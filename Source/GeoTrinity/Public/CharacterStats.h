@@ -1,7 +1,12 @@
 ﻿#pragma once
+#include "CoreMinimal.h"
 
-struct CharacterStats {
+USTRUCT( BlueprintType )
+struct GEOTRINITY_API FCharacterStats : public FTableRowBase
+{
 
-  constexpr float Speed = 300.f;
+	GENERATED_BODY()
 
+	UPROPERTY( EditAnywhere, BlueprintReadWrite )
+	float Speed = 300.f;
 };
