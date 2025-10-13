@@ -1,0 +1,1 @@
+﻿#include "GeoObstacle.h"

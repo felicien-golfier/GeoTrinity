@@ -3,11 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "GeoShapes.h"
 #include "GeoCharacter.generated.h"
 
-UCLASS()
-class GEOTRINITY_API AGeoCharacter : public ACharacter
+
+class UDynamicMesh;UCLASS()
+class GEOTRINITY_API AGeoCharacter : public AActor
 {
 	GENERATED_BODY()
 
@@ -22,8 +23,13 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	void Move(FVector2D InputDir, float DeltaTime);
+	void ApplyCollision(const FGeoBox& Obstacle);
+private:
+	FGeoBox Box;
+	
+	/** The main skeletal mesh associated with this Character (optional sub-object). */
+	UPROPERTY(Category=Character, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	TObjectPtr<UDynamicMesh> Mesh;
+	
 };
