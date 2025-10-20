@@ -5,9 +5,9 @@
 
 #include "GeoCharacter.generated.h"
 
-class UDynamicMesh;
+class UDynamicMeshComponent;
 UCLASS()
-class GEOTRINITY_API AGeoCharacter : public AActor
+class GEOTRINITY_API AGeoCharacter : public APawn
 {
 	GENERATED_BODY()
 
@@ -18,19 +18,23 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void UpdateCharacterLocation( float DeltaTime );
+	virtual void SetupPlayerInputComponent( UInputComponent* PlayerInputComponent ) override;
+	UFUNCTION()
+	void Move( const FInputActionInstance& Instance );
 
 public:
 	// Called every frame
 	virtual void Tick( float DeltaTime ) override;
-	void Move( FVector2D InputDir, float DeltaTime );
 	void ApplyCollision( const FGeoBox& Obstacle );
 
-private:
+protected:
 	FGeoBox Box;
 
-	/** The main skeletal mesh associated with this Character (optional sub-object). */
 	UPROPERTY( Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = ( AllowPrivateAccess = "true" ) )
-	TObjectPtr< UDynamicMesh > Mesh;
+	TObjectPtr< UDynamicMeshComponent > MeshComponent;
+
+	FVector2D MovementInput;
 
 public:
 	UPROPERTY( Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = ( RowType = CharacterStats ) )
