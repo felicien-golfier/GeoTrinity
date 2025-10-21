@@ -16,16 +16,17 @@ class GEOTRINITY_API AGeoPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 public:
-	AGeoPlayerController( const FObjectInitializer& ObjectInitializer );
+	AGeoPlayerController(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void OnPossess( APawn* APawn ) override;
+	virtual void OnPossess(APawn* APawn) override;
 
 public:
-	UPROPERTY( EditAnywhere, Category = "Input" )
+	UPROPERTY(EditAnywhere, Category = "Input")
 	TSoftObjectPtr< UInputMappingContext > InputMapping;
 
-	UPROPERTY( EditAnywhere, Category = "Input" )
-	UInputAction* MoveAction;
+private:
+	UPROPERTY()
+	FVector2D MovementInputs;
 };

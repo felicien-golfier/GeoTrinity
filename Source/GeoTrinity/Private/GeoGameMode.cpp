@@ -2,9 +2,9 @@
 
 #include "GeoGameMode.h"
 
-#include "GeoCharacter.h"
+#include "GeoPawn.h"
 
-AGeoGameMode::AGeoGameMode( const FObjectInitializer& ObjectInitializer ) : Super( ObjectInitializer )
+AGeoGameMode::AGeoGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	DefaultPawnClass = AGeoCharacter::StaticClass();
+	DefaultPawnClass = AGeoPawn::StaticClass();
 }

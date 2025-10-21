@@ -43,7 +43,7 @@ BreakBeforeBraces: Custom
 BraceWrapping:
     AfterCaseLabel: false
     AfterClass: true
-    AfterControlStatement: Never
+    AfterControlStatement: true
     AfterEnum: true
     AfterFunction: true
     AfterNamespace: true
@@ -107,7 +107,7 @@ SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 3
 SpacesInAngles: true
 SpacesInCStyleCastParentheses: false
-SpacesInConditionalStatement: true
-SpacesInContainerLiterals: true
-SpacesInParentheses: true
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
 SpacesInSquareBrackets: false
