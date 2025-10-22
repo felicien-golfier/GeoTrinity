@@ -6,22 +6,23 @@
 #include "CoreMinimal.h"
 #include "GeoPawn.h"
 #include "InputAction.h"
+#include "InputStep.h"
 
-#include "GeoMovementComponent.generated.h"
+#include "GeoInputComponent.generated.h"
 
 UCLASS(Blueprintable, BlueprintType, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class GEOTRINITY_API UGeoMovementComponent : public UActorComponent
+class GEOTRINITY_API UGeoInputComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this component's properties
-	UGeoMovementComponent();
+	UGeoInputComponent();
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void BindInput(UInputComponent* PlayerInputComponent);
 
-	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION()
 	void Move(const FInputActionInstance& Instance);
@@ -30,18 +31,21 @@ public:
 	AGeoPawn* GetGeoPawn() const;
 	void ApplyCollision(const FGeoBox& Obstacle) const;
 
-	UFUNCTION()
-	void OnRep_MovementInput();
+	// UFUNCTION()
+	// void OnRep_MovementInput();
 
 	// Server RPC Function
 	UFUNCTION(Server, reliable)
-	void ServerRPC(FVector2D MovementInputChanged);
+	void SendInputServerRPC(FInputStep InputStep);
 
 private:
-	UPROPERTY(ReplicatedUsing = OnRep_MovementInput)
-	FVector2D MovementInput;
+	void ProcessInput(const FInputStep& InputStep);
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "GeoMovementComponent|Input")
-	TObjectPtr< UInputAction > MoveAction;
+	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
+	TObjectPtr<UInputAction> MoveAction;
+
+private:
+	FInputStep CurrentInputStep;
+	FInputStep PreviousInputStepProcessed;
 };

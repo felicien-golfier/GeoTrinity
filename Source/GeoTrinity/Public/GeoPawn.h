@@ -5,7 +5,7 @@
 
 #include "GeoPawn.generated.h"
 
-class UGeoMovementComponent;
+class UGeoInputComponent;
 class UDynamicMeshComponent;
 UCLASS()
 class GEOTRINITY_API AGeoPawn : public APawn
@@ -26,10 +26,10 @@ protected:
 	FGeoBox Box;
 
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr< UDynamicMeshComponent > MeshComponent;
+	TObjectPtr<UDynamicMeshComponent> MeshComponent;
 
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr< UGeoMovementComponent > MovementComponent;
+	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UGeoInputComponent> GeoInputComponent;
 
 public:
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (RowType = CharacterStats))

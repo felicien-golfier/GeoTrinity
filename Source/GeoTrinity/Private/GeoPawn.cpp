@@ -1,9 +1,7 @@
 #include "GeoPawn.h"
 
 #include "Components/DynamicMeshComponent.h"
-#include "EnhancedInputComponent.h"
-#include "GeoMovementComponent.h"
-#include "GeoPlayerController.h"
+#include "GeoInputComponent.h"
 
 // Sets default values
 AGeoPawn::AGeoPawn()
@@ -20,14 +18,15 @@ AGeoPawn::AGeoPawn()
 	const int Vid4 = MyFDynamicMesh3.AppendVertex(FVector(-Box.Size.X / 2, Box.Size.Y / 2, 0));
 	MyFDynamicMesh3.AppendTriangle(Vid1, Vid2, Vid3);
 	MyFDynamicMesh3.AppendTriangle(Vid3, Vid4, Vid1);
-	MeshComponent = CreateDefaultSubobject< UDynamicMeshComponent >(TEXT("Dynamic Mesh Component"));
+	MeshComponent = CreateDefaultSubobject<UDynamicMeshComponent>(TEXT("Dynamic Mesh Component"));
 	MeshComponent->SetMesh(MoveTemp(MyFDynamicMesh3));
+	SetRootComponent(MeshComponent);
 
-	MovementComponent = CreateDefaultSubobject< UGeoMovementComponent >(TEXT("Geo Movement Component"));
+	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Movement Component"));
 }
 
 void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	MovementComponent->BindInput(PlayerInputComponent);
+	GeoInputComponent->BindInput(PlayerInputComponent);
 }
