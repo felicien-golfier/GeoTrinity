@@ -24,9 +24,28 @@ protected:
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Input")
-	TSoftObjectPtr< UInputMappingContext > InputMapping;
+	TSoftObjectPtr<UInputMappingContext> InputMapping;
+
+	// Time synchronization interface
+	UFUNCTION(Server, unreliable)
+	void ServerRequestServerTime(double ClientSendTimeSeconds);
+
+	UFUNCTION(Client, unreliable)
+	void ClientReportServerTime(double ClientSendTimeSeconds, double ServerTimeSeconds);
+
+	// Returns client-side estimate of server time in seconds
+	double GetEstimatedServerTimeSeconds() const;
 
 private:
+	void ScheduleTimeSync();
+	void SendTimeSyncRequest();
+
+private:
+	// Smoothed offset such that: EstimatedServerTime = ClientRealTime + ServerTimeOffsetSeconds
+	double ServerTimeOffsetSeconds = 0.0;
+	bool bHasServerTimeOffset = false;
+	FTimerHandle TimeSyncTimerHandle;
+
 	UPROPERTY()
 	FVector2D MovementInputs;
 };

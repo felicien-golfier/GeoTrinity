@@ -12,5 +12,4 @@ AGeoGameMode::AGeoGameMode(const FObjectInitializer& ObjectInitializer) : Super(
 void AGeoGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	GetWorld()->GetGameInstance()->GetSubsystem<UGeoInputGameInstanceSubsystem>()->ProcessAgents(DeltaSeconds);
 }

@@ -23,26 +23,34 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 	// End USubsystem
+	bool IsInitialized() const { return bInitialized; }
 
 	// FTickableGameObject implementation Begin
-	ENGINE_API virtual UWorld* GetTickableGameObjectWorld() const override;
-	ENGINE_API virtual ETickableTickType GetTickableTickType() const override;
+	virtual UWorld* GetTickableGameObjectWorld() const override;
+	virtual ETickableTickType GetTickableTickType() const override;
 	virtual bool IsTickable() const override;
-	ENGINE_API virtual void Tick(float DeltaTime) override;
+	virtual TStatId GetStatId() const override;
+	virtual void Tick(float DeltaTime) override;
 	// FTickableGameObject implementation End
 
-	void AddInputBuffer(const FInputStep& InputStep, AGeoPawn* GeoPawn);
+	void ClientUpdateInputBuffer(const TArray<FInputAgent>& InputAgents);
+	void ServerAddInputBuffer(const FInputStep& InputStep, AGeoPawn* GeoPawn);
 	void ProcessAgents(const float DeltaTime);
+	void UpdateClients();
 
-	/** Returns true if Initialize has been called but Deinitialize has not */
-	bool IsInitialized() const { return bInitialized; }
+	FInputAgent& GetInputAgent(AGeoPawn* GeoPawn);
+	static UGeoInputGameInstanceSubsystem* GetInstance(const UWorld* World);
 
 private:
 	bool bInitialized = false;
-
+	// Map of pawn -> buffered inputs received on the server
 	UPROPERTY()
 	TMap<AGeoPawn*, FInputAgent> InputAgents;
 
+	// Cached list of pawns that have sent inputs at least once; used to avoid
+	// iterating over all PlayerControllers every tick when dispatching.
+	TArray<TWeakObjectPtr<AGeoPawn>> GeoPawns;
+
 	UPROPERTY(EditDefaultsOnly)
-	int MaxBufferInputs = 50;
+	int MaxBufferInputs = 100;
 };

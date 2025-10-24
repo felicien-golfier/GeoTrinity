@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerState.h"
 #include "GeoInputGameInstanceSubsystem.h"
 #include "GeoPawn.h"
+#include "GeoPlayerController.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "InputStep.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -27,6 +29,10 @@ void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 	UGameplayStatics::GetAccurateRealTime(CurrentInputStep.TimeSeconds, CurrentInputStep.TimePartialSeconds);
 	CurrentInputStep.Ping = PlayerState->GetPingInMilliseconds();
+	if (AGeoPlayerController* GeoPC = Cast<AGeoPlayerController>(GeoPawn->GetController()))
+	{
+		CurrentInputStep.ServerTimeSeconds = GeoPC->GetEstimatedServerTimeSeconds();
+	}
 	SendInputServerRPC(CurrentInputStep);
 	ProcessInput(CurrentInputStep);
 	CurrentInputStep.Empty();
@@ -108,18 +114,22 @@ void UGeoInputComponent::ProcessInput(const FInputStep& InputStep)
 	float DeltaTime = PreviousInputStepProcessed.IsEmpty() ? 0.017f : InputStep.GetTimeDiff(PreviousInputStepProcessed);
 	if (DeltaTime <= 0.f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Incorrect delta time. (%f)."), DeltaTime);
+		UE_LOG(LogGeoTrinity, Warning, TEXT("Incorrect delta time. (%f)."), DeltaTime);
+		DeltaTime = 0.017f;
 	}
-	else
-	{
-		UpdateCharacterLocation(DeltaTime, InputStep.MovementInput);
-	}
+
+	// Always update with a valid DeltaTime
+	UpdateCharacterLocation(DeltaTime, InputStep.MovementInput);
 
 	PreviousInputStepProcessed = InputStep;
 }
 
 void UGeoInputComponent::SendInputServerRPC_Implementation(FInputStep InputStep)
 {
-	GetWorld()->GetGameInstance()->GetSubsystem<UGeoInputGameInstanceSubsystem>()->AddInputBuffer(InputStep, GetGeoPawn());
-	ProcessInput(InputStep);
+	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->ServerAddInputBuffer(InputStep, GetGeoPawn());
+}
+
+void UGeoInputComponent::SendForeignInputClientRPC_Implementation(const TArray<FInputAgent>& InputAgents)
+{
+	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->ClientUpdateInputBuffer(InputAgents);
 }

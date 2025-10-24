@@ -4,6 +4,7 @@
 
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "GeoInputGameInstanceSubsystem.h"
 #include "GeoPawn.h"
 #include "InputAction.h"
 #include "InputStep.h"
@@ -31,14 +32,13 @@ public:
 	AGeoPawn* GetGeoPawn() const;
 	void ApplyCollision(const FGeoBox& Obstacle) const;
 
-	// UFUNCTION()
-	// void OnRep_MovementInput();
-
 	// Server RPC Function
 	UFUNCTION(Server, reliable)
 	void SendInputServerRPC(FInputStep InputStep);
 
-private:
+	UFUNCTION(Client, reliable)
+	void SendForeignInputClientRPC(const TArray<FInputAgent>& InputAgents);
+
 	void ProcessInput(const FInputStep& InputStep);
 
 public:

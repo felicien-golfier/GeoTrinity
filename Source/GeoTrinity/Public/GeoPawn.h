@@ -21,6 +21,7 @@ protected:
 
 public:
 	FGeoBox GetBox() const { return Box; }
+	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 
 protected:
 	FGeoBox Box;
