@@ -6,3 +6,11 @@ This project is made on Unreal 5, it does not use Chaos neither much actor repli
 All inputs are send to the server and dispatch to the clients. So lag is not an issue theorically :')
 All collisions are calculated locally and on the server by simple math, so it cost nothing to run.
 Visually... I don't know for now
+
+
+Tech : 
+- Replication Unreal des ennemies et des projectils/actions.
+- Replication personnelle des joueurs.
+-   Stocker l'etat des joueurs (Position orientation velocite)
+-   Rollback, rejouer les frames.
+- GAS pour tous les spells.
