@@ -25,9 +25,8 @@ private:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
-	
+
 	void InitAbilityActorInfo();
-	
 
 private:
 	FGeoBox Box;
@@ -41,9 +40,9 @@ private:
 	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoMovementComponent> GeoMovementComponent;
 
-	UPROPERTY(BlueprintReadOnly, Category = Character)
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
-	
+
 public:
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (RowType = CharacterStats))
 	FDataTableRowHandle StatsDTHandle;
