@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "InputMappingContext.h"
+#include "InputStep.h"
 
 #include "GeoPlayerController.generated.h"
 
@@ -28,22 +29,19 @@ public:
 
 	// Time synchronization interface
 	UFUNCTION(Server, unreliable)
-	void ServerRequestServerTime(double ClientSendTimeSeconds);
+	void ServerRequestServerTime(FGeoTime ClientSendTimeSeconds);
 
 	UFUNCTION(Client, unreliable)
-	void ClientReportServerTime(double ClientSendTimeSeconds, double ServerTimeSeconds);
+	void ClientReportServerTime(FGeoTime ClientSendTimeSeconds, FGeoTime ServerTimeSeconds);
 
 	// Returns client-side estimate of server time in seconds
-	double GetEstimatedServerTimeSeconds() const;
+	double GetServerTimeOffsetSeconds() const;
 
 private:
 	void ScheduleTimeSync();
 	void SendTimeSyncRequest();
 
-private:
-	// Smoothed offset such that: EstimatedServerTime = ClientRealTime + ServerTimeOffsetSeconds
 	double ServerTimeOffsetSeconds = 0.0;
-	bool bHasServerTimeOffset = false;
 	FTimerHandle TimeSyncTimerHandle;
 
 	UPROPERTY()

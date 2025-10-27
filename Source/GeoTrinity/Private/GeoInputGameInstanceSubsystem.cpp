@@ -18,7 +18,7 @@ void UGeoInputGameInstanceSubsystem::ClientUpdateInputBuffer(const TArray<FInput
 {
 	for (const FInputAgent& UpdatedInputAgent : UpdatedInputAgents)
 	{
-		FInputAgent& InputAgent = GetInputAgent(UpdatedInputAgent.Owner);
+		FInputAgent& InputAgent = GetInputAgent(UpdatedInputAgent.Owner.Get());
 		InputAgent.InputSteps = UpdatedInputAgent.InputSteps;
 	}
 }
@@ -67,32 +67,22 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 			continue;
 		}
 
-		// Choose the most recent step. Prefer server-time if provided, otherwise fall back to client time minus ping
-		int32 BestIndex = 0;
-		double BestScore = TNumericLimits<double>::Lowest();
-		for (int32 i = 0; i < InputAgent.InputSteps.Num(); ++i)
-		{
-			const FInputStep& InputStep = InputAgent.InputSteps[i];
-			double Score;
-			if (InputStep.ServerTimeSeconds > 0.0)
-			{
-				Score = InputStep.ServerTimeSeconds;
-			}
-			else
-			{
-				double StepTime = static_cast<double>(InputStep.TimeSeconds) + InputStep.TimePartialSeconds;
-				double Adjusted = StepTime - static_cast<double>(InputStep.Ping) / 1000.0;   // subtract RTT seconds
-				Score = Adjusted;
-			}
+		FInputStep SelectedInputStep;
 
-			if (Score > BestScore)
-			{
-				BestScore = Score;
-				BestIndex = i;
-			}
+		// Did I get new inputs ?
+		if (InputAgent.LastProcessedInputStep.IsEmpty() || InputAgent.LastProcessedInputStep.GetTimeDiff(InputAgent.InputSteps[0]) > 0)
+		{
+			// I got new inputs !
+			SelectedInputStep = InputAgent.InputSteps[0];
+			InputAgent.LastProcessedInputStep = SelectedInputStep;
+		}
+		else
+		{
+			// Start extrapolation and process same input over and over with updated time.
+			SelectedInputStep = InputAgent.LastProcessedInputStep;
+			SelectedInputStep.InputTime.TimeSeconds += DeltaTime;
 		}
 
-		const FInputStep SelectedInputStep = InputAgent.InputSteps[BestIndex];
 		GeoPawn->GetGeoInputComponent()->ProcessInput(SelectedInputStep);
 	}
 
@@ -145,7 +135,7 @@ void UGeoInputGameInstanceSubsystem::UpdateClients()
 FInputAgent& UGeoInputGameInstanceSubsystem::GetInputAgent(AGeoPawn* GeoPawn)
 {
 	FInputAgent& InputAgent = InputAgents.FindOrAdd(GeoPawn, FInputAgent());
-	if (!IsValid(InputAgent.Owner))
+	if (!InputAgent.Owner.IsValid())
 	{
 		InputAgent.Owner = GeoPawn;
 		GeoPawns.Add(GeoPawn);

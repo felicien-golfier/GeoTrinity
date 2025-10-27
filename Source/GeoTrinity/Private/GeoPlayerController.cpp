@@ -5,9 +5,6 @@
 #include "Camera/CameraActor.h"
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
-#include "GeoInputComponent.h"
-#include "GeoPawn.h"
-#include "InputStep.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
@@ -43,14 +40,10 @@ void AGeoPlayerController::OnPossess(APawn* APawn)
 	Super::OnPossess(APawn);
 }
 
-static double GetAccurateRealTimeSeconds()
+double AGeoPlayerController::GetServerTimeOffsetSeconds() const
 {
-	int32 Secs = 0;
-	double Part = 0.0;
-	UGameplayStatics::GetAccurateRealTime(Secs, Part);
-	return static_cast<double>(Secs) + Part;
+	return ServerTimeOffsetSeconds;
 }
-
 void AGeoPlayerController::ScheduleTimeSync()
 {
 	if (UWorld* World = GetWorld())
@@ -66,43 +59,29 @@ void AGeoPlayerController::SendTimeSyncRequest()
 	{
 		return;
 	}
-	ServerRequestServerTime(GetAccurateRealTimeSeconds());
+	ServerRequestServerTime(FGeoTime::GetAccurateRealTime());
 }
 
-void AGeoPlayerController::ServerRequestServerTime_Implementation(double ClientSendTimeSeconds)
+void AGeoPlayerController::ServerRequestServerTime_Implementation(const FGeoTime ClientSendTimeSeconds)
 {
 	// Called on server: respond with current server real time seconds
-	const double ServerNow = GetAccurateRealTimeSeconds();
+	const FGeoTime ServerNow = FGeoTime::GetAccurateRealTime();
 	ClientReportServerTime(ClientSendTimeSeconds, ServerNow);
 }
 
-void AGeoPlayerController::ClientReportServerTime_Implementation(double ClientSendTimeSeconds, double ServerTimeSeconds)
+void AGeoPlayerController::ClientReportServerTime_Implementation(const FGeoTime ClientSendTimeSeconds, const FGeoTime ServerTimeSeconds)
 {
-	const double ClientReceive = GetAccurateRealTimeSeconds();
-	const double Rtt = FMath::Max(0.0, ClientReceive - ClientSendTimeSeconds);
+	const FGeoTime ClientReceive = FGeoTime::GetAccurateRealTime();
+	const double Rtt = FMath::Max(0.0, ClientReceive.GetTimeDiff(ClientSendTimeSeconds));
 	const double OneWay = 0.5 * Rtt;
-	const double EstimatedOffset = ServerTimeSeconds - (ClientReceive - OneWay);
-	if (!bHasServerTimeOffset)
+	const double EstimatedOffset = ServerTimeSeconds.GetTimeDiff(ClientReceive - OneWay);
+	if (ServerTimeOffsetSeconds == 0.0f)
 	{
 		ServerTimeOffsetSeconds = EstimatedOffset;
-		bHasServerTimeOffset = true;
 	}
 	else
 	{
 		// Smooth to reduce jitter
 		ServerTimeOffsetSeconds = FMath::Lerp(ServerTimeOffsetSeconds, EstimatedOffset, 0.1);
 	}
-}
-
-double AGeoPlayerController::GetEstimatedServerTimeSeconds() const
-{
-	if (!IsLocalController())
-	{
-		return 0.0;
-	}
-	int32 Secs = 0;
-	double Part = 0.0;
-	UGameplayStatics::GetAccurateRealTime(Secs, Part);
-	const double ClientNow = static_cast<double>(Secs) + Part;
-	return bHasServerTimeOffset ? (ClientNow + ServerTimeOffsetSeconds) : 0.0;
 }

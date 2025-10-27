@@ -52,5 +52,5 @@ private:
 	TArray<TWeakObjectPtr<AGeoPawn>> GeoPawns;
 
 	UPROPERTY(EditDefaultsOnly)
-	int MaxBufferInputs = 100;
+	int MaxBufferInputs = 20;
 };

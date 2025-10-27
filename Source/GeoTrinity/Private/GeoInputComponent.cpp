@@ -27,11 +27,11 @@ void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		return;
 	}
 
-	UGameplayStatics::GetAccurateRealTime(CurrentInputStep.TimeSeconds, CurrentInputStep.TimePartialSeconds);
+	UGameplayStatics::GetAccurateRealTime(CurrentInputStep.InputTime.TimeSeconds, CurrentInputStep.InputTime.TimePartialSeconds);
 	CurrentInputStep.Ping = PlayerState->GetPingInMilliseconds();
-	if (AGeoPlayerController* GeoPC = Cast<AGeoPlayerController>(GeoPawn->GetController()))
+	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GeoPawn->GetController()))
 	{
-		CurrentInputStep.ServerTimeSeconds = GeoPC->GetEstimatedServerTimeSeconds();
+		CurrentInputStep.ServerTimeOffsetSeconds = GeoPlayerController->GetServerTimeOffsetSeconds();
 	}
 	SendInputServerRPC(CurrentInputStep);
 	ProcessInput(CurrentInputStep);
@@ -116,6 +116,9 @@ void UGeoInputComponent::ProcessInput(const FInputStep& InputStep)
 	{
 		UE_LOG(LogGeoTrinity, Warning, TEXT("Incorrect delta time. (%f)."), DeltaTime);
 		DeltaTime = 0.017f;
+		// ICI tu codes l'extrapolation.
+		UpdateCharacterLocation(DeltaTime, PreviousInputStepProcessed.MovementInput);
+		return;
 	}
 
 	// Always update with a valid DeltaTime
