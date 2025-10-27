@@ -22,7 +22,7 @@ AGeoPawn::AGeoPawn()
 	MeshComponent->SetMesh(MoveTemp(MyFDynamicMesh3));
 	SetRootComponent(MeshComponent);
 
-	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Movement Component"));
+	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
 }
 
 void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
