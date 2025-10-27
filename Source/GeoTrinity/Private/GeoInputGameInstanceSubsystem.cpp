@@ -83,7 +83,7 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 			SelectedInputStep.InputTime.TimeSeconds += DeltaTime;
 		}
 
-		GeoPawn->GetGeoInputComponent()->ProcessInput(SelectedInputStep);
+		GeoPawn->GetGeoInputComponent()->ProcessInput(SelectedInputStep, DeltaTime);
 	}
 
 	for (AGeoPawn* GeoPawn : GeoPawnsToRemove)

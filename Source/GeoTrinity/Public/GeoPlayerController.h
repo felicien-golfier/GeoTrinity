@@ -36,6 +36,7 @@ public:
 
 	// Returns client-side estimate of server time in seconds
 	double GetServerTimeOffsetSeconds() const;
+	FGeoTime GetHestimatedServerTime() const;
 
 private:
 	void ScheduleTimeSync();

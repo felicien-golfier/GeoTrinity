@@ -32,6 +32,6 @@ struct FGeoPawnState
 
 struct FGeoGameSnapShot
 {
-	FGeoTime Time;
+	FGeoTime ServerTime;
 	TArray<FGeoPawnState> GeoPawnStates;
 };

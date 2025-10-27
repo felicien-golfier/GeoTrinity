@@ -44,6 +44,12 @@ double AGeoPlayerController::GetServerTimeOffsetSeconds() const
 {
 	return ServerTimeOffsetSeconds;
 }
+FGeoTime AGeoPlayerController::GetHestimatedServerTime() const
+{
+	FGeoTime LocalTime = FGeoTime::GetAccurateRealTime();
+	return LocalTime + ServerTimeOffsetSeconds;
+}
+
 void AGeoPlayerController::ScheduleTimeSync()
 {
 	if (UWorld* World = GetWorld())

@@ -7,6 +7,7 @@
 
 class UGeoInputComponent;
 class UDynamicMeshComponent;
+class UGeoMovementComponent;
 UCLASS()
 class GEOTRINITY_API AGeoPawn : public APawn
 {
@@ -22,6 +23,7 @@ protected:
 public:
 	FGeoBox GetBox() const { return Box; }
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
+	UGeoMovementComponent* GetGeoMovementComponent() const { return GeoMovementComponent; }
 
 protected:
 	FGeoBox Box;
@@ -31,6 +33,9 @@ protected:
 
 	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoInputComponent> GeoInputComponent;
+
+	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UGeoMovementComponent> GeoMovementComponent;
 
 public:
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (RowType = CharacterStats))

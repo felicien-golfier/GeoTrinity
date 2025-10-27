@@ -2,6 +2,7 @@
 
 #include "Components/DynamicMeshComponent.h"
 #include "GeoInputComponent.h"
+#include "GeoMovementComponent.h"
 
 // Sets default values
 AGeoPawn::AGeoPawn()
@@ -23,6 +24,7 @@ AGeoPawn::AGeoPawn()
 	SetRootComponent(MeshComponent);
 
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
+	GeoMovementComponent = CreateDefaultSubobject<UGeoMovementComponent>(TEXT("Geo Movement Component"));
 }
 
 void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

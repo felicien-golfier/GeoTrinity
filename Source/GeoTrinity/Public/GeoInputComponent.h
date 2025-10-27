@@ -26,11 +26,9 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION()
-	void Move(const FInputActionInstance& Instance);
+	void MoveFromInput(const FInputActionInstance& Instance);
 
-	void UpdateCharacterLocation(float DeltaTime, FVector2D GivenMovementInput) const;
 	AGeoPawn* GetGeoPawn() const;
-	void ApplyCollision(const FGeoBox& Obstacle) const;
 
 	// Server RPC Function
 	UFUNCTION(Server, reliable)
@@ -39,7 +37,7 @@ public:
 	UFUNCTION(Client, reliable)
 	void SendForeignInputClientRPC(const TArray<FInputAgent>& InputAgents);
 
-	void ProcessInput(const FInputStep& InputStep);
+	void ProcessInput(const FInputStep& InputStep, const float DeltaTime);
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
@@ -47,5 +45,4 @@ public:
 
 private:
 	FInputStep CurrentInputStep;
-	FInputStep PreviousInputStepProcessed;
 };
