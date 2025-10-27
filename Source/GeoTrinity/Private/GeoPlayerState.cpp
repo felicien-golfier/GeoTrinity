@@ -4,6 +4,7 @@
 #include "GeoPlayerState.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/GeoAttributeSetBase.h"
 
 AGeoPlayerState::AGeoPlayerState()
 {
@@ -14,7 +15,10 @@ AGeoPlayerState::AGeoPlayerState()
 	// in the Abilities/Gameplay effects)
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
-	SetNetUpdateFrequency(100.f);
+	
+	// Adding an attribute set as a subobject of the owning actor of an AbilitySystemComponent
+	// automatically registers the AttributeSet with the AbilitySystemComponent
+	AttributeSetBase = CreateDefaultSubobject<UGeoAttributeSetBase>(TEXT("AttributeSetBase"));
 }
 
 UAbilitySystemComponent* AGeoPlayerState::GetAbilitySystemComponent() const

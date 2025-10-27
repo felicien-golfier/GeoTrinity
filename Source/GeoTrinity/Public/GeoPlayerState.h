@@ -7,6 +7,7 @@
 #include "GameFramework/PlayerState.h"
 #include "GeoPlayerState.generated.h"
 
+class UGeoAttributeSetBase;
 class UGeoAbilitySystemComponent;
 /**
  * Deriving just to set up basic RPG stuff for now (felt awkward to put all of this in the controller)
@@ -20,10 +21,13 @@ public:
 	AGeoPlayerState();
 	
 	/** Implement IAbilitySystemInterface */
-	UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	/** END Implement IAbilitySystemInterface */
 	
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
+	
+	UPROPERTY()
+	TObjectPtr<UGeoAttributeSetBase> AttributeSetBase;
 };
