@@ -3,6 +3,8 @@
 #include "Components/DynamicMeshComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
+#include "GeoPlayerState.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 
 // Sets default values
 AGeoPawn::AGeoPawn()
@@ -31,4 +33,28 @@ void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	GeoInputComponent->BindInput(PlayerInputComponent);
+}
+
+void AGeoPawn::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	InitAbilityActorInfo();
+}
+
+void AGeoPawn::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	// Set the ASC for clients. Server does this in PossessedBy.
+	InitAbilityActorInfo();
+}
+
+void AGeoPawn::InitAbilityActorInfo()
+{
+	AGeoPlayerState* PS = GetPlayerState<AGeoPlayerState>();
+	if (!PS)
+		return;
+
+	AbilitySystemComponent = Cast<UGeoAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
 }

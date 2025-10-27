@@ -5,6 +5,7 @@
 
 #include "GeoPawn.generated.h"
 
+class UGeoAbilitySystemComponent;
 class UGeoInputComponent;
 class UDynamicMeshComponent;
 class UGeoMovementComponent;
@@ -16,16 +17,19 @@ class GEOTRINITY_API AGeoPawn : public APawn
 public:
 	// Sets default values for this character's properties
 	AGeoPawn();
-
-protected:
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
-public:
 	FGeoBox GetBox() const { return Box; }
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const { return GeoMovementComponent; }
 
-protected:
+private:
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+	
+	void InitAbilityActorInfo();
+	
+
+private:
 	FGeoBox Box;
 
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -37,6 +41,9 @@ protected:
 	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoMovementComponent> GeoMovementComponent;
 
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
+	
 public:
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (RowType = CharacterStats))
 	FDataTableRowHandle StatsDTHandle;
