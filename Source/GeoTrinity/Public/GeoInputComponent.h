@@ -37,7 +37,8 @@ public:
 	UFUNCTION(Client, reliable)
 	void SendForeignInputClientRPC(const TArray<FInputAgent>& InputAgents);
 
-	void ProcessInput(const FInputStep& InputStep, const float DeltaTime);
+	void ProcessInput(const FInputStep& InputStep);
+	void ProcessInput(const FInputStep& InputStep, float DeltaTime);
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")

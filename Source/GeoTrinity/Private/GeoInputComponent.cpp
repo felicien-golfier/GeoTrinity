@@ -28,14 +28,14 @@ void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		return;
 	}
 
-	UGameplayStatics::GetAccurateRealTime(CurrentInputStep.InputTime.TimeSeconds, CurrentInputStep.InputTime.TimePartialSeconds);
-	CurrentInputStep.Ping = PlayerState->GetPingInMilliseconds();
+	UGameplayStatics::GetAccurateRealTime(CurrentInputStep.Time.TimeSeconds, CurrentInputStep.Time.TimePartialSeconds);
+	CurrentInputStep.DeltaTimeSeconds = DeltaTime;
 	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GeoPawn->GetController()))
 	{
 		CurrentInputStep.ServerTimeOffsetSeconds = GeoPlayerController->GetServerTimeOffsetSeconds();
 	}
 	SendInputServerRPC(CurrentInputStep);
-	ProcessInput(CurrentInputStep, DeltaTime);
+	ProcessInput(CurrentInputStep);
 	CurrentInputStep.Empty();
 }
 
@@ -62,11 +62,16 @@ AGeoPawn* UGeoInputComponent::GetGeoPawn() const
 	return CastChecked<AGeoPawn>(GetOuter());
 }
 
+void UGeoInputComponent::ProcessInput(const FInputStep& InputStep)
+{
+	ProcessInput(InputStep, InputStep.DeltaTimeSeconds);
+}
+
 void UGeoInputComponent::ProcessInput(const FInputStep& InputStep, const float DeltaTime)
 {
 	if (DeltaTime <= 0.f)
 	{
-		UE_LOG(LogGeoTrinity, Warning, TEXT("Incorrect delta time. (%f)."), DeltaTime);
+		UE_LOG(LogGeoTrinity, Error, TEXT("Incorrect delta time. (%f)."), DeltaTime);
 		return;
 	}
 

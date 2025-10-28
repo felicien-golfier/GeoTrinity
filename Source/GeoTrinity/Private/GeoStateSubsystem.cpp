@@ -4,10 +4,49 @@
 #include "GeoPawn.h"
 #include "GeoPawnState.h"
 #include "GeoPlayerController.h"
+#include "TimerManager.h"
+
+void UGeoStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	if (UWorld* World = GetWorld())
+	{
+		// Only the server should broadcast authoritative snapshots
+		if (World->GetNetMode() != NM_Client)
+		{
+			World->GetTimerManager().SetTimer(SnapshotTimerHandle, this, &UGeoStateSubsystem::BroadcastAuthoritativeSnapshot, 0.5f, true);
+		}
+	}
+}
+
+void UGeoStateSubsystem::Deinitialize()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(SnapshotTimerHandle);
+	}
+	Super::Deinitialize();
+}
+
+void UGeoStateSubsystem::BroadcastAuthoritativeSnapshot()
+{
+	FGeoGameSnapShot Snapshot = GetCurrentSnapshot();
+
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		AGeoPlayerController* GeoPC = Cast<AGeoPlayerController>(Iterator->Get());
+		if (IsValid(GeoPC))
+		{
+			GeoPC->ClientReceiveSnapshot(Snapshot);
+		}
+	}
+}
 
 FGeoGameSnapShot UGeoStateSubsystem::GetCurrentSnapshot() const
 {
 	FGeoGameSnapShot CurrentSnapShot;
+	// Default to authoritative time on the server in case no local controller found
+	CurrentSnapShot.ServerTime = FGeoTime::GetAccurateRealTime();
 	// Parse existing player controllers and create a snapshot from each pawn
 	for (FConstControllerIterator Iterator = GetWorld()->GetControllerIterator(); Iterator; ++Iterator)
 	{
@@ -41,7 +80,7 @@ void UGeoStateSubsystem::ApplySnapshot(const FGeoGameSnapShot& Snapshot)
 	// Restore each pawn state found in the snapshot
 	for (const FGeoPawnState& PawnState : Snapshot.GeoPawnStates)
 	{
-		AGeoPawn* Pawn = PawnState.GeoPawn.Get();
+		AGeoPawn* Pawn = PawnState.GeoPawn;
 		if (!IsValid(Pawn))
 		{
 			continue;
@@ -59,9 +98,21 @@ void UGeoStateSubsystem::ApplySnapshot(const FGeoGameSnapShot& Snapshot)
 	LastAppliedSnapshot = Snapshot;
 }
 
-void UGeoStateSubsystem::RollBackToLastAppliedSnapshot()
+void UGeoStateSubsystem::RollBackToTime(const FGeoTime Time)
 {
-	ApplySnapshot(LastAppliedSnapshot);
+	for (FGeoGameSnapShot& Snapshot : GameHistory)
+	{
+		if (Snapshot.ServerTime > Time)
+		{
+			ApplySnapshot(Snapshot);
+			return;
+		}
+	}
+}
+
+void UGeoStateSubsystem::ReceivedServerSnapshot(const FGeoGameSnapShot& Snapshot)
+{
+	ApplySnapshot(Snapshot);
 }
 
 UGeoStateSubsystem* UGeoStateSubsystem::GetInstance(const UWorld* World)

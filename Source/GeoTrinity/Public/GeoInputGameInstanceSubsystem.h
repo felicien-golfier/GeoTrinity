@@ -45,11 +45,9 @@ private:
 	bool bInitialized = false;
 	// Map of pawn -> buffered inputs received on the server
 	UPROPERTY()
-	TMap<AGeoPawn*, FInputAgent> InputAgents;
-
-	// Cached list of pawns that have sent inputs at least once; used to avoid
-	// iterating over all PlayerControllers every tick when dispatching.
-	TArray<TWeakObjectPtr<AGeoPawn>> GeoPawns;
+	TMap<AGeoPawn*, FInputAgent> InputAgentsHistory;
+	UPROPERTY()
+	TMap<AGeoPawn*, FInputAgent> NewInputAgents;
 
 	UPROPERTY(EditDefaultsOnly)
 	int MaxBufferInputs = 20;

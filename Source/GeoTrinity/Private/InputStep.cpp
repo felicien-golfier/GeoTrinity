@@ -7,6 +7,29 @@ double FGeoTime::GetTimeDiff(const FGeoTime Other) const
 	return static_cast<double>(TimeSeconds - Other.TimeSeconds) + TimePartialSeconds - Other.TimePartialSeconds;
 }
 
+double FGeoTime::operator-(const FGeoTime& Other) const
+{
+	return GetTimeDiff(Other);
+}
+
+bool FGeoTime::operator<(const FGeoTime& Other) const
+{
+	if (TimeSeconds != Other.TimeSeconds)
+	{
+		return TimeSeconds < Other.TimeSeconds;
+	}
+	return TimePartialSeconds < Other.TimePartialSeconds;
+}
+
+bool FGeoTime::operator>(const FGeoTime& Other) const
+{
+	if (TimeSeconds != Other.TimeSeconds)
+	{
+		return TimeSeconds > Other.TimeSeconds;
+	}
+	return TimePartialSeconds > Other.TimePartialSeconds;
+}
+
 FGeoTime FGeoTime::operator-(double DeltaSeconds) const
 {
 	// Break DeltaSeconds into whole and fractional parts using floor so that fraction is in [0,1]
@@ -37,6 +60,20 @@ FGeoTime FGeoTime::operator+(double DeltaSeconds) const
 	return (*this) - (-DeltaSeconds);
 }
 
+bool FGeoTime::operator==(const FGeoTime& Other) const
+{
+	if (TimeSeconds != Other.TimeSeconds)
+	{
+		return false;
+	}
+	return FMath::IsNearlyEqual(TimePartialSeconds, Other.TimePartialSeconds, 1e-6);
+}
+
+bool FGeoTime::IsZero(double Tolerance) const
+{
+	return TimeSeconds == 0 && FMath::Abs(TimePartialSeconds) <= Tolerance;
+}
+
 FGeoTime FGeoTime::GetAccurateRealTime()
 {
 	int32 Secs = 0;
@@ -47,13 +84,13 @@ FGeoTime FGeoTime::GetAccurateRealTime()
 
 FString FInputStep::ToString() const
 {
-	return FString::Printf(TEXT("Inputs :\n Movement : X %f, Y %f\n Ping : %f\n Time : %d and %f \n ServerTimeOffsetSeconds: %f"),
-		MovementInput.X, MovementInput.Y, Ping, InputTime.TimeSeconds, InputTime.TimePartialSeconds, ServerTimeOffsetSeconds);
+	return FString::Printf(TEXT("Inputs :\n Movement : X %f, Y %f\n DeltaTime : %f\n Time : %d and %f \n ServerTimeOffsetSeconds: %f"),
+		MovementInput.X, MovementInput.Y, DeltaTimeSeconds, Time.TimeSeconds, Time.TimePartialSeconds, ServerTimeOffsetSeconds);
 }
 
 double FInputStep::GetTimeDiff(const FInputStep& Other) const
 {
-	double TimeDiff = InputTime.GetTimeDiff(Other.InputTime);
+	double TimeDiff = Time.GetTimeDiff(Other.Time);
 
 	// Prefer server time delta if available on both steps
 	if (ServerTimeOffsetSeconds > 0.0 && Other.ServerTimeOffsetSeconds > 0.0)
@@ -67,23 +104,23 @@ double FInputStep::GetTimeDiff(const FInputStep& Other) const
 bool FInputStep::IsEmpty() const
 {
 	const bool bMovementZero = MovementInput.IsNearlyZero(KINDA_SMALL_NUMBER);
-	const bool bPingZero = FMath::IsNearlyZero(Ping);
-	const bool bTimeSecondsZero = InputTime.TimeSeconds == 0;
-	const bool bTimePartialZero = FMath::IsNearlyZero(InputTime.TimePartialSeconds);
+	const bool bDeltaTimeSecondsZero = FMath::IsNearlyZero(DeltaTimeSeconds);
+	const bool bTimeSecondsZero = Time.TimeSeconds == 0;
+	const bool bTimePartialZero = FMath::IsNearlyZero(Time.TimePartialSeconds);
 	const bool bServerTimeZero = FMath::IsNearlyZero(ServerTimeOffsetSeconds);
-	return bMovementZero && bPingZero && bTimeSecondsZero && bTimePartialZero && bServerTimeZero;
+	return bMovementZero && bDeltaTimeSecondsZero && bTimeSecondsZero && bTimePartialZero && bServerTimeZero;
 }
 
 void FInputStep::Empty()
 {
 	MovementInput = FVector2D::ZeroVector;
-	Ping = 0.f;
-	InputTime.TimeSeconds = 0;
-	InputTime.TimePartialSeconds = 0.0;
+	DeltaTimeSeconds = 0.f;
+	Time.TimeSeconds = 0;
+	Time.TimePartialSeconds = 0.0;
 	ServerTimeOffsetSeconds = 0.0;
 }
 
-double FInputStep::GetEstimatedServerTimeSeconds() const
+FGeoTime FInputStep::ServerTime() const
 {
-	return static_cast<double>(InputTime.TimeSeconds) + InputTime.TimePartialSeconds + ServerTimeOffsetSeconds;
+	return Time + ServerTimeOffsetSeconds;
 }

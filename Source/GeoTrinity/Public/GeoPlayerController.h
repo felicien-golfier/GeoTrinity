@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "GeoPawnState.h"
 #include "InputMappingContext.h"
 #include "InputStep.h"
 
@@ -33,6 +34,10 @@ public:
 
 	UFUNCTION(Client, unreliable)
 	void ClientReportServerTime(FGeoTime ClientSendTimeSeconds, FGeoTime ServerTimeSeconds);
+
+	// Receive authoritative snapshot from server every 0.5s
+	UFUNCTION(Client, unreliable)
+	void ClientReceiveSnapshot(const FGeoGameSnapShot& Snapshot);
 
 	// Returns client-side estimate of server time in seconds
 	double GetServerTimeOffsetSeconds() const;
