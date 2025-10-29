@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GeoPawn.h"
+#include "GeoPlayerController.h"
 #include "InputStep.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 
@@ -34,21 +35,29 @@ public:
 	// FTickableGameObject implementation End
 
 	void ClientUpdateInputBuffer(const TArray<FInputAgent>& InputAgents);
-	void ServerAddInputBuffer(const FInputStep& InputStep, AGeoPawn* GeoPawn);
+	void AddInputBuffer(const FInputStep& InputStep, AGeoPawn* GeoPawn);
 	void ProcessAgents(const float DeltaTime);
 	void UpdateClients();
 
 	FInputAgent& GetInputAgent(AGeoPawn* GeoPawn);
+	void SetServerTimeOffset(AGeoPlayerController* GeoPlayerController, float ServerTimeOffset);
+	static bool HasLocalServerTimeOffset(const UWorld* World);
+	bool HasLocalServerTimeOffset() const;
+	bool HasServerTimeOffset(const AGeoPlayerController* GeoPlayerController) const;
+	FGeoTime GetServerTime(const AGeoPlayerController* GeoPlayerController);
+
 	static UGeoInputGameInstanceSubsystem* GetInstance(const UWorld* World);
 
 private:
 	bool bInitialized = false;
-	// Map of pawn -> buffered inputs received on the server
 	UPROPERTY()
-	TMap<AGeoPawn*, FInputAgent> InputAgentsHistory;
+	TArray<FInputAgent> InputAgentsHistory;
 	UPROPERTY()
-	TMap<AGeoPawn*, FInputAgent> NewInputAgents;
+	TArray<FInputAgent> NewInputAgents;
 
-	UPROPERTY(EditDefaultsOnly)
-	int MaxBufferInputs = 20;
+ // Tracks the last time sent for each (RecipientID -> (SourceID -> Time)) pair. Not exposed to reflection.
+	TMap<uint32, TMap<uint32, FGeoTime>> ClientLastSentTimes;
+
+	UPROPERTY()
+	TMap<AGeoPlayerController*, float> ServerTimeOffsets;
 };

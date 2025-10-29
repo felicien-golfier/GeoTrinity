@@ -5,26 +5,34 @@
 #include "Engine/Engine.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoInputComponent.h"
+#include "GeoPlayerController.h"
 #include "GeoStateSubsystem.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HAL/IConsoleManager.h"
 #include "InputStep.h"
 
-// Console variable to toggle on-screen debug messages from ServerAddInputBuffer.
-// Usage in console: geo.ServerAddInputBuffer.ScreenDebug 1 (enable) or 0 (disable)
-static TAutoConsoleVariable<int32> CVarGeoAddInputBufferScreenDebug(TEXT("geo.ServerAddInputBuffer.ScreenDebug"), 0,
-	TEXT("When > 0, displays on-screen debug messages from UGeoInputGameInstanceSubsystem::ServerAddInputBuffer."), ECVF_Default);
+// Console variable to toggle on-screen debug messages from AddInputBuffer.
+// Usage in console: geo.AddInputBuffer.ScreenDebug 1 (enable) or 0 (disable)
+static TAutoConsoleVariable<int32> CVarGeoAddInputBufferScreenDebug(TEXT("geo.AddInputBuffer.ScreenDebug"), 0,
+	TEXT("When > 0, displays on-screen debug messages from UGeoInputGameInstanceSubsystem::AddInputBuffer."),
+	ECVF_Default);
 
 void UGeoInputGameInstanceSubsystem::ClientUpdateInputBuffer(const TArray<FInputAgent>& UpdatedInputAgents)
 {
-	// Append Inputs to the
 	for (const FInputAgent& InputAgent : UpdatedInputAgents)
 	{
-		NewInputAgents.FindOrAdd(InputAgent.Owner.Get()).InputSteps.Append(InputAgent.InputSteps);
+		if (FInputAgent* ExistingAgent = NewInputAgents.FindByKey(InputAgent.Owner.Get()))
+		{
+			ExistingAgent->InputSteps.Append(InputAgent.InputSteps);
+		}
+		else
+		{
+			NewInputAgents.Add(InputAgent);
+		}
 	}
 }
 
-void UGeoInputGameInstanceSubsystem::ServerAddInputBuffer(const FInputStep& InputStep, AGeoPawn* GeoPawn)
+void UGeoInputGameInstanceSubsystem::AddInputBuffer(const FInputStep& InputStep, AGeoPawn* GeoPawn)
 {
 	if (CVarGeoAddInputBufferScreenDebug.GetValueOnGameThread() > 0)
 	{
@@ -40,7 +48,7 @@ void UGeoInputGameInstanceSubsystem::ServerAddInputBuffer(const FInputStep& Inpu
 	InputAgent.InputSteps.Add(InputStep);
 	if (InputAgent.InputSteps.Num() > MaxBufferInputs)
 	{
-		// Keep the newest MaxBufferInputs by trimming from the front if needed
+		// Keep the newest input by trimming from the front if needed
 		const int32 Excess = InputAgent.InputSteps.Num() - MaxBufferInputs;
 		if (Excess > 0)
 		{
@@ -51,125 +59,241 @@ void UGeoInputGameInstanceSubsystem::ServerAddInputBuffer(const FInputStep& Inpu
 
 void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 {
-
-	bool bHasNewInput = NewInputAgents.Num() != 0;
-	TArray<AGeoPawn*> GeoPawnsToRemove;
-	for (TPair<AGeoPawn*, FInputAgent>& Pair : InputAgentsHistory)
-	{
-		AGeoPawn* GeoPawn = Pair.Key;
-		if (!IsValid(GeoPawn))
+	// Clean up invalid pawns
+	InputAgentsHistory.RemoveAll(
+		[](const FInputAgent& Agent)
 		{
-			GeoPawnsToRemove.Add(GeoPawn);
+			return !Agent.Owner.IsValid();
+		});
+
+	// When no new input, replay last input for each pawn
+	if (NewInputAgents.Num() == 0)
+	{
+		for (FInputAgent& Agent : InputAgentsHistory)
+		{
+			if (Agent.Owner.IsValid() && Agent.InputSteps.Num() > 0)
+			{
+				// Use local deltatime when no input received.
+				Agent.Owner->GetGeoInputComponent()->ProcessInput(Agent.InputSteps.Last(), DeltaTime);
+			}
+		}
+
+		return;
+	}
+
+	// Find out what's the earliest new arrived time across all agents
+	FGeoTime FurthestPastServerTime = FGeoTime::GetAccurateRealTime();
+	for (FInputAgent& InputAgent : NewInputAgents)
+	{
+		for (const FInputStep& InputStep : InputAgent.InputSteps)
+		{
+			if (InputStep.Time < FurthestPastServerTime)
+			{
+				FurthestPastServerTime = InputStep.Time;
+			}
+		}
+
+		FInputAgent& ExistingAgent = GetInputAgent(InputAgent.Owner.Get());
+		// Merge new inputs into existing agent
+		ExistingAgent.InputSteps.Append(InputAgent.InputSteps);
+
+		// sort Inputs by time
+		ExistingAgent.InputSteps.Sort(
+			[](const FInputStep& A, const FInputStep& B)
+			{
+				return A.Time < B.Time;
+			});
+
+		// Remove old inputs
+		if (ExistingAgent.InputSteps.Num() > MaxBufferInputs)
+		{
+			ExistingAgent.InputSteps.RemoveAt(0, ExistingAgent.InputSteps.Num() - MaxBufferInputs);
+		}
+	}
+
+	NewInputAgents.Empty();
+
+	UGeoStateSubsystem::GetInstance(GetWorld())->RollBackToTime(FurthestPastServerTime);
+
+	// Replay all inputs in deterministic order (array order is preserved)
+	for (FInputAgent& Agent : InputAgentsHistory)
+	{
+		if (!Agent.Owner.IsValid())
+		{
 			continue;
 		}
 
-		// When no new info, replay the last input heard from this pawn. Use local deltatime
-		if (!bHasNewInput && Pair.Value.InputSteps.Num() > 0)
+		for (const FInputStep& InputStep : Agent.InputSteps)
 		{
-			GeoPawn->GetGeoInputComponent()->ProcessInput(Pair.Value.InputSteps.Last(), DeltaTime);
-		}
-	}
-
-	for (AGeoPawn* GeoPawn : GeoPawnsToRemove)
-	{
-		UE_LOG(LogGeoTrinity, Warning, TEXT("Pawn %s has been removed from the list !"), *GeoPawn->GetName());
-
-		InputAgentsHistory.Remove(GeoPawn);
-	}
-
-	if (bHasNewInput)
-	{
-		FGeoTime FurthestPastServerTime = FGeoTime::GetAccurateRealTime();
-		for (TPair<AGeoPawn*, FInputAgent>& Pair : NewInputAgents)
-		{
-			for (const FInputStep& InputStep : Pair.Value.InputSteps)
-			{
-				if (InputStep.ServerTime() < FurthestPastServerTime)
-				{
-					FurthestPastServerTime = InputStep.ServerTime();
-				}
-			}
-
-			FInputAgent& InputAgent = Pair.Value;
-			// Ensure inputs are sorted by time ascending so the newest is last
-			InputAgent.InputSteps.Sort(
-				[&InputAgent](const FInputStep& A, const FInputStep& B)
-				{
-					return A.Time < B.Time;
-				});
-		}
-		UGeoStateSubsystem::GetInstance(GetWorld())->RollBackToTime(FurthestPastServerTime);
-
-		// Replay all input since this time
-		for (TPair<AGeoPawn*, FInputAgent>& Pair : InputAgentsHistory)
-		{
-			AGeoPawn* GeoPawn = Pair.Key;
-			if (!IsValid(GeoPawn))
+			if (InputStep.Time <= FurthestPastServerTime)
 			{
 				continue;
 			}
 
-			for (int i = Pair.Value.InputSteps.Num() - 1; i >= 0; i--)
-			{
-				const FInputStep& InputStep = Pair.Value.InputSteps[i];
-				if (InputStep.Time < FurthestPastServerTime)
-				{
-					continue;
-				}
-
-				GeoPawn->GetGeoInputComponent()->ProcessInput(InputStep);
-			}
+			Agent.Owner->GetGeoInputComponent()->ProcessInput(InputStep);
 		}
 	}
 }
 
 void UGeoInputGameInstanceSubsystem::UpdateClients()
 {
-	// Build a flat array of all input agents to send to clients
-	TArray<FInputAgent> AgentsArray;
-	AgentsArray.Reserve(InputAgentsHistory.Num());
-	for (const TPair<AGeoPawn*, FInputAgent>& It : InputAgentsHistory)
+	// Helper lambdas to check presence by UniqueID
+	auto HasPawnWithID = [this](uint32 InID) -> bool
 	{
-		AgentsArray.Add(It.Value);
-	}
+		for (const FInputAgent& Agent : InputAgentsHistory)
+		{
+			if (Agent.Owner.IsValid() && static_cast<uint32>(Agent.Owner->GetUniqueID()) == InID)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
 
-	// Send to each known pawn (those that have sent inputs), excluding their own agent entry
-	TArray<AGeoPawn*> KnownPawns;
-	InputAgentsHistory.GetKeys(KnownPawns);
-	for (const AGeoPawn* KnownPawn : KnownPawns)
+	// For each known recipient pawn, send only new inputs from other pawns
+	for (const FInputAgent& RecipientAgent : InputAgentsHistory)
 	{
-		if (!IsValid(KnownPawn))
+		AGeoPawn* RecipientPawn = RecipientAgent.Owner.Get();
+		if (!IsValid(RecipientPawn))
 		{
 			continue;
 		}
-		UGeoInputComponent* GeoInputComponent = KnownPawn->GetGeoInputComponent();
+
+		UGeoInputComponent* GeoInputComponent = RecipientPawn->GetGeoInputComponent();
 		if (!IsValid(GeoInputComponent))
 		{
 			continue;
 		}
 
-		TArray<FInputAgent> FilteredAgents = AgentsArray;
-		FilteredAgents.RemoveAll(
-			[KnownPawn](const FInputAgent& Agent)
-			{
-				return Agent.Owner == KnownPawn;
-			});
-		if (FilteredAgents.Num() > 0)
+		// Get or create per-recipient map
+		const uint32 RecipientID = RecipientPawn->GetUniqueID();
+		TMap<uint32, FGeoTime>& LastSentForRecipient = ClientLastSentTimes.FindOrAdd(RecipientID);
+
+		TArray<FInputAgent> DeltaAgents;
+		DeltaAgents.Reserve(InputAgentsHistory.Num());
+
+		for (const FInputAgent& SourceAgent : InputAgentsHistory)
 		{
-			GeoInputComponent->SendForeignInputClientRPC(FilteredAgents);
+			AGeoPawn* SourcePawn = SourceAgent.Owner.Get();
+			if (!IsValid(SourcePawn) || SourcePawn == RecipientPawn)
+			{
+				continue;
+			}
+
+			const uint32 SourceID = SourcePawn->GetUniqueID();
+			const FGeoTime* LastSentTimePtr = LastSentForRecipient.Find(SourceID);
+			FGeoTime LastSentTime;
+			const bool bHasLastSent = (LastSentTimePtr != nullptr);
+			if (bHasLastSent)
+			{
+				LastSentTime = *LastSentTimePtr;
+			}
+
+			FInputAgent Delta;
+			Delta.Owner = SourcePawn;
+
+			for (const FInputStep& Step : SourceAgent.InputSteps)
+			{
+				if (!bHasLastSent || Step.Time > LastSentTime)
+				{
+					Delta.InputSteps.Add(Step);
+				}
+			}
+
+			if (Delta.InputSteps.Num() > 0)
+			{
+				// Update last sent time to the latest we are about to send
+				FGeoTime LatestTime = Delta.InputSteps[0].Time;
+				for (int32 i = 1; i < Delta.InputSteps.Num(); ++i)
+				{
+					if (Delta.InputSteps[i].Time > LatestTime)
+					{
+						LatestTime = Delta.InputSteps[i].Time;
+					}
+				}
+				LastSentForRecipient.Add(SourceID, LatestTime);
+				DeltaAgents.Add(MoveTemp(Delta));
+			}
+		}
+
+		if (DeltaAgents.Num() > 0)
+		{
+			GeoInputComponent->SendForeignInputClientRPC(DeltaAgents);
+		}
+	}
+
+	// Cleanup: remove stale entries from ClientLastSentTimes
+	for (auto RecipIt = ClientLastSentTimes.CreateIterator(); RecipIt; ++RecipIt)
+	{
+		const uint32 RecipientID = RecipIt->Key;
+		if (!HasPawnWithID(RecipientID))
+		{
+			RecipIt.RemoveCurrent();
+			continue;
+		}
+
+		TMap<uint32, FGeoTime>& InnerMap = RecipIt->Value;
+		for (auto SourceIt = InnerMap.CreateIterator(); SourceIt; ++SourceIt)
+		{
+			if (!HasPawnWithID(SourceIt->Key))
+			{
+				SourceIt.RemoveCurrent();
+			}
 		}
 	}
 }
 
 FInputAgent& UGeoInputGameInstanceSubsystem::GetInputAgent(AGeoPawn* GeoPawn)
 {
-	FInputAgent& InputAgent = InputAgentsHistory.FindOrAdd(GeoPawn, FInputAgent());
-	if (!InputAgent.Owner.IsValid())
+	if (FInputAgent* InputAgent = InputAgentsHistory.FindByKey(GeoPawn))
 	{
-		InputAgent.Owner = GeoPawn;
+		return *InputAgent;
 	}
-	return InputAgent;
+
+	FInputAgent NewAgent;
+	NewAgent.Owner = GeoPawn;
+
+	// Binary search to find insertion point (array must be sorted)
+	const uint32 NewPawnID = GeoPawn->GetUniqueID();
+	int32 InsertIndex = Algo::LowerBound(InputAgentsHistory, NewPawnID,
+		[](const FInputAgent& Agent, uint32 ID)
+		{
+			return Agent.Owner.IsValid() && Agent.Owner->GetUniqueID() < ID;
+		});
+
+	InputAgentsHistory.Insert(NewAgent, InsertIndex);
+	return InputAgentsHistory[InsertIndex];
 }
+
+void UGeoInputGameInstanceSubsystem::SetServerTimeOffset(AGeoPlayerController* GeoPlayerController,
+	float ServerTimeOffset)
+{
+	ServerTimeOffsets.Add(GeoPlayerController, ServerTimeOffset);
+}
+
+bool UGeoInputGameInstanceSubsystem::HasLocalServerTimeOffset(const UWorld* World)
+{
+	return GetInstance(World)->HasLocalServerTimeOffset();
+}
+
+bool UGeoInputGameInstanceSubsystem::HasLocalServerTimeOffset() const
+{
+	checkf(GetWorld()->GetNetMode() == NM_Client, TEXT("Only valid on client !"));
+	return ServerTimeOffsets.Num() > 0;
+}
+bool UGeoInputGameInstanceSubsystem::HasServerTimeOffset(const AGeoPlayerController* GeoPlayerController) const
+{
+	return ServerTimeOffsets.Contains(GeoPlayerController);
+}
+
+FGeoTime UGeoInputGameInstanceSubsystem::GetServerTime(const AGeoPlayerController* GeoPlayerController)
+{
+	checkf(IsValid(GeoPlayerController), TEXT("Invalid GeoPlayerController !"));
+	checkf(ServerTimeOffsets.Num() > 0,
+		TEXT("No ServerTimeOffset, don't call the function without check HasServerTimeOffset !"));
+	return FGeoTime::GetAccurateRealTime() + ServerTimeOffsets[GeoPlayerController];
+}
+
 // ----------------------------------------------------------------------------------
 void UGeoInputGameInstanceSubsystem::Tick(float DeltaTime)
 {
@@ -194,7 +318,8 @@ UWorld* UGeoInputGameInstanceSubsystem::GetTickableGameObjectWorld() const
 
 ETickableTickType UGeoInputGameInstanceSubsystem::GetTickableTickType() const
 {
-	// If this is a template or has not been initialized yet, set to never tick and it will be enabled when it is initialized
+	// If this is a template or has not been initialized yet, set to never tick and it will be enabled when it is
+	// initialized
 	if (IsTemplate() || !bInitialized)
 	{
 		return ETickableTickType::Never;
@@ -207,9 +332,10 @@ ETickableTickType UGeoInputGameInstanceSubsystem::GetTickableTickType() const
 bool UGeoInputGameInstanceSubsystem::IsTickable() const
 {
 	// This function is now deprecated and subclasses should implement IsTickable instead
-	// This should never be false because Initialize should always be called before the first tick and Deinitialize cancels the tick
-	ensureMsgf(bInitialized, TEXT("Tickable subsystem %s tried to tick when not initialized! Check for missing Super call"),
-		*GetFullName());
+	// This should never be false because Initialize should always be called before the first tick and Deinitialize
+	// cancels the tick
+	ensureMsgf(bInitialized,
+		TEXT("Tickable subsystem %s tried to tick when not initialized! Check for missing Super call"), *GetFullName());
 
 	return bInitialized;
 }

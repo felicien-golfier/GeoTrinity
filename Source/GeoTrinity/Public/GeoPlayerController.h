@@ -23,31 +23,29 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* APawn) override;
+	void SetServerTimeOffsetSeconds(float InServerTimeOffsetSeconds);
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> InputMapping;
 
 	// Time synchronization interface
+	UFUNCTION(Client, unreliable)
+	void RequestClientTime(FGeoTime ServerTimeSeconds);
+
 	UFUNCTION(Server, unreliable)
-	void ServerRequestServerTime(FGeoTime ClientSendTimeSeconds);
+	void ReportClientTime(FGeoTime ClientSendTimeSeconds, FGeoTime ServerTimeSeconds);
 
-	UFUNCTION(Client, unreliable)
-	void ClientReportServerTime(FGeoTime ClientSendTimeSeconds, FGeoTime ServerTimeSeconds);
-
-	// Receive authoritative snapshot from server every 0.5s
-	UFUNCTION(Client, unreliable)
-	void ClientReceiveSnapshot(const FGeoGameSnapShot& Snapshot);
-
-	// Returns client-side estimate of server time in seconds
-	double GetServerTimeOffsetSeconds() const;
-	FGeoTime GetHestimatedServerTime() const;
+	UFUNCTION(Client, Reliable)
+	void ClientSendServerTimeOffset(float ServerTimeOffset);
 
 private:
-	void ScheduleTimeSync();
+	UFUNCTION()
 	void SendTimeSyncRequest();
+	bool HasStabilizedTimerOffset() const;
 
-	double ServerTimeOffsetSeconds = 0.0;
+	TArray<float> ServerTimeOffsetSamples;
+	static constexpr int32 NumSamplesToStabilize = 10;
 	FTimerHandle TimeSyncTimerHandle;
 
 	UPROPERTY()

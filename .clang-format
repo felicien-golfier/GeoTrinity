@@ -2,7 +2,7 @@ StatementMacros: ['UPROPERTY', 'UCLASS', 'USTRUCT', 'GENERATED_BODY', 'UENUM']
 
 Language: Cpp
 Standard: c++20
-ColumnLimit: 140
+ColumnLimit: 120
 IndentWidth: 4
 TabWidth: 4
 AccessModifierOffset: -4

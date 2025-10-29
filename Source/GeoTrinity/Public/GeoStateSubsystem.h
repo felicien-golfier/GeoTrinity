@@ -8,13 +8,13 @@
 #include "GeoStateSubsystem.generated.h"
 
 UCLASS()
-class GEOTRINITY_API UGeoStateSubsystem : public UWorldSubsystem
+class GEOTRINITY_API UGeoStateSubsystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 public:
-	// UWorldSubsystem overrides
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual void Deinitialize() override;
+	// UTickableWorldSubsystem overrides
+	virtual void Tick(float DeltaTime) override;
+	virtual TStatId GetStatId() const override;
 	// Helper to fetch the subsystem instance for a given world.
 	static UGeoStateSubsystem* GetInstance(const UWorld* World);
 
@@ -22,8 +22,6 @@ public:
 	void RollBackToTime(FGeoTime Time);
 
 private:
-	// Timer callback to capture and dispatch snapshot from server to clients
-	void BroadcastAuthoritativeSnapshot();
 	FGeoGameSnapShot GetCurrentSnapshot() const;
 	// Apply a previously captured snapshot to restore pawns to a specific game state.
 	void ApplySnapshot(const FGeoGameSnapShot& Snapshot);

@@ -1,52 +1,19 @@
 ﻿#include "GeoStateSubsystem.h"
 
 #include "Engine/World.h"
+#include "GeoInputGameInstanceSubsystem.h"
 #include "GeoPawn.h"
 #include "GeoPawnState.h"
 #include "GeoPlayerController.h"
+#include "GeoTrinity/GeoTrinity.h"
+#include "Stats/Stats.h"
 #include "TimerManager.h"
-
-void UGeoStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
-{
-	Super::Initialize(Collection);
-	if (UWorld* World = GetWorld())
-	{
-		// Only the server should broadcast authoritative snapshots
-		if (World->GetNetMode() != NM_Client)
-		{
-			World->GetTimerManager().SetTimer(SnapshotTimerHandle, this, &UGeoStateSubsystem::BroadcastAuthoritativeSnapshot, 0.5f, true);
-		}
-	}
-}
-
-void UGeoStateSubsystem::Deinitialize()
-{
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(SnapshotTimerHandle);
-	}
-	Super::Deinitialize();
-}
-
-void UGeoStateSubsystem::BroadcastAuthoritativeSnapshot()
-{
-	FGeoGameSnapShot Snapshot = GetCurrentSnapshot();
-
-	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
-	{
-		AGeoPlayerController* GeoPC = Cast<AGeoPlayerController>(Iterator->Get());
-		if (IsValid(GeoPC))
-		{
-			GeoPC->ClientReceiveSnapshot(Snapshot);
-		}
-	}
-}
 
 FGeoGameSnapShot UGeoStateSubsystem::GetCurrentSnapshot() const
 {
 	FGeoGameSnapShot CurrentSnapShot;
-	// Default to authoritative time on the server in case no local controller found
-	CurrentSnapShot.ServerTime = FGeoTime::GetAccurateRealTime();
+	CurrentSnapShot.ServerTime = FGeoTime::GetAccurateRealTime();   // not overriden on the server
+
 	// Parse existing player controllers and create a snapshot from each pawn
 	for (FConstControllerIterator Iterator = GetWorld()->GetControllerIterator(); Iterator; ++Iterator)
 	{
@@ -63,12 +30,14 @@ FGeoGameSnapShot UGeoStateSubsystem::GetCurrentSnapshot() const
 			continue;
 		}
 
-		if (GeoPlayerController->IsLocalController())
+		if (GeoPlayerController->IsLocalController())   // override ServerTime if on the client
 		{
-			CurrentSnapShot.ServerTime = GeoPlayerController->GetHestimatedServerTime();
+			CurrentSnapShot.ServerTime =
+				UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->GetServerTime(GeoPlayerController);
 		}
 
-		FGeoPawnState GeoPawnState{GeoPawn, GeoPawn->GetActorLocation(), GeoPawn->GetActorRotation(), GeoPawn->GetVelocity()};
+		FGeoPawnState GeoPawnState{GeoPawn, GeoPawn->GetActorLocation(), GeoPawn->GetActorRotation(),
+			GeoPawn->GetVelocity()};
 		CurrentSnapShot.GeoPawnStates.Add(GeoPawnState);
 	}
 
@@ -123,4 +92,25 @@ UGeoStateSubsystem* UGeoStateSubsystem::GetInstance(const UWorld* World)
 	}
 
 	return World->GetSubsystem<UGeoStateSubsystem>();
+}
+
+void UGeoStateSubsystem::Tick(float DeltaTime)
+{
+	// Do not tick until We have a server synch.
+	if (GetWorld()->GetNetMode() == NM_Client && !UGeoInputGameInstanceSubsystem::HasLocalServerTimeOffset(GetWorld()))
+	{
+		return;
+	}
+
+	// Capture a snapshot every frame and store it in history for rollback/replay
+	GameHistory.Add(GetCurrentSnapshot());
+	if (GameHistory.Num() > MaxBufferInputs)
+	{
+		GameHistory.RemoveAt(0, GameHistory.Num() - MaxBufferInputs);
+	}
+}
+
+TStatId UGeoStateSubsystem::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoStateSubsystem, STATGROUP_Tickables);
 }

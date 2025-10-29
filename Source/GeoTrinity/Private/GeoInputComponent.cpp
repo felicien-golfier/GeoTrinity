@@ -10,7 +10,6 @@
 #include "GeoPlayerController.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "InputStep.h"
-#include "Kismet/GameplayStatics.h"
 
 UGeoInputComponent::UGeoInputComponent()
 {
@@ -18,9 +17,11 @@ UGeoInputComponent::UGeoInputComponent()
 	SetIsReplicatedByDefault(true);
 }
 
-void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
 	const AGeoPawn* GeoPawn = GetGeoPawn();
 	const APlayerState* PlayerState = GeoPawn->GetPlayerState();
 	if (!IsValid(GeoPawn) || !IsValid(PlayerState) || !GeoPawn->IsLocallyControlled())
@@ -28,14 +29,24 @@ void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		return;
 	}
 
-	UGameplayStatics::GetAccurateRealTime(CurrentInputStep.Time.TimeSeconds, CurrentInputStep.Time.TimePartialSeconds);
-	CurrentInputStep.DeltaTimeSeconds = DeltaTime;
-	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GeoPawn->GetController()))
+	UGeoInputGameInstanceSubsystem* GeoInputGameInstanceSubsystem =
+		UGeoInputGameInstanceSubsystem::GetInstance(GetWorld());
+
+	AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GeoPawn->GetController());
+	// Do nothing until we get the server Timer offset.
+	if (!IsValid(GeoPlayerController) || !GeoInputGameInstanceSubsystem->HasServerTimeOffset(GeoPlayerController))
 	{
-		CurrentInputStep.ServerTimeOffsetSeconds = GeoPlayerController->GetServerTimeOffsetSeconds();
+		return;
 	}
+
+	CurrentInputStep.Time = GeoInputGameInstanceSubsystem->GetServerTime(GeoPlayerController);
+	CurrentInputStep.DeltaTimeSeconds = DeltaTime;
+
 	SendInputServerRPC(CurrentInputStep);
+	// Add Local inputs to the UGeoInputGameInstanceSubsystem.
+	GeoInputGameInstanceSubsystem->AddInputBuffer(CurrentInputStep, GetGeoPawn());
 	ProcessInput(CurrentInputStep);
+
 	CurrentInputStep.Empty();
 }
 
@@ -84,7 +95,7 @@ void UGeoInputComponent::ProcessInput(const FInputStep& InputStep, const float D
 
 void UGeoInputComponent::SendInputServerRPC_Implementation(FInputStep InputStep)
 {
-	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->ServerAddInputBuffer(InputStep, GetGeoPawn());
+	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->AddInputBuffer(InputStep, GetGeoPawn());
 }
 
 void UGeoInputComponent::SendForeignInputClientRPC_Implementation(const TArray<FInputAgent>& InputAgents)

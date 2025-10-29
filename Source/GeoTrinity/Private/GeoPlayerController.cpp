@@ -5,6 +5,7 @@
 #include "Camera/CameraActor.h"
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
+#include "GeoInputGameInstanceSubsystem.h"
 #include "GeoPawnState.h"
 #include "GeoStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -21,7 +22,8 @@ void AGeoPlayerController::BeginPlay()
 
 	if (ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* InputSystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		if (UEnhancedInputLocalPlayerSubsystem* InputSystem =
+				LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
 			if (!InputMapping.IsNull())
 			{
@@ -30,10 +32,10 @@ void AGeoPlayerController::BeginPlay()
 		}
 	}
 
-	// Start periodic time synchronization on owning client only
-	if (IsLocalController())
+	// Start periodic time synchronization on server
+	if (!IsLocalController())
 	{
-		ScheduleTimeSync();
+		SendTimeSyncRequest();
 	}
 }
 
@@ -42,59 +44,56 @@ void AGeoPlayerController::OnPossess(APawn* APawn)
 	Super::OnPossess(APawn);
 }
 
-double AGeoPlayerController::GetServerTimeOffsetSeconds() const
+void AGeoPlayerController::ClientSendServerTimeOffset_Implementation(float ServerTimeOffset)
 {
-	return ServerTimeOffsetSeconds;
-}
-FGeoTime AGeoPlayerController::GetHestimatedServerTime() const
-{
-	FGeoTime LocalTime = FGeoTime::GetAccurateRealTime();
-	return LocalTime + ServerTimeOffsetSeconds;
-}
-
-void AGeoPlayerController::ScheduleTimeSync()
-{
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimer(TimeSyncTimerHandle, this, &AGeoPlayerController::SendTimeSyncRequest, 0.5f, true,
-			FMath::FRandRange(0.1f, 0.3f));
-	}
+	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->SetServerTimeOffset(this, ServerTimeOffset);
 }
 
 void AGeoPlayerController::SendTimeSyncRequest()
 {
-	if (!IsLocalController())
+	if (!HasStabilizedTimerOffset())
+	{
+		TimeSyncTimerHandle =
+			GetWorld()->GetTimerManager().SetTimerForNextTick(this, &AGeoPlayerController::SendTimeSyncRequest);
+	}
+
+	RequestClientTime(FGeoTime::GetAccurateRealTime());
+}
+
+void AGeoPlayerController::RequestClientTime_Implementation(const FGeoTime ServerTimeSeconds)
+{
+	ReportClientTime(FGeoTime::GetAccurateRealTime(), ServerTimeSeconds);
+}
+
+void AGeoPlayerController::ReportClientTime_Implementation(const FGeoTime ClientSendTimeSeconds,
+	const FGeoTime ServerTimeSeconds)
+{
+	// In case we have buffered RPC that arrived after NumSamplesToStabilize times, ignore them.
+	if (HasStabilizedTimerOffset())
 	{
 		return;
 	}
-	ServerRequestServerTime(FGeoTime::GetAccurateRealTime());
-}
 
-void AGeoPlayerController::ServerRequestServerTime_Implementation(const FGeoTime ClientSendTimeSeconds)
-{
-	// Called on server: respond with current server real time seconds
-	const FGeoTime ServerNow = FGeoTime::GetAccurateRealTime();
-	ClientReportServerTime(ClientSendTimeSeconds, ServerNow);
-}
+	const float Forth = ServerTimeSeconds - ClientSendTimeSeconds;
+	const float Back = ClientSendTimeSeconds - FGeoTime::GetAccurateRealTime();
+	ServerTimeOffsetSamples.Add((Forth + Back) / 2.f);
 
-void AGeoPlayerController::ClientReportServerTime_Implementation(const FGeoTime ClientSendTimeSeconds, const FGeoTime ServerTimeSeconds)
-{
-	const FGeoTime ClientReceive = FGeoTime::GetAccurateRealTime();
-	const double Rtt = FMath::Max(0.0, ClientReceive.GetTimeDiff(ClientSendTimeSeconds));
-	const double OneWay = 0.5 * Rtt;
-	const double EstimatedOffset = ServerTimeSeconds.GetTimeDiff(ClientReceive - OneWay);
-	if (ServerTimeOffsetSeconds == 0.0f)
+	if (ServerTimeOffsetSamples.Num() == NumSamplesToStabilize)
 	{
-		ServerTimeOffsetSeconds = EstimatedOffset;
-	}
-	else
-	{
-		// Smooth to reduce jitter
-		ServerTimeOffsetSeconds = FMath::Lerp(ServerTimeOffsetSeconds, EstimatedOffset, 0.1);
+		float ServerTimeOffset = 0.f;
+		GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
+		for (float ServerTimeOffsetSample : ServerTimeOffsetSamples)
+		{
+			ServerTimeOffset += ServerTimeOffsetSample;
+		}
+
+		ServerTimeOffset /= ServerTimeOffsetSamples.Num();
+		UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->SetServerTimeOffset(this, ServerTimeOffset);
+		ClientSendServerTimeOffset(ServerTimeOffset);
 	}
 }
 
-void AGeoPlayerController::ClientReceiveSnapshot_Implementation(const FGeoGameSnapShot& Snapshot)
+bool AGeoPlayerController::HasStabilizedTimerOffset() const
 {
-	UGeoStateSubsystem::GetInstance(GetWorld())->ReceivedServerSnapshot(Snapshot);
+	return ServerTimeOffsetSamples.Num() >= NumSamplesToStabilize;
 }
