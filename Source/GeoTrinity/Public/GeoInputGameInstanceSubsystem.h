@@ -34,8 +34,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	// FTickableGameObject implementation End
 
-	void ClientUpdateInputBuffer(const TArray<FInputAgent>& InputAgents);
-	void AddInputBuffer(const FInputStep& InputStep, AGeoPawn* GeoPawn);
+	void ClientUpdateInputAgents(const TArray<FInputAgent>& InputAgents);
+	void AddNewInput(const FInputStep& InputStep, AGeoPawn* GeoPawn);
 	void ProcessAgents(const float DeltaTime);
 	void UpdateClients();
 
@@ -54,9 +54,6 @@ private:
 	TArray<FInputAgent> InputAgentsHistory;
 	UPROPERTY()
 	TArray<FInputAgent> NewInputAgents;
-
- // Tracks the last time sent for each (RecipientID -> (SourceID -> Time)) pair. Not exposed to reflection.
-	TMap<uint32, TMap<uint32, FGeoTime>> ClientLastSentTimes;
 
 	UPROPERTY()
 	TMap<AGeoPlayerController*, float> ServerTimeOffsets;

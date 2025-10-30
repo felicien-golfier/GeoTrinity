@@ -1,10 +1,10 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "GeoPawn.h"
 
 #include "InputStep.generated.h"
 
-class AGeoPawn;
 USTRUCT()
 struct FGeoTime
 {
@@ -79,6 +79,9 @@ USTRUCT()
 struct FInputAgent
 {
 	GENERATED_BODY()
+
+	FInputAgent() : InputSteps({}), Owner(nullptr) {}
+	FInputAgent(const TArray<FInputStep>& InInputSteps, AGeoPawn* InOwner) : InputSteps(InInputSteps), Owner(InOwner) {}
 
 	UPROPERTY()
 	TArray<FInputStep> InputSteps;

@@ -17,23 +17,21 @@ static TAutoConsoleVariable<int32> CVarGeoAddInputBufferScreenDebug(TEXT("geo.Ad
 	TEXT("When > 0, displays on-screen debug messages from UGeoInputGameInstanceSubsystem::AddInputBuffer."),
 	ECVF_Default);
 
-void UGeoInputGameInstanceSubsystem::ClientUpdateInputBuffer(const TArray<FInputAgent>& UpdatedInputAgents)
+void UGeoInputGameInstanceSubsystem::ClientUpdateInputAgents(const TArray<FInputAgent>& UpdatedInputAgents)
 {
+	// ONLY CALLED ON CLIENT !
 	for (const FInputAgent& InputAgent : UpdatedInputAgents)
 	{
-		if (FInputAgent* ExistingAgent = NewInputAgents.FindByKey(InputAgent.Owner.Get()))
+		for (FInputStep Step : InputAgent.InputSteps)
 		{
-			ExistingAgent->InputSteps.Append(InputAgent.InputSteps);
-		}
-		else
-		{
-			NewInputAgents.Add(InputAgent);
+			AddNewInput(Step, InputAgent.Owner.Get());
 		}
 	}
 }
 
-void UGeoInputGameInstanceSubsystem::AddInputBuffer(const FInputStep& InputStep, AGeoPawn* GeoPawn)
+void UGeoInputGameInstanceSubsystem::AddNewInput(const FInputStep& InputStep, AGeoPawn* GeoPawn)
 {
+
 	if (CVarGeoAddInputBufferScreenDebug.GetValueOnGameThread() > 0)
 	{
 		if (GEngine)
@@ -43,17 +41,13 @@ void UGeoInputGameInstanceSubsystem::AddInputBuffer(const FInputStep& InputStep,
 		}
 	}
 
-	FInputAgent& InputAgent = GetInputAgent(GeoPawn);
-
-	InputAgent.InputSteps.Add(InputStep);
-	if (InputAgent.InputSteps.Num() > MaxBufferInputs)
+	if (FInputAgent* ExistingAgent = NewInputAgents.FindByKey(GeoPawn))
 	{
-		// Keep the newest input by trimming from the front if needed
-		const int32 Excess = InputAgent.InputSteps.Num() - MaxBufferInputs;
-		if (Excess > 0)
-		{
-			InputAgent.InputSteps.RemoveAt(0, Excess, EAllowShrinking::No);
-		}
+		ExistingAgent->InputSteps.Add(InputStep);
+	}
+	else
+	{
+		NewInputAgents.Add(FInputAgent({InputStep}, GeoPawn));
 	}
 }
 
@@ -111,8 +105,6 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 		}
 	}
 
-	NewInputAgents.Empty();
-
 	UGeoStateSubsystem::GetInstance(GetWorld())->RollBackToTime(FurthestPastServerTime);
 
 	// Replay all inputs in deterministic order (array order is preserved)
@@ -137,108 +129,41 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 
 void UGeoInputGameInstanceSubsystem::UpdateClients()
 {
-	// Helper lambdas to check presence by UniqueID
-	auto HasPawnWithID = [this](uint32 InID) -> bool
+	// For each known recipient pawn, send only inputs that arrived during the last frame
+	for (const FInputAgent& InputAgent : InputAgentsHistory)
 	{
-		for (const FInputAgent& Agent : InputAgentsHistory)
-		{
-			if (Agent.Owner.IsValid() && static_cast<uint32>(Agent.Owner->GetUniqueID()) == InID)
-			{
-				return true;
-			}
-		}
-		return false;
-	};
-
-	// For each known recipient pawn, send only new inputs from other pawns
-	for (const FInputAgent& RecipientAgent : InputAgentsHistory)
-	{
-		AGeoPawn* RecipientPawn = RecipientAgent.Owner.Get();
-		if (!IsValid(RecipientPawn))
+		AGeoPawn* GeoPawn = InputAgent.Owner.Get();
+		if (!IsValid(GeoPawn))
 		{
 			continue;
 		}
 
-		UGeoInputComponent* GeoInputComponent = RecipientPawn->GetGeoInputComponent();
+		UGeoInputComponent* GeoInputComponent = GeoPawn->GetGeoInputComponent();
 		if (!IsValid(GeoInputComponent))
 		{
 			continue;
 		}
 
-		// Get or create per-recipient map
-		const uint32 RecipientID = RecipientPawn->GetUniqueID();
-		TMap<uint32, FGeoTime>& LastSentForRecipient = ClientLastSentTimes.FindOrAdd(RecipientID);
-
 		TArray<FInputAgent> DeltaAgents;
-		DeltaAgents.Reserve(InputAgentsHistory.Num());
+		DeltaAgents.Reserve(NewInputAgents.Num());
 
-		for (const FInputAgent& SourceAgent : InputAgentsHistory)
+		for (const FInputAgent SourceAgent : NewInputAgents)
 		{
 			AGeoPawn* SourcePawn = SourceAgent.Owner.Get();
-			if (!IsValid(SourcePawn) || SourcePawn == RecipientPawn)
+			if (!IsValid(SourcePawn) || SourcePawn == GeoPawn)
 			{
 				continue;
 			}
 
-			const uint32 SourceID = SourcePawn->GetUniqueID();
-			const FGeoTime* LastSentTimePtr = LastSentForRecipient.Find(SourceID);
-			FGeoTime LastSentTime;
-			const bool bHasLastSent = (LastSentTimePtr != nullptr);
-			if (bHasLastSent)
+			if (SourceAgent.InputSteps.Num() > 0)
 			{
-				LastSentTime = *LastSentTimePtr;
-			}
-
-			FInputAgent Delta;
-			Delta.Owner = SourcePawn;
-
-			for (const FInputStep& Step : SourceAgent.InputSteps)
-			{
-				if (!bHasLastSent || Step.Time > LastSentTime)
-				{
-					Delta.InputSteps.Add(Step);
-				}
-			}
-
-			if (Delta.InputSteps.Num() > 0)
-			{
-				// Update last sent time to the latest we are about to send
-				FGeoTime LatestTime = Delta.InputSteps[0].Time;
-				for (int32 i = 1; i < Delta.InputSteps.Num(); ++i)
-				{
-					if (Delta.InputSteps[i].Time > LatestTime)
-					{
-						LatestTime = Delta.InputSteps[i].Time;
-					}
-				}
-				LastSentForRecipient.Add(SourceID, LatestTime);
-				DeltaAgents.Add(MoveTemp(Delta));
+				DeltaAgents.Add(SourceAgent);
 			}
 		}
 
 		if (DeltaAgents.Num() > 0)
 		{
 			GeoInputComponent->SendForeignInputClientRPC(DeltaAgents);
-		}
-	}
-
-	// Cleanup: remove stale entries from ClientLastSentTimes
-	for (auto RecipIt = ClientLastSentTimes.CreateIterator(); RecipIt; ++RecipIt)
-	{
-		const uint32 RecipientID = RecipIt->Key;
-		if (!HasPawnWithID(RecipientID))
-		{
-			RecipIt.RemoveCurrent();
-			continue;
-		}
-
-		TMap<uint32, FGeoTime>& InnerMap = RecipIt->Value;
-		for (auto SourceIt = InnerMap.CreateIterator(); SourceIt; ++SourceIt)
-		{
-			if (!HasPawnWithID(SourceIt->Key))
-			{
-				SourceIt.RemoveCurrent();
-			}
 		}
 	}
 }
@@ -300,7 +225,6 @@ void UGeoInputGameInstanceSubsystem::Tick(float DeltaTime)
 	checkf(IsInitialized(), TEXT("Ticking should have been disabled for an uninitialized subsystem!"));
 
 	ProcessAgents(DeltaTime);
-
 	// Only update clients from the server
 	if (UWorld* World = GetWorld())
 	{
@@ -309,6 +233,9 @@ void UGeoInputGameInstanceSubsystem::Tick(float DeltaTime)
 			UpdateClients();
 		}
 	}
+
+	// We need the content for both ProcessAgents and UpdateClients, so reset it at end tick
+	NewInputAgents.Empty();
 }
 
 UWorld* UGeoInputGameInstanceSubsystem::GetTickableGameObjectWorld() const

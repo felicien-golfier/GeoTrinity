@@ -44,7 +44,7 @@ void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 	SendInputServerRPC(CurrentInputStep);
 	// Add Local inputs to the UGeoInputGameInstanceSubsystem.
-	GeoInputGameInstanceSubsystem->AddInputBuffer(CurrentInputStep, GetGeoPawn());
+	GeoInputGameInstanceSubsystem->AddNewInput(CurrentInputStep, GetGeoPawn());
 	ProcessInput(CurrentInputStep);
 
 	CurrentInputStep.Empty();
@@ -95,10 +95,10 @@ void UGeoInputComponent::ProcessInput(const FInputStep& InputStep, const float D
 
 void UGeoInputComponent::SendInputServerRPC_Implementation(FInputStep InputStep)
 {
-	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->AddInputBuffer(InputStep, GetGeoPawn());
+	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->AddNewInput(InputStep, GetGeoPawn());
 }
 
 void UGeoInputComponent::SendForeignInputClientRPC_Implementation(const TArray<FInputAgent>& InputAgents)
 {
-	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->ClientUpdateInputBuffer(InputAgents);
+	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->ClientUpdateInputAgents(InputAgents);
 }
