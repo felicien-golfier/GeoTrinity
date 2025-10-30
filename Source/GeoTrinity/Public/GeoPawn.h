@@ -5,6 +5,8 @@
 
 #include "GeoPawn.generated.h"
 
+class UGameplayEffect;
+class UGeoAttributeSetBase;
 class UGeoAbilitySystemComponent;
 class UGeoInputComponent;
 class UDynamicMeshComponent;
@@ -26,7 +28,10 @@ private:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
+	// GAS
 	void InitAbilityActorInfo();
+	void InitializeDefaultAttributes() const;
+	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> const& gameplayEffectClass, float level) const;
 
 private:
 	FGeoBox Box;
@@ -40,8 +45,15 @@ private:
 	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoMovementComponent> GeoMovementComponent;
 
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = Character)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = GAS)
+	TObjectPtr<UGeoAttributeSetBase> AttributeSet;
+	
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = GAS)
+	TSubclassOf<UGameplayEffect> DefaultAttributes;
 
 public:
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (RowType = CharacterStats))

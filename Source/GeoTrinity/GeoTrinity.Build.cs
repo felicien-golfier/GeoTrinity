@@ -23,7 +23,8 @@ public class GeoTrinity : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"GameplayTags",
-			"GameplayTasks"
+			"GameplayTasks",
+			"UMG"
 		});
 
 		// Uncomment if you are using Slate UI

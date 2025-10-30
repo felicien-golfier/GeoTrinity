@@ -32,7 +32,7 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
-	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, Health)
+	ATTRIBUTE_ACCESSORS_BASIC(UGeoAttributeSetBase, Health)
 
 	/** MaxHealth is its own attribute since GameplayEffects may modify it */
 	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_MaxHealth)

@@ -23,6 +23,8 @@ public:
 	/** Implement IAbilitySystemInterface */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	/** END Implement IAbilitySystemInterface */
+
+	UGeoAttributeSetBase* GetGeoAttributeSetBase() const {return AttributeSetBase;}
 	
 protected:
 	UPROPERTY(VisibleAnywhere)
