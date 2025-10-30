@@ -5,6 +5,9 @@
 #include "GeoMovementComponent.h"
 #include "GeoPlayerState.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/GeoAttributeSetBase.h"
+#include "GeoTrinity/GeoTrinity.h"
+#include "HUD/GeoHUD.h"
 
 // Sets default values
 AGeoPawn::AGeoPawn()
@@ -35,10 +38,13 @@ void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	GeoInputComponent->BindInput(PlayerInputComponent);
 }
 
+// Server Only
 void AGeoPawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+	
 	InitAbilityActorInfo();
+	InitializeDefaultAttributes();
 }
 
 void AGeoPawn::OnRep_PlayerState()
@@ -57,4 +63,46 @@ void AGeoPawn::InitAbilityActorInfo()
 
 	AbilitySystemComponent = Cast<UGeoAbilitySystemComponent>(PS->GetAbilitySystemComponent());
 	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+	AttributeSet = PS->GetGeoAttributeSetBase();
+
+	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetController()))
+	{
+		// Hud only present locally
+		if (AGeoHUD* Hud = Cast<AGeoHUD>(GeoPlayerController->GetHUD()))
+		{
+			Hud->InitOverlay(GeoPlayerController, PS, AbilitySystemComponent, AttributeSet);
+		}
+	}
+}
+
+void AGeoPawn::InitializeDefaultAttributes() const
+{
+	check(IsValid(AbilitySystemComponent))
+
+	if (!IsValid(DefaultAttributes))
+	{
+		UE_LOG(LogGeoTrinity, Error, TEXT("%s() Missing DefaultAttributes for %s. Please fill in the pawn's Blueprint."), *FString(__FUNCTION__), *GetName());
+		return;
+	}
+
+	ApplyEffectToSelf(DefaultAttributes, 1.0f);
+}
+
+void AGeoPawn::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> const& gameplayEffectClass, float level) const
+{
+	if (!IsValid(AbilitySystemComponent))
+		return;
+	
+	FGameplayEffectContextHandle EffectContextHandle = AbilitySystemComponent->MakeEffectContext();
+	EffectContextHandle.AddSourceObject(this);
+
+	const FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(
+		gameplayEffectClass,
+		level,
+		EffectContextHandle);
+	
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
+	}
 }
