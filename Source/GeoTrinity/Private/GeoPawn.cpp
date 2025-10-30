@@ -32,6 +32,11 @@ AGeoPawn::AGeoPawn()
 	GeoMovementComponent = CreateDefaultSubobject<UGeoMovementComponent>(TEXT("Geo Movement Component"));
 }
 
+void AGeoPawn::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
+{
+	ApplyEffectToSelf(gameplayEffectClass, 1.0f);
+}
+
 void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -75,7 +80,7 @@ void AGeoPawn::InitAbilityActorInfo()
 	}
 }
 
-void AGeoPawn::InitializeDefaultAttributes() const
+void AGeoPawn::InitializeDefaultAttributes()
 {
 	check(IsValid(AbilitySystemComponent))
 
@@ -88,7 +93,8 @@ void AGeoPawn::InitializeDefaultAttributes() const
 	ApplyEffectToSelf(DefaultAttributes, 1.0f);
 }
 
-void AGeoPawn::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> const& gameplayEffectClass, float level) const
+void AGeoPawn::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass,
+	float level)
 {
 	if (!IsValid(AbilitySystemComponent))
 		return;
@@ -103,6 +109,8 @@ void AGeoPawn::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> const& gameplayEff
 	
 	if (SpecHandle.IsValid())
 	{
-		AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
+		FPredictionKey PredictionKey;
+		AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent, PredictionKey);
+		//AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
 	}
 }

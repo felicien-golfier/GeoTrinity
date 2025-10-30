@@ -23,6 +23,11 @@ public:
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const { return GeoMovementComponent; }
 
+protected:
+	
+	UFUNCTION(BlueprintCallable, Category = "GAS")
+	void BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass);
+	
 private:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -30,8 +35,9 @@ private:
 
 	// GAS
 	void InitAbilityActorInfo();
-	void InitializeDefaultAttributes() const;
-	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> const& gameplayEffectClass, float level) const;
+	void InitializeDefaultAttributes();
+	UFUNCTION(Server, Reliable)
+	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
 
 private:
 	FGeoBox Box;
