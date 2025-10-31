@@ -19,6 +19,8 @@ AGeoPlayerState::AGeoPlayerState()
 	// Adding an attribute set as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
 	AttributeSetBase = CreateDefaultSubobject<UGeoAttributeSetBase>(TEXT("AttributeSetBase"));
+
+	SetNetUpdateFrequency(100.0f);
 }
 
 UAbilitySystemComponent* AGeoPlayerState::GetAbilitySystemComponent() const
