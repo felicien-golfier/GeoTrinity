@@ -41,41 +41,22 @@ void UGeoMovementComponent::MovePawnWithInput(float DeltaTime, FVector2D GivenMo
 	const FVector DeltaLocation = NewLocation - OldLocation;
 	Velocity = (DeltaTime > SMALL_NUMBER) ? (DeltaLocation / DeltaTime) : FVector::ZeroVector;
 
-	// Keep internal 2D box in sync
-	GeoPawn->GetBox().Position = FVector2D(NewLocation);
 	GeoPawn->SetActorLocation(NewLocation);
 }
 
-void UGeoMovementComponent::ApplyCollision(const FGeoBox& Obstacle) const
+void UGeoMovementComponent::ApplyCollision(const FBox2D& Obstacle) const
 {
 	const AGeoPawn* GeoPawn = GetGeoPawn();
 	if (!IsValid(GeoPawn))
 	{
 		return;
 	}
-	FGeoBox Box = GeoPawn->GetBox();
-	if (!Box.Overlaps(Obstacle))
+
+	FBox2D Box = GeoPawn->GetBox();
+	if (!Box.Intersect(Obstacle))
 	{
 		return;
 	}
 
-	// Correction X
-	if (Box.Position.X < Obstacle.Position.X)
-	{
-		Box.Position.X = Obstacle.Position.X - Obstacle.Size.X - Box.Size.X;
-	}
-	else
-	{
-		Box.Position.X = Obstacle.Position.X + Obstacle.Size.X + Box.Size.X;
-	}
-
-	// Correction Y
-	if (Box.Position.Y < Obstacle.Position.Y)
-	{
-		Box.Position.Y = Obstacle.Position.Y - Obstacle.Size.Y - Box.Size.Y;
-	}
-	else
-	{
-		Box.Position.Y = Obstacle.Position.Y + Obstacle.Size.Y + Box.Size.Y;
-	}
+	// Do Correction on location
 }

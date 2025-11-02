@@ -17,6 +17,7 @@ struct FGeoTime
 	{
 	}
 
+	FString ToString() const;
 	double GetTimeDiff(FGeoTime Other) const;
 	// Comparison operators
 	bool operator<(const FGeoTime& Other) const;

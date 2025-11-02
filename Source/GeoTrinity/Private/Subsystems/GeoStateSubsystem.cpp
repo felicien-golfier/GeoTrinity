@@ -1,12 +1,12 @@
-﻿#include "GeoStateSubsystem.h"
+﻿#include "Subsystems/GeoStateSubsystem.h"
 
 #include "Engine/World.h"
-#include "GeoInputGameInstanceSubsystem.h"
 #include "GeoPawn.h"
 #include "GeoPawnState.h"
 #include "GeoPlayerController.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Stats/Stats.h"
+#include "Subsystems/GeoInputGameInstanceSubsystem.h"
 #include "TimerManager.h"
 
 FGeoGameSnapShot UGeoStateSubsystem::GetCurrentSnapshot() const
@@ -58,10 +58,6 @@ void UGeoStateSubsystem::ApplySnapshot(const FGeoGameSnapShot& Snapshot)
 		// Set transform (location and rotation). We ignore scale.
 		Pawn->SetActorLocation(PawnState.Location, false, nullptr, ETeleportType::TeleportPhysics);
 		Pawn->SetActorRotation(PawnState.Orientation, ETeleportType::TeleportPhysics);
-
-		// Keep the pawn's internal box in sync with actor location if accessible
-		// Note: GetBox returns a proxy in this project that allows updating Position
-		Pawn->GetBox().Position = FVector2D(PawnState.Location);
 	}
 
 	LastAppliedSnapshot = Snapshot;

@@ -4,7 +4,6 @@
 
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
-#include "GeoInputGameInstanceSubsystem.h"
 #include "GeoPawn.h"
 #include "InputAction.h"
 #include "InputStep.h"
@@ -20,7 +19,8 @@ public:
 	// Sets default values for this component's properties
 	UGeoInputComponent();
 
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+		FActorComponentTickFunction* ThisTickFunction) override;
 	void BindInput(UInputComponent* PlayerInputComponent);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

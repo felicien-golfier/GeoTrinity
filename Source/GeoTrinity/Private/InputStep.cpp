@@ -2,6 +2,11 @@
 
 #include "Kismet/GameplayStatics.h"
 
+FString FGeoTime::ToString() const
+{
+	return FString::Printf(TEXT("%d.%06d"), TimeSeconds, FMath::RoundToInt32(TimePartialSeconds * 1000000.0f));
+}
+
 double FGeoTime::GetTimeDiff(const FGeoTime Other) const
 {
 	return static_cast<double>(TimeSeconds - Other.TimeSeconds) + TimePartialSeconds - Other.TimePartialSeconds;
@@ -146,8 +151,8 @@ FGeoTime FGeoTime::GetAccurateRealTime()
 
 FString FInputStep::ToString() const
 {
-	return FString::Printf(TEXT("Inputs :\n Movement : X %f, Y %f\n DeltaTime : %f\n Time : %d and %f"),
-		MovementInput.X, MovementInput.Y, DeltaTimeSeconds, Time.TimeSeconds, Time.TimePartialSeconds);
+	return FString::Printf(TEXT("Client CurrentInputStep: Move(%.3f, %.3f) Dt=%.4f Time=%d+%.6f"), MovementInput.X,
+		MovementInput.Y, DeltaTimeSeconds, Time.TimeSeconds, Time.TimePartialSeconds);
 }
 
 double FInputStep::GetTimeDiff(const FInputStep& Other) const

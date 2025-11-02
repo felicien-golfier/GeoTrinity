@@ -4,12 +4,13 @@
 
 #include "EnhancedInputComponent.h"
 #include "GameFramework/PlayerState.h"
-#include "GeoInputGameInstanceSubsystem.h"
 #include "GeoMovementComponent.h"
 #include "GeoPawn.h"
 #include "GeoPlayerController.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "InputStep.h"
+#include "Subsystems/GeoInputGameInstanceSubsystem.h"
+#include "VisualLogger/VisualLogger.h"
 
 UGeoInputComponent::UGeoInputComponent()
 {
@@ -33,7 +34,7 @@ void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		UGeoInputGameInstanceSubsystem::GetInstance(GetWorld());
 
 	AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GeoPawn->GetController());
-	// Do nothing until we get the server Timer offset.
+	// Do nothing until we get the server time offset.
 	if (!IsValid(GeoPlayerController) || !GeoInputGameInstanceSubsystem->HasServerTimeOffset(GeoPlayerController))
 	{
 		return;
@@ -41,6 +42,20 @@ void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 	CurrentInputStep.Time = GeoInputGameInstanceSubsystem->GetServerTime(GeoPlayerController);
 	CurrentInputStep.DeltaTimeSeconds = DeltaTime;
+
+	// VLOG: client-side current input step before sending
+	UE_VLOG(GetGeoPawn(), LogGeoTrinity, VeryVerbose, TEXT("%s"), *CurrentInputStep.ToString());
+	// Visualize the local pawn box location (local pawn only)
+	{
+		const AGeoPawn* LocalPawn = GeoPawn;   // already validated and locally controlled above
+		FVector Origin, Extent;
+		LocalPawn->GetActorBounds(true, Origin, Extent);
+		UE_VLOG_BOX(LocalPawn, LogGeoTrinity, VeryVerbose,
+			FBox(FVector(GeoPawn->GetBox().Min, 0.f) + LocalPawn->GetActorLocation(),
+				FVector(GeoPawn->GetBox().Max, 0.f) + LocalPawn->GetActorLocation()),
+			FColor::Green, TEXT("LocalTime %s, delta time %.5f"), *CurrentInputStep.Time.ToString(),
+			CurrentInputStep.DeltaTimeSeconds);
+	}
 
 	SendInputServerRPC(CurrentInputStep);
 	// Add Local inputs to the UGeoInputGameInstanceSubsystem.

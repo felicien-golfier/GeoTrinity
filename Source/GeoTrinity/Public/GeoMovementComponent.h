@@ -20,7 +20,7 @@ public:
 	void MovePawnWithInput(float DeltaTime, FVector2D GivenMovementInput);
 
 	// Simple AABB collision resolution against an obstacle box
-	void ApplyCollision(const FGeoBox& Obstacle) const;
+	void ApplyCollision(const FBox2D& Obstacle) const;
 
 private:
 	AGeoPawn* GetGeoPawn() const;

@@ -2,7 +2,6 @@
 
 #include "GeoGameMode.h"
 
-#include "GeoInputGameInstanceSubsystem.h"
 #include "GeoPawn.h"
 
 AGeoGameMode::AGeoGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

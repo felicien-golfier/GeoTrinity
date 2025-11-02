@@ -1,19 +1,25 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "GeoInputGameInstanceSubsystem.h"
+#include "Subsystems/GeoInputGameInstanceSubsystem.h"
 
 #include "Engine/Engine.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoInputComponent.h"
 #include "GeoPlayerController.h"
-#include "GeoStateSubsystem.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HAL/IConsoleManager.h"
 #include "InputStep.h"
+#include "Subsystems/GeoStateSubsystem.h"
+#include "VisualLogger/VisualLogger.h"
 
 // Console variable to toggle on-screen debug messages from AddInputBuffer.
 // Usage in console: geo.AddInputBuffer.ScreenDebug 1 (enable) or 0 (disable)
-static TAutoConsoleVariable<int32> CVarGeoAddInputBufferScreenDebug(TEXT("geo.AddInputBuffer.ScreenDebug"), 0,
+static TAutoConsoleVariable<int32> CVarNewInputReceivedDebug(TEXT("geo.AddInputBuffer.ScreenDebug"), 0,
+	TEXT("When > 0, displays on-screen debug messages from UGeoInputGameInstanceSubsystem::AddInputBuffer."),
+	ECVF_Default);
+// Console variable to toggle on-screen debug messages from AddInputBuffer.
+// Usage in console: geo.AddInputBuffer.ScreenDebug 1 (enable) or 0 (disable)
+static TAutoConsoleVariable<int32> CVarGeoInputRollBackDebug(TEXT("geo.AddInputBuffer.ScreenDebug"), 0,
 	TEXT("When > 0, displays on-screen debug messages from UGeoInputGameInstanceSubsystem::AddInputBuffer."),
 	ECVF_Default);
 
@@ -31,14 +37,10 @@ void UGeoInputGameInstanceSubsystem::ClientUpdateInputAgents(const TArray<FInput
 
 void UGeoInputGameInstanceSubsystem::AddNewInput(const FInputStep& InputStep, AGeoPawn* GeoPawn)
 {
-
-	if (CVarGeoAddInputBufferScreenDebug.GetValueOnGameThread() > 0)
+	if (CVarNewInputReceivedDebug.GetValueOnGameThread() > 0 && GEngine)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Emerald, InputStep.ToString());
-			GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Blue, GeoPawn ? GeoPawn->GetName() : TEXT("<null pawn>"));
-		}
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Emerald, InputStep.ToString());
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Blue, GeoPawn ? GeoPawn->GetName() : TEXT("<null pawn>"));
 	}
 
 	if (FInputAgent* ExistingAgent = NewInputAgents.FindByKey(GeoPawn))
@@ -67,8 +69,11 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 		{
 			if (Agent.Owner.IsValid() && Agent.InputSteps.Num() > 0)
 			{
+				const FInputStep& LastStep = Agent.InputSteps.Last();
+				UE_VLOG(Agent.Owner.Get(), LogGeoTrinity, VeryVerbose, TEXT("%s"),
+					*FString(TEXT("Extrapolation with Last received Step: ") + LastStep.ToString()));
 				// Use local deltatime when no input received.
-				Agent.Owner->GetGeoInputComponent()->ProcessInput(Agent.InputSteps.Last(), DeltaTime);
+				Agent.Owner->GetGeoInputComponent()->ProcessInput(LastStep, DeltaTime);
 			}
 		}
 
@@ -105,6 +110,9 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 		}
 	}
 
+	UE_VLOG(GetWorld(), LogGeoTrinity, VeryVerbose, TEXT("Server ProcessAgents: NewAgents=%d EarliestTime=%d+%.6f"),
+		NewInputAgents.Num(), FurthestPastServerTime.TimeSeconds, FurthestPastServerTime.TimePartialSeconds);
+
 	UGeoStateSubsystem::GetInstance(GetWorld())->RollBackToTime(FurthestPastServerTime);
 
 	// Replay all inputs in deterministic order (array order is preserved)
@@ -117,11 +125,12 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 
 		for (const FInputStep& InputStep : Agent.InputSteps)
 		{
-			if (InputStep.Time <= FurthestPastServerTime)
+			if (InputStep.Time < FurthestPastServerTime)
 			{
 				continue;
 			}
 
+			UE_VLOG(Agent.Owner.Get(), LogGeoTrinity, VeryVerbose, TEXT("%s"), *InputStep.ToString());
 			Agent.Owner->GetGeoInputComponent()->ProcessInput(InputStep);
 		}
 	}

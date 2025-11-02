@@ -11,13 +11,10 @@
 UCLASS()
 class AGeoObstacle : public AActor
 {
-  GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-  FGeoBox Box;
+	FBox2D Box;
 
-  AGeoObstacle()
-  {
-    PrimaryActorTick.bCanEverTick = false;
-  }
+	AGeoObstacle() { PrimaryActorTick.bCanEverTick = false; }
 };

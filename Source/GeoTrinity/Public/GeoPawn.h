@@ -19,15 +19,16 @@ class GEOTRINITY_API AGeoPawn : public APawn
 public:
 	// Sets default values for this character's properties
 	AGeoPawn();
-	FGeoBox GetBox() const { return Box; }
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const { return GeoMovementComponent; }
+	virtual void GetActorBounds(bool bOnlyCollidingComponents, FVector& Origin, FVector& BoxExtent,
+		bool bIncludeFromChildActors = false) const override;
+	FBox2D GetBox() const { return Box; }
 
 protected:
-	
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass);
-	
+
 private:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -40,7 +41,7 @@ private:
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
 
 private:
-	FGeoBox Box;
+	FBox2D Box;
 
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UDynamicMeshComponent> MeshComponent;
@@ -54,10 +55,10 @@ private:
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = Character)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = GAS)
 	TObjectPtr<UGeoAttributeSetBase> AttributeSet;
-	
+
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = GAS)
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
 

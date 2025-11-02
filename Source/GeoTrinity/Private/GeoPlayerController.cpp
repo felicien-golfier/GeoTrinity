@@ -5,10 +5,8 @@
 #include "Camera/CameraActor.h"
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
-#include "GeoInputGameInstanceSubsystem.h"
-#include "GeoPawnState.h"
-#include "GeoStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "Subsystems/GeoInputGameInstanceSubsystem.h"
 #include "TimerManager.h"
 
 AGeoPlayerController::AGeoPlayerController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -51,7 +49,7 @@ void AGeoPlayerController::ClientSendServerTimeOffset_Implementation(float Serve
 
 void AGeoPlayerController::SendTimeSyncRequest()
 {
-	if (!HasStabilizedTimerOffset())
+	if (!IsServerTimeOffsetStable())
 	{
 		TimeSyncTimerHandle =
 			GetWorld()->GetTimerManager().SetTimerForNextTick(this, &AGeoPlayerController::SendTimeSyncRequest);
@@ -69,13 +67,13 @@ void AGeoPlayerController::ReportClientTime_Implementation(const FGeoTime Client
 	const FGeoTime ServerTimeSeconds)
 {
 	// In case we have buffered RPC that arrived after NumSamplesToStabilize times, ignore them.
-	if (HasStabilizedTimerOffset())
+	if (IsServerTimeOffsetStable())
 	{
 		return;
 	}
 
-	const float Forth = ServerTimeSeconds - ClientSendTimeSeconds;
-	const float Back = ClientSendTimeSeconds - FGeoTime::GetAccurateRealTime();
+	const float Forth = ClientSendTimeSeconds - ServerTimeSeconds;
+	const float Back = FGeoTime::GetAccurateRealTime() - ClientSendTimeSeconds;
 	ServerTimeOffsetSamples.Add((Forth + Back) / 2.f);
 
 	if (ServerTimeOffsetSamples.Num() == NumSamplesToStabilize)
@@ -93,7 +91,7 @@ void AGeoPlayerController::ReportClientTime_Implementation(const FGeoTime Client
 	}
 }
 
-bool AGeoPlayerController::HasStabilizedTimerOffset() const
+bool AGeoPlayerController::IsServerTimeOffsetStable() const
 {
 	return ServerTimeOffsetSamples.Num() >= NumSamplesToStabilize;
 }

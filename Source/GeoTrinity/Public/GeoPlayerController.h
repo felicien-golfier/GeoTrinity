@@ -42,7 +42,7 @@ public:
 private:
 	UFUNCTION()
 	void SendTimeSyncRequest();
-	bool HasStabilizedTimerOffset() const;
+	bool IsServerTimeOffsetStable() const;
 
 	TArray<float> ServerTimeOffsetSamples;
 	static constexpr int32 NumSamplesToStabilize = 10;
