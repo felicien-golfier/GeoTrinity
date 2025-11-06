@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GeoShapes.h"
 
 #include "GeoPawn.generated.h"
 
@@ -25,6 +24,9 @@ public:
 	virtual void GetActorBounds(bool bOnlyCollidingComponents, FVector& Origin, FVector& BoxExtent,
 		bool bIncludeFromChildActors = false) const override;
 	FBox2D GetBox() const { return Box; }
+	static FColor GetColorForPawn(const AGeoPawn* Pawn);
+	void VLogBoxes(const struct FInputStep& InputStep) const;
+	void VLogBoxes(const struct FInputStep& InputStep, FColor Color) const;
 
 protected:
 	UFUNCTION(BlueprintCallable, Category = "GAS")

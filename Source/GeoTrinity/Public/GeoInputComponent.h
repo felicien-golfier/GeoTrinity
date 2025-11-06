@@ -22,6 +22,7 @@ class GEOTRINITY_API UGeoInputComponent : public UEnhancedInputComponent
 public:
 	// Sets default values for this component's properties
 	UGeoInputComponent();
+	void VLogCurrentInputStep(const AGeoPawn* GeoPawn) const;
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 		FActorComponentTickFunction* ThisTickFunction) override;

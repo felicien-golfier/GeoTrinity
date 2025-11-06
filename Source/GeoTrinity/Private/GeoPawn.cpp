@@ -9,6 +9,7 @@
 #include "GeoPlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoHUD.h"
+#include "InputStep.h"
 
 // Sets default values
 AGeoPawn::AGeoPawn()
@@ -145,4 +146,31 @@ void AGeoPawn::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gam
 			PredictionKey);
 		// AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
 	}
+}
+
+FColor AGeoPawn::GetColorForPawn(const AGeoPawn* Pawn)
+{
+	if (!IsValid(Pawn))
+	{
+		return FColor::White;
+	}
+
+	static const FColor Palette[] = {FColor::Red, FColor::Green, FColor::Blue, FColor::Yellow, FColor::Cyan,
+		FColor::Magenta, FColor(255, 165, 0),   // Orange
+		FColor(128, 0, 128),   // Purple
+		FColor::Turquoise, FColor::Silver};
+
+	return Palette[Pawn->GetUniqueID() % std::size(Palette)];
+}
+
+void AGeoPawn::VLogBoxes(const FInputStep& InputStep) const
+{
+	VLogBoxes(InputStep, GetColorForPawn(this));
+}
+
+void AGeoPawn::VLogBoxes(const FInputStep& InputStep, const FColor Color) const
+{
+	UE_VLOG_BOX(this, LogGeoTrinity, VeryVerbose,
+		FBox(FVector(GetBox().Min, 0.f) + GetActorLocation(), FVector(GetBox().Max, 0.f) + GetActorLocation()), Color,
+		TEXT("LocalTime %s, delta time %.5f"), *InputStep.Time.ToString(), InputStep.DeltaTimeSeconds);
 }

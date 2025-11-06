@@ -44,24 +44,12 @@ void UGeoInputComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	CurrentInputStep.DeltaTimeSeconds = DeltaTime;
 
 	// VLOG: client-side current input step before sending
-	UE_VLOG(GetGeoPawn(), LogGeoTrinity, VeryVerbose, TEXT("%s"), *CurrentInputStep.ToString());
-	// Visualize the local pawn box location (local pawn only)
-	{
-		const AGeoPawn* LocalPawn = GeoPawn;   // already validated and locally controlled above
-		FVector Origin, Extent;
-		LocalPawn->GetActorBounds(true, Origin, Extent);
-		UE_VLOG_BOX(LocalPawn, LogGeoTrinity, VeryVerbose,
-			FBox(FVector(GeoPawn->GetBox().Min, 0.f) + LocalPawn->GetActorLocation(),
-				FVector(GeoPawn->GetBox().Max, 0.f) + LocalPawn->GetActorLocation()),
-			FColor::Green, TEXT("LocalTime %s, delta time %.5f"), *CurrentInputStep.Time.ToString(),
-			CurrentInputStep.DeltaTimeSeconds);
-	}
+	VLogCurrentInputStep(GeoPawn);
 
 	SendInputServerRPC(CurrentInputStep);
 	// Add Local inputs to the UGeoInputGameInstanceSubsystem.
 	GeoInputGameInstanceSubsystem->AddNewInput(CurrentInputStep, GetGeoPawn());
 	ProcessInput(CurrentInputStep);
-
 	CurrentInputStep.Empty();
 }
 
@@ -116,4 +104,9 @@ void UGeoInputComponent::SendInputServerRPC_Implementation(FInputStep InputStep)
 void UGeoInputComponent::SendForeignInputClientRPC_Implementation(const TArray<FInputAgent>& InputAgents)
 {
 	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->ClientUpdateInputAgents(InputAgents);
+}
+
+void UGeoInputComponent::VLogCurrentInputStep(const AGeoPawn* GeoPawn) const
+{
+	UE_VLOG(GeoPawn, LogGeoTrinity, VeryVerbose, TEXT("%s"), *CurrentInputStep.ToString());
 }

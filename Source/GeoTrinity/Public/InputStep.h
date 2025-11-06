@@ -82,7 +82,11 @@ struct FInputAgent
 	GENERATED_BODY()
 
 	FInputAgent() : InputSteps({}), Owner(nullptr) {}
-	FInputAgent(const TArray<FInputStep>& InInputSteps, AGeoPawn* InOwner) : InputSteps(InInputSteps), Owner(InOwner) {}
+	FInputAgent(const TArray<FInputStep>& InInputSteps, class AGeoPawn* InOwner)
+		: InputSteps(InInputSteps)
+		, Owner(InOwner)
+	{
+	}
 
 	UPROPERTY()
 	TArray<FInputStep> InputSteps;

@@ -67,6 +67,7 @@ void UGeoStateSubsystem::RollBackToTime(const FGeoTime Time)
 {
 	for (FGeoGameSnapShot& Snapshot : GameHistory)
 	{
+		// Are you sure ?
 		if (Snapshot.ServerTime > Time)
 		{
 			ApplySnapshot(Snapshot);

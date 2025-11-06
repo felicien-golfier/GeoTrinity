@@ -36,6 +36,9 @@ public:
 
 	void ClientUpdateInputAgents(const TArray<FInputAgent>& InputAgents);
 	void AddNewInput(const FInputStep& InputStep, AGeoPawn* GeoPawn);
+	void ExtrapolateAgents(float DeltaTime);
+	void ProcessNewInputAgents(FGeoTime& FurthestPastServerTime);
+	void ReplayInputSteps(FGeoTime FurthestPastServerTime);
 	void ProcessAgents(const float DeltaTime);
 	void UpdateClients();
 
