@@ -62,26 +62,39 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 			return !Agent.Owner.IsValid();
 		});
 
-	// When no new input, replay last input for each pawn
 	if (NewInputAgents.Num() == 0)
 	{
-		for (FInputAgent& Agent : InputAgentsHistory)
-		{
-			if (Agent.Owner.IsValid() && Agent.InputSteps.Num() > 0)
-			{
-				const FInputStep& LastStep = Agent.InputSteps.Last();
-				UE_VLOG(Agent.Owner.Get(), LogGeoTrinity, VeryVerbose, TEXT("%s"),
-					*FString(TEXT("Extrapolation with Last received Step: ") + LastStep.ToString()));
-				// Use local deltatime when no input received.
-				Agent.Owner->GetGeoInputComponent()->ProcessInput(LastStep, DeltaTime);
-			}
-		}
-
-		return;
+		ExtrapolateAgents(DeltaTime);
 	}
+	else
+	{
+		FGeoTime FurthestPastServerTime;
+		ProcessNewInputAgents(FurthestPastServerTime);
+		UGeoStateSubsystem::GetInstance(GetWorld())->RollBackToTime(FurthestPastServerTime);
+		ReplayInputSteps(FurthestPastServerTime); // Recuperer Time snapshot roll back pour re apply.
 
-	// Find out what's the earliest new arrived time across all agents
-	FGeoTime FurthestPastServerTime = FGeoTime::GetAccurateRealTime();
+		UE_VLOG(GetWorld(), LogGeoTrinity, VeryVerbose, TEXT("Server ProcessAgents: NewAgents=%d EarliestTime=%d+%.6f"),
+			NewInputAgents.Num(), FurthestPastServerTime.TimeSeconds, FurthestPastServerTime.TimePartialSeconds);
+	}
+}
+
+void UGeoInputGameInstanceSubsystem::ExtrapolateAgents(const float DeltaTime)
+{
+	for (FInputAgent& Agent : InputAgentsHistory)
+	{
+		if (Agent.Owner.IsValid() && Agent.InputSteps.Num() > 0)
+		{
+			const FInputStep& LastStep = Agent.InputSteps.Last();
+			UE_VLOG(Agent.Owner.Get(), LogGeoTrinity, VeryVerbose, TEXT("%s"),
+				*FString(TEXT("Extrapolation with Last received Step: ") + LastStep.ToString()));
+			// Use local deltatime when no input received.
+			Agent.Owner->GetGeoInputComponent()->ProcessInput(LastStep, DeltaTime);
+		}
+	}
+}
+void UGeoInputGameInstanceSubsystem::ProcessNewInputAgents(FGeoTime& FurthestPastServerTime)
+{
+	FurthestPastServerTime = FGeoTime::GetAccurateRealTime();
 	for (FInputAgent& InputAgent : NewInputAgents)
 	{
 		for (const FInputStep& InputStep : InputAgent.InputSteps)
@@ -109,16 +122,14 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 			ExistingAgent.InputSteps.RemoveAt(0, ExistingAgent.InputSteps.Num() - MaxBufferInputs);
 		}
 	}
+}
 
-	UE_VLOG(GetWorld(), LogGeoTrinity, VeryVerbose, TEXT("Server ProcessAgents: NewAgents=%d EarliestTime=%d+%.6f"),
-		NewInputAgents.Num(), FurthestPastServerTime.TimeSeconds, FurthestPastServerTime.TimePartialSeconds);
-
-	UGeoStateSubsystem::GetInstance(GetWorld())->RollBackToTime(FurthestPastServerTime);
-
+void UGeoInputGameInstanceSubsystem::ReplayInputSteps(FGeoTime FurthestPastServerTime)
+{
 	// Replay all inputs in deterministic order (array order is preserved)
 	for (FInputAgent& Agent : InputAgentsHistory)
 	{
-		if (!Agent.Owner.IsValid())
+		if (!Agent.Owner.IsValid() || Agent.InputSteps.Num() == 0)
 		{
 			continue;
 		}
@@ -133,6 +144,8 @@ void UGeoInputGameInstanceSubsystem::ProcessAgents(const float DeltaTime)
 			UE_VLOG(Agent.Owner.Get(), LogGeoTrinity, VeryVerbose, TEXT("%s"), *InputStep.ToString());
 			Agent.Owner->GetGeoInputComponent()->ProcessInput(InputStep);
 		}
+
+		Agent.Owner->VLogBoxes(Agent.InputSteps.Last());
 	}
 }
 
