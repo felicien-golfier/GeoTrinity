@@ -5,6 +5,7 @@
 
 #include "GeoPawn.generated.h"
 
+struct FGameplayTag;
 class UGameplayEffect;
 class UGeoAttributeSetBase;
 class UGeoAbilitySystemComponent;
@@ -40,6 +41,11 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
 
+	// GAS - Input callbacks
+	void AbilityInputTagPressed(FGameplayTag inputTag);
+	void AbilityInputTagReleased(FGameplayTag inputTag);
+	void AbilityInputTagHeld(FGameplayTag inputTag);
+	
 private:
 	FBox2D Box;
 

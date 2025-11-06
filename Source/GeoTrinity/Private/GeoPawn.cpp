@@ -51,6 +51,9 @@ void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	GeoInputComponent->BindInput(PlayerInputComponent);
+
+	GeoInputComponent->BindAbilityActions(this,
+		&ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased, &ThisClass::AbilityInputTagHeld);
 }
 
 // Server Only
@@ -105,6 +108,21 @@ void AGeoPawn::InitializeDefaultAttributes()
 	}
 
 	ApplyEffectToSelf(DefaultAttributes, 1.0f);
+}
+
+void AGeoPawn::AbilityInputTagPressed(FGameplayTag inputTag)
+{
+	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s pressed"), *inputTag.ToString());
+}
+
+void AGeoPawn::AbilityInputTagReleased(FGameplayTag inputTag)
+{
+	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s released"), *inputTag.ToString());
+}
+
+void AGeoPawn::AbilityInputTagHeld(FGameplayTag inputTag)
+{
+	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s heeeeeld"), *inputTag.ToString());
 }
 
 void AGeoPawn::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level)

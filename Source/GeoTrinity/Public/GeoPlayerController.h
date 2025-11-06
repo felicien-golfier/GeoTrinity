@@ -10,6 +10,7 @@
 
 #include "GeoPlayerController.generated.h"
 
+class UGeoInputConfig;
 /**
  *
  */
@@ -47,7 +48,7 @@ private:
 	TArray<float> ServerTimeOffsetSamples;
 	static constexpr int32 NumSamplesToStabilize = 10;
 	FTimerHandle TimeSyncTimerHandle;
-
+	
 	UPROPERTY()
 	FVector2D MovementInputs;
 };
