@@ -1,9 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/PawnMovementComponent.h"
-#include "GeoShapes.h"
-#include "InputStep.h"
+#include "GameFramework/FloatingPawnMovement.h"
 
 #include "GeoMovementComponent.generated.h"
 
@@ -15,12 +13,32 @@ class GEOTRINITY_API UGeoMovementComponent : public UPawnMovementComponent
 	GENERATED_BODY()
 public:
 	UGeoMovementComponent();
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType,
+		FActorComponentTickFunction* ThisTickFunction) override;
+	void ApplyControlInputToVelocity(float DeltaTime);
+	bool LimitWorldBounds();
+	virtual float GetMaxSpeed() const override { return MaxSpeed; }
 
-	// Applies simple 2D movement along the pawn forward/right vectors
-	void MovePawnWithInput(float DeltaTime, FVector2D GivenMovementInput);
+	/** Maximum velocity magnitude allowed for the controlled Pawn. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = FloatingPawnMovement)
+	float MaxSpeed = 1000.f;
 
-	// Simple AABB collision resolution against an obstacle box
-	void ApplyCollision(const FBox2D& Obstacle) const;
+	/** Acceleration applied by input (rate of change of velocity) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = FloatingPawnMovement)
+	float Acceleration = 1000.f;
+
+	/** Deceleration applied when there is no input (rate of change of velocity) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = FloatingPawnMovement)
+	float Deceleration = 400.f;
+
+	/**
+	 * Setting affecting extra force applied when changing direction, making turns have less drift and become more
+	 * responsive. Velocity magnitude is not allowed to increase, that only happens due to normal acceleration. It may
+	 * decrease with large direction changes. Larger values apply extra force to reach the target direction more
+	 * quickly, while a zero value disables any extra turn force.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = FloatingPawnMovement, meta = (ClampMin = "0", UIMin = "0"))
+	float TurningBoost = 8.0f;
 
 private:
 	AGeoPawn* GetGeoPawn() const;

@@ -21,12 +21,8 @@ public:
 	AGeoPawn();
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const { return GeoMovementComponent; }
-	virtual void GetActorBounds(bool bOnlyCollidingComponents, FVector& Origin, FVector& BoxExtent,
-		bool bIncludeFromChildActors = false) const override;
-	FBox2D GetBox() const { return Box; }
+
 	static FColor GetColorForPawn(const AGeoPawn* Pawn);
-	void VLogBoxes(const struct FInputStep& InputStep) const;
-	void VLogBoxes(const struct FInputStep& InputStep, FColor Color) const;
 
 protected:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
@@ -47,12 +43,10 @@ private:
 	void AbilityInputTagPressed(FGameplayTag inputTag);
 	void AbilityInputTagReleased(FGameplayTag inputTag);
 	void AbilityInputTagHeld(FGameplayTag inputTag);
-	
-private:
-	FBox2D Box;
 
-	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UDynamicMeshComponent> MeshComponent;
+private:
+	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
 	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoInputComponent> GeoInputComponent;

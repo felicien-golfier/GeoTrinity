@@ -6,7 +6,6 @@
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "Kismet/GameplayStatics.h"
-#include "Subsystems/GeoInputGameInstanceSubsystem.h"
 #include "TimerManager.h"
 
 AGeoPlayerController::AGeoPlayerController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -29,69 +28,9 @@ void AGeoPlayerController::BeginPlay()
 			}
 		}
 	}
-
-	// Start periodic time synchronization on server
-	if (!IsLocalController())
-	{
-		SendTimeSyncRequest();
-	}
 }
 
-void AGeoPlayerController::OnPossess(APawn* APawn)
+void AGeoPlayerController::ServerMove_Implementation(const FVector2D InputAxis)
 {
-	Super::OnPossess(APawn);
-}
-
-void AGeoPlayerController::ClientSendServerTimeOffset_Implementation(float ServerTimeOffset)
-{
-	UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->SetServerTimeOffset(this, ServerTimeOffset);
-}
-
-void AGeoPlayerController::SendTimeSyncRequest()
-{
-	if (!IsServerTimeOffsetStable())
-	{
-		TimeSyncTimerHandle =
-			GetWorld()->GetTimerManager().SetTimerForNextTick(this, &AGeoPlayerController::SendTimeSyncRequest);
-	}
-
-	RequestClientTime(FGeoTime::GetAccurateRealTime());
-}
-
-void AGeoPlayerController::RequestClientTime_Implementation(const FGeoTime ServerTimeSeconds)
-{
-	ReportClientTime(FGeoTime::GetAccurateRealTime(), ServerTimeSeconds);
-}
-
-void AGeoPlayerController::ReportClientTime_Implementation(const FGeoTime ClientSendTimeSeconds,
-	const FGeoTime ServerTimeSeconds)
-{
-	// In case we have buffered RPC that arrived after NumSamplesToStabilize times, ignore them.
-	if (IsServerTimeOffsetStable())
-	{
-		return;
-	}
-
-	const float Forth = ClientSendTimeSeconds - ServerTimeSeconds;
-	const float Back = FGeoTime::GetAccurateRealTime() - ClientSendTimeSeconds;
-	ServerTimeOffsetSamples.Add((Forth + Back) / 2.f);
-
-	if (ServerTimeOffsetSamples.Num() == NumSamplesToStabilize)
-	{
-		float ServerTimeOffset = 0.f;
-		GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
-		for (float ServerTimeOffsetSample : ServerTimeOffsetSamples)
-		{
-			ServerTimeOffset += ServerTimeOffsetSample;
-		}
-
-		ServerTimeOffset /= ServerTimeOffsetSamples.Num();
-		UGeoInputGameInstanceSubsystem::GetInstance(GetWorld())->SetServerTimeOffset(this, ServerTimeOffset);
-		ClientSendServerTimeOffset(ServerTimeOffset);
-	}
-}
-
-bool AGeoPlayerController::IsServerTimeOffsetStable() const
-{
-	return ServerTimeOffsetSamples.Num() >= NumSamplesToStabilize;
+	GetPawn()->AddMovementInput(FVector(InputAxis, 0.f));
 }

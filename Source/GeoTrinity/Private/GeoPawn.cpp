@@ -2,14 +2,12 @@
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/GeoAttributeSetBase.h"
-#include "Components/DynamicMeshComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
 #include "GeoPlayerController.h"
 #include "GeoPlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoHUD.h"
-#include "InputStep.h"
 
 // Sets default values
 AGeoPawn::AGeoPawn()
@@ -18,29 +16,17 @@ AGeoPawn::AGeoPawn()
 	// it.
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicates(true);
-	Box = FBox2D(FVector2D(-25.f, -25.f), FVector2D(25.f, 25.f));   // carré 50x50
+	SetReplicateMovement(true);
 
-	FDynamicMesh3 MyFDynamicMesh3;
-	const int Vid1 = MyFDynamicMesh3.AppendVertex(FVector(Box.Max, 0));
-	const int Vid2 = MyFDynamicMesh3.AppendVertex(FVector(Box.Max.X, Box.Min.Y, 0));
-	const int Vid3 = MyFDynamicMesh3.AppendVertex(FVector(Box.Min, 0.f));
-	const int Vid4 = MyFDynamicMesh3.AppendVertex(FVector(Box.Min.X, Box.Max.Y, 0));
+	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh Component"));
+	MeshComponent->SetIsReplicated(true);
 
-	MyFDynamicMesh3.AppendTriangle(Vid1, Vid2, Vid3);
-	MyFDynamicMesh3.AppendTriangle(Vid3, Vid4, Vid1);
-	MeshComponent = CreateDefaultSubobject<UDynamicMeshComponent>(TEXT("Dynamic Mesh Component"));
-	MeshComponent->SetMesh(MoveTemp(MyFDynamicMesh3));
 	SetRootComponent(MeshComponent);
 
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
-	GeoMovementComponent = CreateDefaultSubobject<UGeoMovementComponent>(TEXT("Geo Movement Component"));
-}
+	GeoInputComponent->SetIsReplicated(true);
 
-void AGeoPawn::GetActorBounds(bool bOnlyCollidingComponents, FVector& Origin, FVector& BoxExtent,
-	bool bIncludeFromChildActors) const
-{
-	Origin = GetActorLocation();
-	BoxExtent = FVector(Box.GetExtent(), 0.f);
+	GeoMovementComponent = CreateDefaultSubobject<UGeoMovementComponent>(TEXT("Geo Movement Component"));
 }
 
 void AGeoPawn::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
@@ -53,8 +39,8 @@ void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	GeoInputComponent->BindInput(PlayerInputComponent);
 
-	GeoInputComponent->BindAbilityActions(this,
-		&ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased, &ThisClass::AbilityInputTagHeld);
+	GeoInputComponent->BindAbilityActions(this, &ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased,
+		&ThisClass::AbilityInputTagHeld);
 }
 
 // Server Only
@@ -98,9 +84,9 @@ void AGeoPawn::InitAbilityActorInfo()
 
 void AGeoPawn::InitializeDefaultAttributes()
 {
-	check(IsValid(AbilitySystemComponent))
+	check(IsValid(AbilitySystemComponent));
 
-		if (!IsValid(DefaultAttributes))
+	if (!IsValid(DefaultAttributes))
 	{
 		UE_LOG(LogGeoTrinity, Error,
 			TEXT("%s() Missing DefaultAttributes for %s. Please fill in the pawn's Blueprint."), *FString(__FUNCTION__),
@@ -163,14 +149,9 @@ FColor AGeoPawn::GetColorForPawn(const AGeoPawn* Pawn)
 	return Palette[Pawn->GetUniqueID() % std::size(Palette)];
 }
 
-void AGeoPawn::VLogBoxes(const FInputStep& InputStep) const
-{
-	VLogBoxes(InputStep, GetColorForPawn(this));
-}
-
-void AGeoPawn::VLogBoxes(const FInputStep& InputStep, const FColor Color) const
-{
-	UE_VLOG_BOX(this, LogGeoTrinity, VeryVerbose,
-		FBox(FVector(GetBox().Min, 0.f) + GetActorLocation(), FVector(GetBox().Max, 0.f) + GetActorLocation()), Color,
-		TEXT("LocalTime %s, delta time %.5f"), *InputStep.Time.ToString(), InputStep.DeltaTimeSeconds);
-}
+// void AGeoPawn::VLogBoxes(const FInputStep& InputStep, const FColor Color) const
+// {
+// 	UE_VLOG_BOX(this, LogGeoTrinity, VeryVerbose,
+// 		FBox(FVector(GetBox().Min, 0.f) + GetActorLocation(), FVector(GetBox().Max, 0.f) + GetActorLocation()), Color,
+// 		TEXT("LocalTime %s, delta time %.5f"), *InputStep.Time.ToString(), InputStep.DeltaTimeSeconds);
+// }
