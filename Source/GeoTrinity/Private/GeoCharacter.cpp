@@ -1,7 +1,8 @@
-#include "GeoPawn.h"
+#include "GeoCharacter.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/GeoAttributeSetBase.h"
+#include "Components/CapsuleComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
 #include "GeoPlayerController.h"
@@ -10,31 +11,111 @@
 #include "HUD/GeoHUD.h"
 
 // Sets default values
-AGeoPawn::AGeoPawn()
+AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(
+		  ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need
-	// it.
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicates(true);
-	SetReplicateMovement(true);
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh Component"));
 	MeshComponent->SetIsReplicated(true);
-
-	SetRootComponent(MeshComponent);
+	MeshComponent->SetupAttachment(GetCapsuleComponent());
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
 	GeoInputComponent->SetIsReplicated(true);
 
-	GeoMovementComponent = CreateDefaultSubobject<UGeoMovementComponent>(TEXT("Geo Movement Component"));
+	// Use the Character's movement component, which we've overridden to our class above
+	GeoMovementComponent = Cast<UGeoMovementComponent>(GetCharacterMovement());
+
+	// Disable orient-to-movement; we will rotate manually toward aim
+	bUseControllerRotationYaw = false;
+	if (UCharacterMovementComponent* CharacterMovementComponent = GetCharacterMovement())
+	{
+		CharacterMovementComponent->bOrientRotationToMovement = false;
+	}
 }
 
-void AGeoPawn::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
+void AGeoCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UpdateAimRotation(DeltaSeconds);
+}
+
+void AGeoCharacter::UpdateAimRotation(float DeltaSeconds)
+{
+	// Compute desired aim yaw
+	float DesiredYaw = GetActorRotation().Yaw;
+	bool bHasAim = false;
+
+	// Prior Stick over mouse orientation.
+	if (IsValid(GeoInputComponent))
+	{
+		FVector2D Stick;
+		if (GeoInputComponent->GetLookVector(Stick))
+		{
+			DesiredYaw = FMath::Atan2(Stick.Y, Stick.X) * (180.f / PI);
+			bHasAim = true;
+		}
+	}
+
+	if (!bHasAim)
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			FVector WorldOrigin, WorldDir;
+			if (PlayerController->DeprojectMousePositionToWorld(WorldOrigin, WorldDir))
+			{
+				// Intersect ray with plane Z = Actor.Z
+				const float Z = GetActorLocation().Z;
+				if (!FMath::IsNearlyZero(WorldDir.Z))
+				{
+					const float T = (Z - WorldOrigin.Z) / WorldDir.Z;
+					if (T > 0.f)
+					{
+						const FVector Hit = WorldOrigin + WorldDir * T;
+						const FVector ToHit = (Hit - GetActorLocation());
+						const FRotator AimRot = ToHit.Rotation();
+						DesiredYaw = AimRot.Yaw;
+						bHasAim = true;
+					}
+				}
+			}
+		}
+	}
+
+	if (bHasAim)
+	{
+		// Apply rotation locally
+		FRotator R = GetActorRotation();
+		R.Yaw = DesiredYaw;
+		SetActorRotation(R);
+
+		if (!HasAuthority())
+		{
+			TimeSinceLastAimSend += DeltaSeconds;
+			if (TimeSinceLastAimSend > 0.03f && FMath::Abs(DesiredYaw - LastSentAimYaw) > 0.5f)
+			{
+				if (AGeoPlayerController* GC = Cast<AGeoPlayerController>(GetController()))
+				{
+					GC->ServerSetAimYaw(DesiredYaw);
+					LastSentAimYaw = DesiredYaw;
+					TimeSinceLastAimSend = 0.f;
+				}
+			}
+		}
+	}
+}
+
+void AGeoCharacter::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
 {
 	ApplyEffectToSelf(gameplayEffectClass, 1.0f);
 }
 
-void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void AGeoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	GeoInputComponent->BindInput(PlayerInputComponent);
@@ -44,7 +125,7 @@ void AGeoPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 }
 
 // Server Only
-void AGeoPawn::PossessedBy(AController* NewController)
+void AGeoCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
@@ -52,7 +133,7 @@ void AGeoPawn::PossessedBy(AController* NewController)
 	InitializeDefaultAttributes();
 }
 
-void AGeoPawn::OnRep_PlayerState()
+void AGeoCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
@@ -60,7 +141,7 @@ void AGeoPawn::OnRep_PlayerState()
 	InitAbilityActorInfo();
 }
 
-void AGeoPawn::InitAbilityActorInfo()
+void AGeoCharacter::InitAbilityActorInfo()
 {
 	AGeoPlayerState* PS = GetPlayerState<AGeoPlayerState>();
 	if (!PS)
@@ -82,7 +163,7 @@ void AGeoPawn::InitAbilityActorInfo()
 	}
 }
 
-void AGeoPawn::InitializeDefaultAttributes()
+void AGeoCharacter::InitializeDefaultAttributes()
 {
 	check(IsValid(AbilitySystemComponent));
 
@@ -97,22 +178,22 @@ void AGeoPawn::InitializeDefaultAttributes()
 	ApplyEffectToSelf(DefaultAttributes, 1.0f);
 }
 
-void AGeoPawn::AbilityInputTagPressed(FGameplayTag inputTag)
+void AGeoCharacter::AbilityInputTagPressed(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s pressed"), *inputTag.ToString());
 }
 
-void AGeoPawn::AbilityInputTagReleased(FGameplayTag inputTag)
+void AGeoCharacter::AbilityInputTagReleased(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s released"), *inputTag.ToString());
 }
 
-void AGeoPawn::AbilityInputTagHeld(FGameplayTag inputTag)
+void AGeoCharacter::AbilityInputTagHeld(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s heeeeeld"), *inputTag.ToString());
 }
 
-void AGeoPawn::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level)
+void AGeoCharacter::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level)
 {
 	if (!IsValid(AbilitySystemComponent))
 	{
@@ -134,9 +215,9 @@ void AGeoPawn::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gam
 	}
 }
 
-FColor AGeoPawn::GetColorForPawn(const AGeoPawn* Pawn)
+FColor AGeoCharacter::GetColorForCharacter(const AGeoCharacter* Character)
 {
-	if (!IsValid(Pawn))
+	if (!IsValid(Character))
 	{
 		return FColor::White;
 	}
@@ -146,10 +227,10 @@ FColor AGeoPawn::GetColorForPawn(const AGeoPawn* Pawn)
 		FColor(128, 0, 128),   // Purple
 		FColor::Turquoise, FColor::Silver};
 
-	return Palette[Pawn->GetUniqueID() % std::size(Palette)];
+	return Palette[Character->GetUniqueID() % std::size(Palette)];
 }
 
-// void AGeoPawn::VLogBoxes(const FInputStep& InputStep, const FColor Color) const
+// void AGeoCharacter::VLogBoxes(const FInputStep& InputStep, const FColor Color) const
 // {
 // 	UE_VLOG_BOX(this, LogGeoTrinity, VeryVerbose,
 // 		FBox(FVector(GetBox().Min, 0.f) + GetActorLocation(), FVector(GetBox().Max, 0.f) + GetActorLocation()), Color,

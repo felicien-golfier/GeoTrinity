@@ -19,7 +19,7 @@ public:
 	AGeoPlayerController(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(Server, Reliable)
-	void ServerMove(FVector2D InputAxis);
+	void ServerSetAimYaw(float YawDegrees);
 
 protected:
 	virtual void BeginPlay() override;

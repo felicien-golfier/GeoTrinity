@@ -5,9 +5,11 @@
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include "EnhancedInputComponent.h"
-#include "GeoPawn.h"
 #include "Input/GeoInputConfig.h"
 #include "InputAction.h"
+
+struct FInputActionInstance;
+class AGeoCharacter;
 
 #include "GeoInputComponent.generated.h"
 
@@ -27,7 +29,17 @@ public:
 	UFUNCTION()
 	void MoveFromInput(const FInputActionInstance& Instance);
 
-	AGeoPawn* GetGeoPawn() const;
+	UFUNCTION()
+	void LookFromInput(const FInputActionInstance& Instance);
+
+	AGeoCharacter* GetGeoCharacter() const;
+
+	// Returns true if there is a valid non-zero look vector from right stick
+	bool GetLookVector(FVector2D& OutLook) const
+	{
+		OutLook = LastLookInput;
+		return !LastLookInput.IsNearlyZero(0.05f);
+	}
 
 	template<class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
 	void BindAbilityActions(UserClass* object, PressedFuncType pressedFunc, ReleasedFuncType releasedFunc,
@@ -37,8 +49,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
 	TObjectPtr<UInputAction> MoveAction;
 
+	// Right stick / mouse delta look action (Value: Vector2D). Assign in the Input Mapping.
+	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
+	TObjectPtr<UInputAction> LookAction;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input", meta = (ToolTip = "Data that holds attached inputs"))
 	TObjectPtr<UGeoInputConfig> InputConfig;
+
+private:
+	// Cached latest right stick vector in viewport space (X,Y), not normalized. Zero when idle.
+	UPROPERTY(Transient)
+	FVector2D LastLookInput = FVector2D::ZeroVector;
 };
 
 // template function definition must be in .h

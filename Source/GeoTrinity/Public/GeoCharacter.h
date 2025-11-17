@@ -1,8 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameFramework/Character.h"
 
-#include "GeoPawn.generated.h"
+#include "GeoCharacter.generated.h"
 
 struct FGameplayTag;
 class UGameplayEffect;
@@ -11,18 +12,20 @@ class UGeoAbilitySystemComponent;
 class UGeoInputComponent;
 class UDynamicMeshComponent;
 class UGeoMovementComponent;
+class UStaticMeshComponent;
 UCLASS()
-class GEOTRINITY_API AGeoPawn : public APawn
+class GEOTRINITY_API AGeoCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
-	AGeoPawn();
+	AGeoCharacter(const FObjectInitializer& ObjectInitializer);
+	void UpdateAimRotation(float DeltaSeconds);
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const { return GeoMovementComponent; }
 
-	static FColor GetColorForPawn(const AGeoPawn* Pawn);
+	static FColor GetColorForCharacter(const AGeoCharacter* Character);
 
 protected:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
@@ -32,6 +35,9 @@ private:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+
+public:
+	virtual void Tick(float DeltaSeconds) override;
 
 	// GAS
 	void InitAbilityActorInfo();
@@ -67,4 +73,10 @@ protected:
 public:
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (RowType = CharacterStats))
 	FDataTableRowHandle StatsDTHandle;
+
+private:
+	// Aim rotation cache to throttle RPCs
+	float CachedAimYaw = 0.f;
+	float LastSentAimYaw = 0.f;
+	float TimeSinceLastAimSend = 0.f;
 };

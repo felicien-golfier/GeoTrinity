@@ -30,7 +30,12 @@ void AGeoPlayerController::BeginPlay()
 	}
 }
 
-void AGeoPlayerController::ServerMove_Implementation(const FVector2D InputAxis)
+void AGeoPlayerController::ServerSetAimYaw_Implementation(const float YawDegrees)
 {
-	GetPawn()->AddMovementInput(FVector(InputAxis, 0.f));
+	if (IsValid(GetPawn()))
+	{
+		FRotator Rotation = GetPawn()->GetActorRotation();
+		Rotation.Yaw = YawDegrees;
+		GetPawn()->SetActorRotation(Rotation);
+	}
 }

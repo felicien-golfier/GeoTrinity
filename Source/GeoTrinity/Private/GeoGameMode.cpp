@@ -2,11 +2,11 @@
 
 #include "GeoGameMode.h"
 
-#include "GeoPawn.h"
+#include "GeoCharacter.h"
 
 AGeoGameMode::AGeoGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	DefaultPawnClass = AGeoPawn::StaticClass();
+	DefaultPawnClass = AGeoCharacter::StaticClass();
 }
 void AGeoGameMode::Tick(float DeltaSeconds)
 {

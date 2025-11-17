@@ -3,7 +3,7 @@
 #include "GeoInputComponent.h"
 
 #include "EnhancedInputComponent.h"
-#include "GeoPawn.h"
+#include "GeoCharacter.h"
 #include "GeoPlayerController.h"
 #include "VisualLogger/VisualLogger.h"
 
@@ -16,21 +16,35 @@ void UGeoInputComponent::BindInput(UInputComponent* PlayerInputComponent)
 {
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &UGeoInputComponent::MoveFromInput);
+
+	if (LookAction)
+	{
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this,
+			&UGeoInputComponent::LookFromInput);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Completed, this,
+			&UGeoInputComponent::LookFromInput);
+	}
 }
 
 void UGeoInputComponent::MoveFromInput(const FInputActionInstance& Instance)
 {
-	if (GetNetMode() == NM_Standalone)
+	GetGeoCharacter()->AddMovementInput(FVector(Instance.GetValue().Get<FVector2D>(), 0.f));
+}
+
+void UGeoInputComponent::LookFromInput(const FInputActionInstance& Instance)
+{
+	// Cache latest right stick / look vector
+	if (Instance.GetTriggerEvent() == ETriggerEvent::Completed)
 	{
-		GetGeoPawn()->AddMovementInput(FVector(Instance.GetValue().Get<FVector2D>(), 0.f));
+		LastLookInput = FVector2D::ZeroVector;
 	}
-	else if (AGeoPlayerController* PlayerController = Cast<AGeoPlayerController>(GetGeoPawn()->GetController()))
+	else
 	{
-		PlayerController->ServerMove(Instance.GetValue().Get<FVector2D>());
+		LastLookInput = Instance.GetValue().Get<FVector2D>();
 	}
 }
 
-AGeoPawn* UGeoInputComponent::GetGeoPawn() const
+AGeoCharacter* UGeoInputComponent::GetGeoCharacter() const
 {
-	return CastChecked<AGeoPawn>(GetOuter());
+	return CastChecked<AGeoCharacter>(GetOuter());
 }
