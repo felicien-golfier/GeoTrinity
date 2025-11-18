@@ -10,6 +10,7 @@
 
 AGeoPlayerController::AGeoPlayerController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+	SetShowMouseCursor(true);
 }
 
 void AGeoPlayerController::BeginPlay()

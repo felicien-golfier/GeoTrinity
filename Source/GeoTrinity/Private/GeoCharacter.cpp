@@ -28,14 +28,13 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	GeoInputComponent->SetIsReplicated(true);
 
 	// Use the Character's movement component, which we've overridden to our class above
-	GeoMovementComponent = Cast<UGeoMovementComponent>(GetCharacterMovement());
 
 	// Disable orient-to-movement; we will rotate manually toward aim
 	bUseControllerRotationYaw = false;
-	if (UCharacterMovementComponent* CharacterMovementComponent = GetCharacterMovement())
-	{
-		CharacterMovementComponent->bOrientRotationToMovement = false;
-	}
+
+	GetCharacterMovement()->GravityScale = 0.0f;
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 }
 
 void AGeoCharacter::Tick(float DeltaSeconds)
@@ -59,6 +58,8 @@ void AGeoCharacter::UpdateAimRotation(float DeltaSeconds)
 		{
 			DesiredYaw = FMath::Atan2(Stick.Y, Stick.X) * (180.f / PI);
 			bHasAim = true;
+			// If joystick, do not show mouscursor
+			CastChecked<APlayerController>(GetController())->SetShowMouseCursor(false);
 		}
 	}
 
@@ -81,6 +82,7 @@ void AGeoCharacter::UpdateAimRotation(float DeltaSeconds)
 						const FRotator AimRot = ToHit.Rotation();
 						DesiredYaw = AimRot.Yaw;
 						bHasAim = true;
+						PlayerController->SetShowMouseCursor(true);
 					}
 				}
 			}

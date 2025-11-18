@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GeoMovementComponent.h"
 
 #include "GeoCharacter.generated.h"
 
@@ -23,7 +24,10 @@ public:
 	AGeoCharacter(const FObjectInitializer& ObjectInitializer);
 	void UpdateAimRotation(float DeltaSeconds);
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
-	UGeoMovementComponent* GetGeoMovementComponent() const { return GeoMovementComponent; }
+	UGeoMovementComponent* GetGeoMovementComponent() const
+	{
+		return CastChecked<UGeoMovementComponent>(GetMovementComponent());
+	}
 
 	static FColor GetColorForCharacter(const AGeoCharacter* Character);
 
@@ -56,9 +60,6 @@ private:
 
 	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoInputComponent> GeoInputComponent;
-
-	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UGeoMovementComponent> GeoMovementComponent;
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = Character)
