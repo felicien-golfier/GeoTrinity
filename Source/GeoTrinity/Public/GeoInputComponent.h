@@ -42,8 +42,8 @@ public:
 	}
 
 	template<class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
-	void BindAbilityActions(UserClass* object, PressedFuncType pressedFunc, ReleasedFuncType releasedFunc,
-		HeldFuncType heldFunc);
+	void BindAbilityActions(UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc,
+		HeldFuncType HeldFunc);
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
@@ -65,30 +65,30 @@ private:
 // template function definition must be in .h
 // because the compiler must see its full definition in every translation unit
 template<class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
-void UGeoInputComponent::BindAbilityActions(UserClass* object, PressedFuncType pressedFunc,
-	ReleasedFuncType releasedFunc, HeldFuncType heldFunc)
+void UGeoInputComponent::BindAbilityActions(UserClass* Object, PressedFuncType PressedFunc,
+	ReleasedFuncType ReleasedFunc, HeldFuncType HeldFunc)
 {
 	checkf(InputConfig, TEXT("Please fill in Input config in %s"), *GetName());
 
-	for (const FGeoInputAction& action : InputConfig->AbilityInputActions)
+	for (const auto& [InputAction, InputTag] : InputConfig->AbilityInputActions)
 	{
-		if (!(action.InputAction && action.InputTag.IsValid()))
+		if (!(InputAction && InputTag.IsValid()))
 		{
 			continue;
 		}
 
-		if (pressedFunc)
+		if (PressedFunc)
 		{
-			BindAction(action.InputAction, ETriggerEvent::Started, object, pressedFunc, action.InputTag);
+			BindAction(InputAction, ETriggerEvent::Started, Object, PressedFunc, InputTag);
 		}
-		if (releasedFunc)
+		if (ReleasedFunc)
 		{
-			BindAction(action.InputAction, ETriggerEvent::Completed, object, releasedFunc, action.InputTag);
+			BindAction(InputAction, ETriggerEvent::Completed, Object, ReleasedFunc, InputTag);
 		}
-		if (heldFunc)
+		if (HeldFunc)
 		{
 			// Triggered means the function is called every frame as long as the button is pressed (Start is only once)
-			BindAction(action.InputAction, ETriggerEvent::Triggered, object, heldFunc, action.InputTag);
+			BindAction(InputAction, ETriggerEvent::Triggered, Object, HeldFunc, InputTag);
 		}
 	}
 }

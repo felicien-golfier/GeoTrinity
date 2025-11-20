@@ -39,6 +39,12 @@ public:
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, MaxHealth)
 
+	/** Meta attribute: an attribute used to make calculations (the player does not really hold a "damage" stat).
+	 * We don't need replication here, as the impact of incoming damage will itself be replicated (impact on health) */
+	UPROPERTY(BlueprintReadOnly, Category = "Meta")
+	FGameplayAttributeData IncomingDamage;
+	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, IncomingDamage)
+
 protected:
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
