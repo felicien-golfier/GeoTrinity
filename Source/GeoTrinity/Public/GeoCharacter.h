@@ -7,6 +7,7 @@
 
 #include "GeoCharacter.generated.h"
 
+class UGeoGameplayAbility;
 struct FGameplayTag;
 class UGameplayEffect;
 class UGeoAttributeSetBase;
@@ -51,6 +52,7 @@ public:
 	// GAS
 	void InitAbilityActorInfo();
 	void InitializeDefaultAttributes();
+	void AddCharacterDefaultAbilities();
 	UFUNCTION(Server, Reliable)
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
 
@@ -75,6 +77,14 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = GAS)
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
+	
+	// TODO: create the data asset that ID'es each Ability by a unique tag
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
+	//TArray<FGameplayTag> StartupAbilityInputTags;
+	
+	// In the mean time, for ease of use:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
+	TArray<TSubclassOf<UGeoGameplayAbility>> StartupAbilities;
 
 public:
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (RowType = CharacterStats))

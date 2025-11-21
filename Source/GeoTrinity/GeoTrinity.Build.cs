@@ -18,13 +18,17 @@ public class GeoTrinity : ModuleRules
 			"GeometryFramework", 
 			"GeometryCore",
 			"DynamicMesh",
-			"GameplayAbilities"
+			"GameplayAbilities",
+			"SlateCore",
+			"Slate",
+			"DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"GameplayTags",
 			"GameplayTasks",
-			"UMG"
+			"UMG", 
+			"Niagara"
 		});
 
 		// Uncomment if you are using Slate UI
