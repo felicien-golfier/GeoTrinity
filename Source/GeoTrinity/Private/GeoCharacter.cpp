@@ -29,8 +29,6 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
 	GeoInputComponent->SetIsReplicated(true);
 
-	// Use the Character's movement component, which we've overridden to our class above
-
 	// Disable orient-to-movement; we will rotate manually toward aim
 	bUseControllerRotationYaw = false;
 
@@ -146,11 +144,13 @@ void AGeoCharacter::InitializeDefaultAttributes()
 
 void AGeoCharacter::AddCharacterDefaultAbilities()
 {
-	checkf(AbilitySystemComponent, TEXT("%s() AbilitySystemComponent is null. Did we call this too soon ?"), *FString(__FUNCTION__))
-	
-	if (!HasAuthority())
+	checkf(AbilitySystemComponent, TEXT("%s() AbilitySystemComponent is null. Did we call this too soon ?"),
+		*FString(__FUNCTION__))
+
+		if (!HasAuthority())
 	{
-		UE_LOG(LogGeoASC, Warning, TEXT("This should not be the case, as only the server should be calling this method"));
+		UE_LOG(LogGeoASC, Warning,
+			TEXT("This should not be the case, as only the server should be calling this method"));
 	}
 	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilities);
 }
@@ -159,7 +159,9 @@ void AGeoCharacter::AbilityInputTagPressed(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s pressed"), *inputTag.ToString());
 	if (!AbilitySystemComponent)
+	{
 		return;
+	}
 	AbilitySystemComponent->AbilityInputTagPressed(inputTag);
 }
 
@@ -167,7 +169,9 @@ void AGeoCharacter::AbilityInputTagReleased(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s released"), *inputTag.ToString());
 	if (!AbilitySystemComponent)
+	{
 		return;
+	}
 	AbilitySystemComponent->AbilityInputTagReleased(inputTag);
 }
 
@@ -175,7 +179,9 @@ void AGeoCharacter::AbilityInputTagHeld(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s heeeeeld"), *inputTag.ToString());
 	if (!AbilitySystemComponent)
+	{
 		return;
+	}
 	AbilitySystemComponent->AbilityInputTagHeld(inputTag);
 }
 

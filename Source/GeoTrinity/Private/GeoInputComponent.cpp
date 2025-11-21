@@ -75,13 +75,12 @@ void UGeoInputComponent::BindInput(UInputComponent* PlayerInputComponent)
 
 void UGeoInputComponent::MoveFromInput(const FInputActionInstance& Instance)
 {
-	GetGeoCharacter()->AddMovementInput(
-		FVector(Instance.GetValue().Get<FVector2D>().Y, Instance.GetValue().Get<FVector2D>().X, 0.f));
+	GetGeoCharacter()->AddMovementInput(FVector(Instance.GetValue().Get<FVector2D>(), 0.f));
 }
 
 void UGeoInputComponent::LookFromInput(const FInputActionInstance& Instance)
 {
-	const FVector2D LookInput = Instance.GetValue().Get<FVector2D>();
+	const FVector2D LookInput = FVector2D(Instance.GetValue().Get<FVector2D>());
 	GetGeoCharacter()->DrawDebugVectorFromCharacter(FVector(LookInput, 0.f),
 		FString::Printf(TEXT("Look Input vector from %s"), *GetGeoCharacter()->GetName()));
 
