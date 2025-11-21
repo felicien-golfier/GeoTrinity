@@ -2,14 +2,61 @@
 
 #include "GeoInputComponent.h"
 
+#include "DrawDebugHelpers.h"
+#include "Engine/Engine.h"
 #include "EnhancedInputComponent.h"
 #include "GeoCharacter.h"
-#include "GeoPlayerController.h"
+#include "Kismet/GameplayStatics.h"
 #include "VisualLogger/VisualLogger.h"
 
 UGeoInputComponent::UGeoInputComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
+}
+
+void UGeoInputComponent::TickComponent(float DeltaSeconds, ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaSeconds, TickType, ThisTickFunction);
+
+	UpdateMouseLook();
+}
+
+void UGeoInputComponent::UpdateMouseLook()
+{
+
+	AGeoCharacter* GeoCharacter = GetGeoCharacter();
+	if (!IsValid(GeoCharacter))
+	{
+		return;
+	}
+
+	APlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoController();
+	if (!IsValid(GeoPlayerController))
+	{
+		return;
+	}
+
+	FVector2D ScreenPosition;
+	ULocalPlayer* const LocalPlayer = GeoPlayerController->GetLocalPlayer();
+	if (!IsValid(LocalPlayer) || !IsValid(LocalPlayer->ViewportClient)
+		|| !LocalPlayer->ViewportClient->GetMousePosition(ScreenPosition))
+	{
+		return;
+	}
+
+	if (!ScreenPosition.Equals(LastMouseInput, 1.f))
+	{
+		LastMouseInput = ScreenPosition;
+		GeoPlayerController->SetShowMouseCursor(true);
+		FVector WorldLocation, WorldDirection;
+		UGameplayStatics::DeprojectScreenToWorld(GeoPlayerController, ScreenPosition, WorldLocation, WorldDirection);
+
+		const FVector2D LookDirection = FVector2d(WorldLocation - GeoCharacter->GetActorLocation());
+		LastLookInput = LookDirection;
+		GeoCharacter->DrawDebugVectorFromCharacter(FVector(LookDirection, 0.f),
+			FString::Printf(TEXT("Look vector from %s"), *GeoCharacter->GetName()));
+	}
 }
 
 void UGeoInputComponent::BindInput(UInputComponent* PlayerInputComponent)
@@ -34,18 +81,27 @@ void UGeoInputComponent::MoveFromInput(const FInputActionInstance& Instance)
 
 void UGeoInputComponent::LookFromInput(const FInputActionInstance& Instance)
 {
-	// Cache latest right stick / look vector
+	const FVector2D LookInput = Instance.GetValue().Get<FVector2D>();
+	GetGeoCharacter()->DrawDebugVectorFromCharacter(FVector(LookInput, 0.f),
+		FString::Printf(TEXT("Look Input vector from %s"), *GetGeoCharacter()->GetName()));
+
 	if (Instance.GetTriggerEvent() == ETriggerEvent::Completed)
 	{
 		LastLookInput = FVector2D::ZeroVector;
 	}
 	else
 	{
-		LastLookInput = Instance.GetValue().Get<FVector2D>();
+		GetGeoCharacter()->GetGeoController()->SetShowMouseCursor(false);
+		LastLookInput = LookInput;
 	}
 }
 
 AGeoCharacter* UGeoInputComponent::GetGeoCharacter() const
 {
-	return CastChecked<AGeoCharacter>(GetOuter());
+	return Cast<AGeoCharacter>(GetOuter());
+}
+bool UGeoInputComponent::GetLookVector(FVector2D& OutLook) const
+{
+	OutLook = LastLookInput;
+	return !LastLookInput.IsNearlyZero(ControllerDriftThreshold);
 }

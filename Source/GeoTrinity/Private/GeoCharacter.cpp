@@ -21,8 +21,10 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh Component"));
 	MeshComponent->SetIsReplicated(true);
 	MeshComponent->SetupAttachment(GetCapsuleComponent());
-	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// Set default collision profiles
+	MeshComponent->SetCollisionProfileName(TEXT("GeoShape"));
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("GeoCapsule"));
 
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
 	GeoInputComponent->SetIsReplicated(true);
@@ -32,8 +34,6 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	// Disable orient-to-movement; we will rotate manually toward aim
 	bUseControllerRotationYaw = false;
 
-	GetCharacterMovement()->GravityScale = 0.0f;
-	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 }
 
@@ -46,51 +46,11 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 
 void AGeoCharacter::UpdateAimRotation(float DeltaSeconds)
 {
-	// Compute desired aim yaw
-	float DesiredYaw = GetActorRotation().Yaw;
-	bool bHasAim = false;
-
-	// Prior Stick over mouse orientation.
-	if (IsValid(GeoInputComponent))
+	FVector2D Look;
+	if (GeoInputComponent->GetLookVector(Look))
 	{
-		FVector2D Stick;
-		if (GeoInputComponent->GetLookVector(Stick))
-		{
-			DesiredYaw = FMath::Atan2(Stick.Y, Stick.X) * (180.f / PI);
-			bHasAim = true;
-			// If joystick, do not show mouscursor
-			CastChecked<APlayerController>(GetController())->SetShowMouseCursor(false);
-		}
-	}
+		float DesiredYaw = FMath::Atan2(Look.Y, Look.X) * (180.f / PI);
 
-	if (!bHasAim)
-	{
-		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-		{
-			FVector WorldOrigin, WorldDir;
-			if (PlayerController->DeprojectMousePositionToWorld(WorldOrigin, WorldDir))
-			{
-				// Intersect ray with plane Z = Actor.Z
-				const float Z = GetActorLocation().Z;
-				if (!FMath::IsNearlyZero(WorldDir.Z))
-				{
-					const float T = (Z - WorldOrigin.Z) / WorldDir.Z;
-					if (T > 0.f)
-					{
-						const FVector Hit = WorldOrigin + WorldDir * T;
-						const FVector ToHit = (Hit - GetActorLocation());
-						const FRotator AimRot = ToHit.Rotation();
-						DesiredYaw = AimRot.Yaw;
-						bHasAim = true;
-						PlayerController->SetShowMouseCursor(true);
-					}
-				}
-			}
-		}
-	}
-
-	if (bHasAim)
-	{
 		// Apply rotation locally
 		FRotator R = GetActorRotation();
 		R.Yaw = DesiredYaw;
@@ -99,7 +59,10 @@ void AGeoCharacter::UpdateAimRotation(float DeltaSeconds)
 		if (!HasAuthority())
 		{
 			TimeSinceLastAimSend += DeltaSeconds;
-			if (TimeSinceLastAimSend > 0.03f && FMath::Abs(DesiredYaw - LastSentAimYaw) > 0.5f)
+			constexpr float MaxTimeBetweenAimUpdates = 0.03f;
+			constexpr float MinYawToUpdateServer = 0.5f;
+			if (TimeSinceLastAimSend > MaxTimeBetweenAimUpdates
+				&& FMath::Abs(DesiredYaw - LastSentAimYaw) > MinYawToUpdateServer)
 			{
 				if (AGeoPlayerController* GC = Cast<AGeoPlayerController>(GetController()))
 				{
@@ -225,9 +188,7 @@ FColor AGeoCharacter::GetColorForCharacter(const AGeoCharacter* Character)
 	}
 
 	static const FColor Palette[] = {FColor::Red, FColor::Green, FColor::Blue, FColor::Yellow, FColor::Cyan,
-		FColor::Magenta, FColor(255, 165, 0),   // Orange
-		FColor(128, 0, 128),   // Purple
-		FColor::Turquoise, FColor::Silver};
+		FColor::Magenta, FColor::Orange, FColor::Emerald, FColor::Purple, FColor::Turquoise, FColor::Silver};
 
 	return Palette[Character->GetUniqueID() % std::size(Palette)];
 }
@@ -238,3 +199,28 @@ FColor AGeoCharacter::GetColorForCharacter(const AGeoCharacter* Character)
 // 		FBox(FVector(GetBox().Min, 0.f) + GetActorLocation(), FVector(GetBox().Max, 0.f) + GetActorLocation()), Color,
 // 		TEXT("LocalTime %s, delta time %.5f"), *InputStep.Time.ToString(), InputStep.DeltaTimeSeconds);
 // }
+
+void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage) const
+{
+	DrawDebugVectorFromCharacter(Direction, DebugMessage, GetColorForCharacter(this));
+}
+
+void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage,
+	FColor Color) const
+{
+	// Debug: draw a world-space line (arrow) from the character showing the look vector
+	if (UWorld* World = GetWorld())
+	{
+		const FVector Start = GetActorLocation();
+		const FVector Dir = Direction.GetSafeNormal();
+		constexpr float Length = 500.f;   // visualized length of the vector
+		const FVector End = Start + Dir * Length;
+
+		// Single-frame arrow (non-persistent) so it updates every tick without clutter
+		DrawDebugDirectionalArrow(World, Start, End, 20.f, Color,
+			/*bPersistentLines*/ false,
+			/*LifeTime*/ 0.f, /*DepthPriority*/ 0, /*Thickness*/ 2.f);
+
+		UE_VLOG_ARROW(this, LogGeoTrinity, VeryVerbose, Start, End, Color, TEXT("%s"), *DebugMessage);
+	}
+}

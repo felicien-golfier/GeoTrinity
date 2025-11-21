@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GeoMovementComponent.h"
+#include "GeoPlayerController.h"
 
 #include "GeoCharacter.generated.h"
 
@@ -26,10 +27,14 @@ public:
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const
 	{
-		return CastChecked<UGeoMovementComponent>(GetMovementComponent());
+		return Cast<UGeoMovementComponent>(GetMovementComponent());
 	}
 
+	AGeoPlayerController* GetGeoController() const { return Cast<AGeoPlayerController>(GetController()); }
+
 	static FColor GetColorForCharacter(const AGeoCharacter* Character);
+	void DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage) const;
+	void DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage, FColor Color) const;
 
 protected:
 	UFUNCTION(BlueprintCallable, Category = "GAS")

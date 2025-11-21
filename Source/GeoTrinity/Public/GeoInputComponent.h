@@ -23,7 +23,10 @@ class GEOTRINITY_API UGeoInputComponent : public UEnhancedInputComponent
 public:
 	// Sets default values for this component's properties
 	UGeoInputComponent();
+	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType,
+		FActorComponentTickFunction* ThisTickFunction) override;
 
+	void UpdateMouseLook();
 	void BindInput(UInputComponent* PlayerInputComponent);
 
 	UFUNCTION()
@@ -35,11 +38,7 @@ public:
 	AGeoCharacter* GetGeoCharacter() const;
 
 	// Returns true if there is a valid non-zero look vector from right stick
-	bool GetLookVector(FVector2D& OutLook) const
-	{
-		OutLook = LastLookInput;
-		return !LastLookInput.IsNearlyZero(0.05f);
-	}
+	bool GetLookVector(FVector2D& OutLook) const;
 
 	template<class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
 	void BindAbilityActions(UserClass* object, PressedFuncType pressedFunc, ReleasedFuncType releasedFunc,
@@ -60,6 +59,13 @@ private:
 	// Cached latest right stick vector in viewport space (X,Y), not normalized. Zero when idle.
 	UPROPERTY(Transient)
 	FVector2D LastLookInput = FVector2D::ZeroVector;
+	UPROPERTY(Transient)
+	FVector2D LastMouseLookInput = FVector2D::ZeroVector;
+
+	UPROPERTY(Transient)
+	FVector2D LastMouseInput = FVector2D::ZeroVector;
+
+	constexpr static float ControllerDriftThreshold = 0.1f;
 };
 
 // template function definition must be in .h
