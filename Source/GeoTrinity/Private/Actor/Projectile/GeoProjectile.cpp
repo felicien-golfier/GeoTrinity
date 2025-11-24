@@ -17,7 +17,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoProjectile::AGeoProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
+	
 	bReplicates = true;
 	
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
@@ -36,18 +38,45 @@ AGeoProjectile::AGeoProjectile()
 	ProjectileMovement->MaxSpeed = 550.f;
 	ProjectileMovement->ProjectileGravityScale = 0.f;
 
+	DistanceSpanSqr = FMath::Square(DistanceSpan);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::LifeSpanExpired()
+{
+	if (LifeSpanInSec != 0)
+	{
+		EndProjectileLife();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	float elapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
+	if (elapsedDistanceSqr >= FMath::Square(DistanceSpanSqr))
+	{
+		EndProjectileLife();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	SetActorTickEnabled(true);
+	
 	SetLifeSpan(LifeSpanInSec);
 	
 	Sphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereOverlap);
 
 	LoopingSoundComponent = UGameplayStatics::SpawnSoundAttached(LoopingSound, GetRootComponent(), NAME_None,
 		FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true);
+	
+	InitialPosition = GetActorLocation();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -147,6 +176,12 @@ void AGeoProjectile::PlayImpactFx() const
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ImpactEffect, actorLocation);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::EndProjectileLife()
+{
+	Destroy();
 }
 
 

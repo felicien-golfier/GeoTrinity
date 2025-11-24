@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "AbilitySystem/GeoAttributeSetBase.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"

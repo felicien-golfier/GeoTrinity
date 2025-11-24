@@ -18,6 +18,8 @@ class GEOTRINITY_API AGeoProjectile : public AActor
 	GENERATED_BODY()
 public:
 	AGeoProjectile();
+	virtual void LifeSpanExpired() override;
+	virtual void Tick(float DeltaSeconds) override;
 	
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -45,14 +47,21 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	virtual void PlayImpactFx() const;
 	
+	virtual void EndProjectileLife();
+	
 private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> Sphere;
 	
-	UPROPERTY(EditAnywhere)
-	float LifeSpanInSec = 15.f;
+	UPROPERTY(EditAnywhere, meta=(Tooltip="Safe guard in case distance check fails"))
+	float LifeSpanInSec = 30.f;
+	
+	UPROPERTY(EditAnywhere, meta=(ClampMin="0"))
+	float DistanceSpan = 1000.f;
 	
 	bool bHit {false};
+	FVector InitialPosition;
+	float DistanceSpanSqr = 0.f;
 
 	/** Cosmetic (let the juice flow) **/
 	UPROPERTY(EditAnywhere)
