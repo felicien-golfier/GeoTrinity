@@ -57,12 +57,7 @@ public:
 
 private:
 	// Cached latest right stick vector in viewport space (X,Y), not normalized. Zero when idle.
-	UPROPERTY(Transient)
 	FVector2D LastLookInput = FVector2D::ZeroVector;
-	UPROPERTY(Transient)
-	FVector2D LastMouseLookInput = FVector2D::ZeroVector;
-
-	UPROPERTY(Transient)
 	FVector2D LastMouseInput = FVector2D::ZeroVector;
 
 	constexpr static float ControllerDriftThreshold = 0.1f;

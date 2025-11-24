@@ -158,7 +158,7 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	if (HasAuthority())
 	{
 		ApplyEffectToTarget(OtherActor);
-		Destroy();
+		EndProjectileLife();
 	}
 }
 

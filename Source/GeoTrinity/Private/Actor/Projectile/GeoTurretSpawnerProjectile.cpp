@@ -1,23 +1,24 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Actor/Projectile/TurretSpawnerProjectile.h"
+#include "Actor/Projectile/GeoTurretSpawnerProjectile.h"
 
 #include "Actor/Turret/GeoTurretBase.h"
+#include "Characters/GeoPlayableCharacter.h"
 #include "GameFramework/PlayerState.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-ATurretSpawnerProjectile::ATurretSpawnerProjectile()
+AGeoTurretSpawnerProjectile::AGeoTurretSpawnerProjectile()
 {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float ATurretSpawnerProjectile::GetTurretLevel_Implementation() const
+float AGeoTurretSpawnerProjectile::GetTurretLevel_Implementation() const
 {
 	return 1.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void ATurretSpawnerProjectile::EndProjectileLife()
+void AGeoTurretSpawnerProjectile::EndProjectileLife()
 {
 	SpawnTurretActor();
 
@@ -25,7 +26,7 @@ void ATurretSpawnerProjectile::EndProjectileLife()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void ATurretSpawnerProjectile::SpawnTurretActor() const
+void AGeoTurretSpawnerProjectile::SpawnTurretActor() const
 {
 	checkf(IsValid(Owner), TEXT("Owner is invalid!"));
 	if (!Owner->HasAuthority())
@@ -41,9 +42,9 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 	APawn* Pawn = Cast<APawn>(Owner);
 	if (!IsValid(Pawn))
 	{
-		if (const APlayerState* PlayerState = Cast<APlayerState>(Owner))
+		if (const APlayerState* PlayerController = Cast<APlayerState>(Owner))
 		{
-			Pawn = PlayerState->GetPawn();
+			Pawn = PlayerController->GetPawn();
 		}
 		else
 		{
@@ -68,4 +69,15 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 	Turret->InitTurretData(Data);
 
 	Turret->FinishSpawning(SpawnTransform);
+}
+
+bool AGeoTurretSpawnerProjectile::IsValidOverlap(const AActor* OtherActor)
+{
+	bool bHasValidOverlap = Super::IsValidOverlap(OtherActor);
+	if (!bHasValidOverlap)
+	{
+		return false;
+	}
+
+	return !OtherActor->IsA(AGeoTurretBase::StaticClass()) && !OtherActor->IsA(AGeoPlayableCharacter::StaticClass());
 }

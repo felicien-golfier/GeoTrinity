@@ -37,7 +37,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Destroyed() override;
 	void ApplyEffectToTarget(AActor* OtherActor);
-	bool IsValidOverlap(const AActor* OtherActor);
+	virtual bool IsValidOverlap(const AActor* OtherActor);
 	void StopLoopingSound() const;
 
 	UFUNCTION()
@@ -62,11 +62,8 @@ private:
 
 	bool bHit{false};
 
-	UPROPERTY(Transient)
 	FVector InitialPosition;
-
-	UPROPERTY(Transient)
-	float DistanceSpanSqr = 0.f;
+	float DistanceSpanSqr;
 
 	/** Cosmetic (let the juice flow) **/
 	UPROPERTY(EditAnywhere)

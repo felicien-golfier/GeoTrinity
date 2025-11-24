@@ -4,27 +4,30 @@
 
 #include "CoreMinimal.h"
 #include "GeoProjectile.h"
-#include "TurretSpawnerProjectile.generated.h"
+
+#include "GeoTurretSpawnerProjectile.generated.h"
 
 class AGeoTurretBase;
 /**
  * An actor used to spawn a turret
  */
 UCLASS()
-class GEOTRINITY_API ATurretSpawnerProjectile : public AGeoProjectile
+class GEOTRINITY_API AGeoTurretSpawnerProjectile : public AGeoProjectile
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	ATurretSpawnerProjectile();
-	
+	AGeoTurretSpawnerProjectile();
+
 	UFUNCTION(BlueprintNativeEvent, Category = "Turret")
 	float GetTurretLevel() const;
 
+	virtual bool IsValidOverlap(const AActor* OtherActor) override;
+
 protected:
 	virtual void EndProjectileLife() override;
-	
+
 	UPROPERTY(EditDefaultsOnly, Category = Turret)
 	TSubclassOf<AGeoTurretBase> TurretActorClass;
 
