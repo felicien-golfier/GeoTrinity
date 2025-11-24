@@ -1,7 +1,7 @@
 #include "GeoCharacter.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/GeoAttributeSetBase.h"
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "Components/CapsuleComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"

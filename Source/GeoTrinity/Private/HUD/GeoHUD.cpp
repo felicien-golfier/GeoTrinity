@@ -5,7 +5,7 @@
 
 #include "GeoPlayerController.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/GeoAttributeSetBase.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "Blueprint/UserWidget.h"
 #include "HUD/GeoUserWidget.h"
 

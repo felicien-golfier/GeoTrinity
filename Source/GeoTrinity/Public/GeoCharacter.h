@@ -7,10 +7,10 @@
 
 #include "GeoCharacter.generated.h"
 
+class UCharacterAttributeSet;
 class UGeoGameplayAbility;
 struct FGameplayTag;
 class UGameplayEffect;
-class UGeoAttributeSetBase;
 class UGeoAbilitySystemComponent;
 class UGeoInputComponent;
 class UDynamicMeshComponent;
@@ -73,7 +73,7 @@ protected:
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = GAS)
-	TObjectPtr<UGeoAttributeSetBase> AttributeSet;
+	TObjectPtr<UCharacterAttributeSet> AttributeSet;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = GAS)
 	TSubclassOf<UGameplayEffect> DefaultAttributes;

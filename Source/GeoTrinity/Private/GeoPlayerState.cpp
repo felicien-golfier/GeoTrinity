@@ -4,7 +4,7 @@
 #include "GeoPlayerState.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/GeoAttributeSetBase.h"
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 
 AGeoPlayerState::AGeoPlayerState()
 {
@@ -18,7 +18,7 @@ AGeoPlayerState::AGeoPlayerState()
 	
 	// Adding an attribute set as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
-	AttributeSetBase = CreateDefaultSubobject<UGeoAttributeSetBase>(TEXT("AttributeSetBase"));
+	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
 
 	SetNetUpdateFrequency(100.0f);
 }

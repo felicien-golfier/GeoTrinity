@@ -80,7 +80,6 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(FGameplayTag const& inputTa
 		{
 			TryActivateAbility(abilitySpec.Handle);
 		}
-		
 	}
 }
 

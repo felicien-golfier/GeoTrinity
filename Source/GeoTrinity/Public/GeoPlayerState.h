@@ -9,7 +9,7 @@
 
 #include "GeoPlayerState.generated.h"
 
-class UGeoAttributeSetBase;
+class UCharacterAttributeSet;
 class UGeoAbilitySystemComponent;
 /**
  * Deriving just to set up basic RPG stuff for now (felt awkward to put all of this in the controller)
@@ -28,14 +28,14 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	/** END Implement IAbilitySystemInterface */
 
-	UGeoAttributeSetBase* GetGeoAttributeSetBase() const { return AttributeSetBase; }
+	UCharacterAttributeSet* GetGeoAttributeSetBase() const { return AttributeSetBase; }
 
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY()
-	TObjectPtr<UGeoAttributeSetBase> AttributeSetBase;
+	TObjectPtr<UCharacterAttributeSet> AttributeSetBase;
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UInputAction> MoveAction;
