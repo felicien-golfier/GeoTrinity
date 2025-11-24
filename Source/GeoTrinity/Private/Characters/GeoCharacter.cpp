@@ -1,14 +1,11 @@
-#include "GeoCharacter.h"
+#include "Characters/GeoCharacter.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/GeoAttributeSetBase.h"
 #include "Components/CapsuleComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
-#include "GeoPlayerController.h"
-#include "GeoPlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "HUD/GeoHUD.h"
 
 // Sets default values
 AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
@@ -35,56 +32,13 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 }
 
-void AGeoCharacter::Tick(float DeltaSeconds)
+void AGeoCharacter::InitAbilityActorInfo()
 {
-	Super::Tick(DeltaSeconds);
-
-	UpdateAimRotation(DeltaSeconds);
-}
-
-void AGeoCharacter::UpdateAimRotation(float DeltaSeconds)
-{
-	FVector2D Look;
-	if (GeoInputComponent->GetLookVector(Look))
-	{
-		float DesiredYaw = FMath::Atan2(Look.Y, Look.X) * (180.f / PI);
-
-		// Apply rotation locally
-		FRotator R = GetActorRotation();
-		R.Yaw = DesiredYaw;
-		SetActorRotation(R);
-
-		if (!HasAuthority())
-		{
-			TimeSinceLastAimSend += DeltaSeconds;
-			constexpr float MaxTimeBetweenAimUpdates = 0.03f;
-			constexpr float MinYawToUpdateServer = 0.5f;
-			if (TimeSinceLastAimSend > MaxTimeBetweenAimUpdates
-				&& FMath::Abs(DesiredYaw - LastSentAimYaw) > MinYawToUpdateServer)
-			{
-				if (AGeoPlayerController* GC = Cast<AGeoPlayerController>(GetController()))
-				{
-					GC->ServerSetAimYaw(DesiredYaw);
-					LastSentAimYaw = DesiredYaw;
-					TimeSinceLastAimSend = 0.f;
-				}
-			}
-		}
-	}
 }
 
 void AGeoCharacter::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
 {
 	ApplyEffectToSelf(gameplayEffectClass, 1.0f);
-}
-
-void AGeoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	GeoInputComponent->BindInput(PlayerInputComponent);
-
-	GeoInputComponent->BindAbilityActions(this, &ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased,
-		&ThisClass::AbilityInputTagHeld);
 }
 
 // Server Only
@@ -95,36 +49,6 @@ void AGeoCharacter::PossessedBy(AController* NewController)
 	InitAbilityActorInfo();
 	InitializeDefaultAttributes();
 	AddCharacterDefaultAbilities();
-}
-
-void AGeoCharacter::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-
-	// Set the ASC for clients. Server does this in PossessedBy.
-	InitAbilityActorInfo();
-}
-
-void AGeoCharacter::InitAbilityActorInfo()
-{
-	AGeoPlayerState* PS = GetPlayerState<AGeoPlayerState>();
-	if (!PS)
-	{
-		return;
-	}
-
-	AbilitySystemComponent = Cast<UGeoAbilitySystemComponent>(PS->GetAbilitySystemComponent());
-	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
-	AttributeSet = PS->GetGeoAttributeSetBase();
-
-	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetController()))
-	{
-		// Hud only present locally
-		if (AGeoHUD* Hud = Cast<AGeoHUD>(GeoPlayerController->GetHUD()))
-		{
-			Hud->InitOverlay(GeoPlayerController, PS, AbilitySystemComponent, AttributeSet);
-		}
-	}
 }
 
 void AGeoCharacter::InitializeDefaultAttributes()
@@ -153,36 +77,6 @@ void AGeoCharacter::AddCharacterDefaultAbilities()
 			TEXT("This should not be the case, as only the server should be calling this method"));
 	}
 	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilities);
-}
-
-void AGeoCharacter::AbilityInputTagPressed(FGameplayTag inputTag)
-{
-	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s pressed"), *inputTag.ToString());
-	if (!AbilitySystemComponent)
-	{
-		return;
-	}
-	AbilitySystemComponent->AbilityInputTagPressed(inputTag);
-}
-
-void AGeoCharacter::AbilityInputTagReleased(FGameplayTag inputTag)
-{
-	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s released"), *inputTag.ToString());
-	if (!AbilitySystemComponent)
-	{
-		return;
-	}
-	AbilitySystemComponent->AbilityInputTagReleased(inputTag);
-}
-
-void AGeoCharacter::AbilityInputTagHeld(FGameplayTag inputTag)
-{
-	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s heeeeeld"), *inputTag.ToString());
-	if (!AbilitySystemComponent)
-	{
-		return;
-	}
-	AbilitySystemComponent->AbilityInputTagHeld(inputTag);
 }
 
 void AGeoCharacter::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level)

@@ -2,7 +2,7 @@
 
 #include "GeoGameMode.h"
 
-#include "GeoCharacter.h"
+#include "Characters/GeoCharacter.h"
 
 AGeoGameMode::AGeoGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {

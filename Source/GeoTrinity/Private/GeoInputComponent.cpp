@@ -2,10 +2,10 @@
 
 #include "GeoInputComponent.h"
 
+#include "Characters/GeoCharacter.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/Engine.h"
 #include "EnhancedInputComponent.h"
-#include "GeoCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "VisualLogger/VisualLogger.h"
 

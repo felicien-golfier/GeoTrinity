@@ -1,6 +1,6 @@
 ﻿#include "GeoMovementComponent.h"
 
-#include "GeoCharacter.h"
+#include "Characters/GeoCharacter.h"
 
 UGeoMovementComponent::UGeoMovementComponent()
 {
