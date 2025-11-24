@@ -1,7 +1,7 @@
 ﻿#include "Characters/GeoPlayableCharacter.h"
 
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/GeoAttributeSetBase.h"
 #include "GeoInputComponent.h"
 #include "GeoPlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"

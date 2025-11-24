@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameplayEffectTypes.h"
 #include "AbilitySystem/GeoAscTypes.h"
+#include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameplayEffectTypes.h"
+
 #include "GeoProjectile.generated.h"
 
 class UProjectileMovementComponent;
@@ -20,18 +21,17 @@ public:
 	AGeoProjectile();
 	virtual void LifeSpanExpired() override;
 	virtual void Tick(float DeltaSeconds) override;
-	
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
-	UPROPERTY(BlueprintReadWrite, meta=(ExposeOnSpawn = true))
+	UPROPERTY(BlueprintReadWrite, meta = (ExposeOnSpawn = true))
 	FGameplayEffectSpecHandle DamageEffectSpecHandle;
 	FDamageEffectParams DamageEffectParams;
 
 	UPROPERTY()
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;
-	
+
 protected:
 	/** Functions **/
 	virtual void BeginPlay() override;
@@ -39,28 +39,33 @@ protected:
 	void ApplyEffectToTarget(AActor* OtherActor);
 	bool IsValidOverlap(const AActor* OtherActor);
 	void StopLoopingSound() const;
-	
+
 	UFUNCTION()
-	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherOverlappedComponent,
-		int32 OtherBodyIndex, bool bFromSweep, FHitResult const& SweepResult);
-	
+	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
+		const FHitResult& SweepResult);
+
 	UFUNCTION(BlueprintCallable)
 	virtual void PlayImpactFx() const;
-	
+
 	virtual void EndProjectileLife();
-	
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> Sphere;
-	
-	UPROPERTY(EditAnywhere, meta=(Tooltip="Safe guard in case distance check fails"))
+
+	UPROPERTY(EditAnywhere, meta = (Tooltip = "Safe guard in case distance check fails"))
 	float LifeSpanInSec = 30.f;
-	
-	UPROPERTY(EditAnywhere, meta=(ClampMin="0"))
-	float DistanceSpan = 1000.f;
-	
-	bool bHit {false};
+
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
+	float DistanceSpan = 100.f;
+
+	bool bHit{false};
+
+	UPROPERTY(Transient)
 	FVector InitialPosition;
+
+	UPROPERTY(Transient)
 	float DistanceSpanSqr = 0.f;
 
 	/** Cosmetic (let the juice flow) **/
@@ -75,7 +80,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> LoopingSoundComponent;
-	
+
 	UPROPERTY(EditAnywhere)
 	FString ProjectileName;
 };
