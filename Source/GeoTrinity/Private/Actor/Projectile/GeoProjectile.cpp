@@ -56,7 +56,7 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	
 	float elapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
-	if (elapsedDistanceSqr >= FMath::Square(DistanceSpanSqr))
+	if (elapsedDistanceSqr >= DistanceSpanSqr)
 	{
 		EndProjectileLife();
 	}
