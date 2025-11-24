@@ -1,33 +1,38 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileSpell.h"
 
 #include "Actor/Projectile/GeoProjectile.h"
 
-void UGeoProjectileSpell::SpawnProjectile(FVector const& projectileTargetLocation)
+void UGeoProjectileSpell::SpawnProjectile(const FVector& projectileTargetLocation)
 {
-	AActor* pAvatar = GetAvatarActorFromActorInfo();
-	const bool bIsServer = pAvatar ? pAvatar->HasAuthority() : false;
-	if (!bIsServer)
+	const AActor* Actor = GetAvatarActorFromActorInfo();
+	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
+	if (!Actor->HasAuthority())
+	{
 		return;
+	}
 
-	FRotator rotation = (projectileTargetLocation - pAvatar->GetActorLocation()).Rotation();
+	FRotator rotation = (projectileTargetLocation - Actor->GetActorLocation()).Rotation();
 
-	FTransform const spawnTransform{rotation.Quaternion(), pAvatar->GetActorLocation()};
-	
+	const FTransform spawnTransform{rotation.Quaternion(), Actor->GetActorLocation()};
+
 	// Create projectile
-	AActor* pOwner = GetOwningActorFromActorInfo();
+	AActor* ProjectileOwner = GetOwningActorFromActorInfo();
 	checkf(ProjectileClass, TEXT("No ProjectileClass in the projectile spell!"));
-	AGeoProjectile* pProjectile = GetWorld()->SpawnActorDeferred<AGeoProjectile>(ProjectileClass, spawnTransform, pOwner, 
-		Cast<APawn>(pOwner), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-	if (!pProjectile)
+	AGeoProjectile* GeoProjectile = GetWorld()->SpawnActorDeferred<AGeoProjectile>(ProjectileClass, spawnTransform,
+		ProjectileOwner, Cast<APawn>(ProjectileOwner), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+	if (!GeoProjectile)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No valid Projectile spawned !"));
 		return;
-	
+	}
+
 	// Append GAS data
 	checkf(DamageEffectClass, TEXT("No DamageEffectClass in the projectile spell!"));
 
-	pProjectile->DamageEffectParams = MakeDamageEffectParamsFromClassDefaults(nullptr);
-	
-	pProjectile->FinishSpawning(spawnTransform);
+	GeoProjectile->DamageEffectParams = MakeDamageEffectParamsFromClassDefaults(nullptr);
+
+	GeoProjectile->FinishSpawning(spawnTransform);
 }

@@ -1,11 +1,9 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Actor/Projectile/TurretSpawnerProjectile.h"
 
 #include "Actor/Turret/GeoTurretBase.h"
-
-
+#include "GameFramework/PlayerState.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 ATurretSpawnerProjectile::ATurretSpawnerProjectile()
@@ -22,39 +20,52 @@ float ATurretSpawnerProjectile::GetTurretLevel_Implementation() const
 void ATurretSpawnerProjectile::EndProjectileLife()
 {
 	SpawnTurretActor();
-	
+
 	Super::EndProjectileLife();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void ATurretSpawnerProjectile::SpawnTurretActor() const
 {
-	AActor* pAvatarOwner = GetOwner();
-	const bool bIsServer = pAvatarOwner ? pAvatarOwner->HasAuthority() : false;
-	if (!bIsServer)
+	checkf(IsValid(Owner), TEXT("Owner is invalid!"));
+	if (!Owner->HasAuthority())
+	{
 		return;
-	
-	FTransform const spawnTransform = GetActorTransform();
-	
+	}
+
+	const FTransform SpawnTransform = GetActorTransform();
+
 	// Create turret
 	checkf(TurretActorClass, TEXT("No Turret in the turret spawner!"));
-	
-	AGeoTurretBase* pTurret = GetWorld()->SpawnActorDeferred<AGeoTurretBase>(
-		TurretActorClass, 
-		spawnTransform, 
-		pAvatarOwner, 
-		Cast<APawn>(pAvatarOwner), 
-		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-	
-	if (!pTurret)
+
+	APawn* Pawn = Cast<APawn>(Owner);
+	if (!IsValid(Pawn))
+	{
+		if (const APlayerState* PlayerState = Cast<APlayerState>(Owner))
+		{
+			Pawn = PlayerState->GetPawn();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("No valid pawn to spawn turret!"));
+			return;
+		}
+	}
+
+	AGeoTurretBase* Turret = GetWorld()->SpawnActorDeferred<AGeoTurretBase>(TurretActorClass, SpawnTransform, Owner,
+		Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+	if (!IsValid(Turret))
+	{
+		UE_LOG(LogTemp, Error, TEXT("No valid turret spawned!"));
 		return;
-	
-	TurretInitData data;
-	data.CharacterOwner = pAvatarOwner;
-	data.TurretLevel = GetTurretLevel();
-	data.BulletsDamageEffectParams = DamageEffectParams;
-	pTurret->InitTurretData(data);
+	}
 
-	pTurret->FinishSpawning(spawnTransform);
+	TurretInitData Data;
+	Data.CharacterOwner = Owner;
+	Data.TurretLevel = GetTurretLevel();
+	Data.BulletsDamageEffectParams = DamageEffectParams;
+	Turret->InitTurretData(Data);
+
+	Turret->FinishSpawning(SpawnTransform);
 }
-
