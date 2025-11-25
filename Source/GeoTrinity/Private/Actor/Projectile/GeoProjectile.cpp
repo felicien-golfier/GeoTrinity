@@ -70,6 +70,7 @@ void AGeoProjectile::BeginPlay()
 	SetLifeSpan(LifeSpanInSec);
 
 	Sphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereOverlap);
+	Sphere->OnComponentHit.AddDynamic(this, &ThisClass::OnSphereHit);
 
 	LoopingSoundComponent = UGameplayStatics::SpawnSoundAttached(LoopingSound, GetRootComponent(), NAME_None,
 		FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true);
@@ -80,7 +81,7 @@ void AGeoProjectile::BeginPlay()
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::Destroyed()
 {
-	if (!bHit && !HasAuthority())
+	if (!bHasOverlapped && !HasAuthority())
 	{
 		// In case destroy() is replicated before OnSphereOverlap()
 		PlayImpactFx();
@@ -149,12 +150,12 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 
 	// If multiple overlap, don't play sound each time
-	if (!bHit)
+	if (!bHasOverlapped)
 	{
 		PlayImpactFx();
 	}
 
-	bHit = true;
+	bHasOverlapped = true;
 	if (HasAuthority())
 	{
 		ApplyEffectToTarget(OtherActor);
@@ -162,6 +163,15 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 }
 
+void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+
+{
+	if (HasAuthority())
+	{
+		EndProjectileLife();
+	}
+}
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlayImpactFx() const
 {

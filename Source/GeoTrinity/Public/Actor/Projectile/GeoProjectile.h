@@ -44,6 +44,9 @@ protected:
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
 		const FHitResult& SweepResult);
+	UFUNCTION()
+	void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+		FVector NormalImpulse, const FHitResult& Hit);
 
 	UFUNCTION(BlueprintCallable)
 	virtual void PlayImpactFx() const;
@@ -60,7 +63,7 @@ private:
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
 	float DistanceSpan = 100.f;
 
-	bool bHit{false};
+	bool bHasOverlapped{false};
 
 	FVector InitialPosition;
 	float DistanceSpanSqr;
