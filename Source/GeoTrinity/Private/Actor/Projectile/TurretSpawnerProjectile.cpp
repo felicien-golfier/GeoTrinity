@@ -1,24 +1,24 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Actor/Projectile/GeoTurretSpawnerProjectile.h"
+#include "Actor/Projectile/TurretSpawnerProjectile.h"
 
 #include "Actor/Turret/GeoTurretBase.h"
-#include "Characters/GeoPlayableCharacter.h"
+#include "Characters/PlayableCharacter.h"
 #include "GameFramework/PlayerState.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-AGeoTurretSpawnerProjectile::AGeoTurretSpawnerProjectile()
+ATurretSpawnerProjectile::ATurretSpawnerProjectile()
 {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float AGeoTurretSpawnerProjectile::GetTurretLevel_Implementation() const
+float ATurretSpawnerProjectile::GetTurretLevel_Implementation() const
 {
 	return 1.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoTurretSpawnerProjectile::EndProjectileLife()
+void ATurretSpawnerProjectile::EndProjectileLife()
 {
 	SpawnTurretActor();
 
@@ -26,7 +26,7 @@ void AGeoTurretSpawnerProjectile::EndProjectileLife()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoTurretSpawnerProjectile::SpawnTurretActor() const
+void ATurretSpawnerProjectile::SpawnTurretActor() const
 {
 	checkf(IsValid(Owner), TEXT("Owner is invalid!"));
 	if (!Owner->HasAuthority())
@@ -71,7 +71,7 @@ void AGeoTurretSpawnerProjectile::SpawnTurretActor() const
 	Turret->FinishSpawning(SpawnTransform);
 }
 
-bool AGeoTurretSpawnerProjectile::IsValidOverlap(const AActor* OtherActor)
+bool ATurretSpawnerProjectile::IsValidOverlap(const AActor* OtherActor)
 {
 	bool bHasValidOverlap = Super::IsValidOverlap(OtherActor);
 	if (!bHasValidOverlap)
@@ -79,5 +79,5 @@ bool AGeoTurretSpawnerProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
-	return !OtherActor->IsA(AGeoTurretBase::StaticClass()) && !OtherActor->IsA(AGeoPlayableCharacter::StaticClass());
+	return !OtherActor->IsA(AGeoTurretBase::StaticClass()) && !OtherActor->IsA(APlayableCharacter::StaticClass());
 }

@@ -1,4 +1,4 @@
-﻿#include "Characters/GeoPlayableCharacter.h"
+﻿#include "Characters/PlayableCharacter.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
@@ -9,13 +9,13 @@
 
 class AGeoPlayerState;
 
-void AGeoPlayableCharacter::Tick(float DeltaSeconds)
+void APlayableCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
 	UpdateAimRotation(DeltaSeconds);
 }
-void AGeoPlayableCharacter::UpdateAimRotation(float DeltaSeconds)
+void APlayableCharacter::UpdateAimRotation(float DeltaSeconds)
 {
 	FVector2D Look;
 	if (GeoInputComponent->GetLookVector(Look))
@@ -42,7 +42,7 @@ void AGeoPlayableCharacter::UpdateAimRotation(float DeltaSeconds)
 	}
 }
 
-void AGeoPlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	GeoInputComponent->BindInput(PlayerInputComponent);
@@ -51,7 +51,7 @@ void AGeoPlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		&ThisClass::AbilityInputTagHeld);
 }
 
-void AGeoPlayableCharacter::OnRep_PlayerState()
+void APlayableCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
@@ -59,7 +59,7 @@ void AGeoPlayableCharacter::OnRep_PlayerState()
 	InitAbilityActorInfo();
 }
 
-void AGeoPlayableCharacter::InitAbilityActorInfo()
+void APlayableCharacter::InitAbilityActorInfo()
 {
 	Super::InitAbilityActorInfo();
 
@@ -83,7 +83,7 @@ void AGeoPlayableCharacter::InitAbilityActorInfo()
 	}
 }
 
-void AGeoPlayableCharacter::AbilityInputTagPressed(FGameplayTag inputTag)
+void APlayableCharacter::AbilityInputTagPressed(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s pressed"), *inputTag.ToString());
 	if (!AbilitySystemComponent)
@@ -93,7 +93,7 @@ void AGeoPlayableCharacter::AbilityInputTagPressed(FGameplayTag inputTag)
 	AbilitySystemComponent->AbilityInputTagPressed(inputTag);
 }
 
-void AGeoPlayableCharacter::AbilityInputTagReleased(FGameplayTag inputTag)
+void APlayableCharacter::AbilityInputTagReleased(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s released"), *inputTag.ToString());
 	if (!AbilitySystemComponent)
@@ -103,7 +103,7 @@ void AGeoPlayableCharacter::AbilityInputTagReleased(FGameplayTag inputTag)
 	AbilitySystemComponent->AbilityInputTagReleased(inputTag);
 }
 
-void AGeoPlayableCharacter::AbilityInputTagHeld(FGameplayTag inputTag)
+void APlayableCharacter::AbilityInputTagHeld(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s heeeeeld"), *inputTag.ToString());
 	if (!AbilitySystemComponent)

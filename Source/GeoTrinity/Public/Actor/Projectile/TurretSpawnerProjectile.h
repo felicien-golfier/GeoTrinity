@@ -5,20 +5,20 @@
 #include "CoreMinimal.h"
 #include "GeoProjectile.h"
 
-#include "GeoTurretSpawnerProjectile.generated.h"
+#include "TurretSpawnerProjectile.generated.h"
 
 class AGeoTurretBase;
 /**
  * An actor used to spawn a turret
  */
 UCLASS()
-class GEOTRINITY_API AGeoTurretSpawnerProjectile : public AGeoProjectile
+class GEOTRINITY_API ATurretSpawnerProjectile : public AGeoProjectile
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	AGeoTurretSpawnerProjectile();
+	ATurretSpawnerProjectile();
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Turret")
 	float GetTurretLevel() const;

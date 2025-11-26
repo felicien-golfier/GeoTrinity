@@ -3,10 +3,10 @@
 #include "CoreMinimal.h"
 #include "GeoCharacter.h"
 
-#include "GeoPlayableCharacter.generated.h"
+#include "PlayableCharacter.generated.h"
 
 UCLASS()
-class GEOTRINITY_API AGeoPlayableCharacter : public AGeoCharacter
+class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
 {
 	GENERATED_BODY()
 public:
