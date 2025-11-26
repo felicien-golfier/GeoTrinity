@@ -13,9 +13,10 @@ void APlayableCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	UpdateAimRotation(DeltaSeconds);
+	UpdateAimRotation();
 }
-void APlayableCharacter::UpdateAimRotation(float DeltaSeconds)
+
+void APlayableCharacter::UpdateAimRotation()
 {
 	FVector2D Look;
 	if (GeoInputComponent->GetLookVector(Look))
@@ -51,34 +52,33 @@ void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		&ThisClass::AbilityInputTagHeld);
 }
 
+void APlayableCharacter::InitAbilityActorInfo()
+{
+	// DO NOT CALL SUPER !
+
+	// Set the ASC for clients. Server does this in PossessedBy.
+	AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>();
+	checkf(IsValid(GeoPlayerState), TEXT("GeoPlayerState is not valid at replication !"));
+	InitAbilityActorInfo(Cast<UGeoAbilitySystemComponent>(GeoPlayerState->GetAbilitySystemComponent()), GeoPlayerState,
+		GeoPlayerState->GetGeoAttributeSetBase());
+}
+
 void APlayableCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-
-	// Set the ASC for clients. Server does this in PossessedBy.
 	InitAbilityActorInfo();
 }
 
-void APlayableCharacter::InitAbilityActorInfo()
+void APlayableCharacter::InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
+	UCharacterAttributeSet* GeoAttributeSetBase)
 {
-	Super::InitAbilityActorInfo();
-
-	AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>();
-	if (!GeoPlayerState)
-	{
-		return;
-	}
-
-	AbilitySystemComponent = Cast<UGeoAbilitySystemComponent>(GeoPlayerState->GetAbilitySystemComponent());
-	AbilitySystemComponent->InitAbilityActorInfo(GeoPlayerState, this);
-	AttributeSet = GeoPlayerState->GetGeoAttributeSetBase();
-
+	Super::InitAbilityActorInfo(GeoAbilitySystemComponent, OwnerActor, GeoAttributeSetBase);
 	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetController()))
 	{
 		// Hud only present locally
 		if (AGeoHUD* Hud = Cast<AGeoHUD>(GeoPlayerController->GetHUD()))
 		{
-			Hud->InitOverlay(GeoPlayerController, GeoPlayerState, AbilitySystemComponent, AttributeSet);
+			Hud->InitOverlay(GeoPlayerController, GetPlayerState(), GeoAbilitySystemComponent, GeoAttributeSetBase);
 		}
 	}
 }

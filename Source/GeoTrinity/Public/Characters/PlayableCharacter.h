@@ -17,12 +17,15 @@ public:
 	void AbilityInputTagReleased(FGameplayTag inputTag);
 	void AbilityInputTagHeld(FGameplayTag inputTag);
 
-private:
+protected:
 	virtual void OnRep_PlayerState() override;
-	virtual void InitAbilityActorInfo() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void InitAbilityActorInfo() override;
+	virtual void InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
+		UCharacterAttributeSet* GeoAttributeSetBase) override;
 
-	void UpdateAimRotation(float DeltaSeconds);
+private:
+	void UpdateAimRotation();
 
 private:
 	// Aim rotation cache to throttle RPCs

@@ -1,7 +1,7 @@
 #include "Characters/GeoCharacter.h"
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
@@ -32,8 +32,12 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 }
 
-void AGeoCharacter::InitAbilityActorInfo()
+void AGeoCharacter::InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
+	UCharacterAttributeSet* GeoAttributeSetBase)
 {
+	AbilitySystemComponent = GeoAbilitySystemComponent;
+	AbilitySystemComponent->InitAbilityActorInfo(OwnerActor, this);
+	AttributeSet = GeoAttributeSetBase;
 }
 
 void AGeoCharacter::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
@@ -49,6 +53,13 @@ void AGeoCharacter::PossessedBy(AController* NewController)
 	InitAbilityActorInfo();
 	InitializeDefaultAttributes();
 	AddCharacterDefaultAbilities();
+}
+
+void AGeoCharacter::InitAbilityActorInfo()
+{
+	// Override !
+	checkNoEntry();
+	InitAbilityActorInfo(nullptr, nullptr, nullptr);
 }
 
 void AGeoCharacter::InitializeDefaultAttributes()
@@ -95,7 +106,7 @@ void AGeoCharacter::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect
 	if (SpecHandle.IsValid())
 	{
 		FPredictionKey PredictionKey;
-		AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent,
+		AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent.Get(),
 			PredictionKey);
 		// AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
 	}

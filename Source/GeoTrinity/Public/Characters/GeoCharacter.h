@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GeoMovementComponent.h"
@@ -46,6 +47,8 @@ private:
 public:
 	// GAS
 	virtual void InitAbilityActorInfo();
+	virtual void InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
+		UCharacterAttributeSet* GeoAttributeSetBase);
 	void InitializeDefaultAttributes();
 	void AddCharacterDefaultAbilities();
 	UFUNCTION(Server, Reliable)
@@ -55,13 +58,13 @@ protected:
 	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
-	UPROPERTY(Category = Geo, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoInputComponent> GeoInputComponent;
 
 	UPROPERTY(BlueprintReadOnly, Category = Character)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = GAS)
+	UPROPERTY(BlueprintReadOnly, Category = GAS)
 	TObjectPtr<UCharacterAttributeSet> AttributeSet;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = GAS)
