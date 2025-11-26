@@ -3,10 +3,21 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GenericTeamAgentInterface.h"
 #include "GeoMovementComponent.h"
 #include "GeoPlayerController.h"
 
 #include "GeoCharacter.generated.h"
+
+UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class ETeam : uint8
+{
+	Neutral = (1 << 0) UMETA(DisplayName = "Neutral"),
+	Ally = (1 << 1) UMETA(DisplayName = "Ally"),
+	Enemy = (1 << 2) UMETA(DisplayName = "Enemy")
+};
+
+ENUM_CLASS_FLAGS(ETeam);
 
 class UCharacterAttributeSet;
 class UGeoGameplayAbility;
@@ -18,7 +29,9 @@ class UDynamicMeshComponent;
 class UGeoMovementComponent;
 class UStaticMeshComponent;
 UCLASS()
-class GEOTRINITY_API AGeoCharacter : public ACharacter
+class GEOTRINITY_API AGeoCharacter
+	: public ACharacter
+	, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -37,6 +50,22 @@ public:
 	void DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage) const;
 	void DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage, FColor Color) const;
 
+	//----------------------------------------------------------------------//
+	// IGenericTeamAgentInterface START
+	//----------------------------------------------------------------------//
+	/** Assigns Team Agent to given TeamID */
+	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamId) override { TeamId = NewTeamId; }
+
+	/** Retrieve team identifier in form of FGenericTeamId */
+	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
+
+	/** Retrieved owner attitude toward given Other object */
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+
+	//----------------------------------------------------------------------//
+	// IGenericTeamAgentInterface END
+	//----------------------------------------------------------------------//
+
 protected:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass);
@@ -53,6 +82,11 @@ public:
 	void AddCharacterDefaultAbilities();
 	UFUNCTION(Server, Reliable)
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
+
+	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadWrite, meta = (GetOptions = "GetTeamIdOptions"))
+	FGenericTeamId TeamId;
+	UFUNCTION()
+	TArray<FString> GetTeamIdOptions() const { return TArray<FString>{"Friendly", "Enemy", "Neutral"}; }
 
 protected:
 	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))

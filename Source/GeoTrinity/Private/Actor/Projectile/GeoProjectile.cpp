@@ -11,6 +11,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Tool/GameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoProjectile::AGeoProjectile()
@@ -125,9 +126,14 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
-	// TODO: add a way to enable/remove friendly fire (setup the team interface stuff ?)
+	const IGenericTeamAgentInterface* TeamInterface = nullptr;
+	if (!GameplayLibrary::GetTeamInterface(OtherActor, TeamInterface))
+	{
+		return false;
+	}
 
-	return true;
+	return TeamInterface->GetGenericTeamId().GetId() != FGenericTeamId::NoTeam
+	    && (TeamInterface->GetGenericTeamId().GetId() & ApplyEffectToTeamOnOverlap) != 0x00;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

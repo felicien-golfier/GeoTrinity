@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/GeoAscTypes.h"
+#include "Characters/GeoCharacter.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayEffectTypes.h"
@@ -62,6 +63,9 @@ private:
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
 	float DistanceSpan = 100.f;
+
+	UPROPERTY(EditAnywhere, Meta = (Bitmask, BitmaskEnum = "ETeam"))
+	int32 ApplyEffectToTeamOnOverlap;
 
 	bool bHasOverlapped{false};
 

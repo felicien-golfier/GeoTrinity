@@ -79,5 +79,5 @@ bool ATurretSpawnerProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
-	return !OtherActor->IsA(AGeoTurretBase::StaticClass()) && !OtherActor->IsA(APlayableCharacter::StaticClass());
+	return OtherActor != GetInstigator();
 }

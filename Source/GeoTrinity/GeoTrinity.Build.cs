@@ -10,24 +10,25 @@ public class GeoTrinity : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
-			"Core", 
-			"CoreUObject", 
-			"Engine", 
-			"InputCore", 
-			"EnhancedInput", 
-			"GeometryFramework", 
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"EnhancedInput",
+			"GeometryFramework",
 			"GeometryCore",
 			"DynamicMesh",
 			"GameplayAbilities",
 			"SlateCore",
 			"Slate",
-			"DeveloperSettings"
+			"DeveloperSettings", "AIModule"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] {
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
 			"GameplayTags",
 			"GameplayTasks",
-			"UMG", 
+			"UMG",
 			"Niagara"
 		});
 

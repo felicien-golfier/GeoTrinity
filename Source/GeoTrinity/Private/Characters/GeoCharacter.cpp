@@ -40,6 +40,18 @@ void AGeoCharacter::InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilityS
 	AttributeSet = GeoAttributeSetBase;
 }
 
+ETeamAttitude::Type AGeoCharacter::GetTeamAttitudeTowards(const AActor& Other) const
+{
+
+	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<const IGenericTeamAgentInterface>(&Other);
+	if (!OtherTeamAgent)
+	{
+		return ETeamAttitude::Neutral;
+	}
+
+	return OtherTeamAgent->GetGenericTeamId() == GetGenericTeamId() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+}
+
 void AGeoCharacter::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
 {
 	ApplyEffectToSelf(gameplayEffectClass, 1.0f);
@@ -80,9 +92,9 @@ void AGeoCharacter::InitializeDefaultAttributes()
 void AGeoCharacter::AddCharacterDefaultAbilities()
 {
 	checkf(AbilitySystemComponent, TEXT("%s() AbilitySystemComponent is null. Did we call this too soon ?"),
-		*FString(__FUNCTION__))
+		*FString(__FUNCTION__));
 
-		if (!HasAuthority())
+	if (!HasAuthority())
 	{
 		UE_LOG(LogGeoASC, Warning,
 			TEXT("This should not be the case, as only the server should be calling this method"));
