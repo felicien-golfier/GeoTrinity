@@ -54,10 +54,13 @@ public:
 	// IGenericTeamAgentInterface START
 	//----------------------------------------------------------------------//
 	/** Assigns Team Agent to given TeamID */
-	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamId) override { TeamId = NewTeamId; }
+	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamId) override
+	{
+		TeamId = static_cast<ETeam>(NewTeamId.GetId());
+	}
 
 	/** Retrieve team identifier in form of FGenericTeamId */
-	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
+	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(static_cast<uint8>(TeamId)); }
 
 	/** Retrieved owner attitude toward given Other object */
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
@@ -83,10 +86,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
 
-	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadWrite, meta = (GetOptions = "GetTeamIdOptions"))
-	FGenericTeamId TeamId;
-	UFUNCTION()
-	TArray<FString> GetTeamIdOptions() const { return TArray<FString>{"Friendly", "Enemy", "Neutral"}; }
+private:
+	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	ETeam TeamId;
 
 protected:
 	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
