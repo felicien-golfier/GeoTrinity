@@ -30,10 +30,7 @@ void AGeoPlayerState::BeginPlay()
 	{
 		InitializeInteractableComponent();
 	}
-	else
-	{
-		OnPawnSet.AddUniqueDynamic(this, &AGeoPlayerState::OnPlayerPawnSet);
-	}
+	OnPawnSet.AddUniqueDynamic(this, &AGeoPlayerState::OnPlayerPawnSet);
 }
 
 void AGeoPlayerState::ClientInitialize(class AController* Controller)
