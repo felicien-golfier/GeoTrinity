@@ -23,12 +23,18 @@ class GEOTRINITY_API AGeoPlayerState
 
 public:
 	AGeoPlayerState();
+	virtual void BeginPlay() override;
+	void InitializeInteractableComponent();
+
+	virtual void ClientInitialize(class AController* Controller) override;
+	void InitOverlay();
+
+	UFUNCTION()
+	void OnPlayerPawnSet(APlayerState* Player, APawn* NewPawn, APawn* OldPawn);
 
 	/** Implement IAbilitySystemInterface */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	/** END Implement IAbilitySystemInterface */
-
-	UCharacterAttributeSet* GetGeoAttributeSetBase() const { return AttributeSetBase; }
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -36,7 +42,4 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UCharacterAttributeSet> AttributeSetBase;
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UInputAction> MoveAction;
 };

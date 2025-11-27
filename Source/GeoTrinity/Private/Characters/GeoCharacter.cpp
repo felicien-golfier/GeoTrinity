@@ -1,7 +1,6 @@
 #include "Characters/GeoCharacter.h"
 
-#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/InteractableComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
@@ -30,98 +29,8 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	bUseControllerRotationYaw = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
-}
 
-void AGeoCharacter::InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
-	UCharacterAttributeSet* GeoAttributeSetBase)
-{
-	AbilitySystemComponent = GeoAbilitySystemComponent;
-	AbilitySystemComponent->InitAbilityActorInfo(OwnerActor, this);
-	AttributeSet = GeoAttributeSetBase;
-}
-
-ETeamAttitude::Type AGeoCharacter::GetTeamAttitudeTowards(const AActor& Other) const
-{
-
-	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<const IGenericTeamAgentInterface>(&Other);
-	if (!OtherTeamAgent)
-	{
-		return ETeamAttitude::Neutral;
-	}
-
-	return OtherTeamAgent->GetGenericTeamId() == GetGenericTeamId() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
-}
-
-void AGeoCharacter::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
-{
-	ApplyEffectToSelf(gameplayEffectClass, 1.0f);
-}
-
-// Server Only
-void AGeoCharacter::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-
-	InitAbilityActorInfo();
-	InitializeDefaultAttributes();
-	AddCharacterDefaultAbilities();
-}
-
-void AGeoCharacter::InitAbilityActorInfo()
-{
-	// Override !
-	checkNoEntry();
-	InitAbilityActorInfo(nullptr, nullptr, nullptr);
-}
-
-void AGeoCharacter::InitializeDefaultAttributes()
-{
-	check(IsValid(AbilitySystemComponent));
-
-	if (!IsValid(DefaultAttributes))
-	{
-		UE_LOG(LogGeoTrinity, Error,
-			TEXT("%s() Missing DefaultAttributes for %s. Please fill in the pawn's Blueprint."), *FString(__FUNCTION__),
-			*GetName());
-		return;
-	}
-
-	ApplyEffectToSelf(DefaultAttributes, 1.0f);
-}
-
-void AGeoCharacter::AddCharacterDefaultAbilities()
-{
-	checkf(AbilitySystemComponent, TEXT("%s() AbilitySystemComponent is null. Did we call this too soon ?"),
-		*FString(__FUNCTION__));
-
-	if (!HasAuthority())
-	{
-		UE_LOG(LogGeoASC, Warning,
-			TEXT("This should not be the case, as only the server should be calling this method"));
-	}
-	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilities);
-}
-
-void AGeoCharacter::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level)
-{
-	if (!IsValid(AbilitySystemComponent))
-	{
-		return;
-	}
-
-	FGameplayEffectContextHandle EffectContextHandle = AbilitySystemComponent->MakeEffectContext();
-	EffectContextHandle.AddSourceObject(this);
-
-	const FGameplayEffectSpecHandle SpecHandle =
-		AbilitySystemComponent->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
-
-	if (SpecHandle.IsValid())
-	{
-		FPredictionKey PredictionKey;
-		AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent.Get(),
-			PredictionKey);
-		// AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
-	}
+	InteractableComponent = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable Component"));
 }
 
 FColor AGeoCharacter::GetColorForCharacter(const AGeoCharacter* Character)

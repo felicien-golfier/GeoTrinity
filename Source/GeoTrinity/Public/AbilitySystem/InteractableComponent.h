@@ -1,0 +1,101 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "Abilities/GeoGameplayAbility.h"
+#include "Components/ActorComponent.h"
+#include "CoreMinimal.h"
+#include "GenericTeamAgentInterface.h"
+
+#include "InteractableComponent.generated.h"
+
+class UGeoAbilitySystemComponent;
+class UCharacterAttributeSet;
+class UAttributeSet;
+
+UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class ETeam : uint8
+{
+	Neutral = (1 << 0) UMETA(DisplayName = "Neutral"),
+	Ally = (1 << 1) UMETA(DisplayName = "Ally"),
+	Enemy = (1 << 2) UMETA(DisplayName = "Enemy")
+};
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+class GEOTRINITY_API UInteractableComponent
+	: public UActorComponent
+	, public IGenericTeamAgentInterface
+{
+	GENERATED_BODY()
+
+public:
+	// Sets default values for this component's properties
+	UInteractableComponent();
+
+	virtual void BeginPlay() override;
+	//----------------------------------------------------------------------//
+	// IGenericTeamAgentInterface START
+	//----------------------------------------------------------------------//
+	/** Assigns Team Agent to given TeamID */
+	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamId) override
+	{
+		TeamId = static_cast<ETeam>(NewTeamId.GetId());
+	}
+
+	/** Retrieve team identifier in form of FGenericTeamId */
+	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(static_cast<uint8>(TeamId)); }
+
+	/** Retrieved owner attitude toward given Other object */
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+
+	//----------------------------------------------------------------------//
+	// IGenericTeamAgentInterface END
+	//----------------------------------------------------------------------//
+
+	//----------------------------------------------------------------------//
+	// GAS START
+	//----------------------------------------------------------------------//
+public:
+	virtual void InitGas(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
+		UCharacterAttributeSet* GeoAttributeSetBase);
+	virtual void InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
+		UCharacterAttributeSet* GeoAttributeSetBase);
+	void InitializeDefaultAttributes();
+	void AddCharacterDefaultAbilities();
+	UFUNCTION(Server, Reliable)
+	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
+
+	// Getter for base attribute set (for HUD/UI and other systems needing UAttributeSet*)
+	UFUNCTION(BlueprintCallable, Category = "GAS")
+	UAttributeSet* GetAttributeSetBase() const;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gas")
+	bool bInitGasAtBeginPlay = true;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Gas")
+	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
+
+protected:
+	UFUNCTION(BlueprintCallable, Category = "GAS")
+	void BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gas")
+	TSubclassOf<UGameplayEffect> DefaultAttributes;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Gas")
+	TObjectPtr<UCharacterAttributeSet> AttributeSet;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Gas")
+	TObjectPtr<UCharacterAttributeSet> AttributeSetBase;
+
+	// TODO: could be auto by tag
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
+	TArray<TSubclassOf<UGeoGameplayAbility>> StartupAbilities;
+	//----------------------------------------------------------------------//
+	// GAS END
+	//----------------------------------------------------------------------//
+
+private:
+	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	ETeam TeamId;
+};

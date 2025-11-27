@@ -17,12 +17,4 @@ class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
 
 public:
 	AEnemyCharacter(const FObjectInitializer& ObjectInitializer);
-	virtual void BeginPlay() override;
-
-protected:
-	virtual void InitAbilityActorInfo() override;
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
-	UPROPERTY()
-	TObjectPtr<UCharacterAttributeSet> AttributeSetBase;
 };

@@ -1,6 +1,5 @@
 ﻿#include "Characters/PlayableCharacter.h"
 
-#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoPlayerState.h"
@@ -8,6 +7,11 @@
 #include "HUD/GeoHUD.h"
 
 class AGeoPlayerState;
+
+APlayableCharacter::APlayableCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+{
+	InteractableComponent->bInitGasAtBeginPlay = false;
+}
 
 void APlayableCharacter::Tick(float DeltaSeconds)
 {
@@ -52,63 +56,32 @@ void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		&ThisClass::AbilityInputTagHeld);
 }
 
-void APlayableCharacter::InitAbilityActorInfo()
-{
-	// DO NOT CALL SUPER !
-
-	// Set the ASC for clients. Server does this in PossessedBy.
-	AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>();
-	checkf(IsValid(GeoPlayerState), TEXT("GeoPlayerState is not valid at replication !"));
-	InitAbilityActorInfo(Cast<UGeoAbilitySystemComponent>(GeoPlayerState->GetAbilitySystemComponent()), GeoPlayerState,
-		GeoPlayerState->GetGeoAttributeSetBase());
-}
-
-void APlayableCharacter::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-	InitAbilityActorInfo();
-}
-
-void APlayableCharacter::InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
-	UCharacterAttributeSet* GeoAttributeSetBase)
-{
-	Super::InitAbilityActorInfo(GeoAbilitySystemComponent, OwnerActor, GeoAttributeSetBase);
-	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetController()))
-	{
-		// Hud only present locally
-		if (AGeoHUD* Hud = Cast<AGeoHUD>(GeoPlayerController->GetHUD()))
-		{
-			Hud->InitOverlay(GeoPlayerController, GetPlayerState(), GeoAbilitySystemComponent, GeoAttributeSetBase);
-		}
-	}
-}
-
 void APlayableCharacter::AbilityInputTagPressed(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s pressed"), *inputTag.ToString());
-	if (!AbilitySystemComponent)
+	if (!InteractableComponent->AbilitySystemComponent)
 	{
 		return;
 	}
-	AbilitySystemComponent->AbilityInputTagPressed(inputTag);
+	InteractableComponent->AbilitySystemComponent->AbilityInputTagPressed(inputTag);
 }
 
 void APlayableCharacter::AbilityInputTagReleased(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s released"), *inputTag.ToString());
-	if (!AbilitySystemComponent)
+	if (!InteractableComponent->AbilitySystemComponent)
 	{
 		return;
 	}
-	AbilitySystemComponent->AbilityInputTagReleased(inputTag);
+	InteractableComponent->AbilitySystemComponent->AbilityInputTagReleased(inputTag);
 }
 
 void APlayableCharacter::AbilityInputTagHeld(FGameplayTag inputTag)
 {
 	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s heeeeeld"), *inputTag.ToString());
-	if (!AbilitySystemComponent)
+	if (!InteractableComponent->AbilitySystemComponent)
 	{
 		return;
 	}
-	AbilitySystemComponent->AbilityInputTagHeld(inputTag);
+	InteractableComponent->AbilitySystemComponent->AbilityInputTagHeld(inputTag);
 }
