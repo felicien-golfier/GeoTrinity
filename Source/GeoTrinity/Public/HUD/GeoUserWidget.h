@@ -16,6 +16,8 @@ class GEOTRINITY_API UGeoUserWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	virtual void NativeConstruct() override;
+	
 	void InitFromHUD(AGeoHUD* GeoHUD);
 	
 	UFUNCTION(BlueprintImplementableEvent)

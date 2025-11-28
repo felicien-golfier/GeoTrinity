@@ -17,10 +17,14 @@ UInteractableComponent::UInteractableComponent()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
 UAttributeSet* UInteractableComponent::GetAttributeSetBase() const
 {
 	return AttributeSetBase;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -30,14 +34,26 @@ void UInteractableComponent::BeginPlay()
 	}
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::InitGas(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
 	UCharacterAttributeSet* GeoAttributeSetBase)
 {
 	InitAbilityActorInfo(GeoAbilitySystemComponent, OwnerActor, GeoAttributeSetBase);
-	InitializeDefaultAttributes();
-	AddCharacterDefaultAbilities();
+	
+	if (GetOwner()->HasAuthority())
+	{
+		InitializeDefaultAttributes();
+		
+		BindGasCallbacks();
+		AddCharacterDefaultAbilities();
+	}
+	
+	// fake
+	OnMaxHealthChanged.Broadcast(100.f);
+	OnHealthChanged.Broadcast(90.f);
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent,
 	AActor* OwnerActor, UCharacterAttributeSet* GeoAttributeSetBase)
 {
@@ -45,6 +61,8 @@ void UInteractableComponent::InitAbilityActorInfo(UGeoAbilitySystemComponent* Ge
 	AbilitySystemComponent->InitAbilityActorInfo(OwnerActor, GetOwner());
 	AttributeSet = GeoAttributeSetBase;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::InitializeDefaultAttributes()
 {
 	check(IsValid(AbilitySystemComponent));
@@ -58,8 +76,12 @@ void UInteractableComponent::InitializeDefaultAttributes()
 	}
 
 	ApplyEffectToSelf(DefaultAttributes, 1.0f);
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] After initialization, my health attributes are : Health=%f / MaxHealth=%f"), *GetOwner()->GetName(),
+		AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::AddCharacterDefaultAbilities()
 {
 	checkf(AbilitySystemComponent, TEXT("%s() AbilitySystemComponent is null. Did we call this too soon ?"),
@@ -73,11 +95,13 @@ void UInteractableComponent::AddCharacterDefaultAbilities()
 	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilities);
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
 {
 	ApplyEffectToSelf(gameplayEffectClass, 1.0f);
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass,
 	float level)
 {
@@ -111,4 +135,18 @@ ETeamAttitude::Type UInteractableComponent::GetTeamAttitudeTowards(const AActor&
 	}
 
 	return OtherTeamAgent->GetGenericTeamId() == GetGenericTeamId() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+}
+
+void UInteractableComponent::BindGasCallbacks()
+{
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
+			.AddWeakLambda(this, [this](const FOnAttributeChangeData& Data)
+			{
+				OnHealthChanged.Broadcast(Data.NewValue);
+			});
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMaxHealthAttribute())
+			.AddWeakLambda(this, [this](const FOnAttributeChangeData& Data)
+			{
+				OnMaxHealthChanged.Broadcast(Data.NewValue);
+			});
 }

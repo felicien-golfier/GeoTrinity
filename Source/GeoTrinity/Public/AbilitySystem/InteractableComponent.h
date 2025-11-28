@@ -13,6 +13,8 @@ class UGeoAbilitySystemComponent;
 class UCharacterAttributeSet;
 class UAttributeSet;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGasAttributeChangedSignature, float, NewValue);
+
 UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
 enum class ETeam : uint8
 {
@@ -56,6 +58,7 @@ public:
 	// GAS START
 	//----------------------------------------------------------------------//
 public:
+	void BindGasCallbacks();
 	virtual void InitGas(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
 		UCharacterAttributeSet* GeoAttributeSetBase);
 	virtual void InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
@@ -75,6 +78,11 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Gas")
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
 
+	/** Delegates **/
+	UPROPERTY(BlueprintAssignable, Category = "Gas")
+	FOnGasAttributeChangedSignature OnHealthChanged;
+	UPROPERTY(BlueprintAssignable, Category = "Gas")
+	FOnGasAttributeChangedSignature OnMaxHealthChanged;
 protected:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass);

@@ -4,6 +4,17 @@
 #include "HUD/GeoUserWidget.h"
 
 #include "GeoTrinity/GeoTrinity.h"
+#include "HUD/HudFunctionLibrary.h"
+
+void UGeoUserWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	
+	if (UHudFunctionLibrary::ShouldDrawHUD(GetOwningPlayer()))
+	{
+		RemoveFromParent();
+	}
+}
 
 void UGeoUserWidget::InitFromHUD(AGeoHUD* GeoHUD)
 {
