@@ -12,9 +12,16 @@ UInteractableComponent::UInteractableComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 
 	// Create ASC, and set it to be explicitly replicated
-	AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+	if (GetOwner())
+	{
+		AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+		AbilitySystemComponent->SetIsReplicated(true);
+		AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("InteractableComponent::UInteractableComponent() GetOwner() is null"));
+	}
 	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
 }
 
@@ -39,15 +46,15 @@ void UInteractableComponent::InitGas(UGeoAbilitySystemComponent* GeoAbilitySyste
 	UCharacterAttributeSet* GeoAttributeSetBase)
 {
 	InitAbilityActorInfo(GeoAbilitySystemComponent, OwnerActor, GeoAttributeSetBase);
-	
+
 	if (GetOwner()->HasAuthority())
 	{
 		InitializeDefaultAttributes();
-		
+
 		BindGasCallbacks();
 		AddCharacterDefaultAbilities();
 	}
-	
+
 	// fake
 	OnMaxHealthChanged.Broadcast(100.f);
 	OnHealthChanged.Broadcast(90.f);
@@ -77,8 +84,8 @@ void UInteractableComponent::InitializeDefaultAttributes()
 
 	ApplyEffectToSelf(DefaultAttributes, 1.0f);
 
-	UE_LOG(LogTemp, Log, TEXT("[%s] After initialization, my health attributes are : Health=%f / MaxHealth=%f"), *GetOwner()->GetName(),
-		AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
+	UE_LOG(LogTemp, Log, TEXT("[%s] After initialization, my health attributes are : Health=%f / MaxHealth=%f"),
+		*GetOwner()->GetName(), AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -140,12 +147,14 @@ ETeamAttitude::Type UInteractableComponent::GetTeamAttitudeTowards(const AActor&
 void UInteractableComponent::BindGasCallbacks()
 {
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
-			.AddWeakLambda(this, [this](const FOnAttributeChangeData& Data)
+		.AddWeakLambda(this,
+			[this](const FOnAttributeChangeData& Data)
 			{
 				OnHealthChanged.Broadcast(Data.NewValue);
 			});
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMaxHealthAttribute())
-			.AddWeakLambda(this, [this](const FOnAttributeChangeData& Data)
+		.AddWeakLambda(this,
+			[this](const FOnAttributeChangeData& Data)
 			{
 				OnMaxHealthChanged.Broadcast(Data.NewValue);
 			});

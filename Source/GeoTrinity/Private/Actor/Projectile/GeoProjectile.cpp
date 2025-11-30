@@ -111,6 +111,12 @@ void AGeoProjectile::ApplyEffectToTarget(AActor* OtherActor)
 // ---------------------------------------------------------------------------------------------------------------------
 bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 {
+	// Do no execute overlap logic on client !
+	if (!OtherActor->HasAuthority())
+	{
+		return false;
+	}
+
 	if (!IsValid(DamageEffectParams.SourceASC))
 	{
 		UE_LOG(LogGeoTrinity, Error,
