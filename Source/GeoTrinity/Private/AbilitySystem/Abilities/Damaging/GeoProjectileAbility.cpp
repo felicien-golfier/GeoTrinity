@@ -1,10 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "AbilitySystem/Abilities/Damaging/GeoProjectileSpell.h"
+#include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
 #include "Actor/Projectile/GeoProjectile.h"
 
-void UGeoProjectileSpell::SpawnProjectile(const FVector& projectileTargetLocation)
+void UGeoProjectileAbility::SpawnProjectile(const FVector& projectileTargetLocation)
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));

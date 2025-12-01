@@ -17,7 +17,6 @@ public class GeoTrinity : ModuleRules
 			"EnhancedInput",
 			"GeometryFramework",
 			"GeometryCore",
-			"DynamicMesh",
 			"GameplayAbilities",
 			"SlateCore",
 			"Slate",
