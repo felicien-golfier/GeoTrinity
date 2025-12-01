@@ -4,7 +4,7 @@
 
 #include "Actor/Projectile/GeoProjectile.h"
 
-void UGeoProjectileAbility::SpawnProjectile(const FVector& projectileTargetLocation)
+void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projectileTargetLocation)
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
@@ -13,9 +13,19 @@ void UGeoProjectileAbility::SpawnProjectile(const FVector& projectileTargetLocat
 		return;
 	}
 
-	FRotator rotation = (projectileTargetLocation - Actor->GetActorLocation()).Rotation();
+	SpawnProjectile((projectileTargetLocation - Actor->GetActorLocation()).Rotation());
+}
 
-	const FTransform spawnTransform{rotation.Quaternion(), Actor->GetActorLocation()};
+void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
+{
+	const AActor* Actor = GetAvatarActorFromActorInfo();
+	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
+	if (!Actor->HasAuthority())
+	{
+		return;
+	}
+
+	const FTransform spawnTransform{DirectionRotator.Quaternion(), Actor->GetActorLocation()};
 
 	// Create projectile
 	AActor* ProjectileOwner = GetOwningActorFromActorInfo();
@@ -35,4 +45,43 @@ void UGeoProjectileAbility::SpawnProjectile(const FVector& projectileTargetLocat
 	GeoProjectile->DamageEffectParams = MakeDamageEffectParamsFromClassDefaults(nullptr);
 
 	GeoProjectile->FinishSpawning(spawnTransform);
+}
+
+void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
+{
+	for (FVector Location : GetTargetLocations())
+	{
+		SpawnProjectileUsingLocation(Location);
+	}
+}
+
+TArray<FVector> UGeoProjectileAbility::GetTargetLocations()
+{
+	switch (Target)
+	{
+		case ETarget::Forward:
+		{
+			AActor* Actor = GetAvatarActorFromActorInfo();
+			return {Actor->GetActorForwardVector() + Actor->GetActorLocation()};
+		}
+
+		case ETarget::AllPlayers:
+		{
+			TArray<FVector> Locations;
+			for (auto PlayerControllerIt = GetWorld()->GetPlayerControllerIterator(); PlayerControllerIt;
+				++PlayerControllerIt)
+			{
+				if (APlayerController* PlayerController = PlayerControllerIt->Get())
+				{
+					Locations.Add(PlayerController->GetPawn()->GetActorLocation());
+				}
+			}
+			return Locations;
+		}
+
+		default:
+		{
+			return {};
+		}
+	}
 }

@@ -27,6 +27,7 @@ public:
 	// Sets default values for this character's properties
 	AGeoCharacter(const FObjectInitializer& ObjectInitializer);
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
+	UInteractableComponent* GetInteractableComponent() const { return InteractableComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const
 	{
 		return Cast<UGeoMovementComponent>(GetMovementComponent());

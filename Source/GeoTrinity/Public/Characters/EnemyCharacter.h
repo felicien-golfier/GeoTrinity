@@ -2,8 +2,11 @@
 
 #pragma once
 
+#include "AbilitySystem/InteractableComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "CoreMinimal.h"
+#include "GameplayAbilitySpec.h"
+#include "UObject/SoftObjectPtr.h"
 
 #include "EnemyCharacter.generated.h"
 
@@ -17,4 +20,25 @@ class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
 
 public:
 	AEnemyCharacter(const FObjectInitializer& ObjectInitializer);
+
+	// Firing points the enemy will move to (round-robin) to cast abilities
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|AI")
+	TArray<TObjectPtr<AActor>> FiringPoints;
+
+	// Behavior Tree to run for this enemy (assigned per instance or via BP)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|AI")
+	TObjectPtr<class UBehaviorTree> BehaviorTree;
+
+	// Get next firing point (cycles) and advance the internal index. Returns false if none.
+	bool GetAndAdvanceNextFiringPointLocation(FVector& OutLocation);
+
+protected:
+	virtual void BeginPlay() override;
+
+	// Destroy actor when health reaches zero, bound to InteractableComponent->OnHealthChanged
+	UFUNCTION()
+	void OnHealthChanged(float NewValue);
+
+	// Index used for round-robin selection of firing points
+	int CurrentFiringPointIndex = 0;
 };
