@@ -6,9 +6,6 @@
 
 #include "BTTask_FireProjectileAbility.generated.h"
 
-/**
- * Activates the enemy's AttackAbilityClass via GAS (TryActivateAbilityByClass)
- */
 UCLASS(DisplayName = "Fire Projectile Ability")
 class GEOTRINITY_API UBTTask_FireProjectileAbility : public UBTTaskNode
 {
@@ -21,7 +18,6 @@ public:
 
 protected:
 	// Optional: if set, the task will try to activate abilities matching this gameplay tag via ASC.
-	// If unset or invalid, it will fall back to AttackAbilityClass on the enemy character.
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	FBlackboardKeySelector AbilityTagKey;
 };
