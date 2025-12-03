@@ -13,6 +13,9 @@
 class UProjectileMovementComponent;
 class UNiagaraSystem;
 class USphereComponent;
+class USceneComponent;
+class USoundBase;
+class UAudioComponent;
 
 UCLASS()
 class GEOTRINITY_API AGeoProjectile : public AActor
@@ -22,6 +25,11 @@ public:
 	AGeoProjectile();
 	virtual void LifeSpanExpired() override;
 	virtual void Tick(float DeltaSeconds) override;
+
+	// Called by pool subsystem when taken from pool
+	virtual void OnPooledSpawned();
+	// Called by pool subsystem when returned to pool
+	virtual void OnPooledDespawned();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;

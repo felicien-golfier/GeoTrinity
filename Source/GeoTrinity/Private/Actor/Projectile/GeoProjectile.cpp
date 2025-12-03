@@ -11,6 +11,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "System/GeoActorPoolSubsystem.h"
 #include "Tool/GameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -208,5 +209,36 @@ void AGeoProjectile::PlayImpactFx() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::EndProjectileLife()
 {
+	// Return to pool if subsystem exists, otherwise destroy
+	if (UWorld* World = GetWorld())
+	{
+		if (UGeoActorPoolSubsystem* Pool = World->GetSubsystem<UGeoActorPoolSubsystem>())
+		{
+			Pool->ReleaseActor(this);
+			return;
+		}
+	}
 	Destroy();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::OnPooledSpawned()
+{
+	bHasOverlapped = false;
+	InitialPosition = GetActorLocation();
+	DistanceSpanSqr = FMath::Square(DistanceSpan);
+	SetLifeSpan(LifeSpanInSec);
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	if (LoopingSound && !LoopingSoundComponent)
+	{
+		LoopingSoundComponent = UGameplayStatics::SpawnSoundAttached(LoopingSound, GetRootComponent(), NAME_None,
+			FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::OnPooledDespawned()
+{
+	StopLoopingSound();
 }
