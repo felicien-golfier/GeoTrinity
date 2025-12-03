@@ -24,5 +24,5 @@ void UGeoUserWidget::InitFromHUD(AGeoHUD* GeoHUD)
 		return;
 	}
 
-	BindCallacksFromHUD(GeoHUD);
+	BindCallbacksFromHUD(GeoHUD);
 }
