@@ -42,6 +42,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
 	TArray<TSubclassOf<UGeoGameplayAbility>> StartupAbilities;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
+	TArray<FGameplayTag> StartupAbilityTags;
+	
 private:
 	void InitializeDefaultAttributes();
 	void AddDefaultAbilities();

@@ -100,6 +100,7 @@ void UInteractableComponent::AddCharacterDefaultAbilities()
 			TEXT("This should not be the case, as only the server should be calling this method"));
 	}
 	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilities);
+	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilityTags);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

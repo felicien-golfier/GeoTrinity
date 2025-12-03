@@ -7,14 +7,38 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffectTypes.h"
-#include "GeoGameMode.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Data/StatusInfo.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Kismet/GameplayStatics.h"
 #include "Settings/GameDataSettings.h"
+
+// ---------------------------------------------------------------------------------------------------------------------
+UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo(UObject const* WorldContextObject)
+{
+	if (!WorldContextObject)
+	{
+		return nullptr;
+	}
+		
+	const UGameDataSettings* GDSettings = GetDefault<UGameDataSettings>();
+
+	return GDSettings->GetLoadedDataAsset(GDSettings->AbilityInfo);	
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UStatusInfo* UGeoAbilitySystemLibrary::GetStatusInfo(UObject const* WorldContextObject)
+{
+	if (!WorldContextObject)
+	{
+		return nullptr;
+	}
+		
+	const UGameDataSettings* GDSettings = GetDefault<UGameDataSettings>();
+
+	return GDSettings->GetLoadedDataAsset(GDSettings->StatusInfo);	
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromDamageParams(FDamageEffectParams const& params)

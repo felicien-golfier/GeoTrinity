@@ -99,6 +99,9 @@ protected:
 	// TODO: could be auto by tag
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
 	TArray<TSubclassOf<UGeoGameplayAbility>> StartupAbilities;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
+	TArray<FGameplayTag> StartupAbilityTags;
 	//----------------------------------------------------------------------//
 	// GAS END
 	//----------------------------------------------------------------------//

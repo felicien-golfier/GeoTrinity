@@ -25,6 +25,10 @@ struct FGeoGameplayTags
 	FGameplayTag Gameplay_Damage;
 	
 	FGameplayTag InputTag_BasicSpell;
+	FGameplayTag InputTag_SpecialSpell;
+	
+	FGameplayTag Ability_Type_Basic;
+	FGameplayTag Ability_Type_Special;
 
 private:
 	static FGeoGameplayTags GameplayTags;
