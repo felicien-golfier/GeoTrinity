@@ -20,6 +20,16 @@ namespace
 	{
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::InputTag + "." + tagName), comment);
 	}
+
+	// ABILITY //
+	void AddAbilityTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
+	{
+		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilityTag + "." + tagName), comment);
+	}
+	void AddAbilityIDTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
+	{
+		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilityIDTag + "." + tagName), comment);
+	}
 }
 
 void FGeoGameplayTags::InitializeNativeGameplayTags()
@@ -28,4 +38,9 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	
 	// INPUT //
 	AddInputTag(GameplayTags.InputTag_BasicSpell		, "BasicSpell", "Input tag for left mouse button-linked spell");
+	AddInputTag(GameplayTags.InputTag_SpecialSpell	, "SpecialSpell", "Input tag for right mouse button-linked spell");
+	
+	// TYPE OF ABILITY //
+	AddAbilityTag(GameplayTags.Ability_Type_Basic	, "Type.Basic", "Tag associated with basic spells");
+	AddAbilityTag(GameplayTags.Ability_Type_Special	, "Type.Special", "Tag associated with special spells");
 }

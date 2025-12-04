@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Logging/LogMacros.h"
 
 // Project-wide log category for GeoTrinity
 DECLARE_LOG_CATEGORY_EXTERN(LogGeoTrinity, Log, All);

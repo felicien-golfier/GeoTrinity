@@ -21,5 +21,5 @@ public:
 	void InitFromHUD(AGeoHUD* GeoHUD);
 	
 	UFUNCTION(BlueprintImplementableEvent)
-	void BindCallacksFromHUD(AGeoHUD* GeoHUD);
+	void BindCallbacksFromHUD(AGeoHUD* GeoHUD);
 };

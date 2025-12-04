@@ -6,6 +6,7 @@
 #include "AbilitySystem/InteractableComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 
 AEnemyCharacter::AEnemyCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(
@@ -26,6 +27,8 @@ void AEnemyCharacter::BeginPlay()
 		InteractableComponent->SetGenericTeamId(FGenericTeamId(static_cast<uint8>(ETeam::Enemy)));
 		InteractableComponent->OnHealthChanged.AddDynamic(this, &AEnemyCharacter::OnHealthChanged);
 	}
+
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), TEXT("Path"), FiringPoints);
 }
 
 void AEnemyCharacter::OnHealthChanged(float NewValue)

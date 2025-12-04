@@ -3,7 +3,6 @@
 #pragma once
 
 #include "AbilitySystem/GeoAscTypes.h"
-#include "Characters/GeoCharacter.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayEffectTypes.h"

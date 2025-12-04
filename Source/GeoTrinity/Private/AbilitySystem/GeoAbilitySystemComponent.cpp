@@ -4,7 +4,8 @@
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/GeoAscTypes.h"
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
 
 FGeoGameplayEffectContext* UGeoAbilitySystemComponent::MakeGeoEffectContext() const
@@ -32,6 +33,40 @@ void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<TSubclassOf
 	bStartupAbilitiesGiven = true;
 	// Event broadcasting will be needed for UI
 	// AbilitiesGivenEvent.Broadcast();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive)
+{
+	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
+	if (!AbilityInfos)
+	{
+		return;
+	}
+	
+	TArray<FGameplayAbilityInfo> AbilityInfoList = AbilityInfos->FindAbilityInfoForListOfTag(AbilitiesToGive, true);
+	
+	for (FGameplayAbilityInfo const& abilityInfo : AbilityInfoList)
+	{
+		FGameplayAbilitySpec abilitySpec{abilityInfo.AbilityClass, 1};
+		
+		// Add input tag if need be
+		if (abilityInfo.TypeOfAbilityTag.IsValid())
+		{
+			if (FGameplayTag const* FoundTag = AbilityInfos->AbilityTypeToInputTagMap.Find(abilityInfo.TypeOfAbilityTag))
+			{
+				abilitySpec.GetDynamicSpecSourceTags().AddTag(*FoundTag);
+			}
+			else
+			{
+				UE_LOG(LogGeoASC, Error, TEXT("Input Tag for ability of type %s not found in map AbilityTypeToInputTagMap (UAbilityInfo)"), *abilityInfo.TypeOfAbilityTag.ToString());
+			}
+		}
+		
+		GiveAbility(abilitySpec);
+	}
+	
+	bStartupAbilitiesGiven = true;	
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

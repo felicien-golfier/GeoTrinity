@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-//#include "AbilitySystem/Data/StatusInfo.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameDataSettings.generated.h"
 
@@ -24,6 +24,9 @@ public:
 	/* Soft path will be converted to content reference before use */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
 	TSoftObjectPtr<UStatusInfo> StatusInfo;
+	
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
+	TSoftObjectPtr<UAbilityInfo> AbilityInfo;
 
 };
 

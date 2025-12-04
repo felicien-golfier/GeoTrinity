@@ -23,6 +23,7 @@ public:
 	
 	/** Abilities **/
 	void AddCharacterStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive);
+	void AddCharacterStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive);
 	
 	/** Input **/
 	void AbilityInputTagPressed(FGameplayTag const& inputTag);
