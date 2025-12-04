@@ -22,13 +22,12 @@ UInteractableComponent::UInteractableComponent()
 	{
 		UE_LOG(LogTemp, Error, TEXT("InteractableComponent::UInteractableComponent() GetOwner() is null"));
 	}
-	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-UAttributeSet* UInteractableComponent::GetAttributeSetBase() const
+UAttributeSet* UInteractableComponent::GetAttributeSet() const
 {
-	return AttributeSetBase;
+	return AttributeSet;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -37,15 +36,16 @@ void UInteractableComponent::BeginPlay()
 	Super::BeginPlay();
 	if (bInitGasAtBeginPlay)
 	{
-		InitGas(AbilitySystemComponent, GetOwner(), AttributeSetBase);
+		InitGas(AbilitySystemComponent, GetOwner(),
+			NewObject<UGeoAttributeSetBase>(GetOuter(), UGeoAttributeSetBase::StaticClass()));
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::InitGas(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
-	UCharacterAttributeSet* GeoAttributeSetBase)
+	UGeoAttributeSetBase* NewAttributeSet)
 {
-	InitAbilityActorInfo(GeoAbilitySystemComponent, OwnerActor, GeoAttributeSetBase);
+	InitAbilityActorInfo(GeoAbilitySystemComponent, OwnerActor, NewAttributeSet);
 
 	if (GetOwner()->HasAuthority())
 	{
@@ -62,15 +62,19 @@ void UInteractableComponent::InitGas(UGeoAbilitySystemComponent* GeoAbilitySyste
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UInteractableComponent::InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent,
-	AActor* OwnerActor, UCharacterAttributeSet* GeoAttributeSetBase)
+	AActor* OwnerActor, UGeoAttributeSetBase* NewAttributeSet)
 {
 	AbilitySystemComponent = GeoAbilitySystemComponent;
 	AbilitySystemComponent->InitAbilityActorInfo(OwnerActor, GetOwner());
-	AttributeSet = GeoAttributeSetBase;
+	if (IsValid(NewAttributeSet))
+	{
+		AttributeSet = NewAttributeSet;
+		AbilitySystemComponent->AddSpawnedAttribute(AttributeSet);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UInteractableComponent::InitializeDefaultAttributes()
+void UInteractableComponent::InitializeDefaultAttributes() const
 {
 	check(IsValid(AbilitySystemComponent));
 
@@ -109,8 +113,7 @@ void UInteractableComponent::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGamepla
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UInteractableComponent::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass,
-	float level)
+void UInteractableComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level) const
 {
 	if (!IsValid(AbilitySystemComponent))
 	{

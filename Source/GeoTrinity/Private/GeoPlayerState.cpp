@@ -19,10 +19,11 @@ AGeoPlayerState::AGeoPlayerState()
 
 	// Adding an attribute set as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
-	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
+	CharacterAttributeSet = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("CharacterAttributeSet"));
 
 	SetNetUpdateFrequency(100.0f);
 }
+
 void AGeoPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
@@ -55,11 +56,11 @@ void AGeoPlayerState::InitializeInteractableComponent()
 	{
 		if (Pawn->HasAuthority())
 		{
-			InteractableComponent->InitGas(AbilitySystemComponent, Pawn, AttributeSetBase);
+			InteractableComponent->InitGas(AbilitySystemComponent, Pawn, CharacterAttributeSet);
 		}
 		else
 		{
-			InteractableComponent->InitAbilityActorInfo(AbilitySystemComponent, Pawn, AttributeSetBase);
+			InteractableComponent->InitAbilityActorInfo(AbilitySystemComponent, Pawn, CharacterAttributeSet);
 			InitOverlay();
 		}
 	}
@@ -72,7 +73,7 @@ void AGeoPlayerState::InitOverlay()
 		// Hud only present locally
 		if (AGeoHUD* Hud = Cast<AGeoHUD>(GeoPlayerController->GetHUD()))
 		{
-			Hud->InitOverlay(GeoPlayerController, this, AbilitySystemComponent, AttributeSetBase);
+			Hud->InitOverlay(GeoPlayerController, this, AbilitySystemComponent, CharacterAttributeSet);
 		}
 	}
 }
