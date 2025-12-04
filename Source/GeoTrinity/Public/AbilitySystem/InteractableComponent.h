@@ -9,6 +9,7 @@
 
 #include "InteractableComponent.generated.h"
 
+class UGeoAttributeSetBase;
 class UGeoAbilitySystemComponent;
 class UCharacterAttributeSet;
 class UAttributeSet;
@@ -60,17 +61,17 @@ public:
 public:
 	void BindGasCallbacks();
 	virtual void InitGas(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
-		UCharacterAttributeSet* GeoAttributeSetBase);
+		UGeoAttributeSetBase* NewAttributeSet);
 	virtual void InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
-		UCharacterAttributeSet* GeoAttributeSetBase);
-	void InitializeDefaultAttributes();
+		UGeoAttributeSetBase* NewAttributeSet);
+	void InitializeDefaultAttributes() const;
 	void AddCharacterDefaultAbilities();
-	UFUNCTION(Server, Reliable)
-	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
+
+	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level) const;
 
 	// Getter for base attribute set (for HUD/UI and other systems needing UAttributeSet*)
 	UFUNCTION(BlueprintCallable, Category = "GAS")
-	UAttributeSet* GetAttributeSetBase() const;
+	UAttributeSet* GetAttributeSet() const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gas")
 	bool bInitGasAtBeginPlay = true;
@@ -83,6 +84,7 @@ public:
 	FOnGasAttributeChangedSignature OnHealthChanged;
 	UPROPERTY(BlueprintAssignable, Category = "Gas")
 	FOnGasAttributeChangedSignature OnMaxHealthChanged;
+
 protected:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass);
@@ -91,10 +93,7 @@ protected:
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Gas")
-	TObjectPtr<UCharacterAttributeSet> AttributeSet;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Gas")
-	TObjectPtr<UCharacterAttributeSet> AttributeSetBase;
+	TObjectPtr<UGeoAttributeSetBase> AttributeSet;
 
 	// TODO: could be auto by tag
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)

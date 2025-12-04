@@ -41,5 +41,5 @@ protected:
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY()
-	TObjectPtr<UCharacterAttributeSet> AttributeSetBase;
+	TObjectPtr<UCharacterAttributeSet> CharacterAttributeSet;
 };

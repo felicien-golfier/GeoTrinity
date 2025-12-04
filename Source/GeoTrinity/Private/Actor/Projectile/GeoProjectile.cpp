@@ -112,7 +112,7 @@ void AGeoProjectile::ApplyEffectToTarget(AActor* OtherActor)
 bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 {
 	// Do no execute overlap logic on client !
-	if (!OtherActor->HasAuthority())
+	if (!HasAuthority())
 	{
 		return false;
 	}

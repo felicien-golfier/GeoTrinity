@@ -2,10 +2,8 @@
 
 #pragma once
 
-#include "AbilitySystem/InteractableComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "CoreMinimal.h"
-#include "GameplayAbilitySpec.h"
 #include "UObject/SoftObjectPtr.h"
 
 #include "EnemyCharacter.generated.h"
@@ -22,8 +20,8 @@ public:
 	AEnemyCharacter(const FObjectInitializer& ObjectInitializer);
 
 	// Firing points the enemy will move to (round-robin) to cast abilities
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|AI")
-	TArray<TObjectPtr<AActor>> FiringPoints;
+	UPROPERTY(Transient)
+	TArray<AActor*> FiringPoints;
 
 	// Behavior Tree to run for this enemy (assigned per instance or via BP)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|AI")

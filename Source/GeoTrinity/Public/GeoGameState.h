@@ -4,14 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
+
 #include "GeoGameState.generated.h"
 
+class AEnemyCharacter;
 /**
- * 
+ *
  */
 UCLASS()
 class GEOTRINITY_API AGeoGameState : public AGameState
 {
 	GENERATED_BODY()
-	
+
+	virtual void HandleMatchHasStarted() override;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyCharacter> EnemyToSpawn;
+
+	UPROPERTY(Transient)
+	TObjectPtr<AEnemyCharacter> SpawnedEnemy;
 };

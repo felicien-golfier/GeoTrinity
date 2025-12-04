@@ -7,6 +7,7 @@
 
 #include "GeoGameMode.generated.h"
 
+class AEnemyCharacter;
 class UStatusInfo;
 /**
  *
@@ -19,5 +20,4 @@ public:
 	AGeoGameMode(const FObjectInitializer& ObjectInitializer);
 
 	virtual void Tick(float DeltaSeconds) override;
-	
 };
