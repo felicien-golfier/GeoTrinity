@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/InteractableComponent.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -50,14 +51,11 @@ void UInteractableComponent::InitGas(UGeoAbilitySystemComponent* GeoAbilitySyste
 	if (GetOwner()->HasAuthority())
 	{
 		InitializeDefaultAttributes();
-
-		BindGasCallbacks();
-		AddCharacterDefaultAbilities();
+		AddCharacterDefaultAbilities();		
 	}
-
-	// fake
-	OnMaxHealthChanged.Broadcast(100.f);
-	OnHealthChanged.Broadcast(90.f);
+	
+	// Bind for cosmetic and gameplay purposes, so both on client and on server
+	BindGasCallbacks();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -126,7 +124,8 @@ void UInteractableComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> game
 
 	const FGameplayEffectSpecHandle SpecHandle =
 		AbilitySystemComponent->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
-
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, FGameplayTag::RequestGameplayTag(FName("Data.Level")), level);
+	
 	if (SpecHandle.IsValid())
 	{
 		FPredictionKey PredictionKey;
