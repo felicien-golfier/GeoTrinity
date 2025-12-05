@@ -24,7 +24,7 @@ enum class ETeam : uint8
 	Enemy = (1 << 2) UMETA(DisplayName = "Enemy")
 };
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GEOTRINITY_API UInteractableComponent
 	: public UActorComponent
 	, public IGenericTeamAgentInterface
@@ -99,7 +99,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
 	TArray<TSubclassOf<UGeoGameplayAbility>> StartupAbilities;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS, meta=(Categories="Ability.Spell"))
 	TArray<FGameplayTag> StartupAbilityTags;
 	//----------------------------------------------------------------------//
 	// GAS END

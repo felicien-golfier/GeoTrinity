@@ -1,8 +1,8 @@
 #pragma once
 
-#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/InteractableComponent.h"
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "GeoMovementComponent.h"
 #include "GeoPlayerController.h"
@@ -19,7 +19,7 @@ class UDynamicMeshComponent;
 class UGeoMovementComponent;
 class UStaticMeshComponent;
 UCLASS()
-class GEOTRINITY_API AGeoCharacter : public ACharacter
+class GEOTRINITY_API AGeoCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -33,6 +33,11 @@ public:
 		return Cast<UGeoMovementComponent>(GetMovementComponent());
 	}
 
+
+	// IAbilitySystemInterface BEGIN
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	// IAbilitySystemInterface END
+	
 	AGeoPlayerController* GetGeoController() const { return Cast<AGeoPlayerController>(GetController()); }
 
 	static FColor GetColorForCharacter(const AGeoCharacter* Character);

@@ -4,6 +4,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 
 // Sets default values
@@ -31,6 +32,11 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 
 	InteractableComponent = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable Component"));
+}
+
+UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
+{
+	return InteractableComponent->AbilitySystemComponent;
 }
 
 FColor AGeoCharacter::GetColorForCharacter(const AGeoCharacter* Character)
