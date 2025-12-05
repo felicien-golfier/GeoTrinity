@@ -11,7 +11,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
-#include "System/GeoActorPoolSubsystem.h"
+#include "System/GeoActorPoolingSubsystem.h"
 #include "Tool/GameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -38,13 +38,17 @@ AGeoProjectile::AGeoProjectile()
 	ProjectileMovement->InitialSpeed = 550.f;
 	ProjectileMovement->MaxSpeed = 550.f;
 	ProjectileMovement->ProjectileGravityScale = 0.f;
+
+	LoopingSoundComponent = CreateDefaultSubobject<UAudioComponent>("LoopingSoundComponent");
+	LoopingSoundComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::LifeSpanExpired()
 {
-	if (LifeSpanInSec != 0)
+	if (LifeSpanInSec != 0 && !bIsEnding)
 	{
+		bIsEnding = true;
 		EndProjectileLife();
 	}
 }
@@ -53,42 +57,17 @@ void AGeoProjectile::LifeSpanExpired()
 void AGeoProjectile::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	if (bIsEnding)
+	{
+		return;
+	}
 
 	float elapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
 	if (elapsedDistanceSqr >= DistanceSpanSqr)
 	{
+		bIsEnding = true;
 		EndProjectileLife();
 	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::BeginPlay()
-{
-	Super::BeginPlay();
-
-	SetActorTickEnabled(true);
-
-	DistanceSpanSqr = FMath::Square(DistanceSpan);
-	SetLifeSpan(LifeSpanInSec);
-
-	Sphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereOverlap);
-	Sphere->OnComponentHit.AddDynamic(this, &ThisClass::OnSphereHit);
-
-	LoopingSoundComponent = UGameplayStatics::SpawnSoundAttached(LoopingSound, GetRootComponent(), NAME_None,
-		FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true);
-
-	InitialPosition = GetActorLocation();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::Destroyed()
-{
-	if (!bHasOverlapped && !HasAuthority())
-	{
-		// In case destroy() is replicated before OnSphereOverlap()
-		PlayImpactFx();
-	}
-	Super::Destroyed();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -144,47 +123,38 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::StopLoopingSound() const
-{
-	if (LoopingSoundComponent)
-	{
-		LoopingSoundComponent->Stop();
-		LoopingSoundComponent->DestroyComponent();
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!IsValidOverlap(OtherActor))
+	if (bIsEnding || !IsValidOverlap(OtherActor))
 	{
 		return;
 	}
 
-	// If multiple overlap, don't play sound each time
-	if (!bHasOverlapped)
-	{
-		PlayImpactFx();
-	}
+	bIsEnding = true;
 
-	bHasOverlapped = true;
+	PlayImpactFx();
+
 	if (HasAuthority())
 	{
 		ApplyEffectToTarget(OtherActor);
-		EndProjectileLife();
 	}
+
+	EndProjectileLife();
 }
 
 void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 
 {
-	if (HasAuthority())
+	if (bIsEnding)
 	{
-		EndProjectileLife();
+		return;
 	}
+	bIsEnding = true;
+	EndProjectileLife();
 }
+
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlayImpactFx() const
 {
@@ -192,8 +162,6 @@ void AGeoProjectile::PlayImpactFx() const
 	{
 		return;
 	}
-
-	StopLoopingSound();
 
 	const FVector actorLocation = GetActorLocation();
 	if (IsValid(ImpactSound))
@@ -209,36 +177,45 @@ void AGeoProjectile::PlayImpactFx() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::EndProjectileLife()
 {
-	// Return to pool if subsystem exists, otherwise destroy
-	if (UWorld* World = GetWorld())
-	{
-		if (UGeoActorPoolSubsystem* Pool = World->GetSubsystem<UGeoActorPoolSubsystem>())
-		{
-			Pool->ReleaseActor(this);
-			return;
-		}
-	}
-	Destroy();
+	PlayImpactFx();
+
+	// TODO: Call Release after FX are done !
+
+	UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
+	checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
+	Pool->Push(this);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::OnPooledSpawned()
+void AGeoProjectile::Init()
 {
-	bHasOverlapped = false;
+	if (!HasAuthority())
+	{
+		LoopingSoundComponent->SetSound(LoopingSound);
+		LoopingSoundComponent->Play();
+	}
+
+	SetLifeSpan(LifeSpanInSec);
+	Sphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereOverlap);
+	Sphere->OnComponentHit.AddDynamic(this, &ThisClass::OnSphereHit);
+
 	InitialPosition = GetActorLocation();
 	DistanceSpanSqr = FMath::Square(DistanceSpan);
-	SetLifeSpan(LifeSpanInSec);
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
-	if (LoopingSound && !LoopingSoundComponent)
-	{
-		LoopingSoundComponent = UGameplayStatics::SpawnSoundAttached(LoopingSound, GetRootComponent(), NAME_None,
-			FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true);
-	}
+
+	bIsEnding = false;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::OnPooledDespawned()
+void AGeoProjectile::End()
 {
-	StopLoopingSound();
+	ensureMsgf(bIsEnding, TEXT("Ends projectile without bIsEnding true"));
+	if (!HasAuthority())
+	{
+		LoopingSoundComponent->Stop();
+	}
+
+	Sphere->OnComponentBeginOverlap.RemoveDynamic(this, &ThisClass::OnSphereOverlap);
+	Sphere->OnComponentHit.RemoveDynamic(this, &ThisClass::OnSphereHit);
+
+	ProjectileMovement->StopMovementImmediately();
 }

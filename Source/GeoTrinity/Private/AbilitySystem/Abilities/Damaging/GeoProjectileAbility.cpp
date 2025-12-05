@@ -3,6 +3,7 @@
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
 #include "Actor/Projectile/GeoProjectile.h"
+#include "System/GeoActorPoolingSubsystem.h"
 
 void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projectileTargetLocation)
 {
@@ -25,13 +26,15 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 		return;
 	}
 
-	const FTransform spawnTransform{DirectionRotator.Quaternion(), Actor->GetActorLocation()};
+	const FTransform SpawnTransform{DirectionRotator.Quaternion(), Actor->GetActorLocation()};
 
 	// Create projectile
 	AActor* ProjectileOwner = GetOwningActorFromActorInfo();
 	checkf(ProjectileClass, TEXT("No ProjectileClass in the projectile spell!"));
-	AGeoProjectile* GeoProjectile = GetWorld()->SpawnActorDeferred<AGeoProjectile>(ProjectileClass, spawnTransform,
-		ProjectileOwner, Cast<APawn>(ProjectileOwner), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+	AGeoProjectile* GeoProjectile =
+		UGeoActorPoolingSubsystem::Get(GetWorld())
+			->Pop(ProjectileClass, SpawnTransform, ProjectileOwner, Cast<APawn>(ProjectileOwner), false);
 
 	if (!GeoProjectile)
 	{
@@ -44,7 +47,7 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 
 	GeoProjectile->DamageEffectParams = MakeDamageEffectParamsFromClassDefaults(nullptr);
 
-	GeoProjectile->FinishSpawning(spawnTransform);
+	GeoProjectile->Init();   // Equivalent to the DeferredSpawn
 }
 
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget()

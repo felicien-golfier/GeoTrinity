@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayEffectTypes.h"
+#include "System/GeoPoolableInterface.h"
 
 #include "GeoProjectile.generated.h"
 
@@ -15,9 +16,13 @@ class USphereComponent;
 class USceneComponent;
 class USoundBase;
 class UAudioComponent;
+class UPrimitiveComponent;
+struct FHitResult;
 
 UCLASS()
-class GEOTRINITY_API AGeoProjectile : public AActor
+class GEOTRINITY_API AGeoProjectile
+	: public AActor
+	, public IGeoPoolableInterface
 {
 	GENERATED_BODY()
 public:
@@ -25,10 +30,10 @@ public:
 	virtual void LifeSpanExpired() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	// Called by pool subsystem when taken from pool
-	virtual void OnPooledSpawned();
-	// Called by pool subsystem when returned to pool
-	virtual void OnPooledDespawned();
+	// IGeoPoolableInterface start
+	virtual void Init() override;
+	virtual void End() override;
+	// IGeoPoolableInterface end
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
@@ -41,12 +46,8 @@ public:
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;
 
 protected:
-	/** Functions **/
-	virtual void BeginPlay() override;
-	virtual void Destroyed() override;
 	void ApplyEffectToTarget(AActor* OtherActor);
 	virtual bool IsValidOverlap(const AActor* OtherActor);
-	void StopLoopingSound() const;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -71,10 +72,10 @@ private:
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
 	float DistanceSpan = 100.f;
 
-	UPROPERTY(EditAnywhere, Meta = (Bitmask, BitmaskEnum = "ETeam"))
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "ETeam"))
 	int32 ApplyEffectToTeamOnOverlap;
 
-	bool bHasOverlapped{false};
+	bool bIsEnding{false};
 
 	FVector InitialPosition;
 	float DistanceSpanSqr;
