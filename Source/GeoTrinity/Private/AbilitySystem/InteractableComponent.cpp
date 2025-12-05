@@ -124,7 +124,6 @@ void UInteractableComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> game
 
 	const FGameplayEffectSpecHandle SpecHandle =
 		AbilitySystemComponent->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, FGameplayTag::RequestGameplayTag(FName("Data.Level")), level);
 	
 	if (SpecHandle.IsValid())
 	{
