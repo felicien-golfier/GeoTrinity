@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GenericTeamAgentInterface.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "GeoAbilitySystemLibrary.generated.h"
 
@@ -39,6 +40,16 @@ public:
 	static FGameplayTag GetGameplayTagFromRootTagString(FString const& StringOfTag);
 	static FGameplayTag GetAbilityTagFromSpec(FGameplayAbilitySpec const& Spec);
 	static FGameplayTag GetAbilityTagFromAbility(UGameplayAbility const& Ability);
+	
+	/** TEAM **/
+	UFUNCTION(BlueprintCallable, Category="AbilitySystemLibrary|Team", meta=(DefaultToSelf = "WorldContextObject"))
+	static TArray<AActor*> GetAllAgentsInTeam(const UObject* WorldContextObject, FGenericTeamId const& TeamId);
+	UFUNCTION(BlueprintCallable, Category="AbilitySystemLibrary|Team", meta=(DefaultToSelf = "WorldContextObject"))
+	static TArray<AActor*> GetAllAgentsWithRelationTowardsActor(const UObject* WorldContextObject, AActor const* Actor, ETeamAttitude::Type Attitude);
+	
+	/** TOOLBOX **/
+	UFUNCTION(BlueprintCallable, Category="AbilitySystemLibrary|Toolbox")
+	static AActor* GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList);
 	
 	/**
 	 * Getters and setters for the context

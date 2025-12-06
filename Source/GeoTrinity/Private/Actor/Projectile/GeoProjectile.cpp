@@ -153,6 +153,12 @@ void AGeoProjectile::StopLoopingSound() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::DisableSphereCollision() const
+{
+	Sphere->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {

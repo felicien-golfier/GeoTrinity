@@ -5,7 +5,6 @@
 #include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
-#include "InputAction.h"
 
 #include "GeoPlayerState.generated.h"
 
@@ -26,7 +25,7 @@ public:
 	virtual void BeginPlay() override;
 	void InitializeInteractableComponent();
 
-	virtual void ClientInitialize(class AController* Controller) override;
+	virtual void ClientInitialize(AController* Controller) override;
 	void InitOverlay();
 
 	UFUNCTION()
@@ -36,6 +35,9 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	/** END Implement IAbilitySystemInterface */
 
+	UCharacterAttributeSet* GetCharacterAttributeSet() const { return CharacterAttributeSet; }
+	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponent() const { return AbilitySystemComponent; }
+	
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;

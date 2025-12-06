@@ -30,13 +30,16 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	bUseControllerRotationYaw = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
-
-	InteractableComponent = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable Component"));
 }
 
 UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
 {
-	return InteractableComponent->AbilitySystemComponent;
+	return AbilitySystemComponent;
+}
+
+FGenericTeamId AGeoCharacter::GetGenericTeamId() const
+{
+	return FGenericTeamId(static_cast<uint8>(TeamId));
 }
 
 FColor AGeoCharacter::GetColorForCharacter(const AGeoCharacter* Character)

@@ -3,15 +3,12 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoPlayerState.h"
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoHUD.h"
 
 class AGeoPlayerState;
 
-APlayableCharacter::APlayableCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
-{
-	InteractableComponent->bInitGasAtBeginPlay = false;
-}
 
 void APlayableCharacter::Tick(float DeltaSeconds)
 {
@@ -56,32 +53,67 @@ void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		&ThisClass::AbilityInputTagHeld);
 }
 
-void APlayableCharacter::AbilityInputTagPressed(FGameplayTag inputTag)
+void APlayableCharacter::InitAbilityActorInfo()
 {
-	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s pressed"), *inputTag.ToString());
-	if (!InteractableComponent->AbilitySystemComponent)
+	Super::InitAbilityActorInfo();
+	
+	AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>();
+	if (!GeoPlayerState)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("No player state in %s"), *GetName());
 		return;
 	}
-	InteractableComponent->AbilitySystemComponent->AbilityInputTagPressed(inputTag);
+	
+	AbilitySystemComponent = Cast<UGeoAbilitySystemComponent>(GeoPlayerState->GetAbilitySystemComponent());
+	AbilitySystemComponent->InitAbilityActorInfo(GeoPlayerState, this);
+	AttributeSetBase = GeoPlayerState->GetCharacterAttributeSet();
 }
 
-void APlayableCharacter::AbilityInputTagReleased(FGameplayTag inputTag)
+void APlayableCharacter::AbilityInputTagPressed(FGameplayTag InputTag)
 {
-	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s released"), *inputTag.ToString());
-	if (!InteractableComponent->AbilitySystemComponent)
+	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s pressed"), *InputTag.ToString());
+	if (!AbilitySystemComponent)
 	{
 		return;
 	}
-	InteractableComponent->AbilitySystemComponent->AbilityInputTagReleased(inputTag);
+	AbilitySystemComponent->AbilityInputTagPressed(InputTag);
 }
 
-void APlayableCharacter::AbilityInputTagHeld(FGameplayTag inputTag)
+void APlayableCharacter::AbilityInputTagReleased(FGameplayTag InputTag)
 {
-	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s heeeeeld"), *inputTag.ToString());
-	if (!InteractableComponent->AbilitySystemComponent)
+	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s released"), *InputTag.ToString());
+	if (!AbilitySystemComponent)
 	{
 		return;
 	}
-	InteractableComponent->AbilitySystemComponent->AbilityInputTagHeld(inputTag);
+	AbilitySystemComponent->AbilityInputTagReleased(InputTag);
+}
+
+void APlayableCharacter::AbilityInputTagHeld(FGameplayTag InputTag)
+{
+	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("Ability tag %s heeeeeld"), *InputTag.ToString());
+	if (!AbilitySystemComponent)
+	{
+		return;
+	}
+	AbilitySystemComponent->AbilityInputTagHeld(InputTag);
+}
+
+void APlayableCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
+	InitAbilityActorInfo();
+	
+	check(AbilitySystemComponent)
+	AbilitySystemComponent->InitializeDefaultAttributes();
+	AbilitySystemComponent->AddCharacterStartupAbilities();
+}
+
+void APlayableCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	InitAbilityActorInfo();
 }

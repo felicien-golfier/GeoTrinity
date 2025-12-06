@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "GameFramework/Actor.h"
 #include "GeoTurretBase.generated.h"
@@ -25,7 +26,7 @@ struct TurretInitData
 
 
 UCLASS()
-class GEOTRINITY_API AGeoTurretBase : public AActor
+class GEOTRINITY_API AGeoTurretBase : public AActor, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -35,34 +36,16 @@ public:
 	
 	virtual void BeginPlay() override;
 	
-protected:
-	UPROPERTY(EditAnywhere, Category = GAS)
-	TSubclassOf<UGameplayEffect> DefaultAttributes;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
-	TArray<TSubclassOf<UGeoGameplayAbility>> StartupAbilities;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
-	TArray<FGameplayTag> StartupAbilityTags;
+	// IAbilitySystemInterface BEGIN
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	// IAbilitySystemInterface END
 	
 private:
-	void InitializeDefaultAttributes();
-	void AddDefaultAbilities();
 	UFUNCTION(Server, Reliable)
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
-	
-	UPROPERTY()
-	TObjectPtr<UGeoAbilitySystemComponent> ASC;
-	
-	UPROPERTY()
-	TObjectPtr<UGeoAttributeSetBase> AttributeSet;
-
-	UPROPERTY()
-	TWeakObjectPtr<AActor> CharacterOwner;
 	
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 	
-	float TurretLevel {1.f};
-	FDamageEffectParams BulletsDamageEffectParams;
+	TurretInitData TurretData;
 };

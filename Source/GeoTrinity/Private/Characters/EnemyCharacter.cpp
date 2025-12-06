@@ -3,7 +3,9 @@
 #include "Characters/EnemyCharacter.h"
 
 #include "AI/GeoEnemyAIController.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/InteractableComponent.h"
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
@@ -15,20 +17,42 @@ AEnemyCharacter::AEnemyCharacter(const FObjectInitializer& ObjectInitializer)
 	// Ensure an AI controller and auto possession for enemies
 	AIControllerClass = AGeoEnemyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	TeamId = ETeam::Enemy;
+	
+	// Create ASC, and set it to be explicitly replicated
+	AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	// Adding an attribute set as a subobject of the owning actor of an AbilitySystemComponent
+	// automatically registers the AttributeSet with the AbilitySystemComponent
+	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
+	
+	SetNetUpdateFrequency(100.f);
 }
 
 void AEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (InteractableComponent)
-	{
-		// Mark as Enemy team and bind health change to handle death
-		InteractableComponent->SetGenericTeamId(FGenericTeamId(static_cast<uint8>(ETeam::Enemy)));
-		InteractableComponent->OnHealthChanged.AddDynamic(this, &AEnemyCharacter::OnHealthChanged);
-	}
-
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), TEXT("Path"), FiringPoints);
+	InitAbilityActorInfo();
+}
+
+void AEnemyCharacter::InitAbilityActorInfo()
+{
+	Super::InitAbilityActorInfo();
+	check(AbilitySystemComponent)
+	
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	
+	if (HasAuthority())
+	{
+		AbilitySystemComponent->InitializeDefaultAttributes();
+		AbilitySystemComponent->AddCharacterStartupAbilities();
+	}
+	
+	AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &AEnemyCharacter::OnHealthChanged);	// Do we need to remove this on destroy?
 }
 
 void AEnemyCharacter::OnHealthChanged(float NewValue)

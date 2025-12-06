@@ -39,6 +39,7 @@ protected:
 	void ApplyEffectToTarget(AActor* OtherActor);
 	virtual bool IsValidOverlap(const AActor* OtherActor);
 	void StopLoopingSound() const;
+	void DisableSphereCollision() const;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

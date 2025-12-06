@@ -4,6 +4,7 @@
 
 #include "Actor/Turret/GeoTurretBase.h"
 #include "Characters/PlayableCharacter.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/PlayerState.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -53,6 +54,8 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 		}
 	}
 
+	DisableSphereCollision();
+	
 	AGeoTurretBase* Turret = GetWorld()->SpawnActorDeferred<AGeoTurretBase>(TurretActorClass, SpawnTransform, Owner,
 		Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
