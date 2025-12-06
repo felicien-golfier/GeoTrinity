@@ -4,6 +4,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/GameplayLibrary.h"
 
@@ -30,8 +31,16 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	bUseControllerRotationYaw = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
+}
 
-	InteractableComponent = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable Component"));
+UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+FGenericTeamId AGeoCharacter::GetGenericTeamId() const
+{
+	return FGenericTeamId(static_cast<uint8>(TeamId));
 }
 
 // void AGeoCharacter::VLogBoxes(const FInputStep& InputStep, const FColor Color) const

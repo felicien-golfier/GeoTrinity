@@ -4,10 +4,19 @@
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/GeoAscTypes.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
 
+void UGeoAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
+{
+	Super::InitAbilityActorInfo(InOwnerActor, InAvatarActor);
+	
+	BindAttributeCallbacks();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 FGeoGameplayEffectContext* UGeoAbilitySystemComponent::MakeGeoEffectContext() const
 {
 	FGameplayEffectContextHandle handle = MakeEffectContext();
@@ -36,7 +45,7 @@ void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<TSubclassOf
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive)
+void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, const int32 Level /*= 1.f*/)
 {
 	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	if (!AbilityInfos)
@@ -48,7 +57,7 @@ void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<FGameplayTa
 	
 	for (FGameplayAbilityInfo const& abilityInfo : AbilityInfoList)
 	{
-		FGameplayAbilitySpec abilitySpec{abilityInfo.AbilityClass, 1};
+		FGameplayAbilitySpec abilitySpec{abilityInfo.AbilityClass, Level};
 		
 		// Add input tag if need be
 		if (abilityInfo.TypeOfAbilityTag.IsValid())
@@ -67,6 +76,12 @@ void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<FGameplayTa
 	}
 	
 	bStartupAbilitiesGiven = true;	
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(const int32 Level)
+{
+	AddCharacterStartupAbilities(StartupAbilityTags, Level);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -162,4 +177,50 @@ void UGeoAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& inp
 				originalPredictionKey);
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, int32 Level /*= 1*/)
+{
+	FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext();
+	EffectContextHandle.AddSourceObject(this);
+
+	const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(GameplayEffectClass, Level, EffectContextHandle);
+
+	if (SpecHandle.IsValid())
+	{
+		FPredictionKey PredictionKey;
+		ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), this, PredictionKey);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::InitializeDefaultAttributes(int32 Level /*= 1*/)
+{
+	if (!IsValid(DefaultAttributes))
+	{
+		UE_LOG(LogGeoTrinity, Error,
+			TEXT("%s() Missing DefaultAttributes for %s. Please fill in the Owner's Blueprint."), *FString(__FUNCTION__),
+			*GetName());
+		return;
+	}
+
+	ApplyEffectToSelf(DefaultAttributes, Level);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::BindAttributeCallbacks()
+{
+	GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
+		.AddWeakLambda(this,
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnHealthChanged.Broadcast(Data.NewValue);
+			});
+	GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetMaxHealthAttribute())
+		.AddWeakLambda(this,
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnMaxHealthChanged.Broadcast(Data.NewValue);
+			});
 }

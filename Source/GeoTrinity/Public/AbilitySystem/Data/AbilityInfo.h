@@ -15,10 +15,10 @@ struct FGameplayAbilityInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(Categories="Ability.Spell"))
 	FGameplayTag AbilityTag {};
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay", meta=(Categories="Ability.Cooldown"))
 	FGameplayTag CooldownTag {};
 
 	/** This is deduced from the ability obtained from the tag */
@@ -29,7 +29,7 @@ struct FGameplayAbilityInfo
 	UPROPERTY(BlueprintReadOnly, Category = "Gameplay")
 	FGameplayTag StatusTag {};
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay", meta=(Categories="Ability.Type"))
 	FGameplayTag TypeOfAbilityTag {};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")

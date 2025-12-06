@@ -68,7 +68,7 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	{
 		bIsEnding = true;
 		EndProjectileLife();
-	}
+	}x
 
 	UE_VLOG_SPHERE(this, LogGeoTrinity, Verbose, GetActorLocation(), GetSimpleCollisionRadius(),
 		GameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
@@ -124,6 +124,12 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 
 	return TeamInterface->GetGenericTeamId().GetId() != FGenericTeamId::NoTeam
 	    && (TeamInterface->GetGenericTeamId().GetId() & ApplyEffectToTeamOnOverlap) != 0x00;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::DisableSphereCollision() const
+{
+	Sphere->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

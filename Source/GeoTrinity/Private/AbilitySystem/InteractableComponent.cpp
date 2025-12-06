@@ -12,17 +12,16 @@ UInteractableComponent::UInteractableComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// Create ASC, and set it to be explicitly replicated
-	if (GetOwner())
-	{
-		AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-		AbilitySystemComponent->SetIsReplicated(true);
-		AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("InteractableComponent::UInteractableComponent() GetOwner() is null"));
-	}
+	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("UInteractableComponent::UInteractableComponent(), role %s"),
+		*UEnum::GetValueAsString(GetOwnerRole()));
+
+	//if (GetOwner())
+	//{
+	//	UE_LOG(LogGeoASC, Log, TEXT("UInteractableComponent [%s] has an owner with a role %s"), *GetName(), *UEnum::GetValueAsString(GetOwnerRole()));
+	//	AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	//	AbilitySystemComponent->SetIsReplicated(true);
+	//	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+	//}	
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -35,10 +34,34 @@ UAttributeSet* UInteractableComponent::GetAttributeSet() const
 void UInteractableComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	if (bInitGasAtBeginPlay)
+	
+	if (AActor* Owner = GetOwner())
 	{
-		InitGas(AbilitySystemComponent, GetOwner(),
-			NewObject<UGeoAttributeSetBase>(GetOuter(), UGeoAttributeSetBase::StaticClass()));
+		if (!bInitGasAtBeginPlay)
+		{
+			return;
+		}
+		
+		// Create ASC, and set it to be explicitly replicated
+		AbilitySystemComponent = NewObject<UGeoAbilitySystemComponent>(Owner, TEXT("AbilitySystemComponent"));
+		AbilitySystemComponent->RegisterComponent();
+		AbilitySystemComponent->SetIsReplicated(true);
+		AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+		
+		if (!AttributeSet)
+		{
+			AttributeSet = NewObject<UGeoAttributeSetBase>(Owner);
+			AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet.Get());
+		}
+		
+		InitGas(
+			AbilitySystemComponent,
+			GetOwner(), 
+			AttributeSet);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GROS PROBLEM"));
 	}
 }
 
@@ -64,10 +87,16 @@ void UInteractableComponent::InitAbilityActorInfo(UGeoAbilitySystemComponent* Ge
 {
 	AbilitySystemComponent = GeoAbilitySystemComponent;
 	AbilitySystemComponent->InitAbilityActorInfo(OwnerActor, GetOwner());
-	if (IsValid(NewAttributeSet))
+	//if (IsValid(NewAttributeSet))
+	//{
+	//	AttributeSet = NewAttributeSet;
+	//	AbilitySystemComponent->AddSpawnedAttribute(AttributeSet);
+	//}
+	
+	if (!IsValid(AttributeSet) && IsValid(NewAttributeSet))
 	{
 		AttributeSet = NewAttributeSet;
-		AbilitySystemComponent->AddSpawnedAttribute(AttributeSet);
+		AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet.Get());
 	}
 }
 
@@ -84,14 +113,14 @@ void UInteractableComponent::InitializeDefaultAttributes() const
 		return;
 	}
 
-	ApplyEffectToSelf(DefaultAttributes, 1.0f);
+	ApplyEffectToSelf(DefaultAttributes, Level);
 
 	UE_LOG(LogTemp, Log, TEXT("[%s] After initialization, my health attributes are : Health=%f / MaxHealth=%f"),
 		*GetOwner()->GetName(), AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UInteractableComponent::AddCharacterDefaultAbilities()
+void UInteractableComponent::AddCharacterDefaultAbilities() const
 {
 	checkf(AbilitySystemComponent, TEXT("%s() AbilitySystemComponent is null. Did we call this too soon ?"),
 		*FString(__FUNCTION__));
@@ -101,14 +130,7 @@ void UInteractableComponent::AddCharacterDefaultAbilities()
 		UE_LOG(LogGeoASC, Warning,
 			TEXT("This should not be the case, as only the server should be calling this method"));
 	}
-	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilities);
-	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilityTags);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UInteractableComponent::BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass)
-{
-	ApplyEffectToSelf(gameplayEffectClass, 1.0f);
+	AbilitySystemComponent->AddCharacterStartupAbilities(StartupAbilityTags, Level);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -124,7 +146,6 @@ void UInteractableComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> game
 
 	const FGameplayEffectSpecHandle SpecHandle =
 		AbilitySystemComponent->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, FGameplayTag::RequestGameplayTag(FName("Data.Level")), level);
 	
 	if (SpecHandle.IsValid())
 	{

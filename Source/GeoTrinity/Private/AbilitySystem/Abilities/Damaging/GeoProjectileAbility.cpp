@@ -52,7 +52,8 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
 {
-	for (FVector Location : GetTargetLocations())
+	const TArray<FVector> Locations = GetTargetLocations();
+	for (FVector const& Location : Locations)
 	{
 		SpawnProjectileUsingLocation(Location);
 	}

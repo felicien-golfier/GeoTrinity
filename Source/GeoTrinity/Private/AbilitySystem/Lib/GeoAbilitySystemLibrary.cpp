@@ -6,12 +6,14 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "EngineUtils.h"
 #include "GameplayEffectTypes.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Data/StatusInfo.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Kismet/GameplayStatics.h"
 #include "Settings/GameDataSettings.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -152,6 +154,96 @@ FGameplayTag UGeoAbilitySystemLibrary::GetAbilityTagFromAbility(UGameplayAbility
 		}
 	}
 	return FGameplayTag();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<AActor*> UGeoAbilitySystemLibrary::GetAllAgentsInTeam(const UObject* WorldContextObject, FGenericTeamId const& TeamId)
+{
+	TArray<AActor*> Result;
+
+	if (!WorldContextObject || !WorldContextObject->GetWorld())
+	{
+		UE_LOG(LogGeoASC, Warning, TEXT("No World in %s"), *FString(__FUNCTION__));
+		return Result;
+	}
+	
+	for (TActorIterator<AActor> It(WorldContextObject->GetWorld()); It; ++It)
+	{
+		AActor* Actor = *It;
+
+		IGenericTeamAgentInterface* TeamAgent = Cast<IGenericTeamAgentInterface>(Actor);
+		if (!TeamAgent)
+			continue;
+
+		const FGenericTeamId OtherTeam = TeamAgent->GetGenericTeamId();
+
+		if (OtherTeam == TeamId)
+		{
+			Result.Add(Actor);
+		}
+	}
+
+	return Result;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<AActor*> UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(const UObject* WorldContextObject, AActor const* Actor,
+	ETeamAttitude::Type Attitude)
+{
+	TArray<AActor*> Result;
+
+	if (!WorldContextObject || !WorldContextObject->GetWorld())
+	{
+		UE_LOG(LogGeoASC, Warning, TEXT("No World in %s"), *FString(__FUNCTION__));
+		return Result;
+	}
+	if (!Actor)
+	{
+		UE_LOG(LogGeoASC, Warning, TEXT("No Actor in %s"), *FString(__FUNCTION__));
+		return Result;
+	}
+	
+	for (TActorIterator<AActor> It(WorldContextObject->GetWorld()); It; ++It)
+	{
+		AActor* OtherActor = *It;
+
+		const IGenericTeamAgentInterface* TeamAgent = Cast<IGenericTeamAgentInterface>(OtherActor);
+		if (!TeamAgent)
+			continue;
+
+		if (Attitude == TeamAgent->GetTeamAttitudeTowards(*Actor))
+		{
+			Result.Add(OtherActor);
+		}
+	}
+
+	return Result;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+AActor* UGeoAbilitySystemLibrary::GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList)
+{
+	if (!IsValid(FromActor) || ActorList.Num() == 0)
+	{
+		return nullptr;
+	}
+	AActor* NearestActor = nullptr;
+	float NearestDistanceSqr = TNumericLimits<float>::Max();
+	const FVector FromLocation = FromActor->GetActorLocation();
+	for (AActor* CurrentActor : ActorList)
+	{
+		if (!IsValid(CurrentActor))
+		{
+			continue;
+		}
+		const float CurrentDistanceSqr = FVector::DistSquared(FromLocation, CurrentActor->GetActorLocation());
+		if (CurrentDistanceSqr < NearestDistanceSqr)
+		{
+			NearestDistanceSqr = CurrentDistanceSqr;
+			NearestActor = CurrentActor;
+		}
+	}
+	return NearestActor;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

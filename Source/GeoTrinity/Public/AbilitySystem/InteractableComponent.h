@@ -24,7 +24,7 @@ enum class ETeam : uint8
 	Enemy = (1 << 2) UMETA(DisplayName = "Enemy")
 };
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GEOTRINITY_API UInteractableComponent
 	: public UActorComponent
 	, public IGenericTeamAgentInterface
@@ -65,13 +65,16 @@ public:
 	virtual void InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
 		UGeoAttributeSetBase* NewAttributeSet);
 	void InitializeDefaultAttributes() const;
-	void AddCharacterDefaultAbilities();
+	void AddCharacterDefaultAbilities() const;
 
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level) const;
 
 	// Getter for base attribute set (for HUD/UI and other systems needing UAttributeSet*)
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	UAttributeSet* GetAttributeSet() const;
+	
+	int32 GetLevel() const { return Level; }
+	void SetLevel(const int32 NewLevel) { Level = NewLevel; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gas")
 	bool bInitGasAtBeginPlay = true;
@@ -86,20 +89,13 @@ public:
 	FOnGasAttributeChangedSignature OnMaxHealthChanged;
 
 protected:
-	UFUNCTION(BlueprintCallable, Category = "GAS")
-	void BP_ApplyEffectToSelfDefaultLvl(TSubclassOf<UGameplayEffect> gameplayEffectClass);
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gas")
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Gas")
 	TObjectPtr<UGeoAttributeSetBase> AttributeSet;
-
-	// TODO: could be auto by tag
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
-	TArray<TSubclassOf<UGeoGameplayAbility>> StartupAbilities;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = GAS, meta=(Categories="Ability.Spell"))
 	TArray<FGameplayTag> StartupAbilityTags;
 	//----------------------------------------------------------------------//
 	// GAS END
@@ -108,4 +104,6 @@ protected:
 private:
 	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	ETeam TeamId;
+	
+	int32 Level {1};
 };

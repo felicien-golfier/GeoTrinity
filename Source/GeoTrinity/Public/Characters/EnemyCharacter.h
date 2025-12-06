@@ -32,6 +32,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	
+	virtual void InitAbilityActorInfo() override;
 
 	// Destroy actor when health reaches zero, bound to InteractableComponent->OnHealthChanged
 	UFUNCTION()

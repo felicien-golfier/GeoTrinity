@@ -10,21 +10,21 @@ class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
 {
 	GENERATED_BODY()
 public:
-	APlayableCharacter(const FObjectInitializer& ObjectInitializer);
 	virtual void Tick(float DeltaSeconds) override;
-
+	
 	// GAS - Input callbacks
-	void AbilityInputTagPressed(FGameplayTag inputTag);
-	void AbilityInputTagReleased(FGameplayTag inputTag);
-	void AbilityInputTagHeld(FGameplayTag inputTag);
+	void AbilityInputTagPressed(FGameplayTag InputTag);
+	void AbilityInputTagReleased(FGameplayTag InputTag);
+	void AbilityInputTagHeld(FGameplayTag InputTag);
 
 protected:
-	void InitOverlay() const;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	// virtual void InitAbilityActorInfo() override;
-	// virtual void InitAbilityActorInfo(UGeoAbilitySystemComponent* GeoAbilitySystemComponent, AActor* OwnerActor,
-	// 	UCharacterAttributeSet* GeoAttributeSetBase) override;
 
+	// GAS //
+	virtual void InitAbilityActorInfo() override;
+	// END GAS //
 private:
 	void UpdateAimRotation();
 

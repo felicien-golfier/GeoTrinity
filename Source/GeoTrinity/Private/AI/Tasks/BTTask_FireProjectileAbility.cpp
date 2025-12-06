@@ -21,29 +21,33 @@ EBTNodeResult::Type UBTTask_FireProjectileAbility::ExecuteTask(UBehaviorTreeComp
 	{
 		checkf(IsValid(Controller->GetPawn()) && Controller->GetPawn().IsA(AEnemyCharacter::StaticClass()),
 			TEXT("Invalid Enemy Pawn !"));
-		AEnemyCharacter* Enemy = CastChecked<AEnemyCharacter>(Controller->GetPawn());
-
-		UInteractableComponent* Interactable = Enemy->FindComponentByClass<UInteractableComponent>();
-		if (UGeoAbilitySystemComponent* ASC = Interactable ? Interactable->AbilitySystemComponent : nullptr)
+		
+		IAbilitySystemInterface* AbilitySystemInterface = Cast<IAbilitySystemInterface>(Controller->GetPawn());
+		if (!AbilitySystemInterface)
 		{
-			// Try activate by gameplay tag from Blackboard first (if provided)
-			if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
-			{
-				// Read name from BB and map to GameplayTag path (works for Name/String/GameplayTag keys)
-				const FName TagName = BB->GetValueAsName(AbilityTagKey.SelectedKeyName);
-				if (!TagName.IsNone())
-				{
-					const FGameplayTag AbilityTag = FGameplayTag::RequestGameplayTag(TagName, false);
-					if (AbilityTag.IsValid())
-					{
-						const bool bActivatedByTag = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag));
-						return bActivatedByTag ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
-					}
-				}
-			}
-
-			// No class fallback: this task relies on a Blackboard-provided gameplay tag
+			return EBTNodeResult::Failed;
 		}
+		UAbilitySystemComponent* ASC = AbilitySystemInterface->GetAbilitySystemComponent();
+		UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+		if (!ASC || !BB)
+		{
+			return EBTNodeResult::Failed;
+		}
+		
+		// Read name from BB and map to GameplayTag path (works for Name/String/GameplayTag keys)
+		const FName TagName = BB->GetValueAsName(AbilityTagKey.SelectedKeyName);
+		if (!TagName.IsNone())
+		{
+			const FGameplayTag AbilityTag = FGameplayTag::RequestGameplayTag(TagName, false);
+			if (AbilityTag.IsValid())
+			{
+				const bool bActivatedByTag = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag));
+				return bActivatedByTag ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
+			}
+		}
+			
+		// No class fallback: this task relies on a Blackboard-provided gameplay tag
+		
 	}
 	return EBTNodeResult::Failed;
 }

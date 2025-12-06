@@ -27,10 +27,12 @@ AGeoPlayerState::AGeoPlayerState()
 void AGeoPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
-	if (IsValid(GetPawn()))
+	
+	if (!HasAuthority())
 	{
-		InitializeInteractableComponent();
+		InitOverlay();
 	}
+	
 	OnPawnSet.AddUniqueDynamic(this, &AGeoPlayerState::OnPlayerPawnSet);
 }
 
@@ -49,20 +51,9 @@ void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
 
 void AGeoPlayerState::InitializeInteractableComponent()
 {
-	APawn* Pawn = GetPawn();
-	checkf(Pawn, TEXT("Player pawn is invalid at init"));
-	UInteractableComponent* InteractableComponent = Pawn->GetComponentByClass<UInteractableComponent>();
-	if (IsValid(InteractableComponent))
+	if (!HasAuthority())
 	{
-		if (Pawn->HasAuthority())
-		{
-			InteractableComponent->InitGas(AbilitySystemComponent, Pawn, CharacterAttributeSet);
-		}
-		else
-		{
-			InteractableComponent->InitAbilityActorInfo(AbilitySystemComponent, Pawn, CharacterAttributeSet);
-			InitOverlay();
-		}
+		InitOverlay();
 	}
 }
 
