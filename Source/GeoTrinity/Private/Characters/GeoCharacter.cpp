@@ -5,6 +5,7 @@
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Tool/GameplayLibrary.h"
 
 // Sets default values
 AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
@@ -33,19 +34,6 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	InteractableComponent = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable Component"));
 }
 
-FColor AGeoCharacter::GetColorForCharacter(const AGeoCharacter* Character)
-{
-	if (!IsValid(Character))
-	{
-		return FColor::White;
-	}
-
-	static const FColor Palette[] = {FColor::Red, FColor::Green, FColor::Blue, FColor::Yellow, FColor::Cyan,
-		FColor::Magenta, FColor::Orange, FColor::Emerald, FColor::Purple, FColor::Turquoise, FColor::Silver};
-
-	return Palette[Character->GetUniqueID() % std::size(Palette)];
-}
-
 // void AGeoCharacter::VLogBoxes(const FInputStep& InputStep, const FColor Color) const
 // {
 // 	UE_VLOG_BOX(this, LogGeoTrinity, VeryVerbose,
@@ -55,7 +43,7 @@ FColor AGeoCharacter::GetColorForCharacter(const AGeoCharacter* Character)
 
 void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage) const
 {
-	DrawDebugVectorFromCharacter(Direction, DebugMessage, GetColorForCharacter(this));
+	DrawDebugVectorFromCharacter(Direction, DebugMessage, GameplayLibrary::GetColorForObject(this));
 }
 
 void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage,

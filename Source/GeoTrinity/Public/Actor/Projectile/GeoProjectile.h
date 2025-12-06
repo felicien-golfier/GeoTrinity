@@ -61,6 +61,7 @@ protected:
 	virtual void PlayImpactFx() const;
 
 	virtual void EndProjectileLife();
+	void InitProjectileMovementComponent();
 
 private:
 	UPROPERTY(VisibleAnywhere)

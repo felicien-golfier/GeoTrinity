@@ -35,7 +35,6 @@ public:
 
 	AGeoPlayerController* GetGeoController() const { return Cast<AGeoPlayerController>(GetController()); }
 
-	static FColor GetColorForCharacter(const AGeoCharacter* Character);
 	void DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage) const;
 	void DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage, FColor Color) const;
 

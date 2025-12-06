@@ -5,6 +5,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/GeoCharacter.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -68,6 +69,9 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 		bIsEnding = true;
 		EndProjectileLife();
 	}
+
+	UE_VLOG_SPHERE(this, LogGeoTrinity, Verbose, GetActorLocation(), GetSimpleCollisionRadius(),
+		GameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -183,7 +187,20 @@ void AGeoProjectile::EndProjectileLife()
 
 	UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
 	checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
-	Pool->Push(this);
+	Pool->ReleaseActor(this);
+}
+
+void AGeoProjectile::InitProjectileMovementComponent()
+{
+	if (ProjectileMovement->InitialSpeed > 0.f)
+	{
+		ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileMovement->InitialSpeed;
+		if (ProjectileMovement->bRotationFollowsVelocity)
+		{
+			SetActorRotation(ProjectileMovement->Velocity.Rotation());
+		}
+		ProjectileMovement->UpdateComponentVelocity();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -201,6 +218,8 @@ void AGeoProjectile::Init()
 
 	InitialPosition = GetActorLocation();
 	DistanceSpanSqr = FMath::Square(DistanceSpan);
+
+	InitProjectileMovementComponent();
 
 	bIsEnding = false;
 }

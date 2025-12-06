@@ -16,9 +16,12 @@ class GEOTRINITY_API UGeoActorPoolingSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 public:
-	// Generic C++ templated acquire for any AActor subclass
+	// Return the first actor of the pool if available, spawn a new one if not
+	// Class must be a child of AActor
+	// if bInit is true, call IGeoPoolableInterface::Init() on the returned actor.
 	template<typename T>
-	T* Pop(TSubclassOf<T> Class, const FTransform& Transform, AActor* Owner, APawn* Instigator, bool bInit = true)
+	T* RequestActor(TSubclassOf<T> Class, const FTransform& Transform, AActor* Owner, APawn* Instigator,
+		bool bInit = true)
 	{
 		checkf((*Class)->IsChildOf(AActor::StaticClass()), TEXT("Class must be an AActor"));
 		AActor* Spawned = PopWithClass(*Class, Transform, Owner, Instigator, bInit);
@@ -33,8 +36,8 @@ public:
 		PreSpawn(*Class, Count, Owner, Instigator);
 	}
 
-	// Return any actor to its pool
-	void Push(AActor* Actor);
+	// Return any actor to the pool of inactive actors. Will call IGeoPoolableInterface::End() on the Actor.
+	void ReleaseActor(AActor* Actor);
 
 	static UGeoActorPoolingSubsystem* Get(const UWorld* World);
 

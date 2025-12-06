@@ -34,7 +34,7 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 
 	AGeoProjectile* GeoProjectile =
 		UGeoActorPoolingSubsystem::Get(GetWorld())
-			->Pop(ProjectileClass, SpawnTransform, ProjectileOwner, Cast<APawn>(ProjectileOwner), false);
+			->RequestActor(ProjectileClass, SpawnTransform, ProjectileOwner, Cast<APawn>(ProjectileOwner), false);
 
 	if (!GeoProjectile)
 	{

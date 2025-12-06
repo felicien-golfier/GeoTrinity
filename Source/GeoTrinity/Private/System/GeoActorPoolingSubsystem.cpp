@@ -30,9 +30,9 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform&
 	AActor* Actor = Weak.Get();
 	checkf(IsValid(Actor), TEXT("Weak Ptr from pool is empty !"));
 
-	Actor->SetActorTransform(Transform);
 	Actor->SetOwner(Owner);
 	Actor->SetInstigator(Instigator);
+	Actor->TeleportTo(Transform.GetLocation(), Transform.GetRotation().Rotator(), false, true);
 	ChangeActorState(Actor, true);
 
 	if (bInit)
@@ -89,7 +89,7 @@ AActor* UGeoActorPoolingSubsystem::SpawnActor(UClass* Class, const FActorSpawnPa
 	return NewActor;
 }
 
-void UGeoActorPoolingSubsystem::Push(AActor* Actor)
+void UGeoActorPoolingSubsystem::ReleaseActor(AActor* Actor)
 {
 	if (!IsValid(Actor))
 	{
