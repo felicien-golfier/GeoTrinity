@@ -16,6 +16,16 @@ void UGeoAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
+float UGeoAttributeSetBase::GetHealthRatio() const
+{
+	if (GetMaxHealth() > 0.f)
+	{
+		return GetHealth() / GetMaxHealth();
+	}
+	return 0.f;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoAttributeSetBase::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UGeoAttributeSetBase, Health, OldHealth);

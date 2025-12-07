@@ -4,51 +4,86 @@
 #include "Actor/Turret/GeoTurretBase.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/InteractableComponent.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "Components/CapsuleComponent.h"
-#include "GeoTrinity/GeoTrinity.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoTurretBase::AGeoTurretBase()
 {
-	bReplicates = true;
+	bReplicates = true;	//Directly setting bReplicates is the correct procedure for pre-init actors.
 	PrimaryActorTick.bCanEverTick = false;
 	
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
 	SetRootComponent(CapsuleComponent);
 	CapsuleComponent->SetCollisionProfileName(TEXT("GeoCapsule"));
 
-	SetNetUpdateFrequency(100.0f);
+	
+	AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	AttributeSetBase = CreateDefaultSubobject<UGeoAttributeSetBase>(TEXT("AttributeSetBase"));
+	
+	SetNetUpdateFrequency(100.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoTurretBase::InitTurretData(TurretInitData const& data)
 {
 	TurretData = data;
-
-	//if (UInteractableComponent* InteractableComponent = GetComponentByClass<UInteractableComponent>())
-	//{
-	//	InteractableComponent->SetLevel(TurretData.TurretLevel);
-	//}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoTurretBase::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	InitAbilityActorInfo();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoTurretBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnbindGasCallbacks();
+	
+	Super::EndPlay(EndPlayReason);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 UAbilitySystemComponent* AGeoTurretBase::GetAbilitySystemComponent() const
 {
-	if (UInteractableComponent* InteractableComponent = GetComponentByClass<UInteractableComponent>())
+	return AbilitySystemComponent;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoTurretBase::BindGasCallbacks()
+{
+	checkf(AbilitySystemComponent, TEXT("Trying to bind GAS callbacks but AbilitySystemComponent is null. This is too early ?"));
+	AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
+	AbilitySystemComponent->OnMaxHealthChanged.AddDynamic(this, &ThisClass::OnMaxHealthChanged);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoTurretBase::UnbindGasCallbacks()
+{
+	if (!AbilitySystemComponent)
 	{
-		return InteractableComponent->AbilitySystemComponent;
+		// It's already been invalidated, so don't try to unbind
+		return;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Do we expect NOT to have an InteractableComponent on %s ?"), *GetName());
-	return nullptr;
+	AbilitySystemComponent->OnHealthChanged.RemoveDynamic(this, &ThisClass::OnHealthChanged);
+	AbilitySystemComponent->OnMaxHealthChanged.RemoveDynamic(this, &ThisClass::OnMaxHealthChanged);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoTurretBase::OnHealthChanged(float NewValue)
+{
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoTurretBase::OnMaxHealthChanged(float NewValue)
+{
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -73,4 +108,20 @@ void AGeoTurretBase::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffec
 		ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), ASC,
 			PredictionKey);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoTurretBase::InitAbilityActorInfo()
+{
+	check(AbilitySystemComponent)
+	
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	
+	if (HasAuthority())
+	{
+		AbilitySystemComponent->InitializeDefaultAttributes();
+		AbilitySystemComponent->AddCharacterStartupAbilities();
+	}
+	
+	BindGasCallbacks();
 }

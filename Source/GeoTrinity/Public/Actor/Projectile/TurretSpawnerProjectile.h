@@ -24,7 +24,7 @@ public:
 	float GetTurretLevel() const;
 
 	virtual bool IsValidOverlap(const AActor* OtherActor) override;
-
+	
 protected:
 	virtual void EndProjectileLife() override;
 

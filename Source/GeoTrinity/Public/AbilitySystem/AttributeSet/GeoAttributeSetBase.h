@@ -46,6 +46,10 @@ public:
 	FGameplayAttributeData IncomingDamage;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, IncomingDamage)
 
+	
+	UFUNCTION(BlueprintCallable, Category = "Attribute")
+	float GetHealthRatio() const;
+	
 protected:
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);

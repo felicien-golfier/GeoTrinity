@@ -12,6 +12,7 @@
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Data/StatusInfo.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "GameFramework/PlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "Settings/GameDataSettings.h"
@@ -211,9 +212,18 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(c
 		if (!TeamAgent)
 			continue;
 
+		if (APlayerState const* PS = Cast<APlayerState>(OtherActor))
+		{
+			OtherActor = PS->GetPawn();
+		}
+		else if (AController const* Controller = Cast<AController>(OtherActor))
+		{
+			OtherActor = Controller->GetPawn();
+		}
+		
 		if (Attitude == TeamAgent->GetTeamAttitudeTowards(*Actor))
 		{
-			Result.Add(OtherActor);
+			Result.AddUnique(OtherActor);
 		}
 	}
 
