@@ -5,7 +5,6 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "Characters/GeoCharacter.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -68,7 +67,7 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	{
 		bIsEnding = true;
 		EndProjectileLife();
-	}x
+	}
 
 	UE_VLOG_SPHERE(this, LogGeoTrinity, Verbose, GetActorLocation(), GetSimpleCollisionRadius(),
 		GameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
@@ -101,6 +100,11 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
+	if (bIsEnding)
+	{
+		return false;
+	}
+
 	if (!IsValid(DamageEffectParams.SourceASC))
 	{
 		UE_LOG(LogGeoTrinity, Error,
@@ -127,16 +131,10 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::DisableSphereCollision() const
-{
-	Sphere->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (bIsEnding || !IsValidOverlap(OtherActor))
+	if (!IsValidOverlap(OtherActor))
 	{
 		return;
 	}
@@ -198,6 +196,10 @@ void AGeoProjectile::EndProjectileLife()
 
 void AGeoProjectile::InitProjectileMovementComponent()
 {
+	// Clear any previous movement state
+	ProjectileMovement->StopMovementImmediately();
+	ProjectileMovement->SetUpdatedComponent(Sphere);
+
 	if (ProjectileMovement->InitialSpeed > 0.f)
 	{
 		ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileMovement->InitialSpeed;

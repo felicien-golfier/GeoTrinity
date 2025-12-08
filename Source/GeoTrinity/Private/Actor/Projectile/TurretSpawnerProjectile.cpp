@@ -21,9 +21,8 @@ float ATurretSpawnerProjectile::GetTurretLevel_Implementation() const
 // ---------------------------------------------------------------------------------------------------------------------
 void ATurretSpawnerProjectile::EndProjectileLife()
 {
-	SpawnTurretActor();
-
 	Super::EndProjectileLife();
+	SpawnTurretActor();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -54,8 +53,6 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 		}
 	}
 
-	DisableSphereCollision();
-	
 	AGeoTurretBase* Turret = GetWorld()->SpawnActorDeferred<AGeoTurretBase>(TurretActorClass, SpawnTransform, Owner,
 		Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 

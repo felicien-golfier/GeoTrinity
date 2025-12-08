@@ -1,10 +1,10 @@
 #include "Characters/GeoCharacter.h"
 
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/InteractableComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/GameplayLibrary.h"
 
@@ -74,3 +74,11 @@ void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const
 		UE_VLOG_ARROW(this, LogGeoTrinity, VeryVerbose, Start, End, Color, TEXT("%s"), *DebugMessage);
 	}
 }
+
+#ifdef UE_EDITOR
+void AGeoCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	LocalRoleForDebugPurpose = GetLocalRole();
+}
+#endif
