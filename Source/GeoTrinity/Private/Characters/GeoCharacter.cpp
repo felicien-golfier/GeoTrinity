@@ -19,6 +19,7 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh Component"));
 	MeshComponent->SetIsReplicated(true);
 	MeshComponent->SetupAttachment(GetCapsuleComponent());
+	MeshComponent->SetCastShadow(false);
 
 	// Set default collision profiles
 	MeshComponent->SetCollisionProfileName(TEXT("GeoShape"));

@@ -12,6 +12,7 @@ void UGeoUserWidget::NativeConstruct()
 	
 	if (UHudFunctionLibrary::ShouldDrawHUD(GetOwningPlayer()))
 	{
+		UE_LOG(LogTemp, Log, TEXT("Removing %s from parent because HUD should not be drawn"), *GetName());
 		RemoveFromParent();
 	}
 }

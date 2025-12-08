@@ -4,6 +4,7 @@
 
 #include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
+#include "GenericTeamAgentInterface.h"
 #include "GameFramework/PlayerState.h"
 
 #include "GeoPlayerState.generated.h"
@@ -17,6 +18,7 @@ UCLASS()
 class GEOTRINITY_API AGeoPlayerState
 	: public APlayerState
 	, public IAbilitySystemInterface
+	, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -35,6 +37,10 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	/** END Implement IAbilitySystemInterface */
 
+	// IGenericTeamAgentInterface BEGIN
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	// IGameplayTaskOwnerInterface END
+	
 	UCharacterAttributeSet* GetCharacterAttributeSet() const { return CharacterAttributeSet; }
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponent() const { return AbilitySystemComponent; }
 	
