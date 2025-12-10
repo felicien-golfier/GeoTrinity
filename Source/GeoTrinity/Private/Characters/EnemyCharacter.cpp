@@ -6,7 +6,6 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/InteractableComponent.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
-#include "BehaviorTree/BehaviorTree.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 

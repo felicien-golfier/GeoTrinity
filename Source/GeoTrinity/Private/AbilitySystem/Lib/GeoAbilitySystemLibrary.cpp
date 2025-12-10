@@ -14,7 +14,6 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GameFramework/PlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Kismet/GameplayStatics.h"
 #include "Settings/GameDataSettings.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
