@@ -35,6 +35,13 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform&
 	Actor->TeleportTo(Transform.GetLocation(), Transform.GetRotation().Rotator(), false, true);
 	ChangeActorState(Actor, true);
 
+	// Force replication update for networked actors
+	if (Actor->GetIsReplicated())
+	{
+		// Force a net update
+		Actor->ForceNetUpdate();
+	}
+
 	if (bInit)
 	{
 		if (IGeoPoolableInterface* Poolable = Cast<IGeoPoolableInterface>(Actor))
@@ -72,6 +79,9 @@ void UGeoActorPoolingSubsystem::ChangeActorState(AActor* NewActor, bool bActive)
 	NewActor->SetActorEnableCollision(bActive);
 	NewActor->SetActorTickEnabled(bActive);
 	NewActor->SetActorHiddenInGame(!bActive);
+
+	NewActor->SetNetDormancy(bActive ? DORM_Awake : DORM_DormantAll);
+	NewActor->FlushNetDormancy();
 }
 
 AActor* UGeoActorPoolingSubsystem::SpawnActor(UClass* Class, const FActorSpawnParameters& Params)

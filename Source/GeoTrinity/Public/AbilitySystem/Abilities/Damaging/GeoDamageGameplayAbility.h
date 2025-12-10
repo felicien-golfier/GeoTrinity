@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/Abilities/NetworkAbility.h"
 #include "AbilitySystem/GeoAscTypes.h"
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "CoreMinimal.h"
 
 #include "GeoDamageGameplayAbility.generated.h"
 
@@ -20,47 +20,50 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void CauseDamage(AActor* targetActor) const;
 
-
 	UFUNCTION(BlueprintPure, BlueprintNativeEvent)
 	float GetDamageAtLevel(int32 Level) const;
 	UFUNCTION(BlueprintPure)
 	float GetDamage() const;
-	
+
 protected:
 	float GetCooldown(int32 level = 1) const;
 	UFUNCTION(BlueprintPure)
-	FDamageEffectParams MakeDamageEffectParamsFromClassDefaults(AActor const* pTargetActor) const;
+	FDamageEffectParams MakeDamageEffectParamsFromClassDefaults(const AActor* pTargetActor) const;
 	UFUNCTION(BlueprintPure)
-	FVector GetDirectionFromCauseToTarget(FDamageEffectParams const& damageEffectParams, const float pitchOverride = 0.f) const;
-	
-	/** Returns a zero vector if dice roll decided there was no knockback. Takes into account the knockback magnitude **/
-	UFUNCTION(BlueprintPure)
-	FVector ComputeKnockbackVector(FVector const& originPoint, FVector const& destinationPoint, bool bPrintLog = false) const;
-	UFUNCTION(BlueprintPure)
-	FVector ComputeDeathImpulseVector(FVector const& originPoint, FVector const& destinationPoint) const;
+	FVector GetDirectionFromCauseToTarget(const FDamageEffectParams& damageEffectParams,
+		const float pitchOverride = 0.f) const;
 
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Damage")
+	/** Returns a zero vector if dice roll decided there was no knockback. Takes into account the knockback magnitude
+	 * **/
+	UFUNCTION(BlueprintPure)
+	FVector ComputeKnockbackVector(const FVector& originPoint, const FVector& destinationPoint,
+		bool bPrintLog = false) const;
+	UFUNCTION(BlueprintPure)
+	FVector ComputeDeathImpulseVector(const FVector& originPoint, const FVector& destinationPoint) const;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage")
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Damage")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage")
 	FScalableFloat DamageAmount;
 
 	/** Death **/
-	UPROPERTY(EditDefaultsOnly, Category="Damage")
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	float DeathImpulseMagnitude = 2500.f;
 
 	/** Knockback **/
-	UPROPERTY(EditDefaultsOnly, Category="Damage", meta=(ClampMin="0", ClampMax="100"))
+	UPROPERTY(EditDefaultsOnly, Category = "Damage", meta = (ClampMin = "0", ClampMax = "100"))
 	uint8 KnockbackChancePercent = 0;
-	UPROPERTY(EditDefaultsOnly, Category="Damage")
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	float KnockbackMagnitude = 2500.f;
-	
+
 	/** Radial Damage **/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Radial Damage")
-	bool bIsRadialDamage {false};
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Radial Damage", meta = (EditCondition = "bIsRadialDamage"))
-	float RadialDamageInnerRadius {0.f};
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Radial Damage", meta = (EditCondition = "bIsRadialDamage"))
-	float RadialDamageOuterRadius {0.f};
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Radial Damage")
+	bool bIsRadialDamage{false};
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Radial Damage",
+		meta = (EditCondition = "bIsRadialDamage"))
+	float RadialDamageInnerRadius{0.f};
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Radial Damage",
+		meta = (EditCondition = "bIsRadialDamage"))
+	float RadialDamageOuterRadius{0.f};
 };

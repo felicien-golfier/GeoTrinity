@@ -18,9 +18,9 @@
 AGeoProjectile::AGeoProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = false;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	bReplicates = true;
+	bReplicates = false;
 
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
 	SetRootComponent(Sphere);
@@ -29,8 +29,7 @@ AGeoProjectile::AGeoProjectile()
 	Sphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Sphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 	Sphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
-	// TODO: we will need to see whether we create a specific channel for "characters", in the case we use a different
-	// shape for collision (instead of the Capsule)
+
 	Sphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	Sphere->SetCollisionObjectType(ECC_Projectile);
 
@@ -57,6 +56,7 @@ void AGeoProjectile::LifeSpanExpired()
 void AGeoProjectile::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
 	if (bIsEnding)
 	{
 		return;
@@ -94,12 +94,6 @@ void AGeoProjectile::ApplyEffectToTarget(AActor* OtherActor)
 // ---------------------------------------------------------------------------------------------------------------------
 bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 {
-	// Do no execute overlap logic on client !
-	if (!HasAuthority())
-	{
-		return false;
-	}
-
 	if (bIsEnding)
 	{
 		return false;
@@ -187,18 +181,20 @@ void AGeoProjectile::EndProjectileLife()
 {
 	PlayImpactFx();
 
-	// TODO: Call Release after FX are done !
-
-	UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
-	checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
-	Pool->ReleaseActor(this);
+	// TODO : Create a way to have a pool on client for client spawned actors
+	if (HasAuthority())   // return to pool only on the server for now.
+	{
+		// TODO: Call Release after FX are done !
+		UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
+		checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
+		Pool->ReleaseActor(this);
+	}
 }
 
 void AGeoProjectile::InitProjectileMovementComponent()
 {
 	// Clear any previous movement state
-	ProjectileMovement->StopMovementImmediately();
-	ProjectileMovement->SetUpdatedComponent(Sphere);
+	ProjectileMovement->SetUpdatedComponent(GetRootComponent());
 
 	if (ProjectileMovement->InitialSpeed > 0.f)
 	{
@@ -208,6 +204,10 @@ void AGeoProjectile::InitProjectileMovementComponent()
 			SetActorRotation(ProjectileMovement->Velocity.Rotation());
 		}
 		ProjectileMovement->UpdateComponentVelocity();
+	}
+	else
+	{
+		ProjectileMovement->StopMovementImmediately();
 	}
 }
 
@@ -235,7 +235,8 @@ void AGeoProjectile::Init()
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::End()
 {
-	ensureMsgf(bIsEnding, TEXT("Ends projectile without bIsEnding true"));
+	ensureMsgf(bIsEnding || !HasAuthority(), TEXT("Ends projectile on server without bIsEnding true"));
+
 	if (!HasAuthority())
 	{
 		LoopingSoundComponent->Stop();

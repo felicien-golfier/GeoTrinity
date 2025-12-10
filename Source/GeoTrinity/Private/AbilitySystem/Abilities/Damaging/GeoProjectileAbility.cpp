@@ -9,10 +9,6 @@ void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projecti
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
-	if (!Actor->HasAuthority())
-	{
-		return;
-	}
 
 	SpawnProjectile((projectileTargetLocation - Actor->GetActorLocation()).Rotation());
 }
@@ -21,10 +17,6 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
-	if (!Actor->HasAuthority())
-	{
-		return;
-	}
 
 	const FTransform SpawnTransform{DirectionRotator.Quaternion(), Actor->GetActorLocation()};
 
@@ -38,7 +30,7 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 
 	if (!GeoProjectile)
 	{
-		UE_LOG(LogTemp, Error, TEXT("No valid Projectile spawned !"));
+		UE_LOG(LogTemp, Error, TEXT("No valid Projectile pooled ( ;-) ) !"));
 		return;
 	}
 
@@ -53,7 +45,7 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
 {
 	const TArray<FVector> Locations = GetTargetLocations();
-	for (FVector const& Location : Locations)
+	for (const FVector& Location : Locations)
 	{
 		SpawnProjectileUsingLocation(Location);
 	}
