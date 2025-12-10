@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Abilities/GameplayAbility.h"
-#include "AbilitySystem/Abilities/NetworkAbility.h"
+#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "CoreMinimal.h"
 

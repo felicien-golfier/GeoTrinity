@@ -7,6 +7,9 @@
 
 #include "GeoGameplayAbility.generated.h"
 
+struct FPatternPayload;
+class UGeoAbilitySystemComponent;
+class UPattern;
 /**
  *
  */
@@ -17,6 +20,10 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 
 public:
 	FGameplayTag GetAbilityTag() const;
+	FPatternPayload CreatePatternPayload(const FTransform& Transform, AActor* Owner, AActor* Instigator) const;
+	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")
 	FGameplayTag StartupInputTag;
@@ -26,4 +33,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Status", meta = (ClampMin = "0", ClampMax = "100"))
 	uint8 ChanceToInflictStatus{0};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern")
+	TSubclassOf<UPattern> PatternToLaunch;
 };

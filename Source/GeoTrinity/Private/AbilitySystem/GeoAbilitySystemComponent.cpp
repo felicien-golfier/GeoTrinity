@@ -3,16 +3,16 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
-#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
 
 void UGeoAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
 {
 	Super::InitAbilityActorInfo(InOwnerActor, InAvatarActor);
-	
+
 	BindAttributeCallbacks();
 }
 
@@ -45,37 +45,41 @@ void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<TSubclassOf
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, const int32 Level /*= 1.f*/)
+void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(const TArray<FGameplayTag>& AbilitiesToGive,
+	const int32 Level /*= 1.f*/)
 {
 	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	if (!AbilityInfos)
 	{
 		return;
 	}
-	
+
 	TArray<FGameplayAbilityInfo> AbilityInfoList = AbilityInfos->FindAbilityInfoForListOfTag(AbilitiesToGive, true);
-	
-	for (FGameplayAbilityInfo const& abilityInfo : AbilityInfoList)
+
+	for (const FGameplayAbilityInfo& abilityInfo : AbilityInfoList)
 	{
 		FGameplayAbilitySpec abilitySpec{abilityInfo.AbilityClass, Level};
-		
+
 		// Add input tag if need be
 		if (abilityInfo.TypeOfAbilityTag.IsValid())
 		{
-			if (FGameplayTag const* FoundTag = AbilityInfos->AbilityTypeToInputTagMap.Find(abilityInfo.TypeOfAbilityTag))
+			if (const FGameplayTag* FoundTag =
+					AbilityInfos->AbilityTypeToInputTagMap.Find(abilityInfo.TypeOfAbilityTag))
 			{
 				abilitySpec.GetDynamicSpecSourceTags().AddTag(*FoundTag);
 			}
 			else
 			{
-				UE_LOG(LogGeoASC, Error, TEXT("Input Tag for ability of type %s not found in map AbilityTypeToInputTagMap (UAbilityInfo)"), *abilityInfo.TypeOfAbilityTag.ToString());
+				UE_LOG(LogGeoASC, Error,
+					TEXT("Input Tag for ability of type %s not found in map AbilityTypeToInputTagMap (UAbilityInfo)"),
+					*abilityInfo.TypeOfAbilityTag.ToString());
 			}
 		}
-		
+
 		GiveAbility(abilitySpec);
 	}
-	
-	bStartupAbilitiesGiven = true;	
+
+	bStartupAbilitiesGiven = true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -180,7 +184,8 @@ void UGeoAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& inp
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, int32 Level /*= 1*/)
+void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass,
+	int32 Level /*= 1*/)
 {
 	FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext();
 	EffectContextHandle.AddSourceObject(this);
@@ -200,8 +205,8 @@ void UGeoAbilitySystemComponent::InitializeDefaultAttributes(int32 Level /*= 1*/
 	if (!IsValid(DefaultAttributes))
 	{
 		UE_LOG(LogGeoTrinity, Error,
-			TEXT("%s() Missing DefaultAttributes for %s. Please fill in the Owner's Blueprint."), *FString(__FUNCTION__),
-			*GetName());
+			TEXT("%s() Missing DefaultAttributes for %s. Please fill in the Owner's Blueprint."),
+			*FString(__FUNCTION__), *GetName());
 		return;
 	}
 
@@ -223,4 +228,31 @@ void UGeoAbilitySystemComponent::BindAttributeCallbacks()
 			{
 				OnMaxHealthChanged.Broadcast(Data.NewValue);
 			});
+}
+
+void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FPatternPayload Payload)
+{
+	checkf(Payload.PatternClass, TEXT("PatternStartMulticast: Invalid PatternClassName"));
+	UPattern* PatternInstance;
+	UClass* PatternClass = Payload.PatternClass;
+	UPattern** MaybePattern = Patterns.FindByPredicate(
+		[PatternClass](const UPattern* Candidate)
+		{
+			return Candidate->IsA(PatternClass);
+		});
+
+	if (MaybePattern)
+	{
+		PatternInstance = *MaybePattern;
+	}
+	else
+	{
+		PatternInstance = NewObject<UPattern>(this, PatternClass);
+		Patterns.Add(PatternInstance);
+	}
+
+	checkf(PatternInstance, TEXT("PatternStartMulticast: Failed to create instance of %s"),
+		*Payload.PatternClass->GetName());
+
+	PatternInstance->StartPattern(Payload);
 }
