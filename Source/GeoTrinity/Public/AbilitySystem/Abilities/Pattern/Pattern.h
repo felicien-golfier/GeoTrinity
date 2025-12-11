@@ -16,7 +16,7 @@ struct FPatternPayload
 	float Yaw;   // orientation
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	float ServerSpawnTime;   // server world time (seconds)
+	double ServerSpawnTime;   // server world time (seconds)
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	int32 Seed;   // seed pour variations RNG

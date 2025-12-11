@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "GeoPlayerController.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
@@ -20,7 +21,7 @@ FPatternPayload UGeoGameplayAbility::CreatePatternPayload(const FTransform& Tran
 	Payload.Origin = FVector2D(Transform.GetLocation());
 	Payload.Yaw = Transform.GetRotation().Z;
 	Payload.PatternClass = PatternToLaunch;
-	Payload.ServerSpawnTime = GetWorld()->GetTimeSeconds();
+	Payload.ServerSpawnTime = AGeoPlayerController::GetServerTime(GetWorld());
 	Payload.Seed = FMath::Rand32();
 	return Payload;
 }

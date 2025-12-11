@@ -29,3 +29,7 @@ FColor GameplayLibrary::GetColorForObject(const UObject* Object)
 
 	return Palette[Object->GetUniqueID() % std::size(Palette)];
 }
+double GameplayLibrary::GetTime()
+{
+	return FPlatformTime::Seconds() - GStartTime;
+}
