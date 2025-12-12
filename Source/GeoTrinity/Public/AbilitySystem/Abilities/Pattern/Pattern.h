@@ -2,6 +2,8 @@
 
 #include "Pattern.generated.h"
 
+class UEffectDataAsset;
+struct FEffectData;
 class UGameplayEffect;
 class AGeoProjectile;
 USTRUCT(BlueprintType)
@@ -21,6 +23,10 @@ struct FPatternPayload
 	UPROPERTY(Transient, BlueprintReadOnly)
 	int32 Seed;   // seed pour variations RNG
 
+	// TODO: Find out a better solution than sending this every ability.
+	UPROPERTY(Transient, BlueprintReadOnly)
+	int32 AbilityLevel;
+
 	UPROPERTY(Transient, BlueprintReadOnly)
 	TSubclassOf<class UPattern> PatternClass;
 
@@ -37,17 +43,25 @@ class GEOTRINITY_API UPattern : public UObject
 	GENERATED_BODY()
 
 public:
-	virtual void StartPattern(const FPatternPayload& Payload);
+	UFUNCTION(BlueprintNativeEvent)
+	void StartPattern(const FPatternPayload& Payload);
+	virtual void StartPattern_Implementation(const FPatternPayload& Payload);
 
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnStartPattern(const FPatternPayload& Payload);
+	UPROPERTY(EditDefaultsOnly)
+	UEffectDataAsset* EffectDataAsset;
+};
+
+UCLASS(BlueprintType, Blueprintable)
+class GEOTRINITY_API UProjectilePattern : public UPattern
+{
+	GENERATED_BODY()
+
+public:
+	virtual void StartPattern_Implementation(const FPatternPayload& Payload) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectile(const FPatternPayload& Payload, float Yaw);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<AGeoProjectile> ProjectileClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
 };

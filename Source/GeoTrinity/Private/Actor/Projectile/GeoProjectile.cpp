@@ -2,6 +2,7 @@
 
 #include "Actor/Projectile/GeoProjectile.h"
 
+#include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -74,24 +75,6 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::ApplyEffectToTarget(AActor* OtherActor)
-{
-	DamageEffectParams.TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
-	DamageEffectParams.DeathImpulseVector = GetActorForwardVector() * DamageEffectParams.DeathImpulseMagnitude;
-	DamageEffectParams.DeathImpulseVector.Z = 0;   // Parallel to the ground
-
-	if (DamageEffectParams.KnockbackChancePercent
-		&& DamageEffectParams.KnockbackChancePercent >= FMath::RandRange(1, 100))
-	{
-		// Override pitch
-		const FVector knockbackDirection = GetActorForwardVector().RotateAngleAxis(-45.f, GetActorRightVector());
-		DamageEffectParams.KnockbackVector = knockbackDirection * DamageEffectParams.KnockbackMagnitude;
-	}
-
-	UGeoAbilitySystemLibrary::ApplyEffectFromDamageParams(DamageEffectParams);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 {
 	if (bIsEnding)
@@ -99,17 +82,18 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
-	if (!IsValid(DamageEffectParams.SourceASC))
+	UGeoAbilitySystemComponent* SourceASC = Payload.Instigator->GetComponentByClass<UGeoAbilitySystemComponent>();
+	if (!IsValid(SourceASC))
 	{
 		UE_LOG(LogGeoTrinity, Error,
 			TEXT("A projectile was launched with an invalid Source ASC, this should never happen"));
 		return false;
 	}
 
-	const AActor* pSourceAvatarActor = DamageEffectParams.SourceASC->GetAvatarActor();
+	const AActor* SourceAvatarActor = SourceASC->GetAvatarActor();
 
 	// Don't apply on self
-	if (!pSourceAvatarActor || (pSourceAvatarActor == OtherActor))
+	if (!IsValid(SourceAvatarActor) || (SourceAvatarActor == OtherActor))
 	{
 		return false;
 	}
@@ -120,6 +104,7 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
+	// TODO: use TeamInterface->GetTeamAttitudeTowards()
 	return TeamInterface->GetGenericTeamId().GetId() != FGenericTeamId::NoTeam
 	    && (TeamInterface->GetGenericTeamId().GetId() & ApplyEffectToTeamOnOverlap) != 0x00;
 }
@@ -139,7 +124,9 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	if (HasAuthority())
 	{
-		ApplyEffectToTarget(OtherActor);
+		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray,
+			Payload.Instigator->GetComponentByClass<UGeoAbilitySystemComponent>(),
+			OtherActor->GetComponentByClass<UGeoAbilitySystemComponent>(), Payload.AbilityLevel, Payload.Seed);
 	}
 
 	EndProjectileLife();

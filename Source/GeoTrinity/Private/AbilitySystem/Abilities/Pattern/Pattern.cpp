@@ -1,16 +1,22 @@
 ﻿#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "System/GeoActorPoolingSubsystem.h"
 
-void UPattern::StartPattern(const FPatternPayload& Payload)
+void UPattern::StartPattern_Implementation(const FPatternPayload& Payload)
 {
-	OnStartPattern(Payload);
-	// To be overriden by your own partern !
+	// To be overriden by your own pattern !
 }
 
-void UPattern::SpawnProjectile(const FPatternPayload& Payload, float Yaw)
+void UProjectilePattern::StartPattern_Implementation(const FPatternPayload& Payload)
+{
+	// Basic Projectile Pattern just spawns a projectile in the correct direction.
+	SpawnProjectile(Payload, 0.f);
+}
+
+void UProjectilePattern::SpawnProjectile(const FPatternPayload& Payload, float Yaw)
 {
 
 	const FTransform SpawnTransform{FRotator(0.f, Yaw, 0.f), FVector(Payload.Origin, 50.f)};
@@ -28,13 +34,8 @@ void UPattern::SpawnProjectile(const FPatternPayload& Payload, float Yaw)
 		return;
 	}
 
-	// TODO: minimum damage Effects for now. find out a solution. Maybe hook the ability ?
-	FDamageEffectParams params;
-	params.WorldContextObject = Payload.Owner;
-	params.DamageGameplayEffectClass = DamageEffectClass;
-	params.SourceASC = Payload.Owner->GetComponentByClass<UGeoAbilitySystemComponent>();
-	params.BaseDamage = 5.f;
-	GeoProjectile->DamageEffectParams = params;
+	GeoProjectile->Payload = Payload;
+	GeoProjectile->EffectDataArray = UGeoAbilitySystemLibrary::GetEffectDataArray(EffectDataAsset);
 
 	GeoProjectile->Init();   // Equivalent to the DeferredSpawn
 }

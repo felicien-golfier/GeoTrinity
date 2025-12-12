@@ -2,6 +2,8 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
+#include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "System/GeoActorPoolingSubsystem.h"
 
@@ -30,14 +32,14 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 
 	if (!GeoProjectile)
 	{
-		UE_LOG(LogTemp, Error, TEXT("No valid Projectile pooled ( ;-) ) !"));
+		UE_LOG(LogTemp, Error, TEXT("No valid Projectile pooled (ahah) !"));
 		return;
 	}
 
 	// Append GAS data
 	checkf(DamageEffectClass, TEXT("No DamageEffectClass in the projectile spell!"));
 
-	GeoProjectile->DamageEffectParams = MakeDamageEffectParamsFromClassDefaults(nullptr);
+	GeoProjectile->EffectDataArray = UGeoAbilitySystemLibrary::GetEffectDataArray(EffectDataAsset);
 
 	GeoProjectile->Init();   // Equivalent to the DeferredSpawn
 }

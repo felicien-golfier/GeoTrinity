@@ -3,10 +3,13 @@
 #pragma once
 
 #include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/Data/EffectData.h"
 #include "CoreMinimal.h"
 
 #include "GeoGameplayAbility.generated.h"
 
+struct FInstancedStruct;
+struct FEffectData;
 struct FPatternPayload;
 class UGeoAbilitySystemComponent;
 class UPattern;
@@ -36,4 +39,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern")
 	TSubclassOf<UPattern> PatternToLaunch;
+
+	UPROPERTY(EditDefaultsOnly)
+	UEffectDataAsset* EffectDataAsset;
 };

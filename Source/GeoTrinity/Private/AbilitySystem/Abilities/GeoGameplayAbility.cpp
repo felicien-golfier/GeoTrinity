@@ -3,6 +3,7 @@
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
+#include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoPlayerController.h"
@@ -23,6 +24,7 @@ FPatternPayload UGeoGameplayAbility::CreatePatternPayload(const FTransform& Tran
 	Payload.PatternClass = PatternToLaunch;
 	Payload.ServerSpawnTime = AGeoPlayerController::GetServerTime(GetWorld());
 	Payload.Seed = FMath::Rand32();
+	Payload.AbilityLevel = GetAbilityLevel();
 	return Payload;
 }
 

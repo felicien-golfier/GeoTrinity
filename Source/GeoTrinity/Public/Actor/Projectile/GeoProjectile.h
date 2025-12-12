@@ -2,14 +2,15 @@
 
 #pragma once
 
-#include "AbilitySystem/GeoAscTypes.h"
+#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "GameplayEffectTypes.h"
 #include "System/GeoPoolableInterface.h"
 
 #include "GeoProjectile.generated.h"
 
+class UGeoAbilitySystemComponent;
+struct FEffectData;
 class UProjectileMovementComponent;
 class UNiagaraSystem;
 class USphereComponent;
@@ -38,15 +39,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
-	UPROPERTY(BlueprintReadWrite, meta = (ExposeOnSpawn = true))
-	FGameplayEffectSpecHandle DamageEffectSpecHandle;
-	FDamageEffectParams DamageEffectParams;
+	TArray<FEffectData> EffectDataArray;
 
 	UPROPERTY()
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;
 
+	FPatternPayload Payload;
+
 protected:
-	void ApplyEffectToTarget(AActor* OtherActor);
 	virtual bool IsValidOverlap(const AActor* OtherActor);
 
 	UFUNCTION()
