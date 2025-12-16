@@ -45,4 +45,5 @@ void UGeoGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 		const FPatternPayload& Payload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
 		GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload);
 	}
+	
 }

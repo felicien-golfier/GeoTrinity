@@ -39,7 +39,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
-	TArray<FEffectData> EffectDataArray;
+	UPROPERTY(Transient)
+	TArray<UEffectDataAsset*> EffectDataArray;
 
 	UPROPERTY()
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;

@@ -19,11 +19,13 @@ class UGeoAbilitySystemComponent;
 
 struct TurretInitData
 {
+	// Should it be USTRUCT with UPROPERTY to avoid garbage collection on this pointer ?
 	AActor* CharacterOwner;
 
 	float TurretLevel{1.f};
 
-	TArray<FEffectData> EffectDataArray;
+	// Should it be USTRUCT with UPROPERTY to avoid garbage collection on this pointer array?
+	TArray<UEffectDataAsset*> EffectDataArray;
 
 	FGenericTeamId TeamID;
 };

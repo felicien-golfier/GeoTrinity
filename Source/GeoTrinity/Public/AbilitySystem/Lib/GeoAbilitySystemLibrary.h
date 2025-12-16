@@ -34,9 +34,8 @@ public:
 	/** PARAMS STUFF **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static FGameplayEffectContextHandle ApplyEffectFromDamageParams(const FDamageEffectParams& params);
-	static FGameplayEffectContextHandle ApplyEffectFromEffectData(TArray<FEffectData>& DataArray,
+	static FGameplayEffectContextHandle ApplyEffectFromEffectData(const TArray<UEffectDataAsset*>& DataArray,
 		UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed);
-	static TArray<FEffectData> GetEffectDataArray(UEffectDataAsset* EffectDataAsset);
 
 	/** STATUS **/
 	static bool ApplyStatusToTarget(UAbilitySystemComponent* pTargetASC, UAbilitySystemComponent* pSourceASC,
@@ -122,6 +121,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetRadialDamageOrigin(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
 		const FVector& inVector);
+
+	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary")
+	static UGeoAbilitySystemComponent* GetGeoAscFromActor(AActor* Actor);
+
 	/**
 	 * END context getter setters
 	 */

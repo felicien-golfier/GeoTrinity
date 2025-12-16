@@ -1,9 +1,17 @@
 ﻿#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "System/GeoActorPoolingSubsystem.h"
+
+void UPattern::OnCreate()
+{
+	EffectDataArray.Empty();
+	for (auto EffectDataAsset : EffectDataAssets)
+	{
+		EffectDataArray.Add(EffectDataAsset.LoadSynchronous());
+	}
+}
 
 void UPattern::StartPattern_Implementation(const FPatternPayload& Payload)
 {
@@ -35,7 +43,7 @@ void UProjectilePattern::SpawnProjectile(const FPatternPayload& Payload, float Y
 	}
 
 	GeoProjectile->Payload = Payload;
-	GeoProjectile->EffectDataArray = UGeoAbilitySystemLibrary::GetEffectDataArray(EffectDataAsset);
+	GeoProjectile->EffectDataArray = EffectDataArray;
 
 	GeoProjectile->Init();   // Equivalent to the DeferredSpawn
 }

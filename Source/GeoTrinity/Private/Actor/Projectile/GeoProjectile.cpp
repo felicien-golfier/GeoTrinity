@@ -2,7 +2,6 @@
 
 #include "Actor/Projectile/GeoProjectile.h"
 
-#include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -14,6 +13,8 @@
 #include "NiagaraFunctionLibrary.h"
 #include "System/GeoActorPoolingSubsystem.h"
 #include "Tool/GameplayLibrary.h"
+
+using GeoASL = UGeoAbilitySystemLibrary;
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoProjectile::AGeoProjectile()
@@ -108,7 +109,6 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 	return TeamInterface->GetGenericTeamId().GetId() != FGenericTeamId::NoTeam
 	    && (TeamInterface->GetGenericTeamId().GetId() & ApplyEffectToTeamOnOverlap) != 0x00;
 }
-
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -124,9 +124,8 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	if (HasAuthority())
 	{
-		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray,
-			Payload.Instigator->GetComponentByClass<UGeoAbilitySystemComponent>(),
-			OtherActor->GetComponentByClass<UGeoAbilitySystemComponent>(), Payload.AbilityLevel, Payload.Seed);
+		GeoASL::ApplyEffectFromEffectData(EffectDataArray, GeoASL::GetGeoAscFromActor(Payload.Instigator),
+			GeoASL::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel, Payload.Seed);
 	}
 
 	EndProjectileLife();

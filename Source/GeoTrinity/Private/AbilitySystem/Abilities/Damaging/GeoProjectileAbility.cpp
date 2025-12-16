@@ -39,7 +39,7 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 	// Append GAS data
 	checkf(DamageEffectClass, TEXT("No DamageEffectClass in the projectile spell!"));
 
-	GeoProjectile->EffectDataArray = UGeoAbilitySystemLibrary::GetEffectDataArray(EffectDataAsset);
+	GeoProjectile->EffectDataArray = EffectDataArray;
 
 	GeoProjectile->Init();   // Equivalent to the DeferredSpawn
 }

@@ -248,6 +248,7 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FPatternPa
 	else
 	{
 		PatternInstance = NewObject<UPattern>(this, PatternClass);
+		PatternInstance->OnCreate();
 		Patterns.Add(PatternInstance);
 	}
 

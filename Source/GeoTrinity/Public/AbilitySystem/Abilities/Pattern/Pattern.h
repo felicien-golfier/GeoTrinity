@@ -43,12 +43,20 @@ class GEOTRINITY_API UPattern : public UObject
 	GENERATED_BODY()
 
 public:
+	void OnCreate();
+
 	UFUNCTION(BlueprintNativeEvent)
 	void StartPattern(const FPatternPayload& Payload);
 	virtual void StartPattern_Implementation(const FPatternPayload& Payload);
 
-	UPROPERTY(EditDefaultsOnly)
-	UEffectDataAsset* EffectDataAsset;
+	/**
+	 * Effect data assets that defines specific gameplay effects
+	 * /!\ This array is NOT transmitted by the ability!
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
+	UPROPERTY(Transient)
+	TArray<UEffectDataAsset*> EffectDataArray;
 };
 
 UCLASS(BlueprintType, Blueprintable)

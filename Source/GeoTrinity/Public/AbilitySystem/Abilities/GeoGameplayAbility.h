@@ -40,6 +40,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern")
 	TSubclassOf<UPattern> PatternToLaunch;
 
-	UPROPERTY(EditDefaultsOnly)
-	UEffectDataAsset* EffectDataAsset;
+	/**
+	 * An array of effect data assets which defines specific gameplay effects
+	 * /!\ This array is NOT transmitted to the Pattern !
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
+	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
+	UPROPERTY(Transient)
+	TArray<UEffectDataAsset*> EffectDataArray;
 };
