@@ -5,22 +5,22 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemBlueprintLibrary.h"
 
-void UEffectDataAsset::UpdateContextHandle(FGeoGameplayEffectContext*) const
+void FEffectData::UpdateContextHandle(FGeoGameplayEffectContext*) const
 {
-	ensureMsgf(false, TEXT("UpdateContextHandle not implemented for this effect %s"), *GetClass()->GetName());
+	ensureMsgf(false, TEXT("UpdateContextHandle not implemented for this effect %s"), *StaticStruct()->GetName());
 }
-void UEffectDataAsset::ApplyEffect(const FGameplayEffectContextHandle& ContextHandle,
-	UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const
+void FEffectData::ApplyEffect(const FGameplayEffectContextHandle& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
+	UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const
 {
-	ensureMsgf(false, TEXT("UpdateContextHandle not implemented for this effect %s"), *GetClass()->GetName());
+	ensureMsgf(false, TEXT("UpdateContextHandle not implemented for this effect %s"), *StaticStruct()->GetName());
 }
 
-void UDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext*) const
+void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext*) const
 {
 	checkf(DamageEffectClass, TEXT("No valid DamageEffectClass !"));
 }
 
-void UDamageEffectData::ApplyEffect(const FGameplayEffectContextHandle& ContextHandle,
+void FDamageEffectData::ApplyEffect(const FGameplayEffectContextHandle& ContextHandle,
 	UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32) const
 {
 	FGameplayEffectSpecHandle specHandle = SourceASC->MakeOutgoingSpec(DamageEffectClass, AbilityLevel, ContextHandle);
@@ -34,11 +34,11 @@ void UDamageEffectData::ApplyEffect(const FGameplayEffectContextHandle& ContextH
 	TargetASC->ApplyGameplayEffectSpecToSelf(*specHandle.Data);
 }
 
-void UStatusEffectData::UpdateContextHandle(FGeoGameplayEffectContext* GeoGameplayEffectContext) const
+void FStatusEffectData::UpdateContextHandle(FGeoGameplayEffectContext* GeoGameplayEffectContext) const
 {
 }
 
-void UStatusEffectData::ApplyEffect(const FGameplayEffectContextHandle& ContextHandle,
+void FStatusEffectData::ApplyEffect(const FGameplayEffectContextHandle& ContextHandle,
 	UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const
 {
 	if (static_cast<float>(Seed) / MAX_int32 * 100 <= StatusChance)

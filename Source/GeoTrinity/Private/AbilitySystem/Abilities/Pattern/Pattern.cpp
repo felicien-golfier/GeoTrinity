@@ -1,30 +1,30 @@
 ﻿#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 
 #include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "System/GeoActorPoolingSubsystem.h"
 
-void UPattern::OnCreate()
+void UPattern::OnCreate(FGameplayTag AbilityTag)
 {
-	EffectDataArray.Empty();
-	for (auto EffectDataAsset : EffectDataAssets)
-	{
-		EffectDataArray.Add(EffectDataAsset.LoadSynchronous());
-	}
+	checkf(EffectDataArray.IsEmpty(),
+		TEXT(
+			"EffectDataArray is not empty when creating a Pattern ! Ensure you call this function only at the spawn of the pattern."));
+	EffectDataArray = UGeoAbilitySystemLibrary::GetEffectDataArray(AbilityTag);
 }
 
-void UPattern::StartPattern_Implementation(const FPatternPayload& Payload)
+void UPattern::StartPattern_Implementation(const FAbilityPayload& Payload)
 {
 	// To be overriden by your own pattern !
 }
 
-void UProjectilePattern::StartPattern_Implementation(const FPatternPayload& Payload)
+void UProjectilePattern::StartPattern_Implementation(const FAbilityPayload& Payload)
 {
 	// Basic Projectile Pattern just spawns a projectile in the correct direction.
 	SpawnProjectile(Payload, 0.f);
 }
 
-void UProjectilePattern::SpawnProjectile(const FPatternPayload& Payload, float Yaw)
+void UProjectilePattern::SpawnProjectile(const FAbilityPayload& Payload, float Yaw)
 {
 
 	const FTransform SpawnTransform{FRotator(0.f, Yaw, 0.f), FVector(Payload.Origin, 50.f)};

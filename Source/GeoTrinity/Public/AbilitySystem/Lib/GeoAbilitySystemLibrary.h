@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include "GeoAbilitySystemLibrary.generated.h"
 
@@ -28,15 +29,19 @@ public:
 	/** INFO HOLDER **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))
 	static UAbilityInfo* GetAbilityInfo(const UObject* WorldContextObject);
+	static UAbilityInfo* GetAbilityInfo();
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))
 	static UStatusInfo* GetStatusInfo(const UObject* WorldContextObject);
 
 	/** PARAMS STUFF **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static FGameplayEffectContextHandle ApplyEffectFromDamageParams(const FDamageEffectParams& params);
-	static FGameplayEffectContextHandle ApplyEffectFromEffectData(const TArray<UEffectDataAsset*>& DataArray,
+	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Effects")
+	static FGameplayEffectContextHandle ApplyEffectFromEffectData(const TArray<FEffectData>& DataArray,
 		UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed);
-
+	static TArray<FEffectData> GetEffectDataArray(const UEffectDataAsset* EffectDataAsset);
+	static TArray<FEffectData> GetEffectDataArray(TArray<TInstancedStruct<FEffectData>> EffectDataArray);
+	static TArray<FEffectData> GetEffectDataArray(FGameplayTag AbilityTag);
 	/** STATUS **/
 	static bool ApplyStatusToTarget(UAbilitySystemComponent* pTargetASC, UAbilitySystemComponent* pSourceASC,
 		const FGameplayTag& statusTag, int32 level);

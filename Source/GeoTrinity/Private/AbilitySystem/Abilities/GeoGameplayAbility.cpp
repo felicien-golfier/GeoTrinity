@@ -7,16 +7,17 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoPlayerController.h"
+using GeoASL = UGeoAbilitySystemLibrary;
 
 // ---------------------------------------------------------------------------------------------------------------------
 FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 {
 	return UGeoAbilitySystemLibrary::GetAbilityTagFromAbility(*this);
 }
-FPatternPayload UGeoGameplayAbility::CreatePatternPayload(const FTransform& Transform, AActor* Owner,
+FAbilityPayload UGeoGameplayAbility::CreatePatternPayload(const FTransform& Transform, AActor* Owner,
 	AActor* Instigator) const
 {
-	FPatternPayload Payload;
+	FAbilityPayload Payload;
 	Payload.Owner = Owner;
 	Payload.Instigator = Instigator;
 	Payload.Origin = FVector2D(Transform.GetLocation());
@@ -25,6 +26,8 @@ FPatternPayload UGeoGameplayAbility::CreatePatternPayload(const FTransform& Tran
 	Payload.ServerSpawnTime = AGeoPlayerController::GetServerTime(GetWorld());
 	Payload.Seed = FMath::Rand32();
 	Payload.AbilityLevel = GetAbilityLevel();
+	// TODO: optimise AbilityTag : remove from payload and set only once on Pattern Creation.
+	Payload.AbilityTag = GetAbilityTag();
 	return Payload;
 }
 
@@ -42,8 +45,20 @@ void UGeoGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 	if (PatternToLaunch)
 	{
 		AActor* Owner = GetOwningActorFromActorInfo();
-		const FPatternPayload& Payload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
+		const FAbilityPayload& Payload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
 		GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload);
 	}
-	
+}
+
+TArray<FEffectData> UGeoGameplayAbility::GetEffectDataArray() const
+{
+	TArray<FEffectData> FilledEffectData;
+	for (auto EffectDataAsset : EffectDataAssets)
+	{
+		FilledEffectData.Append(GeoASL::GetEffectDataArray(EffectDataAsset.LoadSynchronous()));
+	}
+
+	FilledEffectData.Append(GeoASL::GetEffectDataArray(EffectDataInstances));
+
+	return FilledEffectData;
 }

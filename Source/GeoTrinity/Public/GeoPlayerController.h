@@ -50,7 +50,7 @@ private:
 	TArray<float> Pings;
 	float ServerTimeOffset;
 	FTimerHandle TimeSyncTimerHandle;
-	static constexpr int32 NumSamplesToStabilize = 201;
+	static constexpr int32 NumSamplesToStabilize = 200;
 	static constexpr float MaxDeviationFromMedian = 0.01f;
 
 public:

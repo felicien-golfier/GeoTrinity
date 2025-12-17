@@ -230,7 +230,7 @@ void UGeoAbilitySystemComponent::BindAttributeCallbacks()
 			});
 }
 
-void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FPatternPayload Payload)
+void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload)
 {
 	checkf(Payload.PatternClass, TEXT("PatternStartMulticast: Invalid PatternClassName"));
 	UPattern* PatternInstance;
@@ -248,7 +248,7 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FPatternPa
 	else
 	{
 		PatternInstance = NewObject<UPattern>(this, PatternClass);
-		PatternInstance->OnCreate();
+		PatternInstance->OnCreate(Payload.AbilityTag);
 		Patterns.Add(PatternInstance);
 	}
 

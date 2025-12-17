@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "ScalableFloat.h"
+#include "StructUtils/InstancedStruct.h"
 #include "UObject/Class.h"
 
 #include "EffectData.generated.h"
@@ -11,40 +12,49 @@ struct FGameplayEffectContextHandle;
 struct FGeoGameplayEffectContext;
 class UGeoAbilitySystemComponent;
 
-UCLASS()
+UCLASS(BlueprintType)
+
 class GEOTRINITY_API UEffectDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<TInstancedStruct<struct FEffectData>> EffectDataInstances;
+};
+
+USTRUCT(BlueprintType)
+struct GEOTRINITY_API FEffectData
+{
+	GENERATED_BODY()
+	virtual ~FEffectData() = default;
+
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext) const;
 	virtual void ApplyEffect(const FGameplayEffectContextHandle& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
 		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const;
 };
 
-UCLASS()
-class UDamageEffectData : public UEffectDataAsset
+USTRUCT()
+struct FDamageEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-public:
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext) const override;
 	virtual void ApplyEffect(const FGameplayEffectContextHandle& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
 		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<class UGameplayEffect> DamageEffectClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat DamageAmount;
 };
 
-UCLASS()
-class UStatusEffectData : public UEffectDataAsset
+USTRUCT()
+struct FStatusEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-public:
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext*) const override;
 	virtual void ApplyEffect(const FGameplayEffectContextHandle& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
 		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;

@@ -3,14 +3,13 @@
 #pragma once
 
 #include "Abilities/GameplayAbility.h"
-#include "AbilitySystem/Data/EffectData.h"
 #include "CoreMinimal.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include "GeoGameplayAbility.generated.h"
 
-struct FInstancedStruct;
-struct FEffectData;
-struct FPatternPayload;
+struct FAbilityPayload;
+class UEffectDataAsset;
 class UGeoAbilitySystemComponent;
 class UPattern;
 /**
@@ -23,10 +22,11 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 
 public:
 	FGameplayTag GetAbilityTag() const;
-	FPatternPayload CreatePatternPayload(const FTransform& Transform, AActor* Owner, AActor* Instigator) const;
+	FAbilityPayload CreatePatternPayload(const FTransform& Transform, AActor* Owner, AActor* Instigator) const;
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	TArray<struct FEffectData> GetEffectDataArray() const;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")
 	FGameplayTag StartupInputTag;
@@ -40,12 +40,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern")
 	TSubclassOf<UPattern> PatternToLaunch;
 
-	/**
-	 * An array of effect data assets which defines specific gameplay effects
-	 * /!\ This array is NOT transmitted to the Pattern !
-	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
-	UPROPERTY(Transient)
-	TArray<UEffectDataAsset*> EffectDataArray;
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
 };

@@ -7,6 +7,14 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "System/GeoActorPoolingSubsystem.h"
 
+void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+	const FGameplayEventData* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	AActor* Owner = GetOwningActorFromActorInfo();
+	StoredPayload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
+}
 void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projectileTargetLocation)
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
@@ -15,7 +23,7 @@ void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projecti
 	SpawnProjectile((projectileTargetLocation - Actor->GetActorLocation()).Rotation());
 }
 
-void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
+void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator) const
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
@@ -39,7 +47,8 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator)
 	// Append GAS data
 	checkf(DamageEffectClass, TEXT("No DamageEffectClass in the projectile spell!"));
 
-	GeoProjectile->EffectDataArray = EffectDataArray;
+	GeoProjectile->Payload = StoredPayload;
+	GeoProjectile->EffectDataArray = GetEffectDataArray();
 
 	GeoProjectile->Init();   // Equivalent to the DeferredSpawn
 }
@@ -53,7 +62,7 @@ void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
 	}
 }
 
-TArray<FVector> UGeoProjectileAbility::GetTargetLocations()
+TArray<FVector> UGeoProjectileAbility::GetTargetLocations() const
 {
 	switch (Target)
 	{

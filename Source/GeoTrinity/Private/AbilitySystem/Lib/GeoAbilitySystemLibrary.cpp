@@ -3,6 +3,7 @@
 // ReSharper disable CppUE4CodingStandardNamingViolationWarning
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 
+#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Data/StatusInfo.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
@@ -15,7 +16,6 @@
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "GroomVisualizationData.h"
 #include "Settings/GameDataSettings.h"
 #include "StructUtils/InstancedStruct.h"
 
@@ -29,6 +29,12 @@ UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo(const UObject* WorldConte
 
 	const UGameDataSettings* GDSettings = GetDefault<UGameDataSettings>();
 
+	return GDSettings->GetLoadedDataAsset(GDSettings->AbilityInfo);
+}
+
+UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo()
+{
+	const UGameDataSettings* GDSettings = GetDefault<UGameDataSettings>();
 	return GDSettings->GetLoadedDataAsset(GDSettings->AbilityInfo);
 }
 
@@ -46,9 +52,8 @@ UStatusInfo* UGeoAbilitySystemLibrary::GetStatusInfo(const UObject* WorldContext
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(
-	const TArray<UEffectDataAsset*>& DataArray, UGeoAbilitySystemComponent* SourceASC,
-	UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 EGroomViewMode::Seed)
+FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(const TArray<FEffectData>& DataArray,
+	UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed)
 {
 	FGameplayEffectContextHandle ContextHandle;
 	checkf(SourceASC, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source ASC to apply effect")) if (
@@ -64,10 +69,10 @@ FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData
 	checkf(GeoEffectContext,
 		TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Failed to create GeoEffectContext"));
 
-	for (UEffectDataAsset* EffectDataClass : DataArray)
+	for (auto EffectData : DataArray)
 	{
-		EffectDataClass->UpdateContextHandle(GeoEffectContext);
-		EffectDataClass->ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
+		EffectData.UpdateContextHandle(GeoEffectContext);
+		EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
 	}
 
 	return ContextHandle;
@@ -519,29 +524,50 @@ void UGeoAbilitySystemLibrary::SetRadialDamageOrigin(FGameplayEffectContextHandl
 		pGeoContext->SetRadialDamageOrigin(inVector);
 	}
 }
+
 UGeoAbilitySystemComponent* UGeoAbilitySystemLibrary::GetGeoAscFromActor(AActor* Actor)
 {
 	return Cast<UGeoAbilitySystemComponent>(UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor));
 }
 
-// TArray<FEffectData> UGeoAbilitySystemLibrary::GetEffectDataArray(UEffectDataAsset* EffectDataAsset)
-// {
-// 	if (!ensureMsgf(IsValid(EffectDataAsset), TEXT("EffectDataAsset is not valid !")))
-// 	{
-// 		return {};
-// 	}
-//
-// 	TArray<FEffectData> EffectDataArray;
-//
-// 	EffectDataArray.Reserve(EffectDataAsset->EffectDataInstances.Num());
-//
-// 	for (const FInstancedStruct& Effect : EffectDataAsset->EffectDataInstances)
-// 	{
-// 		checkf(Effect.IsValid() && Effect.GetScriptStruct()->IsChildOf(FEffectData::StaticStruct()),
-// 			TEXT("Effects must be from type FEffectData"));
-//
-// 		EffectDataArray.Add(Effect.Get<FEffectData>());
-// 	}
-//
-// 	return EffectDataArray;
-// }
+TArray<FEffectData> UGeoAbilitySystemLibrary::GetEffectDataArray(const UEffectDataAsset* EffectDataAsset)
+{
+	if (!ensureMsgf(IsValid(EffectDataAsset), TEXT("EffectDataAsset is not valid !")))
+	{
+		return {};
+	}
+
+	return GetEffectDataArray(EffectDataAsset->EffectDataInstances);
+}
+
+TArray<FEffectData> UGeoAbilitySystemLibrary::GetEffectDataArray(TArray<TInstancedStruct<FEffectData>> EffectDataArray)
+{
+	TArray<FEffectData> LoadedEffectDataArray;
+
+	LoadedEffectDataArray.Reserve(EffectDataArray.Num());
+
+	for (auto Effect : EffectDataArray)
+	{
+		LoadedEffectDataArray.Add(Effect.Get<FEffectData>());
+	}
+
+	return LoadedEffectDataArray;
+}
+
+TArray<FEffectData> UGeoAbilitySystemLibrary::GetEffectDataArray(FGameplayTag AbilityTag)
+{
+	for (auto AbilityInfo : GetAbilityInfo()->AbilityInfos)
+	{
+		if (AbilityInfo.AbilityTag == AbilityTag)
+		{
+			const UGameplayAbility* AbilityCDO = AbilityInfo.AbilityClass.GetDefaultObject();
+			if (IsValid(AbilityCDO) && AbilityCDO->IsA(UGeoGameplayAbility::StaticClass()))
+			{
+				return CastChecked<UGeoGameplayAbility>(AbilityCDO)->GetEffectDataArray();
+			}
+		}
+	}
+
+	ensureMsgf(true, TEXT("No EffectData found for AbilityTag %s"), *AbilityTag.ToString());
+	return {};
+}

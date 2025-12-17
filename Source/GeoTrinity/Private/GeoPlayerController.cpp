@@ -145,6 +145,7 @@ void AGeoPlayerController::CalculateStableServerTimeOffset()
 
 double AGeoPlayerController::GetServerTime() const
 {
+	// TODO: Check if HasAuth is on server only !
 	if (HasAuthority())
 	{
 		return GameplayLibrary::GetTime();

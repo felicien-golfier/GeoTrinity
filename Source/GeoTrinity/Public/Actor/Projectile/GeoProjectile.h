@@ -10,7 +10,6 @@
 #include "GeoProjectile.generated.h"
 
 class UGeoAbilitySystemComponent;
-struct FEffectData;
 class UProjectileMovementComponent;
 class UNiagaraSystem;
 class USphereComponent;
@@ -39,13 +38,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
-	UPROPERTY(Transient)
-	TArray<UEffectDataAsset*> EffectDataArray;
+	TArray<struct FEffectData> EffectDataArray;
 
 	UPROPERTY()
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;
 
-	FPatternPayload Payload;
+	FAbilityPayload Payload;
 
 protected:
 	virtual bool IsValidOverlap(const AActor* OtherActor);

@@ -25,7 +25,7 @@ struct TurretInitData
 	float TurretLevel{1.f};
 
 	// Should it be USTRUCT with UPROPERTY to avoid garbage collection on this pointer array?
-	TArray<UEffectDataAsset*> EffectDataArray;
+	TArray<struct FEffectData> EffectDataArray;
 
 	FGenericTeamId TeamID;
 };

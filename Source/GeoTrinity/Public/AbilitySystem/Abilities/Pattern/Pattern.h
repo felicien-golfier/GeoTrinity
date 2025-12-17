@@ -1,13 +1,14 @@
 ﻿#pragma once
+#include "GameplayTagContainer.h"
 
 #include "Pattern.generated.h"
 
+struct FGameplayTagContainer;
 class UEffectDataAsset;
-struct FEffectData;
 class UGameplayEffect;
 class AGeoProjectile;
 USTRUCT(BlueprintType)
-struct FPatternPayload
+struct FAbilityPayload
 {
 	GENERATED_BODY()
 
@@ -23,12 +24,15 @@ struct FPatternPayload
 	UPROPERTY(Transient, BlueprintReadOnly)
 	int32 Seed;   // seed pour variations RNG
 
-	// TODO: Find out a better solution than sending this every ability.
 	UPROPERTY(Transient, BlueprintReadOnly)
 	int32 AbilityLevel;
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	TSubclassOf<class UPattern> PatternClass;
+
+	// TODO: optimise AbilityTag : remove from payload and set only once on Pattern Creation.
+	UPROPERTY(Transient, BlueprintReadOnly)
+	FGameplayTag AbilityTag;
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	AActor* Owner;
@@ -43,20 +47,13 @@ class GEOTRINITY_API UPattern : public UObject
 	GENERATED_BODY()
 
 public:
-	void OnCreate();
+	void OnCreate(FGameplayTag AbilityTag);
 
 	UFUNCTION(BlueprintNativeEvent)
-	void StartPattern(const FPatternPayload& Payload);
-	virtual void StartPattern_Implementation(const FPatternPayload& Payload);
+	void StartPattern(const FAbilityPayload& Payload);
+	virtual void StartPattern_Implementation(const FAbilityPayload& Payload);
 
-	/**
-	 * Effect data assets that defines specific gameplay effects
-	 * /!\ This array is NOT transmitted by the ability!
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
-	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
-	UPROPERTY(Transient)
-	TArray<UEffectDataAsset*> EffectDataArray;
+	TArray<struct FEffectData> EffectDataArray;
 };
 
 UCLASS(BlueprintType, Blueprintable)
@@ -65,10 +62,10 @@ class GEOTRINITY_API UProjectilePattern : public UPattern
 	GENERATED_BODY()
 
 public:
-	virtual void StartPattern_Implementation(const FPatternPayload& Payload) override;
+	virtual void StartPattern_Implementation(const FAbilityPayload& Payload) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectile(const FPatternPayload& Payload, float Yaw);
+	void SpawnProjectile(const FAbilityPayload& Payload, float Yaw);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<AGeoProjectile> ProjectileClass;
