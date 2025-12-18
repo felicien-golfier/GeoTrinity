@@ -34,7 +34,7 @@ struct GEOTRINITY_API FEffectData
 		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const;
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FDamageEffectData : public FEffectData
 {
 	GENERATED_BODY()
@@ -50,7 +50,7 @@ struct FDamageEffectData : public FEffectData
 	FScalableFloat DamageAmount;
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FStatusEffectData : public FEffectData
 {
 	GENERATED_BODY()
@@ -59,8 +59,9 @@ struct FStatusEffectData : public FEffectData
 	virtual void ApplyEffect(const FGameplayEffectContextHandle& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
 		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
 
-	UPROPERTY(BlueprintReadWrite, meta = (ClampMin = "0", ClampMax = "100", UIMin = "0", UIMax = "100"))
-	uint8 StatusChance = 0;
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
+		meta = (ClampMin = "0", ClampMax = "100", UIMin = "0", UIMax = "100"))
+	uint8 StatusChance = 100;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FGameplayTag StatusTag{};
 };

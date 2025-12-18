@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "CoreMinimal.h"
-#include "GeoDamageGameplayAbility.h"
 
 #include "GeoProjectileAbility.generated.h"
 
@@ -20,7 +20,7 @@ class AGeoProjectile;
  * A spell that launches a projectile
  */
 UCLASS()
-class GEOTRINITY_API UGeoProjectileAbility : public UGeoDamageGameplayAbility
+class GEOTRINITY_API UGeoProjectileAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
 
@@ -37,14 +37,14 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectilesUsingTarget();
 
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	UFUNCTION(BlueprintCallable, Category = "Ability|Target")
 	TArray<FVector> GetTargetLocations() const;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoProjectile> ProjectileClass;
 
 	FAbilityPayload StoredPayload;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Target")
 	ETarget Target = ETarget::Forward;
 };

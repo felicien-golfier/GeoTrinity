@@ -127,7 +127,7 @@ void AGeoPlayerController::CalculateStableServerTimeOffset()
 	}
 
 	// If filtering was too aggressive, fall back to all samples
-	if (FilteredSamples.Num() == 0)
+	if (FilteredSamples.Num() <= 1)
 	{
 		UE_LOG(LogGeoTrinity, Error, TEXT("filtering was too aggressive, fall back to all samples"))
 		FilteredSamples = ServerTimeOffsetSamples;
@@ -155,6 +155,21 @@ double AGeoPlayerController::GetServerTime() const
 		ensureMsgf(HasServerTime(), TEXT("Server time is not available yet. please request only when ready !"));
 		return GameplayLibrary::GetTime() + ServerTimeOffset;
 	}
+}
+
+bool AGeoPlayerController::HasServerTime(const UWorld* World)
+{
+	if (World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer))
+	{
+		return true;
+	}
+
+	if (AGeoPlayerController* GeoPlayerController = GetLocalGeoPlayerController(World))
+	{
+		return GeoPlayerController->HasServerTime();
+	}
+
+	return false;
 }
 
 double AGeoPlayerController::GetServerTime(const UWorld* World)

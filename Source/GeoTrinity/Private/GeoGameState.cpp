@@ -8,7 +8,7 @@ void AGeoGameState::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
 
-	if (HasAuthority())
+	if (HasAuthority() && EnemyToSpawn)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

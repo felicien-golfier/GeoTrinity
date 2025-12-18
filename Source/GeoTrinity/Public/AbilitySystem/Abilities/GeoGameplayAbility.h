@@ -26,16 +26,14 @@ public:
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-	TArray<struct FEffectData> GetEffectDataArray() const;
+	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr,
+		FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+	TArray<TInstancedStruct<struct FEffectData>> GetEffectDataArray() const;
+	float GetCooldown(int32 level = 1) const;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")
 	FGameplayTag StartupInputTag;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Status")
-	FGameplayTag StatusToInflictTag{};
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Status", meta = (ClampMin = "0", ClampMax = "100"))
-	uint8 ChanceToInflictStatus{0};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern")
 	TSubclassOf<UPattern> PatternToLaunch;

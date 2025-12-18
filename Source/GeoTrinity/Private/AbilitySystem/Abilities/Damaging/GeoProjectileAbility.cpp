@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
-#include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Data/EffectData.h"   //Necessary to copy array of EffectData.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "System/GeoActorPoolingSubsystem.h"
@@ -11,10 +11,11 @@ void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	AActor* Owner = GetOwningActorFromActorInfo();
 	StoredPayload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
+
 void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projectileTargetLocation)
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
@@ -45,8 +46,6 @@ void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator) co
 	}
 
 	// Append GAS data
-	checkf(DamageEffectClass, TEXT("No DamageEffectClass in the projectile spell!"));
-
 	GeoProjectile->Payload = StoredPayload;
 	GeoProjectile->EffectDataArray = GetEffectDataArray();
 

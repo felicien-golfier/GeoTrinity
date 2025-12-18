@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "GameplayTagContainer.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include "Pattern.generated.h"
 
@@ -53,7 +54,7 @@ public:
 	void StartPattern(const FAbilityPayload& Payload);
 	virtual void StartPattern_Implementation(const FAbilityPayload& Payload);
 
-	TArray<struct FEffectData> EffectDataArray;
+	TArray<TInstancedStruct<struct FEffectData>> EffectDataArray;
 };
 
 UCLASS(BlueprintType, Blueprintable)

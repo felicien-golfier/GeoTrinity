@@ -26,7 +26,6 @@ FAbilityPayload UGeoGameplayAbility::CreatePatternPayload(const FTransform& Tran
 	Payload.ServerSpawnTime = AGeoPlayerController::GetServerTime(GetWorld());
 	Payload.Seed = FMath::Rand32();
 	Payload.AbilityLevel = GetAbilityLevel();
-	// TODO: optimise AbilityTag : remove from payload and set only once on Pattern Creation.
 	Payload.AbilityTag = GetAbilityTag();
 	return Payload;
 }
@@ -44,21 +43,44 @@ void UGeoGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 	if (PatternToLaunch)
 	{
+		CommitAbility(Handle, ActorInfo, ActivationInfo);
 		AActor* Owner = GetOwningActorFromActorInfo();
 		const FAbilityPayload& Payload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
 		GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload);
+		EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
 	}
 }
-
-TArray<FEffectData> UGeoGameplayAbility::GetEffectDataArray() const
+bool UGeoGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags,
+	const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
 {
-	TArray<FEffectData> FilledEffectData;
+
+	return AGeoPlayerController::HasServerTime(ActorInfo->OwnerActor->GetWorld())
+	    && Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
+}
+
+TArray<TInstancedStruct<FEffectData>> UGeoGameplayAbility::GetEffectDataArray() const
+{
+	TArray<TInstancedStruct<FEffectData>> FilledEffectData;
 	for (auto EffectDataAsset : EffectDataAssets)
 	{
 		FilledEffectData.Append(GeoASL::GetEffectDataArray(EffectDataAsset.LoadSynchronous()));
 	}
 
-	FilledEffectData.Append(GeoASL::GetEffectDataArray(EffectDataInstances));
+	FilledEffectData.Append(EffectDataInstances);
 
 	return FilledEffectData;
+}
+float UGeoGameplayAbility::GetCooldown(int32 level) const
+{
+	float cooldown = 0.f;
+
+	UGameplayEffect* pCooldownEffect = GetCooldownGameplayEffect();
+	if (!pCooldownEffect)
+	{
+		return cooldown;
+	}
+
+	pCooldownEffect->DurationMagnitude.GetStaticMagnitudeIfPossible(level, cooldown);
+	return cooldown;
 }

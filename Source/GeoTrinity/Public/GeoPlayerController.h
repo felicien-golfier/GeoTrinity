@@ -41,6 +41,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	double GetServerTime() const;
+	static bool HasServerTime(const UWorld* World);
 	static double GetServerTime(const UWorld* World);
 	static AGeoPlayerController* GetLocalGeoPlayerController(const UWorld* World);
 
@@ -50,7 +51,7 @@ private:
 	TArray<float> Pings;
 	float ServerTimeOffset;
 	FTimerHandle TimeSyncTimerHandle;
-	static constexpr int32 NumSamplesToStabilize = 200;
+	static constexpr int32 NumSamplesToStabilize = 50;
 	static constexpr float MaxDeviationFromMedian = 0.01f;
 
 public:

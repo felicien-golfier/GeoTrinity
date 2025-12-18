@@ -3,8 +3,6 @@
 #include "Actor/Projectile/TurretSpawnerProjectile.h"
 
 #include "Actor/Turret/GeoTurretBase.h"
-#include "Characters/PlayableCharacter.h"
-#include "Components/SphereComponent.h"
 #include "GameFramework/PlayerState.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -15,7 +13,7 @@ ATurretSpawnerProjectile::ATurretSpawnerProjectile()
 // ---------------------------------------------------------------------------------------------------------------------
 float ATurretSpawnerProjectile::GetTurretLevel_Implementation() const
 {
-	return 1.f;
+	return Payload.AbilityLevel;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -77,11 +75,5 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 
 bool ATurretSpawnerProjectile::IsValidOverlap(const AActor* OtherActor)
 {
-	bool bHasValidOverlap = Super::IsValidOverlap(OtherActor);
-	if (!bHasValidOverlap)
-	{
-		return false;
-	}
-
-	return OtherActor != GetInstigator();
+	return OtherActor != GetInstigator() && Super::IsValidOverlap(OtherActor);
 }

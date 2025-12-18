@@ -9,7 +9,6 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
-#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "EngineUtils.h"
@@ -52,8 +51,9 @@ UStatusInfo* UGeoAbilitySystemLibrary::GetStatusInfo(const UObject* WorldContext
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(const TArray<FEffectData>& DataArray,
-	UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed)
+FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(
+	const TArray<TInstancedStruct<FEffectData>>& DataArray, UGeoAbilitySystemComponent* SourceASC,
+	UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed)
 {
 	FGameplayEffectContextHandle ContextHandle;
 	checkf(SourceASC, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source ASC to apply effect")) if (
@@ -69,61 +69,15 @@ FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData
 	checkf(GeoEffectContext,
 		TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Failed to create GeoEffectContext"));
 
-	for (auto EffectData : DataArray)
+	for (auto EffectDataInstance : DataArray)
 	{
-		EffectData.UpdateContextHandle(GeoEffectContext);
-		EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
+		const FEffectData* EffectData = EffectDataInstance.GetPtr<FEffectData>();
+		checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
+		EffectData->UpdateContextHandle(GeoEffectContext);
+		EffectData->ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
 	}
 
 	return ContextHandle;
-}
-
-FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromDamageParams(const FDamageEffectParams& params)
-{
-	FGameplayEffectContextHandle contextHandle;
-	UGeoAbilitySystemComponent* pSourceASC = Cast<UGeoAbilitySystemComponent>(params.SourceASC);
-	checkf(pSourceASC, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source ASC to apply effect")) if (
-		!IsValid(pSourceASC) || !IsValid(params.TargetASC))
-	{
-		return contextHandle;
-	}
-	checkf(params.DamageGameplayEffectClass,
-		TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Damage effect class not set"))
-
-		contextHandle = pSourceASC->MakeEffectContext();
-	contextHandle.AddSourceObject(pSourceASC->GetAvatarActor());
-
-	FGeoGameplayEffectContext* pGeoEffectContext = static_cast<FGeoGameplayEffectContext*>(contextHandle.Get());
-	checkf(pGeoEffectContext,
-		TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Failed to create GeoEffectContext"))
-
-		/** Knockbacks **/
-		pGeoEffectContext->SetDeathImpulseVector(params.DeathImpulseVector);
-	pGeoEffectContext->SetKnockbackVector(params.KnockbackVector);
-
-	/** Radial damage **/
-	pGeoEffectContext->SetIsRadialDamage(params.bIsRadialDamage);
-	pGeoEffectContext->SetRadialDamageInnerRadius(params.RadialDamageInnerRadius);
-	pGeoEffectContext->SetRadialDamageOuterRadius(params.RadialDamageOuterRadius);
-	pGeoEffectContext->SetRadialDamageOrigin(params.RadialDamageOrigin);
-
-	FGameplayEffectSpecHandle specHandle =
-		params.SourceASC->MakeOutgoingSpec(params.DamageGameplayEffectClass, params.AbilityLevel, contextHandle);
-
-	/** Type of damage **/
-	const FGeoGameplayTags& tags = FGeoGameplayTags::Get();
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(specHandle, tags.Gameplay_Damage, params.BaseDamage);
-
-	/** APPLY EFFECT **/
-	params.TargetASC->ApplyGameplayEffectSpecToSelf(*specHandle.Data);
-
-	/** Status **/
-	if (FMath::RandRange(1, 100) <= params.StatusChance)
-	{
-		ApplyStatusToTarget(params.TargetASC, pSourceASC, params.StatusTag, params.AbilityLevel);
-	}
-
-	return contextHandle;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -530,31 +484,18 @@ UGeoAbilitySystemComponent* UGeoAbilitySystemLibrary::GetGeoAscFromActor(AActor*
 	return Cast<UGeoAbilitySystemComponent>(UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor));
 }
 
-TArray<FEffectData> UGeoAbilitySystemLibrary::GetEffectDataArray(const UEffectDataAsset* EffectDataAsset)
+TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArray(
+	const UEffectDataAsset* EffectDataAsset)
 {
 	if (!ensureMsgf(IsValid(EffectDataAsset), TEXT("EffectDataAsset is not valid !")))
 	{
 		return {};
 	}
 
-	return GetEffectDataArray(EffectDataAsset->EffectDataInstances);
+	return EffectDataAsset->EffectDataInstances;
 }
 
-TArray<FEffectData> UGeoAbilitySystemLibrary::GetEffectDataArray(TArray<TInstancedStruct<FEffectData>> EffectDataArray)
-{
-	TArray<FEffectData> LoadedEffectDataArray;
-
-	LoadedEffectDataArray.Reserve(EffectDataArray.Num());
-
-	for (auto Effect : EffectDataArray)
-	{
-		LoadedEffectDataArray.Add(Effect.Get<FEffectData>());
-	}
-
-	return LoadedEffectDataArray;
-}
-
-TArray<FEffectData> UGeoAbilitySystemLibrary::GetEffectDataArray(FGameplayTag AbilityTag)
+TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArray(FGameplayTag AbilityTag)
 {
 	for (auto AbilityInfo : GetAbilityInfo()->AbilityInfos)
 	{

@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "StructUtils/InstancedStruct.h"
 #include "System/GeoPoolableInterface.h"
 
 #include "GeoProjectile.generated.h"
@@ -38,7 +39,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
-	TArray<struct FEffectData> EffectDataArray;
+	TArray<TInstancedStruct<struct FEffectData>> EffectDataArray;
 
 	UPROPERTY()
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;

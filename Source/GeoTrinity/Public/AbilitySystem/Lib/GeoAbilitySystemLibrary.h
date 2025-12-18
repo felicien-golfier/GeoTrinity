@@ -34,14 +34,12 @@ public:
 	static UStatusInfo* GetStatusInfo(const UObject* WorldContextObject);
 
 	/** PARAMS STUFF **/
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static FGameplayEffectContextHandle ApplyEffectFromDamageParams(const FDamageEffectParams& params);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Effects")
-	static FGameplayEffectContextHandle ApplyEffectFromEffectData(const TArray<FEffectData>& DataArray,
-		UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed);
-	static TArray<FEffectData> GetEffectDataArray(const UEffectDataAsset* EffectDataAsset);
-	static TArray<FEffectData> GetEffectDataArray(TArray<TInstancedStruct<FEffectData>> EffectDataArray);
-	static TArray<FEffectData> GetEffectDataArray(FGameplayTag AbilityTag);
+	static FGameplayEffectContextHandle ApplyEffectFromEffectData(
+		const TArray<TInstancedStruct<FEffectData>>& DataArray, UGeoAbilitySystemComponent* SourceASC,
+		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed);
+	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(const UEffectDataAsset* EffectDataAsset);
+	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(FGameplayTag AbilityTag);
 	/** STATUS **/
 	static bool ApplyStatusToTarget(UAbilitySystemComponent* pTargetASC, UAbilitySystemComponent* pSourceASC,
 		const FGameplayTag& statusTag, int32 level);

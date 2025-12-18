@@ -13,52 +13,6 @@
 class UGameplayEffect;
 
 USTRUCT(BlueprintType)
-struct FDamageEffectParams
-{
-	GENERATED_BODY()
-	FDamageEffectParams() {}
-
-	UPROPERTY(BlueprintReadWrite)
-	TObjectPtr<UObject> WorldContextObject = nullptr;
-	UPROPERTY(BlueprintReadWrite)
-	TSubclassOf<UGameplayEffect> DamageGameplayEffectClass = nullptr;
-	UPROPERTY(BlueprintReadWrite)
-	TObjectPtr<UAbilitySystemComponent> SourceASC = nullptr;
-	UPROPERTY(BlueprintReadWrite)
-	TObjectPtr<UAbilitySystemComponent> TargetASC = nullptr;
-	UPROPERTY(BlueprintReadWrite)
-	float BaseDamage = 0.f;
-	UPROPERTY(BlueprintReadWrite)
-	float AbilityLevel = 1.f;
-	UPROPERTY(BlueprintReadWrite)
-	uint8 StatusChance = 0;
-	UPROPERTY(BlueprintReadWrite)
-	FGameplayTag StatusTag{};
-
-	UPROPERTY(BlueprintReadWrite)
-	float DeathImpulseMagnitude = 0.f;
-	UPROPERTY(BlueprintReadWrite)
-	FVector DeathImpulseVector{FVector::ZeroVector};
-
-	UPROPERTY(BlueprintReadWrite)
-	uint8 KnockbackChancePercent = 0;
-	UPROPERTY(BlueprintReadWrite)
-	float KnockbackMagnitude = 0.f;
-	UPROPERTY(BlueprintReadWrite)
-	FVector KnockbackVector{FVector::ZeroVector};
-
-	UPROPERTY(BlueprintReadWrite)
-	bool bIsRadialDamage{false};
-	UPROPERTY(BlueprintReadWrite)
-	float RadialDamageInnerRadius{0.f};
-	UPROPERTY(BlueprintReadWrite)
-	float RadialDamageOuterRadius{0.f};
-	UPROPERTY(BlueprintReadWrite)
-	FVector RadialDamageOrigin{FVector::ZeroVector};
-};
-
-// ---------------------------------------------------------------------------------------------------------------------
-USTRUCT(BlueprintType)
 struct FGeoGameplayEffectContext : public FGameplayEffectContext
 {
 	GENERATED_BODY()
