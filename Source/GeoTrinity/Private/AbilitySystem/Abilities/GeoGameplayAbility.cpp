@@ -2,7 +2,6 @@
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 
-#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -14,7 +13,7 @@ FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 {
 	return UGeoAbilitySystemLibrary::GetAbilityTagFromAbility(*this);
 }
-FAbilityPayload UGeoGameplayAbility::CreatePatternPayload(const FTransform& Transform, AActor* Owner,
+FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(const FTransform& Transform, AActor* Owner,
 	AActor* Instigator) const
 {
 	FAbilityPayload Payload;
@@ -35,26 +34,6 @@ UGeoAbilitySystemComponent* UGeoGameplayAbility::GetGeoAbilitySystemComponentFro
 	return CastChecked<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
 }
 
-void UGeoGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-	const FGameplayEventData* TriggerEventData)
-{
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	if (PatternToLaunch)
-	{
-		if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-		{
-			EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
-			return;
-		}
-
-		AActor* Owner = GetOwningActorFromActorInfo();
-		const FAbilityPayload& Payload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
-		GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload);
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
-	}
-}
 bool UGeoGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags,
 	const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const

@@ -22,10 +22,8 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 
 public:
 	FGameplayTag GetAbilityTag() const;
-	FAbilityPayload CreatePatternPayload(const FTransform& Transform, AActor* Owner, AActor* Instigator) const;
+	FAbilityPayload CreateAbilityPayload(const FTransform& Transform, AActor* Owner, AActor* Instigator) const;
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
-	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr,
 		FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;

@@ -12,7 +12,7 @@ void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	const FGameplayEventData* TriggerEventData)
 {
 	AActor* Owner = GetOwningActorFromActorInfo();
-	StoredPayload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
+	StoredPayload = CreateAbilityPayload(Owner->GetTransform(), Owner, Owner);
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 
