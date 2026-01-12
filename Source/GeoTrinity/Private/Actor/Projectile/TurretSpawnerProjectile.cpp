@@ -60,15 +60,15 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 		return;
 	}
 
-	TurretInitData Data;
+	FTurretData Data;
 	Data.CharacterOwner = Owner;
-	Data.TurretLevel = GetTurretLevel();
+	Data.Level = GetTurretLevel();
 	Data.EffectDataArray = EffectDataArray;
 	if (const IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(Owner))
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
 	}
-	Turret->InitTurretData(Data);
+	Turret->InitInteractableData(&Data);
 
 	Turret->FinishSpawning(SpawnTransform);
 }

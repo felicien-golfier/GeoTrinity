@@ -15,8 +15,8 @@
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "InstancedStruct.h"
 #include "Settings/GameDataSettings.h"
-#include "StructUtils/InstancedStruct.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo(const UObject* WorldContextObject)

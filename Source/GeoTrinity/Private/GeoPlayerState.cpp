@@ -4,7 +4,6 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/InteractableComponent.h"
 #include "GeoPlayerController.h"
 #include "HUD/GeoHUD.h"
 
@@ -27,12 +26,12 @@ AGeoPlayerState::AGeoPlayerState()
 void AGeoPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	if (!HasAuthority())
 	{
 		InitOverlay();
 	}
-	
+
 	OnPawnSet.AddUniqueDynamic(this, &AGeoPlayerState::OnPlayerPawnSet);
 }
 
@@ -43,15 +42,7 @@ void AGeoPlayerState::ClientInitialize(class AController* Controller)
 
 void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
 {
-	if (IsValid(NewPawn))
-	{
-		InitializeInteractableComponent();
-	}
-}
-
-void AGeoPlayerState::InitializeInteractableComponent()
-{
-	if (!HasAuthority())
+	if (IsValid(NewPawn) && !HasAuthority())
 	{
 		InitOverlay();
 	}

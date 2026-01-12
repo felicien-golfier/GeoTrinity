@@ -4,8 +4,8 @@
 
 #include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
-#include "GenericTeamAgentInterface.h"
 #include "GameFramework/PlayerState.h"
+#include "GenericTeamAgentInterface.h"
 
 #include "GeoPlayerState.generated.h"
 
@@ -25,7 +25,6 @@ class GEOTRINITY_API AGeoPlayerState
 public:
 	AGeoPlayerState();
 	virtual void BeginPlay() override;
-	void InitializeInteractableComponent();
 
 	virtual void ClientInitialize(AController* Controller) override;
 	void InitOverlay();
@@ -40,10 +39,10 @@ public:
 	// IGenericTeamAgentInterface BEGIN
 	virtual FGenericTeamId GetGenericTeamId() const override;
 	// IGameplayTaskOwnerInterface END
-	
+
 	UCharacterAttributeSet* GetCharacterAttributeSet() const { return CharacterAttributeSet; }
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponent() const { return AbilitySystemComponent; }
-	
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;

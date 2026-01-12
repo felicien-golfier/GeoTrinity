@@ -1,14 +1,12 @@
 ﻿#include "Characters/PlayableCharacter.h"
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "GeoInputComponent.h"
-#include "GeoPlayerState.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "GeoPlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "HUD/GeoHUD.h"
+#include "Input/GeoInputComponent.h"
 
 class AGeoPlayerState;
-
 
 void APlayableCharacter::Tick(float DeltaSeconds)
 {
@@ -53,20 +51,20 @@ void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		&ThisClass::AbilityInputTagHeld);
 }
 
-void APlayableCharacter::InitAbilityActorInfo()
+void APlayableCharacter::InitGAS()
 {
-	Super::InitAbilityActorInfo();
-	
 	AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>();
 	if (!GeoPlayerState)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No player state in %s"), *GetName());
 		return;
 	}
-	
+
 	AbilitySystemComponent = Cast<UGeoAbilitySystemComponent>(GeoPlayerState->GetAbilitySystemComponent());
 	AbilitySystemComponent->InitAbilityActorInfo(GeoPlayerState, this);
 	AttributeSetBase = GeoPlayerState->GetCharacterAttributeSet();
+
+	Super::InitGAS();
 }
 
 void APlayableCharacter::AbilityInputTagPressed(FGameplayTag InputTag)
@@ -102,18 +100,14 @@ void APlayableCharacter::AbilityInputTagHeld(FGameplayTag InputTag)
 void APlayableCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	
+
 	// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
-	InitAbilityActorInfo();
-	
-	check(AbilitySystemComponent)
-	AbilitySystemComponent->InitializeDefaultAttributes();
-	AbilitySystemComponent->AddCharacterStartupAbilities();
+	InitGAS();
 }
 
 void APlayableCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	
-	InitAbilityActorInfo();
+
+	InitGAS();
 }

@@ -24,7 +24,7 @@ FGeoGameplayEffectContext* UGeoAbilitySystemComponent::MakeGeoEffectContext() co
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive)
+void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive)
 {
 	for (const TSubclassOf<UGeoGameplayAbility>& AbilityClass : AbilitiesToGive)
 	{
@@ -45,26 +45,27 @@ void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(TArray<TSubclassOf
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(const TArray<FGameplayTag>& AbilitiesToGive,
+void UGeoAbilitySystemComponent::GiveStartupAbilities(const TArray<FGameplayTag>& AbilitiesToGive,
 	const int32 Level /*= 1.f*/)
 {
 	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	if (!AbilityInfos)
 	{
+		UE_LOG(LogAbilitySystemComponent, Warning, TEXT("GiveStartupAbilities without AbilityInfo set !"));
 		return;
 	}
 
 	TArray<FGameplayAbilityInfo> AbilityInfoList = AbilityInfos->FindAbilityInfoForListOfTag(AbilitiesToGive, true);
 
-	for (const FGameplayAbilityInfo& abilityInfo : AbilityInfoList)
+	for (const FGameplayAbilityInfo& AbilityInfo : AbilityInfoList)
 	{
-		FGameplayAbilitySpec abilitySpec{abilityInfo.AbilityClass, Level};
+		FGameplayAbilitySpec abilitySpec{AbilityInfo.AbilityClass, Level};
 
 		// Add input tag if need be
-		if (abilityInfo.TypeOfAbilityTag.IsValid())
+		if (AbilityInfo.TypeOfAbilityTag.IsValid())
 		{
 			if (const FGameplayTag* FoundTag =
-					AbilityInfos->AbilityTypeToInputTagMap.Find(abilityInfo.TypeOfAbilityTag))
+					AbilityInfos->AbilityTypeToInputTagMap.Find(AbilityInfo.TypeOfAbilityTag))
 			{
 				abilitySpec.GetDynamicSpecSourceTags().AddTag(*FoundTag);
 			}
@@ -72,7 +73,7 @@ void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(const TArray<FGame
 			{
 				UE_LOG(LogGeoASC, Error,
 					TEXT("Input Tag for ability of type %s not found in map AbilityTypeToInputTagMap (UAbilityInfo)"),
-					*abilityInfo.TypeOfAbilityTag.ToString());
+					*AbilityInfo.TypeOfAbilityTag.ToString());
 			}
 		}
 
@@ -83,9 +84,9 @@ void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(const TArray<FGame
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AddCharacterStartupAbilities(const int32 Level)
+void UGeoAbilitySystemComponent::GiveStartupAbilities(const int32 Level)
 {
-	AddCharacterStartupAbilities(StartupAbilityTags, Level);
+	GiveStartupAbilities(StartupAbilityTags, Level);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

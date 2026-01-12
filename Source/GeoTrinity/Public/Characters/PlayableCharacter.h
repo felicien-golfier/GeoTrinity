@@ -11,7 +11,7 @@ class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
 	GENERATED_BODY()
 public:
 	virtual void Tick(float DeltaSeconds) override;
-	
+
 	// GAS - Input callbacks
 	void AbilityInputTagPressed(FGameplayTag InputTag);
 	void AbilityInputTagReleased(FGameplayTag InputTag);
@@ -23,7 +23,7 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	// GAS //
-	virtual void InitAbilityActorInfo() override;
+	virtual void InitGAS() override;
 	// END GAS //
 private:
 	void UpdateAimRotation();

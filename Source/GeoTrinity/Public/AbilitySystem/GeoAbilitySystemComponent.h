@@ -27,9 +27,9 @@ public:
 	FGeoGameplayEffectContext* MakeGeoEffectContext() const;
 
 	/** Abilities **/
-	void AddCharacterStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive);
-	void AddCharacterStartupAbilities(const TArray<FGameplayTag>& AbilitiesToGive, const int32 Level = 1.f);
-	void AddCharacterStartupAbilities(const int32 Level = 1.f);
+	void GiveStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive);
+	void GiveStartupAbilities(const TArray<FGameplayTag>& AbilitiesToGive, const int32 Level = 1.f);
+	void GiveStartupAbilities(const int32 Level = 1.f);
 
 	/** Input **/
 	void AbilityInputTagPressed(const FGameplayTag& inputTag);

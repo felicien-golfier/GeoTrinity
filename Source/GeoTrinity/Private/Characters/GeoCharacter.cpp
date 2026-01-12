@@ -1,11 +1,10 @@
 #include "Characters/GeoCharacter.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/InteractableComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "GeoInputComponent.h"
 #include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Input/GeoInputComponent.h"
 #include "Tool/GameplayLibrary.h"
 
 // Sets default values
@@ -39,17 +38,16 @@ UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
-FGenericTeamId AGeoCharacter::GetGenericTeamId() const
+ETeamAttitude::Type AGeoCharacter::GetTeamAttitudeTowards(const AActor& Other) const
 {
-	return FGenericTeamId(static_cast<uint8>(TeamId));
-}
+	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<const IGenericTeamAgentInterface>(&Other);
+	if (!OtherTeamAgent)
+	{
+		return ETeamAttitude::Neutral;
+	}
 
-// void AGeoCharacter::VLogBoxes(const FInputStep& InputStep, const FColor Color) const
-// {
-// 	UE_VLOG_BOX(this, LogGeoTrinity, VeryVerbose,
-// 		FBox(FVector(GetBox().Min, 0.f) + GetActorLocation(), FVector(GetBox().Max, 0.f) + GetActorLocation()), Color,
-// 		TEXT("LocalTime %s, delta time %.5f"), *InputStep.Time.ToString(), InputStep.DeltaTimeSeconds);
-// }
+	return OtherTeamAgent->GetGenericTeamId() == GetGenericTeamId() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+}
 
 void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage) const
 {
@@ -67,13 +65,16 @@ void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const
 		constexpr float Length = 500.f;   // visualized length of the vector
 		const FVector End = Start + Dir * Length;
 
-		// Single-frame arrow (non-persistent) so it updates every tick without clutter
-		DrawDebugDirectionalArrow(World, Start, End, 20.f, Color,
-			/*bPersistentLines*/ false,
-			/*LifeTime*/ 0.f, /*DepthPriority*/ 0, /*Thickness*/ 2.f);
+		DrawDebugDirectionalArrow(World, Start, End, 20.f, Color, false, 0.f, 0, 2.f);
 
 		UE_VLOG_ARROW(this, LogGeoTrinity, VeryVerbose, Start, End, Color, TEXT("%s"), *DebugMessage);
 	}
+}
+
+void AGeoCharacter::InitGAS()
+{
+	AbilitySystemComponent->InitializeDefaultAttributes();
+	AbilitySystemComponent->GiveStartupAbilities();
 }
 
 #ifdef UE_EDITOR

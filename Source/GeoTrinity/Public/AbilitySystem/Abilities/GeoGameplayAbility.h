@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/Data/EffectData.h"
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
 
@@ -27,7 +28,7 @@ public:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr,
 		FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
-	TArray<TInstancedStruct<struct FEffectData>> GetEffectDataArray() const;
+	TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const;
 	float GetCooldown(int32 level = 1) const;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")

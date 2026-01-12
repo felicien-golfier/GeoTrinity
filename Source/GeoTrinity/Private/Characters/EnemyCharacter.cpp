@@ -3,9 +3,8 @@
 #include "Characters/EnemyCharacter.h"
 
 #include "AI/GeoEnemyAIController.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/InteractableComponent.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -17,7 +16,7 @@ AEnemyCharacter::AEnemyCharacter(const FObjectInitializer& ObjectInitializer)
 	AIControllerClass = AGeoEnemyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	TeamId = ETeam::Enemy;
-	
+
 	// Create ASC, and set it to be explicitly replicated
 	AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
@@ -26,7 +25,7 @@ AEnemyCharacter::AEnemyCharacter(const FObjectInitializer& ObjectInitializer)
 	// Adding an attribute set as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
 	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
-	
+
 	SetNetUpdateFrequency(100.f);
 }
 
@@ -35,23 +34,16 @@ void AEnemyCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), TEXT("Path"), FiringPoints);
-	InitAbilityActorInfo();
+	InitGAS();
 }
 
-void AEnemyCharacter::InitAbilityActorInfo()
+void AEnemyCharacter::InitGAS()
 {
-	Super::InitAbilityActorInfo();
-	check(AbilitySystemComponent)
-	
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
-	
-	if (HasAuthority())
-	{
-		AbilitySystemComponent->InitializeDefaultAttributes();
-		AbilitySystemComponent->AddCharacterStartupAbilities();
-	}
-	
-	AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &AEnemyCharacter::OnHealthChanged);	// Do we need to remove this on destroy?
+	Super::InitGAS();
+
+	AbilitySystemComponent->OnHealthChanged.AddDynamic(this,
+		&AEnemyCharacter::OnHealthChanged);   // Do we need to remove this on destroy?
 }
 
 void AEnemyCharacter::OnHealthChanged(float NewValue)

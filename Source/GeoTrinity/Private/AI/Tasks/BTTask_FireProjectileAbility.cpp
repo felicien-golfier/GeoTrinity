@@ -4,7 +4,6 @@
 
 #include "AIController.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/InteractableComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "GameplayTagContainer.h"
@@ -21,7 +20,7 @@ EBTNodeResult::Type UBTTask_FireProjectileAbility::ExecuteTask(UBehaviorTreeComp
 	{
 		checkf(IsValid(Controller->GetPawn()) && Controller->GetPawn().IsA(AEnemyCharacter::StaticClass()),
 			TEXT("Invalid Enemy Pawn !"));
-		
+
 		IAbilitySystemInterface* AbilitySystemInterface = Cast<IAbilitySystemInterface>(Controller->GetPawn());
 		if (!AbilitySystemInterface)
 		{
@@ -33,7 +32,7 @@ EBTNodeResult::Type UBTTask_FireProjectileAbility::ExecuteTask(UBehaviorTreeComp
 		{
 			return EBTNodeResult::Failed;
 		}
-		
+
 		// Read name from BB and map to GameplayTag path (works for Name/String/GameplayTag keys)
 		const FName TagName = BB->GetValueAsName(AbilityTagKey.SelectedKeyName);
 		if (!TagName.IsNone())
@@ -45,9 +44,8 @@ EBTNodeResult::Type UBTTask_FireProjectileAbility::ExecuteTask(UBehaviorTreeComp
 				return bActivatedByTag ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
 			}
 		}
-			
+
 		// No class fallback: this task relies on a Blackboard-provided gameplay tag
-		
 	}
 	return EBTNodeResult::Failed;
 }
