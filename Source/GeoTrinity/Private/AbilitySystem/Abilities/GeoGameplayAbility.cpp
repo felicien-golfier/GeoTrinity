@@ -21,7 +21,7 @@ FAbilityPayload UGeoGameplayAbility::CreatePatternPayload(const FTransform& Tran
 	Payload.Owner = Owner;
 	Payload.Instigator = Instigator;
 	Payload.Origin = FVector2D(Transform.GetLocation());
-	Payload.Yaw = Transform.GetRotation().Z;
+	Payload.Yaw = Transform.GetRotation().Rotator().Yaw;
 	Payload.PatternClass = PatternToLaunch;
 	Payload.ServerSpawnTime = AGeoPlayerController::GetServerTime(GetWorld());
 	Payload.Seed = FMath::Rand32();
@@ -43,7 +43,12 @@ void UGeoGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 	if (PatternToLaunch)
 	{
-		CommitAbility(Handle, ActorInfo, ActivationInfo);
+		if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+		{
+			EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+			return;
+		}
+
 		AActor* Owner = GetOwningActorFromActorInfo();
 		const FAbilityPayload& Payload = CreatePatternPayload(Owner->GetTransform(), Owner, Owner);
 		GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload);

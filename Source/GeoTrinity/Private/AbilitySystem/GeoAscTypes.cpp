@@ -1,9 +1,8 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "AbilitySystem/GeoAscTypes.h"
 
-namespace 
+namespace
 {
 enum RepFlag
 {
@@ -19,8 +18,8 @@ enum RepFlag
 	REP_RadialDamageOuterRadius,
 	REP_RadialDamageOrigin,
 	REP_MAX
- };
-}
+};
+}   // namespace
 
 FGeoGameplayEffectContext* FGeoGameplayEffectContext::Duplicate() const
 {
@@ -37,9 +36,9 @@ FGeoGameplayEffectContext* FGeoGameplayEffectContext::Duplicate() const
 bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
 {
 	FGameplayEffectContext::NetSerialize(Ar, Map, bOutSuccess);
-	
+
 	uint32 RepBits = 0;
-	
+
 	if (Ar.IsSaving())
 	{
 		if (bIsBlockedHit)
@@ -73,7 +72,7 @@ bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 		{
 			RepBits |= 1 << REP_KnockbackVector;
 		}
-		
+
 		if (bIsRadialDamage)
 		{
 			RepBits |= 1 << REP_IsRadialDamage;
@@ -94,56 +93,57 @@ bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 
 	Ar.SerializeBits(&RepBits, REP_MAX);
 
-	// For booleans only (no need to use the archive)
 	if (Ar.IsLoading())
 	{
-		bIsBlockedHit		= RepBits & (1 & REP_IsBlockedHit);
-		bIsCriticalHit		= RepBits & (1 & REP_IsCriticalHit);
-		bIsRadialDamage		= RepBits & (1 & REP_IsRadialDamage);
-		// Need to load the status tag to check if status data is present
-		Ar << StatusTag;
+		bIsBlockedHit = (RepBits & (1 << REP_IsBlockedHit)) != 0;
+		bIsCriticalHit = (RepBits & (1 << REP_IsCriticalHit)) != 0;
+		bIsRadialDamage = (RepBits & (1 << REP_IsRadialDamage)) != 0;
 	}
 
-	// Serialization in both cases (check RepBits to see whether we need to save data, or read RepBits to see what's in the archive to load)
+	// Serialize StatusTag in both directions
+	Ar << StatusTag;
+
+	// Serialization in both cases (check RepBits to see whether we need to save data, or read RepBits to see what's in
+	// the archive to load)
 	if (GetIsSuccessfulDebuff())
 	{
-		if (RepBits & (1 & REP_DebuffDamage))
+		if (RepBits & (1 << REP_DebuffDamage))
 		{
 			Ar << DebuffDamage;
 		}
-		if (RepBits & (1 & REP_DebuffDuration))
+		if (RepBits & (1 << REP_DebuffDuration))
 		{
 			Ar << DebuffDuration;
 		}
-		if (RepBits & (1 & REP_DebuffFrequency))
+		if (RepBits & (1 << REP_DebuffFrequency))
 		{
 			Ar << DebuffFrequency;
 		}
 	}
-	if (RepBits & (1 & REP_DeathImpulseVector))
+	if (RepBits & (1 << REP_DeathImpulseVector))
 	{
 		DeathImpulseVector.NetSerialize(Ar, Map, bOutSuccess);
 	}
-	if (RepBits & (1 & REP_KnockbackVector))
+	if (RepBits & (1 << REP_KnockbackVector))
 	{
 		KnockbackVector.NetSerialize(Ar, Map, bOutSuccess);
 	}
 	if (bIsRadialDamage)
 	{
-		if (RepBits & (1 & REP_RadialDamageInnerRadius))
+		if (RepBits & (1 << REP_RadialDamageInnerRadius))
 		{
 			Ar << RadialDamageInnerRadius;
 		}
-		if (RepBits & (1 & REP_RadialDamageOuterRadius))
+		if (RepBits & (1 << REP_RadialDamageOuterRadius))
 		{
 			Ar << RadialDamageOuterRadius;
 		}
-		if (RepBits & (1 & REP_RadialDamageOrigin))
+		if (RepBits & (1 << REP_RadialDamageOrigin))
 		{
 			RadialDamageOrigin.NetSerialize(Ar, Map, bOutSuccess);
 		}
 	}
-	
+
 	bOutSuccess = true;
 	return true;
 }
