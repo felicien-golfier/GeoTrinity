@@ -19,8 +19,8 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 	virtual void HandleMatchHasStarted() override;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<AEnemyCharacter> EnemyToSpawn;
+	TArray<TSubclassOf<AEnemyCharacter>> EnemiesToSpawn;
 
 	UPROPERTY(Transient)
-	TObjectPtr<AEnemyCharacter> SpawnedEnemy;
+	TArray<TObjectPtr<AEnemyCharacter>> SpawnedEnemies;
 };

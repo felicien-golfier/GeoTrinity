@@ -231,11 +231,10 @@ void UGeoAbilitySystemComponent::BindAttributeCallbacks()
 			});
 }
 
-void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload)
+void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload, UClass* PatternClass)
 {
-	checkf(Payload.PatternClass, TEXT("PatternStartMulticast: Invalid PatternClassName"));
+	checkf(PatternClass, TEXT("PatternStartMulticast: Invalid PatternClass"));
 	UPattern* PatternInstance;
-	UClass* PatternClass = Payload.PatternClass;
 	UPattern** MaybePattern = Patterns.FindByPredicate(
 		[PatternClass](const UPattern* Candidate)
 		{
@@ -253,8 +252,7 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 		Patterns.Add(PatternInstance);
 	}
 
-	checkf(PatternInstance, TEXT("PatternStartMulticast: Failed to create instance of %s"),
-		*Payload.PatternClass->GetName());
+	checkf(PatternInstance, TEXT("PatternStartMulticast: Failed to create instance of %s"), *PatternClass->GetName());
 
 	PatternInstance->StartPattern(Payload);
 }

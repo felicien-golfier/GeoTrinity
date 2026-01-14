@@ -19,7 +19,7 @@ void UPatternAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 	AActor* Owner = GetOwningActorFromActorInfo();
 	const FAbilityPayload& Payload = CreateAbilityPayload(Owner->GetTransform(), Owner, Owner);
-	GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload);
+	GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload, PatternToLaunch);
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
 }

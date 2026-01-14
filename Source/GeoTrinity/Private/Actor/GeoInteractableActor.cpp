@@ -78,6 +78,7 @@ void AGeoInteractableActor::OnHealthChanged(float NewValue)
 void AGeoInteractableActor::OnMaxHealthChanged(float NewValue)
 {
 }
+
 void AGeoInteractableActor::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass,
 	float level)
 {
@@ -108,10 +109,10 @@ void AGeoInteractableActor::InitGas()
 	// TODO: Shouldn't we give the OwnerActor From the InteractableData instead of itself ?
 	// TODO: And so call the InitGas in the InitInteractableData ?
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	AbilitySystemComponent->InitializeDefaultAttributes();
 
 	if (HasAuthority())
 	{
-		AbilitySystemComponent->InitializeDefaultAttributes();
 		AbilitySystemComponent->GiveStartupAbilities();
 	}
 

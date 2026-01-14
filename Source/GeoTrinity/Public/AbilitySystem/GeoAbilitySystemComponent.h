@@ -44,7 +44,7 @@ public:
 	void BindAttributeCallbacks();   // By doing that, we factorize, ok... but we also make the ASC not agnostic to
 	                                 // GeoAttributeSet anymore :/
 	UFUNCTION(NetMulticast, reliable)
-	void PatternStartMulticast(FAbilityPayload Payload);
+	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;

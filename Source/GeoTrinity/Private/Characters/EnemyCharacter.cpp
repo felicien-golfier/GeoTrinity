@@ -48,9 +48,36 @@ void AEnemyCharacter::InitGAS()
 
 void AEnemyCharacter::OnHealthChanged(float NewValue)
 {
-	if (NewValue <= 0.f)
+	if (HasAuthority() && NewValue <= 0.f)
 	{
-		Destroy();
+		if (ResetToFullLifeWhenReachingZero)
+		{
+			// Modify Health using an effect on the fly
+
+			UGameplayEffect* GE = NewObject<UGameplayEffect>(GetTransientPackage());
+			GE->DurationPolicy = EGameplayEffectDurationType::Instant;
+
+			// 2. Define the modifier (definition-level)
+			FGameplayModifierInfo ModifierInfo;
+			ModifierInfo.Attribute = UGeoAttributeSetBase::GetHealthAttribute();
+			ModifierInfo.ModifierOp = EGameplayModOp::Override;
+			const UGeoAttributeSetBase* AS = Cast<UGeoAttributeSetBase>(
+				AbilitySystemComponent->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
+			ModifierInfo.ModifierMagnitude = FScalableFloat(AS->GetMaxHealth());
+
+			GE->Modifiers.Add(ModifierInfo);
+
+			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+			Context.AddSourceObject(AbilitySystemComponent->GetAvatarActor());
+
+			const FGameplayEffectSpec Spec(GE, Context, 1.f);
+
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
+		}
+		else
+		{
+			Destroy();
+		}
 	}
 }
 

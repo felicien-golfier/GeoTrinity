@@ -21,7 +21,6 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(const FTransform& Tran
 	Payload.Instigator = Instigator;
 	Payload.Origin = FVector2D(Transform.GetLocation());
 	Payload.Yaw = Transform.GetRotation().Rotator().Yaw;
-	Payload.PatternClass = PatternToLaunch;
 	Payload.ServerSpawnTime = AGeoPlayerController::GetServerTime(GetWorld());
 	Payload.Seed = FMath::Rand32();
 	Payload.AbilityLevel = GetAbilityLevel();

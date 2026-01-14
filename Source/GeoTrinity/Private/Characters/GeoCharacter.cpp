@@ -74,7 +74,10 @@ void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const
 void AGeoCharacter::InitGAS()
 {
 	AbilitySystemComponent->InitializeDefaultAttributes();
-	AbilitySystemComponent->GiveStartupAbilities();
+	if (HasAuthority())
+	{
+		AbilitySystemComponent->GiveStartupAbilities();
+	}
 }
 
 #ifdef UE_EDITOR

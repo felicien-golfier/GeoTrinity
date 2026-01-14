@@ -14,32 +14,29 @@ struct FAbilityPayload
 	GENERATED_BODY()
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	FVector2D Origin;   // position X,Y
+	FVector2D Origin{};   // position X,Y
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	float Yaw;   // orientation
+	float Yaw{};   // orientation
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	double ServerSpawnTime;   // server world time (seconds)
+	double ServerSpawnTime{};   // server world time (seconds)
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	int32 Seed;   // seed pour variations RNG
+	int32 Seed{};   // seed pour variations RNG
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	int32 AbilityLevel;
-
-	UPROPERTY(Transient, BlueprintReadOnly)
-	TSubclassOf<class UPattern> PatternClass;
+	int32 AbilityLevel{};
 
 	// TODO: optimise AbilityTag : remove from payload and set only once on Pattern Creation.
 	UPROPERTY(Transient, BlueprintReadOnly)
-	FGameplayTag AbilityTag;
+	FGameplayTag AbilityTag{};
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	AActor* Owner;
+	AActor* Owner{nullptr};
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	AActor* Instigator;
+	AActor* Instigator{nullptr};
 };
 
 UCLASS(BlueprintType, Blueprintable)

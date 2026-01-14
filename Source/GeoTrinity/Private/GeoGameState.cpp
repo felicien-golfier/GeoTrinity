@@ -8,12 +8,15 @@ void AGeoGameState::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
 
-	if (HasAuthority() && EnemyToSpawn)
+	if (HasAuthority() && EnemiesToSpawn.Num() > 0)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Owner = this;
-		SpawnedEnemy =
-			GetWorld()->SpawnActor<AEnemyCharacter>(EnemyToSpawn, FTransform(FVector(0, 0, 50)), SpawnParams);
+		for (auto EnemyToSpawn : EnemiesToSpawn)
+		{
+			SpawnedEnemies.Add(
+				GetWorld()->SpawnActor<AEnemyCharacter>(EnemyToSpawn, FTransform(FVector(0, 0, 50)), SpawnParams));
+		}
 	}
 }

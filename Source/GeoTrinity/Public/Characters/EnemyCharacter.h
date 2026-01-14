@@ -40,4 +40,8 @@ protected:
 
 	// Index used for round-robin selection of firing points
 	int CurrentFiringPointIndex = 0;
+
+private:
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"), Category = "Enemy")
+	bool ResetToFullLifeWhenReachingZero = false;
 };
