@@ -101,9 +101,6 @@ protected:
 	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly)
 	ETeam TeamId;
 
-public:
-	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (RowType = CharacterStats))
-	FDataTableRowHandle StatsDTHandle;
 
 #ifdef UE_EDITOR
 public:
