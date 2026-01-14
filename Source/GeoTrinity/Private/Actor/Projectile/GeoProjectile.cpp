@@ -168,14 +168,10 @@ void AGeoProjectile::EndProjectileLife()
 {
 	PlayImpactFx();
 
-	// TODO : Create a way to have a pool on client for client spawned actors
-	if (HasAuthority())   // return to pool only on the server for now.
-	{
-		// TODO: Call Release after FX are done !
-		UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
-		checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
-		Pool->ReleaseActor(this);
-	}
+	// TODO: Call Release after FX are done !
+	UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
+	checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
+	Pool->ReleaseActor(this);
 }
 
 void AGeoProjectile::InitProjectileMovementComponent()
