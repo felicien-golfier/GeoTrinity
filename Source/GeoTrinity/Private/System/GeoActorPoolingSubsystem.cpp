@@ -7,7 +7,7 @@
 #include "System/GeoPoolableInterface.h"
 
 AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform& Transform, AActor* Owner,
-	APawn* Instigator, bool bInit)
+	APawn* Instigator, bool bInit, bool bActivate)
 {
 	if (!ensure(Class))
 	{
@@ -33,7 +33,11 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform&
 	Actor->SetOwner(Owner);
 	Actor->SetInstigator(Instigator);
 	Actor->TeleportTo(Transform.GetLocation(), Transform.GetRotation().Rotator(), false, true);
-	ChangeActorState(Actor, true);
+
+	if (bActivate)
+	{
+		ChangeActorState(Actor, true);
+	}
 
 	// Force replication update for networked actors
 	if (Actor->GetIsReplicated())
@@ -71,6 +75,11 @@ void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, const uint16 Count, AAct
 	{
 		SpawnActor(Class, Params);
 	}
+}
+
+bool UGeoActorPoolingSubsystem::GetActorState(const AActor* Actor)
+{
+	return Actor->GetActorEnableCollision() && !Actor->IsHidden();
 }
 
 void UGeoActorPoolingSubsystem::ChangeActorState(AActor* NewActor, bool bActive)

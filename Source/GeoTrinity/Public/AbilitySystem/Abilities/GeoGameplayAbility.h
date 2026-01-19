@@ -13,6 +13,7 @@ struct FAbilityPayload;
 class UEffectDataAsset;
 class UGeoAbilitySystemComponent;
 class UPattern;
+
 /**
  *
  */

@@ -40,9 +40,7 @@ public:
 	bool HasServerTime() const { return bHasServerTime; };
 
 	UFUNCTION(BlueprintCallable)
-	double GetServerTime() const;
 	static bool HasServerTime(const UWorld* World);
-	static double GetServerTime(const UWorld* World);
 	static AGeoPlayerController* GetLocalGeoPlayerController(const UWorld* World);
 
 private:

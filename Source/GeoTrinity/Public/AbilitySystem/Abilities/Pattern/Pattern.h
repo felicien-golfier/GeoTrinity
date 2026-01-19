@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include "AbilitySystem/Abilities/AbilityPayload.h"
+#include "AbilitySystem/Data/EffectData.h"
 #include "GameplayTagContainer.h"
 #include "StructUtils/InstancedStruct.h"
 
@@ -8,36 +10,7 @@ struct FGameplayTagContainer;
 class UEffectDataAsset;
 class UGameplayEffect;
 class AGeoProjectile;
-USTRUCT(BlueprintType)
-struct FAbilityPayload
-{
-	GENERATED_BODY()
-
-	UPROPERTY(Transient, BlueprintReadOnly)
-	FVector2D Origin{};   // position X,Y
-
-	UPROPERTY(Transient, BlueprintReadOnly)
-	float Yaw{};   // orientation
-
-	UPROPERTY(Transient, BlueprintReadOnly)
-	double ServerSpawnTime{};   // server world time (seconds)
-
-	UPROPERTY(Transient, BlueprintReadOnly)
-	int32 Seed{};   // seed pour variations RNG
-
-	UPROPERTY(Transient, BlueprintReadOnly)
-	int32 AbilityLevel{};
-
-	// TODO: optimise AbilityTag : remove from payload and set only once on Pattern Creation.
-	UPROPERTY(Transient, BlueprintReadOnly)
-	FGameplayTag AbilityTag{};
-
-	UPROPERTY(Transient, BlueprintReadOnly)
-	AActor* Owner{nullptr};
-
-	UPROPERTY(Transient, BlueprintReadOnly)
-	AActor* Instigator{nullptr};
-};
+struct FAbilityPayload;
 
 UCLASS(BlueprintType, Blueprintable)
 class GEOTRINITY_API UPattern : public UObject
@@ -51,7 +24,30 @@ public:
 	void StartPattern(const FAbilityPayload& Payload);
 	virtual void StartPattern_Implementation(const FAbilityPayload& Payload);
 
-	TArray<TInstancedStruct<struct FEffectData>> EffectDataArray;
+protected:
+	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
+};
+
+UCLASS(BlueprintType, Blueprintable)
+class GEOTRINITY_API UTickablePattern : public UPattern
+{
+	GENERATED_BODY()
+
+protected:
+	virtual void StartPattern_Implementation(const FAbilityPayload& Payload) override;
+	UFUNCTION()
+	void CalculateDeltaTimeAndTickPattern();
+
+	virtual void TickPattern(float DeltaSeconds);
+
+	// Must be called when the last tick is done. BEFORE the next Pattern of this same instance is starded again !
+	virtual void EndPattern();
+
+	FAbilityPayload StoredPayload;
+	double PreviousFrameTime;
+	FTimerHandle TimeSyncTimerHandle;
+
+	bool bPatternIsActive = false;
 };
 
 UCLASS(BlueprintType, Blueprintable)
@@ -59,7 +55,7 @@ class GEOTRINITY_API UProjectilePattern : public UPattern
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	virtual void StartPattern_Implementation(const FAbilityPayload& Payload) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")

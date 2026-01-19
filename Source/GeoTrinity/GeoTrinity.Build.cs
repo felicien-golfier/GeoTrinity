@@ -28,7 +28,7 @@ public class GeoTrinity : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
 			"UMG",
-			"Niagara", "OpenCV"
+			"Niagara"
 		});
 
 		// Uncomment if you are using Slate UI

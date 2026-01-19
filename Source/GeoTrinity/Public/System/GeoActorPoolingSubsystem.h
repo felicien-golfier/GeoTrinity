@@ -21,10 +21,10 @@ public:
 	// if bInit is true, call IGeoPoolableInterface::Init() on the returned actor.
 	template<typename T>
 	T* RequestActor(TSubclassOf<T> Class, const FTransform& Transform, AActor* Owner, APawn* Instigator,
-		bool bInit = true)
+		bool bInit = true, bool bActivate = true)
 	{
 		checkf((*Class)->IsChildOf(AActor::StaticClass()), TEXT("Class must be an AActor"));
-		AActor* Spawned = PopWithClass(*Class, Transform, Owner, Instigator, bInit);
+		AActor* Spawned = PopWithClass(*Class, Transform, Owner, Instigator, bInit, bActivate);
 		return Cast<T>(Spawned);
 	}
 
@@ -44,11 +44,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ActorPoolingSystem", meta = (WorldContext = "WorldContextObject"))
 	static UGeoActorPoolingSubsystem* Get(const UObject* WorldContextObject);
 
+	static bool GetActorState(const AActor* Actor);
+	static void ChangeActorState(AActor* NewActor, bool bActive);
+
 private:
 	// Non-templated helper for internal use
-	AActor* PopWithClass(UClass* Class, const FTransform& Transform, AActor* Owner, APawn* Instigator, bool bInit);
+	AActor* PopWithClass(UClass* Class, const FTransform& Transform, AActor* Owner, APawn* Instigator, bool bInit,
+		bool bActivate);
 	void PreSpawn(UClass* Class, const uint16 Count, AActor* Owner, APawn* Instigator);
-	void ChangeActorState(AActor* NewActor, bool bActive);
 	AActor* SpawnActor(UClass* Class, const FActorSpawnParameters& Params);
 	// Storage for pooled (inactive) actors, keyed by concrete class
 	TMap<TObjectPtr<UClass>, TArray<TWeakObjectPtr<AActor>>> Pool;

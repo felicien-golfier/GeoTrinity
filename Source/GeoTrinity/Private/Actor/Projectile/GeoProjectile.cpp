@@ -172,6 +172,8 @@ void AGeoProjectile::EndProjectileLife()
 	UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
 	checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
 	Pool->ReleaseActor(this);
+
+	OnProjectileEndLifeDelegate.Broadcast(this);
 }
 
 void AGeoProjectile::InitProjectileMovementComponent()
@@ -204,8 +206,8 @@ void AGeoProjectile::Init()
 	}
 
 	SetLifeSpan(LifeSpanInSec);
-	Sphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereOverlap);
-	Sphere->OnComponentHit.AddDynamic(this, &ThisClass::OnSphereHit);
+	Sphere->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnSphereOverlap);
+	Sphere->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnSphereHit);
 
 	InitialPosition = GetActorLocation();
 	DistanceSpanSqr = FMath::Square(DistanceSpan);

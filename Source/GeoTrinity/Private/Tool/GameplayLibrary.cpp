@@ -1,5 +1,7 @@
 ﻿#include "Tool/GameplayLibrary.h"
 
+#include "GameFramework/GameStateBase.h"
+
 bool GameplayLibrary::GetTeamInterface(const AActor* Actor, const IGenericTeamAgentInterface*& OutInterface)
 {
 	OutInterface = Cast<const IGenericTeamAgentInterface>(Actor);
@@ -19,6 +21,11 @@ FColor GameplayLibrary::GetColorForObject(const UObject* Object)
 
 	return Palette[Object->GetUniqueID() % std::size(Palette)];
 }
+double GameplayLibrary::GetServerTime(const UWorld* World)
+{
+	return World->GetGameState()->GetServerWorldTimeSeconds();
+}
+
 double GameplayLibrary::GetTime()
 {
 	return FPlatformTime::Seconds() - GStartTime;

@@ -143,20 +143,6 @@ void AGeoPlayerController::CalculateStableServerTimeOffset()
 	ServerTimeOffset = StableServerTimeOffset;
 }
 
-double AGeoPlayerController::GetServerTime() const
-{
-	// TODO: Check if HasAuth is on server only !
-	if (HasAuthority())
-	{
-		return GameplayLibrary::GetTime();
-	}
-	else
-	{
-		ensureMsgf(HasServerTime(), TEXT("Server time is not available yet. please request only when ready !"));
-		return GameplayLibrary::GetTime() + ServerTimeOffset;
-	}
-}
-
 bool AGeoPlayerController::HasServerTime(const UWorld* World)
 {
 	if (World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer))
@@ -170,22 +156,6 @@ bool AGeoPlayerController::HasServerTime(const UWorld* World)
 	}
 
 	return false;
-}
-
-double AGeoPlayerController::GetServerTime(const UWorld* World)
-{
-	if (World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer))
-	{
-		return GameplayLibrary::GetTime();
-	}
-
-	if (AGeoPlayerController* GeoPlayerController = GetLocalGeoPlayerController(World))
-	{
-		return GeoPlayerController->GetServerTime();
-	}
-
-	ensureMsgf(false, TEXT("No local GeoPlayerController found!"));
-	return 0.0;
 }
 
 AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(const UWorld* World)

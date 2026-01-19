@@ -2,10 +2,12 @@
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 
+#include "AbilitySystem/Abilities/AbilityPayload.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoPlayerController.h"
+#include "Tool/GameplayLibrary.h"
 using GeoASL = UGeoAbilitySystemLibrary;
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -13,6 +15,7 @@ FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 {
 	return UGeoAbilitySystemLibrary::GetAbilityTagFromAbility(*this);
 }
+
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(const FTransform& Transform, AActor* Owner,
 	AActor* Instigator) const
 {
@@ -21,7 +24,7 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(const FTransform& Tran
 	Payload.Instigator = Instigator;
 	Payload.Origin = FVector2D(Transform.GetLocation());
 	Payload.Yaw = Transform.GetRotation().Rotator().Yaw;
-	Payload.ServerSpawnTime = AGeoPlayerController::GetServerTime(GetWorld());
+	Payload.ServerSpawnTime = GameplayLibrary::GetServerTime(GetWorld());
 	Payload.Seed = FMath::Rand32();
 	Payload.AbilityLevel = GetAbilityLevel();
 	Payload.AbilityTag = GetAbilityTag();

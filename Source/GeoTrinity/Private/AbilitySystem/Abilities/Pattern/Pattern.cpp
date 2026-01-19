@@ -1,9 +1,10 @@
 ﻿#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 
-#include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "GeoPlayerController.h"
 #include "System/GeoActorPoolingSubsystem.h"
+#include "Tool/GameplayLibrary.h"
 
 void UPattern::OnCreate(FGameplayTag AbilityTag)
 {
@@ -16,6 +17,47 @@ void UPattern::OnCreate(FGameplayTag AbilityTag)
 void UPattern::StartPattern_Implementation(const FAbilityPayload& Payload)
 {
 	// To be overriden by your own pattern !
+}
+
+void UTickablePattern::StartPattern_Implementation(const FAbilityPayload& Payload)
+{
+	if (TimeSyncTimerHandle.IsValid() || bPatternIsActive)
+	{
+		UE_LOG(LogTemp, Error,
+			TEXT("Starting pattern when the Previous pattern of the same instance is still active !"));
+		EndPattern();
+	}
+
+	StoredPayload = Payload;
+	PreviousFrameTime = GameplayLibrary::GetServerTime(GetWorld());
+	// Call this only next frame to have a proper Delta Time.
+	TimeSyncTimerHandle =
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UTickablePattern::CalculateDeltaTimeAndTickPattern);
+
+	bPatternIsActive = true;
+}
+
+void UTickablePattern::CalculateDeltaTimeAndTickPattern()
+{
+	double CurrentTime = GameplayLibrary::GetServerTime(GetWorld());
+	TickPattern(CurrentTime - PreviousFrameTime);
+	PreviousFrameTime = CurrentTime;
+	if (bPatternIsActive)
+	{
+		TimeSyncTimerHandle = GetWorld()->GetTimerManager().SetTimerForNextTick(this,
+			&UTickablePattern::CalculateDeltaTimeAndTickPattern);
+	}
+}
+
+void UTickablePattern::TickPattern(float DeltaSeconds)
+{
+	// To be overriden by your own Tickable pattern !
+}
+void UTickablePattern::EndPattern()
+{
+	bPatternIsActive = false;
+	PreviousFrameTime = 0;
+	GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
 }
 
 void UProjectilePattern::StartPattern_Implementation(const FAbilityPayload& Payload)

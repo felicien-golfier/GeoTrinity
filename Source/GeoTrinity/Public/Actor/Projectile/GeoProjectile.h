@@ -20,6 +20,7 @@ class UAudioComponent;
 class UPrimitiveComponent;
 struct FHitResult;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
 UCLASS()
 class GEOTRINITY_API AGeoProjectile
 	: public AActor
@@ -45,6 +46,8 @@ public:
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;
 
 	FAbilityPayload Payload;
+
+	FOnProjectileEndLife OnProjectileEndLifeDelegate;
 
 protected:
 	virtual bool IsValidOverlap(const AActor* OtherActor);
