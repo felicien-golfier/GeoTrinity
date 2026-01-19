@@ -29,7 +29,7 @@ void UTickablePattern::StartPattern_Implementation(const FAbilityPayload& Payloa
 	}
 
 	StoredPayload = Payload;
-	PreviousFrameTime = GameplayLibrary::GetServerTime(GetWorld());
+	PreviousFrameTime = GetWorld()->GetTimeSeconds();
 	// Call this only next frame to have a proper Delta Time.
 	TimeSyncTimerHandle =
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UTickablePattern::CalculateDeltaTimeAndTickPattern);
@@ -39,7 +39,7 @@ void UTickablePattern::StartPattern_Implementation(const FAbilityPayload& Payloa
 
 void UTickablePattern::CalculateDeltaTimeAndTickPattern()
 {
-	double CurrentTime = GameplayLibrary::GetServerTime(GetWorld());
+	const double CurrentTime = GetWorld()->GetTimeSeconds();
 	TickPattern(CurrentTime - PreviousFrameTime);
 	PreviousFrameTime = CurrentTime;
 	if (bPatternIsActive)

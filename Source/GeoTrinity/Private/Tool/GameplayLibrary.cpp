@@ -1,6 +1,7 @@
 ﻿#include "Tool/GameplayLibrary.h"
 
 #include "GameFramework/GameStateBase.h"
+#include "GameFramework/PlayerState.h"
 
 bool GameplayLibrary::GetTeamInterface(const AActor* Actor, const IGenericTeamAgentInterface*& OutInterface)
 {
@@ -21,12 +22,35 @@ FColor GameplayLibrary::GetColorForObject(const UObject* Object)
 
 	return Palette[Object->GetUniqueID() % std::size(Palette)];
 }
-double GameplayLibrary::GetServerTime(const UWorld* World)
-{
-	return World->GetGameState()->GetServerWorldTimeSeconds();
-}
 
-double GameplayLibrary::GetTime()
+float GameplayLibrary::GetServerTime(const UWorld* World, const bool bUpdatedWithPing)
 {
-	return FPlatformTime::Seconds() - GStartTime;
+	if (World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer))
+	{
+		return World->GetTimeSeconds();
+	}
+
+	float ServerTimeSeconds = World->GetGameState()->GetServerWorldTimeSeconds();
+
+	if (bUpdatedWithPing)
+	{
+		const APlayerController* LocalPlayerController = World->GetFirstPlayerController();
+		if (!IsValid(LocalPlayerController))
+		{
+			UE_LOG(LogTemp, Error, TEXT("No local player controller found"));
+			return ServerTimeSeconds;
+		}
+
+		const APlayerState* PlayerState = LocalPlayerController->GetPlayerState<APlayerState>();
+		if (!IsValid(PlayerState))
+		{
+			UE_LOG(LogTemp, Error, TEXT("No local player state found"));
+			return ServerTimeSeconds;
+		}
+		const float OnWayPingSec =
+			LocalPlayerController->GetPlayerState<APlayerState>()->GetPingInMilliseconds() * 0.0005f;
+		ServerTimeSeconds += OnWayPingSec;
+	}
+
+	return ServerTimeSeconds;
 }
