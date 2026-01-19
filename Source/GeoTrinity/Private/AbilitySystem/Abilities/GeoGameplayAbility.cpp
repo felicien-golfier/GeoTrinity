@@ -36,15 +36,6 @@ UGeoAbilitySystemComponent* UGeoGameplayAbility::GetGeoAbilitySystemComponentFro
 	return CastChecked<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
 }
 
-bool UGeoGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags,
-	const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
-{
-
-	return AGeoPlayerController::HasServerTime(ActorInfo->OwnerActor->GetWorld())
-	    && Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
-}
-
 TArray<TInstancedStruct<FEffectData>> UGeoGameplayAbility::GetEffectDataArray() const
 {
 	TArray<TInstancedStruct<FEffectData>> FilledEffectData;

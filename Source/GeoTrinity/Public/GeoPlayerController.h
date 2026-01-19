@@ -24,35 +24,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-private:
-	// Time synchronization interface
-	UFUNCTION(Client, unreliable)
-	void SendToClientTheServerTime(double ServerTimeSeconds);
-
-	UFUNCTION(Server, Reliable)
-	void SendServerTimeOffsetToServer(float StabilizedServerTimeOffset);
-
-	UFUNCTION()
-	void RequestTimeSync();
-	void CalculateStableServerTimeOffset();
-
 public:
-	bool HasServerTime() const { return bHasServerTime; };
-
-	UFUNCTION(BlueprintCallable)
-	static bool HasServerTime(const UWorld* World);
 	static AGeoPlayerController* GetLocalGeoPlayerController(const UWorld* World);
 
-private:
-	bool bHasServerTime = false;
-	TArray<float> ServerTimeOffsetSamples;
-	TArray<float> Pings;
-	float ServerTimeOffset;
-	FTimerHandle TimeSyncTimerHandle;
-	static constexpr int32 NumSamplesToStabilize = 50;
-	static constexpr float MaxDeviationFromMedian = 0.01f;
-
-public:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> InputMapping;
 };

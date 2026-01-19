@@ -26,9 +26,6 @@ public:
 	FGameplayTag GetAbilityTag() const;
 	FAbilityPayload CreateAbilityPayload(const FTransform& Transform, AActor* Owner, AActor* Instigator) const;
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
-	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr,
-		FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 	TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const;
 	float GetCooldown(int32 level = 1) const;
 

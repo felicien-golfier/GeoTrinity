@@ -14,7 +14,6 @@
 AGeoPlayerController::AGeoPlayerController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	SetShowMouseCursor(true);
-	ServerTimeOffsetSamples.Reserve(NumSamplesToStabilize - NumSamplesToStabilize % 8 + 8);
 }
 
 void AGeoPlayerController::BeginPlay()
@@ -33,12 +32,6 @@ void AGeoPlayerController::BeginPlay()
 			}
 		}
 	}
-
-	// Start periodic time synchronization on server
-	if (HasAuthority())
-	{
-		RequestTimeSync();
-	}
 }
 
 void AGeoPlayerController::ServerSetAimYaw_Implementation(const float YawDegrees)
@@ -49,113 +42,6 @@ void AGeoPlayerController::ServerSetAimYaw_Implementation(const float YawDegrees
 		Rotation.Yaw = YawDegrees;
 		GetPawn()->SetActorRotation(Rotation);
 	}
-}
-
-void AGeoPlayerController::RequestTimeSync()
-{
-	// Server
-	if (HasServerTime())
-	{
-		return;
-	}
-
-	TimeSyncTimerHandle =
-		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &AGeoPlayerController::RequestTimeSync);
-	Pings.Add(GetPlayerState<APlayerState>()->GetPingInMilliseconds());
-
-	SendToClientTheServerTime(GameplayLibrary::GetTime());
-}
-
-void AGeoPlayerController::SendToClientTheServerTime_Implementation(const double ServerTimeSeconds)
-{
-	// Client
-	if (HasServerTime())
-	{
-		return;
-	}
-
-	ServerTimeOffsetSamples.Add(GameplayLibrary::GetTime() - ServerTimeSeconds);
-	if (GetPlayerState<APlayerState>())
-	{
-		Pings.Add(GetPlayerState<APlayerState>()->GetPingInMilliseconds());
-	}
-
-	if (ServerTimeOffsetSamples.Num() == NumSamplesToStabilize)
-	{
-		CalculateStableServerTimeOffset();
-		bHasServerTime = true;
-		SendServerTimeOffsetToServer(ServerTimeOffset);
-	}
-}
-
-void AGeoPlayerController::SendServerTimeOffsetToServer_Implementation(float StabilizedServerTimeOffset)
-{
-	// Server
-	ServerTimeOffset = StabilizedServerTimeOffset;
-	bHasServerTime = true;
-	GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
-}
-
-void AGeoPlayerController::CalculateStableServerTimeOffset()
-{
-	checkf(ServerTimeOffsetSamples.Num() > 2 && ServerTimeOffsetSamples.Num() >= NumSamplesToStabilize,
-		TEXT("Not enough samples !"));
-
-	ServerTimeOffsetSamples.Sort();
-
-	float Median;
-
-	int32 Count = ServerTimeOffsetSamples.Num();
-	int32 MidIndex = Count / 2;
-
-	if (Count % 2 == 0)
-	{
-		Median = (ServerTimeOffsetSamples[MidIndex - 1] + ServerTimeOffsetSamples[MidIndex]) * 0.5f;
-	}
-	else
-	{
-		Median = ServerTimeOffsetSamples[MidIndex];
-	}
-
-	TArray<float> FilteredSamples;
-	for (float Value : ServerTimeOffsetSamples)
-	{
-		if (FMath::Abs(Value - Median) <= MaxDeviationFromMedian)
-		{
-			FilteredSamples.Add(Value);
-		}
-	}
-
-	// If filtering was too aggressive, fall back to all samples
-	if (FilteredSamples.Num() <= 1)
-	{
-		UE_LOG(LogGeoTrinity, Error, TEXT("filtering was too aggressive, fall back to all samples"))
-		FilteredSamples = ServerTimeOffsetSamples;
-	}
-
-	float StableServerTimeOffset = 0.f;
-	for (float Value : FilteredSamples)
-	{
-		StableServerTimeOffset += Value;
-	}
-	StableServerTimeOffset /= FilteredSamples.Num();
-
-	ServerTimeOffset = StableServerTimeOffset;
-}
-
-bool AGeoPlayerController::HasServerTime(const UWorld* World)
-{
-	if (World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer))
-	{
-		return true;
-	}
-
-	if (AGeoPlayerController* GeoPlayerController = GetLocalGeoPlayerController(World))
-	{
-		return GeoPlayerController->HasServerTime();
-	}
-
-	return false;
 }
 
 AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(const UWorld* World)
