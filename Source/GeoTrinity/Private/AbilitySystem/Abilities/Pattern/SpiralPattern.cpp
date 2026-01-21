@@ -5,7 +5,7 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "System/GeoActorPoolingSubsystem.h"
-#include "Tool/GameplayLibrary.h"
+
 void USpiralPattern::StartPattern_Implementation(const FAbilityPayload& Payload)
 {
 	Super::StartPattern_Implementation(Payload);

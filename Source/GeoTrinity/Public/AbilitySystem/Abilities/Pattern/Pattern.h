@@ -26,6 +26,10 @@ public:
 
 protected:
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
+
+public:
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UAnimMontage> AnimMontage;
 };
 
 UCLASS(BlueprintType, Blueprintable)

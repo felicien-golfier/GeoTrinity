@@ -1,9 +1,7 @@
 ﻿#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Projectile/GeoProjectile.h"
-#include "GeoPlayerController.h"
-#include "System/GeoActorPoolingSubsystem.h"
+#include "GameFramework/Character.h"
 #include "Tool/GameplayLibrary.h"
 
 void UPattern::OnCreate(FGameplayTag AbilityTag)
@@ -16,11 +14,26 @@ void UPattern::OnCreate(FGameplayTag AbilityTag)
 
 void UPattern::StartPattern_Implementation(const FAbilityPayload& Payload)
 {
-	// To be overriden by your own pattern !
+	if (IsValid(AnimMontage) && !GameplayLibrary::IsServer(GetWorld()))
+	{
+		ACharacter* OwnerCharacter = Cast<ACharacter>(Payload.Owner);
+		if (IsValid(OwnerCharacter))
+		{
+			UAnimInstance* AnimInstance =
+				(OwnerCharacter->GetMesh()) ? OwnerCharacter->GetMesh()->GetAnimInstance() : nullptr;
+			if (AnimMontage && AnimInstance)
+			{
+				float StartTime = GameplayLibrary::GetServerTime(GetWorld()) - Payload.ServerSpawnTime;
+				AnimInstance->Montage_Play(AnimMontage, 1.f, EMontagePlayReturnType::MontageLength, StartTime);
+			}
+		}
+	}
 }
 
 void UTickablePattern::StartPattern_Implementation(const FAbilityPayload& Payload)
 {
+	Super::StartPattern_Implementation(Payload);
+
 	if (TimeSyncTimerHandle.IsValid() || bPatternIsActive)
 	{
 		UE_LOG(LogTemp, Error,
@@ -54,4 +67,3 @@ void UTickablePattern::EndPattern()
 	bPatternIsActive = false;
 	GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
 }
-

@@ -15,13 +15,12 @@ AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicates(true);
 
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh Component"));
-	MeshComponent->SetIsReplicated(true);
-	MeshComponent->SetupAttachment(GetCapsuleComponent());
-	MeshComponent->SetCastShadow(false);
-
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	MeshComp->SetIsReplicated(true);
+	MeshComp->SetCastShadow(false);
 	// Set default collision profiles
-	MeshComponent->SetCollisionProfileName(TEXT("GeoShape"));
+	MeshComp->SetCollisionProfileName(TEXT("GeoShape"));
+
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("GeoCapsule"));
 
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));

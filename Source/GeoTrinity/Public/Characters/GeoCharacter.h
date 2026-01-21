@@ -86,9 +86,6 @@ protected:
 	// GAS END
 	//----------------------------------------------------------------------//
 
-	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMeshComponent> MeshComponent;
-
 	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoInputComponent> GeoInputComponent;
 
@@ -100,7 +97,6 @@ protected:
 
 	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly)
 	ETeam TeamId;
-
 
 #ifdef UE_EDITOR
 public:

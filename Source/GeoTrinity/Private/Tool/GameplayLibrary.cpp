@@ -23,9 +23,14 @@ FColor GameplayLibrary::GetColorForObject(const UObject* Object)
 	return Palette[Object->GetUniqueID() % std::size(Palette)];
 }
 
+float GameplayLibrary::IsServer(const UWorld* World)
+{
+	return World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer);
+}
+
 float GameplayLibrary::GetServerTime(const UWorld* World, const bool bUpdatedWithPing)
 {
-	if (World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer))
+	if (IsServer(World))
 	{
 		return World->GetTimeSeconds();
 	}
