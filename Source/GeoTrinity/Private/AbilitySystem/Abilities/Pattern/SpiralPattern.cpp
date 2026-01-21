@@ -21,10 +21,8 @@ void USpiralPattern::StartPattern_Implementation(const FAbilityPayload& Payload)
 			.RotateAngleAxis((static_cast<float>(Payload.Seed) / MAX_int32) * 360.f, FVector::UpVector);
 }
 
-void USpiralPattern::TickPattern(float DeltaSeconds)
+void USpiralPattern::TickPattern(const float ServerTime, const float SpentTime)
 {
-	const double ServerTime = GameplayLibrary::GetServerTime(GetWorld(), true);
-	const double SpentTime = ServerTime - StoredPayload.ServerSpawnTime;
 	const int ProjectileNumSpawned =
 		FMath::Floor(1 + SpentTime / TimeDiffBetweenProjectiles);   // 1+ because first projectile spawns at 0.
 	bool bHasValidProjectiles = false;

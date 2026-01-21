@@ -38,13 +38,16 @@ protected:
 	UFUNCTION()
 	void CalculateDeltaTimeAndTickPattern();
 
-	virtual void TickPattern(float DeltaSeconds);
+	// We do NOT give the delta time, because we want pattern to be deterministic !
+	// Use SpentTime to re-calculate every frame your stuff.
+	// @param ServerTime : Gives synchronized server time, it is the replicated server time - 1/2 ping.
+	// @param SpentTime : ServerTime - ServerSpawnTime
+	virtual void TickPattern(float ServerTime, float SpentTime);
 
 	// Must be called when the last tick is done. BEFORE the next Pattern of this same instance is starded again !
 	virtual void EndPattern();
 
 	FAbilityPayload StoredPayload;
-	double PreviousFrameTime;
 	FTimerHandle TimeSyncTimerHandle;
 
 	bool bPatternIsActive = false;

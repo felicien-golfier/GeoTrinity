@@ -29,19 +29,14 @@ void UTickablePattern::StartPattern_Implementation(const FAbilityPayload& Payloa
 	}
 
 	StoredPayload = Payload;
-	PreviousFrameTime = GetWorld()->GetTimeSeconds();
-	// Call this only next frame to have a proper Delta Time.
-	TimeSyncTimerHandle =
-		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UTickablePattern::CalculateDeltaTimeAndTickPattern);
-
 	bPatternIsActive = true;
+	CalculateDeltaTimeAndTickPattern();
 }
 
 void UTickablePattern::CalculateDeltaTimeAndTickPattern()
 {
-	const double CurrentTime = GetWorld()->GetTimeSeconds();
-	TickPattern(CurrentTime - PreviousFrameTime);
-	PreviousFrameTime = CurrentTime;
+	const float ServerTime = GameplayLibrary::GetServerTime(GetWorld(), true);
+	TickPattern(ServerTime, ServerTime - StoredPayload.ServerSpawnTime);
 	if (bPatternIsActive)
 	{
 		TimeSyncTimerHandle = GetWorld()->GetTimerManager().SetTimerForNextTick(this,
@@ -49,14 +44,14 @@ void UTickablePattern::CalculateDeltaTimeAndTickPattern()
 	}
 }
 
-void UTickablePattern::TickPattern(float DeltaSeconds)
+void UTickablePattern::TickPattern(const float ServerTime, const float SpentTime)
 {
 	// To be overriden by your own Tickable pattern !
 }
+
 void UTickablePattern::EndPattern()
 {
 	bPatternIsActive = false;
-	PreviousFrameTime = 0;
 	GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
 }
 
