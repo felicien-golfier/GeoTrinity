@@ -52,18 +52,3 @@ protected:
 
 	bool bPatternIsActive = false;
 };
-
-UCLASS(BlueprintType, Blueprintable)
-class GEOTRINITY_API UProjectilePattern : public UPattern
-{
-	GENERATED_BODY()
-
-protected:
-	virtual void StartPattern_Implementation(const FAbilityPayload& Payload) override;
-
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectile(const FAbilityPayload& Payload, float Yaw);
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<AGeoProjectile> ProjectileClass;
-};
