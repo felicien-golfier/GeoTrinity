@@ -5,10 +5,6 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/GameplayLibrary.h"
 
-// const FName UPattern::SectionStartName(TEXT("Start"));
-// const FName UPattern::SectionLoopName(TEXT("Loop"));
-// const FName UPattern::SectionEndName(TEXT("End"));
-
 void UPattern::OnCreate(FGameplayTag AbilityTag)
 {
 	checkf(EffectDataArray.IsEmpty(),
@@ -112,7 +108,7 @@ void UPattern::StartPattern(const FAbilityPayload& Payload)
 		}
 		else if (SectionName != SectionLoopName)
 		{
-			UE_LOG(LogPattern, Error, TEXT("AnimMontage in the section %s where it should be only Start or Loop !"),
+			UE_LOG(LogPattern, Warning, TEXT("AnimMontage in the section %s where it should be only Start or Loop !"),
 				*SectionName.ToString());
 		}
 	}
@@ -125,7 +121,7 @@ void UPattern::OnStartPattern_Implementation(const FAbilityPayload& Payload)
 	// for Blueprint use mainly
 }
 
-void UPattern::JumpMontageToEndSection()
+void UPattern::JumpMontageToEndSection() const
 {
 	UAnimInstance* AnimInstance = GetAnimInstance(StoredPayload);
 	if (IsValid(AnimMontage) && !GameplayLibrary::IsServer(GetWorld()) && IsValid(AnimInstance)
@@ -135,6 +131,7 @@ void UPattern::JumpMontageToEndSection()
 		AnimInstance->Montage_JumpToSection(SectionEndName);
 	}
 }
+
 void UPattern::EndPattern()
 {
 	JumpMontageToEndSection();

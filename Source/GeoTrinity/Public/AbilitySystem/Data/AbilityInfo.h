@@ -35,7 +35,6 @@ struct FGameplayAbilityInfo
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
 	TSubclassOf<UGameplayAbility> AbilityClass;
 	
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
 	TObjectPtr<const UTexture2D> AbilityIcon {nullptr};
 	

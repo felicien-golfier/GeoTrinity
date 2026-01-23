@@ -21,6 +21,7 @@ class GEOTRINITY_API UGeoAbilitySystemComponent : public UAbilitySystemComponent
 	GENERATED_BODY()
 
 public:
+	virtual void InitializeComponent() override;
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
 
 	/** Create an EffectContext for the owner of this AbilitySystemComponent */
@@ -42,7 +43,9 @@ public:
 
 	/** Delegates **/
 	void BindAttributeCallbacks();   // By doing that, we factorize, ok... but we also make the ASC not agnostic to
-	                                 // GeoAttributeSet anymore :/
+
+	UPattern* CreatePatternInstance(const UClass* PatternClass, FGameplayTag AbilityTag);
+	bool FindPatternByClass(UClass* PatternClass, UPattern*& Pattern);
 	UFUNCTION(NetMulticast, reliable)
 	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass);
 

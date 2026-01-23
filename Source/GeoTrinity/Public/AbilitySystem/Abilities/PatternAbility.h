@@ -17,6 +17,10 @@ class GEOTRINITY_API UPatternAbility : public UGeoGameplayAbility
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
+public:
+	TSubclassOf<UPattern> GetPatternClass() const { return PatternToLaunch; }
+
+private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern")
 	TSubclassOf<UPattern> PatternToLaunch;
 };

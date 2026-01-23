@@ -32,7 +32,7 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Pattern")
 	void OnStartPattern(const FAbilityPayload& Payload);
 
-	void JumpMontageToEndSection();
+	void JumpMontageToEndSection() const;
 	// Must be called at the end of your pattern to call the Montage End.
 	UFUNCTION(BlueprintCallable, Category = "Pattern")
 	virtual void EndPattern();

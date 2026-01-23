@@ -3,11 +3,39 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/PatternAbility.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
+
+void UGeoAbilitySystemComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+
+	const UWorld* World = GetWorld();
+	if (!World || !World->IsGameWorld())
+	{
+		// Editor preview worlds, editor world, etc.
+		return;
+	}
+
+	for (auto AbilityInfo : UGeoAbilitySystemLibrary::GetAbilityInfo()->AbilityInfos)
+	{
+		if (AbilityInfo.AbilityClass->IsChildOf(UPatternAbility::StaticClass())
+			&& StartupAbilityTags.Contains(AbilityInfo.AbilityTag))
+		{
+			UPatternAbility* PatternAbilityCDO =
+				CastChecked<UPatternAbility>(AbilityInfo.AbilityClass->GetDefaultObject());
+			UPattern* Pattern;
+			if (!FindPatternByClass(PatternAbilityCDO->GetPatternClass(), Pattern))
+			{
+				CreatePatternInstance(PatternAbilityCDO->GetPatternClass(), AbilityInfo.AbilityTag);
+			}
+		}
+	}
+}
 
 void UGeoAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
 {
@@ -231,28 +259,53 @@ void UGeoAbilitySystemComponent::BindAttributeCallbacks()
 			});
 }
 
+UPattern* UGeoAbilitySystemComponent::CreatePatternInstance(const UClass* PatternClass, FGameplayTag AbilityTag)
+{
+	if (!PatternClass)
+	{
+		UE_LOG(LogGeoTrinity, Error, TEXT("CreatePatternInstance: Invalid PatternClass"));
+		return nullptr;
+	}
+
+	UPattern* PatternInstance = NewObject<UPattern>(this, PatternClass);
+	PatternInstance->OnCreate(AbilityTag);
+	Patterns.Add(PatternInstance);
+
+	return PatternInstance;
+}
+
+bool UGeoAbilitySystemComponent::FindPatternByClass(UClass* PatternClass, UPattern*& Pattern)
+{
+	UPattern** FoundPattern = Patterns.FindByPredicate(
+		[PatternClass](const UPattern* Candidate)
+		{
+			return IsValid(Candidate) && Candidate->IsA(PatternClass);
+		});
+
+	if (!FoundPattern)
+	{
+		return false;
+	}
+
+	Pattern = *FoundPattern;
+	return true;
+}
+
 void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload, UClass* PatternClass)
 {
 	checkf(PatternClass, TEXT("PatternStartMulticast: Invalid PatternClass"));
-	UPattern* PatternInstance;
-	UPattern** MaybePattern = Patterns.FindByPredicate(
-		[PatternClass](const UPattern* Candidate)
-		{
-			return Candidate->IsA(PatternClass);
-		});
 
-	if (MaybePattern)
+	UPattern* Pattern;
+	if (!FindPatternByClass(PatternClass, Pattern))
 	{
-		PatternInstance = *MaybePattern;
-	}
-	else
-	{
-		PatternInstance = NewObject<UPattern>(this, PatternClass);
-		PatternInstance->OnCreate(Payload.AbilityTag);
-		Patterns.Add(PatternInstance);
+		UE_LOG(LogGeoASC, Warning,
+			TEXT(
+				"PatternStartMulticast: Pattern instance of class %s not found! It should have been created in OnGiveAbility."),
+			*PatternClass->GetName());
+
+		// Fallback to maintain functionality if OnGiveAbility wasn't called for some reason
+		Pattern = CreatePatternInstance(PatternClass, Payload.AbilityTag);
 	}
 
-	checkf(PatternInstance, TEXT("PatternStartMulticast: Failed to create instance of %s"), *PatternClass->GetName());
-
-	PatternInstance->InitPattern(Payload);
+	Pattern->InitPattern(Payload);
 }
