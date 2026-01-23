@@ -5,17 +5,26 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "System/GeoActorPoolingSubsystem.h"
+#include "Tool/GameplayLibrary.h"
 
-void USpiralPattern::StartPattern_Implementation(const FAbilityPayload& Payload)
+void USpiralPattern::OnCreate(FGameplayTag AbilityTag)
 {
-	Super::StartPattern_Implementation(Payload);
+	Super::OnCreate(AbilityTag);
+
 	const float MaxProjectileNum = RoundNumber * NumberProjectileByRound;
 	checkf(MaxProjectileNum > 0, TEXT("No projectile set in the spiral ! please fill your pattern values in BP"));
 	Projectiles.Reserve(MaxProjectileNum);
 
+	ensureMsgf(ProjectileClass, TEXT("You must fill the projectile class in the Spiral pattern."));
 	ProjectileSpeed = ProjectileClass->GetDefaultObject<AGeoProjectile>()->ProjectileMovement->InitialSpeed;
 	TimeDiffBetweenProjectiles = TimeForOneRound / NumberProjectileByRound;
 	AngleBetweenProjectiles = 360.f / NumberProjectileByRound;
+}
+
+void USpiralPattern::InitPattern(const FAbilityPayload& Payload)
+{
+	Super::InitPattern(Payload);
+
 	FirstProjectileOrientation =
 		FVector(1.f, 1.f, 0.f)
 			.RotateAngleAxis((static_cast<float>(Payload.Seed) / MAX_int32) * 360.f, FVector::UpVector);
@@ -64,6 +73,11 @@ void USpiralPattern::TickPattern(const float ServerTime, const float SpentTime)
 			UGeoActorPoolingSubsystem::Get(GetWorld())->ChangeActorState(Projectile, true);
 			Projectile->Init();
 		}
+	}
+
+	if (ProjectileNumSpawned >= RoundNumber * NumberProjectileByRound)
+	{
+		JumpMontageToEndSection();
 	}
 
 	if (!bHasValidProjectiles && ProjectileNumSpawned > 0)

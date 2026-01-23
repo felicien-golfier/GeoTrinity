@@ -254,5 +254,5 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 
 	checkf(PatternInstance, TEXT("PatternStartMulticast: Failed to create instance of %s"), *PatternClass->GetName());
 
-	PatternInstance->StartPattern(Payload);
+	PatternInstance->InitPattern(Payload);
 }

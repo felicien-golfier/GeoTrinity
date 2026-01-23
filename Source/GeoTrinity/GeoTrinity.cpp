@@ -7,5 +7,6 @@
 // Define the project-wide log category declared in GeoTrinity.h
 DEFINE_LOG_CATEGORY(LogGeoTrinity);
 DEFINE_LOG_CATEGORY(LogGeoASC);
+DEFINE_LOG_CATEGORY(LogPattern);
 
 IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultGameModuleImpl, GeoTrinity, "GeoTrinity");
