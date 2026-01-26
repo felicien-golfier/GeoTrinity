@@ -32,6 +32,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")
 	FGameplayTag StartupInputTag;
 
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UAnimMontage> AnimMontage;
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;

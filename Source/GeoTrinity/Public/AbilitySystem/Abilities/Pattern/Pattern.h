@@ -18,14 +18,10 @@ class GEOTRINITY_API UPattern : public UObject
 	GENERATED_BODY()
 
 private:
-	int GetAndCheckSection(FName Section) const;
-
 	UFUNCTION()
 	void OnMontageSectionStartEnded();
 
 protected:
-	UAnimInstance* GetAnimInstance(const FAbilityPayload& Payload) const;
-
 	// Called when montage start is done and starts the loop.
 	virtual void StartPattern(const FAbilityPayload& Payload);
 
@@ -52,13 +48,9 @@ protected:
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 
 	float StartSectionLength = 0.f;
-	inline static const FName SectionStartName{"Start"};
-	inline static const FName SectionLoopName{"Loop"};
-	inline static const FName SectionEndName{"End"};
 
 	FAbilityPayload StoredPayload;
 
-public:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UAnimMontage> AnimMontage;
 };

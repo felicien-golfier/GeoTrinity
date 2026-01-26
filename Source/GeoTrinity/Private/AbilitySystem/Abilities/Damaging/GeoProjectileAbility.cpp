@@ -2,18 +2,62 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
+#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "AbilitySystem/Data/EffectData.h"   //Necessary to copy array of EffectData.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "System/GeoActorPoolingSubsystem.h"
+#include "Tool/GameplayLibrary.h"
 
 void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
 	AActor* Owner = GetOwningActorFromActorInfo();
+	bool bHasSpawned = false;
 	StoredPayload = CreateAbilityPayload(Owner->GetTransform(), Owner, Owner);
+	if (AnimMontage)
+	{
+		UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(StoredPayload);
+		if (AnimInstance->Montage_IsPlaying(AnimMontage))
+		{
+		}
+		const int StartSectionIndex =
+			GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionStartName);
+		const float StartSectionLength = AnimMontage->GetSectionLength(StartSectionIndex);
+		if (StartSectionLength > 0.f)
+		{
+			GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this,
+				&UGeoProjectileAbility::OnMontageSectionStartEnded, StartSectionLength);
+			bHasSpawned = true;
+		}
+	}
+
+	if (!bHasSpawned)
+	{
+		SpawnProjectilesUsingTarget();
+	}
+
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+}
+
+void UGeoProjectileAbility::OnMontageSectionStartEnded()
+{
+	SpawnProjectilesUsingTarget();
+}
+
+void UGeoProjectileAbility::EndAbility(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+	bool bReplicateEndAbility, bool bWasCancelled)
+{
+	if (AnimMontage && IsInstantiated())
+	{
+		MontageJumpToSection(GameplayLibrary::SectionEndName);
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(StartSectionTimerHandle);
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projectileTargetLocation)
@@ -21,15 +65,15 @@ void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projecti
 	const AActor* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
 
-	SpawnProjectile((projectileTargetLocation - Actor->GetActorLocation()).Rotation());
+	FTransform SpawnTransform{(projectileTargetLocation - Actor->GetActorLocation()).Rotation().Quaternion(),
+		Actor->GetActorLocation()};
+	SpawnProjectile(SpawnTransform);
 }
 
-void UGeoProjectileAbility::SpawnProjectile(const FRotator& DirectionRotator) const
+void UGeoProjectileAbility::SpawnProjectile(const FTransform& SpawnTransform) const
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
-
-	const FTransform SpawnTransform{DirectionRotator.Quaternion(), Actor->GetActorLocation()};
 
 	// Create projectile
 	AActor* ProjectileOwner = GetOwningActorFromActorInfo();

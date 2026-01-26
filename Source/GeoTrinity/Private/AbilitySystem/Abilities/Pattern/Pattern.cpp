@@ -1,7 +1,6 @@
 ﻿#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "GameFramework/Character.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/GameplayLibrary.h"
 
@@ -13,41 +12,11 @@ void UPattern::OnCreate(FGameplayTag AbilityTag)
 	EffectDataArray = UGeoAbilitySystemLibrary::GetEffectDataArray(AbilityTag);
 	if (AnimMontage)
 	{
-		StartSectionLength = AnimMontage->GetSectionLength(GetAndCheckSection(SectionStartName));
-		(void)GetAndCheckSection(SectionLoopName);
-		(void)GetAndCheckSection(SectionEndName);
+		StartSectionLength = AnimMontage->GetSectionLength(
+			GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionStartName));
+		(void)GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionLoopName);
+		(void)GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionEndName);
 	}
-}
-
-int UPattern::GetAndCheckSection(const FName Section) const
-{
-	const int SectionIndex = AnimMontage->GetSectionIndex(Section);
-	if (SectionIndex == INDEX_NONE)
-	{
-		ensureMsgf(true, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(), *AnimMontage->GetName());
-		UE_LOG(LogPattern, Error, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(),
-			*AnimMontage->GetName());
-	}
-	return SectionIndex;
-}
-
-UAnimInstance* UPattern::GetAnimInstance(const FAbilityPayload& Payload) const
-{
-	ACharacter* OwnerCharacter = Cast<ACharacter>(Payload.Owner);
-	if (!IsValid(OwnerCharacter))
-	{
-		UE_LOG(LogPattern, Error, TEXT("We support only animation montage for character in pattern for now !"));
-		return nullptr;
-	}
-
-	UAnimInstance* AnimInstance = OwnerCharacter->GetMesh() ? OwnerCharacter->GetMesh()->GetAnimInstance() : nullptr;
-	if (!AnimInstance)
-	{
-		UE_LOG(LogPattern, Error, TEXT("Please set an anim instance (With the Default Slot filled in anim graph;)"));
-		return nullptr;
-	}
-
-	return AnimInstance;
 }
 
 void UPattern::InitPattern(const FAbilityPayload& Payload)
@@ -63,7 +32,7 @@ void UPattern::InitPattern(const FAbilityPayload& Payload)
 	StoredPayload = Payload;
 
 	const float StartTime = GameplayLibrary::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
-	UAnimInstance* AnimInstance = GetAnimInstance(Payload);
+	UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(Payload);
 
 	if (!IsValid(AnimMontage) || !IsValid(AnimInstance) || StartTime > StartSectionLength)
 	{
@@ -92,7 +61,7 @@ void UPattern::OnMontageSectionStartEnded()
 
 void UPattern::StartPattern(const FAbilityPayload& Payload)
 {
-	UAnimInstance* AnimInstance = GetAnimInstance(Payload);
+	UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(Payload);
 	if (IsValid(AnimMontage) && !GameplayLibrary::IsServer(GetWorld()) && IsValid(AnimInstance))
 	{
 		if (!AnimInstance->Montage_IsPlaying(AnimMontage))
@@ -102,11 +71,11 @@ void UPattern::StartPattern(const FAbilityPayload& Payload)
 		}
 
 		const FName SectionName = AnimInstance->Montage_GetCurrentSection(AnimMontage);
-		if (SectionName == SectionStartName)
+		if (SectionName == GameplayLibrary::SectionStartName)
 		{
-			AnimInstance->Montage_JumpToSection(SectionLoopName);
+			AnimInstance->Montage_JumpToSection(GameplayLibrary::SectionLoopName);
 		}
-		else if (SectionName != SectionLoopName)
+		else if (SectionName != GameplayLibrary::SectionLoopName)
 		{
 			UE_LOG(LogPattern, Warning, TEXT("AnimMontage in the section %s where it should be only Start or Loop !"),
 				*SectionName.ToString());
@@ -123,12 +92,12 @@ void UPattern::OnStartPattern_Implementation(const FAbilityPayload& Payload)
 
 void UPattern::JumpMontageToEndSection() const
 {
-	UAnimInstance* AnimInstance = GetAnimInstance(StoredPayload);
+	UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(StoredPayload);
 	if (IsValid(AnimMontage) && !GameplayLibrary::IsServer(GetWorld()) && IsValid(AnimInstance)
 		&& AnimInstance->Montage_IsPlaying(AnimMontage)
-		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != SectionEndName)
+		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != GameplayLibrary::SectionEndName)
 	{
-		AnimInstance->Montage_JumpToSection(SectionEndName);
+		AnimInstance->Montage_JumpToSection(GameplayLibrary::SectionEndName);
 	}
 }
 

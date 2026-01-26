@@ -25,14 +25,18 @@ class GEOTRINITY_API UGeoProjectileAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 protected:
-	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+		FGameplayAbilityActivationInfo ActivationInfo, FGameplayEventData const* TriggerEventData) override;
+	void OnMontageSectionStartEnded();
+
+	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
+		FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectileUsingLocation(const FVector& projectileTargetLocation);
+	void SpawnProjectileUsingLocation(FVector const& projectileTargetLocation);
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectile(const FRotator& DirectionRotator) const;
+	void SpawnProjectile(FTransform const& SpawnTransform) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectilesUsingTarget();
@@ -47,4 +51,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Target")
 	ETarget Target = ETarget::Forward;
+
+	FTimerHandle StartSectionTimerHandle;
 };

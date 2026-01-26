@@ -1,7 +1,10 @@
 ﻿#include "Tool/GameplayLibrary.h"
 
+#include "AbilitySystem/Abilities/AbilityPayload.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
+#include "GeoTrinity/GeoTrinity.h"
 
 bool GameplayLibrary::GetTeamInterface(const AActor* Actor, const IGenericTeamAgentInterface*& OutInterface)
 {
@@ -58,4 +61,35 @@ float GameplayLibrary::GetServerTime(const UWorld* World, const bool bUpdatedWit
 	}
 
 	return ServerTimeSeconds;
+}
+
+int GameplayLibrary::GetAndCheckSection(const UAnimMontage* AnimMontage, const FName Section)
+{
+	const int SectionIndex = AnimMontage->GetSectionIndex(Section);
+	if (SectionIndex == INDEX_NONE)
+	{
+		ensureMsgf(true, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(), *AnimMontage->GetName());
+		UE_LOG(LogPattern, Error, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(),
+			*AnimMontage->GetName());
+	}
+	return SectionIndex;
+}
+
+UAnimInstance* GameplayLibrary::GetAnimInstance(const FAbilityPayload& Payload)
+{
+	ACharacter* OwnerCharacter = Cast<ACharacter>(Payload.Owner);
+	if (!IsValid(OwnerCharacter))
+	{
+		UE_LOG(LogPattern, Error, TEXT("We support only animation montage for character in pattern for now !"));
+		return nullptr;
+	}
+
+	UAnimInstance* AnimInstance = OwnerCharacter->GetMesh() ? OwnerCharacter->GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		UE_LOG(LogPattern, Error, TEXT("Please set an anim instance (With the Default Slot filled in anim graph;)"));
+		return nullptr;
+	}
+
+	return AnimInstance;
 }
