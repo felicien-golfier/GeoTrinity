@@ -12,6 +12,6 @@ public:
 	static UAnimInstance* GetAnimInstance(const struct FAbilityPayload& Payload);
 
 	inline static const FName SectionStartName{"Start"};
-	inline static const FName SectionLoopName{"Loop"};
+	inline static const FName SectionFireName{"Fire"};
 	inline static const FName SectionEndName{"End"};
 };

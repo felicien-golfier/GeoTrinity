@@ -6,7 +6,8 @@
 
 void UPattern::OnCreate(FGameplayTag AbilityTag)
 {
-	checkf(EffectDataArray.IsEmpty(),
+	checkf(
+		EffectDataArray.IsEmpty(),
 		TEXT(
 			"EffectDataArray is not empty when creating a Pattern ! Ensure you call this function only at the spawn of the pattern."));
 	EffectDataArray = UGeoAbilitySystemLibrary::GetEffectDataArray(AbilityTag);
@@ -14,7 +15,7 @@ void UPattern::OnCreate(FGameplayTag AbilityTag)
 	{
 		StartSectionLength = AnimMontage->GetSectionLength(
 			GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionStartName));
-		(void)GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionLoopName);
+		(void)GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionFireName);
 		(void)GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionEndName);
 	}
 }
@@ -24,7 +25,7 @@ void UPattern::InitPattern(const FAbilityPayload& Payload)
 	if (bPatternIsActive)
 	{
 		UE_LOG(LogPattern, Error,
-			TEXT("Starting pattern when the Previous pattern of the same instance is still active !"));
+			   TEXT("Starting pattern when the Previous pattern of the same instance is still active !"));
 		EndPattern();
 	}
 
@@ -51,7 +52,7 @@ void UPattern::InitPattern(const FAbilityPayload& Payload)
 
 	const float RemainingStartTime = StartSectionLength - StartTime;
 	GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this, &UPattern::OnMontageSectionStartEnded,
-		RemainingStartTime);
+										   RemainingStartTime);
 }
 
 void UPattern::OnMontageSectionStartEnded()
@@ -73,12 +74,12 @@ void UPattern::StartPattern(const FAbilityPayload& Payload)
 		const FName SectionName = AnimInstance->Montage_GetCurrentSection(AnimMontage);
 		if (SectionName == GameplayLibrary::SectionStartName)
 		{
-			AnimInstance->Montage_JumpToSection(GameplayLibrary::SectionLoopName);
+			AnimInstance->Montage_JumpToSection(GameplayLibrary::SectionFireName);
 		}
-		else if (SectionName != GameplayLibrary::SectionLoopName)
+		else if (SectionName != GameplayLibrary::SectionFireName)
 		{
 			UE_LOG(LogPattern, Warning, TEXT("AnimMontage in the section %s where it should be only Start or Loop !"),
-				*SectionName.ToString());
+				   *SectionName.ToString());
 		}
 	}
 
@@ -111,6 +112,7 @@ void UPattern::EndPattern()
 	}
 
 	bPatternIsActive = false;
+	// TODO: EndAbility after Montage EndSection or directly right now.
 }
 
 void UTickablePattern::InitPattern(const FAbilityPayload& Payload)
@@ -118,7 +120,7 @@ void UTickablePattern::InitPattern(const FAbilityPayload& Payload)
 	if (TimeSyncTimerHandle.IsValid())
 	{
 		UE_LOG(LogPattern, Error,
-			TEXT("Starting pattern when the Previous pattern of the same instance is still active !"));
+			   TEXT("Starting pattern when the Previous pattern of the same instance is still active !"));
 		EndPattern();
 	}
 

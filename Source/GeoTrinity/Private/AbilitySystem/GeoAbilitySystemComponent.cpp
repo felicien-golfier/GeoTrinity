@@ -74,7 +74,7 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<TSubclassOf<UGeoGam
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySystemComponent::GiveStartupAbilities(const TArray<FGameplayTag>& AbilitiesToGive,
-	const int32 Level /*= 1.f*/)
+													  const int32 Level /*= 1.f*/)
 {
 	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	if (!AbilityInfos)
@@ -99,7 +99,8 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(const TArray<FGameplayTag>
 			}
 			else
 			{
-				UE_LOG(LogGeoASC, Error,
+				UE_LOG(
+					LogGeoASC, Error,
 					TEXT("Input Tag for ability of type %s not found in map AbilityTypeToInputTagMap (UAbilityInfo)"),
 					*AbilityInfo.TypeOfAbilityTag.ToString());
 			}
@@ -143,12 +144,12 @@ void UGeoAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& inpu
 			// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
 			const UGameplayAbility* Instance = abilitySpec.GetPrimaryInstance();
 			FPredictionKey originalPredictionKey = Instance
-			                                         ? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
-			                                         : abilitySpec.ActivationInfo.GetActivationPredictionKey();
+				? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
+				: abilitySpec.ActivationInfo.GetActivationPredictionKey();
 			PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 			InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputPressed, abilitySpec.Handle,
-				originalPredictionKey);
+								  originalPredictionKey);
 		}
 	}
 }
@@ -201,20 +202,20 @@ void UGeoAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& inp
 			// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
 			const UGameplayAbility* Instance = abilitySpec.GetPrimaryInstance();
 			FPredictionKey originalPredictionKey = Instance
-			                                         ? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
-			                                         : abilitySpec.ActivationInfo.GetActivationPredictionKey();
+				? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
+				: abilitySpec.ActivationInfo.GetActivationPredictionKey();
 			PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 			// Needed to use Wait for input release in blueprint
 			InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, abilitySpec.Handle,
-				originalPredictionKey);
+								  originalPredictionKey);
 		}
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass,
-	int32 Level /*= 1*/)
+												   int32 Level /*= 1*/)
 {
 	FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext();
 	EffectContextHandle.AddSourceObject(this);
@@ -234,8 +235,8 @@ void UGeoAbilitySystemComponent::InitializeDefaultAttributes(int32 Level /*= 1*/
 	if (!IsValid(DefaultAttributes))
 	{
 		UE_LOG(LogGeoTrinity, Error,
-			TEXT("%s() Missing DefaultAttributes for %s. Please fill in the Owner's Blueprint."),
-			*FString(__FUNCTION__), *GetName());
+			   TEXT("%s() Missing DefaultAttributes for %s. Please fill in the Owner's Blueprint."),
+			   *FString(__FUNCTION__), *GetName());
 		return;
 	}
 
@@ -247,16 +248,16 @@ void UGeoAbilitySystemComponent::BindAttributeCallbacks()
 {
 	GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
 		.AddWeakLambda(this,
-			[this](const FOnAttributeChangeData& Data)
-			{
-				OnHealthChanged.Broadcast(Data.NewValue);
-			});
+					   [this](const FOnAttributeChangeData& Data)
+					   {
+						   OnHealthChanged.Broadcast(Data.NewValue);
+					   });
 	GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetMaxHealthAttribute())
 		.AddWeakLambda(this,
-			[this](const FOnAttributeChangeData& Data)
-			{
-				OnMaxHealthChanged.Broadcast(Data.NewValue);
-			});
+					   [this](const FOnAttributeChangeData& Data)
+					   {
+						   OnMaxHealthChanged.Broadcast(Data.NewValue);
+					   });
 }
 
 UPattern* UGeoAbilitySystemComponent::CreatePatternInstance(const UClass* PatternClass, FGameplayTag AbilityTag)
@@ -299,9 +300,8 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 	if (!FindPatternByClass(PatternClass, Pattern))
 	{
 		UE_LOG(LogGeoASC, Warning,
-			TEXT(
-				"PatternStartMulticast: Pattern instance of class %s not found! It should have been created in OnGiveAbility."),
-			*PatternClass->GetName());
+			   TEXT("PatternStartMulticast: Pattern instance of class %s not found! It should have been created."),
+			   *PatternClass->GetName());
 
 		// Fallback to maintain functionality if OnGiveAbility wasn't called for some reason
 		Pattern = CreatePatternInstance(PatternClass, Payload.AbilityTag);

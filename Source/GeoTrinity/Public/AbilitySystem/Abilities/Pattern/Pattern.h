@@ -38,7 +38,7 @@ public:
 
 	virtual void InitPattern(const FAbilityPayload& Payload);
 
-	bool IsPatternActive() const { return bPatternIsActive; };
+	bool IsPatternActive() const { return bPatternIsActive; }
 
 private:
 	bool bPatternIsActive = false;
