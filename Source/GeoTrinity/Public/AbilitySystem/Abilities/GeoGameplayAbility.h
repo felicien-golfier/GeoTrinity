@@ -29,6 +29,16 @@ public:
 	TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const;
 	float GetCooldown(int32 level = 1) const;
 
+	UFUNCTION()
+	void Test(UAnimMontage* Montage, bool bInterrupted);
+
+protected:
+	void HandleAnimationMontage(const UAnimInstance* AnimInstance,
+								const FGameplayAbilityActivationInfo& ActivationInfo);
+	UFUNCTION()
+	virtual void AnimTrigger();
+
+public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")
 	FGameplayTag StartupInputTag;
 
@@ -40,4 +50,6 @@ private:
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
+
+	FTimerHandle StartSectionTimerHandle;
 };

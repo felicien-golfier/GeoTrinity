@@ -176,6 +176,7 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& inputTa
 		}
 
 		AbilitySpecInputPressed(abilitySpec);
+
 		if (!abilitySpec.IsActive())
 		{
 			TryActivateAbility(abilitySpec.Handle);

@@ -12,6 +12,11 @@ public:
 	static UAnimInstance* GetAnimInstance(const struct FAbilityPayload& Payload);
 
 	inline static const FName SectionStartName{"Start"};
+	inline static FString SectionStartString{SectionStartName.ToString()};
 	inline static const FName SectionFireName{"Fire"};
+	inline static FString SectionFireString{SectionFireName.ToString()};
 	inline static const FName SectionEndName{"End"};
+	inline static FString SectionEndString{SectionEndName.ToString()};
+	inline static const FName SectionStopName{"Stop"};
+	inline static FString SectionStopString{SectionStopName.ToString()};
 };

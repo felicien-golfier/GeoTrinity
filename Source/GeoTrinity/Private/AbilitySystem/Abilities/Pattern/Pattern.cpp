@@ -76,10 +76,12 @@ void UPattern::StartPattern(const FAbilityPayload& Payload)
 		{
 			AnimInstance->Montage_JumpToSection(GameplayLibrary::SectionFireName);
 		}
-		else if (SectionName != GameplayLibrary::SectionFireName)
+		else if (!SectionName.ToString().Contains(GameplayLibrary::SectionFireName.ToString()))
 		{
-			UE_LOG(LogPattern, Warning, TEXT("AnimMontage in the section %s where it should be only Start or Loop !"),
-				   *SectionName.ToString());
+			UE_LOG(LogPattern, Warning,
+				   TEXT("AnimMontage in the section %s where it should be only %s or containing section name %s !"),
+				   *SectionName.ToString(), *GameplayLibrary::SectionStartName.ToString(),
+				   *GameplayLibrary::SectionFireName.ToString());
 		}
 	}
 

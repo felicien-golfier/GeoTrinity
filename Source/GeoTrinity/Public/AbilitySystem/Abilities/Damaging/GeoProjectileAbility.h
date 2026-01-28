@@ -28,8 +28,9 @@ protected:
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 const FGameplayEventData* TriggerEventData) override;
-	UFUNCTION()
-	void OnMontageSectionStartEnded();
+
+	virtual void AnimTrigger() override;
+
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectileUsingLocation(const FVector& projectileTargetLocation);
@@ -50,6 +51,4 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Target")
 	ETarget Target = ETarget::Forward;
-
-	FTimerHandle StartSectionTimerHandle;
 };

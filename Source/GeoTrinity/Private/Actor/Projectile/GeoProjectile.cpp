@@ -2,7 +2,7 @@
 
 #include "Actor/Projectile/GeoProjectile.h"
 
-#include "AbilitySystem/Data/EffectData.h"   //Necessary for array transfer.
+#include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -73,7 +73,7 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	}
 
 	UE_VLOG_SPHERE(this, LogGeoTrinity, Verbose, GetActorLocation(), GetSimpleCollisionRadius(),
-		GameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
+				   GameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -84,11 +84,11 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = Payload.Instigator->GetComponentByClass<UGeoAbilitySystemComponent>();
+	UGeoAbilitySystemComponent* SourceASC = Payload.Owner->GetComponentByClass<UGeoAbilitySystemComponent>();
 	if (!IsValid(SourceASC))
 	{
 		UE_LOG(LogGeoTrinity, Error,
-			TEXT("A projectile was launched with an invalid Source ASC, this should never happen"));
+			   TEXT("A projectile was launched with an invalid Source ASC, this should never happen"));
 		return false;
 	}
 
@@ -108,11 +108,12 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 
 	// TODO: use TeamInterface->GetTeamAttitudeTowards()
 	return TeamInterface->GetGenericTeamId().GetId() != FGenericTeamId::NoTeam
-	    && (TeamInterface->GetGenericTeamId().GetId() & ApplyEffectToTeamOnOverlap) != 0x00;
+		&& (TeamInterface->GetGenericTeamId().GetId() & ApplyEffectToTeamOnOverlap) != 0x00;
 }
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+									 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex,
+									 bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (!IsValidOverlap(OtherActor))
 	{
@@ -126,14 +127,14 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	if (HasAuthority())
 	{
 		GeoASL::ApplyEffectFromEffectData(EffectDataArray, GeoASL::GetGeoAscFromActor(Payload.Instigator),
-			GeoASL::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel, Payload.Seed);
+										  GeoASL::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel, Payload.Seed);
 	}
 
 	EndProjectileLife();
 }
 
 void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	FVector NormalImpulse, const FHitResult& Hit)
+								 FVector NormalImpulse, const FHitResult& Hit)
 
 {
 	if (bIsEnding)
