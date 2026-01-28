@@ -7,10 +7,11 @@
 #include "System/GeoPoolableInterface.h"
 
 AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform& Transform, AActor* Owner,
-	APawn* Instigator, bool bInit, bool bActivate)
+												APawn* Instigator, bool bInit, bool bActivate)
 {
-	if (!ensure(Class))
+	if (!Class)
 	{
+		ensureMsgf(false, TEXT("PopWithClass called with invalid Class"));
 		return nullptr;
 	}
 
@@ -27,8 +28,12 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform&
 	}
 
 	TWeakObjectPtr<AActor> Weak = PoolForClass.Pop();
+	if (!Weak.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Pool] INVALID weak pointer for %s! Actor was GC'd?"), *Class->GetName());
+	}
 	AActor* Actor = Weak.Get();
-	checkf(IsValid(Actor), TEXT("Weak Ptr from pool is empty !"));
+	ensureMsgf(IsValid(Actor), TEXT("Weak Ptr from pool is empty !"));
 
 	Actor->SetOwner(Owner);
 	Actor->SetInstigator(Instigator);
@@ -60,7 +65,7 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform&
 void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, const uint16 Count, AActor* Owner, APawn* Instigator)
 {
 	UWorld* World = GetWorld();
-	checkf(World, TEXT("World is invalid"));
+	ensureMsgf(World, TEXT("World is invalid"));
 
 	FActorSpawnParameters Params;
 	Params.Owner = Owner;
@@ -97,10 +102,10 @@ AActor* UGeoActorPoolingSubsystem::SpawnActor(UClass* Class, const FActorSpawnPa
 {
 
 	UWorld* World = GetWorld();
-	checkf(World, TEXT("World is invalid"));
+	ensureMsgf(World, TEXT("World is invalid"));
 
 	AActor* NewActor = World->SpawnActor<AActor>(Class, FTransform::Identity, Params);
-	checkf(NewActor, TEXT("Failed to spawn actor of class %s"), *Class->GetName());
+	ensureMsgf(NewActor, TEXT("Failed to spawn actor of class %s"), *Class->GetName());
 
 	ChangeActorState(NewActor, false);
 
@@ -112,6 +117,8 @@ void UGeoActorPoolingSubsystem::ReleaseActor(AActor* Actor)
 {
 	if (!IsValid(Actor))
 	{
+		UE_LOG(LogTemp, Error, TEXT("[Pool] ReleaseActor called with invalid actor!"));
+		ensureMsgf(false, TEXT("[Pool] ReleaseActor called with invalid actor!"));
 		return;
 	}
 

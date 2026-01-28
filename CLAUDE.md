@@ -26,6 +26,11 @@ The project uses a custom `.clang-format` with these key settings:
 - Allman brace style (braces on new lines)
 - UE macros handled: UPROPERTY, UCLASS, USTRUCT, GENERATED_BODY, UENUM
 
+**Preferences**:
+- Prefer fewer but longer if statements (merge conditions with && rather than nesting)
+- Use const by default on variables; remove const only when mutation is needed
+- Prefer non-const parameters over creating new variables (e.g., `FTransform SpawnTransform` instead of `const FTransform& SpawnTransform` + local copy)
+
 ## Architecture
 
 ### Character Hierarchy
@@ -72,8 +77,10 @@ Patterns spawn projectiles deterministically across clients:
 
 - **Playable Characters**: ASC lives on `AGeoPlayerState` (full replication)
 - **Enemy Characters**: ASC on character (minimal replication mode)
-- **Projectiles**: Not replicated - spawned locally via multicast with deterministic time sync
-- **FAbilityPayload**: Contains Origin, Yaw, ServerSpawnTime, Seed for network sync
+
+**Two projectile/ability replication approaches**:
+1. **Player Abilities** - Use standard GAS replication with local prediction (normal Unreal GAS workflow)
+2. **Patterns (enemy bullet patterns)** - Use multicast RPC with deterministic time-synced spawning via `FAbilityPayload` (Origin, Yaw, ServerSpawnTime, Seed)
 
 ### AI System
 

@@ -36,7 +36,7 @@ protected:
 	void SpawnProjectileUsingLocation(const FVector& projectileTargetLocation);
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectile(const FTransform& SpawnTransform) const;
+	void SpawnProjectile(const FTransform SpawnTransform) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectilesUsingTarget();
@@ -51,4 +51,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Target")
 	ETarget Target = ETarget::Forward;
+
+	/** If true, spawns projectile from a socket named by the current montage section index (e.g., section "Fire2" uses
+	 * socket "2") */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Projectile")
+	bool bUseSocketFromSectionIndex = false;
 };

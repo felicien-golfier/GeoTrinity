@@ -4,7 +4,9 @@
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "AbilitySystem/Data/EffectData.h" //Necessary to copy array of EffectData.
+#include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "System/GeoActorPoolingSubsystem.h"
 
 void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -52,10 +54,25 @@ void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projecti
 
 	FTransform SpawnTransform{(projectileTargetLocation - Actor->GetActorLocation()).Rotation().Quaternion(),
 							  Actor->GetActorLocation()};
+	// Optionally spawn from a socket named by the current montage section index
+	const UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	const USkeletalMeshComponent* Mesh = Actor->FindComponentByClass<USkeletalMeshComponent>();
+	if (bUseSocketFromSectionIndex && ASC && Mesh)
+	{
+		const FName CurrentSection = ASC->GetCurrentMontageSectionName();
+		const FString IndexString = CurrentSection.ToString().Right(1);
+		const FName SocketName(*IndexString);
+
+		if (IndexString.IsNumeric() && Mesh->DoesSocketExist(SocketName))
+		{
+			SpawnTransform.SetLocation(Mesh->GetSocketLocation(SocketName));
+		}
+	}
+
 	SpawnProjectile(SpawnTransform);
 }
 
-void UGeoProjectileAbility::SpawnProjectile(const FTransform& SpawnTransform) const
+void UGeoProjectileAbility::SpawnProjectile(const FTransform SpawnTransform) const
 {
 	const AActor* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
@@ -70,7 +87,8 @@ void UGeoProjectileAbility::SpawnProjectile(const FTransform& SpawnTransform) co
 
 	if (!GeoProjectile)
 	{
-		UE_LOG(LogTemp, Error, TEXT("No valid Projectile pooled (ahah) !"));
+		UE_LOG(LogTemp, Error, TEXT("[Projectile] FAILED: RequestActor returned nullptr for %s"),
+			   *ProjectileClass->GetName());
 		return;
 	}
 

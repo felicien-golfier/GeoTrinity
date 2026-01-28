@@ -42,7 +42,7 @@ public:
 	void InitializeDefaultAttributes(int32 Level = 1);
 
 	/** Delegates **/
-	void BindAttributeCallbacks();   // By doing that, we factorize, ok... but we also make the ASC not agnostic to
+	void BindAttributeCallbacks(); // By doing that, we factorize, ok... but we also make the ASC not agnostic to
 
 	UPattern* CreatePatternInstance(const UClass* PatternClass, FGameplayTag AbilityTag);
 	bool FindPatternByClass(UClass* PatternClass, UPattern*& Pattern);

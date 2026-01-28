@@ -28,9 +28,9 @@ public:
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
 	TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const;
 	float GetCooldown(int32 level = 1) const;
-
-	UFUNCTION()
-	void Test(UAnimMontage* Montage, bool bInterrupted);
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+							const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
+							bool bWasCancelled) override;
 
 protected:
 	void HandleAnimationMontage(const UAnimInstance* AnimInstance,

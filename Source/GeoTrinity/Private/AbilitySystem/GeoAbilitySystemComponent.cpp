@@ -167,6 +167,8 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& inputTa
 		UE_LOG(LogTemp, Warning, TEXT("AbilityInputTagHeld of INPUT %s"), *inputTag.ToString());
 	}
 
+	const double CurrentTime = GetWorld()->GetTimeSeconds();
+
 	FScopedAbilityListLock activeScopeLock(*this);
 	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())
 	{

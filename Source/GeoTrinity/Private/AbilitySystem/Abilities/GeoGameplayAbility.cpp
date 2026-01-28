@@ -11,6 +11,7 @@
 #include "Tool/GameplayLibrary.h"
 using GeoASL = UGeoAbilitySystemLibrary;
 using GL = GameplayLibrary;
+
 // ---------------------------------------------------------------------------------------------------------------------
 FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 {
@@ -62,6 +63,15 @@ float UGeoGameplayAbility::GetCooldown(int32 level) const
 
 	pCooldownEffect->DurationMagnitude.GetStaticMagnitudeIfPossible(level, cooldown);
 	return cooldown;
+}
+
+void UGeoGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle,
+									 const FGameplayAbilityActorInfo* ActorInfo,
+									 const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
+									 bool bWasCancelled)
+{
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+	StartSectionTimerHandle.Invalidate();
 }
 
 void UGeoGameplayAbility::HandleAnimationMontage(const UAnimInstance* AnimInstance,
@@ -164,5 +174,4 @@ void UGeoGameplayAbility::HandleAnimationMontage(const UAnimInstance* AnimInstan
 void UGeoGameplayAbility::AnimTrigger()
 {
 	// Do what you need from the anim.
-	StartSectionTimerHandle.Invalidate();
 }
