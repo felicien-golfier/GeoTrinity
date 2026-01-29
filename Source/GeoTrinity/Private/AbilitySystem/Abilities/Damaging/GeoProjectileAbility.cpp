@@ -4,6 +4,7 @@
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "AbilitySystem/Data/EffectData.h" //Necessary to copy array of EffectData.
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -14,27 +15,36 @@ void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 											const FGameplayAbilityActivationInfo ActivationInfo,
 											const FGameplayEventData* TriggerEventData)
 {
-	AActor* Owner = GetOwningActorFromActorInfo();
-	StoredPayload = CreateAbilityPayload(Owner->GetTransform(), Owner, GetAvatarActorFromActorInfo());
-	// TODO: Use (ablility?) context handle to send payload
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+		return;
+	}
 
+	// Build payload from avatar transform
+	AActor* Instigator = GetAvatarActorFromActorInfo();
+	StoredPayload = CreateAbilityPayload(Instigator->GetTransform(), GetOwningActorFromActorInfo(), Instigator);
+
+	// Extract orientation from TriggerEventData if available (sent via event-based activation)
+	// Both client and server receive the same event data in a single RPC
+
+	ensureMsgf(TriggerEventData && TriggerEventData->TargetData.Num() > 0, TEXT("No TargetData in TriggerEventData!"));
+
+	if (const FGeoAbilityTargetData_Orientation* OrientationData =
+			static_cast<const FGeoAbilityTargetData_Orientation*>(TriggerEventData->TargetData.Get(0)))
+	{
+		StoredPayload.Origin = OrientationData->Origin;
+		StoredPayload.Yaw = OrientationData->Yaw;
+	}
+
+	// Proceed with montage or spawn
 	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
 	if (IsValid(AnimInstance) && AnimMontage)
 	{
-		if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-		{
-			EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
-			return;
-		}
 		HandleAnimationMontage(AnimInstance, ActivationInfo);
 	}
 	else
 	{
-		if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-		{
-			EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
-			return;
-		}
 		AnimTrigger();
 	}
 }
@@ -47,29 +57,72 @@ void UGeoProjectileAbility::AnimTrigger()
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 
-void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projectileTargetLocation)
+void UGeoProjectileAbility::SpawnProjectileUsingDirection(const FVector& Direction)
 {
-	const AActor* Actor = GetAvatarActorFromActorInfo();
-	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
+	const AActor* Instigator = GetAvatarActorFromActorInfo();
+	checkf(IsValid(Instigator), TEXT("Avatar Actor from actor info is invalid!"));
 
-	FTransform SpawnTransform{(projectileTargetLocation - Actor->GetActorLocation()).Rotation().Quaternion(),
-							  Actor->GetActorLocation()};
+	FTransform SpawnTransform{Direction.Rotation().Quaternion(), Instigator->GetActorLocation()};
+
 	// Optionally spawn from a socket named by the current montage section index
-	const UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	const USkeletalMeshComponent* Mesh = Actor->FindComponentByClass<USkeletalMeshComponent>();
-	if (bUseSocketFromSectionIndex && ASC && Mesh)
+	if (bUseSocketFromSectionIndex)
 	{
-		const FName CurrentSection = ASC->GetCurrentMontageSectionName();
-		const FString IndexString = CurrentSection.ToString().Right(1);
-		const FName SocketName(*IndexString);
-
-		if (IndexString.IsNumeric() && Mesh->DoesSocketExist(SocketName))
+		const UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		const USkeletalMeshComponent* Mesh = Instigator->FindComponentByClass<USkeletalMeshComponent>();
+		if (ASC && Mesh)
 		{
-			SpawnTransform.SetLocation(Mesh->GetSocketLocation(SocketName));
+			const FName CurrentSection = ASC->GetCurrentMontageSectionName();
+			const FString IndexString = CurrentSection.ToString().Right(1);
+			const FName SocketName(*IndexString);
+
+			if (IndexString.IsNumeric() && Mesh->DoesSocketExist(SocketName))
+			{
+				SpawnTransform.SetLocation(Mesh->GetSocketLocation(SocketName));
+			}
 		}
 	}
 
 	SpawnProjectile(SpawnTransform);
+}
+
+void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
+{
+	const TArray<FVector> Directions = GetTargetDirection();
+	for (const FVector& Direction : Directions)
+	{
+		SpawnProjectileUsingDirection(Direction);
+	}
+}
+
+TArray<FVector> UGeoProjectileAbility::GetTargetDirection() const
+{
+	switch (Target)
+	{
+	case ETarget::Forward:
+		{
+			return {FRotator(0.f, StoredPayload.Yaw, 0.f).Vector()};
+		}
+
+	case ETarget::AllPlayers:
+		{
+			TArray<FVector> Directions;
+			for (auto PlayerControllerIt = GetWorld()->GetPlayerControllerIterator(); PlayerControllerIt;
+				 ++PlayerControllerIt)
+			{
+				if (const APlayerController* PlayerController = PlayerControllerIt->Get())
+				{
+					Directions.Add(PlayerController->GetPawn()->GetActorLocation()
+								   - GetAvatarActorFromActorInfo()->GetActorLocation());
+				}
+			}
+			return Directions;
+		}
+
+	default:
+		{
+			return {};
+		}
+	}
 }
 
 void UGeoProjectileAbility::SpawnProjectile(const FTransform SpawnTransform) const
@@ -97,44 +150,4 @@ void UGeoProjectileAbility::SpawnProjectile(const FTransform SpawnTransform) con
 	GeoProjectile->EffectDataArray = GetEffectDataArray();
 
 	GeoProjectile->Init(); // Equivalent to the DeferredSpawn
-}
-
-void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
-{
-	const TArray<FVector> Locations = GetTargetLocations();
-	for (const FVector& Location : Locations)
-	{
-		SpawnProjectileUsingLocation(Location);
-	}
-}
-
-TArray<FVector> UGeoProjectileAbility::GetTargetLocations() const
-{
-	switch (Target)
-	{
-	case ETarget::Forward:
-		{
-			AActor* Actor = GetAvatarActorFromActorInfo();
-			return {Actor->GetActorForwardVector() + Actor->GetActorLocation()};
-		}
-
-	case ETarget::AllPlayers:
-		{
-			TArray<FVector> Locations;
-			for (auto PlayerControllerIt = GetWorld()->GetPlayerControllerIterator(); PlayerControllerIt;
-				 ++PlayerControllerIt)
-			{
-				if (APlayerController* PlayerController = PlayerControllerIt->Get())
-				{
-					Locations.Add(PlayerController->GetPawn()->GetActorLocation());
-				}
-			}
-			return Locations;
-		}
-
-	default:
-		{
-			return {};
-		}
-	}
 }

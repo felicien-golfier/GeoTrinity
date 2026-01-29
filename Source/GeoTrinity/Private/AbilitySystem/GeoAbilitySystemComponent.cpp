@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 
+#include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/PatternAbility.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
@@ -181,7 +182,15 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& inputTa
 
 		if (!abilitySpec.IsActive())
 		{
-			TryActivateAbility(abilitySpec.Handle);
+			// Use orientation-aware activation for projectile abilities
+			if (abilitySpec.Ability->IsA<UGeoProjectileAbility>())
+			{
+				TryActivateAbilityWithOrientation(abilitySpec.Handle);
+			}
+			else
+			{
+				TryActivateAbility(abilitySpec.Handle);
+			}
 		}
 	}
 }
@@ -311,4 +320,25 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 	}
 
 	Pattern->InitPattern(Payload);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoAbilitySystemComponent::TryActivateAbilityWithOrientation(FGameplayAbilitySpecHandle Handle)
+{
+	// Build event data with avatar's current orientation
+	FGameplayEventData EventData;
+
+	if (AActor* Avatar = GetAvatarActor())
+	{
+		FGameplayAbilityTargetDataHandle TargetData;
+		FGeoAbilityTargetData_Orientation* OrientationData = new FGeoAbilityTargetData_Orientation(
+			FVector2D(Avatar->GetActorLocation()), Avatar->GetActorRotation().Yaw);
+		TargetData.Add(OrientationData);
+		EventData.TargetData = TargetData;
+		EventData.Instigator = Avatar;
+	}
+
+	// Use InternalTryActivateAbility which accepts TriggerEventData
+	// This sends the event data with the activation RPC (single packet)
+	return InternalTryActivateAbility(Handle, FPredictionKey(), nullptr, nullptr, &EventData);
 }
