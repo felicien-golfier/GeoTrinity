@@ -57,29 +57,72 @@ void UGeoProjectileAbility::AnimTrigger()
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 
-void UGeoProjectileAbility::SpawnProjectileUsingLocation(const FVector& projectileTargetLocation)
+void UGeoProjectileAbility::SpawnProjectileUsingDirection(const FVector& Direction)
 {
-	const AActor* Actor = GetAvatarActorFromActorInfo();
-	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
+	const AActor* Instigator = GetAvatarActorFromActorInfo();
+	checkf(IsValid(Instigator), TEXT("Avatar Actor from actor info is invalid!"));
 
-	FTransform SpawnTransform{(projectileTargetLocation - Actor->GetActorLocation()).Rotation().Quaternion(),
-							  Actor->GetActorLocation()};
+	FTransform SpawnTransform{Direction.Rotation().Quaternion(), Instigator->GetActorLocation()};
+
 	// Optionally spawn from a socket named by the current montage section index
-	const UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	const USkeletalMeshComponent* Mesh = Actor->FindComponentByClass<USkeletalMeshComponent>();
-	if (bUseSocketFromSectionIndex && ASC && Mesh)
+	if (bUseSocketFromSectionIndex)
 	{
-		const FName CurrentSection = ASC->GetCurrentMontageSectionName();
-		const FString IndexString = CurrentSection.ToString().Right(1);
-		const FName SocketName(*IndexString);
-
-		if (IndexString.IsNumeric() && Mesh->DoesSocketExist(SocketName))
+		const UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		const USkeletalMeshComponent* Mesh = Instigator->FindComponentByClass<USkeletalMeshComponent>();
+		if (ASC && Mesh)
 		{
-			SpawnTransform.SetLocation(Mesh->GetSocketLocation(SocketName));
+			const FName CurrentSection = ASC->GetCurrentMontageSectionName();
+			const FString IndexString = CurrentSection.ToString().Right(1);
+			const FName SocketName(*IndexString);
+
+			if (IndexString.IsNumeric() && Mesh->DoesSocketExist(SocketName))
+			{
+				SpawnTransform.SetLocation(Mesh->GetSocketLocation(SocketName));
+			}
 		}
 	}
 
 	SpawnProjectile(SpawnTransform);
+}
+
+void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
+{
+	const TArray<FVector> Directions = GetTargetDirection();
+	for (const FVector& Direction : Directions)
+	{
+		SpawnProjectileUsingDirection(Direction);
+	}
+}
+
+TArray<FVector> UGeoProjectileAbility::GetTargetDirection() const
+{
+	switch (Target)
+	{
+	case ETarget::Forward:
+		{
+			return {FRotator(0.f, StoredPayload.Yaw, 0.f).Vector()};
+		}
+
+	case ETarget::AllPlayers:
+		{
+			TArray<FVector> Directions;
+			for (auto PlayerControllerIt = GetWorld()->GetPlayerControllerIterator(); PlayerControllerIt;
+				 ++PlayerControllerIt)
+			{
+				if (const APlayerController* PlayerController = PlayerControllerIt->Get())
+				{
+					Directions.Add(PlayerController->GetPawn()->GetActorLocation()
+								   - GetAvatarActorFromActorInfo()->GetActorLocation());
+				}
+			}
+			return Directions;
+		}
+
+	default:
+		{
+			return {};
+		}
+	}
 }
 
 void UGeoProjectileAbility::SpawnProjectile(const FTransform SpawnTransform) const
@@ -107,43 +150,4 @@ void UGeoProjectileAbility::SpawnProjectile(const FTransform SpawnTransform) con
 	GeoProjectile->EffectDataArray = GetEffectDataArray();
 
 	GeoProjectile->Init(); // Equivalent to the DeferredSpawn
-}
-
-void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
-{
-	const TArray<FVector> Locations = GetTargetLocations();
-	for (const FVector& Location : Locations)
-	{
-		SpawnProjectileUsingLocation(Location);
-	}
-}
-
-TArray<FVector> UGeoProjectileAbility::GetTargetLocations() const
-{
-	switch (Target)
-	{
-	case ETarget::Forward:
-		{
-			return {FRotator(0.f, StoredPayload.Yaw, 0.f).Vector()};
-		}
-
-	case ETarget::AllPlayers:
-		{
-			TArray<FVector> Locations;
-			for (auto PlayerControllerIt = GetWorld()->GetPlayerControllerIterator(); PlayerControllerIt;
-				 ++PlayerControllerIt)
-			{
-				if (APlayerController* PlayerController = PlayerControllerIt->Get())
-				{
-					Locations.Add(PlayerController->GetPawn()->GetActorLocation());
-				}
-			}
-			return Locations;
-		}
-
-	default:
-		{
-			return {};
-		}
-	}
 }

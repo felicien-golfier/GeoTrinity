@@ -33,7 +33,7 @@ protected:
 
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectileUsingLocation(const FVector& projectileTargetLocation);
+	void SpawnProjectileUsingDirection(const FVector& Direction);
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectile(const FTransform SpawnTransform) const;
@@ -42,7 +42,7 @@ protected:
 	void SpawnProjectilesUsingTarget();
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Target")
-	TArray<FVector> GetTargetLocations() const;
+	TArray<FVector> GetTargetDirection() const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoProjectile> ProjectileClass;
