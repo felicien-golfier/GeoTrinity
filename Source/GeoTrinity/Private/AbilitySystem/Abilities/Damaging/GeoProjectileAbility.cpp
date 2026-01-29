@@ -4,6 +4,7 @@
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "AbilitySystem/Data/EffectData.h" //Necessary to copy array of EffectData.
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -14,27 +15,36 @@ void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 											const FGameplayAbilityActivationInfo ActivationInfo,
 											const FGameplayEventData* TriggerEventData)
 {
-	AActor* Owner = GetOwningActorFromActorInfo();
-	StoredPayload = CreateAbilityPayload(Owner->GetTransform(), Owner, GetAvatarActorFromActorInfo());
-	// TODO: Use (ablility?) context handle to send payload
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+		return;
+	}
 
+	// Build payload from avatar transform
+	AActor* Instigator = GetAvatarActorFromActorInfo();
+	StoredPayload = CreateAbilityPayload(Instigator->GetTransform(), GetOwningActorFromActorInfo(), Instigator);
+
+	// Extract orientation from TriggerEventData if available (sent via event-based activation)
+	// Both client and server receive the same event data in a single RPC
+
+	ensureMsgf(TriggerEventData && TriggerEventData->TargetData.Num() > 0, TEXT("No TargetData in TriggerEventData!"));
+
+	if (const FGeoAbilityTargetData_Orientation* OrientationData =
+			static_cast<const FGeoAbilityTargetData_Orientation*>(TriggerEventData->TargetData.Get(0)))
+	{
+		StoredPayload.Origin = OrientationData->Origin;
+		StoredPayload.Yaw = OrientationData->Yaw;
+	}
+
+	// Proceed with montage or spawn
 	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
 	if (IsValid(AnimInstance) && AnimMontage)
 	{
-		if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-		{
-			EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
-			return;
-		}
 		HandleAnimationMontage(AnimInstance, ActivationInfo);
 	}
 	else
 	{
-		if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-		{
-			EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
-			return;
-		}
 		AnimTrigger();
 	}
 }
@@ -114,8 +124,7 @@ TArray<FVector> UGeoProjectileAbility::GetTargetLocations() const
 	{
 	case ETarget::Forward:
 		{
-			AActor* Actor = GetAvatarActorFromActorInfo();
-			return {Actor->GetActorForwardVector() + Actor->GetActorLocation()};
+			return {FRotator(0.f, StoredPayload.Yaw, 0.f).Vector()};
 		}
 
 	case ETarget::AllPlayers:

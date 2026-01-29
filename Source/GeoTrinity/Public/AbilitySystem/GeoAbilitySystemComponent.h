@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
 
@@ -36,6 +37,9 @@ public:
 	void AbilityInputTagPressed(const FGameplayTag& inputTag);
 	void AbilityInputTagHeld(const FGameplayTag& inputTag);
 	void AbilityInputTagReleased(const FGameplayTag& inputTag);
+
+	/** Activates ability with event data containing avatar orientation. Used for projectile abilities. */
+	bool TryActivateAbilityWithOrientation(FGameplayAbilitySpecHandle Handle);
 
 	/** Effects **/
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, int32 Level = 1);
