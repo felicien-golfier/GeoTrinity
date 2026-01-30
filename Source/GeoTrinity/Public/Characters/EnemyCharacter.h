@@ -17,7 +17,7 @@ class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
 	GENERATED_BODY()
 
 public:
-	AEnemyCharacter(const FObjectInitializer& ObjectInitializer);
+	AEnemyCharacter(FObjectInitializer const& ObjectInitializer);
 
 	// Firing points the enemy will move to (round-robin) to cast abilities
 	UPROPERTY(Transient)

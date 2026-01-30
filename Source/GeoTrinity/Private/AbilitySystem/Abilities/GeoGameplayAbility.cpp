@@ -18,7 +18,7 @@ FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 	return GeoASL::GetAbilityTagFromAbility(*this);
 }
 
-FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator, const FVector2D& Origin,
+FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator, FVector2D const& Origin,
 														  float Yaw, float ServerSpawnTime, int Seed) const
 {
 	FAbilityPayload Payload;
@@ -33,7 +33,7 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor*
 	return Payload;
 }
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator,
-														  const FTransform& Transform) const
+														  FTransform const& Transform) const
 {
 	return CreateAbilityPayload(Owner, Instigator, FVector2D(Transform.GetLocation()),
 								Transform.GetRotation().Rotator().Yaw, GL::GetServerTime(GetWorld()), FMath::Rand32());
@@ -71,17 +71,17 @@ float UGeoGameplayAbility::GetCooldown(int32 level) const
 	return cooldown;
 }
 
-void UGeoGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle,
-									 const FGameplayAbilityActorInfo* ActorInfo,
-									 const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
+void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
+									 FGameplayAbilityActorInfo const* ActorInfo,
+									 FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 									 bool bWasCancelled)
 {
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 	StartSectionTimerHandle.Invalidate();
 }
 
-void UGeoGameplayAbility::HandleAnimationMontage(const UAnimInstance* AnimInstance,
-												 const FGameplayAbilityActivationInfo& ActivationInfo)
+void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance const* AnimInstance,
+												 FGameplayAbilityActivationInfo const& ActivationInfo)
 {
 	ensureMsgf(AnimMontage && AnimInstance, TEXT("No valid AnimMontage or AnimInstance"));
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
@@ -107,7 +107,7 @@ void UGeoGameplayAbility::HandleAnimationMontage(const UAnimInstance* AnimInstan
 	else
 	{
 		// Case we are still in a combo, or ending.
-		const float SectionTime = ASC->GetCurrentMontageSectionLength() - ASC->GetCurrentMontageSectionTimeLeft();
+		float const SectionTime = ASC->GetCurrentMontageSectionLength() - ASC->GetCurrentMontageSectionTimeLeft();
 		constexpr float AcceptableComboTimeThreshold = 0.1f; // Equivalent to 3 frame of delay
 		if (CurrentSection.ToString().Contains(GL::SectionEndString) && SectionTime > AcceptableComboTimeThreshold)
 		{
@@ -117,8 +117,8 @@ void UGeoGameplayAbility::HandleAnimationMontage(const UAnimInstance* AnimInstan
 		else
 		{
 			// Jump to next combo
-			const FName FireSection = GL::SectionFireName;
-			const FString IndexChar = CurrentSection.ToString().Right(1);
+			FName const FireSection = GL::SectionFireName;
+			FString const IndexChar = CurrentSection.ToString().Right(1);
 			if (!IndexChar.IsNumeric())
 			{
 				// Case where we do not have combo with number.

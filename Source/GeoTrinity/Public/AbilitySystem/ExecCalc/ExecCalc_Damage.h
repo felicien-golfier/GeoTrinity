@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayEffectExecutionCalculation.h"
 #include "ExecCalc_Damage.generated.h"
+#include "GameplayEffectExecutionCalculation.h"
 
 /**
  * Modifies the manner Damage attribute is calculated for a GE
@@ -15,8 +15,7 @@ class GEOTRINITY_API UExecCalc_Damage : public UGameplayEffectExecutionCalculati
 	GENERATED_BODY()
 public:
 	UExecCalc_Damage();
-	
-	virtual void Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, 
-		FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
 
+	virtual void Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
+										FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
 };

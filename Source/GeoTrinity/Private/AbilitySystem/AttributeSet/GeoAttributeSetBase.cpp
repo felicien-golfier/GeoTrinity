@@ -10,7 +10,7 @@
 void UGeoAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
+
 	DOREPLIFETIME_CONDITION_NOTIFY(UGeoAttributeSetBase, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UGeoAttributeSetBase, MaxHealth, COND_None, REPNOTIFY_Always);
 }
@@ -26,13 +26,13 @@ float UGeoAttributeSetBase::GetHealthRatio() const
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoAttributeSetBase::OnRep_Health(const FGameplayAttributeData& OldHealth)
+void UGeoAttributeSetBase::OnRep_Health(FGameplayAttributeData const& OldHealth)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UGeoAttributeSetBase, Health, OldHealth);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoAttributeSetBase::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
+void UGeoAttributeSetBase::OnRep_MaxHealth(FGameplayAttributeData const& OldMaxHealth)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UGeoAttributeSetBase, MaxHealth, OldMaxHealth);
 }

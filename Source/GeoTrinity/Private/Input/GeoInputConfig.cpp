@@ -9,7 +9,7 @@ UInputAction const* UGeoInputConfig::FindAbilityInputActionForTag(FGameplayTag c
 	{
 		if (action.InputTag.MatchesTagExact(inputTag))
 		{
-			if(bLogNotFound && !action.InputAction)
+			if (bLogNotFound && !action.InputAction)
 			{
 				UE_LOG(LogTemp, Error, TEXT("InputAction for tag [%s] is not valid"), *inputTag.ToString());
 			}
@@ -18,8 +18,8 @@ UInputAction const* UGeoInputConfig::FindAbilityInputActionForTag(FGameplayTag c
 	}
 	if (bLogNotFound)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Can't find tag [%s] in AbilityInputActions on config [%s]"),
-			*inputTag.ToString(), *GetName());
+		UE_LOG(LogTemp, Error, TEXT("Can't find tag [%s] in AbilityInputActions on config [%s]"), *inputTag.ToString(),
+			   *GetName());
 	}
 	return nullptr;
 }

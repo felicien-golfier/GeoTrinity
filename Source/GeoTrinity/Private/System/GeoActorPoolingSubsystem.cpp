@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "System/GeoPoolableInterface.h"
 
-AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform& Transform, AActor* Owner,
+AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, FTransform const& Transform, AActor* Owner,
 												APawn* Instigator, bool bInit, bool bActivate)
 {
 	if (!Class)
@@ -62,7 +62,7 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, const FTransform&
 	return Actor;
 }
 
-void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, const uint16 Count, AActor* Owner, APawn* Instigator)
+void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, uint16 const Count, AActor* Owner, APawn* Instigator)
 {
 	UWorld* World = GetWorld();
 	ensureMsgf(World, TEXT("World is invalid"));
@@ -82,7 +82,7 @@ void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, const uint16 Count, AAct
 	}
 }
 
-bool UGeoActorPoolingSubsystem::GetActorState(const AActor* Actor)
+bool UGeoActorPoolingSubsystem::GetActorState(AActor const* Actor)
 {
 	return Actor->GetActorEnableCollision() && !Actor->IsHidden();
 }
@@ -98,7 +98,7 @@ void UGeoActorPoolingSubsystem::ChangeActorState(AActor* NewActor, bool bActive)
 	NewActor->FlushNetDormancy();
 }
 
-AActor* UGeoActorPoolingSubsystem::SpawnActor(UClass* Class, const FActorSpawnParameters& Params)
+AActor* UGeoActorPoolingSubsystem::SpawnActor(UClass* Class, FActorSpawnParameters const& Params)
 {
 
 	UWorld* World = GetWorld();
@@ -132,14 +132,14 @@ void UGeoActorPoolingSubsystem::ReleaseActor(AActor* Actor)
 	// Return to pool
 	Pool.FindOrAdd(Actor->GetClass()).Add(Actor);
 }
-UGeoActorPoolingSubsystem* UGeoActorPoolingSubsystem::Get(const UWorld* World)
+UGeoActorPoolingSubsystem* UGeoActorPoolingSubsystem::Get(UWorld const* World)
 {
 	UGeoActorPoolingSubsystem* Pool = World->GetSubsystem<UGeoActorPoolingSubsystem>();
 	ensureMsgf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
 	return Pool;
 }
 
-UGeoActorPoolingSubsystem* UGeoActorPoolingSubsystem::Get(const UObject* WorldContextObject)
+UGeoActorPoolingSubsystem* UGeoActorPoolingSubsystem::Get(UObject const* WorldContextObject)
 {
 	return Get(WorldContextObject->GetWorld());
 }

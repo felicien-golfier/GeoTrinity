@@ -17,7 +17,7 @@ class GEOTRINITY_API AGeoGameMode : public AGameMode
 {
 	GENERATED_BODY()
 public:
-	AGeoGameMode(const FObjectInitializer& ObjectInitializer);
+	AGeoGameMode(FObjectInitializer const& ObjectInitializer);
 
 	virtual void Tick(float DeltaSeconds) override;
 };

@@ -77,7 +77,7 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
+bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 {
 	if (bIsEnding)
 	{
@@ -92,7 +92,7 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
-	const AActor* SourceAvatarActor = SourceASC->GetAvatarActor();
+	AActor const* SourceAvatarActor = SourceASC->GetAvatarActor();
 
 	// Don't apply on self
 	if (!IsValid(SourceAvatarActor) || (SourceAvatarActor == OtherActor))
@@ -100,7 +100,7 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 		return false;
 	}
 
-	const IGenericTeamAgentInterface* TeamInterface = nullptr;
+	IGenericTeamAgentInterface const* TeamInterface = nullptr;
 	if (!GameplayLibrary::GetTeamInterface(OtherActor, TeamInterface))
 	{
 		return false;
@@ -113,7 +113,7 @@ bool AGeoProjectile::IsValidOverlap(const AActor* OtherActor)
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 									 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex,
-									 bool bFromSweep, const FHitResult& SweepResult)
+									 bool bFromSweep, FHitResult const& SweepResult)
 {
 	if (!IsValidOverlap(OtherActor))
 	{
@@ -134,7 +134,7 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 }
 
 void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-								 FVector NormalImpulse, const FHitResult& Hit)
+								 FVector NormalImpulse, FHitResult const& Hit)
 
 {
 	if (bIsEnding)
@@ -153,7 +153,7 @@ void AGeoProjectile::PlayImpactFx() const
 		return;
 	}
 
-	const FVector actorLocation = GetActorLocation();
+	FVector const actorLocation = GetActorLocation();
 	if (IsValid(ImpactSound))
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, actorLocation, FRotator::ZeroRotator, 0.2f);

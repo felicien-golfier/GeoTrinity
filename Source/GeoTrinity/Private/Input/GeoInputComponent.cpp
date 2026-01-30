@@ -15,7 +15,7 @@ UGeoInputComponent::UGeoInputComponent()
 }
 
 void UGeoInputComponent::TickComponent(float DeltaSeconds, ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
+									   FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaSeconds, TickType, ThisTickFunction);
 
@@ -52,10 +52,10 @@ void UGeoInputComponent::UpdateMouseLook()
 		FVector WorldLocation, WorldDirection;
 		UGameplayStatics::DeprojectScreenToWorld(GeoPlayerController, ScreenPosition, WorldLocation, WorldDirection);
 
-		const FVector2D LookDirection = FVector2d(WorldLocation - GeoCharacter->GetActorLocation());
+		FVector2D const LookDirection = FVector2d(WorldLocation - GeoCharacter->GetActorLocation());
 		LastLookInput = LookDirection;
-		GeoCharacter->DrawDebugVectorFromCharacter(FVector(LookDirection, 0.f),
-			FString::Printf(TEXT("Look vector from %s"), *GeoCharacter->GetName()));
+		GeoCharacter->DrawDebugVectorFromCharacter(
+			FVector(LookDirection, 0.f), FString::Printf(TEXT("Look vector from %s"), *GeoCharacter->GetName()));
 	}
 }
 
@@ -67,22 +67,22 @@ void UGeoInputComponent::BindInput(UInputComponent* PlayerInputComponent)
 	if (LookAction)
 	{
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this,
-			&UGeoInputComponent::LookFromInput);
+										   &UGeoInputComponent::LookFromInput);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Completed, this,
-			&UGeoInputComponent::LookFromInput);
+										   &UGeoInputComponent::LookFromInput);
 	}
 }
 
-void UGeoInputComponent::MoveFromInput(const FInputActionInstance& Instance)
+void UGeoInputComponent::MoveFromInput(FInputActionInstance const& Instance)
 {
 	GetGeoCharacter()->AddMovementInput(FVector(Instance.GetValue().Get<FVector2D>(), 0.f));
 }
 
-void UGeoInputComponent::LookFromInput(const FInputActionInstance& Instance)
+void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 {
-	const FVector2D LookInput = FVector2D(Instance.GetValue().Get<FVector2D>());
-	GetGeoCharacter()->DrawDebugVectorFromCharacter(FVector(LookInput, 0.f),
-		FString::Printf(TEXT("Look Input vector from %s"), *GetGeoCharacter()->GetName()));
+	FVector2D const LookInput = FVector2D(Instance.GetValue().Get<FVector2D>());
+	GetGeoCharacter()->DrawDebugVectorFromCharacter(
+		FVector(LookInput, 0.f), FString::Printf(TEXT("Look Input vector from %s"), *GetGeoCharacter()->GetName()));
 
 	if (Instance.GetTriggerEvent() == ETriggerEvent::Completed)
 	{

@@ -23,10 +23,10 @@ private:
 
 protected:
 	// Called when montage start is done and starts the loop.
-	virtual void StartPattern(const FAbilityPayload& Payload);
+	virtual void StartPattern(FAbilityPayload const& Payload);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Pattern")
-	void OnStartPattern(const FAbilityPayload& Payload);
+	void OnStartPattern(FAbilityPayload const& Payload);
 
 	void JumpMontageToEndSection() const;
 	// Must be called at the end of your pattern to call the Montage End.
@@ -36,7 +36,7 @@ protected:
 public:
 	virtual void OnCreate(FGameplayTag AbilityTag);
 
-	virtual void InitPattern(const FAbilityPayload& Payload);
+	virtual void InitPattern(FAbilityPayload const& Payload);
 
 	bool IsPatternActive() const { return bPatternIsActive; }
 
@@ -61,8 +61,8 @@ class GEOTRINITY_API UTickablePattern : public UPattern
 	GENERATED_BODY()
 
 protected:
-	virtual void StartPattern(const FAbilityPayload& Payload) override;
-	virtual void InitPattern(const FAbilityPayload& Payload) override;
+	virtual void StartPattern(FAbilityPayload const& Payload) override;
+	virtual void InitPattern(FAbilityPayload const& Payload) override;
 	UFUNCTION()
 	void CalculateTimeAndTickPattern();
 

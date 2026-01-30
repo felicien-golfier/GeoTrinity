@@ -48,7 +48,7 @@ void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	GeoInputComponent->BindInput(PlayerInputComponent);
 
 	GeoInputComponent->BindAbilityActions(this, &ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased,
-		&ThisClass::AbilityInputTagHeld);
+										  &ThisClass::AbilityInputTagHeld);
 }
 
 void APlayableCharacter::InitGAS()

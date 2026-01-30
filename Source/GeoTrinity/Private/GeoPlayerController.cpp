@@ -11,7 +11,7 @@
 #include "TimerManager.h"
 #include "Tool/GameplayLibrary.h"
 
-AGeoPlayerController::AGeoPlayerController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+AGeoPlayerController::AGeoPlayerController(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	SetShowMouseCursor(true);
 }
@@ -34,7 +34,7 @@ void AGeoPlayerController::BeginPlay()
 	}
 }
 
-void AGeoPlayerController::ServerSetAimYaw_Implementation(const float YawDegrees)
+void AGeoPlayerController::ServerSetAimYaw_Implementation(float const YawDegrees)
 {
 	if (IsValid(GetPawn()))
 	{
@@ -44,7 +44,7 @@ void AGeoPlayerController::ServerSetAimYaw_Implementation(const float YawDegrees
 	}
 }
 
-AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(const UWorld* World)
+AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(UWorld const* World)
 {
 	for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{

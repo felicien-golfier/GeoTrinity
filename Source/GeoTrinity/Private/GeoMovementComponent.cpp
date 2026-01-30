@@ -4,7 +4,7 @@
 
 UGeoMovementComponent::UGeoMovementComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;   // movement driven via ProcessInput calls
+	PrimaryComponentTick.bCanEverTick = true; // movement driven via ProcessInput calls
 }
 
 AGeoCharacter* UGeoMovementComponent::GetGeoCharacter() const

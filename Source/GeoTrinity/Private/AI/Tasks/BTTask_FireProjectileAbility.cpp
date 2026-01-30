@@ -16,10 +16,10 @@ UBTTask_FireProjectileAbility::UBTTask_FireProjectileAbility()
 
 EBTNodeResult::Type UBTTask_FireProjectileAbility::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	if (const AAIController* Controller = OwnerComp.GetAIOwner())
+	if (AAIController const* Controller = OwnerComp.GetAIOwner())
 	{
 		checkf(IsValid(Controller->GetPawn()) && Controller->GetPawn().IsA(AEnemyCharacter::StaticClass()),
-			TEXT("Invalid Enemy Pawn !"));
+			   TEXT("Invalid Enemy Pawn !"));
 
 		IAbilitySystemInterface* AbilitySystemInterface = Cast<IAbilitySystemInterface>(Controller->GetPawn());
 		if (!AbilitySystemInterface)
@@ -34,13 +34,13 @@ EBTNodeResult::Type UBTTask_FireProjectileAbility::ExecuteTask(UBehaviorTreeComp
 		}
 
 		// Read name from BB and map to GameplayTag path (works for Name/String/GameplayTag keys)
-		const FName TagName = BB->GetValueAsName(AbilityTagKey.SelectedKeyName);
+		FName const TagName = BB->GetValueAsName(AbilityTagKey.SelectedKeyName);
 		if (!TagName.IsNone())
 		{
-			const FGameplayTag AbilityTag = FGameplayTag::RequestGameplayTag(TagName, false);
+			FGameplayTag const AbilityTag = FGameplayTag::RequestGameplayTag(TagName, false);
 			if (AbilityTag.IsValid())
 			{
-				const bool bActivatedByTag = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag));
+				bool const bActivatedByTag = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag));
 				return bActivatedByTag ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
 			}
 		}

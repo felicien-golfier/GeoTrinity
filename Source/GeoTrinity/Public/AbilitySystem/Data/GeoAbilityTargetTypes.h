@@ -16,7 +16,7 @@ struct GEOTRINITY_API FGeoAbilityTargetData : public FGameplayAbilityTargetData
 	GENERATED_BODY()
 
 	FGeoAbilityTargetData() = default;
-	FGeoAbilityTargetData(const FVector2D& InOrigin, float InYaw, float InServerTime, int InSeed) :
+	FGeoAbilityTargetData(FVector2D const& InOrigin, float InYaw, float InServerTime, int InSeed) :
 		Origin(InOrigin), Yaw(InYaw), ServerSpawnTime(InServerTime), Seed(InSeed)
 	{
 	}

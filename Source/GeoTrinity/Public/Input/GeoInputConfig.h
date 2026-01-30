@@ -3,20 +3,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
+#include "GameplayTagContainer.h"
 #include "GeoInputConfig.generated.h"
 
 USTRUCT(BlueprintType)
 struct FGeoInputAction
 {
 	GENERATED_BODY()
-	
+
 	UPROPERTY(EditDefaultsOnly)
-	const class UInputAction* InputAction = nullptr;
-	
+	class UInputAction const* InputAction = nullptr;
+
 	UPROPERTY(EditDefaultsOnly)
-	FGameplayTag InputTag {};
+	FGameplayTag InputTag{};
 };
 
 /**
@@ -28,9 +28,8 @@ class GEOTRINITY_API UGeoInputConfig : public UDataAsset
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(TitleProperty="{InputTag}"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (TitleProperty = "{InputTag}"))
 	TArray<FGeoInputAction> AbilityInputActions;
 
 	UInputAction const* FindAbilityInputActionForTag(FGameplayTag const& inputTag, bool bLogNotFound) const;
-	
 };

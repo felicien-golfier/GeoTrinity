@@ -30,13 +30,13 @@ public:
 
 	/** Abilities **/
 	void GiveStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive);
-	void GiveStartupAbilities(const TArray<FGameplayTag>& AbilitiesToGive, const int32 Level = 1.f);
-	void GiveStartupAbilities(const int32 Level = 1.f);
+	void GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, int32 const Level = 1.f);
+	void GiveStartupAbilities(int32 const Level = 1.f);
 
 	/** Input **/
-	void AbilityInputTagPressed(const FGameplayTag& inputTag);
-	void AbilityInputTagHeld(const FGameplayTag& inputTag);
-	void AbilityInputTagReleased(const FGameplayTag& inputTag);
+	void AbilityInputTagPressed(FGameplayTag const& inputTag);
+	void AbilityInputTagHeld(FGameplayTag const& inputTag);
+	void AbilityInputTagReleased(FGameplayTag const& inputTag);
 
 	/** Activates ability with event data containing avatar orientation. Used for projectile abilities. */
 	bool TryActivateAbilityWithTargetData(FGameplayAbilitySpecHandle Handle);
@@ -48,7 +48,7 @@ public:
 	/** Delegates **/
 	void BindAttributeCallbacks(); // By doing that, we factorize, ok... but we also make the ASC not agnostic to
 
-	UPattern* CreatePatternInstance(const UClass* PatternClass, FGameplayTag AbilityTag);
+	UPattern* CreatePatternInstance(UClass const* PatternClass, FGameplayTag AbilityTag);
 	bool FindPatternByClass(UClass* PatternClass, UPattern*& Pattern);
 	UFUNCTION(NetMulticast, reliable)
 	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass);

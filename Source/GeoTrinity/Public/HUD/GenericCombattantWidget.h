@@ -2,13 +2,13 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
-#include "GeoUserWidget.h"
+#include "CoreMinimal.h"
 #include "GenericCombattantWidget.generated.h"
+#include "GeoUserWidget.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class GEOTRINITY_API UGenericCombattantWidget : public UGeoUserWidget
@@ -18,14 +18,14 @@ class GEOTRINITY_API UGenericCombattantWidget : public UGeoUserWidget
 public:
 	UFUNCTION(BlueprintNativeEvent)
 	void InitializeWithAbilitySystemComponent(UAbilitySystemComponent* ASC);
-	
+
 protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void UpdateHealthRatio(float NewHealthRatio);
-	
+
 	virtual void InitStats();
-	
-	UPROPERTY(BlueprintReadOnly, Category="Runtime")
+
+	UPROPERTY(BlueprintReadOnly, Category = "Runtime")
 	TWeakObjectPtr<UAbilitySystemComponent> OwnerASC;
 
 private:

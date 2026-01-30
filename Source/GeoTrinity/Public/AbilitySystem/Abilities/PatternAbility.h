@@ -14,8 +14,9 @@ UCLASS()
 class GEOTRINITY_API UPatternAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
-	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+								 FGameplayAbilityActivationInfo ActivationInfo,
+								 FGameplayEventData const* TriggerEventData) override;
 
 public:
 	TSubclassOf<UPattern> GetPatternClass() const { return PatternToLaunch; }

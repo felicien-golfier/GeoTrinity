@@ -25,18 +25,18 @@ class GEOTRINITY_API UGeoProjectileAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 protected:
-	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
-								 const FGameplayEventData* TriggerEventData) override;
+								 FGameplayEventData const* TriggerEventData) override;
 
 	virtual void AnimTrigger() override;
 
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectileUsingDirection(const FVector& Direction);
+	void SpawnProjectileUsingDirection(FVector const& Direction);
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectile(const FTransform SpawnTransform) const;
+	void SpawnProjectile(FTransform const SpawnTransform) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectilesUsingTarget();

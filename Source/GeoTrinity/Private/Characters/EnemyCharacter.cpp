@@ -8,9 +8,8 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 
-AEnemyCharacter::AEnemyCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(
-		  ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(ACharacter::CharacterMovementComponentName))
+AEnemyCharacter::AEnemyCharacter(FObjectInitializer const& ObjectInitializer) :
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	// Ensure an AI controller and auto possession for enemies
 	AIControllerClass = AGeoEnemyAIController::StaticClass();
@@ -42,8 +41,9 @@ void AEnemyCharacter::InitGAS()
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	Super::InitGAS();
 
-	AbilitySystemComponent->OnHealthChanged.AddDynamic(this,
-		&AEnemyCharacter::OnHealthChanged);   // Do we need to remove this on destroy?
+	AbilitySystemComponent->OnHealthChanged.AddDynamic(
+		this,
+		&AEnemyCharacter::OnHealthChanged); // Do we need to remove this on destroy?
 }
 
 void AEnemyCharacter::OnHealthChanged(float NewValue)
@@ -61,7 +61,7 @@ void AEnemyCharacter::OnHealthChanged(float NewValue)
 			FGameplayModifierInfo ModifierInfo;
 			ModifierInfo.Attribute = UGeoAttributeSetBase::GetHealthAttribute();
 			ModifierInfo.ModifierOp = EGameplayModOp::Override;
-			const UGeoAttributeSetBase* AS = Cast<UGeoAttributeSetBase>(
+			UGeoAttributeSetBase const* AS = Cast<UGeoAttributeSetBase>(
 				AbilitySystemComponent->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
 			ModifierInfo.ModifierMagnitude = FScalableFloat(AS->GetMaxHealth());
 
@@ -70,7 +70,7 @@ void AEnemyCharacter::OnHealthChanged(float NewValue)
 			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
 			Context.AddSourceObject(AbilitySystemComponent->GetAvatarActor());
 
-			const FGameplayEffectSpec Spec(GE, Context, 1.f);
+			FGameplayEffectSpec const Spec(GE, Context, 1.f);
 
 			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
 		}
@@ -83,7 +83,7 @@ void AEnemyCharacter::OnHealthChanged(float NewValue)
 
 bool AEnemyCharacter::GetAndAdvanceNextFiringPointLocation(FVector& OutLocation)
 {
-	const int32 Num = FiringPoints.Num();
+	int32 const Num = FiringPoints.Num();
 	if (Num <= 0)
 	{
 		return false;
@@ -98,7 +98,7 @@ bool AEnemyCharacter::GetAndAdvanceNextFiringPointLocation(FVector& OutLocation)
 	int32 Checked = 0;
 	while (Checked < Num)
 	{
-		const int32 Index = (CurrentFiringPointIndex + Checked) % Num;
+		int32 const Index = (CurrentFiringPointIndex + Checked) % Num;
 		if (IsValid(FiringPoints[Index]))
 		{
 			OutLocation = FiringPoints[Index]->GetActorLocation();

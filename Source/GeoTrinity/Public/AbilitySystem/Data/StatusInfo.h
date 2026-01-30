@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
 #include "ScalableFloat.h"
-#include "Engine/DataAsset.h"
 #include "StatusInfo.generated.h"
 
 
@@ -19,23 +19,23 @@ struct FRpgStatusInfo
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FGameplayTag StatusTag {};
-	
+	FGameplayTag StatusTag{};
+
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UGameplayEffect> StatusEffect {nullptr};
+	TSubclassOf<UGameplayEffect> StatusEffect{nullptr};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
-	bool bDoesDamage {false};
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Damage", meta=(EditCondition = "bDoesDamage", EditConditionHides))
-	FScalableFloat DamageAmount {0.f};
-	
+	bool bDoesDamage{false};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Damage", meta = (EditCondition = "bDoesDamage", EditConditionHides))
+	FScalableFloat DamageAmount{0.f};
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Display")
-	FString StatusDisplayName {"No name set"};
-	
+	FString StatusDisplayName{"No name set"};
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Display")
 	FString Description;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Display")
 	FSlateBrush Icon;
 };
@@ -47,9 +47,9 @@ UCLASS()
 class GEOTRINITY_API UStatusInfo : public UDataAsset
 {
 	GENERATED_BODY()
-	
+
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(TitleProperty="{StatusDisplayName}"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (TitleProperty = "{StatusDisplayName}"))
 	TArray<FRpgStatusInfo> StatusInfos;
 
 	bool FillStatusInfoFromTag(FGameplayTag const& tag, FRpgStatusInfo& outInfo) const;

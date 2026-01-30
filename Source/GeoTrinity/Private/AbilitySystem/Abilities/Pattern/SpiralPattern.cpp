@@ -10,7 +10,7 @@ void USpiralPattern::OnCreate(FGameplayTag AbilityTag)
 {
 	Super::OnCreate(AbilityTag);
 
-	const float MaxProjectileNum = RoundNumber * NumberProjectileByRound;
+	float const MaxProjectileNum = RoundNumber * NumberProjectileByRound;
 	ensureMsgf(MaxProjectileNum > 0, TEXT("No projectile set in the spiral ! please fill your pattern values in BP"));
 	Projectiles.Reserve(MaxProjectileNum);
 
@@ -21,10 +21,10 @@ void USpiralPattern::OnCreate(FGameplayTag AbilityTag)
 
 	UGeoActorPoolingSubsystem::Get(GetWorld())
 		->PreSpawn(ProjectileClass,
-			MaxProjectileNum * 0.67f /*Create a first estimation number of projectiles in the pool.*/);
+				   MaxProjectileNum * 0.67f /*Create a first estimation number of projectiles in the pool.*/);
 }
 
-void USpiralPattern::InitPattern(const FAbilityPayload& Payload)
+void USpiralPattern::InitPattern(FAbilityPayload const& Payload)
 {
 	Super::InitPattern(Payload);
 
@@ -33,10 +33,10 @@ void USpiralPattern::InitPattern(const FAbilityPayload& Payload)
 			.RotateAngleAxis((static_cast<float>(Payload.Seed) / MAX_int32) * 360.f, FVector::UpVector);
 }
 
-void USpiralPattern::TickPattern(const float ServerTime, const float SpentTime)
+void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 {
-	const int ProjectileNumSpawned =
-		FMath::Floor(1 + SpentTime / TimeDiffBetweenProjectiles);   // 1+ because first projectile spawns at 0.
+	int const ProjectileNumSpawned =
+		FMath::Floor(1 + SpentTime / TimeDiffBetweenProjectiles); // 1+ because first projectile spawns at 0.
 	bool bHasValidProjectiles = false;
 
 	for (int i = 0; i < RoundNumber * NumberProjectileByRound && i < ProjectileNumSpawned; i++)
@@ -45,8 +45,8 @@ void USpiralPattern::TickPattern(const float ServerTime, const float SpentTime)
 		{
 
 			AGeoProjectile* Projectile = UGeoActorPoolingSubsystem::Get(GetWorld())
-			                                 ->RequestActor(ProjectileClass, FTransform::Identity, StoredPayload.Owner,
-												 Cast<APawn>(StoredPayload.Instigator), false, false);
+											 ->RequestActor(ProjectileClass, FTransform::Identity, StoredPayload.Owner,
+															Cast<APawn>(StoredPayload.Instigator), false, false);
 
 			Projectile->Payload = StoredPayload;
 			Projectiles.Add(Projectile);
@@ -62,12 +62,11 @@ void USpiralPattern::TickPattern(const float ServerTime, const float SpentTime)
 
 		bHasValidProjectiles = true;
 
-		const FVector ProjectileDirection =
+		FVector const ProjectileDirection =
 			FirstProjectileOrientation.RotateAngleAxis(i * AngleBetweenProjectiles, FVector::UpVector);
 		Projectile->SetActorRotation(ProjectileDirection.Rotation());
 
-		FVector ProjectileLocation =
-			FVector(StoredPayload.Origin, 0.f)
+		FVector ProjectileLocation = FVector(StoredPayload.Origin, 0.f)
 			+ ProjectileDirection * ProjectileSpeed * (SpentTime - i * TimeDiffBetweenProjectiles);
 		Projectile->SetActorLocation(ProjectileLocation);
 

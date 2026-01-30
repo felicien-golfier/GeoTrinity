@@ -30,8 +30,8 @@ struct GEOTRINITY_API FEffectData
 	virtual ~FEffectData() = default;
 
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext) const;
-	virtual void ApplyEffect(const FGameplayEffectContextHandle& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const;
+	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
+							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const;
 };
 
 USTRUCT(BlueprintType)
@@ -40,8 +40,8 @@ struct FDamageEffectData : public FEffectData
 	GENERATED_BODY()
 
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext) const override;
-	virtual void ApplyEffect(const FGameplayEffectContextHandle& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
+	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
+							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<class UGameplayEffect> DamageEffectClass;
@@ -56,11 +56,11 @@ struct FStatusEffectData : public FEffectData
 	GENERATED_BODY()
 
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext*) const override;
-	virtual void ApplyEffect(const FGameplayEffectContextHandle& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
+	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
+							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
-		meta = (ClampMin = "0", ClampMax = "100", UIMin = "0", UIMax = "100"))
+			  meta = (ClampMin = "0", ClampMax = "100", UIMin = "0", UIMax = "100"))
 	uint8 StatusChance = 100;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FGameplayTag StatusTag{};

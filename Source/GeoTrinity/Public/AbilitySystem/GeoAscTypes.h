@@ -24,12 +24,12 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	float GetDebuffDamage() const { return DebuffDamage; }
 	float GetDebuffDuration() const { return DebuffDuration; }
 	float GetDebuffFrequency() const { return DebuffFrequency; }
-	const FVector& GetDeathImpulseVector() const { return DeathImpulseVector; }
-	const FVector& GetKnockbackVector() const { return KnockbackVector; }
+	FVector const& GetDeathImpulseVector() const { return DeathImpulseVector; }
+	FVector const& GetKnockbackVector() const { return KnockbackVector; }
 	bool GetIsRadialDamage() const { return bIsRadialDamage; }
 	float GetRadialDamageInnerRadius() const { return RadialDamageInnerRadius; }
 	float GetRadialDamageOuterRadius() const { return RadialDamageOuterRadius; }
-	const FVector& GetRadialDamageOrigin() const { return RadialDamageOrigin; }
+	FVector const& GetRadialDamageOrigin() const { return RadialDamageOrigin; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
@@ -37,12 +37,12 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetDebuffDamage(float value) { DebuffDamage = value; }
 	void SetDebuffDuration(float value) { DebuffDuration = value; }
 	void SetDebuffFrequency(float value) { DebuffFrequency = value; }
-	void SetDeathImpulseVector(const FVector& inVector) { DeathImpulseVector = inVector; }
-	void SetKnockbackVector(const FVector& inVector) { KnockbackVector = inVector; }
+	void SetDeathImpulseVector(FVector const& inVector) { DeathImpulseVector = inVector; }
+	void SetKnockbackVector(FVector const& inVector) { KnockbackVector = inVector; }
 	void SetIsRadialDamage(bool value) { bIsRadialDamage = value; }
 	void SetRadialDamageInnerRadius(float value) { RadialDamageInnerRadius = value; }
 	void SetRadialDamageOuterRadius(float value) { RadialDamageOuterRadius = value; }
-	void SetRadialDamageOrigin(const FVector& inVector) { RadialDamageOrigin = inVector; }
+	void SetRadialDamageOrigin(FVector const& inVector) { RadialDamageOrigin = inVector; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return FGeoGameplayEffectContext::StaticStruct(); }
 	virtual FGeoGameplayEffectContext* Duplicate() const override;
@@ -78,12 +78,12 @@ protected:
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
-template<>
+template <>
 struct TStructOpsTypeTraits<FGeoGameplayEffectContext> : public TStructOpsTypeTraitsBase2<FGeoGameplayEffectContext>
 {
 	enum
 	{
 		WithNetSerializer = true,
-		WithCopy = true   // Necessary so that TSharedPtr<FHitResult> Data is copied around
+		WithCopy = true // Necessary so that TSharedPtr<FHitResult> Data is copied around
 	};
 };

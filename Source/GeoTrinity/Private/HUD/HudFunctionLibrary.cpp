@@ -5,7 +5,7 @@
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 
-bool UHudFunctionLibrary::ShouldDrawHUD(const UObject* WorldContextObject)
+bool UHudFunctionLibrary::ShouldDrawHUD(UObject const* WorldContextObject)
 {
 	if (!WorldContextObject)
 	{
@@ -27,14 +27,14 @@ bool UHudFunctionLibrary::ShouldDrawHUD(const UObject* WorldContextObject)
 	return true; // Standalone, client, or listen server
 }
 
-float UHudFunctionLibrary::GetHealthRatio(const UAbilitySystemComponent* AbilitySystemComponent)
+float UHudFunctionLibrary::GetHealthRatio(UAbilitySystemComponent const* AbilitySystemComponent)
 {
 	if (!AbilitySystemComponent)
 	{
 		return 0.0f;
 	}
-	const float CurrentHealth = AbilitySystemComponent->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
-	const float MaxHealth = AbilitySystemComponent->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
+	float const CurrentHealth = AbilitySystemComponent->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
+	float const MaxHealth = AbilitySystemComponent->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
 	if (MaxHealth <= 0.0f)
 	{
 		return 0.0f;

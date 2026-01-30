@@ -2,21 +2,21 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
+#include "CoreMinimal.h"
 #include "GeoAttributeSetBase.generated.h"
 
-#define GAMEPLAYATTRIBUTE_BASEVALUE_GETTER(PropertyName) \
-FORCEINLINE float Get##PropertyName##BaseValue() const \
-{ \
-return PropertyName.GetBaseValue(); \
-}
+#define GAMEPLAYATTRIBUTE_BASEVALUE_GETTER(PropertyName)   \
+	FORCEINLINE float Get##PropertyName##BaseValue() const \
+	{                                                      \
+		return PropertyName.GetBaseValue();                \
+	}
 
 // Uses macros from AttributeSet.h
-#define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
-ATTRIBUTE_ACCESSORS_BASIC(ClassName, PropertyName) \
-GAMEPLAYATTRIBUTE_BASEVALUE_GETTER(PropertyName)
+#define ATTRIBUTE_ACCESSORS(ClassName, PropertyName)   \
+	ATTRIBUTE_ACCESSORS_BASIC(ClassName, PropertyName) \
+	GAMEPLAYATTRIBUTE_BASEVALUE_GETTER(PropertyName)
 
 /**
  * Attribute set that holds RPG stats for a pawn
@@ -27,9 +27,8 @@ class GEOTRINITY_API UGeoAttributeSetBase : public UAttributeSet
 	GENERATED_BODY()
 
 public:
-	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS_BASIC(UGeoAttributeSetBase, Health)
@@ -38,7 +37,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_MaxHealth)
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, MaxHealth)
-	
+
 
 	/** Meta attribute: an attribute used to make calculations (the player does not really hold a "damage" stat).
 	 * We don't need replication here, as the impact of incoming damage will itself be replicated (impact on health) */
@@ -46,13 +45,13 @@ public:
 	FGameplayAttributeData IncomingDamage;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, IncomingDamage)
 
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Attribute")
 	float GetHealthRatio() const;
-	
+
 protected:
 	UFUNCTION()
-	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
+	virtual void OnRep_Health(FGameplayAttributeData const& OldHealth);
 	UFUNCTION()
-	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
+	virtual void OnRep_MaxHealth(FGameplayAttributeData const& OldMaxHealth);
 };

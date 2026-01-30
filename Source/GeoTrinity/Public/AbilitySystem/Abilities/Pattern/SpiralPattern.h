@@ -16,7 +16,7 @@ class GEOTRINITY_API USpiralPattern : public UTickablePattern
 	GENERATED_BODY()
 protected:
 	virtual void OnCreate(FGameplayTag AbilityTag) override;
-	virtual void InitPattern(const FAbilityPayload& Payload) override;
+	virtual void InitPattern(FAbilityPayload const& Payload) override;
 
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	virtual void EndPattern() override;

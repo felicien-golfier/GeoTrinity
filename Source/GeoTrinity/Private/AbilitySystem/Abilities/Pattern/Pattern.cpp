@@ -20,7 +20,7 @@ void UPattern::OnCreate(FGameplayTag AbilityTag)
 	}
 }
 
-void UPattern::InitPattern(const FAbilityPayload& Payload)
+void UPattern::InitPattern(FAbilityPayload const& Payload)
 {
 	if (bPatternIsActive)
 	{
@@ -32,7 +32,7 @@ void UPattern::InitPattern(const FAbilityPayload& Payload)
 	bPatternIsActive = true;
 	StoredPayload = Payload;
 
-	const float StartTime = GameplayLibrary::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
+	float const StartTime = GameplayLibrary::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
 	UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(Payload);
 
 	if (!IsValid(AnimMontage) || !IsValid(AnimInstance) || StartTime > StartSectionLength)
@@ -50,7 +50,7 @@ void UPattern::InitPattern(const FAbilityPayload& Payload)
 		AnimInstance->Montage_Play(AnimMontage, 1.f, EMontagePlayReturnType::MontageLength, StartTime);
 	}
 
-	const float RemainingStartTime = StartSectionLength - StartTime;
+	float const RemainingStartTime = StartSectionLength - StartTime;
 	GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this, &UPattern::OnMontageSectionStartEnded,
 										   RemainingStartTime);
 }
@@ -60,7 +60,7 @@ void UPattern::OnMontageSectionStartEnded()
 	StartPattern(StoredPayload);
 }
 
-void UPattern::StartPattern(const FAbilityPayload& Payload)
+void UPattern::StartPattern(FAbilityPayload const& Payload)
 {
 	UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(Payload);
 	if (IsValid(AnimMontage) && !GameplayLibrary::IsServer(GetWorld()) && IsValid(AnimInstance))
@@ -71,7 +71,7 @@ void UPattern::StartPattern(const FAbilityPayload& Payload)
 			AnimInstance->Montage_Play(AnimMontage);
 		}
 
-		const FName SectionName = AnimInstance->Montage_GetCurrentSection(AnimMontage);
+		FName const SectionName = AnimInstance->Montage_GetCurrentSection(AnimMontage);
 		if (SectionName == GameplayLibrary::SectionStartName)
 		{
 			AnimInstance->Montage_JumpToSection(GameplayLibrary::SectionFireName);
@@ -88,7 +88,7 @@ void UPattern::StartPattern(const FAbilityPayload& Payload)
 	OnStartPattern(Payload);
 }
 
-void UPattern::OnStartPattern_Implementation(const FAbilityPayload& Payload)
+void UPattern::OnStartPattern_Implementation(FAbilityPayload const& Payload)
 {
 	// for Blueprint use mainly
 }
@@ -117,7 +117,7 @@ void UPattern::EndPattern()
 	// TODO: EndAbility after Montage EndSection or directly right now.
 }
 
-void UTickablePattern::InitPattern(const FAbilityPayload& Payload)
+void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
 {
 	if (TimeSyncTimerHandle.IsValid())
 	{
@@ -129,7 +129,7 @@ void UTickablePattern::InitPattern(const FAbilityPayload& Payload)
 	Super::InitPattern(Payload);
 }
 
-void UTickablePattern::StartPattern(const FAbilityPayload& Payload)
+void UTickablePattern::StartPattern(FAbilityPayload const& Payload)
 {
 	Super::StartPattern(Payload);
 	CalculateTimeAndTickPattern();
@@ -137,7 +137,7 @@ void UTickablePattern::StartPattern(const FAbilityPayload& Payload)
 
 void UTickablePattern::CalculateTimeAndTickPattern()
 {
-	const float ServerTime = GameplayLibrary::GetServerTime(GetWorld(), true);
+	float const ServerTime = GameplayLibrary::GetServerTime(GetWorld(), true);
 	TickPattern(ServerTime, ServerTime - StoredPayload.ServerSpawnTime - StartSectionLength);
 	if (IsPatternActive())
 	{
@@ -146,7 +146,7 @@ void UTickablePattern::CalculateTimeAndTickPattern()
 	}
 }
 
-void UTickablePattern::TickPattern(const float ServerTime, const float SpentTime)
+void UTickablePattern::TickPattern(float const ServerTime, float const SpentTime)
 {
 	// To be overriden by your own Tickable pattern !
 }

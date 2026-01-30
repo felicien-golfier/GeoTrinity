@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
+#include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameDataSettings.generated.h"
 
@@ -11,27 +11,25 @@ class UStatusInfo;
 /**
  * A place to link all data tables for game stuff, accessible by server and client
  */
-UCLASS(Config=Game, defaultconfig, meta = (DisplayName="Game Data Settings"))
+UCLASS(Config = Game, defaultconfig, meta = (DisplayName = "Game Data Settings"))
 class GEOTRINITY_API UGameDataSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	
 	template <typename T>
-	static T* GetLoadedDataAsset(const TSoftObjectPtr<T>& SoftObject);
-	
+	static T* GetLoadedDataAsset(TSoftObjectPtr<T> const& SoftObject);
+
 	/* Soft path will be converted to content reference before use */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
 	TSoftObjectPtr<UStatusInfo> StatusInfo;
-	
+
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
 	TSoftObjectPtr<UAbilityInfo> AbilityInfo;
-
 };
 
 template <typename T>
-T* UGameDataSettings::GetLoadedDataAsset(const TSoftObjectPtr<T>& SoftObject)
+T* UGameDataSettings::GetLoadedDataAsset(TSoftObjectPtr<T> const& SoftObject)
 {
 	return SoftObject.LoadSynchronous();
 }

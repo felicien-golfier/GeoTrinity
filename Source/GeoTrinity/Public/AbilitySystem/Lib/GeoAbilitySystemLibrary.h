@@ -28,102 +28,103 @@ class GEOTRINITY_API UGeoAbilitySystemLibrary : public UBlueprintFunctionLibrary
 public:
 	/** INFO HOLDER **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))
-	static UAbilityInfo* GetAbilityInfo(const UObject* WorldContextObject);
+	static UAbilityInfo* GetAbilityInfo(UObject const* WorldContextObject);
 	static UAbilityInfo* GetAbilityInfo();
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))
-	static UStatusInfo* GetStatusInfo(const UObject* WorldContextObject);
+	static UStatusInfo* GetStatusInfo(UObject const* WorldContextObject);
 
 	/** PARAMS STUFF **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Effects")
-	static FGameplayEffectContextHandle ApplyEffectFromEffectData(
-		const TArray<TInstancedStruct<FEffectData>>& DataArray, UGeoAbilitySystemComponent* SourceASC,
-		UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed);
-	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(const UEffectDataAsset* EffectDataAsset);
+	static FGameplayEffectContextHandle
+	ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
+							  UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC,
+							  int32 AbilityLevel, int32 Seed);
+	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(UEffectDataAsset const* EffectDataAsset);
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(FGameplayTag AbilityTag);
 	/** STATUS **/
 	static bool ApplyStatusToTarget(UAbilitySystemComponent* pTargetASC, UAbilitySystemComponent* pSourceASC,
-		const FGameplayTag& statusTag, int32 level);
+									FGameplayTag const& statusTag, int32 level);
 
 	/** TAG **/
-	static FGameplayTag GetGameplayTagFromRootTagString(const FString& StringOfTag);
-	static FGameplayTag GetAbilityTagFromSpec(const FGameplayAbilitySpec& Spec);
-	static FGameplayTag GetAbilityTagFromAbility(const UGameplayAbility& Ability);
+	static FGameplayTag GetGameplayTagFromRootTagString(FString const& StringOfTag);
+	static FGameplayTag GetAbilityTagFromSpec(FGameplayAbilitySpec const& Spec);
+	static FGameplayTag GetAbilityTagFromAbility(UGameplayAbility const& Ability);
 
 	/** TEAM **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
-	static TArray<AActor*> GetAllAgentsInTeam(const UObject* WorldContextObject, const FGenericTeamId& TeamId);
+	static TArray<AActor*> GetAllAgentsInTeam(UObject const* WorldContextObject, FGenericTeamId const& TeamId);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
-	static TArray<AActor*> GetAllAgentsWithRelationTowardsActor(const UObject* WorldContextObject, const AActor* Actor,
-		ETeamAttitude::Type Attitude);
+	static TArray<AActor*> GetAllAgentsWithRelationTowardsActor(UObject const* WorldContextObject, AActor const* Actor,
+																ETeamAttitude::Type Attitude);
 
 	/** TOOLBOX **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Toolbox")
-	static AActor* GetNearestActorFromList(const AActor* FromActor, const TArray<AActor*>& ActorList);
+	static AActor* GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList);
 
 	/**
 	 * Getters and setters for the context
 	 */
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool IsBlockedHit(const FGameplayEffectContextHandle& effectContextHandle);
+	static bool IsBlockedHit(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool IsCriticalHit(const FGameplayEffectContextHandle& effectContextHandle);
+	static bool IsCriticalHit(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool IsSuccessfulDebuff(const FGameplayEffectContextHandle& effectContextHandle);
+	static bool IsSuccessfulDebuff(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetDebuffDamage(const FGameplayEffectContextHandle& effectContextHandle);
+	static float GetDebuffDamage(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetDebuffDuration(const FGameplayEffectContextHandle& effectContextHandle);
+	static float GetDebuffDuration(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetDebuffFrequency(const FGameplayEffectContextHandle& effectContextHandle);
+	static float GetDebuffFrequency(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static FVector GetDeathImpulseVector(const FGameplayEffectContextHandle& effectContextHandle);
+	static FVector GetDeathImpulseVector(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static FVector GetKnockbackVector(const FGameplayEffectContextHandle& effectContextHandle);
+	static FVector GetKnockbackVector(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool GetIsRadialDamage(const FGameplayEffectContextHandle& effectContextHandle);
+	static bool GetIsRadialDamage(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetRadialDamageInnerRadius(const FGameplayEffectContextHandle& effectContextHandle);
+	static float GetRadialDamageInnerRadius(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetRadialDamageOuterRadius(const FGameplayEffectContextHandle& effectContextHandle);
+	static float GetRadialDamageOuterRadius(FGameplayEffectContextHandle const& effectContextHandle);
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static FVector GetRadialDamageOrigin(const FGameplayEffectContextHandle& effectContextHandle);
+	static FVector GetRadialDamageOrigin(FGameplayEffectContextHandle const& effectContextHandle);
 
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetIsBlockedHit(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const bool bIsBlockedHit);
+								bool const bIsBlockedHit);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetIsCriticalHit(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const bool bIsCriticalHit);
+								 bool const bIsCriticalHit);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetStatusTag(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const FGameplayTag statusTag);
+							 FGameplayTag const statusTag);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetDebuffDamage(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const float debuffDamage);
+								float const debuffDamage);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetDebuffFrequency(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const float debuffFrequency);
+								   float const debuffFrequency);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetDebuffDuration(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const float debuffDuration);
+								  float const debuffDuration);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetDeathImpulseVector(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const FVector& inVector);
+									  FVector const& inVector);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetKnockbackVector(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const FVector& inVector);
+								   FVector const& inVector);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetIsRadialDamage(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const bool bIsRadialDamage);
+								  bool const bIsRadialDamage);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetRadialDamageInnerRadius(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const float radialDamageInnerRadius);
+										   float const radialDamageInnerRadius);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetRadialDamageOuterRadius(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const float radialDamageOuterRadius);
+										   float const radialDamageOuterRadius);
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetRadialDamageOrigin(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-		const FVector& inVector);
+									  FVector const& inVector);
 
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary")
 	static UGeoAbilitySystemComponent* GetGeoAscFromActor(AActor* Actor);

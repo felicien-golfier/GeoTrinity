@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "AbilitySystemGlobals.h"
+#include "CoreMinimal.h"
 #include "GeoAscTypes.h"
 
 #include "GeoAbilitySystemGlobals.generated.h"
@@ -16,5 +16,5 @@ class GEOTRINITY_API UGeoAbilitySystemGlobals : public UAbilitySystemGlobals
 {
 	GENERATED_BODY()
 
-	virtual  FGameplayEffectContext* AllocGameplayEffectContext() const override;
+	virtual FGameplayEffectContext* AllocGameplayEffectContext() const override;
 };

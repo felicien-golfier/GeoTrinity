@@ -1,8 +1,8 @@
 ﻿// GeoEnemyAIController.h
 #pragma once
 
-#include "CoreMinimal.h"
 #include "AIController.h"
+#include "CoreMinimal.h"
 
 #include "GeoEnemyAIController.generated.h"
 
@@ -13,20 +13,20 @@ class UBlackboardComponent;
 UCLASS()
 class GEOTRINITY_API AGeoEnemyAIController : public AAIController
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    AGeoEnemyAIController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer = FObjectInitializer::Get());
 
-    virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnPossess(APawn* InPawn) override;
 
-    UBlackboardComponent* GetBlackboardComponent() const { return BlackboardComp; }
-    UBehaviorTreeComponent* GetBehaviorComp() const { return BehaviorComp; }
+	UBlackboardComponent* GetBlackboardComponent() const { return BlackboardComp; }
+	UBehaviorTreeComponent* GetBehaviorComp() const { return BehaviorComp; }
 
 protected:
-    UPROPERTY(Transient)
-    TObjectPtr<UBlackboardComponent> BlackboardComp;
+	UPROPERTY(Transient)
+	TObjectPtr<UBlackboardComponent> BlackboardComp;
 
-    UPROPERTY(Transient)
-    TObjectPtr<UBehaviorTreeComponent> BehaviorComp;
+	UPROPERTY(Transient)
+	TObjectPtr<UBehaviorTreeComponent> BehaviorComp;
 };

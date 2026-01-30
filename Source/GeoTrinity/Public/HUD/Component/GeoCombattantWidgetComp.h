@@ -2,20 +2,19 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Components/WidgetComponent.h"
+#include "CoreMinimal.h"
 #include "GeoCombattantWidgetComp.generated.h"
 
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GEOTRINITY_API UGeoCombattantWidgetComp : public UWidgetComponent
 {
 	GENERATED_BODY()
 
 public:
-
 	virtual void PostInitProperties() override;
-	
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -23,7 +22,5 @@ protected:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-		FActorComponentTickFunction* ThisTickFunction) override;
-
-
+							   FActorComponentTickFunction* ThisTickFunction) override;
 };

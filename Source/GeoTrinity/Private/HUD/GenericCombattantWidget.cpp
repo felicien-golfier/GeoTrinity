@@ -12,18 +12,18 @@
 void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementation(UAbilitySystemComponent* ASC)
 {
 	OwnerASC = ASC;
-	
+
 	if (!GetOwningPlayer())
 	{
 		UE_LOG(LogGeoTrinity, Log, TEXT("No owning player for widget %s"), *GetName());
 		return;
 	}
-	
+
 	if (AGeoHUD* Hud = Cast<AGeoHUD>(GetOwningPlayer()->GetHUD()))
 	{
 		InitFromHUD(Hud);
 	}
-	
+
 	BindStatCallbacks();
 	InitStats();
 }
@@ -37,7 +37,9 @@ void UGenericCombattantWidget::InitStats()
 	}
 	else
 	{
-		UE_LOG(LogGeoTrinity, Warning, TEXT("Initializing UI stats with default values, probably not ideal. Please fix missing OwnerASC in %s"), *GetName());
+		UE_LOG(LogGeoTrinity, Warning,
+			   TEXT("Initializing UI stats with default values, probably not ideal. Please fix missing OwnerASC in %s"),
+			   *GetName());
 		UpdateHealthRatio(1.f);
 	}
 }
@@ -49,13 +51,13 @@ void UGenericCombattantWidget::BindStatCallbacks()
 	{
 		return;
 	}
-	
+
 	UGeoAbilitySystemComponent* GeoASC = Cast<UGeoAbilitySystemComponent>(OwnerASC.Get());
 	if (!GeoASC)
 	{
 		return;
 	}
-	
+
 	GeoASC->OnHealthChanged.AddDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
 	GeoASC->OnMaxHealthChanged.AddDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
 }

@@ -15,7 +15,7 @@ class GEOTRINITY_API UGeoAssetManager : public UAssetManager
 	GENERATED_BODY()
 public:
 	static UGeoAssetManager& Get();
+
 protected:
 	virtual void StartInitialLoading() override;
-
 };

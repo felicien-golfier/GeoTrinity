@@ -6,11 +6,11 @@
 
 namespace RootTagNames
 {
-	const FString AbilityTag{"Ability"};
-	const FString InputTag{"InputTag"};
-	const FString SpellSubTag{"Spell"};
-	const FString AbilityIDTag{AbilityTag + "." + SpellSubTag};
-}
+	FString const AbilityTag{"Ability"};
+	FString const InputTag{"InputTag"};
+	FString const SpellSubTag{"Spell"};
+	FString const AbilityIDTag{AbilityTag + "." + SpellSubTag};
+} // namespace RootTagNames
 
 /**
  * GameplayTags
@@ -19,14 +19,14 @@ namespace RootTagNames
  */
 struct FGeoGameplayTags
 {
-	static FGeoGameplayTags const& Get() {return GameplayTags;}
+	static FGeoGameplayTags const& Get() { return GameplayTags; }
 	static void InitializeNativeGameplayTags();
-   
+
 	FGameplayTag Gameplay_Damage;
-	
+
 	FGameplayTag InputTag_BasicSpell;
 	FGameplayTag InputTag_SpecialSpell;
-	
+
 	FGameplayTag Ability_Type_Basic;
 	FGameplayTag Ability_Type_Special;
 

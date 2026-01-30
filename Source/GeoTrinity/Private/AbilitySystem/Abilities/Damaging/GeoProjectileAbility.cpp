@@ -10,10 +10,10 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "System/GeoActorPoolingSubsystem.h"
 
-void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-											const FGameplayAbilityActorInfo* ActorInfo,
-											const FGameplayAbilityActivationInfo ActivationInfo,
-											const FGameplayEventData* TriggerEventData)
+void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
+											FGameplayAbilityActorInfo const* ActorInfo,
+											FGameplayAbilityActivationInfo const ActivationInfo,
+											FGameplayEventData const* TriggerEventData)
 {
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
@@ -23,8 +23,8 @@ void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	// Build payload from avatar transform
 	AActor* Instigator = GetAvatarActorFromActorInfo();
-	if (const FGeoAbilityTargetData* TargetData =
-			static_cast<const FGeoAbilityTargetData*>(TriggerEventData->TargetData.Get(0)))
+	if (FGeoAbilityTargetData const* TargetData =
+			static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)))
 	{
 		StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, TargetData->Origin,
 											 TargetData->Yaw, TargetData->ServerSpawnTime, TargetData->Seed);
@@ -60,9 +60,9 @@ void UGeoProjectileAbility::AnimTrigger()
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 
-void UGeoProjectileAbility::SpawnProjectileUsingDirection(const FVector& Direction)
+void UGeoProjectileAbility::SpawnProjectileUsingDirection(FVector const& Direction)
 {
-	const AActor* Instigator = GetAvatarActorFromActorInfo();
+	AActor const* Instigator = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Instigator), TEXT("Avatar Actor from actor info is invalid!"));
 
 	FTransform SpawnTransform{Direction.Rotation().Quaternion(), Instigator->GetActorLocation()};
@@ -70,13 +70,13 @@ void UGeoProjectileAbility::SpawnProjectileUsingDirection(const FVector& Directi
 	// Optionally spawn from a socket named by the current montage section index
 	if (bUseSocketFromSectionIndex)
 	{
-		const UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-		const USkeletalMeshComponent* Mesh = Instigator->FindComponentByClass<USkeletalMeshComponent>();
+		UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
+		USkeletalMeshComponent const* Mesh = Instigator->FindComponentByClass<USkeletalMeshComponent>();
 		if (ASC && Mesh)
 		{
-			const FName CurrentSection = ASC->GetCurrentMontageSectionName();
-			const FString IndexString = CurrentSection.ToString().Right(1);
-			const FName SocketName(*IndexString);
+			FName const CurrentSection = ASC->GetCurrentMontageSectionName();
+			FString const IndexString = CurrentSection.ToString().Right(1);
+			FName const SocketName(*IndexString);
 
 			if (IndexString.IsNumeric() && Mesh->DoesSocketExist(SocketName))
 			{
@@ -90,8 +90,8 @@ void UGeoProjectileAbility::SpawnProjectileUsingDirection(const FVector& Directi
 
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
 {
-	const TArray<FVector> Directions = GetTargetDirection();
-	for (const FVector& Direction : Directions)
+	TArray<FVector> const Directions = GetTargetDirection();
+	for (FVector const& Direction : Directions)
 	{
 		SpawnProjectileUsingDirection(Direction);
 	}
@@ -112,7 +112,7 @@ TArray<FVector> UGeoProjectileAbility::GetTargetDirection() const
 			for (auto PlayerControllerIt = GetWorld()->GetPlayerControllerIterator(); PlayerControllerIt;
 				 ++PlayerControllerIt)
 			{
-				if (const APlayerController* PlayerController = PlayerControllerIt->Get())
+				if (APlayerController const* PlayerController = PlayerControllerIt->Get())
 				{
 					Directions.Add(PlayerController->GetPawn()->GetActorLocation()
 								   - GetAvatarActorFromActorInfo()->GetActorLocation());
@@ -128,9 +128,9 @@ TArray<FVector> UGeoProjectileAbility::GetTargetDirection() const
 	}
 }
 
-void UGeoProjectileAbility::SpawnProjectile(const FTransform SpawnTransform) const
+void UGeoProjectileAbility::SpawnProjectile(FTransform const SpawnTransform) const
 {
-	const AActor* Actor = GetAvatarActorFromActorInfo();
+	AActor const* Actor = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
 
 	// Create projectile

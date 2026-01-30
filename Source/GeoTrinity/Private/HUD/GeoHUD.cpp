@@ -33,9 +33,9 @@ void AGeoHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySyste
 	checkf(OverlayWidgetClass, TEXT("Overlay Widget Class uninitialized, please fill out HUD %s"), *GetName())
 
 		// UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), OverlayWidgetClass);
-	    // OverlayWidget = Cast<UGeoUserWidget>(Widget);
-	    // checkf(OverlayWidget, TEXT("OverlayWidgetClass is not of class UGeoUserWidget. Rethink design if this is
-	    // necessary."))
+		// OverlayWidget = Cast<UGeoUserWidget>(Widget);
+		// checkf(OverlayWidget, TEXT("OverlayWidgetClass is not of class UGeoUserWidget. Rethink design if this is
+		// necessary."))
 
 		// Setup params the HUD may very probably need to access
 		HudPlayerParams.PlayerController = PC;
@@ -57,7 +57,7 @@ void AGeoHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySyste
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::BroadcastInitialValues() const
 {
-	const UGeoAttributeSetBase* GeoAttributeSet = HudPlayerParams.GetGeoAttributeSet();
+	UGeoAttributeSetBase const* GeoAttributeSet = HudPlayerParams.GetGeoAttributeSet();
 	if (!GeoAttributeSet)
 	{
 		return;
@@ -70,7 +70,7 @@ void AGeoHUD::BroadcastInitialValues() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::BindCallbacksToDependencies()
 {
-	const UGeoAttributeSetBase* GeoAttributeSet = HudPlayerParams.GetGeoAttributeSet();
+	UGeoAttributeSetBase const* GeoAttributeSet = HudPlayerParams.GetGeoAttributeSet();
 	if (!GeoAttributeSet)
 	{
 		return;
@@ -79,16 +79,16 @@ void AGeoHUD::BindCallbacksToDependencies()
 	HudPlayerParams.AbilitySystemComponent
 		->GetGameplayAttributeValueChangeDelegate(GeoAttributeSet->GetHealthAttribute())
 		.AddWeakLambda(this,
-			[this](const FOnAttributeChangeData& data)
-			{
-				OnHealthChanged.Broadcast(data.NewValue);
-			});
+					   [this](FOnAttributeChangeData const& data)
+					   {
+						   OnHealthChanged.Broadcast(data.NewValue);
+					   });
 
 	HudPlayerParams.AbilitySystemComponent
 		->GetGameplayAttributeValueChangeDelegate(GeoAttributeSet->GetMaxHealthAttribute())
 		.AddWeakLambda(this,
-			[this](const FOnAttributeChangeData& data)
-			{
-				OnMaxHealthChanged.Broadcast(data.NewValue);
-			});
+					   [this](FOnAttributeChangeData const& data)
+					   {
+						   OnMaxHealthChanged.Broadcast(data.NewValue);
+					   });
 }

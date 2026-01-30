@@ -23,8 +23,8 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Turret")
 	float GetTurretLevel() const;
 
-	virtual bool IsValidOverlap(const AActor* OtherActor) override;
-	
+	virtual bool IsValidOverlap(AActor const* OtherActor) override;
+
 protected:
 	virtual void EndProjectileLife() override;
 

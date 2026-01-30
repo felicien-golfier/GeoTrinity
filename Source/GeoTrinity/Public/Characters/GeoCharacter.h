@@ -38,7 +38,7 @@ class GEOTRINITY_API AGeoCharacter
 
 public:
 	// Sets default values for this character's properties
-	AGeoCharacter(const FObjectInitializer& ObjectInitializer);
+	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const
 	{
@@ -57,22 +57,22 @@ public:
 	// IGenericTeamAgentInterface BEGIN
 	//----------------------------------------------------------------------//
 	/** Assigns Team Agent to given TeamID */
-	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamId) override
+	virtual void SetGenericTeamId(FGenericTeamId const& NewTeamId) override
 	{
 		TeamId = static_cast<ETeam>(NewTeamId.GetId());
 	}
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(static_cast<uint8>(TeamId)); };
 
-	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(AActor const& Other) const override;
 	//----------------------------------------------------------------------//
 	// IGenericTeamAgentInterface END
 	//----------------------------------------------------------------------//
 
 	AGeoPlayerController* GetGeoController() const { return Cast<AGeoPlayerController>(GetController()); }
 
-	void DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage) const;
-	void DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage, FColor Color) const;
+	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const;
+	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage, FColor Color) const;
 
 protected:
 	//----------------------------------------------------------------------//

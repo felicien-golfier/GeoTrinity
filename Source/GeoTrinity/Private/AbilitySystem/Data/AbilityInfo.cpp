@@ -5,9 +5,10 @@
 
 #include "GeoTrinity/GeoTrinity.h"
 
-FGameplayAbilityInfo UAbilityInfo::FindAbilityInfoForTag(FGameplayTag const& AbilityTag, const bool bLogIfNotFound) const
+FGameplayAbilityInfo UAbilityInfo::FindAbilityInfoForTag(FGameplayTag const& AbilityTag,
+														 bool const bLogIfNotFound) const
 {
-	for (FGameplayAbilityInfo const& Info:AbilityInfos)
+	for (FGameplayAbilityInfo const& Info : AbilityInfos)
 	{
 		if (Info.AbilityTag == AbilityTag)
 		{
@@ -17,7 +18,8 @@ FGameplayAbilityInfo UAbilityInfo::FindAbilityInfoForTag(FGameplayTag const& Abi
 
 	if (bLogIfNotFound)
 	{
-		UE_LOG(LogGeoASC, Error, TEXT("Tag %s was not found on AbilityInfos %s"), *AbilityTag.GetTagName().ToString(), *GetName());
+		UE_LOG(LogGeoASC, Error, TEXT("Tag %s was not found on AbilityInfos %s"), *AbilityTag.GetTagName().ToString(),
+			   *GetName());
 	}
 
 	return FGameplayAbilityInfo();
@@ -25,10 +27,10 @@ FGameplayAbilityInfo UAbilityInfo::FindAbilityInfoForTag(FGameplayTag const& Abi
 
 // ---------------------------------------------------------------------------------------------------------------------
 TArray<FGameplayAbilityInfo> UAbilityInfo::FindAbilityInfoForListOfTag(TArray<FGameplayTag> const& AbilityTags,
-	bool bLogIfNotFound) const
+																	   bool bLogIfNotFound) const
 {
 	TArray<FGameplayAbilityInfo> CorrespondingInfos;
-	for (FGameplayAbilityInfo const& Info:AbilityInfos)
+	for (FGameplayAbilityInfo const& Info : AbilityInfos)
 	{
 		if (AbilityTags.Contains(Info.AbilityTag))
 		{
@@ -38,7 +40,7 @@ TArray<FGameplayAbilityInfo> UAbilityInfo::FindAbilityInfoForListOfTag(TArray<FG
 
 	if (bLogIfNotFound && CorrespondingInfos.Num() != AbilityTags.Num())
 	{
-		
+
 		UE_LOG(LogGeoASC, Error, TEXT("NOT all tags were found on AbilityInfos %s"), *GetName());
 	}
 

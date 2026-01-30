@@ -3,10 +3,10 @@
 
 #include "AbilitySystem/ExecCalc/ExecCalc_Damage.h"
 
-#include "AbilitySystemComponent.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "AbilitySystemComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -16,8 +16,8 @@ UExecCalc_Damage::UExecCalc_Damage()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams,
-	FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const
+void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
+											  FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const
 {
 	/** GET SOURCE DATA **/
 	FGameplayEffectSpec const& specGE = ExecutionParams.GetOwningSpec();
@@ -27,29 +27,23 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 	AActor* pSourceAvatar = pSourceASC ? pSourceASC->GetAvatarActor() : nullptr;
 	AActor* pTargetAvatar = pTargetASC ? pTargetASC->GetAvatarActor() : nullptr;
 	FGeoGameplayTags const& tags = FGeoGameplayTags::Get();
-	
+
 	/** COMPUTE EVERYTHING TODO **/
 	float damage = specGE.GetSetByCallerMagnitude(tags.Gameplay_Damage, false, 0.f);
-	
+
 #pragma region Radial damage
 	if (UGeoAbilitySystemLibrary::GetIsRadialDamage(contextHandle))
 	{
 		UGameplayStatics::ApplyRadialDamageWithFalloff(
-			pTargetAvatar,
-			damage,
-			0.f,
-			UGeoAbilitySystemLibrary::GetRadialDamageOrigin(contextHandle),
+			pTargetAvatar, damage, 0.f, UGeoAbilitySystemLibrary::GetRadialDamageOrigin(contextHandle),
 			UGeoAbilitySystemLibrary::GetRadialDamageInnerRadius(contextHandle),
-			UGeoAbilitySystemLibrary::GetRadialDamageOuterRadius(contextHandle),
-			1.f,
-			UDamageType::StaticClass(),
-			TArray<AActor*>(),
-			pSourceAvatar,
-			nullptr);
+			UGeoAbilitySystemLibrary::GetRadialDamageOuterRadius(contextHandle), 1.f, UDamageType::StaticClass(),
+			TArray<AActor*>(), pSourceAvatar, nullptr);
 	}
 #pragma endregion
-	
+
 	/*** OUTPUT ***/
-	const FGameplayModifierEvaluatedData evaluatedData{UGeoAttributeSetBase::GetIncomingDamageAttribute(), EGameplayModOp::Additive, damage};
+	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingDamageAttribute(),
+													   EGameplayModOp::Additive, damage};
 	OutExecutionOutput.AddOutputModifier(std::move(evaluatedData));
 }

@@ -11,15 +11,15 @@
 // ---------------------------------------------------------------------------------------------------------------------
 static ETeamAttitude::Type GeoAttitudeSolver(FGenericTeamId A, FGenericTeamId B)
 {
-	const uint8 IdA = A.GetId();
-	const uint8 IdB = B.GetId();
+	uint8 const IdA = A.GetId();
+	uint8 const IdB = B.GetId();
 
 	// Same team → friendly
 	if (IdA == IdB)
 	{
 		return ETeamAttitude::Friendly;
 	}
-	
+
 	// Keep it simple for now
 	return ETeamAttitude::Hostile;
 }
@@ -28,6 +28,6 @@ static ETeamAttitude::Type GeoAttitudeSolver(FGenericTeamId A, FGenericTeamId B)
 void UGeoGameInstance::Init()
 {
 	Super::Init();
-	
+
 	FGenericTeamId::SetAttitudeSolver(&GeoAttitudeSolver);
 }

@@ -6,32 +6,32 @@
 #include "GameFramework/PlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
 
-bool GameplayLibrary::GetTeamInterface(const AActor* Actor, const IGenericTeamAgentInterface*& OutInterface)
+bool GameplayLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)
 {
-	OutInterface = Cast<const IGenericTeamAgentInterface>(Actor);
+	OutInterface = Cast<IGenericTeamAgentInterface const>(Actor);
 	return OutInterface != nullptr;
 }
 
-FColor GameplayLibrary::GetColorForObject(const UObject* Object)
+FColor GameplayLibrary::GetColorForObject(UObject const* Object)
 {
 	if (!IsValid(Object))
 	{
 		return FColor::White;
 	}
 
-	static const FColor Palette[] = {FColor::Black,	  FColor::Red,	  FColor::Green,	 FColor::Blue,
+	static FColor const Palette[] = {FColor::Black,	  FColor::Red,	  FColor::Green,	 FColor::Blue,
 									 FColor::Yellow,  FColor::Cyan,	  FColor::Magenta,	 FColor::Orange,
 									 FColor::Emerald, FColor::Purple, FColor::Turquoise, FColor::Silver};
 
 	return Palette[Object->GetUniqueID() % std::size(Palette)];
 }
 
-float GameplayLibrary::IsServer(const UWorld* World)
+float GameplayLibrary::IsServer(UWorld const* World)
 {
 	return World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer);
 }
 
-float GameplayLibrary::GetServerTime(const UWorld* World, const bool bUpdatedWithPing)
+float GameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdatedWithPing)
 {
 	if (IsServer(World))
 	{
@@ -42,20 +42,20 @@ float GameplayLibrary::GetServerTime(const UWorld* World, const bool bUpdatedWit
 
 	if (bUpdatedWithPing)
 	{
-		const APlayerController* LocalPlayerController = World->GetFirstPlayerController();
+		APlayerController const* LocalPlayerController = World->GetFirstPlayerController();
 		if (!IsValid(LocalPlayerController))
 		{
 			UE_LOG(LogTemp, Error, TEXT("No local player controller found"));
 			return ServerTimeSeconds;
 		}
 
-		const APlayerState* PlayerState = LocalPlayerController->GetPlayerState<APlayerState>();
+		APlayerState const* PlayerState = LocalPlayerController->GetPlayerState<APlayerState>();
 		if (!IsValid(PlayerState))
 		{
 			UE_LOG(LogTemp, Error, TEXT("No local player state found"));
 			return ServerTimeSeconds;
 		}
-		const float OnWayPingSec =
+		float const OnWayPingSec =
 			LocalPlayerController->GetPlayerState<APlayerState>()->GetPingInMilliseconds() * 0.0005f;
 		ServerTimeSeconds += OnWayPingSec;
 	}
@@ -63,9 +63,9 @@ float GameplayLibrary::GetServerTime(const UWorld* World, const bool bUpdatedWit
 	return ServerTimeSeconds;
 }
 
-int GameplayLibrary::GetAndCheckSection(const UAnimMontage* AnimMontage, const FName Section)
+int GameplayLibrary::GetAndCheckSection(UAnimMontage const* AnimMontage, FName const Section)
 {
-	const int SectionIndex = AnimMontage->GetSectionIndex(Section);
+	int const SectionIndex = AnimMontage->GetSectionIndex(Section);
 	if (SectionIndex == INDEX_NONE)
 	{
 		ensureMsgf(true, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(), *AnimMontage->GetName());
@@ -75,7 +75,7 @@ int GameplayLibrary::GetAndCheckSection(const UAnimMontage* AnimMontage, const F
 	return SectionIndex;
 }
 
-UAnimInstance* GameplayLibrary::GetAnimInstance(const FAbilityPayload& Payload)
+UAnimInstance* GameplayLibrary::GetAnimInstance(FAbilityPayload const& Payload)
 {
 	ACharacter* InstigatorCharacter = Cast<ACharacter>(Payload.Instigator);
 	if (!IsValid(InstigatorCharacter))

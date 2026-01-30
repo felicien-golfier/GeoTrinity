@@ -24,19 +24,19 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 
 public:
 	FGameplayTag GetAbilityTag() const;
-	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, const FVector2D& Origin, float Yaw,
+	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, FVector2D const& Origin, float Yaw,
 										 float ServerSpawnTime, int Seed) const;
-	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, const FTransform& Transform) const;
+	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, FTransform const& Transform) const;
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
 	TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const;
 	float GetCooldown(int32 level = 1) const;
-	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-							const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
+	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
+							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
 protected:
-	void HandleAnimationMontage(const UAnimInstance* AnimInstance,
-								const FGameplayAbilityActivationInfo& ActivationInfo);
+	void HandleAnimationMontage(UAnimInstance const* AnimInstance,
+								FGameplayAbilityActivationInfo const& ActivationInfo);
 	UFUNCTION()
 	virtual void AnimTrigger();
 

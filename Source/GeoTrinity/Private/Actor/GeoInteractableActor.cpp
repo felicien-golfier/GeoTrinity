@@ -8,7 +8,7 @@
 // Sets default values
 AGeoInteractableActor::AGeoInteractableActor()
 {
-	bReplicates = true;   // Directly setting bReplicates is the correct procedure for pre-init actors.
+	bReplicates = true; // Directly setting bReplicates is the correct procedure for pre-init actors.
 	PrimaryActorTick.bCanEverTick = false;
 
 	AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
@@ -35,7 +35,7 @@ void AGeoInteractableActor::BeginPlay()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoInteractableActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void AGeoInteractableActor::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
 	UnbindGasCallbacks();
 
@@ -52,7 +52,7 @@ UAbilitySystemComponent* AGeoInteractableActor::GetAbilitySystemComponent() cons
 void AGeoInteractableActor::BindGasCallbacks()
 {
 	checkf(AbilitySystemComponent,
-		TEXT("Trying to bind GAS callbacks but AbilitySystemComponent is null. This is too early ?"));
+		   TEXT("Trying to bind GAS callbacks but AbilitySystemComponent is null. This is too early ?"));
 	AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
 	AbilitySystemComponent->OnMaxHealthChanged.AddDynamic(this, &ThisClass::OnMaxHealthChanged);
 }
@@ -80,7 +80,7 @@ void AGeoInteractableActor::OnMaxHealthChanged(float NewValue)
 }
 
 void AGeoInteractableActor::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass,
-	float level)
+															 float level)
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	if (!IsValid(ASC))
@@ -92,7 +92,7 @@ void AGeoInteractableActor::ApplyEffectToSelf_Implementation(TSubclassOf<UGamepl
 	EffectContextHandle.AddSourceObject(this);
 	EffectContextHandle.AddInstigator(InteractableActorData->CharacterOwner, this);
 
-	const FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
+	FGameplayEffectSpecHandle const SpecHandle = ASC->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
 
 	if (SpecHandle.IsValid())
 	{

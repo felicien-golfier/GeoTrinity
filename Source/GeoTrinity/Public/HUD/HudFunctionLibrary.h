@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
 #include "HudFunctionLibrary.generated.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 
 class UAbilitySystemComponent;
 /**
@@ -17,9 +17,9 @@ class GEOTRINITY_API UHudFunctionLibrary : public UBlueprintFunctionLibrary
 
 public:
 	// DRAW //
-	static bool ShouldDrawHUD(const UObject* WorldContextObject);
-	
+	static bool ShouldDrawHUD(UObject const* WorldContextObject);
+
 	// STATS //
 	UFUNCTION(BlueprintCallable, Category = "Gas")
-	static float GetHealthRatio(const UAbilitySystemComponent* AbilitySystemComponent);
+	static float GetHealthRatio(UAbilitySystemComponent const* AbilitySystemComponent);
 };

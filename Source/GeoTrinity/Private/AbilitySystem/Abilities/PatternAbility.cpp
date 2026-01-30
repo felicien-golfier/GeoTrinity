@@ -5,10 +5,10 @@
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 
-void UPatternAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-									  const FGameplayAbilityActorInfo* ActorInfo,
-									  const FGameplayAbilityActivationInfo ActivationInfo,
-									  const FGameplayEventData* TriggerEventData)
+void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
+									  FGameplayAbilityActorInfo const* ActorInfo,
+									  FGameplayAbilityActivationInfo const ActivationInfo,
+									  FGameplayEventData const* TriggerEventData)
 {
 	ensureMsgf(PatternToLaunch, TEXT("Please fill the PatternToLaunch in Blueprint"));
 	ensureMsgf(HasAuthority(&ActivationInfo), TEXT("PatternAbility are made for Server initiated abilities only."));
@@ -20,7 +20,7 @@ void UPatternAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 
 	AActor* Owner = GetOwningActorFromActorInfo();
-	const FAbilityPayload& Payload = CreateAbilityPayload(Owner, Owner, Owner->GetTransform());
+	FAbilityPayload const& Payload = CreateAbilityPayload(Owner, Owner, Owner->GetTransform());
 	GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload, PatternToLaunch);
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);

@@ -5,7 +5,11 @@
 
 bool UStatusInfo::FillStatusInfoFromTag(FGameplayTag const& tag, FRpgStatusInfo& outInfo) const
 {
-	FRpgStatusInfo const* pInfo = StatusInfos.FindByPredicate([&tag](FRpgStatusInfo const& info) { return info.StatusTag.MatchesTag(tag); });
+	FRpgStatusInfo const* pInfo = StatusInfos.FindByPredicate(
+		[&tag](FRpgStatusInfo const& info)
+		{
+			return info.StatusTag.MatchesTag(tag);
+		});
 	if (!pInfo)
 	{
 		return false;

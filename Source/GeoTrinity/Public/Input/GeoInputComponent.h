@@ -24,25 +24,25 @@ public:
 	// Sets default values for this component's properties
 	UGeoInputComponent();
 	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType,
-		FActorComponentTickFunction* ThisTickFunction) override;
+							   FActorComponentTickFunction* ThisTickFunction) override;
 
 	void UpdateMouseLook();
 	void BindInput(UInputComponent* PlayerInputComponent);
 
 	UFUNCTION()
-	void MoveFromInput(const FInputActionInstance& Instance);
+	void MoveFromInput(FInputActionInstance const& Instance);
 
 	UFUNCTION()
-	void LookFromInput(const FInputActionInstance& Instance);
+	void LookFromInput(FInputActionInstance const& Instance);
 
 	AGeoCharacter* GetGeoCharacter() const;
 
 	// Returns true if there is a valid non-zero look vector from right stick
 	bool GetLookVector(FVector2D& OutLook) const;
 
-	template<class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
+	template <class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
 	void BindAbilityActions(UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc,
-		HeldFuncType HeldFunc);
+							HeldFuncType HeldFunc);
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
@@ -65,13 +65,13 @@ private:
 
 // template function definition must be in .h
 // because the compiler must see its full definition in every translation unit
-template<class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
+template <class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
 void UGeoInputComponent::BindAbilityActions(UserClass* Object, PressedFuncType PressedFunc,
-	ReleasedFuncType ReleasedFunc, HeldFuncType HeldFunc)
+											ReleasedFuncType ReleasedFunc, HeldFuncType HeldFunc)
 {
 	checkf(InputConfig, TEXT("Please fill in Input config in %s"), *GetName());
 
-	for (const auto& [InputAction, InputTag] : InputConfig->AbilityInputActions)
+	for (auto const& [InputAction, InputTag] : InputConfig->AbilityInputActions)
 	{
 		if (!(InputAction && InputTag.IsValid()))
 		{

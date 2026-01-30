@@ -16,7 +16,7 @@ void UGeoAbilitySystemComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	const UWorld* World = GetWorld();
+	UWorld const* World = GetWorld();
 	if (!World || !World->IsGameWorld())
 	{
 		// Editor preview worlds, editor world, etc.
@@ -56,10 +56,10 @@ FGeoGameplayEffectContext* UGeoAbilitySystemComponent::MakeGeoEffectContext() co
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive)
 {
-	for (const TSubclassOf<UGeoGameplayAbility>& AbilityClass : AbilitiesToGive)
+	for (TSubclassOf<UGeoGameplayAbility> const& AbilityClass : AbilitiesToGive)
 	{
 		FGameplayAbilitySpec abilitySpec{AbilityClass, 1};
-		if (const UGeoGameplayAbility* pMMAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability))
+		if (UGeoGameplayAbility const* pMMAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability))
 		{
 			abilitySpec.GetDynamicSpecSourceTags().AddTag(pMMAbility->StartupInputTag);
 			// If we ever need to be able to switch between active GA, we will need to use this system again. Leaving it
@@ -75,8 +75,8 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<TSubclassOf<UGeoGam
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities(const TArray<FGameplayTag>& AbilitiesToGive,
-													  const int32 Level /*= 1.f*/)
+void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive,
+													  int32 const Level /*= 1.f*/)
 {
 	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	if (!AbilityInfos)
@@ -87,14 +87,14 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(const TArray<FGameplayTag>
 
 	TArray<FGameplayAbilityInfo> AbilityInfoList = AbilityInfos->FindAbilityInfoForListOfTag(AbilitiesToGive, true);
 
-	for (const FGameplayAbilityInfo& AbilityInfo : AbilityInfoList)
+	for (FGameplayAbilityInfo const& AbilityInfo : AbilityInfoList)
 	{
 		FGameplayAbilitySpec abilitySpec{AbilityInfo.AbilityClass, Level};
 
 		// Add input tag if need be
 		if (AbilityInfo.TypeOfAbilityTag.IsValid())
 		{
-			if (const FGameplayTag* FoundTag =
+			if (FGameplayTag const* FoundTag =
 					AbilityInfos->AbilityTypeToInputTagMap.Find(AbilityInfo.TypeOfAbilityTag))
 			{
 				abilitySpec.GetDynamicSpecSourceTags().AddTag(*FoundTag);
@@ -115,13 +115,13 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(const TArray<FGameplayTag>
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities(const int32 Level)
+void UGeoAbilitySystemComponent::GiveStartupAbilities(int32 const Level)
 {
 	GiveStartupAbilities(StartupAbilityTags, Level);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& inputTag)
+void UGeoAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag const& inputTag)
 {
 	if (!inputTag.IsValid())
 	{
@@ -144,7 +144,7 @@ void UGeoAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& inpu
 		{
 			PRAGMA_DISABLE_DEPRECATION_WARNINGS
 			// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
-			const UGameplayAbility* Instance = abilitySpec.GetPrimaryInstance();
+			UGameplayAbility const* Instance = abilitySpec.GetPrimaryInstance();
 			FPredictionKey originalPredictionKey = Instance
 				? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
 				: abilitySpec.ActivationInfo.GetActivationPredictionKey();
@@ -157,7 +157,7 @@ void UGeoAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& inpu
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& inputTag)
+void UGeoAbilitySystemComponent::AbilityInputTagHeld(FGameplayTag const& inputTag)
 {
 	if (!inputTag.IsValid())
 	{
@@ -169,7 +169,7 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& inputTa
 		UE_LOG(LogTemp, Warning, TEXT("AbilityInputTagHeld of INPUT %s"), *inputTag.ToString());
 	}
 
-	const double CurrentTime = GetWorld()->GetTimeSeconds();
+	double const CurrentTime = GetWorld()->GetTimeSeconds();
 
 	FScopedAbilityListLock activeScopeLock(*this);
 	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())
@@ -189,7 +189,7 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& inputTa
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& inputTag)
+void UGeoAbilitySystemComponent::AbilityInputTagReleased(FGameplayTag const& inputTag)
 {
 	if (!inputTag.IsValid())
 	{
@@ -205,7 +205,7 @@ void UGeoAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& inp
 
 			PRAGMA_DISABLE_DEPRECATION_WARNINGS
 			// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
-			const UGameplayAbility* Instance = abilitySpec.GetPrimaryInstance();
+			UGameplayAbility const* Instance = abilitySpec.GetPrimaryInstance();
 			FPredictionKey originalPredictionKey = Instance
 				? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
 				: abilitySpec.ActivationInfo.GetActivationPredictionKey();
@@ -225,7 +225,7 @@ void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> 
 	FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext();
 	EffectContextHandle.AddSourceObject(this);
 
-	const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(GameplayEffectClass, Level, EffectContextHandle);
+	FGameplayEffectSpecHandle const SpecHandle = MakeOutgoingSpec(GameplayEffectClass, Level, EffectContextHandle);
 
 	if (SpecHandle.IsValid())
 	{
@@ -253,19 +253,19 @@ void UGeoAbilitySystemComponent::BindAttributeCallbacks()
 {
 	GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
 		.AddWeakLambda(this,
-					   [this](const FOnAttributeChangeData& Data)
+					   [this](FOnAttributeChangeData const& Data)
 					   {
 						   OnHealthChanged.Broadcast(Data.NewValue);
 					   });
 	GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetMaxHealthAttribute())
 		.AddWeakLambda(this,
-					   [this](const FOnAttributeChangeData& Data)
+					   [this](FOnAttributeChangeData const& Data)
 					   {
 						   OnMaxHealthChanged.Broadcast(Data.NewValue);
 					   });
 }
 
-UPattern* UGeoAbilitySystemComponent::CreatePatternInstance(const UClass* PatternClass, FGameplayTag AbilityTag)
+UPattern* UGeoAbilitySystemComponent::CreatePatternInstance(UClass const* PatternClass, FGameplayTag AbilityTag)
 {
 	if (!PatternClass)
 	{
@@ -283,7 +283,7 @@ UPattern* UGeoAbilitySystemComponent::CreatePatternInstance(const UClass* Patter
 bool UGeoAbilitySystemComponent::FindPatternByClass(UClass* PatternClass, UPattern*& Pattern)
 {
 	UPattern** FoundPattern = Patterns.FindByPredicate(
-		[PatternClass](const UPattern* Candidate)
+		[PatternClass](UPattern const* Candidate)
 		{
 			return IsValid(Candidate) && Candidate->IsA(PatternClass);
 		});

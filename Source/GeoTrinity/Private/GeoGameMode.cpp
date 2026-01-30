@@ -4,7 +4,7 @@
 
 #include "Characters/GeoCharacter.h"
 
-AGeoGameMode::AGeoGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+AGeoGameMode::AGeoGameMode(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	DefaultPawnClass = AGeoCharacter::StaticClass();
 }

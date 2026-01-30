@@ -8,9 +8,8 @@
 #include "Tool/GameplayLibrary.h"
 
 // Sets default values
-AGeoCharacter::AGeoCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(
-		  ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(ACharacter::CharacterMovementComponentName))
+AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicates(true);
@@ -37,9 +36,9 @@ UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
-ETeamAttitude::Type AGeoCharacter::GetTeamAttitudeTowards(const AActor& Other) const
+ETeamAttitude::Type AGeoCharacter::GetTeamAttitudeTowards(AActor const& Other) const
 {
-	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<const IGenericTeamAgentInterface>(&Other);
+	IGenericTeamAgentInterface const* OtherTeamAgent = Cast<IGenericTeamAgentInterface const>(&Other);
 	if (!OtherTeamAgent)
 	{
 		return ETeamAttitude::Neutral;
@@ -48,21 +47,21 @@ ETeamAttitude::Type AGeoCharacter::GetTeamAttitudeTowards(const AActor& Other) c
 	return OtherTeamAgent->GetGenericTeamId() == GetGenericTeamId() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
 }
 
-void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage) const
+void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const
 {
 	DrawDebugVectorFromCharacter(Direction, DebugMessage, GameplayLibrary::GetColorForObject(this));
 }
 
-void AGeoCharacter::DrawDebugVectorFromCharacter(const FVector& Direction, const FString& DebugMessage,
-	FColor Color) const
+void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage,
+												 FColor Color) const
 {
 	// Debug: draw a world-space line (arrow) from the character showing the look vector
 	if (UWorld* World = GetWorld())
 	{
-		const FVector Start = GetActorLocation();
-		const FVector Dir = Direction.GetSafeNormal();
-		constexpr float Length = 500.f;   // visualized length of the vector
-		const FVector End = Start + Dir * Length;
+		FVector const Start = GetActorLocation();
+		FVector const Dir = Direction.GetSafeNormal();
+		constexpr float Length = 500.f; // visualized length of the vector
+		FVector const End = Start + Dir * Length;
 
 		DrawDebugDirectionalArrow(World, Start, End, 20.f, Color, false, 0.f, 0, 2.f);
 

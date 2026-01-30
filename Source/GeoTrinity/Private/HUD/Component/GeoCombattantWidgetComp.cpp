@@ -11,10 +11,11 @@
 void UGeoCombattantWidgetComp::PostInitProperties()
 {
 	Super::PostInitProperties();
-	
+
 	if (GetWidgetClass() && !GetWidgetClass()->IsChildOf(UGenericCombattantWidget::StaticClass()))
 	{
-		UE_LOG(LogGeoASC, Error, TEXT("You may want to use a widget class derived from UGenericCombattantWidget for %s"), *GetName());
+		UE_LOG(LogGeoASC, Error,
+			   TEXT("You may want to use a widget class derived from UGenericCombattantWidget for %s"), *GetName());
 	}
 }
 
@@ -35,19 +36,18 @@ void UGeoCombattantWidgetComp::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogGeoASC, Warning, TEXT("IAbilitySystemInterface was not implemented on owner actor %s for %s. No stat will be displayed"), 
-			*OwnerActor->GetName(), *GetName());
+		UE_LOG(LogGeoASC, Warning,
+			   TEXT("IAbilitySystemInterface was not implemented on owner actor %s for %s. No stat will be displayed"),
+			   *OwnerActor->GetName(), *GetName());
 	}
-	
 }
 
 
 // Called every frame
 void UGeoCombattantWidgetComp::TickComponent(float DeltaTime, ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
+											 FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
 }
-

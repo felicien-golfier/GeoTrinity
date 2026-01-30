@@ -32,7 +32,7 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 		return;
 	}
 
-	const FTransform SpawnTransform = GetActorTransform();
+	FTransform const SpawnTransform = GetActorTransform();
 
 	// Create turret
 	checkf(TurretActorClass, TEXT("No Turret in the turret spawner!"));
@@ -40,7 +40,7 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 	APawn* Pawn = Cast<APawn>(Owner);
 	if (!IsValid(Pawn))
 	{
-		if (const APlayerState* PlayerController = Cast<APlayerState>(Owner))
+		if (APlayerState const* PlayerController = Cast<APlayerState>(Owner))
 		{
 			Pawn = PlayerController->GetPawn();
 		}
@@ -51,8 +51,8 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 		}
 	}
 
-	AGeoTurretBase* Turret = GetWorld()->SpawnActorDeferred<AGeoTurretBase>(TurretActorClass, SpawnTransform, Owner,
-		Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	AGeoTurretBase* Turret = GetWorld()->SpawnActorDeferred<AGeoTurretBase>(
+		TurretActorClass, SpawnTransform, Owner, Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
 	if (!IsValid(Turret))
 	{
@@ -64,7 +64,7 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 	Data.CharacterOwner = Owner;
 	Data.Level = GetTurretLevel();
 	Data.EffectDataArray = EffectDataArray;
-	if (const IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(Owner))
+	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Owner))
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
 	}
@@ -73,7 +73,7 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 	Turret->FinishSpawning(SpawnTransform);
 }
 
-bool ATurretSpawnerProjectile::IsValidOverlap(const AActor* OtherActor)
+bool ATurretSpawnerProjectile::IsValidOverlap(AActor const* OtherActor)
 {
 	return OtherActor != GetInstigator() && Super::IsValidOverlap(OtherActor);
 }

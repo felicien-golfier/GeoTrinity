@@ -4,22 +4,22 @@
 
 namespace
 {
-enum RepFlag
-{
-	REP_IsBlockedHit,
-	REP_IsCriticalHit,
-	REP_DebuffDamage,
-	REP_DebuffDuration,
-	REP_DebuffFrequency,
-	REP_DeathImpulseVector,
-	REP_KnockbackVector,
-	REP_IsRadialDamage,
-	REP_RadialDamageInnerRadius,
-	REP_RadialDamageOuterRadius,
-	REP_RadialDamageOrigin,
-	REP_MAX
-};
-}   // namespace
+	enum RepFlag
+	{
+		REP_IsBlockedHit,
+		REP_IsCriticalHit,
+		REP_DebuffDamage,
+		REP_DebuffDuration,
+		REP_DebuffFrequency,
+		REP_DeathImpulseVector,
+		REP_KnockbackVector,
+		REP_IsRadialDamage,
+		REP_RadialDamageInnerRadius,
+		REP_RadialDamageOuterRadius,
+		REP_RadialDamageOrigin,
+		REP_MAX
+	};
+} // namespace
 
 FGeoGameplayEffectContext* FGeoGameplayEffectContext::Duplicate() const
 {
