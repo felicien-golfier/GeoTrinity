@@ -3,8 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ExecCalc_Damage.generated.h"
 #include "GameplayEffectExecutionCalculation.h"
+
+#include "ExecCalc_Damage.generated.h"
 
 /**
  * Modifies the manner Damage attribute is calculated for a GE

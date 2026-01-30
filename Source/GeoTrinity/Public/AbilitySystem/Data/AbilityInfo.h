@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include "AbilityInfo.generated.h"
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
+
+#include "AbilityInfo.generated.h"
 
 
 class UGameplayAbility;

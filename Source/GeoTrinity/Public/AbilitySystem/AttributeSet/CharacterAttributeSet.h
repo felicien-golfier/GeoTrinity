@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include "CharacterAttributeSet.generated.h"
 #include "CoreMinimal.h"
 #include "GeoAttributeSetBase.h"
+
+#include "CharacterAttributeSet.generated.h"
 
 /**
  *

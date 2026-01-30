@@ -4,6 +4,7 @@
 
 #include "Components/WidgetComponent.h"
 #include "CoreMinimal.h"
+
 #include "GeoCombattantWidgetComp.generated.h"
 
 

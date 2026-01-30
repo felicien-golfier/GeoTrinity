@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
+
 #include "GeoInputConfig.generated.h"
 
 USTRUCT(BlueprintType)

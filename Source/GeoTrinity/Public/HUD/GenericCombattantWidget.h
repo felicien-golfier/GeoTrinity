@@ -4,8 +4,9 @@
 
 #include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
-#include "GenericCombattantWidget.generated.h"
 #include "GeoUserWidget.h"
+
+#include "GenericCombattantWidget.generated.h"
 
 /**
  *

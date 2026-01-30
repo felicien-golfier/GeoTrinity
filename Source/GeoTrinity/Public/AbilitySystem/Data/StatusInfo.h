@@ -6,6 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
 #include "ScalableFloat.h"
+
 #include "StatusInfo.generated.h"
 
 

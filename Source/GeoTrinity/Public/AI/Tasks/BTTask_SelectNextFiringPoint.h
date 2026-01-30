@@ -1,9 +1,10 @@
 ﻿// BTTask_SelectNextFiringPoint.h
 #pragma once
 
-#include "BTTask_SelectNextFiringPoint.generated.h"
 #include "BehaviorTree/BTTaskNode.h"
 #include "CoreMinimal.h"
+
+#include "BTTask_SelectNextFiringPoint.generated.h"
 
 /**
  * Sets a Vector blackboard key to the next firing point location from AEnemyCharacter.FiringPoints (round-robin)

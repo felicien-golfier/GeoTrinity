@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
 #include "CoreMinimal.h"
+
 #include "GeoAttributeSetBase.generated.h"
 
 #define GAMEPLAYATTRIBUTE_BASEVALUE_GETTER(PropertyName)   \

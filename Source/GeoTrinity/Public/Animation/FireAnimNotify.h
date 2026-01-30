@@ -4,6 +4,7 @@
 
 #include "Animation/AnimNotifies/AnimNotify.h"
 #include "CoreMinimal.h"
+
 #include "FireAnimNotify.generated.h"
 
 /**

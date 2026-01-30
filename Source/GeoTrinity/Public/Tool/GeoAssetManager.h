@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/AssetManager.h"
+
 #include "GeoAssetManager.generated.h"
 
 /**

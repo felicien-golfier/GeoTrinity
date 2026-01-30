@@ -3,8 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "HudFunctionLibrary.generated.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+
+#include "HudFunctionLibrary.generated.h"
 
 class UAbilitySystemComponent;
 /**
