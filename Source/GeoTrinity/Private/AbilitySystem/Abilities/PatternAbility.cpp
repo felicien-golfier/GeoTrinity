@@ -6,10 +6,12 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 
 void UPatternAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-	const FGameplayEventData* TriggerEventData)
+									  const FGameplayAbilityActorInfo* ActorInfo,
+									  const FGameplayAbilityActivationInfo ActivationInfo,
+									  const FGameplayEventData* TriggerEventData)
 {
-	checkf(PatternToLaunch, TEXT("Please fill the PatternToLaunch in Blueprint"));
+	ensureMsgf(PatternToLaunch, TEXT("Please fill the PatternToLaunch in Blueprint"));
+	ensureMsgf(HasAuthority(&ActivationInfo), TEXT("PatternAbility are made for Server initiated abilities only."));
 
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
@@ -18,7 +20,7 @@ void UPatternAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 
 	AActor* Owner = GetOwningActorFromActorInfo();
-	const FAbilityPayload& Payload = CreateAbilityPayload(Owner->GetTransform(), Owner, Owner);
+	const FAbilityPayload& Payload = CreateAbilityPayload(Owner, Owner, Owner->GetTransform());
 	GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload, PatternToLaunch);
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);

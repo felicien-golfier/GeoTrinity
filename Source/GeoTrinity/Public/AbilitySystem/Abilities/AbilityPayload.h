@@ -9,16 +9,16 @@ struct GEOTRINITY_API FAbilityPayload
 	GENERATED_BODY()
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	FVector2D Origin{};   // position X,Y
+	FVector2D Origin{}; // position X,Y
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	float Yaw{};   // orientation
+	float Yaw{}; // orientation
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	double ServerSpawnTime{};   // server world time (seconds)
+	float ServerSpawnTime{}; // server world time (seconds)
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	int Seed{};   // seed pour variations RNG
+	int Seed{}; // seed pour variations RNG
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	int AbilityLevel{};

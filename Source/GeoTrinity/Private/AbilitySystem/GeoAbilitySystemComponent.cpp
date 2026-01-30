@@ -10,6 +10,7 @@
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Tool/GameplayLibrary.h"
 
 void UGeoAbilitySystemComponent::InitializeComponent()
 {
@@ -182,15 +183,7 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& inputTa
 
 		if (!abilitySpec.IsActive())
 		{
-			// Use orientation-aware activation for projectile abilities
-			if (abilitySpec.Ability->IsA<UGeoProjectileAbility>())
-			{
-				TryActivateAbilityWithOrientation(abilitySpec.Handle);
-			}
-			else
-			{
-				TryActivateAbility(abilitySpec.Handle);
-			}
+			TryActivateAbilityWithTargetData(abilitySpec.Handle);
 		}
 	}
 }
@@ -323,18 +316,19 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool UGeoAbilitySystemComponent::TryActivateAbilityWithOrientation(FGameplayAbilitySpecHandle Handle)
+bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbilitySpecHandle Handle)
 {
 	// Build event data with avatar's current orientation
 	FGameplayEventData EventData;
 
 	if (AActor* Avatar = GetAvatarActor())
 	{
-		FGameplayAbilityTargetDataHandle TargetData;
-		FGeoAbilityTargetData_Orientation* OrientationData = new FGeoAbilityTargetData_Orientation(
-			FVector2D(Avatar->GetActorLocation()), Avatar->GetActorRotation().Yaw);
-		TargetData.Add(OrientationData);
-		EventData.TargetData = TargetData;
+		FGameplayAbilityTargetDataHandle TargetDataHandle;
+		FGeoAbilityTargetData* TargetData =
+			new FGeoAbilityTargetData(FVector2D(Avatar->GetActorLocation()), Avatar->GetActorRotation().Yaw,
+									  GameplayLibrary::GetServerTime(GetWorld(), true), FMath::Rand32());
+		TargetDataHandle.Add(TargetData);
+		EventData.TargetData = TargetDataHandle;
 		EventData.Instigator = Avatar;
 	}
 

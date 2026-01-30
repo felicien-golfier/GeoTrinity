@@ -23,19 +23,22 @@ void UGeoProjectileAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	// Build payload from avatar transform
 	AActor* Instigator = GetAvatarActorFromActorInfo();
-	StoredPayload = CreateAbilityPayload(Instigator->GetTransform(), GetOwningActorFromActorInfo(), Instigator);
+	if (const FGeoAbilityTargetData* TargetData =
+			static_cast<const FGeoAbilityTargetData*>(TriggerEventData->TargetData.Get(0)))
+	{
+		StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, TargetData->Origin,
+											 TargetData->Yaw, TargetData->ServerSpawnTime, TargetData->Seed);
+	}
+	else
+	{
+		StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, Instigator->GetTransform());
+	}
 
 	// Extract orientation from TriggerEventData if available (sent via event-based activation)
 	// Both client and server receive the same event data in a single RPC
 
 	ensureMsgf(TriggerEventData && TriggerEventData->TargetData.Num() > 0, TEXT("No TargetData in TriggerEventData!"));
 
-	if (const FGeoAbilityTargetData_Orientation* OrientationData =
-			static_cast<const FGeoAbilityTargetData_Orientation*>(TriggerEventData->TargetData.Get(0)))
-	{
-		StoredPayload.Origin = OrientationData->Origin;
-		StoredPayload.Yaw = OrientationData->Yaw;
-	}
 
 	// Proceed with montage or spawn
 	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();

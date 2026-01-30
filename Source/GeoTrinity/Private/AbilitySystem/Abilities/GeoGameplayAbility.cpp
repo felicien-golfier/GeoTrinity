@@ -18,19 +18,25 @@ FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 	return GeoASL::GetAbilityTagFromAbility(*this);
 }
 
-FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(const FTransform& Transform, AActor* Owner,
-														  AActor* Instigator) const
+FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator, const FVector2D& Origin,
+														  float Yaw, float ServerSpawnTime, int Seed) const
 {
 	FAbilityPayload Payload;
 	Payload.Owner = Owner;
 	Payload.Instigator = Instigator;
-	Payload.Origin = FVector2D(Transform.GetLocation());
-	Payload.Yaw = Transform.GetRotation().Rotator().Yaw;
-	Payload.ServerSpawnTime = GL::GetServerTime(GetWorld());
-	Payload.Seed = FMath::Rand32();
+	Payload.Origin = Origin;
+	Payload.Yaw = Yaw;
+	Payload.ServerSpawnTime = ServerSpawnTime;
+	Payload.Seed = Seed;
 	Payload.AbilityLevel = GetAbilityLevel();
 	Payload.AbilityTag = GetAbilityTag();
 	return Payload;
+}
+FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator,
+														  const FTransform& Transform) const
+{
+	return CreateAbilityPayload(Owner, Instigator, FVector2D(Transform.GetLocation()),
+								Transform.GetRotation().Rotator().Yaw, GL::GetServerTime(GetWorld()), FMath::Rand32());
 }
 
 UGeoAbilitySystemComponent* UGeoGameplayAbility::GetGeoAbilitySystemComponentFromActorInfo() const

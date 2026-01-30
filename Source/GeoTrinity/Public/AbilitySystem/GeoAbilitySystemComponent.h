@@ -39,7 +39,7 @@ public:
 	void AbilityInputTagReleased(const FGameplayTag& inputTag);
 
 	/** Activates ability with event data containing avatar orientation. Used for projectile abilities. */
-	bool TryActivateAbilityWithOrientation(FGameplayAbilitySpecHandle Handle);
+	bool TryActivateAbilityWithTargetData(FGameplayAbilitySpecHandle Handle);
 
 	/** Effects **/
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, int32 Level = 1);

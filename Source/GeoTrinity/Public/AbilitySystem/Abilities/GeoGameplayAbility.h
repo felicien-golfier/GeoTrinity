@@ -24,7 +24,9 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 
 public:
 	FGameplayTag GetAbilityTag() const;
-	FAbilityPayload CreateAbilityPayload(const FTransform& Transform, AActor* Owner, AActor* Instigator) const;
+	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, const FVector2D& Origin, float Yaw,
+										 float ServerSpawnTime, int Seed) const;
+	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, const FTransform& Transform) const;
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
 	TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const;
 	float GetCooldown(int32 level = 1) const;
