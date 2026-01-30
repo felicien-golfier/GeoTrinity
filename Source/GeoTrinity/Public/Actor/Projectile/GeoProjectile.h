@@ -19,6 +19,7 @@ class USoundBase;
 class UAudioComponent;
 class UPrimitiveComponent;
 struct FHitResult;
+enum class ETeam : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
 UCLASS()
@@ -76,7 +77,7 @@ private:
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
 	float DistanceSpan = 100.f;
 
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "ETeam"))
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeam"))
 	int32 ApplyEffectToTeamOnOverlap;
 
 	bool bIsEnding{false};

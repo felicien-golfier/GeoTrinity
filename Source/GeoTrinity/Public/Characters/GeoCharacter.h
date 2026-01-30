@@ -10,6 +10,8 @@
 
 #include "GeoCharacter.generated.h"
 
+
+enum class ETeam : uint8;
 class UCharacterAttributeSet;
 class UGeoGameplayAbility;
 struct FGameplayTag;
@@ -19,14 +21,6 @@ class UGeoInputComponent;
 class UDynamicMeshComponent;
 class UGeoMovementComponent;
 class UStaticMeshComponent;
-
-UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
-enum class ETeam : uint8
-{
-	Neutral = (1 << 0) UMETA(DisplayName = "Neutral"),
-	Ally = (1 << 1) UMETA(DisplayName = "Ally"),
-	Enemy = (1 << 2) UMETA(DisplayName = "Enemy")
-};
 
 UCLASS()
 class GEOTRINITY_API AGeoCharacter

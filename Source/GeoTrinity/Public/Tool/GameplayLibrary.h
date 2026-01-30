@@ -1,6 +1,15 @@
 ﻿#pragma once
 #include "GenericTeamAgentInterface.h"
 
+
+UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class ETeam : uint8
+{
+	Neutral = (1 << 0) UMETA(DisplayName = "Neutral"),
+	Ally = (1 << 1) UMETA(DisplayName = "Ally"),
+	Enemy = (1 << 2) UMETA(DisplayName = "Enemy")
+};
+
 class GameplayLibrary
 {
 public:

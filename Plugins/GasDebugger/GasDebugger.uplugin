@@ -20,5 +20,15 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
-	]
+    ],
+    "Plugins": [
+        {
+            "Name": "GameplayTagsEditor",
+            "Enabled": true
+        },
+        {
+            "Name": "GameplayAbilities",
+            "Enabled": true
+        }
+    ]
 }
