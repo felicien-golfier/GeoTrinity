@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(find:*)",
-      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.6\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinity Win64 Development -Project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")"
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.6\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinity Win64 Development -Project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")",
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinityEditor Win64 Development -Project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")",
+      "Bash(findstr:*)",
+      "Bash(dir /s /b \"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Plugins\\\\Runtime\\\\*StateTreeComponent.h\")",
+      "Bash(dir /s /b \"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Plugins\\\\Runtime\\\\StateTree\\\\*.h\")",
+      "WebSearch",
+      "WebFetch(domain:dev.epicgames.com)",
+      "WebFetch(domain:x157.github.io)"
     ]
   }
 }

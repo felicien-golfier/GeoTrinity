@@ -8,6 +8,7 @@
 
 #include "EnemyCharacter.generated.h"
 
+class UStateTree;
 /**
  *
  */
@@ -23,10 +24,10 @@ public:
 	UPROPERTY(Transient)
 	TArray<AActor*> FiringPoints;
 
-	// Behavior Tree to run for this enemy (assigned per instance or via BP)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|AI")
-	TObjectPtr<class UBehaviorTree> BehaviorTree;
 
+	UPROPERTY(EditAnywhere, Category = "AI")
+	TObjectPtr<UStateTree> StateTree;
+	
 	// Get next firing point (cycles) and advance the internal index. Returns false if none.
 	bool GetAndAdvanceNextFiringPointLocation(FVector& OutLocation);
 

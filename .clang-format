@@ -63,6 +63,7 @@ MacroBlockEnd: ''
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: All
 PointerAlignment: Left
+QualifierAlignment: Right
 SortUsingDeclarations: true
 SpaceInEmptyParentheses: false
 SpacesInAngles: false

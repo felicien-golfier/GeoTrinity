@@ -20,7 +20,10 @@ public class GeoTrinity : ModuleRules
 			"GameplayAbilities",
 			"SlateCore",
 			"Slate",
-			"DeveloperSettings", "AIModule"
+			"DeveloperSettings",
+			"AIModule",
+			"StateTreeModule",
+			"GameplayStateTreeModule"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
