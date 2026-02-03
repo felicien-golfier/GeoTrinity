@@ -8,19 +8,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="53a171f0-0e5c-4bcf-a996-6a81ea21731c" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.claude/skills/skip_perm/SKILL.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/AI/ST_EnemyBehaviour.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/AI/ST_EnemyBehaviour.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Game/BP_GeoGameState.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Game/BP_GeoGameState.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AI/GeoEnemyAIController.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AI/GeoEnemyAIController.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AI/StateTree/STTask_FireProjectileAbility.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AI/StateTree/STTask_FireProjectileAbility.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AI/StateTree/STTask_SelectNextFiringPoint.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AI/StateTree/STTask_SelectNextFiringPoint.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Abilities/Pattern/Pattern.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Abilities/Pattern/Pattern.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Abilities/PatternAbility.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Abilities/PatternAbility.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/AI/StateTree/STTask_FireProjectileAbility.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/AI/StateTree/STTask_FireProjectileAbility.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Abilities/Pattern/Pattern.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Abilities/Pattern/Pattern.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Abilities/PatternAbility.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Abilities/PatternAbility.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.GeoTrinity.dir/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GeoTrinity.dir/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,7 +19,7 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="9492" />
+    <option name="cachedIndexableFilesCount" value="9428" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -50,7 +38,7 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="cidr-memory-view://5" root0="FORCE_HIGHLIGHTING" />
+    <setting file="cidr-memory-view://0" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/AIModule/Private/Tasks/AITask_MoveTo.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/Core/Public/Misc/MTAccessDetector.h" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/CoreUObject/Public/StructUtils/InstancedStruct.h" root0="FORCE_HIGHLIGHTING" />
@@ -72,35 +60,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "Uproject.GeoTrinity.executor": "Debug",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "do_not_show_solution_notification": "true",
-    "git-widget-placeholder": "state-tree",
-    "junie.onboarding.icon.badge.shown": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "rider.code.cleanup.on.save": "true",
-    "settings.editor.selected.configurable": "UnrealLinkOptionsId",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;Uproject.GeoTrinity.executor&quot;: &quot;Debug&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;do_not_show_solution_notification&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;state-tree&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;rider.code.cleanup.on.save&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;UnrealLinkOptionsId&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecapSpentCounter">
     <option name="endsOfQuotaMs" value="1771488077146" />
     <option name="spentUsd" value="0.029896349" />
   </component>
   <component name="RecapUselessUpdatesCounter">
-    <option name="suspendCountdown" value="9" />
+    <option name="suspendCountdown" value="8" />
   </component>
   <component name="RunManager">
     <configuration name="GeoTrinity" type="Uproject" factoryName="rider.uproject">
@@ -188,7 +176,8 @@
       <workItem from="1770046473452" duration="10000" />
       <workItem from="1770047699596" duration="1135000" />
       <workItem from="1770122116104" duration="4863000" />
-      <workItem from="1770127075651" duration="5649000" />
+      <workItem from="1770127075651" duration="5698000" />
+      <workItem from="1770132901272" duration="426000" />
     </task>
     <servers />
   </component>
