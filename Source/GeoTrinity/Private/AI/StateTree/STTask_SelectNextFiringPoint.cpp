@@ -16,7 +16,6 @@ EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutio
 		return EStateTreeRunStatus::Failed;
 	}
 
-	// If owner is a controller, get the pawn
 	if (AController const* Controller = Cast<AController>(Actor))
 	{
 		Actor = Controller->GetPawn();
@@ -32,7 +31,7 @@ EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutio
 	if (Enemy->GetAndAdvanceNextFiringPointLocation(Location))
 	{
 		InstanceData.TargetLocation = Location;
-		return EStateTreeRunStatus::Succeeded;
+		return EStateTreeRunStatus::Unset;
 	}
 
 	return EStateTreeRunStatus::Failed;

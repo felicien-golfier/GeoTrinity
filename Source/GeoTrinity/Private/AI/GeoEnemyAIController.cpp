@@ -18,6 +18,7 @@ void AGeoEnemyAIController::OnPossess(APawn* InPawn)
 		if (EnemyChar->StateTree)
 		{
 			StateTreeComp->SetStateTree(EnemyChar->StateTree);
+			StateTreeComp->StartLogic();
 		}
 	}
 }

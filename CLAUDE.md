@@ -10,7 +10,6 @@ GeoTrinity is a multiplayer 2D bullet-hell game built with Unreal Engine 5.7 usi
 
 - **IDE**: JetBrains Rider (not Visual Studio)
 - **Engine**: Unreal Engine 5.7
-- **Important**: Open the `.uproject` file directly in Rider, not the `.sln` - this ensures proper Unreal integration and build configurations
 
 ## Build Commands
 
@@ -96,10 +95,20 @@ Patterns spawn projectiles deterministically across clients:
 - `AEnemyCharacter` maintains firing points from world actors tagged "Path"
 
 **StateTree Task Pattern**:
-- Tasks are `USTRUCT` extending `FStateTreeTaskCommonBase`
+- Tasks are `USTRUCT` extending `FStateTreeTaskCommonBase` or `FStateTreeAIActionTaskBase`
 - Instance data stored in separate `FInstanceDataType` struct
-- Override `EnterState()` for one-shot tasks, `Tick()` for continuous tasks
+- **Must override** `GetInstanceDataType()`: `return FInstanceDataType::StaticStruct();`
 - Access owner via `Context.GetOwner()` (returns AIController or Pawn depending on schema)
+
+**StateTree Task Completion Patterns** (from `FStateTreeMoveToTask`, `FStateTreeDelayTask`):
+1. **Async completion (preferred for delegate-based tasks)**:
+   - In constructor: `bShouldCallTick = false;`
+   - Capture weak context: `Context.MakeWeakExecutionContext()`
+   - In delegate callback: `WeakContext.FinishTask(EStateTreeFinishTaskType::Succeeded)`
+   - Requires include: `StateTreeAsyncExecutionContext.h`
+2. **Scheduled tick (for timer-based tasks)**:
+   - Use `Context.UpdateScheduledTickRequest(Handle, FStateTreeScheduledTick::MakeCustomTickRate(Time))`
+   - Only ticks when needed, not every frame
 
 **UStateTreeAIComponent** (from `Components/StateTreeAIComponent.h`):
 - Inherits from `UStateTreeComponent` which inherits from `UBrainComponent`
@@ -143,6 +152,13 @@ Source/GeoTrinity/
 ```
 
 ## Important Notes for AI Assistance
+
+**NO WORKAROUNDS when debugging**: When investigating issues, find the actual root cause. Don't propose workarounds or alternative approaches until the real problem is understood. The user needs to understand what's actually wrong.
+
+**ALWAYS check existing Unreal Engine code for patterns**:
+- Before implementing StateTree tasks, AI behaviors, or GAS features, find and read existing Epic implementations
+- Key reference tasks: `FStateTreeDelayTask`, `FStateTreeMoveToTask` (see patterns below)
+- Plugin source is in `Engine\Plugins\Runtime\<PluginName>\Source\<Module>\`
 
 **ALWAYS verify Unreal Engine APIs before using them**:
 - Read the actual engine header files in `C:\Program Files\Epic Games\UE_5.7\Engine\` before suggesting method calls

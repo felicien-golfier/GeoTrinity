@@ -21,7 +21,20 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 
 	AActor* Owner = GetOwningActorFromActorInfo();
 	FAbilityPayload const& Payload = CreateAbilityPayload(Owner, Owner, Owner->GetTransform());
-	GetGeoAbilitySystemComponentFromActorInfo()->PatternStartMulticast(Payload, PatternToLaunch);
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	ASC->PatternStartMulticast(Payload, PatternToLaunch);
+	UPattern* PatternInstance;
+	ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
+			   TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
+	PatternInstance->OnPatternEnd.AddUniqueDynamic(this, &UPatternAbility::OnPatternEnd);
+}
 
-	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
+void UPatternAbility::OnPatternEnd()
+{
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	UPattern* PatternInstance;
+	ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
+			   TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
+	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
+	PatternInstance->OnPatternEnd.RemoveDynamic(this, &UPatternAbility::OnPatternEnd);
 }
