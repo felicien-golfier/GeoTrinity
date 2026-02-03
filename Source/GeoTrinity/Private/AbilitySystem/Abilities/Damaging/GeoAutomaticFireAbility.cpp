@@ -40,14 +40,10 @@ void UGeoAutomaticFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const 
 	{
 		StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, TargetData->Origin,
 											 TargetData->Yaw, TargetData->ServerSpawnTime, TargetData->Seed);
-		InitialServerSpawnTime = TargetData->ServerSpawnTime;
-		InitialSeed = TargetData->Seed;
 	}
 	else
 	{
 		StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, Instigator->GetTransform());
-		InitialServerSpawnTime = StoredPayload.ServerSpawnTime;
-		InitialSeed = StoredPayload.Seed;
 	}
 
 	// Reset firing state
@@ -97,8 +93,6 @@ void UGeoAutomaticFireAbility::EndAbility(FGameplayAbilitySpecHandle const Handl
 
 	// Reset state for next activation
 	CurrentShotIndex = 0;
-	InitialServerSpawnTime = 0.f;
-	InitialSeed = 0;
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -139,7 +133,7 @@ void UGeoAutomaticFireAbility::FireShot()
 
 	// Use deterministic seed variation per shot
 	// Each shot gets a predictable seed based on initial seed and shot index
-	StoredPayload.Seed = InitialSeed + CurrentShotIndex;
+	StoredPayload.Seed += CurrentShotIndex;
 
 	// Optionally update position from current avatar location (for moving characters)
 	// When disabled, uses initial position for better network sync but less responsiveness
@@ -190,5 +184,5 @@ float UGeoAutomaticFireAbility::GetShotServerTime(int32 ShotIndex) const
 {
 	// Deterministic shot timing: each shot's server time is predictable
 	// Both client and server calculate the same values, ensuring sync
-	return InitialServerSpawnTime + (static_cast<float>(ShotIndex) * FireInterval);
+	return StoredPayload.ServerSpawnTime + (static_cast<float>(ShotIndex) * FireInterval);
 }

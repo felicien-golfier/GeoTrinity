@@ -75,14 +75,8 @@ private:
 	/** Timer handle for the firing loop */
 	FTimerHandle FireTimerHandle;
 
-	/** Server time at ability activation, used for deterministic shot timing */
-	float InitialServerSpawnTime = 0.f;
-
 	/** Current shot index for deterministic timing */
 	int32 CurrentShotIndex = 0;
-
-	/** Initial seed for RNG variations */
-	int32 InitialSeed = 0;
 
 	/** Track if we should continue firing */
 	bool bWantsToFire = true;
