@@ -12,12 +12,13 @@ class UGameplayEffect;
 class AGeoProjectile;
 struct FAbilityPayload;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPatternEnd);
+
 UCLASS(BlueprintType, Blueprintable)
 class GEOTRINITY_API UPattern : public UObject
 {
 	GENERATED_BODY()
 
-private:
 	UFUNCTION()
 	void OnMontageSectionStartEnded();
 
@@ -53,6 +54,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UAnimMontage> AnimMontage;
+
+public:
+	FOnPatternEnd OnPatternEnd;
 };
 
 UCLASS(BlueprintType, Blueprintable)

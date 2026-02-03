@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "Bash(find:*)",
-      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.6\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinity Win64 Development -Project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")"
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.6\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinity Win64 Development -Project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")",
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinityEditor Win64 Development -Project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")",
+      "Bash(findstr:*)",
+      "Bash(dir *)",
+      "WebSearch",
+      "Write",
+      "Grep",
+      "Read",
+      "WebFetch(domain:dev.epicgames.com)",
+      "WebFetch(domain:x157.github.io)",
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Binaries\\\\DotNET\\\\UnrealBuildTool\\\\UnrealBuildTool.exe\" -projectfiles -project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\" -game -engine -progress)",
+      "Bash(dotnet --list-sdks:*)",
+      "Bash(\"/c/Program Files/dotnet/dotnet\" --version)"
     ]
   }
 }

@@ -114,7 +114,7 @@ void UPattern::EndPattern()
 	}
 
 	bPatternIsActive = false;
-	// TODO: EndAbility after Montage EndSection or directly right now.
+	OnPatternEnd.Broadcast();
 }
 
 void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
