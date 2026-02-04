@@ -15,8 +15,10 @@ void AGeoGameState::HandleMatchHasStarted()
 		SpawnParams.Owner = this;
 		for (auto EnemyToSpawn : EnemiesToSpawn)
 		{
-			SpawnedEnemies.Add(
-				GetWorld()->SpawnActor<AEnemyCharacter>(EnemyToSpawn, FTransform(FVector(0, 0, 50)), SpawnParams));
+			AEnemyCharacter* SpawnedEnemy =
+				GetWorld()->SpawnActor<AEnemyCharacter>(EnemyToSpawn, FTransform(FVector(0, 0, 50)), SpawnParams);
+			SpawnedEnemies.Add(SpawnedEnemy);
+			OnEnemySpawned.Broadcast(SpawnedEnemy);
 		}
 	}
 }

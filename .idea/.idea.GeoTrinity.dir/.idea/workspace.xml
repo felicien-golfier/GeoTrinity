@@ -8,7 +8,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="53a171f0-0e5c-4bcf-a996-6a81ea21731c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.GeoTrinity.dir/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GeoTrinity.dir/.idea/workspace.xml" afterDir="false" />
+<<<<<<< Updated upstream
+=======
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/AbilitySystem/Abilities/Projectile/GA_BasicAutoProjectile.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/AbilitySystem/Abilities/Projectile/GA_BasicAutoProjectile.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/HUD/BP_GeoHudMain.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/HUD/BP_GeoHudMain.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Abilities/Damaging/GeoProjectileAbility.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Abilities/Damaging/GeoProjectileAbility.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/GeoGameState.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/GeoGameState.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/HUD/GeoHUD.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/HUD/GeoHUD.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/Tool/GameplayLibrary.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/Tool/GameplayLibrary.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/GeoGameState.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/GeoGameState.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/HUD/GeoHUD.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/HUD/GeoHUD.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/Tool/GameplayLibrary.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/Tool/GameplayLibrary.h" afterDir="false" />
+>>>>>>> Stashed changes
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,7 +55,11 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
+<<<<<<< Updated upstream
     <setting file="cidr-memory-view://0" root0="FORCE_HIGHLIGHTING" />
+=======
+    <setting file="cidr-memory-view://2" root0="FORCE_HIGHLIGHTING" />
+>>>>>>> Stashed changes
     <setting file="file://$PROJECT_DIR$/../Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/AIModule/Private/Tasks/AITask_MoveTo.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/Core/Public/Misc/MTAccessDetector.h" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/CoreUObject/Public/StructUtils/InstancedStruct.h" root0="FORCE_HIGHLIGHTING" />
@@ -70,7 +91,11 @@
     &quot;Uproject.GeoTrinity.executor&quot;: &quot;Debug&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
     &quot;do_not_show_solution_notification&quot;: &quot;true&quot;,
+<<<<<<< Updated upstream
     &quot;git-widget-placeholder&quot;: &quot;state-tree&quot;,
+=======
+    &quot;git-widget-placeholder&quot;: &quot;highfirerateability&quot;,
+>>>>>>> Stashed changes
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -85,10 +110,17 @@
 }</component>
   <component name="RecapSpentCounter">
     <option name="endsOfQuotaMs" value="1771488077146" />
+<<<<<<< Updated upstream
     <option name="spentUsd" value="0.029896349" />
   </component>
   <component name="RecapUselessUpdatesCounter">
     <option name="suspendCountdown" value="8" />
+=======
+    <option name="spentUsd" value="0.17871399" />
+  </component>
+  <component name="RecapUselessUpdatesCounter">
+    <option name="suspendCountdown" value="0" />
+>>>>>>> Stashed changes
   </component>
   <component name="RunManager">
     <configuration name="GeoTrinity" type="Uproject" factoryName="rider.uproject">
@@ -177,7 +209,13 @@
       <workItem from="1770047699596" duration="1135000" />
       <workItem from="1770122116104" duration="4863000" />
       <workItem from="1770127075651" duration="5698000" />
+<<<<<<< Updated upstream
       <workItem from="1770132901272" duration="426000" />
+=======
+      <workItem from="1770132901272" duration="2592000" />
+      <workItem from="1770194622316" duration="4751000" />
+      <workItem from="1770209194100" duration="5250000" />
+>>>>>>> Stashed changes
     </task>
     <servers />
   </component>

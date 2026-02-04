@@ -14,6 +14,8 @@ class UAttributeSet;
 class UAbilitySystemComponent;
 class UGeoAbilitySystemComponent;
 class APlayerState;
+class UGenericCombattantWidget;
+class AEnemyCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeModifiedSignature, float, NewValue);
 
@@ -62,6 +64,17 @@ public:
 
 	FHudPlayerParams const& GetHudPlayerParams() const { return HudPlayerParams; }
 
+	/** Shows the boss health bar for the given enemy. Call this when a boss fight starts. */
+	UFUNCTION(BlueprintCallable, Category = "Boss")
+	void ShowBossHealthBar(AEnemyCharacter* Boss);
+
+	/** Hides the boss health bar. Call this when the boss fight ends. */
+	UFUNCTION(BlueprintCallable, Category = "Boss")
+	void HideBossHealthBar();
+
+protected:
+	virtual void BeginPlay() override;
+
 private:
 	void BroadcastInitialValues() const;
 	void BindCallbacksToDependencies();
@@ -70,8 +83,15 @@ private:
 	UPROPERTY()
 	TObjectPtr<UGeoUserWidget> OverlayWidget;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Overlay")
 	TSubclassOf<UGeoUserWidget> OverlayWidgetClass;
+
+	/** Widget class for the boss health bar displayed at the top of the screen */
+	UPROPERTY(EditAnywhere, Category = "Boss")
+	TSubclassOf<UGenericCombattantWidget> BossHealthBarWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UGenericCombattantWidget> BossHealthBarWidget;
 
 	FHudPlayerParams HudPlayerParams;
 

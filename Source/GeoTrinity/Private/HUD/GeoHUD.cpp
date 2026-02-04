@@ -4,8 +4,12 @@
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "Blueprint/UserWidget.h"
+#include "Characters/EnemyCharacter.h"
+#include "GeoGameState.h"
 #include "GeoPlayerController.h"
+#include "HUD/GenericCombattantWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
 
@@ -91,4 +95,62 @@ void AGeoHUD::BindCallbacksToDependencies()
 					   {
 						   OnMaxHealthChanged.Broadcast(data.NewValue);
 					   });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Auto-show boss health bar when enemies spawn
+	if (UWorld* World = GetWorld())
+	{
+		if (AGeoGameState* GameState = World->GetGameState<AGeoGameState>())
+		{
+			GameState->OnEnemySpawned.AddDynamic(this, &AGeoHUD::ShowBossHealthBar);
+
+			// If enemies already spawned before HUD was ready, show the first one
+			if (AEnemyCharacter* FirstEnemy = GameState->GetFirstEnemy())
+			{
+				ShowBossHealthBar(FirstEnemy);
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::ShowBossHealthBar(AEnemyCharacter* Boss)
+{
+	if (!Boss || !BossHealthBarWidgetClass)
+	{
+		return;
+	}
+
+	// Hide existing boss bar if showing a different boss
+	HideBossHealthBar();
+
+	if (!UHudFunctionLibrary::ShouldDrawHUD(GetOwner()))
+	{
+		return;
+	}
+
+	BossHealthBarWidget = CreateWidget<UGenericCombattantWidget>(GetWorld(), BossHealthBarWidgetClass);
+	if (BossHealthBarWidget)
+	{
+		if (UAbilitySystemComponent* BossASC = Cast<IAbilitySystemInterface>(Boss)->GetAbilitySystemComponent())
+		{
+			BossHealthBarWidget->InitializeWithAbilitySystemComponent(BossASC);
+		}
+		BossHealthBarWidget->AddToViewport(10); // Higher Z-order to be on top
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::HideBossHealthBar()
+{
+	if (BossHealthBarWidget)
+	{
+		BossHealthBarWidget->RemoveFromParent();
+		BossHealthBarWidget = nullptr;
+	}
 }
