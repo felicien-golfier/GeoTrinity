@@ -1,10 +1,12 @@
 ﻿#include "Tool/GameplayLibrary.h"
 
 #include "AbilitySystem/Abilities/AbilityPayload.h"
+#include "Actor/Projectile/GeoProjectile.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "System/GeoActorPoolingSubsystem.h"
 
 bool GameplayLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)
 {
@@ -93,4 +95,63 @@ UAnimInstance* GameplayLibrary::GetAnimInstance(FAbilityPayload const& Payload)
 	}
 
 	return AnimInstance;
+}
+
+AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* World, TSubclassOf<AGeoProjectile> ProjectileClass,
+												 FTransform const& SpawnTransform, FAbilityPayload const& Payload,
+												 TArray<TInstancedStruct<FEffectData>> const& EffectDataArray)
+{
+	if (!World || !ProjectileClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[GameplayLibrary::SpawnProjectile] Invalid World or ProjectileClass"));
+		return nullptr;
+	}
+
+	AGeoProjectile* Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(
+		ProjectileClass, SpawnTransform, Payload.Owner, Cast<APawn>(Payload.Owner), false);
+
+	if (!Projectile)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[GameplayLibrary::SpawnProjectile] RequestActor returned nullptr for %s"),
+			   *ProjectileClass->GetName());
+		return nullptr;
+	}
+
+	Projectile->Payload = Payload;
+	Projectile->EffectDataArray = EffectDataArray;
+	Projectile->Init();
+
+	return Projectile;
+}
+
+TArray<FVector> GameplayLibrary::GetTargetDirections(UWorld const* World, EProjectileTarget const Target,
+													 float const Yaw, FVector const& Origin)
+{
+	switch (Target)
+	{
+	case EProjectileTarget::Forward:
+		{
+			return {FRotator(0.f, Yaw, 0.f).Vector()};
+		}
+
+	case EProjectileTarget::AllPlayers:
+		{
+			TArray<FVector> Directions;
+			for (auto PlayerControllerIt = World->GetPlayerControllerIterator(); PlayerControllerIt;
+				 ++PlayerControllerIt)
+			{
+				if (APlayerController const* PlayerController = PlayerControllerIt->Get();
+					PlayerController && PlayerController->GetPawn())
+				{
+					Directions.Add((PlayerController->GetPawn()->GetActorLocation() - Origin).GetSafeNormal());
+				}
+			}
+			return Directions;
+		}
+
+	default:
+		{
+			return {};
+		}
+	}
 }

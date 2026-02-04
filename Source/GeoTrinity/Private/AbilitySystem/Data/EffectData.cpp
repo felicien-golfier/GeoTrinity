@@ -12,7 +12,7 @@ void FEffectData::UpdateContextHandle(FGeoGameplayEffectContext*) const
 void FEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
 							  UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const
 {
-	ensureMsgf(false, TEXT("UpdateContextHandle not implemented for this effect %s"), *StaticStruct()->GetName());
+	ensureMsgf(false, TEXT("ApplyEffect not implemented for this effect %s"), *StaticStruct()->GetName());
 }
 
 void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext*) const

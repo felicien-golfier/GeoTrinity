@@ -8,13 +8,7 @@
 
 #include "GeoProjectileAbility.generated.h"
 
-UENUM(BlueprintType)
-enum class ETarget : uint8
-{
-	Forward,
-	AllPlayers
-};
-
+enum class EProjectileTarget : uint8;
 class AGeoProjectile;
 /**
  * A spell that launches a projectile
@@ -41,16 +35,13 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectilesUsingTarget();
 
-	UFUNCTION(BlueprintCallable, Category = "Ability|Target")
-	TArray<FVector> GetTargetDirection() const;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoProjectile> ProjectileClass;
 
 	FAbilityPayload StoredPayload;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Target")
-	ETarget Target = ETarget::Forward;
+	EProjectileTarget Target;
 
 	/** If true, spawns projectile from a socket named by the current montage section index (e.g., section "Fire2" uses
 	 * socket "2") */

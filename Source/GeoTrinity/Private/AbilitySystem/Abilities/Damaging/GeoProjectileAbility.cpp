@@ -3,12 +3,11 @@
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
-#include "AbilitySystem/Data/EffectData.h" //Necessary to copy array of EffectData.
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "System/GeoActorPoolingSubsystem.h"
+#include "Tool/GameplayLibrary.h"
 
 void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 											FGameplayAbilityActorInfo const* ActorInfo,
@@ -90,67 +89,16 @@ void UGeoProjectileAbility::SpawnProjectileUsingDirection(FVector const& Directi
 
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
 {
-	TArray<FVector> const Directions = GetTargetDirection();
+	TArray<FVector> const Directions =
+		GameplayLibrary::GetTargetDirections(GetWorld(), Target, StoredPayload.Yaw, FVector(StoredPayload.Origin, 0.f));
 	for (FVector const& Direction : Directions)
 	{
 		SpawnProjectileUsingDirection(Direction);
 	}
 }
 
-TArray<FVector> UGeoProjectileAbility::GetTargetDirection() const
-{
-	switch (Target)
-	{
-	case ETarget::Forward:
-		{
-			return {FRotator(0.f, StoredPayload.Yaw, 0.f).Vector()};
-		}
-
-	case ETarget::AllPlayers:
-		{
-			TArray<FVector> Directions;
-			for (auto PlayerControllerIt = GetWorld()->GetPlayerControllerIterator(); PlayerControllerIt;
-				 ++PlayerControllerIt)
-			{
-				if (APlayerController const* PlayerController = PlayerControllerIt->Get())
-				{
-					Directions.Add(PlayerController->GetPawn()->GetActorLocation()
-								   - GetAvatarActorFromActorInfo()->GetActorLocation());
-				}
-			}
-			return Directions;
-		}
-
-	default:
-		{
-			return {};
-		}
-	}
-}
-
 void UGeoProjectileAbility::SpawnProjectile(FTransform const SpawnTransform) const
 {
-	AActor const* Actor = GetAvatarActorFromActorInfo();
-	checkf(IsValid(Actor), TEXT("Avatar Actor from actor info is invalid!"));
-
-	// Create projectile
-	AActor* ProjectileOwner = GetOwningActorFromActorInfo();
 	checkf(ProjectileClass, TEXT("No ProjectileClass in the projectile spell!"));
-
-	AGeoProjectile* GeoProjectile =
-		UGeoActorPoolingSubsystem::Get(GetWorld())
-			->RequestActor(ProjectileClass, SpawnTransform, ProjectileOwner, Cast<APawn>(ProjectileOwner), false);
-
-	if (!GeoProjectile)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[Projectile] FAILED: RequestActor returned nullptr for %s"),
-			   *ProjectileClass->GetName());
-		return;
-	}
-
-	// Append GAS data
-	GeoProjectile->Payload = StoredPayload;
-	GeoProjectile->EffectDataArray = GetEffectDataArray();
-
-	GeoProjectile->Init(); // Equivalent to the DeferredSpawn
+	GameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray());
 }
