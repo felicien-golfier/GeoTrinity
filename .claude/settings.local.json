@@ -14,7 +14,8 @@
       "WebFetch(domain:x157.github.io)",
       "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Binaries\\\\DotNET\\\\UnrealBuildTool\\\\UnrealBuildTool.exe\" -projectfiles -project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\" -game -engine -progress)",
       "Bash(dotnet --list-sdks:*)",
-      "Bash(\"/c/Program Files/dotnet/dotnet\" --version)"
+      "Bash(\"/c/Program Files/dotnet/dotnet\" --version)",
+      "Bash(ls -la \"C:\\\\GeoTrinity\\\\.claude\\\\memory\"\" 2>/dev/null || dir \"C:GeoTrinity.claudememory\"\")"
     ]
   }
 }

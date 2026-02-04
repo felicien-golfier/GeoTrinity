@@ -35,6 +35,9 @@ The project uses a custom `.clang-format` with these key settings:
 - Prefer fewer but longer if statements (merge conditions with && rather than nesting)
 - Use const by default on variables; remove const only when mutation is needed
 - Prefer non-const parameters over creating new variables (e.g., `FTransform SpawnTransform` instead of `const FTransform& SpawnTransform` + local copy)
+- Prefer forward declarations in headers over includes (for enums: `enum class EMyEnum : uint8;`)
+- Remove trivial wrapper functions that just delegate to another function - call directly instead
+- Code only what's needed (YAGNI) - don't add unused parameters, variables, or speculative features
 
 ## Architecture
 
@@ -63,6 +66,7 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 
 ### Bullet Pattern System
 
+/!\ Onlydevelopped for server abilities for now ! Only enemies use those.
 Patterns spawn projectiles deterministically across clients:
 
 1. `UPatternAbility` activates and calls `PatternStartMulticast()`
