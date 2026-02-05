@@ -38,6 +38,9 @@ The project uses a custom `.clang-format` with these key settings:
 - Prefer forward declarations in headers over includes (for enums: `enum class EMyEnum : uint8;`)
 - Remove trivial wrapper functions that just delegate to another function - call directly instead
 - Code only what's needed (YAGNI) - don't add unused parameters, variables, or speculative features
+- Be consistent in general ! Do not use a code style once and then another one. For naming also. 
+- Be consistent with Super call placement: choose what makes sense (e.g., Super::Init at start, Super::Destroy at end), but when there's no meaningful ordering dependency, keep it consistent (e.g., always at the top) rather than mixing positions arbitrarily
+- Dont use abreviations in variable name, ALWAYS use full class name except some very verbose names like ASC for AbilitySystemComponent.
 
 ## Architecture
 

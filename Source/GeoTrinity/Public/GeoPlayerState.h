@@ -1,8 +1,7 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "AbilitySystemInterface.h"
+#include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "GenericTeamAgentInterface.h"
@@ -25,6 +24,7 @@ class GEOTRINITY_API AGeoPlayerState
 public:
 	AGeoPlayerState();
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void ClientInitialize(AController* Controller) override;
 	void InitOverlay();
@@ -43,10 +43,16 @@ public:
 	UCharacterAttributeSet* GetCharacterAttributeSet() const { return CharacterAttributeSet; }
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponent() const { return AbilitySystemComponent; }
 
+	EPlayerClass GetPlayerClass() const { return PlayerClass; }
+	void SetPlayerClass(EPlayerClass NewClass) { PlayerClass = NewClass; }
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY()
 	TObjectPtr<UCharacterAttributeSet> CharacterAttributeSet;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Class")
+	EPlayerClass PlayerClass = EPlayerClass::None;
 };

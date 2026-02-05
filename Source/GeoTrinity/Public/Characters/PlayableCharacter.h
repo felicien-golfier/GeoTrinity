@@ -1,7 +1,8 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "GeoCharacter.h"
+#include "PlayerClassTypes.h"
 
 #include "PlayableCharacter.generated.h"
 
@@ -16,6 +17,8 @@ public:
 	void AbilityInputTagPressed(FGameplayTag InputTag);
 	void AbilityInputTagReleased(FGameplayTag InputTag);
 	void AbilityInputTagHeld(FGameplayTag InputTag);
+
+	EPlayerClass GetPlayerClass() const;
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;

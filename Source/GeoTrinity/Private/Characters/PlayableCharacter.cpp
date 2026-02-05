@@ -6,8 +6,6 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Input/GeoInputComponent.h"
 
-class AGeoPlayerState;
-
 void APlayableCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -103,6 +101,15 @@ void APlayableCharacter::PossessedBy(AController* NewController)
 
 	// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
 	InitGAS();
+}
+
+EPlayerClass APlayableCharacter::GetPlayerClass() const
+{
+	if (AGeoPlayerState const* GeoPlayerState = GetPlayerState<AGeoPlayerState>())
+	{
+		return GeoPlayerState->GetPlayerClass();
+	}
+	return EPlayerClass::None;
 }
 
 void APlayableCharacter::OnRep_PlayerState()

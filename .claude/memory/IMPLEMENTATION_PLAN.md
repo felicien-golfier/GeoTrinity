@@ -128,14 +128,15 @@ Actor->Init();
 
 | Task | File | Status |
 |------|------|--------|
-| Player Class Enum | `Public/Characters/PlayerClassTypes.h` | [ ] |
-| Extended Attributes | `Public/AbilitySystem/AttributeSet/CharacterAttributeSet.h` | [ ] |
-| PlayerClass on Character | `Public/Characters/PlayableCharacter.h` | [ ] |
-| PlayerClass Replication | `Public/GeoPlayerState.h` | [ ] |
-| Range Gauge Component | `Public/AbilitySystem/Component/GeoRangeGaugeComponent.h/.cpp` | [ ] |
-| Deployable Base | `Public/Actor/Deployable/GeoDeployableBase.h/.cpp` | [ ] |
-| Deployable Manager | `Public/Characters/Component/GeoDeployableManagerComponent.h/.cpp` | [ ] |
-| Buff Pickup | `Public/Actor/Pickup/GeoBuffPickup.h/.cpp` | [ ] |
+| Player Class Enum | `Public/Characters/PlayerClassTypes.h` | [x] |
+| Extended Attributes | `Public/AbilitySystem/AttributeSet/CharacterAttributeSet.h` | [x] |
+| PlayerClass on Character | `Public/Characters/PlayableCharacter.h` | [x] |
+| PlayerClass Replication | `Public/GeoPlayerState.h` | [x] |
+| Range Gauge Component | Deleted — charge logic will live in deploy abilities | N/A |
+| Deployable Base | `Public/Actor/Deployable/GeoDeployableBase.h/.cpp` | [x] |
+| Deployable Manager | `Public/Characters/Component/GeoDeployableManagerComponent.h/.cpp` | [x] |
+| Buff Pickup | `Public/Actor/Pickup/GeoBuffPickup.h/.cpp` | [x] |
+| Gameplay Tags | `Public/AbilitySystem/Lib/GeoGameplayTags.h/.cpp` | [x] |
 
 ### Phase 2: Common Abilities
 

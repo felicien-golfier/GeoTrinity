@@ -8,7 +8,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="53a171f0-0e5c-4bcf-a996-6a81ea21731c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.claude/memory/GEOTRINITY_PROJECT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/memory/IMPLEMENTATION_PLAN.md" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/memory/IMPLEMENTATION_PLAN.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/memory/MEMORY.md" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/memory/MEMORY.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.GeoTrinity.dir/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GeoTrinity.dir/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/AttributeSet/CharacterAttributeSet.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/AttributeSet/CharacterAttributeSet.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Lib/GeoGameplayTags.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/AbilitySystem/Lib/GeoGameplayTags.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/Characters/PlayableCharacter.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/Characters/PlayableCharacter.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Private/GeoPlayerState.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Private/GeoPlayerState.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/AttributeSet/CharacterAttributeSet.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/AttributeSet/CharacterAttributeSet.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Lib/GeoGameplayTags.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/AbilitySystem/Lib/GeoGameplayTags.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/Actor/Turret/GeoTurretBase.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/Actor/Turret/GeoTurretBase.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/Characters/PlayableCharacter.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/Characters/PlayableCharacter.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GeoTrinity/Public/GeoPlayerState.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GeoTrinity/Public/GeoPlayerState.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,11 +32,12 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="9428" />
+    <option name="cachedIndexableFilesCount" value="9500" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="SWAP_SIDES_IN_COMPARE_BRANCHES" value="true" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -70,7 +84,8 @@
     &quot;Uproject.GeoTrinity.executor&quot;: &quot;Debug&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
     &quot;do_not_show_solution_notification&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;state-tree&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Plan-for-design&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -85,10 +100,10 @@
 }</component>
   <component name="RecapSpentCounter">
     <option name="endsOfQuotaMs" value="1771488077146" />
-    <option name="spentUsd" value="0.029896349" />
+    <option name="spentUsd" value="0.05658585" />
   </component>
   <component name="RecapUselessUpdatesCounter">
-    <option name="suspendCountdown" value="8" />
+    <option name="suspendCountdown" value="4" />
   </component>
   <component name="RunManager">
     <configuration name="GeoTrinity" type="Uproject" factoryName="rider.uproject">
@@ -178,6 +193,8 @@
       <workItem from="1770122116104" duration="4863000" />
       <workItem from="1770127075651" duration="5698000" />
       <workItem from="1770132901272" duration="426000" />
+      <workItem from="1770296017586" duration="2513000" />
+      <workItem from="1770300343961" duration="2917000" />
     </task>
     <servers />
   </component>
