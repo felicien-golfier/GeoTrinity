@@ -33,6 +33,7 @@ struct FGeoGameplayTags
 	// Ability types
 	FGameplayTag Ability_Type_Basic;
 	FGameplayTag Ability_Type_Special;
+	FGameplayTag Ability_Type_Dash;
 
 	// Player classes
 	FGameplayTag PlayerClass_Triangle;

@@ -2,8 +2,8 @@
 
 #include "AbilitySystemInterface.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/SphereComponent.h"
-#include "System/GeoActorPoolingSubsystem.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoBuffPickup::AGeoBuffPickup()
@@ -62,14 +62,8 @@ void AGeoBuffPickup::OnSphereOverlap(UPrimitiveComponent*, AActor* OtherActor, U
 		return;
 	}
 
-	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
-	for (const TInstancedStruct<FEffectData>& Effect : EffectDataArray)
-	{
-		if (const FEffectData* Data = Effect.GetPtr<FEffectData>())
-		{
-			Data->ApplyEffect(ContextHandle, SourceASC, TargetASC, FMath::Max(1, FMath::RoundToInt32(PowerScale)), 0);
-		}
-	}
+	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
+														FMath::Max(1, FMath::RoundToInt32(PowerScale)), 0);
 
 	OnRecalled();
 }
