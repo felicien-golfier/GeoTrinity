@@ -67,6 +67,19 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 - `UGeoProjectileAbility` - Spawns projectiles using actor pooling
 - `UPatternAbility` - Creates bullet patterns via multicast RPC
 
+**Class-Specific Ability Selection**:
+- `FGameplayAbilityInfo` has `EPlayerClass PlayerClass` field
+- Multiple abilities can share the same `AbilityTag` (e.g., `Ability.Basic`) but differ by `PlayerClass`
+- When activating by input tag, filter by player's `EPlayerClass` to select correct ability
+- Example: Triangle's BasicAttack (ammo-based auto-fire) vs Circle's BasicAttack (standard projectile)
+- Do NOT create separate ability classes just for different player classes - use the `PlayerClass` filter instead
+
+**Gameplay Effect**:
+- `FEffectData` - Effect Data to store all Effects needed. Create subclass for new effect.
+- `UEffectDataAsset` contains `TArray<TInstancedStruct<struct FEffectData>> EffectDataInstances` to store Data Assets on the Ability BP
+- Ability always merge its UEffectDataAsset with `TArray<TInstancedStruct<FEffectData>> EffectDataInstances` to pass throught.
+- ALWAYS use UGeoAbilitySystemLibrary::ApplyEffectFromEffectData to apply a EffectDataArray.
+
 ### Bullet Pattern System
 
 /!\ Onlydevelopped for server abilities for now ! Only enemies use those.
@@ -137,6 +150,7 @@ Enhanced Input with `UGeoInputConfig` data asset:
 - `FAbilityPayload` - Network sync data (Origin, Yaw, ServerSpawnTime, Seed, AbilityTag)
 - `FEffectData` - Polymorphic effect system (FDamageEffectData, FStatusEffectData)
 - `UAbilityInfo` - Data asset mapping ability tags to classes and metadata
+- `FGameplayAbilityInfo` - Contains `EPlayerClass PlayerClass` field for class-specific ability selection
 
 ## Source Structure
 
