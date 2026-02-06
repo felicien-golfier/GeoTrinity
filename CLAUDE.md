@@ -38,6 +38,9 @@ The project uses a custom `.clang-format` with these key settings:
 - Prefer forward declarations in headers over includes (for enums: `enum class EMyEnum : uint8;`)
 - Remove trivial wrapper functions that just delegate to another function - call directly instead
 - Code only what's needed (YAGNI) - don't add unused parameters, variables, or speculative features
+- Be consistent in general ! Do not use a code style once and then another one. For naming also. 
+- Be consistent with Super call placement: choose what makes sense (e.g., Super::Init at start, Super::Destroy at end), but when there's no meaningful ordering dependency, keep it consistent (e.g., always at the top) rather than mixing positions arbitrarily
+- Dont use abreviations in variable name, ALWAYS use full class name except some very verbose names like ASC for AbilitySystemComponent.
 
 ## Architecture
 
@@ -63,6 +66,19 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 - `UGeoGameplayAbility` - Base class with montage support and effect data
 - `UGeoProjectileAbility` - Spawns projectiles using actor pooling
 - `UPatternAbility` - Creates bullet patterns via multicast RPC
+
+**Class-Specific Ability Selection**:
+- `FGameplayAbilityInfo` has `EPlayerClass PlayerClass` field
+- Multiple abilities can share the same `AbilityTag` (e.g., `Ability.Basic`) but differ by `PlayerClass`
+- When activating by input tag, filter by player's `EPlayerClass` to select correct ability
+- Example: Triangle's BasicAttack (ammo-based auto-fire) vs Circle's BasicAttack (standard projectile)
+- Do NOT create separate ability classes just for different player classes - use the `PlayerClass` filter instead
+
+**Gameplay Effect**:
+- `FEffectData` - Effect Data to store all Effects needed. Create subclass for new effect.
+- `UEffectDataAsset` contains `TArray<TInstancedStruct<struct FEffectData>> EffectDataInstances` to store Data Assets on the Ability BP
+- Ability always merge its UEffectDataAsset with `TArray<TInstancedStruct<FEffectData>> EffectDataInstances` to pass throught.
+- ALWAYS use UGeoAbilitySystemLibrary::ApplyEffectFromEffectData to apply a EffectDataArray.
 
 ### Bullet Pattern System
 
@@ -134,6 +150,7 @@ Enhanced Input with `UGeoInputConfig` data asset:
 - `FAbilityPayload` - Network sync data (Origin, Yaw, ServerSpawnTime, Seed, AbilityTag)
 - `FEffectData` - Polymorphic effect system (FDamageEffectData, FStatusEffectData)
 - `UAbilityInfo` - Data asset mapping ability tags to classes and metadata
+- `FGameplayAbilityInfo` - Contains `EPlayerClass PlayerClass` field for class-specific ability selection
 
 ## Source Structure
 

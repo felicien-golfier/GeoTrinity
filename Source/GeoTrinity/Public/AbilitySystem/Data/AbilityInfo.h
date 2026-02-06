@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
@@ -35,6 +36,9 @@ struct FGameplayAbilityInfo
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
 	TSubclassOf<UGameplayAbility> AbilityClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
+	EPlayerClass PlayerClass = EPlayerClass::None;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
 	TObjectPtr<UTexture2D const> AbilityIcon{nullptr};

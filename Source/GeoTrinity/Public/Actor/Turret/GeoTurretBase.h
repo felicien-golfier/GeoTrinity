@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Data/EffectData.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -21,7 +22,7 @@ struct FTurretData : FInteractableActorData
 };
 
 UCLASS()
-class GEOTRINITY_API AGeoTurretBase : public AGeoInteractableActor
+class GEOTRINITY_API AGeoTurretBase : public AGeoDeployableBase
 {
 	GENERATED_BODY()
 

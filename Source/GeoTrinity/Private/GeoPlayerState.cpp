@@ -6,6 +6,7 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GeoPlayerController.h"
 #include "HUD/GeoHUD.h"
+#include "Net/UnrealNetwork.h"
 
 AGeoPlayerState::AGeoPlayerState()
 {
@@ -21,6 +22,13 @@ AGeoPlayerState::AGeoPlayerState()
 	CharacterAttributeSet = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("CharacterAttributeSet"));
 
 	SetNetUpdateFrequency(100.0f);
+}
+
+void AGeoPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AGeoPlayerState, PlayerClass);
 }
 
 void AGeoPlayerState::BeginPlay()
