@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -35,10 +35,11 @@ public:
 							bool bWasCancelled) override;
 
 protected:
-	void HandleAnimationMontage(UAnimInstance const* AnimInstance,
-								FGameplayAbilityActivationInfo const& ActivationInfo);
+	void ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo, UAnimInstance* AnimInstance,
+							 float ClientServerSpawnTime = 0.f);
+	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	UFUNCTION()
-	virtual void AnimTrigger();
+	virtual void Fire();
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")
@@ -47,11 +48,19 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UAnimMontage> AnimMontage;
 
+	// We consider the ability to Fire at the end of the FireRate delay.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation",
+			  meta = (ClampMin = "0.01", UIMin = "0.05"))
+	float FireRate = 0.5f;
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
 
-	FTimerHandle StartSectionTimerHandle;
+	FTimerHandle FireTriggerTimerHandle;
+
+protected:
+	float CachedNetworkDelay = 0.f;
 };

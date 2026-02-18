@@ -27,6 +27,9 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
 	TSoftObjectPtr<UAbilityInfo> AbilityInfo;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Network")
+	bool bNetworkDelayCompensation = true;
 };
 
 template <typename T>

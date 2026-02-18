@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 
@@ -6,8 +6,8 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Animation/FireAnimNotify.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/GameplayLibrary.h"
 using GeoASL = UGeoAbilitySystemLibrary;
 using GL = GameplayLibrary;
@@ -77,68 +77,68 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 									 bool bWasCancelled)
 {
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-	StartSectionTimerHandle.Invalidate();
+	FireTriggerTimerHandle.Invalidate();
 }
 
-void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance const* AnimInstance,
+void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo,
+											  UAnimInstance* AnimInstance, float ClientServerSpawnTime)
+{
+	bool const bIsServer = GetAvatarActorFromActorInfo()->HasAuthority();
+
+	float TriggerTime = FireRate;
+	CachedNetworkDelay = 0.f;
+	if (bIsServer && GetDefault<UGameDataSettings>()->bNetworkDelayCompensation)
+	{
+		CachedNetworkDelay = FMath::Max(0.f, GL::GetServerTime(GetWorld()) - ClientServerSpawnTime);
+		TriggerTime = FMath::Max(0.f, FireRate - CachedNetworkDelay);
+	}
+
+	if (AnimInstance && AnimMontage && !bIsServer && FireRate > 0.f)
+	{
+		HandleAnimationMontage(AnimInstance, ActivationInfo);
+	}
+
+	if (TriggerTime > 0.f)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
+		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::Fire, TriggerTime);
+	}
+	else
+	{
+		Fire();
+	}
+}
+
+void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 												 FGameplayAbilityActivationInfo const& ActivationInfo)
 {
 	ensureMsgf(AnimMontage && AnimInstance, TEXT("No valid AnimMontage or AnimInstance"));
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	FName CurrentSection = ASC->GetCurrentMontageSectionName();
-	FName SectionToJumpTo;
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	int32& FireSectionIndex = ASC->GetFireSectionIndex(GetAbilityTag());
 
 	if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 	{
-		// Case Montage is not playing
 		ASC->PlayMontage(this, ActivationInfo, AnimMontage, 1.f);
-		SectionToJumpTo = GL::SectionStartName;
+		FireSectionIndex = 0;
 	}
-	else if (CurrentSection == GL::SectionStartName)
+
+	// Build section name: first activation goes to "Start", then cycle Fire1 -> Fire2 -> ... -> Fire1
+	FName SectionToJumpTo;
+	if (FireSectionIndex == 0)
 	{
-		// Case we are still in Start
-		SectionToJumpTo = AnimMontage->GetSectionName(AnimMontage->GetSectionIndex(GL::SectionStartName) + 1);
-	}
-	else if (CurrentSection == GL::SectionStopName)
-	{
-		// Case we are already in Stop
 		SectionToJumpTo = GL::SectionStartName;
 	}
 	else
 	{
-		// Case we are still in a combo, or ending.
-		float const SectionTime = ASC->GetCurrentMontageSectionLength() - ASC->GetCurrentMontageSectionTimeLeft();
-		constexpr float AcceptableComboTimeThreshold = 0.1f; // Equivalent to 3 frame of delay
-		if (CurrentSection.ToString().Contains(GL::SectionEndString) && SectionTime > AcceptableComboTimeThreshold)
+		FString FireSectionName = GL::SectionFireString;
+		FireSectionName.AppendInt(FireSectionIndex);
+		if (!AnimMontage->IsValidSectionName(FName(FireSectionName)))
 		{
-			// currently ending combo, and too late to jump to next combo.
-			SectionToJumpTo = GL::SectionStartName;
+			FireSectionIndex = 1;
+			FireSectionName = GL::SectionFireString;
+			FireSectionName.AppendInt(1);
 		}
-		else
-		{
-			// Jump to next combo
-			FName const FireSection = GL::SectionFireName;
-			FString const IndexChar = CurrentSection.ToString().Right(1);
-			if (!IndexChar.IsNumeric())
-			{
-				// Case where we do not have combo with number.
-				SectionToJumpTo = AnimMontage->GetSectionName(AnimMontage->GetSectionIndex(GL::SectionStartName) + 1);
-			}
-			else
-			{
-				int i = FCString::Atoi(*IndexChar);
-				FString NextFire = FireSection.ToString();
-				NextFire.AppendInt(++i);
-				if (!AnimMontage->IsValidSectionName(FName(NextFire)))
-				{
-					// Cycle back to 1.
-					NextFire = FireSection.ToString();
-					NextFire.AppendInt(1);
-				}
-
-				SectionToJumpTo = FName(NextFire);
-			}
-		}
+		SectionToJumpTo = FName(FireSectionName);
 	}
 
 	if (!AnimMontage->IsValidSectionName(SectionToJumpTo))
@@ -147,37 +147,20 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance const* AnimInstan
 		SectionToJumpTo = GL::SectionStartName;
 	}
 
-	CurrentSection = SectionToJumpTo;
 	ASC->CurrentMontageJumpToSection(SectionToJumpTo);
 
+	// Adjust play rate so the section fits within FireRate
 	float StartTime, EndTime;
-	AnimMontage->GetSectionStartAndEndTime(AnimMontage->GetSectionIndex(CurrentSection), StartTime, EndTime);
-	float TriggerTime = ASC->GetCurrentMontageSectionTimeLeft();
-	for (auto Notify : AnimMontage->Notifies)
-	{
-		if (Notify.Notify.IsA(UFireAnimNotify::StaticClass()) && Notify.GetTriggerTime() > StartTime
-			&& Notify.GetTriggerTime() < EndTime)
-		{
-			TriggerTime = Notify.GetTriggerTime() - StartTime;
-		}
-	}
+	AnimMontage->GetSectionStartAndEndTime(AnimMontage->GetSectionIndex(SectionToJumpTo), StartTime, EndTime);
+	float const SectionLength = EndTime - StartTime;
+	ensureMsgf(SectionLength > 0.f, TEXT("Current section has no length"));
 
-	if (TriggerTime > 0.f)
-	{
-		if (StartSectionTimerHandle.IsValid())
-		{
-			UE_LOG(LogGeoASC, Error, TEXT("Set timer with a valid Handle ! Last ability has never ended."));
-		}
-		GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this, &UGeoGameplayAbility::AnimTrigger,
-											   TriggerTime);
-	}
-	else
-	{
-		AnimTrigger();
-	}
+	float const PlayRate = SectionLength / FireRate;
+	AnimInstance->Montage_SetPlayRate(AnimMontage, PlayRate);
+	FireSectionIndex++;
 }
 
-void UGeoGameplayAbility::AnimTrigger()
+void UGeoGameplayAbility::Fire()
 {
-	// Do what you need from the anim.
+	// Do what you need from the ability when the FireRate end is reach
 }

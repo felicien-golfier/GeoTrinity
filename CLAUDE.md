@@ -41,6 +41,7 @@ The project uses a custom `.clang-format` with these key settings:
 - Be consistent in general ! Do not use a code style once and then another one. For naming also. 
 - Be consistent with Super call placement: choose what makes sense (e.g., Super::Init at start, Super::Destroy at end), but when there's no meaningful ordering dependency, keep it consistent (e.g., always at the top) rather than mixing positions arbitrarily
 - Dont use abreviations in variable name, ALWAYS use full class name except some very verbose names like ASC for AbilitySystemComponent.
+- Prefer readable, self-documenting code over comments. Don't add comments that restate what the code already says - the code should speak for itself.
 
 ## Architecture
 

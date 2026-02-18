@@ -18,15 +18,17 @@ class GEOTRINITY_API AGeoPlayerController : public APlayerController
 public:
 	AGeoPlayerController(FObjectInitializer const& ObjectInitializer);
 
-	UFUNCTION(Server, Reliable)
-	void ServerSetAimYaw(float YawDegrees);
-
 protected:
 	virtual void BeginPlay() override;
+
+#if !UE_BUILD_SHIPPING
+	virtual void Tick(float DeltaTime) override;
+#endif
 
 public:
 	static AGeoPlayerController* GetLocalGeoPlayerController(UWorld const* World);
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> InputMapping;
+
 };

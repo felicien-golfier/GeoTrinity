@@ -6,10 +6,11 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Input/GeoInputComponent.h"
 #include "Tool/GameplayLibrary.h"
+#include "VisualLogger/VisualLogger.h"
 
 // Sets default values
 AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
-	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(ACharacter::CharacterMovementComponentName))
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicates(true);
@@ -25,10 +26,17 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
 	GeoInputComponent->SetIsReplicated(true);
 
-	// Disable orient-to-movement; we will rotate manually toward aim
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
+}
+
+void AGeoCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UE_VLOG_LOCATION(this, LogGeoTrinity, Verbose, GetActorLocation(), 30.f, GameplayLibrary::GetColorForObject(this),
+					 TEXT("%s [%s]"), *GetName(), *UEnum::GetValueAsString(GetLocalRole()));
 }
 
 UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const

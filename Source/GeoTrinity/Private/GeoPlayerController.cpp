@@ -3,6 +3,7 @@
 #include "GeoPlayerController.h"
 
 #include "Camera/CameraActor.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerState.h"
@@ -10,6 +11,17 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "Tool/GameplayLibrary.h"
+
+#if !UE_BUILD_SHIPPING
+static bool bShowPing = false;
+
+static FAutoConsoleCommandWithWorld GShowPingCommand(TEXT("Geo.ShowPing"), TEXT("Toggle on-screen ping display"),
+													 FConsoleCommandWithWorldDelegate::CreateLambda(
+														 [](UWorld*)
+														 {
+															 bShowPing = !bShowPing;
+														 }));
+#endif
 
 AGeoPlayerController::AGeoPlayerController(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -34,24 +46,13 @@ void AGeoPlayerController::BeginPlay()
 	}
 }
 
-void AGeoPlayerController::ServerSetAimYaw_Implementation(float const YawDegrees)
-{
-	if (IsValid(GetPawn()))
-	{
-		FRotator Rotation = GetPawn()->GetActorRotation();
-		Rotation.Yaw = YawDegrees;
-		GetPawn()->SetActorRotation(Rotation);
-	}
-}
-
 AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(UWorld const* World)
 {
 	for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		if (APlayerController* PlayerController = Iterator->Get())
 		{
-			if (PlayerController && PlayerController->IsLocalController()
-				&& PlayerController->IsA(AGeoPlayerController::StaticClass()))
+			if (PlayerController && PlayerController->IsLocalController() && PlayerController->IsA(StaticClass()))
 			{
 				return CastChecked<AGeoPlayerController>(PlayerController);
 			}
@@ -59,3 +60,16 @@ AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(UWorld c
 	}
 	return nullptr;
 }
+
+#if !UE_BUILD_SHIPPING
+void AGeoPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bShowPing && IsLocalController() && PlayerState)
+	{
+		float const Ping = PlayerState->GetPingInMilliseconds();
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Green, FString::Printf(TEXT("Ping: %.0f ms"), Ping));
+	}
+}
+#endif

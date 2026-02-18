@@ -53,12 +53,15 @@ public:
 	UFUNCTION(NetMulticast, reliable)
 	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass);
 
+	int32& GetFireSectionIndex(FGameplayTag const& AbilityTag);
+
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnMaxHealthChanged;
 
 private:
+	TMap<FGameplayTag, int32> FireSectionIndices;
 	bool bStartupAbilitiesGiven{false};
 
 	UPROPERTY(Transient)

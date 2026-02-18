@@ -14,13 +14,16 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	}
 
 	FVector const Origin{StoredPayload.Origin, 0.f};
-	TArray<FVector> const Directions = GameplayLibrary::GetTargetDirections(GetWorld(), Target, StoredPayload.Yaw, Origin);
+	float const ProjectileYaw =
+		GameplayLibrary::GetYawWithNetworkDelay(GetAvatarActorFromActorInfo(), CachedNetworkDelay);
+	TArray<FVector> const Directions = GameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
 
 	bool bAnySpawned = false;
 	for (FVector const& Direction : Directions)
 	{
 		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
-		if (GameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray()))
+		if (GameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
+											 GetEffectDataArray()))
 		{
 			bAnySpawned = true;
 		}

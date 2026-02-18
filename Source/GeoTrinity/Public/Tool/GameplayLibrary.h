@@ -56,6 +56,14 @@ public:
 	static TArray<FVector> GetTargetDirections(UWorld const* World, EProjectileTarget Target, float Yaw,
 											   FVector const& Origin);
 
+	/**
+	 * Get Yaw extrapolated with a delay.
+	 * @param Avatar The avatar we want the Yaw
+	 * @param NetworkDelay Delay to extrapolate Yaw
+	 * @return Yaw
+	 */
+	static float GetYawWithNetworkDelay(AActor* const Avatar, float NetworkDelay);
+
 	inline static FName const SectionStartName{"Start"};
 	inline static FString SectionStartString{SectionStartName.ToString()};
 	inline static FName const SectionFireName{"Fire"};

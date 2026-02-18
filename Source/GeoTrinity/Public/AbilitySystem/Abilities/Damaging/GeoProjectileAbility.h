@@ -23,7 +23,7 @@ protected:
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
-	virtual void AnimTrigger() override;
+	virtual void Fire() override;
 
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
@@ -42,9 +42,4 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Target")
 	EProjectileTarget Target;
-
-	/** If true, spawns projectile from a socket named by the current montage section index (e.g., section "Fire2" uses
-	 * socket "2") */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Projectile")
-	bool bUseSocketFromSectionIndex = false;
 };

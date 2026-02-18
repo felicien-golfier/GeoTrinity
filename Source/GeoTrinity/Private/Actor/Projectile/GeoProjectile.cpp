@@ -8,6 +8,7 @@
 #include "AbilitySystemComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
+#include "DrawDebugHelpers.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
@@ -16,6 +17,9 @@
 #include "Tool/GameplayLibrary.h"
 
 using GeoASL = UGeoAbilitySystemLibrary;
+
+static TAutoConsoleVariable CVarDrawServerProjectiles(TEXT("Geo.DrawServerProjectiles"), false,
+													  TEXT("Draw debug spheres for projectiles on the server"));
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoProjectile::AGeoProjectile()
@@ -74,6 +78,12 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 
 	UE_VLOG_SPHERE(this, LogGeoTrinity, Verbose, GetActorLocation(), GetSimpleCollisionRadius(),
 				   GameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
+
+	if (CVarDrawServerProjectiles.GetValueOnGameThread() && GameplayLibrary::IsServer(GetWorld()))
+	{
+		DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
+						GameplayLibrary::GetColorForObject(GetOuter()), false, 0.f);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -33,6 +33,7 @@ class GEOTRINITY_API AGeoCharacter
 public:
 	// Sets default values for this character's properties
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
+	virtual void Tick(float DeltaSeconds) override;
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	UGeoMovementComponent* GetGeoMovementComponent() const
 	{

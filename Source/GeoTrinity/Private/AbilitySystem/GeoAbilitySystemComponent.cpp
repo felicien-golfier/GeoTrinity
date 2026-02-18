@@ -315,6 +315,11 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 	Pattern->InitPattern(Payload);
 }
 
+int32& UGeoAbilitySystemComponent::GetFireSectionIndex(FGameplayTag const& AbilityTag)
+{
+	return FireSectionIndices.FindOrAdd(AbilityTag, 0);
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbilitySpecHandle Handle)
 {

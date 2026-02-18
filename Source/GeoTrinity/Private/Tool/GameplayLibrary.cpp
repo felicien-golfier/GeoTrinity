@@ -2,11 +2,14 @@
 
 #include "AbilitySystem/Abilities/AbilityPayload.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Characters/PlayableCharacter.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Settings/GameDataSettings.h"
 #include "System/GeoActorPoolingSubsystem.h"
+#include "VisualLogger/VisualLogger.h"
 
 bool GameplayLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)
 {
@@ -107,6 +110,7 @@ AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* World, TSubclassOf<AGeo
 		return nullptr;
 	}
 
+
 	AGeoProjectile* Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(
 		ProjectileClass, SpawnTransform, Payload.Owner, Cast<APawn>(Payload.Owner), false);
 
@@ -154,4 +158,33 @@ TArray<FVector> GameplayLibrary::GetTargetDirections(UWorld const* World, EProje
 			return {};
 		}
 	}
+}
+
+float GameplayLibrary::GetYawWithNetworkDelay(AActor* const Avatar, float const NetworkDelay)
+{
+	float const ActualYaw = Avatar->GetActorRotation().Yaw;
+	float ProjectileYaw = ActualYaw;
+
+	if (Avatar->HasAuthority() && GetDefault<UGameDataSettings>()->bNetworkDelayCompensation)
+	{
+		if (APlayableCharacter const* PlayableCharacter = Cast<APlayableCharacter>(Avatar))
+		{
+			ProjectileYaw += PlayableCharacter->GetYawVelocity() * NetworkDelay;
+		}
+	}
+
+	FVector const Start = Avatar->GetActorLocation();
+	constexpr float ArrowLength = 500.f;
+
+	FVector const ActualEnd = Start + FRotator(0.f, ActualYaw, 0.f).Vector() * ArrowLength;
+	UE_VLOG_ARROW(Avatar, LogGeoASC, Verbose, Start, ActualEnd, FColor::Red, TEXT("%s ActualYaw=%.2f"),
+				  Avatar->HasAuthority() ? TEXT("Server") : TEXT("Client"), ActualYaw);
+
+	FVector const PredictedEnd = Start + FRotator(0.f, ProjectileYaw, 0.f).Vector() * ArrowLength;
+	UE_VLOG_ARROW(Avatar, LogGeoASC, Verbose, Start, PredictedEnd, FColor::Blue,
+				  TEXT("%s PredictedYaw=%.2f (delta=%.2f, ND=%.4f)"),
+				  Avatar->HasAuthority() ? TEXT("Server") : TEXT("Client"), ProjectileYaw, ProjectileYaw - ActualYaw,
+				  NetworkDelay);
+
+	return ProjectileYaw;
 }

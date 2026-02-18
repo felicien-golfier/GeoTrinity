@@ -19,6 +19,7 @@ public:
 	void AbilityInputTagHeld(FGameplayTag InputTag);
 
 	EPlayerClass GetPlayerClass() const;
+	float GetYawVelocity() const { return YawVelocity; }
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -28,10 +29,14 @@ protected:
 	// GAS //
 	virtual void InitGAS() override;
 	// END GAS //
-private:
-	void UpdateAimRotation();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
+			  meta = (ClampMin = "1.0", UIMin = "10.0"))
+	float MaxRotationSpeed = 720.f;
 
 private:
-	// Aim rotation cache to throttle RPCs
-	float LastSentAimYaw = 0.f;
+	void UpdateAimRotation(float DeltaSeconds);
+
+	float YawVelocity = 0.f;
+	float PreviousYaw = 0.f;
 };

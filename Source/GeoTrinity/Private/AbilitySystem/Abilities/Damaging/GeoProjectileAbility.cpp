@@ -6,6 +6,7 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Characters/PlayableCharacter.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Tool/GameplayLibrary.h"
 
@@ -39,22 +40,15 @@ void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Han
 	ensureMsgf(TriggerEventData && TriggerEventData->TargetData.Num() > 0, TEXT("No TargetData in TriggerEventData!"));
 
 
-	// Proceed with montage or spawn
+	// Schedule fire with network delay compensation (plays montage on client, timer-only on server)
 	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-	if (IsValid(AnimInstance) && AnimMontage)
-	{
-		HandleAnimationMontage(AnimInstance, ActivationInfo);
-	}
-	else
-	{
-		AnimTrigger();
-	}
+	ScheduleFireTrigger(ActivationInfo, AnimInstance, StoredPayload.ServerSpawnTime);
 }
 
 
-void UGeoProjectileAbility::AnimTrigger()
+void UGeoProjectileAbility::Fire()
 {
-	Super::AnimTrigger();
+	Super::Fire();
 	SpawnProjectilesUsingTarget();
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
@@ -66,31 +60,16 @@ void UGeoProjectileAbility::SpawnProjectileUsingDirection(FVector const& Directi
 
 	FTransform SpawnTransform{Direction.Rotation().Quaternion(), Instigator->GetActorLocation()};
 
-	// Optionally spawn from a socket named by the current montage section index
-	if (bUseSocketFromSectionIndex)
-	{
-		UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
-		USkeletalMeshComponent const* Mesh = Instigator->FindComponentByClass<USkeletalMeshComponent>();
-		if (ASC && Mesh)
-		{
-			FName const CurrentSection = ASC->GetCurrentMontageSectionName();
-			FString const IndexString = CurrentSection.ToString().Right(1);
-			FName const SocketName(*IndexString);
-
-			if (IndexString.IsNumeric() && Mesh->DoesSocketExist(SocketName))
-			{
-				SpawnTransform.SetLocation(Mesh->GetSocketLocation(SocketName));
-			}
-		}
-	}
-
 	SpawnProjectile(SpawnTransform);
 }
 
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
 {
+	float const ProjectileYaw =
+		GameplayLibrary::GetYawWithNetworkDelay(GetAvatarActorFromActorInfo(), CachedNetworkDelay);
+
 	TArray<FVector> const Directions =
-		GameplayLibrary::GetTargetDirections(GetWorld(), Target, StoredPayload.Yaw, FVector(StoredPayload.Origin, 0.f));
+		GameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, FVector(StoredPayload.Origin, 0.f));
 	for (FVector const& Direction : Directions)
 	{
 		SpawnProjectileUsingDirection(Direction);

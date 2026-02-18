@@ -10,34 +10,37 @@ void APlayableCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	UpdateAimRotation();
+	if (IsLocallyControlled())
+	{
+		UpdateAimRotation(DeltaSeconds);
+	}
+	else if (DeltaSeconds > 0.f)
+	{
+		float const CurrentYaw = GetActorRotation().Yaw;
+		float const InstantVelocity = FMath::FindDeltaAngleDegrees(PreviousYaw, CurrentYaw) / DeltaSeconds;
+		constexpr float SmoothingSpeed = 1.f;
+		YawVelocity = FMath::FInterpTo(YawVelocity, InstantVelocity, DeltaSeconds, SmoothingSpeed);
+		PreviousYaw = CurrentYaw;
+	}
 }
 
-void APlayableCharacter::UpdateAimRotation()
+void APlayableCharacter::UpdateAimRotation(float DeltaSeconds)
 {
 	FVector2D Look;
-	if (GeoInputComponent->GetLookVector(Look))
+	if (!GeoInputComponent->GetLookVector(Look))
 	{
-		float DesiredYaw = FMath::Atan2(Look.Y, Look.X) * (180.f / PI);
-
-		// Apply rotation locally
-		FRotator R = GetActorRotation();
-		R.Yaw = DesiredYaw;
-		SetActorRotation(R);
-
-		if (!HasAuthority())
-		{
-			constexpr float MinYawToUpdateServer = 0.5f;
-			if (FMath::Abs(DesiredYaw - LastSentAimYaw) > MinYawToUpdateServer)
-			{
-				if (AGeoPlayerController* GC = Cast<AGeoPlayerController>(GetController()))
-				{
-					GC->ServerSetAimYaw(DesiredYaw);
-					LastSentAimYaw = DesiredYaw;
-				}
-			}
-		}
+		YawVelocity = 0.f;
+		return;
 	}
+
+	float const DesiredYaw = FMath::Atan2(Look.Y, Look.X) * (180.f / PI);
+	float const CurrentYaw = Controller->GetControlRotation().Yaw;
+	float const DeltaAngle = FMath::FindDeltaAngleDegrees(CurrentYaw, DesiredYaw);
+	float const MaxDelta = MaxRotationSpeed * DeltaSeconds;
+	float const ClampedDelta = FMath::Clamp(DeltaAngle, -MaxDelta, MaxDelta);
+
+	YawVelocity = (DeltaSeconds > 0.f) ? ClampedDelta / DeltaSeconds : 0.f;
+	Controller->SetControlRotation(FRotator(0.f, CurrentYaw + ClampedDelta, 0.f));
 }
 
 void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
