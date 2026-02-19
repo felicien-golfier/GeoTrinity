@@ -4,8 +4,6 @@
 
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
-#include "Characters/PlayableCharacter.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/GameplayLibrary.h"
 
 UGeoAutomaticFireAbility::UGeoAutomaticFireAbility()
@@ -126,18 +124,5 @@ void UGeoAutomaticFireAbility::UpdatePayload()
 	ensureMsgf(IsValid(Avatar), TEXT("Avatar Actor from actor info is invalid!"));
 
 	StoredPayload.Origin = FVector2D(Avatar->GetActorLocation());
-	StoredPayload.Yaw = GameplayLibrary::GetYawWithNetworkDelay(Avatar, CachedNetworkDelay);
-
-	if (Avatar->HasAuthority() && GetDefault<UGameDataSettings>()->bNetworkDelayCompensation)
-	{
-		if (APlayableCharacter const* PlayableCharacter = Cast<APlayableCharacter>(Avatar))
-		{
-			StoredPayload.Yaw += PlayableCharacter->GetYawVelocity() * CachedNetworkDelay;
-		}
-	}
-}
-
-float UGeoAutomaticFireAbility::GetShotServerTime(int32 ShotIndex) const
-{
-	return StoredPayload.ServerSpawnTime + (static_cast<float>(ShotIndex) * FireRate);
+	StoredPayload.Yaw = Avatar->GetActorRotation().Yaw;
 }

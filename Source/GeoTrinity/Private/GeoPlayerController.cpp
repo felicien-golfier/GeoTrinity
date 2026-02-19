@@ -7,10 +7,8 @@
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerState.h"
-#include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
-#include "Tool/GameplayLibrary.h"
 
 #if !UE_BUILD_SHIPPING
 static bool bShowPing = false;

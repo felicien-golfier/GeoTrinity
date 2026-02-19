@@ -39,7 +39,6 @@ protected:
 	bool ExecuteShot();
 	virtual bool ExecuteShot_Implementation();
 
-	float GetShotServerTime(int32 ShotIndex) const;
 	void UpdatePayload();
 
 	FAbilityPayload StoredPayload;

@@ -86,12 +86,6 @@ void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo con
 	bool const bIsServer = GetAvatarActorFromActorInfo()->HasAuthority();
 
 	float TriggerTime = FireRate;
-	CachedNetworkDelay = 0.f;
-	if (bIsServer && GetDefault<UGameDataSettings>()->bNetworkDelayCompensation)
-	{
-		CachedNetworkDelay = FMath::Max(0.f, GL::GetServerTime(GetWorld()) - ClientServerSpawnTime);
-		TriggerTime = FMath::Max(0.f, FireRate - CachedNetworkDelay);
-	}
 
 	if (AnimInstance && AnimMontage && !bIsServer && FireRate > 0.f)
 	{
@@ -101,7 +95,7 @@ void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo con
 	if (TriggerTime > 0.f)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
-		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::Fire, TriggerTime);
+		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::Fire, FireRate);
 	}
 	else
 	{

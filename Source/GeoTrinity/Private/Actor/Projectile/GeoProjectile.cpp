@@ -9,11 +9,13 @@
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "DrawDebugHelpers.h"
+#include "EngineUtils.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "NiagaraFunctionLibrary.h"
-#include "System/GeoActorPoolingSubsystem.h"
+#include "System/GeoPoolableInterface.h"
 #include "Tool/GameplayLibrary.h"
 
 using GeoASL = UGeoAbilitySystemLibrary;
@@ -27,7 +29,7 @@ AGeoProjectile::AGeoProjectile()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	bReplicates = false;
+	bReplicates = true;
 
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
 	SetRootComponent(Sphere);
@@ -36,9 +38,10 @@ AGeoProjectile::AGeoProjectile()
 	Sphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Sphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 	Sphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
-
 	Sphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	Sphere->SetCollisionObjectType(ECC_Projectile);
+	Sphere->SetCollisionResponseToChannel(ECC_GeoCharacter, ECR_Overlap);
+
+	Sphere->SetCollisionObjectType(ECC_GeoCharacter);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileMovement");
 	ProjectileMovement->InitialSpeed = 550.f;
@@ -47,6 +50,36 @@ AGeoProjectile::AGeoProjectile()
 
 	LoopingSoundComponent = CreateDefaultSubobject<UAudioComponent>("LoopingSoundComponent");
 	LoopingSoundComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AGeoProjectile, PredictionKeyId);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// When a real (server-replicated) projectile arrives on the owning client,
+	// find and destroy the matching predicted fake spawned earlier by the client.
+	if (PredictionKeyId == 0 || GameplayLibrary::IsServer(GetWorld()) || Implements<UGeoPoolableInterface>())
+	{
+		return;
+	}
+
+	for (TActorIterator<AGeoProjectile> It(GetWorld(), GetClass()); It; ++It)
+	{
+		AGeoProjectile* Other = *It;
+		if (Other != this && Other->PredictionKeyId == PredictionKeyId && Other->GetIsReplicated()
+			&& Other->GetOwner() == GetOwner())
+		{
+			Other->Destroy();
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -69,8 +102,8 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 		return;
 	}
 
-	float elapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
-	if (elapsedDistanceSqr >= DistanceSpanSqr)
+	float const ElapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
+	if (ElapsedDistanceSqr >= DistanceSpanSqr)
 	{
 		bIsEnding = true;
 		EndProjectileLife();
@@ -132,8 +165,6 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	bIsEnding = true;
 
-	PlayImpactFx();
-
 	if (HasAuthority())
 	{
 		GeoASL::ApplyEffectFromEffectData(EffectDataArray, GeoASL::GetGeoAscFromActor(Payload.Instigator),
@@ -179,12 +210,8 @@ void AGeoProjectile::EndProjectileLife()
 {
 	PlayImpactFx();
 
-	// TODO: Call Release after FX are done !
-	UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
-	checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
-	Pool->ReleaseActor(this);
-
 	OnProjectileEndLifeDelegate.Broadcast(this);
+	Destroy();
 }
 
 void AGeoProjectile::InitProjectileMovementComponent()
@@ -208,7 +235,48 @@ void AGeoProjectile::InitProjectileMovementComponent()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::Init()
+void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
+{
+	if (TimeDelta <= 0.f || bIsEnding)
+	{
+		return;
+	}
+
+	FVector const CurrentLocation = GetActorLocation();
+	FVector const Velocity = ProjectileMovement->Velocity;
+	FVector const AdvancedPosition = CurrentLocation + Velocity * TimeDelta;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(Payload.Instigator);
+
+	FCollisionObjectQueryParams ObjectQueryParams = FCollisionObjectQueryParams(ECC_GeoCharacter); // GeoCharacter ECC
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+	TArray<FHitResult> HitResults;
+	bool const bHit = GetWorld()->LineTraceMultiByObjectType(HitResults, CurrentLocation, AdvancedPosition,
+															 ObjectQueryParams, QueryParams);
+
+	if (bHit)
+	{
+		for (FHitResult const& Hit : HitResults)
+		{
+			if (AActor* HitActor = Hit.GetActor(); HitActor && IsValidOverlap(HitActor))
+			{
+				SetActorLocation(Hit.ImpactPoint);
+				OnSphereOverlap(nullptr, HitActor, nullptr, 0, false, Hit);
+				return;
+			}
+		}
+	}
+
+	SetActorLocation(AdvancedPosition);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::InitProjectileLife()
 {
 	if (!HasAuthority())
 	{
@@ -226,20 +294,4 @@ void AGeoProjectile::Init()
 	InitProjectileMovementComponent();
 
 	bIsEnding = false;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::End()
-{
-	ensureMsgf(bIsEnding || !HasAuthority(), TEXT("Ends projectile on server without bIsEnding true"));
-
-	if (!HasAuthority())
-	{
-		LoopingSoundComponent->Stop();
-	}
-
-	Sphere->OnComponentBeginOverlap.RemoveDynamic(this, &ThisClass::OnSphereOverlap);
-	Sphere->OnComponentHit.RemoveDynamic(this, &ThisClass::OnSphereHit);
-
-	ProjectileMovement->StopMovementImmediately();
 }

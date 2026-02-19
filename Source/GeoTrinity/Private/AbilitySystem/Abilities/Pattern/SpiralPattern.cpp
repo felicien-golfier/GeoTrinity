@@ -5,6 +5,7 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "System/GeoActorPoolingSubsystem.h"
+#include "System/GeoPoolableInterface.h"
 
 void USpiralPattern::OnCreate(FGameplayTag AbilityTag)
 {
@@ -73,7 +74,10 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 		if (!UGeoActorPoolingSubsystem::Get(GetWorld())->GetActorState(Projectile))
 		{
 			UGeoActorPoolingSubsystem::Get(GetWorld())->ChangeActorState(Projectile, true);
-			Projectile->Init();
+			if (ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
+			{
+				CastChecked<IGeoPoolableInterface>(Projectile)->Init();
+			}
 		}
 	}
 

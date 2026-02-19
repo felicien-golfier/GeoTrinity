@@ -6,7 +6,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "StructUtils/InstancedStruct.h"
-#include "System/GeoPoolableInterface.h"
 
 #include "GeoProjectile.generated.h"
 
@@ -23,20 +22,19 @@ enum class ETeam : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
 UCLASS()
-class GEOTRINITY_API AGeoProjectile
-	: public AActor
-	, public IGeoPoolableInterface
+class GEOTRINITY_API AGeoProjectile : public AActor
 {
 	GENERATED_BODY()
 public:
 	AGeoProjectile();
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void BeginPlay() override;
 	virtual void LifeSpanExpired() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	// IGeoPoolableInterface start
-	virtual void Init() override;
-	virtual void End() override;
-	// IGeoPoolableInterface end
+	virtual void InitProjectileLife();
+
+	void AdvanceProjectile(float TimeDelta);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
@@ -47,6 +45,9 @@ public:
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;
 
 	FAbilityPayload Payload;
+
+	UPROPERTY(Replicated)
+	int16 PredictionKeyId = 0;
 
 	FOnProjectileEndLife OnProjectileEndLifeDelegate;
 
@@ -67,10 +68,13 @@ protected:
 	virtual void EndProjectileLife();
 	void InitProjectileMovementComponent();
 
-private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> Sphere;
 
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> LoopingSoundComponent;
+
+private:
 	UPROPERTY(EditAnywhere, meta = (Tooltip = "Safe guard in case distance check fails"))
 	float LifeSpanInSec = 30.f;
 
@@ -94,10 +98,4 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USoundBase> LoopingSound;
-
-	UPROPERTY()
-	TObjectPtr<UAudioComponent> LoopingSoundComponent;
-
-	UPROPERTY(EditAnywhere)
-	FString ProjectileName;
 };

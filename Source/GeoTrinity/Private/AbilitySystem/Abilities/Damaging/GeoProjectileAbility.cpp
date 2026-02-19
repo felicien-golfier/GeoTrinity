@@ -2,12 +2,9 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
-#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
-#include "Characters/PlayableCharacter.h"
-#include "Components/SkeletalMeshComponent.h"
 #include "Tool/GameplayLibrary.h"
 
 void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -49,27 +46,28 @@ void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Han
 void UGeoProjectileAbility::Fire()
 {
 	Super::Fire();
+
 	SpawnProjectilesUsingTarget();
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 
 void UGeoProjectileAbility::SpawnProjectileUsingDirection(FVector const& Direction)
 {
-	AActor const* Instigator = GetAvatarActorFromActorInfo();
-	checkf(IsValid(Instigator), TEXT("Avatar Actor from actor info is invalid!"));
+	AActor const* Avatar = GetAvatarActorFromActorInfo();
+	checkf(IsValid(Avatar), TEXT("Avatar Actor from actor info is invalid!"));
 
-	FTransform SpawnTransform{Direction.Rotation().Quaternion(), Instigator->GetActorLocation()};
+	FTransform SpawnTransform{Direction.Rotation().Quaternion(), Avatar->GetActorLocation()};
 
 	SpawnProjectile(SpawnTransform);
 }
 
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
 {
-	float const ProjectileYaw =
-		GameplayLibrary::GetYawWithNetworkDelay(GetAvatarActorFromActorInfo(), CachedNetworkDelay);
+	AActor const* Avatar = GetAvatarActorFromActorInfo();
+	float const ProjectileYaw = Avatar->GetActorRotation().Yaw;
 
 	TArray<FVector> const Directions =
-		GameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, FVector(StoredPayload.Origin, 0.f));
+		GameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Avatar->GetActorLocation());
 	for (FVector const& Direction : Directions)
 	{
 		SpawnProjectileUsingDirection(Direction);
@@ -79,5 +77,26 @@ void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
 void UGeoProjectileAbility::SpawnProjectile(FTransform const SpawnTransform) const
 {
 	checkf(ProjectileClass, TEXT("No ProjectileClass in the projectile spell!"));
-	GameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray());
+
+	// Pass the prediction key only during the initial predicted activation.
+	// In Confirmed mode (continuous fire shots 2+), the key is stale — skip fake spawning.
+	FPredictionKey PredictionKey;
+	switch (GetCurrentActivationInfo().ActivationMode)
+	{
+	case EGameplayAbilityActivationMode::Predicting:
+	case EGameplayAbilityActivationMode::Confirmed:
+	case EGameplayAbilityActivationMode::Authority:
+		PredictionKey = GetCurrentActivationInfo().GetActivationPredictionKey();
+		break;
+	case EGameplayAbilityActivationMode::Rejected:
+		return;
+	case EGameplayAbilityActivationMode::NonAuthority:
+		ensureMsgf(false, TEXT("Not sure that NonAuthority activation mode can even exist here"));
+	default:
+		PredictionKey = FPredictionKey();
+		break;
+	}
+
+	GameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
+									 FireRate, PredictionKey);
 }

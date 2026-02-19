@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "GameplayPrediction.h"
 #include "GenericTeamAgentInterface.h"
 #include "StructUtils/InstancedStruct.h"
 
@@ -39,11 +40,14 @@ public:
 	 * @param SpawnTransform Where to spawn the projectile
 	 * @param Payload Network sync data (owner, instigator, origin, yaw, timing, seed)
 	 * @param EffectDataArray Effects to apply on hit
+	 * @param SpawnDelayFromPayloadTime
 	 * @return The spawned projectile, or nullptr on failure
 	 */
-	static AGeoProjectile* SpawnProjectile(UWorld* World, TSubclassOf<AGeoProjectile> ProjectileClass,
+	static AGeoProjectile* SpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> ProjectileClass,
 										   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
-										   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray);
+										   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+										   float SpawnDelayFromPayloadTime,
+										   FPredictionKey PredictionKey = FPredictionKey{});
 
 	/**
 	 * Get target directions based on targeting mode.
@@ -55,14 +59,6 @@ public:
 	 */
 	static TArray<FVector> GetTargetDirections(UWorld const* World, EProjectileTarget Target, float Yaw,
 											   FVector const& Origin);
-
-	/**
-	 * Get Yaw extrapolated with a delay.
-	 * @param Avatar The avatar we want the Yaw
-	 * @param NetworkDelay Delay to extrapolate Yaw
-	 * @return Yaw
-	 */
-	static float GetYawWithNetworkDelay(AActor* const Avatar, float NetworkDelay);
 
 	inline static FName const SectionStartName{"Start"};
 	inline static FString SectionStartString{SectionStartName.ToString()};

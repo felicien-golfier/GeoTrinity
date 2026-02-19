@@ -13,9 +13,25 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 		return false;
 	}
 
+	FPredictionKey PredictionKey;
+	switch (GetCurrentActivationInfo().ActivationMode)
+	{
+	case EGameplayAbilityActivationMode::Predicting:
+	case EGameplayAbilityActivationMode::Confirmed:
+		PredictionKey = GetCurrentActivationInfo().GetActivationPredictionKey();
+		break;
+	case EGameplayAbilityActivationMode::Rejected:
+		return false;
+	case EGameplayAbilityActivationMode::NonAuthority:
+		ensureMsgf(false, TEXT("Not sure that NonAuthority activation mode can even exist here"));
+	default:
+		PredictionKey = FPredictionKey();
+		break;
+	}
+
 	FVector const Origin{StoredPayload.Origin, 0.f};
-	float const ProjectileYaw =
-		GameplayLibrary::GetYawWithNetworkDelay(GetAvatarActorFromActorInfo(), CachedNetworkDelay);
+	AActor const* Avatar = GetAvatarActorFromActorInfo();
+	float const ProjectileYaw = Avatar->GetActorRotation().Yaw;
 	TArray<FVector> const Directions = GameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
 
 	bool bAnySpawned = false;
@@ -23,7 +39,7 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	{
 		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
 		if (GameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
-											 GetEffectDataArray()))
+											 GetEffectDataArray(), FireRate, PredictionKey))
 		{
 			bAnySpawned = true;
 		}

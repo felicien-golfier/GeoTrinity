@@ -2,13 +2,13 @@
 
 #include "AbilitySystem/Abilities/AbilityPayload.h"
 #include "Actor/Projectile/GeoProjectile.h"
-#include "Characters/PlayableCharacter.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Settings/GameDataSettings.h"
+#include "Kismet/GameplayStatics.h"
 #include "System/GeoActorPoolingSubsystem.h"
+#include "System/GeoPoolableInterface.h"
 #include "VisualLogger/VisualLogger.h"
 
 bool GameplayLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)
@@ -100,9 +100,10 @@ UAnimInstance* GameplayLibrary::GetAnimInstance(FAbilityPayload const& Payload)
 	return AnimInstance;
 }
 
-AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* World, TSubclassOf<AGeoProjectile> ProjectileClass,
+AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> const ProjectileClass,
 												 FTransform const& SpawnTransform, FAbilityPayload const& Payload,
-												 TArray<TInstancedStruct<FEffectData>> const& EffectDataArray)
+												 TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+												 float const SpawnDelayFromPayloadTime, FPredictionKey PredictionKey)
 {
 	if (!World || !ProjectileClass)
 	{
@@ -110,20 +111,72 @@ AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* World, TSubclassOf<AGeo
 		return nullptr;
 	}
 
-
-	AGeoProjectile* Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(
-		ProjectileClass, SpawnTransform, Payload.Owner, Cast<APawn>(Payload.Owner), false);
-
-	if (!Projectile)
+	AGeoProjectile* Projectile;
+	bool const bIsPoolable = ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass());
+	if (bIsPoolable)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[GameplayLibrary::SpawnProjectile] RequestActor returned nullptr for %s"),
-			   *ProjectileClass->GetName());
-		return nullptr;
+		Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(ProjectileClass, SpawnTransform, Payload.Owner,
+																		 Cast<APawn>(Payload.Owner), false);
+		if (!Projectile)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[GameplayLibrary::SpawnProjectile] RequestActor returned nullptr for %s"),
+				   *ProjectileClass->GetName());
+			return nullptr;
+		}
+	}
+	else
+	{
+		Projectile = World->SpawnActorDeferred<AGeoProjectile>(ProjectileClass, SpawnTransform, Payload.Owner,
+															   Cast<APawn>(Payload.Instigator),
+															   ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+		if (!Projectile)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[GameplayLibrary::SpawnProjectile] SpawnActor returned nullptr for %s"),
+				   *ProjectileClass->GetName());
+			return nullptr;
+		}
 	}
 
 	Projectile->Payload = Payload;
 	Projectile->EffectDataArray = EffectDataArray;
-	Projectile->Init();
+	Projectile->PredictionKeyId = PredictionKey.Current;
+
+	if (bIsPoolable)
+	{
+		Cast<IGeoPoolableInterface>(Projectile)->Init();
+	}
+	else
+	{
+		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTransform);
+		Projectile->InitProjectileLife();
+
+		// Register prediction key delegates as fast-path cleanup for when the ability
+		// is confirmed AFTER the projectile spawns (no FireRate delay).
+		// For the FireRate-delayed case, BeginPlay proximity matching handles it instead.
+		if (!IsServer(World) && PredictionKey.IsLocalClientKey())
+		{
+			TWeakObjectPtr<AGeoProjectile> WeakProjectile(Projectile);
+			auto DestroyFake = [WeakProjectile]()
+			{
+				if (WeakProjectile.IsValid())
+				{
+					WeakProjectile->Destroy();
+				}
+			};
+			PredictionKey.NewCaughtUpDelegate().BindLambda(DestroyFake);
+			PredictionKey.NewRejectedDelegate().BindLambda(DestroyFake);
+		}
+	}
+
+	if (IsServer(World))
+	{
+		float const TimeDelta = GetServerTime(World) - Payload.ServerSpawnTime - SpawnDelayFromPayloadTime;
+		if (TimeDelta > 0.f)
+		{
+			Projectile->AdvanceProjectile(TimeDelta);
+		}
+	}
 
 	return Projectile;
 }
@@ -158,33 +211,4 @@ TArray<FVector> GameplayLibrary::GetTargetDirections(UWorld const* World, EProje
 			return {};
 		}
 	}
-}
-
-float GameplayLibrary::GetYawWithNetworkDelay(AActor* const Avatar, float const NetworkDelay)
-{
-	float const ActualYaw = Avatar->GetActorRotation().Yaw;
-	float ProjectileYaw = ActualYaw;
-
-	if (Avatar->HasAuthority() && GetDefault<UGameDataSettings>()->bNetworkDelayCompensation)
-	{
-		if (APlayableCharacter const* PlayableCharacter = Cast<APlayableCharacter>(Avatar))
-		{
-			ProjectileYaw += PlayableCharacter->GetYawVelocity() * NetworkDelay;
-		}
-	}
-
-	FVector const Start = Avatar->GetActorLocation();
-	constexpr float ArrowLength = 500.f;
-
-	FVector const ActualEnd = Start + FRotator(0.f, ActualYaw, 0.f).Vector() * ArrowLength;
-	UE_VLOG_ARROW(Avatar, LogGeoASC, Verbose, Start, ActualEnd, FColor::Red, TEXT("%s ActualYaw=%.2f"),
-				  Avatar->HasAuthority() ? TEXT("Server") : TEXT("Client"), ActualYaw);
-
-	FVector const PredictedEnd = Start + FRotator(0.f, ProjectileYaw, 0.f).Vector() * ArrowLength;
-	UE_VLOG_ARROW(Avatar, LogGeoASC, Verbose, Start, PredictedEnd, FColor::Blue,
-				  TEXT("%s PredictedYaw=%.2f (delta=%.2f, ND=%.4f)"),
-				  Avatar->HasAuthority() ? TEXT("Server") : TEXT("Client"), ProjectileYaw, ProjectileYaw - ActualYaw,
-				  NetworkDelay);
-
-	return ProjectileYaw;
 }

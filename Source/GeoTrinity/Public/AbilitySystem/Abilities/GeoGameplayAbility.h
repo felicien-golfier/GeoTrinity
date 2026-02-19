@@ -60,7 +60,4 @@ private:
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
 
 	FTimerHandle FireTriggerTimerHandle;
-
-protected:
-	float CachedNetworkDelay = 0.f;
 };
