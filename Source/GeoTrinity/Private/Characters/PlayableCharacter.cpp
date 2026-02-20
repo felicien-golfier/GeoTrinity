@@ -14,14 +14,6 @@ void APlayableCharacter::Tick(float DeltaSeconds)
 	{
 		UpdateAimRotation(DeltaSeconds);
 	}
-	else if (DeltaSeconds > 0.f)
-	{
-		float const CurrentYaw = GetActorRotation().Yaw;
-		float const InstantVelocity = FMath::FindDeltaAngleDegrees(PreviousYaw, CurrentYaw) / DeltaSeconds;
-		constexpr float SmoothingSpeed = 1.f;
-		YawVelocity = FMath::FInterpTo(YawVelocity, InstantVelocity, DeltaSeconds, SmoothingSpeed);
-		PreviousYaw = CurrentYaw;
-	}
 }
 
 void APlayableCharacter::UpdateAimRotation(float DeltaSeconds)
@@ -29,7 +21,6 @@ void APlayableCharacter::UpdateAimRotation(float DeltaSeconds)
 	FVector2D Look;
 	if (!GeoInputComponent->GetLookVector(Look))
 	{
-		YawVelocity = 0.f;
 		return;
 	}
 
@@ -39,7 +30,6 @@ void APlayableCharacter::UpdateAimRotation(float DeltaSeconds)
 	float const MaxDelta = MaxRotationSpeed * DeltaSeconds;
 	float const ClampedDelta = FMath::Clamp(DeltaAngle, -MaxDelta, MaxDelta);
 
-	YawVelocity = (DeltaSeconds > 0.f) ? ClampedDelta / DeltaSeconds : 0.f;
 	Controller->SetControlRotation(FRotator(0.f, CurrentYaw + ClampedDelta, 0.f));
 }
 

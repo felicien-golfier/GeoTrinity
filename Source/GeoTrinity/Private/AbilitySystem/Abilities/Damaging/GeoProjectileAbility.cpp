@@ -5,41 +5,23 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
 
 void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 											FGameplayAbilityActorInfo const* ActorInfo,
 											FGameplayAbilityActivationInfo const ActivationInfo,
 											FGameplayEventData const* TriggerEventData)
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	if (bIsAbilityEnding) // We ended the ability in the Super.
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
 
-	// Build payload from avatar transform
-	AActor* Instigator = GetAvatarActorFromActorInfo();
-	if (FGeoAbilityTargetData const* TargetData =
-			static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)))
-	{
-		StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, TargetData->Origin,
-											 TargetData->Yaw, TargetData->ServerSpawnTime, TargetData->Seed);
-	}
-	else
-	{
-		StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, Instigator->GetTransform());
-	}
-
-	// Extract orientation from TriggerEventData if available (sent via event-based activation)
-	// Both client and server receive the same event data in a single RPC
-
-	ensureMsgf(TriggerEventData && TriggerEventData->TargetData.Num() > 0, TEXT("No TargetData in TriggerEventData!"));
-
-
 	// Schedule fire with network delay compensation (plays montage on client, timer-only on server)
 	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-	ScheduleFireTrigger(ActivationInfo, AnimInstance, StoredPayload.ServerSpawnTime);
+	ScheduleFireTrigger(ActivationInfo, AnimInstance);
 }
 
 
@@ -47,34 +29,59 @@ void UGeoProjectileAbility::Fire()
 {
 	Super::Fire();
 
-	SpawnProjectilesUsingTarget();
+	if (GetCurrentActorInfo()->IsLocallyControlledPlayer())
+	{
+		AActor const* Avatar = GetAvatarActorFromActorInfo();
+		SpawnProjectilesUsingTarget(Avatar->GetActorRotation().Yaw, Avatar->GetActorLocation(),
+									UGameplayLibrary::GetServerTime(GetWorld(), true));
+	}
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 
-void UGeoProjectileAbility::SpawnProjectileUsingDirection(FVector const& Direction)
+void UGeoProjectileAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
+													 FGameplayTag ApplicationTag)
+{
+	Super::OnFireTargetDataReceived(DataHandle, ApplicationTag);
+
+	FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
+	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
+	FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();
+
+	GetAbilitySystemComponentFromActorInfo()->ConsumeClientReplicatedTargetData(
+		Handle, ActivationInfo.GetActivationPredictionKey());
+
+	FGeoAbilityTargetData const* TargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
+	ensureMsgf(TargetData,
+			   TEXT("No FGeoAbilityTargetData found in TriggerEventData, falling back to Generate a payload"));
+
+	// Server projectile spawn with updated values.
+	SpawnProjectilesUsingTarget(TargetData->Yaw,
+								FVector(TargetData->Origin, ActorInfo->AvatarActor->GetActorLocation().Z),
+								TargetData->ServerSpawnTime);
+}
+
+void UGeoProjectileAbility::SpawnProjectileUsingDirection(FVector const& Direction, FVector const& Origin,
+														  float const SpawnServerTime)
 {
 	AActor const* Avatar = GetAvatarActorFromActorInfo();
 	checkf(IsValid(Avatar), TEXT("Avatar Actor from actor info is invalid!"));
 
-	FTransform SpawnTransform{Direction.Rotation().Quaternion(), Avatar->GetActorLocation()};
+	FTransform SpawnTransform{Direction.Rotation().Quaternion(), Origin};
 
-	SpawnProjectile(SpawnTransform);
+	SpawnProjectile(SpawnTransform, SpawnServerTime);
 }
 
-void UGeoProjectileAbility::SpawnProjectilesUsingTarget()
+void UGeoProjectileAbility::SpawnProjectilesUsingTarget(float const ProjectileYaw, FVector const& Origin,
+														float const SpawnServerTime)
 {
-	AActor const* Avatar = GetAvatarActorFromActorInfo();
-	float const ProjectileYaw = Avatar->GetActorRotation().Yaw;
-
-	TArray<FVector> const Directions =
-		GameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Avatar->GetActorLocation());
+	TArray<FVector> const Directions = UGameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
 	for (FVector const& Direction : Directions)
 	{
-		SpawnProjectileUsingDirection(Direction);
+		SpawnProjectileUsingDirection(Direction, Origin, SpawnServerTime);
 	}
 }
 
-void UGeoProjectileAbility::SpawnProjectile(FTransform const SpawnTransform) const
+void UGeoProjectileAbility::SpawnProjectile(FTransform const& SpawnTransform, float const SpawnServerTime) const
 {
 	checkf(ProjectileClass, TEXT("No ProjectileClass in the projectile spell!"));
 
@@ -97,6 +104,6 @@ void UGeoProjectileAbility::SpawnProjectile(FTransform const SpawnTransform) con
 		break;
 	}
 
-	GameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
-									 FireRate, PredictionKey);
+	UGameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
+									  SpawnServerTime, PredictionKey);
 }

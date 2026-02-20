@@ -3,6 +3,8 @@
 #include "GenericTeamAgentInterface.h"
 #include "StructUtils/InstancedStruct.h"
 
+#include "UGameplayLibrary.generated.h"
+
 
 UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
 enum class ETeam : uint8
@@ -23,13 +25,26 @@ class AGeoProjectile;
 struct FAbilityPayload;
 struct FEffectData;
 
-class GameplayLibrary
+UCLASS()
+
+class UGameplayLibrary : public UBlueprintFunctionLibrary
 {
+	GENERATED_BODY()
+
 public:
 	static bool GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface);
-	static FColor GetColorForObject(UObject const* Object);
-	static float IsServer(UWorld const* World);
+
+	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	static FColor GetColorForObject(UObject const* WorldContextObject);
+
+	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	static bool IsServer(UObject const* WorldContextObject);
+	static bool IsServer(UWorld const* World);
+
+	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
+
 	static int GetAndCheckSection(UAnimMontage const* AnimMontage, FName Section);
 	static UAnimInstance* GetAnimInstance(FAbilityPayload const& Payload);
 
@@ -40,14 +55,13 @@ public:
 	 * @param SpawnTransform Where to spawn the projectile
 	 * @param Payload Network sync data (owner, instigator, origin, yaw, timing, seed)
 	 * @param EffectDataArray Effects to apply on hit
-	 * @param SpawnDelayFromPayloadTime
+	 * @param SpawnServerTime
 	 * @return The spawned projectile, or nullptr on failure
 	 */
 	static AGeoProjectile* SpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> ProjectileClass,
 										   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 										   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
-										   float SpawnDelayFromPayloadTime,
-										   FPredictionKey PredictionKey = FPredictionKey{});
+										   float SpawnServerTime, FPredictionKey PredictionKey = FPredictionKey{});
 
 	/**
 	 * Get target directions based on targeting mode.

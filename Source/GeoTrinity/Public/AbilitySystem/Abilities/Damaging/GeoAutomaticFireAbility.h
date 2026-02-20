@@ -39,11 +39,11 @@ protected:
 	bool ExecuteShot();
 	virtual bool ExecuteShot_Implementation();
 
-	void UpdatePayload();
-
-	FAbilityPayload StoredPayload;
 	int32 CurrentShotIndex = 0;
 
 private:
 	bool bWantsToFire = true;
+
+	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
+										  FGameplayTag ApplicationTag) override;
 };

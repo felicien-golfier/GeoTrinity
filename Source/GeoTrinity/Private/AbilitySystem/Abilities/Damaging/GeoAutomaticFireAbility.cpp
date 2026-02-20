@@ -4,7 +4,7 @@
 
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
 
 UGeoAutomaticFireAbility::UGeoAutomaticFireAbility()
 {
@@ -19,32 +19,17 @@ void UGeoAutomaticFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const 
 											   FGameplayAbilityActivationInfo const ActivationInfo,
 											   FGameplayEventData const* TriggerEventData)
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	if (bIsAbilityEnding) // We ended the ability in the Super.
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
-	}
-
-	AActor* Instigator = GetAvatarActorFromActorInfo();
-	if (TriggerEventData && TriggerEventData->TargetData.Num() > 0)
-	{
-		if (FGeoAbilityTargetData const* TargetData =
-				static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)))
-		{
-			StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, TargetData->Origin,
-												 TargetData->Yaw, TargetData->ServerSpawnTime, TargetData->Seed);
-		}
-	}
-	else if (Instigator)
-	{
-		StoredPayload = CreateAbilityPayload(GetOwningActorFromActorInfo(), Instigator, Instigator->GetTransform());
 	}
 
 	CurrentShotIndex = 0;
 	bWantsToFire = true;
 
 	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-	ScheduleFireTrigger(ActivationInfo, AnimInstance, StoredPayload.ServerSpawnTime);
+	ScheduleFireTrigger(ActivationInfo, AnimInstance);
 }
 
 void UGeoAutomaticFireAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
@@ -52,6 +37,7 @@ void UGeoAutomaticFireAbility::EndAbility(FGameplayAbilitySpecHandle const Handl
 										  FGameplayAbilityActivationInfo const ActivationInfo,
 										  bool bReplicateEndAbility, bool bWasCancelled)
 {
+
 	bWantsToFire = false;
 	CurrentShotIndex = 0;
 
@@ -96,18 +82,12 @@ void UGeoAutomaticFireAbility::Fire()
 		return;
 	}
 
-	UpdatePayload();
-
-	// Execute the shot - subclasses define what happens
 	bool const bShotSucceeded = ExecuteShot();
-
-	// Increment shot counter
 	CurrentShotIndex++;
 
-	if (bShotSucceeded && bWantsToFire && IsActive())
+	if (bShotSucceeded && bWantsToFire)
 	{
-		UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-		ScheduleFireTrigger(ActivationInfo, AnimInstance, GameplayLibrary::GetServerTime(GetWorld()));
+		ScheduleFireTrigger(ActivationInfo, ActorInfo->GetAnimInstance());
 	}
 	else if (!bShotSucceeded)
 	{
@@ -116,13 +96,42 @@ void UGeoAutomaticFireAbility::Fire()
 	}
 }
 
-void UGeoAutomaticFireAbility::UpdatePayload()
+void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
+														FGameplayTag ApplicationTag)
 {
-	StoredPayload.Seed += CurrentShotIndex;
+	FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
+	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
+	FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();
 
-	AActor* const Avatar = GetAvatarActorFromActorInfo();
-	ensureMsgf(IsValid(Avatar), TEXT("Avatar Actor from actor info is invalid!"));
+	GetAbilitySystemComponentFromActorInfo()->ConsumeClientReplicatedTargetData(
+		Handle, ActivationInfo.GetActivationPredictionKey());
 
-	StoredPayload.Origin = FVector2D(Avatar->GetActorLocation());
-	StoredPayload.Yaw = Avatar->GetActorRotation().Yaw;
+	if (!bWantsToFire || !IsActive())
+	{
+		return;
+	}
+
+	if (!CommitAbilityCost(Handle, ActorInfo, ActivationInfo))
+	{
+		bWantsToFire = false;
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		return;
+	}
+
+	if (FGeoAbilityTargetData const* TargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0)))
+	{
+		StoredPayload.Origin = TargetData->Origin;
+		StoredPayload.Yaw = TargetData->Yaw;
+		StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
+		StoredPayload.Seed = TargetData->Seed;
+	}
+
+	bool const bShotSucceeded = ExecuteShot();
+	CurrentShotIndex++;
+
+	if (!bShotSucceeded)
+	{
+		bWantsToFire = false;
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
 }

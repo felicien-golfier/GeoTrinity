@@ -3,7 +3,7 @@
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticProjectileAbility.h"
 
 #include "Actor/Projectile/GeoProjectile.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
 
 bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 {
@@ -32,14 +32,14 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	FVector const Origin{StoredPayload.Origin, 0.f};
 	AActor const* Avatar = GetAvatarActorFromActorInfo();
 	float const ProjectileYaw = Avatar->GetActorRotation().Yaw;
-	TArray<FVector> const Directions = GameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
+	TArray<FVector> const Directions = UGameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
 
 	bool bAnySpawned = false;
 	for (FVector const& Direction : Directions)
 	{
 		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
-		if (GameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
-											 GetEffectDataArray(), FireRate, PredictionKey))
+		if (UGameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
+											  GetEffectDataArray(), FireRate, PredictionKey))
 		{
 			bAnySpawned = true;
 		}

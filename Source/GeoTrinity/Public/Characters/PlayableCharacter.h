@@ -19,7 +19,6 @@ public:
 	void AbilityInputTagHeld(FGameplayTag InputTag);
 
 	EPlayerClass GetPlayerClass() const;
-	float GetYawVelocity() const { return YawVelocity; }
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -37,6 +36,5 @@ protected:
 private:
 	void UpdateAimRotation(float DeltaSeconds);
 
-	float YawVelocity = 0.f;
 	float PreviousYaw = 0.f;
 };

@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
 
 void UPattern::OnCreate(FGameplayTag AbilityTag)
 {
@@ -14,9 +14,9 @@ void UPattern::OnCreate(FGameplayTag AbilityTag)
 	if (AnimMontage)
 	{
 		StartSectionLength = AnimMontage->GetSectionLength(
-			GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionStartName));
-		(void)GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionFireName);
-		(void)GameplayLibrary::GetAndCheckSection(AnimMontage, GameplayLibrary::SectionEndName);
+			UGameplayLibrary::GetAndCheckSection(AnimMontage, UGameplayLibrary::SectionStartName));
+		(void)UGameplayLibrary::GetAndCheckSection(AnimMontage, UGameplayLibrary::SectionFireName);
+		(void)UGameplayLibrary::GetAndCheckSection(AnimMontage, UGameplayLibrary::SectionEndName);
 	}
 }
 
@@ -32,8 +32,8 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 	bPatternIsActive = true;
 	StoredPayload = Payload;
 
-	float const StartTime = GameplayLibrary::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
-	UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(Payload);
+	float const StartTime = UGameplayLibrary::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
+	UAnimInstance* AnimInstance = UGameplayLibrary::GetAnimInstance(Payload);
 
 	if (!IsValid(AnimMontage) || !IsValid(AnimInstance) || StartTime > StartSectionLength)
 	{
@@ -45,7 +45,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 		return;
 	}
 
-	if (!GameplayLibrary::IsServer(GetWorld()))
+	if (!UGameplayLibrary::IsServer(GetWorld()))
 	{
 		AnimInstance->Montage_Play(AnimMontage, 1.f, EMontagePlayReturnType::MontageLength, StartTime);
 	}
@@ -62,8 +62,8 @@ void UPattern::OnMontageSectionStartEnded()
 
 void UPattern::StartPattern(FAbilityPayload const& Payload)
 {
-	UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(Payload);
-	if (IsValid(AnimMontage) && !GameplayLibrary::IsServer(GetWorld()) && IsValid(AnimInstance))
+	UAnimInstance* AnimInstance = UGameplayLibrary::GetAnimInstance(Payload);
+	if (IsValid(AnimMontage) && !UGameplayLibrary::IsServer(GetWorld()) && IsValid(AnimInstance))
 	{
 		if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 		{
@@ -72,16 +72,16 @@ void UPattern::StartPattern(FAbilityPayload const& Payload)
 		}
 
 		FName const SectionName = AnimInstance->Montage_GetCurrentSection(AnimMontage);
-		if (SectionName == GameplayLibrary::SectionStartName)
+		if (SectionName == UGameplayLibrary::SectionStartName)
 		{
-			AnimInstance->Montage_JumpToSection(GameplayLibrary::SectionFireName);
+			AnimInstance->Montage_JumpToSection(UGameplayLibrary::SectionFireName);
 		}
-		else if (!SectionName.ToString().Contains(GameplayLibrary::SectionFireName.ToString()))
+		else if (!SectionName.ToString().Contains(UGameplayLibrary::SectionFireName.ToString()))
 		{
 			UE_LOG(LogPattern, Warning,
 				   TEXT("AnimMontage in the section %s where it should be only %s or containing section name %s !"),
-				   *SectionName.ToString(), *GameplayLibrary::SectionStartName.ToString(),
-				   *GameplayLibrary::SectionFireName.ToString());
+				   *SectionName.ToString(), *UGameplayLibrary::SectionStartName.ToString(),
+				   *UGameplayLibrary::SectionFireName.ToString());
 		}
 	}
 
@@ -95,12 +95,12 @@ void UPattern::OnStartPattern_Implementation(FAbilityPayload const& Payload)
 
 void UPattern::JumpMontageToEndSection() const
 {
-	UAnimInstance* AnimInstance = GameplayLibrary::GetAnimInstance(StoredPayload);
-	if (IsValid(AnimMontage) && !GameplayLibrary::IsServer(GetWorld()) && IsValid(AnimInstance)
+	UAnimInstance* AnimInstance = UGameplayLibrary::GetAnimInstance(StoredPayload);
+	if (IsValid(AnimMontage) && !UGameplayLibrary::IsServer(GetWorld()) && IsValid(AnimInstance)
 		&& AnimInstance->Montage_IsPlaying(AnimMontage)
-		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != GameplayLibrary::SectionEndName)
+		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != UGameplayLibrary::SectionEndName)
 	{
-		AnimInstance->Montage_JumpToSection(GameplayLibrary::SectionEndName);
+		AnimInstance->Montage_JumpToSection(UGameplayLibrary::SectionEndName);
 	}
 }
 
@@ -137,7 +137,7 @@ void UTickablePattern::StartPattern(FAbilityPayload const& Payload)
 
 void UTickablePattern::CalculateTimeAndTickPattern()
 {
-	float const ServerTime = GameplayLibrary::GetServerTime(GetWorld(), true);
+	float const ServerTime = UGameplayLibrary::GetServerTime(GetWorld(), true);
 	TickPattern(ServerTime, ServerTime - StoredPayload.ServerSpawnTime - StartSectionLength);
 	if (IsPatternActive())
 	{

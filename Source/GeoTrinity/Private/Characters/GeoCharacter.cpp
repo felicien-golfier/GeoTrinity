@@ -5,7 +5,7 @@
 #include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Input/GeoInputComponent.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
 // Sets default values
@@ -35,7 +35,7 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	UE_VLOG_LOCATION(this, LogGeoTrinity, Verbose, GetActorLocation(), 30.f, GameplayLibrary::GetColorForObject(this),
+	UE_VLOG_LOCATION(this, LogGeoTrinity, Verbose, GetActorLocation(), 30.f, UGameplayLibrary::GetColorForObject(this),
 					 TEXT("%s [%s]"), *GetName(), *UEnum::GetValueAsString(GetLocalRole()));
 }
 
@@ -57,7 +57,7 @@ ETeamAttitude::Type AGeoCharacter::GetTeamAttitudeTowards(AActor const& Other) c
 
 void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const
 {
-	DrawDebugVectorFromCharacter(Direction, DebugMessage, GameplayLibrary::GetColorForObject(this));
+	DrawDebugVectorFromCharacter(Direction, DebugMessage, UGameplayLibrary::GetColorForObject(this));
 }
 
 void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage,

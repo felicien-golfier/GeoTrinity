@@ -1,4 +1,4 @@
-﻿#include "Tool/GameplayLibrary.h"
+﻿#include "Tool/UGameplayLibrary.h"
 
 #include "AbilitySystem/Abilities/AbilityPayload.h"
 #include "Actor/Projectile/GeoProjectile.h"
@@ -11,13 +11,13 @@
 #include "System/GeoPoolableInterface.h"
 #include "VisualLogger/VisualLogger.h"
 
-bool GameplayLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)
+bool UGameplayLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)
 {
 	OutInterface = Cast<IGenericTeamAgentInterface const>(Actor);
 	return OutInterface != nullptr;
 }
 
-FColor GameplayLibrary::GetColorForObject(UObject const* Object)
+FColor UGameplayLibrary::GetColorForObject(UObject const* Object)
 {
 	if (!IsValid(Object))
 	{
@@ -31,12 +31,32 @@ FColor GameplayLibrary::GetColorForObject(UObject const* Object)
 	return Palette[Object->GetUniqueID() % std::size(Palette)];
 }
 
-float GameplayLibrary::IsServer(UWorld const* World)
+bool UGameplayLibrary::IsServer(UObject const* WorldContextObject)
+{
+	if (!WorldContextObject)
+	{
+		ensureMsgf(false, TEXT("WorldContextObject is invalid!"));
+		return 0.f;
+	}
+	return IsServer(WorldContextObject->GetWorld());
+}
+
+bool UGameplayLibrary::IsServer(UWorld const* World)
 {
 	return World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer);
 }
+float UGameplayLibrary::GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing)
+{
+	if (!WorldContextObject)
+	{
+		ensureMsgf(false, TEXT("WorldContextObject is invalid!"));
+		return 0.f;
+	}
 
-float GameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdatedWithPing)
+	return GetServerTime(WorldContextObject->GetWorld(), bUpdatedWithPing);
+}
+
+float UGameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdatedWithPing)
 {
 	if (IsServer(World))
 	{
@@ -68,7 +88,7 @@ float GameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdatedWit
 	return ServerTimeSeconds;
 }
 
-int GameplayLibrary::GetAndCheckSection(UAnimMontage const* AnimMontage, FName const Section)
+int UGameplayLibrary::GetAndCheckSection(UAnimMontage const* AnimMontage, FName const Section)
 {
 	int const SectionIndex = AnimMontage->GetSectionIndex(Section);
 	if (SectionIndex == INDEX_NONE)
@@ -80,7 +100,7 @@ int GameplayLibrary::GetAndCheckSection(UAnimMontage const* AnimMontage, FName c
 	return SectionIndex;
 }
 
-UAnimInstance* GameplayLibrary::GetAnimInstance(FAbilityPayload const& Payload)
+UAnimInstance* UGameplayLibrary::GetAnimInstance(FAbilityPayload const& Payload)
 {
 	ACharacter* InstigatorCharacter = Cast<ACharacter>(Payload.Instigator);
 	if (!IsValid(InstigatorCharacter))
@@ -100,14 +120,15 @@ UAnimInstance* GameplayLibrary::GetAnimInstance(FAbilityPayload const& Payload)
 	return AnimInstance;
 }
 
-AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> const ProjectileClass,
-												 FTransform const& SpawnTransform, FAbilityPayload const& Payload,
-												 TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
-												 float const SpawnDelayFromPayloadTime, FPredictionKey PredictionKey)
+AGeoProjectile* UGameplayLibrary::SpawnProjectile(UWorld* const World,
+												  TSubclassOf<AGeoProjectile> const ProjectileClass,
+												  FTransform const& SpawnTransform, FAbilityPayload const& Payload,
+												  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+												  float const SpawnServerTime, FPredictionKey PredictionKey)
 {
 	if (!World || !ProjectileClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[GameplayLibrary::SpawnProjectile] Invalid World or ProjectileClass"));
+		UE_LOG(LogTemp, Error, TEXT("[UGameplayLibrary::SpawnProjectile] Invalid World or ProjectileClass"));
 		return nullptr;
 	}
 
@@ -119,7 +140,7 @@ AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* const World, TSubclassO
 																		 Cast<APawn>(Payload.Owner), false);
 		if (!Projectile)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[GameplayLibrary::SpawnProjectile] RequestActor returned nullptr for %s"),
+			UE_LOG(LogTemp, Error, TEXT("[UGameplayLibrary::SpawnProjectile] RequestActor returned nullptr for %s"),
 				   *ProjectileClass->GetName());
 			return nullptr;
 		}
@@ -132,7 +153,7 @@ AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* const World, TSubclassO
 
 		if (!Projectile)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[GameplayLibrary::SpawnProjectile] SpawnActor returned nullptr for %s"),
+			UE_LOG(LogTemp, Error, TEXT("[UGameplayLibrary::SpawnProjectile] SpawnActor returned nullptr for %s"),
 				   *ProjectileClass->GetName());
 			return nullptr;
 		}
@@ -154,7 +175,10 @@ AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* const World, TSubclassO
 		// Register prediction key delegates as fast-path cleanup for when the ability
 		// is confirmed AFTER the projectile spawns (no FireRate delay).
 		// For the FireRate-delayed case, BeginPlay proximity matching handles it instead.
-		if (!IsServer(World) && PredictionKey.IsLocalClientKey())
+		// When LocalOnlyProjectiles is on, keep the fake alive (server projectile won't replicate to owner).
+		static IConsoleVariable* const LocalOnlyCVar =
+			IConsoleManager::Get().FindConsoleVariable(TEXT("Geo.LocalOnlyProjectiles"));
+		if (!IsServer(World) && PredictionKey.IsLocalClientKey() && !(LocalOnlyCVar && LocalOnlyCVar->GetBool()))
 		{
 			TWeakObjectPtr<AGeoProjectile> WeakProjectile(Projectile);
 			auto DestroyFake = [WeakProjectile]()
@@ -171,7 +195,7 @@ AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* const World, TSubclassO
 
 	if (IsServer(World))
 	{
-		float const TimeDelta = GetServerTime(World) - Payload.ServerSpawnTime - SpawnDelayFromPayloadTime;
+		float const TimeDelta = GetServerTime(World) - SpawnServerTime;
 		if (TimeDelta > 0.f)
 		{
 			Projectile->AdvanceProjectile(TimeDelta);
@@ -181,8 +205,8 @@ AGeoProjectile* GameplayLibrary::SpawnProjectile(UWorld* const World, TSubclassO
 	return Projectile;
 }
 
-TArray<FVector> GameplayLibrary::GetTargetDirections(UWorld const* World, EProjectileTarget const Target,
-													 float const Yaw, FVector const& Origin)
+TArray<FVector> UGameplayLibrary::GetTargetDirections(UWorld const* World, EProjectileTarget const Target,
+													  float const Yaw, FVector const& Origin)
 {
 	switch (Target)
 	{

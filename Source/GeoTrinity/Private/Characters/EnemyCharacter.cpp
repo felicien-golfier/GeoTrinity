@@ -7,10 +7,10 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
 
 AEnemyCharacter::AEnemyCharacter(FObjectInitializer const& ObjectInitializer) :
-	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(ACharacter::CharacterMovementComponentName))
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(CharacterMovementComponentName))
 {
 	// Ensure an AI controller and auto possession for enemies
 	AIControllerClass = AGeoEnemyAIController::StaticClass();

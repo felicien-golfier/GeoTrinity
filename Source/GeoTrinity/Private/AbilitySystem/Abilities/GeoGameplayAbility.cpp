@@ -7,12 +7,54 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Settings/GameDataSettings.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
+
 using GeoASL = UGeoAbilitySystemLibrary;
-using GL = GameplayLibrary;
+using GL = UGameplayLibrary;
 
 // ---------------------------------------------------------------------------------------------------------------------
+
+
+void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
+										  FGameplayAbilityActorInfo const* ActorInfo,
+										  FGameplayAbilityActivationInfo const ActivationInfo,
+										  FGameplayEventData const* TriggerEventData)
+{
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+		return;
+	}
+
+	// Both client and server receive the same event data in a single RPC at activation
+	ensureMsgf(TriggerEventData && TriggerEventData->TargetData.Num() > 0, TEXT("No TargetData in TriggerEventData!"));
+
+	AActor* Instigator = GetAvatarActorFromActorInfo();
+	AActor* Owner = GetOwningActorFromActorInfo();
+	if (FGeoAbilityTargetData const* TargetData =
+			static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)))
+	{
+		StoredPayload = CreateAbilityPayload(Owner, Instigator, TargetData->Origin, TargetData->Yaw,
+											 TargetData->ServerSpawnTime, TargetData->Seed);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning,
+			   TEXT("No FGeoAbilityTargetData found in TriggerEventData, falling back to Generate a payload"));
+		StoredPayload = CreateAbilityPayload(Owner, Instigator, Instigator->GetTransform());
+	}
+
+	// Bind Delegate on server to receive Fire data from client
+	if (ActorInfo->IsNetAuthority() && !ActorInfo->IsLocallyControlledPlayer())
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		FAbilityTargetDataSetDelegate Delegate =
+			ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey());
+		Delegate.RemoveAll(this);
+		Delegate.AddUObject(this, &ThisClass::OnFireTargetDataReceived);
+	}
+}
+
 FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 {
 	return GeoASL::GetAbilityTagFromAbility(*this);
@@ -76,23 +118,27 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 									 FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 									 bool bWasCancelled)
 {
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+	// if (ActorInfo->IsNetAuthority() && !ActorInfo->IsLocallyControlledPlayer())
+	// {
+	// 	GetAbilitySystemComponentFromActorInfo()
+	// 		->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey())
+	// 		.RemoveAll(this);
+	// }
 	FireTriggerTimerHandle.Invalidate();
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo,
-											  UAnimInstance* AnimInstance, float ClientServerSpawnTime)
+											  UAnimInstance* AnimInstance)
 {
 	bool const bIsServer = GetAvatarActorFromActorInfo()->HasAuthority();
-
-	float TriggerTime = FireRate;
 
 	if (AnimInstance && AnimMontage && !bIsServer && FireRate > 0.f)
 	{
 		HandleAnimationMontage(AnimInstance, ActivationInfo);
 	}
 
-	if (TriggerTime > 0.f)
+	if (FireRate > 0.f)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::Fire, FireRate);
@@ -156,5 +202,28 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 
 void UGeoGameplayAbility::Fire()
 {
-	// Do what you need from the ability when the FireRate end is reach
+	// Client: send a fresh snapshot to the server proxy so it fires with accurate data.
+	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
+	if (ActorInfo->IsLocallyControlledPlayer())
+	{
+		FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
+		FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		FScopedPredictionWindow ScopedPrediction(ASC);
+
+		AActor* const Avatar = GetAvatarActorFromActorInfo();
+		ensureMsgf(IsValid(Avatar), TEXT("Avatar Actor from actor info is invalid!"));
+		FGameplayAbilityTargetDataHandle DataHandle;
+		DataHandle.Add(new FGeoAbilityTargetData(FVector2D(Avatar->GetActorLocation()), Avatar->GetActorRotation().Yaw,
+												 GL::GetServerTime(GetWorld(), true), StoredPayload.Seed));
+
+		ASC->ServerSetReplicatedTargetData(Handle, ActivationInfo.GetActivationPredictionKey(), DataHandle,
+										   FGameplayTag{}, ASC->ScopedPredictionKey);
+	}
+}
+
+void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
+												   FGameplayTag ApplicationTag)
+{
+	// Called on server when Fire has happen on client and data is finally here.
 }

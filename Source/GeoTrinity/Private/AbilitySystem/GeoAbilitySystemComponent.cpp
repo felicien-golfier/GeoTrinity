@@ -10,7 +10,7 @@
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
 
 void UGeoAbilitySystemComponent::InitializeComponent()
 {
@@ -331,7 +331,7 @@ bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbili
 		FGameplayAbilityTargetDataHandle TargetDataHandle;
 		FGeoAbilityTargetData* TargetData =
 			new FGeoAbilityTargetData(FVector2D(Avatar->GetActorLocation()), Avatar->GetActorRotation().Yaw,
-									  GameplayLibrary::GetServerTime(GetWorld(), true), FMath::Rand32());
+									  UGameplayLibrary::GetServerTime(GetWorld(), true), FMath::Rand32());
 		TargetDataHandle.Add(TargetData);
 		EventData.TargetData = TargetDataHandle;
 		EventData.Instigator = Avatar;

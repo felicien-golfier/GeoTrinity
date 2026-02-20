@@ -16,12 +16,17 @@
 #include "Net/UnrealNetwork.h"
 #include "NiagaraFunctionLibrary.h"
 #include "System/GeoPoolableInterface.h"
-#include "Tool/GameplayLibrary.h"
+#include "Tool/UGameplayLibrary.h"
 
 using GeoASL = UGeoAbilitySystemLibrary;
 
 static TAutoConsoleVariable CVarDrawServerProjectiles(TEXT("Geo.DrawServerProjectiles"), false,
 													  TEXT("Draw debug spheres for projectiles on the server"));
+
+static TAutoConsoleVariable CVarLocalOnlyProjectiles(
+	TEXT("Geo.LocalOnlyProjectiles"), false,
+	TEXT(
+		"When true, owning client sees only its local predicted projectile (server projectile not replicated to owner)"));
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoProjectile::AGeoProjectile()
@@ -60,13 +65,29 @@ void AGeoProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+bool AGeoProjectile::IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget,
+									  FVector const& SrcLocation) const
+{
+	// Decides if yes or not it needs to replicate on this client.
+	// Here we don't want to replicate on the projectile owner.
+	if (CVarLocalOnlyProjectiles.GetValueOnGameThread() && PredictionKeyId != 0 && GetNetConnection()
+		&& GetNetConnection() == RealViewer->GetNetConnection())
+	{
+		return false;
+	}
+
+	return Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
 	// When a real (server-replicated) projectile arrives on the owning client,
 	// find and destroy the matching predicted fake spawned earlier by the client.
-	if (PredictionKeyId == 0 || GameplayLibrary::IsServer(GetWorld()) || Implements<UGeoPoolableInterface>())
+	if (CVarLocalOnlyProjectiles.GetValueOnGameThread() || PredictionKeyId == 0
+		|| UGameplayLibrary::IsServer(GetWorld()) || Implements<UGeoPoolableInterface>())
 	{
 		return;
 	}
@@ -110,12 +131,12 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	}
 
 	UE_VLOG_SPHERE(this, LogGeoTrinity, Verbose, GetActorLocation(), GetSimpleCollisionRadius(),
-				   GameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
+				   UGameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
 
-	if (CVarDrawServerProjectiles.GetValueOnGameThread() && GameplayLibrary::IsServer(GetWorld()))
+	if (CVarDrawServerProjectiles.GetValueOnGameThread() && UGameplayLibrary::IsServer(GetWorld()))
 	{
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
-						GameplayLibrary::GetColorForObject(GetOuter()), false, 0.f);
+						UGameplayLibrary::GetColorForObject(GetOuter()), false, 0.f);
 	}
 }
 
@@ -144,7 +165,7 @@ bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 	}
 
 	IGenericTeamAgentInterface const* TeamInterface = nullptr;
-	if (!GameplayLibrary::GetTeamInterface(OtherActor, TeamInterface))
+	if (!UGameplayLibrary::GetTeamInterface(OtherActor, TeamInterface))
 	{
 		return false;
 	}

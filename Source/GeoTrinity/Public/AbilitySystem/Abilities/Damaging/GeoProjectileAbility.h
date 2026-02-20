@@ -25,20 +25,20 @@ protected:
 
 	virtual void Fire() override;
 
+	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
+										  FGameplayTag ApplicationTag) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectileUsingDirection(FVector const& Direction);
+	void SpawnProjectileUsingDirection(FVector const& Direction, FVector const& Origin, float SpawnServerTime);
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectile(FTransform const SpawnTransform) const;
+	void SpawnProjectile(FTransform const& SpawnTransform, float SpawnServerTime) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SpawnProjectilesUsingTarget();
+	void SpawnProjectilesUsingTarget(float ProjectileYaw, FVector const& Origin, float SpawnServerTime);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoProjectile> ProjectileClass;
-
-	FAbilityPayload StoredPayload;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Target")
 	EProjectileTarget Target;
