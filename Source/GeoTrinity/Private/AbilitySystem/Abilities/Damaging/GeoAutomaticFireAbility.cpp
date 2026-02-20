@@ -29,7 +29,10 @@ void UGeoAutomaticFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const 
 	bWantsToFire = true;
 
 	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-	ScheduleFireTrigger(ActivationInfo, AnimInstance);
+	if (ActorInfo->IsLocallyControlledPlayer())
+	{
+		ScheduleFireTrigger(ActivationInfo, AnimInstance);
+	}
 }
 
 void UGeoAutomaticFireAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
@@ -55,43 +58,47 @@ void UGeoAutomaticFireAbility::InputReleased(FGameplayAbilitySpecHandle const Ha
 											 FGameplayAbilityActivationInfo const ActivationInfo)
 {
 	bWantsToFire = false;
-
-	if (IsActive() && !bIsAbilityEnding)
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-	}
 }
 
 void UGeoAutomaticFireAbility::Fire()
 {
-	Super::Fire();
+	// Don't call super, as we don't want to send the data in every situations.
 
-	if (!bWantsToFire || !IsActive())
+	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
+	if (!IsActive() || bIsAbilityEnding)
 	{
 		return;
 	}
 
 	FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
-	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
 	FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();
 
 	if (!CommitAbilityCost(Handle, ActorInfo, ActivationInfo))
 	{
-		bWantsToFire = false;
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}
 
+	AActor const* Avatar = ActorInfo->AvatarActor.Get();
+	StoredPayload.Origin = FVector2D(Avatar->GetActorLocation());
+	StoredPayload.Yaw = Avatar->GetActorRotation().Yaw;
+	StoredPayload.ServerSpawnTime = UGameplayLibrary::GetServerTime(GetWorld(), true);
+
 	bool const bShotSucceeded = ExecuteShot();
+	StoredPayload.Seed += CurrentShotIndex;
 	CurrentShotIndex++;
 
-	if (bShotSucceeded && bWantsToFire)
+	if (bShotSucceeded)
+	{
+		SendFireDataToServer(); // Call RPC only when we actually shoot !
+	}
+
+	if (bWantsToFire)
 	{
 		ScheduleFireTrigger(ActivationInfo, ActorInfo->GetAnimInstance());
 	}
-	else if (!bShotSucceeded)
+	else
 	{
-		bWantsToFire = false;
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 	}
 }
@@ -106,32 +113,25 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	GetAbilitySystemComponentFromActorInfo()->ConsumeClientReplicatedTargetData(
 		Handle, ActivationInfo.GetActivationPredictionKey());
 
-	if (!bWantsToFire || !IsActive())
+	if (!IsActive() || bIsAbilityEnding)
 	{
 		return;
 	}
 
 	if (!CommitAbilityCost(Handle, ActorInfo, ActivationInfo))
 	{
-		bWantsToFire = false;
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}
 
-	if (FGeoAbilityTargetData const* TargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0)))
-	{
-		StoredPayload.Origin = TargetData->Origin;
-		StoredPayload.Yaw = TargetData->Yaw;
-		StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
-		StoredPayload.Seed = TargetData->Seed;
-	}
+	FGeoAbilityTargetData const* TargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
 
-	bool const bShotSucceeded = ExecuteShot();
+	// Update payload with the information, as we read from it to spawn projectile
+	StoredPayload.Origin = TargetData->Origin;
+	StoredPayload.Yaw = TargetData->Yaw;
+	StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
+
+	ExecuteShot();
+	StoredPayload.Seed += CurrentShotIndex; // don't use target data, to avoid client abuse. (lol)
 	CurrentShotIndex++;
-
-	if (!bShotSucceeded)
-	{
-		bWantsToFire = false;
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-	}
 }

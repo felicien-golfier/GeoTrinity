@@ -26,7 +26,12 @@ void ATurretSpawnerProjectile::EndProjectileLife()
 // ---------------------------------------------------------------------------------------------------------------------
 void ATurretSpawnerProjectile::SpawnTurretActor() const
 {
-	checkf(IsValid(Owner), TEXT("Owner is invalid!"));
+	if (!IsValid(Owner))
+	{
+		ensureMsgf(false, TEXT("Owner is invalid!"));
+		return;
+	}
+
 	if (!Owner->HasAuthority())
 	{
 		return;

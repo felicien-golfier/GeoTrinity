@@ -41,6 +41,7 @@ public:
 protected:
 	void ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo, UAnimInstance* AnimInstance);
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
+	void SendFireDataToServer();
 	UFUNCTION()
 	virtual void Fire();
 

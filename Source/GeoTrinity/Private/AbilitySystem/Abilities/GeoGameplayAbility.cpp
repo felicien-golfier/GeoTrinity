@@ -48,10 +48,9 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 	if (ActorInfo->IsNetAuthority() && !ActorInfo->IsLocallyControlledPlayer())
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-		FAbilityTargetDataSetDelegate Delegate =
-			ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey());
-		Delegate.RemoveAll(this);
-		Delegate.AddUObject(this, &ThisClass::OnFireTargetDataReceived);
+		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey()).RemoveAll(this);
+		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey())
+			.AddUObject(this, &ThisClass::OnFireTargetDataReceived);
 	}
 }
 
@@ -118,12 +117,6 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 									 FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 									 bool bWasCancelled)
 {
-	// if (ActorInfo->IsNetAuthority() && !ActorInfo->IsLocallyControlledPlayer())
-	// {
-	// 	GetAbilitySystemComponentFromActorInfo()
-	// 		->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey())
-	// 		.RemoveAll(this);
-	// }
 	FireTriggerTimerHandle.Invalidate();
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -200,7 +193,7 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	FireSectionIndex++;
 }
 
-void UGeoGameplayAbility::Fire()
+void UGeoGameplayAbility::SendFireDataToServer()
 {
 	// Client: send a fresh snapshot to the server proxy so it fires with accurate data.
 	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
@@ -220,6 +213,11 @@ void UGeoGameplayAbility::Fire()
 		ASC->ServerSetReplicatedTargetData(Handle, ActivationInfo.GetActivationPredictionKey(), DataHandle,
 										   FGameplayTag{}, ASC->ScopedPredictionKey);
 	}
+}
+
+void UGeoGameplayAbility::Fire()
+{
+	SendFireDataToServer();
 }
 
 void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,

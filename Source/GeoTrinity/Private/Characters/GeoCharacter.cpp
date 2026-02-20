@@ -37,6 +37,8 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 
 	UE_VLOG_LOCATION(this, LogGeoTrinity, Verbose, GetActorLocation(), 30.f, UGameplayLibrary::GetColorForObject(this),
 					 TEXT("%s [%s]"), *GetName(), *UEnum::GetValueAsString(GetLocalRole()));
+	DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
+					UGameplayLibrary::GetColorForObject(GetOuter()), false, 0.f);
 }
 
 UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
@@ -66,7 +68,8 @@ void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FStri
 	// Debug: draw a world-space line (arrow) from the character showing the look vector
 	if (UWorld* World = GetWorld())
 	{
-		FVector const Start = GetActorLocation();
+		FVector Start = GetActorLocation();
+		Start.Z = 0.f;
 		FVector const Dir = Direction.GetSafeNormal();
 		constexpr float Length = 500.f; // visualized length of the vector
 		FVector const End = Start + Dir * Length;

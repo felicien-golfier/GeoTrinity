@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 GeoTrinity is a multiplayer 2D bullet-hell game built with Unreal Engine 5.7 using the Gameplay Ability System (GAS). Players control geometric shapes (Tank=Square, Heal=Circle, DPS=Triangle) in a co-op experience against bosses.
 
+**Camera**: Orthographic, pitch = -90 (looking straight down), no angle or tilt.
+
 ## Development Environment
 
 - **IDE**: JetBrains Rider (not Visual Studio)

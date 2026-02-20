@@ -18,6 +18,7 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	{
 	case EGameplayAbilityActivationMode::Predicting:
 	case EGameplayAbilityActivationMode::Confirmed:
+	case EGameplayAbilityActivationMode::Authority:
 		PredictionKey = GetCurrentActivationInfo().GetActivationPredictionKey();
 		break;
 	case EGameplayAbilityActivationMode::Rejected:
