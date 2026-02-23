@@ -36,6 +36,7 @@ public:
 	virtual void InitProjectileLife();
 
 	void AdvanceProjectile(float TimeDelta);
+	void SetDistanceSpan(float Distance);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;

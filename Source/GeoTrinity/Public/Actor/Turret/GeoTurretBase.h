@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -10,11 +10,8 @@
 
 #include "GeoTurretBase.generated.h"
 
-class UGeoAttributeSetBase;
+class AGeoProjectile;
 class UCapsuleComponent;
-class UGeoGameplayAbility;
-class UGameplayEffect;
-class UGeoAbilitySystemComponent;
 
 struct FTurretData : FInteractableActorData
 {
@@ -29,7 +26,40 @@ class GEOTRINITY_API AGeoTurretBase : public AGeoDeployableBase
 public:
 	AGeoTurretBase();
 
+	virtual void InitInteractableData(FInteractableActorData* Data) override;
+	virtual void OnRecalled() override;
+
+	virtual FGenericTeamId GetGenericTeamId() const override { return TeamID; }
+
+	bool IsBlinking() const;
+	bool WasBlinkingOnRecall() const { return bWasBlinkingOnRecall; }
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+
+	AActor* FindBestTarget() const;
+	void ScheduleFire();
+	void TryFire();
+
+	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
+	AActor* CharacterOwner = nullptr;
+	float TurretLevel = 1.f;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AGeoProjectile> TurretProjectileClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	float FireInterval = 1.f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float BlinkThreshold = 0.2f;
+
 private:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
+
+	FTimerHandle FireTimerHandle;
+	FGenericTeamId TeamID;
+	bool bWasBlinkingOnRecall = false;
 };

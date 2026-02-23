@@ -16,21 +16,6 @@ AGeoBuffPickup::AGeoBuffPickup()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoBuffPickup::Init()
-{
-	Super::Init();
-	EffectDataArray.Empty();
-	PowerScale = 1.f;
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoBuffPickup::End()
-{
-	Super::End();
-	EffectDataArray.Empty();
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoBuffPickup::Setup(TArray<TInstancedStruct<FEffectData>> const& InEffectData, float InPowerScale)
 {
 	EffectDataArray = InEffectData;

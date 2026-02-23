@@ -44,6 +44,9 @@ The project uses a custom `.clang-format` with these key settings:
 - Be consistent with Super call placement: choose what makes sense (e.g., Super::Init at start, Super::Destroy at end), but when there's no meaningful ordering dependency, keep it consistent (e.g., always at the top) rather than mixing positions arbitrarily
 - Dont use abreviations in variable name, ALWAYS use full class name except some very verbose names like ASC for AbilitySystemComponent.
 - Prefer readable, self-documenting code over comments. Don't add comments that restate what the code already says - the code should speak for itself.
+- **No silent fallbacks**: Never silently skip or substitute when something required is missing. Use `ensureMsgf(condition, ...)` to flag the problem. If execution must continue gracefully despite the failure, follow it with an `if` — but always surface the error. Never use `condition ? A : B` as a quiet fallback (e.g. `Pool ? Pool->Get() : SpawnActor()`).
+  - Configured assets (ProjectileClass, EffectData, subsystems) must be checked with `ensureMsgf` — missing them is always a bug.
+  - Runtime misses (no target found, empty list) are legitimate — a plain `if` with no assert is fine there.
 
 ## Architecture
 
@@ -66,9 +69,11 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 - `UCharacterAttributeSet` - Character-specific extensions
 
 **Ability Classes**:
-- `UGeoGameplayAbility` - Base class with montage support and effect data
-- `UGeoProjectileAbility` - Spawns projectiles using actor pooling
-- `UPatternAbility` - Creates bullet patterns via multicast RPC
+- `UGeoGameplayAbility` - Base class: handles `StoredPayload`, `ScheduleFireTrigger`, `SendFireDataToServer`, `OnFireTargetDataReceived`
+- `UGeoProjectileAbility` - Single-shot projectile: client fires in `Fire()`, server fires in `OnFireTargetDataReceived()`
+- `UGeoAutomaticFireAbility` - Hold-to-fire loop: client drives timing, server mirrors each shot via `OnFireTargetDataReceived`. Subclasses override `ExecuteShot()` (Abstract)
+- `UGeoAutomaticProjectileAbility` - Concrete auto-fire that spawns projectiles, extends `UGeoAutomaticFireAbility`
+- `UPatternAbility` - Creates bullet patterns via multicast RPC (enemy-only, server-driven)
 
 **Class-Specific Ability Selection**:
 - `FGameplayAbilityInfo` has `EPlayerClass PlayerClass` field
@@ -107,8 +112,20 @@ Patterns spawn projectiles deterministically across clients:
 - **Enemy Characters**: ASC on character (minimal replication mode)
 
 **Two projectile/ability replication approaches**:
-1. **Player Abilities** - Use standard GAS replication with local prediction (normal Unreal GAS workflow)
+
+1. **Player Abilities** - Custom client-prediction system (NOT standard GAS replication):
+   - Client fires immediately (predicted), sends `FGeoAbilityTargetData` to server via `ServerSetReplicatedTargetData`
+   - Server receives data in `OnFireTargetDataReceived` and spawns its authoritative projectile using client's `Origin`, `Yaw`, `ServerSpawnTime`
+   - Server projectile is **not replicated to the owning client** (`IsNetRelevantFor` returns false for owner) — client keeps its local predicted one
+   - `ServerSpawnTime` uses synchronized server clock (`UGameplayLibrary::GetServerTime`) so projectile positions match across all machines despite ping
+   - `AGeoProjectile::AdvanceProjectile()` can fast-forward a projectile's position by elapsed time since `ServerSpawnTime`
+   - For automatic/hold-to-fire: client drives the shot timer, server fires once per received `FGeoAbilityTargetData` packet (no server-side timer)
+   - **NEVER use `GetServerTime` for local client timing** (e.g. measuring charge duration, cooldown UI): it is a replicated approximation of server time and is not accurate for local delta-time. Use `GetWorld()->GetTimeSeconds()` or `FPlatformTime::Seconds()` for local timing on the client.
+
 2. **Patterns (enemy bullet patterns)** - Use multicast RPC with deterministic time-synced spawning via `FAbilityPayload` (Origin, Yaw, ServerSpawnTime, Seed)
+
+**To add a new single-shot ability**: Extend `UGeoProjectileAbility` (or override `Fire`/`OnFireTargetDataReceived` for custom behaviour).
+**To add a new hold-to-fire ability**: Extend `UGeoAutomaticFireAbility`, override `ExecuteShot()`. Use `StoredPayload` for spawn data.
 
 ### AI System
 
@@ -150,7 +167,8 @@ Enhanced Input with `UGeoInputConfig` data asset:
 
 ### Key Data Structures
 
-- `FAbilityPayload` - Network sync data (Origin, Yaw, ServerSpawnTime, Seed, AbilityTag)
+- `FAbilityPayload` - Internal ability data (Origin, Yaw, ServerSpawnTime, Seed, AbilityTag, Owner, Instigator) — stored as `StoredPayload` on ability instances; also used by pattern system
+- `FGeoAbilityTargetData` - Per-shot RPC payload sent client→server via `ServerSetReplicatedTargetData` (Origin, Yaw, ServerSpawnTime, Seed); custom `NetSerialize`
 - `FEffectData` - Polymorphic effect system (FDamageEffectData, FStatusEffectData)
 - `UAbilityInfo` - Data asset mapping ability tags to classes and metadata
 - `FGameplayAbilityInfo` - Contains `EPlayerClass PlayerClass` field for class-specific ability selection

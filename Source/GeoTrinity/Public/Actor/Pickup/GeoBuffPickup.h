@@ -21,10 +21,7 @@ class GEOTRINITY_API AGeoBuffPickup : public AGeoDeployableBase
 public:
 	AGeoBuffPickup();
 
-	virtual void Init() override;
-	virtual void End() override;
-
-	/** Set effect data and visual power scale (based on missing ammo). Call after Init. */
+	/** Set effect data and visual power scale (based on missing ammo). Call after spawn. */
 	void Setup(TArray<TInstancedStruct<FEffectData>> const& InEffectData, float InPowerScale);
 
 private:

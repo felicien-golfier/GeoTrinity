@@ -1,30 +1,10 @@
 #include "Actor/Deployable/GeoDeployableBase.h"
 
-#include "System/GeoActorPoolingSubsystem.h"
-
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoDeployableBase::AGeoDeployableBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = false;
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::Init()
-{
-	bExpired = false;
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
-	SetActorTickEnabled(true);
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::End()
-{
-	SetActorTickEnabled(false);
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
-	DeployableData = nullptr;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -88,9 +68,5 @@ void AGeoDeployableBase::OnDeployableExpired()
 	bExpired = true;
 
 	OnDeployableDestroyed.Broadcast(this);
-
-	if (UGeoActorPoolingSubsystem* Pool = UGeoActorPoolingSubsystem::Get(GetWorld()))
-	{
-		Pool->ReleaseActor(this);
-	}
+	Destroy();
 }

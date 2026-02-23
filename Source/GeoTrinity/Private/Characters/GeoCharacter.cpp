@@ -8,6 +8,10 @@
 #include "Tool/UGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
+static TAutoConsoleVariable CVarShowCharacterServerLocation(
+	TEXT("Geo.ShowCharacterServerLocation"), false,
+	TEXT("When true, the character server location will appear as draw sphere with simple collision size"));
+
 // Sets default values
 AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(CharacterMovementComponentName))
@@ -37,8 +41,12 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 
 	UE_VLOG_LOCATION(this, LogGeoTrinity, Verbose, GetActorLocation(), 30.f, UGameplayLibrary::GetColorForObject(this),
 					 TEXT("%s [%s]"), *GetName(), *UEnum::GetValueAsString(GetLocalRole()));
-	DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
-					UGameplayLibrary::GetColorForObject(GetOuter()), false, 0.f);
+
+	if (CVarShowCharacterServerLocation.GetValueOnGameThread() && UGameplayLibrary::IsServer(GetWorld()))
+	{
+		DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
+						UGameplayLibrary::GetColorForObject(GetOuter()), false, 0.f);
+	}
 }
 
 UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const

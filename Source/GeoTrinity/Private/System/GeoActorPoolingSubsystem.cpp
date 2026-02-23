@@ -66,6 +66,9 @@ void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, uint16 const Count, AAct
 {
 	UWorld* World = GetWorld();
 	ensureMsgf(World, TEXT("World is invalid"));
+	ensureMsgf(Class, TEXT("Class is invalid"));
+	ensureMsgf(Count > 0, TEXT("Count must be greater than 0"));
+	ensureMsgf(Owner, TEXT("Owner is invalid"));
 
 	FActorSpawnParameters Params;
 	Params.Owner = Owner;

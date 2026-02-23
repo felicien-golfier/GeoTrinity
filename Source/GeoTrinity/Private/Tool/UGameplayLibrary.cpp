@@ -176,9 +176,11 @@ AGeoProjectile* UGameplayLibrary::SpawnProjectile(UWorld* const World,
 		// is confirmed AFTER the projectile spawns (no FireRate delay).
 		// For the FireRate-delayed case, BeginPlay proximity matching handles it instead.
 		// When LocalOnlyProjectiles is on, keep the fake alive (server projectile won't replicate to owner).
-		static IConsoleVariable* const LocalOnlyCVar =
-			IConsoleManager::Get().FindConsoleVariable(TEXT("Geo.LocalOnlyProjectiles"));
-		if (!IsServer(World) && PredictionKey.IsLocalClientKey() && !(LocalOnlyCVar && LocalOnlyCVar->GetBool()))
+		static IConsoleVariable* const LocalOverrideCVar =
+			IConsoleManager::Get().FindConsoleVariable(TEXT("Geo.ReplaceLocalProjectiles"));
+		ensureMsgf(LocalOverrideCVar,
+				   TEXT("LocalOverrideCVar is invalid, please ensure ReplaceLocalProjectiles still exist"));
+		if (!IsServer(World) && PredictionKey.IsLocalClientKey() && LocalOverrideCVar->GetBool())
 		{
 			TWeakObjectPtr<AGeoProjectile> WeakProjectile(Projectile);
 			auto DestroyFake = [WeakProjectile]()

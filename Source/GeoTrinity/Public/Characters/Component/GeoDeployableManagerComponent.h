@@ -38,6 +38,8 @@ public:
 	/** Get the ratio of deployed/max (used for size scaling) */
 	float GetDeployRatio() const;
 
+	TArray<TObjectPtr<AGeoDeployableBase>> const& GetDeployables() const { return Deployables; }
+
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployCountChanged OnDeployCountChanged;
 

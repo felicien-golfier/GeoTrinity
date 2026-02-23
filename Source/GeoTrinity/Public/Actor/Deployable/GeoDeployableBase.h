@@ -2,7 +2,6 @@
 
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
-#include "System/GeoPoolableInterface.h"
 
 #include "GeoDeployableBase.generated.h"
 
@@ -15,21 +14,15 @@ struct FDeployableData : FInteractableActorData
 
 /**
  * Base class for all deployable actors (turrets, walls, healing zones).
- * Extends AGeoInteractableActor (has ASC + health) and implements pooling.
+ * Replicated actors — spawned by the server and destroyed when expired or recalled.
  */
 UCLASS(Abstract)
-class GEOTRINITY_API AGeoDeployableBase
-	: public AGeoInteractableActor
-	, public IGeoPoolableInterface
+class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 {
 	GENERATED_BODY()
 
 public:
 	AGeoDeployableBase();
-
-	// IGeoPoolableInterface
-	virtual void Init() override;
-	virtual void End() override;
 
 	void InitDeployableData(FDeployableData* Data);
 

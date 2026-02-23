@@ -3,6 +3,7 @@
 #include "Actor/Projectile/TurretSpawnerProjectile.h"
 
 #include "Actor/Turret/GeoTurretBase.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameFramework/PlayerState.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -26,56 +27,61 @@ void ATurretSpawnerProjectile::EndProjectileLife()
 // ---------------------------------------------------------------------------------------------------------------------
 void ATurretSpawnerProjectile::SpawnTurretActor() const
 {
-	if (!IsValid(Owner))
+	AActor* PayloadOwner = Payload.Owner;
+	ensureMsgf(IsValid(PayloadOwner), TEXT("TurretSpawnerProjectile: Payload.Owner is invalid!"));
+	if (!IsValid(PayloadOwner))
 	{
-		ensureMsgf(false, TEXT("Owner is invalid!"));
 		return;
 	}
 
-	if (!Owner->HasAuthority())
+	if (!PayloadOwner->HasAuthority())
 	{
 		return;
 	}
 
 	FTransform const SpawnTransform = GetActorTransform();
 
-	// Create turret
 	checkf(TurretActorClass, TEXT("No Turret in the turret spawner!"));
 
-	APawn* Pawn = Cast<APawn>(Owner);
+	APawn* Pawn = Cast<APawn>(PayloadOwner);
 	if (!IsValid(Pawn))
 	{
-		if (APlayerState const* PlayerController = Cast<APlayerState>(Owner))
+		if (APlayerState const* PlayerState = Cast<APlayerState>(PayloadOwner))
 		{
-			Pawn = PlayerController->GetPawn();
+			Pawn = PlayerState->GetPawn();
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("No valid pawn to spawn turret!"));
+			UE_LOG(LogTemp, Error, TEXT("TurretSpawnerProjectile: No valid pawn to spawn turret!"));
 			return;
 		}
 	}
 
 	AGeoTurretBase* Turret = GetWorld()->SpawnActorDeferred<AGeoTurretBase>(
-		TurretActorClass, SpawnTransform, Owner, Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		TurretActorClass, SpawnTransform, PayloadOwner, Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
 	if (!IsValid(Turret))
 	{
-		UE_LOG(LogTemp, Error, TEXT("No valid turret spawned!"));
+		UE_LOG(LogTemp, Error, TEXT("TurretSpawnerProjectile: No valid turret spawned!"));
 		return;
 	}
 
 	FTurretData Data;
-	Data.CharacterOwner = Owner;
+	Data.CharacterOwner = PayloadOwner;
 	Data.Level = GetTurretLevel();
 	Data.EffectDataArray = EffectDataArray;
-	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Owner))
+	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(PayloadOwner))
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
 	}
 	Turret->InitInteractableData(&Data);
 
 	Turret->FinishSpawning(SpawnTransform);
+
+	if (UGeoDeployableManagerComponent* DeployableManager = Pawn->GetComponentByClass<UGeoDeployableManagerComponent>())
+	{
+		DeployableManager->RegisterDeployable(Turret);
+	}
 }
 
 bool ATurretSpawnerProjectile::IsValidOverlap(AActor const* OtherActor)

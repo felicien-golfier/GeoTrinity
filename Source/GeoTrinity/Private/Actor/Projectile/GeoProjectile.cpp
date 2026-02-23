@@ -23,10 +23,9 @@ using GeoASL = UGeoAbilitySystemLibrary;
 static TAutoConsoleVariable CVarDrawServerProjectiles(TEXT("Geo.DrawServerProjectiles"), false,
 													  TEXT("Draw debug spheres for projectiles on the server"));
 
-static TAutoConsoleVariable CVarLocalOnlyProjectiles(
-	TEXT("Geo.LocalOnlyProjectiles"), false,
-	TEXT(
-		"When true, owning client sees only its local predicted projectile (server projectile not replicated to owner)"));
+static TAutoConsoleVariable
+	CVarReplaceLocalProjectiles(TEXT("Geo.ReplaceLocalProjectiles"), false,
+								TEXT("When true, server projectile Does replicate to owner and override local one"));
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoProjectile::AGeoProjectile()
@@ -70,7 +69,7 @@ bool AGeoProjectile::IsNetRelevantFor(AActor const* RealViewer, AActor const* Vi
 {
 	// Decides if yes or not it needs to replicate on this client.
 	// Here we don't want to replicate on the projectile owner.
-	if (CVarLocalOnlyProjectiles.GetValueOnGameThread() && PredictionKeyId != 0 && GetNetConnection()
+	if (!CVarReplaceLocalProjectiles.GetValueOnGameThread() && PredictionKeyId != 0 && GetNetConnection()
 		&& GetNetConnection() == RealViewer->GetNetConnection())
 	{
 		return false;
@@ -86,7 +85,7 @@ void AGeoProjectile::BeginPlay()
 
 	// When a real (server-replicated) projectile arrives on the owning client,
 	// find and destroy the matching predicted fake spawned earlier by the client.
-	if (CVarLocalOnlyProjectiles.GetValueOnGameThread() || PredictionKeyId == 0
+	if (!CVarReplaceLocalProjectiles.GetValueOnGameThread() || PredictionKeyId == 0
 		|| UGameplayLibrary::IsServer(GetWorld()) || Implements<UGeoPoolableInterface>())
 	{
 		return;
@@ -294,6 +293,13 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 	}
 
 	SetActorLocation(AdvancedPosition);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::SetDistanceSpan(float const Distance)
+{
+	DistanceSpan = Distance;
+	DistanceSpanSqr = FMath::Square(DistanceSpan);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
