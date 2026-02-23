@@ -40,7 +40,7 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	{
 		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
 		if (UGameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
-											  GetEffectDataArray(), FireRate, PredictionKey))
+											  GetEffectDataArray(), StoredPayload.ServerSpawnTime, PredictionKey))
 		{
 			bAnySpawned = true;
 		}
