@@ -21,6 +21,7 @@ class UGeoInputComponent;
 class UDynamicMeshComponent;
 class UGeoMovementComponent;
 class UStaticMeshComponent;
+class UGeoCombattantWidgetComp;
 
 UCLASS()
 class GEOTRINITY_API AGeoCharacter
@@ -92,6 +93,9 @@ protected:
 
 	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly)
 	ETeam TeamId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	TObjectPtr<UGeoCombattantWidgetComp> CharacterWidgetComponent;
 
 #ifdef UE_EDITOR
 public:

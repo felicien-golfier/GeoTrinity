@@ -208,6 +208,27 @@ Source/GeoTrinity/
 - Check parent classes for inherited methods (e.g., `UStateTreeAIComponent` → `UStateTreeComponent` → `UBrainComponent`)
 - Plugin headers are in `Engine\Plugins\Runtime\<PluginName>\Source\<Module>\Public\`
 
+## HUD Architecture
+
+```
+AGeoHUD (GameFramework HUD, owns OverlayWidget)
+├── OverlayWidget (UGeoUserWidget) — main player HUD, created in InitOverlay()
+│     └── player's BP widget inherits UGeoUserWidget directly (NOT UGenericCombattantWidget)
+└── BossHealthBarWidget (UGenericCombattantWidget) — separate, shown during boss fights
+```
+
+- `UGeoUserWidget` — base widget; has `InitFromHUD(AGeoHUD*)` and `BindCallbacksFromHUD` BP event
+- `UGenericCombattantWidget` — extends UGeoUserWidget; for health display on combatants (enemies, boss bar). Has `InitializeWithAbilitySystemComponent`. **Do NOT use for the player overlay** — it's for health bars only.
+- `UGeoCombattantWidgetComp` — WidgetComponent on actors, auto-initializes widget with the actor's ASC on BeginPlay
+- `AGeoHUD::OverlayWidget` is `BlueprintReadOnly` — cast it in HUD BP to access the player widget
+- `FHudPlayerParams` — holds PC, PS, ASC, AttributeSet; accessible via `GetHudPlayerParams()`
+
+**Pattern for ability-driven HUD changes:**
+- **Screen-space / global UI** (e.g. boss bar, cooldown display): route through `AGeoHUD` with `BlueprintImplementableEvent` functions → implement in HUD BP → forward to `OverlayWidget`
+- **World-space UI that follows the character** (e.g. deploy charge gauge): use a `UWidgetComponent` directly on the character BP. Ability calls `GetAvatarActor → Cast PlayableCharacter → Show/HideGauge(Self)`. No HUD involvement needed. Use **Space = Screen** on the WidgetComponent for a top-down game (stays readable, auto-faces camera).
+
+**Key HUD files**: `HUD/GeoHUD.h`, `HUD/GenericCombattantWidget.h`, `HUD/GeoUserWidget.h`, `HUD/HudFunctionLibrary.h`, `HUD/Component/GeoCombattantWidgetComp.h`
+
 ## Key Files for Common Tasks
 
 - **Adding abilities**: `AbilitySystem/Abilities/GeoGameplayAbility.h`, create UAbilityInfo data asset

@@ -72,17 +72,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void HideBossHealthBar();
 
+
 protected:
 	virtual void BeginPlay() override;
+
 
 private:
 	void BroadcastInitialValues() const;
 	void BindCallbacksToDependencies();
 
-
-	UPROPERTY()
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UGeoUserWidget> OverlayWidget;
 
+private:
 	UPROPERTY(EditAnywhere, Category = "Overlay")
 	TSubclassOf<UGeoUserWidget> OverlayWidgetClass;
 

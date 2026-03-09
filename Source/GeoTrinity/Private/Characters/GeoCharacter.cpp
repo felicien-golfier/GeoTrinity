@@ -4,6 +4,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Input/GeoInputComponent.h"
 #include "Tool/UGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
@@ -29,6 +30,10 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
 	GeoInputComponent->SetIsReplicated(true);
+
+	CharacterWidgetComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("CharacterWidgetComponent"));
+	CharacterWidgetComponent->SetupAttachment(GetRootComponent());
+	CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 
 	bUseControllerRotationYaw = true;
 

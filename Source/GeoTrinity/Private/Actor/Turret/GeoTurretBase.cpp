@@ -80,6 +80,61 @@ void AGeoTurretBase::ScheduleFire()
 // - Create the GameplayCue BP for the recall beam VFX (RecallGameplayCueTag)
 // - Create turret BP subclass with TurretProjectileClass and FireInterval set
 
+// ---
+// 1. Create WBP_DeployChargeGauge
+//
+// - Parent class: GeoDeployChargeGaugeWidget
+// - Add a Progress Bar in the designer
+// - Right-click its Percent → Bind → Create Binding
+// - In the function: DeployAbility → Get Charge Ratio → Return
+// - That's the entire widget — nothing else needed
+//
+// ---
+// 2. Player Character BP
+//
+// - Select DeployChargeGaugeComponent → Details → Widget Class = WBP_DeployChargeGauge
+// - Adjust its position offset in the viewport if needed (attached to root by default)
+// - CharacterWidgetComponent → leave Widget Class empty for now (player overhead health is "maybe later")
+//
+// ---
+// 3. Enemy Character BP
+//
+// - Remove the manually added GeoCombattantWidgetComp you had in BP — it's now in C++, would be a duplicate
+// - Select the C++-created CharacterWidgetComponent → Widget Class = your existing enemy health bar widget
+// (WBP_EnemyHealthBar or whatever it's called)
+//
+// ---
+// 4. BP_TurretBase (child of AGeoTurretBase)
+//
+// - Add a mesh component
+// - Set TurretProjectileClass → an existing projectile BP
+// - Set FireInterval, BlinkThreshold
+// - Configure default health attributes
+//
+// ---
+// 5. BP_TurretSpawnerProjectile (child of ATurretSpawnerProjectile)
+//
+// - Add a mesh
+// - Set TurretActorClass = BP_TurretBase
+//
+// ---
+// 6. BP_DeployTurretAbility (child of UGeoDeployAbility)
+//
+// - ProjectileClass = BP_TurretSpawnerProjectile
+// - MinDeployDistance, MaxDeployDistance, MaxChargeTime
+// - EffectDataAssets = damage effect data for turret bullets
+// - No gauge code — fully automatic
+//
+// ---
+// 7. Add UGeoDeployableManagerComponent to the player character BP
+//
+// - Add component, set MaxDeployables = 3 (or however many turrets Triangle can have)
+//
+// ---
+// 8. DA_AbilityInfo
+//
+// - New entry: AbilityTag = Ability.Deploy, AbilityClass = BP_DeployTurretAbility, PlayerClass = Triangle
+
 void AGeoTurretBase::TryFire()
 {
 	if (!HasAuthority())
