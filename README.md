@@ -1,5 +1,7 @@
 # GeoTrinity
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 A multiplayer 2D minimalist geometric bullet-hell game featuring the classic trinity of Tank, Heal, and DPS roles.
 
 ## Concept
@@ -50,3 +52,11 @@ Source/GeoTrinity/
 ```
 
 See `CLAUDE.md` for detailed architecture documentation.
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0**.
+
+You are free to use, study, and modify this code. If you distribute it or build upon it, you must release your work under the same GPL v3 license with source code available. Commercial use is permitted only under these same terms — you cannot use this code in a closed-source product.
+
+See the [LICENSE](LICENSE) file for the full license text.

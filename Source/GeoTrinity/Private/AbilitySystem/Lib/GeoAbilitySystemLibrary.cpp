@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 // ReSharper disable CppUE4CodingStandardNamingViolationWarning
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"

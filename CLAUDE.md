@@ -25,6 +25,13 @@ This is an Unreal Engine 5.7 C++ project. Build and run through the Unreal Edito
 "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" GeoTrinity Win64 Development
 ```
 
+## Copyright
+
+Every new source file (`.h` / `.cpp`) must start with:
+```cpp
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+```
+
 ## Code Style
 
 The project uses a custom `.clang-format` with these key settings:
