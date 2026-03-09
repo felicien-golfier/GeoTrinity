@@ -32,7 +32,7 @@ protected:
 	virtual void InputReleased(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo const ActivationInfo) override;
 
-	virtual void Fire() override;
+	virtual FGeoAbilityTargetData BuildAbilityTargetData() override;
 
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;

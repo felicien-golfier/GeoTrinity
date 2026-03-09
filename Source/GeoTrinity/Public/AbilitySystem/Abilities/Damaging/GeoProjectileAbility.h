@@ -23,7 +23,7 @@ protected:
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
-	virtual void Fire() override;
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;

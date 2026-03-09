@@ -67,7 +67,7 @@ void UGeoDeployAbility::FireDeployable()
 	float const ChargeTime = FMath::Min(GetWorld()->GetTimeSeconds() - ChargeStartTime, MaxChargeTime);
 	float const ChargeRatio = MaxChargeTime > 0.f ? ChargeTime / MaxChargeTime : 0.f;
 	PendingDeployDistance = FMath::Lerp(MinDeployDistance, MaxDeployDistance, ChargeRatio);
-	Fire();
+	BuildDataAndFire();
 }
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoDeployAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
@@ -81,19 +81,13 @@ void UGeoDeployAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoDeployAbility::Fire()
+FGeoAbilityTargetData UGeoDeployAbility::BuildAbilityTargetData()
 {
 	// Encode deploy distance as integer cm in Seed so the server receives it
 	StoredPayload.Seed = FMath::RoundToInt(PendingDeployDistance);
-	SendFireDataToServer();
-
-	if (!GetCurrentActorInfo()->IsLocallyControlledPlayer())
-	{
-		return;
-	}
-
-	// Let Server Spawn Deployable.
-	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
+	FGeoAbilityTargetData AbilityTargetData = Super::BuildAbilityTargetData();
+	AbilityTargetData.Seed = StoredPayload.Seed; // Ensure to set it properly even if Super changes code.
+	return AbilityTargetData;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -115,7 +109,7 @@ void UGeoDeployAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandl
 
 	SpawnDeployProjectile(Origin, TargetData->Yaw, TargetData->ServerSpawnTime, DeployDistance);
 
-	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

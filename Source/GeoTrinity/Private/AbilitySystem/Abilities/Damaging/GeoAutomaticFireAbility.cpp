@@ -60,7 +60,7 @@ void UGeoAutomaticFireAbility::InputReleased(FGameplayAbilitySpecHandle const Ha
 	bWantsToFire = false;
 }
 
-void UGeoAutomaticFireAbility::Fire()
+void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	// Don't call super, as we don't want to send the data in every situations.
 
@@ -79,10 +79,9 @@ void UGeoAutomaticFireAbility::Fire()
 		return;
 	}
 
-	AActor const* Avatar = ActorInfo->AvatarActor.Get();
-	StoredPayload.Origin = FVector2D(Avatar->GetActorLocation());
-	StoredPayload.Yaw = Avatar->GetActorRotation().Yaw;
-	StoredPayload.ServerSpawnTime = UGameplayLibrary::GetServerTime(GetWorld(), true);
+	StoredPayload.Origin = FVector2D(AbilityTargetData.Origin);
+	StoredPayload.Yaw = AbilityTargetData.Yaw;
+	StoredPayload.ServerSpawnTime = AbilityTargetData.ServerSpawnTime;
 
 	bool const bShotSucceeded = ExecuteShot();
 	StoredPayload.Seed += CurrentShotIndex;
@@ -90,7 +89,7 @@ void UGeoAutomaticFireAbility::Fire()
 
 	if (bShotSucceeded)
 	{
-		SendFireDataToServer(); // Call RPC only when we actually shoot !
+		SendFireDataToServer(AbilityTargetData); // Call RPC only when we actually shoot !
 	}
 
 	if (bWantsToFire)

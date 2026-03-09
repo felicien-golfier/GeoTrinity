@@ -73,6 +73,13 @@ void AGeoTurretBase::ScheduleFire()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+
+// What's left is Blueprint/data work:
+// - Create BP subclasses of the new ability classes
+// - Set up UEffectDataAsset slots (ammo cost GE, ammo restore GE, buff effects, recall normal/blink-bonus effects)
+// - Create the GameplayCue BP for the recall beam VFX (RecallGameplayCueTag)
+// - Create turret BP subclass with TurretProjectileClass and FireInterval set
+
 void AGeoTurretBase::TryFire()
 {
 	if (!HasAuthority())

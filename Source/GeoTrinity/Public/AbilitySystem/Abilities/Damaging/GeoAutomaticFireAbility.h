@@ -33,7 +33,7 @@ protected:
 	virtual void InputReleased(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo const ActivationInfo) override;
 
-	virtual void Fire() override;
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Ability|AutoFire")
 	bool ExecuteShot();

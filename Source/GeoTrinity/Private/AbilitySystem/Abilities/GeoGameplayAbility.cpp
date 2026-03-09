@@ -124,21 +124,20 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo,
 											  UAnimInstance* AnimInstance)
 {
-	bool const bIsServer = GetAvatarActorFromActorInfo()->HasAuthority();
-
-	if (AnimInstance && AnimMontage && !bIsServer && FireRate > 0.f)
-	{
-		HandleAnimationMontage(AnimInstance, ActivationInfo);
-	}
-
 	if (FireRate > 0.f)
 	{
+		bool const bIsServer = GetAvatarActorFromActorInfo()->HasAuthority();
+		if (AnimInstance && AnimMontage && !bIsServer)
+		{
+			HandleAnimationMontage(AnimInstance, ActivationInfo);
+		}
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
-		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::Fire, FireRate);
+		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::BuildDataAndFire,
+											   FireRate);
 	}
 	else
 	{
-		Fire();
+		BuildDataAndFire();
 	}
 }
 
@@ -193,7 +192,7 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	FireSectionIndex++;
 }
 
-void UGeoGameplayAbility::SendFireDataToServer()
+void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const
 {
 	// Client: send a fresh snapshot to the server proxy so it fires with accurate data.
 	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
@@ -204,24 +203,41 @@ void UGeoGameplayAbility::SendFireDataToServer()
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 		FScopedPredictionWindow ScopedPrediction(ASC);
 
-		AActor* const Avatar = GetAvatarActorFromActorInfo();
-		ensureMsgf(IsValid(Avatar), TEXT("Avatar Actor from actor info is invalid!"));
-		FGameplayAbilityTargetDataHandle DataHandle;
-		DataHandle.Add(new FGeoAbilityTargetData(FVector2D(Avatar->GetActorLocation()), Avatar->GetActorRotation().Yaw,
-												 GL::GetServerTime(GetWorld(), true), StoredPayload.Seed));
 
+		FGameplayAbilityTargetDataHandle DataHandle;
+		DataHandle.Add(new FGeoAbilityTargetData(AbilityTargetData)); // Duplicate Data to ensure we keep it alive.
 		ASC->ServerSetReplicatedTargetData(Handle, ActivationInfo.GetActivationPredictionKey(), DataHandle,
 										   FGameplayTag{}, ASC->ScopedPredictionKey);
 	}
 }
 
-void UGeoGameplayAbility::Fire()
+FGeoAbilityTargetData UGeoGameplayAbility::BuildAbilityTargetData()
 {
-	SendFireDataToServer();
+	AActor* const Avatar = GetAvatarActorFromActorInfo();
+	ensureMsgf(IsValid(Avatar), TEXT("Avatar Actor from actor info is invalid!"));
+
+	FVector2D const Origin = FVector2D(Avatar->GetActorLocation());
+	float const Yaw = Avatar->GetActorRotation().Yaw;
+	float const ServerTime = GL::GetServerTime(GetWorld(), true);
+	int const Seed = StoredPayload.Seed;
+
+	return FGeoAbilityTargetData(Origin, Yaw, ServerTime, Seed);
+}
+
+void UGeoGameplayAbility::BuildDataAndFire()
+{
+	// This ref to AbilityTargetData needs to exist only during Fire as we create a new pointer in SendFireDataToServer
+	FGeoAbilityTargetData const AbilityTargetData = BuildAbilityTargetData();
+	Fire(AbilityTargetData);
+}
+
+void UGeoGameplayAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
+{
+	SendFireDataToServer(AbilityTargetData);
 }
 
 void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 												   FGameplayTag ApplicationTag)
 {
-	// Called on server when Fire has happen on client and data is finally here.
+	// Called on server when Fire() has happen on client and data is finally here.
 }

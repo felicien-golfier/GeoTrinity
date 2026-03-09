@@ -24,9 +24,9 @@ void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Han
 	ScheduleFireTrigger(ActivationInfo, AnimInstance);
 }
 
-void UGeoProjectileAbility::Fire()
+void UGeoProjectileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
-	Super::Fire();
+	Super::Fire(AbilityTargetData);
 
 	if (!GetCurrentActorInfo()->IsLocallyControlledPlayer())
 	{
@@ -35,8 +35,8 @@ void UGeoProjectileAbility::Fire()
 	}
 
 	AActor const* Avatar = GetAvatarActorFromActorInfo();
-	SpawnProjectilesUsingTarget(Avatar->GetActorRotation().Yaw, Avatar->GetActorLocation(),
-								UGameplayLibrary::GetServerTime(GetWorld(), true));
+	SpawnProjectilesUsingTarget(AbilityTargetData.Yaw, FVector(AbilityTargetData.Origin, ArbitraryCharacterZ),
+								AbilityTargetData.ServerSpawnTime);
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 

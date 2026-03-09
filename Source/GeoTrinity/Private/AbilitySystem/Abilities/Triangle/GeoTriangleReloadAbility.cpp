@@ -24,7 +24,7 @@ void UGeoTriangleReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoTriangleReloadAbility::Fire()
+void UGeoTriangleReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	if (!GetCurrentActorInfo()->IsNetAuthority())
 	{
@@ -57,7 +57,8 @@ void UGeoTriangleReloadAbility::Fire()
 	{
 		int32 const RandomIndex = FMath::RandRange(0, BuffEffectDataAssets.Num() - 1);
 		UEffectDataAsset* const SelectedAsset = BuffEffectDataAssets[RandomIndex].LoadSynchronous();
-		TArray<TInstancedStruct<FEffectData>> const EffectData = UGeoAbilitySystemLibrary::GetEffectDataArray(SelectedAsset);
+		TArray<TInstancedStruct<FEffectData>> const EffectData =
+			UGeoAbilitySystemLibrary::GetEffectDataArray(SelectedAsset);
 
 		AActor* Avatar = GetAvatarActorFromActorInfo();
 		FTransform const PickupTransform{Avatar->GetActorLocation()};

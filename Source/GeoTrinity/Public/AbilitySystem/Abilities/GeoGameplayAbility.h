@@ -10,6 +10,8 @@
 
 #include "GeoGameplayAbility.generated.h"
 
+
+struct FGeoAbilityTargetData;
 struct FAbilityPayload;
 class UEffectDataAsset;
 class UGeoAbilitySystemComponent;
@@ -41,9 +43,12 @@ public:
 protected:
 	void ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo, UAnimInstance* AnimInstance);
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
-	void SendFireDataToServer();
+	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;
+	virtual FGeoAbilityTargetData BuildAbilityTargetData();
 	UFUNCTION()
-	virtual void Fire();
+	void BuildDataAndFire();
+
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData);
 
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag);

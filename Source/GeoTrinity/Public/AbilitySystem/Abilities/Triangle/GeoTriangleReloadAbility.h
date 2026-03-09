@@ -25,7 +25,7 @@ protected:
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
-	virtual void Fire() override;
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Reload")
 	TArray<TSoftObjectPtr<UEffectDataAsset>> BuffEffectDataAssets;

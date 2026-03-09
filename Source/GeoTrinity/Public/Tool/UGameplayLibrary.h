@@ -5,6 +5,9 @@
 
 #include "UGameplayLibrary.generated.h"
 
+// Should be used as default value to spawn projectiles / characters etc... Also should be Playable Character's half
+// capsule height.
+constexpr float ArbitraryCharacterZ = 50.0f;
 
 UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
 enum class ETeam : uint8

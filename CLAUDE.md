@@ -69,9 +69,9 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 - `UCharacterAttributeSet` - Character-specific extensions
 
 **Ability Classes**:
-- `UGeoGameplayAbility` - Base class: handles `StoredPayload`, `ScheduleFireTrigger`, `SendFireDataToServer`, `OnFireTargetDataReceived`
-- `UGeoProjectileAbility` - Single-shot projectile: client fires in `Fire()`, server fires in `OnFireTargetDataReceived()`
-- `UGeoAutomaticFireAbility` - Hold-to-fire loop: client drives timing, server mirrors each shot via `OnFireTargetDataReceived`. Subclasses override `ExecuteShot()` (Abstract)
+- `UGeoGameplayAbility` - Base class: handles `StoredPayload`, `ScheduleFireTrigger`, `SendFireDataToServer`, `OnFireTargetDataReceived`. Calls `CommitAbility()` (cost + cooldown) once in `ActivateAbility()`.
+- `UGeoProjectileAbility` - Single-shot projectile: client fires in `Fire()`, server fires in `OnFireTargetDataReceived()`. Cost committed once at activation (one activation = one shot).
+- `UGeoAutomaticFireAbility` - Hold-to-fire loop: `ActivateAbility` schedules `Fire()` which runs **client-only** per shot; server receives each shot via `OnFireTargetDataReceived`. Subclasses override `ExecuteShot()` (Abstract). `CommitAbilityCost()` is called per shot in **both** `Fire()` and `OnFireTargetDataReceived()` — ability ends automatically when cost runs out.
 - `UGeoAutomaticProjectileAbility` - Concrete auto-fire that spawns projectiles, extends `UGeoAutomaticFireAbility`
 - `UPatternAbility` - Creates bullet patterns via multicast RPC (enemy-only, server-driven)
 
