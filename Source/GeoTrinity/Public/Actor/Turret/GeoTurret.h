@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -8,33 +8,37 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
-#include "GeoTurretBase.generated.h"
+#include "GeoTurret.generated.h"
 
 class AGeoProjectile;
 class UCapsuleComponent;
 
-struct FTurretData : FInteractableActorData
+USTRUCT()
+struct FTurretData : public FDeployableData
 {
-	TArray<TInstancedStruct<struct FEffectData>> EffectDataArray;
+	GENERATED_BODY()
+
+	UPROPERTY(NotReplicated)
+	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 };
 
-UCLASS()
-class GEOTRINITY_API AGeoTurretBase : public AGeoDeployableBase
+UCLASS(Blueprintable, ClassGroup = (Custom))
+class GEOTRINITY_API AGeoTurret : public AGeoDeployableBase
 {
 	GENERATED_BODY()
 
 public:
-	AGeoTurretBase();
-
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	virtual void OnRecalled() override;
 
-	virtual FGenericTeamId GetGenericTeamId() const override { return TeamID; }
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	bool IsBlinking() const;
 	bool WasBlinkingOnRecall() const { return bWasBlinkingOnRecall; }
 
 protected:
+	virtual FTurretData const* GetData() const override { return &Data; }
+
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
@@ -42,9 +46,8 @@ protected:
 	void ScheduleFire();
 	void TryFire();
 
-	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
-	AActor* CharacterOwner = nullptr;
-	float TurretLevel = 1.f;
+	UPROPERTY(Replicated)
+	FTurretData Data;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AGeoProjectile> TurretProjectileClass;
@@ -56,10 +59,6 @@ protected:
 	float BlinkThreshold = 0.2f;
 
 private:
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UCapsuleComponent> CapsuleComponent;
-
 	FTimerHandle FireTimerHandle;
-	FGenericTeamId TeamID;
 	bool bWasBlinkingOnRecall = false;
 };

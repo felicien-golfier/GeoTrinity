@@ -4,6 +4,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Input/GeoInputComponent.h"
 #include "Tool/UGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
@@ -26,9 +27,13 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	MeshComp->SetCollisionProfileName(TEXT("GeoShape"));
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("GeoCapsule"));
-
+	GetCapsuleComponent()->SetCapsuleHalfHeight(ArbitraryCharacterZ);
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
 	GeoInputComponent->SetIsReplicated(true);
+
+	CharacterWidgetComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("CharacterWidgetComponent"));
+	CharacterWidgetComponent->SetupAttachment(GetRootComponent());
+	CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 
 	bUseControllerRotationYaw = true;
 
@@ -52,17 +57,6 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
-}
-
-ETeamAttitude::Type AGeoCharacter::GetTeamAttitudeTowards(AActor const& Other) const
-{
-	IGenericTeamAgentInterface const* OtherTeamAgent = Cast<IGenericTeamAgentInterface const>(&Other);
-	if (!OtherTeamAgent)
-	{
-		return ETeamAttitude::Neutral;
-	}
-
-	return OtherTeamAgent->GetGenericTeamId() == GetGenericTeamId() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
 }
 
 void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const

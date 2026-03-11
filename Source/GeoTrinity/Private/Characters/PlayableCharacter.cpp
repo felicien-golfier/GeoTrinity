@@ -1,10 +1,45 @@
 ﻿#include "Characters/PlayableCharacter.h"
 
+#include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GeoPlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
+#include "Tool/UGameplayLibrary.h"
+
+APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
+{
+	DeployChargeGaugeComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("DeployChargeGaugeComponent"));
+	DeployChargeGaugeComponent->SetupAttachment(GetRootComponent());
+	DeployChargeGaugeComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	DeployChargeGaugeComponent->SetHiddenInGame(true);
+
+	DeployableManagerComponent =
+		CreateDefaultSubobject<UGeoDeployableManagerComponent>(TEXT("DeployableManagerComponent"));
+
+	TeamId = ETeam::Player;
+}
+
+void APlayableCharacter::ShowDeployChargeGauge(UGeoDeployAbility* Ability)
+{
+	UGeoDeployChargeGaugeWidget* Widget =
+		Cast<UGeoDeployChargeGaugeWidget>(DeployChargeGaugeComponent->GetUserWidgetObject());
+	ensureMsgf(Widget, TEXT("DeployChargeGaugeComponent has no widget or wrong widget class on %s"), *GetName());
+	if (Widget)
+	{
+		Widget->DeployAbility = Ability;
+	}
+	DeployChargeGaugeComponent->SetHiddenInGame(false);
+}
+
+void APlayableCharacter::HideDeployChargeGauge()
+{
+	DeployChargeGaugeComponent->SetHiddenInGame(true);
+}
 
 void APlayableCharacter::Tick(float DeltaSeconds)
 {

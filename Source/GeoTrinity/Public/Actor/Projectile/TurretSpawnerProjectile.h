@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -7,7 +7,7 @@
 
 #include "TurretSpawnerProjectile.generated.h"
 
-class AGeoTurretBase;
+class AGeoTurret;
 /**
  * An actor used to spawn a turret
  */
@@ -29,7 +29,7 @@ protected:
 	virtual void EndProjectileLife() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = Turret)
-	TSubclassOf<AGeoTurretBase> TurretActorClass;
+	TSubclassOf<AGeoTurret> TurretActorClass;
 
 private:
 	void SpawnTurretActor() const;

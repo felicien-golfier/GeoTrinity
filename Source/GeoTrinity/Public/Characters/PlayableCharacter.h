@@ -6,11 +6,17 @@
 
 #include "PlayableCharacter.generated.h"
 
+class UWidgetComponent;
+class UGeoDeployAbility;
+class UGeoDeployableManagerComponent;
+
 UCLASS()
 class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
 {
 	GENERATED_BODY()
 public:
+	APlayableCharacter(FObjectInitializer const& ObjectInitializer);
+
 	virtual void Tick(float DeltaSeconds) override;
 
 	// GAS - Input callbacks
@@ -19,6 +25,9 @@ public:
 	void AbilityInputTagHeld(FGameplayTag InputTag);
 
 	EPlayerClass GetPlayerClass() const;
+
+	void ShowDeployChargeGauge(UGeoDeployAbility* Ability);
+	void HideDeployChargeGauge();
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -32,6 +41,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))
 	float MaxRotationSpeed = 720.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	TObjectPtr<UWidgetComponent> DeployChargeGaugeComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
+	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 private:
 	void UpdateAimRotation(float DeltaSeconds);

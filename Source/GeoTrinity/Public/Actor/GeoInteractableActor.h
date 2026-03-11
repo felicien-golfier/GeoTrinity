@@ -1,18 +1,27 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
 #include "AbilitySystemInterface.h"
+#include "Components/CapsuleComponent.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GenericTeamAgentInterface.h"
 
 #include "GeoInteractableActor.generated.h"
 
+USTRUCT()
 struct FInteractableActorData
 {
-	AActor* CharacterOwner;
-	float Level{1.f};
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TObjectPtr<AActor> CharacterOwner = nullptr;
+
+	UPROPERTY()
+	float Level = 1.f;
+
+	UPROPERTY()
 	FGenericTeamId TeamID;
 };
 
@@ -33,13 +42,14 @@ public:
 	// IAbilitySystemInterface END
 
 	// IGenericTeamAgentInterface BEGIN
-	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(); }
-	// IGameplayTaskOwnerInterface END
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	// IGenericTeamAgentInterface END
 
 	virtual void InitInteractableData(FInteractableActorData* Data);
 
 protected:
-	// Called when the game starts or when spawned
+	virtual FInteractableActorData const* GetData() const { return nullptr; }
+
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
 
@@ -60,5 +70,6 @@ private:
 	UPROPERTY(Category = "GAS", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UGeoAttributeSetBase> AttributeSetBase;
 
-	FInteractableActorData* InteractableActorData;
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 };

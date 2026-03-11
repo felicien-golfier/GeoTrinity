@@ -7,9 +7,13 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeployableDestroyed, AGeoDeployableBase*, Deployable);
 
-struct FDeployableData : FInteractableActorData
+USTRUCT()
+struct FDeployableData : public FInteractableActorData
 {
-	float MaxDuration = 0.f; // 0 = infinite
+	GENERATED_BODY()
+
+	UPROPERTY()
+	float MaxDuration = 0.f;
 };
 
 /**
@@ -24,8 +28,6 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 public:
 	AGeoDeployableBase();
 
-	void InitDeployableData(FDeployableData* Data);
-
 	/** Called by the owning player to recall this deployable */
 	virtual void OnRecalled();
 
@@ -33,17 +35,22 @@ public:
 	float GetDurationPercent() const;
 	bool IsExpired() const { return bExpired; }
 
+	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployableDestroyed OnDeployableDestroyed;
 
 protected:
+	virtual FDeployableData const* GetData() const override
+	{
+		checkNoEntry();
+		return nullptr;
+	}
+
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnHealthChanged(float NewValue) override;
 
 	/** Called when duration or health reaches zero */
 	virtual void OnDeployableExpired();
-
-	FDeployableData* DeployableData = nullptr;
 
 private:
 	float RemainingDuration = 0.f;

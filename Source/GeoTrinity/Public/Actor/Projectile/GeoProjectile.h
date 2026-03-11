@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Tool/UGameplayLibrary.h"
 
 #include "GeoProjectile.generated.h"
 
@@ -28,7 +29,8 @@ class GEOTRINITY_API AGeoProjectile : public AActor
 public:
 	AGeoProjectile();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual bool IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget, FVector const& SrcLocation) const override;
+	virtual bool IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget,
+								  FVector const& SrcLocation) const override;
 	virtual void BeginPlay() override;
 	virtual void LifeSpanExpired() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -81,10 +83,10 @@ private:
 	float LifeSpanInSec = 30.f;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
-	float DistanceSpan = 100.f;
+	float DistanceSpan = 1000.f;
 
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeam"))
-	int32 ApplyEffectToTeamOnOverlap;
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
 
 	bool bIsEnding{false};
 

@@ -1,10 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Triangle/GeoExplosiveRecallAbility.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Turret/GeoTurretBase.h"
+#include "Actor/Turret/GeoTurret.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameplayCueManager.h"
 #include "Tool/UGameplayLibrary.h"
@@ -43,7 +43,7 @@ void UGeoExplosiveRecallAbility::ActivateAbility(FGameplayAbilitySpecHandle cons
 	TArray<FRecallInfo> RecallInfos;
 	for (AGeoDeployableBase* Deployable : TArray<TObjectPtr<AGeoDeployableBase>>(DeployableManager->GetDeployables()))
 	{
-		AGeoTurretBase* Turret = Cast<AGeoTurretBase>(Deployable);
+		AGeoTurret* Turret = Cast<AGeoTurret>(Deployable);
 		if (!IsValid(Turret))
 		{
 			continue;

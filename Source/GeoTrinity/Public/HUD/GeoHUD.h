@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -72,17 +72,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void HideBossHealthBar();
 
+
 protected:
 	virtual void BeginPlay() override;
+
 
 private:
 	void BroadcastInitialValues() const;
 	void BindCallbacksToDependencies();
 
-
-	UPROPERTY()
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UGeoUserWidget> OverlayWidget;
 
+private:
 	UPROPERTY(EditAnywhere, Category = "Overlay")
 	TSubclassOf<UGeoUserWidget> OverlayWidgetClass;
 

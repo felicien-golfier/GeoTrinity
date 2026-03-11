@@ -24,6 +24,12 @@ public:
 	/** Set effect data and visual power scale (based on missing ammo). Call after spawn. */
 	void Setup(TArray<TInstancedStruct<FEffectData>> const& InEffectData, float InPowerScale);
 
+protected:
+	virtual const FDeployableData* GetData() const override { return &Data; }
+
+	UPROPERTY()
+	FDeployableData Data;
+
 private:
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,

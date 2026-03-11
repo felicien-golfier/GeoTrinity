@@ -9,12 +9,20 @@
 // capsule height.
 constexpr float ArbitraryCharacterZ = 50.0f;
 
-UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+UENUM()
 enum class ETeam : uint8
 {
+	Neutral = 0 UMETA(DisplayName = "Neutral"),
+	Player = 1 UMETA(DisplayName = "Player"),
+	Enemy = 2 UMETA(DisplayName = "Enemy")
+};
+
+UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class ETeamAttitudeBitflag : uint8
+{
 	Neutral = (1 << 0) UMETA(DisplayName = "Neutral"),
-	Ally = (1 << 1) UMETA(DisplayName = "Ally"),
-	Enemy = (1 << 2) UMETA(DisplayName = "Enemy")
+	Friendly = (1 << 1) UMETA(DisplayName = "Friendly"),
+	Hostile = (1 << 2) UMETA(DisplayName = "Hostile")
 };
 
 UENUM(BlueprintType)
@@ -85,4 +93,7 @@ public:
 	inline static FString SectionEndString{SectionEndName.ToString()};
 	inline static FName const SectionStopName{"Stop"};
 	inline static FString SectionStopString{SectionStopName.ToString()};
+
+	static ETeamAttitudeBitflag GetAttitudeBitflag(ETeamAttitude::Type Attitude);
+	static bool IsAttitudeIntBitflag(ETeamAttitudeBitflag AttitudeBitflag, ETeamAttitude::Type Attitude);
 };

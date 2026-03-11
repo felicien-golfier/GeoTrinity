@@ -1,9 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "Actor/GeoInteractableActor.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "Tool/UGameplayLibrary.h"
 
 // Sets default values
 AGeoInteractableActor::AGeoInteractableActor()
@@ -17,13 +18,20 @@ AGeoInteractableActor::AGeoInteractableActor()
 
 	AttributeSetBase = CreateDefaultSubobject<UGeoAttributeSetBase>(TEXT("AttributeSetBase"));
 
-	SetNetUpdateFrequency(100.f);
+	SetNetUpdateFrequency(30.f);
+
+	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
+	CapsuleComponent->SetCapsuleHalfHeight(ArbitraryCharacterZ);
+	CapsuleComponent->SetCapsuleRadius(ArbitraryCharacterZ);
+	CapsuleComponent->SetCollisionProfileName(TEXT("GeoCapsule"));
+	SetRootComponent(CapsuleComponent);
 }
 
 void AGeoInteractableActor::InitInteractableData(FInteractableActorData* Data)
 {
-	check(Data);
-	InteractableActorData = Data;
+	ensureMsgf(Data, TEXT("Data is invalid!"));
+	ensureMsgf(GetData(),
+			   TEXT("Subclass must store data into their UPROPERTY before calling Super::InitInteractableData!"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -32,6 +40,8 @@ void AGeoInteractableActor::BeginPlay()
 	Super::BeginPlay();
 
 	InitGas();
+	ensureMsgf(GetData(),
+			   TEXT("Deployable hasn't been init properly, please call InitInteractableData before spawn !"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -46,6 +56,12 @@ void AGeoInteractableActor::EndPlay(EEndPlayReason::Type const EndPlayReason)
 UAbilitySystemComponent* AGeoInteractableActor::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
+}
+
+FGenericTeamId AGeoInteractableActor::GetGenericTeamId() const
+{
+	FInteractableActorData const* Data = GetData();
+	return Data ? Data->TeamID : FGenericTeamId();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -90,7 +106,7 @@ void AGeoInteractableActor::ApplyEffectToSelf_Implementation(TSubclassOf<UGamepl
 
 	FGameplayEffectContextHandle EffectContextHandle = ASC->MakeEffectContext();
 	EffectContextHandle.AddSourceObject(this);
-	EffectContextHandle.AddInstigator(InteractableActorData->CharacterOwner, this);
+	EffectContextHandle.AddInstigator(GetData()->CharacterOwner, this);
 
 	FGameplayEffectSpecHandle const SpecHandle = ASC->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
 

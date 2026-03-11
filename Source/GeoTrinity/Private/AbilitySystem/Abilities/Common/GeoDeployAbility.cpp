@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 
@@ -6,6 +6,7 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Characters/PlayableCharacter.h"
 #include "Tool/UGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -35,6 +36,11 @@ void UGeoDeployAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	{
 		GetWorld()->GetTimerManager().SetTimer(ChargeAutoFireHandle, this, &UGeoDeployAbility::FireDeployable,
 											   MaxChargeTime, false);
+
+		if (APlayableCharacter* Character = Cast<APlayableCharacter>(ActorInfo->AvatarActor.Get()))
+		{
+			Character->ShowDeployChargeGauge(this);
+		}
 		OnChargeBegin(MaxChargeTime);
 	}
 }
@@ -47,6 +53,11 @@ void UGeoDeployAbility::EndAbility(FGameplayAbilitySpecHandle const Handle, FGam
 	if (ActorInfo->IsLocallyControlledPlayer())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(ChargeAutoFireHandle);
+
+		if (APlayableCharacter* Character = Cast<APlayableCharacter>(ActorInfo->AvatarActor.Get()))
+		{
+			Character->HideDeployChargeGauge();
+		}
 		OnChargeEnded();
 	}
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

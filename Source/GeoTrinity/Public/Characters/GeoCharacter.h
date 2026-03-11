@@ -21,6 +21,7 @@ class UGeoInputComponent;
 class UDynamicMeshComponent;
 class UGeoMovementComponent;
 class UStaticMeshComponent;
+class UGeoCombattantWidgetComp;
 
 UCLASS()
 class GEOTRINITY_API AGeoCharacter
@@ -58,8 +59,6 @@ public:
 	}
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(static_cast<uint8>(TeamId)); };
-
-	virtual ETeamAttitude::Type GetTeamAttitudeTowards(AActor const& Other) const override;
 	//----------------------------------------------------------------------//
 	// IGenericTeamAgentInterface END
 	//----------------------------------------------------------------------//
@@ -92,6 +91,9 @@ protected:
 
 	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly)
 	ETeam TeamId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	TObjectPtr<UGeoCombattantWidgetComp> CharacterWidgetComponent;
 
 #ifdef UE_EDITOR
 public:

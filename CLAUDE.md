@@ -25,6 +25,13 @@ This is an Unreal Engine 5.7 C++ project. Build and run through the Unreal Edito
 "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" GeoTrinity Win64 Development
 ```
 
+## Copyright
+
+Every new source file (`.h` / `.cpp`) must start with:
+```cpp
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+```
+
 ## Code Style
 
 The project uses a custom `.clang-format` with these key settings:
@@ -197,16 +204,26 @@ Source/GeoTrinity/
 
 **NO WORKAROUNDS when debugging**: When investigating issues, find the actual root cause. Don't propose workarounds or alternative approaches until the real problem is understood. The user needs to understand what's actually wrong.
 
-**ALWAYS check existing Unreal Engine code for patterns**:
-- Before implementing StateTree tasks, AI behaviors, or GAS features, find and read existing Epic implementations
-- Key reference tasks: `FStateTreeDelayTask`, `FStateTreeMoveToTask` (see patterns below)
-- Plugin source is in `Engine\Plugins\Runtime\<PluginName>\Source\<Module>\`
+## HUD Architecture
 
-**ALWAYS verify Unreal Engine APIs before using them**:
-- Read the actual engine header files in `C:\Program Files\Epic Games\UE_5.7\Engine\` before suggesting method calls
-- Do NOT assume or guess method names - UE APIs change between versions
-- Check parent classes for inherited methods (e.g., `UStateTreeAIComponent` → `UStateTreeComponent` → `UBrainComponent`)
-- Plugin headers are in `Engine\Plugins\Runtime\<PluginName>\Source\<Module>\Public\`
+```
+AGeoHUD (GameFramework HUD, owns OverlayWidget)
+├── OverlayWidget (UGeoUserWidget) — main player HUD, created in InitOverlay()
+│     └── player's BP widget inherits UGeoUserWidget directly (NOT UGenericCombattantWidget)
+└── BossHealthBarWidget (UGenericCombattantWidget) — separate, shown during boss fights
+```
+
+- `UGeoUserWidget` — base widget; has `InitFromHUD(AGeoHUD*)` and `BindCallbacksFromHUD` BP event
+- `UGenericCombattantWidget` — extends UGeoUserWidget; for health display on combatants (enemies, boss bar). Has `InitializeWithAbilitySystemComponent`. **Do NOT use for the player overlay** — it's for health bars only.
+- `UGeoCombattantWidgetComp` — WidgetComponent on actors, auto-initializes widget with the actor's ASC on BeginPlay
+- `AGeoHUD::OverlayWidget` is `BlueprintReadOnly` — cast it in HUD BP to access the player widget
+- `FHudPlayerParams` — holds PC, PS, ASC, AttributeSet; accessible via `GetHudPlayerParams()`
+
+**Pattern for ability-driven HUD changes:**
+- **Screen-space / global UI** (e.g. boss bar, cooldown display): route through `AGeoHUD` with `BlueprintImplementableEvent` functions → implement in HUD BP → forward to `OverlayWidget`
+- **World-space UI that follows the character** (e.g. deploy charge gauge): use a `UWidgetComponent` directly on the character BP. Ability calls `GetAvatarActor → Cast PlayableCharacter → Show/HideGauge(Self)`. No HUD involvement needed. Use **Space = Screen** on the WidgetComponent for a top-down game (stays readable, auto-faces camera).
+
+**Key HUD files**: `HUD/GeoHUD.h`, `HUD/GenericCombattantWidget.h`, `HUD/GeoUserWidget.h`, `HUD/HudFunctionLibrary.h`, `HUD/Component/GeoCombattantWidgetComp.h`
 
 ## Key Files for Common Tasks
 

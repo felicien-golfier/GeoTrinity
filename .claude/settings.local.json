@@ -18,7 +18,8 @@
       "Bash(ls -la \"C:\\\\GeoTrinity\\\\.claude\\\\memory\"\" 2>/dev/null || dir \"C:GeoTrinity.claudememory\"\")",
       "Bash(xxd:*)",
       "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinity Win64 Development -project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Read(//c/Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/AIModule/Classes/**)"
     ]
   }
 }

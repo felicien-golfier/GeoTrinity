@@ -1,9 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 
 #include "GeoGameInstance.h"
 
 #include "GenericTeamAgentInterface.h"
+#include "Tool/UGameplayLibrary.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -11,16 +12,21 @@
 // ---------------------------------------------------------------------------------------------------------------------
 static ETeamAttitude::Type GeoAttitudeSolver(FGenericTeamId A, FGenericTeamId B)
 {
-	uint8 const IdA = A.GetId();
-	uint8 const IdB = B.GetId();
+	ETeam const TeamA = static_cast<ETeam>(A.GetId());
+	ETeam const TeamB = static_cast<ETeam>(B.GetId());
 
-	// Same team → friendly
-	if (IdA == IdB)
+	if (TeamA == TeamB)
 	{
 		return ETeamAttitude::Friendly;
 	}
 
-	// Keep it simple for now
+	// Consider NoTeam as neutral. Everyone is Neutral against NoTeam.
+	if (TeamA == ETeam::Neutral || A == FGenericTeamId::NoTeam || TeamB == ETeam::Neutral
+		|| B == FGenericTeamId::NoTeam)
+	{
+		return ETeamAttitude::Neutral;
+	}
+
 	return ETeamAttitude::Hostile;
 }
 
