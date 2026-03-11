@@ -43,7 +43,10 @@ protected:
 	void TryFire();
 
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
-	AActor* CharacterOwner = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<AActor> CharacterOwner = nullptr;
+
 	float TurretLevel = 1.f;
 
 	UPROPERTY(EditDefaultsOnly)

@@ -1,6 +1,7 @@
 ﻿#include "Characters/PlayableCharacter.h"
 
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "Components/WidgetComponent.h"
@@ -15,6 +16,8 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 	DeployChargeGaugeComponent->SetupAttachment(GetRootComponent());
 	DeployChargeGaugeComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	DeployChargeGaugeComponent->SetHiddenInGame(true);
+
+	DeployableManagerComponent = CreateDefaultSubobject<UGeoDeployableManagerComponent>(TEXT("DeployableManagerComponent"));
 }
 
 void APlayableCharacter::ShowDeployChargeGauge(UGeoDeployAbility* Ability)

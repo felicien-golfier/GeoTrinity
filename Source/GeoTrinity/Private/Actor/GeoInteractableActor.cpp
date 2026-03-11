@@ -22,7 +22,12 @@ AGeoInteractableActor::AGeoInteractableActor()
 
 void AGeoInteractableActor::InitInteractableData(FInteractableActorData* Data)
 {
-	check(Data);
+	if (!Data)
+	{
+		ensureMsgf(Data, TEXT("Data is invalid!"));
+		return;
+	}
+
 	InteractableActorData = Data;
 }
 

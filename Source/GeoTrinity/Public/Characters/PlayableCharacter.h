@@ -8,6 +8,7 @@
 
 class UWidgetComponent;
 class UGeoDeployAbility;
+class UGeoDeployableManagerComponent;
 
 UCLASS()
 class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
@@ -43,6 +44,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> DeployChargeGaugeComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
+	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 private:
 	void UpdateAimRotation(float DeltaSeconds);

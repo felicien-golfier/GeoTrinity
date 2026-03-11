@@ -28,7 +28,8 @@ class GEOTRINITY_API AGeoProjectile : public AActor
 public:
 	AGeoProjectile();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual bool IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget, FVector const& SrcLocation) const override;
+	virtual bool IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget,
+								  FVector const& SrcLocation) const override;
 	virtual void BeginPlay() override;
 	virtual void LifeSpanExpired() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -81,7 +82,7 @@ private:
 	float LifeSpanInSec = 30.f;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
-	float DistanceSpan = 100.f;
+	float DistanceSpan = 1000.f;
 
 	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeam"))
 	int32 ApplyEffectToTeamOnOverlap;
