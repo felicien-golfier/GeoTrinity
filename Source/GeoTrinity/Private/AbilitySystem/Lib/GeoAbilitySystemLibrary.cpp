@@ -11,6 +11,8 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "Actor/GeoInteractableActor.h"
+#include "Characters/GeoCharacter.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
@@ -209,26 +211,28 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(U
 		return Result;
 	}
 
-	for (TActorIterator<AActor> It(WorldContextObject->GetWorld()); It; ++It)
+	for (TActorIterator<AGeoCharacter> It(WorldContextObject->GetWorld()); It; ++It)
 	{
 		AActor* OtherActor = *It;
 
-		IGenericTeamAgentInterface const* TeamAgent = Cast<IGenericTeamAgentInterface>(OtherActor);
-		if (!TeamAgent)
-		{
-			continue;
-		}
+		IGenericTeamAgentInterface const* OtherActorTeamInterface = Cast<IGenericTeamAgentInterface>(OtherActor);
+		checkf(OtherActorTeamInterface, TEXT(" AGeoCharacter is a IGenericTeamAgentInterface, this should never fail"));
 
-		if (APlayerState const* PS = Cast<APlayerState>(OtherActor))
+		if (Attitude == OtherActorTeamInterface->GetTeamAttitudeTowards(*Actor))
 		{
-			OtherActor = PS->GetPawn();
+			Result.AddUnique(OtherActor);
 		}
-		else if (AController const* Controller = Cast<AController>(OtherActor))
-		{
-			OtherActor = Controller->GetPawn();
-		}
+	}
 
-		if (Attitude == TeamAgent->GetTeamAttitudeTowards(*Actor))
+	for (TActorIterator<AGeoInteractableActor> It(WorldContextObject->GetWorld()); It; ++It)
+	{
+		AActor* OtherActor = *It;
+
+		IGenericTeamAgentInterface const* OtherActorTeamInterface = Cast<IGenericTeamAgentInterface>(OtherActor);
+		checkf(OtherActorTeamInterface,
+			   TEXT(" AGeoInteractableActor is a IGenericTeamAgentInterface, this should never fail"));
+
+		if (Attitude == OtherActorTeamInterface->GetTeamAttitudeTowards(*Actor))
 		{
 			Result.AddUnique(OtherActor);
 		}

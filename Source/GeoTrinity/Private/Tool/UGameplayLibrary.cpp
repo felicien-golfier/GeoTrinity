@@ -238,3 +238,23 @@ TArray<FVector> UGameplayLibrary::GetTargetDirections(UWorld const* World, EProj
 		}
 	}
 }
+ETeamAttitudeBitflag UGameplayLibrary::GetAttitudeBitflag(ETeamAttitude::Type Attitude)
+{
+	switch (Attitude)
+	{
+	case ETeamAttitude::Neutral:
+		return ETeamAttitudeBitflag::Neutral;
+	case ETeamAttitude::Hostile:
+		return ETeamAttitudeBitflag::Hostile;
+	case ETeamAttitude::Friendly:
+		return ETeamAttitudeBitflag::Friendly;
+	default:
+		ensureMsgf(false, TEXT("Invalid team attitude"));
+		return ETeamAttitudeBitflag::Neutral;
+	}
+}
+
+bool UGameplayLibrary::IsAttitudeIntBitflag(ETeamAttitudeBitflag AttitudeBitflag, ETeamAttitude::Type Attitude)
+{
+	return (static_cast<uint8>(AttitudeBitflag) & static_cast<uint8>(GetAttitudeBitflag(Attitude))) != 0x00;
+}

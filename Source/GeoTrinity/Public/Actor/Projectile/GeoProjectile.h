@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Tool/UGameplayLibrary.h"
 
 #include "GeoProjectile.generated.h"
 
@@ -84,8 +85,8 @@ private:
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
 	float DistanceSpan = 1000.f;
 
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeam"))
-	int32 ApplyEffectToTeamOnOverlap;
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
 
 	bool bIsEnding{false};
 

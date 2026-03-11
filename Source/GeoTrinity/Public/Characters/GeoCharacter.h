@@ -59,8 +59,6 @@ public:
 	}
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(static_cast<uint8>(TeamId)); };
-
-	virtual ETeamAttitude::Type GetTeamAttitudeTowards(AActor const& Other) const override;
 	//----------------------------------------------------------------------//
 	// IGenericTeamAgentInterface END
 	//----------------------------------------------------------------------//

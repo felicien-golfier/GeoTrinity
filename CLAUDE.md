@@ -204,17 +204,6 @@ Source/GeoTrinity/
 
 **NO WORKAROUNDS when debugging**: When investigating issues, find the actual root cause. Don't propose workarounds or alternative approaches until the real problem is understood. The user needs to understand what's actually wrong.
 
-**ALWAYS check existing Unreal Engine code for patterns**:
-- Before implementing StateTree tasks, AI behaviors, or GAS features, find and read existing Epic implementations
-- Key reference tasks: `FStateTreeDelayTask`, `FStateTreeMoveToTask` (see patterns below)
-- Plugin source is in `Engine\Plugins\Runtime\<PluginName>\Source\<Module>\`
-
-**ALWAYS verify Unreal Engine APIs before using them**:
-- Read the actual engine header files in `C:\Program Files\Epic Games\UE_5.7\Engine\` before suggesting method calls
-- Do NOT assume or guess method names - UE APIs change between versions
-- Check parent classes for inherited methods (e.g., `UStateTreeAIComponent` → `UStateTreeComponent` → `UBrainComponent`)
-- Plugin headers are in `Engine\Plugins\Runtime\<PluginName>\Source\<Module>\Public\`
-
 ## HUD Architecture
 
 ```

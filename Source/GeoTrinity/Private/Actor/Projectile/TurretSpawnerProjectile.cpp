@@ -2,9 +2,10 @@
 
 #include "Actor/Projectile/TurretSpawnerProjectile.h"
 
-#include "Actor/Turret/GeoTurretBase.h"
+#include "Actor/Turret/GeoTurret.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameFramework/PlayerState.h"
+#include "Tool/UGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 ATurretSpawnerProjectile::ATurretSpawnerProjectile()
@@ -57,7 +58,7 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 		}
 	}
 
-	AGeoTurretBase* Turret = GetWorld()->SpawnActorDeferred<AGeoTurretBase>(
+	AGeoTurret* Turret = GetWorld()->SpawnActorDeferred<AGeoTurret>(
 		TurretActorClass, SpawnTransform, PayloadOwner, Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
 	if (!IsValid(Turret))
@@ -74,6 +75,8 @@ void ATurretSpawnerProjectile::SpawnTurretActor() const
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
 	}
+	Data.MaxDuration = 20.f; // TODO: change Hard coded value to use parameters in the GA.
+
 	Turret->InitInteractableData(&Data);
 
 	Turret->FinishSpawning(SpawnTransform);

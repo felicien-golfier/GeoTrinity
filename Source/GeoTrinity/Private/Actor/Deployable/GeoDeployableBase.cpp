@@ -8,14 +8,6 @@ AGeoDeployableBase::AGeoDeployableBase()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::InitDeployableData(FDeployableData* Data)
-{
-	DeployableData = Data;
-	InitInteractableData(Data);
-	RemainingDuration = Data->MaxDuration;
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnRecalled()
 {
 	OnDeployableExpired();
@@ -24,11 +16,15 @@ void AGeoDeployableBase::OnRecalled()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 float AGeoDeployableBase::GetDurationPercent() const
 {
-	if (!DeployableData || DeployableData->MaxDuration <= 0.f)
-	{
-		return 1.f;
-	}
-	return FMath::Clamp(RemainingDuration / DeployableData->MaxDuration, 0.f, 1.f);
+	return FMath::Clamp(RemainingDuration / GetData()->MaxDuration, 0.f, 1.f);
+}
+
+void AGeoDeployableBase::InitInteractableData(FInteractableActorData* InputData)
+{
+	Super::InitInteractableData(InputData);
+	ensureMsgf(GetData()->MaxDuration > 0.f,
+			   TEXT("Deployable has no duration ! It must have been missed init, or data has lost in the way"));
+	RemainingDuration = GetData()->MaxDuration;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -36,7 +32,7 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (bExpired || !DeployableData || DeployableData->MaxDuration <= 0.f)
+	if (bExpired || GetData()->MaxDuration <= 0.f)
 	{
 		return;
 	}

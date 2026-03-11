@@ -163,15 +163,15 @@ bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 		return false;
 	}
 
-	IGenericTeamAgentInterface const* TeamInterface = nullptr;
-	if (!UGameplayLibrary::GetTeamInterface(OtherActor, TeamInterface))
+	IGenericTeamAgentInterface const* OwnerTeamInterface = nullptr;
+	if (!UGameplayLibrary::GetTeamInterface(Payload.Owner, OwnerTeamInterface))
 	{
+		ensureMsgf(false, TEXT("Projectile owner has no team interface"));
 		return false;
 	}
 
-	// TODO: use TeamInterface->GetTeamAttitudeTowards()
-	return TeamInterface->GetGenericTeamId().GetId() != FGenericTeamId::NoTeam
-		&& (TeamInterface->GetGenericTeamId().GetId() & ApplyEffectToTeamOnOverlap) != 0x00;
+	return UGameplayLibrary::IsAttitudeIntBitflag(static_cast<ETeamAttitudeBitflag>(OverlapAttitude),
+												  OwnerTeamInterface->GetTeamAttitudeTowards(*OtherActor));
 }
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
