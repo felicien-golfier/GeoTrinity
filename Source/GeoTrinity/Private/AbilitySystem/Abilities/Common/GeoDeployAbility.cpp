@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/PlayableCharacter.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -34,6 +35,7 @@ void UGeoDeployAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 
 	if (ActorInfo->IsLocallyControlledPlayer())
 	{
+		float const MaxChargeTime = GetDefault<UGameDataSettings>()->DeployMaxChargeTime;
 		GetWorld()->GetTimerManager().SetTimer(ChargeAutoFireHandle, this, &UGeoDeployAbility::FireDeployable,
 											   MaxChargeTime, false);
 
@@ -64,8 +66,9 @@ void UGeoDeployAbility::EndAbility(FGameplayAbilitySpecHandle const Handle, FGam
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float UGeoDeployAbility::GetChargeRatio() const
+float UGeoDeployAbility::GetRawChargeRatio() const
 {
+	float const MaxChargeTime = GetDefault<UGameDataSettings>()->DeployMaxChargeTime;
 	if (MaxChargeTime <= 0.f)
 	{
 		return 1.f;
@@ -73,13 +76,54 @@ float UGeoDeployAbility::GetChargeRatio() const
 	return FMath::Clamp((GetWorld()->GetTimeSeconds() - ChargeStartTime) / MaxChargeTime, 0.f, 1.f);
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+float UGeoDeployAbility::ApplyChargeCurve(float const RawRatio) const
+{
+	APlayableCharacter const* Character = Cast<APlayableCharacter>(GetCurrentActorInfo()->AvatarActor.Get());
+	ensureMsgf(Character, TEXT("GeoDeployAbility: AvatarActor '%s' is not an APlayableCharacter — this ability must only be granted to playable characters."),
+			   *GetNameSafe(GetCurrentActorInfo()->AvatarActor.Get()));
+	if (!Character)
+	{
+		return RawRatio;
+	}
+
+	UCurveFloat const* Curve = Character->GetGaugeChargingSpeedCurve();
+	ensureMsgf(Curve, TEXT("GeoDeployAbility: GaugeChargingSpeedCurve is not set on '%s'. Assign a CurveFloat in the character BP."), *Character->GetName());
+	if (!Curve)
+	{
+		return RawRatio;
+	}
+
+	return FMath::Clamp(Curve->GetFloatValue(RawRatio), 0.f, 1.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float UGeoDeployAbility::GetChargeRatio() const
+{
+	return ApplyChargeCurve(GetRawChargeRatio());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoDeployAbility::FireDeployable()
 {
-	float const ChargeTime = FMath::Min(GetWorld()->GetTimeSeconds() - ChargeStartTime, MaxChargeTime);
-	float const ChargeRatio = MaxChargeTime > 0.f ? ChargeTime / MaxChargeTime : 0.f;
-	PendingDeployDistance = FMath::Lerp(MinDeployDistance, MaxDeployDistance, ChargeRatio);
+	PendingDeployDistance = FMath::Lerp(MinDeployDistance, MaxDeployDistance, ApplyChargeCurve(GetRawChargeRatio()));
 	BuildDataAndFire();
 }
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
+{
+	SendFireDataToServer(AbilityTargetData);
+
+	if (!GetCurrentActorInfo()->IsLocallyControlledPlayer())
+	{
+		return;
+	}
+
+	FVector const Origin{AbilityTargetData.Origin, ArbitraryCharacterZ};
+	SpawnDeployProjectile(Origin, AbilityTargetData.Yaw, AbilityTargetData.ServerSpawnTime, PendingDeployDistance);
+	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoDeployAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 									  FGameplayAbilityActorInfo const* ActorInfo,

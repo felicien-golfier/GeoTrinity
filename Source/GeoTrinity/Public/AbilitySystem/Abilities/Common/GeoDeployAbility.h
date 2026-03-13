@@ -20,6 +20,9 @@ class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
 public:
 	UGeoDeployAbility();
 
+	UFUNCTION(BlueprintPure, Category = "Ability|Deploy")
+	float GetChargeRatio() const;
+
 protected:
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
@@ -28,6 +31,8 @@ protected:
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
+
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	virtual void InputReleased(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo const ActivationInfo) override;
@@ -43,22 +48,18 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Ability|Deploy")
 	void OnChargeEnded();
 
-	UFUNCTION(BlueprintPure, Category = "Ability|Deploy")
-	float GetChargeRatio() const;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
 	float MinDeployDistance = 300.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
 	float MaxDeployDistance = 1500.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
-	float MaxChargeTime = 2.f;
-
 private:
 	void SpawnDeployProjectile(FVector const& Origin, float Yaw, float SpawnServerTime, float DeployDistance) const;
 	UFUNCTION()
 	void FireDeployable();
+	float GetRawChargeRatio() const;
+	float ApplyChargeCurve(float RawRatio) const;
 
 	float ChargeStartTime = 0.f;
 	float PendingDeployDistance = 0.f;

@@ -9,6 +9,9 @@
 #include "GameDataSettings.generated.h"
 
 class UStatusInfo;
+class UUserWidget;
+class UGameplayEffect;
+
 /**
  * A place to link all data tables for game stuff, accessible by server and client
  */
@@ -27,6 +30,15 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
 	TSoftObjectPtr<UAbilityInfo> AbilityInfo;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
+	TSoftClassPtr<UUserWidget> DefaultDeployableHealthBarWidgetClass;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Deployable")
+	float DeployMaxChargeTime = 1.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Deployable")
+	TSoftClassPtr<UGameplayEffect> DeployableHealthDrainEffect;
 };
 
 template <typename T>

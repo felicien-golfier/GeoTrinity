@@ -1,10 +1,63 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #include "Actor/Deployable/GeoDeployableBase.h"
+
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayEffect.h"
+#include "HUD/Component/GeoCombattantWidgetComp.h"
+#include "Settings/GameDataSettings.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoDeployableBase::AGeoDeployableBase()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.bCanEverTick = false;
+
+	HealthBarComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("HealthBarComponent"));
+	HealthBarComponent->SetupAttachment(RootComponent);
+	HealthBarComponent->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
+
+	if (TSubclassOf<UUserWidget> const HealthBarWidgetClass =
+			GetDefault<UGameDataSettings>()->DefaultDeployableHealthBarWidgetClass.LoadSynchronous())
+	{
+		HealthBarComponent->SetWidgetClass(HealthBarWidgetClass);
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!HasAuthority() || GetData()->MaxDuration <= 0.f)
+	{
+		return;
+	}
+
+	TSubclassOf<UGameplayEffect> const HealthDrainEffect =
+		GetDefault<UGameDataSettings>()->DeployableHealthDrainEffect.LoadSynchronous();
+	ensureMsgf(HealthDrainEffect,
+			   TEXT("AGeoDeployableBase: DeployableHealthDrainEffect is not set in GameDataSettings!"));
+	if (!HealthDrainEffect)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	float const MaxHealth = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
+	ensureMsgf(MaxHealth > 0.f, TEXT("AGeoDeployableBase: MaxHealth is 0 — DefaultAttributes may not be applied."));
+	if (MaxHealth <= 0.f)
+	{
+		return;
+	}
+	float const DrainPerSecond = MaxHealth / GetData()->MaxDuration;
+
+	FGameplayEffectSpecHandle const SpecHandle =
+		ASC->MakeOutgoingSpec(HealthDrainEffect, GetData()->Level, ASC->MakeEffectContext());
+	SpecHandle.Data->SetSetByCallerMagnitude(FGeoGameplayTags::Get().Data_Drain, -DrainPerSecond);
+	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -16,33 +69,24 @@ void AGeoDeployableBase::OnRecalled()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 float AGeoDeployableBase::GetDurationPercent() const
 {
-	return FMath::Clamp(RemainingDuration / GetData()->MaxDuration, 0.f, 1.f);
-}
+	if (GetData()->MaxDuration <= 0.f)
+	{
+		return 1.f;
+	}
 
-void AGeoDeployableBase::InitInteractableData(FInteractableActorData* InputData)
-{
-	Super::InitInteractableData(InputData);
-	ensureMsgf(GetData()->MaxDuration > 0.f,
-			   TEXT("Deployable has no duration ! It must have been missed init, or data has lost in the way"));
-	RemainingDuration = GetData()->MaxDuration;
+	UAbilitySystemComponent const* ASC = GetAbilitySystemComponent();
+	float const MaxHealth = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
+	if (MaxHealth <= 0.f)
+	{
+		return 0.f;
+	}
+	return FMath::Clamp(ASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute()) / MaxHealth, 0.f, 1.f);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::Tick(float DeltaSeconds)
+void AGeoDeployableBase::InitInteractableData(FInteractableActorData* InputData)
 {
-	Super::Tick(DeltaSeconds);
-
-	if (bExpired || GetData()->MaxDuration <= 0.f)
-	{
-		return;
-	}
-
-	RemainingDuration -= DeltaSeconds;
-	if (RemainingDuration <= 0.f)
-	{
-		RemainingDuration = 0.f;
-		OnDeployableExpired();
-	}
+	Super::InitInteractableData(InputData);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

@@ -21,6 +21,7 @@ struct FGeoGameplayTags
 	static void InitializeNativeGameplayTags();
 
 	FGameplayTag Gameplay_Damage;
+	FGameplayTag Data_Drain;
 
 	// Input
 	FGameplayTag InputTag_BasicSpell;

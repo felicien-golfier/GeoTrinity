@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Curves/CurveFloat.h"
 #include "GeoCharacter.h"
 #include "PlayerClassTypes.h"
 
@@ -26,8 +27,10 @@ public:
 
 	EPlayerClass GetPlayerClass() const;
 
-	void ShowDeployChargeGauge(UGeoDeployAbility* Ability);
-	void HideDeployChargeGauge();
+	void ShowDeployChargeGauge(UGeoDeployAbility* Ability) const;
+	void HideDeployChargeGauge() const;
+
+	UCurveFloat* GetGaugeChargingSpeedCurve() const { return GaugeChargingSpeedCurve; }
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -48,8 +51,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
+	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
+	UPROPERTY(EditDefaultsOnly, Category = "Deployable")
+	TObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
+
 private:
-	void UpdateAimRotation(float DeltaSeconds);
+	void UpdateAimRotation(float DeltaSeconds) const;
 
 	float PreviousYaw = 0.f;
 };

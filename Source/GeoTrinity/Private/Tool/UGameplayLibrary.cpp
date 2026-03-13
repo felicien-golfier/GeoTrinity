@@ -238,6 +238,7 @@ TArray<FVector> UGameplayLibrary::GetTargetDirections(UWorld const* World, EProj
 		}
 	}
 }
+
 ETeamAttitudeBitflag UGameplayLibrary::GetAttitudeBitflag(ETeamAttitude::Type Attitude)
 {
 	switch (Attitude)

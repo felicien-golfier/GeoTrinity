@@ -4,6 +4,7 @@
 #include "HUD/GenericCombattantWidget.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "Components/ProgressBar.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoHUD.h"
 #include "HUD/HudFunctionLibrary.h"
@@ -13,19 +14,30 @@ void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementati
 {
 	OwnerASC = ASC;
 
-	if (!GetOwningPlayer())
+	if (APlayerController* PlayerController = GetOwningPlayer())
 	{
-		UE_LOG(LogGeoTrinity, Log, TEXT("No owning player for widget %s"), *GetName());
-		return;
-	}
-
-	if (AGeoHUD* Hud = Cast<AGeoHUD>(GetOwningPlayer()->GetHUD()))
-	{
-		InitFromHUD(Hud);
+		if (AGeoHUD* Hud = Cast<AGeoHUD>(PlayerController->GetHUD()))
+		{
+			InitFromHUD(Hud);
+		}
 	}
 
 	BindStatCallbacks();
 	InitStats();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGenericCombattantWidget::UpdateHealthRatio_Implementation(float NewHealthRatio)
+{
+	if (HealthBar)
+	{
+		HealthBar->SetPercent(NewHealthRatio);
+		FLinearColor const HighHealth = FLinearColor::LerpUsingHSV(
+			FLinearColor::Yellow, FLinearColor::Green, FMath::Clamp((NewHealthRatio - 0.5f) * 2.f, 0.f, 1.f));
+		FLinearColor const LowHealth = FLinearColor::LerpUsingHSV(FLinearColor::Red, FLinearColor::Yellow,
+																  FMath::Clamp(NewHealthRatio * 2.f, 0.f, 1.f));
+		HealthBar->SetFillColorAndOpacity(NewHealthRatio > 0.5f ? HighHealth : LowHealth);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
