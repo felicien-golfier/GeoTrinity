@@ -51,9 +51,13 @@ The project uses a custom `.clang-format` with these key settings:
 - Be consistent with Super call placement: choose what makes sense (e.g., Super::Init at start, Super::Destroy at end), but when there's no meaningful ordering dependency, keep it consistent (e.g., always at the top) rather than mixing positions arbitrarily
 - Dont use abreviations in variable name, ALWAYS use full class name except some very verbose names like ASC for AbilitySystemComponent.
 - Prefer readable, self-documenting code over comments. Don't add comments that restate what the code already says - the code should speak for itself.
-- **No silent fallbacks**: Never silently skip or substitute when something required is missing. Use `ensureMsgf(condition, ...)` to flag the problem. If execution must continue gracefully despite the failure, follow it with an `if` — but always surface the error. Never use `condition ? A : B` as a quiet fallback (e.g. `Pool ? Pool->Get() : SpawnActor()`).
-  - Configured assets (ProjectileClass, EffectData, subsystems) must be checked with `ensureMsgf` — missing them is always a bug.
-  - Runtime misses (no target found, empty list) are legitimate — a plain `if` with no assert is fine there.
+- **No silent fallbacks**: Never silently skip or substitute when something required is missing. Always surface the error. The question to ask for every `if` guard is: *can this condition legitimately be false at runtime?* If the answer is no, it must be flagged. When in doubt, add the assert — it is easier to remove an assert that turns out to be too strict than to track down a silent failure later.
+  - Use `ensureMsgf(condition, ...)` to flag the problem. If execution must continue gracefully despite the failure, follow it with an `if` — but always surface the error first.
+  - For critical invariants (wrong actor type, missing subsystem, corrupted state) where silent continuation would cause hard-to-debug downstream damage, prefer `checkf` to crash immediately with a clear message rather than limping forward.
+  - Never use `condition ? A : B` as a quiet fallback (e.g. `Pool ? Pool->Get() : SpawnActor()`).
+  - Configured assets (ProjectileClass, EffectData, curves, subsystems) must be checked with `ensureMsgf` — missing them is always a configuration bug.
+  - Wrong actor/component types (e.g. ability used on the wrong class by design) must be checked with `ensureMsgf` — this is always a design bug.
+  - Runtime misses (no target found, empty list, optional feature not set) are legitimate — a plain `if` with no assert is fine there.
 
 ## Architecture
 

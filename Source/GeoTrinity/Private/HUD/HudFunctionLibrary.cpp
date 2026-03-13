@@ -31,6 +31,7 @@ float UHudFunctionLibrary::GetHealthRatio(UAbilitySystemComponent const* Ability
 {
 	if (!AbilitySystemComponent)
 	{
+		ensureMsgf(false, TEXT("AbilitySystemComponent must be valid to GetHealthRatio!"));
 		return 0.0f;
 	}
 	float const CurrentHealth = AbilitySystemComponent->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());

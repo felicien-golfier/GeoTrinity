@@ -9,6 +9,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGameplayLibrary.h"
 
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -24,7 +25,7 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 	TeamId = ETeam::Player;
 }
 
-void APlayableCharacter::ShowDeployChargeGauge(UGeoDeployAbility* Ability)
+void APlayableCharacter::ShowDeployChargeGauge(UGeoDeployAbility* Ability) const
 {
 	UGeoDeployChargeGaugeWidget* Widget =
 		Cast<UGeoDeployChargeGaugeWidget>(DeployChargeGaugeComponent->GetUserWidgetObject());
@@ -36,7 +37,7 @@ void APlayableCharacter::ShowDeployChargeGauge(UGeoDeployAbility* Ability)
 	DeployChargeGaugeComponent->SetHiddenInGame(false);
 }
 
-void APlayableCharacter::HideDeployChargeGauge()
+void APlayableCharacter::HideDeployChargeGauge() const
 {
 	DeployChargeGaugeComponent->SetHiddenInGame(true);
 }
@@ -51,7 +52,7 @@ void APlayableCharacter::Tick(float DeltaSeconds)
 	}
 }
 
-void APlayableCharacter::UpdateAimRotation(float DeltaSeconds)
+void APlayableCharacter::UpdateAimRotation(float DeltaSeconds) const
 {
 	FVector2D Look;
 	if (!GeoInputComponent->GetLookVector(Look))

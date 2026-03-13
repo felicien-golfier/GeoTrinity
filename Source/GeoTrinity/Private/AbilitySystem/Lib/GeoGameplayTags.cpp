@@ -32,6 +32,7 @@ namespace
 void FGeoGameplayTags::InitializeNativeGameplayTags()
 {
 	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Damage, "Gameplay.Damage", "Tag to identify damage");
+	CreateAndAssignGameplayTag(GameplayTags.Data_Drain, "Data.Drain", "SetByCaller magnitude tag for deployable health drain GE");
 
 	// INPUT //
 	AddInputTag(GameplayTags.InputTag_BasicSpell, "BasicSpell", "Input tag for left mouse button-linked spell");

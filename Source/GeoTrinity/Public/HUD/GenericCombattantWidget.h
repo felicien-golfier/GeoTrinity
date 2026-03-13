@@ -8,6 +8,8 @@
 
 #include "GenericCombattantWidget.generated.h"
 
+class UProgressBar;
+
 /**
  *
  */
@@ -21,13 +23,17 @@ public:
 	void InitializeWithAbilitySystemComponent(UAbilitySystemComponent* ASC);
 
 protected:
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintNativeEvent)
 	void UpdateHealthRatio(float NewHealthRatio);
+	virtual void UpdateHealthRatio_Implementation(float NewHealthRatio);
 
 	virtual void InitStats();
 
 	UPROPERTY(BlueprintReadOnly, Category = "Runtime")
 	TWeakObjectPtr<UAbilitySystemComponent> OwnerASC;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UProgressBar> HealthBar;
 
 private:
 	void BindStatCallbacks();
