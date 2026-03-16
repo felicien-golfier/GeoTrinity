@@ -32,7 +32,8 @@ namespace
 void FGeoGameplayTags::InitializeNativeGameplayTags()
 {
 	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Damage, "Gameplay.Damage", "Tag to identify damage");
-	CreateAndAssignGameplayTag(GameplayTags.Data_Drain, "Data.Drain", "SetByCaller magnitude tag for deployable health drain GE");
+	CreateAndAssignGameplayTag(GameplayTags.Data_Drain, "Data.Drain",
+							   "SetByCaller magnitude tag for deployable health drain GE");
 
 	// INPUT //
 	AddInputTag(GameplayTags.InputTag_BasicSpell, "BasicSpell", "Input tag for left mouse button-linked spell");
@@ -45,6 +46,8 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	// TYPE OF ABILITY //
 	AddAbilityTag(GameplayTags.Ability_Type_Basic, "Type.Basic", "Tag associated with basic spells");
 	AddAbilityTag(GameplayTags.Ability_Type_Special, "Type.Special", "Tag associated with special spells");
+	AddAbilityTag(GameplayTags.Ability_Type_AltSpecial, "Type.AltSpecial",
+				  "Tag associated with Special Alternate spells");
 	AddAbilityTag(GameplayTags.Ability_Type_Dash, "Type.Dash", "Tag associated with Dash spells");
 
 	// PLAYER CLASSES //

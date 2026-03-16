@@ -1,8 +1,12 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #include "AbilitySystem/Abilities/Common/GeoDashAbility.h"
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/RootMotionSource.h"
+#include "Tool/UGameplayLibrary.h"
 
 UGeoDashAbility::UGeoDashAbility()
 {
@@ -39,30 +43,44 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 		return;
 	}
 
-	// Direction comes from StoredPayload.Yaw — identical on both client and server because
-	// the client bakes its local yaw into the activation target data before sending.
-	FVector const DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
-	float const DashSpeed = DashDistance / DashDuration;
+	// Direction comes from character velocity, if no, use Yaw.
+	FVector DashDirection;
+	if (MovementComponent->Velocity.SizeSquared() < SMALL_NUMBER)
+	{
+		DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
+	}
+	else
+	{
+		DashDirection = MovementComponent->Velocity.GetSafeNormal();
+	}
 
-	Character->LaunchCharacter(DashDirection * DashSpeed, true, true);
+	FVector const StartLocation = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
+	FVector const TargetLocation = StartLocation + DashDirection * DashDistance;
 
-	ensureMsgf(!DashTimerHandle.IsValid(),
-			   TEXT("Activating Dash with DashTimerHandle already valid — ability has not ended properly"));
+	// FRootMotionSource_MoveToForce is saved in FSavedMove_Character, so both client and
+	// server apply identical movement when the server replays saved moves — no CMC corrections.
+	TSharedPtr<FRootMotionSource_MoveToForce> DashRootMotion = MakeShared<FRootMotionSource_MoveToForce>();
+	DashRootMotion->InstanceName = TEXT("Dash");
+	DashRootMotion->AccumulateMode = ERootMotionAccumulateMode::Override;
+	DashRootMotion->StartLocation = StartLocation;
+	DashRootMotion->TargetLocation = TargetLocation;
+	DashRootMotion->Duration = DashDuration;
+	DashRootMotion->bRestrictSpeedToExpected = false;
+	DashRootMotion->FinishVelocityParams.Mode = ERootMotionFinishVelocityMode::ClampVelocity;
+	DashRootMotion->FinishVelocityParams.ClampVelocity = MovementComponent->MaxWalkSpeed;
+
+	ensureMsgf(DashRootMotionSourceID == 0,
+			   TEXT("Activating Dash with DashRootMotionSourceID already set — ability has not ended properly"));
+	DashRootMotionSourceID = MovementComponent->ApplyRootMotionSource(DashRootMotion);
+
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindWeakLambda(this,
-								 [this, Handle, ActorInfo, ActivationInfo, DashDirection]()
+								 [this, Handle, ActorInfo, ActivationInfo]()
 								 {
-									 ACharacter* DashCharacter = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-									 if (IsValid(DashCharacter))
-									 {
-										 DashCharacter->GetCharacterMovement()->StopMovementImmediately();
-										 DashCharacter->GetCharacterMovement()->Velocity =
-											 DashDirection * DashCharacter->GetCharacterMovement()->MaxWalkSpeed;
-									 }
 									 EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
 								 });
 
-	Character->GetWorldTimerManager().SetTimer(DashTimerHandle, TimerDelegate, DashDuration, false);
+	Character->GetWorldTimerManager().SetTimer(DashEndTimerHandle, TimerDelegate, DashDuration, false);
 }
 
 void UGeoDashAbility::EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
@@ -72,13 +90,15 @@ void UGeoDashAbility::EndAbility(FGameplayAbilitySpecHandle const Handle, FGamep
 	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
 	if (IsValid(Character))
 	{
-		Character->GetWorldTimerManager().ClearTimer(DashTimerHandle);
+		Character->GetWorldTimerManager().ClearTimer(DashEndTimerHandle);
 		UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
 		if (IsValid(MovementComponent))
 		{
+			MovementComponent->RemoveRootMotionSourceByID(DashRootMotionSourceID);
 			MovementComponent->SetMovementMode(MOVE_Walking);
 		}
 	}
+	DashRootMotionSourceID = 0;
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

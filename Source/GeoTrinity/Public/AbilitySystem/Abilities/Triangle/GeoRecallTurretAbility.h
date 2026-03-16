@@ -5,8 +5,9 @@
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "Tool/UGameplayLibrary.h"
 
-#include "GeoExplosiveRecallAbility.generated.h"
+#include "GeoRecallTurretAbility.generated.h"
 
 class UEffectDataAsset;
 
@@ -16,11 +17,18 @@ class UEffectDataAsset;
  * Turrets that were blinking (low duration) use BlinkBonusRecallEffectData.
  */
 UCLASS()
-class GEOTRINITY_API UGeoExplosiveRecallAbility : public UGeoGameplayAbility
+class GEOTRINITY_API UGeoRecallTurretAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
 
+	struct FRecallInfo
+	{
+		FVector TurretLocation;
+		bool bWasBlinking;
+	};
+
 protected:
+	TArray<UGeoAbilitySystemComponent*> FindTargets(AActor const* Instigator, FRecallInfo const& RecallInfo) const;
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
@@ -33,4 +41,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Recall", meta = (Categories = "GameplayCue"))
 	FGameplayTag RecallGameplayCueTag;
+
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
 };

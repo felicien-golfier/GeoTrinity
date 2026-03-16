@@ -96,4 +96,5 @@ public:
 
 	static ETeamAttitudeBitflag GetAttitudeBitflag(ETeamAttitude::Type Attitude);
 	static bool IsAttitudeIntBitflag(ETeamAttitudeBitflag AttitudeBitflag, ETeamAttitude::Type Attitude);
+	static bool IsTeamAttitudeAligned(AActor const* Owner, AActor const* OtherActor, int32 OverlapAttitudeBitMask);
 };

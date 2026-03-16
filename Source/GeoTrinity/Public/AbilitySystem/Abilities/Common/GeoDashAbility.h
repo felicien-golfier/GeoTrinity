@@ -7,12 +7,12 @@
 
 /**
  * Dash ability shared by all player classes.
- * Applies a velocity impulse in the aim direction.
- * Does NOT provide invincibility - character can still take damage during dash.
  *
- * Networking: direction and start time are sent in the activation target data so both
- * client and server execute the identical dash. The server trims the timer by the
- * elapsed server time to end in sync despite ping.
+ * Uses FRootMotionSource_MoveToForce so the dash movement is part of the CMC saved-move
+ * system. This means the server replays client moves with the exact same root motion
+ * applied, avoiding the CMC position-correction artifacts that LaunchCharacter causes
+ * (LaunchCharacter is not saved in FSavedMove_Character, so server/client velocities
+ * diverge and the CMC sends corrections that manifest as snap-teleport artefacts).
  */
 UCLASS()
 class GEOTRINITY_API UGeoDashAbility : public UGeoGameplayAbility
@@ -39,5 +39,6 @@ protected:
 	float DashDuration = 0.2f;
 
 private:
-	FTimerHandle DashTimerHandle;
+	uint16 DashRootMotionSourceID{0};
+	FTimerHandle DashEndTimerHandle;
 };

@@ -147,31 +147,7 @@ bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 		return false;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = Payload.Owner->GetComponentByClass<UGeoAbilitySystemComponent>();
-	if (!IsValid(SourceASC))
-	{
-		UE_LOG(LogGeoTrinity, Error,
-			   TEXT("A projectile was launched with an invalid Source ASC, this should never happen"));
-		return false;
-	}
-
-	AActor const* SourceAvatarActor = SourceASC->GetAvatarActor();
-
-	// Don't apply on self
-	if (!IsValid(SourceAvatarActor) || (SourceAvatarActor == OtherActor))
-	{
-		return false;
-	}
-
-	IGenericTeamAgentInterface const* OwnerTeamInterface = nullptr;
-	if (!UGameplayLibrary::GetTeamInterface(Payload.Owner, OwnerTeamInterface))
-	{
-		ensureMsgf(false, TEXT("Projectile owner has no team interface"));
-		return false;
-	}
-
-	return UGameplayLibrary::IsAttitudeIntBitflag(static_cast<ETeamAttitudeBitflag>(OverlapAttitude),
-												  OwnerTeamInterface->GetTeamAttitudeTowards(*OtherActor));
+	return UGameplayLibrary::IsTeamAttitudeAligned(Payload.Owner, OtherActor, OverlapAttitude);
 }
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

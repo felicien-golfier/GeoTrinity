@@ -1,6 +1,8 @@
 ﻿#include "Tool/UGameplayLibrary.h"
 
 #include "AbilitySystem/Abilities/AbilityPayload.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/GameStateBase.h"
@@ -258,4 +260,34 @@ ETeamAttitudeBitflag UGameplayLibrary::GetAttitudeBitflag(ETeamAttitude::Type At
 bool UGameplayLibrary::IsAttitudeIntBitflag(ETeamAttitudeBitflag AttitudeBitflag, ETeamAttitude::Type Attitude)
 {
 	return (static_cast<uint8>(AttitudeBitflag) & static_cast<uint8>(GetAttitudeBitflag(Attitude))) != 0x00;
+}
+
+bool UGameplayLibrary::IsTeamAttitudeAligned(AActor const* Owner, AActor const* OtherActor,
+											 int32 OverlapAttitudeBitMask)
+{
+	IAbilitySystemInterface const* OwnerASCInterface = Cast<IAbilitySystemInterface>(Owner);
+	if (!OwnerASCInterface)
+	{
+		UE_LOG(LogGeoTrinity, Error,
+			   TEXT("The Owner does not implement IAbilitySystemInterface. It should never happen"));
+		return false;
+	}
+
+	AActor const* SourceAvatarActor = OwnerASCInterface->GetAbilitySystemComponent()->GetAvatarActor();
+
+	// Don't apply on self
+	if (!IsValid(SourceAvatarActor) || (SourceAvatarActor == OtherActor))
+	{
+		return false;
+	}
+
+	IGenericTeamAgentInterface const* OwnerTeamInterface = nullptr;
+	if (!GetTeamInterface(Owner, OwnerTeamInterface))
+	{
+		ensureMsgf(false, TEXT("Projectile owner has no team interface"));
+		return false;
+	}
+
+	return IsAttitudeIntBitflag(static_cast<ETeamAttitudeBitflag>(OverlapAttitudeBitMask),
+								OwnerTeamInterface->GetTeamAttitudeTowards(*OtherActor));
 }

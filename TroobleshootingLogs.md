@@ -10,3 +10,5 @@ commit 562880e0ffc015ddce292007cde1ac44ac83389e
 	- /!\ Loaded Failed on my Solution in Rider : Had to install the new Visual Studio with .Net 8.0 MANUALLY.
 	- Forgot to download the pdb for Unreal in the launcher. 
 
+
+# Adding a new ability type, don't forget to add it to AbilityTypeToInputTagMap
