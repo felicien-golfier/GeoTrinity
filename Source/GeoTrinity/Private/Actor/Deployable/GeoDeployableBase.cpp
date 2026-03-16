@@ -53,16 +53,17 @@ void AGeoDeployableBase::BeginPlay()
 		return;
 	}
 	float const DrainPerSecond = MaxHealth / GetData()->MaxDuration;
-
+	float const DrainPeriod = HealthDrainEffect.GetDefaultObject()->Period.Value;
 	FGameplayEffectSpecHandle const SpecHandle =
 		ASC->MakeOutgoingSpec(HealthDrainEffect, GetData()->Level, ASC->MakeEffectContext());
-	SpecHandle.Data->SetSetByCallerMagnitude(FGeoGameplayTags::Get().Data_Drain, -DrainPerSecond);
+	SpecHandle.Data->SetSetByCallerMagnitude(FGeoGameplayTags::Get().Data_Drain, -(DrainPerSecond * DrainPeriod));
 	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnRecalled()
 {
+	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
 	OnDeployableExpired();
 }
 
@@ -92,10 +93,40 @@ void AGeoDeployableBase::InitInteractableData(FInteractableActorData* InputData)
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnHealthChanged(float NewValue)
 {
-	if (NewValue <= 0.f && !bExpired)
+	if (NewValue <= 0.f && !bExpired && !BlinkTimerHandle.IsValid())
 	{
-		OnDeployableExpired();
+		float const BlinkDuration = GetData()->BlinkDuration;
+		if (BlinkDuration > 0.f)
+		{
+			GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::OnBlinkTimerExpired,
+												   BlinkDuration, false);
+			OnBlinkStarted();
+		}
+		else
+		{
+			OnDeployableExpired();
+		}
 	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::OnBlinkStarted_Implementation()
+{
+	float constexpr BlinkRate = 0.2f;
+	GetWorld()->GetTimerManager().SetTimer(BlinkVisibilityTimerHandle, this, &ThisClass::OnBlinkVisibilityTick,
+										   BlinkRate, true);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::OnBlinkVisibilityTick()
+{
+	SetActorHiddenInGame(!IsHidden());
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::OnBlinkTimerExpired()
+{
+	OnDeployableExpired();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -106,7 +137,15 @@ void AGeoDeployableBase::OnDeployableExpired()
 		return;
 	}
 	bExpired = true;
-
+	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(BlinkVisibilityTimerHandle);
+	SetActorHiddenInGame(true);
 	OnDeployableDestroyed.Broadcast(this);
 	Destroy();
+}
+
+
+bool AGeoDeployableBase::IsBlinking() const
+{
+	return BlinkTimerHandle.IsValid();
 }

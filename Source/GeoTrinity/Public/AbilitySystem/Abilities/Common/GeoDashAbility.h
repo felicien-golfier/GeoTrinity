@@ -2,7 +2,6 @@
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
-#include "GameFramework/CharacterMovementComponent.h"
 
 #include "GeoDashAbility.generated.h"
 
@@ -10,6 +9,10 @@
  * Dash ability shared by all player classes.
  * Applies a velocity impulse in the aim direction.
  * Does NOT provide invincibility - character can still take damage during dash.
+ *
+ * Networking: direction and start time are sent in the activation target data so both
+ * client and server execute the identical dash. The server trims the timer by the
+ * elapsed server time to end in sync despite ping.
  */
 UCLASS()
 class GEOTRINITY_API UGeoDashAbility : public UGeoGameplayAbility
@@ -36,8 +39,5 @@ protected:
 	float DashDuration = 0.2f;
 
 private:
-	FVector GetDashDirection(FGameplayAbilityActorInfo const* ActorInfo,
-							 UCharacterMovementComponent const* MovementComponent) const;
-
 	FTimerHandle DashTimerHandle;
 };

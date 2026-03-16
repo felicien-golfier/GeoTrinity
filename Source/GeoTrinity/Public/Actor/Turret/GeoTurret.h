@@ -29,12 +29,7 @@ class GEOTRINITY_API AGeoTurret : public AGeoDeployableBase
 
 public:
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
-	virtual void OnRecalled() override;
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	bool IsBlinking() const;
-	bool WasBlinkingOnRecall() const { return bWasBlinkingOnRecall; }
 
 protected:
 	virtual FTurretData const* GetData() const override { return &Data; }
@@ -55,10 +50,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	float FireInterval = 1.f;
 
-	UPROPERTY(EditDefaultsOnly)
-	float BlinkThreshold = 0.2f;
-
 private:
 	FTimerHandle FireTimerHandle;
-	bool bWasBlinkingOnRecall = false;
 };

@@ -15,15 +15,18 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 									  FGameplayAbilityActivationInfo const ActivationInfo,
 									  FGameplayEventData const* TriggerEventData)
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	// Super commits the ability, validates cost/cooldown, and stores StoredPayload from
+	// the activation target data (Origin, Yaw, ServerSpawnTime sent by the client).
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	if (!IsActive())
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
 
 	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
 	if (!IsValid(Character))
 	{
+		ensureMsgf(IsValid(Character), TEXT("UGeoDashAbility: invalid Character on activation"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
@@ -31,18 +34,20 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
 	if (!IsValid(MovementComponent))
 	{
+		ensureMsgf(IsValid(MovementComponent), TEXT("UGeoDashAbility: invalid MovementComponent on activation"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
 
-	FVector const DashDirection = GetDashDirection(ActorInfo, MovementComponent);
+	// Direction comes from StoredPayload.Yaw — identical on both client and server because
+	// the client bakes its local yaw into the activation target data before sending.
+	FVector const DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
 	float const DashSpeed = DashDistance / DashDuration;
-	FVector const LaunchVelocity = DashDirection * DashSpeed;
 
-	Character->LaunchCharacter(LaunchVelocity, true, true);
+	Character->LaunchCharacter(DashDirection * DashSpeed, true, true);
 
 	ensureMsgf(!DashTimerHandle.IsValid(),
-			   TEXT("Activating Dash with DashTimerHandle already valid ! The ability has not ended properly"));
+			   TEXT("Activating Dash with DashTimerHandle already valid — ability has not ended properly"));
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindWeakLambda(this,
 								 [this, Handle, ActorInfo, ActivationInfo, DashDirection]()
@@ -76,26 +81,4 @@ void UGeoDashAbility::EndAbility(FGameplayAbilitySpecHandle const Handle, FGamep
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-FVector UGeoDashAbility::GetDashDirection(FGameplayAbilityActorInfo const* ActorInfo,
-										  UCharacterMovementComponent const* MovementComponent) const
-{
-	FVector Direction = MovementComponent->GetLastUpdateVelocity();
-	if (Direction.IsNearlyZero(0.1))
-	{
-		ACharacter const* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-		if (!IsValid(Character))
-		{
-			Direction = FVector::ForwardVector;
-		}
-		else
-		{
-			Direction = Character->GetActorForwardVector();
-		}
-	}
-
-	Direction.Z = 0.f;
-	Direction.Normalize();
-	return Direction.IsNearlyZero() ? FVector::ForwardVector : Direction;
 }

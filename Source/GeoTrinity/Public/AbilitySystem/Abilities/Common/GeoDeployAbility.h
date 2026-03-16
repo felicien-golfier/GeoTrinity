@@ -54,6 +54,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
 	float MaxDeployDistance = 1500.f;
 
+	// LifeDrain is used to define the life drain rate base on "How long the deployable would stay alive in sec if
+	// nothing else deplete its life"
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
+	float LifeDrain = 20.f;
+
 private:
 	void SpawnDeployProjectile(FVector const& Origin, float Yaw, float SpawnServerTime, float DeployDistance) const;
 	UFUNCTION()

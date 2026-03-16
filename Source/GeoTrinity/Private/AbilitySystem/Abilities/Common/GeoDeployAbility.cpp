@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
+#include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/PlayableCharacter.h"
 #include "Settings/GameDataSettings.h"
@@ -80,15 +81,21 @@ float UGeoDeployAbility::GetRawChargeRatio() const
 float UGeoDeployAbility::ApplyChargeCurve(float const RawRatio) const
 {
 	APlayableCharacter const* Character = Cast<APlayableCharacter>(GetCurrentActorInfo()->AvatarActor.Get());
-	ensureMsgf(Character, TEXT("GeoDeployAbility: AvatarActor '%s' is not an APlayableCharacter — this ability must only be granted to playable characters."),
-			   *GetNameSafe(GetCurrentActorInfo()->AvatarActor.Get()));
+	ensureMsgf(
+		Character,
+		TEXT(
+			"GeoDeployAbility: AvatarActor '%s' is not an APlayableCharacter — this ability must only be granted to playable characters."),
+		*GetNameSafe(GetCurrentActorInfo()->AvatarActor.Get()));
 	if (!Character)
 	{
 		return RawRatio;
 	}
 
 	UCurveFloat const* Curve = Character->GetGaugeChargingSpeedCurve();
-	ensureMsgf(Curve, TEXT("GeoDeployAbility: GaugeChargingSpeedCurve is not set on '%s'. Assign a CurveFloat in the character BP."), *Character->GetName());
+	ensureMsgf(
+		Curve,
+		TEXT("GeoDeployAbility: GaugeChargingSpeedCurve is not set on '%s'. Assign a CurveFloat in the character BP."),
+		*Character->GetName());
 	if (!Curve)
 	{
 		return RawRatio;
@@ -190,5 +197,9 @@ void UGeoDeployAbility::SpawnDeployProjectile(FVector const& Origin, float const
 	if (IsValid(Projectile))
 	{
 		Projectile->SetDistanceSpan(DeployDistance);
+		if (ADeployableSpawnerProjectile* DeployableSpawnerProjectile = Cast<ADeployableSpawnerProjectile>(Projectile))
+		{
+			DeployableSpawnerProjectile->LifeDrain = LifeDrain;
+		}
 	}
 }

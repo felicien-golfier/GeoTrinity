@@ -18,6 +18,9 @@ struct FDeployableData : public FInteractableActorData
 
 	UPROPERTY()
 	float MaxDuration = 0.f;
+
+	UPROPERTY()
+	float BlinkDuration = 2.f;
 };
 
 /**
@@ -39,6 +42,7 @@ public:
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	float GetDurationPercent() const;
 	bool IsExpired() const { return bExpired; }
+	bool IsBlinking() const;
 
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	UPROPERTY(BlueprintAssignable)
@@ -59,6 +63,15 @@ protected:
 	/** Called when duration or health reaches zero */
 	virtual void OnDeployableExpired();
 
+	UFUNCTION(BlueprintNativeEvent)
+	void OnBlinkStarted();
+	virtual void OnBlinkStarted_Implementation();
+
 private:
+	void OnBlinkTimerExpired();
+	void OnBlinkVisibilityTick();
+
+	FTimerHandle BlinkTimerHandle;
+	FTimerHandle BlinkVisibilityTimerHandle;
 	bool bExpired = false;
 };

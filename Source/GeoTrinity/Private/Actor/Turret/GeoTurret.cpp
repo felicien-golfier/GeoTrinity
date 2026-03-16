@@ -44,19 +44,6 @@ void AGeoTurret::InitInteractableData(FInteractableActorData* InputData)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoTurret::OnRecalled()
-{
-	bWasBlinkingOnRecall = IsBlinking();
-	Super::OnRecalled();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool AGeoTurret::IsBlinking() const
-{
-	return GetDurationPercent() <= BlinkThreshold;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 AActor* AGeoTurret::FindBestTarget() const
 {
 	TArray<AActor*> const HostileActors =
