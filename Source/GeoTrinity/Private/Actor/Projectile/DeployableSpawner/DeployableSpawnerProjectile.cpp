@@ -42,14 +42,14 @@ void ADeployableSpawnerProjectile::InitDeployable(AGeoDeployableBase* Deployable
 // ---------------------------------------------------------------------------------------------------------------------
 void ADeployableSpawnerProjectile::SpawnDeployableActor() const
 {
-	AActor* PayloadOwner = Payload.Owner;
-	ensureMsgf(IsValid(PayloadOwner), TEXT("DeployableSpawnerProjectile: Payload.Owner is invalid!"));
-	if (!IsValid(PayloadOwner))
+	if (!UGameplayLibrary::IsServer(GetWorld()))
 	{
 		return;
 	}
 
-	if (!PayloadOwner->HasAuthority())
+	AActor* PayloadOwner = Payload.Owner;
+	ensureMsgf(IsValid(PayloadOwner), TEXT("DeployableSpawnerProjectile: Payload.Owner must exist on server"));
+	if (!IsValid(PayloadOwner))
 	{
 		return;
 	}

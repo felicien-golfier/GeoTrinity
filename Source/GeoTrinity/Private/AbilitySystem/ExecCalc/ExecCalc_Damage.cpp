@@ -4,6 +4,7 @@
 #include "AbilitySystem/ExecCalc/ExecCalc_Damage.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
@@ -30,6 +31,12 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 
 	/** COMPUTE EVERYTHING TODO **/
 	float damage = specGE.GetSetByCallerMagnitude(tags.Gameplay_Damage, false, 0.f);
+
+	FGeoGameplayEffectContext const* GeoContext = static_cast<FGeoGameplayEffectContext const*>(contextHandle.Get());
+	if (GeoContext)
+	{
+		damage *= GeoContext->GetSingleUseDamageMultiplier();
+	}
 
 #pragma region Radial damage
 	if (UGeoAbilitySystemLibrary::GetIsRadialDamage(contextHandle))

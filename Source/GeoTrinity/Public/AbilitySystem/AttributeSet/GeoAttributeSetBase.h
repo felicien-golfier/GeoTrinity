@@ -29,6 +29,7 @@ class GEOTRINITY_API UGeoAttributeSetBase : public UAttributeSet
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostGameplayEffectExecute(FGameplayEffectModCallbackData const& Data) override;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;

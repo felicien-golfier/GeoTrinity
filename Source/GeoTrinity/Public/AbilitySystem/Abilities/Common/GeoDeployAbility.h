@@ -24,6 +24,11 @@ public:
 	float GetChargeRatio() const;
 
 protected:
+	virtual bool CanActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+									FGameplayTagContainer const* SourceTags = nullptr,
+									FGameplayTagContainer const* TargetTags = nullptr,
+									FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;

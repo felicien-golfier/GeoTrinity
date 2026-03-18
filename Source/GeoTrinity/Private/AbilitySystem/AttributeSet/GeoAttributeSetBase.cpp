@@ -4,7 +4,24 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 
 #include "AbilitySystemComponent.h"
+#include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackData const& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	if (Data.EvaluatedData.Attribute == GetIncomingDamageAttribute())
+	{
+		float const DamageToApply = GetIncomingDamage();
+		SetIncomingDamage(0.f);
+		if (DamageToApply > 0.f)
+		{
+			SetHealth(FMath::Clamp(GetHealth() - DamageToApply, 0.f, GetMaxHealth()));
+		}
+	}
+}
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGameplayLibrary.h"
@@ -16,6 +17,30 @@ UGeoDeployAbility::UGeoDeployAbility()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoDeployAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Handle,
+										   FGameplayAbilityActorInfo const* ActorInfo,
+										   FGameplayTagContainer const* SourceTags,
+										   FGameplayTagContainer const* TargetTags,
+										   FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	UGeoDeployableManagerComponent* DeployableManager =
+		ActorInfo->AvatarActor->GetComponentByClass<UGeoDeployableManagerComponent>();
+	ensureMsgf(DeployableManager, TEXT("GeoDeployAbility: No UGeoDeployableManagerComponent on avatar '%s'!"),
+			   *GetNameSafe(ActorInfo->AvatarActor.Get()));
+	if (!DeployableManager)
+	{
+		return false;
+	}
+
+	return DeployableManager->CanDeploy();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

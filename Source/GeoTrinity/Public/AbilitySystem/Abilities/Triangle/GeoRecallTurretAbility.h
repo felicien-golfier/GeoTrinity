@@ -14,7 +14,9 @@ class UEffectDataAsset;
 /**
  * Recalls all deployed turrets. Each recall instantly applies effects to the player
  * and fires a GameplayCue for the visual (beam from turret to player).
- * Turrets that were blinking (low duration) use BlinkBonusRecallEffectData.
+ * Uses base EffectDataAssets/EffectDataInstances for the recall effect.
+ * Turrets that were blinking additionally apply BlinkBonusEffectData (expected to hold a
+ * FSingleUseDamageMultiplierEffectData).
  */
 UCLASS()
 class GEOTRINITY_API UGeoRecallTurretAbility : public UGeoGameplayAbility
@@ -34,10 +36,7 @@ protected:
 								 FGameplayEventData const* TriggerEventData) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Recall")
-	TObjectPtr<UEffectDataAsset> NormalRecallEffectData;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Recall")
-	TObjectPtr<UEffectDataAsset> BlinkBonusRecallEffectData;
+	TArray<TInstancedStruct<FEffectData>> BlinkBonusEffect;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Recall", meta = (Categories = "GameplayCue"))
 	FGameplayTag RecallGameplayCueTag;

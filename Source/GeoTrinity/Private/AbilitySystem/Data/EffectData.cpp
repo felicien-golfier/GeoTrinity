@@ -1,6 +1,7 @@
 ﻿#include "AbilitySystem/Data/EffectData.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -26,13 +27,18 @@ void FDamageEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextH
 {
 	FGameplayEffectSpecHandle specHandle = SourceASC->MakeOutgoingSpec(DamageEffectClass, AbilityLevel, ContextHandle);
 
-	/** Type of damage **/
 	FGeoGameplayTags const& tags = FGeoGameplayTags::Get();
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(specHandle, tags.Gameplay_Damage,
 																  DamageAmount.GetValueAtLevel(AbilityLevel));
 
-	/** APPLY EFFECT **/
 	TargetASC->ApplyGameplayEffectSpecToSelf(*specHandle.Data);
+}
+
+void FSingleUseDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext) const
+{
+	checkf(Multiplier != 1.f,
+		   TEXT("You've set Single Use Damage Multiplier but value is 1. So it's not useful, you douchebag !"));
+	EffectContext->SetSingleUseDamageMultiplier(Multiplier);
 }
 
 void FStatusEffectData::UpdateContextHandle(FGeoGameplayEffectContext* GeoGameplayEffectContext) const

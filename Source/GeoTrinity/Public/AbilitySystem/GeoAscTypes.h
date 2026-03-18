@@ -30,6 +30,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	float GetRadialDamageInnerRadius() const { return RadialDamageInnerRadius; }
 	float GetRadialDamageOuterRadius() const { return RadialDamageOuterRadius; }
 	FVector const& GetRadialDamageOrigin() const { return RadialDamageOrigin; }
+	float GetSingleUseDamageMultiplier() const { return SingleUseDamageMultiplier; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
@@ -43,8 +44,9 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetRadialDamageInnerRadius(float value) { RadialDamageInnerRadius = value; }
 	void SetRadialDamageOuterRadius(float value) { RadialDamageOuterRadius = value; }
 	void SetRadialDamageOrigin(FVector const& inVector) { RadialDamageOrigin = inVector; }
+	void SetSingleUseDamageMultiplier(float value) { SingleUseDamageMultiplier = value; }
 
-	virtual UScriptStruct* GetScriptStruct() const override { return FGeoGameplayEffectContext::StaticStruct(); }
+	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
 	virtual FGeoGameplayEffectContext* Duplicate() const override;
 
 	virtual bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess) override;
@@ -67,6 +69,10 @@ protected:
 	UPROPERTY()
 	FVector KnockbackVector{FVector::ZeroVector};
 
+	// Transient — set by FSingleUseDamageMultiplierEffectData::UpdateContextHandle, consumed by UExecCalc_Damage.
+	// Not serialized: applied and consumed server-side within the same call stack.
+	float SingleUseDamageMultiplier{1.f};
+
 	UPROPERTY()
 	bool bIsRadialDamage{false};
 	UPROPERTY()
@@ -79,7 +85,7 @@ protected:
 
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-struct TStructOpsTypeTraits<FGeoGameplayEffectContext> : public TStructOpsTypeTraitsBase2<FGeoGameplayEffectContext>
+struct TStructOpsTypeTraits<FGeoGameplayEffectContext> : TStructOpsTypeTraitsBase2<FGeoGameplayEffectContext>
 {
 	enum
 	{

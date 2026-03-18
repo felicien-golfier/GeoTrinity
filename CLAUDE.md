@@ -98,6 +98,11 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 - `UEffectDataAsset` contains `TArray<TInstancedStruct<struct FEffectData>> EffectDataInstances` to store Data Assets on the Ability BP
 - Ability always merge its UEffectDataAsset with `TArray<TInstancedStruct<FEffectData>> EffectDataInstances` to pass throught.
 - ALWAYS use UGeoAbilitySystemLibrary::ApplyEffectFromEffectData to apply a EffectDataArray.
+- `ApplyEffectFromEffectData` uses a **two-pass loop**: all `UpdateContextHandle` calls first, then all `ApplyEffect` calls. This means order in the array does not matter for context setup.
+- **Damage multipliers**: use `FSingleUseDamageMultiplierEffectData` — it sets `SingleUseDamageMultiplier` on `FGeoGameplayEffectContext` in `UpdateContextHandle`. `UExecCalc_Damage` reads and applies it. The multiplier is scoped per `ApplyEffectFromEffectData` call (fresh context each call = auto-reset). To multiply damage for a specific apply call, append a `FSingleUseDamageMultiplierEffectData` entry to the effect array. Do NOT read it in `FDamageEffectData::ApplyEffect` — that is `ExecCalc_Damage`'s responsibility. For a **persistent timed damage boost** (e.g. 2s buff), use a source attribute + duration GE captured in ExecCalc instead.
+- **Effect data storage — choose the right container**:
+  - `TArray<TInstancedStruct<FEffectData>>` (inline, on the ability) — for effects that are **specific to one ability** and will never be reused elsewhere. Edit directly in the ability's Details panel.
+  - `TArray<TSoftObjectPtr<UEffectDataAsset>>` (asset reference) — for effects that are **shared/reused across multiple abilities**. Create a `UEffectDataAsset` only when reuse is the intent.
 
 ### Bullet Pattern System
 

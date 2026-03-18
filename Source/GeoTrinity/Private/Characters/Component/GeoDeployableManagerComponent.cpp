@@ -17,11 +17,10 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 		return;
 	}
 
-	// If at max, recall the oldest to make room
-	if (Deployables.Num() >= MaxDeployables && Deployables.Num() > 0)
-	{
-		RecallOldest();
-	}
+	checkf(Deployables.Num() < MaxDeployables,
+		   TEXT("GeoDeployableManagerComponent: Tried to register a deployable but already at max (%d/%d). "
+				"Deploy ability should have been blocked by CanActivateAbility."),
+		   Deployables.Num(), MaxDeployables);
 
 	Deployables.Add(Deployable);
 	Deployable->OnDeployableDestroyed.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
@@ -40,15 +39,6 @@ void UGeoDeployableManagerComponent::RecallAll()
 		{
 			Deployable->OnRecalled();
 		}
-	}
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoDeployableManagerComponent::RecallOldest()
-{
-	if (Deployables.Num() > 0 && IsValid(Deployables[0]))
-	{
-		Deployables[0]->OnRecalled();
 	}
 }
 

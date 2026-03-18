@@ -71,11 +71,16 @@ FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData
 	checkf(GeoEffectContext,
 		   TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Failed to create GeoEffectContext"));
 
-	for (auto EffectDataInstance : DataArray)
+	for (auto const& EffectDataInstance : DataArray)
 	{
 		FEffectData const* EffectData = EffectDataInstance.GetPtr<FEffectData>();
 		checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
 		EffectData->UpdateContextHandle(GeoEffectContext);
+	}
+
+	for (auto const& EffectDataInstance : DataArray)
+	{
+		FEffectData const* EffectData = EffectDataInstance.GetPtr<FEffectData>();
 		EffectData->ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
 	}
 

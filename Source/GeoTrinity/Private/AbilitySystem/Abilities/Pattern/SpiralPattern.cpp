@@ -50,6 +50,7 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 															Cast<APawn>(StoredPayload.Instigator), false, false);
 
 			Projectile->Payload = StoredPayload;
+			Projectile->EffectDataArray = EffectDataArray;
 			Projectiles.Add(Projectile);
 			Projectile->OnProjectileEndLifeDelegate.AddUniqueDynamic(this, &USpiralPattern::EndProjectile);
 		}

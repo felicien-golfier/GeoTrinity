@@ -32,9 +32,6 @@ public:
 	/** Recall all deployed actors */
 	void RecallAll();
 
-	/** Recall the oldest deployed actor */
-	void RecallOldest();
-
 	/** Get the ratio of deployed/max (used for size scaling) */
 	float GetDeployRatio() const;
 

@@ -55,19 +55,23 @@ void UGeoRecallTurretAbility::ActivateAbility(FGameplayAbilitySpecHandle const H
 		return;
 	}
 
-	ensureMsgf(NormalRecallEffectData, TEXT("GeoExplosiveRecallAbility: NormalRecallEffectData is not set!"));
-	ensureMsgf(BlinkBonusRecallEffectData, TEXT("GeoExplosiveRecallAbility: BlinkBonusRecallEffectData is not set!"));
+	ensureMsgf(BlinkBonusEffect.Num() > 0, TEXT("GeoRecallTurretAbility: BlinkBonusEffectData is not set!"));
+
+	TArray<TInstancedStruct<FEffectData>> const BaseEffectData = GetEffectDataArray();
 
 	UGeoAbilitySystemComponent* PlayerASC = GetGeoAbilitySystemComponentFromActorInfo();
 	FVector const AvatarLocation = Instigator->GetActorLocation();
 
 	for (FRecallInfo const& RecallInfo : RecallInfos)
 	{
-		DrawDebugLine(GetWorld(), RecallInfo.TurretLocation, AvatarLocation, FColor::Cyan, false, 3.0f, 0, 2.0f);
+		DrawDebugLine(GetWorld(), RecallInfo.TurretLocation, AvatarLocation,
+					  RecallInfo.bWasBlinking ? FColor::Red : FColor::Cyan, false, 3.0f, 0, 2.0f);
 
-		UEffectDataAsset* EffectAsset =
-			RecallInfo.bWasBlinking ? BlinkBonusRecallEffectData.Get() : NormalRecallEffectData.Get();
-		TArray<TInstancedStruct<FEffectData>> const EffectData = GeoASL::GetEffectDataArray(EffectAsset);
+		TArray<TInstancedStruct<FEffectData>> EffectData = BaseEffectData;
+		if (RecallInfo.bWasBlinking)
+		{
+			EffectData.Append(BlinkBonusEffect);
+		}
 
 		for (auto const TargetASC : FindTargets(Instigator, RecallInfo))
 		{
@@ -114,8 +118,9 @@ TArray<UGeoAbilitySystemComponent*> UGeoRecallTurretAbility::FindTargets(AActor 
 				UGeoAbilitySystemComponent* HitActorASC = HitActor->GetComponentByClass<UGeoAbilitySystemComponent>();
 				if (IsValid(HitActorASC))
 				{
-					DrawDebugCircle(GetWorld(), HitActor->GetActorLocation(), 50.0f, 32, FColor::Green, false, 3.0f, 0,
-									2.0f, FVector::ForwardVector, FVector::RightVector);
+					DrawDebugCircle(GetWorld(), HitActor->GetActorLocation(), 50.0f, 32,
+									RecallInfo.bWasBlinking ? FColor::Black : FColor::Green, false, 3.0f, 0, 2.0f,
+									FVector::ForwardVector, FVector::UpVector);
 					Targets.Add(HitActorASC);
 				}
 			}

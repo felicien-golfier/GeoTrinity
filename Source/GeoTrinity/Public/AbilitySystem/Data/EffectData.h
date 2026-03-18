@@ -51,6 +51,21 @@ struct FDamageEffectData : public FEffectData
 };
 
 USTRUCT(BlueprintType)
+struct FSingleUseDamageMultiplierEffectData : public FEffectData
+{
+	GENERATED_BODY()
+
+	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext) const override;
+	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
+							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override
+	{
+	}
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.0"))
+	float Multiplier{2.f};
+};
+
+USTRUCT(BlueprintType)
 struct FStatusEffectData : public FEffectData
 {
 	GENERATED_BODY()
