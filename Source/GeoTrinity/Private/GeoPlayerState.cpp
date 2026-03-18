@@ -22,6 +22,9 @@ void AGeoPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AGeoPlayerState, PlayerClass);
+	DOREPLIFETIME(AGeoPlayerState, DebugDPS);
+	DOREPLIFETIME(AGeoPlayerState, DebugHPS);
+	DOREPLIFETIME(AGeoPlayerState, DebugRecv);
 }
 
 void AGeoPlayerState::BeginPlay()

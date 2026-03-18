@@ -46,6 +46,16 @@ public:
 	EPlayerClass GetPlayerClass() const { return PlayerClass; }
 	void SetPlayerClass(EPlayerClass NewClass) { PlayerClass = NewClass; }
 
+	float GetDebugDPS() const { return DebugDPS; }
+	float GetDebugHPS() const { return DebugHPS; }
+	float GetDebugRecv() const { return DebugRecv; }
+	void SetDebugCombatStats(float DPS, float HPS, float Recv)
+	{
+		DebugDPS = DPS;
+		DebugHPS = HPS;
+		DebugRecv = Recv;
+	}
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
@@ -55,4 +65,11 @@ protected:
 
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Class")
 	EPlayerClass PlayerClass = EPlayerClass::None;
+
+	UPROPERTY(Replicated)
+	float DebugDPS = 0.f;
+	UPROPERTY(Replicated)
+	float DebugHPS = 0.f;
+	UPROPERTY(Replicated)
+	float DebugRecv = 0.f;
 };

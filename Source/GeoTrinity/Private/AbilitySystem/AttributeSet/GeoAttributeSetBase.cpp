@@ -5,7 +5,9 @@
 
 #include "AbilitySystemComponent.h"
 #include "GameplayEffectExtension.h"
+#include "GeoPlayerState.h"
 #include "Net/UnrealNetwork.h"
+#include "System/GeoCombatStatsSubsystem.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackData const& Data)
@@ -19,6 +21,32 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 		if (DamageToApply > 0.f)
 		{
 			SetHealth(FMath::Clamp(GetHealth() - DamageToApply, 0.f, GetMaxHealth()));
+			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
+			{
+				AGeoPlayerState* TargetPlayerState = Cast<AGeoPlayerState>(GetOwningActor());
+				AGeoPlayerState* SourcePlayerState = Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext().GetInstigator());
+				CombatStats->ReportDamageDealt(SourcePlayerState, DamageToApply);
+				CombatStats->ReportDamageReceived(TargetPlayerState, DamageToApply);
+			}
+		}
+	}
+	else if (Data.EvaluatedData.Attribute == GetHealthAttribute() &&
+			 Data.EvaluatedData.ModifierOp == EGameplayModOp::Additive && Data.EvaluatedData.Magnitude != 0.f)
+	{
+		if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
+		{
+			float const Magnitude = Data.EvaluatedData.Magnitude;
+			AGeoPlayerState* SourcePlayerState = Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext().GetInstigator());
+			if (Magnitude > 0.f)
+			{
+				CombatStats->ReportHealingDealt(SourcePlayerState, Magnitude);
+			}
+			else
+			{
+				AGeoPlayerState* TargetPlayerState = Cast<AGeoPlayerState>(GetOwningActor());
+				CombatStats->ReportDamageDealt(SourcePlayerState, -Magnitude);
+				CombatStats->ReportDamageReceived(TargetPlayerState, -Magnitude);
+			}
 		}
 	}
 }
