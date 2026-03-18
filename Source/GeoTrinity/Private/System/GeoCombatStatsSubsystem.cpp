@@ -3,7 +3,6 @@
 #include "System/GeoCombatStatsSubsystem.h"
 
 #include "Characters/PlayerClassTypes.h"
-#include "GameFramework/GameStateBase.h"
 #include "GeoPlayerState.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -42,7 +41,6 @@ void UGeoCombatStatsSubsystem::ReportHealingDealt(AGeoPlayerState* Source, float
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ComputePlayerStats(float CurrentTime)
 {
-	// On authority, compute rolling averages and push them to each PlayerState so clients receive them via replication.
 	for (auto It = StatsPerActor.CreateIterator(); It; ++It)
 	{
 		AGeoPlayerState* GeoPlayerState = It.Key().Get();
@@ -57,61 +55,49 @@ void UGeoCombatStatsSubsystem::ComputePlayerStats(float CurrentTime)
 		PruneEvents(Stats.HealingDealt, CurrentTime);
 		PruneEvents(Stats.DamageReceived, CurrentTime);
 
-		GeoPlayerState->SetDebugCombatStats(SumEvents(Stats.DamageDealt) / RollingWindowSeconds,
-											SumEvents(Stats.HealingDealt) / RollingWindowSeconds,
-											SumEvents(Stats.DamageReceived) / RollingWindowSeconds);
+		GeoPlayerState->SetDebugCombatStats(
+			SumEvents(Stats.DamageDealt) / RollingWindowSeconds,
+			SumEvents(Stats.HealingDealt) / RollingWindowSeconds,
+			SumEvents(Stats.DamageReceived) / RollingWindowSeconds);
 	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-TArray<FString> UGeoCombatStatsSubsystem::BuildDisplayLines() const
+void UGeoCombatStatsSubsystem::DisplayLines(AGeoPlayerState* LocalPlayerState) const
 {
-	TArray<FString> Lines;
-
-	AGameStateBase const* GameState = GetWorld()->GetGameState();
-	if (!GameState)
+	if (!IsValid(LocalPlayerState))
 	{
-		return Lines;
+		return;
 	}
 
-	// Build display lines from replicated PlayerState data — works on both server and clients.
-	for (APlayerState* PlayerState : GameState->PlayerArray)
+	FString ClassName;
+	FColor LineColor = FColor::White;
+	switch (LocalPlayerState->GetPlayerClass())
 	{
-		AGeoPlayerState* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState);
-		if (!IsValid(GeoPlayerState))
-		{
-			continue;
-		}
-
-		FString ClassName;
-		FColor LineColor;
-		switch (GeoPlayerState->GetPlayerClass())
-		{
-		case EPlayerClass::Triangle:
-			ClassName = TEXT("Triangle");
-			LineColor = FColor::Red;
-			break;
-		case EPlayerClass::Circle:
-			ClassName = TEXT("Circle");
-			LineColor = FColor::Cyan;
-			break;
-		case EPlayerClass::Square:
-			ClassName = TEXT("Square");
-			LineColor = FColor::Blue;
-			break;
-		default:
-			ClassName = TEXT("Unknown");
-			LineColor = FColor::White;
-			break;
-		}
-
-		FString const Line = FString::Printf(TEXT("[%s] %s — DPS: %.1f | HPS: %.1f | Recv: %.1f"), *ClassName,
-											 *GeoPlayerState->GetPlayerName(), GeoPlayerState->GetDebugDPS(),
-											 GeoPlayerState->GetDebugHPS(), GeoPlayerState->GetDebugRecv());
-		Lines.Add(Line);
+	case EPlayerClass::Triangle:
+		ClassName = TEXT("Triangle");
+		LineColor = FColor::Red;
+		break;
+	case EPlayerClass::Circle:
+		ClassName = TEXT("Circle");
+		LineColor = FColor::Green;
+		break;
+	case EPlayerClass::Square:
+		ClassName = TEXT("Square");
+		LineColor = FColor::Blue;
+		break;
+	default:
+		ClassName = TEXT("Unknown");
+		break;
 	}
 
-	return Lines;
+	FString const Line = FString::Printf(TEXT("[%s] %s — DPS: %.1f | HPS: %.1f | Recv: %.1f"),
+										 *ClassName,
+										 *LocalPlayerState->GetPlayerName(),
+										 LocalPlayerState->GetDebugDPS(),
+										 LocalPlayerState->GetDebugHPS(),
+										 LocalPlayerState->GetDebugRecv());
+	GEngine->AddOnScreenDebugMessage(-1, 0.f, LineColor, Line);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

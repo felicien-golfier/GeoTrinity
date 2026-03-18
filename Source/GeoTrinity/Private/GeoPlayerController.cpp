@@ -8,6 +8,7 @@
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "GeoPlayerState.h"
 #include "System/GeoCombatStatsSubsystem.h"
 #include "TimerManager.h"
 #include "Tool/UGameplayLibrary.h"
@@ -80,16 +81,13 @@ void AGeoPlayerController::Tick(float DeltaTime)
 	{
 		if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
 		{
-			if (IsLocalController())
-			{
-				for (FString const& Line : CombatStats->BuildDisplayLines())
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 0.f, UGameplayLibrary::GetColorForObject(this), Line);
-				}
-			}
-			else if (UGameplayLibrary::IsServer(GetWorld()))
+			if (HasAuthority())
 			{
 				CombatStats->ComputePlayerStats(GetWorld()->GetTimeSeconds());
+			}
+			if (IsLocalController())
+			{
+				CombatStats->DisplayLines(Cast<AGeoPlayerState>(PlayerState));
 			}
 		}
 	}

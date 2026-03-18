@@ -33,7 +33,7 @@ public:
 	void ReportHealingDealt(AGeoPlayerState* Source, float Amount);
 	void ComputePlayerStats(float CurrentTime);
 
-	TArray<FString> BuildDisplayLines() const;
+	void DisplayLines(AGeoPlayerState* LocalPlayerState) const;
 
 private:
 	static constexpr float RollingWindowSeconds = 30.f;
