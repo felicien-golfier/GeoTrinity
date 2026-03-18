@@ -24,18 +24,18 @@ struct FGeoGameplayTags
 	FGameplayTag Data_Drain;
 
 	// Input
-	FGameplayTag InputTag_BasicSpell;
-	FGameplayTag InputTag_SpecialSpell;
+	FGameplayTag InputTag_Basic;
+	FGameplayTag InputTag_Special;
+	FGameplayTag InputTag_SpecialAlternative;
 	FGameplayTag InputTag_Reload;
-	FGameplayTag InputTag_Deploy;
-	FGameplayTag InputTag_AltSpecial;
 	FGameplayTag InputTag_Dash;
 
 	// Ability types
 	FGameplayTag Ability_Type_Basic;
 	FGameplayTag Ability_Type_Special;
-	FGameplayTag Ability_Type_AltSpecial;
+	FGameplayTag Ability_Type_SpecialAlternative;
 	FGameplayTag Ability_Type_Dash;
+	FGameplayTag Ability_Type_Reload;
 
 	// Player classes
 	FGameplayTag PlayerClass_Triangle;

@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AbilitySystem/Abilities/Triangle/GeoTriangleReloadAbility.h"
+#include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -8,10 +8,10 @@
 #include "Actor/Pickup/GeoBuffPickup.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoTriangleReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
-												FGameplayAbilityActorInfo const* ActorInfo,
-												FGameplayAbilityActivationInfo const ActivationInfo,
-												FGameplayEventData const* TriggerEventData)
+void UGeoReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
+										FGameplayAbilityActorInfo const* ActorInfo,
+										FGameplayAbilityActivationInfo const ActivationInfo,
+										FGameplayEventData const* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	if (bIsAbilityEnding)
@@ -24,7 +24,7 @@ void UGeoTriangleReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoTriangleReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
+void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	if (!GetCurrentActorInfo()->IsNetAuthority())
 	{

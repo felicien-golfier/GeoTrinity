@@ -2,13 +2,12 @@
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 
-#include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/PatternAbility.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/PlayerClassTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGameplayLibrary.h"
 
@@ -23,17 +22,17 @@ void UGeoAbilitySystemComponent::InitializeComponent()
 		return;
 	}
 
-	for (auto AbilityInfo : UGeoAbilitySystemLibrary::GetAbilityInfo()->AbilityInfos)
+	for (auto const AbilityInfo : UGeoAbilitySystemLibrary::GetAbilityInfo()->GetAllAbilityInfos())
 	{
-		if (AbilityInfo.AbilityClass->IsChildOf(UPatternAbility::StaticClass())
-			&& StartupAbilityTags.Contains(AbilityInfo.AbilityTag))
+		if (AbilityInfo->AbilityClass->IsChildOf(UPatternAbility::StaticClass())
+			&& StartupAbilityTags.Contains(AbilityInfo->AbilityTag))
 		{
 			UPatternAbility* PatternAbilityCDO =
-				CastChecked<UPatternAbility>(AbilityInfo.AbilityClass->GetDefaultObject());
+				CastChecked<UPatternAbility>(AbilityInfo->AbilityClass->GetDefaultObject());
 			UPattern* Pattern;
 			if (!FindPatternByClass(PatternAbilityCDO->GetPatternClass(), Pattern))
 			{
-				CreatePatternInstance(PatternAbilityCDO->GetPatternClass(), AbilityInfo.AbilityTag);
+				CreatePatternInstance(PatternAbilityCDO->GetPatternClass(), AbilityInfo->AbilityTag);
 			}
 		}
 	}
@@ -54,34 +53,12 @@ FGeoGameplayEffectContext* UGeoAbilitySystemComponent::MakeGeoEffectContext() co
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive)
-{
-	for (TSubclassOf<UGeoGameplayAbility> const& AbilityClass : AbilitiesToGive)
-	{
-		FGameplayAbilitySpec abilitySpec{AbilityClass, 1};
-		if (UGeoGameplayAbility const* pMMAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability))
-		{
-			abilitySpec.GetDynamicSpecSourceTags().AddTag(pMMAbility->StartupInputTag);
-			// If we ever need to be able to switch between active GA, we will need to use this system again. Leaving it
-			// as a reminder
-			// abilitySpec.GetDynamicSpecSourceTags().AddTag(tags.Abilities_Status_Equipped);
-		}
-
-		GiveAbility(abilitySpec);
-	}
-	bStartupAbilitiesGiven = true;
-	// Event broadcasting will be needed for UI
-	// AbilitiesGivenEvent.Broadcast();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive,
-													  int32 const Level /*= 1.f*/)
+void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, int32 const Level)
 {
 	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	if (!AbilityInfos)
 	{
-		UE_LOG(LogAbilitySystemComponent, Warning, TEXT("GiveStartupAbilities without AbilityInfo set !"));
+		ensureMsgf(AbilityInfos, TEXT("GiveStartupAbilities: AbilityInfo not set!"));
 		return;
 	}
 
@@ -90,24 +67,6 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const
 	for (FGameplayAbilityInfo const& AbilityInfo : AbilityInfoList)
 	{
 		FGameplayAbilitySpec abilitySpec{AbilityInfo.AbilityClass, Level};
-
-		// Add input tag if need be
-		if (AbilityInfo.TypeOfAbilityTag.IsValid())
-		{
-			if (FGameplayTag const* FoundTag =
-					AbilityInfos->AbilityTypeToInputTagMap.Find(AbilityInfo.TypeOfAbilityTag))
-			{
-				abilitySpec.GetDynamicSpecSourceTags().AddTag(*FoundTag);
-			}
-			else
-			{
-				UE_LOG(
-					LogGeoASC, Error,
-					TEXT("Input Tag for ability of type %s not found in map AbilityTypeToInputTagMap (UAbilityInfo)"),
-					*AbilityInfo.TypeOfAbilityTag.ToString());
-			}
-		}
-
 		GiveAbility(abilitySpec);
 	}
 
@@ -118,6 +77,43 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const
 void UGeoAbilitySystemComponent::GiveStartupAbilities(int32 const Level)
 {
 	GiveStartupAbilities(StartupAbilityTags, Level);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerClass, int32 const Level)
+{
+	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
+	if (!AbilityInfos)
+	{
+		ensureMsgf(AbilityInfos, TEXT("GiveStartupAbilities: AbilityInfo not set!"));
+		return;
+	}
+
+	for (FPlayersGameplayAbilityInfo const& AbilityInfo : AbilityInfos->PlayersAbilityInfos)
+	{
+		if (!AbilityInfo.bGiveAtStartup
+			|| (AbilityInfo.PlayerClass != PlayerClass && AbilityInfo.PlayerClass != EPlayerClass::All))
+		{
+			continue;
+		}
+
+		FGameplayAbilitySpec AbilitySpec{AbilityInfo.AbilityClass, Level};
+
+		if (AbilityInfo.InputAction && !AbilityInfo.InputTag.IsValid())
+		{
+			ensureMsgf(AbilityInfo.InputTag.IsValid(),
+					   TEXT("Ability %s has an InputAction but no InputTag — fill InputTag in DA_AbilityInfo"),
+					   *AbilityInfo.AbilityClass->GetName());
+		}
+		else if (AbilityInfo.InputAction)
+		{
+			AbilitySpec.GetDynamicSpecSourceTags().AddTag(AbilityInfo.InputTag);
+		}
+
+		GiveAbility(AbilitySpec);
+	}
+
+	bStartupAbilitiesGiven = true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -163,13 +159,6 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(FGameplayTag const& inputTa
 	{
 		return;
 	}
-	FName Name = inputTag.GetTagName();
-	if (Name == "InputTag.SpecialSpell")
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AbilityInputTagHeld of INPUT %s"), *inputTag.ToString());
-	}
-
-	double const CurrentTime = GetWorld()->GetTimeSeconds();
 
 	FScopedAbilityListLock activeScopeLock(*this);
 	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())

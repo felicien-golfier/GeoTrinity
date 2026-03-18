@@ -12,20 +12,14 @@ namespace
 		outTag = UGameplayTagsManager::Get().AddNativeGameplayTag(tagName, comment);
 	}
 
-	// INPUT //
 	void AddInputTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
 	{
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::InputTag + "." + tagName), comment);
 	}
 
-	// ABILITY //
 	void AddAbilityTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
 	{
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilityTag + "." + tagName), comment);
-	}
-	void AddAbilityIDTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
-	{
-		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilityIDTag + "." + tagName), comment);
 	}
 } // namespace
 
@@ -36,18 +30,19 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 							   "SetByCaller magnitude tag for deployable health drain GE");
 
 	// INPUT //
-	AddInputTag(GameplayTags.InputTag_BasicSpell, "BasicSpell", "Input tag for left mouse button-linked spell");
-	AddInputTag(GameplayTags.InputTag_SpecialSpell, "SpecialSpell", "Input tag for right mouse button-linked spell");
+	AddInputTag(GameplayTags.InputTag_Basic, "Basic", "Input tag for left mouse button-linked spell");
+	AddInputTag(GameplayTags.InputTag_Special, "Special", "Input tag for right mouse button-linked spell");
+	AddInputTag(GameplayTags.InputTag_SpecialAlternative, "SpecialAlternative",
+				"Input tag for alternative special ability");
 	AddInputTag(GameplayTags.InputTag_Reload, "Reload", "Input tag for reload action");
-	AddInputTag(GameplayTags.InputTag_Deploy, "Deploy", "Input tag for deploying objects");
-	AddInputTag(GameplayTags.InputTag_AltSpecial, "AltSpecial", "Input tag for alternative special ability");
 	AddInputTag(GameplayTags.InputTag_Dash, "Dash", "Input tag for dash ability");
 
-	// TYPE OF ABILITY //
+	// ABILITY TYPES //
 	AddAbilityTag(GameplayTags.Ability_Type_Basic, "Type.Basic", "Tag associated with basic spells");
 	AddAbilityTag(GameplayTags.Ability_Type_Special, "Type.Special", "Tag associated with special spells");
-	AddAbilityTag(GameplayTags.Ability_Type_AltSpecial, "Type.AltSpecial",
+	AddAbilityTag(GameplayTags.Ability_Type_SpecialAlternative, "Type.SpecialAlternative",
 				  "Tag associated with Special Alternate spells");
+	AddAbilityTag(GameplayTags.Ability_Type_Reload, "Type.Reload", "Tag associated with Reloading spells");
 	AddAbilityTag(GameplayTags.Ability_Type_Dash, "Type.Dash", "Tag associated with Dash spells");
 
 	// PLAYER CLASSES //

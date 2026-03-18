@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
 
 #include "GeoAbilitySystemComponent.generated.h"
@@ -29,9 +30,9 @@ public:
 	FGeoGameplayEffectContext* MakeGeoEffectContext() const;
 
 	/** Abilities **/
-	void GiveStartupAbilities(TArray<TSubclassOf<UGeoGameplayAbility>>& AbilitiesToGive);
-	void GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, int32 const Level = 1.f);
-	void GiveStartupAbilities(int32 const Level = 1.f);
+	void GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, int32 Level = 1);
+	void GiveStartupAbilities(int32 Level = 1);
+	void GiveStartupAbilities(EPlayerClass PlayerClass, int32 Level = 1);
 
 	/** Input **/
 	void AbilityInputTagPressed(FGameplayTag const& inputTag);

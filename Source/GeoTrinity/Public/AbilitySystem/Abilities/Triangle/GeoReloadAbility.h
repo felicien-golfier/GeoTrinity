@@ -5,7 +5,7 @@
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
 
-#include "GeoTriangleReloadAbility.generated.h"
+#include "GeoReloadAbility.generated.h"
 
 class AGeoBuffPickup;
 class UEffectDataAsset;
@@ -16,7 +16,7 @@ class UEffectDataAsset;
  * A random buff is chosen from BuffEffectDataAssets each time.
  */
 UCLASS()
-class GEOTRINITY_API UGeoTriangleReloadAbility : public UGeoGameplayAbility
+class GEOTRINITY_API UGeoReloadAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
 

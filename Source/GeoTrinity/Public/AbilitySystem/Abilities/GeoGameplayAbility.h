@@ -55,9 +55,6 @@ protected:
 
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")
-	FGameplayTag StartupInputTag;
-
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UAnimMontage> AnimMontage;
 

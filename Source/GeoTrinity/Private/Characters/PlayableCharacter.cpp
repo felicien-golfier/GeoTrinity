@@ -3,6 +3,7 @@
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GeoPlayerState.h"
@@ -74,16 +75,17 @@ void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	GeoInputComponent->BindInput(PlayerInputComponent);
 
+	UAbilityInfo* AbilityInfo = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	GeoInputComponent->BindAbilityActions(this, &ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased,
-										  &ThisClass::AbilityInputTagHeld);
+										  &ThisClass::AbilityInputTagHeld, AbilityInfo);
 }
 
 void APlayableCharacter::InitGAS()
 {
 	AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>();
+	ensureMsgf(GeoPlayerState, TEXT("No player state in %s"), *GetName());
 	if (!GeoPlayerState)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No player state in %s"), *GetName());
 		return;
 	}
 
@@ -91,7 +93,11 @@ void APlayableCharacter::InitGAS()
 	AbilitySystemComponent->InitAbilityActorInfo(GeoPlayerState, this);
 	AttributeSetBase = GeoPlayerState->GetCharacterAttributeSet();
 
-	Super::InitGAS();
+	AbilitySystemComponent->InitializeDefaultAttributes();
+	if (HasAuthority())
+	{
+		AbilitySystemComponent->GiveStartupAbilities(GetPlayerClass());
+	}
 }
 
 void APlayableCharacter::AbilityInputTagPressed(FGameplayTag InputTag)

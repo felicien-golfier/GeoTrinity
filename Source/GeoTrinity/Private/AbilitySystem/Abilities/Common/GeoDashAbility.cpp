@@ -2,7 +2,6 @@
 
 #include "AbilitySystem/Abilities/Common/GeoDashAbility.h"
 
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
@@ -10,7 +9,6 @@
 
 UGeoDashAbility::UGeoDashAbility()
 {
-	StartupInputTag = FGeoGameplayTags::Get().InputTag_Dash;
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 

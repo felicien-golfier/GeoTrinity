@@ -508,11 +508,11 @@ UGeoAbilitySystemLibrary::GetEffectDataArray(UEffectDataAsset const* EffectDataA
 
 TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArray(FGameplayTag AbilityTag)
 {
-	for (auto AbilityInfo : GetAbilityInfo()->AbilityInfos)
+	for (auto AbilityInfo : GetAbilityInfo()->GetAllAbilityInfos())
 	{
-		if (AbilityInfo.AbilityTag == AbilityTag)
+		if (AbilityInfo->AbilityTag == AbilityTag)
 		{
-			UGameplayAbility const* AbilityCDO = AbilityInfo.AbilityClass.GetDefaultObject();
+			UGameplayAbility const* AbilityCDO = AbilityInfo->AbilityClass.GetDefaultObject();
 			if (IsValid(AbilityCDO) && AbilityCDO->IsA(UGeoGameplayAbility::StaticClass()))
 			{
 				return CastChecked<UGeoGameplayAbility>(AbilityCDO)->GetEffectDataArray();

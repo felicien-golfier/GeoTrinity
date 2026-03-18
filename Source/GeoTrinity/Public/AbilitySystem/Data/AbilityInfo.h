@@ -11,49 +11,50 @@
 
 
 class UGameplayAbility;
+class UInputAction;
 
 USTRUCT(BlueprintType)
 struct FGameplayAbilityInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Categories = "Ability.Spell"))
-	FGameplayTag AbilityTag{};
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay", meta = (Categories = "Ability.Cooldown"))
-	FGameplayTag CooldownTag{};
-
-	/** This is deduced from the ability obtained from the tag */
-	UPROPERTY(BlueprintReadOnly, Category = "Gameplay")
-	FGameplayTag InputTag{};
-
-	/** This is deduced from the ability obtained from the tag */
-	UPROPERTY(BlueprintReadOnly, Category = "Gameplay")
-	FGameplayTag StatusTag{};
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay", meta = (Categories = "Ability.Type"))
-	FGameplayTag TypeOfAbilityTag{};
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
 	TSubclassOf<UGameplayAbility> AbilityClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
-	EPlayerClass PlayerClass = EPlayerClass::None;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
-	TObjectPtr<UTexture2D const> AbilityIcon{nullptr};
+	/** Populated automatically from the ability CDO's AssetTags on load — do not set manually */
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta = (Categories = "Ability.Spell"))
+	FGameplayTag AbilityTag{};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
 	FString AbilityDisplayName{"No name set"};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
 	FString Description;
+};
 
-	UPROPERTY(BlueprintReadOnly, Category = "Gameplay", meta = (Units = Seconds))
-	float AbilityCooldownDuration{0.f};
+USTRUCT(BlueprintType)
+struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
+{
+	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly, Category = "Gameplay")
-	float ManaCost{0.f};
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay", meta = (Categories = "Ability.Type"))
+	FGameplayTag TypeOfAbilityTag{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (Categories = "InputTag"))
+	FGameplayTag InputTag{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> InputAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
+	EPlayerClass PlayerClass = EPlayerClass::None;
+
+	/** If true, this ability is automatically given to players of the matching PlayerClass at startup */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
+	bool bGiveAtStartup = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
+	TObjectPtr<UTexture2D const> AbilityIcon{nullptr};
 };
 
 /**
@@ -66,14 +67,20 @@ class GEOTRINITY_API UAbilityInfo : public UDataAsset
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
-	TArray<FGameplayAbilityInfo> AbilityInfos;
+	TArray<FPlayersGameplayAbilityInfo> PlayersAbilityInfos;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Input Information",
-			  meta = (TitleProperty = "{Key}", ForceInlineRow, KeyCategories = "Ability.Type",
-					  ValueCategories = "InputTag"))
-	TMap<FGameplayTag, FGameplayTag> AbilityTypeToInputTagMap;
+	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
+	TArray<FGameplayAbilityInfo> GenericAbilityInfos;
 
-	FGameplayAbilityInfo FindAbilityInfoForTag(FGameplayTag const& AbilityTag, bool bLogIfNotFound = false) const;
+	virtual void PostLoad() override;
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
+	TArray<FGameplayAbilityInfo*> GetAllAbilityInfos() const;
 	TArray<FGameplayAbilityInfo> FindAbilityInfoForListOfTag(TArray<FGameplayTag> const& AbilityTags,
 															 bool bLogIfNotFound = false) const;
+
+private:
+	void PopulateAbilityTags();
 };
