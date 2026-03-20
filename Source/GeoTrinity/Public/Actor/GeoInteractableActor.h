@@ -70,6 +70,7 @@ private:
 	UPROPERTY(Category = "GAS", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UGeoAttributeSetBase> AttributeSetBase;
 
+protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 };

@@ -11,4 +11,6 @@ commit 562880e0ffc015ddce292007cde1ac44ac83389e
 	- Forgot to download the pdb for Unreal in the launcher. 
 
 
-# Adding a new ability type, don't forget to add it to AbilityTypeToInputTagMap
+# ExecCalc attribute capture: Source vs Target
+When adding a new ExecCalc that captures a multiplier attribute (e.g. HealMultiplier), capture from **Target** if the GE is applied by a non-character source (deployable, pickup). Capture from **Source** only when the caster/attacker is the source and owns the attribute (e.g. DamageMultiplier on the attacker).
+If `FindCaptureSpecByDefinition` returns null with `bOnlyIncludeValidCapture=true`, the capture spec exists but `HasValidCapture()` is false — the source ASC doesn't own the attribute set containing that attribute.

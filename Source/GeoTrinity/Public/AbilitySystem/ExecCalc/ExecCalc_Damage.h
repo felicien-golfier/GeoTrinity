@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayEffectExecutionCalculation.h"
+#include "GameplayEffectTypes.h"
 
 #include "ExecCalc_Damage.generated.h"
 
@@ -19,4 +20,7 @@ public:
 
 	virtual void Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
 										FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
+
+private:
+	FGameplayEffectAttributeCaptureDefinition DamageMultiplierCaptureDef;
 };

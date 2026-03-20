@@ -6,6 +6,8 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Pickup/GeoBuffPickup.h"
+#include "GenericTeamAgentInterface.h"
+#include "Tool/UGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -19,8 +21,7 @@ void UGeoReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 		return;
 	}
 
-	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-	ScheduleFireTrigger(ActivationInfo, AnimInstance);
+	ScheduleFireTrigger(ActivationInfo, ActorInfo->GetAnimInstance());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -52,22 +53,39 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	}
 
 	ensureMsgf(BuffPickupClass, TEXT("GeoTriangleReloadAbility: BuffPickupClass is not set!"));
-	ensureMsgf(!BuffEffectDataAssets.IsEmpty(), TEXT("GeoTriangleReloadAbility: BuffEffectDataAssets is empty!"));
-	if (BuffPickupClass && !BuffEffectDataAssets.IsEmpty())
+	TArray<TInstancedStruct<FEffectData>> BuffEffects = GetEffectDataArray();
+	ensureMsgf(!BuffEffects.IsEmpty(), TEXT("GeoTriangleReloadAbility: "));
+	if (BuffPickupClass && !BuffEffects.IsEmpty())
 	{
-		int32 const RandomIndex = FMath::RandRange(0, BuffEffectDataAssets.Num() - 1);
-		UEffectDataAsset* const SelectedAsset = BuffEffectDataAssets[RandomIndex].LoadSynchronous();
-		TArray<TInstancedStruct<FEffectData>> const EffectData =
-			UGeoAbilitySystemLibrary::GetEffectDataArray(SelectedAsset);
+		int32 const RandomIndex = AbilityTargetData.Seed % BuffEffects.Num();
 
 		AActor* Avatar = GetAvatarActorFromActorInfo();
-		FTransform const PickupTransform{Avatar->GetActorLocation()};
+		float const RandomAngle = FMath::RandRange(0.f, 2.f * PI);
+		float const RandomRadius = FMath::RandRange(MinSpawnRadius, MaxSpawnRadius);
+		FVector const SpawnOffset{FMath::Cos(RandomAngle) * RandomRadius, FMath::Sin(RandomAngle) * RandomRadius, 0.f};
+		FVector const AvatarLocation = Avatar->GetActorLocation();
+		FTransform const SpawnTransform{AvatarLocation};
 
-		AGeoBuffPickup* Pickup = GetWorld()->SpawnActor<AGeoBuffPickup>(BuffPickupClass, PickupTransform);
+		AGeoBuffPickup* Pickup =
+			GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(BuffPickupClass, SpawnTransform, Avatar, Cast<APawn>(Avatar),
+														   ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		ensureMsgf(IsValid(Pickup), TEXT("GeoTriangleReloadAbility: Failed to spawn AGeoBuffPickup!"));
 		if (IsValid(Pickup))
 		{
-			Pickup->Setup(EffectData, PowerScale);
+			FBuffPickupData PickupData;
+			PickupData.CharacterOwner = Avatar;
+			PickupData.Level = GetAbilityLevel();
+			PickupData.EffectDataArray = {BuffEffects[RandomIndex]};
+			PickupData.PowerScale = PowerScale;
+			PickupData.MeshIndex = RandomIndex;
+			PickupData.TargetLocation = AvatarLocation + SpawnOffset;
+			if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Avatar))
+			{
+				PickupData.TeamID = TeamInterface->GetGenericTeamId();
+			}
+
+			Pickup->InitInteractableData(&PickupData);
+			Pickup->FinishSpawning(SpawnTransform);
 		}
 	}
 

@@ -75,7 +75,7 @@ FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData
 	{
 		FEffectData const* EffectData = EffectDataInstance.GetPtr<FEffectData>();
 		checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
-		EffectData->UpdateContextHandle(GeoEffectContext);
+		EffectData->UpdateContextHandle(GeoEffectContext, AbilityLevel);
 	}
 
 	for (auto const& EffectDataInstance : DataArray)

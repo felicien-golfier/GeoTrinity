@@ -3,6 +3,7 @@
 
 #include "AbilitySystem/ExecCalc/ExecCalc_Damage.h"
 
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -13,7 +14,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
 UExecCalc_Damage::UExecCalc_Damage()
 {
-	// Add releveant attributes to capture (once we have them). For example: crit chance, armor, etc
+	DamageMultiplierCaptureDef = FGameplayEffectAttributeCaptureDefinition(
+		UCharacterAttributeSet::GetDamageMultiplierAttribute(), EGameplayEffectAttributeCaptureSource::Source, true);
+	RelevantAttributesToCapture.Add(DamageMultiplierCaptureDef);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -30,19 +33,28 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	FGeoGameplayTags const& tags = FGeoGameplayTags::Get();
 
 	/** COMPUTE EVERYTHING TODO **/
-	float damage = specGE.GetSetByCallerMagnitude(tags.Gameplay_Damage, false, 0.f);
+	float Damage = specGE.GetSetByCallerMagnitude(tags.Gameplay_Damage, false, 0.f);
 
 	FGeoGameplayEffectContext const* GeoContext = static_cast<FGeoGameplayEffectContext const*>(contextHandle.Get());
 	if (GeoContext)
 	{
-		damage *= GeoContext->GetSingleUseDamageMultiplier();
+		Damage *= GeoContext->GetSingleUseDamageMultiplier();
 	}
+
+	FAggregatorEvaluateParameters EvaluationParams;
+	EvaluationParams.SourceTags = specGE.CapturedSourceTags.GetAggregatedTags();
+	EvaluationParams.TargetTags = specGE.CapturedTargetTags.GetAggregatedTags();
+
+	float DamageMultiplier = 1.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageMultiplierCaptureDef, EvaluationParams,
+															   DamageMultiplier);
+	Damage *= DamageMultiplier;
 
 #pragma region Radial damage
 	if (UGeoAbilitySystemLibrary::GetIsRadialDamage(contextHandle))
 	{
 		UGameplayStatics::ApplyRadialDamageWithFalloff(
-			pTargetAvatar, damage, 0.f, UGeoAbilitySystemLibrary::GetRadialDamageOrigin(contextHandle),
+			pTargetAvatar, Damage, 0.f, UGeoAbilitySystemLibrary::GetRadialDamageOrigin(contextHandle),
 			UGeoAbilitySystemLibrary::GetRadialDamageInnerRadius(contextHandle),
 			UGeoAbilitySystemLibrary::GetRadialDamageOuterRadius(contextHandle), 1.f, UDamageType::StaticClass(),
 			TArray<AActor*>(), pSourceAvatar, nullptr);
@@ -51,6 +63,6 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 
 	/*** OUTPUT ***/
 	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingDamageAttribute(),
-													   EGameplayModOp::Additive, damage};
+													   EGameplayModOp::Additive, Damage};
 	OutExecutionOutput.AddOutputModifier(std::move(evaluatedData));
 }

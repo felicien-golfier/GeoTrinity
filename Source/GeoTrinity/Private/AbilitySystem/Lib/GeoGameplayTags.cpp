@@ -26,6 +26,7 @@ namespace
 void FGeoGameplayTags::InitializeNativeGameplayTags()
 {
 	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Damage, "Gameplay.Damage", "Tag to identify damage");
+	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Heal, "Gameplay.Heal", "Tag to identify healing");
 	CreateAndAssignGameplayTag(GameplayTags.Data_Drain, "Data.Drain",
 							   "SetByCaller magnitude tag for deployable health drain GE");
 
@@ -55,6 +56,5 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Tankiness, "Status.Buff.Tankiness", "Tankiness buff");
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_HealBoost, "Status.Buff.HealBoost", "Heal boost buff");
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Speed, "Status.Buff.Speed", "Movement speed buff");
-	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Heal, "Status.Buff.Heal", "Healing buff");
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Shield, "Status.Buff.Shield", "Shield buff");
 }

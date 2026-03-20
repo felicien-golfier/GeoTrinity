@@ -1,54 +1,154 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #include "Actor/Pickup/GeoBuffPickup.h"
 
-#include "AbilitySystemInterface.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Components/SphereComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Curves/CurveFloat.h"
+#include "Net/UnrealNetwork.h"
+#include "Tool/UGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoBuffPickup::AGeoBuffPickup()
 {
-	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
-	SetRootComponent(CollisionSphere);
-	CollisionSphere->SetSphereRadius(50.f);
-	CollisionSphere->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
-	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereOverlap);
+	PrimaryActorTick.bCanEverTick = true;
+
+	VisualRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));
+	VisualRoot->SetupAttachment(GetRootComponent());
+
+	BuffMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BuffMeshComponent"));
+	BuffMeshComponent->SetupAttachment(VisualRoot);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoBuffPickup::Setup(TArray<TInstancedStruct<FEffectData>> const& InEffectData, float InPowerScale)
+void AGeoBuffPickup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	EffectDataArray = InEffectData;
-	PowerScale = InPowerScale;
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION(AGeoBuffPickup, Data, COND_InitialOnly);
+}
 
-	const float Scale = FMath::Lerp(0.5f, 1.5f, FMath::Clamp(PowerScale, 0.f, 1.f));
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoBuffPickup::InitInteractableData(FInteractableActorData* InputData)
+{
+	FBuffPickupData* BuffPickupData = static_cast<FBuffPickupData*>(InputData);
+	ensureMsgf(BuffPickupData, TEXT("AGeoBuffPickup: InputData is not a FBuffPickupData!"));
+	if (!BuffPickupData)
+	{
+		return;
+	}
+
+	Data = *BuffPickupData;
+
+	Super::InitInteractableData(InputData);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoBuffPickup::BeginPlay()
+{
+	Super::BeginPlay();
+
+	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnOverlap);
+
+	float const Scale = FMath::Lerp(MinScale, MaxScale, FMath::Clamp(Data.PowerScale, 0.f, 1.f));
 	SetActorScale3D(FVector(Scale));
+
+	ensureMsgf(LaunchCurve, TEXT("AGeoBuffPickup: LaunchCurve is not set — pickup will snap to target."));
+	if (LaunchCurve)
+	{
+		LaunchStartLocation = GetActorLocation();
+	}
+	else
+	{
+		bMovingToTarget = false;
+		SetActorLocation(Data.TargetLocation);
+	}
+	UpdateMesh();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoBuffPickup::OnSphereOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimitiveComponent*, int32, bool,
-									 FHitResult const&)
+void AGeoBuffPickup::Tick(float DeltaTime)
 {
-	if (!HasAuthority() || !IsValid(OtherActor))
+	Super::Tick(DeltaTime);
+
+	VisualRoot->AddLocalRotation(FRotator(0.f, RotationSpeed * DeltaTime, 0.f));
+
+	if (bMovingToTarget)
+	{
+		LaunchElapsedTime += DeltaTime;
+
+		float MinTime, MaxTime;
+		LaunchCurve->GetTimeRange(MinTime, MaxTime);
+		ensureMsgf(MinTime == 0.f, TEXT("Min time must start at 0"));
+
+		if (LaunchElapsedTime >= MaxTime)
+		{
+			LaunchElapsedTime = MaxTime;
+			bMovingToTarget = false;
+		}
+
+		float const Alpha = LaunchCurve->GetFloatValue(LaunchElapsedTime);
+		SetActorLocation(FMath::Lerp(LaunchStartLocation, Data.TargetLocation, Alpha));
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoBuffPickup::OnRep_Data()
+{
+	UpdateMesh();
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoBuffPickup::UpdateMesh()
+{
+	ensureMsgf(Data.MeshIndex < 0 || BuffMeshAssets.IsValidIndex(Data.MeshIndex),
+			   TEXT("AGeoBuffPickup: MeshIndex %d is out of range — BuffMeshAssets has %d entries. "
+					"BuffMeshAssets and BuffEffectDataAssets must have the same number of entries."),
+			   Data.MeshIndex, BuffMeshAssets.Num());
+
+	if (BuffMeshAssets.IsValidIndex(Data.MeshIndex))
+	{
+		BuffMeshComponent->SetStaticMesh(BuffMeshAssets[Data.MeshIndex]);
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimitiveComponent*, int32, bool,
+							   FHitResult const&)
+{
+	if (!UGameplayLibrary::IsServer(GetWorld()) || bMovingToTarget || !IsValid(OtherActor))
 	{
 		return;
 	}
 
-	const IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(OtherActor);
-	if (!ASI)
+	if (Cast<AGeoBuffPickup>(OtherActor))
 	{
 		return;
 	}
 
-	UGeoAbilitySystemComponent* TargetASC = Cast<UGeoAbilitySystemComponent>(ASI->GetAbilitySystemComponent());
+	IAbilitySystemInterface const* OtherActorAbilitySystem = Cast<IAbilitySystemInterface>(OtherActor);
+	if (!OtherActorAbilitySystem)
+	{
+		return;
+	}
+
+	if (!UGameplayLibrary::IsTeamAttitudeAligned(GetData()->CharacterOwner, OtherActor, OverlapAttitude))
+	{
+		return;
+	}
+
+	UGeoAbilitySystemComponent* TargetASC =
+		Cast<UGeoAbilitySystemComponent>(OtherActorAbilitySystem->GetAbilitySystemComponent());
 	UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponent());
 	if (!TargetASC || !SourceASC)
 	{
 		return;
 	}
 
-	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
-														FMath::Max(1, FMath::RoundToInt32(PowerScale)), 0);
+	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, SourceASC, TargetASC,
+														FMath::Max(1, FMath::RoundToInt32(Data.PowerScale)), 0);
 
 	OnRecalled();
 }

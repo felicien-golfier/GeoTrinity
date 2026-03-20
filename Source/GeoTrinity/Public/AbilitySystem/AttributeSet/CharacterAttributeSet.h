@@ -32,9 +32,13 @@ public:
 	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, MaxShield)
 
 	// Multipliers
-	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_HealingPower)
-	FGameplayAttributeData HealingPower;
-	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, HealingPower)
+	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_HealMultiplier)
+	FGameplayAttributeData HealMultiplier;
+	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, HealMultiplier)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_DamageMultiplier)
+	FGameplayAttributeData DamageMultiplier;
+	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, DamageMultiplier)
 
 	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_DamageReduction)
 	FGameplayAttributeData DamageReduction;
@@ -58,7 +62,9 @@ protected:
 	UFUNCTION()
 	void OnRep_MaxShield(FGameplayAttributeData const& OldMaxShield);
 	UFUNCTION()
-	void OnRep_HealingPower(FGameplayAttributeData const& OldHealingPower);
+	void OnRep_HealMultiplier(FGameplayAttributeData const& OldHealMultiplier);
+	UFUNCTION()
+	void OnRep_DamageMultiplier(FGameplayAttributeData const& OldDamageMultiplier);
 	UFUNCTION()
 	void OnRep_DamageReduction(FGameplayAttributeData const& OldDamageReduction);
 	UFUNCTION()

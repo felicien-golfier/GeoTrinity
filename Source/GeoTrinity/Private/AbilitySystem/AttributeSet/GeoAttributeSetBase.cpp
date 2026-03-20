@@ -30,6 +30,20 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 			}
 		}
 	}
+	else if (Data.EvaluatedData.Attribute == GetIncomingHealAttribute())
+	{
+		float const HealToApply = GetIncomingHeal();
+		SetIncomingHeal(0.f);
+		if (HealToApply > 0.f)
+		{
+			SetHealth(FMath::Clamp(GetHealth() + HealToApply, 0.f, GetMaxHealth()));
+			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
+			{
+				AGeoPlayerState* SourcePlayerState = Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext().GetInstigator());
+				CombatStats->ReportHealingDealt(SourcePlayerState, HealToApply);
+			}
+		}
+	}
 	else if (Data.EvaluatedData.Attribute == GetHealthAttribute() &&
 			 Data.EvaluatedData.ModifierOp == EGameplayModOp::Additive && Data.EvaluatedData.Magnitude != 0.f)
 	{

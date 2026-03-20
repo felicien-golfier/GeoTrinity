@@ -14,7 +14,8 @@ void UCharacterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, MaxAmmo, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, Shield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, HealingPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, HealMultiplier, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, DamageMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, DamageReduction, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, MovementSpeedMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, RotationSpeedMultiplier, COND_None, REPNOTIFY_Always);
@@ -45,9 +46,15 @@ void UCharacterAttributeSet::OnRep_MaxShield(FGameplayAttributeData const& OldMa
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UCharacterAttributeSet::OnRep_HealingPower(FGameplayAttributeData const& OldHealingPower)
+void UCharacterAttributeSet::OnRep_HealMultiplier(FGameplayAttributeData const& OldHealMultiplier)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, HealingPower, OldHealingPower);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, HealMultiplier, OldHealMultiplier);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UCharacterAttributeSet::OnRep_DamageMultiplier(FGameplayAttributeData const& OldDamageMultiplier)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, DamageMultiplier, OldDamageMultiplier);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

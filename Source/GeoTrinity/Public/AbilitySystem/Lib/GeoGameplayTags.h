@@ -21,6 +21,7 @@ struct FGeoGameplayTags
 	static void InitializeNativeGameplayTags();
 
 	FGameplayTag Gameplay_Damage;
+	FGameplayTag Gameplay_Heal;
 	FGameplayTag Data_Drain;
 
 	// Input
@@ -47,7 +48,6 @@ struct FGeoGameplayTags
 	FGameplayTag Status_Buff_Tankiness;
 	FGameplayTag Status_Buff_HealBoost;
 	FGameplayTag Status_Buff_Speed;
-	FGameplayTag Status_Buff_Heal;
 	FGameplayTag Status_Buff_Shield;
 
 private:

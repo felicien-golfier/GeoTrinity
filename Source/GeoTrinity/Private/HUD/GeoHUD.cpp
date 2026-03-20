@@ -2,6 +2,7 @@
 
 #include "HUD/GeoHUD.h"
 
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
@@ -69,6 +70,12 @@ void AGeoHUD::BroadcastInitialValues() const
 
 	OnHealthChanged.Broadcast(GeoAttributeSet->GetHealth());
 	OnMaxHealthChanged.Broadcast(GeoAttributeSet->GetMaxHealth());
+
+	if (UCharacterAttributeSet const* CharacterAttributeSet = Cast<UCharacterAttributeSet>(GeoAttributeSet))
+	{
+		OnAmmoChanged.Broadcast(CharacterAttributeSet->GetAmmo());
+		OnMaxAmmoChanged.Broadcast(CharacterAttributeSet->GetMaxAmmo());
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -95,6 +102,25 @@ void AGeoHUD::BindCallbacksToDependencies()
 					   {
 						   OnMaxHealthChanged.Broadcast(data.NewValue);
 					   });
+
+	if (UCharacterAttributeSet const* CharacterAttributeSet = Cast<UCharacterAttributeSet>(GeoAttributeSet))
+	{
+		HudPlayerParams.AbilitySystemComponent
+			->GetGameplayAttributeValueChangeDelegate(CharacterAttributeSet->GetAmmoAttribute())
+			.AddWeakLambda(this,
+						   [this](FOnAttributeChangeData const& data)
+						   {
+							   OnAmmoChanged.Broadcast(data.NewValue);
+						   });
+
+		HudPlayerParams.AbilitySystemComponent
+			->GetGameplayAttributeValueChangeDelegate(CharacterAttributeSet->GetMaxAmmoAttribute())
+			.AddWeakLambda(this,
+						   [this](FOnAttributeChangeData const& data)
+						   {
+							   OnMaxAmmoChanged.Broadcast(data.NewValue);
+						   });
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

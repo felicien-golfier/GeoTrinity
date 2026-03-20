@@ -147,6 +147,17 @@ bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 		return false;
 	}
 
+	if (Cast<AGeoProjectile>(OtherActor))
+	{
+		return false;
+	}
+
+	// Don't apply on investigator. If you need to add projectiles that apply on self, change that rule, make it param
+	if (OtherActor == Payload.Instigator)
+	{
+		return false;
+	}
+
 	return UGameplayLibrary::IsTeamAttitudeAligned(Payload.Owner, OtherActor, OverlapAttitude);
 }
 // ---------------------------------------------------------------------------------------------------------------------

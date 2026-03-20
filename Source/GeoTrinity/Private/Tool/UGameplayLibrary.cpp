@@ -274,9 +274,7 @@ bool UGameplayLibrary::IsTeamAttitudeAligned(AActor const* Owner, AActor const* 
 	}
 
 	AActor const* SourceAvatarActor = OwnerASCInterface->GetAbilitySystemComponent()->GetAvatarActor();
-
-	// Don't apply on self
-	if (!IsValid(SourceAvatarActor) || (SourceAvatarActor == OtherActor))
+	if (!IsValid(SourceAvatarActor))
 	{
 		return false;
 	}

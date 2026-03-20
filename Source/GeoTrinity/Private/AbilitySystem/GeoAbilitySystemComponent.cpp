@@ -3,11 +3,14 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 
 #include "AbilitySystem/Abilities/PatternAbility.h"
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/GeoCharacter.h"
 #include "Characters/PlayerClassTypes.h"
+#include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGameplayLibrary.h"
 
@@ -251,6 +254,17 @@ void UGeoAbilitySystemComponent::BindAttributeCallbacks()
 					   [this](FOnAttributeChangeData const& Data)
 					   {
 						   OnMaxHealthChanged.Broadcast(Data.NewValue);
+					   });
+
+	GetGameplayAttributeValueChangeDelegate(UCharacterAttributeSet::GetMovementSpeedMultiplierAttribute())
+		.AddWeakLambda(this,
+					   [this](FOnAttributeChangeData const& Data)
+					   {
+						   AGeoCharacter* GeoCharacter = Cast<AGeoCharacter>(GetAvatarActor());
+						   if (GeoCharacter)
+						   {
+							   GeoCharacter->GetGeoMovementComponent()->ApplySpeedMultiplier(Data.NewValue);
+						   }
 					   });
 }
 

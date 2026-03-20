@@ -1,17 +1,48 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "AbilitySystem/Data/EffectData.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
+#include "Engine/StaticMesh.h"
+#include "Tool/UGameplayLibrary.h"
 
 #include "GeoBuffPickup.generated.h"
 
-class USphereComponent;
+class UCurveFloat;
 class UPrimitiveComponent;
+class USceneComponent;
+class UStaticMeshComponent;
+
+USTRUCT()
+struct FBuffPickupData : public FDeployableData
+{
+	GENERATED_BODY()
+
+	/** Not replicated — effects are applied server-side only. */
+	UPROPERTY(NotReplicated)
+	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
+
+	/** 0..1 ratio of missing ammo. Controls visual scale and effect stack count. */
+	UPROPERTY()
+	float PowerScale = 1.f;
+
+	/** Index into BuffMeshAssets (and the ability's BuffEffectDataAssets). -1 = none selected. */
+	UPROPERTY()
+	int32 MeshIndex = -1;
+
+	/** World position the pickup travels to after spawning. */
+	UPROPERTY()
+	FVector TargetLocation = FVector::ZeroVector;
+};
 
 /**
  * Pickup that grants a buff to the player who collects it.
- * Spawned by Triangle's reload ability. Effect data is provided by the spawning ability.
+ * Spawned by Triangle's reload ability. Initialized via InitInteractableData before BeginPlay.
+ *
+ * Fill BuffMeshAssets in the Blueprint Class Defaults to match the ability's BuffEffectDataAssets:
+ * index N in BuffMeshAssets = index N in BuffEffectDataAssets (same buff type).
  */
 UCLASS()
 class GEOTRINITY_API AGeoBuffPickup : public AGeoDeployableBase
@@ -21,23 +52,57 @@ class GEOTRINITY_API AGeoBuffPickup : public AGeoDeployableBase
 public:
 	AGeoBuffPickup();
 
-	/** Set effect data and visual power scale (based on missing ammo). Call after spawn. */
-	void Setup(TArray<TInstancedStruct<FEffectData>> const& InEffectData, float InPowerScale);
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void InitInteractableData(FInteractableActorData* InputData) override;
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 protected:
-	virtual const FDeployableData* GetData() const override { return &Data; }
+	virtual FBuffPickupData const* GetData() const override { return &Data; }
 
-	UPROPERTY()
-	FDeployableData Data;
+	UPROPERTY(ReplicatedUsing = OnRep_Data)
+	FBuffPickupData Data;
+
+	/**
+	 * One static mesh asset per buff type. Must match the ability's BuffEffectDataAssets by index.
+	 * The active mesh is swapped on BuffMeshComponent at runtime based on the selected index.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	TArray<TObjectPtr<UStaticMesh>> BuffMeshAssets;
 
 private:
 	UFUNCTION()
-	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-						 int32 OtherBodyIndex, bool bFromSweep, FHitResult const& SweepResult);
+	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+				   int32 OtherBodyIndex, bool bFromSweep, FHitResult const& SweepResult);
+
+	UFUNCTION()
+	void OnRep_Data();
+
+	void UpdateMesh();
 
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USphereComponent> CollisionSphere;
+	TObjectPtr<USceneComponent> VisualRoot;
 
-	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
-	float PowerScale = 1.f;
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UStaticMeshComponent> BuffMeshComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	float RotationSpeed = 90.f;
+
+	/** Curve controlling the launch movement. X = time (seconds), Y = lerp alpha (0 to 1). */
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	TObjectPtr<UCurveFloat> LaunchCurve;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	float MinScale = .5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	float MaxScale = 1.5f;
+
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Friendly);
+
+	bool bMovingToTarget = true;
+	float LaunchElapsedTime = 0.f;
+	FVector LaunchStartLocation = FVector::ZeroVector;
 };

@@ -27,6 +27,10 @@ protected:
 	void UpdateHealthRatio(float NewHealthRatio);
 	virtual void UpdateHealthRatio_Implementation(float NewHealthRatio);
 
+	UFUNCTION(BlueprintNativeEvent)
+	void UpdateHealthBarVisibility();
+	virtual void UpdateHealthBarVisibility_Implementation();
+
 	virtual void InitStats();
 
 	UPROPERTY(BlueprintReadOnly, Category = "Runtime")

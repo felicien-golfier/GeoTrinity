@@ -16,7 +16,7 @@ class UEffectDataAsset;
  * and fires a GameplayCue for the visual (beam from turret to player).
  * Uses base EffectDataAssets/EffectDataInstances for the recall effect.
  * Turrets that were blinking additionally apply BlinkBonusEffectData (expected to hold a
- * FSingleUseDamageMultiplierEffectData).
+ * FContextDamageMultiplierEffectData).
  */
 UCLASS()
 class GEOTRINITY_API UGeoRecallTurretAbility : public UGeoGameplayAbility

@@ -14,6 +14,11 @@ class GEOTRINITY_API UGeoMovementComponent : public UCharacterMovementComponent
 public:
 	UGeoMovementComponent();
 
+	virtual void BeginPlay() override;
+	void ApplySpeedMultiplier(float Multiplier);
+
 private:
+	float BaseMaxWalkSpeed = 0.f;
+
 	AGeoCharacter* GetGeoCharacter() const;
 };

@@ -73,7 +73,7 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 	FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
 	FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();
 
-	if (!CommitAbilityCost(Handle, ActorInfo, ActivationInfo))
+	if (!CheckAbilityCost(Handle, ActorInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
@@ -89,7 +89,8 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 
 	if (bShotSucceeded)
 	{
-		SendFireDataToServer(AbilityTargetData); // Call RPC only when we actually shoot !
+		CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+		SendFireDataToServer(AbilityTargetData);
 	}
 
 	if (bWantsToFire)
@@ -117,7 +118,7 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 		return;
 	}
 
-	if (!CommitAbilityCost(Handle, ActorInfo, ActivationInfo))
+	if (!CheckAbilityCost(Handle, ActorInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
@@ -131,6 +132,7 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
 
 	ExecuteShot();
+	CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
 	StoredPayload.Seed += CurrentShotIndex; // don't use target data, to avoid client abuse. (lol)
 	CurrentShotIndex++;
 }

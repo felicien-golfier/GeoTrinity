@@ -69,7 +69,7 @@ protected:
 	UPROPERTY()
 	FVector KnockbackVector{FVector::ZeroVector};
 
-	// Transient — set by FSingleUseDamageMultiplierEffectData::UpdateContextHandle, consumed by UExecCalc_Damage.
+	// Transient — set by FContextDamageMultiplierEffectData::UpdateContextHandle, consumed by UExecCalc_Damage.
 	// Not serialized: applied and consumed server-side within the same call stack.
 	float SingleUseDamageMultiplier{1.f};
 

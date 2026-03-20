@@ -3,6 +3,7 @@
 
 #include "HUD/GenericCombattantWidget.h"
 
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "Components/ProgressBar.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -54,6 +55,19 @@ void UGenericCombattantWidget::InitStats()
 			   *GetName());
 		UpdateHealthRatio(1.f);
 	}
+	UpdateHealthBarVisibility();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGenericCombattantWidget::UpdateHealthBarVisibility_Implementation()
+{
+	if (!HealthBar || !OwnerASC.IsValid())
+	{
+		return;
+	}
+
+	float const MaxHealth = OwnerASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
+	HealthBar->SetVisibility(MaxHealth > 0.f ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
