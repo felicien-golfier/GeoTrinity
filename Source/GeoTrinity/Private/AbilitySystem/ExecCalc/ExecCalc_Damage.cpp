@@ -17,6 +17,10 @@ UExecCalc_Damage::UExecCalc_Damage()
 	DamageMultiplierCaptureDef = FGameplayEffectAttributeCaptureDefinition(
 		UCharacterAttributeSet::GetDamageMultiplierAttribute(), EGameplayEffectAttributeCaptureSource::Source, true);
 	RelevantAttributesToCapture.Add(DamageMultiplierCaptureDef);
+
+	DamageReductionCaptureDef = FGameplayEffectAttributeCaptureDefinition(
+		UCharacterAttributeSet::GetDamageReductionAttribute(), EGameplayEffectAttributeCaptureSource::Target, true);
+	RelevantAttributesToCapture.Add(DamageReductionCaptureDef);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -49,6 +53,11 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageMultiplierCaptureDef, EvaluationParams,
 															   DamageMultiplier);
 	Damage *= DamageMultiplier;
+
+	float DamageReduction = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageReductionCaptureDef, EvaluationParams,
+															   DamageReduction);
+	Damage *= 1.f - FMath::Clamp(DamageReduction, 0.f, 1.f);
 
 #pragma region Radial damage
 	if (UGeoAbilitySystemLibrary::GetIsRadialDamage(contextHandle))

@@ -23,4 +23,5 @@ public:
 
 private:
 	FGameplayEffectAttributeCaptureDefinition DamageMultiplierCaptureDef;
+	FGameplayEffectAttributeCaptureDefinition DamageReductionCaptureDef;
 };

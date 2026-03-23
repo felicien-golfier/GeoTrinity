@@ -12,6 +12,7 @@ UGeoAutomaticFireAbility::UGeoAutomaticFireAbility()
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateYes;
+	bCommitAtActivate = false;
 }
 
 void UGeoAutomaticFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -73,7 +74,7 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 	FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
 	FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();
 
-	if (!CheckAbilityCost(Handle, ActorInfo))
+	if (!CheckCost(Handle, ActorInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
@@ -89,7 +90,10 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 
 	if (bShotSucceeded)
 	{
-		CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+		if (ActorInfo->IsLocallyControlledPlayer()) // Commit will be done on server when receiving data.
+		{
+			CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+		}
 		SendFireDataToServer(AbilityTargetData);
 	}
 
@@ -118,7 +122,7 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 		return;
 	}
 
-	if (!CheckAbilityCost(Handle, ActorInfo))
+	if (!CheckCost(Handle, ActorInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
@@ -132,7 +136,11 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
 
 	ExecuteShot();
-	CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+	if (!ActorInfo->IsLocallyControlledPlayer())
+	{
+		CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+	}
+
 	StoredPayload.Seed += CurrentShotIndex; // don't use target data, to avoid client abuse. (lol)
 	CurrentShotIndex++;
 }

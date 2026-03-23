@@ -19,6 +19,7 @@ public:
 
 private:
 	float BaseMaxWalkSpeed = 0.f;
+	float BaseMaxAcceleration = 0.f;
 
 	AGeoCharacter* GetGeoCharacter() const;
 };

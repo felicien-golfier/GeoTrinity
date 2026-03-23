@@ -27,8 +27,13 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 {
 	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Damage, "Gameplay.Damage", "Tag to identify damage");
 	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Heal, "Gameplay.Heal", "Tag to identify healing");
-	CreateAndAssignGameplayTag(GameplayTags.Data_Drain, "Data.Drain",
+	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Shield, "Gameplay.Shield", "Tag to identify shield");
+	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Drain, "Gameplay.Drain",
 							   "SetByCaller magnitude tag for deployable health drain GE");
+	CreateAndAssignGameplayTag(GameplayTags.Gameplay_DurationMagnitude, "Gameplay.DurationMagnitude",
+							   "SetByCaller magnitude tag for Duration Magnitude");
+	CreateAndAssignGameplayTag(GameplayTags.Gameplay_GenericMagnitude, "Gameplay.GenericMagnitude",
+							   "SetByCaller magnitude tag for Generic Gameplay Effects.");
 
 	// INPUT //
 	AddInputTag(GameplayTags.InputTag_Basic, "Basic", "Input tag for left mouse button-linked spell");
@@ -51,9 +56,13 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	CreateAndAssignGameplayTag(GameplayTags.PlayerClass_Circle, "PlayerClass.Circle", "Healer class");
 	CreateAndAssignGameplayTag(GameplayTags.PlayerClass_Square, "PlayerClass.Square", "Tank class");
 
+	// ABILITY STATES //
+	CreateAndAssignGameplayTag(GameplayTags.Status_Reloading, "Status.Reloading", "Active while reload ability is in progress");
+
 	// BUFF STATUS //
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_DamageBoost, "Status.Buff.DamageBoost", "Damage boost buff");
-	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Tankiness, "Status.Buff.Tankiness", "Tankiness buff");
+	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_DamageReduction, "Status.Buff.DamageReduction",
+							   "Damage reduction buff");
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_HealBoost, "Status.Buff.HealBoost", "Heal boost buff");
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Speed, "Status.Buff.Speed", "Movement speed buff");
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Shield, "Status.Buff.Shield", "Shield buff");

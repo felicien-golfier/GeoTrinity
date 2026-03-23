@@ -8,12 +8,12 @@
 
 void FEffectData::UpdateContextHandle(FGeoGameplayEffectContext*, int32) const
 {
-	// By default do nothing. Override what you need
+	// By default does nothing. Override for your needs
 }
 void FEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
 							  UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const
 {
-	// By default do nothing. Override what you need
+	// By default does nothing. Override for your needs
 }
 
 void FGameplayEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
@@ -23,6 +23,13 @@ void FGameplayEffectData::ApplyEffect(FGameplayEffectContextHandle const& Contex
 	checkf(GameplayEffect, TEXT("No valid DamageEffectClass !"));
 
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GameplayEffect, AbilityLevel, ContextHandle);
+
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, DataTag,
+																  Magnitude.GetValueAtLevel(AbilityLevel));
+	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_DurationMagnitude,
+																  Duration.GetValueAtLevel(AbilityLevel));
+
 	TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
@@ -60,46 +67,6 @@ void FContextDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectC
 	checkf(Multiplier != 1.f,
 		   TEXT("You've set Single Use Damage Multiplier but value is 1. So it's not useful, you douchebag !"));
 	EffectContext->SetSingleUseDamageMultiplier(Multiplier.GetValueAtLevel(AbilityLevel));
-}
-
-void FDamageMultiplierEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-											  UGeoAbilitySystemComponent* SourceASC,
-											  UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32) const
-{
-	ensureMsgf(DamageMultiplierGameplayEffect,
-			   TEXT("FDamageMultiplierEffectData: DamageMultiplierGameplayEffect is not set!"));
-	if (!DamageMultiplierGameplayEffect)
-	{
-		return;
-	}
-	FGameplayEffectSpecHandle SpecHandle =
-		SourceASC->MakeOutgoingSpec(DamageMultiplierGameplayEffect, AbilityLevel, ContextHandle);
-
-	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Status_Buff_DamageBoost,
-																  Multiplier.GetValueAtLevel(AbilityLevel));
-
-	TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
-}
-
-void FHealMultiplierEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-											UGeoAbilitySystemComponent* SourceASC,
-											UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32) const
-{
-	ensureMsgf(HealMultiplierGameplayEffect,
-			   TEXT("FHealMultiplierEffectData: HealMultiplierGameplayEffect is not set!"));
-	if (!HealMultiplierGameplayEffect)
-	{
-		return;
-	}
-	FGameplayEffectSpecHandle SpecHandle =
-		SourceASC->MakeOutgoingSpec(HealMultiplierGameplayEffect, AbilityLevel, ContextHandle);
-
-	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Status_Buff_HealBoost,
-																  Multiplier.GetValueAtLevel(AbilityLevel));
-
-	TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
 void FStatusEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,

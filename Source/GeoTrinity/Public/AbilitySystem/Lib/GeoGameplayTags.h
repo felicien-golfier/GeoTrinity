@@ -22,7 +22,10 @@ struct FGeoGameplayTags
 
 	FGameplayTag Gameplay_Damage;
 	FGameplayTag Gameplay_Heal;
-	FGameplayTag Data_Drain;
+	FGameplayTag Gameplay_Shield;
+	FGameplayTag Gameplay_Drain;
+	FGameplayTag Gameplay_DurationMagnitude;
+	FGameplayTag Gameplay_GenericMagnitude;
 
 	// Input
 	FGameplayTag InputTag_Basic;
@@ -43,9 +46,12 @@ struct FGeoGameplayTags
 	FGameplayTag PlayerClass_Circle;
 	FGameplayTag PlayerClass_Square;
 
+	// Ability states
+	FGameplayTag Status_Reloading;
+
 	// Buff status
 	FGameplayTag Status_Buff_DamageBoost;
-	FGameplayTag Status_Buff_Tankiness;
+	FGameplayTag Status_Buff_DamageReduction;
 	FGameplayTag Status_Buff_HealBoost;
 	FGameplayTag Status_Buff_Speed;
 	FGameplayTag Status_Buff_Shield;

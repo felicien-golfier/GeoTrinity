@@ -30,6 +30,7 @@ public:
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 	FGameplayTag GetAbilityTag() const;
+	void SetTypeTag(FGameplayTag const& TypeTag);
 	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, FVector2D const& Origin, float Yaw,
 										 float ServerSpawnTime, int Seed) const;
 	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, FTransform const& Transform) const;
@@ -65,12 +66,12 @@ public:
 
 protected:
 	FAbilityPayload StoredPayload;
+	bool bCommitAtActivate = true;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
-
 	FTimerHandle FireTriggerTimerHandle;
 };

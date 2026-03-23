@@ -7,6 +7,7 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "GameplayTagsManager.h"
 #include "Tool/UGameplayLibrary.h"
 
 using GeoASL = UGeoAbilitySystemLibrary;
@@ -15,12 +16,30 @@ using GL = UGameplayLibrary;
 // ---------------------------------------------------------------------------------------------------------------------
 
 
+void UGeoGameplayAbility::SetTypeTag(FGameplayTag const& TypeTag)
+{
+	static FGameplayTag const TypeRoot =
+		UGameplayTagsManager::Get().RequestGameplayTag(FName("Ability.Type"), false);
+
+	FGameplayTagContainer ToRemove;
+	for (FGameplayTag const& Tag : AbilityTags)
+	{
+		if (Tag.MatchesTag(TypeRoot))
+		{
+			ToRemove.AddTag(Tag);
+		}
+	}
+	AbilityTags.RemoveTags(ToRemove);
+	AbilityTags.AddTag(TypeTag);
+}
+
 void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 										  FGameplayAbilityActorInfo const* ActorInfo,
 										  FGameplayAbilityActivationInfo const ActivationInfo,
 										  FGameplayEventData const* TriggerEventData)
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	if ((!bCommitAtActivate && !CheckCost(Handle, ActorInfo))
+		|| (bCommitAtActivate && !CommitAbility(Handle, ActorInfo, ActivationInfo)))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;

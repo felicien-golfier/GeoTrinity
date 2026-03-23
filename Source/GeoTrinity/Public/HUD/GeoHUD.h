@@ -107,4 +107,6 @@ private:
 	FOnAttributeModifiedSignature OnAmmoChanged;
 	UPROPERTY(BlueprintAssignable, Category = "GAS")
 	FOnAttributeModifiedSignature OnMaxAmmoChanged;
+	UPROPERTY(BlueprintAssignable, Category = "GAS")
+	FOnAttributeModifiedSignature OnShieldChanged;
 };

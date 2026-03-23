@@ -520,6 +520,6 @@ TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArr
 		}
 	}
 
-	ensureMsgf(true, TEXT("No EffectData found for AbilityTag %s"), *AbilityTag.ToString());
+	ensureMsgf(true, TEXT("No Ability found for AbilityTag %s"), *AbilityTag.ToString());
 	return {};
 }

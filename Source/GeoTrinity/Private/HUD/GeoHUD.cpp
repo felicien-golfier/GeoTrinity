@@ -70,6 +70,7 @@ void AGeoHUD::BroadcastInitialValues() const
 
 	OnHealthChanged.Broadcast(GeoAttributeSet->GetHealth());
 	OnMaxHealthChanged.Broadcast(GeoAttributeSet->GetMaxHealth());
+	OnShieldChanged.Broadcast(GeoAttributeSet->GetShield());
 
 	if (UCharacterAttributeSet const* CharacterAttributeSet = Cast<UCharacterAttributeSet>(GeoAttributeSet))
 	{
@@ -101,6 +102,14 @@ void AGeoHUD::BindCallbacksToDependencies()
 					   [this](FOnAttributeChangeData const& data)
 					   {
 						   OnMaxHealthChanged.Broadcast(data.NewValue);
+					   });
+
+	HudPlayerParams.AbilitySystemComponent
+		->GetGameplayAttributeValueChangeDelegate(GeoAttributeSet->GetShieldAttribute())
+		.AddWeakLambda(this,
+					   [this](FOnAttributeChangeData const& data)
+					   {
+						   OnShieldChanged.Broadcast(data.NewValue);
 					   });
 
 	if (UCharacterAttributeSet const* CharacterAttributeSet = Cast<UCharacterAttributeSet>(GeoAttributeSet))

@@ -56,7 +56,7 @@ void AGeoDeployableBase::BeginPlay()
 	float const DrainPeriod = HealthDrainEffect.GetDefaultObject()->Period.Value;
 	FGameplayEffectSpecHandle const SpecHandle =
 		ASC->MakeOutgoingSpec(HealthDrainEffect, GetData()->Level, ASC->MakeEffectContext());
-	SpecHandle.Data->SetSetByCallerMagnitude(FGeoGameplayTags::Get().Data_Drain, -(DrainPerSecond * DrainPeriod));
+	SpecHandle.Data->SetSetByCallerMagnitude(FGeoGameplayTags::Get().Gameplay_Drain, -(DrainPerSecond * DrainPeriod));
 	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 }
 
@@ -101,6 +101,7 @@ void AGeoDeployableBase::OnHealthChanged(float NewValue)
 			GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::OnBlinkTimerExpired,
 												   BlinkDuration, false);
 			OnBlinkStarted();
+			SetActorEnableCollision(false);
 		}
 		else
 		{

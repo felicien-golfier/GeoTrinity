@@ -9,11 +9,8 @@ void UCharacterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 
 	// For GAS attributes, REPNOTIFY_Always is the standard pattern because the prediction system needs OnRep to fire
 	// even on unchanged values to handle prediction rollbacks correctly
-
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, Ammo, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, MaxAmmo, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, Shield, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, HealMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, DamageMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, DamageReduction, COND_None, REPNOTIFY_Always);
@@ -31,18 +28,6 @@ void UCharacterAttributeSet::OnRep_Ammo(FGameplayAttributeData const& OldAmmo)
 void UCharacterAttributeSet::OnRep_MaxAmmo(FGameplayAttributeData const& OldMaxAmmo)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, MaxAmmo, OldMaxAmmo);
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void UCharacterAttributeSet::OnRep_Shield(FGameplayAttributeData const& OldShield)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, Shield, OldShield);
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void UCharacterAttributeSet::OnRep_MaxShield(FGameplayAttributeData const& OldMaxShield)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, MaxShield, OldMaxShield);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

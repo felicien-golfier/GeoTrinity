@@ -22,15 +22,6 @@ public:
 	FGameplayAttributeData MaxAmmo;
 	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, MaxAmmo)
 
-	// Shield
-	UPROPERTY(BlueprintReadOnly, Category = "Shield", ReplicatedUsing = OnRep_Shield)
-	FGameplayAttributeData Shield;
-	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, Shield)
-
-	UPROPERTY(BlueprintReadOnly, Category = "Shield", ReplicatedUsing = OnRep_MaxShield)
-	FGameplayAttributeData MaxShield;
-	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, MaxShield)
-
 	// Multipliers
 	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_HealMultiplier)
 	FGameplayAttributeData HealMultiplier;
@@ -57,10 +48,6 @@ protected:
 	void OnRep_Ammo(FGameplayAttributeData const& OldAmmo);
 	UFUNCTION()
 	void OnRep_MaxAmmo(FGameplayAttributeData const& OldMaxAmmo);
-	UFUNCTION()
-	void OnRep_Shield(FGameplayAttributeData const& OldShield);
-	UFUNCTION()
-	void OnRep_MaxShield(FGameplayAttributeData const& OldMaxShield);
 	UFUNCTION()
 	void OnRep_HealMultiplier(FGameplayAttributeData const& OldHealMultiplier);
 	UFUNCTION()

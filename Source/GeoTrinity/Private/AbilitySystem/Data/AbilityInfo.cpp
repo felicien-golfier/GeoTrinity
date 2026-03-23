@@ -4,6 +4,7 @@
 #include "AbilitySystem/Data/AbilityInfo.h"
 
 #include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GameplayTagsManager.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -40,6 +41,13 @@ void UAbilityInfo::PopulateAbilityTags()
 	for (FPlayersGameplayAbilityInfo& Info : PlayersAbilityInfos)
 	{
 		Info.AbilityTag = GetAbilityTagFromCDO(Info.AbilityClass);
+		if (Info.TypeOfAbilityTag.IsValid())
+		{
+			if (UGeoGameplayAbility* CDO = Cast<UGeoGameplayAbility>(Info.AbilityClass.GetDefaultObject()))
+			{
+				CDO->SetTypeTag(Info.TypeOfAbilityTag);
+			}
+		}
 	}
 }
 

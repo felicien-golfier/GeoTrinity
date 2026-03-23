@@ -40,6 +40,10 @@ public:
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, MaxHealth)
 
+	// Shield
+	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_Shield)
+	FGameplayAttributeData Shield;
+	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, Shield)
 
 	UPROPERTY(BlueprintReadOnly, Category = "Meta")
 	FGameplayAttributeData IncomingDamage;
@@ -58,4 +62,6 @@ protected:
 	virtual void OnRep_Health(FGameplayAttributeData const& OldHealth);
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(FGameplayAttributeData const& OldMaxHealth);
+	UFUNCTION()
+	virtual void OnRep_Shield(FGameplayAttributeData const& OldShield);
 };

@@ -11,11 +11,13 @@ void UGeoMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	BaseMaxWalkSpeed = MaxWalkSpeed;
+	BaseMaxAcceleration = MaxAcceleration;
 }
 
 void UGeoMovementComponent::ApplySpeedMultiplier(float Multiplier)
 {
 	MaxWalkSpeed = BaseMaxWalkSpeed * Multiplier;
+	MaxAcceleration = BaseMaxAcceleration * Multiplier;
 }
 
 AGeoCharacter* UGeoMovementComponent::GetGeoCharacter() const

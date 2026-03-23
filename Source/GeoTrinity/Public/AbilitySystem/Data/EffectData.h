@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "ScalableFloat.h"
@@ -11,6 +12,7 @@
 struct FGameplayEffectContextHandle;
 struct FGeoGameplayEffectContext;
 class UGeoAbilitySystemComponent;
+class UGameplayEffect;
 
 UCLASS(BlueprintType)
 
@@ -42,7 +44,19 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<class UGameplayEffect> GameplayEffect;
+	TSubclassOf<UGameplayEffect> GameplayEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameplayTag DataTag;
+
+	// Will set the Magnitude of the GE SetByCaller with given SetByCallerDataTag tag.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FScalableFloat Magnitude;
+
+	// Will set the Duration magnitude of the GE SetByCaller with Data.DurationMagnitude tag.
+	// If the GE is Instant or infinite, it's not used.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FScalableFloat Duration;
 };
 
 USTRUCT(BlueprintType)
@@ -54,7 +68,7 @@ struct FDamageEffectData : public FEffectData
 							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<class UGameplayEffect> DamageEffectClass;
+	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat DamageAmount;
@@ -69,7 +83,7 @@ struct FHealEffectData : public FEffectData
 							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<class UGameplayEffect> HealEffectClass;
+	TSubclassOf<UGameplayEffect> HealEffectClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat HealAmount;
@@ -81,36 +95,6 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 	GENERATED_BODY()
 
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.0"))
-	FScalableFloat Multiplier{2.f};
-};
-
-USTRUCT(BlueprintType)
-struct FDamageMultiplierEffectData : public FEffectData
-{
-	GENERATED_BODY()
-
-	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UGameplayEffect> DamageMultiplierGameplayEffect;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.0"))
-	FScalableFloat Multiplier{2.f};
-};
-
-USTRUCT(BlueprintType)
-struct FHealMultiplierEffectData : public FEffectData
-{
-	GENERATED_BODY()
-
-	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UGameplayEffect> HealMultiplierGameplayEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.0"))
 	FScalableFloat Multiplier{2.f};

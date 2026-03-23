@@ -147,8 +147,7 @@ void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimit
 		return;
 	}
 
-	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, SourceASC, TargetASC,
-														FMath::Max(1, FMath::RoundToInt32(Data.PowerScale)), 0);
+	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, SourceASC, TargetASC, Data.Level, 0);
 
 	OnRecalled();
 }

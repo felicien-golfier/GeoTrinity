@@ -3,11 +3,36 @@
 #include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Pickup/GeoBuffPickup.h"
 #include "GenericTeamAgentInterface.h"
-#include "Tool/UGameplayLibrary.h"
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoReloadAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
+{
+	Super::OnGiveAbility(ActorInfo, Spec);
+
+	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+	if (!IsValid(ASC))
+	{
+		ensureMsgf(ASC, TEXT("GeoReloadAbility::OnGiveAbility: No ASC"));
+		return;
+	}
+
+	FGameplayAbilitySpecHandle const SpecHandle = Spec.Handle;
+	ASC->GetGameplayAttributeValueChangeDelegate(UCharacterAttributeSet::GetAmmoAttribute())
+		.AddWeakLambda(this,
+					   [this, ASC, SpecHandle](FOnAttributeChangeData const& Data)
+					   {
+						   if (Data.NewValue > 0.f)
+						   {
+							   return;
+						   }
+						   CastChecked<UGeoAbilitySystemComponent>(ASC)->TryActivateAbilityWithTargetData(SpecHandle);
+					   });
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -22,6 +47,20 @@ void UGeoReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	}
 
 	ScheduleFireTrigger(ActivationInfo, ActorInfo->GetAnimInstance());
+}
+
+bool UGeoReloadAbility::CheckCost(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
+								  FGameplayTagContainer* OptionalRelevantTags) const
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	float const CurrentAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetAmmoAttribute());
+	float const MaxAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetMaxAmmoAttribute());
+	if (CurrentAmmo == MaxAmmo)
+	{
+		return false;
+	}
+
+	return Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -74,7 +113,7 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		{
 			FBuffPickupData PickupData;
 			PickupData.CharacterOwner = Avatar;
-			PickupData.Level = GetAbilityLevel();
+			PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
 			PickupData.EffectDataArray = {BuffEffects[RandomIndex]};
 			PickupData.PowerScale = PowerScale;
 			PickupData.MeshIndex = RandomIndex;
