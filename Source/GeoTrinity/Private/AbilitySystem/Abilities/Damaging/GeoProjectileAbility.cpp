@@ -7,6 +7,13 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Tool/UGameplayLibrary.h"
 
+FGeoAbilityTargetData UGeoProjectileAbility::BuildAbilityTargetData()
+{
+	FGeoAbilityTargetData Data = Super::BuildAbilityTargetData();
+	Data.Origin = FVector2D(GetFireSocketLocation());
+	return Data;
+}
+
 void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 											FGameplayAbilityActorInfo const* ActorInfo,
 											FGameplayAbilityActivationInfo const ActivationInfo,

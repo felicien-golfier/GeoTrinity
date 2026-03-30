@@ -11,7 +11,7 @@ class AGeoBuffPickup;
 class UEffectDataAsset;
 
 /**
- * Triangle reload ability: after a delay equal to FireRate, restores ammo and spawns a buff pickup.
+ * Triangle reload ability: after a delay equal to FireDuration, restores ammo and spawns a buff pickup.
  * PowerScale = MissingAmmo / MaxAmmo — controls pickup size and effect magnitude.
  * A random buff is chosen from BuffEffectDataAssets each time.
  */

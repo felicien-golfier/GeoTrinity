@@ -8,6 +8,7 @@ namespace RootTagNames
 	FString const InputTag{"InputTag"};
 	FString const SpellSubTag{"Spell"};
 	FString const AbilityIDTag{AbilityTag + "." + SpellSubTag};
+	FString const AbilityTypeTag{AbilityTag + "." + "Type"};
 } // namespace RootTagNames
 
 /**

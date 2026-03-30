@@ -6,32 +6,14 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "GameFramework/Character.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "GameplayTagsManager.h"
 #include "Tool/UGameplayLibrary.h"
 
 using GeoASL = UGeoAbilitySystemLibrary;
 using GL = UGameplayLibrary;
 
 // ---------------------------------------------------------------------------------------------------------------------
-
-
-void UGeoGameplayAbility::SetTypeTag(FGameplayTag const& TypeTag)
-{
-	static FGameplayTag const TypeRoot =
-		UGameplayTagsManager::Get().RequestGameplayTag(FName("Ability.Type"), false);
-
-	FGameplayTagContainer ToRemove;
-	for (FGameplayTag const& Tag : AbilityTags)
-	{
-		if (Tag.MatchesTag(TypeRoot))
-		{
-			ToRemove.AddTag(Tag);
-		}
-	}
-	AbilityTags.RemoveTags(ToRemove);
-	AbilityTags.AddTag(TypeTag);
-}
 
 void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 										  FGameplayAbilityActorInfo const* ActorInfo,
@@ -64,7 +46,7 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 	}
 
 	// Bind Delegate on server to receive Fire data from client
-	if (ActorInfo->IsNetAuthority() && !ActorInfo->IsLocallyControlledPlayer())
+	if (GL::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey()).RemoveAll(this);
@@ -92,6 +74,7 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor*
 	Payload.AbilityTag = GetAbilityTag();
 	return Payload;
 }
+
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator,
 														  FTransform const& Transform) const
 {
@@ -143,20 +126,31 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo,
 											  UAnimInstance* AnimInstance)
 {
-	if (FireRate > 0.f)
+	if (FireDuration > 0.f)
 	{
-		bool const bIsServer = GetAvatarActorFromActorInfo()->HasAuthority();
-		if (AnimInstance && AnimMontage && !bIsServer)
+		if (AnimInstance && AnimMontage)
 		{
 			HandleAnimationMontage(AnimInstance, ActivationInfo);
 		}
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::BuildDataAndFire,
-											   FireRate);
+											   FireDuration);
 	}
 	else
 	{
 		BuildDataAndFire();
+	}
+}
+
+void UGeoGameplayAbility::InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex)
+{
+	if (!AnimInstance->Montage_IsPlaying(AnimMontage))
+	{
+		FireSectionIndex = 0; // If we are not playing the montage let's reset the index.
+	}
+	else
+	{
+		++FireSectionIndex; // FireSectionIndex stored is the last played, so let's increment first
 	}
 }
 
@@ -166,12 +160,7 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	ensureMsgf(AnimMontage && AnimInstance, TEXT("No valid AnimMontage or AnimInstance"));
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	int32& FireSectionIndex = ASC->GetFireSectionIndex(GetAbilityTag());
-
-	if (!AnimInstance->Montage_IsPlaying(AnimMontage))
-	{
-		ASC->PlayMontage(this, ActivationInfo, AnimMontage, 1.f);
-		FireSectionIndex = 0;
-	}
+	InitFireSectionIndex(AnimInstance, FireSectionIndex);
 
 	// Build section name: first activation goes to "Start", then cycle Fire1 -> Fire2 -> ... -> Fire1
 	FName SectionToJumpTo;
@@ -198,17 +187,41 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 		SectionToJumpTo = GL::SectionStartName;
 	}
 
-	ASC->CurrentMontageJumpToSection(SectionToJumpTo);
 
-	// Adjust play rate so the section fits within FireRate
+	// Adjust play rate so the section fits within FireDuration
 	float StartTime, EndTime;
 	AnimMontage->GetSectionStartAndEndTime(AnimMontage->GetSectionIndex(SectionToJumpTo), StartTime, EndTime);
 	float const SectionLength = EndTime - StartTime;
 	ensureMsgf(SectionLength > 0.f, TEXT("Current section has no length"));
 
-	float const PlayRate = SectionLength / FireRate;
-	AnimInstance->Montage_SetPlayRate(AnimMontage, PlayRate);
-	FireSectionIndex++;
+	float const PlayRate = SectionLength / FireDuration;
+
+	if (!AnimInstance->Montage_IsPlaying(AnimMontage))
+	{
+		ASC->PlayMontage(this, ActivationInfo, AnimMontage, PlayRate, SectionToJumpTo);
+	}
+	else
+	{
+		ASC->CurrentMontageJumpToSection(SectionToJumpTo);
+		AnimInstance->Montage_SetPlayRate(AnimMontage, PlayRate);
+	}
+}
+
+FVector UGeoGameplayAbility::GetFireSocketLocation() const
+{
+	ACharacter const* Avatar = CastChecked<ACharacter>(GetAvatarActorFromActorInfo());
+	USkeletalMeshComponent* Mesh = Avatar->GetMesh();
+	int32 const FireSectionIndex = GetGeoAbilitySystemComponentFromActorInfo()->GetFireSectionIndex(GetAbilityTag());
+	FName const SocketName{FString::Printf(TEXT("%s%d"), GL::SocketBaseName, FireSectionIndex)};
+
+	if (!Mesh->DoesSocketExist(SocketName))
+	{
+		UE_LOG(LogAbilitySystemComponent, Warning, TEXT("[GeoGameplayAbility] Socket '%s' not found on mesh!"),
+			   *SocketName.ToString());
+		return Avatar->GetActorLocation();
+	}
+
+	return Mesh->GetSocketLocation(SocketName);
 }
 
 void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const

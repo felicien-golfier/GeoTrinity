@@ -20,6 +20,7 @@ class GEOTRINITY_API UGeoAutomaticProjectileAbility : public UGeoAutomaticFireAb
 	GENERATED_BODY()
 
 protected:
+	virtual FGeoAbilityTargetData BuildAbilityTargetData() override;
 	virtual bool ExecuteShot_Implementation() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Projectile")

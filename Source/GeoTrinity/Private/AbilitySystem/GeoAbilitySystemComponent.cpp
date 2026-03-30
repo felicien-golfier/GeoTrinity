@@ -320,7 +320,7 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 
 int32& UGeoAbilitySystemComponent::GetFireSectionIndex(FGameplayTag const& AbilityTag)
 {
-	return FireSectionIndices.FindOrAdd(AbilityTag, 0);
+	return FireSectionIndices.FindOrAdd(AbilityTag, -1);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

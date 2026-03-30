@@ -25,6 +25,7 @@ UCLASS()
 class GEOTRINITY_API UGeoAbilitySystemLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
+
 public:
 	/** INFO HOLDER **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))

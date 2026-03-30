@@ -30,7 +30,6 @@ public:
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 	FGameplayTag GetAbilityTag() const;
-	void SetTypeTag(FGameplayTag const& TypeTag);
 	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, FVector2D const& Origin, float Yaw,
 										 float ServerSpawnTime, int Seed) const;
 	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, FTransform const& Transform) const;
@@ -43,9 +42,11 @@ public:
 
 protected:
 	void ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo, UAnimInstance* AnimInstance);
+	virtual void InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex);
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;
 	virtual FGeoAbilityTargetData BuildAbilityTargetData();
+	FVector GetFireSocketLocation() const;
 	UFUNCTION()
 	void BuildDataAndFire();
 
@@ -59,10 +60,10 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UAnimMontage> AnimMontage;
 
-	// We consider the ability to Fire at the end of the FireRate delay.
+	// We consider the ability to Fire at the end of the FireDuration delay.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation",
 			  meta = (ClampMin = "0.01", UIMin = "0.05"))
-	float FireRate = 0.5f;
+	float FireDuration = 0.5f;
 
 protected:
 	FAbilityPayload StoredPayload;

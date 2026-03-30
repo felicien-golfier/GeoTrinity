@@ -4,16 +4,16 @@
 #include "AbilitySystem/Data/AbilityInfo.h"
 
 #include "Abilities/GameplayAbility.h"
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GameplayTagsManager.h"
 #include "GeoTrinity/GeoTrinity.h"
 
 static FGameplayTag GetAbilityTagFromCDO(TSubclassOf<UGameplayAbility> const& AbilityClass)
 {
+
 	if (!AbilityClass)
 	{
-		return FGameplayTag{};
+		return FGameplayTag();
 	}
 
 	FGameplayTag const SpellRoot =
@@ -28,7 +28,30 @@ static FGameplayTag GetAbilityTagFromCDO(TSubclassOf<UGameplayAbility> const& Ab
 
 	ensureMsgf(false, TEXT("Ability %s has no AbilityTag, please fill the AssetTags in the BP under Tag category"),
 			   *AbilityClass->GetName());
-	return FGameplayTag{};
+
+	return FGameplayTag();
+}
+
+static FGameplayTag GetAbilityTypeTagFromCDO(TSubclassOf<UGameplayAbility> const& AbilityClass)
+{
+	if (!AbilityClass)
+	{
+		return FGameplayTag();
+	}
+
+	FGameplayTag const AbilityTypeRoot =
+		UGameplayTagsManager::Get().RequestGameplayTag(FName(RootTagNames::AbilityTypeTag), false);
+	for (FGameplayTag const& Tag : AbilityClass.GetDefaultObject()->GetAssetTags())
+	{
+		if (Tag.MatchesTag(AbilityTypeRoot))
+		{
+			return Tag;
+		}
+	}
+
+	ensureMsgf(false, TEXT("Ability %s has no Ability Type, please fill the AssetTags in the BP under Tag category"),
+			   *AbilityClass->GetName());
+	return FGameplayTag();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -41,13 +64,7 @@ void UAbilityInfo::PopulateAbilityTags()
 	for (FPlayersGameplayAbilityInfo& Info : PlayersAbilityInfos)
 	{
 		Info.AbilityTag = GetAbilityTagFromCDO(Info.AbilityClass);
-		if (Info.TypeOfAbilityTag.IsValid())
-		{
-			if (UGeoGameplayAbility* CDO = Cast<UGeoGameplayAbility>(Info.AbilityClass.GetDefaultObject()))
-			{
-				CDO->SetTypeTag(Info.TypeOfAbilityTag);
-			}
-		}
+		Info.TypeOfAbilityTag = GetAbilityTypeTagFromCDO(Info.AbilityClass);
 	}
 }
 

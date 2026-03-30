@@ -10,7 +10,7 @@
 
 /**
  * Base class for high fire rate abilities that continuously execute while input is held.
- * Uses the base class FireRate and ScheduleFireTrigger for timing and network compensation.
+ * Uses the base class FireDuration and ScheduleFireTrigger for timing and network compensation.
  * Subclasses override ExecuteShot() to define what happens each shot.
  */
 UCLASS(Abstract)
@@ -38,6 +38,9 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Ability|AutoFire")
 	bool ExecuteShot();
 	virtual bool ExecuteShot_Implementation();
+
+	virtual void InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex) override;
+
 
 	int32 CurrentShotIndex = 0;
 

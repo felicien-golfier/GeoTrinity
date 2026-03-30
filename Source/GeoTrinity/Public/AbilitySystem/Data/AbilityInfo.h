@@ -37,7 +37,8 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay", meta = (Categories = "Ability.Type"))
+	/** Populated automatically from the ability CDO's AssetTags on load — do not set manually */
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta = (Categories = "Ability.Type"))
 	FGameplayTag TypeOfAbilityTag{};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (Categories = "InputTag"))

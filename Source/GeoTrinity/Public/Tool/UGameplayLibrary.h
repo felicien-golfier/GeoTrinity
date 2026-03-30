@@ -85,6 +85,7 @@ public:
 	static TArray<FVector> GetTargetDirections(UWorld const* World, EProjectileTarget Target, float Yaw,
 											   FVector const& Origin);
 
+	static constexpr TCHAR const* SocketBaseName = TEXT("anim_socket_");
 	inline static FName const SectionStartName{"Start"};
 	inline static FString SectionStartString{SectionStartName.ToString()};
 	inline static FName const SectionFireName{"Fire"};

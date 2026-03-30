@@ -17,9 +17,9 @@ namespace
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::InputTag + "." + tagName), comment);
 	}
 
-	void AddAbilityTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
+	void AddAbilityTypeTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
 	{
-		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilityTag + "." + tagName), comment);
+		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilityTypeTag + "." + tagName), comment);
 	}
 } // namespace
 
@@ -44,12 +44,12 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	AddInputTag(GameplayTags.InputTag_Dash, "Dash", "Input tag for dash ability");
 
 	// ABILITY TYPES //
-	AddAbilityTag(GameplayTags.Ability_Type_Basic, "Type.Basic", "Tag associated with basic spells");
-	AddAbilityTag(GameplayTags.Ability_Type_Special, "Type.Special", "Tag associated with special spells");
-	AddAbilityTag(GameplayTags.Ability_Type_SpecialAlternative, "Type.SpecialAlternative",
-				  "Tag associated with Special Alternate spells");
-	AddAbilityTag(GameplayTags.Ability_Type_Reload, "Type.Reload", "Tag associated with Reloading spells");
-	AddAbilityTag(GameplayTags.Ability_Type_Dash, "Type.Dash", "Tag associated with Dash spells");
+	AddAbilityTypeTag(GameplayTags.Ability_Type_Basic, "Basic", "Tag associated with basic spells");
+	AddAbilityTypeTag(GameplayTags.Ability_Type_Special, "Special", "Tag associated with special spells");
+	AddAbilityTypeTag(GameplayTags.Ability_Type_SpecialAlternative, "SpecialAlternative",
+					  "Tag associated with Special Alternate spells");
+	AddAbilityTypeTag(GameplayTags.Ability_Type_Reload, "Reload", "Tag associated with Reloading spells");
+	AddAbilityTypeTag(GameplayTags.Ability_Type_Dash, "Dash", "Tag associated with Dash spells");
 
 	// PLAYER CLASSES //
 	CreateAndAssignGameplayTag(GameplayTags.PlayerClass_Triangle, "PlayerClass.Triangle", "DPS class");
@@ -57,7 +57,8 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	CreateAndAssignGameplayTag(GameplayTags.PlayerClass_Square, "PlayerClass.Square", "Tank class");
 
 	// ABILITY STATES //
-	CreateAndAssignGameplayTag(GameplayTags.Status_Reloading, "Status.Reloading", "Active while reload ability is in progress");
+	CreateAndAssignGameplayTag(GameplayTags.Status_Reloading, "Status.Reloading",
+							   "Active while reload ability is in progress");
 
 	// BUFF STATUS //
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_DamageBoost, "Status.Buff.DamageBoost", "Damage boost buff");

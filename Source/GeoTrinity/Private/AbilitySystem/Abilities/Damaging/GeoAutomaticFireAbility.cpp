@@ -3,8 +3,8 @@
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h"
 
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystemComponent.h"
-#include "Tool/UGameplayLibrary.h"
 
 UGeoAutomaticFireAbility::UGeoAutomaticFireAbility()
 {
@@ -30,10 +30,7 @@ void UGeoAutomaticFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const 
 	bWantsToFire = true;
 
 	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-	if (ActorInfo->IsLocallyControlledPlayer())
-	{
-		ScheduleFireTrigger(ActivationInfo, AnimInstance);
-	}
+	ScheduleFireTrigger(ActivationInfo, AnimInstance);
 }
 
 void UGeoAutomaticFireAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
@@ -44,6 +41,10 @@ void UGeoAutomaticFireAbility::EndAbility(FGameplayAbilitySpecHandle const Handl
 
 	bWantsToFire = false;
 	CurrentShotIndex = 0;
+	if (AnimMontage)
+	{
+		GetGeoAbilitySystemComponentFromActorInfo()->GetFireSectionIndex(GetAbilityTag()) = -1;
+	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -52,6 +53,12 @@ bool UGeoAutomaticFireAbility::ExecuteShot_Implementation()
 {
 	ensureMsgf(false, TEXT("Subclasses must override this function to play whatever needs to be done in the ability."));
 	return true;
+}
+
+void UGeoAutomaticFireAbility::InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex)
+{
+	// Reset FireSectionIndex only at the ability end.
+	++FireSectionIndex;
 }
 
 void UGeoAutomaticFireAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,

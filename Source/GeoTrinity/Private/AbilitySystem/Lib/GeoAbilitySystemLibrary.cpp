@@ -14,7 +14,6 @@
 #include "Actor/GeoInteractableActor.h"
 #include "Characters/GeoCharacter.h"
 #include "EngineUtils.h"
-#include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "InstancedStruct.h"

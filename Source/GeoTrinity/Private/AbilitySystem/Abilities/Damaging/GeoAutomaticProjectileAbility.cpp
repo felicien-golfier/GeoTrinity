@@ -2,8 +2,16 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticProjectileAbility.h"
 
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Tool/UGameplayLibrary.h"
+
+FGeoAbilityTargetData UGeoAutomaticProjectileAbility::BuildAbilityTargetData()
+{
+	FGeoAbilityTargetData Data = Super::BuildAbilityTargetData();
+	Data.Origin = FVector2D(GetFireSocketLocation());
+	return Data;
+}
 
 bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 {
