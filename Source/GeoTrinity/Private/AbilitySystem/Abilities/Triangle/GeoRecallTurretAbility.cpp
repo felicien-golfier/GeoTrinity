@@ -85,6 +85,7 @@ void UGeoRecallTurretAbility::ActivateAbility(FGameplayAbilitySpecHandle const H
 			CueParams.Normal = (AvatarLocation - RecallInfo.TurretLocation).GetSafeNormal();
 			CueParams.Instigator = Instigator;
 			CueParams.AbilityLevel = GetAbilityLevel();
+			CueParams.RawMagnitude = RecallInfo.bWasBlinking ? 1.f : 0.f;
 			PlayerASC->ExecuteGameplayCue(RecallGameplayCueTag, CueParams);
 		}
 	}

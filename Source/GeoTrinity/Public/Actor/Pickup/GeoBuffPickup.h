@@ -20,21 +20,16 @@ struct FBuffPickupData : public FDeployableData
 {
 	GENERATED_BODY()
 
-	/** Not replicated — effects are applied server-side only. */
-	UPROPERTY(NotReplicated)
-	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
-
-	/** 0..1 ratio of missing ammo. Controls visual scale and effect stack count. */
-	UPROPERTY()
-	float PowerScale = 1.f;
-
 	/** Index into BuffMeshAssets (and the ability's BuffEffectDataAssets). -1 = none selected. */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	int32 MeshIndex = -1;
 
 	/** World position the pickup travels to after spawning. */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FVector TargetLocation = FVector::ZeroVector;
+
+	UPROPERTY(Transient)
+	float PowerScale;
 };
 
 /**

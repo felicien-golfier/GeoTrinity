@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
 
 #include "GeoDeployAbility.generated.h"
@@ -59,10 +60,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
 	float MaxDeployDistance = 1500.f;
 
-	// LifeDrain is used to define the life drain rate base on "How long the deployable would stay alive in sec if
-	// nothing else deplete its life"
+	// LifeDrainMaxDuration is used to define the life drain rate base on "How long the deployable would stay alive in
+	// sec if nothing else deplete its life", Size is the DeployableSize, for example it is used by the HealingZone to
+	// determine the size of the deployable.
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
-	float LifeDrain = 20.f;
+	FDeployableDataParams Params;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
 private:
 	void SpawnDeployProjectile(FVector const& Origin, float Yaw, float SpawnServerTime, float DeployDistance) const;

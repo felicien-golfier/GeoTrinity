@@ -79,13 +79,14 @@ protected:
 	TObjectPtr<UAudioComponent> LoopingSoundComponent;
 
 private:
-	UPROPERTY(EditAnywhere, meta = (Tooltip = "Safe guard in case distance check fails"))
+	UPROPERTY(EditAnywhere, Category = "GeoProjectile", meta = (Tooltip = "Safe guard in case distance check fails"))
 	float LifeSpanInSec = 30.f;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, Category = "GeoProjectile", meta = (ClampMin = "0"))
 	float DistanceSpan = 1000.f;
 
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	UPROPERTY(EditAnywhere, Category = "GeoProjectile",
+			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
 	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
 
 	bool bIsEnding{false};
@@ -94,12 +95,12 @@ private:
 	float DistanceSpanSqr;
 
 	/** Cosmetic (let the juice flow) **/
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "GeoProjectile")
 	TObjectPtr<UNiagaraSystem> ImpactEffect;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "GeoProjectile")
 	TObjectPtr<USoundBase> ImpactSound;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "GeoProjectile")
 	TObjectPtr<USoundBase> LoopingSound;
 };

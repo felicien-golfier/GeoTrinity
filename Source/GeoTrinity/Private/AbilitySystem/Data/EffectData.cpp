@@ -5,20 +5,26 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Settings/GameDataSettings.h"
 
 void FEffectData::UpdateContextHandle(FGeoGameplayEffectContext*, int32) const
 {
 	// By default does nothing. Override for your needs
 }
-void FEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-							  UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const
+
+FActiveGameplayEffectHandle FEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+													 UAbilitySystemComponent* SourceASC,
+													 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+													 int32 Seed) const
 {
 	// By default does nothing. Override for your needs
+	return FActiveGameplayEffectHandle();
 }
 
-void FGameplayEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-									  UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC,
-									  int32 AbilityLevel, int32) const
+FActiveGameplayEffectHandle FGameplayEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+															 UAbilitySystemComponent* SourceASC,
+															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+															 int32) const
 {
 	checkf(GameplayEffect, TEXT("No valid DamageEffectClass !"));
 
@@ -30,35 +36,50 @@ void FGameplayEffectData::ApplyEffect(FGameplayEffectContextHandle const& Contex
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_DurationMagnitude,
 																  Duration.GetValueAtLevel(AbilityLevel));
 
-	TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
-void FDamageEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-									UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC,
-									int32 AbilityLevel, int32) const
+FActiveGameplayEffectHandle FDamageEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+														   UAbilitySystemComponent* SourceASC,
+														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+														   int32) const
 {
-	checkf(DamageEffectClass, TEXT("No valid DamageEffectClass !"));
+	TSubclassOf<UGameplayEffect> const DamageEffectClass =
+		GetDefault<UGameDataSettings>()->DamageEffect.LoadSynchronous();
+	if (!DamageEffectClass)
+	{
+		ensureMsgf(DamageEffectClass, TEXT("Add an instant Damage Effect using ExecCalc_Damage in UGameDataSettings!"));
+		return FActiveGameplayEffectHandle();
+	}
+
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageEffectClass, AbilityLevel, ContextHandle);
 
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Damage,
 																  DamageAmount.GetValueAtLevel(AbilityLevel));
 
-	TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
-void FHealEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-								  UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC,
-								  int32 AbilityLevel, int32) const
+FActiveGameplayEffectHandle FHealEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+														 UAbilitySystemComponent* SourceASC,
+														 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+														 int32) const
 {
-	checkf(HealEffectClass, TEXT("No valid HealEffectClass !"));
+	TSubclassOf<UGameplayEffect> const HealEffectClass =
+		GetDefault<UGameDataSettings>()->HealthEffect.LoadSynchronous();
+	if (!HealEffectClass)
+	{
+		ensureMsgf(HealEffectClass, TEXT("Add an instant Heal Effect using ExecCalc_Heal in UGameDataSettings!"));
+		return FActiveGameplayEffectHandle();
+	}
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(HealEffectClass, AbilityLevel, ContextHandle);
 
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Heal,
 																  HealAmount.GetValueAtLevel(AbilityLevel));
 
-	TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
 void FContextDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext,
@@ -69,12 +90,16 @@ void FContextDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectC
 	EffectContext->SetSingleUseDamageMultiplier(Multiplier.GetValueAtLevel(AbilityLevel));
 }
 
-void FStatusEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-									UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC,
-									int32 AbilityLevel, int32 Seed) const
+FActiveGameplayEffectHandle FStatusEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+														   UAbilitySystemComponent* SourceASC,
+														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+														   int32 Seed) const
 {
 	if (static_cast<float>(Seed) / MAX_int32 * 100 <= StatusChance)
 	{
-		UGeoAbilitySystemLibrary::ApplyStatusToTarget(TargetASC, SourceASC, StatusTag, AbilityLevel);
+		FGameplayEffectSpecHandle SpecHandle;
+		return UGeoAbilitySystemLibrary::ApplyStatusToTarget(TargetASC, SourceASC, StatusTag, AbilityLevel, SpecHandle);
 	}
+
+	return FActiveGameplayEffectHandle();
 }

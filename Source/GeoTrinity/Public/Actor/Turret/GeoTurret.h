@@ -13,15 +13,6 @@
 class AGeoProjectile;
 class UCapsuleComponent;
 
-USTRUCT()
-struct FTurretData : public FDeployableData
-{
-	GENERATED_BODY()
-
-	UPROPERTY(NotReplicated)
-	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
-};
-
 UCLASS(Blueprintable, ClassGroup = (Custom))
 class GEOTRINITY_API AGeoTurret : public AGeoDeployableBase
 {
@@ -32,7 +23,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
-	virtual FTurretData const* GetData() const override { return &Data; }
+	virtual FDeployableData const* GetData() const override { return &Data; }
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
@@ -42,7 +33,7 @@ protected:
 	void TryFire();
 
 	UPROPERTY(Replicated)
-	FTurretData Data;
+	FDeployableData Data;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AGeoProjectile> TurretProjectileClass;

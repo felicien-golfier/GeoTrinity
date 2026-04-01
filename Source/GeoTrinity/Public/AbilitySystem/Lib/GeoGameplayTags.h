@@ -24,7 +24,6 @@ struct FGeoGameplayTags
 	FGameplayTag Gameplay_Damage;
 	FGameplayTag Gameplay_Heal;
 	FGameplayTag Gameplay_Shield;
-	FGameplayTag Gameplay_Drain;
 	FGameplayTag Gameplay_DurationMagnitude;
 	FGameplayTag Gameplay_GenericMagnitude;
 
@@ -41,14 +40,12 @@ struct FGeoGameplayTags
 	FGameplayTag Ability_Type_SpecialAlternative;
 	FGameplayTag Ability_Type_Dash;
 	FGameplayTag Ability_Type_Reload;
+	FGameplayTag Ability_Type_Passive;
 
 	// Player classes
 	FGameplayTag PlayerClass_Triangle;
 	FGameplayTag PlayerClass_Circle;
 	FGameplayTag PlayerClass_Square;
-
-	// Ability states
-	FGameplayTag Status_Reloading;
 
 	// Buff status
 	FGameplayTag Status_Buff_DamageBoost;

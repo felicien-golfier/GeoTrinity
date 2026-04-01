@@ -50,20 +50,55 @@ UStatusInfo* UGeoAbilitySystemLibrary::GetStatusInfo(UObject const* WorldContext
 
 	return GDSettings->GetLoadedDataAsset(GDSettings->StatusInfo);
 }
-
-// ---------------------------------------------------------------------------------------------------------------------
-FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(
-	TArray<TInstancedStruct<FEffectData>> const& DataArray, UGeoAbilitySystemComponent* SourceASC,
-	UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed)
+FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(TInstancedStruct<FEffectData> const& Data,
+																			UAbilitySystemComponent* SourceASC,
+																			UAbilitySystemComponent* TargetASC,
+																			int32 AbilityLevel, int32 Seed)
 {
-	FGameplayEffectContextHandle ContextHandle;
-	checkf(SourceASC, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source ASC to apply effect")) if (
-		!IsValid(SourceASC) || !IsValid(TargetASC))
+	FEffectData const* EffectData = Data.GetPtr<FEffectData>();
+	checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
+	return ApplySingleEffectData(*EffectData, SourceASC, TargetASC, AbilityLevel, Seed);
+}
+
+FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEffectData const& EffectData,
+																			UAbilitySystemComponent* SourceASC,
+																			UAbilitySystemComponent* TargetASC,
+																			int32 AbilityLevel, int32 Seed)
+{
+	if (!IsValid(SourceASC) || !IsValid(TargetASC))
 	{
-		return ContextHandle;
+		ensureMsgf(
+			IsValid(SourceASC) && IsValid(TargetASC),
+			TEXT(
+				"AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source and Target ASC to apply effect"));
+		return FActiveGameplayEffectHandle();
 	}
 
-	ContextHandle = SourceASC->MakeEffectContext();
+	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
+	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
+	FGeoGameplayEffectContext* GeoEffectContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
+
+	EffectData.UpdateContextHandle(GeoEffectContext, AbilityLevel);
+	return EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FActiveGameplayEffectHandle>
+UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed)
+{
+	TArray<FActiveGameplayEffectHandle> SpecHandles;
+	if (!IsValid(SourceASC) || !IsValid(TargetASC))
+	{
+		ensureMsgf(
+			IsValid(SourceASC) && IsValid(TargetASC),
+			TEXT(
+				"AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source and Target ASC to apply effect"));
+		return SpecHandles;
+	}
+
+	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
 	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
 
 	FGeoGameplayEffectContext* GeoEffectContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
@@ -80,16 +115,16 @@ FGameplayEffectContextHandle UGeoAbilitySystemLibrary::ApplyEffectFromEffectData
 	for (auto const& EffectDataInstance : DataArray)
 	{
 		FEffectData const* EffectData = EffectDataInstance.GetPtr<FEffectData>();
-		EffectData->ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
+		SpecHandles.Add(EffectData->ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed));
 	}
 
-	return ContextHandle;
+	return SpecHandles;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 bool UGeoAbilitySystemLibrary::ApplyStatusToTarget(UAbilitySystemComponent* pTargetASC,
 												   UAbilitySystemComponent* pSourceASC, FGameplayTag const& statusTag,
-												   int32 level)
+												   int32 level, FGameplayEffectSpecHandle& OutSpecHandle)
 {
 	if (!pTargetASC || !pSourceASC)
 	{
@@ -121,9 +156,9 @@ bool UGeoAbilitySystemLibrary::ApplyStatusToTarget(UAbilitySystemComponent* pTar
 	FGameplayEffectContextHandle contextHandle = pSourceASC->MakeEffectContext();
 	contextHandle.AddSourceObject(pSourceASC->GetAvatarActor());
 
-	FGameplayEffectSpecHandle specHandle = pSourceASC->MakeOutgoingSpec(statusInfo.StatusEffect, level, contextHandle);
+	OutSpecHandle = pSourceASC->MakeOutgoingSpec(statusInfo.StatusEffect, level, contextHandle);
 
-	pSourceASC->ApplyGameplayEffectSpecToTarget(*specHandle.Data, pTargetASC);
+	pSourceASC->ApplyGameplayEffectSpecToTarget(*OutSpecHandle.Data, pTargetASC);
 
 	return true;
 }

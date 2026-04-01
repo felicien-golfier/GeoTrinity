@@ -34,11 +34,17 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UUserWidget> DefaultDeployableHealthBarWidgetClass;
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Deployable")
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float DeployMaxChargeTime = 1.f;
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Deployable")
-	TSoftClassPtr<UGameplayEffect> DeployableHealthDrainEffect;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	TSoftClassPtr<UGameplayEffect> HealthEffect;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	TSoftClassPtr<UGameplayEffect> DamageEffect;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	float RegularTickInterval = .1f;
 };
 
 template <typename T>

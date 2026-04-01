@@ -26,6 +26,8 @@ class GEOTRINITY_API UGeoAbilitySystemLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
+	using GeoASL = UGeoAbilitySystemLibrary;
+
 public:
 	/** INFO HOLDER **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))
@@ -34,17 +36,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))
 	static UStatusInfo* GetStatusInfo(UObject const* WorldContextObject);
 
+
 	/** PARAMS STUFF **/
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Effects")
-	static FGameplayEffectContextHandle
+	static TArray<FActiveGameplayEffectHandle>
 	ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
-							  UGeoAbilitySystemComponent* SourceASC, UGeoAbilitySystemComponent* TargetASC,
+							  UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
 							  int32 AbilityLevel, int32 Seed);
+
+	static FActiveGameplayEffectHandle ApplySingleEffectData(TInstancedStruct<FEffectData> const& Data,
+															 UAbilitySystemComponent* SourceASC,
+															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+															 int32 Seed);
+
+	static FActiveGameplayEffectHandle ApplySingleEffectData(FEffectData const& EffectData,
+															 UAbilitySystemComponent* SourceASC,
+															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+															 int32 Seed);
+
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(UEffectDataAsset const* EffectDataAsset);
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(FGameplayTag AbilityTag);
 	/** STATUS **/
 	static bool ApplyStatusToTarget(UAbilitySystemComponent* pTargetASC, UAbilitySystemComponent* pSourceASC,
-									FGameplayTag const& statusTag, int32 level);
+									FGameplayTag const& statusTag, int32 level,
+									FGameplayEffectSpecHandle& OutSpecHandle);
 
 	/** TAG **/
 	static FGameplayTag GetGameplayTagFromRootTagString(FString const& StringOfTag);

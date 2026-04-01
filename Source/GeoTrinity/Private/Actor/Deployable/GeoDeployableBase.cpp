@@ -3,17 +3,18 @@
 #include "Actor/Deployable/GeoDeployableBase.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/UGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoDeployableBase::AGeoDeployableBase()
 {
-	PrimaryActorTick.bCanEverTick = false;
-
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
 	HealthBarComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("HealthBarComponent"));
 	HealthBarComponent->SetupAttachment(RootComponent);
 	HealthBarComponent->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
@@ -26,40 +27,45 @@ AGeoDeployableBase::AGeoDeployableBase()
 	}
 }
 
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::BeginPlay()
+void AGeoDeployableBase::InitDrain()
 {
-	Super::BeginPlay();
-
-	if (!HasAuthority() || GetData()->MaxDuration <= 0.f)
-	{
-		return;
-	}
-
-	TSubclassOf<UGameplayEffect> const HealthDrainEffect =
-		GetDefault<UGameDataSettings>()->DeployableHealthDrainEffect.LoadSynchronous();
-	ensureMsgf(HealthDrainEffect,
-			   TEXT("AGeoDeployableBase: DeployableHealthDrainEffect is not set in GameDataSettings!"));
-	if (!HealthDrainEffect)
+	if (!HasAuthority() || GetData()->Params.LifeDrainMaxDuration <= 0.f)
 	{
 		return;
 	}
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	float const MaxHealth = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
-	ensureMsgf(MaxHealth > 0.f, TEXT("AGeoDeployableBase: MaxHealth is 0 — DefaultAttributes may not be applied."));
 	if (MaxHealth <= 0.f)
 	{
+		ensureMsgf(MaxHealth > 0.f, TEXT("AGeoDeployableBase: MaxHealth is 0 — DefaultAttributes may not be applied."));
 		return;
 	}
-	float const DrainPerSecond = MaxHealth / GetData()->MaxDuration;
-	float const DrainPeriod = HealthDrainEffect.GetDefaultObject()->Period.Value;
-	FGameplayEffectSpecHandle const SpecHandle =
-		ASC->MakeOutgoingSpec(HealthDrainEffect, GetData()->Level, ASC->MakeEffectContext());
-	SpecHandle.Data->SetSetByCallerMagnitude(FGeoGameplayTags::Get().Gameplay_Drain, -(DrainPerSecond * DrainPeriod));
-	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+	DrainMagnitudePerSecond = MaxHealth / GetData()->Params.LifeDrainMaxDuration;
 }
 
+// -----------------------------------------------------------------------------------------------------------------------------------------
+
+void AGeoDeployableBase::Tick(float DeltaSeconds)
+{
+	// Based on the GameDataSettings RegularTickInterval frequence
+	if (UGameplayLibrary::IsServer(GetWorld()))
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+		FDamageEffectData DrainEffectData = FDamageEffectData();
+		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed);
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+
+void AGeoDeployableBase::BeginPlay()
+{
+	Super::BeginPlay();
+	InitDrain();
+}
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnRecalled()
 {
@@ -70,7 +76,7 @@ void AGeoDeployableBase::OnRecalled()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 float AGeoDeployableBase::GetDurationPercent() const
 {
-	if (GetData()->MaxDuration <= 0.f)
+	if (GetData()->Params.LifeDrainMaxDuration <= 0.f)
 	{
 		return 1.f;
 	}
@@ -85,17 +91,11 @@ float AGeoDeployableBase::GetDurationPercent() const
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::InitInteractableData(FInteractableActorData* InputData)
-{
-	Super::InitInteractableData(InputData);
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnHealthChanged(float NewValue)
 {
 	if (NewValue <= 0.f && !bExpired && !BlinkTimerHandle.IsValid())
 	{
-		float const BlinkDuration = GetData()->BlinkDuration;
+		float const BlinkDuration = GetData()->Params.BlinkDuration;
 		if (BlinkDuration > 0.f)
 		{
 			GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::OnBlinkTimerExpired,

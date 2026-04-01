@@ -9,6 +9,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 UExecCalc_Heal::UExecCalc_Heal()
 {
+	// TODO: Here the heal multiplicator is on the target. It's not the intend way. it is a received heal multiplicator
 	HealMultiplierCaptureDef = FGameplayEffectAttributeCaptureDefinition(
 		UCharacterAttributeSet::GetHealMultiplierAttribute(), EGameplayEffectAttributeCaptureSource::Target, false);
 	RelevantAttributesToCapture.Add(HealMultiplierCaptureDef);

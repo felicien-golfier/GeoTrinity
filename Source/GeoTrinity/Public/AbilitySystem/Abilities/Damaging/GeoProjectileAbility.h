@@ -42,6 +42,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoProjectile> ProjectileClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Target")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	EProjectileTarget Target;
 };

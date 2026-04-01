@@ -57,7 +57,7 @@ protected:
 
 
 public:
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;
 
 	// We consider the ability to Fire at the end of the FireDuration delay.

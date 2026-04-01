@@ -219,12 +219,15 @@ void UGeoDeployAbility::SpawnDeployProjectile(FVector const& Origin, float const
 	AGeoProjectile* Projectile =
 		UGameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
 										  GetEffectDataArray(), SpawnServerTime, PredictionKey);
-	if (IsValid(Projectile))
+	if (!IsValid(Projectile))
 	{
-		Projectile->SetDistanceSpan(DeployDistance);
-		if (ADeployableSpawnerProjectile* DeployableSpawnerProjectile = Cast<ADeployableSpawnerProjectile>(Projectile))
-		{
-			DeployableSpawnerProjectile->LifeDrain = LifeDrain;
-		}
+		ensureMsgf(false, TEXT("GeoDeployAbility: Failed to spawn projectile!"));
+		return;
 	}
+
+	Projectile->SetDistanceSpan(DeployDistance);
+	ADeployableSpawnerProjectile* DeployableSpawnerProjectile = Cast<ADeployableSpawnerProjectile>(Projectile);
+	checkf(DeployableSpawnerProjectile, TEXT("SpawnerProjectile  must be a ADeployableSpawnerProjectile"));
+	DeployableSpawnerProjectile->Params = Params;
+	DeployableSpawnerProjectile->DeployableActorClass = DeployableActorClass;
 }

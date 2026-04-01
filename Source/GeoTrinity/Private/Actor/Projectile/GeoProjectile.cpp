@@ -179,7 +179,7 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	if (HasAuthority())
 	{
-		GeoASL::ApplyEffectFromEffectData(EffectDataArray, GeoASL::GetGeoAscFromActor(Payload.Instigator),
+		GeoASL::ApplyEffectFromEffectData(EffectDataArray, GeoASL::GetGeoAscFromActor(Payload.Owner),
 										  GeoASL::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel, Payload.Seed);
 	}
 

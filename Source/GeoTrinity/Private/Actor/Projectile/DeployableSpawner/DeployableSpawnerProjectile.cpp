@@ -24,7 +24,8 @@ void ADeployableSpawnerProjectile::FillBaseData(FDeployableData& Data, AActor* P
 {
 	Data.CharacterOwner = PayloadOwner;
 	Data.Level = Payload.AbilityLevel;
-	Data.MaxDuration = LifeDrain;
+	Data.Seed = Payload.Seed;
+	Data.Params = Params;
 	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(PayloadOwner))
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
@@ -36,6 +37,7 @@ void ADeployableSpawnerProjectile::InitDeployable(AGeoDeployableBase* Deployable
 {
 	FDeployableData Data;
 	FillBaseData(Data, PayloadOwner);
+	Data.EffectDataArray = EffectDataArray;
 	Deployable->InitInteractableData(&Data);
 }
 

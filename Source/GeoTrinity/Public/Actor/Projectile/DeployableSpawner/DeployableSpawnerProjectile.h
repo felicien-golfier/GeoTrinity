@@ -8,13 +8,14 @@
 
 #include "DeployableSpawnerProjectile.generated.h"
 
-UCLASS()
+UCLASS(Blueprintable)
 class GEOTRINITY_API ADeployableSpawnerProjectile : public AGeoProjectile
 {
 	GENERATED_BODY()
 
 public:
-	float LifeDrain;
+	FDeployableDataParams Params;
+	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
 	virtual bool IsValidOverlap(AActor const* OtherActor) override;
 
@@ -22,9 +23,6 @@ protected:
 	virtual void EndProjectileLife() override;
 	virtual void InitDeployable(AGeoDeployableBase* Deployable, AActor* PayloadOwner) const;
 	void FillBaseData(FDeployableData& Data, AActor* PayloadOwner) const;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Deployable")
-	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
 private:
 	void SpawnDeployableActor() const;

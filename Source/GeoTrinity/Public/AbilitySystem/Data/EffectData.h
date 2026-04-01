@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
+#include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
 #include "ScalableFloat.h"
 #include "StructUtils/InstancedStruct.h"
@@ -32,16 +33,20 @@ struct GEOTRINITY_API FEffectData
 	virtual ~FEffectData() = default;
 
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const;
-	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const;
+	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+													int32 Seed) const;
 };
 
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
 	GENERATED_BODY()
-	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
+	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+													int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UGameplayEffect> GameplayEffect;
@@ -64,11 +69,10 @@ struct FDamageEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+													int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat DamageAmount;
@@ -79,11 +83,10 @@ struct FHealEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UGameplayEffect> HealEffectClass;
+	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+													int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat HealAmount;
@@ -105,8 +108,10 @@ struct FStatusEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	virtual void ApplyEffect(FGameplayEffectContextHandle const& ContextHandle, UGeoAbilitySystemComponent* SourceASC,
-							 UGeoAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed) const override;
+	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+													int32 Seed) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
 			  meta = (ClampMin = "0", ClampMax = "100", UIMin = "0", UIMax = "100"))

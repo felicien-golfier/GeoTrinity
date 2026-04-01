@@ -31,14 +31,14 @@ void AGeoTurret::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 
 void AGeoTurret::InitInteractableData(FInteractableActorData* InputData)
 {
-	FTurretData* TurretData = static_cast<FTurretData*>(InputData);
-	ensureMsgf(TurretData, TEXT("AGeoTurret: Data is not a FTurretData!"));
-	if (!TurretData)
+	FDeployableData* DeployableData = static_cast<FDeployableData*>(InputData);
+	ensureMsgf(DeployableData, TEXT("AGeoTurret: Data is not a FDeployableData!"));
+	if (!DeployableData)
 	{
 		return;
 	}
 
-	Data = *TurretData;
+	Data = *DeployableData;
 
 	Super::InitInteractableData(InputData);
 }
@@ -85,7 +85,7 @@ void AGeoTurret::TryFire()
 	Payload.Origin = FVector2D(GetActorLocation());
 	Payload.Yaw = DirectionToTarget.Rotation().Yaw;
 	Payload.ServerSpawnTime = SpawnServerTime;
-	Payload.AbilityLevel = FMath::RoundToInt(Data.Level);
+	Payload.AbilityLevel = Data.Level;
 
 	UGameplayLibrary::SpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload,
 									  GetData()->EffectDataArray, SpawnServerTime);

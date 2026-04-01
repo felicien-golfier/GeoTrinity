@@ -19,10 +19,13 @@ struct FInteractableActorData
 	TObjectPtr<AActor> CharacterOwner = nullptr;
 
 	UPROPERTY()
-	float Level = 1.f;
+	int Level = 1;
 
 	UPROPERTY()
 	FGenericTeamId TeamID;
+
+	UPROPERTY()
+	int Seed;
 };
 
 UCLASS()

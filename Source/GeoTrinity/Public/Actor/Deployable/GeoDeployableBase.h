@@ -2,25 +2,44 @@
 
 #pragma once
 
+#include "AbilitySystem/Data/EffectData.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include "GeoDeployableBase.generated.h"
 
+
+struct FEffectData;
 class UGeoCombattantWidgetComp;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeployableDestroyed, AGeoDeployableBase*, Deployable);
+
+USTRUCT(Blueprintable)
+struct FDeployableDataParams
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	float BlinkDuration = 2.f;
+
+	UPROPERTY(EditAnywhere)
+	float LifeDrainMaxDuration = 0.f;
+
+	UPROPERTY(EditAnywhere)
+	float Size;
+};
 
 USTRUCT()
 struct FDeployableData : public FInteractableActorData
 {
 	GENERATED_BODY()
 
-	UPROPERTY()
-	float MaxDuration = 0.f;
+	UPROPERTY(Transient, NotReplicated)
+	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 
-	UPROPERTY()
-	float BlinkDuration = 2.f;
+	UPROPERTY(Transient)
+	FDeployableDataParams Params;
 };
 
 /**
@@ -34,17 +53,18 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 
 public:
 	AGeoDeployableBase();
+	virtual void InitDrain();
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 
 	/** Called by the owning player to recall this deployable */
 	virtual void OnRecalled();
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
-	float GetDurationPercent() const;
+	virtual float GetDurationPercent() const;
 	bool IsExpired() const { return bExpired; }
 	bool IsBlinking() const;
 
-	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployableDestroyed OnDeployableDestroyed;
 
@@ -66,6 +86,8 @@ protected:
 	UFUNCTION(BlueprintNativeEvent)
 	void OnBlinkStarted();
 	virtual void OnBlinkStarted_Implementation();
+
+	float DrainMagnitudePerSecond;
 
 private:
 	void OnBlinkTimerExpired();

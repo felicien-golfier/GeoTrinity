@@ -118,6 +118,7 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 			PickupData.PowerScale = PowerScale;
 			PickupData.MeshIndex = RandomIndex;
 			PickupData.TargetLocation = AvatarLocation + SpawnOffset;
+			PickupData.Seed = StoredPayload.Seed;
 			if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Avatar))
 			{
 				PickupData.TeamID = TeamInterface->GetGenericTeamId();
