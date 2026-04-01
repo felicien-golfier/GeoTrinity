@@ -27,7 +27,7 @@ struct FDeployableDataParams
 	float LifeDrainMaxDuration = 0.f;
 
 	UPROPERTY(EditAnywhere)
-	float Size;
+	float Size = 0.f;
 };
 
 USTRUCT()
@@ -87,6 +87,7 @@ protected:
 	void OnBlinkStarted();
 	virtual void OnBlinkStarted_Implementation();
 
+	bool bUseRegularDrain = true;
 	float DrainMagnitudePerSecond;
 
 private:

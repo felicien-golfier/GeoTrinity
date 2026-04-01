@@ -1,4 +1,4 @@
-﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 
 #include "AbilitySystem/Data/AbilityInfo.h"
@@ -54,6 +54,15 @@ static FGameplayTag GetAbilityTypeTagFromCDO(TSubclassOf<UGameplayAbility> const
 	return FGameplayTag();
 }
 
+static void PopulateTagsForArray(TArray<FPlayersGameplayAbilityInfo>& Infos)
+{
+	for (FPlayersGameplayAbilityInfo& Info : Infos)
+	{
+		Info.AbilityTag = GetAbilityTagFromCDO(Info.AbilityClass);
+		Info.TypeOfAbilityTag = GetAbilityTypeTagFromCDO(Info.AbilityClass);
+	}
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 void UAbilityInfo::PopulateAbilityTags()
 {
@@ -61,11 +70,10 @@ void UAbilityInfo::PopulateAbilityTags()
 	{
 		Info.AbilityTag = GetAbilityTagFromCDO(Info.AbilityClass);
 	}
-	for (FPlayersGameplayAbilityInfo& Info : PlayersAbilityInfos)
-	{
-		Info.AbilityTag = GetAbilityTagFromCDO(Info.AbilityClass);
-		Info.TypeOfAbilityTag = GetAbilityTypeTagFromCDO(Info.AbilityClass);
-	}
+	PopulateTagsForArray(TriangleAbilities);
+	PopulateTagsForArray(CircleAbilities);
+	PopulateTagsForArray(SquareAbilities);
+	PopulateTagsForArray(SharedAbilities);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -85,10 +93,46 @@ void UAbilityInfo::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 #endif
 
 // ---------------------------------------------------------------------------------------------------------------------
+TArray<FPlayersGameplayAbilityInfo> UAbilityInfo::GetAbilitiesForClass(EPlayerClass PlayerClass) const
+{
+	ensureMsgf(PlayerClass != EPlayerClass::None && PlayerClass != EPlayerClass::All,
+			   TEXT("GetAbilitiesForClass called with invalid PlayerClass %s"),
+			   *UEnum::GetValueAsString(PlayerClass));
+
+	TArray<FPlayersGameplayAbilityInfo> Result = SharedAbilities;
+	switch (PlayerClass)
+	{
+	case EPlayerClass::Triangle:
+		Result.Append(TriangleAbilities);
+		break;
+	case EPlayerClass::Circle:
+		Result.Append(CircleAbilities);
+		break;
+	case EPlayerClass::Square:
+		Result.Append(SquareAbilities);
+		break;
+	default:
+		break;
+	}
+	return Result;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FPlayersGameplayAbilityInfo> UAbilityInfo::GetAllPlayersAbilityInfos() const
+{
+	TArray<FPlayersGameplayAbilityInfo> Result;
+	Result.Append(TriangleAbilities);
+	Result.Append(CircleAbilities);
+	Result.Append(SquareAbilities);
+	Result.Append(SharedAbilities);
+	return Result;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 TArray<FGameplayAbilityInfo*> UAbilityInfo::GetAllAbilityInfos() const
 {
 	TArray<FGameplayAbilityInfo*> AllInfos;
-	for (auto PlayersAbilityInfo : PlayersAbilityInfos)
+	for (auto PlayersAbilityInfo : GetAllPlayersAbilityInfos())
 	{
 		AllInfos.Add(&PlayersAbilityInfo);
 	}
@@ -113,7 +157,7 @@ TArray<FGameplayAbilityInfo> UAbilityInfo::FindAbilityInfoForListOfTag(TArray<FG
 		}
 	}
 
-	for (FGameplayAbilityInfo const& Info : PlayersAbilityInfos)
+	for (FPlayersGameplayAbilityInfo const& Info : GetAllPlayersAbilityInfos())
 	{
 		if (AbilityTags.Contains(Info.AbilityTag))
 		{

@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerState.h"
 #include "GenericTeamAgentInterface.h"
 
+class APlayableCharacter;
+
 #include "GeoPlayerState.generated.h"
 
 class UCharacterAttributeSet;
@@ -63,8 +65,11 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UCharacterAttributeSet> CharacterAttributeSet;
 
-	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Class")
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerClass, EditAnywhere, BlueprintReadOnly, Category = "Class")
 	EPlayerClass PlayerClass = EPlayerClass::None;
+
+	UFUNCTION()
+	void OnRep_PlayerClass();
 
 	UPROPERTY(Replicated)
 	float DebugDPS = 0.f;

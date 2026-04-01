@@ -33,6 +33,7 @@ public:
 	void GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, int32 Level = 1);
 	void GiveStartupAbilities(int32 Level = 1);
 	void GiveStartupAbilities(EPlayerClass PlayerClass, int32 Level = 1);
+	void ClearPlayerClassAbilities();
 
 	/** Input **/
 	void AbilityInputTagPressed(FGameplayTag const& inputTag);

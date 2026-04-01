@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "Characters/PlayableCharacter.h"
 #include "GeoPlayerController.h"
 #include "HUD/GeoHUD.h"
 #include "Net/UnrealNetwork.h"
@@ -61,6 +62,16 @@ void AGeoPlayerState::InitOverlay()
 			Hud->InitOverlay(GeoPlayerController, this, AbilitySystemComponent, CharacterAttributeSet);
 		}
 	}
+}
+
+void AGeoPlayerState::OnRep_PlayerClass()
+{
+	APlayableCharacter* PlayableCharacter = Cast<APlayableCharacter>(GetPawn());
+	if (!PlayableCharacter)
+	{
+		return;
+	}
+	PlayableCharacter->ApplyClassData(PlayerClass);
 }
 
 UAbilitySystemComponent* AGeoPlayerState::GetAbilitySystemComponent() const

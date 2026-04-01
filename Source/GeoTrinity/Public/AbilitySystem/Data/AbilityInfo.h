@@ -47,9 +47,6 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> InputAction;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
-	EPlayerClass PlayerClass = EPlayerClass::None;
-
 	/** If true, this ability is automatically given to players of the matching PlayerClass at startup */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
 	bool bGiveAtStartup = true;
@@ -67,16 +64,34 @@ class GEOTRINITY_API UAbilityInfo : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
-	TArray<FPlayersGameplayAbilityInfo> PlayersAbilityInfos;
+	UPROPERTY(EditDefaultsOnly, Category = "Triangle", meta = (TitleProperty = "{AbilityTag}"))
+	TArray<FPlayersGameplayAbilityInfo> TriangleAbilities;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Circle", meta = (TitleProperty = "{AbilityTag}"))
+	TArray<FPlayersGameplayAbilityInfo> CircleAbilities;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Square", meta = (TitleProperty = "{AbilityTag}"))
+	TArray<FPlayersGameplayAbilityInfo> SquareAbilities;
+
+	/** Abilities granted to all player classes */
+	UPROPERTY(EditDefaultsOnly, Category = "Shared (All Classes)", meta = (TitleProperty = "{AbilityTag}"))
+	TArray<FPlayersGameplayAbilityInfo> SharedAbilities;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FGameplayAbilityInfo> GenericAbilityInfos;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
+	TArray<FGameplayAbilityInfo> PlayersAbilityInfos;
 
 	virtual void PostLoad() override;
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
+
+	/** Returns abilities for the given class combined with SharedAbilities */
+	TArray<FPlayersGameplayAbilityInfo> GetAbilitiesForClass(EPlayerClass PlayerClass) const;
+	/** Returns all player ability infos across all classes (for clearing) */
+	TArray<FPlayersGameplayAbilityInfo> GetAllPlayersAbilityInfos() const;
 
 	TArray<FGameplayAbilityInfo*> GetAllAbilityInfos() const;
 	TArray<FGameplayAbilityInfo> FindAbilityInfoForListOfTag(TArray<FGameplayTag> const& AbilityTags,

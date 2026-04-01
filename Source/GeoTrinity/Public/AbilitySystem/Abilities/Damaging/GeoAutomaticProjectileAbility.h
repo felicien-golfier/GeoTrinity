@@ -23,9 +23,9 @@ protected:
 	virtual FGeoAbilityTargetData BuildAbilityTargetData() override;
 	virtual bool ExecuteShot_Implementation() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Projectile")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoProjectile> ProjectileClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Target")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	EProjectileTarget Target;
 };

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "AbilitySystem/Data/EffectData.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
@@ -19,6 +18,8 @@ class GEOTRINITY_API AGeoTurret : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
+	AGeoTurret();
+
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -26,6 +27,7 @@ protected:
 	virtual FDeployableData const* GetData() const override { return &Data; }
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	AActor* FindBestTarget() const;

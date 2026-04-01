@@ -6,7 +6,7 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "Actor/Pickup/GeoBuffPickup.h"
+#include "Actor/Deployable/GeoBuffPickup.h"
 #include "GenericTeamAgentInterface.h"
 
 // ---------------------------------------------------------------------------------------------------------------------

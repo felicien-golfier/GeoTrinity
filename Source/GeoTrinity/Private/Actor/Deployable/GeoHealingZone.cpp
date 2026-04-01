@@ -6,10 +6,14 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGameplayLibrary.h"
+
+AGeoHealingZone::AGeoHealingZone()
+{
+	bUseRegularDrain = false;
+}
 
 void AGeoHealingZone::InitDrain()
 {
@@ -92,7 +96,7 @@ void AGeoHealingZone::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponen
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHealingZone::Tick(float DeltaSeconds)
 {
-	// Do not call super to ensure we don't apply drain.
+	Super::Tick(DeltaSeconds);
 	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponent();
 	IGenericTeamAgentInterface const* ZoneTeamAgent = Cast<IGenericTeamAgentInterface>(this);
 

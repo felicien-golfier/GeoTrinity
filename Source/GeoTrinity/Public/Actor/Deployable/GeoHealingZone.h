@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "AbilitySystem/Data/EffectData.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
 
@@ -15,6 +14,7 @@ class GEOTRINITY_API AGeoHealingZone : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
+	AGeoHealingZone();
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual float GetDurationPercent() const override;

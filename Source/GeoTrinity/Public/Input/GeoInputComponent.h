@@ -71,7 +71,7 @@ void UGeoInputComponent::BindAbilityActions(UserClass* Object, PressedFuncType P
 
 	TSet<TTuple<UInputAction*, FGameplayTag>> BoundPairs;
 
-	for (FPlayersGameplayAbilityInfo const& Info : AbilityInfo->PlayersAbilityInfos)
+	for (FPlayersGameplayAbilityInfo const& Info : AbilityInfo->GetAllPlayersAbilityInfos())
 	{
 		if (!Info.InputAction || !Info.InputTag.IsValid())
 		{

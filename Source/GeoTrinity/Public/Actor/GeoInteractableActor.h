@@ -25,7 +25,7 @@ struct FInteractableActorData
 	FGenericTeamId TeamID;
 
 	UPROPERTY()
-	int Seed;
+	int Seed = 0;
 };
 
 UCLASS()

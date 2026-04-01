@@ -7,8 +7,8 @@
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerState.h"
-#include "Kismet/GameplayStatics.h"
 #include "GeoPlayerState.h"
+#include "Kismet/GameplayStatics.h"
 #include "System/GeoCombatStatsSubsystem.h"
 #include "TimerManager.h"
 #include "Tool/UGameplayLibrary.h"
@@ -24,7 +24,7 @@ static FAutoConsoleCommandWithWorld GShowPingCommand(TEXT("Geo.ShowPing"), TEXT(
 														 }));
 
 static TAutoConsoleVariable<bool>
-	CVarShowCombatStats(TEXT("Geo.ShowCombatStats"), false,
+	CVarShowCombatStats(TEXT("Geo.ShowCombatStats"), true,
 						TEXT("When true, shows per-player DPS / HPS / damage received on screen"));
 #endif
 

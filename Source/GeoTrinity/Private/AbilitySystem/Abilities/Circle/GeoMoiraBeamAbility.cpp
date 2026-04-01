@@ -31,6 +31,12 @@ void UGeoMoiraBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 	RemainingDuration = InitialDuration;
 	AccumulatedRadiusBonus = 0.f;
 
+	if (!SpeedBuffEffect.IsValid())
+	{
+		ensureMsgf(SpeedBuffHandle.IsValid(), TEXT("SpeedBuffEffect is not valid, pls fill the asset"));
+		return;
+	}
+
 	UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
 	SpeedBuffHandle = UGeoAbilitySystemLibrary::ApplySingleEffectData(SpeedBuffEffect, SourceASC, SourceASC,
 																	  GetAbilityLevel(), StoredPayload.Seed);

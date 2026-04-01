@@ -92,10 +92,9 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerC
 		return;
 	}
 
-	for (FPlayersGameplayAbilityInfo const& AbilityInfo : AbilityInfos->PlayersAbilityInfos)
+	for (FPlayersGameplayAbilityInfo const& AbilityInfo : AbilityInfos->GetAbilitiesForClass(PlayerClass))
 	{
-		if (!AbilityInfo.bGiveAtStartup
-			|| (AbilityInfo.PlayerClass != PlayerClass && AbilityInfo.PlayerClass != EPlayerClass::All))
+		if (!AbilityInfo.bGiveAtStartup)
 		{
 			continue;
 		}
@@ -117,6 +116,42 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerC
 	}
 
 	bStartupAbilitiesGiven = true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::ClearPlayerClassAbilities()
+{
+	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
+	if (!AbilityInfos)
+	{
+		ensureMsgf(AbilityInfos, TEXT("ClearPlayerClassAbilities: AbilityInfo not set!"));
+		return;
+	}
+
+	TArray<FGameplayAbilitySpecHandle> AbilitiesToClear;
+	{
+		FScopedAbilityListLock ScopeLock(*this);
+		for (FGameplayAbilitySpec const& AbilitySpec : GetActivatableAbilities())
+		{
+			if (!AbilitySpec.Ability)
+			{
+				continue;
+			}
+			for (FPlayersGameplayAbilityInfo const& Info : AbilityInfos->GetAllPlayersAbilityInfos())
+			{
+				if (AbilitySpec.Ability->GetClass() == Info.AbilityClass)
+				{
+					AbilitiesToClear.Add(AbilitySpec.Handle);
+					break;
+				}
+			}
+		}
+	}
+
+	for (FGameplayAbilitySpecHandle const& Handle : AbilitiesToClear)
+	{
+		ClearAbility(Handle);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

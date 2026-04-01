@@ -7,6 +7,12 @@
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGameplayLibrary.h"
 
+AGeoTurret::AGeoTurret()
+{
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.f;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoTurret::BeginPlay()
 {
@@ -41,6 +47,21 @@ void AGeoTurret::InitInteractableData(FInteractableActorData* InputData)
 	Data = *DeployableData;
 
 	Super::InitInteractableData(InputData);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoTurret::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	AActor* Target = FindBestTarget();
+	if (!IsValid(Target))
+	{
+		return;
+	}
+
+	FVector const DirectionToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	SetActorRotation(DirectionToTarget.Rotation());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -89,5 +110,4 @@ void AGeoTurret::TryFire()
 
 	UGameplayLibrary::SpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload,
 									  GetData()->EffectDataArray, SpawnServerTime);
-	SetActorRotation(DirectionToTarget.Rotation());
 }

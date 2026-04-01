@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/Pickup/GeoBuffPickup.h"
+#include "Actor/Deployable/GeoBuffPickup.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -15,12 +15,15 @@
 AGeoBuffPickup::AGeoBuffPickup()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.f;
 
 	VisualRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));
 	VisualRoot->SetupAttachment(GetRootComponent());
 
 	BuffMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BuffMeshComponent"));
 	BuffMeshComponent->SetupAttachment(VisualRoot);
+
+	bUseRegularDrain = false;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

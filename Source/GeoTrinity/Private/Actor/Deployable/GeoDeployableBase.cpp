@@ -49,8 +49,10 @@ void AGeoDeployableBase::InitDrain()
 
 void AGeoDeployableBase::Tick(float DeltaSeconds)
 {
+	Super::Tick(DeltaSeconds);
+
 	// Based on the GameDataSettings RegularTickInterval frequence
-	if (UGameplayLibrary::IsServer(GetWorld()))
+	if (bUseRegularDrain && UGameplayLibrary::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		FDamageEffectData DrainEffectData = FDamageEffectData();

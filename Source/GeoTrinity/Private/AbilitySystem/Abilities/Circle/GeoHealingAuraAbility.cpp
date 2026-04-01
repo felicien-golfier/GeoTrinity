@@ -31,6 +31,12 @@ void UGeoHealingAuraAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
+	if (!Heal.IsValid())
+	{
+		ensureMsgf(Heal.IsValid(), TEXT("Fill your data dumb ass"));
+		return;
+	}
+
 	float const AuraTickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
 
 	GetWorld()->GetTimerManager().SetTimer(AuraTickHandle, this, &ThisClass::TickAura, AuraTickInterval, true);

@@ -6,12 +6,14 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/GameStateBase.h"
 #include "GeoPlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGameplayLibrary.h"
+#include "World/GeoWorldSettings.h"
 
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -130,12 +132,92 @@ void APlayableCharacter::AbilityInputTagHeld(FGameplayTag InputTag)
 	AbilitySystemComponent->AbilityInputTagHeld(InputTag);
 }
 
+EPlayerClass APlayableCharacter::PickStartingClass() const
+{
+	if (AGeoWorldSettings const* GeoWorldSettings = Cast<AGeoWorldSettings>(GetWorld()->GetWorldSettings()))
+	{
+		if (GeoWorldSettings->StartingClassOverride != EPlayerClass::None
+			&& GeoWorldSettings->StartingClassOverride != EPlayerClass::All)
+		{
+			return GeoWorldSettings->StartingClassOverride;
+		}
+	}
+
+	AGameStateBase const* GameState = GetWorld()->GetGameState();
+	if (!GameState)
+	{
+		ensureMsgf(GameState, TEXT("PickStartingClass: No GameState on %s"), *GetName());
+		return EPlayerClass::Triangle;
+	}
+
+	TSet<EPlayerClass> UsedClasses;
+	for (APlayerState* Player : GameState->PlayerArray)
+	{
+		AGeoPlayerState const* GeoPlayerState = Cast<AGeoPlayerState>(Player);
+		if (GeoPlayerState && GeoPlayerState != GetPlayerState<AGeoPlayerState>())
+		{
+			UsedClasses.Add(GeoPlayerState->GetPlayerClass());
+		}
+	}
+
+	for (uint8 i = static_cast<uint8>(EPlayerClass::None) + 1; i < static_cast<uint8>(EPlayerClass::All); i++)
+	{
+		EPlayerClass Class = static_cast<EPlayerClass>(i);
+		if (!UsedClasses.Contains(Class))
+		{
+			return Class;
+		}
+	}
+
+	return EPlayerClass::Triangle;
+}
+
 void APlayableCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
+	if (AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>())
+	{
+		GeoPlayerState->SetPlayerClass(PickStartingClass());
+	}
+
 	// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
 	InitGAS();
+}
+
+void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
+{
+	AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>();
+	if (!GeoPlayerState)
+	{
+		ensureMsgf(GeoPlayerState, TEXT("ChangeClass: No player state on %s"), *GetName());
+		return;
+	}
+
+	GeoPlayerState->SetPlayerClass(NewClass);
+	AbilitySystemComponent->ClearPlayerClassAbilities();
+	AbilitySystemComponent->GiveStartupAbilities(NewClass);
+	ApplyClassData(NewClass);
+}
+
+void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)
+{
+	FPlayerClassData const* VisualData = ClassData.Find(NewClass);
+	if (!VisualData)
+	{
+		ensureMsgf(VisualData, TEXT("ApplyClassData: No visual data for class on %s"), *GetName());
+		return;
+	}
+	if (!VisualData->DefaultAttributes)
+	{
+		ensureMsgf(VisualData->DefaultAttributes, TEXT("ApplyClassData: No DefaultAttributes for class on %s"),
+				   *GetName());
+		return;
+	}
+
+	GetMesh()->SetSkeletalMesh(VisualData->Mesh);
+	GetMesh()->SetAnimInstanceClass(VisualData->AnimClass);
+	AbilitySystemComponent->ApplyEffectToSelf(VisualData->DefaultAttributes);
 }
 
 EPlayerClass APlayableCharacter::GetPlayerClass() const

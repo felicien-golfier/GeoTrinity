@@ -56,7 +56,11 @@ void ADeployableSpawnerProjectile::SpawnDeployableActor() const
 		return;
 	}
 
-	checkf(DeployableActorClass, TEXT("DeployableSpawnerProjectile: No DeployableActorClass set!"));
+	if (!IsValid(DeployableActorClass))
+	{
+		ensureMsgf(DeployableActorClass, TEXT("DeployableSpawnerProjectile: No DeployableActorClass set!"));
+		return;
+	}
 
 	APawn* Pawn = Cast<APawn>(PayloadOwner);
 	if (!IsValid(Pawn))

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "AbilitySystem/Data/EffectData.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
@@ -29,7 +28,7 @@ struct FBuffPickupData : public FDeployableData
 	FVector TargetLocation = FVector::ZeroVector;
 
 	UPROPERTY(Transient)
-	float PowerScale;
+	float PowerScale = 1.f;
 };
 
 /**
