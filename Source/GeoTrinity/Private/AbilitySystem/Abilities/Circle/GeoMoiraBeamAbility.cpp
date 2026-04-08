@@ -28,7 +28,6 @@ void UGeoMoiraBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 	}
 
 	RemainingDuration = InitialDuration;
-	AccumulatedRadiusBonus = 0.f;
 
 	if (!SpeedBuffEffect.IsValid())
 	{
@@ -64,7 +63,7 @@ bool UGeoMoiraBeamAbility::IsInBeam(AActor const* const Actor) const
 	FVector const Origin = Character->GetActorLocation();
 	FVector const Forward = Character->GetActorForwardVector();
 	float const CurrentBeamRadius =
-		Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + AccumulatedRadiusBonus;
+		Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + RadiusGrowthPerZone * BeamRatio;
 	FVector const ToActor = Actor->GetActorLocation() - Origin;
 	float const DistAlongBeam = FMath::Clamp(FVector::DotProduct(ToActor, Forward), 0.f, BeamLength);
 	FVector const ClosestPointOnAxis = Origin + Forward * DistAlongBeam;
@@ -92,7 +91,7 @@ void UGeoMoiraBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
 	FVector const Origin = Character->GetActorLocation();
 	FVector const Forward = Character->GetActorForwardVector();
 	float const CurrentBeamRadius =
-		Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + AccumulatedRadiusBonus;
+		Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + RadiusGrowthPerZone * BeamRatio;
 
 	FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
 	FVector const BeamEnd = Origin + Forward * BeamLength;
@@ -143,8 +142,10 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 
 		if (GeoLib::IsServer(GetWorld()))
 		{
-			UGeoAbilitySystemLibrary::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, GetAbilityLevel(),
-															StoredPayload.Seed);
+			FDamageEffectData DamageEffect = FDamageEffectData();
+			DamageEffect.DamageAmount = DamagePerSecond.GetValueAtLevel(BeamRatio) * DeltaTime;
+			UGeoAbilitySystemLibrary::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC,
+															StoredPayload.AbilityLevel, StoredPayload.Seed);
 		}
 	}
 
@@ -165,8 +166,10 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 
 		if (GeoLib::IsServer(GetWorld()))
 		{
-			UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
-															StoredPayload.Seed);
+			FHealEffectData HealEffect = FHealEffectData();
+			HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(BeamRatio) * DeltaTime;
+			UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC,
+															StoredPayload.AbilityLevel, StoredPayload.Seed);
 		}
 	}
 
@@ -204,8 +207,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 		}
 
 		float const DrainRatio = ActualDrain / MaxHealth;
+		BeamRatio += DrainRatio;
 		RemainingDuration += DurationPerAbsorbedZone * DrainRatio;
-		float const RadiusBonus = RadiusGrowthPerZone * DrainRatio;
-		AccumulatedRadiusBonus += RadiusBonus;
 	}
 }

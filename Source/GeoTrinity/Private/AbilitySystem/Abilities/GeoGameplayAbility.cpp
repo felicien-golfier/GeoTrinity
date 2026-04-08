@@ -222,8 +222,6 @@ FVector UGeoGameplayAbility::GetFireSocketLocation() const
 
 	if (!Mesh->DoesSocketExist(SocketName))
 	{
-		UE_LOG(LogAbilitySystemComponent, Warning, TEXT("[GeoGameplayAbility] Socket '%s' not found on mesh!"),
-			   *SocketName.ToString());
 		return Avatar->GetActorLocation();
 	}
 

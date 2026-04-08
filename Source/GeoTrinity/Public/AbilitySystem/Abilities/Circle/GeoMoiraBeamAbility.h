@@ -47,10 +47,10 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	void DrawBeamDebugLines(float DeltaTime) const;
 #endif
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
-	TInstancedStruct<FEffectData> DamageEffect;
+	FScalableFloat DamagePerSecond;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
-	TInstancedStruct<FEffectData> HealEffect;
+	FScalableFloat HealPerSecond;
 
 	/** Infinite GE applied to self on activation. Should additively modify MovementSpeedMultiplier. */
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
@@ -80,5 +80,5 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	FActiveGameplayEffectHandle SpeedBuffHandle;
 
 	float RemainingDuration = 0.f;
-	float AccumulatedRadiusBonus = 0.f;
+	float BeamRatio = 1.f;
 };
