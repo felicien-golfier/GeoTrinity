@@ -43,6 +43,15 @@ void UGeoCombattantWidgetComp::BeginPlay()
 }
 
 
+void UGeoCombattantWidgetComp::EndPlay(EEndPlayReason::Type const EndPlayReason)
+{
+	if (UGenericCombattantWidget* CombattantWidget = Cast<UGenericCombattantWidget>(GetUserWidgetObject()))
+	{
+		CombattantWidget->UnbindStatCallbacks();
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
 // Called every frame
 void UGeoCombattantWidgetComp::TickComponent(float DeltaTime, ELevelTick TickType,
 											 FActorComponentTickFunction* ThisTickFunction)

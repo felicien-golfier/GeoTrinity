@@ -26,15 +26,17 @@ protected:
 
 private:
 	UFUNCTION()
-	void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-							  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-							  FHitResult const& SweepResult);
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+						int32 OtherBodyIndex, bool bFromSweep, FHitResult const& SweepResult);
 	UFUNCTION()
-	void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+					  int32 OtherBodyIndex);
 	virtual void Tick(float DeltaSeconds) override;
 
-	UPROPERTY(Replicated)
+	UFUNCTION()
+	void OnRep_Data() const;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Data)
 	FDeployableData Data;
 
 	TSet<TWeakObjectPtr<AActor>> ActorsInZone;

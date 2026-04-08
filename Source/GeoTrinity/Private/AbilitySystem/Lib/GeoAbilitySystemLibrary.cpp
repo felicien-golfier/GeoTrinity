@@ -12,12 +12,17 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Actor/GeoInteractableActor.h"
+#include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/GeoCharacter.h"
 #include "EngineUtils.h"
 #include "GameplayEffectTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "InstancedStruct.h"
+#include "Kismet/GameplayStatics.h"
 #include "Settings/GameDataSettings.h"
+#include "System/GeoActorPoolingSubsystem.h"
+#include "System/GeoPoolableInterface.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo(UObject const* WorldContextObject)
@@ -556,4 +561,213 @@ TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArr
 
 	ensureMsgf(true, TEXT("No Ability found for AbilityTag %s"), *AbilityTag.ToString());
 	return {};
+}
+
+AGeoProjectile* UGeoAbilitySystemLibrary::SpawnProjectile(UWorld* const World,
+														  TSubclassOf<AGeoProjectile> const ProjectileClass,
+														  FTransform const& SpawnTransform,
+														  FAbilityPayload const& Payload,
+														  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+														  float const SpawnServerTime, FPredictionKey PredictionKey)
+{
+	if (!World || !ProjectileClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UGeoAbilitySystemLibrary::SpawnProjectile] Invalid World or ProjectileClass"));
+		return nullptr;
+	}
+
+	AGeoProjectile* Projectile;
+	bool const bIsPoolable = ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass());
+	if (bIsPoolable)
+	{
+		Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(ProjectileClass, SpawnTransform, Payload.Owner,
+																		 Cast<APawn>(Payload.Owner), false);
+		if (!Projectile)
+		{
+			UE_LOG(LogTemp, Error,
+				   TEXT("[UGeoAbilitySystemLibrary::SpawnProjectile] RequestActor returned nullptr for %s"),
+				   *ProjectileClass->GetName());
+			return nullptr;
+		}
+	}
+	else
+	{
+		Projectile = World->SpawnActorDeferred<AGeoProjectile>(ProjectileClass, SpawnTransform, Payload.Owner,
+															   Cast<APawn>(Payload.Instigator),
+															   ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+		if (!Projectile)
+		{
+			UE_LOG(LogTemp, Error,
+				   TEXT("[UGeoAbilitySystemLibrary::SpawnProjectile] SpawnActor returned nullptr for %s"),
+				   *ProjectileClass->GetName());
+			return nullptr;
+		}
+	}
+
+	Projectile->Payload = Payload;
+	Projectile->EffectDataArray = EffectDataArray;
+	Projectile->PredictionKeyId = PredictionKey.Current;
+
+	if (bIsPoolable)
+	{
+		Cast<IGeoPoolableInterface>(Projectile)->Init();
+	}
+	else
+	{
+		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTransform);
+		Projectile->InitProjectileLife();
+
+		// Register prediction key delegates as fast-path cleanup for when the ability
+		// is confirmed AFTER the projectile spawns (no FireRate delay).
+		// For the FireRate-delayed case, BeginPlay proximity matching handles it instead.
+		// When LocalOnlyProjectiles is on, keep the fake alive (server projectile won't replicate to owner).
+		static IConsoleVariable* const LocalOverrideCVar =
+			IConsoleManager::Get().FindConsoleVariable(TEXT("Geo.ReplaceLocalProjectiles"));
+		ensureMsgf(LocalOverrideCVar,
+				   TEXT("LocalOverrideCVar is invalid, please ensure ReplaceLocalProjectiles still exist"));
+		if (!GeoLib::IsServer(World) && PredictionKey.IsLocalClientKey() && LocalOverrideCVar->GetBool())
+		{
+			TWeakObjectPtr<AGeoProjectile> WeakProjectile(Projectile);
+			auto DestroyFake = [WeakProjectile]()
+			{
+				if (WeakProjectile.IsValid())
+				{
+					WeakProjectile->Destroy();
+				}
+			};
+			PredictionKey.NewCaughtUpDelegate().BindLambda(DestroyFake);
+			PredictionKey.NewRejectedDelegate().BindLambda(DestroyFake);
+		}
+	}
+
+	if (GeoLib::IsServer(World))
+	{
+		float const TimeDelta = GeoLib::GetServerTime(World) - SpawnServerTime;
+		if (TimeDelta > 0.f)
+		{
+			Projectile->AdvanceProjectile(TimeDelta);
+		}
+	}
+
+	return Projectile;
+}
+
+TArray<FVector> UGeoAbilitySystemLibrary::GetTargetDirections(UWorld const* World, EProjectileTarget const Target,
+															  float const Yaw, FVector const& Origin)
+{
+	switch (Target)
+	{
+	case EProjectileTarget::Forward:
+		{
+			return {FRotator(0.f, Yaw, 0.f).Vector()};
+		}
+
+	case EProjectileTarget::AllPlayers:
+		{
+			TArray<FVector> Directions;
+			for (auto PlayerControllerIt = World->GetPlayerControllerIterator(); PlayerControllerIt;
+				 ++PlayerControllerIt)
+			{
+				if (APlayerController const* PlayerController = PlayerControllerIt->Get();
+					PlayerController && PlayerController->GetPawn())
+				{
+					Directions.Add((PlayerController->GetPawn()->GetActorLocation() - Origin).GetSafeNormal());
+				}
+			}
+			return Directions;
+		}
+
+	default:
+		{
+			return {};
+		}
+	}
+}
+
+ETeamAttitudeBitflag UGeoAbilitySystemLibrary::GetAttitudeBitflag(ETeamAttitude::Type Attitude)
+{
+	switch (Attitude)
+	{
+	case ETeamAttitude::Neutral:
+		return ETeamAttitudeBitflag::Neutral;
+	case ETeamAttitude::Hostile:
+		return ETeamAttitudeBitflag::Hostile;
+	case ETeamAttitude::Friendly:
+		return ETeamAttitudeBitflag::Friendly;
+	default:
+		ensureMsgf(false, TEXT("Invalid team attitude"));
+		return ETeamAttitudeBitflag::Neutral;
+	}
+}
+
+bool UGeoAbilitySystemLibrary::IsAttitudeIntBitflag(ETeamAttitudeBitflag AttitudeBitflag, ETeamAttitude::Type Attitude)
+{
+	return (static_cast<uint8>(AttitudeBitflag) & static_cast<uint8>(GetAttitudeBitflag(Attitude))) != 0x00;
+}
+
+bool UGeoAbilitySystemLibrary::IsTeamAttitudeAligned(AActor const* Owner, AActor const* OtherActor,
+													 int32 OverlapAttitudeBitMask)
+{
+	IAbilitySystemInterface const* OwnerASCInterface = Cast<IAbilitySystemInterface>(Owner);
+	if (!OwnerASCInterface)
+	{
+		UE_LOG(LogGeoTrinity, Error,
+			   TEXT("The Owner does not implement IAbilitySystemInterface. It should never happen"));
+		return false;
+	}
+
+	AActor const* SourceAvatarActor = OwnerASCInterface->GetAbilitySystemComponent()->GetAvatarActor();
+	if (!IsValid(SourceAvatarActor))
+	{
+		return false;
+	}
+
+	IGenericTeamAgentInterface const* OwnerTeamInterface = nullptr;
+	if (!GetTeamInterface(Owner, OwnerTeamInterface))
+	{
+		ensureMsgf(false, TEXT("Projectile owner has no team interface"));
+		return false;
+	}
+
+	return IsAttitudeIntBitflag(static_cast<ETeamAttitudeBitflag>(OverlapAttitudeBitMask),
+								OwnerTeamInterface->GetTeamAttitudeTowards(*OtherActor));
+}
+
+int UGeoAbilitySystemLibrary::GetAndCheckSection(UAnimMontage const* AnimMontage, FName const Section)
+{
+	int const SectionIndex = AnimMontage->GetSectionIndex(Section);
+	if (SectionIndex == INDEX_NONE)
+	{
+		ensureMsgf(true, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(), *AnimMontage->GetName());
+		UE_LOG(LogPattern, Error, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(),
+			   *AnimMontage->GetName());
+	}
+	return SectionIndex;
+}
+
+UAnimInstance* UGeoAbilitySystemLibrary::GetAnimInstance(FAbilityPayload const& Payload)
+{
+	ACharacter* InstigatorCharacter = Cast<ACharacter>(Payload.Instigator);
+	if (!IsValid(InstigatorCharacter))
+	{
+		UE_LOG(LogPattern, Error, TEXT("We support only animation montage for character in pattern for now !"));
+		return nullptr;
+	}
+
+	UAnimInstance* AnimInstance =
+		InstigatorCharacter->GetMesh() ? InstigatorCharacter->GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		UE_LOG(LogPattern, Error, TEXT("Please set an anim instance (With the Default Slot filled in anim graph;)"));
+		return nullptr;
+	}
+
+	return AnimInstance;
+}
+
+bool UGeoAbilitySystemLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)
+{
+	OutInterface = Cast<IGenericTeamAgentInterface const>(Actor);
+	return OutInterface != nullptr;
 }

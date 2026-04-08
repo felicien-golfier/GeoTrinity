@@ -4,7 +4,7 @@
 #include "GeoGameInstance.h"
 
 #include "GenericTeamAgentInterface.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/Team.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------

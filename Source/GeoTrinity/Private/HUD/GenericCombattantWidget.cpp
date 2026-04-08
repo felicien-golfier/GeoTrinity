@@ -89,8 +89,28 @@ void UGenericCombattantWidget::BindStatCallbacks()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGenericCombattantWidget::UnbindStatCallbacks()
+{
+	if (!OwnerASC.IsValid())
+	{
+		return;
+	}
+	UGeoAbilitySystemComponent* GeoASC = Cast<UGeoAbilitySystemComponent>(OwnerASC.Get());
+	if (!GeoASC)
+	{
+		return;
+	}
+	GeoASC->OnHealthChanged.RemoveDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
+	GeoASC->OnMaxHealthChanged.RemoveDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGenericCombattantWidget::OnHealthChanged(float NewValue)
 {
+	if (!OwnerASC.IsValid())
+	{
+		return;
+	}
 	// Don't use NewValue, just get the ratio from ASC (it might be health or max health)
 	UpdateHealthRatio(UHudFunctionLibrary::GetHealthRatio(OwnerASC.Get()));
 }

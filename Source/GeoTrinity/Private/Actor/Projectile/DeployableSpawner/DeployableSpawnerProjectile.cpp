@@ -5,6 +5,7 @@
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "GenericTeamAgentInterface.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 bool ADeployableSpawnerProjectile::IsValidOverlap(AActor const* OtherActor)
@@ -44,7 +45,7 @@ void ADeployableSpawnerProjectile::InitDeployable(AGeoDeployableBase* Deployable
 // ---------------------------------------------------------------------------------------------------------------------
 void ADeployableSpawnerProjectile::SpawnDeployableActor() const
 {
-	if (!UGameplayLibrary::IsServer(GetWorld()))
+	if (!GeoLib::IsServer(GetWorld()))
 	{
 		return;
 	}

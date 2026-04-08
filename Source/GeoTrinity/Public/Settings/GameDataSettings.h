@@ -45,6 +45,13 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float RegularTickInterval = .1f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameFeel")
+	TSoftObjectPtr<UMaterialInterface> HitFlashMaterial;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameFeel")
+	TSoftObjectPtr<UMaterialInterface> LocalPlayerHitFlashMaterial;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameFeel")
+	float HitFlashDuration = 0.9f;
 };
 
 template <typename T>

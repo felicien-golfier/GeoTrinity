@@ -12,7 +12,8 @@
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
+#include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
 
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -26,6 +27,11 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 		CreateDefaultSubobject<UGeoDeployableManagerComponent>(TEXT("DeployableManagerComponent"));
 
 	TeamId = ETeam::Player;
+}
+
+void APlayableCharacter::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void APlayableCharacter::ShowDeployChargeGauge(UGeoDeployAbility* Ability) const

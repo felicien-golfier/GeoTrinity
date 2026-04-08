@@ -9,7 +9,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Net/UnrealNetwork.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoBuffPickup::AGeoBuffPickup()
@@ -121,7 +121,7 @@ void AGeoBuffPickup::UpdateMesh()
 void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimitiveComponent*, int32, bool,
 							   FHitResult const&)
 {
-	if (!UGameplayLibrary::IsServer(GetWorld()) || bMovingToTarget || !IsValid(OtherActor))
+	if (!GeoLib::IsServer(GetWorld()) || bMovingToTarget || !IsValid(OtherActor))
 	{
 		return;
 	}
@@ -137,7 +137,7 @@ void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimit
 		return;
 	}
 
-	if (!UGameplayLibrary::IsTeamAttitudeAligned(GetData()->CharacterOwner, OtherActor, OverlapAttitude))
+	if (!GeoASLib::IsTeamAttitudeAligned(GetData()->CharacterOwner, OtherActor, OverlapAttitude))
 	{
 		return;
 	}

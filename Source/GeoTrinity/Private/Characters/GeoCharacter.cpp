@@ -1,12 +1,13 @@
 #include "Characters/GeoCharacter.h"
 
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Input/GeoInputComponent.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
 static TAutoConsoleVariable CVarShowCharacterServerLocation(
@@ -35,6 +36,8 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	CharacterWidgetComponent->SetupAttachment(GetRootComponent());
 	CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 
+	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>(TEXT("GameFeelComponent"));
+
 	bUseControllerRotationYaw = true;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
@@ -44,13 +47,13 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	UE_VLOG_LOCATION(this, LogGeoTrinity, Verbose, GetActorLocation(), 30.f, UGameplayLibrary::GetColorForObject(this),
+	UE_VLOG_LOCATION(this, LogGeoTrinity, Verbose, GetActorLocation(), 30.f, GeoLib::GetColorForObject(this),
 					 TEXT("%s [%s]"), *GetName(), *UEnum::GetValueAsString(GetLocalRole()));
 
-	if (CVarShowCharacterServerLocation.GetValueOnGameThread() && UGameplayLibrary::IsServer(GetWorld()))
+	if (CVarShowCharacterServerLocation.GetValueOnGameThread() && GeoLib::IsServer(GetWorld()))
 	{
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
-						UGameplayLibrary::GetColorForObject(GetOuter()), false, 0.f);
+						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
 }
 
@@ -61,7 +64,7 @@ UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
 
 void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const
 {
-	DrawDebugVectorFromCharacter(Direction, DebugMessage, UGameplayLibrary::GetColorForObject(this));
+	DrawDebugVectorFromCharacter(Direction, DebugMessage, GeoLib::GetColorForObject(this));
 }
 
 void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage,

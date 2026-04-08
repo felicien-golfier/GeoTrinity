@@ -2,9 +2,12 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h"
 
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 UGeoAutomaticFireAbility::UGeoAutomaticFireAbility()
 {
@@ -97,9 +100,34 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 
 	if (bShotSucceeded)
 	{
-		if (ActorInfo->IsLocallyControlledPlayer()) // Commit will be done on server when receiving data.
+		if (ActorInfo->IsLocallyControlledPlayer())
 		{
 			CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+
+			if (FireCameraShakeClass)
+			{
+				GeoLib::TriggerCameraShake(this, FireCameraShakeClass);
+			}
+
+			if (RecoilDistance > 0.f)
+			{
+				if (UGeoGameFeelComponent* GameFeel =
+						GetAvatarActorFromActorInfo()->FindComponentByClass<UGeoGameFeelComponent>())
+				{
+					GameFeel->ApplyRecoil(RecoilDistance);
+				}
+			}
+
+			if (FireGameplayCueTag.IsValid())
+			{
+				FGameplayCueParameters CueParams;
+				CueParams.Location = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
+				CueParams.Instigator = StoredPayload.Instigator;
+				CueParams.AbilityLevel = StoredPayload.AbilityLevel;
+				CueParams.RawMagnitude = StoredPayload.Seed;
+				CueParams.Normal = FRotator(0, StoredPayload.Yaw, 0).Vector();
+				GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(FireGameplayCueTag, CueParams);
+			}
 		}
 		SendFireDataToServer(AbilityTargetData);
 	}
@@ -117,6 +145,8 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 														FGameplayTag ApplicationTag)
 {
+	// Server only function
+
 	FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
 	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
 	FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();
@@ -143,10 +173,7 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
 
 	ExecuteShot();
-	if (!ActorInfo->IsLocallyControlledPlayer())
-	{
-		CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
-	}
+	CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
 
 	StoredPayload.Seed += CurrentShotIndex; // don't use target data, to avoid client abuse. (lol)
 	CurrentShotIndex++;

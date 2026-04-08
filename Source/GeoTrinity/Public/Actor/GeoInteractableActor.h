@@ -10,6 +10,8 @@
 
 #include "GeoInteractableActor.generated.h"
 
+class UGeoGameFeelComponent;
+
 USTRUCT()
 struct FInteractableActorData
 {
@@ -76,4 +78,7 @@ private:
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")
+	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
 };

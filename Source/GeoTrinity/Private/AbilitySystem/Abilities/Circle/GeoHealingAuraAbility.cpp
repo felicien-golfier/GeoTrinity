@@ -8,10 +8,9 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
-#include "Settings/GameDataSettings.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
-// ---------------------------------------------------------------------------------------------------------------------w
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoHealingAuraAbility::OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
 {
 	Super::OnAvatarSet(ActorInfo, Spec);
@@ -25,38 +24,25 @@ void UGeoHealingAuraAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 											 FGameplayEventData const* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	if (!UGameplayLibrary::IsServer(GetWorld()))
+	if (bIsAbilityEnding)
 	{
 		return;
 	}
 
-	if (!Heal.IsValid())
+	if (!HealPerSecond.IsValid())
 	{
-		ensureMsgf(Heal.IsValid(), TEXT("Fill your data dumb ass"));
+		ensureMsgf(HealPerSecond.IsValid(), TEXT("Fill your data dumb ass"));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHealingAuraAbility::Tick(float const DeltaTime)
+{
+	if (!GeoLib::IsServer(GetWorld()))
+	{
 		return;
 	}
 
-	float const AuraTickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
-
-	GetWorld()->GetTimerManager().SetTimer(AuraTickHandle, this, &ThisClass::TickAura, AuraTickInterval, true);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoHealingAuraAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
-										FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
-										bool bWasCancelled)
-{
-	if (UGameplayLibrary::IsServer(GetWorld()))
-	{
-		GetWorld()->GetTimerManager().ClearTimer(AuraTickHandle);
-	}
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoHealingAuraAbility::TickAura()
-{
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (!IsValid(Character))
 	{
@@ -96,12 +82,18 @@ void UGeoHealingAuraAbility::TickAura()
 			continue; // Do not heal, neither count in AlliesHealed full life mates.
 		}
 
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(Heal, SourceASC, TargetASC, GetAbilityLevel(), 0);
+		FHealEffectData HealEffect = FHealEffectData();
+		HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime;
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
+														StoredPayload.Seed);
 		AlliesHealed++;
 	}
 
-	for (int32 i = 0; i < AlliesHealed; i++)
+	if (AlliesHealed > 0)
 	{
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(Heal, SourceASC, SourceASC, GetAbilityLevel(), 0);
+		FHealEffectData HealEffect = FHealEffectData();
+		HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime * AlliesHealed;
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, SourceASC, GetAbilityLevel(),
+														StoredPayload.Seed);
 	}
 }

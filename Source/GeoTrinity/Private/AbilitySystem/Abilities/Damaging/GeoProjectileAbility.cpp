@@ -2,10 +2,12 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/GeoProjectile.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 FGeoAbilityTargetData UGeoProjectileAbility::BuildAbilityTargetData()
 {
@@ -85,7 +87,7 @@ void UGeoProjectileAbility::SpawnProjectileUsingDirection(FVector const& Directi
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget(float const ProjectileYaw, FVector const& Origin,
 														float const SpawnServerTime)
 {
-	TArray<FVector> const Directions = UGameplayLibrary::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
+	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
 	for (FVector const& Direction : Directions)
 	{
 		SpawnProjectileUsingDirection(Direction, Origin, SpawnServerTime);
@@ -115,6 +117,6 @@ void UGeoProjectileAbility::SpawnProjectile(FTransform const& SpawnTransform, fl
 		break;
 	}
 
-	UGameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
-									  SpawnServerTime, PredictionKey);
+	GeoASLib::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
+							  SpawnServerTime, PredictionKey);
 }

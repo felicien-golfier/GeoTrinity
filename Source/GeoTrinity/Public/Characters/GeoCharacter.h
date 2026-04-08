@@ -19,6 +19,7 @@ class UGameplayEffect;
 class UGeoAbilitySystemComponent;
 class UGeoInputComponent;
 class UDynamicMeshComponent;
+class UGeoGameFeelComponent;
 class UGeoMovementComponent;
 class UStaticMeshComponent;
 class UGeoCombattantWidgetComp;
@@ -94,6 +95,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UGeoCombattantWidgetComp> CharacterWidgetComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")
+	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
 
 #ifdef UE_EDITOR
 public:

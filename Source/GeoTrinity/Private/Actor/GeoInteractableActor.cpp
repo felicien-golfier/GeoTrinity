@@ -4,7 +4,8 @@
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // Sets default values
 AGeoInteractableActor::AGeoInteractableActor()
@@ -17,6 +18,8 @@ AGeoInteractableActor::AGeoInteractableActor()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	AttributeSetBase = CreateDefaultSubobject<UGeoAttributeSetBase>(TEXT("AttributeSetBase"));
+
+	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>(TEXT("GameFeelComponent"));
 
 	SetNetUpdateFrequency(30.f);
 

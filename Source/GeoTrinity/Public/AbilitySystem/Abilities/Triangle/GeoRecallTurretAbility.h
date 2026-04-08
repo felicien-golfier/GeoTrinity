@@ -5,10 +5,12 @@
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/Team.h"
 
 #include "GeoRecallTurretAbility.generated.h"
 
+
+class AGeoTurret;
 class UEffectDataAsset;
 
 /**
@@ -25,12 +27,15 @@ class GEOTRINITY_API UGeoRecallTurretAbility : public UGeoGameplayAbility
 
 	struct FRecallInfo
 	{
+		TWeakObjectPtr<AGeoTurret> Turret;
 		FVector TurretLocation;
 		bool bWasBlinking;
 	};
 
 protected:
 	TArray<UGeoAbilitySystemComponent*> FindTargets(AActor const* Instigator, FRecallInfo const& RecallInfo) const;
+	void FireRecallCue(UGeoAbilitySystemComponent* PlayerASC, FRecallInfo const& RecallInfo,
+					   FVector const& AvatarLocation) const;
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;

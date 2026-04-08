@@ -2,10 +2,10 @@
 
 #pragma once
 
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
-#include "Tool/UGameplayLibrary.h"
 
 #include "GeoBuffPickup.generated.h"
 

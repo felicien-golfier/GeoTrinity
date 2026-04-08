@@ -3,8 +3,7 @@
 #include "Actor/GeoClassChangeTrigger.h"
 
 #include "Characters/PlayableCharacter.h"
-#include "Components/SphereComponent.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoClassChangeTrigger::AGeoClassChangeTrigger()
 {
@@ -24,14 +23,15 @@ void AGeoClassChangeTrigger::OnBeginOverlap(UPrimitiveComponent* OverlappedCompo
 											UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
 											FHitResult const& SweepResult)
 {
-	if (!UGameplayLibrary::IsServer(GetWorld()))
+	if (!GeoLib::IsServer(GetWorld()))
 	{
 		return;
 	}
 
 	if (TargetClass == EPlayerClass::None)
 	{
-		ensureMsgf(TargetClass != EPlayerClass::None, TEXT("AGeoClassChangeTrigger %s has TargetClass = None"), *GetName());
+		ensureMsgf(TargetClass != EPlayerClass::None, TEXT("AGeoClassChangeTrigger %s has TargetClass = None"),
+				   *GetName());
 		return;
 	}
 

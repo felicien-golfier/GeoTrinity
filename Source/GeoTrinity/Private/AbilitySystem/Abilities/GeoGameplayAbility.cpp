@@ -6,12 +6,10 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GameFramework/Character.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Tool/UGameplayLibrary.h"
-
-using GeoASL = UGeoAbilitySystemLibrary;
-using GL = UGameplayLibrary;
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -27,26 +25,33 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 		return;
 	}
 
-	// Both client and server receive the same event data in a single RPC at activation
-	ensureMsgf(TriggerEventData && TriggerEventData->TargetData.Num() > 0, TEXT("No TargetData in TriggerEventData!"));
-
 	AActor* Instigator = GetAvatarActorFromActorInfo();
 	AActor* Owner = GetOwningActorFromActorInfo();
-	if (FGeoAbilityTargetData const* TargetData =
-			static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)))
+
+	if (GetAssetTags().HasTag(FGeoGameplayTags::Get().Ability_Type_Passive))
 	{
-		StoredPayload = CreateAbilityPayload(Owner, Instigator, TargetData->Origin, TargetData->Yaw,
-											 TargetData->ServerSpawnTime, TargetData->Seed);
+		StoredPayload = CreateAbilityPayload(Owner, Instigator, Instigator->GetTransform());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning,
-			   TEXT("No FGeoAbilityTargetData found in TriggerEventData, falling back to Generate a payload"));
-		StoredPayload = CreateAbilityPayload(Owner, Instigator, Instigator->GetTransform());
+		if (TriggerEventData && TriggerEventData->TargetData.Num() > 0)
+		{
+			if (FGeoAbilityTargetData const* TargetData =
+					static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)))
+			{
+				StoredPayload = CreateAbilityPayload(Owner, Instigator, TargetData->Origin, TargetData->Yaw,
+													 TargetData->ServerSpawnTime, TargetData->Seed);
+			}
+		}
+		else
+		{
+			// Both client and server receive the same event data in a single RPC at activation
+			ensureMsgf(false, TEXT("No TargetData in TriggerEventData! This ability is not set as passive"));
+		}
 	}
 
 	// Bind Delegate on server to receive Fire data from client
-	if (GL::IsServer(GetWorld()))
+	if (GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey()).RemoveAll(this);
@@ -57,7 +62,7 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 
 FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 {
-	return GeoASL::GetAbilityTagFromAbility(*this);
+	return GeoASLib::GetAbilityTagFromAbility(*this);
 }
 
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator, FVector2D const& Origin,
@@ -79,7 +84,8 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor*
 														  FTransform const& Transform) const
 {
 	return CreateAbilityPayload(Owner, Instigator, FVector2D(Transform.GetLocation()),
-								Transform.GetRotation().Rotator().Yaw, GL::GetServerTime(GetWorld()), FMath::Rand32());
+								Transform.GetRotation().Rotator().Yaw, GeoLib::GetServerTime(GetWorld()),
+								FMath::Rand32());
 }
 
 UGeoAbilitySystemComponent* UGeoGameplayAbility::GetGeoAbilitySystemComponentFromActorInfo() const
@@ -92,7 +98,7 @@ TArray<TInstancedStruct<FEffectData>> UGeoGameplayAbility::GetEffectDataArray() 
 	TArray<TInstancedStruct<FEffectData>> FilledEffectData;
 	for (auto EffectDataAsset : EffectDataAssets)
 	{
-		FilledEffectData.Append(GeoASL::GetEffectDataArray(EffectDataAsset.LoadSynchronous()));
+		FilledEffectData.Append(GeoASLib::GetEffectDataArray(EffectDataAsset.LoadSynchronous()));
 	}
 
 	FilledEffectData.Append(EffectDataInstances);
@@ -166,16 +172,16 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	FName SectionToJumpTo;
 	if (FireSectionIndex == 0)
 	{
-		SectionToJumpTo = GL::SectionStartName;
+		SectionToJumpTo = GeoASLib::SectionStartName;
 	}
 	else
 	{
-		FString FireSectionName = GL::SectionFireString;
+		FString FireSectionName = GeoASLib::SectionFireString;
 		FireSectionName.AppendInt(FireSectionIndex);
 		if (!AnimMontage->IsValidSectionName(FName(FireSectionName)))
 		{
 			FireSectionIndex = 1;
-			FireSectionName = GL::SectionFireString;
+			FireSectionName = GeoASLib::SectionFireString;
 			FireSectionName.AppendInt(1);
 		}
 		SectionToJumpTo = FName(FireSectionName);
@@ -184,7 +190,7 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	if (!AnimMontage->IsValidSectionName(SectionToJumpTo))
 	{
 		UE_LOG(LogGeoASC, Error, TEXT("Section %s doesn't exist ! Fallback to Start."), *SectionToJumpTo.ToString());
-		SectionToJumpTo = GL::SectionStartName;
+		SectionToJumpTo = GeoASLib::SectionStartName;
 	}
 
 
@@ -212,7 +218,7 @@ FVector UGeoGameplayAbility::GetFireSocketLocation() const
 	ACharacter const* Avatar = CastChecked<ACharacter>(GetAvatarActorFromActorInfo());
 	USkeletalMeshComponent* Mesh = Avatar->GetMesh();
 	int32 const FireSectionIndex = GetGeoAbilitySystemComponentFromActorInfo()->GetFireSectionIndex(GetAbilityTag());
-	FName const SocketName{FString::Printf(TEXT("%s%d"), GL::SocketBaseName, FireSectionIndex)};
+	FName const SocketName{FString::Printf(TEXT("%s%d"), GeoASLib::SocketBaseName, FireSectionIndex)};
 
 	if (!Mesh->DoesSocketExist(SocketName))
 	{
@@ -250,7 +256,7 @@ FGeoAbilityTargetData UGeoGameplayAbility::BuildAbilityTargetData()
 
 	FVector2D const Origin = FVector2D(Avatar->GetActorLocation());
 	float const Yaw = Avatar->GetActorRotation().Yaw;
-	float const ServerTime = GL::GetServerTime(GetWorld(), true);
+	float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
 	int const Seed = StoredPayload.Seed;
 
 	return FGeoAbilityTargetData(Origin, Yaw, ServerTime, Seed);

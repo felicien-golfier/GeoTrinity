@@ -12,8 +12,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
-#include "Settings/GameDataSettings.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMoiraBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
@@ -40,9 +39,6 @@ void UGeoMoiraBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 	UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
 	SpeedBuffHandle = UGeoAbilitySystemLibrary::ApplySingleEffectData(SpeedBuffEffect, SourceASC, SourceASC,
 																	  GetAbilityLevel(), StoredPayload.Seed);
-
-	GetWorld()->GetTimerManager().SetTimer(BeamTickHandle, this, &ThisClass::TickBeam,
-										   GetDefault<UGameDataSettings>()->RegularTickInterval, true);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -50,9 +46,9 @@ void UGeoMoiraBeamAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGamepl
 									  FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 									  bool bWasCancelled)
 {
-	if (UGameplayLibrary::IsServer(GetWorld()))
+
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		GetWorld()->GetTimerManager().ClearTimer(BeamTickHandle);
 		if (SpeedBuffHandle.IsValid())
 		{
 			GetAbilitySystemComponentFromActorInfo()->RemoveActiveGameplayEffect(SpeedBuffHandle);
@@ -62,51 +58,75 @@ void UGeoMoiraBeamAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGamepl
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoMoiraBeamAbility::TickBeam()
+bool UGeoMoiraBeamAbility::IsInBeam(AActor const* const Actor) const
 {
-	float const BeamTickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
-	RemainingDuration -= BeamTickInterval;
+	ACharacter const* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	FVector const Origin = Character->GetActorLocation();
+	FVector const Forward = Character->GetActorForwardVector();
+	float const CurrentBeamRadius =
+		Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + AccumulatedRadiusBonus;
+	FVector const ToActor = Actor->GetActorLocation() - Origin;
+	float const DistAlongBeam = FMath::Clamp(FVector::DotProduct(ToActor, Forward), 0.f, BeamLength);
+	FVector const ClosestPointOnAxis = Origin + Forward * DistAlongBeam;
+	float const CombinedRadius = CurrentBeamRadius + Actor->GetSimpleCollisionRadius();
+	return FVector::DistSquared(Actor->GetActorLocation(), ClosestPointOnAxis) <= CombinedRadius * CombinedRadius;
+}
+
+#ifdef WITH_EDITOR
+void UGeoMoiraBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
+{
+	ACharacter const* const Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (!IsValid(Character))
+	{
+		return;
+	}
+
+	UGeoAbilitySystemComponent const* const SourceASC =
+		Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
+	if (!SourceASC)
+	{
+		ensureMsgf(SourceASC, TEXT("UGeoMoiraBeamAbility: invalid ASC on activation"));
+		return;
+	}
+
+	FVector const Origin = Character->GetActorLocation();
+	FVector const Forward = Character->GetActorForwardVector();
+	float const CurrentBeamRadius =
+		Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + AccumulatedRadiusBonus;
+
+	FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
+	FVector const BeamEnd = Origin + Forward * BeamLength;
+	DrawDebugLine(GetWorld(), Origin + Right * CurrentBeamRadius, BeamEnd + Right * CurrentBeamRadius, FColor::Cyan,
+				  false, DeltaTime);
+	DrawDebugLine(GetWorld(), Origin - Right * CurrentBeamRadius, BeamEnd - Right * CurrentBeamRadius, FColor::Cyan,
+				  false, DeltaTime);
+	DrawDebugLine(GetWorld(), BeamEnd - Right * CurrentBeamRadius, BeamEnd + Right * CurrentBeamRadius, FColor::Cyan,
+				  false, DeltaTime);
+}
+#endif
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
+{
+	RemainingDuration -= DeltaTime;
 	if (RemainingDuration <= 0.f)
 	{
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, false);
 		return;
 	}
 
-	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	ACharacter const* const Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (!IsValid(Character))
 	{
 		return;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
-	IGenericTeamAgentInterface const* OwnerTeamAgent = Cast<IGenericTeamAgentInterface>(Character);
-	if (!SourceASC || !OwnerTeamAgent)
+	UAbilitySystemComponent* const SourceASC = GetAbilitySystemComponentFromActorInfo();
+	if (!SourceASC)
 	{
+		ensureMsgf(SourceASC, TEXT("UGeoMoiraBeamAbility: invalid ASC on activation"));
 		return;
 	}
-
-	FVector const Origin = Character->GetActorLocation();
-	FVector const Forward = Character->GetActorForwardVector();
-	float CurrentBeamRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + AccumulatedRadiusBonus;
-
-	FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
-	FVector const BeamEnd = Origin + Forward * BeamLength;
-	DrawDebugLine(GetWorld(), Origin + Right * CurrentBeamRadius, BeamEnd + Right * CurrentBeamRadius, FColor::Cyan,
-				  false, BeamTickInterval);
-	DrawDebugLine(GetWorld(), Origin - Right * CurrentBeamRadius, BeamEnd - Right * CurrentBeamRadius, FColor::Cyan,
-				  false, BeamTickInterval);
-	DrawDebugLine(GetWorld(), BeamEnd - Right * CurrentBeamRadius, BeamEnd + Right * CurrentBeamRadius, FColor::Cyan,
-				  false, BeamTickInterval);
-
-	auto IsInBeam = [&](AActor const* Actor) -> bool
-	{
-		FVector const ToActor = Actor->GetActorLocation() - Origin;
-		float const DistAlongBeam = FMath::Clamp(FVector::DotProduct(ToActor, Forward), 0.f, BeamLength);
-		FVector const ClosestPointOnAxis = Origin + Forward * DistAlongBeam;
-		float const CombinedRadius = CurrentBeamRadius + Actor->GetSimpleCollisionRadius();
-		return FVector::DistSquared(Actor->GetActorLocation(), ClosestPointOnAxis) <= CombinedRadius * CombinedRadius;
-	};
 
 	for (AActor* Actor :
 		 UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character, ETeamAttitude::Hostile))
@@ -121,25 +141,38 @@ void UGeoMoiraBeamAbility::TickBeam()
 			continue;
 		}
 
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, GetAbilityLevel(),
-														StoredPayload.Seed);
+		if (GeoLib::IsServer(GetWorld()))
+		{
+			UGeoAbilitySystemLibrary::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, GetAbilityLevel(),
+															StoredPayload.Seed);
+		}
 	}
 
 	for (AActor* Actor :
 		 UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character, ETeamAttitude::Friendly))
 	{
-		if (Actor == Character || !IsInBeam(Actor))
+		AGeoDeployableBase const* Deployable = Cast<AGeoDeployableBase>(Actor);
+		if (Actor == Character || (Deployable && !Deployable->CanBeDamaged()) || !IsInBeam(Actor))
 		{
 			continue;
 		}
+
 		UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
 		if (!TargetASC)
 		{
 			continue;
 		}
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
-														StoredPayload.Seed);
+
+		if (GeoLib::IsServer(GetWorld()))
+		{
+			UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
+															StoredPayload.Seed);
+		}
 	}
+
+#ifdef WITH_EDITOR
+	DrawBeamDebugLines(DeltaTime);
+#endif
 
 	UGeoDeployableManagerComponent* DeployableManager =
 		Character->FindComponentByClass<UGeoDeployableManagerComponent>();
@@ -148,8 +181,7 @@ void UGeoMoiraBeamAbility::TickBeam()
 		return;
 	}
 
-	TArray<TObjectPtr<AGeoDeployableBase>> const ZonesCopy = DeployableManager->GetDeployables();
-	for (AGeoDeployableBase* Deployable : ZonesCopy)
+	for (AGeoDeployableBase* Deployable : TArray(DeployableManager->GetDeployables()))
 	{
 		AGeoHealingZone* Zone = Cast<AGeoHealingZone>(Deployable);
 		if (!IsValid(Zone) || !IsInBeam(Zone))
@@ -159,14 +191,17 @@ void UGeoMoiraBeamAbility::TickBeam()
 
 		UAbilitySystemComponent* ZoneASC = Zone->GetAbilitySystemComponent();
 		float const MaxHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
-		float const BeamZoneDrainPerTick = (BeamZoneDrainPercentagePerSecond / 100.f) * BeamTickInterval * MaxHealth;
+		float const BeamZoneDrainPerTick = (BeamZoneDrainPercentagePerSecond / 100.f) * DeltaTime * MaxHealth;
 		float const CurrentHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
 		float const ActualDrain = FMath::Min(BeamZoneDrainPerTick, CurrentHealth);
 
-		FDamageEffectData DrainEffectData = FDamageEffectData();
-		DrainEffectData.DamageAmount = ActualDrain;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(),
-														StoredPayload.Seed);
+		if (GeoLib::IsServer(GetWorld()))
+		{
+			FDamageEffectData DrainEffectData = FDamageEffectData();
+			DrainEffectData.DamageAmount = ActualDrain;
+			UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(),
+															StoredPayload.Seed);
+		}
 
 		float const DrainRatio = ActualDrain / MaxHealth;
 		RemainingDuration += DurationPerAbsorbedZone * DrainRatio;

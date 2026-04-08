@@ -4,13 +4,14 @@
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UGeoDeployAbility::UGeoDeployAbility()
@@ -216,9 +217,8 @@ void UGeoDeployAbility::SpawnDeployProjectile(FVector const& Origin, float const
 		PredictionKey = GetCurrentActivationInfo().GetActivationPredictionKey();
 	}
 
-	AGeoProjectile* Projectile =
-		UGameplayLibrary::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
-										  GetEffectDataArray(), SpawnServerTime, PredictionKey);
+	AGeoProjectile* Projectile = GeoASLib::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
+														   GetEffectDataArray(), SpawnServerTime, PredictionKey);
 	if (!IsValid(Projectile))
 	{
 		ensureMsgf(false, TEXT("GeoDeployAbility: Failed to spawn projectile!"));

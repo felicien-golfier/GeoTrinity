@@ -8,7 +8,7 @@
 #include "GameplayEffect.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoDeployableBase::AGeoDeployableBase()
@@ -52,7 +52,7 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	// Based on the GameDataSettings RegularTickInterval frequence
-	if (bUseRegularDrain && UGameplayLibrary::IsServer(GetWorld()))
+	if (bUseRegularDrain && GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		FDamageEffectData DrainEffectData = FDamageEffectData();

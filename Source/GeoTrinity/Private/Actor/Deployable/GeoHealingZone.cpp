@@ -7,12 +7,12 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Net/UnrealNetwork.h"
-#include "Settings/GameDataSettings.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoHealingZone::AGeoHealingZone()
 {
 	bUseRegularDrain = false;
+	SetCanBeDamaged(false);
 }
 
 void AGeoHealingZone::InitDrain()
@@ -20,7 +20,7 @@ void AGeoHealingZone::InitDrain()
 	ensureMsgf(Data.Params.LifeDrainMaxDuration > 0.f,
 			   TEXT("HealingZone cannot have no duration. please fill your data correctly"));
 
-	if (!UGameplayLibrary::IsServer(GetWorld()))
+	if (!GeoLib::IsServer(GetWorld()))
 	{
 		return;
 	}
@@ -33,8 +33,7 @@ void AGeoHealingZone::InitDrain()
 		return;
 	}
 
-	DrainMagnitudePerSecond =
-		(MaxHealth / Data.Params.LifeDrainMaxDuration) * GetDefault<UGameDataSettings>()->RegularTickInterval;
+	DrainMagnitudePerSecond = MaxHealth / Data.Params.LifeDrainMaxDuration;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -57,8 +56,8 @@ void AGeoHealingZone::InitInteractableData(FInteractableActorData* InputData)
 
 	CapsuleComponent->SetCapsuleHalfHeight(Data.Params.Size);
 	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
-	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnSphereBeginOverlap);
-	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnSphereEndOverlap);
+	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
+	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
 	Super::InitInteractableData(InputData);
 }
 
@@ -75,9 +74,9 @@ float AGeoHealingZone::GetDurationPercent() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHealingZone::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-										   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-										   FHitResult const& SweepResult)
+void AGeoHealingZone::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+									 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+									 FHitResult const& SweepResult)
 {
 	if (!UGeoAbilitySystemLibrary::GetGeoAscFromActor(OtherActor))
 	{
@@ -87,8 +86,8 @@ void AGeoHealingZone::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedCompon
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHealingZone::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-										 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AGeoHealingZone::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+								   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	ActorsInZone.Remove(OtherActor);
 }
@@ -97,6 +96,10 @@ void AGeoHealingZone::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponen
 void AGeoHealingZone::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	if (!GeoLib::IsServer(GetWorld()))
+	{
+		return;
+	}
 	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponent();
 	IGenericTeamAgentInterface const* ZoneTeamAgent = Cast<IGenericTeamAgentInterface>(this);
 
@@ -140,4 +143,10 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, SourceASC, SourceASC, Data.Level, Data.Seed);
 	}
+}
+
+void AGeoHealingZone::OnRep_Data() const
+{
+	CapsuleComponent->SetCapsuleHalfHeight(Data.Params.Size);
+	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
 }

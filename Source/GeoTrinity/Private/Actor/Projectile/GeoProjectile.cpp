@@ -4,8 +4,8 @@
 
 #include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "DrawDebugHelpers.h"
@@ -16,7 +16,7 @@
 #include "Net/UnrealNetwork.h"
 #include "NiagaraFunctionLibrary.h"
 #include "System/GeoPoolableInterface.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 using GeoASL = UGeoAbilitySystemLibrary;
 
@@ -85,8 +85,8 @@ void AGeoProjectile::BeginPlay()
 
 	// When a real (server-replicated) projectile arrives on the owning client,
 	// find and destroy the matching predicted fake spawned earlier by the client.
-	if (!CVarReplaceLocalProjectiles.GetValueOnGameThread() || PredictionKeyId == 0
-		|| UGameplayLibrary::IsServer(GetWorld()) || Implements<UGeoPoolableInterface>())
+	if (!CVarReplaceLocalProjectiles.GetValueOnGameThread() || PredictionKeyId == 0 || GeoLib::IsServer(GetWorld())
+		|| Implements<UGeoPoolableInterface>())
 	{
 		return;
 	}
@@ -130,12 +130,12 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	}
 
 	UE_VLOG_SPHERE(this, LogGeoTrinity, Verbose, GetActorLocation(), GetSimpleCollisionRadius(),
-				   UGameplayLibrary::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
+				   GeoLib::GetColorForObject(GetOuter()), TEXT("Projectile tick of %s"), *GetName());
 
-	if (CVarDrawServerProjectiles.GetValueOnGameThread() && UGameplayLibrary::IsServer(GetWorld()))
+	if (CVarDrawServerProjectiles.GetValueOnGameThread() && GeoLib::IsServer(GetWorld()))
 	{
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
-						UGameplayLibrary::GetColorForObject(GetOuter()), false, 0.f);
+						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
 }
 
@@ -163,7 +163,7 @@ bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 		return false;
 	}
 
-	return UGameplayLibrary::IsTeamAttitudeAligned(Payload.Owner, OtherActor, OverlapAttitude);
+	return GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor, OverlapAttitude);
 }
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -179,11 +179,21 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	if (HasAuthority())
 	{
-		GeoASL::ApplyEffectFromEffectData(EffectDataArray, GeoASL::GetGeoAscFromActor(Payload.Owner),
-										  GeoASL::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel, Payload.Seed);
+		GeoASLib::ApplyEffectFromEffectData(EffectDataArray, GeoASLib::GetGeoAscFromActor(Payload.Owner),
+											GeoASLib::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel,
+											Payload.Seed);
 	}
 
+	OnProjectileHit(OtherActor);
 	EndProjectileLife();
+}
+
+void AGeoProjectile::OnProjectileHit_Implementation(AActor* HitActor)
+{
+	if (UGeoGameFeelComponent* GameFeel = HitActor->FindComponentByClass<UGeoGameFeelComponent>())
+	{
+		GameFeel->FlashOnHit();
+	}
 }
 
 void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,

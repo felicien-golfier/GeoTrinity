@@ -22,6 +22,8 @@ public:
 	UFUNCTION(BlueprintNativeEvent)
 	void InitializeWithAbilitySystemComponent(UAbilitySystemComponent* ASC);
 
+	void UnbindStatCallbacks();
+
 protected:
 	UFUNCTION(BlueprintNativeEvent)
 	void UpdateHealthRatio(float NewHealthRatio);

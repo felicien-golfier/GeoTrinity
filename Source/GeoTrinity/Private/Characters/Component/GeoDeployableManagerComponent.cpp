@@ -1,12 +1,20 @@
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 
 #include "Actor/Deployable/GeoDeployableBase.h"
+#include "Net/UnrealNetwork.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 UGeoDeployableManagerComponent::UGeoDeployableManagerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	SetIsReplicatedByDefault(true);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoDeployableManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UGeoDeployableManagerComponent, Deployables);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

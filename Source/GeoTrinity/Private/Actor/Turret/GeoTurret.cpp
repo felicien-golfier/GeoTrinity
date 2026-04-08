@@ -5,7 +5,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Net/UnrealNetwork.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoTurret::AGeoTurret()
 {
@@ -98,7 +98,7 @@ void AGeoTurret::TryFire()
 	FVector const DirectionToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 	FTransform const SpawnTransform{DirectionToTarget.Rotation().Quaternion(), GetActorLocation()};
 
-	float const SpawnServerTime = UGameplayLibrary::GetServerTime(GetWorld());
+	float const SpawnServerTime = GeoLib::GetServerTime(GetWorld());
 
 	FAbilityPayload Payload;
 	Payload.Owner = GetData()->CharacterOwner;
@@ -108,6 +108,6 @@ void AGeoTurret::TryFire()
 	Payload.ServerSpawnTime = SpawnServerTime;
 	Payload.AbilityLevel = Data.Level;
 
-	UGameplayLibrary::SpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload,
-									  GetData()->EffectDataArray, SpawnServerTime);
+	GeoASLib::SpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload, GetData()->EffectDataArray,
+							  SpawnServerTime);
 }

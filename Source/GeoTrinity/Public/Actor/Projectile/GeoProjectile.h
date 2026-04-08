@@ -6,7 +6,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "StructUtils/InstancedStruct.h"
-#include "Tool/UGameplayLibrary.h"
+#include "Tool/Team.h"
 
 #include "GeoProjectile.generated.h"
 
@@ -19,7 +19,6 @@ class USoundBase;
 class UAudioComponent;
 class UPrimitiveComponent;
 struct FHitResult;
-enum class ETeam : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
 UCLASS()
@@ -68,6 +67,15 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	virtual void PlayImpactFx() const;
+
+	/**
+	 * Called on every machine that has this projectile when it hits a valid actor.
+	 * Override in Blueprint to apply a hit flash or other cosmetic reaction on the HitActor's mesh.
+	 *
+	 * @param HitActor  The actor that was struck. Cast to GeoCharacter to access its mesh.
+	 */
+	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|GameFeel")
+	void OnProjectileHit(AActor* HitActor);
 
 	virtual void EndProjectileLife();
 	void InitProjectileMovementComponent();

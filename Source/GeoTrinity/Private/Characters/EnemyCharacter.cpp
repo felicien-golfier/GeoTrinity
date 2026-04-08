@@ -5,9 +5,9 @@
 #include "AI/GeoEnemyAIController.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
-#include "Tool/UGameplayLibrary.h"
 
 AEnemyCharacter::AEnemyCharacter(FObjectInitializer const& ObjectInitializer) :
 	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(CharacterMovementComponentName))

@@ -8,6 +8,7 @@
 #include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Tickable.h"
 
 #include "GeoMoiraBeamAbility.generated.h"
 
@@ -19,7 +20,9 @@
  * Applies a movement speed buff for the duration of the channel.
  */
 UCLASS()
-class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoGameplayAbility
+class GEOTRINITY_API UGeoMoiraBeamAbility
+	: public UGeoGameplayAbility
+	, public FTickableGameObject
 {
 	GENERATED_BODY()
 
@@ -30,8 +33,19 @@ class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoGameplayAbility
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
-	void TickBeam();
+	virtual void Tick(float DeltaTime) override;
+	virtual bool IsTickable() const override { return IsInstantiated() && IsActive(); }
+	virtual TStatId GetStatId() const override
+	{
+		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoMoiraBeamAbility, STATGROUP_Tickables);
+	}
 
+	bool IsInBeam(AActor const* Actor) const;
+
+#ifdef WITH_EDITOR
+
+	void DrawBeamDebugLines(float DeltaTime) const;
+#endif
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
 	TInstancedStruct<FEffectData> DamageEffect;
 
@@ -63,7 +77,6 @@ class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoGameplayAbility
 	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0", ClampMax = "100"))
 	float BeamZoneDrainPercentagePerSecond = 50.f;
 
-	FTimerHandle BeamTickHandle;
 	FActiveGameplayEffectHandle SpeedBuffHandle;
 
 	float RemainingDuration = 0.f;

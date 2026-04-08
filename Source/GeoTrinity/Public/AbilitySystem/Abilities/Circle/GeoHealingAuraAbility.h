@@ -3,9 +3,10 @@
 #pragma once
 
 #include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "CoreMinimal.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Tickable.h"
 
 #include "GeoHealingAuraAbility.generated.h"
 
@@ -15,7 +16,9 @@
  * Self-heals once per healed ally per tick — configure SelfHealEffectDataInstances as SelfHealPercent * AuraHealAmount.
  */
 UCLASS()
-class GEOTRINITY_API UGeoHealingAuraAbility : public UGameplayAbility
+class GEOTRINITY_API UGeoHealingAuraAbility
+	: public UGeoGameplayAbility
+	, public FTickableGameObject
 {
 	GENERATED_BODY()
 
@@ -23,14 +26,14 @@ class GEOTRINITY_API UGeoHealingAuraAbility : public UGameplayAbility
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
-	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
-							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
-							bool bWasCancelled) override;
 
-	void TickAura();
+	virtual void Tick(float DeltaTime) override;
+	virtual bool IsTickable() const override { return IsInstantiated() && IsActive(); }
+	virtual TStatId GetStatId() const override
+	{
+		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoHealingAuraAbility, STATGROUP_Tickables);
+	}
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
-	TInstancedStruct<FEffectData> Heal;
-
-	FTimerHandle AuraTickHandle;
+	FScalableFloat HealPerSecond;
 };

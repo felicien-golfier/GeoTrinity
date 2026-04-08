@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/AbilityPayload.h"
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "Camera/CameraShakeBase.h"
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 
 #include "GeoAutomaticFireAbility.generated.h"
 
@@ -41,6 +42,15 @@ protected:
 
 	virtual void InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex) override;
 
+	/** Camera shake played on the local client each shot. */
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel")
+	TSubclassOf<UCameraShakeBase> FireCameraShakeClass;
+	/** How far (cm) the mesh snaps backward on each shot. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|GameFeel", meta = (ClampMin = "0"))
+	float RecoilDistance = 12.f;
+	/** GameplayCue executed locally on the shooting client each shot. Use for muzzle flash, fire sound, etc. */
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel", meta = (Categories = "GameplayCue"))
+	FGameplayTag FireGameplayCueTag;
 
 	int32 CurrentShotIndex = 0;
 
