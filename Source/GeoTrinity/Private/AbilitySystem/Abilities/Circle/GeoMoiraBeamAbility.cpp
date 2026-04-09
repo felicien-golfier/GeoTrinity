@@ -109,8 +109,6 @@ void UGeoMoiraBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
 void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 {
 	RemainingDuration -= DeltaTime;
-	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red,
-									 FString::Printf(TEXT("RemainingDuration: %f"), RemainingDuration));
 	if (RemainingDuration <= 0.f)
 	{
 
