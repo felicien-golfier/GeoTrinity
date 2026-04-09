@@ -54,19 +54,19 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Ability|Deploy")
 	void OnChargeEnded();
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy")
 	float MinDeployDistance = 300.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy")
 	float MaxDeployDistance = 1500.f;
 
 	// LifeDrainMaxDuration is used to define the life drain rate base on "How long the deployable would stay alive in
 	// sec if nothing else deplete its life", Size is the DeployableSize, for example it is used by the HealingZone to
 	// determine the size of the deployable.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Deploy")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy")
 	FDeployableDataParams Params;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
 private:

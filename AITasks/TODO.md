@@ -47,7 +47,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
   After completing the task, optionally append a short timestamped comment (usually 1–5 lines, it can be longer if needed.) directly below the task bullet. Flag anything worth surfacing: incoherent naming, a function whose comment contradicts its implementation, suspicious patterns, or anything that looks like a latent bug. Skip the report if nothing notable was found.
   Format: `<!-- [YYYY-MM-DD] <findings> -->`
 
-- [ ] Blueprint exposure audit — add BlueprintReadOnly/BlueprintPure/BlueprintNativeEvent specifiers across all headers. No behavior changes except OnHealthChanged and OnDeployableExpired become BlueprintNativeEvent (requires _Implementation rename in .cpp). Full change list below.
+- [x] Blueprint exposure audit — add BlueprintReadOnly/BlueprintPure/BlueprintNativeEvent specifiers across all headers. No behavior changes except OnHealthChanged and OnDeployableExpired become BlueprintNativeEvent (requires _Implementation rename in .cpp). Full change list below.
 
 ### Blueprint Exposure — Change List
 

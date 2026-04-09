@@ -25,7 +25,7 @@ public:
 	TArray<AActor*> FiringPoints;
 
 
-	UPROPERTY(EditAnywhere, Category = "AI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UStateTree> StateTree;
 	
 	// Get next firing point (cycles) and advance the internal index. Returns false if none.
@@ -36,13 +36,14 @@ protected:
 
 	virtual void InitGAS() override;
 
-	UFUNCTION()
+	UFUNCTION(BlueprintNativeEvent)
 	void OnHealthChanged(float NewValue);
+	virtual void OnHealthChanged_Implementation(float NewValue);
 
 	// Index used for round-robin selection of firing points
 	int CurrentFiringPointIndex = 0;
 
 private:
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"), Category = "Enemy")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "Enemy")
 	bool ResetToFullLifeWhenReachingZero = false;
 };

@@ -61,7 +61,7 @@ protected:
 	 * One static mesh asset per buff type. Must match the ability's BuffEffectDataAssets by index.
 	 * The active mesh is swapped on BuffMeshComponent at runtime based on the selected index.
 	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance")
 	TArray<TObjectPtr<UStaticMesh>> BuffMeshAssets;
 
 private:
@@ -80,20 +80,21 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> BuffMeshComponent;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	float RotationSpeed = 90.f;
 
 	/** Curve controlling the launch movement. X = time (seconds), Y = lerp alpha (0 to 1). */
-	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	TObjectPtr<UCurveFloat> LaunchCurve;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	float MinScale = .5f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Pickup|Appearance")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	float MaxScale = 1.5f;
 
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,
+			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
 	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Friendly);
 
 	bool bMovingToTarget = true;

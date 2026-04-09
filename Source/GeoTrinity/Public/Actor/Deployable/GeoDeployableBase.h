@@ -20,13 +20,13 @@ struct FDeployableDataParams
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float BlinkDuration = 2.f;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float LifeDrainMaxDuration = 0.f;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float Size = 0.f;
 };
 
@@ -61,8 +61,11 @@ public:
 	virtual void OnRecalled();
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
+	UFUNCTION(BlueprintPure)
 	virtual float GetDurationPercent() const;
+	UFUNCTION(BlueprintPure)
 	bool IsExpired() const { return bExpired; }
+	UFUNCTION(BlueprintPure)
 	bool IsBlinking() const;
 
 	UPROPERTY(BlueprintAssignable)
@@ -78,17 +81,21 @@ protected:
 		return nullptr;
 	}
 
-	virtual void OnHealthChanged(float NewValue) override;
+	virtual void OnHealthChanged_Implementation(float NewValue) override;
 
 	/** Called when duration or health reaches zero */
-	virtual void OnDeployableExpired();
+	UFUNCTION(BlueprintNativeEvent)
+	void OnDeployableExpired();
+	virtual void OnDeployableExpired_Implementation();
 
 	UFUNCTION(BlueprintNativeEvent)
 	void OnBlinkStarted();
 	virtual void OnBlinkStarted_Implementation();
 
+	UPROPERTY(BlueprintReadOnly)
 	bool bUseRegularDrain = true;
-	float DrainMagnitudePerSecond;
+	UPROPERTY(BlueprintReadOnly)
+	float DrainMagnitudePerSecond = 0.f;
 
 private:
 	void OnBlinkTimerExpired();

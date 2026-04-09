@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Trigger Phrases
+
+- **"Work alone"** — Read `AITasks/Tasks.md`, execute every `[ ]` task in order (skip `[x]` ones), mark each `[x]` when done, then commit and push. Do NOT touch `AITasks/TODO.md` — that file is for automated remote agents only.
+
 ## Project Overview
 
 GeoTrinity is a multiplayer 2D bullet-hell game built with Unreal Engine 5.7 using the Gameplay Ability System (GAS). Players control geometric shapes (Tank=Square, Heal=Circle, DPS=Triangle) in a co-op experience against bosses.

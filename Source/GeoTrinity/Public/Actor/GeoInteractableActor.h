@@ -61,10 +61,12 @@ protected:
 	virtual void InitGas();
 	virtual void BindGasCallbacks();
 	virtual void UnbindGasCallbacks();
-	UFUNCTION()
-	virtual void OnHealthChanged(float NewValue);
-	UFUNCTION()
-	virtual void OnMaxHealthChanged(float NewValue);
+	UFUNCTION(BlueprintNativeEvent)
+	void OnHealthChanged(float NewValue);
+	virtual void OnHealthChanged_Implementation(float NewValue);
+	UFUNCTION(BlueprintNativeEvent)
+	void OnMaxHealthChanged(float NewValue);
+	virtual void OnMaxHealthChanged_Implementation(float NewValue);
 
 private:
 	UFUNCTION(Server, Reliable)
@@ -76,7 +78,7 @@ private:
 	TObjectPtr<class UGeoAttributeSetBase> AttributeSetBase;
 
 protected:
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")

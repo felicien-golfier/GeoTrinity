@@ -24,8 +24,11 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Returns true if under the max limit */
+	UFUNCTION(BlueprintPure)
 	bool CanDeploy() const { return Deployables.Num() < MaxDeployables; }
+	UFUNCTION(BlueprintPure)
 	int32 GetDeployedCount() const { return Deployables.Num(); }
+	UFUNCTION(BlueprintPure)
 	int32 GetMaxDeployables() const { return MaxDeployables; }
 
 	/** Register a newly deployed actor. Binds to its destroyed delegate. */
@@ -35,6 +38,7 @@ public:
 	void RecallAll();
 
 	/** Get the ratio of deployed/max (used for size scaling) */
+	UFUNCTION(BlueprintPure)
 	float GetDeployRatio() const;
 
 	TArray<TObjectPtr<AGeoDeployableBase>> const& GetDeployables() const { return Deployables; }
@@ -42,7 +46,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployCountChanged OnDeployCountChanged;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Deployable", meta = (ClampMin = "1"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (ClampMin = "1"))
 	int32 MaxDeployables = 3;
 
 private:

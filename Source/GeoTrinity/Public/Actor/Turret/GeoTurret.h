@@ -37,10 +37,10 @@ protected:
 	UPROPERTY(Replicated)
 	FDeployableData Data;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<AGeoProjectile> TurretProjectileClass;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float FireInterval = 1.f;
 
 private:

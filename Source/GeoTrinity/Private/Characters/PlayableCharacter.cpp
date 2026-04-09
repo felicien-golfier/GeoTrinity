@@ -201,6 +201,7 @@ void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
 	}
 
 	GeoPlayerState->SetPlayerClass(NewClass);
+	DeployableManagerComponent->RecallAll();
 	AbilitySystemComponent->ClearPlayerClassAbilities();
 	AbilitySystemComponent->GiveStartupAbilities(NewClass);
 	ApplyClassData(NewClass);

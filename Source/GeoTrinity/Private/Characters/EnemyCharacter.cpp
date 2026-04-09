@@ -47,7 +47,7 @@ void AEnemyCharacter::InitGAS()
 		&AEnemyCharacter::OnHealthChanged); // Do we need to remove this on destroy?
 }
 
-void AEnemyCharacter::OnHealthChanged(float NewValue)
+void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 {
 	if (HasAuthority() && NewValue <= 0.f)
 	{
@@ -77,6 +77,7 @@ void AEnemyCharacter::OnHealthChanged(float NewValue)
 		}
 		else
 		{
+			AbilitySystemComponent->StopAllActivePatterns();
 			Destroy();
 		}
 	}

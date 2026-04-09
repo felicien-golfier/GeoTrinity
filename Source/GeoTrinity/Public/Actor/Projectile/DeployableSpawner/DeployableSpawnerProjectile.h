@@ -25,5 +25,5 @@ protected:
 	void FillBaseData(FDeployableData& Data, AActor* PayloadOwner) const;
 
 private:
-	void SpawnDeployableActor() const;
+	void SpawnDeployableActor();
 };

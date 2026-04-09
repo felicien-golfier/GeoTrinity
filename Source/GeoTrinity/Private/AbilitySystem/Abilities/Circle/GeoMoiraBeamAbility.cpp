@@ -28,6 +28,7 @@ void UGeoMoiraBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 	}
 
 	RemainingDuration = InitialDuration;
+	BeamRatio = 1.f;
 
 	if (!SpeedBuffEffect.IsValid())
 	{
@@ -62,8 +63,8 @@ bool UGeoMoiraBeamAbility::IsInBeam(AActor const* const Actor) const
 	ACharacter const* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	FVector const Origin = Character->GetActorLocation();
 	FVector const Forward = Character->GetActorForwardVector();
-	float const CurrentBeamRadius =
-		Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + RadiusGrowthPerZone * BeamRatio;
+	float const CurrentBeamRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f
+		+ RadiusGrowthPerAbsorbedZone * (BeamRatio - 1);
 	FVector const ToActor = Actor->GetActorLocation() - Origin;
 	float const DistAlongBeam = FMath::Clamp(FVector::DotProduct(ToActor, Forward), 0.f, BeamLength);
 	FVector const ClosestPointOnAxis = Origin + Forward * DistAlongBeam;
@@ -90,8 +91,8 @@ void UGeoMoiraBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
 
 	FVector const Origin = Character->GetActorLocation();
 	FVector const Forward = Character->GetActorForwardVector();
-	float const CurrentBeamRadius =
-		Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f + RadiusGrowthPerZone * BeamRatio;
+	float const CurrentBeamRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f
+		+ RadiusGrowthPerAbsorbedZone * (BeamRatio - 1);
 
 	FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
 	FVector const BeamEnd = Origin + Forward * BeamLength;
@@ -108,9 +109,13 @@ void UGeoMoiraBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
 void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 {
 	RemainingDuration -= DeltaTime;
+	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red,
+									 FString::Printf(TEXT("RemainingDuration: %f"), RemainingDuration));
 	if (RemainingDuration <= 0.f)
 	{
-		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, false);
+
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
+
 		return;
 	}
 
@@ -179,7 +184,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 
 	UGeoDeployableManagerComponent* DeployableManager =
 		Character->FindComponentByClass<UGeoDeployableManagerComponent>();
-	if (!DeployableManager)
+	if (!ensureMsgf(DeployableManager, TEXT("UGeoMoiraBeamAbility: Character has no GeoDeployableManagerComponent")))
 	{
 		return;
 	}

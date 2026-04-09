@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "AbilitySystem/Abilities/AbilityPayload.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "GameplayTagContainer.h"
@@ -22,6 +22,18 @@ class GEOTRINITY_API UPattern : public UObject
 	UFUNCTION()
 	void OnMontageSectionStartEnded();
 
+public:
+	virtual void OnCreate(FGameplayTag AbilityTag);
+	virtual void InitPattern(FAbilityPayload const& Payload);
+	bool IsPatternActive() const { return bPatternIsActive; }
+
+	// Must be called at the end of your pattern to call the Montage End.
+	UFUNCTION(BlueprintCallable, Category = "Pattern")
+	virtual void EndPattern();
+
+	UPROPERTY(BlueprintAssignable)
+	FOnPatternEnd OnPatternEnd;
+
 protected:
 	// Called when montage start is done and starts the loop.
 	virtual void StartPattern(FAbilityPayload const& Payload);
@@ -30,39 +42,28 @@ protected:
 	void OnStartPattern(FAbilityPayload const& Payload);
 
 	void JumpMontageToEndSection() const;
-	// Must be called at the end of your pattern to call the Montage End.
-	UFUNCTION(BlueprintCallable, Category = "Pattern")
-	virtual void EndPattern();
 
-public:
-	virtual void OnCreate(FGameplayTag AbilityTag);
-
-	virtual void InitPattern(FAbilityPayload const& Payload);
-
-	bool IsPatternActive() const { return bPatternIsActive; }
-
-private:
-	bool bPatternIsActive = false;
-	FTimerHandle StartSectionTimerHandle;
-
-protected:
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 
 	float StartSectionLength = 0.f;
 
 	FAbilityPayload StoredPayload;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> AnimMontage;
 
-public:
-	FOnPatternEnd OnPatternEnd;
+private:
+	bool bPatternIsActive = false;
+	FTimerHandle StartSectionTimerHandle;
 };
 
 UCLASS(BlueprintType, Blueprintable)
 class GEOTRINITY_API UTickablePattern : public UPattern
 {
 	GENERATED_BODY()
+
+public:
+	virtual void EndPattern() override;
 
 protected:
 	virtual void StartPattern(FAbilityPayload const& Payload) override;
@@ -75,9 +76,6 @@ protected:
 	// @param ServerTime : Gives synchronized server time, it is the replicated server time - 1/2 ping.
 	// @param SpentTime : ServerTime - ServerSpawnTime
 	virtual void TickPattern(float ServerTime, float SpentTime);
-
-	// Must be called when the last tick is done. BEFORE the next Pattern of this same instance is starded again !
-	virtual void EndPattern() override;
 
 	FTimerHandle TimeSyncTimerHandle;
 };

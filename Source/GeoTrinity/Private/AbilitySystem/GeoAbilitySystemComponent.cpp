@@ -318,6 +318,17 @@ UPattern* UGeoAbilitySystemComponent::CreatePatternInstance(UClass const* Patter
 	return PatternInstance;
 }
 
+void UGeoAbilitySystemComponent::StopAllActivePatterns()
+{
+	for (UPattern* Pattern : Patterns)
+	{
+		if (IsValid(Pattern) && Pattern->IsPatternActive())
+		{
+			Pattern->EndPattern();
+		}
+	}
+}
+
 bool UGeoAbilitySystemComponent::FindPatternByClass(UClass* PatternClass, UPattern*& Pattern)
 {
 	UPattern** FoundPattern = Patterns.FindByPredicate(

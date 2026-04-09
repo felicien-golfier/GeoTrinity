@@ -57,7 +57,7 @@ protected:
 
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;
 
 	// We consider the ability to Fire at the end of the FireDuration delay.
@@ -70,9 +70,9 @@ protected:
 	bool bCommitAtActivate = true;
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
 	FTimerHandle FireTriggerTimerHandle;
 };

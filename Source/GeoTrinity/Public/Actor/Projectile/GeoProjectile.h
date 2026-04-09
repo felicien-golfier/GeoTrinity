@@ -37,16 +37,19 @@ public:
 	virtual void InitProjectileLife();
 
 	void AdvanceProjectile(float TimeDelta);
+	UFUNCTION(BlueprintCallable)
 	void SetDistanceSpan(float Distance);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
+	UPROPERTY(BlueprintReadOnly)
 	TArray<TInstancedStruct<struct FEffectData>> EffectDataArray;
 
 	UPROPERTY()
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;
 
+	UPROPERTY(BlueprintReadOnly)
 	FAbilityPayload Payload;
 
 	UPROPERTY(Replicated)
@@ -80,21 +83,23 @@ protected:
 	virtual void EndProjectileLife();
 	void InitProjectileMovementComponent();
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<USphereComponent> Sphere;
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> LoopingSoundComponent;
 
 private:
-	UPROPERTY(EditAnywhere, Category = "GeoProjectile", meta = (Tooltip = "Safe guard in case distance check fails"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
+			  meta = (Tooltip = "Safe guard in case distance check fails", AllowPrivateAccess = true))
 	float LifeSpanInSec = 30.f;
 
-	UPROPERTY(EditAnywhere, Category = "GeoProjectile", meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
+			  meta = (ClampMin = "0", AllowPrivateAccess = true))
 	float DistanceSpan = 1000.f;
 
-	UPROPERTY(EditAnywhere, Category = "GeoProjectile",
-			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
+			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
 	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
 
 	bool bIsEnding{false};
@@ -103,12 +108,12 @@ private:
 	float DistanceSpanSqr;
 
 	/** Cosmetic (let the juice flow) **/
-	UPROPERTY(EditAnywhere, Category = "GeoProjectile")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
 	TObjectPtr<UNiagaraSystem> ImpactEffect;
 
-	UPROPERTY(EditAnywhere, Category = "GeoProjectile")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
 	TObjectPtr<USoundBase> ImpactSound;
 
-	UPROPERTY(EditAnywhere, Category = "GeoProjectile")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
 	TObjectPtr<USoundBase> LoopingSound;
 };

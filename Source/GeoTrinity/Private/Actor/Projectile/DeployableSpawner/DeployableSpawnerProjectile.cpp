@@ -43,7 +43,7 @@ void ADeployableSpawnerProjectile::InitDeployable(AGeoDeployableBase* Deployable
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void ADeployableSpawnerProjectile::SpawnDeployableActor() const
+void ADeployableSpawnerProjectile::SpawnDeployableActor()
 {
 	if (!GeoLib::IsServer(GetWorld()))
 	{

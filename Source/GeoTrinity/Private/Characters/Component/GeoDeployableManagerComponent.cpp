@@ -20,7 +20,7 @@ void UGeoDeployableManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetime
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Deployable)
 {
-	if (!Deployable || Deployables.Contains(Deployable))
+	if (!IsValid(Deployable) || Deployables.Contains(Deployable))
 	{
 		return;
 	}

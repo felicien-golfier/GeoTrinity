@@ -54,6 +54,7 @@ public:
 	/** Misc **/
 	UPattern* CreatePatternInstance(UClass const* PatternClass, FGameplayTag AbilityTag);
 	bool FindPatternByClass(UClass* PatternClass, UPattern*& Pattern);
+	void StopAllActivePatterns();
 	UFUNCTION(NetMulticast, reliable)
 	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass);
 

@@ -91,12 +91,12 @@ void AGeoInteractableActor::UnbindGasCallbacks()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoInteractableActor::OnHealthChanged(float NewValue)
+void AGeoInteractableActor::OnHealthChanged_Implementation(float NewValue)
 {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoInteractableActor::OnMaxHealthChanged(float NewValue)
+void AGeoInteractableActor::OnMaxHealthChanged_Implementation(float NewValue)
 {
 }
 

@@ -93,7 +93,7 @@ float AGeoDeployableBase::GetDurationPercent() const
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::OnHealthChanged(float NewValue)
+void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 {
 	if (NewValue <= 0.f && !bExpired && !BlinkTimerHandle.IsValid())
 	{
@@ -133,7 +133,7 @@ void AGeoDeployableBase::OnBlinkTimerExpired()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::OnDeployableExpired()
+void AGeoDeployableBase::OnDeployableExpired_Implementation()
 {
 	if (bExpired)
 	{

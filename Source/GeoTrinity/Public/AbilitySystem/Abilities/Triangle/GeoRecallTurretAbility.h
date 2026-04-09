@@ -40,12 +40,13 @@ protected:
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Recall")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Recall")
 	TArray<TInstancedStruct<FEffectData>> BlinkBonusEffect;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Recall", meta = (Categories = "GameplayCue"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Recall", meta = (Categories = "GameplayCue"))
 	FGameplayTag RecallGameplayCueTag;
 
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,
+			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
 	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
 };

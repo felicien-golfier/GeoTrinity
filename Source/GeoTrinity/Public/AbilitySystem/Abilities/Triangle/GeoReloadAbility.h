@@ -31,15 +31,15 @@ protected:
 						   OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
 	TSubclassOf<UGameplayEffect> AmmoRestoreEffect;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
 	TSubclassOf<AGeoBuffPickup> BuffPickupClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
 	float MinSpawnRadius = 150.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
 	float MaxSpawnRadius = 400.f;
 };

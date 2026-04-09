@@ -46,39 +46,41 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 
 	void DrawBeamDebugLines(float DeltaTime) const;
 #endif
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat DamagePerSecond;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat HealPerSecond;
 
 	/** Infinite GE applied to self on activation. Should additively modify MovementSpeedMultiplier. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TInstancedStruct<FEffectData> SpeedBuffEffect;
 
 	/** Length of the beam in cm. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float BeamLength = 800.f;
 
 	/** Base beam duration in seconds (before any zone absorption). */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float InitialDuration = 3.f;
 
 	/** Fuel added (in seconds) when a full HealingZone is consumed by the beam. Scales proportionally with partial
 	 * drain. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float DurationPerAbsorbedZone = 2.f;
 
 	/** Beam radius growth (in cm) when a full HealingZone is consumed. Scales proportionally with partial drain. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
-	float RadiusGrowthPerZone = 50.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	float RadiusGrowthPerAbsorbedZone = 50.f;
 
 	/** Health drained from a HealingZone per beam tick. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0", ClampMax = "100"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
+			  meta = (ClampMin = "0", ClampMax = "100", AllowPrivateAccess = true))
 	float BeamZoneDrainPercentagePerSecond = 50.f;
 
 	FActiveGameplayEffectHandle SpeedBuffHandle;
 
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	float RemainingDuration = 0.f;
 	float BeamRatio = 1.f;
 };

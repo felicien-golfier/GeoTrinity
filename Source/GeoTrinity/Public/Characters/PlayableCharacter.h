@@ -73,10 +73,10 @@ protected:
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
-	UPROPERTY(EditDefaultsOnly, Category = "Deployable")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable")
 	TObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Class")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Class")
 	TMap<EPlayerClass, FPlayerClassData> ClassData;
 
 private:
