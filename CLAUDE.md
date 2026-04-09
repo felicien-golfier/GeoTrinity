@@ -184,6 +184,7 @@ Enhanced Input with `UGeoInputConfig` data asset:
 ### Key Data Structures
 
 - `FAbilityPayload` - Internal ability data (Origin, Yaw, ServerSpawnTime, Seed, AbilityTag, Owner, Instigator) — stored as `StoredPayload` on ability instances; also used by pattern system
+  - **Always use `StoredPayload` fields** (Owner, Instigator, AbilityTag, Origin, Yaw, Seed, ServerSpawnTime) instead of calling ability helper functions (e.g. `GetAvatarActor()`, `GetOwningActorFromActorInfo()`, `GetAbilityLevel()`) to retrieve the same data. The payload is set by the client and may intentionally differ from what the ability's ActorInfo reports.
 - `FGeoAbilityTargetData` - Per-shot RPC payload sent client→server via `ServerSetReplicatedTargetData` (Origin, Yaw, ServerSpawnTime, Seed); custom `NetSerialize`
 - `FEffectData` - Polymorphic effect system (FDamageEffectData, FStatusEffectData)
 - `UAbilityInfo` - Data asset mapping ability tags to classes and metadata

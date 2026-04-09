@@ -96,7 +96,9 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	ensureMsgf(!BuffEffects.IsEmpty(), TEXT("GeoTriangleReloadAbility: "));
 	if (BuffPickupClass && !BuffEffects.IsEmpty())
 	{
-		int32 const RandomIndex = AbilityTargetData.Seed % BuffEffects.Num();
+		// Index is set with the number of ammo remaining, except when out of ammo.
+		int32 const Index =
+			(CurrentAmmo == 0.f ? AbilityTargetData.Seed : FMath::RoundToInt(CurrentAmmo)) % BuffEffects.Num();
 
 		AActor* Avatar = GetAvatarActorFromActorInfo();
 		float const RandomAngle = FMath::RandRange(0.f, 2.f * PI);
@@ -114,9 +116,9 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 			FBuffPickupData PickupData;
 			PickupData.CharacterOwner = Avatar;
 			PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
-			PickupData.EffectDataArray = {BuffEffects[RandomIndex]};
+			PickupData.EffectDataArray = {BuffEffects[Index]};
 			PickupData.PowerScale = PowerScale;
-			PickupData.MeshIndex = RandomIndex;
+			PickupData.MeshIndex = Index;
 			PickupData.TargetLocation = AvatarLocation + SpawnOffset;
 			PickupData.Seed = StoredPayload.Seed;
 			if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Avatar))

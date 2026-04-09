@@ -83,6 +83,7 @@ struct FHealEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -90,6 +91,11 @@ struct FHealEffectData : public FEffectData
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat HealAmount;
+
+	// When true, the heal will not broadcast OnHealProvided on the source ASC.
+	// Set on the context in UpdateContextHandle; baked into the spec via Duplicate() at MakeOutgoingSpec time.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bSuppressHealProvided{false};
 };
 
 USTRUCT(BlueprintType)

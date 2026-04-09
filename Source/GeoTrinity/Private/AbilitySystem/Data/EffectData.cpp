@@ -61,6 +61,14 @@ FActiveGameplayEffectHandle FDamageEffectData::ApplyEffect(FGameplayEffectContex
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
+void FHealEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32) const
+{
+	if (bSuppressHealProvided)
+	{
+		EffectContext->SetSuppressHealProvided(true);
+	}
+}
+
 FActiveGameplayEffectHandle FHealEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 														 UAbilitySystemComponent* SourceASC,
 														 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,

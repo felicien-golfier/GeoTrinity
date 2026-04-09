@@ -36,7 +36,6 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	AActor* pTargetAvatar = pTargetASC ? pTargetASC->GetAvatarActor() : nullptr;
 	FGeoGameplayTags const& tags = FGeoGameplayTags::Get();
 
-	/** COMPUTE EVERYTHING TODO **/
 	float Damage = specGE.GetSetByCallerMagnitude(tags.Gameplay_Damage, false, 0.f);
 
 	FGeoGameplayEffectContext const* GeoContext = static_cast<FGeoGameplayEffectContext const*>(contextHandle.Get());

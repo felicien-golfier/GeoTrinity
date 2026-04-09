@@ -11,6 +11,7 @@
 #include "GeoAbilitySystemComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeChangedSignature, float, NewValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealProvided, float, HealDone);
 
 class UGeoGameplayAbility;
 struct FGeoGameplayEffectContext;
@@ -50,12 +51,16 @@ public:
 	/** Delegates **/
 	void BindAttributeCallbacks(); // By doing that, we factorize, ok... but we also make the ASC not agnostic to
 
+	/** Misc **/
 	UPattern* CreatePatternInstance(UClass const* PatternClass, FGameplayTag AbilityTag);
 	bool FindPatternByClass(UClass* PatternClass, UPattern*& Pattern);
 	UFUNCTION(NetMulticast, reliable)
 	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass);
 
 	int32& GetFireSectionIndex(FGameplayTag const& AbilityTag);
+
+	UPROPERTY(BlueprintAssignable)
+	FOnHealProvided OnHealProvided;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;

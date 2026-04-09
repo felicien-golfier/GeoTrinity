@@ -31,6 +31,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	float GetRadialDamageOuterRadius() const { return RadialDamageOuterRadius; }
 	FVector const& GetRadialDamageOrigin() const { return RadialDamageOrigin; }
 	float GetSingleUseDamageMultiplier() const { return SingleUseDamageMultiplier; }
+	bool IsSuppressHealProvided() const { return bSuppressHealProvided; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
@@ -45,6 +46,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetRadialDamageOuterRadius(float value) { RadialDamageOuterRadius = value; }
 	void SetRadialDamageOrigin(FVector const& inVector) { RadialDamageOrigin = inVector; }
 	void SetSingleUseDamageMultiplier(float value) { SingleUseDamageMultiplier = value; }
+	void SetSuppressHealProvided(bool value) { bSuppressHealProvided = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
 	virtual FGeoGameplayEffectContext* Duplicate() const override;
@@ -69,9 +71,10 @@ protected:
 	UPROPERTY()
 	FVector KnockbackVector{FVector::ZeroVector};
 
-	// Transient — set by FContextDamageMultiplierEffectData::UpdateContextHandle, consumed by UExecCalc_Damage.
-	// Not serialized: applied and consumed server-side within the same call stack.
+	// Transient — set by UpdateContextHandle, baked into the spec context via Duplicate() at MakeOutgoingSpec time.
+	// Not serialized: consumed server-side from the spec's embedded context copy in PostGameplayEffectExecute.
 	float SingleUseDamageMultiplier{1.f};
+	bool bSuppressHealProvided{false};
 
 	UPROPERTY()
 	bool bIsRadialDamage{false};

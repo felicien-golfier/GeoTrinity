@@ -67,3 +67,5 @@ Clear this file and replace its tasks whenever a new batch of overnight work is 
   ```
 
 - [x] Read all the code and find potential bug, then report it in a file next to this one.
+
+- [x] Create a Camera system that make so it follows the character up to the bounds. I want to be able to setup the bounds of the arena whre the camera would stop going further, then catch up smoothly (With a curve, I want to have 2 curves in one (Color curve makes it possible) So the X and Y axis are handle sperately) when the character comes back out of scop, the camera would move again, to keep the character in the center.

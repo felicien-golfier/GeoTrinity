@@ -62,7 +62,6 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 	TArray<AActor*> OverlappingActors;
 	Character->GetCapsuleComponent()->GetOverlappingActors(OverlappingActors);
 
-	int32 AlliesHealed = 0;
 	for (AActor* Actor : OverlappingActors)
 	{
 		if (Actor == Character || OwnerTeamAgent->GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Hostile)
@@ -85,15 +84,6 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 		FHealEffectData HealEffect = FHealEffectData();
 		HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
-														StoredPayload.Seed);
-		AlliesHealed++;
-	}
-
-	if (AlliesHealed > 0)
-	{
-		FHealEffectData HealEffect = FHealEffectData();
-		HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime * AlliesHealed;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, SourceASC, GetAbilityLevel(),
 														StoredPayload.Seed);
 	}
 }

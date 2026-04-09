@@ -46,7 +46,8 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 		else
 		{
 			// Both client and server receive the same event data in a single RPC at activation
-			ensureMsgf(false, TEXT("No TargetData in TriggerEventData! This ability is not set as passive"));
+			ensureMsgf(false,
+					   TEXT("No TargetData in TriggerEventData! This ability is not set as passive, it should exist"));
 		}
 	}
 
@@ -83,9 +84,19 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor*
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator,
 														  FTransform const& Transform) const
 {
+	float ServerSpawnTime;
+	if (GetAssetTags().HasTag(FGeoGameplayTags::Get().Ability_Type_Passive))
+	{
+		// Don't need server time for passive. This avoids to try get the time even if GameState does not exist still.
+		ServerSpawnTime = 0.f;
+	}
+	else
+	{
+		ServerSpawnTime = GeoLib::GetServerTime(GetWorld());
+	}
+
 	return CreateAbilityPayload(Owner, Instigator, FVector2D(Transform.GetLocation()),
-								Transform.GetRotation().Rotator().Yaw, GeoLib::GetServerTime(GetWorld()),
-								FMath::Rand32());
+								Transform.GetRotation().Rotator().Yaw, ServerSpawnTime, FMath::Rand32());
 }
 
 UGeoAbilitySystemComponent* UGeoGameplayAbility::GetGeoAbilitySystemComponentFromActorInfo() const
