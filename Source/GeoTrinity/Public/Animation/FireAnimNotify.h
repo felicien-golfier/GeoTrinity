@@ -8,7 +8,8 @@
 #include "FireAnimNotify.generated.h"
 
 /**
- *
+ * Animation notify fired at the moment a weapon fires.
+ * Used to synchronize fire audio/VFX with the animation frame.
  */
 UCLASS()
 class GEOTRINITY_API UFireAnimNotify : public UAnimNotify

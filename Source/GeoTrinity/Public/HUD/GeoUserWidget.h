@@ -17,8 +17,10 @@ class GEOTRINITY_API UGeoUserWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	/** Stores the HUD reference and fires BindCallbacksFromHUD so BP subclasses can connect to HUD delegates. */
 	void InitFromHUD(AGeoHUD* GeoHUD);
 
+	/** Blueprint event called after InitFromHUD. Implement in BP to bind to delegates exposed by AGeoHUD. */
 	UFUNCTION(BlueprintImplementableEvent)
 	void BindCallbacksFromHUD(AGeoHUD* GeoHUD);
 };

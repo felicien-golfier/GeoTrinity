@@ -8,7 +8,8 @@
 #include "SpiralPattern.generated.h"
 
 /**
- *
+ * Bullet pattern that fires projectiles in expanding spirals.
+ * NumberProjectileByRound, TimeForOneRound, and RoundNumber configure the density and duration.
  */
 UCLASS()
 class GEOTRINITY_API USpiralPattern : public UTickablePattern

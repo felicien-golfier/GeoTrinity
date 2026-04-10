@@ -23,13 +23,20 @@ class GEOTRINITY_API UGeoChargeBeamAbility : public UGeoGameplayAbility
 	UGeoChargeBeamAbility();
 
 protected:
+	/** Encodes the current charge ratio (0–1) into the Seed field (as an integer 0–100) of the target data. */
 	virtual FGeoAbilityTargetData BuildAbilityTargetData() override;
 
+	/**
+	 * Appends a FContextDamageMultiplierEffectData entry to the base effect array.
+	 * The multiplier is lerped from MinDamageMultiplier to MaxDamageMultiplier based on the charge ratio.
+	 */
 	virtual TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const override;
 
+	/** On the server, spawns the projectile and conditionally applies the sweet spot bonus effect. */
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 
+	/** Returns MaxChargeTime, which is also used as the ability's FireDelay. */
 	virtual float GetMaxChargeTime() const override { return MaxChargeTime; }
 
 	// Sweet spot range (charge ratio 0–1). Releasing within this window applies SweetSpotBonusEffect.

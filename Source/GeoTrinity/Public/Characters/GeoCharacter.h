@@ -33,10 +33,11 @@ class GEOTRINITY_API AGeoCharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
 	virtual void Tick(float DeltaSeconds) override;
+	/** Returns the GeoInputComponent attached to this character. */
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
+	/** Returns the movement component cast to UGeoMovementComponent. */
 	UGeoMovementComponent* GetGeoMovementComponent() const
 	{
 		return Cast<UGeoMovementComponent>(GetMovementComponent());
@@ -64,9 +65,12 @@ public:
 	// IGenericTeamAgentInterface END
 	//----------------------------------------------------------------------//
 
+	/** Returns the controller cast to AGeoPlayerController, or nullptr if controlled by AI or a different type. */
 	AGeoPlayerController* GetGeoController() const { return Cast<AGeoPlayerController>(GetController()); }
 
+	/** Draws an arrow in the default debug color starting from the character's location. */
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const;
+	/** Draws an arrow in the given color starting from the character's location. */
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage, FColor Color) const;
 
 protected:
@@ -74,7 +78,10 @@ protected:
 	// GAS START
 	//----------------------------------------------------------------------//
 
-	// InitGAS MUST call InitAbilityActorInfo in subclasses.
+	/**
+	 * Initializes the Gameplay Ability System for this character.
+	 * Subclass implementations MUST call InitAbilityActorInfo with the correct owner and avatar actors.
+	 */
 	virtual void InitGAS();
 
 	//----------------------------------------------------------------------//

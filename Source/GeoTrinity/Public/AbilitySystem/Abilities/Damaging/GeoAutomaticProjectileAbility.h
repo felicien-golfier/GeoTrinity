@@ -20,7 +20,9 @@ class GEOTRINITY_API UGeoAutomaticProjectileAbility : public UGeoAutomaticFireAb
 	GENERATED_BODY()
 
 protected:
+	/** Builds target data from the character's current position and facing, encoding Target mode into the payload. */
 	virtual FGeoAbilityTargetData BuildAbilityTargetData() override;
+	/** Spawns a projectile of ProjectileClass aimed according to the Target mode. Returns true on success. */
 	virtual bool ExecuteShot_Implementation() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")

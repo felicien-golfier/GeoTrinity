@@ -26,13 +26,34 @@ public:
 	TArray<TInstancedStruct<struct FEffectData>> EffectDataInstances;
 };
 
+/**
+ * Polymorphic base for all gameplay effect descriptors.
+ * Used with TInstancedStruct so arrays of mixed effect types can be stored in a UPROPERTY.
+ * Subclasses override UpdateContextHandle to write extra data into the context before application,
+ * and ApplyEffect to perform the actual GE application.
+ */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FEffectData
 {
 	GENERATED_BODY()
 	virtual ~FEffectData() = default;
 
+	/**
+	 * Pre-application hook: writes subclass-specific data into the effect context before any ApplyEffect call.
+	 * Called in the first pass of UGeoAbilitySystemLibrary::ApplyEffectFromEffectData.
+	 */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const;
+
+	/**
+	 * Applies the gameplay effect described by this struct to TargetASC.
+	 *
+	 * @param ContextHandle  Pre-built context (may have been mutated by UpdateContextHandle).
+	 * @param SourceASC      ASC of the instigator.
+	 * @param TargetASC      ASC of the recipient.
+	 * @param AbilityLevel   Level passed to the GE spec for scaling.
+	 * @param Seed           RNG seed for deterministic randomness.
+	 * @return               Handle to the applied active effect, or an invalid handle on failure.
+	 */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,

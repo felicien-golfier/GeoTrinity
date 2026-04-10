@@ -34,8 +34,11 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
+	/** Returns the nearest hostile actor within range, or nullptr if none is found. */
 	AActor* FindBestTarget() const;
+	/** Sets a timer to call TryFire after FireInterval seconds. */
 	void ScheduleFire();
+	/** Fires a projectile at the current best target if one exists. */
 	void TryFire();
 
 	UPROPERTY(Replicated)

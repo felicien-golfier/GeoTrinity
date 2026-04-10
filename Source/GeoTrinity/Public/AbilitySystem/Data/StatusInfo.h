@@ -53,5 +53,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (TitleProperty = "{StatusDisplayName}"))
 	TArray<FRpgStatusInfo> StatusInfos;
 
+	/**
+	 * Finds the FRpgStatusInfo entry whose StatusTag matches the given tag.
+	 *
+	 * @param tag      The gameplay tag to search for.
+	 * @param outInfo  Populated with the found entry if the function returns true.
+	 * @return         True if a matching entry was found.
+	 */
 	bool FillStatusInfoFromTag(FGameplayTag const& tag, FRpgStatusInfo& outInfo) const;
 };

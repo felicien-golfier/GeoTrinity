@@ -62,17 +62,17 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float InitialDuration = 3.f;
 
-	/** Fuel added (in seconds) when a full HealingZone is consumed by the beam. Scales proportionally with partial
+	/** Fuel added (in seconds) for a full HealingZone consumed by the beam. Scales proportionally with partial
 	 * drain. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float DurationPerAbsorbedZone = 2.f;
 
-	/** Beam radius growth (in cm) when a full HealingZone is consumed. Scales proportionally with partial drain. */
+	/** Beam radius growth (in cm) for a full HealingZone consumed. Scales proportionally with partial drain. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float RadiusGrowthPerAbsorbedZone = 50.f;
 
-	/** Beam Heal And Damage boost when a full HealingZone is consumed, 1 will dobble damage and heal, 0 won;t change
-	 * anything. Scales proportionally with partial drain. */
+	/** Beam Heal And Damage boost for a full HealingZone consumed, 1 will double damage and heal
+	 * Scales proportionally with partial drain. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float DamageAndHealBoostPerAbsorbedZone = 1.f;
 

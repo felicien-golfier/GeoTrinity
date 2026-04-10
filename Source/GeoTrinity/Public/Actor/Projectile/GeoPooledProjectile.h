@@ -22,10 +22,12 @@ class GEOTRINITY_API AGeoPooledProjectile
 public:
 	AGeoPooledProjectile();
 
-	// IGeoPoolableInterface
+	/** Returns this projectile to the actor pool and disables collision. */
 	virtual void End() override;
+	/** Resets projectile state and re-enables collision after retrieval from the pool. */
 	virtual void Init() override;
 
 protected:
+	/** Overrides the base class to release back to the pool instead of destroying the actor. */
 	virtual void EndProjectileLife() override;
 };

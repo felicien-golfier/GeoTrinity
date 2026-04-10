@@ -10,6 +10,10 @@
 
 class USphereComponent;
 
+/**
+ * Trigger volume that switches the overlapping playable character to TargetClass when touched.
+ * Used in level design to force or offer class transitions.
+ */
 UCLASS()
 class GEOTRINITY_API AGeoClassChangeTrigger : public AActor
 {

@@ -29,6 +29,11 @@ class GEOTRINITY_API UGeoAttributeSetBase : public UAttributeSet
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/**
+	 * Applies IncomingDamage and IncomingHeal meta attributes to Health, clamps to [0, MaxHealth],
+	 * and reports damage/healing to UGeoCombatStatsSubsystem. Ends the owning actor's life at zero health.
+	 */
 	virtual void PostGameplayEffectExecute(FGameplayEffectModCallbackData const& Data) override;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_Health)
@@ -54,6 +59,7 @@ public:
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, IncomingHeal)
 
 
+	/** Returns Health / MaxHealth. Returns 0 when MaxHealth is zero. */
 	UFUNCTION(BlueprintCallable, Category = "Attribute")
 	float GetHealthRatio() const;
 

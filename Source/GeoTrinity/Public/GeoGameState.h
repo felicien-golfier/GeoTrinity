@@ -12,7 +12,8 @@ class AEnemyCharacter;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, AEnemyCharacter*, Enemy);
 
 /**
- *
+ * Replicated game state for GeoTrinity. Tracks spawned enemies and broadcasts
+ * delegate events so HUD and other systems can react to enemy appearance.
  */
 UCLASS()
 class GEOTRINITY_API AGeoGameState : public AGameState
@@ -20,6 +21,7 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 	GENERATED_BODY()
 
 public:
+	/** Spawns enemies listed in EnemiesToSpawn and broadcasts OnEnemySpawned for each. */
 	virtual void HandleMatchHasStarted() override;
 
 	UPROPERTY(BlueprintAssignable, Category = "Enemy")

@@ -22,25 +22,45 @@ class GEOTRINITY_API UGeoInputComponent : public UEnhancedInputComponent
 	friend class AGeoPlayerController;
 
 public:
-	// Sets default values for this component's properties
 	UGeoInputComponent();
 	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType,
 							   FActorComponentTickFunction* ThisTickFunction) override;
 
+	/** Updates the character's aim rotation from the latest mouse or right-stick look input. */
 	void UpdateMouseLook();
+
+	/** Binds movement, look, and all ability input actions to their respective callbacks. */
 	void BindInput(UInputComponent* PlayerInputComponent);
 
+	/** Callback for the move input action. Applies directional movement to the owning character. */
 	UFUNCTION()
 	void MoveFromInput(FInputActionInstance const& Instance);
 
+	/** Callback for the look input action. Caches the latest look vector for rotation processing. */
 	UFUNCTION()
 	void LookFromInput(FInputActionInstance const& Instance);
 
+	/** Returns the GeoCharacter that owns this component, or nullptr if the owner is not a GeoCharacter. */
 	AGeoCharacter* GetGeoCharacter() const;
 
-	// Returns true if there is a valid non-zero look vector from right stick
+	/**
+	 * Returns the latest non-zero look vector from the right stick.
+	 *
+	 * @param OutLook  Set to the cached look vector in viewport space.
+	 * @return         True if the vector is non-zero (stick is active).
+	 */
 	bool GetLookVector(FVector2D& OutLook) const;
 
+	/**
+	 * Binds started/completed/triggered events for every ability action defined in AbilityInfo.
+	 * Deduplicates (InputAction, InputTag) pairs so the same action is bound only once per event type.
+	 *
+	 * @param Object         Object that owns the callback functions.
+	 * @param PressedFunc    Called once when the action starts. Pass nullptr to skip.
+	 * @param ReleasedFunc   Called once when the action completes. Pass nullptr to skip.
+	 * @param HeldFunc       Called every frame while the action is triggered. Pass nullptr to skip.
+	 * @param AbilityInfo    Data asset listing all player ability input mappings.
+	 */
 	template <class UserClass, typename PressedFuncType, typename ReleasedFuncType, typename HeldFuncType>
 	void BindAbilityActions(UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc,
 							HeldFuncType HeldFunc, UAbilityInfo* AbilityInfo);

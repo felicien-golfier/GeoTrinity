@@ -83,6 +83,7 @@ public:
 protected:
 	virtual void StartPattern(FAbilityPayload const& Payload) override;
 	virtual void InitPattern(FAbilityPayload const& Payload) override;
+	/** Timer callback: reads current server time, computes SpentTime, and delegates to TickPattern. */
 	UFUNCTION()
 	void CalculateTimeAndTickPattern();
 

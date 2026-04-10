@@ -21,6 +21,10 @@ class GEOTRINITY_API UGameDataSettings : public UDeveloperSettings
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Synchronously loads and returns the data asset pointed to by SoftObject.
+	 * @warning Should only be called after the asset has been async-loaded; synchronous loads during gameplay cause hitches.
+	 */
 	template <typename T>
 	static T* GetLoadedDataAsset(TSoftObjectPtr<T> const& SoftObject);
 

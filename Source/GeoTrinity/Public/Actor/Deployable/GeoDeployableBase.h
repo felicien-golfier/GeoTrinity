@@ -56,6 +56,7 @@ public:
 
 	/** Computes DrainMagnitudePerSecond from Params and applies the initial drain GE. Call after data is set. */
 	virtual void InitDrain();
+	/** Ticks the blink timer state and calls OnDeployableExpired when health reaches zero. */
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 
@@ -80,6 +81,7 @@ public:
 	TObjectPtr<UGeoCombattantWidgetComp> HealthBarComponent;
 
 protected:
+	// subclasses MUST override this with their own data struct inherited from FDeployableData
 	virtual FDeployableData const* GetData() const override
 	{
 		checkNoEntry();

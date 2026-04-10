@@ -86,6 +86,10 @@ public:
 	/** Ends all currently active pattern instances managed by this component. */
 	void StopAllActivePatterns();
 
+	/**
+	 * Multicast RPC that instantiates PatternClass on every client and calls InitPattern with Payload.
+	 * Called by UPatternAbility on the server after activation.
+	 */
 	UFUNCTION(NetMulticast, reliable)
 	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass);
 

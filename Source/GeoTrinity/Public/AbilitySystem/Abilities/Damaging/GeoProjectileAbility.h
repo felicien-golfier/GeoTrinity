@@ -26,12 +26,32 @@ protected:
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 
+	/**
+	 * Spawns a projectile aimed along Direction from Origin.
+	 *
+	 * @param Direction        Normalized world-space fire direction.
+	 * @param Origin           World-space spawn location.
+	 * @param SpawnServerTime  Synchronized server time used to fast-forward the projectile on the server.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectileUsingDirection(FVector const& Direction, FVector const& Origin, float SpawnServerTime);
 
+	/**
+	 * Spawns a projectile at SpawnTransform. Override to change the projectile class or initialization.
+	 *
+	 * @param SpawnTransform   World transform for the new projectile.
+	 * @param SpawnServerTime  Synchronized server time for position fast-forwarding.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	virtual void SpawnProjectile(FTransform const& SpawnTransform, float SpawnServerTime) const;
 
+	/**
+	 * Spawns one projectile per direction returned by GetTargetDirections for the given Target mode.
+	 *
+	 * @param ProjectileYaw    Yaw angle used for Forward mode targeting.
+	 * @param Origin           World-space origin for direction calculations.
+	 * @param SpawnServerTime  Synchronized server time for position fast-forwarding.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SpawnProjectilesUsingTarget(float ProjectileYaw, FVector const& Origin, float SpawnServerTime);
 

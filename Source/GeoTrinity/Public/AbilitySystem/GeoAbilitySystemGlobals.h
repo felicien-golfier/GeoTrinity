@@ -9,12 +9,14 @@
 #include "GeoAbilitySystemGlobals.generated.h"
 
 /**
- * Direved to allow the use of a custom Gameplay effect context class
+ * Derived from UAbilitySystemGlobals to inject the custom FGeoGameplayEffectContext.
+ * Registered in DefaultGame.ini so GAS uses this class when allocating effect contexts.
  */
 UCLASS()
 class GEOTRINITY_API UGeoAbilitySystemGlobals : public UAbilitySystemGlobals
 {
 	GENERATED_BODY()
 
+	/** Allocates a FGeoGameplayEffectContext instead of the default FGameplayEffectContext. */
 	virtual FGameplayEffectContext* AllocGameplayEffectContext() const override;
 };

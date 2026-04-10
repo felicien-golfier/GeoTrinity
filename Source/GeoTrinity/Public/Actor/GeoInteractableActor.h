@@ -46,13 +46,8 @@ class GEOTRINITY_API AGeoInteractableActor
 public:
 	AGeoInteractableActor();
 
-	// IAbilitySystemInterface BEGIN
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	// IAbilitySystemInterface END
-
-	// IGenericTeamAgentInterface BEGIN
 	virtual FGenericTeamId GetGenericTeamId() const override;
-	// IGenericTeamAgentInterface END
 
 	/**
 	 * Called by the spawner before BeginPlay to supply runtime configuration (owner, level, team, seed).

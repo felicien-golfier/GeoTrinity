@@ -19,9 +19,11 @@ class GEOTRINITY_API UGenericCombattantWidget : public UGeoUserWidget
 	GENERATED_BODY()
 
 public:
+	/** Stores ASC, calls BindStatCallbacks, then fires InitStats so BP subclasses can populate initial values. */
 	UFUNCTION(BlueprintNativeEvent)
 	void InitializeWithAbilitySystemComponent(UAbilitySystemComponent* ASC);
 
+	/** Removes attribute change delegates bound by BindStatCallbacks. Call before the ASC is destroyed. */
 	void UnbindStatCallbacks();
 
 protected:

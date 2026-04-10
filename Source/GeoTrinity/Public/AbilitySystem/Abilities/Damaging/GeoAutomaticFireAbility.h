@@ -36,10 +36,17 @@ protected:
 
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
+	/**
+	 * Called every shot to perform the actual shot logic (e.g. spawn a projectile).
+	 * Override ExecuteShot_Implementation in C++ subclasses; override ExecuteShot in Blueprint.
+	 *
+	 * @return  True if the shot was executed successfully. False ends the ability immediately.
+	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Ability|AutoFire")
 	bool ExecuteShot();
 	virtual bool ExecuteShot_Implementation();
 
+	/** Cycles the fire montage section index to the next shot animation. */
 	virtual void InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex) override;
 
 	/** Camera shake played on the local client each shot. */

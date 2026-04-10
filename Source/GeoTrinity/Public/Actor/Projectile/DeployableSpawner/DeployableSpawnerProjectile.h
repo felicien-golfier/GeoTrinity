@@ -26,8 +26,17 @@ public:
 	virtual bool IsValidOverlap(AActor const* OtherActor) override;
 
 protected:
+	/** Spawns the deployable actor at the projectile's final position then destroys the projectile. */
 	virtual void EndProjectileLife() override;
+	/**
+	 * Called after spawning to finish configuring the deployable with ability-specific data before FinishSpawning.
+	 * Subclasses may override to set class-specific fields on the FDeployableData.
+	 *
+	 * @param Deployable    The freshly deferred-spawned deployable actor (before BeginPlay).
+	 * @param PayloadOwner  The character who fired the spawner projectile.
+	 */
 	virtual void InitDeployable(AGeoDeployableBase* Deployable, AActor* PayloadOwner) const;
+	/** Fills common FDeployableData fields (owner, level, team, seed, params, effects) from the projectile payload. */
 	void FillBaseData(FDeployableData& Data, AActor* PayloadOwner) const;
 
 private:

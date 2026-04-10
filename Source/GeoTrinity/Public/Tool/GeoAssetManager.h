@@ -15,8 +15,10 @@ class GEOTRINITY_API UGeoAssetManager : public UAssetManager
 {
 	GENERATED_BODY()
 public:
+	/** Returns the global UGeoAssetManager instance. Asserts if the asset manager is not of this type. */
 	static UGeoAssetManager& Get();
 
 protected:
+	/** Calls the parent load, then initializes native gameplay tags via FGeoGameplayTags. */
 	virtual void StartInitialLoading() override;
 };

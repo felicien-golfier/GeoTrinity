@@ -77,27 +77,52 @@ public:
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
+	/** Convenience overload that ends this ability instance without requiring handle/actorinfo parameters. */
 	void EndAbility(bool bReplicateEndAbility = true, bool bWasCancelled = false);
 
+	/**
+	 * Returns the normalized charge progress (0–1) based on time held since activation.
+	 * Only meaningful when FireMode == EFireMode::ChargeForFireDelay.
+	 */
 	float GetChargeRatio() const;
 	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo ActivationInfo) override;
 
 protected:
+	/**
+	 * Starts a timer (or charge window) after which BuildDataAndFire is called.
+	 * Duration is FireDelay for ShootAfterFireDelay mode, or unbounded for charge mode (fires on input release).
+	 */
 	void ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo, UAnimInstance* AnimInstance);
+	/**
+	 * Selects or advances the animation montage's fire section index.
+	 * Override in subclasses that cycle through multiple fire animations.
+	 */
 	virtual void InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex);
+	/** Plays AnimMontage and jumps to the correct section based on the current fire section index. */
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
+	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;
+	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize. */
 	virtual FGeoAbilityTargetData BuildAbilityTargetData();
+	/** Returns the world location of the ability's fire socket on the character's mesh. */
 	FVector GetFireSocketLocation() const;
+
+	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. */
 	UFUNCTION()
 	void BuildDataAndFire();
 
+	/** Client-side shot logic (spawn predicted projectile, play VFX). Override in subclasses. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData);
 
+	/**
+	 * Server-side shot logic. Called when the server receives target data from the client.
+	 * Override to spawn the authoritative projectile or apply server-side effects.
+	 */
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag);
 
+	/** Returns the maximum charge time for charge-mode abilities. Override to return the configured value. */
 	UFUNCTION(BlueprintCallable)
 	virtual float GetMaxChargeTime() const;
 

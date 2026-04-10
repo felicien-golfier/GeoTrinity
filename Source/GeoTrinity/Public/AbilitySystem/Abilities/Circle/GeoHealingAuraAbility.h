@@ -13,7 +13,6 @@
 /**
  * Passive healing aura for the Circle player.
  * Periodically heals allies in physical contact (overlapping the character capsule).
- * Self-heals once per healed ally per tick — configure SelfHealEffectDataInstances as SelfHealPercent * AuraHealAmount.
  */
 UCLASS()
 class GEOTRINITY_API UGeoHealingAuraAbility

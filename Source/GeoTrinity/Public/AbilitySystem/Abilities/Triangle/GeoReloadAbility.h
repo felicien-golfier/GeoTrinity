@@ -21,10 +21,13 @@ class GEOTRINITY_API UGeoReloadAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 protected:
+	/** Binds the ammo-changed callback so the reload button is grayed out in the HUD when ammo is full. */
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
+	/** Returns false when the character already has maximum ammo (reload is a no-op in that state). */
 	virtual bool CheckCost(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 						   OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+	/** Restores ammo via AmmoRestoreEffect and spawns a buff pickup at a random location near the character. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")

@@ -5,6 +5,10 @@
 
 #include "CharacterAttributeSet.generated.h"
 
+/**
+ * Extends UGeoAttributeSetBase with player-specific attributes: ammo, heal/damage/movement multipliers.
+ * Used by APlayableCharacter's ASC.
+ */
 UCLASS()
 class GEOTRINITY_API UCharacterAttributeSet : public UGeoAttributeSetBase
 {

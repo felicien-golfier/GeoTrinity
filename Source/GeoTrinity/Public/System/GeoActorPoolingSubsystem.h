@@ -16,9 +16,17 @@ class GEOTRINITY_API UGeoActorPoolingSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 public:
-	// Return the first actor of the pool if available, spawn a new one if not
-	// Class must be a child of AActor
-	// if bInit is true, call IGeoPoolableInterface::Init() on the returned actor.
+	/**
+	 * Returns a pooled actor of the given class, or spawns a new one if the pool is empty.
+	 *
+	 * @param Class        The actor class to retrieve. Must derive from AActor.
+	 * @param Transform    Spawn transform applied to the actor.
+	 * @param Owner        The actor that logically owns this instance.
+	 * @param Instigator   The pawn responsible for spawning (used for damage attribution).
+	 * @param bInit        When true, calls IGeoPoolableInterface::Init() on the returned actor.
+	 * @param bActivate    When true, calls actor.SetActorTickEnabled(true) and makes it visible.
+	 * @return             The acquired actor cast to T, or nullptr if the cast fails.
+	 */
 	template <typename T>
 	T* RequestActor(TSubclassOf<T> Class, FTransform const& Transform, AActor* Owner, APawn* Instigator,
 					bool bInit = true, bool bActivate = true)
@@ -28,7 +36,15 @@ public:
 		return Cast<T>(Spawned);
 	}
 
-	// Pre-spawn a number of actors of the given class and store them inactive in the pool
+	/**
+	 * Pre-allocates Count inactive actors of the given class and stores them in the pool.
+	 * Use during level load to avoid runtime spawn cost.
+	 *
+	 * @param Class        The actor class to pre-spawn. Must derive from AActor.
+	 * @param Count        Number of instances to pre-allocate.
+	 * @param Owner        Optional owner assigned to each pre-spawned actor.
+	 * @param Instigator   Optional instigator assigned to each pre-spawned actor.
+	 */
 	template <typename T>
 	void PreSpawn(TSubclassOf<T> Class, uint16 const Count, AActor* Owner = nullptr, APawn* Instigator = nullptr)
 	{
@@ -36,15 +52,19 @@ public:
 		PreSpawn(*Class, Count, Owner, Instigator);
 	}
 
-	// Return any actor to the pool of inactive actors. Will call IGeoPoolableInterface::End() on the Actor.
+	/** Returns Actor to the pool and calls IGeoPoolableInterface::End() on it. */
 	void ReleaseActor(AActor* Actor);
 
+	/** Returns the subsystem for the given world. */
 	static UGeoActorPoolingSubsystem* Get(UWorld const* World);
 
+	/** Returns the subsystem for the world of the given context object. Blueprint-callable. */
 	UFUNCTION(BlueprintCallable, Category = "ActorPoolingSystem", meta = (WorldContext = "WorldContextObject"))
 	static UGeoActorPoolingSubsystem* Get(UObject const* WorldContextObject);
 
+	/** Returns true when Actor is currently active (not sitting in the pool). */
 	static bool GetActorState(AActor const* Actor);
+	/** Sets the active/inactive state of an actor and adjusts visibility and tick accordingly. */
 	static void ChangeActorState(AActor* NewActor, bool bActive);
 
 private:

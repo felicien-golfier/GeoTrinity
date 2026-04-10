@@ -18,7 +18,9 @@ namespace RootTagNames
  */
 struct FGeoGameplayTags
 {
+	/** Returns the singleton instance of all native gameplay tags. */
 	static FGeoGameplayTags const& Get() { return GameplayTags; }
+	/** Registers all native tags with the GameplayTagsManager. Called from UGeoAssetManager::StartInitialLoading. */
 	static void InitializeNativeGameplayTags();
 
 	FGameplayTag Gameplay_Damage;

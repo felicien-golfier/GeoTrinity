@@ -18,9 +18,9 @@ class GEOTRINITY_API IGeoPoolableInterface
 	GENERATED_BODY()
 
 public:
-	// Called when an actor is popped (acquired) from the pool
+	/** Called when an actor is acquired from the pool. Reset state here before use. */
 	virtual void Init() = 0;
 
-	// Called when an actor is released back to the pool
+	/** Called when an actor is returned to the pool. Deactivate visuals and clear state here. */
 	virtual void End() = 0;
 };

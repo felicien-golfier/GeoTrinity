@@ -76,6 +76,10 @@ public:
 	FOnProjectileEndLife OnProjectileEndLifeDelegate;
 
 protected:
+	/**
+	 * Returns true when OtherActor is a valid hit target for this projectile.
+	 * Default implementation checks team attitude bitmask. Override to restrict targeting (e.g. ground only).
+	 */
 	virtual bool IsValidOverlap(AActor const* OtherActor);
 
 	UFUNCTION()
@@ -98,7 +102,9 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|GameFeel")
 	void OnProjectileHit(AActor* HitActor);
 
+	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor by default. */
 	virtual void EndProjectileLife();
+	/** Configures the UProjectileMovementComponent from the projectile's UPROPERTY settings. */
 	void InitProjectileMovementComponent();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

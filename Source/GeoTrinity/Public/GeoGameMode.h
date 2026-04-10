@@ -10,7 +10,8 @@
 class AEnemyCharacter;
 class UStatusInfo;
 /**
- *
+ * Game mode for GeoTrinity. Assigns starting player classes based on join order
+ * and handles server-side round management.
  */
 UCLASS()
 class GEOTRINITY_API AGeoGameMode : public AGameMode

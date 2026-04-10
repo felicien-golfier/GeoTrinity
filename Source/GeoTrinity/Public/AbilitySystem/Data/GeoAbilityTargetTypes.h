@@ -35,6 +35,7 @@ struct GEOTRINITY_API FGeoAbilityTargetData : public FGameplayAbilityTargetData
 
 	virtual UScriptStruct* GetScriptStruct() const override { return FGeoAbilityTargetData::StaticStruct(); }
 
+	/** Serializes Origin, Yaw, ServerSpawnTime, and Seed for replication. */
 	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
 
 	virtual FString ToString() const override

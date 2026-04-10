@@ -83,17 +83,27 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FGameplayAbilityInfo> PlayersAbilityInfos;
 
+	/** Calls PopulateAbilityTags() to fill transient AbilityTag fields from CDO asset tags. */
 	virtual void PostLoad() override;
 #if WITH_EDITOR
+	/** Re-populates ability tags when the asset is edited in the editor. */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
-	/** Returns abilities for the given class combined with SharedAbilities */
+	/** Returns abilities for the given class combined with SharedAbilities. */
 	TArray<FPlayersGameplayAbilityInfo> GetAbilitiesForClass(EPlayerClass PlayerClass) const;
-	/** Returns all player ability infos across all classes (for clearing) */
+	/** Returns all player ability infos across all classes (Triangle + Circle + Square + Shared). */
 	TArray<FPlayersGameplayAbilityInfo> GetAllPlayersAbilityInfos() const;
 
+	/** Returns raw pointers to all FGameplayAbilityInfo entries (generic and player infos). */
 	TArray<FGameplayAbilityInfo*> GetAllAbilityInfos() const;
+	/**
+	 * Finds ability infos whose AbilityTag matches any tag in AbilityTags.
+	 *
+	 * @param AbilityTags       Tags to match against.
+	 * @param bLogIfNotFound    When true, logs a warning for each tag with no matching entry.
+	 * @return                  Array of matching FGameplayAbilityInfo copies.
+	 */
 	TArray<FGameplayAbilityInfo> FindAbilityInfoForListOfTag(TArray<FGameplayTag> const& AbilityTags,
 															 bool bLogIfNotFound = false) const;
 
