@@ -7,14 +7,15 @@
 
 #include "GeoGameCamera.generated.h"
 
-class UCurveLinearColor;
+class UCurveVector;
 
 /**
  * Arena-bounded follow camera for GeoTrinity.
  * Follows the centroid of all player pawns in XY, stopping at configurable arena bounds.
  * When the centroid moves back inside the reachable area, the camera catches up smoothly.
- * Catch-up speed is driven by a UCurveLinearColor: curve X = distance to target (cm),
- * R channel = X-axis speed (cm/s), G channel = Y-axis speed (cm/s).
+ * Follow speed is driven by a UCurveVector sampled at the character's normalized position in the arena
+ * (-1 = BoundsMin, 0 = center, +1 = BoundsMax). X channel = X-axis speed (cm/s), Y channel = Y-axis speed (cm/s).
+ * The curve should reach 0 at ±1 so the camera stops smoothly at the bounds.
  * Z position is fixed to the actor's initial spawn height.
  */
 UCLASS(BlueprintType, Blueprintable)
@@ -37,14 +38,15 @@ protected:
 	FVector2D BoundsMax = FVector2D(500.f, 500.f);
 
 	/**
-	 * Controls catch-up speed per axis as a function of distance to the target position.
-	 * Curve X axis: distance to target in cm.
-	 * R channel: camera speed along the X world axis (cm/s).
-	 * G channel: camera speed along the Y world axis (cm/s).
+	 * Controls camera follow speed per axis based on the character's normalized position within the arena.
+	 * Curve X axis: normalized character position, -1 = BoundsMin, 0 = center, +1 = BoundsMax.
+	 * X channel: camera speed along the X world axis (cm/s).
+	 * Y channel: camera speed along the Y world axis (cm/s).
 	 *
-	 * @note A curve that ramps from low speed at close range to high speed at long range
-	 *       gives a smooth, responsive catch-up feel without overshooting.
+	 * Design intent: high speed near 0 (full follow at center), falling to 0 at ±1 (camera stops at bounds).
+	 * The symmetric falloff makes the camera decelerate as the character approaches a bound,
+	 * and accelerate again as the character moves back toward the center.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Movement")
-	TObjectPtr<UCurveLinearColor> CatchUpCurve;
+	TObjectPtr<UCurveVector> CatchUpCurve;
 };

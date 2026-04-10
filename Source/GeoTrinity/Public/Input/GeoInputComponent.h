@@ -76,7 +76,7 @@ private:
 	// Cached latest right stick vector in viewport space (X,Y), not normalized. Zero when idle.
 	FVector2D LastLookInput = FVector2D::ZeroVector;
 	FVector2D LastMouseInput = FVector2D::ZeroVector;
-
+	bool bIsUsingController = false;
 	constexpr static float ControllerDriftThreshold = 0.1f;
 };
 

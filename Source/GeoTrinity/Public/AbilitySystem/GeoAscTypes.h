@@ -51,12 +51,12 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
 
 	/**
-	 * Deep-copies the context, including transient fields (SingleUseDamageMultiplier, bSuppressHealProvided)
+	 * Deep-copies the context, including call-site scoped fields (SingleUseDamageMultiplier, bSuppressHealProvided)
 	 * that are not replicated, so they survive the MakeOutgoingSpec copy and reach PostGameplayEffectExecute.
 	 */
 	virtual FGeoGameplayEffectContext* Duplicate() const override;
 
-	/** Serializes all extended context fields for replication. Transient fields are excluded. */
+	/** Serializes all extended context fields for replication. Call-site scoped fields are excluded. */
 	virtual bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess) override;
 
 protected:
@@ -77,7 +77,7 @@ protected:
 	UPROPERTY()
 	FVector KnockbackVector{FVector::ZeroVector};
 
-	// Transient — set by UpdateContextHandle, baked into the spec context via Duplicate() at MakeOutgoingSpec time.
+	// Call-site scoped — set by UpdateContextHandle, baked into the spec context via Duplicate() at MakeOutgoingSpec time.
 	// Not serialized: consumed server-side from the spec's embedded context copy in PostGameplayEffectExecute.
 	float SingleUseDamageMultiplier{1.f};
 	bool bSuppressHealProvided{false};

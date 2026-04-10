@@ -24,7 +24,6 @@ void UGeoInputComponent::TickComponent(float DeltaSeconds, ELevelTick TickType,
 
 void UGeoInputComponent::UpdateMouseLook()
 {
-
 	AGeoCharacter* GeoCharacter = GetGeoCharacter();
 	if (!IsValid(GeoCharacter))
 	{
@@ -47,8 +46,13 @@ void UGeoInputComponent::UpdateMouseLook()
 
 	if (!ScreenPosition.Equals(LastMouseInput, 1.f))
 	{
-		LastMouseInput = ScreenPosition;
+		bIsUsingController = false;
 		GeoPlayerController->SetShowMouseCursor(true);
+		LastMouseInput = ScreenPosition;
+	}
+
+	if (!bIsUsingController)
+	{
 		FVector WorldLocation, WorldDirection;
 		UGameplayStatics::DeprojectScreenToWorld(GeoPlayerController, ScreenPosition, WorldLocation, WorldDirection);
 
@@ -80,6 +84,7 @@ void UGeoInputComponent::MoveFromInput(FInputActionInstance const& Instance)
 
 void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 {
+	bIsUsingController = true;
 	FVector2D const LookInput = FVector2D(Instance.GetValue().Get<FVector2D>());
 	GetGeoCharacter()->DrawDebugVectorFromCharacter(
 		FVector(LookInput, 0.f), FString::Printf(TEXT("Look Input vector from %s"), *GetGeoCharacter()->GetName()));
