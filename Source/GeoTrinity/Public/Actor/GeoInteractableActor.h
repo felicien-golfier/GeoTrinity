@@ -30,6 +30,11 @@ struct FInteractableActorData
 	int Seed = 0;
 };
 
+/**
+ * Base actor for all in-world objects that participate in GAS (turrets, healing zones, buff pickups, etc.).
+ * Owns an ASC and attribute set, implements the team interface for attitude queries, and provides a data-init
+ * contract (InitInteractableData) so the spawner can configure the actor before BeginPlay.
+ */
 UCLASS()
 class GEOTRINITY_API AGeoInteractableActor
 	: public AActor
@@ -39,7 +44,6 @@ class GEOTRINITY_API AGeoInteractableActor
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
 	AGeoInteractableActor();
 
 	// IAbilitySystemInterface BEGIN
@@ -50,6 +54,12 @@ public:
 	virtual FGenericTeamId GetGenericTeamId() const override;
 	// IGenericTeamAgentInterface END
 
+	/**
+	 * Called by the spawner before BeginPlay to supply runtime configuration (owner, level, team, seed).
+	 * Subclasses must cast Data to their own FDeployableData-derived struct.
+	 *
+	 * @param Data  Pointer to the configuration struct. Must not be null. Ownership remains with the caller.
+	 */
 	virtual void InitInteractableData(FInteractableActorData* Data);
 
 protected:

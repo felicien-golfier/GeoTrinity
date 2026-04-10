@@ -49,8 +49,14 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetSuppressHealProvided(bool value) { bSuppressHealProvided = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
+
+	/**
+	 * Deep-copies the context, including transient fields (SingleUseDamageMultiplier, bSuppressHealProvided)
+	 * that are not replicated, so they survive the MakeOutgoingSpec copy and reach PostGameplayEffectExecute.
+	 */
 	virtual FGeoGameplayEffectContext* Duplicate() const override;
 
+	/** Serializes all extended context fields for replication. Transient fields are excluded. */
 	virtual bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess) override;
 
 protected:

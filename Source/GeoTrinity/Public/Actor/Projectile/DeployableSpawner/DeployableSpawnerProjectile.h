@@ -8,6 +8,11 @@
 
 #include "DeployableSpawnerProjectile.generated.h"
 
+/**
+ * Projectile that spawns a deployable actor (turret, healing zone, etc.) when it lands.
+ * Carries FDeployableDataParams and the deployable class set by the ability at fire time,
+ * then hands them off to the spawned actor via InitInteractableData.
+ */
 UCLASS(Blueprintable)
 class GEOTRINITY_API ADeployableSpawnerProjectile : public AGeoProjectile
 {
@@ -17,6 +22,7 @@ public:
 	FDeployableDataParams Params;
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
+	/** Returns true only when OtherActor is the ground (static world geometry), triggering deployment. */
 	virtual bool IsValidOverlap(AActor const* OtherActor) override;
 
 protected:

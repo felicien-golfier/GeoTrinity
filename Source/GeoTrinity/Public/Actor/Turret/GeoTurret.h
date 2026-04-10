@@ -12,6 +12,10 @@
 class AGeoProjectile;
 class UCapsuleComponent;
 
+/**
+ * Deployable turret that periodically fires projectiles at the nearest hostile actor.
+ * Configured via FDeployableData supplied by the deploy ability at spawn time.
+ */
 UCLASS(Blueprintable, ClassGroup = (Custom))
 class GEOTRINITY_API AGeoTurret : public AGeoDeployableBase
 {

@@ -10,7 +10,9 @@
 
 class UStateTree;
 /**
- *
+ * Enemy character controlled by a StateTree AI. Owns its own ASC directly (no PlayerState).
+ * Maintains an ordered list of firing points gathered from world actors tagged "Path" and cycles
+ * through them round-robin to position itself before activating abilities.
  */
 UCLASS()
 class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
@@ -24,11 +26,15 @@ public:
 	UPROPERTY(Transient)
 	TArray<AActor*> FiringPoints;
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UStateTree> StateTree;
-	
-	// Get next firing point (cycles) and advance the internal index. Returns false if none.
+
+	/**
+	 * Returns the world location of the next firing point and advances the internal round-robin index.
+	 *
+	 * @param OutLocation  Set to the next firing point's world location if one exists.
+	 * @return             False if FiringPoints is empty.
+	 */
 	bool GetAndAdvanceNextFiringPointLocation(FVector& OutLocation);
 
 protected:

@@ -14,6 +14,11 @@ struct FAbilityPayload;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPatternEnd);
 
+/**
+ * Base class for all enemy bullet patterns. A pattern is a UObject created per-client by UGeoAbilitySystemComponent
+ * in response to a multicast RPC, so it runs identically on every machine. Subclasses override StartPattern or
+ * TickPattern to define when and how projectiles are spawned.
+ */
 UCLASS(BlueprintType, Blueprintable)
 class GEOTRINITY_API UPattern : public UObject
 {
@@ -23,11 +28,16 @@ class GEOTRINITY_API UPattern : public UObject
 	void OnMontageSectionStartEnded();
 
 public:
+	/** Called immediately after the pattern is created. AbilityTag is stored for montage section lookup. */
 	virtual void OnCreate(FGameplayTag AbilityTag);
+
+	/** Stores the payload and triggers the start-section animation before delegating to StartPattern. */
 	virtual void InitPattern(FAbilityPayload const& Payload);
+
+	/** Returns true while the pattern is running (after InitPattern, before EndPattern). */
 	bool IsPatternActive() const { return bPatternIsActive; }
 
-	// Must be called at the end of your pattern to call the Montage End.
+	/** Ends the pattern and jumps the animation montage to its end section. Must be called to clean up. */
 	UFUNCTION(BlueprintCallable, Category = "Pattern")
 	virtual void EndPattern();
 
@@ -57,6 +67,11 @@ private:
 	FTimerHandle StartSectionTimerHandle;
 };
 
+/**
+ * Pattern subclass that drives projectile spawning via a recurring timer tick.
+ * Uses server-synchronized time so projectile positions are deterministic across all clients despite ping.
+ * Subclasses implement TickPattern to define per-tick spawn logic.
+ */
 UCLASS(BlueprintType, Blueprintable)
 class GEOTRINITY_API UTickablePattern : public UPattern
 {
