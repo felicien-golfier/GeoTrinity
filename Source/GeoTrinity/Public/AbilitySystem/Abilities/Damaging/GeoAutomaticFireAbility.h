@@ -11,7 +11,7 @@
 
 /**
  * Base class for high fire rate abilities that continuously execute while input is held.
- * Uses the base class FireDuration and ScheduleFireTrigger for timing and network compensation.
+ * Uses the base class FireDelay and ScheduleFireTrigger for timing and network compensation.
  * Subclasses override ExecuteShot() to define what happens each shot.
  */
 UCLASS(Abstract)

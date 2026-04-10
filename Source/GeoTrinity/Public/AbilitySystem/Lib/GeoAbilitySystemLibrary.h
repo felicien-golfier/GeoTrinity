@@ -88,11 +88,18 @@ public:
 	 * @param SpawnServerTime
 	 * @return The spawned projectile, or nullptr on failure
 	 */
-	static AGeoProjectile* SpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> ProjectileClass,
-										   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
-										   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
-										   float SpawnServerTime, FPredictionKey PredictionKey = FPredictionKey{});
+	static AGeoProjectile* FullySpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> ProjectileClass,
+												FTransform const& SpawnTransform, FAbilityPayload const& Payload,
+												TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+												float SpawnServerTime, FPredictionKey PredictionKey = FPredictionKey{});
 
+	static AGeoProjectile* StartSpawnProjectile(UWorld* World, TSubclassOf<AGeoProjectile> ProjectileClass,
+												FTransform const& SpawnTransform, FAbilityPayload const& Payload,
+												TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+												FPredictionKey PredictionKey = FPredictionKey{});
+
+	static void FinishSpawnProjectile(UWorld const* World, AGeoProjectile* Projectile, FTransform const& SpawnTransform,
+									  float SpawnServerTime, FPredictionKey PredictionKey);
 	/**
 	 * Get target directions based on targeting mode.
 	 * @param World The world context

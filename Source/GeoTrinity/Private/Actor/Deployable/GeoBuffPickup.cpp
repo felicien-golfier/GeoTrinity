@@ -143,13 +143,13 @@ void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimit
 	}
 
 	UAbilitySystemComponent* TargetASC = OtherActorAbilitySystem->GetAbilitySystemComponent();
-	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponent();
-	if (!TargetASC || !SourceASC)
+	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->CharacterOwner);
+	if (!TargetASC || !OwnerASC)
 	{
 		return;
 	}
 
-	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, SourceASC, TargetASC, Data.Level,
+	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, OwnerASC, TargetASC, Data.Level,
 														Data.Seed);
 
 	OnRecalled();

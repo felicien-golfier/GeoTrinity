@@ -11,7 +11,7 @@ class USkeletalMesh;
 class UAnimInstance;
 class UGameplayEffect;
 class UWidgetComponent;
-class UGeoDeployAbility;
+class UGeoChargeAbility;
 class UGeoDeployableManagerComponent;
 
 USTRUCT(BlueprintType)
@@ -55,7 +55,8 @@ public:
 	EPlayerClass GetPlayerClass() const;
 
 	/**
-	 * Switches the player to NewClass: clears current class abilities, applies new class data, and grants new abilities.
+	 * Switches the player to NewClass: clears current class abilities, applies new class data, and grants new
+	 * abilities.
 	 *
 	 * @param NewClass  The target player class to switch to.
 	 */
@@ -72,13 +73,10 @@ public:
 	 *
 	 * @param Ability  The currently charging deploy ability that drives the gauge fill.
 	 */
-	void ShowDeployChargeGauge(UGeoDeployAbility* Ability) const;
+	void ShowDeployChargeGauge(UGeoGameplayAbility* Ability) const;
 
 	/** Hides the deploy charge gauge widget. */
 	void HideDeployChargeGauge() const;
-
-	/** Returns the curve used to remap the raw charge ratio for the deploy gauge fill speed. */
-	UCurveFloat* GetGaugeChargingSpeedCurve() const { return GaugeChargingSpeedCurve; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -99,10 +97,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
-
-	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable")
-	TObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Class")
 	TMap<EPlayerClass, FPlayerClassData> ClassData;

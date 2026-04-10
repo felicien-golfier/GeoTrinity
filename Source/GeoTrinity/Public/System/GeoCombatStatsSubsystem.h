@@ -20,6 +20,9 @@ struct FActorCombatStats
 	TArray<FCombatEventRecord> DamageDealt;
 	TArray<FCombatEventRecord> HealingDealt;
 	TArray<FCombatEventRecord> DamageReceived;
+	float TotalDamageDealt = 0.f;
+	float TotalHealingDealt = 0.f;
+	float TotalDamageReceived = 0.f;
 };
 
 UCLASS()
@@ -33,14 +36,16 @@ public:
 	void ReportHealingDealt(AGeoPlayerState* Source, float Amount);
 	void ComputePlayerStats(float CurrentTime);
 
-	void DisplayLines(AGeoPlayerState* LocalPlayerState) const;
+#if !UE_BUILD_SHIPPING
+	static bool IsDebugDisplayEnabled();
+#endif
 
 private:
-	static constexpr float RollingWindowSeconds = 30.f;
+	static constexpr float RollingWindowSeconds = 10.f;
 
 	TMap<TWeakObjectPtr<AGeoPlayerState>, FActorCombatStats> StatsPerActor;
 
-	void RecordEvent(TArray<FCombatEventRecord>& Events, float Amount, float CurrentTime);
+	void RecordEvent(TArray<FCombatEventRecord>& Events, float& Total, float Amount, float CurrentTime);
 	static void PruneEvents(TArray<FCombatEventRecord>& Events, float CurrentTime);
 	static float SumEvents(TArray<FCombatEventRecord> const& Events);
 };

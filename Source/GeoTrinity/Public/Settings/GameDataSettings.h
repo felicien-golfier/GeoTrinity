@@ -37,6 +37,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float DeployMaxChargeTime = 1.f;
 
+	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	TSoftObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
+
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	TSoftClassPtr<UGameplayEffect> HealthEffect;
 

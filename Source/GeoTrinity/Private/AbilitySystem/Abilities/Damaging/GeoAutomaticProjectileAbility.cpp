@@ -48,8 +48,8 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	for (FVector const& Direction : Directions)
 	{
 		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
-		if (GeoASLib::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
-									  StoredPayload.ServerSpawnTime, PredictionKey))
+		if (GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
+										   GetEffectDataArray(), StoredPayload.ServerSpawnTime, PredictionKey))
 		{
 			bAnySpawned = true;
 		}

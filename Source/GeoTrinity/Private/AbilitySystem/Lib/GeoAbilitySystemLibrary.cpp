@@ -19,6 +19,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "InstancedStruct.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraTypes.h"
 #include "Settings/GameDataSettings.h"
 #include "System/GeoActorPoolingSubsystem.h"
 #include "System/GeoPoolableInterface.h"
@@ -563,13 +564,27 @@ TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArr
 	return {};
 }
 
-AGeoProjectile* UGeoAbilitySystemLibrary::SpawnProjectile(UWorld* const World,
-														  TSubclassOf<AGeoProjectile> const ProjectileClass,
-														  FTransform const& SpawnTransform,
-														  FAbilityPayload const& Payload,
-														  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
-														  float const SpawnServerTime, FPredictionKey PredictionKey)
+
+AGeoProjectile*
+UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> const ProjectileClass,
+											   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
+											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+											   float const SpawnServerTime, FPredictionKey PredictionKey)
 {
+
+	AGeoProjectile* Projectile =
+		StartSpawnProjectile(World, ProjectileClass, SpawnTransform, Payload, EffectDataArray, PredictionKey);
+	FinishSpawnProjectile(World, Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
+	return Projectile;
+}
+
+AGeoProjectile*
+UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> const ProjectileClass,
+											   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
+											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+											   FPredictionKey PredictionKey)
+{
+
 	if (!World || !ProjectileClass)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[UGeoAbilitySystemLibrary::SpawnProjectile] Invalid World or ProjectileClass"));
@@ -609,7 +624,14 @@ AGeoProjectile* UGeoAbilitySystemLibrary::SpawnProjectile(UWorld* const World,
 	Projectile->EffectDataArray = EffectDataArray;
 	Projectile->PredictionKeyId = PredictionKey.Current;
 
-	if (bIsPoolable)
+	return Projectile;
+}
+
+void UGeoAbilitySystemLibrary::FinishSpawnProjectile(UWorld const* World, AGeoProjectile* Projectile,
+													 FTransform const& SpawnTransform, float const SpawnServerTime,
+													 FPredictionKey PredictionKey)
+{
+	if (Projectile->GetClass()->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
 	{
 		Cast<IGeoPoolableInterface>(Projectile)->Init();
 	}
@@ -649,8 +671,6 @@ AGeoProjectile* UGeoAbilitySystemLibrary::SpawnProjectile(UWorld* const World,
 			Projectile->AdvanceProjectile(TimeDelta);
 		}
 	}
-
-	return Projectile;
 }
 
 TArray<FVector> UGeoAbilitySystemLibrary::GetTargetDirections(UWorld const* World, EProjectileTarget const Target,

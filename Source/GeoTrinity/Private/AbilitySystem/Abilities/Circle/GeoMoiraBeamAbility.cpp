@@ -5,7 +5,6 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Deployable/GeoHealingZone.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -15,38 +14,35 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoMoiraBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
-										   FGameplayAbilityActorInfo const* ActorInfo,
-										   FGameplayAbilityActivationInfo ActivationInfo,
-										   FGameplayEventData const* TriggerEventData)
-{
-	// Call grandparent to commit and set up StoredPayload without scheduling fire
-	UGeoGameplayAbility::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	if (bIsAbilityEnding)
-	{
-		return;
-	}
 
+void UGeoMoiraBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
+{
 	RemainingDuration = InitialDuration;
 	BeamRatio = 1.f;
 
 	if (!SpeedBuffEffect.IsValid())
 	{
 		ensureMsgf(SpeedBuffHandle.IsValid(), TEXT("SpeedBuffEffect is not valid, pls fill the asset"));
+		UGeoGameplayAbility::EndAbility(true, true);
 		return;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
-	SpeedBuffHandle = UGeoAbilitySystemLibrary::ApplySingleEffectData(SpeedBuffEffect, SourceASC, SourceASC,
-																	  GetAbilityLevel(), StoredPayload.Seed);
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		UGeoAbilitySystemComponent* SourceASC =
+			Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
+		SpeedBuffHandle = UGeoAbilitySystemLibrary::ApplySingleEffectData(SpeedBuffEffect, SourceASC, SourceASC,
+																		  GetAbilityLevel(), StoredPayload.Seed);
+	}
+	bIsBeamActive = true;
 }
-
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMoiraBeamAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 									  FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 									  bool bWasCancelled)
 {
-
+	bIsBeamActive = false;
+	RemainingDuration = 0.f;
 	if (GeoLib::IsServer(GetWorld()))
 	{
 		if (SpeedBuffHandle.IsValid())
@@ -111,9 +107,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 	RemainingDuration -= DeltaTime;
 	if (RemainingDuration <= 0.f)
 	{
-
-		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
-
+		UGeoGameplayAbility::EndAbility(false, false);
 		return;
 	}
 
@@ -130,47 +124,48 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 		return;
 	}
 
-	for (AActor* Actor :
-		 UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character, ETeamAttitude::Hostile))
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		if (!IsInBeam(Actor))
+		for (AActor* Actor : UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character,
+																							ETeamAttitude::Hostile))
 		{
-			continue;
-		}
-		UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
-		if (!TargetASC)
-		{
-			continue;
-		}
+			if (Actor == Character || !Actor->CanBeDamaged() || !IsInBeam(Actor))
+			{
+				continue;
+			}
 
-		if (GeoLib::IsServer(GetWorld()))
-		{
+			UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
+			if (!TargetASC)
+			{
+				continue;
+			}
+
+
 			FDamageEffectData DamageEffect = FDamageEffectData();
-			DamageEffect.DamageAmount = DamagePerSecond.GetValueAtLevel(BeamRatio) * DeltaTime;
+			DamageEffect.DamageAmount = DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
+				* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
 			UGeoAbilitySystemLibrary::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC,
 															StoredPayload.AbilityLevel, StoredPayload.Seed);
 		}
-	}
 
-	for (AActor* Actor :
-		 UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character, ETeamAttitude::Friendly))
-	{
-		AGeoDeployableBase const* Deployable = Cast<AGeoDeployableBase>(Actor);
-		if (Actor == Character || (Deployable && !Deployable->CanBeDamaged()) || !IsInBeam(Actor))
+		for (AActor* Actor : UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character,
+																							ETeamAttitude::Friendly))
 		{
-			continue;
-		}
+			if (Actor == Character || !Actor->CanBeDamaged() || !IsInBeam(Actor))
+			{
+				continue;
+			}
 
-		UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
-		if (!TargetASC)
-		{
-			continue;
-		}
+			UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
+			if (!TargetASC)
+			{
+				continue;
+			}
 
-		if (GeoLib::IsServer(GetWorld()))
-		{
+
 			FHealEffectData HealEffect = FHealEffectData();
-			HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(BeamRatio) * DeltaTime;
+			HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
+				* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
 			UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC,
 															StoredPayload.AbilityLevel, StoredPayload.Seed);
 		}

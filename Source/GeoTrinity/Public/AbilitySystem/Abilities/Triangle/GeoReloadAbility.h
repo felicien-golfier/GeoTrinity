@@ -11,7 +11,7 @@ class AGeoBuffPickup;
 class UEffectDataAsset;
 
 /**
- * Triangle reload ability: after a delay equal to FireDuration, restores ammo and spawns a buff pickup.
+ * Triangle reload ability: after a delay equal to FireDelay, restores ammo and spawns a buff pickup.
  * PowerScale = MissingAmmo / MaxAmmo — controls pickup size and effect magnitude.
  * A random buff is chosen from BuffEffectDataAssets each time.
  */
@@ -22,10 +22,6 @@ class GEOTRINITY_API UGeoReloadAbility : public UGeoGameplayAbility
 
 protected:
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
-
-	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
-								 FGameplayAbilityActivationInfo ActivationInfo,
-								 FGameplayEventData const* TriggerEventData) override;
 
 	virtual bool CheckCost(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 						   OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;

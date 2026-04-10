@@ -7,7 +7,6 @@
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerState.h"
-#include "GeoPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "System/GeoCombatStatsSubsystem.h"
 #include "TimerManager.h"
@@ -21,10 +20,6 @@ static FAutoConsoleCommandWithWorld GShowPingCommand(TEXT("Geo.ShowPing"), TEXT(
 														 {
 															 bShowPing = !bShowPing;
 														 }));
-
-static TAutoConsoleVariable<bool>
-	CVarShowCombatStats(TEXT("Geo.ShowCombatStats"), true,
-						TEXT("When true, shows per-player DPS / HPS / damage received on screen"));
 #endif
 
 AGeoPlayerController::AGeoPlayerController(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -76,18 +71,11 @@ void AGeoPlayerController::Tick(float DeltaTime)
 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Green, FString::Printf(TEXT("Ping: %.0f ms"), Ping));
 	}
 
-	if (CVarShowCombatStats.GetValueOnGameThread())
+	if (HasAuthority() && UGeoCombatStatsSubsystem::IsDebugDisplayEnabled())
 	{
 		if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
 		{
-			if (HasAuthority())
-			{
-				CombatStats->ComputePlayerStats(GetWorld()->GetTimeSeconds());
-			}
-			if (IsLocalController())
-			{
-				CombatStats->DisplayLines(Cast<AGeoPlayerState>(PlayerState));
-			}
+			CombatStats->ComputePlayerStats(GetWorld()->GetTimeSeconds());
 		}
 	}
 }

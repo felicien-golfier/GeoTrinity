@@ -17,6 +17,13 @@ class UEffectDataAsset;
 class UGeoAbilitySystemComponent;
 class UPattern;
 
+UENUM(BlueprintType)
+enum class EFireMode : uint8
+{
+	ShootAfterFireDelay,
+	ChargeForFireDelay,
+};
+
 /**
  * Base gameplay ability for GeoTrinity. Provides shared fire-trigger scheduling, animation montage handling,
  * client-to-server target data dispatch, and effect data aggregation used by all derived ability types.
@@ -57,7 +64,7 @@ public:
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
 
 	/** Merges EffectDataAssets and EffectDataInstances into a single flat array for application. */
-	TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const;
+	virtual TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const;
 
 	/**
 	 * Returns the cooldown duration in seconds for the given ability level.
@@ -69,6 +76,12 @@ public:
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
+
+	void EndAbility(bool bReplicateEndAbility = true, bool bWasCancelled = false);
+
+	float GetChargeRatio() const;
+	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+							   FGameplayAbilityActivationInfo ActivationInfo) override;
 
 protected:
 	void ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo, UAnimInstance* AnimInstance);
@@ -85,15 +98,22 @@ protected:
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag);
 
+	UFUNCTION(BlueprintCallable)
+	virtual float GetMaxChargeTime() const;
+
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;
 
-	// We consider the ability to Fire at the end of the FireDuration delay.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation",
-			  meta = (ClampMin = "0.01", UIMin = "0.05"))
-	float FireDuration = 0.5f;
+	// We consider the ability to Fire at the end of the FireDelay delay.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (ClampMin = "0", UIMin = "0"))
+	float FireDelay = 0.5f;
+
+	// Define the way the ability start to Fire. After a charge time or directly after FireDelay.
+	// When FireMode = Charge, we use FireDelay as max charge time.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+	EFireMode FireMode = EFireMode::ShootAfterFireDelay;
 
 protected:
 	FAbilityPayload StoredPayload;
@@ -105,4 +125,5 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
 	FTimerHandle FireTriggerTimerHandle;
+	float ChargeStartTime = 0.f;
 };

@@ -2,7 +2,6 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h"
 
-#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -16,23 +15,6 @@ FGeoAbilityTargetData UGeoProjectileAbility::BuildAbilityTargetData()
 	return Data;
 }
 
-void UGeoProjectileAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
-											FGameplayAbilityActorInfo const* ActorInfo,
-											FGameplayAbilityActivationInfo const ActivationInfo,
-											FGameplayEventData const* TriggerEventData)
-{
-
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	if (bIsAbilityEnding) // We ended the ability in the Super.
-	{
-		return;
-	}
-
-	// Schedule fire with network delay compensation (plays montage on client, timer-only on server)
-	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-	ScheduleFireTrigger(ActivationInfo, AnimInstance);
-}
-
 void UGeoProjectileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	Super::Fire(AbilityTargetData);
@@ -43,10 +25,9 @@ void UGeoProjectileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		return;
 	}
 
-	AActor const* Avatar = GetAvatarActorFromActorInfo();
 	SpawnProjectilesUsingTarget(AbilityTargetData.Yaw, FVector(AbilityTargetData.Origin, ArbitraryCharacterZ),
 								AbilityTargetData.ServerSpawnTime);
-	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
+	EndAbility(false, false);
 }
 
 void UGeoProjectileAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
@@ -61,14 +42,11 @@ void UGeoProjectileAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 	GetAbilitySystemComponentFromActorInfo()->ConsumeClientReplicatedTargetData(
 		Handle, ActivationInfo.GetActivationPredictionKey());
 
-	FGeoAbilityTargetData const* TargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
-	ensureMsgf(TargetData,
-			   TEXT("No FGeoAbilityTargetData found in TriggerEventData, falling back to Generate a payload"));
+	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
 
 	// Server projectile spawn with updated values.
-	SpawnProjectilesUsingTarget(TargetData->Yaw,
-								FVector(TargetData->Origin, ActorInfo->AvatarActor->GetActorLocation().Z),
-								TargetData->ServerSpawnTime);
+	SpawnProjectilesUsingTarget(AbilityTargetData->Yaw, FVector(AbilityTargetData->Origin, ArbitraryCharacterZ),
+								AbilityTargetData->ServerSpawnTime);
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
 }
@@ -98,25 +76,15 @@ void UGeoProjectileAbility::SpawnProjectile(FTransform const& SpawnTransform, fl
 {
 	checkf(ProjectileClass, TEXT("No ProjectileClass in the projectile spell!"));
 
-	// Pass the prediction key only during the initial predicted activation.
-	// In Confirmed mode (continuous fire shots 2+), the key is stale — skip fake spawning.
 	FPredictionKey PredictionKey;
-	switch (GetCurrentActivationInfo().ActivationMode)
+	EGameplayAbilityActivationMode::Type const ActivationMode = GetCurrentActivationInfo().ActivationMode;
+	if (ActivationMode == EGameplayAbilityActivationMode::Predicting
+		|| ActivationMode == EGameplayAbilityActivationMode::Confirmed
+		|| ActivationMode == EGameplayAbilityActivationMode::Authority)
 	{
-	case EGameplayAbilityActivationMode::Predicting:
-	case EGameplayAbilityActivationMode::Confirmed:
-	case EGameplayAbilityActivationMode::Authority:
 		PredictionKey = GetCurrentActivationInfo().GetActivationPredictionKey();
-		break;
-	case EGameplayAbilityActivationMode::Rejected:
-		return;
-	case EGameplayAbilityActivationMode::NonAuthority:
-		ensureMsgf(false, TEXT("Not sure that NonAuthority activation mode can even exist here"));
-	default:
-		PredictionKey = FPredictionKey();
-		break;
 	}
 
-	GeoASLib::SpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
-							  SpawnServerTime, PredictionKey);
+	GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
+								   SpawnServerTime, PredictionKey);
 }

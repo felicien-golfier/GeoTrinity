@@ -34,21 +34,6 @@ void UGeoReloadAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo
 					   });
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoReloadAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
-										FGameplayAbilityActorInfo const* ActorInfo,
-										FGameplayAbilityActivationInfo const ActivationInfo,
-										FGameplayEventData const* TriggerEventData)
-{
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	if (bIsAbilityEnding)
-	{
-		return;
-	}
-
-	ScheduleFireTrigger(ActivationInfo, ActorInfo->GetAnimInstance());
-}
-
 bool UGeoReloadAbility::CheckCost(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								  FGameplayTagContainer* OptionalRelevantTags) const
 {

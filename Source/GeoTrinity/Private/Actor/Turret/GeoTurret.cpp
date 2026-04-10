@@ -108,6 +108,6 @@ void AGeoTurret::TryFire()
 	Payload.ServerSpawnTime = SpawnServerTime;
 	Payload.AbilityLevel = Data.Level;
 
-	GeoASLib::SpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload, GetData()->EffectDataArray,
-							  SpawnServerTime);
+	GeoASLib::FullySpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload,
+								   GetData()->EffectDataArray, SpawnServerTime);
 }

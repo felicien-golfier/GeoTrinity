@@ -51,11 +51,17 @@ public:
 	float GetDebugDPS() const { return DebugDPS; }
 	float GetDebugHPS() const { return DebugHPS; }
 	float GetDebugRecv() const { return DebugRecv; }
-	void SetDebugCombatStats(float DPS, float HPS, float Recv)
+	float GetTotalDamageDealt() const { return TotalDamageDealt; }
+	float GetTotalHealingDealt() const { return TotalHealingDealt; }
+	float GetTotalDamageReceived() const { return TotalDamageReceived; }
+	void SetDebugCombatStats(float DPS, float HPS, float Recv, float TotDmg, float TotHeal, float TotRecv)
 	{
 		DebugDPS = DPS;
 		DebugHPS = HPS;
 		DebugRecv = Recv;
+		TotalDamageDealt = TotDmg;
+		TotalHealingDealt = TotHeal;
+		TotalDamageReceived = TotRecv;
 	}
 
 protected:
@@ -77,4 +83,10 @@ protected:
 	float DebugHPS = 0.f;
 	UPROPERTY(Replicated)
 	float DebugRecv = 0.f;
+	UPROPERTY(Replicated)
+	float TotalDamageDealt = 0.f;
+	UPROPERTY(Replicated)
+	float TotalHealingDealt = 0.f;
+	UPROPERTY(Replicated)
+	float TotalDamageReceived = 0.f;
 };

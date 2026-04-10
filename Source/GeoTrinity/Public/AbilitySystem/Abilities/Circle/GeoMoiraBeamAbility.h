@@ -26,22 +26,20 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 {
 	GENERATED_BODY()
 
-	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
-								 FGameplayAbilityActivationInfo ActivationInfo,
-								 FGameplayEventData const* TriggerEventData) override;
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
+
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
 	virtual void Tick(float DeltaTime) override;
-	virtual bool IsTickable() const override { return IsInstantiated() && IsActive(); }
+	virtual bool IsTickable() const override { return IsInstantiated() && IsActive() && bIsBeamActive; }
 	virtual TStatId GetStatId() const override
 	{
 		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoMoiraBeamAbility, STATGROUP_Tickables);
 	}
 
 	bool IsInBeam(AActor const* Actor) const;
-
 #ifdef WITH_EDITOR
 
 	void DrawBeamDebugLines(float DeltaTime) const;
@@ -73,6 +71,11 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float RadiusGrowthPerAbsorbedZone = 50.f;
 
+	/** Beam Heal And Damage boost when a full HealingZone is consumed, 1 will dobble damage and heal, 0 won;t change
+	 * anything. Scales proportionally with partial drain. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	float DamageAndHealBoostPerAbsorbedZone = 1.f;
+
 	/** Health drained from a HealingZone per beam tick. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
 			  meta = (ClampMin = "0", ClampMax = "100", AllowPrivateAccess = true))
@@ -83,4 +86,5 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	float RemainingDuration = 0.f;
 	float BeamRatio = 1.f;
+	bool bIsBeamActive = false;
 };

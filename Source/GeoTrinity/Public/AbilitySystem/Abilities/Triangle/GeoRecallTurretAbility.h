@@ -34,11 +34,9 @@ class GEOTRINITY_API UGeoRecallTurretAbility : public UGeoGameplayAbility
 
 protected:
 	TArray<UGeoAbilitySystemComponent*> FindTargets(AActor const* Instigator, FRecallInfo const& RecallInfo) const;
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 	void FireRecallCue(UGeoAbilitySystemComponent* PlayerASC, FRecallInfo const& RecallInfo,
 					   FVector const& AvatarLocation) const;
-	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
-								 FGameplayAbilityActivationInfo ActivationInfo,
-								 FGameplayEventData const* TriggerEventData) override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Recall")
 	TArray<TInstancedStruct<FEffectData>> BlinkBonusEffect;

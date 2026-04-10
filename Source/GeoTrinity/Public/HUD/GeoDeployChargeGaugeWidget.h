@@ -7,7 +7,8 @@
 
 #include "GeoDeployChargeGaugeWidget.generated.h"
 
-class UGeoDeployAbility;
+
+class UGeoGameplayAbility;
 class UProgressBar;
 
 UCLASS()
@@ -17,7 +18,7 @@ class GEOTRINITY_API UGeoDeployChargeGaugeWidget : public UGeoUserWidget
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Deploy")
-	TObjectPtr<UGeoDeployAbility> DeployAbility;
+	TObjectPtr<UGeoGameplayAbility> DeployAbility;
 
 protected:
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;

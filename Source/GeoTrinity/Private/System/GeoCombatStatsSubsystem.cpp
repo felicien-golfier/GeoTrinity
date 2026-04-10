@@ -2,8 +2,18 @@
 
 #include "System/GeoCombatStatsSubsystem.h"
 
-#include "Characters/PlayerClassTypes.h"
 #include "GeoPlayerState.h"
+
+#if !UE_BUILD_SHIPPING
+static TAutoConsoleVariable<bool>
+	CVarShowCombatStats(TEXT("Geo.ShowCombatStats"), true,
+						TEXT("When true, shows per-player DPS / HPS / damage received on screen"));
+
+bool UGeoCombatStatsSubsystem::IsDebugDisplayEnabled()
+{
+	return CVarShowCombatStats.GetValueOnGameThread();
+}
+#endif
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float Amount)
@@ -13,7 +23,8 @@ void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float 
 		return;
 	}
 	float const CurrentTime = GetWorld()->GetTimeSeconds();
-	RecordEvent(StatsPerActor.FindOrAdd(Source).DamageDealt, Amount, CurrentTime);
+	FActorCombatStats& Stats = StatsPerActor.FindOrAdd(Source);
+	RecordEvent(Stats.DamageDealt, Stats.TotalDamageDealt, Amount, CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -24,7 +35,8 @@ void UGeoCombatStatsSubsystem::ReportDamageReceived(AGeoPlayerState* Target, flo
 		return;
 	}
 	float const CurrentTime = GetWorld()->GetTimeSeconds();
-	RecordEvent(StatsPerActor.FindOrAdd(Target).DamageReceived, Amount, CurrentTime);
+	FActorCombatStats& Stats = StatsPerActor.FindOrAdd(Target);
+	RecordEvent(Stats.DamageReceived, Stats.TotalDamageReceived, Amount, CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -35,7 +47,8 @@ void UGeoCombatStatsSubsystem::ReportHealingDealt(AGeoPlayerState* Source, float
 		return;
 	}
 	float const CurrentTime = GetWorld()->GetTimeSeconds();
-	RecordEvent(StatsPerActor.FindOrAdd(Source).HealingDealt, Amount, CurrentTime);
+	FActorCombatStats& Stats = StatsPerActor.FindOrAdd(Source);
+	RecordEvent(Stats.HealingDealt, Stats.TotalHealingDealt, Amount, CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -58,52 +71,18 @@ void UGeoCombatStatsSubsystem::ComputePlayerStats(float CurrentTime)
 		GeoPlayerState->SetDebugCombatStats(
 			SumEvents(Stats.DamageDealt) / RollingWindowSeconds,
 			SumEvents(Stats.HealingDealt) / RollingWindowSeconds,
-			SumEvents(Stats.DamageReceived) / RollingWindowSeconds);
+			SumEvents(Stats.DamageReceived) / RollingWindowSeconds,
+			Stats.TotalDamageDealt,
+			Stats.TotalHealingDealt,
+			Stats.TotalDamageReceived);
 	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoCombatStatsSubsystem::DisplayLines(AGeoPlayerState* LocalPlayerState) const
-{
-	if (!IsValid(LocalPlayerState))
-	{
-		return;
-	}
-
-	FString ClassName;
-	FColor LineColor = FColor::White;
-	switch (LocalPlayerState->GetPlayerClass())
-	{
-	case EPlayerClass::Triangle:
-		ClassName = TEXT("Triangle");
-		LineColor = FColor::Red;
-		break;
-	case EPlayerClass::Circle:
-		ClassName = TEXT("Circle");
-		LineColor = FColor::Green;
-		break;
-	case EPlayerClass::Square:
-		ClassName = TEXT("Square");
-		LineColor = FColor::Blue;
-		break;
-	default:
-		ClassName = TEXT("Unknown");
-		break;
-	}
-
-	FString const Line = FString::Printf(TEXT("[%s] %s — DPS: %.1f | HPS: %.1f | Recv: %.1f"),
-										 *ClassName,
-										 *LocalPlayerState->GetPlayerName(),
-										 LocalPlayerState->GetDebugDPS(),
-										 LocalPlayerState->GetDebugHPS(),
-										 LocalPlayerState->GetDebugRecv());
-	GEngine->AddOnScreenDebugMessage(-1, 0.f, LineColor, Line);
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoCombatStatsSubsystem::RecordEvent(TArray<FCombatEventRecord>& Events, float Amount, float CurrentTime)
+void UGeoCombatStatsSubsystem::RecordEvent(TArray<FCombatEventRecord>& Events, float& Total, float Amount, float CurrentTime)
 {
 	Events.Add(FCombatEventRecord{CurrentTime, Amount});
+	Total += Amount;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

@@ -23,17 +23,10 @@ void UGeoAutomaticFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const 
 											   FGameplayAbilityActivationInfo const ActivationInfo,
 											   FGameplayEventData const* TriggerEventData)
 {
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	if (bIsAbilityEnding) // We ended the ability in the Super.
-	{
-		return;
-	}
-
 	CurrentShotIndex = 0;
 	bWantsToFire = true;
 
-	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
-	ScheduleFireTrigger(ActivationInfo, AnimInstance);
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 
 void UGeoAutomaticFireAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,

@@ -7,8 +7,10 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Characters/PlayableCharacter.h"
 #include "GameFramework/Character.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -59,6 +61,9 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey())
 			.AddUObject(this, &ThisClass::OnFireTargetDataReceived);
 	}
+
+	// Schedule fire with network delay compensation (plays montage on client, timer-only on server)
+	ScheduleFireTrigger(ActivationInfo, ActorInfo->GetAnimInstance());
 }
 
 FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
@@ -136,14 +141,42 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 									 FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 									 bool bWasCancelled)
 {
+	GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 	FireTriggerTimerHandle.Invalidate();
+
+	if (FireMode == EFireMode::ChargeForFireDelay)
+	{
+		if (APlayableCharacter* Character = Cast<APlayableCharacter>(StoredPayload.Instigator))
+		{
+			Character->HideDeployChargeGauge();
+		}
+	}
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UGeoGameplayAbility::EndAbility(bool bReplicateEndAbility, bool bWasCancelled)
+{
+	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), bReplicateEndAbility,
+			   bWasCancelled);
+}
+
+void UGeoGameplayAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
+										FGameplayAbilityActorInfo const* ActorInfo,
+										FGameplayAbilityActivationInfo const ActivationInfo)
+{
+	if (FireMode == EFireMode::ChargeForFireDelay && !bIsAbilityEnding && IsActive())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
+		FireTriggerTimerHandle.Invalidate();
+		BuildDataAndFire();
+	}
 }
 
 void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo,
 											  UAnimInstance* AnimInstance)
 {
-	if (FireDuration > 0.f)
+	if (FireDelay > 0.f)
 	{
 		if (AnimInstance && AnimMontage)
 		{
@@ -151,7 +184,15 @@ void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo con
 		}
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::BuildDataAndFire,
-											   FireDuration);
+											   FireDelay);
+		if (FireMode == EFireMode::ChargeForFireDelay)
+		{
+			ChargeStartTime = GetWorld()->GetTimeSeconds();
+			if (APlayableCharacter* Character = Cast<APlayableCharacter>(StoredPayload.Instigator))
+			{
+				Character->ShowDeployChargeGauge(this);
+			}
+		}
 	}
 	else
 	{
@@ -205,13 +246,13 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	}
 
 
-	// Adjust play rate so the section fits within FireDuration
+	// Adjust play rate so the section fits within FireDelay
 	float StartTime, EndTime;
 	AnimMontage->GetSectionStartAndEndTime(AnimMontage->GetSectionIndex(SectionToJumpTo), StartTime, EndTime);
 	float const SectionLength = EndTime - StartTime;
 	ensureMsgf(SectionLength > 0.f, TEXT("Current section has no length"));
 
-	float const PlayRate = SectionLength / FireDuration;
+	float const PlayRate = SectionLength / FireDelay;
 
 	if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 	{
@@ -287,4 +328,34 @@ void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHan
 												   FGameplayTag ApplicationTag)
 {
 	// Called on server when Fire() has happen on client and data is finally here.
+	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
+	ensureMsgf(AbilityTargetData,
+			   TEXT("No FGeoAbilityTargetData found in TriggerEventData, falling back to Generate a payload"));
+	StoredPayload.Seed = AbilityTargetData->Seed;
+	StoredPayload.ServerSpawnTime = AbilityTargetData->ServerSpawnTime;
+	StoredPayload.Origin = AbilityTargetData->Origin;
+	StoredPayload.Yaw = AbilityTargetData->Yaw;
 }
+float UGeoGameplayAbility::GetMaxChargeTime() const
+{
+	return GetDefault<UGameDataSettings>()->DeployMaxChargeTime;
+}
+
+float UGeoGameplayAbility::GetChargeRatio() const
+{
+	if (GetMaxChargeTime() <= 0.f)
+	{
+		return 1.f;
+	}
+
+	float RawRatio = FMath::Clamp((GetWorld()->GetTimeSeconds() - ChargeStartTime) / GetMaxChargeTime(), 0.f, 1.f);
+
+	UCurveFloat const* Curve = GetDefault<UGameDataSettings>()->GaugeChargingSpeedCurve.LoadSynchronous();
+	if (!ensureMsgf(Curve, TEXT("GeoChargeAbility: GaugeChargingSpeedCurve is not set in GameDataSettings.")))
+	{
+		return RawRatio;
+	}
+
+	return FMath::Clamp(Curve->GetFloatValue(RawRatio), 0.f, 1.f);
+}
+// ---------------------------------------------------------------------------------------------------------------------

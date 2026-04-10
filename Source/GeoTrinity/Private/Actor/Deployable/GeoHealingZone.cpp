@@ -78,7 +78,7 @@ void AGeoHealingZone::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 									 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
 									 FHitResult const& SweepResult)
 {
-	if (!UGeoAbilitySystemLibrary::GetGeoAscFromActor(OtherActor))
+	if (!UGeoAbilitySystemLibrary::GetGeoAscFromActor(OtherActor) || OtherActor == this)
 	{
 		return;
 	}
@@ -100,7 +100,8 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 	{
 		return;
 	}
-	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponent();
+	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->CharacterOwner);
+
 	IGenericTeamAgentInterface const* ZoneTeamAgent = Cast<IGenericTeamAgentInterface>(this);
 
 	int HealedNum = 0;
@@ -117,7 +118,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 			continue;
 		}
 		UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
-		if (!TargetASC)
+		if (!TargetASC || !TargetASC->GetAvatarActor()->CanBeDamaged())
 		{
 			continue;
 		}
@@ -129,11 +130,11 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 		}
 
 		// Also add the array, but that not the heal. This is to let game design decide if they want to add something
-		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, SourceASC, TargetASC, Data.Level,
+		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, OwnerASC, TargetASC, Data.Level,
 															Data.Seed);
 		FHealEffectData HealEffectData = FHealEffectData();
 		HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, SourceASC, TargetASC, Data.Level, Data.Seed);
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, OwnerASC, TargetASC, Data.Level, Data.Seed);
 		++HealedNum;
 	}
 
@@ -141,7 +142,8 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 	{
 		FDamageEffectData DrainEffectData = FDamageEffectData();
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, SourceASC, SourceASC, Data.Level, Data.Seed);
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, OwnerASC, GetAbilitySystemComponent(),
+														Data.Level, Data.Seed);
 	}
 }
 

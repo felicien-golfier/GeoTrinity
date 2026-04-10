@@ -10,20 +10,10 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-using GeoASLib = UGeoAbilitySystemLibrary;
-
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoRecallTurretAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
-											  FGameplayAbilityActorInfo const* ActorInfo,
-											  FGameplayAbilityActivationInfo const ActivationInfo,
-											  FGameplayEventData const* TriggerEventData)
-{
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	if (bIsAbilityEnding)
-	{
-		return;
-	}
 
+void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
+{
 	AActor* Instigator = GetAvatarActorFromActorInfo();
 
 	UGeoDeployableManagerComponent* DeployableManager =
@@ -31,7 +21,7 @@ void UGeoRecallTurretAbility::ActivateAbility(FGameplayAbilitySpecHandle const H
 	ensureMsgf(DeployableManager, TEXT("GeoRecallTurretAbility: No UGeoDeployableManagerComponent on avatar!"));
 	if (!DeployableManager)
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+		EndAbility(false, true);
 		return;
 	}
 
@@ -48,7 +38,7 @@ void UGeoRecallTurretAbility::ActivateAbility(FGameplayAbilitySpecHandle const H
 
 	if (RecallInfos.IsEmpty())
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
+		EndAbility(false, false);
 		return;
 	}
 
@@ -78,10 +68,11 @@ void UGeoRecallTurretAbility::ActivateAbility(FGameplayAbilitySpecHandle const H
 		FireRecallCue(PlayerASC, RecallInfo, AvatarLocation);
 	}
 
-	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
+	EndAbility(false, false);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+
 void UGeoRecallTurretAbility::FireRecallCue(UGeoAbilitySystemComponent* PlayerASC, FRecallInfo const& RecallInfo,
 											FVector const& AvatarLocation) const
 {

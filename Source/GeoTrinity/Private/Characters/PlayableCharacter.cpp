@@ -1,6 +1,5 @@
 ﻿#include "Characters/PlayableCharacter.h"
 
-#include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -11,8 +10,6 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
-#include "Settings/GameDataSettings.h"
-#include "Tool/UGeoGameplayLibrary.h"
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
 
@@ -34,7 +31,7 @@ void APlayableCharacter::BeginPlay()
 	Super::BeginPlay();
 }
 
-void APlayableCharacter::ShowDeployChargeGauge(UGeoDeployAbility* Ability) const
+void APlayableCharacter::ShowDeployChargeGauge(UGeoGameplayAbility* Ability) const
 {
 	UGeoDeployChargeGaugeWidget* Widget =
 		Cast<UGeoDeployChargeGaugeWidget>(DeployChargeGaugeComponent->GetUserWidgetObject());
