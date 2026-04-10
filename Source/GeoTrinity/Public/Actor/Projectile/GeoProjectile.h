@@ -28,15 +28,33 @@ class GEOTRINITY_API AGeoProjectile : public AActor
 public:
 	AGeoProjectile();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	/**
+	 * Server-spawned projectiles are hidden from their owning client so the client's locally predicted
+	 * copy remains authoritative for that player's view. All other clients receive normal replication.
+	 */
 	virtual bool IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget,
 								  FVector const& SrcLocation) const override;
 	virtual void BeginPlay() override;
 	virtual void LifeSpanExpired() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	/** Sets movement, enables collision, and starts the lifespan timer. Called on BeginPlay and after pooled reuse. */
 	virtual void InitProjectileLife();
 
+	/**
+	 * Fast-forwards the projectile's position by TimeDelta seconds of movement.
+	 * Used on the server to align a newly spawned authoritative projectile with a client-predicted one
+	 * that has already been flying for the duration of the owning client's ping.
+	 *
+	 * @param TimeDelta  Elapsed time in seconds to advance (typically half round-trip ping).
+	 */
 	void AdvanceProjectile(float TimeDelta);
+
+	/**
+	 * Overrides the maximum travel distance for this projectile instance.
+	 *
+	 * @param Distance  Maximum travel distance in cm before the projectile ends its life.
+	 */
 	UFUNCTION(BlueprintCallable)
 	void SetDistanceSpan(float Distance);
 

@@ -21,6 +21,7 @@ class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
 public:
 	UGeoDeployAbility();
 
+	/** Returns the current charge progress (0 = empty, 1 = fully charged) after applying the charge curve. */
 	UFUNCTION(BlueprintPure, Category = "Ability|Deploy")
 	float GetChargeRatio() const;
 

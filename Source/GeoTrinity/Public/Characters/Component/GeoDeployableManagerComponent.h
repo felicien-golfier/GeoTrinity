@@ -26,8 +26,11 @@ public:
 	/** Returns true if under the max limit */
 	UFUNCTION(BlueprintPure)
 	bool CanDeploy() const { return Deployables.Num() < MaxDeployables; }
+	/** Returns the number of currently active deployed actors. */
 	UFUNCTION(BlueprintPure)
 	int32 GetDeployedCount() const { return Deployables.Num(); }
+
+	/** Returns the configured maximum number of simultaneous deployables. */
 	UFUNCTION(BlueprintPure)
 	int32 GetMaxDeployables() const { return MaxDeployables; }
 
@@ -41,6 +44,7 @@ public:
 	UFUNCTION(BlueprintPure)
 	float GetDeployRatio() const;
 
+	/** Returns the live array of tracked deployable actors. Entries are removed automatically on destruction. */
 	TArray<TObjectPtr<AGeoDeployableBase>> const& GetDeployables() const { return Deployables; }
 
 	UPROPERTY(BlueprintAssignable)

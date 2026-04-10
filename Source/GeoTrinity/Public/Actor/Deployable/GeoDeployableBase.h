@@ -53,6 +53,8 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 
 public:
 	AGeoDeployableBase();
+
+	/** Computes DrainMagnitudePerSecond from Params and applies the initial drain GE. Call after data is set. */
 	virtual void InitDrain();
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
@@ -63,8 +65,11 @@ public:
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDurationPercent() const;
+	/** Returns true once the deployable has been destroyed (health or duration reached zero). */
 	UFUNCTION(BlueprintPure)
 	bool IsExpired() const { return bExpired; }
+
+	/** Returns true during the pre-expiry blink window (blink timer is running). */
 	UFUNCTION(BlueprintPure)
 	bool IsBlinking() const;
 

@@ -29,6 +29,10 @@ struct FPlayerClassData
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
 };
 
+/**
+ * Human-controlled character. Bridges Enhanced Input with the GAS ability activation pipeline and
+ * manages class switching (Square/Circle/Triangle) which swaps mesh, animations, and ability sets at runtime.
+ */
 UCLASS()
 class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
 {
@@ -38,18 +42,42 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
-	// GAS - Input callbacks
+	/** Forwards an input-press event to the ASC for ability activation. */
 	void AbilityInputTagPressed(FGameplayTag InputTag);
+
+	/** Forwards an input-release event to the ASC. */
 	void AbilityInputTagReleased(FGameplayTag InputTag);
+
+	/** Forwards a held-input event to the ASC each frame the button is held. */
 	void AbilityInputTagHeld(FGameplayTag InputTag);
 
+	/** Returns the player's currently active class (Square, Circle, or Triangle). */
 	EPlayerClass GetPlayerClass() const;
+
+	/**
+	 * Switches the player to NewClass: clears current class abilities, applies new class data, and grants new abilities.
+	 *
+	 * @param NewClass  The target player class to switch to.
+	 */
 	void ChangeClass(EPlayerClass NewClass);
+
+	/**
+	 * Applies the mesh and animation class for NewClass without touching abilities.
+	 * Called internally by ChangeClass and at initialization.
+	 */
 	void ApplyClassData(EPlayerClass NewClass);
 
+	/**
+	 * Makes the deploy charge gauge widget visible and binds it to Ability's charge progress.
+	 *
+	 * @param Ability  The currently charging deploy ability that drives the gauge fill.
+	 */
 	void ShowDeployChargeGauge(UGeoDeployAbility* Ability) const;
+
+	/** Hides the deploy charge gauge widget. */
 	void HideDeployChargeGauge() const;
 
+	/** Returns the curve used to remap the raw charge ratio for the deploy gauge fill speed. */
 	UCurveFloat* GetGaugeChargingSpeedCurve() const { return GaugeChargingSpeedCurve; }
 
 protected:
