@@ -8,7 +8,9 @@
 #include "GeoAssetManager.generated.h"
 
 /**
- * Deriving class to enable the addition of gameplay tags (among others)
+ * Custom asset manager for GeoTrinity. Hooks into StartInitialLoading to register
+ * native gameplay tags via FGeoGameplayTags before any assets are loaded.
+ * Set as the AssetManagerClassName in DefaultEngine.ini.
  */
 UCLASS()
 class GEOTRINITY_API UGeoAssetManager : public UAssetManager

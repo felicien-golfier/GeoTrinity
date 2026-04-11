@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#pragma once
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
@@ -15,8 +17,12 @@ struct FGeoGameplayEffectContext;
 class UGeoAbilitySystemComponent;
 class UGameplayEffect;
 
+/**
+ * Data asset that holds an array of polymorphic FEffectData instances.
+ * Used to define reusable, shareable effect configurations that can be referenced by multiple abilities.
+ * For effects specific to a single ability, prefer inline TInstancedStruct<FEffectData> on the ability instead.
+ */
 UCLASS(BlueprintType)
-
 class GEOTRINITY_API UEffectDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
@@ -60,6 +66,7 @@ struct GEOTRINITY_API FEffectData
 													int32 Seed) const;
 };
 
+/** Applies a configurable UGameplayEffect class with an optional SetByCaller magnitude and duration. */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
@@ -85,6 +92,7 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	FScalableFloat Duration;
 };
 
+/** Applies a flat damage amount via ExecCalc_Damage using the project's damage GameplayEffect. */
 USTRUCT(BlueprintType)
 struct FDamageEffectData : public FEffectData
 {
@@ -99,6 +107,7 @@ struct FDamageEffectData : public FEffectData
 	FScalableFloat DamageAmount;
 };
 
+/** Applies a heal amount and optionally suppresses the OnHealProvided broadcast on the source ASC. */
 USTRUCT(BlueprintType)
 struct FHealEffectData : public FEffectData
 {
@@ -119,6 +128,11 @@ struct FHealEffectData : public FEffectData
 	bool bSuppressHealProvided{false};
 };
 
+/**
+ * Writes a single-use damage multiplier into the effect context for the current ApplyEffectFromEffectData call.
+ * The multiplier is consumed by ExecCalc_Damage and automatically resets on the next call (scoped per context).
+ * Append this entry to the effect array to scale the damage of the accompanying FDamageEffectData.
+ */
 USTRUCT(BlueprintType)
 struct FContextDamageMultiplierEffectData : public FEffectData
 {
@@ -130,6 +144,7 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 	FScalableFloat Multiplier{2.f};
 };
 
+/** Applies a status effect (debuff) identified by StatusTag, with a configurable proc chance (0–100). */
 USTRUCT(BlueprintType)
 struct FStatusEffectData : public FEffectData
 {

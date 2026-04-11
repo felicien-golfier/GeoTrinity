@@ -9,7 +9,8 @@
 
 class AGeoHUD;
 /**
- * A derived class to allow easy binding of stuff
+ * Base class for all GeoTrinity HUD widgets. Adds an InitFromHUD entry point so widgets receive
+ * the AGeoHUD reference at creation time and can connect to its delegates via BindCallbacksFromHUD.
  */
 UCLASS()
 class GEOTRINITY_API UGeoUserWidget : public UUserWidget

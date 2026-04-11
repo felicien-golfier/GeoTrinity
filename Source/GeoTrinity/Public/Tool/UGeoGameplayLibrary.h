@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#pragma once
 #include "GameplayPrediction.h"
 #include "GenericTeamAgentInterface.h"
 #include "StructUtils/InstancedStruct.h"
@@ -15,8 +17,12 @@ class UCameraShakeBase;
 struct FAbilityPayload;
 struct FEffectData;
 
+/**
+ * Blueprint function library with GeoTrinity-wide gameplay utilities.
+ * Provides server-detection helpers, camera shake triggering, and synchronized server-time access
+ * for projectile prediction and network-aware timing.
+ */
 UCLASS()
-
 class UGeoGameplayLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()

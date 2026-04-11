@@ -12,6 +12,7 @@
 
 class UGeoGameFeelComponent;
 
+/** Runtime configuration passed to AGeoInteractableActor before BeginPlay to supply ownership, level, team, and RNG seed. */
 USTRUCT()
 struct FInteractableActorData
 {

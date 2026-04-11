@@ -13,6 +13,7 @@
 class UGameplayAbility;
 class UInputAction;
 
+/** Metadata for a single gameplay ability: its class, auto-populated tag, display name, and description. */
 USTRUCT(BlueprintType)
 struct FGameplayAbilityInfo
 {
@@ -32,6 +33,7 @@ struct FGameplayAbilityInfo
 	FString Description;
 };
 
+/** Extends FGameplayAbilityInfo with player-specific fields: input mapping, startup grant flag, and ability icon. */
 USTRUCT(BlueprintType)
 struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 {
@@ -56,7 +58,9 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 };
 
 /**
- *
+ * Data asset that maps ability tags to their classes and metadata, organized by player class.
+ * Referenced globally via UGameDataSettings. Abilities are looked up by tag when granting startup abilities
+ * or activating abilities via input tag.
  */
 UCLASS()
 class GEOTRINITY_API UAbilityInfo : public UDataAsset

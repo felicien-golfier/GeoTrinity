@@ -1,3 +1,5 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
@@ -24,6 +26,11 @@ class UGeoMovementComponent;
 class UStaticMeshComponent;
 class UGeoCombattantWidgetComp;
 
+/**
+ * Base character class for GeoTrinity. Owns the ASC (or references one on the PlayerState),
+ * implements IAbilitySystemInterface and IGenericTeamAgentInterface, and wires up input, movement,
+ * and the game-feel component shared by all playable and enemy characters.
+ */
 UCLASS()
 class GEOTRINITY_API AGeoCharacter
 	: public ACharacter
