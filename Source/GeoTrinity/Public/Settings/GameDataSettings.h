@@ -52,6 +52,9 @@ public:
 	TSoftClassPtr<UGameplayEffect> DamageEffect;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	TSoftClassPtr<UGameplayEffect> ShieldEffect;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float RegularTickInterval = .1f;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameFeel")

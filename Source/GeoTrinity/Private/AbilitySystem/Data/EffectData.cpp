@@ -90,6 +90,27 @@ FActiveGameplayEffectHandle FHealEffectData::ApplyEffect(FGameplayEffectContextH
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
+FActiveGameplayEffectHandle FShieldEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+														   UAbilitySystemComponent* SourceASC,
+														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+														   int32) const
+{
+	TSubclassOf<UGameplayEffect> const ShieldEffectClass =
+		GetDefault<UGameDataSettings>()->ShieldEffect.LoadSynchronous();
+	if (!ensureMsgf(ShieldEffectClass, TEXT("Add a Shield Effect in UGameDataSettings!")))
+	{
+		return FActiveGameplayEffectHandle();
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(ShieldEffectClass, AbilityLevel, ContextHandle);
+
+	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Shield,
+																  ShieldAmount.GetValueAtLevel(AbilityLevel));
+
+	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+}
+
 void FContextDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext,
 															 int32 AbilityLevel) const
 {

@@ -18,6 +18,7 @@ class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
 {
 	GENERATED_BODY()
 
+public:
 	UGeoDeployAbility();
 
 protected:

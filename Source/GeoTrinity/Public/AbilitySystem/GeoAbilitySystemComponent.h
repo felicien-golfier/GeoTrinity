@@ -3,7 +3,6 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
-#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
@@ -12,6 +11,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeChangedSignature, float, NewValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealProvided, float, HealDone);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageDealt, float, DamageAmount, FGameplayTag, AbilityTag);
 
 class UGeoGameplayAbility;
 struct FGeoGameplayEffectContext;
@@ -103,6 +103,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnHealProvided OnHealProvided;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnDamageDealt OnDamageDealt;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;

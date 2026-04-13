@@ -56,6 +56,7 @@ struct FGeoGameplayTags
 	FGameplayTag Status_Buff_Speed;
 	FGameplayTag Status_Buff_Shield;
 
+
 private:
 	static FGeoGameplayTags GameplayTags;
 };

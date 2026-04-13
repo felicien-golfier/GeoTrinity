@@ -120,6 +120,20 @@ struct FHealEffectData : public FEffectData
 };
 
 USTRUCT(BlueprintType)
+struct FShieldEffectData : public FEffectData
+{
+	GENERATED_BODY()
+
+	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+													int32 Seed) const override;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FScalableFloat ShieldAmount;
+};
+
+USTRUCT(BlueprintType)
 struct FContextDamageMultiplierEffectData : public FEffectData
 {
 	GENERATED_BODY()

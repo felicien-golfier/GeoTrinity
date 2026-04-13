@@ -152,5 +152,5 @@ void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimit
 	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, OwnerASC, TargetASC, Data.Level,
 														Data.Seed);
 
-	OnRecalled();
+	Recall();
 }

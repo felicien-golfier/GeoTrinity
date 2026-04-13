@@ -82,6 +82,12 @@ protected:
 	 */
 	virtual bool IsValidOverlap(AActor const* OtherActor);
 
+	/**
+	 * Called from OnSphereOverlap after IsValidOverlap passes. Override to customise hit behaviour.
+	 * Default: applies EffectDataArray to target, calls OnProjectileHit, ends projectile life.
+	 */
+	virtual void HandleValidOverlap(AActor* OtherActor);
+
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 						 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
@@ -102,7 +108,8 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|GameFeel")
 	void OnProjectileHit(AActor* HitActor);
 
-	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor by default. */
+	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
+	 * by default. */
 	virtual void EndProjectileLife();
 	/** Configures the UProjectileMovementComponent from the projectile's UPROPERTY settings. */
 	void InitProjectileMovementComponent();
@@ -113,6 +120,10 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> LoopingSoundComponent;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
+			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
+	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
+
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Tooltip = "Safe guard in case distance check fails", AllowPrivateAccess = true))
@@ -121,10 +132,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (ClampMin = "0", AllowPrivateAccess = true))
 	float DistanceSpan = 1000.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
-			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
-	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
 
 	bool bIsEnding{false};
 

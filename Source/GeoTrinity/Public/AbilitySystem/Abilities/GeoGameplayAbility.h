@@ -5,6 +5,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "AbilityPayload.h"
 #include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
 
@@ -34,6 +35,7 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
+	virtual void OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
@@ -103,7 +105,8 @@ protected:
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;
-	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize. */
+	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize.
+	 */
 	virtual FGeoAbilityTargetData BuildAbilityTargetData();
 	/** Returns the world location of the ability's fire socket on the character's mesh. */
 	FVector GetFireSocketLocation() const;

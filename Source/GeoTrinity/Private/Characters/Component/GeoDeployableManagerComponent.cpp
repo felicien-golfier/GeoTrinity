@@ -39,13 +39,13 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoDeployableManagerComponent::RecallAll()
 {
-	// Copy since OnRecalled will trigger removal via the delegate
+	// Copy since Recall will trigger removal via the delegate
 	TArray<TObjectPtr<AGeoDeployableBase>> Copy = Deployables;
 	for (AGeoDeployableBase* Deployable : Copy)
 	{
 		if (IsValid(Deployable))
 		{
-			Deployable->OnRecalled();
+			Deployable->Recall();
 		}
 	}
 }

@@ -6,6 +6,8 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/GeoAscTypes.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Abilities/GameplayAbility.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffectExtension.h"
 #include "GeoPlayerState.h"
@@ -38,6 +40,22 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 			DamageToApply -= ShieldAbsorbed;
 
 			SetHealth(FMath::Clamp(GetHealth() - DamageToApply, 0.f, GetMaxHealth()));
+
+			UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(
+				Data.EffectSpec.GetEffectContext().GetOriginalInstigatorAbilitySystemComponent());
+			if (IsValid(SourceASC))
+			{
+				FGameplayTag AbilityTag;
+				if (FGameplayEffectContext const* Context = Data.EffectSpec.GetEffectContext().Get())
+				{
+					if (UGameplayAbility const* Ability = Context->GetAbilityInstance_NotReplicated())
+					{
+						AbilityTag = GeoASLib::GetAbilityTagFromAbility(*Ability);
+					}
+				}
+				SourceASC->OnDamageDealt.Broadcast(DamageToApply, AbilityTag);
+			}
+
 			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
 			{
 				AGeoPlayerState* TargetPlayerState = Cast<AGeoPlayerState>(GetOwningActor());

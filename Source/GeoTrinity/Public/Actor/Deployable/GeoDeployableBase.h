@@ -28,6 +28,9 @@ struct FDeployableDataParams
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float Size = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float Value = 0.f;
 };
 
 USTRUCT()
@@ -61,7 +64,7 @@ public:
 	virtual void BeginPlay() override;
 
 	/** Called by the owning player to recall this deployable */
-	virtual void OnRecalled();
+	virtual void Recall(float Value = 0.f);
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
@@ -104,11 +107,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float DrainMagnitudePerSecond = 0.f;
 
+	bool bExpired = false;
+
 private:
 	void OnBlinkTimerExpired();
 	void OnBlinkVisibilityTick();
 
 	FTimerHandle BlinkTimerHandle;
 	FTimerHandle BlinkVisibilityTimerHandle;
-	bool bExpired = false;
 };

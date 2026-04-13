@@ -14,6 +14,17 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameplayAbility::OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
+{
+	Super::OnAvatarSet(ActorInfo, Spec);
+
+	if (GetAssetTags().HasTag(FGeoGameplayTags::Get().Ability_Type_Passive))
+	{
+		ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 										  FGameplayAbilityActorInfo const* ActorInfo,

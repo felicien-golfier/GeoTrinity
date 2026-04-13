@@ -7,15 +7,6 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoHealReturnPassiveAbility::OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo,
-											   FGameplayAbilitySpec const& Spec)
-{
-	Super::OnAvatarSet(ActorInfo, Spec);
-	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UGeoHealReturnPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 												   FGameplayAbilityActorInfo const* ActorInfo,
 												   FGameplayAbilityActivationInfo ActivationInfo,
@@ -33,7 +24,10 @@ void UGeoHealReturnPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle Ha
 		return;
 	}
 
-	SourceASC->OnHealProvided.AddDynamic(this, &UGeoHealReturnPassiveAbility::OnHealProvidedCallback);
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		SourceASC->OnHealProvided.AddDynamic(this, &UGeoHealReturnPassiveAbility::OnHealProvidedCallback);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -43,7 +37,7 @@ void UGeoHealReturnPassiveAbility::EndAbility(FGameplayAbilitySpecHandle Handle,
 											  bool bReplicateEndAbility, bool bWasCancelled)
 {
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
-	if (SourceASC)
+	if (SourceASC && GeoLib::IsServer(GetWorld()))
 	{
 		SourceASC->OnHealProvided.RemoveDynamic(this, &UGeoHealReturnPassiveAbility::OnHealProvidedCallback);
 	}
@@ -54,11 +48,6 @@ void UGeoHealReturnPassiveAbility::EndAbility(FGameplayAbilitySpecHandle Handle,
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoHealReturnPassiveAbility::OnHealProvidedCallback(float HealDone)
 {
-	if (!GeoLib::IsServer(GetWorld()))
-	{
-		return;
-	}
-
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
 	if (!ensureMsgf(SourceASC, TEXT("UGeoHealReturnPassiveAbility: invalid ASC in OnHealProvidedCallback")))
 	{

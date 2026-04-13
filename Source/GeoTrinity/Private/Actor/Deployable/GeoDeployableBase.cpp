@@ -69,7 +69,7 @@ void AGeoDeployableBase::BeginPlay()
 	InitDrain();
 }
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::OnRecalled()
+void AGeoDeployableBase::Recall(float Value)
 {
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
 	OnDeployableExpired();

@@ -16,7 +16,6 @@ class GEOTRINITY_API UGeoHealReturnPassiveAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
 
-	virtual void OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;

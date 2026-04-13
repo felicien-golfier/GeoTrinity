@@ -58,6 +58,7 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 															   DamageReduction);
 	Damage *= 1.f - FMath::Clamp(DamageReduction, 0.f, 1.f);
 
+
 #pragma region Radial damage
 	if (UGeoAbilitySystemLibrary::GetIsRadialDamage(contextHandle))
 	{

@@ -147,11 +147,6 @@ bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 		return false;
 	}
 
-	if (Cast<AGeoProjectile>(OtherActor))
-	{
-		return false;
-	}
-
 	if (!OtherActor->CanBeDamaged())
 	{
 		return false;
@@ -175,6 +170,11 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 		return;
 	}
 
+	HandleValidOverlap(OtherActor);
+}
+
+void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
+{
 	bIsEnding = true;
 
 	if (HasAuthority())

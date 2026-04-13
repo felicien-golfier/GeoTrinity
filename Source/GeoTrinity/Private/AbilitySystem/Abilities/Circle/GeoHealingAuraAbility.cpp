@@ -11,13 +11,6 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoHealingAuraAbility::OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
-{
-	Super::OnAvatarSet(ActorInfo, Spec);
-	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UGeoHealingAuraAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 											 FGameplayAbilityActorInfo const* ActorInfo,
 											 FGameplayAbilityActivationInfo ActivationInfo,
