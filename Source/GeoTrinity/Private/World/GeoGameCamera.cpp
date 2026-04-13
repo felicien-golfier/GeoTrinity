@@ -22,28 +22,21 @@ void AGeoGameCamera::Tick(float DeltaTime)
 		return;
 	}
 
-	// Gather all player pawn locations and compute centroid.
-	FVector2D CentroidSum = FVector2D::ZeroVector;
-	int32 PawnCount = 0;
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		if (APlayerController* PlayerController = It->Get())
-		{
-			if (APawn* Pawn = PlayerController->GetPawn())
-			{
-				FVector const PawnLocation = Pawn->GetActorLocation();
-				CentroidSum += FVector2D(PawnLocation.X, PawnLocation.Y);
-				++PawnCount;
-			}
-		}
-	}
-
-	if (PawnCount == 0)
+	// Use only the local player's pawn — each client drives its own camera.
+	APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController();
+	if (!LocalPlayerController)
 	{
 		return;
 	}
 
-	FVector2D const Centroid = CentroidSum / static_cast<float>(PawnCount);
+	APawn* LocalPawn = LocalPlayerController->GetPawn();
+	if (!LocalPawn)
+	{
+		return;
+	}
+
+	FVector const PawnLocation = LocalPawn->GetActorLocation();
+	FVector2D const Centroid = FVector2D(PawnLocation.X, PawnLocation.Y);
 
 	// Compute orthographic half-extents from the camera component.
 	float const OrthoHalfWidth = GetCameraComponent()->OrthoWidth * 0.5f;
