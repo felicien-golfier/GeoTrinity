@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#pragma once
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
@@ -15,8 +17,12 @@ struct FGeoGameplayEffectContext;
 class UGeoAbilitySystemComponent;
 class UGameplayEffect;
 
+/**
+ * Data asset that holds a reusable array of FEffectData instances shared across multiple abilities.
+ * Use this when a set of effects is reused by more than one ability; for single-ability effects, prefer inline
+ * TInstancedStruct arrays on the ability's EffectDataInstances property.
+ */
 UCLASS(BlueprintType)
-
 class GEOTRINITY_API UEffectDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
@@ -60,6 +66,7 @@ struct GEOTRINITY_API FEffectData
 													int32 Seed) const;
 };
 
+/** Applies a generic Gameplay Effect by class, with optional SetByCaller magnitude and duration overrides. */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
@@ -85,6 +92,7 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	FScalableFloat Duration;
 };
 
+/** Applies a damage GE using the project-wide DamageEffect class from GameDataSettings, scaled by DamageAmount. */
 USTRUCT(BlueprintType)
 struct FDamageEffectData : public FEffectData
 {
@@ -99,6 +107,7 @@ struct FDamageEffectData : public FEffectData
 	FScalableFloat DamageAmount;
 };
 
+/** Applies a heal GE and optionally suppresses the OnHealProvided broadcast on the source ASC via the effect context. */
 USTRUCT(BlueprintType)
 struct FHealEffectData : public FEffectData
 {
@@ -119,6 +128,7 @@ struct FHealEffectData : public FEffectData
 	bool bSuppressHealProvided{false};
 };
 
+/** Applies a shield GE using the project-wide ShieldEffect class from GameDataSettings, scaled by ShieldAmount. */
 USTRUCT(BlueprintType)
 struct FShieldEffectData : public FEffectData
 {
@@ -133,6 +143,11 @@ struct FShieldEffectData : public FEffectData
 	FScalableFloat ShieldAmount;
 };
 
+/**
+ * Writes a single-use damage multiplier into the GE context before any ApplyEffect calls in the same batch.
+ * Consumed by ExecCalc_Damage; resets automatically per ApplyEffectFromEffectData call (fresh context each call).
+ * @note The CLAUDE.md refers to this struct as FSingleUseDamageMultiplierEffectData — the names are out of sync.
+ */
 USTRUCT(BlueprintType)
 struct FContextDamageMultiplierEffectData : public FEffectData
 {
@@ -144,6 +159,7 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 	FScalableFloat Multiplier{2.f};
 };
 
+/** Applies a status/debuff tag to the target with a configurable chance (0–100). Writes StatusTag into the GE context. */
 USTRUCT(BlueprintType)
 struct FStatusEffectData : public FEffectData
 {

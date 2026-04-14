@@ -35,7 +35,12 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Auto-activates the ability if it carries the Ability_Type_Passive asset tag. */
 	virtual void OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
+	/**
+	 * Commits ability cost/cooldown, populates StoredPayload from event target data, binds the server-side
+	 * OnFireTargetDataReceived delegate, and schedules the fire trigger.
+	 */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
@@ -75,6 +80,7 @@ public:
 	 */
 	float GetCooldown(int32 level = 1) const;
 
+	/** Clears the fire timer, hides the deploy charge gauge if in charge mode, then calls Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
@@ -87,6 +93,7 @@ public:
 	 * Only meaningful when FireMode == EFireMode::ChargeForFireDelay.
 	 */
 	float GetChargeRatio() const;
+	/** In ChargeForFireDelay mode: cancels the pending fire timer and fires immediately on input release. */
 	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo ActivationInfo) override;
 

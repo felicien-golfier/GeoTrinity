@@ -12,6 +12,12 @@
 
 class UGameplayEffect;
 
+/**
+ * Extended GAS effect context for GeoTrinity.
+ * Adds crit, block, status debuff, knockback, radial damage, a single-use damage multiplier, and a heal-suppression
+ * flag beyond what FGameplayEffectContext provides. All extended fields are replicated except SingleUseDamageMultiplier
+ * and bSuppressHealProvided, which are call-site scoped and consumed server-side via Duplicate().
+ */
 USTRUCT(BlueprintType)
 struct FGeoGameplayEffectContext : public FGameplayEffectContext
 {

@@ -13,7 +13,8 @@ class UUserWidget;
 class UGameplayEffect;
 
 /**
- * A place to link all data tables for game stuff, accessible by server and client
+ * Project-wide data registry for all shared game assets (ability info, GEs, widgets, curves).
+ * Configured once in Project Settings and accessible on both server and client at all times.
  */
 UCLASS(Config = Game, defaultconfig, meta = (DisplayName = "Game Data Settings"))
 class GEOTRINITY_API UGameDataSettings : public UDeveloperSettings

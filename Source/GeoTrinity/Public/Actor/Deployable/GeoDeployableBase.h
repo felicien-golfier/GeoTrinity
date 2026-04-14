@@ -63,7 +63,12 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 
-	/** Called by the owning player to recall this deployable */
+	/**
+	 * Clears the blink timer and triggers destruction via OnDeployableExpired.
+	 * Override in subclasses to apply recall-specific effects (e.g. burst damage) before calling Super.
+	 *
+	 * @param Value  Optional scalar passed by the recall trigger — subclasses use it for damage/shield scaling.
+	 */
 	virtual void Recall(float Value = 0.f);
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */

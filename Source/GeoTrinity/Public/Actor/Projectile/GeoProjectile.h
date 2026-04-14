@@ -21,6 +21,13 @@ class UPrimitiveComponent;
 struct FHitResult;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
+
+/**
+ * Base replicated projectile for GeoTrinity.
+ * Moves via UProjectileMovementComponent and ends its life when it hits a valid target, exceeds its distance span,
+ * or its lifespan expires. Server-spawned copies are hidden from the owning client's replication so the client's
+ * locally predicted projectile remains authoritative for that player's view (see IsNetRelevantFor).
+ */
 UCLASS()
 class GEOTRINITY_API AGeoProjectile : public AActor
 {

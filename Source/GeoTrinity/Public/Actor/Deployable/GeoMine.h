@@ -22,9 +22,15 @@ class GEOTRINITY_API AGeoMine : public AGeoDeployableBase
 public:
 	AGeoMine();
 
+	/** Casts Data to FDeployableData and stores it in MineData. Must be called before the mine is active. */
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
+	/** Registers MineData for initial-only replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/**
+	 * Sphere-overlaps all actors within Params.Size: deals damage to enemies and grants shield to allies,
+	 * both scaled by Params.Value * Value, then calls Super::Recall to destroy the mine.
+	 */
 	virtual void Recall(float Value) override;
 
 protected:

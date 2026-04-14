@@ -23,6 +23,7 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Broadcast every time the gauge fill ratio changes. Bind in the character widget to drive the gauge display. */
 	UPROPERTY(BlueprintAssignable)
 	FOnGaugeChanged OnGaugeChanged;
 
