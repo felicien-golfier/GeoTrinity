@@ -35,6 +35,7 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Auto-activates the ability immediately after the avatar is assigned, if it carries the Passive ability type tag. */
 	virtual void OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,

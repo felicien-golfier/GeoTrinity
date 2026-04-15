@@ -119,6 +119,7 @@ struct FHealEffectData : public FEffectData
 	bool bSuppressHealProvided{false};
 };
 
+/** Grants a one-shot shield to the target. Shield size is configured via ShieldAmount. */
 USTRUCT(BlueprintType)
 struct FShieldEffectData : public FEffectData
 {

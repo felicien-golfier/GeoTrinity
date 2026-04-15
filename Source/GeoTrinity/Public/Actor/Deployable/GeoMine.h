@@ -22,9 +22,17 @@ class GEOTRINITY_API AGeoMine : public AGeoDeployableBase
 public:
 	AGeoMine();
 
+	/** Casts Data to FDeployableData, stores it in MineData, resets the recall flag, then calls Super. */
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
+	/** Registers MineData with initial-only replication (replicated once at spawn). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/**
+	 * Detonates the mine: applies damage to enemies and shield to allies within Params.Size radius.
+	 * Both effects are scaled by Value * Params.Value. No-ops when already recalled or expired.
+	 *
+	 * @param Value  Scale factor for the detonation magnitude (1.0 = full detonation).
+	 */
 	virtual void Recall(float Value) override;
 
 protected:
