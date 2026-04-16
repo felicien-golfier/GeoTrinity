@@ -4,7 +4,7 @@
 
 ---
 
-## BUG-01 — Crash: `OnFireTargetDataReceived` dereferences TargetData after `ensureMsgf` without early return
+## [x] BUG-01 — Crash: `OnFireTargetDataReceived` dereferences TargetData after `ensureMsgf` without early return
 **File:** `Private/AbilitySystem/Abilities/GeoGameplayAbility.cpp:332-337`  
 **Severity:** High — server crash
 
@@ -20,7 +20,7 @@ StoredPayload.Seed = AbilityTargetData->Seed;   // crashes if null
 
 ---
 
-## BUG-02 — Crash: `GeoAutomaticFireAbility::OnFireTargetDataReceived` has no null guard on TargetData
+## [x] BUG-02 — Crash: `GeoAutomaticFireAbility::OnFireTargetDataReceived` has no null guard on TargetData
 **File:** `Private/AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.cpp:161-166`  
 **Severity:** High — server crash
 
@@ -37,7 +37,7 @@ Unlike the base class (which at least has an `ensureMsgf`), this override has ne
 
 ---
 
-## BUG-03 — Crash: `GeoProjectileAbility::OnFireTargetDataReceived` re-reads TargetData without a null check
+## [x] BUG-03 — Crash: `GeoProjectileAbility::OnFireTargetDataReceived` re-reads TargetData without a null check
 **File:** `Private/AbilitySystem/Abilities/Damaging/GeoProjectileAbility.cpp:45-49`  
 **Severity:** High — server crash
 
@@ -56,7 +56,7 @@ The super call already extracted what it needs, but this override performs a sep
 
 ---
 
-## BUG-04 — Logic Error: `GetDebuffDuration` returns debuff **damage**, not duration (copy-paste)
+## [x] BUG-04 — Logic Error: `GetDebuffDuration` returns debuff **damage**, not duration (copy-paste)
 **File:** `Private/AbilitySystem/Lib/GeoAbilitySystemLibrary.cpp:351-354`  
 **Severity:** Medium — silent wrong value
 
@@ -74,7 +74,7 @@ Every caller of `GetDebuffDuration` receives the damage value instead of the dur
 
 ---
 
-## BUG-05 — Logic Error: `ensureMsgf(true, ...)` never fires — condition is inverted
+## [x] BUG-05 — Logic Error: `ensureMsgf(true, ...)` never fires — condition is inverted
 **File:** `Private/AbilitySystem/Lib/GeoAbilitySystemLibrary.cpp:563`  
 **Severity:** Medium — silent failure, missing error signal
 
@@ -89,7 +89,7 @@ ensureMsgf(true, TEXT("No Ability found for AbilityTag %s"), *AbilityTag.ToStrin
 
 ---
 
-## BUG-06 — Logic Error: Same `ensureMsgf(true, ...)` in `GetAndCheckSection`
+## [x] BUG-06 — Logic Error: Same `ensureMsgf(true, ...)` in `GetAndCheckSection`
 **File:** `Private/AbilitySystem/Lib/GeoAbilitySystemLibrary.cpp:762`  
 **Severity:** Medium — missing error signal
 
@@ -107,7 +107,7 @@ The `UE_LOG` fires correctly, but the ensure (which would break the debugger and
 
 ---
 
-## BUG-07 — Crash: `FullySpawnProjectile` passes null to `FinishSpawnProjectile` when spawn fails
+## [x] BUG-07 — Crash: `FullySpawnProjectile` passes null to `FinishSpawnProjectile` when spawn fails
 **File:** `Private/AbilitySystem/Lib/GeoAbilitySystemLibrary.cpp:573-578`  
 **Severity:** Medium — crash when spawn fails
 
@@ -122,7 +122,7 @@ FinishSpawnProjectile(World, Projectile, ...);            // Projectile->GetClas
 
 ---
 
-## BUG-08 — Wrong Instigator on poolable projectiles
+## [x] BUG-08 — Wrong Instigator on poolable projectiles
 **File:** `Private/AbilitySystem/Lib/GeoAbilitySystemLibrary.cpp:598`  
 **Severity:** Low — Actor's `GetInstigator()` returns wrong pawn for pooled projectiles
 

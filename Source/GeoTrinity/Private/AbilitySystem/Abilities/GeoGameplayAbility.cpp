@@ -340,8 +340,10 @@ void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHan
 {
 	// Called on server when Fire() has happen on client and data is finally here.
 	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
-	ensureMsgf(AbilityTargetData,
-			   TEXT("No FGeoAbilityTargetData found in TriggerEventData, falling back to Generate a payload"));
+	if (!ensureMsgf(AbilityTargetData, TEXT("No FGeoAbilityTargetData found in DataHandle — cannot update StoredPayload.")))
+	{
+		return;
+	}
 	StoredPayload.Seed = AbilityTargetData->Seed;
 	StoredPayload.ServerSpawnTime = AbilityTargetData->ServerSpawnTime;
 	StoredPayload.Origin = AbilityTargetData->Origin;
