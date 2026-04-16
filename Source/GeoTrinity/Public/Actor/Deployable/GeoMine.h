@@ -22,9 +22,17 @@ class GEOTRINITY_API AGeoMine : public AGeoDeployableBase
 public:
 	AGeoMine();
 
+	/** Casts Data to FDeployableData, stores it in MineData, and calls Super to start the drain. */
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/**
+	 * Triggers the mine explosion: damages enemies and shields allies within Params.Size radius.
+	 * The final damage/shield magnitude is Params.Value * Value — pass 1.f for full-strength detonation.
+	 * Also called internally from the step-on overlap with Value = 1.f.
+	 *
+	 * @param Value  Multiplier applied to the base LifeSpent magnitude. Range: [0, 1].
+	 */
 	virtual void Recall(float Value) override;
 
 protected:

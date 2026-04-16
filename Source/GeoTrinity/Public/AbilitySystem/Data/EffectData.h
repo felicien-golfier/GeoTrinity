@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#pragma once
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
@@ -15,8 +17,12 @@ struct FGeoGameplayEffectContext;
 class UGeoAbilitySystemComponent;
 class UGameplayEffect;
 
+/**
+ * Data asset container for a reusable list of FEffectData instances.
+ * Use this when the same set of effects must be shared across multiple abilities.
+ * For effects specific to one ability, prefer inline TArray<TInstancedStruct<FEffectData>> on the ability directly.
+ */
 UCLASS(BlueprintType)
-
 class GEOTRINITY_API UEffectDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
@@ -60,10 +66,15 @@ struct GEOTRINITY_API FEffectData
 													int32 Seed) const;
 };
 
+/**
+ * Applies an arbitrary UGameplayEffect to the target.
+ * Supports optional SetByCaller magnitude (DataTag) and duration magnitude.
+ */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
 	GENERATED_BODY()
+	/** Applies GameplayEffect at the given ability level, optionally setting SetByCaller magnitudes from Magnitude and Duration. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -85,11 +96,16 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	FScalableFloat Duration;
 };
 
+/**
+ * Applies raw damage to the target.
+ * ExecCalc_Damage resolves attribute modifiers, crits, and the SingleUseDamageMultiplier from the context.
+ */
 USTRUCT(BlueprintType)
 struct FDamageEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Applies the damage GE scaled by DamageAmount. Crit and multiplier handling is delegated to ExecCalc_Damage. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -99,12 +115,19 @@ struct FDamageEffectData : public FEffectData
 	FScalableFloat DamageAmount;
 };
 
+/**
+ * Applies a heal to the target.
+ * If bSuppressHealProvided is true, the heal does not broadcast OnHealProvided — useful to prevent the
+ * Circle passive's heal-return loop from triggering on self-heals.
+ */
 USTRUCT(BlueprintType)
 struct FHealEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Writes bSuppressHealProvided into the context so the flag survives the MakeOutgoingSpec Duplicate pass. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
+	/** Applies the heal GE scaled by HealAmount. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -119,11 +142,15 @@ struct FHealEffectData : public FEffectData
 	bool bSuppressHealProvided{false};
 };
 
+/**
+ * Applies a shield to the target, absorbing incoming damage up to ShieldAmount.
+ */
 USTRUCT(BlueprintType)
 struct FShieldEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Applies the shield GE scaled by ShieldAmount. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -133,22 +160,34 @@ struct FShieldEffectData : public FEffectData
 	FScalableFloat ShieldAmount;
 };
 
+/**
+ * Injects a one-shot damage multiplier into the effect context.
+ * No GE is applied — this entry only mutates SingleUseDamageMultiplier on the shared context.
+ * ExecCalc_Damage reads and applies it during the same ApplyEffectFromEffectData call.
+ * @note Append to the effect array alongside a FDamageEffectData to scale that specific apply call.
+ */
 USTRUCT(BlueprintType)
 struct FContextDamageMultiplierEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Writes Multiplier into FGeoGameplayEffectContext::SingleUseDamageMultiplier. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.0"))
 	FScalableFloat Multiplier{2.f};
 };
 
+/**
+ * Applies a status effect (debuff) with a configurable proc chance.
+ * A random roll is compared against StatusChance (0–100); the GE is skipped when the roll exceeds it.
+ */
 USTRUCT(BlueprintType)
 struct FStatusEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Applies the status GE if a random roll (0–100) falls within StatusChance. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,

@@ -6,12 +6,15 @@
 
 #include "GeoAscTypes.generated.h"
 
-/**
- * A file to gather different structures essential for our ASC
- */
-
 class UGameplayEffect;
 
+/**
+ * Extended gameplay effect context for GeoTrinity.
+ * Adds support for critical hits, blocked hits, status effects (debuffs), knockback, radial damage,
+ * and a per-apply-call damage multiplier (SingleUseDamageMultiplier).
+ * Call-site scoped fields (SingleUseDamageMultiplier, bSuppressHealProvided) are not serialized —
+ * they are set before MakeOutgoingSpec, baked in via Duplicate(), and read server-side in PostGameplayEffectExecute.
+ */
 USTRUCT(BlueprintType)
 struct FGeoGameplayEffectContext : public FGameplayEffectContext
 {
