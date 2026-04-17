@@ -21,6 +21,12 @@ class UPrimitiveComponent;
 struct FHitResult;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
+
+/**
+ * Base class for all GeoTrinity projectiles.
+ * Handles movement, sphere-based overlap detection, team-attitude filtering, distance-span expiry,
+ * and client-prediction alignment (AdvanceProjectile). Integrates with the actor pool via InitProjectileLife/EndProjectileLife.
+ */
 UCLASS()
 class GEOTRINITY_API AGeoProjectile : public AActor
 {

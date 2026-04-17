@@ -158,8 +158,10 @@ public:
 	 */
 	static bool GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface);
 
+	/** Returns all actors in the world that implement IGenericTeamAgentInterface and belong to TeamId. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetAllAgentsInTeam(UObject const* WorldContextObject, FGenericTeamId const& TeamId);
+	/** Returns all actors in the world that implement IGenericTeamAgentInterface and have the given Attitude toward Actor. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetAllAgentsWithRelationTowardsActor(UObject const* WorldContextObject, AActor const* Actor,
 																ETeamAttitude::Type Attitude);
