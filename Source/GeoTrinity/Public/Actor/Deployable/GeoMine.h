@@ -22,9 +22,16 @@ class GEOTRINITY_API AGeoMine : public AGeoDeployableBase
 public:
 	AGeoMine();
 
+	/** Casts Data to FDeployableData and stores it in the replicated MineData field. Must be called before BeginPlay applies collision. */
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/**
+	 * Detonates the mine: applies damage scaled by (Params.Value * Value) to nearby enemies and shield to nearby allies,
+	 * then destroys the mine via the base Recall path.
+	 *
+	 * @param Value  Multiplier on Params.Value (LifeSpent). Pass 1.0 for a full-power detonation.
+	 */
 	virtual void Recall(float Value) override;
 
 protected:

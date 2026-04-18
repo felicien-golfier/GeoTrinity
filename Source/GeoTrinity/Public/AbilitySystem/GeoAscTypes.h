@@ -6,12 +6,14 @@
 
 #include "GeoAscTypes.generated.h"
 
-/**
- * A file to gather different structures essential for our ASC
- */
-
 class UGameplayEffect;
 
+/**
+ * Extends FGameplayEffectContext with GeoTrinity-specific fields: critical/blocked hit flags, debuff parameters,
+ * death impulse, knockback, and radial damage support.
+ * Also carries call-site scoped fields (SingleUseDamageMultiplier, bSuppressHealProvided) that are not replicated
+ * but survive the spec copy because Duplicate() copies them explicitly.
+ */
 USTRUCT(BlueprintType)
 struct FGeoGameplayEffectContext : public FGameplayEffectContext
 {

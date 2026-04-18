@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#pragma once
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
@@ -15,8 +17,12 @@ struct FGeoGameplayEffectContext;
 class UGeoAbilitySystemComponent;
 class UGameplayEffect;
 
+/**
+ * Data asset that holds a reusable collection of polymorphic FEffectData entries.
+ * Assign to ability blueprints when effects are shared across multiple abilities.
+ * For effects specific to a single ability, use the inline TArray on the ability instead.
+ */
 UCLASS(BlueprintType)
-
 class GEOTRINITY_API UEffectDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
@@ -60,6 +66,10 @@ struct GEOTRINITY_API FEffectData
 													int32 Seed) const;
 };
 
+/**
+ * Generic FEffectData that applies a configurable UGameplayEffect with optional SetByCaller magnitude and duration.
+ * The default choice for simple effects that do not require custom ExecCalc logic.
+ */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
@@ -85,6 +95,10 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	FScalableFloat Duration;
 };
 
+/**
+ * Applies the global damage gameplay effect via ExecCalc_Damage.
+ * DamageAmount is passed through the context; multipliers set by FContextDamageMultiplierEffectData are applied inside ExecCalc.
+ */
 USTRUCT(BlueprintType)
 struct FDamageEffectData : public FEffectData
 {
@@ -99,6 +113,10 @@ struct FDamageEffectData : public FEffectData
 	FScalableFloat DamageAmount;
 };
 
+/**
+ * Applies the global heal gameplay effect.
+ * Optionally suppresses the OnHealProvided broadcast so heal-return passives (e.g. Circle's self-heal) are not triggered.
+ */
 USTRUCT(BlueprintType)
 struct FHealEffectData : public FEffectData
 {
@@ -119,6 +137,7 @@ struct FHealEffectData : public FEffectData
 	bool bSuppressHealProvided{false};
 };
 
+/** Applies the global shield gameplay effect with a configurable shield amount. */
 USTRUCT(BlueprintType)
 struct FShieldEffectData : public FEffectData
 {
@@ -133,6 +152,11 @@ struct FShieldEffectData : public FEffectData
 	FScalableFloat ShieldAmount;
 };
 
+/**
+ * Writes a one-shot damage multiplier into the effect context before the damage GE is applied.
+ * Consumed by ExecCalc_Damage; only affects the FDamageEffectData in the same ApplyEffectFromEffectData call.
+ * Append before FDamageEffectData in the effect array — order within a call does not matter due to two-pass execution.
+ */
 USTRUCT(BlueprintType)
 struct FContextDamageMultiplierEffectData : public FEffectData
 {
@@ -144,6 +168,10 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 	FScalableFloat Multiplier{2.f};
 };
 
+/**
+ * Applies a status effect (buff or debuff) identified by StatusTag, with a configurable application chance.
+ * StatusChance = 100 always applies; lower values roll against the chance each time.
+ */
 USTRUCT(BlueprintType)
 struct FStatusEffectData : public FEffectData
 {

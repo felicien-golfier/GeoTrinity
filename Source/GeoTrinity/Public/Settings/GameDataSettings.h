@@ -13,7 +13,9 @@ class UUserWidget;
 class UGameplayEffect;
 
 /**
- * A place to link all data tables for game stuff, accessible by server and client
+ * Project-wide configuration that binds soft-object references to shared data assets (AbilityInfo, StatusInfo,
+ * gameplay effect classes, UI widgets, and game-feel constants).
+ * Accessible at runtime from both server and client via GetDefault<UGameDataSettings>().
  */
 UCLASS(Config = Game, defaultconfig, meta = (DisplayName = "Game Data Settings"))
 class GEOTRINITY_API UGameDataSettings : public UDeveloperSettings
