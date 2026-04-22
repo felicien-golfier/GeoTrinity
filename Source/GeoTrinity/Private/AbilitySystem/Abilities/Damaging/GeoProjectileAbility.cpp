@@ -43,6 +43,11 @@ void UGeoProjectileAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 		Handle, ActivationInfo.GetActivationPredictionKey());
 
 	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
+	if (!ensureMsgf(AbilityTargetData, TEXT("GeoProjectileAbility: No FGeoAbilityTargetData in DataHandle — server projectile not spawned.")))
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
+		return;
+	}
 
 	// Server projectile spawn with updated values.
 	SpawnProjectilesUsingTarget(AbilityTargetData->Yaw, FVector(AbilityTargetData->Origin, ArbitraryCharacterZ),

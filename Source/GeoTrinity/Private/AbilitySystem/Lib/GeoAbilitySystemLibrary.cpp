@@ -350,7 +350,7 @@ float UGeoAbilitySystemLibrary::GetDebuffDuration(FGameplayEffectContextHandle c
 	FGeoGameplayEffectContext const* pGeoContext =
 		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
 
-	return pGeoContext ? pGeoContext->GetDebuffDamage() : 0.f;
+	return pGeoContext ? pGeoContext->GetDebuffDuration() : 0.f;
 }
 
 float UGeoAbilitySystemLibrary::GetDebuffFrequency(FGameplayEffectContextHandle const& effectContextHandle)
@@ -560,7 +560,7 @@ TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArr
 		}
 	}
 
-	ensureMsgf(true, TEXT("No Ability found for AbilityTag %s"), *AbilityTag.ToString());
+	ensureMsgf(false, TEXT("No Ability found for AbilityTag %s"), *AbilityTag.ToString());
 	return {};
 }
 
@@ -574,6 +574,10 @@ UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, TSubclassOf<
 
 	AGeoProjectile* Projectile =
 		StartSpawnProjectile(World, ProjectileClass, SpawnTransform, Payload, EffectDataArray, PredictionKey);
+	if (!Projectile)
+	{
+		return nullptr;
+	}
 	FinishSpawnProjectile(World, Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
 	return Projectile;
 }
@@ -596,7 +600,7 @@ UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, TSubclassOf<
 	if (bIsPoolable)
 	{
 		Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(ProjectileClass, SpawnTransform, Payload.Owner,
-																		 Cast<APawn>(Payload.Owner), false);
+																		 Cast<APawn>(Payload.Instigator), false);
 		if (!Projectile)
 		{
 			UE_LOG(LogTemp, Error,
@@ -759,7 +763,7 @@ int UGeoAbilitySystemLibrary::GetAndCheckSection(UAnimMontage const* AnimMontage
 	int const SectionIndex = AnimMontage->GetSectionIndex(Section);
 	if (SectionIndex == INDEX_NONE)
 	{
-		ensureMsgf(true, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(), *AnimMontage->GetName());
+		ensureMsgf(false, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(), *AnimMontage->GetName());
 		UE_LOG(LogPattern, Error, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(),
 			   *AnimMontage->GetName());
 	}

@@ -159,6 +159,10 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	}
 
 	FGeoAbilityTargetData const* TargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
+	if (!ensureMsgf(TargetData, TEXT("GeoAutomaticFireAbility: No FGeoAbilityTargetData in DataHandle — shot skipped on server.")))
+	{
+		return;
+	}
 
 	// Update payload with the information, as we read from it to spawn projectile
 	StoredPayload.Origin = TargetData->Origin;
