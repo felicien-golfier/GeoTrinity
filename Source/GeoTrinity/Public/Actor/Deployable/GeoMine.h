@@ -22,9 +22,17 @@ class GEOTRINITY_API AGeoMine : public AGeoDeployableBase
 public:
 	AGeoMine();
 
+	/** Stores Data as MineData (replicated init-only) and calls Super::InitInteractableData. */
 	virtual void InitInteractableData(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/**
+	 * Triggers the mine explosion: applies scaled damage to nearby enemies and shield to nearby allies,
+	 * then calls Super::Recall. Explosion radius is MineData.Params.Size; effect scale = Params.Value * Value.
+	 * No-op if already expired or a recall is in progress.
+	 *
+	 * @param Value  Recall strength multiplier [0..1]. 1.0 when stepping on the mine, less when recalled early.
+	 */
 	virtual void Recall(float Value) override;
 
 protected:

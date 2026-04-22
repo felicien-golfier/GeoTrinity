@@ -12,6 +12,12 @@
 
 class UGameplayEffect;
 
+/**
+ * Extended FGameplayEffectContext for GeoTrinity.
+ * Carries all hit metadata (crit, block, status, knockback, radial damage) in addition to two
+ * call-site–scoped fields (SingleUseDamageMultiplier, bSuppressHealProvided) that survive
+ * MakeOutgoingSpec via Duplicate() but are excluded from NetSerialize.
+ */
 USTRUCT(BlueprintType)
 struct FGeoGameplayEffectContext : public FGameplayEffectContext
 {
