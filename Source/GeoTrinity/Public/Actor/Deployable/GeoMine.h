@@ -22,7 +22,7 @@ class GEOTRINITY_API AGeoMine : public AGeoDeployableBase
 public:
 	AGeoMine();
 
-	virtual void InitInteractableData(FInteractableActorData* Data) override;
+	virtual void InitInteractable(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void Recall(float Value) override;

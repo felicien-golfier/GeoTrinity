@@ -33,7 +33,7 @@ struct FBuffPickupData : public FDeployableData
 
 /**
  * Pickup that grants a buff to the player who collects it.
- * Spawned by Triangle's reload ability. Initialized via InitInteractableData before BeginPlay.
+ * Spawned by Triangle's reload ability. Initialized via InitInteractable before BeginPlay.
  *
  * Fill BuffMeshAssets in the Blueprint Class Defaults to match the ability's BuffEffectDataAssets:
  * index N in BuffMeshAssets = index N in BuffEffectDataAssets (same buff type).
@@ -47,7 +47,7 @@ public:
 	AGeoBuffPickup();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual void InitInteractableData(FInteractableActorData* InputData) override;
+	virtual void InitInteractable(FInteractableActorData* InputData) override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 

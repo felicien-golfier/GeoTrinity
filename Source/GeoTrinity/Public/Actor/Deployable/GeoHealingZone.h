@@ -15,7 +15,7 @@ class GEOTRINITY_API AGeoHealingZone : public AGeoDeployableBase
 
 public:
 	AGeoHealingZone();
-	virtual void InitInteractableData(FInteractableActorData* Data) override;
+	virtual void InitInteractable(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual float GetDurationPercent() const override;
 

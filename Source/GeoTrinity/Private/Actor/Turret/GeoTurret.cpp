@@ -35,7 +35,7 @@ void AGeoTurret::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME_CONDITION(AGeoTurret, Data, COND_InitialOnly);
 }
 
-void AGeoTurret::InitInteractableData(FInteractableActorData* InputData)
+void AGeoTurret::InitInteractable(FInteractableActorData* InputData)
 {
 	FDeployableData* DeployableData = static_cast<FDeployableData*>(InputData);
 	ensureMsgf(DeployableData, TEXT("AGeoTurret: Data is not a FDeployableData!"));
@@ -46,7 +46,7 @@ void AGeoTurret::InitInteractableData(FInteractableActorData* InputData)
 
 	Data = *DeployableData;
 
-	Super::InitInteractableData(InputData);
+	Super::InitInteractable(InputData);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

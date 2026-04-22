@@ -24,7 +24,7 @@ void AGeoMine::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoMine::InitInteractableData(FInteractableActorData* Data)
+void AGeoMine::InitInteractable(FInteractableActorData* Data)
 {
 	FDeployableData* InputData = static_cast<FDeployableData*>(Data);
 	if (!ensureMsgf(InputData, TEXT("AGeoMine: Data is not a FDeployableData!")))
@@ -34,7 +34,7 @@ void AGeoMine::InitInteractableData(FInteractableActorData* Data)
 
 	MineData = *InputData;
 	bIsRecalling = false;
-	Super::InitInteractableData(Data);
+	Super::InitInteractable(Data);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

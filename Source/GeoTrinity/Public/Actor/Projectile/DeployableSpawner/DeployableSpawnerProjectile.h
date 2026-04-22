@@ -11,7 +11,7 @@
 /**
  * Projectile that spawns a deployable actor (turret, healing zone, etc.) when it lands.
  * Carries FDeployableDataParams and the deployable class set by the ability at fire time,
- * then hands them off to the spawned actor via InitInteractableData.
+ * then hands them off to the spawned actor via InitInteractable.
  */
 UCLASS(Blueprintable)
 class GEOTRINITY_API ADeployableSpawnerProjectile : public AGeoProjectile

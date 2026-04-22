@@ -39,7 +39,7 @@ void ADeployableSpawnerProjectile::InitDeployable(AGeoDeployableBase* Deployable
 	FDeployableData Data;
 	FillBaseData(Data, PayloadOwner);
 	Data.EffectDataArray = EffectDataArray;
-	Deployable->InitInteractableData(&Data);
+	Deployable->InitInteractable(&Data);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

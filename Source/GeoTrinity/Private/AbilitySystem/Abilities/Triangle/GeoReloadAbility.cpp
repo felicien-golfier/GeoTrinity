@@ -112,7 +112,7 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 				PickupData.TeamID = TeamInterface->GetGenericTeamId();
 			}
 
-			Pickup->InitInteractableData(&PickupData);
+			Pickup->InitInteractable(&PickupData);
 			Pickup->FinishSpawning(SpawnTransform);
 		}
 	}

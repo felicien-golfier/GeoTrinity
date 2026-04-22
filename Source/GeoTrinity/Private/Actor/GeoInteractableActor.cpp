@@ -30,11 +30,11 @@ AGeoInteractableActor::AGeoInteractableActor()
 	SetRootComponent(CapsuleComponent);
 }
 
-void AGeoInteractableActor::InitInteractableData(FInteractableActorData* Data)
+void AGeoInteractableActor::InitInteractable(FInteractableActorData* Data)
 {
 	ensureMsgf(Data, TEXT("Data is invalid!"));
 	ensureMsgf(GetData(),
-			   TEXT("Subclass must store data into their UPROPERTY before calling Super::InitInteractableData!"));
+			   TEXT("Subclass must store data into their UPROPERTY before calling Super::InitInteractable!"));
 	InitGas();
 }
 
@@ -44,7 +44,7 @@ void AGeoInteractableActor::BeginPlay()
 	Super::BeginPlay();
 
 	ensureMsgf(GetData(),
-			   TEXT("Deployable hasn't been init properly, please call InitInteractableData before spawn !"));
+			   TEXT("Deployable hasn't been init properly, please call InitInteractable before spawn !"));
 
 	AbilitySystemComponent->InitializeDefaultAttributes(GetData()->Level);
 }
@@ -128,7 +128,7 @@ void AGeoInteractableActor::InitGas()
 	check(AbilitySystemComponent);
 
 	// TODO: Shouldn't we give the OwnerActor From the InteractableData instead of itself ?
-	// TODO: And so call the InitGas in the InitInteractableData ?
+	// TODO: And so call the InitGas in the InitInteractable ?
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
 	if (HasAuthority())

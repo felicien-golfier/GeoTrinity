@@ -24,7 +24,7 @@ class GEOTRINITY_API AGeoTurret : public AGeoDeployableBase
 public:
 	AGeoTurret();
 
-	virtual void InitInteractableData(FInteractableActorData* Data) override;
+	virtual void InitInteractable(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:

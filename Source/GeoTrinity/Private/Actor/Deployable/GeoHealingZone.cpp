@@ -44,7 +44,7 @@ void AGeoHealingZone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHealingZone::InitInteractableData(FInteractableActorData* InputData)
+void AGeoHealingZone::InitInteractable(FInteractableActorData* InputData)
 {
 	FDeployableData* DeployableData = static_cast<FDeployableData*>(InputData);
 	ensureMsgf(DeployableData, TEXT("AGeoHealingZone: Data is not FHealingZoneData!"));
@@ -58,7 +58,7 @@ void AGeoHealingZone::InitInteractableData(FInteractableActorData* InputData)
 	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
 	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
 	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
-	Super::InitInteractableData(InputData);
+	Super::InitInteractable(InputData);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

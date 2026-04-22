@@ -33,7 +33,7 @@ struct FInteractableActorData
 /**
  * Base actor for all in-world objects that participate in GAS (turrets, healing zones, buff pickups, etc.).
  * Owns an ASC and attribute set, implements the team interface for attitude queries, and provides a data-init
- * contract (InitInteractableData) so the spawner can configure the actor before BeginPlay.
+ * contract (InitInteractable) so the spawner can configure the actor before BeginPlay.
  */
 UCLASS()
 class GEOTRINITY_API AGeoInteractableActor
@@ -55,7 +55,7 @@ public:
 	 *
 	 * @param Data  Pointer to the configuration struct. Must not be null. Ownership remains with the caller.
 	 */
-	virtual void InitInteractableData(FInteractableActorData* Data);
+	virtual void InitInteractable(FInteractableActorData* Data);
 
 protected:
 	virtual FInteractableActorData const* GetData() const { return nullptr; }

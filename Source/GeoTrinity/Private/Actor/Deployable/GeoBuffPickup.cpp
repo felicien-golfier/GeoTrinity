@@ -34,7 +34,7 @@ void AGeoBuffPickup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoBuffPickup::InitInteractableData(FInteractableActorData* InputData)
+void AGeoBuffPickup::InitInteractable(FInteractableActorData* InputData)
 {
 	FBuffPickupData* BuffPickupData = static_cast<FBuffPickupData*>(InputData);
 	ensureMsgf(BuffPickupData, TEXT("AGeoBuffPickup: InputData is not a FBuffPickupData!"));
@@ -45,7 +45,7 @@ void AGeoBuffPickup::InitInteractableData(FInteractableActorData* InputData)
 
 	Data = *BuffPickupData;
 
-	Super::InitInteractableData(InputData);
+	Super::InitInteractable(InputData);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
