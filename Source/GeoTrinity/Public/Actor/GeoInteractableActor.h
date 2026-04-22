@@ -63,7 +63,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
 
-	virtual void InitGas();
+	virtual void InitGas(AActor* OwnerActor);
 	virtual void BindGasCallbacks();
 	virtual void UnbindGasCallbacks();
 	UFUNCTION(BlueprintNativeEvent)
