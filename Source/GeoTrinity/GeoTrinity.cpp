@@ -4,7 +4,6 @@
 
 #include "Modules/ModuleManager.h"
 
-// Define the project-wide log category declared in GeoTrinity.h
 DEFINE_LOG_CATEGORY(LogGeoTrinity);
 DEFINE_LOG_CATEGORY(LogGeoASC);
 DEFINE_LOG_CATEGORY(LogPattern);

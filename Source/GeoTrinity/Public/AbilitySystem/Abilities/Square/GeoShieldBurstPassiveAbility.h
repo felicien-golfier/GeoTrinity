@@ -9,24 +9,20 @@
 #include "GeoShieldBurstPassiveAbility.generated.h"
 
 class AGeoShieldBurstProjectile;
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGaugeChanged, float, GaugeRatio);
+class UShieldBurstPassiveComponent;
 
 /**
  * Passive ability for the Square player.
- * Auto-attack damage fills a gauge; at 100% a shield burst projectile is launched toward allies.
- * Broadcasts OnGaugeChanged so the character widget can display the fill in real time.
+ * Auto-attack damage fills a gauge; at 100% a shield burst projectile is launched toward allies after a charge delay.
+ * GaugeRatio is replicated via UShieldBurstPassiveComponent so all clients can drive the charge visual.
  */
 UCLASS()
 class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
 
-public:
-	UPROPERTY(BlueprintAssignable)
-	FOnGaugeChanged OnGaugeChanged;
+	UGeoShieldBurstPassiveAbility();
 
-private:
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
@@ -48,5 +44,16 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
 	TSubclassOf<AGeoShieldBurstProjectile> ShieldBurstClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
+	TSubclassOf<UShieldBurstPassiveComponent> PassiveComponentClass;
+
 	float GaugeAccumulated = 0.f;
+	FTimerHandle ChargeTimerHandle;
+
+	UPROPERTY()
+	TObjectPtr<UShieldBurstPassiveComponent> PassiveComponent;
+
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst")
+	float ChargeTime = 1.f; // Needs to be accessible from the passive comp via CDO
 };

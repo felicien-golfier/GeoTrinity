@@ -38,7 +38,9 @@ public:
 	virtual void LifeSpanExpired() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	/** Sets movement, enables collision, and starts the lifespan timer. Called on BeginPlay and after pooled reuse. */
+	/** CALLED ONLY ON SERVER */
+	/** Sets movement, enables collision, and starts the lifespan timer. Called before BeginPlay. */
+	UFUNCTION()
 	virtual void InitProjectileLife();
 
 	/**

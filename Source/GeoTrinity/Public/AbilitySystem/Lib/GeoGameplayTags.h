@@ -7,7 +7,7 @@ namespace RootTagNames
 	FString const AbilityTag{"Ability"};
 	FString const InputTag{"InputTag"};
 	FString const SpellSubTag{"Spell"};
-	FString const AbilityIDTag{AbilityTag + "." + SpellSubTag};
+	FString const AbilitySpellTag{AbilityTag + "." + SpellSubTag};
 	FString const AbilityTypeTag{AbilityTag + "." + "Type"};
 } // namespace RootTagNames
 
@@ -22,6 +22,7 @@ struct FGeoGameplayTags
 	static FGeoGameplayTags const& Get() { return GameplayTags; }
 	/** Registers all native tags with the GameplayTagsManager. Called from UGeoAssetManager::StartInitialLoading. */
 	static void InitializeNativeGameplayTags();
+	static bool AreNativeTagsInitialized() { return bNativeTagsInitialized; }
 
 	FGameplayTag Gameplay_Damage;
 	FGameplayTag Gameplay_Heal;
@@ -37,6 +38,7 @@ struct FGeoGameplayTags
 	FGameplayTag InputTag_Dash;
 
 	// Ability types
+	FGameplayTag Ability_Type;
 	FGameplayTag Ability_Type_Basic;
 	FGameplayTag Ability_Type_Special;
 	FGameplayTag Ability_Type_SpecialAlternative;
@@ -56,7 +58,11 @@ struct FGeoGameplayTags
 	FGameplayTag Status_Buff_Speed;
 	FGameplayTag Status_Buff_Shield;
 
+	// Ability spells needed in code
+	FGameplayTag Ability_Spell_ShieldBurst;
+
 
 private:
 	static FGeoGameplayTags GameplayTags;
+	static bool bNativeTagsInitialized;
 };

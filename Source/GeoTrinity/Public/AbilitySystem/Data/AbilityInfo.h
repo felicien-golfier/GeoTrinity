@@ -95,8 +95,8 @@ public:
 	/** Returns all player ability infos across all classes (Triangle + Circle + Square + Shared). */
 	TArray<FPlayersGameplayAbilityInfo> GetAllPlayersAbilityInfos() const;
 
-	/** Returns raw pointers to all FGameplayAbilityInfo entries (generic and player infos). */
-	TArray<FGameplayAbilityInfo*> GetAllAbilityInfos() const;
+	/** Returns copies of all FGameplayAbilityInfo entries (generic and player infos). */
+	TArray<FGameplayAbilityInfo> GetAllAbilityInfos() const;
 	/**
 	 * Finds ability infos whose AbilityTag matches any tag in AbilityTags.
 	 *

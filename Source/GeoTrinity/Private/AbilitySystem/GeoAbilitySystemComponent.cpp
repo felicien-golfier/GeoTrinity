@@ -25,17 +25,17 @@ void UGeoAbilitySystemComponent::InitializeComponent()
 		return;
 	}
 
-	for (auto const AbilityInfo : UGeoAbilitySystemLibrary::GetAbilityInfo()->GetAllAbilityInfos())
+	for (FGameplayAbilityInfo const& AbilityInfo : UGeoAbilitySystemLibrary::GetAbilityInfo()->GetAllAbilityInfos())
 	{
-		if (AbilityInfo->AbilityClass->IsChildOf(UPatternAbility::StaticClass())
-			&& StartupAbilityTags.Contains(AbilityInfo->AbilityTag))
+		if (AbilityInfo.AbilityClass->IsChildOf(UPatternAbility::StaticClass())
+			&& StartupAbilityTags.Contains(AbilityInfo.AbilityTag))
 		{
 			UPatternAbility* PatternAbilityCDO =
-				CastChecked<UPatternAbility>(AbilityInfo->AbilityClass->GetDefaultObject());
+				CastChecked<UPatternAbility>(AbilityInfo.AbilityClass->GetDefaultObject());
 			UPattern* Pattern;
 			if (!FindPatternByClass(PatternAbilityCDO->GetPatternClass(), Pattern))
 			{
-				CreatePatternInstance(PatternAbilityCDO->GetPatternClass(), AbilityInfo->AbilityTag);
+				CreatePatternInstance(PatternAbilityCDO->GetPatternClass(), AbilityInfo.AbilityTag);
 			}
 		}
 	}

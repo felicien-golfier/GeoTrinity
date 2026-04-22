@@ -204,6 +204,7 @@ void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* Othe
 	{
 		return;
 	}
+
 	bIsEnding = true;
 	EndProjectileLife();
 }

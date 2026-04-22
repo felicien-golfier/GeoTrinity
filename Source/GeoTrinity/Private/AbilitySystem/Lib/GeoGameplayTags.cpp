@@ -4,6 +4,7 @@
 
 
 FGeoGameplayTags FGeoGameplayTags::GameplayTags;
+bool FGeoGameplayTags::bNativeTagsInitialized = false;
 
 namespace
 {
@@ -21,10 +22,16 @@ namespace
 	{
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilityTypeTag + "." + tagName), comment);
 	}
+
+	void AddAbilitySpellTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
+	{
+		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilitySpellTag + "." + tagName), comment);
+	}
 } // namespace
 
 void FGeoGameplayTags::InitializeNativeGameplayTags()
 {
+	bNativeTagsInitialized = true;
 	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Damage, "Gameplay.Damage", "Tag to identify damage");
 	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Heal, "Gameplay.Heal", "Tag to identify healing");
 	CreateAndAssignGameplayTag(GameplayTags.Gameplay_Shield, "Gameplay.Shield", "Tag to identify shield");
@@ -42,6 +49,8 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	AddInputTag(GameplayTags.InputTag_Dash, "Dash", "Input tag for dash ability");
 
 	// ABILITY TYPES //
+	CreateAndAssignGameplayTag(GameplayTags.Ability_Type, FName(RootTagNames::AbilityTypeTag),
+							   "Root tag for ability types");
 	AddAbilityTypeTag(GameplayTags.Ability_Type_Basic, "Basic", "Tag associated with basic spells");
 	AddAbilityTypeTag(GameplayTags.Ability_Type_Special, "Special", "Tag associated with special spells");
 	AddAbilityTypeTag(GameplayTags.Ability_Type_SpecialAlternative, "SpecialAlternative",
@@ -63,4 +72,6 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Speed, "Status.Buff.Speed", "Movement speed buff");
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Shield, "Status.Buff.Shield", "Shield buff");
 
+	// ABILITY SPELLS NEEDED IN CODE //
+	AddAbilitySpellTag(GameplayTags.Ability_Spell_ShieldBurst, "ShieldBurst", "Ability spell for shield burst");
 }

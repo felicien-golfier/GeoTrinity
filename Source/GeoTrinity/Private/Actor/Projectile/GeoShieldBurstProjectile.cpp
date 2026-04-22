@@ -10,7 +10,8 @@
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoShieldBurstProjectile::AGeoShieldBurstProjectile()
 {
-	OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile) | static_cast<int32>(ETeamAttitudeBitflag::Friendly);
+	OverlapAttitude =
+		static_cast<int32>(ETeamAttitudeBitflag::Hostile) | static_cast<int32>(ETeamAttitudeBitflag::Friendly);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -23,7 +24,9 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 	{
 		FVector const Normal = (GetActorLocation() - OtherActor->GetActorLocation()).GetSafeNormal();
 		FVector const CurrentVelocity = ProjectileMovement->Velocity;
-		ProjectileMovement->Velocity = CurrentVelocity - 2.f * FVector::DotProduct(CurrentVelocity, Normal) * Normal;
+		ProjectileMovement->Velocity =
+			(CurrentVelocity.GetSafeNormal() - 2.f * FVector::DotProduct(CurrentVelocity, Normal) * Normal)
+			* ProjectileMovement->Velocity.Size();
 		ShieldAmount *= EnemyBounceMultiplier;
 		return;
 	}

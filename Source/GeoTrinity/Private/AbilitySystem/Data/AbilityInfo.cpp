@@ -17,7 +17,7 @@ static FGameplayTag GetAbilityTagFromCDO(TSubclassOf<UGameplayAbility> const& Ab
 	}
 
 	FGameplayTag const SpellRoot =
-		UGameplayTagsManager::Get().RequestGameplayTag(FName(RootTagNames::AbilityIDTag), false);
+		UGameplayTagsManager::Get().RequestGameplayTag(FName(RootTagNames::AbilitySpellTag), false);
 	for (FGameplayTag const& Tag : AbilityClass.GetDefaultObject()->GetAssetTags())
 	{
 		if (Tag.MatchesTag(SpellRoot))
@@ -39,8 +39,7 @@ static FGameplayTag GetAbilityTypeTagFromCDO(TSubclassOf<UGameplayAbility> const
 		return FGameplayTag();
 	}
 
-	FGameplayTag const AbilityTypeRoot =
-		UGameplayTagsManager::Get().RequestGameplayTag(FName(RootTagNames::AbilityTypeTag), false);
+	FGameplayTag const AbilityTypeRoot = FGeoGameplayTags::Get().Ability_Type;
 	for (FGameplayTag const& Tag : AbilityClass.GetDefaultObject()->GetAssetTags())
 	{
 		if (Tag.MatchesTag(AbilityTypeRoot))
@@ -80,6 +79,10 @@ void UAbilityInfo::PopulateAbilityTags()
 void UAbilityInfo::PostLoad()
 {
 	Super::PostLoad();
+	if (!FGeoGameplayTags::AreNativeTagsInitialized())
+	{
+		return;
+	}
 	PopulateAbilityTags();
 }
 
@@ -96,8 +99,7 @@ void UAbilityInfo::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 TArray<FPlayersGameplayAbilityInfo> UAbilityInfo::GetAbilitiesForClass(EPlayerClass PlayerClass) const
 {
 	ensureMsgf(PlayerClass != EPlayerClass::None && PlayerClass != EPlayerClass::All,
-			   TEXT("GetAbilitiesForClass called with invalid PlayerClass %s"),
-			   *UEnum::GetValueAsString(PlayerClass));
+			   TEXT("GetAbilitiesForClass called with invalid PlayerClass %s"), *UEnum::GetValueAsString(PlayerClass));
 
 	TArray<FPlayersGameplayAbilityInfo> Result = SharedAbilities;
 	switch (PlayerClass)
@@ -129,19 +131,17 @@ TArray<FPlayersGameplayAbilityInfo> UAbilityInfo::GetAllPlayersAbilityInfos() co
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-TArray<FGameplayAbilityInfo*> UAbilityInfo::GetAllAbilityInfos() const
+TArray<FGameplayAbilityInfo> UAbilityInfo::GetAllAbilityInfos() const
 {
-	TArray<FGameplayAbilityInfo*> AllInfos;
-	for (auto PlayersAbilityInfo : GetAllPlayersAbilityInfos())
+	TArray<FGameplayAbilityInfo> AllInfos;
+	for (FPlayersGameplayAbilityInfo const& Info : GetAllPlayersAbilityInfos())
 	{
-		AllInfos.Add(&PlayersAbilityInfo);
+		AllInfos.Add(Info);
 	}
-
-	for (auto GenericAbilityInfo : GenericAbilityInfos)
+	for (FGameplayAbilityInfo const& Info : GenericAbilityInfos)
 	{
-		AllInfos.Add(&GenericAbilityInfo);
+		AllInfos.Add(Info);
 	}
-
 	return AllInfos;
 }
 // ---------------------------------------------------------------------------------------------------------------------

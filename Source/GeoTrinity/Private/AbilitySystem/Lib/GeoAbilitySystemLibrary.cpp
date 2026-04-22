@@ -194,7 +194,7 @@ FGameplayTag UGeoAbilitySystemLibrary::GetAbilityTagFromSpec(FGameplayAbilitySpe
 // ---------------------------------------------------------------------------------------------------------------------
 FGameplayTag UGeoAbilitySystemLibrary::GetAbilityTagFromAbility(UGameplayAbility const& Ability)
 {
-	FGameplayTag const tagToMatch = GetGameplayTagFromRootTagString(RootTagNames::AbilityIDTag);
+	FGameplayTag const tagToMatch = GetGameplayTagFromRootTagString(RootTagNames::AbilitySpellTag);
 	for (FGameplayTag const& currentTag : Ability.GetAssetTags())
 	{
 		if (currentTag.MatchesTag(tagToMatch))
@@ -535,6 +535,11 @@ UGeoAbilitySystemComponent* UGeoAbilitySystemLibrary::GetGeoAscFromActor(AActor*
 	return Cast<UGeoAbilitySystemComponent>(UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor));
 }
 
+UGeoGameplayAbility const* UGeoAbilitySystemLibrary::GetAbilityCDO(FGameplayTag const AbilityTag)
+{
+	return GetAbilityCDO<UGeoGameplayAbility>(AbilityTag);
+}
+
 TArray<TInstancedStruct<FEffectData>>
 UGeoAbilitySystemLibrary::GetEffectDataArray(UEffectDataAsset const* EffectDataAsset)
 {
@@ -546,21 +551,13 @@ UGeoAbilitySystemLibrary::GetEffectDataArray(UEffectDataAsset const* EffectDataA
 	return EffectDataAsset->EffectDataInstances;
 }
 
-TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArray(FGameplayTag AbilityTag)
+TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArray(FGameplayTag const AbilityTag)
 {
-	for (auto AbilityInfo : GetAbilityInfo()->GetAllAbilityInfos())
+	if (UGeoGameplayAbility const* AbilityCDO = GetAbilityCDO(AbilityTag))
 	{
-		if (AbilityInfo->AbilityTag == AbilityTag)
-		{
-			UGameplayAbility const* AbilityCDO = AbilityInfo->AbilityClass.GetDefaultObject();
-			if (IsValid(AbilityCDO) && AbilityCDO->IsA(UGeoGameplayAbility::StaticClass()))
-			{
-				return CastChecked<UGeoGameplayAbility>(AbilityCDO)->GetEffectDataArray();
-			}
-		}
+		return AbilityCDO->GetEffectDataArray();
 	}
 
-	ensureMsgf(false, TEXT("No Ability found for AbilityTag %s"), *AbilityTag.ToString());
 	return {};
 }
 
@@ -641,8 +638,8 @@ void UGeoAbilitySystemLibrary::FinishSpawnProjectile(UWorld const* World, AGeoPr
 	}
 	else
 	{
-		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTransform);
 		Projectile->InitProjectileLife();
+		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTransform);
 
 		// Register prediction key delegates as fast-path cleanup for when the ability
 		// is confirmed AFTER the projectile spawns (no FireRate delay).

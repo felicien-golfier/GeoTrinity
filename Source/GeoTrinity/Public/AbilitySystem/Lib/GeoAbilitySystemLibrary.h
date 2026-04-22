@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
@@ -68,7 +70,8 @@ public:
 	 * first pass calls UpdateContextHandle on every entry, second pass calls ApplyEffect on every entry.
 	 * This ensures context data (e.g. damage multipliers) is set before any effect is applied.
 	 *
-	 * @return  Array of active effect handles, one per successfully applied effect. Invalid handles are included for entries that do not apply effects.
+	 * @return  Array of active effect handles, one per successfully applied effect. Invalid handles are included for
+	 * entries that do not apply effects.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Effects")
 	static TArray<FActiveGameplayEffectHandle>
@@ -87,6 +90,27 @@ public:
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 															 int32 Seed);
+
+	template <typename T>
+	static T const* GetAbilityCDO(FGameplayTag const AbilityTag)
+	{
+		for (FGameplayAbilityInfo const& AbilityInfo : GetAbilityInfo()->GetAllAbilityInfos())
+		{
+			if (AbilityInfo.AbilityTag == AbilityTag)
+			{
+				UGameplayAbility const* AbilityCDO = AbilityInfo.AbilityClass.GetDefaultObject();
+				if (IsValid(AbilityCDO) && AbilityCDO->IsA(T::StaticClass()))
+				{
+					return CastChecked<T>(AbilityCDO);
+				}
+			}
+		}
+
+		ensureMsgf(false, TEXT("No Ability found for AbilityTag %s"), *AbilityTag.ToString());
+		return nullptr;
+	}
+
+	static UGeoGameplayAbility const* GetAbilityCDO(FGameplayTag AbilityTag);
 
 	/** Extracts the EffectDataInstances array from a UEffectDataAsset. */
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(UEffectDataAsset const* EffectDataAsset);
@@ -241,7 +265,8 @@ public:
 	static void SetRadialDamageOrigin(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
 									  FVector const& inVector);
 
-	/** Returns the ASC from Actor cast to UGeoAbilitySystemComponent, or nullptr if Actor does not implement IAbilitySystemInterface. */
+	/** Returns the ASC from Actor cast to UGeoAbilitySystemComponent, or nullptr if Actor does not implement
+	 * IAbilitySystemInterface. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary")
 	static UGeoAbilitySystemComponent* GetGeoAscFromActor(AActor* Actor);
 
