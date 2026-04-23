@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#pragma once
 #include "GameplayPrediction.h"
 #include "GenericTeamAgentInterface.h"
 #include "StructUtils/InstancedStruct.h"
@@ -41,8 +43,14 @@ public:
 	/**
 	 * Returns the current server world time in seconds.
 	 * Use only for network synchronization (e.g. projectile spawn times) — not for local timing.
+	 * For local delta-time measurements on the client, use GetWorld()->GetTimeSeconds() instead.
 	 *
-	 * @param bUpdatedWithPing  When true, adjusts by estimated ping for tighter client-side prediction.
+	 * @param bUpdatedWithPing  When false (default), returns the raw replicated server time. When true, subtracts
+	 *                          half the estimated round-trip ping so the result approximates the server's "current"
+	 *                          time as seen by the client — useful for scheduling client-side predicted events.
+	 *
+	 * @warning  Do NOT use this for measuring local durations (e.g. charge time, cooldown UI). The value is
+	 *           a network approximation and can drift or jump. Use GetWorld()->GetTimeSeconds() for local timing.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);

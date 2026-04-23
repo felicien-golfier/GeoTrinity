@@ -28,10 +28,10 @@ struct GEOTRINITY_API FGeoAbilityTargetData : public FGameplayAbilityTargetData
 	float Yaw{};
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	float ServerSpawnTime{}; // server world time (seconds)
+	float ServerSpawnTime{}; // Server world time in seconds at the moment of the shot
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	int Seed{}; // seed pour variations RNG
+	int Seed{}; // RNG seed for deterministic variation
 
 	virtual UScriptStruct* GetScriptStruct() const override { return FGeoAbilityTargetData::StaticStruct(); }
 

@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#pragma once
 #include "GameplayTagContainer.h"
 
 #include "AbilityPayload.generated.h"
@@ -9,16 +11,16 @@ struct GEOTRINITY_API FAbilityPayload
 	GENERATED_BODY()
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	FVector2D Origin{}; // position X,Y
+	FVector2D Origin{}; // World-space XY position at spawn time
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	float Yaw{}; // orientation
+	float Yaw{}; // Character facing yaw in degrees at spawn time
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	float ServerSpawnTime{}; // server world time (seconds)
+	float ServerSpawnTime{}; // Server world time in seconds at spawn time
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-	int Seed{}; // seed pour variations RNG
+	int Seed{}; // RNG seed for deterministic variation
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	int AbilityLevel{};

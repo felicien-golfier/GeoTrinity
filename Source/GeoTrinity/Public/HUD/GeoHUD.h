@@ -45,14 +45,19 @@ struct FHudPlayerParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UAttributeSet> AttributeSet = nullptr;
 
+	/** Returns PlayerController cast to AGeoPlayerController, or nullptr on type mismatch. */
 	AGeoPlayerController* GetGeoPlayerController() const;
+	/** Returns AbilitySystemComponent cast to UGeoAbilitySystemComponent, or nullptr on type mismatch. */
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponent() const;
+	/** Returns AttributeSet cast to UGeoAttributeSetBase, or nullptr on type mismatch. */
 	UGeoAttributeSetBase* GetGeoAttributeSet() const;
 };
 
 
 /**
- * Base class for a HUD in the game
+ * HUD for GeoTrinity. Owns the player's OverlayWidget and an optional boss health bar.
+ * Receives attribute change notifications from the ASC and forwards them as Blueprint-assignable delegates
+ * so BP widgets can bind without needing a direct ASC reference.
  */
 UCLASS()
 class GEOTRINITY_API AGeoHUD : public AHUD
@@ -60,8 +65,10 @@ class GEOTRINITY_API AGeoHUD : public AHUD
 	GENERATED_BODY()
 
 public:
+	/** Creates and adds the OverlayWidget, then binds all attribute-change callbacks. Call once from AGeoPlayerState. */
 	void InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS);
 
+	/** Returns the cached player parameters (controller, state, ASC, attribute set) set during InitOverlay. */
 	FHudPlayerParams const& GetHudPlayerParams() const { return HudPlayerParams; }
 
 	/** Shows the boss health bar for the given enemy. Call this when a boss fight starts. */

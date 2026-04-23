@@ -13,7 +13,9 @@ class APlayableCharacter;
 class UCharacterAttributeSet;
 class UGeoAbilitySystemComponent;
 /**
- * Deriving just to set up basic RPG stuff for now (felt awkward to put all of this in the controller)
+ * Player state for GeoTrinity. Owns the ASC and UCharacterAttributeSet for playable characters
+ * (ASC lives here so it survives pawn respawns). Also tracks the player's current class,
+ * replicated combat debug stats (DPS, HPS, damage received), and triggers HUD overlay initialization.
  */
 UCLASS()
 class GEOTRINITY_API AGeoPlayerState
@@ -29,8 +31,10 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void ClientInitialize(AController* Controller) override;
+	/** Creates the HUD overlay widget on the owning client. Called from ClientInitialize once the controller is valid. */
 	void InitOverlay();
 
+	/** Callback for APlayerState::PawnSetDelegate. Triggers InitGAS on the pawn when it is first assigned. */
 	UFUNCTION()
 	void OnPlayerPawnSet(APlayerState* Player, APawn* NewPawn, APawn* OldPawn);
 

@@ -39,14 +39,17 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoMoiraBeamAbility, STATGROUP_Tickables);
 	}
 
+	/** Returns true when Actor's center is inside the current beam cylinder (using BeamLength and the runtime radius). */
 	bool IsInBeam(AActor const* Actor) const;
 #ifdef WITH_EDITOR
 
 	void DrawBeamDebugLines(float DeltaTime) const;
 #endif
+	/** Damage applied per second to each enemy inside the beam cylinder. Scales with ability level. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat DamagePerSecond;
 
+	/** Heal applied per second to each ally inside the beam cylinder. Scales with ability level. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat HealPerSecond;
 
@@ -71,8 +74,10 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float RadiusGrowthPerAbsorbedZone = 50.f;
 
-	/** Beam Heal And Damage boost for a full HealingZone consumed, 1 will double damage and heal
-	 * Scales proportionally with partial drain. */
+	/**
+	 * Additive boost to damage and heal for a fully absorbed HealingZone.
+	 * A value of 1 doubles damage and heal (adds 100% of the base amount). Scales proportionally with partial drain.
+	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float DamageAndHealBoostPerAbsorbedZone = 1.f;
 

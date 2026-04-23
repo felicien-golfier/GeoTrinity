@@ -11,7 +11,9 @@
 class UProgressBar;
 
 /**
- *
+ * Reusable health-bar widget for any combatant (enemy, boss bar, deployable).
+ * Bind it to an ASC via InitializeWithAbilitySystemComponent; attribute changes automatically update the bar.
+ * Do NOT use this for the player's main overlay — use UGeoUserWidget directly for that.
  */
 UCLASS()
 class GEOTRINITY_API UGenericCombattantWidget : public UGeoUserWidget
