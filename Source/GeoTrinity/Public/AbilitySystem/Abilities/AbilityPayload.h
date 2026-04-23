@@ -5,6 +5,12 @@
 
 #include "AbilityPayload.generated.h"
 
+/**
+ * Snapshot of all data needed to replicate an ability shot or pattern spawn across machines.
+ * Stored as StoredPayload on ability instances. Also carried by UPattern subclasses.
+ * Always use the fields here instead of calling ability helper functions (GetAvatarActor, etc.),
+ * as the payload may intentionally differ from what ActorInfo reports on the server.
+ */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FAbilityPayload
 {

@@ -27,6 +27,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Enemy")
 	FOnEnemySpawned OnEnemySpawned;
 
+	/** Returns the first spawned enemy, or nullptr if none have been spawned yet. */
 	UFUNCTION(BlueprintCallable, Category = "Enemy")
 	AEnemyCharacter* GetFirstEnemy() const { return SpawnedEnemies.Num() > 0 ? SpawnedEnemies[0] : nullptr; }
 

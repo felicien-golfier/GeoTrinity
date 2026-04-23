@@ -1,4 +1,4 @@
-﻿// GeoActorPoolSubsystem.h
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 

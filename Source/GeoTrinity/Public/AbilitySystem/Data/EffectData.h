@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#pragma once
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
@@ -15,8 +17,12 @@ struct FGeoGameplayEffectContext;
 class UGeoAbilitySystemComponent;
 class UGameplayEffect;
 
+/**
+ * Data asset that holds a reusable array of FEffectData entries.
+ * Create one when the same set of effects needs to be shared across multiple abilities.
+ * For effects that are specific to a single ability, use the ability's inline EffectDataInstances instead.
+ */
 UCLASS(BlueprintType)
-
 class GEOTRINITY_API UEffectDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
@@ -60,6 +66,7 @@ struct GEOTRINITY_API FEffectData
 													int32 Seed) const;
 };
 
+/** Applies an arbitrary UGameplayEffect with optional SetByCaller magnitude and duration. General-purpose. */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
@@ -85,6 +92,7 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	FScalableFloat Duration;
 };
 
+/** Applies a flat damage amount. DamageAmount is evaluated at the given ability level. */
 USTRUCT(BlueprintType)
 struct FDamageEffectData : public FEffectData
 {
@@ -99,6 +107,7 @@ struct FDamageEffectData : public FEffectData
 	FScalableFloat DamageAmount;
 };
 
+/** Applies a flat heal amount. Sets bSuppressHealProvided on the context when configured. */
 USTRUCT(BlueprintType)
 struct FHealEffectData : public FEffectData
 {
@@ -119,6 +128,7 @@ struct FHealEffectData : public FEffectData
 	bool bSuppressHealProvided{false};
 };
 
+/** Applies a flat shield amount to the target. */
 USTRUCT(BlueprintType)
 struct FShieldEffectData : public FEffectData
 {
@@ -133,6 +143,11 @@ struct FShieldEffectData : public FEffectData
 	FScalableFloat ShieldAmount;
 };
 
+/**
+ * Sets SingleUseDamageMultiplier on the effect context for the current ApplyEffectFromEffectData call.
+ * The multiplier is consumed by UExecCalc_Damage and automatically resets on the next call (fresh context).
+ * Append this entry to an effect array to scale damage for that specific apply call only.
+ */
 USTRUCT(BlueprintType)
 struct FContextDamageMultiplierEffectData : public FEffectData
 {
@@ -144,6 +159,10 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 	FScalableFloat Multiplier{2.f};
 };
 
+/**
+ * Probabilistically applies a status effect (debuff) to the target.
+ * StatusChance (0–100) is rolled on each apply; on failure nothing happens.
+ */
 USTRUCT(BlueprintType)
 struct FStatusEffectData : public FEffectData
 {

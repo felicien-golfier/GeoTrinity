@@ -4,6 +4,11 @@
 
 namespace
 {
+	/**
+	 * Bit positions used by NetSerialize to pack optional fields into a single uint32.
+	 * Each field is only written/read when its corresponding bit is set, keeping bandwidth minimal.
+	 * The order must remain stable across builds — never reorder or remove existing values.
+	 */
 	enum RepFlag
 	{
 		REP_IsBlockedHit,

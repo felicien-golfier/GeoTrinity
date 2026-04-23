@@ -13,7 +13,8 @@ UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 // ---------------------------------------------------------------------------------------------------------------------
 FGeoAbilityTargetData UGeoChargeBeamAbility::BuildAbilityTargetData()
 {
-	// Encode charge ratio as integer 0–100 in Seed for server replication
+	// Seed field is repurposed to carry the charge ratio as an integer percentage (0–100).
+	// This piggybacks on the existing RPC without adding a new field, since Seed is unused by the beam otherwise.
 	StoredPayload.Seed = FMath::RoundToInt(GetChargeRatio() * 100.f);
 	FGeoAbilityTargetData Data = Super::BuildAbilityTargetData();
 	Data.Seed = StoredPayload.Seed; // Ensure to set it properly even if Super changes code.

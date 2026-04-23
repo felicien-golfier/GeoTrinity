@@ -91,6 +91,12 @@ public:
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 															 int32 Seed);
 
+	/**
+	 * Returns the class default object for the ability registered under AbilityTag, cast to T.
+	 * Asserts (ensureMsgf) if no matching ability is found or the CDO cannot be cast to T.
+	 *
+	 * @return  CDO pointer on success, nullptr if not found or wrong type.
+	 */
 	template <typename T>
 	static T const* GetAbilityCDO(FGameplayTag const AbilityTag)
 	{
@@ -120,14 +126,16 @@ public:
 	/** PROJECTILES **/
 
 	/**
-	 * Spawns a projectile from the actor pool with the given payload and effects.
-	 * @param World The world context
-	 * @param ProjectileClass The projectile class to spawn
-	 * @param SpawnTransform Where to spawn the projectile
-	 * @param Payload Network sync data (owner, instigator, origin, yaw, timing, seed)
-	 * @param EffectDataArray Effects to apply on hit
-	 * @param SpawnServerTime
-	 * @return The spawned projectile, or nullptr on failure
+	 * Fully spawns and activates a projectile from the actor pool.
+	 * Calls StartSpawnProjectile followed by FinishSpawnProjectile (which fast-forwards position by elapsed ping time).
+	 *
+	 * @param World            The world to spawn into.
+	 * @param ProjectileClass  The projectile class to spawn.
+	 * @param SpawnTransform   Initial world transform for the projectile.
+	 * @param Payload          Network sync data (owner, instigator, origin, yaw, timing, seed).
+	 * @param EffectDataArray  Effects to apply on hit.
+	 * @param SpawnServerTime  Synchronized server time at spawn, used to fast-forward position by elapsed ping.
+	 * @return                 The spawned projectile, or nullptr on failure.
 	 */
 	static AGeoProjectile* FullySpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> ProjectileClass,
 												FTransform const& SpawnTransform, FAbilityPayload const& Payload,

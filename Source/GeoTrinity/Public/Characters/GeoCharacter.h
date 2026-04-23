@@ -1,3 +1,5 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
@@ -24,6 +26,12 @@ class UGeoMovementComponent;
 class UStaticMeshComponent;
 class UGeoCombattantWidgetComp;
 
+/**
+ * Abstract base character shared by APlayableCharacter and AEnemyCharacter.
+ * Implements IAbilitySystemInterface and IGenericTeamAgentInterface, and exposes
+ * helpers for input, movement, and ASC access that both subclasses need.
+ * GAS initialization is deferred to InitGAS() which subclasses must override.
+ */
 UCLASS()
 class GEOTRINITY_API AGeoCharacter
 	: public ACharacter

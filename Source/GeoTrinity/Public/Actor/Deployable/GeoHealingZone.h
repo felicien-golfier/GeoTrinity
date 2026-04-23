@@ -8,6 +8,11 @@
 #include "GeoHealingZone.generated.h"
 
 
+/**
+ * Deployable healing zone placed by the Circle player.
+ * Periodically heals allies who remain inside the capsule area. Can be absorbed by UGeoMoiraBeamAbility
+ * which drains its health and converts it into fuel, radius growth, and damage/heal boost.
+ */
 UCLASS(Blueprintable, ClassGroup = (Custom))
 class GEOTRINITY_API AGeoHealingZone : public AGeoDeployableBase
 {

@@ -10,6 +10,11 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // TEAM
 // ---------------------------------------------------------------------------------------------------------------------
+/**
+ * Global team attitude resolver registered with the engine on game startup.
+ * Registered once in Init() via FGenericTeamId::SetAttitudeSolver — any two actors that implement
+ * IGenericTeamAgentInterface will route through here for team-based queries (damage filtering, aura targeting, etc.).
+ */
 static ETeamAttitude::Type GeoAttitudeSolver(FGenericTeamId A, FGenericTeamId B)
 {
 	ETeam const TeamA = static_cast<ETeam>(A.GetId());

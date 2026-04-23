@@ -32,6 +32,8 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 	bPatternIsActive = true;
 	StoredPayload = Payload;
 
+	// How much time has elapsed since the server fired: used to decide whether to skip
+	// the "Start" montage section and jump directly into the looping fire section.
 	float const StartTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
 
@@ -135,6 +137,11 @@ void UTickablePattern::StartPattern(FAbilityPayload const& Payload)
 	CalculateTimeAndTickPattern();
 }
 
+/**
+ * Drives the tick loop using SetTimerForNextTick rather than a regular Tick override so that
+ * the pattern can stop itself cleanly (by simply not re-scheduling) without a separate bIsActive guard.
+ * SpentTime excludes the Start-section length because projectiles are not spawned during that phase.
+ */
 void UTickablePattern::CalculateTimeAndTickPattern()
 {
 	float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);

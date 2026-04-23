@@ -17,8 +17,9 @@ class UCameraShakeBase;
 struct FAbilityPayload;
 struct FEffectData;
 
+/** General-purpose Blueprint function library for GeoTrinity. Provides server detection, camera shake, and
+ *  network-time utilities used across abilities, projectiles, and UI. */
 UCLASS()
-
 class UGeoGameplayLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()

@@ -8,6 +8,11 @@
 
 #include "ExecCalc_Heal.generated.h"
 
+/**
+ * Execution calculation that applies IncomingHeal to the target.
+ * Captures HealMultiplier from the source and broadcasts OnHealProvided on the source ASC
+ * unless bSuppressHealProvided is set on the effect context.
+ */
 UCLASS()
 class GEOTRINITY_API UExecCalc_Heal : public UGameplayEffectExecutionCalculation
 {

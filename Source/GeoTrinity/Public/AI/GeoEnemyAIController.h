@@ -1,4 +1,5 @@
-﻿// GeoEnemyAIController.h
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "AIController.h"
@@ -13,6 +14,10 @@ class UBehaviorTree;
 class UBehaviorTreeComponent;
 class UBlackboardComponent;
 
+/**
+ * AI controller for enemy characters. Starts a StateTree (via UStateTreeAIComponent) on possession
+ * and leaves execution entirely to the tree tasks (FSTTask_FireProjectileAbility, etc.).
+ */
 UCLASS()
 class GEOTRINITY_API AGeoEnemyAIController : public AAIController
 {

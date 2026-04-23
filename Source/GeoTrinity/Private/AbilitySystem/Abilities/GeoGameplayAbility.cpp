@@ -97,6 +97,10 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor*
 	return Payload;
 }
 
+/**
+ * Overload used for passive abilities that activate in-place (no fire socket, no aim direction).
+ * Derives Origin and Yaw from the actor's current transform.
+ */
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator,
 														  FTransform const& Transform) const
 {
@@ -223,6 +227,13 @@ void UGeoGameplayAbility::InitFireSectionIndex(UAnimInstance* AnimInstance, int3
 	}
 }
 
+/**
+ * Selects and plays the correct montage section for the current shot:
+ *  - FireSectionIndex == 0 → "Start" section (first activation of the ability)
+ *  - FireSectionIndex >= 1 → "Fire1", "Fire2", ... cycling back to "Fire1" when out of sections
+ * Adjusts play rate so the chosen section exactly fills the FireDelay window, keeping animation
+ * in sync regardless of how long the designer makes each section.
+ */
 void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 												 FGameplayAbilityActivationInfo const& ActivationInfo)
 {
@@ -276,6 +287,11 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	}
 }
 
+/**
+ * Returns the world-space spawn point for projectiles.
+ * Socket names follow the convention "<SocketBaseName><FireSectionIndex>" (e.g. "Fire0", "Fire1").
+ * Falls back to the actor origin when no matching socket exists (e.g. enemy shapes without rigs).
+ */
 FVector UGeoGameplayAbility::GetFireSocketLocation() const
 {
 	ACharacter const* Avatar = CastChecked<ACharacter>(GetAvatarActorFromActorInfo());
@@ -363,6 +379,7 @@ float UGeoGameplayAbility::GetChargeRatio() const
 
 	float RawRatio = FMath::Clamp((GetWorld()->GetTimeSeconds() - ChargeStartTime) / GetMaxChargeTime(), 0.f, 1.f);
 
+	// Apply a designer-tunable easing curve so the gauge feels responsive at the start and slows near full charge.
 	UCurveFloat const* Curve = GetDefault<UGameDataSettings>()->GaugeChargingSpeedCurve.LoadSynchronous();
 	if (!ensureMsgf(Curve, TEXT("GeoChargeAbility: GaugeChargingSpeedCurve is not set in GameDataSettings.")))
 	{

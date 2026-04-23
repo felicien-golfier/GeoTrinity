@@ -1,4 +1,5 @@
-﻿// BTTask_FireProjectileAbility.h
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "BehaviorTree/BTTaskNode.h"
@@ -6,6 +7,11 @@
 
 #include "BTTask_FireProjectileAbility.generated.h"
 
+/**
+ * Behavior tree task that activates an ability by GameplayTag via the pawn's ASC.
+ * The ability tag is read from a blackboard key. Task succeeds immediately after activation.
+ * @note Prefer the StateTree equivalent (FSTTask_FireProjectileAbility) for new AI behavior.
+ */
 UCLASS(DisplayName = "Fire Projectile Ability")
 class GEOTRINITY_API UBTTask_FireProjectileAbility : public UBTTaskNode
 {

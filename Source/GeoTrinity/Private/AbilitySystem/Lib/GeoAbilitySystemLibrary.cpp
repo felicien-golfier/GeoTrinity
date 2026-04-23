@@ -170,6 +170,11 @@ bool UGeoAbilitySystemLibrary::ApplyStatusToTarget(UAbilitySystemComponent* pTar
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+/**
+ * Resolves a tag string to a FGameplayTag and caches the result.
+ * RequestGameplayTag involves a hash-map lookup inside the tags manager on every call;
+ * the local static cache avoids that cost for frequently queried root tags.
+ */
 FGameplayTag UGeoAbilitySystemLibrary::GetGameplayTagFromRootTagString(FString const& StringOfTag)
 {
 	static TMap<FString, FGameplayTag> RootTagNameToTagMap{};
@@ -641,10 +646,7 @@ void UGeoAbilitySystemLibrary::FinishSpawnProjectile(UWorld const* World, AGeoPr
 		Projectile->InitProjectileLife();
 		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTransform);
 
-		// Register prediction key delegates as fast-path cleanup for when the ability
-		// is confirmed AFTER the projectile spawns (no FireRate delay).
-		// For the FireRate-delayed case, BeginPlay proximity matching handles it instead.
-		// When LocalOnlyProjectiles is on, keep the fake alive (server projectile won't replicate to owner).
+		// Cache the CVar pointer once rather than re-querying the console manager on every projectile spawn.
 		static IConsoleVariable* const LocalOverrideCVar =
 			IConsoleManager::Get().FindConsoleVariable(TEXT("Geo.ReplaceLocalProjectiles"));
 		ensureMsgf(LocalOverrideCVar,
@@ -722,6 +724,7 @@ ETeamAttitudeBitflag UGeoAbilitySystemLibrary::GetAttitudeBitflag(ETeamAttitude:
 	}
 }
 
+/** Returns true when the attitude bitmask includes the given single attitude value. */
 bool UGeoAbilitySystemLibrary::IsAttitudeIntBitflag(ETeamAttitudeBitflag AttitudeBitflag, ETeamAttitude::Type Attitude)
 {
 	return (static_cast<uint8>(AttitudeBitflag) & static_cast<uint8>(GetAttitudeBitflag(Attitude))) != 0x00;

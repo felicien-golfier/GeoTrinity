@@ -1,3 +1,5 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 #include "AbilitySystem/Abilities/AbilityPayload.h"
 #include "AbilitySystem/Data/EffectData.h"
@@ -87,10 +89,13 @@ protected:
 	UFUNCTION()
 	void CalculateTimeAndTickPattern();
 
-	// We do NOT give the delta time because we want pattern to be deterministic !
-	// Use SpentTime to re-calculate every frame your stuff.
-	// @param ServerTime : Gives synchronized server time, it is the replicated server time - 1/2 ping.
-	// @param SpentTime : ServerTime - ServerSpawnTime
+	/**
+	 * Called each timer tick to spawn projectiles. DeltaTime is intentionally not provided — all
+	 * timing must be derived from SpentTime so the pattern is deterministic across clients.
+	 *
+	 * @param ServerTime  Synchronized server time (replicated server time minus half ping).
+	 * @param SpentTime   ServerTime minus the payload's ServerSpawnTime — elapsed time since pattern start.
+	 */
 	virtual void TickPattern(float ServerTime, float SpentTime);
 
 	FTimerHandle TimeSyncTimerHandle;
