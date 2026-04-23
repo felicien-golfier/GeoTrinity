@@ -13,6 +13,7 @@
 class UGameplayAbility;
 class UInputAction;
 
+/** Binds an ability class to its tag and cosmetic metadata. Shared by all ability info types. */
 USTRUCT(BlueprintType)
 struct FGameplayAbilityInfo
 {
@@ -32,6 +33,7 @@ struct FGameplayAbilityInfo
 	FString Description;
 };
 
+/** Extends FGameplayAbilityInfo with player-specific binding: input tag, input action, and per-class startup flag. */
 USTRUCT(BlueprintType)
 struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 {
@@ -56,7 +58,8 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 };
 
 /**
- *
+ * Data asset that maps ability tags to their classes and metadata for all player classes.
+ * Used as the single source of truth for ability lookup, startup granting, and UI display.
  */
 UCLASS()
 class GEOTRINITY_API UAbilityInfo : public UDataAsset

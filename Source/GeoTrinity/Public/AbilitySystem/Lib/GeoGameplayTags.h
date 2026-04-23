@@ -22,6 +22,7 @@ struct FGeoGameplayTags
 	static FGeoGameplayTags const& Get() { return GameplayTags; }
 	/** Registers all native tags with the GameplayTagsManager. Called from UGeoAssetManager::StartInitialLoading. */
 	static void InitializeNativeGameplayTags();
+	/** Returns true if native gameplay tags have been registered via InitializeNativeGameplayTags. */
 	static bool AreNativeTagsInitialized() { return bNativeTagsInitialized; }
 
 	FGameplayTag Gameplay_Damage;

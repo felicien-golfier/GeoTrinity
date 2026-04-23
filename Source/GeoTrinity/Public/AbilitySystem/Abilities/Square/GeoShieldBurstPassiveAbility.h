@@ -54,6 +54,7 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	TObjectPtr<UShieldBurstPassiveComponent> PassiveComponent;
 
 public:
+	/** Charge duration in seconds before the shield burst fires. Read by ShieldBurstPassiveComponent via CDO. */
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst")
-	float ChargeTime = 1.f; // Needs to be accessible from the passive comp via CDO
+	float ChargeTime = 1.f;
 };
