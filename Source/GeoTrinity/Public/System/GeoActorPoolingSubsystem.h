@@ -62,9 +62,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ActorPoolingSystem", meta = (WorldContext = "WorldContextObject"))
 	static UGeoActorPoolingSubsystem* Get(UObject const* WorldContextObject);
 
-	/** Returns true when Actor is currently active (not sitting in the pool). */
+	/**
+	 * Returns true when Actor is currently active (i.e. in use by a caller, not sitting idle in the pool).
+	 * An active actor has tick enabled and is visible; a pooled (inactive) actor has tick disabled and is hidden.
+	 */
 	static bool GetActorState(AActor const* Actor);
-	/** Sets the active/inactive state of an actor and adjusts visibility and tick accordingly. */
+
+	/**
+	 * Marks Actor as active or inactive and applies the corresponding visibility and tick state.
+	 * Active (bActive=true): SetActorHiddenInGame(false) + SetActorTickEnabled(true).
+	 * Inactive (bActive=false): SetActorHiddenInGame(true) + SetActorTickEnabled(false).
+	 *
+	 * @param NewActor  The actor whose state to change. Must not be null.
+	 * @param bActive   True to activate (make visible and tickable), false to deactivate.
+	 */
 	static void ChangeActorState(AActor* NewActor, bool bActive);
 
 private:
