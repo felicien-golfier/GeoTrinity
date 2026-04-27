@@ -18,8 +18,6 @@
 #include "System/GeoPoolableInterface.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-using GeoASL = UGeoAbilitySystemLibrary;
-
 static TAutoConsoleVariable CVarDrawServerProjectiles(TEXT("Geo.DrawServerProjectiles"), false,
 													  TEXT("Draw debug spheres for projectiles on the server"));
 
@@ -32,7 +30,7 @@ AGeoProjectile::AGeoProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
-
+	bAllowTickBeforeBeginPlay = false;
 	bReplicates = true;
 
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
@@ -83,10 +81,18 @@ void AGeoProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Blueprint construction (run by FinishSpawningActor) resets velocity to local (1,0,0); re-apply after.
 	if (!Implements<UGeoPoolableInterface>())
 	{
-		InitProjectileMovementComponent();
+		if (GeoLib::IsServer(GetWorld()))
+		{
+			// Blueprint construction (run by FinishSpawningActor) resets velocity to local (1,0,0); re-apply after.
+			InitProjectileMovementComponent(); // TODO : find out how to remove this.
+		}
+		else
+		{
+			// Replicated server projectile arriving on client: InitProjectileLife was never called here.
+			InitProjectileLife();
+		}
 	}
 
 	// When a real (server-replicated) projectile arrives on the owning client,
@@ -146,6 +152,17 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+									 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex,
+									 bool bFromSweep, FHitResult const& SweepResult)
+{
+	if (IsValidOverlap(OtherActor))
+	{
+		HandleValidOverlap(OtherActor);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 {
 	if (bIsEnding)
@@ -158,25 +175,16 @@ bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 		return false;
 	}
 
-	// Don't apply on investigator. If you need to add projectiles that apply on self, change that rule, make it param
-	if (OtherActor == Payload.Instigator)
+	if (OtherActor == Payload.Instigator
+		&& (!bCanOverlapInstigator || LifeSpanInSec - GetLifeSpan() < LifeTimeThresholdBeforeOverlapSelf))
 	{
 		return false;
 	}
 
 	return GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor, OverlapAttitude);
 }
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-									 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex,
-									 bool bFromSweep, FHitResult const& SweepResult)
-{
-	if (IsValidOverlap(OtherActor))
-	{
-		HandleValidOverlap(OtherActor);
-	}
-}
 
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 {
 	bIsEnding = true;

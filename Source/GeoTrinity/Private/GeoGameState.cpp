@@ -3,6 +3,7 @@
 #include "GeoGameState.h"
 
 #include "Characters/EnemyCharacter.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 void AGeoGameState::HandleMatchHasStarted()
 {
@@ -15,8 +16,8 @@ void AGeoGameState::HandleMatchHasStarted()
 		SpawnParams.Owner = this;
 		for (auto EnemyToSpawn : EnemiesToSpawn)
 		{
-			AEnemyCharacter* SpawnedEnemy =
-				GetWorld()->SpawnActor<AEnemyCharacter>(EnemyToSpawn, FTransform(FVector(0, 0, 50)), SpawnParams);
+			AEnemyCharacter* SpawnedEnemy = GetWorld()->SpawnActor<AEnemyCharacter>(
+				EnemyToSpawn, FTransform(FVector(0, 0, ArbitraryCharacterZ)), SpawnParams);
 			SpawnedEnemies.Add(SpawnedEnemy);
 			OnEnemySpawned.Broadcast(SpawnedEnemy);
 		}

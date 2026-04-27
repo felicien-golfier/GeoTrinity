@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 
-#include "ShieldBurstPassiveActor.generated.h"
+#include "ShieldBurstPassiveComponent.generated.h"
 
 /**
  * Replicated actor dynamically added to the Square character while the shield burst passive ability is active.
@@ -12,12 +12,12 @@
  * Subclass in Blueprint to implement OnGaugeRatioChanged (gauge fill, charge arrow, timeline, etc.).
  */
 UCLASS(Blueprintable, BlueprintType)
-class GEOTRINITY_API AShieldBurstPassiveActor : public AActor
+class GEOTRINITY_API UShieldBurstPassiveComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	AShieldBurstPassiveActor();
+	UShieldBurstPassiveComponent();
 	void InitializeMaterialInstances();
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -45,15 +45,12 @@ private:
 	UPROPERTY(Transient, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	float ChargeTime;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	float DischargeTime = .3f;
+
 	// Has to stay material 0;
 	UPROPERTY(Transient, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UMaterialInstanceDynamic> CharacterMaterialInstance;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMeshComponent> MeshComponent;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ShieldBurst")
-	FVector2D ActorRelativeLocation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ShieldBurst")
 	FName GaugeScalarParamName = "GlowGauge";

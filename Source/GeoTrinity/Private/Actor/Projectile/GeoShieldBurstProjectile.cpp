@@ -4,8 +4,11 @@
 
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Components/SphereComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "NiagaraComponent.h"
 #include "Tool/Team.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -13,6 +16,28 @@ AGeoShieldBurstProjectile::AGeoShieldBurstProjectile()
 {
 	OverlapAttitude =
 		static_cast<int32>(ETeamAttitudeBitflag::Hostile) | static_cast<int32>(ETeamAttitudeBitflag::Friendly);
+	SetReplicateMovement(false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoShieldBurstProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AGeoShieldBurstProjectile, BounceSnapshot);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoShieldBurstProjectile::OnRep_BounceSnapshot()
+{
+	SetActorLocation(BounceSnapshot.Location);
+	ProjectileMovement->Velocity = BounceSnapshot.Velocity;
+	ProjectileMovement->UpdateComponentVelocity();
+	UNiagaraComponent* Niagara = GetComponentByClass<UNiagaraComponent>();
+	if (!ensureMsgf(Niagara, TEXT("AGeoShieldBurstProjectile: no Niagara on %s"), *GetName()))
+	{
+		return;
+	}
+	Niagara->SetVariableFloat(FName("User.Bullet_Radius"), BounceSnapshot.Radius);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -25,27 +50,16 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 
 		if (bIsHostile)
 		{
-			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
 			float Speed = ProjectileMovement->Velocity.Size();
-			FVector const CurrentVelocity = ProjectileMovement->Velocity.GetSafeNormal();
+			FVector const CurrentVelocity = ProjectileMovement->Velocity.GetSafeNormal2D();
 			FVector ReflectedVelocity = CurrentVelocity - 2.f * (FVector::DotProduct(CurrentVelocity, Normal) * Normal);
 			ReflectedVelocity.Normalize();
 			ReflectedVelocity *= Speed;
 			ProjectileMovement->Velocity = ReflectedVelocity;
 			ShieldAmount *= EnemyBounceMultiplier;
-
-#if ENABLE_DRAW_DEBUG
-			FVector const Origin = GetActorLocation();
-			constexpr float DebugLength = 200.f;
-			constexpr float ArrowSize = 20.f;
-			constexpr float Duration = 3.f;
-			DrawDebugDirectionalArrow(GetWorld(), Origin, Origin + CurrentVelocity.GetSafeNormal() * DebugLength,
-									  ArrowSize, FColor::Blue, false, Duration, 0, 3.f);
-			DrawDebugDirectionalArrow(GetWorld(), Origin, Origin + Normal * DebugLength, ArrowSize, FColor::Green,
-									  false, Duration, 0, 3.f);
-			DrawDebugDirectionalArrow(GetWorld(), Origin, Origin + ReflectedVelocity.GetSafeNormal() * DebugLength,
-									  ArrowSize, FColor::Red, false, Duration, 0, 3.f);
-#endif
+			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() * EnemyBounceMultiplier);
+			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
 		}
 		else
 		{

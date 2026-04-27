@@ -71,3 +71,5 @@ Clear this file and replace its tasks whenever a new batch of overnight work is 
 - [x] The HealthEffect and DamageEffect used in UGameDataSettings have now gameplayCue. But they are use every frame, please ensure we use the gameplay cue only a max times per sec given by a variable, Only when the Effect is used for Drain every frame or Heal every frame.
 
 - [x] When launching auto-projectiles, the server launches often one more projectile than the client. causing damage where we shouldn't, find the bug, fix it and report it. Do it step by step to avoid timeout.
+
+- [] ShieldBurstProjectile should replicate with everything it needs to operate on the client. Then re replicate values after the bounce to overide client values.

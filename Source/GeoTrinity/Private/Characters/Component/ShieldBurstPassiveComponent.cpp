@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Characters/Component/ShieldBurstPassiveActor.h"
+#include "Characters/Component/ShieldBurstPassiveComponent.h"
 
 #include "AbilitySystem/Abilities/Square/GeoShieldBurstPassiveAbility.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -9,35 +9,29 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-AShieldBurstPassiveActor::AShieldBurstPassiveActor()
+UShieldBurstPassiveComponent::UShieldBurstPassiveComponent()
 {
-	SetReplicates(true);
-	SetCanBeDamaged(false);
-	PrimaryActorTick.bCanEverTick = false;
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	SetRootComponent(MeshComponent);
+	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AShieldBurstPassiveActor::BeginPlay()
+void UShieldBurstPassiveComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	UGeoShieldBurstPassiveAbility const* ShieldBurstCDO =
 		GeoASLib::GetAbilityCDO<UGeoShieldBurstPassiveAbility>(FGeoGameplayTags::Get().Ability_Spell_ShieldBurst);
-	ensureMsgf(ShieldBurstCDO, TEXT("AShieldBurstPassiveActor: could not find ShieldBurst ability CDO"));
+	ensureMsgf(ShieldBurstCDO, TEXT("UShieldBurstPassiveComponent: could not find ShieldBurst ability CDO"));
 	if (ShieldBurstCDO)
 	{
 		ChargeTime = ShieldBurstCDO->ChargeTime;
 	}
 
 	AActor* OwnerActor = GetOwner();
-	if (!ensureMsgf(IsValid(OwnerActor), TEXT("AShieldBurstPassiveActor: Owner is not valid")))
+	if (!ensureMsgf(IsValid(OwnerActor), TEXT("UShieldBurstPassiveComponent: Owner is not valid")))
 	{
 		return;
 	}
-
-	SetActorLocation(OwnerActor->GetActorLocation() + FVector(ActorRelativeLocation, ArbitraryCharacterZ + 1.f));
-	AttachToActor(OwnerActor, FAttachmentTransformRules::KeepRelativeTransform);
 
 	// No material set on server
 	if (!GeoLib::IsServer(GetWorld()))
@@ -47,13 +41,13 @@ void AShieldBurstPassiveActor::BeginPlay()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AShieldBurstPassiveActor::InitializeMaterialInstances()
+void UShieldBurstPassiveComponent::InitializeMaterialInstances()
 {
 	ACharacter const* Character = Cast<ACharacter>(GetOwner());
 
 	if (!IsValid(Character))
 	{
-		ensureMsgf(IsValid(Character), TEXT("AShieldBurstPassiveActor: invalid Instigator"));
+		ensureMsgf(IsValid(Character), TEXT("UShieldBurstPassiveComponent: invalid Instigator"));
 		return;
 	}
 
@@ -61,7 +55,7 @@ void AShieldBurstPassiveActor::InitializeMaterialInstances()
 
 	if (!IsValid(CharacterMaterialInstance))
 	{
-		ensureMsgf(IsValid(CharacterMaterialInstance), TEXT("AShieldBurstPassiveActor: invalid MaterialInstance"));
+		ensureMsgf(IsValid(CharacterMaterialInstance), TEXT("UShieldBurstPassiveComponent: invalid MaterialInstance"));
 	}
 
 	CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, 0.f);
@@ -69,23 +63,30 @@ void AShieldBurstPassiveActor::InitializeMaterialInstances()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AShieldBurstPassiveActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void UShieldBurstPassiveComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AShieldBurstPassiveActor, GaugeRatio);
+	DOREPLIFETIME(UShieldBurstPassiveComponent, GaugeRatio);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AShieldBurstPassiveActor::SetGaugeRatio(float const NewRatio)
+void UShieldBurstPassiveComponent::SetGaugeRatio(float const NewRatio)
 {
 	GaugeRatio = NewRatio;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AShieldBurstPassiveActor::OnRep_GaugeRatio()
+void UShieldBurstPassiveComponent::OnRep_GaugeRatio()
 {
 	OnGaugeRatioChanged(GaugeRatio);
-	CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, GaugeRatio);
+
+	// Do not change the value when the Discharge is not ended.
+	float DeltaTime = GetWorld()->GetTimeSeconds() - StartChargeTime;
+	if (DeltaTime > ChargeTime + DischargeTime)
+	{
+		CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, GaugeRatio);
+	}
+
 	if (GaugeRatio >= 1.f)
 	{
 		StartChargeTime = GetWorld()->GetTimeSeconds();
@@ -93,22 +94,21 @@ void AShieldBurstPassiveActor::OnRep_GaugeRatio()
 	}
 }
 
-void AShieldBurstPassiveActor::Charge()
+void UShieldBurstPassiveComponent::Charge()
 {
-	constexpr float DischargeTime = .3f;
 
 	float DeltaTime = GetWorld()->GetTimeSeconds() - StartChargeTime;
 
 	if (DeltaTime < ChargeTime)
 	{
 		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, DeltaTime / ChargeTime);
-		GetWorldTimerManager().SetTimerForNextTick(this, &AShieldBurstPassiveActor::Charge);
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UShieldBurstPassiveComponent::Charge);
 	}
 	else if (DeltaTime < ChargeTime + DischargeTime)
 	{
 		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName,
 														   1 - (DeltaTime - ChargeTime) / DischargeTime);
-		GetWorldTimerManager().SetTimerForNextTick(this, &AShieldBurstPassiveActor::Charge);
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UShieldBurstPassiveComponent::Charge);
 	}
 	else
 	{

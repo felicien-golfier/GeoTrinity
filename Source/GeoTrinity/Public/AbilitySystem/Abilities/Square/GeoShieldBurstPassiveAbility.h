@@ -9,9 +9,8 @@
 #include "GeoShieldBurstPassiveAbility.generated.h"
 
 
-class AShieldBurstPassiveActor;
-class AGeoShieldBurstProjectile;
 class UShieldBurstPassiveComponent;
+class AGeoShieldBurstProjectile;
 
 /**
  * Passive ability for the Square player.
@@ -43,17 +42,20 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
 	float ShieldAmount = 50.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "ShieldBurst", meta = (AllowPrivateAccess = true))
+	float EnemyBounceMultiplier = 1.5f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
 	TSubclassOf<AGeoShieldBurstProjectile> ShieldBurstClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
-	TSubclassOf<AShieldBurstPassiveActor> PassiveActorClass;
+	TSubclassOf<UShieldBurstPassiveComponent> PassiveComponentClass;
 
 	float GaugeAccumulated = 0.f;
 	FTimerHandle ChargeTimerHandle;
 
 	UPROPERTY()
-	TObjectPtr<AShieldBurstPassiveActor> PassiveActor;
+	TObjectPtr<UShieldBurstPassiveComponent> PassiveComponent;
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst")

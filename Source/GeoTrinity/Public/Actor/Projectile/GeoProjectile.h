@@ -135,6 +135,12 @@ private:
 			  meta = (ClampMin = "0", AllowPrivateAccess = true))
 	float DistanceSpan = 1000.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
+	bool bCanOverlapInstigator = false;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
+			  meta = (EditConditionHides, EditCondition = bCanOverlapInstigator, AllowPrivateAccess = true))
+	float LifeTimeThresholdBeforeOverlapSelf = 0.2f;
+
 	bool bIsEnding{false};
 
 	FVector InitialPosition;
