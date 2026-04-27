@@ -8,6 +8,10 @@
 #include "GameplayTagsManager.h"
 #include "GeoTrinity/GeoTrinity.h"
 
+/**
+ * Walks the CDO's asset tags and returns the first tag under the AbilitySpell root.
+ * Called once at asset load / property change, not at runtime — synchronous CDO access is intentional.
+ */
 static FGameplayTag GetAbilityTagFromCDO(TSubclassOf<UGameplayAbility> const& AbilityClass)
 {
 

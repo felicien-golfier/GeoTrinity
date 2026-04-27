@@ -1,3 +1,5 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "AbilitySystem/Abilities/GeoGameplayAbility.h"

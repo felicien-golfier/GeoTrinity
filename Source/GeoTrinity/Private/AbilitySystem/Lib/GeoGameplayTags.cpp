@@ -8,21 +8,25 @@ bool FGeoGameplayTags::bNativeTagsInitialized = false;
 
 namespace
 {
+	/** Registers a native tag (survives editor restarts without a .ini entry) and stores it in the provided slot. */
 	void CreateAndAssignGameplayTag(FGameplayTag& outTag, FName const& tagName, FString const& comment)
 	{
 		outTag = UGameplayTagsManager::Get().AddNativeGameplayTag(tagName, comment);
 	}
 
+	/** Prepends the shared InputTag root so call sites only specify the leaf name. */
 	void AddInputTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
 	{
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::InputTag + "." + tagName), comment);
 	}
 
+	/** Prepends the shared AbilityTypeTag root so call sites only specify the leaf name. */
 	void AddAbilityTypeTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
 	{
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilityTypeTag + "." + tagName), comment);
 	}
 
+	/** Prepends the shared AbilitySpellTag root so call sites only specify the leaf name. */
 	void AddAbilitySpellTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
 	{
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilitySpellTag + "." + tagName), comment);

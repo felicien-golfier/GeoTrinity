@@ -11,9 +11,7 @@
 
 
 class UGameplayEffect;
-/**
- * How to define a status gameplay-wise (a debuff)
- */
+/** Defines one status (debuff/buff) including its gameplay effect, optional periodic damage, and display data. */
 USTRUCT(BlueprintType)
 struct FRpgStatusInfo
 {
@@ -41,9 +39,8 @@ struct FRpgStatusInfo
 	FSlateBrush Icon;
 };
 
-/**
- * All info about gameplay statuses in the game
- */
+/** Data asset listing all status effects in the game. Used by UGeoAbilitySystemLibrary::ApplyStatusToTarget
+ *  to look up the correct GE by tag at runtime. */
 UCLASS()
 class GEOTRINITY_API UStatusInfo : public UDataAsset
 {

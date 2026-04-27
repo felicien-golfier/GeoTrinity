@@ -1,4 +1,5 @@
-﻿// BTTask_SelectNextFiringPoint.h
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "BehaviorTree/BTTaskNode.h"

@@ -32,6 +32,7 @@ class GEOTRINITY_API UGeoHealingAuraAbility
 		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoHealingAuraAbility, STATGROUP_Tickables);
 	}
 
+	/** Heal applied per second to each overlapping ally. Scales with ability level via the curve table row. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat HealPerSecond;
 };

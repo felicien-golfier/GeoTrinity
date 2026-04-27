@@ -1,4 +1,5 @@
-// STTask_SelectNextFiringPoint.h
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -6,12 +7,13 @@
 
 #include "STTask_SelectNextFiringPoint.generated.h"
 
+/** Per-instance data for FSTTask_SelectNextFiringPoint. TargetLocation is the output binding. */
 USTRUCT()
 struct GEOTRINITY_API FSTTask_SelectNextFiringPointInstanceData
 {
 	GENERATED_BODY()
 
-	// Output: The selected firing point location
+	/** Output: world location of the selected firing point, bound to a StateTree output parameter. */
 	UPROPERTY(EditAnywhere, Category = "Output")
 	FVector TargetLocation = FVector::ZeroVector;
 };

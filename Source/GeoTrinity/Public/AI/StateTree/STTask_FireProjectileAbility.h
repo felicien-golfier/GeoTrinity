@@ -1,4 +1,5 @@
-// STTask_FireProjectileAbility.h
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
 #pragma once
 
 #include "AbilitySystemComponent.h"
@@ -9,16 +10,17 @@
 
 #include "STTask_FireProjectileAbility.generated.h"
 
+/** Per-instance data for FSTTask_FireProjectileAbility (StateTree instance data pattern). */
 USTRUCT()
 struct GEOTRINITY_API FSTTask_FireProjectileAbilityInstanceData
 {
 	GENERATED_BODY()
 
-	// The GameplayTag of the ability to activate
+	/** The GameplayTag of the ability to activate on the pawn's ASC. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	FGameplayTag AbilityTag;
 
-	// Delegate handle for cleanup
+	/** Handle used to unbind the OnAbilityEnded delegate when the task exits. */
 	FDelegateHandle AbilityEndedDelegateHandle;
 };
 

@@ -9,7 +9,9 @@
 
 class AGeoHUD;
 /**
- * A derived class to allow easy binding of stuff
+ * Base widget class for GeoTrinity HUD screens. Provides the InitFromHUD / BindCallbacksFromHUD
+ * contract so Blueprint subclasses can connect to AGeoHUD delegates without manually looking up the HUD.
+ * All player-facing overlay widgets should inherit from this class.
  */
 UCLASS()
 class GEOTRINITY_API UGeoUserWidget : public UUserWidget

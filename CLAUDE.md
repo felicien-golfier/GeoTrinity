@@ -67,10 +67,25 @@ The project uses a custom `.clang-format` with these key settings:
 
 ### Character Hierarchy
 ```
-AGeoCharacter (base, implements IAbilitySystemInterface)
-├── APlayableCharacter (gets ASC from PlayerState, handles input)
-└── AEnemyCharacter (creates own ASC, AI-controlled)
+AGeoCharacter (base, implements IAbilitySystemInterface, IGenericTeamAgentInterface)
+├── APlayableCharacter (gets ASC from PlayerState, handles input, class-switching)
+└── AEnemyCharacter (creates own ASC, AI-controlled, maintains firing points)
 ```
+
+**AGeoCharacter** (`Characters/GeoCharacter.h`) — base for all characters:
+- Components: `UGeoAbilitySystemComponent`, `UGeoInputComponent`, `UGeoMovementComponent`, `UGeoCombattantWidgetComp` (world-space health bar), `UGeoGameFeelComponent` (VFX/audio)
+- `InitGAS()` — subclasses must override to set up the ASC
+
+**APlayableCharacter** (`Characters/PlayableCharacter.h`):
+- ASC lives on `AGeoPlayerState` (fetched in `InitGAS()`)
+- Runtime class switching via `ChangeClass()` — swaps mesh, animation, and ability sets
+- Class data stored in `FPlayerClassData` (Mesh, AnimClass, DefaultAttributes) per `EPlayerClass`
+- Components: `UGeoDeployableManagerComponent` (tracks active deployables, enforces limits), `UGeoDeployChargeGaugeWidget` (WidgetComponent for deploy charge UI)
+
+**AEnemyCharacter** (`Characters/EnemyCharacter.h`):
+- Creates its own ASC directly (not on PlayerState), minimal replication mode
+- Maintains `FiringPoints` array — world actors tagged "Path"
+- `GetAndAdvanceNextFiringPointLocation()` — round-robin firing point selection
 
 ### Gameplay Ability System (GAS) Setup
 
@@ -80,8 +95,8 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 - Custom effect context (`FGeoGameplayEffectContext`) supporting crits, knockback, radial damage
 
 **Attribute Sets**:
-- `UGeoAttributeSetBase` - Health, MaxHealth, IncomingDamage (meta)
-- `UCharacterAttributeSet` - Character-specific extensions
+- `UGeoAttributeSetBase` (`AbilitySystem/AttributeSet/GeoAttributeSetBase.h`) — Health, MaxHealth, Shield, IncomingDamage (meta), IncomingHeal (meta). `PostGameplayEffectExecute()` clamps health to [0, MaxHealth], reports to `UGeoCombatStatsSubsystem`, and ends the actor at zero health.
+- `UCharacterAttributeSet` (`AbilitySystem/AttributeSet/CharacterAttributeSet.h`) — player-only: Ammo/MaxAmmo (Triangle's ammo system), HealMultiplier, DamageMultiplier, DamageReduction, MovementSpeedMultiplier, RotationSpeedMultiplier
 
 **Ability Classes**:
 - `UGeoGameplayAbility` - Base class: handles `StoredPayload`, `ScheduleFireTrigger`, `SendFireDataToServer`, `OnFireTargetDataReceived`. Calls `CommitAbility()` (cost + cooldown) once in `ActivateAbility()`.
@@ -89,6 +104,12 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 - `UGeoAutomaticFireAbility` - Hold-to-fire loop: `ActivateAbility` schedules `Fire()` which runs **client-only** per shot; server receives each shot via `OnFireTargetDataReceived`. Subclasses override `ExecuteShot()` (Abstract). `CommitAbilityCost()` is called per shot in **both** `Fire()` and `OnFireTargetDataReceived()` — ability ends automatically when cost runs out.
 - `UGeoAutomaticProjectileAbility` - Concrete auto-fire that spawns projectiles, extends `UGeoAutomaticFireAbility`
 - `UPatternAbility` - Creates bullet patterns via multicast RPC (enemy-only, server-driven)
+
+**Class-Specific Ability Inventory**:
+- **Circle (Healer)**: `GeoHealingAuraAbility` (passive healing via tickable pattern), `GeoMoiraBeamAbility` (beam that heals allies and boosts damage), `GeoHealReturnPassiveAbility` (passive returns heals to self), `GeoChargeBeamAbility` (chargeable beam)
+- **Square (Tank)**: `GeoMineAbility` (costs 50% health to deploy), `GeoShieldBurstPassiveAbility` (shields allies, driven by `UShieldBurstPassiveComponent`), `GeoDetonateAllMinesAbility` (detonates all placed mines)
+- **Triangle (DPS)**: `GeoReloadAbility` (restores ammo), `GeoRecallTurretAbility` (recalls turrets); basic attack uses `UGeoAutomaticProjectileAbility` with ammo cost
+- **Common**: `GeoDeployAbility` (hold-to-charge, release to deploy at distance), `GeoDashAbility` (movement dash)
 
 **Class-Specific Ability Selection**:
 - `FGameplayAbilityInfo` has `EPlayerClass PlayerClass` field
@@ -110,13 +131,18 @@ AGeoCharacter (base, implements IAbilitySystemInterface)
 
 ### Bullet Pattern System
 
-/!\ Onlydevelopped for server abilities for now ! Only enemies use those.
+/!\ Only developed for server abilities for now! Only enemies use those.
 Patterns spawn projectiles deterministically across clients:
 
 1. `UPatternAbility` activates and calls `PatternStartMulticast()`
 2. Each client creates a `UPattern` instance
 3. `UTickablePattern::TickPattern()` spawns projectiles using server time for sync
 4. Example: `USpiralPattern` creates circular projectile sprays
+
+**Pattern Classes** (`AbilitySystem/Abilities/Pattern/`):
+- `UPattern` — base: `OnCreate()`, `InitPattern()` (stores payload, plays start anim), `IsPatternActive()`, `EndPattern()`, `OnPatternEnd` delegate
+- `UTickablePattern` — `TickPattern(ServerTime, SpentTime)` (abstract, **no delta time** — deterministic across all clients). `SpentTime = ServerTime - ServerSpawnTime`. Implement this to spawn projectiles.
+- `USpiralPattern` — concrete example: circular projectile spray
 
 ### Actor Pooling
 
@@ -190,28 +216,124 @@ Enhanced Input with `UGeoInputConfig` data asset:
 - `FAbilityPayload` - Internal ability data (Origin, Yaw, ServerSpawnTime, Seed, AbilityTag, Owner, Instigator) — stored as `StoredPayload` on ability instances; also used by pattern system
   - **Always use `StoredPayload` fields** (Owner, Instigator, AbilityTag, Origin, Yaw, Seed, ServerSpawnTime) instead of calling ability helper functions (e.g. `GetAvatarActor()`, `GetOwningActorFromActorInfo()`, `GetAbilityLevel()`) to retrieve the same data. The payload is set by the client and may intentionally differ from what the ability's ActorInfo reports.
 - `FGeoAbilityTargetData` - Per-shot RPC payload sent client→server via `ServerSetReplicatedTargetData` (Origin, Yaw, ServerSpawnTime, Seed); custom `NetSerialize`
-- `FEffectData` - Polymorphic effect system (FDamageEffectData, FStatusEffectData)
-- `UAbilityInfo` - Data asset mapping ability tags to classes and metadata
+- `FEffectData` - Polymorphic effect system: `FDamageEffectData`, `FHealEffectData`, `FShieldEffectData`, `FGameplayEffectData` (generic with SetByCaller), `FContextDamageMultiplierEffectData`, `FStatusEffectData` (chance-based)
+- `UAbilityInfo` (`AbilitySystem/Data/AbilityInfo.h`) — Data asset with per-class ability arrays: `TriangleAbilities`, `CircleAbilities`, `SquareAbilities`, `SharedAbilities` (given to all), `GenericAbilityInfos` (enemies). Per-ability: `FPlayersGameplayAbilityInfo` holds `AbilityClass`, `AbilityTag` (auto-populated from CDO), `InputAction`, `InputTag`, `bGiveAtStartup`, `AbilityIcon`. Use `GetAbilitiesForClass(EPlayerClass)` to retrieve class abilities + shared.
 - `FGameplayAbilityInfo` - Contains `EPlayerClass PlayerClass` field for class-specific ability selection
+- `FPlayerClassData` — per-class runtime data on `APlayableCharacter`: Mesh, AnimClass, DefaultAttributes
+- `FHudPlayerParams` — snapshot of PC, PS, ASC, AttributeSet passed to HUD and widgets
+
+### Camera System
+
+`AGeoGameCamera` (`World/GeoGameCamera.h`) — orthographic top-down camera (pitch = -90):
+- **Edge-triggered follow**: camera stays stationary until the player nears a screen edge, then smoothly follows
+- `ScreenEdgeThresholdPercent` — fraction of screen width/height that defines the trigger zone
+- `FollowSpeedCurve` (`UCurveVector`) — separate X/Y follow speed curves driven by distance
+- `BoundsMin` / `BoundsMax` — world-space camera movement limits for map boundary clamping
+- Follows the **local player only**, not a centroid of all players
+
+### Movement Component
+
+`UGeoMovementComponent` (`GeoMovementComponent.h`) — extends `UCharacterMovementComponent`:
+- Caches base speed and acceleration on `BeginPlay`
+- `ApplySpeedMultiplier(float)` — scales movement relative to cached base values, driven by `MovementSpeedMultiplier` attribute
+
+### Character Components
+
+- `UGeoGameFeelComponent` — attached to all characters; handles VFX/audio feedback (hit reactions, damage numbers, Niagara effects)
+- `UGeoDeployableManagerComponent` (`Characters/Component/GeoDeployableManagerComponent.h`) — attached to `APlayableCharacter`; tracks active deployables and enforces per-class deployment limits; `Recall()` cleans them up
+- `UShieldBurstPassiveComponent` (`Characters/Component/ShieldBurstPassiveComponent.h`) — dynamically added to Square while the shield burst passive ability is active; `SetGaugeRatio(float)` (server-side gauge update); `OnGaugeRatioChanged()` (replicated BP event for visuals)
+
+### Deployable System
+
+`AGeoDeployableBase` (`Actor/Deployable/GeoDeployableBase.h`) — abstract base for all deployables:
+- `InitDrain()` — applies a drain Gameplay Effect based on configurable duration
+- `Tick()` — manages blink timer logic before expiry
+- `Recall()` — owner-initiated destruction
+- `OnDeployableExpired()` — Blueprint event called at end of lifespan
+- `OnBlinkStarted()` — Blueprint event for pre-expiry visual feedback
+
+**Concrete deployables** (`Actor/Deployable/`):
+- `AGeoMine` — proximity mine (deployed by Square at 50% health cost)
+- `AGeoHealingZone` — area heal deployable (Circle)
+- `AGeoBuffPickup` — buff pickup deployable
+- `ADeployableSpawnerProjectile` — projectile that triggers a deployable spawn on impact (used by `GeoDeployAbility`)
+
+### Combat Stats Subsystem
+
+`UGeoCombatStatsSubsystem` (`System/GeoCombatStatsSubsystem.h`) — World Subsystem:
+- Tracks DPS, HPS, and damage received per player using a rolling 10-second window
+- Called from `UGeoAttributeSetBase::PostGameplayEffectExecute()` on every damage/heal
+- Reports collected stats up to `AGeoPlayerState`
+
+### Projectile Variants
+
+`AGeoProjectile` (`Actor/Projectile/GeoProjectile.h`) — poolable base projectile:
+- `InitProjectileLife()` — called before BeginPlay; enables collision, starts lifespan timer
+- `AdvanceProjectile(float ElapsedTime)` — fast-forwards position for server lag compensation
+- `SetDistanceSpan(float)` — override max travel distance
+- `IsNetRelevantFor()` — returns false for owning client (client keeps its predicted copy)
+- `HandleValidOverlap()` — override for custom hit logic; applies `EffectDataArray` on hit
+
+**Variants**:
+- `AGeoPooledProjectile` — general-purpose pooled projectile (pre-allocate via `PreSpawn<T>()`)
+- `AGeoShieldBurstProjectile` — spawned by Square's shield burst passive
+- `ADeployableSpawnerProjectile` — spawns a deployable on impact
 
 ## Source Structure
 
 ```
 Source/GeoTrinity/
-├── Public/Private AbilitySystem/
-│   ├── Abilities/         # GeoGameplayAbility, PatternAbility, ProjectileAbility
-│   ├── AttributeSet/      # GeoAttributeSetBase, CharacterAttributeSet
-│   ├── Data/              # AbilityInfo, EffectData, AbilityPayload
-│   └── GeoAbilitySystemComponent.h
-├── Actor/
-│   ├── Projectile/        # GeoProjectile (poolable)
-│   └── Turret/            # Turret actors
-├── Characters/            # GeoCharacter, PlayableCharacter, EnemyCharacter
-├── AI/
-│   ├── StateTree/         # StateTree tasks (FSTTask_*)
-│   └── Tasks/             # Legacy behavior tree tasks (UBTTask_*)
-├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface
-└── Input/                 # GeoInputComponent, GeoInputConfig
+├── Public/ & Private/
+│   ├── AbilitySystem/
+│   │   ├── Abilities/
+│   │   │   ├── Damaging/      # GeoProjectileAbility, GeoAutomaticFireAbility, GeoAutomaticProjectileAbility
+│   │   │   ├── Pattern/       # PatternAbility, Pattern, TickablePattern, SpiralPattern
+│   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility
+│   │   │   ├── Square/        # GeoMineAbility, GeoShieldBurstPassiveAbility, GeoDetonateAllMinesAbility
+│   │   │   ├── Triangle/      # GeoReloadAbility, GeoRecallTurretAbility
+│   │   │   ├── GeoDeployAbility.h
+│   │   │   ├── GeoDashAbility.h
+│   │   │   └── GeoGameplayAbility.h
+│   │   ├── AttributeSet/      # GeoAttributeSetBase, CharacterAttributeSet
+│   │   ├── Data/              # AbilityInfo, EffectData, AbilityPayload, GeoAbilityTargetTypes
+│   │   ├── ExecCalc/          # ExecCalc_Damage, ExecCalc_Heal
+│   │   ├── Lib/               # GeoAbilitySystemLibrary, GeoGameplayTags
+│   │   ├── GeoAbilitySystemComponent.h
+│   │   ├── GeoAscTypes.h      # FGeoGameplayEffectContext
+│   │   └── GeoAbilitySystemGlobals.h
+│   ├── Actor/
+│   │   ├── Projectile/        # GeoProjectile, GeoPooledProjectile, GeoShieldBurstProjectile, DeployableSpawnerProjectile
+│   │   ├── Deployable/        # GeoDeployableBase, GeoMine, GeoHealingZone, GeoBuffPickup
+│   │   ├── Turret/
+│   │   └── GeoInteractableActor.h
+│   ├── Characters/
+│   │   ├── Component/         # GeoDeployableManagerComponent, GeoGameFeelComponent, ShieldBurstPassiveComponent
+│   │   ├── GeoCharacter.h
+│   │   ├── PlayableCharacter.h
+│   │   ├── EnemyCharacter.h
+│   │   └── PlayerClassTypes.h # EPlayerClass enum
+│   ├── AI/
+│   │   ├── StateTree/         # FSTTask_FireProjectileAbility, FSTTask_SelectNextFiringPoint
+│   │   ├── Tasks/             # Legacy BT tasks (UBTTask_*)
+│   │   └── GeoEnemyAIController.h
+│   ├── HUD/
+│   │   ├── Component/         # GeoCombattantWidgetComp
+│   │   ├── GeoHUD.h
+│   │   ├── GeoUserWidget.h
+│   │   ├── GenericCombattantWidget.h
+│   │   ├── GeoDeployChargeGaugeWidget.h
+│   │   └── HudFunctionLibrary.h
+│   ├── Input/                 # GeoInputComponent, GeoInputConfig
+│   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem
+│   ├── World/                 # GeoGameCamera, GeoWorldSettings
+│   ├── Tool/                  # GeoGameplayLibrary, GeoAssetManager, Team
+│   ├── Animation/             # FireAnimNotify
+│   ├── GeoMovementComponent.h
+│   ├── GeoGameMode.h
+│   ├── GeoGameState.h
+│   ├── GeoGameInstance.h
+│   ├── GeoPlayerController.h
+│   └── GeoPlayerState.h
 ```
 
 ## Important Notes for AI Assistance
@@ -241,8 +363,15 @@ AGeoHUD (GameFramework HUD, owns OverlayWidget)
 
 ## Key Files for Common Tasks
 
-- **Adding abilities**: `AbilitySystem/Abilities/GeoGameplayAbility.h`, create UAbilityInfo data asset
-- **Projectile behavior**: `Actor/Projectile/GeoProjectile.cpp`
-- **Bullet patterns**: Extend `UTickablePattern`, implement `TickPattern()`
-- **Character attributes**: `AbilitySystem/AttributeSet/CharacterAttributeSet.h`
+- **Adding a single-shot ability**: Extend `UGeoProjectileAbility` (`AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h`), register in `UAbilityInfo` data asset
+- **Adding a hold-to-fire ability**: Extend `UGeoAutomaticFireAbility`, override `ExecuteShot()`, use `StoredPayload` for spawn data
+- **Adding a bullet pattern**: Extend `UTickablePattern`, implement `TickPattern(ServerTime, SpentTime)`
+- **Adding a deployable**: Extend `AGeoDeployableBase` (`Actor/Deployable/GeoDeployableBase.h`)
+- **Character attributes**: `AbilitySystem/AttributeSet/CharacterAttributeSet.h` (player), `GeoAttributeSetBase.h` (shared)
+- **Applying effects**: Always use `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()` (`AbilitySystem/Lib/GeoAbilitySystemLibrary.h`)
+- **Projectile behavior**: `Actor/Projectile/GeoProjectile.h/.cpp`
 - **AI behavior**: Create StateTree tasks in `AI/StateTree/`, configure StateTree asset in editor
+- **HUD changes**: Screen-space → `HUD/GeoHUD.h` (BlueprintImplementableEvent); World-space → WidgetComponent on character BP
+- **Camera**: `World/GeoGameCamera.h`
+- **Movement speed**: `GeoMovementComponent.h` (`ApplySpeedMultiplier`), `CharacterAttributeSet` (`MovementSpeedMultiplier`)
+- **Combat stats tracking**: `System/GeoCombatStatsSubsystem.h`

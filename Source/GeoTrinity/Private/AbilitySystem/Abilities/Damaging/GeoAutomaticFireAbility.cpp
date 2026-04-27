@@ -53,7 +53,8 @@ bool UGeoAutomaticFireAbility::ExecuteShot_Implementation()
 
 void UGeoAutomaticFireAbility::InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex)
 {
-	// Reset FireSectionIndex only at the ability end.
+	// For auto-fire, the montage loops continuously — always advance the index.
+	// The base class resets on ability end, so the counter naturally starts from 0 again next activation.
 	++FireSectionIndex;
 }
 
@@ -172,6 +173,8 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	ExecuteShot();
 	CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
 
-	StoredPayload.Seed += CurrentShotIndex; // don't use target data, to avoid client abuse. (lol)
+	// Seed is incremented server-side using the authoritative shot counter rather than reading it from
+	// the client's target data, so a cheating client cannot fabricate a seed that bypasses status-proc checks.
+	StoredPayload.Seed += CurrentShotIndex;
 	CurrentShotIndex++;
 }

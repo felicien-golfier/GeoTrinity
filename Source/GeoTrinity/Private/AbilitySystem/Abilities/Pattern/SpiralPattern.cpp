@@ -29,6 +29,8 @@ void USpiralPattern::InitPattern(FAbilityPayload const& Payload)
 {
 	Super::InitPattern(Payload);
 
+	// Map Seed (full int32 range) to [0, 360] to give each spiral instance a deterministic but unique
+	// starting angle, so two spirals fired with different seeds don't overlap identically.
 	FirstProjectileOrientation =
 		FVector(1.f, 1.f, 0.f)
 			.RotateAngleAxis((static_cast<float>(Payload.Seed) / MAX_int32) * 360.f, FVector::UpVector);
@@ -72,6 +74,8 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 			+ ProjectileDirection * ProjectileSpeed * (SpentTime - i * TimeDiffBetweenProjectiles);
 		Projectile->SetActorLocation(ProjectileLocation);
 
+		// Activate the projectile on the first tick that catches up to its spawn time.
+		// Checking the state prevents calling Init() again if we're re-ticking an already-active projectile.
 		if (!UGeoActorPoolingSubsystem::Get(GetWorld())->GetActorState(Projectile))
 		{
 			UGeoActorPoolingSubsystem::Get(GetWorld())->ChangeActorState(Projectile, true);

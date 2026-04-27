@@ -13,7 +13,9 @@ class UUserWidget;
 class UGameplayEffect;
 
 /**
- * A place to link all data tables for game stuff, accessible by server and client
+ * Project Settings panel (Game Data Settings) that holds soft references to all global data assets
+ * (ability info, status info, GE classes, hit flash materials, tuning values).
+ * Accessible from any machine via GetDefault<UGameDataSettings>().
  */
 UCLASS(Config = Game, defaultconfig, meta = (DisplayName = "Game Data Settings"))
 class GEOTRINITY_API UGameDataSettings : public UDeveloperSettings

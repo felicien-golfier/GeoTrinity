@@ -15,6 +15,7 @@ class UGeoCombattantWidgetComp;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeployableDestroyed, AGeoDeployableBase*, Deployable);
 
+/** Configuration parameters set by the deploy ability and passed to the deployable actor via FDeployableData. */
 USTRUCT(Blueprintable)
 struct FDeployableDataParams
 {
@@ -33,6 +34,7 @@ struct FDeployableDataParams
 	float Value = 0.f;
 };
 
+/** Runtime init data passed from the spawner projectile to the deployable actor before BeginPlay. */
 USTRUCT()
 struct FDeployableData : public FInteractableActorData
 {

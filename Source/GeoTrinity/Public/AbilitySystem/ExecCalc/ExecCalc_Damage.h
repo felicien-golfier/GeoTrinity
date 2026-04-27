@@ -9,7 +9,9 @@
 #include "ExecCalc_Damage.generated.h"
 
 /**
- * Modifies the manner Damage attribute is calculated for a GE
+ * Execution calculation that applies IncomingDamage to the target.
+ * Captures DamageMultiplier (source) and DamageReduction (target) attributes, and reads
+ * SingleUseDamageMultiplier from FGeoGameplayEffectContext to support per-shot damage scaling.
  */
 UCLASS()
 class GEOTRINITY_API UExecCalc_Damage : public UGameplayEffectExecutionCalculation
