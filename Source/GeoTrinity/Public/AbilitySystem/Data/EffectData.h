@@ -98,7 +98,6 @@ struct FDamageEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -107,7 +106,7 @@ struct FDamageEffectData : public FEffectData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat DamageAmount;
 
-	/** When true, skips the GameplayCue embedded in the DamageEffect GE. Use to rate-limit cues on tick-based callers. */
+	/** When true, suppresses the GameplayCue embedded in the DamageEffect GE. Set by callers to rate-limit cues on tick-based effects. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
 };
@@ -132,7 +131,7 @@ struct FHealEffectData : public FEffectData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressHealProvided{false};
 
-	/** When true, skips the GameplayCue embedded in the HealthEffect GE. Use to rate-limit cues on tick-based callers. */
+	/** When true, suppresses the GameplayCue embedded in the HealthEffect GE. Set by callers to rate-limit cues on tick-based effects. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
 };

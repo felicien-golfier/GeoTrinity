@@ -36,6 +36,20 @@ public:
 	 */
 	void ApplyRecoil(float Distance);
 
+	/**
+	 * Returns true when enough time has passed since the last damage GameplayCue to fire a new one.
+	 * Records the current time on success so subsequent calls within the rate window return false.
+	 * Call server-side only — the rate state is not replicated.
+	 */
+	bool IsDamageCueAvailable();
+
+	/**
+	 * Returns true when enough time has passed since the last heal GameplayCue to fire a new one.
+	 * Records the current time on success so subsequent calls within the rate window return false.
+	 * Call server-side only — the rate state is not replicated.
+	 */
+	bool IsHealCueAvailable();
+
 	UPROPERTY(EditDefaultsOnly, Category = "Recoil", meta = (ClampMin = "0"))
 	float RecoilRecoverySpeed = 14.f;
 
@@ -44,6 +58,9 @@ private:
 	TObjectPtr<UMeshComponent> TargetMesh;
 
 	FTimerHandle HitFlashTimerHandle;
+
+	double LastDamageCueTime = 0.0;
+	double LastHealCueTime = 0.0;
 
 	FVector CurrentRecoilOffset = FVector::ZeroVector;
 	FVector InitialMeshRelativeLocation = FVector::ZeroVector;

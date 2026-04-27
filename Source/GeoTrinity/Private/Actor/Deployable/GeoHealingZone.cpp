@@ -7,7 +7,6 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Net/UnrealNetwork.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoHealingZone::AGeoHealingZone()
@@ -96,18 +95,14 @@ void AGeoHealingZone::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHealingZone::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaSeconds); // Increments TimeSinceLastGameplayCue (drain path skipped: bUseRegularDrain=false)
+	Super::Tick(DeltaSeconds);
 	if (!GeoLib::IsServer(GetWorld()))
 	{
 		return;
 	}
 
-	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
-	bool const bSuppressCue = TimeSinceLastGameplayCue < RateLimit;
-	if (!bSuppressCue)
-	{
-		TimeSinceLastGameplayCue = 0.f;
-	}
+	bool const bSuppressHealCue = !GameFeelComponent->IsHealCueAvailable();
+	bool const bSuppressDamageCue = !GameFeelComponent->IsDamageCueAvailable();
 
 	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->CharacterOwner);
 
@@ -143,7 +138,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 															Data.Seed);
 		FHealEffectData HealEffectData;
 		HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
-		HealEffectData.bSuppressGameplayCue = bSuppressCue;
+		HealEffectData.bSuppressGameplayCue = bSuppressHealCue;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, OwnerASC, TargetASC, Data.Level, Data.Seed);
 		++HealedNum;
 	}
@@ -152,7 +147,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 	{
 		FDamageEffectData DrainEffectData;
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
-		DrainEffectData.bSuppressGameplayCue = bSuppressCue;
+		DrainEffectData.bSuppressGameplayCue = bSuppressDamageCue;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, OwnerASC, GetAbilitySystemComponent(),
 														Data.Level, Data.Seed);
 	}

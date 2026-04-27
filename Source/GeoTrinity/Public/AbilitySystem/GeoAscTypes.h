@@ -21,7 +21,6 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 
 	bool IsCriticalHit() const { return bIsCriticalHit; }
 	bool IsBlockedHit() const { return bIsBlockedHit; }
-	bool IsSuppressGameplayCue() const { return bSuppressGameplayCue; }
 	FGameplayTag GetStatusTag() const { return StatusTag; }
 	bool GetIsSuccessfulDebuff() const { return StatusTag.IsValid(); }
 	float GetDebuffDamage() const { return DebuffDamage; }
@@ -37,7 +36,6 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsSuppressHealProvided() const { return bSuppressHealProvided; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
-	void SetSuppressGameplayCue(bool value) { bSuppressGameplayCue = value; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
 	void SetStatusTag(FGameplayTag statusTag) { StatusTag = statusTag; }
 	void SetDebuffDamage(float value) { DebuffDamage = value; }
@@ -68,8 +66,6 @@ protected:
 	bool bIsBlockedHit{false};
 	UPROPERTY()
 	bool bIsCriticalHit{false};
-	UPROPERTY()
-	bool bSuppressGameplayCue{false};
 	UPROPERTY()
 	FGameplayTag StatusTag{};
 	UPROPERTY()

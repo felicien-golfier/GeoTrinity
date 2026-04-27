@@ -280,13 +280,6 @@ public:
 	static UGeoAbilitySystemComponent* GetGeoAscFromActor(AActor* Actor);
 
 	/**
-	 * Returns true when the GameplayCue should be suppressed for this application.
-	 * Call this at the start of a GameplayCue notify to skip visuals/audio on rate-limited tick-based effects.
-	 */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool IsSuppressGameplayCue(FGameplayCueParameters CueParameters);
-
-	/**
 	 * END context getter setters
 	 */
 };

@@ -101,3 +101,27 @@ void UGeoGameFeelComponent::ApplyRecoil(float Distance)
 	TargetMesh->SetRelativeLocation(InitialMeshRelativeLocation + CurrentRecoilOffset);
 	SetComponentTickEnabled(true);
 }
+
+bool UGeoGameFeelComponent::IsDamageCueAvailable()
+{
+	double const Now = GetWorld()->GetTimeSeconds();
+	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
+	if (Now - LastDamageCueTime < RateLimit)
+	{
+		return false;
+	}
+	LastDamageCueTime = Now;
+	return true;
+}
+
+bool UGeoGameFeelComponent::IsHealCueAvailable()
+{
+	double const Now = GetWorld()->GetTimeSeconds();
+	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
+	if (Now - LastHealCueTime < RateLimit)
+	{
+		return false;
+	}
+	LastHealCueTime = Now;
+	return true;
+}

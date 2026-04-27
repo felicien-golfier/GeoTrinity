@@ -540,13 +540,6 @@ UGeoAbilitySystemComponent* UGeoAbilitySystemLibrary::GetGeoAscFromActor(AActor*
 	return Cast<UGeoAbilitySystemComponent>(UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor));
 }
 
-bool UGeoAbilitySystemLibrary::IsSuppressGameplayCue(FGameplayCueParameters CueParameters)
-{
-	FGeoGameplayEffectContext const* GeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(CueParameters.EffectContext.Get());
-	return GeoContext && GeoContext->IsSuppressGameplayCue();
-}
-
 UGeoGameplayAbility const* UGeoAbilitySystemLibrary::GetAbilityCDO(FGameplayTag const AbilityTag)
 {
 	return GetAbilityCDO<UGeoGameplayAbility>(AbilityTag);

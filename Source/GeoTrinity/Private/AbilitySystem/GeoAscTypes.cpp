@@ -22,7 +22,6 @@ namespace
 		REP_RadialDamageInnerRadius,
 		REP_RadialDamageOuterRadius,
 		REP_RadialDamageOrigin,
-		REP_SuppressGameplayCue,
 		REP_MAX
 	};
 } // namespace
@@ -79,10 +78,6 @@ bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 			RepBits |= 1 << REP_KnockbackVector;
 		}
 
-		if (bSuppressGameplayCue)
-		{
-			RepBits |= 1 << REP_SuppressGameplayCue;
-		}
 		if (bIsRadialDamage)
 		{
 			RepBits |= 1 << REP_IsRadialDamage;
@@ -108,7 +103,6 @@ bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 		bIsBlockedHit = (RepBits & (1 << REP_IsBlockedHit)) != 0;
 		bIsCriticalHit = (RepBits & (1 << REP_IsCriticalHit)) != 0;
 		bIsRadialDamage = (RepBits & (1 << REP_IsRadialDamage)) != 0;
-		bSuppressGameplayCue = (RepBits & (1 << REP_SuppressGameplayCue)) != 0;
 	}
 
 	// Serialize StatusTag in both directions

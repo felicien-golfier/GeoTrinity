@@ -5,10 +5,10 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -18,7 +18,6 @@ void UGeoHealingAuraAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 											 FGameplayEventData const* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	TimeSinceLastGameplayCue = 0.f;
 	if (bIsAbilityEnding)
 	{
 		return;
@@ -54,13 +53,12 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 		return;
 	}
 
-	TimeSinceLastGameplayCue += DeltaTime;
-	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
-	bool const bSuppressCue = TimeSinceLastGameplayCue < RateLimit;
-	if (!bSuppressCue)
+	UGeoGameFeelComponent* GameFeel = Character->FindComponentByClass<UGeoGameFeelComponent>();
+	if (!ensureMsgf(GameFeel, TEXT("UGeoHealingAuraAbility: avatar has no GeoGameFeelComponent")))
 	{
-		TimeSinceLastGameplayCue = 0.f;
+		return;
 	}
+	bool const bSuppressHealCue = !GameFeel->IsHealCueAvailable();
 
 	TArray<AActor*> OverlappingActors;
 	Character->GetCapsuleComponent()->GetOverlappingActors(OverlappingActors);
@@ -86,7 +84,7 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 
 		FHealEffectData HealEffect;
 		HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime;
-		HealEffect.bSuppressGameplayCue = bSuppressCue;
+		HealEffect.bSuppressGameplayCue = bSuppressHealCue;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
 														StoredPayload.Seed);
 	}

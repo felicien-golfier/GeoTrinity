@@ -7,11 +7,11 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoHealingZone.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -20,7 +20,6 @@ void UGeoMoiraBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	RemainingDuration = InitialDuration;
 	BeamRatio = 1.f;
-	TimeSinceLastGameplayCue = 0.f;
 
 	if (!SpeedBuffEffect.IsValid())
 	{
@@ -126,16 +125,18 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 		return;
 	}
 
-	TimeSinceLastGameplayCue += DeltaTime;
-	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
-	bool const bSuppressCue = TimeSinceLastGameplayCue < RateLimit;
-	if (!bSuppressCue)
-	{
-		TimeSinceLastGameplayCue = 0.f;
-	}
+	bool bSuppressDamageCue = true;
+	bool bSuppressHealCue = true;
 
 	if (GeoLib::IsServer(GetWorld()))
 	{
+		UGeoGameFeelComponent* GameFeel = Character->FindComponentByClass<UGeoGameFeelComponent>();
+		if (ensureMsgf(GameFeel, TEXT("UGeoMoiraBeamAbility: avatar has no GeoGameFeelComponent")))
+		{
+			bSuppressDamageCue = !GameFeel->IsDamageCueAvailable();
+			bSuppressHealCue = !GameFeel->IsHealCueAvailable();
+		}
+
 		for (AActor* Actor : UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character,
 																							ETeamAttitude::Hostile))
 		{
@@ -153,7 +154,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			FDamageEffectData DamageEffect;
 			DamageEffect.DamageAmount = DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
 				* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
-			DamageEffect.bSuppressGameplayCue = bSuppressCue;
+			DamageEffect.bSuppressGameplayCue = bSuppressDamageCue;
 			UGeoAbilitySystemLibrary::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC,
 															StoredPayload.AbilityLevel, StoredPayload.Seed);
 		}
@@ -175,7 +176,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			FHealEffectData HealEffect;
 			HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
 				* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
-			HealEffect.bSuppressGameplayCue = bSuppressCue;
+			HealEffect.bSuppressGameplayCue = bSuppressHealCue;
 			UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC,
 															StoredPayload.AbilityLevel, StoredPayload.Seed);
 		}
@@ -210,7 +211,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 		{
 			FDamageEffectData DrainEffectData;
 			DrainEffectData.DamageAmount = ActualDrain;
-			DrainEffectData.bSuppressGameplayCue = bSuppressCue;
+			DrainEffectData.bSuppressGameplayCue = bSuppressDamageCue;
 			UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(),
 															StoredPayload.Seed);
 		}
