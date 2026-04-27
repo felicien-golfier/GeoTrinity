@@ -18,6 +18,7 @@ class GEOTRINITY_API UShieldBurstPassiveComponent : public UActorComponent
 
 public:
 	UShieldBurstPassiveComponent();
+	/** Finds the owner's mesh material at slot 0 and creates a dynamic material instance used to drive the gauge and charge shader parameters. */
 	void InitializeMaterialInstances();
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
