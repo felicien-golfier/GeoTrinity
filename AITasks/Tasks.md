@@ -72,4 +72,10 @@ Clear this file and replace its tasks whenever a new batch of overnight work is 
 
 - [x] When launching auto-projectiles, the server launches often one more projectile than the client. causing damage where we shouldn't, find the bug, fix it and report it. Do it step by step to avoid timeout.
 
-- [] ShieldBurstProjectile should replicate with everything it needs to operate on the client. Then re replicate values after the bounce to overide client values.
+- [] ShieldBurstProjectile Niagara Bullet_Radius doesn't work.
+
+- [] Gravity does not work on enemies. They spawn higher than where they should be and never go down, even if their capsule collider doesn;t touch the ground.
+
+- [] Add Explosion actor at the Mine explosion. Maybe we should think about having a Niagara instead of spawning actor for that kind of event.
+
+- [] Split ShieldBurst bounce logic to be able to bounce when it does hit a wall, but not scale up.
