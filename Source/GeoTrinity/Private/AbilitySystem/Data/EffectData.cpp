@@ -39,6 +39,14 @@ FActiveGameplayEffectHandle FGameplayEffectData::ApplyEffect(FGameplayEffectCont
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
+void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32) const
+{
+	if (bSuppressGameplayCue)
+	{
+		EffectContext->SetSuppressGameplayCue(true);
+	}
+}
+
 FActiveGameplayEffectHandle FDamageEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 														   UAbilitySystemComponent* SourceASC,
 														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -58,8 +66,6 @@ FActiveGameplayEffectHandle FDamageEffectData::ApplyEffect(FGameplayEffectContex
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Damage,
 																  DamageAmount.GetValueAtLevel(AbilityLevel));
 
-	TGuardValue<bool> CueSuppressGuard(TargetASC->bSuppressGameplayCues,
-									   bSuppressGameplayCue || TargetASC->bSuppressGameplayCues);
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
@@ -68,6 +74,10 @@ void FHealEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectConte
 	if (bSuppressHealProvided)
 	{
 		EffectContext->SetSuppressHealProvided(true);
+	}
+	if (bSuppressGameplayCue)
+	{
+		EffectContext->SetSuppressGameplayCue(true);
 	}
 }
 
@@ -89,8 +99,6 @@ FActiveGameplayEffectHandle FHealEffectData::ApplyEffect(FGameplayEffectContextH
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Heal,
 																  HealAmount.GetValueAtLevel(AbilityLevel));
 
-	TGuardValue<bool> CueSuppressGuard(TargetASC->bSuppressGameplayCues,
-									   bSuppressGameplayCue || TargetASC->bSuppressGameplayCues);
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 

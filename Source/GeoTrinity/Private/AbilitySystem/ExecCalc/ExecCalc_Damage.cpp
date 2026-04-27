@@ -42,6 +42,10 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	if (GeoContext)
 	{
 		Damage *= GeoContext->GetSingleUseDamageMultiplier();
+		if (GeoContext->IsSuppressGameplayCue())
+		{
+			OutExecutionOutput.MarkGameplayCuesHandledManually();
+		}
 	}
 
 	FAggregatorEvaluateParameters EvaluationParams;

@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -21,6 +22,13 @@ void UExecCalc_Heal::Execute_Implementation(FGameplayEffectCustomExecutionParame
 {
 	FGameplayEffectSpec const& specGE = ExecutionParams.GetOwningSpec();
 	FGeoGameplayTags const& tags = FGeoGameplayTags::Get();
+
+	FGeoGameplayEffectContext const* GeoContext =
+		static_cast<FGeoGameplayEffectContext const*>(specGE.GetContext().Get());
+	if (GeoContext && GeoContext->IsSuppressGameplayCue())
+	{
+		OutExecutionOutput.MarkGameplayCuesHandledManually();
+	}
 
 	float HealAmount = specGE.GetSetByCallerMagnitude(tags.Gameplay_Heal, false, 0.f);
 
