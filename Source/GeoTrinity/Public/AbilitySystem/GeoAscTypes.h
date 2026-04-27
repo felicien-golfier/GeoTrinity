@@ -34,6 +34,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	FVector const& GetRadialDamageOrigin() const { return RadialDamageOrigin; }
 	float GetSingleUseDamageMultiplier() const { return SingleUseDamageMultiplier; }
 	bool IsSuppressHealProvided() const { return bSuppressHealProvided; }
+	bool IsSuppressGameplayCue() const { return bSuppressGameplayCue; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
@@ -49,6 +50,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetRadialDamageOrigin(FVector const& inVector) { RadialDamageOrigin = inVector; }
 	void SetSingleUseDamageMultiplier(float value) { SingleUseDamageMultiplier = value; }
 	void SetSuppressHealProvided(bool value) { bSuppressHealProvided = value; }
+	void SetSuppressGameplayCue(bool value) { bSuppressGameplayCue = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
 
@@ -80,9 +82,10 @@ protected:
 	FVector KnockbackVector{FVector::ZeroVector};
 
 	// Call-site scoped — set by UpdateContextHandle, baked into the spec context via Duplicate() at MakeOutgoingSpec time.
-	// Not serialized: consumed server-side from the spec's embedded context copy in PostGameplayEffectExecute.
+	// Not serialized: consumed server-side from the spec's embedded context copy in ExecCalc / PostGameplayEffectExecute.
 	float SingleUseDamageMultiplier{1.f};
 	bool bSuppressHealProvided{false};
+	bool bSuppressGameplayCue{false};
 
 	UPROPERTY()
 	bool bIsRadialDamage{false};

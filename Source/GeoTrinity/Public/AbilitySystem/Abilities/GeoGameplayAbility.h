@@ -60,7 +60,7 @@ public:
 	 * Constructs an FAbilityPayload from an actor transform.
 	 * Derives Origin and Yaw from Transform. ServerSpawnTime is set to current server time.
 	 */
-	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, FTransform const& Transform) const;
+	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator) const;
 
 	/** Returns the GeoAbilitySystemComponent from the ability's current actor info. */
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
@@ -108,8 +108,6 @@ protected:
 	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize.
 	 */
 	virtual FGeoAbilityTargetData BuildAbilityTargetData();
-	/** Returns the world location of the ability's fire socket on the character's mesh. */
-	FVector GetFireSocketLocation() const;
 
 	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. */
 	UFUNCTION()
@@ -129,6 +127,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	virtual float GetMaxChargeTime() const;
 
+	FVector2D GetFireOrigin2D(AActor* Instigator) const;
+	FVector GetFireOrigin(AActor* Instigator) const;
+	float GetFireYaw(AActor const* Instigator) const;
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation")

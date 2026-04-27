@@ -34,15 +34,16 @@ private:
 	UFUNCTION()
 	void OnRep_GaugeRatio();
 
+	UFUNCTION()
+	void Charge();
+
+	float StartChargeTime = 0.f;
+
 	UPROPERTY(ReplicatedUsing = OnRep_GaugeRatio)
 	float GaugeRatio = 0.f;
 
 	UPROPERTY(Transient, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	float ChargeTime;
-
-	// Has to stay material 0;
-	UPROPERTY(Transient, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TObjectPtr<UMaterialInstanceDynamic> ShieldMaterialInstance;
 
 	// Has to stay material 0;
 	UPROPERTY(Transient, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
@@ -55,7 +56,7 @@ private:
 	FVector2D ActorRelativeLocation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ShieldBurst")
-	FName CharacterMaterialScalarParamName = "GlowGauge";
+	FName GaugeScalarParamName = "GlowGauge";
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ShieldBurst")
-	FName ShieldMaterialScalarParamName = "FillAmount";
+	FName ChargeScalarParamName = "FullGlowGauge";
 };

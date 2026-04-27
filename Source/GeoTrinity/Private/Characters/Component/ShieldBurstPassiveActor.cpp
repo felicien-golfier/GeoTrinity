@@ -58,15 +58,14 @@ void AShieldBurstPassiveActor::InitializeMaterialInstances()
 	}
 
 	CharacterMaterialInstance = Character->GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
-	ShieldMaterialInstance = MeshComponent->CreateAndSetMaterialInstanceDynamic(0);
 
-	if (!IsValid(CharacterMaterialInstance) || !IsValid(ShieldMaterialInstance))
+	if (!IsValid(CharacterMaterialInstance))
 	{
 		ensureMsgf(IsValid(CharacterMaterialInstance), TEXT("AShieldBurstPassiveActor: invalid MaterialInstance"));
 	}
 
-	ShieldMaterialInstance->SetScalarParameterValue(ShieldMaterialScalarParamName, 0.f);
-	CharacterMaterialInstance->SetScalarParameterValue(CharacterMaterialScalarParamName, 0.f);
+	CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, 0.f);
+	CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, 0.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -86,5 +85,33 @@ void AShieldBurstPassiveActor::SetGaugeRatio(float const NewRatio)
 void AShieldBurstPassiveActor::OnRep_GaugeRatio()
 {
 	OnGaugeRatioChanged(GaugeRatio);
-	CharacterMaterialInstance->SetScalarParameterValue(CharacterMaterialScalarParamName, GaugeRatio);
+	CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, GaugeRatio);
+	if (GaugeRatio >= 1.f)
+	{
+		StartChargeTime = GetWorld()->GetTimeSeconds();
+		Charge();
+	}
+}
+
+void AShieldBurstPassiveActor::Charge()
+{
+	constexpr float DischargeTime = .3f;
+
+	float DeltaTime = GetWorld()->GetTimeSeconds() - StartChargeTime;
+
+	if (DeltaTime < ChargeTime)
+	{
+		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, DeltaTime / ChargeTime);
+		GetWorldTimerManager().SetTimerForNextTick(this, &AShieldBurstPassiveActor::Charge);
+	}
+	else if (DeltaTime < ChargeTime + DischargeTime)
+	{
+		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName,
+														   1 - (DeltaTime - ChargeTime) / DischargeTime);
+		GetWorldTimerManager().SetTimerForNextTick(this, &AShieldBurstPassiveActor::Charge);
+	}
+	else
+	{
+		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, 0.f);
+	}
 }

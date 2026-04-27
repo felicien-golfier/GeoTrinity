@@ -171,12 +171,10 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 									 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex,
 									 bool bFromSweep, FHitResult const& SweepResult)
 {
-	if (!IsValidOverlap(OtherActor))
+	if (IsValidOverlap(OtherActor))
 	{
-		return;
+		HandleValidOverlap(OtherActor);
 	}
-
-	HandleValidOverlap(OtherActor);
 }
 
 void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)

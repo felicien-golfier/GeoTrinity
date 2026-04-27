@@ -7,13 +7,6 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-FGeoAbilityTargetData UGeoAutomaticProjectileAbility::BuildAbilityTargetData()
-{
-	FGeoAbilityTargetData Data = Super::BuildAbilityTargetData();
-	Data.Origin = FVector2D(GetFireSocketLocation());
-	return Data;
-}
-
 bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 {
 	if (!ProjectileClass)

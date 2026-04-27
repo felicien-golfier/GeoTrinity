@@ -45,7 +45,8 @@ void UGeoShieldBurstPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle H
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = PayloadInstigator;
 		SpawnParams.Instigator = Cast<APawn>(PayloadInstigator);
-		PassiveActor = GetWorld()->SpawnActor<AShieldBurstPassiveActor>(PassiveActorClass, PayloadInstigator->GetTransform(), SpawnParams);
+		PassiveActor = GetWorld()->SpawnActor<AShieldBurstPassiveActor>(PassiveActorClass,
+																		PayloadInstigator->GetTransform(), SpawnParams);
 		if (!ensureMsgf(PassiveActor, TEXT("UGeoShieldBurstPassiveAbility: failed to spawn AShieldBurstPassiveActor")))
 		{
 			return;
@@ -119,11 +120,9 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 		return;
 	}
 
-	StoredPayload =
-		CreateAbilityPayload(StoredPayload.Owner, StoredPayload.Instigator, StoredPayload.Instigator->GetTransform());
-	FVector const Origin = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
-	TArray<FVector> const Directions =
-		GeoASLib::GetTargetDirections(GetWorld(), EProjectileTarget::Forward, StoredPayload.Yaw, Origin);
+	FVector const Origin = GetFireOrigin(StoredPayload.Instigator);
+	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(GetWorld(), EProjectileTarget::Forward,
+																	 GetFireYaw(StoredPayload.Instigator), Origin);
 
 	if (Directions.Num() != 1)
 	{
@@ -143,6 +142,6 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 	}
 
 	Projectile->ShieldAmount = ShieldAmount;
-	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, StoredPayload.ServerSpawnTime,
+	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, GeoLib::GetServerTime(GetWorld()),
 									FPredictionKey{});
 }

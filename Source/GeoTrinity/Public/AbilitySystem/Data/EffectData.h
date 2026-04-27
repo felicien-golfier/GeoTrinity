@@ -98,6 +98,7 @@ struct FDamageEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,

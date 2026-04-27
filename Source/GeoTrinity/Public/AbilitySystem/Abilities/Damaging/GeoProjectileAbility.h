@@ -19,8 +19,6 @@ class GEOTRINITY_API UGeoProjectileAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 protected:
-	virtual FGeoAbilityTargetData BuildAbilityTargetData() override;
-
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,

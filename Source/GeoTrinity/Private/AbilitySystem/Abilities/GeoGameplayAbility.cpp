@@ -43,7 +43,7 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 
 	if (GetAssetTags().HasTag(FGeoGameplayTags::Get().Ability_Type_Passive))
 	{
-		StoredPayload = CreateAbilityPayload(Owner, Instigator, Instigator->GetTransform());
+		StoredPayload = CreateAbilityPayload(Owner, Instigator);
 	}
 	else
 	{
@@ -101,8 +101,7 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor*
  * Overload used for passive abilities that activate in-place (no fire socket, no aim direction).
  * Derives Origin and Yaw from the actor's current transform.
  */
-FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator,
-														  FTransform const& Transform) const
+FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor* Instigator) const
 {
 	float ServerSpawnTime;
 	if (GetAssetTags().HasTag(FGeoGameplayTags::Get().Ability_Type_Passive))
@@ -115,8 +114,8 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor*
 		ServerSpawnTime = GeoLib::GetServerTime(GetWorld());
 	}
 
-	return CreateAbilityPayload(Owner, Instigator, FVector2D(Transform.GetLocation()),
-								Transform.GetRotation().Rotator().Yaw, ServerSpawnTime, FMath::Rand32());
+	return CreateAbilityPayload(Owner, Instigator, GetFireOrigin2D(Instigator), GetFireYaw(Instigator), ServerSpawnTime,
+								FMath::Rand32());
 }
 
 UGeoAbilitySystemComponent* UGeoGameplayAbility::GetGeoAbilitySystemComponentFromActorInfo() const
@@ -287,26 +286,6 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	}
 }
 
-/**
- * Returns the world-space spawn point for projectiles.
- * Socket names follow the convention "<SocketBaseName><FireSectionIndex>" (e.g. "Fire0", "Fire1").
- * Falls back to the actor origin when no matching socket exists (e.g. enemy shapes without rigs).
- */
-FVector UGeoGameplayAbility::GetFireSocketLocation() const
-{
-	ACharacter const* Avatar = CastChecked<ACharacter>(GetAvatarActorFromActorInfo());
-	USkeletalMeshComponent* Mesh = Avatar->GetMesh();
-	int32 const FireSectionIndex = GetGeoAbilitySystemComponentFromActorInfo()->GetFireSectionIndex(GetAbilityTag());
-	FName const SocketName{FString::Printf(TEXT("%s%d"), GeoASLib::SocketBaseName, FireSectionIndex)};
-
-	if (!Mesh->DoesSocketExist(SocketName))
-	{
-		return Avatar->GetActorLocation();
-	}
-
-	return Mesh->GetSocketLocation(SocketName);
-}
-
 void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const
 {
 	// Client: send a fresh snapshot to the server proxy so it fires with accurate data.
@@ -331,8 +310,8 @@ FGeoAbilityTargetData UGeoGameplayAbility::BuildAbilityTargetData()
 	AActor* const Avatar = GetAvatarActorFromActorInfo();
 	ensureMsgf(IsValid(Avatar), TEXT("Avatar Actor from actor info is invalid!"));
 
-	FVector2D const Origin = FVector2D(Avatar->GetActorLocation());
-	float const Yaw = Avatar->GetActorRotation().Yaw;
+	FVector2D const Origin = GetFireOrigin2D(Avatar);
+	float const Yaw = GetFireYaw(Avatar);
 	float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
 	int const Seed = StoredPayload.Seed;
 
@@ -356,7 +335,8 @@ void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHan
 {
 	// Called on server when Fire() has happen on client and data is finally here.
 	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
-	if (!ensureMsgf(AbilityTargetData, TEXT("No FGeoAbilityTargetData found in DataHandle — cannot update StoredPayload.")))
+	if (!ensureMsgf(AbilityTargetData,
+					TEXT("No FGeoAbilityTargetData found in DataHandle — cannot update StoredPayload.")))
 	{
 		return;
 	}
@@ -368,6 +348,24 @@ void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHan
 float UGeoGameplayAbility::GetMaxChargeTime() const
 {
 	return GetDefault<UGameDataSettings>()->DeployMaxChargeTime;
+}
+
+FVector2D UGeoGameplayAbility::GetFireOrigin2D(AActor* Instigator) const
+{
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	return ASC->GetFireOrigin2D(Instigator, GetAbilityTag());
+}
+
+FVector UGeoGameplayAbility::GetFireOrigin(AActor* Instigator) const
+{
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	return ASC->GetFireOrigin(Instigator, GetAbilityTag());
+}
+
+float UGeoGameplayAbility::GetFireYaw(AActor const* Instigator) const
+{
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	return ASC->GetFireYaw(Instigator);
 }
 
 float UGeoGameplayAbility::GetChargeRatio() const

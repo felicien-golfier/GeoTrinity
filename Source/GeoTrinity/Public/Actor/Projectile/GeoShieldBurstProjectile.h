@@ -23,6 +23,7 @@ public:
 
 protected:
 	virtual void HandleValidOverlap(AActor* OtherActor) override;
+	virtual void EndProjectileLife() override;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "ShieldBurst", meta = (AllowPrivateAccess = true))

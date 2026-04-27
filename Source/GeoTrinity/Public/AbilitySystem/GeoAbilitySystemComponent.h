@@ -54,7 +54,7 @@ public:
 	void AbilityInputTagReleased(FGameplayTag const& inputTag);
 
 	/** Activates ability with event data containing avatar orientation. Used for projectile abilities. */
-	bool TryActivateAbilityWithTargetData(FGameplayAbilitySpecHandle Handle);
+	bool TryActivateAbilityWithTargetData(FGameplayAbilitySpecHandle Handle, FGameplayTag AbilityTag);
 
 	/** Applies a gameplay effect to this component's owner at the given level. */
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, int32 Level = 1);
@@ -100,6 +100,12 @@ public:
 	 * @param AbilityTag  Tag identifying the ability whose fire section index to retrieve.
 	 */
 	int32& GetFireSectionIndex(FGameplayTag const& AbilityTag);
+
+	/** Returns the world location of the ability's fire socket on the character's mesh. */
+	FVector2D GetFireOrigin2D(AActor* Instigator, FGameplayTag AbilityTag);
+	FVector GetFireOrigin(AActor* Instigator, FGameplayTag AbilityTag);
+
+	float GetFireYaw(AActor const* Instigator) const;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnHealProvided OnHealProvided;

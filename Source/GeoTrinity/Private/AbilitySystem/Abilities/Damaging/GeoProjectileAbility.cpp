@@ -8,13 +8,6 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-FGeoAbilityTargetData UGeoProjectileAbility::BuildAbilityTargetData()
-{
-	FGeoAbilityTargetData Data = Super::BuildAbilityTargetData();
-	Data.Origin = FVector2D(GetFireSocketLocation());
-	return Data;
-}
-
 void UGeoProjectileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	Super::Fire(AbilityTargetData);
@@ -43,7 +36,9 @@ void UGeoProjectileAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 		Handle, ActivationInfo.GetActivationPredictionKey());
 
 	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
-	if (!ensureMsgf(AbilityTargetData, TEXT("GeoProjectileAbility: No FGeoAbilityTargetData in DataHandle — server projectile not spawned.")))
+	if (!ensureMsgf(
+			AbilityTargetData,
+			TEXT("GeoProjectileAbility: No FGeoAbilityTargetData in DataHandle — server projectile not spawned.")))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
 		return;

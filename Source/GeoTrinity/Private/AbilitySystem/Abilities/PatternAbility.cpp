@@ -20,7 +20,7 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	}
 
 	AActor* Owner = GetOwningActorFromActorInfo();
-	FAbilityPayload const& Payload = CreateAbilityPayload(Owner, Owner, Owner->GetTransform());
+	FAbilityPayload const& Payload = CreateAbilityPayload(Owner, Owner);
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	ASC->PatternStartMulticast(Payload, PatternToLaunch);
 	UPattern* PatternInstance;

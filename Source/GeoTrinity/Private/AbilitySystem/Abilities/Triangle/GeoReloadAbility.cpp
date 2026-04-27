@@ -31,7 +31,8 @@ void UGeoReloadAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo
 						   {
 							   return;
 						   }
-						   CastChecked<UGeoAbilitySystemComponent>(ASC)->TryActivateAbilityWithTargetData(SpecHandle);
+						   CastChecked<UGeoAbilitySystemComponent>(ASC)->TryActivateAbilityWithTargetData(
+							   SpecHandle, GetAbilityTag());
 					   });
 }
 
