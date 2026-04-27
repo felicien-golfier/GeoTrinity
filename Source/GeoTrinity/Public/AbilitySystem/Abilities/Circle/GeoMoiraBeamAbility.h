@@ -92,4 +92,5 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	float RemainingDuration = 0.f;
 	float BeamRatio = 1.f;
 	bool bIsBeamActive = false;
+	float TimeSinceLastGameplayCue = 0.f;
 };

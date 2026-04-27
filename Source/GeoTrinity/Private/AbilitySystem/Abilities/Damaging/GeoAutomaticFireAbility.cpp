@@ -70,6 +70,14 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 	// Don't call super, as we don't want to send the data in every situations.
 
 	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
+
+	// The server fires exclusively via OnFireTargetDataReceived (one shot per client packet).
+	// Running the fire loop server-side too would spawn a duplicate projectile for every shot.
+	if (!ActorInfo->IsLocallyControlledPlayer())
+	{
+		return;
+	}
+
 	if (!IsActive() || bIsAbilityEnding)
 	{
 		return;

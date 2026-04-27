@@ -7,6 +7,7 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoHealingZone::AGeoHealingZone()
@@ -95,11 +96,19 @@ void AGeoHealingZone::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHealingZone::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaSeconds);
+	Super::Tick(DeltaSeconds); // Increments TimeSinceLastGameplayCue (drain path skipped: bUseRegularDrain=false)
 	if (!GeoLib::IsServer(GetWorld()))
 	{
 		return;
 	}
+
+	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
+	bool const bSuppressCue = TimeSinceLastGameplayCue < RateLimit;
+	if (!bSuppressCue)
+	{
+		TimeSinceLastGameplayCue = 0.f;
+	}
+
 	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->CharacterOwner);
 
 	IGenericTeamAgentInterface const* ZoneTeamAgent = Cast<IGenericTeamAgentInterface>(this);
@@ -132,16 +141,18 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 		// Also add the array, but that not the heal. This is to let game design decide if they want to add something
 		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, OwnerASC, TargetASC, Data.Level,
 															Data.Seed);
-		FHealEffectData HealEffectData = FHealEffectData();
+		FHealEffectData HealEffectData;
 		HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
+		HealEffectData.bSuppressGameplayCue = bSuppressCue;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, OwnerASC, TargetASC, Data.Level, Data.Seed);
 		++HealedNum;
 	}
 
 	if (HealedNum > 0)
 	{
-		FDamageEffectData DrainEffectData = FDamageEffectData();
+		FDamageEffectData DrainEffectData;
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
+		DrainEffectData.bSuppressGameplayCue = bSuppressCue;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, OwnerASC, GetAbilitySystemComponent(),
 														Data.Level, Data.Seed);
 	}

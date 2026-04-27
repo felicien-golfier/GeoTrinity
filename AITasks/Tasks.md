@@ -68,8 +68,6 @@ Clear this file and replace its tasks whenever a new batch of overnight work is 
 
 - [x] Read all the code and find potential bug, then report it in a file next to this one.
 
-- [] The HealthEffect and DamageEffect used in UGameDataSettings have now gameplayCue. But they are use every frame, please ensure we use the gameplay cue only a max times per sec given by a variable, Only when the Effect is used for Drain every frame or Heal every frame.
+- [x] The HealthEffect and DamageEffect used in UGameDataSettings have now gameplayCue. But they are use every frame, please ensure we use the gameplay cue only a max times per sec given by a variable, Only when the Effect is used for Drain every frame or Heal every frame.
 
-- [] When launching auto-projectiles, the server launches often one more projectile than the client. causing damage where we shouldn't, find the bug, fix it and report it. Do it step by step to avoid timeout.
-
-- [] Clean the StartAbility tasks in the player state, also don;t show the class type, as all this is now managed in code when changing class. Also ensure to start with the correct class and use the same code than when we change class. I see difference in the defaut attribute.
+- [x] When launching auto-projectiles, the server launches often one more projectile than the client. causing damage where we shouldn't, find the bug, fix it and report it. Do it step by step to avoid timeout.

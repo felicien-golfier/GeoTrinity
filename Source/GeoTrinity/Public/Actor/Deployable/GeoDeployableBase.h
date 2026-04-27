@@ -110,6 +110,7 @@ protected:
 	float DrainMagnitudePerSecond = 0.f;
 
 	bool bExpired = false;
+	float TimeSinceLastGameplayCue = 0.f;
 
 private:
 	void OnBlinkTimerExpired();

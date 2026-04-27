@@ -51,12 +51,25 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	TimeSinceLastGameplayCue += DeltaSeconds;
+
 	// Based on the GameDataSettings RegularTickInterval frequence
 	if (bUseRegularDrain && GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		FDamageEffectData DrainEffectData = FDamageEffectData();
+		FDamageEffectData DrainEffectData;
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
+
+		float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
+		if (TimeSinceLastGameplayCue >= RateLimit)
+		{
+			TimeSinceLastGameplayCue = 0.f;
+		}
+		else
+		{
+			DrainEffectData.bSuppressGameplayCue = true;
+		}
+
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed);
 	}
 }
