@@ -179,13 +179,9 @@ void APlayableCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	if (AGeoPlayerState* GeoPlayerState = GetPlayerState<AGeoPlayerState>())
-	{
-		GeoPlayerState->SetPlayerClass(PickStartingClass());
-	}
-
 	// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
 	InitGAS();
+	ChangeClass(PickStartingClass());
 }
 
 void APlayableCharacter::ChangeClass(EPlayerClass NewClass)

@@ -71,7 +71,7 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UCharacterAttributeSet> CharacterAttributeSet;
 
-	UPROPERTY(ReplicatedUsing = OnRep_PlayerClass, EditAnywhere, BlueprintReadOnly, Category = "Class")
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_PlayerClass, BlueprintReadOnly, Category = "Class")
 	EPlayerClass PlayerClass = EPlayerClass::None;
 
 	UFUNCTION()

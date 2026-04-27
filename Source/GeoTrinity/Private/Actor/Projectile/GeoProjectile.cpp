@@ -83,6 +83,12 @@ void AGeoProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Blueprint construction (run by FinishSpawningActor) resets velocity to local (1,0,0); re-apply after.
+	if (!Implements<UGeoPoolableInterface>())
+	{
+		InitProjectileMovementComponent();
+	}
+
 	// When a real (server-replicated) projectile arrives on the owning client,
 	// find and destroy the matching predicted fake spawned earlier by the client.
 	if (!CVarReplaceLocalProjectiles.GetValueOnGameThread() || PredictionKeyId == 0 || GeoLib::IsServer(GetWorld())

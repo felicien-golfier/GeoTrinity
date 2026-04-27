@@ -5,7 +5,7 @@
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoShieldBurstProjectile.h"
-#include "Characters/Component/ShieldBurstPassiveComponent.h"
+#include "Characters/Component/ShieldBurstPassiveActor.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoShieldBurstPassiveAbility::UGeoShieldBurstPassiveAbility()
@@ -32,19 +32,25 @@ void UGeoShieldBurstPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle H
 	}
 
 	if (!ensureMsgf(
-			PassiveComponentClass,
+			PassiveActorClass,
 			TEXT(
 				"UGeoShieldBurstPassiveAbility: PassiveComponentClass is not set — assign BP_ShieldBurstPassiveComponent in the ability defaults")))
 	{
 		return;
 	}
 
-	AActor* PayloadOwner = StoredPayload.Owner;
-	PassiveComponent = NewObject<UShieldBurstPassiveComponent>(PayloadOwner, PassiveComponentClass);
-	PassiveComponent->RegisterComponent();
-
 	if (GeoLib::IsServer(GetWorld()))
 	{
+		AActor* PayloadInstigator = StoredPayload.Instigator;
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = PayloadInstigator;
+		SpawnParams.Instigator = Cast<APawn>(PayloadInstigator);
+		PassiveActor = GetWorld()->SpawnActor<AShieldBurstPassiveActor>(PassiveActorClass, PayloadInstigator->GetTransform(), SpawnParams);
+		if (!ensureMsgf(PassiveActor, TEXT("UGeoShieldBurstPassiveAbility: failed to spawn AShieldBurstPassiveActor")))
+		{
+			return;
+		}
+
 		SourceASC->OnDamageDealt.AddDynamic(this, &UGeoShieldBurstPassiveAbility::OnDamageDealtCallback);
 	}
 
@@ -65,10 +71,10 @@ void UGeoShieldBurstPassiveAbility::EndAbility(FGameplayAbilitySpecHandle Handle
 
 	GetWorld()->GetTimerManager().ClearTimer(ChargeTimerHandle);
 
-	if (PassiveComponent)
+	if (PassiveActor)
 	{
-		PassiveComponent->DestroyComponent();
-		PassiveComponent = nullptr;
+		PassiveActor->Destroy();
+		PassiveActor = nullptr;
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -85,7 +91,7 @@ void UGeoShieldBurstPassiveAbility::OnDamageDealtCallback(float DamageAmount, FG
 	GaugeAccumulated += DamageAmount;
 
 	float const GaugeRatio = FMath::Clamp(GaugeAccumulated / GaugeFillThreshold, 0.f, 1.f);
-	PassiveComponent->SetGaugeRatio(GaugeRatio);
+	PassiveActor->SetGaugeRatio(GaugeRatio);
 
 	if (GaugeAccumulated >= GaugeFillThreshold)
 	{
@@ -98,7 +104,7 @@ void UGeoShieldBurstPassiveAbility::OnDamageDealtCallback(float DamageAmount, FG
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 {
-	PassiveComponent->SetGaugeRatio(0.f);
+	PassiveActor->SetGaugeRatio(0.f);
 	ChargeTimerHandle.Invalidate();
 
 	if (!ensureMsgf(ShieldBurstClass, TEXT("UGeoShieldBurstPassiveAbility: ShieldBurstClass is not set")))

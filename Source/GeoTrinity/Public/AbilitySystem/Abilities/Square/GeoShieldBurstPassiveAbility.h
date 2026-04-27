@@ -8,6 +8,8 @@
 
 #include "GeoShieldBurstPassiveAbility.generated.h"
 
+
+class AShieldBurstPassiveActor;
 class AGeoShieldBurstProjectile;
 class UShieldBurstPassiveComponent;
 
@@ -45,13 +47,13 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	TSubclassOf<AGeoShieldBurstProjectile> ShieldBurstClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
-	TSubclassOf<UShieldBurstPassiveComponent> PassiveComponentClass;
+	TSubclassOf<AShieldBurstPassiveActor> PassiveActorClass;
 
 	float GaugeAccumulated = 0.f;
 	FTimerHandle ChargeTimerHandle;
 
 	UPROPERTY()
-	TObjectPtr<UShieldBurstPassiveComponent> PassiveComponent;
+	TObjectPtr<AShieldBurstPassiveActor> PassiveActor;
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst")

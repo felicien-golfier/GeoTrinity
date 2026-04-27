@@ -120,9 +120,9 @@ private:
 	TArray<UPattern*> Patterns;
 
 	// DATA //
-	UPROPERTY(EditAnywhere, Category = "Gas")
+	UPROPERTY(EditAnywhere, Category = "GAS")
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
 
-	UPROPERTY(EditAnywhere, Category = GAS, meta = (Categories = "Ability.Spell"))
+	UPROPERTY(EditAnywhere, Category = "GAS")
 	TArray<FGameplayTag> StartupAbilityTags;
 };
