@@ -39,7 +39,7 @@ AGeoProjectile::AGeoProjectile()
 	Sphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Sphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Sphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
-	Sphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
+	Sphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	Sphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	Sphere->SetCollisionResponseToChannel(ECC_GeoCharacter, ECR_Overlap);
 
@@ -212,7 +212,7 @@ void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* Othe
 								 FVector NormalImpulse, FHitResult const& Hit)
 
 {
-	if (bIsEnding)
+	if (bIsEnding || ProjectileMovement->bShouldBounce)
 	{
 		return;
 	}

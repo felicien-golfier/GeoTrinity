@@ -12,14 +12,15 @@
 
 class UGeoGameFeelComponent;
 
-/** Base init data passed to AGeoInteractableActor::InitInteractable before BeginPlay. Subclass to add actor-specific fields. */
+/** Base init data passed to AGeoInteractableActor::InitInteractable before BeginPlay. Subclass to add actor-specific
+ * fields. */
 USTRUCT()
 struct FInteractableActorData
 {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	TObjectPtr<AActor> CharacterOwner = nullptr;
+	TObjectPtr<AActor> Owner = nullptr;
 
 	UPROPERTY()
 	int Level = 1;

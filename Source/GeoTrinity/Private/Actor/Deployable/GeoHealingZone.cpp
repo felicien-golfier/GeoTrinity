@@ -6,6 +6,7 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -101,10 +102,8 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 		return;
 	}
 
-	bool const bSuppressHealCue = !GameFeelComponent->IsHealCueAvailable();
-	bool const bSuppressDamageCue = !GameFeelComponent->IsDamageCueAvailable();
 
-	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->CharacterOwner);
+	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
 
 	IGenericTeamAgentInterface const* ZoneTeamAgent = Cast<IGenericTeamAgentInterface>(this);
 
@@ -138,7 +137,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 															Data.Seed);
 		FHealEffectData HealEffectData;
 		HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
-		HealEffectData.bSuppressGameplayCue = bSuppressHealCue;
+		HealEffectData.bSuppressGameplayCue = !GameFeelComponent->IsHealCueAvailable();
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, OwnerASC, TargetASC, Data.Level, Data.Seed);
 		++HealedNum;
 	}
@@ -147,7 +146,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 	{
 		FDamageEffectData DrainEffectData;
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
-		DrainEffectData.bSuppressGameplayCue = bSuppressDamageCue;
+		DrainEffectData.bSuppressGameplayCue = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, OwnerASC, GetAbilitySystemComponent(),
 														Data.Level, Data.Seed);
 	}

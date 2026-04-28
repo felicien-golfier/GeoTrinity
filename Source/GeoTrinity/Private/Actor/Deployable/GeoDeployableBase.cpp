@@ -5,6 +5,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "GameplayEffect.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Settings/GameDataSettings.h"
@@ -71,7 +72,19 @@ void AGeoDeployableBase::BeginPlay()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::Recall(float Value)
 {
+	if (RecallGameplayCueTag.IsValid())
+	{
+		UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
+		if (!IsValid(SourceASC))
+		{
+			ensureMsgf(SourceASC, TEXT("AGeoDeployableBase: no ASC on Owner"));
+		}
+		SourceASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
+	}
+
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
+
+
 	OnDeployableExpired();
 }
 
@@ -151,4 +164,21 @@ void AGeoDeployableBase::OnDeployableExpired_Implementation()
 bool AGeoDeployableBase::IsBlinking() const
 {
 	return BlinkTimerHandle.IsValid();
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams() const
+{
+	FVector const DeployableLocation = GetActorLocation();
+	FVector const OwnerLocation = GetData()->Owner->GetActorLocation();
+
+
+	FGameplayCueParameters CueParams;
+	CueParams.Location = DeployableLocation;
+	CueParams.Normal = (OwnerLocation - DeployableLocation).GetSafeNormal();
+	CueParams.Instigator = GetData()->Owner;
+	CueParams.AbilityLevel = GetData()->Level;
+	CueParams.RawMagnitude = IsBlinking() ? 1.f : 0.f;
+	return CueParams;
 }

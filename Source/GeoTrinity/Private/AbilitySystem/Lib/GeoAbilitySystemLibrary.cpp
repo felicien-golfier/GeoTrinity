@@ -107,6 +107,15 @@ UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(TArray<TInstancedStruct<FEff
 	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
 	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
 
+	if (AActor* TargetAvatar = TargetASC->GetAvatarActor())
+	{
+		FHitResult HitResult;
+		HitResult.ImpactPoint = TargetAvatar->GetActorLocation();
+		HitResult.ImpactNormal =
+			(TargetAvatar->GetActorLocation() - SourceASC->GetAvatarActor()->GetActorLocation()).GetSafeNormal2D();
+		ContextHandle.AddHitResult(HitResult);
+	}
+
 	FGeoGameplayEffectContext* GeoEffectContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
 	checkf(GeoEffectContext,
 		   TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Failed to create GeoEffectContext"));

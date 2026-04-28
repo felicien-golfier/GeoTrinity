@@ -118,10 +118,11 @@ bool UGeoGameFeelComponent::IsHealCueAvailable()
 {
 	double const Now = GetWorld()->GetTimeSeconds();
 	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
-	if (Now - LastHealCueTime < RateLimit)
+	if (Now - LastHealCueTime >= RateLimit)
 	{
-		return false;
+		LastHealCueTime = Now;
+		return true;
 	}
-	LastHealCueTime = Now;
-	return true;
+
+	return false;
 }

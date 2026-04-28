@@ -35,7 +35,7 @@ void AGeoInteractableActor::InitInteractable(FInteractableActorData* Data)
 	ensureMsgf(Data, TEXT("Data is invalid!"));
 	ensureMsgf(GetData(),
 			   TEXT("Subclass must store data into their UPROPERTY before calling Super::InitInteractable!"));
-	InitGas(Data->CharacterOwner);
+	InitGas(Data->Owner);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -110,7 +110,7 @@ void AGeoInteractableActor::ApplyEffectToSelf_Implementation(TSubclassOf<UGamepl
 
 	FGameplayEffectContextHandle EffectContextHandle = ASC->MakeEffectContext();
 	EffectContextHandle.AddSourceObject(this);
-	EffectContextHandle.AddInstigator(GetData()->CharacterOwner, this);
+	EffectContextHandle.AddInstigator(GetData()->Owner, this);
 
 	FGameplayEffectSpecHandle const SpecHandle = ASC->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
 

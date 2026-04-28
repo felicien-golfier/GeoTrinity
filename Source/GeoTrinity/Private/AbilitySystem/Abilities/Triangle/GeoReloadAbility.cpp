@@ -101,7 +101,7 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		if (IsValid(Pickup))
 		{
 			FBuffPickupData PickupData;
-			PickupData.CharacterOwner = Avatar;
+			PickupData.Owner = Avatar;
 			PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
 			PickupData.EffectDataArray = {BuffEffects[Index]};
 			PickupData.PowerScale = PowerScale;

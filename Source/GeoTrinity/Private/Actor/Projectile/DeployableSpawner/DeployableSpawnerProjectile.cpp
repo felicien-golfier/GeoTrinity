@@ -23,7 +23,7 @@ void ADeployableSpawnerProjectile::EndProjectileLife()
 // ---------------------------------------------------------------------------------------------------------------------
 void ADeployableSpawnerProjectile::FillBaseData(FDeployableData& Data, AActor* PayloadOwner) const
 {
-	Data.CharacterOwner = PayloadOwner;
+	Data.Owner = PayloadOwner;
 	Data.Level = Payload.AbilityLevel;
 	Data.Seed = Payload.Seed;
 	Data.Params = Params;

@@ -137,13 +137,13 @@ void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimit
 		return;
 	}
 
-	if (!GeoASLib::IsTeamAttitudeAligned(GetData()->CharacterOwner, OtherActor, OverlapAttitude))
+	if (!GeoASLib::IsTeamAttitudeAligned(GetData()->Owner, OtherActor, OverlapAttitude))
 	{
 		return;
 	}
 
 	UAbilitySystemComponent* TargetASC = OtherActorAbilitySystem->GetAbilitySystemComponent();
-	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->CharacterOwner);
+	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
 	if (!TargetASC || !OwnerASC)
 	{
 		return;

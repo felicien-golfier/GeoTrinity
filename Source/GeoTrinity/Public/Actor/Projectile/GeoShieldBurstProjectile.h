@@ -39,13 +39,16 @@ public:
 	float EnemyBounceMultiplier;
 
 protected:
+	virtual void InitProjectileLife() override;
 	virtual void HandleValidOverlap(AActor* OtherActor) override;
-	virtual void EndProjectileLife() override;
 
 	UFUNCTION()
 	void OnRep_BounceSnapshot();
 
 private:
+	UFUNCTION()
+	void OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity);
+
 	UPROPERTY(ReplicatedUsing = OnRep_BounceSnapshot)
 	FShieldBounceSnapshot BounceSnapshot;
 };

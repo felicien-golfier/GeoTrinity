@@ -68,6 +68,9 @@ public:
 	/** Called by the owning player to recall this deployable */
 	virtual void Recall(float Value = 0.f);
 
+	/** Return the recall GameplayCue Parameter.*/
+	virtual FGameplayCueParameters GetRecallCueParams() const;
+
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDurationPercent() const;
@@ -108,6 +111,9 @@ protected:
 	bool bUseRegularDrain = true;
 	UPROPERTY(BlueprintReadOnly)
 	float DrainMagnitudePerSecond = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	FGameplayTag RecallGameplayCueTag;
 
 	bool bExpired = false;
 

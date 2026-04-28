@@ -17,6 +17,6 @@ class GEOTRINITY_API UGeoAbilitySystemGlobals : public UAbilitySystemGlobals
 {
 	GENERATED_BODY()
 
-	/** Allocates a FGeoGameplayEffectContext instead of the default FGameplayEffectContext. */
 	virtual FGameplayEffectContext* AllocGameplayEffectContext() const override;
+	virtual void InitGameplayCueParameters(FGameplayCueParameters& CueParameters, const FGameplayEffectContextHandle& EffectContext) override;
 };

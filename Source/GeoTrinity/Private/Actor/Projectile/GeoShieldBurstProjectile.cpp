@@ -10,12 +10,17 @@
 #include "Net/UnrealNetwork.h"
 #include "NiagaraComponent.h"
 #include "Tool/Team.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoShieldBurstProjectile::AGeoShieldBurstProjectile()
 {
 	OverlapAttitude =
 		static_cast<int32>(ETeamAttitudeBitflag::Hostile) | static_cast<int32>(ETeamAttitudeBitflag::Friendly);
+
+	ProjectileMovement->bShouldBounce = true;
+	ProjectileMovement->Bounciness = 1.0f;
+	ProjectileMovement->Friction = 0.0f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -23,6 +28,16 @@ void AGeoShieldBurstProjectile::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoShieldBurstProjectile, BounceSnapshot);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoShieldBurstProjectile::InitProjectileLife()
+{
+	Super::InitProjectileLife();
+	if (HasAuthority())
+	{
+		ProjectileMovement->OnProjectileBounce.AddUniqueDynamic(this, &ThisClass::OnWallBounce);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -39,10 +54,16 @@ void AGeoShieldBurstProjectile::OnRep_BounceSnapshot()
 	Niagara->SetVariableFloat(FName("User.Bullet_Radius"), BounceSnapshot.Radius);
 }
 
+
+void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity)
+{
+	BounceSnapshot = {GetActorLocation(), ImpactVelocity, Sphere->GetScaledSphereRadius()};
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 {
-	if (HasAuthority())
+	if (GeoLib::IsServer(GetWorld()))
 	{
 		bool const bIsHostile = GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor,
 																static_cast<int32>(ETeamAttitudeBitflag::Hostile));
@@ -50,14 +71,15 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 		if (bIsHostile)
 		{
 			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
-			float Speed = ProjectileMovement->Velocity.Size();
+			float const Speed = ProjectileMovement->Velocity.Size();
 			FVector const CurrentVelocity = ProjectileMovement->Velocity.GetSafeNormal2D();
 			FVector ReflectedVelocity = CurrentVelocity - 2.f * (FVector::DotProduct(CurrentVelocity, Normal) * Normal);
 			ReflectedVelocity.Normalize();
 			ReflectedVelocity *= Speed;
 			ProjectileMovement->Velocity = ReflectedVelocity;
-			ShieldAmount *= EnemyBounceMultiplier;
+			ProjectileMovement->UpdateComponentVelocity();
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() * EnemyBounceMultiplier);
+			ShieldAmount *= EnemyBounceMultiplier;
 			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
 		}
 		else
@@ -75,9 +97,4 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			EndProjectileLife();
 		}
 	}
-}
-
-void AGeoShieldBurstProjectile::EndProjectileLife()
-{
-	Super::EndProjectileLife();
 }

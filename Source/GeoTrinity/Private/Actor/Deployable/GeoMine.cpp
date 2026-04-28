@@ -47,8 +47,8 @@ void AGeoMine::Recall(float Value)
 
 	bIsRecalling = true;
 
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(MineData.CharacterOwner);
-	if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on CharacterOwner")))
+	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(MineData.Owner);
+	if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on Owner")))
 	{
 		Super::Recall(Value);
 		return;
@@ -64,13 +64,12 @@ void AGeoMine::Recall(float Value)
 
 	for (AActor* Actor : OverlappingActors)
 	{
-		if (!IsValid(Actor) || Actor == MineData.CharacterOwner)
+		if (!IsValid(Actor) || Actor == MineData.Owner)
 		{
 			continue;
 		}
 
-		if (GeoASLib::IsTeamAttitudeAligned(MineData.CharacterOwner, Actor,
-											static_cast<int32>(ETeamAttitudeBitflag::Hostile)))
+		if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, static_cast<int32>(ETeamAttitudeBitflag::Hostile)))
 		{
 			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
 			if (TargetASC)
@@ -80,7 +79,7 @@ void AGeoMine::Recall(float Value)
 				GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
 			}
 		}
-		else if (GeoASLib::IsTeamAttitudeAligned(MineData.CharacterOwner, Actor,
+		else if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor,
 												 static_cast<int32>(ETeamAttitudeBitflag::Friendly)))
 		{
 			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);

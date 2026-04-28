@@ -95,8 +95,8 @@ protected:
 						 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
 						 FHitResult const& SweepResult);
 	UFUNCTION()
-	void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-					 FVector NormalImpulse, FHitResult const& Hit);
+	virtual void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+							 FVector NormalImpulse, FHitResult const& Hit);
 
 	UFUNCTION(BlueprintCallable)
 	virtual void PlayImpactFx() const;

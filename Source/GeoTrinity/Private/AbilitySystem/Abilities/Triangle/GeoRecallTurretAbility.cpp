@@ -43,7 +43,6 @@ void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 	}
 
 	UGeoAbilitySystemComponent* PlayerASC = GetGeoAbilitySystemComponentFromActorInfo();
-	FVector const AvatarLocation = Instigator->GetActorLocation();
 
 	for (FRecallInfo const& RecallInfo : RecallInfos)
 	{
@@ -64,32 +63,9 @@ void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 													StoredPayload.Seed);
 			}
 		}
-
-		FireRecallCue(PlayerASC, RecallInfo, AvatarLocation);
 	}
 
 	EndAbility(false, false);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-void UGeoRecallTurretAbility::FireRecallCue(UGeoAbilitySystemComponent* PlayerASC, FRecallInfo const& RecallInfo,
-											FVector const& AvatarLocation) const
-{
-	if (!RecallGameplayCueTag.IsValid())
-	{
-		DrawDebugLine(GetWorld(), RecallInfo.TurretLocation, AvatarLocation,
-					  RecallInfo.bWasBlinking ? FColor::Red : FColor::Cyan, false, 3.0f, 0, 2.0f);
-		return;
-	}
-
-	FGameplayCueParameters CueParams;
-	CueParams.Location = RecallInfo.TurretLocation;
-	CueParams.Normal = (AvatarLocation - RecallInfo.TurretLocation).GetSafeNormal();
-	CueParams.Instigator = GetAvatarActorFromActorInfo();
-	CueParams.AbilityLevel = GetAbilityLevel();
-	CueParams.RawMagnitude = RecallInfo.bWasBlinking ? 1.f : 0.f;
-	PlayerASC->ExecuteGameplayCue(RecallGameplayCueTag, CueParams);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
