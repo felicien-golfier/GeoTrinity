@@ -51,10 +51,16 @@ The project uses a custom `.clang-format` with these key settings:
 - Prefer forward declarations in headers over includes (for enums: `enum class EMyEnum : uint8;`)
 - Remove trivial wrapper functions that just delegate to another function - call directly instead
 - Code only what's needed (YAGNI) - don't add unused parameters, variables, or speculative features
-- Be consistent in general ! Do not use a code style once and then another one. For naming also. 
+- **Delete unused code**: When removing a call site, also remove the declaration and implementation. Never keep dead code as a safety net or for hypothetical future use.
+- **No duplicated code**: Never copy the same logic into multiple locations. Extract to a base class, component, or free function when the same code appears in more than one place.
+- Be consistent in general ! Do not use a code style once and then another one. For naming also.
 - Be consistent with Super call placement: choose what makes sense (e.g., Super::Init at start, Super::Destroy at end), but when there's no meaningful ordering dependency, keep it consistent (e.g., always at the top) rather than mixing positions arbitrarily
 - Dont use abreviations in variable name, ALWAYS use full class name except some very verbose names like ASC for AbilitySystemComponent.
 - Prefer readable, self-documenting code over comments. Don't add comments that restate what the code already says - the code should speak for itself.
+- **Read the full class hierarchy** before adding any new function or data member. The base class likely already has what you need — a virtual override point, a data field, or a pattern designed for exactly this case. Adding a parallel implementation alongside an existing one creates inconsistency and breaks the architecture.
+- **Verify access specifiers** before inserting declarations in a header. Functions callable from outside the class must be `public`. Internal implementation details belong in `private`. Subclass extension points go in `protected`.
+- **Reuse existing virtual methods**: Before adding a new method to a subclass, check if the base class already has a virtual for the same concept and override it instead. Example: `AGeoDeployableBase::Recall` is the correct override point for "deployable triggers its effect and ends" — don't add a separate `Explode` method alongside it.
+- **Extracting to base class**: Copy code exactly — never modify logic during the move. If a subclass needs a different value or behavior, introduce a virtual getter the base calls internally and let subclasses override it.
 - **No silent fallbacks**: Never silently skip or substitute when something required is missing. Always surface the error. The question to ask for every `if` guard is: *can this condition legitimately be false at runtime?* If the answer is no, it must be flagged. When in doubt, add the assert — it is easier to remove an assert that turns out to be too strict than to track down a silent failure later.
   - Use `ensureMsgf(condition, ...)` to flag the problem. If execution must continue gracefully despite the failure, follow it with an `if` — but always surface the error first.
   - For critical invariants (wrong actor type, missing subsystem, corrupted state) where silent continuation would cause hard-to-debug downstream damage, prefer `checkf` to crash immediately with a clear message rather than limping forward.
@@ -62,6 +68,10 @@ The project uses a custom `.clang-format` with these key settings:
   - Configured assets (ProjectileClass, EffectData, curves, subsystems) must be checked with `ensureMsgf` — missing them is always a configuration bug.
   - Wrong actor/component types (e.g. ability used on the wrong class by design) must be checked with `ensureMsgf` — this is always a design bug.
   - Runtime misses (no target found, empty list, optional feature not set) are legitimate — a plain `if` with no assert is fine there.
+- **`ensureMsgf` placement**:
+  - When a return is needed: `if (!x) { ensureMsgf(x, TEXT("...")); return; }` — ensure goes *inside* the if body, never as a standalone line before it. Always pass the real condition (not `false`) so the call is self-contained.
+  - When no return is needed: `ensureMsgf(x, TEXT("..."))` alone — no if wrapper.
+- **Gate condition-based bindings at the binding site, not inside the callback.** If a binding should only apply on a specific machine or context (e.g. server-only, local player only), guard before the `AddDynamic` call — not with a check inside the lambda or handler.
 
 ## Architecture
 
@@ -279,6 +289,28 @@ Enhanced Input with `UGeoInputConfig` data asset:
 - `AGeoShieldBurstProjectile` — spawned by Square's shield burst passive
 - `ADeployableSpawnerProjectile` — spawns a deployable on impact
 
+## Ability & GAS Conventions
+
+Rules that have been violated by AI agents in the past — apply these without exception.
+
+**Base class**: All ability classes must extend `UGeoGameplayAbility`. Never use `UGameplayAbility` directly — it bypasses project GAS infrastructure (StoredPayload, fire flow, CommitAbility, etc.). Include `"AbilitySystem/Abilities/GeoGameplayAbility.h"`.
+
+**Server check**: Always use `UGameplayLibrary::IsServer(GetWorld())`. Never use `HasAuthority()` (returns true for autonomous proxies on clients) or `IsNetMode(NM_DedicatedServer)` (misses listen server).
+
+**`OnFireTargetDataReceived` is server-only by design**: Never add `IsServer` guards inside it. If only certain inner logic must be server-gated, that signals an architectural problem to investigate, not a guard to add.
+
+**Never override `Fire()` as a no-op**: `UGeoGameplayAbility::Fire()` sends `FGeoAbilityTargetData` to the server, which is what triggers `OnFireTargetDataReceived`. Overriding with an empty body silently breaks the entire server chain. If a subclass only needs server-side logic, override `OnFireTargetDataReceived` only — never suppress `Fire()`.
+
+**RNG in abilities**: Always seed randomness from `StoredPayload.Seed` — construct `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` directly inside ability logic. Both client and server must derive identical values from the same seed.
+
+**`StoredPayload.Owner` naming**: Local variable copies of `StoredPayload.Owner` must be named `PayloadOwner`, never `AvatarActor`. `StoredPayload.Owner` is set by the client and may differ from what `GetAvatarActor()` returns.
+
+**New projectiles default to `AGeoPooledProjectile`**: All new projectile classes extend `AGeoPooledProjectile` (not `AGeoProjectile` directly), unless the task explicitly states the projectile must not be pooled.
+
+**VFX — never use multicast RPC or multicast delegate**: Clients have enough local context to detect events (damage, death, detonation) without a server-initiated broadcast. Trigger VFX via Gameplay Cues, the same way turret recall does. If a deployable needs to stay alive visually after its logic ends, keep the actor alive but logic-dead (disable overlap/tick), or move the VFX trigger to the ability or a Gameplay Cue.
+
+**No movement/physics workarounds**: Never use `SetMovementMode(MOVE_Flying)` or similar mode switches to suppress gravity or friction issues as a side effect. Find and fix the actual root cause (gravity scale, ground detection, movement mode transitions, etc.).
+
 ## Source Structure
 
 ```
@@ -338,7 +370,9 @@ Source/GeoTrinity/
 
 ## Important Notes for AI Assistance
 
-**NO WORKAROUNDS when debugging**: When investigating issues, find the actual root cause. Don't propose workarounds or alternative approaches until the real problem is understood. The user needs to understand what's actually wrong.
+**NO WORKAROUNDS when debugging**: When investigating issues, find the actual root cause. Don't propose workarounds or alternative approaches until the real problem is understood. This includes movement mode switches (`MOVE_Flying` to suppress gravity), multicast delegates to paper over missing local event detection, or any other fix that changes unrelated behavior as a side effect.
+
+**Check Epic source before implementing UE features**: Always read the actual engine/plugin headers before implementing UE features (StateTree tasks, GAS, AI). Key references: `FStateTreeDelayTask`, `FStateTreeMoveToTask`. Plugin source: `Engine\Plugins\Runtime\<PluginName>\Source\<Module>\`. Never assume method names — they change between versions.
 
 ## HUD Architecture
 

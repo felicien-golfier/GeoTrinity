@@ -16,7 +16,6 @@ AGeoShieldBurstProjectile::AGeoShieldBurstProjectile()
 {
 	OverlapAttitude =
 		static_cast<int32>(ETeamAttitudeBitflag::Hostile) | static_cast<int32>(ETeamAttitudeBitflag::Friendly);
-	SetReplicateMovement(false);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
