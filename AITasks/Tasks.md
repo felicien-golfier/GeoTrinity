@@ -6,9 +6,12 @@ Clear this file and replace its tasks whenever a new batch of overnight work is 
 ---
 ## Generic Rules
 - Never delete any task from the file.
-- Always pull before starting the task
-- Always push after committing.
-- Report frequently on the task, so if the usage is depleted, it knows where to come back next day. Clear all reports of this type when the task if fully done.
+- **Pull first** — always run `git pull` before touching any task.
+- **One task at a time** — execute unchecked `[ ]` tasks in order, one by one. Do not start the next task until the current one is fully complete (not just partially addressed).
+- **Read comments first** — before starting a task, read all comments left below it by previous sessions. They contain partial progress, findings, and next steps.
+- **Write a progress comment after every work session** — directly below the task, append a timestamped comment block describing what was done, what was found, and what remains. This lets any future session resume exactly where this one left off. Only remove these comments when the task is marked `[x]` (fully done).
+- **Push after every completed task** — commit and push as soon as a task is marked `[x]`. Do not batch multiple task completions into one push.
+- **Report in-file at every meaningful step** — if a task is long or multi-step, write an interim progress comment before moving on. If the session ends mid-task, the file must reflect exactly where work stopped and what to do next.
 
 ## Tasks
 
