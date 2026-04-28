@@ -68,7 +68,7 @@ public:
 	/** Called by the owning player to recall this deployable */
 	virtual void Recall(float Value = 0.f);
 
-	/** Return the recall GameplayCue Parameter.*/
+	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams() const;
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */

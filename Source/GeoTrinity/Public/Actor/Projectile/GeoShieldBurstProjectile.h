@@ -35,17 +35,26 @@ public:
 	AGeoShieldBurstProjectile();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/** Shield magnitude applied to allies on contact. Scales up with each enemy bounce. */
 	float ShieldAmount = 0.f;
+	/** Factor applied to both ShieldAmount and sphere radius each time the projectile bounces off an enemy. */
 	float EnemyBounceMultiplier;
 
 protected:
+	/** Extends base setup to bind the wall-bounce delegate on the server. */
 	virtual void InitProjectileLife() override;
+	/**
+	 * On enemy overlap: reflects the projectile and scales ShieldAmount and sphere radius by EnemyBounceMultiplier.
+	 * On ally overlap: applies ShieldAmount as a shield effect and ends the projectile life.
+	 */
 	virtual void HandleValidOverlap(AActor* OtherActor) override;
 
+	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients. */
 	UFUNCTION()
 	void OnRep_BounceSnapshot();
 
 private:
+	/** Records the post-bounce location, velocity, and radius in BounceSnapshot for replication to simulated clients. */
 	UFUNCTION()
 	void OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity);
 

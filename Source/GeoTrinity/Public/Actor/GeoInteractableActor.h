@@ -48,7 +48,9 @@ class GEOTRINITY_API AGeoInteractableActor
 public:
 	AGeoInteractableActor();
 
+	/** Returns the actor's owned ASC (IAbilitySystemInterface implementation). */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	/** Returns the team ID set during InitInteractable (IGenericTeamAgentInterface implementation). */
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
 	/**
