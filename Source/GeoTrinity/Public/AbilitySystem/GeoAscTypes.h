@@ -34,6 +34,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	FVector const& GetRadialDamageOrigin() const { return RadialDamageOrigin; }
 	float GetSingleUseDamageMultiplier() const { return SingleUseDamageMultiplier; }
 	bool IsSuppressHealProvided() const { return bSuppressHealProvided; }
+	/** Returns true when the GameplayCue embedded in the applied effect should be skipped (used for rate-limiting). */
 	bool IsSuppressGameplayCue() const { return bSuppressGameplayCue; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
@@ -50,6 +51,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetRadialDamageOrigin(FVector const& inVector) { RadialDamageOrigin = inVector; }
 	void SetSingleUseDamageMultiplier(float value) { SingleUseDamageMultiplier = value; }
 	void SetSuppressHealProvided(bool value) { bSuppressHealProvided = value; }
+	/** When true, the GameplayCue embedded in the applied effect will be suppressed. Use to rate-limit cues on tick-based effects. */
 	void SetSuppressGameplayCue(bool value) { bSuppressGameplayCue = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }

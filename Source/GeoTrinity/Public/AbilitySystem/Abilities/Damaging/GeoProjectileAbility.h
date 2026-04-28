@@ -11,7 +11,9 @@
 enum class EProjectileTarget : uint8;
 class AGeoProjectile;
 /**
- * A spell that launches a projectile
+ * Single-shot ability that spawns one or more projectiles on activation.
+ * Fires client-predicted on the local machine and authoritative on the server via OnFireTargetDataReceived.
+ * Extend this class to add new single-shot weapon types; override SpawnProjectile for custom initialization.
  */
 UCLASS()
 class GEOTRINITY_API UGeoProjectileAbility : public UGeoGameplayAbility

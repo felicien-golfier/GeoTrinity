@@ -48,18 +48,39 @@ public:
 	virtual FGenericTeamId GetGenericTeamId() const override;
 	// IGameplayTaskOwnerInterface END
 
+	/** Returns the player's character attribute set (player-only attributes: ammo, multipliers, etc.). */
 	UCharacterAttributeSet* GetCharacterAttributeSet() const { return CharacterAttributeSet; }
+	/** Returns the GeoTrinity-specific ASC owned by this player state. */
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponent() const { return AbilitySystemComponent; }
 
+	/** Returns the player's current playable class. */
 	EPlayerClass GetPlayerClass() const { return PlayerClass; }
+	/** Sets the player's current playable class. Does not grant or remove abilities — call GiveStartupAbilities separately. */
 	void SetPlayerClass(EPlayerClass NewClass) { PlayerClass = NewClass; }
 
+	/** Returns the rolling average damage-per-second over the last 10 seconds (replicated, for HUD display). */
 	float GetDebugDPS() const { return DebugDPS; }
+	/** Returns the rolling average healing-per-second over the last 10 seconds (replicated, for HUD display). */
 	float GetDebugHPS() const { return DebugHPS; }
+	/** Returns the rolling average damage-received-per-second over the last 10 seconds (replicated, for HUD display). */
 	float GetDebugRecv() const { return DebugRecv; }
+	/** Returns the cumulative damage dealt over the session. */
 	float GetTotalDamageDealt() const { return TotalDamageDealt; }
+	/** Returns the cumulative healing dealt over the session. */
 	float GetTotalHealingDealt() const { return TotalHealingDealt; }
+	/** Returns the cumulative damage received over the session. */
 	float GetTotalDamageReceived() const { return TotalDamageReceived; }
+
+	/**
+	 * Batch-updates all replicated combat stat fields in one call. Called by UGeoCombatStatsSubsystem on the server.
+	 *
+	 * @param DPS      Rolling damage-per-second average.
+	 * @param HPS      Rolling healing-per-second average.
+	 * @param Recv     Rolling damage-received-per-second average.
+	 * @param TotDmg   Cumulative damage dealt this session.
+	 * @param TotHeal  Cumulative healing dealt this session.
+	 * @param TotRecv  Cumulative damage received this session.
+	 */
 	void SetDebugCombatStats(float DPS, float HPS, float Recv, float TotDmg, float TotHeal, float TotRecv)
 	{
 		DebugDPS = DPS;
