@@ -25,7 +25,7 @@ public:
 	virtual void InitInteractable(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	virtual void Recall(float Value) override;
+	virtual void Recall(bool bExectueCue, float Value) override;
 
 protected:
 	virtual FDeployableData const* GetData() const override { return &MineData; }
@@ -40,7 +40,6 @@ private:
 
 	UPROPERTY(Replicated)
 	FDeployableData MineData;
-	
+
 	bool bIsRecalling = false;
-	
 };

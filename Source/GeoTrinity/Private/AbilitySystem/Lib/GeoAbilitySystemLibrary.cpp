@@ -19,7 +19,6 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "InstancedStruct.h"
 #include "Kismet/GameplayStatics.h"
-#include "NiagaraTypes.h"
 #include "Settings/GameDataSettings.h"
 #include "System/GeoActorPoolingSubsystem.h"
 #include "System/GeoPoolableInterface.h"
@@ -81,13 +80,28 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 	}
 
 	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
-	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
+	FillEffectContext(SourceASC, TargetASC, ContextHandle);
+
 	FGeoGameplayEffectContext* GeoEffectContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
 
 	EffectData.UpdateContextHandle(GeoEffectContext, AbilityLevel);
 	return EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
 }
 
+void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
+												 FGameplayEffectContextHandle ContextHandle)
+{
+	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
+
+	if (AActor* TargetAvatar = TargetASC->GetAvatarActor())
+	{
+		FHitResult HitResult;
+		HitResult.ImpactPoint = TargetAvatar->GetActorLocation();
+		HitResult.ImpactNormal =
+			(TargetAvatar->GetActorLocation() - SourceASC->GetAvatarActor()->GetActorLocation()).GetSafeNormal2D();
+		ContextHandle.AddHitResult(HitResult);
+	}
+}
 // ---------------------------------------------------------------------------------------------------------------------
 TArray<FActiveGameplayEffectHandle>
 UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
@@ -105,16 +119,7 @@ UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(TArray<TInstancedStruct<FEff
 	}
 
 	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
-	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
-
-	if (AActor* TargetAvatar = TargetASC->GetAvatarActor())
-	{
-		FHitResult HitResult;
-		HitResult.ImpactPoint = TargetAvatar->GetActorLocation();
-		HitResult.ImpactNormal =
-			(TargetAvatar->GetActorLocation() - SourceASC->GetAvatarActor()->GetActorLocation()).GetSafeNormal2D();
-		ContextHandle.AddHitResult(HitResult);
-	}
+	FillEffectContext(SourceASC, TargetASC, ContextHandle);
 
 	FGeoGameplayEffectContext* GeoEffectContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
 	checkf(GeoEffectContext,

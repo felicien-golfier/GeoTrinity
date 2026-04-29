@@ -53,19 +53,13 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 		return;
 	}
 
-	UGeoGameFeelComponent* GameFeel = Character->FindComponentByClass<UGeoGameFeelComponent>();
-	if (!ensureMsgf(GameFeel, TEXT("UGeoHealingAuraAbility: avatar has no GeoGameFeelComponent")))
-	{
-		return;
-	}
-	bool const bSuppressHealCue = !GameFeel->IsHealCueAvailable();
-
 	TArray<AActor*> OverlappingActors;
 	Character->GetCapsuleComponent()->GetOverlappingActors(OverlappingActors);
 
 	for (AActor* Actor : OverlappingActors)
 	{
-		if (Actor == Character || OwnerTeamAgent->GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Hostile)
+		if (!Actor->CanBeDamaged() || Actor == Character
+			|| OwnerTeamAgent->GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Hostile)
 		{
 			continue;
 		}
@@ -81,6 +75,13 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 		{
 			continue; // Do not heal, neither count in AlliesHealed full life mates.
 		}
+
+		UGeoGameFeelComponent* GameFeelComponent = Actor->FindComponentByClass<UGeoGameFeelComponent>();
+		if (!ensureMsgf(GameFeelComponent, TEXT("UGeoHealingAuraAbility: avatar has no GeoGameFeelComponent")))
+		{
+			return;
+		}
+		bool const bSuppressHealCue = !GameFeelComponent->IsHealCueAvailable();
 
 		FHealEffectData HealEffect;
 		HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime;

@@ -90,6 +90,8 @@ public:
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 															 int32 Seed);
+	static void FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
+								  FGameplayEffectContextHandle ContextHandle);
 
 	/**
 	 * Returns the class default object for the ability registered under AbilityTag, cast to T.

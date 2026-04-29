@@ -40,7 +40,7 @@ void UGeoDetonateAllMinesAbility::OnFireTargetDataReceived(FGameplayAbilityTarge
 	{
 		if (AGeoMine* Mine = Cast<AGeoMine>(Deployable); Mine && !Mine->IsExpired())
 		{
-			Mine->Recall(DetonationMultiplier);
+			Mine->Recall(true, DetonationMultiplier);
 		}
 	}
 

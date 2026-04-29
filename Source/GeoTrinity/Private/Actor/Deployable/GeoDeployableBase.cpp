@@ -70,9 +70,9 @@ void AGeoDeployableBase::BeginPlay()
 	InitDrain();
 }
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::Recall(float Value)
+void AGeoDeployableBase::Recall(bool const bExecuteCue, float Value)
 {
-	if (RecallGameplayCueTag.IsValid())
+	if (bExecuteCue && RecallGameplayCueTag.IsValid())
 	{
 		UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
 		if (!IsValid(SourceASC))

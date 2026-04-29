@@ -45,7 +45,7 @@ void UGeoDeployableManagerComponent::RecallAll()
 	{
 		if (IsValid(Deployable))
 		{
-			Deployable->Recall();
+			Deployable->Recall(false);
 		}
 	}
 }

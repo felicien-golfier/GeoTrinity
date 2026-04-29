@@ -66,7 +66,7 @@ public:
 	virtual void BeginPlay() override;
 
 	/** Called by the owning player to recall this deployable */
-	virtual void Recall(float Value = 0.f);
+	virtual void Recall(bool bExecuteCue, float Value = 0.f);
 
 	/** Return the recall GameplayCue Parameter.*/
 	virtual FGameplayCueParameters GetRecallCueParams() const;

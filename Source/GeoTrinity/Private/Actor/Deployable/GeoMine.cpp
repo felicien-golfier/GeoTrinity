@@ -38,7 +38,7 @@ void AGeoMine::InitInteractable(FInteractableActorData* Data)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoMine::Recall(float Value)
+void AGeoMine::Recall(bool bExectueCue, float Value)
 {
 	if (bExpired || bIsRecalling)
 	{
@@ -50,7 +50,7 @@ void AGeoMine::Recall(float Value)
 	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(MineData.Owner);
 	if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on Owner")))
 	{
-		Super::Recall(Value);
+		Super::Recall(bExectueCue, Value);
 		return;
 	}
 
@@ -92,7 +92,7 @@ void AGeoMine::Recall(float Value)
 		}
 	}
 
-	Super::Recall(Value);
+	Super::Recall(bExectueCue, Value);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -113,5 +113,5 @@ void AGeoMine::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 		return;
 	}
 
-	Recall(1.f);
+	Recall(true, 1.f);
 }
