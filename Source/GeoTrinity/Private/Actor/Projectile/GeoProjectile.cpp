@@ -33,6 +33,8 @@ AGeoProjectile::AGeoProjectile()
 	bAllowTickBeforeBeginPlay = false;
 	bReplicates = true;
 
+	SetCanBeDamaged(false);
+
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
 	SetRootComponent(Sphere);
 

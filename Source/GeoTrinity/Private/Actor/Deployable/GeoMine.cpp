@@ -9,6 +9,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/Team.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoMine::AGeoMine()
@@ -47,47 +48,51 @@ void AGeoMine::Recall(bool bExectueCue, float Value)
 
 	bIsRecalling = true;
 
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(MineData.Owner);
-	if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on Owner")))
+
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		Super::Recall(bExectueCue, Value);
-		return;
-	}
-
-	TArray<AActor*> OverlappingActors;
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes = {UEngineTypes::ConvertToObjectType(ECC_Pawn),
-														 UEngineTypes::ConvertToObjectType(ECC_GeoCharacter)};
-	UKismetSystemLibrary::SphereOverlapActors(this, GetActorLocation(), MineData.Params.Size, ObjectTypes, nullptr, {},
-											  OverlappingActors);
-
-	float const ScaledLifeSpent = MineData.Params.Value * Value;
-
-	for (AActor* Actor : OverlappingActors)
-	{
-		if (!IsValid(Actor) || Actor == MineData.Owner)
+		UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(MineData.Owner);
+		if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on Owner")))
 		{
-			continue;
+			Super::Recall(bExectueCue, Value);
+			return;
 		}
+		TArray<AActor*> OverlappingActors;
+		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes = {UEngineTypes::ConvertToObjectType(ECC_Pawn),
+															 UEngineTypes::ConvertToObjectType(ECC_GeoCharacter)};
+		UKismetSystemLibrary::SphereOverlapActors(this, GetActorLocation(), MineData.Params.Size, ObjectTypes, nullptr,
+												  {}, OverlappingActors);
 
-		if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, static_cast<int32>(ETeamAttitudeBitflag::Hostile)))
+		float const ScaledLifeSpent = MineData.Params.Value * Value;
+
+		for (AActor* Actor : OverlappingActors)
 		{
-			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-			if (TargetASC)
+			if (!IsValid(Actor) || Actor == MineData.Owner)
 			{
-				FDamageEffectData DamageEffect;
-				DamageEffect.DamageAmount = FScalableFloat(ScaledLifeSpent);
-				GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
+				continue;
 			}
-		}
-		else if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor,
-												 static_cast<int32>(ETeamAttitudeBitflag::Friendly)))
-		{
-			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-			if (TargetASC)
+
+			if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor,
+												static_cast<int32>(ETeamAttitudeBitflag::Hostile)))
 			{
-				FShieldEffectData ShieldEffect;
-				ShieldEffect.ShieldAmount = FScalableFloat(ScaledLifeSpent);
-				GeoASLib::ApplySingleEffectData(ShieldEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
+				UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
+				if (TargetASC)
+				{
+					FDamageEffectData DamageEffect;
+					DamageEffect.DamageAmount = FScalableFloat(ScaledLifeSpent);
+					GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
+				}
+			}
+			else if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor,
+													 static_cast<int32>(ETeamAttitudeBitflag::Friendly)))
+			{
+				UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
+				if (TargetASC)
+				{
+					FShieldEffectData ShieldEffect;
+					ShieldEffect.ShieldAmount = FScalableFloat(ScaledLifeSpent);
+					GeoASLib::ApplySingleEffectData(ShieldEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
+				}
 			}
 		}
 	}
@@ -114,4 +119,11 @@ void AGeoMine::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 
 	Recall(true, 1.f);
+}
+
+FGameplayCueParameters AGeoMine::GetRecallCueParams() const
+{
+	FGameplayCueParameters Params = Super::GetRecallCueParams();
+	Params.RawMagnitude = MineData.Params.Size;
+	return Params;
 }

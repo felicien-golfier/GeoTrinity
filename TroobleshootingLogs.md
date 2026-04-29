@@ -1,23 +1,51 @@
 **Enter here all your issues and fixes you got when setup this project, upgrade Unreal engine etc..**
 
-# UE 5.7.2
-30/01/2026 
+---
 
-commit 562880e0ffc015ddce292007cde1ac44ac83389e 
+# Project Setup & Engine
 
-	- Had to update manually Source/GeoTrinity.Target.cs and Source/GeoTrinityEditor.Target.cs 
-	- BitFlags needs now the full Enum path (ex : /Script/GeoTrinity.ETeam")
-	- /!\ Loaded Failed on my Solution in Rider : Had to install the new Visual Studio with .Net 8.0 MANUALLY.
-	- Forgot to download the pdb for Unreal in the launcher. 
+## UE 5.7.2 — 30/01/2026
+commit `562880e0ffc015ddce292007cde1ac44ac83389e`
+- Had to update manually `Source/GeoTrinity.Target.cs` and `Source/GeoTrinityEditor.Target.cs`
+- BitFlags now require the full Enum path (e.g. `/Script/GeoTrinity.ETeam`)
+- **Rider load failure**: had to install the new Visual Studio with .Net 8.0 manually
+- Forgot to download the PDB for Unreal in the launcher
 
+**After each pull (from Oliver):**
+Open a command prompt and run:
+```
+"C:\Program Files\Epic Games\UE_5.x\Engine\Build\BatchFiles\Build.bat" GeoTrinityEditor Win64 Development "C:\Path\To\Project.uproject"
+```
 
-# ExecCalc attribute capture: Source vs Target
-When adding a new ExecCalc that captures a multiplier attribute (e.g. HealMultiplier), capture from **Target** if the GE is applied by a non-character source (deployable, pickup). Capture from **Source** only when the caster/attacker is the source and owns the attribute (e.g. DamageMultiplier on the attacker).
-If `FindCaptureSpecByDefinition` returns null with `bOnlyIncludeValidCapture=true`, the capture spec exists but `HasValidCapture()` is false — the source ASC doesn't own the attribute set containing that attribute.
+---
 
+# GAS — Gameplay Cues
 
+## ExecCalc attribute capture: Source vs Target
+When adding a new ExecCalc that captures a multiplier attribute (e.g. `HealMultiplier`), capture from **Target** if the GE is applied by a non-character source (deployable, pickup). Capture from **Source** only when the caster/attacker is the source and owns the attribute (e.g. `DamageMultiplier` on the attacker).
 
-Notes from Oliver : 
-- After each pull, open the cmd
-- in the cmd, paste : "YourLocalUnrealInstallPath\Engine\Build\BatchFiles\Build.bat" GeoTrinityEditor Win64 Development "TheLocationOfThe .uproject"
-- should look like this :  "C:\Program Files\Epic Games\UE_5.3\Engine\Build\BatchFiles\Build.bat"  GeoTrinityEditor Win64 Development  "C:\Dev\MyProject\MyProject.uproject"
+If `FindCaptureSpecByDefinition` returns null with `bOnlyIncludeValidCapture=true`, the capture spec exists but `HasValidCapture()` is false — the source ASC doesn't own the attribute set that contains that attribute.
+
+## Gameplay Cue not showing when fired from `OnFireTargetDataReceived` — 29/04/2026
+
+**Symptom:** A deployable's explosion Gameplay Cue plays correctly on proximity overlap but is invisible when the same `Recall(true, ...)` call is made from `OnFireTargetDataReceived` (e.g. `GeoDetonateAllMinesAbility`).
+
+**Root cause:** GAS prediction-key collision.
+When `Fire()` calls `Super::Fire()` → `ServerSetReplicatedTargetData(key=K)`, the server receives the target data and calls `OnFireTargetDataReceived` with scoped prediction key K still active. When it fires `ExecuteGameplayCue`, GAS calls `NetMulticast_InvokeGameplayCueExecuted` with key K. On the **owning client**, `NetMulticast_InvokeGameplayCueExecuted_Implementation` checks `!PredictionKey.IsLocalClientKey()` → `false` (key K *is* the local client's key) → **the cue is skipped**. GAS assumes the client already played it predicted in `Fire()`, but `Fire()` never fired it, so the owning client sees nothing.
+
+Proximity overlap avoids this entirely: `OnCapsuleBeginOverlap` fires independently on every machine, so each client calls `ExecuteGameplayCue` locally with no prediction key, no multicast, no skip.
+
+**Fix:** Move all logic into `Fire()` and drop `OnFireTargetDataReceived` entirely (same pattern as `GeoRecallTurretAbility`). Because `Super::Fire()` is never called, no prediction key is ever established. The `ExecuteGameplayCue` inside `Mine->Recall()` multicasts with an empty key — empty keys are never treated as local-client keys, so the multicast is not skipped on any machine.
+
+```cpp
+void UMyAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
+{
+    // ... resolve Pawn and DeployableManager ...
+    for (AGeoMine* Mine : ...)
+        Mine->Recall(true, Multiplier);
+    EndAbility(true, false);
+    // No Super::Fire() — no prediction key, no multicast skip
+}
+```
+
+Note: `ExecuteRecallCue()` is a public method on `AGeoDeployableBase` that fires only the Gameplay Cue (no game logic, safe to call on any machine) — useful when you need the cue without the full `Recall` side effects.

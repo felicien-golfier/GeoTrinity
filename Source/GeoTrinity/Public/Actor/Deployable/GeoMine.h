@@ -37,6 +37,7 @@ private:
 	void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 							   UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
 							   FHitResult const& SweepResult);
+	virtual FGameplayCueParameters GetRecallCueParams() const override;
 
 	UPROPERTY(Replicated)
 	FDeployableData MineData;

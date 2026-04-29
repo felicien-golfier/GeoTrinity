@@ -112,6 +112,7 @@ void UShieldBurstPassiveComponent::Charge()
 	}
 	else
 	{
+		CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, 0.f);
 		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, 0.f);
 	}
 }

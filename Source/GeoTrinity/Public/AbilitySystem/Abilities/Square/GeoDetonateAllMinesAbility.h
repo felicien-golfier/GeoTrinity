@@ -17,7 +17,8 @@ class GEOTRINITY_API UGeoDetonateAllMinesAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 protected:
-	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& TargetData,
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
+	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 
 private:

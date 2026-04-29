@@ -57,7 +57,8 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		FDamageEffectData DrainEffectData;
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
-		DrainEffectData.bSuppressGameplayCue = !GameFeelComponent->IsDamageCueAvailable();
+		DrainEffectData.bSuppressGameplayCue =
+			bSuppressDrainDamageVisuals ? true : !GameFeelComponent->IsDamageCueAvailable();
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed);
 	}
 }
@@ -68,22 +69,37 @@ void AGeoDeployableBase::BeginPlay()
 {
 	Super::BeginPlay();
 	InitDrain();
+
+	if (!CanBeDamaged())
+	{
+		HealthBarComponent->SetHiddenInGame(true);
+	}
 }
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::ExecuteRecallCue()
+{
+	if (!RecallGameplayCueTag.IsValid())
+	{
+		return;
+	}
+
+	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
+	if (!ensureMsgf(IsValid(SourceASC), TEXT("AGeoDeployableBase: no ASC on Owner")))
+	{
+		return;
+	}
+	SourceASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
+}
+
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::Recall(bool const bExecuteCue, float Value)
 {
-	if (bExecuteCue && RecallGameplayCueTag.IsValid())
+	if (bExecuteCue)
 	{
-		UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
-		if (!IsValid(SourceASC))
-		{
-			ensureMsgf(SourceASC, TEXT("AGeoDeployableBase: no ASC on Owner"));
-		}
-		SourceASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
+		ExecuteRecallCue();
 	}
 
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
-
 
 	OnDeployableExpired();
 }

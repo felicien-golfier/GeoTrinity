@@ -68,6 +68,9 @@ public:
 	/** Called by the owning player to recall this deployable */
 	virtual void Recall(bool bExecuteCue, float Value = 0.f);
 
+	/** Fires the recall Gameplay Cue without triggering any game logic. Safe to call on any machine. */
+	void ExecuteRecallCue();
+
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams() const;
 
@@ -114,7 +117,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag RecallGameplayCueTag;
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	bool bSuppressDrainDamageVisuals = true;
 	bool bExpired = false;
 
 private:

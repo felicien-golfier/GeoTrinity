@@ -8,8 +8,7 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoDetonateAllMinesAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& TargetData,
-														   FGameplayTag ApplicationTag)
+void UGeoDetonateAllMinesAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	AActor* PayloadOwner = StoredPayload.Owner;
 	APawn* Pawn = Cast<APawn>(PayloadOwner);
@@ -44,5 +43,5 @@ void UGeoDetonateAllMinesAbility::OnFireTargetDataReceived(FGameplayAbilityTarge
 		}
 	}
 
-	EndAbility(true, false);
+	EndAbility(GeoLib::IsServer(GetWorld()), false);
 }
