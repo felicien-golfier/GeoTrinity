@@ -94,6 +94,7 @@ protected:
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 						 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
 						 FHitResult const& SweepResult);
+	/** Called on a physics blocking hit (wall or environment). Default is a no-op; override to implement bounce behaviour. */
 	UFUNCTION()
 	virtual void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 							 FVector NormalImpulse, FHitResult const& Hit);
