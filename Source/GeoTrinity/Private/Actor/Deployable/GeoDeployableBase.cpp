@@ -83,12 +83,15 @@ void AGeoDeployableBase::ExecuteRecallCue()
 		return;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
-	if (!ensureMsgf(IsValid(SourceASC), TEXT("AGeoDeployableBase: no ASC on Owner")))
+	// Use this deployable's own ASC (not the owner's) so each deployable fires from its own actor channel.
+	// The owner's ASC would share one channel across all deployables, hitting UE5's 2-unreliable-RPC-per-channel
+	// throttle when multiple deployables detonate simultaneously.
+	UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponent());
+	if (!ensureMsgf(IsValid(ASC), TEXT("AGeoDeployableBase: no ASC on self")))
 	{
 		return;
 	}
-	SourceASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
+	ASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
