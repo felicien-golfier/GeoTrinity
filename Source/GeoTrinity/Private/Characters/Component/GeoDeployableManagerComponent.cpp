@@ -31,7 +31,7 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 		   Deployables.Num(), MaxDeployables);
 
 	Deployables.Add(Deployable);
-	Deployable->OnDeployableDestroyed.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
+	Deployable->OnDeployableExpiredEvent.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
 
 	OnDeployCountChanged.Broadcast(Deployables.Num(), MaxDeployables);
 }
@@ -40,7 +40,7 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 void UGeoDeployableManagerComponent::RecallAll()
 {
 	// Copy since Recall will trigger removal via the delegate
-	TArray<TObjectPtr<AGeoDeployableBase>> Copy = Deployables;
+	TArray<AGeoDeployableBase*> Copy = Deployables;
 	for (AGeoDeployableBase* Deployable : Copy)
 	{
 		if (IsValid(Deployable))

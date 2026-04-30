@@ -36,9 +36,6 @@ protected:
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 
-	/** Returns MaxChargeTime, which is also used as the ability's FireDelay. */
-	virtual float GetMaxChargeTime() const override { return MaxChargeTime; }
-
 	// Sweet spot range (charge ratio 0–1). Releasing within this window applies SweetSpotBonusEffect.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float SweetSpotMinRatio = 0.6f;
@@ -52,7 +49,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float MaxDamageMultiplier = 1.5f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
-	float MaxChargeTime = .5f;
 };

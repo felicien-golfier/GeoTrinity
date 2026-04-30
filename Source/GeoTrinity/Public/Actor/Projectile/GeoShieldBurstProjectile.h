@@ -19,7 +19,7 @@ struct FShieldBounceSnapshot
 	FVector Velocity = FVector::ZeroVector;
 
 	UPROPERTY()
-	float Radius;
+	float Radius = 0.f;
 };
 
 /**
@@ -49,12 +49,14 @@ protected:
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor) override;
 
-	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients. */
+	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients.
+	 */
 	UFUNCTION()
 	void OnRep_BounceSnapshot();
 
 private:
-	/** Records the post-bounce location, velocity, and radius in BounceSnapshot for replication to simulated clients. */
+	/** Records the post-bounce location, velocity, and radius in BounceSnapshot for replication to simulated clients.
+	 */
 	UFUNCTION()
 	void OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity);
 

@@ -47,7 +47,7 @@ public:
 	float GetDeployRatio() const;
 
 	/** Returns the live array of tracked deployable actors. Entries are removed automatically on destruction. */
-	TArray<TObjectPtr<AGeoDeployableBase>> const& GetDeployables() const { return Deployables; }
+	TArray<AGeoDeployableBase*> const& GetDeployables() const { return Deployables; }
 
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployCountChanged OnDeployCountChanged;
@@ -60,5 +60,5 @@ private:
 	void OnDeployableDestroyed(AGeoDeployableBase* Deployable);
 
 	UPROPERTY(Replicated)
-	TArray<TObjectPtr<AGeoDeployableBase>> Deployables;
+	TArray<AGeoDeployableBase*> Deployables;
 };

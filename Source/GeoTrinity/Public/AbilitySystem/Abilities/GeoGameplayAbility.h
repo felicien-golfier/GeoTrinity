@@ -89,6 +89,8 @@ public:
 	float GetChargeRatio() const;
 	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo ActivationInfo) override;
+	UFUNCTION(BlueprintCallable)
+	float GetFireDelay() const;
 
 protected:
 	/**
@@ -123,10 +125,6 @@ protected:
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag);
 
-	/** Returns the maximum charge time for charge-mode abilities. Override to return the configured value. */
-	UFUNCTION(BlueprintCallable)
-	virtual float GetMaxChargeTime() const;
-
 	FVector2D GetFireOrigin2D(AActor* Instigator) const;
 	FVector GetFireOrigin(AActor* Instigator) const;
 	float GetFireYaw(AActor const* Instigator) const;
@@ -135,20 +133,26 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;
 
-	// We consider the ability to Fire at the end of the FireDelay delay.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (ClampMin = "0", UIMin = "0"))
-	float FireDelay = 0.5f;
-
 	// Define the way the ability start to Fire. After a charge time or directly after FireDelay.
 	// When FireMode = Charge, we use FireDelay as max charge time.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	EFireMode FireMode = EFireMode::ShootAfterFireDelay;
+
 
 protected:
 	FAbilityPayload StoredPayload;
 	bool bCommitAtActivate = true;
 
 private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	bool bUseGeneralChargeTimeForFireDelay = true;
+
+	// We consider the ability to Fire at the end of the FireDelay delay.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
+			  meta = (EditCondition = "!bUseGeneralChargeTimeForFireDelay", EditConditionHides, ClampMin = "0",
+					  UIMin = "0", AllowPrivateAccess = true))
+	float FireDelay = 0.5f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))

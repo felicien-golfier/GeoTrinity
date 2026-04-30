@@ -53,4 +53,6 @@ void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 	// Decode charge ratio from Seed before parent spawns the projectile and calls GetEffectDataArray()
 	StoredPayload.Seed = TargetData->Seed;
 	Super::OnFireTargetDataReceived(DataHandle, ApplicationTag);
+
+	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, false);
 }

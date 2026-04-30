@@ -49,3 +49,15 @@ void UMyAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 ```
 
 Note: `ExecuteRecallCue()` is a public method on `AGeoDeployableBase` that fires only the Gameplay Cue (no game logic, safe to call on any machine) — useful when you need the cue without the full `Recall` side effects.
+
+## Gameplay Cue not showing when fired at the same frame on the same ASC — 30/04/2026
+
+Only 2 Gameplay Cues can be multicasted over the network each frame for a single ASC. If you try to detonate mines with the GC on the SourceASC, then only 2 will be shown, always. even if client plays it.
+
+# Misc
+
+## Deployables null on client
+
+It happens that the deployables are null on client. replication fails for some reasons. to fix it I've just made the replication Using a function, then try it out, and then come back to the original. :shruging:
+
+---

@@ -61,7 +61,7 @@ public:
 
 	/** Computes DrainMagnitudePerSecond from Params and applies the initial drain GE. Call after data is set. */
 	virtual void InitDrain();
-	/** Ticks the blink timer state and calls OnDeployableExpired when health reaches zero. */
+	/** Ticks the blink timer state and calls Expire when health reaches zero. */
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 
@@ -86,7 +86,7 @@ public:
 	bool IsBlinking() const;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnDeployableDestroyed OnDeployableDestroyed;
+	FOnDeployableDestroyed OnDeployableExpiredEvent;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGeoCombattantWidgetComp> HealthBarComponent;
@@ -102,9 +102,8 @@ protected:
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
 
 	/** Called when duration or health reaches zero */
-	UFUNCTION(BlueprintNativeEvent)
-	void OnDeployableExpired();
-	virtual void OnDeployableExpired_Implementation();
+	UFUNCTION()
+	virtual void Expire();
 
 	UFUNCTION(BlueprintNativeEvent)
 	void OnBlinkStarted();
@@ -120,6 +119,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 	bool bExpired = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	float TimeBeforeDestroyAtExpire = 3.f;
 
 private:
 	void OnBlinkTimerExpired();

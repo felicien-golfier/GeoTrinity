@@ -40,6 +40,7 @@ protected:
 	void ScheduleFire();
 	/** Fires a projectile at the current best target if one exists. */
 	void TryFire();
+	virtual void Expire() override;
 
 	UPROPERTY(Replicated)
 	FDeployableData Data;

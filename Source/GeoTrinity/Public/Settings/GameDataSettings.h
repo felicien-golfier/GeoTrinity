@@ -25,7 +25,8 @@ class GEOTRINITY_API UGameDataSettings : public UDeveloperSettings
 public:
 	/**
 	 * Synchronously loads and returns the data asset pointed to by SoftObject.
-	 * @warning Should only be called after the asset has been async-loaded; synchronous loads during gameplay cause hitches.
+	 * @warning Should only be called after the asset has been async-loaded; synchronous loads during gameplay cause
+	 * hitches.
 	 */
 	template <typename T>
 	static T* GetLoadedDataAsset(TSoftObjectPtr<T> const& SoftObject);
@@ -41,7 +42,7 @@ public:
 	TSoftClassPtr<UUserWidget> DefaultDeployableHealthBarWidgetClass;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
-	float DeployMaxChargeTime = 1.f;
+	float GeneralChargeTime = .5f;
 
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
@@ -59,7 +60,8 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float RegularTickInterval = .1f;
 
-	/** Maximum number of times per second the GameplayCue on HealthEffect/DamageEffect may fire when applied every tick (drain/heal). */
+	/** Maximum number of times per second the GameplayCue on HealthEffect/DamageEffect may fire when applied every tick
+	 * (drain/heal). */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay", meta = (ClampMin = "0.1"))
 	float GameplayCueRateLimitPerSecond = 3.f;
 

@@ -111,3 +111,10 @@ void AGeoTurret::TryFire()
 	GeoASLib::FullySpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload,
 								   GetData()->EffectDataArray, SpawnServerTime);
 }
+
+void AGeoTurret::Expire()
+{
+	GetWorldTimerManager().ClearTimer(FireTimerHandle);
+	FireTimerHandle.Invalidate();
+	Super::Expire();
+}

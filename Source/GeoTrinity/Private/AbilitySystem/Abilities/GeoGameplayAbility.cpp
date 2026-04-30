@@ -8,7 +8,6 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Characters/PlayableCharacter.h"
-#include "GameFramework/Character.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -179,7 +178,8 @@ void UGeoGameplayAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 										FGameplayAbilityActorInfo const* ActorInfo,
 										FGameplayAbilityActivationInfo const ActivationInfo)
 {
-	if (FireMode == EFireMode::ChargeForFireDelay && !bIsAbilityEnding && IsActive())
+	if (FireMode == EFireMode::ChargeForFireDelay && !bIsAbilityEnding && IsActive()
+		&& FireTriggerTimerHandle.IsValid())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 		FireTriggerTimerHandle.Invalidate();
@@ -187,10 +187,15 @@ void UGeoGameplayAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 	}
 }
 
+float UGeoGameplayAbility::GetFireDelay() const
+{
+	return bUseGeneralChargeTimeForFireDelay ? GetDefault<UGameDataSettings>()->GeneralChargeTime : FireDelay;
+}
+
 void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo,
 											  UAnimInstance* AnimInstance)
 {
-	if (FireDelay > 0.f)
+	if (GetFireDelay() > 0.f)
 	{
 		if (AnimInstance && AnimMontage)
 		{
@@ -198,7 +203,7 @@ void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo con
 		}
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::BuildDataAndFire,
-											   FireDelay);
+											   GetFireDelay());
 		if (FireMode == EFireMode::ChargeForFireDelay)
 		{
 			ChargeStartTime = GetWorld()->GetTimeSeconds();
@@ -273,7 +278,7 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	float const SectionLength = EndTime - StartTime;
 	ensureMsgf(SectionLength > 0.f, TEXT("Current section has no length"));
 
-	float const PlayRate = SectionLength / FireDelay;
+	float const PlayRate = SectionLength / GetFireDelay();
 
 	if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 	{
@@ -345,10 +350,6 @@ void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHan
 	StoredPayload.Origin = AbilityTargetData->Origin;
 	StoredPayload.Yaw = AbilityTargetData->Yaw;
 }
-float UGeoGameplayAbility::GetMaxChargeTime() const
-{
-	return GetDefault<UGameDataSettings>()->DeployMaxChargeTime;
-}
 
 FVector2D UGeoGameplayAbility::GetFireOrigin2D(AActor* Instigator) const
 {
@@ -370,12 +371,13 @@ float UGeoGameplayAbility::GetFireYaw(AActor const* Instigator) const
 
 float UGeoGameplayAbility::GetChargeRatio() const
 {
-	if (GetMaxChargeTime() <= 0.f)
+	float const MaxChargeTime = GetFireDelay();
+	if (MaxChargeTime <= 0.f || FireMode != EFireMode::ChargeForFireDelay)
 	{
 		return 1.f;
 	}
 
-	float RawRatio = FMath::Clamp((GetWorld()->GetTimeSeconds() - ChargeStartTime) / GetMaxChargeTime(), 0.f, 1.f);
+	float RawRatio = FMath::Clamp((GetWorld()->GetTimeSeconds() - ChargeStartTime) / MaxChargeTime, 0.f, 1.f);
 
 	// Apply a designer-tunable easing curve so the gauge feels responsive at the start and slows near full charge.
 	UCurveFloat const* Curve = GetDefault<UGameDataSettings>()->GaugeChargingSpeedCurve.LoadSynchronous();

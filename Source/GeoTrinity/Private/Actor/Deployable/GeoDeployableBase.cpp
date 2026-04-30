@@ -26,6 +26,8 @@ AGeoDeployableBase::AGeoDeployableBase()
 	{
 		HealthBarComponent->SetWidgetClass(HealthBarWidgetClass);
 	}
+
+	SetReplicates(true);
 }
 
 void AGeoDeployableBase::InitDrain()
@@ -97,6 +99,11 @@ void AGeoDeployableBase::ExecuteRecallCue()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::Recall(bool const bExecuteCue, float Value)
 {
+	if (bExpired)
+	{
+		return;
+	}
+
 	if (bExecuteCue)
 	{
 		ExecuteRecallCue();
@@ -104,7 +111,7 @@ void AGeoDeployableBase::Recall(bool const bExecuteCue, float Value)
 
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
 
-	OnDeployableExpired();
+	Expire();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -139,7 +146,7 @@ void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 		}
 		else
 		{
-			OnDeployableExpired();
+			Expire();
 		}
 	}
 }
@@ -161,11 +168,11 @@ void AGeoDeployableBase::OnBlinkVisibilityTick()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnBlinkTimerExpired()
 {
-	OnDeployableExpired();
+	Expire();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::OnDeployableExpired_Implementation()
+void AGeoDeployableBase::Expire()
 {
 	if (bExpired)
 	{
@@ -175,8 +182,20 @@ void AGeoDeployableBase::OnDeployableExpired_Implementation()
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(BlinkVisibilityTimerHandle);
 	SetActorHiddenInGame(true);
-	OnDeployableDestroyed.Broadcast(this);
-	Destroy();
+	OnDeployableExpiredEvent.Broadcast(this);
+	FTimerHandle TimerHandle;
+	SetActorTickEnabled(false);
+
+	GetWorldTimerManager().SetTimer(
+		TimerHandle,
+		[this]()
+		{
+			if (IsValid(this))
+			{
+				this->Destroy();
+			}
+		},
+		TimeBeforeDestroyAtExpire, false);
 }
 
 

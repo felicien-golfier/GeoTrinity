@@ -34,8 +34,7 @@ void UGeoDetonateAllMinesAbility::Fire(FGeoAbilityTargetData const& AbilityTarge
 		return;
 	}
 
-	TArray<TObjectPtr<AGeoDeployableBase>> const DeployablesCopy = DeployableManager->GetDeployables();
-	for (AGeoDeployableBase* Deployable : DeployablesCopy)
+	for (AGeoDeployableBase* Deployable : TArray(DeployableManager->GetDeployables()))
 	{
 		if (AGeoMine* Mine = Cast<AGeoMine>(Deployable); Mine && !Mine->IsExpired())
 		{
