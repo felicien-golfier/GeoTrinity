@@ -1,6 +1,7 @@
 ﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
+#include "GameplayPrediction.h"
 #include "GameplayTagContainer.h"
 
 #include "AbilityPayload.generated.h"
@@ -40,4 +41,7 @@ struct GEOTRINITY_API FAbilityPayload
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	AActor* Instigator{nullptr};
+
+	UPROPERTY(Transient)
+	FPredictionKey PredictionKey{};
 };

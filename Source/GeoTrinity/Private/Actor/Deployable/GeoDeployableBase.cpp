@@ -6,6 +6,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "GameplayEffect.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Settings/GameDataSettings.h"
@@ -93,6 +94,8 @@ void AGeoDeployableBase::ExecuteRecallCue()
 	{
 		return;
 	}
+
+	FScopedPredictionWindow ScopedPrediction(ASC, GetData()->PredictionKey);
 	ASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
 }
 
@@ -206,16 +209,23 @@ bool AGeoDeployableBase::IsBlinking() const
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams() const
+FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
 {
 	FVector const DeployableLocation = GetActorLocation();
-	FVector const OwnerLocation = GetData()->Owner->GetActorLocation();
+	AActor* DataOwner = GetData()->Owner;
+	if (DataOwner->IsA(APlayerState::StaticClass()))
+	{
+		DataOwner = CastChecked<APlayerState>(DataOwner)->GetPawn();
+	}
+
+	FVector const OwnerLocation = Owner->GetActorLocation();
 
 
 	FGameplayCueParameters CueParams;
 	CueParams.Location = DeployableLocation;
 	CueParams.Normal = (OwnerLocation - DeployableLocation).GetSafeNormal();
-	CueParams.Instigator = GetData()->Owner;
+	CueParams.EffectCauser = this;
+	CueParams.Instigator = DataOwner;
 	CueParams.AbilityLevel = GetData()->Level;
 	CueParams.RawMagnitude = IsBlinking() ? 1.f : 0.f;
 	return CueParams;

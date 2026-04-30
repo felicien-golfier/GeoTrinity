@@ -5,6 +5,7 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
+#include "GameplayPrediction.h"
 #include "StructUtils/InstancedStruct.h"
 
 #include "GeoDeployableBase.generated.h"
@@ -45,6 +46,9 @@ struct FDeployableData : public FInteractableActorData
 
 	UPROPERTY(Transient)
 	FDeployableDataParams Params;
+
+	UPROPERTY(Transient)
+	FPredictionKey PredictionKey;
 };
 
 /**
@@ -72,7 +76,7 @@ public:
 	void ExecuteRecallCue();
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
-	virtual FGameplayCueParameters GetRecallCueParams() const;
+	virtual FGameplayCueParameters GetRecallCueParams();
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)

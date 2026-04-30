@@ -121,7 +121,7 @@ void AGeoMine::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	Recall(true, 1.f);
 }
 
-FGameplayCueParameters AGeoMine::GetRecallCueParams() const
+FGameplayCueParameters AGeoMine::GetRecallCueParams()
 {
 	FGameplayCueParameters Params = Super::GetRecallCueParams();
 	Params.RawMagnitude = MineData.Params.Size;

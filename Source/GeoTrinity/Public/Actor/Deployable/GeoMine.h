@@ -26,7 +26,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void Recall(bool bExectueCue, float Value) override;
-	virtual FGameplayCueParameters GetRecallCueParams() const override;
+	virtual FGameplayCueParameters GetRecallCueParams() override;
 
 protected:
 	virtual FDeployableData const* GetData() const override { return &MineData; }
