@@ -18,8 +18,6 @@ class GEOTRINITY_API UGeoDetonateAllMinesAbility : public UGeoGameplayAbility
 
 protected:
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
-	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
-										  FGameplayTag ApplicationTag) override;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Detonate", meta = (AllowPrivateAccess = true))

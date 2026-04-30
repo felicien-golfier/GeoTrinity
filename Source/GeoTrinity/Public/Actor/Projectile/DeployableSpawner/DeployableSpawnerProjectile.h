@@ -19,9 +19,6 @@ class GEOTRINITY_API ADeployableSpawnerProjectile : public AGeoProjectile
 	GENERATED_BODY()
 
 public:
-	
-	ADeployableSpawnerProjectile();
-	
 	FDeployableDataParams Params;
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 

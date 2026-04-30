@@ -26,6 +26,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void Recall(bool bExectueCue, float Value) override;
+	virtual FGameplayCueParameters GetRecallCueParams() const override;
 
 protected:
 	virtual FDeployableData const* GetData() const override { return &MineData; }
@@ -37,7 +38,6 @@ private:
 	void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 							   UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
 							   FHitResult const& SweepResult);
-	virtual FGameplayCueParameters GetRecallCueParams() const override;
 
 	UPROPERTY(Replicated)
 	FDeployableData MineData;

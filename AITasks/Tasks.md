@@ -69,16 +69,4 @@ Clear this file and replace its tasks whenever a new batch of overnight work is 
   -->
   ```
 
-- [x] Read all the code and find potential bug, then report it in a file next to this one.
-
-- [x] The HealthEffect and DamageEffect used in UGameDataSettings have now gameplayCue. But they are use every frame, please ensure we use the gameplay cue only a max times per sec given by a variable, Only when the Effect is used for Drain every frame or Heal every frame.
-
-- [x] When launching auto-projectiles, the server launches often one more projectile than the client. causing damage where we shouldn't, find the bug, fix it and report it. Do it step by step to avoid timeout.
-
-- [] ShieldBurstProjectile Niagara Bullet_Radius doesn't work.
-
-- [] Gravity does not work on enemies. They spawn higher than where they should be and never go down, even if their capsule collider doesn;t touch the ground.
-
-- [] Add Explosion actor at the Mine explosion. Maybe we should think about having a Niagara instead of spawning actor for that kind of event.
-
-- [] Split ShieldBurst bounce logic to be able to bounce when it does hit a wall, but not scale up.
+- [] Read all the code and find potential bug, then report it in a file next to this one. Look at what as already been reported before report anything not new.
