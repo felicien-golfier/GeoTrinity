@@ -95,8 +95,11 @@ void AGeoDeployableBase::ExecuteRecallCue()
 		return;
 	}
 
-	FScopedPredictionWindow ScopedPrediction(ASC, GetData()->PredictionKey);
-	ASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
+	if (!GeoLib::IsServer(GetWorld()))
+	{
+		FScopedPredictionWindow ScopedPrediction(ASC);
+		ASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
+	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
