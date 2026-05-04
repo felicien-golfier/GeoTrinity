@@ -1,7 +1,7 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
-#include "AbilitySystem/Abilities/AbilityPayload.h"
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "GameplayTagContainer.h"
 #include "StructUtils/InstancedStruct.h"

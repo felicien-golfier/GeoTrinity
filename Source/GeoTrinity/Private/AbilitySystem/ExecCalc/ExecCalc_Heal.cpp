@@ -4,8 +4,8 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UExecCalc_Heal::UExecCalc_Heal()

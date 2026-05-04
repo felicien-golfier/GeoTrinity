@@ -4,11 +4,11 @@
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystemInterface.h"
+#include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "CoreMinimal.h"
+#include "GameClasses/GeoPlayerController.h"
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
-#include "GeoMovementComponent.h"
-#include "GeoPlayerController.h"
 
 #include "GeoCharacter.generated.h"
 
@@ -22,7 +22,7 @@ class UGeoAbilitySystemComponent;
 class UGeoInputComponent;
 class UDynamicMeshComponent;
 class UGeoGameFeelComponent;
-class UGeoMovementComponent;
+class UGeoCharacterMovementComponent;
 class UStaticMeshComponent;
 class UGeoCombattantWidgetComp;
 
@@ -45,10 +45,10 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	/** Returns the GeoInputComponent attached to this character. */
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
-	/** Returns the movement component cast to UGeoMovementComponent. */
-	UGeoMovementComponent* GetGeoMovementComponent() const
+	/** Returns the movement component cast to UGeoCharacterMovementComponent. */
+	UGeoCharacterMovementComponent* GetGeoMovementComponent() const
 	{
-		return Cast<UGeoMovementComponent>(GetMovementComponent());
+		return Cast<UGeoCharacterMovementComponent>(GetMovementComponent());
 	}
 
 	//----------------------------------------------------------------------//

@@ -1,16 +1,16 @@
 ﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 
-#include "AbilitySystem/Abilities/PatternAbility.h"
+#include "AbilitySystem/Abilities/Base/PatternAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
-#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
+#include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "Characters/PlayerClassTypes.h"
-#include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
 

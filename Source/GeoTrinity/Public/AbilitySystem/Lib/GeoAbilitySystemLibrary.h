@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
 #include "Kismet/BlueprintFunctionLibrary.h"

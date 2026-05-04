@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
 
 #include "GeoHealReturnPassiveAbility.generated.h"

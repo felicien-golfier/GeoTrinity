@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"

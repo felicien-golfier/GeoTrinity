@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "GeoPlayerController.h"
+#include "GameClasses/GeoPlayerController.h"
 
 #include "Camera/CameraActor.h"
 #include "Engine/Engine.h"

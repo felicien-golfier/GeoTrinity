@@ -2,7 +2,7 @@
 
 #include "Actor/Deployable/GeoBuffPickup.h"
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemInterface.h"
 #include "Components/SceneComponent.h"

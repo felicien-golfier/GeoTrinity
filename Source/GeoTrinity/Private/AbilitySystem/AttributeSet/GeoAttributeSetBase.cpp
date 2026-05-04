@@ -3,14 +3,14 @@
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 
-#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/GeoAscTypes.h"
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
+#include "GameClasses/GeoPlayerState.h"
 #include "GameplayEffectExtension.h"
-#include "GeoPlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "System/GeoCombatStatsSubsystem.h"
 

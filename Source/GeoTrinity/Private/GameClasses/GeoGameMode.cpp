@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "GeoGameMode.h"
+#include "GameClasses/GeoGameMode.h"
 
 #include "Characters/GeoCharacter.h"
 

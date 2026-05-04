@@ -1,6 +1,6 @@
 ﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AbilitySystem/GeoAscTypes.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 
 namespace
 {

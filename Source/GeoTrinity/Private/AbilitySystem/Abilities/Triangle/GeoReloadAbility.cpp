@@ -3,8 +3,8 @@
 #include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Deployable/GeoBuffPickup.h"

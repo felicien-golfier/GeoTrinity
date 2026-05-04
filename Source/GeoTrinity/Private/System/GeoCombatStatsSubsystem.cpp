@@ -2,7 +2,7 @@
 
 #include "System/GeoCombatStatsSubsystem.h"
 
-#include "GeoPlayerState.h"
+#include "GameClasses/GeoPlayerState.h"
 
 #if !UE_BUILD_SHIPPING
 static TAutoConsoleVariable<bool>
@@ -68,18 +68,16 @@ void UGeoCombatStatsSubsystem::ComputePlayerStats(float CurrentTime)
 		PruneEvents(Stats.HealingDealt, CurrentTime);
 		PruneEvents(Stats.DamageReceived, CurrentTime);
 
-		GeoPlayerState->SetDebugCombatStats(
-			SumEvents(Stats.DamageDealt) / RollingWindowSeconds,
-			SumEvents(Stats.HealingDealt) / RollingWindowSeconds,
-			SumEvents(Stats.DamageReceived) / RollingWindowSeconds,
-			Stats.TotalDamageDealt,
-			Stats.TotalHealingDealt,
-			Stats.TotalDamageReceived);
+		GeoPlayerState->SetDebugCombatStats(SumEvents(Stats.DamageDealt) / RollingWindowSeconds,
+											SumEvents(Stats.HealingDealt) / RollingWindowSeconds,
+											SumEvents(Stats.DamageReceived) / RollingWindowSeconds,
+											Stats.TotalDamageDealt, Stats.TotalHealingDealt, Stats.TotalDamageReceived);
 	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoCombatStatsSubsystem::RecordEvent(TArray<FCombatEventRecord>& Events, float& Total, float Amount, float CurrentTime)
+void UGeoCombatStatsSubsystem::RecordEvent(TArray<FCombatEventRecord>& Events, float& Total, float Amount,
+										   float CurrentTime)
 {
 	Events.Add(FCombatEventRecord{CurrentTime, Amount});
 	Total += Amount;

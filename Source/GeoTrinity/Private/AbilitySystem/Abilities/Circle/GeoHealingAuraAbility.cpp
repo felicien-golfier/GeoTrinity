@@ -3,7 +3,7 @@
 #include "AbilitySystem/Abilities/Circle/GeoHealingAuraAbility.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"

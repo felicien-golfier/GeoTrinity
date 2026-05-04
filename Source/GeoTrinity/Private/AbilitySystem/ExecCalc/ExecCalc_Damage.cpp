@@ -5,9 +5,9 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Kismet/GameplayStatics.h"
 

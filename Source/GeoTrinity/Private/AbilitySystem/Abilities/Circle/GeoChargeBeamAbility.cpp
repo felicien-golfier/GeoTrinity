@@ -2,8 +2,8 @@
 
 #include "AbilitySystem/Abilities/Circle/GeoChargeBeamAbility.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
 
 UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 {

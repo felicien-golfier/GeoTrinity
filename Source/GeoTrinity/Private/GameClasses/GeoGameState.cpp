@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "GeoGameState.h"
+#include "GameClasses/GeoGameState.h"
 
 #include "Characters/EnemyCharacter.h"
 #include "Tool/UGeoGameplayLibrary.h"

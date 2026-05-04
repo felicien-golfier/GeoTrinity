@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Abilities/Square/GeoShieldBurstPassiveAbility.h"
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoShieldBurstProjectile.h"
 #include "Characters/Component/ShieldBurstPassiveComponent.h"

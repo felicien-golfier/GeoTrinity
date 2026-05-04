@@ -3,12 +3,12 @@
 // ReSharper disable CppUE4CodingStandardNamingViolationWarning
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Data/StatusInfo.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Actor/GeoInteractableActor.h"
@@ -747,6 +747,12 @@ bool UGeoAbilitySystemLibrary::IsAttitudeIntBitflag(ETeamAttitudeBitflag Attitud
 bool UGeoAbilitySystemLibrary::IsTeamAttitudeAligned(AActor const* Owner, AActor const* OtherActor,
 													 int32 OverlapAttitudeBitMask)
 {
+	if (!IsValid(Owner) || !IsValid(OtherActor))
+	{
+		UE_LOG(LogGeoTrinity, Warning, TEXT("The Owner or the Other Actor is not valid"));
+		return false;
+	}
+
 	IAbilitySystemInterface const* OwnerASCInterface = Cast<IAbilitySystemInterface>(Owner);
 	if (!OwnerASCInterface)
 	{

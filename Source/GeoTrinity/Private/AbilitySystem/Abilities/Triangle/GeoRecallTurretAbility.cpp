@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Abilities/Triangle/GeoRecallTurretAbility.h"
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Turret/GeoTurret.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"

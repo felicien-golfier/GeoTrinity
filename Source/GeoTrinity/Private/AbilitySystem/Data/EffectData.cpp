@@ -1,9 +1,9 @@
 ﻿#include "AbilitySystem/Data/EffectData.h"
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/GeoAscTypes.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Settings/GameDataSettings.h"
 

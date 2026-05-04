@@ -3,8 +3,8 @@
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -168,7 +168,8 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	}
 
 	FGeoAbilityTargetData const* TargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
-	if (!ensureMsgf(TargetData, TEXT("GeoAutomaticFireAbility: No FGeoAbilityTargetData in DataHandle — shot skipped on server.")))
+	if (!ensureMsgf(TargetData,
+					TEXT("GeoAutomaticFireAbility: No FGeoAbilityTargetData in DataHandle — shot skipped on server.")))
 	{
 		return;
 	}

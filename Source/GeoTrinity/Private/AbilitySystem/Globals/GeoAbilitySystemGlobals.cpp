@@ -1,7 +1,7 @@
 ﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 
-#include "AbilitySystem/GeoAbilitySystemGlobals.h"
+#include "AbilitySystem/Globals/GeoAbilitySystemGlobals.h"
 
 FGameplayEffectContext* UGeoAbilitySystemGlobals::AllocGameplayEffectContext() const
 {

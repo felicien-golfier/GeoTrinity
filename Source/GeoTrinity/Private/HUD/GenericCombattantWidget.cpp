@@ -4,7 +4,7 @@
 #include "HUD/GenericCombattantWidget.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Components/ProgressBar.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoHUD.h"

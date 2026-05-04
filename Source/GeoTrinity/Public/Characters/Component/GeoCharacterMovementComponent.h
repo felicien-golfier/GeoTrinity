@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
-#include "GeoMovementComponent.generated.h"
+#include "GeoCharacterMovementComponent.generated.h"
 
 class AGeoCharacter;
 
@@ -14,11 +14,11 @@ class AGeoCharacter;
  * so that attribute-driven multipliers can be applied and restored correctly.
  */
 UCLASS(Blueprintable, BlueprintType, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class GEOTRINITY_API UGeoMovementComponent : public UCharacterMovementComponent
+class GEOTRINITY_API UGeoCharacterMovementComponent : public UCharacterMovementComponent
 {
 	GENERATED_BODY()
 public:
-	UGeoMovementComponent();
+	UGeoCharacterMovementComponent();
 
 	virtual void BeginPlay() override;
 

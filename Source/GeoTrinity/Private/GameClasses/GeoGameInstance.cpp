@@ -1,7 +1,7 @@
 ﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 
-#include "GeoGameInstance.h"
+#include "GameClasses/GeoGameInstance.h"
 
 #include "GenericTeamAgentInterface.h"
 #include "Tool/Team.h"

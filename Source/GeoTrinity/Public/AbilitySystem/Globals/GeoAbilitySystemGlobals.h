@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "../Types/GeoAscTypes.h"
 #include "AbilitySystemGlobals.h"
 #include "CoreMinimal.h"
-#include "GeoAscTypes.h"
 
 #include "GeoAbilitySystemGlobals.generated.h"
 
@@ -20,5 +20,6 @@ class GEOTRINITY_API UGeoAbilitySystemGlobals : public UAbilitySystemGlobals
 	/** Allocates a FGeoGameplayEffectContext instead of the default FGameplayEffectContext. */
 	virtual FGameplayEffectContext* AllocGameplayEffectContext() const override;
 	/** Populates CueParameters with Instigator, EffectCauser, and hit location/normal from EffectContext. */
-	virtual void InitGameplayCueParameters(FGameplayCueParameters& CueParameters, const FGameplayEffectContextHandle& EffectContext) override;
+	virtual void InitGameplayCueParameters(FGameplayCueParameters& CueParameters,
+										   FGameplayEffectContextHandle const& EffectContext) override;
 };

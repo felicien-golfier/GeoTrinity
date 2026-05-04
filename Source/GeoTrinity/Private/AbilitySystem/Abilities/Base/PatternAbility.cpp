@@ -1,9 +1,9 @@
 ﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AbilitySystem/Abilities/PatternAbility.h"
+#include "AbilitySystem/Abilities/Base/PatternAbility.h"
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 
 void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 									  FGameplayAbilityActorInfo const* ActorInfo,

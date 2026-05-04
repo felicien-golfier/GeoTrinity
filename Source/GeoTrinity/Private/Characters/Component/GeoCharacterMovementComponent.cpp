@@ -1,26 +1,26 @@
-﻿#include "GeoMovementComponent.h"
+﻿#include "Characters/Component/GeoCharacterMovementComponent.h"
 
 #include "Characters/GeoCharacter.h"
 
-UGeoMovementComponent::UGeoMovementComponent()
+UGeoCharacterMovementComponent::UGeoCharacterMovementComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true; // movement driven via ProcessInput calls
 }
 
-void UGeoMovementComponent::BeginPlay()
+void UGeoCharacterMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	BaseMaxWalkSpeed = MaxWalkSpeed;
 	BaseMaxAcceleration = MaxAcceleration;
 }
 
-void UGeoMovementComponent::ApplySpeedMultiplier(float Multiplier)
+void UGeoCharacterMovementComponent::ApplySpeedMultiplier(float Multiplier)
 {
 	MaxWalkSpeed = BaseMaxWalkSpeed * Multiplier;
 	MaxAcceleration = BaseMaxAcceleration * Multiplier;
 }
 
-AGeoCharacter* UGeoMovementComponent::GetGeoCharacter() const
+AGeoCharacter* UGeoCharacterMovementComponent::GetGeoCharacter() const
 {
 	return Cast<AGeoCharacter>(GetOwner());
 }

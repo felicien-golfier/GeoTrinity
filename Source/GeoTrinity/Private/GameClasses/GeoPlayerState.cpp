@@ -1,9 +1,9 @@
-﻿#include "GeoPlayerState.h"
+﻿#include "GameClasses/GeoPlayerState.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/PlayableCharacter.h"
-#include "GeoPlayerController.h"
+#include "GameClasses/GeoPlayerController.h"
 #include "HUD/GeoHUD.h"
 #include "Net/UnrealNetwork.h"
 

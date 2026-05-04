@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Abilities/GameplayAbility.h"
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
@@ -39,7 +39,8 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoMoiraBeamAbility, STATGROUP_Tickables);
 	}
 
-	/** Returns true when Actor's center is inside the current beam cylinder (using BeamLength and the runtime radius). */
+	/** Returns true when Actor's center is inside the current beam cylinder (using BeamLength and the runtime radius).
+	 */
 	bool IsInBeam(AActor const* Actor) const;
 #ifdef WITH_EDITOR
 

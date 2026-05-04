@@ -3,7 +3,7 @@
 #include "Actor/GeoInteractableActor.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 

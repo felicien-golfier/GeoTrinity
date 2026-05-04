@@ -1,10 +1,10 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 
-#include "AbilitySystem/Abilities/AbilityPayload.h"
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Characters/PlayableCharacter.h"

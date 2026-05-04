@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
 
 #include "GeoDetonateAllMinesAbility.generated.h"
 

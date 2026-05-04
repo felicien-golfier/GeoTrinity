@@ -3,7 +3,7 @@
 #include "AbilitySystem/Abilities/Circle/GeoMoiraBeamAbility.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoHealingZone.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"

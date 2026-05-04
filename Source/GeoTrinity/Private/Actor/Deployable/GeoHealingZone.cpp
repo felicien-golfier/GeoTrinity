@@ -3,8 +3,8 @@
 #include "Actor/Deployable/GeoHealingZone.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Net/UnrealNetwork.h"

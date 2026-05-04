@@ -3,7 +3,7 @@
 #include "AI/Tasks/BTTask_FireProjectileAbility.h"
 
 #include "AIController.h"
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "GameplayTagContainer.h"

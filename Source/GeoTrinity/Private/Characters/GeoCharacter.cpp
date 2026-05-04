@@ -1,9 +1,9 @@
 #include "Characters/GeoCharacter.h"
 
-#include "AbilitySystem/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "GeoMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Input/GeoInputComponent.h"
@@ -16,7 +16,7 @@ static TAutoConsoleVariable CVarShowCharacterServerLocation(
 
 // Sets default values
 AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
-	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoMovementComponent>(CharacterMovementComponentName))
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoCharacterMovementComponent>(CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicates(true);

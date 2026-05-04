@@ -2,7 +2,7 @@
 
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 
-#include "AbilitySystem/Abilities/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "Components/ProgressBar.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
