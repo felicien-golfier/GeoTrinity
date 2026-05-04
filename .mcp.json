@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mcp-unreal": {
+      "command": "C:\\Users\\Felou\\go\\bin\\mcp-unreal.exe",
+      "env": {
+        "MCP_UNREAL_PROJECT": "C:\\GeoTrinity",
+        "UE_EDITOR_PATH": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe",
+        "RC_API_PORT": "30010",
+        "PLUGIN_PORT": "8090"
+      }
+    }
+  }
+}

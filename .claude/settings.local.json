@@ -19,7 +19,19 @@
       "Bash(xxd:*)",
       "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinity Win64 Development -project=\"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")",
       "WebFetch(domain:github.com)",
-      "Read(//c/Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/AIModule/Classes/**)"
+      "Read(//c/Program Files/Epic Games/UE_5.7/Engine/Source/Runtime/AIModule/Classes/**)",
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" GeoTrinityEditor Win64 Development \"C:\\\\GeoTrinity\\\\GeoTrinity.uproject\")",
+      "mcp__mcp-unreal__status",
+      "mcp__mcp-unreal__niagara_ops",
+      "mcp__mcp-unreal__search_assets",
+      "mcp__mcp-unreal__get_output_log",
+      "mcp__mcp-unreal__execute_script",
+      "mcp__mcp-unreal__live_compile",
+      "mcp__mcp-unreal__get_asset_info"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "mcp-unreal"
+  ]
 }
