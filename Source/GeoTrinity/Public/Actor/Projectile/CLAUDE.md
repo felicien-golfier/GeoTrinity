@@ -1,0 +1,48 @@
+# Actor/Projectile
+
+All projectile classes. **Default base for any new projectile: `AGeoPooledProjectile`** — never `AGeoProjectile` directly unless explicitly non-pooled.
+
+## `GeoProjectile.h` — base
+Poolable, effect-applying projectile.
+
+**Lifecycle:**
+1. `InitProjectileLife()` — server only; enables collision, starts lifespan timer. Call before or instead of BeginPlay for pooled actors.
+2. `AdvanceProjectile(float TimeDelta)` — fast-forwards position to compensate for server-spawn lag (called after spawning with `ServerSpawnTime`)
+3. `EndProjectileLife()` — triggered by distance span, lifespan, or hit; destroys by default
+
+**Hit handling:**
+- `OnSphereOverlap()` — private; calls `IsValidOverlap()` then `HandleValidOverlap()`
+- `IsValidOverlap(OtherActor)` — override to restrict targeting (team check, type check)
+- `HandleValidOverlap(OtherActor)` — override for custom hit logic; default applies `EffectDataArray` to target
+- `OnProjectileHit(HitActor)` — `BlueprintNativeEvent`; fired on all clients after a valid hit
+
+**Network:**
+- `IsNetRelevantFor()` — returns false for the **owning client** (they keep their predicted copy)
+- `PredictionKeyId` — replicated; used to match server projectile to client's predicted one
+
+**Key fields:**
+- `EffectDataArray` — effects applied on hit
+- `Payload` (`FAbilityPayload`) — owner/instigator/ability info
+- `DistanceSpan = 1000 cm` — override with `SetDistanceSpan(float)`
+- `LifeSpanInSec = 30` — safeguard max lifespan
+- `bCanOverlapInstigator = false`, `LifeTimeThresholdBeforeOverlapSelf = 0.2` — prevent self-hit on spawn
+- `ImpactEffect` (Niagara), `ImpactSound`, `LoopingSound` — cosmetic only
+
+## `GeoPooledProjectile.h` — pooled variant
+Extends `GeoProjectile` + implements `IGeoPoolableInterface`:
+- `Init()` — reset state, enable collision
+- `End()` — disable collision, return to `UGeoActorPoolingSubsystem`
+- `EndProjectileLife()` — releases to pool instead of destroying
+
+## `GeoShieldBurstProjectile.h` — Square passive
+Bounces off enemies, grants shield on ally contact.
+- `ShieldAmount` — scales with number of enemy bounces (`EnemyBounceMultiplier` per bounce)
+- `BounceSnapshot` (`FShieldBounceSnapshot`) — replicated; teleports all clients to post-bounce state
+- `HandleValidOverlap()` — reflect on enemy, shield ally, end on ally contact
+- `OnWallBounce()` — bound to ProjectileMovement bounce delegate
+
+## `DeployableSpawner/DeployableSpawnerProjectile.h` — spawns a deployable on impact
+- `IsValidOverlap()` — only ground/static geometry
+- `EndProjectileLife()` — spawns `DeployableActorClass` at impact location, destroys self
+- `InitDeployable(Deployable, PayloadOwner)` — override point for subclass configuration
+- `FillBaseData(Data, PayloadOwner)` — fills owner, level, team, seed, params, effects into `FDeployableData`
