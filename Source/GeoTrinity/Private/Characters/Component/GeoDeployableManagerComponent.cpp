@@ -11,13 +11,6 @@ UGeoDeployableManagerComponent::UGeoDeployableManagerComponent()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoDeployableManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UGeoDeployableManagerComponent, Deployables);
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Deployable)
 {
 	if (!IsValid(Deployable) || Deployables.Contains(Deployable))
@@ -37,7 +30,7 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoDeployableManagerComponent::RecallAll()
+void UGeoDeployableManagerComponent::ExpireAll()
 {
 	// Copy since Recall will trigger removal via the delegate
 	TArray<AGeoDeployableBase*> Copy = Deployables;
@@ -45,7 +38,7 @@ void UGeoDeployableManagerComponent::RecallAll()
 	{
 		if (IsValid(Deployable))
 		{
-			Deployable->Recall(false);
+			Deployable->Expire();
 		}
 	}
 }

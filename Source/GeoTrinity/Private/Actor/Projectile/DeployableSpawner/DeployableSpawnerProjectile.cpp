@@ -26,7 +26,6 @@ void ADeployableSpawnerProjectile::FillBaseData(FDeployableData& Data, AActor* P
 	Data.Owner = PayloadOwner;
 	Data.Level = Payload.AbilityLevel;
 	Data.Seed = Payload.Seed;
-	Data.PredictionKey = Payload.PredictionKey;
 	Data.Params = Params;
 	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(PayloadOwner))
 	{
@@ -90,9 +89,4 @@ void ADeployableSpawnerProjectile::SpawnDeployableActor()
 
 	InitDeployable(Deployable, PayloadOwner);
 	Deployable->FinishSpawning(SpawnTransform);
-
-	if (UGeoDeployableManagerComponent* DeployableManager = Pawn->GetComponentByClass<UGeoDeployableManagerComponent>())
-	{
-		DeployableManager->RegisterDeployable(Deployable);
-	}
 }

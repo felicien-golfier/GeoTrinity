@@ -22,9 +22,7 @@ class GEOTRINITY_API UGeoDeployableManagerComponent : public UActorComponent
 
 public:
 	UGeoDeployableManagerComponent();
-
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
+	
 	/** Returns true if under the max limit */
 	UFUNCTION(BlueprintPure)
 	bool CanDeploy() const { return Deployables.Num() < MaxDeployables; }
@@ -40,7 +38,7 @@ public:
 	void RegisterDeployable(AGeoDeployableBase* Deployable);
 
 	/** Recall all deployed actors */
-	void RecallAll();
+	void ExpireAll();
 
 	/** Get the ratio of deployed/max (used for size scaling) */
 	UFUNCTION(BlueprintPure)
@@ -59,6 +57,5 @@ private:
 	UFUNCTION()
 	void OnDeployableDestroyed(AGeoDeployableBase* Deployable);
 
-	UPROPERTY(Replicated)
 	TArray<AGeoDeployableBase*> Deployables;
 };

@@ -39,7 +39,7 @@ void AGeoMine::InitInteractable(FInteractableActorData* Data)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoMine::Recall(bool bExectueCue, float Value)
+void AGeoMine::Recall(float Value)
 {
 	if (bExpired || bIsRecalling)
 	{
@@ -48,13 +48,12 @@ void AGeoMine::Recall(bool bExectueCue, float Value)
 
 	bIsRecalling = true;
 
-
 	if (GeoLib::IsServer(GetWorld()))
 	{
 		UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(MineData.Owner);
 		if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on Owner")))
 		{
-			Super::Recall(bExectueCue, Value);
+			Super::Recall(Value);
 			return;
 		}
 		TArray<AActor*> OverlappingActors;
@@ -97,7 +96,7 @@ void AGeoMine::Recall(bool bExectueCue, float Value)
 		}
 	}
 
-	Super::Recall(bExectueCue, Value);
+	Super::Recall(Value);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -118,7 +117,7 @@ void AGeoMine::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 		return;
 	}
 
-	Recall(true, 1.f);
+	Recall(1.f);
 }
 
 FGameplayCueParameters AGeoMine::GetRecallCueParams()

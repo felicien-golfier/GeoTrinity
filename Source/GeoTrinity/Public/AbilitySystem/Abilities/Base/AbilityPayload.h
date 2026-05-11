@@ -41,7 +41,4 @@ struct GEOTRINITY_API FAbilityPayload
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	AActor* Instigator{nullptr};
-
-	UPROPERTY(Transient)
-	FPredictionKey PredictionKey{};
 };

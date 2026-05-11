@@ -5,13 +5,14 @@ GeoTrinity — multiplayer 2D bullet-hell, Unreal Engine 5.7, GAS. Players are g
 
 ## Big RULES
 When opening a cpp file, read it entirely.
-if you read directly .cpp without going to the .h folder, read the CLAUDE.md in the corresponding public folder
 Each source/public sub folder contains a CLAUDE.md that tells you what's inside
+ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
 When creating a memory, place it in the relevant subfolder's CLAUDE.md.
 
 ## Key References
 | Context | File |
 |---|---|
+| Any project's cpp file | CLAUDE.md at the .h root, in the public folder |
 | Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
 | Build commands, dev environment, copyright | `AI/Commands.md` |
 | Networking, data structures, effect system | `AI/Architecture.md` |

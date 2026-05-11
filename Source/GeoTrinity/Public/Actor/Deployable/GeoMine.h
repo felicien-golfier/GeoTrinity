@@ -25,7 +25,7 @@ public:
 	virtual void InitInteractable(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	virtual void Recall(bool bExectueCue, float Value) override;
+	virtual void Recall(float Value = 0.f) override;
 	virtual FGameplayCueParameters GetRecallCueParams() override;
 
 protected:

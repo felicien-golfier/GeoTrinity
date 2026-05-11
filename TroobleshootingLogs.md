@@ -58,6 +58,10 @@ Only 2 Gameplay Cues can be multicasted over the network each frame for a single
 
 ## Deployables null on client
 
-It happens that the deployables are null on client. replication fails for some reasons. to fix it I've just made the replication Using a function, then try it out, and then come back to the original. :shruging:
+**Root cause:** `AGeoDeployableBase::BeginPlay` calls `RegisterDeployable(this)` on both server and client — this is intentional, the client needs its own local copy for `GetDeployRatio()` and `OnDeployCountChanged`. However `Deployables` is also `UPROPERTY(Replicated)`, so when the server rep update arrives it overwrites the client's correctly-populated local array. UE resolves actor pointers at rep-apply time; if the actor isn't ready yet the slot is null and never fixed up.
+
+**Fix:** Remove `Replicated` from `Deployables` entirely. The client already builds its own correct copy via `BeginPlay` — replicating the array is redundant and actively harmful.
+
+**Why the OnRep trick works temporarily:** Switching to `ReplicatedUsing` adds a callback that sweeps the array after each rep update, patching up pointers that have since become valid. It masks the symptom but the race is still there.
 
 ---

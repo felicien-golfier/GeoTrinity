@@ -5,10 +5,12 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffect.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
+#include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -29,6 +31,13 @@ AGeoDeployableBase::AGeoDeployableBase()
 	}
 
 	SetReplicates(true);
+}
+
+void AGeoDeployableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(AGeoDeployableBase, bExpired, COND_SkipOwner);
 }
 
 void AGeoDeployableBase::InitDrain()
@@ -71,6 +80,13 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 void AGeoDeployableBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UGeoDeployableManagerComponent* DeployableManager =
+			GetInstigator()->GetComponentByClass<UGeoDeployableManagerComponent>())
+	{
+		DeployableManager->RegisterDeployable(this);
+	}
+
 	InitDrain();
 
 	if (!CanBeDamaged())
@@ -86,37 +102,24 @@ void AGeoDeployableBase::ExecuteRecallCue()
 		return;
 	}
 
-	// Use this deployable's own ASC (not the owner's) so each deployable fires from its own actor channel.
-	// The owner's ASC would share one channel across all deployables, hitting UE5's 2-unreliable-RPC-per-channel
-	// throttle when multiple deployables detonate simultaneously.
 	UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponent());
 	if (!ensureMsgf(IsValid(ASC), TEXT("AGeoDeployableBase: no ASC on self")))
 	{
 		return;
 	}
 
-	if (!GeoLib::IsServer(GetWorld()))
-	{
-		FScopedPredictionWindow ScopedPrediction(ASC);
-		ASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
-	}
+	ASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::Recall(bool const bExecuteCue, float Value)
+void AGeoDeployableBase::Recall(float Value)
 {
 	if (bExpired)
 	{
 		return;
 	}
 
-	if (bExecuteCue)
-	{
-		ExecuteRecallCue();
-	}
-
-	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
-
+	ExecuteRecallCue();
 	Expire();
 }
 
@@ -163,6 +166,15 @@ void AGeoDeployableBase::OnBlinkStarted_Implementation()
 	float constexpr BlinkRate = 0.2f;
 	GetWorld()->GetTimerManager().SetTimer(BlinkVisibilityTimerHandle, this, &ThisClass::OnBlinkVisibilityTick,
 										   BlinkRate, true);
+}
+
+void AGeoDeployableBase::OnRep_Expired(bool bOldValue)
+{
+	if (!bOldValue && bExpired)
+	{
+		ExecuteRecallCue();
+		Expire();
+	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -221,7 +233,7 @@ FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
 		DataOwner = CastChecked<APlayerState>(DataOwner)->GetPawn();
 	}
 
-	FVector const OwnerLocation = Owner->GetActorLocation();
+	FVector const OwnerLocation = DataOwner->GetActorLocation();
 
 
 	FGameplayCueParameters CueParams;

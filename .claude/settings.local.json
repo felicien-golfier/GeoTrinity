@@ -27,7 +27,8 @@
       "mcp__mcp-unreal__get_output_log",
       "mcp__mcp-unreal__execute_script",
       "mcp__mcp-unreal__live_compile",
-      "mcp__mcp-unreal__get_asset_info"
+      "mcp__mcp-unreal__get_asset_info",
+      "Skill(update-config)"
     ]
   },
   "enableAllProjectMcpServers": true,

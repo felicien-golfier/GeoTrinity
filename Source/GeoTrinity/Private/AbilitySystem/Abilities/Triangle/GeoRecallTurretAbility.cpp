@@ -47,7 +47,7 @@ void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 	for (FRecallInfo const& RecallInfo : RecallInfos)
 	{
 		ensureMsgf(BlinkBonusEffect.Num() > 0, TEXT("GeoRecallTurretAbility: BlinkBonusEffectData is not set!"));
-		RecallInfo.Turret->Recall(true);
+		RecallInfo.Turret->Recall();
 
 		if (GeoLib::IsServer(GetWorld()))
 		{

@@ -253,12 +253,13 @@ void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> 
 	EffectContextHandle.AddSourceObject(this);
 
 	FGameplayEffectSpecHandle const SpecHandle = MakeOutgoingSpec(GameplayEffectClass, Level, EffectContextHandle);
-
-	if (SpecHandle.IsValid())
+	if (!SpecHandle.IsValid())
 	{
-		FPredictionKey PredictionKey;
-		ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), this, PredictionKey);
+		ensureMsgf(false, TEXT("ApplyEffectToSelf: SpecHandle is invalid!"));
+		return;
 	}
+
+	ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), this);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

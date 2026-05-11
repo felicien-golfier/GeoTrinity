@@ -93,7 +93,6 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(AActor* Owner, AActor*
 	Payload.Seed = Seed;
 	Payload.AbilityLevel = GetAbilityLevel();
 	Payload.AbilityTag = GetAbilityTag();
-	Payload.PredictionKey = CurrentActivationInfo.GetActivationPredictionKey();
 	return Payload;
 }
 

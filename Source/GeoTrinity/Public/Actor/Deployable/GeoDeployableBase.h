@@ -5,7 +5,6 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
-#include "GameplayPrediction.h"
 #include "StructUtils/InstancedStruct.h"
 
 #include "GeoDeployableBase.generated.h"
@@ -46,9 +45,6 @@ struct FDeployableData : public FInteractableActorData
 
 	UPROPERTY(Transient)
 	FDeployableDataParams Params;
-
-	UPROPERTY(Transient)
-	FPredictionKey PredictionKey;
 };
 
 /**
@@ -63,16 +59,15 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 public:
 	AGeoDeployableBase();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	/** Computes DrainMagnitudePerSecond from Params and applies the initial drain GE. Call after data is set. */
 	virtual void InitDrain();
 	/** Ticks the blink timer state and calls Expire when health reaches zero. */
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 
-	/** Called by the owning player to recall this deployable */
-	virtual void Recall(bool bExecuteCue, float Value = 0.f);
-
-	/** Fires the recall Gameplay Cue without triggering any game logic. Safe to call on any machine. */
+	virtual void Recall(float Value = 0.f);
 	void ExecuteRecallCue();
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
@@ -81,6 +76,11 @@ public:
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDurationPercent() const;
+
+	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
+	UFUNCTION()
+	virtual void Expire();
+
 	/** Returns true once the deployable has been destroyed (health or duration reached zero). */
 	UFUNCTION(BlueprintPure)
 	bool IsExpired() const { return bExpired; }
@@ -105,13 +105,13 @@ protected:
 
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
 
-	/** Called when duration or health reaches zero */
-	UFUNCTION()
-	virtual void Expire();
-
 	UFUNCTION(BlueprintNativeEvent)
 	void OnBlinkStarted();
 	virtual void OnBlinkStarted_Implementation();
+
+	// Called ONLY on non owning clients ! Due to bExpired Rep Conditions.
+	UFUNCTION()
+	virtual void OnRep_Expired(bool bOldValue);
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bUseRegularDrain = true;
@@ -122,6 +122,9 @@ protected:
 	FGameplayTag RecallGameplayCueTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
+
+	// replicated ONLY on non owning clients ! Due to bExpired Rep Conditions.
+	UPROPERTY(ReplicatedUsing = OnRep_Expired)
 	bool bExpired = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
