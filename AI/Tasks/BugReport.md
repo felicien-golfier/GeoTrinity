@@ -300,7 +300,7 @@ void UGeoAttributeSetBase::OnRep_Shield(FGameplayAttributeData const& OldShield)
 
 ---
 
-## [x] BUG-10 — `GetRecallCueParams` uses actor's raw `Owner` for location instead of the resolved pawn
+## [ ] BUG-10 — `GetRecallCueParams` uses actor's raw `Owner` for location instead of the resolved pawn
 **File:** `Private/Actor/Deployable/GeoDeployableBase.cpp:221`  
 **Severity:** Low — wrong `Normal` direction passed to recall Gameplay Cue
 

@@ -70,6 +70,3 @@ Clear this file and replace its tasks whenever a new batch of overnight work is 
   ```
 
 - [] Read all the code and find potential bug, then report it in a file next to this one. Look at what as already been reported before report anything not new.
-
-- [] in AGeoDeployableBase::ExecuteRecallCue() I want my gameplay Cue to be predicted locally. Right now it's  not calling the Cue at all. I'm using Ability Prediction key  FScopedPredictionWindow ScopedPrediction(ASC, GetData()->PredictionKey); Because creating a new one here would not synch with server and they would be different. So I had 2 times the Cue, the local one and the multicast one.
-How can I make it work properly ?

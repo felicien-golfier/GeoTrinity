@@ -81,6 +81,8 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() * EnemyBounceMultiplier);
 			ShieldAmount *= EnemyBounceMultiplier;
 			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
+			LastOverlapHostileActor = OtherActor;
+			LastOverlapTime = GetWorld()->GetTimeSeconds();
 		}
 		else
 		{
@@ -97,4 +99,15 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			EndProjectileLife();
 		}
 	}
+}
+bool AGeoShieldBurstProjectile::IsValidOverlap(AActor const* OtherActor)
+{
+	constexpr float TimeThresholdBetweenSameHostileOverlap = 0.5f;
+	if (LastOverlapHostileActor.IsValid() && LastOverlapHostileActor == OtherActor
+		&& GetWorld()->GetTimeSeconds() - LastOverlapTime < TimeThresholdBetweenSameHostileOverlap)
+	{
+		return false;
+	}
+
+	return Super::IsValidOverlap(OtherActor);
 }

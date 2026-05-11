@@ -612,8 +612,7 @@ UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, TSubclassOf<
 	}
 
 	AGeoProjectile* Projectile;
-	bool const bIsPoolable = ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass());
-	if (bIsPoolable)
+	if (ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
 	{
 		Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(ProjectileClass, SpawnTransform, Payload.Owner,
 																		 Cast<APawn>(Payload.Instigator), false);

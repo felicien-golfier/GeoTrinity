@@ -44,6 +44,7 @@ AGeoProjectile::AGeoProjectile()
 	Sphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	Sphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	Sphere->SetCollisionResponseToChannel(ECC_GeoCharacter, ECR_Overlap);
+	Sphere->SetCollisionResponseToChannel(ECC_Floor, ECR_Ignore);
 
 	Sphere->SetCollisionObjectType(ECC_GeoCharacter);
 

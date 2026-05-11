@@ -49,6 +49,8 @@ protected:
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor) override;
 
+	virtual bool IsValidOverlap(AActor const* OtherActor) override;
+
 	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients.
 	 */
 	UFUNCTION()
@@ -62,4 +64,7 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_BounceSnapshot)
 	FShieldBounceSnapshot BounceSnapshot;
+
+	TWeakObjectPtr<AActor> LastOverlapHostileActor;
+	float LastOverlapTime = 0.f;
 };
