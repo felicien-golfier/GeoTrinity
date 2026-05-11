@@ -18,14 +18,18 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 		return;
 	}
 
-	checkf(Deployables.Num() < MaxDeployables,
-		   TEXT("GeoDeployableManagerComponent: Tried to register a deployable but already at max (%d/%d). "
-				"Deploy ability should have been blocked by CanActivateAbility."),
-		   Deployables.Num(), MaxDeployables);
+	if (Deployables.Num() >= MaxDeployables)
+	{
+		UE_LOG(LogTemp, Error,
+			   TEXT("GeoDeployableManagerComponent: Tried to register a deployable but already at max (%d/%d). "
+					"Deploy ability should have been blocked by CanActivateAbility."),
+			   Deployables.Num(), MaxDeployables);
+	}
 
 	Deployables.Add(Deployable);
 	Deployable->OnDeployableExpiredEvent.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
-
+	// Ensure we remove it also on client even if forced expired by server
+	Deployable->OnDestroyed.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
 	OnDeployCountChanged.Broadcast(Deployables.Num(), MaxDeployables);
 }
 
@@ -54,6 +58,10 @@ float UGeoDeployableManagerComponent::GetDeployRatio() const
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoDeployableManagerComponent::OnDeployableDestroyed(AActor* Deployable)
+{
+	OnDeployableDestroyed(Cast<AGeoDeployableBase>(Deployable));
+}
 void UGeoDeployableManagerComponent::OnDeployableDestroyed(AGeoDeployableBase* Deployable)
 {
 	Deployables.Remove(Deployable);

@@ -37,7 +37,7 @@ void AGeoDeployableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION(AGeoDeployableBase, bExpired, COND_SkipOwner);
+	DOREPLIFETIME(AGeoDeployableBase, bExpired);
 }
 
 void AGeoDeployableBase::InitDrain()
@@ -186,16 +186,15 @@ void AGeoDeployableBase::OnBlinkVisibilityTick()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnBlinkTimerExpired()
 {
-	Expire();
+	if (!bExpired)
+	{
+		Expire();
+	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::Expire()
 {
-	if (bExpired)
-	{
-		return;
-	}
 	bExpired = true;
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(BlinkVisibilityTimerHandle);
@@ -228,9 +227,17 @@ FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
 {
 	FVector const DeployableLocation = GetActorLocation();
 	AActor* DataOwner = GetData()->Owner;
+	if (!ensureMsgf(DataOwner, TEXT("AGeoDeployableBase::GetRecallCueParams: DataOwner is null")))
+	{
+		return FGameplayCueParameters();
+	}
 	if (DataOwner->IsA(APlayerState::StaticClass()))
 	{
-		DataOwner = CastChecked<APlayerState>(DataOwner)->GetPawn();
+		APawn* OwnerPawn = CastChecked<APlayerState>(DataOwner)->GetPawn();
+		if (ensureMsgf(OwnerPawn, TEXT("AGeoDeployableBase::GetRecallCueParams: PlayerState has no Pawn")))
+		{
+			DataOwner = OwnerPawn;
+		}
 	}
 
 	FVector const OwnerLocation = DataOwner->GetActorLocation();

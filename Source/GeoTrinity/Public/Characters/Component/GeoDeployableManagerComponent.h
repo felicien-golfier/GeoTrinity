@@ -22,7 +22,7 @@ class GEOTRINITY_API UGeoDeployableManagerComponent : public UActorComponent
 
 public:
 	UGeoDeployableManagerComponent();
-	
+
 	/** Returns true if under the max limit */
 	UFUNCTION(BlueprintPure)
 	bool CanDeploy() const { return Deployables.Num() < MaxDeployables; }
@@ -43,6 +43,7 @@ public:
 	/** Get the ratio of deployed/max (used for size scaling) */
 	UFUNCTION(BlueprintPure)
 	float GetDeployRatio() const;
+	void OnDeployableDestroyed(AActor* Deployable);
 
 	/** Returns the live array of tracked deployable actors. Entries are removed automatically on destruction. */
 	TArray<AGeoDeployableBase*> const& GetDeployables() const { return Deployables; }

@@ -9,6 +9,7 @@
 #include "AbilitySystemComponent.h"
 #include "Actor/Deployable/GeoBuffPickup.h"
 #include "GenericTeamAgentInterface.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoReloadAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
@@ -53,7 +54,7 @@ bool UGeoReloadAbility::CheckCost(FGameplayAbilitySpecHandle const Handle, FGame
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
-	if (!GetCurrentActorInfo()->IsNetAuthority())
+	if (!GeoLib::IsServer(GetWorld()))
 	{
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 		return;
@@ -88,8 +89,9 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 			(CurrentAmmo == 0.f ? AbilityTargetData.Seed : FMath::RoundToInt(CurrentAmmo)) % BuffEffects.Num();
 
 		AActor* Avatar = GetAvatarActorFromActorInfo();
-		float const RandomAngle = FMath::RandRange(0.f, 2.f * PI);
-		float const RandomRadius = FMath::RandRange(MinSpawnRadius, MaxSpawnRadius);
+		FRandomStream Rng(StoredPayload.Seed);
+		float const RandomAngle = Rng.FRandRange(0.f, 2.f * PI);
+		float const RandomRadius = Rng.FRandRange(MinSpawnRadius, MaxSpawnRadius);
 		FVector const SpawnOffset{FMath::Cos(RandomAngle) * RandomRadius, FMath::Sin(RandomAngle) * RandomRadius, 0.f};
 		FVector const AvatarLocation = Avatar->GetActorLocation();
 		FTransform const SpawnTransform{AvatarLocation};

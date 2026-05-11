@@ -138,7 +138,7 @@ FActiveGameplayEffectHandle FStatusEffectData::ApplyEffect(FGameplayEffectContex
 {
 	// Seed is a deterministic pseudo-random value replicated to all machines; mapping it to [0,100] gives
 	// a consistent proc roll — all machines agree on whether the status was applied without a server RPC.
-	if (static_cast<float>(Seed) / MAX_int32 * 100 <= StatusChance)
+	if (static_cast<float>(static_cast<uint32>(Seed)) / static_cast<float>(MAX_uint32) * 100.f <= StatusChance)
 	{
 		FGameplayEffectSpecHandle SpecHandle;
 		return UGeoAbilitySystemLibrary::ApplyStatusToTarget(TargetASC, SourceASC, StatusTag, AbilityLevel, SpecHandle);

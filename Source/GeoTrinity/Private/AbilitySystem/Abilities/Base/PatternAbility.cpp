@@ -23,18 +23,26 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	FAbilityPayload const& Payload = CreateAbilityPayload(Owner, Owner);
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	ASC->PatternStartMulticast(Payload, PatternToLaunch);
-	UPattern* PatternInstance;
-	ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
-			   TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
+	UPattern* PatternInstance = nullptr;
+	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
+	{
+		ensureMsgf(false, TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
+		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+		return;
+	}
 	PatternInstance->OnPatternEnd.AddUniqueDynamic(this, &UPatternAbility::OnPatternEnd);
 }
 
 void UPatternAbility::OnPatternEnd()
 {
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
-	UPattern* PatternInstance;
-	ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
-			   TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
+	UPattern* PatternInstance = nullptr;
+	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
+	{
+		ensureMsgf(false, TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, true);
+		return;
+	}
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 	PatternInstance->OnPatternEnd.RemoveDynamic(this, &UPatternAbility::OnPatternEnd);
 }

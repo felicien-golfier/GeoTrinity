@@ -79,7 +79,7 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 		UGeoGameFeelComponent* GameFeelComponent = Actor->FindComponentByClass<UGeoGameFeelComponent>();
 		if (!ensureMsgf(GameFeelComponent, TEXT("UGeoHealingAuraAbility: avatar has no GeoGameFeelComponent")))
 		{
-			return;
+			continue;
 		}
 		bool const bSuppressHealCue = !GameFeelComponent->IsHealCueAvailable();
 

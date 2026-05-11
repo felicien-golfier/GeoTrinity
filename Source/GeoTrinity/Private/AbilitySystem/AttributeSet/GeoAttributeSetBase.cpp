@@ -89,9 +89,11 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 					Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext().GetInstigator());
 				if (!IsValid(SourcePlayerState))
 				{
-					SourcePlayerState = Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext()
-																  .GetOriginalInstigatorAbilitySystemComponent()
-																  ->GetOwnerActor());
+					if (UAbilitySystemComponent* InstigatorASC =
+							Data.EffectSpec.GetEffectContext().GetOriginalInstigatorAbilitySystemComponent())
+					{
+						SourcePlayerState = Cast<AGeoPlayerState>(InstigatorASC->GetOwnerActor());
+					}
 				}
 				CombatStats->ReportHealingDealt(SourcePlayerState, HealToApply);
 			}
@@ -105,8 +107,11 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 		AGeoPlayerState* SourcePlayerState = Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext().GetInstigator());
 		if (!IsValid(SourcePlayerState))
 		{
-			SourcePlayerState = Cast<AGeoPlayerState>(
-				Data.EffectSpec.GetEffectContext().GetOriginalInstigatorAbilitySystemComponent()->GetOwnerActor());
+			if (UAbilitySystemComponent* InstigatorASC =
+					Data.EffectSpec.GetEffectContext().GetOriginalInstigatorAbilitySystemComponent())
+			{
+				SourcePlayerState = Cast<AGeoPlayerState>(InstigatorASC->GetOwnerActor());
+			}
 		}
 
 		if (Magnitude > 0.f)
@@ -159,5 +164,5 @@ void UGeoAttributeSetBase::OnRep_MaxHealth(FGameplayAttributeData const& OldMaxH
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoAttributeSetBase::OnRep_Shield(FGameplayAttributeData const& OldShield)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, Shield, OldShield);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UGeoAttributeSetBase, Shield, OldShield);
 }

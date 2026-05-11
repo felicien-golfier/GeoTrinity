@@ -107,7 +107,10 @@ AActor* UGeoActorPoolingSubsystem::SpawnActor(UClass* Class, FActorSpawnParamete
 	ensureMsgf(World, TEXT("World is invalid"));
 
 	AActor* NewActor = World->SpawnActor<AActor>(Class, FTransform::Identity, Params);
-	ensureMsgf(NewActor, TEXT("Failed to spawn actor of class %s"), *Class->GetName());
+	if (!ensureMsgf(NewActor, TEXT("Failed to spawn actor of class %s"), *Class->GetName()))
+	{
+		return nullptr;
+	}
 
 	ChangeActorState(NewActor, false);
 

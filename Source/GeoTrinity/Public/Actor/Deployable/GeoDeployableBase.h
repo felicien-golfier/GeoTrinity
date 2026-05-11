@@ -109,7 +109,6 @@ protected:
 	void OnBlinkStarted();
 	virtual void OnBlinkStarted_Implementation();
 
-	// Called ONLY on non owning clients ! Due to bExpired Rep Conditions.
 	UFUNCTION()
 	virtual void OnRep_Expired(bool bOldValue);
 
@@ -123,7 +122,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 
-	// replicated ONLY on non owning clients ! Due to bExpired Rep Conditions.
 	UPROPERTY(ReplicatedUsing = OnRep_Expired)
 	bool bExpired = false;
 

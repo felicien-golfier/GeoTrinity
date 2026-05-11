@@ -23,7 +23,7 @@ void UGeoMoiraBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 
 	if (!SpeedBuffEffect.IsValid())
 	{
-		ensureMsgf(SpeedBuffHandle.IsValid(), TEXT("SpeedBuffEffect is not valid, pls fill the asset"));
+		ensureMsgf(false, TEXT("SpeedBuffEffect is not valid, pls fill the asset"));
 		UGeoGameplayAbility::EndAbility(true, true);
 		return;
 	}
