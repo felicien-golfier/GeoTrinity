@@ -7,7 +7,7 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "Actor/Deployable/GeoBuffPickup.h"
+#include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
 #include "GenericTeamAgentInterface.h"
 #include "Tool/UGeoGameplayLibrary.h"
 

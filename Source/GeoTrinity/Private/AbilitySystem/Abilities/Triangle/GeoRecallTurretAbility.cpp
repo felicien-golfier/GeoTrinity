@@ -4,7 +4,7 @@
 
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Turret/GeoTurret.h"
+#include "Actor/Deployable/Turret/GeoTurret.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GeoTrinity/GeoTrinity.h"

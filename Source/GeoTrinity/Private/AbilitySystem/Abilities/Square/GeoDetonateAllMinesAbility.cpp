@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Abilities/Square/GeoDetonateAllMinesAbility.h"
 
-#include "Actor/Deployable/GeoMine.h"
+#include "Actor/Deployable/Mine/GeoMine.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "Tool/UGeoGameplayLibrary.h"

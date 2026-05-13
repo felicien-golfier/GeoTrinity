@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/Deployable/GeoHealingZone.h"
+#include "Actor/Deployable/HealingZone/GeoHealingZone.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"

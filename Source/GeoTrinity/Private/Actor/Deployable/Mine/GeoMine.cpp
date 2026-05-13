@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/Deployable/GeoMine.h"
+#include "Actor/Deployable/Mine/GeoMine.h"
 
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"

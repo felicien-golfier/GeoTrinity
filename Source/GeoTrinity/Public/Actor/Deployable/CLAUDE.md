@@ -33,25 +33,8 @@ Handles drain GE, blink-before-expiry, recall, and Blueprint events.
 **`FDeployableData`** (extends `FInteractableActorData`):
 - `EffectDataArray`, `Params`, `PredictionKey`
 
-## `GeoMine.h` — Square's proximity mine
-- Triggers on capsule overlap → calls `Recall(true, Value)` to explode
-- `bIsRecalling` prevents double-trigger
-- `GetRecallCueParams()` — override; passes explosion force data to GC
-
-## `GeoHealingZone.h` — Circle's area heal
-- Tracks `ActorsInZone` (TSet) via `OnBeginOverlap` / `OnEndOverlap`
-- `Tick()` — periodically applies heal effects to all actors in zone
-- `GetDurationPercent()` — override; uses drain GE remaining duration
-- `OnRep_Data()` — updates zone size/visuals when data replicates
-
-## `GeoBuffPickup.h` — Triangle's buff pickup
-- Launched toward `TargetLocation` via `LaunchCurve`
-- `MeshIndex` selects which `BuffMeshAssets` to display
-- `PowerScale` scales buff effect magnitude
-- `OnOverlap()` — applies `EffectDataArray` to collector, calls `Recall(false)`
-
-## `GeoTurret.h` (in `Turret/`)
-Triangle's deployable auto-firing turret.
-- `FindBestTarget()` — nearest hostile in range
-- `TryFire()` — spawns `TurretProjectileClass` toward target; called on `FireInterval` timer
-- `Expire()` override — cleans up fire timer
+## `Mine/` — Explodes on overlap, damages enemies and shields allies. See `Mine/CLAUDE.md`.
+## `HealingZone/` — Static zone that heals allies over time while they stand inside. See `HealingZone/CLAUDE.md`.
+## `BuffPickup/` — Launched pickup that applies a random buff to whoever collects it. See `BuffPickup/CLAUDE.md`.
+## `Turret/` — Auto-targets and fires at the nearest enemy on a timer. See `Turret/CLAUDE.md`.
+## `Pillar/` — Indestructible-until-damaged pillar that blocks the boss's devastating wave. See `Pillar/CLAUDE.md`.

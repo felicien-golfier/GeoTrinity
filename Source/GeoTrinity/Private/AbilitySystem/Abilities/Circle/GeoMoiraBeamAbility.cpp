@@ -5,7 +5,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Deployable/GeoHealingZone.h"
+#include "Actor/Deployable/HealingZone/GeoHealingZone.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"

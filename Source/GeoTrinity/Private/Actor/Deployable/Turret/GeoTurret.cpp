@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/Turret/GeoTurret.h"
+#include "Actor/Deployable/Turret/GeoTurret.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
