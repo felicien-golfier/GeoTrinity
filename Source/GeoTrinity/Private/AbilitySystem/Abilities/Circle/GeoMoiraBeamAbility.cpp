@@ -12,6 +12,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -63,7 +64,8 @@ bool UGeoMoiraBeamAbility::IsInBeam(AActor const* const Actor) const
 	float const CurrentBeamRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f
 		+ RadiusGrowthPerAbsorbedZone * (BeamRatio - 1);
 	FVector const ToActor = Actor->GetActorLocation() - Origin;
-	float const DistAlongBeam = FMath::Clamp(FVector::DotProduct(ToActor, Forward), 0.f, BeamLength);
+	float const DistAlongBeam =
+		FMath::Clamp(FVector::DotProduct(ToActor, Forward), 0.f, GetDefault<UGameDataSettings>()->GeneralSpellDistance);
 	FVector const ClosestPointOnAxis = Origin + Forward * DistAlongBeam;
 	float const CombinedRadius = CurrentBeamRadius + Actor->GetSimpleCollisionRadius();
 	return FVector::DistSquared(Actor->GetActorLocation(), ClosestPointOnAxis) <= CombinedRadius * CombinedRadius;
@@ -92,7 +94,7 @@ void UGeoMoiraBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
 		+ RadiusGrowthPerAbsorbedZone * (BeamRatio - 1);
 
 	FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
-	FVector const BeamEnd = Origin + Forward * BeamLength;
+	FVector const BeamEnd = Origin + Forward * GetDefault<UGameDataSettings>()->GeneralSpellDistance;
 	DrawDebugLine(GetWorld(), Origin + Right * CurrentBeamRadius, BeamEnd + Right * CurrentBeamRadius, FColor::Cyan,
 				  false, DeltaTime);
 	DrawDebugLine(GetWorld(), Origin - Right * CurrentBeamRadius, BeamEnd - Right * CurrentBeamRadius, FColor::Cyan,

@@ -44,6 +44,9 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;
 
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	float GeneralSpellDistance = 1500.f;
+
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	TSoftObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;

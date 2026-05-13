@@ -23,6 +23,7 @@ class GEOTRINITY_API UFatalZonePattern : public UPattern
 	GENERATED_BODY()
 
 protected:
+	virtual void OnCreate(FGameplayTag AbilityTag) override;
 	virtual void InitPattern(FAbilityPayload const& Payload) override;
 
 private:

@@ -58,10 +58,6 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TInstancedStruct<FEffectData> SpeedBuffEffect;
 
-	/** Length of the beam in cm. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
-	float BeamLength = 800.f;
-
 	/** Base beam duration in seconds (before any zone absorption). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float InitialDuration = 3.f;

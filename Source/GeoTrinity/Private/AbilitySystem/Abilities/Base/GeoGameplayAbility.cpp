@@ -292,7 +292,15 @@ void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& Abil
 	}
 }
 
-FGeoAbilityTargetData UGeoGameplayAbility::GetUpdatedAbilityTargetData()
+void UGeoGameplayAbility::UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData)
+{
+	StoredPayload.Seed = TargetData.Seed;
+	StoredPayload.ServerSpawnTime = TargetData.ServerSpawnTime;
+	StoredPayload.Origin = TargetData.Origin;
+	StoredPayload.Yaw = TargetData.Yaw;
+}
+
+FGeoAbilityTargetData UGeoGameplayAbility::GetUpdatedTargetData()
 {
 	FVector2D const Origin =
 		GetFireOrigin2D(StoredPayload.Instigator, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
@@ -304,7 +312,8 @@ FGeoAbilityTargetData UGeoGameplayAbility::GetUpdatedAbilityTargetData()
 void UGeoGameplayAbility::BuildDataAndFire()
 {
 	// This ref to AbilityTargetData needs to exist only during Fire as we create a new pointer in SendFireDataToServer
-	FGeoAbilityTargetData const AbilityTargetData = GetUpdatedAbilityTargetData();
+	FGeoAbilityTargetData const AbilityTargetData = GetUpdatedTargetData();
+	UpdatePayloadFromTargetData(AbilityTargetData);
 	Fire(AbilityTargetData);
 }
 
@@ -323,10 +332,8 @@ void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHan
 	{
 		return;
 	}
-	StoredPayload.Seed = AbilityTargetData->Seed;
-	StoredPayload.ServerSpawnTime = AbilityTargetData->ServerSpawnTime;
-	StoredPayload.Origin = AbilityTargetData->Origin;
-	StoredPayload.Yaw = AbilityTargetData->Yaw;
+
+	UpdatePayloadFromTargetData(*AbilityTargetData);
 }
 
 /**

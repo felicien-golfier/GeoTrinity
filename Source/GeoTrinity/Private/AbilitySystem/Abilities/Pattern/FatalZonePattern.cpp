@@ -11,6 +11,12 @@
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+void UFatalZonePattern::OnCreate(FGameplayTag AbilityTag)
+{
+	Super::OnCreate(AbilityTag);
+	UGeoActorPoolingSubsystem::Get(GetWorld())->PreSpawn(PillarClass, 10);
+}
+
 void UFatalZonePattern::InitPattern(FAbilityPayload const& Payload)
 {
 	Super::InitPattern(Payload);
@@ -68,8 +74,8 @@ void UFatalZonePattern::OnExpire()
 		{
 			FVector2D const Origin2D(ZoneLocation.X, ZoneLocation.Y);
 			for (AActor* TargetActor : GeoASLib::GetInteractableActors(
-					 this, GeoASLib::GetTeamId(StoredPayload.Owner),
-					 static_cast<int32>(ETeamAttitudeBitflag::Hostile), true, Origin2D, ZoneSize))
+					 this, GeoASLib::GetTeamId(StoredPayload.Owner), static_cast<int32>(ETeamAttitudeBitflag::Hostile),
+					 true, Origin2D, ZoneSize))
 			{
 				UGeoAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UGeoAbilitySystemComponent>();
 				if (TargetASC)

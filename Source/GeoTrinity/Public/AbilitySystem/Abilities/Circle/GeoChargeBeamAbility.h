@@ -24,15 +24,17 @@ class GEOTRINITY_API UGeoChargeBeamAbility : public UGeoGameplayAbility
 
 protected:
 	/** Encodes the current charge ratio (0–1) into the Seed field (as an integer 0–100) of the target data. */
-	virtual FGeoAbilityTargetData GetUpdatedAbilityTargetData() override;
+	virtual FGeoAbilityTargetData GetUpdatedTargetData() override;
 
 	/**
 	 * Appends a FContextDamageMultiplierEffectData entry to the base effect array.
 	 * The multiplier is lerped from MinDamageMultiplier to MaxDamageMultiplier based on the charge ratio.
 	 */
 	virtual TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const override;
+	void FireGameplayCue(FGeoAbilityTargetData const& AbilityTargetData);
 
-	/** On the server, spawns the projectile and conditionally applies the sweet spot bonus effect. */
+	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
+
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 
@@ -42,6 +44,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float SweetSpotMaxRatio = 0.7f;
+
+	// Gameplay Cue fired on the client at the moment of release to trigger beam VFX/SFX.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
+	FGameplayTag FireGameplayCueTag;
 
 	// Damage multiplier lerped from Min (0% charge) to Max (100% charge).
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")

@@ -15,6 +15,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Settings/GameDataSettings.h"
 #include "System/GeoPoolableInterface.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -323,8 +324,9 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::SetDistanceSpan(float const Distance)
+void AGeoProjectile::OverrideDistanceSpan(float const Distance)
 {
+	bUseGeneralSpellDistance = false;
 	DistanceSpan = Distance;
 	DistanceSpanSqr = FMath::Square(DistanceSpan);
 }
@@ -343,8 +345,8 @@ void AGeoProjectile::InitProjectileLife()
 	Sphere->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnSphereHit);
 
 	InitialPosition = GetActorLocation();
-	DistanceSpanSqr = FMath::Square(DistanceSpan);
-
+	DistanceSpanSqr =
+		FMath::Square(bUseGeneralSpellDistance ? GetDefault<UGameDataSettings>()->GeneralSpellDistance : DistanceSpan);
 	InitProjectileMovementComponent();
 
 	bIsEnding = false;

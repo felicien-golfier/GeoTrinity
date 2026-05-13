@@ -58,7 +58,7 @@ public:
 	 * @param Distance  Maximum travel distance in cm before the projectile ends its life.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SetDistanceSpan(float Distance);
+	void OverrideDistanceSpan(float Distance);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
@@ -133,8 +133,12 @@ private:
 			  meta = (Tooltip = "Safe guard in case distance check fails", AllowPrivateAccess = true))
 	float LifeSpanInSec = 30.f;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
+	bool bUseGeneralSpellDistance = true;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true))
+			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "!bUseGeneralSpellDistance",
+					  EditConditionHides = "true", UIMin = "0"))
 	float DistanceSpan = 1000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))

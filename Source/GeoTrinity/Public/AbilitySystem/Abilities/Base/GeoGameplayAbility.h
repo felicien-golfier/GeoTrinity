@@ -126,7 +126,8 @@ protected:
 
 	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize.
 	 */
-	virtual FGeoAbilityTargetData GetUpdatedAbilityTargetData();
+	virtual FGeoAbilityTargetData GetUpdatedTargetData();
+	void UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData);
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation")

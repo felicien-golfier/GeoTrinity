@@ -30,7 +30,7 @@ protected:
 									FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 	/** Builds target data encoding the deploy distance (derived from charge ratio) in the Seed field as integer cm. */
-	virtual FGeoAbilityTargetData GetUpdatedAbilityTargetData() override;
+	virtual FGeoAbilityTargetData GetUpdatedTargetData() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy")
 	float MinDeployDistance = 300.f;

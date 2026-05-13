@@ -40,12 +40,12 @@ bool UGeoDeployAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Hand
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGeoAbilityTargetData UGeoDeployAbility::GetUpdatedAbilityTargetData()
+FGeoAbilityTargetData UGeoDeployAbility::GetUpdatedTargetData()
 {
 	float PendingDeployDistance = FMath::Lerp(MinDeployDistance, MaxDeployDistance, GetChargeRatio());
 	// Encode deploy distance as integer cm in Seed so the server receives it
 	StoredPayload.Seed = FMath::RoundToInt(PendingDeployDistance);
-	return Super::GetUpdatedAbilityTargetData();
+	return Super::GetUpdatedTargetData();
 }
 
 
@@ -71,7 +71,7 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 		return;
 	}
 
-	Projectile->SetDistanceSpan(StoredPayload.Seed);
+	Projectile->OverrideDistanceSpan(StoredPayload.Seed);
 	ADeployableSpawnerProjectile* DeployableSpawnerProjectile = Cast<ADeployableSpawnerProjectile>(Projectile);
 	checkf(DeployableSpawnerProjectile, TEXT("SpawnerProjectile  must be a ADeployableSpawnerProjectile"));
 	DeployableSpawnerProjectile->Params = Params;

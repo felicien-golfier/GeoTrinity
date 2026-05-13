@@ -107,7 +107,10 @@ void AGeoDeployableBase::Recall(float Value)
 	bActive = false;
 
 	RecallEffect(Value);
-	ExecuteRecallCue();
+	if (!GeoLib::IsServer(GetWorld()))
+	{
+		ExecuteRecallCue();
+	}
 	Expire();
 }
 
@@ -126,6 +129,7 @@ void AGeoDeployableBase::ExecuteRecallCue()
 		return;
 	}
 
+	FScopedPredictionWindow ScopedPredictionWindow(ASC);
 	ASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
 }
 

@@ -7,6 +7,7 @@ GeoTrinity — multiplayer 2D boss fight bullet-hell, Unreal Engine 5.7, GAS. Pl
 Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working on Blueprints or code that directly touches MCP/Blueprint state.
 
 ## Big RULES
+- ALWAYS read AI/CodingStyle.md before coding. If planing or just answering, don't, but if you write any line of code, read it.
 - When opening a cpp file, read it entirely.
 - ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
 - Instead of creating a memory, place it in the relevant subfolder's CLAUDE.md.
@@ -16,8 +17,8 @@ Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working
 | Context | File |
 |---|---|
 | Any project's cpp file | CLAUDE.md at the .h root, in the public folder |
-| ALWAYS OPEN WHEN CODING : Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
-| Build commands, dev environment, copyright | `AI/Commands.md` |
+| Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
+| ALWAYS BUILD WHEN DONE CODING : Build commands, dev environment, copyright | `AI/Commands.md` |
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
 | AbilitySystem code | `Source/GeoTrinity/Public/AbilitySystem/CLAUDE.md` |
