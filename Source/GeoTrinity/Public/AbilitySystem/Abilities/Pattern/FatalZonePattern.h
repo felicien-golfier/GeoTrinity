@@ -32,26 +32,26 @@ private:
 
 	FTimerHandle ExpiryTimerHandle;
 
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone")
+	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	float CountdownDuration = 3.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone")
+	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	float ZoneSize = 300.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone")
+	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AGeoPillar> PillarClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone")
+	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	FGameplayTag CountdownGameplayCueTag;
 
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone")
+	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	FGameplayTag ExpiryGameplayCueTag;
 
 	// Effects applied to hostiles in the zone on expiry (server-only).
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone")
+	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	TArray<TInstancedStruct<FEffectData>> ZoneEffectDataArray;
 
 	// Effects passed into the spawned pillar's FDeployableData.
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone")
+	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	TArray<TInstancedStruct<FEffectData>> PillarEffectDataArray;
 };

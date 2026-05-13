@@ -12,6 +12,7 @@ Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working
 - ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
 - Instead of creating a memory, place it in the relevant subfolder's CLAUDE.md.
 - Don't spawn Explore agents to discover files before reading CLAUDE.md files — they already map every subsystem to its paths. Read the relevant CLAUDE.md (root + subfolder), then Read/Grep/Glob those files directly. Only spawn Explore for genuinely undocumented or ambiguous areas.
+- ALWAYS read `AI/MCP_Blueprint.md` before creating or modifying Blueprint assets via MCP Python scripts.
 
 ## Key References
 | Context | File |
@@ -21,6 +22,7 @@ Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working
 | ALWAYS BUILD WHEN DONE CODING : Build commands, dev environment, copyright | `AI/Commands.md` |
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
+| Creating/configuring Blueprints via MCP Python | `AI/MCP_Blueprint.md` |
 | AbilitySystem code | `Source/GeoTrinity/Public/AbilitySystem/CLAUDE.md` |
 | Abilities (all classes) | `Source/GeoTrinity/Public/AbilitySystem/Abilities/CLAUDE.md` |
 | Characters & components | `Source/GeoTrinity/Public/Characters/CLAUDE.md` |
