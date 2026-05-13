@@ -14,6 +14,8 @@ All GAS infrastructure: abilities, attributes, execution calculations, effect da
 | `Lib/` | `GeoAbilitySystemLibrary` (helpers), `GeoGameplayTags` (native tags) |
 | `Types/` | `GeoAscTypes` — `FGeoGameplayEffectContext` |
 
-## Key Rule
+## Key Rules
 **Always use `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()`** to apply effects — never apply GEs directly.
 Two-pass loop: all `UpdateContextHandle()` first, then all `ApplyEffect()`. Order in the array doesn't matter for context setup.
+
+**Never use `SphereOverlapActors` or `OverlapMultiByChannel` to find game agents** — use `GeoASLib::GetInteractableActors(...)` instead. It iterates only the ~20 relevant actors and skips the physics scene entirely.

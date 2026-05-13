@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 									  FGameplayAbilityActorInfo const* ActorInfo,
@@ -11,7 +12,7 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 									  FGameplayEventData const* TriggerEventData)
 {
 	ensureMsgf(PatternToLaunch, TEXT("Please fill the PatternToLaunch in Blueprint"));
-	ensureMsgf(HasAuthority(&ActivationInfo), TEXT("PatternAbility are made for Server initiated abilities only."));
+	ensureMsgf(GeoLib::IsServer(GetWorld()), TEXT("PatternAbility are made for Server initiated abilities only."));
 
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
@@ -19,10 +20,9 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 		return;
 	}
 
-	AActor* Owner = GetOwningActorFromActorInfo();
-	FAbilityPayload const& Payload = CreateAbilityPayload(Owner, Owner);
+	StoredPayload = CreateAbilityPayload();
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
-	ASC->PatternStartMulticast(Payload, PatternToLaunch);
+	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch);
 	UPattern* PatternInstance = nullptr;
 	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
 	{
@@ -39,7 +39,7 @@ void UPatternAbility::OnPatternEnd()
 	UPattern* PatternInstance = nullptr;
 	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
 	{
-		ensureMsgf(false, TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
+		ensureMsgf(false, TEXT("Pattern Instance doesn't exist at the end of the pattern on server  !"));
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, true);
 		return;
 	}

@@ -68,7 +68,7 @@ void AGeoTurret::Tick(float DeltaSeconds)
 AActor* AGeoTurret::FindBestTarget() const
 {
 	TArray<AActor*> const HostileActors =
-		UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(this, this, ETeamAttitude::Hostile);
+		UGeoAbilitySystemLibrary::GetInteractableActors(this, GeoASLib::GetTeamId(this), TeamAttitudeMask::Hostile);
 	return UGeoAbilitySystemLibrary::GetNearestActorFromList(this, HostileActors);
 }
 
@@ -111,6 +111,8 @@ void AGeoTurret::TryFire()
 	GeoASLib::FullySpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload,
 								   GetData()->EffectDataArray, SpawnServerTime);
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 void AGeoTurret::Expire()
 {

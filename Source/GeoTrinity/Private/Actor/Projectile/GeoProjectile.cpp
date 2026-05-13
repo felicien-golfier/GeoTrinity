@@ -168,6 +168,15 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 // ---------------------------------------------------------------------------------------------------------------------
 bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 {
+	// When we are on a fully replicated projectile, Payload is not replicated, but Owner and Instigator are.
+	AActor* const CurrentOwner = IsValid(Payload.Owner) ? Payload.Owner : GetOwner();
+	AActor* const CurrentInstigator = IsValid(Payload.Instigator) ? Payload.Instigator : GetInstigator();
+
+	if (!IsValid(CurrentOwner) || !IsValid(CurrentInstigator) || !IsValid(OtherActor))
+	{
+		return false;
+	}
+
 	if (bIsEnding)
 	{
 		return false;
@@ -178,13 +187,13 @@ bool AGeoProjectile::IsValidOverlap(AActor const* OtherActor)
 		return false;
 	}
 
-	if (OtherActor == Payload.Instigator
+	if (OtherActor == CurrentInstigator
 		&& (!bCanOverlapInstigator || LifeSpanInSec - GetLifeSpan() < LifeTimeThresholdBeforeOverlapSelf))
 	{
 		return false;
 	}
 
-	return GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor, OverlapAttitude);
+	return GeoASLib::IsTeamAttitudeAligned(CurrentOwner, OtherActor, OverlapAttitude);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

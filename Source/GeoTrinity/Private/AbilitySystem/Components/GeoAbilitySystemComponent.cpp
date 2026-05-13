@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/Base/PatternAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
@@ -379,10 +380,19 @@ bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbili
 
 	if (AActor* Avatar = GetAvatarActor())
 	{
+		UGeoGameplayAbility const* CDO = GeoASLib::GetAbilityCDO(AbilityTag);
+
+		if (!IsValid(CDO))
+		{
+			ensureMsgf(CDO, TEXT("TryActivateAbilityWithTargetData: no ability CDO found for Tag %s"),
+					   *AbilityTag.ToString());
+			return false;
+		}
+
 		FGameplayAbilityTargetDataHandle TargetDataHandle;
-		FGeoAbilityTargetData* TargetData =
-			new FGeoAbilityTargetData(GetFireOrigin2D(Avatar, AbilityTag), GetFireYaw(Avatar),
-									  GeoLib::GetServerTime(GetWorld(), true), FMath::Rand32());
+		int const Seed = CDO->GetNewSeed();
+		FGeoAbilityTargetData* TargetData = new FGeoAbilityTargetData(
+			CDO->GetFireOrigin2D(Avatar, this, Seed), CDO->GetFireYaw(Avatar), CDO->GetStartTime(GetWorld()), Seed);
 		TargetDataHandle.Add(TargetData);
 		EventData.TargetData = TargetDataHandle;
 		EventData.Instigator = Avatar;
@@ -391,34 +401,4 @@ bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbili
 	// Use InternalTryActivateAbility which accepts TriggerEventData
 	// This sends the event data with the activation RPC (single packet)
 	return InternalTryActivateAbility(Handle, FPredictionKey(), nullptr, nullptr, &EventData);
-}
-
-/**
- * Returns the world-space spawn point for projectiles.
- * Socket names follow the convention "<SocketBaseName><FireSectionIndex>" (e.g. "Fire0", "Fire1").
- * Falls back to the actor origin when no matching socket exists (e.g. enemy shapes without rigs).
- */
-FVector UGeoAbilitySystemComponent::GetFireOrigin(AActor* Instigator, FGameplayTag const AbilityTag)
-{
-	return FVector(GetFireOrigin2D(Instigator, AbilityTag), ArbitraryCharacterZ);
-}
-
-FVector2D UGeoAbilitySystemComponent::GetFireOrigin2D(AActor* Instigator, FGameplayTag const AbilityTag)
-{
-	ACharacter const* Avatar = CastChecked<ACharacter>(Instigator);
-	USkeletalMeshComponent* Mesh = Avatar->GetMesh();
-	int32 const FireSectionIndex = GetFireSectionIndex(AbilityTag);
-	FName const SocketName{FString::Printf(TEXT("%s%d"), GeoASLib::SocketBaseName, FireSectionIndex)};
-
-	if (!Mesh->DoesSocketExist(SocketName))
-	{
-		return FVector2D(Avatar->GetActorLocation());
-	}
-
-	return FVector2D(Mesh->GetSocketLocation(SocketName));
-}
-
-float UGeoAbilitySystemComponent::GetFireYaw(AActor const* Instigator) const
-{
-	return Instigator->GetActorRotation().Yaw;
 }

@@ -94,7 +94,8 @@ protected:
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 						 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
 						 FHitResult const& SweepResult);
-	/** Called on a physics blocking hit (wall or environment). Default is a no-op; override to implement bounce behaviour. */
+	/** Called on a physics blocking hit (wall or environment). Default is a no-op; override to implement bounce
+	 * behaviour. */
 	UFUNCTION()
 	virtual void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 							 FVector NormalImpulse, FHitResult const& Hit);
@@ -125,7 +126,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
-	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
+	int32 OverlapAttitude = TeamAttitudeMask::Hostile;
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",

@@ -32,8 +32,8 @@ void UGeoMoiraBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	{
 		UGeoAbilitySystemComponent* SourceASC =
 			Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
-		SpeedBuffHandle = UGeoAbilitySystemLibrary::ApplySingleEffectData(SpeedBuffEffect, SourceASC, SourceASC,
-																		  GetAbilityLevel(), StoredPayload.Seed);
+		SpeedBuffHandle = GeoASLib::ApplySingleEffectData(SpeedBuffEffect, SourceASC, SourceASC, GetAbilityLevel(),
+														  StoredPayload.Seed);
 	}
 	bIsBeamActive = true;
 }
@@ -127,16 +127,16 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 
 	if (GeoLib::IsServer(GetWorld()))
 	{
-		for (AActor* Actor : UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character,
-																							ETeamAttitude::Hostile))
+		for (AActor* Actor :
+			 GeoASLib::GetInteractableActors(Character, GeoASLib::GetTeamId(Character), TeamAttitudeMask::Hostile))
 		{
 
-			if (Actor == Character || !Actor->CanBeDamaged() || !IsInBeam(Actor))
+			if (Actor == Character || !IsInBeam(Actor))
 			{
 				continue;
 			}
 
-			UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
+			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
 			if (!TargetASC)
 			{
 				continue;
@@ -154,19 +154,19 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			DamageEffect.DamageAmount = DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
 				* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
 			DamageEffect.bSuppressGameplayCue = !GameFeel->IsDamageCueAvailable();
-			UGeoAbilitySystemLibrary::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC,
-															StoredPayload.AbilityLevel, StoredPayload.Seed);
+			GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
+											StoredPayload.Seed);
 		}
 
-		for (AActor* Actor : UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(Character, Character,
-																							ETeamAttitude::Friendly))
+		for (AActor* Actor :
+			 GeoASLib::GetInteractableActors(Character, GeoASLib::GetTeamId(Character), TeamAttitudeMask::Friendly))
 		{
-			if (Actor == Character || !Actor->CanBeDamaged() || !IsInBeam(Actor))
+			if (Actor == Character || !IsInBeam(Actor))
 			{
 				continue;
 			}
 
-			UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
+			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
 			if (!TargetASC)
 			{
 				continue;
@@ -184,8 +184,8 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
 				* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
 			HealEffect.bSuppressGameplayCue = !GameFeel->IsHealCueAvailable();
-			UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC,
-															StoredPayload.AbilityLevel, StoredPayload.Seed);
+			GeoASLib::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
+											StoredPayload.Seed);
 		}
 	}
 
@@ -219,8 +219,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			FDamageEffectData DrainEffectData;
 			DrainEffectData.DamageAmount = ActualDrain;
 			DrainEffectData.bSuppressGameplayCue = true;
-			UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(),
-															StoredPayload.Seed);
+			GeoASLib::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(), StoredPayload.Seed);
 		}
 
 		float const DrainRatio = ActualDrain / MaxHealth;

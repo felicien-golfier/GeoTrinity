@@ -24,7 +24,7 @@ class GEOTRINITY_API UGeoChargeBeamAbility : public UGeoGameplayAbility
 
 protected:
 	/** Encodes the current charge ratio (0–1) into the Seed field (as an integer 0–100) of the target data. */
-	virtual FGeoAbilityTargetData BuildAbilityTargetData() override;
+	virtual FGeoAbilityTargetData GetUpdatedAbilityTargetData() override;
 
 	/**
 	 * Appends a FContextDamageMultiplierEffectData entry to the base effect array.

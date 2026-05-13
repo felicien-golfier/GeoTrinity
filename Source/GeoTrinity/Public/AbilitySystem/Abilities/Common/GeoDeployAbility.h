@@ -22,14 +22,15 @@ public:
 	UGeoDeployAbility();
 
 protected:
-	/** Checks the base GAS cost/cooldown and also verifies that the player's deployable manager has room for another. */
+	/** Checks the base GAS cost/cooldown and also verifies that the player's deployable manager has room for another.
+	 */
 	virtual bool CanActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 									FGameplayTagContainer const* SourceTags = nullptr,
 									FGameplayTagContainer const* TargetTags = nullptr,
 									FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 	/** Builds target data encoding the deploy distance (derived from charge ratio) in the Seed field as integer cm. */
-	virtual FGeoAbilityTargetData BuildAbilityTargetData() override;
+	virtual FGeoAbilityTargetData GetUpdatedAbilityTargetData() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy")
 	float MinDeployDistance = 300.f;

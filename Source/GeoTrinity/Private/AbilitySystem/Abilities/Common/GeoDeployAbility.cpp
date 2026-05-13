@@ -40,16 +40,14 @@ bool UGeoDeployAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Hand
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGeoAbilityTargetData UGeoDeployAbility::BuildAbilityTargetData()
+FGeoAbilityTargetData UGeoDeployAbility::GetUpdatedAbilityTargetData()
 {
-
 	float PendingDeployDistance = FMath::Lerp(MinDeployDistance, MaxDeployDistance, GetChargeRatio());
 	// Encode deploy distance as integer cm in Seed so the server receives it
 	StoredPayload.Seed = FMath::RoundToInt(PendingDeployDistance);
-	FGeoAbilityTargetData AbilityTargetData = Super::BuildAbilityTargetData();
-	AbilityTargetData.Seed = StoredPayload.Seed; // Ensure to set it properly even if Super changes code.
-	return AbilityTargetData;
+	return Super::GetUpdatedAbilityTargetData();
 }
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float const SpawnServerTime) const

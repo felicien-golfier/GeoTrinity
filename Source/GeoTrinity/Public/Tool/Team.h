@@ -19,3 +19,20 @@ enum class ETeamAttitudeBitflag : uint8
 	Friendly = (1 << 1) UMETA(DisplayName = "Friendly"),
 	Hostile = (1 << 2) UMETA(DisplayName = "Hostile")
 };
+ENUM_CLASS_FLAGS(ETeamAttitudeBitflag)
+
+namespace TeamAttitudeMask
+{
+	constexpr uint8 None = 0;
+	constexpr uint8 Neutral = static_cast<uint8>(ETeamAttitudeBitflag::Neutral);
+	constexpr uint8 Hostile = static_cast<uint8>(ETeamAttitudeBitflag::Hostile);
+	constexpr uint8 Friendly = static_cast<uint8>(ETeamAttitudeBitflag::Friendly);
+	constexpr uint8 All = static_cast<uint8>(ETeamAttitudeBitflag::Neutral)
+		| static_cast<uint8>(ETeamAttitudeBitflag::Friendly) | static_cast<uint8>(ETeamAttitudeBitflag::Hostile);
+	constexpr uint8 HostileAndFriendly =
+		static_cast<uint8>(ETeamAttitudeBitflag::Friendly) | static_cast<uint8>(ETeamAttitudeBitflag::Hostile);
+	constexpr uint8 HostileAndNeutral =
+		static_cast<uint8>(ETeamAttitudeBitflag::Hostile) | static_cast<uint8>(ETeamAttitudeBitflag::Neutral);
+	constexpr uint8 FriendlyAndNeutral =
+		static_cast<uint8>(ETeamAttitudeBitflag::Friendly) | static_cast<uint8>(ETeamAttitudeBitflag::Neutral);
+} // namespace TeamAttitudeMask

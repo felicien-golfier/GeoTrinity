@@ -63,8 +63,10 @@ Always: `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` di
 Enemy-only. `UPatternAbility` is the ability class; `UPattern`/`UTickablePattern` are the pattern objects (in `Pattern/` folder).
 
 - `PatternToLaunch` — class to instantiate
-- `ActivateAbility` → calls `PatternStartMulticast()` RPC → all clients create a `UPattern` instance
+- `ActivateAbility` → calls `CreateAbilityPayload()` → calls `ModifyPayload()` → calls `PatternStartMulticast()` RPC → all clients create a `UPattern` instance
 - Ability waits for `OnPatternEnd` delegate, then ends
+- **Subclass hook**: override `ModifyPayload(FAbilityPayload&)` to adjust the payload after base construction (server-only, has world access). Never override `ActivateAbility`.
+- **Client-ability hook**: override `GetFireOrigin2D(AActor*)` / `GetFireYaw(AActor const*)` on `UGeoGameplayAbility` to change what values the ASC bundles into target data on activation.
 
 ---
 

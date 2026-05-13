@@ -15,8 +15,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoShieldBurstProjectile::AGeoShieldBurstProjectile()
 {
-	OverlapAttitude =
-		static_cast<int32>(ETeamAttitudeBitflag::Hostile) | static_cast<int32>(ETeamAttitudeBitflag::Friendly);
+	OverlapAttitude = TeamAttitudeMask::HostileAndFriendly;
 
 	ProjectileMovement->bShouldBounce = true;
 	ProjectileMovement->Bounciness = 1.0f;
@@ -65,10 +64,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 {
 	if (GeoLib::IsServer(GetWorld()))
 	{
-		bool const bIsHostile = GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor,
-																static_cast<int32>(ETeamAttitudeBitflag::Hostile));
-
-		if (bIsHostile)
+		if (GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor, TeamAttitudeMask::Hostile))
 		{
 			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
 			float const Speed = ProjectileMovement->Velocity.Size();
@@ -102,6 +98,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 }
 bool AGeoShieldBurstProjectile::IsValidOverlap(AActor const* OtherActor)
 {
+
 	constexpr float TimeThresholdBetweenSameHostileOverlap = 0.5f;
 	if (LastOverlapHostileActor.IsValid() && LastOverlapHostileActor == OtherActor
 		&& GetWorld()->GetTimeSeconds() - LastOverlapTime < TimeThresholdBetweenSameHostileOverlap)

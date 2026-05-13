@@ -1,19 +1,22 @@
 # CLAUDE.md
 
 ## Project
-GeoTrinity — multiplayer 2D bullet-hell, Unreal Engine 5.7, GAS. Players are geometric shapes (Tank=Square, Heal=Circle, DPS=Triangle). Camera: orthographic, pitch = -90.
+GeoTrinity — multiplayer 2D boss fight bullet-hell, Unreal Engine 5.7, GAS. Players are geometric shapes (Tank=Square, Heal=Circle, DPS=Triangle). Camera: orthographic.
+
+## Build
+Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working on Blueprints or code that directly touches MCP/Blueprint state.
 
 ## Big RULES
-When opening a cpp file, read it entirely.
-Each source/public sub folder contains a CLAUDE.md that tells you what's inside
-ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
-When creating a memory, place it in the relevant subfolder's CLAUDE.md.
+- When opening a cpp file, read it entirely.
+- ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
+- Instead of creating a memory, place it in the relevant subfolder's CLAUDE.md.
+- Don't spawn Explore agents to discover files before reading CLAUDE.md files — they already map every subsystem to its paths. Read the relevant CLAUDE.md (root + subfolder), then Read/Grep/Glob those files directly. Only spawn Explore for genuinely undocumented or ambiguous areas.
 
 ## Key References
 | Context | File |
 |---|---|
 | Any project's cpp file | CLAUDE.md at the .h root, in the public folder |
-| Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
+| ALWAYS OPEN WHEN CODING : Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
 | Build commands, dev environment, copyright | `AI/Commands.md` |
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
@@ -25,7 +28,7 @@ When creating a memory, place it in the relevant subfolder's CLAUDE.md.
 | HUD & widgets | `Source/GeoTrinity/Public/HUD/CLAUDE.md` |
 | Subsystems & pooling | `Source/GeoTrinity/Public/System/CLAUDE.md` |
 
-## Source Structure
+## Source Structure (Every public folder has it's CLAUDE.md to explore)
 ```
 Source/GeoTrinity/
 ├── Public/ & Private/
@@ -76,21 +79,3 @@ Source/GeoTrinity/
 │   ├── Animation/             # FireAnimNotify
 │   └── GameClasses/           # GeoGameMode, GeoGameState, GeoGameInstance, GeoPlayerController, GeoPlayerState
 ```
-
-## Key Files for Common Tasks
-| Task | File |
-|---|---|
-| New single-shot ability | Extend `UGeoProjectileAbility` → `AbilitySystem/Abilities/Damaging/GeoProjectileAbility.h` |
-| New hold-to-fire ability | Extend `UGeoAutomaticFireAbility`, override `ExecuteShot()` |
-| New bullet pattern | Extend `UTickablePattern`, implement `TickPattern(ServerTime, SpentTime)` |
-| New deployable | Extend `AGeoDeployableBase` → `Actor/Deployable/GeoDeployableBase.h` |
-| Player attributes | `AbilitySystem/AttributeSet/CharacterAttributeSet.h` |
-| Shared attributes | `AbilitySystem/AttributeSet/GeoAttributeSetBase.h` |
-| Applying effects | `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()` |
-| Projectile behavior | `Actor/Projectile/GeoProjectile.h` |
-| New StateTree AI task | `AI/StateTree/` |
-| HUD screen-space | `HUD/GeoHUD.h` (BlueprintImplementableEvent) |
-| HUD world-space | WidgetComponent on character BP |
-| Camera | `World/GeoGameCamera.h` |
-| Movement speed | `Characters/Component/GeoCharacterMovementComponent.h` (`ApplySpeedMultiplier`) |
-| Combat stats | `System/GeoCombatStatsSubsystem.h` |

@@ -116,7 +116,8 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 		return;
 	}
 
-	FVector const Origin = GetFireOrigin(StoredPayload.Instigator);
+	FVector const Origin =
+		GetFireOrigin(StoredPayload.Instigator, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
 	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(GetWorld(), EProjectileTarget::Forward,
 																	 GetFireYaw(StoredPayload.Instigator), Origin);
 

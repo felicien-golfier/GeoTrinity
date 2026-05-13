@@ -28,7 +28,8 @@
       "mcp__mcp-unreal__execute_script",
       "mcp__mcp-unreal__live_compile",
       "mcp__mcp-unreal__get_asset_info",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Skill(schedule)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -101,14 +101,6 @@ public:
 	 */
 	int32& GetFireSectionIndex(FGameplayTag const& AbilityTag);
 
-	/** Returns the world location of the ability's fire socket on the character's mesh as a 2D XY position. */
-	FVector2D GetFireOrigin2D(AActor* Instigator, FGameplayTag AbilityTag);
-	/** Returns the world location of the ability's fire socket on the character's mesh as a 3D vector. */
-	FVector GetFireOrigin(AActor* Instigator, FGameplayTag AbilityTag);
-
-	/** Returns the current yaw of Instigator's actor rotation in degrees. */
-	float GetFireYaw(AActor const* Instigator) const;
-
 	UPROPERTY(BlueprintAssignable)
 	FOnHealProvided OnHealProvided;
 

@@ -106,6 +106,12 @@ void UPattern::JumpMontageToEndSection() const
 	}
 }
 
+float UPattern::CalculateElapsedTime() const
+{
+	return FMath::Max(0.f,
+					  GeoLib::GetServerTime(GetWorld(), true) - StoredPayload.ServerSpawnTime - StartSectionLength);
+}
+
 void UPattern::EndPattern()
 {
 	JumpMontageToEndSection();
@@ -145,7 +151,7 @@ void UTickablePattern::StartPattern(FAbilityPayload const& Payload)
 void UTickablePattern::CalculateTimeAndTickPattern()
 {
 	float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
-	TickPattern(ServerTime, ServerTime - StoredPayload.ServerSpawnTime - StartSectionLength);
+	TickPattern(ServerTime, CalculateElapsedTime());
 	if (IsPatternActive())
 	{
 		TimeSyncTimerHandle =

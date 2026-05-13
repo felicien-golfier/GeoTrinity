@@ -142,22 +142,16 @@ void AGeoDeployableBase::Explode(float Value)
 		return;
 	}
 
-	TArray<AActor*> OverlappingActors;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes = {UEngineTypes::ConvertToObjectType(ECC_Pawn),
 														 UEngineTypes::ConvertToObjectType(ECC_GeoCharacter)};
-	UKismetSystemLibrary::SphereOverlapActors(this, GetActorLocation(), GetData()->Params.Size, ObjectTypes, nullptr,
-											  {}, OverlappingActors);
-
+	TArray<AActor*> OverlappingActors =
+		GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(GetData()->Owner), ExplodeAttitude, true,
+										FVector2D(GetActorLocation()), GetData()->Params.Size);
 
 	for (AActor* Actor : OverlappingActors)
 	{
-		if (!IsValid(Actor) || !Actor->CanBeDamaged())
-		{
-			continue;
-		}
-
 		UGeoAbilitySystemComponent* ActorASC = GeoASLib::GetGeoAscFromActor(Actor);
-		if (!IsValid(ActorASC) || GeoASLib::IsTeamAttitudeAligned(GetData()->Owner, Actor, ExplodeAttitude))
+		if (!IsValid(ActorASC))
 		{
 			continue;
 		}

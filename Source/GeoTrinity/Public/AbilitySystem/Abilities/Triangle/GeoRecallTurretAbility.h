@@ -46,5 +46,5 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
-	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
+	int32 OverlapAttitude = TeamAttitudeMask::Hostile;
 };

@@ -136,7 +136,7 @@ protected:
 	// Wether should recall or expire when the deployable ends its life on its own.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deployable",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
-	int32 ExplodeAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
+	int32 ExplodeAttitude = TeamAttitudeMask::Hostile;
 	bool bAutoRecallAtEndLife = false;
 
 private:

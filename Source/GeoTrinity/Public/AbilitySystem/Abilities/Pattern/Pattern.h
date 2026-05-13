@@ -54,6 +54,7 @@ protected:
 	void OnStartPattern(FAbilityPayload const& Payload);
 
 	void JumpMontageToEndSection() const;
+	float CalculateElapsedTime() const;
 
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 
@@ -64,8 +65,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> AnimMontage;
 
-private:
 	bool bPatternIsActive = false;
+
+private:
 	FTimerHandle StartSectionTimerHandle;
 };
 

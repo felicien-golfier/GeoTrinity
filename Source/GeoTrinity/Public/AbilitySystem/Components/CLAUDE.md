@@ -10,9 +10,8 @@ Extended ASC used by all characters.
 - `AbilityInputTagReleased(FGameplayTag)` — ends hold abilities
 
 ### Fire helpers (used by ability classes)
-- `GetFireOrigin2D()` / `GetFireOrigin3D()` — returns fire socket world position
-- `GetFireYaw()` — returns current aim yaw
 - `GetFireSectionIndex(AbilityTag)` — returns reference to section counter for animation cycling
+- Fire origin and yaw logic lives on `UGeoGameplayAbility::GetFireOrigin2D` / `GetFireYaw` — override there to customize per-ability
 
 ### Pattern management (enemy-only)
 - `CreatePatternInstance()` — instantiates a `UPattern` subclass

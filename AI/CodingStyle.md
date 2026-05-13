@@ -22,6 +22,7 @@
 - **Verify access specifiers**: public = callable from outside, private = internal, protected = subclass extension, ask to change them if needed.
 - **Reuse existing virtual methods**: check if base class already has a virtual for the same concept before adding new methods
 - **Extracting to base class**: copy code exactly — never modify logic during the move. Introduce virtual getters for subclass variation.
+- **Never re-implement a template method just to inject logic mid-flow**: prefer making the relevant sub-step virtual so the subclass calls `Super` and patches the result. When the sub-step requires state unavailable to a virtual override, add a named virtual hook at that point in the base instead. Duplicating the full method body to change one line is always wrong.
 
 ## Error Handling — No Silent Fallbacks
 - Never silently skip or substitute when something required is missing. Always surface the error.

@@ -5,10 +5,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 ## Tasks
 
-- [ ] [recur:daily] For every function modified today and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
-<!-- [2026-04-27] Processed 5 headers from today's commits (Shield Burst passive + GameplayCue rate-limiting work). Added: IsSuppressGameplayCue/SetSuppressGameplayCue docs in GeoAscTypes.h (new fields from rate-limit fix, zero docs); GetFireOrigin/GetFireYaw docs in GeoAbilitySystemComponent.h (sibling GetFireOrigin2D was already documented, these were not); InitializeMaterialInstances doc in ShieldBurstPassiveComponent.h (non-obvious public method with no hint of what it does); all public accessor/setter docs in GeoPlayerState.h (14 methods with no docs — notably SetDebugCombatStats takes 6 params and now has full @param block, and GetDebugRecv was ambiguous — it's damage received, not heal received); improved GeoProjectileAbility class comment (was a single vague line with no mention of client-prediction or extension pattern). Notable: GeoPlayerState had 14 public methods with zero documentation. SetPlayerClass has a subtle constraint — it does NOT grant abilities — that is easy to miss and now captured. -->
-<!-- [2026-04-28] Processed 5 headers from today's commits (GameplayCue propagation to deployables + ShieldBurst wall-bounce work). Added: AllocGameplayEffectContext/InitGameplayCueParameters docs in GeoAbilitySystemGlobals.h (AllocGameplayEffectContext had its comment removed in today's diff; InitGameplayCueParameters was newly added with no doc — notably it intentionally skips Super to avoid copying the full context, which is worth capturing); fixed GetRecallCueParams grammar in GeoDeployableBase.h ("Return the" → "Returns the"); OnSphereHit doc in GeoProjectile.h (became virtual today — override intent now stated); InitProjectileLife/HandleValidOverlap/OnRep_BounceSnapshot/OnWallBounce docs in GeoShieldBurstProjectile.h (all new or modified today, HandleValidOverlap has non-obvious dual-branch logic — enemy bounce vs ally shield-apply — now explicit); GetAbilitySystemComponent/GetGenericTeamId docs in GeoInteractableActor.h (public interface implementations with zero docs). No suspicious patterns found. -->
-
+- [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
 
   **Scope**
   - Run `git diff --name-only HEAD` to get today's modified files. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase.
@@ -47,6 +44,27 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
   - Class comments must state: what problem the class solves, and why it was created.
 
   **Report**
-  After completing the task, optionally append a short timestamped comment (usually 1–5 lines, it can be longer if needed.) directly below the task bullet. Flag anything worth surfacing: incoherent naming, a function whose comment contradicts its implementation, suspicious patterns, or anything that looks like a latent bug. Skip the report if nothing notable was found.
+  After completing the task, optionally append a short timestamped comment (usually 1–5 lines, it can be longer if needed.) directly below this bullet. Flag anything worth surfacing: incoherent naming, a function whose comment contradicts its implementation, suspicious patterns, or anything that looks like a latent bug. Skip the report if nothing notable was found.
+  Format: `<!-- [YYYY-MM-DD] <findings> -->`
+
+- [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
+
+  **Scope**
+  - Run `git diff --name-only HEAD` to get today's modified files. Only open `.h` and `.cpp` files from that list.
+  - For each changed file, identify its subfolder `CLAUDE.md` (the one sitting next to the `.h` files) and the parent-folder `CLAUDE.md` above it — update both if needed.
+  - Only update what actually changed. Do not touch sections unaffected by today's diff.
+
+  **Two-tier CLAUDE.md rule — strictly enforce this:**
+  - **Subfolder CLAUDE.md** (lives next to the `.h` files) — this is the full reference. Include: class purpose, lifecycle, override points, key fields, networking rules, and any non-obvious constraints. Keep it concise but complete. Remove lines that are no longer accurate.
+  - **Parent-folder CLAUDE.md** (one level up, e.g. `Deployable/CLAUDE.md` vs `Mine/CLAUDE.md`) — one short sentence per subfolder/file, nothing more. It is an index, not a reference. Do not duplicate details already in the subfolder CLAUDE.md.
+
+  **Writing rules**
+  - Be concise. Every line must earn its place — delete stale or redundant lines before adding new ones.
+  - Document *why* something works the way it does, not *what* the code does (the code documents itself).
+  - Use bullet points, not prose paragraphs.
+  - Never describe the task, the fix, or the PR in the CLAUDE.md — only the steady-state design.
+
+  **Report**
+  After completing the task, optionally append a short timestamped comment directly below this bullet listing which CLAUDE.md files were updated and what changed. Skip if nothing needed updating.
   Format: `<!-- [YYYY-MM-DD] <findings> -->`
 

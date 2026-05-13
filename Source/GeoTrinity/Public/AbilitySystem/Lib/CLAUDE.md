@@ -15,9 +15,11 @@
 **Targeting:**
 - `GetTargetDirections(Payload, TargetMode)` — returns directions for Forward / AllPlayers modes
 
-**Team utilities:**
-- `GetAllAgentsInTeam(World, Team)` — all agents with matching team
-- `GetAllAgentsWithRelationTowardsActor(World, Actor, Attitude)` — all agents with given attitude toward `Actor`
+**Team utilities — prefer these over `SphereOverlapActors` / `OverlapMultiByChannel`:**
+- `GetInteractableActors(World, SourceTeam, AttitudeBitmask)` — all agents matching any bit in `ETeamAttitudeBitflag` bitmask
+- `GetInteractableActors(World, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location, MaxDistance)` — with optional distance + damageable filter
+- `GetInteractableActors(World, bMustBeDamageable, Location, MaxDistance)` — no team filter, distance only
+- Use these instead of any physics overlap when filtering game agents.
 - `IsTeamAttitudeAligned(Agent1, Agent2)` — checks alignment
 
 **Context helpers:**

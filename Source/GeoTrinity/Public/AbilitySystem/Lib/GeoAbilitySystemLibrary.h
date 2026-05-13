@@ -192,11 +192,25 @@ public:
 	 */
 	static bool GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface);
 
+	static FGenericTeamId GetTeamId(AActor const* Actor);
+
+	/**
+	 * Returns all agents whose team attitude toward SourceActor matches any bit in AttitudeBitmask.
+	 * @param WorldContextObject Bluperint required WorldObject
+	 * @param AttitudeBitmask  Bitmask of ETeamAttitudeBitflag values (e.g. Hostile | Neutral).
+	 * @param bMustBeDamageable
+	 * @param bMustBeDamageable
+	 * @param MaxDistance      Maximum distance from Actor (world units). 0 = no distance check.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
-	static TArray<AActor*> GetAllAgentsInTeam(UObject const* WorldContextObject, FGenericTeamId const& TeamId);
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
-	static TArray<AActor*> GetAllAgentsWithRelationTowardsActor(UObject const* WorldContextObject, AActor const* Actor,
-																ETeamAttitude::Type Attitude);
+	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
+												 int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
+												 float MaxDistance);
+
+	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
+												 int32 AttitudeBitmask, bool bMustBeDamageable = true);
+	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, bool bMustBeDamageable,
+												 FVector2D Location, float MaxDistance);
 
 	/** Converts a UE ETeamAttitude enum value to its corresponding ETeamAttitudeBitflag bit. */
 	static ETeamAttitudeBitflag GetAttitudeBitflag(ETeamAttitude::Type Attitude);

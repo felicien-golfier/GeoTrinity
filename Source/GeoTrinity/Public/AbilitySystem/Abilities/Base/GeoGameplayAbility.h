@@ -46,21 +46,14 @@ public:
 	/**
 	 * Constructs an FAbilityPayload from explicit shot parameters.
 	 *
-	 * @param Owner             Actor that owns the ability.
-	 * @param Instigator        Actor causing the damage/effect (may differ from Owner).
 	 * @param Origin            2D world position of the fire socket at the moment of firing.
 	 * @param Yaw               Character facing yaw at the moment of firing (degrees).
 	 * @param ServerSpawnTime   Synchronized server time at which the projectile was spawned.
 	 * @param Seed              Random seed for deterministic effects.
 	 */
-	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator, FVector2D const& Origin, float Yaw,
-										 float ServerSpawnTime, int Seed) const;
-
-	/**
-	 * Constructs an FAbilityPayload from an actor transform.
-	 * Derives Origin and Yaw from Transform. ServerSpawnTime is set to current server time.
-	 */
-	FAbilityPayload CreateAbilityPayload(AActor* Owner, AActor* Instigator) const;
+	FAbilityPayload CreateAbilityPayload(FVector2D const& Origin, float Yaw, float ServerSpawnTime, int Seed) const;
+	FAbilityPayload CreateAbilityPayload() const;
+	FAbilityPayload CreateAbilityPayloadFromTargetData(FGeoAbilityTargetData const& TargetData) const;
 
 	/** Returns the GeoAbilitySystemComponent from the ability's current actor info. */
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponentFromActorInfo() const;
@@ -92,6 +85,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	float GetFireDelay() const;
 
+	bool IsPassive() const;
+
+	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC, int Seed) const;
+	virtual FVector GetFireOrigin(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC, int Seed) const;
+	virtual float GetStartTime(UWorld const* World) const;
+	virtual int GetNewSeed() const;
+	virtual float GetFireYaw(AActor const* Instigator) const;
+
 protected:
 	/**
 	 * Starts a timer (or charge window) after which BuildDataAndFire is called.
@@ -107,9 +108,7 @@ protected:
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;
-	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize.
-	 */
-	virtual FGeoAbilityTargetData BuildAbilityTargetData();
+
 
 	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. */
 	UFUNCTION()
@@ -125,9 +124,9 @@ protected:
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag);
 
-	FVector2D GetFireOrigin2D(AActor* Instigator) const;
-	FVector GetFireOrigin(AActor* Instigator) const;
-	float GetFireYaw(AActor const* Instigator) const;
+	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize.
+	 */
+	virtual FGeoAbilityTargetData GetUpdatedAbilityTargetData();
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation")

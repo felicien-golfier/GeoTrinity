@@ -225,8 +225,10 @@ FGameplayTag UGeoAbilitySystemLibrary::GetAbilityTagFromAbility(UGameplayAbility
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-TArray<AActor*> UGeoAbilitySystemLibrary::GetAllAgentsInTeam(UObject const* WorldContextObject,
-															 FGenericTeamId const& TeamId)
+TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
+																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,
+																bool bMustBeDamageable, FVector2D const Location,
+																float MaxDistance /* = 0.f => No distance check*/)
 {
 	TArray<AActor*> Result;
 
@@ -236,73 +238,67 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetAllAgentsInTeam(UObject const* Worl
 		return Result;
 	}
 
-	for (TActorIterator<AActor> It(WorldContextObject->GetWorld()); It; ++It)
+
+	bool bHasDistanceCheck = MaxDistance > 0.f;
+	float const MaxDistanceSqr = MaxDistance * MaxDistance;
+
+
+	auto TryAddActor = [&](AActor* OtherActor, TCHAR const* ClassName)
 	{
-		AActor* Actor = *It;
-
-		IGenericTeamAgentInterface* TeamAgent = Cast<IGenericTeamAgentInterface>(Actor);
-		if (!TeamAgent)
+		if (!IsValid(OtherActor))
 		{
-			continue;
+			return;
 		}
 
-		FGenericTeamId const OtherTeam = TeamAgent->GetGenericTeamId();
+		IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(OtherActor);
+		checkf(TeamInterface, TEXT("%s is a IGenericTeamAgentInterface, this should never fail"), ClassName);
 
-		if (OtherTeam == TeamId)
+		if (bMustBeDamageable && !OtherActor->CanBeDamaged())
 		{
-			Result.Add(Actor);
+			return;
 		}
+
+		if (SourceTeam != FGenericTeamId::NoTeam
+			&& !IsAttitudeIntBitflag(static_cast<ETeamAttitudeBitflag>(AttitudeBitmask),
+									 FGenericTeamId::GetAttitude(SourceTeam, TeamInterface->GetGenericTeamId())))
+		{
+			return;
+		}
+
+		if (bHasDistanceCheck
+			&& FVector2D::DistSquared(Location, FVector2D(OtherActor->GetActorLocation())) > MaxDistanceSqr)
+		{
+			return;
+		}
+
+		Result.Add(OtherActor);
+	};
+
+	for (TActorIterator<AGeoCharacter> It(WorldContextObject->GetWorld()); It; ++It)
+	{
+		TryAddActor(*It, TEXT("AGeoCharacter"));
+	}
+
+	for (TActorIterator<AGeoInteractableActor> It(WorldContextObject->GetWorld()); It; ++It)
+	{
+		TryAddActor(*It, TEXT("AGeoInteractableActor"));
 	}
 
 	return Result;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-TArray<AActor*> UGeoAbilitySystemLibrary::GetAllAgentsWithRelationTowardsActor(UObject const* WorldContextObject,
-																			   AActor const* Actor,
-																			   ETeamAttitude::Type Attitude)
+TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
+																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,
+																bool bMustBeDamageable)
 {
-	TArray<AActor*> Result;
-
-	if (!WorldContextObject || !WorldContextObject->GetWorld())
-	{
-		UE_LOG(LogGeoASC, Warning, TEXT("No World in %s"), *FString(__FUNCTION__));
-		return Result;
-	}
-	if (!Actor)
-	{
-		UE_LOG(LogGeoASC, Warning, TEXT("No Actor in %s"), *FString(__FUNCTION__));
-		return Result;
-	}
-
-	for (TActorIterator<AGeoCharacter> It(WorldContextObject->GetWorld()); It; ++It)
-	{
-		AActor* OtherActor = *It;
-
-		IGenericTeamAgentInterface const* OtherActorTeamInterface = Cast<IGenericTeamAgentInterface>(OtherActor);
-		checkf(OtherActorTeamInterface, TEXT(" AGeoCharacter is a IGenericTeamAgentInterface, this should never fail"));
-
-		if (Attitude == OtherActorTeamInterface->GetTeamAttitudeTowards(*Actor))
-		{
-			Result.AddUnique(OtherActor);
-		}
-	}
-
-	for (TActorIterator<AGeoInteractableActor> It(WorldContextObject->GetWorld()); It; ++It)
-	{
-		AActor* OtherActor = *It;
-
-		IGenericTeamAgentInterface const* OtherActorTeamInterface = Cast<IGenericTeamAgentInterface>(OtherActor);
-		checkf(OtherActorTeamInterface,
-			   TEXT(" AGeoInteractableActor is a IGenericTeamAgentInterface, this should never fail"));
-
-		if (Attitude == OtherActorTeamInterface->GetTeamAttitudeTowards(*Actor))
-		{
-			Result.AddUnique(OtherActor);
-		}
-	}
-
-	return Result;
+	return GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable,
+								 FVector2D::ZeroVector, 0.0f);
+}
+TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
+																bool bMustBeDamageable, FVector2D Location,
+																float MaxDistance)
+{
+	return GetInteractableActors(WorldContextObject, FGenericTeamId(), 0, bMustBeDamageable, Location, MaxDistance);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -793,6 +789,16 @@ UAnimInstance* UGeoAbilitySystemLibrary::GetAnimInstance(FAbilityPayload const& 
 	}
 
 	return AnimInstance;
+}
+
+FGenericTeamId UGeoAbilitySystemLibrary::GetTeamId(AActor const* Actor)
+{
+	IGenericTeamAgentInterface const* TeamInterface = nullptr;
+	if (GetTeamInterface(Actor, TeamInterface))
+	{
+		return TeamInterface->GetGenericTeamId();
+	}
+	return FGenericTeamId::NoTeam;
 }
 
 bool UGeoAbilitySystemLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)

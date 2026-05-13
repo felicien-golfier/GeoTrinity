@@ -19,7 +19,6 @@ struct GEOTRINITY_API FAbilityPayload
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	FVector2D Origin{}; // World-space XY position at spawn time
-
 	UPROPERTY(Transient, BlueprintReadOnly)
 	float Yaw{}; // Character facing yaw in degrees at spawn time
 

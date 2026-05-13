@@ -95,7 +95,7 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
-	int32 OverlapAttitude = static_cast<int32>(ETeamAttitudeBitflag::Friendly);
+	int32 OverlapAttitude = TeamAttitudeMask::Friendly;
 
 	bool bMovingToTarget = true;
 	float LaunchElapsedTime = 0.f;
