@@ -21,23 +21,24 @@ void ADeployableSpawnerProjectile::EndProjectileLife()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void ADeployableSpawnerProjectile::FillBaseData(FDeployableData& Data, AActor* PayloadOwner) const
+void ADeployableSpawnerProjectile::FillBaseData(FDeployableData& Data) const
 {
-	Data.Owner = PayloadOwner;
+	Data.Owner = Payload.Owner;
+	Data.Instigator = Payload.Instigator;
 	Data.Level = Payload.AbilityLevel;
 	Data.Seed = Payload.Seed;
 	Data.Params = Params;
-	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(PayloadOwner))
+	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Payload.Owner))
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void ADeployableSpawnerProjectile::InitDeployable(AGeoDeployableBase* Deployable, AActor* PayloadOwner) const
+void ADeployableSpawnerProjectile::InitDeployable(AGeoDeployableBase* Deployable) const
 {
 	FDeployableData Data;
-	FillBaseData(Data, PayloadOwner);
+	FillBaseData(Data);
 	Data.EffectDataArray = EffectDataArray;
 	Deployable->InitInteractable(&Data);
 }
@@ -87,6 +88,6 @@ void ADeployableSpawnerProjectile::SpawnDeployableActor()
 		return;
 	}
 
-	InitDeployable(Deployable, PayloadOwner);
+	InitDeployable(Deployable);
 	Deployable->FinishSpawning(SpawnTransform);
 }

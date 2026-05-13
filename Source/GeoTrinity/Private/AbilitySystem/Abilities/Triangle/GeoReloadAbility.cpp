@@ -88,29 +88,30 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		int32 const Index =
 			(CurrentAmmo == 0.f ? AbilityTargetData.Seed : FMath::RoundToInt(CurrentAmmo)) % BuffEffects.Num();
 
-		AActor* Avatar = GetAvatarActorFromActorInfo();
 		FRandomStream Rng(StoredPayload.Seed);
 		float const RandomAngle = Rng.FRandRange(0.f, 2.f * PI);
 		float const RandomRadius = Rng.FRandRange(MinSpawnRadius, MaxSpawnRadius);
 		FVector const SpawnOffset{FMath::Cos(RandomAngle) * RandomRadius, FMath::Sin(RandomAngle) * RandomRadius, 0.f};
-		FVector const AvatarLocation = Avatar->GetActorLocation();
-		FTransform const SpawnTransform{AvatarLocation};
+		FVector const InstigatorLocation = StoredPayload.Instigator->GetActorLocation();
+		FTransform const SpawnTransform{InstigatorLocation};
 
-		AGeoBuffPickup* Pickup =
-			GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(BuffPickupClass, SpawnTransform, Avatar, Cast<APawn>(Avatar),
-														   ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		AGeoBuffPickup* Pickup = GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(
+			BuffPickupClass, SpawnTransform, StoredPayload.Instigator, Cast<APawn>(StoredPayload.Instigator),
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
 		ensureMsgf(IsValid(Pickup), TEXT("GeoTriangleReloadAbility: Failed to spawn AGeoBuffPickup!"));
 		if (IsValid(Pickup))
 		{
 			FBuffPickupData PickupData;
-			PickupData.Owner = Avatar;
+			PickupData.Owner = StoredPayload.Owner;
+			PickupData.Instigator = StoredPayload.Instigator;
 			PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
 			PickupData.EffectDataArray = {BuffEffects[Index]};
 			PickupData.PowerScale = PowerScale;
 			PickupData.MeshIndex = Index;
-			PickupData.TargetLocation = AvatarLocation + SpawnOffset;
+			PickupData.TargetLocation = InstigatorLocation + SpawnOffset;
 			PickupData.Seed = StoredPayload.Seed;
-			if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Avatar))
+			if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(StoredPayload.Owner))
 			{
 				PickupData.TeamID = TeamInterface->GetGenericTeamId();
 			}

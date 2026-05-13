@@ -4,11 +4,13 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoPillar::AGeoPillar()
 {
-	bUseRegularDrain = false;
+	bUseRegularDrain = true;
+	CapsuleComponent->SetCapsuleSize(100.f, 100.f, false);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -31,20 +33,10 @@ void AGeoPillar::InitInteractable(FInteractableActorData* Data)
 	Super::InitInteractable(Data);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoPillar::OnHealthChanged_Implementation(float NewValue)
+void AGeoPillar::RecallEffect(float Value)
 {
-	// Let base handle blink/expiry from drain; pillar has no drain so this only fires from damage.
-	Super::OnHealthChanged_Implementation(NewValue);
-
-	if (NewValue <= 0.f && !IsExpired())
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		OnPillarDestroyed();
+		Explode(Value);
 	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoPillar::OnPillarDestroyed_Implementation()
-{
-	// Base implementation intentionally empty — BP overrides for VFX/SFX.
 }

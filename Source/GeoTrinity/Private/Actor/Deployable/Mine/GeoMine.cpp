@@ -34,69 +34,35 @@ void AGeoMine::InitInteractable(FInteractableActorData* Data)
 	}
 
 	MineData = *InputData;
-	bIsRecalling = false;
 	Super::InitInteractable(Data);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoMine::Recall(float Value)
+void AGeoMine::ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
+							 UGeoAbilitySystemComponent* TargetASC)
 {
-	if (bExpired || bIsRecalling)
+	Super::ExplodeEffect(Value, SourceASC, Actor, TargetASC);
+	float const ScaledLifeSpent = MineData.Params.Value * Value;
+	if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, static_cast<int32>(ETeamAttitudeBitflag::Hostile)))
 	{
-		return;
+		FDamageEffectData DamageEffect;
+		DamageEffect.DamageAmount = FScalableFloat(ScaledLifeSpent);
+		GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
 	}
+	else if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, static_cast<int32>(ETeamAttitudeBitflag::Friendly)))
+	{
+		FShieldEffectData ShieldEffect;
+		ShieldEffect.ShieldAmount = FScalableFloat(ScaledLifeSpent);
+		GeoASLib::ApplySingleEffectData(ShieldEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
+	}
+}
 
-	bIsRecalling = true;
-
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoMine::RecallEffect(float Value)
+{
 	if (GeoLib::IsServer(GetWorld()))
 	{
-		UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(MineData.Owner);
-		if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on Owner")))
-		{
-			Super::Recall(Value);
-			return;
-		}
-		TArray<AActor*> OverlappingActors;
-		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes = {UEngineTypes::ConvertToObjectType(ECC_Pawn),
-															 UEngineTypes::ConvertToObjectType(ECC_GeoCharacter)};
-		UKismetSystemLibrary::SphereOverlapActors(this, GetActorLocation(), MineData.Params.Size, ObjectTypes, nullptr,
-												  {}, OverlappingActors);
-
-		float const ScaledLifeSpent = MineData.Params.Value * Value;
-
-		for (AActor* Actor : OverlappingActors)
-		{
-			if (!IsValid(Actor) || Actor == MineData.Owner)
-			{
-				continue;
-			}
-
-			if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor,
-												static_cast<int32>(ETeamAttitudeBitflag::Hostile)))
-			{
-				UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-				if (TargetASC)
-				{
-					FDamageEffectData DamageEffect;
-					DamageEffect.DamageAmount = FScalableFloat(ScaledLifeSpent);
-					GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
-				}
-			}
-			else if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor,
-													 static_cast<int32>(ETeamAttitudeBitflag::Friendly)))
-			{
-				UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-				if (TargetASC)
-				{
-					FShieldEffectData ShieldEffect;
-					ShieldEffect.ShieldAmount = FScalableFloat(ScaledLifeSpent);
-					GeoASLib::ApplySingleEffectData(ShieldEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
-				}
-			}
-		}
+		Explode(Value);
 	}
-
-	Super::Recall(Value);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -117,7 +83,8 @@ void AGeoMine::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 		return;
 	}
 
-	Recall(1.f);
+	constexpr float RecallPowerModifier = 1.f; // When stepping on the mine, no modificator
+	Recall(RecallPowerModifier);
 }
 
 FGameplayCueParameters AGeoMine::GetRecallCueParams()

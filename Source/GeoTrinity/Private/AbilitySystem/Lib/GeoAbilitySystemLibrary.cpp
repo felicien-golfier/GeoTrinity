@@ -752,20 +752,6 @@ bool UGeoAbilitySystemLibrary::IsTeamAttitudeAligned(AActor const* Owner, AActor
 		return false;
 	}
 
-	IAbilitySystemInterface const* OwnerASCInterface = Cast<IAbilitySystemInterface>(Owner);
-	if (!OwnerASCInterface)
-	{
-		UE_LOG(LogGeoTrinity, Error,
-			   TEXT("The Owner does not implement IAbilitySystemInterface. It should never happen"));
-		return false;
-	}
-
-	AActor const* SourceAvatarActor = OwnerASCInterface->GetAbilitySystemComponent()->GetAvatarActor();
-	if (!IsValid(SourceAvatarActor))
-	{
-		return false;
-	}
-
 	IGenericTeamAgentInterface const* OwnerTeamInterface = nullptr;
 	if (!GetTeamInterface(Owner, OwnerTeamInterface))
 	{

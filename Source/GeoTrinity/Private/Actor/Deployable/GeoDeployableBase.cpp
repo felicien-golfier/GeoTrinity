@@ -9,7 +9,9 @@
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffect.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -37,7 +39,7 @@ void AGeoDeployableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AGeoDeployableBase, bExpired);
+	DOREPLIFETIME(AGeoDeployableBase, bActive);
 }
 
 void AGeoDeployableBase::InitDrain()
@@ -94,6 +96,22 @@ void AGeoDeployableBase::BeginPlay()
 		HealthBarComponent->SetHiddenInGame(true);
 	}
 }
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::Recall(float Value)
+{
+	if (!bActive)
+	{
+		return;
+	}
+	bActive = false;
+
+	RecallEffect(Value);
+	ExecuteRecallCue();
+	Expire();
+}
+
+
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::ExecuteRecallCue()
 {
@@ -111,16 +129,78 @@ void AGeoDeployableBase::ExecuteRecallCue()
 	ASC->ExecuteGameplayCue(RecallGameplayCueTag, GetRecallCueParams());
 }
 
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::Recall(float Value)
+void AGeoDeployableBase::RecallEffect(float Value)
 {
-	if (bExpired)
+	// Override to add effects.
+}
+
+void AGeoDeployableBase::Explode(float Value)
+{
+	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
+	if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on Owner")))
 	{
 		return;
 	}
 
-	ExecuteRecallCue();
-	Expire();
+	TArray<AActor*> OverlappingActors;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes = {UEngineTypes::ConvertToObjectType(ECC_Pawn),
+														 UEngineTypes::ConvertToObjectType(ECC_GeoCharacter)};
+	UKismetSystemLibrary::SphereOverlapActors(this, GetActorLocation(), GetData()->Params.Size, ObjectTypes, nullptr,
+											  {}, OverlappingActors);
+
+
+	for (AActor* Actor : OverlappingActors)
+	{
+		if (!IsValid(Actor) || !Actor->CanBeDamaged())
+		{
+			continue;
+		}
+
+		UGeoAbilitySystemComponent* ActorASC = GeoASLib::GetGeoAscFromActor(Actor);
+		if (!IsValid(ActorASC) || GeoASLib::IsTeamAttitudeAligned(GetData()->Owner, Actor, ExplodeAttitude))
+		{
+			continue;
+		}
+
+		ExplodeEffect(Value, SourceASC, Actor, ActorASC);
+	}
+}
+
+void AGeoDeployableBase::ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
+									   UGeoAbilitySystemComponent* TargetASC)
+{
+	GeoASLib::ApplyEffectFromEffectData(GetData()->EffectDataArray, SourceASC, TargetASC, GetData()->Level,
+										GetData()->Seed);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::Expire()
+{
+	bActive = false;
+	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(BlinkVisibilityTimerHandle);
+	SetActorHiddenInGame(true);
+	OnDeployableExpiredEvent.Broadcast(this);
+	SetActorTickEnabled(false);
+
+	if (TimeBeforeDestroyAtExpire > 0.f)
+	{
+		FTimerHandle TimerHandle;
+		GetWorldTimerManager().SetTimer(
+			TimerHandle,
+			[this]()
+			{
+				if (IsValid(this))
+				{
+					this->Destroy();
+				}
+			},
+			TimeBeforeDestroyAtExpire, false);
+	}
+	else
+	{
+		Destroy();
+	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -143,7 +223,7 @@ float AGeoDeployableBase::GetDurationPercent() const
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 {
-	if (NewValue <= 0.f && !bExpired && !BlinkTimerHandle.IsValid())
+	if (NewValue <= 0.f && bActive && !BlinkTimerHandle.IsValid())
 	{
 		float const BlinkDuration = GetData()->Params.BlinkDuration;
 		if (BlinkDuration > 0.f)
@@ -155,7 +235,14 @@ void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 		}
 		else
 		{
-			Expire();
+			if (bAutoRecallAtEndLife)
+			{
+				Recall();
+			}
+			else
+			{
+				Expire();
+			}
 		}
 	}
 }
@@ -170,7 +257,7 @@ void AGeoDeployableBase::OnBlinkStarted_Implementation()
 
 void AGeoDeployableBase::OnRep_Expired(bool bOldValue)
 {
-	if (!bOldValue && bExpired)
+	if (bOldValue && !bActive)
 	{
 		ExecuteRecallCue();
 		Expire();
@@ -186,35 +273,18 @@ void AGeoDeployableBase::OnBlinkVisibilityTick()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnBlinkTimerExpired()
 {
-	if (!bExpired)
+	if (bActive)
 	{
-		Expire();
+		if (bAutoRecallAtEndLife)
+		{
+			Recall();
+		}
+		else
+		{
+			Expire();
+		}
 	}
 }
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::Expire()
-{
-	bExpired = true;
-	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
-	GetWorld()->GetTimerManager().ClearTimer(BlinkVisibilityTimerHandle);
-	SetActorHiddenInGame(true);
-	OnDeployableExpiredEvent.Broadcast(this);
-	FTimerHandle TimerHandle;
-	SetActorTickEnabled(false);
-
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[this]()
-		{
-			if (IsValid(this))
-			{
-				this->Destroy();
-			}
-		},
-		TimeBeforeDestroyAtExpire, false);
-}
-
 
 bool AGeoDeployableBase::IsBlinking() const
 {
@@ -226,28 +296,12 @@ bool AGeoDeployableBase::IsBlinking() const
 FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
 {
 	FVector const DeployableLocation = GetActorLocation();
-	AActor* DataOwner = GetData()->Owner;
-	if (!ensureMsgf(DataOwner, TEXT("AGeoDeployableBase::GetRecallCueParams: DataOwner is null")))
-	{
-		return FGameplayCueParameters();
-	}
-	if (DataOwner->IsA(APlayerState::StaticClass()))
-	{
-		APawn* OwnerPawn = CastChecked<APlayerState>(DataOwner)->GetPawn();
-		if (ensureMsgf(OwnerPawn, TEXT("AGeoDeployableBase::GetRecallCueParams: PlayerState has no Pawn")))
-		{
-			DataOwner = OwnerPawn;
-		}
-	}
-
-	FVector const OwnerLocation = DataOwner->GetActorLocation();
-
 
 	FGameplayCueParameters CueParams;
 	CueParams.Location = DeployableLocation;
-	CueParams.Normal = (OwnerLocation - DeployableLocation).GetSafeNormal();
+	CueParams.Normal = (GetData()->Instigator->GetActorLocation() - DeployableLocation).GetSafeNormal();
 	CueParams.EffectCauser = this;
-	CueParams.Instigator = DataOwner;
+	CueParams.Instigator = GetData()->Instigator;
 	CueParams.AbilityLevel = GetData()->Level;
 	CueParams.RawMagnitude = IsBlinking() ? 1.f : 0.f;
 	return CueParams;

@@ -23,6 +23,9 @@ struct FInteractableActorData
 	TObjectPtr<AActor> Owner = nullptr;
 
 	UPROPERTY()
+	TObjectPtr<AActor> Instigator = nullptr;
+
+	UPROPERTY()
 	int Level = 1;
 
 	UPROPERTY()

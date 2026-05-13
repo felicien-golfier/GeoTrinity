@@ -10,7 +10,7 @@ Handles drain GE, blink-before-expiry, recall, and Blueprint events.
 2. `InitDrain()` — applies drain GE from `Params.LifeDrainMaxDuration`; override to change drain behavior
 3. `Tick()` — manages blink timer countdown
 4. On health/duration zero → `Expire()` → sets `bExpired`, starts `TimeBeforeDestroyAtExpire = 3s` timer, fires `OnDeployableExpiredEvent`
-5. `Recall(bExecuteCue, Value)` — owner-initiated; **this is the override point** for "deployable triggers effect and ends". Override `Recall()`, not a separate method.
+5. `Recall(Value)` — owner-initiated; **this is the ONLY destruction/end path**. Override `Recall()` for any "deployable triggers effect and ends" logic. **Never add a separate destruction method** (e.g. `OnXDestroyed`). When health hits zero, call `Recall()` — do not call `Expire()` or `Destroy()` directly.
 
 **Blueprint events:**
 - `OnBlinkStarted()` — `BlueprintNativeEvent`; pre-expiry visual (blink animation)

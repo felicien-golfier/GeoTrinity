@@ -23,9 +23,12 @@ public:
 	AGeoMine();
 
 	virtual void InitInteractable(FInteractableActorData* Data) override;
+
+	virtual void ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
+							   UGeoAbilitySystemComponent* TargetASC) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	virtual void Recall(float Value = 0.f) override;
+	virtual void RecallEffect(float Value = 0.f) override;
 	virtual FGameplayCueParameters GetRecallCueParams() override;
 
 protected:
@@ -41,6 +44,4 @@ private:
 
 	UPROPERTY(Replicated)
 	FDeployableData MineData;
-
-	bool bIsRecalling = false;
 };

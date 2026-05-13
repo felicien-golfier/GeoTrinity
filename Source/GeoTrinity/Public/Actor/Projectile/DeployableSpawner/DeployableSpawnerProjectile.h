@@ -33,11 +33,10 @@ protected:
 	 * Subclasses may override to set class-specific fields on the FDeployableData.
 	 *
 	 * @param Deployable    The freshly deferred-spawned deployable actor (before BeginPlay).
-	 * @param PayloadOwner  The character who fired the spawner projectile.
 	 */
-	virtual void InitDeployable(AGeoDeployableBase* Deployable, AActor* PayloadOwner) const;
+	virtual void InitDeployable(AGeoDeployableBase* Deployable) const;
 	/** Fills common FDeployableData fields (owner, level, team, seed, params, effects) from the projectile payload. */
-	void FillBaseData(FDeployableData& Data, AActor* PayloadOwner) const;
+	void FillBaseData(FDeployableData& Data) const;
 
 private:
 	void SpawnDeployableActor();

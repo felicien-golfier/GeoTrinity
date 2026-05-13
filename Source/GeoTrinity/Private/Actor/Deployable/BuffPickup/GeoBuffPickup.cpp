@@ -121,7 +121,7 @@ void AGeoBuffPickup::UpdateMesh()
 void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimitiveComponent*, int32, bool,
 							   FHitResult const&)
 {
-	if (!GeoLib::IsServer(GetWorld()) || bMovingToTarget || !IsValid(OtherActor))
+	if (!GeoLib::IsServer(GetWorld()) || bMovingToTarget || !IsValid(OtherActor) || !OtherActor->CanBeDamaged())
 	{
 		return;
 	}

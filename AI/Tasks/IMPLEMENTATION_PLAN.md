@@ -199,18 +199,22 @@ Actor->Init();
 
 ### Phase 6: Boss
 
+**Architecture decision:** No new C++ boss character class — boss is a BP subclass of `AEnemyCharacter`. Abilities manage their own actors. Boss actors live in `Actor/Deployable/` subfolders following the existing deployable pattern.
+
 | Task | File | Status |
 |------|------|--------|
-| Boss Character | `Characters/Boss/GeoSpaceInvaderBoss.h/.cpp` | [ ] |
+| Boss Character | BP subclass of `AEnemyCharacter` — no C++ needed | [BP] |
+| Pillar Actor | `Actor/Deployable/Pillar/GeoPillar.h/.cpp` | [x] |
 | Boss Movement Task | `AI/StateTree/Boss/STTask_BossRandomMovement.h/.cpp` | [ ] |
 | Boss Ability Select | `AI/StateTree/Boss/STTask_BossSelectAbility.h/.cpp` | [ ] |
 | Boss Teleport Task | `AI/StateTree/Boss/STTask_BossTeleportToCenter.h/.cpp` | [ ] |
 | Targeted Salvo | `Abilities/Boss/GeoTargetedSalvoAbility.h/.cpp` | [ ] |
 | Delayed Fatal Zone | `Abilities/Boss/GeoDelayedFatalZoneAbility.h/.cpp` | [ ] |
-| Fatal Zone Actor | `Actor/Boss/GeoFatalZone.h/.cpp` | [ ] |
-| Pillar Actor | `Actor/Boss/GeoPillar.h/.cpp` | [ ] |
+| Fatal Zone Actor | `Actor/Deployable/FatalZone/GeoFatalZone.h/.cpp` | [ ] |
 | Devastating Wave | `Abilities/Boss/GeoDevastatingWaveAbility.h/.cpp` | [ ] |
-| Wave Actor | `Actor/Boss/GeoDevastatingWave.h/.cpp` | [ ] |
+| Wave Actor | `Actor/Deployable/DevastatingWave/GeoDevastatingWave.h/.cpp` | [ ] |
+
+**Next:** Step 2 — `GeoFatalZone` (countdown zone that spawns a Pillar) + `GeoDevastatingWave` (expanding lethal wave blocked by Pillars). Both extend `AGeoDeployableBase`.
 
 ### Phase 7: Multiplayer Connection Pipeline
 

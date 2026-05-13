@@ -7,12 +7,6 @@
 
 #include "GeoPillar.generated.h"
 
-/** Runtime init data for a pillar deployable. */
-USTRUCT()
-struct FPillarData : public FDeployableData
-{
-	GENERATED_BODY()
-};
 
 /**
  * Pillar deployable spawned by GeoFatalZone when its countdown expires.
@@ -33,14 +27,9 @@ public:
 protected:
 	virtual FDeployableData const* GetData() const override { return &PillarData; }
 
-	virtual void OnHealthChanged_Implementation(float NewValue) override;
-
-	/** Fired on health reaching zero — override in BP for death VFX. */
-	UFUNCTION(BlueprintNativeEvent)
-	void OnPillarDestroyed();
-	virtual void OnPillarDestroyed_Implementation();
+	virtual void RecallEffect(float Value = 0.f) override;
 
 private:
 	UPROPERTY(Replicated)
-	FPillarData PillarData;
+	FDeployableData PillarData;
 };

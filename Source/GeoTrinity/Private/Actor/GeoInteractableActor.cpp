@@ -108,8 +108,10 @@ void AGeoInteractableActor::ApplyEffectToSelf_Implementation(TSubclassOf<UGamepl
 		return;
 	}
 
+	// TODO : Not sure about setting correctly Instigator as SourceObject
 	FGameplayEffectContextHandle EffectContextHandle = ASC->MakeEffectContext();
-	EffectContextHandle.AddSourceObject(this);
+	EffectContextHandle.AddSourceObject(GetData()->Instigator);
+	// We use Owner here, because the effect instigator is the one that Owns the ASC...
 	EffectContextHandle.AddInstigator(GetData()->Owner, this);
 
 	FGameplayEffectSpecHandle const SpecHandle = ASC->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
@@ -126,6 +128,7 @@ void AGeoInteractableActor::InitGas(AActor* OwnerActor)
 {
 	check(AbilitySystemComponent);
 
+	// TODO: Verify Owner is the right call here.
 	AbilitySystemComponent->InitAbilityActorInfo(OwnerActor, this);
 
 	if (HasAuthority())

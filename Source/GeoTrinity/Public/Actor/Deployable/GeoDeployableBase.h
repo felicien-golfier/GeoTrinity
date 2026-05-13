@@ -6,6 +6,7 @@
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Tool/Team.h"
 
 #include "GeoDeployableBase.generated.h"
 
@@ -67,8 +68,13 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 
-	virtual void Recall(float Value = 0.f);
+	void Recall(float Value = 0.f);
+	virtual void RecallEffect(float Value);
 	void ExecuteRecallCue();
+
+	void Explode(float Value);
+	virtual void ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
+							   UGeoAbilitySystemComponent* TargetASC);
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams();
@@ -83,7 +89,7 @@ public:
 
 	/** Returns true once the deployable has been destroyed (health or duration reached zero). */
 	UFUNCTION(BlueprintPure)
-	bool IsExpired() const { return bExpired; }
+	bool IsActive() const { return bActive; }
 
 	/** Returns true during the pre-expiry blink window (blink timer is running). */
 	UFUNCTION(BlueprintPure)
@@ -123,10 +129,15 @@ protected:
 	bool bSuppressDrainDamageVisuals = true;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Expired)
-	bool bExpired = false;
+	bool bActive = true;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	float TimeBeforeDestroyAtExpire = 3.f;
+	// Wether should recall or expire when the deployable ends its life on its own.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deployable",
+			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
+	int32 ExplodeAttitude = static_cast<int32>(ETeamAttitudeBitflag::Hostile);
+	bool bAutoRecallAtEndLife = false;
 
 private:
 	void OnBlinkTimerExpired();
