@@ -47,6 +47,7 @@ public:
 	AGeoBuffPickup();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	/** Casts InputData to FBuffPickupData and initializes spawn target, mesh index, and PowerScale before BeginPlay. */
 	virtual void InitInteractable(FInteractableActorData* InputData) override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;

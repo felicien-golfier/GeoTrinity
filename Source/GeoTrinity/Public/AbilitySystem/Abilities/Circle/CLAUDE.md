@@ -29,11 +29,13 @@ Key fields:
 
 ## `GeoChargeBeamAbility.h` — chargeable single-shot beam
 Hold to charge, release to fire. Uses `ChargeForFireDelay` FireMode.
+**Hit detection is server-side** — `OnFireTargetDataReceived` iterates hostile actors in front of the character and applies effects directly; no projectile is spawned.
 
-- `SweetSpotMinRatio` / `SweetSpotMaxRatio` (0..1) — charge window that triggers bonus effect on release
-- `MinDamageMultiplier` / `MaxDamageMultiplier` — lerped by charge ratio
-- Charge ratio encoded in `StoredPayload.Seed` as integer 0..100 (set at release time)
+- `SweetSpotMinRatio` / `SweetSpotMaxRatio` (0..1) — charge window that grants `MaxDamageMultiplier` on release
+- `MinDamageMultiplier` / `MaxDamageMultiplier` — damage multiplier lerped by charge ratio; sweet-spot always gets max
+- Charge ratio encoded in `StoredPayload.Seed` as integer 0..100 (set at release time in `GetUpdatedTargetData`)
 - `GetChargeRatio()` on base ability returns 0..1 with easing curve applied
+- `FireGameplayCue` — fires beam VFX/SFX on the locally-controlled client only (not from `OnFireTargetDataReceived`)
 
 ---
 
