@@ -52,7 +52,9 @@ public:
 	 * @param Seed              Random seed for deterministic effects.
 	 */
 	FAbilityPayload CreateAbilityPayload(FVector2D const& Origin, float Yaw, float ServerSpawnTime, int Seed) const;
+	/** Constructs an FAbilityPayload from the current avatar's world state (position, facing, server time, new seed). */
 	FAbilityPayload CreateAbilityPayload() const;
+	/** Reconstructs an FAbilityPayload from replicated target data received by the server. */
 	FAbilityPayload CreateAbilityPayloadFromTargetData(FGeoAbilityTargetData const& TargetData) const;
 
 	/** Returns the GeoAbilitySystemComponent from the ability's current actor info. */
@@ -87,10 +89,22 @@ public:
 
 	bool IsPassive() const;
 
+	/**
+	 * Returns the 2D world-space origin for the projectile spawn, sampled at fire time.
+	 * Default reads "anim_socket_<FireSectionIndex>" from the character mesh; falls back to actor location.
+	 * Override to change the spawn point (different socket, fixed offset, etc.).
+	 */
 	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC, int Seed) const;
+	/**
+	 * 3D variant of GetFireOrigin2D. Default elevates the 2D origin to ArbitraryCharacterZ.
+	 * Override for abilities that need a true 3D spawn point.
+	 */
 	virtual FVector GetFireOrigin(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC, int Seed) const;
+	/** Returns the server world time stamped into the payload as ServerSpawnTime. Override to pre-adjust for latency. */
 	virtual float GetStartTime(UWorld const* World) const;
+	/** Returns a fresh random seed for the next shot. Override for deterministic seed strategies. */
 	virtual int GetNewSeed() const;
+	/** Returns the instigator's facing yaw in degrees. Override to aim toward a specific target instead. */
 	virtual float GetFireYaw(AActor const* Instigator) const;
 
 protected:

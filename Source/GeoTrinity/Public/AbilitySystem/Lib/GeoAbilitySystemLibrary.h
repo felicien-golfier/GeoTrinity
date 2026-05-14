@@ -90,6 +90,7 @@ public:
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 															 int32 Seed);
+	/** Fills SourceASC and TargetASC into ContextHandle for access by downstream execution calculations. */
 	static void FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
 								  FGameplayEffectContextHandle ContextHandle);
 
@@ -118,6 +119,7 @@ public:
 		return nullptr;
 	}
 
+	/** Non-template overload; returns the CDO cast to UGeoGameplayAbility const*. */
 	static UGeoGameplayAbility const* GetAbilityCDO(FGameplayTag AbilityTag);
 
 	/** Extracts the EffectDataInstances array from a UEffectDataAsset. */
@@ -192,23 +194,25 @@ public:
 	 */
 	static bool GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface);
 
+	/** Returns the GenericTeamId for Actor, or FGenericTeamId::NoTeam if Actor does not implement IGenericTeamAgentInterface. */
 	static FGenericTeamId GetTeamId(AActor const* Actor);
 
 	/**
-	 * Returns all agents whose team attitude toward SourceActor matches any bit in AttitudeBitmask.
-	 * @param WorldContextObject Bluperint required WorldObject
-	 * @param AttitudeBitmask  Bitmask of ETeamAttitudeBitflag values (e.g. Hostile | Neutral).
-	 * @param bMustBeDamageable
-	 * @param bMustBeDamageable
-	 * @param MaxDistance      Maximum distance from Actor (world units). 0 = no distance check.
+	 * Returns all interactable agents whose attitude toward SourceTeam matches any bit in AttitudeBitmask.
+	 * @param AttitudeBitmask    Bitmask of ETeamAttitudeBitflag values (e.g. Hostile | Neutral).
+	 * @param bMustBeDamageable  If true, skips actors that cannot be damaged.
+	 * @param Location           2D world origin for the distance check.
+	 * @param MaxDistance        Maximum distance in world units. 0 = no distance check.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 												 int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
 												 float MaxDistance);
 
+	/** Returns all interactable agents matching AttitudeBitmask relative to SourceTeam, without a distance filter. */
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 												 int32 AttitudeBitmask, bool bMustBeDamageable = true);
+	/** Returns all interactable agents within MaxDistance of Location regardless of team. */
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, bool bMustBeDamageable,
 												 FVector2D Location, float MaxDistance);
 

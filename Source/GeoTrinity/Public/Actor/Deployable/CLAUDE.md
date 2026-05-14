@@ -32,9 +32,10 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 - `OnBlinkStarted()` — `BlueprintNativeEvent`; override in BP for pre-expiry visual
 
 **VFX / Gameplay Cue rule:** Never multicast RPC for recall/expiry VFX. Gameplay cues are called **locally only**:
-- Server/owner: `ExecuteRecallCue()` called directly in `Recall()`.
-- Clients (non-owner): `OnRep_Expired()` fires when `bActive` replicates, then calls `ExecuteRecallCue()` locally.
-- Result: every machine executes the cue exactly once, no multicast needed.
+- Clients: `OnRep_Expired()` fires when `bActive` replicates to false, then calls `ExecuteRecallCue()` locally.
+- `Recall()` also calls `ExecuteRecallCue()` when running on a non-server machine (safety path for edge cases).
+- The server itself does not fire the cue — `OnRep` does not trigger on the machine that set the value.
+- Result: every client executes the cue exactly once via replication, no multicast needed.
 
 **Key fields:**
 - `bUseRegularDrain`, `DrainMagnitudePerSecond` — drain config

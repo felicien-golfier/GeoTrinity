@@ -39,7 +39,8 @@ Source/GeoTrinity/
 │   │   ├── Abilities/
 │   │   │   ├── Base/          # GeoGameplayAbility, PatternAbility, AbilityPayload
 │   │   │   ├── Damaging/      # GeoProjectileAbility, GeoAutomaticFireAbility, GeoAutomaticProjectileAbility
-│   │   │   ├── Pattern/       # Pattern, SpiralPattern
+│   │   │   ├── Boss/          # GeoDelayedFatalZoneAbility
+│   │   │   ├── Pattern/       # Pattern, SpiralPattern, FatalZonePattern
 │   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility
 │   │   │   ├── Square/        # GeoMineAbility, GeoShieldBurstPassiveAbility, GeoDetonateAllMinesAbility
 │   │   │   ├── Triangle/      # GeoReloadAbility, GeoRecallTurretAbility

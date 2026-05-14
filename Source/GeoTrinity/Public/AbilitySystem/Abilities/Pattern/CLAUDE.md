@@ -39,3 +39,20 @@ Always seed randomness from `Payload.Seed`.
 Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`
 - Spawns projectiles in expanding circular sprays
 - Tracks active projectiles; auto-ends them on actor destruction
+
+---
+
+## `FatalZonePattern.h` — zone-and-pillar boss pattern
+
+Non-ticking pattern that marks a zone under a random player, shows a countdown VFX, then on expiry applies damage and spawns a `GeoPillar`.
+
+- `CountdownDuration` — seconds before expiry (default 3s)
+- `ZoneSize` — radius of the danger zone in cm
+- `PillarClass` — `GeoPillar` subclass to spawn on expiry
+- `CountdownGameplayCueTag` — cue fired at start to show the countdown indicator
+- `ExpiryGameplayCueTag` — cue fired on expiry
+- `ZoneEffectDataArray` — effects applied to hostiles in the zone on expiry (server-only)
+- `PillarEffectDataArray` — effects passed into the spawned pillar's `FDeployableData`
+
+Runs on all clients via `PatternStartMulticast`. Server time in the payload ensures countdown sync.
+Used by `UGeoDelayedFatalZoneAbility`.

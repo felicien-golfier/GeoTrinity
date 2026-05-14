@@ -68,11 +68,35 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 
+	/**
+	 * Ends this deployable's lifetime. Calls RecallEffect then Expire.
+	 * Always use this instead of Expire or Destroy directly — it is the sole valid end-of-life path.
+	 * Should be called on the server only; clients receive bActive replication and respond via OnRep_Expired.
+	 *
+	 * @param Value  Scalar forwarded to RecallEffect for effect scaling (e.g. mine power).
+	 */
 	void Recall(float Value = 0.f);
+	/**
+	 * Override hook called inside Recall() on the server. Put class-specific end-of-life logic here
+	 * (apply effects, call Explode, etc.). Default is a no-op.
+	 *
+	 * @param Value  Scalar passed from Recall(), e.g. for explosion damage scaling.
+	 */
 	virtual void RecallEffect(float Value);
+	/** Fires RecallGameplayCueTag on this actor's ASC. Called by OnRep_Expired on clients when bActive replicates. */
 	void ExecuteRecallCue();
 
+	/**
+	 * Sphere-overlaps interactable actors at the deployable's location with radius Params.Size,
+	 * then calls ExplodeEffect per target matching ExplodeAttitude. Server only.
+	 *
+	 * @param Value  Scalar forwarded to ExplodeEffect for damage/effect scaling.
+	 */
 	void Explode(float Value);
+	/**
+	 * Called once per valid target found by Explode(). Override to change what is applied.
+	 * Default applies GetData()->EffectDataArray to the target via ApplyEffectFromEffectData.
+	 */
 	virtual void ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
 							   UGeoAbilitySystemComponent* TargetASC);
 
