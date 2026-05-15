@@ -46,10 +46,13 @@ class GEOTRINITY_API AGeoBuffPickup : public AGeoDeployableBase
 public:
 	AGeoBuffPickup();
 
+	/** Registers Data with COND_InitialOnly — pickup state is set once and never updated. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/** Casts InputData to FBuffPickupData and initializes spawn target, mesh index, and PowerScale before BeginPlay. */
 	virtual void InitInteractable(FInteractableActorData* InputData) override;
+	/** Binds the overlap delegate, sets visual scale from PowerScale, and starts launch movement toward TargetLocation. */
 	virtual void BeginPlay() override;
+	/** Rotates the mesh and advances the LaunchCurve lerp toward TargetLocation each tick. */
 	virtual void Tick(float DeltaTime) override;
 
 protected:

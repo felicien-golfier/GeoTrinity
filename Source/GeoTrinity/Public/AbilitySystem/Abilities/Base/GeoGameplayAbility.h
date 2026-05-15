@@ -35,7 +35,12 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Auto-activates this ability immediately when the ASC is assigned if it carries the Ability.Type.Passive tag. */
 	virtual void OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
+	/**
+	 * Commits cost and cooldown, populates StoredPayload from TriggerEventData (or avatar state for passives),
+	 * binds the server-side OnFireTargetDataReceived delegate, and schedules the fire trigger.
+	 */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
@@ -70,6 +75,7 @@ public:
 	 */
 	float GetCooldown(int32 level = 1) const;
 
+	/** Cancels the pending fire timer and hides the charge gauge (ChargeForFireDelay mode) before calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
@@ -82,11 +88,14 @@ public:
 	 * Only meaningful when FireMode == EFireMode::ChargeForFireDelay.
 	 */
 	float GetChargeRatio() const;
+	/** In ChargeForFireDelay mode, fires immediately on input release instead of waiting for the timer to expire. */
 	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo ActivationInfo) override;
+	/** Returns the effective fire delay: reads GeneralChargeTime from GameDataSettings when bUseGeneralChargeTimeForFireDelay is set, otherwise uses the per-ability FireDelay. */
 	UFUNCTION(BlueprintCallable)
 	float GetFireDelay() const;
 
+	/** Returns true if this ability carries the Ability.Type.Passive asset tag. */
 	bool IsPassive() const;
 
 	/**
@@ -141,6 +150,7 @@ protected:
 	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize.
 	 */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData();
+	/** Refreshes Seed, ServerSpawnTime, Origin, and Yaw in StoredPayload from the server's received TargetData snapshot. */
 	void UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData);
 
 public:

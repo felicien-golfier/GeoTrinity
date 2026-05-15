@@ -5,7 +5,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 ## Tasks
 
-- [x] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
+- [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
 
   **Scope**
   - Run `git diff --name-only HEAD` to get today's modified files. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase.
@@ -49,7 +49,9 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-05-14] Fixed malformed double-comment on AGeoProjectile::InitProjectileLife (was two separate /** */ blocks; merged @note Server only. into the single block). Fixed typo "Bluperint" and duplicate @param bMustBeDamageable in GetInteractableActors BlueprintCallable comment. Added missing public-method comments across GeoGameplayAbility.h (virtual fire-origin/yaw/seed/time hooks and no-param CreateAbilityPayload overloads), GeoDeployableBase.h (Recall/RecallEffect/ExecuteRecallCue/Explode/ExplodeEffect), GeoAbilitySystemLibrary.h (FillEffectContext, non-template GetAbilityCDO, GetTeamId, 2 GetInteractableActors overloads), and GeoBuffPickup.h (InitInteractable). Notable: the Deployable/CLAUDE.md had an incorrect description of when ExecuteRecallCue fires — the server never fires it directly; clients receive it via OnRep_Expired replication. -->
 
-- [x] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
+<!-- [2026-05-15] Added missing Unreal-style JavaDoc headers across all five modified headers. GeoGameplayAbility.h: added comments for OnAvatarSet, ActivateAbility, EndAbility (4-param), InputReleased, GetFireDelay, IsPassive, UpdatePayloadFromTargetData. GeoDeployableBase.h: added comments for GetLifetimeReplicatedProps and BeginPlay. GeoProjectile.h: fixed incorrect "@note Server only." on InitProjectileLife (function is also called on clients for non-pooled replicated projectiles); added comments for GetLifetimeReplicatedProps, BeginPlay, LifeSpanExpired, Tick, OnSphereOverlap, PlayImpactFx. GeoBuffPickup.h: added comments for GetLifetimeReplicatedProps, BeginPlay, Tick. GeoAbilitySystemLibrary.h: added per-function comments to all 12 Blueprint getter and 12 Blueprint setter functions in the context section. -->
+
+- [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
   - Run `git diff --name-only HEAD` to get today's modified files. Only open `.h` and `.cpp` files from that list.
@@ -71,3 +73,5 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
   Format: `<!-- [YYYY-MM-DD] <findings> -->`
 
 <!-- [2026-05-14] Updated: Actor/Deployable/CLAUDE.md — fixed wrong description of ExecuteRecallCue call site (was "Server/owner calls it in Recall()"; actual code only calls it on non-server in Recall(), clients always receive it via OnRep_Expired). Abilities/Pattern/CLAUDE.md — added FatalZonePattern section. Abilities/CLAUDE.md — added Boss/ row to subfolder table and FatalZonePattern to Pattern row. Created Abilities/Boss/CLAUDE.md for GeoDelayedFatalZoneAbility. Abilities/Circle/CLAUDE.md — updated GeoChargeBeamAbility to document server-side hit detection (no projectile), sweet-spot logic, and FireGameplayCue behaviour. Root CLAUDE.md — added Boss/ to source structure. -->
+
+<!-- [2026-05-15] Updated: Actor/Projectile/CLAUDE.md — corrected InitProjectileLife Lifecycle entry from "server only" to accurately reflect that it is called by pool Init() on both machines AND in BeginPlay on clients for non-pooled replicated projectiles. Actor/Deployable/CLAUDE.md — corrected Lifecycle point 5 for Recall(): clarified that ExecuteRecallCue() is only called on non-server machines (safety path), not unconditionally. No other CLAUDE.md changes needed; all other documented behavior was accurate. -->

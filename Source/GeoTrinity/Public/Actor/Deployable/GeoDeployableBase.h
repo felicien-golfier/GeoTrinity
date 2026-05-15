@@ -60,12 +60,14 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 public:
 	AGeoDeployableBase();
 
+	/** Registers bActive (with OnRep_Expired) for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Computes DrainMagnitudePerSecond from Params and applies the initial drain GE. Call after data is set. */
 	virtual void InitDrain();
 	/** Ticks the blink timer state and calls Expire when health reaches zero. */
 	virtual void Tick(float DeltaSeconds) override;
+	/** Registers with the instigator's DeployableManagerComponent and calls InitDrain. */
 	virtual void BeginPlay() override;
 
 	/**
