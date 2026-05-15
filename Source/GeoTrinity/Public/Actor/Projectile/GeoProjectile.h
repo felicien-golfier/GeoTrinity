@@ -27,6 +27,7 @@ class GEOTRINITY_API AGeoProjectile : public AActor
 	GENERATED_BODY()
 public:
 	AGeoProjectile();
+	/** Registers PredictionKeyId for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/**
 	 * Server-spawned projectiles are hidden from their owning client so the client's locally predicted
@@ -34,13 +35,20 @@ public:
 	 */
 	virtual bool IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget,
 								  FVector const& SrcLocation) const override;
+	/**
+	 * For non-pooled projectiles: re-applies movement on the server (Blueprint construction resets velocity),
+	 * and calls InitProjectileLife on clients. Also destroys the matching predicted projectile on the owning client
+	 * when CVarReplaceLocalProjectiles is enabled.
+	 */
 	virtual void BeginPlay() override;
+	/** Guards against double-ending by checking bIsEnding before calling EndProjectileLife. */
 	virtual void LifeSpanExpired() override;
+	/** Checks cumulative travel distance each tick and calls EndProjectileLife when DistanceSpanSqr is exceeded. */
 	virtual void Tick(float DeltaSeconds) override;
 
 	/**
-	 * Sets movement, enables collision, and starts the lifespan timer. Called before BeginPlay.
-	 * @note Server only.
+	 * Binds hit/overlap delegates, starts the lifespan timer, records the initial position, and applies movement.
+	 * Called by pooled variants via Init(); called in BeginPlay for non-pooled replicated projectiles on clients.
 	 */
 	UFUNCTION()
 	virtual void InitProjectileLife();
@@ -92,6 +100,7 @@ protected:
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor);
 
+	/** Dispatches overlap events to IsValidOverlap then HandleValidOverlap. */
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 						 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
@@ -102,6 +111,7 @@ protected:
 	virtual void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 							 FVector NormalImpulse, FHitResult const& Hit);
 
+	/** Plays ImpactSound and spawns ImpactEffect (Niagara) at the actor's current location. */
 	UFUNCTION(BlueprintCallable)
 	virtual void PlayImpactFx() const;
 

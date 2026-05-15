@@ -6,7 +6,7 @@ All projectile classes. **Default base for any new projectile: `AGeoPooledProjec
 Poolable, effect-applying projectile.
 
 **Lifecycle:**
-1. `InitProjectileLife()` — server only; enables collision, starts lifespan timer. Call before or instead of BeginPlay for pooled actors.
+1. `InitProjectileLife()` — binds hit/overlap delegates, starts lifespan timer, records initial position, applies movement. Called by pool `Init()` on both machines; called in `BeginPlay` on clients for non-pooled replicated projectiles (server re-applies movement separately via `InitProjectileMovementComponent`).
 2. `AdvanceProjectile(float TimeDelta)` — fast-forwards position to compensate for server-spawn lag (called after spawning with `ServerSpawnTime`)
 3. `EndProjectileLife()` — triggered by distance span, lifespan, or hit; destroys by default
 
