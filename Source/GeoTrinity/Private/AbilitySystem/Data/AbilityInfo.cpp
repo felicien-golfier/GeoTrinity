@@ -57,7 +57,7 @@ static FGameplayTag GetAbilityTypeTagFromCDO(TSubclassOf<UGameplayAbility> const
 	return FGameplayTag();
 }
 
-static void PopulateTagsForArray(TArray<FPlayersGameplayAbilityInfo>& Infos)
+static void PopulateTagsForPlayerAbilitiesArray(TArray<FPlayersGameplayAbilityInfo>& Infos)
 {
 	for (FPlayersGameplayAbilityInfo& Info : Infos)
 	{
@@ -69,14 +69,14 @@ static void PopulateTagsForArray(TArray<FPlayersGameplayAbilityInfo>& Infos)
 // ---------------------------------------------------------------------------------------------------------------------
 void UAbilityInfo::PopulateAbilityTags()
 {
-	for (FGameplayAbilityInfo& Info : GenericAbilityInfos)
+	for (FGameplayAbilityInfo& Info : EnemyAbilityInfos)
 	{
 		Info.AbilityTag = GetAbilityTagFromCDO(Info.AbilityClass);
 	}
-	PopulateTagsForArray(TriangleAbilities);
-	PopulateTagsForArray(CircleAbilities);
-	PopulateTagsForArray(SquareAbilities);
-	PopulateTagsForArray(SharedAbilities);
+	PopulateTagsForPlayerAbilitiesArray(TriangleAbilities);
+	PopulateTagsForPlayerAbilitiesArray(CircleAbilities);
+	PopulateTagsForPlayerAbilitiesArray(SquareAbilities);
+	PopulateTagsForPlayerAbilitiesArray(SharedAbilities);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ TArray<FGameplayAbilityInfo> UAbilityInfo::GetAllAbilityInfos() const
 	{
 		AllInfos.Add(Info);
 	}
-	for (FGameplayAbilityInfo const& Info : GenericAbilityInfos)
+	for (FGameplayAbilityInfo const& Info : EnemyAbilityInfos)
 	{
 		AllInfos.Add(Info);
 	}
@@ -153,7 +153,7 @@ TArray<FGameplayAbilityInfo> UAbilityInfo::FindAbilityInfoForListOfTag(TArray<FG
 																	   bool bLogIfNotFound) const
 {
 	TArray<FGameplayAbilityInfo> CorrespondingInfos;
-	for (FGameplayAbilityInfo const& Info : GenericAbilityInfos)
+	for (FGameplayAbilityInfo const& Info : EnemyAbilityInfos)
 	{
 		if (AbilityTags.Contains(Info.AbilityTag))
 		{

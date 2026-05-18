@@ -86,28 +86,31 @@ void UFatalZonePattern::OnExpire()
 			}
 		}
 
-		if (PillarClass)
+		if (!IsValid(PillarClass))
 		{
-			AGeoPillar* Pillar = Cast<AGeoPillar>(UGeoActorPoolingSubsystem::Get(World)->RequestActor(
-				PillarClass, FTransform(ZoneLocation), StoredPayload.Owner, Cast<APawn>(StoredPayload.Instigator),
-				false, false));
+			ensureMsgf(false, TEXT("PillarClass null, please fill the class in the FatalZonePattern"));
+			return;
+		}
 
-			if (IsValid(Pillar))
+		AGeoPillar* Pillar = Cast<AGeoPillar>(UGeoActorPoolingSubsystem::Get(World)->RequestActor(
+			PillarClass, FTransform(ZoneLocation), StoredPayload.Owner, Cast<APawn>(StoredPayload.Instigator), false,
+			false));
+
+		if (IsValid(Pillar))
+		{
+			FDeployableData PillarData;
+			PillarData.Owner = StoredPayload.Owner;
+			PillarData.Instigator = StoredPayload.Instigator;
+			PillarData.Level = StoredPayload.AbilityLevel;
+			PillarData.Seed = StoredPayload.Seed;
+			PillarData.EffectDataArray = PillarEffectDataArray;
+			PillarData.Params.Size = ZoneSize;
+
+			Pillar->InitInteractable(&PillarData);
+			UGeoActorPoolingSubsystem::Get(World)->ChangeActorState(Pillar, true);
+			if (Pillar->GetClass()->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
 			{
-				FDeployableData PillarData;
-				PillarData.Owner = StoredPayload.Owner;
-				PillarData.Instigator = StoredPayload.Instigator;
-				PillarData.Level = StoredPayload.AbilityLevel;
-				PillarData.Seed = StoredPayload.Seed;
-				PillarData.EffectDataArray = PillarEffectDataArray;
-				PillarData.Params.Size = ZoneSize;
-
-				Pillar->InitInteractable(&PillarData);
-				UGeoActorPoolingSubsystem::Get(World)->ChangeActorState(Pillar, true);
-				if (Pillar->GetClass()->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
-				{
-					CastChecked<IGeoPoolableInterface>(Pillar)->Init();
-				}
+				CastChecked<IGeoPoolableInterface>(Pillar)->Init();
 			}
 		}
 	}

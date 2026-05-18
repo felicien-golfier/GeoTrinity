@@ -60,7 +60,7 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 /**
  * Data asset that catalogs all abilities in the game.
  * Three arrays are separated by player class (Triangle/Circle/Square) for input binding and class-specific granting.
- * SharedAbilities are granted to all classes. GenericAbilityInfos and PlayersAbilityInfos serve as flat look-up
+ * SharedAbilities are granted to all classes. EnemyAbilityInfos and PlayersAbilityInfos serve as flat look-up
  * tables for code that needs to find an ability by tag without caring which class owns it.
  *
  * When to use each container:
@@ -78,27 +78,23 @@ class GEOTRINITY_API UAbilityInfo : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Triangle", meta = (TitleProperty = "{AbilityTag}"))
+	UPROPERTY(EditDefaultsOnly, meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FPlayersGameplayAbilityInfo> TriangleAbilities;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Circle", meta = (TitleProperty = "{AbilityTag}"))
+	UPROPERTY(EditDefaultsOnly, meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FPlayersGameplayAbilityInfo> CircleAbilities;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Square", meta = (TitleProperty = "{AbilityTag}"))
+	UPROPERTY(EditDefaultsOnly, meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FPlayersGameplayAbilityInfo> SquareAbilities;
 
 	/** Abilities granted to all player classes */
-	UPROPERTY(EditDefaultsOnly, Category = "Shared (All Classes)", meta = (TitleProperty = "{AbilityTag}"))
+	UPROPERTY(EditDefaultsOnly, meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FPlayersGameplayAbilityInfo> SharedAbilities;
 
-	/** Non-player abilities (enemies, passives, system). Used for tag-based CDO look-up. Not bound to any input or class. */
+	/** Non-player abilities (enemies, passives, system). Used for tag-based CDO look-up. Not bound to any input or
+	 * class. */
 	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
-	TArray<FGameplayAbilityInfo> GenericAbilityInfos;
-
-	/** Flat look-up table combining all player abilities across all classes. Populated manually from the per-class arrays.
-	 * Use GetAllPlayersAbilityInfos() to get the authoritative runtime-merged list instead. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
-	TArray<FGameplayAbilityInfo> PlayersAbilityInfos;
+	TArray<FGameplayAbilityInfo> EnemyAbilityInfos;
 
 	/** Calls PopulateAbilityTags() to fill transient AbilityTag fields from CDO asset tags. */
 	virtual void PostLoad() override;

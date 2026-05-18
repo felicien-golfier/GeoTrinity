@@ -9,6 +9,7 @@
 - **YAGNI — code only what's needed.** No unused parameters, variables, or speculative features
 - **Delete unused code**: remove declaration + implementation when removing a call site. No dead code safety nets.
 - **No duplicated code**: extract to base class, component, or free function when logic appears in more than one place
+- **Before adding a function**: check if an existing function already covers the same operation. If two functions differ only by a constant (e.g. a trigger type, a flag), merge them into one with a parameter. Never add a wrapper that just forwards with a hardcoded argument.
 - Be consistent: same code style, same naming convention throughout
 - `Super` call placement: choose what makes semantic sense (Init = top, Destroy = bottom); when no ordering dependency exists, always top
 - No abbreviations in variable names; full class names except `ASC` for AbilitySystemComponent
