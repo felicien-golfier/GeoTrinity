@@ -25,10 +25,10 @@ All editor automation in this project goes through `mcp-unreal` `execute_script`
 
 | Topic | File |
 |---|---|
-| Blueprint asset creation, CDO properties, GameplayTag, TInstancedStruct, components | `MCP_Blueprint.md` |
-| StateTree editing (add/remove states, transitions, list tree) | `MCP_StateTree.md` |
-| C++ editor utility pattern (when Python can't reach something) | `MCP_EditorUtility.md` |
-| Creating a new enemy ability end-to-end (tag → BP → AbilityInfo → StateTree) | `MCP_NewEnemyAbility.md` |
+| Blueprint asset creation, CDO properties, GameplayTag, components | `MCP_Blueprint.md` |
+| StateTree editing (add/remove states, transitions) | `MCP_StateTree.md` |
+| C++ editor utility pattern | `MCP_EditorUtility.md` |
+| New enemy ability end-to-end (tag → BP → AbilityInfo → ASC → StateTree) | `MCP_NewEnemyAbility.md` |
 
 ---
 

@@ -14,7 +14,8 @@
 void UFatalZonePattern::OnCreate(FGameplayTag AbilityTag)
 {
 	Super::OnCreate(AbilityTag);
-	UGeoActorPoolingSubsystem::Get(GetWorld())->PreSpawn(PillarClass, 10);
+	// TODO: why not having deployables in the pooling system. Need to set it up properly
+	//  UGeoActorPoolingSubsystem::Get(GetWorld())->PreSpawn(PillarClass, 10);
 }
 
 void UFatalZonePattern::InitPattern(FAbilityPayload const& Payload)

@@ -10,9 +10,6 @@
 
 class UStateTree;
 class UStateTreeAIComponent;
-class UBehaviorTree;
-class UBehaviorTreeComponent;
-class UBlackboardComponent;
 
 /**
  * AI controller for enemy characters. Starts a StateTree (via UStateTreeAIComponent) on possession
