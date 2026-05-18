@@ -32,6 +32,12 @@ All editor automation in this project goes through `mcp-unreal` `execute_script`
 
 ---
 
+## Python scripts
+
+Multi-step or reusable operations go in `AI/Python/` as a `.py` file. Reference it by path in the relevant `.md` — never paste the full script inline.
+
+---
+
 ## Doc style rules (for writing new `.md` files in this folder)
 
 - Only document what isn't obvious from the code — point to files, don't repeat bodies.
