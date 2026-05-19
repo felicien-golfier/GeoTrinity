@@ -22,8 +22,10 @@ class GEOTRINITY_API AGeoEnemyAIController : public AAIController
 
 public:
 
+	/** Creates the UStateTreeAIComponent subobject. */
 	AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer = FObjectInitializer::Get());
 
+	/** Starts the StateTree via StateTreeAIComponent after taking possession of InPawn. */
 	virtual void OnPossess(APawn* InPawn) override;
 
 protected:

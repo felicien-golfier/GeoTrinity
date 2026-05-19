@@ -37,8 +37,11 @@ struct GEOTRINITY_API FSTTask_FireProjectileAbility : public FStateTreeAIActionT
 	FSTTask_FireProjectileAbility();
 
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+	/** Activates the configured ability by tag on the pawn's ASC. Binds to OnAbilityEnded for async completion. Returns Running until the ability ends or failed if the ASC is missing or the tag is invalid. */
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 										   FStateTreeTransitionResult const& Transition) const override;
+
+	/** Removes the OnAbilityEnded delegate registered in EnterState. */
 	virtual void ExitState(FStateTreeExecutionContext& Context,
 						   FStateTreeTransitionResult const& Transition) const override;
 

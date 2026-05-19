@@ -66,7 +66,6 @@ Source/GeoTrinity/
 │   │   └── PlayerClassTypes.h # EPlayerClass enum
 │   ├── AI/
 │   │   ├── StateTree/         # STTask_FireProjectileAbility, STTask_SelectNextFiringPoint
-│   │   ├── Tasks/             # Legacy BT tasks (BTTask_*)
 │   │   └── GeoEnemyAIController.h
 │   ├── HUD/
 │   │   ├── Component/         # GeoCombattantWidgetComp
@@ -78,7 +77,7 @@ Source/GeoTrinity/
 │   ├── Input/                 # GeoInputComponent
 │   ├── Settings/              # GameDataSettings
 │   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem
-│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team
+│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoStateTreeBuilderUtil (editor-only)
 │   ├── World/                 # GeoGameCamera, GeoWorldSettings
 │   ├── Animation/             # FireAnimNotify
 │   └── GameClasses/           # GeoGameMode, GeoGameState, GeoGameInstance, GeoPlayerController, GeoPlayerState

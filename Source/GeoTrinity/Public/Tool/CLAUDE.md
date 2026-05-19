@@ -24,3 +24,12 @@ Custom asset manager subclass. Configure in `DefaultEngine.ini`.
 
 ## `Team.h`
 Team definitions and `ETeam` enum used by `IGenericTeamAgentInterface`.
+
+## `GeoStateTreeBuilderUtil.h`
+Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` for mutating `UStateTree` assets from Python/Blueprint automation.
+Each method validates, compiles (`FCompilerManager::CompileSynchronously`), and saves the asset atomically.
+- `AddFireAbilityStateByTagName` — creates a state with an `FSTTask_FireProjectileAbility` task at a given parent/index
+- `ReplaceFireAbilityTagInState` — swaps the ability tag on an existing state's fire task
+- `RemoveState` — deletes a state by name (recursive search)
+- `ClearTransitions` / `AddTransition` — manage `GotoState` transitions with a specified trigger
+- `ListStates` — logs the full tree with indent and task tags to `LogTemp`
