@@ -57,6 +57,8 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-05-18] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
 
+<!-- [2026-05-19] Scope: GeoEnemyAIController.h, STTask_FireProjectileAbility.h, STTask_SelectNextFiringPoint.h, AbilityInfo.h, GeoStateTreeBuilderUtil.h, FatalZonePattern.h (+ CPPs). Added missing public comments to GeoEnemyAIController (constructor + OnPossess), STTask_FireProjectileAbility (EnterState + ExitState), STTask_SelectNextFiringPoint (EnterState). Fixed stale class comment in AbilityInfo.h: PlayersAbilityInfos was deleted as a property in commit cc7b701 but the doc block still referred to it; replaced with GetAllPlayersAbilityInfos(). Fixed GenericAbilityInfos → EnemyAbilityInfos in the same class comment (the field was renamed). GeoStateTreeBuilderUtil.h and FatalZonePattern.h already had accurate comments. -->
+
 - [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
@@ -87,3 +89,5 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-05-17] Scope: no .h or .cpp files in git diff --name-only HEAD. No developer commits in last 25h. No CLAUDE.md updates needed. -->
 
 <!-- [2026-05-18] Scope: no .h or .cpp files in git diff --name-only HEAD. No developer commits in last 25h. No CLAUDE.md updates needed. -->
+
+<!-- [2026-05-19] Updated: AbilitySystem/Data/CLAUDE.md — GenericAbilityInfos → EnemyAbilityInfos (field renamed in cc7b701). Tool/CLAUDE.md — added GeoStateTreeBuilderUtil section (new file). Root CLAUDE.md — removed defunct AI/Tasks/ row (BTTask files deleted in 83cb25d), added GeoStateTreeBuilderUtil to Tool/ comment. AI/StateTree/CLAUDE.md and Pattern/CLAUDE.md were already accurate. -->
