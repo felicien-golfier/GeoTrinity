@@ -6,6 +6,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "System/GeoActorPoolingSubsystem.h"
 #include "System/GeoPoolableInterface.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 void USpiralPattern::OnCreate(FGameplayTag AbilityTag)
 {
@@ -70,7 +71,7 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 			FirstProjectileOrientation.RotateAngleAxis(i * AngleBetweenProjectiles, FVector::UpVector);
 		Projectile->SetActorRotation(ProjectileDirection.Rotation());
 
-		FVector ProjectileLocation = FVector(StoredPayload.Origin, 0.f)
+		FVector ProjectileLocation = FVector(StoredPayload.Origin, ArbitraryCharacterZ)
 			+ ProjectileDirection * ProjectileSpeed * (SpentTime - i * TimeDiffBetweenProjectiles);
 		Projectile->SetActorLocation(ProjectileLocation);
 

@@ -11,4 +11,5 @@ DECLARE_LOG_CATEGORY_EXTERN(LogGeoASC, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogPattern, Log, All);
 
 #define ECC_GeoCharacter ECollisionChannel::ECC_GameTraceChannel1
-#define ECC_Floor ECollisionChannel::ECC_GameTraceChannel2
+#define ECC_GeoProjectile ECollisionChannel::ECC_GameTraceChannel2
+#define ECC_Floor ECollisionChannel::ECC_GameTraceChannel3

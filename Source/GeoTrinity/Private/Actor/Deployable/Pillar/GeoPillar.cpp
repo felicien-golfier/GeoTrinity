@@ -10,6 +10,7 @@
 AGeoPillar::AGeoPillar()
 {
 	bUseRegularDrain = true;
+	bPushActorsOnSpawn = true;
 	CapsuleComponent->SetCapsuleSize(100.f, 100.f, false);
 }
 

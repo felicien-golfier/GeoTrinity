@@ -228,7 +228,8 @@ FGameplayTag UGeoAbilitySystemLibrary::GetAbilityTagFromAbility(UGameplayAbility
 TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
 																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,
 																bool bMustBeDamageable, FVector2D const Location,
-																float MaxDistance /* = 0.f => No distance check*/)
+																float MaxDistance,
+																TFunctionRef<bool(AActor*)> const& ExtraFilter)
 {
 	TArray<AActor*> Result;
 
@@ -238,10 +239,8 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 		return Result;
 	}
 
-
-	bool bHasDistanceCheck = MaxDistance > 0.f;
+	bool const bHasDistanceCheck = MaxDistance > 0.f;
 	float const MaxDistanceSqr = MaxDistance * MaxDistance;
-
 
 	auto TryAddActor = [&](AActor* OtherActor, TCHAR const* ClassName)
 	{
@@ -271,6 +270,11 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 			return;
 		}
 
+		if (!ExtraFilter(OtherActor))
+		{
+			return;
+		}
+
 		Result.Add(OtherActor);
 	};
 
@@ -287,6 +291,37 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 	return Result;
 }
 
+TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
+																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,
+																bool bMustBeDamageable, FVector2D const Location,
+																float MaxDistance)
+{
+	return GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location,
+								 MaxDistance,
+								 [](AActor*)
+								 {
+									 return true;
+								 });
+}
+
+TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActorsInLine(
+	UObject const* WorldContextObject, FGenericTeamId const SourceTeam, int32 AttitudeBitmask, bool bMustBeDamageable,
+	FVector2D const Origin, FVector2D const ForwardVector, float const MaxRange, float const LineHalfWidth)
+{
+	return GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Origin, MaxRange,
+								 [&](AActor const* Target)
+								 {
+									 FVector2D const ToTarget = FVector2D(Target->GetActorLocation()) - Origin;
+									 float const AlongBeam = FVector2D::DotProduct(ToTarget, ForwardVector);
+									 if (AlongBeam < 0.f)
+									 {
+										 return false;
+									 }
+									 float const PerpDistSqr = (ToTarget - ForwardVector * AlongBeam).SizeSquared();
+									 float const HitRadius = Target->GetSimpleCollisionRadius() + LineHalfWidth;
+									 return PerpDistSqr <= HitRadius * HitRadius;
+								 });
+}
 TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
 																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,
 																bool bMustBeDamageable)

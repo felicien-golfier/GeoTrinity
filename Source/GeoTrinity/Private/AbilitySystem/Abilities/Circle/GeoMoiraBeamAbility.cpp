@@ -56,21 +56,6 @@ void UGeoMoiraBeamAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGamepl
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-bool UGeoMoiraBeamAbility::IsInBeam(AActor const* const Actor) const
-{
-	ACharacter const* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
-	FVector const Origin = Character->GetActorLocation();
-	FVector const Forward = Character->GetActorForwardVector();
-	float const CurrentBeamRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f
-		+ RadiusGrowthPerAbsorbedZone * (BeamRatio - 1);
-	FVector const ToActor = Actor->GetActorLocation() - Origin;
-	float const DistAlongBeam =
-		FMath::Clamp(FVector::DotProduct(ToActor, Forward), 0.f, GetDefault<UGameDataSettings>()->GeneralSpellDistance);
-	FVector const ClosestPointOnAxis = Origin + Forward * DistAlongBeam;
-	float const CombinedRadius = CurrentBeamRadius + Actor->GetSimpleCollisionRadius();
-	return FVector::DistSquared(Actor->GetActorLocation(), ClosestPointOnAxis) <= CombinedRadius * CombinedRadius;
-}
-
 #ifdef WITH_EDITOR
 void UGeoMoiraBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
 {
@@ -91,7 +76,7 @@ void UGeoMoiraBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
 	FVector const Origin = Character->GetActorLocation();
 	FVector const Forward = Character->GetActorForwardVector();
 	float const CurrentBeamRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f
-		+ RadiusGrowthPerAbsorbedZone * (BeamRatio - 1);
+		+ HalfWidthGrowthPerAbsorbedZone * (BeamRatio - 1);
 
 	FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
 	FVector const BeamEnd = Origin + Forward * GetDefault<UGameDataSettings>()->GeneralSpellDistance;
@@ -127,69 +112,83 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 		return;
 	}
 
-	if (GeoLib::IsServer(GetWorld()))
+	float const CurrentBeamHalfWidth = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f
+		+ HalfWidthGrowthPerAbsorbedZone * (BeamRatio - 1);
+	for (AActor* Target : GeoASLib::GetInteractableActorsInLine(
+			 Character, GeoASLib::GetTeamId(Character), TeamAttitudeMask::All, false,
+			 FVector2D(Character->GetActorLocation()), FVector2D(Character->GetActorForwardVector()),
+			 GetDefault<UGameDataSettings>()->GeneralSpellDistance, CurrentBeamHalfWidth))
 	{
-		for (AActor* Actor :
-			 GeoASLib::GetInteractableActors(Character, GeoASLib::GetTeamId(Character), TeamAttitudeMask::Hostile))
+
+		if (Target == Character)
 		{
-
-			if (Actor == Character || !IsInBeam(Actor))
-			{
-				continue;
-			}
-
-			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-			if (!TargetASC)
-			{
-				continue;
-			}
-
-			UGeoGameFeelComponent* GameFeel = Actor->FindComponentByClass<UGeoGameFeelComponent>();
-			if (!IsValid(GameFeel))
-			{
-				ensureMsgf(GameFeel, TEXT("UGeoMoiraBeamAbility: Actor %s has no GeoGameFeelComponent"),
-						   *Actor->GetName());
-				continue;
-			}
-
-			FDamageEffectData DamageEffect;
-			DamageEffect.DamageAmount = DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
-				* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
-			DamageEffect.bSuppressGameplayCue = !GameFeel->IsDamageCueAvailable();
-			GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
-											StoredPayload.Seed);
+			continue;
 		}
 
-		for (AActor* Actor :
-			 GeoASLib::GetInteractableActors(Character, GeoASLib::GetTeamId(Character), TeamAttitudeMask::Friendly))
+		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
+		if (!TargetASC)
 		{
-			if (Actor == Character || !IsInBeam(Actor))
+			continue;
+		}
+
+		UGeoGameFeelComponent* GameFeel = Target->FindComponentByClass<UGeoGameFeelComponent>();
+		if (!IsValid(GameFeel))
+		{
+			ensureMsgf(GameFeel, TEXT("UGeoMoiraBeamAbility: Actor %s has no GeoGameFeelComponent"),
+					   *Target->GetName());
+			continue;
+		}
+
+		if (Target->IsA<AGeoHealingZone>()) // We get the Healing zones.
+		{
+			AGeoHealingZone* Zone = CastChecked<AGeoHealingZone>(Target);
+			UAbilitySystemComponent* ZoneASC = Zone->GetAbilitySystemComponent();
+			float const MaxHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
+			float const BeamZoneDrainPerTick = (BeamZoneDrainPercentagePerSecond / 100.f) * DeltaTime * MaxHealth;
+			float const CurrentHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
+			float const ActualDrain = FMath::Min(BeamZoneDrainPerTick, CurrentHealth);
+
+			if (GeoLib::IsServer(GetWorld()))
 			{
-				continue;
+				FDamageEffectData DrainEffectData;
+				DrainEffectData.DamageAmount = ActualDrain;
+				DrainEffectData.bSuppressGameplayCue = true;
+				GeoASLib::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(),
+												StoredPayload.Seed);
 			}
 
-			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-			if (!TargetASC)
+			float const DrainRatio = ActualDrain / MaxHealth;
+			BeamRatio += DrainRatio;
+			RemainingDuration += DurationPerAbsorbedZone * DrainRatio;
+		}
+		else if (Target->CanBeDamaged())
+		{
+			if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::Hostile))
 			{
-				continue;
+				FDamageEffectData DamageEffect;
+				DamageEffect.DamageAmount = DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
+					* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
+				DamageEffect.bSuppressGameplayCue = !GameFeel->IsDamageCueAvailable();
+				GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
+												StoredPayload.Seed);
 			}
-
-			UGeoGameFeelComponent* GameFeel = Actor->FindComponentByClass<UGeoGameFeelComponent>();
-			if (!IsValid(GameFeel))
+			else if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::Friendly))
 			{
-				ensureMsgf(GameFeel, TEXT("UGeoMoiraBeamAbility: Actor %s has no GeoGameFeelComponent"),
-						   *Actor->GetName());
-				continue;
+				FHealEffectData HealEffect;
+				HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
+					* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
+				HealEffect.bSuppressGameplayCue = !GameFeel->IsHealCueAvailable();
+				GeoASLib::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
+												StoredPayload.Seed);
 			}
-
-			FHealEffectData HealEffect;
-			HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
-				* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
-			HealEffect.bSuppressGameplayCue = !GameFeel->IsHealCueAvailable();
-			GeoASLib::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
-											StoredPayload.Seed);
+			else
+			{
+				// Decide what to do for Neutral
+				UE_LOG(LogTemp, Warning, TEXT("Neutral Attitude not taken in account in the beam"));
+			}
 		}
 	}
+
 
 #ifdef WITH_EDITOR
 	DrawBeamDebugLines(DeltaTime);
@@ -204,28 +203,5 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 
 	for (AGeoDeployableBase* Deployable : TArray(DeployableManager->GetDeployables()))
 	{
-		AGeoHealingZone* Zone = Cast<AGeoHealingZone>(Deployable);
-		if (!IsValid(Zone) || !IsInBeam(Zone))
-		{
-			continue;
-		}
-
-		UAbilitySystemComponent* ZoneASC = Zone->GetAbilitySystemComponent();
-		float const MaxHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
-		float const BeamZoneDrainPerTick = (BeamZoneDrainPercentagePerSecond / 100.f) * DeltaTime * MaxHealth;
-		float const CurrentHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
-		float const ActualDrain = FMath::Min(BeamZoneDrainPerTick, CurrentHealth);
-
-		if (GeoLib::IsServer(GetWorld()))
-		{
-			FDamageEffectData DrainEffectData;
-			DrainEffectData.DamageAmount = ActualDrain;
-			DrainEffectData.bSuppressGameplayCue = true;
-			GeoASLib::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(), StoredPayload.Seed);
-		}
-
-		float const DrainRatio = ActualDrain / MaxHealth;
-		BeamRatio += DrainRatio;
-		RemainingDuration += DurationPerAbsorbedZone * DrainRatio;
 	}
 }

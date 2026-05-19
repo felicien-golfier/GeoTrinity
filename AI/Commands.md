@@ -15,6 +15,13 @@
 "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" GeoTrinity Win64 Development
 ```
 
+## Launch Editor
+
+```bash
+# Launch editor with MCP remote control access
+"C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe" "C:\GeoTrinity\GeoTrinity.uproject" -RemoteControlAllow
+```
+
 ## Copyright Header
 Every new source file (`.h` / `.cpp`) must start with:
 ```cpp

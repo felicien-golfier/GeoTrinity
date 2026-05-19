@@ -16,7 +16,7 @@
  * Fire-and-forget beam ability for the Circle player.
  * Fires on activation and sustains independently of button input until fuel is depleted.
  * Damages enemies and heals allies in a cylinder in front of the character.
- * Absorbs deployed HealingZones in the beam path: each absorbed zone adds fuel and grows the beam radius.
+ * Absorbs deployed HealingZones in the beam path: each absorbed zone adds fuel and grows the beam width.
  * Applies a movement speed buff for the duration of the channel.
  */
 UCLASS()
@@ -39,9 +39,6 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoMoiraBeamAbility, STATGROUP_Tickables);
 	}
 
-	/** Returns true when Actor's center is inside the current beam cylinder (using BeamLength and the runtime radius).
-	 */
-	bool IsInBeam(AActor const* Actor) const;
 #ifdef WITH_EDITOR
 
 	void DrawBeamDebugLines(float DeltaTime) const;
@@ -67,9 +64,9 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float DurationPerAbsorbedZone = 2.f;
 
-	/** Beam radius growth (in cm) for a full HealingZone consumed. Scales proportionally with partial drain. */
+	/** Beam width growth (in cm) for a full HealingZone consumed. Scales proportionally with partial drain. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
-	float RadiusGrowthPerAbsorbedZone = 50.f;
+	float HalfWidthGrowthPerAbsorbedZone = 50.f;
 
 	/**
 	 * Additive boost to damage and heal for a fully absorbed HealingZone.

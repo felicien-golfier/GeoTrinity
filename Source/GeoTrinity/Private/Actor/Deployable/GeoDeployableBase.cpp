@@ -7,11 +7,13 @@
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
-#include "GameFramework/PlayerState.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/RootMotionSource.h"
 #include "GameplayEffect.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Component/GeoCombattantWidgetComp.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -33,6 +35,86 @@ AGeoDeployableBase::AGeoDeployableBase()
 	}
 
 	SetReplicates(true);
+}
+
+
+void AGeoDeployableBase::InitInteractable(FInteractableActorData* Data)
+{
+	Super::InitInteractable(Data);
+
+	if (bPushActorsOnSpawn && GeoLib::IsServer(GetWorld()))
+	{
+		PushAway();
+	}
+}
+
+void AGeoDeployableBase::PushAway()
+{
+	CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+
+	FVector2D const Location2D(GetActorLocation());
+	float const PushRadius =
+		GetData()->Params.Size > 0.f ? GetData()->Params.Size : CapsuleComponent->GetScaledCapsuleRadius();
+
+	for (AActor* Actor : GeoASLib::GetInteractableActors(this, true, Location2D, PushRadius))
+	{
+		ACharacter* Character = Cast<ACharacter>(Actor);
+		if (!IsValid(Character))
+		{
+			continue;
+		}
+
+		UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
+		if (!IsValid(Movement))
+		{
+			continue;
+		}
+
+		FVector PushDirection = (Actor->GetActorLocation() - GetActorLocation());
+		PushDirection.Z = 0.f;
+		if (PushDirection.IsNearlyZero())
+		{
+			PushDirection = FVector(1.f, 0.f, 0.f);
+		}
+		PushDirection.Normalize();
+
+		constexpr float PushDuration = 0.15f;
+		FVector const PushTarget = Actor->GetActorLocation() + PushDirection * PushRadius;
+
+		TSharedPtr<FRootMotionSource_MoveToForce> PushRootMotion = MakeShared<FRootMotionSource_MoveToForce>();
+		PushRootMotion->InstanceName = TEXT("PillarPush");
+		PushRootMotion->AccumulateMode = ERootMotionAccumulateMode::Override;
+		PushRootMotion->StartLocation = Actor->GetActorLocation();
+		PushRootMotion->TargetLocation = PushTarget;
+		PushRootMotion->Duration = PushDuration;
+		PushRootMotion->bRestrictSpeedToExpected = false;
+		PushRootMotion->FinishVelocityParams.Mode = ERootMotionFinishVelocityMode::SetVelocity;
+		PushRootMotion->FinishVelocityParams.SetVelocity = FVector::ZeroVector;
+
+		uint16 const SourceID = Movement->ApplyRootMotionSource(PushRootMotion);
+
+		FTimerHandle RemoveHandle;
+		GetWorldTimerManager().SetTimer(
+			RemoveHandle,
+			[Movement, SourceID]()
+			{
+				if (IsValid(Movement))
+				{
+					Movement->RemoveRootMotionSourceByID(SourceID);
+					Movement->SetMovementMode(MOVE_Walking);
+				}
+			},
+			PushDuration, false);
+	}
+
+	constexpr float CollisionEnableDelay = 0.3f;
+	GetWorldTimerManager().SetTimer(CollisionEnableTimerHandle, this, &ThisClass::EnableBlockingCollision,
+									CollisionEnableDelay, false);
+}
+
+void AGeoDeployableBase::EnableBlockingCollision()
+{
+	CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void AGeoDeployableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -146,8 +228,6 @@ void AGeoDeployableBase::Explode(float Value)
 		return;
 	}
 
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes = {UEngineTypes::ConvertToObjectType(ECC_Pawn),
-														 UEngineTypes::ConvertToObjectType(ECC_GeoCharacter)};
 	TArray<AActor*> OverlappingActors =
 		GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(GetData()->Owner), ExplodeAttitude, true,
 										FVector2D(GetActorLocation()), GetData()->Params.Size);

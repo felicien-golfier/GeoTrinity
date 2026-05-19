@@ -40,14 +40,8 @@ AGeoProjectile::AGeoProjectile()
 	SetRootComponent(Sphere);
 
 	Sphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Sphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-	Sphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
-	Sphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-	Sphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	Sphere->SetCollisionResponseToChannel(ECC_GeoCharacter, ECR_Overlap);
-	Sphere->SetCollisionResponseToChannel(ECC_Floor, ECR_Ignore);
-
-	Sphere->SetCollisionObjectType(ECC_GeoCharacter);
+	Sphere->SetCollisionProfileName(TEXT("GeoProjectile"));
+	Sphere->SetCollisionObjectType(ECC_GeoProjectile);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileMovement");
 	ProjectileMovement->InitialSpeed = 550.f;
@@ -299,6 +293,7 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 	QueryParams.AddIgnoredActor(Payload.Instigator);
 
 	FCollisionObjectQueryParams ObjectQueryParams = FCollisionObjectQueryParams(ECC_GeoCharacter); // GeoCharacter ECC
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_GeoProjectile);
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);

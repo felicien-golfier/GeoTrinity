@@ -48,7 +48,7 @@ void UFatalZonePattern::InitPattern(FAbilityPayload const& Payload)
 
 void UFatalZonePattern::OnExpire()
 {
-	FVector const ZoneLocation = FVector(StoredPayload.Origin, 0.f);
+	FVector const ZoneLocation = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
 	UGeoAbilitySystemComponent* OwnerASC =
 		StoredPayload.Owner ? StoredPayload.Owner->FindComponentByClass<UGeoAbilitySystemComponent>() : nullptr;
 

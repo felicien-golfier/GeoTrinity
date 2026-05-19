@@ -59,9 +59,12 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 
 public:
 	AGeoDeployableBase();
+	void PushAway();
 
 	/** Registers bActive (with OnRep_Expired) for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void InitInteractable(FInteractableActorData* Data) override;
 
 	/** Computes DrainMagnitudePerSecond from Params and applies the initial drain GE. Call after data is set. */
 	virtual void InitDrain();
@@ -165,10 +168,17 @@ protected:
 	int32 ExplodeAttitude = TeamAttitudeMask::Hostile;
 	bool bAutoRecallAtEndLife = false;
 
+	/** If true, pushes all damageable interactable actors away on spawn and re-enables blocking collision after
+	 * CollisionEnableDelay. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	bool bPushActorsOnSpawn = false;
+
 private:
 	void OnBlinkTimerExpired();
 	void OnBlinkVisibilityTick();
+	void EnableBlockingCollision();
 
 	FTimerHandle BlinkTimerHandle;
 	FTimerHandle BlinkVisibilityTimerHandle;
+	FTimerHandle CollisionEnableTimerHandle;
 };

@@ -98,27 +98,13 @@ void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 	}
 
 	float const MaxRange = GetDefault<UGameDataSettings>()->GeneralSpellDistance;
-	FVector2D ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
+	FVector2D const ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
 
-	for (AActor* Target : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Instigator),
-														  TeamAttitudeMask::Hostile, true))
+	for (AActor* Target : GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(StoredPayload.Instigator),
+																TeamAttitudeMask::Hostile, true, StoredPayload.Origin,
+																ForwardVector, MaxRange))
 	{
 		if (Target == StoredPayload.Instigator)
-		{
-			continue;
-		}
-
-		FVector2D const TargetLocation2D(Target->GetActorLocation());
-		FVector2D const ToTarget = TargetLocation2D - StoredPayload.Origin;
-		float const AlongBeam = FVector2D::DotProduct(ToTarget, ForwardVector);
-		if (AlongBeam < 0.f || AlongBeam > MaxRange)
-		{
-			continue;
-		}
-
-		float const PerpDist = (ToTarget - ForwardVector * AlongBeam).SizeSquared();
-		float const HitRadius = Target->GetSimpleCollisionRadius();
-		if (PerpDist > HitRadius * HitRadius)
 		{
 			continue;
 		}

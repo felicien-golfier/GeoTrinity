@@ -194,7 +194,8 @@ public:
 	 */
 	static bool GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface);
 
-	/** Returns the GenericTeamId for Actor, or FGenericTeamId::NoTeam if Actor does not implement IGenericTeamAgentInterface. */
+	/** Returns the GenericTeamId for Actor, or FGenericTeamId::NoTeam if Actor does not implement
+	 * IGenericTeamAgentInterface. */
 	static FGenericTeamId GetTeamId(AActor const* Actor);
 
 	/**
@@ -203,7 +204,13 @@ public:
 	 * @param bMustBeDamageable  If true, skips actors that cannot be damaged.
 	 * @param Location           2D world origin for the distance check.
 	 * @param MaxDistance        Maximum distance in world units. 0 = no distance check.
+	 * @param ExtraFilter        Optional per-actor predicate; actors for which it returns false are excluded.
 	 */
+	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
+												 int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
+												 float MaxDistance, TFunctionRef<bool(AActor*)> const& ExtraFilter);
+
+	/** Same as above without an extra filter. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 												 int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
@@ -215,6 +222,20 @@ public:
 	/** Returns all interactable agents within MaxDistance of Location regardless of team. */
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, bool bMustBeDamageable,
 												 FVector2D Location, float MaxDistance);
+
+	/**
+	 * Returns all interactable agents that lie within a beam segment.
+	 * An actor passes if its collision circle (SimpleCollisionRadius) overlaps the segment
+	 * [Origin, Origin + ForwardVector * MaxRange].
+	 * @param Origin         2D start of the beam.
+	 * @param ForwardVector  Normalized 2D beam direction.
+	 * @param MaxRange       Beam length in world units.
+	 * @param LineHalfWidth
+	 */
+	static TArray<AActor*> GetInteractableActorsInLine(UObject const* WorldContextObject, FGenericTeamId SourceTeam,
+													   int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Origin,
+													   FVector2D ForwardVector, float MaxRange,
+													   float LineHalfWidth = 0.f);
 
 	/** Converts a UE ETeamAttitude enum value to its corresponding ETeamAttitudeBitflag bit. */
 	static ETeamAttitudeBitflag GetAttitudeBitflag(ETeamAttitude::Type Attitude);
