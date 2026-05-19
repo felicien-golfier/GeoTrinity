@@ -34,7 +34,7 @@ Data assets and structs that configure abilities and effects.
 `UAbilityInfo` data asset (configured once, referenced globally):
 - `TriangleAbilities`, `CircleAbilities`, `SquareAbilities` — class-specific
 - `SharedAbilities` — given to all players
-- `GenericAbilityInfos` — enemies
+- `EnemyAbilityInfos` — non-player abilities (enemies, passives, system); no InputAction, no class filter
 
 `FPlayersGameplayAbilityInfo` per entry: `AbilityClass`, `AbilityTag` (auto-populated from CDO), `InputAction`, `InputTag`, `bGiveAtStartup`, `AbilityIcon`.
 

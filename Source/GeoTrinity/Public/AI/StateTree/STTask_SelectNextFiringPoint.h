@@ -31,5 +31,6 @@ struct GEOTRINITY_API FSTTask_SelectNextFiringPoint : public FStateTreeTaskCommo
 	FSTTask_SelectNextFiringPoint() = default;
 
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+	/** Advances AEnemyCharacter's round-robin firing point index, writes the world location into TargetLocation, and returns Unset (succeeds immediately). */
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };

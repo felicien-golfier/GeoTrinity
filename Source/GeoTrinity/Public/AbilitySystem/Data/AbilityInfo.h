@@ -60,16 +60,16 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 /**
  * Data asset that catalogs all abilities in the game.
  * Three arrays are separated by player class (Triangle/Circle/Square) for input binding and class-specific granting.
- * SharedAbilities are granted to all classes. EnemyAbilityInfos and PlayersAbilityInfos serve as flat look-up
- * tables for code that needs to find an ability by tag without caring which class owns it.
+ * SharedAbilities are granted to all classes. EnemyAbilityInfos and GetAllPlayersAbilityInfos() serve as flat
+ * look-up tables for code that needs to find an ability by tag without caring which class owns it.
  *
  * When to use each container:
  *   - TriangleAbilities / CircleAbilities / SquareAbilities: abilities that belong to exactly one class and
  *     need an InputAction bound. Granted automatically at class startup.
  *   - SharedAbilities: abilities common to all classes (e.g. Dash). Granted to every player at startup.
- *   - PlayersAbilityInfos: flat merged view used by code that needs to resolve an ability tag without knowing
- *     the player's class. Populated from the per-class + shared arrays via GetAllPlayersAbilityInfos().
- *   - GenericAbilityInfos: non-player abilities (enemy, passive, system). No InputAction, no class filter.
+ *   - GetAllPlayersAbilityInfos(): flat merged view (Triangle + Circle + Square + Shared) for code that needs
+ *     to resolve an ability tag without knowing the player's class.
+ *   - EnemyAbilityInfos: non-player abilities (enemies, passives, system). No InputAction, no class filter.
  *     Used by UGeoAbilitySystemLibrary::GetAbilityCDO and similar helpers for tag-based look-up.
  */
 UCLASS()
