@@ -37,10 +37,16 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 - The server itself does not fire the cue — `OnRep` does not trigger on the machine that set the value.
 - Result: every client executes the cue exactly once via replication, no multicast needed.
 
+**Spawn-push helper — `PushAway()`:**
+- If `bPushActorsOnSpawn = true`, `InitInteractable` calls `PushAway()` on the server before Super
+- Disables capsule collision, root-motion-pushes all overlapping characters outward (`FRootMotionSource_MoveToForce`, 0.15 s), then re-enables blocking collision after 0.3 s
+- Push radius = `Params.Size` if set, otherwise the capsule's scaled radius
+
 **Key fields:**
 - `bUseRegularDrain`, `DrainMagnitudePerSecond` — drain config
 - `bAutoRecallAtEndLife` — if true, calls `Recall()` when blink timer expires; otherwise calls `Expire()`
 - `bSuppressDrainDamageVisuals = true` — hides hit flash during drain ticks
+- `bPushActorsOnSpawn` — enables spawn-time push (see above); server only
 - `ExplodeAttitude` — bitmask of team attitudes targeted by `Explode()` (default: `Hostile`)
 - `GetDurationPercent()` — health ratio 0..1; drives health bar
 - `GetData()` — pure virtual; subclasses return their `FDeployableData`

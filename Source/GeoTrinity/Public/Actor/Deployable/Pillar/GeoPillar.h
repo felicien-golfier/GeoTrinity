@@ -21,7 +21,9 @@ class GEOTRINITY_API AGeoPillar : public AGeoDeployableBase
 public:
 	AGeoPillar();
 
+	/** Copies Data into the replicated PillarData field, then delegates to Super (which triggers PushAway). */
 	virtual void InitInteractable(FInteractableActorData* Data) override;
+	/** Registers PillarData (COND_InitialOnly) in addition to the base-class replicants. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:

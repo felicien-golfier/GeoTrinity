@@ -230,7 +230,7 @@ public:
 	 * @param Origin         2D start of the beam.
 	 * @param ForwardVector  Normalized 2D beam direction.
 	 * @param MaxRange       Beam length in world units.
-	 * @param LineHalfWidth
+	 * @param LineHalfWidth  Half-width added to each target's SimpleCollisionRadius for hit testing. 0 = point test.
 	 */
 	static TArray<AActor*> GetInteractableActorsInLine(UObject const* WorldContextObject, FGenericTeamId SourceTeam,
 													   int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Origin,
