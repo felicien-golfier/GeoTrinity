@@ -24,12 +24,9 @@ public:
 
 	virtual void InitInteractable(FInteractableActorData* Data) override;
 
-	virtual void ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
-							   UGeoAbilitySystemComponent* TargetASC) override;
+	virtual void ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
+									UGeoAbilitySystemComponent* TargetASC) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	virtual void RecallEffect(float Value = 0.f) override;
-	virtual FGameplayCueParameters GetRecallCueParams() override;
 
 protected:
 	virtual FDeployableData const* GetData() const override { return &MineData; }

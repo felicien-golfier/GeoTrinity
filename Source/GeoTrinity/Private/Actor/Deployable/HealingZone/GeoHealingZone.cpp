@@ -105,8 +105,6 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 
 	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
 
-	IGenericTeamAgentInterface const* ZoneTeamAgent = Cast<IGenericTeamAgentInterface>(this);
-
 	int HealedNum = 0;
 
 	for (TWeakObjectPtr<AActor> const WeakActor : ActorsInZone)
@@ -116,7 +114,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 		{
 			continue;
 		}
-		if (ZoneTeamAgent->GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Hostile)
+		if (GeoASLib::IsTeamAttitudeAligned(Actor, this, TeamAttitudeMask::Hostile))
 		{
 			continue;
 		}

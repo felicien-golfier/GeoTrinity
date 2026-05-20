@@ -61,7 +61,6 @@ public:
 	AGeoDeployableBase();
 	void PushAway();
 
-	/** Registers bActive (with OnRep_Expired) for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void InitInteractable(FInteractableActorData* Data) override;
@@ -70,13 +69,14 @@ public:
 	virtual void InitDrain();
 	/** Ticks the blink timer state and calls Expire when health reaches zero. */
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void PreInitializeComponents() override;
 	/** Registers with the instigator's DeployableManagerComponent and calls InitDrain. */
 	virtual void BeginPlay() override;
 
 	/**
 	 * Ends this deployable's lifetime. Calls RecallEffect then Expire.
 	 * Always use this instead of Expire or Destroy directly — it is the sole valid end-of-life path.
-	 * Should be called on the server only; clients receive bActive replication and respond via OnRep_Expired.
+	 * Should be called on the server only; clients receive bActive replication and respond via OnRep_Active.
 	 *
 	 * @param Value  Scalar forwarded to RecallEffect for effect scaling (e.g. mine power).
 	 */
@@ -88,12 +88,12 @@ public:
 	 * @param Value  Scalar passed from Recall(), e.g. for explosion damage scaling.
 	 */
 	virtual void RecallEffect(float Value);
-	/** Fires RecallGameplayCueTag on this actor's ASC. Called by OnRep_Expired on clients when bActive replicates. */
-	void ExecuteRecallCue();
+	/** Fires RecallGameplayCueTag on this actor's ASC. Called by OnRep_Active on clients when bActive replicates. */
+	void ExecuteCue(FGameplayTag const& GameplayCueTag, FGameplayCueParameters const& CueParams) const;
 
 	/**
 	 * Sphere-overlaps interactable actors at the deployable's location with radius Params.Size,
-	 * then calls ExplodeEffect per target matching ExplodeAttitude. Server only.
+	 * then calls ApplyExplodeEffect per target matching ExplodeAttitude. Server only.
 	 *
 	 * @param Value  Scalar forwarded to ExplodeEffect for damage/effect scaling.
 	 */
@@ -102,8 +102,8 @@ public:
 	 * Called once per valid target found by Explode(). Override to change what is applied.
 	 * Default applies GetData()->EffectDataArray to the target via ApplyEffectFromEffectData.
 	 */
-	virtual void ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
-							   UGeoAbilitySystemComponent* TargetASC);
+	virtual void ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
+									UGeoAbilitySystemComponent* TargetASC);
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams();
@@ -111,6 +111,7 @@ public:
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDurationPercent() const;
+	void StartBlinking(float BlinkDuration);
 
 	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
 	UFUNCTION()
@@ -123,6 +124,7 @@ public:
 	/** Returns true during the pre-expiry blink window (blink timer is running). */
 	UFUNCTION(BlueprintPure)
 	bool IsBlinking() const;
+	FGameplayCueParameters GetGenericCueParams();
 
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployableDestroyed OnDeployableExpiredEvent;
@@ -141,11 +143,13 @@ protected:
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
 
 	UFUNCTION(BlueprintNativeEvent)
-	void OnBlinkStarted();
-	virtual void OnBlinkStarted_Implementation();
+	void OnBlinkVisualStarted();
+	virtual void OnBlinkVisualStarted_Implementation();
 
 	UFUNCTION()
-	virtual void OnRep_Expired(bool bOldValue);
+	virtual void OnRep_Active(bool bOldValue);
+	UFUNCTION()
+	virtual void OnRep_Blinking(bool bOldValue);
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bUseRegularDrain = true;
@@ -154,29 +158,43 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag RecallGameplayCueTag;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	FGameplayTag BlinkingGameplayCueTag;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	FGameplayTag ExplodeGameplayCueTag;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Expired)
+	UPROPERTY(ReplicatedUsing = OnRep_Active)
 	bool bActive = true;
+	UPROPERTY(ReplicatedUsing = OnRep_Blinking)
+	bool bBlinking = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	float TimeBeforeDestroyAtExpire = 3.f;
-	// Wether should recall or expire when the deployable ends its life on its own.
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deployable",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
-	int32 ExplodeAttitude = TeamAttitudeMask::Hostile;
+	int32 ExplodeAttitude = TeamAttitudeMask::HostileOrNeutral;
+	// Wether should recall or expire when the deployable ends its life on its own.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	bool bExplodeAtRecall = false;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bAutoRecallAtEndLife = false;
 
 	/** If true, pushes all damageable interactable actors away on spawn and re-enables blocking collision after
 	 * CollisionEnableDelay. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bPushActorsOnSpawn = false;
+	float const CollisionEnableDelay = 0.3f;
 
 private:
 	void OnBlinkTimerExpired();
 	void OnBlinkVisibilityTick();
-	void EnableBlockingCollision();
+	void EnableActorCollision();
 
 	FTimerHandle BlinkTimerHandle;
 	FTimerHandle BlinkVisibilityTimerHandle;

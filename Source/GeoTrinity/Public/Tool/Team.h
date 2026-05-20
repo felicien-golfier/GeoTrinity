@@ -29,10 +29,10 @@ namespace TeamAttitudeMask
 	constexpr uint8 Friendly = static_cast<uint8>(ETeamAttitudeBitflag::Friendly);
 	constexpr uint8 All = static_cast<uint8>(ETeamAttitudeBitflag::Neutral)
 		| static_cast<uint8>(ETeamAttitudeBitflag::Friendly) | static_cast<uint8>(ETeamAttitudeBitflag::Hostile);
-	constexpr uint8 HostileAndFriendly =
+	constexpr uint8 HostileOrFriendly =
 		static_cast<uint8>(ETeamAttitudeBitflag::Friendly) | static_cast<uint8>(ETeamAttitudeBitflag::Hostile);
-	constexpr uint8 HostileAndNeutral =
+	constexpr uint8 HostileOrNeutral =
 		static_cast<uint8>(ETeamAttitudeBitflag::Hostile) | static_cast<uint8>(ETeamAttitudeBitflag::Neutral);
-	constexpr uint8 FriendlyAndNeutral =
+	constexpr uint8 FriendlyOrNeutral =
 		static_cast<uint8>(ETeamAttitudeBitflag::Friendly) | static_cast<uint8>(ETeamAttitudeBitflag::Neutral);
 } // namespace TeamAttitudeMask

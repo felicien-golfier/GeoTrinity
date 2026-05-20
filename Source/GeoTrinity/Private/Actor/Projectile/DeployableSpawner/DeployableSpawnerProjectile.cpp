@@ -2,7 +2,6 @@
 
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 
-#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "GenericTeamAgentInterface.h"
 #include "Tool/UGeoGameplayLibrary.h"

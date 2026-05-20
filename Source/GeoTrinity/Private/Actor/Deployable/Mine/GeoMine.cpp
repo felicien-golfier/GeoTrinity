@@ -9,12 +9,12 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/Team.h"
-#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoMine::AGeoMine()
 {
 	bUseRegularDrain = false;
+	bExplodeAtRecall = true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -37,10 +37,10 @@ void AGeoMine::InitInteractable(FInteractableActorData* Data)
 	Super::InitInteractable(Data);
 }
 
-void AGeoMine::ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
-							 UGeoAbilitySystemComponent* TargetASC)
+void AGeoMine::ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
+								  UGeoAbilitySystemComponent* TargetASC)
 {
-	Super::ExplodeEffect(Value, SourceASC, Actor, TargetASC);
+	Super::ApplyExplodeEffect(Value, SourceASC, Actor, TargetASC);
 	float const ScaledLifeSpent = MineData.Params.Value * Value;
 	if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, TeamAttitudeMask::Hostile))
 	{
@@ -48,20 +48,11 @@ void AGeoMine::ExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC,
 		DamageEffect.DamageAmount = FScalableFloat(ScaledLifeSpent);
 		GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
 	}
-	else if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, TeamAttitudeMask::Friendly))
+	else if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, TeamAttitudeMask::FriendlyOrNeutral))
 	{
 		FShieldEffectData ShieldEffect;
 		ShieldEffect.ShieldAmount = FScalableFloat(ScaledLifeSpent);
 		GeoASLib::ApplySingleEffectData(ShieldEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoMine::RecallEffect(float Value)
-{
-	if (GeoLib::IsServer(GetWorld()))
-	{
-		Explode(Value);
 	}
 }
 
@@ -85,11 +76,4 @@ void AGeoMine::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	constexpr float RecallPowerModifier = 1.f; // When stepping on the mine, no modificator
 	Recall(RecallPowerModifier);
-}
-
-FGameplayCueParameters AGeoMine::GetRecallCueParams()
-{
-	FGameplayCueParameters Params = Super::GetRecallCueParams();
-	Params.RawMagnitude = MineData.Params.Size;
-	return Params;
 }

@@ -27,8 +27,6 @@ public:
 protected:
 	virtual FDeployableData const* GetData() const override { return &PillarData; }
 
-	virtual void RecallEffect(float Value = 0.f) override;
-
 private:
 	UPROPERTY(Replicated)
 	FDeployableData PillarData;

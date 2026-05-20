@@ -57,7 +57,8 @@ public:
 	 * @param Seed              Random seed for deterministic effects.
 	 */
 	FAbilityPayload CreateAbilityPayload(FVector2D const& Origin, float Yaw, float ServerSpawnTime, int Seed) const;
-	/** Constructs an FAbilityPayload from the current avatar's world state (position, facing, server time, new seed). */
+	/** Constructs an FAbilityPayload from the current avatar's world state (position, facing, server time, new seed).
+	 */
 	FAbilityPayload CreateAbilityPayload() const;
 	/** Reconstructs an FAbilityPayload from replicated target data received by the server. */
 	FAbilityPayload CreateAbilityPayloadFromTargetData(FGeoAbilityTargetData const& TargetData) const;
@@ -91,7 +92,8 @@ public:
 	/** In ChargeForFireDelay mode, fires immediately on input release instead of waiting for the timer to expire. */
 	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo ActivationInfo) override;
-	/** Returns the effective fire delay: reads GeneralChargeTime from GameDataSettings when bUseGeneralChargeTimeForFireDelay is set, otherwise uses the per-ability FireDelay. */
+	/** Returns the effective fire delay: reads GeneralChargeTime from GameDataSettings when
+	 * bUseGeneralChargeTimeForFireDelay is set, otherwise uses the per-ability FireDelay. */
 	UFUNCTION(BlueprintCallable)
 	float GetFireDelay() const;
 
@@ -109,7 +111,8 @@ public:
 	 * Override for abilities that need a true 3D spawn point.
 	 */
 	virtual FVector GetFireOrigin(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC, int Seed) const;
-	/** Returns the server world time stamped into the payload as ServerSpawnTime. Override to pre-adjust for latency. */
+	/** Returns the server world time stamped into the payload as ServerSpawnTime. Override to pre-adjust for latency.
+	 */
 	virtual float GetStartTime(UWorld const* World) const;
 	/** Returns a fresh random seed for the next shot. Override for deterministic seed strategies. */
 	virtual int GetNewSeed() const;
@@ -150,7 +153,8 @@ protected:
 	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize.
 	 */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData();
-	/** Refreshes Seed, ServerSpawnTime, Origin, and Yaw in StoredPayload from the server's received TargetData snapshot. */
+	/** Refreshes Seed, ServerSpawnTime, Origin, and Yaw in StoredPayload from the server's received TargetData
+	 * snapshot. */
 	void UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData);
 
 public:

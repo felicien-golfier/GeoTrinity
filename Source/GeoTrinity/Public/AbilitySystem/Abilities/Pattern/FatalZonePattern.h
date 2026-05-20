@@ -24,16 +24,10 @@ class GEOTRINITY_API UFatalZonePattern : public UPattern
 
 protected:
 	virtual void OnCreate(FGameplayTag AbilityTag) override;
-	virtual void InitPattern(FAbilityPayload const& Payload) override;
+	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 
 private:
-	UFUNCTION()
-	void OnExpire();
-
-	FTimerHandle ExpiryTimerHandle;
-
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
-	float CountdownDuration = 3.f;
+	virtual void StartPattern() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	float ZoneSize = 300.f;
@@ -41,17 +35,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AGeoPillar> PillarClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
-	FGameplayTag CountdownGameplayCueTag;
-
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
-	FGameplayTag ExpiryGameplayCueTag;
-
 	// Effects applied to hostiles in the zone on expiry (server-only).
 	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	TArray<TInstancedStruct<FEffectData>> ZoneEffectDataArray;
-
-	// Effects passed into the spawned pillar's FDeployableData.
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
-	TArray<TInstancedStruct<FEffectData>> PillarEffectDataArray;
 };

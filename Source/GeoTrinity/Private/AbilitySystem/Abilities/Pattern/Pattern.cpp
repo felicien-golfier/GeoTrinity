@@ -10,11 +10,24 @@ void UPattern::OnCreate(FGameplayTag AbilityTag)
 		EffectDataArray.IsEmpty(),
 		TEXT(
 			"EffectDataArray is not empty when creating a Pattern ! Ensure you call this function only at the spawn of the pattern."));
-	EffectDataArray = UGeoAbilitySystemLibrary::GetEffectDataArray(AbilityTag);
+	UGeoGameplayAbility const* AbilityCDO = GeoASLib::GetAbilityCDO(AbilityTag);
+	if (!AbilityCDO)
+	{
+		ensureMsgf(false, TEXT("Pattern %s has no AbilityCDO !"), *AbilityTag.ToString());
+		return;
+	}
+
+	StartDelay = AbilityCDO->GetFireDelay();
+	EffectDataArray = AbilityCDO->GetEffectDataArray();
+
 	if (AnimMontage)
 	{
-		StartSectionLength =
-			AnimMontage->GetSectionLength(GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionStartName));
+		int StartSection = GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionStartName);
+		if (StartDelay == 0.f && StartSection != INDEX_NONE)
+		{
+			StartDelay = AnimMontage->GetSectionLength(StartSection);
+		}
+
 		(void)GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionFireName);
 		(void)GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionEndName);
 	}
@@ -31,46 +44,72 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 
 	bPatternIsActive = true;
 	StoredPayload = Payload;
+	StartTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
+	bool const bIsServer = GeoLib::IsServer(GetWorld());
 
-	// How much time has elapsed since the server fired: used to decide whether to skip
-	// the "Start" montage section and jump directly into the looping fire section.
-	float const StartTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
 
-	if (!IsValid(AnimMontage) || !IsValid(AnimInstance) || StartTime > StartSectionLength)
+	if (DelayGameplayCueTag.IsValid() && !bIsServer)
 	{
-		if (StartTime > StartSectionLength)
+		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(Payload.Instigator);
+		if (!IsValid(InstigatorASC))
 		{
-			UE_LOG(LogPattern, Warning, TEXT("We start the montage too late, starting from loop directly"));
+			ensureMsgf(false, TEXT("Pattern Instigator %s has no ASC !"), *Payload.Instigator->GetName());
 		}
-		StartPattern(Payload);
-		return;
+		else
+		{
+			FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
+			FGameplayCueParameters CueParams = FillCueParam(Payload);
+			InstigatorASC->ExecuteGameplayCue(DelayGameplayCueTag, CueParams);
+		}
 	}
 
-	if (!GeoLib::IsServer(GetWorld()))
+	if (StartTime > StartDelay)
 	{
-		AnimInstance->Montage_Play(AnimMontage, 1.f, EMontagePlayReturnType::MontageLength, StartTime);
+		UE_LOG(LogPattern, Warning, TEXT("We start the montage too late, starting from loop directly"));
+		StartPattern();
 	}
+	else
+	{
+		if (!bIsServer && IsValid(AnimMontage) && IsValid(AnimInstance))
+		{
+			int const StartSection = GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionStartName);
+			float const PlayRate = AnimMontage->GetSectionLength(StartSection) / StartDelay;
+			AnimInstance->Montage_Play(AnimMontage, PlayRate, EMontagePlayReturnType::MontageLength,
+									   FMath::Max(0.f, StartTime));
+		}
 
-	float const RemainingStartTime = StartSectionLength - StartTime;
-	GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this, &UPattern::OnMontageSectionStartEnded,
-										   RemainingStartTime);
+		float const RemainingStartTime = StartDelay - StartTime;
+		GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this, &UPattern::StartPattern,
+											   RemainingStartTime);
+	}
 }
 
-void UPattern::OnMontageSectionStartEnded()
+FGameplayCueParameters UPattern::FillCueParam(FAbilityPayload const& Payload)
 {
-	StartPattern(StoredPayload);
+	FGameplayCueParameters CueParams;
+	CueParams.Location = FVector(Payload.Origin, 0.f);
+	CueParams.Instigator = Payload.Instigator;
+	CueParams.AbilityLevel = Payload.AbilityLevel;
+	// Hack Normale to pack timing info into (start delay, elapsed time before stating, ratio)
+	CueParams.Normal = FVector(StartDelay, StartTime, 1 - ((StartDelay - StartTime) / StartDelay));
+	return CueParams;
 }
 
-void UPattern::StartPattern(FAbilityPayload const& Payload)
+void UPattern::StartPattern()
 {
-	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
-	if (IsValid(AnimMontage) && !GeoLib::IsServer(GetWorld()) && IsValid(AnimInstance))
+	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
+	bool bIsServer = GeoLib::IsServer(GetWorld());
+	if (IsValid(AnimMontage) && !bIsServer && IsValid(AnimInstance))
 	{
 		if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 		{
 			UE_LOG(LogPattern, Warning, TEXT("Montage is NOT playing %s"), *AnimMontage->GetName());
 			AnimInstance->Montage_Play(AnimMontage);
+		}
+		else
+		{
+			AnimInstance->Montage_SetPlayRate(AnimMontage);
 		}
 
 		FName const SectionName = AnimInstance->Montage_GetCurrentSection(AnimMontage);
@@ -87,12 +126,22 @@ void UPattern::StartPattern(FAbilityPayload const& Payload)
 		}
 	}
 
-	OnStartPattern(Payload);
-}
+	if (StartGameplayCueTag.IsValid() && !bIsServer)
+	{
+		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
+		if (!IsValid(InstigatorASC))
+		{
+			ensureMsgf(false, TEXT("Pattern Instigator %s has no ASC !"), *StoredPayload.Instigator->GetName());
+		}
+		else
+		{
+			FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
+			FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
+			InstigatorASC->ExecuteGameplayCue(StartGameplayCueTag, CueParams);
+		}
+	}
 
-void UPattern::OnStartPattern_Implementation(FAbilityPayload const& Payload)
-{
-	// for Blueprint use mainly
+	OnPatternStart.Broadcast();
 }
 
 void UPattern::JumpMontageToEndSection() const
@@ -108,8 +157,7 @@ void UPattern::JumpMontageToEndSection() const
 
 float UPattern::CalculateElapsedTime() const
 {
-	return FMath::Max(0.f,
-					  GeoLib::GetServerTime(GetWorld(), true) - StoredPayload.ServerSpawnTime - StartSectionLength);
+	return FMath::Max(0.f, GeoLib::GetServerTime(GetWorld(), true) - StoredPayload.ServerSpawnTime - StartDelay);
 }
 
 void UPattern::EndPattern()
@@ -137,9 +185,9 @@ void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
 	Super::InitPattern(Payload);
 }
 
-void UTickablePattern::StartPattern(FAbilityPayload const& Payload)
+void UTickablePattern::StartPattern()
 {
-	Super::StartPattern(Payload);
+	Super::StartPattern();
 	CalculateTimeAndTickPattern();
 }
 

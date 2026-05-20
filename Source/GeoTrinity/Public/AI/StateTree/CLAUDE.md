@@ -41,6 +41,12 @@ Activates an ability by `GameplayTag` on the enemy's ASC.
 - `EnterState` — finds ASC, activates ability, binds to ability-ended delegate for async completion
 - `ExitState` — unbinds delegate
 
+### `STTask_MoveTo`
+Replacement for the built-in `Move To` StateTree task. Replans around dynamic nav obstacles (e.g. pillars) that appear after the initial path is computed.
+- Overrides `PrepareMoveToTask` to spawn `UGeoAITask_MoveTo` instead of `UAITask_MoveTo`
+- `UGeoAITask_MoveTo` overrides `PerformMove()` to call `Path->EnableRecalculationOnInvalidation(true)` after `Super`, enabling the nav system to auto-repath when tiles are rebuilt
+- **Always use this task instead of the built-in `Move To` in `ST_EnemyBehaviour`**
+
 ### `STTask_SelectNextFiringPoint`
 Round-robin firing point selection from `AEnemyCharacter::FiringPoints`.
 - `FInstanceDataType`: `TargetLocation` (output `FVector`)

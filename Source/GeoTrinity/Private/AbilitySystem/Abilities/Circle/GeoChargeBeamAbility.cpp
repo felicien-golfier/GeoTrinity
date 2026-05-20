@@ -101,8 +101,8 @@ void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 	FVector2D const ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
 
 	for (AActor* Target : GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(StoredPayload.Instigator),
-																TeamAttitudeMask::Hostile, true, StoredPayload.Origin,
-																ForwardVector, MaxRange))
+																TeamAttitudeMask::HostileOrNeutral, true,
+																StoredPayload.Origin, ForwardVector, MaxRange))
 	{
 		if (Target == StoredPayload.Instigator)
 		{

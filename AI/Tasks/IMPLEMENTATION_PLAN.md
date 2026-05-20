@@ -199,22 +199,46 @@ Actor->Init();
 
 ### Phase 6: Boss
 
-**Architecture decision:** No new C++ boss character class — boss is a BP subclass of `AEnemyCharacter`. Abilities manage their own actors. Boss actors live in `Actor/Deployable/` subfolders following the existing deployable pattern.
+**Architecture decision:** No new C++ boss character class — boss is a BP subclass of `AEnemyCharacter`. Abilities manage their own actors. Devastating Wave is a `UTickablePattern` (not a deployable actor). Teleport-to-center lives inside the wave ability, not a separate StateTree task — `STTask_FireProjectileAbility` handles ability activation.
 
 | Task | File | Status |
 |------|------|--------|
 | Boss Character | BP subclass of `AEnemyCharacter` — no C++ needed | [BP] |
 | Pillar Actor | `Actor/Deployable/Pillar/GeoPillar.h/.cpp` | [x] |
+| Fatal Zone Pattern | `Abilities/Pattern/FatalZonePattern.h/.cpp` | [x] |
+| Delayed Fatal Zone Ability | `Abilities/Boss/GeoDelayedFatalZoneAbility.h/.cpp` | [x] |
+| Targeted Salvo | No C++ needed — `UGeoProjectileAbility` multi-target system handles this; configure via BP/DA | [BP] |
+| Boss Teleport Task | Removed — teleport is inside `GeoDevastatingWaveAbility::ModifyPayload()` | N/A |
 | Boss Movement Task | `AI/StateTree/Boss/STTask_BossRandomMovement.h/.cpp` | [ ] |
 | Boss Ability Select | `AI/StateTree/Boss/STTask_BossSelectAbility.h/.cpp` | [ ] |
-| Boss Teleport Task | `AI/StateTree/Boss/STTask_BossTeleportToCenter.h/.cpp` | [ ] |
-| Targeted Salvo | `Abilities/Boss/GeoTargetedSalvoAbility.h/.cpp` | [ ] |
-| Delayed Fatal Zone | `Abilities/Boss/GeoDelayedFatalZoneAbility.h/.cpp` | [ ] |
-| Fatal Zone Actor | `Actor/Deployable/FatalZone/GeoFatalZone.h/.cpp` | [ ] |
-| Devastating Wave | `Abilities/Boss/GeoDevastatingWaveAbility.h/.cpp` | [ ] |
-| Wave Actor | `Actor/Deployable/DevastatingWave/GeoDevastatingWave.h/.cpp` | [ ] |
+| Lethal effect | No C++ needed — create `GE_InstantKill` BP asset: Instant GE, Health attr, Override modifier, magnitude = 0; reference via `FGameplayEffectData` in wave effect arrays | [BP] |
+| Devastating Wave Pattern | `Abilities/Pattern/DevastatingWavePattern.h/.cpp` | [ ] |
+| Devastating Wave Ability | `Abilities/Boss/GeoDevastatingWaveAbility.h/.cpp` | [ ] |
 
-**Next:** Step 2 — `GeoFatalZone` (countdown zone that spawns a Pillar) + `GeoDevastatingWave` (expanding lethal wave blocked by Pillars). Both extend `AGeoDeployableBase`.
+**Next: Devastating Wave Pattern**
+
+`UDevastatingWavePattern` extends `UTickablePattern`. `TickPattern(ServerTime, SpentTime)`:
+1. `CurrentRadius = ExpansionSpeed * SpentTime`
+2. Server-only: `GeoASLib::GetInteractableActors(...)` for hostiles within `CurrentRadius` from `StoredPayload.Origin`
+3. Skip actors already in `TSet<TWeakObjectPtr<AActor>> HitActors`; apply `WaveEffectDataArray` to new hits
+4. For each `AGeoPillar` found: call `Pillar->Recall(0.f)` on server
+5. `CurrentRadius >= MaxRadius` → `EndPattern()`
+
+Config fields: `ExpansionSpeed` (cm/s, default 800), `MaxRadius` (cm, default 3000), `WaveEffectDataArray`.
+
+**Devastating Wave Ability**
+
+`UGeoDevastatingWaveAbility` extends `UPatternAbility`. Overrides `ModifyPayload(FAbilityPayload&)` (server-only):
+- `StoredPayload.Owner->SetActorLocation(TeleportLocation)`
+- `Payload.Origin = FVector2D(TeleportLocation)`
+
+Config field: `TeleportLocation` (default `FVector::ZeroVector`). Set `PatternToLaunch = BP_DevastatingWavePattern` in BP subclass.
+
+**StateTree Tasks**
+
+`STTask_BossRandomMovement`: scheduled tick (`MakeCustomTickRate(MoveInterval)`), each tick picks random 2D point within `ArenaRadius` → `SimpleMoveToLocation`. Never completes. Instance data: `MoveInterval=2f`, `ArenaRadius=2000f`, `FStateTreeScheduledTickHandle Handle`.
+
+`STTask_BossSelectAbility`: completes immediately (like `STTask_SelectNextFiringPoint`). Weighted random pick from `TArray<FGameplayTag> AbilityPool` + `TArray<float> Weights` → writes to output `FGameplayTag SelectedAbility`.
 
 ### Phase 7: Multiplayer Connection Pipeline
 
@@ -295,3 +319,11 @@ Ability.Boss.TargetedSalvo / .Spiral / .FatalZones / .DevastatingWave
 - Phase 3 Triangle: 100% complete — all C++ and all Blueprint/Data work done
 - Class names differ slightly from plan: GeoTurretBase→AGeoTurret, GeoExplosiveRecallAbility→GeoRecallTurretAbility, GeoTriangleReloadAbility→GeoReloadAbility
 - Ready for Phase 4: Circle (Healer)
+
+### 2026-05-19
+- Phase 6 audit: GeoPillar, UFatalZonePattern, UGeoDelayedFatalZoneAbility all confirmed complete
+- Targeted Salvo removed from C++ backlog — covered by UGeoProjectileAbility multi-target system (BP/DA only)
+- STTask_BossTeleportToCenter removed — teleport lives inside GeoDevastatingWaveAbility::ModifyPayload
+- Devastating Wave redesigned as UTickablePattern (not a deployable actor) — fully deterministic, no actor needed
+- Lethal effect: use GE_InstantKill BP asset (Health Override to 0) + FGameplayEffectData — no new C++ subtype
+- Remaining C++: DevastatingWavePattern, GeoDevastatingWaveAbility, STTask_BossRandomMovement, STTask_BossSelectAbility

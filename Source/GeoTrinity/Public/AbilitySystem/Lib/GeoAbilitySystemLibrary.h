@@ -242,7 +242,7 @@ public:
 	/** Returns true when AttitudeBitflag has the bit corresponding to Attitude set. */
 	static bool IsAttitudeIntBitflag(ETeamAttitudeBitflag AttitudeBitflag, ETeamAttitude::Type Attitude);
 	/** Returns true when OtherActor's team attitude toward Owner is set in OverlapAttitudeBitMask. */
-	static bool IsTeamAttitudeAligned(AActor const* Owner, AActor const* OtherActor, int32 OverlapAttitudeBitMask);
+	static bool IsTeamAttitudeAligned(AActor const* Owner, AActor const* OtherActor, uint8 OverlapAttitudeBitMask);
 
 
 	/** Returns the actor in ActorList with the smallest 3D distance to FromActor, or nullptr if the list is empty. */

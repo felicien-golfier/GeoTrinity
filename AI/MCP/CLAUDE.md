@@ -26,6 +26,7 @@ All editor automation in this project goes through `mcp-unreal` `execute_script`
 | Topic | File |
 |---|---|
 | Blueprint asset creation, CDO properties, GameplayTag, components | `MCP_Blueprint.md` |
+| Material creation, node wiring, hard-edge circle fill | `MCP_Material.md` |
 | StateTree editing (add/remove states, transitions) | `MCP_StateTree.md` |
 | C++ editor utility pattern | `MCP_EditorUtility.md` |
 | New enemy ability end-to-end (tag → BP → AbilityInfo → ASC → StateTree) | `MCP_NewEnemyAbility.md` |
@@ -40,8 +41,8 @@ Multi-step or reusable operations go in `AI/Python/` as a `.py` file. Reference 
 
 ## Doc style rules (for writing new `.md` files in this folder)
 
-- Only document what isn't obvious from the code — point to files, don't repeat bodies.
-- Only document what succeeded. No failure history or pitfall tables.
+- Only document how things work, not what was tried or what failed.
+- No failure history, no pitfall tables, no "we tried X first" context.
+- Be succinct: one sentence per constraint, no elaboration.
 - Python call sites only in code snippets — C++ patterns belong in `.cpp`.
 - One-line method table pointing to the header — no signatures.
-- Constraints as tight bullets under "Key Constraints". One sentence each.

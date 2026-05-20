@@ -14,7 +14,7 @@ class UGameplayEffect;
 class AGeoProjectile;
 struct FAbilityPayload;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPatternEnd);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPatternEvent);
 
 /**
  * Base class for all enemy bullet patterns. A pattern is a UObject created per-client by UGeoAbilitySystemComponent
@@ -26,12 +26,10 @@ class GEOTRINITY_API UPattern : public UObject
 {
 	GENERATED_BODY()
 
-	UFUNCTION()
-	void OnMontageSectionStartEnded();
-
 public:
 	/** Called immediately after the pattern is created. AbilityTag is stored for montage section lookup. */
 	virtual void OnCreate(FGameplayTag AbilityTag);
+	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload);
 
 	/** Stores the payload and triggers the start-section animation before delegating to StartPattern. */
 	virtual void InitPattern(FAbilityPayload const& Payload);
@@ -44,30 +42,38 @@ public:
 	virtual void EndPattern();
 
 	UPROPERTY(BlueprintAssignable)
-	FOnPatternEnd OnPatternEnd;
+	FOnPatternEvent OnPatternEnd;
+	UPROPERTY(BlueprintAssignable)
+	FOnPatternEvent OnPatternStart;
 
 protected:
 	// Called when montage start is done and starts the loop.
-	virtual void StartPattern(FAbilityPayload const& Payload);
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Pattern")
-	void OnStartPattern(FAbilityPayload const& Payload);
+	UFUNCTION()
+	virtual void StartPattern();
 
 	void JumpMontageToEndSection() const;
 	float CalculateElapsedTime() const;
 
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 
-	float StartSectionLength = 0.f;
-
+	UPROPERTY(Transient, BlueprintReadOnly)
 	FAbilityPayload StoredPayload;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> AnimMontage;
+
+	float StartDelay = 0.f;
+	float StartTime = 0.f;
 
 	bool bPatternIsActive = false;
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
+	FGameplayTag DelayGameplayCueTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
+	FGameplayTag StartGameplayCueTag;
+
 	FTimerHandle StartSectionTimerHandle;
 };
 
@@ -85,7 +91,7 @@ public:
 	virtual void EndPattern() override;
 
 protected:
-	virtual void StartPattern(FAbilityPayload const& Payload) override;
+	virtual void StartPattern() override;
 	virtual void InitPattern(FAbilityPayload const& Payload) override;
 	/** Timer callback: reads current server time, computes SpentTime, and delegates to TickPattern. */
 	UFUNCTION()

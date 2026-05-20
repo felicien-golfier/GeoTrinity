@@ -11,7 +11,9 @@ AGeoPillar::AGeoPillar()
 {
 	bUseRegularDrain = true;
 	bPushActorsOnSpawn = true;
+	bExplodeAtRecall = true;
 	CapsuleComponent->SetCapsuleSize(100.f, 100.f, false);
+	CapsuleComponent->SetCollisionProfileName(TEXT("MovementBlocker"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -31,13 +33,7 @@ void AGeoPillar::InitInteractable(FInteractableActorData* Data)
 	}
 
 	PillarData = *InputData;
+	// Override Team to ensure this pillar is set neutral.
+	PillarData.TeamID = FGenericTeamId(static_cast<uint8>(ETeam::Neutral));
 	Super::InitInteractable(Data);
-}
-
-void AGeoPillar::RecallEffect(float Value)
-{
-	if (GeoLib::IsServer(GetWorld()))
-	{
-		Explode(Value);
-	}
 }

@@ -19,6 +19,10 @@ st  = unreal.load_asset("/Game/AI/ST_EnemyBehaviour")
 cdo.list_states(st)
 ```
 
+## Adding New UFUNCTIONs to the Shim
+
+When a new operation is needed, make the UFUNCTION as generic as possible — accept a task struct type, state name, parent, etc. as parameters rather than hardcoding a specific task class. A function that works for one task type today should work for any struct type tomorrow. Never add a specialized helper when a parameterized one covers the same ground.
+
 ## Existing Utility
 
 `Source/GeoTrinity/Public/Tool/GeoStateTreeBuilderUtil.h`

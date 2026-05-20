@@ -172,7 +172,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 				GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed);
 			}
-			else if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::Friendly))
+			else if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::FriendlyOrNeutral))
 			{
 				FHealEffectData HealEffect;
 				HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
@@ -180,11 +180,6 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 				HealEffect.bSuppressGameplayCue = !GameFeel->IsHealCueAvailable();
 				GeoASLib::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed);
-			}
-			else
-			{
-				// Decide what to do for Neutral
-				UE_LOG(LogTemp, Warning, TEXT("Neutral Attitude not taken in account in the beam"));
 			}
 		}
 	}

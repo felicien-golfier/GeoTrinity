@@ -18,70 +18,32 @@ void UFatalZonePattern::OnCreate(FGameplayTag AbilityTag)
 	//  UGeoActorPoolingSubsystem::Get(GetWorld())->PreSpawn(PillarClass, 10);
 }
 
-void UFatalZonePattern::InitPattern(FAbilityPayload const& Payload)
+FGameplayCueParameters UFatalZonePattern::FillCueParam(FAbilityPayload const& Payload)
 {
-	Super::InitPattern(Payload);
-
-	float const TimeUntilExpire = FMath::Max(0.f, CountdownDuration - CalculateElapsedTime());
-
-	if (CountdownGameplayCueTag.IsValid())
-	{
-		UGeoAbilitySystemComponent* ASC =
-			Payload.Owner ? Payload.Owner->FindComponentByClass<UGeoAbilitySystemComponent>() : nullptr;
-
-		if (ASC)
-		{
-			FGameplayCueParameters CueParams;
-			CueParams.Location = FVector(Payload.Origin, 0.f);
-			CueParams.Instigator = Payload.Instigator;
-			CueParams.AbilityLevel = Payload.AbilityLevel;
-			CueParams.RawMagnitude = CountdownDuration;
-			CueParams.NormalizedMagnitude = TimeUntilExpire / CountdownDuration;
-			CueParams.Normal = FVector(ZoneSize, 0.f, 0.f);
-			ASC->ExecuteGameplayCue(CountdownGameplayCueTag, CueParams);
-		}
-	}
-
-	GetWorld()->GetTimerManager().SetTimer(ExpiryTimerHandle, this, &UFatalZonePattern::OnExpire, TimeUntilExpire,
-										   false);
+	FGameplayCueParameters CueParams = Super::FillCueParam(Payload);
+	CueParams.RawMagnitude = ZoneSize;
+	return CueParams;
 }
 
-void UFatalZonePattern::OnExpire()
+void UFatalZonePattern::StartPattern()
 {
+	Super::StartPattern();
+
 	FVector const ZoneLocation = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
-	UGeoAbilitySystemComponent* OwnerASC =
-		StoredPayload.Owner ? StoredPayload.Owner->FindComponentByClass<UGeoAbilitySystemComponent>() : nullptr;
-
-	if (ExpiryGameplayCueTag.IsValid())
-	{
-		if (!ensureMsgf(OwnerASC, TEXT("UFatalZonePattern::TickPattern — OwnerASC is null, cannot execute expiry cue")))
-		{
-			EndPattern();
-			return;
-		}
-
-		FGameplayCueParameters CueParams;
-		CueParams.Location = ZoneLocation;
-		CueParams.Instigator = StoredPayload.Instigator;
-		CueParams.AbilityLevel = StoredPayload.AbilityLevel;
-		CueParams.RawMagnitude = ZoneSize;
-		OwnerASC->ExecuteGameplayCue(ExpiryGameplayCueTag, CueParams);
-	}
+	UGeoAbilitySystemComponent* InstigatorAsc = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
 
 	UWorld* World = GetWorld();
 	if (UGeoGameplayLibrary::IsServer(World))
 	{
-		if (OwnerASC && ZoneEffectDataArray.Num() > 0)
+		if (InstigatorAsc && ZoneEffectDataArray.Num() > 0)
 		{
-			FVector2D const Origin2D(ZoneLocation.X, ZoneLocation.Y);
-			for (AActor* TargetActor : GeoASLib::GetInteractableActors(
-					 this, GeoASLib::GetTeamId(StoredPayload.Owner), static_cast<int32>(ETeamAttitudeBitflag::Hostile),
-					 true, Origin2D, ZoneSize))
+			for (AActor* TargetActor : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Owner),
+																	   TeamAttitudeMask::HostileOrNeutral, true,
+																	   StoredPayload.Origin, ZoneSize))
 			{
-				UGeoAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UGeoAbilitySystemComponent>();
-				if (TargetASC)
+				if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
 				{
-					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(ZoneEffectDataArray, OwnerASC, TargetASC,
+					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(ZoneEffectDataArray, InstigatorAsc, TargetASC,
 																		StoredPayload.AbilityLevel, StoredPayload.Seed);
 				}
 			}
@@ -104,7 +66,7 @@ void UFatalZonePattern::OnExpire()
 			PillarData.Instigator = StoredPayload.Instigator;
 			PillarData.Level = StoredPayload.AbilityLevel;
 			PillarData.Seed = StoredPayload.Seed;
-			PillarData.EffectDataArray = PillarEffectDataArray;
+			PillarData.EffectDataArray = GeoASLib::GetEffectDataArray(StoredPayload.AbilityTag);
 			PillarData.Params.Size = ZoneSize;
 
 			Pillar->InitInteractable(&PillarData);

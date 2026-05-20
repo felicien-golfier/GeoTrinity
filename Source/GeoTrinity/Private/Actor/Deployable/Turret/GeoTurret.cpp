@@ -67,8 +67,8 @@ void AGeoTurret::Tick(float DeltaSeconds)
 // ---------------------------------------------------------------------------------------------------------------------
 AActor* AGeoTurret::FindBestTarget() const
 {
-	TArray<AActor*> const HostileActors =
-		UGeoAbilitySystemLibrary::GetInteractableActors(this, GeoASLib::GetTeamId(this), TeamAttitudeMask::Hostile);
+	TArray<AActor*> const HostileActors = UGeoAbilitySystemLibrary::GetInteractableActors(
+		this, GeoASLib::GetTeamId(this), TeamAttitudeMask::HostileOrNeutral);
 	return UGeoAbilitySystemLibrary::GetNearestActorFromList(this, HostileActors);
 }
 

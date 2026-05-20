@@ -138,7 +138,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
-	int32 OverlapAttitude = TeamAttitudeMask::Hostile;
+	int32 OverlapAttitude = TeamAttitudeMask::HostileOrNeutral;
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",

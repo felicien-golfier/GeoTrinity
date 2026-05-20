@@ -39,6 +39,7 @@ for a in ar.get_assets(filter):
 | Generic laser | `/Game/VFX/Generic/Niagara/NS_GenericLaser` |
 | Glow material instance | `/Game/VFX/Generic/Materials/MatInstances/MI_Glow01` |
 | Unlit particle material | `/Game/VFX/Generic/Materials/M_Particle_Unlit_Advanced` |
+| Zone indicator (ring + hard fill) | `/Game/VFX/Generic/Materials/M_ZoneIndicator` |
 
 Note: The turret recall asset has a typo — "Rurret" not "Turret".
 

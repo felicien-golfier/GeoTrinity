@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoShieldBurstProjectile::AGeoShieldBurstProjectile()
 {
-	OverlapAttitude = TeamAttitudeMask::HostileAndFriendly;
+	OverlapAttitude = TeamAttitudeMask::All;
 
 	ProjectileMovement->bShouldBounce = true;
 	ProjectileMovement->Bounciness = 1.0f;
@@ -64,7 +64,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 {
 	if (GeoLib::IsServer(GetWorld()))
 	{
-		if (GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor, TeamAttitudeMask::Hostile))
+		if (GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor, TeamAttitudeMask::HostileOrNeutral))
 		{
 			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
 			float const Speed = ProjectileMovement->Velocity.Size();
@@ -82,6 +82,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 		}
 		else
 		{
+			// TODO: as we don;t call super, we should ensure few things before the ensure
 			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(OtherActor);
 			if (ensureMsgf(TargetASC, TEXT("AGeoShieldBurstProjectile: no ASC on ally %s"), *OtherActor->GetName()))
 			{

@@ -13,6 +13,7 @@
 - Be consistent: same code style, same naming convention throughout
 - `Super` call placement: choose what makes semantic sense (Init = top, Destroy = bottom); when no ordering dependency exists, always top
 - No abbreviations in variable names; full class names except `ASC` for AbilitySystemComponent
+- **Never use `GetComponentByClass` to get an ASC** — always use `GeoASLib::GetGeoAscFromActor` instead
 - No comments that restate what the code says — code should be self-documenting
 - Never assume method names — they change between versions.
 **Check Epic source before implementing UE features**: Always read actual engine/plugin headers before implementing StateTree tasks, GAS, AI, etc.

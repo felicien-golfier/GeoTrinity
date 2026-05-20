@@ -775,7 +775,7 @@ bool UGeoAbilitySystemLibrary::IsAttitudeIntBitflag(ETeamAttitudeBitflag Attitud
 }
 
 bool UGeoAbilitySystemLibrary::IsTeamAttitudeAligned(AActor const* Owner, AActor const* OtherActor,
-													 int32 OverlapAttitudeBitMask)
+													 uint8 OverlapAttitudeBitMask)
 {
 	if (!IsValid(Owner) || !IsValid(OtherActor))
 	{
