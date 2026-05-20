@@ -18,7 +18,9 @@
 **Team utilities — prefer these over `SphereOverlapActors` / `OverlapMultiByChannel`:**
 - `GetInteractableActors(World, SourceTeam, AttitudeBitmask)` — all agents matching any bit in `ETeamAttitudeBitflag` bitmask
 - `GetInteractableActors(World, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location, MaxDistance)` — with optional distance + damageable filter
+- `GetInteractableActors(World, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location, MaxDistance, ExtraFilter)` — same but with an additional per-actor predicate (`TFunctionRef<bool(AActor*)>`)
 - `GetInteractableActors(World, bMustBeDamageable, Location, MaxDistance)` — no team filter, distance only
+- `GetInteractableActorsInLine(World, SourceTeam, AttitudeBitmask, bMustBeDamageable, Origin, ForwardVector, MaxRange, LineHalfWidth)` — actors whose collision circle overlaps the 2D beam segment; used by beam abilities instead of a capsule overlap
 - Use these instead of any physics overlap when filtering game agents.
 - `IsTeamAttitudeAligned(Agent1, Agent2)` — checks alignment
 

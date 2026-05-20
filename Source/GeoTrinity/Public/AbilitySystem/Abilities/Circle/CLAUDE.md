@@ -13,17 +13,19 @@ Implements `FTickableGameObject` — ticks independently from the game tick.
 ---
 
 ## `GeoMoiraBeamAbility.h` — fire-and-forget beam
-Damages enemies and heals allies inside a forward cylinder. Can absorb deployed `AGeoHealingZone` actors to grow.
+Damages enemies and heals allies inside a forward rectangle. Can absorb deployed `AGeoHealingZone` actors to grow.
+Target detection uses `GeoASLib::GetInteractableActorsInLine`; beam length = `GameDataSettings::GeneralSpellDistance`.
 
 Key fields:
-- `BeamLength` — cylinder depth (cm)
-- `InitialDuration` — base duration (seconds)
-- `DurationPerAbsorbedZone` — duration bonus per absorbed healing zone
-- `RadialGrowthPerAbsorbedZone` — beam radius increase per absorption
+- `DamagePerSecond` / `HealPerSecond` — per-second amounts; scale with ability level
+- `SpeedBuffEffect` — infinite GE applied to self on activation (additive `MovementSpeedMultiplier`)
+- `InitialDuration` — base channel duration (seconds)
+- `DurationPerAbsorbedZone` — duration bonus per fully absorbed healing zone
+- `HalfWidthGrowthPerAbsorbedZone` — half-width added per fully absorbed zone (cm)
 - `DamageAndHealBoostPerAbsorbedZone` — `1.0 = 100%` damage/heal boost per zone
-- `BeamZoneDrainPercentagePerSecond` — how fast the beam drains absorbed zone health (0..100%)
+- `BeamZoneDrainPercentagePerSecond` — rate at which the beam drains zone health (0..100%/s)
 
-`IsInBeam(Actor)` — checks if actor center is inside the current beam cylinder.
+Runtime state: `BeamRatio` (grows as zones are absorbed), `RemainingDuration`.
 
 ---
 

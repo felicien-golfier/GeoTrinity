@@ -59,11 +59,18 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 
 public:
 	AGeoDeployableBase();
+
+	/**
+	 * Temporarily disables blocking collision, root-motion-pushes all overlapping characters outward,
+	 * then re-enables blocking collision after a short fixed delay.
+	 * Server only — called automatically from InitInteractable when bPushActorsOnSpawn is true.
+	 */
 	void PushAway();
 
 	/** Registers bActive (with OnRep_Expired) for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/** Calls PushAway() on the server when bPushActorsOnSpawn is set, then delegates to Super. */
 	virtual void InitInteractable(FInteractableActorData* Data) override;
 
 	/** Computes DrainMagnitudePerSecond from Params and applies the initial drain GE. Call after data is set. */
