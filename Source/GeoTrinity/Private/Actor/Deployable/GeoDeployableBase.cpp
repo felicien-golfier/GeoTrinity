@@ -53,10 +53,9 @@ void AGeoDeployableBase::InitInteractable(FInteractableActorData* Data)
 void AGeoDeployableBase::PushAway()
 {
 	FVector2D const Location2D(GetActorLocation());
-	float const PushRadius =
-		GetData()->Params.Size > 0.f ? GetData()->Params.Size : CapsuleComponent->GetScaledCapsuleRadius();
+	float const Radius = CapsuleComponent->GetScaledCapsuleRadius();
 
-	for (AActor* Actor : GeoASLib::GetInteractableActors(this, true, Location2D, PushRadius))
+	for (AActor* Actor : GeoASLib::GetInteractableActors(this, true, Location2D, Radius))
 	{
 		ACharacter* Character = Cast<ACharacter>(Actor);
 		if (!IsValid(Character))
@@ -79,7 +78,8 @@ void AGeoDeployableBase::PushAway()
 		PushDirection.Normalize();
 
 		constexpr float PushDuration = 0.15f;
-		FVector const PushTarget = Actor->GetActorLocation() + PushDirection * PushRadius;
+		FVector const PushTarget =
+			Actor->GetActorLocation() + PushDirection * (Radius + Actor->GetSimpleCollisionRadius());
 
 		TSharedPtr<FRootMotionSource_MoveToForce> PushRootMotion = MakeShared<FRootMotionSource_MoveToForce>();
 		PushRootMotion->InstanceName = TEXT("PillarPush");
@@ -101,7 +101,7 @@ void AGeoDeployableBase::PushAway()
 				if (IsValid(Movement))
 				{
 					Movement->RemoveRootMotionSourceByID(SourceID);
-					Movement->SetMovementMode(MOVE_Walking);
+					Movement->SetMovementMode(MOVE_Falling);
 				}
 			},
 			PushDuration, false);
@@ -326,8 +326,7 @@ float AGeoDeployableBase::GetDurationPercent() const
 void AGeoDeployableBase::StartBlinking(float const BlinkDuration)
 {
 	bBlinking = true;
-	GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::OnBlinkTimerExpired, BlinkDuration,
-										   false);
+	GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::TryRecallOrExpire, BlinkDuration, false);
 
 	if (BlinkingGameplayCueTag.IsValid() && !GeoLib::IsServer(this))
 	{
@@ -353,14 +352,7 @@ void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 		}
 		else
 		{
-			if (bAutoRecallAtEndLife)
-			{
-				Recall();
-			}
-			else
-			{
-				Expire();
-			}
+			TryRecallOrExpire();
 		}
 	}
 }
@@ -400,7 +392,7 @@ void AGeoDeployableBase::OnBlinkVisibilityTick()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::OnBlinkTimerExpired()
+void AGeoDeployableBase::TryRecallOrExpire()
 {
 	if (bActive)
 	{
@@ -426,6 +418,8 @@ FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams()
 {
 	FGameplayCueParameters CueParams;
 	CueParams.Location = GetActorLocation();
+	// TODO: find a better solution
+	CueParams.Location.Z = 1.f; // Ensure all Cues happens just above the floor
 	CueParams.EffectCauser = this;
 	CueParams.Instigator = GetData()->Instigator;
 	CueParams.AbilityLevel = GetData()->Level;

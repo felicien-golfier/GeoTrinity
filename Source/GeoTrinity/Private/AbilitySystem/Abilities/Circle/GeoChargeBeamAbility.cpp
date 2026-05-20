@@ -55,7 +55,7 @@ void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& Ability
 		CueParams.Location = FVector(AbilityTargetData.Origin + ForwardVector, ArbitraryCharacterZ);
 		CueParams.Instigator = StoredPayload.Instigator;
 		CueParams.AbilityLevel = StoredPayload.AbilityLevel;
-		CueParams.RawMagnitude =
+		CueParams.NormalizedMagnitude =
 			ChargeRatio >= SweetSpotMinRatio && ChargeRatio <= SweetSpotMaxRatio || ChargeRatio >= .95f;
 		CueParams.Normal = FRotator(0, AbilityTargetData.Yaw, 0).Vector();
 

@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/Data/EffectData.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "StructUtils/InstancedStruct.h"
@@ -30,10 +31,13 @@ private:
 	virtual void StartPattern() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
-	float ZoneSize = 300.f;
+	float SpawningZoneSize = 300.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AGeoPillar> PillarClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
+	FDeployableDataParams PillarParams;
 
 	// Effects applied to hostiles in the zone on expiry (server-only).
 	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))

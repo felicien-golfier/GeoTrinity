@@ -180,7 +180,6 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_Blinking)
 	bool bBlinking = false;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	float TimeBeforeDestroyAtExpire = 3.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deployable",
@@ -199,7 +198,9 @@ protected:
 	float const CollisionEnableDelay = 0.3f;
 
 private:
-	void OnBlinkTimerExpired();
+	UFUNCTION()
+	void TryRecallOrExpire();
+
 	void OnBlinkVisibilityTick();
 	void EnableActorCollision();
 

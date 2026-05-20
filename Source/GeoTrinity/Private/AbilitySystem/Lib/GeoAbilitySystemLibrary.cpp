@@ -264,8 +264,10 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 			return;
 		}
 
+		float const OtherActorRadius = OtherActor->GetSimpleCollisionRadius();
 		if (bHasDistanceCheck
-			&& FVector2D::DistSquared(Location, FVector2D(OtherActor->GetActorLocation())) > MaxDistanceSqr)
+			&& FVector2D::DistSquared(Location, FVector2D(OtherActor->GetActorLocation()))
+				> MaxDistanceSqr + OtherActorRadius * OtherActorRadius)
 		{
 			return;
 		}

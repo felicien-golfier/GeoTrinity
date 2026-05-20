@@ -21,7 +21,7 @@ void UFatalZonePattern::OnCreate(FGameplayTag AbilityTag)
 FGameplayCueParameters UFatalZonePattern::FillCueParam(FAbilityPayload const& Payload)
 {
 	FGameplayCueParameters CueParams = Super::FillCueParam(Payload);
-	CueParams.RawMagnitude = ZoneSize;
+	CueParams.RawMagnitude = SpawningZoneSize;
 	return CueParams;
 }
 
@@ -39,7 +39,7 @@ void UFatalZonePattern::StartPattern()
 		{
 			for (AActor* TargetActor : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Owner),
 																	   TeamAttitudeMask::HostileOrNeutral, true,
-																	   StoredPayload.Origin, ZoneSize))
+																	   StoredPayload.Origin, SpawningZoneSize))
 			{
 				if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
 				{
@@ -67,7 +67,7 @@ void UFatalZonePattern::StartPattern()
 			PillarData.Level = StoredPayload.AbilityLevel;
 			PillarData.Seed = StoredPayload.Seed;
 			PillarData.EffectDataArray = GeoASLib::GetEffectDataArray(StoredPayload.AbilityTag);
-			PillarData.Params.Size = ZoneSize;
+			PillarData.Params = PillarParams;
 
 			Pillar->InitInteractable(&PillarData);
 			UGeoActorPoolingSubsystem::Get(World)->ChangeActorState(Pillar, true);
