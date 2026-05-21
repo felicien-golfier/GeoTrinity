@@ -47,12 +47,12 @@ Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`
 Non-ticking pattern that marks a zone under a random player, shows a countdown VFX, then on expiry applies damage and spawns a `GeoPillar`.
 
 - `CountdownDuration` — seconds before expiry (default 3s)
-- `ZoneSize` — radius of the danger zone in cm
+- `SpawningZoneSize` — radius of the danger zone in cm (renamed from `ZoneSize`)
 - `PillarClass` — `GeoPillar` subclass to spawn on expiry
+- `PillarParams` — `FDeployableDataParams` forwarded into the spawned pillar's `FDeployableData`; drives pillar size, blink duration, etc. via data asset instead of hardcoded values
 - `CountdownGameplayCueTag` — cue fired at start to show the countdown indicator
 - `ExpiryGameplayCueTag` — cue fired on expiry
 - `ZoneEffectDataArray` — effects applied to hostiles in the zone on expiry (server-only)
-- `PillarEffectDataArray` — effects passed into the spawned pillar's `FDeployableData`
 
 Runs on all clients via `PatternStartMulticast`. Server time in the payload ensures countdown sync.
 Used by `UGeoDelayedFatalZoneAbility`.

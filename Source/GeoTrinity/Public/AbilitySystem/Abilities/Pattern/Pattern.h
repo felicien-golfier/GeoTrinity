@@ -29,6 +29,7 @@ class GEOTRINITY_API UPattern : public UObject
 public:
 	/** Called immediately after the pattern is created. AbilityTag is stored for montage section lookup. */
 	virtual void OnCreate(FGameplayTag AbilityTag);
+	/** Builds the FGameplayCueParameters for this pattern's start cue. Override to inject custom fields (location, magnitude, etc.). */
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload);
 
 	/** Stores the payload and triggers the start-section animation before delegating to StartPattern. */

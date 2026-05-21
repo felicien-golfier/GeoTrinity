@@ -16,6 +16,7 @@ struct GEOTRINITY_API FSTTask_MoveTo : public FStateTreeMoveToTask
 {
 	GENERATED_BODY()
 
+	/** Returns a UGeoAITask_MoveTo instance so the move task enables nav-mesh recalculation on invalidation. */
 	virtual UAITask_MoveTo* PrepareMoveToTask(FStateTreeExecutionContext& Context, AAIController& Controller,
 	                                          UAITask_MoveTo* ExistingTask, FAIMoveRequest& MoveRequest) const override;
 };

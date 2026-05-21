@@ -95,7 +95,7 @@ public:
 	 * @param Value  Scalar passed from Recall(), e.g. for explosion damage scaling.
 	 */
 	virtual void RecallEffect(float Value);
-	/** Fires RecallGameplayCueTag on this actor's ASC. Called by OnRep_Active on clients when bActive replicates. */
+	/** Executes the given GameplayCueTag on this actor's ASC with CueParams. Used by OnRep_Active and Recall() to fire recall/blink cues locally. */
 	void ExecuteCue(FGameplayTag const& GameplayCueTag, FGameplayCueParameters const& CueParams) const;
 
 	/**
@@ -118,6 +118,7 @@ public:
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDurationPercent() const;
+	/** Starts the pre-expiry blink timer for the given duration in seconds. */
 	void StartBlinking(float BlinkDuration);
 
 	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
@@ -131,6 +132,7 @@ public:
 	/** Returns true during the pre-expiry blink window (blink timer is running). */
 	UFUNCTION(BlueprintPure)
 	bool IsBlinking() const;
+	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying instigator. */
 	FGameplayCueParameters GetGenericCueParams();
 
 	UPROPERTY(BlueprintAssignable)
