@@ -10,7 +10,7 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 2. `InitDrain()` — computes `DrainMagnitudePerSecond` from `Params.LifeDrainMaxDuration`; override to change drain behavior
 3. `Tick()` — applies drain damage each tick on server
 4. On health/duration zero → blink timer → `Expire()` → hides actor, fires `OnDeployableExpiredEvent`, destroys after `TimeBeforeDestroyAtExpire`
-5. **`Recall(Value)`** — the ONLY valid end-of-life path. Calls `RecallEffect(Value)` → `Expire()`. On non-server machines it also calls `ExecuteRecallCue()` (safety path; clients normally receive the cue via `OnRep_Expired`). Never call `Expire()` or `Destroy()` directly — always go through `Recall()`.
+5. **`Recall(Value)`** — the ONLY valid end-of-life path. Calls `RecallEffect(Value)` → `Expire()`. On non-server machines it also calls `ExecuteCue(RecallGameplayCueTag, ...)` (safety path; clients normally receive the cue via `OnRep_Active`). Never call `Expire()` or `Destroy()` directly — always go through `Recall()`.
 
 **Override points for subclasses:**
 - `RecallEffect(Value)` — called inside `Recall()` on the server. Put "what happens when this deployable ends" logic here (apply effects, call `Explode()`, etc.). Default: no-op.
@@ -32,8 +32,8 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 - `OnBlinkStarted()` — `BlueprintNativeEvent`; override in BP for pre-expiry visual
 
 **VFX / Gameplay Cue rule:** Never multicast RPC for recall/expiry VFX. Gameplay cues are called **locally only**:
-- Clients: `OnRep_Expired()` fires when `bActive` replicates to false, then calls `ExecuteRecallCue()` locally.
-- `Recall()` also calls `ExecuteRecallCue()` when running on a non-server machine (safety path for edge cases).
+- Clients: `OnRep_Active()` fires when `bActive` replicates to false, then calls `ExecuteCue(RecallGameplayCueTag, ...)` locally.
+- `Recall()` also calls `ExecuteCue(RecallGameplayCueTag, ...)` when running on a non-server machine (safety path for edge cases).
 - The server itself does not fire the cue — `OnRep` does not trigger on the machine that set the value.
 - Result: every client executes the cue exactly once via replication, no multicast needed.
 

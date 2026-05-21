@@ -22,10 +22,16 @@ class GEOTRINITY_API AGeoMine : public AGeoDeployableBase
 public:
 	AGeoMine();
 
+	/** Casts Data into MineData and delegates to Super. */
 	virtual void InitInteractable(FInteractableActorData* Data) override;
 
+	/**
+	 * Applies damage to hostiles and shield to allies, both scaled by Value (life-spent ratio).
+	 * Called once per valid target inside Explode() on the server.
+	 */
 	virtual void ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
 									UGeoAbilitySystemComponent* TargetASC) override;
+	/** Registers MineData for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
