@@ -22,15 +22,11 @@ Pattern for exposing C++ editor operations to Python when `get/set_editor_proper
 - `"Blutility"` — for `UEditorUtilityObject`
 - After any Build.cs change: **close editor and do a full build** before Live Coding.
 
-**Call from Python**
-```python
-cdo = unreal.GeoXxxUtil.get_default_object()
-cdo.do_something(arg1, arg2)
-```
-Python snake_cases UFUNCTION names automatically. Pass `FGameplayTag` args via `import_text`.
+**Call from Python** — get the CDO via `get_default_object()`, then call the method. Python snake_cases UFUNCTION names automatically. Pass `FGameplayTag` args via `import_text`. See `AI/Python/` for call patterns.
 
 ## Existing Utilities
 
 | Class | Header | What it does |
 |---|---|---|
 | `UGeoStateTreeBuilderUtil` | `Public/Tool/GeoStateTreeBuilderUtil.h` | Add/remove states, manage transitions on `UStateTree` assets |
+| `UGeoWidgetBuilderUtil` | `Public/Tool/GeoWidgetBuilderUtil.h` | Build widget trees on `UWidgetBlueprint` assets (see `MCP_UI.md`) |

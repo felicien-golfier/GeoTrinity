@@ -40,7 +40,8 @@ public class GeoTrinity : ModuleRules
 			{
 				"StateTreeEditorModule",
 				"UnrealEd",
-				"Blutility"
+				"Blutility",
+				"UMGEditor"
 			});
 		}
 

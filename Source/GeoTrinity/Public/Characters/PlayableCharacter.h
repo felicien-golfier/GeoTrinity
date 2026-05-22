@@ -15,6 +15,7 @@ class UGameplayEffect;
 class UWidgetComponent;
 class UGeoChargeAbility;
 class UGeoDeployableManagerComponent;
+class UGeoChargeBeamGaugeWidget;
 
 USTRUCT(BlueprintType)
 struct FPlayerClassData
@@ -80,6 +81,17 @@ public:
 	/** Hides the deploy charge gauge widget. */
 	void HideDeployChargeGauge() const;
 
+	/**
+	 * Shows or hides the charge-beam gauge widget.
+	 *
+	 * @param Ability            The charging ability that drives the gauge fill. Ignored when bVisible is false.
+	 * @param bVisible           True to show and bind; false to hide.
+	 * @param SweetSpotMinRatio  Sweet-spot window start (0–1). Only used when bVisible is true.
+	 * @param SweetSpotMaxRatio  Sweet-spot window end (0–1). Only used when bVisible is true.
+	 */
+	void SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability, bool bVisible, float SweetSpotMinRatio = 0.f,
+								   float SweetSpotMaxRatio = 0.f) const;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -96,6 +108,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> DeployChargeGaugeComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	TObjectPtr<UWidgetComponent> ChargeBeamGaugeComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;

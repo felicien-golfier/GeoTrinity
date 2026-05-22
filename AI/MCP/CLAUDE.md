@@ -30,6 +30,8 @@ All editor automation in this project goes through `mcp-unreal` `execute_script`
 | StateTree editing (add/remove states, transitions) | `MCP_StateTree.md` |
 | C++ editor utility pattern | `MCP_EditorUtility.md` |
 | New enemy ability end-to-end (tag → BP → AbilityInfo → ASC → StateTree) | `MCP_NewEnemyAbility.md` |
+| Widget Blueprint creation, widget tree shim, WidgetComponent setup | `MCP_UI.md` |
+| Doc style rules for `.md` files in this folder | `MCP_DocStyle.md` |
 
 ---
 
@@ -39,10 +41,6 @@ Multi-step or reusable operations go in `AI/Python/` as a `.py` file. Reference 
 
 ---
 
-## Doc style rules (for writing new `.md` files in this folder)
+## Doc style rules
 
-- Only document how things work, not what was tried or what failed.
-- No failure history, no pitfall tables, no "we tried X first" context.
-- Be succinct: one sentence per constraint, no elaboration.
-- Python call sites only in code snippets — C++ patterns belong in `.cpp`.
-- One-line method table pointing to the header — no signatures.
+When editing doc, ALWAYS read `MCP_DocStyle.md`.

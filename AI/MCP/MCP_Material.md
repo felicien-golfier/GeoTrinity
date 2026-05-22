@@ -6,11 +6,10 @@ All material node wiring goes through `execute_script` (Python) using `MaterialE
 
 ## Key Constraints
 
-- Use `AssetTools.create_asset` to get a material object, then call `create_material_expression` on it.
+- Create the material asset first via `AssetTools`, then add expression nodes to it.
 - Set `blend_mode` and `shading_model` **after** all nodes are wired, not before.
-- Blend mode enum: `unreal.BlendMode.BLEND_TRANSLUCENT`, `unreal.BlendMode.BLEND_MASKED`. (`EBlendMode` does not exist.)
 - `MaterialExpressionIf` scalar constant properties are not accessible via `set_editor_property` in Python. Use `MaterialExpressionStep` instead for hard thresholds.
-- Unused expression nodes that are not connected still compile fine but clutter the graph. Delete them with `mel.delete_material_expression(mat, node)`.
+- Unused expression nodes that are not connected still compile fine but clutter the graph.
 
 ---
 
@@ -18,21 +17,7 @@ All material node wiring goes through `execute_script` (Python) using `MaterialE
 
 `mat.get_editor_property("expressions")` is protected. `material_ops set_parameter` only works on material instances, not base materials.
 
-To change a base material parameter default value, use `find_object` with the auto-indexed inner path:
-
-```python
-mat = unreal.load_asset("/Game/Path/MyMaterial")
-for i in range(10):
-    obj = unreal.find_object(None, f"/Game/Path/MyMaterial.MyMaterial:MaterialExpressionVectorParameter_{i}")
-    if obj:
-        name = obj.get_editor_property("parameter_name")
-        if name == "MyColor":
-            obj.set_editor_property("default_value", unreal.LinearColor(1.0, 0.5, 0.0, 1.0))
-unreal.MaterialEditingLibrary.recompile_material(mat)
-unreal.EditorAssetLibrary.save_asset("/Game/Path/MyMaterial")
-```
-
-Same pattern works for `MaterialExpressionScalarParameter` — replace with `default_value` float.
+To change a base material parameter default value, use `find_object` with the auto-indexed inner path. See `AI/Python/material_edit.py` for the pattern.
 
 ---
 

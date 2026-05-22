@@ -26,7 +26,6 @@ public:
 	TObjectPtr<UGeoGameplayAbility> DeployAbility;
 
 protected:
-	/** Updates ChargeBar percent from DeployAbility->GetChargeRatio() each frame. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))

@@ -143,7 +143,7 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 	{
 		if (APlayableCharacter* Character = Cast<APlayableCharacter>(StoredPayload.Instigator))
 		{
-			Character->HideDeployChargeGauge();
+			SetChargeGaugeVisible(Character, false);
 		}
 	}
 
@@ -191,7 +191,7 @@ void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo con
 			ChargeStartTime = GetWorld()->GetTimeSeconds();
 			if (APlayableCharacter* Character = Cast<APlayableCharacter>(StoredPayload.Instigator))
 			{
-				Character->ShowDeployChargeGauge(this);
+				SetChargeGaugeVisible(Character, true);
 			}
 		}
 	}
@@ -363,6 +363,18 @@ FVector UGeoGameplayAbility::GetFireOrigin(AActor* Instigator, UGeoAbilitySystem
 										   int const Seed) const
 {
 	return FVector(GetFireOrigin2D(Instigator, SourceASC, Seed), ArbitraryCharacterZ);
+}
+
+void UGeoGameplayAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
+{
+	if (bVisible)
+	{
+		Character->ShowDeployChargeGauge(this);
+	}
+	else
+	{
+		Character->HideDeployChargeGauge();
+	}
 }
 
 bool UGeoGameplayAbility::IsPassive() const

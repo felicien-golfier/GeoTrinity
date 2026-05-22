@@ -5,6 +5,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/PlayableCharacter.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -12,6 +13,12 @@
 UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 {
 	FireMode = EFireMode::ChargeForFireDelay;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoChargeBeamAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
+{
+	Character->SetChargeBeamGaugeVisible(this, bVisible, SweetSpotMinRatio, SweetSpotMaxRatio);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -49,7 +56,7 @@ void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& Ability
 		FVector2D ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
 		ForwardVector *= GetDefault<UGameDataSettings>()->GeneralSpellDistance;
 
-		float const ChargeRatio = GetChargeRatio();
+		float const ChargeRatio = StoredPayload.Seed / 100.f;
 
 		FGameplayCueParameters CueParams;
 		CueParams.Location = FVector(AbilityTargetData.Origin + ForwardVector, ArbitraryCharacterZ);
@@ -58,7 +65,7 @@ void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& Ability
 		CueParams.NormalizedMagnitude =
 			ChargeRatio >= SweetSpotMinRatio && ChargeRatio <= SweetSpotMaxRatio || ChargeRatio >= .95f;
 		CueParams.Normal = FRotator(0, AbilityTargetData.Yaw, 0).Vector();
-
+		CueParams.RawMagnitude = ChargeRatio;
 		UAbilitySystemComponent* const ASC = GetAbilitySystemComponentFromActorInfo();
 		FScopedPredictionWindow ScopedPredictionWindow(ASC);
 		ASC->ExecuteGameplayCue(FireGameplayCueTag, CueParams);
@@ -67,12 +74,12 @@ void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& Ability
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoChargeBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
+	Super::Fire(AbilityTargetData);
 	if (IsLocallyControlled())
 	{
 		FireGameplayCue(AbilityTargetData);
+		EndAbility(false);
 	}
-
-	Super::Fire(AbilityTargetData);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -8,6 +8,7 @@
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "HUD/GeoChargeBeamGaugeWidget.h"
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
 #include "VectorTypes.h"
@@ -19,6 +20,13 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 	DeployChargeGaugeComponent->SetupAttachment(GetRootComponent());
 	DeployChargeGaugeComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	DeployChargeGaugeComponent->SetHiddenInGame(true);
+	DeployChargeGaugeComponent->SetUsingAbsoluteRotation(true);
+
+	ChargeBeamGaugeComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("ChargeBeamGaugeComponent"));
+	ChargeBeamGaugeComponent->SetupAttachment(GetRootComponent());
+	ChargeBeamGaugeComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	ChargeBeamGaugeComponent->SetHiddenInGame(true);
+	ChargeBeamGaugeComponent->SetUsingAbsoluteRotation(true);
 
 	DeployableManagerComponent =
 		CreateDefaultSubobject<UGeoDeployableManagerComponent>(TEXT("DeployableManagerComponent"));
@@ -46,6 +54,31 @@ void APlayableCharacter::ShowDeployChargeGauge(UGeoGameplayAbility* Ability) con
 void APlayableCharacter::HideDeployChargeGauge() const
 {
 	DeployChargeGaugeComponent->SetHiddenInGame(true);
+}
+
+void APlayableCharacter::SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability, bool bVisible, float SweetSpotMinRatio,
+												   float SweetSpotMaxRatio) const
+{
+	if (bVisible)
+	{
+		UGeoChargeBeamGaugeWidget* Widget =
+			Cast<UGeoChargeBeamGaugeWidget>(ChargeBeamGaugeComponent->GetUserWidgetObject());
+		ensureMsgf(Widget, TEXT("ChargeBeamGaugeComponent has no widget or wrong widget class on %s"), *GetName());
+		if (Widget)
+		{
+			Widget->ChargeBeamAbility = Ability;
+			Widget->SetSweetSpotRatios(SweetSpotMinRatio, SweetSpotMaxRatio);
+		}
+	}
+	else
+	{
+		if (UGeoChargeBeamGaugeWidget* Widget =
+				Cast<UGeoChargeBeamGaugeWidget>(ChargeBeamGaugeComponent->GetUserWidgetObject()))
+		{
+			Widget->ChargeBeamAbility = nullptr;
+		}
+	}
+	ChargeBeamGaugeComponent->SetHiddenInGame(!bVisible);
 }
 
 void APlayableCharacter::Tick(float DeltaSeconds)

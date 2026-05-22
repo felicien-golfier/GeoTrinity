@@ -17,6 +17,7 @@ struct FAbilityPayload;
 class UEffectDataAsset;
 class UGeoAbilitySystemComponent;
 class UPattern;
+class APlayableCharacter;
 
 UENUM(BlueprintType)
 enum class EFireMode : uint8
@@ -80,6 +81,9 @@ public:
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
+
+	/** Shows or hides the charge gauge on the owning PlayableCharacter. Override to use a different widget. */
+	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible);
 
 	/** Convenience overload that ends this ability instance without requiring handle/actorinfo parameters. */
 	void EndAbility(bool bReplicateEndAbility = true, bool bWasCancelled = false);

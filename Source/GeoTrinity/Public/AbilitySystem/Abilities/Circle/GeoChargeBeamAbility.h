@@ -23,6 +23,8 @@ class GEOTRINITY_API UGeoChargeBeamAbility : public UGeoGameplayAbility
 	UGeoChargeBeamAbility();
 
 protected:
+	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible) override;
+
 	/** Encodes the current charge ratio (0–1) into the Seed field (as an integer 0–100) of the target data. */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData() override;
 
@@ -40,7 +42,7 @@ protected:
 
 	// Sweet spot range (charge ratio 0–1). Releasing within this window applies SweetSpotBonusEffect.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
-	float SweetSpotMinRatio = 0.6f;
+	float SweetSpotMinRatio = 0.5f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float SweetSpotMaxRatio = 0.7f;
