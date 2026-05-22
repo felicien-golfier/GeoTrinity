@@ -77,8 +77,8 @@ void UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetB
 	float const SweetHeight = (SweetSpotMaxRatio - SweetSpotMinRatio) * BarHeight;
 
 	UCanvasPanelSlot* SweetSlot = Canvas->AddChildToCanvas(SweetSpotBar);
-	SweetSlot->SetAnchors(FAnchors(0.f, 0.f, 0.f, 0.f));
-	SweetSlot->SetOffsets(FMargin(0.f, SweetTop, BarWidth, SweetHeight));
+	SweetSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 0.f));
+	SweetSlot->SetOffsets(FMargin(0.f, SweetTop, 0.f, SweetHeight));
 	SweetSlot->SetAlignment(FVector2D(0.f, 0.f));
 	SweetSlot->SetAutoSize(false);
 

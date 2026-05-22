@@ -11,27 +11,11 @@ void UGeoChargeBeamGaugeWidget::SetSweetSpotRatios(float MinRatio, float MaxRati
 {
 	SweetSpotMinRatio = MinRatio;
 	SweetSpotMaxRatio = MaxRatio;
-	if (!UpdateSweetSpotLayout())
-	{
-		bPendingSweetSpotLayout = true;
-	}
+	SweetSpotRatioDirty = true;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoChargeBeamGaugeWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaTime)
+void UGeoChargeBeamGaugeWidget::UpdateVisualChargeRatio() const
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
-
-	if (bPendingSweetSpotLayout)
-	{
-		bPendingSweetSpotLayout = !UpdateSweetSpotLayout();
-	}
-
-	if (!ChargeBeamAbility)
-	{
-		return;
-	}
-
 	float const ChargeRatio = ChargeBeamAbility->GetChargeRatio();
 
 	if (ChargeBar)
@@ -42,8 +26,11 @@ void UGeoChargeBeamGaugeWidget::NativeTick(FGeometry const& MyGeometry, float In
 	if (SweetSpotBar)
 	{
 		float const SweetSpotRange = SweetSpotMaxRatio - SweetSpotMinRatio;
+
 		if (ChargeRatio < SweetSpotMinRatio || SweetSpotRange <= 0.f)
 		{
+			FProgressBarStyle Style = SweetSpotBar->GetWidgetStyle();
+			SweetSpotBar->SetWidgetStyle(Style);
 			SweetSpotBar->SetPercent(0.f);
 		}
 		else
@@ -53,7 +40,8 @@ void UGeoChargeBeamGaugeWidget::NativeTick(FGeometry const& MyGeometry, float In
 
 			bool const bPastSweetSpot = ChargeRatio > SweetSpotMaxRatio;
 			FLinearColor const FillColor =
-				bPastSweetSpot ? FLinearColor(1.0f, 0.3f, 0.0f, 1.0f) : FLinearColor(1.0f, 0.75f, 0.0f, 1.0f);
+				bPastSweetSpot ? FLinearColor(1.0f, 0.75f, 0.0f, .30f) : FLinearColor(1.0f, 0.75f, 0.0f, 1.0f);
+
 
 			FProgressBarStyle Style = SweetSpotBar->GetWidgetStyle();
 			Style.FillImage.TintColor = FSlateColor(FillColor);
@@ -61,30 +49,48 @@ void UGeoChargeBeamGaugeWidget::NativeTick(FGeometry const& MyGeometry, float In
 		}
 	}
 }
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoChargeBeamGaugeWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (SweetSpotRatioDirty)
+	{
+		UpdateSweetSpotLayout();
+	}
+
+	if (!ChargeBeamAbility)
+	{
+		return;
+	}
+
+	UpdateVisualChargeRatio();
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool UGeoChargeBeamGaugeWidget::UpdateSweetSpotLayout()
+void UGeoChargeBeamGaugeWidget::UpdateSweetSpotLayout()
 {
 	if (!SweetSpotBar)
 	{
-		return true;
+		return;
 	}
 
-	FVector2D const WidgetSize = GetCachedGeometry().GetLocalSize();
-	if (WidgetSize.IsZero())
+	FVector2D const BarSize = GetCachedGeometry().GetLocalSize();
+	if (BarSize.IsZero())
 	{
-		return false;
+		return;
 	}
 
 	UCanvasPanelSlot* CanvasPanelSlot = Cast<UCanvasPanelSlot>(SweetSpotBar->Slot);
 	if (!ensureMsgf(CanvasPanelSlot, TEXT("SweetSpotBar is not in a CanvasPanel")))
 	{
-		return true;
+		return;
 	}
 
-	float const SweetTop = (1.f - SweetSpotMaxRatio) * WidgetSize.Y;
-	float const SweetHeight = (SweetSpotMaxRatio - SweetSpotMinRatio) * WidgetSize.Y;
+	float const SweetTop = (1.f - SweetSpotMaxRatio) * BarSize.Y;
+	float const SweetHeight = (SweetSpotMaxRatio - SweetSpotMinRatio) * BarSize.Y;
 
-	CanvasPanelSlot->SetOffsets(FMargin(0.f, SweetTop, WidgetSize.X, SweetHeight));
-	return true;
+	CanvasPanelSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 0.f));
+	CanvasPanelSlot->SetOffsets(FMargin(0.f, SweetTop, 0.f, SweetHeight));
+	SweetSpotRatioDirty = false;
 }

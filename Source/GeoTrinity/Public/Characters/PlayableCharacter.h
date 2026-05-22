@@ -75,11 +75,9 @@ public:
 	 * Makes the deploy charge gauge widget visible and binds it to Ability's charge progress.
 	 *
 	 * @param Ability  The currently charging deploy ability that drives the gauge fill.
+	 * @param bVisible
 	 */
-	void ShowDeployChargeGauge(UGeoGameplayAbility* Ability) const;
-
-	/** Hides the deploy charge gauge widget. */
-	void HideDeployChargeGauge() const;
+	void SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Ability, bool bVisible);
 
 	/**
 	 * Shows or hides the charge-beam gauge widget.
@@ -90,7 +88,7 @@ public:
 	 * @param SweetSpotMaxRatio  Sweet-spot window end (0–1). Only used when bVisible is true.
 	 */
 	void SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability, bool bVisible, float SweetSpotMinRatio = 0.f,
-								   float SweetSpotMaxRatio = 0.f) const;
+								   float SweetSpotMaxRatio = 0.f);
 
 protected:
 	virtual void BeginPlay() override;
@@ -123,4 +121,6 @@ private:
 	EPlayerClass PickStartingClass() const;
 
 	float PreviousYaw = 0.f;
+	FTimerHandle ChargeDeployHideTimerHandle;
+	FTimerHandle ChargeBeamHideTimerHandle;
 };

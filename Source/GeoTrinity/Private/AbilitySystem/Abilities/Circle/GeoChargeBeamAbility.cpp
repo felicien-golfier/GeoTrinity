@@ -25,9 +25,10 @@ void UGeoChargeBeamAbility::SetChargeGaugeVisible(APlayableCharacter* Character,
 
 FGeoAbilityTargetData UGeoChargeBeamAbility::GetUpdatedTargetData()
 {
-	// Seed field is repurposed to carry the charge ratio as an integer percentage (0–100).
+	// Seed field is repurposed to carry the charge ratio as an integer permillage (0–1000).
 	// This piggybacks on the existing RPC without adding a new field, since Seed is unused by the beam otherwise.
-	StoredPayload.Seed = FMath::RoundToInt(GetChargeRatio() * 100.f);
+	float const ChargeRatio = GetChargeRatio();
+	StoredPayload.Seed = FMath::RoundToInt(ChargeRatio * 1000.f);
 	return Super::GetUpdatedTargetData();
 }
 
@@ -36,7 +37,7 @@ TArray<TInstancedStruct<FEffectData>> UGeoChargeBeamAbility::GetEffectDataArray(
 {
 	TArray<TInstancedStruct<FEffectData>> Effects = Super::GetEffectDataArray();
 
-	float const ChargeRatio = FMath::Clamp(static_cast<float>(StoredPayload.Seed) / 100.f, 0.f, 1.f);
+	float const ChargeRatio = FMath::Clamp(static_cast<float>(StoredPayload.Seed) / 1000.f, 0.f, 1.f);
 	bool const bSweetSpot = ChargeRatio >= SweetSpotMinRatio && ChargeRatio <= SweetSpotMaxRatio;
 	float const MultiplierValue =
 		bSweetSpot ? MaxDamageMultiplier : FMath::Lerp(MinDamageMultiplier, MaxDamageMultiplier, ChargeRatio);
@@ -56,7 +57,7 @@ void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& Ability
 		FVector2D ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
 		ForwardVector *= GetDefault<UGameDataSettings>()->GeneralSpellDistance;
 
-		float const ChargeRatio = StoredPayload.Seed / 100.f;
+		float const ChargeRatio = FMath::Clamp(static_cast<float>(StoredPayload.Seed) / 1000.f, 0.f, 1.f);
 
 		FGameplayCueParameters CueParams;
 		CueParams.Location = FVector(AbilityTargetData.Origin + ForwardVector, ArbitraryCharacterZ);

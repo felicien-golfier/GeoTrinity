@@ -122,6 +122,7 @@ public:
 	virtual int GetNewSeed() const;
 	/** Returns the instigator's facing yaw in degrees. Override to aim toward a specific target instead. */
 	virtual float GetFireYaw(AActor const* Instigator) const;
+	float ApplyChargingCurve(float RawRatio) const;
 
 protected:
 	/**

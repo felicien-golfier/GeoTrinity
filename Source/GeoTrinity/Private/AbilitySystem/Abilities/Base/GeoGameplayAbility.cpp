@@ -367,14 +367,7 @@ FVector UGeoGameplayAbility::GetFireOrigin(AActor* Instigator, UGeoAbilitySystem
 
 void UGeoGameplayAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
 {
-	if (bVisible)
-	{
-		Character->ShowDeployChargeGauge(this);
-	}
-	else
-	{
-		Character->HideDeployChargeGauge();
-	}
+	Character->SetDeployChargeGaugeVisibility(this, bVisible);
 }
 
 bool UGeoGameplayAbility::IsPassive() const
@@ -403,6 +396,8 @@ float UGeoGameplayAbility::GetFireYaw(AActor const* Instigator) const
 	return Instigator->GetActorRotation().Yaw;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
 float UGeoGameplayAbility::GetChargeRatio() const
 {
 	float const MaxChargeTime = GetFireDelay();
@@ -413,6 +408,13 @@ float UGeoGameplayAbility::GetChargeRatio() const
 
 	float RawRatio = FMath::Clamp((GetWorld()->GetTimeSeconds() - ChargeStartTime) / MaxChargeTime, 0.f, 1.f);
 
+	return ApplyChargingCurve(RawRatio);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+float UGeoGameplayAbility::ApplyChargingCurve(float RawRatio) const
+{
 	// Apply a designer-tunable easing curve so the gauge feels responsive at the start and slows near full charge.
 	UCurveFloat const* Curve = GetDefault<UGameDataSettings>()->GaugeChargingSpeedCurve.LoadSynchronous();
 	if (!ensureMsgf(Curve, TEXT("GeoChargeAbility: GaugeChargingSpeedCurve is not set in GameDataSettings.")))
@@ -422,4 +424,3 @@ float UGeoGameplayAbility::GetChargeRatio() const
 
 	return FMath::Clamp(Curve->GetFloatValue(RawRatio), 0.f, 1.f);
 }
-// ---------------------------------------------------------------------------------------------------------------------

@@ -217,12 +217,14 @@ Actor->Init();
 
 **Next: Devastating Wave Pattern**
 
-`UDevastatingWavePattern` extends `UTickablePattern`. `TickPattern(ServerTime, SpentTime)`:
+`UDevastatingWavePattern` extends `UTickablePattern`. `StartPattern()` — clears `HitActors` (no payload param; use `StoredPayload`). `TickPattern(ServerTime, SpentTime)`:
 1. `CurrentRadius = ExpansionSpeed * SpentTime`
-2. Server-only: `GeoASLib::GetInteractableActors(...)` for hostiles within `CurrentRadius` from `StoredPayload.Origin`
+2. Server-only: `GeoASLib::GetInteractableActors(...)` for hostiles within `CurrentRadius` from `FVector2D(StoredPayload.Origin)`
 3. Skip actors already in `TSet<TWeakObjectPtr<AActor>> HitActors`; apply `WaveEffectDataArray` to new hits
 4. For each `AGeoPillar` found: call `Pillar->Recall(0.f)` on server
 5. `CurrentRadius >= MaxRadius` → `EndPattern()`
+
+**API note:** `StartPattern()` has no payload parameter (changed — payload lives in `StoredPayload`). Do not pass payload to `StartPattern`.
 
 Config fields: `ExpansionSpeed` (cm/s, default 800), `MaxRadius` (cm, default 3000), `WaveEffectDataArray`.
 
@@ -236,7 +238,7 @@ Config field: `TeleportLocation` (default `FVector::ZeroVector`). Set `PatternTo
 
 **StateTree Tasks**
 
-`STTask_BossRandomMovement`: scheduled tick (`MakeCustomTickRate(MoveInterval)`), each tick picks random 2D point within `ArenaRadius` → `SimpleMoveToLocation`. Never completes. Instance data: `MoveInterval=2f`, `ArenaRadius=2000f`, `FStateTreeScheduledTickHandle Handle`.
+`STTask_BossRandomMovement`: scheduled tick (`MakeCustomTickRate(MoveInterval)`), each tick picks random 2D point within `ArenaRadius` then uses `UAIBlueprintHelperLibrary::SimpleMoveToLocation`. Use `FSTTask_MoveTo` as reference for how to drive AI movement (added 2026-05-20 — overrides `PrepareMoveToTask` for nav recalc support). Never completes. Instance data: `MoveInterval=2f`, `ArenaRadius=2000f`, `FStateTreeScheduledTickHandle Handle`.
 
 `STTask_BossSelectAbility`: completes immediately (like `STTask_SelectNextFiringPoint`). Weighted random pick from `TArray<FGameplayTag> AbilityPool` + `TArray<float> Weights` → writes to output `FGameplayTag SelectedAbility`.
 
@@ -327,3 +329,9 @@ Ability.Boss.TargetedSalvo / .Spiral / .FatalZones / .DevastatingWave
 - Devastating Wave redesigned as UTickablePattern (not a deployable actor) — fully deterministic, no actor needed
 - Lethal effect: use GE_InstantKill BP asset (Health Override to 0) + FGameplayEffectData — no new C++ subtype
 - Remaining C++: DevastatingWavePattern, GeoDevastatingWaveAbility, STTask_BossRandomMovement, STTask_BossSelectAbility
+
+### 2026-05-22
+- Audit of commits since 2026-05-19: ChargeBeam gauge widget, FatalZonePattern fixes, FSTTask_MoveTo + UGeoAITask_MoveTo added, Pattern API updated
+- Pattern API change: `StartPattern()` no longer takes `FAbilityPayload const& Payload` — use `StoredPayload` instead. Update DevastatingWavePattern plan accordingly.
+- `FSTTask_MoveTo` now exists (`AI/StateTree/STTask_MoveTo.h`) — use as reference for boss movement task
+- Phase 6 C++ backlog unchanged: DevastatingWavePattern, GeoDevastatingWaveAbility, STTask_BossRandomMovement, STTask_BossSelectAbility

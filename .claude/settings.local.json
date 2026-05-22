@@ -30,7 +30,8 @@
       "mcp__mcp-unreal__get_asset_info",
       "Skill(update-config)",
       "Skill(schedule)",
-      "Read(//c/Users/Felou/.claude/debug/**)"
+      "Read(//c/Users/Felou/.claude/debug/**)",
+      "mcp__mcp-unreal__blueprint_query"
     ]
   },
   "enableAllProjectMcpServers": true,

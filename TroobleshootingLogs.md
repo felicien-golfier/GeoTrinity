@@ -1,5 +1,7 @@
 **Enter here all your issues and fixes you got when setup this project, upgrade Unreal engine etc..**
 
+# How to send a cmd through network in editor : 
+ServerExec slomo 0.5
 ---
 
 # Project Setup & Engine

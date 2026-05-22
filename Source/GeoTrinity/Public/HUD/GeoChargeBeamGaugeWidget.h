@@ -28,6 +28,7 @@ public:
 	TObjectPtr<UGeoGameplayAbility> ChargeBeamAbility;
 
 	void SetSweetSpotRatios(float MinRatio, float MaxRatio);
+	void UpdateVisualChargeRatio() const;
 
 protected:
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
@@ -41,9 +42,9 @@ protected:
 	TObjectPtr<UProgressBar> SweetSpotBar;
 
 private:
-	bool UpdateSweetSpotLayout();
+	void UpdateSweetSpotLayout();
 
 	float SweetSpotMinRatio = 0.6f;
 	float SweetSpotMaxRatio = 0.7f;
-	bool bPendingSweetSpotLayout = false;
+	bool SweetSpotRatioDirty = false;
 };
