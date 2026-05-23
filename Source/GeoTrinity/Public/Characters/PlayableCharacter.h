@@ -74,8 +74,8 @@ public:
 	/**
 	 * Makes the deploy charge gauge widget visible and binds it to Ability's charge progress.
 	 *
-	 * @param Ability  The currently charging deploy ability that drives the gauge fill.
-	 * @param bVisible
+	 * @param Ability   The currently charging deploy ability that drives the gauge fill.
+	 * @param bVisible  True to show and bind immediately; false to hide after a short delay.
 	 */
 	void SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Ability, bool bVisible);
 

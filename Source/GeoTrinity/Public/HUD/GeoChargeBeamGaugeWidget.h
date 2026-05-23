@@ -27,10 +27,13 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "ChargeBeam")
 	TObjectPtr<UGeoGameplayAbility> ChargeBeamAbility;
 
+	/** Sets the sweet-spot window boundaries and marks the SweetSpotBar position dirty for update on next tick. */
 	void SetSweetSpotRatios(float MinRatio, float MaxRatio);
+	/** Syncs ChargeBar and SweetSpotBar fill/color to the current ability charge ratio. Safe to call outside of tick. */
 	void UpdateVisualChargeRatio() const;
 
 protected:
+	/** Applies any pending sweet-spot layout changes, then updates the charge bar fill each frame. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
 	/** Main charge fill bar. */

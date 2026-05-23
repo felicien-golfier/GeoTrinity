@@ -13,7 +13,7 @@ AGeoCharacter  (base — IAbilitySystemInterface, IGenericTeamAgentInterface)
 | File | Role |
 |---|---|
 | `GeoCharacter.h` | Abstract base — ASC, input, movement, health bar, game feel |
-| `PlayableCharacter.h` | Human player — input forwarding, `ChangeClass()`, deploy gauge |
+| `PlayableCharacter.h` | Human player — input forwarding, `ChangeClass()`, deploy gauge, charge-beam gauge |
 | `EnemyCharacter.h` | AI enemy — own ASC, `FiringPoints`, `GetAndAdvanceNextFiringPointLocation()` |
 | `PlayerClassTypes.h` | `EPlayerClass` enum: `Triangle=1`, `Circle=2`, `Square=3`, `All=4` |
 
