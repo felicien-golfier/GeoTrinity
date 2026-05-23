@@ -33,3 +33,8 @@ Each method validates, compiles (`FCompilerManager::CompileSynchronously`), and 
 - `RemoveState` — deletes a state by name (recursive search)
 - `ClearTransitions` / `AddTransition` — manage `GotoState` transitions with a specified trigger
 - `ListStates` — logs the full tree with indent and task tags to `LogTemp`
+
+## `GeoWidgetBuilderUtil.h`
+Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` for building and inspecting UMG Widget Blueprints via Python/Blueprint automation.
+- `BuildChargeBeamGaugeWidget` — creates the WBP_ChargeBeamGauge widget tree (ChargeBar + SweetSpotBar overlay), saves the asset
+- `InspectWidgetBlueprint` — logs the full widget tree (type, name, slot layout, widget properties) to `LogTemp`

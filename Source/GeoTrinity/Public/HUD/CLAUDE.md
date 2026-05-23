@@ -17,6 +17,7 @@ AGeoHUD  (owns OverlayWidget)
 | `GeoUserWidget.h` | Base widget; `InitFromHUD(AGeoHUD*)`, `BindCallbacksFromHUD` BP event |
 | `GenericCombattantWidget.h` | Reusable health bar for enemies/boss/deployables — **not for player overlay** |
 | `GeoDeployChargeGaugeWidget.h` | World-space deploy charge gauge; ticks from ability's `GetChargeRatio()` |
+| `GeoChargeBeamGaugeWidget.h` | World-space charge-beam gauge with sweet-spot overlay bar; bound to `ChargeBeamGaugeComponent` on `PlayableCharacter`; ticks from ability's `GetChargeRatio()` |
 | `HudFunctionLibrary.h` | `ShouldDrawHUD()`, `GetHealthRatio()` |
 | `Component/GeoCombattantWidgetComp.h` | WidgetComponent on actors; auto-inits widget with actor's ASC on BeginPlay |
 

@@ -29,7 +29,7 @@ public:
 	static void BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetBlueprint, float SweetSpotMinRatio = 0.6f,
 	                                       float SweetSpotMaxRatio = 0.7f);
 
-	// Logs the full widget tree of a WidgetBlueprint — type, name, slot layout, and widget-specific properties.
+	/** Logs the full widget tree of a WidgetBlueprint — type, name, slot layout, and widget-specific properties. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void InspectWidgetBlueprint(UWidgetBlueprint* WidgetBlueprint);
 

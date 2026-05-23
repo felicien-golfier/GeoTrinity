@@ -33,11 +33,12 @@ Runtime state: `BeamRatio` (grows as zones are absorbed), `RemainingDuration`.
 Hold to charge, release to fire. Uses `ChargeForFireDelay` FireMode.
 **Hit detection is server-side** — `OnFireTargetDataReceived` iterates hostile actors in front of the character and applies effects directly; no projectile is spawned.
 
-- `SweetSpotMinRatio` / `SweetSpotMaxRatio` (0..1) — charge window that grants `MaxDamageMultiplier` on release
+- `SweetSpotMinRatio` (default 0.5) / `SweetSpotMaxRatio` (default 0.7) — charge window that grants `MaxDamageMultiplier` on release
 - `MinDamageMultiplier` / `MaxDamageMultiplier` — damage multiplier lerped by charge ratio; sweet-spot always gets max
-- Charge ratio encoded in `StoredPayload.Seed` as integer 0..100 (set at release time in `GetUpdatedTargetData`)
+- Charge ratio encoded in `StoredPayload.Seed` as integer permillage 0..1000 (set at release time in `GetUpdatedTargetData`)
 - `GetChargeRatio()` on base ability returns 0..1 with easing curve applied
-- `FireGameplayCue` — fires beam VFX/SFX on the locally-controlled client only (not from `OnFireTargetDataReceived`)
+- `FireGameplayCue` — fires beam VFX/SFX (endpoint, charge ratio, sweet-spot flag) on the locally-controlled client only
+- Overrides `SetChargeGaugeVisible` to bind `ChargeBeamGaugeComponent` instead of the deploy gauge
 
 ---
 

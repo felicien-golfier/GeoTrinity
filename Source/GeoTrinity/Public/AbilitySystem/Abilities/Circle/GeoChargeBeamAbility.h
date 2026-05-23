@@ -23,9 +23,10 @@ class GEOTRINITY_API UGeoChargeBeamAbility : public UGeoGameplayAbility
 	UGeoChargeBeamAbility();
 
 protected:
+	/** Overrides the base to show the charge-beam gauge (ChargeBeamGaugeComponent) instead of the deploy gauge. */
 	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible) override;
 
-	/** Encodes the current charge ratio (0–1) into the Seed field (as an integer 0–100) of the target data. */
+	/** Encodes the current charge ratio (0–1) into the Seed field as an integer permillage (0–1000) of the target data. */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData() override;
 
 	/**
@@ -33,10 +34,16 @@ protected:
 	 * The multiplier is lerped from MinDamageMultiplier to MaxDamageMultiplier based on the charge ratio.
 	 */
 	virtual TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const override;
+	/** Fires FireGameplayCueTag on the locally-controlled client, encoding the beam endpoint, charge ratio, and sweet-spot flag into cue params. */
 	void FireGameplayCue(FGeoAbilityTargetData const& AbilityTargetData);
 
+	/** Calls Super (sends data to server), fires the beam cue locally, then ends the ability on the locally-controlled client. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
+	/**
+	 * Server-side handler: updates StoredPayload from the client's replicated target data, then iterates all
+	 * hostile actors within GeneralSpellDistance along the character's forward direction and applies effects directly.
+	 */
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 
