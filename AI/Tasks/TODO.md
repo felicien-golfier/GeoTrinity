@@ -69,6 +69,8 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-05-24] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
 
+<!-- [2026-05-25] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
+
 - [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
@@ -111,3 +113,5 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-05-23] Updated: Abilities/Circle/CLAUDE.md — GeoChargeBeamAbility section: corrected Seed encoding from "integer 0..100" to "integer permillage 0..1000", updated SweetSpotMinRatio default 0.6 → 0.5, added note on FireGameplayCue cue params and SetChargeGaugeVisible override. Abilities/Base/CLAUDE.md — FireMode section: added ApplyChargingCurve note and SetChargeGaugeVisible virtual hook documentation. HUD/CLAUDE.md — added GeoChargeBeamGaugeWidget.h row. Characters/CLAUDE.md — updated PlayableCharacter.h row to include charge-beam gauge. Tool/CLAUDE.md — added GeoWidgetBuilderUtil.h section. -->
 
 <!-- [2026-05-24] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
+
+<!-- [2026-05-25] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
