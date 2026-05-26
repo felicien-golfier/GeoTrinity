@@ -19,7 +19,7 @@ See `AI/Python/` for call patterns covering:
 - Moving an asset
 - Searching assets by keyword via `AssetRegistry`
 
-**`EditDefaultsOnly` private properties** need `meta=(AllowPrivateAccess="true")` to be accessible from Python.
+**`EditDefaultsOnly` private properties** need `meta=(AllowPrivateAccess="true")` to be accessible from Python. When the property is in project C++ code, add the meta specifier directly — do not use workarounds.
 
 ## Naming Conventions
 

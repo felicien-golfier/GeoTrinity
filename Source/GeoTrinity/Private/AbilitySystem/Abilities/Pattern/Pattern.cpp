@@ -4,7 +4,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-void UPattern::OnCreate(FGameplayTag AbilityTag)
+void UPattern::OnCreate(FGameplayTag AbilityTag, AActor&)
 {
 	checkf(
 		EffectDataArray.IsEmpty(),

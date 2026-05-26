@@ -11,10 +11,12 @@
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/GeoInteractableActor.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/GeoCharacter.h"
 #include "EngineUtils.h"
+#include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "InstancedStruct.h"
@@ -613,6 +615,46 @@ TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArr
 	return {};
 }
 
+
+AGeoDeployableBase*
+UGeoAbilitySystemLibrary::StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> const DeployableActorClass,
+											   AActor* Owner, APawn* Instigator, FTransform const& SpawnTransform)
+{
+	if (!IsValid(DeployableActorClass))
+	{
+		ensureMsgf(DeployableActorClass, TEXT("SpawnDeployableActor: No DeployableActorClass set!"));
+		return nullptr;
+	}
+
+	if (!IsValid(Owner))
+	{
+		ensureMsgf(Owner, TEXT("SpawnDeployableActor : No valid Owner "));
+		return nullptr;
+	}
+
+	if (!IsValid(Instigator))
+	{
+		UE_LOG(LogTemp, Error, TEXT("SpawnDeployableActor: No valid pawn to spawn deployable!"));
+		return nullptr;
+	}
+
+	AGeoDeployableBase* Deployable = Owner->GetWorld()->SpawnActorDeferred<AGeoDeployableBase>(
+		DeployableActorClass, SpawnTransform, Owner, Instigator, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+	if (!IsValid(Deployable))
+	{
+		UE_LOG(LogTemp, Error, TEXT("DeployableSpawnerProjectile: Failed to spawn deployable!"));
+		return nullptr;
+	}
+
+	return Deployable;
+}
+
+void UGeoAbilitySystemLibrary::FinishSpawnDeployable(AGeoDeployableBase* const Deployable,
+													 FTransform const& SpawnTransform)
+{
+	Deployable->FinishSpawning(SpawnTransform);
+}
 
 AGeoProjectile*
 UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> const ProjectileClass,

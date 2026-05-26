@@ -7,6 +7,11 @@
 #include "VisualLogger/VisualLogger.h"
 
 
+FColor UGeoGameplayLibrary::GetRandomColorFromPalette()
+{
+	return ColorPalette[FMath::RandRange(0, std::size(ColorPalette) - 1)];
+}
+
 FColor UGeoGameplayLibrary::GetColorForObject(UObject const* Object)
 {
 	if (!IsValid(Object))
@@ -14,11 +19,7 @@ FColor UGeoGameplayLibrary::GetColorForObject(UObject const* Object)
 		return FColor::White;
 	}
 
-	static FColor const Palette[] = {FColor::Black,	  FColor::Red,	  FColor::Green,	 FColor::Blue,
-									 FColor::Yellow,  FColor::Cyan,	  FColor::Magenta,	 FColor::Orange,
-									 FColor::Emerald, FColor::Purple, FColor::Turquoise, FColor::Silver};
-
-	return Palette[Object->GetUniqueID() % std::size(Palette)];
+	return ColorPalette[Object->GetUniqueID() % std::size(ColorPalette)];
 }
 
 void UGeoGameplayLibrary::TriggerCameraShake(UObject const* WorldContextObject,

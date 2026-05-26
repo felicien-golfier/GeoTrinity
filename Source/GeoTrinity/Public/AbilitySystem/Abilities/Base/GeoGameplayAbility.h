@@ -26,6 +26,14 @@ enum class EFireMode : uint8
 	ChargeForFireDelay,
 };
 
+UENUM(BlueprintType)
+enum class ECommitBehaviour : uint8
+{
+	AtActivate,
+	CostAtActivateCooldownAtEnd,
+	DoNotAutoCommit
+};
+
 /**
  * Base gameplay ability for GeoTrinity. Provides shared fire-trigger scheduling, animation montage handling,
  * client-to-server target data dispatch, and effect data aggregation used by all derived ability types.
@@ -175,7 +183,7 @@ public:
 
 protected:
 	FAbilityPayload StoredPayload;
-	bool bCommitAtActivate = true;
+	ECommitBehaviour CommitBehaviour = ECommitBehaviour::AtActivate;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))

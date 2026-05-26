@@ -313,8 +313,15 @@ UPattern* UGeoAbilitySystemComponent::CreatePatternInstance(UClass const* Patter
 		return nullptr;
 	}
 
+	if (!IsValid(GetOwnerActor()))
+	{
+		ensureMsgf(IsValid(GetOwnerActor()), TEXT("CreatePatternInstance: Invalid OwnerActor"));
+		return nullptr;
+	}
+
 	UPattern* PatternInstance = NewObject<UPattern>(this, PatternClass);
-	PatternInstance->OnCreate(AbilityTag);
+
+	PatternInstance->OnCreate(AbilityTag, *GetOwnerActor());
 	Patterns.Add(PatternInstance);
 
 	return PatternInstance;

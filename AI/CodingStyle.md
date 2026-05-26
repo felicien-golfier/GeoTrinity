@@ -7,15 +7,18 @@
 - Prefer forward declarations in headers over includes (enums: `enum class EMyEnum : uint8;`)
 - Remove trivial wrapper functions that just delegate — call directly instead
 - **YAGNI — code only what's needed.** No unused parameters, variables, or speculative features
+- **Functions do exactly what their name says — nothing more.** A getter returns a value; it never mutates state. A query never triggers side effects. If a function needs to do more, split it.
 - **Delete unused code**: remove declaration + implementation when removing a call site. No dead code safety nets.
 - **No duplicated code**: extract to base class, component, or free function when logic appears in more than one place
+- **Before adding or removing any field/function**: Grep for all read and write sites across the codebase. Never assume a field is unused or needs a new setter based on the header alone — it may already be populated elsewhere (e.g. a base class method).
 - **Before adding a function**: check if an existing function already covers the same operation. If two functions differ only by a constant (e.g. a trigger type, a flag), merge them into one with a parameter. Never add a wrapper that just forwards with a hardcoded argument.
 - Be consistent: same code style, same naming convention throughout
 - `Super` call placement: choose what makes semantic sense (Init = top, Destroy = bottom); when no ordering dependency exists, always top
 - No abbreviations in variable names; full class names except `ASC` for AbilitySystemComponent
 - **Never use `GetComponentByClass` to get an ASC** — always use `GeoASLib::GetGeoAscFromActor` instead
 - No comments that restate what the code says — code should be self-documenting
-- Never assume method names — they change between versions.
+- Never assume method names or constants (including `FColor::X`) — they change between versions.
+**Check Epic source before using any UE named constant or method**: Always read the actual engine header to confirm it exists. If the constant doesn't exist, define it with explicit RGB/RGBA values instead.
 **Check Epic source before implementing UE features**: Always read actual engine/plugin headers before implementing StateTree tasks, GAS, AI, etc.
 - Plugin source: `Engine\Plugins\Runtime\<PluginName>\Source\<Module>\`
 

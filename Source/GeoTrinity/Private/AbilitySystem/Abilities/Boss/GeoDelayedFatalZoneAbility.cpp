@@ -2,6 +2,8 @@
 
 #include "AbilitySystem/Abilities/Boss/GeoDelayedFatalZoneAbility.h"
 
+#include "Actor/Deployable/Pillar/GeoPillar.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "Math/RandomStream.h"

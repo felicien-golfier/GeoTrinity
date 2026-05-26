@@ -25,5 +25,15 @@ cdo.add_transition(st, "MyState",  "NextState", unreal.StateTreeTransitionTrigge
 cdo.add_transition(st, "MyState",  "Root",      unreal.StateTreeTransitionTrigger.ON_STATE_FAILED)
 cdo.add_transition(st, "MyState",  "SomeState", unreal.StateTreeTransitionTrigger.ON_STATE_COMPLETED)
 
+# Float enter condition (e.g. HP < 50%)
+cdo.add_float_enter_condition(st, "MyState", 0.5, unreal.GenericAICheck.LESS, False)
+# Bind condition property to a Property Function (call immediately after add_float_enter_condition)
+# ConditionIndex=0, ConditionProperty="Left", FuncStruct="FSTGetHealthRatioPropertyFunction",
+# FuncOutput="Output", FuncInput="Input", ContextClass="GeoEnemyAIController"
+cdo.bind_condition_property_to_property_function(
+    st, "MyState", 0, "Left",
+    "FSTGetHealthRatioPropertyFunction", "Output", "Input",
+    "GeoEnemyAIController")
+
 # Remove a state
 cdo.remove_state(st, "MyState")

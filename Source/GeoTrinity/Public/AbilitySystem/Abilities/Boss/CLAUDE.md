@@ -10,3 +10,13 @@ Extends `UPatternAbility`. Picks a random player's location server-side as the z
 
 - Overrides `GetFireOrigin2D(Instigator, SourceASC, Seed)` — selects a random player position using seeded RNG; the chosen 2D position becomes the zone center for all clients
 - Pattern: `UFatalZonePattern` (see `Pattern/CLAUDE.md`)
+
+---
+
+## `GeoDevastatingWaveAbility.h` — expanding radial wave
+
+Extends `UPatternAbility`. Teleports the boss to `TeleportLocation` by overriding `GetFireOrigin2D` (so the payload `Origin` is the destination), then launches `UDevastatingWavePattern`.
+
+- Overrides `GetFireOrigin2D` — returns `TeleportLocation`; teleport happens in `UDevastatingWavePattern::StartPattern`
+- Effect data configured on the ability via `EffectDataAssets`/`EffectDataInstances`; forwarded automatically to the pattern by `PatternAbility`
+- Pattern: `UDevastatingWavePattern` (see `Pattern/CLAUDE.md`)

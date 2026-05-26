@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -126,6 +127,9 @@ public:
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(UEffectDataAsset const* EffectDataAsset);
 	/** Returns the effect data array registered for the ability identified by AbilityTag in UAbilityInfo. */
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(FGameplayTag AbilityTag);
+	static AGeoDeployableBase* StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> DeployableActorClass, AActor* Owner,
+													APawn* Instigator, FTransform const& SpawnTransform);
+	static void FinishSpawnDeployable(AGeoDeployableBase* Deployable, FTransform const& SpawnTransform);
 
 	/** PROJECTILES **/
 

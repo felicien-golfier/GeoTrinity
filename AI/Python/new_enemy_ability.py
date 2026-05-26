@@ -25,9 +25,9 @@ unreal.EditorAssetLibrary.save_loaded_asset(bp)
 
 # --- 3. Register in DA_AbilityInfo (triggers PopulateAbilityTags via PostEditChangeProperty) ---
 da = unreal.load_asset("/Game/AbilitySystem/Data/DA_AbilityInfo")
-cls_path = bp.generated_class().get_path_name()
+cls_path = f"/Script/Engine.BlueprintGeneratedClass'{bp.generated_class().get_path_name()}'"
 new_info = unreal.GameplayAbilityInfo()
-new_info.import_text(f'(AbilityClass="{cls_path}")')
+new_info.import_text(f'(AbilityClass="{cls_path}",AbilityDisplayName="My Ability Display Name",Description="Short description of what the ability does")')
 enemy_infos = da.get_editor_property("EnemyAbilityInfos")
 enemy_infos.append(new_info)
 da.set_editor_property("EnemyAbilityInfos", enemy_infos)

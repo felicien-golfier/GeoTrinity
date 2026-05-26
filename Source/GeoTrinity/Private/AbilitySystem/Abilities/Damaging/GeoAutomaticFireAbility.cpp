@@ -15,7 +15,7 @@ UGeoAutomaticFireAbility::UGeoAutomaticFireAbility()
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateYes;
-	bCommitAtActivate = false;
+	CommitBehaviour = ECommitBehaviour::DoNotAutoCommit;
 }
 
 void UGeoAutomaticFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -88,7 +88,7 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 
 	if (!CheckCost(Handle, ActorInfo))
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
@@ -104,7 +104,7 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 	{
 		if (ActorInfo->IsLocallyControlledPlayer())
 		{
-			CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+			CommitAbility(Handle, ActorInfo, ActivationInfo);
 
 			if (FireCameraShakeClass)
 			{
@@ -163,7 +163,7 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 
 	if (!CheckCost(Handle, ActorInfo))
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
@@ -180,7 +180,7 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
 
 	ExecuteShot();
-	CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+	CommitAbility(Handle, ActorInfo, ActivationInfo);
 
 	// Seed is incremented server-side using the authoritative shot counter rather than reading it from
 	// the client's target data, so a cheating client cannot fabricate a seed that bypasses status-proc checks.

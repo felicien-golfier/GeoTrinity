@@ -56,3 +56,14 @@ Non-ticking pattern that marks a zone under a random player, shows a countdown V
 
 Runs on all clients via `PatternStartMulticast`. Server time in the payload ensures countdown sync.
 Used by `UGeoDelayedFatalZoneAbility`.
+
+---
+
+## `DevastatingWavePattern.h` — expanding radial wave
+
+Non-projectile ticking pattern. On `StartPattern`, teleports the owner to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; any hostile actor whose distance falls within `CurrentRadius` is hit once. Pillars are recalled; other hostiles receive the ability's effect data (via `EffectDataArray` set by `PatternAbility`). Ends when `CurrentRadius >= MaxRadius`.
+
+- `ExpansionSpeed` — cm/s expansion rate (default 800)
+- `MaxRadius` — stops the wave at this distance (default 3000)
+- Effect data: sourced from ability's `GetEffectDataArray()` — configure on `GeoDevastatingWaveAbility`, not here
+- Used by `UGeoDevastatingWaveAbility`

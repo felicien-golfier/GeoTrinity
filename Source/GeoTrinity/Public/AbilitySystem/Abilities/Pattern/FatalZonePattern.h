@@ -24,7 +24,7 @@ class GEOTRINITY_API UFatalZonePattern : public UPattern
 	GENERATED_BODY()
 
 protected:
-	virtual void OnCreate(FGameplayTag AbilityTag) override;
+	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 
 private:

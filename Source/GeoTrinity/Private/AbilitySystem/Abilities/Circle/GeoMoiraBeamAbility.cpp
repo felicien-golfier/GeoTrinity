@@ -15,6 +15,12 @@
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+UGeoMoiraBeamAbility::UGeoMoiraBeamAbility()
+{
+	CommitBehaviour = ECommitBehaviour::CostAtActivateCooldownAtEnd;
+}
+
+
 // ---------------------------------------------------------------------------------------------------------------------
 
 void UGeoMoiraBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
@@ -188,15 +194,4 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 #ifdef WITH_EDITOR
 	DrawBeamDebugLines(DeltaTime);
 #endif
-
-	UGeoDeployableManagerComponent* DeployableManager =
-		Character->FindComponentByClass<UGeoDeployableManagerComponent>();
-	if (!ensureMsgf(DeployableManager, TEXT("UGeoMoiraBeamAbility: Character has no GeoDeployableManagerComponent")))
-	{
-		return;
-	}
-
-	for (AGeoDeployableBase* Deployable : TArray(DeployableManager->GetDeployables()))
-	{
-	}
 }

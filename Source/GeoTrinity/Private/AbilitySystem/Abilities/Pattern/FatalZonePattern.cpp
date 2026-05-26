@@ -6,16 +6,21 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/Deployable/Pillar/GeoPillar.h"
-#include "System/GeoActorPoolingSubsystem.h"
-#include "System/GeoPoolableInterface.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-void UFatalZonePattern::OnCreate(FGameplayTag AbilityTag)
+void UFatalZonePattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
-	Super::OnCreate(AbilityTag);
+	Super::OnCreate(AbilityTag, Owner);
 	// TODO: why not having deployables in the pooling system. Need to set it up properly
 	//  UGeoActorPoolingSubsystem::Get(GetWorld())->PreSpawn(PillarClass, 10);
+	UGeoDeployableManagerComponent* DeployablesManagerComp =
+		Owner.GetComponentByClass<UGeoDeployableManagerComponent>();
+	if (DeployablesManagerComp)
+	{
+		DeployablesManagerComp->SetDeployableInfinitCount(PillarClass);
+	}
 }
 
 FGameplayCueParameters UFatalZonePattern::FillCueParam(FAbilityPayload const& Payload)
@@ -55,10 +60,14 @@ void UFatalZonePattern::StartPattern()
 			return;
 		}
 
-		AGeoPillar* Pillar = Cast<AGeoPillar>(UGeoActorPoolingSubsystem::Get(World)->RequestActor(
-			PillarClass, FTransform(ZoneLocation), StoredPayload.Owner, Cast<APawn>(StoredPayload.Instigator), false,
-			false));
+		// AGeoPillar* Pillar = Cast<AGeoPillar>(UGeoActorPoolingSubsystem::Get(World)->RequestActor(PillarClass,
+		//  FTransform(ZoneLocation), StoredPayload.Owner, Cast<APawn>(StoredPayload.Instigator), false,false))
 
+		FActorSpawnParameters PillarSpawnParams;
+		PillarSpawnParams.Owner = StoredPayload.Owner;
+		PillarSpawnParams.Instigator = Cast<APawn>(StoredPayload.Instigator);
+
+		AGeoPillar* Pillar = World->SpawnActor<AGeoPillar>(PillarClass, ZoneLocation, FRotator::ZeroRotator, PillarSpawnParams);
 		if (IsValid(Pillar))
 		{
 			FDeployableData PillarData;
@@ -70,11 +79,12 @@ void UFatalZonePattern::StartPattern()
 			PillarData.Params = PillarParams;
 
 			Pillar->InitInteractable(&PillarData);
-			UGeoActorPoolingSubsystem::Get(World)->ChangeActorState(Pillar, true);
-			if (Pillar->GetClass()->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
-			{
-				CastChecked<IGeoPoolableInterface>(Pillar)->Init();
-			}
+
+			// UGeoActorPoolingSubsystem::Get(World)->ChangeActorState(Pillar, true);
+			// if (Pillar->GetClass()->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
+			// {
+			// 	CastChecked<IGeoPoolableInterface>(Pillar)->Init();
+			// }
 		}
 	}
 

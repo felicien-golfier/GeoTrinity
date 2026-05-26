@@ -5,13 +5,17 @@
 #include "Tool/GeoStateTreeBuilderUtil.h"
 
 #include "AI/StateTree/STTask_FireProjectileAbility.h"
+#include "AI/StateTree/STPropertyFunction_GetHealthRatio.h"
 #include "FileHelpers.h"
+#include "PropertyBindingPath.h"
 #include "StateTree.h"
 #include "StateTreeCompilerManager.h"
 #include "StateTreeEditingSubsystem.h"
 #include "StateTreeEditorData.h"
+#include "StateTreeEditorPropertyBindings.h"
 #include "StateTreeState.h"
 #include "StateTreeTypes.h"
+#include "Conditions/StateTreeCommonConditions.h"
 
 static UStateTreeState* FindStateRecursive(const TArray<TObjectPtr<UStateTreeState>>& States, FName StateName)
 {
@@ -222,6 +226,81 @@ void UGeoStateTreeBuilderUtil::AddTransition(UStateTree* StateTree, FName Source
 	SourceState->Modify();
 	SourceState->AddTransition(Trigger, EStateTreeTransitionType::GotoState, TargetState);
 	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddTransition"));
+}
+
+void UGeoStateTreeBuilderUtil::AddFloatEnterCondition(UStateTree* StateTree, FName StateName, float Threshold,
+                                                       EGenericAICheck Operator, bool bInvert)
+{
+	if (!ensureMsgf(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddFloatEnterCondition — StateTree is null")))
+		return;
+
+	UStateTreeEditorData* EditorData = Cast<UStateTreeEditorData>(StateTree->EditorData);
+	if (!ensureMsgf(EditorData, TEXT("UGeoStateTreeBuilderUtil::AddFloatEnterCondition — EditorData is null on '%s'"), *StateTree->GetName()))
+		return;
+
+	UStateTreeState* State = FindStateRecursive(EditorData->SubTrees, StateName);
+	if (!ensureMsgf(State, TEXT("UGeoStateTreeBuilderUtil::AddFloatEnterCondition — state '%s' not found"), *StateName.ToString()))
+		return;
+
+	EditorData->Modify();
+	State->Modify();
+
+	TStateTreeEditorNode<FStateTreeCompareFloatCondition>& CondNode = State->AddEnterCondition<FStateTreeCompareFloatCondition>(Operator);
+	CondNode.GetInstanceData().Right = Threshold;
+	CondNode.GetNode().bInvert = bInvert;
+
+	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddFloatEnterCondition"));
+}
+
+void UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction(UStateTree* StateTree, FName StateName,
+                                                                         int32 ConditionIndex,
+                                                                         FName ConditionPropertyName,
+                                                                         FName PropertyFunctionStructName,
+                                                                         FName FunctionOutputPropertyName,
+                                                                         FName FunctionInputPropertyName,
+                                                                         FName ContextClassName)
+{
+	if (!ensureMsgf(StateTree, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — StateTree is null")))
+		return;
+
+	UStateTreeEditorData* EditorData = Cast<UStateTreeEditorData>(StateTree->EditorData);
+	if (!ensureMsgf(EditorData, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — EditorData is null on '%s'"), *StateTree->GetName()))
+		return;
+
+	UStateTreeState* State = FindStateRecursive(EditorData->SubTrees, StateName);
+	if (!ensureMsgf(State, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — state '%s' not found"), *StateName.ToString()))
+		return;
+
+	if (!ensureMsgf(State->EnterConditions.IsValidIndex(ConditionIndex),
+	                TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — condition index %d out of range on state '%s'"), ConditionIndex, *StateName.ToString()))
+		return;
+
+	const UScriptStruct* FuncStruct = FindFirstObject<UScriptStruct>(*PropertyFunctionStructName.ToString());
+	if (!ensureMsgf(FuncStruct, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — struct '%s' not found"), *PropertyFunctionStructName.ToString()))
+		return;
+
+	const UClass* ContextClass = FindFirstObject<UClass>(*ContextClassName.ToString());
+	if (!ensureMsgf(ContextClass, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — class '%s' not found"), *ContextClassName.ToString()))
+		return;
+
+	const FStateTreeEditorNode& CondNode = State->EnterConditions[ConditionIndex];
+	FPropertyBindingPath TargetPath(CondNode.ID, ConditionPropertyName);
+
+	FPropertyBindingPath SourcePath = EditorData->GetPropertyEditorBindings()->AddFunctionBinding(
+		FuncStruct,
+		{ FPropertyBindingPathSegment(FunctionOutputPropertyName) },
+		TargetPath);
+
+	FStateTreeBindableStructDesc ContextDesc = EditorData->FindContextData(ContextClass, TEXT(""));
+	if (ensureMsgf(ContextDesc.ID.IsValid(), TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — class '%s' not found in StateTree context"), *ContextClassName.ToString()))
+	{
+		FPropertyBindingPath InputSourcePath(ContextDesc.ID);
+		FPropertyBindingPath InputTargetPath(SourcePath.GetStructID(), FunctionInputPropertyName);
+		EditorData->AddPropertyBinding(InputSourcePath, InputTargetPath);
+	}
+
+	EditorData->Modify();
+	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction"));
 }
 
 void UGeoStateTreeBuilderUtil::ListStates(UStateTree* StateTree)

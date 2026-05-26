@@ -30,8 +30,8 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 										  FGameplayAbilityActivationInfo const ActivationInfo,
 										  FGameplayEventData const* TriggerEventData)
 {
-	if ((!bCommitAtActivate && !CheckCost(Handle, ActorInfo))
-		|| (bCommitAtActivate && !CommitAbility(Handle, ActorInfo, ActivationInfo)))
+	if (CommitBehaviour != ECommitBehaviour::AtActivate && !CheckCost(Handle, ActorInfo)
+		|| (CommitBehaviour == ECommitBehaviour::AtActivate && !CommitAbility(Handle, ActorInfo, ActivationInfo)))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
@@ -136,6 +136,11 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 									 FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 									 bool bWasCancelled)
 {
+	if (CommitBehaviour == ECommitBehaviour::CostAtActivateCooldownAtEnd && !bWasCancelled)
+	{
+		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, true);
+	}
+
 	GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 	FireTriggerTimerHandle.Invalidate();
 

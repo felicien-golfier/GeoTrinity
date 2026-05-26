@@ -2,6 +2,7 @@
 
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GameFramework/PlayerState.h"
 #include "GenericTeamAgentInterface.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -50,43 +51,8 @@ void ADeployableSpawnerProjectile::SpawnDeployableActor()
 		return;
 	}
 
-	AActor* PayloadOwner = Payload.Owner;
-	ensureMsgf(IsValid(PayloadOwner), TEXT("DeployableSpawnerProjectile: Payload.Owner must exist on server"));
-	if (!IsValid(PayloadOwner))
-	{
-		return;
-	}
-
-	if (!IsValid(DeployableActorClass))
-	{
-		ensureMsgf(DeployableActorClass, TEXT("DeployableSpawnerProjectile: No DeployableActorClass set!"));
-		return;
-	}
-
-	APawn* Pawn = Cast<APawn>(PayloadOwner);
-	if (!IsValid(Pawn))
-	{
-		if (APlayerState const* PlayerState = Cast<APlayerState>(PayloadOwner))
-		{
-			Pawn = PlayerState->GetPawn();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("DeployableSpawnerProjectile: No valid pawn to spawn deployable!"));
-			return;
-		}
-	}
-
-	FTransform const SpawnTransform = GetActorTransform();
-	AGeoDeployableBase* Deployable = GetWorld()->SpawnActorDeferred<AGeoDeployableBase>(
-		DeployableActorClass, SpawnTransform, PayloadOwner, Pawn, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
-	if (!IsValid(Deployable))
-	{
-		UE_LOG(LogTemp, Error, TEXT("DeployableSpawnerProjectile: Failed to spawn deployable!"));
-		return;
-	}
-
-	InitDeployable(Deployable);
-	Deployable->FinishSpawning(SpawnTransform);
+	auto Deployable = GeoASLib::StartSpawnDeployable(DeployableActorClass, Payload.Owner,
+													 Cast<APawn>(Payload.Instigator), GetActorTransform());
+	InitDeployable(Deployable); // TODO: Move code to ASLib
+	GeoASLib::FinishSpawnDeployable(Deployable, GetActorTransform());
 }

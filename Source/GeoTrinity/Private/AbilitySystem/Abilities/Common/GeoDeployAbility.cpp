@@ -36,7 +36,7 @@ bool UGeoDeployAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Hand
 		return false;
 	}
 
-	return DeployableManager->CanDeploy();
+	return DeployableManager->CanDeploy(DeployableActorClass);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

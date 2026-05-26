@@ -27,6 +27,6 @@ public:
 	TSubclassOf<UPattern> GetPatternClass() const { return PatternToLaunch; }
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern")
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UPattern> PatternToLaunch;
 };

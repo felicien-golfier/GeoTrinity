@@ -265,6 +265,7 @@ void AGeoDeployableBase::Explode(float Value)
 		if (ExplodeGameplayCueTag.IsValid())
 		{
 			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams());
+			// TODO: Pass the Value in the Cue ?
 		}
 	}
 }

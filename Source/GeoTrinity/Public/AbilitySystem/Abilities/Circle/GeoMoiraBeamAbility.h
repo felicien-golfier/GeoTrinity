@@ -26,6 +26,8 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 {
 	GENERATED_BODY()
 
+	UGeoMoiraBeamAbility();
+
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,

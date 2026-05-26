@@ -8,9 +8,9 @@
 #include "System/GeoPoolableInterface.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-void USpiralPattern::OnCreate(FGameplayTag AbilityTag)
+void USpiralPattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 {
-	Super::OnCreate(AbilityTag);
+	Super::OnCreate(AbilityTag, Owner);
 
 	float const MaxProjectileNum = RoundNumber * NumberProjectileByRound;
 	ensureMsgf(MaxProjectileNum > 0, TEXT("No projectile set in the spiral ! please fill your pattern values in BP"));

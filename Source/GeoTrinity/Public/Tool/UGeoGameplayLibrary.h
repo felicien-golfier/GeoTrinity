@@ -17,6 +17,18 @@ class UCameraShakeBase;
 struct FAbilityPayload;
 struct FEffectData;
 
+static FColor const ColorPalette[] = {
+	FColor::Black,		  FColor::Red,	   FColor::Green,  FColor::Blue,	   FColor::Yellow,
+	FColor::Cyan,		  FColor::Magenta, FColor::Orange, FColor::Emerald,	   FColor::Purple,
+	FColor::Turquoise,	  FColor::Silver,  FColor::White,  FColor(75, 0, 130), // Indigo
+	FColor(255, 20, 147), // Pink
+	FColor(0,   128, 128), // Teal
+	FColor(220, 20,  60),  // Crimson
+	FColor(191, 255, 0),   // Lime
+	FColor(139, 69,  19),  // Brown
+	FColor(0,   0,   128), // Navy
+};
+
 /** General-purpose Blueprint function library for GeoTrinity. Provides server detection, camera shake, and
  *  network-time utilities used across abilities, projectiles, and UI. */
 UCLASS()
@@ -25,6 +37,7 @@ class UGeoGameplayLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
+	static FColor GetRandomColorFromPalette();
 	/** Returns a deterministic debug color for WorldContextObject based on its object hash. */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static FColor GetColorForObject(UObject const* WorldContextObject);
@@ -33,7 +46,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsServer(UObject const* WorldContextObject);
 
-	/** Triggers a camera shake on the local player controller. Safe to call from any machine — no-op on dedicated server. */
+	/** Triggers a camera shake on the local player controller. Safe to call from any machine — no-op on dedicated
+	 * server. */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static void TriggerCameraShake(UObject const* WorldContextObject, TSubclassOf<UCameraShakeBase> ShakeClass,
 								   float Scale = 1.f);
