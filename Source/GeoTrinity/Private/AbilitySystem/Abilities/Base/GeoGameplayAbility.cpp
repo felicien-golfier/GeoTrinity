@@ -39,11 +39,12 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 
 	bool const bIsPassive = IsPassive();
 	bool const bHasTargetData = TriggerEventData && TriggerEventData->TargetData.Num() > 0;
-	ensureMsgf(bIsPassive || bHasTargetData,
+	bool const bIsServerInitiated = GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::ServerInitiated;
+	ensureMsgf(bIsServerInitiated || bIsPassive || bHasTargetData,
 			   TEXT("No TargetData in TriggerEventData! This ability is not set as passive, it should exist"));
 	FGeoAbilityTargetData const* TargetData =
 		bHasTargetData ? static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)) : nullptr;
-	ensureMsgf(bIsPassive || TargetData, TEXT("Target Data 0 is not a FGeoAbilityTargetData"));
+	ensureMsgf(bIsServerInitiated || bIsPassive || TargetData, TEXT("Target Data 0 is not a FGeoAbilityTargetData"));
 
 	if (!bIsPassive && bHasTargetData && TargetData)
 	{

@@ -12,7 +12,8 @@ void UGeoProjectileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	Super::Fire(AbilityTargetData);
 
-	if (!GetCurrentActorInfo()->IsLocallyControlledPlayer())
+	if (!GetCurrentActorInfo()->IsLocallyControlledPlayer()
+		|| GetNetExecutionPolicy() != EGameplayAbilityNetExecutionPolicy::ServerInitiated)
 	{
 		// Server : don't spawn or end here — OnFireTargetDataReceived handles it when target data arrives.
 		return;

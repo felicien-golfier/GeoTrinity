@@ -37,7 +37,7 @@ Make UFUNCTIONs as generic as possible — accept struct type, state name, paren
 Enter conditions gate whether a state can be entered on each tick — they are evaluated before the state activates.
 
 - `FStateTreeCompareFloatCondition` is the standard struct for numeric comparisons; use `AddFloatEnterCondition` to append one via Python.
-- After calling `AddFloatEnterCondition`, unbound properties will cause a compile warning — call `BindConditionPropertyToPropertyFunction` immediately after to wire them.
+- Call `BindConditionPropertyToPropertyFunction` immediately after `AddFloatEnterCondition` to wire unbound properties.
 - `BindConditionPropertyToPropertyFunction` takes the condition property name, the Property Function struct name, the function's output and input property names, and the context class name — all as `FName`; nothing is hardcoded.
 
 ## StateTree Property Functions

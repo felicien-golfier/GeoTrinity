@@ -5,11 +5,12 @@ Steps required every time a new enemy `GA_` Blueprint ability is created.
 ## Key Constraints
 
 - Tags in `Config/Tags/GeoGameplayTags.ini` require an **editor restart** to resolve — do this first.
-- `AbilityTag` on `FGameplayAbilityInfo` is `Transient`. Re-population is triggered by calling `set_editor_property("EnemyAbilityInfos", ...)` which fires `PostEditChangeProperty → PopulateAbilityTags`.
+- `AbilityTag` on `FGameplayAbilityInfo` must be set in the `import_text` call: `AbilityTag=(TagName="Ability.Spell.X")`.
 - `AbilityClass` on `FGameplayAbilityInfo` cannot be set via `set_editor_property` — use `import_text` instead.
 - `import_text` requires the full `BlueprintGeneratedClass` path prefix, not the raw `get_path_name()` result — see `AI/Python/new_enemy_ability.py`.
 - Always set `AbilityDisplayName` and `Description` in the same `import_text` call.
 - The ability tag must be in `BP_StarBoss` ASC `StartupAbilityTags` or it is never granted at `BeginPlay`.
+- After modifying any subobject property (e.g. ASC `StartupAbilityTags`), save with `EditorAssetLibrary.save_loaded_asset(bp_boss)`.
 
 ## Steps
 

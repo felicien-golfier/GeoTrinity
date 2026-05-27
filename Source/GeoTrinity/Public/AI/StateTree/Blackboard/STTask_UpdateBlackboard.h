@@ -95,7 +95,7 @@ struct GEOTRINITY_API FSTTask_UpdateBlackboardInstanceData
  * Applies operations to selected AI blackboard fields. Set Op to anything other than None to activate a field.
  * Supports Set, Add, and Multiply. Value is a float to allow multiply ratios; truncated to int32 on apply.
  */
-USTRUCT(DisplayName = "Set Blackboard", Category = "GeoTrinity|AI")
+USTRUCT(DisplayName = "Update Blackboard", Category = "GeoTrinity|AI")
 struct GEOTRINITY_API FSTTask_UpdateBlackboard : public FStateTreeTaskCommonBase
 {
 	GENERATED_BODY()

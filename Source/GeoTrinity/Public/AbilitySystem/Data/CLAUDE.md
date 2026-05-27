@@ -37,7 +37,9 @@ Data assets and structs that configure abilities and effects.
 - `SharedAbilities` — given to all players
 - `EnemyAbilityInfos` — non-player abilities (enemies, passives, system); no InputAction, no class filter
 
-`FPlayersGameplayAbilityInfo` per entry: `AbilityClass`, `AbilityTag` (auto-populated from CDO), `InputAction`, `InputTag`, `bGiveAtStartup`, `AbilityIcon`.
+`FPlayersGameplayAbilityInfo` per entry: `AbilityClass`, `AbilityTag`, `InputAction`, `InputTag`, `bGiveAtStartup`, `AbilityIcon`.
+
+`populate_ability_tags()` (`BlueprintCallable`, `CallInEditor`) — re-reads all CDO `AssetTags` and fills `AbilityTag` fields on all entries. From Python, set `AbilityTag` directly in `import_text` — see `MCP_NewEnemyAbility.md`.
 
 `GetAbilitiesForClass(EPlayerClass)` — returns class abilities + shared.
 

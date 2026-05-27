@@ -14,7 +14,7 @@ See `AI/Python/` for call patterns covering:
 - Setting CDO properties via `get_default_object`
 - Setting a `FGameplayTag` via `import_text`
 - Setting a `TSubclassOf` property
-- Accessing and mutating subobject components via `SubobjectDataSubsystem`
+- Accessing and mutating subobject components via `SubobjectDataSubsystem` — save with `EditorAssetLibrary.save_loaded_asset(asset)`
 - Copying a `TInstancedStruct` from an existing asset
 - Moving an asset
 - Searching assets by keyword via `AssetRegistry`

@@ -23,15 +23,15 @@ tag_container.import_text(f'(GameplayTags=((TagName="{ABILITY_TAG}")))')
 cdo.set_editor_property("AbilityTags", tag_container)
 unreal.EditorAssetLibrary.save_loaded_asset(bp)
 
-# --- 3. Register in DA_AbilityInfo (triggers PopulateAbilityTags via PostEditChangeProperty) ---
+# --- 3. Register in DA_AbilityInfo ---
 da = unreal.load_asset("/Game/AbilitySystem/Data/DA_AbilityInfo")
 cls_path = f"/Script/Engine.BlueprintGeneratedClass'{bp.generated_class().get_path_name()}'"
 new_info = unreal.GameplayAbilityInfo()
-new_info.import_text(f'(AbilityClass="{cls_path}",AbilityDisplayName="My Ability Display Name",Description="Short description of what the ability does")')
+new_info.import_text(f'(AbilityClass="{cls_path}",AbilityTag=(TagName="{ABILITY_TAG}"),AbilityDisplayName="My Ability Display Name",Description="Short description of what the ability does")')
 enemy_infos = da.get_editor_property("EnemyAbilityInfos")
 enemy_infos.append(new_info)
 da.set_editor_property("EnemyAbilityInfos", enemy_infos)
-unreal.EditorAssetLibrary.save_loaded_asset(da)
+unreal.EditorLoadingAndSavingUtils.save_packages([da.get_outermost()], False)
 
 # --- 4. Add to BP_StarBoss ASC StartupAbilityTags (index 7 — verify if BP structure changes) ---
 bp_boss = unreal.load_asset("/Game/Characters/Enemies/BP_StarBoss")
@@ -44,6 +44,6 @@ new_tag.import_text(f'(TagName="{ABILITY_TAG}")')
 tags = asc.get_editor_property("StartupAbilityTags")
 tags.append(new_tag)
 asc.set_editor_property("StartupAbilityTags", tags)
-unreal.EditorAssetLibrary.save_loaded_asset(bp_boss)
+unreal.EditorLoadingAndSavingUtils.save_packages([bp_boss.get_outermost()], False)
 
 unreal.log(f"Done — {ABILITY_NAME} created and registered.")

@@ -23,7 +23,7 @@ struct FGameplayAbilityInfo
 	TSubclassOf<UGameplayAbility> AbilityClass;
 
 	/** Populated automatically from the ability CDO's AssetTags on load — do not set manually */
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta = (Categories = "Ability.Spell"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (Categories = "Ability.Spell"))
 	FGameplayTag AbilityTag{};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
@@ -40,7 +40,7 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 	GENERATED_BODY()
 
 	/** Populated automatically from the ability CDO's AssetTags on load — do not set manually */
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta = (Categories = "Ability.Type"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (Categories = "Ability.Type"))
 	FGameplayTag TypeOfAbilityTag{};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (Categories = "InputTag"))
@@ -96,10 +96,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FGameplayAbilityInfo> EnemyAbilityInfos;
 
-	/** Calls PopulateAbilityTags() to fill transient AbilityTag fields from CDO asset tags. */
 	virtual void PostLoad() override;
 #if WITH_EDITOR
-	/** Re-populates ability tags when the asset is edited in the editor. */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
@@ -120,6 +118,7 @@ public:
 	TArray<FGameplayAbilityInfo> FindAbilityInfoForListOfTag(TArray<FGameplayTag> const& AbilityTags,
 															 bool bLogIfNotFound = false) const;
 
-private:
+	/** Re-reads every ability CDO's AssetTags and fills AbilityTag fields. Call from Python after modifying ability arrays. */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	void PopulateAbilityTags();
 };
