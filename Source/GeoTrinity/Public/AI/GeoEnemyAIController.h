@@ -8,6 +8,7 @@
 #include "GeoEnemyAIController.generated.h"
 
 
+class UGeoAIBlackboardComponent;
 class UStateTree;
 class UStateTreeAIComponent;
 
@@ -21,9 +22,11 @@ class GEOTRINITY_API AGeoEnemyAIController : public AAIController
 	GENERATED_BODY()
 
 public:
-
-	/** Creates the UStateTreeAIComponent subobject. */
+	/** Creates the UStateTreeAIComponent and UGeoAIBlackboardComponent subobjects. */
 	AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer = FObjectInitializer::Get());
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	TObjectPtr<UGeoAIBlackboardComponent> GeoBlackBoard;
 
 	/** Starts the StateTree via StateTreeAIComponent after taking possession of InPawn. */
 	virtual void OnPossess(APawn* InPawn) override;

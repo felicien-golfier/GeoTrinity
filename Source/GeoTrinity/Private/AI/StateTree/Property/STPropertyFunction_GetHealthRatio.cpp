@@ -1,6 +1,6 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AI/StateTree/STPropertyFunction_GetHealthRatio.h"
+#include "AI/StateTree/Property/STPropertyFunction_GetHealthRatio.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"

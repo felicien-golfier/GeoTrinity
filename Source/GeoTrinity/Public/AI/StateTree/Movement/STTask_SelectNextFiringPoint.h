@@ -3,11 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "StateTreeExecutionTypes.h"
 #include "StateTreeTaskBase.h"
 
 #include "STTask_SelectNextFiringPoint.generated.h"
 
-/** Per-instance data for FSTTask_SelectNextFiringPoint. TargetLocation is the output binding. */
+class UGeoAIBlackboardComponent;
+
+/** Per-instance data for FSTTask_SelectNextFiringPoint. */
 USTRUCT()
 struct GEOTRINITY_API FSTTask_SelectNextFiringPointInstanceData
 {
@@ -16,6 +19,7 @@ struct GEOTRINITY_API FSTTask_SelectNextFiringPointInstanceData
 	/** Output: world location of the selected firing point, bound to a StateTree output parameter. */
 	UPROPERTY(EditAnywhere, Category = "Output")
 	FVector TargetLocation = FVector::ZeroVector;
+
 };
 
 /**
@@ -31,6 +35,9 @@ struct GEOTRINITY_API FSTTask_SelectNextFiringPoint : public FStateTreeTaskCommo
 	FSTTask_SelectNextFiringPoint() = default;
 
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
-	/** Advances AEnemyCharacter's round-robin firing point index, writes the world location into TargetLocation, and returns Unset (succeeds immediately). */
+	virtual bool Link(FStateTreeLinker& Linker) override;
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+
+private:
+	TStateTreeExternalDataHandle<UGeoAIBlackboardComponent> BlackboardHandle;
 };

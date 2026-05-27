@@ -1,9 +1,9 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AI/StateTree/STTask_MoveTo.h"
+#include "AI/StateTree/Movement/STTask_MoveTo.h"
 
 #include "AIController.h"
-#include "AI/StateTree/GeoAITask_MoveTo.h"
+#include "AI/StateTree/Movement/GeoAITask_MoveTo.h"
 #include "StateTreeExecutionContext.h"
 #include "Tasks/AITask.h"
 

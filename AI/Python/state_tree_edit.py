@@ -35,5 +35,17 @@ cdo.bind_condition_property_to_property_function(
     "FSTGetHealthRatioPropertyFunction", "Output", "Input",
     "GeoEnemyAIController")
 
+# Add STTask_SendEventAfterNCycles to an existing state
+# cdo.add_send_event_after_n_cycles_task(st, "StateName", CyclesRequired, "Event.Tag.Name")
+
+# Clear all enter conditions from a state
+# cdo.clear_enter_conditions(st, "StateName")
+
+# Set the Required Event To Enter on a state
+# cdo.set_required_event_to_enter(st, "StateName", "Event.Tag.Name")
+
+# Log all enter conditions on a state
+# cdo.list_enter_conditions(st, "StateName")
+
 # Remove a state
 cdo.remove_state(st, "MyState")

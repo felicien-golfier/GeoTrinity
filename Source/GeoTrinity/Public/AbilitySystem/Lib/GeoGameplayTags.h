@@ -63,6 +63,8 @@ struct FGeoGameplayTags
 	// Ability spells needed in code
 	FGameplayTag Ability_Spell_ShieldBurst;
 
+	// AI
+	FGameplayTag AI_FiringPoint;
 
 private:
 	static FGeoGameplayTags GameplayTags;

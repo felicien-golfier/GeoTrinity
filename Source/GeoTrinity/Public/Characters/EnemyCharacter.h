@@ -22,20 +22,8 @@ class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
 public:
 	AEnemyCharacter(FObjectInitializer const& ObjectInitializer);
 
-	// Firing points the enemy will move to (round-robin) to cast abilities
-	UPROPERTY(Transient)
-	TArray<AActor*> FiringPoints;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UStateTree> StateTree;
-
-	/**
-	 * Returns the world location of the next firing point and advances the internal round-robin index.
-	 *
-	 * @param OutLocation  Set to the next firing point's world location if one exists.
-	 * @return             False if FiringPoints is empty.
-	 */
-	bool GetAndAdvanceNextFiringPointLocation(FVector& OutLocation);
 
 protected:
 	virtual void BeginPlay() override;
@@ -45,9 +33,6 @@ protected:
 	UFUNCTION(BlueprintNativeEvent)
 	void OnHealthChanged(float NewValue);
 	virtual void OnHealthChanged_Implementation(float NewValue);
-
-	// Index used for round-robin selection of firing points
-	int CurrentFiringPointIndex = 0;
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "Enemy")

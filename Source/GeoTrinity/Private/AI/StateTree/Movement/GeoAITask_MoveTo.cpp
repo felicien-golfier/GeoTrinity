@@ -1,6 +1,6 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AI/StateTree/GeoAITask_MoveTo.h"
+#include "AI/StateTree/Movement/GeoAITask_MoveTo.h"
 
 #include "NavigationData.h"
 

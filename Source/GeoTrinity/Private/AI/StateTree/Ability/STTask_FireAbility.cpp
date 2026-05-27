@@ -1,6 +1,6 @@
-// STTask_FireProjectileAbility.cpp
+﻿// STTask_FireProjectileAbility.cpp
 
-#include "AI/StateTree/STTask_FireProjectileAbility.h"
+#include "AI/StateTree/Ability/STTask_FireAbility.h"
 
 #include "Abilities/GameplayAbility.h"
 #include "AbilitySystemComponent.h"
@@ -8,13 +8,13 @@
 #include "StateTreeAsyncExecutionContext.h"
 #include "StateTreeExecutionContext.h"
 
-FSTTask_FireProjectileAbility::FSTTask_FireProjectileAbility()
+FSTTask_FireAbility::FSTTask_FireAbility()
 {
 	bShouldCallTick = false;
 }
 
-EStateTreeRunStatus FSTTask_FireProjectileAbility::EnterState(FStateTreeExecutionContext& Context,
-															  FStateTreeTransitionResult const& Transition) const
+EStateTreeRunStatus FSTTask_FireAbility::EnterState(FStateTreeExecutionContext& Context,
+													FStateTreeTransitionResult const& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 
@@ -45,8 +45,8 @@ EStateTreeRunStatus FSTTask_FireProjectileAbility::EnterState(FStateTreeExecutio
 	return EStateTreeRunStatus::Running;
 }
 
-void FSTTask_FireProjectileAbility::ExitState(FStateTreeExecutionContext& Context,
-											  FStateTreeTransitionResult const& Transition) const
+void FSTTask_FireAbility::ExitState(FStateTreeExecutionContext& Context,
+									FStateTreeTransitionResult const& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 
@@ -60,7 +60,7 @@ void FSTTask_FireProjectileAbility::ExitState(FStateTreeExecutionContext& Contex
 	}
 }
 
-UAbilitySystemComponent* FSTTask_FireProjectileAbility::GetASC(FStateTreeExecutionContext const& Context) const
+UAbilitySystemComponent* FSTTask_FireAbility::GetASC(FStateTreeExecutionContext const& Context) const
 {
 	AActor const* Actor = Cast<AActor>(Context.GetOwner());
 	if (!Actor)

@@ -34,8 +34,6 @@ AEnemyCharacter::AEnemyCharacter(FObjectInitializer const& ObjectInitializer) :
 void AEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), TEXT("Path"), FiringPoints);
 	InitGAS();
 }
 
@@ -83,33 +81,4 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 			Destroy();
 		}
 	}
-}
-
-bool AEnemyCharacter::GetAndAdvanceNextFiringPointLocation(FVector& OutLocation)
-{
-	int32 const Num = FiringPoints.Num();
-	if (Num <= 0)
-	{
-		return false;
-	}
-
-	// Wrap index and fetch
-	if (CurrentFiringPointIndex >= Num)
-	{
-		CurrentFiringPointIndex = 0;
-	}
-	// Find a valid actor starting from current index, loop at most Num times
-	int32 Checked = 0;
-	while (Checked < Num)
-	{
-		int32 const Index = (CurrentFiringPointIndex + Checked) % Num;
-		if (IsValid(FiringPoints[Index]))
-		{
-			OutLocation = FiringPoints[Index]->GetActorLocation();
-			CurrentFiringPointIndex = (Index + 1) % Num;
-			return true;
-		}
-		++Checked;
-	}
-	return false;
 }

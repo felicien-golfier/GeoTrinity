@@ -7,8 +7,7 @@ Extends `AGeoCharacter`. Creates its own ASC directly on the character (not on P
 
 ## Firing points
 - `FiringPoints` (`TArray<AActor*>`) — world actors tagged `"Path"`, collected on `BeginPlay`
-- `GetAndAdvanceNextFiringPointLocation(OutLocation)` — round-robin; returns false if array is empty
-- Used by `FSTTask_SelectNextFiringPoint` to set the StateTree `TargetLocation` output
+- Round-robin selection and index tracking live in `FSTTask_SelectNextFiringPoint`'s instance data
 
 ## AI
 - `StateTree` (`UStateTree*`) — the StateTree asset assigned in BP; handed to `UStateTreeAIComponent` on `BeginPlay`

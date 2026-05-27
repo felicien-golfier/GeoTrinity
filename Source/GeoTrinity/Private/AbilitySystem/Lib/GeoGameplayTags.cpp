@@ -78,4 +78,7 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 
 	// ABILITY SPELLS NEEDED IN CODE //
 	AddAbilitySpellTag(GameplayTags.Ability_Spell_ShieldBurst, "ShieldBurst", "Ability spell for shield burst");
+
+	// AI
+	CreateAndAssignGameplayTag(GameplayTags.AI_FiringPoint, "FiringPoint", "Where the AI can fire from.");
 }
