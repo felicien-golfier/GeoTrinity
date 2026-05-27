@@ -7,8 +7,8 @@ All gameplay ability classes. **Base class for everything: `UGeoGameplayAbility`
 |---|---|
 | `Base/` | `GeoGameplayAbility`, `PatternAbility`, `AbilityPayload` — see `Base/CLAUDE.md` |
 | `Damaging/` | `GeoProjectileAbility`, `GeoAutomaticFireAbility`, `GeoAutomaticProjectileAbility` |
-| `Boss/` | `GeoDelayedFatalZoneAbility` — boss abilities |
-| `Pattern/` | `Pattern`, `SpiralPattern`, `FatalZonePattern` — deterministic enemy bullet patterns |
+| `Boss/` | `GeoDelayedFatalZoneAbility`, `GeoDevastatingWaveAbility` — boss abilities |
+| `Pattern/` | `Pattern`, `SpiralPattern`, `FatalZonePattern`, `DevastatingWavePattern` — deterministic enemy bullet patterns |
 | `Circle/` | `GeoHealingAuraAbility`, `GeoMoiraBeamAbility`, `GeoChargeBeamAbility`, `GeoHealReturnPassiveAbility` |
 | `Square/` | `GeoMineAbility`, `GeoShieldBurstPassiveAbility`, `GeoDetonateAllMinesAbility` |
 | `Triangle/` | `GeoReloadAbility`, `GeoRecallTurretAbility` |

@@ -27,7 +27,10 @@ class GEOTRINITY_API UPattern : public UObject
 	GENERATED_BODY()
 
 public:
-	/** Called immediately after the pattern is created. AbilityTag is stored for montage section lookup. */
+	/**
+	 * Called immediately after the pattern is created. AbilityTag is stored for montage section lookup.
+	 * Owner is the enemy character that activated the ability; subclasses may access its components here.
+	 */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner);
 	/** Builds the FGameplayCueParameters for this pattern's start cue. Override to inject custom fields (location,
 	 * magnitude, etc.). */

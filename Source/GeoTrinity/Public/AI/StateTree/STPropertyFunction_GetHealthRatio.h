@@ -20,6 +20,10 @@ struct FSTGetHealthRatioPropertyFunctionInstanceData
 	float Output = 1.f;
 };
 
+/**
+ * StateTree property function that reads the owning pawn's current health ratio from UGeoAttributeSetBase.
+ * Inputs an AIController; outputs a float in [0, 1]. Outputs 0 if the controller or ASC is absent.
+ */
 USTRUCT(DisplayName = "Get Health Ratio")
 struct GEOTRINITY_API FSTGetHealthRatioPropertyFunction : public FStateTreePropertyFunctionCommonBase
 {
@@ -28,9 +32,11 @@ struct GEOTRINITY_API FSTGetHealthRatioPropertyFunction : public FStateTreePrope
 	using FInstanceDataType = FSTGetHealthRatioPropertyFunctionInstanceData;
 
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+	/** Reads the controlled pawn's health ratio and writes it to InstanceData.Output. */
 	virtual void Execute(FStateTreeExecutionContext& Context) const override;
 
 #if WITH_EDITOR
+	/** Returns a human-readable one-line summary of this function node for the StateTree editor. */
 	virtual FText GetDescription(FGuid const& ID, FStateTreeDataView InstanceDataView,
 								 IStateTreeBindingLookup const& BindingLookup,
 								 EStateTreeNodeFormatting Formatting) const override;

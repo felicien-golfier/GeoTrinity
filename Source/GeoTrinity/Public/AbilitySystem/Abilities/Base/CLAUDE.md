@@ -55,7 +55,10 @@ Always: `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` di
 ### Key Invariants
 - `OnFireTargetDataReceived` is **server-only by design** — never add `IsServer` guards inside it
 - Never override `Fire()` as a no-op — it sends the RPC that triggers `OnFireTargetDataReceived`; a no-op silently breaks the server chain
-- `CommitAbility()` is called **once** in `ActivateAbility()` — not per shot (except `UGeoAutomaticFireAbility`)
+- `CommitBehaviour` (`ECommitBehaviour`) — controls when cost/cooldown are committed:
+  - `AtActivate` (default) — both cost and cooldown committed on `ActivateAbility`
+  - `CostAtActivateCooldownAtEnd` — cost at activation, cooldown deferred to `EndAbility`
+  - `DoNotAutoCommit` — subclass is responsible for calling `CommitAbility()` manually
 
 ---
 

@@ -5,7 +5,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 ## Tasks
 
-- [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
+- [x] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
 
   **Scope**
   - Run `git diff --name-only HEAD` to get today's modified files. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase.
@@ -73,7 +73,9 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-05-26] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
 
-- [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
+<!-- [2026-05-27] Scope: STPropertyFunction_GetHealthRatio.h (new), GeoDevastatingWaveAbility.h (new), DevastatingWavePattern.h (new), GeoGameplayAbility.h, PatternAbility.h, GeoMoiraBeamAbility.h, Pattern.h, FatalZonePattern.h, SpiralPattern.h, GeoAbilitySystemLibrary.h, DeployableSpawnerProjectile.h, GeoDeployableManagerComponent.h, GeoStateTreeBuilderUtil.h (+ CPPs). Added struct-level doc comment + Execute + GetDescription comments to FSTGetHealthRatioPropertyFunction (new file, no comments). Added StartSpawnDeployable/FinishSpawnDeployable comments to GeoAbilitySystemLibrary.h (new functions). Added SetDeployableInfinitCount and OnDeployableDestroyed(AActor*) comments to GeoDeployableManagerComponent.h. Added SpawnDeployableActor comment to DeployableSpawnerProjectile.h (protected, but other protected methods in that file are all commented). Updated OnCreate comment in Pattern.h to document the new Owner parameter (used by subclasses to access character components). All other changed headers already fully commented. Notable: GeoDeployableManagerComponent CLAUDE.md had stale RecallAll() (real method: ExpireAll()) and claimed Deployables array is replicated — both were false; fixed. DeployableSpawnerProjectile CLAUDE.md had stale FillBaseData(Data, PayloadOwner) signature — real signature is FillBaseData(Data). -->
+
+- [x] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
   - Run `git diff --name-only HEAD` to get today's modified files. Only open `.h` and `.cpp` files from that list.
@@ -119,3 +121,5 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-05-25] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
 
 <!-- [2026-05-26] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
+
+<!-- [2026-05-27] Updated: Characters/Component/CLAUDE.md — GeoDeployableManagerComponent section: fixed stale RecallAll() → ExpireAll(), removed inaccurate "Deployables array is replicated" note, updated CanDeploy() signature to document optional TSubclassOf param, added DeployableSlots, SetDeployableInfinitCount, GetDeployables<T>(). AbilitySystem/Lib/CLAUDE.md — added Deployable spawning section (StartSpawnDeployable/FinishSpawnDeployable). AI/StateTree/CLAUDE.md — added Property Functions section and FSTGetHealthRatioPropertyFunction. AbilitySystem/Abilities/Base/CLAUDE.md — replaced bCommitAtActivate with ECommitBehaviour enum documentation. Actor/Projectile/CLAUDE.md — updated DeployableSpawnerProjectile section: added SpawnDeployableActor, corrected FillBaseData signature (no PayloadOwner), updated spawn flow description. Root CLAUDE.md and Abilities/CLAUDE.md — added GeoDevastatingWaveAbility to Boss/, DevastatingWavePattern to Pattern/, FSTGetHealthRatioPropertyFunction to AI/StateTree/. Developer already updated Boss/CLAUDE.md and Pattern/CLAUDE.md in the commit. -->

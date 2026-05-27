@@ -42,7 +42,8 @@ Bounces off enemies, grants shield on ally contact.
 - `OnWallBounce()` — bound to ProjectileMovement bounce delegate
 
 ## `DeployableSpawner/DeployableSpawnerProjectile.h` — spawns a deployable on impact
-- `IsValidOverlap()` — only ground/static geometry
-- `EndProjectileLife()` — spawns `DeployableActorClass` at impact location, destroys self
-- `InitDeployable(Deployable, PayloadOwner)` — override point for subclass configuration
-- `FillBaseData(Data, PayloadOwner)` — fills owner, level, team, seed, params, effects into `FDeployableData`
+- `IsValidOverlap()` — only ground/static geometry triggers deployment
+- `EndProjectileLife()` — calls `SpawnDeployableActor`, then destroys the projectile
+- `SpawnDeployableActor(PayloadOwner)` — delegates to `GeoASLib::StartSpawnDeployable` → `InitDeployable` → `GeoASLib::FinishSpawnDeployable`
+- `InitDeployable(Deployable)` — override point for subclass to configure class-specific `FDeployableData` fields before `FinishSpawning`
+- `FillBaseData(Data)` — fills owner, level, team, seed, params, effects into `FDeployableData` from the projectile payload

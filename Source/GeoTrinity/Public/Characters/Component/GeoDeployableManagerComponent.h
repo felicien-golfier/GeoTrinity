@@ -58,6 +58,7 @@ public:
 	/** Get the ratio of deployed/max (used for size scaling) */
 	UFUNCTION(BlueprintPure)
 	float GetDeployRatio() const;
+	/** AActor* delegate callback bound to AGeoDeployableBase::OnDestroyed; forwards to the typed overload. */
 	void OnDeployableDestroyed(AActor* Deployable);
 
 	/** Returns all live tracked deployable actors. */
@@ -81,6 +82,7 @@ public:
 		return Result;
 	}
 
+	/** Adds a DeployableSlots entry for Class with limit 0, granting unlimited deployments of that class. */
 	void SetDeployableInfinitCount(TSubclassOf<AGeoDeployableBase> Class);
 
 	UPROPERTY(BlueprintAssignable)

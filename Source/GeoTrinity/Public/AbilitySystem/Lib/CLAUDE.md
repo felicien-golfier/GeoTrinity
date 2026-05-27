@@ -7,6 +7,10 @@
 **Effect application** (always use this):
 - `ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC)` — two-pass: all `UpdateContextHandle` first, then all `ApplyEffect`. Fresh context per call = `SingleUseDamageMultiplier` auto-resets.
 
+**Deployable spawning:**
+- `StartSpawnDeployable(Class, Owner, Instigator, Transform)` — deferred spawn; returns actor before `BeginPlay`. Call `InitInteractable` before `FinishSpawnDeployable`.
+- `FinishSpawnDeployable(Deployable, Transform)` — calls `FinishSpawning`, triggering `BeginPlay`
+
 **Projectile spawning** (pool-aware):
 - `FullySpawnProjectile(Class, Transform, Payload, EffectData, ...)` — request from pool, init, advance position
 - `StartSpawnProjectile()` / `FinishSpawnProjectile()` — split spawn for deferred initialization

@@ -35,6 +35,8 @@ protected:
 	 * @param Deployable    The freshly deferred-spawned deployable actor (before BeginPlay).
 	 */
 	virtual void InitDeployable(AGeoDeployableBase* Deployable) const;
+	/** Spawns the deployable using the library helpers (StartSpawnDeployable → InitDeployable → FinishSpawnDeployable).
+	 *  Returns true on success. */
 	bool SpawnDeployableActor(AActor* PayloadOwner);
 	/** Fills common FDeployableData fields (owner, level, team, seed, params, effects) from the projectile payload. */
 	void FillBaseData(FDeployableData& Data) const;

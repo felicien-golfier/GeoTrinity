@@ -51,3 +51,14 @@ Replacement for the built-in `Move To` StateTree task. Replans around dynamic na
 Round-robin firing point selection from `AEnemyCharacter::FiringPoints`.
 - `FInstanceDataType`: `TargetLocation` (output `FVector`)
 - `EnterState` — calls `GetAndAdvanceNextFiringPointLocation()`, writes to `TargetLocation`, completes immediately
+
+---
+
+## Property Functions
+
+Property functions are `USTRUCT` extending `FStateTreePropertyFunctionCommonBase`. They run each frame to compute a value and write it to an output property, which can then be bound to any condition or task input.
+
+### `FSTGetHealthRatioPropertyFunction`
+Reads the controlled pawn's current health ratio from `UGeoAttributeSetBase`.
+- `Input` — `AAIController*` (bind to the owning controller context)
+- `Output` — `float` in [0, 1]; outputs 0 if the controller, pawn, or ASC is absent

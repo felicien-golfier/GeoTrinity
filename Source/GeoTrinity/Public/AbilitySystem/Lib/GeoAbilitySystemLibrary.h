@@ -127,8 +127,12 @@ public:
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(UEffectDataAsset const* EffectDataAsset);
 	/** Returns the effect data array registered for the ability identified by AbilityTag in UAbilityInfo. */
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(FGameplayTag AbilityTag);
+
+	/** Deferred-spawns a deployable actor without calling FinishSpawning; caller must call FinishSpawnDeployable
+	 * after configuring the deployable's data (via InitInteractable). Returns nullptr on failure. */
 	static AGeoDeployableBase* StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> DeployableActorClass, AActor* Owner,
 													APawn* Instigator, FTransform const& SpawnTransform);
+	/** Completes a deferred deployable spawn started by StartSpawnDeployable; triggers BeginPlay. */
 	static void FinishSpawnDeployable(AGeoDeployableBase* Deployable, FTransform const& SpawnTransform);
 
 	/** PROJECTILES **/
