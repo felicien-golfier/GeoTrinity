@@ -39,8 +39,8 @@ Source/GeoTrinity/
 │   │   ├── Abilities/
 │   │   │   ├── Base/          # GeoGameplayAbility, PatternAbility, AbilityPayload
 │   │   │   ├── Damaging/      # GeoProjectileAbility, GeoAutomaticFireAbility, GeoAutomaticProjectileAbility
-│   │   │   ├── Boss/          # GeoDelayedFatalZoneAbility
-│   │   │   ├── Pattern/       # Pattern, SpiralPattern, FatalZonePattern
+│   │   │   ├── Boss/          # GeoDelayedFatalZoneAbility, GeoDevastatingWaveAbility
+│   │   │   ├── Pattern/       # Pattern, SpiralPattern, FatalZonePattern, DevastatingWavePattern
 │   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility
 │   │   │   ├── Square/        # GeoMineAbility, GeoShieldBurstPassiveAbility, GeoDetonateAllMinesAbility
 │   │   │   ├── Triangle/      # GeoReloadAbility, GeoRecallTurretAbility
@@ -65,7 +65,7 @@ Source/GeoTrinity/
 │   │   ├── EnemyCharacter.h
 │   │   └── PlayerClassTypes.h # EPlayerClass enum
 │   ├── AI/
-│   │   ├── StateTree/         # STTask_FireProjectileAbility, STTask_SelectNextFiringPoint
+│   │   ├── StateTree/         # STTask_FireProjectileAbility, STTask_SelectNextFiringPoint, FSTGetHealthRatioPropertyFunction
 │   │   └── GeoEnemyAIController.h
 │   ├── HUD/
 │   │   ├── Component/         # GeoCombattantWidgetComp

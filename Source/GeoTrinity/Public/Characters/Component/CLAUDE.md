@@ -10,15 +10,17 @@ Extends `UCharacterMovementComponent`. Caches base speed and acceleration on `Be
 - `GetGeoCharacter()` — typed owner access
 
 ## `GeoDeployableManagerComponent.h`
-Attached to `APlayableCharacter`. Tracks active deployables, enforces max count.
+Attached to `APlayableCharacter`. Tracks active deployables, enforces max count with optional per-class caps.
 
-- `MaxDeployables = 3` — configurable per class
-- `CanDeploy()` — false when at limit
-- `RegisterDeployable(AGeoDeployableBase*)` — registers + binds to destroy callback
-- `RecallAll()` — destroys all tracked deployables
+- `MaxDeployables = 3` — global cap; applies to classes without a `DeployableSlots` entry
+- `DeployableSlots` — `TMap<TSubclassOf, int32>`; add an entry to give a class its own independent limit. Set value to 0 for unlimited.
+- `CanDeploy(TSubclassOf opt)` — checks the per-class slot if one exists, otherwise checks the global pool
+- `SetDeployableInfinitCount(Class)` — adds `DeployableSlots[Class] = 0`; used by patterns that must spawn an arbitrary number of pillars
+- `RegisterDeployable(AGeoDeployableBase*)` — registers + binds to destroy/expire delegates
+- `ExpireAll()` — recalls/destroys all tracked deployables
+- `GetDeployables()` / `GetDeployables<T>()` — all live deployables (optionally filtered by class)
 - `GetDeployRatio()` — `CurrentCount / MaxDeployables`
 - `OnDeployCountChanged` delegate — broadcast to HUD/UI on count change
-- `Deployables` array is **replicated**
 
 ## `GeoGameFeelComponent.h`
 Attached to all characters. Centralizes cosmetic reactions — never drives game logic.
