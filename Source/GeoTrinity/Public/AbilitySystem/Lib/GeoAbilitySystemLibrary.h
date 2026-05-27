@@ -128,10 +128,19 @@ public:
 	/** Returns the effect data array registered for the ability identified by AbilityTag in UAbilityInfo. */
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(FGameplayTag AbilityTag);
 
+	static AGeoDeployableBase* FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> const DeployableActorClass,
+													FAbilityPayload const& Payload,
+													TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+													FDeployableDataParams const& Params,
+													FTransform const& SpawnTransform);
 	/** Deferred-spawns a deployable actor without calling FinishSpawning; caller must call FinishSpawnDeployable
 	 * after configuring the deployable's data (via InitInteractable). Returns nullptr on failure. */
 	static AGeoDeployableBase* StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> DeployableActorClass, AActor* Owner,
 													APawn* Instigator, FTransform const& SpawnTransform);
+	/** Fills FDeployableData from Payload + Params + EffectDataArray and calls InitInteractable on Deployable. */
+	static void InitDeployable(AGeoDeployableBase* Deployable, FAbilityPayload const& Payload,
+							   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+							   FDeployableDataParams const& Params);
 	/** Completes a deferred deployable spawn started by StartSpawnDeployable; triggers BeginPlay. */
 	static void FinishSpawnDeployable(AGeoDeployableBase* Deployable, FTransform const& SpawnTransform);
 

@@ -9,7 +9,7 @@
 #include "GameplayTagContainer.h"
 #include "StructUtils/InstancedStruct.h"
 
-#include "FatalZonePattern.generated.h"
+#include "SpawnPillarPattern.generated.h"
 
 class AGeoPillar;
 
@@ -19,7 +19,7 @@ class AGeoPillar;
  * Runs identically on all clients via PatternStartMulticast — server time ensures sync.
  */
 UCLASS(Blueprintable)
-class GEOTRINITY_API UFatalZonePattern : public UPattern
+class GEOTRINITY_API USpawnPillarPattern : public UPattern
 {
 	GENERATED_BODY()
 
@@ -28,6 +28,9 @@ protected:
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 
 private:
+	virtual void InitPattern(FAbilityPayload const& Payload) override;
+	virtual void ExecuteDelayGameplayCue() override;
+	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* InstigatorAsc) const;
 	virtual void StartPattern() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
@@ -41,5 +44,7 @@ private:
 
 	// Effects applied to hostiles in the zone on expiry (server-only).
 	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
-	TArray<TInstancedStruct<FEffectData>> ZoneEffectDataArray;
+	TArray<TInstancedStruct<FEffectData>> PillarSpawnEffects;
+
+	TSet<FVector2D> PillarSpawnLocations;
 };

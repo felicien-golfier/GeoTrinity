@@ -25,6 +25,8 @@
 ## Class Hierarchy Rules
 - **Read the full class hierarchy** before adding any new function or data member
 - **Verify access specifiers**: public = callable from outside, private = internal, protected = subclass extension, ask to change them if needed.
+- **Prefer relaxing access over adding complexity**: if a subclass needs a private member or method and moving it to `protected` (or `public`) removes the need for a workaround (wrapper function, duplicate handle, extra indirection), just move it. Don't add complexity to work around an access specifier.
+- **Read the .cpp of every virtual you plan to override**: the header only shows the signature — the implementation may have branching, early returns, or side effects that change whether the override is correct.
 - **Reuse existing virtual methods**: check if base class already has a virtual for the same concept before adding new methods
 - **Extracting to base class**: copy code exactly — never modify logic during the move. Introduce virtual getters for subclass variation.
 - **Never re-implement a template method just to inject logic mid-flow**: prefer making the relevant sub-step virtual so the subclass calls `Super` and patches the result. When the sub-step requires state unavailable to a virtual override, add a named virtual hook at that point in the base instead. Duplicating the full method body to change one line is always wrong.

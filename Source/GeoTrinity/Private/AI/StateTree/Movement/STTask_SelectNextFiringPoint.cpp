@@ -16,14 +16,14 @@ bool FSTTask_SelectNextFiringPoint::Link(FStateTreeLinker& Linker)
 }
 
 EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutionContext& Context,
-	FStateTreeTransitionResult const& Transition) const
+															  FStateTreeTransitionResult const& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	UGeoAIBlackboardComponent& Blackboard = Context.GetExternalData(BlackboardHandle);
 
 	TArray<AActor*> FiringPoints;
 	UGameplayStatics::GetAllActorsOfClassWithTag(Context.GetWorld(), ATargetPoint::StaticClass(),
-		FGeoGameplayTags::Get().AI_FiringPoint.GetTagName(), FiringPoints);
+												 FGeoGameplayTags::Get().AI_FiringPoint.GetTagName(), FiringPoints);
 	int32 Num = FiringPoints.Num();
 	if (Num <= 0)
 	{
@@ -41,7 +41,7 @@ EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutio
 	{
 		InstanceData.TargetLocation = FiringPoints[Index]->GetActorLocation();
 		Blackboard.Data.LastFiringPointIndex = Index;
-		return EStateTreeRunStatus::Unset;
+		return EStateTreeRunStatus::Succeeded;
 	}
 
 	return EStateTreeRunStatus::Failed;

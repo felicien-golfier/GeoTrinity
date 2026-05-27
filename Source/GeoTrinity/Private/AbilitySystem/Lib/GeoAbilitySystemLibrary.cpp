@@ -615,6 +615,19 @@ TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArr
 	return {};
 }
 
+AGeoDeployableBase*
+UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> const DeployableActorClass,
+											   FAbilityPayload const& Payload,
+											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+											   FDeployableDataParams const& Params, FTransform const& SpawnTransform)
+{
+	AGeoDeployableBase* Deployable =
+		StartSpawnDeployable(DeployableActorClass, Payload.Owner, Cast<APawn>(Payload.Instigator), SpawnTransform);
+	InitDeployable(Deployable, Payload, EffectDataArray, Params);
+	FinishSpawnDeployable(Deployable, SpawnTransform);
+
+	return Deployable;
+}
 
 AGeoDeployableBase*
 UGeoAbilitySystemLibrary::StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> const DeployableActorClass,
@@ -654,6 +667,26 @@ void UGeoAbilitySystemLibrary::FinishSpawnDeployable(AGeoDeployableBase* const D
 													 FTransform const& SpawnTransform)
 {
 	Deployable->FinishSpawning(SpawnTransform);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+void UGeoAbilitySystemLibrary::InitDeployable(AGeoDeployableBase* Deployable, FAbilityPayload const& Payload,
+											  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+											  FDeployableDataParams const& Params)
+{
+	FDeployableData Data;
+	Data.Owner = Payload.Owner;
+	Data.Instigator = Payload.Instigator;
+	Data.Level = Payload.AbilityLevel;
+	Data.Seed = Payload.Seed;
+	Data.Params = Params;
+	Data.EffectDataArray = EffectDataArray;
+	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Payload.Owner))
+	{
+		Data.TeamID = TeamInterface->GetGenericTeamId();
+	}
+	Deployable->InitInteractable(&Data);
 }
 
 AGeoProjectile*

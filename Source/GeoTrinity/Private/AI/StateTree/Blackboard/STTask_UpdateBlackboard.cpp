@@ -21,5 +21,5 @@ EStateTreeRunStatus FSTTask_UpdateBlackboard::EnterState(FStateTreeExecutionCont
 	Data.LastFiringPointIndex = InstanceData.LastFiringPointIndex.Apply(Data.LastFiringPointIndex);
 	Data.CycleCount = InstanceData.CycleCount.Apply(Data.CycleCount);
 
-	return InstanceData.bReturnSucceeded ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
+	return EStateTreeRunStatus::Succeeded;
 }

@@ -32,6 +32,7 @@ public:
 	 * Owner is the enemy character that activated the ability; subclasses may access its components here.
 	 */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner);
+	virtual void ExecuteDelayGameplayCue();
 	/** Builds the FGameplayCueParameters for this pattern's start cue. Override to inject custom fields (location,
 	 * magnitude, etc.). */
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload);
@@ -72,7 +73,6 @@ protected:
 
 	bool bPatternIsActive = false;
 
-private:
 	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
 	FGameplayTag DelayGameplayCueTag;
 

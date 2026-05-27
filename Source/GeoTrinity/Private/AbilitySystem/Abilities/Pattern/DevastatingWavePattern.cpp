@@ -33,6 +33,7 @@ FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FAbilityPayload con
 	return CueParams;
 }
 
+
 bool UDevastatingWavePattern::ShouldHitActor(AActor const* Actor) const
 {
 	for (FPillarWaveData const& PillarData : PillarsWaveData)

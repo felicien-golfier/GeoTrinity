@@ -49,20 +49,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
 
-	if (DelayGameplayCueTag.IsValid() && !bIsServer)
-	{
-		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(Payload.Instigator);
-		if (!IsValid(InstigatorASC))
-		{
-			ensureMsgf(false, TEXT("Pattern Instigator %s has no ASC !"), *Payload.Instigator->GetName());
-		}
-		else
-		{
-			FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
-			FGameplayCueParameters CueParams = FillCueParam(Payload);
-			InstigatorASC->ExecuteGameplayCue(DelayGameplayCueTag, CueParams);
-		}
-	}
+	ExecuteDelayGameplayCue();
 
 	if (StartTime > StartDelay)
 	{
@@ -82,6 +69,25 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 		float const RemainingStartTime = StartDelay - StartTime;
 		GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this, &UPattern::StartPattern,
 											   RemainingStartTime);
+	}
+}
+
+void UPattern::ExecuteDelayGameplayCue()
+{
+	bool const bIsServer = GeoLib::IsServer(GetWorld());
+	if (DelayGameplayCueTag.IsValid() && !bIsServer)
+	{
+		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
+		if (!IsValid(InstigatorASC))
+		{
+			ensureMsgf(false, TEXT("Pattern Instigator %s has no ASC !"), *StoredPayload.Instigator->GetName());
+		}
+		else
+		{
+			FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
+			FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
+			InstigatorASC->ExecuteGameplayCue(DelayGameplayCueTag, CueParams);
+		}
 	}
 }
 

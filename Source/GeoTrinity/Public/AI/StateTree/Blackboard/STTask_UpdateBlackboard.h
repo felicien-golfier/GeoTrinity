@@ -82,9 +82,6 @@ struct GEOTRINITY_API FSTTask_UpdateBlackboardInstanceData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	bool bReturnSucceeded = false;
-
-	UPROPERTY(EditAnywhere, Category = "Parameter")
 	FGeoBlackboardIntFieldOp LastFiringPointIndex;
 
 	UPROPERTY(EditAnywhere, Category = "Parameter")

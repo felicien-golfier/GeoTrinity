@@ -133,6 +133,10 @@ public:
 	/** Applies the designer-tunable GaugeChargingSpeedCurve easing to a raw charge ratio in [0, 1]. */
 	float ApplyChargingCurve(float RawRatio) const;
 
+	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. */
+	UFUNCTION()
+	void BuildDataAndFire(); // Public to let subclass call it in Timers.
+
 protected:
 	/**
 	 * Starts a timer (or charge window) after which BuildDataAndFire is called.
@@ -148,11 +152,6 @@ protected:
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;
-
-
-	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. */
-	UFUNCTION()
-	void BuildDataAndFire();
 
 	/** Client-side shot logic (spawn predicted projectile, play VFX). Override in subclasses. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData);
@@ -184,6 +183,7 @@ public:
 protected:
 	FAbilityPayload StoredPayload;
 	ECommitBehaviour CommitBehaviour = ECommitBehaviour::AtActivate;
+	FTimerHandle FireTriggerTimerHandle;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
@@ -199,6 +199,5 @@ private:
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
-	FTimerHandle FireTriggerTimerHandle;
 	float ChargeStartTime = 0.f;
 };
