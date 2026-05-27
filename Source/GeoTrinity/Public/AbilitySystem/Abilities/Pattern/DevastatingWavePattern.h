@@ -9,6 +9,16 @@ class AGeoPillar;
 
 #include "DevastatingWavePattern.generated.h"
 
+USTRUCT()
+struct FPillarWaveData
+{
+	GENERATED_BODY()
+
+	FVector2D Location;
+	float Radius = 0.f;
+	TWeakObjectPtr<AGeoPillar> Pillar;
+};
+
 /**
  * Expanding radial wave fired from the boss's center position.
  * Hits each interactable actor exactly once as the wave radius passes through them.
@@ -21,13 +31,15 @@ class GEOTRINITY_API UDevastatingWavePattern : public UTickablePattern
 	GENERATED_BODY()
 
 protected:
-	virtual void StartPattern() override;
+	virtual void InitPattern(FAbilityPayload const& Payload) override;
+	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
+	virtual void EndPattern() override;
 
 private:
 	bool ShouldHitActor(AActor const* Actor) const;
 #if WITH_EDITOR
-	void DrawDebugSafeZones() const;
+	void DrawDebugSafeZones(float CurrentRadius) const;
 #endif
 	;
 
@@ -38,5 +50,5 @@ private:
 	float MaxRadius = 3000.f;
 
 	TSet<TWeakObjectPtr<AActor>> HitActors;
-	TArray<TPair<FVector2D, float>> PillarsLocationAndRadius;
+	TArray<FPillarWaveData> PillarsWaveData;
 };

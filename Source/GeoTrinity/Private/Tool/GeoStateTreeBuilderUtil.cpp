@@ -4,8 +4,8 @@
 
 #include "Tool/GeoStateTreeBuilderUtil.h"
 
-#include "AI/StateTree/Property/STPropertyFunction_GetHealthRatio.h"
 #include "AI/StateTree/Ability/STTask_FireAbility.h"
+#include "AI/StateTree/Property/STPropertyFunction_GetHealthRatio.h"
 #include "AI/StateTree/Utility/STTask_SendEventAfterNCycles.h"
 #include "Conditions/StateTreeCommonConditions.h"
 #include "FileHelpers.h"
@@ -76,20 +76,18 @@ static void LogStatesRecursive(TArray<TObjectPtr<UStateTreeState>> const& States
 		for (FStateTreeEditorNode const& TaskNode : State->Tasks)
 		{
 			if (TaskNode.GetInstance().GetStruct()
-				&& TaskNode.GetInstance().GetStruct()->IsChildOf(
-					FSTTask_FireProjectileAbilityInstanceData::StaticStruct()))
+				&& TaskNode.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
 			{
-				FSTTask_FireProjectileAbilityInstanceData const* Data =
-					TaskNode.GetInstance().GetPtr<FSTTask_FireProjectileAbilityInstanceData>();
+				FSTTask_FireAbilityInstanceData const* Data =
+					TaskNode.GetInstance().GetPtr<FSTTask_FireAbilityInstanceData>();
 				TaskTags += FString::Printf(TEXT(" [tag=%s]"), *Data->AbilityTag.ToString());
 			}
 		}
 		if (State->SingleTask.GetInstance().GetStruct()
-			&& State->SingleTask.GetInstance().GetStruct()->IsChildOf(
-				FSTTask_FireProjectileAbilityInstanceData::StaticStruct()))
+			&& State->SingleTask.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
 		{
-			FSTTask_FireProjectileAbilityInstanceData const* Single =
-				State->SingleTask.GetInstance().GetPtr<FSTTask_FireProjectileAbilityInstanceData>();
+			FSTTask_FireAbilityInstanceData const* Single =
+				State->SingleTask.GetInstance().GetPtr<FSTTask_FireAbilityInstanceData>();
 			TaskTags += FString::Printf(TEXT(" [singletask tag=%s]"), *Single->AbilityTag.ToString());
 		}
 		else if (UScriptStruct const* SingleStruct = Cast<UScriptStruct>(State->SingleTask.GetInstance().GetStruct()))
@@ -133,7 +131,7 @@ void UGeoStateTreeBuilderUtil::AddFireAbilityState(UStateTree* StateTree, FName 
 		UStateTreeState& NewRootState = EditorData->AddSubTree(StateName);
 		NewRootState.Modify();
 		TStateTreeEditorNode<FSTTask_FireAbility>& TaskNode = NewRootState.AddTask<FSTTask_FireAbility>();
-		TaskNode.GetInstance().GetMutablePtr<FSTTask_FireProjectileAbilityInstanceData>()->AbilityTag = AbilityTag;
+		TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = AbilityTag;
 		CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddFireAbilityState"));
 		return;
 	}
@@ -150,7 +148,7 @@ void UGeoStateTreeBuilderUtil::AddFireAbilityState(UStateTree* StateTree, FName 
 	UStateTreeState* NewState = NewObject<UStateTreeState>(EditorData, StateName);
 	NewState->Name = StateName;
 	TStateTreeEditorNode<FSTTask_FireAbility>& TaskNode = NewState->AddTask<FSTTask_FireAbility>();
-	TaskNode.GetInstance().GetMutablePtr<FSTTask_FireProjectileAbilityInstanceData>()->AbilityTag = AbilityTag;
+	TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = AbilityTag;
 
 	if (InsertIndex >= 0 && InsertIndex < ParentState->Children.Num())
 	{
@@ -209,9 +207,9 @@ void UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState(UStateTree* StateTre
 	for (FStateTreeEditorNode& TaskNode : TargetState->Tasks)
 	{
 		if (TaskNode.GetInstance().GetStruct()
-			&& TaskNode.GetInstance().GetStruct()->IsChildOf(FSTTask_FireProjectileAbilityInstanceData::StaticStruct()))
+			&& TaskNode.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
 		{
-			TaskNode.GetInstance().GetMutablePtr<FSTTask_FireProjectileAbilityInstanceData>()->AbilityTag = NewTag;
+			TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = NewTag;
 			break;
 		}
 	}

@@ -20,6 +20,7 @@ Data assets and structs that configure abilities and effects.
 | `FGameplayEffectData` | Applies arbitrary `UGameplayEffect` with SetByCaller magnitude/duration |
 | `FSingleUseDamageMultiplierEffectData` | Sets `SingleUseDamageMultiplier` on context in `UpdateContextHandle`. Read by `ExecCalc_Damage`. **Do NOT read in `FDamageEffectData::ApplyEffect`** |
 | `FStatusEffectData` | Probabilistic status (StatusChance 0..100%). Uses seeded roll from context for determinism |
+| `FLethalEffectData` | Instantly kills the target via `GameDataSettings.LethalEffect`. No parameters — BP sets health to 0 |
 
 `UEffectDataAsset` — container for a reusable array of `TInstancedStruct<FEffectData>`. Create one only when effects are shared across multiple abilities.
 

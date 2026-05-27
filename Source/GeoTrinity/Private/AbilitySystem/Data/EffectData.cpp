@@ -131,6 +131,22 @@ void FContextDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectC
 	EffectContext->SetSingleUseDamageMultiplier(Multiplier.GetValueAtLevel(AbilityLevel));
 }
 
+FActiveGameplayEffectHandle FLethalEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+														   UAbilitySystemComponent* SourceASC,
+														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+														   int32) const
+{
+	TSubclassOf<UGameplayEffect> const LethalEffectClass =
+		GetDefault<UGameDataSettings>()->LethalEffect.LoadSynchronous();
+	if (!ensureMsgf(LethalEffectClass, TEXT("Add a Lethal Effect in UGameDataSettings!")))
+	{
+		return FActiveGameplayEffectHandle();
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(LethalEffectClass, AbilityLevel, ContextHandle);
+	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+}
+
 FActiveGameplayEffectHandle FStatusEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 														   UAbilitySystemComponent* SourceASC,
 														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,

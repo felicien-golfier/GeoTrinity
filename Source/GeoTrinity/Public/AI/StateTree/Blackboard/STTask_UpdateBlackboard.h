@@ -7,7 +7,7 @@
 #include "StateTreeExecutionTypes.h"
 #include "StateTreeTaskBase.h"
 
-#include "STTask_SetBlackboard.generated.h"
+#include "STTask_UpdateBlackboard.generated.h"
 
 class UGeoAIBlackboardComponent;
 
@@ -28,17 +28,22 @@ struct GEOTRINITY_API FGeoBlackboardIntFieldOp
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	EGeoBlackboardOp Op = EGeoBlackboardOp::None;
 
-	UPROPERTY(EditAnywhere, Category = "Parameter", meta = (EditCondition = "Op != EGeoBlackboardOp::None", EditConditionHides = false))
+	UPROPERTY(EditAnywhere, Category = "Parameter",
+			  meta = (EditCondition = "Op != EGeoBlackboardOp::None", EditConditionHides = false))
 	int32 Value = 0;
 
 	int32 Apply(int32 Current) const
 	{
 		switch (Op)
 		{
-		case EGeoBlackboardOp::Set:      return Value;
-		case EGeoBlackboardOp::Add:      return Current + Value;
-		case EGeoBlackboardOp::Multiply: return Current * Value;
-		default:                         return Current;
+		case EGeoBlackboardOp::Set:
+			return Value;
+		case EGeoBlackboardOp::Add:
+			return Current + Value;
+		case EGeoBlackboardOp::Multiply:
+			return Current * Value;
+		default:
+			return Current;
 		}
 	}
 };
@@ -51,25 +56,33 @@ struct GEOTRINITY_API FGeoBlackboardFloatFieldOp
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	EGeoBlackboardOp Op = EGeoBlackboardOp::None;
 
-	UPROPERTY(EditAnywhere, Category = "Parameter", meta = (EditCondition = "Op != EGeoBlackboardOp::None", EditConditionHides = false))
+	UPROPERTY(EditAnywhere, Category = "Parameter",
+			  meta = (EditCondition = "Op != EGeoBlackboardOp::None", EditConditionHides = false))
 	float Value = 0.f;
 
 	float Apply(float Current) const
 	{
 		switch (Op)
 		{
-		case EGeoBlackboardOp::Set:      return Value;
-		case EGeoBlackboardOp::Add:      return Current + Value;
-		case EGeoBlackboardOp::Multiply: return Current * Value;
-		default:                         return Current;
+		case EGeoBlackboardOp::Set:
+			return Value;
+		case EGeoBlackboardOp::Add:
+			return Current + Value;
+		case EGeoBlackboardOp::Multiply:
+			return Current * Value;
+		default:
+			return Current;
 		}
 	}
 };
 
 USTRUCT()
-struct GEOTRINITY_API FSTTask_SetBlackboardInstanceData
+struct GEOTRINITY_API FSTTask_UpdateBlackboardInstanceData
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	bool bReturnSucceeded = false;
 
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	FGeoBlackboardIntFieldOp LastFiringPointIndex;
@@ -83,13 +96,16 @@ struct GEOTRINITY_API FSTTask_SetBlackboardInstanceData
  * Supports Set, Add, and Multiply. Value is a float to allow multiply ratios; truncated to int32 on apply.
  */
 USTRUCT(DisplayName = "Set Blackboard", Category = "GeoTrinity|AI")
-struct GEOTRINITY_API FSTTask_SetBlackboard : public FStateTreeTaskCommonBase
+struct GEOTRINITY_API FSTTask_UpdateBlackboard : public FStateTreeTaskCommonBase
 {
 	GENERATED_BODY()
 
-	using FInstanceDataType = FSTTask_SetBlackboardInstanceData;
 
-	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+	FSTTask_UpdateBlackboard() { bShouldCallTick = false; }
+
+	using FInstanceDataType = FSTTask_UpdateBlackboardInstanceData;
+
+	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	virtual bool Link(FStateTreeLinker& Linker) override;
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 										   FStateTreeTransitionResult const& Transition) const override;

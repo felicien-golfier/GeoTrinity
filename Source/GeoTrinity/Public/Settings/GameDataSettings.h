@@ -61,6 +61,9 @@ public:
 	TSoftClassPtr<UGameplayEffect> ShieldEffect;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	TSoftClassPtr<UGameplayEffect> LethalEffect;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float RegularTickInterval = .1f;
 
 	/** Maximum number of times per second the GameplayCue on HealthEffect/DamageEffect may fire when applied every tick

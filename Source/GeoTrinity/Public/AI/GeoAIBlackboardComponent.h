@@ -9,7 +9,7 @@
 
 /**
  * All persistent AI state for the enemy StateTree.
- * Exposed as a struct so FSTTask_SetBlackboard can write any subset of fields from the editor.
+ * Exposed as a struct so FSTTask_UpdateBlackboard can write any subset of fields from the editor.
  */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGeoAIBlackboardData

@@ -5,13 +5,13 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Pillar/GeoPillar.h"
-#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-void UDevastatingWavePattern::StartPattern()
+void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload)
 {
+	Super::InitPattern(Payload);
 	if (!IsValid(StoredPayload.Owner))
 	{
 		ensureMsgf(false, TEXT("UDevastatingWavePattern: StoredPayload.Owner is null"));
@@ -19,20 +19,27 @@ void UDevastatingWavePattern::StartPattern()
 	}
 
 	HitActors.Empty();
-	PillarsLocationAndRadius.Empty();
-	Super::StartPattern();
+	PillarsWaveData.Empty();
 
 	StoredPayload.Instigator->SetActorLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
 }
 
+FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FAbilityPayload const& Payload)
+{
+	FGameplayCueParameters CueParams = Super::FillCueParam(Payload);
+	CueParams.RawMagnitude = MaxRadius;
+	float const LifeTime = MaxRadius / ExpansionSpeed;
+	CueParams.Normal = FVector(LifeTime, StartTime, 1.f - (LifeTime - StartTime) / LifeTime);
+	return CueParams;
+}
+
 bool UDevastatingWavePattern::ShouldHitActor(AActor const* Actor) const
 {
-	for (auto const PillarLocationAndRadius : PillarsLocationAndRadius)
+	for (FPillarWaveData const& PillarData : PillarsWaveData)
 	{
-		FVector2D const PillarLocation(PillarLocationAndRadius.Key);
 		FVector2D const ActorLocation(Actor->GetActorLocation());
 		FVector2D const CenterToActor(ActorLocation - StoredPayload.Origin);
-		FVector2D const CenterToPillar(PillarLocation - StoredPayload.Origin);
+		FVector2D const CenterToPillar(PillarData.Location - StoredPayload.Origin);
 		float const Dot = CenterToActor | CenterToPillar;
 		float const CenterToPillarSizeSquared = CenterToPillar.SizeSquared();
 
@@ -44,9 +51,7 @@ bool UDevastatingWavePattern::ShouldHitActor(AActor const* Actor) const
 		FVector2D const ActorProjectedOnCenterToPillar = CenterToPillar * Dot / CenterToPillarSizeSquared;
 		float const DistanceSquaredToPillarVector = (ActorProjectedOnCenterToPillar - CenterToActor).SizeSquared();
 
-		float const PillarRadius = PillarLocationAndRadius.Value;
-
-		if (DistanceSquaredToPillarVector < PillarRadius * PillarRadius)
+		if (DistanceSquaredToPillarVector < PillarData.Radius * PillarData.Radius)
 		{
 			return false;
 		}
@@ -56,12 +61,13 @@ bool UDevastatingWavePattern::ShouldHitActor(AActor const* Actor) const
 }
 
 #if WITH_EDITOR
-void UDevastatingWavePattern::DrawDebugSafeZones() const
+void UDevastatingWavePattern::DrawDebugSafeZones(float CurrentRadius) const
 {
-	for (auto const& PillarLocationAndRadius : PillarsLocationAndRadius)
+	int i = 0;
+	for (FPillarWaveData const& PillarData : PillarsWaveData)
 	{
-		FVector2D const PillarLocation(PillarLocationAndRadius.Key);
-		float const PillarRadius = PillarLocationAndRadius.Value;
+		FVector2D const PillarLocation(PillarData.Location);
+		float const PillarRadius = PillarData.Radius;
 		FVector2D const CenterToPillar(PillarLocation - StoredPayload.Origin);
 		float const PillarDistance = CenterToPillar.Size();
 		FVector2D const PillarDir(CenterToPillar / PillarDistance);
@@ -70,12 +76,11 @@ void UDevastatingWavePattern::DrawDebugSafeZones() const
 		FVector2D const LeftTangent(PillarLocation + PillarPerp * PillarRadius);
 		FVector2D const RightTangent(PillarLocation - PillarPerp * PillarRadius);
 
-		FVector2D const LeftEnd(StoredPayload.Origin
-								+ (LeftTangent - StoredPayload.Origin).GetSafeNormal() * MaxRadius);
-		FVector2D const RightEnd(StoredPayload.Origin
-								 + (RightTangent - StoredPayload.Origin).GetSafeNormal() * MaxRadius);
+		float const WaveOffset = FMath::Max(0.f, CurrentRadius - PillarDistance);
+		FVector2D const LeftEnd(LeftTangent + PillarDir * WaveOffset);
+		FVector2D const RightEnd(RightTangent + PillarDir * WaveOffset);
 
-		FColor const Color = GeoLib::GetRandomColorFromPalette();
+		FColor const Color = ColorPalette[i++ % UE_ARRAY_COUNT(ColorPalette)];
 		DrawDebugLine(GetWorld(), FVector(LeftTangent, ArbitraryCharacterZ), FVector(LeftEnd, ArbitraryCharacterZ),
 					  Color, false, 0.f, 0, 3.f);
 		DrawDebugLine(GetWorld(), FVector(RightTangent, ArbitraryCharacterZ), FVector(RightEnd, ArbitraryCharacterZ),
@@ -109,9 +114,8 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 
 				if (AGeoPillar* Pillar = Cast<AGeoPillar>(HitActor))
 				{
-					PillarsLocationAndRadius.Add(
-						{FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius()});
-					Pillar->Recall(1.f);
+					PillarsWaveData.Add(
+						{FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Pillar});
 				}
 				else if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
 				{
@@ -123,11 +127,46 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 	}
 
 #if WITH_EDITOR
-	DrawDebugSafeZones();
+	DrawDebugSafeZones(CurrentRadius);
 #endif
 
 	if (CurrentRadius >= MaxRadius)
 	{
 		EndPattern();
 	}
+}
+
+void UDevastatingWavePattern::EndPattern()
+{
+	if (!UGeoGameplayLibrary::IsServer(GetWorld()))
+	{
+		Super::EndPattern();
+		return;
+	}
+
+	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
+	if (!SourceASC)
+	{
+		ensureMsgf(false, TEXT("UDevastatingWavePattern: SourceASC is null on wave end — Owner has no ASC"));
+		Super::EndPattern();
+		return;
+	}
+
+	for (FPillarWaveData const& PillarData : PillarsWaveData)
+	{
+		if (!PillarData.Pillar.IsValid())
+		{
+			continue;
+		}
+		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(PillarData.Pillar.Get());
+		if (!TargetASC)
+		{
+			ensureMsgf(false, TEXT("UDevastatingWavePattern: alive pillar has no ASC"));
+			continue;
+		}
+		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
+															StoredPayload.AbilityLevel, StoredPayload.Seed);
+	}
+
+	Super::EndPattern();
 }

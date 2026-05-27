@@ -168,6 +168,18 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 	FScalableFloat Multiplier{2.f};
 };
 
+/** Instantly kills the target by applying the LethalEffect from UGameDataSettings. */
+USTRUCT(BlueprintType)
+struct FLethalEffectData : public FEffectData
+{
+	GENERATED_BODY()
+
+	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+													int32 Seed) const override;
+};
+
 /**
  * Probabilistically applies a status effect (debuff) to the target.
  * StatusChance (0–100) is rolled on each apply; on failure nothing happens.
