@@ -41,7 +41,9 @@ struct GEOTRINITY_API FSTTask_SendEventAfterNCycles : public FStateTreeTaskCommo
 	FSTTask_SendEventAfterNCycles();
 
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+	/** Registers the external data handle for UGeoAIBlackboardComponent. */
 	virtual bool Link(FStateTreeLinker& Linker) override;
+	/** Increments CycleCount; when it reaches CyclesRequired, sends EventTag and resets the counter to 0. */
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 										   FStateTreeTransitionResult const& Transition) const override;
 

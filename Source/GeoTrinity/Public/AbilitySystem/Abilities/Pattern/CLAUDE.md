@@ -42,20 +42,16 @@ Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`
 
 ---
 
-## `FatalZonePattern.h` — zone-and-pillar boss pattern
+## `SpawnPillarPattern.h` — zone-and-pillar boss pattern
 
-Non-ticking pattern that marks a zone under a random player, shows a countdown VFX, then on expiry applies damage and spawns a `GeoPillar`.
+Non-ticking pattern. On `InitPattern`, determines how many pillars to spawn (1–3, scaled by the boss's remaining health ratio) and selects target player locations sorted by `PlayerId` for determinism. On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via `ExecuteDelayGameplayCue` override.
 
-- `CountdownDuration` — seconds before expiry (default 3s)
-- `SpawningZoneSize` — radius of the danger zone in cm (renamed from `ZoneSize`)
-- `PillarClass` — `GeoPillar` subclass to spawn on expiry
-- `PillarParams` — `FDeployableDataParams` forwarded into the spawned pillar's `FDeployableData`; drives pillar size, blink duration, etc. via data asset instead of hardcoded values
-- `CountdownGameplayCueTag` — cue fired at start to show the countdown indicator
-- `ExpiryGameplayCueTag` — cue fired on expiry
-- `ZoneEffectDataArray` — effects applied to hostiles in the zone on expiry (server-only)
+- `SpawningZoneSize` — radius used for both the countdown cue magnitude and hostile hit detection (cm)
+- `PillarClass` — `AGeoPillar` subclass to spawn; also passed to `SetDeployableInfinitCount` in `OnCreate` to bypass slot limits
+- `PillarParams` — `FDeployableDataParams` forwarded into the spawned pillar via `FullySpawnDeployable`
+- `PillarSpawnEffects` — effects applied to hostiles in the zone on expiry (server-only); distinct from the pillar's own effect data
 
-Runs on all clients via `PatternStartMulticast`. Server time in the payload ensures countdown sync.
-Used by `UGeoDelayedFatalZoneAbility`.
+Runs on all clients via `PatternStartMulticast`. Used by a `UPatternAbility` subclass.
 
 ---
 

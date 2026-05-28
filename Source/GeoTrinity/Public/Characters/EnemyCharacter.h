@@ -20,6 +20,7 @@ class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
 	GENERATED_BODY()
 
 public:
+	/** Creates the ASC and attribute set as direct subobjects (enemies own their ASC, unlike players who use PlayerState). Sets AGeoEnemyAIController as the AI controller class. */
 	AEnemyCharacter(FObjectInitializer const& ObjectInitializer);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")

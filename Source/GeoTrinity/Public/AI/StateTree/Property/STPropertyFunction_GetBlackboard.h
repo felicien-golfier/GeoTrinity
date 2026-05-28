@@ -33,9 +33,11 @@ struct GEOTRINITY_API FSTGetBlackboardPropertyFunction : public FStateTreeProper
 	using FInstanceDataType = FSTGetBlackboardPropertyFunctionInstanceData;
 
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+	/** Reads FGeoAIBlackboardData from UGeoAIBlackboardComponent on the input controller and writes it into Blackboard. */
 	virtual void Execute(FStateTreeExecutionContext& Context) const override;
 
 #if WITH_EDITOR
+	/** Returns a human-readable one-line summary of this function node for the StateTree editor. */
 	virtual FText GetDescription(FGuid const& ID, FStateTreeDataView InstanceDataView,
 								 IStateTreeBindingLookup const& BindingLookup,
 								 EStateTreeNodeFormatting Formatting) const override;

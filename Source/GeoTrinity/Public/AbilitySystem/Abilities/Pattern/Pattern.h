@@ -32,6 +32,8 @@ public:
 	 * Owner is the enemy character that activated the ability; subclasses may access its components here.
 	 */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner);
+	/** Fires DelayGameplayCueTag at the pattern's zone location(s). Client-only; called from InitPattern to show the
+	 * countdown indicator before StartPattern. Override to fire at multiple locations. */
 	virtual void ExecuteDelayGameplayCue();
 	/** Builds the FGameplayCueParameters for this pattern's start cue. Override to inject custom fields (location,
 	 * magnitude, etc.). */
