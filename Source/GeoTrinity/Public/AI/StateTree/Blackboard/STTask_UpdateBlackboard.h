@@ -20,6 +20,7 @@ enum class EGeoBlackboardOp : uint8
 	Multiply,
 };
 
+/** Typed operation applied to a single int32 blackboard field. Op = None is a no-op (field unchanged). */
 USTRUCT()
 struct GEOTRINITY_API FGeoBlackboardIntFieldOp
 {
@@ -48,6 +49,7 @@ struct GEOTRINITY_API FGeoBlackboardIntFieldOp
 	}
 };
 
+/** Typed operation applied to a single float blackboard field. Op = None is a no-op (field unchanged). */
 USTRUCT()
 struct GEOTRINITY_API FGeoBlackboardFloatFieldOp
 {
@@ -103,7 +105,9 @@ struct GEOTRINITY_API FSTTask_UpdateBlackboard : public FStateTreeTaskCommonBase
 	using FInstanceDataType = FSTTask_UpdateBlackboardInstanceData;
 
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+	/** Registers the external data handle for UGeoAIBlackboardComponent. */
 	virtual bool Link(FStateTreeLinker& Linker) override;
+	/** Applies the configured operations to each blackboard field and returns Succeeded. */
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 										   FStateTreeTransitionResult const& Transition) const override;
 

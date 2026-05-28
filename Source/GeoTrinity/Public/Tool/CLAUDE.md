@@ -28,11 +28,17 @@ Team definitions and `ETeam` enum used by `IGenericTeamAgentInterface`.
 ## `GeoStateTreeBuilderUtil.h`
 Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` for mutating `UStateTree` assets from Python/Blueprint automation.
 Each method validates, compiles (`FCompilerManager::CompileSynchronously`), and saves the asset atomically.
-- `AddFireAbilityStateByTagName` — creates a state with an `FSTTask_FireProjectileAbility` task at a given parent/index
+- `AddFireAbilityStateByTagName` — creates a state with an `FSTTask_FireAbility` task at a given parent/index
 - `ReplaceFireAbilityTagInState` — swaps the ability tag on an existing state's fire task
 - `RemoveState` — deletes a state by name (recursive search)
 - `ClearTransitions` / `AddTransition` — manage `GotoState` transitions with a specified trigger
+- `AddFloatEnterCondition` — appends a `FStateTreeCompareFloatCondition` to a state's `EnterConditions`
+- `BindConditionPropertyToPropertyFunction` — binds a condition property to a Property Function output (e.g. `FSTGetHealthRatioPropertyFunction`) and wires the function's input to a context object
+- `AddSendEventAfterNCyclesTask` — appends an `FSTTask_SendEventAfterNCycles` task to an existing state
+- `ClearEnterConditions` — removes all enter conditions from a state
+- `SetRequiredEventToEnter` — sets the Required Event To Enter on a state
 - `ListStates` — logs the full tree with indent and task tags to `LogTemp`
+- `ListEnterConditions` — logs all enter conditions on a named state
 
 ## `GeoWidgetBuilderUtil.h`
 Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` for building and inspecting UMG Widget Blueprints via Python/Blueprint automation.

@@ -4,12 +4,12 @@ Boss-specific gameplay abilities.
 
 ---
 
-## `GeoDelayedFatalZoneAbility.h` — boss fatal zone spawner
+## `GeoPeriodicFireAbility.h` — server-only periodic projectile fire
 
-Extends `UPatternAbility`. Picks a random player's location server-side as the zone origin, encodes it in the payload `Origin` field, then launches `UFatalZonePattern` on all clients. All clients derive the same zone position deterministically from the payload.
+Extends `UGeoProjectileAbility`. Auto-activates as a passive on ASC assignment. Fires projectiles at all players in a random interval, then re-schedules itself via `BuildDataAndFire`. ServerOnly — no client prediction.
 
-- Overrides `GetFireOrigin2D(Instigator, SourceASC, Seed)` — selects a random player position using seeded RNG; the chosen 2D position becomes the zone center for all clients
-- Pattern: `UFatalZonePattern` (see `Pattern/CLAUDE.md`)
+- `FireIntervalMin` / `FireIntervalMax` — interval range in seconds; each shot picks `FMath::FRandRange(Min, Max)` before the next shot
+- Targets: `EProjectileTarget::AllPlayers` — resolved in `SpawnProjectilesUsingTarget`
 
 ---
 

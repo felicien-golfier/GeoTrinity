@@ -39,8 +39,8 @@ Source/GeoTrinity/
 │   │   ├── Abilities/
 │   │   │   ├── Base/          # GeoGameplayAbility, PatternAbility, AbilityPayload
 │   │   │   ├── Damaging/      # GeoProjectileAbility, GeoAutomaticFireAbility, GeoAutomaticProjectileAbility
-│   │   │   ├── Boss/          # GeoDelayedFatalZoneAbility, GeoDevastatingWaveAbility
-│   │   │   ├── Pattern/       # Pattern, SpiralPattern, FatalZonePattern, DevastatingWavePattern
+│   │   │   ├── Boss/          # GeoPeriodicFireAbility, GeoDevastatingWaveAbility
+│   │   │   ├── Pattern/       # Pattern, SpiralPattern, SpawnPillarPattern, DevastatingWavePattern
 │   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility
 │   │   │   ├── Square/        # GeoMineAbility, GeoShieldBurstPassiveAbility, GeoDetonateAllMinesAbility
 │   │   │   ├── Triangle/      # GeoReloadAbility, GeoRecallTurretAbility
@@ -65,7 +65,13 @@ Source/GeoTrinity/
 │   │   ├── EnemyCharacter.h
 │   │   └── PlayerClassTypes.h # EPlayerClass enum
 │   ├── AI/
-│   │   ├── StateTree/         # STTask_FireProjectileAbility, STTask_SelectNextFiringPoint, FSTGetHealthRatioPropertyFunction
+│   │   ├── StateTree/
+│   │   │   ├── Ability/       # STTask_FireAbility
+│   │   │   ├── Blackboard/    # STTask_UpdateBlackboard
+│   │   │   ├── Movement/      # STTask_MoveTo, GeoAITask_MoveTo, STTask_SelectNextFiringPoint
+│   │   │   ├── Property/      # STPropertyFunction_GetHealthRatio, STPropertyFunction_GetBlackboard
+│   │   │   └── Utility/       # STTask_SendEventAfterNCycles
+│   │   ├── GeoAIBlackboardComponent.h
 │   │   └── GeoEnemyAIController.h
 │   ├── HUD/
 │   │   ├── Component/         # GeoCombattantWidgetComp

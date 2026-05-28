@@ -18,6 +18,7 @@ class GEOTRINITY_API UGeoPeriodicFireAbility : public UGeoProjectileAbility
 	GENERATED_BODY()
 
 public:
+	/** Configures ServerOnly net execution, InstancedPerActor instancing, and no replication. */
 	UGeoPeriodicFireAbility();
 
 protected:
