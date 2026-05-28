@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+#include "GameFramework/GameStateBase.h"
 
 #include "GeoGameMode.generated.h"
 
@@ -21,4 +22,8 @@ public:
 	AGeoGameMode(FObjectInitializer const& ObjectInitializer);
 
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void Logout(AController* Exiting) override;
+
+	void RequestWaitingToStart() { SetMatchState(MatchState::WaitingToStart); }
+	void RequestWaitingPostMatch() { SetMatchState(MatchState::WaitingPostMatch); }
 };

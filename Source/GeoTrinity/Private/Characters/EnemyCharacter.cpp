@@ -4,9 +4,11 @@
 
 #include "AI/GeoEnemyAIController.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/CapsuleComponent.h"
+#include "GameClasses/GeoGameState.h"
 #include "GameFramework/Character.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
@@ -49,16 +51,18 @@ void AEnemyCharacter::InitGAS()
 
 void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 {
+	if (bIsResetting)
+	{
+		return;
+	}
+
 	if (HasAuthority() && NewValue <= 0.f)
 	{
 		if (ResetToFullLifeWhenReachingZero)
 		{
-			// Modify Health using an effect on the fly
-
 			UGameplayEffect* GE = NewObject<UGameplayEffect>(GetTransientPackage());
 			GE->DurationPolicy = EGameplayEffectDurationType::Instant;
 
-			// 2. Define the modifier (definition-level)
 			FGameplayModifierInfo ModifierInfo;
 			ModifierInfo.Attribute = UGeoAttributeSetBase::GetHealthAttribute();
 			ModifierInfo.ModifierOp = EGameplayModOp::Override;
@@ -77,8 +81,37 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 		}
 		else
 		{
+			OnBossDefeated.Broadcast();
 			AbilitySystemComponent->StopAllActivePatterns();
 			Destroy();
 		}
 	}
+}
+
+void AEnemyCharacter::ResetForNewAttempt()
+{
+	bIsResetting = true;
+
+	UGameplayEffect* GE = NewObject<UGameplayEffect>(GetTransientPackage());
+	GE->DurationPolicy = EGameplayEffectDurationType::Instant;
+
+	FGameplayModifierInfo ModifierInfo;
+	ModifierInfo.Attribute = UGeoAttributeSetBase::GetHealthAttribute();
+	ModifierInfo.ModifierOp = EGameplayModOp::Override;
+	UGeoAttributeSetBase const* AS = Cast<UGeoAttributeSetBase>(
+		AbilitySystemComponent->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
+	ModifierInfo.ModifierMagnitude = FScalableFloat(AS->GetMaxHealth());
+	GE->Modifiers.Add(ModifierInfo);
+
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	Context.AddSourceObject(AbilitySystemComponent->GetAvatarActor());
+	FGameplayEffectSpec const Spec(GE, Context, 1.f);
+	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
+
+	if (AGeoEnemyAIController* AIC = Cast<AGeoEnemyAIController>(GetController()))
+	{
+		AIC->RestartStateTree();
+	}
+
+	bIsResetting = false;
 }

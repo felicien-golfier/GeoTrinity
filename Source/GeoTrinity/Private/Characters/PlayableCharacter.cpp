@@ -3,14 +3,18 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Engine/TargetPoint.h"
+#include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoChargeBeamGaugeWidget.h"
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
 
@@ -162,7 +166,37 @@ void APlayableCharacter::InitGAS()
 	if (HasAuthority())
 	{
 		AbilitySystemComponent->GiveStartupAbilities(GetPlayerClass());
+		AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &APlayableCharacter::OnFightHealthChanged);
 	}
+}
+
+void APlayableCharacter::OnFightHealthChanged(float NewValue)
+{
+	if (NewValue > 0.f)
+	{
+		return;
+	}
+	AGeoGameState* GS = GetWorld()->GetGameState<AGeoGameState>();
+	if (!GS || !GS->IsMatchInProgress())
+	{
+		return;
+	}
+
+	DisableInput(Cast<APlayerController>(GetController()));
+
+	TArray<AActor*> EntrancePoints;
+	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), ATargetPoint::StaticClass(),
+		FGeoGameplayTags::Get().AI_Arena_Entrance.GetTagName(), EntrancePoints);
+	if (!EntrancePoints.IsEmpty())
+	{
+		SetActorLocation(EntrancePoints[0]->GetActorLocation());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("APlayableCharacter::OnFightHealthChanged — no entrance ATargetPoint found"));
+	}
+
+	GS->NotifyPlayerDiedInFight();
 }
 
 void APlayableCharacter::AbilityInputTagPressed(FGameplayTag InputTag)

@@ -100,6 +100,9 @@ protected:
 	virtual void InitGAS() override;
 	// END GAS //
 
+	UFUNCTION()
+	void OnFightHealthChanged(float NewValue);
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))
 	float MaxRotationSpeed = 720.f;

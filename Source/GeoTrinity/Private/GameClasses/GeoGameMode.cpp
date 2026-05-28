@@ -3,6 +3,7 @@
 #include "GameClasses/GeoGameMode.h"
 
 #include "Characters/GeoCharacter.h"
+#include "GameClasses/GeoGameState.h"
 
 AGeoGameMode::AGeoGameMode(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -11,4 +12,14 @@ AGeoGameMode::AGeoGameMode(FObjectInitializer const& ObjectInitializer) : Super(
 void AGeoGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+}
+
+void AGeoGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+	AGeoGameState* GS = GetGameState<AGeoGameState>();
+	if (GS && GS->IsMatchInProgress())
+	{
+		GS->NotifyPlayerDiedInFight();
+	}
 }

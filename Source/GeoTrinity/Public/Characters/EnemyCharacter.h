@@ -9,6 +9,9 @@
 #include "EnemyCharacter.generated.h"
 
 class UStateTree;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossDefeated);
+
 /**
  * Enemy character controlled by a StateTree AI. Owns its own ASC directly (no PlayerState).
  * Maintains an ordered list of firing points gathered from world actors tagged "Path" and cycles
@@ -26,6 +29,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UStateTree> StateTree;
 
+	UPROPERTY(BlueprintAssignable, Category = "Boss")
+	FOnBossDefeated OnBossDefeated;
+
+	/** Resets health to max and restarts the StateTree. Called on full-wipe to start a new attempt. */
+	void ResetForNewAttempt();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -38,4 +47,6 @@ protected:
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "Enemy")
 	bool ResetToFullLifeWhenReachingZero = false;
+
+	bool bIsResetting = false;
 };

@@ -81,4 +81,7 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 
 	// AI
 	CreateAndAssignGameplayTag(GameplayTags.AI_FiringPoint, "FiringPoint", "Where the AI can fire from.");
+	CreateAndAssignGameplayTag(GameplayTags.AI_Arena_PlayerSpawn, "AI.Arena.PlayerSpawn", "Spawn points inside the arena for fight start.");
+	CreateAndAssignGameplayTag(GameplayTags.AI_Arena_Entrance, "AI.Arena.Entrance", "Entry point outside arena — dead players teleport here.");
+	CreateAndAssignGameplayTag(GameplayTags.AI_Boss_Aggro, "AI.Boss.Aggro", "StateTree event sent when the boss is aggroed.");
 }
