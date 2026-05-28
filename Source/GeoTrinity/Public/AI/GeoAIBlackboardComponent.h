@@ -18,7 +18,7 @@ struct GEOTRINITY_API FGeoAIBlackboardData
 
 	/** Last selected firing point index — written by FSTTask_SelectNextFiringPoint. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 LastFiringPointIndex = 0;
+	AActor* LastFiringPointActor = nullptr;
 
 	/** Cycle counter — written by FSTTask_SendEventAfterNCycles. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

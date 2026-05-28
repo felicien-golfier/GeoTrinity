@@ -24,15 +24,21 @@ EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutio
 	TArray<AActor*> FiringPoints;
 	UGameplayStatics::GetAllActorsOfClassWithTag(Context.GetWorld(), ATargetPoint::StaticClass(),
 												 FGeoGameplayTags::Get().AI_FiringPoint.GetTagName(), FiringPoints);
+	FiringPoints.Sort(
+		[](TObjectPtr<AActor> const A, TObjectPtr<AActor> const B)
+		{
+			return A->GetUniqueID() < B->GetUniqueID();
+		});
+
 	int32 Num = FiringPoints.Num();
 	if (Num <= 0)
 	{
 		return EStateTreeRunStatus::Failed;
 	}
 
-	if (Num > 1)
+	if (Num > 1 && IsValid(Blackboard.Data.LastFiringPointActor))
 	{
-		FiringPoints.RemoveAt(Blackboard.Data.LastFiringPointIndex);
+		FiringPoints.Remove(Blackboard.Data.LastFiringPointActor);
 		Num = FiringPoints.Num();
 	}
 
@@ -40,7 +46,7 @@ EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutio
 	if (IsValid(FiringPoints[Index]))
 	{
 		InstanceData.TargetLocation = FiringPoints[Index]->GetActorLocation();
-		Blackboard.Data.LastFiringPointIndex = Index;
+		Blackboard.Data.LastFiringPointActor = FiringPoints[Index];
 		return EStateTreeRunStatus::Succeeded;
 	}
 

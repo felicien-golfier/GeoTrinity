@@ -25,8 +25,13 @@ protected:
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.1"))
-	float FireIntervalMin = 1.f;
+	float SalveInterval = .3f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.1"))
-	float FireIntervalMax = 3.f;
+	float FireIntervalMin = 3.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.1"))
+	float FireIntervalMax = 5.f;
+
+	uint8 SalveCount = 0;
 };

@@ -340,6 +340,7 @@ void AGeoDeployableBase::StartBlinking(float const BlinkDuration)
 
 	OnBlinkVisualStarted();
 	SetActorEnableCollision(false);
+	SetCanBeDamaged(false);
 }
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)

@@ -19,7 +19,6 @@ struct GEOTRINITY_API FSTTask_SelectNextFiringPointInstanceData
 	/** Output: world location of the selected firing point, bound to a StateTree output parameter. */
 	UPROPERTY(EditAnywhere, Category = "Output")
 	FVector TargetLocation = FVector::ZeroVector;
-
 };
 
 /**
@@ -34,14 +33,15 @@ struct GEOTRINITY_API FSTTask_SelectNextFiringPoint : public FStateTreeTaskCommo
 
 	FSTTask_SelectNextFiringPoint() = default;
 
-	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Registers the external data handle for UGeoAIBlackboardComponent. */
 	virtual bool Link(FStateTreeLinker& Linker) override;
 	/**
 	 * Selects a random ATargetPoint tagged AI.FiringPoint, excluding the last used index.
-	 * Writes the chosen world location into TargetLocation and updates LastFiringPointIndex in the blackboard.
+	 * Writes the chosen world location into TargetLocation and updates LastFiringPointActor in the blackboard.
 	 */
-	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
+										   FStateTreeTransitionResult const& Transition) const override;
 
 private:
 	TStateTreeExternalDataHandle<UGeoAIBlackboardComponent> BlackboardHandle;

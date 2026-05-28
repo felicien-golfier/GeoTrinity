@@ -18,7 +18,6 @@ EStateTreeRunStatus FSTTask_UpdateBlackboard::EnterState(FStateTreeExecutionCont
 	FInstanceDataType const& InstanceData = Context.GetInstanceData(*this);
 	FGeoAIBlackboardData& Data = Context.GetExternalData(BlackboardHandle).Data;
 
-	Data.LastFiringPointIndex = InstanceData.LastFiringPointIndex.Apply(Data.LastFiringPointIndex);
 	Data.CycleCount = InstanceData.CycleCount.Apply(Data.CycleCount);
 
 	return EStateTreeRunStatus::Succeeded;

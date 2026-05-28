@@ -73,7 +73,7 @@ void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload)
 
 	for (uint8 i = 0; i < NumPillarToSpawn && i < Players.Num(); i++)
 	{
-		if (APawn const* TargetPawn = Players[Payload.Seed % Players.Num()]->GetPawn())
+		if (APawn const* TargetPawn = Players[(Payload.Seed + i) % Players.Num()]->GetPawn())
 		{
 			PillarSpawnLocations.Add(FVector2D(TargetPawn->GetActorLocation()));
 		}
