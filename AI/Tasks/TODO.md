@@ -79,6 +79,8 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-05-29] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
 
+<!-- [2026-05-30] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
+
 - [x] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
@@ -131,3 +133,5 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-05-28] Updated: Abilities/Boss/CLAUDE.md — removed stale GeoDelayedFatalZoneAbility section (file deleted in a07417e), added GeoPeriodicFireAbility section. Abilities/Pattern/CLAUDE.md — removed stale FatalZonePattern section (file deleted in a07417e), added SpawnPillarPattern section (health-scaled pillar count, deterministic location selection, PillarSpawnEffects). Abilities/CLAUDE.md — Boss/ row: GeoDelayedFatalZoneAbility → GeoPeriodicFireAbility; Pattern/ row: FatalZonePattern → SpawnPillarPattern. AI/StateTree/Blackboard/CLAUDE.md — FSTTask_SetBlackboard → FSTTask_UpdateBlackboard (class was renamed in bd5e770). Tool/CLAUDE.md — FSTTask_FireProjectileAbility → FSTTask_FireAbility; added six new GeoStateTreeBuilderUtil methods (AddFloatEnterCondition, BindConditionPropertyToPropertyFunction, AddSendEventAfterNCyclesTask, ClearEnterConditions, SetRequiredEventToEnter, ListEnterConditions). Root CLAUDE.md — Boss/ and Pattern/ subtrees corrected; AI/StateTree/ expanded to show new subfolder layout (Ability/, Blackboard/, Movement/, Property/, Utility/) and GeoAIBlackboardComponent.h. -->
 
 <!-- [2026-05-29] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
+
+<!-- [2026-05-30] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
