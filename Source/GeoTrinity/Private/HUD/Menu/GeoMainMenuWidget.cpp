@@ -2,11 +2,10 @@
 
 #include "HUD/Menu/GeoMainMenuWidget.h"
 
+#include "HUD/Menu/GeoCreateServerWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "Interfaces/OnlineIdentityInterface.h"
-#include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -49,41 +48,25 @@ void UGeoMainMenuWidget::NativeConstruct()
 		ensureMsgf(QuitButton, TEXT("UGeoMainMenuWidget: QuitButton is not bound"));
 		return;
 	}
+	if (!CreateServerWidget)
+	{
+		ensureMsgf(CreateServerWidget, TEXT("UGeoMainMenuWidget: CreateServerWidget is not bound"));
+		return;
+	}
 
 	CreateServerButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleCreateServer);
 	JoinServerButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleJoinServer);
 	QuitButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleQuit);
+	CreateServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleCreateServerClosed);
+
+	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleCreateServer()
 {
-	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
-	if (!ensureMsgf(OnlineSub, TEXT("UGeoMainMenuWidget: Online subsystem not available")))
-	{
-		return;
-	}
-
-	IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-	if (!ensureMsgf(Sessions.IsValid(), TEXT("UGeoMainMenuWidget: Session interface not valid")))
-	{
-		return;
-	}
-
-	FOnlineSessionSettings SessionSettings;
-	SessionSettings.NumPublicConnections = MaxPublicConnections;
-	SessionSettings.bShouldAdvertise = true;
-	SessionSettings.bAllowJoinInProgress = false;
-	SessionSettings.bIsLANMatch = false;
-	SessionSettings.bUsesPresence = true;
-	SessionSettings.bAllowJoinViaPresence = true;
-	SessionSettings.bUseLobbiesIfAvailable = true;
-
-	CreateSessionDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(
-		FOnCreateSessionCompleteDelegate::CreateUObject(this, &UGeoMainMenuWidget::OnCreateSessionComplete)
-	);
-
-	Sessions->CreateSession(0, FName(TEXT("GameSession")), SessionSettings);
+	SetButtonsVisible(false);
+	CreateServerWidget->SetVisibility(ESlateVisibility::Visible);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -99,24 +82,17 @@ void UGeoMainMenuWidget::HandleQuit()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoMainMenuWidget::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+void UGeoMainMenuWidget::HandleCreateServerClosed()
 {
-	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
-	if (OnlineSub)
-	{
-		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-		if (Sessions.IsValid())
-		{
-			Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
-		}
-	}
+	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
+	SetButtonsVisible(true);
+}
 
-	if (!bWasSuccessful)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UGeoMainMenuWidget: Failed to create session '%s'"), *SessionName.ToString());
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("UGeoMainMenuWidget: Session created, traveling to %s"), *GameMapURL);
-	GetWorld()->ServerTravel(GameMapURL + TEXT("?listen"));
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMainMenuWidget::SetButtonsVisible(bool bVisible)
+{
+	const ESlateVisibility NewVisibility = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+	CreateServerButton->SetVisibility(NewVisibility);
+	JoinServerButton->SetVisibility(NewVisibility);
+	QuitButton->SetVisibility(NewVisibility);
 }

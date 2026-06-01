@@ -8,11 +8,13 @@
 #include "GeoMainMenuWidget.generated.h"
 
 class UGeoMenuButton;
+class UGeoCreateServerWidget;
 
 /**
  * Main lobby menu widget. Composes three UGeoMenuButton instances and handles all action logic in C++.
- * Blueprint subclasses configure appearance through the button UPROPERTYs and set GameMapURL + MaxPublicConnections.
- * Required in the BP hierarchy: UGeoMenuButton widgets named "CreateServerButton", "JoinServerButton", "QuitButton".
+ * Blueprint subclasses configure appearance through the button UPROPERTYs.
+ * Required in the BP hierarchy: UGeoMenuButton widgets named "CreateServerButton", "JoinServerButton", "QuitButton",
+ * and a UGeoCreateServerWidget named "CreateServerWidget" (set Collapsed by default in the BP layout).
  */
 UCLASS()
 class GEOTRINITY_API UGeoMainMenuWidget : public UUserWidget
@@ -20,12 +22,6 @@ class GEOTRINITY_API UGeoMainMenuWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Session")
-	FString GameMapURL;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Session")
-	int32 MaxPublicConnections = 4;
-
 	UFUNCTION(BlueprintCallable, Category = "Session")
 	FString GetLocalPlayerName() const;
 
@@ -41,6 +37,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> QuitButton;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UGeoCreateServerWidget> CreateServerWidget;
+
 private:
 	UFUNCTION()
 	void HandleCreateServer();
@@ -51,7 +50,8 @@ private:
 	UFUNCTION()
 	void HandleQuit();
 
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	UFUNCTION()
+	void HandleCreateServerClosed();
 
-	FDelegateHandle CreateSessionDelegateHandle;
+	void SetButtonsVisible(bool bVisible);
 };
