@@ -31,7 +31,8 @@ public class GeoTrinity : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
 			"UMG",
-			"Niagara"
+			"Niagara",
+			"OnlineSubsystem"
 		});
 
 		if (Target.bBuildEditor)
