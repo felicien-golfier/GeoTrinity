@@ -163,7 +163,7 @@ void APlayableCharacter::InitGAS()
 	AttributeSetBase = GeoPlayerState->GetCharacterAttributeSet();
 
 	AbilitySystemComponent->InitializeDefaultAttributes();
-	if (HasAuthority())
+	if (GeoLib::IsServer(this))
 	{
 		AbilitySystemComponent->GiveStartupAbilities(GetPlayerClass());
 		AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &APlayableCharacter::OnFightHealthChanged);
@@ -176,8 +176,8 @@ void APlayableCharacter::OnFightHealthChanged(float NewValue)
 	{
 		return;
 	}
-	AGeoGameState* GS = GetWorld()->GetGameState<AGeoGameState>();
-	if (!GS || !GS->IsMatchInProgress())
+	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
+	if (!GameState || !GameState->IsMatchInProgress())
 	{
 		return;
 	}
@@ -196,7 +196,7 @@ void APlayableCharacter::OnFightHealthChanged(float NewValue)
 		UE_LOG(LogTemp, Warning, TEXT("APlayableCharacter::OnFightHealthChanged — no entrance ATargetPoint found"));
 	}
 
-	GS->NotifyPlayerDiedInFight();
+	GameState->NotifyPlayerDiedInFight();
 }
 
 void APlayableCharacter::AbilityInputTagPressed(FGameplayTag InputTag)

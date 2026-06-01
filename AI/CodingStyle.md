@@ -15,6 +15,7 @@
 - Be consistent: same code style, same naming convention throughout
 - `Super` call placement: choose what makes semantic sense (Init = top, Destroy = bottom); when no ordering dependency exists, always top
 - No abbreviations in variable names; full class names except `ASC` for AbilitySystemComponent
+- **Unused parameters**: always name them in `.h` declarations; suppress with `/*name*/` in `.cpp` implementations when unused
 - **Never use `GetComponentByClass` to get an ASC** — always use `GeoASLib::GetGeoAscFromActor` instead
 - No comments that restate what the code says — code should be self-documenting
 - Never assume method names or constants (including `FColor::X`) — they change between versions.

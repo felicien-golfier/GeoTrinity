@@ -9,7 +9,8 @@
 #include "Components/StateTreeAIComponent.h"
 #include "Engine/TargetPoint.h"
 #include "GameClasses/GeoGameMode.h"
-#include "HUD/GeoHUD.h"
+#include "GameplayTagContainer.h"
+#include "GeoHUD/GeoGeoHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -17,12 +18,12 @@ void AGeoGameState::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
 
-	if (HasAuthority() && EnemiesToSpawn.Num() > 0)
+	if (GeoLib::IsServer(this) && EnemiesToSpawn.Num() > 0)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Owner = this;
-		for (auto EnemyToSpawn : EnemiesToSpawn)
+		for (TSubclassOf<AEnemyCharacter> EnemyToSpawn : EnemiesToSpawn)
 		{
 			AEnemyCharacter* SpawnedEnemy = GetWorld()->SpawnActor<AEnemyCharacter>(
 				EnemyToSpawn, FTransform(FVector(100, 100, ArbitraryCharacterZ)), SpawnParams);
@@ -33,21 +34,21 @@ void AGeoGameState::HandleMatchHasStarted()
 
 	if (AEnemyCharacter* Boss = GetFirstEnemy())
 	{
-		if (APlayerController* LocalPC = GetWorld()->GetFirstPlayerController())
+		if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 		{
-			if (AGeoHUD* HUD = LocalPC->GetHUD<AGeoHUD>())
+			if (AGeoGeoHUD* GeoHUD = LocalPlayerController->GetGeoHUD<AGeoGeoHUD>())
 			{
-				HUD->ShowBossHealthBar(Boss);
+				GeoHUD->ShowBossHealthBar(Boss);
 			}
 		}
 
-		if (HasAuthority())
+		if (GeoLib::IsServer(this))
 		{
 			Boss->OnBossDefeated.AddDynamic(this, &AGeoGameState::NotifyBossDefeated);
 
-			if (AGeoEnemyAIController* AIC = Cast<AGeoEnemyAIController>(Boss->GetController()))
+			if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(Boss->GetController()))
 			{
-				AIC->GetStateTreeComp()->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_Aggro);
+				EnemyAIController->GetStateTreeComp()->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_Aggro);
 			}
 
 			PlayersAliveInFight = 0;
@@ -68,15 +69,15 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 {
 	Super::HandleMatchIsWaitingToStart();
 
-	if (APlayerController* LocalPC = GetWorld()->GetFirstPlayerController())
+	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
-		if (AGeoHUD* HUD = LocalPC->GetHUD<AGeoHUD>())
+		if (AGeoGeoHUD* GeoHUD = LocalPlayerController->GetGeoHUD<AGeoGeoHUD>())
 		{
-			HUD->HideBossHealthBar();
+			GeoHUD->HideBossHealthBar();
 		}
 	}
 
-	if (HasAuthority())
+	if (GeoLib::IsServer(this))
 	{
 		if (ArenaBarrier)
 		{
@@ -90,15 +91,15 @@ void AGeoGameState::HandleMatchHasEnded()
 {
 	Super::HandleMatchHasEnded();
 
-	if (APlayerController* LocalPC = GetWorld()->GetFirstPlayerController())
+	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
-		if (AGeoHUD* HUD = LocalPC->GetHUD<AGeoHUD>())
+		if (AGeoGeoHUD* GeoHUD = LocalPlayerController->GetGeoHUD<AGeoGeoHUD>())
 		{
-			HUD->HideBossHealthBar();
+			GeoHUD->HideBossHealthBar();
 		}
 	}
 
-	if (HasAuthority() && ArenaBarrier)
+	if (GeoLib::IsServer(this) && ArenaBarrier)
 	{
 		ArenaBarrier->SetClosed(false);
 	}
@@ -155,16 +156,16 @@ void AGeoGameState::NotifyPlayerDiedInFight()
 		Boss->ResetForNewAttempt();
 	}
 
-	if (AGeoGameMode* GM = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
+	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
 	{
-		GM->RequestWaitingToStart();
+		GeoGameMode->RequestWaitingToStart();
 	}
 }
 
 void AGeoGameState::NotifyBossDefeated()
 {
-	if (AGeoGameMode* GM = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
+	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
 	{
-		GM->RequestWaitingPostMatch();
+		GeoGameMode->RequestWaitingPostMatch();
 	}
 }

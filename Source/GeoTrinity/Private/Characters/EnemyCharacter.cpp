@@ -56,7 +56,7 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 		return;
 	}
 
-	if (HasAuthority() && NewValue <= 0.f)
+	if (GeoLib::IsServer(this) && NewValue <= 0.f)
 	{
 		if (ResetToFullLifeWhenReachingZero)
 		{
@@ -108,9 +108,9 @@ void AEnemyCharacter::ResetForNewAttempt()
 	FGameplayEffectSpec const Spec(GE, Context, 1.f);
 	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
 
-	if (AGeoEnemyAIController* AIC = Cast<AGeoEnemyAIController>(GetController()))
+	if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(GetController()))
 	{
-		AIC->RestartStateTree();
+		EnemyAIController->RestartStateTree();
 	}
 
 	bIsResetting = false;

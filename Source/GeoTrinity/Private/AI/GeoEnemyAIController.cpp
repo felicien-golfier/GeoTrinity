@@ -1,4 +1,4 @@
-// GeoEnemyAIController.cpp
+// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AI/GeoEnemyAIController.h"
 
@@ -8,8 +8,9 @@
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"
-#include "GameFramework/GameMode.h"
 #include "EngineUtils.h"
+#include "GameClasses/GeoGameMode.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoEnemyAIController::AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -27,17 +28,15 @@ void AGeoEnemyAIController::OnPossess(APawn* InPawn)
 		StateTreeComp->StartLogic();
 	}
 
-	if (HasAuthority() && EnemyChar)
+	if (GeoLib::IsServer(this) && EnemyChar)
 	{
 		GetWorld()->GetTimerManager().SetTimer(AggroCheckTimer, this,
 			&AGeoEnemyAIController::CheckAggroDistance, 0.5f, true);
 
 		UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(
 			EnemyChar->GetAbilitySystemComponent());
-		if (ensureMsgf(ASC, TEXT("GeoEnemyAIController::OnPossess — boss has no GeoAbilitySystemComponent")))
-		{
-			ASC->OnDamageDealt.AddDynamic(this, &AGeoEnemyAIController::OnBossDamaged);
-		}
+		if (!ASC) { ensureMsgf(false, TEXT("GeoEnemyAIController::OnPossess — boss has no GeoAbilitySystemComponent")); return; }
+		ASC->OnDamageDealt.AddDynamic(this, &AGeoEnemyAIController::OnBossDamaged);
 	}
 }
 
@@ -48,9 +47,9 @@ void AGeoEnemyAIController::CheckAggroDistance()
 		return;
 	}
 	FVector2D const BossPos(GetPawn()->GetActorLocation());
-	for (APlayableCharacter* PC : TActorRange<APlayableCharacter>(GetWorld()))
+	for (APlayableCharacter* PlayableCharacter : TActorRange<APlayableCharacter>(GetWorld()))
 	{
-		if (FVector2D::Distance(BossPos, FVector2D(PC->GetActorLocation())) <= AggroRadius)
+		if (FVector2D::Distance(BossPos, FVector2D(PlayableCharacter->GetActorLocation())) <= AggroRadius)
 		{
 			TriggerAggro();
 			return;
@@ -72,9 +71,9 @@ void AGeoEnemyAIController::TriggerAggro()
 	bAggroed = true;
 	GetWorld()->GetTimerManager().ClearTimer(AggroCheckTimer);
 
-	if (AGameMode* GM = Cast<AGameMode>(GetWorld()->GetAuthGameMode()))
+	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
 	{
-		GM->StartMatch();
+		GeoGameMode->StartMatch();
 	}
 }
 

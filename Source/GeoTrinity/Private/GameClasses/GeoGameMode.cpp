@@ -3,12 +3,14 @@
 #include "GameClasses/GeoGameMode.h"
 
 #include "Characters/GeoCharacter.h"
+#include "Characters/PlayableCharacter.h"
 #include "GameClasses/GeoGameState.h"
 
 AGeoGameMode::AGeoGameMode(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	DefaultPawnClass = AGeoCharacter::StaticClass();
 }
+
 void AGeoGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -17,9 +19,15 @@ void AGeoGameMode::Tick(float DeltaSeconds)
 void AGeoGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
-	AGeoGameState* GS = GetGameState<AGeoGameState>();
-	if (GS && GS->IsMatchInProgress())
+	AGeoGameState* GameState = GetGameState<AGeoGameState>();
+	if (!GameState || !GameState->IsMatchInProgress())
 	{
-		GS->NotifyPlayerDiedInFight();
+		return;
 	}
+	APlayableCharacter* PlayableCharacter = Exiting ? Cast<APlayableCharacter>(Exiting->GetPawn()) : nullptr;
+	if (!PlayableCharacter)
+	{
+		return;
+	}
+	GameState->NotifyPlayerDiedInFight();
 }
