@@ -26,6 +26,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Session")
 	int32 MaxPublicConnections = 4;
 
+	UFUNCTION(BlueprintCallable, Category = "Session")
+	FString GetLocalPlayerName() const;
+
 protected:
 	virtual void NativeConstruct() override;
 

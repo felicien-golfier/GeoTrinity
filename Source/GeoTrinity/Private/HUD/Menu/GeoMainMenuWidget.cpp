@@ -3,10 +3,31 @@
 #include "HUD/Menu/GeoMainMenuWidget.h"
 
 #include "HUD/Menu/GeoMenuButton.h"
+#include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
+
+// ---------------------------------------------------------------------------------------------------------------------
+FString UGeoMainMenuWidget::GetLocalPlayerName() const
+{
+	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+	if (!OnlineSub)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UGeoMainMenuWidget::GetLocalPlayerName: Online subsystem not available"));
+		return FString();
+	}
+
+	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+	if (!Identity.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UGeoMainMenuWidget::GetLocalPlayerName: Identity interface not valid"));
+		return FString();
+	}
+
+	return Identity->GetPlayerNickname(0);
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::NativeConstruct()
