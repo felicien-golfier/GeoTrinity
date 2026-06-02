@@ -14,7 +14,7 @@ class UStateTreeAIComponent;
 
 /**
  * AI controller for enemy characters. Starts a StateTree (via UStateTreeAIComponent) on possession
- * and leaves execution entirely to the tree tasks (FSTTask_FireProjectileAbility, etc.).
+ * and leaves execution entirely to the tree tasks (FSTTask_FireAbility, etc.).
  * Also drives aggro detection (proximity + on-damage) and exposes RestartStateTree for wipe resets.
  */
 UCLASS()
@@ -23,13 +23,16 @@ class GEOTRINITY_API AGeoEnemyAIController : public AAIController
 	GENERATED_BODY()
 
 public:
+	/** Creates UStateTreeAIComponent and UGeoAIBlackboardComponent subobjects. */
 	AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer = FObjectInitializer::Get());
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UGeoAIBlackboardComponent> GeoBlackBoard;
 
+	/** Starts the StateTree, sets up the aggro proximity-check timer, and binds damage-to-aggro (server only). */
 	virtual void OnPossess(APawn* InPawn) override;
 
+	/** Returns the StateTree component driving this enemy's behavior. */
 	UStateTreeAIComponent* GetStateTreeComp() const { return StateTreeComp; }
 
 	/** Stops the StateTree logic and restarts it from the root (Dormant state). Resets aggro. */

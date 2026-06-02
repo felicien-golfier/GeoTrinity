@@ -14,7 +14,7 @@ AGeoCharacter  (base — IAbilitySystemInterface, IGenericTeamAgentInterface)
 |---|---|
 | `GeoCharacter.h` | Abstract base — ASC, input, movement, health bar, game feel |
 | `PlayableCharacter.h` | Human player — input forwarding, `ChangeClass()`, deploy gauge, charge-beam gauge |
-| `EnemyCharacter.h` | AI enemy — own ASC, `FiringPoints` (populated in `BeginPlay` from actors tagged "Path") |
+| `EnemyCharacter.h` | AI enemy — own ASC, boss-death handling (`OnHealthChanged` / `ResetForNewAttempt`) |
 | `PlayerClassTypes.h` | `EPlayerClass` enum: `Triangle=1`, `Circle=2`, `Square=3`, `All=4` |
 
 ## Component Subfolder

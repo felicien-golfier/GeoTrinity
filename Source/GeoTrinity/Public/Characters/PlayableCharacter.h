@@ -41,6 +41,7 @@ class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
 {
 	GENERATED_BODY()
 public:
+	/** Creates widget components for the deploy and charge-beam gauges, and the deployable manager component. */
 	APlayableCharacter(FObjectInitializer const& ObjectInitializer);
 
 	virtual void Tick(float DeltaSeconds) override;
