@@ -6,8 +6,7 @@ Extends `AGeoCharacter`. Creates its own ASC directly on the character (not on P
 `InitGAS()` — creates `UGeoAbilitySystemComponent` directly on self, calls `InitAbilityActorInfo(Self, Self)`. No PlayerState involved.
 
 ## Firing points
-- `FiringPoints` (`TArray<AActor*>`) — world actors tagged `"Path"`, collected on `BeginPlay`
-- Round-robin selection and index tracking live in `FSTTask_SelectNextFiringPoint`'s instance data
+- Firing point collection and round-robin selection live entirely in `FSTTask_SelectNextFiringPoint`'s instance data — EnemyCharacter has no `FiringPoints` property of its own
 
 ## AI
 - `StateTree` (`UStateTree*`) — the StateTree asset assigned in BP; handed to `UStateTreeAIComponent` on `BeginPlay`
