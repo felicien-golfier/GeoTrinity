@@ -60,9 +60,9 @@ void AGeoPlayerState::InitOverlay()
 {
 	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
 	{
-		if (AGeoHUD* Hud = Cast<AGeoHUD>(GeoPlayerController->GetHUD()))
+		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
 		{
-			Hud->InitOverlay(GeoPlayerController, this, AbilitySystemComponent, CharacterAttributeSet);
+			GeoHUD->InitOverlay(GeoPlayerController, this, AbilitySystemComponent, CharacterAttributeSet);
 		}
 	}
 }

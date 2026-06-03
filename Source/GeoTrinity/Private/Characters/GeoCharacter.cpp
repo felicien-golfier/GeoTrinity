@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -37,6 +38,9 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 
 	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>(TEXT("GameFeelComponent"));
+
+	DeployableManagerComponent =
+		CreateDefaultSubobject<UGeoDeployableManagerComponent>(TEXT("DeployableManagerComponent"));
 
 	bUseControllerRotationYaw = true;
 

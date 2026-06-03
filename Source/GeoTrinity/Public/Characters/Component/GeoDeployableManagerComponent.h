@@ -39,11 +39,7 @@ public:
 	 * Otherwise falls back to the global MaxDeployables limit.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass = nullptr) const;
-
-	/** Returns the total number of currently active deployed actors across all classes. */
-	UFUNCTION(BlueprintPure)
-	int32 GetDeployedCount() const;
+	bool CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass);
 
 	/** Returns the configured maximum number of simultaneous deployables. */
 	UFUNCTION(BlueprintPure)
@@ -53,16 +49,13 @@ public:
 	void RegisterDeployable(AGeoDeployableBase* Deployable);
 
 	/** Recall all deployed actors */
-	void ExpireAll();
+	void ForceExpireAll() const;
 
-	/** Get the ratio of deployed/max (used for size scaling) */
-	UFUNCTION(BlueprintPure)
-	float GetDeployRatio() const;
 	/** AActor* delegate callback bound to AGeoDeployableBase::OnDestroyed; forwards to the typed overload. */
 	void OnDeployableDestroyed(AActor* Deployable);
 
 	/** Returns all live tracked deployable actors. */
-	TArray<AGeoDeployableBase*> GetDeployables() const;
+	TArray<AGeoDeployableBase*> GetAllDeployables() const;
 
 	/** Returns all live tracked deployable actors of the given class, cast to T. */
 	template <typename T>
@@ -84,6 +77,7 @@ public:
 
 	/** Adds a DeployableSlots entry for Class with limit 0, granting unlimited deployments of that class. */
 	void SetDeployableInfinitCount(TSubclassOf<AGeoDeployableBase> Class);
+	void RemoveInvalidDeployables(FDeployableBucket& Bucket);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployCountChanged OnDeployCountChanged;

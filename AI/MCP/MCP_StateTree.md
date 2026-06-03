@@ -24,13 +24,14 @@ Make UFUNCTIONs as generic as possible — accept struct type, state name, paren
 | Method | What it does |
 |---|---|
 | `ListStates` | Logs all states recursively with indent, task tags, and transitions |
+| `AddState` | Adds an empty state with no task; for idle states gated by an event transition |
 | `AddFireAbilityStateByTagName` | Adds a state with a fire-projectile task; pass `"None"` (string) for root parent, `InsertIndex=-1` to append |
 | `ReplaceFireAbilityTagInState` | Finds a state by name, replaces its task tag, compiles, saves |
 | `AddFloatEnterCondition` | Appends a `Float Compare` enter condition to a state; sets `Right` (threshold) and operator |
 | `BindConditionPropertyToPropertyFunction` | Binds any condition property to a Property Function output; also binds the function's Input to a context class — use this after `AddFloatEnterCondition` to wire `Left` |
 | `RemoveState` | Removes a state by name (recursive), compiles, saves |
 | `ClearTransitions` | Removes all transitions from a state, compiles, saves |
-| `AddTransition` | Adds a GotoState transition with a trigger enum, compiles, saves |
+| `AddTransition` | Adds a GotoState transition with a trigger enum; pass an event tag name for `OnEvent` triggers, compiles, saves |
 
 ## Enter Conditions
 

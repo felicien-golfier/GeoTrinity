@@ -7,11 +7,10 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Components/CapsuleComponent.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameFramework/Character.h"
-#include "GeoTrinity/GeoTrinity.h"
-#include "Kismet/GameplayStatics.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AEnemyCharacter::AEnemyCharacter(FObjectInitializer const& ObjectInitializer) :
 	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoCharacterMovementComponent>(CharacterMovementComponentName))
@@ -49,35 +48,35 @@ void AEnemyCharacter::InitGAS()
 		&AEnemyCharacter::OnHealthChanged); // Do we need to remove this on destroy?
 }
 
+void AEnemyCharacter::ResetHealth() const
+{
+	UGeoAttributeSetBase const* AS =
+		Cast<UGeoAttributeSetBase>(AbilitySystemComponent->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
+
+	UGameplayEffect* GE = NewObject<UGameplayEffect>(GetTransientPackage());
+	GE->DurationPolicy = EGameplayEffectDurationType::Instant;
+
+	FGameplayModifierInfo ModifierInfo;
+	ModifierInfo.Attribute = UGeoAttributeSetBase::GetHealthAttribute();
+	ModifierInfo.ModifierOp = EGameplayModOp::Override;
+	ModifierInfo.ModifierMagnitude = FScalableFloat(AS->GetMaxHealth());
+	GE->Modifiers.Add(ModifierInfo);
+
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	Context.AddSourceObject(AbilitySystemComponent->GetAvatarActor());
+
+	FGameplayEffectSpec const Spec(GE, Context, 1.f);
+
+	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
+}
+
 void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 {
-	if (bIsResetting)
-	{
-		return;
-	}
-
 	if (GeoLib::IsServer(this) && NewValue <= 0.f)
 	{
-		if (ResetToFullLifeWhenReachingZero)
+		if (GetWorld()->GetGameState<AGeoGameState>()->IsDummy(this))
 		{
-			UGameplayEffect* GE = NewObject<UGameplayEffect>(GetTransientPackage());
-			GE->DurationPolicy = EGameplayEffectDurationType::Instant;
-
-			FGameplayModifierInfo ModifierInfo;
-			ModifierInfo.Attribute = UGeoAttributeSetBase::GetHealthAttribute();
-			ModifierInfo.ModifierOp = EGameplayModOp::Override;
-			UGeoAttributeSetBase const* AS = Cast<UGeoAttributeSetBase>(
-				AbilitySystemComponent->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
-			ModifierInfo.ModifierMagnitude = FScalableFloat(AS->GetMaxHealth());
-
-			GE->Modifiers.Add(ModifierInfo);
-
-			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
-			Context.AddSourceObject(AbilitySystemComponent->GetAvatarActor());
-
-			FGameplayEffectSpec const Spec(GE, Context, 1.f);
-
-			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
+			AbilitySystemComponent->InitializeDefaultAttributes();
 		}
 		else
 		{
@@ -90,28 +89,7 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 
 void AEnemyCharacter::ResetForNewAttempt()
 {
-	bIsResetting = true;
-
-	UGameplayEffect* GE = NewObject<UGameplayEffect>(GetTransientPackage());
-	GE->DurationPolicy = EGameplayEffectDurationType::Instant;
-
-	FGameplayModifierInfo ModifierInfo;
-	ModifierInfo.Attribute = UGeoAttributeSetBase::GetHealthAttribute();
-	ModifierInfo.ModifierOp = EGameplayModOp::Override;
-	UGeoAttributeSetBase const* AS = Cast<UGeoAttributeSetBase>(
-		AbilitySystemComponent->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
-	ModifierInfo.ModifierMagnitude = FScalableFloat(AS->GetMaxHealth());
-	GE->Modifiers.Add(ModifierInfo);
-
-	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
-	Context.AddSourceObject(AbilitySystemComponent->GetAvatarActor());
-	FGameplayEffectSpec const Spec(GE, Context, 1.f);
-	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
-
-	if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(GetController()))
-	{
-		EnemyAIController->RestartStateTree();
-	}
-
-	bIsResetting = false;
+	DeployableManagerComponent->ForceExpireAll();
+	AbilitySystemComponent->InitializeDefaultAttributes();
+	GetController<AGeoEnemyAIController>()->ResetAI();
 }

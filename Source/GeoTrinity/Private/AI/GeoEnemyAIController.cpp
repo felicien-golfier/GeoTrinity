@@ -2,14 +2,16 @@
 
 #include "AI/GeoEnemyAIController.h"
 
-#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AI/GeoAIBlackboardComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"
 #include "EngineUtils.h"
 #include "GameClasses/GeoGameMode.h"
+#include "GameClasses/GeoGameState.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoEnemyAIController::AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -18,26 +20,104 @@ AGeoEnemyAIController::AGeoEnemyAIController(FObjectInitializer const& ObjectIni
 	GeoBlackBoard = CreateDefaultSubobject<UGeoAIBlackboardComponent>(TEXT("GeoBlackBoard"));
 }
 
-void AGeoEnemyAIController::OnPossess(APawn* InPawn)
+void AGeoEnemyAIController::SetGenericTeamId(FGenericTeamId const& NewTeamId)
 {
-	Super::OnPossess(InPawn);
-	AEnemyCharacter* EnemyChar = Cast<AEnemyCharacter>(InPawn);
-	if (EnemyChar && EnemyChar->StateTree)
+	IGenericTeamAgentInterface* TeamAgentInterface = Cast<IGenericTeamAgentInterface>(GetPawn());
+	if (!TeamAgentInterface)
+	{
+		ensureMsgf(GetPawn(), TEXT("No Pawn on %s"), *GetName());
+		ensureMsgf(TeamAgentInterface, TEXT("No IGenericTeamAgentInterface on %s"), *GetName());
+		return;
+	}
+
+	TeamAgentInterface->SetGenericTeamId(NewTeamId);
+}
+
+FGenericTeamId AGeoEnemyAIController::GetGenericTeamId() const
+{
+	IGenericTeamAgentInterface* TeamAgentInterface = Cast<IGenericTeamAgentInterface>(GetPawn());
+	if (!TeamAgentInterface)
+	{
+		ensureMsgf(GetPawn(), TEXT("No Pawn on %s"), *GetName());
+		ensureMsgf(TeamAgentInterface, TEXT("No IGenericTeamAgentInterface on %s"), *GetName());
+		return FGenericTeamId::NoTeam;
+	}
+
+	return TeamAgentInterface->GetGenericTeamId();
+}
+
+void AGeoEnemyAIController::ResetAI()
+{
+	ClearAggro();
+	bAggroed = false;
+	AEnemyCharacter* EnemyChar = Cast<AEnemyCharacter>(GetPawn());
+	if (!IsValid(EnemyChar))
+	{
+		ensureMsgf(IsValid(EnemyChar), TEXT("Pawn is not an EnemyCharacter"));
+		return;
+	}
+
+	InitializeStateTree(EnemyChar);
+	InitializeAggro(EnemyChar);
+}
+
+void AGeoEnemyAIController::InitializeAggro(AEnemyCharacter const* EnemyChar)
+{
+	GetWorld()->GetTimerManager().SetTimer(AggroCheckTimer, this, &AGeoEnemyAIController::CheckAggroDistance, 0.5f,
+										   true);
+
+	UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(EnemyChar->GetAbilitySystemComponent());
+	if (!ASC)
+	{
+		ensureMsgf(false, TEXT("GeoEnemyAIController::OnPossess — boss has no GeoAbilitySystemComponent"));
+		return;
+	}
+
+	ASC->OnGameplayEffectAppliedDelegateToSelf.AddUObject(this, &AGeoEnemyAIController::OnGEApplied);
+}
+
+void AGeoEnemyAIController::ClearAggro()
+{
+	GetWorld()->GetTimerManager().ClearTimer(AggroCheckTimer);
+
+	UGeoAbilitySystemComponent* ASC = GeoASLib::GetGeoAscFromActor(GetPawn());
+	if (!ASC)
+	{
+		ensureMsgf(false, TEXT("GeoEnemyAIController::OnPossess — boss has no GeoAbilitySystemComponent"));
+		return;
+	}
+
+	ASC->OnGameplayEffectAppliedDelegateToSelf.RemoveAll(this);
+}
+
+void AGeoEnemyAIController::InitializeStateTree(AEnemyCharacter const* EnemyChar) const
+{
+	if (EnemyChar->StateTree)
 	{
 		StateTreeComp->SetStateTree(EnemyChar->StateTree);
 		StateTreeComp->StartLogic();
 	}
+}
 
-	if (GeoLib::IsServer(this) && EnemyChar)
+void AGeoEnemyAIController::OnPossess(APawn* InPawn)
+{
+	// Only called on server
+	Super::OnPossess(InPawn);
+	AEnemyCharacter* EnemyChar = Cast<AEnemyCharacter>(InPawn);
+	if (!IsValid(EnemyChar))
 	{
-		GetWorld()->GetTimerManager().SetTimer(AggroCheckTimer, this,
-			&AGeoEnemyAIController::CheckAggroDistance, 0.5f, true);
-
-		UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(
-			EnemyChar->GetAbilitySystemComponent());
-		if (!ASC) { ensureMsgf(false, TEXT("GeoEnemyAIController::OnPossess — boss has no GeoAbilitySystemComponent")); return; }
-		ASC->OnDamageDealt.AddDynamic(this, &AGeoEnemyAIController::OnBossDamaged);
+		ensureMsgf(IsValid(EnemyChar), TEXT("Pawn is not an EnemyCharacter"));
+		return;
 	}
+
+	InitializeStateTree(EnemyChar);
+	InitializeAggro(EnemyChar);
+}
+
+void AGeoEnemyAIController::OnUnPossess()
+{
+	ClearAggro();
+	Super::OnUnPossess();
 }
 
 void AGeoEnemyAIController::CheckAggroDistance()
@@ -47,19 +127,21 @@ void AGeoEnemyAIController::CheckAggroDistance()
 		return;
 	}
 	FVector2D const BossPos(GetPawn()->GetActorLocation());
-	for (APlayableCharacter* PlayableCharacter : TActorRange<APlayableCharacter>(GetWorld()))
+	TArray<AActor*> Actors = GeoASLib::GetInteractableActors(this, GetGenericTeamId(), TeamAttitudeMask::Hostile, false,
+															 BossPos, AggroRadius);
+	if (Actors.Num() > 0)
 	{
-		if (FVector2D::Distance(BossPos, FVector2D(PlayableCharacter->GetActorLocation())) <= AggroRadius)
-		{
-			TriggerAggro();
-			return;
-		}
+		TriggerAggro();
 	}
 }
 
-void AGeoEnemyAIController::OnBossDamaged(float /*DamageAmount*/, FGameplayTag /*AbilityTag*/)
+void AGeoEnemyAIController::OnGEApplied(UAbilitySystemComponent* Source, FGameplayEffectSpec const&,
+										FActiveGameplayEffectHandle)
 {
-	TriggerAggro();
+	if (Source != GeoASLib::GetGeoAscFromActor(GetPawn()))
+	{
+		TriggerAggro();
+	}
 }
 
 void AGeoEnemyAIController::TriggerAggro()
@@ -69,19 +151,12 @@ void AGeoEnemyAIController::TriggerAggro()
 		return;
 	}
 	bAggroed = true;
-	GetWorld()->GetTimerManager().ClearTimer(AggroCheckTimer);
+	ClearAggro();
 
-	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
+	AGeoGameState const* GeoGameState = GetWorld()->GetGameStateChecked<AGeoGameState>();
+	AGeoGameMode* GeoGameMode = GetWorld()->GetAuthGameMode<AGeoGameMode>();
+	if (GeoGameState && GeoGameMode && GeoGameState->IsBoss(GetPawn()))
 	{
 		GeoGameMode->StartMatch();
 	}
-}
-
-void AGeoEnemyAIController::RestartStateTree()
-{
-	bAggroed = false;
-	StateTreeComp->StopLogic(TEXT("Reset"));
-	StateTreeComp->StartLogic();
-	GetWorld()->GetTimerManager().SetTimer(AggroCheckTimer, this,
-		&AGeoEnemyAIController::CheckAggroDistance, 0.5f, true);
 }

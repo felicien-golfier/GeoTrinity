@@ -30,7 +30,7 @@ void UGeoInputComponent::UpdateMouseLook()
 		return;
 	}
 
-	APlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoController();
+	APlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoPlayerController();
 	if (!IsValid(GeoPlayerController))
 	{
 		return;
@@ -95,7 +95,7 @@ void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 	}
 	else
 	{
-		GetGeoCharacter()->GetGeoController()->SetShowMouseCursor(false);
+		GetGeoCharacter()->GetGeoPlayerController()->SetShowMouseCursor(false);
 		LastLookInput = LookInput;
 	}
 }

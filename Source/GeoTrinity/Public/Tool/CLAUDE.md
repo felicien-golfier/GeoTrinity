@@ -28,15 +28,16 @@ Team definitions and `ETeam` enum used by `IGenericTeamAgentInterface`.
 ## `GeoStateTreeBuilderUtil.h`
 Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` for mutating `UStateTree` assets from Python/Blueprint automation.
 Each method validates, compiles (`FCompilerManager::CompileSynchronously`), and saves the asset atomically.
+- `AddState` — creates an empty (taskless) state at a given parent/index; use for idle/dormant states that wait on an `OnEvent` transition
 - `AddFireAbilityStateByTagName` — creates a state with an `FSTTask_FireAbility` task at a given parent/index
 - `ReplaceFireAbilityTagInState` — swaps the ability tag on an existing state's fire task
 - `RemoveState` — deletes a state by name (recursive search)
-- `ClearTransitions` / `AddTransition` — manage `GotoState` transitions with a specified trigger
+- `ClearTransitions` / `AddTransition` — manage `GotoState` transitions; `AddTransition` takes a trigger and, for `OnEvent`, an event tag name
 - `AddFloatEnterCondition` — appends a `FStateTreeCompareFloatCondition` to a state's `EnterConditions`
 - `BindConditionPropertyToPropertyFunction` — binds a condition property to a Property Function output (e.g. `FSTGetHealthRatioPropertyFunction`) and wires the function's input to a context object
 - `AddSendEventAfterNCyclesTask` — appends an `FSTTask_SendEventAfterNCycles` task to an existing state
 - `ClearEnterConditions` — removes all enter conditions from a state
-- `SetRequiredEventToEnter` — sets the Required Event To Enter on a state
+- `SetRequiredEventToEnter` / `ClearRequiredEventToEnter` — set or clear the Required Event To Enter on a state
 - `ListStates` — logs the full tree with indent and task tags to `LogTemp`
 - `ListEnterConditions` — logs all enter conditions on a named state
 

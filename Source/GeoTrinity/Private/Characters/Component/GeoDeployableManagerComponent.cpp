@@ -1,6 +1,7 @@
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 
 #include "Actor/Deployable/GeoDeployableBase.h"
+#include "GeoTrinity/GeoTrinity.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 UGeoDeployableManagerComponent::UGeoDeployableManagerComponent()
@@ -10,7 +11,7 @@ UGeoDeployableManagerComponent::UGeoDeployableManagerComponent()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-bool UGeoDeployableManagerComponent::CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass) const
+bool UGeoDeployableManagerComponent::CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass)
 {
 	if (!DeployableClass)
 	{
@@ -24,22 +25,11 @@ bool UGeoDeployableManagerComponent::CanDeploy(TSubclassOf<AGeoDeployableBase> D
 		return Bucket->Deployables.Num() == 0 || Bucket->Deployables.Num() < *ClassMax;
 	}
 
-	return GetDeployedCount() < MaxDeployables;
+	return Deployables.FindOrAdd(DeployableClass).Deployables.Num() < MaxDeployables;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-int32 UGeoDeployableManagerComponent::GetDeployedCount() const
-{
-	int32 Total = 0;
-	for (auto const& [Class, Bucket] : Deployables)
-	{
-		Total += Bucket.Deployables.Num();
-	}
-	return Total;
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-TArray<AGeoDeployableBase*> UGeoDeployableManagerComponent::GetDeployables() const
+TArray<AGeoDeployableBase*> UGeoDeployableManagerComponent::GetAllDeployables() const
 {
 	TArray<AGeoDeployableBase*> All;
 	for (auto const& [Class, Bucket] : Deployables)
@@ -54,6 +44,17 @@ void UGeoDeployableManagerComponent::SetDeployableInfinitCount(TSubclassOf<AGeoD
 	DeployableSlots.FindOrAdd(Class) = 0;
 }
 
+void UGeoDeployableManagerComponent::RemoveInvalidDeployables(FDeployableBucket& Bucket)
+{
+	for (int i = Bucket.Deployables.Num() - 1; i >= 0; --i)
+	{
+		if (!IsValid(Bucket.Deployables[i]))
+		{
+			UE_LOG(LogGeoTrinity, Warning, TEXT("Deployable Invalid in the array"));
+			Bucket.Deployables.RemoveAt(i);
+		}
+	}
+}
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Deployable)
 {
@@ -62,13 +63,15 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 		return;
 	}
 
-	auto& [Bucket] = Deployables.FindOrAdd(Deployable->GetClass());
-	if (Bucket.Contains(Deployable))
+	FDeployableBucket& Bucket = Deployables.FindOrAdd(Deployable->GetClass());
+	if (Bucket.Deployables.Contains(Deployable))
 	{
 		ensureMsgf(false, TEXT("GeoDeployableManagerComponent: Tried to register '%s' twice."),
 				   *GetNameSafe(Deployable));
 		return;
 	}
+
+	RemoveInvalidDeployables(Bucket);
 
 	if (!CanDeploy(Deployable->GetClass()))
 	{
@@ -78,35 +81,25 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 			   *GetNameSafe(Deployable));
 	}
 
-	Bucket.Add(Deployable);
+	Bucket.Deployables.Add(Deployable);
 	Deployable->OnDeployableExpiredEvent.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
 	// Ensure we remove it also on client even if forced expired by server
 	Deployable->OnDestroyed.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
-	OnDeployCountChanged.Broadcast(GetDeployedCount(), MaxDeployables);
+	OnDeployCountChanged.Broadcast(Bucket.Deployables.Num(), MaxDeployables);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoDeployableManagerComponent::ExpireAll()
+void UGeoDeployableManagerComponent::ForceExpireAll() const
 {
 	// Copy since Recall will trigger removal via the delegate
-	TArray<AGeoDeployableBase*> const Copy = GetDeployables();
+	TArray<AGeoDeployableBase*> const Copy = GetAllDeployables();
 	for (AGeoDeployableBase* Deployable : Copy)
 	{
 		if (IsValid(Deployable))
 		{
-			Deployable->Expire();
+			Deployable->Expire(0.f);
 		}
 	}
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-float UGeoDeployableManagerComponent::GetDeployRatio() const
-{
-	if (MaxDeployables <= 0)
-	{
-		return 0.f;
-	}
-	return static_cast<float>(GetDeployedCount()) / static_cast<float>(MaxDeployables);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -117,9 +110,8 @@ void UGeoDeployableManagerComponent::OnDeployableDestroyed(AActor* Deployable)
 
 void UGeoDeployableManagerComponent::OnDeployableDestroyed(AGeoDeployableBase* Deployable)
 {
-	if (FDeployableBucket* Bucket = Deployables.Find(Deployable->GetClass()))
-	{
-		Bucket->Deployables.Remove(Deployable);
-	}
-	OnDeployCountChanged.Broadcast(GetDeployedCount(), MaxDeployables);
+	FDeployableBucket& Bucket = Deployables.FindOrAdd(Deployable->GetClass());
+	Bucket.Deployables.Remove(Deployable);
+
+	OnDeployCountChanged.Broadcast(Bucket.Deployables.Num(), MaxDeployables);
 }

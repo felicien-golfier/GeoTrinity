@@ -19,8 +19,8 @@ void AGeoGameMode::Tick(float DeltaSeconds)
 void AGeoGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
-	AGeoGameState* GameState = GetGameState<AGeoGameState>();
-	if (!GameState || !GameState->IsMatchInProgress())
+	AGeoGameState* GeoGameState = GetGameState<AGeoGameState>();
+	if (!GeoGameState || !GeoGameState->IsMatchInProgress())
 	{
 		return;
 	}
@@ -29,5 +29,18 @@ void AGeoGameMode::Logout(AController* Exiting)
 	{
 		return;
 	}
-	GameState->NotifyPlayerDiedInFight();
+	GeoGameState->NotifyPlayerDiedInFight(PlayableCharacter);
+}
+
+bool AGeoGameMode::ReadyToStartMatch_Implementation()
+{
+	return false; // Only code can call StartMatch
+}
+
+void AGeoGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	if (!bStartPlayersAsSpectators && !MustSpectate(NewPlayer))
+	{
+		RestartPlayer(NewPlayer);
+	}
 }

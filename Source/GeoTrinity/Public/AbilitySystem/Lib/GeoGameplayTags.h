@@ -65,9 +65,17 @@ struct FGeoGameplayTags
 
 	// AI
 	FGameplayTag AI_FiringPoint;
-	FGameplayTag AI_Arena_PlayerSpawn;
-	FGameplayTag AI_Arena_Entrance;
-	FGameplayTag AI_Boss_Aggro;
+	FGameplayTag AI_Boss_AggroEvent;
+	FGameplayTag AI_Boss_Spawn;
+	FGameplayTag AI_Dummy_Spawn;
+
+	// ARENA LOCATION //
+	FGameplayTag Arena_FightLocation;
+	FGameplayTag Arena_Entrance;
+
+	// CAMERA //
+	FGameplayTag Camera_Bounds_Intro;
+	FGameplayTag Camera_Bounds_Fight;
 
 private:
 	static FGeoGameplayTags GameplayTags;

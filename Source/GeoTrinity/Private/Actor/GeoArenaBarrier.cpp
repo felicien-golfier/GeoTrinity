@@ -2,20 +2,11 @@
 
 #include "Actor/GeoArenaBarrier.h"
 
-#include "Components/BoxComponent.h"
 #include "Net/UnrealNetwork.h"
 
 AGeoArenaBarrier::AGeoArenaBarrier()
 {
 	bReplicates = true;
-
-	BlockingVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("BlockingVolume"));
-	SetRootComponent(BlockingVolume);
-	BlockingVolume->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	BlockingVolume->SetCollisionResponseToAllChannels(ECR_Block);
-
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	MeshComponent->SetupAttachment(BlockingVolume);
 }
 
 void AGeoArenaBarrier::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -23,16 +14,70 @@ void AGeoArenaBarrier::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoArenaBarrier, bIsClosed);
 }
+void AGeoArenaBarrier::BeginPlay()
+{
+	Super::BeginPlay();
+	TickLerp();
+}
 
 void AGeoArenaBarrier::SetClosed(bool bNewClosed)
 {
 	bIsClosed = bNewClosed;
 	OnRep_bIsClosed();
+	OnBarrierStateChanged(bIsClosed);
+}
+
+void AGeoArenaBarrier::OnBarrierStateChanged_Implementation(bool bClosed)
+{
+	TickLerp();
+}
+
+void AGeoArenaBarrier::CaptureFightOnLocations()
+{
+	for (FBarrierAnimatedActor& AnimatedActor : AnimatedActors)
+	{
+		if (AnimatedActor.Actor)
+		{
+			AnimatedActor.FightOnLocation = AnimatedActor.Actor->GetActorLocation();
+		}
+	}
+}
+
+void AGeoArenaBarrier::CaptureFightOffLocations()
+{
+	for (FBarrierAnimatedActor& AnimatedActor : AnimatedActors)
+	{
+		if (AnimatedActor.Actor)
+		{
+			AnimatedActor.FightOffLocation = AnimatedActor.Actor->GetActorLocation();
+		}
+	}
 }
 
 void AGeoArenaBarrier::OnRep_bIsClosed()
 {
-	BlockingVolume->SetCollisionEnabled(bIsClosed ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-	MeshComponent->SetVisibility(bIsClosed);
 	OnBarrierStateChanged(bIsClosed);
+}
+
+void AGeoArenaBarrier::TickLerp()
+{
+	float const Step = LerpDuration > 0.0f ? GetWorld()->GetDeltaSeconds() / LerpDuration : 1.0f;
+	LerpAlpha = FMath::Clamp(LerpAlpha + (bIsClosed ? Step : -Step), 0.0f, 1.0f);
+
+	for (FBarrierAnimatedActor const& AnimatedActor : AnimatedActors)
+	{
+		if (!AnimatedActor.Actor)
+		{
+			ensureMsgf(AnimatedActor.Actor, TEXT("AGeoArenaBarrier: AnimatedActors entry has no Actor assigned."));
+			continue;
+		}
+
+		AnimatedActor.Actor->SetActorLocation(FMath::Lerp(AnimatedActor.FightOffLocation, AnimatedActor.FightOnLocation,
+														  AnimatedActor.bHasMovement ? LerpAlpha : !bIsClosed));
+	}
+
+	if ((bIsClosed && LerpAlpha <= 1.0f) || (!bIsClosed && LerpAlpha >= 0.0f))
+	{
+		GetWorldTimerManager().SetTimerForNextTick(this, &AGeoArenaBarrier::TickLerp);
+	}
 }

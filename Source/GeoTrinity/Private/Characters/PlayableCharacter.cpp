@@ -15,6 +15,7 @@
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Tool/UGeoGameplayLibrary.h"
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
 
@@ -31,9 +32,6 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 	ChargeBeamGaugeComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	ChargeBeamGaugeComponent->SetHiddenInGame(true);
 	ChargeBeamGaugeComponent->SetUsingAbsoluteRotation(true);
-
-	DeployableManagerComponent =
-		CreateDefaultSubobject<UGeoDeployableManagerComponent>(TEXT("DeployableManagerComponent"));
 
 	TeamId = ETeam::Player;
 }
@@ -166,11 +164,11 @@ void APlayableCharacter::InitGAS()
 	if (GeoLib::IsServer(this))
 	{
 		AbilitySystemComponent->GiveStartupAbilities(GetPlayerClass());
-		AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &APlayableCharacter::OnFightHealthChanged);
+		AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &APlayableCharacter::OnHealthChanged);
 	}
 }
 
-void APlayableCharacter::OnFightHealthChanged(float NewValue)
+void APlayableCharacter::OnHealthChanged(float const NewValue)
 {
 	if (NewValue > 0.f)
 	{
@@ -184,19 +182,7 @@ void APlayableCharacter::OnFightHealthChanged(float NewValue)
 
 	DisableInput(Cast<APlayerController>(GetController()));
 
-	TArray<AActor*> EntrancePoints;
-	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), ATargetPoint::StaticClass(),
-		FGeoGameplayTags::Get().AI_Arena_Entrance.GetTagName(), EntrancePoints);
-	if (!EntrancePoints.IsEmpty())
-	{
-		SetActorLocation(EntrancePoints[0]->GetActorLocation());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("APlayableCharacter::OnFightHealthChanged — no entrance ATargetPoint found"));
-	}
-
-	GameState->NotifyPlayerDiedInFight();
+	GameState->NotifyPlayerDiedInFight(this);
 }
 
 void APlayableCharacter::AbilityInputTagPressed(FGameplayTag InputTag)
@@ -288,7 +274,7 @@ void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
 	}
 
 	GeoPlayerState->SetPlayerClass(NewClass);
-	DeployableManagerComponent->ExpireAll();
+	DeployableManagerComponent->ForceExpireAll();
 	AbilitySystemComponent->ClearPlayerClassAbilities();
 	AbilitySystemComponent->GiveStartupAbilities(NewClass);
 	ApplyClassData(NewClass);

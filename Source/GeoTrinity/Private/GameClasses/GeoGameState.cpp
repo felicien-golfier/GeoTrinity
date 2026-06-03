@@ -2,66 +2,28 @@
 
 #include "GameClasses/GeoGameState.h"
 
+#include "AI/GeoEnemyAIController.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/GeoArenaBarrier.h"
-#include "AI/GeoEnemyAIController.h"
 #include "Characters/EnemyCharacter.h"
+#include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"
-#include "Engine/TargetPoint.h"
 #include "GameClasses/GeoGameMode.h"
 #include "GameplayTagContainer.h"
-#include "GeoHUD/GeoGeoHUD.h"
+#include "HUD/GeoHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void AGeoGameState::HandleMatchHasStarted()
 {
-	Super::HandleMatchHasStarted();
-
-	if (GeoLib::IsServer(this) && EnemiesToSpawn.Num() > 0)
+	AEnemyCharacter* Boss = GetBossEnemy();
+	if (IsValid(Boss))
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		SpawnParams.Owner = this;
-		for (TSubclassOf<AEnemyCharacter> EnemyToSpawn : EnemiesToSpawn)
-		{
-			AEnemyCharacter* SpawnedEnemy = GetWorld()->SpawnActor<AEnemyCharacter>(
-				EnemyToSpawn, FTransform(FVector(100, 100, ArbitraryCharacterZ)), SpawnParams);
-			SpawnedEnemies.Add(SpawnedEnemy);
-			OnEnemySpawned.Broadcast(SpawnedEnemy);
-		}
+		InitBoss(Boss);
 	}
-
-	if (AEnemyCharacter* Boss = GetFirstEnemy())
+	else
 	{
-		if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
-		{
-			if (AGeoGeoHUD* GeoHUD = LocalPlayerController->GetGeoHUD<AGeoGeoHUD>())
-			{
-				GeoHUD->ShowBossHealthBar(Boss);
-			}
-		}
-
-		if (GeoLib::IsServer(this))
-		{
-			Boss->OnBossDefeated.AddDynamic(this, &AGeoGameState::NotifyBossDefeated);
-
-			if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(Boss->GetController()))
-			{
-				EnemyAIController->GetStateTreeComp()->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_Aggro);
-			}
-
-			PlayersAliveInFight = 0;
-			for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-			{
-				if (It->IsValid())
-				{
-					++PlayersAliveInFight;
-				}
-			}
-
-			GetWorld()->GetTimerManager().SetTimer(CommitFightTimer, this, &AGeoGameState::CommitFightStart, 5.f, false);
-		}
+		ensureMsgf(false, TEXT("No Boss found in the world, ensure an EnemyCharacter with bIsBoss=true is spawned"));
 	}
 }
 
@@ -69,9 +31,14 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 {
 	Super::HandleMatchIsWaitingToStart();
 
+	if (PreviousMatchState == MatchState::EnteringMap)
+	{
+		SpawnEnemies();
+	}
+
 	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
-		if (AGeoGeoHUD* GeoHUD = LocalPlayerController->GetGeoHUD<AGeoGeoHUD>())
+		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
 		{
 			GeoHUD->HideBossHealthBar();
 		}
@@ -83,17 +50,19 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 		{
 			ArenaBarrier->SetClosed(false);
 		}
-		TeleportPlayersTo(FGeoGameplayTags::Get().AI_Arena_Entrance);
+		TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance);
 	}
+
+	MatchIsWaitingToStartDelegate.Broadcast();
 }
 
 void AGeoGameState::HandleMatchHasEnded()
 {
 	Super::HandleMatchHasEnded();
 
-	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
+	if (APlayerController const* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
-		if (AGeoGeoHUD* GeoHUD = LocalPlayerController->GetGeoHUD<AGeoGeoHUD>())
+		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
 		{
 			GeoHUD->HideBossHealthBar();
 		}
@@ -105,24 +74,108 @@ void AGeoGameState::HandleMatchHasEnded()
 	}
 }
 
+void AGeoGameState::SpawnEnemies()
+{
+	if (!GeoLib::IsServer(this) || (!BossToSpawn.EnemyClass.Get() && !DummyToSpawn.EnemyClass.Get()))
+	{
+		return;
+	}
+
+	SpawnEnemy(BossToSpawn, true);
+	SpawnEnemy(DummyToSpawn, false);
+}
+
+void AGeoGameState::SpawnEnemy(FEnemySpawnEntry const& Entry, bool const bIsBoss)
+{
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Owner = this;
+	TArray<AActor*> Points = GeoLib::GetTargetPoints(this, Entry.SpawnTag);
+	FVector SpawnLocation = Points.Num() > 0 ? Points[0]->GetActorLocation() : FVector(100.f, 100.f, 0.f);
+	SpawnLocation.Z = ArbitraryCharacterZ;
+	AEnemyCharacter* SpawnedEnemy =
+		GetWorld()->SpawnActor<AEnemyCharacter>(Entry.EnemyClass, FTransform(SpawnLocation), SpawnParams);
+	OnEnemySpawned.Broadcast(SpawnedEnemy);
+}
+
+bool AGeoGameState::IsBoss(AActor const* Enemy) const
+{
+	return IsValid(Enemy) && Enemy->GetClass() == BossToSpawn.EnemyClass;
+}
+
+bool AGeoGameState::IsDummy(AActor const* Enemy) const
+{
+	return IsValid(Enemy) && Enemy->GetClass() == DummyToSpawn.EnemyClass;
+}
+
+AEnemyCharacter* AGeoGameState::GetBossEnemy() const
+{
+	TArray<AActor*> Enemies;
+	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Enemies);
+	for (AActor* Enemy : Enemies)
+	{
+		if (IsBoss(Enemy))
+		{
+			return Cast<AEnemyCharacter>(Enemy);
+		}
+	}
+	return nullptr;
+}
+
+void AGeoGameState::InitBoss(AEnemyCharacter* Boss)
+{
+	if (APlayerController const* LocalPlayerController = GetWorld()->GetFirstPlayerController())
+	{
+		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
+		{
+			GeoHUD->ShowBossHealthBar(Boss);
+		}
+	}
+
+	if (GeoLib::IsServer(this))
+	{
+
+		ensureMsgf(!Boss->OnBossDefeated.IsAlreadyBound(this, &AGeoGameState::NotifyBossDefeated),
+				   TEXT("Boss %s already has OnBossDefeated bound to this GameState"), *Boss->GetName());
+
+		Boss->OnBossDefeated.AddUniqueDynamic(this, &AGeoGameState::NotifyBossDefeated);
+
+		if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(Boss->GetController()))
+		{
+			EnemyAIController->GetStateTreeComp()->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
+		}
+
+		// TODO : Do a proper player life cycle not boss dependent
+		PlayersAliveInFight = 0;
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (It->IsValid())
+			{
+				++PlayersAliveInFight;
+			}
+		}
+
+		GetWorld()->GetTimerManager().SetTimer(CommitFightTimer, this, &AGeoGameState::CommitFightStart, 5.f, false);
+	}
+}
+
 void AGeoGameState::CommitFightStart()
 {
 	if (ArenaBarrier)
 	{
 		ArenaBarrier->SetClosed(true);
 	}
-	TeleportPlayersTo(FGeoGameplayTags::Get().AI_Arena_PlayerSpawn);
+	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_FightLocation);
+	CommitFightDelegate.Broadcast();
 }
 
-void AGeoGameState::TeleportPlayersTo(FGameplayTag LocationTag)
+void AGeoGameState::TeleportPlayersTo(FGameplayTag LocationTag) const
 {
-	TArray<AActor*> SpawnPoints;
-	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), ATargetPoint::StaticClass(),
-		LocationTag.GetTagName(), SpawnPoints);
-
+	TArray<AActor*> SpawnPoints = GeoLib::GetTargetPoints(this, LocationTag);
 	if (SpawnPoints.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GeoGameState::TeleportPlayersTo — no ATargetPoint found for tag %s"), *LocationTag.ToString());
+		ensureMsgf(false, TEXT("Ensure to add Spawn points with tag %s in your map, DUMBASS"),
+				   *LocationTag.GetTagName().ToString());
 		return;
 	}
 
@@ -143,15 +196,27 @@ void AGeoGameState::TeleportPlayersTo(FGameplayTag LocationTag)
 	}
 }
 
-void AGeoGameState::NotifyPlayerDiedInFight()
+void AGeoGameState::NotifyPlayerDiedInFight(APlayableCharacter* PlayableCharacter)
 {
+
+	TArray<AActor*> EntrancePoints = GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().Arena_Entrance);
+	if (!EntrancePoints.IsEmpty())
+	{
+		PlayableCharacter->SetActorLocation(
+			EntrancePoints[FMath::RandRange(0, EntrancePoints.Num() - 1)]->GetActorLocation());
+	}
+	else
+	{
+		ensureMsgf(false, TEXT("APlayableCharacter::NotifyPlayerDiedInFight — no entrance ATargetPoint found"));
+	}
+
 	--PlayersAliveInFight;
 	if (PlayersAliveInFight > 0)
 	{
 		return;
 	}
 
-	if (AEnemyCharacter* Boss = GetFirstEnemy())
+	if (AEnemyCharacter* Boss = GetBossEnemy())
 	{
 		Boss->ResetForNewAttempt();
 	}

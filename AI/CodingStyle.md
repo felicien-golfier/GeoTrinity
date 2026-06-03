@@ -1,6 +1,7 @@
 # Coding Style & Conventions
 
 ## General Rules
+- **SIMPLICITY IS THE #1 PRIORITY — write the least code that solves the exact ask.** Before writing, find the simplest mechanism already available (timer, existing function, existing member) and use it instead of inventing new machinery. If a solution feels elaborate, OR it is wrong OR ask the linter.
 - Prefer fewer but longer `if` statements — merge conditions with `&&` rather than nesting
 - `const` by default; remove only when mutation is needed
 - Prefer non-const parameters over creating new variables (`FTransform SpawnTransform` not `const FTransform& SpawnTransform` + local copy)

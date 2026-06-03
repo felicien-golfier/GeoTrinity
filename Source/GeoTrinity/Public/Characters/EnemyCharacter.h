@@ -23,7 +23,8 @@ class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
 	GENERATED_BODY()
 
 public:
-	/** Creates the ASC and attribute set as direct subobjects (enemies own their ASC, unlike players who use PlayerState). Sets AGeoEnemyAIController as the AI controller class. */
+	/** Creates the ASC and attribute set as direct subobjects (enemies own their ASC, unlike players who use
+	 * PlayerState). Sets AGeoEnemyAIController as the AI controller class. */
 	AEnemyCharacter(FObjectInitializer const& ObjectInitializer);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
@@ -39,6 +40,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void InitGAS() override;
+	void ResetHealth() const;
 
 	UFUNCTION(BlueprintNativeEvent)
 	void OnHealthChanged(float NewValue);
@@ -47,6 +49,4 @@ protected:
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "Enemy")
 	bool ResetToFullLifeWhenReachingZero = false;
-
-	bool bIsResetting = false;
 };

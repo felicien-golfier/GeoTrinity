@@ -1,17 +1,15 @@
 ﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
-#include "GameplayPrediction.h"
-#include "GenericTeamAgentInterface.h"
-#include "StructUtils/InstancedStruct.h"
-
 #include "UGeoGameplayLibrary.generated.h"
 
+struct FGameplayTag;
 // Should be used as default value to spawn projectiles / characters etc... Also should be Playable Character's half
 // capsule height.
 constexpr float ArbitraryCharacterZ = 50.0f;
 
 
+class AEnemyCharacter;
 class AGeoProjectile;
 class UCameraShakeBase;
 struct FAbilityPayload;
@@ -22,11 +20,11 @@ static FColor const ColorPalette[] = {
 	FColor::Cyan,		  FColor::Magenta, FColor::Orange, FColor::Emerald,	   FColor::Purple,
 	FColor::Turquoise,	  FColor::Silver,  FColor::White,  FColor(75, 0, 130), // Indigo
 	FColor(255, 20, 147), // Pink
-	FColor(0,   128, 128), // Teal
-	FColor(220, 20,  60),  // Crimson
-	FColor(191, 255, 0),   // Lime
-	FColor(139, 69,  19),  // Brown
-	FColor(0,   0,   128), // Navy
+	FColor(0, 128, 128), // Teal
+	FColor(220, 20, 60), // Crimson
+	FColor(191, 255, 0), // Lime
+	FColor(139, 69, 19), // Brown
+	FColor(0, 0, 128), // Navy
 };
 
 /** General-purpose Blueprint function library for GeoTrinity. Provides server detection, camera shake, and
@@ -70,6 +68,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
+
+	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	static TArray<AActor*> GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const LocationTag);
 };
 
 using GeoLib = UGeoGameplayLibrary;

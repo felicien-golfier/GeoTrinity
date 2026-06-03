@@ -13,6 +13,7 @@
 #include "GeoCharacter.generated.h"
 
 
+class UGeoDeployableManagerComponent;
 enum class ETeam : uint8;
 class UCharacterAttributeSet;
 class UGeoGameplayAbility;
@@ -74,7 +75,7 @@ public:
 	//----------------------------------------------------------------------//
 
 	/** Returns the controller cast to AGeoPlayerController, or nullptr if controlled by AI or a different type. */
-	AGeoPlayerController* GetGeoController() const { return Cast<AGeoPlayerController>(GetController()); }
+	AGeoPlayerController* GetGeoPlayerController() const { return Cast<AGeoPlayerController>(GetController()); }
 
 	/** Draws an arrow in the default debug color starting from the character's location. */
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const;
@@ -113,6 +114,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")
 	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
+	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 #ifdef UE_EDITOR
 public:

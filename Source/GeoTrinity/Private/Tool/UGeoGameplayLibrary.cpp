@@ -1,8 +1,11 @@
 ﻿#include "Tool/UGeoGameplayLibrary.h"
 
+#include "Actor/GeoTargetPoint.h"
 #include "Camera/CameraShakeBase.h"
+#include "Characters/EnemyCharacter.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
+#include "GameplayTagContainer.h"
 #include "Kismet/GameplayStatics.h"
 #include "VisualLogger/VisualLogger.h"
 
@@ -99,4 +102,24 @@ float UGeoGameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdate
 	}
 
 	return ServerTimeSeconds;
+}
+
+TArray<AActor*> UGeoGameplayLibrary::GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const LocationTag)
+{
+	TArray<AActor*> AllPoints;
+	UGameplayStatics::GetAllActorsOfClass(WorldContextObject->GetWorld(), AGeoTargetPoint::StaticClass(), AllPoints);
+
+	TArray<AActor*> SpawnPoints = AllPoints.FilterByPredicate(
+		[&LocationTag](AActor const* Actor)
+		{
+			return CastChecked<AGeoTargetPoint>(Actor)->GameplayTags.HasTag(LocationTag);
+		});
+
+	if (SpawnPoints.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GeoLib::GetTargetPoints — no AGeoTargetPoint found for tag %s"),
+			   *LocationTag.ToString());
+	}
+
+	return SpawnPoints;
 }

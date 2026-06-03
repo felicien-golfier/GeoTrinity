@@ -18,6 +18,7 @@
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "System/GeoCombatStatsSubsystem.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // FHudPlayerParams
@@ -150,9 +151,9 @@ void AGeoHUD::BeginPlay()
 			GameState->OnEnemySpawned.AddDynamic(this, &AGeoHUD::ShowBossHealthBar);
 
 			// If enemies already spawned before HUD was ready, show the first one
-			if (AEnemyCharacter* FirstEnemy = GameState->GetFirstEnemy())
+			if (AEnemyCharacter* Boss = GameState->GetBossEnemy())
 			{
-				ShowBossHealthBar(FirstEnemy);
+				ShowBossHealthBar(Boss);
 			}
 		}
 	}

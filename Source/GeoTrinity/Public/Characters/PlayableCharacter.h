@@ -101,7 +101,7 @@ protected:
 	// END GAS //
 
 	UFUNCTION()
-	void OnFightHealthChanged(float NewValue);
+	void OnHealthChanged(float NewValue);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))
@@ -112,9 +112,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> ChargeBeamGaugeComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
-	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Class")
 	TMap<EPlayerClass, FPlayerClassData> ClassData;
