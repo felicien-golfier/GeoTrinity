@@ -83,6 +83,10 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-06-01] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
 
+<!-- [2026-06-02] Scope: GeoEnemyAIController.cpp, EnemyCharacter.cpp, PlayableCharacter.cpp, GeoGameMode.cpp, GeoGameState.cpp (+ headers). Fixed stale class comment in GeoEnemyAIController.h (FSTTask_FireProjectileAbility → FSTTask_FireAbility). Added constructor/OnPossess/GetStateTreeComp comments to GeoEnemyAIController.h. Fixed stale class comment in EnemyCharacter.h (removed FiringPoints reference — property was removed from EnemyCharacter; firing point logic lives entirely in STTask_SelectNextFiringPoint). Added constructor comment to PlayableCharacter.h. Added constructor, Logout, RequestWaitingToStart, and RequestWaitingPostMatch comments to GeoGameMode.h. Added HandleMatchHasStarted, HandleMatchIsWaitingToStart, and HandleMatchHasEnded comments to GeoGameState.h. Notable: EnemyCharacter.md and Characters/CLAUDE.md both carried stale FiringPoints entries — see CLAUDE.md task report. -->
+
+<!-- [2026-06-03] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
+
 - [x] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
@@ -139,3 +143,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-05-30] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
 
 <!-- [2026-06-01] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
+
+<!-- [2026-06-02] Updated: Characters/CLAUDE.md — EnemyCharacter.h row: removed stale `FiringPoints` reference (property was deleted from EnemyCharacter; firing point logic is entirely in STTask_SelectNextFiringPoint). Characters/EnemyCharacter.md — Firing points section rewritten: removed stale `FiringPoints` property entry, replaced with a note pointing to FSTTask_SelectNextFiringPoint. No other CLAUDE.md changes needed — the remaining commit changes (HasAuthority → GeoLib::IsServer, variable renaming, GeoGameMode Logout guard) are code-style only and do not affect documented design decisions. -->
+
+<!-- [2026-06-03] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->

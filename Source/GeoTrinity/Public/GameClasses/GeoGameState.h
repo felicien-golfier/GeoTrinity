@@ -40,8 +40,16 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Spawns enemies from `EnemiesToSpawn`, sends the aggro event to the boss's StateTree, counts connected
+	 * players, and schedules the arena-lock timer (server). Shows the boss health bar locally.
+	 */
 	virtual void HandleMatchHasStarted() override;
+
+	/** Hides boss health bar locally. Opens the arena barrier and teleports players to the entrance (server). */
 	virtual void HandleMatchIsWaitingToStart() override;
+
+	/** Hides boss health bar locally. Opens the arena barrier (server). */
 	virtual void HandleMatchHasEnded() override;
 	void SpawnEnemy(FEnemySpawnEntry const& Entry, bool bIsBoss);
 	bool IsBoss(AActor const* Enemy) const;

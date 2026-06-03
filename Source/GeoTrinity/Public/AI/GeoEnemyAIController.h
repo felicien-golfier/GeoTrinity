@@ -16,7 +16,7 @@ class UStateTreeAIComponent;
 /**
  * AI controller for enemy characters. Starts a StateTree (via UStateTreeAIComponent) on possession
  * and leaves execution entirely to the tree tasks (FSTTask_FireProjectileAbility, etc.).
- * Also drives aggro detection (proximity + on-damage) and exposes ResetAI for wipe resets.
+ * Also drives aggro detection (proximity + on-damage) and exposes RestartStateTree for wipe resets.
  */
 UCLASS()
 class GEOTRINITY_API AGeoEnemyAIController : public AAIController

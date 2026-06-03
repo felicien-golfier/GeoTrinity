@@ -13,9 +13,9 @@ class UStateTree;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossDefeated);
 
 /**
- * Enemy character controlled by a StateTree AI. Owns its own ASC directly (no PlayerState).
- * Maintains an ordered list of firing points gathered from world actors tagged "Path" and cycles
- * through them round-robin to position itself before activating abilities.
+ * Enemy character controlled by a StateTree AI. Owns its ASC as a direct subobject (unlike
+ * APlayableCharacter, where GAS lives on PlayerState). Boss death is handled in OnHealthChanged:
+ * either resets health for looping attempts or broadcasts OnBossDefeated and self-destructs.
  */
 UCLASS()
 class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
