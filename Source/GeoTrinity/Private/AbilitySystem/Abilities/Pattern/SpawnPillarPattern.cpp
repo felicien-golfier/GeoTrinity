@@ -114,21 +114,30 @@ void USpawnPillarPattern::StartPattern()
 		for (FVector2D const& Location : PillarSpawnLocations)
 		{
 			SpawnPillarAtLocation(Location, InstigatorAsc);
+			if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
+			{
+				return;
+			}
 		}
 	}
+
 	EndPattern();
 }
 
 void USpawnPillarPattern::SpawnPillarAtLocation(FVector2D const& ZoneLocation,
 												UGeoAbilitySystemComponent* InstigatorAsc) const
 {
-
 	if (InstigatorAsc && PillarSpawnEffects.Num() > 0)
 	{
 		for (AActor* TargetActor :
 			 GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Owner),
 											 TeamAttitudeMask::HostileOrNeutral, true, ZoneLocation, SpawningZoneSize))
 		{
+			if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
+			{
+				return;
+			}
+
 			if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
 			{
 				UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, InstigatorAsc, TargetASC,
@@ -137,6 +146,10 @@ void USpawnPillarPattern::SpawnPillarAtLocation(FVector2D const& ZoneLocation,
 		}
 	}
 
-	GeoASLib::FullySpawnDeployable(PillarClass, StoredPayload, GeoASLib::GetEffectDataArray(StoredPayload.AbilityTag),
-								   PillarParams, FTransform(FVector(ZoneLocation, ArbitraryCharacterZ)));
+	if (bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
+	{
+		GeoASLib::FullySpawnDeployable(PillarClass, StoredPayload,
+									   GeoASLib::GetEffectDataArray(StoredPayload.AbilityTag), PillarParams,
+									   FTransform(FVector(ZoneLocation, ArbitraryCharacterZ)));
+	}
 }

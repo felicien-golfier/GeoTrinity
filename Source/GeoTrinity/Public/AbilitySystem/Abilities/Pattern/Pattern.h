@@ -47,7 +47,7 @@ public:
 
 	/** Ends the pattern and jumps the animation montage to its end section. Must be called to clean up. */
 	UFUNCTION(BlueprintCallable, Category = "Pattern")
-	virtual void EndPattern();
+	virtual void EndPattern(bool bForceStop = false);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnPatternEvent OnPatternEnd;
@@ -95,7 +95,7 @@ class GEOTRINITY_API UTickablePattern : public UPattern
 	GENERATED_BODY()
 
 public:
-	virtual void EndPattern() override;
+	virtual void EndPattern(bool bForceStop = false) override;
 
 protected:
 	virtual void StartPattern() override;

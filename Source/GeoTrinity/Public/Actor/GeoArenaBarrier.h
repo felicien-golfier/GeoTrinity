@@ -58,13 +58,21 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Barrier")
 	void OnBarrierStateChanged(bool bClosed);
 
-	// /** Editor: store each animated actor's current world location as its fight-on location. */
-	// UFUNCTION(CallInEditor, Category = "Barrier")
-	// void CaptureFightOnLocations();
-	//
-	// /** Editor: store each animated actor's current world location as its fight-off location. */
-	// UFUNCTION(CallInEditor, Category = "Barrier")
-	// void CaptureFightOffLocations();
+	/** Editor: store each animated actor's current world transform as its fight-on transform. */
+	UFUNCTION(CallInEditor, Category = "Barrier")
+	void CaptureFightOnTransforms();
+
+	/** Editor: store each animated actor's current world transform as its fight-off transform. */
+	UFUNCTION(CallInEditor, Category = "Barrier")
+	void CaptureFightOffTransforms();
+
+	/** Editor: move each animated actor to its stored fight-on transform. */
+	UFUNCTION(CallInEditor, Category = "Barrier")
+	void SetToFightOnTransforms();
+
+	/** Editor: move each animated actor to its stored fight-off transform. */
+	UFUNCTION(CallInEditor, Category = "Barrier")
+	void SetToFightOffTransforms();
 
 	/** Actors lerped between their two locations when the barrier state changes. */
 	UPROPERTY(EditAnywhere, Category = "Barrier")

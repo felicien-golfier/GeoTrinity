@@ -31,10 +31,17 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 {
 	Super::HandleMatchIsWaitingToStart();
 
-	if (PreviousMatchState == MatchState::EnteringMap)
+	if (GetBossEnemy())
 	{
-		SpawnEnemies();
+		GetBossEnemy()->Destroy();
 	}
+	if (GetDummyEnemy())
+	{
+		GetDummyEnemy()->Destroy();
+	}
+
+	SpawnEnemies();
+
 
 	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
@@ -84,11 +91,26 @@ void AGeoGameState::SpawnEnemies()
 		return;
 	}
 
-	SpawnEnemy(BossToSpawn, true);
-	SpawnEnemy(DummyToSpawn, false);
+	if (GetBossEnemy() && !GetBossEnemy()->IsActorBeingDestroyed())
+	{
+		ensureMsgf(false, TEXT("Boss is already existing"));
+	}
+	else
+	{
+		SpawnEnemy(BossToSpawn);
+	}
+
+	if (GetDummyEnemy() && !GetDummyEnemy()->IsActorBeingDestroyed())
+	{
+		ensureMsgf(false, TEXT("Boss is already existing"));
+	}
+	else
+	{
+		SpawnEnemy(DummyToSpawn);
+	}
 }
 
-void AGeoGameState::SpawnEnemy(FEnemySpawnEntry const& Entry, bool const bIsBoss)
+void AGeoGameState::SpawnEnemy(FEnemySpawnEntry const& Entry)
 {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -125,6 +147,20 @@ AEnemyCharacter* AGeoGameState::GetBossEnemy() const
 	return nullptr;
 }
 
+AEnemyCharacter* AGeoGameState::GetDummyEnemy() const
+{
+	TArray<AActor*> Enemies;
+	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Enemies);
+	for (AActor* Enemy : Enemies)
+	{
+		if (IsDummy(Enemy))
+		{
+			return Cast<AEnemyCharacter>(Enemy);
+		}
+	}
+	return nullptr;
+}
+
 void AGeoGameState::InitBoss(AEnemyCharacter* Boss)
 {
 	if (APlayerController const* LocalPlayerController = GetWorld()->GetFirstPlayerController())
@@ -137,7 +173,6 @@ void AGeoGameState::InitBoss(AEnemyCharacter* Boss)
 
 	if (GeoLib::IsServer(this))
 	{
-
 		ensureMsgf(!Boss->OnBossDefeated.IsAlreadyBound(this, &AGeoGameState::NotifyBossDefeated),
 				   TEXT("Boss %s already has OnBossDefeated bound to this GameState"), *Boss->GetName());
 

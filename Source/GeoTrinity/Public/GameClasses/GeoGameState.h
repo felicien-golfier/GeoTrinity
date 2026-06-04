@@ -51,10 +51,11 @@ public:
 
 	/** Hides boss health bar locally. Opens the arena barrier (server). */
 	virtual void HandleMatchHasEnded() override;
-	void SpawnEnemy(FEnemySpawnEntry const& Entry, bool bIsBoss);
+	void SpawnEnemy(FEnemySpawnEntry const& Entry);
 	bool IsBoss(AActor const* Enemy) const;
 	bool IsDummy(AActor const* Enemy) const;
 	AEnemyCharacter* GetBossEnemy() const;
+	AEnemyCharacter* GetDummyEnemy() const;
 
 	/** Server-only. Called when a player dies during the fight. Decrements alive counter; triggers wipe reset when 0.
 	 */
@@ -86,10 +87,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	FName EntranceZoneTagName = "EntranceZone";
 
-
 	FCommitFight CommitFightDelegate;
 	FMatchIsWaitingToStart MatchIsWaitingToStartDelegate;
-
 
 private:
 	int32 PlayersAliveInFight = 0;

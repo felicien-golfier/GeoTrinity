@@ -623,6 +623,10 @@ UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 {
 	AGeoDeployableBase* Deployable =
 		StartSpawnDeployable(DeployableActorClass, Payload.Owner, Cast<APawn>(Payload.Instigator), SpawnTransform);
+	if (!ensureMsgf(IsValid(Deployable), TEXT("Failed to spawn deployable! %s"), *DeployableActorClass->GetName()))
+	{
+		return nullptr;
+	}
 	InitDeployable(Deployable, Payload, EffectDataArray, Params);
 	FinishSpawnDeployable(Deployable, SpawnTransform);
 

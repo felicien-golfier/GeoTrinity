@@ -89,7 +89,7 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 
 void AEnemyCharacter::ResetForNewAttempt()
 {
-	DeployableManagerComponent->ForceExpireAll();
+	StopAllGameplayElements();
 	AbilitySystemComponent->InitializeDefaultAttributes();
 	GetController<AGeoEnemyAIController>()->ResetAI();
 }

@@ -32,6 +32,7 @@ class GEOTRINITY_API UGeoDeployableManagerComponent : public UActorComponent
 
 public:
 	UGeoDeployableManagerComponent();
+	bool CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass);
 
 	/**
 	 * Returns true if another deployable of the given class can be deployed.
@@ -39,7 +40,7 @@ public:
 	 * Otherwise falls back to the global MaxDeployables limit.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass);
+	bool HasReachMaxLimit(TSubclassOf<AGeoDeployableBase> DeployableClass);
 
 	/** Returns the configured maximum number of simultaneous deployables. */
 	UFUNCTION(BlueprintPure)

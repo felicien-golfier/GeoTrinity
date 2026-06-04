@@ -60,13 +60,17 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
 }
-void AGeoCharacter::BeginDestroy()
+void AGeoCharacter::StopAllGameplayElements()
 {
 	if (DeployableManagerComponent)
 	{
 		DeployableManagerComponent->ForceExpireAll();
 	}
-	Super::BeginDestroy();
+}
+void AGeoCharacter::EndPlay(EEndPlayReason::Type const EndPlayReason)
+{
+	StopAllGameplayElements();
+	Super::EndPlay(EndPlayReason);
 }
 
 UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const

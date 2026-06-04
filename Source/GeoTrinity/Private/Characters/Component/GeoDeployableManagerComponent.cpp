@@ -11,21 +11,27 @@ UGeoDeployableManagerComponent::UGeoDeployableManagerComponent()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-bool UGeoDeployableManagerComponent::CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass)
+bool UGeoDeployableManagerComponent::CanDeploy(TSubclassOf<AGeoDeployableBase> const DeployableClass)
+{
+	return DeployableClass->GetDefaultObject<AGeoDeployableBase>()->DestroyOldestWhenLimitReached()
+		|| !HasReachMaxLimit(DeployableClass);
+}
+
+bool UGeoDeployableManagerComponent::HasReachMaxLimit(TSubclassOf<AGeoDeployableBase> const DeployableClass)
 {
 	if (!DeployableClass)
 	{
 		ensureMsgf(false, TEXT("GeoDeployableManagerComponent: Tried to deploy a null class."));
-		return false;
+		return true;
 	}
 
 	if (int32 const* ClassMax = DeployableSlots.Find(DeployableClass))
 	{
 		FDeployableBucket const* Bucket = Deployables.Find(DeployableClass);
-		return Bucket->Deployables.Num() == 0 || Bucket->Deployables.Num() < *ClassMax;
+		return Bucket->Deployables.Num() != 0 && Bucket->Deployables.Num() >= *ClassMax;
 	}
 
-	return Deployables.FindOrAdd(DeployableClass).Deployables.Num() < MaxDeployables;
+	return Deployables.FindOrAdd(DeployableClass).Deployables.Num() >= MaxDeployables;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -73,12 +79,23 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 
 	RemoveInvalidDeployables(Bucket);
 
-	if (!CanDeploy(Deployable->GetClass()))
+	if (HasReachMaxLimit(Deployable->GetClass()))
 	{
-		UE_LOG(LogTemp, Error,
-			   TEXT("GeoDeployableManagerComponent: Tried to register '%s' but already at max. "
-					"Deploy ability should have been blocked by CanActivateAbility."),
-			   *GetNameSafe(Deployable));
+		if (Deployable->DestroyOldestWhenLimitReached())
+		{
+			checkf(Bucket.Deployables.Num() > 0,
+				   TEXT("Deployables reach the max limit but their is nothing in the array."));
+			Bucket.Deployables[0]->Expire();
+			Bucket.Deployables.RemoveAt(0);
+		}
+		else
+		{
+			// TODO : Can happen between the time a deployable projectile is spawned and deployable is here.
+			UE_LOG(LogTemp, Error,
+				   TEXT("GeoDeployableManagerComponent: Tried to register '%s' but already at max. "
+						"Deploy ability should have been blocked by CanActivateAbility."),
+				   *GetNameSafe(Deployable));
+		}
 	}
 
 	Bucket.Deployables.Add(Deployable);

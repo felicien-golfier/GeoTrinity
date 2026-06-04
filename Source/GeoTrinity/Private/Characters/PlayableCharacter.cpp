@@ -19,11 +19,9 @@
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
 
-static TAutoConsoleVariable<bool> CVarPlayerInvincible(
-	TEXT("Geo.PlayerInvincible"),
-	false,
-	TEXT("When true, players never die from health reaching zero."),
-	ECVF_Cheat);
+static TAutoConsoleVariable<bool> CVarPlayerInvincible(TEXT("Geo.PlayerInvincible"), false,
+													   TEXT("When true, players never die from health reaching zero."),
+													   ECVF_Cheat);
 
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -174,21 +172,34 @@ void APlayableCharacter::InitGAS()
 	}
 }
 
-void APlayableCharacter::OnHealthChanged(float const NewValue)
+void APlayableCharacter::Death()
 {
-	if (NewValue > 0.f || CVarPlayerInvincible.GetValueOnGameThread())
+	if (bIsDead)
 	{
 		return;
 	}
+	bIsDead = true;
 	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
-	if (!GameState || !GameState->IsMatchInProgress())
-	{
-		return;
-	}
+	ensureMsgf(GameState, TEXT("No GameState in %s"), *GetName());
 
-	DisableInput(Cast<APlayerController>(GetController()));
+	StopAllGameplayElements();
+	// DisableInput(Cast<APlayerController>(GetController()));
 
 	GameState->NotifyPlayerDiedInFight(this);
+}
+
+void APlayableCharacter::OnHealthChanged(float const NewValue)
+{
+	if (NewValue <= 0.f && !CVarPlayerInvincible.GetValueOnGameThread())
+	{
+		Death();
+	}
+
+	// TODO Do a proper rez system;
+	if (NewValue > 0 && bIsDead)
+	{
+		bIsDead = false;
+	}
 }
 
 void APlayableCharacter::AbilityInputTagPressed(FGameplayTag InputTag)
@@ -280,7 +291,7 @@ void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
 	}
 
 	GeoPlayerState->SetPlayerClass(NewClass);
-	DeployableManagerComponent->ForceExpireAll();
+	StopAllGameplayElements();
 	AbilitySystemComponent->ClearPlayerClassAbilities();
 	AbilitySystemComponent->GiveStartupAbilities(NewClass);
 	ApplyClassData(NewClass);

@@ -204,7 +204,7 @@ void AGeoDeployableBase::Recall(float Value)
 	{
 		ExecuteCue(RecallGameplayCueTag, GetRecallCueParams());
 	}
-	Expire(TimeBeforeDestroyAtExpire);
+	Expire();
 }
 
 
@@ -278,7 +278,7 @@ void AGeoDeployableBase::ApplyExplodeEffect(float Value, UGeoAbilitySystemCompon
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::Expire(float TimeBeforeDestroy)
+void AGeoDeployableBase::Expire(float const TimeBeforeDestroy)
 {
 	bActive = false;
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
@@ -299,12 +299,17 @@ void AGeoDeployableBase::Expire(float TimeBeforeDestroy)
 					this->Destroy();
 				}
 			},
-			TimeBeforeDestroyAtExpire, false);
+			TimeBeforeDestroy, false);
 	}
 	else
 	{
 		Destroy();
 	}
+}
+
+void AGeoDeployableBase::Expire()
+{
+	Expire(TimeBeforeDestroyAtExpire);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -376,7 +381,7 @@ void AGeoDeployableBase::OnRep_Active(bool bOldValue)
 		{
 			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams());
 		}
-		Expire(TimeBeforeDestroyAtExpire);
+		Expire();
 	}
 }
 void AGeoDeployableBase::OnRep_Blinking(bool bOldValue)
@@ -404,7 +409,7 @@ void AGeoDeployableBase::TryRecallOrExpire()
 		}
 		else
 		{
-			Expire(TimeBeforeDestroyAtExpire);
+			Expire();
 		}
 	}
 }

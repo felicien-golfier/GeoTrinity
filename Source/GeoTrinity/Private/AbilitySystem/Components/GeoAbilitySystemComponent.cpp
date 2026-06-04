@@ -333,7 +333,7 @@ void UGeoAbilitySystemComponent::StopAllActivePatterns()
 	{
 		if (IsValid(Pattern) && Pattern->IsPatternActive())
 		{
-			Pattern->EndPattern();
+			Pattern->EndPattern(true);
 		}
 	}
 }

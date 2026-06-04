@@ -34,7 +34,7 @@ protected:
 	virtual void InitPattern(FAbilityPayload const& Payload) override;
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
-	virtual void EndPattern() override;
+	virtual void EndPattern(bool bForceStop = false) override;
 
 private:
 	bool ShouldHitActor(AActor const* Actor) const;

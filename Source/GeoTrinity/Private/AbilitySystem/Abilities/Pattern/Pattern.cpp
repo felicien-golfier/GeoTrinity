@@ -39,7 +39,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 	{
 		UE_LOG(LogPattern, Error,
 			   TEXT("Starting pattern when the Previous pattern of the same instance is still active !"));
-		EndPattern();
+		EndPattern(true);
 	}
 
 	bPatternIsActive = true;
@@ -166,17 +166,36 @@ float UPattern::CalculateElapsedTime() const
 	return FMath::Max(0.f, GeoLib::GetServerTime(GetWorld(), true) - StoredPayload.ServerSpawnTime - StartDelay);
 }
 
-void UPattern::EndPattern()
+void UPattern::EndPattern(bool const bForceStop)
 {
-	JumpMontageToEndSection();
+	if (!bPatternIsActive)
+	{
+		return;
+	}
+	bPatternIsActive = false;
+
+	if (bForceStop)
+	{
+		UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
+		if (IsValid(AnimInstance))
+		{
+			AnimInstance->StopAllMontages(.2f);
+		}
+	}
+	else
+	{
+		JumpMontageToEndSection();
+	}
 
 	if (StartSectionTimerHandle.IsValid())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(StartSectionTimerHandle);
 	}
 
-	bPatternIsActive = false;
-	OnPatternEnd.Broadcast();
+	if (!bForceStop)
+	{
+		OnPatternEnd.Broadcast();
+	}
 }
 
 void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
@@ -218,8 +237,8 @@ void UTickablePattern::TickPattern(float const ServerTime, float const SpentTime
 	// To be overriden by your own Tickable pattern !
 }
 
-void UTickablePattern::EndPattern()
+void UTickablePattern::EndPattern(bool bForceStop)
 {
-	Super::EndPattern();
+	Super::EndPattern(bForceStop);
 	GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
 }

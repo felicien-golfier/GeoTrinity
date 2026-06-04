@@ -37,7 +37,7 @@
 - Never silently skip or substitute when something required is missing. Always surface the error.
 - Ask: *can this condition legitimately be false at runtime?* If no → must flag it.
 - `ensureMsgf(condition, TEXT("..."))` — flags the problem
-  - If execution must continue: `if (!x) { ensureMsgf(x, TEXT("...")); return; }` — ensure *inside* the if body
+  - If execution must continue: `if (!ensureMsgf(x, TEXT("..."))) { return; }`
   - If no return needed: `ensureMsgf(x, TEXT("..."))` alone
 - `checkf` — for critical invariants (wrong actor type, missing subsystem, corrupted state) where silent continuation causes hard-to-debug damage
 - Never use `condition ? A : B` as a quiet fallback

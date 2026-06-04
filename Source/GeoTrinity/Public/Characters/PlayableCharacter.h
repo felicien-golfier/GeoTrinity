@@ -103,6 +103,7 @@ protected:
 
 	UFUNCTION()
 	void OnHealthChanged(float NewValue);
+	void Death();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))
@@ -122,6 +123,7 @@ private:
 	EPlayerClass PickStartingClass() const;
 
 	float PreviousYaw = 0.f;
+	bool bIsDead = false;
 	FTimerHandle ChargeDeployHideTimerHandle;
 	FTimerHandle ChargeBeamHideTimerHandle;
 };

@@ -24,6 +24,7 @@ AGeoBuffPickup::AGeoBuffPickup()
 	BuffMeshComponent->SetupAttachment(VisualRoot);
 
 	bUseRegularDrain = false;
+	bDestroyOldestWhenLimitReached = true;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

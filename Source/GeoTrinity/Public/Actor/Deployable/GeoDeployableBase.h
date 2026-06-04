@@ -80,6 +80,8 @@ public:
 	/** Registers with the instigator's DeployableManagerComponent and calls InitDrain. */
 	virtual void BeginPlay() override;
 
+	UFUNCTION(BlueprintCallable)
+	bool DestroyOldestWhenLimitReached() const { return bDestroyOldestWhenLimitReached; }
 	/**
 	 * Ends this deployable's lifetime. Calls RecallEffect then Expire.
 	 * Always use this instead of Expire or Destroy directly — it is the sole valid end-of-life path.
@@ -125,6 +127,7 @@ public:
 	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
 	UFUNCTION()
 	virtual void Expire(float TimeBeforeDestroy);
+	virtual void Expire();
 
 	/** Returns true once the deployable has been destroyed (health or duration reached zero). */
 	UFUNCTION(BlueprintPure)
@@ -179,6 +182,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 
+
 	UPROPERTY(ReplicatedUsing = OnRep_Active)
 	bool bActive = true;
 	UPROPERTY(ReplicatedUsing = OnRep_Blinking)
@@ -200,6 +204,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bPushActorsOnSpawn = false;
 	float const CollisionEnableDelay = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	bool bDestroyOldestWhenLimitReached = false;
 
 private:
 	UFUNCTION()

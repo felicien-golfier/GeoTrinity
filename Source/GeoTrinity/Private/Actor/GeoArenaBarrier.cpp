@@ -33,27 +33,49 @@ void AGeoArenaBarrier::OnBarrierStateChanged_Implementation(bool bClosed)
 	TickLerp();
 }
 
-// void AGeoArenaBarrier::CaptureFightOnLocations()
-// {
-// 	for (FBarrierAnimatedActor& AnimatedActor : AnimatedActors)
-// 	{
-// 		if (AnimatedActor.Actor)
-// 		{
-// 			AnimatedActor.FightOnTransform = AnimatedActor.Actor->GetActorTransform();
-// 		}
-// 	}
-// }
-//
-// void AGeoArenaBarrier::CaptureFightOffLocations()
-// {
-// 	for (FBarrierAnimatedActor& AnimatedActor : AnimatedActors)
-// 	{
-// 		if (AnimatedActor.Actor)
-// 		{
-// 			AnimatedActor.FightOffTransform = AnimatedActor.Actor->GetActorTransform();
-// 		}
-// 	}
-// }
+void AGeoArenaBarrier::CaptureFightOnTransforms()
+{
+	for (FBarrierAnimatedActor& AnimatedActor : AnimatedActors)
+	{
+		if (AnimatedActor.Actor)
+		{
+			AnimatedActor.FightOnTransform = AnimatedActor.Actor->GetActorTransform();
+		}
+	}
+}
+
+void AGeoArenaBarrier::CaptureFightOffTransforms()
+{
+	for (FBarrierAnimatedActor& AnimatedActor : AnimatedActors)
+	{
+		if (AnimatedActor.Actor)
+		{
+			AnimatedActor.FightOffTransform = AnimatedActor.Actor->GetActorTransform();
+		}
+	}
+}
+
+void AGeoArenaBarrier::SetToFightOnTransforms()
+{
+	for (FBarrierAnimatedActor const& AnimatedActor : AnimatedActors)
+	{
+		if (AnimatedActor.Actor)
+		{
+			AnimatedActor.Actor->SetActorTransform(AnimatedActor.FightOnTransform);
+		}
+	}
+}
+
+void AGeoArenaBarrier::SetToFightOffTransforms()
+{
+	for (FBarrierAnimatedActor const& AnimatedActor : AnimatedActors)
+	{
+		if (AnimatedActor.Actor)
+		{
+			AnimatedActor.Actor->SetActorTransform(AnimatedActor.FightOffTransform);
+		}
+	}
+}
 
 void AGeoArenaBarrier::OnRep_bIsClosed()
 {
