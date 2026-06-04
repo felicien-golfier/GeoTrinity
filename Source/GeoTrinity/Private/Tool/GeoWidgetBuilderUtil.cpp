@@ -7,28 +7,28 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/Image.h"
 #include "Components/PanelWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/Widget.h"
 #include "FileHelpers.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "Materials/MaterialInterface.h"
 #include "WidgetBlueprint.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetBlueprint, float SweetSpotMinRatio,
-													   float SweetSpotMaxRatio)
+UWidgetTree* UGeoWidgetBuilderUtil::BeginBuild(UWidgetBlueprint* WidgetBlueprint, TCHAR const* FunctionName)
 {
-	if (!ensureMsgf(WidgetBlueprint,
-					TEXT("UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget — WidgetBlueprint is null")))
+	if (!ensureMsgf(WidgetBlueprint, TEXT("UGeoWidgetBuilderUtil::%s — WidgetBlueprint is null"), FunctionName))
 	{
-		return;
+		return nullptr;
 	}
 
 	UWidgetTree* Tree = WidgetBlueprint->WidgetTree;
-	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget — WidgetTree is null on '%s'"),
+	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::%s — WidgetTree is null on '%s'"), FunctionName,
 					*WidgetBlueprint->GetName()))
 	{
-		return;
+		return nullptr;
 	}
 
 	Tree->Modify();
@@ -37,11 +37,30 @@ void UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetB
 	// Clear any existing root before rebuilding
 	Tree->RootWidget = nullptr;
 
+	return Tree;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::FinishBuild(UWidgetBlueprint* WidgetBlueprint)
+{
+	FKismetEditorUtilities::CompileBlueprint(WidgetBlueprint);
+	UEditorLoadingAndSavingUtils::SavePackages({WidgetBlueprint->GetPackage()}, false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetBlueprint, float SweetSpotMinRatio,
+													   float SweetSpotMaxRatio)
+{
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("BuildChargeBeamGaugeWidget"));
+	if (!Tree)
+	{
+		return;
+	}
+
 	// --- Root: Canvas Panel ---
 	UCanvasPanel* Canvas = Tree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("CanvasRoot"));
 	Tree->RootWidget = Canvas;
 
-	constexpr float BarWidth = 15.f;
 	constexpr float BarHeight = 80.f;
 
 	// --- ChargeBar: full-width, dark-blue fill ---
@@ -82,12 +101,61 @@ void UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetB
 	SweetSlot->SetAlignment(FVector2D(0.f, 0.f));
 	SweetSlot->SetAutoSize(false);
 
-	// Compile and save
-	FKismetEditorUtilities::CompileBlueprint(WidgetBlueprint);
-	UEditorLoadingAndSavingUtils::SavePackages({WidgetBlueprint->GetPackage()}, false);
+	FinishBuild(WidgetBlueprint);
 
 	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Built WBP_ChargeBeamGauge (sweet spot %.2f–%.2f)"),
 		   SweetSpotMinRatio, SweetSpotMaxRatio);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SetImageRoot(UWidgetBlueprint* WidgetBlueprint, UTexture2D* Texture, FVector2D DesiredSize)
+{
+	if (!ensureMsgf(Texture, TEXT("UGeoWidgetBuilderUtil::SetImageRoot — Texture is null")))
+	{
+		return;
+	}
+
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("SetImageRoot"));
+	if (!Tree)
+	{
+		return;
+	}
+
+	UImage* Image = Tree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Image"));
+	Image->SetBrushFromTexture(Texture);
+	Image->SetDesiredSizeOverride(DesiredSize);
+	Tree->RootWidget = Image;
+
+	FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Set image root on '%s' with texture '%s' (%gx%g)"),
+		   *WidgetBlueprint->GetName(), *Texture->GetName(), DesiredSize.X, DesiredSize.Y);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SetImageRootFromMaterial(UWidgetBlueprint* WidgetBlueprint, UMaterialInterface* Material,
+													 FVector2D DesiredSize)
+{
+	if (!ensureMsgf(Material, TEXT("UGeoWidgetBuilderUtil::SetImageRootFromMaterial — Material is null")))
+	{
+		return;
+	}
+
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("SetImageRootFromMaterial"));
+	if (!Tree)
+	{
+		return;
+	}
+
+	UImage* Image = Tree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Image"));
+	Image->SetBrushFromMaterial(Material);
+	Image->SetDesiredSizeOverride(DesiredSize);
+	Tree->RootWidget = Image;
+
+	FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Set image root on '%s' with material '%s' (%gx%g)"),
+		   *WidgetBlueprint->GetName(), *Material->GetName(), DesiredSize.X, DesiredSize.Y);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

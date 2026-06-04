@@ -60,6 +60,14 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
 }
+void AGeoCharacter::BeginDestroy()
+{
+	if (DeployableManagerComponent)
+	{
+		DeployableManagerComponent->ForceExpireAll();
+	}
+	Super::BeginDestroy();
+}
 
 UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
 {

@@ -56,13 +56,6 @@ public:
 	bool IsDummy(AActor const* Enemy) const;
 	AEnemyCharacter* GetBossEnemy() const;
 
-	UPROPERTY(BlueprintAssignable, Category = "Enemy")
-	FOnEnemySpawned OnEnemySpawned;
-
-	/** Level reference to the arena barrier actor. Set in the editor. */
-	UPROPERTY(EditAnywhere, Category = "Fight")
-	TObjectPtr<AGeoArenaBarrier> ArenaBarrier;
-
 	/** Server-only. Called when a player dies during the fight. Decrements alive counter; triggers wipe reset when 0.
 	 */
 	void NotifyPlayerDiedInFight(APlayableCharacter* PlayableCharacter);
@@ -72,23 +65,37 @@ public:
 	void NotifyBossDefeated();
 
 	void InitBoss(AEnemyCharacter* Boss);
+	AGeoArenaBarrier* GetArenaBarrier() const;
 	void SpawnEnemies();
+
+	UPROPERTY(BlueprintAssignable, Category = "Enemy")
+	FOnEnemySpawned OnEnemySpawned;
+	UPROPERTY(EditAnywhere, Category = "Enemy")
+	FEnemySpawnEntry BossToSpawn;
+	UPROPERTY(EditAnywhere, Category = "Enemy")
+	FEnemySpawnEntry DummyToSpawn;
+
+	UPROPERTY(EditAnywhere, Category = "Fight")
+	float CommitFightTime = 3.f;
+	/**
+	 * Level reference to a trigger volume. On fight commit, players already overlapping this volume
+	 * are left in place instead of being teleported to the fight location. Set in the editor.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Fight")
+	FName FightZoneTagName = "FightZone";
+	UPROPERTY(EditAnywhere, Category = "Fight")
+	FName EntranceZoneTagName = "EntranceZone";
+
 
 	FCommitFight CommitFightDelegate;
 	FMatchIsWaitingToStart MatchIsWaitingToStartDelegate;
 
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Enemy")
-	FEnemySpawnEntry BossToSpawn;
-
-	UPROPERTY(EditAnywhere, Category = "Enemy")
-	FEnemySpawnEntry DummyToSpawn;
-
 	int32 PlayersAliveInFight = 0;
 
 	FTimerHandle CommitFightTimer;
 
 	void CommitFightStart();
-	void TeleportPlayersTo(FGameplayTag LocationTag) const;
+	void TeleportPlayersTo(FGameplayTag LocationTag, FName const& ExemptZoneName = NAME_None) const;
 };

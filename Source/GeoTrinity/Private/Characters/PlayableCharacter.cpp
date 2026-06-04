@@ -19,6 +19,12 @@
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
 
+static TAutoConsoleVariable<bool> CVarPlayerInvincible(
+	TEXT("Geo.PlayerInvincible"),
+	false,
+	TEXT("When true, players never die from health reaching zero."),
+	ECVF_Cheat);
+
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	DeployChargeGaugeComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("DeployChargeGaugeComponent"));
@@ -170,7 +176,7 @@ void APlayableCharacter::InitGAS()
 
 void APlayableCharacter::OnHealthChanged(float const NewValue)
 {
-	if (NewValue > 0.f)
+	if (NewValue > 0.f || CVarPlayerInvincible.GetValueOnGameThread())
 	{
 		return;
 	}

@@ -11,8 +11,8 @@ class UBoxComponent;
 
 /**
  * An actor moved between two world locations when the barrier opens/closes.
- * FightOnLocation is the resting place while the fight is active (barrier closed),
- * FightOffLocation while the fight is inactive (barrier open).
+ * FightOnTransform is the resting place while the fight is active (barrier closed),
+ * FightOffTransform while the fight is inactive (barrier open).
  */
 USTRUCT(BlueprintType)
 struct FBarrierAnimatedActor
@@ -27,11 +27,11 @@ struct FBarrierAnimatedActor
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Barrier",
 			  meta = (EditCondition = "bHasMovement", EditConditionHides))
-	FVector FightOnLocation = FVector::ZeroVector;
+	FTransform FightOnTransform = FTransform::Identity;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Barrier",
 			  meta = (EditCondition = "bHasMovement", EditConditionHides))
-	FVector FightOffLocation = FVector::ZeroVector;
+	FTransform FightOffTransform = FTransform::Identity;
 };
 
 /**
@@ -58,21 +58,18 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Barrier")
 	void OnBarrierStateChanged(bool bClosed);
 
-	/** Editor: store each animated actor's current world location as its fight-on location. */
-	UFUNCTION(CallInEditor, Category = "Barrier")
-	void CaptureFightOnLocations();
-
-	/** Editor: store each animated actor's current world location as its fight-off location. */
-	UFUNCTION(CallInEditor, Category = "Barrier")
-	void CaptureFightOffLocations();
+	// /** Editor: store each animated actor's current world location as its fight-on location. */
+	// UFUNCTION(CallInEditor, Category = "Barrier")
+	// void CaptureFightOnLocations();
+	//
+	// /** Editor: store each animated actor's current world location as its fight-off location. */
+	// UFUNCTION(CallInEditor, Category = "Barrier")
+	// void CaptureFightOffLocations();
 
 	/** Actors lerped between their two locations when the barrier state changes. */
 	UPROPERTY(EditAnywhere, Category = "Barrier")
 	TArray<FBarrierAnimatedActor> AnimatedActors;
 
-	/** Time in seconds to lerp animated actors from one location to the other. */
-	UPROPERTY(EditAnywhere, Category = "Barrier", meta = (ClampMin = "0.0"))
-	float LerpDuration = 1.0f;
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_bIsClosed, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

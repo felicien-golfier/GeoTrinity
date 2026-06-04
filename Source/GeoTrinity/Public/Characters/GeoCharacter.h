@@ -44,6 +44,7 @@ class GEOTRINITY_API AGeoCharacter
 public:
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void BeginDestroy() override;
 	/** Returns the GeoInputComponent attached to this character. */
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	/** Returns the movement component cast to UGeoCharacterMovementComponent. */

@@ -73,6 +73,12 @@ Configure via `SubobjectDataSubsystem` handle enumeration: print all indices fir
 
 ---
 
+## Single-Image Widget
+
+A widget showing one image (cursor, icon, …) needs only an Image root — no canvas or slotting, since the hotspot is the widget's top-left. Build it with the generic image-root shim primitive and supply the concrete texture and size from a typed Python caller. To draw only the bright parts of a texture (black background transparent), feed the Image a UI-domain translucent material that maps luminance to opacity rather than a raw texture. See `AI/Python/crosshair_cursor.py`.
+
+---
+
 ## Naming & Folder Convention
 
 Widget Blueprints use the `WBP_` prefix and live under `/Game/HUD/`, grouped by widget type.

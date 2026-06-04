@@ -44,4 +44,8 @@ Each method validates, compiles (`FCompilerManager::CompileSynchronously`), and 
 ## `GeoWidgetBuilderUtil.h`
 Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` for building and inspecting UMG Widget Blueprints via Python/Blueprint automation.
 - `BuildChargeBeamGaugeWidget` — creates the WBP_ChargeBeamGauge widget tree (ChargeBar + SweetSpotBar overlay), saves the asset
+- `SetImageRoot` — generic primitive: replaces a widget's root with a single Image (texture + desired size), compiles and saves. Compose typed widgets (software cursor, icon, …) from this in Python
+- `SetImageRootFromMaterial` — generic primitive like `SetImageRoot` but draws a material (e.g. a luminance-to-alpha mask) instead of a raw texture
 - `InspectWidgetBlueprint` — logs the full widget tree (type, name, slot layout, widget properties) to `LogTemp`
+
+`BuildChargeBeamGaugeWidget`, `SetImageRoot`, and `SetImageRootFromMaterial` share the private `BeginBuild` (validate/clear root) and `FinishBuild` (compile/save) helpers.

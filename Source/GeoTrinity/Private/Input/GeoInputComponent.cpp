@@ -86,8 +86,6 @@ void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 {
 	bIsUsingController = true;
 	FVector2D const LookInput = FVector2D(Instance.GetValue().Get<FVector2D>());
-	GetGeoCharacter()->DrawDebugVectorFromCharacter(
-		FVector(LookInput, 0.f), FString::Printf(TEXT("Look Input vector from %s"), *GetGeoCharacter()->GetName()));
 
 	if (Instance.GetTriggerEvent() == ETriggerEvent::Completed)
 	{

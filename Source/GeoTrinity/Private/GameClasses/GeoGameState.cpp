@@ -46,11 +46,11 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 
 	if (GeoLib::IsServer(this))
 	{
-		if (ArenaBarrier)
+		if (AGeoArenaBarrier* ArenaBarrier = GetArenaBarrier())
 		{
 			ArenaBarrier->SetClosed(false);
 		}
-		TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance);
+		TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance, EntranceZoneTagName);
 	}
 
 	MatchIsWaitingToStartDelegate.Broadcast();
@@ -68,9 +68,12 @@ void AGeoGameState::HandleMatchHasEnded()
 		}
 	}
 
-	if (GeoLib::IsServer(this) && ArenaBarrier)
+	if (GeoLib::IsServer(this))
 	{
-		ArenaBarrier->SetClosed(false);
+		if (AGeoArenaBarrier* ArenaBarrier = GetArenaBarrier())
+		{
+			ArenaBarrier->SetClosed(false);
+		}
 	}
 }
 
@@ -155,21 +158,28 @@ void AGeoGameState::InitBoss(AEnemyCharacter* Boss)
 			}
 		}
 
-		GetWorld()->GetTimerManager().SetTimer(CommitFightTimer, this, &AGeoGameState::CommitFightStart, 5.f, false);
+		if (AGeoArenaBarrier* ArenaBarrier = GetArenaBarrier())
+		{
+			ArenaBarrier->SetClosed(true);
+		}
+
+		GetWorld()->GetTimerManager().SetTimer(CommitFightTimer, this, &AGeoGameState::CommitFightStart,
+											   CommitFightTime, false);
 	}
+}
+
+AGeoArenaBarrier* AGeoGameState::GetArenaBarrier() const
+{
+	return Cast<AGeoArenaBarrier>(UGameplayStatics::GetActorOfClass(this, AGeoArenaBarrier::StaticClass()));
 }
 
 void AGeoGameState::CommitFightStart()
 {
-	if (ArenaBarrier)
-	{
-		ArenaBarrier->SetClosed(true);
-	}
-	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_FightLocation);
+	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_FightLocation, FightZoneTagName);
 	CommitFightDelegate.Broadcast();
 }
 
-void AGeoGameState::TeleportPlayersTo(FGameplayTag LocationTag) const
+void AGeoGameState::TeleportPlayersTo(FGameplayTag const LocationTag, FName const& ExemptZoneName) const
 {
 	TArray<AActor*> SpawnPoints = GeoLib::GetTargetPoints(this, LocationTag);
 	if (SpawnPoints.IsEmpty())
@@ -187,9 +197,18 @@ void AGeoGameState::TeleportPlayersTo(FGameplayTag LocationTag) const
 			continue;
 		}
 		APawn* Pawn = (*It)->GetPawn();
-		if (Pawn)
+		bool bTeleport = IsValid(Pawn);
+
+		TArray<AActor*> ExemptZone;
+		UGameplayStatics::GetAllActorsWithTag(this, ExemptZoneName, ExemptZone);
+		for (AActor const* Zone : ExemptZone)
 		{
-			AActor* SpawnPoint = SpawnPoints[SpawnIndex % SpawnPoints.Num()];
+			bTeleport &= !Pawn->IsOverlappingActor(Zone);
+		}
+
+		if (bTeleport)
+		{
+			AActor const* SpawnPoint = SpawnPoints[SpawnIndex % SpawnPoints.Num()];
 			Pawn->SetActorLocation(SpawnPoint->GetActorLocation());
 			++SpawnIndex;
 		}
