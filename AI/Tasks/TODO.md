@@ -5,7 +5,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 ## Tasks
 
-- [x] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
+- [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
 
   **Scope**
   - Run `git diff --name-only HEAD` to get today's modified files. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase.
@@ -89,7 +89,9 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-06-04] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No-op. -->
 
-- [x] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
+<!-- [2026-06-05] Scope: PatternAbility.h, Pattern.h, SpiralPattern.h, DevastatingWavePattern.h, GeoDevastatingWaveAbility.h, GeoDeployableBase.h, GeoArenaBarrier.h, GeoDeployableManagerComponent.h, GeoCharacter.h, PlayableCharacter.h, GeoGameState.h, GeoWidgetBuilderUtil.h (+ CPPs). Fixed EndPattern comment to document bForceStop (stops all montages and skips OnPatternEnd when true — used by PatternAbility::EndAbility to avoid recursive end chain). Added UTickablePattern::EndPattern override comment. Added DestroyOldestWhenLimitReached() and Expire() no-arg comments to GeoDeployableBase.h. Fixed ForceExpireAll comment (was "Recall all deployed actors" but calls Expire, not Recall). Added CanDeploy comment to GeoDeployableManagerComponent.h (now checks bDestroyOldestWhenLimitReached first). Added StopAllGameplayElements and EndPlay comments to GeoCharacter.h. Added comments for SpawnEnemy, IsBoss, IsDummy, GetBossEnemy, GetDummyEnemy, InitBoss, GetArenaBarrier, SpawnEnemies to GeoGameState.h. Fixed HandleMatchHasStarted comment (was "Spawns enemies" — enemies are spawned in HandleMatchIsWaitingToStart; HandleMatchHasStarted only calls InitBoss). Updated HandleMatchIsWaitingToStart comment to mention destroying and re-spawning both boss and dummy. Notable: GeoGameState.ArenaBarrier property was replaced with GetArenaBarrier() runtime lookup — any code referencing the old property will break. GeoDeployableManagerComponent.CanDeploy was split: old behavior (limit check only) renamed to HasReachMaxLimit; new CanDeploy also short-circuits for bDestroyOldestWhenLimitReached. -->
+
+- [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
   - Run `git diff --name-only HEAD` to get today's modified files. Only open `.h` and `.cpp` files from that list.
@@ -151,3 +153,5 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-06-03] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
 
 <!-- [2026-06-04] Scope: git diff --name-only HEAD returned no .h or .cpp files. No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
+
+<!-- [2026-06-05] Updated: Abilities/Pattern/CLAUDE.md — EndPattern description expanded with bForceStop semantics and bPatternIsActive double-call guard. Abilities/Base/CLAUDE.md — PatternAbility section: replaced stale ModifyPayload hook note (hook was removed) with EndAbility override behavior (force-stops pattern, skips OnPatternEnd broadcast). Actor/Deployable/CLAUDE.md — Key fields: added bDestroyOldestWhenLimitReached, DestroyOldestWhenLimitReached() accessor, and Expire() no-arg overload. Actor/CLAUDE.md — Other Files: added GeoArenaBarrier.h entry (lerps FTransform pairs, editor capture helpers, CommitFightTime from GameState). Characters/Component/CLAUDE.md — CanDeploy renamed to HasReachMaxLimit; new CanDeploy now checks bDestroyOldestWhenLimitReached first; ExpireAll → ForceExpireAll; RegisterDeployable note updated. Characters/CLAUDE.md — Component row: RecallAll() → ForceExpireAll(). GameClasses/CLAUDE.md — GeoGameState row expanded; new GeoGameState section added (GetArenaBarrier lookup, boss/dummy lifecycle, CommitFightTime, FightZoneTagName/EntranceZoneTagName). -->

@@ -44,7 +44,9 @@ class GEOTRINITY_API AGeoCharacter
 public:
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
 	virtual void Tick(float DeltaSeconds) override;
+	/** Expires all tracked deployables. Called on EndPlay and before any class switch that resets abilities. */
 	void StopAllGameplayElements();
+	/** Calls StopAllGameplayElements before delegating to Super. */
 	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
 	;
 	/** Returns the GeoInputComponent attached to this character. */
