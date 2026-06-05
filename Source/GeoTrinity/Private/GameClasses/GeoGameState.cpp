@@ -17,13 +17,10 @@
 void AGeoGameState::HandleMatchHasStarted()
 {
 	AEnemyCharacter* Boss = GetBossEnemy();
-	if (IsValid(Boss))
+	if (ensureMsgf(IsValid(Boss),
+				   TEXT("No Boss found in the world, ensure an EnemyCharacter with bIsBoss=true is spawned")))
 	{
-		InitBoss(Boss);
-	}
-	else
-	{
-		ensureMsgf(false, TEXT("No Boss found in the world, ensure an EnemyCharacter with bIsBoss=true is spawned"));
+		InitBossFight(Boss);
 	}
 }
 
@@ -31,34 +28,9 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 {
 	Super::HandleMatchIsWaitingToStart();
 
-	if (GetBossEnemy())
-	{
-		GetBossEnemy()->Destroy();
-	}
-	if (GetDummyEnemy())
-	{
-		GetDummyEnemy()->Destroy();
-	}
+	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance, EntranceZoneTagName);
 
 	SpawnEnemies();
-
-
-	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
-	{
-		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
-		{
-			GeoHUD->HideBossHealthBar();
-		}
-	}
-
-	if (GeoLib::IsServer(this))
-	{
-		if (AGeoArenaBarrier* ArenaBarrier = GetArenaBarrier())
-		{
-			ArenaBarrier->SetClosed(false);
-		}
-		TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance, EntranceZoneTagName);
-	}
 
 	MatchIsWaitingToStartDelegate.Broadcast();
 }
@@ -66,22 +38,16 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 void AGeoGameState::HandleMatchHasEnded()
 {
 	Super::HandleMatchHasEnded();
+	StopBossFight();
+}
 
-	if (APlayerController const* LocalPlayerController = GetWorld()->GetFirstPlayerController())
+void AGeoGameState::OnRep_MatchState()
+{
+	if (PreviousMatchState != MatchState && PreviousMatchState == MatchState::InProgress)
 	{
-		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
-		{
-			GeoHUD->HideBossHealthBar();
-		}
+		StopBossFight();
 	}
-
-	if (GeoLib::IsServer(this))
-	{
-		if (AGeoArenaBarrier* ArenaBarrier = GetArenaBarrier())
-		{
-			ArenaBarrier->SetClosed(false);
-		}
-	}
+	Super::OnRep_MatchState();
 }
 
 void AGeoGameState::SpawnEnemies()
@@ -91,20 +57,12 @@ void AGeoGameState::SpawnEnemies()
 		return;
 	}
 
-	if (GetBossEnemy() && !GetBossEnemy()->IsActorBeingDestroyed())
-	{
-		ensureMsgf(false, TEXT("Boss is already existing"));
-	}
-	else
+	if (!GetBossEnemy() || GetBossEnemy()->IsActorBeingDestroyed())
 	{
 		SpawnEnemy(BossToSpawn);
 	}
 
-	if (GetDummyEnemy() && !GetDummyEnemy()->IsActorBeingDestroyed())
-	{
-		ensureMsgf(false, TEXT("Boss is already existing"));
-	}
-	else
+	if (!GetDummyEnemy() || GetDummyEnemy()->IsActorBeingDestroyed())
 	{
 		SpawnEnemy(DummyToSpawn);
 	}
@@ -118,9 +76,7 @@ void AGeoGameState::SpawnEnemy(FEnemySpawnEntry const& Entry)
 	TArray<AActor*> Points = GeoLib::GetTargetPoints(this, Entry.SpawnTag);
 	FVector SpawnLocation = Points.Num() > 0 ? Points[0]->GetActorLocation() : FVector(100.f, 100.f, 0.f);
 	SpawnLocation.Z = ArbitraryCharacterZ;
-	AEnemyCharacter* SpawnedEnemy =
-		GetWorld()->SpawnActor<AEnemyCharacter>(Entry.EnemyClass, FTransform(SpawnLocation), SpawnParams);
-	OnEnemySpawned.Broadcast(SpawnedEnemy);
+	GetWorld()->SpawnActor<AEnemyCharacter>(Entry.EnemyClass, FTransform(SpawnLocation), SpawnParams);
 }
 
 bool AGeoGameState::IsBoss(AActor const* Enemy) const
@@ -161,7 +117,34 @@ AEnemyCharacter* AGeoGameState::GetDummyEnemy() const
 	return nullptr;
 }
 
-void AGeoGameState::InitBoss(AEnemyCharacter* Boss)
+void AGeoGameState::StopBossFight()
+{
+	if (GetBossEnemy())
+	{
+		GetBossEnemy()->Destroy();
+	}
+
+	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
+	{
+		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
+		{
+			GeoHUD->HideBossHealthBar();
+		}
+	}
+
+	if (GeoLib::IsServer(this))
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
+		if (AGeoArenaBarrier* ArenaBarrier = GetArenaBarrier())
+		{
+			ArenaBarrier->SetClosed(false);
+		}
+
+		RevivePlayers();
+	}
+}
+
+void AGeoGameState::InitBossFight(AEnemyCharacter* Boss)
 {
 	if (APlayerController const* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
@@ -208,7 +191,7 @@ AGeoArenaBarrier* AGeoGameState::GetArenaBarrier() const
 	return Cast<AGeoArenaBarrier>(UGameplayStatics::GetActorOfClass(this, AGeoArenaBarrier::StaticClass()));
 }
 
-void AGeoGameState::CommitFightStart()
+void AGeoGameState::CommitFightStart() const
 {
 	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_FightLocation, FightZoneTagName);
 	CommitFightDelegate.Broadcast();
@@ -250,20 +233,27 @@ void AGeoGameState::TeleportPlayersTo(FGameplayTag const LocationTag, FName cons
 	}
 }
 
-void AGeoGameState::NotifyPlayerDiedInFight(APlayableCharacter* PlayableCharacter)
+void AGeoGameState::RequestWaitingToStart() const
 {
-
-	TArray<AActor*> EntrancePoints = GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().Arena_Entrance);
-	if (!EntrancePoints.IsEmpty())
+	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
 	{
-		PlayableCharacter->SetActorLocation(
-			EntrancePoints[FMath::RandRange(0, EntrancePoints.Num() - 1)]->GetActorLocation());
+		GeoGameMode->RequestWaitingToStart();
 	}
-	else
-	{
-		ensureMsgf(false, TEXT("APlayableCharacter::NotifyPlayerDiedInFight — no entrance ATargetPoint found"));
-	}
+}
 
+void AGeoGameState::RevivePlayers() const
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APlayableCharacter* Player = It->IsValid() ? Cast<APlayableCharacter>((*It)->GetPawn()) : nullptr)
+		{
+			Player->Revive();
+		}
+	}
+}
+
+void AGeoGameState::NotifyPlayerDiedInFight(APlayableCharacter* /*PlayableCharacter*/)
+{
 	--PlayersAliveInFight;
 	if (PlayersAliveInFight > 0)
 	{
@@ -275,10 +265,8 @@ void AGeoGameState::NotifyPlayerDiedInFight(APlayableCharacter* PlayableCharacte
 		Boss->ResetForNewAttempt();
 	}
 
-	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GeoGameMode->RequestWaitingToStart();
-	}
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AGeoGameState::RequestWaitingToStart, DeathTime, false);
 }
 
 void AGeoGameState::NotifyBossDefeated()

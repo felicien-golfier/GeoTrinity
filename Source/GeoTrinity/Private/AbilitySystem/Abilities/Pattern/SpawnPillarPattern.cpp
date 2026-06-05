@@ -81,10 +81,9 @@ void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload)
 
 	Super::InitPattern(Payload);
 }
-void USpawnPillarPattern::ExecuteDelayGameplayCue()
+void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 {
-	bool const bIsServer = GeoLib::IsServer(GetWorld());
-	if (DelayGameplayCueTag.IsValid() && !bIsServer)
+	if (GameplayCueTag.IsValid() && !GeoLib::IsServer(GetWorld()))
 	{
 		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
 		if (!IsValid(InstigatorASC))
@@ -98,7 +97,7 @@ void USpawnPillarPattern::ExecuteDelayGameplayCue()
 				FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
 				FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
 				CueParams.Location = FVector(Location, ArbitraryCharacterZ);
-				InstigatorASC->ExecuteGameplayCue(DelayGameplayCueTag, CueParams);
+				InstigatorASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
 			}
 		}
 	}

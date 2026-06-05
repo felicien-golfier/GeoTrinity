@@ -3,10 +3,7 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
-#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/WidgetComponent.h"
-#include "Engine/TargetPoint.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
@@ -14,7 +11,7 @@
 #include "HUD/GeoChargeBeamGaugeWidget.h"
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
@@ -38,6 +35,12 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 	ChargeBeamGaugeComponent->SetUsingAbsoluteRotation(true);
 
 	TeamId = ETeam::Player;
+}
+
+void APlayableCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(APlayableCharacter, bIsDead);
 }
 
 void APlayableCharacter::BeginPlay()
@@ -180,12 +183,72 @@ void APlayableCharacter::Death()
 	}
 	bIsDead = true;
 	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
-	ensureMsgf(GameState, TEXT("No GameState in %s"), *GetName());
+	if (!ensureMsgf(GameState, TEXT("No GameState in %s"), *GetName()))
+	{
+		return;
+	}
 
-	StopAllGameplayElements();
-	// DisableInput(Cast<APlayerController>(GetController()));
+	AbilitySystemComponent->CancelAllAbilities();
+	AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+	StopAllSpawnedElements();
+	StopCharacter();
 
 	GameState->NotifyPlayerDiedInFight(this);
+}
+
+void APlayableCharacter::Revive()
+{
+	if (!bIsDead)
+	{
+		return;
+	}
+	bIsDead = false;
+	AbilitySystemComponent->InitializeDefaultAttributes();
+	RestartCharacter();
+}
+
+void APlayableCharacter::StopCharacter()
+{
+	DisableInput(GetGeoPlayerController());
+	GetGeoMovementComponent()->StopMovementImmediately();
+	GetGeoMovementComponent()->DisableMovement();
+	// Collision must go off on clients too (other characters' movement is predicted), but with collision
+	// off there is no floor to rest on, so disable gravity to keep the corpse where it died.
+	GetGeoMovementComponent()->GravityScale = 0.f;
+	SetActorEnableCollision(false);
+	SetDeathMaterial(true);
+}
+
+void APlayableCharacter::RestartCharacter()
+{
+	EnableInput(GetGeoPlayerController());
+	GetGeoMovementComponent()->GravityScale = 1.f;
+	GetGeoMovementComponent()->SetMovementMode(MOVE_Walking);
+	SetActorEnableCollision(true);
+	SetDeathMaterial(false);
+}
+
+void APlayableCharacter::SetDeathMaterial(bool const bDead)
+{
+	FPlayerClassData const* VisualData = ClassData.Find(GetPlayerClass());
+	if (!ensureMsgf(VisualData, TEXT("SetDeathMaterial: No visual data for class on %s"), *GetName()))
+	{
+		return;
+	}
+	GetMesh()->SetMaterial(0, bDead ? VisualData->DeathMaterial : VisualData->AliveMaterial);
+}
+
+void APlayableCharacter::OnRep_IsDead(bool const bOldValue)
+{
+	if (bIsDead && !bOldValue)
+	{
+		StopAllSpawnedElements();
+		StopCharacter();
+	}
+	else if (!bIsDead && bOldValue)
+	{
+		RestartCharacter();
+	}
 }
 
 void APlayableCharacter::OnHealthChanged(float const NewValue)
@@ -193,12 +256,6 @@ void APlayableCharacter::OnHealthChanged(float const NewValue)
 	if (NewValue <= 0.f && !CVarPlayerInvincible.GetValueOnGameThread())
 	{
 		Death();
-	}
-
-	// TODO Do a proper rez system;
-	if (NewValue > 0 && bIsDead)
-	{
-		bIsDead = false;
 	}
 }
 
@@ -291,7 +348,7 @@ void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
 	}
 
 	GeoPlayerState->SetPlayerClass(NewClass);
-	StopAllGameplayElements();
+	StopAllSpawnedElements();
 	AbilitySystemComponent->ClearPlayerClassAbilities();
 	AbilitySystemComponent->GiveStartupAbilities(NewClass);
 	ApplyClassData(NewClass);
@@ -314,7 +371,12 @@ void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)
 
 	GetMesh()->SetSkeletalMesh(VisualData->Mesh);
 	GetMesh()->SetAnimInstanceClass(VisualData->AnimClass);
-	AbilitySystemComponent->ApplyEffectToSelf(VisualData->DefaultAttributes);
+	ensureMsgf(VisualData->AliveMaterial, TEXT("ApplyClassData: No AliveMaterial for class on %s"), *GetName());
+	GetMesh()->SetMaterial(0, VisualData->AliveMaterial);
+	if (IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->ApplyEffectToSelf(VisualData->DefaultAttributes);
+	}
 }
 
 EPlayerClass APlayableCharacter::GetPlayerClass() const

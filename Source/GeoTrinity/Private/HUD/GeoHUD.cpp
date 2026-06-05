@@ -139,27 +139,6 @@ void AGeoHUD::BindCallbacksToDependencies()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// Auto-show boss health bar when enemies spawn
-	if (UWorld* World = GetWorld())
-	{
-		if (AGeoGameState* GameState = World->GetGameState<AGeoGameState>())
-		{
-			GameState->OnEnemySpawned.AddDynamic(this, &AGeoHUD::ShowBossHealthBar);
-
-			// If enemies already spawned before HUD was ready, show the first one
-			if (AEnemyCharacter* Boss = GameState->GetBossEnemy())
-			{
-				ShowBossHealthBar(Boss);
-			}
-		}
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::ShowBossHealthBar(AEnemyCharacter* Boss)
 {
 	if (!Boss || !BossHealthBarWidgetClass)

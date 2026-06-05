@@ -53,6 +53,9 @@ void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
 	if (IsValid(NewPawn) && !HasAuthority())
 	{
 		InitOverlay();
+		// PlayerClass and the pawn link replicate independently. If PlayerClass arrived before the pawn,
+		// OnRep_PlayerClass already ran and bailed on a null pawn — apply class data now that the pawn exists.
+		ApplyClassDataToPawn();
 	}
 }
 
@@ -69,12 +72,15 @@ void AGeoPlayerState::InitOverlay()
 
 void AGeoPlayerState::OnRep_PlayerClass()
 {
-	APlayableCharacter* PlayableCharacter = Cast<APlayableCharacter>(GetPawn());
-	if (!PlayableCharacter)
+	ApplyClassDataToPawn();
+}
+
+void AGeoPlayerState::ApplyClassDataToPawn()
+{
+	if (APlayableCharacter* PlayableCharacter = Cast<APlayableCharacter>(GetPawn()))
 	{
-		return;
+		PlayableCharacter->ApplyClassData(PlayerClass);
 	}
-	PlayableCharacter->ApplyClassData(PlayerClass);
 }
 
 UAbilitySystemComponent* AGeoPlayerState::GetAbilitySystemComponent() const

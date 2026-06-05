@@ -60,8 +60,9 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
 }
-void AGeoCharacter::StopAllGameplayElements()
+void AGeoCharacter::StopAllSpawnedElements()
 {
+	AbilitySystemComponent->StopAllActivePatterns();
 	if (DeployableManagerComponent)
 	{
 		DeployableManagerComponent->ForceExpireAll();
@@ -69,7 +70,7 @@ void AGeoCharacter::StopAllGameplayElements()
 }
 void AGeoCharacter::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
-	StopAllGameplayElements();
+	StopAllSpawnedElements();
 	Super::EndPlay(EndPlayReason);
 }
 

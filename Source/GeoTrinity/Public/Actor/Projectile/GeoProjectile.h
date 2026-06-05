@@ -92,7 +92,7 @@ protected:
 	 * Returns true when OtherActor is a valid hit target for this projectile.
 	 * Default implementation checks team attitude bitmask. Override to restrict targeting (e.g. ground only).
 	 */
-	virtual bool IsValidOverlap(AActor const* OtherActor);
+	virtual bool IsValidOverlap(AActor* OtherActor);
 
 	/**
 	 * Called from OnSphereOverlap after IsValidOverlap passes. Override to customise hit behaviour.

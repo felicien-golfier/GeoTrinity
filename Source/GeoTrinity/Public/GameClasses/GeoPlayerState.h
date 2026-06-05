@@ -104,6 +104,9 @@ protected:
 	UFUNCTION()
 	void OnRep_PlayerClass();
 
+	/** Applies the current PlayerClass visuals (mesh, anim, material) to the owned pawn, if it exists. */
+	void ApplyClassDataToPawn();
+
 	UPROPERTY(Replicated)
 	float DebugDPS = 0.f;
 	UPROPERTY(Replicated)

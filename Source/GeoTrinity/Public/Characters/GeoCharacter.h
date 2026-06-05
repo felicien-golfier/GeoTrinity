@@ -44,7 +44,8 @@ class GEOTRINITY_API AGeoCharacter
 public:
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
 	virtual void Tick(float DeltaSeconds) override;
-	void StopAllGameplayElements();
+	/** Expires all elements spawned by this character (deployables, and in future visual zones, etc). */
+	void StopAllSpawnedElements();
 	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
 	;
 	/** Returns the GeoInputComponent attached to this character. */

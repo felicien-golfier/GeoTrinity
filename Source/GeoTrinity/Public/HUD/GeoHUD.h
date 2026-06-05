@@ -81,7 +81,6 @@ public:
 
 
 protected:
-	virtual void BeginPlay() override;
 
 #if !UE_BUILD_SHIPPING
 	virtual void DrawHUD() override;

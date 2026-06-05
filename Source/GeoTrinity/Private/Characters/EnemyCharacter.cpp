@@ -81,7 +81,6 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 		else
 		{
 			OnBossDefeated.Broadcast();
-			AbilitySystemComponent->StopAllActivePatterns();
 			Destroy();
 		}
 	}
@@ -89,7 +88,7 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 
 void AEnemyCharacter::ResetForNewAttempt()
 {
-	StopAllGameplayElements();
+	StopAllSpawnedElements();
 	AbilitySystemComponent->InitializeDefaultAttributes();
 	GetController<AGeoEnemyAIController>()->ResetAI();
 }

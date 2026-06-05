@@ -10,6 +10,12 @@ The data already exists: `UAbilityInfo` holds icons/input/tags, GAS exposes cool
 
 **Decisions:** Hybrid (C++ data, BP layout) · radial sweep + seconds text · event-driven + light tick only while a cooldown is active.
 
+> **Revalidated 2026-06-05** against commits `f0549d5` + `eec95ac`. All relied-on APIs still exist. Three corrections folded in below:
+> - Deployable cap check was split into `HasReachMaxLimit` (commit `f0549d5`); there is no per-class current-count getter, so `GetDeployCountForAbility` computes live count itself from the manager.
+> - **Deploy-count class resolution: map via `DeployableSlots` keys / live buckets** (chosen) — `GetDeployCountForAbility` works purely off `UGeoDeployableManagerComponent`, not the ability CDO.
+> - `ChangeClass()` insertion point confirmed: `PlayableCharacter.cpp:339` — sequence is `ClearPlayerClassAbilities → GiveStartupAbilities → ApplyClassData`; refresh hook goes right after `GiveStartupAbilities`.
+> - Death path (`bIsDead`/`Revive`) added but does NOT re-grant abilities, so the only rebuild hook stays in `ChangeClass`. No change needed for death.
+
 ## Design overview
 ```
 APlayableCharacter (granted ability specs + DeployableManagerComponent)
@@ -45,7 +51,8 @@ Add to `AGeoHUD`:
 - `UFUNCTION(BlueprintPure) void GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, float& OutDuration) const;`
   - Find granted spec by tag; call native `Spec.Ability->GetCooldownTimeRemainingAndDuration(ActorInfo, OutRemaining, OutDuration)`.
 - `UFUNCTION(BlueprintPure) void GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;`
-  - Resolve the deployable class for the ability; read avatar's `UGeoDeployableManagerComponent` (`GetComponentByClass`): live count from `GetDeployables<AGeoDeployableBase>()` filtered by class vs. slot cap / `GetMaxDeployables()`.
+  - Read avatar's `UGeoDeployableManagerComponent` (`GetComponentByClass`). Resolve the bucket **off the manager, not the ability CDO** (chosen approach): match against `DeployableSlots` keys; `OutCurrent` = matching live `GetDeployables<AGeoDeployableBase>()` count, `OutMax` = the slot's cap if present else `GetMaxDeployables()`. Mirror the lookup logic already in `UGeoDeployableManagerComponent::HasReachMaxLimit` (`.cpp:20`) so behavior matches the deploy gate exactly.
+  - Note: if a deploy ability has no `DeployableSlots` entry it shares the global pool — in that case `OutMax = GetMaxDeployables()` and `OutCurrent` = total live deployables. Designers wanting a per-ability badge must add a `DeployableSlots` entry for that class.
 
 ### 2. BP-facing wiring on `AGeoHUD`
 - `UFUNCTION(BlueprintImplementableEvent) void InitAbilityBar();` — implemented in HUD BP, forwards to the overlay's ability-bar widget which calls `GetAbilityBarEntries()` and builds slots. Call from `InitOverlay()` after abilities are granted.

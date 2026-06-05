@@ -25,7 +25,6 @@ struct FEnemySpawnEntry
 };
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, AEnemyCharacter*, Enemy);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCommitFight);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMatchIsWaitingToStart);
 
@@ -45,12 +44,17 @@ public:
 	 * players, and schedules the arena-lock timer (server). Shows the boss health bar locally.
 	 */
 	virtual void HandleMatchHasStarted() override;
+	void RevivePlayers() const;
+	void StopBossFight();
 
 	/** Hides boss health bar locally. Opens the arena barrier and teleports players to the entrance (server). */
 	virtual void HandleMatchIsWaitingToStart() override;
 
 	/** Hides boss health bar locally. Opens the arena barrier (server). */
 	virtual void HandleMatchHasEnded() override;
+
+	virtual void OnRep_MatchState() override;
+
 	void SpawnEnemy(FEnemySpawnEntry const& Entry);
 	bool IsBoss(AActor const* Enemy) const;
 	bool IsDummy(AActor const* Enemy) const;
@@ -65,12 +69,10 @@ public:
 	UFUNCTION()
 	void NotifyBossDefeated();
 
-	void InitBoss(AEnemyCharacter* Boss);
+	void InitBossFight(AEnemyCharacter* Boss);
 	AGeoArenaBarrier* GetArenaBarrier() const;
 	void SpawnEnemies();
 
-	UPROPERTY(BlueprintAssignable, Category = "Enemy")
-	FOnEnemySpawned OnEnemySpawned;
 	UPROPERTY(EditAnywhere, Category = "Enemy")
 	FEnemySpawnEntry BossToSpawn;
 	UPROPERTY(EditAnywhere, Category = "Enemy")
@@ -78,6 +80,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	float CommitFightTime = 3.f;
+	UPROPERTY(EditAnywhere, Category = "Fight")
+	float DeathTime = 3.f;
 	/**
 	 * Level reference to a trigger volume. On fight commit, players already overlapping this volume
 	 * are left in place instead of being teleported to the fight location. Set in the editor.
@@ -95,6 +99,8 @@ private:
 
 	FTimerHandle CommitFightTimer;
 
-	void CommitFightStart();
+	void CommitFightStart() const;
 	void TeleportPlayersTo(FGameplayTag LocationTag, FName const& ExemptZoneName = NAME_None) const;
+	UFUNCTION()
+	void RequestWaitingToStart() const;
 };

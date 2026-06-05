@@ -11,6 +11,7 @@
 
 class USkeletalMesh;
 class UAnimInstance;
+class UMaterialInterface;
 class UGameplayEffect;
 class UWidgetComponent;
 class UGeoChargeAbility;
@@ -24,6 +25,12 @@ struct FPlayerClassData
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<USkeletalMesh> Mesh = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UMaterialInterface> AliveMaterial = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UMaterialInterface> DeathMaterial = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UAnimInstance> AnimClass;
@@ -45,6 +52,7 @@ public:
 	APlayableCharacter(FObjectInitializer const& ObjectInitializer);
 
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Forwards an input-press event to the ASC for ability activation. */
 	void AbilityInputTagPressed(FGameplayTag InputTag);
@@ -57,6 +65,9 @@ public:
 
 	/** Returns the player's currently active class (Square, Circle, or Triangle). */
 	EPlayerClass GetPlayerClass() const;
+
+	/** Server. Revives a downed player: re-applies base attributes (full health) and restores the character. */
+	void Revive();
 
 	/**
 	 * Switches the player to NewClass: clears current class abilities, applies new class data, and grants new
@@ -103,7 +114,19 @@ protected:
 
 	UFUNCTION()
 	void OnHealthChanged(float NewValue);
+
+	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
+	 */
 	void Death();
+
+	/** Disables controls and collision and swaps to the death material. */
+	void StopCharacter();
+
+	/** Mirror of StopCharacter: restores controls, collision, and the alive material. */
+	void RestartCharacter();
+
+	UFUNCTION()
+	void OnRep_IsDead(bool bOldValue);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))
@@ -121,8 +144,12 @@ protected:
 private:
 	void UpdateAimRotation(float DeltaSeconds) const;
 	EPlayerClass PickStartingClass() const;
+	/** Swaps the mesh material to the current class's death (bDead) or alive material. */
+	void SetDeathMaterial(bool bDead);
 
 	float PreviousYaw = 0.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
 	bool bIsDead = false;
 	FTimerHandle ChargeDeployHideTimerHandle;
 	FTimerHandle ChargeBeamHideTimerHandle;

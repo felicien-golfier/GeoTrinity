@@ -6,7 +6,7 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool ADeployableSpawnerProjectile::IsValidOverlap(AActor const* OtherActor)
+bool ADeployableSpawnerProjectile::IsValidOverlap(AActor* OtherActor)
 {
 	return OtherActor != GetInstigator() && Super::IsValidOverlap(OtherActor);
 }

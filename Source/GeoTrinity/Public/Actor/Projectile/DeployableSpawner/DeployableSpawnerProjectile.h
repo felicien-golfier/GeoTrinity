@@ -23,13 +23,14 @@ public:
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
 	/** Returns true only when OtherActor is the ground (static world geometry), triggering deployment. */
-	virtual bool IsValidOverlap(AActor const* OtherActor) override;
+	virtual bool IsValidOverlap(AActor* OtherActor) override;
 
 protected:
 	/** Spawns the deployable actor at the projectile's final position then destroys the projectile. */
 	virtual void EndProjectileLife() override;
 
 private:
-	/** Spawns the deployable using the library helpers (StartSpawnDeployable → InitDeployable → FinishSpawnDeployable). */
+	/** Spawns the deployable using the library helpers (StartSpawnDeployable → InitDeployable → FinishSpawnDeployable).
+	 */
 	void SpawnDeployableActor();
 };

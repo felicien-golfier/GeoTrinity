@@ -101,7 +101,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 	RemainingDuration -= DeltaTime;
 	if (RemainingDuration <= 0.f)
 	{
-		UGeoGameplayAbility::EndAbility(false, false);
+		UGeoGameplayAbility::EndAbility(true, false);
 		return;
 	}
 
