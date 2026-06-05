@@ -80,6 +80,7 @@ public:
 	/** Registers with the instigator's DeployableManagerComponent and calls InitDrain. */
 	virtual void BeginPlay() override;
 
+	/** True if registering a new deployable of this class beyond the limit should expire the oldest instead of being blocked. */
 	UFUNCTION(BlueprintCallable)
 	bool DestroyOldestWhenLimitReached() const { return bDestroyOldestWhenLimitReached; }
 	/**
@@ -127,6 +128,7 @@ public:
 	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
 	UFUNCTION()
 	virtual void Expire(float TimeBeforeDestroy);
+	/** Overload that uses the default TimeBeforeDestroyAtExpire delay. */
 	virtual void Expire();
 
 	/** Returns true once the deployable has been destroyed (health or duration reached zero). */

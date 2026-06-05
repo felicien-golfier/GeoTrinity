@@ -32,6 +32,12 @@ class GEOTRINITY_API UGeoDeployableManagerComponent : public UActorComponent
 
 public:
 	UGeoDeployableManagerComponent();
+	/**
+	 * Returns true if a new deployable of the given class may be deployed.
+	 * Always returns true when the class has bDestroyOldestWhenLimitReached set
+	 * (the oldest will be expired on RegisterDeployable instead of blocking).
+	 * Otherwise delegates to HasReachMaxLimit.
+	 */
 	bool CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass);
 
 	/**
@@ -49,7 +55,7 @@ public:
 	/** Register a newly deployed actor. Binds to its destroyed delegate. */
 	void RegisterDeployable(AGeoDeployableBase* Deployable);
 
-	/** Recall all deployed actors */
+	/** Immediately expires all tracked deployables. Used on character EndPlay and class switch. */
 	void ForceExpireAll() const;
 
 	/** AActor* delegate callback bound to AGeoDeployableBase::OnDestroyed; forwards to the typed overload. */

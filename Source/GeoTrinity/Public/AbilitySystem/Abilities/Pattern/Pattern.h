@@ -45,7 +45,12 @@ public:
 	/** Returns true while the pattern is running (after InitPattern, before EndPattern). */
 	bool IsPatternActive() const { return bPatternIsActive; }
 
-	/** Ends the pattern and jumps the animation montage to its end section. Must be called to clean up. */
+	/**
+	 * Ends the pattern and cleans up timers.
+	 * When bForceStop is false, jumps the montage to its end section and broadcasts OnPatternEnd.
+	 * When bForceStop is true, stops all montages immediately and skips the OnPatternEnd broadcast —
+	 * used by PatternAbility::EndAbility to force-end a pattern without re-triggering the ability end chain.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pattern")
 	virtual void EndPattern(bool bForceStop = false);
 
@@ -95,6 +100,7 @@ class GEOTRINITY_API UTickablePattern : public UPattern
 	GENERATED_BODY()
 
 public:
+	/** Stops the tick timer, then delegates to UPattern::EndPattern. */
 	virtual void EndPattern(bool bForceStop = false) override;
 
 protected:

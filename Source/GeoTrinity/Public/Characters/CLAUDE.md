@@ -21,7 +21,7 @@ AGeoCharacter  (base — IAbilitySystemInterface, IGenericTeamAgentInterface)
 | Component | Role |
 |---|---|
 | `GeoCharacterMovementComponent` | Cached base speed, `ApplySpeedMultiplier(float)` |
-| `GeoDeployableManagerComponent` | Tracks deployables, enforces max count, `RecallAll()` |
+| `GeoDeployableManagerComponent` | Tracks deployables, enforces max count, `ForceExpireAll()` |
 | `GeoGameFeelComponent` | Hit flash, recoil spring, cue rate-limiting |
 | `ShieldBurstPassiveComponent` | Square passive gauge — replicated `GaugeRatio`, `SetGaugeRatio()` |
 

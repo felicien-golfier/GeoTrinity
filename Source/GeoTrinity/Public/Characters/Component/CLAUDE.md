@@ -14,12 +14,12 @@ Attached to `APlayableCharacter`. Tracks active deployables, enforces max count 
 
 - `MaxDeployables = 3` — global cap; applies to classes without a `DeployableSlots` entry
 - `DeployableSlots` — `TMap<TSubclassOf, int32>`; add an entry to give a class its own independent limit. Set value to 0 for unlimited.
-- `CanDeploy(TSubclassOf opt)` — checks the per-class slot if one exists, otherwise checks the global pool
+- `CanDeploy(TSubclassOf)` — true if deployment is allowed; always true when the class has `bDestroyOldestWhenLimitReached` set (oldest expires on register instead of blocking). Otherwise delegates to `HasReachMaxLimit`.
+- `HasReachMaxLimit(TSubclassOf)` — checks the per-class slot if one exists, otherwise checks the global pool
 - `SetDeployableInfinitCount(Class)` — adds `DeployableSlots[Class] = 0`; used by patterns that must spawn an arbitrary number of pillars
-- `RegisterDeployable(AGeoDeployableBase*)` — registers + binds to destroy/expire delegates
-- `ExpireAll()` — recalls/destroys all tracked deployables
+- `RegisterDeployable(AGeoDeployableBase*)` — registers + binds to destroy/expire delegates; expires oldest if `bDestroyOldestWhenLimitReached` and slot is full
+- `ForceExpireAll()` — immediately expires all tracked deployables; called on character EndPlay and class switch
 - `GetDeployables()` / `GetDeployables<T>()` — all live deployables (optionally filtered by class)
-- `GetDeployRatio()` — `CurrentCount / MaxDeployables`
 - `OnDeployCountChanged` delegate — broadcast to HUD/UI on count change
 
 ## `GeoGameFeelComponent.h`

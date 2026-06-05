@@ -41,20 +41,26 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 
 public:
 	/**
-	 * Spawns enemies from `EnemiesToSpawn`, sends the aggro event to the boss's StateTree, counts connected
-	 * players, and schedules the arena-lock timer (server). Shows the boss health bar locally.
+	 * Calls InitBoss() on the existing boss enemy. Enemies are spawned during HandleMatchIsWaitingToStart;
+	 * this hook assumes the boss is already in the world when the match begins.
 	 */
 	virtual void HandleMatchHasStarted() override;
 
-	/** Hides boss health bar locally. Opens the arena barrier and teleports players to the entrance (server). */
+	/** Destroys existing boss/dummy, respawns both, hides boss health bar locally, opens the arena barrier,
+	 *  and teleports players to the entrance (server). */
 	virtual void HandleMatchIsWaitingToStart() override;
 
 	/** Hides boss health bar locally. Opens the arena barrier (server). */
 	virtual void HandleMatchHasEnded() override;
+	/** Spawns a single enemy at the target point matching Entry.SpawnTag. Server only. */
 	void SpawnEnemy(FEnemySpawnEntry const& Entry);
+	/** Returns true if Enemy's class matches BossToSpawn. */
 	bool IsBoss(AActor const* Enemy) const;
+	/** Returns true if Enemy's class matches DummyToSpawn. */
 	bool IsDummy(AActor const* Enemy) const;
+	/** Finds and returns the live boss enemy actor in the world, or nullptr if none exists. */
 	AEnemyCharacter* GetBossEnemy() const;
+	/** Finds and returns the live dummy enemy actor in the world, or nullptr if none exists. */
 	AEnemyCharacter* GetDummyEnemy() const;
 
 	/** Server-only. Called when a player dies during the fight. Decrements alive counter; triggers wipe reset when 0.
@@ -65,8 +71,14 @@ public:
 	UFUNCTION()
 	void NotifyBossDefeated();
 
+	/**
+	 * Shows boss health bar locally, binds the defeat delegate, sends the aggro StateTree event,
+	 * closes the arena barrier, and schedules the fight-commit timer. Server-side bindings only.
+	 */
 	void InitBoss(AEnemyCharacter* Boss);
+	/** Finds and returns the AGeoArenaBarrier actor in the world, or nullptr. */
 	AGeoArenaBarrier* GetArenaBarrier() const;
+	/** Spawns both boss and dummy enemies on the server. No-op on clients or if already spawned. */
 	void SpawnEnemies();
 
 	UPROPERTY(BlueprintAssignable, Category = "Enemy")
