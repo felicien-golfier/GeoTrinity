@@ -46,6 +46,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	/** Expires all elements spawned by this character (deployables, and in future visual zones, etc). */
 	void StopAllSpawnedElements();
+	/** Calls StopAllGameplayElements before delegating to Super. */
 	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
 	;
 	/** Returns the GeoInputComponent attached to this character. */

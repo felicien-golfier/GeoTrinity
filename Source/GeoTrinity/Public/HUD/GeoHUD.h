@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
+#include "GameplayTagContainer.h"
 
 #include "GeoHUD.generated.h"
 
+class UTexture2D;
 class UGeoUserWidget;
 class UGeoAttributeSetBase;
 class AGeoPlayerController;
@@ -18,6 +20,27 @@ class UGenericCombattantWidget;
 class AEnemyCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeModifiedSignature, float, NewValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeployCountChangedSignature, int32, CurrentCount, int32, MaxCount);
+
+
+/** One ability-bar slot's static data: which ability it represents, its input, icon, and whether to show a deploy count. */
+USTRUCT(BlueprintType)
+struct FGeoAbilityBarEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FGameplayTag AbilityTag;
+
+	UPROPERTY(BlueprintReadOnly)
+	FGameplayTag InputTag;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UTexture2D const> Icon = nullptr;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsDeployable = false;
+};
 
 
 USTRUCT(BlueprintType)
@@ -78,6 +101,29 @@ public:
 	/** Hides the boss health bar. Call this when the boss fight ends. */
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void HideBossHealthBar();
+
+	/**
+	 * Returns one entry per granted non-passive player ability, with icon/input/deployable flags resolved
+	 * from the global UAbilityInfo asset. Used by the ability bar widget to build its slots.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AbilityBar")
+	TArray<FGeoAbilityBarEntry> GetAbilityBarEntries() const;
+
+	/** Outputs the remaining cooldown and full cooldown duration (seconds) for the granted ability with AbilityTag. */
+	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	void GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, float& OutDuration) const;
+
+	/** Outputs the live and maximum deployable count for the deploy ability with AbilityTag, read from the avatar's manager. */
+	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	void GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;
+
+	/** Implemented in the HUD BP: forwards to the overlay's ability-bar widget to build slots from GetAbilityBarEntries. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "AbilityBar")
+	void InitAbilityBar();
+
+	/** Implemented in the HUD BP: rebuilds the ability bar after a class change re-grants abilities. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "AbilityBar")
+	void RefreshAbilityBar();
 
 
 protected:

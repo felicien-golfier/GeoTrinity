@@ -55,6 +55,10 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
 	TObjectPtr<UTexture2D const> AbilityIcon{nullptr};
+
+	/** When true, the ability bar slot shows a remaining-deployable count badge (Mine/Turret abilities). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
+	bool bShowDeployCount = false;
 };
 
 /**
