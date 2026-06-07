@@ -44,7 +44,7 @@ Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`
 
 ## `SpawnPillarPattern.h` — zone-and-pillar boss pattern
 
-Non-ticking pattern. On `InitPattern`, determines how many pillars to spawn (1–3, scaled by the boss's remaining health ratio) and selects target player locations sorted by `PlayerId` for determinism. On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via `ExecuteDelayGameplayCue` override.
+Non-ticking pattern. On `InitPattern`, determines how many pillars to spawn (1–3, scaled by the boss's remaining health ratio) and selects target player locations sorted by `PlayerId` for determinism. On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via the `ExecuteGameplayCue` override (fires one cue per spawn point).
 
 - `SpawningZoneSize` — radius used for both the countdown cue magnitude and hostile hit detection (cm)
 - `PillarClass` — `AGeoPillar` subclass to spawn; also passed to `SetDeployableInfinitCount` in `OnCreate` to bypass slot limits
