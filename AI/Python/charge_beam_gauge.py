@@ -53,7 +53,7 @@ def create_charge_beam_gauge():
         "/Game/HUD/ChargeBeam",
         "/Script/GeoTrinity.GeoChargeBeamGaugeWidget",
     )
-    build_widget_tree(unreal.GeoWidgetBuilderUtil, "build_charge_beam_gauge_widget", wbp, 0.6, 0.7)
+    build_widget_tree(unreal.GeoHudWidgetBuilderUtil, "build_charge_beam_gauge_widget", wbp, 0.6, 0.7)
     wire_widget_component(
         "/Game/Characters/Playable/BP_GeoPlayableCharacter",
         wbp,

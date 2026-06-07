@@ -9,10 +9,18 @@
 
 #include "GeoWidgetBuilderUtil.generated.h"
 
+class UCanvasPanelSlot;
 class UMaterialInterface;
+class UPanelWidget;
+class UUserWidget;
 class UWidgetBlueprint;
 class UWidget;
+class UWidgetTree;
 
+/**
+ * Generic, reusable widget-tree primitives for Python/Blueprint automation. Content-specific builders (per-widget
+ * trees) live in UGeoHudWidgetBuilderUtil and compose these. Keep this class free of one-off, per-asset functions.
+ */
 UCLASS()
 class GEOTRINITY_API UGeoWidgetBuilderUtil : public UEditorUtilityObject
 {
@@ -20,15 +28,13 @@ class GEOTRINITY_API UGeoWidgetBuilderUtil : public UEditorUtilityObject
 
 public:
 	/**
-	 * Builds the WBP_ChargeBeamGauge widget tree:
-	 *   Root: CanvasPanel (300×30, fills designer canvas)
-	 *     - ChargeBar     : ProgressBar, full width, dark-blue fill
-	 *     - SweetSpotBar  : ProgressBar, overlaid at SweetSpotMinRatio..SweetSpotMaxRatio, golden fill
-	 * Saves the asset after building.
+	 * Generic: replaces the widget's root with a freshly constructed panel of PanelClass (CanvasPanel, Overlay,
+	 * HorizontalBox, …), named RootName. Pass a BindWidget variable name (e.g. "SlotBox") so the C++ widget can bind
+	 * the root. The panel is left empty for runtime population or further building. Compiles and saves the asset.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
-	static void BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetBlueprint, float SweetSpotMinRatio = 0.6f,
-	                                       float SweetSpotMaxRatio = 0.7f);
+	static void SetRootPanel(UWidgetBlueprint* WidgetBlueprint, TSubclassOf<UPanelWidget> PanelClass,
+							 FName RootName = TEXT("Root"));
 
 	/**
 	 * Generic: replaces the widget's root with a single Image showing Texture at DesiredSize.
@@ -51,13 +57,27 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void InspectWidgetBlueprint(UWidgetBlueprint* WidgetBlueprint);
 
-private:
+	// --- Building blocks for content builders (UGeoHudWidgetBuilderUtil and future per-widget builders) ---
+
 	/** Validates the blueprint and its tree, marks both for modification, and clears the root. Returns null on failure. */
-	static class UWidgetTree* BeginBuild(UWidgetBlueprint* WidgetBlueprint, TCHAR const* FunctionName);
+	static UWidgetTree* BeginBuild(UWidgetBlueprint* WidgetBlueprint, TCHAR const* FunctionName);
 
 	/** Compiles and saves the widget blueprint after its tree has been built. */
 	static void FinishBuild(UWidgetBlueprint* WidgetBlueprint);
 
+	/** Constructs a panel of PanelClass named Name and assigns it as the tree root. Returns it (null on failure). */
+	static UPanelWidget* ConstructRootPanel(UWidgetTree* Tree, TSubclassOf<UPanelWidget> PanelClass, FName Name);
+
+	/**
+	 * Adds an instance of ChildWidgetClass (a UserWidget) named ChildName under the CanvasPanel ParentPanelName in an
+	 * existing tree, WITHOUT clearing it. ChildName becomes a BindWidget variable, so a fresh GUID is registered for it.
+	 * Returns the new canvas slot for the caller to position (the content builder owns layout policy); null on failure.
+	 * Does not compile/save — the caller does that via FinishBuild after positioning.
+	 */
+	static UCanvasPanelSlot* AddChildToCanvasPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
+												   TSubclassOf<UUserWidget> ChildWidgetClass, FName ChildName);
+
+private:
 	static void LogWidget(UWidget* Widget, int32 Depth);
 };
 

@@ -18,9 +18,11 @@ class UGeoAbilitySystemComponent;
 class APlayerState;
 class UGenericCombattantWidget;
 class AEnemyCharacter;
+class APlayableCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeModifiedSignature, float, NewValue);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeployCountChangedSignature, int32, CurrentCount, int32, MaxCount);
+/** Tagless "a deploy count changed" ping. Slots re-query GetDeployCountForAbility for their own tag on receipt. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeployCountChangedSignature);
 
 
 /** One ability-bar slot's static data: which ability it represents, its input, icon, and whether to show a deploy count. */
@@ -94,6 +96,9 @@ public:
 	/** Returns the cached player parameters (controller, state, ASC, attribute set) set during InitOverlay. */
 	FHudPlayerParams const& GetHudPlayerParams() const { return HudPlayerParams; }
 
+	/** Binds pawn-dependent HUD callbacks (deploy-count ping). Call once the local pawn exists, from OnPlayerPawnSet. */
+	void BindToPawn(APlayableCharacter* PlayableCharacter);
+
 	/** Shows the boss health bar for the given enemy. Call this when a boss fight starts. */
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void ShowBossHealthBar(AEnemyCharacter* Boss);
@@ -117,13 +122,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AbilityBar")
 	void GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;
 
-	/** Implemented in the HUD BP: forwards to the overlay's ability-bar widget to build slots from GetAbilityBarEntries. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "AbilityBar")
-	void InitAbilityBar();
+	/**
+	 * (Re)builds the overlay's ability-bar slots from GetAbilityBarEntries. Called from BindToPawn once the pawn exists
+	 * and from AGeoPlayerState::OnRep_PlayerClass after a class change re-grants abilities.
+	 */
+	void BuildAbilityBar();
 
-	/** Implemented in the HUD BP: rebuilds the ability bar after a class change re-grants abilities. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "AbilityBar")
-	void RefreshAbilityBar();
+	/** Tagless ping fired when any deployable count changes; ability-bar slots re-query their own count on receipt (no polling). */
+	UPROPERTY(BlueprintAssignable, Category = "AbilityBar")
+	FOnDeployCountChangedSignature OnPlayerDeployCountChanged;
 
 
 protected:
@@ -136,6 +143,10 @@ protected:
 private:
 	void BroadcastInitialValues() const;
 	void BindCallbacksToDependencies();
+
+	/** Bound to the avatar's deployable manager; fires the tagless OnPlayerDeployCountChanged ping (args ignored). */
+	UFUNCTION()
+	void HandleDeployCountChanged(int32 CurrentCount, int32 MaxCount);
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "HUD")

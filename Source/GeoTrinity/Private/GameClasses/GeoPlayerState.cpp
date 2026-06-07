@@ -56,6 +56,15 @@ void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
 		// PlayerClass and the pawn link replicate independently. If PlayerClass arrived before the pawn,
 		// OnRep_PlayerClass already ran and bailed on a null pawn — apply class data now that the pawn exists.
 		ApplyClassDataToPawn();
+
+		// Bind pawn-dependent HUD callbacks now that the pawn (and its components) exist.
+		if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
+		{
+			if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
+			{
+				GeoHUD->BindToPawn(Cast<APlayableCharacter>(NewPawn));
+			}
+		}
 	}
 }
 
@@ -73,6 +82,15 @@ void AGeoPlayerState::InitOverlay()
 void AGeoPlayerState::OnRep_PlayerClass()
 {
 	ApplyClassDataToPawn();
+
+	// The class change re-grants abilities; rebuild the ability bar so it reflects the new class's ability set.
+	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
+	{
+		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
+		{
+			GeoHUD->BuildAbilityBar();
+		}
+	}
 }
 
 void AGeoPlayerState::ApplyClassDataToPawn()

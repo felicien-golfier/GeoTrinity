@@ -31,6 +31,38 @@ See `Source/GeoTrinity/Public/Tool/GeoWidgetBuilderUtil.h` and its `.cpp` for th
 
 Widget names passed to `ConstructWidget` become the `BindWidget` variable names the C++ class binds against.
 
+Parameterize the constructed root panel's name so a built root can satisfy a specific `BindWidget` variable; pass the variable name from the caller rather than hardcoding it. See `Source/GeoTrinity/Public/Tool/GeoWidgetBuilderUtil.h`.
+
+---
+
+## Rebuilding an Existing Widget Blueprint
+
+When a build shim rebuilds a widget tree on an already-existing asset, clear the widget-variable GUID map as part of resetting the root. The widget BP compiler only auto-assigns variable GUIDs when that map is empty; stale entries from the previous tree otherwise leave freshly constructed widgets without a GUID. See `GeoWidgetBuilderUtil.cpp` (`BeginBuild`).
+
+---
+
+## Appending a Child to an Existing Tree
+
+To add one named child into an existing tree without rebuilding it, do not clear the root or the GUID map — existing widgets keep their GUIDs. Register a fresh GUID for the new child's name yourself, since the compiler mints GUIDs only when the map is empty. Make the add reuse-safe by removing any existing widget of that name first. See `GeoWidgetBuilderUtil.cpp` (`AddChildToCanvasPanel`).
+
+---
+
+## Composing a Tree from Generic Primitives
+
+Keep generic, parameterized tree primitives (begin/finish, construct-root-panel, image-root) in one shim and build content-specific trees in a separate shim that composes those primitives. See `Source/GeoTrinity/Public/Tool/GeoHudWidgetBuilderUtil.h` and `MCP_EditorUtility.md`.
+
+---
+
+## Setting Widget-Blueprint Default Properties
+
+Set a widget Blueprint's class-default values (e.g. a material reference, a slot widget class) on the default object of its generated class from Python, then save the asset. Use this to wire asset references that would otherwise be set in the designer's Details panel.
+
+---
+
+## Driving a Child Widget from C++ Instead of BP Nodes
+
+To rebuild or update a nested widget without authoring event-graph nodes, give the parent a C++ base class that `BindWidget`s the child and exposes a build/update method; the owning HUD or actor calls that method directly in C++. Reparent the designer Blueprint to the C++ base and name the child to match the `BindWidget` variable. This replaces BlueprintImplementableEvent forwarding with a direct C++ call. See `Source/GeoTrinity/Public/HUD/GeoOverlayWidget.h`.
+
 ---
 
 ## ProgressBar Style

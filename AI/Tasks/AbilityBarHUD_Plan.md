@@ -1,5 +1,41 @@
 # Ability Bar HUD — abilities, cooldowns & deployable counts
 
+## STATUS (2026-06-05) — assets built; ⚠️ uncommitted C++ awaiting editor-closed rebuild (see NEXT STEPS #0)
+
+**Done (compiles clean, GeoTrinityEditor):**
+- `AGeoHUD` (`GeoHUD.h/.cpp`): `FGeoAbilityBarEntry`; `GetAbilityBarEntries` / `GetAbilityCooldown` / `GetDeployCountForAbility`; `InitAbilityBar` + `RefreshAbilityBar` BlueprintImplementableEvents; **tagless** `OnPlayerDeployCountChanged` ping (public) + `HandleDeployCountChanged`; `BindToPawn(APlayableCharacter*)` does the pawn-dependent deploy binding + initial `InitAbilityBar`, called from `AGeoPlayerState::OnPlayerPawnSet` (NOT InitOverlay — pawn isn't guaranteed there). `RefreshAbilityBar` called from `OnRep_PlayerClass`.
+- `AbilityInfo.h`: `bShowDeployCount`. `GeoDeployAbility.h`: public `GetDeployableActorClass()`.
+- Widget classes: `UGeoAbilitySlotWidget` (`HUD/GeoAbilitySlotWidget.h/.cpp`) — BindWidget `Icon`/`CooldownSweep`/`CountdownText`/`CountText`(opt) + `CooldownSweepMaterial` + MID `Fill` param; `NativeTick` early-outs when ready; `InitSlot`/`RefreshDeployCount`. `UGeoAbilityBarWidget` (`HUD/GeoAbilityBarWidget.h/.cpp`) — BindWidget `SlotBox`(HorizontalBox) + `SlotWidgetClass`; `BuildBar(AGeoHUD*)` clears+rebuilds, AddUniqueDynamic to ping.
+- Shim split: `UGeoWidgetBuilderUtil` = generic primitives only (public static `BeginBuild`/`FinishBuild`/`ConstructRootPanel`; `SetRootPanel`, `SetImageRoot`, `SetImageRootFromMaterial`, `InspectWidgetBlueprint`). New `UGeoHudWidgetBuilderUtil` (`Tool/GeoHudWidgetBuilderUtil.h/.cpp`) = content builders `BuildAbilitySlotWidget(WBP, IconSize)` + `BuildChargeBeamGaugeWidget`. `charge_beam_gauge.py` updated to `GeoHudWidgetBuilderUtil`.
+- Docs: generic-shim rule added to `AI/MCP/MCP_EditorUtility.md`.
+- `AI/Python/ability_bar.py` written: builds `M_CooldownSweep` (UI/Translucent, `Fill` scalar → Step over atan2 angle), `WBP_AbilitySlot` (parent `GeoAbilitySlotWidget`, via `build_ability_slot_widget`), `WBP_AbilityBar` (parent `GeoAbilityBarWidget`, root HorizontalBox `Root` via `set_root_panel`). All under `/Game/HUD/AbilityBar`.
+
+**DONE (compiled & live in editor):**
+- `M_CooldownSweep`, `WBP_AbilitySlot`, `WBP_AbilityBar` all built (`ability_bar.py`). Inspected: slot = Overlay `Root` → `Icon`/`CooldownSweep`/`CountdownText`/`CountText`; bar = HorizontalBox **`SlotBox`** (matches BindWidget).
+- `SetRootPanel` parameterized with `FName RootName = "Root"` (forwards to `ConstructRootPanel`); `ability_bar.py` passes `"SlotBox"` for the bar root. **(already compiled in — docstring confirmed live)**
+- **Crash fix**: `BeginBuild` now empties `WidgetBlueprint->WidgetVariableNameToGuidMap`. The WBP compiler only auto-assigns GUIDs when that map is empty; on a *rebuild* of an existing asset the stale entries skipped that path, so freshly-named widgets got no GUID → `ensureAlwaysMsgf "Widget [X] was added but did not get a GUID"` (WidgetBlueprintCompiler.cpp:794). Generic fix → all content builders rebuild cleanly. **(live-compiled, verified working — no crash on re-run)**
+- CDO refs wired + saved: `WBP_AbilitySlot.CooldownSweepMaterial = M_CooldownSweep`, `WBP_AbilityBar.SlotWidgetClass = WBP_AbilitySlot_C`.
+- MCP UI docs updated (`MCP_UI.md`: rebuild GUID-map purge, parameterized root name, primitive-vs-content split, set-default-via-CDO, **driving a child widget from C++**; `MCP_EditorUtility.md`: added `UGeoHudWidgetBuilderUtil` row). DocStyle-compliant.
+
+**⚠️ UNCOMMITTED C++ ON DISK — NEEDS A FULL EDITOR-CLOSED `GeoTrinityEditor` REBUILD BEFORE ANYTHING ELSE WORKS:**
+Decision (user-approved): drive the bar from C++ via a `BindWidget`, NOT BP event-graph nodes. Changes written but **not yet compiled** (new UCLASS + removed BlueprintImplementableEvents ⇒ header regen, live coding can't do it):
+- NEW `HUD/GeoOverlayWidget.h/.cpp` — `UGeoOverlayWidget : UGeoUserWidget`, `meta=(BindWidget) UGeoAbilityBarWidget* AbilityBar`, `BuildAbilityBar(AGeoHUD*)` → `AbilityBar->BuildBar(HUD)`.
+- `GeoHUD.h/.cpp` — removed `InitAbilityBar`/`RefreshAbilityBar` BlueprintImplementableEvents; replaced with ONE C++ `BuildAbilityBar()` that casts `OverlayWidget`→`UGeoOverlayWidget` and forwards. `BindToPawn` now calls `BuildAbilityBar()`. Added `#include "HUD/GeoOverlayWidget.h"`.
+- `GeoPlayerState.cpp` — `OnRep_PlayerClass` now calls `BuildAbilityBar()` (was `RefreshAbilityBar()`).
+- (Build.cs unchanged — UMG/UMGEditor already deps.)
+
+**NEXT STEPS (resume here):**
+0. **Editor must be closed** → run full build (`AI/Commands.md` Bash build, or `build_project` target `GeoTrinityEditor`). Confirm `Result: Succeeded`. Relaunch editor, `status` → editor_online:true.
+1. **Wire overlay (finish task #5)** via MCP/Python on `/Game/HUD/WBP_MainOverlay` (confirmed = HUD `OverlayWidgetClass`; HUD BP = `/Game/HUD/BP_GeoHudMain`; overlay root canvas = `CanvasPanel_21`, has ProgressBar_Health/Shield + AmmoText):
+   - Reparent `WBP_MainOverlay` → `UGeoOverlayWidget`.
+   - Add `WBP_AbilityBar` to `CanvasPanel_21`, **named `AbilityBar`** (must match BindWidget), anchored **bottom-center**.
+   - `InspectWidgetBlueprint` to confirm bind OK + no compile error.
+   - ⚠️ RISK A: Python reparent of a populated WBP may need an `FBlueprintEditorUtils::ReparentBlueprint`-style shim if `set_editor_property("parent_class", …)` + recompile is flaky.
+   - ⚠️ RISK B: adding a child UserWidget as a *named BindWidget variable* is the same GUID-map territory that crashed us — inspect right after, watch for the GUID ensure. May need a small shim that constructs the sub-widget into the canvas with a name (mirrors `BuildAbilitySlotWidget`).
+2. Populate `AbilityIcon` + `bShowDeployCount` on `UAbilityInfo` entries for all classes (deploy abilities → true). Find the data asset via `UGameDataSettings` (task #6).
+3. PIE verify: icons row bottom-center, cooldown sweep + countdown, deploy badge decrements/increments, class-change rebuild, no idle tick cost (task #7).
+4. Update remaining docs: `Tool/CLAUDE.md` (new `GeoHudWidgetBuilderUtil` + trimmed `GeoWidgetBuilderUtil` incl. RootName param + GUID-map purge), `HUD/CLAUDE.md` (add `UGeoOverlayWidget` + slot/bar widgets; **fix stale line ~37**: `InitAbilityBar`/`RefreshAbilityBar` BP events → C++ `BuildAbilityBar`).
+
 ## Context
 The player HUD shows health/ammo/shield and a boss bar, but nothing tells the player **what abilities they have, which are on cooldown, and how many deployables remain**. Goal: a single compact row of icons at the **bottom-center** of the screen, one slot per granted (non-passive) player ability, each showing:
 - the ability icon,

@@ -244,9 +244,13 @@ Config field: `TeleportLocation` (default `FVector::ZeroVector`). Set `PatternTo
 
 ### Phase 7: Multiplayer Connection Pipeline
 
-Full design in `project_multiplayer_pipeline.md` and `C:\Users\Felou\.claude\plans\i-want-you-to-sequential-neumann.md`.
+**Step 1 (direct-IP, do first): full execution doc in `AI/Tasks/MultiplayerConnectUI_Plan.md`** —
+ships a Host/Join menu over direct IP now, behind a `UGeoSessionSubsystem` seam so the EOS
+backend below slots in later without rewriting the UI. (The previously referenced
+`project_multiplayer_pipeline.md` and `~/.claude/plans/i-want-you-to-sequential-neumann.md` do
+not exist; that direct-IP doc supersedes them for step 1.)
 
-**Model:** EOS internet, listen server, host/join-by-code, one game map (staging zone + boss room), late join always spawns in staging zone.
+**Model (full target):** EOS internet, listen server, host/join-by-code, one game map (staging zone + boss room), late join always spawns in staging zone.
 
 | Task | File | Status |
 |------|------|--------|
