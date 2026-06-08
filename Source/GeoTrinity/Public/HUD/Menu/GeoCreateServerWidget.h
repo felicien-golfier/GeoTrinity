@@ -75,10 +75,7 @@ private:
 	UFUNCTION()
 	void HandleBack();
 
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-
 	void PopulateComboBoxes();
 
 	FString PendingMapURL;
-	FDelegateHandle CreateSessionDelegateHandle;
 };

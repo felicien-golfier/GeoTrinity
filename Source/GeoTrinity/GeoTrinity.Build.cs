@@ -32,7 +32,9 @@ public class GeoTrinity : ModuleRules
 			"GameplayTasks",
 			"UMG",
 			"Niagara",
-			"OnlineSubsystem"
+			"OnlineSubsystem",
+			"AdvancedSessions",
+			"AdvancedSteamSessions"
 		});
 
 		if (Target.bBuildEditor)

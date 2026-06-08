@@ -4,6 +4,9 @@
 #include "GameClasses/GeoGameInstance.h"
 
 #include "GenericTeamAgentInterface.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "Tool/Team.h"
 
 
@@ -41,4 +44,66 @@ void UGeoGameInstance::Init()
 	Super::Init();
 
 	FGenericTeamId::SetAttitudeSolver(&GeoAttitudeSolver);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ADVANCED SESSION
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::CreateAdvancedSession(FOnlineSessionSettings const& SessionSettings, FString MapToGoTo/* = ""*/)
+{
+	// Advanced session plugin only wraps for blueprint with a latent task, so better do it directly when in CPP
+	
+	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
+	if (!ensureMsgf(OnlineSubsystem, TEXT("UGeoCreateServerWidget: Online subsystem not available")))
+	{
+		return;
+	}
+	IOnlineSessionPtr Sessions = OnlineSubsystem->GetSessionInterface();
+	if (!ensureMsgf(Sessions.IsValid(), TEXT("UGeoCreateServerWidget: Session interface not valid")))
+	{
+		return;
+	}
+	
+	CreateSessionDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(
+		FOnCreateSessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnCreateSessionComplete)
+	);
+
+	// Map
+	if (MapToGoTo.IsEmpty())
+	{
+		if (!ensureMsgf(!DefaultMap.IsNull(), TEXT("GeoGameInstance: No map URL — DefaultMap is not set on the Blueprint subclass")))
+		{
+			return;
+		}
+		PendingMapURL = DefaultMap.ToSoftObjectPath().GetLongPackageName();
+	}
+	else
+	{
+		PendingMapURL = MapToGoTo;
+	}
+	
+	Sessions->CreateSession(0, FName(TEXT("GameSession")), SessionSettings);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
+	if (OnlineSub)
+	{
+		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
+		if (Sessions.IsValid())
+		{
+			Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
+		}
+	}
+
+	if (!bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UGeoCreateServerWidget: Failed to create session '%s'"), *SessionName.ToString());
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("UGeoCreateServerWidget: Session created, traveling to %s"), *PendingMapURL);
+	GetWorld()->ServerTravel(PendingMapURL + TEXT("?listen"));
 }

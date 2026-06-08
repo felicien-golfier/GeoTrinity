@@ -8,6 +8,8 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
+#include "GameClasses/GeoGameInstance.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCreateServerWidget::NativeConstruct()
@@ -99,26 +101,8 @@ void UGeoCreateServerWidget::PopulateComboBoxes()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCreateServerWidget::HandleCreate()
 {
-	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
-	if (!ensureMsgf(OnlineSub, TEXT("UGeoCreateServerWidget: Online subsystem not available")))
-	{
-		return;
-	}
-
-	IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-	if (!ensureMsgf(Sessions.IsValid(), TEXT("UGeoCreateServerWidget: Session interface not valid")))
-	{
-		return;
-	}
 
 	const int32 SelectedMapIndex = MapComboBox->GetSelectedIndex();
-	if (!MapURLs.IsValidIndex(SelectedMapIndex))
-	{
-		UE_LOG(LogTemp, Error, TEXT("UGeoCreateServerWidget: No URL configured for map at index %d — check MapURLs array"), SelectedMapIndex);
-		return;
-	}
-
-	PendingMapURL = MapURLs[SelectedMapIndex];
 
 	const FText ServerNameText = ServerNameInput->GetText();
 	const FString ServerName = ServerNameText.IsEmpty() ? DefaultServerName : ServerNameText.ToString();
@@ -129,7 +113,7 @@ void UGeoCreateServerWidget::HandleCreate()
 	const bool bIsPublic = PrivacyComboBox->GetSelectedOption() == TEXT("Public");
 
 	FOnlineSessionSettings SessionSettings;
-	SessionSettings.NumPublicConnections = NumSlots;
+	SessionSettings.NumPublicConnections = NumSlots;	// Should be at least 2 for listen server, according to doc on "CreateAdvancedSession" from Advanced session plugin
 	SessionSettings.NumPrivateConnections = bIsPublic ? 0 : NumSlots;
 	SessionSettings.bShouldAdvertise = bIsPublic;
 	SessionSettings.bAllowJoinInProgress = false;
@@ -140,38 +124,18 @@ void UGeoCreateServerWidget::HandleCreate()
 	SessionSettings.Set(FName("SERVER_NAME"), ServerName, EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(FName("LANGUAGE"), Language, EOnlineDataAdvertisementType::ViaOnlineService);
 
-	CreateSessionDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(
-		FOnCreateSessionCompleteDelegate::CreateUObject(this, &UGeoCreateServerWidget::OnCreateSessionComplete)
-	);
-
-	Sessions->CreateSession(0, FName(TEXT("GameSession")), SessionSettings);
+	UGeoGameInstance* GeoGameInstance = Cast<UGeoGameInstance>(GetGameInstance());
+	if (!GeoGameInstance)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UGeoCreateServerWidget: Could not get GeoGameInstance"));
+		return;
+	}
+	// No maps for now, just go to the default one, set in game instance
+	GeoGameInstance->CreateAdvancedSession(SessionSettings);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCreateServerWidget::HandleBack()
 {
 	OnClosed.Broadcast();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoCreateServerWidget::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
-{
-	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
-	if (OnlineSub)
-	{
-		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-		if (Sessions.IsValid())
-		{
-			Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
-		}
-	}
-
-	if (!bWasSuccessful)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UGeoCreateServerWidget: Failed to create session '%s'"), *SessionName.ToString());
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("UGeoCreateServerWidget: Session created, traveling to %s"), *PendingMapURL);
-	GetWorld()->ServerTravel(PendingMapURL + TEXT("?listen"));
 }
