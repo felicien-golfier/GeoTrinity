@@ -31,6 +31,7 @@ public:
 	void RefreshDeployCount();
 
 protected:
+	/** Drives the cooldown-sweep material's Fill scalar and countdown text each frame; early-outs when the ability is ready. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
 	/** Ability icon. */
