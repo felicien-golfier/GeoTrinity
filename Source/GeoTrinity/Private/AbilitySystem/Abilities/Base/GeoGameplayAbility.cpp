@@ -373,7 +373,10 @@ FVector UGeoGameplayAbility::GetFireOrigin(AActor* Instigator, UGeoAbilitySystem
 
 void UGeoGameplayAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
 {
-	Character->SetDeployChargeGaugeVisibility(this, bVisible);
+	if (!GeoLib::IsServer(this))
+	{
+		Character->SetDeployChargeGaugeVisibility(this, bVisible);
+	}
 }
 
 bool UGeoGameplayAbility::IsPassive() const

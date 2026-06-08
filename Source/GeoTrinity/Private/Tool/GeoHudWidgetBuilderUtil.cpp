@@ -5,8 +5,10 @@
 #include "Tool/GeoHudWidgetBuilderUtil.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/EditableTextBox.h"
 #include "Components/HorizontalBox.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
@@ -14,6 +16,7 @@
 #include "Components/ProgressBar.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
 #include "Tool/GeoWidgetBuilderUtil.h"
 #include "WidgetBlueprint.h"
 
@@ -194,6 +197,56 @@ void UGeoHudWidgetBuilderUtil::AddAbilityBarToOverlay(UWidgetBlueprint* WidgetBl
 
 	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added AbilityBar (%s) to '%s' bottom-center (%.0f%%x%.0f%% of screen)"),
 		   *AbilityBarClass->GetName(), *WidgetBlueprint->GetName(), WidthFraction * 100.f, HeightFraction * 100.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::BuildMainMenuWidget(UWidgetBlueprint* WidgetBlueprint)
+{
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildMainMenuWidget"));
+	if (!Tree)
+	{
+		return;
+	}
+
+	// Root Overlay fills the screen; the menu VerticalBox is centered inside it so the stack of controls sits in the middle.
+	UOverlay* Root = Cast<UOverlay>(UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, UOverlay::StaticClass(), TEXT("Root")));
+
+	UVerticalBox* Menu = Tree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("Menu"));
+	if (UOverlaySlot* MenuSlot = Cast<UOverlaySlot>(Root->AddChildToOverlay(Menu)))
+	{
+		MenuSlot->SetHorizontalAlignment(HAlign_Center);
+		MenuSlot->SetVerticalAlignment(VAlign_Center);
+	}
+
+	// Each control is added center-aligned with a little vertical breathing room. HostButton/IPInput/JoinButton/LocalIPText
+	// are flagged as BP variables (bIsVariable) so the WBP_MainMenu graph and the C++ BindWidget members can reach them;
+	// the layout-only widgets stay unflagged.
+	FMargin const RowPadding(0.f, 8.f);
+
+	UTextBlock* TitleText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleText"));
+	TitleText->SetText(FText::FromString(TEXT("GeoTrinity")));
+	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, TitleText, RowPadding);
+
+	UButton* HostButton = UGeoWidgetBuilderUtil::ConstructLabeledButton(Tree, TEXT("HostButton"), FText::FromString(TEXT("Host")));
+	HostButton->bIsVariable = true;
+	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, HostButton, RowPadding);
+
+	UEditableTextBox* IPInput = Tree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("IPInput"));
+	IPInput->bIsVariable = true;
+	IPInput->SetHintText(FText::FromString(TEXT("Host IP")));
+	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, IPInput, RowPadding);
+
+	UButton* JoinButton = UGeoWidgetBuilderUtil::ConstructLabeledButton(Tree, TEXT("JoinButton"), FText::FromString(TEXT("Join")));
+	JoinButton->bIsVariable = true;
+	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, JoinButton, RowPadding);
+
+	UTextBlock* LocalIPText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("LocalIPText"));
+	LocalIPText->bIsVariable = true;
+	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, LocalIPText, RowPadding);
+
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_MainMenu (centered connect screen)"));
 }
 
 #endif // WITH_EDITOR

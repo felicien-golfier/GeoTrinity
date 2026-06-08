@@ -59,6 +59,15 @@ public:
 	static void AddAbilityBarToOverlay(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
 									   TSubclassOf<UUserWidget> AbilityBarClass, float WidthFraction = 0.3f,
 									   float HeightFraction = 0.08f, float BottomFraction = 0.02f);
+
+	/**
+	 * Builds the WBP_MainMenu connect-screen tree: a centered VerticalBox holding
+	 *   TitleText ("GeoTrinity") ← HostButton (label "Host") ← IPInput (EditableTextBox, hint "Host IP")
+	 *   ← JoinButton (label "Join") ← LocalIPText (host reads this out; bound at runtime to GetLocalIP).
+	 * The child names match the BindWidget members the BP exposes so UGeoMenuWidget's graph can wire them. Saves the asset.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void BuildMainMenuWidget(UWidgetBlueprint* WidgetBlueprint);
 };
 
 #endif // WITH_EDITOR

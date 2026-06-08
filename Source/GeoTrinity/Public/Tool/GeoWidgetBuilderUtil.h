@@ -9,10 +9,13 @@
 
 #include "GeoWidgetBuilderUtil.generated.h"
 
+class UButton;
 class UCanvasPanelSlot;
 class UMaterialInterface;
 class UPanelWidget;
 class UUserWidget;
+class UVerticalBox;
+class UVerticalBoxSlot;
 class UWidgetBlueprint;
 class UWidget;
 class UWidgetTree;
@@ -76,6 +79,12 @@ public:
 	 */
 	static UCanvasPanelSlot* AddChildToCanvasPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
 												   TSubclassOf<UUserWidget> ChildWidgetClass, FName ChildName);
+
+	/** Adds Child to VerticalBox horizontally centered with Padding, and returns its slot (null on failure). */
+	static UVerticalBoxSlot* AddCenteredChildToVerticalBox(UVerticalBox* VerticalBox, UWidget* Child, FMargin Padding);
+
+	/** Constructs a Button named Name in Tree whose content is a TextBlock showing LabelText. Returns it (null on failure). */
+	static UButton* ConstructLabeledButton(UWidgetTree* Tree, FName Name, FText LabelText);
 
 private:
 	static void LogWidget(UWidget* Widget, int32 Depth);

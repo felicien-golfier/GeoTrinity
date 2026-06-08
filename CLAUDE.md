@@ -7,6 +7,7 @@ GeoTrinity — multiplayer 2D boss fight bullet-hell, Unreal Engine 5.7, GAS. Pl
 Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working on Blueprints or code that directly touches MCP/Blueprint state.
 
 ## Big RULES
+- **NEVER close, kill, or restart the user's Unreal editor — not even to build.** It may hold unsaved work that closing destroys. When a build needs the editor closed, ask the user to close it and wait; never do it yourself.
 - ALWAYS read AI/CodingStyle.md before coding. If planing or just answering, don't, but if you write any line of code, read it.
 - When opening a cpp file, read it entirely.
 - ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.

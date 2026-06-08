@@ -31,6 +31,8 @@ See `Source/GeoTrinity/Public/Tool/GeoWidgetBuilderUtil.h` and its `.cpp` for th
 
 Widget names passed to `ConstructWidget` become the `BindWidget` variable names the C++ class binds against.
 
+A shim-constructed widget is only reachable as a Blueprint variable (graph nodes, designer Details, `BindWidget` properties) when it is flagged as a variable; leave layout-only widgets unflagged and flag the ones the graph or C++ needs.
+
 Parameterize the constructed root panel's name so a built root can satisfy a specific `BindWidget` variable; pass the variable name from the caller rather than hardcoding it. See `Source/GeoTrinity/Public/Tool/GeoWidgetBuilderUtil.h`.
 
 ---

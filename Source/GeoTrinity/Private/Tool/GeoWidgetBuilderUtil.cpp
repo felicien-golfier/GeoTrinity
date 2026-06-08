@@ -6,11 +6,15 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/Image.h"
 #include "Components/PanelWidget.h"
 #include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Components/Widget.h"
 #include "FileHelpers.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -205,6 +209,39 @@ UCanvasPanelSlot* UGeoWidgetBuilderUtil::AddChildToCanvasPanel(UWidgetBlueprint*
 	WidgetBlueprint->WidgetVariableNameToGuidMap.Add(ChildName, FGuid::NewGuid());
 
 	return ChildSlot;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UVerticalBoxSlot* UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(UVerticalBox* VerticalBox, UWidget* Child,
+																	   FMargin Padding)
+{
+	if (!ensureMsgf(VerticalBox && Child, TEXT("UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox — null arg")))
+	{
+		return nullptr;
+	}
+
+	UVerticalBoxSlot* Slot = VerticalBox->AddChildToVerticalBox(Child);
+	if (Slot)
+	{
+		Slot->SetHorizontalAlignment(HAlign_Center);
+		Slot->SetPadding(Padding);
+	}
+	return Slot;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UButton* UGeoWidgetBuilderUtil::ConstructLabeledButton(UWidgetTree* Tree, FName Name, FText LabelText)
+{
+	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::ConstructLabeledButton — Tree is null")))
+	{
+		return nullptr;
+	}
+
+	UButton* Button = Tree->ConstructWidget<UButton>(UButton::StaticClass(), Name);
+	UTextBlock* Label = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), FName(*(Name.ToString() + TEXT("Label"))));
+	Label->SetText(LabelText);
+	Button->SetContent(Label);
+	return Button;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
