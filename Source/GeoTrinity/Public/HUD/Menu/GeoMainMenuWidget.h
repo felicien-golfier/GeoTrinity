@@ -7,8 +7,9 @@
 
 #include "GeoMainMenuWidget.generated.h"
 
-class UGeoMenuButton;
 class UGeoCreateServerWidget;
+class UGeoBrowseServersWidget;
+class UGeoMenuButton;
 
 /**
  * Main lobby menu widget. Composes three UGeoMenuButton instances and handles all action logic in C++.
@@ -40,6 +41,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoCreateServerWidget> CreateServerWidget;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UGeoBrowseServersWidget> BrowseServerWidget;
+
 private:
 	UFUNCTION()
 	void HandleCreateServer();
@@ -52,6 +56,9 @@ private:
 
 	UFUNCTION()
 	void HandleCreateServerClosed();
+
+	UFUNCTION()
+	void HandleBrowseServerClosed();
 
 	void SetButtonsVisible(bool bVisible);
 };

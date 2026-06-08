@@ -21,8 +21,10 @@ AGeoHUD  (owns OverlayWidget)
 | `HudFunctionLibrary.h` | `ShouldDrawHUD()`, `GetHealthRatio()` |
 | `Component/GeoCombattantWidgetComp.h` | WidgetComponent on actors; auto-inits widget with actor's ASC on BeginPlay |
 | `Menu/GeoMenuButton.h` | Reusable styled button; `BlueprintAssignable OnClicked`; appearance fully configurable via `EditAnywhere` props |
-| `Menu/GeoMainMenuWidget.h` | Lobby menu; 3× `BindWidget UGeoMenuButton` + `BindWidget UGeoCreateServerWidget`; C++ shows/hides the create-server form and handles quit; Join is a stub |
-| `Menu/GeoCreateServerWidget.h` | "Create Server" form; fields: ServerNameInput, MapComboBox, SlotsComboBox, LanguageComboBox, PrivacyComboBox, CreateButton, BackButton (all BindWidget); `BlueprintAssignable OnClosed` delegate fires on Back; session creation logic fully in C++; data arrays (MapDisplayNames, MapURLs, SlotOptions, LanguageOptions) set via `EditAnywhere` in BP |
+| `Menu/GeoMainMenuWidget.h` | Lobby menu; 3× `BindWidget UGeoMenuButton` + `BindWidget UGeoCreateServerWidget` + `BindWidget UGeoBrowseServersWidget`; C++ shows/hides the create-server and browse-server panels and handles quit |
+| `Menu/GeoCreateServerWidget.h` | "Create Server" form; fields: ServerNameInput, MapComboBox, SlotsComboBox, LanguageComboBox, PrivacyComboBox, CreateButton, BackButton (all BindWidget); `BlueprintAssignable OnClosed` delegate fires on Back; session creation logic fully in C++; sets SERVER_NAME, LANGUAGE, MAP session keys; data arrays (MapDisplayNames, MapURLs, SlotOptions, LanguageOptions) set via `EditAnywhere` in BP |
+| `Menu/GeoBrowseServersWidget.h` | Browse-servers panel; BindWidgets: SearchInput, LanguageComboBox, SearchProgressBar, RefreshButton, BackButton, ServerListScrollBox; `EditAnywhere ServerRowWidgetClass` (set in BP); client-side name filter, server-side language filter; `BlueprintAssignable OnClosed` fires on Back; calls `GeoGameInstance::JoinAdvancedSession` on row select |
+| `Menu/GeoServerRowWidget.h` | Single row in the server list; BindWidgets: RowButton, ServerNameText, MapText, PlayersText, PingText; optional FlagImage; raw multicast `OnSelected` delegate carries `FOnlineSessionSearchResult`; call `InitFromSearchResult` after `CreateWidget` |
 
 ## Adding HUD Changes
 **Screen-space UI** (boss bar, cooldown): add `BlueprintImplementableEvent` to `AGeoHUD` → implement in HUD BP → forward to `OverlayWidget`.

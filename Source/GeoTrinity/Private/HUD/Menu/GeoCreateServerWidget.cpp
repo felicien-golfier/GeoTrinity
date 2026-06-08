@@ -123,6 +123,7 @@ void UGeoCreateServerWidget::HandleCreate()
 	SessionSettings.bUseLobbiesIfAvailable = true;
 	SessionSettings.Set(FName("SERVER_NAME"), ServerName, EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(FName("LANGUAGE"), Language, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(FName("MAP"), MapComboBox->GetSelectedOption(), EOnlineDataAdvertisementType::ViaOnlineService);
 
 	UGeoGameInstance* GeoGameInstance = Cast<UGeoGameInstance>(GetGameInstance());
 	if (!GeoGameInstance)

@@ -2,6 +2,7 @@
 
 #include "HUD/Menu/GeoMainMenuWidget.h"
 
+#include "HUD/Menu/GeoBrowseServersWidget.h"
 #include "HUD/Menu/GeoCreateServerWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "Interfaces/OnlineIdentityInterface.h"
@@ -53,13 +54,20 @@ void UGeoMainMenuWidget::NativeConstruct()
 		ensureMsgf(CreateServerWidget, TEXT("UGeoMainMenuWidget: CreateServerWidget is not bound"));
 		return;
 	}
+	if (!BrowseServerWidget)
+	{
+		ensureMsgf(BrowseServerWidget, TEXT("UGeoMainMenuWidget: BrowseServerWidget is not bound"));
+		return;
+	}
 
 	CreateServerButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleCreateServer);
 	JoinServerButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleJoinServer);
 	QuitButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleQuit);
 	CreateServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleCreateServerClosed);
+	BrowseServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleBrowseServerClosed);
 
 	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
+	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -72,7 +80,8 @@ void UGeoMainMenuWidget::HandleCreateServer()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleJoinServer()
 {
-	UE_LOG(LogTemp, Warning, TEXT("UGeoMainMenuWidget: Join server not yet implemented"));
+	SetButtonsVisible(false);
+	BrowseServerWidget->SetVisibility(ESlateVisibility::Visible);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -85,6 +94,13 @@ void UGeoMainMenuWidget::HandleQuit()
 void UGeoMainMenuWidget::HandleCreateServerClosed()
 {
 	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
+	SetButtonsVisible(true);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMainMenuWidget::HandleBrowseServerClosed()
+{
+	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
 }
 
