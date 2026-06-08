@@ -42,10 +42,17 @@ Each method validates, compiles (`FCompilerManager::CompileSynchronously`), and 
 - `ListEnterConditions` — logs all enter conditions on a named state
 
 ## `GeoWidgetBuilderUtil.h`
-Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` for building and inspecting UMG Widget Blueprints via Python/Blueprint automation.
-- `BuildChargeBeamGaugeWidget` — creates the WBP_ChargeBeamGauge widget tree (ChargeBar + SweetSpotBar overlay), saves the asset
-- `SetImageRoot` — generic primitive: replaces a widget's root with a single Image (texture + desired size), compiles and saves. Compose typed widgets (software cursor, icon, …) from this in Python
-- `SetImageRootFromMaterial` — generic primitive like `SetImageRoot` but draws a material (e.g. a luminance-to-alpha mask) instead of a raw texture
+Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` — generic, reusable widget-tree primitives. Keep this file free of per-asset functions; content-specific builders belong in `GeoHudWidgetBuilderUtil.h`.
+- `SetRootPanel(Blueprint, PanelClass, RootName)` — replaces root with a freshly constructed panel (CanvasPanel, Overlay, HorizontalBox, …), named for BindWidget, compiles and saves
+- `SetImageRoot` — replaces root with a single Image (texture + desired size), compiles and saves
+- `SetImageRootFromMaterial` — like `SetImageRoot` but draws a material (e.g. a luminance-to-alpha mask) instead of a raw texture
 - `InspectWidgetBlueprint` — logs the full widget tree (type, name, slot layout, widget properties) to `LogTemp`
 
-`BuildChargeBeamGaugeWidget`, `SetImageRoot`, and `SetImageRootFromMaterial` share the private `BeginBuild` (validate/clear root) and `FinishBuild` (compile/save) helpers.
+Private static helpers shared by content builders: `BeginBuild` (validate/mark/clear root), `FinishBuild` (compile/save), `ConstructRootPanel`, `AddChildToCanvasPanel`.
+
+## `GeoHudWidgetBuilderUtil.h`
+Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` — content-specific HUD widget-tree builders that compose the generic primitives from `GeoWidgetBuilderUtil.h`. New per-widget builders go here.
+- `BuildAbilitySlotWidget(Blueprint, SquareSize)` — builds WBP_AbilitySlot tree: Overlay → SizeBox ("Square") → Icon / CooldownSweep / CountdownText / CountText; names match BindWidget members on `UGeoAbilitySlotWidget`
+- `BuildAbilityBarWidget(Blueprint)` — builds WBP_AbilityBar tree: Overlay root with centered SlotBox HorizontalBox (BindWidget on `UGeoAbilityBarWidget`)
+- `BuildChargeBeamGaugeWidget(Blueprint, SweetSpotMinRatio, SweetSpotMaxRatio)` — builds WBP_ChargeBeamGauge tree (ChargeBar + SweetSpotBar overlay on CanvasPanel)
+- `AddAbilityBarToOverlay(Blueprint, ParentPanelName, AbilityBarClass, fractions)` — adds AbilityBarClass child named "AbilityBar" to the overlay's CanvasPanel, anchored bottom-center, sized as fractions of the canvas

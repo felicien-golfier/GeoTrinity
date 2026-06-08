@@ -76,14 +76,18 @@ Source/GeoTrinity/
 │   ├── HUD/
 │   │   ├── Component/         # GeoCombattantWidgetComp
 │   │   ├── GeoHUD.h
+│   │   ├── GeoOverlayWidget.h
+│   │   ├── GeoAbilityBarWidget.h
+│   │   ├── GeoAbilitySlotWidget.h
 │   │   ├── GeoUserWidget.h
 │   │   ├── GenericCombattantWidget.h
 │   │   ├── GeoDeployChargeGaugeWidget.h
+│   │   ├── GeoChargeBeamGaugeWidget.h
 │   │   └── HudFunctionLibrary.h
 │   ├── Input/                 # GeoInputComponent
 │   ├── Settings/              # GameDataSettings
 │   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem
-│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoStateTreeBuilderUtil (editor-only)
+│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil (editor-only)
 │   ├── World/                 # GeoGameCamera, GeoWorldSettings
 │   ├── Animation/             # FireAnimNotify
 │   └── GameClasses/           # GeoGameMode, GeoGameState, GeoGameInstance, GeoPlayerController, GeoPlayerState

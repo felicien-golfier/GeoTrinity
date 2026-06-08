@@ -45,6 +45,7 @@ struct FGeoAbilityBarEntry
 };
 
 
+/** Snapshot of per-player GAS references cached by AGeoHUD after InitOverlay. Avoids repeated controller/pawn lookups at HUD draw time. */
 USTRUCT(BlueprintType)
 struct FHudPlayerParams
 {
