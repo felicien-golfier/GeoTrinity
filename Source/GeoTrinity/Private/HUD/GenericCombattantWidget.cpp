@@ -113,4 +113,9 @@ void UGenericCombattantWidget::OnHealthChanged(float NewValue)
 	}
 	// Don't use NewValue, just get the ratio from ASC (it might be health or max health)
 	UpdateHealthRatio(UHudFunctionLibrary::GetHealthRatio(OwnerASC.Get()));
+	// Re-evaluate visibility too: on the listen-server host InitStats() runs before the owner's attributes are
+	// initialized, reading MaxHealth as 0 and collapsing the bar. Clients recover because MaxHealth arrives via
+	// replication and fires this delegate, but the host sets it synchronously — so without this call the bar stays
+	// collapsed on the host forever.
+	UpdateHealthBarVisibility();
 }

@@ -45,7 +45,9 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 	bPatternIsActive = true;
 	StoredPayload = Payload;
 	StartTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
-	bool const bIsServer = GeoLib::IsServer(GetWorld());
+	// Cosmetic montage gate: any machine that renders this boss must play it, including the listen-server host.
+	// Only a dedicated server (no viewport) skips it. !IsServer() would wrongly skip the host.
+	bool const bRendersLocally = !GeoLib::IsDedicatedServer(GetWorld());
 
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
 
@@ -58,7 +60,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 	}
 	else
 	{
-		if (!bIsServer && IsValid(AnimMontage) && IsValid(AnimInstance))
+		if (bRendersLocally && IsValid(AnimMontage) && IsValid(AnimInstance))
 		{
 			int const StartSection = GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionStartName);
 			float const PlayRate = AnimMontage->GetSectionLength(StartSection) / StartDelay;
@@ -74,8 +76,9 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 
 void UPattern::ExecuteGameplayCue(FGameplayTag const GameplayCueTag)
 {
-	bool const bIsServer = GeoLib::IsServer(GetWorld());
-	if (GameplayCueTag.IsValid() && !bIsServer)
+	// Local (non-replicated) cue: execute on every rendering machine including the listen-server host; skip only on a
+	// dedicated server, which has no viewport.
+	if (GameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
 		if (!IsValid(InstigatorASC))
@@ -105,8 +108,7 @@ FGameplayCueParameters UPattern::FillCueParam(FAbilityPayload const& Payload)
 void UPattern::StartPattern()
 {
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
-	bool bIsServer = GeoLib::IsServer(GetWorld());
-	if (IsValid(AnimMontage) && !bIsServer && IsValid(AnimInstance))
+	if (IsValid(AnimMontage) && !GeoLib::IsDedicatedServer(GetWorld()) && IsValid(AnimInstance))
 	{
 		if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 		{
@@ -140,7 +142,7 @@ void UPattern::StartPattern()
 void UPattern::JumpMontageToEndSection() const
 {
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
-	if (IsValid(AnimMontage) && !GeoLib::IsServer(GetWorld()) && IsValid(AnimInstance)
+	if (IsValid(AnimMontage) && !GeoLib::IsDedicatedServer(GetWorld()) && IsValid(AnimInstance)
 		&& AnimInstance->Montage_IsPlaying(AnimMontage)
 		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != GeoASLib::SectionEndName)
 	{

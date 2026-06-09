@@ -35,12 +35,18 @@ void AGeoPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!HasAuthority())
-	{
-		InitOverlay();
-	}
+	InitOverlay();
 
 	OnPawnSet.AddUniqueDynamic(this, &AGeoPlayerState::OnPlayerPawnSet);
+
+	// On the listen-server host the pawn is possessed (and abilities granted) synchronously during PossessedBy, which
+	// runs BEFORE this BeginPlay — so OnPawnSet already fired before the binding above and never will again. Drive the
+	// pawn-dependent setup here for the already-set pawn. On clients the pawn replicates later, so OnPlayerPawnSet
+	// (bound above) covers it and AddUnique on the inner bindings prevents a double-build if both paths run.
+	if (APawn* CurrentPawn = GetPawn())
+	{
+		OnPlayerPawnSet(this, CurrentPawn, nullptr);
+	}
 }
 
 void AGeoPlayerState::ClientInitialize(class AController* Controller)
@@ -50,27 +56,33 @@ void AGeoPlayerState::ClientInitialize(class AController* Controller)
 
 void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
 {
-	if (IsValid(NewPawn) && !HasAuthority())
+	// Local-player gate (not !IsServer): the listen-server host needs these HUD/visual steps too, and remote players'
+	// PlayerStates living on the server must not run them. GetOwningController() returns null / a non-local controller
+	// in both excluded cases.
+	AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController());
+	if (!IsValid(NewPawn) || !GeoPlayerController || !GeoPlayerController->IsLocalPlayerController())
 	{
-		InitOverlay();
-		// PlayerClass and the pawn link replicate independently. If PlayerClass arrived before the pawn,
-		// OnRep_PlayerClass already ran and bailed on a null pawn — apply class data now that the pawn exists.
-		ApplyClassDataToPawn();
+		return;
+	}
 
-		// Bind pawn-dependent HUD callbacks now that the pawn (and its components) exist.
-		if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
-		{
-			if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
-			{
-				GeoHUD->BindToPawn(Cast<APlayableCharacter>(NewPawn));
-			}
-		}
+	InitOverlay();
+	// PlayerClass and the pawn link replicate independently. If PlayerClass arrived before the pawn,
+	// OnRep_PlayerClass already ran and bailed on a null pawn — apply class data now that the pawn exists.
+	ApplyClassDataToPawn();
+
+	// Bind pawn-dependent HUD callbacks now that the pawn (and its components) exist.
+	if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
+	{
+		GeoHUD->BindToPawn(Cast<APlayableCharacter>(NewPawn));
 	}
 }
 
 void AGeoPlayerState::InitOverlay()
 {
-	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
+	// Gate on the local player controller so this runs for clients AND the listen-server host, but not for a dedicated
+	// server or for other players' PlayerStates replicated onto a server.
+	AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController());
+	if (GeoPlayerController && GeoPlayerController->IsLocalPlayerController())
 	{
 		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
 		{
@@ -82,9 +94,16 @@ void AGeoPlayerState::InitOverlay()
 void AGeoPlayerState::OnRep_PlayerClass()
 {
 	ApplyClassDataToPawn();
-
 	// The class change re-grants abilities; rebuild the ability bar so it reflects the new class's ability set.
-	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
+	RebuildAbilityBar();
+}
+
+void AGeoPlayerState::RebuildAbilityBar()
+{
+	// Local-controller gate: on the listen-server host there is no OnRep_PlayerClass, so ChangeClass calls this
+	// directly; on a server this PlayerState may belong to a remote player whose HUD lives elsewhere.
+	AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController());
+	if (GeoPlayerController && GeoPlayerController->IsLocalPlayerController())
 	{
 		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
 		{

@@ -20,7 +20,7 @@ class GEOTRINITY_API UGeoCharacterMovementComponent : public UCharacterMovementC
 public:
 	UGeoCharacterMovementComponent();
 
-	virtual void BeginPlay() override;
+	virtual void OnRegister() override;
 
 	/**
 	 * Scales MaxWalkSpeed and MaxAcceleration by Multiplier relative to their cached base values.

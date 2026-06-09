@@ -200,7 +200,8 @@ void AGeoDeployableBase::Recall(float Value)
 	bActive = false;
 
 	RecallEffect(Value);
-	if (!GeoLib::IsServer(GetWorld()))
+	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
+	if (!GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		ExecuteCue(RecallGameplayCueTag, GetRecallCueParams());
 	}
@@ -334,7 +335,8 @@ void AGeoDeployableBase::StartBlinking(float const BlinkDuration)
 	bBlinking = true;
 	GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::TryRecallOrExpire, BlinkDuration, false);
 
-	if (BlinkingGameplayCueTag.IsValid() && !GeoLib::IsServer(this))
+	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
+	if (BlinkingGameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(this))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		FScopedPredictionWindow ScopedPredictionWindow(ASC);

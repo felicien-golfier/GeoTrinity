@@ -107,6 +107,16 @@ protected:
 	/** Applies the current PlayerClass visuals (mesh, anim, material) to the owned pawn, if it exists. */
 	void ApplyClassDataToPawn();
 
+public:
+	/**
+	 * Rebuilds the local HUD ability bar from the owned pawn's current ability set. No-op unless the owning controller
+	 * is local. Call after abilities are (re)granted: from OnRep_PlayerClass on clients, and from
+	 * APlayableCharacter::ChangeClass on the server/listen-host (which has no OnRep_PlayerClass).
+	 */
+	void RebuildAbilityBar();
+
+protected:
+
 	UPROPERTY(Replicated)
 	float DebugDPS = 0.f;
 	UPROPERTY(Replicated)

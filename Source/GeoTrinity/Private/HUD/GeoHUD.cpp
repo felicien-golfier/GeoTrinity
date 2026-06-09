@@ -204,6 +204,9 @@ void AGeoHUD::ShowBossHealthBar(AEnemyCharacter* Boss)
 		}
 		BossHealthBarWidget->AddToViewport(10); // Higher Z-order to be on top
 	}
+
+	// The on-screen boss bar replaces the boss's floating bar.
+	Boss->SetCombattantWidgetVisible(false);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -54,6 +54,15 @@ public:
 	static bool IsServer(UWorld const* World);
 
 	/**
+	 * Returns true only on a dedicated server (a machine with no local player / viewport).
+	 * Use this to gate cosmetic-only work (montages, local Gameplay Cues, VFX): `if (!IsDedicatedServer(...))`.
+	 * Do NOT use `!IsServer()` for visuals — that wrongly skips the listen-server host, which IS a rendering player.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	static bool IsDedicatedServer(UObject const* WorldContextObject);
+	static bool IsDedicatedServer(UWorld const* World);
+
+	/**
 	 * Returns the current server world time in seconds.
 	 * Use only for network synchronization (e.g. projectile spawn times) — not for local timing.
 	 * For local delta-time measurements on the client, use GetWorld()->GetTimeSeconds() instead.

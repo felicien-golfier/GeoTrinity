@@ -8,6 +8,9 @@ Blueprint-callable static helpers:
 **Server check** — always use this:
 - `IsServer(UObject*)` / `IsServer(UWorld*)` — true on dedicated server and listen server. Never use `HasAuthority()` or `IsNetMode(NM_DedicatedServer)`.
 
+**Render/cosmetic gate** — use for visuals, NOT `!IsServer()`:
+- `IsDedicatedServer(UObject*)` / `IsDedicatedServer(UWorld*)` — true only on a dedicated server (no viewport). Gate cosmetic-only work (montages, local Gameplay Cues, VFX) with `if (!IsDedicatedServer(...))`. `!IsServer()` wrongly skips the listen-server **host**, which is a rendering player — that bug makes boss montages/cues invisible to the host only.
+
 **Time**:
 - `GetServerTime(WorldContext, bUpdatedWithPing)` — network-approximated server time. **Never use for local client timing** (charge duration, UI) — use `GetWorld()->GetTimeSeconds()` instead.
 

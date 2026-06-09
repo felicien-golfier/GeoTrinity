@@ -6,6 +6,7 @@
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "System/GeoActorPoolingSubsystem.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoPooledProjectile::AGeoPooledProjectile()
 {
@@ -14,7 +15,9 @@ AGeoPooledProjectile::AGeoPooledProjectile()
 
 void AGeoPooledProjectile::End()
 {
-	if (!HasAuthority())
+	// Looping sound is cosmetic and only spawned where rendered, so stop it on every machine except the dedicated
+	// server (which never started it). The listen-server host has the sound and must stop it.
+	if (!GeoLib::IsDedicatedServer(this))
 	{
 		LoopingSoundComponent->Stop();
 	}

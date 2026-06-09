@@ -104,6 +104,7 @@ void APlayableCharacter::SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability,
 		if (UGeoChargeBeamGaugeWidget* Widget =
 				Cast<UGeoChargeBeamGaugeWidget>(ChargeBeamGaugeComponent->GetUserWidgetObject()))
 		{
+			Widget->ChargeBeamAbility = Ability; // In cas we haven't got time to enter visibility.
 			Widget->UpdateVisualChargeRatio();
 			Widget->ChargeBeamAbility = nullptr;
 		}
@@ -352,6 +353,10 @@ void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
 	AbilitySystemComponent->ClearPlayerClassAbilities();
 	AbilitySystemComponent->GiveStartupAbilities(NewClass);
 	ApplyClassData(NewClass);
+
+	// Clients rebuild the bar from OnRep_PlayerClass, but the listen-server host has no OnRep on its own PlayerState.
+	// Rebuild here now that abilities for NewClass are granted (no-op when this controller isn't local).
+	GeoPlayerState->RebuildAbilityBar();
 }
 
 void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)

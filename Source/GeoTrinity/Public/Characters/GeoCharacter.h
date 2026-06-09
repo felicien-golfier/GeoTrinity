@@ -82,6 +82,10 @@ public:
 	/** Returns the controller cast to AGeoPlayerController, or nullptr if controlled by AI or a different type. */
 	AGeoPlayerController* GetGeoPlayerController() const { return Cast<AGeoPlayerController>(GetController()); }
 
+	/** Shows or hides this character's floating combatant widget (the bar above its head). Used to hide the boss's
+	 *  floating bar while the dedicated on-screen boss bar is displayed. */
+	void SetCombattantWidgetVisible(bool bVisible);
+
 	/** Draws an arrow in the default debug color starting from the character's location. */
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const;
 	/** Draws an arrow in the given color starting from the character's location. */

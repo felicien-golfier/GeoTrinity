@@ -79,6 +79,14 @@ UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+void AGeoCharacter::SetCombattantWidgetVisible(bool const bVisible)
+{
+	if (CharacterWidgetComponent)
+	{
+		CharacterWidgetComponent->SetHiddenInGame(!bVisible);
+	}
+}
+
 void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const
 {
 	DrawDebugVectorFromCharacter(Direction, DebugMessage, GeoLib::GetColorForObject(this));
