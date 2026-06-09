@@ -80,3 +80,6 @@ DerivedDataCache/*
 # Python cache
 __pycache__/
 *.pyc
+
+# Bleve search index (rebuildable derived data; root.bolt is held open by Claude)
+docs/index.bleve/
