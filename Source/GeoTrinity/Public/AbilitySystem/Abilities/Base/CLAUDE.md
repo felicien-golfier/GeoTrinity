@@ -32,7 +32,7 @@ Some abilities send a second, updated snapshot after the `FireDelay` timer expir
 ### FireMode
 - `ShootAfterFireDelay` — fires after a fixed delay
 - `ChargeForFireDelay` — fires on release; `GetChargeRatio()` returns 0..1 (eased by `GameDataSettings::GaugeChargingSpeedCurve` via `ApplyChargingCurve`)
-- `SetChargeGaugeVisible(Character, bVisible)` — virtual hook called in `ScheduleFireTrigger` (show) and `EndAbility` (hide) when in `ChargeForFireDelay` mode. Default delegates to `Character->SetDeployChargeGaugeVisibility()`. Override to show a different gauge widget (see `UGeoChargeBeamAbility`).
+- `SetChargeGaugeVisible(Character, bVisible)` — virtual hook called in `ScheduleFireTrigger` (show) and `EndAbility` (hide) when in `ChargeForFireDelay` mode. Base implementation is **client-only** (no-op on server via `GeoLib::IsServer` guard) — gauge is a local-player concern. Override to use a different widget (see `UGeoChargeBeamAbility`).
 
 ### StoredPayload (`FAbilityPayload`)
 Set once per activation. **Always use `StoredPayload` fields** — never call `GetAvatarActor()` or similar inside abilities. The payload is set by the client and may differ from what ActorInfo reports.
