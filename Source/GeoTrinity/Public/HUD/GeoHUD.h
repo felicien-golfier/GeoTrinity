@@ -9,6 +9,7 @@
 #include "GeoHUD.generated.h"
 
 class UTexture2D;
+class UInputAction;
 class UGeoUserWidget;
 class UGeoAttributeSetBase;
 class AGeoPlayerController;
@@ -25,7 +26,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeModifiedSignature, float
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeployCountChangedSignature);
 
 
-/** One ability-bar slot's static data: which ability it represents, its input, icon, and whether to show a deploy count. */
+/** One ability-bar slot's static data: which ability it represents, its input, icon, and whether to show a deploy
+ * count. */
 USTRUCT(BlueprintType)
 struct FGeoAbilityBarEntry
 {
@@ -37,6 +39,10 @@ struct FGeoAbilityBarEntry
 	UPROPERTY(BlueprintReadOnly)
 	FGameplayTag InputTag;
 
+	/** Input action this slot is bound to; used to query the live mapped key for the slot's key label. */
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UInputAction const> InputAction = nullptr;
+
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UTexture2D const> Icon = nullptr;
 
@@ -45,7 +51,8 @@ struct FGeoAbilityBarEntry
 };
 
 
-/** Snapshot of per-player GAS references cached by AGeoHUD after InitOverlay. Avoids repeated controller/pawn lookups at HUD draw time. */
+/** Snapshot of per-player GAS references cached by AGeoHUD after InitOverlay. Avoids repeated controller/pawn lookups
+ * at HUD draw time. */
 USTRUCT(BlueprintType)
 struct FHudPlayerParams
 {
@@ -91,13 +98,15 @@ class GEOTRINITY_API AGeoHUD : public AHUD
 	GENERATED_BODY()
 
 public:
-	/** Creates and adds the OverlayWidget, then binds all attribute-change callbacks. Call once from AGeoPlayerState. */
+	/** Creates and adds the OverlayWidget, then binds all attribute-change callbacks. Call once from AGeoPlayerState.
+	 */
 	void InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS);
 
 	/** Returns the cached player parameters (controller, state, ASC, attribute set) set during InitOverlay. */
 	FHudPlayerParams const& GetHudPlayerParams() const { return HudPlayerParams; }
 
-	/** Binds pawn-dependent HUD callbacks (deploy-count ping). Call once the local pawn exists, from OnPlayerPawnSet. */
+	/** Binds pawn-dependent HUD callbacks (deploy-count ping). Call once the local pawn exists, from OnPlayerPawnSet.
+	 */
 	void BindToPawn(APlayableCharacter* PlayableCharacter);
 
 	/** Shows the boss health bar for the given enemy. Call this when a boss fight starts. */
@@ -113,13 +122,18 @@ public:
 	 * from the global UAbilityInfo asset. Used by the ability bar widget to build its slots.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "AbilityBar")
-	TArray<FGeoAbilityBarEntry> GetAbilityBarEntries() const;
+	TArray<FGeoAbilityBarEntry> GetAbilityBarEntries(APlayableCharacter* PlayableCharacter) const;
 
 	/** Outputs the remaining cooldown and full cooldown duration (seconds) for the granted ability with AbilityTag. */
 	UFUNCTION(BlueprintPure, Category = "AbilityBar")
 	void GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, float& OutDuration) const;
 
-	/** Outputs the live and maximum deployable count for the deploy ability with AbilityTag, read from the avatar's manager. */
+	/** Returns true while any instance of the granted ability with AbilityTag is active. */
+	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	bool IsAbilityActive(FGameplayTag AbilityTag) const;
+
+	/** Outputs the live and maximum deployable count for the deploy ability with AbilityTag, read from the avatar's
+	 * manager. */
 	UFUNCTION(BlueprintPure, Category = "AbilityBar")
 	void GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;
 
@@ -127,15 +141,15 @@ public:
 	 * (Re)builds the overlay's ability-bar slots from GetAbilityBarEntries. Called from BindToPawn once the pawn exists
 	 * and from AGeoPlayerState::OnRep_PlayerClass after a class change re-grants abilities.
 	 */
-	void BuildAbilityBar();
+	void BuildAbilityBar(APlayableCharacter* PlayableCharacter);
 
-	/** Tagless ping fired when any deployable count changes; ability-bar slots re-query their own count on receipt (no polling). */
+	/** Tagless ping fired when any deployable count changes; ability-bar slots re-query their own count on receipt (no
+	 * polling). */
 	UPROPERTY(BlueprintAssignable, Category = "AbilityBar")
 	FOnDeployCountChangedSignature OnPlayerDeployCountChanged;
 
 
 protected:
-
 #if !UE_BUILD_SHIPPING
 	virtual void DrawHUD() override;
 #endif

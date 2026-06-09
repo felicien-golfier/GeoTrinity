@@ -37,6 +37,9 @@ Projectile-firing ability base classes.
 - `RecoilDistance` (cm) — recoil kick via `UGeoGameFeelComponent::ApplyRecoil()`
 - `FireGameplayCueTag` — GC tag fired per shot
 
+### Ability-bar sweep
+Has no real GAS cooldown, so overrides `GetCooldownTimeRemainingAndDuration` to report the per-shot fire-delay timer (`FireTriggerTimerHandle` remaining / `GetFireDelay()`). The ability-bar slot sweep therefore fills/depletes once per shot instead of staying grayed for the whole hold.
+
 ---
 
 ## `GeoAutomaticProjectileAbility.h` — concrete auto-fire

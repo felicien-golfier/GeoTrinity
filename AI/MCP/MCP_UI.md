@@ -41,6 +41,8 @@ Parameterize the constructed root panel's name so a built root can satisfy a spe
 
 When a build shim rebuilds a widget tree on an already-existing asset, clear the widget-variable GUID map as part of resetting the root. The widget BP compiler only auto-assigns variable GUIDs when that map is empty; stale entries from the previous tree otherwise leave freshly constructed widgets without a GUID. See `GeoWidgetBuilderUtil.cpp` (`BeginBuild`).
 
+When a rebuild changes the root panel's class (e.g. Overlay to VerticalBox), rename the previous root object out to the transient package before constructing the new one — UE refuses to replace an existing object with one of a different class under the same name. See `GeoWidgetBuilderUtil.cpp` (`ConstructRootPanel`).
+
 ---
 
 ## Appending a Child to an Existing Tree
@@ -110,6 +112,12 @@ Configure via `SubobjectDataSubsystem` handle enumeration: print all indices fir
 ## Single-Image Widget
 
 A widget showing one image (cursor, icon, …) needs only an Image root — no canvas or slotting, since the hotspot is the widget's top-left. Build it with the generic image-root shim primitive and supply the concrete texture and size from a typed Python caller. To draw only the bright parts of a texture (black background transparent), feed the Image a UI-domain translucent material that maps luminance to opacity rather than a raw texture. See `AI/Python/crosshair_cursor.py`.
+
+---
+
+## Constraining a Label to a Fixed Width
+
+To stop a text label from exceeding a fixed width, cap its width with a SizeBox and wrap the text in a ScaleBox set to scale-to-fit-X, down-only — short text keeps its size and only over-wide text shrinks to fit. See `GeoHudWidgetBuilderUtil.cpp` (`BuildAbilitySlotWidget`).
 
 ---
 

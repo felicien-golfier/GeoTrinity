@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Characters/PlayableCharacter.h"
 #include "CoreMinimal.h"
 #include "HUD/GeoUserWidget.h"
 
@@ -13,7 +14,8 @@ class AGeoHUD;
 
 /**
  * Bottom-center ability bar. On BuildBar it clears SlotBox, queries AGeoHUD::GetAbilityBarEntries, and creates one
- * WBP_AbilitySlot per entry. Binds the HUD's deploy-count ping so deployable slots refresh their badges without polling.
+ * WBP_AbilitySlot per entry. Binds the HUD's deploy-count ping so deployable slots refresh their badges without
+ * polling.
  */
 UCLASS()
 class GEOTRINITY_API UGeoAbilityBarWidget : public UGeoUserWidget
@@ -23,7 +25,7 @@ class GEOTRINITY_API UGeoAbilityBarWidget : public UGeoUserWidget
 public:
 	/** Rebuilds the bar from the HUD's current ability set. Called via UGeoOverlayWidget::BuildAbilityBar. */
 	UFUNCTION(BlueprintCallable, Category = "AbilityBar")
-	void BuildBar(AGeoHUD* InHUD);
+	void BuildBar(AGeoHUD* InHUD, APlayableCharacter* PlayableCharacter);
 
 protected:
 	/** Re-broadcast target: re-queries every deployable slot's count on the HUD's tagless ping. */

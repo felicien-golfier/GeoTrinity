@@ -31,6 +31,14 @@ protected:
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
+	/**
+	 * Auto-fire has no real GAS cooldown, so it reports the per-shot fire-delay timer as the cooldown. This drives
+	 * the ability-bar sweep to fill/deplete once per shot instead of pinning grayed for the whole hold.
+	 */
+	virtual void GetCooldownTimeRemainingAndDuration(FGameplayAbilitySpecHandle Handle,
+													 FGameplayAbilityActorInfo const* ActorInfo, float& TimeRemaining,
+													 float& CooldownDuration) const override;
+
 	virtual void InputReleased(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo const ActivationInfo) override;
 

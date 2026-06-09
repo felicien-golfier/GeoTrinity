@@ -24,6 +24,8 @@ Pattern for exposing C++ editor operations to Python when `get/set_editor_proper
 
 **Call from Python** — get the CDO via `get_default_object()`, then call the method. Python snake_cases UFUNCTION names automatically. Pass `FGameplayTag` args via `import_text`. See `AI/Python/` for call patterns.
 
+**Confirm a new signature is loaded first** — after a rebuild that adds a UFUNCTION, parameter, or UENUM, check the type is present on the `unreal` module (e.g. the enum exists, the new attribute resolves) before invoking it; the running editor only sees the new signature once the rebuilt module is loaded.
+
 **Generic, parameterized functions — never one-offs.** A shim function takes arguments and works for any caller; a per-asset hardcoded function is wrong. Before adding one, check the existing utility for a function that already does the operation and extend it (add a parameter) rather than adding a near-duplicate. Compose complex trees by calling several generic primitives with arguments from the Python caller, and share setup/teardown through private helpers.
 
 ## Existing Utilities

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Characters/PlayableCharacter.h"
 #include "CoreMinimal.h"
 #include "HUD/GeoUserWidget.h"
 
@@ -22,7 +23,7 @@ class GEOTRINITY_API UGeoOverlayWidget : public UGeoUserWidget
 
 public:
 	/** Rebuilds the ability bar from the HUD's current ability set. Called by AGeoHUD::BuildAbilityBar. */
-	void BuildAbilityBar(AGeoHUD* GeoHUD);
+	void BuildAbilityBar(AGeoHUD* GeoHUD, APlayableCharacter* PlayableCharacter);
 
 protected:
 	/** Bottom-center ability bar. Bound from WBP_MainOverlay; rebuilt by the HUD when abilities are granted/changed. */

@@ -52,7 +52,7 @@ Private static helpers shared by content builders: `BeginBuild` (validate/mark/c
 
 ## `GeoHudWidgetBuilderUtil.h`
 Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` — content-specific HUD widget-tree builders that compose the generic primitives from `GeoWidgetBuilderUtil.h`. New per-widget builders go here.
-- `BuildAbilitySlotWidget(Blueprint, SquareSize)` — builds WBP_AbilitySlot tree: Overlay → SizeBox ("Square") → Icon / CooldownSweep / CountdownText / CountText; names match BindWidget members on `UGeoAbilitySlotWidget`
+- `BuildAbilitySlotWidget(Blueprint, SquareSize, KeyLabelPlacement)` — builds WBP_AbilitySlot tree: SizeBox ("Square") → Icon / CooldownSweep / CountdownText / CountText, plus a `KeyText` live key-binding label placed per `EAbilitySlotKeyLabelPlacement` (`Below` = VerticalBox root, label under the square (default); `OverlayBottom` = label bottom-center over the icon; `None` = no label). Names match BindWidget members on `UGeoAbilitySlotWidget`
 - `BuildAbilityBarWidget(Blueprint)` — builds WBP_AbilityBar tree: Overlay root with centered SlotBox HorizontalBox (BindWidget on `UGeoAbilityBarWidget`)
 - `BuildChargeBeamGaugeWidget(Blueprint, SweetSpotMinRatio, SweetSpotMaxRatio)` — builds WBP_ChargeBeamGauge tree (ChargeBar + SweetSpotBar overlay on CanvasPanel)
 - `AddAbilityBarToOverlay(Blueprint, ParentPanelName, AbilityBarClass, fractions)` — adds AbilityBarClass child named "AbilityBar" to the overlay's CanvasPanel, anchored bottom-center, sized as fractions of the canvas

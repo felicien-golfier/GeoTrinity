@@ -15,7 +15,8 @@ class UMaterialInstanceDynamic;
 /**
  * One slot of the bottom-center ability bar: an ability icon with a radial cooldown sweep and countdown text,
  * plus an optional remaining-deployable count badge. All live data is pulled from AGeoHUD each tick; the slot
- * holds no gameplay state. Tick early-outs while the ability is ready and not deployable, so an idle bar is free.
+ * holds no gameplay state. While the ability is active the sweep is pinned full (grayed-out "in use" look) until
+ * the ability ends and its cooldown takes over depleting it; with no cooldown it clears the moment the ability ends.
  */
 UCLASS()
 class GEOTRINITY_API UGeoAbilitySlotWidget : public UGeoUserWidget
@@ -30,8 +31,12 @@ public:
 	UFUNCTION()
 	void RefreshDeployCount();
 
+	/** Re-queries the live key mapped to this slot's input action and updates KeyText only when the key changed. */
+	void RefreshKeyLabel();
+
 protected:
-	/** Drives the cooldown-sweep material's Fill scalar and countdown text each frame; early-outs when the ability is ready. */
+	/** Drives the cooldown-sweep material's Fill scalar and countdown text each frame; early-outs when the ability is
+	 * ready. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
 	/** Ability icon. */
@@ -50,6 +55,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> CountText;
 
+	/** Live key binding (e.g. "LMB", "RMB", "Shift"), shown just under the slot. Refreshed each tick so rebinds appear
+	 * immediately. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> KeyText;
+
 	/** Material on M_CooldownSweep whose Fill scalar (0=ready, 1=fully swept) the sweep image uses. */
 	UPROPERTY(EditDefaultsOnly, Category = "AbilityBar")
 	TObjectPtr<UMaterialInterface> CooldownSweepMaterial;
@@ -62,6 +72,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> CooldownSweepMID;
-	
-	float tmp;
+
+	/** Last key shown in KeyText; lets RefreshKeyLabel skip the text update when the binding is unchanged. */
+	FKey CachedKey;
 };

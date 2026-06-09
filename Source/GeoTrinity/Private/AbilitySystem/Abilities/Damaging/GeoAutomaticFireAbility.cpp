@@ -45,6 +45,20 @@ void UGeoAutomaticFireAbility::EndAbility(FGameplayAbilitySpecHandle const Handl
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
+void UGeoAutomaticFireAbility::GetCooldownTimeRemainingAndDuration(FGameplayAbilitySpecHandle Handle,
+																   FGameplayAbilityActorInfo const* ActorInfo,
+																   float& TimeRemaining, float& CooldownDuration) const
+{
+	if (FireTriggerTimerHandle.IsValid() && GetWorld())
+	{
+		TimeRemaining = GetWorld()->GetTimerManager().GetTimerRemaining(FireTriggerTimerHandle);
+		CooldownDuration = GetFireDelay();
+		return;
+	}
+
+	Super::GetCooldownTimeRemainingAndDuration(Handle, ActorInfo, TimeRemaining, CooldownDuration);
+}
+
 bool UGeoAutomaticFireAbility::ExecuteShot_Implementation()
 {
 	ensureMsgf(false, TEXT("Subclasses must override this function to play whatever needs to be done in the ability."));

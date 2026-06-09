@@ -160,15 +160,15 @@ void AGeoHUD::BindToPawn(APlayableCharacter* PlayableCharacter)
 
 	// Build the ability bar now that the pawn's granted abilities exist (the overlay may have been created earlier,
 	// before the pawn replicated).
-	BuildAbilityBar();
+	BuildAbilityBar(PlayableCharacter);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::BuildAbilityBar()
+void AGeoHUD::BuildAbilityBar(APlayableCharacter* PlayableCharacter)
 {
 	if (UGeoOverlayWidget* Overlay = Cast<UGeoOverlayWidget>(OverlayWidget))
 	{
-		Overlay->BuildAbilityBar(this);
+		Overlay->BuildAbilityBar(this, PlayableCharacter);
 	}
 }
 
@@ -217,13 +217,11 @@ void AGeoHUD::HideBossHealthBar()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries() const
+TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries(APlayableCharacter* PlayableCharacter) const
 {
 	TArray<FGeoAbilityBarEntry> Entries;
 
 	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
-	APlayableCharacter const* PlayableCharacter = Cast<APlayableCharacter>(
-		HudPlayerParams.PlayerController ? HudPlayerParams.PlayerController->GetPawn() : nullptr);
 	UAbilityInfo const* AbilityInfo = UGeoAbilitySystemLibrary::GetAbilityInfo();
 	if (!ASC || !PlayableCharacter || !AbilityInfo)
 	{
@@ -257,6 +255,7 @@ TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries() const
 		FGeoAbilityBarEntry& Entry = Entries.AddDefaulted_GetRef();
 		Entry.AbilityTag = AbilityTag;
 		Entry.InputTag = Info->InputTag;
+		Entry.InputAction = Info->InputAction;
 		Entry.Icon = Info->AbilityIcon;
 		Entry.bIsDeployable = Info->bShowDeployCount;
 	}
@@ -281,11 +280,38 @@ void AGeoHUD::GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, f
 		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
 		if (Ability && Ability->GetAbilityTag() == AbilityTag)
 		{
+			// Spec.Ability is the CDO for instanced abilities; query the active instance so per-instance state
+			// (e.g. UGeoAutomaticFireAbility's fire-delay timer) is read instead of the CDO's empty timer.
+			if (UGeoGameplayAbility const* Instance = Cast<UGeoGameplayAbility>(Spec.GetPrimaryInstance()))
+			{
+				Ability = Instance;
+			}
 			Ability->GetCooldownTimeRemainingAndDuration(Spec.Handle, ASC->AbilityActorInfo.Get(), OutRemaining,
 														 OutDuration);
 			return;
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool AGeoHUD::IsAbilityActive(FGameplayTag AbilityTag) const
+{
+	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
+	if (!ASC)
+	{
+		return false;
+	}
+
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
+	{
+		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
+		if (Ability && Ability->GetAbilityTag() == AbilityTag)
+		{
+			return Spec.IsActive();
+		}
+	}
+
+	return false;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -67,6 +67,14 @@ UPanelWidget* UGeoWidgetBuilderUtil::ConstructRootPanel(UWidgetTree* Tree, TSubc
 		return nullptr;
 	}
 
+	// A rebuild that changes the root's class (e.g. Overlay → VerticalBox) would otherwise fatal in ConstructWidget:
+	// the previous root UObject still occupies Name, and UE refuses to replace an existing object with a different class.
+	// Rename the stale occupant to a unique transient name so the new root can claim Name.
+	if (UObject* Existing = StaticFindObjectFast(UObject::StaticClass(), Tree, Name))
+	{
+		Existing->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional);
+	}
+
 	UPanelWidget* Panel = Tree->ConstructWidget<UPanelWidget>(PanelClass, Name);
 	Tree->RootWidget = Panel;
 	return Panel;

@@ -12,6 +12,18 @@
 class UUserWidget;
 class UWidgetBlueprint;
 
+/** Where the ability slot's live key-binding label (KeyText) is placed when building WBP_AbilitySlot. */
+UENUM()
+enum class EAbilitySlotKeyLabelPlacement : uint8
+{
+	/** KeyText sits in a VerticalBox just under the icon square. */
+	Below,
+	/** KeyText overlays the icon, bottom-center, inside the square. */
+	OverlayBottom,
+	/** No KeyText is built. */
+	None
+};
+
 /**
  * Content-specific HUD widget-tree builders. Each function builds one named widget tree by composing the generic
  * primitives in UGeoWidgetBuilderUtil. New per-widget builders go here, keeping the generic util uncluttered.
@@ -23,13 +35,17 @@ class GEOTRINITY_API UGeoHudWidgetBuilderUtil : public UEditorUtilityObject
 
 public:
 	/**
-	 * Builds the WBP_AbilitySlot tree: an Overlay root holding a SquareSize x SquareSize SizeBox ("Square") that contains
+	 * Builds the WBP_AbilitySlot tree. A SquareSize x SquareSize SizeBox ("Square") holds
 	 *   Icon (Image) ← CooldownSweep (Image) ← CountdownText (centered) ← CountText (bottom-right corner).
+	 * KeyLabelPlacement decides where the live key-binding label (KeyText, e.g. "LMB", refreshed from C++ each tick) goes:
+	 * Below puts it under the square in a VerticalBox root; OverlayBottom stacks it bottom-center over the icon (Overlay
+	 * root); None omits it (Overlay root).
 	 * The fixed square keeps the slot a stable size regardless of icon/cooldown content (resolution scaling is handled by
 	 * the bar's fractional anchors + UMG DPI). Names match the BindWidget members on UGeoAbilitySlotWidget. Saves the asset.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
-	static void BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBlueprint, float SquareSize = 64.f);
+	static void BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBlueprint, float SquareSize = 64.f,
+									   EAbilitySlotKeyLabelPlacement KeyLabelPlacement = EAbilitySlotKeyLabelPlacement::Below);
 
 	/**
 	 * Builds the WBP_AbilityBar tree: an Overlay root holding the SlotBox HorizontalBox horizontally centered. Centering

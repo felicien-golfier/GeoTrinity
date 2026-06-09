@@ -88,7 +88,7 @@ void AGeoPlayerState::OnRep_PlayerClass()
 	{
 		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
 		{
-			GeoHUD->BuildAbilityBar();
+			GeoHUD->BuildAbilityBar(GeoPlayerController->GetPawn<APlayableCharacter>());
 		}
 	}
 }

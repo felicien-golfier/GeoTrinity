@@ -14,6 +14,7 @@
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/ProgressBar.h"
+#include "Components/ScaleBox.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -21,7 +22,8 @@
 #include "WidgetBlueprint.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoHudWidgetBuilderUtil::BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBlueprint, float SquareSize)
+void UGeoHudWidgetBuilderUtil::BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBlueprint, float SquareSize,
+													  EAbilitySlotKeyLabelPlacement KeyLabelPlacement)
 {
 	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildAbilitySlotWidget"));
 	if (!Tree)
@@ -29,19 +31,43 @@ void UGeoHudWidgetBuilderUtil::BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBl
 		return;
 	}
 
-	// Root: Overlay wraps the fixed-size square.
-	UOverlay* Root = Cast<UOverlay>(UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, UOverlay::StaticClass(), TEXT("Root")));
-
 	// Square — a SizeBox with an explicit SquareSize x SquareSize so the slot has a stable size no matter what the icon or
 	// cooldown material reports as its desired size (otherwise an empty/placeholder icon collapses the slot and it grows
 	// only once the cooldown sweep renders). Resolution scaling is the bar's job (fractional anchors + UMG DPI).
 	USizeBox* Square = Tree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("Square"));
 	Square->SetWidthOverride(SquareSize);
 	Square->SetHeightOverride(SquareSize);
-	if (UOverlaySlot* SquareSlot = Cast<UOverlaySlot>(Root->AddChildToOverlay(Square)))
+
+	// The root depends on where the key label goes: a VerticalBox stacks the square above the label (Below); otherwise an
+	// Overlay just wraps the square and the label (if any) is stacked over the icon by the inner Stack.
+	if (KeyLabelPlacement == EAbilitySlotKeyLabelPlacement::Below)
 	{
-		SquareSlot->SetHorizontalAlignment(HAlign_Center);
-		SquareSlot->SetVerticalAlignment(VAlign_Center);
+		UVerticalBox* Root =
+			Cast<UVerticalBox>(UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, UVerticalBox::StaticClass(), TEXT("Root")));
+		UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Root, Square, FMargin(0.f));
+
+		// Constrain the key label to the slot width: a SizeBox caps the width at SquareSize and a ScaleBox shrinks the text
+		// (ScaleToFitX, DownOnly — never enlarges) so a wide key name like "Left Shift" scales down instead of overflowing.
+		USizeBox* KeyWidth = Tree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("KeyWidth"));
+		KeyWidth->SetWidthOverride(SquareSize);
+		UScaleBox* KeyScale = Tree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass(), TEXT("KeyScale"));
+		KeyScale->SetStretch(EStretch::ScaleToFitX);
+		KeyScale->SetStretchDirection(EStretchDirection::DownOnly);
+		KeyWidth->AddChild(KeyScale);
+
+		UTextBlock* KeyText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("KeyText"));
+		KeyScale->AddChild(KeyText);
+		UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Root, KeyWidth, FMargin(0.f, 2.f, 0.f, 0.f));
+	}
+	else
+	{
+		UOverlay* Root =
+			Cast<UOverlay>(UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, UOverlay::StaticClass(), TEXT("Root")));
+		if (UOverlaySlot* SquareSlot = Cast<UOverlaySlot>(Root->AddChildToOverlay(Square)))
+		{
+			SquareSlot->SetHorizontalAlignment(HAlign_Center);
+			SquareSlot->SetVerticalAlignment(VAlign_Center);
+		}
 	}
 
 	// Inner overlay stacks the icon, cooldown sweep, and text labels inside the square.
@@ -78,6 +104,17 @@ void UGeoHudWidgetBuilderUtil::BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBl
 	{
 		CountSlot->SetHorizontalAlignment(HAlign_Right);
 		CountSlot->SetVerticalAlignment(VAlign_Bottom);
+	}
+
+	// OverlayBottom places KeyText inside the square, bottom-center over the icon (Below already added it under the square).
+	if (KeyLabelPlacement == EAbilitySlotKeyLabelPlacement::OverlayBottom)
+	{
+		UTextBlock* KeyText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("KeyText"));
+		if (UOverlaySlot* KeySlot = Cast<UOverlaySlot>(Stack->AddChildToOverlay(KeyText)))
+		{
+			KeySlot->SetHorizontalAlignment(HAlign_Center);
+			KeySlot->SetVerticalAlignment(VAlign_Bottom);
+		}
 	}
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);

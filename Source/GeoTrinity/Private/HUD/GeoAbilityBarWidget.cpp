@@ -10,14 +10,14 @@ namespace
 {
 	/** Small horizontal gap (px each side) between packed ability slots. */
 	constexpr float SlotGap = 3.f;
-}
+} // namespace
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilityBarWidget::BuildBar(AGeoHUD* InHUD)
+void UGeoAbilityBarWidget::BuildBar(AGeoHUD* InHUD, APlayableCharacter* PlayableCharacter)
 {
-	if (!ensureMsgf(InHUD, TEXT("UGeoAbilityBarWidget::BuildBar — HUD is null")) ||
-		!ensureMsgf(SlotBox, TEXT("UGeoAbilityBarWidget::BuildBar — SlotBox is not bound")) ||
-		!ensureMsgf(SlotWidgetClass, TEXT("UGeoAbilityBarWidget::BuildBar — SlotWidgetClass is not set")))
+	if (!ensureMsgf(InHUD, TEXT("UGeoAbilityBarWidget::BuildBar — HUD is null"))
+		|| !ensureMsgf(SlotBox, TEXT("UGeoAbilityBarWidget::BuildBar — SlotBox is not bound"))
+		|| !ensureMsgf(SlotWidgetClass, TEXT("UGeoAbilityBarWidget::BuildBar — SlotWidgetClass is not set")))
 	{
 		return;
 	}
@@ -27,7 +27,7 @@ void UGeoAbilityBarWidget::BuildBar(AGeoHUD* InHUD)
 	SlotBox->ClearChildren();
 	Slots.Reset();
 
-	for (FGeoAbilityBarEntry const& Entry : HUD->GetAbilityBarEntries())
+	for (FGeoAbilityBarEntry const& Entry : HUD->GetAbilityBarEntries(PlayableCharacter))
 	{
 		UGeoAbilitySlotWidget* SlotWidget = CreateWidget<UGeoAbilitySlotWidget>(this, SlotWidgetClass);
 		SlotWidget->InitSlot(Entry, HUD);
