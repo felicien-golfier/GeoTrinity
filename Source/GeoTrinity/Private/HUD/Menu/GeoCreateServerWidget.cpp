@@ -110,7 +110,7 @@ void UGeoCreateServerWidget::HandleCreate()
 	const FString SlotString = SlotsComboBox->GetSelectedOption();
 	const int32 NumSlots = SlotString.IsEmpty() ? 2 : FCString::Atoi(*SlotString);
 	const FString Language = LanguageComboBox->GetSelectedOption();
-	const bool bIsPublic = PrivacyComboBox->GetSelectedOption() == TEXT("Public");
+	const bool bIsPublic = true; //PrivacyComboBox->GetSelectedOption() == TEXT("Public");
 
 	FOnlineSessionSettings SessionSettings;
 	SessionSettings.NumPublicConnections = NumSlots;	// Should be at least 2 for listen server, according to doc on "CreateAdvancedSession" from Advanced session plugin

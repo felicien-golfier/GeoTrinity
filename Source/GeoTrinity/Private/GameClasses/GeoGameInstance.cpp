@@ -84,11 +84,17 @@ void UGeoGameInstance::CreateAdvancedSession(FOnlineSessionSettings const& Sessi
 	}
 	
 	Sessions->CreateSession(0, FName(TEXT("GameSession")), SessionSettings);
+	
+	
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, 
+		FString::Printf(TEXT("[%u] CreateAdvancedSession done, waiting for callback"), FNetworkVersion::GetLocalNetworkVersion()));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("OnCreateSessionComplete complete")));
+
 	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
 	if (OnlineSub)
 	{

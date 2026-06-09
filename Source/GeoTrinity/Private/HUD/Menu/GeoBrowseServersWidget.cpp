@@ -103,11 +103,12 @@ void UGeoBrowseServersWidget::StartFindSessions()
 	SessionSearch->MaxSearchResults = 100;
 	SessionSearch->bIsLanQuery = false;
 
+	/*
 	const FString SelectedLanguage = LanguageComboBox->GetSelectedOption();
 	if (!SelectedLanguage.IsEmpty() && SelectedLanguage != TEXT("All"))
 	{
 		SessionSearch->QuerySettings.Set(FName("LANGUAGE"), SelectedLanguage, EOnlineComparisonOp::Equals);
-	}
+	}*/
 
 	FindSessionsDelegateHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(
 		FOnFindSessionsCompleteDelegate::CreateUObject(this, &UGeoBrowseServersWidget::OnFindSessionsComplete)
@@ -138,6 +139,10 @@ void UGeoBrowseServersWidget::OnFindSessionsComplete(bool bWasSuccessful)
 		return;
 	}
 
+	uint32 CodeHash = FNetworkVersion::GetLocalNetworkVersion();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(
+		TEXT("[%u] OnFindSessionsComplete complete, found %u results"), CodeHash, SessionSearch->SearchResults.Num()));
+	
 	CachedResults = SessionSearch->SearchResults;
 	PopulateServerList();
 }
@@ -178,6 +183,9 @@ void UGeoBrowseServersWidget::PopulateServerList()
 		RowWidget->OnSelected.AddUObject(this, &UGeoBrowseServersWidget::HandleServerSelected);
 		ServerListScrollBox->AddChild(RowWidget);
 	}
+	
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(
+		TEXT("PopulateServerList, ServerListScrollBox contains %u results"), ServerListScrollBox->GetChildrenCount()));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
