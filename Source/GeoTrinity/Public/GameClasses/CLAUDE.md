@@ -10,6 +10,8 @@ Core Unreal game framework classes.
 | `GeoGameInstance.h` | Persistent across levels |
 | `GeoPlayerController.h` | Player controller |
 | `GeoPlayerState.h` | **Hosts ASC + attribute sets for playable characters** |
+| `GeoMainMenuGameMode.h` | Menu level GameMode (`AGameModeBase`); no pawn; sets `PlayerControllerClass` to `AGeoMainMenuPlayerController` |
+| `GeoMainMenuPlayerController.h` | Menu player controller; creates `UGeoMainMenuWidget` on `BeginPlay`, adds to viewport, sets UI-only input |
 
 ## `GeoPlayerState` — Critical for GAS
 The `UGeoAbilitySystemComponent` and `UCharacterAttributeSet` live on `AGeoPlayerState`, not on the character. This is the standard GAS multiplayer pattern — ASC survives character respawn.
