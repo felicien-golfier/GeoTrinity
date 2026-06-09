@@ -48,7 +48,7 @@ Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` — generic, reusable wid
 - `SetImageRootFromMaterial` — like `SetImageRoot` but draws a material (e.g. a luminance-to-alpha mask) instead of a raw texture
 - `InspectWidgetBlueprint` — logs the full widget tree (type, name, slot layout, widget properties) to `LogTemp`
 
-Private static helpers shared by content builders: `BeginBuild` (validate/mark/clear root), `FinishBuild` (compile/save), `ConstructRootPanel`, `AddChildToCanvasPanel`.
+Building-block helpers for content builders (public but not `UFUNCTION`): `BeginBuild` (validate/mark/clear root), `FinishBuild` (compile/save), `ConstructRootPanel`, `AddChildToCanvasPanel`, `AddCenteredChildToVerticalBox(VerticalBox, Child, Padding)` (center-aligned slot with padding), `ConstructLabeledButton(Tree, Name, LabelText)` (Button + TextBlock label).
 
 ## `GeoHudWidgetBuilderUtil.h`
 Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` — content-specific HUD widget-tree builders that compose the generic primitives from `GeoWidgetBuilderUtil.h`. New per-widget builders go here.
@@ -56,3 +56,4 @@ Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` — content-specific HUD 
 - `BuildAbilityBarWidget(Blueprint)` — builds WBP_AbilityBar tree: Overlay root with centered SlotBox HorizontalBox (BindWidget on `UGeoAbilityBarWidget`)
 - `BuildChargeBeamGaugeWidget(Blueprint, SweetSpotMinRatio, SweetSpotMaxRatio)` — builds WBP_ChargeBeamGauge tree (ChargeBar + SweetSpotBar overlay on CanvasPanel)
 - `AddAbilityBarToOverlay(Blueprint, ParentPanelName, AbilityBarClass, fractions)` — adds AbilityBarClass child named "AbilityBar" to the overlay's CanvasPanel, anchored bottom-center, sized as fractions of the canvas
+- `BuildMainMenuWidget(Blueprint)` — builds WBP_MainMenu connect-screen: Overlay root → centered VerticalBox → TitleText / HostButton / IPInput / JoinButton / LocalIPText; BindWidget names match `UGeoMenuWidget` BP members
