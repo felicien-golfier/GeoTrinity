@@ -137,11 +137,11 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 	}
 }
 
-void UDevastatingWavePattern::EndPattern()
+void UDevastatingWavePattern::EndPattern(bool bForceStop)
 {
 	if (!UGeoGameplayLibrary::IsServer(GetWorld()))
 	{
-		Super::EndPattern();
+		Super::EndPattern(bForceStop);
 		return;
 	}
 
@@ -149,25 +149,28 @@ void UDevastatingWavePattern::EndPattern()
 	if (!SourceASC)
 	{
 		ensureMsgf(false, TEXT("UDevastatingWavePattern: SourceASC is null on wave end — Owner has no ASC"));
-		Super::EndPattern();
+		Super::EndPattern(bForceStop);
 		return;
 	}
 
-	for (FPillarWaveData const& PillarData : PillarsWaveData)
+	if (!bForceStop)
 	{
-		if (!PillarData.Pillar.IsValid())
+		for (FPillarWaveData const& PillarData : PillarsWaveData)
 		{
-			continue;
+			if (!PillarData.Pillar.IsValid())
+			{
+				continue;
+			}
+			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(PillarData.Pillar.Get());
+			if (!TargetASC)
+			{
+				ensureMsgf(false, TEXT("UDevastatingWavePattern: alive pillar has no ASC"));
+				continue;
+			}
+			UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
+																StoredPayload.AbilityLevel, StoredPayload.Seed);
 		}
-		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(PillarData.Pillar.Get());
-		if (!TargetASC)
-		{
-			ensureMsgf(false, TEXT("UDevastatingWavePattern: alive pillar has no ASC"));
-			continue;
-		}
-		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
-															StoredPayload.AbilityLevel, StoredPayload.Seed);
 	}
 
-	Super::EndPattern();
+	Super::EndPattern(bForceStop);
 }

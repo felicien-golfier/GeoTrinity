@@ -80,6 +80,9 @@ public:
 	/** Registers with the instigator's DeployableManagerComponent and calls InitDrain. */
 	virtual void BeginPlay() override;
 
+	/** True if registering a new deployable of this class beyond the limit should expire the oldest instead of being blocked. */
+	UFUNCTION(BlueprintCallable)
+	bool DestroyOldestWhenLimitReached() const { return bDestroyOldestWhenLimitReached; }
 	/**
 	 * Ends this deployable's lifetime. Calls RecallEffect then Expire.
 	 * Always use this instead of Expire or Destroy directly — it is the sole valid end-of-life path.
@@ -95,7 +98,8 @@ public:
 	 * @param Value  Scalar passed from Recall(), e.g. for explosion damage scaling.
 	 */
 	virtual void RecallEffect(float Value);
-	/** Executes the given GameplayCueTag on this actor's ASC with CueParams. Used by OnRep_Active and Recall() to fire recall/blink cues locally. */
+	/** Executes the given GameplayCueTag on this actor's ASC with CueParams. Used by OnRep_Active and Recall() to fire
+	 * recall/blink cues locally. */
 	void ExecuteCue(FGameplayTag const& GameplayCueTag, FGameplayCueParameters const& CueParams) const;
 
 	/**
@@ -123,6 +127,8 @@ public:
 
 	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
 	UFUNCTION()
+	virtual void Expire(float TimeBeforeDestroy);
+	/** Overload that uses the default TimeBeforeDestroyAtExpire delay. */
 	virtual void Expire();
 
 	/** Returns true once the deployable has been destroyed (health or duration reached zero). */
@@ -132,7 +138,8 @@ public:
 	/** Returns true during the pre-expiry blink window (blink timer is running). */
 	UFUNCTION(BlueprintPure)
 	bool IsBlinking() const;
-	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying instigator. */
+	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
+	 * instigator. */
 	FGameplayCueParameters GetGenericCueParams();
 
 	UPROPERTY(BlueprintAssignable)
@@ -177,6 +184,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 
+
 	UPROPERTY(ReplicatedUsing = OnRep_Active)
 	bool bActive = true;
 	UPROPERTY(ReplicatedUsing = OnRep_Blinking)
@@ -198,6 +206,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bPushActorsOnSpawn = false;
 	float const CollisionEnableDelay = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	bool bDestroyOldestWhenLimitReached = false;
 
 private:
 	UFUNCTION()

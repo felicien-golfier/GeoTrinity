@@ -45,6 +45,11 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 
 	for (int i = 0; i < RoundNumber * NumberProjectileByRound && i < ProjectileNumSpawned; i++)
 	{
+		if (!bPatternIsActive) // Cuz a projectile can kill during the loop
+		{
+			return;
+		}
+
 		if (Projectiles.Num() <= i)
 		{
 
@@ -98,9 +103,9 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 	}
 }
 
-void USpiralPattern::EndPattern()
+void USpiralPattern::EndPattern(bool bForceStop)
 {
-	Super::EndPattern();
+	Super::EndPattern(bForceStop);
 	for (int i = 0; i < Projectiles.Num(); i++)
 	{
 		if (IsValid(Projectiles[i]))

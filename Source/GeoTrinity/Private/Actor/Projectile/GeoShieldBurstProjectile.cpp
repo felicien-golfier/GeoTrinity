@@ -97,7 +97,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 		}
 	}
 }
-bool AGeoShieldBurstProjectile::IsValidOverlap(AActor const* OtherActor)
+bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor)
 {
 
 	constexpr float TimeThresholdBetweenSameHostileOverlap = 0.5f;

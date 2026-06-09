@@ -1,6 +1,7 @@
 # Coding Style & Conventions
 
 ## General Rules
+- **SIMPLICITY IS THE #1 PRIORITY — write the least code that solves the exact ask.** Before writing, find the simplest mechanism already available (timer, existing function, existing member) and use it instead of inventing new machinery. If a solution feels elaborate, OR it is wrong OR ask the linter.
 - Prefer fewer but longer `if` statements — merge conditions with `&&` rather than nesting
 - `const` by default; remove only when mutation is needed
 - Prefer non-const parameters over creating new variables (`FTransform SpawnTransform` not `const FTransform& SpawnTransform` + local copy)
@@ -15,6 +16,7 @@
 - Be consistent: same code style, same naming convention throughout
 - `Super` call placement: choose what makes semantic sense (Init = top, Destroy = bottom); when no ordering dependency exists, always top
 - No abbreviations in variable names; full class names except `ASC` for AbilitySystemComponent
+- **Unused parameters**: always name them in `.h` declarations; suppress with `/*name*/` in `.cpp` implementations when unused
 - **Never use `GetComponentByClass` to get an ASC** — always use `GeoASLib::GetGeoAscFromActor` instead
 - No comments that restate what the code says — code should be self-documenting
 - Never assume method names or constants (including `FColor::X`) — they change between versions.
@@ -35,7 +37,7 @@
 - Never silently skip or substitute when something required is missing. Always surface the error.
 - Ask: *can this condition legitimately be false at runtime?* If no → must flag it.
 - `ensureMsgf(condition, TEXT("..."))` — flags the problem
-  - If execution must continue: `if (!x) { ensureMsgf(x, TEXT("...")); return; }` — ensure *inside* the if body
+  - If execution must continue: `if (!ensureMsgf(x, TEXT("..."))) { return; }`
   - If no return needed: `ensureMsgf(x, TEXT("..."))` alone
 - `checkf` — for critical invariants (wrong actor type, missing subsystem, corrupted state) where silent continuation causes hard-to-debug damage
 - Never use `condition ? A : B` as a quiet fallback

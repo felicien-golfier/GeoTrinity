@@ -4,31 +4,36 @@
 
 #include "Tool/GeoWidgetBuilderUtil.h"
 
+#include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/Image.h"
 #include "Components/PanelWidget.h"
 #include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Components/Widget.h"
 #include "FileHelpers.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "Materials/MaterialInterface.h"
 #include "WidgetBlueprint.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetBlueprint, float SweetSpotMinRatio,
-													   float SweetSpotMaxRatio)
+UWidgetTree* UGeoWidgetBuilderUtil::BeginBuild(UWidgetBlueprint* WidgetBlueprint, TCHAR const* FunctionName)
 {
-	if (!ensureMsgf(WidgetBlueprint,
-					TEXT("UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget — WidgetBlueprint is null")))
+	if (!ensureMsgf(WidgetBlueprint, TEXT("UGeoWidgetBuilderUtil::%s — WidgetBlueprint is null"), FunctionName))
 	{
-		return;
+		return nullptr;
 	}
 
 	UWidgetTree* Tree = WidgetBlueprint->WidgetTree;
-	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget — WidgetTree is null on '%s'"),
+	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::%s — WidgetTree is null on '%s'"), FunctionName,
 					*WidgetBlueprint->GetName()))
 	{
-		return;
+		return nullptr;
 	}
 
 	Tree->Modify();
@@ -37,57 +42,109 @@ void UGeoWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetB
 	// Clear any existing root before rebuilding
 	Tree->RootWidget = nullptr;
 
-	// --- Root: Canvas Panel ---
-	UCanvasPanel* Canvas = Tree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("CanvasRoot"));
-	Tree->RootWidget = Canvas;
+	// Clear the widget-variable GUID map too. The compiler only auto-assigns deterministic GUIDs when this map is
+	// empty (see UWidgetBlueprintCompilerContext); on a rebuild of an existing asset the stale entries (named for the
+	// PREVIOUS tree) skip that path, so freshly constructed widgets get no GUID and the compiler's verify pass trips
+	// "Widget [X] was added but did not get a GUID". Emptying it lets the compiler repopulate cleanly for the new tree.
+	WidgetBlueprint->WidgetVariableNameToGuidMap.Empty();
 
-	constexpr float BarWidth = 15.f;
-	constexpr float BarHeight = 80.f;
+	return Tree;
+}
 
-	// --- ChargeBar: full-width, dark-blue fill ---
-	UProgressBar* ChargeBar = Tree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("ChargeBar"));
-	{
-		FProgressBarStyle Style = ChargeBar->GetWidgetStyle();
-		Style.BackgroundImage.TintColor = FSlateColor(FLinearColor(0.1f, 0.4f, 1.0f, .5f));
-		Style.FillImage.TintColor = FSlateColor(FLinearColor(0.1f, 0.4f, 1.0f, 1.0f));
-		ChargeBar->SetWidgetStyle(Style);
-	}
-	ChargeBar->SetFillColorAndOpacity(FLinearColor::White);
-	ChargeBar->SetBarFillType(EProgressBarFillType::BottomToTop);
-	ChargeBar->SetPercent(0.f);
-
-	UCanvasPanelSlot* ChargeSlot = Canvas->AddChildToCanvas(ChargeBar);
-	ChargeSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
-	ChargeSlot->SetOffsets(FMargin(0.f, 0.f, 0.f, 0.f));
-	ChargeSlot->SetAlignment(FVector2D(0.f, 0.f));
-
-	// --- SweetSpotBar: narrow golden overlay at the sweet-spot window ---
-	UProgressBar* SweetSpotBar = Tree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("SweetSpotBar"));
-	{
-		FProgressBarStyle Style = SweetSpotBar->GetWidgetStyle();
-		Style.BackgroundImage.TintColor = FSlateColor(FLinearColor(1.f, 0.75f, 0.0f, 0.5f));
-		Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, 0.75f, 0.0f, 1.0f));
-		SweetSpotBar->SetWidgetStyle(Style);
-	}
-	SweetSpotBar->SetBarFillType(EProgressBarFillType::BottomToTop);
-	SweetSpotBar->SetPercent(1.f);
-
-	// Sweet spot is positioned from the bottom — canvas Y grows downward, so top offset = (1 - max) * BarHeight.
-	float const SweetTop = (1.f - SweetSpotMaxRatio) * BarHeight;
-	float const SweetHeight = (SweetSpotMaxRatio - SweetSpotMinRatio) * BarHeight;
-
-	UCanvasPanelSlot* SweetSlot = Canvas->AddChildToCanvas(SweetSpotBar);
-	SweetSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 0.f));
-	SweetSlot->SetOffsets(FMargin(0.f, SweetTop, 0.f, SweetHeight));
-	SweetSlot->SetAlignment(FVector2D(0.f, 0.f));
-	SweetSlot->SetAutoSize(false);
-
-	// Compile and save
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::FinishBuild(UWidgetBlueprint* WidgetBlueprint)
+{
 	FKismetEditorUtilities::CompileBlueprint(WidgetBlueprint);
 	UEditorLoadingAndSavingUtils::SavePackages({WidgetBlueprint->GetPackage()}, false);
+}
 
-	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Built WBP_ChargeBeamGauge (sweet spot %.2f–%.2f)"),
-		   SweetSpotMinRatio, SweetSpotMaxRatio);
+// ---------------------------------------------------------------------------------------------------------------------
+UPanelWidget* UGeoWidgetBuilderUtil::ConstructRootPanel(UWidgetTree* Tree, TSubclassOf<UPanelWidget> PanelClass,
+														FName Name)
+{
+	if (!ensureMsgf(PanelClass, TEXT("UGeoWidgetBuilderUtil::ConstructRootPanel — PanelClass is null")))
+	{
+		return nullptr;
+	}
+
+	// A rebuild that changes the root's class (e.g. Overlay → VerticalBox) would otherwise fatal in ConstructWidget:
+	// the previous root UObject still occupies Name, and UE refuses to replace an existing object with a different class.
+	// Rename the stale occupant to a unique transient name so the new root can claim Name.
+	if (UObject* Existing = StaticFindObjectFast(UObject::StaticClass(), Tree, Name))
+	{
+		Existing->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional);
+	}
+
+	UPanelWidget* Panel = Tree->ConstructWidget<UPanelWidget>(PanelClass, Name);
+	Tree->RootWidget = Panel;
+	return Panel;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SetRootPanel(UWidgetBlueprint* WidgetBlueprint, TSubclassOf<UPanelWidget> PanelClass,
+										 FName RootName)
+{
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("SetRootPanel"));
+	if (!Tree || !ConstructRootPanel(Tree, PanelClass, RootName))
+	{
+		return;
+	}
+
+	FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Set root panel '%s' (named '%s') on '%s'"), *PanelClass->GetName(),
+		   *RootName.ToString(), *WidgetBlueprint->GetName());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SetImageRoot(UWidgetBlueprint* WidgetBlueprint, UTexture2D* Texture, FVector2D DesiredSize)
+{
+	if (!ensureMsgf(Texture, TEXT("UGeoWidgetBuilderUtil::SetImageRoot — Texture is null")))
+	{
+		return;
+	}
+
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("SetImageRoot"));
+	if (!Tree)
+	{
+		return;
+	}
+
+	UImage* Image = Tree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Image"));
+	Image->SetBrushFromTexture(Texture);
+	Image->SetDesiredSizeOverride(DesiredSize);
+	Tree->RootWidget = Image;
+
+	FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Set image root on '%s' with texture '%s' (%gx%g)"),
+		   *WidgetBlueprint->GetName(), *Texture->GetName(), DesiredSize.X, DesiredSize.Y);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SetImageRootFromMaterial(UWidgetBlueprint* WidgetBlueprint, UMaterialInterface* Material,
+													 FVector2D DesiredSize)
+{
+	if (!ensureMsgf(Material, TEXT("UGeoWidgetBuilderUtil::SetImageRootFromMaterial — Material is null")))
+	{
+		return;
+	}
+
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("SetImageRootFromMaterial"));
+	if (!Tree)
+	{
+		return;
+	}
+
+	UImage* Image = Tree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Image"));
+	Image->SetBrushFromMaterial(Material);
+	Image->SetDesiredSizeOverride(DesiredSize);
+	Tree->RootWidget = Image;
+
+	FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Set image root on '%s' with material '%s' (%gx%g)"),
+		   *WidgetBlueprint->GetName(), *Material->GetName(), DesiredSize.X, DesiredSize.Y);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -114,6 +171,85 @@ void UGeoWidgetBuilderUtil::InspectWidgetBlueprint(UWidgetBlueprint* WidgetBluep
 	}
 
 	LogWidget(Tree->RootWidget, 0);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UCanvasPanelSlot* UGeoWidgetBuilderUtil::AddChildToCanvasPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
+															   TSubclassOf<UUserWidget> ChildWidgetClass, FName ChildName)
+{
+	if (!ensureMsgf(WidgetBlueprint, TEXT("UGeoWidgetBuilderUtil::AddChildToCanvasPanel — WidgetBlueprint is null")) ||
+		!ensureMsgf(ChildWidgetClass, TEXT("UGeoWidgetBuilderUtil::AddChildToCanvasPanel — ChildWidgetClass is null")))
+	{
+		return nullptr;
+	}
+
+	UWidgetTree* Tree = WidgetBlueprint->WidgetTree;
+	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::AddChildToCanvasPanel — WidgetTree is null on '%s'"),
+					*WidgetBlueprint->GetName()))
+	{
+		return nullptr;
+	}
+
+	// Unlike the root builders, this APPENDS to the existing tree: do NOT clear RootWidget or the GUID map. Existing
+	// widgets keep their GUIDs; only the new child's variable name needs a fresh GUID registered (the compiler auto-
+	// assigns GUIDs only when WidgetVariableNameToGuidMap is empty, which it is not on an already-built asset).
+	UCanvasPanel* Parent = Cast<UCanvasPanel>(Tree->FindWidget(ParentPanelName));
+	if (!ensureMsgf(Parent, TEXT("AddChildToCanvasPanel — no CanvasPanel named '%s' in '%s'"),
+					*ParentPanelName.ToString(), *WidgetBlueprint->GetName()))
+	{
+		return nullptr;
+	}
+
+	// Reuse-safe: drop any existing child of this name so a re-run rebuilds cleanly instead of duplicating.
+	if (UWidget* Existing = Tree->FindWidget(ChildName))
+	{
+		Existing->RemoveFromParent();
+	}
+
+	Tree->Modify();
+	WidgetBlueprint->Modify();
+
+	UUserWidget* Child = Tree->ConstructWidget<UUserWidget>(ChildWidgetClass, ChildName);
+	UCanvasPanelSlot* ChildSlot = Parent->AddChildToCanvas(Child);
+
+	// Register a GUID for the new BindWidget variable so the compiler's verify pass ("Widget [X] did not get a GUID")
+	// passes; with a non-empty map the compiler will not mint one itself.
+	WidgetBlueprint->WidgetVariableNameToGuidMap.Add(ChildName, FGuid::NewGuid());
+
+	return ChildSlot;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UVerticalBoxSlot* UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(UVerticalBox* VerticalBox, UWidget* Child,
+																	   FMargin Padding)
+{
+	if (!ensureMsgf(VerticalBox && Child, TEXT("UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox — null arg")))
+	{
+		return nullptr;
+	}
+
+	UVerticalBoxSlot* Slot = VerticalBox->AddChildToVerticalBox(Child);
+	if (Slot)
+	{
+		Slot->SetHorizontalAlignment(HAlign_Center);
+		Slot->SetPadding(Padding);
+	}
+	return Slot;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UButton* UGeoWidgetBuilderUtil::ConstructLabeledButton(UWidgetTree* Tree, FName Name, FText LabelText)
+{
+	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::ConstructLabeledButton — Tree is null")))
+	{
+		return nullptr;
+	}
+
+	UButton* Button = Tree->ConstructWidget<UButton>(UButton::StaticClass(), Name);
+	UTextBlock* Label = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), FName(*(Name.ToString() + TEXT("Label"))));
+	Label->SetText(LabelText);
+	Button->SetContent(Label);
+	return Button;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

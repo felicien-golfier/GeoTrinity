@@ -15,7 +15,7 @@ Pattern flow:
 - `OnCreate(AbilityTag)` — stores ability tag used for montage lookup
 - `InitPattern(FAbilityPayload)` — stores payload, plays start animation section
 - `IsPatternActive()` — true while running
-- `EndPattern()` — jumps animation to end section, broadcasts `OnPatternEnd`
+- `EndPattern(bForceStop=false)` — cleans up timers; when false, jumps montage to end section and broadcasts `OnPatternEnd`; when true, stops all montages immediately and skips the broadcast (used by `PatternAbility::EndAbility` to force-stop without re-triggering the ability-end chain). Guards against double-call via `bPatternIsActive`.
 - `StartPattern()` — pure virtual; subclasses define spawn logic here
 
 Stores: `FAbilityPayload Payload`, `UAnimMontage* AnimMontage`, effect data array.
@@ -44,7 +44,7 @@ Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`
 
 ## `SpawnPillarPattern.h` — zone-and-pillar boss pattern
 
-Non-ticking pattern. On `InitPattern`, determines how many pillars to spawn (1–3, scaled by the boss's remaining health ratio) and selects target player locations sorted by `PlayerId` for determinism. On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via `ExecuteDelayGameplayCue` override.
+Non-ticking pattern. On `InitPattern`, determines how many pillars to spawn (1–3, scaled by the boss's remaining health ratio) and selects target player locations sorted by `PlayerId` for determinism. On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via the `ExecuteGameplayCue` override (fires one cue per spawn point).
 
 - `SpawningZoneSize` — radius used for both the countdown cue magnitude and hostile hit detection (cm)
 - `PillarClass` — `AGeoPillar` subclass to spawn; also passed to `SetDeployableInfinitCount` in `OnCreate` to bypass slot limits

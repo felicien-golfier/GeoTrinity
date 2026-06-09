@@ -17,9 +17,9 @@ void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementati
 
 	if (APlayerController* PlayerController = GetOwningPlayer())
 	{
-		if (AGeoHUD* Hud = Cast<AGeoHUD>(PlayerController->GetHUD()))
+		if (AGeoHUD* GeoHUD = PlayerController->GetHUD<AGeoHUD>())
 		{
-			InitFromHUD(Hud);
+			InitFromHUD(GeoHUD);
 		}
 	}
 

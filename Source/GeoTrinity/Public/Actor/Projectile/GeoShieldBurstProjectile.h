@@ -49,7 +49,7 @@ protected:
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor) override;
 
-	virtual bool IsValidOverlap(AActor const* OtherActor) override;
+	virtual bool IsValidOverlap(AActor* OtherActor) override;
 
 	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients.
 	 */

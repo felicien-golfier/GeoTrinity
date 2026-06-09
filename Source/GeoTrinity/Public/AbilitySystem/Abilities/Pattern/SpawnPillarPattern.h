@@ -29,7 +29,7 @@ protected:
 
 private:
 	virtual void InitPattern(FAbilityPayload const& Payload) override;
-	virtual void ExecuteDelayGameplayCue() override;
+	virtual void ExecuteGameplayCue(FGameplayTag GameplayCueTag) override;
 	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* InstigatorAsc) const;
 	virtual void StartPattern() override;
 

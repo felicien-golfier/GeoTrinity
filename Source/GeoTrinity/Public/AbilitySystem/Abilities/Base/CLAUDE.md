@@ -32,7 +32,7 @@ Some abilities send a second, updated snapshot after the `FireDelay` timer expir
 ### FireMode
 - `ShootAfterFireDelay` — fires after a fixed delay
 - `ChargeForFireDelay` — fires on release; `GetChargeRatio()` returns 0..1 (eased by `GameDataSettings::GaugeChargingSpeedCurve` via `ApplyChargingCurve`)
-- `SetChargeGaugeVisible(Character, bVisible)` — virtual hook called in `ScheduleFireTrigger` (show) and `EndAbility` (hide) when in `ChargeForFireDelay` mode. Default delegates to `Character->SetDeployChargeGaugeVisibility()`. Override to show a different gauge widget (see `UGeoChargeBeamAbility`).
+- `SetChargeGaugeVisible(Character, bVisible)` — virtual hook called in `ScheduleFireTrigger` (show) and `EndAbility` (hide) when in `ChargeForFireDelay` mode. Base implementation is **client-only** (no-op on server via `GeoLib::IsServer` guard) — gauge is a local-player concern. Override to use a different widget (see `UGeoChargeBeamAbility`).
 
 ### StoredPayload (`FAbilityPayload`)
 Set once per activation. **Always use `StoredPayload` fields** — never call `GetAvatarActor()` or similar inside abilities. The payload is set by the client and may differ from what ActorInfo reports.
@@ -67,10 +67,9 @@ Always: `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` di
 Enemy-only. `UPatternAbility` is the ability class; `UPattern`/`UTickablePattern` are the pattern objects (in `Pattern/` folder).
 
 - `PatternToLaunch` — class to instantiate
-- `ActivateAbility` → calls `CreateAbilityPayload()` → calls `ModifyPayload()` → calls `PatternStartMulticast()` RPC → all clients create a `UPattern` instance
-- Ability waits for `OnPatternEnd` delegate, then ends
-- **Subclass hook**: override `ModifyPayload(FAbilityPayload&)` to adjust the payload after base construction (server-only, has world access). Never override `ActivateAbility`.
-- **Client-ability hook**: override `GetFireOrigin2D(AActor*)` / `GetFireYaw(AActor const*)` on `UGeoGameplayAbility` to change what values the ASC bundles into target data on activation.
+- `ActivateAbility` → calls `CreateAbilityPayload()` → calls `PatternStartMulticast()` RPC → all clients create a `UPattern` instance; binds `OnPatternEnd` delegate
+- `EndAbility` (override) → calls `PatternInstance->EndPattern(true)` before `Super` — force-stops the pattern (stops montages, skips `OnPatternEnd` broadcast) to avoid a recursive end chain when the ability itself is cancelled
+- **Subclass hook**: override `GetFireOrigin2D(AActor*)` / `GetFireYaw(AActor const*)` on `UGeoGameplayAbility` to change what values the ASC bundles into target data on activation.
 
 ---
 

@@ -278,7 +278,7 @@ void AGeoDeployableBase::ApplyExplodeEffect(float Value, UGeoAbilitySystemCompon
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::Expire()
+void AGeoDeployableBase::Expire(float const TimeBeforeDestroy)
 {
 	bActive = false;
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
@@ -287,7 +287,7 @@ void AGeoDeployableBase::Expire()
 	OnDeployableExpiredEvent.Broadcast(this);
 	SetActorTickEnabled(false);
 
-	if (TimeBeforeDestroyAtExpire > 0.f)
+	if (TimeBeforeDestroy > 0.f)
 	{
 		FTimerHandle TimerHandle;
 		GetWorldTimerManager().SetTimer(
@@ -299,12 +299,17 @@ void AGeoDeployableBase::Expire()
 					this->Destroy();
 				}
 			},
-			TimeBeforeDestroyAtExpire, false);
+			TimeBeforeDestroy, false);
 	}
 	else
 	{
 		Destroy();
 	}
+}
+
+void AGeoDeployableBase::Expire()
+{
+	Expire(TimeBeforeDestroyAtExpire);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

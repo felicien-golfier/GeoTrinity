@@ -2,27 +2,62 @@
 
 #include "World/GeoGameCamera.h"
 
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Camera/CameraComponent.h"
-#include "Curves/CurveVector.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
+#include "GameClasses/GeoGameState.h"
+#include "GameFramework/GameMode.h"
+#include "GameFramework/GameState.h"
 #include "GameFramework/PlayerController.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoGameCamera::AGeoGameCamera()
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void AGeoGameCamera::BeginPlay()
+{
+	Super::BeginPlay();
+
+	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
+	GameState->CommitFightDelegate.AddUniqueDynamic(this, &AGeoGameCamera::CalculateBounds);
+	GameState->MatchIsWaitingToStartDelegate.AddUniqueDynamic(this, &AGeoGameCamera::CalculateBounds);
+	CalculateBounds();
+}
+
+void AGeoGameCamera::CalculateBounds()
+{
+	AGameState const* GameState = GetWorld()->GetGameState<AGameState>();
+	bool const bFightInProgress = GameState && GameState->GetMatchState() == MatchState::InProgress;
+	FGameplayTag const BoundsTag =
+		bFightInProgress ? FGeoGameplayTags::Get().Camera_Bounds_Fight : FGeoGameplayTags::Get().Camera_Bounds_Intro;
+
+	TArray<AActor*> BoundPoints = UGeoGameplayLibrary::GetTargetPoints(this, BoundsTag);
+	if (BoundPoints.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning,
+			   TEXT("AGeoGameCamera: No AGeoTargetPoint with tag %s found — using default bounds ±500."),
+			   *BoundsTag.ToString());
+		return;
+	}
+
+	FBox2D Result(ForceInit);
+	for (AActor const* Point : BoundPoints)
+	{
+		if (Point)
+		{
+			Result += FVector2D(Point->GetActorLocation());
+		}
+	}
+	Bounds = Result;
+}
+
 void AGeoGameCamera::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (!ensureMsgf(FollowSpeedCurve, TEXT("AGeoGameCamera: FollowSpeedCurve is not set — camera will not move.")))
-	{
-		return;
-	}
-
-	// Use only the local player's pawn — each client drives its own camera.
 	APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController();
 	if (!LocalPlayerController)
 	{
@@ -34,15 +69,6 @@ void AGeoGameCamera::Tick(float DeltaTime)
 	{
 		return;
 	}
-
-	FVector const PawnLocation = LocalPawn->GetActorLocation();
-	FVector2D const CharacterPosition = FVector2D(PawnLocation.X, PawnLocation.Y);
-
-	// Camera screen axes projected onto the world XY plane (camera looks straight down, Z is irrelevant).
-	// With pitch=-90, yaw=0: ScreenRight = World Y (horizontal), ScreenUp = World X (vertical).
-	// Using actual camera vectors makes this correct for any yaw.
-	FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
-	FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
 
 	float const OrthoHalfWidth = GetCameraComponent()->OrthoWidth * 0.5f;
 
@@ -58,46 +84,28 @@ void AGeoGameCamera::Tick(float DeltaTime)
 	}
 	float const OrthoHalfHeight = OrthoHalfWidth / AspectRatio;
 
-	// Project character offset onto screen axes to get true screen-space distances.
-	FVector2D const CameraPosition = FVector2D(GetActorLocation());
-	FVector2D const RelativePosition = CharacterPosition - CameraPosition;
-	float const ScreenOffsetH = FVector2D::DotProduct(RelativePosition, ScreenRight);
-	float const ScreenOffsetV = FVector2D::DotProduct(RelativePosition, ScreenUp);
+	FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
+	FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
 
-	// Edge proximity: 0 when character just entered the trigger zone, 1 when at the screen edge.
-	float const EdgeZoneHalfWidth = OrthoHalfWidth * ScreenEdgeThresholdPercent;
-	float const EdgeZoneHalfHeight = OrthoHalfHeight * ScreenEdgeThresholdPercent;
+	float const ViewportHalfExtentX =
+		OrthoHalfWidth * FMath::Abs(ScreenRight.X) + OrthoHalfHeight * FMath::Abs(ScreenUp.X);
+	float const ViewportHalfExtentY =
+		OrthoHalfWidth * FMath::Abs(ScreenRight.Y) + OrthoHalfHeight * FMath::Abs(ScreenUp.Y);
 
-	float const ProximityH = FMath::Clamp((FMath::Abs(ScreenOffsetH) - (OrthoHalfWidth - EdgeZoneHalfWidth)) / EdgeZoneHalfWidth, 0.f, 1.f);
-	float const ProximityV = FMath::Clamp((FMath::Abs(ScreenOffsetV) - (OrthoHalfHeight - EdgeZoneHalfHeight)) / EdgeZoneHalfHeight, 0.f, 1.f);
+	float const MinCameraX = Bounds.Min.X + ViewportHalfExtentX;
+	float const MaxCameraX = Bounds.Max.X - ViewportHalfExtentX;
+	float const MinCameraY = Bounds.Min.Y + ViewportHalfExtentY;
+	float const MaxCameraY = Bounds.Max.Y - ViewportHalfExtentY;
 
-	float const SpeedH = FollowSpeedCurve->GetVectorValue(ProximityH).X;
-	float const SpeedV = FollowSpeedCurve->GetVectorValue(ProximityV).Y;
+	FVector2D const PawnXY(LocalPawn->GetActorLocation());
+	FVector2D const BoundsCenter = Bounds.GetCenter();
+	FVector2D const ClampedTarget(
+		MinCameraX <= MaxCameraX ? FMath::Clamp(PawnXY.X, MinCameraX, MaxCameraX) : BoundsCenter.X,
+		MinCameraY <= MaxCameraY ? FMath::Clamp(PawnXY.Y, MinCameraY, MaxCameraY) : BoundsCenter.Y);
 
-	// World-space AABB half-extents of the viewport rectangle.
-	// For yaw=0: ExtentX = OrthoHalfHeight, ExtentY = OrthoHalfWidth. General formula handles any yaw.
-	float const ViewportHalfExtentX = OrthoHalfWidth * FMath::Abs(ScreenRight.X) + OrthoHalfHeight * FMath::Abs(ScreenUp.X);
-	float const ViewportHalfExtentY = OrthoHalfWidth * FMath::Abs(ScreenRight.Y) + OrthoHalfHeight * FMath::Abs(ScreenUp.Y);
+	FVector2D const CameraXY(GetActorLocation());
+	FVector2D const NewXY = FMath::Vector2DInterpTo(CameraXY, ClampedTarget, DeltaTime, FollowInterpSpeed);
 
-	// Valid camera position range: ensures map bounds stay outside the viewport.
-	// When the map is smaller than the visible area on an axis, center on that axis.
-	float const MinCameraX = BoundsMin.X + ViewportHalfExtentX;
-	float const MaxCameraX = BoundsMax.X - ViewportHalfExtentX;
-	float const MinCameraY = BoundsMin.Y + ViewportHalfExtentY;
-	float const MaxCameraY = BoundsMax.Y - ViewportHalfExtentY;
-
-	FVector2D const BoundsCenter = (BoundsMin + BoundsMax) * 0.5f;
-	FVector2D const Target = FVector2D(
-		MinCameraX <= MaxCameraX ? FMath::Clamp(CharacterPosition.X, MinCameraX, MaxCameraX) : BoundsCenter.X,
-		MinCameraY <= MaxCameraY ? FMath::Clamp(CharacterPosition.Y, MinCameraY, MaxCameraY) : BoundsCenter.Y
-	);
-
-	// Move in screen space (along camera axes), then convert back to world XY.
-	FVector2D const CameraToTarget = Target - CameraPosition;
-	float const DeltaH = FMath::FInterpConstantTo(0.f, FVector2D::DotProduct(CameraToTarget, ScreenRight), DeltaTime, SpeedH);
-	float const DeltaV = FMath::FInterpConstantTo(0.f, FVector2D::DotProduct(CameraToTarget, ScreenUp), DeltaTime, SpeedV);
-
-	FVector2D const NewPosition = CameraPosition + ScreenRight * DeltaH + ScreenUp * DeltaV;
 	FVector const CurrentLocation = GetActorLocation();
-	SetActorLocation(FVector(NewPosition.X, NewPosition.Y, CurrentLocation.Z));
+	SetActorLocation(FVector(NewXY.X, NewXY.Y, CurrentLocation.Z));
 }

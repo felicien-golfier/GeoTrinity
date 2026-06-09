@@ -15,8 +15,8 @@ Extends `UGeoProjectileAbility`. Auto-activates as a passive on ASC assignment. 
 
 ## `GeoDevastatingWaveAbility.h` — expanding radial wave
 
-Extends `UPatternAbility`. Teleports the boss to `TeleportLocation` by overriding `GetFireOrigin2D` (so the payload `Origin` is the destination), then launches `UDevastatingWavePattern`.
+Extends `UPatternAbility`. Teleports the boss to a tagged `AGeoTargetPoint` by overriding `GetFireOrigin2D` (so the payload `Origin` is the destination), then launches `UDevastatingWavePattern`.
 
-- Overrides `GetFireOrigin2D` — returns `TeleportLocation`; teleport happens in `UDevastatingWavePattern::StartPattern`
+- Overrides `GetFireOrigin2D` — resolves the first `AGeoTargetPoint` tagged with `TeleportLocationTag` via `GeoLib::GetTargetPoints` and returns its 2D location (`ensureMsgf` if none match); teleport happens in `UDevastatingWavePattern::StartPattern`
 - Effect data configured on the ability via `EffectDataAssets`/`EffectDataInstances`; forwarded automatically to the pattern by `PatternAbility`
 - Pattern: `UDevastatingWavePattern` (see `Pattern/CLAUDE.md`)

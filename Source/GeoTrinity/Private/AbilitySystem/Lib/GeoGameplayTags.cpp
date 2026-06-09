@@ -79,6 +79,24 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	// ABILITY SPELLS NEEDED IN CODE //
 	AddAbilitySpellTag(GameplayTags.Ability_Spell_ShieldBurst, "ShieldBurst", "Ability spell for shield burst");
 
-	// AI
-	CreateAndAssignGameplayTag(GameplayTags.AI_FiringPoint, "FiringPoint", "Where the AI can fire from.");
+	// ARENA LOCATION //
+	CreateAndAssignGameplayTag(GameplayTags.Arena_FightLocation, "Arena.FightLocation",
+							   "Spawn points inside the arena for fight start.");
+	CreateAndAssignGameplayTag(GameplayTags.Arena_Entrance, "Arena.Entrance",
+							   "Entry point outside arena — dead players teleport here.");
+
+	// CAMERA //
+	CreateAndAssignGameplayTag(GameplayTags.Camera_Bounds_Intro, "Camera.Bounds.Intro",
+							   "Camera bounds used before the fight starts.");
+	CreateAndAssignGameplayTag(GameplayTags.Camera_Bounds_Fight, "Camera.Bounds.Fight",
+							   "Camera bounds used during the fight.");
+
+	// AI //
+	CreateAndAssignGameplayTag(GameplayTags.AI_Boss_AggroEvent, "AI.Boss.AggroEvent",
+							   "StateTree event sent when the boss is aggroed.");
+	CreateAndAssignGameplayTag(GameplayTags.AI_FiringPoint, "AI.Boss.FiringPoint", "Where the AI can fire from.");
+	CreateAndAssignGameplayTag(GameplayTags.AI_Boss_Spawn, "AI.Boss.SpawnLocation",
+							   "Tag to determine the spawn of a boss");
+	CreateAndAssignGameplayTag(GameplayTags.AI_Dummy_Spawn, "AI.Dummy.SpawnLocation",
+							   "Tag to determine the spawn of a Dummy");
 }

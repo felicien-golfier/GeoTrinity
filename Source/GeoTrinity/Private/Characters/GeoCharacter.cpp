@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -38,6 +39,9 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 
 	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>(TEXT("GameFeelComponent"));
 
+	DeployableManagerComponent =
+		CreateDefaultSubobject<UGeoDeployableManagerComponent>(TEXT("DeployableManagerComponent"));
+
 	bUseControllerRotationYaw = true;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
@@ -55,6 +59,19 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
 						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
+}
+void AGeoCharacter::StopAllSpawnedElements()
+{
+	AbilitySystemComponent->StopAllActivePatterns();
+	if (DeployableManagerComponent)
+	{
+		DeployableManagerComponent->ForceExpireAll();
+	}
+}
+void AGeoCharacter::EndPlay(EEndPlayReason::Type const EndPlayReason)
+{
+	StopAllSpawnedElements();
+	Super::EndPlay(EndPlayReason);
 }
 
 UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const

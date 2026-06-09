@@ -23,6 +23,7 @@ Extends `GeoProjectileAbility`. All deploy abilities (mines, turrets, healing zo
 - Deploy distance (0..1 charge ratio) encoded in `StoredPayload.Seed` as integer cm value
 - `MinDeployDistance` / `MaxDeployDistance` — lerped by charge ratio
 - `DeployableActorClass` — what to spawn on impact
+- `GetDeployableActorClass()` — public accessor; used by `AGeoHUD::GetDeployCountForAbility` to match the ability to the correct deployable-manager slot
 - `Params` (`FDeployableDataParams`) — `LifeDrainMaxDuration`, `Size` passed to the deployable
 
 Deploy charge UI: ability calls `PlayableCharacter::ShowDeployChargeGauge(Self)` on activation and `HideDeployChargeGauge()` on end.

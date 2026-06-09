@@ -30,7 +30,7 @@ void UGeoInputComponent::UpdateMouseLook()
 		return;
 	}
 
-	APlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoController();
+	APlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoPlayerController();
 	if (!IsValid(GeoPlayerController))
 	{
 		return;
@@ -86,8 +86,6 @@ void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 {
 	bIsUsingController = true;
 	FVector2D const LookInput = FVector2D(Instance.GetValue().Get<FVector2D>());
-	GetGeoCharacter()->DrawDebugVectorFromCharacter(
-		FVector(LookInput, 0.f), FString::Printf(TEXT("Look Input vector from %s"), *GetGeoCharacter()->GetName()));
 
 	if (Instance.GetTriggerEvent() == ETriggerEvent::Completed)
 	{
@@ -95,7 +93,7 @@ void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 	}
 	else
 	{
-		GetGeoCharacter()->GetGeoController()->SetShowMouseCursor(false);
+		GetGeoCharacter()->GetGeoPlayerController()->SetShowMouseCursor(false);
 		LastLookInput = LookInput;
 	}
 }

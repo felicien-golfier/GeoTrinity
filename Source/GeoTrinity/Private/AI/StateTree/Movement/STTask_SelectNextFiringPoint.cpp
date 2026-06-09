@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "StateTreeExecutionContext.h"
 #include "StateTreeLinker.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 bool FSTTask_SelectNextFiringPoint::Link(FStateTreeLinker& Linker)
 {
@@ -21,9 +22,8 @@ EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutio
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	UGeoAIBlackboardComponent& Blackboard = Context.GetExternalData(BlackboardHandle);
 
-	TArray<AActor*> FiringPoints;
-	UGameplayStatics::GetAllActorsOfClassWithTag(Context.GetWorld(), ATargetPoint::StaticClass(),
-												 FGeoGameplayTags::Get().AI_FiringPoint.GetTagName(), FiringPoints);
+	TArray<AActor*> FiringPoints = GeoLib::GetTargetPoints(Context.GetOwner(), FGeoGameplayTags::Get().AI_FiringPoint);
+
 	FiringPoints.Sort(
 		[](TObjectPtr<AActor> const A, TObjectPtr<AActor> const B)
 		{

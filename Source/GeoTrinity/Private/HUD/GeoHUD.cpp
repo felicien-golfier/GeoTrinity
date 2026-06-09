@@ -2,12 +2,18 @@
 
 #include "HUD/GeoHUD.h"
 
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemInterface.h"
 #include "Blueprint/UserWidget.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
+#include "Characters/PlayableCharacter.h"
 #include "Characters/PlayerClassTypes.h"
 #include "Engine/Canvas.h"
 #include "GameClasses/GeoGameState.h"
@@ -15,9 +21,11 @@
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "HUD/GenericCombattantWidget.h"
+#include "HUD/GeoOverlayWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "System/GeoCombatStatsSubsystem.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // FHudPlayerParams
@@ -42,18 +50,15 @@ void AGeoHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySyste
 {
 	checkf(OverlayWidgetClass, TEXT("Overlay Widget Class uninitialized, please fill out HUD %s"), *GetName())
 
-		// UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), OverlayWidgetClass);
-		// OverlayWidget = Cast<UGeoUserWidget>(Widget);
-		// checkf(OverlayWidget, TEXT("OverlayWidgetClass is not of class UGeoUserWidget. Rethink design if this is
-		// necessary."))
-
 		// Setup params the HUD may very probably need to access
 		HudPlayerParams.PlayerController = PC;
 	HudPlayerParams.PlayerState = PS;
 	HudPlayerParams.AbilitySystemComponent = ASC;
 	HudPlayerParams.AttributeSet = AS;
 
-	if (UHudFunctionLibrary::ShouldDrawHUD(GetOwner()))
+	// AGeoPlayerState calls InitOverlay from both BeginPlay and OnPlayerPawnSet (replication-order safety net), so this
+	// can run twice on the client. Build the overlay and bind delegates only once.
+	if (!OverlayWidget && UHudFunctionLibrary::ShouldDrawHUD(GetOwner()))
 	{
 		OverlayWidget = CreateWidget<UGeoUserWidget>(GetWorld(), OverlayWidgetClass);
 		OverlayWidget->InitFromHUD(this);
@@ -138,24 +143,40 @@ void AGeoHUD::BindCallbacksToDependencies()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::BeginPlay()
+void AGeoHUD::BindToPawn(APlayableCharacter* PlayableCharacter)
 {
-	Super::BeginPlay();
-
-	// Auto-show boss health bar when enemies spawn
-	if (UWorld* World = GetWorld())
+	// Called from AGeoPlayerState::OnPlayerPawnSet, the one client-side moment the pawn is guaranteed. Pawn-dependent
+	// bindings live here, not in InitOverlay/BindCallbacksToDependencies, which run before the pawn may exist.
+	UGeoDeployableManagerComponent* Manager =
+		PlayableCharacter ? PlayableCharacter->GetComponentByClass<UGeoDeployableManagerComponent>() : nullptr;
+	if (!Manager)
 	{
-		if (AGeoGameState* GameState = World->GetGameState<AGeoGameState>())
-		{
-			GameState->OnEnemySpawned.AddDynamic(this, &AGeoHUD::ShowBossHealthBar);
-
-			// If enemies already spawned before HUD was ready, show the first one
-			if (AEnemyCharacter* FirstEnemy = GameState->GetFirstEnemy())
-			{
-				ShowBossHealthBar(FirstEnemy);
-			}
-		}
+		ensureMsgf(Manager, TEXT("BindToPawn: pawn has no UGeoDeployableManagerComponent on %s"), *GetName());
+		return;
 	}
+
+	// AddUnique so a re-possession of the same manager leaves exactly one binding.
+	Manager->OnDeployCountChanged.AddUniqueDynamic(this, &AGeoHUD::HandleDeployCountChanged);
+
+	// Build the ability bar now that the pawn's granted abilities exist (the overlay may have been created earlier,
+	// before the pawn replicated).
+	BuildAbilityBar(PlayableCharacter);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::BuildAbilityBar(APlayableCharacter* PlayableCharacter)
+{
+	if (UGeoOverlayWidget* Overlay = Cast<UGeoOverlayWidget>(OverlayWidget))
+	{
+		Overlay->BuildAbilityBar(this, PlayableCharacter);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::HandleDeployCountChanged(int32 /*CurrentCount*/, int32 /*MaxCount*/)
+{
+	// The manager's count is global; slots re-query their own per-ability count, so this is just a "refresh now" ping.
+	OnPlayerDeployCountChanged.Broadcast();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -193,6 +214,152 @@ void AGeoHUD::HideBossHealthBar()
 		BossHealthBarWidget->RemoveFromParent();
 		BossHealthBarWidget = nullptr;
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries(APlayableCharacter* PlayableCharacter) const
+{
+	TArray<FGeoAbilityBarEntry> Entries;
+
+	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
+	UAbilityInfo const* AbilityInfo = UGeoAbilitySystemLibrary::GetAbilityInfo();
+	if (!ASC || !PlayableCharacter || !AbilityInfo)
+	{
+		ensureMsgf(ASC && PlayableCharacter && AbilityInfo,
+				   TEXT("GetAbilityBarEntries: missing ASC, PlayableCharacter, or AbilityInfo on %s"), *GetName());
+		return Entries;
+	}
+
+	TArray<FPlayersGameplayAbilityInfo> const ClassInfos =
+		AbilityInfo->GetAbilitiesForClass(PlayableCharacter->GetPlayerClass());
+
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
+	{
+		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
+		if (!Ability || Ability->IsPassive())
+		{
+			continue;
+		}
+
+		FGameplayTag const AbilityTag = Ability->GetAbilityTag();
+		FPlayersGameplayAbilityInfo const* Info = ClassInfos.FindByPredicate(
+			[AbilityTag](FPlayersGameplayAbilityInfo const& Candidate)
+			{
+				return Candidate.AbilityTag == AbilityTag;
+			});
+		if (!Info)
+		{
+			continue;
+		}
+
+		FGeoAbilityBarEntry& Entry = Entries.AddDefaulted_GetRef();
+		Entry.AbilityTag = AbilityTag;
+		Entry.InputTag = Info->InputTag;
+		Entry.InputAction = Info->InputAction;
+		Entry.Icon = Info->AbilityIcon;
+		Entry.bIsDeployable = Info->bShowDeployCount;
+	}
+
+	return Entries;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, float& OutDuration) const
+{
+	OutRemaining = 0.f;
+	OutDuration = 0.f;
+
+	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
+	{
+		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
+		if (Ability && Ability->GetAbilityTag() == AbilityTag)
+		{
+			// Spec.Ability is the CDO for instanced abilities; query the active instance so per-instance state
+			// (e.g. UGeoAutomaticFireAbility's fire-delay timer) is read instead of the CDO's empty timer.
+			if (UGeoGameplayAbility const* Instance = Cast<UGeoGameplayAbility>(Spec.GetPrimaryInstance()))
+			{
+				Ability = Instance;
+			}
+			Ability->GetCooldownTimeRemainingAndDuration(Spec.Handle, ASC->AbilityActorInfo.Get(), OutRemaining,
+														 OutDuration);
+			return;
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool AGeoHUD::IsAbilityActive(FGameplayTag AbilityTag) const
+{
+	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
+	if (!ASC)
+	{
+		return false;
+	}
+
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
+	{
+		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
+		if (Ability && Ability->GetAbilityTag() == AbilityTag)
+		{
+			return Spec.IsActive();
+		}
+	}
+
+	return false;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const
+{
+	OutCurrent = 0;
+	OutMax = 0;
+
+	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
+	APlayableCharacter const* PlayableCharacter = Cast<APlayableCharacter>(
+		HudPlayerParams.PlayerController ? HudPlayerParams.PlayerController->GetPawn() : nullptr);
+	if (!ASC || !PlayableCharacter)
+	{
+		return;
+	}
+
+	UGeoDeployableManagerComponent* Manager = PlayableCharacter->GetComponentByClass<UGeoDeployableManagerComponent>();
+	if (!Manager)
+	{
+		return;
+	}
+
+	// Resolve the deployable class from the deploy ability so we can pick the matching manager slot.
+	TSubclassOf<AGeoDeployableBase> DeployableClass = nullptr;
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
+	{
+		UGeoDeployAbility const* DeployAbility = Cast<UGeoDeployAbility>(Spec.Ability);
+		if (DeployAbility && DeployAbility->GetAbilityTag() == AbilityTag)
+		{
+			DeployableClass = DeployAbility->GetDeployableActorClass();
+			break;
+		}
+	}
+	if (!DeployableClass)
+	{
+		return;
+	}
+
+	OutCurrent = Manager->GetDeployables<AGeoDeployableBase>()
+					 .FilterByPredicate(
+						 [DeployableClass](AGeoDeployableBase const* Deployable)
+						 {
+							 return Deployable->IsA(DeployableClass);
+						 })
+					 .Num();
+
+	int32 const* SlotCap = Manager->DeployableSlots.Find(DeployableClass);
+	OutMax = SlotCap ? *SlotCap : Manager->GetMaxDeployables();
 }
 
 #if !UE_BUILD_SHIPPING

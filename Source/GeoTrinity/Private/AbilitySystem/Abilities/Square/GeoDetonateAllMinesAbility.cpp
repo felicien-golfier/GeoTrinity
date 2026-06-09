@@ -34,9 +34,9 @@ void UGeoDetonateAllMinesAbility::Fire(FGeoAbilityTargetData const& AbilityTarge
 		return;
 	}
 
-	for (AGeoDeployableBase* Deployable : TArray(DeployableManager->GetDeployables()))
+	for (AGeoMine* Mine : TArray(DeployableManager->GetDeployables<AGeoMine>()))
 	{
-		if (AGeoMine* Mine = Cast<AGeoMine>(Deployable); Mine && Mine->IsActive())
+		if (IsValid(Mine) && Mine->IsActive())
 		{
 			Mine->Recall(DetonationMultiplier);
 		}

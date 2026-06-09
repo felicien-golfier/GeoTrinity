@@ -17,9 +17,22 @@ See `AI/Python/` for call patterns covering:
 - Accessing and mutating subobject components via `SubobjectDataSubsystem` — save with `EditorAssetLibrary.save_loaded_asset(asset)`
 - Copying a `TInstancedStruct` from an existing asset
 - Moving an asset
+- Deleting an asset via `EditorAssetLibrary`
 - Searching assets by keyword via `AssetRegistry`
 
 **`EditDefaultsOnly` private properties** need `meta=(AllowPrivateAccess="true")` to be accessible from Python. When the property is in project C++ code, add the meta specifier directly — do not use workarounds.
+
+## Property Access
+
+A boolean property's `b` prefix is dropped in its Python name.
+
+Resolve a class by its script path with the class loader; there is no find-by-name helper.
+
+## Editing a Struct Array
+
+Elements read from a struct array are by-value copies, so mutating one in place does not write back.
+
+`EditDefaultsOnly` struct fields reject the property setter even on the copy; clone the element by round-tripping its exported text into a fresh struct, then merge overrides — a single-field text import sets only that field and preserves the rest. Reassign the whole rebuilt array to the asset and save. See `AI/Python/ability_info_icons.py`.
 
 ## Naming Conventions
 

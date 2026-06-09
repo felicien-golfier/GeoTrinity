@@ -114,9 +114,9 @@ void AGeoTurret::TryFire()
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-void AGeoTurret::Expire()
+void AGeoTurret::Expire(float TimeBeforeDestroy)
 {
 	GetWorldTimerManager().ClearTimer(FireTimerHandle);
 	FireTimerHandle.Invalidate();
-	Super::Expire();
+	Super::Expire(TimeBeforeDestroy);
 }

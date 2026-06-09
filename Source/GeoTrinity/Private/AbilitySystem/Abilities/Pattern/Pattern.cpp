@@ -39,7 +39,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 	{
 		UE_LOG(LogPattern, Error,
 			   TEXT("Starting pattern when the Previous pattern of the same instance is still active !"));
-		EndPattern();
+		EndPattern(true);
 	}
 
 	bPatternIsActive = true;
@@ -49,7 +49,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
 
-	ExecuteDelayGameplayCue();
+	ExecuteGameplayCue(DelayGameplayCueTag);
 
 	if (StartTime > StartDelay)
 	{
@@ -72,10 +72,10 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 	}
 }
 
-void UPattern::ExecuteDelayGameplayCue()
+void UPattern::ExecuteGameplayCue(FGameplayTag const GameplayCueTag)
 {
 	bool const bIsServer = GeoLib::IsServer(GetWorld());
-	if (DelayGameplayCueTag.IsValid() && !bIsServer)
+	if (GameplayCueTag.IsValid() && !bIsServer)
 	{
 		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
 		if (!IsValid(InstigatorASC))
@@ -86,7 +86,7 @@ void UPattern::ExecuteDelayGameplayCue()
 		{
 			FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
 			FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
-			InstigatorASC->ExecuteGameplayCue(DelayGameplayCueTag, CueParams);
+			InstigatorASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
 		}
 	}
 }
@@ -132,20 +132,7 @@ void UPattern::StartPattern()
 		}
 	}
 
-	if (StartGameplayCueTag.IsValid() && !bIsServer)
-	{
-		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
-		if (!IsValid(InstigatorASC))
-		{
-			ensureMsgf(false, TEXT("Pattern Instigator %s has no ASC !"), *StoredPayload.Instigator->GetName());
-		}
-		else
-		{
-			FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
-			FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
-			InstigatorASC->ExecuteGameplayCue(StartGameplayCueTag, CueParams);
-		}
-	}
+	ExecuteGameplayCue(StartGameplayCueTag);
 
 	OnPatternStart.Broadcast();
 }
@@ -166,17 +153,36 @@ float UPattern::CalculateElapsedTime() const
 	return FMath::Max(0.f, GeoLib::GetServerTime(GetWorld(), true) - StoredPayload.ServerSpawnTime - StartDelay);
 }
 
-void UPattern::EndPattern()
+void UPattern::EndPattern(bool const bForceStop)
 {
-	JumpMontageToEndSection();
+	if (!bPatternIsActive)
+	{
+		return;
+	}
+	bPatternIsActive = false;
+
+	if (bForceStop)
+	{
+		UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
+		if (IsValid(AnimInstance))
+		{
+			AnimInstance->StopAllMontages(.2f);
+		}
+	}
+	else
+	{
+		JumpMontageToEndSection();
+	}
 
 	if (StartSectionTimerHandle.IsValid())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(StartSectionTimerHandle);
 	}
 
-	bPatternIsActive = false;
-	OnPatternEnd.Broadcast();
+	if (!bForceStop)
+	{
+		OnPatternEnd.Broadcast();
+	}
 }
 
 void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
@@ -218,8 +224,8 @@ void UTickablePattern::TickPattern(float const ServerTime, float const SpentTime
 	// To be overriden by your own Tickable pattern !
 }
 
-void UTickablePattern::EndPattern()
+void UTickablePattern::EndPattern(bool bForceStop)
 {
-	Super::EndPattern();
+	Super::EndPattern(bForceStop);
 	GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
 }

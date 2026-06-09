@@ -32,6 +32,13 @@ class GEOTRINITY_API UGeoDeployableManagerComponent : public UActorComponent
 
 public:
 	UGeoDeployableManagerComponent();
+	/**
+	 * Returns true if a new deployable of the given class may be deployed.
+	 * Always returns true when the class has bDestroyOldestWhenLimitReached set
+	 * (the oldest will be expired on RegisterDeployable instead of blocking).
+	 * Otherwise delegates to HasReachMaxLimit.
+	 */
+	bool CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass);
 
 	/**
 	 * Returns true if another deployable of the given class can be deployed.
@@ -39,11 +46,7 @@ public:
 	 * Otherwise falls back to the global MaxDeployables limit.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass = nullptr) const;
-
-	/** Returns the total number of currently active deployed actors across all classes. */
-	UFUNCTION(BlueprintPure)
-	int32 GetDeployedCount() const;
+	bool HasReachMaxLimit(TSubclassOf<AGeoDeployableBase> DeployableClass);
 
 	/** Returns the configured maximum number of simultaneous deployables. */
 	UFUNCTION(BlueprintPure)
@@ -52,17 +55,14 @@ public:
 	/** Register a newly deployed actor. Binds to its destroyed delegate. */
 	void RegisterDeployable(AGeoDeployableBase* Deployable);
 
-	/** Recall all deployed actors */
-	void ExpireAll();
+	/** Immediately expires all tracked deployables. Used on character EndPlay and class switch. */
+	void ForceExpireAll() const;
 
-	/** Get the ratio of deployed/max (used for size scaling) */
-	UFUNCTION(BlueprintPure)
-	float GetDeployRatio() const;
 	/** AActor* delegate callback bound to AGeoDeployableBase::OnDestroyed; forwards to the typed overload. */
 	void OnDeployableDestroyed(AActor* Deployable);
 
 	/** Returns all live tracked deployable actors. */
-	TArray<AGeoDeployableBase*> GetDeployables() const;
+	TArray<AGeoDeployableBase*> GetAllDeployables() const;
 
 	/** Returns all live tracked deployable actors of the given class, cast to T. */
 	template <typename T>
@@ -84,6 +84,7 @@ public:
 
 	/** Adds a DeployableSlots entry for Class with limit 0, granting unlimited deployments of that class. */
 	void SetDeployableInfinitCount(TSubclassOf<AGeoDeployableBase> Class);
+	void RemoveInvalidDeployables(FDeployableBucket& Bucket);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployCountChanged OnDeployCountChanged;

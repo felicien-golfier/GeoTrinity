@@ -32,9 +32,9 @@ public:
 	 * Owner is the enemy character that activated the ability; subclasses may access its components here.
 	 */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner);
-	/** Fires DelayGameplayCueTag at the pattern's zone location(s). Client-only; called from InitPattern to show the
-	 * countdown indicator before StartPattern. Override to fire at multiple locations. */
-	virtual void ExecuteDelayGameplayCue();
+	/** Client-only. Fires GameplayCueTag at the pattern's zone location(s) via the instigator's ASC. Override to fire
+	 * at multiple locations (e.g. one cue per pillar spawn point). */
+	virtual void ExecuteGameplayCue(FGameplayTag GameplayCueTag);
 	/** Builds the FGameplayCueParameters for this pattern's start cue. Override to inject custom fields (location,
 	 * magnitude, etc.). */
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload);
@@ -45,9 +45,14 @@ public:
 	/** Returns true while the pattern is running (after InitPattern, before EndPattern). */
 	bool IsPatternActive() const { return bPatternIsActive; }
 
-	/** Ends the pattern and jumps the animation montage to its end section. Must be called to clean up. */
+	/**
+	 * Ends the pattern and cleans up timers.
+	 * When bForceStop is false, jumps the montage to its end section and broadcasts OnPatternEnd.
+	 * When bForceStop is true, stops all montages immediately and skips the OnPatternEnd broadcast —
+	 * used by PatternAbility::EndAbility to force-end a pattern without re-triggering the ability end chain.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Pattern")
-	virtual void EndPattern();
+	virtual void EndPattern(bool bForceStop = false);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnPatternEvent OnPatternEnd;
@@ -95,7 +100,8 @@ class GEOTRINITY_API UTickablePattern : public UPattern
 	GENERATED_BODY()
 
 public:
-	virtual void EndPattern() override;
+	/** Stops the tick timer, then delegates to UPattern::EndPattern. */
+	virtual void EndPattern(bool bForceStop = false) override;
 
 protected:
 	virtual void StartPattern() override;

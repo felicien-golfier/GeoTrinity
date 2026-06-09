@@ -12,6 +12,8 @@
 #include "GeoStateTreeBuilderUtil.generated.h"
 
 class UStateTree;
+class UStateTreeState;
+class UStateTreeEditorData;
 
 UCLASS()
 class GEOTRINITY_API UGeoStateTreeBuilderUtil : public UEditorUtilityObject
@@ -28,6 +30,14 @@ public:
 	static void AddFireAbilityStateByTagName(UStateTree* StateTree, FName StateName, FName AbilityTagName,
 											 FName ParentStateName, int32 InsertIndex = -1);
 
+	/**
+	 * Adds a new empty state (no tasks) and compiles/saves. Use for idle/dormant states that wait on an OnEvent
+	 * transition. ParentStateName — name of the parent; pass NAME_None to add at root. InsertIndex — position in the
+	 * parent's children; pass -1 to append.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void AddState(UStateTree* StateTree, FName StateName, FName ParentStateName, int32 InsertIndex = -1);
+
 	/** Finds an existing state by name and replaces its FSTTask_FireAbility tag. Compiles and saves. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void ReplaceFireAbilityTagInState(UStateTree* StateTree, FName StateName, FName NewAbilityTagName);
@@ -41,10 +51,11 @@ public:
 	static void ClearTransitions(UStateTree* StateTree, FName StateName);
 
 	/** Adds a GotoState transition from SourceStateName to TargetStateName. Trigger: OnStateSucceeded, OnStateFailed,
-	 * or OnStateCompleted. Compiles and saves. */
+	 * OnStateCompleted, or OnEvent. For OnEvent transitions pass the event tag name in EventTagName; leave it None for
+	 * completion triggers. Compiles and saves. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddTransition(UStateTree* StateTree, FName SourceStateName, FName TargetStateName,
-							  EStateTreeTransitionTrigger Trigger);
+							  EStateTreeTransitionTrigger Trigger, FName EventTagName = NAME_None);
 
 	/**
 	 * Appends a FStateTreeCompareFloatCondition to a state's EnterConditions.
@@ -84,6 +95,10 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void SetRequiredEventToEnter(UStateTree* StateTree, FName StateName, FName EventTagName);
 
+	/** Clears the Required Event To Enter on a state. Compiles and saves. */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void ClearRequiredEventToEnter(UStateTree* StateTree, FName StateName);
+
 	/** Logs all states recursively with indent and task tags. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void ListStates(UStateTree* StateTree);
@@ -93,6 +108,11 @@ public:
 	static void ListEnterConditions(UStateTree* StateTree, FName StateName);
 
 private:
+	/** Creates a state and inserts it under the named parent (NAME_None = root subtree). Returns the new state, or
+	 * nullptr if the parent was not found. Does not compile/save — callers do that after any further setup. */
+	static UStateTreeState* CreateAndInsertState(UStateTreeEditorData* EditorData, FName StateName,
+												 FName ParentStateName, int32 InsertIndex);
+
 	static void AddFireAbilityState(UStateTree* StateTree, FName StateName, FGameplayTag AbilityTag,
 									FName ParentStateName, int32 InsertIndex);
 };

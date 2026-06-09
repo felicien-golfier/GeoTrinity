@@ -31,6 +31,9 @@ All editor automation in this project goes through `mcp-unreal` `execute_script`
 | C++ editor utility pattern | `MCP_EditorUtility.md` |
 | New enemy ability end-to-end (tag → BP → AbilityInfo → ASC → StateTree) | `MCP_NewEnemyAbility.md` |
 | Widget Blueprint creation, widget tree shim, WidgetComponent setup | `MCP_UI.md` |
+| Level settings (World Settings, GameMode override, PlayerControllerClass) | `MCP_Level.md` |
+| Reading the running game in PIE (screenshots, worlds, live actors) | `MCP_PIE.md` |
+| Reading/writing/persisting config-backed project settings | `MCP_Settings.md` |
 | Doc style rules for `.md` files in this folder | `MCP_DocStyle.md` |
 
 ---

@@ -13,6 +13,7 @@
 #include "GeoCharacter.generated.h"
 
 
+class UGeoDeployableManagerComponent;
 enum class ETeam : uint8;
 class UCharacterAttributeSet;
 class UGeoGameplayAbility;
@@ -43,6 +44,11 @@ class GEOTRINITY_API AGeoCharacter
 public:
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
 	virtual void Tick(float DeltaSeconds) override;
+	/** Expires all elements spawned by this character (deployables, and in future visual zones, etc). */
+	void StopAllSpawnedElements();
+	/** Calls StopAllSpawnedElements before delegating to Super. */
+	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
+	;
 	/** Returns the GeoInputComponent attached to this character. */
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	/** Returns the movement component cast to UGeoCharacterMovementComponent. */
@@ -74,7 +80,7 @@ public:
 	//----------------------------------------------------------------------//
 
 	/** Returns the controller cast to AGeoPlayerController, or nullptr if controlled by AI or a different type. */
-	AGeoPlayerController* GetGeoController() const { return Cast<AGeoPlayerController>(GetController()); }
+	AGeoPlayerController* GetGeoPlayerController() const { return Cast<AGeoPlayerController>(GetController()); }
 
 	/** Draws an arrow in the default debug color starting from the character's location. */
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const;
@@ -113,6 +119,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")
 	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
+	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 #ifdef UE_EDITOR
 public:

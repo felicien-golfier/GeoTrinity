@@ -53,6 +53,18 @@ void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
 	if (IsValid(NewPawn) && !HasAuthority())
 	{
 		InitOverlay();
+		// PlayerClass and the pawn link replicate independently. If PlayerClass arrived before the pawn,
+		// OnRep_PlayerClass already ran and bailed on a null pawn — apply class data now that the pawn exists.
+		ApplyClassDataToPawn();
+
+		// Bind pawn-dependent HUD callbacks now that the pawn (and its components) exist.
+		if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
+		{
+			if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
+			{
+				GeoHUD->BindToPawn(Cast<APlayableCharacter>(NewPawn));
+			}
+		}
 	}
 }
 
@@ -60,21 +72,33 @@ void AGeoPlayerState::InitOverlay()
 {
 	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
 	{
-		if (AGeoHUD* Hud = Cast<AGeoHUD>(GeoPlayerController->GetHUD()))
+		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
 		{
-			Hud->InitOverlay(GeoPlayerController, this, AbilitySystemComponent, CharacterAttributeSet);
+			GeoHUD->InitOverlay(GeoPlayerController, this, AbilitySystemComponent, CharacterAttributeSet);
 		}
 	}
 }
 
 void AGeoPlayerState::OnRep_PlayerClass()
 {
-	APlayableCharacter* PlayableCharacter = Cast<APlayableCharacter>(GetPawn());
-	if (!PlayableCharacter)
+	ApplyClassDataToPawn();
+
+	// The class change re-grants abilities; rebuild the ability bar so it reflects the new class's ability set.
+	if (AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController()))
 	{
-		return;
+		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
+		{
+			GeoHUD->BuildAbilityBar(GeoPlayerController->GetPawn<APlayableCharacter>());
+		}
 	}
-	PlayableCharacter->ApplyClassData(PlayerClass);
+}
+
+void AGeoPlayerState::ApplyClassDataToPawn()
+{
+	if (APlayableCharacter* PlayableCharacter = Cast<APlayableCharacter>(GetPawn()))
+	{
+		PlayableCharacter->ApplyClassData(PlayerClass);
+	}
 }
 
 UAbilitySystemComponent* AGeoPlayerState::GetAbilitySystemComponent() const

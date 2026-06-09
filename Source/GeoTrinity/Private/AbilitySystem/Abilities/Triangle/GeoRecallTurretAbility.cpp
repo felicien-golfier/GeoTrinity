@@ -26,9 +26,8 @@ void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 	}
 
 	TArray<FRecallInfo> RecallInfos;
-	for (AGeoDeployableBase* Deployable : TArray(DeployableManager->GetDeployables()))
+	for (AGeoTurret* Turret : TArray(DeployableManager->GetDeployables<AGeoTurret>()))
 	{
-		AGeoTurret* Turret = Cast<AGeoTurret>(Deployable);
 		if (!IsValid(Turret))
 		{
 			continue;

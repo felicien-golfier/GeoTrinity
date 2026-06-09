@@ -19,11 +19,14 @@ class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
 	GENERATED_BODY()
 
 public:
+	/** Sets FireMode to ChargeForFireDelay (hold-to-charge, release-to-deploy). */
 	UGeoDeployAbility();
 
+	/** Returns the deployable class this ability spawns. Used by the HUD to resolve the matching deployable-manager slot. */
+	TSubclassOf<AGeoDeployableBase> GetDeployableActorClass() const { return DeployableActorClass; }
+
 protected:
-	/** Checks the base GAS cost/cooldown and also verifies that the player's deployable manager has room for another.
-	 */
+	/** Checks the base GAS cost/cooldown and also verifies that the player's deployable manager has room for another. */
 	virtual bool CanActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 									FGameplayTagContainer const* SourceTags = nullptr,
 									FGameplayTagContainer const* TargetTags = nullptr,

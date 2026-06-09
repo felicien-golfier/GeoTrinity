@@ -46,3 +46,19 @@ void UPatternAbility::OnPatternEnd()
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 	PatternInstance->OnPatternEnd.RemoveDynamic(this, &UPatternAbility::OnPatternEnd);
 }
+void UPatternAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+								 FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
+								 bool bWasCancelled)
+{
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	UPattern* PatternInstance = nullptr;
+	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
+	{
+		ensureMsgf(false, TEXT("Pattern Instance doesn't exist at ability end !"));
+	}
+	else
+	{
+		PatternInstance->EndPattern(true);
+	}
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
