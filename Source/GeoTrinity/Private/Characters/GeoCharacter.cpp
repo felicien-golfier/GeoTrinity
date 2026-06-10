@@ -128,7 +128,7 @@ void AGeoCharacter::InitGAS()
 	// On clients replication later fires the change delegate and re-shows it, but the listen-server host sets
 	// attributes synchronously with no replication callback — so (re)bind now that attributes are initialized.
 	// (APlayableCharacter overrides InitGAS and calls this itself; InitializeForOwner is idempotent.)
-	CharacterWidgetComponent->InitializeForOwner();
+	CharacterWidgetComponent->BindWidgetToOwnerASC();
 }
 
 void AGeoCharacter::BeginPlay()

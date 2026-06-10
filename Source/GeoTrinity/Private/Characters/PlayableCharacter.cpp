@@ -178,7 +178,7 @@ void APlayableCharacter::InitGAS()
 
 	// The floating health bar binds in its component's BeginPlay, which can run before the ASC exists on a remote proxy
 	// (the ASC arrives via OnRep_PlayerState). Now that the ASC is set, (re)bind the bar so it reflects real health.
-	CharacterWidgetComponent->InitializeForOwner();
+	CharacterWidgetComponent->BindWidgetToOwnerASC();
 }
 
 void APlayableCharacter::Death()

@@ -13,21 +13,22 @@
 // ---------------------------------------------------------------------------------------------------------------------
 void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementation(UAbilitySystemComponent* ASC)
 {
-	// Idempotent: the owner re-initializes once its ASC is ready (see UGeoCombattantWidgetComp::InitializeForOwner).
-	// Already bound to this ASC → don't rebind (would stack callbacks), but still refresh the displayed stats: the bind
-	// may have happened before attributes were initialized (MaxHealth 0 collapsed the bar), and on a listen-server host
-	// no replication callback arrives to refresh it. Bound to a different ASC → unbind before rebinding.
-	if (OwnerASC == ASC)
-	{
-		InitStats();
-		return;
-	}
-	if (OwnerASC.IsValid())
+	// Idempotent: the owner may re-initialize once its ASC is ready. Bound to a different ASC → unbind before rebinding
+	// so callbacks don't stack. Same ASC → fall through and refresh stats only (no rebind).
+	if (OwnerASC.IsValid() && OwnerASC != ASC)
 	{
 		UnbindStatCallbacks();
 	}
 
+	bool const bAlreadyBound = (OwnerASC == ASC);
 	OwnerASC = ASC;
+
+	if (bAlreadyBound)
+	{
+		// Already bound to this ASC: just refresh the displayed values (attributes may have been 0 at first bind).
+		InitStats();
+		return;
+	}
 
 	if (APlayerController* PlayerController = GetOwningPlayer())
 	{
