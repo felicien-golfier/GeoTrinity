@@ -27,7 +27,7 @@ struct FEnemySpawnEntry
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, AEnemyCharacter*, Enemy);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCommitFight);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMatchIsWaitingToStart);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMatchStateChanged, FName, MatchState, FName, PreviousMatchState);
 
 /**
  * Replicated game state for GeoTrinity. Drives the boss fight lifecycle via
@@ -109,7 +109,7 @@ public:
 	FName EntranceZoneTagName = "EntranceZone";
 
 	FCommitFight CommitFightDelegate;
-	FMatchIsWaitingToStart MatchIsWaitingToStartDelegate;
+	FMatchStateChanged OnMatchStateChanged;
 
 private:
 	int32 PlayersAliveInFight = 0;

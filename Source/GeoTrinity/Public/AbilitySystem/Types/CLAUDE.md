@@ -19,6 +19,7 @@ These are **not replicated** and **not included in `NetSerialize`**. They are em
 | `SingleUseDamageMultiplier` | `FSingleUseDamageMultiplierEffectData::UpdateContextHandle` | `ExecCalc_Damage` |
 | `bSuppressHealProvided` | `FHealEffectData::UpdateContextHandle` | `ExecCalc_Heal` |
 | `bSuppressGameplayCue` | `FDamageEffectData` / `FHealEffectData` | `ExecCalc_*` |
+| `bSuppressCombatStats` | `FDamageEffectData` / `FHealEffectData` | `UGeoAttributeSetBase::PostGameplayEffectExecute` |
 
 ### `GeoAbilitySystemGlobals` (`Globals/GeoAbilitySystemGlobals.h`)
 - `AllocGameplayEffectContext()` — allocates `FGeoGameplayEffectContext` instead of the default engine context. This is what makes all GEs use the custom context automatically.

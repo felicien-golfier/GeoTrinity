@@ -75,7 +75,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			ProjectileMovement->Velocity = ReflectedVelocity;
 			ProjectileMovement->UpdateComponentVelocity();
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() * EnemyBounceMultiplier);
-			ShieldAmount *= EnemyBounceMultiplier;
+			ShieldAmount.Value *= EnemyBounceMultiplier;
 			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
 			LastOverlapHostileActor = OtherActor;
 			LastOverlapTime = GetWorld()->GetTimeSeconds();
@@ -87,7 +87,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			if (ensureMsgf(TargetASC, TEXT("AGeoShieldBurstProjectile: no ASC on ally %s"), *OtherActor->GetName()))
 			{
 				FShieldEffectData ShieldEffect;
-				ShieldEffect.ShieldAmount = FScalableFloat(ShieldAmount);
+				ShieldEffect.ShieldAmount = ShieldAmount;
 				GeoASLib::ApplySingleEffectData(ShieldEffect, GeoASLib::GetGeoAscFromActor(Payload.Owner), TargetASC,
 												Payload.AbilityLevel, Payload.Seed);
 			}

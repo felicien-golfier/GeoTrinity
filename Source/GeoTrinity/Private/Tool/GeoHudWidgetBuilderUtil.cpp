@@ -164,16 +164,9 @@ void UGeoHudWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* Widg
 	constexpr float BarHeight = 80.f;
 
 	// --- ChargeBar: full-width, dark-blue fill ---
-	UProgressBar* ChargeBar = Tree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("ChargeBar"));
-	{
-		FProgressBarStyle Style = ChargeBar->GetWidgetStyle();
-		Style.BackgroundImage.TintColor = FSlateColor(FLinearColor(0.1f, 0.4f, 1.0f, .5f));
-		Style.FillImage.TintColor = FSlateColor(FLinearColor(0.1f, 0.4f, 1.0f, 1.0f));
-		ChargeBar->SetWidgetStyle(Style);
-	}
-	ChargeBar->SetFillColorAndOpacity(FLinearColor::White);
+	UProgressBar* ChargeBar = UGeoWidgetBuilderUtil::ConstructProgressBar(
+		Tree, TEXT("ChargeBar"), FLinearColor(0.1f, 0.4f, 1.0f, 1.0f), FLinearColor(0.1f, 0.4f, 1.0f, 0.5f));
 	ChargeBar->SetBarFillType(EProgressBarFillType::BottomToTop);
-	ChargeBar->SetPercent(0.f);
 
 	UCanvasPanelSlot* ChargeSlot = Canvas->AddChildToCanvas(ChargeBar);
 	ChargeSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
@@ -181,13 +174,8 @@ void UGeoHudWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* Widg
 	ChargeSlot->SetAlignment(FVector2D(0.f, 0.f));
 
 	// --- SweetSpotBar: narrow golden overlay at the sweet-spot window ---
-	UProgressBar* SweetSpotBar = Tree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("SweetSpotBar"));
-	{
-		FProgressBarStyle Style = SweetSpotBar->GetWidgetStyle();
-		Style.BackgroundImage.TintColor = FSlateColor(FLinearColor(1.f, 0.75f, 0.0f, 0.5f));
-		Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, 0.75f, 0.0f, 1.0f));
-		SweetSpotBar->SetWidgetStyle(Style);
-	}
+	UProgressBar* SweetSpotBar = UGeoWidgetBuilderUtil::ConstructProgressBar(
+		Tree, TEXT("SweetSpotBar"), FLinearColor(1.0f, 0.75f, 0.0f, 1.0f), FLinearColor(1.f, 0.75f, 0.0f, 0.5f));
 	SweetSpotBar->SetBarFillType(EProgressBarFillType::BottomToTop);
 	SweetSpotBar->SetPercent(1.f);
 
@@ -234,6 +222,64 @@ void UGeoHudWidgetBuilderUtil::AddAbilityBarToOverlay(UWidgetBlueprint* WidgetBl
 
 	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added AbilityBar (%s) to '%s' bottom-center (%.0f%%x%.0f%% of screen)"),
 		   *AbilityBarClass->GetName(), *WidgetBlueprint->GetName(), WidthFraction * 100.f, HeightFraction * 100.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::BuildCombattantLifeBarWidget(UWidgetBlueprint* WidgetBlueprint, float BarWidth,
+															float BarHeight)
+{
+	// Preserve the existing bar dimensions if the asset already has a sized root, so the rebuild keeps the same footprint.
+	if (UWidgetTree* OldTree = WidgetBlueprint->WidgetTree)
+	{
+		OldTree->ForEachWidget(
+			[&BarWidth, &BarHeight](UWidget* Widget)
+			{
+				if (USizeBox* SizeBox = Cast<USizeBox>(Widget))
+				{
+					if (SizeBox->IsWidthOverride())
+					{
+						BarWidth = SizeBox->GetWidthOverride();
+					}
+					if (SizeBox->IsHeightOverride())
+					{
+						BarHeight = SizeBox->GetHeightOverride();
+					}
+				}
+			});
+	}
+
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildCombattantLifeBarWidget"));
+	if (!Tree)
+	{
+		return;
+	}
+
+	// Root SizeBox fixes the bar footprint; the Overlay stacks the shield bar over the health bar in the same rect.
+	USizeBox* Root =
+		Cast<USizeBox>(UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, USizeBox::StaticClass(), TEXT("Root")));
+	Root->SetWidthOverride(BarWidth);
+	Root->SetHeightOverride(BarHeight);
+
+	UOverlay* Stack = Tree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Stack"));
+	Root->AddChild(Stack);
+
+	// HealthBar — fills the rect; its fill color is set at runtime by UGenericCombattantWidget::UpdateHealthRatio (white
+	// default, opaque background so the empty portion reads as the depleted track).
+	UProgressBar* HealthBar = UGeoWidgetBuilderUtil::ConstructProgressBar(
+		Tree, TEXT("HealthBar"), FLinearColor::White, FLinearColor(1.f, 1.f, 1.f, 1.f), /*bIsVariable*/ true);
+	UGeoWidgetBuilderUtil::AddFillChildToOverlay(Stack, HealthBar);
+
+	// ShieldBar — same rect over the health bar, semi-transparent cyan fill so the health shows through, transparent
+	// background so it draws only the filled portion. Percent is shield-as-fraction-of-max-health (UpdateShieldRatio).
+	UProgressBar* ShieldBar =
+		UGeoWidgetBuilderUtil::ConstructProgressBar(Tree, TEXT("ShieldBar"), FLinearColor(0.4f, 0.8f, 1.f, 0.6f),
+													FLinearColor(0.f, 0.f, 0.f, 0.f), /*bIsVariable*/ true);
+	UGeoWidgetBuilderUtil::AddFillChildToOverlay(Stack, ShieldBar);
+
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_CombattantLifeBar (%.0fx%.0f, shield over health)"),
+		   BarWidth, BarHeight);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

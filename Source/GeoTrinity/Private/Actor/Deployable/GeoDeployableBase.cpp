@@ -23,15 +23,22 @@ AGeoDeployableBase::AGeoDeployableBase()
 	CapsuleComponent->SetCollisionProfileName(TEXT("GeoShape"));
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
-	HealthBarComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("HealthBarComponent"));
-	HealthBarComponent->SetupAttachment(RootComponent);
-	HealthBarComponent->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
-	HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	// Non-rotating anchor so the bar's offset doesn't orbit the deployable as it yaws (e.g. turret aiming).
+	USceneComponent* WidgetAnchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("WidgetAnchorComponent"));
+	WidgetAnchorComponent->SetupAttachment(RootComponent);
+	WidgetAnchorComponent->SetUsingAbsoluteRotation(true);
+
+	CombattantWidgetComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("CombattantWidgetComponent"));
+	CombattantWidgetComponent->SetupAttachment(WidgetAnchorComponent);
+	CombattantWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	CombattantWidgetComponent->SetRelativeLocation(FVector(100.f, 0.f, 0.f));
+	// Let the component match the bar's own size instead of stretching a large DrawSize over the deployable.
+	CombattantWidgetComponent->SetDrawAtDesiredSize(true);
 
 	if (TSubclassOf<UUserWidget> const HealthBarWidgetClass =
 			GetDefault<UGameDataSettings>()->DefaultDeployableHealthBarWidgetClass.LoadSynchronous())
 	{
-		HealthBarComponent->SetWidgetClass(HealthBarWidgetClass);
+		CombattantWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
 	}
 
 	SetReplicates(true);
@@ -186,7 +193,7 @@ void AGeoDeployableBase::BeginPlay()
 
 	if (!CanBeDamaged())
 	{
-		HealthBarComponent->SetHiddenInGame(true);
+		CombattantWidgetComponent->SetHiddenInGame(true);
 	}
 }
 

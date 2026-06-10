@@ -159,6 +159,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 				FDamageEffectData DrainEffectData;
 				DrainEffectData.DamageAmount = ActualDrain;
 				DrainEffectData.bSuppressGameplayCue = true;
+				DrainEffectData.bSuppressCombatStats = true;
 				GeoASLib::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(),
 												StoredPayload.Seed);
 			}
@@ -169,11 +170,12 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 		}
 		else if (Target->CanBeDamaged())
 		{
+			float BoostPerAbsorbedZone = 1 + FMath::Max(BeamRatio - 1.f, 0.f) * DamageAndHealBoostPerAbsorbedZone;
 			if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::Hostile))
 			{
 				FDamageEffectData DamageEffect;
-				DamageEffect.DamageAmount = DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
-					* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
+				DamageEffect.DamageAmount =
+					DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BoostPerAbsorbedZone * DeltaTime;
 				DamageEffect.bSuppressGameplayCue = !GameFeel->IsDamageCueAvailable();
 				GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed);
@@ -181,8 +183,8 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			else if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::FriendlyOrNeutral))
 			{
 				FHealEffectData HealEffect;
-				HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BeamRatio
-					* DamageAndHealBoostPerAbsorbedZone * DeltaTime;
+				HealEffect.HealAmount =
+					HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BoostPerAbsorbedZone * DeltaTime;
 				HealEffect.bSuppressGameplayCue = !GameFeel->IsHealCueAvailable();
 				GeoASLib::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed);

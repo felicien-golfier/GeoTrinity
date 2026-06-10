@@ -56,19 +56,27 @@ void AGeoPlayerState::ClientInitialize(class AController* Controller)
 
 void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
 {
-	// Local-player gate (not !IsServer): the listen-server host needs these HUD/visual steps too, and remote players'
+	if (!IsValid(NewPawn))
+	{
+		return;
+	}
+
+	// PlayerClass and the pawn link replicate independently. If PlayerClass arrived before the pawn,
+	// OnRep_PlayerClass already ran and bailed on a null pawn — apply class data now that the pawn exists.
+	// Must run for remote players' pawns too: on a dedicated server clients only see other players' class
+	// visuals through this path + OnRep_PlayerClass.
+	ApplyClassDataToPawn();
+
+	// Local-player gate (not !IsServer): the listen-server host needs these HUD steps too, and remote players'
 	// PlayerStates living on the server must not run them. GetOwningController() returns null / a non-local controller
 	// in both excluded cases.
 	AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController());
-	if (!IsValid(NewPawn) || !GeoPlayerController || !GeoPlayerController->IsLocalPlayerController())
+	if (!GeoPlayerController || !GeoPlayerController->IsLocalPlayerController())
 	{
 		return;
 	}
 
 	InitOverlay();
-	// PlayerClass and the pawn link replicate independently. If PlayerClass arrived before the pawn,
-	// OnRep_PlayerClass already ran and bailed on a null pawn — apply class data now that the pawn exists.
-	ApplyClassDataToPawn();
 
 	// Bind pawn-dependent HUD callbacks now that the pawn (and its components) exist.
 	if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
@@ -114,6 +122,11 @@ void AGeoPlayerState::RebuildAbilityBar()
 
 void AGeoPlayerState::ApplyClassDataToPawn()
 {
+	// None is legitimate here: on the server OnPawnSet fires during PossessedBy, before ChangeClass picks the class.
+	if (PlayerClass == EPlayerClass::None)
+	{
+		return;
+	}
 	if (APlayableCharacter* PlayableCharacter = Cast<APlayableCharacter>(GetPawn()))
 	{
 		PlayableCharacter->ApplyClassData(PlayerClass);

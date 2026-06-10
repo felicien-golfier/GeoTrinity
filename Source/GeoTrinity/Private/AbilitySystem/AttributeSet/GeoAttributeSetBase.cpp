@@ -56,7 +56,10 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 				SourceASC->OnDamageDealt.Broadcast(DamageToApply, AbilityTag);
 			}
 
-			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
+			FGeoGameplayEffectContext const* GeoContext =
+				static_cast<FGeoGameplayEffectContext const*>(Data.EffectSpec.GetEffectContext().Get());
+			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>();
+				CombatStats && (!GeoContext || !GeoContext->IsSuppressCombatStats()))
 			{
 				AGeoPlayerState* TargetPlayerState = Cast<AGeoPlayerState>(GetOwningActor());
 				AGeoPlayerState* SourcePlayerState =
@@ -83,7 +86,8 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 				ASC->OnHealProvided.Broadcast(HealToApply);
 			}
 
-			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
+			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>();
+				CombatStats && (!GeoContext || !GeoContext->IsSuppressCombatStats()))
 			{
 				AGeoPlayerState* SourcePlayerState =
 					Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext().GetInstigator());
@@ -125,7 +129,8 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 				ASC->OnHealProvided.Broadcast(Magnitude);
 			}
 
-			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
+			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>();
+				CombatStats && (!GeoContext || !GeoContext->IsSuppressCombatStats()))
 			{
 				CombatStats->ReportHealingDealt(SourcePlayerState, Magnitude);
 			}

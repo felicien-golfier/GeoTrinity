@@ -23,7 +23,23 @@ void AGeoGameCamera::BeginPlay()
 
 	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
 	GameState->CommitFightDelegate.AddUniqueDynamic(this, &AGeoGameCamera::CalculateBounds);
-	GameState->MatchIsWaitingToStartDelegate.AddUniqueDynamic(this, &AGeoGameCamera::CalculateBounds);
+	GameState->OnMatchStateChanged.AddUniqueDynamic(this, &AGeoGameCamera::OnMatchStateChanged);
+	CalculateBounds();
+}
+
+void AGeoGameCamera::OnMatchStateChanged(FName MatchState, FName PreviousMatchState)
+{
+	if (PreviousMatchState == MatchState)
+	{
+		return;
+	}
+
+	// Let Commit Fight update the bounds
+	if (MatchState == MatchState::InProgress)
+	{
+		return;
+	}
+
 	CalculateBounds();
 }
 

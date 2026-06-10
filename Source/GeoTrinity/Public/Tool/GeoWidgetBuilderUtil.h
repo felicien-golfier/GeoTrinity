@@ -12,7 +12,10 @@
 class UButton;
 class UCanvasPanelSlot;
 class UMaterialInterface;
+class UOverlay;
+class UOverlaySlot;
 class UPanelWidget;
+class UProgressBar;
 class UUserWidget;
 class UVerticalBox;
 class UVerticalBoxSlot;
@@ -85,6 +88,17 @@ public:
 
 	/** Constructs a Button named Name in Tree whose content is a TextBlock showing LabelText. Returns it (null on failure). */
 	static UButton* ConstructLabeledButton(UWidgetTree* Tree, FName Name, FText LabelText);
+
+	/**
+	 * Constructs a UProgressBar named Name in Tree with the given fill/background tints, starting empty (LeftToRight fill;
+	 * callers needing another fill type set it on the returned bar). Set bIsVariable when the C++ widget BindWidgets it.
+	 * Returns it (null on failure).
+	 */
+	static UProgressBar* ConstructProgressBar(UWidgetTree* Tree, FName Name, FLinearColor FillColor,
+											  FLinearColor BackgroundColor, bool bIsVariable = false);
+
+	/** Adds Child to Overlay as a fill/fill slot (covers the whole overlay rect). Returns its slot (null on failure). */
+	static UOverlaySlot* AddFillChildToOverlay(UOverlay* Overlay, UWidget* Child);
 
 private:
 	static void LogWidget(UWidget* Widget, int32 Depth);

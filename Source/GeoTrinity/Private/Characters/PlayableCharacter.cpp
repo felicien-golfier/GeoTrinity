@@ -8,6 +8,7 @@
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "HUD/GeoChargeBeamGaugeWidget.h"
 #include "HUD/GeoDeployChargeGaugeWidget.h"
 #include "Input/GeoInputComponent.h"
@@ -23,16 +24,16 @@ static TAutoConsoleVariable<bool> CVarPlayerInvincible(TEXT("Geo.PlayerInvincibl
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	DeployChargeGaugeComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("DeployChargeGaugeComponent"));
-	DeployChargeGaugeComponent->SetupAttachment(GetRootComponent());
+	DeployChargeGaugeComponent->SetupAttachment(WidgetAnchorComponent);
 	DeployChargeGaugeComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	DeployChargeGaugeComponent->SetRelativeLocation(FVector(0.f, 100.f, 0.f));
 	DeployChargeGaugeComponent->SetHiddenInGame(true);
-	DeployChargeGaugeComponent->SetUsingAbsoluteRotation(true);
 
 	ChargeBeamGaugeComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("ChargeBeamGaugeComponent"));
-	ChargeBeamGaugeComponent->SetupAttachment(GetRootComponent());
+	ChargeBeamGaugeComponent->SetupAttachment(WidgetAnchorComponent);
 	ChargeBeamGaugeComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	ChargeBeamGaugeComponent->SetRelativeLocation(FVector(0.f, -100.f, 0.f));
 	ChargeBeamGaugeComponent->SetHiddenInGame(true);
-	ChargeBeamGaugeComponent->SetUsingAbsoluteRotation(true);
 
 	TeamId = ETeam::Player;
 }
@@ -174,6 +175,10 @@ void APlayableCharacter::InitGAS()
 		AbilitySystemComponent->GiveStartupAbilities(GetPlayerClass());
 		AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &APlayableCharacter::OnHealthChanged);
 	}
+
+	// The floating health bar binds in its component's BeginPlay, which can run before the ASC exists on a remote proxy
+	// (the ASC arrives via OnRep_PlayerState). Now that the ASC is set, (re)bind the bar so it reflects real health.
+	CharacterWidgetComponent->InitializeForOwner();
 }
 
 void APlayableCharacter::Death()
@@ -193,7 +198,7 @@ void APlayableCharacter::Death()
 	AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
 	StopAllSpawnedElements();
 	StopCharacter();
-
+	SetCanBeDamaged(false);
 	GameState->NotifyPlayerDiedInFight(this);
 }
 
@@ -206,6 +211,7 @@ void APlayableCharacter::Revive()
 	bIsDead = false;
 	AbilitySystemComponent->InitializeDefaultAttributes();
 	RestartCharacter();
+	SetCanBeDamaged(true);
 }
 
 void APlayableCharacter::StopCharacter()

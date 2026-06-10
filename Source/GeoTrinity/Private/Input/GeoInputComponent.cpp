@@ -58,8 +58,6 @@ void UGeoInputComponent::UpdateMouseLook()
 
 		FVector2D const LookDirection = FVector2d(WorldLocation - GeoCharacter->GetActorLocation());
 		LastLookInput = LookDirection;
-		GeoCharacter->DrawDebugVectorFromCharacter(
-			FVector(LookDirection, 0.f), FString::Printf(TEXT("Look vector from %s"), *GeoCharacter->GetName()));
 	}
 }
 

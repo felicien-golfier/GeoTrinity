@@ -31,8 +31,6 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance, EntranceZoneTagName);
 
 	SpawnEnemies();
-
-	MatchIsWaitingToStartDelegate.Broadcast();
 }
 
 void AGeoGameState::HandleMatchHasEnded()
@@ -47,6 +45,7 @@ void AGeoGameState::OnRep_MatchState()
 	{
 		StopBossFight();
 	}
+	OnMatchStateChanged.Broadcast(MatchState, PreviousMatchState);
 	Super::OnRep_MatchState();
 }
 

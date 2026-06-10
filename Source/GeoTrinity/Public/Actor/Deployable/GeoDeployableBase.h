@@ -80,7 +80,8 @@ public:
 	/** Registers with the instigator's DeployableManagerComponent and calls InitDrain. */
 	virtual void BeginPlay() override;
 
-	/** True if registering a new deployable of this class beyond the limit should expire the oldest instead of being blocked. */
+	/** True if registering a new deployable of this class beyond the limit should expire the oldest instead of being
+	 * blocked. */
 	UFUNCTION(BlueprintCallable)
 	bool DestroyOldestWhenLimitReached() const { return bDestroyOldestWhenLimitReached; }
 	/**
@@ -146,7 +147,7 @@ public:
 	FOnDeployableDestroyed OnDeployableExpiredEvent;
 
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UGeoCombattantWidgetComp> HealthBarComponent;
+	TObjectPtr<UGeoCombattantWidgetComp> CombattantWidgetComponent;
 
 protected:
 	// subclasses MUST override this with their own data struct inherited from FDeployableData

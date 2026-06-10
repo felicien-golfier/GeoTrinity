@@ -36,6 +36,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsSuppressHealProvided() const { return bSuppressHealProvided; }
 	/** Returns true when the GameplayCue embedded in the applied effect should be skipped (used for rate-limiting). */
 	bool IsSuppressGameplayCue() const { return bSuppressGameplayCue; }
+	bool IsSuppressCombatStats() const { return bSuppressCombatStats; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
@@ -53,6 +54,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetSuppressHealProvided(bool value) { bSuppressHealProvided = value; }
 	/** When true, the GameplayCue embedded in the applied effect will be suppressed. Use to rate-limit cues on tick-based effects. */
 	void SetSuppressGameplayCue(bool value) { bSuppressGameplayCue = value; }
+	void SetSuppressCombatStats(bool value) { bSuppressCombatStats = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
 
@@ -88,6 +90,7 @@ protected:
 	float SingleUseDamageMultiplier{1.f};
 	bool bSuppressHealProvided{false};
 	bool bSuppressGameplayCue{false};
+	bool bSuppressCombatStats{false};
 
 	UPROPERTY()
 	bool bIsRadialDamage{false};

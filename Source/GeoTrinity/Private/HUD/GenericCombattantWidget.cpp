@@ -13,6 +13,20 @@
 // ---------------------------------------------------------------------------------------------------------------------
 void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementation(UAbilitySystemComponent* ASC)
 {
+	// Idempotent: the owner re-initializes once its ASC is ready (see UGeoCombattantWidgetComp::InitializeForOwner).
+	// Already bound to this ASC → don't rebind (would stack callbacks), but still refresh the displayed stats: the bind
+	// may have happened before attributes were initialized (MaxHealth 0 collapsed the bar), and on a listen-server host
+	// no replication callback arrives to refresh it. Bound to a different ASC → unbind before rebinding.
+	if (OwnerASC == ASC)
+	{
+		InitStats();
+		return;
+	}
+	if (OwnerASC.IsValid())
+	{
+		UnbindStatCallbacks();
+	}
+
 	OwnerASC = ASC;
 
 	if (APlayerController* PlayerController = GetOwningPlayer())
@@ -42,6 +56,27 @@ void UGenericCombattantWidget::UpdateHealthRatio_Implementation(float NewHealthR
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGenericCombattantWidget::UpdateShieldRatio_Implementation(float NewShieldRatio)
+{
+	if (ShieldBar)
+	{
+		ShieldBar->SetPercent(NewShieldRatio);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGenericCombattantWidget::RefreshShield()
+{
+	if (!OwnerASC.IsValid())
+	{
+		return;
+	}
+	float const MaxHealth = OwnerASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
+	float const Shield = OwnerASC->GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute());
+	UpdateShieldRatio(MaxHealth > 0.f ? Shield / MaxHealth : 0.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGenericCombattantWidget::InitStats()
 {
 	if (OwnerASC.IsValid())
@@ -55,6 +90,7 @@ void UGenericCombattantWidget::InitStats()
 			   *GetName());
 		UpdateHealthRatio(1.f);
 	}
+	RefreshShield();
 	UpdateHealthBarVisibility();
 }
 
@@ -86,6 +122,15 @@ void UGenericCombattantWidget::BindStatCallbacks()
 
 	GeoASC->OnHealthChanged.AddDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
 	GeoASC->OnMaxHealthChanged.AddDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
+
+	// The ASC exposes no Shield delegate (unlike Health/MaxHealth), so bind the attribute directly. A weak lambda
+	// self-cleans when this widget is destroyed, so no matching removal is needed in UnbindStatCallbacks.
+	GeoASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
+		.AddWeakLambda(this,
+					   [this](FOnAttributeChangeData const&)
+					   {
+						   RefreshShield();
+					   });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -113,6 +158,8 @@ void UGenericCombattantWidget::OnHealthChanged(float NewValue)
 	}
 	// Don't use NewValue, just get the ratio from ASC (it might be health or max health)
 	UpdateHealthRatio(UHudFunctionLibrary::GetHealthRatio(OwnerASC.Get()));
+	// MaxHealth is the shield denominator, so a max-health change moves the shield ratio too.
+	RefreshShield();
 	// Re-evaluate visibility too: on the listen-server host InitStats() runs before the owner's attributes are
 	// initialized, reading MaxHealth as 0 and collapsing the bar. Clients recover because MaxHealth arrives via
 	// replication and fires this delegate, but the host sets it synchronously — so without this call the bar stays

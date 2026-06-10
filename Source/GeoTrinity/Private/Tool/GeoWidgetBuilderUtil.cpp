@@ -10,6 +10,8 @@
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/Image.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
@@ -250,6 +252,43 @@ UButton* UGeoWidgetBuilderUtil::ConstructLabeledButton(UWidgetTree* Tree, FName 
 	Label->SetText(LabelText);
 	Button->SetContent(Label);
 	return Button;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UProgressBar* UGeoWidgetBuilderUtil::ConstructProgressBar(UWidgetTree* Tree, FName Name, FLinearColor FillColor,
+														  FLinearColor BackgroundColor, bool bIsVariable)
+{
+	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::ConstructProgressBar — Tree is null")))
+	{
+		return nullptr;
+	}
+
+	UProgressBar* Bar = Tree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), Name);
+	Bar->bIsVariable = bIsVariable;
+	FProgressBarStyle Style = Bar->GetWidgetStyle();
+	Style.BackgroundImage.TintColor = FSlateColor(BackgroundColor);
+	Style.FillImage.TintColor = FSlateColor(FillColor);
+	Bar->SetWidgetStyle(Style);
+	Bar->SetFillColorAndOpacity(FLinearColor::White);
+	Bar->SetPercent(0.f);
+	return Bar;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UOverlaySlot* UGeoWidgetBuilderUtil::AddFillChildToOverlay(UOverlay* Overlay, UWidget* Child)
+{
+	if (!ensureMsgf(Overlay && Child, TEXT("UGeoWidgetBuilderUtil::AddFillChildToOverlay — Overlay or Child is null")))
+	{
+		return nullptr;
+	}
+
+	UOverlaySlot* Slot = Cast<UOverlaySlot>(Overlay->AddChildToOverlay(Child));
+	if (Slot)
+	{
+		Slot->SetHorizontalAlignment(HAlign_Fill);
+		Slot->SetVerticalAlignment(VAlign_Fill);
+	}
+	return Slot;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -35,6 +35,8 @@ private:
 	 * state. Falls back to ±500 when no points are found. */
 	UFUNCTION()
 	void CalculateBounds();
+	UFUNCTION()
+	void OnMatchStateChanged(FName MatchState, FName PreviousMatchState);
 
 	FBox2D Bounds{};
 };

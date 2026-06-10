@@ -40,7 +40,7 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	float GaugeFillThreshold = 100.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
-	float ShieldAmount = 50.f;
+	FScalableFloat ShieldAmount;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ShieldBurst", meta = (AllowPrivateAccess = true))
 	float EnemyBounceMultiplier = 1.5f;

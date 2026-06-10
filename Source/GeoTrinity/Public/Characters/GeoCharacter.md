@@ -8,7 +8,8 @@ Implements `IAbilitySystemInterface` and `IGenericTeamAgentInterface`.
 | `UGeoAbilitySystemComponent` | `AbilitySystemComponent` | GAS — on PlayerState for playable, on self for enemies |
 | `UGeoInputComponent` | `GeoInputComponent` | Enhanced Input; ability bindings |
 | `UGeoCharacterMovementComponent` | (via `GetGeoMovementComponent()`) | Speed multiplier support |
-| `UGeoCombattantWidgetComp` | `CharacterWidgetComponent` | World-space health bar |
+| `USceneComponent` | `WidgetAnchorComponent` | Non-rotating (absolute rotation) anchor; attach all world widgets here, never to the root — root-relative offsets orbit as the capsule yaws |
+| `UGeoCombattantWidgetComp` | `CharacterWidgetComponent` | World-space health bar (under `WidgetAnchorComponent`) |
 | `UGeoGameFeelComponent` | `GameFeelComponent` | Hit flash, recoil |
 
 ## Key methods

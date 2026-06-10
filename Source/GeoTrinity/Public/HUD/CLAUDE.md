@@ -32,7 +32,7 @@ AGeoHUD  (owns OverlayWidget)
 ## Adding HUD Changes
 **Screen-space UI** (boss bar, cooldown): add `BlueprintImplementableEvent` to `AGeoHUD` → implement in HUD BP → forward to `OverlayWidget`.
 
-**World-space UI** (deploy gauge): `UWidgetComponent` on character BP, `Space = Screen`. Ability calls `GetAvatarActor → Cast PlayableCharacter → Show/HideDeployChargeGauge`. No HUD involvement.
+**World-space UI** (deploy gauge): `UWidgetComponent` on character BP, `Space = Screen`. Ability calls `GetAvatarActor → Cast PlayableCharacter → Show/HideDeployChargeGauge`. No HUD involvement. Attach to the actor's `WidgetAnchorComponent` (non-rotating anchor on `AGeoCharacter`/`AGeoDeployableBase`), never to the rotating root — a root-relative offset orbits the actor as it yaws, even in Screen space.
 
 ## `FHudPlayerParams`
 Snapshot held by `AGeoHUD`: `PlayerController`, `PlayerState`, `AbilitySystemComponent`, `AttributeSet`. Access via `GetHudPlayerParams()`.

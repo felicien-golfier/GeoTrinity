@@ -77,6 +77,17 @@ public:
 									   float HeightFraction = 0.08f, float BottomFraction = 0.02f);
 
 	/**
+	 * Builds the WBP_CombattantLifeBar tree: a SizeBox (BarWidth x BarHeight) → Overlay → HealthBar (fill) under
+	 * ShieldBar (fill, semi-transparent cyan). Both progress bars fill the same rect so the shield overlays the health,
+	 * mirroring WBP_MainOverlay. Names match the BindWidgetOptional members on UGenericCombattantWidget; the health color
+	 * is driven at runtime by UpdateHealthRatio, and the shield percent by UpdateShieldRatio (Shield / MaxHealth).
+	 * Compiles and saves the asset.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void BuildCombattantLifeBarWidget(UWidgetBlueprint* WidgetBlueprint, float BarWidth = 100.f,
+											 float BarHeight = 12.f);
+
+	/**
 	 * Builds the WBP_MainMenu connect-screen tree: a centered VerticalBox holding
 	 *   TitleText ("GeoTrinity") ← HostButton (label "Host") ← IPInput (EditableTextBox, hint "Host IP")
 	 *   ← JoinButton (label "Join") ← LocalIPText (host reads this out; bound at runtime to GetLocalIP).

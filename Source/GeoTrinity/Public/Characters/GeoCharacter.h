@@ -92,6 +92,8 @@ public:
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage, FColor Color) const;
 
 protected:
+	virtual void BeginPlay() override;
+
 	//----------------------------------------------------------------------//
 	// GAS START
 	//----------------------------------------------------------------------//
@@ -118,6 +120,11 @@ protected:
 	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly)
 	ETeam TeamId;
 
+	// Non-rotating attachment point for all world widgets: their relative offsets would orbit the actor as the
+	// capsule yaws if attached to the root (absolute rotation alone doesn't fix it — the offset is composed with the
+	// parent rotation before the rotation override applies).
+	TObjectPtr<USceneComponent> WidgetAnchorComponent;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UGeoCombattantWidgetComp> CharacterWidgetComponent;
 
@@ -128,9 +135,6 @@ protected:
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 #ifdef UE_EDITOR
-public:
-	virtual void BeginPlay() override;
-
 private:
 	ENetRole LocalRoleForDebugPurpose = ROLE_None;
 #endif
