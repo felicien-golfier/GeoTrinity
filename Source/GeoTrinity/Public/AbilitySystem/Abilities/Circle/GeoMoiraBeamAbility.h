@@ -12,6 +12,11 @@
 
 #include "GeoMoiraBeamAbility.generated.h"
 
+
+class UNiagaraSystem;
+class ACharacter;
+class UGeoBeamVFXComponent;
+
 /**
  * Fire-and-forget beam ability for the Circle player.
  * Fires on activation and sustains independently of button input until fuel is depleted.
@@ -27,6 +32,10 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	GENERATED_BODY()
 
 	UGeoMoiraBeamAbility();
+
+	/** Server: adds the replicated BeamVFXComponent to the avatar for as long as the ability is granted. */
+	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
+	virtual void OnRemoveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
@@ -45,6 +54,10 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 
 	void DrawBeamDebugLines(float DeltaTime) const;
 #endif
+
+	/** Beam half-width in cm: half the capsule radius, grown by HalfWidthGrowthPerAbsorbedZone per absorbed zone. */
+	float GetCurrentBeamHalfWidth(ACharacter const* Character) const;
+
 	/** Damage applied per second to each enemy inside the beam cylinder. Scales with ability level. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat DamagePerSecond;
@@ -81,6 +94,9 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
 			  meta = (ClampMin = "0", ClampMax = "100", AllowPrivateAccess = true))
 	float BeamZoneDrainPercentagePerSecond = 50.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel")
+	TObjectPtr<UNiagaraSystem> BeamNiagaraSystem;
 
 	FActiveGameplayEffectHandle SpeedBuffHandle;
 

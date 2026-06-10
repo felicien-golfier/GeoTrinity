@@ -24,6 +24,7 @@ Key fields:
 - `HalfWidthGrowthPerAbsorbedZone` — half-width added per fully absorbed zone (cm)
 - `DamageAndHealBoostPerAbsorbedZone` — `1.0 = 100%` damage/heal boost per zone
 - `BeamZoneDrainPercentagePerSecond` — rate at which the beam drains zone health (0..100%/s)
+- `BeamVFXComponentClass` — `UGeoBeamVFXComponent` subclass added to the character on the server in `OnGiveAbility`, destroyed in `OnRemoveAbility`; never cached — fetched via `FindComponentByClass`. `Tick` pushes the current half-width (server write replicates to all clients), `EndAbility` switches it off
 
 Runtime state: `BeamRatio` (grows as zones are absorbed), `RemainingDuration`.
 
