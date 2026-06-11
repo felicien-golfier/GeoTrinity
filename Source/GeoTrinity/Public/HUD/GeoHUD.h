@@ -8,6 +8,7 @@
 
 #include "GeoHUD.generated.h"
 
+class SWidget;
 class UTexture2D;
 class UInputAction;
 class UGeoUserWidget;
@@ -152,10 +153,21 @@ public:
 protected:
 #if !UE_BUILD_SHIPPING
 	virtual void DrawHUD() override;
+	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
 #endif
 
 
 private:
+#if !UE_BUILD_SHIPPING
+	/** Creates, rebuilds, or removes the combat-stats panel so it mirrors the cvar and the current player list. */
+	void UpdateCombatStatsPanel();
+	void RemoveCombatStatsPanel();
+
+	/** Debug per-player DPS/HPS table, top-right of the viewport. Plain Slate: no widget Blueprint asset needed. */
+	TSharedPtr<SWidget> CombatStatsPanel;
+	int32 CombatStatsRowCount = 0;
+#endif
+
 	void BroadcastInitialValues() const;
 	void BindCallbacksToDependencies();
 

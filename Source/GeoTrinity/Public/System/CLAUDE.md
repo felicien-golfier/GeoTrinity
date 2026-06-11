@@ -23,6 +23,6 @@ World subsystem tracking DPS / HPS / damage-received per player using a **10-sec
 - `ReportDamageDealt(PlayerState, Amount)`
 - `ReportDamageReceived(PlayerState, Amount)`
 - `ReportHealingDealt(PlayerState, Amount)`
-- `ComputePlayerStats(CurrentTime)` — prune old events, push stats to `AGeoPlayerState`
+- `ComputePlayerStats(CurrentTime)` — prune old events, update session-best rolling DPS/HPS, push stats to `AGeoPlayerState`
 - Called from `UGeoAttributeSetBase::PostGameplayEffectExecute()` on every damage/heal event
 - Stats stored as `FActorCombatStats` with `TArray<FCombatEventRecord>` per event type

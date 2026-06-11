@@ -87,6 +87,17 @@ void UGeoProjectileAbility::SpawnProjectile(FTransform const& SpawnTransform, fl
 		PredictionKey = GetCurrentActivationInfo().GetActivationPredictionKey();
 	}
 
-	GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload, GetEffectDataArray(),
-								   SpawnServerTime, PredictionKey);
+	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform,
+																StoredPayload, GetEffectDataArray(), PredictionKey);
+	if (!ensureMsgf(Projectile, TEXT("GeoProjectileAbility: Failed to spawn projectile!")))
+	{
+		return;
+	}
+
+	if (bOverrideDistanceSpan)
+	{
+		Projectile->OverrideDistanceSpan(DistanceSpan);
+	}
+
+	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
 }

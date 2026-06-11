@@ -119,7 +119,7 @@ void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 		}
 
 		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
-		if (!TargetASC)
+		if (!IsValid(TargetASC))
 		{
 			continue;
 		}

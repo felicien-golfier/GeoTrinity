@@ -13,7 +13,7 @@ AGeoHUD  (owns OverlayWidget)
 ## Files
 | File | Role |
 |---|---|
-| `GeoHUD.h` | Main HUD; `InitOverlay()`, `BindToPawn()`, `BuildAbilityBar()`, `ShowBossHealthBar()`, attribute delegates, `GetHudPlayerParams()`, ability-bar data helpers (`GetAbilityCooldown`, `IsAbilityActive`, `GetDeployCountForAbility`) |
+| `GeoHUD.h` | Main HUD; `InitOverlay()`, `BindToPawn()`, `BuildAbilityBar()`, `ShowBossHealthBar()`, attribute delegates, `GetHudPlayerParams()`, ability-bar data helpers (`GetAbilityCooldown`, `IsAbilityActive`, `GetDeployCountForAbility`); non-shipping debug combat-stats table (top-right, gated by `Geo.ShowCombatStats`) — pure Slate panel (no WBP asset) built in `UpdateCombatStatsPanel()`, cells poll `AGeoPlayerState` via `TAttribute` lambdas, tree rebuilt from `DrawHUD()` only when the player list changes |
 | `GeoOverlayWidget.h` | Root player overlay; holds `AbilityBar` as BindWidget so the HUD rebuilds it from C++ without Blueprint wiring |
 | `GeoAbilityBarWidget.h` | Bottom-center ability bar widget; builds slots from `GetAbilityBarEntries()`, refreshes deploy badges on HUD ping |
 | `GeoAbilitySlotWidget.h` | Single ability slot: icon + radial cooldown sweep (material) + countdown text + optional deploy count badge + live key-binding label (`KeyText`, queried from Enhanced Input each tick) |

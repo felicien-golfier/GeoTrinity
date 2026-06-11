@@ -15,7 +15,7 @@
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Characters/PlayerClassTypes.h"
-#include "Engine/Canvas.h"
+#include "Engine/GameViewportClient.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerController.h"
 #include "GameClasses/GeoPlayerState.h"
@@ -24,8 +24,15 @@
 #include "HUD/GeoOverlayWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
+#include "Styling/CoreStyle.h"
+#include "Styling/SlateTypes.h"
 #include "System/GeoCombatStatsSubsystem.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/Text/STextBlock.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // FHudPlayerParams
@@ -366,103 +373,176 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 }
 
 #if !UE_BUILD_SHIPPING
+namespace
+{
+// Compact display so the panel stays narrow once totals grow.
+FText CompactNumber(float const Value)
+{
+	return FText::FromString(Value >= 1000.f ? FString::Printf(TEXT("%.1fk"), Value / 1000.f)
+											 : FString::Printf(TEXT("%.0f"), Value));
+}
+
+struct FPlayerClassStyle
+{
+	TCHAR const* Label;
+	FLinearColor Color;
+};
+
+FPlayerClassStyle GetPlayerClassStyle(EPlayerClass const PlayerClass)
+{
+	switch (PlayerClass)
+	{
+	case EPlayerClass::Triangle:
+		return {TEXT("Tri"), FLinearColor(1.f, 0.35f, 0.35f, 1.f)};
+	case EPlayerClass::Circle:
+		return {TEXT("Cir"), FLinearColor(0.35f, 1.f, 0.35f, 1.f)};
+	case EPlayerClass::Square:
+		return {TEXT("Sqr"), FLinearColor(0.45f, 0.65f, 1.f, 1.f)};
+	default:
+		return {TEXT("?"), FLinearColor::White};
+	}
+}
+} // namespace
+
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::DrawHUD()
 {
 	Super::DrawHUD();
 
-	if (!UGeoCombatStatsSubsystem::IsDebugDisplayEnabled() || !Canvas)
-	{
-		return;
-	}
+	UpdateCombatStatsPanel();
+}
 
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::EndPlay(EEndPlayReason::Type const EndPlayReason)
+{
+	RemoveCombatStatsPanel();
+	Super::EndPlay(EndPlayReason);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::UpdateCombatStatsPanel()
+{
 	AGameStateBase const* GameState = GetWorld()->GetGameState();
-	if (!GameState)
+	UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
+	bool const bShow = UGeoCombatStatsSubsystem::IsDebugDisplayEnabled() && Viewport && GameState
+					   && !GameState->PlayerArray.IsEmpty();
+	if (!bShow)
 	{
+		RemoveCombatStatsPanel();
 		return;
 	}
 
-	TArray<AGeoPlayerState const*> PlayerStates;
+	// Cell texts and colors poll their player state through Slate attributes, so the tree only needs rebuilding when
+	// the player list changes.
+	if (CombatStatsPanel && CombatStatsRowCount == GameState->PlayerArray.Num())
+	{
+		return;
+	}
+	RemoveCombatStatsPanel();
+
+	FSlateFontInfo const StatsFont = FCoreStyle::GetDefaultFontStyle("Regular", 12);
+	constexpr float NameColumnWidth = 170.f;
+	constexpr float StatColumnWidth = 48.f;
+
+	auto MakeCell = [&StatsFont](float const Width, TAttribute<FText> Text, TAttribute<FSlateColor> Color)
+	{
+		return SNew(SBox).WidthOverride(Width)
+			[SNew(STextBlock)
+				 .Text(MoveTemp(Text))
+				 .ColorAndOpacity(MoveTemp(Color))
+				 .Font(StatsFont)
+				 .OverflowPolicy(ETextOverflowPolicy::Ellipsis)];
+	};
+
+	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
+
+	FSlateColor const HeaderColor = FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
+	TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox);
+	HeaderRow->AddSlot().AutoWidth()[MakeCell(NameColumnWidth, FText::FromString(TEXT("Player")), HeaderColor)];
+	for (TCHAR const* Label :
+		 {TEXT("DPS"), TEXT("Best"), TEXT("Tot"), TEXT("HPS"), TEXT("Best"), TEXT("Tot"), TEXT("Rcv")})
+	{
+		HeaderRow->AddSlot().AutoWidth()[MakeCell(StatColumnWidth, FText::FromString(Label), HeaderColor)];
+	}
+	Rows->AddSlot().AutoHeight()[HeaderRow];
+
 	for (APlayerState* PlayerState : GameState->PlayerArray)
 	{
-		if (AGeoPlayerState const* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState))
+		AGeoPlayerState const* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState);
+		if (!GeoPlayerState)
 		{
-			PlayerStates.Add(GeoPlayerState);
+			continue;
 		}
-	}
 
-	if (PlayerStates.IsEmpty())
+		TWeakObjectPtr<AGeoPlayerState const> WeakPlayerState = GeoPlayerState;
+		TAttribute<FSlateColor> const RowColor = TAttribute<FSlateColor>::CreateLambda(
+			[WeakPlayerState]() -> FSlateColor
+			{
+				return WeakPlayerState.IsValid() ? GetPlayerClassStyle(WeakPlayerState->GetPlayerClass()).Color
+												 : FLinearColor::White;
+			});
+		TAttribute<FText> NameText = TAttribute<FText>::CreateLambda(
+			[WeakPlayerState]
+			{
+				if (!WeakPlayerState.IsValid())
+				{
+					return FText::GetEmpty();
+				}
+				return FText::FromString(FString::Printf(
+					TEXT("[%s] %s"), GetPlayerClassStyle(WeakPlayerState->GetPlayerClass()).Label,
+					*WeakPlayerState->GetPlayerName()));
+			});
+
+		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox);
+		Row->AddSlot().AutoWidth()[MakeCell(NameColumnWidth, MoveTemp(NameText), RowColor)];
+
+		using FStatGetter = float (AGeoPlayerState::*)() const;
+		for (FStatGetter const Getter :
+			 {&AGeoPlayerState::GetDebugDPS, &AGeoPlayerState::GetBestDPS, &AGeoPlayerState::GetTotalDamageDealt,
+			  &AGeoPlayerState::GetDebugHPS, &AGeoPlayerState::GetBestHPS, &AGeoPlayerState::GetTotalHealingDealt,
+			  &AGeoPlayerState::GetTotalDamageReceived})
+		{
+			TAttribute<FText> StatText = TAttribute<FText>::CreateLambda(
+				[WeakPlayerState, Getter]
+				{
+					return WeakPlayerState.IsValid() ? CompactNumber((WeakPlayerState.Get()->*Getter)())
+													 : FText::GetEmpty();
+				});
+			Row->AddSlot().AutoWidth()[MakeCell(StatColumnWidth, MoveTemp(StatText), RowColor)];
+		}
+		Rows->AddSlot().AutoHeight()[Row];
+	}
+	CombatStatsRowCount = GameState->PlayerArray.Num();
+
+	// Anchored top-right, below the boss health bar which hugs the top edge of the screen.
+	TSharedRef<SConstraintCanvas> Panel =
+		SNew(SConstraintCanvas)
+		+ SConstraintCanvas::Slot()
+			  .Anchors(FAnchors(1.f, 0.08f))
+			  .Alignment(FVector2D(1.f, 0.f))
+			  .Offset(FMargin(-12.f, 0.f, 0.f, 0.f))
+			  .AutoSize(true)
+				  [SNew(SBorder)
+					   .BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					   .BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.65f))
+					   .Padding(FMargin(6.f, 4.f))[Rows]];
+
+	Viewport->AddViewportWidgetContent(Panel);
+	CombatStatsPanel = Panel;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::RemoveCombatStatsPanel()
+{
+	if (!CombatStatsPanel)
 	{
 		return;
 	}
 
-	constexpr float PanelWidth = 600.f;
-	constexpr float RowHeight = 18.f;
-	constexpr float PanelPaddingX = 8.f;
-	constexpr float PanelPaddingY = 8.f;
-	float const PanelHeight = PanelPaddingY + (PlayerStates.Num() + 1) * RowHeight + PanelPaddingY;
-	float const PanelX = Canvas->SizeX - PanelWidth - 16.f;
-	constexpr float PanelY = 16.f;
-
-	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.65f), PanelX, PanelY, PanelWidth, PanelHeight);
-
-	// Column offsets relative to PanelX
-	constexpr float ColPlayer = PanelPaddingX;
-	constexpr float ColDPS = 180.f;
-	constexpr float ColHPS = 240.f;
-	constexpr float ColRecv = 300.f;
-	constexpr float ColTotDmg = 370.f;
-	constexpr float ColTotHeal = 450.f;
-	constexpr float ColTotRecv = 530.f;
-
-	float CurY = PanelY + PanelPaddingY;
-	constexpr FLinearColor HeaderColor(0.8f, 0.8f, 0.8f, 1.f);
-
-	DrawText(TEXT("Player"), HeaderColor, PanelX + ColPlayer, CurY);
-	DrawText(TEXT("DPS"), HeaderColor, PanelX + ColDPS, CurY);
-	DrawText(TEXT("HPS"), HeaderColor, PanelX + ColHPS, CurY);
-	DrawText(TEXT("Recv/s"), HeaderColor, PanelX + ColRecv, CurY);
-	DrawText(TEXT("TotDmg"), HeaderColor, PanelX + ColTotDmg, CurY);
-	DrawText(TEXT("TotHeal"), HeaderColor, PanelX + ColTotHeal, CurY);
-	DrawText(TEXT("TotRecv"), HeaderColor, PanelX + ColTotRecv, CurY);
-	CurY += RowHeight;
-
-	for (AGeoPlayerState const* GeoPlayerState : PlayerStates)
+	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
 	{
-		FLinearColor RowColor;
-		FString ClassName;
-		switch (GeoPlayerState->GetPlayerClass())
-		{
-		case EPlayerClass::Triangle:
-			ClassName = TEXT("Tri");
-			RowColor = FLinearColor(1.f, 0.35f, 0.35f, 1.f);
-			break;
-		case EPlayerClass::Circle:
-			ClassName = TEXT("Cir");
-			RowColor = FLinearColor(0.35f, 1.f, 0.35f, 1.f);
-			break;
-		case EPlayerClass::Square:
-			ClassName = TEXT("Sqr");
-			RowColor = FLinearColor(0.45f, 0.65f, 1.f, 1.f);
-			break;
-		default:
-			ClassName = TEXT("?");
-			RowColor = FLinearColor::White;
-			break;
-		}
-
-		FString const PlayerLabel = FString::Printf(TEXT("[%s] %s"), *ClassName, *GeoPlayerState->GetPlayerName());
-		DrawText(PlayerLabel, RowColor, PanelX + ColPlayer, CurY);
-		DrawText(FString::Printf(TEXT("%.1f"), GeoPlayerState->GetDebugDPS()), RowColor, PanelX + ColDPS, CurY);
-		DrawText(FString::Printf(TEXT("%.1f"), GeoPlayerState->GetDebugHPS()), RowColor, PanelX + ColHPS, CurY);
-		DrawText(FString::Printf(TEXT("%.1f"), GeoPlayerState->GetDebugRecv()), RowColor, PanelX + ColRecv, CurY);
-		DrawText(FString::Printf(TEXT("%.0f"), GeoPlayerState->GetTotalDamageDealt()), RowColor, PanelX + ColTotDmg,
-				 CurY);
-		DrawText(FString::Printf(TEXT("%.0f"), GeoPlayerState->GetTotalHealingDealt()), RowColor, PanelX + ColTotHeal,
-				 CurY);
-		DrawText(FString::Printf(TEXT("%.0f"), GeoPlayerState->GetTotalDamageReceived()), RowColor, PanelX + ColTotRecv,
-				 CurY);
-		CurY += RowHeight;
+		Viewport->RemoveViewportWidgetContent(CombatStatsPanel.ToSharedRef());
 	}
+	CombatStatsPanel.Reset();
 }
 #endif

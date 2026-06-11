@@ -62,8 +62,10 @@ public:
 	float GetDebugDPS() const { return DebugDPS; }
 	/** Returns the rolling average healing-per-second over the last 10 seconds (replicated, for HUD display). */
 	float GetDebugHPS() const { return DebugHPS; }
-	/** Returns the rolling average damage-received-per-second over the last 10 seconds (replicated, for HUD display). */
-	float GetDebugRecv() const { return DebugRecv; }
+	/** Returns the highest rolling DPS reached this session. */
+	float GetBestDPS() const { return BestDPS; }
+	/** Returns the highest rolling HPS reached this session. */
+	float GetBestHPS() const { return BestHPS; }
 	/** Returns the cumulative damage dealt over the session. */
 	float GetTotalDamageDealt() const { return TotalDamageDealt; }
 	/** Returns the cumulative healing dealt over the session. */
@@ -76,16 +78,19 @@ public:
 	 *
 	 * @param DPS      Rolling damage-per-second average.
 	 * @param HPS      Rolling healing-per-second average.
-	 * @param Recv     Rolling damage-received-per-second average.
+	 * @param MaxDPS   Highest rolling DPS reached this session.
+	 * @param MaxHPS   Highest rolling HPS reached this session.
 	 * @param TotDmg   Cumulative damage dealt this session.
 	 * @param TotHeal  Cumulative healing dealt this session.
 	 * @param TotRecv  Cumulative damage received this session.
 	 */
-	void SetDebugCombatStats(float DPS, float HPS, float Recv, float TotDmg, float TotHeal, float TotRecv)
+	void SetDebugCombatStats(float DPS, float HPS, float MaxDPS, float MaxHPS, float TotDmg, float TotHeal,
+							 float TotRecv)
 	{
 		DebugDPS = DPS;
 		DebugHPS = HPS;
-		DebugRecv = Recv;
+		BestDPS = MaxDPS;
+		BestHPS = MaxHPS;
 		TotalDamageDealt = TotDmg;
 		TotalHealingDealt = TotHeal;
 		TotalDamageReceived = TotRecv;
@@ -122,7 +127,9 @@ protected:
 	UPROPERTY(Replicated)
 	float DebugHPS = 0.f;
 	UPROPERTY(Replicated)
-	float DebugRecv = 0.f;
+	float BestDPS = 0.f;
+	UPROPERTY(Replicated)
+	float BestHPS = 0.f;
 	UPROPERTY(Replicated)
 	float TotalDamageDealt = 0.f;
 	UPROPERTY(Replicated)

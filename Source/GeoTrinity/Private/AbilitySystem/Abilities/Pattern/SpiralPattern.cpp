@@ -59,8 +59,9 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 
 			Projectile->Payload = StoredPayload;
 			Projectile->EffectDataArray = EffectDataArray;
-			Projectiles.Add(Projectile);
 			Projectile->OnProjectileEndLifeDelegate.AddUniqueDynamic(this, &USpiralPattern::EndProjectile);
+			Projectile->OverrideDistanceSpan(DistanceSpan);
+			Projectiles.Add(Projectile);
 		}
 
 		AGeoProjectile* Projectile = Projectiles[i];
