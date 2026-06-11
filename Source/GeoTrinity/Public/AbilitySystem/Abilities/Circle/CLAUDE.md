@@ -24,7 +24,8 @@ Key fields:
 - `HalfWidthGrowthPerAbsorbedZone` — half-width added per fully absorbed zone (cm)
 - `DamageAndHealBoostPerAbsorbedZone` — `1.0 = 100%` damage/heal boost per zone
 - `BeamZoneDrainPercentagePerSecond` — rate at which the beam drains zone health (0..100%/s)
-- `BeamVFXComponentClass` — `UGeoBeamVFXComponent` subclass added to the character on the server in `OnGiveAbility`, destroyed in `OnRemoveAbility`; never cached — fetched via `FindComponentByClass`. `Tick` pushes the current half-width (server write replicates to all clients), `EndAbility` switches it off
+- `BeamNiagaraSystem` — Niagara system passed to the `UGeoBeamVFXComponent` in `OnGiveAbility`; assign a BP subclass of `GeoBeamVFXComponent` in the level if custom param names are needed
+- `UGeoBeamVFXComponent` — created via `NewObject` on the server in `OnGiveAbility`, destroyed in `OnRemoveAbility`; never cached — fetched via `FindComponentByClass`. `Tick` calls `SetBeamState` with the current half-width (server write replicates to all clients); `EndAbility` calls `SetBeamState(false, …)` to switch it off
 
 Runtime state: `BeamRatio` (grows as zones are absorbed), `RemainingDuration`.
 

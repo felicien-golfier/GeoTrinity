@@ -36,7 +36,7 @@ Extends `GeoProjectile` + implements `IGeoPoolableInterface`:
 
 ## `GeoShieldBurstProjectile.h` — Square passive
 Bounces off enemies, grants shield on ally contact.
-- `ShieldAmount` — scales with number of enemy bounces (`EnemyBounceMultiplier` per bounce)
+- `ShieldAmount` (`FScalableFloat`) — base shield per burst; scales with ability level and multiplied by each enemy bounce
 - `BounceSnapshot` (`FShieldBounceSnapshot`) — replicated; teleports all clients to post-bounce state
 - `HandleValidOverlap()` — reflect on enemy, shield ally, end on ally contact
 - `OnWallBounce()` — bound to ProjectileMovement bounce delegate

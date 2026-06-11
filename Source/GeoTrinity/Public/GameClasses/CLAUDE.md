@@ -22,8 +22,9 @@ Key fields:
 - `EPlayerClass PlayerClass` — replicated, `OnRep_PlayerClass` triggers class switch visuals
 - Rolling combat stats (replicated): `DebugDPS`, `DebugHPS`, `DebugRecv`, `TotalDamageDealt`, `TotalHealingDealt`, `TotalDamageReceived`
 
-Key flow: `ClientInitialize` → `InitOverlay()` (creates HUD), `OnPlayerPawnSet` delegate → `InitGAS()` on the character + `ApplyClassDataToPawn()` (guards against the race where `OnRep_PlayerClass` fires before the pawn exists).
-`OnRep_PlayerClass` also calls `ApplyClassDataToPawn()` so both replication orders are covered.
+Key flow: `ClientInitialize` → `InitOverlay()` (creates HUD), `OnPlayerPawnSet` delegate → `ApplyClassDataToPawn()` (runs for ALL pawns — covers remote players' class visuals on dedicated servers), then local-player path → `InitGAS()` on the character.
+`OnRep_PlayerClass` also calls `ApplyClassDataToPawn()` so both race orderings (pawn set before class, class set before pawn) are covered.
+`ApplyClassDataToPawn()` early-outs when `PlayerClass == EPlayerClass::None` (server-side: class not yet assigned).
 
 ## `GeoGameState` — Boss fight lifecycle
 
@@ -39,3 +40,5 @@ Key design points:
 - `CommitFightTime` — seconds from arena close to fight commit (players teleported to fight location); read by `AGeoArenaBarrier::TickLerp` as the lerp duration.
 - `DeathTime` — delay (seconds) after a full wipe before transitioning back to WaitingToStart.
 - `FightZoneTagName` / `EntranceZoneTagName` — tag names of exemption volumes; players already inside are skipped during teleport.
+- `CommitFightDelegate` — broadcast when the fight-commit timer fires (players teleported to fight zone).
+- `OnMatchStateChanged` (`FMatchStateChanged`, two params: `MatchState`, `PreviousMatchState`) — broadcast on every match state transition; replaces the old per-state `MatchIsWaitingToStartDelegate`. Subscribe here instead of overriding `OnRep_MatchState` on clients.

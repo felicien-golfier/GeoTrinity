@@ -35,6 +35,7 @@ private:
 	 * state. Falls back to ±500 when no points are found. */
 	UFUNCTION()
 	void CalculateBounds();
+	/** Recalculates camera bounds for the new match state; skips InProgress transitions (CommitFight handles those). */
 	UFUNCTION()
 	void OnMatchStateChanged(FName MatchState, FName PreviousMatchState);
 

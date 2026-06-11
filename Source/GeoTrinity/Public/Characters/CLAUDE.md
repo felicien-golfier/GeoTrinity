@@ -27,5 +27,6 @@ On health ≤ 0, `Death()` (server) sets replicated `bIsDead`, calls `StopAllSpa
 | `GeoDeployableManagerComponent` | Tracks deployables, enforces max count, `ForceExpireAll()` |
 | `GeoGameFeelComponent` | Hit flash, recoil spring, cue rate-limiting |
 | `ShieldBurstPassiveComponent` | Square passive gauge — replicated `GaugeRatio`, `SetGaugeRatio()` |
+| `GeoBeamVFXComponent` | Replicated beam VFX; dynamically added/removed by beam abilities; `SetBeamState` drives the Niagara beam |
 
 See `Component/CLAUDE.md` for full details.

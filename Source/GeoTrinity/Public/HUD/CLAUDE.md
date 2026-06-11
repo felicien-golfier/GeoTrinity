@@ -18,11 +18,11 @@ AGeoHUD  (owns OverlayWidget)
 | `GeoAbilityBarWidget.h` | Bottom-center ability bar widget; builds slots from `GetAbilityBarEntries()`, refreshes deploy badges on HUD ping |
 | `GeoAbilitySlotWidget.h` | Single ability slot: icon + radial cooldown sweep (material) + countdown text + optional deploy count badge + live key-binding label (`KeyText`, queried from Enhanced Input each tick) |
 | `GeoUserWidget.h` | Base widget; `InitFromHUD(AGeoHUD*)`, `BindCallbacksFromHUD` BP event |
-| `GenericCombattantWidget.h` | Reusable health bar for enemies/boss/deployables — **not for player overlay** |
+| `GenericCombattantWidget.h` | Reusable health/shield bar for enemies/boss/deployables — **not for player overlay**; `ShieldBar` overlays `HealthBar` (shield = Shield / MaxHealth) |
 | `GeoDeployChargeGaugeWidget.h` | World-space deploy charge gauge; ticks from ability's `GetChargeRatio()` |
 | `GeoChargeBeamGaugeWidget.h` | World-space charge-beam gauge with sweet-spot overlay bar; bound to `ChargeBeamGaugeComponent` on `PlayableCharacter`; ticks from ability's `GetChargeRatio()` |
 | `HudFunctionLibrary.h` | `ShouldDrawHUD()`, `GetHealthRatio()` |
-| `Component/GeoCombattantWidgetComp.h` | WidgetComponent on actors; auto-inits widget with actor's ASC on BeginPlay |
+| `Component/GeoCombattantWidgetComp.h` | WidgetComponent on actors; binds widget to owner's ASC on `InitWidget`; `BindWidgetToOwnerASC()` is idempotent — call it again once the ASC becomes available |
 | `Menu/GeoMenuButton.h` | Reusable styled button; `BlueprintAssignable OnClicked`; appearance fully configurable via `EditAnywhere` props |
 | `Menu/GeoMainMenuWidget.h` | Lobby menu; 3× `BindWidget UGeoMenuButton` + `BindWidget UGeoCreateServerWidget` + `BindWidget UGeoBrowseServersWidget`; C++ shows/hides the create-server and browse-server panels and handles quit |
 | `Menu/GeoCreateServerWidget.h` | "Create Server" form; fields: ServerNameInput, MapComboBox, SlotsComboBox, LanguageComboBox, PrivacyComboBox, CreateButton, BackButton (all BindWidget); `BlueprintAssignable OnClosed` delegate fires on Back; session creation logic fully in C++; sets SERVER_NAME, LANGUAGE, MAP session keys; data arrays (MapDisplayNames, MapURLs, SlotOptions, LanguageOptions) set via `EditAnywhere` in BP |

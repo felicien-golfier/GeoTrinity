@@ -43,7 +43,9 @@ public:
 
 	/** Spawns the local NiagaraComponent on rendering machines and applies any already-replicated BeamState. */
 	virtual void BeginPlay() override;
+	/** Destroys the locally-spawned NiagaraComponent before delegating to Super. */
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+	/** Registers BeamState and BeamSystem for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/**
@@ -51,6 +53,7 @@ public:
 	 * owning client may also call it for lag-free local visuals (its write only feeds the local NiagaraComponent).
 	 */
 	void SetBeamState(bool bActive, float Width, float Length);
+	/** Assigns the Niagara system before BeginPlay; call from the owning ability's OnGiveAbility. */
 	void SetNiagaraSystem(TObjectPtr<UNiagaraSystem> const Object) { BeamSystem = Object; };
 
 private:
