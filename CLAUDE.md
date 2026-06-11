@@ -60,7 +60,7 @@ Source/GeoTrinity/
 │   │   ├── GeoClassChangeTrigger.h
 │   │   └── GeoInteractableActor.h
 │   ├── Characters/
-│   │   ├── Component/         # GeoCharacterMovementComponent, GeoDeployableManagerComponent, GeoGameFeelComponent, ShieldBurstPassiveComponent
+│   │   ├── Component/         # GeoCharacterMovementComponent, GeoDeployableManagerComponent, GeoGameFeelComponent, ShieldBurstPassiveComponent, GeoBeamVFXComponent
 │   │   ├── GeoCharacter.h
 │   │   ├── PlayableCharacter.h
 │   │   ├── EnemyCharacter.h

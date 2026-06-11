@@ -36,6 +36,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsSuppressHealProvided() const { return bSuppressHealProvided; }
 	/** Returns true when the GameplayCue embedded in the applied effect should be skipped (used for rate-limiting). */
 	bool IsSuppressGameplayCue() const { return bSuppressGameplayCue; }
+	/** Returns true when the damage/heal should not be reported to UGeoCombatStatsSubsystem. */
 	bool IsSuppressCombatStats() const { return bSuppressCombatStats; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
@@ -54,6 +55,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetSuppressHealProvided(bool value) { bSuppressHealProvided = value; }
 	/** When true, the GameplayCue embedded in the applied effect will be suppressed. Use to rate-limit cues on tick-based effects. */
 	void SetSuppressGameplayCue(bool value) { bSuppressGameplayCue = value; }
+	/** When true, skips reporting damage/heal to the DPS/HPS meter in UGeoCombatStatsSubsystem. */
 	void SetSuppressCombatStats(bool value) { bSuppressCombatStats = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }

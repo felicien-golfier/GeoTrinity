@@ -35,6 +35,7 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 
 	/** Server: adds the replicated BeamVFXComponent to the avatar for as long as the ability is granted. */
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
+	/** Destroys the BeamVFXComponent previously added to the avatar. */
 	virtual void OnRemoveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;

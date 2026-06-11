@@ -3,14 +3,14 @@
 Level-specific actors.
 
 ## `GeoGameCamera.h`
-Orthographic top-down camera (pitch = -90).
+Orthographic follow camera for GeoTrinity.
 
-**Edge-triggered follow**: stationary until player nears a screen edge, then smoothly follows.
+**Always follows** the local player with exponential smoothing (`FollowInterpSpeed`, default 5) — no edge-trigger dead zone.
+World-space movement bounds are computed from `AGeoTargetPoint` actors tagged `Camera.Bounds` for the current match state.
+Camera decelerates naturally near borders (clamped target shrinks the interp gap). Z is fixed to spawn height.
 
-Fields:
-- `BoundsMin / BoundsMax` — world-space camera movement limits (`FVector2D`, default ±500)
-- `ScreenEdgeThresholdPercent` — fraction of screen half-extent defining trigger zone (default 0.05)
-- `FollowSpeedCurve` (`UCurveVector`) — X/Y follow speed driven by edge proximity distance
+- Bounds recalculate on `CommitFightDelegate` (fight start) and on `OnMatchStateChanged` for any state except the InProgress transition (CommitFight handles that)
+- `FollowInterpSpeed` — exponential follow speed; higher = snappier. Range 2–8 typical
 
 Follows the **local player only** — not a centroid of all players.
 

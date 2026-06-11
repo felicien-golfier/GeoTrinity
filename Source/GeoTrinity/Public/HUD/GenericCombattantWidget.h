@@ -33,6 +33,7 @@ protected:
 	void UpdateHealthRatio(float NewHealthRatio);
 	virtual void UpdateHealthRatio_Implementation(float NewHealthRatio);
 
+	/** Updates the ShieldBar fill to NewShieldRatio (Shield / MaxHealth). */
 	UFUNCTION(BlueprintNativeEvent)
 	void UpdateShieldRatio(float NewShieldRatio);
 	virtual void UpdateShieldRatio_Implementation(float NewShieldRatio);
