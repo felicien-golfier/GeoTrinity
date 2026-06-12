@@ -11,7 +11,8 @@ Projectile-firing ability base classes.
 - Cost committed **once at activation** (one activation = one shot)
 - `Fire()` → client spawns predicted projectile
 - `OnFireTargetDataReceived()` → server spawns authoritative projectile
-- `SpawnProjectile()` — virtual override point for custom projectile initialization
+- `SpawnProjectile()` — virtual override point for custom projectile initialization; uses `StartSpawnProjectile` + `FinishSpawnProjectile` to allow per-projectile property injection mid-spawn
+- `bOverrideDistanceSpan` / `DistanceSpan` — when enabled, calls `Projectile->OverrideDistanceSpan(DistanceSpan)` between start- and finish-spawn; lets a BP subclass set a different travel range per ability without subclassing the projectile
 - `SpawnProjectilesUsingTarget()` — spawns one projectile per direction from `GetTargetDirections()`
 - `GetTargetDirections()` — returns directions based on target mode (Forward, AllPlayers, etc.)
 

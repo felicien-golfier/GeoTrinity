@@ -153,6 +153,7 @@ public:
 protected:
 #if !UE_BUILD_SHIPPING
 	virtual void DrawHUD() override;
+	/** Removes the combat-stats panel from the viewport before calling Super. */
 	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
 #endif
 
@@ -161,6 +162,7 @@ private:
 #if !UE_BUILD_SHIPPING
 	/** Creates, rebuilds, or removes the combat-stats panel so it mirrors the cvar and the current player list. */
 	void UpdateCombatStatsPanel();
+	/** Removes the Slate combat-stats panel from the viewport and resets panel state. */
 	void RemoveCombatStatsPanel();
 
 	/** Debug per-player DPS/HPS table, top-right of the viewport. Plain Slate: no widget Blueprint asset needed. */

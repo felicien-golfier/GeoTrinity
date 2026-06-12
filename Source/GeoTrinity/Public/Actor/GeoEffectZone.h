@@ -22,12 +22,19 @@ class GEOTRINITY_API AGeoEffectZone : public AGeoInteractableActor
 	GENERATED_BODY()
 
 public:
+	/** Disables damage on this actor so it cannot be destroyed during play. */
 	AGeoEffectZone();
 
 protected:
+	/** Returns the interactable data populated from Details-panel properties in OnConstruction and BeginPlay. */
 	virtual FInteractableActorData const* GetData() const override { return &Data; }
 
+	/** Pushes Team/Level into Data and updates the capsule dimensions to match Radius. */
 	virtual void OnConstruction(FTransform const& Transform) override;
+	/**
+	 * Self-initializes GAS using this actor as owner (no spawner sets this up for editor-placed actors).
+	 * On the server: starts the repeating timer that calls ApplyEffectsToActorsInZone every TickInterval seconds.
+	 */
 	virtual void BeginPlay() override;
 
 private:

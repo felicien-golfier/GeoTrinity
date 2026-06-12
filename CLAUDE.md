@@ -58,6 +58,7 @@ Source/GeoTrinity/
 │   │   ├── Deployable/        # GeoDeployableBase, GeoMine, GeoHealingZone, GeoBuffPickup
 │   │   ├── Turret/            # GeoTurret
 │   │   ├── GeoClassChangeTrigger.h
+│   │   ├── GeoEffectZone.h
 │   │   └── GeoInteractableActor.h
 │   ├── Characters/
 │   │   ├── Component/         # GeoCharacterMovementComponent, GeoDeployableManagerComponent, GeoGameFeelComponent, ShieldBurstPassiveComponent, GeoBeamVFXComponent

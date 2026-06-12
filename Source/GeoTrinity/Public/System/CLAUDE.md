@@ -20,9 +20,10 @@ Interface actors must implement to be poolable:
 
 ### `GeoCombatStatsSubsystem.h`
 World subsystem tracking DPS / HPS / damage-received per player using a **10-second rolling window**:
-- `ReportDamageDealt(PlayerState, Amount)`
-- `ReportDamageReceived(PlayerState, Amount)`
-- `ReportHealingDealt(PlayerState, Amount)`
+- `OnWorldBeginPlay` — server-only: subscribes to `GeoGameState::OnMatchStateChanged` to reset all stats when a fight starts (`MatchState::InProgress`)
+- `ReportDamageDealt(PlayerState, Amount)` — adds a timestamped event to the rolling window
+- `ReportDamageReceived(PlayerState, Amount)` — increments the session total only (no rolling window for received damage)
+- `ReportHealingDealt(PlayerState, Amount)` — adds a timestamped event to the rolling window
 - `ComputePlayerStats(CurrentTime)` — prune old events, update session-best rolling DPS/HPS, push stats to `AGeoPlayerState`
 - Called from `UGeoAttributeSetBase::PostGameplayEffectExecute()` on every damage/heal event
-- Stats stored as `FActorCombatStats` with `TArray<FCombatEventRecord>` per event type
+- `FActorCombatStats` holds `TArray<FCombatEventRecord>` for DamageDealt and HealingDealt; TotalDamageReceived is a plain running total (not a rolling window)
