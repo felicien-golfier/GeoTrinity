@@ -47,7 +47,15 @@ When a rebuild changes the root panel's class (e.g. Overlay to VerticalBox), ren
 
 ## Appending a Child to an Existing Tree
 
-To add one named child into an existing tree without rebuilding it, do not clear the root or the GUID map — existing widgets keep their GUIDs. Register a fresh GUID for the new child's name yourself, since the compiler mints GUIDs only when the map is empty. Make the add reuse-safe by removing any existing widget of that name first. See `GeoWidgetBuilderUtil.cpp` (`AddChildToCanvasPanel`).
+To add one named child into an existing tree without rebuilding it, do not clear the root or the GUID map — existing widgets keep their GUIDs. Register a fresh GUID for the new child's name yourself, since the compiler mints GUIDs only when the map is empty. The compiler's verify pass requires a GUID for every appended widget, including layout-only ones like spacers — not just the bound child. Make the add reuse-safe by removing any existing widget of that name first. See `GeoWidgetBuilderUtil.cpp` (`AddChildToCanvasPanel`).
+
+To insert at a specific position rather than appending, use the panel's insert-at-index call with the index of an existing sibling. See `GeoHudWidgetBuilderUtil.cpp` (`AddLocalConnectToMainMenu`).
+
+---
+
+## Child User-Widget Templates Ignore Later CDO Edits
+
+A user-widget template constructed inside another widget's tree holds its own property values; setting a default on the child class CDO afterwards does not reach it. Set the property on the template object inside the parent asset (what the designer's Details panel edits) and save the parent. Re-running a builder that reconstructs the template requires re-applying such per-template values. See `AI/Python/local_connect_menu.py` (`set_child_template_property`).
 
 ---
 

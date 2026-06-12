@@ -34,7 +34,8 @@ public class GeoTrinity : ModuleRules
 			"Niagara",
 			"OnlineSubsystem",
 			"AdvancedSessions",
-			"AdvancedSteamSessions"
+			"AdvancedSteamSessions",
+			"Sockets"
 		});
 
 		if (Target.bBuildEditor)

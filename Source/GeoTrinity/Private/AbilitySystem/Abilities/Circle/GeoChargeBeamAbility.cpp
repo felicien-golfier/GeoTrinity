@@ -19,7 +19,10 @@ UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoChargeBeamAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
 {
-	Character->SetChargeBeamGaugeVisible(this, bVisible, SweetSpotMinRatio, SweetSpotMaxRatio);
+	if (!GeoLib::IsDedicatedServer(this))
+	{
+		Character->SetChargeBeamGaugeVisible(this, bVisible, SweetSpotMinRatio, SweetSpotMaxRatio);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

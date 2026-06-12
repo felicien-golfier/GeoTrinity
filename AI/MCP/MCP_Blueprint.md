@@ -28,6 +28,12 @@ A boolean property's `b` prefix is dropped in its Python name.
 
 Resolve a class by its script path with the class loader; there is no find-by-name helper.
 
+A soft-object-pointer property takes the loaded asset object as its value; passing a soft-object-path value fails type conversion.
+
+A class absent from the Python module can still be reached by loading its CDO via the script path with the `Default__` prefix; its reflected functions are callable with the by-name method caller, which also works for static function libraries.
+
+A byte property backed by an unexposed enum cannot be read or written from Python, and the Remote Control API refuses private properties — changing one needs a C++ shim.
+
 ## Editing a Struct Array
 
 Elements read from a struct array are by-value copies, so mutating one in place does not write back.

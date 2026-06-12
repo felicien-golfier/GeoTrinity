@@ -22,6 +22,8 @@ Write the durable value to the relevant `Config/Default*.ini` section directly; 
 
 The editor loads each config section only at startup, so an ini edit made while it runs is ignored. Run the `ReloadConfig` console command on the settings class to make the running editor re-read the section.
 
+Per-user editor settings (the saved-config hierarchy, e.g. play-session settings) are re-saved from live values when editor sessions change state, so disk edits get overwritten and a config reload does not apply them; automating such a setting needs a C++ shim.
+
 ---
 
 ## Map and Struct Properties

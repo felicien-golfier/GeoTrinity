@@ -31,6 +31,8 @@ AGeoPlayerController::AGeoPlayerController(FObjectInitializer const& ObjectIniti
 void AGeoPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	CurrentMouseCursor = EMouseCursor::Crosshairs;
+	SetInputMode(FInputModeGameOnly());
 	SetViewTarget(UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass()));
 
 	if (ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player))
