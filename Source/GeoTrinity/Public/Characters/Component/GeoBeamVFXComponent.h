@@ -59,6 +59,8 @@ public:
 private:
 	UFUNCTION()
 	void OnRep_BeamState() const;
+	UFUNCTION()
+	void CreateNiagaraComponent();
 
 	/** Pushes BeamState into the local NiagaraComponent (activation + user parameters). No-op on dedicated server. */
 	void ApplyBeamState() const;
@@ -66,7 +68,7 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_BeamState)
 	FBeamVFXState BeamState;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = CreateNiagaraComponent)
 	TObjectPtr<UNiagaraSystem> BeamSystem;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BeamVFX")
