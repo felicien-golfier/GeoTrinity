@@ -15,6 +15,7 @@ class UGeoMenuButton;
 class UGeoServerRowWidget;
 class UProgressBar;
 class UScrollBox;
+struct FBlueprintSessionResult;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoBrowseServersClosedSignature);
 
@@ -44,7 +45,13 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Server")
+	void BP_FindSessions();
 
+	UFUNCTION(BlueprintCallable, Category = "Server")
+	void PopulateListFromBP(TArray<FBlueprintSessionResult> const& ListOfResults);
+	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UEditableTextBox> SearchInput;
 

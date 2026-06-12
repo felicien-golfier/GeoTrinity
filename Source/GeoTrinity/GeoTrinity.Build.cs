@@ -33,6 +33,7 @@ public class GeoTrinity : ModuleRules
 			"UMG",
 			"Niagara",
 			"OnlineSubsystem",
+			"OnlineSubsystemUtils",
 			"AdvancedSessions",
 			"AdvancedSteamSessions"
 		});

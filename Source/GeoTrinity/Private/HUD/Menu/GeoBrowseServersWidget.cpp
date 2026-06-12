@@ -13,6 +13,7 @@
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "OnlineSubsystemUtils/Classes/FindSessionsCallbackProxy.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBrowseServersWidget::NativeConstruct()
@@ -84,8 +85,23 @@ void UGeoBrowseServersWidget::NativeDestruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoBrowseServersWidget::PopulateListFromBP(TArray<FBlueprintSessionResult> const& ListOfResults)
+{
+	CachedResults.Empty();
+	for (const FBlueprintSessionResult& Result : ListOfResults)
+	{
+		CachedResults.Add(Result.OnlineResult);
+	}
+	
+	PopulateServerList();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoBrowseServersWidget::StartFindSessions()
 {
+	BP_FindSessions();
+	return;
+	/*
 	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
 	if (!OnlineSubsystem)
 	{
@@ -102,20 +118,20 @@ void UGeoBrowseServersWidget::StartFindSessions()
 	SessionSearch = MakeShareable(new FOnlineSessionSearch());
 	SessionSearch->MaxSearchResults = 100;
 	SessionSearch->bIsLanQuery = false;
-
+	*/
 	/*
 	const FString SelectedLanguage = LanguageComboBox->GetSelectedOption();
 	if (!SelectedLanguage.IsEmpty() && SelectedLanguage != TEXT("All"))
 	{
 		SessionSearch->QuerySettings.Set(FName("LANGUAGE"), SelectedLanguage, EOnlineComparisonOp::Equals);
 	}*/
-
+	/*
 	FindSessionsDelegateHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(
 		FOnFindSessionsCompleteDelegate::CreateUObject(this, &UGeoBrowseServersWidget::OnFindSessionsComplete)
 	);
 
 	SetSearchInProgress(true);
-	Sessions->FindSessions(0, SessionSearch.ToSharedRef());
+	Sessions->FindSessions(0, SessionSearch.ToSharedRef());*/
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
