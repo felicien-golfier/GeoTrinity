@@ -36,8 +36,8 @@ Always seed randomness from `Payload.Seed`.
 
 ## `SpiralPattern.h` — concrete spiral example
 
-Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`
-- Spawns projectiles in expanding circular sprays
+Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`, `DistanceSpan`
+- Spawns projectiles in expanding circular sprays; calls `Projectile->OverrideDistanceSpan(DistanceSpan)` per projectile
 - Tracks active projectiles; auto-ends them on actor destruction
 
 ---
