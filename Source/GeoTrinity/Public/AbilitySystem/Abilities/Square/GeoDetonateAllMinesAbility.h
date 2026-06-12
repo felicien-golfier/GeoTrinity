@@ -19,6 +19,6 @@ protected:
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Detonate", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	float DetonationMultiplier = 2.f;
 };

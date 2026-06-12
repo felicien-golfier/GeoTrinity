@@ -37,4 +37,5 @@ void AGeoMainMenuPlayerController::BeginPlay()
 	InputMode.SetWidgetToFocus(MenuWidget->TakeWidget());
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	SetInputMode(InputMode);
+	CurrentMouseCursor = EMouseCursor::Default;
 }

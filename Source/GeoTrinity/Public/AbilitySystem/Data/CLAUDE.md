@@ -14,8 +14,8 @@ Data assets and structs that configure abilities and effects.
 
 | Type | What it does |
 |---|---|
-| `FDamageEffectData` | Flat damage. `bSuppressGameplayCue` suppresses hit flash |
-| `FHealEffectData` | Flat heal. `bSuppressHealProvided` suppresses `OnHealProvided` delegate. `bSuppressGameplayCue` suppresses heal visual |
+| `FDamageEffectData` | Flat damage. `bSuppressGameplayCue` suppresses hit flash. `bSuppressCombatStats` skips the DPS meter |
+| `FHealEffectData` | Flat heal. `bSuppressHealProvided` suppresses `OnHealProvided` delegate. `bSuppressGameplayCue` suppresses heal visual. `bSuppressCombatStats` skips the HPS meter |
 | `FShieldEffectData` | Flat shield amount |
 | `FGameplayEffectData` | Applies arbitrary `UGameplayEffect` with SetByCaller magnitude/duration |
 | `FSingleUseDamageMultiplierEffectData` | Sets `SingleUseDamageMultiplier` on context in `UpdateContextHandle`. Read by `ExecCalc_Damage`. **Do NOT read in `FDamageEffectData::ApplyEffect`** |

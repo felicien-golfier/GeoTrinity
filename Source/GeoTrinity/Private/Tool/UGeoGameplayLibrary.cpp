@@ -55,6 +55,21 @@ bool UGeoGameplayLibrary::IsServer(UWorld const* World)
 	return World->IsNetMode(NM_DedicatedServer) || World->IsNetMode(NM_ListenServer);
 }
 
+bool UGeoGameplayLibrary::IsDedicatedServer(UObject const* WorldContextObject)
+{
+	if (!WorldContextObject)
+	{
+		ensureMsgf(false, TEXT("WorldContextObject is invalid!"));
+		return false;
+	}
+	return IsDedicatedServer(WorldContextObject->GetWorld());
+}
+
+bool UGeoGameplayLibrary::IsDedicatedServer(UWorld const* World)
+{
+	return World->IsNetMode(NM_DedicatedServer);
+}
+
 float UGeoGameplayLibrary::GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing)
 {
 	if (!WorldContextObject)

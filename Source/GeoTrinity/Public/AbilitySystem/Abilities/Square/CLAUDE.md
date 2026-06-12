@@ -17,7 +17,7 @@ Auto-attack damage dealt fills a gauge; at 100% a shield burst is sent to nearby
 
 Key fields:
 - `GaugeFillThreshold` — damage needed to fill gauge
-- `ShieldAmount` — shield granted per burst
+- `ShieldAmount` (`FScalableFloat`) — shield granted per burst; scales with ability level
 - `EnemyBounceMultiplier` — multiplier applied to `AGeoShieldBurstProjectile` per enemy bounce
 - `ChargeTime = 1s` — wind-up before burst fires
 

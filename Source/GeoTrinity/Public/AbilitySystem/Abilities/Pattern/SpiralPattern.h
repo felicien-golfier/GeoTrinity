@@ -31,8 +31,9 @@ protected:
 	float TimeForOneRound;
 	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
 	float RoundNumber;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
+	float DistanceSpan = 2000.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
 	TSubclassOf<AGeoProjectile> ProjectileClass;
 
 	UPROPERTY(Transient)

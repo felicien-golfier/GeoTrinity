@@ -2,7 +2,10 @@
 
 #include "System/GeoCombatStatsSubsystem.h"
 
+#include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerState.h"
+#include "GameFramework/GameMode.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 #if !UE_BUILD_SHIPPING
 static TAutoConsoleVariable<bool>
@@ -14,6 +17,41 @@ bool UGeoCombatStatsSubsystem::IsDebugDisplayEnabled()
 	return CVarShowCombatStats.GetValueOnGameThread();
 }
 #endif
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoCombatStatsSubsystem::OnWorldBeginPlay(UWorld& InWorld)
+{
+	Super::OnWorldBeginPlay(InWorld);
+
+	// Server-only: stats are recorded and pushed from the server. No AGeoGameState in menu worlds — legitimate skip.
+	AGeoGameState* GameState = InWorld.GetGameState<AGeoGameState>();
+	if (GeoLib::IsServer(&InWorld) && GameState)
+	{
+		GameState->OnMatchStateChanged.AddUniqueDynamic(this, &UGeoCombatStatsSubsystem::OnMatchStateChanged);
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoCombatStatsSubsystem::OnMatchStateChanged(FName MatchState, FName /*PreviousMatchState*/)
+{
+	if (MatchState == MatchState::InProgress)
+	{
+		ResetStats();
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoCombatStatsSubsystem::ResetStats()
+{
+	for (TPair<TWeakObjectPtr<AGeoPlayerState>, FActorCombatStats> const& Pair : StatsPerActor)
+	{
+		if (AGeoPlayerState* GeoPlayerState = Pair.Key.Get())
+		{
+			GeoPlayerState->SetDebugCombatStats(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+		}
+	}
+	StatsPerActor.Empty();
+}
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float Amount)
@@ -34,9 +72,7 @@ void UGeoCombatStatsSubsystem::ReportDamageReceived(AGeoPlayerState* Target, flo
 	{
 		return;
 	}
-	float const CurrentTime = GetWorld()->GetTimeSeconds();
-	FActorCombatStats& Stats = StatsPerActor.FindOrAdd(Target);
-	RecordEvent(Stats.DamageReceived, Stats.TotalDamageReceived, Amount, CurrentTime);
+	StatsPerActor.FindOrAdd(Target).TotalDamageReceived += Amount;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -66,12 +102,14 @@ void UGeoCombatStatsSubsystem::ComputePlayerStats(float CurrentTime)
 		FActorCombatStats& Stats = It.Value();
 		PruneEvents(Stats.DamageDealt, CurrentTime);
 		PruneEvents(Stats.HealingDealt, CurrentTime);
-		PruneEvents(Stats.DamageReceived, CurrentTime);
 
-		GeoPlayerState->SetDebugCombatStats(SumEvents(Stats.DamageDealt) / RollingWindowSeconds,
-											SumEvents(Stats.HealingDealt) / RollingWindowSeconds,
-											SumEvents(Stats.DamageReceived) / RollingWindowSeconds,
-											Stats.TotalDamageDealt, Stats.TotalHealingDealt, Stats.TotalDamageReceived);
+		float const DPS = SumEvents(Stats.DamageDealt) / RollingWindowSeconds;
+		float const HPS = SumEvents(Stats.HealingDealt) / RollingWindowSeconds;
+		Stats.BestDPS = FMath::Max(Stats.BestDPS, DPS);
+		Stats.BestHPS = FMath::Max(Stats.BestHPS, HPS);
+
+		GeoPlayerState->SetDebugCombatStats(DPS, HPS, Stats.BestDPS, Stats.BestHPS, Stats.TotalDamageDealt,
+											Stats.TotalHealingDealt, Stats.TotalDamageReceived);
 	}
 }
 

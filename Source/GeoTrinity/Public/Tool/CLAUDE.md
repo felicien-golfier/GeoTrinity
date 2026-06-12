@@ -8,6 +8,9 @@ Blueprint-callable static helpers:
 **Server check** — always use this:
 - `IsServer(UObject*)` / `IsServer(UWorld*)` — true on dedicated server and listen server. Never use `HasAuthority()` or `IsNetMode(NM_DedicatedServer)`.
 
+**Render/cosmetic gate** — use for visuals, NOT `!IsServer()`:
+- `IsDedicatedServer(UObject*)` / `IsDedicatedServer(UWorld*)` — true only on a dedicated server (no viewport). Gate cosmetic-only work (montages, local Gameplay Cues, VFX) with `if (!IsDedicatedServer(...))`. `!IsServer()` wrongly skips the listen-server **host**, which is a rendering player — that bug makes boss montages/cues invisible to the host only.
+
 **Time**:
 - `GetServerTime(WorldContext, bUpdatedWithPing)` — network-approximated server time. **Never use for local client timing** (charge duration, UI) — use `GetWorld()->GetTimeSeconds()` instead.
 
@@ -48,12 +51,14 @@ Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` — generic, reusable wid
 - `SetImageRootFromMaterial` — like `SetImageRoot` but draws a material (e.g. a luminance-to-alpha mask) instead of a raw texture
 - `InspectWidgetBlueprint` — logs the full widget tree (type, name, slot layout, widget properties) to `LogTemp`
 
-Building-block helpers for content builders (public but not `UFUNCTION`): `BeginBuild` (validate/mark/clear root), `FinishBuild` (compile/save), `ConstructRootPanel`, `AddChildToCanvasPanel`, `AddCenteredChildToVerticalBox(VerticalBox, Child, Padding)` (center-aligned slot with padding), `ConstructLabeledButton(Tree, Name, LabelText)` (Button + TextBlock label).
+Building-block helpers for content builders (public but not `UFUNCTION`): `BeginBuild` (validate/mark/clear root), `FinishBuild` (compile/save), `ConstructRootPanel`, `AddChildToCanvasPanel`, `AddCenteredChildToVerticalBox(VerticalBox, Child, Padding)` (center-aligned slot with padding), `ConstructLabeledButton(Tree, Name, LabelText)` (Button + TextBlock label), `ConstructProgressBar(Tree, Name, FillColor, BackgroundColor, bIsVariable)` (styled empty ProgressBar, LeftToRight default; set `bIsVariable` when C++ BindWidgets it), `AddFillChildToOverlay(Overlay, Child)` (fill/fill overlay slot covering the full rect).
 
 ## `GeoHudWidgetBuilderUtil.h`
 Editor-only (`#if WITH_EDITOR`) `UEditorUtilityObject` — content-specific HUD widget-tree builders that compose the generic primitives from `GeoWidgetBuilderUtil.h`. New per-widget builders go here.
 - `BuildAbilitySlotWidget(Blueprint, SquareSize, KeyLabelPlacement)` — builds WBP_AbilitySlot tree: SizeBox ("Square") → Icon / CooldownSweep / CountdownText / CountText, plus a `KeyText` live key-binding label placed per `EAbilitySlotKeyLabelPlacement` (`Below` = VerticalBox root, label under the square (default); `OverlayBottom` = label bottom-center over the icon; `None` = no label). Names match BindWidget members on `UGeoAbilitySlotWidget`
 - `BuildAbilityBarWidget(Blueprint)` — builds WBP_AbilityBar tree: Overlay root with centered SlotBox HorizontalBox (BindWidget on `UGeoAbilityBarWidget`)
 - `BuildChargeBeamGaugeWidget(Blueprint, SweetSpotMinRatio, SweetSpotMaxRatio)` — builds WBP_ChargeBeamGauge tree (ChargeBar + SweetSpotBar overlay on CanvasPanel)
+- `BuildCombattantLifeBarWidget(Blueprint, BarWidth, BarHeight)` — builds WBP_CombattantLifeBar tree: SizeBox root (BarWidth × BarHeight) → Overlay → `HealthBar` (fill) under `ShieldBar` (fill, semi-transparent cyan). Both bars fill the same rect so shield overlays health, matching `WBP_MainOverlay`. Names match `BindWidgetOptional` members on `UGenericCombattantWidget`; shield percent driven by `UpdateShieldRatio` (Shield / MaxHealth)
 - `AddAbilityBarToOverlay(Blueprint, ParentPanelName, AbilityBarClass, fractions)` — adds AbilityBarClass child named "AbilityBar" to the overlay's CanvasPanel, anchored bottom-center, sized as fractions of the canvas
-- `BuildMainMenuWidget(Blueprint)` — builds WBP_MainMenu connect-screen: Overlay root → centered VerticalBox → TitleText / HostButton / IPInput / JoinButton / LocalIPText; BindWidget names match `UGeoMenuWidget` BP members
+- `BuildLocalConnectWidget(Blueprint, MenuButtonClass)` — builds WBP_LocalConnect ("Play Local" direct-IP panel): Overlay root → centered VerticalBox → HostButton / IPInput / JoinButton / LocalIPText / BackButton; buttons are `MenuButtonClass` (UGeoMenuButton WBP) instances with per-instance labels; names match BindWidgets on `UGeoLocalConnectWidget`
+- `AddLocalConnectToMainMenu(Blueprint, ParentPanelName, ButtonsBoxName, MenuButtonClass, LocalConnectClass)` — appends to the existing WBP_MainMenuWidget without rebuilding: PlayLocalButton + spacer inserted above QuitButton in `ButtonsBoxName`, LocalConnectClass added centered on the canvas as "LocalConnectWidget"; re-run-safe

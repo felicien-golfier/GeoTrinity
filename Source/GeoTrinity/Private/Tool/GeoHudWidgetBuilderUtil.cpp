@@ -16,8 +16,10 @@
 #include "Components/ProgressBar.h"
 #include "Components/ScaleBox.h"
 #include "Components/SizeBox.h"
+#include "Components/Spacer.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
+#include "HUD/Menu/GeoMenuButton.h"
 #include "Tool/GeoWidgetBuilderUtil.h"
 #include "WidgetBlueprint.h"
 
@@ -164,16 +166,9 @@ void UGeoHudWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* Widg
 	constexpr float BarHeight = 80.f;
 
 	// --- ChargeBar: full-width, dark-blue fill ---
-	UProgressBar* ChargeBar = Tree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("ChargeBar"));
-	{
-		FProgressBarStyle Style = ChargeBar->GetWidgetStyle();
-		Style.BackgroundImage.TintColor = FSlateColor(FLinearColor(0.1f, 0.4f, 1.0f, .5f));
-		Style.FillImage.TintColor = FSlateColor(FLinearColor(0.1f, 0.4f, 1.0f, 1.0f));
-		ChargeBar->SetWidgetStyle(Style);
-	}
-	ChargeBar->SetFillColorAndOpacity(FLinearColor::White);
+	UProgressBar* ChargeBar = UGeoWidgetBuilderUtil::ConstructProgressBar(
+		Tree, TEXT("ChargeBar"), FLinearColor(0.1f, 0.4f, 1.0f, 1.0f), FLinearColor(0.1f, 0.4f, 1.0f, 0.5f));
 	ChargeBar->SetBarFillType(EProgressBarFillType::BottomToTop);
-	ChargeBar->SetPercent(0.f);
 
 	UCanvasPanelSlot* ChargeSlot = Canvas->AddChildToCanvas(ChargeBar);
 	ChargeSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
@@ -181,13 +176,8 @@ void UGeoHudWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* Widg
 	ChargeSlot->SetAlignment(FVector2D(0.f, 0.f));
 
 	// --- SweetSpotBar: narrow golden overlay at the sweet-spot window ---
-	UProgressBar* SweetSpotBar = Tree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("SweetSpotBar"));
-	{
-		FProgressBarStyle Style = SweetSpotBar->GetWidgetStyle();
-		Style.BackgroundImage.TintColor = FSlateColor(FLinearColor(1.f, 0.75f, 0.0f, 0.5f));
-		Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, 0.75f, 0.0f, 1.0f));
-		SweetSpotBar->SetWidgetStyle(Style);
-	}
+	UProgressBar* SweetSpotBar = UGeoWidgetBuilderUtil::ConstructProgressBar(
+		Tree, TEXT("SweetSpotBar"), FLinearColor(1.0f, 0.75f, 0.0f, 1.0f), FLinearColor(1.f, 0.75f, 0.0f, 0.5f));
 	SweetSpotBar->SetBarFillType(EProgressBarFillType::BottomToTop);
 	SweetSpotBar->SetPercent(1.f);
 
@@ -237,15 +227,80 @@ void UGeoHudWidgetBuilderUtil::AddAbilityBarToOverlay(UWidgetBlueprint* WidgetBl
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoHudWidgetBuilderUtil::BuildMainMenuWidget(UWidgetBlueprint* WidgetBlueprint)
+void UGeoHudWidgetBuilderUtil::BuildCombattantLifeBarWidget(UWidgetBlueprint* WidgetBlueprint, float BarWidth,
+															float BarHeight)
 {
-	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildMainMenuWidget"));
+	// Preserve the existing bar dimensions if the asset already has a sized root, so the rebuild keeps the same footprint.
+	if (UWidgetTree* OldTree = WidgetBlueprint->WidgetTree)
+	{
+		OldTree->ForEachWidget(
+			[&BarWidth, &BarHeight](UWidget* Widget)
+			{
+				if (USizeBox* SizeBox = Cast<USizeBox>(Widget))
+				{
+					if (SizeBox->IsWidthOverride())
+					{
+						BarWidth = SizeBox->GetWidthOverride();
+					}
+					if (SizeBox->IsHeightOverride())
+					{
+						BarHeight = SizeBox->GetHeightOverride();
+					}
+				}
+			});
+	}
+
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildCombattantLifeBarWidget"));
 	if (!Tree)
 	{
 		return;
 	}
 
-	// Root Overlay fills the screen; the menu VerticalBox is centered inside it so the stack of controls sits in the middle.
+	// Root SizeBox fixes the bar footprint; the Overlay stacks the shield bar over the health bar in the same rect.
+	USizeBox* Root =
+		Cast<USizeBox>(UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, USizeBox::StaticClass(), TEXT("Root")));
+	Root->SetWidthOverride(BarWidth);
+	Root->SetHeightOverride(BarHeight);
+
+	UOverlay* Stack = Tree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Stack"));
+	Root->AddChild(Stack);
+
+	// HealthBar — fills the rect; its fill color is set at runtime by UGenericCombattantWidget::UpdateHealthRatio (white
+	// default, opaque background so the empty portion reads as the depleted track).
+	UProgressBar* HealthBar = UGeoWidgetBuilderUtil::ConstructProgressBar(
+		Tree, TEXT("HealthBar"), FLinearColor::White, FLinearColor(1.f, 1.f, 1.f, 1.f), /*bIsVariable*/ true);
+	UGeoWidgetBuilderUtil::AddFillChildToOverlay(Stack, HealthBar);
+
+	// ShieldBar — same rect over the health bar, semi-transparent cyan fill so the health shows through, transparent
+	// background so it draws only the filled portion. Percent is shield-as-fraction-of-max-health (UpdateShieldRatio).
+	UProgressBar* ShieldBar =
+		UGeoWidgetBuilderUtil::ConstructProgressBar(Tree, TEXT("ShieldBar"), FLinearColor(0.4f, 0.8f, 1.f, 0.6f),
+													FLinearColor(0.f, 0.f, 0.f, 0.f), /*bIsVariable*/ true);
+	UGeoWidgetBuilderUtil::AddFillChildToOverlay(Stack, ShieldBar);
+
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_CombattantLifeBar (%.0fx%.0f, shield over health)"),
+		   BarWidth, BarHeight);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::BuildLocalConnectWidget(UWidgetBlueprint* WidgetBlueprint,
+													   TSubclassOf<UUserWidget> MenuButtonClass)
+{
+	if (!ensureMsgf(MenuButtonClass && MenuButtonClass->IsChildOf(UGeoMenuButton::StaticClass()),
+					TEXT("BuildLocalConnectWidget — MenuButtonClass must derive from UGeoMenuButton")))
+	{
+		return;
+	}
+
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildLocalConnectWidget"));
+	if (!Tree)
+	{
+		return;
+	}
+
+	// Root Overlay fills the panel rect; the VerticalBox is centered inside it so the stack of controls sits in the middle.
 	UOverlay* Root = Cast<UOverlay>(UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, UOverlay::StaticClass(), TEXT("Root")));
 
 	UVerticalBox* Menu = Tree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("Menu"));
@@ -255,35 +310,114 @@ void UGeoHudWidgetBuilderUtil::BuildMainMenuWidget(UWidgetBlueprint* WidgetBluep
 		MenuSlot->SetVerticalAlignment(VAlign_Center);
 	}
 
-	// Each control is added center-aligned with a little vertical breathing room. HostButton/IPInput/JoinButton/LocalIPText
-	// are flagged as BP variables (bIsVariable) so the WBP_MainMenu graph and the C++ BindWidget members can reach them;
-	// the layout-only widgets stay unflagged.
 	FMargin const RowPadding(0.f, 8.f);
 
-	UTextBlock* TitleText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleText"));
-	TitleText->SetText(FText::FromString(TEXT("GeoTrinity")));
-	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, TitleText, RowPadding);
+	auto AddMenuButton = [Tree, Menu, &MenuButtonClass, &RowPadding](FName Name, TCHAR const* Label)
+	{
+		UGeoMenuButton* Button = Cast<UGeoMenuButton>(Tree->ConstructWidget<UUserWidget>(MenuButtonClass, Name));
+		Button->Label = FText::FromString(Label);
+		Button->bIsVariable = true;
+		UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, Button, RowPadding);
+	};
 
-	UButton* HostButton = UGeoWidgetBuilderUtil::ConstructLabeledButton(Tree, TEXT("HostButton"), FText::FromString(TEXT("Host")));
-	HostButton->bIsVariable = true;
-	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, HostButton, RowPadding);
+	AddMenuButton(TEXT("HostButton"), TEXT("Host"));
 
 	UEditableTextBox* IPInput = Tree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("IPInput"));
 	IPInput->bIsVariable = true;
+	// Defaults to loopback so Join works out of the box for same-machine testing.
+	IPInput->SetText(FText::FromString(TEXT("127.0.0.1")));
 	IPInput->SetHintText(FText::FromString(TEXT("Host IP")));
+	IPInput->SetJustification(ETextJustify::Center);
+	// The default theme draws light-gray text on the light box — force black, sized to match the menu buttons.
+	FEditableTextBoxStyle Style = IPInput->GetWidgetStyle();
+	Style.SetForegroundColor(FSlateColor(FLinearColor::Black));
+	Style.TextStyle.Font.Size = 22;
+	IPInput->SetWidgetStyle(Style);
 	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, IPInput, RowPadding);
 
-	UButton* JoinButton = UGeoWidgetBuilderUtil::ConstructLabeledButton(Tree, TEXT("JoinButton"), FText::FromString(TEXT("Join")));
-	JoinButton->bIsVariable = true;
-	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, JoinButton, RowPadding);
+	AddMenuButton(TEXT("JoinButton"), TEXT("Join"));
 
 	UTextBlock* LocalIPText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("LocalIPText"));
 	LocalIPText->bIsVariable = true;
 	UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(Menu, LocalIPText, RowPadding);
 
+	AddMenuButton(TEXT("BackButton"), TEXT("Back"));
+
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_MainMenu (centered connect screen)"));
+	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_LocalConnect (centered Play Local panel)"));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
+														 FName ButtonsBoxName, TSubclassOf<UUserWidget> MenuButtonClass,
+														 TSubclassOf<UUserWidget> LocalConnectClass)
+{
+	if (!ensureMsgf(WidgetBlueprint && LocalConnectClass, TEXT("AddLocalConnectToMainMenu — null arg")) ||
+		!ensureMsgf(MenuButtonClass && MenuButtonClass->IsChildOf(UGeoMenuButton::StaticClass()),
+					TEXT("AddLocalConnectToMainMenu — MenuButtonClass must derive from UGeoMenuButton")))
+	{
+		return;
+	}
+
+	UWidgetTree* Tree = WidgetBlueprint->WidgetTree;
+	UVerticalBox* ButtonsBox = Tree ? Cast<UVerticalBox>(Tree->FindWidget(ButtonsBoxName)) : nullptr;
+	if (!ensureMsgf(ButtonsBox, TEXT("AddLocalConnectToMainMenu — no VerticalBox named '%s' in '%s'"),
+					*ButtonsBoxName.ToString(), *WidgetBlueprint->GetName()))
+	{
+		return;
+	}
+
+	Tree->Modify();
+	WidgetBlueprint->Modify();
+
+	// Re-run-safe: drop a previous run's widgets so the add rebuilds cleanly instead of duplicating.
+	if (UWidget* Existing = Tree->FindWidget(TEXT("PlayLocalButton")))
+	{
+		Existing->RemoveFromParent();
+	}
+	if (UWidget* Existing = Tree->FindWidget(TEXT("PlayLocalSpacer")))
+	{
+		Existing->RemoveFromParent();
+	}
+
+	// Insert PlayLocalButton + spacer just above QuitButton, keeping the box's button/spacer rhythm.
+	UGeoMenuButton* PlayLocalButton =
+		Cast<UGeoMenuButton>(Tree->ConstructWidget<UUserWidget>(MenuButtonClass, TEXT("PlayLocalButton")));
+	PlayLocalButton->Label = FText::FromString(TEXT("Play Local"));
+	PlayLocalButton->bIsVariable = true;
+
+	USpacer* Spacer = Tree->ConstructWidget<USpacer>(USpacer::StaticClass(), TEXT("PlayLocalSpacer"));
+	Spacer->SetSize(FVector2D(1.f, 10.f));
+
+	int32 InsertIndex = ButtonsBox->GetChildIndex(Tree->FindWidget(TEXT("QuitButton")));
+	if (InsertIndex == INDEX_NONE)
+	{
+		InsertIndex = ButtonsBox->GetChildrenCount();
+	}
+	ButtonsBox->InsertChildAt(InsertIndex, Spacer);
+	ButtonsBox->InsertChildAt(InsertIndex, PlayLocalButton);
+
+	// Appending to a built asset: the compiler only mints GUIDs when the map is empty, and its verify pass requires one
+	// for EVERY added widget (variable or not), so register both here (AddChildToCanvasPanel does it for
+	// LocalConnectWidget below).
+	WidgetBlueprint->WidgetVariableNameToGuidMap.Add(TEXT("PlayLocalButton"), FGuid::NewGuid());
+	WidgetBlueprint->WidgetVariableNameToGuidMap.Add(TEXT("PlayLocalSpacer"), FGuid::NewGuid());
+
+	UCanvasPanelSlot* PanelSlot = UGeoWidgetBuilderUtil::AddChildToCanvasPanel(WidgetBlueprint, ParentPanelName,
+																			   LocalConnectClass, TEXT("LocalConnectWidget"));
+	if (!PanelSlot)
+	{
+		return;
+	}
+	PanelSlot->SetAnchors(FAnchors(0.5f, 0.5f, 0.5f, 0.5f));
+	PanelSlot->SetAlignment(FVector2D(0.5f, 0.5f));
+	PanelSlot->SetAutoSize(true);
+
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added PlayLocalButton + LocalConnectWidget (%s) to '%s'"),
+		   *LocalConnectClass->GetName(), *WidgetBlueprint->GetName());
 }
 
 #endif // WITH_EDITOR

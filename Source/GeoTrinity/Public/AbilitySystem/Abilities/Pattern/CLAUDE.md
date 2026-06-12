@@ -36,8 +36,8 @@ Always seed randomness from `Payload.Seed`.
 
 ## `SpiralPattern.h` — concrete spiral example
 
-Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`
-- Spawns projectiles in expanding circular sprays
+Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`, `DistanceSpan`
+- Spawns projectiles in expanding circular sprays; calls `Projectile->OverrideDistanceSpan(DistanceSpan)` per projectile
 - Tracks active projectiles; auto-ends them on actor destruction
 
 ---
@@ -63,3 +63,10 @@ Non-projectile ticking pattern. On `StartPattern`, teleports the owner to `Store
 - `MaxRadius` — stops the wave at this distance (default 3000)
 - Effect data: sourced from ability's `GetEffectDataArray()` — configure on `GeoDevastatingWaveAbility`, not here
 - Used by `UGeoDevastatingWaveAbility`
+
+**Masked AOE VFX** (every rendering machine, gated `!IsDedicatedServer`):
+- `OnCreate` spawns the `AOEVfxSystem` (NS_PillarsAOE) component once, deactivated with `bAutoDestroy = false` — the pattern instance is reused across activations, and so is the component.
+- `StartPattern` (the moment the wave starts expanding) resets the 8 `PillarPosWS_XX` slots of `MaskMaterialParameterCollection` (MPC_MaskedArea) to the unused sentinel `(-10000, -10000, -10000, 0)` — the MPC is global state shared across waves — then moves the component to the wave origin, sets its user params (`AOE_Radius = MaxRadius`, `AOE_GrowDuration = MaxRadius / ExpansionSpeed`, plus editable `FadeOutDuration` / `AOEColor`) and calls `Activate(true)`.
+- Pillar detection runs on **all machines** in `TickPattern` (not just the server): deterministic since pillars are static replicated actors and the radius derives from server time. Each pillar the wave front reaches is appended to `PillarsWaveData` and its world position written to the next MPC slot (`AddPillarToVfxMask`), cutting a safe-zone shadow out of the AOE material. Damage application remains server-only.
+- `EndPattern` deactivates the spawned Niagara component: graceful `Deactivate()` on a natural end (lets the fade-out play), `DeactivateImmediate()` on force-stop — a graceful deactivate would let the AOE particle live out its full grow+fade lifetime and linger after an interrupt.
+- BP wiring lives in `BP_DevastatingWavePattern` (`AOEVfxSystem`, `MaskMaterialParameterCollection`).

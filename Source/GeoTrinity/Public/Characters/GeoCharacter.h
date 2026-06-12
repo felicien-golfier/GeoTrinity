@@ -82,12 +82,18 @@ public:
 	/** Returns the controller cast to AGeoPlayerController, or nullptr if controlled by AI or a different type. */
 	AGeoPlayerController* GetGeoPlayerController() const { return Cast<AGeoPlayerController>(GetController()); }
 
+	/** Shows or hides this character's floating combatant widget (the bar above its head). Used to hide the boss's
+	 *  floating bar while the dedicated on-screen boss bar is displayed. */
+	void SetCombattantWidgetVisible(bool bVisible);
+
 	/** Draws an arrow in the default debug color starting from the character's location. */
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const;
 	/** Draws an arrow in the given color starting from the character's location. */
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage, FColor Color) const;
 
 protected:
+	virtual void BeginPlay() override;
+
 	//----------------------------------------------------------------------//
 	// GAS START
 	//----------------------------------------------------------------------//
@@ -114,6 +120,11 @@ protected:
 	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly)
 	ETeam TeamId;
 
+	// Non-rotating attachment point for all world widgets: their relative offsets would orbit the actor as the
+	// capsule yaws if attached to the root (absolute rotation alone doesn't fix it — the offset is composed with the
+	// parent rotation before the rotation override applies).
+	TObjectPtr<USceneComponent> WidgetAnchorComponent;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UGeoCombattantWidgetComp> CharacterWidgetComponent;
 
@@ -124,9 +135,6 @@ protected:
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 #ifdef UE_EDITOR
-public:
-	virtual void BeginPlay() override;
-
 private:
 	ENetRole LocalRoleForDebugPurpose = ROLE_None;
 #endif

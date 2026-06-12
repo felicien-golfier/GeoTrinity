@@ -33,8 +33,9 @@ void UShieldBurstPassiveComponent::BeginPlay()
 		return;
 	}
 
-	// No material set on server
-	if (!GeoLib::IsServer(GetWorld()))
+	// Material is cosmetic: set it on every rendering machine including the listen-server host. Only the dedicated
+	// server (no viewport) skips it.
+	if (!GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		InitializeMaterialInstances();
 	}

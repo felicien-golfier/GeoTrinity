@@ -35,7 +35,8 @@ public class GeoTrinity : ModuleRules
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"AdvancedSessions",
-			"AdvancedSteamSessions"
+			"AdvancedSteamSessions",
+			"Sockets"
 		});
 
 		if (Target.bBuildEditor)

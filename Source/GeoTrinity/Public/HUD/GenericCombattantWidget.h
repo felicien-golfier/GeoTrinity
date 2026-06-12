@@ -33,6 +33,11 @@ protected:
 	void UpdateHealthRatio(float NewHealthRatio);
 	virtual void UpdateHealthRatio_Implementation(float NewHealthRatio);
 
+	/** Updates the ShieldBar fill to NewShieldRatio (Shield / MaxHealth). */
+	UFUNCTION(BlueprintNativeEvent)
+	void UpdateShieldRatio(float NewShieldRatio);
+	virtual void UpdateShieldRatio_Implementation(float NewShieldRatio);
+
 	UFUNCTION(BlueprintNativeEvent)
 	void UpdateHealthBarVisibility();
 	virtual void UpdateHealthBarVisibility_Implementation();
@@ -45,8 +50,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> HealthBar;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UProgressBar> ShieldBar;
+
 private:
 	void BindStatCallbacks();
 	UFUNCTION()
 	void OnHealthChanged(float NewValue);
+	/** Recomputes the shield bar as Shield / MaxHealth (shield is capped at MaxHealth by design — no MaxShield). */
+	void RefreshShield();
 };

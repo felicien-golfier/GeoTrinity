@@ -36,7 +36,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Shield magnitude applied to allies on contact. Scales up with each enemy bounce. */
-	float ShieldAmount = 0.f;
+	FScalableFloat ShieldAmount = 0.f;
 	/** Factor applied to both ShieldAmount and sphere radius each time the projectile bounces off an enemy. */
 	float EnemyBounceMultiplier;
 

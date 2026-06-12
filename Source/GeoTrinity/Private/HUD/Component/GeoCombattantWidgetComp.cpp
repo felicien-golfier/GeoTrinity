@@ -20,25 +20,33 @@ void UGeoCombattantWidgetComp::PostInitProperties()
 }
 
 
-// Called when the game starts
-void UGeoCombattantWidgetComp::BeginPlay()
+void UGeoCombattantWidgetComp::InitWidget()
 {
-	Super::BeginPlay();
+	Super::InitWidget();
+	BindWidgetToOwnerASC();
+}
+
+void UGeoCombattantWidgetComp::BindWidgetToOwnerASC() const
+{
+	UGenericCombattantWidget* CombattantWidget = Cast<UGenericCombattantWidget>(GetUserWidgetObject());
+	if (!CombattantWidget)
+	{
+		return;
+	}
 
 	AActor const* OwnerActor = GetOwner();
-	if (OwnerActor->Implements<UAbilitySystemInterface>())
-	{
-		UAbilitySystemComponent* ASC = Cast<IAbilitySystemInterface>(OwnerActor)->GetAbilitySystemComponent();
-		if (UGenericCombattantWidget* CombattantWidget = Cast<UGenericCombattantWidget>(GetUserWidgetObject()))
-		{
-			CombattantWidget->InitializeWithAbilitySystemComponent(ASC);
-		}
-	}
-	else
+	if (!OwnerActor->Implements<UAbilitySystemInterface>())
 	{
 		UE_LOG(LogGeoASC, Warning,
 			   TEXT("IAbilitySystemInterface was not implemented on owner actor %s for %s. No stat will be displayed"),
 			   *OwnerActor->GetName(), *GetName());
+		return;
+	}
+
+	// A null ASC is expected before GAS init (re-bound later via InitializeForOwner), so it is a no-op, not an error.
+	if (UAbilitySystemComponent* ASC = Cast<IAbilitySystemInterface>(OwnerActor)->GetAbilitySystemComponent())
+	{
+		CombattantWidget->InitializeWithAbilitySystemComponent(ASC);
 	}
 }
 
@@ -57,6 +65,4 @@ void UGeoCombattantWidgetComp::TickComponent(float DeltaTime, ELevelTick TickTyp
 											 FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }

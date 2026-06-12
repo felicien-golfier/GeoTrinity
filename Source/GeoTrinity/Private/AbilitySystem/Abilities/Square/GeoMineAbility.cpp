@@ -29,11 +29,11 @@ void UGeoMineAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle 
 											   FGameplayTag ApplicationTag)
 {
 	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
-	Params.Value = SourceASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
+	float const PreviousHealth = SourceASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
 
 	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(GetEffectDataArray(), SourceASC, SourceASC,
 														StoredPayload.AbilityLevel, StoredPayload.Seed);
-	Params.Value = Params.Value - SourceASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
+	Params.Value = PreviousHealth - SourceASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
 
 	Super::OnFireTargetDataReceived(DataHandle, ApplicationTag);
 }

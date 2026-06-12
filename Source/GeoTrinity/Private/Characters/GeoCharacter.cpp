@@ -33,9 +33,15 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	GeoInputComponent = CreateDefaultSubobject<UGeoInputComponent>(TEXT("Geo Input Component"));
 	GeoInputComponent->SetIsReplicated(true);
 
+	WidgetAnchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("WidgetAnchorComponent"));
+	WidgetAnchorComponent->SetupAttachment(GetRootComponent());
+	WidgetAnchorComponent->SetUsingAbsoluteRotation(true);
+
 	CharacterWidgetComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("CharacterWidgetComponent"));
-	CharacterWidgetComponent->SetupAttachment(GetRootComponent());
+	CharacterWidgetComponent->SetupAttachment(WidgetAnchorComponent);
 	CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	CharacterWidgetComponent->SetDrawAtDesiredSize(true);
+	CharacterWidgetComponent->SetRelativeLocation(FVector(100.f, 0.f, 0.f));
 
 	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>(TEXT("GameFeelComponent"));
 
@@ -79,6 +85,14 @@ UAbilitySystemComponent* AGeoCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+void AGeoCharacter::SetCombattantWidgetVisible(bool const bVisible)
+{
+	if (CharacterWidgetComponent)
+	{
+		CharacterWidgetComponent->SetHiddenInGame(!bVisible);
+	}
+}
+
 void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage) const
 {
 	DrawDebugVectorFromCharacter(Direction, DebugMessage, GeoLib::GetColorForObject(this));
@@ -109,12 +123,21 @@ void AGeoCharacter::InitGAS()
 	{
 		AbilitySystemComponent->GiveStartupAbilities();
 	}
+
+	// The floating bar's component binds in BeginPlay, before attributes exist, so it collapses reading MaxHealth as 0.
+	// On clients replication later fires the change delegate and re-shows it, but the listen-server host sets
+	// attributes synchronously with no replication callback — so (re)bind now that attributes are initialized.
+	// (APlayableCharacter overrides InitGAS and calls this itself; InitializeForOwner is idempotent.)
+	CharacterWidgetComponent->BindWidgetToOwnerASC();
 }
 
-#ifdef UE_EDITOR
 void AGeoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	// Don't draw a floating bar over our own avatar — the local player uses the main HUD overlay.
+	// Enemies are never locally controlled, so this is a no-op for them.
+	SetCombattantWidgetVisible(!IsLocallyControlled());
+#ifdef UE_EDITOR
 	LocalRoleForDebugPurpose = GetLocalRole();
-}
 #endif
+}

@@ -19,7 +19,10 @@ UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoChargeBeamAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
 {
-	Character->SetChargeBeamGaugeVisible(this, bVisible, SweetSpotMinRatio, SweetSpotMaxRatio);
+	if (!GeoLib::IsDedicatedServer(this))
+	{
+		Character->SetChargeBeamGaugeVisible(this, bVisible, SweetSpotMinRatio, SweetSpotMaxRatio);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -119,7 +122,7 @@ void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 		}
 
 		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
-		if (!TargetASC)
+		if (!IsValid(TargetASC))
 		{
 			continue;
 		}

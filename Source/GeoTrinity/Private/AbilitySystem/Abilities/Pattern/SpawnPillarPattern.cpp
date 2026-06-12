@@ -83,7 +83,8 @@ void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload)
 }
 void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 {
-	if (GameplayCueTag.IsValid() && !GeoLib::IsServer(GetWorld()))
+	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
+	if (GameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
 		if (!IsValid(InstigatorASC))

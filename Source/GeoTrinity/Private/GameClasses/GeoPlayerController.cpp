@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "System/GeoCombatStatsSubsystem.h"
 #include "TimerManager.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 #if !UE_BUILD_SHIPPING
 static bool bShowPing = false;
@@ -30,6 +31,8 @@ AGeoPlayerController::AGeoPlayerController(FObjectInitializer const& ObjectIniti
 void AGeoPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	CurrentMouseCursor = EMouseCursor::Crosshairs;
+	SetInputMode(FInputModeGameOnly());
 	SetViewTarget(UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass()));
 
 	if (ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player))
@@ -71,7 +74,7 @@ void AGeoPlayerController::Tick(float DeltaTime)
 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Green, FString::Printf(TEXT("Ping: %.0f ms"), Ping));
 	}
 
-	if (HasAuthority() && UGeoCombatStatsSubsystem::IsDebugDisplayEnabled())
+	if (GeoLib::IsServer(this) && UGeoCombatStatsSubsystem::IsDebugDisplayEnabled())
 	{
 		if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
 		{

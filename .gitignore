@@ -81,5 +81,8 @@ DerivedDataCache/*
 __pycache__/
 *.pyc
 
+# Claude
 # Bleve search index (rebuildable derived data; root.bolt is held open by Claude)
 docs/index.bleve/
+# Claude Code scheduled-tasks lock (transient, session-specific)
+.claude/scheduled_tasks.lock

@@ -45,6 +45,10 @@ void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectCon
 	{
 		EffectContext->SetSuppressGameplayCue(true);
 	}
+	if (bSuppressCombatStats)
+	{
+		EffectContext->SetSuppressCombatStats(true);
+	}
 }
 
 FActiveGameplayEffectHandle FDamageEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
@@ -78,6 +82,10 @@ void FHealEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectConte
 	if (bSuppressGameplayCue)
 	{
 		EffectContext->SetSuppressGameplayCue(true);
+	}
+	if (bSuppressCombatStats)
+	{
+		EffectContext->SetSuppressCombatStats(true);
 	}
 }
 

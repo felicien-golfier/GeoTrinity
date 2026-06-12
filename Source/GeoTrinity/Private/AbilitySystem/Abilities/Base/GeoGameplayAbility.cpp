@@ -373,7 +373,8 @@ FVector UGeoGameplayAbility::GetFireOrigin(AActor* Instigator, UGeoAbilitySystem
 
 void UGeoGameplayAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
 {
-	if (!GeoLib::IsServer(this))
+	// Gauge is local UI: show on every rendering machine incl. the listen-server host; skip only the dedicated server.
+	if (!GeoLib::IsDedicatedServer(this))
 	{
 		Character->SetDeployChargeGaugeVisibility(this, bVisible);
 	}

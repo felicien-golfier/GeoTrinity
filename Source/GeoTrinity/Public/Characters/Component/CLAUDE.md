@@ -30,6 +30,14 @@ Attached to all characters. Centralizes cosmetic reactions — never drives game
 - `IsDamageCueAvailable()` / `IsHealCueAvailable()` — rate-limit cue triggers; check before firing a Gameplay Cue
 - Auto-discovers owner's first mesh on `BeginPlay` (`TargetMesh`)
 
+## `GeoBeamVFXComponent.h`
+Replicated beam-VFX holder, dynamically added by a beam ability on the server in `OnGiveAbility` (`NewObject` + `RegisterComponent`) and destroyed in `OnRemoveAbility` — it exists for as long as the ability is granted, and is toggled on/off per activation. Generic: reusable by any beam ability.
+
+- `SetBeamState(bActive, HalfWidth, Length)` — writes replicated `FBeamVFXState`. The **server** write replicates to everyone; the owning client may also call it for lag-free local visuals
+- Each rendering machine (clients + listen host; dedicated server skips) spawns a local non-replicated `UNiagaraComponent` in `BeginPlay`, attached to the owner's **root** so the beam rotates with aim
+- `OnRep_BeamState` → `ApplyBeamState()`: `SetActive` + pushes `User.BeamHalfWidth` / `User.BeamLength` (param names editable per BP subclass)
+- `BeamSystem` (`UNiagaraSystem`) must be assigned in the BP subclass defaults; author the system **local-space pointing +X**
+
 ## `ShieldBurstPassiveComponent.h`
 Dynamically added to Square while `GeoShieldBurstPassiveAbility` is active. Removed when ability ends.
 

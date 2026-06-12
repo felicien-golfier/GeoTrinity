@@ -110,6 +110,10 @@ struct FDamageEffectData : public FEffectData
 	/** When true, suppresses the GameplayCue embedded in the DamageEffect GE. Set by callers to rate-limit cues on tick-based effects. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
+
+	/** When true, the damage is not reported to the DPS meter (UGeoCombatStatsSubsystem). Use for self-inflicted drains. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bSuppressCombatStats{false};
 };
 
 /** Applies a flat heal amount. Sets bSuppressHealProvided on the context when configured. */
@@ -135,6 +139,10 @@ struct FHealEffectData : public FEffectData
 	/** When true, suppresses the GameplayCue embedded in the HealthEffect GE. Set by callers to rate-limit cues on tick-based effects. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
+
+	/** When true, the heal is not reported to the HPS meter (UGeoCombatStatsSubsystem). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bSuppressCombatStats{false};
 };
 
 /** Applies a flat shield amount to the target. */
