@@ -27,7 +27,7 @@ Attached to all characters. Centralizes cosmetic reactions — never drives game
 
 - `FlashOnHit()` — flashes mesh with HitFlashMaterial for HitFlashDuration
 - `ApplyRecoil(float Distance)` — kicks mesh backward opposite to yaw, springs back at `RecoilRecoverySpeed = 14`
-- `IsDamageCueAvailable()` / `IsHealCueAvailable()` — rate-limit cue triggers; check before firing a Gameplay Cue
+- `IsDamageCueAvailable()` / `IsHealCueAvailable()` — rate-limit cue triggers; consumed by `ExecCalc_Damage` / `ExecCalc_Heal` when `bLimitGameplayCue` is set on the effect data — don't call from effect call sites
 - Auto-discovers owner's first mesh on `BeginPlay` (`TargetMesh`)
 
 ## `GeoBeamVFXComponent.h`

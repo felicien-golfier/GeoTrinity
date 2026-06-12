@@ -6,8 +6,6 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Characters/Component/GeoGameFeelComponent.h"
-#include "GameFramework/Character.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void UGeoHealReturnPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
@@ -67,14 +65,7 @@ void UGeoHealReturnPassiveAbility::OnHealProvidedCallback(float HealDone)
 	FHealEffectData HealEffect;
 	HealEffect.HealAmount = FScalableFloat(HealDone * SelfHealPercent);
 	HealEffect.bSuppressHealProvided = true;
-
-	ACharacter const* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
-	UGeoGameFeelComponent* GameFeelComponent =
-		Character ? Character->FindComponentByClass<UGeoGameFeelComponent>() : nullptr;
-	if (ensureMsgf(GameFeelComponent, TEXT("UGeoHealReturnPassiveAbility: avatar has no GeoGameFeelComponent")))
-	{
-		HealEffect.bSuppressGameplayCue = !GameFeelComponent->IsHealCueAvailable();
-	}
+	HealEffect.bLimitGameplayCue = true;
 
 	UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, SourceASC, GetAbilityLevel(),
 													StoredPayload.Seed);

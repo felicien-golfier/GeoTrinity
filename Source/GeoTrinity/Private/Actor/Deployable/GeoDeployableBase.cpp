@@ -6,7 +6,6 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
-#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -152,8 +151,8 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		FDamageEffectData DrainEffectData;
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
-		DrainEffectData.bSuppressGameplayCue =
-			bSuppressDrainDamageVisuals ? true : !GameFeelComponent->IsDamageCueAvailable();
+		DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
+		DrainEffectData.bLimitGameplayCue = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed);
 	}
 }

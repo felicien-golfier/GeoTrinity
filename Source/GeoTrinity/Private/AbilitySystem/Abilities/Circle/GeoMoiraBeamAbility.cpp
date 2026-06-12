@@ -7,7 +7,6 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/HealingZone/GeoHealingZone.h"
 #include "Characters/Component/GeoBeamVFXComponent.h"
-#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
@@ -203,14 +202,6 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			continue;
 		}
 
-		UGeoGameFeelComponent* GameFeel = Target->FindComponentByClass<UGeoGameFeelComponent>();
-		if (!IsValid(GameFeel))
-		{
-			ensureMsgf(GameFeel, TEXT("UGeoMoiraBeamAbility: Actor %s has no GeoGameFeelComponent"),
-					   *Target->GetName());
-			continue;
-		}
-
 		if (Target->IsA<AGeoHealingZone>()) // We get the Healing zones.
 		{
 			AGeoHealingZone* Zone = CastChecked<AGeoHealingZone>(Target);
@@ -242,7 +233,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 				FDamageEffectData DamageEffect;
 				DamageEffect.DamageAmount =
 					DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BoostPerAbsorbedZone * DeltaTime;
-				DamageEffect.bSuppressGameplayCue = !GameFeel->IsDamageCueAvailable();
+				DamageEffect.bLimitGameplayCue = true;
 				GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed);
 			}
@@ -251,7 +242,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 				FHealEffectData HealEffect;
 				HealEffect.HealAmount =
 					HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BoostPerAbsorbedZone * DeltaTime;
-				HealEffect.bSuppressGameplayCue = !GameFeel->IsHealCueAvailable();
+				HealEffect.bLimitGameplayCue = true;
 				GeoASLib::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed);
 			}

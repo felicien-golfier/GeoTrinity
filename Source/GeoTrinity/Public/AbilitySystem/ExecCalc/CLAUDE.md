@@ -17,6 +17,8 @@ Final damage = `BaseDamage × DamageMultiplier × SingleUseDamageMultiplier × (
 
 Also broadcasts `OnDamageDealt` on source ASC.
 
+GameplayCue gating: suppresses the cue when `bSuppressGameplayCue` is set on the context, or when `bLimitGameplayCue` is set and the target's `UGeoGameFeelComponent::IsDamageCueAvailable()` reports the rate window is not elapsed.
+
 ---
 
 ## `ExecCalc_Heal.h`
@@ -27,3 +29,5 @@ Captures:
 Applies to `IncomingHeal` meta-attribute on `UGeoAttributeSetBase`.
 
 Broadcasts `OnHealProvided(Amount)` on source ASC **unless** `bSuppressHealProvided` is set on the context (used by `GeoHealReturnPassiveAbility` to avoid infinite heal loops).
+
+GameplayCue gating: same as `ExecCalc_Damage` — `bSuppressGameplayCue` suppresses unconditionally, `bLimitGameplayCue` rate-limits via the target's `UGeoGameFeelComponent::IsHealCueAvailable()`.

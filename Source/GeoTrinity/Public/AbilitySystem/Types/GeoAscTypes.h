@@ -34,8 +34,10 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	FVector const& GetRadialDamageOrigin() const { return RadialDamageOrigin; }
 	float GetSingleUseDamageMultiplier() const { return SingleUseDamageMultiplier; }
 	bool IsSuppressHealProvided() const { return bSuppressHealProvided; }
-	/** Returns true when the GameplayCue embedded in the applied effect should be skipped (used for rate-limiting). */
+	/** Returns true when the GameplayCue embedded in the applied effect should be skipped unconditionally. */
 	bool IsSuppressGameplayCue() const { return bSuppressGameplayCue; }
+	/** Returns true when the GameplayCue should be rate-limited via the target's UGeoGameFeelComponent in ExecCalc. */
+	bool IsLimitGameplayCue() const { return bLimitGameplayCue; }
 	/** Returns true when the damage/heal should not be reported to UGeoCombatStatsSubsystem. */
 	bool IsSuppressCombatStats() const { return bSuppressCombatStats; }
 
@@ -53,8 +55,10 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetRadialDamageOrigin(FVector const& inVector) { RadialDamageOrigin = inVector; }
 	void SetSingleUseDamageMultiplier(float value) { SingleUseDamageMultiplier = value; }
 	void SetSuppressHealProvided(bool value) { bSuppressHealProvided = value; }
-	/** When true, the GameplayCue embedded in the applied effect will be suppressed. Use to rate-limit cues on tick-based effects. */
+	/** When true, the GameplayCue embedded in the applied effect will be suppressed unconditionally. */
 	void SetSuppressGameplayCue(bool value) { bSuppressGameplayCue = value; }
+	/** When true, ExecCalc rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based effects. */
+	void SetLimitGameplayCue(bool value) { bLimitGameplayCue = value; }
 	/** When true, skips reporting damage/heal to the DPS/HPS meter in UGeoCombatStatsSubsystem. */
 	void SetSuppressCombatStats(bool value) { bSuppressCombatStats = value; }
 
@@ -92,6 +96,7 @@ protected:
 	float SingleUseDamageMultiplier{1.f};
 	bool bSuppressHealProvided{false};
 	bool bSuppressGameplayCue{false};
+	bool bLimitGameplayCue{false};
 	bool bSuppressCombatStats{false};
 
 	UPROPERTY()

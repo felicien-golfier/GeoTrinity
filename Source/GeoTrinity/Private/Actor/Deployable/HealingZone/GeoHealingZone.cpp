@@ -6,7 +6,6 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -135,7 +134,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 															Data.Seed);
 		FHealEffectData HealEffectData;
 		HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
-		HealEffectData.bSuppressGameplayCue = !GameFeelComponent->IsHealCueAvailable();
+		HealEffectData.bLimitGameplayCue = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, OwnerASC, TargetASC, Data.Level, Data.Seed);
 		++HealedNum;
 	}
