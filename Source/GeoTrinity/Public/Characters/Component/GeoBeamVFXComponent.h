@@ -11,6 +11,7 @@
 class UNiagaraComponent;
 class UNiagaraSystem;
 
+/** Replication bundle for the beam's visual dimensions and on/off state; a single OnRep fires when any field changes. */
 USTRUCT()
 struct FBeamVFXState
 {

@@ -25,6 +25,7 @@ class GEOTRINITY_API UGeoMainMenuWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	/** Returns the local player's display name from the game instance settings; used to populate name labels in the lobby. */
 	UFUNCTION(BlueprintCallable, Category = "Session")
 	FString GetLocalPlayerName() const;
 
