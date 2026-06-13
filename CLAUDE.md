@@ -77,6 +77,7 @@ Source/GeoTrinity/
 │   │   └── GeoEnemyAIController.h
 │   ├── HUD/
 │   │   ├── Component/         # GeoCombattantWidgetComp
+│   │   ├── Menu/              # GeoMainMenuWidget, GeoBrowseServersWidget, GeoLocalConnectWidget, GeoCreateServerWidget, GeoServerRowWidget, GeoMenuButton
 │   │   ├── GeoHUD.h
 │   │   ├── GeoOverlayWidget.h
 │   │   ├── GeoAbilityBarWidget.h
@@ -88,7 +89,7 @@ Source/GeoTrinity/
 │   │   └── HudFunctionLibrary.h
 │   ├── Input/                 # GeoInputComponent
 │   ├── Settings/              # GameDataSettings
-│   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem
+│   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem, GeoSessionSubsystem
 │   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil (editor-only)
 │   ├── World/                 # GeoGameCamera, GeoWorldSettings
 │   ├── Animation/             # FireAnimNotify

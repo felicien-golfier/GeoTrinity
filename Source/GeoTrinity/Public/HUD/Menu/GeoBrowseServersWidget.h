@@ -49,6 +49,7 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Server")
 	void BP_FindSessions();
 
+	/** Called from Blueprint after BP_FindSessions completes; fills ServerListScrollBox with a row per result. */
 	UFUNCTION(BlueprintCallable, Category = "Server")
 	void PopulateListFromBP(TArray<FBlueprintSessionResult> const& ListOfResults);
 	
