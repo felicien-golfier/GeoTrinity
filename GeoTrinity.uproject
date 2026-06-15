@@ -11,6 +11,11 @@
 			"AdditionalDependencies": [
 				"Engine"
 			]
+		},
+		{
+			"Name": "GeoTrinityEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [

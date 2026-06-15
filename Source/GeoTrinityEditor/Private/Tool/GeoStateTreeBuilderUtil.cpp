@@ -1,7 +1,5 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#if WITH_EDITOR
-
 #include "Tool/GeoStateTreeBuilderUtil.h"
 
 #include "AI/StateTree/Ability/STTask_FireAbility.h"
@@ -598,5 +596,3 @@ void UGeoStateTreeBuilderUtil::ListEnterConditions(UStateTree* StateTree, FName 
 		}
 	}
 }
-
-#endif // WITH_EDITOR

@@ -2,8 +2,6 @@
 
 #pragma once
 
-#if WITH_EDITOR
-
 #include "CoreMinimal.h"
 #include "EditorUtilityObject.h"
 #include "GameplayTagContainer.h"
@@ -16,7 +14,7 @@ class UStateTreeState;
 class UStateTreeEditorData;
 
 UCLASS()
-class GEOTRINITY_API UGeoStateTreeBuilderUtil : public UEditorUtilityObject
+class GEOTRINITYEDITOR_API UGeoStateTreeBuilderUtil : public UEditorUtilityObject
 {
 	GENERATED_BODY()
 
@@ -116,5 +114,3 @@ private:
 	static void AddFireAbilityState(UStateTree* StateTree, FName StateName, FGameplayTag AbilityTag,
 									FName ParentStateName, int32 InsertIndex);
 };
-
-#endif // WITH_EDITOR

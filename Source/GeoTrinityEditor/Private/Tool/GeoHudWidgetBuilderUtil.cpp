@@ -1,7 +1,5 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#if WITH_EDITOR
-
 #include "Tool/GeoHudWidgetBuilderUtil.h"
 
 #include "Blueprint/WidgetTree.h"
@@ -419,5 +417,3 @@ void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* Widge
 	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added PlayLocalButton + LocalConnectWidget (%s) to '%s'"),
 		   *LocalConnectClass->GetName(), *WidgetBlueprint->GetName());
 }
-
-#endif // WITH_EDITOR

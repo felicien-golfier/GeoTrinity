@@ -2,8 +2,6 @@
 
 #pragma once
 
-#if WITH_EDITOR
-
 #include "CoreMinimal.h"
 #include "EditorUtilityObject.h"
 
@@ -29,7 +27,7 @@ enum class EAbilitySlotKeyLabelPlacement : uint8
  * primitives in UGeoWidgetBuilderUtil. New per-widget builders go here, keeping the generic util uncluttered.
  */
 UCLASS()
-class GEOTRINITY_API UGeoHudWidgetBuilderUtil : public UEditorUtilityObject
+class GEOTRINITYEDITOR_API UGeoHudWidgetBuilderUtil : public UEditorUtilityObject
 {
 	GENERATED_BODY()
 
@@ -107,5 +105,3 @@ public:
 										  TSubclassOf<UUserWidget> MenuButtonClass,
 										  TSubclassOf<UUserWidget> LocalConnectClass);
 };
-
-#endif // WITH_EDITOR

@@ -1,7 +1,5 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#if WITH_EDITOR
-
 #include "Tool/GeoWidgetBuilderUtil.h"
 
 #include "Blueprint/UserWidget.h"
@@ -341,5 +339,3 @@ void UGeoWidgetBuilderUtil::LogWidget(UWidget* Widget, int32 Depth)
 		}
 	}
 }
-
-#endif // WITH_EDITOR

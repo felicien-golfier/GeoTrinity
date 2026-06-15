@@ -2,8 +2,6 @@
 
 #pragma once
 
-#if WITH_EDITOR
-
 #include "CoreMinimal.h"
 #include "EditorUtilityObject.h"
 
@@ -28,7 +26,7 @@ class UWidgetTree;
  * trees) live in UGeoHudWidgetBuilderUtil and compose these. Keep this class free of one-off, per-asset functions.
  */
 UCLASS()
-class GEOTRINITY_API UGeoWidgetBuilderUtil : public UEditorUtilityObject
+class GEOTRINITYEDITOR_API UGeoWidgetBuilderUtil : public UEditorUtilityObject
 {
 	GENERATED_BODY()
 
@@ -103,5 +101,3 @@ public:
 private:
 	static void LogWidget(UWidget* Widget, int32 Depth);
 };
-
-#endif // WITH_EDITOR

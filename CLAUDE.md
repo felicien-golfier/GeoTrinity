@@ -31,6 +31,7 @@ Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working
 | AI & StateTree | `Source/GeoTrinity/Public/AI/CLAUDE.md` |
 | HUD & widgets | `Source/GeoTrinity/Public/HUD/CLAUDE.md` |
 | Subsystems & pooling | `Source/GeoTrinity/Public/System/CLAUDE.md` |
+| Editor automation utils (StateTree/Widget builders) | `Source/GeoTrinityEditor/Public/Tool/CLAUDE.md` |
 
 ## Source Structure (Every public folder has it's CLAUDE.md to explore)
 ```
@@ -90,8 +91,12 @@ Source/GeoTrinity/
 │   ├── Input/                 # GeoInputComponent
 │   ├── Settings/              # GameDataSettings
 │   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem, GeoSessionSubsystem
-│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil (editor-only)
+│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team
 │   ├── World/                 # GeoGameCamera, GeoWorldSettings
 │   ├── Animation/             # FireAnimNotify
 │   └── GameClasses/           # GeoGameMode, GeoGameState, GeoGameInstance, GeoPlayerController, GeoPlayerState
+└── (sibling module)
+Source/GeoTrinityEditor/       # Editor-only module (Type=Editor) — UEditorUtilityObject automation utils kept out of packaged builds
+└── Public/ & Private/
+    └── Tool/                  # GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil
 ```

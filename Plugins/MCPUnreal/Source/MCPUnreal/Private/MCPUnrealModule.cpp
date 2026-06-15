@@ -30,6 +30,15 @@ static TAutoConsoleVariable<int32> CVarMCPPort(
 
 void FMCPUnrealModule::StartupModule() {
   UE_LOG(LogMCPUnreal, Log, TEXT("MCPUnreal plugin starting (version %s)"), PluginVersion);
+
+  // Commandlet runs (cook/package) load Editor modules but never need the MCP
+  // bridge. Skip the HTTP server so the cook process does not collide with the
+  // live editor's listener on the same port.
+  if (IsRunningCommandlet()) {
+    UE_LOG(LogMCPUnreal, Log, TEXT("MCPUnreal HTTP server skipped (running as commandlet)"));
+    return;
+  }
+
   StartHttpServer();
 }
 

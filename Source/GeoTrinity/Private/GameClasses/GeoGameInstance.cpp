@@ -3,6 +3,7 @@
 
 #include "GameClasses/GeoGameInstance.h"
 
+#include "GeoTrinity/GeoTrinity.h"
 #include "GenericTeamAgentInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
@@ -45,6 +46,8 @@ void UGeoGameInstance::Init()
 	Super::Init();
 
 	FGenericTeamId::SetAttitudeSolver(&GeoAttitudeSolver);
+	UE_LOG(LogGeoTrinity, Warning, TEXT("GeoAttitudeSolver registered (netmode=%d, GIsServer=%d)"),
+		   GetWorld() ? static_cast<int32>(GetWorld()->GetNetMode()) : -1, GIsServer ? 1 : 0);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
