@@ -10,7 +10,7 @@
 // Sets default values
 AGeoInteractableActor::AGeoInteractableActor()
 {
-	bReplicates = true; // Directly setting bReplicates is the correct procedure for pre-init actors.
+	bReplicates = true;
 	PrimaryActorTick.bCanEverTick = false;
 
 	AbilitySystemComponent = CreateDefaultSubobject<UGeoAbilitySystemComponent>(TEXT("AbilitySystemComponent"));

@@ -36,18 +36,30 @@ bool UGeoSessionSubsystem::LaunchServerProcess(FString const& MapPackagePath)
 {
 	ShutdownServerProcess(); // never leave a previous server orphaned
 
-	// In the editor there is no packaged GeoTrinityServer.exe — run the gameplay map headless with the editor cmd
-	// binary instead. A packaged-build branch (locating GeoTrinityServer.exe) can be added when shipping.
-	if (!ensureMsgf(GIsEditor, TEXT("HostDedicated: packaged dedicated-server launch not implemented yet")))
-	{
-		return false;
-	}
-
-	FString const Executable = FPlatformProcess::ExecutablePath();
-	FString const ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
+	FString Executable;
+	FString Args;
 	// -nosteam: the local server has no Steam context; force the IP net driver fallback instead of SteamSockets.
-	FString const Args =
-		FString::Printf(TEXT("\"%s\" %s -server -log -port=%u -nosteam"), *ProjectPath, *MapPackagePath, ServerPort);
+	if (GIsEditor)
+	{
+		// In the editor there is no packaged GeoTrinityServer.exe — run the gameplay map headless with the editor cmd
+		// binary, passing the .uproject and -server.
+		Executable = FPlatformProcess::ExecutablePath();
+		FString const ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
+		Args = FString::Printf(TEXT("\"%s\" %s -server -log -port=%u -nosteam"), *ProjectPath, *MapPackagePath, ServerPort);
+	}
+	else
+	{
+		// Packaged build: launch the dedicated GeoTrinityServer.exe shipped alongside the client exe. Requires the
+		// project to be packaged with the Server target (GeoTrinityServer.Target.cs).
+		Executable = FPaths::Combine(FPaths::GetPath(FPlatformProcess::ExecutablePath()), TEXT("GeoTrinityServer.exe"));
+		if (!ensureMsgf(FPaths::FileExists(Executable),
+						TEXT("HostDedicated: GeoTrinityServer.exe not found at %s — package with the Server target"),
+						*Executable))
+		{
+			return false;
+		}
+		Args = FString::Printf(TEXT("%s -log -port=%u -nosteam"), *MapPackagePath, ServerPort);
+	}
 
 	ServerProcessHandle =
 		FPlatformProcess::CreateProc(*Executable, *Args, /*bLaunchDetached*/ true,

@@ -39,8 +39,6 @@ AGeoDeployableBase::AGeoDeployableBase()
 	{
 		CombattantWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
 	}
-
-	SetReplicates(true);
 }
 
 

@@ -20,7 +20,7 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	Super(ObjectInitializer.SetDefaultSubobjectClass<UGeoCharacterMovementComponent>(CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
-	SetReplicates(true);
+	bReplicates = true;
 
 	USkeletalMeshComponent* MeshComp = GetMesh();
 	MeshComp->SetIsReplicated(true);
