@@ -16,7 +16,6 @@ class UGameplayEffect;
 class UWidgetComponent;
 class UGeoChargeAbility;
 class UGeoDeployableManagerComponent;
-class UGeoChargeBeamGaugeWidget;
 
 USTRUCT(BlueprintType)
 struct FPlayerClassData

@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -19,7 +19,7 @@ class UMaterialInstanceDynamic;
  * the ability ends and its cooldown takes over depleting it; with no cooldown it clears the moment the ability ends.
  */
 UCLASS()
-class GEOTRINITY_API UGeoAbilitySlotWidget : public UGeoUserWidget
+class GEOTRINITYUI_API UGeoAbilitySlotWidget : public UGeoUserWidget
 {
 	GENERATED_BODY()
 

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
 #include "GameplayTagContainer.h"
+#include "HUD/Interface/GeoHUDInterface.h"
 
 #include "GeoHUD.generated.h"
 
@@ -94,29 +95,32 @@ struct FHudPlayerParams
  * so BP widgets can bind without needing a direct ASC reference.
  */
 UCLASS()
-class GEOTRINITY_API AGeoHUD : public AHUD
+class GEOTRINITYUI_API AGeoHUD
+	: public AHUD
+	, public IGeoHUDInterface
 {
 	GENERATED_BODY()
 
 public:
 	/** Creates and adds the OverlayWidget, then binds all attribute-change callbacks. Call once from AGeoPlayerState.
 	 */
-	void InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS);
+	virtual void InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC,
+							 UAttributeSet* AS) override;
 
 	/** Returns the cached player parameters (controller, state, ASC, attribute set) set during InitOverlay. */
 	FHudPlayerParams const& GetHudPlayerParams() const { return HudPlayerParams; }
 
 	/** Binds pawn-dependent HUD callbacks (deploy-count ping). Call once the local pawn exists, from OnPlayerPawnSet.
 	 */
-	void BindToPawn(APlayableCharacter* PlayableCharacter);
+	virtual void BindToPawn(APlayableCharacter* PlayableCharacter) override;
 
 	/** Shows the boss health bar for the given enemy. Call this when a boss fight starts. */
 	UFUNCTION(BlueprintCallable, Category = "Boss")
-	void ShowBossHealthBar(AEnemyCharacter* Boss);
+	virtual void ShowBossHealthBar(AEnemyCharacter* Boss) override;
 
 	/** Hides the boss health bar. Call this when the boss fight ends. */
 	UFUNCTION(BlueprintCallable, Category = "Boss")
-	void HideBossHealthBar();
+	virtual void HideBossHealthBar() override;
 
 	/**
 	 * Returns one entry per granted non-passive player ability, with icon/input/deployable flags resolved
@@ -142,7 +146,7 @@ public:
 	 * (Re)builds the overlay's ability-bar slots from GetAbilityBarEntries. Called from BindToPawn once the pawn exists
 	 * and from AGeoPlayerState::OnRep_PlayerClass after a class change re-grants abilities.
 	 */
-	void BuildAbilityBar(APlayableCharacter* PlayableCharacter);
+	virtual void BuildAbilityBar(APlayableCharacter* PlayableCharacter) override;
 
 	/** Tagless ping fired when any deployable count changes; ability-bar slots re-query their own count on receipt (no
 	 * polling). */

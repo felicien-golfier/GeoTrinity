@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -20,7 +20,7 @@ class UGeoMenuButton;
  * (panels set Collapsed by default in the BP layout).
  */
 UCLASS()
-class GEOTRINITY_API UGeoMainMenuWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoMainMenuWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

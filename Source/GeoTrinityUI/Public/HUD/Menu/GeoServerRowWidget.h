@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -21,7 +21,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FGeoServerRowSelectedDelegate, const FOnline
  * "PlayersText", "PingText". Optional: UImage "FlagImage".
  */
 UCLASS()
-class GEOTRINITY_API UGeoServerRowWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoServerRowWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

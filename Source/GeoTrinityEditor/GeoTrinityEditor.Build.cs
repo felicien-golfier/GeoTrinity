@@ -8,16 +8,17 @@ public class GeoTrinityEditor : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[]
+		PublicDependencyModuleNames.AddRange(new[]
 		{
 			"Core",
 			"CoreUObject",
 			"Engine"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[]
+		PrivateDependencyModuleNames.AddRange(new[]
 		{
 			"GeoTrinity",
+			"GeoTrinityUI",
 			"UnrealEd",
 			"Blutility",
 			"SlateCore",

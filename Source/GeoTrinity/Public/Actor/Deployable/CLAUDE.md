@@ -49,7 +49,7 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 - `bPushActorsOnSpawn` — enables spawn-time push (see above); server only
 - `bDestroyOldestWhenLimitReached` — if true, `CanDeploy` always returns true; the oldest deployable of the same class is expired by `RegisterDeployable` when the slot is full
 - `ExplodeAttitude` — bitmask of team attitudes targeted by `Explode()` (default: `Hostile`)
-- `CombattantWidgetComponent` — the world-space health bar widget component; publicly accessible for callers that need to show/hide it
+- `CombattantWidgetComponent` — the world-space health bar widget component, held as the engine base `UWidgetComponent` (the concrete `UGeoCombattantWidgetComp` lives in the `GeoTrinityUI` module). **Added in Blueprint**, resolved in `BeginPlay` via `FindComponentByClass`. Publicly accessible for callers that need to show/hide it
 - `GetDurationPercent()` — health ratio 0..1; drives health bar
 - `DestroyOldestWhenLimitReached()` — public getter for `bDestroyOldestWhenLimitReached`; read by `UGeoDeployableManagerComponent`
 - `Expire(float TimeBeforeDestroy)` / `Expire()` — `Expire()` uses the default `TimeBeforeDestroyAtExpire`; never call directly; always go through `Recall()` for proper end-of-life

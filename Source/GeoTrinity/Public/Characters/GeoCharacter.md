@@ -9,7 +9,7 @@ Implements `IAbilitySystemInterface` and `IGenericTeamAgentInterface`.
 | `UGeoInputComponent` | `GeoInputComponent` | Enhanced Input; ability bindings |
 | `UGeoCharacterMovementComponent` | (via `GetGeoMovementComponent()`) | Speed multiplier support |
 | `USceneComponent` | `WidgetAnchorComponent` | Non-rotating (absolute rotation) anchor; attach all world widgets here, never to the root — root-relative offsets orbit as the capsule yaws |
-| `UGeoCombattantWidgetComp` | `CharacterWidgetComponent` | World-space health bar (under `WidgetAnchorComponent`) |
+| `UWidgetComponent` (base) | `CharacterWidgetComponent` | World-space health bar. Concrete `UGeoCombattantWidgetComp` is in `GeoTrinityUI`; **added in Blueprint** under `WidgetAnchorComponent`, resolved in `BeginPlay` via `FindComponentByClass`. Bind/visibility go through `IGeoCombattantWidgetHost` / engine base API |
 | `UGeoGameFeelComponent` | `GameFeelComponent` | Hit flash, recoil |
 
 ## Key methods

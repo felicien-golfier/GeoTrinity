@@ -3,7 +3,6 @@
 #include "GameClasses/GeoMainMenuPlayerController.h"
 
 #include "Blueprint/UserWidget.h"
-#include "HUD/Menu/GeoMainMenuWidget.h"
 
 AGeoMainMenuPlayerController::AGeoMainMenuPlayerController(FObjectInitializer const& ObjectInitializer) :
 	Super(ObjectInitializer)
@@ -25,7 +24,7 @@ void AGeoMainMenuPlayerController::BeginPlay()
 		return;
 	}
 
-	MenuWidget = CreateWidget<UGeoMainMenuWidget>(this, MenuWidgetClass);
+	MenuWidget = CreateWidget<UUserWidget>(this, MenuWidgetClass);
 	if (!ensureMsgf(MenuWidget, TEXT("AGeoMainMenuPlayerController: Failed to create MenuWidget")))
 	{
 		return;

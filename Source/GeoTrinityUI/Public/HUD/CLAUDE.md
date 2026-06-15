@@ -1,6 +1,16 @@
 # HUD
 
-Widget and HUD classes for all UI.
+Widget and HUD classes for all UI. **This is the `GeoTrinityUI` module** (Type=Runtime), separate from the `GeoTrinity` gameplay module so the dedicated-server target ships no Slate/UMG. `GeoTrinityUI` depends on `GeoTrinity`; gameplay must **never** reference a concrete class here.
+
+## Gameplay→UI seam (interfaces)
+Gameplay holds engine base pointers (`UWidgetComponent*`, `UUserWidget*`, `AHUD*`) and calls UI behavior through interfaces declared in **`GeoTrinity/Public/HUD/Interface/`** and implemented here:
+| Interface (gameplay module) | Implemented by | Used by |
+|---|---|---|
+| `IGeoHUDInterface` | `AGeoHUD` | `AGeoPlayerState`, `AGeoGameState` (via `Cast<IGeoHUDInterface>(GetHUD())`) |
+| `IGeoCombattantWidgetHost` | `UGeoCombattantWidgetComp` | `AGeoCharacter`, `AGeoDeployableBase` |
+| `IGeoDeployGaugeWidgetInterface` | `UGeoDeployChargeGaugeWidget` | `APlayableCharacter` |
+| `IGeoChargeBeamGaugeWidgetInterface` | `UGeoChargeBeamGaugeWidget` | `APlayableCharacter` |
+The combatant widget component and the two gauge components are **added in Blueprint** (not `CreateDefaultSubobject` in C++) and resolved at runtime via `FindComponentByClass<UWidgetComponent>()`. The menu widget needs no interface — the controller only calls engine `UUserWidget::AddToViewport`/`TakeWidget`.
 
 ## Architecture
 ```
@@ -22,7 +32,7 @@ AGeoHUD  (owns OverlayWidget)
 | `GeoDeployChargeGaugeWidget.h` | World-space deploy charge gauge; ticks from ability's `GetChargeRatio()` |
 | `GeoChargeBeamGaugeWidget.h` | World-space charge-beam gauge with sweet-spot overlay bar; bound to `ChargeBeamGaugeComponent` on `PlayableCharacter`; ticks from ability's `GetChargeRatio()` |
 | `HudFunctionLibrary.h` | `ShouldDrawHUD()`, `GetHealthRatio()` |
-| `Component/GeoCombattantWidgetComp.h` | WidgetComponent on actors; binds widget to owner's ASC on `InitWidget`; `BindWidgetToOwnerASC()` is idempotent — call it again once the ASC becomes available |
+| `Component/GeoCombattantWidgetComp.h` | WidgetComponent on actors; implements `IGeoCombattantWidgetHost`; binds widget to owner's ASC on `InitWidget`; `BindToOwnerASC()` (interface method) is idempotent — call it again once the ASC becomes available. **Added in Blueprint**, not in C++. |
 | `Menu/GeoMenuButton.h` | Reusable styled button; `BlueprintAssignable OnClicked`; appearance fully configurable via `EditAnywhere` props |
 | `Menu/GeoMainMenuWidget.h` | Lobby menu; 3× `BindWidget UGeoMenuButton` + `BindWidget UGeoCreateServerWidget` + `BindWidget UGeoBrowseServersWidget`; C++ shows/hides the create-server and browse-server panels and handles quit |
 | `Menu/GeoCreateServerWidget.h` | "Create Server" form; fields: ServerNameInput, MapComboBox, SlotsComboBox, LanguageComboBox, PrivacyComboBox, CreateButton, BackButton (all BindWidget); `BlueprintAssignable OnClosed` delegate fires on Back; session creation logic fully in C++; sets SERVER_NAME, LANGUAGE, MAP session keys; data arrays (MapDisplayNames, MapURLs, SlotOptions, LanguageOptions) set via `EditAnywhere` in BP |

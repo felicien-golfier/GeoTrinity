@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -18,7 +18,7 @@ class AGeoHUD;
  * polling.
  */
 UCLASS()
-class GEOTRINITY_API UGeoAbilityBarWidget : public UGeoUserWidget
+class GEOTRINITYUI_API UGeoAbilityBarWidget : public UGeoUserWidget
 {
 	GENERATED_BODY()
 

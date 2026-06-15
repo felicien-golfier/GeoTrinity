@@ -10,8 +10,8 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
+#include "Components/WidgetComponent.h"
 #include "GameplayEffect.h"
-#include "HUD/Component/GeoCombattantWidgetComp.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -22,23 +22,9 @@ AGeoDeployableBase::AGeoDeployableBase()
 	CapsuleComponent->SetCollisionProfileName(TEXT("GeoShape"));
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
-	// Non-rotating anchor so the bar's offset doesn't orbit the deployable as it yaws (e.g. turret aiming).
-	USceneComponent* WidgetAnchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("WidgetAnchorComponent"));
-	WidgetAnchorComponent->SetupAttachment(RootComponent);
-	WidgetAnchorComponent->SetUsingAbsoluteRotation(true);
-
-	CombattantWidgetComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("CombattantWidgetComponent"));
-	CombattantWidgetComponent->SetupAttachment(WidgetAnchorComponent);
-	CombattantWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
-	CombattantWidgetComponent->SetRelativeLocation(FVector(100.f, 0.f, 0.f));
-	// Let the component match the bar's own size instead of stretching a large DrawSize over the deployable.
-	CombattantWidgetComponent->SetDrawAtDesiredSize(true);
-
-	if (TSubclassOf<UUserWidget> const HealthBarWidgetClass =
-			GetDefault<UGameDataSettings>()->DefaultDeployableHealthBarWidgetClass.LoadSynchronous())
-	{
-		CombattantWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
-	}
+	// CombattantWidgetComponent (the world-space health bar) is a UGeoCombattantWidgetComp added in Blueprint — it lives
+	// in the UI module which gameplay must not reference. It is resolved and configured from the BP component in
+	// BeginPlay. The BP attaches it to a non-rotating anchor so the bar's offset doesn't orbit the deployable as it yaws.
 }
 
 
@@ -180,6 +166,18 @@ void AGeoDeployableBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// The health-bar widget component is added in Blueprint (a UGeoCombattantWidgetComp from the UI module). Resolve it
+	// as the engine base; apply the project default widget class if the BP left it unset (engine base API only).
+	CombattantWidgetComponent = FindComponentByClass<UWidgetComponent>();
+	if (CombattantWidgetComponent && !CombattantWidgetComponent->GetWidgetClass())
+	{
+		if (TSubclassOf<UUserWidget> const HealthBarWidgetClass =
+				GetDefault<UGameDataSettings>()->DefaultDeployableHealthBarWidgetClass.LoadSynchronous())
+		{
+			CombattantWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
+		}
+	}
+
 	if (UGeoDeployableManagerComponent* DeployableManager =
 			GetInstigator()->GetComponentByClass<UGeoDeployableManagerComponent>())
 	{
@@ -188,7 +186,7 @@ void AGeoDeployableBase::BeginPlay()
 
 	InitDrain();
 
-	if (!CanBeDamaged())
+	if (!CanBeDamaged() && CombattantWidgetComponent)
 	{
 		CombattantWidgetComponent->SetHiddenInGame(true);
 	}

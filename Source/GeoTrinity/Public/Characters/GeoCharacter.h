@@ -25,7 +25,7 @@ class UDynamicMeshComponent;
 class UGeoGameFeelComponent;
 class UGeoCharacterMovementComponent;
 class UStaticMeshComponent;
-class UGeoCombattantWidgetComp;
+class UWidgetComponent;
 
 /**
  * Abstract base character shared by APlayableCharacter and AEnemyCharacter.
@@ -125,8 +125,10 @@ protected:
 	// parent rotation before the rotation override applies).
 	TObjectPtr<USceneComponent> WidgetAnchorComponent;
 
+	// The world-space health-bar widget component. Added in Blueprint (a UGeoCombattantWidgetComp from the UI module);
+	// held here as the engine base so the gameplay module never names the UI type. Found via the BP-added component.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
-	TObjectPtr<UGeoCombattantWidgetComp> CharacterWidgetComponent;
+	TObjectPtr<UWidgetComponent> CharacterWidgetComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")
 	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;

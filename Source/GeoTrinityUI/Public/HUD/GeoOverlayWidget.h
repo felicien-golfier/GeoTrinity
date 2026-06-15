@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -17,7 +17,7 @@ class AGeoHUD;
  * class and places a WBP_AbilityBar named "AbilityBar" anchored bottom-center.
  */
 UCLASS()
-class GEOTRINITY_API UGeoOverlayWidget : public UGeoUserWidget
+class GEOTRINITYUI_API UGeoOverlayWidget : public UGeoUserWidget
 {
 	GENERATED_BODY()
 

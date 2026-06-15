@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -22,7 +22,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoLocalConnectClosedSignature);
  * UEditableTextBox "IPInput", UTextBlock "LocalIPText".
  */
 UCLASS()
-class GEOTRINITY_API UGeoLocalConnectWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoLocalConnectWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

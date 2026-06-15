@@ -23,10 +23,10 @@ void UGeoCombattantWidgetComp::PostInitProperties()
 void UGeoCombattantWidgetComp::InitWidget()
 {
 	Super::InitWidget();
-	BindWidgetToOwnerASC();
+	BindToOwnerASC();
 }
 
-void UGeoCombattantWidgetComp::BindWidgetToOwnerASC() const
+void UGeoCombattantWidgetComp::BindToOwnerASC() const
 {
 	UGenericCombattantWidget* CombattantWidget = Cast<UGenericCombattantWidget>(GetUserWidgetObject());
 	if (!CombattantWidget)

@@ -5,8 +5,9 @@
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "HUD/Component/GeoCombattantWidgetComp.h"
+#include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Input/GeoInputComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
@@ -37,11 +38,8 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	WidgetAnchorComponent->SetupAttachment(GetRootComponent());
 	WidgetAnchorComponent->SetUsingAbsoluteRotation(true);
 
-	CharacterWidgetComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("CharacterWidgetComponent"));
-	CharacterWidgetComponent->SetupAttachment(WidgetAnchorComponent);
-	CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
-	CharacterWidgetComponent->SetDrawAtDesiredSize(true);
-	CharacterWidgetComponent->SetRelativeLocation(FVector(100.f, 0.f, 0.f));
+	// CharacterWidgetComponent (the world-space health bar) is a UGeoCombattantWidgetComp added in Blueprint — it lives
+	// in the UI module which gameplay must not reference. It is resolved from the BP-added component in BeginPlay.
 
 	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>(TEXT("GameFeelComponent"));
 
@@ -128,12 +126,24 @@ void AGeoCharacter::InitGAS()
 	// On clients replication later fires the change delegate and re-shows it, but the listen-server host sets
 	// attributes synchronously with no replication callback — so (re)bind now that attributes are initialized.
 	// (APlayableCharacter overrides InitGAS and calls this itself; InitializeForOwner is idempotent.)
-	CharacterWidgetComponent->BindWidgetToOwnerASC();
+	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
+	{
+		WidgetHost->BindToOwnerASC();
+	}
 }
 
 void AGeoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	// The health-bar widget component is added in Blueprint (a UGeoCombattantWidgetComp from the UI module). Resolve it
+	// here as the engine base so gameplay can toggle/bind it through IGeoCombattantWidgetHost without naming the UI type.
+	CharacterWidgetComponent = FindComponentByClass<UWidgetComponent>();
+	// On the listen-server host InitGAS runs from PossessedBy (before this BeginPlay), when the BP component is not yet
+	// resolved, so the re-bind there is skipped. Attributes are already initialized by now, so bind here instead.
+	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
+	{
+		WidgetHost->BindToOwnerASC();
+	}
 	// Don't draw a floating bar over our own avatar — the local player uses the main HUD overlay.
 	// Enemies are never locally controlled, so this is a no-op for them.
 	SetCombattantWidgetVisible(!IsLocallyControlled());

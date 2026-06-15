@@ -14,7 +14,7 @@ class AGeoHUD;
  * All player-facing overlay widgets should inherit from this class.
  */
 UCLASS()
-class GEOTRINITY_API UGeoUserWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

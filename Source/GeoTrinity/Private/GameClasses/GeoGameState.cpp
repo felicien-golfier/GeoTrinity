@@ -9,8 +9,9 @@
 #include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"
 #include "GameClasses/GeoGameMode.h"
+#include "GameFramework/HUD.h"
 #include "GameplayTagContainer.h"
-#include "HUD/GeoHUD.h"
+#include "HUD/Interface/GeoHUDInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -125,7 +126,7 @@ void AGeoGameState::StopBossFight()
 
 	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
-		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
+		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(LocalPlayerController->GetHUD()))
 		{
 			GeoHUD->HideBossHealthBar();
 		}
@@ -145,9 +146,9 @@ void AGeoGameState::StopBossFight()
 
 void AGeoGameState::InitBossFight(AEnemyCharacter* Boss)
 {
-	if (APlayerController const* LocalPlayerController = GetWorld()->GetFirstPlayerController())
+	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
-		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
+		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(LocalPlayerController->GetHUD()))
 		{
 			GeoHUD->ShowBossHealthBar(Boss);
 		}

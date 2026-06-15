@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -28,7 +28,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoBrowseServersClosedSignature);
  * UScrollBox "ServerListScrollBox".
  */
 UCLASS()
-class GEOTRINITY_API UGeoBrowseServersWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoBrowseServersWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

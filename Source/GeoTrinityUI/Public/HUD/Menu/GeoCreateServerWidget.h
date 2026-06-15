@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -21,7 +21,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoCreateServerClosedSignature);
  * "SlotsComboBox", "LanguageComboBox", "PrivacyComboBox", UGeoMenuButton "CreateButton", "BackButton".
  */
 UCLASS()
-class GEOTRINITY_API UGeoCreateServerWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoCreateServerWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

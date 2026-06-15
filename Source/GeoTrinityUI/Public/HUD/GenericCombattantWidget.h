@@ -16,7 +16,7 @@ class UProgressBar;
  * Do NOT use this for the player's main overlay — use UGeoUserWidget directly for that.
  */
 UCLASS()
-class GEOTRINITY_API UGenericCombattantWidget : public UGeoUserWidget
+class GEOTRINITYUI_API UGenericCombattantWidget : public UGeoUserWidget
 {
 	GENERATED_BODY()
 

@@ -12,7 +12,7 @@ class UAbilitySystemComponent;
  * A library of helper functions related to HUD
  */
 UCLASS()
-class GEOTRINITY_API UHudFunctionLibrary : public UBlueprintFunctionLibrary
+class GEOTRINITYUI_API UHudFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 

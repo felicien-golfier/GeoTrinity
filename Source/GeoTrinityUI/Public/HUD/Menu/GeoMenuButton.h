@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -21,7 +21,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoButtonClickedSignature);
  * Required in the BP hierarchy: a UButton named "Button". Optional: a UTextBlock named "ButtonText".
  */
 UCLASS()
-class GEOTRINITY_API UGeoMenuButton : public UUserWidget
+class GEOTRINITYUI_API UGeoMenuButton : public UUserWidget
 {
 	GENERATED_BODY()
 
