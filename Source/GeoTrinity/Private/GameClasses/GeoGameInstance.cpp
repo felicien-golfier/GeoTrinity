@@ -3,6 +3,7 @@
 
 #include "GameClasses/GeoGameInstance.h"
 
+#include "FindSessionsCallbackProxy.h"
 #include "GenericTeamAgentInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
@@ -118,6 +119,11 @@ void UGeoGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::JoinAdvancedSession(const FOnlineSessionSearchResult& SearchResult)
 {
+	FBlueprintSessionResult BPResult;
+	BPResult.OnlineResult = SearchResult;
+	BP_JoinAdvancedSession(BPResult);
+	
+	/*
 	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
 	if (!ensureMsgf(OnlineSubsystem, TEXT("GeoGameInstance::JoinAdvancedSession: Online subsystem not available")))
 	{
@@ -134,6 +140,7 @@ void UGeoGameInstance::JoinAdvancedSession(const FOnlineSessionSearchResult& Sea
 	);
 
 	Sessions->JoinSession(0, FName(TEXT("GameSession")), SearchResult);
+	*/
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

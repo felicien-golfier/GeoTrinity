@@ -8,6 +8,7 @@
 
 #include "GeoGameInstance.generated.h"
 
+struct FBlueprintSessionResult;
 class FOnlineSessionSearchResult;
 class FOnlineSessionSettings;
 class UWorld;
@@ -27,9 +28,13 @@ public:
 	/** Online **/
 	void CreateAdvancedSession(FOnlineSessionSettings const& SessionSettings, FString MapToGoTo = "");
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Online")
+	void BP_CreateAdvancedSession(FString const& ServerName, int32 NbOfSlots, bool bUseLan);
 
 	void JoinAdvancedSession(const FOnlineSessionSearchResult& SearchResult);
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	UFUNCTION(BlueprintImplementableEvent, Category = "Online")
+	void BP_JoinAdvancedSession(FBlueprintSessionResult const& SessionData);
 
 	/** Default map to travel to when creating a session without an explicit map URL */
 	UPROPERTY(EditDefaultsOnly, Category = "Online")
