@@ -169,6 +169,10 @@ void AGeoDeployableBase::BeginPlay()
 	// The health-bar widget component is added in Blueprint (a UGeoCombattantWidgetComp from the UI module). Resolve it
 	// as the engine base; apply the project default widget class if the BP left it unset (engine base API only).
 	CombattantWidgetComponent = FindComponentByClass<UWidgetComponent>();
+	// A damageable deployable must show a health bar, so its BP must include the widget component. Flag a missing one
+	// (the dedicated server is headless and never renders it, so skip the check there).
+	ensureMsgf(CombattantWidgetComponent || !CanBeDamaged() || GeoLib::IsDedicatedServer(GetWorld()),
+			   TEXT("%s is damageable but has no UGeoCombattantWidgetComp — add one in its Blueprint"), *GetName());
 	if (CombattantWidgetComponent && !CombattantWidgetComponent->GetWidgetClass())
 	{
 		if (TSubclassOf<UUserWidget> const HealthBarWidgetClass =

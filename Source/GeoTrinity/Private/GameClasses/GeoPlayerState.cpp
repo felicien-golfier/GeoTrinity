@@ -142,9 +142,5 @@ UAbilitySystemComponent* AGeoPlayerState::GetAbilitySystemComponent() const
 
 FGenericTeamId AGeoPlayerState::GetGenericTeamId() const
 {
-	if (IGenericTeamAgentInterface const* TeamAgent = Cast<IGenericTeamAgentInterface>(GetPawn()))
-	{
-		return TeamAgent->GetGenericTeamId();
-	}
-	return IGenericTeamAgentInterface::GetGenericTeamId();
+	return FGenericTeamId(static_cast<uint8>(TeamId));
 }

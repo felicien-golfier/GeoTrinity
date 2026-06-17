@@ -138,6 +138,10 @@ void AGeoCharacter::BeginPlay()
 	// The health-bar widget component is added in Blueprint (a UGeoCombattantWidgetComp from the UI module). Resolve it
 	// here as the engine base so gameplay can toggle/bind it through IGeoCombattantWidgetHost without naming the UI type.
 	CharacterWidgetComponent = FindComponentByClass<UWidgetComponent>();
+	// Every character shows a floating health bar, so its BP must include the widget component. Flag a missing one (the
+	// dedicated server is headless and never renders it, so skip the check there).
+	ensureMsgf(CharacterWidgetComponent || GeoLib::IsDedicatedServer(GetWorld()),
+			   TEXT("%s has no UGeoCombattantWidgetComp — add one in its Blueprint"), *GetName());
 	// On the listen-server host InitGAS runs from PossessedBy (before this BeginPlay), when the BP component is not yet
 	// resolved, so the re-bind there is skipped. Attributes are already initialized by now, so bind here instead.
 	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
