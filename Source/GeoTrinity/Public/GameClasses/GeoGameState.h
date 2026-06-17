@@ -70,9 +70,14 @@ public:
 	/** Finds and returns the live dummy enemy actor in the world, or nullptr if none exists. */
 	AEnemyCharacter* GetDummyEnemy() const;
 
-	/** Server-only. Called when a player dies during the fight. Decrements alive counter; triggers wipe reset when 0.
+	/**
+	 * Server-only. Called when a player dies. Outside InProgress (e.g. during the fight-commit transition) it just
+	 * revives that player; during the fight it re-checks for a full wipe.
 	 */
-	void NotifyPlayerDiedInFight(APlayableCharacter* PlayableCharacter);
+	void NotifyPlayerDied(APlayableCharacter* PlayableCharacter);
+
+	/** Server-only. Stops tracking a player who left the fight, then re-checks for a full wipe. */
+	void NotifyPlayerLeft(APlayableCharacter* PlayableCharacter);
 
 	/** Server-only. Called when the boss health reaches 0. Transitions to WaitingPostMatch. */
 	UFUNCTION()
@@ -112,7 +117,18 @@ public:
 	FMatchStateChanged OnMatchStateChanged;
 
 private:
-	int32 PlayersAliveInFight = 0;
+	/** Players being tracked for the current fight. Their individual life is checked to detect a full wipe. */
+	UPROPERTY()
+	TArray<TObjectPtr<APlayableCharacter>> PlayersInFight;
+
+	/** Returns true when every tracked player is gone (dead or no longer valid). */
+	bool AreAllPlayersDead() const;
+
+	/**
+	 * Re-checks whether every tracked player is dead and, if so, resets the boss and schedules the transition
+	 * back to WaitingToStart.
+	 */
+	void HandlePotentialWipe();
 
 	FTimerHandle CommitFightTimer;
 
