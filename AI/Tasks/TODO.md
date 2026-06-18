@@ -8,7 +8,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 - [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
 
   **Scope**
-  - Run `git diff --name-only HEAD` to get today's modified files. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase.
+  - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase. (Do NOT use `git diff --name-only HEAD` — that only reports uncommitted working-tree changes, which are empty in the cloud checkout, so the day's committed work would be missed.)
   - Within those files: add comments to public functions that have none, fix comments that are malformed or contradict the current implementation, and update any comment whose intent changed today.
   - Do not touch headers that are already correct.
   - Only comment where the method is publicly declared — not in the implementation.
@@ -118,7 +118,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 - [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
-  - Run `git diff --name-only HEAD` to get today's modified files. Only open `.h` and `.cpp` files from that list.
+  - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open `.h` and `.cpp` files from that list. (Do NOT use `git diff --name-only HEAD` — it only reports uncommitted working-tree changes, empty in the cloud checkout.)
   - For each changed file, identify its subfolder `CLAUDE.md` (the one sitting next to the `.h` files) and the parent-folder `CLAUDE.md` above it — update both if needed.
   - Only update what actually changed. Do not touch sections unaffected by today's diff.
 
