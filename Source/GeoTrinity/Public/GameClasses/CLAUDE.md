@@ -20,6 +20,7 @@ Key fields:
 - `UGeoAbilitySystemComponent* AbilitySystemComponent`
 - `UCharacterAttributeSet* CharacterAttributeSet`
 - `EPlayerClass PlayerClass` — replicated, `OnRep_PlayerClass` triggers class switch visuals
+- `ETeam TeamId = ETeam::Player` — canonical team for this player; `GetGenericTeamId()` reads this directly so attitude queries on the PlayerState resolve even when the pawn is momentarily absent (respawn, possession order on server)
 - Rolling combat stats (replicated): `DebugDPS`, `DebugHPS`, `BestDPS`, `BestHPS`, `TotalDamageDealt`, `TotalHealingDealt`, `TotalDamageReceived`
 
 Key flow: `ClientInitialize` → `InitOverlay()` (creates HUD), `OnPlayerPawnSet` delegate → `ApplyClassDataToPawn()` (runs for ALL pawns — covers remote players' class visuals on dedicated servers), then local-player path → `InitGAS()` on the character.
