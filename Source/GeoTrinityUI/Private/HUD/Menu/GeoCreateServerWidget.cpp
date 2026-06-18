@@ -55,7 +55,7 @@ void UGeoCreateServerWidget::NativeConstruct()
 	PopulateComboBoxes();
 	ServerNameInput->SetHintText(FText::FromString(DefaultServerName));
 
-	CreateButton->OnClicked.AddDynamic(this, &UGeoCreateServerWidget::HandleCreate);
+	//CreateButton->OnClicked.AddDynamic(this, &UGeoCreateServerWidget::HandleCreate);
 	BackButton->OnClicked.AddDynamic(this, &UGeoCreateServerWidget::HandleBack);
 }
 
@@ -110,7 +110,7 @@ void UGeoCreateServerWidget::HandleCreate()
 	const FString SlotString = SlotsComboBox->GetSelectedOption();
 	const int32 NumSlots = SlotString.IsEmpty() ? 2 : FCString::Atoi(*SlotString);
 	const FString Language = LanguageComboBox->GetSelectedOption();
-	const bool bIsPublic = true; //PrivacyComboBox->GetSelectedOption() == TEXT("Public");
+	const bool bIsPublic = PrivacyComboBox->GetSelectedOption() == TEXT("Public");
 
 	FOnlineSessionSettings SessionSettings;
 	SessionSettings.NumPublicConnections = NumSlots;	// Should be at least 2 for listen server, according to doc on "CreateAdvancedSession" from Advanced session plugin
@@ -131,8 +131,12 @@ void UGeoCreateServerWidget::HandleCreate()
 		UE_LOG(LogTemp, Error, TEXT("UGeoCreateServerWidget: Could not get GeoGameInstance"));
 		return;
 	}
+	
+	// Testing the BP function
+	GeoGameInstance->BP_CreateAdvancedSession(ServerName, NumSlots, bIsPublic);
+	
 	// No maps for now, just go to the default one, set in game instance
-	GeoGameInstance->CreateAdvancedSession(SessionSettings);
+	//GeoGameInstance->CreateAdvancedSession(SessionSettings);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

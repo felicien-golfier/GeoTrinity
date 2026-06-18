@@ -62,7 +62,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UComboBoxString> PrivacyComboBox;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> CreateButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

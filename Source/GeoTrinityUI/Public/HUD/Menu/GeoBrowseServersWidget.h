@@ -77,6 +77,7 @@ private:
 	TArray<FOnlineSessionSearchResult> CachedResults;
 
 	void StartFindSessions();
+	void Code_FindSessions();
 	void OnFindSessionsComplete(bool bWasSuccessful);
 	void PopulateServerList();
 	void HandleServerSelected(const FOnlineSessionSearchResult& Result);
