@@ -40,7 +40,7 @@ void AGeoMine::InitInteractable(FInteractableActorData* Data)
 void AGeoMine::ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
 								  UGeoAbilitySystemComponent* TargetASC)
 {
-	Super::ApplyExplodeEffect(Value, SourceASC, Actor, TargetASC);
+	// Do not call super to not apply the Mine Life Cost effect.
 	float const ScaledLifeSpent = MineData.Params.Value * Value;
 	if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, TeamAttitudeMask::Hostile))
 	{

@@ -107,9 +107,13 @@ struct FDamageEffectData : public FEffectData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat DamageAmount;
 
-	/** When true, suppresses the GameplayCue embedded in the DamageEffect GE. Set by callers to rate-limit cues on tick-based effects. */
+	/** When true, unconditionally suppresses the GameplayCue embedded in the DamageEffect GE. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
+
+	/** When true, UExecCalc_Damage rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based effects. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bLimitGameplayCue{false};
 
 	/** When true, the damage is not reported to the DPS meter (UGeoCombatStatsSubsystem). Use for self-inflicted drains. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -136,9 +140,13 @@ struct FHealEffectData : public FEffectData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressHealProvided{false};
 
-	/** When true, suppresses the GameplayCue embedded in the HealthEffect GE. Set by callers to rate-limit cues on tick-based effects. */
+	/** When true, unconditionally suppresses the GameplayCue embedded in the HealthEffect GE. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
+
+	/** When true, UExecCalc_Heal rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based effects. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bLimitGameplayCue{false};
 
 	/** When true, the heal is not reported to the HPS meter (UGeoCombatStatsSubsystem). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)

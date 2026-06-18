@@ -26,8 +26,8 @@ public:
 	 *
 	 * The local player is always a client (never the authority), so authority-gated UI/HUD init runs the same way it
 	 * does for a remote joiner. In the editor the server is an UnrealEditor-Cmd.exe instance running MapPackagePath
-	 * with -server; a packaged GeoTrinityServer.exe path is left for later. The launched process is tracked and killed
-	 * in Deinitialize.
+	 * with -server; in a packaged build it is the GeoTrinityServer.exe shipped alongside the client. The launched
+	 * process is tracked and killed in Deinitialize.
 	 *
 	 * @param MapPackagePath  Package path of the gameplay map the server should load (e.g. /Game/Maps/DraftMap).
 	 */

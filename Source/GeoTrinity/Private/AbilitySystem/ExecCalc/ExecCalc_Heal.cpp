@@ -6,6 +6,8 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
+#include "AbilitySystemComponent.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UExecCalc_Heal::UExecCalc_Heal()
@@ -25,9 +27,25 @@ void UExecCalc_Heal::Execute_Implementation(FGameplayEffectCustomExecutionParame
 
 	FGeoGameplayEffectContext const* GeoContext =
 		static_cast<FGeoGameplayEffectContext const*>(specGE.GetContext().Get());
-	if (GeoContext && GeoContext->IsSuppressGameplayCue())
+	if (GeoContext)
 	{
-		OutExecutionOutput.MarkGameplayCuesHandledManually();
+		bool bSuppressGameplayCue = GeoContext->IsSuppressGameplayCue();
+		UAbilitySystemComponent const* pTargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
+		AActor* pTargetAvatar = pTargetASC ? pTargetASC->GetAvatarActor() : nullptr;
+		if (!bSuppressGameplayCue && GeoContext->IsLimitGameplayCue() && IsValid(pTargetAvatar))
+		{
+			UGeoGameFeelComponent* GameFeelComponent = pTargetAvatar->FindComponentByClass<UGeoGameFeelComponent>();
+			if (ensureMsgf(GameFeelComponent,
+						   TEXT("UExecCalc_Heal: bLimitGameplayCue set but target %s has no GeoGameFeelComponent"),
+						   *pTargetAvatar->GetName()))
+			{
+				bSuppressGameplayCue = !GameFeelComponent->IsHealCueAvailable();
+			}
+		}
+		if (bSuppressGameplayCue)
+		{
+			OutExecutionOutput.MarkGameplayCuesHandledManually();
+		}
 	}
 
 	float HealAmount = specGE.GetSetByCallerMagnitude(tags.Gameplay_Heal, false, 0.f);

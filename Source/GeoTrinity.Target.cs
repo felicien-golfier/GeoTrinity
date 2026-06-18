@@ -11,5 +11,6 @@ public class GeoTrinityTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V6;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
 		ExtraModuleNames.Add("GeoTrinity");
+		ExtraModuleNames.Add("GeoTrinityUI");
 	}
 }

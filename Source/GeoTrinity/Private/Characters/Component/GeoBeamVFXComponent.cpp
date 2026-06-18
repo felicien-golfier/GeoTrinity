@@ -13,6 +13,18 @@ UGeoBeamVFXComponent::UGeoBeamVFXComponent()
 	SetIsReplicatedByDefault(true);
 }
 
+void UGeoBeamVFXComponent::CreateNiagaraComponent()
+{
+	if (!IsValid(NiagaraComponent) && BeamSystem)
+	{
+		NiagaraComponent = NewObject<UNiagaraComponent>(GetOwner());
+		NiagaraComponent->SetAutoActivate(false);
+		NiagaraComponent->SetAsset(BeamSystem);
+		NiagaraComponent->RegisterComponent();
+		NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
+											FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	}
+}
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBeamVFXComponent::BeginPlay()
 {
@@ -25,21 +37,12 @@ void UGeoBeamVFXComponent::BeginPlay()
 		return;
 	}
 
-	if (!ensureMsgf(BeamSystem,
-					TEXT("UGeoBeamVFXComponent: BeamSystem is not set — assign it in the component defaults")))
+	if (BeamSystem)
 	{
-		return;
+		CreateNiagaraComponent();
+		// BeamState may already hold live values when this component arrives via replication after the ability fired.
+		ApplyBeamState();
 	}
-
-	NiagaraComponent = NewObject<UNiagaraComponent>(GetOwner());
-	NiagaraComponent->SetAutoActivate(false);
-	NiagaraComponent->SetAsset(BeamSystem);
-	NiagaraComponent->RegisterComponent();
-	NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
-										FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
-	// BeamState may already hold live values when this component arrives via replication after the ability fired.
-	ApplyBeamState();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

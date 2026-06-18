@@ -5,7 +5,6 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
@@ -76,16 +75,9 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 			continue; // Do not heal, neither count in AlliesHealed full life mates.
 		}
 
-		UGeoGameFeelComponent* GameFeelComponent = Actor->FindComponentByClass<UGeoGameFeelComponent>();
-		if (!ensureMsgf(GameFeelComponent, TEXT("UGeoHealingAuraAbility: avatar has no GeoGameFeelComponent")))
-		{
-			continue;
-		}
-		bool const bSuppressHealCue = !GameFeelComponent->IsHealCueAvailable();
-
 		FHealEffectData HealEffect;
 		HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime;
-		HealEffect.bSuppressGameplayCue = bSuppressHealCue;
+		HealEffect.bLimitGameplayCue = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
 														StoredPayload.Seed);
 	}

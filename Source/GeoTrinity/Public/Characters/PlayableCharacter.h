@@ -16,7 +16,6 @@ class UGameplayEffect;
 class UWidgetComponent;
 class UGeoChargeAbility;
 class UGeoDeployableManagerComponent;
-class UGeoChargeBeamGaugeWidget;
 
 USTRUCT(BlueprintType)
 struct FPlayerClassData
@@ -66,8 +65,11 @@ public:
 	/** Returns the player's currently active class (Square, Circle, or Triangle). */
 	EPlayerClass GetPlayerClass() const;
 
-	/** Server. Revives a downed player: re-applies base attributes (full health) and restores the character. */
+	/** Server. Revives a downed player: cancels active abilities, removes all gameplay effects, re-applies per-class default attributes, and restores the character. */
 	void Revive();
+
+	/** Returns true while the player is downed (health reached 0 and not yet revived). */
+	bool IsDead() const { return bIsDead; }
 
 	/**
 	 * Switches the player to NewClass: clears current class abilities, applies new class data, and grants new

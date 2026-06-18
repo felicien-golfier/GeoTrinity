@@ -9,8 +9,9 @@
 #include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"
 #include "GameClasses/GeoGameMode.h"
+#include "GameFramework/HUD.h"
 #include "GameplayTagContainer.h"
-#include "HUD/GeoHUD.h"
+#include "HUD/Interface/GeoHUDInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -125,7 +126,7 @@ void AGeoGameState::StopBossFight()
 
 	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
-		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
+		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(LocalPlayerController->GetHUD()))
 		{
 			GeoHUD->HideBossHealthBar();
 		}
@@ -145,9 +146,9 @@ void AGeoGameState::StopBossFight()
 
 void AGeoGameState::InitBossFight(AEnemyCharacter* Boss)
 {
-	if (APlayerController const* LocalPlayerController = GetWorld()->GetFirstPlayerController())
+	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
-		if (AGeoHUD* GeoHUD = LocalPlayerController->GetHUD<AGeoHUD>())
+		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(LocalPlayerController->GetHUD()))
 		{
 			GeoHUD->ShowBossHealthBar(Boss);
 		}
@@ -165,13 +166,12 @@ void AGeoGameState::InitBossFight(AEnemyCharacter* Boss)
 			EnemyAIController->GetStateTreeComp()->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
 		}
 
-		// TODO : Do a proper player life cycle not boss dependent
-		PlayersAliveInFight = 0;
+		PlayersInFight.Reset();
 		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 		{
-			if (It->IsValid())
+			if (APlayableCharacter* Player = It->IsValid() ? Cast<APlayableCharacter>((*It)->GetPawn()) : nullptr)
 			{
-				++PlayersAliveInFight;
+				PlayersInFight.Add(Player);
 			}
 		}
 
@@ -251,10 +251,39 @@ void AGeoGameState::RevivePlayers() const
 	}
 }
 
-void AGeoGameState::NotifyPlayerDiedInFight(APlayableCharacter* /*PlayableCharacter*/)
+bool AGeoGameState::AreAllPlayersDead() const
 {
-	--PlayersAliveInFight;
-	if (PlayersAliveInFight > 0)
+	for (APlayableCharacter* Player : PlayersInFight)
+	{
+		if (IsValid(Player) && !Player->IsDead())
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void AGeoGameState::NotifyPlayerDied(APlayableCharacter* PlayableCharacter)
+{
+	if (MatchState != MatchState::InProgress)
+	{
+		// Player died while not in progress (e.g. during the fight-commit transition); just revive that player.
+		PlayableCharacter->Revive();
+		return;
+	}
+
+	HandlePotentialWipe();
+}
+
+void AGeoGameState::NotifyPlayerLeft(APlayableCharacter* PlayableCharacter)
+{
+	PlayersInFight.Remove(PlayableCharacter);
+	HandlePotentialWipe();
+}
+
+void AGeoGameState::HandlePotentialWipe()
+{
+	if (!AreAllPlayersDead())
 	{
 		return;
 	}

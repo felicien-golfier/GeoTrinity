@@ -4,6 +4,7 @@
 #include "GameClasses/GeoGameInstance.h"
 
 #include "FindSessionsCallbackProxy.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "GenericTeamAgentInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"

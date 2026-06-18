@@ -29,7 +29,7 @@ void AGeoGameMode::Logout(AController* Exiting)
 	{
 		return;
 	}
-	GeoGameState->NotifyPlayerDiedInFight(PlayableCharacter);
+	GeoGameState->NotifyPlayerLeft(PlayableCharacter);
 }
 
 bool AGeoGameMode::ReadyToStartMatch_Implementation()

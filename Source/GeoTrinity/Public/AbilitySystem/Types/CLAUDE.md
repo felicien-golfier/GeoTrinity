@@ -18,7 +18,8 @@ These are **not replicated** and **not included in `NetSerialize`**. They are em
 |---|---|---|
 | `SingleUseDamageMultiplier` | `FSingleUseDamageMultiplierEffectData::UpdateContextHandle` | `ExecCalc_Damage` |
 | `bSuppressHealProvided` | `FHealEffectData::UpdateContextHandle` | `ExecCalc_Heal` |
-| `bSuppressGameplayCue` | `FDamageEffectData` / `FHealEffectData` | `ExecCalc_*` |
+| `bSuppressGameplayCue` | `FDamageEffectData` / `FHealEffectData` | `ExecCalc_*` (unconditional suppress) |
+| `bLimitGameplayCue` | `FDamageEffectData` / `FHealEffectData` | `ExecCalc_*` (rate-limits via target's `UGeoGameFeelComponent`) |
 | `bSuppressCombatStats` | `FDamageEffectData` / `FHealEffectData` | `UGeoAttributeSetBase::PostGameplayEffectExecute` |
 
 ### `GeoAbilitySystemGlobals` (`Globals/GeoAbilitySystemGlobals.h`)

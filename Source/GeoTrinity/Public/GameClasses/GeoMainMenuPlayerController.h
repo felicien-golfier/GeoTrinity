@@ -7,7 +7,7 @@
 
 #include "GeoMainMenuPlayerController.generated.h"
 
-class UGeoMainMenuWidget;
+class UUserWidget;
 
 /**
  * Player controller for the main menu level. On BeginPlay it creates the main menu widget,
@@ -24,10 +24,12 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	// The menu widget class lives in the UI module; held here as the engine base so gameplay never names the UI type.
+	// Set the concrete UGeoMainMenuWidget subclass in Blueprint.
 	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<UGeoMainMenuWidget> MenuWidgetClass;
+	TSubclassOf<UUserWidget> MenuWidgetClass;
 
 private:
 	UPROPERTY()
-	TObjectPtr<UGeoMainMenuWidget> MenuWidget;
+	TObjectPtr<UUserWidget> MenuWidget;
 };

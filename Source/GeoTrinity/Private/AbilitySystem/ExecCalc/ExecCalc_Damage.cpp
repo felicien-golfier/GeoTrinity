@@ -9,6 +9,7 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -42,7 +43,18 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	if (GeoContext)
 	{
 		Damage *= GeoContext->GetSingleUseDamageMultiplier();
-		if (GeoContext->IsSuppressGameplayCue())
+		bool bSuppressGameplayCue = GeoContext->IsSuppressGameplayCue();
+		if (!bSuppressGameplayCue && GeoContext->IsLimitGameplayCue() && IsValid(pTargetAvatar))
+		{
+			UGeoGameFeelComponent* GameFeelComponent = pTargetAvatar->FindComponentByClass<UGeoGameFeelComponent>();
+			if (ensureMsgf(GameFeelComponent,
+						   TEXT("UExecCalc_Damage: bLimitGameplayCue set but target %s has no GeoGameFeelComponent"),
+						   *pTargetAvatar->GetName()))
+			{
+				bSuppressGameplayCue = !GameFeelComponent->IsDamageCueAvailable();
+			}
+		}
+		if (bSuppressGameplayCue)
 		{
 			OutExecutionOutput.MarkGameplayCuesHandledManually();
 		}

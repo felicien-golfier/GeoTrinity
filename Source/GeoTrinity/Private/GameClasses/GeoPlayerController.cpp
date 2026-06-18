@@ -32,7 +32,9 @@ void AGeoPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	CurrentMouseCursor = EMouseCursor::Crosshairs;
-	SetInputMode(FInputModeGameOnly());
+	// With a visible cursor the viewport regularly loses mouse capture; the default GameOnly mode consumes the click
+	// that re-acquires capture, so most ability clicks would never reach input processing.
+	SetInputMode(FInputModeGameOnly().SetConsumeCaptureMouseDown(false));
 	SetViewTarget(UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass()));
 
 	if (ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player))

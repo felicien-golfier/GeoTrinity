@@ -29,8 +29,10 @@ Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working
 | Characters & components | `Source/GeoTrinity/Public/Characters/CLAUDE.md` |
 | Actors (projectiles, deployables, turret) | `Source/GeoTrinity/Public/Actor/CLAUDE.md` |
 | AI & StateTree | `Source/GeoTrinity/Public/AI/CLAUDE.md` |
-| HUD & widgets | `Source/GeoTrinity/Public/HUD/CLAUDE.md` |
+| HUD & widgets (UI module) | `Source/GeoTrinityUI/Public/HUD/CLAUDE.md` |
+| Gameplay↔UI interfaces (in gameplay module) | `Source/GeoTrinity/Public/HUD/Interface/` |
 | Subsystems & pooling | `Source/GeoTrinity/Public/System/CLAUDE.md` |
+| Editor automation utils (StateTree/Widget builders) | `Source/GeoTrinityEditor/Public/Tool/CLAUDE.md` |
 
 ## Source Structure (Every public folder has it's CLAUDE.md to explore)
 ```
@@ -75,22 +77,25 @@ Source/GeoTrinity/
 │   │   │   └── Utility/       # STTask_SendEventAfterNCycles
 │   │   ├── GeoAIBlackboardComponent.h
 │   │   └── GeoEnemyAIController.h
-│   ├── HUD/
-│   │   ├── Component/         # GeoCombattantWidgetComp
-│   │   ├── GeoHUD.h
-│   │   ├── GeoOverlayWidget.h
-│   │   ├── GeoAbilityBarWidget.h
-│   │   ├── GeoAbilitySlotWidget.h
-│   │   ├── GeoUserWidget.h
-│   │   ├── GenericCombattantWidget.h
-│   │   ├── GeoDeployChargeGaugeWidget.h
-│   │   ├── GeoChargeBeamGaugeWidget.h
-│   │   └── HudFunctionLibrary.h
+│   ├── HUD/Interface/        # Gameplay↔UI seam (UINTERFACEs implemented by GeoTrinityUI widgets):
+│   │                         #   GeoHUDInterface, GeoCombattantWidgetHost, GeoDeployGaugeWidgetInterface, GeoChargeBeamGaugeWidgetInterface
 │   ├── Input/                 # GeoInputComponent
 │   ├── Settings/              # GameDataSettings
-│   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem
-│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil (editor-only)
+│   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem, GeoSessionSubsystem
+│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team
 │   ├── World/                 # GeoGameCamera, GeoWorldSettings
 │   ├── Animation/             # FireAnimNotify
 │   └── GameClasses/           # GeoGameMode, GeoGameState, GeoGameInstance, GeoPlayerController, GeoPlayerState
+└── (sibling modules)
+Source/GeoTrinityUI/           # Runtime UI module (Type=Runtime) — all HUD/widgets/menus. Depends on GeoTrinity; gameplay
+│                             # never depends on it (interface seam in GeoTrinity/Public/HUD/Interface). Excluded from the
+│                             # dedicated-server target so the server package ships no Slate/UMG.
+└── Public/ & Private/
+    └── HUD/                  # Component/ (GeoCombattantWidgetComp), Menu/ (GeoMainMenuWidget, GeoBrowseServersWidget,
+                              # GeoLocalConnectWidget, GeoCreateServerWidget, GeoServerRowWidget, GeoMenuButton), GeoHUD,
+                              # GeoOverlayWidget, GeoAbilityBarWidget, GeoAbilitySlotWidget, GeoUserWidget,
+                              # GenericCombattantWidget, GeoDeployChargeGaugeWidget, GeoChargeBeamGaugeWidget, HudFunctionLibrary
+Source/GeoTrinityEditor/       # Editor-only module (Type=Editor) — UEditorUtilityObject automation utils kept out of packaged builds
+└── Public/ & Private/
+    └── Tool/                  # GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil
 ```

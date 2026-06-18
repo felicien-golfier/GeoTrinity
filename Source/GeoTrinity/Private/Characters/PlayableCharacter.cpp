@@ -8,9 +8,9 @@
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "HUD/Component/GeoCombattantWidgetComp.h"
-#include "HUD/GeoChargeBeamGaugeWidget.h"
-#include "HUD/GeoDeployChargeGaugeWidget.h"
+#include "HUD/Interface/GeoChargeBeamGaugeWidgetInterface.h"
+#include "HUD/Interface/GeoCombattantWidgetHost.h"
+#include "HUD/Interface/GeoDeployGaugeWidgetInterface.h"
 #include "Input/GeoInputComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -52,28 +52,22 @@ void APlayableCharacter::BeginPlay()
 void APlayableCharacter::SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Ability, bool const bVisible)
 {
 	DeployChargeGaugeComponent->SetHiddenInGame(false);
+	GetWorld()->GetTimerManager().ClearTimer(ChargeDeployHideTimerHandle);
+
+	IGeoDeployGaugeWidgetInterface* Widget =
+		Cast<IGeoDeployGaugeWidgetInterface>(DeployChargeGaugeComponent->GetUserWidgetObject());
+	ensureMsgf(Widget, TEXT("DeployChargeGaugeComponent has no widget or wrong widget class on %s"), *GetName());
+	if (Widget)
+	{
+		Widget->SetDeployAbility(Ability);
+	}
+
 	if (bVisible)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(ChargeDeployHideTimerHandle);
-		UGeoDeployChargeGaugeWidget* Widget =
-			Cast<UGeoDeployChargeGaugeWidget>(DeployChargeGaugeComponent->GetUserWidgetObject());
-		ensureMsgf(Widget, TEXT("DeployChargeGaugeComponent has no widget or wrong widget class on %s"), *GetName());
-		if (Widget)
-		{
-			Widget->DeployAbility = Ability;
-		}
 		DeployChargeGaugeComponent->SetHiddenInGame(false);
 	}
 	else
 	{
-		GetWorld()->GetTimerManager().ClearTimer(ChargeDeployHideTimerHandle);
-		UGeoDeployChargeGaugeWidget* Widget =
-			Cast<UGeoDeployChargeGaugeWidget>(DeployChargeGaugeComponent->GetUserWidgetObject());
-		ensureMsgf(Widget, TEXT("DeployChargeGaugeComponent has no widget or wrong widget class on %s"), *GetName());
-		if (Widget)
-		{
-			Widget->DeployAbility = Ability;
-		}
 		GetWorld()->GetTimerManager().SetTimer(
 			ChargeDeployHideTimerHandle,
 			[this]()
@@ -87,27 +81,27 @@ void APlayableCharacter::SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Abi
 void APlayableCharacter::SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability, bool bVisible, float SweetSpotMinRatio,
 												   float SweetSpotMaxRatio)
 {
+	IGeoChargeBeamGaugeWidgetInterface* Widget =
+		Cast<IGeoChargeBeamGaugeWidgetInterface>(ChargeBeamGaugeComponent->GetUserWidgetObject());
+
 	if (bVisible)
 	{
 		ChargeBeamGaugeComponent->SetHiddenInGame(false);
 		GetWorld()->GetTimerManager().ClearTimer(ChargeBeamHideTimerHandle);
-		UGeoChargeBeamGaugeWidget* Widget =
-			Cast<UGeoChargeBeamGaugeWidget>(ChargeBeamGaugeComponent->GetUserWidgetObject());
 		ensureMsgf(Widget, TEXT("ChargeBeamGaugeComponent has no widget or wrong widget class on %s"), *GetName());
 		if (Widget)
 		{
-			Widget->ChargeBeamAbility = Ability;
+			Widget->SetChargeBeamAbility(Ability);
 			Widget->SetSweetSpotRatios(SweetSpotMinRatio, SweetSpotMaxRatio);
 		}
 	}
 	else
 	{
-		if (UGeoChargeBeamGaugeWidget* Widget =
-				Cast<UGeoChargeBeamGaugeWidget>(ChargeBeamGaugeComponent->GetUserWidgetObject()))
+		if (Widget)
 		{
-			Widget->ChargeBeamAbility = Ability; // In cas we haven't got time to enter visibility.
+			Widget->SetChargeBeamAbility(Ability); // In case we haven't got time to enter visibility.
 			Widget->UpdateVisualChargeRatio();
-			Widget->ChargeBeamAbility = nullptr;
+			Widget->SetChargeBeamAbility(nullptr);
 		}
 		GetWorld()->GetTimerManager().SetTimer(
 			ChargeBeamHideTimerHandle,
@@ -178,7 +172,12 @@ void APlayableCharacter::InitGAS()
 
 	// The floating health bar binds in its component's BeginPlay, which can run before the ASC exists on a remote proxy
 	// (the ASC arrives via OnRep_PlayerState). Now that the ASC is set, (re)bind the bar so it reflects real health.
-	CharacterWidgetComponent->BindWidgetToOwnerASC();
+	// CharacterWidgetComponent is resolved in BeginPlay; if InitGAS runs first (PossessedBy), BeginPlay binds it
+	// instead.
+	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
+	{
+		WidgetHost->BindToOwnerASC();
+	}
 }
 
 void APlayableCharacter::Death()
@@ -188,18 +187,25 @@ void APlayableCharacter::Death()
 		return;
 	}
 	bIsDead = true;
-	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
-	if (!ensureMsgf(GameState, TEXT("No GameState in %s"), *GetName()))
-	{
-		return;
-	}
 
-	AbilitySystemComponent->CancelAllAbilities();
-	AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+	if (IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->CancelAllAbilities();
+		AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+	}
 	StopAllSpawnedElements();
 	StopCharacter();
 	SetCanBeDamaged(false);
-	GameState->NotifyPlayerDiedInFight(this);
+
+	if (GeoLib::IsServer(this))
+	{
+		AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
+		if (!ensureMsgf(GameState, TEXT("No GameState in %s"), *GetName()))
+		{
+			return;
+		}
+		GameState->NotifyPlayerDied(this);
+	}
 }
 
 void APlayableCharacter::Revive()
@@ -209,7 +215,17 @@ void APlayableCharacter::Revive()
 		return;
 	}
 	bIsDead = false;
-	AbilitySystemComponent->InitializeDefaultAttributes();
+
+	// Reset every cooldown: a predicted cooldown effect can survive a prediction correction at death,
+	// leaving the client ability bar stuck. Wiping all effects on revive guarantees a clean slate.
+	// Re-apply both the generic and per-class default attributes (ammo, multipliers) exactly like start/ChangeClass,
+	// so revive restores the same values — InitializeDefaultAttributes alone misses the per-class GE.
+	if (IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->CancelAllAbilities();
+		AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+		ApplyClassData(GetPlayerClass());
+	}
 	RestartCharacter();
 	SetCanBeDamaged(true);
 }
@@ -247,14 +263,16 @@ void APlayableCharacter::SetDeathMaterial(bool const bDead)
 
 void APlayableCharacter::OnRep_IsDead(bool const bOldValue)
 {
+	// bIsDead is already set by replication; reset it so Death/Revive run their full bodies (guarded internally).
 	if (bIsDead && !bOldValue)
 	{
-		StopAllSpawnedElements();
-		StopCharacter();
+		bIsDead = false;
+		Death();
 	}
 	else if (!bIsDead && bOldValue)
 	{
-		RestartCharacter();
+		bIsDead = true;
+		Revive();
 	}
 }
 
@@ -367,26 +385,26 @@ void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
 
 void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)
 {
-	FPlayerClassData const* VisualData = ClassData.Find(NewClass);
-	if (!VisualData)
+	FPlayerClassData const* PlayerClassData = ClassData.Find(NewClass);
+	if (!PlayerClassData)
 	{
-		ensureMsgf(VisualData, TEXT("ApplyClassData: No visual data for class on %s"), *GetName());
+		ensureMsgf(PlayerClassData, TEXT("ApplyClassData: No visual data for class on %s"), *GetName());
 		return;
 	}
-	if (!VisualData->DefaultAttributes)
+	if (!PlayerClassData->DefaultAttributes)
 	{
-		ensureMsgf(VisualData->DefaultAttributes, TEXT("ApplyClassData: No DefaultAttributes for class on %s"),
+		ensureMsgf(PlayerClassData->DefaultAttributes, TEXT("ApplyClassData: No DefaultAttributes for class on %s"),
 				   *GetName());
 		return;
 	}
 
-	GetMesh()->SetSkeletalMesh(VisualData->Mesh);
-	GetMesh()->SetAnimInstanceClass(VisualData->AnimClass);
-	ensureMsgf(VisualData->AliveMaterial, TEXT("ApplyClassData: No AliveMaterial for class on %s"), *GetName());
-	GetMesh()->SetMaterial(0, VisualData->AliveMaterial);
+	GetMesh()->SetSkeletalMesh(PlayerClassData->Mesh);
+	GetMesh()->SetAnimInstanceClass(PlayerClassData->AnimClass);
+	ensureMsgf(PlayerClassData->AliveMaterial, TEXT("ApplyClassData: No AliveMaterial for class on %s"), *GetName());
+	GetMesh()->SetMaterial(0, PlayerClassData->AliveMaterial);
 	if (IsValid(AbilitySystemComponent))
 	{
-		AbilitySystemComponent->ApplyEffectToSelf(VisualData->DefaultAttributes);
+		AbilitySystemComponent->ApplyEffectToSelf(PlayerClassData->DefaultAttributes);
 	}
 }
 

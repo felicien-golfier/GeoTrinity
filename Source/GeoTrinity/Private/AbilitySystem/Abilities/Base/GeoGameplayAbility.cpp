@@ -172,6 +172,11 @@ void UGeoGameplayAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 		FireTriggerTimerHandle.Invalidate();
 		BuildDataAndFire();
+		UAnimInstance* AnimInstance = GetActorInfo().GetAnimInstance();
+		if (AnimInstance && AnimMontage && IsLocallyControlled())
+		{
+			GetAbilitySystemComponentFromActorInfo()->CurrentMontageJumpToSection(GeoASLib::SectionEndName);
+		}
 	}
 }
 
