@@ -65,7 +65,7 @@ public:
 	/** Returns the player's currently active class (Square, Circle, or Triangle). */
 	EPlayerClass GetPlayerClass() const;
 
-	/** Server. Revives a downed player: re-applies base attributes (full health) and restores the character. */
+	/** Server. Revives a downed player: cancels active abilities, removes all gameplay effects, re-applies per-class default attributes, and restores the character. */
 	void Revive();
 
 	/** Returns true while the player is downed (health reached 0 and not yet revived). */
