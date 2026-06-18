@@ -136,12 +136,22 @@ void AGeoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	// The health-bar widget component is added in Blueprint (a UGeoCombattantWidgetComp from the UI module). Resolve it
-	// here as the engine base so gameplay can toggle/bind it through IGeoCombattantWidgetHost without naming the UI type.
-	CharacterWidgetComponent = FindComponentByClass<UWidgetComponent>();
+	// by the IGeoCombattantWidgetHost interface, not the bare UWidgetComponent base — the gauge components are also
+	// UWidgetComponents, so FindComponentByClass could return a gauge depending on registration order.
+	CharacterWidgetComponent =
+		Cast<UWidgetComponent>(FindComponentByInterface(UGeoCombattantWidgetHost::StaticClass()));
 	// Every character shows a floating health bar, so its BP must include the widget component. Flag a missing one (the
 	// dedicated server is headless and never renders it, so skip the check there).
 	ensureMsgf(CharacterWidgetComponent || GeoLib::IsDedicatedServer(GetWorld()),
 			   TEXT("%s has no UGeoCombattantWidgetComp — add one in its Blueprint"), *GetName());
+	// The bar must draw in Screen space at the WBP's own (small) desired size. These were guaranteed in C++ before the
+	// component moved to Blueprint; enforce them here so a BP left at the WidgetComponent defaults (World space, fixed
+	// DrawSize) can't render the bar flat-on-the-ground (invisible top-down) or stretched to a screen-filling size.
+	if (CharacterWidgetComponent)
+	{
+		CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		CharacterWidgetComponent->SetDrawAtDesiredSize(true);
+	}
 	// On the listen-server host InitGAS runs from PossessedBy (before this BeginPlay), when the BP component is not yet
 	// resolved, so the re-bind there is skipped. Attributes are already initialized by now, so bind here instead.
 	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
