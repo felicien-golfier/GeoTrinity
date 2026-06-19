@@ -9,7 +9,7 @@ jobs:
   build:
     name: Build Listen Server (Game target)
     runs-on: self-hosted
-    timeout-minutes: 60
+    timeout-minutes: 240
 
     steps:
       - name: Pull latest
