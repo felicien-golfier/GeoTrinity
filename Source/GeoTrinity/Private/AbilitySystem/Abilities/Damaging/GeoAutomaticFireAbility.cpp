@@ -194,7 +194,14 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
 
 	ExecuteShot();
-	CommitAbility(Handle, ActorInfo, ActivationInfo);
+
+	// On a listen host the locally-controlled player and the server share one ASC, and Fire() already committed the
+	// cost on this machine — committing again here would charge the cost twice (e.g. ammo dropping 2 per shot for the
+	// host only). Only the server-for-a-remote-client path must commit here.
+	if (!ActorInfo->IsLocallyControlledPlayer())
+	{
+		CommitAbility(Handle, ActorInfo, ActivationInfo);
+	}
 
 	// Seed is incremented server-side using the authoritative shot counter rather than reading it from
 	// the client's target data, so a cheating client cannot fabricate a seed that bypasses status-proc checks.

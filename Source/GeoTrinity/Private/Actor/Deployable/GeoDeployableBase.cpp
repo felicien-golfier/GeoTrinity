@@ -7,10 +7,10 @@
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
-#include "Components/WidgetComponent.h"
 #include "GameplayEffect.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
@@ -22,9 +22,10 @@ AGeoDeployableBase::AGeoDeployableBase()
 	CapsuleComponent->SetCollisionProfileName(TEXT("GeoShape"));
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
-	// CombattantWidgetComponent (the world-space health bar) is a UGeoCombattantWidgetComp added in Blueprint — it lives
-	// in the UI module which gameplay must not reference. It is resolved and configured from the BP component in
-	// BeginPlay. The BP attaches it to a non-rotating anchor so the bar's offset doesn't orbit the deployable as it yaws.
+	// CombattantWidgetComponent (the world-space health bar) is a UGeoCombattantWidgetComp added in Blueprint — it
+	// lives in the UI module which gameplay must not reference. It is resolved and configured from the BP component in
+	// BeginPlay. The BP attaches it to a non-rotating anchor so the bar's offset doesn't orbit the deployable as it
+	// yaws.
 }
 
 
@@ -182,10 +183,13 @@ void AGeoDeployableBase::BeginPlay()
 		}
 	}
 
-	if (UGeoDeployableManagerComponent* DeployableManager =
-			GetInstigator()->GetComponentByClass<UGeoDeployableManagerComponent>())
+	if (GetInstigator())
 	{
-		DeployableManager->RegisterDeployable(this);
+		if (UGeoDeployableManagerComponent* DeployableManager =
+				GetInstigator()->GetComponentByClass<UGeoDeployableManagerComponent>())
+		{
+			DeployableManager->RegisterDeployable(this);
+		}
 	}
 
 	InitDrain();
