@@ -14,8 +14,10 @@ jobs:
     steps:
       - name: Pull latest
         shell: cmd
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" pull
+          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" -c "http.https://github.com/.extraheader=Authorization: Bearer %GITHUB_TOKEN%" pull
 
       - name: Build Game (GeoTrinity Win64 Development)
         shell: cmd
