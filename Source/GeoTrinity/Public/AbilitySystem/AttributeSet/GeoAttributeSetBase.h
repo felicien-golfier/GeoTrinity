@@ -30,6 +30,9 @@ class GEOTRINITY_API UGeoAttributeSetBase : public UAttributeSet
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/** Clamps Shield to [0, MaxHealth] before any modification lands. */
+	virtual void PreAttributeChange(FGameplayAttribute const& Attribute, float& NewValue) override;
+
 	/**
 	 * Applies IncomingDamage and IncomingHeal meta attributes to Health, clamps to [0, MaxHealth],
 	 * and reports damage/healing to UGeoCombatStatsSubsystem. Ends the owning actor's life at zero health.

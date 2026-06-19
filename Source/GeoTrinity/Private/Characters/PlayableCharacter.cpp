@@ -188,6 +188,10 @@ void APlayableCharacter::Death()
 	if (IsValid(AbilitySystemComponent))
 	{
 		AbilitySystemComponent->CancelAllAbilities();
+		// CancelAllAbilities skips specs whose replicated ActiveCount is already 0, so a local predicted instance
+		// (e.g. a held beam) the server already ended can keep ticking on the owning client and leave its ability-bar
+		// slot stuck grayed. End any such instance directly.
+		AbilitySystemComponent->EndActiveAbilitiesLocally();
 		AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
 	}
 	StopAllSpawnedElements();

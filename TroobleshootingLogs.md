@@ -56,6 +56,14 @@ Note: `ExecuteRecallCue()` is a public method on `AGeoDeployableBase` that fires
 
 Only 2 Gameplay Cues can be multicasted over the network each frame for a single ASC. If you try to detonate mines with the GC on the SourceASC, then only 2 will be shown, always. even if client plays it.
 
+# GAS — Ability Lifecycle
+
+## `Spec.IsActive()` is a replicated value, not local instance state — 19/06/2026
+
+Held ability (Moira beam) stuck "in use" / slot stuck grayed on death. `FGameplayAbilitySpec::IsActive()` is `ActiveCount > 0`, a server-replicated counter — NOT the local instance's `bIsActive`. `CancelAllAbilities()` gates on `if (Spec.IsActive())`, so when the server's cancel zeroes `ActiveCount` before the client's `OnRep_IsDead -> Death() -> CancelAllAbilities()` runs, the client skips the spec and its local predicted instance keeps ticking.
+
+**Rule:** to tear down your own instance, drive off `Instance->IsActive()` over `Spec.GetAbilityInstances()`, never `Spec.IsActive()`. Fix: `UGeoAbilitySystemComponent::EndActiveAbilitiesLocally()`, called from `Death()`.
+
 # Misc
 
 ## Deployables null on client

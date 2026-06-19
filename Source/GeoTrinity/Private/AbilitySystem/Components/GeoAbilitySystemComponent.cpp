@@ -338,6 +338,26 @@ void UGeoAbilitySystemComponent::StopAllActivePatterns()
 	}
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::EndActiveAbilitiesLocally()
+{
+	FGameplayAbilityActorInfo* ActorInfo = AbilityActorInfo.Get();
+
+	FScopedAbilityListLock ScopeLock(*this);
+	for (FGameplayAbilitySpec const& Spec : GetActivatableAbilities())
+	{
+		for (UGameplayAbility* Instance : Spec.GetAbilityInstances())
+		{
+			// Drive off the instance's own active flag, not the replicated Spec.IsActive() count: the count may already
+			// have been zeroed by the server's authoritative end while this local predicted instance is still running.
+			if (Instance && Instance->IsActive())
+			{
+				Instance->CancelAbility(Spec.Handle, ActorInfo, Instance->GetCurrentActivationInfoRef(), false);
+			}
+		}
+	}
+}
+
 bool UGeoAbilitySystemComponent::FindPatternByClass(UClass* PatternClass, UPattern*& Pattern)
 {
 	UPattern** FoundPattern = Patterns.FindByPredicate(

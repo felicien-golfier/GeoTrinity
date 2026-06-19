@@ -25,6 +25,17 @@ void UGeoAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoAttributeSetBase::PreAttributeChange(FGameplayAttribute const& Attribute, float& NewValue)
+{
+	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetShieldAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackData const& Data)
 {
 	Super::PostGameplayEffectExecute(Data);

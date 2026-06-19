@@ -127,8 +127,14 @@ void UGeoDeployableManagerComponent::OnDeployableDestroyed(AActor* Deployable)
 
 void UGeoDeployableManagerComponent::OnDeployableDestroyed(AGeoDeployableBase* Deployable)
 {
+	// Reached by both OnDeployableExpiredEvent (Expire, authority-only, fires early) and OnDestroyed (engine, every
+	// machine). On a listen host both fire for the same actor, so only act on the invocation that actually removes it —
+	// otherwise the count broadcasts twice and transiently reads wrong.
 	FDeployableBucket& Bucket = Deployables.FindOrAdd(Deployable->GetClass());
-	Bucket.Deployables.Remove(Deployable);
+	if (Bucket.Deployables.Remove(Deployable) == 0)
+	{
+		return;
+	}
 
 	OnDeployCountChanged.Broadcast(Bucket.Deployables.Num(), MaxDeployables);
 }

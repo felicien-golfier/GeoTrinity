@@ -222,7 +222,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			}
 
 			float const DrainRatio = ActualDrain / MaxHealth;
-			BeamRatio += DrainRatio;
+			BeamRatio = FMath::Min(BeamRatio + DrainRatio, MaximumZoneAbsorbed + 1.f);
 			RemainingDuration += DurationPerAbsorbedZone * DrainRatio;
 		}
 		else if (Target->CanBeDamaged())

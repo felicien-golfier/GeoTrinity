@@ -26,6 +26,14 @@ Other targets (build these ONLY when explicitly needed, not for the normal edito
 "C:\UnrealEngine\Engine\Build\BatchFiles\Build.bat" GeoTrinity Win64 Development -Project="C:\GeoTrinity\GeoTrinity.uproject" -WaitMutex
 ```
 
+## Packaging (cook + stage + archive)
+**Always archive packaged builds into `C:\GeoTrinity\Build` — never `Packaged` or any other folder.**
+```bash
+# Listen-server-capable standalone client (boots MainMenu → Play Local → Host = listen server)
+"C:\UnrealEngine\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="C:\GeoTrinity\GeoTrinity.uproject" -noP4 -platform=Win64 -clientconfig=Development -cook -build -stage -pak -archive -archivedirectory="C:\GeoTrinity\Build"
+```
+Editor must be closed during packaging (DLL link locks). Packaged client logs to `%LOCALAPPDATA%\GeoTrinity\Saved\Logs`.
+
 ## Launch Editor
 
 ```bash

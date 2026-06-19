@@ -6,6 +6,8 @@
 
 Attributes: `Health`, `MaxHealth`, `Shield`, `IncomingDamage` (meta), `IncomingHeal` (meta)
 
+**`PreAttributeChange()`** clamps `Shield` to `[0, MaxHealth]` before any modification lands, so shield can never exceed max life regardless of source (GE modifier, setter, OnRep).
+
 **`PostGameplayEffectExecute()` does three things:**
 1. Clamps `Health` to `[0, MaxHealth]`
 2. Reports damage/heal to `UGeoCombatStatsSubsystem`
