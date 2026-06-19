@@ -59,7 +59,7 @@ void UGeoLocalConnectWidget::HandleHost()
 	{
 		return;
 	}
-	Session->HostDedicated(HostMap.ToSoftObjectPath().GetLongPackageName());
+	Session->HostListen(HostMap.ToSoftObjectPath().GetLongPackageName());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

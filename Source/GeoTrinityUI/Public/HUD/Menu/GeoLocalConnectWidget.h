@@ -15,9 +15,9 @@ class UWorld;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoLocalConnectClosedSignature);
 
 /**
- * "Play Local" panel: direct-IP host/join without Steam, via UGeoSessionSubsystem. Host launches a dedicated server
- * behind and joins it as a pure client; Join travels to the IP typed in IPInput. LocalIPText shows this machine's IPv4
- * for the host to read out. Communicates back to the main menu exclusively via the OnClosed delegate.
+ * "Play Local" panel: direct-IP host/join without Steam, via UGeoSessionSubsystem. Host starts a listen server (the
+ * local player is the authority and plays); Join travels to the IP typed in IPInput. LocalIPText shows this machine's
+ * IPv4 for the host to read out. Communicates back to the main menu exclusively via the OnClosed delegate.
  * Required in the BP hierarchy: UGeoMenuButton "HostButton", "JoinButton", "BackButton",
  * UEditableTextBox "IPInput", UTextBlock "LocalIPText".
  */
@@ -30,7 +30,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Session")
 	FGeoLocalConnectClosedSignature OnClosed;
 
-	/** Gameplay map the launched dedicated server loads. */
+	/** Gameplay map the listen-server host travels to. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Session")
 	TSoftObjectPtr<UWorld> HostMap;
 

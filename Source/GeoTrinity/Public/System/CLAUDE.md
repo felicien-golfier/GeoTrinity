@@ -30,8 +30,8 @@ World subsystem tracking DPS / HPS / damage-received per player using a **10-sec
 
 ### `GeoSessionSubsystem.h`
 **GameInstance** subsystem (survives level travel) — the direct-IP **no-Steam** connect/host seam. Steam sessions stay in `UGeoGameInstance` (CreateAdvancedSession/JoinAdvancedSession); this subsystem never touches them.
-- `HostDedicated(MapPackagePath)` — **launches a dedicated server behind, then joins it as a pure client** (the local player is never the authority, so authority-gated HUD init runs like a remote joiner's). In-editor it `CreateProc`s `UnrealEditor-Cmd.exe "<uproject>" <MapPackagePath> -server -log -port=7777 -nosteam`; in a packaged build it `CreateProc`s `GeoTrinityServer.exe <MapPackagePath> -log -port=7777 -nosteam` located next to the client exe (requires packaging with the Server target — `Source/GeoTrinityServer.Target.cs`). The `FProcHandle` is tracked and killed in `Deinitialize` so quitting the client never orphans a server.
-- `JoinByAddress(Address)` — `ClientTravel` the local player to a host IP (engine default port 7777 if omitted). Used by Join-by-IP and internally by `HostDedicated` (loopback `127.0.0.1:7777`).
+- `HostListen(MapPackagePath)` — **starts a listen server**: `ServerTravel`s the local player to `<MapPackagePath>?listen`, so the host is the authority and also plays. No separate process is launched; no Server target needed for local play. Joiners connect over direct IP via `JoinByAddress`.
+- `JoinByAddress(Address)` — `ClientTravel` the local player to a host IP (engine default port 7777 if omitted). Used by Join-by-IP.
 - `GetLocalIPv4()` — best-effort local IPv4 (via `ISocketSubsystem::GetLocalHostAddr`) for the host to read out; `"127.0.0.1"` on failure
 - Called by `UGeoLocalConnectWidget` (the "Play Local" menu panel). Requires the `"Sockets"` module dep.
 - Net driver: `DefaultEngine.ini` keeps SteamSockets as primary but falls back to `IpNetDriver`, so no-Steam instances network over plain IP. **Host and joiner must be in the same mode** (both Steam or both no-Steam) — mixed connections fail.
