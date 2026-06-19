@@ -8,6 +8,7 @@
 #include "GameFramework/Pawn.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 UGeoGameFeelComponent::UGeoGameFeelComponent()
 {
@@ -67,8 +68,7 @@ void UGeoGameFeelComponent::FlashOnHit()
 
 	UGameDataSettings const* GDSettings = GetDefault<UGameDataSettings>();
 
-	APawn const* OwnerAsPawn = Cast<APawn>(GetOwner());
-	bool const bIsLocalPlayer = OwnerAsPawn && OwnerAsPawn->IsLocallyControlled();
+	bool const bIsLocalPlayer = GeoLib::IsLocalPlayerAvatar(Cast<APawn>(GetOwner()));
 	TSoftObjectPtr<UMaterialInterface> const& MaterialRef =
 		bIsLocalPlayer ? GDSettings->LocalPlayerHitFlashMaterial : GDSettings->HitFlashMaterial;
 

@@ -44,7 +44,7 @@ TArray<TInstancedStruct<FEffectData>> UGeoChargeBeamAbility::GetEffectDataArray(
 	float const ChargeRatio = FMath::Clamp(static_cast<float>(StoredPayload.Seed) / 1000.f, 0.f, 1.f);
 	bool const bSweetSpot = ChargeRatio >= SweetSpotMinRatio && ChargeRatio <= SweetSpotMaxRatio;
 	float const MultiplierValue =
-		bSweetSpot ? MaxDamageMultiplier : FMath::Lerp(MinDamageMultiplier, MaxDamageMultiplier, ChargeRatio);
+		bSweetSpot ? SweetSpotDamageMultiplier : FMath::Lerp(MinDamageMultiplier, MaxDamageMultiplier, ChargeRatio);
 
 	TInstancedStruct<FContextDamageMultiplierEffectData> ChargeMultiplier;
 	ChargeMultiplier.InitializeAs<FContextDamageMultiplierEffectData>();

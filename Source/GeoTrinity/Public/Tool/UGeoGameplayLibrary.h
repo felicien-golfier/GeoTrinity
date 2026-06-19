@@ -11,6 +11,7 @@ constexpr float ArbitraryCharacterZ = 50.0f;
 
 class AEnemyCharacter;
 class AGeoProjectile;
+class APawn;
 class UCameraShakeBase;
 struct FAbilityPayload;
 struct FEffectData;
@@ -61,6 +62,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsDedicatedServer(UObject const* WorldContextObject);
 	static bool IsDedicatedServer(UWorld const* World);
+
+	/**
+	 * Returns true only for the viewing human player's own avatar on this machine.
+	 * Use this — NOT `IsLocallyControlled()` — to gate "my own pawn" cosmetics (hide own floating bar, local-player hit
+	 * flash). On a listen server the host's AI pawns are also locally controlled, so `IsLocallyControlled()` alone is
+	 * true for every host enemy; the extra `IsPlayerControlled()` term excludes them.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary")
+	static bool IsLocalPlayerAvatar(APawn const* Pawn);
 
 	/**
 	 * Returns the current server world time in seconds.

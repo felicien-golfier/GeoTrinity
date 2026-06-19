@@ -125,8 +125,8 @@ protected:
 	// parent rotation before the rotation override applies).
 	TObjectPtr<USceneComponent> WidgetAnchorComponent;
 
-	// The world-space health-bar widget component. Added in Blueprint (a UGeoCombattantWidgetComp from the UI module);
-	// held here as the engine base so the gameplay module never names the UI type. Found via the BP-added component.
+	// World-space health bar. Held as the engine base; the concrete UGeoCombattantWidgetComp (UI module) is set as the
+	// default subobject class from GameDataSettings so gameplay never names it. Edit per-BP in the component tree.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> CharacterWidgetComponent;
 

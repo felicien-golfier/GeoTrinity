@@ -9,6 +9,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Input/GeoInputComponent.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
@@ -38,8 +39,25 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	WidgetAnchorComponent->SetupAttachment(GetRootComponent());
 	WidgetAnchorComponent->SetUsingAbsoluteRotation(true);
 
-	// CharacterWidgetComponent (the world-space health bar) is a UGeoCombattantWidgetComp added in Blueprint — it lives
-	// in the UI module which gameplay must not reference. It is resolved from the BP-added component in BeginPlay.
+	// Concrete class comes from settings (a soft path) so gameplay never names the UI-module UGeoCombattantWidgetComp.
+	// Optional subobject: the dedicated-server target doesn't ship the UI class, so it resolves to null and is skipped.
+	if (UClass* const WidgetComponentClass =
+			GetDefault<UGameDataSettings>()->CombattantWidgetComponentClass.LoadSynchronous())
+	{
+		CharacterWidgetComponent = Cast<UWidgetComponent>(ObjectInitializer.CreateDefaultSubobject(
+			this, TEXT("CharacterWidgetComponent"), UWidgetComponent::StaticClass(), WidgetComponentClass,
+			/*bIsRequired=*/false, /*bIsTransient=*/false));
+		CharacterWidgetComponent->SetupAttachment(WidgetAnchorComponent);
+		// Orthographic top-down: World space lies the bar flat on the ground; Screen space at desired size keeps it
+		// upright and sized to the WBP. Both stay BP-overridable.
+		CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		CharacterWidgetComponent->SetDrawAtDesiredSize(true);
+		if (UClass* const WidgetClass =
+				GetDefault<UGameDataSettings>()->DefaultCharacterHealthBarWidgetClass.LoadSynchronous())
+		{
+			CharacterWidgetComponent->SetWidgetClass(WidgetClass);
+		}
+	}
 
 	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>(TEXT("GameFeelComponent"));
 
@@ -64,6 +82,7 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
 }
+
 void AGeoCharacter::StopAllSpawnedElements()
 {
 	AbilitySystemComponent->StopAllActivePatterns();
@@ -122,10 +141,8 @@ void AGeoCharacter::InitGAS()
 		AbilitySystemComponent->GiveStartupAbilities();
 	}
 
-	// The floating bar's component binds in BeginPlay, before attributes exist, so it collapses reading MaxHealth as 0.
-	// On clients replication later fires the change delegate and re-shows it, but the listen-server host sets
-	// attributes synchronously with no replication callback — so (re)bind now that attributes are initialized.
-	// (APlayableCharacter overrides InitGAS and calls this itself; InitializeForOwner is idempotent.)
+	// The host sets attributes synchronously (no replication callback), so re-bind now that they exist or the bar reads
+	// MaxHealth as 0 and collapses.
 	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
 	{
 		WidgetHost->BindToOwnerASC();
@@ -135,32 +152,16 @@ void AGeoCharacter::InitGAS()
 void AGeoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	// The health-bar widget component is added in Blueprint (a UGeoCombattantWidgetComp from the UI module). Resolve it
-	// by the IGeoCombattantWidgetHost interface, not the bare UWidgetComponent base — the gauge components are also
-	// UWidgetComponents, so FindComponentByClass could return a gauge depending on registration order.
-	CharacterWidgetComponent =
-		Cast<UWidgetComponent>(FindComponentByInterface(UGeoCombattantWidgetHost::StaticClass()));
-	// Every character shows a floating health bar, so its BP must include the widget component. Flag a missing one (the
-	// dedicated server is headless and never renders it, so skip the check there).
 	ensureMsgf(CharacterWidgetComponent || GeoLib::IsDedicatedServer(GetWorld()),
-			   TEXT("%s has no UGeoCombattantWidgetComp — add one in its Blueprint"), *GetName());
-	// The bar must draw in Screen space at the WBP's own (small) desired size. These were guaranteed in C++ before the
-	// component moved to Blueprint; enforce them here so a BP left at the WidgetComponent defaults (World space, fixed
-	// DrawSize) can't render the bar flat-on-the-ground (invisible top-down) or stretched to a screen-filling size.
-	if (CharacterWidgetComponent)
-	{
-		CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
-		CharacterWidgetComponent->SetDrawAtDesiredSize(true);
-	}
-	// On the listen-server host InitGAS runs from PossessedBy (before this BeginPlay), when the BP component is not yet
-	// resolved, so the re-bind there is skipped. Attributes are already initialized by now, so bind here instead.
+			   TEXT("%s has no CharacterWidgetComponent — set CombattantWidgetComponentClass in Game Data Settings"),
+			   *GetName());
+	// The host sets attributes synchronously (no replication callback to bind the bar), so bind here once they exist.
 	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
 	{
 		WidgetHost->BindToOwnerASC();
 	}
-	// Don't draw a floating bar over our own avatar — the local player uses the main HUD overlay.
-	// Enemies are never locally controlled, so this is a no-op for them.
-	SetCombattantWidgetVisible(!IsLocallyControlled());
+	// Hide the floating bar only over the local player's own avatar — it uses the main HUD overlay instead.
+	SetCombattantWidgetVisible(!GeoLib::IsLocalPlayerAvatar(this));
 #ifdef UE_EDITOR
 	LocalRoleForDebugPurpose = GetLocalRole();
 #endif

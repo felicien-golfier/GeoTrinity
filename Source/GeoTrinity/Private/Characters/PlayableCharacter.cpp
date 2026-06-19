@@ -170,10 +170,7 @@ void APlayableCharacter::InitGAS()
 		AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &APlayableCharacter::OnHealthChanged);
 	}
 
-	// The floating health bar binds in its component's BeginPlay, which can run before the ASC exists on a remote proxy
-	// (the ASC arrives via OnRep_PlayerState). Now that the ASC is set, (re)bind the bar so it reflects real health.
-	// CharacterWidgetComponent is resolved in BeginPlay; if InitGAS runs first (PossessedBy), BeginPlay binds it
-	// instead.
+	// On a remote proxy the ASC arrives via OnRep_PlayerState, after the bar's first bind; re-bind now that it exists.
 	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
 	{
 		WidgetHost->BindToOwnerASC();
