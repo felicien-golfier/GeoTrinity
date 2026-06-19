@@ -12,15 +12,16 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Pull latest
+        shell: cmd
+        run: git -C "H:\Work\Git\GeoTrinity" pull
 
       - name: Build Game (GeoTrinity Win64 Development)
         shell: cmd
         run: |
           "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" ^
             GeoTrinity Win64 Development ^
-            "${{ github.workspace }}\GeoTrinity.uproject" ^
+            "H:\Work\Git\GeoTrinity\GeoTrinity.uproject" ^
             -WaitMutex -NoHotReloadFromIDE
         env:
           UE_IgnoreOutdatedImportedLibraries: 1
