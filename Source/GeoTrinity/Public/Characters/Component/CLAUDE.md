@@ -3,7 +3,7 @@
 Character components attached to `AGeoCharacter` and its subclasses.
 
 ## `GeoCharacterMovementComponent.h`
-Extends `UCharacterMovementComponent`. Caches base speed and acceleration on `BeginPlay`.
+Extends `UCharacterMovementComponent`. Caches base speed and acceleration on `OnRegister`.
 
 - `ApplySpeedMultiplier(float Multiplier)` — scales `MaxWalkSpeed` and `MaxAcceleration` relative to cached base values
 - Driven by `MovementSpeedMultiplier` attribute changes from `UCharacterAttributeSet`

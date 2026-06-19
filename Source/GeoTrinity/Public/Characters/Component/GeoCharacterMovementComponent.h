@@ -10,7 +10,7 @@
 class AGeoCharacter;
 
 /**
- * Custom movement component that caches the character's base walk speed and acceleration on BeginPlay
+ * Custom movement component that caches the character's base walk speed and acceleration on OnRegister
  * so that attribute-driven multipliers can be applied and restored correctly.
  */
 UCLASS(Blueprintable, BlueprintType, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -20,6 +20,7 @@ class GEOTRINITY_API UGeoCharacterMovementComponent : public UCharacterMovementC
 public:
 	UGeoCharacterMovementComponent();
 
+	/** Caches MaxWalkSpeed and MaxAcceleration as base values for subsequent multiplier application. */
 	virtual void OnRegister() override;
 
 	/**
