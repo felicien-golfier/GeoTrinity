@@ -1,0 +1,35 @@
+name: Build GeoTrinity
+
+on:
+  push:
+    branches: [build]
+
+jobs:
+  build:
+    name: Build Client + Server
+    runs-on: self-hosted
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Client (GeoTrinity Win64 Development)
+        shell: cmd
+        run: |
+          "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" ^
+            GeoTrinity Win64 Development ^
+            "${{ github.workspace }}\GeoTrinity.uproject" ^
+            -WaitMutex -NoHotReloadFromIDE
+        env:
+          UE_IgnoreOutdatedImportedLibraries: 1
+
+      - name: Build Server (GeoTrinityServer Win64 Development)
+        shell: cmd
+        run: |
+          "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" ^
+            GeoTrinityServer Win64 Development ^
+            "${{ github.workspace }}\GeoTrinity.uproject" ^
+            -WaitMutex -NoHotReloadFromIDE
+        env:
+          UE_IgnoreOutdatedImportedLibraries: 1
