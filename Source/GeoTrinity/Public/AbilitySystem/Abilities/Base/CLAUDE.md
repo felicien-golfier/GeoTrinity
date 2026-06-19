@@ -31,7 +31,7 @@ Some abilities send a second, updated snapshot after the `FireDelay` timer expir
 
 ### FireMode
 - `ShootAfterFireDelay` — fires after a fixed delay
-- `ChargeForFireDelay` — fires on release; `GetChargeRatio()` returns 0..1 (eased by `GameDataSettings::GaugeChargingSpeedCurve` via `ApplyChargingCurve`)
+- `ChargeForFireDelay` — fires on release; `GetChargeRatio()` returns 0..1 (eased by `GameDataSettings::GaugeChargingSpeedCurve` via `ApplyChargingCurve`). On release, `InputReleased` also jumps the montage to the end section (`GeoASLib::SectionEndName`) for the locally controlled player — prevents the charge animation from holding its last frame.
 - `SetChargeGaugeVisible(Character, bVisible)` — virtual hook called in `ScheduleFireTrigger` (show) and `EndAbility` (hide) when in `ChargeForFireDelay` mode. Base implementation is **client-only** (no-op on server via `GeoLib::IsServer` guard) — gauge is a local-player concern. Override to use a different widget (see `UGeoChargeBeamAbility`).
 
 ### StoredPayload (`FAbilityPayload`)

@@ -43,6 +43,7 @@ class GEOTRINITY_API AGeoCharacter
 
 public:
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
+	/** Called every frame. */
 	virtual void Tick(float DeltaSeconds) override;
 	/** Expires all elements spawned by this character (deployables, and in future visual zones, etc). */
 	void StopAllSpawnedElements();
@@ -60,6 +61,7 @@ public:
 	//----------------------------------------------------------------------//
 	// IAbilitySystemInterface BEGIN
 	//----------------------------------------------------------------------//
+	/** Returns the GAS component; required by IAbilitySystemInterface. */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//----------------------------------------------------------------------//
 	// IAbilitySystemInterface END
@@ -74,6 +76,7 @@ public:
 		TeamId = static_cast<ETeam>(NewTeamId.GetId());
 	}
 
+	/** Returns the team ID; required by IGenericTeamAgentInterface. */
 	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(static_cast<uint8>(TeamId)); };
 	//----------------------------------------------------------------------//
 	// IGenericTeamAgentInterface END
