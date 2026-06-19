@@ -10,6 +10,7 @@
 
 class UStatusInfo;
 class UUserWidget;
+class UWidgetComponent;
 class UGameplayEffect;
 
 /**
@@ -40,6 +41,14 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UUserWidget> DefaultDeployableHealthBarWidgetClass;
+
+	/** Combatant health-bar WidgetComponent class (UGeoCombattantWidgetComp). Soft so gameplay never names the UI type. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
+	TSoftClassPtr<UWidgetComponent> CombattantWidgetComponentClass;
+
+	/** Default health-bar WBP (UGenericCombattantWidget subclass) for player/enemy characters. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
+	TSoftClassPtr<UUserWidget> DefaultCharacterHealthBarWidgetClass;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;

@@ -66,4 +66,10 @@ Only 2 Gameplay Cues can be multicasted over the network each frame for a single
 
 **Why the OnRep trick works temporarily:** Switching to `ReplicatedUsing` adds a callback that sweeps the array after each rep update, patching up pointers that have since become valid. It masks the symptom but the race is still there.
 
+
+## Lifebar not visible on the enemies for the host only in ListenServer
+
+IsLocallyControlled() is true for host AI too, so we need to use also IsPlayerControlled 
+ie SetCombattantWidgetVisible(!(IsPlayerControlled() && IsLocallyControlled()));
+
 ---

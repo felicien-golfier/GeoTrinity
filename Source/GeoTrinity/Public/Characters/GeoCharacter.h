@@ -25,7 +25,7 @@ class UDynamicMeshComponent;
 class UGeoGameFeelComponent;
 class UGeoCharacterMovementComponent;
 class UStaticMeshComponent;
-class UGeoCombattantWidgetComp;
+class UWidgetComponent;
 
 /**
  * Abstract base character shared by APlayableCharacter and AEnemyCharacter.
@@ -43,6 +43,7 @@ class GEOTRINITY_API AGeoCharacter
 
 public:
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
+	/** Called every frame. */
 	virtual void Tick(float DeltaSeconds) override;
 	/** Expires all elements spawned by this character (deployables, and in future visual zones, etc). */
 	void StopAllSpawnedElements();
@@ -60,6 +61,7 @@ public:
 	//----------------------------------------------------------------------//
 	// IAbilitySystemInterface BEGIN
 	//----------------------------------------------------------------------//
+	/** Returns the GAS component; required by IAbilitySystemInterface. */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//----------------------------------------------------------------------//
 	// IAbilitySystemInterface END
@@ -74,6 +76,7 @@ public:
 		TeamId = static_cast<ETeam>(NewTeamId.GetId());
 	}
 
+	/** Returns the team ID; required by IGenericTeamAgentInterface. */
 	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(static_cast<uint8>(TeamId)); };
 	//----------------------------------------------------------------------//
 	// IGenericTeamAgentInterface END
@@ -125,8 +128,10 @@ protected:
 	// parent rotation before the rotation override applies).
 	TObjectPtr<USceneComponent> WidgetAnchorComponent;
 
+	// World-space health bar. Held as the engine base; the concrete UGeoCombattantWidgetComp (UI module) is set as the
+	// default subobject class from GameDataSettings so gameplay never names it. Edit per-BP in the component tree.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
-	TObjectPtr<UGeoCombattantWidgetComp> CharacterWidgetComponent;
+	TObjectPtr<UWidgetComponent> CharacterWidgetComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")
 	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;

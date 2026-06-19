@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "GenericTeamAgentInterface.h"
+#include "Tool/Team.h"
 
 class APlayableCharacter;
 
@@ -102,6 +103,10 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UCharacterAttributeSet> CharacterAttributeSet;
+
+	/** Team the player belongs to. Owned here (not delegated to the pawn) so attitude queries resolve even when the
+	 *  pawn link is momentarily absent (respawn, possession order on the server). */
+	ETeam TeamId = ETeam::Player;
 
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_PlayerClass, BlueprintReadOnly, Category = "Class")
 	EPlayerClass PlayerClass = EPlayerClass::None;

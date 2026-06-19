@@ -5,9 +5,11 @@
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "HUD/Component/GeoCombattantWidgetComp.h"
+#include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Input/GeoInputComponent.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
@@ -37,11 +39,25 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	WidgetAnchorComponent->SetupAttachment(GetRootComponent());
 	WidgetAnchorComponent->SetUsingAbsoluteRotation(true);
 
-	CharacterWidgetComponent = CreateDefaultSubobject<UGeoCombattantWidgetComp>(TEXT("CharacterWidgetComponent"));
-	CharacterWidgetComponent->SetupAttachment(WidgetAnchorComponent);
-	CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
-	CharacterWidgetComponent->SetDrawAtDesiredSize(true);
-	CharacterWidgetComponent->SetRelativeLocation(FVector(100.f, 0.f, 0.f));
+	// Concrete class comes from settings (a soft path) so gameplay never names the UI-module UGeoCombattantWidgetComp.
+	// Optional subobject: the dedicated-server target doesn't ship the UI class, so it resolves to null and is skipped.
+	if (UClass* const WidgetComponentClass =
+			GetDefault<UGameDataSettings>()->CombattantWidgetComponentClass.LoadSynchronous())
+	{
+		CharacterWidgetComponent = Cast<UWidgetComponent>(ObjectInitializer.CreateDefaultSubobject(
+			this, TEXT("CharacterWidgetComponent"), UWidgetComponent::StaticClass(), WidgetComponentClass,
+			/*bIsRequired=*/false, /*bIsTransient=*/false));
+		CharacterWidgetComponent->SetupAttachment(WidgetAnchorComponent);
+		// Orthographic top-down: World space lies the bar flat on the ground; Screen space at desired size keeps it
+		// upright and sized to the WBP. Both stay BP-overridable.
+		CharacterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		CharacterWidgetComponent->SetDrawAtDesiredSize(true);
+		if (UClass* const WidgetClass =
+				GetDefault<UGameDataSettings>()->DefaultCharacterHealthBarWidgetClass.LoadSynchronous())
+		{
+			CharacterWidgetComponent->SetWidgetClass(WidgetClass);
+		}
+	}
 
 	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>(TEXT("GameFeelComponent"));
 
@@ -66,6 +82,7 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
 }
+
 void AGeoCharacter::StopAllSpawnedElements()
 {
 	AbilitySystemComponent->StopAllActivePatterns();
@@ -124,19 +141,27 @@ void AGeoCharacter::InitGAS()
 		AbilitySystemComponent->GiveStartupAbilities();
 	}
 
-	// The floating bar's component binds in BeginPlay, before attributes exist, so it collapses reading MaxHealth as 0.
-	// On clients replication later fires the change delegate and re-shows it, but the listen-server host sets
-	// attributes synchronously with no replication callback — so (re)bind now that attributes are initialized.
-	// (APlayableCharacter overrides InitGAS and calls this itself; InitializeForOwner is idempotent.)
-	CharacterWidgetComponent->BindWidgetToOwnerASC();
+	// The host sets attributes synchronously (no replication callback), so re-bind now that they exist or the bar reads
+	// MaxHealth as 0 and collapses.
+	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
+	{
+		WidgetHost->BindToOwnerASC();
+	}
 }
 
 void AGeoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	// Don't draw a floating bar over our own avatar — the local player uses the main HUD overlay.
-	// Enemies are never locally controlled, so this is a no-op for them.
-	SetCombattantWidgetVisible(!IsLocallyControlled());
+	ensureMsgf(CharacterWidgetComponent || GeoLib::IsDedicatedServer(GetWorld()),
+			   TEXT("%s has no CharacterWidgetComponent — set CombattantWidgetComponentClass in Game Data Settings"),
+			   *GetName());
+	// The host sets attributes synchronously (no replication callback to bind the bar), so bind here once they exist.
+	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
+	{
+		WidgetHost->BindToOwnerASC();
+	}
+	// Hide the floating bar only over the local player's own avatar — it uses the main HUD overlay instead.
+	SetCombattantWidgetVisible(!GeoLib::IsLocalPlayerAvatar(this));
 #ifdef UE_EDITOR
 	LocalRoleForDebugPurpose = GetLocalRole();
 #endif

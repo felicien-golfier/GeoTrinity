@@ -12,7 +12,7 @@
 
 
 struct FEffectData;
-class UGeoCombattantWidgetComp;
+class UWidgetComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeployableDestroyed, AGeoDeployableBase*, Deployable);
 
@@ -146,8 +146,10 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployableDestroyed OnDeployableExpiredEvent;
 
+	// World-space health-bar widget component. Added in Blueprint (a UGeoCombattantWidgetComp from the UI module); held
+	// as the engine base so gameplay never names the UI type. Resolved from the BP-added component in BeginPlay.
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UGeoCombattantWidgetComp> CombattantWidgetComponent;
+	TObjectPtr<UWidgetComponent> CombattantWidgetComponent;
 
 protected:
 	// subclasses MUST override this with their own data struct inherited from FDeployableData

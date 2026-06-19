@@ -70,6 +70,11 @@ bool UGeoGameplayLibrary::IsDedicatedServer(UWorld const* World)
 	return World->IsNetMode(NM_DedicatedServer);
 }
 
+bool UGeoGameplayLibrary::IsLocalPlayerAvatar(APawn const* Pawn)
+{
+	return Pawn && Pawn->IsPlayerControlled() && Pawn->IsLocallyControlled();
+}
+
 float UGeoGameplayLibrary::GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing)
 {
 	if (!WorldContextObject)

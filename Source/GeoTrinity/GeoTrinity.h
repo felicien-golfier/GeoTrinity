@@ -5,10 +5,11 @@
 #include "CoreMinimal.h"
 #include "Logging/LogMacros.h"
 
-// Project-wide log category for GeoTrinity
-DECLARE_LOG_CATEGORY_EXTERN(LogGeoTrinity, Log, All);
-DECLARE_LOG_CATEGORY_EXTERN(LogGeoASC, Log, All);
-DECLARE_LOG_CATEGORY_EXTERN(LogPattern, Log, All);
+// Project-wide log categories for GeoTrinity. Exported with the module API so other modules (e.g. GeoTrinityUI) that
+// link against this module can use them across the DLL boundary.
+GEOTRINITY_API DECLARE_LOG_CATEGORY_EXTERN(LogGeoTrinity, Log, All);
+GEOTRINITY_API DECLARE_LOG_CATEGORY_EXTERN(LogGeoASC, Log, All);
+GEOTRINITY_API DECLARE_LOG_CATEGORY_EXTERN(LogPattern, Log, All);
 
 #define ECC_GeoCharacter ECollisionChannel::ECC_GameTraceChannel1
 #define ECC_MovementBlocker ECollisionChannel::ECC_GameTraceChannel2

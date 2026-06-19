@@ -26,7 +26,8 @@ protected:
 	/** Overrides the base to show the charge-beam gauge (ChargeBeamGaugeComponent) instead of the deploy gauge. */
 	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible) override;
 
-	/** Encodes the current charge ratio (0–1) into the Seed field as an integer permillage (0–1000) of the target data. */
+	/** Encodes the current charge ratio (0–1) into the Seed field as an integer permillage (0–1000) of the target data.
+	 */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData() override;
 
 	/**
@@ -34,10 +35,12 @@ protected:
 	 * The multiplier is lerped from MinDamageMultiplier to MaxDamageMultiplier based on the charge ratio.
 	 */
 	virtual TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const override;
-	/** Fires FireGameplayCueTag on the locally-controlled client, encoding the beam endpoint, charge ratio, and sweet-spot flag into cue params. */
+	/** Fires FireGameplayCueTag on the locally-controlled client, encoding the beam endpoint, charge ratio, and
+	 * sweet-spot flag into cue params. */
 	void FireGameplayCue(FGeoAbilityTargetData const& AbilityTargetData);
 
-	/** Calls Super (sends data to server), fires the beam cue locally, then ends the ability on the locally-controlled client. */
+	/** Calls Super (sends data to server), fires the beam cue locally, then ends the ability on the locally-controlled
+	 * client. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	/**
@@ -60,8 +63,11 @@ protected:
 
 	// Damage multiplier lerped from Min (0% charge) to Max (100% charge).
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
-	float MinDamageMultiplier = 0.3f;
+	float MinDamageMultiplier = 0.5f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float MaxDamageMultiplier = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
+	float SweetSpotDamageMultiplier = 2.f;
 };

@@ -4,7 +4,8 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "GameClasses/GeoPlayerController.h"
-#include "HUD/GeoHUD.h"
+#include "GameFramework/HUD.h"
+#include "HUD/Interface/GeoHUDInterface.h"
 #include "Net/UnrealNetwork.h"
 
 AGeoPlayerState::AGeoPlayerState()
@@ -80,7 +81,7 @@ void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
 	InitOverlay();
 
 	// Bind pawn-dependent HUD callbacks now that the pawn (and its components) exist.
-	if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
+	if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(GeoPlayerController->GetHUD()))
 	{
 		GeoHUD->BindToPawn(Cast<APlayableCharacter>(NewPawn));
 	}
@@ -93,7 +94,7 @@ void AGeoPlayerState::InitOverlay()
 	AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController());
 	if (GeoPlayerController && GeoPlayerController->IsLocalPlayerController())
 	{
-		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
+		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(GeoPlayerController->GetHUD()))
 		{
 			GeoHUD->InitOverlay(GeoPlayerController, this, AbilitySystemComponent, CharacterAttributeSet);
 		}
@@ -114,7 +115,7 @@ void AGeoPlayerState::RebuildAbilityBar()
 	AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(GetOwningController());
 	if (GeoPlayerController && GeoPlayerController->IsLocalPlayerController())
 	{
-		if (AGeoHUD* GeoHUD = GeoPlayerController->GetHUD<AGeoHUD>())
+		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(GeoPlayerController->GetHUD()))
 		{
 			GeoHUD->BuildAbilityBar(GeoPlayerController->GetPawn<APlayableCharacter>());
 		}
@@ -141,9 +142,5 @@ UAbilitySystemComponent* AGeoPlayerState::GetAbilitySystemComponent() const
 
 FGenericTeamId AGeoPlayerState::GetGenericTeamId() const
 {
-	if (IGenericTeamAgentInterface const* TeamAgent = Cast<IGenericTeamAgentInterface>(GetPawn()))
-	{
-		return TeamAgent->GetGenericTeamId();
-	}
-	return IGenericTeamAgentInterface::GetGenericTeamId();
+	return FGenericTeamId(static_cast<uint8>(TeamId));
 }
