@@ -32,7 +32,8 @@ protected:
 
 	/**
 	 * Appends a FContextDamageMultiplierEffectData entry to the base effect array.
-	 * The multiplier is lerped from MinDamageMultiplier to MaxDamageMultiplier based on the charge ratio.
+	 * Non-sweet-spot: multiplier lerped from MinDamageMultiplier to MaxDamageMultiplier by charge ratio.
+	 * Sweet-spot: SweetSpotDamageMultiplier used instead.
 	 */
 	virtual TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const override;
 	/** Fires FireGameplayCueTag on the locally-controlled client, encoding the beam endpoint, charge ratio, and
@@ -68,6 +69,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float MaxDamageMultiplier = 1.5f;
 
+	// Damage multiplier applied when the charge ratio is within the sweet-spot window.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float SweetSpotDamageMultiplier = 2.f;
 };

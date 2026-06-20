@@ -24,6 +24,7 @@ Key fields:
 - `HalfWidthGrowthPerAbsorbedZone` — half-width added per fully absorbed zone (cm)
 - `DamageAndHealBoostPerAbsorbedZone` — `1.0 = 100%` damage/heal boost per zone
 - `BeamZoneDrainPercentagePerSecond` — rate at which the beam drains zone health (0..100%/s)
+- `MaximumZoneAbsorbed` — cap on how many HealingZone actors the beam may fully absorb in one activation; zone absorption stops once this count is reached
 - `BeamNiagaraSystem` — Niagara system passed to the `UGeoBeamVFXComponent` in `OnGiveAbility`; assign a BP subclass of `GeoBeamVFXComponent` in the level if custom param names are needed
 - `UGeoBeamVFXComponent` — created via `NewObject` on the server in `OnGiveAbility`, destroyed in `OnRemoveAbility`; never cached — fetched via `FindComponentByClass`. `Tick` calls `SetBeamState` with the current half-width (server write replicates to all clients); `EndAbility` calls `SetBeamState(false, …)` to switch it off
 
@@ -36,7 +37,8 @@ Hold to charge, release to fire. Uses `ChargeForFireDelay` FireMode.
 **Hit detection is server-side** — `OnFireTargetDataReceived` iterates hostile actors in front of the character and applies effects directly; no projectile is spawned.
 
 - `SweetSpotMinRatio` (default 0.5) / `SweetSpotMaxRatio` (default 0.7) — charge window that grants `MaxDamageMultiplier` on release
-- `MinDamageMultiplier` / `MaxDamageMultiplier` — damage multiplier lerped by charge ratio; sweet-spot always gets max
+- `MinDamageMultiplier` / `MaxDamageMultiplier` — damage multiplier lerped by charge ratio for non-sweet-spot releases
+- `SweetSpotDamageMultiplier` — separate multiplier applied instead when released within the sweet-spot window
 - Charge ratio encoded in `StoredPayload.Seed` as integer permillage 0..1000 (set at release time in `GetUpdatedTargetData`)
 - `GetChargeRatio()` on base ability returns 0..1 with easing curve applied
 - `FireGameplayCue` — fires beam VFX/SFX (endpoint, charge ratio, sweet-spot flag) on the locally-controlled client only
