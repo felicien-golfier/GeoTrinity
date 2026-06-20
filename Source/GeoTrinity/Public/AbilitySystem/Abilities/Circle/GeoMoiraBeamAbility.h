@@ -96,7 +96,7 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 			  meta = (ClampMin = "0", ClampMax = "100", AllowPrivateAccess = true))
 	float BeamZoneDrainPercentagePerSecond = 50.f;
 
-	/** Health drained from a HealingZone per beam tick. */
+	/** Maximum number of HealingZone actors the beam may fully absorb in a single activation. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float MaximumZoneAbsorbed = 5.f;
 

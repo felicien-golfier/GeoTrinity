@@ -88,6 +88,7 @@ public:
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
 
+	/** Returns all AGeoTargetPoint actors in the world whose tags include LocationTag. */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const LocationTag);
 };
