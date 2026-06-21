@@ -26,7 +26,7 @@ Projectile-firing ability base classes.
 - `ActivateAbility` schedules `Fire()` on a repeating timer driven by `FireDelay`
 - `Fire()` runs **client-only** per shot — spawns predicted projectile, sends RPC
 - Server receives each shot via `OnFireTargetDataReceived()` (no server-side timer)
-- `CommitAbilityCost()` called **per shot on both client and server** — ability ends automatically when cost runs out (e.g. ammo depleted)
+- Cost committed **per shot**: `Fire()` commits for the locally controlled player; `OnFireTargetDataReceived()` commits only for remote clients (`!IsLocallyControlledPlayer()` guard) — on a listen-server host `Fire()` already committed, so skipping here avoids charging the cost twice
 
 ### Per-shot animation
 - Fire montage plays continuously
