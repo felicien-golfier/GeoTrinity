@@ -82,27 +82,17 @@ void UGeoChargeBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	Super::Fire(AbilityTargetData);
 	if (IsLocallyControlled())
 	{
+		if (GeoLib::IsServer(this)) // Host Case
+		{
+			DealDamage(AbilityTargetData);
+		}
 		FireGameplayCue(AbilityTargetData);
 		EndAbility(false);
 	}
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
-													 FGameplayTag ApplicationTag)
+void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTargetData) const
 {
-	// Call Super first to get the Payload Seed updated.
-	Super::OnFireTargetDataReceived(DataHandle, ApplicationTag);
-
-	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
-	if (!ensureMsgf(AbilityTargetData,
-					TEXT("No FGeoAbilityTargetData found in DataHandle — cannot update StoredPayload.")))
-	{
-		return;
-	}
-
-	// FireGameplayCue(*AbilityTargetData);
-
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
 	if (!ensureMsgf(SourceASC, TEXT("UGeoChargeBeamAbility: invalid ASC on server")))
 	{
@@ -110,13 +100,14 @@ void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 	}
 
 	float const MaxRange = GetDefault<UGameDataSettings>()->GeneralSpellDistance;
-	FVector2D const ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
+	FVector2D const ForwardVector = FVector2D(FRotator(0, AbilityTargetData.Yaw, 0).Vector());
 
-	for (AActor* Target : GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(StoredPayload.Instigator),
-																TeamAttitudeMask::HostileOrNeutral, true,
-																StoredPayload.Origin, ForwardVector, MaxRange))
+	AActor const* const Avatar = GetAvatarActorFromActorInfo();
+	for (AActor* Target :
+		 GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(Avatar), TeamAttitudeMask::HostileOrNeutral,
+											   true, AbilityTargetData.Origin, ForwardVector, MaxRange))
 	{
-		if (Target == StoredPayload.Instigator)
+		if (Target == Avatar)
 		{
 			continue;
 		}
@@ -127,9 +118,25 @@ void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 			continue;
 		}
 
-		GeoASLib::ApplyEffectFromEffectData(GetEffectDataArray(), SourceASC, TargetASC, StoredPayload.AbilityLevel,
-											StoredPayload.Seed);
+		GeoASLib::ApplyEffectFromEffectData(GetEffectDataArray(), SourceASC, TargetASC, GetAbilityLevel(),
+											AbilityTargetData.Seed, GetAbilityTag());
+	}
+}
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
+													 FGameplayTag const ApplicationTag)
+{
+	// Call Super first to get the Payload Seed updated.
+	Super::OnFireTargetDataReceived(DataHandle, ApplicationTag);
+
+	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
+	if (!ensureMsgf(AbilityTargetData,
+					TEXT("No FGeoAbilityTargetData found in DataHandle — cannot update StoredPayload.")))
+	{
+		EndAbility(true, true);
+		return;
 	}
 
+	DealDamage(*AbilityTargetData);
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, false);
 }

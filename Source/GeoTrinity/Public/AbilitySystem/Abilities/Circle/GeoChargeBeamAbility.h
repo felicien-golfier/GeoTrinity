@@ -43,6 +43,7 @@ protected:
 	/** Calls Super (sends data to server), fires the beam cue locally, then ends the ability on the locally-controlled
 	 * client. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
+	void DealDamage(FGeoAbilityTargetData const& AbilityTargetData) const;
 
 	/**
 	 * Server-side handler: updates StoredPayload from the client's replicated target data, then iterates all

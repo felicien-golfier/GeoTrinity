@@ -144,7 +144,8 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 				if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
 				{
 					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
-																		StoredPayload.AbilityLevel, StoredPayload.Seed);
+																		StoredPayload.AbilityLevel, StoredPayload.Seed,
+																		StoredPayload.AbilityTag);
 				}
 			}
 		}
@@ -256,7 +257,8 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 				continue;
 			}
 			UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
-																StoredPayload.AbilityLevel, StoredPayload.Seed);
+																StoredPayload.AbilityLevel, StoredPayload.Seed,
+																StoredPayload.AbilityTag);
 		}
 	}
 

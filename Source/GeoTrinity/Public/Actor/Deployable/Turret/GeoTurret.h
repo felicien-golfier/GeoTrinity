@@ -34,7 +34,10 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
-	/** Returns the nearest hostile actor within range, or nullptr if none is found. */
+	/**
+	 * Returns the owner's last basic-ability target when it is still a valid in-range hostile, otherwise the nearest
+	 * hostile within range, or nullptr if none is found.
+	 */
 	AActor* FindBestTarget() const;
 	/** Sets a timer to call TryFire after FireInterval seconds. */
 	void ScheduleFire();
@@ -52,5 +55,9 @@ protected:
 	float FireInterval = 1.f;
 
 private:
+	// Set on the server each tick from FindBestTarget; replicated so clients can orient toward the live target location.
+	UPROPERTY(Replicated)
+	TObjectPtr<AActor> CurrentTarget;
+
 	FTimerHandle FireTimerHandle;
 };

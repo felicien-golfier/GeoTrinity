@@ -74,7 +74,7 @@ void AGeoEffectZone::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 		{
 			continue;
 		}
-		Handles.Add(GeoASLib::ApplySingleEffectData(Entry, SourceASC, TargetASC, Level, Data.Seed));
+		Handles.Add(GeoASLib::ApplySingleEffectData(Entry, SourceASC, TargetASC, Level, Data.Seed, FGameplayTag()));
 	}
 }
 
@@ -134,13 +134,13 @@ void AGeoEffectZone::Tick(float DeltaSeconds)
 			{
 				FHealEffectData Scaled = *Heal;
 				Scaled.HealAmount = Heal->HealAmount.GetValueAtLevel(Level) * DeltaSeconds;
-				GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Level, Data.Seed);
+				GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Level, Data.Seed, FGameplayTag());
 			}
 			else if (FDamageEffectData const* Damage = Entry.GetPtr<FDamageEffectData>())
 			{
 				FDamageEffectData Scaled = *Damage;
 				Scaled.DamageAmount = Damage->DamageAmount.GetValueAtLevel(Level) * DeltaSeconds;
-				GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Level, Data.Seed);
+				GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Level, Data.Seed, FGameplayTag());
 			}
 		}
 	}

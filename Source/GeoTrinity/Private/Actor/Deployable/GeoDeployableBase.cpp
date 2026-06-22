@@ -138,7 +138,8 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
 		DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
 		DrainEffectData.bLimitGameplayCue = true;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed);
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed,
+														GetData()->AbilityTag);
 	}
 }
 
@@ -285,7 +286,7 @@ void AGeoDeployableBase::ApplyExplodeEffect(float Value, UGeoAbilitySystemCompon
 											UGeoAbilitySystemComponent* TargetASC)
 {
 	GeoASLib::ApplyEffectFromEffectData(GetData()->EffectDataArray, SourceASC, TargetASC, GetData()->Level,
-										GetData()->Seed);
+										GetData()->Seed, GetData()->AbilityTag);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

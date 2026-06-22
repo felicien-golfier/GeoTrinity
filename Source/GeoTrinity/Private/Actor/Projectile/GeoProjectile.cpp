@@ -207,7 +207,7 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 	{
 		GeoASLib::ApplyEffectFromEffectData(EffectDataArray, GeoASLib::GetGeoAscFromActor(Payload.Owner),
 											GeoASLib::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel,
-											Payload.Seed);
+											Payload.Seed, Payload.AbilityTag);
 	}
 
 	OnProjectileHit(OtherActor);

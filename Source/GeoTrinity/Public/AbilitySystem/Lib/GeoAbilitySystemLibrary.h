@@ -78,45 +78,44 @@ public:
 	static TArray<FActiveGameplayEffectHandle>
 	ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
 							  UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
-							  int32 AbilityLevel, int32 Seed);
+							  int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag);
 
 	/** Applies a single TInstancedStruct<FEffectData> entry (calls UpdateContextHandle then ApplyEffect). */
 	static FActiveGameplayEffectHandle ApplySingleEffectData(TInstancedStruct<FEffectData> const& Data,
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-															 int32 Seed);
+															 int32 Seed, FGameplayTag AbilityTag);
 
 	/** Applies a single FEffectData (calls UpdateContextHandle then ApplyEffect). */
 	static FActiveGameplayEffectHandle ApplySingleEffectData(FEffectData const& EffectData,
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-															 int32 Seed);
+															 int32 Seed, FGameplayTag AbilityTag);
 	/** Fills SourceASC and TargetASC into ContextHandle for access by downstream execution calculations. */
 	static void FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
 								  FGameplayEffectContextHandle ContextHandle);
 
 	/**
 	 * Returns the class default object for the ability registered under AbilityTag, cast to T.
-	 * Asserts (ensureMsgf) if no matching ability is found or the CDO cannot be cast to T.
+	 * O(1) via UAbilityInfo's cached tag->class map. Logs a warning and returns nullptr if no matching ability is found
+	 * or the CDO cannot be cast to T. Callers that know a tag may legitimately be invalid should guard before calling
+	 * (an invalid tag still logs the warning).
 	 *
 	 * @return  CDO pointer on success, nullptr if not found or wrong type.
 	 */
 	template <typename T>
 	static T const* GetAbilityCDO(FGameplayTag const AbilityTag)
 	{
-		for (FGameplayAbilityInfo const& AbilityInfo : GetAbilityInfo()->GetAllAbilityInfos())
+		UAbilityInfo const* AbilityInfo = GetAbilityInfo();
+		TSubclassOf<UGameplayAbility> const AbilityClass =
+			AbilityInfo ? AbilityInfo->GetAbilityClassForTag(AbilityTag) : nullptr;
+		UGameplayAbility const* AbilityCDO = AbilityClass ? AbilityClass.GetDefaultObject() : nullptr;
+		if (IsValid(AbilityCDO) && AbilityCDO->IsA(T::StaticClass()))
 		{
-			if (AbilityInfo.AbilityTag == AbilityTag)
-			{
-				UGameplayAbility const* AbilityCDO = AbilityInfo.AbilityClass.GetDefaultObject();
-				if (IsValid(AbilityCDO) && AbilityCDO->IsA(T::StaticClass()))
-				{
-					return CastChecked<T>(AbilityCDO);
-				}
-			}
+			return CastChecked<T>(AbilityCDO);
 		}
 
-		ensureMsgf(false, TEXT("No Ability found for AbilityTag %s"), *AbilityTag.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("GetAbilityCDO: no ability found for AbilityTag %s"), *AbilityTag.ToString());
 		return nullptr;
 	}
 

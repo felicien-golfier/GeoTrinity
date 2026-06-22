@@ -60,17 +60,19 @@ UStatusInfo* UGeoAbilitySystemLibrary::GetStatusInfo(UObject const* WorldContext
 FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(TInstancedStruct<FEffectData> const& Data,
 																			UAbilitySystemComponent* SourceASC,
 																			UAbilitySystemComponent* TargetASC,
-																			int32 AbilityLevel, int32 Seed)
+																			int32 AbilityLevel, int32 Seed,
+																			FGameplayTag AbilityTag)
 {
 	FEffectData const* EffectData = Data.GetPtr<FEffectData>();
 	checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
-	return ApplySingleEffectData(*EffectData, SourceASC, TargetASC, AbilityLevel, Seed);
+	return ApplySingleEffectData(*EffectData, SourceASC, TargetASC, AbilityLevel, Seed, AbilityTag);
 }
 
 FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEffectData const& EffectData,
 																			UAbilitySystemComponent* SourceASC,
 																			UAbilitySystemComponent* TargetASC,
-																			int32 AbilityLevel, int32 Seed)
+																			int32 AbilityLevel, int32 Seed,
+																			FGameplayTag AbilityTag)
 {
 	if (!IsValid(SourceASC) || !IsValid(TargetASC))
 	{
@@ -86,7 +88,7 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 
 	FGeoGameplayEffectContext* GeoEffectContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
 
-	EffectData.UpdateContextHandle(GeoEffectContext, AbilityLevel);
+	EffectData.UpdateContextHandle(GeoEffectContext, AbilityLevel, AbilityTag);
 	return EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
 }
 
@@ -108,7 +110,8 @@ void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* Source
 TArray<FActiveGameplayEffectHandle>
 UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
 													UAbilitySystemComponent* SourceASC,
-													UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed)
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed,
+													FGameplayTag AbilityTag)
 {
 	TArray<FActiveGameplayEffectHandle> SpecHandles;
 	if (!IsValid(SourceASC) || !IsValid(TargetASC))
@@ -131,7 +134,7 @@ UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(TArray<TInstancedStruct<FEff
 	{
 		FEffectData const* EffectData = EffectDataInstance.GetPtr<FEffectData>();
 		checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
-		EffectData->UpdateContextHandle(GeoEffectContext, AbilityLevel);
+		EffectData->UpdateContextHandle(GeoEffectContext, AbilityLevel, AbilityTag);
 	}
 
 	for (auto const& EffectDataInstance : DataArray)
@@ -686,6 +689,7 @@ void UGeoAbilitySystemLibrary::InitDeployable(AGeoDeployableBase* Deployable, FA
 	Data.Seed = Payload.Seed;
 	Data.Params = Params;
 	Data.EffectDataArray = EffectDataArray;
+	Data.AbilityTag = Payload.AbilityTag;
 	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Payload.Owner))
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();

@@ -101,6 +101,11 @@ public:
 	 */
 	int32& GetFireSectionIndex(FGameplayTag const& AbilityTag);
 
+	/** Records the actor most recently hit by this owner's basic ability. Server-only; set from ExecCalc_Damage. */
+	void SetLastBasicAbilityTarget(AActor* Target) { LastBasicAbilityTarget = Target; }
+	/** Returns the actor most recently hit by this owner's basic ability, or nullptr if it died or never existed. */
+	AActor* GetLastBasicAbilityTarget() const { return LastBasicAbilityTarget.Get(); }
+
 	UPROPERTY(BlueprintAssignable)
 	FOnHealProvided OnHealProvided;
 
@@ -115,6 +120,9 @@ public:
 private:
 	TMap<FGameplayTag, int32> FireSectionIndices;
 	bool bStartupAbilitiesGiven{false};
+
+	// Server-only: weak so a destroyed target reads back null without manual cleanup.
+	TWeakObjectPtr<AActor> LastBasicAbilityTarget;
 
 	UPROPERTY(Transient)
 	TArray<UPattern*> Patterns;

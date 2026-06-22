@@ -46,6 +46,11 @@ struct FDeployableData : public FInteractableActorData
 
 	UPROPERTY(Transient)
 	FDeployableDataParams Params;
+
+	// Tag of the ability that spawned this deployable. Forwarded to ApplyEffectFromEffectData on every effect the
+	// deployable applies, so the effect can identify its originating ability (e.g. auto-attack detection in ExecCalc).
+	UPROPERTY(Transient)
+	FGameplayTag AbilityTag;
 };
 
 /**
