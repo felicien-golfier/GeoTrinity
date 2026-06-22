@@ -120,16 +120,19 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 		return;
 	}
 
-	// Idle slots cost nothing: nothing to animate once the ability is ready and the sweep is already cleared.
+	// Ability is ready: clear the countdown text and the sweep fill. Both are normalized independently — the sweep
+	// can be left pinned full by the active branch above (which hides the countdown without filling it), so gating the
+	// sweep clear on the countdown's visibility would strand the fill at 1.0 until another ability drove a real
+	// cooldown. The SetScalarParameterValue is a no-op when the value is unchanged, so idle slots stay cheap.
 	if (Remaining <= 0.f)
 	{
 		if (CountdownText && CountdownText->GetVisibility() != ESlateVisibility::Hidden)
 		{
 			CountdownText->SetVisibility(ESlateVisibility::Hidden);
-			if (CooldownSweepMID)
-			{
-				CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, 0.f);
-			}
+		}
+		if (CooldownSweepMID)
+		{
+			CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, 0.f);
 		}
 		return;
 	}

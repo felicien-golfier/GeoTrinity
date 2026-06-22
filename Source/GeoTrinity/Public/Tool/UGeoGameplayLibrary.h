@@ -62,6 +62,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsDedicatedServer(UObject const* WorldContextObject);
 	static bool IsDedicatedServer(UWorld const* World);
+	static bool IsLocalPlayerAvatar(AActor const* Actor);
 
 	/**
 	 * Returns true only for the viewing human player's own avatar on this machine.

@@ -212,7 +212,7 @@ void AGeoDeployableBase::Recall(float Value)
 
 	RecallEffect(Value);
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
-	if (!GeoLib::IsDedicatedServer(GetWorld()))
+	if (!GeoLib::IsDedicatedServer(GetWorld()) && RecallGameplayCueTag.IsValid())
 	{
 		ExecuteCue(RecallGameplayCueTag, GetRecallCueParams());
 	}
@@ -272,13 +272,11 @@ void AGeoDeployableBase::Explode(float Value)
 			ApplyExplodeEffect(Value, SourceASC, Actor, ActorASC);
 		}
 	}
-	else
+
+	if (!GeoLib::IsDedicatedServer(this) && ExplodeGameplayCueTag.IsValid())
 	{
-		if (ExplodeGameplayCueTag.IsValid())
-		{
-			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams());
-			// TODO: Pass the Value in the Cue ?
-		}
+		ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams());
+		// TODO: Pass the Value in the Cue ?
 	}
 }
 
