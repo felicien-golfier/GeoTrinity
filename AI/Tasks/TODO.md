@@ -121,6 +121,8 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-06-21] Scope: GeoAutomaticFireAbility.cpp and GeoDeployableBase.cpp (commit 0a623e5 "Tweak values" — only .cpp changes, no .h changes). No new public declarations → no header comments to add or fix. GeoDeployableBase.cpp: added null-check on GetInstigator() before RegisterDeployable — defensive fix, no CLAUDE.md impact. Notable: the June 20 run missed 0a623e5's impact on GeoAutomaticFireAbility behavior — see CLAUDE.md task below. -->
 
+<!-- [2026-06-22] Scope: No developer commits in the last 25h (only daily TODO markdown commits). No .h or .cpp files to process. No-op. -->
+
 - [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
@@ -215,3 +217,5 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-06-20] Updated: AbilitySystem/Components/CLAUDE.md — added EndActiveAbilitiesLocally to new "Death / cleanup" section (bypasses replicated IsActive gate on death; required because a predicted held-beam instance keeps ticking after the server's authoritative end replicates ActiveCount to 0). Abilities/Circle/CLAUDE.md — Moira beam: added MaximumZoneAbsorbed field (cap on zones absorbed per activation, added in commit 5336198). ChargeBeam section: split MinDamageMultiplier/MaxDamageMultiplier line to distinguish non-sweet-spot lerp from the new SweetSpotDamageMultiplier (commit 1f15076). GeoTrinityUI/HUD/CLAUDE.md — GeoLocalConnectWidget.h row: corrected stale "map the spawned dedicated server loads" to "listen-server host travels to" (commit 46914d8 moved from dedicated to listen server). Developer already updated System/CLAUDE.md and Characters/CLAUDE.md (IsLocalPlayerAvatar) and Tool/CLAUDE.md in their own commits. Root CLAUDE.md source structure unchanged. -->
 
 <!-- [2026-06-21] Updated: Abilities/Damaging/CLAUDE.md — fixed stale CommitAbilityCost description for GeoAutomaticFireAbility. Commit 0a623e5 added a `!IsLocallyControlledPlayer()` guard in OnFireTargetDataReceived so the listen-server host is not charged twice (Fire() commits for the locally controlled player; OnFireTargetDataReceived only commits for remote-client shots). Old text said "called per shot on both client and server" which implied a symmetric double-commit; replaced with accurate split-path description. Root CLAUDE.md and all other files unchanged — structure still accurate. -->
+
+<!-- [2026-06-22] Scope: No developer commits in the last 25h outside of daily TODO runs. No CLAUDE.md updates needed. -->
