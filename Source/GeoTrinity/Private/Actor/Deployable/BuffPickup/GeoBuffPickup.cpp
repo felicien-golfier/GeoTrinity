@@ -2,12 +2,14 @@
 
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
 
+#include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemInterface.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Curves/CurveFloat.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -44,6 +46,7 @@ void AGeoBuffPickup::InitInteractable(FInteractableActorData* InputData)
 		return;
 	}
 
+
 	Data = *BuffPickupData;
 
 	Super::InitInteractable(InputData);
@@ -69,7 +72,7 @@ void AGeoBuffPickup::BeginPlay()
 		bMovingToTarget = false;
 		SetActorLocation(Data.TargetLocation);
 	}
-	UpdateMesh();
+	UpdateColor();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -101,21 +104,35 @@ void AGeoBuffPickup::Tick(float DeltaTime)
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoBuffPickup::OnRep_Data()
 {
-	UpdateMesh();
+	UpdateColor();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoBuffPickup::UpdateMesh()
+void AGeoBuffPickup::UpdateColor()
 {
-	ensureMsgf(Data.MeshIndex < 0 || BuffMeshAssets.IsValidIndex(Data.MeshIndex),
-			   TEXT("AGeoBuffPickup: MeshIndex %d is out of range — BuffMeshAssets has %d entries. "
-					"BuffMeshAssets and BuffEffectDataAssets must have the same number of entries."),
-			   Data.MeshIndex, BuffMeshAssets.Num());
-
-	if (BuffMeshAssets.IsValidIndex(Data.MeshIndex))
+	if (Data.BuffIndex < 0)
 	{
-		BuffMeshComponent->SetStaticMesh(BuffMeshAssets[Data.MeshIndex]);
+		return;
 	}
+
+	UGeoReloadAbility const* ReloadAbilityCDO = GeoASLib::GetAbilityCDO<UGeoReloadAbility>(Data.AbilityTag);
+	if (!ensureMsgf(ReloadAbilityCDO, TEXT("AGeoBuffPickup: no UGeoReloadAbility CDO for AbilityTag %s"),
+					*Data.AbilityTag.ToString()))
+	{
+		return;
+	}
+
+	if (!BuffMaterialInstance)
+	{
+		BuffMaterialInstance = BuffMeshComponent->CreateAndSetMaterialInstanceDynamic(0);
+	}
+	if (!ensureMsgf(BuffMaterialInstance, TEXT("AGeoBuffPickup: BuffMeshComponent has no material to tint")))
+	{
+		return;
+	}
+
+	BuffMaterialInstance->SetVectorParameterValue(ColorParameterName,
+												  ReloadAbilityCDO->GetColorForIndex(Data.BuffIndex));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

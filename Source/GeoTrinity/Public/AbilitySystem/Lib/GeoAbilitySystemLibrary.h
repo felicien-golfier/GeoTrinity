@@ -140,6 +140,9 @@ public:
 	static void InitDeployable(AGeoDeployableBase* Deployable, FAbilityPayload const& Payload,
 							   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 							   FDeployableDataParams const& Params);
+	static void FillDeployableData(FDeployableData& Data, FAbilityPayload const& Payload,
+								   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+								   FDeployableDataParams const& Params);
 	/** Completes a deferred deployable spawn started by StartSpawnDeployable; triggers BeginPlay. */
 	static void FinishSpawnDeployable(AGeoDeployableBase* Deployable, FTransform const& SpawnTransform);
 

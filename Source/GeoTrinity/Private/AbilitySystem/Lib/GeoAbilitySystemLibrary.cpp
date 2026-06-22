@@ -107,11 +107,9 @@ void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* Source
 	}
 }
 // ---------------------------------------------------------------------------------------------------------------------
-TArray<FActiveGameplayEffectHandle>
-UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
-													UAbilitySystemComponent* SourceASC,
-													UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed,
-													FGameplayTag AbilityTag)
+TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(
+	TArray<TInstancedStruct<FEffectData>> const& DataArray, UAbilitySystemComponent* SourceASC,
+	UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag)
 {
 	TArray<FActiveGameplayEffectHandle> SpecHandles;
 	if (!IsValid(SourceASC) || !IsValid(TargetASC))
@@ -678,11 +676,10 @@ void UGeoAbilitySystemLibrary::FinishSpawnDeployable(AGeoDeployableBase* const D
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-void UGeoAbilitySystemLibrary::InitDeployable(AGeoDeployableBase* Deployable, FAbilityPayload const& Payload,
-											  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
-											  FDeployableDataParams const& Params)
+void UGeoAbilitySystemLibrary::FillDeployableData(FDeployableData& Data, FAbilityPayload const& Payload,
+												  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+												  FDeployableDataParams const& Params)
 {
-	FDeployableData Data;
 	Data.Owner = Payload.Owner;
 	Data.Instigator = Payload.Instigator;
 	Data.Level = Payload.AbilityLevel;
@@ -694,6 +691,14 @@ void UGeoAbilitySystemLibrary::InitDeployable(AGeoDeployableBase* Deployable, FA
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
 	}
+}
+
+void UGeoAbilitySystemLibrary::InitDeployable(AGeoDeployableBase* Deployable, FAbilityPayload const& Payload,
+											  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+											  FDeployableDataParams const& Params)
+{
+	FDeployableData Data;
+	FillDeployableData(Data, Payload, EffectDataArray, Params);
 	Deployable->InitInteractable(&Data);
 }
 

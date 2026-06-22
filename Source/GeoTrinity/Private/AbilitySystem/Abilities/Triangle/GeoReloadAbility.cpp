@@ -9,6 +9,7 @@
 #include "AbilitySystemComponent.h"
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
 #include "GenericTeamAgentInterface.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -91,35 +92,65 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		FRandomStream Rng(StoredPayload.Seed);
 		float const RandomAngle = Rng.FRandRange(0.f, 2.f * PI);
 		float const RandomRadius = Rng.FRandRange(MinSpawnRadius, MaxSpawnRadius);
-		FVector const SpawnOffset{FMath::Cos(RandomAngle) * RandomRadius, FMath::Sin(RandomAngle) * RandomRadius, 0.f};
 		FVector const InstigatorLocation = StoredPayload.Instigator->GetActorLocation();
+		FVector const SpawnOffset = GetReachableSpawnOffset(
+			InstigatorLocation, {FMath::Cos(RandomAngle) * RandomRadius, FMath::Sin(RandomAngle) * RandomRadius, 0.f});
 		FTransform const SpawnTransform{InstigatorLocation};
 
 		AGeoBuffPickup* Pickup = GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(
 			BuffPickupClass, SpawnTransform, StoredPayload.Instigator, Cast<APawn>(StoredPayload.Instigator),
 			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
-		ensureMsgf(IsValid(Pickup), TEXT("GeoTriangleReloadAbility: Failed to spawn AGeoBuffPickup!"));
-		if (IsValid(Pickup))
+		if (!ensureMsgf(IsValid(Pickup), TEXT("GeoTriangleReloadAbility: Failed to spawn AGeoBuffPickup!")))
 		{
-			FBuffPickupData PickupData;
-			PickupData.Owner = StoredPayload.Owner;
-			PickupData.Instigator = StoredPayload.Instigator;
-			PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
-			PickupData.EffectDataArray = {BuffEffects[Index]};
-			PickupData.PowerScale = PowerScale;
-			PickupData.MeshIndex = Index;
-			PickupData.TargetLocation = InstigatorLocation + SpawnOffset;
-			PickupData.Seed = StoredPayload.Seed;
-			if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(StoredPayload.Owner))
-			{
-				PickupData.TeamID = TeamInterface->GetGenericTeamId();
-			}
-
-			Pickup->InitInteractable(&PickupData);
-			Pickup->FinishSpawning(SpawnTransform);
+			EndAbility(true, true);
+			return;
 		}
+
+		FBuffPickupData PickupData;
+		GeoASLib::FillDeployableData(PickupData, StoredPayload, BuffEffects, FDeployableDataParams());
+		PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
+		PickupData.EffectDataArray = {BuffEffects[Index]};
+		PickupData.PowerScale = PowerScale;
+		PickupData.BuffIndex = Index;
+		PickupData.TargetLocation = InstigatorLocation + SpawnOffset;
+
+		Pickup->InitInteractable(&PickupData);
+		Pickup->FinishSpawning(SpawnTransform);
 	}
 
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FVector UGeoReloadAbility::GetReachableSpawnOffset(FVector Origin, FVector DesiredOffset) const
+{
+	FVector const TargetLocation = Origin + DesiredOffset;
+
+	FHitResult Hit;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(StoredPayload.Instigator);
+	if (!GetWorld()->LineTraceSingleByChannel(Hit, Origin, TargetLocation, ECC_GeoCharacter, QueryParams))
+	{
+		return DesiredOffset;
+	}
+
+	float const ReachableDistance = FMath::Max(0.f, Hit.Distance - PickupRadius);
+	return DesiredOffset.GetSafeNormal() * ReachableDistance;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FLinearColor UGeoReloadAbility::GetColorForIndex(int32 Index) const
+{
+	if (BuffColors.IsEmpty())
+	{
+		return FLinearColor::White;
+	}
+	return BuffColors[((Index % BuffColors.Num()) + BuffColors.Num()) % BuffColors.Num()];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FLinearColor UGeoReloadAbility::GetColorForAmmo(int32 Ammo) const
+{
+	return GetColorForIndex(Ammo);
 }
