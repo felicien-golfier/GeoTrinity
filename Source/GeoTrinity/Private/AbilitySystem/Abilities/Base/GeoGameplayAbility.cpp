@@ -330,7 +330,10 @@ void UGeoGameplayAbility::BuildDataAndFire()
 
 void UGeoGameplayAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
-	SendFireDataToServer(AbilityTargetData);
+	if (!GeoLib::IsServer(this))
+	{
+		SendFireDataToServer(AbilityTargetData);
+	}
 }
 
 void UGeoGameplayAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,

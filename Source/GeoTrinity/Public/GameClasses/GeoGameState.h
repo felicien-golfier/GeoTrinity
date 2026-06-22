@@ -45,7 +45,7 @@ public:
 	 * this hook assumes the boss is already in the world when the match begins.
 	 */
 	virtual void HandleMatchHasStarted() override;
-	/** Server. Revives all players currently in the world by calling Revive() on each pawn. */
+	/** Server. Revives all players currently in the world by calling ReviveLogic() on each pawn. */
 	void RevivePlayers() const;
 	/** Destroys the boss, hides the boss health bar locally, opens the arena barrier, and revives players (server). */
 	void StopBossFight();

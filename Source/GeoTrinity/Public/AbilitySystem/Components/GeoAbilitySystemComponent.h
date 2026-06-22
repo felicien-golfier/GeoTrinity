@@ -87,15 +87,6 @@ public:
 	void StopAllActivePatterns();
 
 	/**
-	 * Ends every locally-running ability instance, bypassing the replicated FGameplayAbilitySpec::IsActive() gate that
-	 * UAbilitySystemComponent::CancelAllAbilities() relies on. On the owning client a predicted instance (e.g. a held
-	 * beam) keeps ticking after the server's authoritative end replicates ActiveCount to 0, because the stock cancel
-	 * skips specs whose replicated count is already 0 — leaving the local instance stuck active. Used on death so the
-	 * client ability genuinely stops and the ability bar slot clears.
-	 */
-	void EndActiveAbilitiesLocally();
-
-	/**
 	 * Multicast RPC that instantiates PatternClass on every client and calls InitPattern with Payload.
 	 * Called by UPatternAbility on the server after activation.
 	 */
