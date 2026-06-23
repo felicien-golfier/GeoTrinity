@@ -5,6 +5,7 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
@@ -150,7 +151,22 @@ FLinearColor UGeoReloadAbility::GetColorForIndex(int32 Index) const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FLinearColor UGeoReloadAbility::GetColorForAmmo(int32 Ammo) const
+FLinearColor UGeoReloadAbility::GetColorForAmmo(int32 Ammo)
 {
-	return GetColorForIndex(Ammo);
+	// Resolve the configured (Blueprint-derived) reload ability CDO that owns the authored palette. The ability catalog
+	// is keyed by the Spell AbilityTag, which has no native constant here, so find the entry by class instead.
+	UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo();
+	if (!AbilityInfo)
+	{
+		return FLinearColor::White;
+	}
+
+	for (FGameplayAbilityInfo const& Info : AbilityInfo->GetAllAbilityInfos())
+	{
+		if (Info.AbilityClass && Info.AbilityClass->IsChildOf(UGeoReloadAbility::StaticClass()))
+		{
+			return Info.AbilityClass->GetDefaultObject<UGeoReloadAbility>()->GetColorForIndex(Ammo);
+		}
+	}
+	return FLinearColor::White;
 }

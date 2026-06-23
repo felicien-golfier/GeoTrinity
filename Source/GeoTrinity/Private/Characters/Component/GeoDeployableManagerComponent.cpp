@@ -85,8 +85,10 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 		{
 			checkf(Bucket.Deployables.Num() > 0,
 				   TEXT("Deployables reach the max limit but their is nothing in the array."));
+			// Expire() synchronously broadcasts OnDeployableExpiredEvent, which routes to OnDeployableDestroyed and
+			// removes the oldest from the bucket. Do NOT also RemoveAt(0) here — that would drop a second, still-alive
+			// deployable from tracking, so the limit would only visibly enforce every other spawn.
 			Bucket.Deployables[0]->Expire();
-			Bucket.Deployables.RemoveAt(0);
 		}
 		else
 		{

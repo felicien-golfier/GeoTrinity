@@ -41,7 +41,7 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 
 public:
 	/**
-	 * Calls InitBossFight() on the existing boss enemy. Enemies are spawned during HandleMatchIsWaitingToStart;
+	 * Calls StartBossFight() on the existing boss enemy. Enemies are spawned during HandleMatchIsWaitingToStart;
 	 * this hook assumes the boss is already in the world when the match begins.
 	 */
 	virtual void HandleMatchHasStarted() override;
@@ -87,11 +87,11 @@ public:
 	 * Shows boss health bar locally, binds the defeat delegate, sends the aggro StateTree event,
 	 * closes the arena barrier, and schedules the fight-commit timer. Server-side bindings only.
 	 */
-	void InitBossFight(AEnemyCharacter* Boss);
+	void StartBossFight(AEnemyCharacter* Boss);
 	/** Finds and returns the AGeoArenaBarrier in the level, or nullptr if none exists. */
 	AGeoArenaBarrier* GetArenaBarrier() const;
 	/** Spawns both boss and dummy enemies on the server. No-op on clients or if already spawned. */
-	void SpawnEnemies();
+	void ResetEnemies();
 
 	UPROPERTY(BlueprintAssignable, Category = "Enemy")
 	FOnEnemySpawned OnEnemySpawned;

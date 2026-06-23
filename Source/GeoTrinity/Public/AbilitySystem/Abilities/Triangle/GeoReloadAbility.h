@@ -27,10 +27,11 @@ public:
 
 	/**
 	 * Maps an ammo count to a buff color the same way Fire() maps it to a buff index, so the HUD ammo number can preview
-	 * the color the next reload will spawn. Read from the CDO by the overlay. White when no colors are configured.
+	 * the color the next reload will spawn. Static so the overlay needs only the ammo value: it resolves the reload
+	 * ability CDO itself via the Ability.Type.Reload tag. White when the CDO or palette is missing.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Ability|Reload")
-	FLinearColor GetColorForAmmo(int32 Ammo) const;
+	static FLinearColor GetColorForAmmo(int32 Ammo);
 
 protected:
 	/** Binds the ammo-changed callback so the reload button is grayed out in the HUD when ammo is full. */

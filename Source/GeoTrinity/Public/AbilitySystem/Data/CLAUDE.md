@@ -59,3 +59,9 @@ Sent client → server via `ServerSetReplicatedTargetData`.
 
 ## `StatusInfo.h`
 Status effect configuration data (types, durations, visuals). Referenced by `FStatusEffectData`.
+
+---
+
+## `GeoSoundRow.h`
+`FGeoSoundRow : FTableRowBase` — `Tag` (`FGameplayTag`) + `Sound` (`USoundBase`). DataTable row type for tag→sound lookup; the tag is an explicit field (picked from the tag tree), **not** the row name.
+`UGeoSoundRowLibrary::FindSoundForTag(SoundTable, Tag)` — `BlueprintPure`, returns the `Sound` of the first row whose `Tag` matches exactly (`MatchesTagExact`), else nullptr. Used by the `GenericSound` GameplayCueNotify: `MatchedTagName` → `FindSoundForTag` → `Play Sound`.
