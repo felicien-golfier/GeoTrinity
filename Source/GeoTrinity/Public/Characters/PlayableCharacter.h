@@ -101,6 +101,7 @@ public:
 	void SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability, bool bVisible, float SweetSpotMinRatio = 0.f,
 								   float SweetSpotMaxRatio = 0.f);
 
+	/** Entry point for reviving a downed player. Sets bIsDead = false and delegates to ReviveLogic(). */
 	void Revive();
 
 protected:
@@ -116,6 +117,7 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(float NewValue);
 
+	/** Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from OnHealthChanged. */
 	void Death();
 	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
 	 */

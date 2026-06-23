@@ -43,6 +43,8 @@ protected:
 	/** Calls Super (sends data to server), fires the beam cue locally, then ends the ability on the locally-controlled
 	 * client. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
+	/** Iterates hostile actors within GeneralSpellDistance along the forward direction and applies effects. Called from
+	 * Fire() for the locally-controlled player and from OnFireTargetDataReceived() on the server. */
 	void DealDamage(FGeoAbilityTargetData const& AbilityTargetData) const;
 
 	/**

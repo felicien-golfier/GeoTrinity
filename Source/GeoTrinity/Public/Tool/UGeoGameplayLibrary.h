@@ -62,6 +62,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsDedicatedServer(UObject const* WorldContextObject);
 	static bool IsDedicatedServer(UWorld const* World);
+	/** Non-pawn overload of IsLocalPlayerAvatar; casts Actor to APawn before applying the same check. Returns false for
+	 * non-pawn actors. */
 	static bool IsLocalPlayerAvatar(AActor const* Actor);
 
 	/**

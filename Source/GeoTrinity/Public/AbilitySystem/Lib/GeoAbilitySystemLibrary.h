@@ -140,6 +140,8 @@ public:
 	static void InitDeployable(AGeoDeployableBase* Deployable, FAbilityPayload const& Payload,
 							   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 							   FDeployableDataParams const& Params);
+	/** Populates Data from Payload, EffectDataArray, and Params without calling InitInteractable. Used when the caller
+	 * needs to modify Data fields before passing it to InitInteractable manually. */
 	static void FillDeployableData(FDeployableData& Data, FAbilityPayload const& Payload,
 								   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 								   FDeployableDataParams const& Params);

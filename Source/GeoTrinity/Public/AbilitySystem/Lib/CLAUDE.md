@@ -5,10 +5,11 @@
 ## `GeoAbilitySystemLibrary.h` — static helpers for GAS
 
 **Effect application** (always use this):
-- `ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC)` — two-pass: all `UpdateContextHandle` first, then all `ApplyEffect`. Fresh context per call = `SingleUseDamageMultiplier` auto-resets.
+- `ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC, Level, Seed, AbilityTag)` — two-pass: all `UpdateContextHandle` first, then all `ApplyEffect`. Fresh context per call = `SingleUseDamageMultiplier` auto-resets. `AbilityTag` is forwarded through `UpdateContextHandle` so subtypes like `FDamageEffectData` can read the originating ability's CDO (e.g. to flag `bIsFromBasicAbility`).
 
 **Deployable spawning:**
 - `StartSpawnDeployable(Class, Owner, Instigator, Transform)` — deferred spawn; returns actor before `BeginPlay`. Call `InitInteractable` before `FinishSpawnDeployable`.
+- `FillDeployableData(Data, Payload, EffectDataArray, Params)` — populates an `FDeployableData` struct without calling `InitInteractable`. Use when you need to modify fields (e.g. `BuffIndex`) before passing the struct to `InitInteractable` manually.
 - `FinishSpawnDeployable(Deployable, Transform)` — calls `FinishSpawning`, triggering `BeginPlay`
 
 **Projectile spawning** (pool-aware):
