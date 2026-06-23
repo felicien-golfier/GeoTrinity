@@ -11,6 +11,7 @@ Extended ASC used by all characters.
 
 ### Fire helpers (used by ability classes)
 - `GetFireSectionIndex(AbilityTag)` — returns reference to section counter for animation cycling
+- `SetLastBasicAbilityTarget(AActor*)` / `GetLastBasicAbilityTarget()` — server-only weak pointer tracking the actor most recently hit by this owner's basic ability. Set by `ExecCalc_Damage` when `bIsFromBasicAbility` is flagged in the context; read by `AGeoTurret::FindBestTarget()` to prefer the owner's last target over the nearest hostile.
 - Fire origin and yaw logic lives on `UGeoGameplayAbility::GetFireOrigin2D` / `GetFireYaw` — override there to customize per-ability
 
 ### Pattern management (enemy-only)
@@ -21,9 +22,6 @@ Extended ASC used by all characters.
 
 ### Startup
 - `GiveStartupAbilities()` — grants class abilities + shared abilities from global `UAbilityInfo` data asset, filtered by `EPlayerClass`
-
-### Death / cleanup
-- `EndActiveAbilitiesLocally()` — ends every locally-running ability instance, bypassing the replicated `FGameplayAbilitySpec::IsActive()` gate. Required on death because a predicted client instance (e.g. a held beam) keeps ticking after the server's authoritative end replicates `ActiveCount` to 0; the stock `CancelAllAbilities` skips specs whose replicated count is already 0, leaving the local instance stuck.
 
 ### Delegates (for passive ability bindings)
 - `OnHealProvided(float)` — broadcast by `ExecCalc_Heal` on each heal (unless suppressed)
