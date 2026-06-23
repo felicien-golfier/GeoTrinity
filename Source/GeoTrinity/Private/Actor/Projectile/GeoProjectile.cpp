@@ -343,10 +343,11 @@ void AGeoProjectile::OverrideDistanceSpan(float const Distance)
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::InitProjectileLife()
 {
-	if (!HasAuthority())
+	if (!GeoLib::IsDedicatedServer(this))
 	{
 		LoopingSoundComponent->SetSound(LoopingSound);
 		LoopingSoundComponent->Play();
+		UGameplayStatics::PlaySoundAtLocation(this, StartSound, GetActorLocation(), FRotator::ZeroRotator, 0.2f);
 	}
 
 	SetLifeSpan(LifeSpanInSec);

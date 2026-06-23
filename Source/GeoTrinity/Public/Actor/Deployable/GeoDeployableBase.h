@@ -144,7 +144,7 @@ public:
 
 	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
 	 * instigator. */
-	FGameplayCueParameters GetGenericCueParams(FGameplayTag MatchedTag = FGameplayTag());
+	FGameplayCueParameters GetGenericCueParams(FGameplayTag SoundTag = FGameplayTag());
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams();
@@ -194,22 +194,22 @@ protected:
 	FGameplayTag SpawnGameplayCueTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
 			  meta = (EditCondition = "HasSpawnGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag SpawnMatchedTag;
+	FGameplayTag SpawnSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag RecallGameplayCueTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
 			  meta = (EditCondition = "HasRecallGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag RecallMatchedTag;
+	FGameplayTag RecallSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag BlinkingGameplayCueTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
 			  meta = (EditCondition = "HasBlinkingGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag BlinkingMatchedTag;
+	FGameplayTag BlinkingSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag ExplodeGameplayCueTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
 			  meta = (EditCondition = "HasExplodeGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag ExplodeMatchedTag;
+	FGameplayTag ExplodeSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 

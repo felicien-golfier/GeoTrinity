@@ -200,7 +200,7 @@ void AGeoDeployableBase::BeginPlay()
 		CombattantWidgetComponent->SetHiddenInGame(true);
 	}
 
-	ExecuteCue(SpawnGameplayCueTag, GetGenericCueParams(SpawnMatchedTag));
+	ExecuteCue(SpawnGameplayCueTag, GetGenericCueParams(SpawnSoundTag));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -277,7 +277,7 @@ void AGeoDeployableBase::Explode(float Value)
 
 	if (!GeoLib::IsDedicatedServer(this) && ExplodeGameplayCueTag.IsValid())
 	{
-		ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeMatchedTag));
+		ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeSoundTag));
 		// TODO: Pass the Value in the Cue ?
 	}
 }
@@ -351,7 +351,7 @@ void AGeoDeployableBase::StartBlinking(float const BlinkDuration)
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		FScopedPredictionWindow ScopedPredictionWindow(ASC);
-		FGameplayCueParameters CueParams = GetGenericCueParams(BlinkingMatchedTag);
+		FGameplayCueParameters CueParams = GetGenericCueParams(BlinkingSoundTag);
 		CueParams.Normal = FVector(BlinkDuration, 0.f, 0.f);
 		ASC->ExecuteGameplayCue(BlinkingGameplayCueTag, CueParams);
 	}
@@ -392,7 +392,7 @@ void AGeoDeployableBase::OnRep_Active(bool bOldValue)
 		ExecuteCue(RecallGameplayCueTag, GetRecallCueParams());
 		if (bExplodeAtRecall)
 		{
-			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeMatchedTag));
+			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeSoundTag));
 		}
 		Expire();
 	}
@@ -435,7 +435,7 @@ bool AGeoDeployableBase::IsBlinking() const
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGameplayTag MatchedTag)
+FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGameplayTag SoundTag)
 {
 	FGameplayCueParameters CueParams;
 	CueParams.Location = GetActorLocation();
@@ -446,16 +446,16 @@ FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGameplayTag Matc
 	CueParams.AbilityLevel = GetData()->Level;
 	CueParams.RawMagnitude = GetData()->Params.Size;
 	CueParams.NormalizedMagnitude = GetData()->Params.Value;
-	if (MatchedTag.IsValid())
+	if (SoundTag.IsValid())
 	{
-		CueParams.AggregatedSourceTags.AddTag(MatchedTag);
+		CueParams.AggregatedSourceTags.AddTag(SoundTag);
 	}
 	return CueParams;
 }
 
 FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
 {
-	FGameplayCueParameters CueParams = GetGenericCueParams(RecallMatchedTag);
+	FGameplayCueParameters CueParams = GetGenericCueParams(RecallSoundTag);
 	CueParams.Normal = (GetData()->Instigator->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 	CueParams.NormalizedMagnitude = IsBlinking() ? 1.f : 0.f;
 	return CueParams;
