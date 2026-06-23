@@ -7,7 +7,7 @@ Data assets and structs that configure abilities and effects.
 ## `EffectData.h` — polymorphic effect system
 
 `FEffectData` base — two virtual methods:
-- `UpdateContextHandle(ContextHandle)` — pre-apply hook; sets values on `FGeoGameplayEffectContext`
+- `UpdateContextHandle(ContextHandle, AbilityLevel, AbilityTag)` — pre-apply hook; sets values on `FGeoGameplayEffectContext`. `AbilityTag` identifies the originating ability so subclasses (e.g. `FDamageEffectData`) can flag context fields like `bIsFromBasicAbility` based on the ability's owned tags.
 - `ApplyEffect(SourceASC, TargetASC, ContextHandle)` — applies a `UGameplayEffect`
 
 **Subtypes:**
@@ -42,6 +42,8 @@ Data assets and structs that configure abilities and effects.
 `populate_ability_tags()` (`BlueprintCallable`, `CallInEditor`) — re-reads all CDO `AssetTags` and fills `AbilityTag` fields on all entries. From Python, set `AbilityTag` directly in `import_text` — see `MCP_NewEnemyAbility.md`.
 
 `GetAbilitiesForClass(EPlayerClass)` — returns class abilities + shared.
+
+`GetAbilityClassForTag(FGameplayTag)` — O(1) after the first call (lazily builds a cached tag→class map). Returns nullptr on miss with a warning log; safe to call on every effect application including for non-ability sources that pass an invalid tag.
 
 Multiple abilities can share the same `AbilityTag` but differ by `EPlayerClass` — use this instead of making separate ability classes per class.
 

@@ -13,6 +13,7 @@ Blueprint-callable static helpers:
 
 **Local-avatar check** — use for "my own pawn" cosmetics, NOT `IsLocallyControlled()`:
 - `IsLocalPlayerAvatar(APawn*)` — true only for the viewing human's own avatar (`IsPlayerControlled() && IsLocallyControlled()`). On a listen server the host's AI pawns are also locally controlled, so `IsLocallyControlled()` alone is true for every host enemy. Use this to hide the local player's own floating bar, pick the local-player hit-flash material, etc.
+- `IsLocalPlayerAvatar(AActor const*)` — non-pawn overload; casts to `APawn` first and returns false for non-pawn actors. Convenience for call sites that only have an `AActor*`.
 
 **Time**:
 - `GetServerTime(WorldContext, bUpdatedWithPing)` — network-approximated server time. **Never use for local client timing** (charge duration, UI) — use `GetWorld()->GetTimeSeconds()` instead.
