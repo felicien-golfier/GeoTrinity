@@ -1,6 +1,32 @@
-name: Build GeoTrinity workflow_call
+name: Build GeoTrinity (Custom)
 
 on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to build
+        required: true
+        default: master
+      config:
+        description: Build configuration
+        required: true
+        default: Development
+        type: choice
+        options:
+          - Development
+          - DebugGame
+          - Test
+          - Shipping
+      build_server:
+        description: Also build dedicated server
+        required: false
+        default: false
+        type: boolean
+      clean:
+        description: Clean build (wipe Binaries, Intermediate and cook cache)
+        required: false
+        default: false
+        type: boolean
   workflow_call:
     inputs:
       branch:
