@@ -22,7 +22,7 @@ class GEOTRINITY_API AGeoTurret : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
-	AGeoTurret();
+	AGeoTurret(FObjectInitializer const& ObjectInitializer);
 
 	virtual void InitInteractable(FInteractableActorData* Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

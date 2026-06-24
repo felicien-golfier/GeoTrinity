@@ -7,7 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-AGeoEffectZone::AGeoEffectZone()
+AGeoEffectZone::AGeoEffectZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CapsuleComponent->SetCapsuleRadius(Radius);

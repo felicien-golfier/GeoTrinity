@@ -138,11 +138,14 @@ void USpawnPillarPattern::SpawnPillarAtLocation(FVector2D const& ZoneLocation,
 				return;
 			}
 
-			if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
+			if (IsValid(TargetActor) && !TargetActor->IsActorBeingDestroyed())
 			{
-				UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, InstigatorAsc, TargetASC,
-																	StoredPayload.AbilityLevel, StoredPayload.Seed,
-																	StoredPayload.AbilityTag);
+				if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
+				{
+					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, InstigatorAsc, TargetASC,
+																		StoredPayload.AbilityLevel, StoredPayload.Seed,
+																		StoredPayload.AbilityTag);
+				}
 			}
 		}
 	}

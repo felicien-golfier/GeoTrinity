@@ -14,7 +14,7 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-AGeoBuffPickup::AGeoBuffPickup()
+AGeoBuffPickup::AGeoBuffPickup(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = 0.f;

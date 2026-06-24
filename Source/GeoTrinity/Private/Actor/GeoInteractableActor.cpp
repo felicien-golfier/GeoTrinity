@@ -8,7 +8,7 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // Sets default values
-AGeoInteractableActor::AGeoInteractableActor()
+AGeoInteractableActor::AGeoInteractableActor(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bReplicates = true;
 	PrimaryActorTick.bCanEverTick = false;

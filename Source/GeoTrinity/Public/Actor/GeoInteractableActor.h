@@ -49,7 +49,7 @@ class GEOTRINITY_API AGeoInteractableActor
 	GENERATED_BODY()
 
 public:
-	AGeoInteractableActor();
+	AGeoInteractableActor(FObjectInitializer const& ObjectInitializer);
 
 	/** Returns the actor's owned ASC (IAbilitySystemInterface implementation). */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;

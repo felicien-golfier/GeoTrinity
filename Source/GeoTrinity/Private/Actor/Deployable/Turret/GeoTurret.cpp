@@ -8,7 +8,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-AGeoTurret::AGeoTurret()
+AGeoTurret::AGeoTurret(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = 0.f;

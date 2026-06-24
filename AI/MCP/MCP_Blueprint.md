@@ -34,6 +34,8 @@ A class absent from the Python module can still be reached by loading its CDO vi
 
 A byte property backed by an unexposed enum cannot be read or written from Python, and the Remote Control API refuses private properties — changing one needs a C++ shim.
 
+A gameplay-tag container is read as exported text with its `export_text` method (there is no `to_string`), and written by building a fresh container and round-tripping the desired tags through its `import_text` method.
+
 ## Editing a Struct Array
 
 Elements read from a struct array are by-value copies, so mutating one in place does not write back.
