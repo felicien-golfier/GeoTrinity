@@ -1,13 +1,13 @@
-name: Build GeoTrinity (Listen Server)
+name: Build GeoTrinity
 
 on:
   push:
-    branches: [build-listen]
+    branches: [build]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Listen Server (Game target)
+    name: Build Auto (Game target)
     runs-on: self-hosted
     timeout-minutes: 480
 
@@ -17,9 +17,9 @@ jobs:
         run: |
           $time = Get-Date -Format "HH:mm:ss"
           $hash = & "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" log -1 --format="%h" 2>$null
-          msg * /TIME:120 "GeoTrinity Build Starting! $time | build-listen @ $hash"
+          msg * /TIME:120 "GeoTrinity Build Starting! $time | build-Auto @ $hash"
 
-      - name: Sync build-listen
+      - name: Sync build
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,14 +28,14 @@ jobs:
           $env:GIT_TERMINAL_PROMPT = "0"
           $git = "C:\Program Files\Git\cmd\git.exe"
           & $git -C "H:\Work\Git\GeoTrinity" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin build-listen
-          & $git -C "H:\Work\Git\GeoTrinity" checkout build-listen
+          & $git -C "H:\Work\Git\GeoTrinity" checkout build
           & $git -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
 
       - name: Package Game
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-          $archiveDir = "H:\GeoTrinity\Builds\GeoTrinity_$timestamp"
+          $archiveDir = "H:\Work\Git\GeoTrinity\Build\GeoTrinity_$timestamp"
           & "H:\Epic\UE_5.7\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
             -project="H:\Work\Git\GeoTrinity\GeoTrinity.uproject" `
             -noP4 -platform=Win64 -clientconfig=Development `

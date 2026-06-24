@@ -68,7 +68,7 @@ jobs:
           $branch = "${{ github.event.inputs.branch }}" -replace "[/\\]", "-"
           $config = "${{ github.event.inputs.config }}"
           $withServer = "${{ github.event.inputs.build_server }}" -eq "true"
-          $archiveDir = "H:\GeoTrinity\Builds\GeoTrinity_${branch}_${config}_$timestamp"
+          $archiveDir = "H:\Work\Git\GeoTrinity\Build\GeoTrinity_${branch}_${config}_$timestamp"
 
           $serverArgs = if ($withServer) { @("-server", "-serverconfig=$config") } else { @() }
 
