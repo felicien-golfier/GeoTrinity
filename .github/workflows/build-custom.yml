@@ -87,7 +87,7 @@ jobs:
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-          $branch = "${{ inputs.branch }}" -replace "[/\]", "-"
+          $branch = "${{ inputs.branch }}" -replace "[/\\]", "-"
           $config = "${{ inputs.config }}"
           $archiveDir = "$env:REPO\Build\GeoTrinity_${branch}_${config}_$timestamp"
           & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
