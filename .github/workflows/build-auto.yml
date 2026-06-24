@@ -13,5 +13,4 @@ jobs:
       config: Development
       build_server: false
       clean: false
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    secrets: inherit
