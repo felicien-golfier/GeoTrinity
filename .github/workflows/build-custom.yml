@@ -44,9 +44,6 @@ on:
         required: false
         default: false
         type: boolean
-    secrets:
-      GITHUB_TOKEN:
-        required: true
 
 env:
   REPO: H:\Work\Git\GeoTrinity
