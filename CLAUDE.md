@@ -46,7 +46,7 @@ Source/GeoTrinity/
 │   │   │   ├── Boss/          # GeoPeriodicFireAbility, GeoDevastatingWaveAbility
 │   │   │   ├── Pattern/       # Pattern, SpiralPattern, SpawnPillarPattern, DevastatingWavePattern
 │   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility
-│   │   │   ├── Square/        # GeoMineAbility, GeoShieldBurstPassiveAbility, GeoDetonateAllMinesAbility
+│   │   │   ├── Square/        # GeoShieldBurstPassiveAbility, GeoDetonateWallsAbility (wall uses shared GeoDeployAbility)
 │   │   │   ├── Triangle/      # GeoReloadAbility, GeoRecallTurretAbility
 │   │   │   └── Common/        # GeoDashAbility, GeoDeployAbility
 │   │   ├── AttributeSet/      # GeoAttributeSetBase, CharacterAttributeSet
@@ -58,7 +58,7 @@ Source/GeoTrinity/
 │   │   └── Types/             # GeoAscTypes (FGeoGameplayEffectContext)
 │   ├── Actor/
 │   │   ├── Projectile/        # GeoProjectile, GeoPooledProjectile, GeoShieldBurstProjectile, DeployableSpawnerProjectile
-│   │   ├── Deployable/        # GeoDeployableBase, GeoMine, GeoHealingZone, GeoBuffPickup
+│   │   ├── Deployable/        # GeoDeployableBase, GeoWall, GeoHealingZone, GeoBuffPickup
 │   │   ├── Turret/            # GeoTurret
 │   │   ├── GeoClassChangeTrigger.h
 │   │   ├── GeoEffectZone.h

@@ -5,6 +5,8 @@ Steps required every time a new enemy `GA_` Blueprint ability is created.
 ## Key Constraints
 
 - Tags in `Config/Tags/GeoGameplayTags.ini` require an **editor restart** to resolve — do this first.
+- Every `GA_` ability CDO must carry two asset tags in its `AbilityTags` container: one under `Ability.Spell.*` and one under `Ability.Type.*` (`Special`, `SpecialAlternative`, `Basic`, `Dash`, `Reload`, `Passive`). The `Ability.Type.*` value matches the input slot the ability is bound to. Missing either trips an ensure when the ability catalog is populated.
+- Reparenting an existing ability Blueprint to a different C++ base **clears its `AbilityTags`** — re-set both asset tags afterward and save; read or re-set them on an existing ability with `AI/Python/ability_tags.py`.
 - `AbilityTag` on `FGameplayAbilityInfo` must be set in the `import_text` call: `AbilityTag=(TagName="Ability.Spell.X")`.
 - `AbilityClass` on `FGameplayAbilityInfo` cannot be set via `set_editor_property` — use `import_text` instead.
 - `import_text` requires the full `BlueprintGeneratedClass` path prefix, not the raw `get_path_name()` result — see `AI/Python/new_enemy_ability.py`.

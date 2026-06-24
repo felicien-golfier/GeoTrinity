@@ -45,7 +45,7 @@ class GEOTRINITY_API AGeoBuffPickup : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
-	AGeoBuffPickup();
+	AGeoBuffPickup(FObjectInitializer const& ObjectInitializer);
 
 	/** Registers Data with COND_InitialOnly — pickup state is set once and never updated. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

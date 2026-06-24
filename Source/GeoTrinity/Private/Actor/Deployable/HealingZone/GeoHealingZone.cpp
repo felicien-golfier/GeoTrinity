@@ -9,7 +9,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-AGeoHealingZone::AGeoHealingZone()
+AGeoHealingZone::AGeoHealingZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bUseRegularDrain = false;
 	SetCanBeDamaged(false);

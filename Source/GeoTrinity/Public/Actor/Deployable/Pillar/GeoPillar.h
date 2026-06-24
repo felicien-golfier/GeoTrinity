@@ -19,7 +19,7 @@ class GEOTRINITY_API AGeoPillar : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
-	AGeoPillar();
+	AGeoPillar(FObjectInitializer const& ObjectInitializer);
 
 	/** Copies Data into the replicated PillarData field, then delegates to Super (which triggers PushAway). */
 	virtual void InitInteractable(FInteractableActorData* Data) override;

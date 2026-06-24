@@ -6,7 +6,7 @@ World actors: projectiles, deployables, turret, triggers.
 | Folder | Contents |
 |---|---|
 | `Projectile/` | `GeoProjectile` base + `GeoPooledProjectile`, `GeoShieldBurstProjectile`, `DeployableSpawnerProjectile` |
-| `Deployable/` | `GeoDeployableBase` + `GeoMine`, `GeoHealingZone`, `GeoBuffPickup` |
+| `Deployable/` | `GeoDeployableBase` + `GeoWall`, `GeoHealingZone`, `GeoBuffPickup` |
 | `Turret/` | `GeoTurret` — Triangle's deployable turret |
 
 ## Other Files
