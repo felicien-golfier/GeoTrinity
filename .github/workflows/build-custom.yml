@@ -122,8 +122,13 @@ jobs:
           UE_IgnoreOutdatedImportedLibraries: 1
 
       - name: Notify done
-        if: always()
+        if: success()
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
-          $msg = if ($env:ARCHIVE_DIR) { "GeoTrinity Build Done! $env:ARCHIVE_DIR" } else { "GeoTrinity Build FAILED! Check GitHub Actions." }
-          try { msg * /TIME:120 $msg } catch {}
+          try { msg * /TIME:120 "GeoTrinity Build Done! $env:ARCHIVE_DIR" } catch {}
+
+      - name: Notify failed
+        if: failure()
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          try { msg * /TIME:120 "GeoTrinity Build FAILED! Check GitHub Actions." } catch {}
