@@ -16,8 +16,8 @@ jobs:
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $time = Get-Date -Format "HH:mm:ss"
-          $commit = & "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" log -1 --format="%h %s" 2>$null
-          msg * /TIME:120 "GeoTrinity Build Starting! $time | $commit"
+          $hash = & "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" log -1 --format="%h" 2>$null
+          msg * /TIME:120 "GeoTrinity Build Starting! $time | build-listen @ $hash"
 
       - name: Sync build-listen
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
@@ -31,12 +31,17 @@ jobs:
           & $git -C "H:\Work\Git\GeoTrinity" checkout build-listen
           & $git -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
 
-      - name: Build Game (GeoTrinity Win64 Development)
-        shell: cmd
+      - name: Package Game
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
-          "H:\Epic\UE_5.7\Engine\Build\BatchFiles\Build.bat" ^
-            GeoTrinity Win64 Development ^
-            "H:\Work\Git\GeoTrinity\GeoTrinity.uproject" ^
-            -NoMutex -NoHotReloadFromIDE
+          $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+          $archiveDir = "H:\GeoTrinity\Builds\GeoTrinity_$timestamp"
+          & "H:\Epic\UE_5.7\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="H:\Work\Git\GeoTrinity\GeoTrinity.uproject" `
+            -noP4 -platform=Win64 -clientconfig=Development `
+            -cook -build -stage -pak -archive `
+            -archivedirectory="$archiveDir"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msg * /TIME:120 "GeoTrinity Build Done! Output: $archiveDir\Windows"
         env:
           UE_IgnoreOutdatedImportedLibraries: 1
