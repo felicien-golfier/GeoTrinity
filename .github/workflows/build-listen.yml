@@ -13,15 +13,16 @@ jobs:
 
     steps:
       - name: Sync build-listen
-        shell: cmd
+        shell: powershell
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_TERMINAL_PROMPT: "0"
-          GIT_ASKPASS: echo
         run: |
-          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" -c "credential.helper=" fetch https://x-access-token:%GITHUB_TOKEN%@github.com/felicien-golfier/GeoTrinity.git build-listen:build-listen
-          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" checkout build-listen
-          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
+          $token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GITHUB_TOKEN"))
+          $env:GIT_TERMINAL_PROMPT = "0"
+          $git = "C:\Program Files\Git\cmd\git.exe"
+          & $git -C "H:\Work\Git\GeoTrinity" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin build-listen
+          & $git -C "H:\Work\Git\GeoTrinity" checkout build-listen
+          & $git -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
 
       - name: Build Game (GeoTrinity Win64 Development)
         shell: cmd
