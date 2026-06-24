@@ -23,10 +23,10 @@ Poolable, effect-applying projectile.
 **Key fields:**
 - `EffectDataArray` — effects applied on hit
 - `Payload` (`FAbilityPayload`) — owner/instigator/ability info
-- `DistanceSpan = 1000 cm` — override with `SetDistanceSpan(float)`
+- `DistanceSpan = 1000 cm` — override with `OverrideDistanceSpan(float)`
 - `LifeSpanInSec = 30` — safeguard max lifespan
 - `bCanOverlapInstigator = false`, `LifeTimeThresholdBeforeOverlapSelf = 0.2` — prevent self-hit on spawn
-- `ImpactEffect` (Niagara), `ImpactSound`, `LoopingSound` — cosmetic only
+- `ImpactEffect` (Niagara), `ImpactSound`, `StartSound`, `LoopingSound` — cosmetic only; all three skip dedicated servers (`!GeoLib::IsDedicatedServer`). `StartSound` plays once at spawn; `LoopingSound` loops for the projectile's full lifetime.
 
 ## `GeoPooledProjectile.h` — pooled variant
 Extends `GeoProjectile` + implements `IGeoPoolableInterface`:
