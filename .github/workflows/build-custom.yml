@@ -1,4 +1,5 @@
-# Reusable workflow — called by build.yml and build-manual.yml
+name: Build GeoTrinity (Manual)
+
 on:
   workflow_call:
     inputs:

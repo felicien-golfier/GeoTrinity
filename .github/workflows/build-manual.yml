@@ -1,4 +1,4 @@
-name: Build GeoTrinity (Manual)
+name: Build GeoTrinity (Manual2)
 
 on:
   workflow_dispatch:
