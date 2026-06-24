@@ -75,6 +75,8 @@ jobs:
             -cook -build -stage -pak -archive `
             -archivedirectory="$archiveDir"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          msg * /TIME:120 "GeoTrinity Build Done! Output: $archiveDir\Windows"
+          Move-Item "$archiveDir\Windows\*" "$archiveDir\\"
+          Remove-Item "$archiveDir\Windows" -ErrorAction SilentlyContinue
+          msg * /TIME:120 "GeoTrinity Build Done! Output: $archiveDir"
         env:
           UE_IgnoreOutdatedImportedLibraries: 1
