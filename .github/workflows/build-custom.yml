@@ -85,29 +85,44 @@ jobs:
         run: |
           cmd /c "$env:REPO\Tools\Clean.bat"
 
-      - name: Package Game
+      - name: Package Client
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
           $branch = "${{ inputs.branch }}" -replace "[/\]", "-"
           $config = "${{ inputs.config }}"
-          $withServer = "${{ inputs.build_server }}" -eq "true"
           $archiveDir = "$env:REPO\Build\GeoTrinity_${branch}_${config}_$timestamp"
-
-          $serverArgs = if ($withServer) { @("-server", "-serverconfig=$config") } else { @() }
-
+          $env:BUILD_ARCHIVE_DIR = $archiveDir
           & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
             -project="$env:REPO\GeoTrinity.uproject" `
             -noP4 -platform=Win64 -clientconfig=$config `
             -cook -build -stage -pak -archive `
-            -archivedirectory="$archiveDir" `
-            @serverArgs
+            -archivedirectory="$archiveDir"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
           Move-Item "$archiveDir\Windows\*" "$archiveDir\\"
           Remove-Item "$archiveDir\Windows" -ErrorAction SilentlyContinue
-          if ($withServer) { Rename-Item "$archiveDir\WindowsServer" "Server" }
-
-          msg * /TIME:120 "GeoTrinity Build Done! Output: $archiveDir"
+          echo "ARCHIVE_DIR=$archiveDir" >> $env:GITHUB_ENV
         env:
           UE_IgnoreOutdatedImportedLibraries: 1
+
+      - name: Package Server
+        if: ${{ inputs.build_server == true }}
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $config = "${{ inputs.config }}"
+          $archiveDir = "$env:ARCHIVE_DIR"
+          & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="$env:REPO\GeoTrinity.uproject" `
+            -noP4 -platform=Win64 -serverconfig=$config `
+            -noclient -server `
+            -cook -build -stage -pak -archive `
+            -archivedirectory="$archiveDir"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Rename-Item "$archiveDir\WindowsServer" "Server"
+        env:
+          UE_IgnoreOutdatedImportedLibraries: 1
+
+      - name: Notify done
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          msg * /TIME:120 "GeoTrinity Build Done! Output: $env:ARCHIVE_DIR"
