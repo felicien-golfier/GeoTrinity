@@ -12,6 +12,13 @@ jobs:
     timeout-minutes: 480
 
     steps:
+      - name: Notify start
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $time = Get-Date -Format "HH:mm:ss"
+          $commit = & "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" log -1 --format="%h %s" 2>$null
+          msg * /TIME:120 "GeoTrinity Build Starting! $time | $commit"
+
       - name: Sync build-listen
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         env:
