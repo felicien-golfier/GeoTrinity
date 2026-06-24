@@ -1,4 +1,4 @@
-name: Build GeoTrinity
+name: Build GeoTrinity Auto
 
 on:
   push:
