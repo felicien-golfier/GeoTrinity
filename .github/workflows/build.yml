@@ -1,0 +1,17 @@
+name: Build GeoTrinity
+
+on:
+  push:
+    branches: [build]
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-custom.yml
+    with:
+      branch: build
+      config: Development
+      build_server: false
+      clean: false
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

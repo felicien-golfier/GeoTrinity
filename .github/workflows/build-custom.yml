@@ -27,6 +27,26 @@ on:
         required: false
         default: false
         type: boolean
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+      config:
+        required: false
+        default: Development
+        type: string
+      build_server:
+        required: false
+        default: false
+        type: boolean
+      clean:
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      GITHUB_TOKEN:
+        required: true
 
 env:
   REPO: H:\Work\Git\GeoTrinity
@@ -35,7 +55,7 @@ env:
 
 jobs:
   build:
-    name: Build ${{ github.event.inputs.branch }} (${{ github.event.inputs.config }})
+    name: Build ${{ inputs.branch }} (${{ inputs.config }})
     runs-on: self-hosted
     timeout-minutes: 480
 
@@ -44,8 +64,8 @@ jobs:
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $time = Get-Date -Format "HH:mm:ss"
-          $server = if ("${{ github.event.inputs.build_server }}" -eq "true") { " + Server" } else { "" }
-          msg * /TIME:120 "GeoTrinity Build Starting! $time | ${{ github.event.inputs.branch }} (${{ github.event.inputs.config }}$server)"
+          $server = if ("${{ inputs.build_server }}" -eq "true") { " + Server" } else { "" }
+          msg * /TIME:120 "GeoTrinity Build Starting! $time | ${{ inputs.branch }} (${{ inputs.config }}$server)"
 
       - name: Sync branch
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
@@ -54,13 +74,13 @@ jobs:
         run: |
           $token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GITHUB_TOKEN"))
           $env:GIT_TERMINAL_PROMPT = "0"
-          $branch = "${{ github.event.inputs.branch }}"
+          $branch = "${{ inputs.branch }}"
           & "$env:GIT" -C "$env:REPO" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin $branch
           & "$env:GIT" -C "$env:REPO" checkout $branch
           & "$env:GIT" -C "$env:REPO" reset --hard FETCH_HEAD
 
       - name: Clean (optional)
-        if: ${{ github.event.inputs.clean == 'true' }}
+        if: ${{ inputs.clean == true }}
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           cmd /c "$env:REPO\Tools\Clean.bat"
@@ -69,9 +89,9 @@ jobs:
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-          $branch = "${{ github.event.inputs.branch }}" -replace "[/\]", "-"
-          $config = "${{ github.event.inputs.config }}"
-          $withServer = "${{ github.event.inputs.build_server }}" -eq "true"
+          $branch = "${{ inputs.branch }}" -replace "[/\]", "-"
+          $config = "${{ inputs.config }}"
+          $withServer = "${{ inputs.build_server }}" -eq "true"
           $archiveDir = "$env:REPO\Build\GeoTrinity_${branch}_${config}_$timestamp"
 
           $serverArgs = if ($withServer) { @("-server", "-serverconfig=$config") } else { @() }
