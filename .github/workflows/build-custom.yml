@@ -1,0 +1,137 @@
+name: Build GeoTrinity (Custom)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to build
+        required: true
+        default: master
+      config:
+        description: Build configuration
+        required: true
+        default: Development
+        type: choice
+        options:
+          - Development
+          - DebugGame
+          - Test
+          - Shipping
+      build_server:
+        description: Also build dedicated server
+        required: false
+        default: false
+        type: boolean
+      clean:
+        description: Clean build (wipe Binaries, Intermediate and cook cache)
+        required: false
+        default: false
+        type: boolean
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+      config:
+        required: false
+        default: Development
+        type: string
+      build_server:
+        required: false
+        default: false
+        type: boolean
+      clean:
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REPO: H:\Work\Git\GeoTrinity
+  UE: H:\Epic\UE_5.7
+  GIT: C:\Program Files\Git\cmd\git.exe
+
+jobs:
+  build:
+    name: Build ${{ inputs.branch }} (${{ inputs.config }})
+    runs-on: self-hosted
+    timeout-minutes: 480
+
+    steps:
+      - name: Notify start
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $time   = Get-Date -Format "HH:mm:ss"
+          $branch = "${{ inputs.branch }}"
+          $config = "${{ inputs.config }}"
+          $server = if ("${{ inputs.build_server }}" -eq "true") { " +Server" } else { "" }
+          $clean  = if ("${{ inputs.clean }}"        -eq "true") { " +Clean"  } else { "" }
+          $msg = "GeoTrinity Build! $time - $branch - $config$server$clean"
+          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
+          foreach ($s in $sessions) { msg $s /TIME:120 $msg }
+
+      - name: Sync branch
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GITHUB_TOKEN"))
+          $env:GIT_TERMINAL_PROMPT = "0"
+          $branch = "${{ inputs.branch }}"
+          & "$env:GIT" -C "$env:REPO" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin $branch
+          & "$env:GIT" -C "$env:REPO" checkout $branch
+          & "$env:GIT" -C "$env:REPO" reset --hard FETCH_HEAD
+
+      - name: Clean (optional)
+        if: ${{ inputs.clean == true }}
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          cmd /c "$env:REPO\Tools\Clean.bat"
+
+      - name: Package Client
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+          $branch = "${{ inputs.branch }}" -replace "[/\\]", "-"
+          $config = "${{ inputs.config }}"
+          $archiveDir = "$env:REPO\Build\GeoTrinity_${branch}_${config}_$timestamp"
+          & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="$env:REPO\GeoTrinity.uproject" `
+            -noP4 -platform=Win64 "-clientconfig=$config" `
+            -cook -build -stage -pak -archive `
+            "-archivedirectory=$archiveDir"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Move-Item "$archiveDir\Windows\*" "$archiveDir\\"
+          Remove-Item "$archiveDir\Windows" -ErrorAction SilentlyContinue
+          echo "ARCHIVE_DIR=$archiveDir" >> $env:GITHUB_ENV
+        env:
+          UE_IgnoreOutdatedImportedLibraries: 1
+
+      - name: Package Server
+        if: ${{ inputs.build_server == true }}
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $config = "${{ inputs.config }}"
+          & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="$env:REPO\GeoTrinity.uproject" `
+            -noP4 -platform=Win64 "-serverconfig=$config" `
+            -noclient -server `
+            -cook -build -stage -pak -archive `
+            "-archivedirectory=$env:ARCHIVE_DIR"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Rename-Item "$env:ARCHIVE_DIR\WindowsServer" "Server"
+        env:
+          UE_IgnoreOutdatedImportedLibraries: 1
+
+      - name: Notify done
+        if: always()
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
+          foreach ($s in $sessions) { msg $s /TIME:120 "GeoTrinity Build Done! $env:ARCHIVE_DIR" }
+
+      - name: Notify failed
+        if: failure()
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
+          foreach ($s in $sessions) { msg $s /TIME:120 "GeoTrinity Build FAILED! Check GitHub Actions." }
