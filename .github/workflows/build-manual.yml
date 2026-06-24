@@ -1,0 +1,40 @@
+name: Build GeoTrinity (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to build
+        required: true
+        default: master
+      config:
+        description: Build configuration
+        required: true
+        default: Development
+        type: choice
+        options:
+          - Development
+          - DebugGame
+          - Test
+          - Shipping
+      build_server:
+        description: Also build dedicated server
+        required: false
+        default: false
+        type: boolean
+      clean:
+        description: Clean build (wipe Binaries, Intermediate and cook cache)
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-custom.yml
+    with:
+      branch: ${{ github.event.inputs.branch }}
+      config: ${{ github.event.inputs.config }}
+      build_server: ${{ github.event.inputs.build_server == 'true' }}
+      clean: ${{ github.event.inputs.clean == 'true' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,32 +1,5 @@
-name: Build GeoTrinity (Custom)
-
+# Reusable workflow — called by build.yml and build-manual.yml
 on:
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: Branch to build
-        required: true
-        default: master
-      config:
-        description: Build configuration
-        required: true
-        default: Development
-        type: choice
-        options:
-          - Development
-          - DebugGame
-          - Test
-          - Shipping
-      build_server:
-        description: Also build dedicated server
-        required: false
-        default: false
-        type: boolean
-      clean:
-        description: Clean build (wipe Binaries, Intermediate and cook cache)
-        required: false
-        default: false
-        type: boolean
   workflow_call:
     inputs:
       branch:
@@ -92,7 +65,6 @@ jobs:
           $branch = "${{ inputs.branch }}" -replace "[/\]", "-"
           $config = "${{ inputs.config }}"
           $archiveDir = "$env:REPO\Build\GeoTrinity_${branch}_${config}_$timestamp"
-          $env:BUILD_ARCHIVE_DIR = $archiveDir
           & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
             -project="$env:REPO\GeoTrinity.uproject" `
             -noP4 -platform=Win64 -clientconfig=$config `
@@ -110,15 +82,14 @@ jobs:
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $config = "${{ inputs.config }}"
-          $archiveDir = "$env:ARCHIVE_DIR"
           & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
             -project="$env:REPO\GeoTrinity.uproject" `
             -noP4 -platform=Win64 -serverconfig=$config `
             -noclient -server `
             -cook -build -stage -pak -archive `
-            -archivedirectory="$archiveDir"
+            -archivedirectory="$env:ARCHIVE_DIR"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Rename-Item "$archiveDir\WindowsServer" "Server"
+          Rename-Item "$env:ARCHIVE_DIR\WindowsServer" "Server"
         env:
           UE_IgnoreOutdatedImportedLibraries: 1
 
