@@ -19,14 +19,14 @@ jobs:
           GIT_TERMINAL_PROMPT: "0"
           GIT_ASKPASS: echo
         run: |
-          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" -c "http.https://github.com/.extraheader=Authorization: Bearer %GITHUB_TOKEN%" fetch origin build-listen
+          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" -c "credential.helper=" fetch https://x-access-token:%GITHUB_TOKEN%@github.com/felicien-golfier/GeoTrinity.git build-listen:build-listen
           "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" checkout build-listen
-          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" reset --hard origin/build-listen
+          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
 
       - name: Build Game (GeoTrinity Win64 Development)
         shell: cmd
         run: |
-          "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" ^
+          "H:\Epic\UE_5.7\Engine\Build\BatchFiles\Build.bat" ^
             GeoTrinity Win64 Development ^
             "H:\Work\Git\GeoTrinity\GeoTrinity.uproject" ^
             -NoMutex -NoHotReloadFromIDE
