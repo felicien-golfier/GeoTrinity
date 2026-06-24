@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Sync build-listen
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
