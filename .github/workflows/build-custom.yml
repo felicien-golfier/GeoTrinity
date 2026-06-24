@@ -66,8 +66,7 @@ jobs:
           $server = if ("${{ inputs.build_server }}" -eq "true") { " +Server" } else { "" }
           $clean  = if ("${{ inputs.clean }}"        -eq "true") { " +Clean"  } else { "" }
           $msg = "GeoTrinity Build! $time - $branch - $config$server$clean"
-          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
-          foreach ($s in $sessions) { msg $s /TIME:120 $msg }
+          try { msg * /TIME:120 $msg } catch {}
 
       - name: Sync branch
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
@@ -126,12 +125,5 @@ jobs:
         if: always()
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
-          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
-          foreach ($s in $sessions) { msg $s /TIME:120 "GeoTrinity Build Done! $env:ARCHIVE_DIR" }
-
-      - name: Notify failed
-        if: failure()
-        shell: powershell -ExecutionPolicy Bypass -File "{0}"
-        run: |
-          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
-          foreach ($s in $sessions) { msg $s /TIME:120 "GeoTrinity Build FAILED! Check GitHub Actions." }
+          $msg = if ($env:ARCHIVE_DIR) { "GeoTrinity Build Done! $env:ARCHIVE_DIR" } else { "GeoTrinity Build FAILED! Check GitHub Actions." }
+          try { msg * /TIME:120 $msg } catch {}
