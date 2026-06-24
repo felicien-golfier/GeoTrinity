@@ -1,13 +1,18 @@
-name: Build GeoTrinity
+name: Build GeoTrinity (Listen Server)
 
 on:
   push:
-    branches: [build]
+    branches: [build-listen]
   workflow_dispatch:
+
+env:
+  REPO: H:\Work\Git\GeoTrinity
+  UE: H:\Epic\UE_5.7
+  GIT: C:\Program Files\Git\cmd\git.exe
 
 jobs:
   build:
-    name: Build Auto (Game target)
+    name: Build Listen Server (Game target)
     runs-on: self-hosted
     timeout-minutes: 480
 
@@ -16,28 +21,27 @@ jobs:
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $time = Get-Date -Format "HH:mm:ss"
-          $hash = & "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" log -1 --format="%h" 2>$null
-          msg * /TIME:120 "GeoTrinity Build Starting! $time | build-Auto @ $hash"
+          $hash = & "$env:GIT" -C "$env:REPO" log -1 --format="%h" 2>$null
+          msg * /TIME:120 "GeoTrinity Build Starting! $time | build-listen @ $hash"
 
-      - name: Sync build
+      - name: Sync build-listen
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GITHUB_TOKEN"))
           $env:GIT_TERMINAL_PROMPT = "0"
-          $git = "C:\Program Files\Git\cmd\git.exe"
-          & $git -C "H:\Work\Git\GeoTrinity" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin build-listen
-          & $git -C "H:\Work\Git\GeoTrinity" checkout build
-          & $git -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
+          & "$env:GIT" -C "$env:REPO" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin build-listen
+          & "$env:GIT" -C "$env:REPO" checkout build-listen
+          & "$env:GIT" -C "$env:REPO" reset --hard FETCH_HEAD
 
       - name: Package Game
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-          $archiveDir = "H:\Work\Git\GeoTrinity\Build\GeoTrinity_$timestamp"
-          & "H:\Epic\UE_5.7\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
-            -project="H:\Work\Git\GeoTrinity\GeoTrinity.uproject" `
+          $archiveDir = "$env:REPO\Build\GeoTrinity_$timestamp"
+          & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="$env:REPO\GeoTrinity.uproject" `
             -noP4 -platform=Win64 -clientconfig=Development `
             -cook -build -stage -pak -archive `
             -archivedirectory="$archiveDir"

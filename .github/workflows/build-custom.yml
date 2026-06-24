@@ -28,6 +28,11 @@ on:
         default: false
         type: boolean
 
+env:
+  REPO: H:\Work\Git\GeoTrinity
+  UE: H:\Epic\UE_5.7
+  GIT: C:\Program Files\Git\cmd\git.exe
+
 jobs:
   build:
     name: Build ${{ github.event.inputs.branch }} (${{ github.event.inputs.config }})
@@ -49,31 +54,30 @@ jobs:
         run: |
           $token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GITHUB_TOKEN"))
           $env:GIT_TERMINAL_PROMPT = "0"
-          $git = "C:\Program Files\Git\cmd\git.exe"
           $branch = "${{ github.event.inputs.branch }}"
-          & $git -C "H:\Work\Git\GeoTrinity" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin $branch
-          & $git -C "H:\Work\Git\GeoTrinity" checkout $branch
-          & $git -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
+          & "$env:GIT" -C "$env:REPO" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin $branch
+          & "$env:GIT" -C "$env:REPO" checkout $branch
+          & "$env:GIT" -C "$env:REPO" reset --hard FETCH_HEAD
 
       - name: Clean (optional)
         if: ${{ github.event.inputs.clean == 'true' }}
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
-          cmd /c "H:\Work\Git\GeoTrinity\Tools\Clean.bat"
+          cmd /c "$env:REPO\Tools\Clean.bat"
 
       - name: Package Game
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-          $branch = "${{ github.event.inputs.branch }}" -replace "[/\\]", "-"
+          $branch = "${{ github.event.inputs.branch }}" -replace "[/\]", "-"
           $config = "${{ github.event.inputs.config }}"
           $withServer = "${{ github.event.inputs.build_server }}" -eq "true"
-          $archiveDir = "H:\Work\Git\GeoTrinity\Build\GeoTrinity_${branch}_${config}_$timestamp"
+          $archiveDir = "$env:REPO\Build\GeoTrinity_${branch}_${config}_$timestamp"
 
           $serverArgs = if ($withServer) { @("-server", "-serverconfig=$config") } else { @() }
 
-          & "H:\Epic\UE_5.7\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
-            -project="H:\Work\Git\GeoTrinity\GeoTrinity.uproject" `
+          & "$env:UE\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="$env:REPO\GeoTrinity.uproject" `
             -noP4 -platform=Win64 -clientconfig=$config `
             -cook -build -stage -pak -archive `
             -archivedirectory="$archiveDir" `
@@ -82,9 +86,7 @@ jobs:
 
           Move-Item "$archiveDir\Windows\*" "$archiveDir\\"
           Remove-Item "$archiveDir\Windows" -ErrorAction SilentlyContinue
-          if ($withServer) {
-            Rename-Item "$archiveDir\WindowsServer" "Server"
-          }
+          if ($withServer) { Rename-Item "$archiveDir\WindowsServer" "Server" }
 
           msg * /TIME:120 "GeoTrinity Build Done! Output: $archiveDir"
         env:
