@@ -9,15 +9,17 @@ jobs:
   build:
     name: Build Listen Server (Game target)
     runs-on: self-hosted
-    timeout-minutes: 240
+    timeout-minutes: 480
 
     steps:
-      - name: Pull latest
+      - name: Pull master
         shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_TERMINAL_PROMPT: "0"
+          GIT_ASKPASS: echo
         run: |
-          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" -c "http.https://github.com/.extraheader=Authorization: Bearer %GITHUB_TOKEN%" pull
+          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" -c "http.https://github.com/.extraheader=Authorization: Bearer %GITHUB_TOKEN%" pull --ff-only origin master
 
       - name: Build Game (GeoTrinity Win64 Development)
         shell: cmd
@@ -25,6 +27,6 @@ jobs:
           "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" ^
             GeoTrinity Win64 Development ^
             "H:\Work\Git\GeoTrinity\GeoTrinity.uproject" ^
-            -WaitMutex -NoHotReloadFromIDE
+            -NoMutex -NoHotReloadFromIDE
         env:
           UE_IgnoreOutdatedImportedLibraries: 1
