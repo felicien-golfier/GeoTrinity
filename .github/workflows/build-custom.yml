@@ -65,7 +65,9 @@ jobs:
           $config = "${{ inputs.config }}"
           $server = if ("${{ inputs.build_server }}" -eq "true") { " +Server" } else { "" }
           $clean  = if ("${{ inputs.clean }}"        -eq "true") { " +Clean"  } else { "" }
-          msg * /TIME:120 "GeoTrinity Build! $time - $branch - $config$server$clean"
+          $msg = "GeoTrinity Build! $time - $branch - $config$server$clean"
+          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
+          foreach ($s in $sessions) { msg $s /TIME:120 $msg }
 
       - name: Sync branch
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
@@ -121,6 +123,15 @@ jobs:
           UE_IgnoreOutdatedImportedLibraries: 1
 
       - name: Notify done
+        if: always()
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
-          msg * /TIME:120 "GeoTrinity Build Done! Output: $env:ARCHIVE_DIR"
+          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
+          foreach ($s in $sessions) { msg $s /TIME:120 "GeoTrinity Build Done! $env:ARCHIVE_DIR" }
+
+      - name: Notify failed
+        if: failure()
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $sessions = query session 2>$null | Select-String "Active" | ForEach-Object { ($_ -split "\s+")[2] }
+          foreach ($s in $sessions) { msg $s /TIME:120 "GeoTrinity Build FAILED! Check GitHub Actions." }
