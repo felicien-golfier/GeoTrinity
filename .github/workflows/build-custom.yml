@@ -53,14 +53,7 @@ jobs:
         if: ${{ github.event.inputs.clean == 'true' }}
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
-          $repo = "H:\Work\Git\GeoTrinity"
-          Write-Host "Cleaning intermediates..."
-          Remove-Item -Recurse -Force "$repo\Binaries"     -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force "$repo\Intermediate" -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force "$repo\Saved\Cooked" -ErrorAction SilentlyContinue
-          Get-ChildItem "$repo\Plugins" -Recurse -Directory -Filter "Binaries"     | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-          Get-ChildItem "$repo\Plugins" -Recurse -Directory -Filter "Intermediate" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Clean done."
+          & "H:\Work\Git\GeoTrinity\Clean.ps1"
 
       - name: Package Game
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
