@@ -63,9 +63,9 @@ jobs:
           $time   = Get-Date -Format "HH:mm:ss"
           $branch = "${{ inputs.branch }}"
           $config = "${{ inputs.config }}"
-          $server = if ("${{ inputs.build_server }}" -eq "true") { "Yes" } else { "No" }
-          $clean  = if ("${{ inputs.clean }}"        -eq "true") { "Yes" } else { "No" }
-          msg * /TIME:120 "[$time] Branch:$branch Config:$config Server:$server Clean:$clean"
+          $server = if ("${{ inputs.build_server }}" -eq "true") { " +Server" } else { "" }
+          $clean  = if ("${{ inputs.clean }}"        -eq "true") { " +Clean"  } else { "" }
+          msg * /TIME:120 "GeoTrinity Build! $time - $branch - $config$server$clean"
 
       - name: Sync branch
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
