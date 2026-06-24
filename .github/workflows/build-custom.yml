@@ -17,6 +17,11 @@ on:
           - DebugGame
           - Test
           - Shipping
+      clean:
+        description: Clean build (wipe Binaries, Intermediate and cook cache)
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -43,6 +48,19 @@ jobs:
           & $git -C "H:\Work\Git\GeoTrinity" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin $branch
           & $git -C "H:\Work\Git\GeoTrinity" checkout $branch
           & $git -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
+
+      - name: Clean (optional)
+        if: ${{ github.event.inputs.clean == 'true' }}
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $repo = "H:\Work\Git\GeoTrinity"
+          Write-Host "Cleaning intermediates..."
+          Remove-Item -Recurse -Force "$repo\Binaries"     -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "$repo\Intermediate" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "$repo\Saved\Cooked" -ErrorAction SilentlyContinue
+          Get-ChildItem "$repo\Plugins" -Recurse -Directory -Filter "Binaries"     | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          Get-ChildItem "$repo\Plugins" -Recurse -Directory -Filter "Intermediate" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Clean done."
 
       - name: Package Game
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
