@@ -1,0 +1,62 @@
+name: Build GeoTrinity (Custom)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to build
+        required: true
+        default: master
+      config:
+        description: Build configuration
+        required: true
+        default: Development
+        type: choice
+        options:
+          - Development
+          - DebugGame
+          - Test
+          - Shipping
+
+jobs:
+  build:
+    name: Build ${{ github.event.inputs.branch }} (${{ github.event.inputs.config }})
+    runs-on: self-hosted
+    timeout-minutes: 480
+
+    steps:
+      - name: Notify start
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $time = Get-Date -Format "HH:mm:ss"
+          msg * /TIME:120 "GeoTrinity Build Starting! $time | ${{ github.event.inputs.branch }} (${{ github.event.inputs.config }})"
+
+      - name: Sync branch
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GITHUB_TOKEN"))
+          $env:GIT_TERMINAL_PROMPT = "0"
+          $git = "C:\Program Files\Git\cmd\git.exe"
+          $branch = "${{ github.event.inputs.branch }}"
+          & $git -C "H:\Work\Git\GeoTrinity" -c "credential.helper=" -c "http.https://github.com/.extraheader=Authorization: Basic $token" fetch origin $branch
+          & $git -C "H:\Work\Git\GeoTrinity" checkout $branch
+          & $git -C "H:\Work\Git\GeoTrinity" reset --hard FETCH_HEAD
+
+      - name: Package Game
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
+        run: |
+          $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+          $branch = "${{ github.event.inputs.branch }}" -replace "[/\\]", "-"
+          $config = "${{ github.event.inputs.config }}"
+          $archiveDir = "H:\GeoTrinity\Builds\GeoTrinity_${branch}_${config}_$timestamp"
+          & "H:\Epic\UE_5.7\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="H:\Work\Git\GeoTrinity\GeoTrinity.uproject" `
+            -noP4 -platform=Win64 -clientconfig=$config `
+            -cook -build -stage -pak -archive `
+            -archivedirectory="$archiveDir"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msg * /TIME:120 "GeoTrinity Build Done! Output: $archiveDir\Windows"
+        env:
+          UE_IgnoreOutdatedImportedLibraries: 1
