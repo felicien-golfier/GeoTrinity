@@ -12,14 +12,16 @@ jobs:
     timeout-minutes: 480
 
     steps:
-      - name: Pull master
+      - name: Sync build-listen
         shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_TERMINAL_PROMPT: "0"
           GIT_ASKPASS: echo
         run: |
-          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" -c "http.https://github.com/.extraheader=Authorization: Bearer %GITHUB_TOKEN%" pull --ff-only origin master
+          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" -c "http.https://github.com/.extraheader=Authorization: Bearer %GITHUB_TOKEN%" fetch origin build-listen
+          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" checkout build-listen
+          "C:\Program Files\Git\cmd\git.exe" -C "H:\Work\Git\GeoTrinity" reset --hard origin/build-listen
 
       - name: Build Game (GeoTrinity Win64 Development)
         shell: cmd
