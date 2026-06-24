@@ -59,7 +59,7 @@ jobs:
         if: ${{ github.event.inputs.clean == 'true' }}
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
-          & "H:\Work\Git\GeoTrinity\Clean.ps1"
+          cmd /c "H:\Work\Git\GeoTrinity\Tools\Clean.bat"
 
       - name: Package Game
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
