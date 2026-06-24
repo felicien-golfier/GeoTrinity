@@ -17,6 +17,11 @@ on:
           - DebugGame
           - Test
           - Shipping
+      build_server:
+        description: Also build dedicated server
+        required: false
+        default: false
+        type: boolean
       clean:
         description: Clean build (wipe Binaries, Intermediate and cook cache)
         required: false
@@ -34,7 +39,8 @@ jobs:
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           $time = Get-Date -Format "HH:mm:ss"
-          msg * /TIME:120 "GeoTrinity Build Starting! $time | ${{ github.event.inputs.branch }} (${{ github.event.inputs.config }})"
+          $server = if ("${{ github.event.inputs.build_server }}" -eq "true") { " + Server" } else { "" }
+          msg * /TIME:120 "GeoTrinity Build Starting! $time | ${{ github.event.inputs.branch }} (${{ github.event.inputs.config }}$server)"
 
       - name: Sync branch
         shell: powershell -ExecutionPolicy Bypass -File "{0}"
@@ -61,15 +67,25 @@ jobs:
           $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
           $branch = "${{ github.event.inputs.branch }}" -replace "[/\\]", "-"
           $config = "${{ github.event.inputs.config }}"
+          $withServer = "${{ github.event.inputs.build_server }}" -eq "true"
           $archiveDir = "H:\GeoTrinity\Builds\GeoTrinity_${branch}_${config}_$timestamp"
+
+          $serverArgs = if ($withServer) { @("-server", "-serverconfig=$config") } else { @() }
+
           & "H:\Epic\UE_5.7\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
             -project="H:\Work\Git\GeoTrinity\GeoTrinity.uproject" `
             -noP4 -platform=Win64 -clientconfig=$config `
             -cook -build -stage -pak -archive `
-            -archivedirectory="$archiveDir"
+            -archivedirectory="$archiveDir" `
+            @serverArgs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
           Move-Item "$archiveDir\Windows\*" "$archiveDir\\"
           Remove-Item "$archiveDir\Windows" -ErrorAction SilentlyContinue
+          if ($withServer) {
+            Rename-Item "$archiveDir\WindowsServer" "Server"
+          }
+
           msg * /TIME:120 "GeoTrinity Build Done! Output: $archiveDir"
         env:
           UE_IgnoreOutdatedImportedLibraries: 1
