@@ -48,28 +48,6 @@ void AEnemyCharacter::InitGAS()
 		&AEnemyCharacter::OnHealthChanged); // Do we need to remove this on destroy?
 }
 
-void AEnemyCharacter::ResetHealth() const
-{
-	UGeoAttributeSetBase const* AS =
-		Cast<UGeoAttributeSetBase>(AbilitySystemComponent->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
-
-	UGameplayEffect* GE = NewObject<UGameplayEffect>(GetTransientPackage());
-	GE->DurationPolicy = EGameplayEffectDurationType::Instant;
-
-	FGameplayModifierInfo ModifierInfo;
-	ModifierInfo.Attribute = UGeoAttributeSetBase::GetHealthAttribute();
-	ModifierInfo.ModifierOp = EGameplayModOp::Override;
-	ModifierInfo.ModifierMagnitude = FScalableFloat(AS->GetMaxHealth());
-	GE->Modifiers.Add(ModifierInfo);
-
-	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
-	Context.AddSourceObject(AbilitySystemComponent->GetAvatarActor());
-
-	FGameplayEffectSpec const Spec(GE, Context, 1.f);
-
-	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
-}
-
 void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 {
 	if (GeoLib::IsServer(this) && NewValue <= 0.f)

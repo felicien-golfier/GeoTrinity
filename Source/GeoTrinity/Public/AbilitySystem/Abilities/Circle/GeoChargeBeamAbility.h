@@ -32,7 +32,8 @@ protected:
 
 	/**
 	 * Appends a FContextDamageMultiplierEffectData entry to the base effect array.
-	 * The multiplier is lerped from MinDamageMultiplier to MaxDamageMultiplier based on the charge ratio.
+	 * Non-sweet-spot: multiplier lerped from MinDamageMultiplier to MaxDamageMultiplier by charge ratio.
+	 * Sweet-spot: SweetSpotDamageMultiplier used instead.
 	 */
 	virtual TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const override;
 	/** Fires FireGameplayCueTag on the locally-controlled client, encoding the beam endpoint, charge ratio, and
@@ -42,6 +43,9 @@ protected:
 	/** Calls Super (sends data to server), fires the beam cue locally, then ends the ability on the locally-controlled
 	 * client. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
+	/** Iterates hostile actors within GeneralSpellDistance along the forward direction and applies effects. Called from
+	 * Fire() for the locally-controlled player and from OnFireTargetDataReceived() on the server. */
+	void DealDamage(FGeoAbilityTargetData const& AbilityTargetData) const;
 
 	/**
 	 * Server-side handler: updates StoredPayload from the client's replicated target data, then iterates all
@@ -68,6 +72,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float MaxDamageMultiplier = 1.5f;
 
+	// Damage multiplier applied when the charge ratio is within the sweet-spot window.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
 	float SweetSpotDamageMultiplier = 2.f;
 };

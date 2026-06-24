@@ -7,7 +7,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Settings/GameDataSettings.h"
 
-void FEffectData::UpdateContextHandle(FGeoGameplayEffectContext*, int32) const
+void FEffectData::UpdateContextHandle(FGeoGameplayEffectContext*, int32, FGameplayTag) const
 {
 	// By default does nothing. Override for your needs
 }
@@ -39,7 +39,7 @@ FActiveGameplayEffectHandle FGameplayEffectData::ApplyEffect(FGameplayEffectCont
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
-void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32) const
+void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32, FGameplayTag AbilityTag) const
 {
 	if (bSuppressGameplayCue)
 	{
@@ -52,6 +52,18 @@ void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectCon
 	if (bSuppressCombatStats)
 	{
 		EffectContext->SetSuppressCombatStats(true);
+	}
+
+	// Basic-ability identity comes from the firing ability's own tags, not a per-effect flag. Many effect sources (zones,
+	// drains) have no originating ability — guard the invalid tag so we never run the lookup or log a spurious warning.
+	if (!AbilityTag.IsValid())
+	{
+		return;
+	}
+	UGeoGameplayAbility const* AbilityCDO = UGeoAbilitySystemLibrary::GetAbilityCDO(AbilityTag);
+	if (AbilityCDO && AbilityCDO->GetAssetTags().HasTag(FGeoGameplayTags::Get().Ability_Type_Basic))
+	{
+		EffectContext->SetIsFromBasicAbility(true);
 	}
 }
 
@@ -77,7 +89,7 @@ FActiveGameplayEffectHandle FDamageEffectData::ApplyEffect(FGameplayEffectContex
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
-void FHealEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32) const
+void FHealEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32, FGameplayTag) const
 {
 	if (bSuppressHealProvided)
 	{
@@ -140,7 +152,7 @@ FActiveGameplayEffectHandle FShieldEffectData::ApplyEffect(FGameplayEffectContex
 }
 
 void FContextDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext,
-															 int32 AbilityLevel) const
+															 int32 AbilityLevel, FGameplayTag) const
 {
 	checkf(Multiplier != 1.f,
 		   TEXT("You've set Single Use Damage Multiplier but value is 1. So it's not useful, you douchebag !"));

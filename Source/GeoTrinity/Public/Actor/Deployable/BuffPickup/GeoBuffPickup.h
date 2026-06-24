@@ -5,11 +5,11 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
-#include "Engine/StaticMesh.h"
 
 #include "GeoBuffPickup.generated.h"
 
 class UCurveFloat;
+class UMaterialInstanceDynamic;
 class UPrimitiveComponent;
 class USceneComponent;
 class UStaticMeshComponent;
@@ -19,9 +19,10 @@ struct FBuffPickupData : public FDeployableData
 {
 	GENERATED_BODY()
 
-	/** Index into BuffMeshAssets (and the ability's BuffEffectDataAssets). -1 = none selected. */
+	/** Index of the chosen buff. Used to look up the pickup tint in the reload ability CDO's BuffColors palette
+	 * (resolved via Data.AbilityTag). -1 = none selected (no color applied). */
 	UPROPERTY(Transient)
-	int32 MeshIndex = -1;
+	int32 BuffIndex = -1;
 
 	/** World position the pickup travels to after spawning. */
 	UPROPERTY(Transient)
@@ -35,8 +36,8 @@ struct FBuffPickupData : public FDeployableData
  * Pickup that grants a buff to the player who collects it.
  * Spawned by Triangle's reload ability. Initialized via InitInteractable before BeginPlay.
  *
- * Fill BuffMeshAssets in the Blueprint Class Defaults to match the ability's BuffEffectDataAssets:
- * index N in BuffMeshAssets = index N in BuffEffectDataAssets (same buff type).
+ * A single mesh is set on BuffMeshComponent in the Blueprint; the buff type is conveyed by tinting the mesh's dynamic
+ * material with the color the reload ability CDO maps the chosen buff index to (UGeoReloadAbility::BuffColors).
  */
 UCLASS()
 class GEOTRINITY_API AGeoBuffPickup : public AGeoDeployableBase
@@ -61,12 +62,9 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_Data)
 	FBuffPickupData Data;
 
-	/**
-	 * One static mesh asset per buff type. Must match the ability's BuffEffectDataAssets by index.
-	 * The active mesh is swapped on BuffMeshComponent at runtime based on the selected index.
-	 */
+	/** Vector parameter on BuffMeshComponent's material that the buff color is written to. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance")
-	TArray<TObjectPtr<UStaticMesh>> BuffMeshAssets;
+	FName ColorParameterName = TEXT("Color");
 
 private:
 	UFUNCTION()
@@ -76,13 +74,18 @@ private:
 	UFUNCTION()
 	void OnRep_Data();
 
-	void UpdateMesh();
+	/** Creates the dynamic material instance if needed and tints it with the buff color resolved from the reload
+	 * ability CDO for Data.BuffIndex. */
+	void UpdateColor();
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> VisualRoot;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> BuffMeshComponent;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> BuffMaterialInstance;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	float RotationSpeed = 90.f;

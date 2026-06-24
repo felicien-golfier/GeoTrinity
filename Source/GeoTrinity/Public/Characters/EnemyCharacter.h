@@ -40,7 +40,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void InitGAS() override;
-	void ResetHealth() const;
 
 	UFUNCTION(BlueprintNativeEvent)
 	void OnHealthChanged(float NewValue);

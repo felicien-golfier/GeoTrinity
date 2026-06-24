@@ -40,6 +40,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsLimitGameplayCue() const { return bLimitGameplayCue; }
 	/** Returns true when the damage/heal should not be reported to UGeoCombatStatsSubsystem. */
 	bool IsSuppressCombatStats() const { return bSuppressCombatStats; }
+	/** Returns true when this damage originates from a basic ability; ExecCalc records the target on the source ASC. */
+	bool IsFromBasicAbility() const { return bIsFromBasicAbility; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
@@ -61,6 +63,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetLimitGameplayCue(bool value) { bLimitGameplayCue = value; }
 	/** When true, skips reporting damage/heal to the DPS/HPS meter in UGeoCombatStatsSubsystem. */
 	void SetSuppressCombatStats(bool value) { bSuppressCombatStats = value; }
+	/** When true, ExecCalc records the hit target as the source ASC's last basic-ability target (for turret retargeting). */
+	void SetIsFromBasicAbility(bool value) { bIsFromBasicAbility = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
 
@@ -98,6 +102,7 @@ protected:
 	bool bSuppressGameplayCue{false};
 	bool bLimitGameplayCue{false};
 	bool bSuppressCombatStats{false};
+	bool bIsFromBasicAbility{false};
 
 	UPROPERTY()
 	bool bIsRadialDamage{false};

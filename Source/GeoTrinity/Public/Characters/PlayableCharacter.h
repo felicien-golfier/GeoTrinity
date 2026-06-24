@@ -65,9 +65,6 @@ public:
 	/** Returns the player's currently active class (Square, Circle, or Triangle). */
 	EPlayerClass GetPlayerClass() const;
 
-	/** Server. Revives a downed player: cancels active abilities, removes all gameplay effects, re-applies per-class default attributes, and restores the character. */
-	void Revive();
-
 	/** Returns true while the player is downed (health reached 0 and not yet revived). */
 	bool IsDead() const { return bIsDead; }
 
@@ -104,6 +101,9 @@ public:
 	void SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability, bool bVisible, float SweetSpotMinRatio = 0.f,
 								   float SweetSpotMaxRatio = 0.f);
 
+	/** Entry point for reviving a downed player. Sets bIsDead = false and delegates to ReviveLogic(). */
+	void Revive();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -117,9 +117,14 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(float NewValue);
 
+	/** Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from OnHealthChanged. */
+	void Death();
 	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
 	 */
-	void Death();
+	void DeathLogic();
+	/** Server. Revives a downed player: cancels active abilities, removes all gameplay effects, re-applies per-class
+	 * default attributes, and restores the character. */
+	void ReviveLogic();
 
 	/** Disables controls and collision and swaps to the death material. */
 	void StopCharacter();

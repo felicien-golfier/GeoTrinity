@@ -11,6 +11,7 @@ Extended ASC used by all characters.
 
 ### Fire helpers (used by ability classes)
 - `GetFireSectionIndex(AbilityTag)` — returns reference to section counter for animation cycling
+- `SetLastBasicAbilityTarget(AActor*)` / `GetLastBasicAbilityTarget()` — server-only weak pointer tracking the actor most recently hit by this owner's basic ability. Set by `ExecCalc_Damage` when `bIsFromBasicAbility` is flagged in the context; read by `AGeoTurret::FindBestTarget()` to prefer the owner's last target over the nearest hostile.
 - Fire origin and yaw logic lives on `UGeoGameplayAbility::GetFireOrigin2D` / `GetFireYaw` — override there to customize per-ability
 
 ### Pattern management (enemy-only)

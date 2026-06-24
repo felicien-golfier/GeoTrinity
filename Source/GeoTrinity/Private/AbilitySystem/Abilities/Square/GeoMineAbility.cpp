@@ -32,7 +32,8 @@ void UGeoMineAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle 
 	float const PreviousHealth = SourceASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
 
 	UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(GetEffectDataArray(), SourceASC, SourceASC,
-														StoredPayload.AbilityLevel, StoredPayload.Seed);
+														StoredPayload.AbilityLevel, StoredPayload.Seed,
+														StoredPayload.AbilityTag);
 	Params.Value = PreviousHealth - SourceASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
 
 	Super::OnFireTargetDataReceived(DataHandle, ApplicationTag);

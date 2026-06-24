@@ -77,6 +77,9 @@ void UAbilityInfo::PopulateAbilityTags()
 	PopulateTagsForPlayerAbilitiesArray(CircleAbilities);
 	PopulateTagsForPlayerAbilitiesArray(SquareAbilities);
 	PopulateTagsForPlayerAbilitiesArray(SharedAbilities);
+
+	// Tags just changed — drop the cache so GetAbilityClassForTag rebuilds it on next access.
+	AbilityClassByTag.Reset();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -148,6 +151,29 @@ TArray<FGameplayAbilityInfo> UAbilityInfo::GetAllAbilityInfos() const
 	}
 	return AllInfos;
 }
+// ---------------------------------------------------------------------------------------------------------------------
+TSubclassOf<UGameplayAbility> UAbilityInfo::GetAbilityClassForTag(FGameplayTag AbilityTag) const
+{
+	if (!AbilityTag.IsValid())
+	{
+		return nullptr;
+	}
+
+	if (AbilityClassByTag.IsEmpty())
+	{
+		for (FGameplayAbilityInfo const& Info : GetAllAbilityInfos())
+		{
+			if (Info.AbilityTag.IsValid() && IsValid(Info.AbilityClass))
+			{
+				AbilityClassByTag.Add(Info.AbilityTag, Info.AbilityClass);
+			}
+		}
+	}
+
+	TSubclassOf<UGameplayAbility> const* Found = AbilityClassByTag.Find(AbilityTag);
+	return Found ? *Found : nullptr;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 TArray<FGameplayAbilityInfo> UAbilityInfo::FindAbilityInfoForListOfTag(TArray<FGameplayTag> const& AbilityTags,
 																	   bool bLogIfNotFound) const

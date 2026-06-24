@@ -46,6 +46,11 @@ struct FDeployableData : public FInteractableActorData
 
 	UPROPERTY(Transient)
 	FDeployableDataParams Params;
+
+	// Tag of the ability that spawned this deployable. Forwarded to ApplyEffectFromEffectData on every effect the
+	// deployable applies, so the effect can identify its originating ability (e.g. auto-attack detection in ExecCalc).
+	UPROPERTY(Transient)
+	FGameplayTag AbilityTag;
 };
 
 /**
@@ -117,9 +122,6 @@ public:
 	virtual void ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
 									UGeoAbilitySystemComponent* TargetASC);
 
-	/** Returns the GameplayCue parameters to use when firing the recall cue. */
-	virtual FGameplayCueParameters GetRecallCueParams();
-
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDurationPercent() const;
@@ -139,9 +141,13 @@ public:
 	/** Returns true during the pre-expiry blink window (blink timer is running). */
 	UFUNCTION(BlueprintPure)
 	bool IsBlinking() const;
+
 	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
 	 * instigator. */
-	FGameplayCueParameters GetGenericCueParams();
+	FGameplayCueParameters GetGenericCueParams(FGameplayTag SoundTag = FGameplayTag());
+
+	/** Returns the GameplayCue parameters to use when firing the recall cue. */
+	virtual FGameplayCueParameters GetRecallCueParams();
 
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployableDestroyed OnDeployableExpiredEvent;
@@ -175,15 +181,35 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float DrainMagnitudePerSecond = 0.f;
 
+	UFUNCTION()
+	bool HasSpawnGameplayCueTag() const { return SpawnGameplayCueTag.IsValid(); }
+	UFUNCTION()
+	bool HasRecallGameplayCueTag() const { return RecallGameplayCueTag.IsValid(); }
+	UFUNCTION()
+	bool HasBlinkingGameplayCueTag() const { return BlinkingGameplayCueTag.IsValid(); }
+	UFUNCTION()
+	bool HasExplodeGameplayCueTag() const { return ExplodeGameplayCueTag.IsValid(); }
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	FGameplayTag SpawnGameplayCueTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
+			  meta = (EditCondition = "HasSpawnGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
+	FGameplayTag SpawnSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag RecallGameplayCueTag;
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
+			  meta = (EditCondition = "HasRecallGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
+	FGameplayTag RecallSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag BlinkingGameplayCueTag;
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
+			  meta = (EditCondition = "HasBlinkingGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
+	FGameplayTag BlinkingSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag ExplodeGameplayCueTag;
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
+			  meta = (EditCondition = "HasExplodeGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
+	FGameplayTag ExplodeSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 

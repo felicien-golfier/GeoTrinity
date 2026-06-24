@@ -5,6 +5,7 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
@@ -31,25 +32,25 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	/** GET SOURCE DATA **/
 	FGameplayEffectSpec const& specGE = ExecutionParams.GetOwningSpec();
 	FGameplayEffectContextHandle contextHandle = specGE.GetContext();
-	UAbilitySystemComponent const* pSourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
-	UAbilitySystemComponent const* pTargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
-	AActor* pSourceAvatar = pSourceASC ? pSourceASC->GetAvatarActor() : nullptr;
-	AActor* pTargetAvatar = pTargetASC ? pTargetASC->GetAvatarActor() : nullptr;
-	FGeoGameplayTags const& tags = FGeoGameplayTags::Get();
+	UAbilitySystemComponent const* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
+	UAbilitySystemComponent const* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
+	AActor* SourceAvatar = SourceASC ? SourceASC->GetAvatarActor() : nullptr;
+	AActor* TargetAvatar = TargetASC ? TargetASC->GetAvatarActor() : nullptr;
+	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
 
-	float Damage = specGE.GetSetByCallerMagnitude(tags.Gameplay_Damage, false, 0.f);
+	float Damage = specGE.GetSetByCallerMagnitude(Tags.Gameplay_Damage, false, 0.f);
 
 	FGeoGameplayEffectContext const* GeoContext = static_cast<FGeoGameplayEffectContext const*>(contextHandle.Get());
 	if (GeoContext)
 	{
 		Damage *= GeoContext->GetSingleUseDamageMultiplier();
 		bool bSuppressGameplayCue = GeoContext->IsSuppressGameplayCue();
-		if (!bSuppressGameplayCue && GeoContext->IsLimitGameplayCue() && IsValid(pTargetAvatar))
+		if (!bSuppressGameplayCue && GeoContext->IsLimitGameplayCue() && IsValid(TargetAvatar))
 		{
-			UGeoGameFeelComponent* GameFeelComponent = pTargetAvatar->FindComponentByClass<UGeoGameFeelComponent>();
+			UGeoGameFeelComponent* GameFeelComponent = TargetAvatar->FindComponentByClass<UGeoGameFeelComponent>();
 			if (ensureMsgf(GameFeelComponent,
 						   TEXT("UExecCalc_Damage: bLimitGameplayCue set but target %s has no GeoGameFeelComponent"),
-						   *pTargetAvatar->GetName()))
+						   *TargetAvatar->GetName()))
 			{
 				bSuppressGameplayCue = !GameFeelComponent->IsDamageCueAvailable();
 			}
@@ -57,6 +58,14 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 		if (bSuppressGameplayCue)
 		{
 			OutExecutionOutput.MarkGameplayCuesHandledManually();
+		}
+		if (GeoContext->IsFromBasicAbility() && IsValid(TargetAvatar))
+		{
+			if (UGeoAbilitySystemComponent* SourceGeoASC =
+					Cast<UGeoAbilitySystemComponent>(const_cast<UAbilitySystemComponent*>(SourceASC)))
+			{
+				SourceGeoASC->SetLastBasicAbilityTarget(TargetAvatar);
+			}
 		}
 	}
 
@@ -79,10 +88,10 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	if (UGeoAbilitySystemLibrary::GetIsRadialDamage(contextHandle))
 	{
 		UGameplayStatics::ApplyRadialDamageWithFalloff(
-			pTargetAvatar, Damage, 0.f, UGeoAbilitySystemLibrary::GetRadialDamageOrigin(contextHandle),
+			TargetAvatar, Damage, 0.f, UGeoAbilitySystemLibrary::GetRadialDamageOrigin(contextHandle),
 			UGeoAbilitySystemLibrary::GetRadialDamageInnerRadius(contextHandle),
 			UGeoAbilitySystemLibrary::GetRadialDamageOuterRadius(contextHandle), 1.f, UDamageType::StaticClass(),
-			TArray<AActor*>(), pSourceAvatar, nullptr);
+			TArray<AActor*>(), SourceAvatar, nullptr);
 	}
 #pragma endregion
 

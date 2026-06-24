@@ -207,7 +207,7 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 	{
 		GeoASLib::ApplyEffectFromEffectData(EffectDataArray, GeoASLib::GetGeoAscFromActor(Payload.Owner),
 											GeoASLib::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel,
-											Payload.Seed);
+											Payload.Seed, Payload.AbilityTag);
 	}
 
 	OnProjectileHit(OtherActor);
@@ -343,10 +343,11 @@ void AGeoProjectile::OverrideDistanceSpan(float const Distance)
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::InitProjectileLife()
 {
-	if (!HasAuthority())
+	if (!GeoLib::IsDedicatedServer(this))
 	{
 		LoopingSoundComponent->SetSound(LoopingSound);
 		LoopingSoundComponent->Play();
+		UGameplayStatics::PlaySoundAtLocation(this, StartSound, GetActorLocation(), FRotator::ZeroRotator, 0.2f);
 	}
 
 	SetLifeSpan(LifeSpanInSec);

@@ -62,6 +62,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsDedicatedServer(UObject const* WorldContextObject);
 	static bool IsDedicatedServer(UWorld const* World);
+	/** Non-pawn overload of IsLocalPlayerAvatar; casts Actor to APawn before applying the same check. Returns false for
+	 * non-pawn actors. */
+	static bool IsLocalPlayerAvatar(AActor const* Actor);
 
 	/**
 	 * Returns true only for the viewing human player's own avatar on this machine.
@@ -88,6 +91,7 @@ public:
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
 
+	/** Returns all AGeoTargetPoint actors in the world whose tags include LocationTag. */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const LocationTag);
 };

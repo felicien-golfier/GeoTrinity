@@ -30,8 +30,8 @@ InProgress or immediately revives the player outside InProgress. The corpse **st
 When all players are dead the GameState resets the boss and requests WaitingToStart; `HandleMatchIsWaitingToStart`
 teleports everyone to the entrance and calls `Revive()` per player (cancels active abilities, removes all gameplay
 effects, re-applies per-class defaults via `ApplyClassData()`, then `RestartCharacter()`). The state replicates to
-clients via `OnRep_IsDead(bool)`, which calls the full `Death()` or `Revive()` locally — client-side effects are
-identical to server. Each class entry in `ClassData` (`FPlayerClassData`) configures `AliveMaterial` + `DeathMaterial`;
+clients via `OnRep_IsDead(bool)`, which calls `DeathLogic()` or `ReviveLogic()` directly — same bodies that run on
+the server, so client-side state is identical. Each class entry in `ClassData` (`FPlayerClassData`) configures `AliveMaterial` + `DeathMaterial`;
 both swap on mesh slot 0.
 
 ## Component Subfolder

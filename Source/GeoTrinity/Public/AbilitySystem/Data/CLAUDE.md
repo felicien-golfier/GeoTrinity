@@ -7,7 +7,7 @@ Data assets and structs that configure abilities and effects.
 ## `EffectData.h` — polymorphic effect system
 
 `FEffectData` base — two virtual methods:
-- `UpdateContextHandle(ContextHandle)` — pre-apply hook; sets values on `FGeoGameplayEffectContext`
+- `UpdateContextHandle(ContextHandle, AbilityLevel, AbilityTag)` — pre-apply hook; sets values on `FGeoGameplayEffectContext`. `AbilityTag` identifies the originating ability so subclasses (e.g. `FDamageEffectData`) can flag context fields like `bIsFromBasicAbility` based on the ability's owned tags.
 - `ApplyEffect(SourceASC, TargetASC, ContextHandle)` — applies a `UGameplayEffect`
 
 **Subtypes:**
@@ -43,6 +43,8 @@ Data assets and structs that configure abilities and effects.
 
 `GetAbilitiesForClass(EPlayerClass)` — returns class abilities + shared.
 
+`GetAbilityClassForTag(FGameplayTag)` — O(1) after the first call (lazily builds a cached tag→class map). Returns nullptr on miss with a warning log; safe to call on every effect application including for non-ability sources that pass an invalid tag.
+
 Multiple abilities can share the same `AbilityTag` but differ by `EPlayerClass` — use this instead of making separate ability classes per class.
 
 ---
@@ -59,3 +61,9 @@ Sent client → server via `ServerSetReplicatedTargetData`.
 
 ## `StatusInfo.h`
 Status effect configuration data (types, durations, visuals). Referenced by `FStatusEffectData`.
+
+---
+
+## `GeoSoundRow.h`
+`FGeoSoundRow : FTableRowBase` — `Tag` (`FGameplayTag`) + `Sound` (`USoundBase`). DataTable row type for tag→sound lookup; the tag is an explicit field (picked from the tag tree), **not** the row name.
+`UGeoSoundRowLibrary::FindSoundForTag(SoundTable, Tag)` — `BlueprintPure`, returns the `Sound` of the first row whose `Tag` matches exactly (`MatchesTagExact`), else nullptr. Used by the `GenericSound` GameplayCueNotify: `MatchedTagName` → `FindSoundForTag` → `Play Sound`.

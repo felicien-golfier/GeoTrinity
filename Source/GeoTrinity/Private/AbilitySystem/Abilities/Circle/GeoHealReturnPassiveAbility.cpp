@@ -68,5 +68,5 @@ void UGeoHealReturnPassiveAbility::OnHealProvidedCallback(float HealDone)
 	HealEffect.bLimitGameplayCue = true;
 
 	UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, SourceASC, GetAbilityLevel(),
-													StoredPayload.Seed);
+													StoredPayload.Seed, StoredPayload.AbilityTag);
 }

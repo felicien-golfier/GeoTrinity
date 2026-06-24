@@ -46,13 +46,15 @@ void AGeoMine::ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* Sourc
 	{
 		FDamageEffectData DamageEffect;
 		DamageEffect.DamageAmount = FScalableFloat(ScaledLifeSpent);
-		GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
+		GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed,
+										MineData.AbilityTag);
 	}
 	else if (GeoASLib::IsTeamAttitudeAligned(MineData.Owner, Actor, TeamAttitudeMask::FriendlyOrNeutral))
 	{
 		FShieldEffectData ShieldEffect;
 		ShieldEffect.ShieldAmount = FScalableFloat(ScaledLifeSpent);
-		GeoASLib::ApplySingleEffectData(ShieldEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed);
+		GeoASLib::ApplySingleEffectData(ShieldEffect, SourceASC, TargetASC, MineData.Level, MineData.Seed,
+										MineData.AbilityTag);
 	}
 }
 

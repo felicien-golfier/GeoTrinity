@@ -4,7 +4,7 @@
 GeoTrinity — multiplayer 2D boss fight bullet-hell, Unreal Engine 5.7, GAS. Players are geometric shapes (Tank=Square, Heal=Circle, DPS=Triangle). Camera: orthographic.
 
 ## Build
-Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working on Blueprints or code that directly touches MCP/Blueprint state.
+Use `AI/Commands.md` Bash build for editor/dev builds. To package a distributable build of the game, use `BuildPackage.md` (root). Use MCP live compile only when actively working on Blueprints or code that directly touches MCP/Blueprint state.
 
 ## Big RULES
 - **NEVER close, kill, or restart the user's Unreal editor — not even to build.** It may hold unsaved work that closing destroys. When a build needs the editor closed, ask the user to close it and wait; never do it yourself.
@@ -21,6 +21,7 @@ Use `AI/Commands.md` Bash build. Use MCP live compile only when actively working
 | Any project's cpp file | CLAUDE.md at the .h root, in the public folder |
 | Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
 | ALWAYS BUILD WHEN DONE CODING : Build commands, dev environment, copyright | `AI/Commands.md` |
+| Packaging a distributable build of the game | `BuildPackage.md` |
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
 | Any MCP / Python editor automation | `AI/MCP/CLAUDE.md` |

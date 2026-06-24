@@ -184,14 +184,14 @@ void APlayableCharacter::Death()
 		return;
 	}
 	bIsDead = true;
+	DeathLogic();
+}
 
+void APlayableCharacter::DeathLogic()
+{
 	if (IsValid(AbilitySystemComponent))
 	{
 		AbilitySystemComponent->CancelAllAbilities();
-		// CancelAllAbilities skips specs whose replicated ActiveCount is already 0, so a local predicted instance
-		// (e.g. a held beam) the server already ended can keep ticking on the owning client and leave its ability-bar
-		// slot stuck grayed. End any such instance directly.
-		AbilitySystemComponent->EndActiveAbilitiesLocally();
 		AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
 	}
 	StopAllSpawnedElements();
@@ -216,11 +216,11 @@ void APlayableCharacter::Revive()
 		return;
 	}
 	bIsDead = false;
+	ReviveLogic();
+}
 
-	// Reset every cooldown: a predicted cooldown effect can survive a prediction correction at death,
-	// leaving the client ability bar stuck. Wiping all effects on revive guarantees a clean slate.
-	// Re-apply both the generic and per-class default attributes (ammo, multipliers) exactly like start/ChangeClass,
-	// so revive restores the same values — InitializeDefaultAttributes alone misses the per-class GE.
+void APlayableCharacter::ReviveLogic()
+{
 	if (IsValid(AbilitySystemComponent))
 	{
 		AbilitySystemComponent->CancelAllAbilities();
@@ -264,16 +264,13 @@ void APlayableCharacter::SetDeathMaterial(bool const bDead)
 
 void APlayableCharacter::OnRep_IsDead(bool const bOldValue)
 {
-	// bIsDead is already set by replication; reset it so Death/Revive run their full bodies (guarded internally).
 	if (bIsDead && !bOldValue)
 	{
-		bIsDead = false;
-		Death();
+		DeathLogic();
 	}
 	else if (!bIsDead && bOldValue)
 	{
-		bIsDead = true;
-		Revive();
+		ReviveLogic();
 	}
 }
 

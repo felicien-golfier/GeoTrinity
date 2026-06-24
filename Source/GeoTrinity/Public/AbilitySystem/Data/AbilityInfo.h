@@ -112,6 +112,13 @@ public:
 
 	/** Returns copies of all FGameplayAbilityInfo entries (generic and player infos). */
 	TArray<FGameplayAbilityInfo> GetAllAbilityInfos() const;
+
+	/**
+	 * Returns the ability class registered for AbilityTag, or nullptr if the tag is invalid or unknown.
+	 * O(1) after the first call: lazily builds and caches a tag->class map. Silent on miss (no assert) — safe to call
+	 * on every effect application, including for non-ability sources that pass an invalid tag.
+	 */
+	TSubclassOf<UGameplayAbility> GetAbilityClassForTag(FGameplayTag AbilityTag) const;
 	/**
 	 * Finds ability infos whose AbilityTag matches any tag in AbilityTags.
 	 *
@@ -125,4 +132,9 @@ public:
 	/** Re-reads every ability CDO's AssetTags and fills AbilityTag fields. Call from Python after modifying ability arrays. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	void PopulateAbilityTags();
+
+private:
+	// Lazily-built tag->class map backing GetAbilityClassForTag. Cleared in PostLoad/PopulateAbilityTags so it rebuilds
+	// after the ability arrays or their tags change. Mutable: GetAbilityClassForTag is logically const.
+	mutable TMap<FGameplayTag, TSubclassOf<UGameplayAbility>> AbilityClassByTag;
 };

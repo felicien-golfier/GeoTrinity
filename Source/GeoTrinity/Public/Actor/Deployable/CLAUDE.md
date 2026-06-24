@@ -60,6 +60,7 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 
 **`FDeployableData`** (extends `FInteractableActorData`):
 - `EffectDataArray`, `Params`, `PredictionKey`
+- `AbilityTag` — tag of the ability that spawned this deployable. Forwarded to every `ApplyEffectFromEffectData` call the deployable makes, so `FDamageEffectData::UpdateContextHandle` can inspect the originating ability's CDO (e.g. set `bIsFromBasicAbility` for turret retargeting).
 
 ## `Mine/` — Explodes on overlap, damages enemies and shields allies. See `Mine/CLAUDE.md`.
 ## `HealingZone/` — Static zone that heals allies over time while they stand inside. See `HealingZone/CLAUDE.md`.

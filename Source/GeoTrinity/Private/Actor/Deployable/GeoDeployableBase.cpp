@@ -7,10 +7,10 @@
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
-#include "Components/WidgetComponent.h"
 #include "GameplayEffect.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
@@ -22,9 +22,10 @@ AGeoDeployableBase::AGeoDeployableBase()
 	CapsuleComponent->SetCollisionProfileName(TEXT("GeoShape"));
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
-	// CombattantWidgetComponent (the world-space health bar) is a UGeoCombattantWidgetComp added in Blueprint — it lives
-	// in the UI module which gameplay must not reference. It is resolved and configured from the BP component in
-	// BeginPlay. The BP attaches it to a non-rotating anchor so the bar's offset doesn't orbit the deployable as it yaws.
+	// CombattantWidgetComponent (the world-space health bar) is a UGeoCombattantWidgetComp added in Blueprint — it
+	// lives in the UI module which gameplay must not reference. It is resolved and configured from the BP component in
+	// BeginPlay. The BP attaches it to a non-rotating anchor so the bar's offset doesn't orbit the deployable as it
+	// yaws.
 }
 
 
@@ -137,7 +138,8 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
 		DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
 		DrainEffectData.bLimitGameplayCue = true;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed);
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed,
+														GetData()->AbilityTag);
 	}
 }
 
@@ -182,10 +184,13 @@ void AGeoDeployableBase::BeginPlay()
 		}
 	}
 
-	if (UGeoDeployableManagerComponent* DeployableManager =
-			GetInstigator()->GetComponentByClass<UGeoDeployableManagerComponent>())
+	if (GetInstigator())
 	{
-		DeployableManager->RegisterDeployable(this);
+		if (UGeoDeployableManagerComponent* DeployableManager =
+				GetInstigator()->GetComponentByClass<UGeoDeployableManagerComponent>())
+		{
+			DeployableManager->RegisterDeployable(this);
+		}
 	}
 
 	InitDrain();
@@ -194,6 +199,8 @@ void AGeoDeployableBase::BeginPlay()
 	{
 		CombattantWidgetComponent->SetHiddenInGame(true);
 	}
+
+	ExecuteCue(SpawnGameplayCueTag, GetGenericCueParams(SpawnSoundTag));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -207,7 +214,7 @@ void AGeoDeployableBase::Recall(float Value)
 
 	RecallEffect(Value);
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
-	if (!GeoLib::IsDedicatedServer(GetWorld()))
+	if (!GeoLib::IsDedicatedServer(GetWorld()) && RecallGameplayCueTag.IsValid())
 	{
 		ExecuteCue(RecallGameplayCueTag, GetRecallCueParams());
 	}
@@ -267,13 +274,11 @@ void AGeoDeployableBase::Explode(float Value)
 			ApplyExplodeEffect(Value, SourceASC, Actor, ActorASC);
 		}
 	}
-	else
+
+	if (!GeoLib::IsDedicatedServer(this) && ExplodeGameplayCueTag.IsValid())
 	{
-		if (ExplodeGameplayCueTag.IsValid())
-		{
-			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams());
-			// TODO: Pass the Value in the Cue ?
-		}
+		ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeSoundTag));
+		// TODO: Pass the Value in the Cue ?
 	}
 }
 
@@ -281,7 +286,7 @@ void AGeoDeployableBase::ApplyExplodeEffect(float Value, UGeoAbilitySystemCompon
 											UGeoAbilitySystemComponent* TargetASC)
 {
 	GeoASLib::ApplyEffectFromEffectData(GetData()->EffectDataArray, SourceASC, TargetASC, GetData()->Level,
-										GetData()->Seed);
+										GetData()->Seed, GetData()->AbilityTag);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -346,7 +351,7 @@ void AGeoDeployableBase::StartBlinking(float const BlinkDuration)
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		FScopedPredictionWindow ScopedPredictionWindow(ASC);
-		FGameplayCueParameters CueParams = GetGenericCueParams();
+		FGameplayCueParameters CueParams = GetGenericCueParams(BlinkingSoundTag);
 		CueParams.Normal = FVector(BlinkDuration, 0.f, 0.f);
 		ASC->ExecuteGameplayCue(BlinkingGameplayCueTag, CueParams);
 	}
@@ -387,7 +392,7 @@ void AGeoDeployableBase::OnRep_Active(bool bOldValue)
 		ExecuteCue(RecallGameplayCueTag, GetRecallCueParams());
 		if (bExplodeAtRecall)
 		{
-			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams());
+			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeSoundTag));
 		}
 		Expire();
 	}
@@ -429,7 +434,8 @@ bool AGeoDeployableBase::IsBlinking() const
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams()
+
+FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGameplayTag SoundTag)
 {
 	FGameplayCueParameters CueParams;
 	CueParams.Location = GetActorLocation();
@@ -440,13 +446,16 @@ FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams()
 	CueParams.AbilityLevel = GetData()->Level;
 	CueParams.RawMagnitude = GetData()->Params.Size;
 	CueParams.NormalizedMagnitude = GetData()->Params.Value;
-
+	if (SoundTag.IsValid())
+	{
+		CueParams.AggregatedSourceTags.AddTag(SoundTag);
+	}
 	return CueParams;
 }
 
 FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
 {
-	FGameplayCueParameters CueParams = GetGenericCueParams();
+	FGameplayCueParameters CueParams = GetGenericCueParams(RecallSoundTag);
 	CueParams.Normal = (GetData()->Instigator->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 	CueParams.NormalizedMagnitude = IsBlinking() ? 1.f : 0.f;
 	return CueParams;

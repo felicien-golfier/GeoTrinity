@@ -131,11 +131,12 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 
 		// Also add the array, but that not the heal. This is to let game design decide if they want to add something
 		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, OwnerASC, TargetASC, Data.Level,
-															Data.Seed);
+															Data.Seed, Data.AbilityTag);
 		FHealEffectData HealEffectData;
 		HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
 		HealEffectData.bLimitGameplayCue = true;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, OwnerASC, TargetASC, Data.Level, Data.Seed);
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, OwnerASC, TargetASC, Data.Level, Data.Seed,
+														Data.AbilityTag);
 		++HealedNum;
 	}
 
@@ -145,7 +146,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
 		DrainEffectData.bSuppressGameplayCue = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, OwnerASC, GetAbilitySystemComponent(),
-														Data.Level, Data.Seed);
+														Data.Level, Data.Seed, Data.AbilityTag);
 	}
 }
 

@@ -21,7 +21,7 @@ void AGeoGameState::HandleMatchHasStarted()
 	if (ensureMsgf(IsValid(Boss),
 				   TEXT("No Boss found in the world, ensure an EnemyCharacter with bIsBoss=true is spawned")))
 	{
-		InitBossFight(Boss);
+		StartBossFight(Boss);
 	}
 }
 
@@ -31,7 +31,7 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 
 	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance, EntranceZoneTagName);
 
-	SpawnEnemies();
+	ResetEnemies();
 }
 
 void AGeoGameState::HandleMatchHasEnded()
@@ -50,7 +50,7 @@ void AGeoGameState::OnRep_MatchState()
 	Super::OnRep_MatchState();
 }
 
-void AGeoGameState::SpawnEnemies()
+void AGeoGameState::ResetEnemies()
 {
 	if (!GeoLib::IsServer(this) || (!BossToSpawn.EnemyClass.Get() && !DummyToSpawn.EnemyClass.Get()))
 	{
@@ -60,6 +60,10 @@ void AGeoGameState::SpawnEnemies()
 	if (!GetBossEnemy() || GetBossEnemy()->IsActorBeingDestroyed())
 	{
 		SpawnEnemy(BossToSpawn);
+	}
+	else
+	{
+		GetBossEnemy()->ResetForNewAttempt();
 	}
 
 	if (!GetDummyEnemy() || GetDummyEnemy()->IsActorBeingDestroyed())
@@ -144,7 +148,7 @@ void AGeoGameState::StopBossFight()
 	}
 }
 
-void AGeoGameState::InitBossFight(AEnemyCharacter* Boss)
+void AGeoGameState::StartBossFight(AEnemyCharacter* Boss)
 {
 	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
@@ -286,11 +290,6 @@ void AGeoGameState::HandlePotentialWipe()
 	if (!AreAllPlayersDead())
 	{
 		return;
-	}
-
-	if (AEnemyCharacter* Boss = GetBossEnemy())
-	{
-		Boss->ResetForNewAttempt();
 	}
 
 	FTimerHandle TimerHandle;

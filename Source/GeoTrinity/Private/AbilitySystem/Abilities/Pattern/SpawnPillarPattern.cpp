@@ -141,7 +141,8 @@ void USpawnPillarPattern::SpawnPillarAtLocation(FVector2D const& ZoneLocation,
 			if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
 			{
 				UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, InstigatorAsc, TargetASC,
-																	StoredPayload.AbilityLevel, StoredPayload.Seed);
+																	StoredPayload.AbilityLevel, StoredPayload.Seed,
+																	StoredPayload.AbilityTag);
 			}
 		}
 	}

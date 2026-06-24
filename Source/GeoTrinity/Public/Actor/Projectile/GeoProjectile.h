@@ -172,5 +172,8 @@ private:
 	TObjectPtr<USoundBase> ImpactSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
+	TObjectPtr<USoundBase> StartSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
 	TObjectPtr<USoundBase> LoopingSound;
 };

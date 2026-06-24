@@ -47,8 +47,12 @@ struct GEOTRINITY_API FEffectData
 	/**
 	 * Pre-application hook: writes subclass-specific data into the effect context before any ApplyEffect call.
 	 * Called in the first pass of UGeoAbilitySystemLibrary::ApplyEffectFromEffectData.
+	 *
+	 * @param AbilityTag  Tag of the ability that triggered this apply (invalid for non-ability sources like zones).
+	 *                    Subclasses may look up the ability CDO via GetAbilityCDO to branch on its owned tags.
 	 */
-	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const;
+	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
+									 FGameplayTag AbilityTag) const;
 
 	/**
 	 * Applies the gameplay effect described by this struct to TargetASC.
@@ -98,7 +102,8 @@ struct FDamageEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
+	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
+									 FGameplayTag AbilityTag) const override;
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -126,7 +131,8 @@ struct FHealEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
+	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
+									 FGameplayTag AbilityTag) const override;
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -178,7 +184,8 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel) const override;
+	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
+									 FGameplayTag AbilityTag) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.0"))
 	FScalableFloat Multiplier{2.f};

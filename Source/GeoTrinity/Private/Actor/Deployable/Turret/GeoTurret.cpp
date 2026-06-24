@@ -2,6 +2,7 @@
 
 #include "Actor/Deployable/Turret/GeoTurret.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Net/UnrealNetwork.h"
@@ -18,7 +19,10 @@ void AGeoTurret::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ScheduleFire();
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		ScheduleFire();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -33,6 +37,7 @@ void AGeoTurret::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(AGeoTurret, Data, COND_InitialOnly);
+	DOREPLIFETIME(AGeoTurret, CurrentTarget);
 }
 
 void AGeoTurret::InitInteractable(FInteractableActorData* InputData)
@@ -54,13 +59,18 @@ void AGeoTurret::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	AActor* Target = FindBestTarget();
-	if (!IsValid(Target))
+	// The server picks the target and replicates it; clients only orient toward the live target location.
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		CurrentTarget = FindBestTarget();
+	}
+
+	if (!IsValid(CurrentTarget))
 	{
 		return;
 	}
 
-	FVector const DirectionToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	FVector const DirectionToTarget = (CurrentTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 	SetActorRotation(DirectionToTarget.Rotation());
 }
 
@@ -69,6 +79,16 @@ AActor* AGeoTurret::FindBestTarget() const
 {
 	TArray<AActor*> const HostileActors = UGeoAbilitySystemLibrary::GetInteractableActors(
 		this, GeoASLib::GetTeamId(this), TeamAttitudeMask::HostileOrNeutral);
+
+	if (UGeoAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner))
+	{
+		AActor* PreferredTarget = OwnerASC->GetLastBasicAbilityTarget();
+		if (IsValid(PreferredTarget) && HostileActors.Contains(PreferredTarget))
+		{
+			return PreferredTarget;
+		}
+	}
+
 	return UGeoAbilitySystemLibrary::GetNearestActorFromList(this, HostileActors);
 }
 
@@ -82,7 +102,6 @@ void AGeoTurret::ScheduleFire()
 
 void AGeoTurret::TryFire()
 {
-
 	AActor* Target = FindBestTarget();
 	if (!IsValid(Target))
 	{
@@ -107,6 +126,7 @@ void AGeoTurret::TryFire()
 	Payload.Yaw = DirectionToTarget.Rotation().Yaw;
 	Payload.ServerSpawnTime = SpawnServerTime;
 	Payload.AbilityLevel = Data.Level;
+	Payload.AbilityTag = GetData()->AbilityTag;
 
 	GeoASLib::FullySpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload,
 								   GetData()->EffectDataArray, SpawnServerTime);

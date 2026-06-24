@@ -59,7 +59,7 @@ void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 			for (auto const TargetASC : FindTargets(Instigator, RecallInfo))
 			{
 				GeoASLib::ApplyEffectFromEffectData(EffectData, PlayerASC, TargetASC, GetAbilityLevel(),
-													StoredPayload.Seed);
+													StoredPayload.Seed, StoredPayload.AbilityTag);
 			}
 		}
 	}
