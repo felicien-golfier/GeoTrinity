@@ -16,7 +16,7 @@ Available to all classes.
 ---
 
 ## `GeoDeployAbility.h` — hold-to-charge deployable deployer
-Extends `GeoProjectileAbility`. All deploy abilities (mines, turrets, healing zones) extend this.
+Extends `GeoProjectileAbility`. All deploy abilities (walls, turrets, healing zones) extend this.
 
 - Hold: charges up (uses `ChargeForFireDelay` FireMode)
 - Release: fires `ADeployableSpawnerProjectile` that travels and spawns the deployable on ground impact
