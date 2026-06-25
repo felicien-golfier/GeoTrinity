@@ -24,6 +24,8 @@ class GEOTRINITY_API AGeoWall : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
+	/** Sets bUseRegularDrain=true, creates MeshComponent with GeoShape collision profile, and disables root-capsule
+	 * collision so projectiles hit the wall's mesh shape instead. */
 	AGeoWall(FObjectInitializer const& ObjectInitializer);
 
 	/** Casts Data into WallData and delegates to Super. */
