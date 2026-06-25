@@ -64,6 +64,8 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 	GENERATED_BODY()
 
 public:
+	/** Creates WidgetAnchorComponent (non-rotating health-bar anchor) and CombattantWidgetComponent (resolved from
+	 * GameDataSettings::CombattantWidgetComponentClass via ObjectInitializer; null on dedicated server). */
 	AGeoDeployableBase(FObjectInitializer const& ObjectInitializer);
 
 	/**

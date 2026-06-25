@@ -22,9 +22,12 @@ class GEOTRINITY_API AGeoTurret : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
+	/** Enables continuous Tick at default interval. */
 	AGeoTurret(FObjectInitializer const& ObjectInitializer);
 
+	/** Copies Data into the replicated Data field, then delegates to Super. */
 	virtual void InitInteractable(FInteractableActorData* Data) override;
+	/** Registers Data (COND_InitialOnly) and CurrentTarget for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:

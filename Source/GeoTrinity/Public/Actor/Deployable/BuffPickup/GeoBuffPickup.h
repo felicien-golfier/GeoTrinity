@@ -45,6 +45,7 @@ class GEOTRINITY_API AGeoBuffPickup : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
+	/** Enables continuous Tick and creates the VisualRoot scene component. */
 	AGeoBuffPickup(FObjectInitializer const& ObjectInitializer);
 
 	/** Registers Data with COND_InitialOnly — pickup state is set once and never updated. */
