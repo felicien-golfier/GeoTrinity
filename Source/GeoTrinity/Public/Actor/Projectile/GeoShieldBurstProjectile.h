@@ -56,6 +56,10 @@ protected:
 	UFUNCTION()
 	void OnRep_BounceSnapshot();
 
+	/** Sets the Niagara "User.Bullet_Radius" parameter. Called on every machine — the host updates it directly after a
+	 * bounce (where OnRep never runs), simulated clients via OnRep_BounceSnapshot. */
+	void UpdateVisualRadius(float Radius) const;
+
 private:
 	/** Records the post-bounce location, velocity, and radius in BounceSnapshot for replication to simulated clients.
 	 */

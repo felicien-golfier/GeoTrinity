@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/Deployable/Wall/GeoWall.h"
 #include "Components/SphereComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -45,12 +46,17 @@ void AGeoShieldBurstProjectile::OnRep_BounceSnapshot()
 	SetActorLocation(BounceSnapshot.Location);
 	ProjectileMovement->Velocity = BounceSnapshot.Velocity;
 	ProjectileMovement->UpdateComponentVelocity();
+	UpdateVisualRadius(BounceSnapshot.Radius);
+}
+
+void AGeoShieldBurstProjectile::UpdateVisualRadius(float Radius) const
+{
 	UNiagaraComponent* Niagara = GetComponentByClass<UNiagaraComponent>();
 	if (!ensureMsgf(Niagara, TEXT("AGeoShieldBurstProjectile: no Niagara on %s"), *GetName()))
 	{
 		return;
 	}
-	Niagara->SetVariableFloat(FName("User.Bullet_Radius"), BounceSnapshot.Radius);
+	Niagara->SetVariableFloat(FName("User.Bullet_Radius"), Radius);
 }
 
 
@@ -76,6 +82,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			ProjectileMovement->UpdateComponentVelocity();
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() * EnemyBounceMultiplier);
 			ShieldAmount.Value *= EnemyBounceMultiplier;
+			UpdateVisualRadius(Sphere->GetScaledSphereRadius());
 			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
 			LastOverlapHostileActor = OtherActor;
 			LastOverlapTime = GetWorld()->GetTimeSeconds();
@@ -99,6 +106,10 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 }
 bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor)
 {
+	if (OtherActor->IsA(AGeoWall::StaticClass()))
+	{
+		return false;
+	}
 
 	constexpr float TimeThresholdBetweenSameHostileOverlap = 0.5f;
 	if (LastOverlapHostileActor.IsValid() && LastOverlapHostileActor == OtherActor

@@ -260,8 +260,9 @@ void AGeoDeployableBase::ExecuteCue(FGameplayTag const& GameplayCueTag, FGamepla
 		return;
 	}
 
-	FScopedPredictionWindow ScopedPredictionWindow(ASC);
-	ASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
+	// Local-only: each machine fires the cue once (host via the call site, clients via OnRep). ExecuteGameplayCue would
+	// multicast on the authority, double-playing it on clients with engine-stripped params.
+	ASC->InvokeGameplayCueEvent(GameplayCueTag, EGameplayCueEvent::Executed, CueParams);
 }
 
 void AGeoDeployableBase::RecallEffect(float Value)
@@ -372,11 +373,9 @@ void AGeoDeployableBase::StartBlinking(float const BlinkDuration)
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
 	if (BlinkingGameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(this))
 	{
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		FScopedPredictionWindow ScopedPredictionWindow(ASC);
 		FGameplayCueParameters CueParams = GetGenericCueParams(BlinkingSoundTag);
 		CueParams.Normal = FVector(BlinkDuration, 0.f, 0.f);
-		ASC->ExecuteGameplayCue(BlinkingGameplayCueTag, CueParams);
+		ExecuteCue(BlinkingGameplayCueTag, CueParams);
 	}
 
 	OnBlinkVisualStarted();

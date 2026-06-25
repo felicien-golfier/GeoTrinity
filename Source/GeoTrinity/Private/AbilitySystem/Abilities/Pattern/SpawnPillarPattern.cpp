@@ -98,7 +98,7 @@ void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 				FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
 				FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
 				CueParams.Location = FVector(Location, ArbitraryCharacterZ);
-				InstigatorASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
+				InstigatorASC->InvokeGameplayCueEvent(GameplayCueTag, EGameplayCueEvent::Executed, CueParams);
 			}
 		}
 	}
