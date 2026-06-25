@@ -21,7 +21,19 @@ void AGeoGameCamera::BeginPlay()
 {
 	Super::BeginPlay();
 
+	TryBindToGameState();
+}
+
+void AGeoGameCamera::TryBindToGameState()
+{
 	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
+	if (!GameState)
+	{
+		// Late joiner: the replicated GameState has not arrived yet. Retry next tick rather than dereferencing null.
+		GetWorldTimerManager().SetTimerForNextTick(this, &AGeoGameCamera::TryBindToGameState);
+		return;
+	}
+
 	GameState->CommitFightDelegate.AddUniqueDynamic(this, &AGeoGameCamera::CalculateBounds);
 	GameState->OnMatchStateChanged.AddUniqueDynamic(this, &AGeoGameCamera::OnMatchStateChanged);
 	CalculateBounds();
