@@ -39,6 +39,7 @@ Bounces off enemies, grants shield on ally contact.
 - `ShieldAmount` (`FScalableFloat`) — base shield per burst; scales with ability level and multiplied by each enemy bounce
 - `BounceSnapshot` (`FShieldBounceSnapshot`) — replicated; teleports all clients to post-bounce state
 - `HandleValidOverlap()` — reflect on enemy, shield ally, end on ally contact
+- `IsValidOverlap()` — returns false for `AGeoWall` (the burst passes through the Square's own walls without bouncing); also suppresses the same hostile within 0.5 s to avoid double-hit on glancing overlaps
 - `OnWallBounce()` — bound to ProjectileMovement bounce delegate
 
 ## `DeployableSpawner/DeployableSpawnerProjectile.h` — spawns a deployable on impact

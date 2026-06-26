@@ -7,6 +7,7 @@
 
 #include "GeoShieldBurstProjectile.generated.h"
 
+/** Replication bundle that captures the full post-bounce state (location, velocity, sphere radius) for simulated clients. */
 USTRUCT()
 struct FShieldBounceSnapshot
 {
@@ -32,7 +33,9 @@ class GEOTRINITY_API AGeoShieldBurstProjectile : public AGeoProjectile
 	GENERATED_BODY()
 
 public:
+	/** Sets default bounce parameters and replication policy for BounceSnapshot. */
 	AGeoShieldBurstProjectile();
+	/** Registers BounceSnapshot for replication with OnRep_BounceSnapshot. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Shield magnitude applied to allies on contact. Scales up with each enemy bounce. */
@@ -49,6 +52,7 @@ protected:
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor) override;
 
+	/** Returns false for AGeoWall (passes through the Square's own deployable walls) and for the same hostile actor within 0.5 s (prevents double-hit on glancing overlaps). */
 	virtual bool IsValidOverlap(AActor* OtherActor) override;
 
 	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients.
