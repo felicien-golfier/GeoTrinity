@@ -357,7 +357,7 @@ FVector2D UGeoGameplayAbility::GetFireOrigin2D(AActor* Instigator, UGeoAbilitySy
 		}
 	}
 
-	return FVector2D(Instigator->GetActorLocation());
+	return IsValid(Instigator) ? FVector2D(Instigator->GetActorLocation()) : FVector2D::ZeroVector;
 }
 
 FVector UGeoGameplayAbility::GetFireOrigin(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
@@ -398,7 +398,7 @@ float UGeoGameplayAbility::GetStartTime(UWorld const* World) const
 
 float UGeoGameplayAbility::GetFireYaw(AActor const* Instigator) const
 {
-	return Instigator->GetActorRotation().Yaw;
+	return IsValid(Instigator) ? Instigator->GetActorRotation().Yaw : 0.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

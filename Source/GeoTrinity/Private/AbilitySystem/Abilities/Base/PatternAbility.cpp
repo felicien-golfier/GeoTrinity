@@ -22,11 +22,7 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 
 	StoredPayload = CreateAbilityPayload();
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
-	TInstancedStruct<FPatternData> PatternDataToSend = CreatePatternData();
-	UE_LOG(LogTemp, Warning, TEXT("[PATTERNDBG][SEND] ScriptStruct=%s Valid=%d"),
-		   PatternDataToSend.GetScriptStruct() ? *PatternDataToSend.GetScriptStruct()->GetName() : TEXT("NULL"),
-		   PatternDataToSend.GetScriptStruct() != nullptr);
-	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch, PatternDataToSend);
+	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch, CreatePatternData());
 	UPattern* PatternInstance = nullptr;
 	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
 	{

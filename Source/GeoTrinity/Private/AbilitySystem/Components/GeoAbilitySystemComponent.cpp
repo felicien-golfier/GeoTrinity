@@ -360,10 +360,6 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 {
 	checkf(PatternClass, TEXT("PatternStartMulticast: Invalid PatternClass"));
 
-	UE_LOG(LogTemp, Warning, TEXT("[PATTERNDBG][RECV] IsServer=%d ScriptStruct=%s"),
-		   GetOwner() && GetOwner()->HasAuthority(),
-		   PatternData.GetScriptStruct() ? *PatternData.GetScriptStruct()->GetName() : TEXT("NULL"));
-
 	UPattern* Pattern;
 	if (!FindPatternByClass(PatternClass, Pattern))
 	{

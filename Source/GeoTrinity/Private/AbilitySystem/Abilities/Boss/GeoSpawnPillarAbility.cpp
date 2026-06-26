@@ -16,14 +16,14 @@ TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
 	UGeoAbilitySystemComponent* GeoAsc = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
 	if (!ensureMsgf(IsValid(GeoAsc), TEXT("GeoSpawnPillarAbility: Owner has no ASC")))
 	{
-		return TInstancedStruct<FPatternData>::Make(PillarData);
+		return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);
 	}
 
 	UGeoAttributeSetBase const* AttributeSet =
 		Cast<UGeoAttributeSetBase>(GeoAsc->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
 	if (!ensureMsgf(IsValid(AttributeSet), TEXT("GeoSpawnPillarAbility: OwnerASC has no UGeoAttributeSetBase")))
 	{
-		return TInstancedStruct<FPatternData>::Make(PillarData);
+		return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);
 	}
 
 	float const HealthRatio = AttributeSet->GetHealthRatio();
@@ -72,5 +72,5 @@ TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
 		}
 	}
 
-	return TInstancedStruct<FPatternData>::Make(PillarData);
+	return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);
 }
