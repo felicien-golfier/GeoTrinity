@@ -9,6 +9,7 @@
 #include "GenericCombattantWidget.generated.h"
 
 class UProgressBar;
+class UTextBlock;
 
 /**
  * Reusable health-bar widget for any combatant (enemy, boss bar, deployable).
@@ -52,6 +53,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> ShieldBar;
+
+	/** Current health value (no max), centered over the bar. Optional — bars without it just skip the number. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> CurrentHealthText;
 
 private:
 	void BindStatCallbacks();

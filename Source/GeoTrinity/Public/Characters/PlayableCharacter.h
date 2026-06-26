@@ -77,10 +77,16 @@ public:
 	void ChangeClass(EPlayerClass NewClass);
 
 	/**
-	 * Applies the mesh and animation class for NewClass without touching abilities.
-	 * Called internally by ChangeClass and at initialization.
+	 * Applies the mesh, animation class, and material for NewClass — pure visuals, no attributes or abilities.
+	 * Called by ChangeClass and by AGeoPlayerState::ApplyClassDataToPawn (runs on every client for every pawn).
 	 */
 	void ApplyClassData(EPlayerClass NewClass);
+
+	/**
+	 * Server-only. Brings the character to the alive state: re-applies the current class's DefaultAttributes
+	 * (full HP/attributes) and starts passive abilities. Called at the end of ChangeClass and ReviveLogic.
+	 */
+	void GiveLife();
 
 	/**
 	 * Makes the deploy charge gauge widget visible and binds it to Ability's charge progress.

@@ -56,6 +56,12 @@ public:
 	/** Activates ability with event data containing avatar orientation. Used for projectile abilities. */
 	bool TryActivateAbilityWithTargetData(FGameplayAbilitySpecHandle Handle, FGameplayTag AbilityTag);
 
+	/**
+	 * Re-activates every granted passive ability. Passives auto-activate once on grant (OnAvatarSet); after death
+	 * cancels them they must be restarted explicitly, since the avatar is not re-set on revive.
+	 */
+	void ReactivatePassiveAbilities();
+
 	/** Applies a gameplay effect to this component's owner at the given level. */
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, int32 Level = 1);
 
@@ -88,10 +94,12 @@ public:
 
 	/**
 	 * Multicast RPC that instantiates PatternClass on every client and calls InitPattern with Payload.
-	 * Called by UPatternAbility on the server after activation.
+	 * PatternData carries optional pattern-specific replicated data (an FPatternData subclass); unset for patterns that
+	 * need none. Called by UPatternAbility on the server after activation.
 	 */
 	UFUNCTION(NetMulticast, reliable)
-	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass);
+	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass,
+							   TInstancedStruct<FPatternData> PatternData);
 
 	/**
 	 * Returns a reference to the per-ability fire section index, used to cycle animation montage sections.

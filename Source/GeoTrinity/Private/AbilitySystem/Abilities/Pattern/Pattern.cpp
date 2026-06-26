@@ -33,7 +33,7 @@ void UPattern::OnCreate(FGameplayTag AbilityTag, AActor&)
 	}
 }
 
-void UPattern::InitPattern(FAbilityPayload const& Payload)
+void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
 	if (bPatternIsActive)
 	{
@@ -44,6 +44,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 
 	bPatternIsActive = true;
 	StoredPayload = Payload;
+	StoredPatternData = PatternData;
 	StartTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
 	// Cosmetic montage gate: any machine that renders this boss must play it, including the listen-server host.
 	// Only a dedicated server (no viewport) skips it. !IsServer() would wrongly skip the host.
@@ -187,7 +188,7 @@ void UPattern::EndPattern(bool const bForceStop)
 	}
 }
 
-void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
+void UTickablePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
 	if (TimeSyncTimerHandle.IsValid())
 	{
@@ -196,7 +197,7 @@ void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
 		EndPattern();
 	}
 
-	Super::InitPattern(Payload);
+	Super::InitPattern(Payload, PatternData);
 }
 
 void UTickablePattern::StartPattern()

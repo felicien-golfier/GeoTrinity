@@ -14,6 +14,19 @@
 class AGeoPillar;
 
 /**
+ * Pattern data for USpawnPillarPattern: the zone locations resolved once on the server in USpawnPillarAbility, so every
+ * client spawns its zones at the exact same positions instead of recomputing from locally-replicated player state.
+ */
+USTRUCT()
+struct FSpawnPillarPatternData : public FPatternData
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FVector2D> ZoneLocations;
+};
+
+/**
  * Pattern that marks a zone under a random player, shows a countdown visual, then on expiry:
  * fires an expiry cue, applies damage to hostiles in the zone, and spawns a GeoPillar.
  * Runs identically on all clients via PatternStartMulticast — server time ensures sync.
@@ -28,7 +41,7 @@ protected:
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 
 private:
-	virtual void InitPattern(FAbilityPayload const& Payload) override;
+	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData) override;
 	virtual void ExecuteGameplayCue(FGameplayTag GameplayCueTag) override;
 	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* InstigatorAsc) const;
 	virtual void StartPattern() override;

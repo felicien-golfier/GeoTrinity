@@ -30,6 +30,13 @@ public:
 	/** Returns the UPattern subclass that this ability will instantiate when activated. */
 	TSubclassOf<UPattern> GetPatternClass() const { return PatternToLaunch; }
 
+protected:
+	/**
+	 * Builds the pattern-specific data sent through PatternStartMulticast to every client's InitPattern.
+	 * Base returns an unset struct (no extra data). Override to fill your own FPatternData subclass.
+	 */
+	virtual TInstancedStruct<FPatternData> CreatePatternData() const { return {}; }
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UPattern> PatternToLaunch;

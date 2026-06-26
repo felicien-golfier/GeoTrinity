@@ -9,6 +9,10 @@ Extended ASC used by all characters.
 - `AbilityInputTagHeld(FGameplayTag)` — called every frame while held; drives hold-to-fire
 - `AbilityInputTagReleased(FGameplayTag)` — ends hold abilities
 
+### Passive abilities
+- Passives auto-activate **once** on grant (`UGeoGameplayAbility::OnAvatarSet` → `TryActivateAbility`).
+- `ReactivatePassiveAbilities()` — re-activates every granted, currently-inactive passive. Death's `CancelAllAbilities` cancels passives (running an `EndAbility` that tears down their component + delegate bindings), and the avatar is not re-set on revive, so `PlayableCharacter::ReviveLogic` calls this to restart them.
+
 ### Fire helpers (used by ability classes)
 - `GetFireSectionIndex(AbilityTag)` — returns reference to section counter for animation cycling
 - `SetLastBasicAbilityTarget(AActor*)` / `GetLastBasicAbilityTarget()` — server-only weak pointer tracking the actor most recently hit by this owner's basic ability. Set by `ExecCalc_Damage` when `bIsFromBasicAbility` is flagged in the context; read by `AGeoTurret::FindBestTarget()` to prefer the owner's last target over the nearest hostile.

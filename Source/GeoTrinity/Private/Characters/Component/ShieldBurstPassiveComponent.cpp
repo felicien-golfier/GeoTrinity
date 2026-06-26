@@ -74,6 +74,7 @@ void UShieldBurstPassiveComponent::GetLifetimeReplicatedProps(TArray<FLifetimePr
 void UShieldBurstPassiveComponent::SetGaugeRatio(float const NewRatio)
 {
 	GaugeRatio = NewRatio;
+	OnRep_GaugeRatio(); // For Host.
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
