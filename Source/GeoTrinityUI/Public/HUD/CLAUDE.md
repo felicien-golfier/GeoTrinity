@@ -28,7 +28,7 @@ AGeoHUD  (owns OverlayWidget)
 | `GeoAbilityBarWidget.h` | Bottom-center ability bar widget; builds slots from `GetAbilityBarEntries()`, refreshes deploy badges on HUD ping |
 | `GeoAbilitySlotWidget.h` | Single ability slot: icon + radial cooldown sweep (material) + countdown text + optional deploy count badge + live key-binding label (`KeyText`, queried from Enhanced Input each tick) |
 | `GeoUserWidget.h` | Base widget; `InitFromHUD(AGeoHUD*)`, `BindCallbacksFromHUD` BP event |
-| `GenericCombattantWidget.h` | Reusable health/shield bar for enemies/boss/deployables — **not for player overlay**; `ShieldBar` overlays `HealthBar` (shield = Shield / MaxHealth) |
+| `GenericCombattantWidget.h` | Reusable health/shield bar for enemies/boss/deployables — **not for player overlay**; `ShieldBar` overlays `HealthBar` (shield = Shield / MaxHealth); optional `CurrentHealthText` (BindWidgetOptional) shows the current health value (no max), set in `UpdateHealthRatio` |
 | `GeoDeployChargeGaugeWidget.h` | World-space deploy charge gauge; ticks from ability's `GetChargeRatio()` |
 | `GeoChargeBeamGaugeWidget.h` | World-space charge-beam gauge with sweet-spot overlay bar; bound to `ChargeBeamGaugeComponent` on `PlayableCharacter`; ticks from ability's `GetChargeRatio()` |
 | `HudFunctionLibrary.h` | `ShouldDrawHUD()`, `GetHealthRatio()` |

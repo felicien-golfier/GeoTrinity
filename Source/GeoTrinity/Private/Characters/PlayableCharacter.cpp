@@ -192,7 +192,12 @@ void APlayableCharacter::DeathLogic()
 	if (IsValid(AbilitySystemComponent))
 	{
 		AbilitySystemComponent->CancelAllAbilities();
-		AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+		// RemoveActiveEffects only runs on the authoritative ASC; on clients the removal replicates down.
+		// Calling it client-side is a no-op that leaves locally-predicted effects (e.g. dash cooldown) lingering.
+		if (GeoLib::IsServer(this))
+		{
+			AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+		}
 	}
 	StopAllSpawnedElements();
 	StopCharacter();
@@ -224,9 +229,14 @@ void APlayableCharacter::ReviveLogic()
 	if (IsValid(AbilitySystemComponent))
 	{
 		AbilitySystemComponent->CancelAllAbilities();
-		AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+		// RemoveActiveEffects only runs on the authoritative ASC; on clients the removal replicates down.
+		if (GeoLib::IsServer(this))
+		{
+			AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+		}
 		ApplyClassData(GetPlayerClass());
 	}
+	GiveLife();
 	RestartCharacter();
 	SetCanBeDamaged(true);
 }
@@ -375,10 +385,29 @@ void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
 	AbilitySystemComponent->ClearPlayerClassAbilities();
 	AbilitySystemComponent->GiveStartupAbilities(NewClass);
 	ApplyClassData(NewClass);
+	GiveLife();
 
 	// Clients rebuild the bar from OnRep_PlayerClass, but the listen-server host has no OnRep on its own PlayerState.
 	// Rebuild here now that abilities for NewClass are granted (no-op when this controller isn't local).
 	GeoPlayerState->RebuildAbilityBar();
+}
+
+void APlayableCharacter::GiveLife()
+{
+	if (!GeoLib::IsServer(this) || !IsValid(AbilitySystemComponent))
+	{
+		return;
+	}
+
+	FPlayerClassData const* PlayerClassData = ClassData.Find(GetPlayerClass());
+	if (!ensureMsgf(PlayerClassData && PlayerClassData->DefaultAttributes,
+					TEXT("GiveLife: No DefaultAttributes for class on %s"), *GetName()))
+	{
+		return;
+	}
+
+	AbilitySystemComponent->ApplyEffectToSelf(PlayerClassData->DefaultAttributes);
+	AbilitySystemComponent->ReactivatePassiveAbilities();
 }
 
 void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)
@@ -389,21 +418,11 @@ void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)
 		ensureMsgf(PlayerClassData, TEXT("ApplyClassData: No visual data for class on %s"), *GetName());
 		return;
 	}
-	if (!PlayerClassData->DefaultAttributes)
-	{
-		ensureMsgf(PlayerClassData->DefaultAttributes, TEXT("ApplyClassData: No DefaultAttributes for class on %s"),
-				   *GetName());
-		return;
-	}
 
 	GetMesh()->SetSkeletalMesh(PlayerClassData->Mesh);
 	GetMesh()->SetAnimInstanceClass(PlayerClassData->AnimClass);
 	ensureMsgf(PlayerClassData->AliveMaterial, TEXT("ApplyClassData: No AliveMaterial for class on %s"), *GetName());
 	GetMesh()->SetMaterial(0, PlayerClassData->AliveMaterial);
-	if (IsValid(AbilitySystemComponent))
-	{
-		AbilitySystemComponent->ApplyEffectToSelf(PlayerClassData->DefaultAttributes);
-	}
 }
 
 EPlayerClass APlayableCharacter::GetPlayerClass() const

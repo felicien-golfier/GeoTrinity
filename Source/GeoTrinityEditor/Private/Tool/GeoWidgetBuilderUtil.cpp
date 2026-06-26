@@ -10,6 +10,7 @@
 #include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
+#include "Components/PanelSlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
@@ -17,6 +18,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Components/Widget.h"
 #include "FileHelpers.h"
+#include "Animation/WidgetAnimation.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Materials/MaterialInterface.h"
 #include "WidgetBlueprint.h"
@@ -174,6 +176,204 @@ void UGeoWidgetBuilderUtil::InspectWidgetBlueprint(UWidgetBlueprint* WidgetBluep
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoWidgetBuilderUtil::ConstructWidgetInTree(UWidgetBlueprint* WidgetBlueprint, TSubclassOf<UWidget> WidgetClass,
+													  FName WidgetName, bool bIsVariable)
+{
+	if (!ensureMsgf(WidgetClass, TEXT("ConstructWidgetInTree — WidgetClass is null")))
+	{
+		return nullptr;
+	}
+
+	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
+	if (!ensureMsgf(Tree, TEXT("ConstructWidgetInTree — WidgetTree is null on '%s'"),
+					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
+	{
+		return nullptr;
+	}
+
+	// Reuse-safe: drop any existing widget of this name (parented or not) so a re-run rebuilds cleanly. Renaming the
+	// stale occupant out of the tree frees the name — ConstructWidget would otherwise collide on the same Outer+name.
+	if (UWidget* Existing = FindTreeWidget(Tree, WidgetName))
+	{
+		Existing->RemoveFromParent();
+		Existing->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional);
+	}
+
+	Tree->Modify();
+	WidgetBlueprint->Modify();
+
+	UWidget* Widget = Tree->ConstructWidget<UWidget>(WidgetClass, WidgetName);
+	Widget->bIsVariable = bIsVariable;
+	// GUID registration is deferred to CommitTree, which reconciles the whole map against the tree. Registering here
+	// would leak a dangling GUID if the batch aborts before commit (the compiler then fails to load with "Variable was
+	// deleted but still has a GUID").
+	return Widget;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UPanelSlot* UGeoWidgetBuilderUtil::AttachWidget(UWidgetBlueprint* WidgetBlueprint, FName ParentName, FName ChildName,
+												int32 Index)
+{
+	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
+	if (!ensureMsgf(Tree, TEXT("AttachWidget — WidgetTree is null on '%s'"),
+					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
+	{
+		return nullptr;
+	}
+
+	UPanelWidget* Parent = Cast<UPanelWidget>(FindTreeWidget(Tree, ParentName));
+	UWidget* Child = FindTreeWidget(Tree, ChildName);
+	if (!ensureMsgf(Parent, TEXT("AttachWidget — no panel named '%s' in '%s'"), *ParentName.ToString(),
+					*WidgetBlueprint->GetName())
+		|| !ensureMsgf(Child, TEXT("AttachWidget — no widget named '%s' in '%s'"), *ChildName.ToString(),
+					   *WidgetBlueprint->GetName()))
+	{
+		return nullptr;
+	}
+
+	Tree->Modify();
+	WidgetBlueprint->Modify();
+
+	// Detach first so re-parenting (and re-running) is clean; the widget object — name, GUID, graph bindings — survives.
+	Child->RemoveFromParent();
+
+	// InsertChildAt clamps the index; -1 (or out of range) appends.
+	return Index >= 0 ? Parent->InsertChildAt(Index, Child) : Parent->AddChild(Child);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::RemoveWidget(UWidgetBlueprint* WidgetBlueprint, FName Name)
+{
+	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
+	if (!ensureMsgf(Tree, TEXT("RemoveWidget — WidgetTree is null on '%s'"),
+					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
+	{
+		return;
+	}
+
+	UWidget* Widget = FindTreeWidget(Tree, Name);
+	if (!ensureMsgf(Widget, TEXT("RemoveWidget — no widget named '%s' in '%s'"), *Name.ToString(),
+					*WidgetBlueprint->GetName()))
+	{
+		return;
+	}
+
+	Tree->Modify();
+	WidgetBlueprint->Modify();
+	Widget->RemoveFromParent();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::CommitTree(UWidgetBlueprint* WidgetBlueprint)
+{
+	if (!ensureMsgf(WidgetBlueprint, TEXT("CommitTree — WidgetBlueprint is null")))
+	{
+		return;
+	}
+
+	// Reconcile the variable-name → GUID map against the tree before compiling, mirroring the widget-BP compiler's own
+	// ValidateAndFixUpVariableGuids: it requires EVERY tree widget (not just bIsVariable ones — the root and any named
+	// widget count too) to have a GUID, and prunes entries whose widget is gone. Matching that set here keeps a batch of
+	// Construct/Attach/Remove ops consistent so the compiler's verify pass does not trip ("did not get a GUID" /
+	// "was deleted but still has a GUID"). GetAllWidgets returns the root plus all descendants — the compiler's source
+	// set. Animation GUIDs (kept in Animations) are intentionally left to the compiler and never pruned here.
+	if (UWidgetTree* Tree = WidgetBlueprint->WidgetTree)
+	{
+		TArray<UWidget*> AllWidgets;
+		Tree->GetAllWidgets(AllWidgets);
+
+		TSet<FName> WidgetNames;
+		for (UWidget* Widget : AllWidgets)
+		{
+			if (Widget)
+			{
+				WidgetNames.Add(Widget->GetFName());
+				if (!WidgetBlueprint->WidgetVariableNameToGuidMap.Contains(Widget->GetFName()))
+				{
+					WidgetBlueprint->WidgetVariableNameToGuidMap.Add(Widget->GetFName(), FGuid::NewGuid());
+				}
+			}
+		}
+
+		for (auto It = WidgetBlueprint->WidgetVariableNameToGuidMap.CreateIterator(); It; ++It)
+		{
+			bool const bIsAnimation = WidgetBlueprint->Animations.ContainsByPredicate(
+				[&It](UWidgetAnimation const* Animation)
+				{
+					return Animation && Animation->GetFName() == It.Key();
+				});
+			if (!WidgetNames.Contains(It.Key()) && !bIsAnimation)
+			{
+				It.RemoveCurrent();
+			}
+		}
+	}
+
+	FinishBuild(WidgetBlueprint);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoWidgetBuilderUtil::AddWidgetToPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
+												 TSubclassOf<UWidget> WidgetClass, FName WidgetName, FMargin Offsets)
+{
+	UWidget* Widget = ConstructWidgetInTree(WidgetBlueprint, WidgetClass, WidgetName, /*bIsVariable*/ true);
+	if (!Widget)
+	{
+		return nullptr;
+	}
+
+	UPanelSlot* Slot = AttachWidget(WidgetBlueprint, ParentPanelName, WidgetName);
+
+	// CanvasPanel placement is purely numeric (anchors + pixel offsets), so set it here as a convenience. Other panels
+	// (Overlay, VerticalBox, …) carry alignment/fill semantics the caller positions afterward via the returned widget.
+	if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Slot))
+	{
+		CanvasSlot->SetAnchors(FAnchors(0.f, 0.f));
+		CanvasSlot->SetOffsets(Offsets);
+		CanvasSlot->SetAutoSize(false);
+	}
+
+	CommitTree(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Added %s '%s' under '%s' on '%s'"), *WidgetClass->GetName(),
+		   *WidgetName.ToString(), *ParentPanelName.ToString(), *WidgetBlueprint->GetName());
+	return Widget;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UPanelWidget* UGeoWidgetBuilderUtil::GroupWidgetsIntoPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
+														   FName GroupName, TSubclassOf<UPanelWidget> GroupPanelClass,
+														   TArray<FName> ChildNames, FMargin GroupOffsets)
+{
+	UWidget* GroupWidget = ConstructWidgetInTree(WidgetBlueprint, GroupPanelClass, GroupName, /*bIsVariable*/ true);
+	UPanelWidget* Group = Cast<UPanelWidget>(GroupWidget);
+	if (!Group)
+	{
+		return nullptr;
+	}
+
+	if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(AttachWidget(WidgetBlueprint, ParentPanelName, GroupName)))
+	{
+		CanvasSlot->SetAnchors(FAnchors(0.f, 0.f));
+		CanvasSlot->SetOffsets(GroupOffsets);
+		CanvasSlot->SetAutoSize(false);
+	}
+
+	// Re-parent in the given order so z-order (and thus draw order) is preserved.
+	for (FName const ChildName : ChildNames)
+	{
+		AttachWidget(WidgetBlueprint, GroupName, ChildName);
+	}
+
+	CommitTree(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Grouped %d widget(s) into %s '%s' under '%s' on '%s'"),
+		   ChildNames.Num(), *GroupPanelClass->GetName(), *GroupName.ToString(), *ParentPanelName.ToString(),
+		   *WidgetBlueprint->GetName());
+	return Group;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 UCanvasPanelSlot* UGeoWidgetBuilderUtil::AddChildToCanvasPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
 															   TSubclassOf<UUserWidget> ChildWidgetClass, FName ChildName)
 {
@@ -287,6 +487,24 @@ UOverlaySlot* UGeoWidgetBuilderUtil::AddFillChildToOverlay(UOverlay* Overlay, UW
 		Slot->SetVerticalAlignment(VAlign_Fill);
 	}
 	return Slot;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoWidgetBuilderUtil::FindTreeWidget(UWidgetTree* Tree, FName Name)
+{
+	if (!Tree)
+	{
+		return nullptr;
+	}
+
+	// FindWidget only walks from the root, so a just-constructed, not-yet-parented widget is invisible to it. Fall back
+	// to an outer-scoped object find: ConstructWidget makes the widget an Outer-child of the tree, so this catches it
+	// whether or not it is parented.
+	if (UWidget* Found = Tree->FindWidget(Name))
+	{
+		return Found;
+	}
+	return Cast<UWidget>(StaticFindObjectFast(UWidget::StaticClass(), Tree, Name));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

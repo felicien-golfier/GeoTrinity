@@ -40,7 +40,7 @@ public:
 
 protected:
 	/** Teleports the boss actor to the stored origin position before the wave starts expanding. */
-	virtual void InitPattern(FAbilityPayload const& Payload) override;
+	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData) override;
 	/** Resets the mask MPC pillar slots, then positions, configures and activates the AOE VFX at the wave origin. */
 	virtual void StartPattern() override;
 	/** Sets the cue source location to the boss's 2D wave origin. */

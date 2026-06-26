@@ -29,9 +29,12 @@ material via `SetDeathMaterial`), then `GameState->NotifyPlayerDied()` which tri
 InProgress or immediately revives the player outside InProgress. The corpse **stays in place** — no per-death teleport.
 When all players are dead the GameState resets the boss and requests WaitingToStart; `HandleMatchIsWaitingToStart`
 teleports everyone to the entrance and calls `Revive()` per player (cancels active abilities, removes all gameplay
-effects, re-applies per-class defaults via `ApplyClassData()`, then `RestartCharacter()`). The state replicates to
+effects, re-applies class visuals via `ApplyClassData()`, then `GiveLife()` — re-applies per-class default attributes
+and restarts passives — then `RestartCharacter()`). The state replicates to
 clients via `OnRep_IsDead(bool)`, which calls `DeathLogic()` or `ReviveLogic()` directly — same bodies that run on
-the server, so client-side state is identical. Each class entry in `ClassData` (`FPlayerClassData`) configures `AliveMaterial` + `DeathMaterial`;
+the server. **`RemoveActiveEffects` is server-guarded inside both**: it only acts on the authoritative ASC, and the
+removal replicates to clients. Calling it client-side is a no-op that would otherwise leave locally-predicted effects
+(e.g. dash cooldown) lingering after death — the cause of dash being unavailable on the client after respawn. Each class entry in `ClassData` (`FPlayerClassData`) configures `AliveMaterial` + `DeathMaterial`;
 both swap on mesh slot 0.
 
 ## Component Subfolder

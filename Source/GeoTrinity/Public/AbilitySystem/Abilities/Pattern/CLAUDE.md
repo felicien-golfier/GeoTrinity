@@ -44,14 +44,15 @@ Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`, `DistanceSp
 
 ## `SpawnPillarPattern.h` — zone-and-pillar boss pattern
 
-Non-ticking pattern. On `InitPattern`, determines how many pillars to spawn (1–3, scaled by the boss's remaining health ratio) and selects target player locations sorted by `PlayerId` for determinism. On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via the `ExecuteGameplayCue` override (fires one cue per spawn point).
+Non-ticking pattern. **Zone locations are resolved on the server** by `UGeoSpawnPillarAbility::CreatePatternData()` and shipped through `PatternStartMulticast` as an `FSpawnPillarPatternData` — `InitPattern` just reads `ZoneLocations` (no per-client recompute, so all clients place zones identically). On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via the `ExecuteGameplayCue` override (fires one cue per spawn point).
 
+- `FSpawnPillarPatternData` (in the same header) — `FPatternData` subclass carrying `TArray<FVector2D> ZoneLocations`; filled by the ability, consumed in `InitPattern`. `InitPattern` `ensureMsgf`s if the `TInstancedStruct` isn't an `FSpawnPillarPatternData` (i.e. the pattern was launched from a plain `UPatternAbility` instead of `UGeoSpawnPillarAbility`).
 - `SpawningZoneSize` — radius used for both the countdown cue magnitude and hostile hit detection (cm)
 - `PillarClass` — `AGeoPillar` subclass to spawn; also passed to `SetDeployableInfinitCount` in `OnCreate` to bypass slot limits
 - `PillarParams` — `FDeployableDataParams` forwarded into the spawned pillar via `FullySpawnDeployable`
 - `PillarSpawnEffects` — effects applied to hostiles in the zone on expiry (server-only); distinct from the pillar's own effect data
 
-Runs on all clients via `PatternStartMulticast`. Used by a `UPatternAbility` subclass.
+Runs on all clients via `PatternStartMulticast`. Launched by `UGeoSpawnPillarAbility` (see `Boss/CLAUDE.md`).
 
 ---
 

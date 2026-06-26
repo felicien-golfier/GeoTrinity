@@ -44,8 +44,6 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
-	/** Auto-activates this ability immediately when the ASC is assigned if it carries the Ability.Type.Passive tag. */
-	virtual void OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 	/**
 	 * Commits cost and cooldown, populates StoredPayload from TriggerEventData (or avatar state for passives),
 	 * binds the server-side OnFireTargetDataReceived delegate, and schedules the fire trigger.

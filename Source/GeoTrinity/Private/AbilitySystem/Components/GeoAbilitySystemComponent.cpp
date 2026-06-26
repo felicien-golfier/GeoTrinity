@@ -355,9 +355,14 @@ bool UGeoAbilitySystemComponent::FindPatternByClass(UClass* PatternClass, UPatte
 	return true;
 }
 
-void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload, UClass* PatternClass)
+void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload, UClass* PatternClass,
+																	 TInstancedStruct<FPatternData> PatternData)
 {
 	checkf(PatternClass, TEXT("PatternStartMulticast: Invalid PatternClass"));
+
+	UE_LOG(LogTemp, Warning, TEXT("[PATTERNDBG][RECV] IsServer=%d ScriptStruct=%s"),
+		   GetOwner() && GetOwner()->HasAuthority(),
+		   PatternData.GetScriptStruct() ? *PatternData.GetScriptStruct()->GetName() : TEXT("NULL"));
 
 	UPattern* Pattern;
 	if (!FindPatternByClass(PatternClass, Pattern))
@@ -370,7 +375,7 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 		Pattern = CreatePatternInstance(PatternClass, Payload.AbilityTag);
 	}
 
-	Pattern->InitPattern(Payload);
+	Pattern->InitPattern(Payload, PatternData);
 }
 
 int32& UGeoAbilitySystemComponent::GetFireSectionIndex(FGameplayTag const& AbilityTag)
@@ -408,4 +413,18 @@ bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbili
 	// Use InternalTryActivateAbility which accepts TriggerEventData
 	// This sends the event data with the activation RPC (single packet)
 	return InternalTryActivateAbility(Handle, FPredictionKey(), nullptr, nullptr, &EventData);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::ReactivatePassiveAbilities()
+{
+	FScopedAbilityListLock activeScopeLock(*this);
+	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())
+	{
+		UGeoGameplayAbility const* AbilityCDO = Cast<UGeoGameplayAbility>(abilitySpec.Ability);
+		if (AbilityCDO && AbilityCDO->IsPassive() && !abilitySpec.IsActive())
+		{
+			TryActivateAbility(abilitySpec.Handle, false);
+		}
+	}
 }

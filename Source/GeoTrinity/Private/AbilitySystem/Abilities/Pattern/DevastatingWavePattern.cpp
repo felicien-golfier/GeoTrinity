@@ -25,9 +25,9 @@ namespace
 	}
 } // namespace
 
-void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload)
+void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
-	Super::InitPattern(Payload);
+	Super::InitPattern(Payload, PatternData);
 	if (!IsValid(StoredPayload.Owner))
 	{
 		ensureMsgf(false, TEXT("UDevastatingWavePattern: StoredPayload.Owner is null"));

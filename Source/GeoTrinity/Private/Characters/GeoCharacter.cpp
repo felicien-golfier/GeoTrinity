@@ -160,8 +160,6 @@ void AGeoCharacter::BeginPlay()
 	{
 		WidgetHost->BindToOwnerASC();
 	}
-	// Hide the floating bar only over the local player's own avatar — it uses the main HUD overlay instead.
-	SetCombattantWidgetVisible(!GeoLib::IsLocalPlayerAvatar(this));
 #ifdef UE_EDITOR
 	LocalRoleForDebugPurpose = GetLocalRole();
 #endif

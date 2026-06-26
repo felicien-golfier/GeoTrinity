@@ -14,7 +14,17 @@ Use `WidgetBlueprintFactory` with `parent_class` set, then create via `AssetTool
 
 ## Widget Tree
 
-Python cannot read or write the widget designer tree — `WidgetBlueprint` exposes no `widget_tree` property to Python. Adding any widget to the canvas requires a C++ `UEditorUtilityObject` shim.
+Python cannot read or write the widget designer tree — `WidgetBlueprint` exposes no `widget_tree` property to Python, so it cannot construct, re-parent, remove, or save tree widgets.
+
+A C++ `UEditorUtilityObject` shim exposes the four tree operations Python lacks (construct, attach/re-parent, remove, commit); see the low-level primitives in `Source/GeoTrinityEditor/Public/Tool/GeoWidgetBuilderUtil.h`. Everything else — every `set_*` on an existing widget or its slot (text, brush, padding, anchors, color, …) — is already reachable from Python on the objects the primitives return.
+
+Compose these primitives from Python to add, move, wrap, reorder, or delete any widget: batch the tree ops plus Python slot edits, then commit once. The typical flow is construct a panel, attach it, attach existing children into it, position each child's slot, commit. The primitives resolve widgets by name even before they are parented, so a just-constructed group can be attached and populated in the same batch. Do not add a new shim `UFUNCTION` per request — reach for a new shim function only when an operation genuinely cannot be expressed through the primitives plus Python setters, and when you do, prefer enhancing an existing generic primitive over adding a one-off. Reusable compositions go in `AI/Python/` as `.py` files.
+
+---
+
+## Reconciling Variable GUIDs at Commit
+
+The commit primitive reconciles the variable-name-to-GUID map against the tree before compiling, so a batch of tree ops is consistent however it ended. Defer GUID assignment to commit rather than at construction, so an aborted batch leaves no dangling GUID. Every tree widget needs a GUID, not only the ones flagged as variables — the root panel and any named widget count too. The reconciliation set is the root plus all descendants; mint a GUID for any tree widget missing one and prune entries whose widget is gone, leaving animation GUIDs alone. The widget-BP compiler runs the same validation and is self-healing — it adds a missing GUID and continues — so a GUID-map mismatch surfaces as a logged ensure during compile, not a corrupted asset. See `GeoWidgetBuilderUtil.cpp` (`CommitTree`).
 
 ---
 
@@ -98,6 +108,18 @@ Set `SetBarFillType` explicitly — the default is `LeftToRight`. For a vertical
 ## Inspecting a Widget Blueprint at Runtime
 
 Call `InspectWidgetBlueprint` on the shim CDO from Python to log the full widget tree — types, names, slot layout, and per-widget properties. Use this to verify fill type, offsets, and colors before debugging in PIE. See `GeoWidgetBuilderUtil.h`.
+
+---
+
+## Reading a Widget Blueprint's Parent Class
+
+A `WidgetBlueprint`'s parent-class property is protected and unreadable from Python directly. Read it from the asset-registry tag instead, which exposes both the immediate and the native parent class. Use this to confirm a designer Blueprint already reparents to the intended C++ base before driving it.
+
+---
+
+## Grouping Existing Widgets Under One Anchored Container
+
+To make a cluster of separately-placed canvas children scale and move as a unit, wrap them in one new panel anchored on the parent canvas, without moving anything on screen. Re-parent each existing child into the new panel rather than re-creating it, so it keeps its name, GUID, and graph bindings. Set the new panel's pixel rect to the cluster's bounding box (minimum left/top of the children, extent to the maximum right/bottom). Preserve each child's on-screen position by rebasing its offsets — subtract the bounding-box origin from its original canvas offsets — and a child-canvas-in-canvas keeps pixel offsets exact with no alignment guesswork. Re-parent in the intended draw order, since panel child order is z-order. See `AI/Python/group_widgets.py`.
 
 ---
 
