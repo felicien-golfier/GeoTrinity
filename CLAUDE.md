@@ -43,7 +43,7 @@ Source/GeoTrinity/
 │   │   ├── Abilities/
 │   │   │   ├── Base/          # GeoGameplayAbility, PatternAbility, AbilityPayload
 │   │   │   ├── Damaging/      # GeoProjectileAbility, GeoAutomaticFireAbility, GeoAutomaticProjectileAbility
-│   │   │   ├── Boss/          # GeoPeriodicFireAbility, GeoDevastatingWaveAbility
+│   │   │   ├── Boss/          # GeoPeriodicFireAbility, GeoDevastatingWaveAbility, GeoSpawnPillarAbility
 │   │   │   ├── Pattern/       # Pattern, SpiralPattern, SpawnPillarPattern, DevastatingWavePattern
 │   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility
 │   │   │   ├── Square/        # GeoShieldBurstPassiveAbility, GeoDetonateWallsAbility (wall uses shared GeoDeployAbility)
