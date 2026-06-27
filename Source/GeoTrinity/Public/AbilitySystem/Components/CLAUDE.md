@@ -10,8 +10,8 @@ Extended ASC used by all characters.
 - `AbilityInputTagReleased(FGameplayTag)` — ends hold abilities
 
 ### Passive abilities
-- Passives auto-activate **once** on grant (`UGeoGameplayAbility::OnAvatarSet` → `TryActivateAbility`).
-- `ReactivatePassiveAbilities()` — re-activates every granted, currently-inactive passive. Death's `CancelAllAbilities` cancels passives (running an `EndAbility` that tears down their component + delegate bindings), and the avatar is not re-set on revive, so `PlayableCharacter::ReviveLogic` calls this to restart them.
+- Passives are activated explicitly — `OnAvatarSet` was removed from `UGeoGameplayAbility`; `APlayableCharacter::GiveLife()` now calls `ReactivatePassiveAbilities()` after every ability grant (`ChangeClass`) and after every revive.
+- `ReactivatePassiveAbilities()` — iterates all granted abilities, activates those tagged Passive that are not currently active. No-op if all passives are already running.
 
 ### Fire helpers (used by ability classes)
 - `GetFireSectionIndex(AbilityTag)` — returns reference to section counter for animation cycling
@@ -22,7 +22,7 @@ Extended ASC used by all characters.
 - `CreatePatternInstance()` — instantiates a `UPattern` subclass
 - `FindPatternByClass(Class)` — returns active pattern or nullptr
 - `StopAllActivePatterns()` — ends all running patterns
-- `PatternStartMulticast()` — multicast RPC; clients instantiate the pattern here
+- `PatternStartMulticast(Payload, PatternClass, PatternData)` — multicast RPC; clients instantiate the pattern and call `InitPattern(Payload, PatternData)`; `PatternData` is an optional `FPatternData` subclass carrying server-resolved data (unset for patterns that need none)
 
 ### Startup
 - `GiveStartupAbilities()` — grants class abilities + shared abilities from global `UAbilityInfo` data asset, filtered by `EPlayerClass`
