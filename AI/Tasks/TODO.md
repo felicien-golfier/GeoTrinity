@@ -5,7 +5,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 ## Tasks
 
-- [x] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
+- [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
 
   **Scope**
   - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase. (Do NOT use `git diff --name-only HEAD` — that only reports uncommitted working-tree changes, which are empty in the cloud checkout, so the day's committed work would be missed.)
@@ -135,7 +135,9 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-06-28] Scope: No developer commits in the last 25h (git log --since="25 hours ago" shows only the 2026-06-27 daily TODO markdown commits). No .h or .cpp files to process. No-op. -->
 
-- [x] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
+<!-- [2026-06-29] Scope: No developer commits in the last 25h (git log --since="25 hours ago" shows only the 2026-06-28 daily TODO markdown commits). No .h or .cpp files to process. No-op. -->
+
+- [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
   - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open `.h` and `.cpp` files from that list. (Do NOT use `git diff --name-only HEAD` — it only reports uncommitted working-tree changes, empty in the cloud checkout.)
@@ -243,4 +245,6 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-06-27] Updated: Root CLAUDE.md + Abilities/CLAUDE.md — Boss/ row: added GeoSpawnPillarAbility (new file in commits 9e7e84f). AbilitySystem/Components/CLAUDE.md — Passive abilities section: replaced stale "UGeoGameplayAbility::OnAvatarSet → TryActivateAbility" (OnAvatarSet override was deleted from GeoGameplayAbility in 9e7e84f); activation now happens via APlayableCharacter::GiveLife() → ReactivatePassiveAbilities() on every class grant and revive. PatternStartMulticast entry: added PatternData parameter description. Abilities/Pattern/CLAUDE.md — Pattern.h base section: updated InitPattern signature (now takes TInstancedStruct<FPatternData>); added StoredPatternData to stored fields. Developer already updated Base/CLAUDE.md (FPatternData + slicing warning), Boss/CLAUDE.md (GeoSpawnPillarAbility section), and Pattern/CLAUDE.md (SpawnPillarPattern zone-location flow) in their own commits. Notable: GeoSpawnPillarAbility.cpp uses TInstancedStruct<FPatternData>::Make(PillarData) — the same file's Base/CLAUDE.md now warns this form can slice the derived struct down to the base; the commit message says "same loc client server" implying the data IS arriving correctly, so the template deduction is probably working in this UE5 version, but the explicit-type form TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData) would be safer. -->
 
 <!-- [2026-06-28] Scope: No developer commits in the last 25h (git log --since="25 hours ago" shows only the 2026-06-27 daily TODO markdown commits). No .h or .cpp files to process. No CLAUDE.md updates needed. -->
+
+<!-- [2026-06-29] Scope: No developer commits in the last 25h (git log --since="25 hours ago" shows only the 2026-06-28 daily TODO markdown commits). No .h or .cpp files to process. No CLAUDE.md updates needed. -->
 
