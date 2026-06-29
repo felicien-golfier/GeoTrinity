@@ -199,16 +199,22 @@ void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo con
 	}
 }
 
-void UGeoGameplayAbility::InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex)
+int32& UGeoGameplayAbility::GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance)
 {
-	if (!AnimInstance->Montage_IsPlaying(AnimMontage))
+	int32& FireSectionIndex = ASC->GetFireSectionIndex(GetAbilityTag());
+	bool const bHasAnyFireSection = AnimMontage->IsValidSectionName(GeoASLib::SectionFireName)
+		|| AnimMontage->IsValidSectionName(FName(*FString::Printf(TEXT("%s1"), *GeoASLib::SectionFireString)));
+	bool const bIsMontagePlaying = AnimInstance && AnimInstance->Montage_IsPlaying(AnimMontage);
+	if (bHasAnyFireSection && bIsMontagePlaying)
 	{
-		FireSectionIndex = 0; // If we are not playing the montage let's reset the index.
+		++FireSectionIndex;
 	}
 	else
 	{
-		++FireSectionIndex; // FireSectionIndex stored is the last played, so let's increment first
+		FireSectionIndex = 0;
 	}
+
+	return FireSectionIndex;
 }
 
 /**
@@ -223,8 +229,7 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 {
 	ensureMsgf(AnimMontage && AnimInstance, TEXT("No valid AnimMontage or AnimInstance"));
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
-	int32& FireSectionIndex = ASC->GetFireSectionIndex(GetAbilityTag());
-	InitFireSectionIndex(AnimInstance, FireSectionIndex);
+	int32& FireSectionIndex = GetFireSectionIndex(ASC, AnimInstance);
 
 	// Build section name: first activation goes to "Start", then cycle Fire1 -> Fire2 -> ... -> Fire1
 	FName SectionToJumpTo;

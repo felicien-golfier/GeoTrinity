@@ -55,7 +55,7 @@ protected:
 	virtual bool ExecuteShot_Implementation();
 
 	/** Cycles the fire montage section index to the next shot animation. */
-	virtual void InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex) override;
+	virtual int32& GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance) override;
 
 	/** Camera shake played on the local client each shot. */
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel")

@@ -141,11 +141,12 @@ protected:
 	 * Duration is FireDelay for ShootAfterFireDelay mode, or unbounded for charge mode (fires on input release).
 	 */
 	void ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo, UAnimInstance* AnimInstance);
+
 	/**
 	 * Selects or advances the animation montage's fire section index.
 	 * Override in subclasses that cycle through multiple fire animations.
 	 */
-	virtual void InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex);
+	virtual int32& GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance);
 	/** Plays AnimMontage and jumps to the correct section based on the current fire section index. */
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
