@@ -13,12 +13,12 @@ Pattern flow:
 ## `Pattern.h` — base pattern object
 
 - `OnCreate(AbilityTag)` — stores ability tag used for montage lookup
-- `InitPattern(FAbilityPayload)` — stores payload, plays start animation section
+- `InitPattern(FAbilityPayload, TInstancedStruct<FPatternData>)` — stores payload and pattern-specific replicated data (`StoredPatternData`), plays start animation section
 - `IsPatternActive()` — true while running
 - `EndPattern(bForceStop=false)` — cleans up timers; when false, jumps montage to end section and broadcasts `OnPatternEnd`; when true, stops all montages immediately and skips the broadcast (used by `PatternAbility::EndAbility` to force-stop without re-triggering the ability-end chain). Guards against double-call via `bPatternIsActive`.
 - `StartPattern()` — pure virtual; subclasses define spawn logic here
 
-Stores: `FAbilityPayload Payload`, `UAnimMontage* AnimMontage`, effect data array.
+Stores: `FAbilityPayload StoredPayload`, `TInstancedStruct<FPatternData> StoredPatternData`, `UAnimMontage* AnimMontage`, effect data array.
 
 ---
 
