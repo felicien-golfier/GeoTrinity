@@ -43,8 +43,8 @@ Set once per activation. **Always use `StoredPayload` fields** — never call `G
 Always: `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` directly — both client and server must derive identical values from the same seed.
 
 ### Animation
-- Section cycling: Start → Fire1 → Fire2 → … (loops back)
-- `GetFireSectionIndex(AbilityTag)` — reference tracked on ASC per ability tag
+- Section cycling: Start → Fire1 → Fire2 → … (loops back). Montages without any Fire section (e.g. a pure Start/End montage) are valid — `GetFireSectionIndex` detects the absence and resets to 0 instead of incrementing, so the montage always starts from the beginning.
+- `GetFireSectionIndex(AbilityTag)` — reference tracked on ASC per ability tag; `UGeoGameplayAbility::GetFireSectionIndex(ASC, AnimInstance)` fetches it, advances if Fire sections exist and montage is playing, resets to 0 otherwise
 - Play rate auto-adjusted so each section fits the `FireDelay` window
 
 ### Effect Data
