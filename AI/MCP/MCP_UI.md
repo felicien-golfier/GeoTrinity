@@ -151,6 +151,18 @@ To stop a text label from exceeding a fixed width, cap its width with a SizeBox 
 
 ---
 
+## Widget Tree Primitive Call Order
+
+Call `ConstructWidgetInTree` first to stage the widget and reserve its GUID, then `AttachWidget` to parent it, then set slot/widget properties on the returned objects from Python, then `CommitTree` once. Calling `ConstructWidgetInTree` a second time after `AttachWidget` (e.g. to re-obtain a reference) triggers the GUID ensure during commit — use the object returned by the first construct call instead.
+
+---
+
+## OverlaySlot Alignment Property Names
+
+An `OverlaySlot`'s alignment properties in Python are `horizontal_alignment` and `vertical_alignment`.
+
+---
+
 ## Naming & Folder Convention
 
 Widget Blueprints use the `WBP_` prefix and live under `/Game/HUD/`, grouped by widget type.

@@ -36,6 +36,7 @@ void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementati
 		if (AGeoHUD* GeoHUD = PlayerController->GetHUD<AGeoHUD>())
 		{
 			InitFromHUD(GeoHUD);
+			GeoHUD->RegisterASCForDamageNumbers(ASC, ASC->GetAvatarActor());
 		}
 	}
 

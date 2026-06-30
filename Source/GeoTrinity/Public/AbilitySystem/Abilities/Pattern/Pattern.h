@@ -41,8 +41,8 @@ public:
 
 	/**
 	 * Stores the payload and triggers the start-section animation before delegating to StartPattern.
-	 * PatternData carries optional pattern-specific replicated data; subclasses read their own FPatternData subclass via
-	 * PatternData.GetPtr<T>(). Unset for patterns that need no extra data.
+	 * PatternData carries optional pattern-specific replicated data; subclasses read their own FPatternData subclass
+	 * via PatternData.GetPtr<T>(). Unset for patterns that need no extra data.
 	 */
 	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData);
 
@@ -85,7 +85,7 @@ protected:
 	TObjectPtr<UAnimMontage> AnimMontage;
 
 	float StartDelay = 0.f;
-	float StartTime = 0.f;
+	float TravelTime = 0.f;
 
 	bool bPatternIsActive = false;
 
@@ -114,7 +114,8 @@ public:
 
 protected:
 	virtual void StartPattern() override;
-	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData) override;
+	virtual void InitPattern(FAbilityPayload const& Payload,
+							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** Timer callback: reads current server time, computes SpentTime, and delegates to TickPattern. */
 	UFUNCTION()
 	void CalculateTimeAndTickPattern();

@@ -4,8 +4,6 @@
 
 #include "AI/GeoAIBlackboardComponent.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
-#include "Engine/TargetPoint.h"
-#include "Kismet/GameplayStatics.h"
 #include "StateTreeExecutionContext.h"
 #include "StateTreeLinker.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -25,9 +23,9 @@ EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutio
 	TArray<AActor*> FiringPoints = GeoLib::GetTargetPoints(Context.GetOwner(), FGeoGameplayTags::Get().AI_FiringPoint);
 
 	FiringPoints.Sort(
-		[](TObjectPtr<AActor> const A, TObjectPtr<AActor> const B)
+		[](AActor const& A, AActor const& B)
 		{
-			return A->GetUniqueID() < B->GetUniqueID();
+			return A.GetUniqueID() < B.GetUniqueID();
 		});
 
 	int32 Num = FiringPoints.Num();

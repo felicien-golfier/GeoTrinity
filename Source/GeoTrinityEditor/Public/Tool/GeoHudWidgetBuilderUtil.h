@@ -104,4 +104,5 @@ public:
 	static void AddLocalConnectToMainMenu(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName, FName ButtonsBoxName,
 										  TSubclassOf<UUserWidget> MenuButtonClass,
 										  TSubclassOf<UUserWidget> LocalConnectClass);
+
 };

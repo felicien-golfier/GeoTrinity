@@ -219,6 +219,24 @@ public:
 	 * IGenericTeamAgentInterface. */
 	static FGenericTeamId GetTeamId(AActor const* Actor);
 
+	template <typename T>
+	static TArray<T*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
+											int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
+											float MaxDistance)
+	{
+		TArray<T*> Result;
+		for (AActor* Actor : GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable,
+												   Location, MaxDistance,
+												   [](AActor* Actor)
+												   {
+													   return IsValid(Actor) && Actor->IsA(T::StaticClass());
+												   }))
+		{
+			Result.Add(CastChecked<T>(Actor));
+		}
+		return Result;
+	}
+
 	/**
 	 * Returns all interactable agents whose attitude toward SourceTeam matches any bit in AttitudeBitmask.
 	 * @param AttitudeBitmask    Bitmask of ETeamAttitudeBitflag values (e.g. Hostile | Neutral).

@@ -26,6 +26,10 @@ See `AI/Python/` for call patterns covering:
 
 A boolean property's `b` prefix is dropped in its Python name.
 
+The correct CDO accessor is `unreal.get_default_object(bp.generated_class())` — calling `get_default_object()` directly on the class object fails.
+
+Property names passed to `set_editor_property` / `get_editor_property` are **PascalCase** (matching the C++ `UPROPERTY` name), not snake_case.
+
 Resolve a class by its script path with the class loader; there is no find-by-name helper.
 
 A soft-object-pointer property takes the loaded asset object as its value; passing a soft-object-path value fails type conversion.

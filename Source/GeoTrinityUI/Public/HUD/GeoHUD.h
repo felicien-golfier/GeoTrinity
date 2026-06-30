@@ -20,6 +20,7 @@ class UAbilitySystemComponent;
 class UGeoAbilitySystemComponent;
 class APlayerState;
 class UGenericCombattantWidget;
+class UGeoDamageNumberWidget;
 class AEnemyCharacter;
 class APlayableCharacter;
 
@@ -153,6 +154,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "AbilityBar")
 	FOnDeployCountChangedSignature OnPlayerDeployCountChanged;
 
+	/** Binds Health and Shield attribute delegates on ASC so delta changes spawn floating numbers at OwnerActor. */
+	void RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor);
+	/** Finds or creates a pooled UGeoDamageNumberWidget and activates it at the projected screen position. */
+	void SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocation);
+
 
 protected:
 #if !UE_BUILD_SHIPPING
@@ -197,6 +203,12 @@ private:
 	TObjectPtr<UGenericCombattantWidget> BossHealthBarWidget;
 
 	FHudPlayerParams HudPlayerParams;
+
+	UPROPERTY(EditAnywhere, Category = "DamageNumbers")
+	TSubclassOf<UGeoDamageNumberWidget> DamageNumberWidgetClass;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UGeoDamageNumberWidget>> DamageNumberPool;
 
 	// Delegate
 	UPROPERTY(BlueprintAssignable, Category = "GAS")

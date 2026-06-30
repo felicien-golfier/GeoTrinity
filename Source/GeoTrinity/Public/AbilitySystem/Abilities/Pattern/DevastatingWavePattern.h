@@ -37,12 +37,16 @@ class GEOTRINITY_API UDevastatingWavePattern : public UTickablePattern
 public:
 	/** Spawns the masked AOE Niagara component deactivated — the pattern instance is reused across activations. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
+	void ClearData();
 
 protected:
 	/** Teleports the boss actor to the stored origin position before the wave starts expanding. */
-	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData) override;
+	virtual void InitPattern(FAbilityPayload const& Payload,
+							 TInstancedStruct<FPatternData> const& PatternData) override;
+	void AddAllPillarsToVfxMask();
 	/** Resets the mask MPC pillar slots, then positions, configures and activates the AOE VFX at the wave origin. */
 	virtual void StartPattern() override;
+	void ActivateAoeVfxTelegraph() const;
 	/** Sets the cue source location to the boss's 2D wave origin. */
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 	/**
@@ -58,6 +62,8 @@ private:
 	bool ShouldHitActor(AActor const* Actor) const;
 	/** Writes the last added PillarsWaveData entry into the next mask MPC pillar slot. */
 	void AddPillarToVfxMask();
+	/** Positions the AOE component at the wave origin, pushes its user params and activates it. */
+	void ActivateAOEVfx() const;
 #if WITH_EDITOR
 	void DrawDebugSafeZones(float CurrentRadius) const;
 #endif
@@ -78,13 +84,23 @@ private:
 	TObjectPtr<UMaterialParameterCollection> MaskMaterialParameterCollection;
 
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
-	FLinearColor AOEColor = FLinearColor::Red;
+	FLinearColor AOEColor = FLinearColor::Yellow;
 
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
 	float FadeOutDuration = 0.5f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
+	float TelegraphFadeOutDuration = 0.1f;
+
+	/** Color of the full-range blinking telegraph shown during the wind-up, before the wave starts expanding. */
+	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
+	FLinearColor TelegraphColor = FLinearColor::Red;
+
+
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> AOEVfxComponent;
+
+	FTimerHandle TelegraphBlinkTimerHandle;
 
 	TSet<TWeakObjectPtr<AActor>> HitActors;
 	TArray<FPillarWaveData> PillarsWaveData;

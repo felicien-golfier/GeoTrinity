@@ -25,7 +25,8 @@ namespace
 	}
 } // namespace
 
-void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
+void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
+										  TInstancedStruct<FPatternData> const& PatternData)
 {
 	Super::InitPattern(Payload, PatternData);
 	if (!IsValid(StoredPayload.Owner))
@@ -34,10 +35,27 @@ void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload, TInsta
 		return;
 	}
 
-	HitActors.Empty();
-	PillarsWaveData.Empty();
+	ClearData();
 
 	StoredPayload.Instigator->SetActorLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
+
+	// Skipped on the "too late" path (Super::InitPattern ran StartPattern synchronously, no wind-up scheduled).
+	if (IsValid(AOEVfxComponent) && StartSectionTimerHandle.IsValid())
+	{
+		AddAllPillarsToVfxMask();
+		ActivateAoeVfxTelegraph();
+	}
+}
+
+void UDevastatingWavePattern::AddAllPillarsToVfxMask()
+{
+	for (AGeoPillar* Pillar :
+		 GeoASLib::GetInteractableActors<AGeoPillar>(this, GeoASLib::GetTeamId(StoredPayload.Owner),
+													 TeamAttitudeMask::HostileOrNeutral, true, StoredPayload.Origin, 0))
+	{
+		PillarsWaveData.Add({FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Pillar});
+		AddPillarToVfxMask();
+	}
 }
 
 void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
@@ -57,6 +75,18 @@ void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 	ensureMsgf(AOEVfxComponent, TEXT("UDevastatingWavePattern: failed to spawn the AOE VFX system"));
 }
 
+void UDevastatingWavePattern::ClearData()
+{
+	HitActors.Empty();
+	PillarsWaveData.Empty();
+
+	// The MPC is global state — clear slots left over from a previous wave before the AOE starts rendering.
+	for (int32 SlotIndex = 0; SlotIndex < MaxMaskedPillarSlots; ++SlotIndex)
+	{
+		UKismetMaterialLibrary::SetVectorParameterValue(this, MaskMaterialParameterCollection,
+														GetPillarSlotParameterName(SlotIndex), UnusedPillarSlotValue);
+	}
+}
 void UDevastatingWavePattern::StartPattern()
 {
 	Super::StartPattern();
@@ -66,13 +96,28 @@ void UDevastatingWavePattern::StartPattern()
 		return;
 	}
 
-	// The MPC is global state — clear slots left over from a previous wave before the AOE starts rendering.
-	for (int32 SlotIndex = 0; SlotIndex < MaxMaskedPillarSlots; ++SlotIndex)
-	{
-		UKismetMaterialLibrary::SetVectorParameterValue(this, MaskMaterialParameterCollection,
-														GetPillarSlotParameterName(SlotIndex), UnusedPillarSlotValue);
-	}
+	ClearData();
 
+	// Leave the telegraph behind and start the real expanding wave. Re-activating keeps the same component alive,
+	// so the wave origin and grow params are re-pushed here.
+	GetWorld()->GetTimerManager().ClearTimer(TelegraphBlinkTimerHandle);
+	ActivateAOEVfx();
+}
+
+void UDevastatingWavePattern::ActivateAoeVfxTelegraph() const
+{
+	AOEVfxComponent->ReinitializeSystem();
+	AOEVfxComponent->SetWorldLocation(FVector(StoredPayload.Origin, 0.f));
+	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_Radius"), MaxRadius);
+	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_GrowDuration"), MaxRadius / (StartDelay - TravelTime));
+	AOEVfxComponent->SetVariableFloat(TEXT("User.FadeOut_Duration"), TelegraphFadeOutDuration);
+	AOEVfxComponent->SetVariableLinearColor(TEXT("User.AOE_Color"), TelegraphColor);
+	AOEVfxComponent->Activate(true);
+}
+
+void UDevastatingWavePattern::ActivateAOEVfx() const
+{
+	AOEVfxComponent->ReinitializeSystem();
 	AOEVfxComponent->SetWorldLocation(FVector(StoredPayload.Origin, 0.f));
 	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_Radius"), MaxRadius);
 	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_GrowDuration"), MaxRadius / ExpansionSpeed);
@@ -110,7 +155,7 @@ FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FAbilityPayload con
 	FGameplayCueParameters CueParams = Super::FillCueParam(Payload);
 	CueParams.RawMagnitude = MaxRadius;
 	float const LifeTime = MaxRadius / ExpansionSpeed;
-	CueParams.Normal = FVector(LifeTime, StartTime, 1.f - (LifeTime - StartTime) / LifeTime);
+	CueParams.Normal = FVector(LifeTime, TravelTime, 1.f - (LifeTime - TravelTime) / LifeTime);
 	return CueParams;
 }
 
@@ -141,7 +186,8 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 
 			if (GeoLib::IsServer(this) && ShouldHitActor(HitActor))
 			{
-				if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
+				UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
+				if (IsValid(TargetASC))
 				{
 					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
 																		StoredPayload.AbilityLevel, StoredPayload.Seed,
@@ -214,6 +260,7 @@ void UDevastatingWavePattern::DrawDebugSafeZones(float CurrentRadius) const
 #endif
 void UDevastatingWavePattern::EndPattern(bool bForceStop)
 {
+	GetWorld()->GetTimerManager().ClearTimer(TelegraphBlinkTimerHandle);
 	if (IsValid(AOEVfxComponent))
 	{
 		// Deactivate() lets live particles finish their full lifetime, which spans the whole grow+fade —
@@ -261,6 +308,8 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 																StoredPayload.AbilityTag);
 		}
 	}
+
+	ClearData();
 
 	Super::EndPattern(bForceStop);
 }

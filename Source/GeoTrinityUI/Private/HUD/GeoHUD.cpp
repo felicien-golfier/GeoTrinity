@@ -21,6 +21,7 @@
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "HUD/GenericCombattantWidget.h"
+#include "HUD/GeoDamageNumberWidget.h"
 #include "HUD/GeoOverlayWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
@@ -370,6 +371,77 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 
 	int32 const* SlotCap = Manager->DeployableSlots.Find(DeployableClass);
 	OutMax = SlotCap ? *SlotCap : Manager->GetMaxDeployables();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor)
+{
+	if (!ASC || !IsValid(OwnerActor))
+	{
+		return;
+	}
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
+		.AddWeakLambda(this,
+					   [this, OwnerActor](FOnAttributeChangeData const& Data)
+					   {
+						   float const Delta = Data.NewValue - Data.OldValue;
+						   if (FMath::Abs(Delta) >= 0.5f && IsValid(OwnerActor))
+						   {
+							   SpawnDamageNumber(FMath::Abs(Delta), Delta > 0.f, OwnerActor->GetActorLocation());
+						   }
+					   });
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
+		.AddWeakLambda(this,
+					   [this, OwnerActor](FOnAttributeChangeData const& Data)
+					   {
+						   float const Delta = Data.NewValue - Data.OldValue;
+						   if (Delta < -0.5f && IsValid(OwnerActor))
+						   {
+							   SpawnDamageNumber(-Delta, false, OwnerActor->GetActorLocation());
+						   }
+					   });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocation)
+{
+	if (!DamageNumberWidgetClass)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(GetOwner());
+	FVector2D ScreenPos;
+	if (!PC || !PC->ProjectWorldLocationToScreen(WorldLocation, ScreenPos, true))
+	{
+		return;
+	}
+
+	UGeoDamageNumberWidget* Widget = nullptr;
+	for (UGeoDamageNumberWidget* Candidate : DamageNumberPool)
+	{
+		if (IsValid(Candidate) && Candidate->IsAvailable())
+		{
+			Widget = Candidate;
+			break;
+		}
+	}
+
+	if (!Widget)
+	{
+		Widget = CreateWidget<UGeoDamageNumberWidget>(PC, DamageNumberWidgetClass);
+		if (!ensureMsgf(Widget, TEXT("SpawnDamageNumber: CreateWidget failed on %s"), *GetName()))
+		{
+			return;
+		}
+		Widget->AddToViewport(5);
+		Widget->SetVisibility(ESlateVisibility::Collapsed);
+		DamageNumberPool.Add(Widget);
+	}
+
+	Widget->Activate(Amount, bIsHeal, ScreenPos);
 }
 
 #if !UE_BUILD_SHIPPING
