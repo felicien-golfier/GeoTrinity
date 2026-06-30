@@ -54,7 +54,7 @@ protected:
 	bool ExecuteShot();
 	virtual bool ExecuteShot_Implementation();
 
-	/** Cycles the fire montage section index to the next shot animation. */
+	/** Advances to the next fire section when the montage has Fire sections; resets to 0 when it does not. */
 	virtual int32& GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance) override;
 
 	/** Camera shake played on the local client each shot. */
