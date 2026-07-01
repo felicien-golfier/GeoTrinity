@@ -30,7 +30,7 @@ Projectile-firing ability base classes.
 
 ### Per-shot animation
 - Fire montage plays continuously
-- Section index cycles Fire1 → Fire2 → … tracked on ASC via `GetFireSectionIndex()`
+- Section index cycles Fire1 → Fire2 → … tracked on ASC via `GetFireSectionIndex()`; resets to 0 when the montage has no Fire sections (override in `UGeoAutomaticFireAbility::GetFireSectionIndex`)
 - Play rate adjusted so each section matches `FireDelay`
 
 ### Game feel fields

@@ -88,7 +88,7 @@ public:
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
-	/** Shows or hides the charge gauge on the owning PlayableCharacter. Override to use a different widget. */
+	/** Shows or hides the charge gauge on the owning PlayableCharacter. Base implementation is client-only (no-op on server). Override to use a different widget. */
 	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible);
 
 	/** Convenience overload that ends this ability instance without requiring handle/actorinfo parameters. */
@@ -99,7 +99,11 @@ public:
 	 * Only meaningful when FireMode == EFireMode::ChargeForFireDelay.
 	 */
 	float GetChargeRatio() const;
-	/** In ChargeForFireDelay mode, fires immediately on input release instead of waiting for the timer to expire. */
+	/**
+	 * In ChargeForFireDelay mode, fires immediately on input release instead of waiting for the timer to expire.
+	 * Also jumps the montage to SectionEndName on the locally controlled player to prevent the charge animation
+	 * from holding its last frame.
+	 */
 	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo ActivationInfo) override;
 	/** Returns the effective fire delay: reads GeneralChargeTime from GameDataSettings when

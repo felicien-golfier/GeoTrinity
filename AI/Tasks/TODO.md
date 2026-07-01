@@ -137,6 +137,10 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-06-29] Scope: No developer commits in the last 25h (git log --since="25 hours ago" shows only the 2026-06-28 daily TODO markdown commits). No .h or .cpp files to process. No-op. -->
 
+<!-- [2026-06-30] Scope: GeoGameplayAbility.h, GeoAutomaticFireAbility.h (+ CPPs). Commit 53d7ae8 "Start end montage is legit without Fire section" renamed InitFireSectionIndex(UAnimInstance*, int32&) → GetFireSectionIndex(UGeoAbilitySystemComponent*, UAnimInstance const*) on both the base ability and the auto-fire override. The new base implementation adds a bHasAnyFireSection check: if the montage has no Fire section at all, the index resets to 0 (Start) rather than incrementing — making pure Start/End montages valid without a Fire-cycling block. The auto-fire override similarly guards the increment behind an IsValidSectionName check. Updated GetFireSectionIndex comment in GeoAutomaticFireAbility.h to clarify the no-fire-section reset fallback. Also fixed two previously flagged stale header comments now that GeoGameplayAbility.h is in scope: (1) SetChargeGaugeVisible — added "Base implementation is client-only (no-op on server)" (flagged 2026-06-09); (2) InputReleased — expanded to mention the montage end-section jump to SectionEndName for the locally controlled player (flagged 2026-06-19). -->
+
+<!-- [2026-07-01] Scope: GeoGameplayAbility.h and GeoAutomaticFireAbility.h (only .h/.cpp changes in the last 25h are from the 2026-06-30 daily TODO commit itself — no new developer commits). Both headers already fully and correctly commented by the 2026-06-30 run. No additions or fixes needed. No-op. -->
+
 - [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
@@ -247,4 +251,8 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-06-28] Scope: No developer commits in the last 25h (git log --since="25 hours ago" shows only the 2026-06-27 daily TODO markdown commits). No .h or .cpp files to process. No CLAUDE.md updates needed. -->
 
 <!-- [2026-06-29] Scope: No developer commits in the last 25h (git log --since="25 hours ago" shows only the 2026-06-28 daily TODO markdown commits). No .h or .cpp files to process. No CLAUDE.md updates needed. -->
+
+<!-- [2026-06-30] Updated: Abilities/Base/CLAUDE.md — Animation section: expanded GetFireSectionIndex entry to note that the function now detects the absence of Fire sections and resets to 0 instead of advancing, making pure Start/End montages valid. Abilities/Damaging/CLAUDE.md — Per-shot animation: added note that UGeoAutomaticFireAbility::GetFireSectionIndex resets to 0 when no Fire sections exist. Root CLAUDE.md and other CLAUDE.md files unchanged — structure still accurate. -->
+
+<!-- [2026-07-01] Scope: same two headers (GeoGameplayAbility.h, GeoAutomaticFireAbility.h) — only changes in the last 25h are from the 2026-06-30 daily TODO commit. CLAUDE.md files (Base/CLAUDE.md and Damaging/CLAUDE.md) were already updated by that run. No additional updates needed. No-op. -->
 
