@@ -381,6 +381,12 @@ void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* 
 		return;
 	}
 
+	if (RegisteredDamageNumberASCs.Contains(ASC))
+	{
+		return;
+	}
+	RegisteredDamageNumberASCs.Add(ASC);
+
 	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
 		.AddWeakLambda(this,
 					   [this, OwnerActor](FOnAttributeChangeData const& Data)
@@ -413,8 +419,7 @@ void AGeoHUD::SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocatio
 	}
 
 	APlayerController* PC = Cast<APlayerController>(GetOwner());
-	FVector2D ScreenPos;
-	if (!PC || !PC->ProjectWorldLocationToScreen(WorldLocation, ScreenPos, true))
+	if (!PC)
 	{
 		return;
 	}
@@ -441,7 +446,7 @@ void AGeoHUD::SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocatio
 		DamageNumberPool.Add(Widget);
 	}
 
-	Widget->Activate(Amount, bIsHeal, ScreenPos);
+	Widget->Activate(Amount, bIsHeal, WorldLocation);
 }
 
 #if !UE_BUILD_SHIPPING

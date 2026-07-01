@@ -114,14 +114,14 @@ TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEff
 	TArray<FActiveGameplayEffectHandle> SpecHandles;
 	if (!ensureMsgf(
 			IsValid(SourceASC),
-			TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source ASC to apply effect"));)
+			TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source ASC to apply effect")))
 	{
 		return SpecHandles;
 	}
 
 	if (!ensureMsgf(
 			IsValid(TargetASC),
-			TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Target ASC to apply effect"));)
+			TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Target ASC to apply effect")))
 	{
 		return SpecHandles;
 	}

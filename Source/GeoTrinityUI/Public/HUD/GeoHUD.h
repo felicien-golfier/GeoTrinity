@@ -210,6 +210,9 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UGeoDamageNumberWidget>> DamageNumberPool;
 
+	UPROPERTY()
+	TSet<TObjectPtr<UAbilitySystemComponent>> RegisteredDamageNumberASCs;
+
 	// Delegate
 	UPROPERTY(BlueprintAssignable, Category = "GAS")
 	FOnAttributeModifiedSignature OnHealthChanged;
