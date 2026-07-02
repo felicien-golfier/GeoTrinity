@@ -41,23 +41,27 @@ protected:
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 
 private:
-	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData) override;
+	virtual void InitPattern(FAbilityPayload const& Payload,
+							 TInstancedStruct<FPatternData> const& PatternData) override;
 	virtual void ExecuteGameplayCue(FGameplayTag GameplayCueTag) override;
 	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* InstigatorAsc) const;
 	virtual void StartPattern() override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
 	float SpawningZoneSize = 300.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AGeoPillar> PillarClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
 	FDeployableDataParams PillarParams;
 
 	// Effects applied to hostiles in the zone on expiry (server-only).
-	UPROPERTY(EditDefaultsOnly, Category = "FatalZone", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
 	TArray<TInstancedStruct<FEffectData>> PillarSpawnEffects;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
+	FGameplayTag DirectionCue;
 
 	TSet<FVector2D> PillarSpawnLocations;
 };

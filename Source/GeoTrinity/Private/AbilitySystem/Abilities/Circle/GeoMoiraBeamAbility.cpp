@@ -211,6 +211,13 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			float const CurrentHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
 			float const ActualDrain = FMath::Min(BeamZoneDrainPerTick, CurrentHealth);
 
+			float BoostFinishedZone = 0.f;
+			if (ActualDrain >= CurrentHealth && !FinishedZones.Contains(Zone))
+			{
+				FinishedZones.Add(Zone);
+				BoostFinishedZone = FinishedZones.Num() * BoostPerFinishedZone;
+			}
+
 			if (GeoLib::IsServer(GetWorld()))
 			{
 				FDamageEffectData DrainEffectData;
@@ -222,7 +229,7 @@ void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 			}
 
 			float const DrainRatio = ActualDrain / MaxHealth;
-			BeamRatio = FMath::Min(BeamRatio + DrainRatio, MaximumZoneAbsorbed + 1.f);
+			BeamRatio = FMath::Min(BeamRatio + DrainRatio + BoostFinishedZone, MaximumZoneAbsorbed + 1.f);
 			RemainingDuration += DurationPerAbsorbedZone * DrainRatio;
 		}
 		else if (Target->CanBeDamaged())

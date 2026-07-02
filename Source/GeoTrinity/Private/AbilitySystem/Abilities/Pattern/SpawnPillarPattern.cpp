@@ -39,8 +39,9 @@ void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload, TInstanced
 	PillarSpawnLocations.Empty();
 
 	FSpawnPillarPatternData const* PillarData = PatternData.GetPtr<FSpawnPillarPatternData>();
-	if (!ensureMsgf(PillarData, TEXT("SpawnPillarPattern: PatternData is not an FSpawnPillarPatternData — launch this "
-									  "pattern from USpawnPillarAbility")))
+	if (!ensureMsgf(PillarData,
+					TEXT("SpawnPillarPattern: PatternData is not an FSpawnPillarPatternData — launch this "
+						 "pattern from USpawnPillarAbility")))
 	{
 		Super::InitPattern(Payload, PatternData);
 		return;
@@ -50,8 +51,9 @@ void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload, TInstanced
 	{
 		PillarSpawnLocations.Add(ZoneLocation);
 	}
-
 	Super::InitPattern(Payload, PatternData);
+
+	ExecuteGameplayCue(DirectionCue); // Call after super to have Storedpayload
 }
 void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 {
@@ -59,11 +61,8 @@ void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 	if (GameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
-		if (!IsValid(InstigatorASC))
-		{
-			ensureMsgf(false, TEXT("Pattern Instigator %s has no ASC !"), *StoredPayload.Instigator->GetName());
-		}
-		else
+		if (ensureMsgf(IsValid(InstigatorASC), TEXT("Pattern Instigator %s has no ASC !"),
+					   *StoredPayload.Instigator->GetName()))
 		{
 			for (FVector2D const& Location : PillarSpawnLocations)
 			{
