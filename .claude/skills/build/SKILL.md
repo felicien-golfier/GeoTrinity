@@ -26,7 +26,14 @@ Build the game following the project's build docs. There are two distinct doc so
 
 4. **Launch the build** using the exact command from the doc for the chosen target. Run long builds (especially `BuildCookRun`) in the background and report progress / final result. Packaged output must always archive to `C:\GeoTrinity\Build`.
 
-5. **Report** the outcome faithfully — success, or the actual error output if it fails.
+5. **After a successful package build**, rename the output folder to match the CI convention from `.github/workflows/build-custom.yml`:
+   - Format: `GeoTrinity_{branch}_{config}_{timestamp}` (e.g. `GeoTrinity_master_Development_20260702_153000`)
+   - Get the current branch with `git rev-parse --abbrev-ref HEAD`, replace `/` and `\` with `-`
+   - Config is `Development` unless the user specified otherwise
+   - Timestamp: `yyyyMMdd_HHmmss` at build completion time
+   - Then move the contents of the `Windows\` subfolder up one level into the renamed folder, and remove the now-empty `Windows\` subfolder — matching exactly what the CI does.
+
+6. **Report** the outcome faithfully — success with the final folder path, or the actual error output if it fails.
 
 ## Notes
 

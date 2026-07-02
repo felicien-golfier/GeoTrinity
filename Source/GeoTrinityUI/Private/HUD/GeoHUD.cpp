@@ -387,10 +387,13 @@ void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* 
 	}
 	RegisteredDamageNumberASCs.Add(ASC);
 
+	TWeakObjectPtr<AActor> const WeakOwnerActor(OwnerActor);
+
 	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
 		.AddWeakLambda(this,
-					   [this, OwnerActor](FOnAttributeChangeData const& Data)
+					   [this, WeakOwnerActor](FOnAttributeChangeData const& Data)
 					   {
+						   AActor* OwnerActor = WeakOwnerActor.Get();
 						   float const Delta = Data.NewValue - Data.OldValue;
 						   if (FMath::Abs(Delta) >= 0.5f && IsValid(OwnerActor))
 						   {
@@ -400,8 +403,9 @@ void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* 
 
 	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
 		.AddWeakLambda(this,
-					   [this, OwnerActor](FOnAttributeChangeData const& Data)
+					   [this, WeakOwnerActor](FOnAttributeChangeData const& Data)
 					   {
+						   AActor* OwnerActor = WeakOwnerActor.Get();
 						   float const Delta = Data.NewValue - Data.OldValue;
 						   if (Delta < -0.5f && IsValid(OwnerActor))
 						   {

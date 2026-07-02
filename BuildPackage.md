@@ -17,7 +17,9 @@ Always use the **source** engine's BatchFiles (`C:\UnrealEngine\Engine\...`), ne
 "C:\UnrealEngine\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="C:\GeoTrinity\GeoTrinity.uproject" -noP4 -platform=Win64 -clientconfig=Development -cook -build -stage -pak -archive -archivedirectory="C:\GeoTrinity\Build"
 ```
 
-- Output lands in `C:\GeoTrinity\Build\Windows` (includes `GeoTrinity.exe`).
-- Run the listen server: `C:\GeoTrinity\Build\Windows\GeoTrinity.exe` → MainMenu → Play Local → Host.
+- Output initially lands in `C:\GeoTrinity\Build\Windows`. After a successful build, rename and reorganise to match the CI convention (see `.github/workflows/build-custom.yml`):
+  - Rename `C:\GeoTrinity\Build` → `C:\GeoTrinity\Build\GeoTrinity_{branch}_{config}_{timestamp}` (branch from `git rev-parse --abbrev-ref HEAD`, `/`→`-`; timestamp `yyyyMMdd_HHmmss`; config = `Development` unless specified)
+  - Move contents of `Windows\` up into the renamed folder, then remove the empty `Windows\` subfolder.
+- Run the listen server: `GeoTrinity.exe` in the renamed folder → MainMenu → Play Local → Host.
 - Packaged client logs to `%LOCALAPPDATA%\GeoTrinity\Saved\Logs`.
 - This is a long cook (several minutes); run it in the background and report the result.

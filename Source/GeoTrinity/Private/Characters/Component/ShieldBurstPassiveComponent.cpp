@@ -82,6 +82,12 @@ void UShieldBurstPassiveComponent::OnRep_GaugeRatio()
 {
 	OnGaugeRatioChanged(GaugeRatio);
 
+	// Replication can deliver GaugeRatio before BeginPlay has created the material instance on this client.
+	if (!IsValid(CharacterMaterialInstance))
+	{
+		return;
+	}
+
 	// Do not change the value when the Discharge is not ended.
 	float DeltaTime = GetWorld()->GetTimeSeconds() - StartChargeTime;
 	if (DeltaTime > ChargeTime + DischargeTime)
@@ -98,6 +104,10 @@ void UShieldBurstPassiveComponent::OnRep_GaugeRatio()
 
 void UShieldBurstPassiveComponent::Charge()
 {
+	if (!IsValid(CharacterMaterialInstance))
+	{
+		return;
+	}
 
 	float DeltaTime = GetWorld()->GetTimeSeconds() - StartChargeTime;
 
