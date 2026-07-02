@@ -37,14 +37,17 @@ class GEOTRINITY_API UDevastatingWavePattern : public UTickablePattern
 public:
 	/** Spawns the masked AOE Niagara component deactivated — the pattern instance is reused across activations. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
+	/** Clears hit-actor tracking, wave pillar data, and resets all MPC pillar mask slots to the unused sentinel.
+	 * Called at the start of both InitPattern and StartPattern so stale data from a previous activation never bleeds in. */
 	void ClearData();
 
 protected:
-	/** Teleports the boss actor to the stored origin position before the wave starts expanding. */
+	/** Clears previous run data, teleports the instigator to the wave origin, then activates the telegraph VFX for
+	 * the wind-up phase (skipped on the "too late" path when TravelTime >= StartDelay). */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
 	void AddAllPillarsToVfxMask();
-	/** Resets the mask MPC pillar slots, then positions, configures and activates the AOE VFX at the wave origin. */
+	/** Resets wave tracking data and MPC pillar slots via ClearData(), then activates the real expanding-wave AOE. */
 	virtual void StartPattern() override;
 	void ActivateAoeVfxTelegraph() const;
 	/** Sets the cue source location to the boss's 2D wave origin. */
