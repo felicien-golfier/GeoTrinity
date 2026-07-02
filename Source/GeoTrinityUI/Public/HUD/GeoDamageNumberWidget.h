@@ -19,6 +19,15 @@ class GEOTRINITYUI_API UGeoDamageNumberWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Takes this widget from the pool and starts its animation at InWorldPos (with random X/Y jitter up to
+	 * LocationStartDrift). Picks a random upward-biased drift direction, then makes the widget visible so NativeTick
+	 * drives the fade-and-drift. Call only when IsAvailable() is true.
+	 *
+	 * @param Amount     Absolute health delta to display.
+	 * @param bIsHeal    True for healing events (green); false for damage (red/white). Forwarded to SetData in Blueprint.
+	 * @param InWorldPos World-space anchor before jitter is applied.
+	 */
 	void Activate(float Amount, bool bIsHeal, FVector InWorldPos);
 	bool IsAvailable() const { return bAvailable; }
 
