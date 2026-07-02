@@ -95,7 +95,7 @@ Source/GeoTrinityUI/           # Runtime UI module (Type=Runtime) — all HUD/wi
     └── HUD/                  # Component/ (GeoCombattantWidgetComp), Menu/ (GeoMainMenuWidget, GeoBrowseServersWidget,
                               # GeoLocalConnectWidget, GeoCreateServerWidget, GeoServerRowWidget, GeoMenuButton), GeoHUD,
                               # GeoOverlayWidget, GeoAbilityBarWidget, GeoAbilitySlotWidget, GeoUserWidget,
-                              # GenericCombattantWidget, GeoDeployChargeGaugeWidget, GeoChargeBeamGaugeWidget, HudFunctionLibrary
+                              # GenericCombattantWidget, GeoDamageNumberWidget, GeoDeployChargeGaugeWidget, GeoChargeBeamGaugeWidget, HudFunctionLibrary
 Source/GeoTrinityEditor/       # Editor-only module (Type=Editor) — UEditorUtilityObject automation utils kept out of packaged builds
 └── Public/ & Private/
     └── Tool/                  # GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil
