@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/AudioComponent.h"
@@ -214,6 +215,35 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 	EndProjectileLife();
 }
 
+float AGeoProjectile::GetPitch_Implementation(EProjectileSoundType SoundType) const
+{
+	FProjectilePitchEntry const* Entry = PitchMap.Find(SoundType);
+	if (!Entry)
+	{
+		return 1.f;
+	}
+
+	float Pitch = 1.f;
+
+	if (IsValid(Entry->Curve) && Entry->Attribute.IsValid())
+	{
+		UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetInstigator());
+		if (IsValid(ASC))
+		{
+			bool bFound = false;
+			float const AttributeValue = ASC->GetGameplayAttributeValue(Entry->Attribute, bFound);
+			if (bFound)
+			{
+				Pitch = Entry->Curve->GetFloatValue(AttributeValue);
+			}
+		}
+	}
+
+	Pitch *= FMath::RandRange(Entry->RandomPitchMultiplierRange.X, Entry->RandomPitchMultiplierRange.Y);
+
+	return Pitch;
+}
+
 void AGeoProjectile::OnProjectileHit_Implementation(AActor* HitActor)
 {
 	if (UGeoGameFeelComponent* GameFeel = HitActor->FindComponentByClass<UGeoGameFeelComponent>())
@@ -246,7 +276,8 @@ void AGeoProjectile::PlayImpactFx() const
 	FVector const actorLocation = GetActorLocation();
 	if (IsValid(ImpactSound))
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, actorLocation, FRotator::ZeroRotator, 0.2f);
+		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, actorLocation, FRotator::ZeroRotator, 0.2f,
+											  GetPitch(EProjectileSoundType::Impact));
 	}
 	if (ImpactEffect)
 	{
@@ -346,8 +377,10 @@ void AGeoProjectile::InitProjectileLife()
 	if (!GeoLib::IsDedicatedServer(this))
 	{
 		LoopingSoundComponent->SetSound(LoopingSound);
+		LoopingSoundComponent->SetPitchMultiplier(GetPitch(EProjectileSoundType::Looping));
 		LoopingSoundComponent->Play();
-		UGameplayStatics::PlaySoundAtLocation(this, StartSound, GetActorLocation(), FRotator::ZeroRotator, 0.2f);
+		UGameplayStatics::PlaySoundAtLocation(this, StartSound, GetActorLocation(), FRotator::ZeroRotator, 0.2f,
+											  GetPitch(EProjectileSoundType::Start));
 	}
 
 	SetLifeSpan(LifeSpanInSec);

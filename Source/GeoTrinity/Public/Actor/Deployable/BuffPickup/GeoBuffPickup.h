@@ -52,7 +52,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/** Casts InputData to FBuffPickupData and initializes spawn target, mesh index, and PowerScale before BeginPlay. */
 	virtual void InitInteractable(FInteractableActorData* InputData) override;
-	/** Binds the overlap delegate, sets visual scale from PowerScale, and starts launch movement toward TargetLocation. */
+	/** Binds the overlap delegate, sets visual scale from PowerScale, and starts launch movement toward TargetLocation.
+	 */
 	virtual void BeginPlay() override;
 	/** Rotates the mesh and advances the LaunchCurve lerp toward TargetLocation each tick. */
 	virtual void Tick(float DeltaTime) override;
@@ -100,6 +101,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	float MaxScale = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
+	float TimeBeforePickup = .4f;
+	float StartTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))

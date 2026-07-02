@@ -109,7 +109,7 @@ void UDevastatingWavePattern::ActivateAoeVfxTelegraph() const
 	AOEVfxComponent->ReinitializeSystem();
 	AOEVfxComponent->SetWorldLocation(FVector(StoredPayload.Origin, 0.f));
 	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_Radius"), MaxRadius);
-	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_GrowDuration"), MaxRadius / (StartDelay - TravelTime));
+	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_GrowDuration"), StartDelay - TravelTime);
 	AOEVfxComponent->SetVariableFloat(TEXT("User.FadeOut_Duration"), TelegraphFadeOutDuration);
 	AOEVfxComponent->SetVariableLinearColor(TEXT("User.AOE_Color"), TelegraphColor);
 	AOEVfxComponent->Activate(true);

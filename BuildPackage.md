@@ -5,12 +5,7 @@ Everything needed to **package** GeoTrinity (cook + stage + pak + archive into a
 > This is *only* about packaging the game. For editor/dev builds, MCP, and the dev environment, see [`AI/Commands.md`](AI/Commands.md).
 
 ## Big RULE
-**NEVER close, kill, or restart the user's Unreal editor — not even to package.** Packaging locks the DLL link and requires the editor closed. If an editor is running, **ask the user to close it and wait**; never do it yourself.
-
-Check for a running editor first:
-```powershell
-Get-Process UnrealEditor* -ErrorAction SilentlyContinue | Select-Object Id, ProcessName
-```
+**NEVER close, kill, or restart the user's Unreal editor — not even to package.** Packaging can run with the editor open.
 
 ## Packaging (cook + stage + pak + archive)
 **Always archive packaged builds into `C:\GeoTrinity\Build` — never `Packaged` or any other folder.**

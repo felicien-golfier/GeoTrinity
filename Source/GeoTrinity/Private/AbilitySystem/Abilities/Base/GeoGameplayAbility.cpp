@@ -280,7 +280,7 @@ void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& Abil
 {
 	// Client: send a fresh snapshot to the server proxy so it fires with accurate data.
 	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
-	if (ActorInfo->IsLocallyControlledPlayer())
+	if (ActorInfo->IsLocallyControlledPlayer() && !GeoLib::IsServer(this))
 	{
 		FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
 		FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();

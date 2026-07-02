@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
+#include "AttributeSet.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "StructUtils/InstancedStruct.h"
@@ -10,6 +11,7 @@
 
 #include "GeoProjectile.generated.h"
 
+class UCurveFloat;
 class UGeoAbilitySystemComponent;
 class UProjectileMovementComponent;
 class UNiagaraSystem;
@@ -19,6 +21,30 @@ class USoundBase;
 class UAudioComponent;
 class UPrimitiveComponent;
 struct FHitResult;
+
+UENUM(BlueprintType)
+enum class EProjectileSoundType : uint8
+{
+	Start,
+	Looping,
+	Impact,
+};
+
+USTRUCT(BlueprintType)
+struct FProjectilePitchEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameplayAttribute Attribute;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UCurveFloat> Curve;
+
+	/** Random pitch multiplier range applied on top of the curve result. X = min, Y = max. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
+	FVector2D RandomPitchMultiplierRange = FVector2D(1.f, 1.f);
+};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
 UCLASS()
@@ -124,6 +150,12 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|GameFeel")
 	void OnProjectileHit(AActor* HitActor);
 
+	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|Audio")
+	float GetPitch(EProjectileSoundType SoundType) const;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoProjectile|Audio")
+	TMap<EProjectileSoundType, FProjectilePitchEntry> PitchMap;
+
 	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
 	 * by default. */
 	virtual void EndProjectileLife();
@@ -168,12 +200,12 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
 	TObjectPtr<UNiagaraSystem> ImpactEffect;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Audio", meta = (AllowPrivateAccess = true))
 	TObjectPtr<USoundBase> ImpactSound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Audio", meta = (AllowPrivateAccess = true))
 	TObjectPtr<USoundBase> StartSound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Audio", meta = (AllowPrivateAccess = true))
 	TObjectPtr<USoundBase> LoopingSound;
 };
