@@ -22,6 +22,7 @@
 
 **Team utilities — prefer these over `SphereOverlapActors` / `OverlapMultiByChannel`:**
 - `GetInteractableActors(World, SourceTeam, AttitudeBitmask)` — all agents matching any bit in `ETeamAttitudeBitflag` bitmask
+- `GetInteractableActors<T>(World, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location, MaxDistance)` — typed variant; returns only agents that `IsA<T>`, cast to `T*`. Wraps the ExtraFilter overload; avoids casting at call sites
 - `GetInteractableActors(World, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location, MaxDistance)` — with optional distance + damageable filter
 - `GetInteractableActors(World, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location, MaxDistance, ExtraFilter)` — same but with an additional per-actor predicate (`TFunctionRef<bool(AActor*)>`)
 - `GetInteractableActors(World, bMustBeDamageable, Location, MaxDistance)` — no team filter, distance only

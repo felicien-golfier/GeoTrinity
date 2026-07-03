@@ -219,6 +219,10 @@ public:
 	 * IGenericTeamAgentInterface. */
 	static FGenericTeamId GetTeamId(AActor const* Actor);
 
+	/**
+	 * Type-filtered variant of GetInteractableActors: returns only agents that are T (or a subclass of T),
+	 * cast to T*. Wraps the ExtraFilter overload; avoids explicit casting at call sites.
+	 */
 	template <typename T>
 	static TArray<T*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 											int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,

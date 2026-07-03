@@ -102,6 +102,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	float MaxScale = 1.5f;
 
+	/** Minimum seconds after spawn before the overlap pickup logic activates. Prevents the spawning player from
+	 * immediately collecting their own pickup (especially on a listen-server host where InitInteractable and
+	 * the overlap fire on the same machine with no network delay). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	float TimeBeforePickup = .4f;
 	float StartTime;

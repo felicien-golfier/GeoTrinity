@@ -26,7 +26,8 @@ Poolable, effect-applying projectile.
 - `DistanceSpan = 1000 cm` — override with `OverrideDistanceSpan(float)`
 - `LifeSpanInSec = 30` — safeguard max lifespan
 - `bCanOverlapInstigator = false`, `LifeTimeThresholdBeforeOverlapSelf = 0.2` — prevent self-hit on spawn
-- `ImpactEffect` (Niagara), `ImpactSound`, `StartSound`, `LoopingSound` — cosmetic only; all three skip dedicated servers (`!GeoLib::IsDedicatedServer`). `StartSound` plays once at spawn; `LoopingSound` loops for the projectile's full lifetime.
+- `ImpactEffect` (Niagara), `ImpactSound`, `StartSound`, `LoopingSound` — cosmetic only; all skip dedicated servers (`!GeoLib::IsDedicatedServer`). `StartSound` plays once at spawn; `LoopingSound` loops for the projectile's full lifetime.
+- **Attribute-driven pitch**: `PitchMap` (`TMap<EProjectileSoundType, FProjectilePitchEntry>`) maps each of `Start`, `Looping`, and `Impact` to a `FProjectilePitchEntry` (gameplay attribute + `UCurveFloat` + `RandomPitchMultiplierRange`). `GetPitch(SoundType)` (BlueprintNativeEvent) reads the instigator's ASC for the mapped attribute, samples the curve, then multiplies by a random value in the range. All three sounds pass `GetPitch` as their pitch multiplier. Override `GetPitch` in Blueprint for custom logic; returns 1.0 if PitchMap has no entry for the type.
 
 ## `GeoPooledProjectile.h` — pooled variant
 Extends `GeoProjectile` + implements `IGeoPoolableInterface`:
