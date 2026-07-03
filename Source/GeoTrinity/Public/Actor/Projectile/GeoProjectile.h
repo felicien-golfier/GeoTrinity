@@ -30,6 +30,11 @@ enum class EProjectileSoundType : uint8
 	Impact,
 };
 
+/**
+ * Maps an audio event type to an attribute-driven pitch modifier with optional random variance.
+ * The base pitch is read from the instigator's ASC attribute value sampled against Curve;
+ * the result is then multiplied by a random value in RandomPitchMultiplierRange.
+ */
 USTRUCT(BlueprintType)
 struct FProjectilePitchEntry
 {
@@ -150,9 +155,16 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|GameFeel")
 	void OnProjectileHit(AActor* HitActor);
 
+	/**
+	 * Returns the pitch multiplier for the sound identified by SoundType.
+	 * Default: looks up PitchMap, reads the mapped gameplay attribute from the instigator's ASC,
+	 * evaluates the curve at that value, then multiplies by a random value in RandomPitchMultiplierRange.
+	 * Returns 1.0 if no entry exists or the attribute cannot be read. Override in Blueprint for custom logic.
+	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|Audio")
 	float GetPitch(EProjectileSoundType SoundType) const;
 
+	/** Per-sound-type attribute → pitch curve + random range mapping. Evaluated by GetPitch at sound play time. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoProjectile|Audio")
 	TMap<EProjectileSoundType, FProjectilePitchEntry> PitchMap;
 

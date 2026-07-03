@@ -46,9 +46,13 @@ protected:
 	 * the wind-up phase (skipped on the "too late" path when TravelTime >= StartDelay). */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
+	/** Pre-populates the MPC pillar-mask slots with all pillars currently visible from the wave origin so safe zones
+	 * appear on the static telegraph before the wave starts expanding. */
 	void AddAllPillarsToVfxMask();
 	/** Resets wave tracking data and MPC pillar slots via ClearData(), then activates the real expanding-wave AOE. */
 	virtual void StartPattern() override;
+	/** Activates the AOE VFX component in telegraph mode: full MaxRadius extent at TelegraphColor, grow time =
+	 * StartDelay - TravelTime (remaining wind-up). Shows the full danger zone before the wave begins. */
 	void ActivateAoeVfxTelegraph() const;
 	/** Sets the cue source location to the boss's 2D wave origin. */
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
@@ -92,10 +96,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
 	float FadeOutDuration = 0.5f;
 
+	/** Duration in seconds for the telegraph VFX to fade once the wave starts expanding (default 0.1 s — near-instant
+	 * handoff so the static telegraph and the expanding wave don't visually overlap). */
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
 	float TelegraphFadeOutDuration = 0.1f;
 
-	/** Color of the full-range blinking telegraph shown during the wind-up, before the wave starts expanding. */
+	/** Color of the full-range telegraph shown during the wind-up, before the wave starts expanding. */
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
 	FLinearColor TelegraphColor = FLinearColor::Red;
 

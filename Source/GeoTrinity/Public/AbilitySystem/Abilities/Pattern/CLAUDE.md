@@ -60,7 +60,7 @@ Runs on all clients via `PatternStartMulticast`. Launched by `UGeoSpawnPillarAbi
 
 Non-projectile ticking pattern. On `InitPattern`, teleports the instigator to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; any hostile actor whose distance falls within `CurrentRadius` is hit once. Pillars are recalled; other hostiles receive the ability's effect data (via `EffectDataArray` set by `PatternAbility`). Ends when `CurrentRadius >= MaxRadius`.
 
-- `ClearData()` — public; empties `HitActors` and `PillarsWaveData`, resets all 8 `PillarPosWS_XX` MPC slots to the unused sentinel `(-10000, -10000, -10000, 0)`. Called at the start of both `InitPattern` and `StartPattern` so stale data from a previous activation never bleeds in.
+- `ClearData()` — public; empties `HitActors` and `PillarsWaveData`, resets all 8 `PillarPosWS_XX` MPC slots to the unused sentinel `(-10000, -10000, -10000, 0)`. Called at the start of both `InitPattern` and `StartPattern`, and again at the end of `EndPattern`, so stale data from a previous activation never bleeds in.
 - `ExpansionSpeed` — cm/s expansion rate (default 800)
 - `MaxRadius` — stops the wave at this distance (default 3000)
 - Effect data: sourced from ability's `GetEffectDataArray()` — configure on `GeoDevastatingWaveAbility`, not here
@@ -68,7 +68,7 @@ Non-projectile ticking pattern. On `InitPattern`, teleports the instigator to `S
 
 **Masked AOE VFX** (every rendering machine, gated `!IsDedicatedServer`):
 - `OnCreate` spawns the `AOEVfxSystem` (NS_PillarsAOE) component once, deactivated with `bAutoDestroy = false` — the pattern instance is reused across activations, and so is the component.
-- **Telegraph (wind-up) phase**: after calling `ClearData()` and teleporting the instigator, `InitPattern` calls `ActivateAoeVfxTelegraph()` once — a single smooth fill showing the full-range danger zone (`MaxRadius`) in `TelegraphColor` (editable, default red) for the entire wind-up. Skipped when `Super::InitPattern` took the "too late" path and ran `StartPattern` synchronously (no wind-up).
+- **Telegraph (wind-up) phase**: after calling `ClearData()` and teleporting the instigator, `InitPattern` calls `AddAllPillarsToVfxMask()` (pre-populates the 8 MPC pillar-mask slots with all currently-alive pillars so safe zones are already visible on the static telegraph), then calls `ActivateAoeVfxTelegraph()` — a single smooth fill showing the full-range danger zone (`MaxRadius`) in `TelegraphColor` (editable, default red) that grows over the remaining wind-up (`StartDelay − TravelTime`). Skipped when `Super::InitPattern` took the "too late" path and ran `StartPattern` synchronously (no wind-up).
 - `StartPattern` calls `ClearData()` (which resets the 8 MPC pillar slots to the sentinel), then calls `ActivateAOEVfx()` so the static telegraph becomes the expanding wave.
 - `ActivateAOEVfx` moves the component to the wave origin, sets `AOE_Radius = MaxRadius`, `AOE_GrowDuration = MaxRadius / ExpansionSpeed`, plus editable `FadeOutDuration` / `AOEColor`, and calls `Activate(true)`.
 - Pillar detection runs on **all machines** in `TickPattern` (not just the server): deterministic since pillars are static replicated actors and the radius derives from server time. Each pillar the wave front reaches is appended to `PillarsWaveData` and its world position written to the next MPC slot (`AddPillarToVfxMask`), cutting a safe-zone shadow out of the AOE material. Damage application remains server-only.
