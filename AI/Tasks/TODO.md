@@ -5,7 +5,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 ## Tasks
 
-- [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
+- [x] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below.
 
   **Scope**
   - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase. (Do NOT use `git diff --name-only HEAD` — that only reports uncommitted working-tree changes, which are empty in the cloud checkout, so the day's committed work would be missed.)
@@ -147,7 +147,9 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 <!-- [2026-07-04] Scope: git log --since="25 hours ago" shows only the 2026-07-03 daily TODO commits (merge + JavaDoc/CLAUDE.md sync) — no new developer .h/.cpp commits in the last 25 hours. Note: git diff --name-only @{25.hours.ago} HEAD returns a 5-day range in this environment because the reflog only has two entries (initial clone on 2026-06-29 and a fetch on 2026-07-03); the @{25h} anchor falls through to the 2026-06-29 entry. All .h files appearing in that wide diff were already processed by their respective daily TODO runs. No-op. -->
 
-- [ ] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
+<!-- [2026-07-05] Scope: git log --since="25 hours ago" shows only the 2026-07-04 daily TODO commits (merge + no-op report) — no new developer .h/.cpp commits in the last 25 hours. The wide diff from @{25.hours.ago} again resolves to the 2026-06-30 reflog anchor; all .h files in that range were already processed by the 2026-07-02 and 2026-07-03 runs. No-op. -->
+
+- [x] [recur:daily] Read every `.h` and `.cpp` file changed in the last 25h and update the corresponding `CLAUDE.md` files to stay in sync with the code. End with the CLAUDE.md at the root, ensure Structure is still fine and update what's needed.
 
   **Scope**
   - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open `.h` and `.cpp` files from that list. (Do NOT use `git diff --name-only HEAD` — it only reports uncommitted working-tree changes, empty in the cloud checkout.)
@@ -267,5 +269,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 <!-- [2026-07-03] Updated: Abilities/Pattern/CLAUDE.md — DevastatingWavePattern section: expanded telegraph bullet to include AddAllPillarsToVfxMask() call (pre-populates pillar safe-zone slots before ActivateAoeVfxTelegraph fires) and updated grow-time description (StartDelay − TravelTime); updated ClearData() bullet (now also called at end of EndPattern). Abilities/Damaging/CLAUDE.md — AutoFire cost commit: updated description to reflect that SendFireDataToServer now skips the RPC when IsServer() is true (listen-server host shots never reach OnFireTargetDataReceived locally) and OnFireTargetDataReceived now always commits (old !IsLocallyControlledPlayer guard removed). Actor/Projectile/CLAUDE.md — added Attribute-driven pitch bullet under key fields (PitchMap, FProjectilePitchEntry, GetPitch BlueprintNativeEvent; all three sounds use GetPitch as pitch multiplier). Actor/Deployable/BuffPickup/CLAUDE.md — updated OnOverlap description: bMovingToTarget guard replaced with TimeBeforePickup time-based guard; StartTime recorded in InitInteractable for listen-server consistency. AbilitySystem/Lib/CLAUDE.md — added typed GetInteractableActors<T> variant entry. Root CLAUDE.md structure unchanged. -->
 
 <!-- [2026-07-04] Scope: No developer commits in the last 25 hours (git log --since="25 hours ago" shows only the 2026-07-03 daily TODO commits). No .h or .cpp files to process. No CLAUDE.md updates needed. -->
+
+<!-- [2026-07-05] Scope: No developer commits in the last 25 hours (git log --since="25 hours ago" shows only the 2026-07-04 daily TODO commits). No .h or .cpp files to process. No CLAUDE.md updates needed. -->
 
 
