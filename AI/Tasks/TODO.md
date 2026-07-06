@@ -44,7 +44,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
   - Class comments must state: what problem the class solves, and why it was created.
 
 
-- []  UGeoCombatStatsSubsystem needs to add a new field that calculate DPS and HOT during the entire fight (since MatchState Start until it changes). Free all FCombatEventRecord in the Tarray DamageDealt anf HealDealt in FActorCombatStats at the end of the match state and stop ComputePlayerStats when not InProgress. If any actor does damages or heal it should ComputePlayerStats. Don't forget to reset the values at start and end in progress match state. Let's say that you have a "Incombat" mode where you compute the stats, and when not in combat, just display the last values without changing them.
+- [x]  UGeoCombatStatsSubsystem needs to add a new field that calculate DPS and HOT during the entire fight (since MatchState Start until it changes). Free all FCombatEventRecord in the Tarray DamageDealt anf HealDealt in FActorCombatStats at the end of the match state and stop ComputePlayerStats when not InProgress. If any actor does damages or heal it should ComputePlayerStats. Don't forget to reset the values at start and end in progress match state. Let's say that you have a "Incombat" mode where you compute the stats, and when not in combat, just display the last values without changing them.
 
 
 - [x] the void AGeoGameState::Loot() function needs to launch buff pickups all arround where the boss died in loop. I should reuse the info from the CDO Reload and just launch a random buff every .2 sec until gamestate change state.

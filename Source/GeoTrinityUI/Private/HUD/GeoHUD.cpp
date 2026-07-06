@@ -540,8 +540,8 @@ void AGeoHUD::UpdateCombatStatsPanel()
 	FSlateColor const HeaderColor = FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
 	TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox);
 	HeaderRow->AddSlot().AutoWidth()[MakeCell(NameColumnWidth, FText::FromString(TEXT("Player")), HeaderColor)];
-	for (TCHAR const* Label :
-		 {TEXT("DPS"), TEXT("Best"), TEXT("Tot"), TEXT("HPS"), TEXT("Best"), TEXT("Tot"), TEXT("Rcv")})
+	for (TCHAR const* Label : {TEXT("DPS"), TEXT("Best"), TEXT("Avg"), TEXT("Tot"), TEXT("HPS"), TEXT("Best"),
+							   TEXT("Avg"), TEXT("Tot"), TEXT("Rcv")})
 	{
 		HeaderRow->AddSlot().AutoWidth()[MakeCell(StatColumnWidth, FText::FromString(Label), HeaderColor)];
 	}
@@ -579,8 +579,9 @@ void AGeoHUD::UpdateCombatStatsPanel()
 
 		using FStatGetter = float (AGeoPlayerState::*)() const;
 		for (FStatGetter const Getter :
-			 {&AGeoPlayerState::GetDebugDPS, &AGeoPlayerState::GetBestDPS, &AGeoPlayerState::GetTotalDamageDealt,
-			  &AGeoPlayerState::GetDebugHPS, &AGeoPlayerState::GetBestHPS, &AGeoPlayerState::GetTotalHealingDealt,
+			 {&AGeoPlayerState::GetDebugDPS, &AGeoPlayerState::GetBestDPS, &AGeoPlayerState::GetFightDPS,
+			  &AGeoPlayerState::GetTotalDamageDealt, &AGeoPlayerState::GetDebugHPS, &AGeoPlayerState::GetBestHPS,
+			  &AGeoPlayerState::GetFightHPS, &AGeoPlayerState::GetTotalHealingDealt,
 			  &AGeoPlayerState::GetTotalDamageReceived})
 		{
 			TAttribute<FText> StatText = TAttribute<FText>::CreateLambda(
