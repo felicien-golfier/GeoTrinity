@@ -44,8 +44,6 @@ class GEOTRINITY_API UGeoGameplayAbility : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
-	/** Auto-activates this ability immediately when the ASC is assigned if it carries the Ability.Type.Passive tag. */
-	virtual void OnAvatarSet(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 	/**
 	 * Commits cost and cooldown, populates StoredPayload from TriggerEventData (or avatar state for passives),
 	 * binds the server-side OnFireTargetDataReceived delegate, and schedules the fire trigger.
@@ -90,7 +88,7 @@ public:
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
-	/** Shows or hides the charge gauge on the owning PlayableCharacter. Override to use a different widget. */
+	/** Shows or hides the charge gauge on the owning PlayableCharacter. Base implementation is client-only (no-op on server). Override to use a different widget. */
 	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible);
 
 	/** Convenience overload that ends this ability instance without requiring handle/actorinfo parameters. */
@@ -101,7 +99,11 @@ public:
 	 * Only meaningful when FireMode == EFireMode::ChargeForFireDelay.
 	 */
 	float GetChargeRatio() const;
-	/** In ChargeForFireDelay mode, fires immediately on input release instead of waiting for the timer to expire. */
+	/**
+	 * In ChargeForFireDelay mode, fires immediately on input release instead of waiting for the timer to expire.
+	 * Also jumps the montage to SectionEndName on the locally controlled player to prevent the charge animation
+	 * from holding its last frame.
+	 */
 	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo ActivationInfo) override;
 	/** Returns the effective fire delay: reads GeneralChargeTime from GameDataSettings when
@@ -143,11 +145,12 @@ protected:
 	 * Duration is FireDelay for ShootAfterFireDelay mode, or unbounded for charge mode (fires on input release).
 	 */
 	void ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo, UAnimInstance* AnimInstance);
+
 	/**
 	 * Selects or advances the animation montage's fire section index.
 	 * Override in subclasses that cycle through multiple fire animations.
 	 */
-	virtual void InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex);
+	virtual int32& GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance);
 	/** Plays AnimMontage and jumps to the correct section based on the current fire section index. */
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */

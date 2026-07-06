@@ -21,6 +21,7 @@
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "HUD/GenericCombattantWidget.h"
+#include "HUD/GeoDamageNumberWidget.h"
 #include "HUD/GeoOverlayWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
@@ -372,6 +373,86 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 	OutMax = SlotCap ? *SlotCap : Manager->GetMaxDeployables();
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor)
+{
+	if (!ASC || !IsValid(OwnerActor))
+	{
+		return;
+	}
+
+	if (RegisteredDamageNumberASCs.Contains(ASC))
+	{
+		return;
+	}
+	RegisteredDamageNumberASCs.Add(ASC);
+
+	TWeakObjectPtr<AActor> const WeakOwnerActor(OwnerActor);
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
+		.AddWeakLambda(this,
+					   [this, WeakOwnerActor](FOnAttributeChangeData const& Data)
+					   {
+						   AActor* OwnerActor = WeakOwnerActor.Get();
+						   float const Delta = Data.NewValue - Data.OldValue;
+						   if (FMath::Abs(Delta) >= 0.5f && IsValid(OwnerActor))
+						   {
+							   SpawnDamageNumber(FMath::Abs(Delta), Delta > 0.f, OwnerActor->GetActorLocation());
+						   }
+					   });
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
+		.AddWeakLambda(this,
+					   [this, WeakOwnerActor](FOnAttributeChangeData const& Data)
+					   {
+						   AActor* OwnerActor = WeakOwnerActor.Get();
+						   float const Delta = Data.NewValue - Data.OldValue;
+						   if (Delta < -0.5f && IsValid(OwnerActor))
+						   {
+							   SpawnDamageNumber(-Delta, false, OwnerActor->GetActorLocation());
+						   }
+					   });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocation)
+{
+	if (!DamageNumberWidgetClass)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(GetOwner());
+	if (!PC)
+	{
+		return;
+	}
+
+	UGeoDamageNumberWidget* Widget = nullptr;
+	for (UGeoDamageNumberWidget* Candidate : DamageNumberPool)
+	{
+		if (IsValid(Candidate) && Candidate->IsAvailable())
+		{
+			Widget = Candidate;
+			break;
+		}
+	}
+
+	if (!Widget)
+	{
+		Widget = CreateWidget<UGeoDamageNumberWidget>(PC, DamageNumberWidgetClass);
+		if (!ensureMsgf(Widget, TEXT("SpawnDamageNumber: CreateWidget failed on %s"), *GetName()))
+		{
+			return;
+		}
+		Widget->AddToViewport(5);
+		Widget->SetVisibility(ESlateVisibility::Collapsed);
+		DamageNumberPool.Add(Widget);
+	}
+
+	Widget->Activate(Amount, bIsHeal, WorldLocation);
+}
+
 #if !UE_BUILD_SHIPPING
 namespace
 {
@@ -459,8 +540,8 @@ void AGeoHUD::UpdateCombatStatsPanel()
 	FSlateColor const HeaderColor = FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
 	TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox);
 	HeaderRow->AddSlot().AutoWidth()[MakeCell(NameColumnWidth, FText::FromString(TEXT("Player")), HeaderColor)];
-	for (TCHAR const* Label :
-		 {TEXT("DPS"), TEXT("Best"), TEXT("Tot"), TEXT("HPS"), TEXT("Best"), TEXT("Tot"), TEXT("Rcv")})
+	for (TCHAR const* Label : {TEXT("DPS"), TEXT("Best"), TEXT("Avg"), TEXT("Tot"), TEXT("HPS"), TEXT("Best"),
+							   TEXT("Avg"), TEXT("Tot"), TEXT("Rcv")})
 	{
 		HeaderRow->AddSlot().AutoWidth()[MakeCell(StatColumnWidth, FText::FromString(Label), HeaderColor)];
 	}
@@ -498,8 +579,9 @@ void AGeoHUD::UpdateCombatStatsPanel()
 
 		using FStatGetter = float (AGeoPlayerState::*)() const;
 		for (FStatGetter const Getter :
-			 {&AGeoPlayerState::GetDebugDPS, &AGeoPlayerState::GetBestDPS, &AGeoPlayerState::GetTotalDamageDealt,
-			  &AGeoPlayerState::GetDebugHPS, &AGeoPlayerState::GetBestHPS, &AGeoPlayerState::GetTotalHealingDealt,
+			 {&AGeoPlayerState::GetDebugDPS, &AGeoPlayerState::GetBestDPS, &AGeoPlayerState::GetFightDPS,
+			  &AGeoPlayerState::GetTotalDamageDealt, &AGeoPlayerState::GetDebugHPS, &AGeoPlayerState::GetBestHPS,
+			  &AGeoPlayerState::GetFightHPS, &AGeoPlayerState::GetTotalHealingDealt,
 			  &AGeoPlayerState::GetTotalDamageReceived})
 		{
 			TAttribute<FText> StatText = TAttribute<FText>::CreateLambda(

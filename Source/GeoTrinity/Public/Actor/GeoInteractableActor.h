@@ -49,7 +49,8 @@ class GEOTRINITY_API AGeoInteractableActor
 	GENERATED_BODY()
 
 public:
-	AGeoInteractableActor();
+	/** Sets bReplicates=true, disables Tick, and creates the AbilitySystemComponent subobject. */
+	AGeoInteractableActor(FObjectInitializer const& ObjectInitializer);
 
 	/** Returns the actor's owned ASC (IAbilitySystemInterface implementation). */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;

@@ -7,6 +7,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "GenericTeamAgentInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Kismet/GameplayStatics.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
@@ -191,4 +192,44 @@ void UGeoGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCo
 	}
 
 	PlayerController->ClientTravel(ConnectString, TRAVEL_Absolute);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::LeaveSessionAndReturnToMenu()
+{
+	if (!ensureMsgf(!MainMenuMap.IsNull(), TEXT("UGeoGameInstance::LeaveSessionAndReturnToMenu: MainMenuMap is not set")))
+	{
+		return;
+	}
+
+	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
+	IOnlineSessionPtr Sessions = OnlineSubsystem ? OnlineSubsystem->GetSessionInterface() : nullptr;
+	EOnlineSessionState::Type const SessionState =
+		Sessions.IsValid() ? Sessions->GetSessionState(FName(TEXT("GameSession"))) : EOnlineSessionState::NoSession;
+
+	if (SessionState == EOnlineSessionState::NoSession)
+	{
+		UGameplayStatics::OpenLevel(this, FName(*MainMenuMap.ToSoftObjectPath().GetLongPackageName()));
+		return;
+	}
+
+	DestroySessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
+		FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnDestroySessionComplete));
+	Sessions->DestroySession(FName(TEXT("GameSession")));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::OnDestroySessionComplete(FName SessionName, bool /*bWasSuccessful*/)
+{
+	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
+	if (OnlineSub)
+	{
+		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
+		if (Sessions.IsValid())
+		{
+			Sessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
+		}
+	}
+
+	UGameplayStatics::OpenLevel(this, FName(*MainMenuMap.ToSoftObjectPath().GetLongPackageName()));
 }

@@ -112,12 +112,17 @@ TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEff
 	UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag)
 {
 	TArray<FActiveGameplayEffectHandle> SpecHandles;
-	if (!IsValid(SourceASC) || !IsValid(TargetASC))
+	if (!ensureMsgf(
+			IsValid(SourceASC),
+			TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source ASC to apply effect")))
 	{
-		ensureMsgf(
-			IsValid(SourceASC) && IsValid(TargetASC),
-			TEXT(
-				"AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source and Target ASC to apply effect"));
+		return SpecHandles;
+	}
+
+	if (!ensureMsgf(
+			IsValid(TargetASC),
+			TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Target ASC to apply effect")))
+	{
 		return SpecHandles;
 	}
 

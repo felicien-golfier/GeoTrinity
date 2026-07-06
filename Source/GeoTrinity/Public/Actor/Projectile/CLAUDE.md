@@ -23,10 +23,11 @@ Poolable, effect-applying projectile.
 **Key fields:**
 - `EffectDataArray` — effects applied on hit
 - `Payload` (`FAbilityPayload`) — owner/instigator/ability info
-- `DistanceSpan = 1000 cm` — override with `SetDistanceSpan(float)`
+- `DistanceSpan = 1000 cm` — override with `OverrideDistanceSpan(float)`
 - `LifeSpanInSec = 30` — safeguard max lifespan
 - `bCanOverlapInstigator = false`, `LifeTimeThresholdBeforeOverlapSelf = 0.2` — prevent self-hit on spawn
-- `ImpactEffect` (Niagara), `ImpactSound`, `LoopingSound` — cosmetic only
+- `ImpactEffect` (Niagara), `ImpactSound`, `StartSound`, `LoopingSound` — cosmetic only; all skip dedicated servers (`!GeoLib::IsDedicatedServer`). `StartSound` plays once at spawn; `LoopingSound` loops for the projectile's full lifetime.
+- **Attribute-driven pitch**: `PitchMap` (`TMap<EProjectileSoundType, FProjectilePitchEntry>`) maps each of `Start`, `Looping`, and `Impact` to a `FProjectilePitchEntry` (gameplay attribute + `UCurveFloat` + `RandomPitchMultiplierRange`). `GetPitch(SoundType)` (BlueprintNativeEvent) reads the instigator's ASC for the mapped attribute, samples the curve, then multiplies by a random value in the range. All three sounds pass `GetPitch` as their pitch multiplier. Override `GetPitch` in Blueprint for custom logic; returns 1.0 if PitchMap has no entry for the type.
 
 ## `GeoPooledProjectile.h` — pooled variant
 Extends `GeoProjectile` + implements `IGeoPoolableInterface`:
@@ -39,6 +40,7 @@ Bounces off enemies, grants shield on ally contact.
 - `ShieldAmount` (`FScalableFloat`) — base shield per burst; scales with ability level and multiplied by each enemy bounce
 - `BounceSnapshot` (`FShieldBounceSnapshot`) — replicated; teleports all clients to post-bounce state
 - `HandleValidOverlap()` — reflect on enemy, shield ally, end on ally contact
+- `IsValidOverlap()` — returns false for `AGeoWall` (the burst passes through the Square's own walls without bouncing); also suppresses the same hostile within 0.5 s to avoid double-hit on glancing overlaps
 - `OnWallBounce()` — bound to ProjectileMovement bounce delegate
 
 ## `DeployableSpawner/DeployableSpawnerProjectile.h` — spawns a deployable on impact

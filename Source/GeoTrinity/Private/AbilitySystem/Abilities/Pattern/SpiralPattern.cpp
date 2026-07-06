@@ -26,9 +26,9 @@ void USpiralPattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 				   MaxProjectileNum * 0.67f /*Create a first estimation number of projectiles in the pool.*/);
 }
 
-void USpiralPattern::InitPattern(FAbilityPayload const& Payload)
+void USpiralPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
-	Super::InitPattern(Payload);
+	Super::InitPattern(Payload, PatternData);
 
 	// Map Seed (full int32 range) to [0, 360] to give each spiral instance a deterministic but unique
 	// starting angle, so two spirals fired with different seeds don't overlap identically.

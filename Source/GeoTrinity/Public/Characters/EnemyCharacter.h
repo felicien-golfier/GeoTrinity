@@ -15,7 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossDefeated);
 /**
  * Enemy character controlled by a StateTree AI. Owns its ASC as a direct subobject (unlike
  * APlayableCharacter, where GAS lives on PlayerState). Boss death is handled in OnHealthChanged:
- * either resets health for looping attempts or broadcasts OnBossDefeated and self-destructs.
+ * either resets health for looping attempts or broadcasts OnEnemyDefeated and self-destructs.
  */
 UCLASS()
 class GEOTRINITY_API AEnemyCharacter : public AGeoCharacter
@@ -31,7 +31,7 @@ public:
 	TObjectPtr<UStateTree> StateTree;
 
 	UPROPERTY(BlueprintAssignable, Category = "Boss")
-	FOnBossDefeated OnBossDefeated;
+	FOnBossDefeated OnEnemyDefeated;
 
 	/** Resets health to max and restarts the StateTree. Called on full-wipe to start a new attempt. */
 	void ResetForNewAttempt();

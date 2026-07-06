@@ -30,5 +30,10 @@ public class GeoTrinityUI : ModuleRules
 			"AdvancedSessions",
 			"AdvancedSteamSessions"
 		});
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.Add("UnrealEd");
+		}
 	}
 }

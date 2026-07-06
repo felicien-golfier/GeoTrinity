@@ -39,8 +39,12 @@ public:
 	 * magnitude, etc.). */
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload);
 
-	/** Stores the payload and triggers the start-section animation before delegating to StartPattern. */
-	virtual void InitPattern(FAbilityPayload const& Payload);
+	/**
+	 * Stores the payload and triggers the start-section animation before delegating to StartPattern.
+	 * PatternData carries optional pattern-specific replicated data; subclasses read their own FPatternData subclass
+	 * via PatternData.GetPtr<T>(). Unset for patterns that need no extra data.
+	 */
+	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData);
 
 	/** Returns true while the pattern is running (after InitPattern, before EndPattern). */
 	bool IsPatternActive() const { return bPatternIsActive; }
@@ -72,11 +76,16 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly)
 	FAbilityPayload StoredPayload;
 
+	// Pattern-specific replicated data set by the launching UPatternAbility; unset when the pattern needs none.
+	// Read your own FPatternData subclass via StoredPatternData.GetPtr<T>().
+	UPROPERTY(Transient)
+	TInstancedStruct<FPatternData> StoredPatternData;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> AnimMontage;
 
 	float StartDelay = 0.f;
-	float StartTime = 0.f;
+	float TravelTime = 0.f;
 
 	bool bPatternIsActive = false;
 
@@ -105,7 +114,8 @@ public:
 
 protected:
 	virtual void StartPattern() override;
-	virtual void InitPattern(FAbilityPayload const& Payload) override;
+	virtual void InitPattern(FAbilityPayload const& Payload,
+							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** Timer callback: reads current server time, computes SpentTime, and delegates to TickPattern. */
 	UFUNCTION()
 	void CalculateTimeAndTickPattern();

@@ -6,6 +6,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoHUD.h"
 #include "HUD/HudFunctionLibrary.h"
@@ -35,6 +36,7 @@ void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementati
 		if (AGeoHUD* GeoHUD = PlayerController->GetHUD<AGeoHUD>())
 		{
 			InitFromHUD(GeoHUD);
+			GeoHUD->RegisterASCForDamageNumbers(ASC, ASC->GetAvatarActor());
 		}
 	}
 
@@ -53,6 +55,12 @@ void UGenericCombattantWidget::UpdateHealthRatio_Implementation(float NewHealthR
 		FLinearColor const LowHealth = FLinearColor::LerpUsingHSV(FLinearColor::Red, FLinearColor::Yellow,
 																  FMath::Clamp(NewHealthRatio * 2.f, 0.f, 1.f));
 		HealthBar->SetFillColorAndOpacity(NewHealthRatio > 0.5f ? HighHealth : LowHealth);
+	}
+
+	if (CurrentHealthText && OwnerASC.IsValid())
+	{
+		float const Health = OwnerASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
+		CurrentHealthText->SetText(FText::AsNumber(FMath::RoundToInt(Health)));
 	}
 }
 

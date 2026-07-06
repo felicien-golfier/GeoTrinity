@@ -27,7 +27,8 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 							   FActorComponentTickFunction* ThisTickFunction) override;
 
-	/** Flashes the owner's mesh with HitFlashMaterial for HitFlashDuration seconds. Uses LocalPlayerHitFlashMaterial when owner is the local player. */
+	/** Flashes the owner's mesh with HitFlashMaterial for HitFlashDuration seconds. Uses LocalPlayerHitFlashMaterial
+	 * when owner is the local player. */
 	void FlashOnHit();
 
 	/**
@@ -50,7 +51,7 @@ public:
 	 */
 	bool IsHealCueAvailable();
 
-	UPROPERTY(EditDefaultsOnly, Category = "Recoil", meta = (ClampMin = "0"))
+	UPROPERTY(EditDefaultsOnly, Category = "GameFeel", meta = (ClampMin = "0"))
 	float RecoilRecoverySpeed = 14.f;
 
 private:

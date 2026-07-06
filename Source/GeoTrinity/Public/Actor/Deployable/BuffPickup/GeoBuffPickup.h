@@ -45,13 +45,15 @@ class GEOTRINITY_API AGeoBuffPickup : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
-	AGeoBuffPickup();
+	/** Enables continuous Tick and creates the VisualRoot scene component. */
+	AGeoBuffPickup(FObjectInitializer const& ObjectInitializer);
 
 	/** Registers Data with COND_InitialOnly — pickup state is set once and never updated. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/** Casts InputData to FBuffPickupData and initializes spawn target, mesh index, and PowerScale before BeginPlay. */
 	virtual void InitInteractable(FInteractableActorData* InputData) override;
-	/** Binds the overlap delegate, sets visual scale from PowerScale, and starts launch movement toward TargetLocation. */
+	/** Binds the overlap delegate, sets visual scale from PowerScale, and starts launch movement toward TargetLocation.
+	 */
 	virtual void BeginPlay() override;
 	/** Rotates the mesh and advances the LaunchCurve lerp toward TargetLocation each tick. */
 	virtual void Tick(float DeltaTime) override;
@@ -99,6 +101,13 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
 	float MaxScale = 1.5f;
+
+	/** Minimum seconds after spawn before the overlap pickup logic activates. Prevents the spawning player from
+	 * immediately collecting their own pickup (especially on a listen-server host where InitInteractable and
+	 * the overlap fire on the same machine with no network delay). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
+	float TimeBeforePickup = .4f;
+	float StartTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))

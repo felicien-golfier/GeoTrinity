@@ -5,6 +5,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
@@ -12,20 +13,33 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
 #include "GameplayEffect.h"
+#include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-AGeoDeployableBase::AGeoDeployableBase()
+AGeoDeployableBase::AGeoDeployableBase(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	CapsuleComponent->SetCollisionProfileName(TEXT("GeoShape"));
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
-	// CombattantWidgetComponent (the world-space health bar) is a UGeoCombattantWidgetComp added in Blueprint — it
-	// lives in the UI module which gameplay must not reference. It is resolved and configured from the BP component in
-	// BeginPlay. The BP attaches it to a non-rotating anchor so the bar's offset doesn't orbit the deployable as it
-	// yaws.
+
+	WidgetAnchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("WidgetAnchorComponent"));
+	WidgetAnchorComponent->SetupAttachment(GetRootComponent());
+	WidgetAnchorComponent->SetUsingAbsoluteRotation(true);
+
+	// Concrete class comes from settings (a soft path) so gameplay never names the UI-module UGeoCombattantWidgetComp.
+	// Optional subobject: the dedicated-server target doesn't ship the UI class, so it resolves to null and is skipped.
+	if (UClass* const WidgetComponentClass =
+			GetDefault<UGameDataSettings>()->CombattantWidgetComponentClass.LoadSynchronous())
+	{
+		CombattantWidgetComponent = Cast<UWidgetComponent>(ObjectInitializer.CreateDefaultSubobject(
+			this, TEXT("CombattantWidgetComponent"), UWidgetComponent::StaticClass(), WidgetComponentClass,
+			/*bIsRequired=*/false, /*bIsTransient=*/false));
+		CombattantWidgetComponent->SetupAttachment(WidgetAnchorComponent);
+		CombattantWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	}
 }
 
 
@@ -168,19 +182,28 @@ void AGeoDeployableBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// The health-bar widget component is added in Blueprint (a UGeoCombattantWidgetComp from the UI module). Resolve it
-	// as the engine base; apply the project default widget class if the BP left it unset (engine base API only).
-	CombattantWidgetComponent = FindComponentByClass<UWidgetComponent>();
-	// A damageable deployable must show a health bar, so its BP must include the widget component. Flag a missing one
-	// (the dedicated server is headless and never renders it, so skip the check there).
-	ensureMsgf(CombattantWidgetComponent || !CanBeDamaged() || GeoLib::IsDedicatedServer(GetWorld()),
-			   TEXT("%s is damageable but has no UGeoCombattantWidgetComp — add one in its Blueprint"), *GetName());
-	if (CombattantWidgetComponent && !CombattantWidgetComponent->GetWidgetClass())
+	if (CombattantWidgetComponent)
 	{
-		if (TSubclassOf<UUserWidget> const HealthBarWidgetClass =
-				GetDefault<UGameDataSettings>()->DefaultDeployableHealthBarWidgetClass.LoadSynchronous())
+		// The component's class is resolved at runtime, so its Details panel can't expose these — apply the per-BP
+		// values here instead, where BP CDO overrides are loaded.
+		UClass* const WidgetClass = HealthBarWidgetClassOverride.IsNull()
+			? GetDefault<UGameDataSettings>()->DefaultDeployableHealthBarWidgetClass.LoadSynchronous()
+			: HealthBarWidgetClassOverride.LoadSynchronous();
+		if (WidgetClass)
 		{
-			CombattantWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
+			CombattantWidgetComponent->SetWidgetClass(WidgetClass);
+		}
+		CombattantWidgetComponent->SetDrawAtDesiredSize(false);
+		CombattantWidgetComponent->SetDrawSize(HealthBarDrawSize);
+		CombattantWidgetComponent->SetRelativeLocation(HealthBarLocation);
+
+		// Attributes are set synchronously in Super::BeginPlay, so bind the bar now that they exist (and after the
+		// widget class is set so the user widget is created), or it reads MaxHealth as 0 and never updates (mirrors
+		// AGeoCharacter::BeginPlay).
+		CombattantWidgetComponent->InitWidget();
+		if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CombattantWidgetComponent))
+		{
+			WidgetHost->BindToOwnerASC();
 		}
 	}
 
@@ -237,8 +260,9 @@ void AGeoDeployableBase::ExecuteCue(FGameplayTag const& GameplayCueTag, FGamepla
 		return;
 	}
 
-	FScopedPredictionWindow ScopedPredictionWindow(ASC);
-	ASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
+	// Local-only: each machine fires the cue once (host via the call site, clients via OnRep). ExecuteGameplayCue would
+	// multicast on the authority, double-playing it on clients with engine-stripped params.
+	ASC->InvokeGameplayCueEvent(GameplayCueTag, EGameplayCueEvent::Executed, CueParams);
 }
 
 void AGeoDeployableBase::RecallEffect(float Value)
@@ -252,7 +276,7 @@ void AGeoDeployableBase::RecallEffect(float Value)
 void AGeoDeployableBase::Explode(float Value)
 {
 	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
-	if (!ensureMsgf(SourceASC, TEXT("AGeoMine: no ASC on Owner")))
+	if (!ensureMsgf(SourceASC, TEXT("AGeoDeployableBase: no ASC on Owner")))
 	{
 		return;
 	}
@@ -349,11 +373,9 @@ void AGeoDeployableBase::StartBlinking(float const BlinkDuration)
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
 	if (BlinkingGameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(this))
 	{
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		FScopedPredictionWindow ScopedPredictionWindow(ASC);
 		FGameplayCueParameters CueParams = GetGenericCueParams(BlinkingSoundTag);
 		CueParams.Normal = FVector(BlinkDuration, 0.f, 0.f);
-		ASC->ExecuteGameplayCue(BlinkingGameplayCueTag, CueParams);
+		ExecuteCue(BlinkingGameplayCueTag, CueParams);
 	}
 
 	OnBlinkVisualStarted();

@@ -14,7 +14,7 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-AGeoBuffPickup::AGeoBuffPickup()
+AGeoBuffPickup::AGeoBuffPickup(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = 0.f;
@@ -48,7 +48,7 @@ void AGeoBuffPickup::InitInteractable(FInteractableActorData* InputData)
 
 
 	Data = *BuffPickupData;
-
+	StartTime = GetWorld()->GetTimeSeconds();
 	Super::InitInteractable(InputData);
 }
 
@@ -139,7 +139,9 @@ void AGeoBuffPickup::UpdateColor()
 void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimitiveComponent*, int32, bool,
 							   FHitResult const&)
 {
-	if (!GeoLib::IsServer(GetWorld()) || bMovingToTarget || !IsValid(OtherActor) || !OtherActor->CanBeDamaged())
+	bool bHasElapsedTimeBeforePickup = GetWorld()->GetTimeSeconds() >= StartTime + TimeBeforePickup;
+	if (!GeoLib::IsServer(GetWorld()) || !bHasElapsedTimeBeforePickup || !IsValid(OtherActor)
+		|| !OtherActor->CanBeDamaged())
 	{
 		return;
 	}

@@ -47,6 +47,9 @@ void UGeoShieldBurstPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle H
 		{
 			return;
 		}
+		// Registration runs BeginPlay (material setup) and adds the component to the actor's replicated subobject list
+		// so it reaches clients — without it the gauge visual never appears on remote players.
+		PassiveComponent->RegisterComponent();
 
 		SourceASC->OnDamageDealt.AddDynamic(this, &UGeoShieldBurstPassiveAbility::OnDamageDealtCallback);
 	}

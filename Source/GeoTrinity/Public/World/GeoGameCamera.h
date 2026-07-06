@@ -31,6 +31,9 @@ protected:
 	float FollowInterpSpeed = 5.f;
 
 private:
+	/** Binds the match-state delegates and runs the initial bounds calc once the replicated GameState exists. On a late
+	 * joiner the GameState may not have replicated by BeginPlay, so this retries on the next tick until it is valid. */
+	void TryBindToGameState();
 	/** Computes the world-space AABB (Min in X/Y, Max in Z/W) from the AGeoTargetPoints tagged for the current match
 	 * state. Falls back to ±500 when no points are found. */
 	UFUNCTION()

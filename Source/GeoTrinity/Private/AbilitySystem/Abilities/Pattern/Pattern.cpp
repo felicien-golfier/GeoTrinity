@@ -33,7 +33,7 @@ void UPattern::OnCreate(FGameplayTag AbilityTag, AActor&)
 	}
 }
 
-void UPattern::InitPattern(FAbilityPayload const& Payload)
+void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
 	if (bPatternIsActive)
 	{
@@ -44,7 +44,8 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 
 	bPatternIsActive = true;
 	StoredPayload = Payload;
-	StartTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
+	StoredPatternData = PatternData;
+	TravelTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
 	// Cosmetic montage gate: any machine that renders this boss must play it, including the listen-server host.
 	// Only a dedicated server (no viewport) skips it. !IsServer() would wrongly skip the host.
 	bool const bRendersLocally = !GeoLib::IsDedicatedServer(GetWorld());
@@ -53,7 +54,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 
 	ExecuteGameplayCue(DelayGameplayCueTag);
 
-	if (StartTime > StartDelay)
+	if (TravelTime > StartDelay)
 	{
 		UE_LOG(LogPattern, Warning, TEXT("We start the montage too late, starting from loop directly"));
 		StartPattern();
@@ -65,10 +66,10 @@ void UPattern::InitPattern(FAbilityPayload const& Payload)
 			int const StartSection = GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionStartName);
 			float const PlayRate = AnimMontage->GetSectionLength(StartSection) / StartDelay;
 			AnimInstance->Montage_Play(AnimMontage, PlayRate, EMontagePlayReturnType::MontageLength,
-									   FMath::Max(0.f, StartTime));
+									   FMath::Max(0.f, TravelTime));
 		}
 
-		float const RemainingStartTime = StartDelay - StartTime;
+		float const RemainingStartTime = StartDelay - TravelTime;
 		GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this, &UPattern::StartPattern,
 											   RemainingStartTime);
 	}
@@ -101,7 +102,7 @@ FGameplayCueParameters UPattern::FillCueParam(FAbilityPayload const& Payload)
 	CueParams.Instigator = Payload.Instigator;
 	CueParams.AbilityLevel = Payload.AbilityLevel;
 	// Hack Normale to pack timing info into (start delay, elapsed time before stating, ratio)
-	CueParams.Normal = FVector(StartDelay, StartTime, 1 - ((StartDelay - StartTime) / StartDelay));
+	CueParams.Normal = FVector(StartDelay, TravelTime, 1 - ((StartDelay - TravelTime) / StartDelay));
 	return CueParams;
 }
 
@@ -187,7 +188,7 @@ void UPattern::EndPattern(bool const bForceStop)
 	}
 }
 
-void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
+void UTickablePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
 	if (TimeSyncTimerHandle.IsValid())
 	{
@@ -196,7 +197,7 @@ void UTickablePattern::InitPattern(FAbilityPayload const& Payload)
 		EndPattern();
 	}
 
-	Super::InitPattern(Payload);
+	Super::InitPattern(Payload, PatternData);
 }
 
 void UTickablePattern::StartPattern()

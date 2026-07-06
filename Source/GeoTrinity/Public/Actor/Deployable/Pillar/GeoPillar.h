@@ -19,7 +19,8 @@ class GEOTRINITY_API AGeoPillar : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
-	AGeoPillar();
+	/** Sets bUseRegularDrain=true, bPushActorsOnSpawn=true, bExplodeAtRecall=true, and default capsule size 100×100. */
+	AGeoPillar(FObjectInitializer const& ObjectInitializer);
 
 	/** Copies Data into the replicated PillarData field, then delegates to Super (which triggers PushAway). */
 	virtual void InitInteractable(FInteractableActorData* Data) override;

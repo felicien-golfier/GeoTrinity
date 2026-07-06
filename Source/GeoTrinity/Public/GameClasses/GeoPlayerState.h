@@ -59,39 +59,47 @@ public:
 	/** Sets the player's current playable class. Does not grant or remove abilities — call GiveStartupAbilities separately. */
 	void SetPlayerClass(EPlayerClass NewClass) { PlayerClass = NewClass; }
 
-	/** Returns the rolling average damage-per-second over the last 10 seconds (replicated, for HUD display). */
+	/** Returns the exponentially smoothed damage-per-second (replicated, for HUD display). */
 	float GetDebugDPS() const { return DebugDPS; }
-	/** Returns the rolling average healing-per-second over the last 10 seconds (replicated, for HUD display). */
+	/** Returns the exponentially smoothed healing-per-second (replicated, for HUD display). */
 	float GetDebugHPS() const { return DebugHPS; }
-	/** Returns the highest rolling DPS reached this session. */
+	/** Returns the highest smoothed DPS reached this combat. */
 	float GetBestDPS() const { return BestDPS; }
-	/** Returns the highest rolling HPS reached this session. */
+	/** Returns the highest smoothed HPS reached this combat. */
 	float GetBestHPS() const { return BestHPS; }
-	/** Returns the cumulative damage dealt over the session. */
+	/** Returns the average damage-per-second over the whole current combat (fight start until now). */
+	float GetFightDPS() const { return FightDPS; }
+	/** Returns the average healing-per-second over the whole current combat (fight start until now). */
+	float GetFightHPS() const { return FightHPS; }
+	/** Returns the cumulative damage dealt over the combat. */
 	float GetTotalDamageDealt() const { return TotalDamageDealt; }
-	/** Returns the cumulative healing dealt over the session. */
+	/** Returns the cumulative healing dealt over the combat. */
 	float GetTotalHealingDealt() const { return TotalHealingDealt; }
-	/** Returns the cumulative damage received over the session. */
+	/** Returns the cumulative damage received over the combat. */
 	float GetTotalDamageReceived() const { return TotalDamageReceived; }
 
 	/**
 	 * Batch-updates all replicated combat stat fields in one call. Called by UGeoCombatStatsSubsystem on the server.
 	 *
-	 * @param DPS      Rolling damage-per-second average.
-	 * @param HPS      Rolling healing-per-second average.
-	 * @param MaxDPS   Highest rolling DPS reached this session.
-	 * @param MaxHPS   Highest rolling HPS reached this session.
-	 * @param TotDmg   Cumulative damage dealt this session.
-	 * @param TotHeal  Cumulative healing dealt this session.
-	 * @param TotRecv  Cumulative damage received this session.
+	 * @param DPS      Exponentially smoothed damage-per-second.
+	 * @param HPS      Exponentially smoothed healing-per-second.
+	 * @param MaxDPS   Highest smoothed DPS reached this combat.
+	 * @param MaxHPS   Highest smoothed HPS reached this combat.
+	 * @param AvgDPS   Average DPS over the whole current combat.
+	 * @param AvgHPS   Average HPS over the whole current combat.
+	 * @param TotDmg   Cumulative damage dealt this combat.
+	 * @param TotHeal  Cumulative healing dealt this combat.
+	 * @param TotRecv  Cumulative damage received this combat.
 	 */
-	void SetDebugCombatStats(float DPS, float HPS, float MaxDPS, float MaxHPS, float TotDmg, float TotHeal,
-							 float TotRecv)
+	void SetDebugCombatStats(float DPS, float HPS, float MaxDPS, float MaxHPS, float AvgDPS, float AvgHPS, float TotDmg,
+							 float TotHeal, float TotRecv)
 	{
 		DebugDPS = DPS;
 		DebugHPS = HPS;
 		BestDPS = MaxDPS;
 		BestHPS = MaxHPS;
+		FightDPS = AvgDPS;
+		FightHPS = AvgHPS;
 		TotalDamageDealt = TotDmg;
 		TotalHealingDealt = TotHeal;
 		TotalDamageReceived = TotRecv;
@@ -135,6 +143,10 @@ protected:
 	float BestDPS = 0.f;
 	UPROPERTY(Replicated)
 	float BestHPS = 0.f;
+	UPROPERTY(Replicated)
+	float FightDPS = 0.f;
+	UPROPERTY(Replicated)
+	float FightHPS = 0.f;
 	UPROPERTY(Replicated)
 	float TotalDamageDealt = 0.f;
 	UPROPERTY(Replicated)

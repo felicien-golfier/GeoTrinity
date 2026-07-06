@@ -13,6 +13,7 @@
 
 struct FEffectData;
 class UWidgetComponent;
+class UUserWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeployableDestroyed, AGeoDeployableBase*, Deployable);
 
@@ -63,7 +64,9 @@ class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
 	GENERATED_BODY()
 
 public:
-	AGeoDeployableBase();
+	/** Creates WidgetAnchorComponent (non-rotating health-bar anchor) and CombattantWidgetComponent (resolved from
+	 * GameDataSettings::CombattantWidgetComponentClass via ObjectInitializer; null on dedicated server). */
+	AGeoDeployableBase(FObjectInitializer const& ObjectInitializer);
 
 	/**
 	 * Temporarily disables blocking collision, root-motion-pushes all overlapping characters outward,
@@ -152,10 +155,26 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployableDestroyed OnDeployableExpiredEvent;
 
-	// World-space health-bar widget component. Added in Blueprint (a UGeoCombattantWidgetComp from the UI module); held
-	// as the engine base so gameplay never names the UI type. Resolved from the BP-added component in BeginPlay.
-	UPROPERTY(VisibleAnywhere)
+	// Non-rotating attachment point for the health bar: its relative offset would orbit the deployable as the capsule
+	// yaws if attached to the root (mirrors AGeoCharacter::WidgetAnchorComponent).
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	TObjectPtr<USceneComponent> WidgetAnchorComponent;
+
+	// World-space health-bar widget component. Created in the constructor from
+	// GameDataSettings::CombattantWidgetComponentClass (the concrete UGeoCombattantWidgetComp lives in the UI module,
+	// so gameplay holds it as the engine base). Null on the dedicated server, which does not ship the UI class.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> CombattantWidgetComponent;
+
+	// Per-BP health-bar tuning, applied to CombattantWidgetComponent in BeginPlay (the component's own Details panel
+	// can't expose these because its class is resolved at runtime). Leave HealthBarWidgetClassOverride null to use the
+	// project default from GameDataSettings.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	FVector2D HealthBarDrawSize = FVector2D(80.f, 10.f);
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	FVector HealthBarLocation = FVector(100.f, 0.f, 0.f);
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	TSoftClassPtr<UUserWidget> HealthBarWidgetClassOverride;
 
 protected:
 	// subclasses MUST override this with their own data struct inherited from FDeployableData

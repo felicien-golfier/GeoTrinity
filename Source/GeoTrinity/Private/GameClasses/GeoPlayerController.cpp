@@ -2,11 +2,14 @@
 
 #include "GameClasses/GeoPlayerController.h"
 
+#include "Blueprint/UserWidget.h"
 #include "Camera/CameraActor.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "EnhancedInput/Public/EnhancedInputComponent.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerState.h"
+#include "InputAction.h"
 #include "Kismet/GameplayStatics.h"
 #include "System/GeoCombatStatsSubsystem.h"
 #include "TimerManager.h"
@@ -63,6 +66,53 @@ AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(UWorld c
 		}
 	}
 	return nullptr;
+}
+
+void AGeoPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent);
+	if (!ensureMsgf(EnhancedInput && !ToggleMenuAction.IsNull(),
+					TEXT("AGeoPlayerController: ToggleMenuAction is not set")))
+	{
+		return;
+	}
+	EnhancedInput->BindAction(ToggleMenuAction.LoadSynchronous(), ETriggerEvent::Started, this,
+							  &AGeoPlayerController::HandleToggleMenu);
+}
+
+void AGeoPlayerController::HandleToggleMenu(FInputActionInstance const& /*Instance*/)
+{
+	TogglePauseMenu();
+}
+
+void AGeoPlayerController::TogglePauseMenu()
+{
+	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
+	{
+		ClosePauseMenu();
+		return;
+	}
+	if (!ensureMsgf(PauseMenuWidgetClass, TEXT("AGeoPlayerController: PauseMenuWidgetClass is not set")))
+	{
+		return;
+	}
+	if (!PauseMenuWidget)
+	{
+		PauseMenuWidget = CreateWidget<UUserWidget>(this, PauseMenuWidgetClass);
+	}
+	PauseMenuWidget->AddToViewport();
+	SetInputMode(FInputModeGameAndUI().SetHideCursorDuringCapture(false));
+}
+
+void AGeoPlayerController::ClosePauseMenu()
+{
+	if (PauseMenuWidget)
+	{
+		PauseMenuWidget->RemoveFromParent();
+	}
+	SetInputMode(FInputModeGameOnly().SetConsumeCaptureMouseDown(false));
 }
 
 #if !UE_BUILD_SHIPPING

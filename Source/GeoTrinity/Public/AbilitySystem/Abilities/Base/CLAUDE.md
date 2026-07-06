@@ -43,8 +43,8 @@ Set once per activation. **Always use `StoredPayload` fields** — never call `G
 Always: `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` directly — both client and server must derive identical values from the same seed.
 
 ### Animation
-- Section cycling: Start → Fire1 → Fire2 → … (loops back)
-- `GetFireSectionIndex(AbilityTag)` — reference tracked on ASC per ability tag
+- Section cycling: Start → Fire1 → Fire2 → … (loops back). Montages without any Fire section (e.g. a pure Start/End montage) are valid — `GetFireSectionIndex` detects the absence and resets to 0 instead of incrementing, so the montage always starts from the beginning.
+- `GetFireSectionIndex(AbilityTag)` — reference tracked on ASC per ability tag; `UGeoGameplayAbility::GetFireSectionIndex(ASC, AnimInstance)` fetches it, advances if Fire sections exist and montage is playing, resets to 0 otherwise
 - Play rate auto-adjusted so each section fits the `FireDelay` window
 
 ### Effect Data
@@ -67,9 +67,10 @@ Always: `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` di
 Enemy-only. `UPatternAbility` is the ability class; `UPattern`/`UTickablePattern` are the pattern objects (in `Pattern/` folder).
 
 - `PatternToLaunch` — class to instantiate
-- `ActivateAbility` → calls `CreateAbilityPayload()` → calls `PatternStartMulticast()` RPC → all clients create a `UPattern` instance; binds `OnPatternEnd` delegate
+- `ActivateAbility` → calls `CreateAbilityPayload()` → calls `PatternStartMulticast(Payload, PatternToLaunch, CreatePatternData())` RPC → all clients create a `UPattern` instance and call `InitPattern(Payload, PatternData)`; binds `OnPatternEnd` delegate
 - `EndAbility` (override) → calls `PatternInstance->EndPattern(true)` before `Super` — force-stops the pattern (stops montages, skips `OnPatternEnd` broadcast) to avoid a recursive end chain when the ability itself is cancelled
 - **Subclass hook**: override `GetFireOrigin2D(AActor*)` / `GetFireYaw(AActor const*)` on `UGeoGameplayAbility` to change what values the ASC bundles into target data on activation.
+- **Per-pattern data hook**: override `CreatePatternData()` to ship pattern-specific replicated data through the multicast. Computed **once on the server**, so every client's `InitPattern` reads identical values instead of recomputing from locally-replicated state. Base returns an unset `TInstancedStruct<FPatternData>` (no extra data). Each pattern defines its own `FPatternData` subclass with `UPROPERTY` fields; the pattern reads it via `StoredPatternData.GetPtr<T>()`. Example: `UGeoSpawnPillarAbility` resolves zone locations here so all clients spawn zones at the same positions. See `FPatternData` in `AbilityPayload.h`.
 
 ---
 
@@ -78,3 +79,7 @@ Enemy-only. `UPatternAbility` is the ability class; `UPattern`/`UTickablePattern
 `FAbilityPayload` — carried by both `StoredPayload` (on ability) and `FGeoAbilityTargetData` (RPC payload).
 
 Fields: `Origin` (`FVector2D`), `Yaw`, `ServerSpawnTime`, `Seed`, `AbilityLevel`, `AbilityTag`, `Owner`, `Instigator`, `PredictionKey`
+
+`FPatternData` (same header) — empty polymorphic base for **pattern-specific** data sent alongside `FAbilityPayload` through `PatternStartMulticast`. Patterns that need extra replicated data subclass it with `UPROPERTY` fields, fill it server-side in `UPatternAbility::CreatePatternData()`, and read it back via `StoredPatternData.GetPtr<T>()`. `FAbilityPayload` stays concrete (all ability code reads its fields directly); the polymorphism lives only on this sibling — mirrors `FDeployableDataParams` + `TInstancedStruct<FEffectData>`.
+
+**When filling a derived `FPatternData` in `CreatePatternData()`, always spell the type out: `TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(Derived)`.** `Make(Derived)` without the explicit template arg resolves to the variadic `Make(TArgs&&...)` overload with `T` defaulted to the *base* `FPatternData`, which slices the derived struct down to the base — `GetPtr<Derived>()` then returns null on every machine (the bug looks like "InstancedStruct arrives empty"). The slicing happens at creation, not over the wire.

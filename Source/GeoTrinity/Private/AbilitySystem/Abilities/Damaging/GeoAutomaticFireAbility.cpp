@@ -5,6 +5,7 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -65,11 +66,21 @@ bool UGeoAutomaticFireAbility::ExecuteShot_Implementation()
 	return true;
 }
 
-void UGeoAutomaticFireAbility::InitFireSectionIndex(UAnimInstance* AnimInstance, int32& FireSectionIndex)
+int32& UGeoAutomaticFireAbility::GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance)
 {
+	int32& FireSectionIndex = ASC->GetFireSectionIndex(GetAbilityTag());
+
 	// For auto-fire, the montage loops continuously — always advance the index.
 	// The base class resets on ability end, so the counter naturally starts from 0 again next activation.
-	++FireSectionIndex;
+	if (AnimMontage->IsValidSectionName(FName(*FString::Printf(TEXT("%s1"), *GeoASLib::SectionFireString))))
+	{
+		++FireSectionIndex;
+	}
+	else
+	{
+		FireSectionIndex = 0; // When the montage has no Fire loop system.
+	}
+	return FireSectionIndex;
 }
 
 void UGeoAutomaticFireAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
@@ -194,14 +205,7 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
 
 	ExecuteShot();
-
-	// On a listen host the locally-controlled player and the server share one ASC, and Fire() already committed the
-	// cost on this machine — committing again here would charge the cost twice (e.g. ammo dropping 2 per shot for the
-	// host only). Only the server-for-a-remote-client path must commit here.
-	if (!ActorInfo->IsLocallyControlledPlayer())
-	{
-		CommitAbility(Handle, ActorInfo, ActivationInfo);
-	}
+	CommitAbility(Handle, ActorInfo, ActivationInfo);
 
 	// Seed is incremented server-side using the authoritative shot counter rather than reading it from
 	// the client's target data, so a cheating client cannot fabricate a seed that bypasses status-proc checks.

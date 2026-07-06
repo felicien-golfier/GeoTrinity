@@ -9,7 +9,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-AGeoHealingZone::AGeoHealingZone()
+AGeoHealingZone::AGeoHealingZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bUseRegularDrain = false;
 	SetCanBeDamaged(false);
@@ -145,6 +145,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 		FDamageEffectData DrainEffectData;
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
 		DrainEffectData.bSuppressGameplayCue = true;
+		DrainEffectData.bSuppressCombatStats = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, OwnerASC, GetAbilitySystemComponent(),
 														Data.Level, Data.Seed, Data.AbilityTag);
 	}

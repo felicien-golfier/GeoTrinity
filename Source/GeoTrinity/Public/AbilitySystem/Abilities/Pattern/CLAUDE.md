@@ -13,12 +13,12 @@ Pattern flow:
 ## `Pattern.h` — base pattern object
 
 - `OnCreate(AbilityTag)` — stores ability tag used for montage lookup
-- `InitPattern(FAbilityPayload)` — stores payload, plays start animation section
+- `InitPattern(FAbilityPayload, TInstancedStruct<FPatternData>)` — stores payload and pattern-specific replicated data (`StoredPatternData`), plays start animation section
 - `IsPatternActive()` — true while running
 - `EndPattern(bForceStop=false)` — cleans up timers; when false, jumps montage to end section and broadcasts `OnPatternEnd`; when true, stops all montages immediately and skips the broadcast (used by `PatternAbility::EndAbility` to force-stop without re-triggering the ability-end chain). Guards against double-call via `bPatternIsActive`.
 - `StartPattern()` — pure virtual; subclasses define spawn logic here
 
-Stores: `FAbilityPayload Payload`, `UAnimMontage* AnimMontage`, effect data array.
+Stores: `FAbilityPayload StoredPayload`, `TInstancedStruct<FPatternData> StoredPatternData`, `UAnimMontage* AnimMontage`, effect data array.
 
 ---
 
@@ -44,21 +44,23 @@ Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`, `DistanceSp
 
 ## `SpawnPillarPattern.h` — zone-and-pillar boss pattern
 
-Non-ticking pattern. On `InitPattern`, determines how many pillars to spawn (1–3, scaled by the boss's remaining health ratio) and selects target player locations sorted by `PlayerId` for determinism. On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via the `ExecuteGameplayCue` override (fires one cue per spawn point).
+Non-ticking pattern. **Zone locations are resolved on the server** by `UGeoSpawnPillarAbility::CreatePatternData()` and shipped through `PatternStartMulticast` as an `FSpawnPillarPatternData` — `InitPattern` just reads `ZoneLocations` (no per-client recompute, so all clients place zones identically). On `StartPattern`, spawns pillars and applies `PillarSpawnEffects` to hostiles in each zone (server-only), then calls `EndPattern`. The `DelayGameplayCueTag` countdown cue fires at each pillar location via the `ExecuteGameplayCue` override (fires one cue per spawn point).
 
+- `FSpawnPillarPatternData` (in the same header) — `FPatternData` subclass carrying `TArray<FVector2D> ZoneLocations`; filled by the ability, consumed in `InitPattern`. `InitPattern` `ensureMsgf`s if the `TInstancedStruct` isn't an `FSpawnPillarPatternData` (i.e. the pattern was launched from a plain `UPatternAbility` instead of `UGeoSpawnPillarAbility`).
 - `SpawningZoneSize` — radius used for both the countdown cue magnitude and hostile hit detection (cm)
 - `PillarClass` — `AGeoPillar` subclass to spawn; also passed to `SetDeployableInfinitCount` in `OnCreate` to bypass slot limits
 - `PillarParams` — `FDeployableDataParams` forwarded into the spawned pillar via `FullySpawnDeployable`
 - `PillarSpawnEffects` — effects applied to hostiles in the zone on expiry (server-only); distinct from the pillar's own effect data
 
-Runs on all clients via `PatternStartMulticast`. Used by a `UPatternAbility` subclass.
+Runs on all clients via `PatternStartMulticast`. Launched by `UGeoSpawnPillarAbility` (see `Boss/CLAUDE.md`).
 
 ---
 
 ## `DevastatingWavePattern.h` — expanding radial wave
 
-Non-projectile ticking pattern. On `StartPattern`, teleports the owner to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; any hostile actor whose distance falls within `CurrentRadius` is hit once. Pillars are recalled; other hostiles receive the ability's effect data (via `EffectDataArray` set by `PatternAbility`). Ends when `CurrentRadius >= MaxRadius`.
+Non-projectile ticking pattern. On `InitPattern`, teleports the instigator to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; any hostile actor whose distance falls within `CurrentRadius` is hit once. Pillars are recalled; other hostiles receive the ability's effect data (via `EffectDataArray` set by `PatternAbility`). Ends when `CurrentRadius >= MaxRadius`.
 
+- `ClearData()` — public; empties `HitActors` and `PillarsWaveData`, resets all 8 `PillarPosWS_XX` MPC slots to the unused sentinel `(-10000, -10000, -10000, 0)`. Called at the start of both `InitPattern` and `StartPattern`, and again at the end of `EndPattern`, so stale data from a previous activation never bleeds in.
 - `ExpansionSpeed` — cm/s expansion rate (default 800)
 - `MaxRadius` — stops the wave at this distance (default 3000)
 - Effect data: sourced from ability's `GetEffectDataArray()` — configure on `GeoDevastatingWaveAbility`, not here
@@ -66,7 +68,9 @@ Non-projectile ticking pattern. On `StartPattern`, teleports the owner to `Store
 
 **Masked AOE VFX** (every rendering machine, gated `!IsDedicatedServer`):
 - `OnCreate` spawns the `AOEVfxSystem` (NS_PillarsAOE) component once, deactivated with `bAutoDestroy = false` — the pattern instance is reused across activations, and so is the component.
-- `StartPattern` (the moment the wave starts expanding) resets the 8 `PillarPosWS_XX` slots of `MaskMaterialParameterCollection` (MPC_MaskedArea) to the unused sentinel `(-10000, -10000, -10000, 0)` — the MPC is global state shared across waves — then moves the component to the wave origin, sets its user params (`AOE_Radius = MaxRadius`, `AOE_GrowDuration = MaxRadius / ExpansionSpeed`, plus editable `FadeOutDuration` / `AOEColor`) and calls `Activate(true)`.
+- **Telegraph (wind-up) phase**: after calling `ClearData()` and teleporting the instigator, `InitPattern` calls `AddAllPillarsToVfxMask()` (pre-populates the 8 MPC pillar-mask slots with all currently-alive pillars so safe zones are already visible on the static telegraph), then calls `ActivateAoeVfxTelegraph()` — a single smooth fill showing the full-range danger zone (`MaxRadius`) in `TelegraphColor` (editable, default red) that grows over the remaining wind-up (`StartDelay − TravelTime`). Skipped when `Super::InitPattern` took the "too late" path and ran `StartPattern` synchronously (no wind-up).
+- `StartPattern` calls `ClearData()` (which resets the 8 MPC pillar slots to the sentinel), then calls `ActivateAOEVfx()` so the static telegraph becomes the expanding wave.
+- `ActivateAOEVfx` moves the component to the wave origin, sets `AOE_Radius = MaxRadius`, `AOE_GrowDuration = MaxRadius / ExpansionSpeed`, plus editable `FadeOutDuration` / `AOEColor`, and calls `Activate(true)`.
 - Pillar detection runs on **all machines** in `TickPattern` (not just the server): deterministic since pillars are static replicated actors and the radius derives from server time. Each pillar the wave front reaches is appended to `PillarsWaveData` and its world position written to the next MPC slot (`AddPillarToVfxMask`), cutting a safe-zone shadow out of the AOE material. Damage application remains server-only.
 - `EndPattern` deactivates the spawned Niagara component: graceful `Deactivate()` on a natural end (lets the fade-out play), `DeactivateImmediate()` on force-stop — a graceful deactivate would let the AOE particle live out its full grow+fade lifetime and linger after an interrupt.
 - BP wiring lives in `BP_DevastatingWavePattern` (`AOEVfxSystem`, `MaskMaterialParameterCollection`).

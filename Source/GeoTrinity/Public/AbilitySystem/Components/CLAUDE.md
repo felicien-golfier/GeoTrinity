@@ -9,6 +9,10 @@ Extended ASC used by all characters.
 - `AbilityInputTagHeld(FGameplayTag)` — called every frame while held; drives hold-to-fire
 - `AbilityInputTagReleased(FGameplayTag)` — ends hold abilities
 
+### Passive abilities
+- Passives are activated explicitly — `OnAvatarSet` was removed from `UGeoGameplayAbility`; `APlayableCharacter::GiveLife()` now calls `ReactivatePassiveAbilities()` after every ability grant (`ChangeClass`) and after every revive.
+- `ReactivatePassiveAbilities()` — iterates all granted abilities, activates those tagged Passive that are not currently active. No-op if all passives are already running.
+
 ### Fire helpers (used by ability classes)
 - `GetFireSectionIndex(AbilityTag)` — returns reference to section counter for animation cycling
 - `SetLastBasicAbilityTarget(AActor*)` / `GetLastBasicAbilityTarget()` — server-only weak pointer tracking the actor most recently hit by this owner's basic ability. Set by `ExecCalc_Damage` when `bIsFromBasicAbility` is flagged in the context; read by `AGeoTurret::FindBestTarget()` to prefer the owner's last target over the nearest hostile.
@@ -18,7 +22,7 @@ Extended ASC used by all characters.
 - `CreatePatternInstance()` — instantiates a `UPattern` subclass
 - `FindPatternByClass(Class)` — returns active pattern or nullptr
 - `StopAllActivePatterns()` — ends all running patterns
-- `PatternStartMulticast()` — multicast RPC; clients instantiate the pattern here
+- `PatternStartMulticast(Payload, PatternClass, PatternData)` — multicast RPC; clients instantiate the pattern and call `InitPattern(Payload, PatternData)`; `PatternData` is an optional `FPatternData` subclass carrying server-resolved data (unset for patterns that need none)
 
 ### Startup
 - `GiveStartupAbilities()` — grants class abilities + shared abilities from global `UAbilityInfo` data asset, filtered by `EPlayerClass`

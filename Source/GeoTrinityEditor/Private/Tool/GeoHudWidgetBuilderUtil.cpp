@@ -2,6 +2,7 @@
 
 #include "Tool/GeoHudWidgetBuilderUtil.h"
 
+#include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
@@ -417,3 +418,4 @@ void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* Widge
 	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added PlayLocalButton + LocalConnectWidget (%s) to '%s'"),
 		   *LocalConnectClass->GetName(), *WidgetBlueprint->GetName());
 }
+

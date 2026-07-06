@@ -26,6 +26,15 @@ void UGeoMenuButton::NativeConstruct()
 	ButtonWidget->OnClicked.AddDynamic(this, &UGeoMenuButton::HandleButtonClicked);
 }
 
+void UGeoMenuButton::NativeDestruct()
+{
+	if (ButtonWidget)
+	{
+		ButtonWidget->OnClicked.RemoveDynamic(this, &UGeoMenuButton::HandleButtonClicked);
+	}
+	Super::NativeDestruct();
+}
+
 void UGeoMenuButton::ApplyStyle()
 {
 	if (ButtonText)

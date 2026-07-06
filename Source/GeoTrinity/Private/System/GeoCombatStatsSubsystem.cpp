@@ -32,25 +32,57 @@ void UGeoCombatStatsSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoCombatStatsSubsystem::OnMatchStateChanged(FName MatchState, FName /*PreviousMatchState*/)
+void UGeoCombatStatsSubsystem::OnMatchStateChanged(FName MatchState, FName PreviousMatchState)
 {
 	if (MatchState == MatchState::InProgress)
 	{
 		ResetStats();
+	}
+	else if (PreviousMatchState == MatchState::InProgress)
+	{
+		// Fight over: drop all per-player stats. Player states keep their last pushed values so the
+		// HUD still shows the final fight stats.
+		StatsPerActor.Empty();
 	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ResetStats()
 {
-	for (TPair<TWeakObjectPtr<AGeoPlayerState>, FActorCombatStats> const& Pair : StatsPerActor)
+	// Zero every player's displayed stats, not just tracked ones: a new session must wipe the frozen
+	// values of the previous fight for everyone.
+	if (AGameState const* GameState = GetWorld()->GetGameState<AGameState>())
 	{
-		if (AGeoPlayerState* GeoPlayerState = Pair.Key.Get())
+		for (APlayerState* PlayerState : GameState->PlayerArray)
 		{
-			GeoPlayerState->SetDebugCombatStats(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+			if (AGeoPlayerState* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState))
+			{
+				GeoPlayerState->SetDebugCombatStats(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+			}
 		}
 	}
 	StatsPerActor.Empty();
+	CombatStartTime = GetWorld()->GetTimeSeconds();
+	LastDecayTime = CombatStartTime;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+FActorCombatStats& UGeoCombatStatsSubsystem::FindOrAddStats(AGeoPlayerState* Actor, float CurrentTime)
+{
+	// First event outside a match (e.g. training dummy) opens a new combat session, resetting values
+	// like the InProgress transition does; during a match the session runs from that transition.
+	if (StatsPerActor.IsEmpty() && !IsMatchInProgress())
+	{
+		ResetStats();
+	}
+	return StatsPerActor.FindOrAdd(Actor);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+bool UGeoCombatStatsSubsystem::IsMatchInProgress() const
+{
+	AGameState const* GameState = GetWorld()->GetGameState<AGameState>();
+	return GameState && GameState->IsMatchInProgress();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -61,8 +93,11 @@ void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float 
 		return;
 	}
 	float const CurrentTime = GetWorld()->GetTimeSeconds();
-	FActorCombatStats& Stats = StatsPerActor.FindOrAdd(Source);
-	RecordEvent(Stats.DamageDealt, Stats.TotalDamageDealt, Amount, CurrentTime);
+	DecayRates(CurrentTime);
+	FActorCombatStats& Stats = FindOrAddStats(Source, CurrentTime);
+	Stats.TotalDamageDealt += Amount;
+	Stats.SmoothedDPS += Amount / SmoothingWindowSeconds;
+	PushPlayerStats(CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -72,7 +107,10 @@ void UGeoCombatStatsSubsystem::ReportDamageReceived(AGeoPlayerState* Target, flo
 	{
 		return;
 	}
-	StatsPerActor.FindOrAdd(Target).TotalDamageReceived += Amount;
+	float const CurrentTime = GetWorld()->GetTimeSeconds();
+	DecayRates(CurrentTime);
+	FindOrAddStats(Target, CurrentTime).TotalDamageReceived += Amount;
+	PushPlayerStats(CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -83,13 +121,49 @@ void UGeoCombatStatsSubsystem::ReportHealingDealt(AGeoPlayerState* Source, float
 		return;
 	}
 	float const CurrentTime = GetWorld()->GetTimeSeconds();
-	FActorCombatStats& Stats = StatsPerActor.FindOrAdd(Source);
-	RecordEvent(Stats.HealingDealt, Stats.TotalHealingDealt, Amount, CurrentTime);
+	DecayRates(CurrentTime);
+	FActorCombatStats& Stats = FindOrAddStats(Source, CurrentTime);
+	Stats.TotalHealingDealt += Amount;
+	Stats.SmoothedHPS += Amount / SmoothingWindowSeconds;
+	PushPlayerStats(CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ComputePlayerStats(float CurrentTime)
 {
+	// Empty means no combat session is running (e.g. a fight just ended): keep the last displayed
+	// values frozen instead of decaying them.
+	if (StatsPerActor.IsEmpty())
+	{
+		return;
+	}
+	DecayRates(CurrentTime);
+	PushPlayerStats(CurrentTime);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoCombatStatsSubsystem::DecayRates(float CurrentTime)
+{
+	// Several reports can land in the same frame at an identical world time; decaying by zero elapsed
+	// time is the identity, so skip the Exp and the map walk.
+	if (CurrentTime == LastDecayTime)
+	{
+		return;
+	}
+	float const Decay = FMath::Exp((LastDecayTime - CurrentTime) / SmoothingWindowSeconds);
+	LastDecayTime = CurrentTime;
+	for (TPair<TWeakObjectPtr<AGeoPlayerState>, FActorCombatStats>& Pair : StatsPerActor)
+	{
+		Pair.Value.SmoothedDPS *= Decay;
+		Pair.Value.SmoothedHPS *= Decay;
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoCombatStatsSubsystem::PushPlayerStats(float CurrentTime)
+{
+	// Clamped to one second so the first hits of a combat don't read as an absurd average.
+	float const CombatDuration = FMath::Max(CurrentTime - CombatStartTime, 1.f);
 	for (auto It = StatsPerActor.CreateIterator(); It; ++It)
 	{
 		AGeoPlayerState* GeoPlayerState = It.Key().Get();
@@ -100,45 +174,12 @@ void UGeoCombatStatsSubsystem::ComputePlayerStats(float CurrentTime)
 		}
 
 		FActorCombatStats& Stats = It.Value();
-		PruneEvents(Stats.DamageDealt, CurrentTime);
-		PruneEvents(Stats.HealingDealt, CurrentTime);
+		Stats.BestDPS = FMath::Max(Stats.BestDPS, Stats.SmoothedDPS);
+		Stats.BestHPS = FMath::Max(Stats.BestHPS, Stats.SmoothedHPS);
 
-		float const DPS = SumEvents(Stats.DamageDealt) / RollingWindowSeconds;
-		float const HPS = SumEvents(Stats.HealingDealt) / RollingWindowSeconds;
-		Stats.BestDPS = FMath::Max(Stats.BestDPS, DPS);
-		Stats.BestHPS = FMath::Max(Stats.BestHPS, HPS);
-
-		GeoPlayerState->SetDebugCombatStats(DPS, HPS, Stats.BestDPS, Stats.BestHPS, Stats.TotalDamageDealt,
+		GeoPlayerState->SetDebugCombatStats(Stats.SmoothedDPS, Stats.SmoothedHPS, Stats.BestDPS, Stats.BestHPS,
+											Stats.TotalDamageDealt / CombatDuration,
+											Stats.TotalHealingDealt / CombatDuration, Stats.TotalDamageDealt,
 											Stats.TotalHealingDealt, Stats.TotalDamageReceived);
 	}
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoCombatStatsSubsystem::RecordEvent(TArray<FCombatEventRecord>& Events, float& Total, float Amount,
-										   float CurrentTime)
-{
-	Events.Add(FCombatEventRecord{CurrentTime, Amount});
-	Total += Amount;
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoCombatStatsSubsystem::PruneEvents(TArray<FCombatEventRecord>& Events, float CurrentTime)
-{
-	float const CutoffTime = CurrentTime - RollingWindowSeconds;
-	Events.RemoveAll(
-		[CutoffTime](FCombatEventRecord const& Record)
-		{
-			return Record.Timestamp < CutoffTime;
-		});
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-float UGeoCombatStatsSubsystem::SumEvents(TArray<FCombatEventRecord> const& Events)
-{
-	float Total = 0.f;
-	for (FCombatEventRecord const& Record : Events)
-	{
-		Total += Record.Amount;
-	}
-	return Total;
 }

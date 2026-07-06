@@ -7,7 +7,7 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-AGeoPillar::AGeoPillar()
+AGeoPillar::AGeoPillar(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bUseRegularDrain = true;
 	bPushActorsOnSpawn = true;

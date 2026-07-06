@@ -14,7 +14,19 @@ Use `WidgetBlueprintFactory` with `parent_class` set, then create via `AssetTool
 
 ## Widget Tree
 
-Python cannot read or write the widget designer tree — `WidgetBlueprint` exposes no `widget_tree` property to Python. Adding any widget to the canvas requires a C++ `UEditorUtilityObject` shim.
+Python cannot read or write the widget designer tree — `WidgetBlueprint` exposes no `widget_tree` property to Python, so it cannot construct, re-parent, remove, or save tree widgets.
+
+A C++ `UEditorUtilityObject` shim exposes the tree operations Python lacks (construct, attach/re-parent, remove, commit, find-by-name); see the low-level primitives in `Source/GeoTrinityEditor/Public/Tool/GeoWidgetBuilderUtil.h`. Everything else — every `set_*` on an existing widget or its slot (text, brush, padding, anchors, color, …) — is already reachable from Python on the objects the primitives return.
+
+To fetch a reference to an already-existing widget (e.g. to resize/realign it without touching its content), use `FindWidget(Blueprint, Name)` rather than re-running `ConstructWidgetInTree` on its name — the latter is reuse-safe for *rebuilding* (it discards the old widget object), so reusing it on a widget that already has children only to get a reference back would silently drop those children.
+
+Compose these primitives from Python to add, move, wrap, reorder, or delete any widget: batch the tree ops plus Python slot edits, then commit once. The typical flow is construct a panel, attach it, attach existing children into it, position each child's slot, commit. The primitives resolve widgets by name even before they are parented, so a just-constructed group can be attached and populated in the same batch. Do not add a new shim `UFUNCTION` per request — reach for a new shim function only when an operation genuinely cannot be expressed through the primitives plus Python setters, and when you do, prefer enhancing an existing generic primitive over adding a one-off. Reusable compositions go in `AI/Python/` as `.py` files.
+
+---
+
+## Reconciling Variable GUIDs at Commit
+
+The commit primitive reconciles the variable-name-to-GUID map against the tree before compiling, so a batch of tree ops is consistent however it ended. Defer GUID assignment to commit rather than at construction, so an aborted batch leaves no dangling GUID. Every tree widget needs a GUID, not only the ones flagged as variables — the root panel and any named widget count too. The reconciliation set is the root plus all descendants; mint a GUID for any tree widget missing one and prune entries whose widget is gone, leaving animation GUIDs alone. The widget-BP compiler runs the same validation and is self-healing — it adds a missing GUID and continues — so a GUID-map mismatch surfaces as a logged ensure during compile, not a corrupted asset. See `GeoWidgetBuilderUtil.cpp` (`CommitTree`).
 
 ---
 
@@ -101,6 +113,18 @@ Call `InspectWidgetBlueprint` on the shim CDO from Python to log the full widget
 
 ---
 
+## Reading a Widget Blueprint's Parent Class
+
+A `WidgetBlueprint`'s parent-class property is protected and unreadable from Python directly. Read it from the asset-registry tag instead, which exposes both the immediate and the native parent class. Use this to confirm a designer Blueprint already reparents to the intended C++ base before driving it.
+
+---
+
+## Grouping Existing Widgets Under One Anchored Container
+
+To make a cluster of separately-placed canvas children scale and move as a unit, wrap them in one new panel anchored on the parent canvas, without moving anything on screen. Re-parent each existing child into the new panel rather than re-creating it, so it keeps its name, GUID, and graph bindings. Set the new panel's pixel rect to the cluster's bounding box (minimum left/top of the children, extent to the maximum right/bottom). Preserve each child's on-screen position by rebasing its offsets — subtract the bounding-box origin from its original canvas offsets — and a child-canvas-in-canvas keeps pixel offsets exact with no alignment guesswork. Re-parent in the intended draw order, since panel child order is z-order. See `AI/Python/group_widgets.py`.
+
+---
+
 ## Finding the Correct Asset Path
 
 The WidgetComponent's `widget_class` property reveals the actual asset path in use — always verify this before rebuilding, as there may be multiple assets with the same name in different folders.
@@ -126,6 +150,32 @@ A widget showing one image (cursor, icon, …) needs only an Image root — no c
 ## Constraining a Label to a Fixed Width
 
 To stop a text label from exceeding a fixed width, cap its width with a SizeBox and wrap the text in a ScaleBox set to scale-to-fit-X, down-only — short text keeps its size and only over-wide text shrinks to fit. See `GeoHudWidgetBuilderUtil.cpp` (`BuildAbilitySlotWidget`).
+
+---
+
+## Widget Tree Primitive Call Order
+
+Call `ConstructWidgetInTree` first to stage the widget and reserve its GUID, then `AttachWidget` to parent it, then set slot/widget properties on the returned objects from Python, then `CommitTree` once. Calling `ConstructWidgetInTree` a second time after `AttachWidget` (e.g. to re-obtain a reference) triggers the GUID ensure during commit — use the object returned by the first construct call instead.
+
+---
+
+## Single-Child Containers Silently Evict on Re-Attach
+
+A single-slot container (`SizeBox`, `Border`, …) holds exactly one content child. Attaching a widget into one that already has a child does not nest it — it detaches the previous child instead, and anything not reachable from the root at commit time is dropped from the saved asset, taking its whole subtree with it.
+
+To add a layer (e.g. a background image) inside an existing single-slot container, insert a multi-child panel (`Overlay`, `VerticalBox`, …) as its one child first, then attach the background and the existing content into that new panel.
+
+---
+
+## Matching an Existing Widget's Visual Style
+
+To replicate one widget's appearance onto another (e.g. a differently-styled button variant), read the source widget's brush/color properties via the find-by-name lookup and copy each value onto the target rather than guessing at colors — brush tint, resource texture, and draw type must all be copied together, since a tint alone reads differently against a different texture or draw type.
+
+---
+
+## OverlaySlot Alignment Property Names
+
+An `OverlaySlot`'s alignment properties in Python are `horizontal_alignment` and `vertical_alignment`.
 
 ---
 

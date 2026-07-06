@@ -96,6 +96,6 @@ World Subsystem managing object reuse:
 
 ## Class Inventories
 - **Circle (Healer)**: `GeoHealingAuraAbility`, `GeoMoiraBeamAbility`, `GeoHealReturnPassiveAbility`, `GeoChargeBeamAbility`
-- **Square (Tank)**: `GeoMineAbility`, `GeoShieldBurstPassiveAbility`, `GeoDetonateAllMinesAbility`
+- **Square (Tank)**: `GeoShieldBurstPassiveAbility`, `GeoDetonateWallsAbility` (wall deploy uses shared `GeoDeployAbility`)
 - **Triangle (DPS)**: `GeoReloadAbility`, `GeoRecallTurretAbility`; basic attack = `UGeoAutomaticProjectileAbility` with ammo cost
 - **Common**: `GeoDeployAbility`, `GeoDashAbility`

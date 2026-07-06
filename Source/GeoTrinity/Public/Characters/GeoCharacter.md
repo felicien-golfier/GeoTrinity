@@ -21,5 +21,5 @@ Implements `IAbilitySystemInterface` and `IGenericTeamAgentInterface`.
 ## Team
 - `ETeam TeamId` — implements `IGenericTeamAgentInterface`; used by AI perception and `GetAllAgentsWithRelationTowardsActor()`
 
-## Floating-bar visibility (listen-server trap)
-The floating bar is hidden only over the **local human player's own avatar** (it uses the main HUD overlay). `BeginPlay` gates on `GeoLib::IsLocalPlayerAvatar(this)` — **not `IsLocallyControlled()` alone**: on a listen server the host's AI pawns are *also* locally controlled, so the plain check wrongly hid every host enemy's bar while clients (non-local proxies) still showed it. Use `IsLocalPlayerAvatar` for any "my own pawn" cosmetic.
+## Floating-bar visibility
+Every avatar shows its floating combatant bar, including the local human player's own (so the host sees a bar over their own head too). `SetCombattantWidgetVisible` exists only to hide the boss's floating bar while the dedicated on-screen boss bar is displayed.

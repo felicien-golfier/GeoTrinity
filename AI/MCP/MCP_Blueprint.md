@@ -26,6 +26,10 @@ See `AI/Python/` for call patterns covering:
 
 A boolean property's `b` prefix is dropped in its Python name.
 
+The correct CDO accessor is `unreal.get_default_object(bp.generated_class())` — calling `get_default_object()` directly on the class object fails.
+
+Property names passed to `set_editor_property` / `get_editor_property` are **PascalCase** (matching the C++ `UPROPERTY` name), not snake_case.
+
 Resolve a class by its script path with the class loader; there is no find-by-name helper.
 
 A soft-object-pointer property takes the loaded asset object as its value; passing a soft-object-path value fails type conversion.
@@ -33,6 +37,8 @@ A soft-object-pointer property takes the loaded asset object as its value; passi
 A class absent from the Python module can still be reached by loading its CDO via the script path with the `Default__` prefix; its reflected functions are callable with the by-name method caller, which also works for static function libraries.
 
 A byte property backed by an unexposed enum cannot be read or written from Python, and the Remote Control API refuses private properties — changing one needs a C++ shim.
+
+A gameplay-tag container is read as exported text with its `export_text` method (there is no `to_string`), and written by building a fresh container and round-tripping the desired tags through its `import_text` method.
 
 ## Editing a Struct Array
 

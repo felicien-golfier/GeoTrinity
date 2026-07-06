@@ -49,7 +49,8 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 - `bPushActorsOnSpawn` — enables spawn-time push (see above); server only
 - `bDestroyOldestWhenLimitReached` — if true, `CanDeploy` always returns true; the oldest deployable of the same class is expired by `RegisterDeployable` when the slot is full
 - `ExplodeAttitude` — bitmask of team attitudes targeted by `Explode()` (default: `Hostile`)
-- `CombattantWidgetComponent` — the world-space health bar widget component, held as the engine base `UWidgetComponent` (the concrete `UGeoCombattantWidgetComp` lives in the `GeoTrinityUI` module). **Added in Blueprint**, resolved in `BeginPlay` via `FindComponentByClass`. Publicly accessible for callers that need to show/hide it
+- `CombattantWidgetComponent` — the world-space health bar widget component, held as the engine base `UWidgetComponent` (the concrete `UGeoCombattantWidgetComp` lives in the `GeoTrinityUI` module). **Created automatically in the base constructor** from `GameDataSettings::CombattantWidgetComponentClass` (a soft class, so gameplay never names the UI type) and attached to a non-rotating `WidgetAnchorComponent` — exactly like `AGeoCharacter`. Null on the dedicated server (UI class not shipped). Bound to the owner's ASC in `BeginPlay` (`BindToOwnerASC`, after attributes exist) and hidden there for non-damageable deployables. Publicly accessible for callers that need to show/hide it. Every deployable BP inherits it; no per-BP setup needed.
+- Per-BP health-bar tuning, all `EditDefaultsOnly` (the component's own Details panel can't expose these because its class is runtime-resolved): `HealthBarDrawSize` (`FVector2D`), `HealthBarLocation` (`FVector`, relative to `WidgetAnchorComponent`), `HealthBarWidgetClassOverride` (`TSoftClassPtr<UUserWidget>`, falls back to `GameDataSettings::DefaultDeployableHealthBarWidgetClass`). Applied in `BeginPlay`.
 - `GetDurationPercent()` — health ratio 0..1; drives health bar
 - `DestroyOldestWhenLimitReached()` — public getter for `bDestroyOldestWhenLimitReached`; read by `UGeoDeployableManagerComponent`
 - `Expire(float TimeBeforeDestroy)` / `Expire()` — `Expire()` uses the default `TimeBeforeDestroyAtExpire`; never call directly; always go through `Recall()` for proper end-of-life
@@ -62,7 +63,7 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 - `EffectDataArray`, `Params`, `PredictionKey`
 - `AbilityTag` — tag of the ability that spawned this deployable. Forwarded to every `ApplyEffectFromEffectData` call the deployable makes, so `FDamageEffectData::UpdateContextHandle` can inspect the originating ability's CDO (e.g. set `bIsFromBasicAbility` for turret retargeting).
 
-## `Mine/` — Explodes on overlap, damages enemies and shields allies. See `Mine/CLAUDE.md`.
+## `Wall/` — Damageable wall with a draining health pool; does not block/trigger; consumed by Detonate's ray to boost it. See `Wall/CLAUDE.md`.
 ## `HealingZone/` — Static zone that heals allies over time while they stand inside. See `HealingZone/CLAUDE.md`.
 ## `BuffPickup/` — Launched pickup that applies a random buff to whoever collects it. See `BuffPickup/CLAUDE.md`.
 ## `Turret/` — Auto-targets and fires at the nearest enemy on a timer. See `Turret/CLAUDE.md`.

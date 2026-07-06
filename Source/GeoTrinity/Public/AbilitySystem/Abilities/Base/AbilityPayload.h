@@ -41,3 +41,15 @@ struct GEOTRINITY_API FAbilityPayload
 	UPROPERTY(Transient, BlueprintReadOnly)
 	AActor* Instigator{nullptr};
 };
+
+/**
+ * Polymorphic base for pattern-specific data carried through PatternStartMulticast alongside FAbilityPayload.
+ * A pattern that needs extra replicated data defines its own FPatternData subclass with UPROPERTY fields, fills it on
+ * the server in UPatternAbility::CreatePatternData(), and reads it back in InitPattern via PatternData.GetPtr<T>().
+ * Empty by default — most patterns need no extra data and pass an unset TInstancedStruct.
+ */
+USTRUCT(BlueprintType)
+struct GEOTRINITY_API FPatternData
+{
+	GENERATED_BODY()
+};

@@ -19,14 +19,12 @@ Interface actors must implement to be poolable:
 - `End()` — called on return
 
 ### `GeoCombatStatsSubsystem.h`
-World subsystem tracking DPS / HPS / damage-received per player using a **10-second rolling window**:
-- `OnWorldBeginPlay` — server-only: subscribes to `GeoGameState::OnMatchStateChanged` to reset all stats when a fight starts (`MatchState::InProgress`)
-- `ReportDamageDealt(PlayerState, Amount)` — adds a timestamped event to the rolling window
-- `ReportDamageReceived(PlayerState, Amount)` — increments the session total only (no rolling window for received damage)
-- `ReportHealingDealt(PlayerState, Amount)` — adds a timestamped event to the rolling window
-- `ComputePlayerStats(CurrentTime)` — prune old events, update session-best rolling DPS/HPS, push stats to `AGeoPlayerState`
-- Called from `UGeoAttributeSetBase::PostGameplayEffectExecute()` on every damage/heal event
-- `FActorCombatStats` holds `TArray<FCombatEventRecord>` for DamageDealt and HealingDealt; TotalDamageReceived is a plain running total (not a rolling window)
+World subsystem tracking DPS / HPS / damage-received per player with **fixed-size state — no per-event storage**. Current DPS/HPS are exponentially smoothed rates (`SmoothingWindowSeconds` = 3 s time constant: each event adds `Amount / T`, rates decay by `e^(-dt/T)`), plus whole-combat averages (`FightDPS`/`FightHPS` = totals / time since `CombatStartTime`):
+- `OnWorldBeginPlay` — server-only: subscribes to `GeoGameState::OnMatchStateChanged`
+- Match `InProgress` starts a fight: `ResetStats()` zeroes everything and restarts `CombatStartTime`. Leaving `InProgress` ends it: `StatsPerActor.Empty()` **without** pushing zeros, so the player states keep displaying the final fight values
+- `ReportDamageDealt` / `ReportHealingDealt` / `ReportDamageReceived` — decay the rates to now, fold the event in, push stats. The first event outside a match opens a **new session** (`FindOrAddStats` → `ResetStats`), zeroing the previous fight's frozen values for every player
+- `ComputePlayerStats(CurrentTime)` — `DecayRates` + `PushPlayerStats` (best rates + fight averages + `SetDebugCombatStats`). Ticked every frame from `AGeoPlayerController::Tick` (non-shipping, `Geo.ShowCombatStats`); **no-op while `StatsPerActor` is empty** (right after a fight ends), which is what freezes the final fight values
+- Reports come from `UGeoAttributeSetBase::PostGameplayEffectExecute()` on every damage/heal event
 
 ### `GeoSessionSubsystem.h`
 **GameInstance** subsystem (survives level travel) — the direct-IP **no-Steam** connect/host seam. Steam sessions stay in `UGeoGameInstance` (CreateAdvancedSession/JoinAdvancedSession); this subsystem never touches them.

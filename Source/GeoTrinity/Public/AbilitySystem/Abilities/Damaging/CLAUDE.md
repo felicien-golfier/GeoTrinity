@@ -26,11 +26,11 @@ Projectile-firing ability base classes.
 - `ActivateAbility` schedules `Fire()` on a repeating timer driven by `FireDelay`
 - `Fire()` runs **client-only** per shot — spawns predicted projectile, sends RPC
 - Server receives each shot via `OnFireTargetDataReceived()` (no server-side timer)
-- Cost committed **per shot**: `Fire()` commits for the locally controlled player; `OnFireTargetDataReceived()` commits only for remote clients (`!IsLocallyControlledPlayer()` guard) — on a listen-server host `Fire()` already committed, so skipping here avoids charging the cost twice
+- Cost committed **per shot**: `Fire()` commits for the locally controlled player. `SendFireDataToServer` now skips the RPC when `IsServer()` is true, so a listen-server host's own shots never reach `OnFireTargetDataReceived` on that machine. `OnFireTargetDataReceived` always commits — it is only reachable for remote clients' shots processed on the server
 
 ### Per-shot animation
 - Fire montage plays continuously
-- Section index cycles Fire1 → Fire2 → … tracked on ASC via `GetFireSectionIndex()`
+- Section index cycles Fire1 → Fire2 → … tracked on ASC via `GetFireSectionIndex()`; resets to 0 when the montage has no Fire sections (override in `UGeoAutomaticFireAbility::GetFireSectionIndex`)
 - Play rate adjusted so each section matches `FireDelay`
 
 ### Game feel fields

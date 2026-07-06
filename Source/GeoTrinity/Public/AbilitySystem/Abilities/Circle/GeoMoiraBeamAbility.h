@@ -13,6 +13,7 @@
 #include "GeoMoiraBeamAbility.generated.h"
 
 
+class AGeoHealingZone;
 class UNiagaraSystem;
 class ACharacter;
 class UGeoBeamVFXComponent;
@@ -96,9 +97,13 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 			  meta = (ClampMin = "0", ClampMax = "100", AllowPrivateAccess = true))
 	float BeamZoneDrainPercentagePerSecond = 50.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	float BoostPerFinishedZone = .2f;
+	TArray<TWeakObjectPtr<AGeoHealingZone>> FinishedZones;
+
 	/** Maximum number of HealingZone actors the beam may fully absorb in a single activation. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
-	float MaximumZoneAbsorbed = 5.f;
+	float MaximumZoneAbsorbed = 6.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel")
 	TObjectPtr<UNiagaraSystem> BeamNiagaraSystem;

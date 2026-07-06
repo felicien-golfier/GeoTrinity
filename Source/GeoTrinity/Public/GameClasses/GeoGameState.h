@@ -11,6 +11,8 @@
 
 class AEnemyCharacter;
 class AGeoArenaBarrier;
+class AGeoDeployableBase;
+class UGeoDeployableManagerComponent;
 
 USTRUCT(BlueprintType)
 struct FEnemySpawnEntry
@@ -79,9 +81,12 @@ public:
 	/** Server-only. Stops tracking a player who left the fight, then re-checks for a full wipe. */
 	void NotifyPlayerLeft(APlayableCharacter* PlayableCharacter);
 
-	/** Server-only. Called when the boss health reaches 0. Transitions to WaitingPostMatch. */
+	/** Server-only. Called when the boss health reaches 0. Captures the loot origin, transitions to WaitingPostMatch.
+	 */
 	UFUNCTION()
 	void NotifyBossDefeated();
+	/** Server-only. Starts the post-match loot shower: bursts of buff pickups erupting from the dead boss. */
+	void Loot();
 
 	/**
 	 * Shows boss health bar locally, binds the defeat delegate, sends the aggro StateTree event,
@@ -113,6 +118,16 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	FName EntranceZoneTagName = "EntranceZone";
 
+	/** Seconds between loot pickup bursts after the boss dies. */
+	UPROPERTY(EditAnywhere, Category = "Loot")
+	float LootSpawnInterval = 0.1f;
+	/** Pickups spawned per burst. */
+	UPROPERTY(EditAnywhere, Category = "Loot")
+	int32 LootPickupsPerBurst = 1;
+	/** Scatter radius around the dead boss the pickups are launched to. */
+	UPROPERTY(EditAnywhere, Category = "Loot")
+	float LootMaxRadius = 1500.f;
+
 	FCommitFight CommitFightDelegate;
 	FMatchStateChanged OnMatchStateChanged;
 
@@ -131,6 +146,15 @@ private:
 	void HandlePotentialWipe();
 
 	FTimerHandle CommitFightTimer;
+	FTimerHandle LootTimer;
+	FVector LootOrigin = FVector::ZeroVector;
+
+	/** Managers granted an unlimited pickup slot for the loot shower; restored when the arena resets. */
+	TArray<TWeakObjectPtr<UGeoDeployableManagerComponent>> LootBoostedManagers;
+	TSubclassOf<AGeoDeployableBase> LootPickupClass;
+
+	/** Spawns one burst of loot pickups from LootOrigin. Timer callback started by Loot(). */
+	void SpawnLootBurst();
 
 	void CommitFightStart() const;
 	void TeleportPlayersTo(FGameplayTag LocationTag, FName const& ExemptZoneName = NAME_None) const;

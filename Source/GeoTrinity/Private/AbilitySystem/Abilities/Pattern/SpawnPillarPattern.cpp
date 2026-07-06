@@ -2,13 +2,10 @@
 
 #include "AbilitySystem/Abilities/Pattern/SpawnPillarPattern.h"
 
-#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Pillar/GeoPillar.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
-#include "GameFramework/GameStateBase.h"
-#include "GameFramework/PlayerState.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -37,49 +34,26 @@ FGameplayCueParameters USpawnPillarPattern::FillCueParam(FAbilityPayload const& 
 	return CueParams;
 }
 
-void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload)
+void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
 	PillarSpawnLocations.Empty();
-	UGeoAbilitySystemComponent* GeoAsc = GeoASLib::GetGeoAscFromActor(Payload.Owner);
-	if (!IsValid(GeoAsc))
-	{
-		ensureMsgf(GeoAsc, TEXT("SpawnPillarPattern: Owner has no ASC"));
-		Super::InitPattern(Payload);
-		return;
-	}
-	UGeoAttributeSetBase const* AttributeSet =
-		Cast<UGeoAttributeSetBase>(GeoAsc->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
 
-	if (!IsValid(AttributeSet))
+	FSpawnPillarPatternData const* PillarData = PatternData.GetPtr<FSpawnPillarPatternData>();
+	if (!ensureMsgf(PillarData,
+					TEXT("SpawnPillarPattern: PatternData is not an FSpawnPillarPatternData — launch this "
+						 "pattern from USpawnPillarAbility")))
 	{
-		ensureMsgf(AttributeSet, TEXT("SpawnPillarPattern: OwnerASC has no UGeoAttributeSetBase"));
-		Super::InitPattern(Payload);
+		Super::InitPattern(Payload, PatternData);
 		return;
 	}
 
-	float const HealthRatio = AttributeSet->GetHealthRatio();
-	uint8 NumPillarToSpawn = HealthRatio < .2f ? 3 : HealthRatio < .5f ? 2 : 1;
-	TArray<TObjectPtr<APlayerState>> Players = GetWorld()->GetGameState()->PlayerArray;
-	if (Players.Num() == 0)
+	for (FVector2D const& ZoneLocation : PillarData->ZoneLocations)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SpawnPillarPattern: No player in the game"));
+		PillarSpawnLocations.Add(ZoneLocation);
 	}
+	Super::InitPattern(Payload, PatternData);
 
-	Players.Sort(
-		[](TObjectPtr<APlayerState> const& A, TObjectPtr<APlayerState> const& B)
-		{
-			return A->GetPlayerId() < B->GetPlayerId();
-		});
-
-	for (uint8 i = 0; i < NumPillarToSpawn && i < Players.Num(); i++)
-	{
-		if (APawn const* TargetPawn = Players[(Payload.Seed + i) % Players.Num()]->GetPawn())
-		{
-			PillarSpawnLocations.Add(FVector2D(TargetPawn->GetActorLocation()));
-		}
-	}
-
-	Super::InitPattern(Payload);
+	ExecuteGameplayCue(DirectionCue); // Call after super to have Storedpayload
 }
 void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 {
@@ -87,18 +61,14 @@ void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 	if (GameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
-		if (!IsValid(InstigatorASC))
-		{
-			ensureMsgf(false, TEXT("Pattern Instigator %s has no ASC !"), *StoredPayload.Instigator->GetName());
-		}
-		else
+		if (ensureMsgf(IsValid(InstigatorASC), TEXT("Pattern Instigator %s has no ASC !"),
+					   *StoredPayload.Instigator->GetName()))
 		{
 			for (FVector2D const& Location : PillarSpawnLocations)
 			{
-				FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
 				FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
 				CueParams.Location = FVector(Location, ArbitraryCharacterZ);
-				InstigatorASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
+				InstigatorASC->InvokeGameplayCueEvent(GameplayCueTag, EGameplayCueEvent::Executed, CueParams);
 			}
 		}
 	}
@@ -138,11 +108,14 @@ void USpawnPillarPattern::SpawnPillarAtLocation(FVector2D const& ZoneLocation,
 				return;
 			}
 
-			if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
+			if (IsValid(TargetActor) && !TargetActor->IsActorBeingDestroyed())
 			{
-				UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, InstigatorAsc, TargetASC,
-																	StoredPayload.AbilityLevel, StoredPayload.Seed,
-																	StoredPayload.AbilityTag);
+				if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
+				{
+					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, InstigatorAsc, TargetASC,
+																		StoredPayload.AbilityLevel, StoredPayload.Seed,
+																		StoredPayload.AbilityTag);
+				}
 			}
 		}
 	}

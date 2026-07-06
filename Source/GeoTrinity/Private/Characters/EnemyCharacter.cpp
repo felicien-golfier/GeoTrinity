@@ -58,7 +58,7 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 		}
 		else
 		{
-			OnBossDefeated.Broadcast();
+			OnEnemyDefeated.Broadcast();
 			Destroy();
 		}
 	}

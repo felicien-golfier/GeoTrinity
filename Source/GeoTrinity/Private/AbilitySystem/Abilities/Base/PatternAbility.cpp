@@ -22,7 +22,7 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 
 	StoredPayload = CreateAbilityPayload();
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
-	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch);
+	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch, CreatePatternData());
 	UPattern* PatternInstance = nullptr;
 	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
 	{

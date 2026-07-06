@@ -37,12 +37,23 @@ class GEOTRINITY_API UDevastatingWavePattern : public UTickablePattern
 public:
 	/** Spawns the masked AOE Niagara component deactivated — the pattern instance is reused across activations. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
+	/** Clears hit-actor tracking, wave pillar data, and resets all MPC pillar mask slots to the unused sentinel.
+	 * Called at the start of both InitPattern and StartPattern so stale data from a previous activation never bleeds in. */
+	void ClearData();
 
 protected:
-	/** Teleports the boss actor to the stored origin position before the wave starts expanding. */
-	virtual void InitPattern(FAbilityPayload const& Payload) override;
-	/** Resets the mask MPC pillar slots, then positions, configures and activates the AOE VFX at the wave origin. */
+	/** Clears previous run data, teleports the instigator to the wave origin, then activates the telegraph VFX for
+	 * the wind-up phase (skipped on the "too late" path when TravelTime >= StartDelay). */
+	virtual void InitPattern(FAbilityPayload const& Payload,
+							 TInstancedStruct<FPatternData> const& PatternData) override;
+	/** Pre-populates the MPC pillar-mask slots with all pillars currently visible from the wave origin so safe zones
+	 * appear on the static telegraph before the wave starts expanding. */
+	void AddAllPillarsToVfxMask();
+	/** Resets wave tracking data and MPC pillar slots via ClearData(), then activates the real expanding-wave AOE. */
 	virtual void StartPattern() override;
+	/** Activates the AOE VFX component in telegraph mode: full MaxRadius extent at TelegraphColor, grow time =
+	 * StartDelay - TravelTime (remaining wind-up). Shows the full danger zone before the wave begins. */
+	void ActivateAoeVfxTelegraph() const;
 	/** Sets the cue source location to the boss's 2D wave origin. */
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 	/**
@@ -58,6 +69,8 @@ private:
 	bool ShouldHitActor(AActor const* Actor) const;
 	/** Writes the last added PillarsWaveData entry into the next mask MPC pillar slot. */
 	void AddPillarToVfxMask();
+	/** Positions the AOE component at the wave origin, pushes its user params and activates it. */
+	void ActivateAOEVfx() const;
 #if WITH_EDITOR
 	void DrawDebugSafeZones(float CurrentRadius) const;
 #endif
@@ -78,13 +91,25 @@ private:
 	TObjectPtr<UMaterialParameterCollection> MaskMaterialParameterCollection;
 
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
-	FLinearColor AOEColor = FLinearColor::Red;
+	FLinearColor AOEColor = FLinearColor::Yellow;
 
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
 	float FadeOutDuration = 0.5f;
 
+	/** Duration in seconds for the telegraph VFX to fade once the wave starts expanding (default 0.1 s — near-instant
+	 * handoff so the static telegraph and the expanding wave don't visually overlap). */
+	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
+	float TelegraphFadeOutDuration = 0.1f;
+
+	/** Color of the full-range telegraph shown during the wind-up, before the wave starts expanding. */
+	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
+	FLinearColor TelegraphColor = FLinearColor::Red;
+
+
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> AOEVfxComponent;
+
+	FTimerHandle TelegraphBlinkTimerHandle;
 
 	TSet<TWeakObjectPtr<AActor>> HitActors;
 	TArray<FPillarWaveData> PillarsWaveData;

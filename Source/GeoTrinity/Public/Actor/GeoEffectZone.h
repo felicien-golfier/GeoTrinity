@@ -27,7 +27,7 @@ class GEOTRINITY_API AGeoEffectZone : public AGeoInteractableActor
 
 public:
 	/** Disables damage on this actor so it cannot be destroyed during play. */
-	AGeoEffectZone();
+	AGeoEffectZone(FObjectInitializer const& ObjectInitializer);
 
 protected:
 	/** Returns the interactable data populated from Details-panel properties in OnConstruction and BeginPlay. */
