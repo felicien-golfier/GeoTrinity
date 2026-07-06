@@ -160,10 +160,10 @@ void AGeoGameState::StartBossFight(AEnemyCharacter* Boss)
 
 	if (GeoLib::IsServer(this))
 	{
-		ensureMsgf(!Boss->OnBossDefeated.IsAlreadyBound(this, &AGeoGameState::NotifyBossDefeated),
-				   TEXT("Boss %s already has OnBossDefeated bound to this GameState"), *Boss->GetName());
+		ensureMsgf(!Boss->OnEnemyDefeated.IsAlreadyBound(this, &AGeoGameState::NotifyBossDefeated),
+				   TEXT("Boss %s already has OnEnemyDefeated bound to this GameState"), *Boss->GetName());
 
-		Boss->OnBossDefeated.AddUniqueDynamic(this, &AGeoGameState::NotifyBossDefeated);
+		Boss->OnEnemyDefeated.AddUniqueDynamic(this, &AGeoGameState::NotifyBossDefeated);
 
 		if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(Boss->GetController()))
 		{
@@ -302,4 +302,10 @@ void AGeoGameState::NotifyBossDefeated()
 	{
 		GeoGameMode->RequestWaitingPostMatch();
 	}
+	Loot();
+}
+
+void AGeoGameState::Loot()
+{
+	
 }

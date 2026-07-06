@@ -82,6 +82,7 @@ public:
 	/** Server-only. Called when the boss health reaches 0. Transitions to WaitingPostMatch. */
 	UFUNCTION()
 	void NotifyBossDefeated();
+	void Loot();
 
 	/**
 	 * Shows boss health bar locally, binds the defeat delegate, sends the aggro StateTree event,

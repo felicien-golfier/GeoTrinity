@@ -54,7 +54,7 @@ public:
 #endif
 
 private:
-	static constexpr float RollingWindowSeconds = 10.f;
+	static constexpr float RollingWindowSeconds = 3.f;
 
 	TMap<TWeakObjectPtr<AGeoPlayerState>, FActorCombatStats> StatsPerActor;
 
