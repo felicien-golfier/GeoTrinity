@@ -33,6 +33,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Ability|Reload")
 	static FLinearColor GetColorForAmmo(int32 Ammo);
 
+	/** Public so AGeoGameState::Loot() can spawn the same pickups from this CDO without duplicating the config. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
+	TSubclassOf<AGeoBuffPickup> BuffPickupClass;
+
 protected:
 	/** Binds the ammo-changed callback so the reload button is grayed out in the HUD when ammo is full. */
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
@@ -57,9 +61,6 @@ protected:
 	 * tinted with the entry matching the chosen buff; the HUD ammo number uses the same palette via GetColorForAmmo. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
 	TArray<FLinearColor> BuffColors;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
-	TSubclassOf<AGeoBuffPickup> BuffPickupClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
 	float MinSpawnRadius = 150.f;

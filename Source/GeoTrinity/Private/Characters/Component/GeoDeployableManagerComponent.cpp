@@ -27,8 +27,12 @@ bool UGeoDeployableManagerComponent::HasReachMaxLimit(TSubclassOf<AGeoDeployable
 
 	if (int32 const* ClassMax = DeployableSlots.Find(DeployableClass))
 	{
+		if (*ClassMax <= 0) // 0 = unlimited
+		{
+			return false;
+		}
 		FDeployableBucket const* Bucket = Deployables.Find(DeployableClass);
-		return Bucket->Deployables.Num() != 0 && Bucket->Deployables.Num() >= *ClassMax;
+		return Bucket && Bucket->Deployables.Num() >= *ClassMax;
 	}
 
 	return Deployables.FindOrAdd(DeployableClass).Deployables.Num() >= MaxDeployables;
@@ -48,6 +52,11 @@ TArray<AGeoDeployableBase*> UGeoDeployableManagerComponent::GetAllDeployables() 
 void UGeoDeployableManagerComponent::SetDeployableInfinitCount(TSubclassOf<AGeoDeployableBase> const Class)
 {
 	DeployableSlots.FindOrAdd(Class) = 0;
+}
+
+void UGeoDeployableManagerComponent::RemoveDeployableSlot(TSubclassOf<AGeoDeployableBase> const Class)
+{
+	DeployableSlots.Remove(Class);
 }
 
 void UGeoDeployableManagerComponent::RemoveInvalidDeployables(FDeployableBucket& Bucket)

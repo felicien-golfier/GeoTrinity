@@ -84,6 +84,8 @@ public:
 
 	/** Adds a DeployableSlots entry for Class with limit 0, granting unlimited deployments of that class. */
 	void SetDeployableInfinitCount(TSubclassOf<AGeoDeployableBase> Class);
+	/** Removes the DeployableSlots entry for Class, putting it back on the global MaxDeployables pool. */
+	void RemoveDeployableSlot(TSubclassOf<AGeoDeployableBase> Class);
 	void RemoveInvalidDeployables(FDeployableBucket& Bucket);
 
 	UPROPERTY(BlueprintAssignable)

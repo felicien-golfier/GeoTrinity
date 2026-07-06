@@ -20,7 +20,7 @@ Use `AI/Commands.md` Bash build for editor/dev builds. To package a distributabl
 |---|---|
 | Any project's cpp file | CLAUDE.md at the .h root, in the public folder |
 | Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
-| ALWAYS BUILD WHEN DONE CODING : Build commands, dev environment, copyright | `AI/Commands.md` |
+| Build commands, dev environment, copyright | `AI/Commands.md` |
 | Packaging a distributable build of the game | `BuildPackage.md` |
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |

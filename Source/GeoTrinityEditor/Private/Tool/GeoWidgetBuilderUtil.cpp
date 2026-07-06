@@ -313,6 +313,19 @@ void UGeoWidgetBuilderUtil::CommitTree(UWidgetBlueprint* WidgetBlueprint)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoWidgetBuilderUtil::FindWidget(UWidgetBlueprint* WidgetBlueprint, FName Name)
+{
+	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
+	if (!ensureMsgf(Tree, TEXT("FindWidget — WidgetTree is null on '%s'"),
+					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
+	{
+		return nullptr;
+	}
+
+	return FindTreeWidget(Tree, Name);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 UWidget* UGeoWidgetBuilderUtil::AddWidgetToPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
 												 TSubclassOf<UWidget> WidgetClass, FName WidgetName, FMargin Offsets)
 {

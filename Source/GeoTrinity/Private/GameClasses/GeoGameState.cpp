@@ -3,8 +3,13 @@
 #include "GameClasses/GeoGameState.h"
 
 #include "AI/GeoEnemyAIController.h"
+#include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
 #include "Actor/GeoArenaBarrier.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"
@@ -28,6 +33,16 @@ void AGeoGameState::HandleMatchHasStarted()
 void AGeoGameState::HandleMatchIsWaitingToStart()
 {
 	Super::HandleMatchIsWaitingToStart();
+
+	GetWorld()->GetTimerManager().ClearTimer(LootTimer);
+	for (TWeakObjectPtr<UGeoDeployableManagerComponent> const& Manager : LootBoostedManagers)
+	{
+		if (UGeoDeployableManagerComponent* DeployableManager = Manager.Get())
+		{
+			DeployableManager->RemoveDeployableSlot(LootPickupClass);
+		}
+	}
+	LootBoostedManagers.Empty();
 
 	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance, EntranceZoneTagName);
 
@@ -298,6 +313,12 @@ void AGeoGameState::HandlePotentialWipe()
 
 void AGeoGameState::NotifyBossDefeated()
 {
+	// Capture before the WaitingPostMatch transition: HandleMatchHasEnded → StopBossFight destroys the boss.
+	if (AEnemyCharacter const* Boss = GetBossEnemy())
+	{
+		LootOrigin = Boss->GetActorLocation();
+	}
+
 	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
 	{
 		GeoGameMode->RequestWaitingPostMatch();
@@ -307,5 +328,98 @@ void AGeoGameState::NotifyBossDefeated()
 
 void AGeoGameState::Loot()
 {
-	
+	if (!GeoLib::IsServer(this))
+	{
+		return;
+	}
+	GetWorld()->GetTimerManager().SetTimer(LootTimer, this, &AGeoGameState::SpawnLootBurst, LootSpawnInterval, true);
+}
+
+void AGeoGameState::SpawnLootBurst()
+{
+	// Resolve the Blueprint-derived reload ability CDO that owns the pickup config (class, buff pool, color palette).
+	// The ability catalog is keyed by the Spell AbilityTag, which has no native constant, so find the entry by class.
+	UGeoReloadAbility const* ReloadCDO = nullptr;
+	FGameplayTag ReloadTag;
+	if (UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo())
+	{
+		for (FGameplayAbilityInfo const& Info : AbilityInfo->GetAllAbilityInfos())
+		{
+			if (Info.AbilityClass && Info.AbilityClass->IsChildOf(UGeoReloadAbility::StaticClass()))
+			{
+				ReloadCDO = Info.AbilityClass->GetDefaultObject<UGeoReloadAbility>();
+				ReloadTag = Info.AbilityTag;
+				break;
+			}
+		}
+	}
+	if (!ensureMsgf(ReloadCDO && ReloadCDO->BuffPickupClass,
+					TEXT("SpawnLootBurst: no reload ability with a BuffPickupClass registered in AbilityInfo")))
+	{
+		GetWorld()->GetTimerManager().ClearTimer(LootTimer);
+		return;
+	}
+
+	TArray<TInstancedStruct<FEffectData>> const BuffEffects = ReloadCDO->GetEffectDataArray();
+
+	// The pickup needs a live player as Owner: its ASC is the effect source and drives the Friendly attitude check.
+	APlayableCharacter* PayloadOwner = nullptr;
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		PayloadOwner = It->IsValid() ? Cast<APlayableCharacter>((*It)->GetPawn()) : nullptr;
+		if (IsValid(PayloadOwner))
+		{
+			break;
+		}
+	}
+	if (BuffEffects.IsEmpty() || !IsValid(PayloadOwner))
+	{
+		return;
+	}
+
+	// The pickups register on PayloadOwner's deployable manager; lift its cap for the shower so pickups
+	// don't expire each other. Restored in HandleMatchIsWaitingToStart.
+	if (UGeoDeployableManagerComponent* DeployableManager =
+			PayloadOwner->GetComponentByClass<UGeoDeployableManagerComponent>())
+	{
+		DeployableManager->SetDeployableInfinitCount(ReloadCDO->BuffPickupClass);
+		LootBoostedManagers.AddUnique(DeployableManager);
+		LootPickupClass = ReloadCDO->BuffPickupClass;
+	}
+
+	FAbilityPayload Payload;
+	Payload.Origin = FVector2D(LootOrigin);
+	Payload.ServerSpawnTime = GetWorld()->GetTimeSeconds();
+	Payload.AbilityTag = ReloadTag;
+	Payload.Owner = PayloadOwner;
+	Payload.Instigator = PayloadOwner;
+
+	FTransform const SpawnTransform{LootOrigin};
+	for (int32 PickupIndex = 0; PickupIndex < LootPickupsPerBurst; ++PickupIndex)
+	{
+		AGeoBuffPickup* Pickup = GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(
+			ReloadCDO->BuffPickupClass, SpawnTransform, PayloadOwner, PayloadOwner,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (!ensureMsgf(IsValid(Pickup), TEXT("SpawnLootBurst: failed to spawn AGeoBuffPickup")))
+		{
+			return;
+		}
+		// Server-only spawning of replicated actors — no client prediction, so plain RNG is fine here.
+		float const Angle = FMath::FRandRange(0.f, 2.f * PI);
+		float const Radius = LootMaxRadius * FMath::Sqrt(FMath::FRand()); // sqrt → uniform over the disc
+		float const PowerScale = FMath::FRandRange(0.3f, 1.f);
+		Payload.Seed = FMath::Rand();
+		int32 const BuffIndex = Payload.Seed % BuffEffects.Num();
+
+		FBuffPickupData PickupData;
+		GeoASLib::FillDeployableData(PickupData, Payload, BuffEffects, FDeployableDataParams());
+		PickupData.EffectDataArray = {BuffEffects[BuffIndex]};
+		PickupData.BuffIndex = BuffIndex;
+		PickupData.PowerScale = PowerScale;
+		PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
+		PickupData.TargetLocation = LootOrigin + FVector{FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f};
+
+		Pickup->InitInteractable(&PickupData);
+		Pickup->FinishSpawning(SpawnTransform);
+	}
 }

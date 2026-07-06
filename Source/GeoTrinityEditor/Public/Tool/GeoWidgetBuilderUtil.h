@@ -97,6 +97,15 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void CommitTree(UWidgetBlueprint* WidgetBlueprint);
 
+	/**
+	 * Finds and returns an existing widget by name anywhere in the tree (parented or not), without constructing,
+	 * attaching, or modifying anything. Read-only counterpart to ConstructWidgetInTree: use this to fetch a widget
+	 * or its Slot for property edits (sizing, alignment, …) when it already exists, so Python never needs to
+	 * reconstruct-and-reattach just to obtain a reference. Null if no widget of that name exists.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static UWidget* FindWidget(UWidgetBlueprint* WidgetBlueprint, FName Name);
+
 	// --- Convenience wrappers over the primitives -------------------------------------------------------------------
 
 	/**
