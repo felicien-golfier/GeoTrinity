@@ -138,6 +138,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AbilityBar")
 	bool IsAbilityActive(FGameplayTag AbilityTag) const;
 
+	/** Returns true when the granted ability with AbilityTag passes its activation checks (tags, cost, cooldown).
+	 * Lets a shared-input slot pick which of its abilities to display (e.g. sacrifice channel vs detonate). */
+	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	bool CanActivateAbility(FGameplayTag AbilityTag) const;
+
 	/** Outputs the live and maximum deployable count for the deploy ability with AbilityTag, read from the avatar's
 	 * manager. */
 	UFUNCTION(BlueprintPure, Category = "AbilityBar")

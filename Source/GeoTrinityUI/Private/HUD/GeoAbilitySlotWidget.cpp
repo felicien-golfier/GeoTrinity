@@ -15,14 +15,20 @@ namespace
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySlotWidget::InitSlot(FGeoAbilityBarEntry const& InEntry, AGeoHUD* InHUD)
+void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntries, AGeoHUD* InHUD)
 {
-	Entry = InEntry;
+	if (!ensureMsgf(InEntries.Num() > 0, TEXT("UGeoAbilitySlotWidget::InitSlot — no entries")))
+	{
+		return;
+	}
+
+	Entries = InEntries;
+	DisplayedIndex = 0;
 	HUD = InHUD;
 
-	if (Icon && Entry.Icon)
+	if (Icon && DisplayedEntry().Icon)
 	{
-		Icon->SetBrushFromTexture(const_cast<UTexture2D*>(Entry.Icon.Get()));
+		Icon->SetBrushFromTexture(const_cast<UTexture2D*>(DisplayedEntry().Icon.Get()));
 	}
 
 	if (CooldownSweep && CooldownSweepMaterial)
@@ -39,8 +45,8 @@ void UGeoAbilitySlotWidget::InitSlot(FGeoAbilityBarEntry const& InEntry, AGeoHUD
 
 	if (CountText)
 	{
-		CountText->SetVisibility(Entry.bIsDeployable ? ESlateVisibility::HitTestInvisible
-													 : ESlateVisibility::Collapsed);
+		CountText->SetVisibility(DisplayedEntry().bIsDeployable ? ESlateVisibility::HitTestInvisible
+																: ESlateVisibility::Collapsed);
 	}
 
 	RefreshDeployCount();
@@ -48,9 +54,43 @@ void UGeoAbilitySlotWidget::InitSlot(FGeoAbilityBarEntry const& InEntry, AGeoHUD
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::SelectDisplayedEntry()
+{
+	// Last active-or-activatable entry wins so the armed follow-up (e.g. sacrifice detonate, gated by its
+	// ActivationRequiredTags) overrides the base ability; the first entry is the resting look.
+	int32 NewIndex = 0;
+	for (int32 Index = Entries.Num() - 1; Index > 0; --Index)
+	{
+		FGameplayTag const& Tag = Entries[Index].AbilityTag;
+		if (HUD->IsAbilityActive(Tag) || HUD->CanActivateAbility(Tag))
+		{
+			NewIndex = Index;
+			break;
+		}
+	}
+
+	if (NewIndex == DisplayedIndex)
+	{
+		return;
+	}
+	DisplayedIndex = NewIndex;
+
+	if (Icon && DisplayedEntry().Icon)
+	{
+		Icon->SetBrushFromTexture(const_cast<UTexture2D*>(DisplayedEntry().Icon.Get()));
+	}
+	if (CountText)
+	{
+		CountText->SetVisibility(DisplayedEntry().bIsDeployable ? ESlateVisibility::HitTestInvisible
+																: ESlateVisibility::Collapsed);
+	}
+	RefreshDeployCount();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySlotWidget::RefreshKeyLabel()
 {
-	if (!KeyText || !Entry.InputAction)
+	if (!KeyText || !DisplayedEntry().InputAction)
 	{
 		return;
 	}
@@ -62,7 +102,7 @@ void UGeoAbilitySlotWidget::RefreshKeyLabel()
 		return;
 	}
 
-	TArray<FKey> const Keys = InputSubsystem->QueryKeysMappedToAction(Entry.InputAction);
+	TArray<FKey> const Keys = InputSubsystem->QueryKeysMappedToAction(DisplayedEntry().InputAction);
 	FKey const Key = Keys.Num() > 0 ? Keys[0] : FKey();
 
 	// Re-queried every tick; only touch the text when the binding actually changed so idle slots stay cheap.
@@ -77,14 +117,14 @@ void UGeoAbilitySlotWidget::RefreshKeyLabel()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySlotWidget::RefreshDeployCount()
 {
-	if (!Entry.bIsDeployable || !CountText || !HUD)
+	if (!DisplayedEntry().bIsDeployable || !CountText || !HUD)
 	{
 		return;
 	}
 
 	int32 Current = 0;
 	int32 Max = 0;
-	HUD->GetDeployCountForAbility(Entry.AbilityTag, Current, Max);
+	HUD->GetDeployCountForAbility(DisplayedEntry().AbilityTag, Current, Max);
 	CountText->SetText(FText::AsNumber(Current));
 }
 
@@ -93,21 +133,23 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (!HUD)
+	if (!HUD || Entries.Num() == 0)
 	{
 		return;
 	}
 
+	SelectDisplayedEntry();
 	RefreshKeyLabel();
 
+	FGameplayTag const& AbilityTag = DisplayedEntry().AbilityTag;
 	float Remaining = 0.f;
 	float Duration = 0.f;
-	HUD->GetAbilityCooldown(Entry.AbilityTag, Remaining, Duration);
+	HUD->GetAbilityCooldown(AbilityTag, Remaining, Duration);
 
 	// While the ability is active, keep the sweep fully filled so the slot reads as "in use". The cooldown (if any)
 	// takes over depleting it once the ability ends; an active ability with no cooldown stays grayed until it ends.
-	if (Remaining <= 0.f && HUD->IsAbilityActive(Entry.AbilityTag)
-		&& !GeoASLib::GetAbilityCDO(Entry.AbilityTag)->GetClass()->IsChildOf(UGeoAutomaticFireAbility::StaticClass()))
+	if (Remaining <= 0.f && HUD->IsAbilityActive(AbilityTag)
+		&& !GeoASLib::GetAbilityCDO(AbilityTag)->GetClass()->IsChildOf(UGeoAutomaticFireAbility::StaticClass()))
 	{
 		if (CooldownSweepMID)
 		{

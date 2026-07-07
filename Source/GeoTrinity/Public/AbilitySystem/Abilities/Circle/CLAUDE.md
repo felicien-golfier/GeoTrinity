@@ -13,6 +13,7 @@ Implements `FTickableGameObject` — ticks independently from the game tick.
 ---
 
 ## `GeoMoiraBeamAbility.h` — fire-and-forget beam
+Extends `UGeoChannelBeamAbility` (`Base/`) which owns the beam VFX component lifecycle, the tickable boilerplate, and the per-tick line scan; Moira implements `TickBeam` (zone drain, damage/heal) and overrides `GetCurrentBeamHalfWidth` (capsule/2 + growth) and `Tick` (fuel countdown).
 Damages enemies and heals allies inside a forward rectangle. Can absorb deployed `AGeoHealingZone` actors to grow.
 Target detection uses `GeoASLib::GetInteractableActorsInLine`; beam length = `GameDataSettings::GeneralSpellDistance`.
 

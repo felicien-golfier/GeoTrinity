@@ -38,12 +38,6 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 	TeamId = ETeam::Player;
 }
 
-void APlayableCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(APlayableCharacter, bIsDead);
-}
-
 void APlayableCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -177,16 +171,6 @@ void APlayableCharacter::InitGAS()
 	}
 }
 
-void APlayableCharacter::Death()
-{
-	if (bIsDead)
-	{
-		return;
-	}
-	bIsDead = true;
-	DeathLogic();
-}
-
 void APlayableCharacter::DeathLogic()
 {
 	if (IsValid(AbilitySystemComponent))
@@ -197,6 +181,8 @@ void APlayableCharacter::DeathLogic()
 		if (GeoLib::IsServer(this))
 		{
 			AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+			// Death disarms the sacrifice detonation (the DetonateReady GE just went away with the purge above).
+			AbilitySystemComponent->SetNumericAttributeBase(UCharacterAttributeSet::GetSacrificeValueAttribute(), 0.f);
 		}
 	}
 	StopAllSpawnedElements();
@@ -212,16 +198,6 @@ void APlayableCharacter::DeathLogic()
 		}
 		GameState->NotifyPlayerDied(this);
 	}
-}
-
-void APlayableCharacter::Revive()
-{
-	if (!bIsDead)
-	{
-		return;
-	}
-	bIsDead = false;
-	ReviveLogic();
 }
 
 void APlayableCharacter::ReviveLogic()
@@ -270,18 +246,6 @@ void APlayableCharacter::SetDeathMaterial(bool const bDead)
 		return;
 	}
 	GetMesh()->SetMaterial(0, bDead ? VisualData->DeathMaterial : VisualData->AliveMaterial);
-}
-
-void APlayableCharacter::OnRep_IsDead(bool const bOldValue)
-{
-	if (bIsDead && !bOldValue)
-	{
-		DeathLogic();
-	}
-	else if (!bIsDead && bOldValue)
-	{
-		ReviveLogic();
-	}
 }
 
 void APlayableCharacter::OnHealthChanged(float const NewValue)

@@ -42,6 +42,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsSuppressCombatStats() const { return bSuppressCombatStats; }
 	/** Returns true when this damage originates from a basic ability; ExecCalc records the target on the source ASC. */
 	bool IsFromBasicAbility() const { return bIsFromBasicAbility; }
+	/** Returns true when this damage must never be captured by a sacrificed target (redirected shares, drains, ...). */
+	bool DoNotRedirectSacrifice() const { return bDoNotRedirectSacrifice; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
@@ -65,6 +67,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetSuppressCombatStats(bool value) { bSuppressCombatStats = value; }
 	/** When true, ExecCalc records the hit target as the source ASC's last basic-ability target (for turret retargeting). */
 	void SetIsFromBasicAbility(bool value) { bIsFromBasicAbility = value; }
+	/** When true, PostGameplayEffectExecute never captures this damage for sacrifice redirection. */
+	void SetDoNotRedirectSacrifice(bool value) { bDoNotRedirectSacrifice = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
 
@@ -103,6 +107,7 @@ protected:
 	bool bLimitGameplayCue{false};
 	bool bSuppressCombatStats{false};
 	bool bIsFromBasicAbility{false};
+	bool bDoNotRedirectSacrifice{false};
 
 	UPROPERTY()
 	bool bIsRadialDamage{false};

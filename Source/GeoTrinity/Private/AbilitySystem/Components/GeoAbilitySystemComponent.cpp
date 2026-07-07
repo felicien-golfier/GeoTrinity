@@ -175,6 +175,14 @@ void UGeoAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag const& inpu
 		}
 
 		AbilitySpecInputPressed(abilitySpec);
+
+		// Fresh-press-only abilities are excluded from the per-frame Held activation, so the press activates them.
+		UGeoGameplayAbility const* GeoAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability);
+		if (!abilitySpec.IsActive() && GeoAbility && GeoAbility->bActivateOnFreshPressOnly)
+		{
+			TryActivateAbilityWithTargetData(abilitySpec.Handle, GeoASLib::GetAbilityTagFromSpec(abilitySpec));
+		}
+
 		if (abilitySpec.IsActive())
 		{
 			PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -209,7 +217,8 @@ void UGeoAbilitySystemComponent::AbilityInputTagHeld(FGameplayTag const& inputTa
 
 		AbilitySpecInputPressed(abilitySpec);
 
-		if (!abilitySpec.IsActive())
+		UGeoGameplayAbility const* GeoAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability);
+		if (!abilitySpec.IsActive() && !(GeoAbility && GeoAbility->bActivateOnFreshPressOnly))
 		{
 			TryActivateAbilityWithTargetData(abilitySpec.Handle, GeoASLib::GetAbilityTagFromSpec(abilitySpec));
 		}

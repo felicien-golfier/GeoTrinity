@@ -60,6 +60,10 @@ struct FGeoGameplayTags
 	FGameplayTag Status_Buff_Speed;
 	FGameplayTag Status_Buff_Shield;
 
+	// Sacrifice beam
+	FGameplayTag Status_Sacrificed;
+	FGameplayTag Status_Square_DetonateReady;
+
 	// Ability spells needed in code
 	FGameplayTag Ability_Spell_ShieldBurst;
 

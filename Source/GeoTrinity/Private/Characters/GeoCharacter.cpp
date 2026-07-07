@@ -9,6 +9,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Input/GeoInputComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
@@ -67,6 +68,13 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	bUseControllerRotationYaw = true;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
+}
+
+
+void AGeoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AGeoCharacter, bIsDead);
 }
 
 void AGeoCharacter::Tick(float DeltaSeconds)
@@ -163,4 +171,48 @@ void AGeoCharacter::BeginPlay()
 #ifdef UE_EDITOR
 	LocalRoleForDebugPurpose = GetLocalRole();
 #endif
+}
+
+
+void AGeoCharacter::Death()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+	bIsDead = true;
+	DeathLogic();
+}
+
+void AGeoCharacter::DeathLogic()
+{
+	Destroy();
+}
+
+void AGeoCharacter::ReviveLogic()
+{
+	// does nothing by default
+}
+
+void AGeoCharacter::OnRep_IsDead(bool const bOldValue)
+{
+	if (bIsDead && !bOldValue)
+	{
+		DeathLogic();
+	}
+	else if (!bIsDead && bOldValue)
+	{
+		ReviveLogic();
+	}
+}
+
+
+void AGeoCharacter::Revive()
+{
+	if (!bIsDead)
+	{
+		return;
+	}
+	bIsDead = false;
+	ReviveLogic();
 }

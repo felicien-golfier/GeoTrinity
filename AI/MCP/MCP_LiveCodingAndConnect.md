@@ -21,6 +21,9 @@ The editor hosts the bridge HTTP server (see its startup line in the log for the
 - The editor must already be serving the bridge before the MCP client connects, or the client registers as failed and its tools never load.
 - If `mcp-unreal` shows as failed after the editor is up, reconnect it with `/mcp` in the prompt; the tools load once the connection succeeds.
 - Confirm the bridge is up by requesting its root over HTTP — any response (including 404) means it is ready.
+- While the client is down, the bridge can be driven directly: POST `{"script": "..."}` to `/api/editor/execute_script` on the bound port.
+- When building that JSON in Windows PowerShell 5.1, cast the script to `[string]` before `ConvertTo-Json` — a `Get-Content -Raw` result otherwise serializes as an object and the route rejects the body.
+- Script `print`/stdout does not surface in the response; write results to a file under `Saved/` and read it back.
 
 ---
 

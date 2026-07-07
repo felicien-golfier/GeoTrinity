@@ -146,6 +146,7 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
 		DrainEffectData.bSuppressGameplayCue = true;
 		DrainEffectData.bSuppressCombatStats = true;
+		DrainEffectData.bDoNotRedirectSacrifice = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, OwnerASC, GetAbilitySystemComponent(),
 														Data.Level, Data.Seed, Data.AbilityTag);
 	}

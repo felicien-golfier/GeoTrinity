@@ -43,13 +43,15 @@ class GEOTRINITY_API AGeoCharacter
 
 public:
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	/** Called every frame. */
 	virtual void Tick(float DeltaSeconds) override;
 	/** Expires all elements spawned by this character (deployables, and in future visual zones, etc). */
 	void StopAllSpawnedElements();
 	/** Calls StopAllSpawnedElements before delegating to Super. */
 	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
-	;
+
 	/** Returns the GeoInputComponent attached to this character. */
 	UGeoInputComponent* GetGeoInputComponent() const { return GeoInputComponent; }
 	/** Returns the movement component cast to UGeoCharacterMovementComponent. */
@@ -94,6 +96,13 @@ public:
 	/** Draws an arrow in the given color starting from the character's location. */
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage, FColor Color) const;
 
+
+	/** Entry point for reviving a downed player. Sets bIsDead = false and delegates to ReviveLogic(). */
+	void Revive();
+
+	/** Returns true while the player is downed (health reached 0 and not yet revived). */
+	bool IsDead() const { return bIsDead; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -110,6 +119,25 @@ protected:
 	//----------------------------------------------------------------------//
 	// GAS END
 	//----------------------------------------------------------------------//
+
+	/** Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from
+	 * OnHealthChanged. */
+	void Death();
+	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
+	 */
+	virtual void DeathLogic();
+
+	/** Server. Revives a downed player: cancels active abilities, removes all gameplay effects, re-applies per-class
+	 * default attributes, and restores the character. */
+	virtual void ReviveLogic();
+
+	UFUNCTION()
+	void OnRep_IsDead(bool bOldValue);
+
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
+	bool bIsDead = false;
+
 
 	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoInputComponent> GeoInputComponent;

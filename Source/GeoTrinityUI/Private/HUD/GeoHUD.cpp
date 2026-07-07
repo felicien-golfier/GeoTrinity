@@ -326,6 +326,27 @@ bool AGeoHUD::IsAbilityActive(FGameplayTag AbilityTag) const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+bool AGeoHUD::CanActivateAbility(FGameplayTag const AbilityTag) const
+{
+	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
+	if (!ASC)
+	{
+		return false;
+	}
+
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
+	{
+		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
+		if (Ability && Ability->GetAbilityTag() == AbilityTag)
+		{
+			return Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get());
+		}
+	}
+
+	return false;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const
 {
 	OutCurrent = 0;

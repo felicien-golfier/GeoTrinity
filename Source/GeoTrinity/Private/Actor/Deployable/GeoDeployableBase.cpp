@@ -152,6 +152,7 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
 		DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
 		DrainEffectData.bLimitGameplayCue = true;
+		DrainEffectData.bDoNotRedirectSacrifice = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed,
 														GetData()->AbilityTag);
 	}

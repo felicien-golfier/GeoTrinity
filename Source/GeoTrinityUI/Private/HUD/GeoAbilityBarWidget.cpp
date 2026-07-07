@@ -27,10 +27,29 @@ void UGeoAbilityBarWidget::BuildBar(AGeoHUD* InHUD, APlayableCharacter* Playable
 	SlotBox->ClearChildren();
 	Slots.Reset();
 
+	// Abilities sharing one input (sacrifice channel/detonate) collapse into a single slot that swaps between them.
+	TArray<TArray<FGeoAbilityBarEntry>> GroupedEntries;
 	for (FGeoAbilityBarEntry const& Entry : HUD->GetAbilityBarEntries(PlayableCharacter))
 	{
+		TArray<FGeoAbilityBarEntry>* Group = GroupedEntries.FindByPredicate(
+			[&Entry](TArray<FGeoAbilityBarEntry> const& Candidate)
+			{
+				return Candidate[0].InputTag == Entry.InputTag;
+			});
+		if (Group)
+		{
+			Group->Add(Entry);
+		}
+		else
+		{
+			GroupedEntries.Add({Entry});
+		}
+	}
+
+	for (TArray<FGeoAbilityBarEntry> const& Group : GroupedEntries)
+	{
 		UGeoAbilitySlotWidget* SlotWidget = CreateWidget<UGeoAbilitySlotWidget>(this, SlotWidgetClass);
-		SlotWidget->InitSlot(Entry, HUD);
+		SlotWidget->InitSlot(Group, HUD);
 
 		// Auto-size so each slot is only as wide as its square (whose side = the bar height), with a small gap between
 		// slots. The SlotBox is centered in the bar (see BuildAbilityBarWidget), so the packed run of squares stays

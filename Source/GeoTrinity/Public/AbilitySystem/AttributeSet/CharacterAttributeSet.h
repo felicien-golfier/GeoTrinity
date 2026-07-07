@@ -49,6 +49,12 @@ public:
 	FGameplayAttributeData RotationSpeedMultiplier;
 	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, RotationSpeedMultiplier)
 
+	/** Square: damage captured by the sacrifice beam, consumed by the sacrifice detonation. Replicated so the HUD can
+	 * display the armed value. */
+	UPROPERTY(BlueprintReadOnly, Category = "Sacrifice", ReplicatedUsing = OnRep_SacrificeValue)
+	FGameplayAttributeData SacrificeValue;
+	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, SacrificeValue)
+
 protected:
 	UFUNCTION()
 	void OnRep_Ammo(FGameplayAttributeData const& OldAmmo);
@@ -64,4 +70,6 @@ protected:
 	void OnRep_MovementSpeedMultiplier(FGameplayAttributeData const& OldMovementSpeedMultiplier);
 	UFUNCTION()
 	void OnRep_RotationSpeedMultiplier(FGameplayAttributeData const& OldRotationSpeedMultiplier);
+	UFUNCTION()
+	void OnRep_SacrificeValue(FGameplayAttributeData const& OldSacrificeValue);
 };

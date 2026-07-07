@@ -182,6 +182,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	EFireMode FireMode = EFireMode::ShootAfterFireDelay;
 
+	/** When true, only a fresh button press can activate this ability — the per-frame Held input never does.
+	 * Used by abilities sharing an input with another ability (sacrifice channel/detonate) so a held button
+	 * cannot chain-activate the counterpart the frame after the first one starts. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+	bool bActivateOnFreshPressOnly = false;
+
 
 protected:
 	FAbilityPayload StoredPayload;

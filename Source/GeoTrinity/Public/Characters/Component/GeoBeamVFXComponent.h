@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/Circle/GeoMoiraBeamAbility.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 
@@ -56,6 +55,8 @@ public:
 	void SetBeamState(bool bActive, float Width, float Length);
 	/** Assigns the Niagara system before BeginPlay; call from the owning ability's OnGiveAbility. */
 	void SetNiagaraSystem(TObjectPtr<UNiagaraSystem> const Object) { BeamSystem = Object; };
+	/** Assigns the beam tint pushed to the Niagara Color user parameter; call from the owning ability's OnGiveAbility. */
+	void SetBeamColor(FLinearColor const Color) { BeamColor = Color; };
 
 private:
 	UFUNCTION()
@@ -72,11 +73,17 @@ private:
 	UPROPERTY(ReplicatedUsing = CreateNiagaraComponent)
 	TObjectPtr<UNiagaraSystem> BeamSystem;
 
+	UPROPERTY(Replicated)
+	FLinearColor BeamColor = FLinearColor::White;
+
 	UPROPERTY(EditDefaultsOnly, Category = "BeamVFX")
 	FName HalfWidthParamName = "User.Beam_Width";
 
 	UPROPERTY(EditDefaultsOnly, Category = "BeamVFX")
 	FName LengthParamName = "User.Beam_Length";
+
+	UPROPERTY(EditDefaultsOnly, Category = "BeamVFX")
+	FName ColorParamName = "User.Color";
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> NiagaraComponent;

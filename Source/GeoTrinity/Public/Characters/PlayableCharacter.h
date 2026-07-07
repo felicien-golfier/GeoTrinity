@@ -51,7 +51,6 @@ public:
 	APlayableCharacter(FObjectInitializer const& ObjectInitializer);
 
 	virtual void Tick(float DeltaSeconds) override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Forwards an input-press event to the ASC for ability activation. */
 	void AbilityInputTagPressed(FGameplayTag InputTag);
@@ -64,9 +63,6 @@ public:
 
 	/** Returns the player's currently active class (Square, Circle, or Triangle). */
 	EPlayerClass GetPlayerClass() const;
-
-	/** Returns true while the player is downed (health reached 0 and not yet revived). */
-	bool IsDead() const { return bIsDead; }
 
 	/**
 	 * Switches the player to NewClass: clears current class abilities, applies new class data, and grants new
@@ -107,9 +103,6 @@ public:
 	void SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability, bool bVisible, float SweetSpotMinRatio = 0.f,
 								   float SweetSpotMaxRatio = 0.f);
 
-	/** Entry point for reviving a downed player. Sets bIsDead = false and delegates to ReviveLogic(). */
-	void Revive();
-
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -120,17 +113,11 @@ protected:
 	virtual void InitGAS() override;
 	// END GAS //
 
+	virtual void DeathLogic() override;
+	virtual void ReviveLogic() override;
+
 	UFUNCTION()
 	void OnHealthChanged(float NewValue);
-
-	/** Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from OnHealthChanged. */
-	void Death();
-	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
-	 */
-	void DeathLogic();
-	/** Server. Revives a downed player: cancels active abilities, removes all gameplay effects, re-applies per-class
-	 * default attributes, and restores the character. */
-	void ReviveLogic();
 
 	/** Disables controls and collision and swaps to the death material. */
 	void StopCharacter();
@@ -138,8 +125,6 @@ protected:
 	/** Mirror of StopCharacter: restores controls, collision, and the alive material. */
 	void RestartCharacter();
 
-	UFUNCTION()
-	void OnRep_IsDead(bool bOldValue);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))
@@ -161,9 +146,6 @@ private:
 	void SetDeathMaterial(bool bDead);
 
 	float PreviousYaw = 0.f;
-
-	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
-	bool bIsDead = false;
 	FTimerHandle ChargeDeployHideTimerHandle;
 	FTimerHandle ChargeBeamHideTimerHandle;
 };

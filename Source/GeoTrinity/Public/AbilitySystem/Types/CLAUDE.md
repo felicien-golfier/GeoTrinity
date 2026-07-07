@@ -22,6 +22,7 @@ These are **not replicated** and **not included in `NetSerialize`**. They are em
 | `bLimitGameplayCue` | `FDamageEffectData` / `FHealEffectData` | `ExecCalc_*` (rate-limits via target's `UGeoGameFeelComponent`) |
 | `bSuppressCombatStats` | `FDamageEffectData` / `FHealEffectData` | `UGeoAttributeSetBase::PostGameplayEffectExecute` |
 | `bIsFromBasicAbility` | `FDamageEffectData::UpdateContextHandle` (when ability's owned tags include `Ability.Basic`) | `ExecCalc_Damage` → records hit target on source ASC via `SetLastBasicAbilityTarget`; used by `AGeoTurret::FindBestTarget` |
+| `bDoNotRedirectSacrifice` | `FDamageEffectData` (redirect shares from `UGeoSacrificeBeamAbility`, deployable life drain, any damage that must not be captured) | `UGeoSacrificeBeamAbility::TryRedirectIncomingDamage` (called from `PostGameplayEffectExecute`) — skips sacrifice capture |
 
 ### `GeoAbilitySystemGlobals` (`Globals/GeoAbilitySystemGlobals.h`)
 - `AllocGameplayEffectContext()` — allocates `FGeoGameplayEffectContext` instead of the default engine context. This is what makes all GEs use the custom context automatically.

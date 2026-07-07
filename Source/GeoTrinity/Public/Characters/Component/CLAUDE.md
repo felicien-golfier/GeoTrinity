@@ -37,6 +37,7 @@ Replicated beam-VFX holder, dynamically added by a beam ability on the server in
 - `SetBeamState(bActive, HalfWidth, Length)` — writes replicated `FBeamVFXState`. The **server** write replicates to everyone; the owning client may also call it for lag-free local visuals
 - Each rendering machine (clients + listen host; dedicated server skips) spawns a local non-replicated `UNiagaraComponent` in `BeginPlay`, attached to the owner's **root** so the beam rotates with aim
 - `OnRep_BeamState` → `ApplyBeamState()`: `SetActive` + pushes `User.BeamHalfWidth` / `User.BeamLength` (param names editable per BP subclass)
+- `SetBeamColor(FLinearColor)` — set from the ability's `OnGiveAbility` (like `SetNiagaraSystem`); replicated `COND_InitialOnly` and pushed once to the `User.Color` Niagara parameter at component creation
 - `BeamSystem` (`UNiagaraSystem`) must be assigned in the BP subclass defaults; author the system **local-space pointing +X**
 
 ## `ShieldBurstPassiveComponent.h`

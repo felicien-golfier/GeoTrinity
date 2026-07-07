@@ -16,6 +16,7 @@ void UCharacterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, DamageReduction, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, MovementSpeedMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, RotationSpeedMultiplier, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, SacrificeValue, COND_None, REPNOTIFY_Always);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -58,4 +59,10 @@ void UCharacterAttributeSet::OnRep_MovementSpeedMultiplier(FGameplayAttributeDat
 void UCharacterAttributeSet::OnRep_RotationSpeedMultiplier(FGameplayAttributeData const& OldRotationSpeedMultiplier)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, RotationSpeedMultiplier, OldRotationSpeedMultiplier);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UCharacterAttributeSet::OnRep_SacrificeValue(FGameplayAttributeData const& OldSacrificeValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, SacrificeValue, OldSacrificeValue);
 }

@@ -20,6 +20,7 @@ void UGeoBeamVFXComponent::CreateNiagaraComponent()
 		NiagaraComponent = NewObject<UNiagaraComponent>(GetOwner());
 		NiagaraComponent->SetAutoActivate(false);
 		NiagaraComponent->SetAsset(BeamSystem);
+		NiagaraComponent->SetVariableLinearColor(ColorParamName, BeamColor);
 		NiagaraComponent->RegisterComponent();
 		NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
 											FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -63,6 +64,7 @@ void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UGeoBeamVFXComponent, BeamState);
 	DOREPLIFETIME_CONDITION(UGeoBeamVFXComponent, BeamSystem, COND_InitialOnly);
+	DOREPLIFETIME_CONDITION(UGeoBeamVFXComponent, BeamColor, COND_InitialOnly);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 
 #include "Actor/GeoTargetPoint.h"
 #include "Camera/CameraShakeBase.h"
-#include "Characters/EnemyCharacter.h"
+#include "Characters/GeoCharacter.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayTagContainer.h"
@@ -78,6 +78,20 @@ bool UGeoGameplayLibrary::IsLocalPlayerAvatar(AActor const* Actor)
 bool UGeoGameplayLibrary::IsLocalPlayerAvatar(APawn const* Pawn)
 {
 	return Pawn && Pawn->IsPlayerControlled() && Pawn->IsLocallyControlled();
+}
+AGeoCharacter* UGeoGameplayLibrary::GetCharacterFromOwner(AActor* Owner)
+{
+	AGeoCharacter* Character = Cast<AGeoCharacter>(Owner);
+	if (!IsValid(Character))
+	{
+		APlayerState* PlayerState = Cast<APlayerState>(Owner);
+		if (IsValid(PlayerState))
+		{
+			Character = Cast<AGeoCharacter>(PlayerState->GetPawn());
+		}
+	}
+
+	return Character;
 }
 
 float UGeoGameplayLibrary::GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing)

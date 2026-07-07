@@ -53,6 +53,10 @@ void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectCon
 	{
 		EffectContext->SetSuppressCombatStats(true);
 	}
+	if (bDoNotRedirectSacrifice)
+	{
+		EffectContext->SetDoNotRedirectSacrifice(true);
+	}
 
 	// Basic-ability identity comes from the firing ability's own tags, not a per-effect flag. Many effect sources (zones,
 	// drains) have no originating ability — guard the invalid tag so we never run the lookup or log a spurious warning.

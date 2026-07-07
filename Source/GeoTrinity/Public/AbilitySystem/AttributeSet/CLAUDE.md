@@ -31,3 +31,4 @@ Lives on `AGeoPlayerState` alongside the ASC.
 | `DamageReduction` | Captured by `ExecCalc_Damage` as target reduction |
 | `MovementSpeedMultiplier` | Read by `UGeoCharacterMovementComponent::ApplySpeedMultiplier()` |
 | `RotationSpeedMultiplier` | Read by `APlayableCharacter::UpdateAimRotation()` |
+| `SacrificeValue` | Damage captured by the Square's sacrifice channel, consumed by the sacrifice detonation. Replicated for HUD display; zeroed on death (`DeathLogic`) |

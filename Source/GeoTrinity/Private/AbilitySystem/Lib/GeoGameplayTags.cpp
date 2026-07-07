@@ -76,6 +76,13 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Speed, "Status.Buff.Speed", "Movement speed buff");
 	CreateAndAssignGameplayTag(GameplayTags.Status_Buff_Shield, "Status.Buff.Shield", "Shield buff");
 
+	// SACRIFICE BEAM //
+	CreateAndAssignGameplayTag(GameplayTags.Status_Sacrificed, "Status.Sacrificed",
+							   "Sacrificed by the Square's sacrifice beam — incoming damage is redirected.");
+	CreateAndAssignGameplayTag(GameplayTags.Status_Square_DetonateReady, "Status.Square.DetonateReady",
+							   "The Square has an armed sacrifice detonation: blocks the channel, enables the "
+							   "detonate ability, and swaps the ability-bar slot.");
+
 	// ABILITY SPELLS NEEDED IN CODE //
 	AddAbilitySpellTag(GameplayTags.Ability_Spell_ShieldBurst, "ShieldBurst", "Ability spell for shield burst");
 

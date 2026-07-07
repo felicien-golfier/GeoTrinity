@@ -17,6 +17,8 @@ class UMaterialInstanceDynamic;
  * plus an optional remaining-deployable count badge. All live data is pulled from AGeoHUD each tick; the slot
  * holds no gameplay state. While the ability is active the sweep is pinned full (grayed-out "in use" look) until
  * the ability ends and its cooldown takes over depleting it; with no cooldown it clears the moment the ability ends.
+ * A slot can represent several abilities sharing the same input (sacrifice channel/detonate): each tick it displays
+ * the last entry whose ability is active or activatable, falling back to the first.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoAbilitySlotWidget : public UGeoUserWidget
@@ -24,8 +26,9 @@ class GEOTRINITYUI_API UGeoAbilitySlotWidget : public UGeoUserWidget
 	GENERATED_BODY()
 
 public:
-	/** Stores the entry and HUD, sets the icon brush, and creates the cooldown-sweep material instance. */
-	void InitSlot(FGeoAbilityBarEntry const& InEntry, AGeoHUD* InHUD);
+	/** Stores the entries (all sharing one input) and HUD, applies the first entry, and creates the cooldown-sweep
+	 * material instance. */
+	void InitSlot(TArray<FGeoAbilityBarEntry> const& InEntries, AGeoHUD* InHUD);
 
 	/** Re-queries this slot's deploy count and refreshes the badge. Bound to AGeoHUD::OnPlayerDeployCountChanged. */
 	UFUNCTION()
@@ -65,7 +68,13 @@ protected:
 	TObjectPtr<UMaterialInterface> CooldownSweepMaterial;
 
 private:
-	FGeoAbilityBarEntry Entry;
+	/** Picks which entry to display (last active/activatable, else the first) and refreshes the visuals on change. */
+	void SelectDisplayedEntry();
+	FGeoAbilityBarEntry const& DisplayedEntry() const { return Entries[DisplayedIndex]; }
+
+	/** Abilities sharing this slot's input; Entries[DisplayedIndex] drives every visual. */
+	TArray<FGeoAbilityBarEntry> Entries;
+	int32 DisplayedIndex = 0;
 
 	UPROPERTY()
 	TObjectPtr<AGeoHUD> HUD;

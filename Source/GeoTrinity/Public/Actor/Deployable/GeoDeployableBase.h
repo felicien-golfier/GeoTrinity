@@ -137,7 +137,7 @@ public:
 	/** Overload that uses the default TimeBeforeDestroyAtExpire delay. */
 	virtual void Expire();
 
-	/** Returns true once the deployable has been destroyed (health or duration reached zero). */
+	/** Returns false once the deployable is dead / blinking (health or duration reached zero). */
 	UFUNCTION(BlueprintPure)
 	bool IsActive() const { return bActive; }
 

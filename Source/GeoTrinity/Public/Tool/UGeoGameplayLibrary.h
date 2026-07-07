@@ -3,6 +3,8 @@
 #pragma once
 #include "UGeoGameplayLibrary.generated.h"
 
+
+class AGeoCharacter;
 struct FGameplayTag;
 // Should be used as default value to spawn projectiles / characters etc... Also should be Playable Character's half
 // capsule height.
@@ -74,6 +76,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary")
 	static bool IsLocalPlayerAvatar(APawn const* Pawn);
+
+	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary")
+	static AGeoCharacter* GetCharacterFromOwner(AActor* Owner);
 
 	/**
 	 * Returns the current server world time in seconds.

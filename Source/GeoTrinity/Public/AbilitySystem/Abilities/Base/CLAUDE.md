@@ -55,10 +55,22 @@ Always: `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` di
 ### Key Invariants
 - `OnFireTargetDataReceived` is **server-only by design** — never add `IsServer` guards inside it
 - Never override `Fire()` as a no-op — it sends the RPC that triggers `OnFireTargetDataReceived`; a no-op silently breaks the server chain
+- `bActivateOnFreshPressOnly` — when true, the per-frame Held input never activates the ability; only a fresh press does (`UGeoAbilitySystemComponent::AbilityInputTagPressed`). For abilities sharing one input (sacrifice channel/detonate) so a held button cannot chain-activate the counterpart.
 - `CommitBehaviour` (`ECommitBehaviour`) — controls when cost/cooldown are committed:
   - `AtActivate` (default) — both cost and cooldown committed on `ActivateAbility`
   - `CostAtActivateCooldownAtEnd` — cost at activation, cooldown deferred to `EndAbility`
   - `DoNotAutoCommit` — subclass is responsible for calling `CommitAbility()` manually
+
+---
+
+## `GeoChannelBeamAbility.h` — base for channelled beam abilities
+
+Shared infrastructure for `GeoMoiraBeamAbility` (Circle) and `GeoSacrificeBeamAbility` (Square):
+- `OnGiveAbility`/`OnRemoveAbility` — server creates/destroys the replicated `UGeoBeamVFXComponent` on the avatar (`BeamNiagaraSystem` + `BeamColor` config; the color feeds the Niagara `User.Color` parameter)
+- `Fire()` sets `bIsBeamActive`; `EndAbility` clears it and calls `SetBeamState(false, …)`; `FTickableGameObject` ticks only while active
+- `Tick()` pushes the beam VFX state each tick, then calls the pure-virtual `TickBeam(DeltaTime, ActorsInLine)` with the result of `GeoASLib::GetInteractableActorsInLine`
+- Virtual hooks: `GetCurrentBeamHalfWidth(Character)` (default: capsule radius / 2), `GetScanAttitudeMask()` (default: `All`)
+- Like Moira originally, `Fire()` does **not** call `UGeoGameplayAbility::Fire` — channel beams don't send fire target data on start (the server starts its own channel from activation data); subclasses that need a later RPC (sacrifice detonation) call `SendFireDataToServer` themselves.
 
 ---
 

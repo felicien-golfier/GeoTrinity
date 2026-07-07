@@ -123,6 +123,10 @@ struct FDamageEffectData : public FEffectData
 	/** When true, the damage is not reported to the DPS meter (UGeoCombatStatsSubsystem). Use for self-inflicted drains. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressCombatStats{false};
+
+	/** When true, this damage is never captured by a sacrificed receiver (redirected shares, drains, ...). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bDoNotRedirectSacrifice{false};
 };
 
 /** Applies a flat heal amount. Sets bSuppressHealProvided on the context when configured. */

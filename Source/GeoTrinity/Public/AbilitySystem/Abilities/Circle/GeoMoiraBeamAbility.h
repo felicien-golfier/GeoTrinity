@@ -2,21 +2,16 @@
 
 #pragma once
 
-#include "Abilities/GameplayAbility.h"
-#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/GeoChannelBeamAbility.h"
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
-#include "Tickable.h"
 
 #include "GeoMoiraBeamAbility.generated.h"
 
 
 class AGeoHealingZone;
-class UNiagaraSystem;
 class ACharacter;
-class UGeoBeamVFXComponent;
 
 /**
  * Fire-and-forget beam ability for the Circle player.
@@ -26,18 +21,11 @@ class UGeoBeamVFXComponent;
  * Applies a movement speed buff for the duration of the channel.
  */
 UCLASS()
-class GEOTRINITY_API UGeoMoiraBeamAbility
-	: public UGeoGameplayAbility
-	, public FTickableGameObject
+class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoChannelBeamAbility
 {
 	GENERATED_BODY()
 
 	UGeoMoiraBeamAbility();
-
-	/** Server: adds the replicated BeamVFXComponent to the avatar for as long as the ability is granted. */
-	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
-	/** Destroys the BeamVFXComponent previously added to the avatar. */
-	virtual void OnRemoveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
@@ -45,20 +33,13 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
+	/** Counts down the remaining fuel before delegating the beam scan to Super. */
 	virtual void Tick(float DeltaTime) override;
-	virtual bool IsTickable() const override { return IsInstantiated() && IsActive() && bIsBeamActive; }
-	virtual TStatId GetStatId() const override
-	{
-		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoMoiraBeamAbility, STATGROUP_Tickables);
-	}
-
-#ifdef WITH_EDITOR
-
-	void DrawBeamDebugLines(float DeltaTime) const;
-#endif
+	/** Drains HealingZones on the beam, damages enemies, and heals allies. */
+	virtual void TickBeam(float DeltaTime, TArray<AActor*> const& ActorsInLine) override;
 
 	/** Beam half-width in cm: half the capsule radius, grown by HalfWidthGrowthPerAbsorbedZone per absorbed zone. */
-	float GetCurrentBeamHalfWidth(ACharacter const* Character) const;
+	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const override;
 
 	/** Damage applied per second to each enemy inside the beam cylinder. Scales with ability level. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
@@ -105,13 +86,9 @@ class GEOTRINITY_API UGeoMoiraBeamAbility
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
 	float MaximumZoneAbsorbed = 6.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel")
-	TObjectPtr<UNiagaraSystem> BeamNiagaraSystem;
-
 	FActiveGameplayEffectHandle SpeedBuffHandle;
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	float RemainingDuration = 0.f;
 	float BeamRatio = 1.f;
-	bool bIsBeamActive = false;
 };
