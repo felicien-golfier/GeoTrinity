@@ -54,7 +54,7 @@ protected:
 
 private:
 	/** Server: adds the captured damage to SacrificeValue and splits it across alive walls + the Square. */
-	void RedirectCapturedDamage(float Damage);
+	void RedirectCapturedDamage(float Damage, UGeoAbilitySystemComponent* SourceAsc) const;
 	/** Server: removes the sacrifice mark GE from every tracked victim. */
 	void RemoveAllSacrificeMarks();
 

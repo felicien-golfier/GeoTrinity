@@ -77,7 +77,8 @@ bool UGeoSacrificeBeamAbility::TryRedirectIncomingDamage(UAbilitySystemComponent
 		return false;
 	}
 
-	Instance->RedirectCapturedDamage(Damage);
+	Instance->RedirectCapturedDamage(
+		Damage, Cast<UGeoAbilitySystemComponent>(DamageContext.GetOriginalInstigatorAbilitySystemComponent()));
 	return true;
 }
 
@@ -177,12 +178,17 @@ void UGeoSacrificeBeamAbility::TickBeam(float const /*DeltaTime*/, TArray<AActor
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage)
+void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage, UGeoAbilitySystemComponent* SourceAsc) const
 {
-	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
-	SourceASC->SetNumericAttributeBase(
+	UGeoAbilitySystemComponent* SquareASC = GetGeoAbilitySystemComponentFromActorInfo();
+	SquareASC->SetNumericAttributeBase(
 		UCharacterAttributeSet::GetSacrificeValueAttribute(),
-		SourceASC->GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute()) + Damage);
+		SquareASC->GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute()) + Damage);
+
+	if (!IsValid(SourceAsc)) // When the damage dealer is no more valid, we switch to the square
+	{
+		SourceAsc = SquareASC;
+	}
 
 	TArray<AGeoWall*> AliveWalls;
 	if (UGeoDeployableManagerComponent* DeployableManager = IsValid(StoredPayload.Instigator)
@@ -210,11 +216,11 @@ void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage)
 		UGeoAbilitySystemComponent* WallASC = IsValid(Wall) ? GeoASLib::GetGeoAscFromActor(Wall) : nullptr;
 		if (IsValid(WallASC))
 		{
-			GeoASLib::ApplySingleEffectData(RedirectEffect, SourceASC, WallASC, GetAbilityLevel(), StoredPayload.Seed,
+			GeoASLib::ApplySingleEffectData(RedirectEffect, SourceAsc, WallASC, GetAbilityLevel(), StoredPayload.Seed,
 											StoredPayload.AbilityTag);
 		}
 	}
-	GeoASLib::ApplySingleEffectData(RedirectEffect, SourceASC, SourceASC, GetAbilityLevel(), StoredPayload.Seed,
+	GeoASLib::ApplySingleEffectData(RedirectEffect, SourceAsc, SquareASC, GetAbilityLevel(), StoredPayload.Seed,
 									StoredPayload.AbilityTag);
 }
 

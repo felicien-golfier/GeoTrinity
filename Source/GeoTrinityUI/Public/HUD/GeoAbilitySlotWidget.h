@@ -72,7 +72,9 @@ private:
 	void SelectDisplayedEntry();
 	FGeoAbilityBarEntry const& DisplayedEntry() const { return Entries[DisplayedIndex]; }
 
-	/** Abilities sharing this slot's input; Entries[DisplayedIndex] drives every visual. */
+	/** Abilities sharing this slot's input; Entries[DisplayedIndex] drives every visual. UPROPERTY so the GC keeps the
+	 * entries' Icon/InputAction assets alive. */
+	UPROPERTY()
 	TArray<FGeoAbilityBarEntry> Entries;
 	int32 DisplayedIndex = 0;
 
