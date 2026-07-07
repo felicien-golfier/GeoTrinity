@@ -29,6 +29,7 @@ public:
 	 * @param InWorldPos World-space anchor before jitter is applied.
 	 */
 	void Activate(float Amount, bool bIsHeal, FVector InWorldPos);
+	/** Returns true when this widget is back in the pool and ready to be activated for a new number. */
 	bool IsAvailable() const { return bAvailable; }
 
 protected:

@@ -64,7 +64,10 @@ public:
 	/** Returns all live tracked deployable actors. */
 	TArray<AGeoDeployableBase*> GetAllDeployables() const;
 
-	/** Returns all live tracked deployable actors of the given class, cast to T. */
+	/**
+	 * Returns all live tracked deployable actors whose class is T or a subclass of T, cast to T*.
+	 * Iterates every bucket whose stored class IsChildOf T; skips buckets for unrelated classes.
+	 */
 	template <typename T>
 	TArray<T*> GetDeployables() const
 	{
@@ -86,6 +89,7 @@ public:
 	void SetDeployableInfinitCount(TSubclassOf<AGeoDeployableBase> Class);
 	/** Removes the DeployableSlots entry for Class, putting it back on the global MaxDeployables pool. */
 	void RemoveDeployableSlot(TSubclassOf<AGeoDeployableBase> Class);
+	/** Purges null or pending-kill entries from Bucket.Deployables in place. */
 	void RemoveInvalidDeployables(FDeployableBucket& Bucket);
 
 	UPROPERTY(BlueprintAssignable)
