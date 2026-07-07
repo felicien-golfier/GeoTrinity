@@ -53,32 +53,8 @@ bool UGeoSacrificeBeamAbility::TryRedirectIncomingDamage(UAbilitySystemComponent
 		return false;
 	}
 
-	// GetPrimaryInstance is null for InstancedPerExecution (project default) — search the live instances instead.
-	UGeoSacrificeBeamAbility* Instance = nullptr;
-	for (FGameplayAbilitySpec const& Spec : SquareASC->GetActivatableAbilities())
-	{
-		if (Spec.Ability && Spec.Ability->IsA<UGeoSacrificeBeamAbility>())
-		{
-			for (UGameplayAbility* AbilityInstance : Spec.GetAbilityInstances())
-			{
-				if (IsValid(AbilityInstance) && AbilityInstance->IsActive())
-				{
-					Instance = Cast<UGeoSacrificeBeamAbility>(AbilityInstance);
-					break;
-				}
-			}
-			break;
-		}
-	}
-	if (!ensureMsgf(Instance,
-					TEXT("UGeoSacrificeBeamAbility: sacrifice mark present but no active ability instance on the "
-						 "instigator — marks should be removed in EndAbility")))
-	{
-		return false;
-	}
-
-	Instance->RedirectCapturedDamage(
-		Damage, Cast<UGeoAbilitySystemComponent>(DamageContext.GetOriginalInstigatorAbilitySystemComponent()));
+	RedirectCapturedDamage(Damage, DamageContext.GetOriginalInstigatorAbilitySystemComponent(), *SquareASC,
+						   static_cast<int32>(MarkEffect->Spec.GetLevel()));
 	return true;
 }
 
@@ -143,6 +119,11 @@ void UGeoSacrificeBeamAbility::TickBeam(float const /*DeltaTime*/, TArray<AActor
 	TSet<AActor const*> CurrentTargets;
 	for (AActor* Target : ActorsInLine)
 	{
+		if (!Target->CanBeDamaged())
+		{
+			continue;
+		}
+
 		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
 		// The Square is the final redirect receiver — never sacrifice it. Walls CAN be sacrificed; the redirect
 		// shares they receive (and their own drain) carry bDoNotRedirectSacrifice so nothing loops.
@@ -178,26 +159,27 @@ void UGeoSacrificeBeamAbility::TickBeam(float const /*DeltaTime*/, TArray<AActor
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage, UGeoAbilitySystemComponent* SourceAsc) const
+void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage, UAbilitySystemComponent* SourceAsc,
+													  UAbilitySystemComponent& SquareASC, int32 const AbilityLevel)
 {
-	UGeoAbilitySystemComponent* SquareASC = GetGeoAbilitySystemComponentFromActorInfo();
-	SquareASC->SetNumericAttributeBase(
+	SquareASC.SetNumericAttributeBase(
 		UCharacterAttributeSet::GetSacrificeValueAttribute(),
-		SquareASC->GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute()) + Damage);
+		SquareASC.GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute()) + Damage);
 
 	if (!IsValid(SourceAsc)) // When the damage dealer is no more valid, we switch to the square
 	{
-		SourceAsc = SquareASC;
+		SourceAsc = &SquareASC;
 	}
 
+	AActor* SquareAvatar = SquareASC.GetAvatarActor();
 	TArray<AGeoWall*> AliveWalls;
-	if (UGeoDeployableManagerComponent* DeployableManager = IsValid(StoredPayload.Instigator)
-			? StoredPayload.Instigator->FindComponentByClass<UGeoDeployableManagerComponent>()
-			: nullptr)
+	if (UGeoDeployableManagerComponent* DeployableManager =
+			IsValid(SquareAvatar) ? SquareAvatar->FindComponentByClass<UGeoDeployableManagerComponent>() : nullptr)
 	{
 		for (AGeoWall* Wall : DeployableManager->GetDeployables<AGeoWall>())
 		{
-			if (IsValid(Wall) && Wall->IsActive() && Wall->CanBeDamaged() && Wall->GetOwner() == StoredPayload.Owner)
+			if (IsValid(Wall) && Wall->IsActive() && Wall->CanBeDamaged()
+				&& Wall->GetOwner() == SquareASC.GetOwnerActor())
 			{
 				AliveWalls.Add(Wall);
 			}
@@ -211,17 +193,16 @@ void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage, UGeoAb
 
 	// Each apply can kill its receiver and cascade (the Square's death force-expires every wall), so the snapshot
 	// goes stale mid-loop: re-validate each wall at apply time, and damage the Square last.
+	// Seed and AbilityTag are irrelevant here: the inline damage effect uses neither.
 	for (AGeoWall* Wall : AliveWalls)
 	{
 		UGeoAbilitySystemComponent* WallASC = IsValid(Wall) ? GeoASLib::GetGeoAscFromActor(Wall) : nullptr;
 		if (IsValid(WallASC))
 		{
-			GeoASLib::ApplySingleEffectData(RedirectEffect, SourceAsc, WallASC, GetAbilityLevel(), StoredPayload.Seed,
-											StoredPayload.AbilityTag);
+			GeoASLib::ApplySingleEffectData(RedirectEffect, SourceAsc, WallASC, AbilityLevel, 0, FGameplayTag());
 		}
 	}
-	GeoASLib::ApplySingleEffectData(RedirectEffect, SourceAsc, SquareASC, GetAbilityLevel(), StoredPayload.Seed,
-									StoredPayload.AbilityTag);
+	GeoASLib::ApplySingleEffectData(RedirectEffect, SourceAsc, &SquareASC, AbilityLevel, 0, FGameplayTag());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

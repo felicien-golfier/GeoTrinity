@@ -107,7 +107,7 @@ void UGeoChannelBeamAbility::Tick(float const DeltaTime)
 
 	TickBeam(DeltaTime,
 			 GeoASLib::GetInteractableActorsInLine(
-				 Character, GeoASLib::GetTeamId(Character), GetScanAttitudeMask(), true,
+				 Character, GeoASLib::GetTeamId(Character), GetScanAttitudeMask(), false,
 				 FVector2D(Character->GetActorLocation()), FVector2D(Character->GetActorForwardVector()),
 				 GetDefault<UGameDataSettings>()->GeneralSpellDistance, CurrentBeamHalfWidth));
 }

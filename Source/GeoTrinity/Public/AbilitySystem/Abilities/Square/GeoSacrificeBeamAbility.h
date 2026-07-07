@@ -53,8 +53,14 @@ protected:
 	virtual uint8 GetScanAttitudeMask() const override { return TeamAttitudeMask::FriendlyOrNeutral; }
 
 private:
-	/** Server: adds the captured damage to SacrificeValue and splits it across alive walls + the Square. */
-	void RedirectCapturedDamage(float Damage, UGeoAbilitySystemComponent* SourceAsc) const;
+	/**
+	 * Server: adds the captured damage to the Square's SacrificeValue and splits it across its alive walls + the
+	 * Square. Static on purpose: everything is derived from the mark GE (SquareASC, AbilityLevel), so redirection
+	 * never needs a live channel instance. SourceAsc is the original damage dealer, kept as the source of the
+	 * redirect shares so the Square's own damage stats never scale them.
+	 */
+	static void RedirectCapturedDamage(float Damage, UAbilitySystemComponent* SourceAsc,
+									   UAbilitySystemComponent& SquareASC, int32 AbilityLevel);
 	/** Server: removes the sacrifice mark GE from every tracked victim. */
 	void RemoveAllSacrificeMarks();
 

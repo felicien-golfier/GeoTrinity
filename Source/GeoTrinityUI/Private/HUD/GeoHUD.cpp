@@ -382,13 +382,7 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 		return;
 	}
 
-	OutCurrent = Manager->GetDeployables<AGeoDeployableBase>()
-					 .FilterByPredicate(
-						 [DeployableClass](AGeoDeployableBase const* Deployable)
-						 {
-							 return Deployable->IsA(DeployableClass);
-						 })
-					 .Num();
+	OutCurrent = Manager->GetDeployables(DeployableClass).Num();
 
 	int32 const* SlotCap = Manager->DeployableSlots.Find(DeployableClass);
 	OutMax = SlotCap ? *SlotCap : Manager->GetMaxDeployables();

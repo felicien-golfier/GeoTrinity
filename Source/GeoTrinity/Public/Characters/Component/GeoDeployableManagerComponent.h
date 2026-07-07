@@ -63,24 +63,17 @@ public:
 
 	/** Returns all live tracked deployable actors. */
 	TArray<AGeoDeployableBase*> GetAllDeployables() const;
+	
+	TArray<AGeoDeployableBase*> GetDeployables(TSubclassOf<AGeoDeployableBase> Class) const;
 
-	/**
-	 * Returns all live tracked deployable actors whose class is T or a subclass of T, cast to T*.
-	 * Iterates every bucket whose stored class IsChildOf T; skips buckets for unrelated classes.
-	 */
+	/** Compile-time-typed convenience wrapper around GetDeployables(UClass*); casts each result to T*. */
 	template <typename T>
 	TArray<T*> GetDeployables() const
 	{
 		TArray<T*> Result;
-		for (auto const& [StoredClass, Bucket] : Deployables)
+		for (AGeoDeployableBase* Deployable : GetDeployables(T::StaticClass()))
 		{
-			if (StoredClass->IsChildOf(T::StaticClass()))
-			{
-				for (AGeoDeployableBase* Deployable : Bucket.Deployables)
-				{
-					Result.Add(CastChecked<T>(Deployable));
-				}
-			}
+			Result.Add(CastChecked<T>(Deployable));
 		}
 		return Result;
 	}

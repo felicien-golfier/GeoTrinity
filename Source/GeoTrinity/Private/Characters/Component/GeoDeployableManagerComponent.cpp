@@ -49,6 +49,25 @@ TArray<AGeoDeployableBase*> UGeoDeployableManagerComponent::GetAllDeployables() 
 	return All;
 }
 
+TArray<AGeoDeployableBase*> UGeoDeployableManagerComponent::GetDeployables(
+	TSubclassOf<AGeoDeployableBase> const Class) const
+{
+	TArray<AGeoDeployableBase*> Result;
+	if (!Class)
+	{
+		return Result;
+	}
+
+	for (auto const& [StoredClass, Bucket] : Deployables)
+	{
+		if (StoredClass->IsChildOf(Class))
+		{
+			Result.Append(Bucket.Deployables);
+		}
+	}
+	return Result;
+}
+
 void UGeoDeployableManagerComponent::SetDeployableInfinitCount(TSubclassOf<AGeoDeployableBase> const Class)
 {
 	DeployableSlots.FindOrAdd(Class) = 0;
@@ -110,8 +129,8 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 	}
 
 	Bucket.Deployables.Add(Deployable);
-	Deployable->OnDeployableExpiredEvent.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
-	// Ensure we remove it also on client even if forced expired by server
+	// Use OnDestroy to ensure we remove it also on client even if forced expired by server.
+	// And keep in array even if blinking
 	Deployable->OnDestroyed.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
 	OnDeployCountChanged.Broadcast(Bucket.Deployables.Num(), MaxDeployables);
 }
