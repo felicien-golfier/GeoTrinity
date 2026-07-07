@@ -26,13 +26,19 @@ public:
 	virtual void Init() override;
 
 	/** Online **/
+	/** Creates a Steam session with the given settings and travels to MapToGoTo when complete. */
 	void CreateAdvancedSession(FOnlineSessionSettings const& SessionSettings, FString MapToGoTo = "");
+	/** Delegate callback for session creation; travels to the pending map on success. */
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	/** Blueprint entry point for hosting: assembles SessionSettings from human-readable params and calls CreateAdvancedSession. */
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Online")
 	void BP_CreateAdvancedSession(FString const& ServerName, int32 NbOfSlots, bool bUseLan);
 
+	/** Joins an existing Steam session and travels to the host. */
 	void JoinAdvancedSession(const FOnlineSessionSearchResult& SearchResult);
+	/** Delegate callback for session join; performs client travel on success. */
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	/** Blueprint entry point for joining: resolves the search result from Blueprint and calls JoinAdvancedSession. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Online")
 	void BP_JoinAdvancedSession(FBlueprintSessionResult const& SessionData);
 
@@ -44,6 +50,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Online")
 	void LeaveSessionAndReturnToMenu();
 
+	/** Delegate callback for session destruction; opens the main menu map once the session is fully torn down. */
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
 
 	/** Default map to travel to when creating a session without an explicit map URL */

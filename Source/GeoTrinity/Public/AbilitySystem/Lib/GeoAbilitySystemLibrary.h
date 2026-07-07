@@ -127,6 +127,17 @@ public:
 	/** Returns the effect data array registered for the ability identified by AbilityTag in UAbilityInfo. */
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(FGameplayTag AbilityTag);
 
+	/**
+	 * Fully spawns and initializes a deployable actor: deferred-spawn, fills FDeployableData, calls InitInteractable,
+	 * then FinishSpawning. Equivalent to calling StartSpawnDeployable → InitDeployable → FinishSpawnDeployable in one call.
+	 *
+	 * @param DeployableActorClass  The deployable class to spawn.
+	 * @param Payload               Network sync data (owner, instigator, ability tag, seed, etc.).
+	 * @param EffectDataArray       Effects the deployable applies on hit or expiry.
+	 * @param Params                Designer config: size, life drain, blink duration, value.
+	 * @param SpawnTransform        World transform to spawn at.
+	 * @return                      The fully initialized deployable, or nullptr on failure.
+	 */
 	static AGeoDeployableBase* FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> const DeployableActorClass,
 													FAbilityPayload const& Payload,
 													TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
@@ -180,12 +191,13 @@ public:
 	static void FinishSpawnProjectile(UWorld const* World, AGeoProjectile* Projectile, FTransform const& SpawnTransform,
 									  float SpawnServerTime, FPredictionKey PredictionKey);
 	/**
-	 * Get target directions based on targeting mode.
-	 * @param World The world context
-	 * @param Target The targeting mode
-	 * @param Yaw Direction for Forward mode
-	 * @param Origin Position for calculating directions to players
-	 * @return Array of direction vectors
+	 * Returns normalized launch directions for a projectile ability based on the targeting mode.
+	 *
+	 * @param World   The world context (used to enumerate players for AllPlayers mode).
+	 * @param Target  Targeting mode: Forward fires along Yaw; AllPlayers fires one direction per live player.
+	 * @param Yaw     Instigator facing yaw in degrees; defines the forward direction for Forward mode.
+	 * @param Origin  3D world position of the fire socket; used to compute per-player directions.
+	 * @return        Array of normalized direction vectors, one per intended projectile.
 	 */
 	static TArray<FVector> GetTargetDirections(UWorld const* World, EProjectileTarget Target, float Yaw,
 											   FVector const& Origin);

@@ -30,9 +30,12 @@ class GEOTRINITY_API AGeoPlayerState
 
 public:
 	AGeoPlayerState();
+	/** Registers OnMatchStateChanged delegate binding on the server for stat reset coordination. */
 	virtual void BeginPlay() override;
+	/** Registers all replicated combat stat fields (DebugDPS, DebugHPS, BestDPS, etc.) for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/** Binds PawnSetDelegate and calls InitOverlay once the owning controller is available on this machine. */
 	virtual void ClientInitialize(AController* Controller) override;
 	/** Creates the HUD overlay widget on the owning client. Called from ClientInitialize once the controller is valid. */
 	void InitOverlay();
