@@ -50,6 +50,7 @@ public:
 	/** Creates widget components for the deploy and charge-beam gauges, and the deployable manager component. */
 	APlayableCharacter(FObjectInitializer const& ObjectInitializer);
 
+	/** Drives aim rotation toward the cursor and refreshes gauge widgets each frame. */
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Forwards an input-press event to the ASC for ability activation. */
