@@ -144,6 +144,8 @@ private:
 	EPlayerClass PickStartingClass() const;
 	/** Swaps the mesh material to the current class's death (bDead) or alive material. */
 	void SetDeathMaterial(bool bDead);
+	/** Sets Material on mesh slot 0 and recreates the shield-burst gauge MID that the raw material set discards. */
+	void SetBodyMaterial(UMaterialInterface* Material);
 
 	float PreviousYaw = 0.f;
 	FTimerHandle ChargeDeployHideTimerHandle;

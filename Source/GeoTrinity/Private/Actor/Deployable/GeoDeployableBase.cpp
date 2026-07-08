@@ -49,6 +49,7 @@ void AGeoDeployableBase::InitInteractable(FInteractableActorData* Data)
 
 	bBlinking = false;
 	bActive = true;
+	bRecalled = false;
 	if (bPushActorsOnSpawn)
 	{
 		PushAway();
@@ -118,6 +119,7 @@ void AGeoDeployableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AGeoDeployableBase, bActive);
+	DOREPLIFETIME(AGeoDeployableBase, bRecalled);
 	DOREPLIFETIME(AGeoDeployableBase, bBlinking);
 }
 
@@ -152,7 +154,7 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
 		DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
 		DrainEffectData.bLimitGameplayCue = true;
-		DrainEffectData.bDoNotRedirectSacrifice = true;
+		DrainEffectData.bDoNotRedirectSacrifice = !bCanSacrificeDrain;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed,
 														GetData()->AbilityTag);
 	}
@@ -235,6 +237,7 @@ void AGeoDeployableBase::Recall(float Value)
 		return;
 	}
 	bActive = false;
+	bRecalled = true;
 
 	RecallEffect(Value);
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
@@ -412,10 +415,13 @@ void AGeoDeployableBase::OnRep_Active(bool bOldValue)
 {
 	if (bOldValue && !bActive)
 	{
-		ExecuteCue(RecallGameplayCueTag, GetRecallCueParams());
-		if (bExplodeAtRecall)
+		if (bRecalled)
 		{
-			ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeSoundTag));
+			ExecuteCue(RecallGameplayCueTag, GetRecallCueParams());
+			if (bExplodeAtRecall)
+			{
+				ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeSoundTag));
+			}
 		}
 		Expire();
 	}

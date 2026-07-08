@@ -124,6 +124,16 @@ void AGeoProjectile::LifeSpanExpired()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::Destroyed()
+{
+	if (!HasAuthority() && !bIsEnding)
+	{
+		PlayImpactFx();
+	}
+	Super::Destroyed();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -203,6 +213,7 @@ bool AGeoProjectile::IsValidOverlap(AActor* OtherActor)
 void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 {
 	bIsEnding = true;
+	EndSoundType = EProjectileSoundType::ValidOverlapEnd;
 
 	if (HasAuthority())
 	{
@@ -217,31 +228,56 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 
 float AGeoProjectile::GetPitch_Implementation(EProjectileSoundType SoundType) const
 {
-	FProjectilePitchEntry const* Entry = PitchMap.Find(SoundType);
+	FProjectileSoundEntry const* Entry = SoundMap.Find(SoundType);
 	if (!Entry)
 	{
 		return 1.f;
 	}
 
+	return GetPitch(*Entry);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float AGeoProjectile::GetPitch(FProjectileSoundEntry const& Entry) const
+{
 	float Pitch = 1.f;
 
-	if (IsValid(Entry->Curve) && Entry->Attribute.IsValid())
+	if (IsValid(Entry.PitchCurve) && Entry.PitchAttribute.IsValid())
 	{
 		UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetInstigator());
 		if (IsValid(ASC))
 		{
 			bool bFound = false;
-			float const AttributeValue = ASC->GetGameplayAttributeValue(Entry->Attribute, bFound);
+			float const AttributeValue = ASC->GetGameplayAttributeValue(Entry.PitchAttribute, bFound);
 			if (bFound)
 			{
-				Pitch = Entry->Curve->GetFloatValue(AttributeValue);
+				Pitch = Entry.PitchCurve->GetFloatValue(AttributeValue);
 			}
 		}
 	}
 
-	Pitch *= FMath::RandRange(Entry->RandomPitchMultiplierRange.X, Entry->RandomPitchMultiplierRange.Y);
+	Pitch *= FMath::RandRange(Entry.RandomPitchMultiplierRange.X, Entry.RandomPitchMultiplierRange.Y);
 
 	return Pitch;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::PlaySoundOneShot(EProjectileSoundType const SoundType) const
+{
+	if (FProjectileSoundEntry const* Entry = SoundMap.Find(SoundType))
+	{
+		PlaySoundOneShot(*Entry);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::PlaySoundOneShot(FProjectileSoundEntry const& Entry) const
+{
+	if (IsValid(Entry.Sound))
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, Entry.Sound, GetActorLocation(), FRotator::ZeroRotator,
+											  Entry.Volume, GetPitch(Entry), Entry.StartTime);
+	}
 }
 
 void AGeoProjectile::OnProjectileHit_Implementation(AActor* HitActor)
@@ -273,15 +309,15 @@ void AGeoProjectile::PlayImpactFx() const
 		return;
 	}
 
-	FVector const actorLocation = GetActorLocation();
-	if (IsValid(ImpactSound))
+	PlaySoundOneShot(EndSoundType);
+	if (EndSoundType == EProjectileSoundType::ValidOverlapEnd)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, actorLocation, FRotator::ZeroRotator, 0.2f,
-											  GetPitch(EProjectileSoundType::Impact));
+		PlaySoundOneShot(EProjectileSoundType::NoOverlapEnd);
 	}
+
 	if (ImpactEffect)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ImpactEffect, actorLocation);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ImpactEffect, GetActorLocation());
 	}
 }
 
@@ -376,11 +412,14 @@ void AGeoProjectile::InitProjectileLife()
 {
 	if (!GeoLib::IsDedicatedServer(this))
 	{
-		LoopingSoundComponent->SetSound(LoopingSound);
-		LoopingSoundComponent->SetPitchMultiplier(GetPitch(EProjectileSoundType::Looping));
-		LoopingSoundComponent->Play();
-		UGameplayStatics::PlaySoundAtLocation(this, StartSound, GetActorLocation(), FRotator::ZeroRotator, 0.2f,
-											  GetPitch(EProjectileSoundType::Start));
+		if (FProjectileSoundEntry const* LoopingEntry = SoundMap.Find(EProjectileSoundType::Looping))
+		{
+			LoopingSoundComponent->SetSound(LoopingEntry->Sound);
+			LoopingSoundComponent->SetVolumeMultiplier(LoopingEntry->Volume);
+			LoopingSoundComponent->SetPitchMultiplier(GetPitch(EProjectileSoundType::Looping));
+			LoopingSoundComponent->Play();
+		}
+		PlaySoundOneShot(EProjectileSoundType::Start);
 	}
 
 	SetLifeSpan(LifeSpanInSec);
@@ -393,4 +432,5 @@ void AGeoProjectile::InitProjectileLife()
 	InitProjectileMovementComponent();
 
 	bIsEnding = false;
+	EndSoundType = EProjectileSoundType::NoOverlapEnd;
 }

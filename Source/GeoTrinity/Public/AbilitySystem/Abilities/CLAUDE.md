@@ -29,6 +29,9 @@ ActivateAbility(TriggerEventData)
 
 `SendFireDataToServer` / `OnFireTargetDataReceived` are **not mandatory** — only used when an ability needs a value that changes during `FireDelay` (e.g. projectile aim direction). The server already has the activation-time data from `TriggerEventData`.
 
+## Passive abilities
+Passives (`Ability.Type.Passive` tag) are server-owned: activated by `ReactivatePassiveAbilities()` (GiveLife) and set `NetSecurityPolicy = ServerOnly` in their C++ constructor. Without it, the client-side `CancelAllAbilities()` in Death/ReviveLogic sends `ServerCancelAbility` that kills the server's freshly reactivated instance after a revive (client processes the revive after the server already reactivated).
+
 ## Effect Data on Abilities
 - `TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets` — shared/reused effects (asset references)
 - `TArray<TInstancedStruct<FEffectData>> EffectDataInstances` — ability-specific inline effects

@@ -27,24 +27,36 @@ enum class EProjectileSoundType : uint8
 {
 	Start,
 	Looping,
-	Impact,
+	/** Played when the projectile's life ends without a valid target: wall hit, distance span, or lifespan. */
+	NoOverlapEnd,
+	/** Played when the projectile overlaps a valid target. */
+	ValidOverlapEnd,
 };
 
 /**
- * Maps an audio event type to an attribute-driven pitch modifier with optional random variance.
- * The base pitch is read from the instigator's ASC attribute value sampled against Curve;
+ * A projectile sound: the asset, its volume, and an attribute-driven pitch modifier with optional random variance.
+ * The base pitch is read from the instigator's ASC attribute value sampled against PitchCurve;
  * the result is then multiplied by a random value in RandomPitchMultiplierRange.
  */
 USTRUCT(BlueprintType)
-struct FProjectilePitchEntry
+struct FProjectileSoundEntry
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FGameplayAttribute Attribute;
+	TObjectPtr<USoundBase> Sound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
+	float Volume = 1.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
+	float StartTime = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UCurveFloat> Curve;
+	FGameplayAttribute PitchAttribute;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UCurveFloat> PitchCurve;
 
 	/** Random pitch multiplier range applied on top of the curve result. X = min, Y = max. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
@@ -74,6 +86,9 @@ public:
 	virtual void BeginPlay() override;
 	/** Guards against double-ending by checking bIsEnding before calling EndProjectileLife. */
 	virtual void LifeSpanExpired() override;
+	/** Plays the impact FX on non-authority machines that did not already end locally (bIsEnding) — replicated
+	 * destruction never runs EndProjectileLife there. */
+	virtual void Destroyed() override;
 	/** Checks cumulative travel distance each tick and calls EndProjectileLife when DistanceSpanSqr is exceeded. */
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -142,7 +157,8 @@ protected:
 	virtual void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 							 FVector NormalImpulse, FHitResult const& Hit);
 
-	/** Plays ImpactSound and spawns ImpactEffect (Niagara) at the actor's current location. */
+	/** Plays EndSoundType (ValidOverlapEnd after a valid overlap, NoOverlapEnd otherwise) and spawns ImpactEffect
+	 * (Niagara) at the actor's current location. */
 	UFUNCTION(BlueprintCallable)
 	virtual void PlayImpactFx() const;
 
@@ -157,16 +173,26 @@ protected:
 
 	/**
 	 * Returns the pitch multiplier for the sound identified by SoundType.
-	 * Default: looks up PitchMap, reads the mapped gameplay attribute from the instigator's ASC,
-	 * evaluates the curve at that value, then multiplies by a random value in RandomPitchMultiplierRange.
+	 * Default: looks up SoundMap, reads the mapped gameplay attribute from the instigator's ASC,
+	 * evaluates the pitch curve at that value, then multiplies by a random value in RandomPitchMultiplierRange.
 	 * Returns 1.0 if no entry exists or the attribute cannot be read. Override in Blueprint for custom logic.
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|Audio")
 	float GetPitch(EProjectileSoundType SoundType) const;
 
-	/** Per-sound-type attribute → pitch curve + random range mapping. Evaluated by GetPitch at sound play time. */
+	/** Returns the pitch multiplier for Entry: attribute value sampled against PitchCurve, then multiplied by a random
+	 * value in RandomPitchMultiplierRange. Virtual so subclasses can layer additional pitch factors (e.g. size). */
+	virtual float GetPitch(FProjectileSoundEntry const& Entry) const;
+
+	/** Plays the mapped sound once at the actor's location with its volume and attribute-driven pitch. */
+	void PlaySoundOneShot(EProjectileSoundType SoundType) const;
+
+	/** Plays Entry once at the actor's location with its volume and attribute-driven pitch. */
+	void PlaySoundOneShot(FProjectileSoundEntry const& Entry) const;
+
+	/** Per-sound-type sound asset + volume + attribute-driven pitch mapping. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoProjectile|Audio")
-	TMap<EProjectileSoundType, FProjectilePitchEntry> PitchMap;
+	TMap<EProjectileSoundType, FProjectileSoundEntry> SoundMap;
 
 	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
 	 * by default. */
@@ -183,6 +209,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
 	int32 OverlapAttitude = TeamAttitudeMask::HostileOrNeutral;
+
+	EProjectileSoundType EndSoundType = EProjectileSoundType::NoOverlapEnd;
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
@@ -205,19 +233,13 @@ private:
 
 	bool bIsEnding{false};
 
+	/** Sound played by PlayImpactFx; switched to ValidOverlapEnd by HandleValidOverlap, reset to NoOverlapEnd in
+	 * InitProjectileLife. */
+
 	FVector InitialPosition;
 	float DistanceSpanSqr;
 
 	/** Cosmetic (let the juice flow) **/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
 	TObjectPtr<UNiagaraSystem> ImpactEffect;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Audio", meta = (AllowPrivateAccess = true))
-	TObjectPtr<USoundBase> ImpactSound;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Audio", meta = (AllowPrivateAccess = true))
-	TObjectPtr<USoundBase> StartSound;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Audio", meta = (AllowPrivateAccess = true))
-	TObjectPtr<USoundBase> LoopingSound;
 };

@@ -11,6 +11,9 @@
 UGeoShieldBurstPassiveAbility::UGeoShieldBurstPassiveAbility()
 {
 	SetAssetTags(FGeoGameplayTags::Get().Ability_Spell_ShieldBurst.GetSingleTagContainer());
+	// Passives are server-owned: without this, the client-side CancelAllAbilities in Death/ReviveLogic sends
+	// ServerCancelAbility and kills the server's freshly reactivated instance after a revive.
+	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -54,6 +57,7 @@ void UGeoShieldBurstPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle H
 		SourceASC->OnDamageDealt.AddDynamic(this, &UGeoShieldBurstPassiveAbility::OnDamageDealtCallback);
 	}
 
+	GaugeAccumulated = 0.f;
 	ChargeTimerHandle.Invalidate();
 }
 

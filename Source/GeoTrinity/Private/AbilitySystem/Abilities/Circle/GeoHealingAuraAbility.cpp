@@ -11,6 +11,13 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
+UGeoHealingAuraAbility::UGeoHealingAuraAbility()
+{
+	// Passives are server-owned: a client cancel request must never end the server's instance.
+	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoHealingAuraAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 											 FGameplayAbilityActorInfo const* ActorInfo,
 											 FGameplayAbilityActivationInfo ActivationInfo,

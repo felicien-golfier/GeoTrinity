@@ -19,10 +19,7 @@ void AGeoTurret::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GeoLib::IsServer(GetWorld()))
-	{
-		ScheduleFire();
-	}
+	GetWorldTimerManager().SetTimer(FireTimerHandle, this, &ThisClass::TryFire, FireInterval, true);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -93,17 +90,10 @@ AActor* AGeoTurret::FindBestTarget() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoTurret::ScheduleFire()
-{
-	GetWorldTimerManager().SetTimer(FireTimerHandle, this, &ThisClass::TryFire, FireInterval, true);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 void AGeoTurret::TryFire()
 {
-	AActor* Target = FindBestTarget();
-	if (!IsValid(Target))
+	if (!IsValid(CurrentTarget))
 	{
 		return;
 	}
@@ -114,7 +104,7 @@ void AGeoTurret::TryFire()
 		return;
 	}
 
-	FVector const DirectionToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	FVector const DirectionToTarget = (CurrentTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 	FTransform const SpawnTransform{DirectionToTarget.Rotation().Quaternion(), GetActorLocation()};
 
 	float const SpawnServerTime = GeoLib::GetServerTime(GetWorld());

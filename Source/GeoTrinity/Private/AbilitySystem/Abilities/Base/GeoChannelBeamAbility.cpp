@@ -39,10 +39,13 @@ void UGeoChannelBeamAbility::OnGiveAbility(FGameplayAbilityActorInfo const* Acto
 void UGeoChannelBeamAbility::OnRemoveAbility(FGameplayAbilityActorInfo const* ActorInfo,
 											 FGameplayAbilitySpec const& Spec)
 {
-	// Null when OnGiveAbility never created it (clients, or unset class). Replicated teardown removes it on clients.
+	// Server only: replicated teardown removes it on clients. Destroying here on the client races the class-change
+	// replication — the next class's component can arrive before this removal fires, and FindComponentByClass would
+	// tear that one down instead, leaving the client without a beam.
 	AActor const* Avatar = ActorInfo->AvatarActor.Get();
-	if (UGeoBeamVFXComponent* BeamVFXComponent =
-			IsValid(Avatar) ? Avatar->FindComponentByClass<UGeoBeamVFXComponent>() : nullptr)
+	if (UGeoBeamVFXComponent* BeamVFXComponent = IsValid(Avatar) && GeoLib::IsServer(Avatar)
+													 ? Avatar->FindComponentByClass<UGeoBeamVFXComponent>()
+													 : nullptr)
 	{
 		BeamVFXComponent->DestroyComponent();
 	}

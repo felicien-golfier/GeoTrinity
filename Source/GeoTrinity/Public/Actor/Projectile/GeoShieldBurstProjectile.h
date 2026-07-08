@@ -7,7 +7,8 @@
 
 #include "GeoShieldBurstProjectile.generated.h"
 
-/** Replication bundle that captures the full post-bounce state (location, velocity, sphere radius) for simulated clients. */
+/** Replication bundle that captures the full post-bounce state (location, velocity, sphere radius) for simulated
+ * clients. */
 USTRUCT()
 struct FShieldBounceSnapshot
 {
@@ -44,16 +45,30 @@ public:
 	float EnemyBounceMultiplier;
 
 protected:
-	/** Extends base setup to bind the wall-bounce delegate on the server. */
+	/** Sound played each time the projectile bounces, off a wall or an enemy. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile|Audio")
+	FProjectileSoundEntry BounceSound;
+
+	/** Extra pitch multiplier for BounceSound, evaluated against the sphere's current scaled radius. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile|Audio")
+	TObjectPtr<UCurveFloat> BounceSoundSizePitchCurve;
+
+	/** Extends base setup to bind the wall-bounce delegate. */
 	virtual void InitProjectileLife() override;
 	/**
-	 * On enemy overlap: reflects the projectile and scales ShieldAmount and sphere radius by EnemyBounceMultiplier.
-	 * On ally overlap: applies ShieldAmount as a shield effect and ends the projectile life.
+	 * On enemy overlap: plays BounceSound on every machine; on the server also reflects the projectile and scales
+	 * ShieldAmount and sphere radius by EnemyBounceMultiplier.
+	 * On ally overlap (server): applies ShieldAmount as a shield effect and ends the projectile life.
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor) override;
 
-	/** Returns false for AGeoWall (passes through the Square's own deployable walls) and for the same hostile actor within 0.5 s (prevents double-hit on glancing overlaps). */
+	/** Returns false for AGeoWall (passes through the Square's own deployable walls) and for the same hostile actor
+	 * within 0.5 s (prevents double-hit on glancing overlaps). */
 	virtual bool IsValidOverlap(AActor* OtherActor) override;
+
+	/** Extends base pitch with an extra factor from BounceSoundSizePitchCurve, evaluated at the sphere's current
+	 * scaled radius, so bigger bursts pitch differently. */
+	virtual float GetPitch(FProjectileSoundEntry const& Entry) const override;
 
 	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients.
 	 */
@@ -65,8 +80,8 @@ protected:
 	void UpdateVisualRadius(float Radius) const;
 
 private:
-	/** Records the post-bounce location, velocity, and radius in BounceSnapshot for replication to simulated clients.
-	 */
+	/** Plays BounceSound, then on the server records the post-bounce location, velocity, and radius in
+	 * BounceSnapshot for replication to simulated clients. */
 	UFUNCTION()
 	void OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity);
 

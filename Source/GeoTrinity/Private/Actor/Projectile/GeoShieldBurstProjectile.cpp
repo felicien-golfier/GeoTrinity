@@ -6,6 +6,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Wall/GeoWall.h"
 #include "Components/SphereComponent.h"
+#include "Curves/CurveFloat.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -34,10 +35,7 @@ void AGeoShieldBurstProjectile::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 void AGeoShieldBurstProjectile::InitProjectileLife()
 {
 	Super::InitProjectileLife();
-	if (HasAuthority())
-	{
-		ProjectileMovement->OnProjectileBounce.AddUniqueDynamic(this, &ThisClass::OnWallBounce);
-	}
+	ProjectileMovement->OnProjectileBounce.AddUniqueDynamic(this, &ThisClass::OnWallBounce);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -59,18 +57,32 @@ void AGeoShieldBurstProjectile::UpdateVisualRadius(float Radius) const
 	Niagara->SetVariableFloat(FName("User.Bullet_Radius"), Radius);
 }
 
+float AGeoShieldBurstProjectile::GetPitch(FProjectileSoundEntry const& Entry) const
+{
+	float Pitch = Super::GetPitch(Entry);
+	if (IsValid(BounceSoundSizePitchCurve))
+	{
+		Pitch *= BounceSoundSizePitchCurve->GetFloatValue(Sphere->GetScaledSphereRadius());
+	}
+	return Pitch;
+}
 
 void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity)
 {
-	BounceSnapshot = {GetActorLocation(), ImpactVelocity, Sphere->GetScaledSphereRadius()};
+	if (HasAuthority())
+	{
+		BounceSnapshot = {GetActorLocation(), ImpactVelocity, Sphere->GetScaledSphereRadius()};
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 {
-	if (GeoLib::IsServer(GetWorld()))
+	AActor* const CurrentOwner = IsValid(Payload.Owner) ? Payload.Owner : GetOwner();
+	if (GeoASLib::IsTeamAttitudeAligned(CurrentOwner, OtherActor, TeamAttitudeMask::HostileOrNeutral))
 	{
-		if (GeoASLib::IsTeamAttitudeAligned(Payload.Owner, OtherActor, TeamAttitudeMask::HostileOrNeutral))
+		PlaySoundOneShot(BounceSound);
+		if (GeoLib::IsServer(GetWorld()))
 		{
 			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
 			float const Speed = ProjectileMovement->Velocity.Size();
@@ -87,7 +99,11 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			LastOverlapHostileActor = OtherActor;
 			LastOverlapTime = GetWorld()->GetTimeSeconds();
 		}
-		else
+	}
+	else
+	{
+		EndSoundType = EProjectileSoundType::ValidOverlapEnd;
+		if (GeoLib::IsServer(GetWorld()))
 		{
 			// TODO: as we don;t call super, we should ensure few things before the ensure
 			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(OtherActor);
@@ -98,7 +114,6 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 				GeoASLib::ApplySingleEffectData(ShieldEffect, GeoASLib::GetGeoAscFromActor(Payload.Owner), TargetASC,
 												Payload.AbilityLevel, Payload.Seed, Payload.AbilityTag);
 			}
-
 			OnProjectileHit(OtherActor);
 			EndProjectileLife();
 		}

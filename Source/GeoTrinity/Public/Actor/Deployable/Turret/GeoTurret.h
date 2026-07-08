@@ -42,8 +42,7 @@ protected:
 	 * hostile within range, or nullptr if none is found.
 	 */
 	AActor* FindBestTarget() const;
-	/** Sets a timer to call TryFire after FireInterval seconds. */
-	void ScheduleFire();
+
 	/** Fires a projectile at the current best target if one exists. */
 	void TryFire();
 	virtual void Expire(float TimeBeforeDestroy) override;
@@ -58,7 +57,8 @@ protected:
 	float FireInterval = 1.f;
 
 private:
-	// Set on the server each tick from FindBestTarget; replicated so clients can orient toward the live target location.
+	// Set on the server each tick from FindBestTarget; replicated so clients can orient toward the live target
+	// location.
 	UPROPERTY(Replicated)
 	TObjectPtr<AActor> CurrentTarget;
 

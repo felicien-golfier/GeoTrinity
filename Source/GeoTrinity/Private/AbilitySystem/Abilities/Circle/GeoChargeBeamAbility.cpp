@@ -13,7 +13,7 @@
 UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 {
 	FireMode = EFireMode::ChargeForFireDelay;
-	CommitBehaviour = ECommitBehaviour::CostAtActivateCooldownAtEnd;
+	CommitBehaviour = ECommitBehaviour::AtActivate;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

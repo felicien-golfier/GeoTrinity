@@ -63,6 +63,8 @@ void AGeoEnemyAIController::ResetAI()
 
 void AGeoEnemyAIController::InitializeAggro(AEnemyCharacter const* EnemyChar)
 {
+	ClearAggro();
+
 	GetWorld()->GetTimerManager().SetTimer(AggroCheckTimer, this, &AGeoEnemyAIController::CheckAggroDistance, 0.5f,
 										   true);
 

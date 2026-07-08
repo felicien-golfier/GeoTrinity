@@ -235,6 +235,9 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Active)
 	bool bActive = true;
+	// True only when the deployable ended via Recall(); lets OnRep_Active skip the recall cues on a plain expiry.
+	UPROPERTY(Replicated)
+	bool bRecalled = false;
 	UPROPERTY(ReplicatedUsing = OnRep_Blinking)
 	bool bBlinking = false;
 
@@ -257,6 +260,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bDestroyOldestWhenLimitReached = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	bool bCanSacrificeDrain = true;
 
 private:
 	UFUNCTION()

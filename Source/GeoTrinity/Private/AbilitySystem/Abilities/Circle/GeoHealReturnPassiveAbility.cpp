@@ -8,6 +8,13 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+UGeoHealReturnPassiveAbility::UGeoHealReturnPassiveAbility()
+{
+	// Passives are server-owned: a client cancel request must never end the server's instance.
+	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoHealReturnPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 												   FGameplayAbilityActorInfo const* ActorInfo,
 												   FGameplayAbilityActivationInfo ActivationInfo,

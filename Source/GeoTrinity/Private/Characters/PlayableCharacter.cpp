@@ -1,5 +1,7 @@
 ﻿#include "Characters/PlayableCharacter.h"
 
+#include "Characters/Component/ShieldBurstPassiveComponent.h"
+
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -245,7 +247,21 @@ void APlayableCharacter::SetDeathMaterial(bool const bDead)
 	{
 		return;
 	}
-	GetMesh()->SetMaterial(0, bDead ? VisualData->DeathMaterial : VisualData->AliveMaterial);
+	SetBodyMaterial(bDead ? VisualData->DeathMaterial : VisualData->AliveMaterial);
+}
+
+void APlayableCharacter::SetBodyMaterial(UMaterialInterface* Material)
+{
+	GetMesh()->SetMaterial(0, Material);
+
+	// Setting a raw material on slot 0 orphans the shield-burst gauge MID; recreate it so the gauge visual
+	// survives death/revive/class swaps regardless of the order the material swap and the replicated
+	// ShieldBurstPassiveComponent arrive in.
+	UShieldBurstPassiveComponent* ShieldBurstComponent = FindComponentByClass<UShieldBurstPassiveComponent>();
+	if (ShieldBurstComponent && !GeoLib::IsDedicatedServer(GetWorld()))
+	{
+		ShieldBurstComponent->InitializeMaterialInstances();
+	}
 }
 
 void APlayableCharacter::OnHealthChanged(float const NewValue)
@@ -386,7 +402,7 @@ void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)
 	GetMesh()->SetSkeletalMesh(PlayerClassData->Mesh);
 	GetMesh()->SetAnimInstanceClass(PlayerClassData->AnimClass);
 	ensureMsgf(PlayerClassData->AliveMaterial, TEXT("ApplyClassData: No AliveMaterial for class on %s"), *GetName());
-	GetMesh()->SetMaterial(0, PlayerClassData->AliveMaterial);
+	SetBodyMaterial(PlayerClassData->AliveMaterial);
 }
 
 EPlayerClass APlayableCharacter::GetPlayerClass() const

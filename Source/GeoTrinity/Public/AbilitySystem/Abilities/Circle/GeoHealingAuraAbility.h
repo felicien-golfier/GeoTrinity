@@ -21,6 +21,10 @@ class GEOTRINITY_API UGeoHealingAuraAbility
 {
 	GENERATED_BODY()
 
+public:
+	UGeoHealingAuraAbility();
+
+private:
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;

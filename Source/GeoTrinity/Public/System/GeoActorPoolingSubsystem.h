@@ -52,7 +52,7 @@ public:
 		PreSpawn(*Class, Count, Owner, Instigator);
 	}
 
-	/** Returns Actor to the pool and calls IGeoPoolableInterface::End() on it. */
+	/** Returns Actor to the pool and calls IGeoPoolableInterface::NoOverlapEnd() on it. */
 	void ReleaseActor(AActor* Actor);
 
 	/** Returns the subsystem for the given world. */

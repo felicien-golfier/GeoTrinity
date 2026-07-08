@@ -11,9 +11,8 @@ AGeoWall::AGeoWall(FObjectInitializer const& ObjectInitializer) : Super(ObjectIn
 {
 	bUseRegularDrain = true;
 	bExplodeAtRecall = false;
-
-	// Gameplay collision moves from the root capsule onto the mesh: the mesh carries the GeoShape profile so projectiles
-	// hit its exact shape, while the capsule keeps no collision (still the root for transform/replication).
+	// Gameplay collision moves from the root capsule onto the mesh: the mesh carries the GeoShape profile so
+	// projectiles hit its exact shape, while the capsule keeps no collision (still the root for transform/replication).
 	CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));

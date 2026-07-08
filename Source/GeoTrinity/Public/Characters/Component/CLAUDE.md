@@ -35,9 +35,9 @@ Attached to all characters. Centralizes cosmetic reactions — never drives game
 Replicated beam-VFX holder, dynamically added by a beam ability on the server in `OnGiveAbility` (`NewObject` + `RegisterComponent`) and destroyed in `OnRemoveAbility` — it exists for as long as the ability is granted, and is toggled on/off per activation. Generic: reusable by any beam ability.
 
 - `SetBeamState(bActive, HalfWidth, Length)` — writes replicated `FBeamVFXState`. The **server** write replicates to everyone; the owning client may also call it for lag-free local visuals
-- Each rendering machine (clients + listen host; dedicated server skips) spawns a local non-replicated `UNiagaraComponent` in `BeginPlay`, attached to the owner's **root** so the beam rotates with aim
+- Each rendering machine (clients + listen host; dedicated server skips) spawns a local non-replicated `UNiagaraComponent`, attached to the owner's **root** so the beam rotates with aim. On clients the component arrives via replication with `BeginPlay` running **before** the initial `BeamSystem` value lands, so creation happens in the `BeamSystem` RepNotify (`CreateNiagaraComponent`), which must end with `ApplyBeamState()` — `OnRep_BeamState` fires before it (declaration order) and is a no-op while the Niagara component is null
 - `OnRep_BeamState` → `ApplyBeamState()`: `SetActive` + pushes `User.BeamHalfWidth` / `User.BeamLength` (param names editable per BP subclass)
-- `SetBeamColor(FLinearColor)` — set from the ability's `OnGiveAbility` (like `SetNiagaraSystem`); replicated `COND_InitialOnly` and pushed once to the `User.Color` Niagara parameter at component creation
+- `SetBeamColor(FLinearColor)` — set from the ability's `OnGiveAbility` (like `SetNiagaraSystem`); replicated (plain `COND_None` — `COND_InitialOnly` never delivers on dynamically added components since the actor channel's initial bunch already went out) and pushed once to the `User.Color` Niagara parameter at component creation
 - `BeamSystem` (`UNiagaraSystem`) must be assigned in the BP subclass defaults; author the system **local-space pointing +X**
 
 ## `ShieldBurstPassiveComponent.h`
@@ -46,5 +46,6 @@ Dynamically added to Square while `GeoShieldBurstPassiveAbility` is active. Remo
 - `SetGaugeRatio(float)` — **server-side only**; updates replicated `GaugeRatio`
 - `OnGaugeRatioChanged(float)` — `BlueprintImplementableEvent`; fires on all clients via `OnRep_GaugeRatio`
 - Drives shader parameter `"GlowGauge"` on slot-0 dynamic material instance (`CharacterMaterialInstance`)
+- The MID is discarded whenever a raw material is set on slot 0 — every slot-0 material change must go through `APlayableCharacter::SetBodyMaterial`, which re-calls `InitializeMaterialInstances()` (death/revive/class swap, any replication order)
 - `Charge()` — plays charge animation when gauge reaches 100%
 - `ChargeTime` and `DischargeTime = 0.3f` control animation timing

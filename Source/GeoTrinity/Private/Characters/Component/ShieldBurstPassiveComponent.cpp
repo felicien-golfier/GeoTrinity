@@ -59,7 +59,7 @@ void UShieldBurstPassiveComponent::InitializeMaterialInstances()
 		ensureMsgf(IsValid(CharacterMaterialInstance), TEXT("UShieldBurstPassiveComponent: invalid MaterialInstance"));
 	}
 
-	CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, 0.f);
+	CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, GaugeRatio);
 	CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, 0.f);
 }
 

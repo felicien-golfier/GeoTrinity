@@ -24,6 +24,9 @@ void UGeoBeamVFXComponent::CreateNiagaraComponent()
 		NiagaraComponent->RegisterComponent();
 		NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
 											FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		// BeamState may already hold live values: on clients its RepNotify can fire before this one (declaration
+		// order), and the component can arrive via replication after the ability fired.
+		ApplyBeamState();
 	}
 }
 // ---------------------------------------------------------------------------------------------------------------------
@@ -38,12 +41,7 @@ void UGeoBeamVFXComponent::BeginPlay()
 		return;
 	}
 
-	if (BeamSystem)
-	{
-		CreateNiagaraComponent();
-		// BeamState may already hold live values when this component arrives via replication after the ability fired.
-		ApplyBeamState();
-	}
+	CreateNiagaraComponent();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -63,8 +61,10 @@ void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UGeoBeamVFXComponent, BeamState);
-	DOREPLIFETIME_CONDITION(UGeoBeamVFXComponent, BeamSystem, COND_InitialOnly);
-	DOREPLIFETIME_CONDITION(UGeoBeamVFXComponent, BeamColor, COND_InitialOnly);
+	// Not COND_InitialOnly: the component is added dynamically (OnGiveAbility), after the owning actor's channel
+	// already sent its initial bunch — InitialOnly properties would then never reach existing clients.
+	DOREPLIFETIME(UGeoBeamVFXComponent, BeamSystem);
+	DOREPLIFETIME(UGeoBeamVFXComponent, BeamColor);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
