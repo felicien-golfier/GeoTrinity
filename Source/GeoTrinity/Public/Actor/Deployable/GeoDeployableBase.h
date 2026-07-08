@@ -75,6 +75,7 @@ public:
 	 */
 	void PushAway();
 
+	/** Registers replicated deployable properties (bActive, bBlinking). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Calls PushAway() on the server when bPushActorsOnSpawn is set, then delegates to Super. */
@@ -84,6 +85,7 @@ public:
 	virtual void InitDrain();
 	/** Ticks the blink timer state and calls Expire when health reaches zero. */
 	virtual void Tick(float DeltaSeconds) override;
+	/** Resolves and attaches the CombattantWidgetComponent before components initialize. */
 	virtual void PreInitializeComponents() override;
 	/** Registers with the instigator's DeployableManagerComponent and calls InitDrain. */
 	virtual void BeginPlay() override;
