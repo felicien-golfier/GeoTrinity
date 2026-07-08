@@ -44,13 +44,11 @@ public:
 	UFUNCTION()
 	void OnPlayerPawnSet(APlayerState* Player, APawn* NewPawn, APawn* OldPawn);
 
-	/** Implement IAbilitySystemInterface */
+	/** Returns the ASC owned by this player state; required by IAbilitySystemInterface. */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	/** END Implement IAbilitySystemInterface */
 
-	// IGenericTeamAgentInterface BEGIN
+	/** Returns this player's team identifier for attitude queries; required by IGenericTeamAgentInterface. */
 	virtual FGenericTeamId GetGenericTeamId() const override;
-	// IGameplayTaskOwnerInterface END
 
 	/** Returns the player's character attribute set (player-only attributes: ammo, multipliers, etc.). */
 	UCharacterAttributeSet* GetCharacterAttributeSet() const { return CharacterAttributeSet; }

@@ -17,6 +17,7 @@ class GEOTRINITY_API UCharacterAttributeSet : public UGeoAttributeSetBase
 	GENERATED_BODY()
 
 public:
+	/** Registers all player-specific attributes (ammo, multipliers, SacrificeValue) for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// Triangle: ammo system

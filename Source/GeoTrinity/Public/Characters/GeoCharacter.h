@@ -43,6 +43,7 @@ class GEOTRINITY_API AGeoCharacter
 
 public:
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
+	/** Registers replicated character properties (bIsDead). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Called every frame. */

@@ -38,6 +38,7 @@ class UGeoGameplayLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
+	/** Returns a randomly selected color from the static debug ColorPalette array. */
 	static FColor GetRandomColorFromPalette();
 	/** Returns a deterministic debug color for WorldContextObject based on its object hash. */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
@@ -77,6 +78,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary")
 	static bool IsLocalPlayerAvatar(APawn const* Pawn);
 
+	/**
+	 * Returns Owner cast to AGeoCharacter; if Owner is a PlayerState, resolves and returns its pawn instead.
+	 * Returns nullptr when neither cast succeeds (e.g. non-character owner actor).
+	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary")
 	static AGeoCharacter* GetCharacterFromOwner(AActor* Owner);
 
