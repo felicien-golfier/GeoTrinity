@@ -31,6 +31,7 @@ class GEOTRINITY_API UGeoDeployableManagerComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	/** Disables component tick and enables replication by default. */
 	UGeoDeployableManagerComponent();
 	/**
 	 * Returns true if a new deployable of the given class may be deployed.
@@ -63,7 +64,8 @@ public:
 
 	/** Returns all live tracked deployable actors. */
 	TArray<AGeoDeployableBase*> GetAllDeployables() const;
-	
+
+	/** Returns all live tracked deployables of the given class or any subclass thereof. */
 	TArray<AGeoDeployableBase*> GetDeployables(TSubclassOf<AGeoDeployableBase> Class) const;
 
 	/** Compile-time-typed convenience wrapper around GetDeployables(UClass*); casts each result to T*. */

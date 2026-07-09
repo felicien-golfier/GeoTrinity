@@ -42,11 +42,17 @@ class GEOTRINITY_API AGeoCharacter
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Substitutes UGeoCharacterMovementComponent via ObjectInitializer and creates default subobjects:
+	 * GeoInputComponent, WidgetAnchorComponent, CharacterWidgetComponent (resolved from GameDataSettings;
+	 * null on dedicated server), GameFeelComponent, and DeployableManagerComponent.
+	 */
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
 	/** Registers replicated character properties (bIsDead). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	/** Called every frame. */
+	/** Emits a visual-log entry at the character's location; optionally draws a debug sphere on the server
+	 *  (Geo.ShowCharacterServerLocation CVar). */
 	virtual void Tick(float DeltaSeconds) override;
 	/** Expires all elements spawned by this character (deployables, and in future visual zones, etc). */
 	void StopAllSpawnedElements();
