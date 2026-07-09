@@ -64,11 +64,18 @@ struct FProjectileSoundEntry
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
+
+/**
+ * Replicable, effect-applying projectile that terminates on distance-span, lifespan, or a valid hit.
+ * Base class for all game projectiles — extend AGeoPooledProjectile for pool-managed variants.
+ */
 UCLASS()
 class GEOTRINITY_API AGeoProjectile : public AActor
 {
 	GENERATED_BODY()
 public:
+	/** Creates the sphere collider (root), projectile movement component, and looping audio component as
+	 *  default subobjects; enables replication and tick. */
 	AGeoProjectile();
 	/** Registers PredictionKeyId for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
