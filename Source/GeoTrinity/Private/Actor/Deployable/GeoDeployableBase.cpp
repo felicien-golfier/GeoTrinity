@@ -100,7 +100,6 @@ void AGeoDeployableBase::PushAway()
 		uint16 const SourceID = Movement->ApplyRootMotionSource(PushRootMotion);
 
 		FTimerHandle RemoveHandle;
-		// Weak-bound: the timer is dropped if the component is destroyed first.
 		GetWorldTimerManager().SetTimer(RemoveHandle,
 										FTimerDelegate::CreateWeakLambda(Movement,
 																		 [Movement, SourceID]()
@@ -337,7 +336,6 @@ void AGeoDeployableBase::Expire(float const TimeBeforeDestroy)
 	if (TimeBeforeDestroy > 0.f)
 	{
 		FTimerHandle TimerHandle;
-		// Weak-bound: the timer is dropped if the actor is destroyed first (e.g. owning client disconnects).
 		GetWorldTimerManager().SetTimer(
 			TimerHandle, FTimerDelegate::CreateWeakLambda(this, [this]() { Destroy(); }), TimeBeforeDestroy, false);
 	}

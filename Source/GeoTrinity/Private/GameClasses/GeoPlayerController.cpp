@@ -47,7 +47,11 @@ void AGeoPlayerController::BeginPlay()
 		{
 			if (!InputMapping.IsNull())
 			{
-				InputSystem->AddMappingContext(InputMapping.LoadSynchronous(), 0);
+				// bNotifyUserSettings registers the context with UEnhancedInputUserSettings so the key-rebinding
+				// screen can enumerate its player-mappable rows and saved remaps get applied on rebuild.
+				FModifyContextOptions Options;
+				Options.bNotifyUserSettings = true;
+				InputSystem->AddMappingContext(InputMapping.LoadSynchronous(), 0, Options);
 			}
 		}
 	}

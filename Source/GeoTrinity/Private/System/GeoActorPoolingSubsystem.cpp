@@ -74,8 +74,6 @@ void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, uint16 const Count, AAct
 	Params.Instigator = Instigator;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Top up to Count instead of always adding Count: PreSpawn is re-called on every pattern creation
-	// (e.g. boss respawn) and must not grow the pool unboundedly.
 	TArray<TWeakObjectPtr<AActor>>& PoolByClass = Pool.FindOrAdd(Class);
 	int32 const MissingCount = Count - PoolByClass.Num();
 	PoolByClass.Reserve(Count);
@@ -93,11 +91,8 @@ bool UGeoActorPoolingSubsystem::GetActorState(AActor const* Actor)
 
 void UGeoActorPoolingSubsystem::ChangeActorState(AActor* NewActor, bool bActive)
 {
-	// Make inactive
 	NewActor->SetActorEnableCollision(bActive);
 	NewActor->SetActorTickEnabled(bActive);
-	// SetActorTickEnabled only covers the actor tick: component ticks (movement, audio...) must be toggled too,
-	// otherwise pooled inactive actors keep ticking their components forever.
 	NewActor->ForEachComponent<UActorComponent>(false, [bActive](UActorComponent* Component)
 												{ Component->SetComponentTickEnabled(bActive); });
 	NewActor->SetActorHiddenInGame(!bActive);

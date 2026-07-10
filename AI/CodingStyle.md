@@ -22,7 +22,7 @@
 - No abbreviations in variable names; full class names except `ASC` for AbilitySystemComponent
 - **Unused parameters**: always name them in `.h` declarations; suppress with `/*name*/` in `.cpp` implementations when unused
 - **Never use `GetComponentByClass` to get an ASC** — always use `GeoASLib::GetGeoAscFromActor` instead
-- No comments that restate what the code says — code should be self-documenting. Only comment when the code is genuinely complex/hard to read, or when an uncommon code-style choice needs justification. Never write comments that explain history or why a past approach was wrong (e.g. "this is the correct procedure instead of X").
+- No comments that restate what the code says — code should be self-documenting. This applies to changes too: when fixing a bug or changing behavior, don't add a comment explaining what changed or why the old way was wrong — the diff/commit message is where that belongs, not the file. Only comment in the rare case (~1%) where the code is genuinely complex/hard to read on its own, or an uncommon code-style choice needs justification. Never write comments that explain history (e.g. "this is the correct procedure instead of X").
 - Never assume method names or constants (including `FColor::X`) — they change between versions.
 **Check Epic source before using any UE named constant or method**: Always read the actual engine header to confirm it exists. If the constant doesn't exist, define it with explicit RGB/RGBA values instead.
 **Check Epic source before implementing UE features**: Always read actual engine/plugin headers before implementing StateTree tasks, GAS, AI, etc.

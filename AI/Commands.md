@@ -28,7 +28,7 @@ Other targets (build these ONLY when explicitly needed, not for the normal edito
 
 ## Packaging
 
-To package a distributable build of the game, see [`BuildPackage.md`](../BuildPackage.md) at the repo root.
+To package a distributable build of the game, see [`BuildPackage.md`](BuildPackage.md).
 
 ## Launch Editor
 

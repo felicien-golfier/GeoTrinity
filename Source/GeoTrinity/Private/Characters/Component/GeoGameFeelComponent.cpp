@@ -80,7 +80,6 @@ void UGeoGameFeelComponent::FlashOnHit()
 	}
 
 	TargetMesh->SetOverlayMaterial(FlashMaterial);
-	// Weak-bound: the timer is dropped if the component is destroyed first.
 	GetWorld()->GetTimerManager().SetTimer(HitFlashTimerHandle,
 										   FTimerDelegate::CreateWeakLambda(this,
 																			[this]()
