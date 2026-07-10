@@ -6,8 +6,6 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Turret/GeoTurret.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
-#include "DrawDebugHelpers.h"
-#include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -72,31 +70,28 @@ TArray<UGeoAbilitySystemComponent*> UGeoRecallTurretAbility::FindTargets(AActor 
 																		 FRecallInfo const& RecallInfo) const
 {
 	TArray<UGeoAbilitySystemComponent*> Targets{};
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(Instigator);
 
-	FCollisionObjectQueryParams ObjectQueryParams = FCollisionObjectQueryParams(ECC_GeoCharacter);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-
-	TArray<FHitResult> HitResults;
-	bool const bHit = GetWorld()->LineTraceMultiByObjectType(
-		HitResults, RecallInfo.TurretLocation, Instigator->GetActorLocation(), ObjectQueryParams, QueryParams);
-
-	if (bHit)
+	FVector2D const Origin = FVector2D(RecallInfo.TurretLocation);
+	FVector2D const ToInstigator = FVector2D(Instigator->GetActorLocation()) - Origin;
+	float const MaxRange = ToInstigator.Length();
+	if (MaxRange <= UE_KINDA_SMALL_NUMBER)
 	{
-		for (FHitResult const& Hit : HitResults)
+		return Targets;
+	}
+
+	for (AActor* Target : GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(Instigator), OverlapAttitude,
+																false, Origin, ToInstigator / MaxRange, MaxRange,
+																LineHalfWidth))
+	{
+		if (Target == Instigator)
 		{
-			if (AActor* HitActor = Hit.GetActor();
-				IsValid(HitActor) && GeoASLib::IsTeamAttitudeAligned(Instigator, HitActor, OverlapAttitude))
-			{
-				UGeoAbilitySystemComponent* HitActorASC = HitActor->GetComponentByClass<UGeoAbilitySystemComponent>();
-				if (IsValid(HitActorASC))
-				{
-					Targets.Add(HitActorASC);
-				}
-			}
+			continue;
+		}
+
+		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
+		if (IsValid(TargetASC))
+		{
+			Targets.Add(TargetASC);
 		}
 	}
 

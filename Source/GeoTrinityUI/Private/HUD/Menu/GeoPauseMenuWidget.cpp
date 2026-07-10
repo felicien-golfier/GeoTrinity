@@ -6,7 +6,6 @@
 #include "GameClasses/GeoPlayerController.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "HUD/Menu/GeoSettingsWidget.h"
-#include "Kismet/KismetSystemLibrary.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -114,7 +113,12 @@ void UGeoPauseMenuWidget::HandleQuit()
 		return;
 	}
 #endif
-	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
+	UGeoGameInstance* GameInstance = Cast<UGeoGameInstance>(GetGameInstance());
+	if (!ensureMsgf(GameInstance, TEXT("UGeoPauseMenuWidget::HandleQuit: GameInstance is not a UGeoGameInstance")))
+	{
+		return;
+	}
+	GameInstance->QuitGame();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

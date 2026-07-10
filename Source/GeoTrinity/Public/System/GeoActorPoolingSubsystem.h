@@ -37,11 +37,11 @@ public:
 	}
 
 	/**
-	 * Pre-allocates Count inactive actors of the given class and stores them in the pool.
-	 * Use during level load to avoid runtime spawn cost.
+	 * Tops up the pool so it holds Count inactive actors of the given class; does nothing if it already does.
+	 * Use during level load to avoid runtime spawn cost. Safe to call repeatedly.
 	 *
 	 * @param Class        The actor class to pre-spawn. Must derive from AActor.
-	 * @param Count        Number of instances to pre-allocate.
+	 * @param Count        Number of pooled instances to guarantee.
 	 * @param Owner        Optional owner assigned to each pre-spawned actor.
 	 * @param Instigator   Optional instigator assigned to each pre-spawned actor.
 	 */
@@ -70,8 +70,8 @@ public:
 
 	/**
 	 * Marks Actor as active or inactive and applies the corresponding visibility and tick state.
-	 * Active (bActive=true): SetActorHiddenInGame(false) + SetActorTickEnabled(true).
-	 * Inactive (bActive=false): SetActorHiddenInGame(true) + SetActorTickEnabled(false).
+	 * Active (bActive=true): visible, collision on, actor and component ticks enabled.
+	 * Inactive (bActive=false): hidden, collision off, actor and component ticks disabled.
 	 *
 	 * @param NewActor  The actor whose state to change. Must not be null.
 	 * @param bActive   True to activate (make visible and tickable), false to deactivate.

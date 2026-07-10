@@ -11,6 +11,14 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
+UGeoChannelBeamAbility::UGeoChannelBeamAbility()
+	// Only game-thread constructions may register as tickable: async-loaded Blueprint CDOs are built on the loading
+	// thread and must not register (registration is game-thread-only; the CDO never ticks anyway).
+	: FTickableGameObject(IsInGameThread() ? ETickableTickType::Conditional : ETickableTickType::Never)
+{
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // May run on the CDO (no primary instance yet) — derive everything from ActorInfo, never from GetWorld().
 void UGeoChannelBeamAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
 {

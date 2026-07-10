@@ -2,12 +2,12 @@
 
 #include "HUD/Menu/GeoMainMenuWidget.h"
 
+#include "GameClasses/GeoGameInstance.h"
 #include "HUD/Menu/GeoBrowseServersWidget.h"
 #include "HUD/Menu/GeoCreateServerWidget.h"
 #include "HUD/Menu/GeoLocalConnectWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "Interfaces/OnlineIdentityInterface.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "OnlineSubsystem.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -108,7 +108,12 @@ void UGeoMainMenuWidget::HandlePlayLocal()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleQuit()
 {
-	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
+	UGeoGameInstance* GameInstance = Cast<UGeoGameInstance>(GetGameInstance());
+	if (!ensureMsgf(GameInstance, TEXT("UGeoMainMenuWidget::HandleQuit: GameInstance is not a UGeoGameInstance")))
+	{
+		return;
+	}
+	GameInstance->QuitGame();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

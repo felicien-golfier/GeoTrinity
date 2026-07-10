@@ -125,7 +125,7 @@ void UGeoAbilitySlotWidget::RefreshDeployCount()
 	int32 Current = 0;
 	int32 Max = 0;
 	HUD->GetDeployCountForAbility(DisplayedEntry().AbilityTag, Current, Max);
-	CountText->SetText(FText::AsNumber(Current));
+	CountText->SetText(FText::AsNumber(Max - Current));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

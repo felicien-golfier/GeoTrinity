@@ -262,6 +262,13 @@ float AGeoProjectile::GetPitch(FProjectileSoundEntry const& Entry) const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+float AGeoProjectile::GetVolume(FProjectileSoundEntry const& Entry) const
+{
+	AActor const* const CurrentInstigator = IsValid(Payload.Instigator) ? Payload.Instigator : GetInstigator();
+	return GeoLib::IsLocalPlayerAvatar(CurrentInstigator) ? Entry.Volume : Entry.Volume / NonLocalOwnerVolumeDivider;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlaySoundOneShot(EProjectileSoundType const SoundType) const
 {
 	if (FProjectileSoundEntry const* Entry = SoundMap.Find(SoundType))
@@ -276,7 +283,7 @@ void AGeoProjectile::PlaySoundOneShot(FProjectileSoundEntry const& Entry) const
 	if (IsValid(Entry.Sound))
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, Entry.Sound, GetActorLocation(), FRotator::ZeroRotator,
-											  Entry.Volume, GetPitch(Entry), Entry.StartTime);
+											  GetVolume(Entry), GetPitch(Entry), Entry.StartTime);
 	}
 }
 
@@ -327,6 +334,20 @@ void AGeoProjectile::EndProjectileLife()
 	PlayImpactFx();
 
 	OnProjectileEndLifeDelegate.Broadcast(this);
+
+	// A simulated proxy must never Destroy() itself: the server still replicates the actor, and any later property
+	// bunch (e.g. a bounce snapshot) re-creates it client-side as a fresh, wrongly-moving ghost. Go dark instead and
+	// let the server's replicated destruction remove the actor. Predicted fakes are client-spawned and therefore
+	// locally ROLE_Authority, so they still destroy themselves here.
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
+		ProjectileMovement->StopMovementImmediately();
+		LoopingSoundComponent->Stop();
+		return;
+	}
+
 	Destroy();
 }
 
@@ -415,7 +436,7 @@ void AGeoProjectile::InitProjectileLife()
 		if (FProjectileSoundEntry const* LoopingEntry = SoundMap.Find(EProjectileSoundType::Looping))
 		{
 			LoopingSoundComponent->SetSound(LoopingEntry->Sound);
-			LoopingSoundComponent->SetVolumeMultiplier(LoopingEntry->Volume);
+			LoopingSoundComponent->SetVolumeMultiplier(GetVolume(*LoopingEntry));
 			LoopingSoundComponent->SetPitchMultiplier(GetPitch(EProjectileSoundType::Looping));
 			LoopingSoundComponent->Play();
 		}

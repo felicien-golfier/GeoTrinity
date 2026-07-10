@@ -8,6 +8,7 @@
 #include "GenericTeamAgentInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
@@ -202,8 +203,7 @@ void UGeoGameInstance::LeaveSessionAndReturnToMenu()
 		return;
 	}
 
-	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
-	IOnlineSessionPtr Sessions = OnlineSubsystem ? OnlineSubsystem->GetSessionInterface() : nullptr;
+	IOnlineSessionPtr Sessions = GetSessionInterface();
 	EOnlineSessionState::Type const SessionState =
 		Sessions.IsValid() ? Sessions->GetSessionState(FName(TEXT("GameSession"))) : EOnlineSessionState::NoSession;
 
@@ -219,17 +219,47 @@ void UGeoGameInstance::LeaveSessionAndReturnToMenu()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGameInstance::OnDestroySessionComplete(FName SessionName, bool /*bWasSuccessful*/)
+void UGeoGameInstance::OnDestroySessionComplete(FName /*SessionName*/, bool /*bWasSuccessful*/)
 {
-	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
-	if (OnlineSub)
+	IOnlineSessionPtr Sessions = GetSessionInterface();
+	if (Sessions.IsValid())
 	{
-		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-		if (Sessions.IsValid())
-		{
-			Sessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
-		}
+		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
 	}
 
 	UGameplayStatics::OpenLevel(this, FName(*MainMenuMap.ToSoftObjectPath().GetLongPackageName()));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::QuitGame()
+{
+	IOnlineSessionPtr Sessions = GetSessionInterface();
+	if (!Sessions.IsValid() || Sessions->GetSessionState(FName(TEXT("GameSession"))) == EOnlineSessionState::NoSession)
+	{
+		UKismetSystemLibrary::QuitGame(this, GetFirstLocalPlayerController(), EQuitPreference::Quit, true);
+		return;
+	}
+
+	DestroySessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
+		FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnDestroySessionForQuitComplete));
+	Sessions->DestroySession(FName(TEXT("GameSession")));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::OnDestroySessionForQuitComplete(FName /*SessionName*/, bool /*bWasSuccessful*/)
+{
+	IOnlineSessionPtr Sessions = GetSessionInterface();
+	if (Sessions.IsValid())
+	{
+		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
+	}
+
+	UKismetSystemLibrary::QuitGame(this, GetFirstLocalPlayerController(), EQuitPreference::Quit, true);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IOnlineSessionPtr UGeoGameInstance::GetSessionInterface() const
+{
+	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
+	return OnlineSubsystem ? OnlineSubsystem->GetSessionInterface() : nullptr;
 }

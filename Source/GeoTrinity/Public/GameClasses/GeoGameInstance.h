@@ -53,6 +53,16 @@ public:
 	/** Delegate callback for session destruction; opens the main menu map once the session is fully torn down. */
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
 
+	/**
+	 * Quits the game process. Destroys the Steam online session first if one exists (exit happens in the
+	 * destroy-completion callback) — quitting with a live session leaves the process hanging on Steam shutdown.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Online")
+	void QuitGame();
+
+	/** Delegate callback for session destruction during quit; requests engine exit once the session is torn down. */
+	void OnDestroySessionForQuitComplete(FName SessionName, bool bWasSuccessful);
+
 	/** Default map to travel to when creating a session without an explicit map URL */
 	UPROPERTY(EditDefaultsOnly, Category = "Online")
 	TSoftObjectPtr<UWorld> DefaultMap;
@@ -63,6 +73,9 @@ public:
 
 private:
 	/** Online **/
+	/** Session interface of the active online subsystem, or invalid if the subsystem is unavailable. */
+	IOnlineSessionPtr GetSessionInterface() const;
+
 	FString PendingMapURL;
 	FDelegateHandle CreateSessionDelegateHandle;
 	FDelegateHandle JoinSessionDelegateHandle;

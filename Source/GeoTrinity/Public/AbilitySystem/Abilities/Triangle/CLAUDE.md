@@ -19,4 +19,5 @@ Triangle (DPS) class abilities. Triangle's basic attack uses `UGeoAutomaticProje
 - Recalls all deployed `AGeoTurret` actors via `UGeoDeployableManagerComponent::RecallAll()`
 - Applies effects to nearby players on recall
 - `BlinkBonusEffect` — additional effect applied to turrets that were already **blinking** (near expiry) when recalled
-- `OverlapAttitude` — filters which team receives the effects (default: `Hostile`)
+- `OverlapAttitude` — filters which team receives the effects (default: `HostileOrNeutral`)
+- `FindTargets` — uses `GeoASLib::GetInteractableActorsInLine` along the turret→player segment; `LineHalfWidth` sets the line half-width

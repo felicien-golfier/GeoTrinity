@@ -100,17 +100,15 @@ void AGeoDeployableBase::PushAway()
 		uint16 const SourceID = Movement->ApplyRootMotionSource(PushRootMotion);
 
 		FTimerHandle RemoveHandle;
-		GetWorldTimerManager().SetTimer(
-			RemoveHandle,
-			[Movement, SourceID]()
-			{
-				if (IsValid(Movement))
-				{
-					Movement->RemoveRootMotionSourceByID(SourceID);
-					Movement->SetMovementMode(MOVE_Falling);
-				}
-			},
-			PushDuration, false);
+		// Weak-bound: the timer is dropped if the component is destroyed first.
+		GetWorldTimerManager().SetTimer(RemoveHandle,
+										FTimerDelegate::CreateWeakLambda(Movement,
+																		 [Movement, SourceID]()
+																		 {
+																			 Movement->RemoveRootMotionSourceByID(SourceID);
+																			 Movement->SetMovementMode(MOVE_Falling);
+																		 }),
+										PushDuration, false);
 	}
 }
 
@@ -327,19 +325,21 @@ void AGeoDeployableBase::Expire(float const TimeBeforeDestroy)
 	OnDeployableExpiredEvent.Broadcast(this);
 	SetActorTickEnabled(false);
 
+	// A simulated proxy must never Destroy() itself: the server still replicates the actor, and a later property bunch
+	// would re-create it client-side. Stay dark (hidden, tick off) and let the server's replicated destruction remove
+	// the actor (mirrors AGeoProjectile::EndProjectileLife).
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		SetActorEnableCollision(false);
+		return;
+	}
+
 	if (TimeBeforeDestroy > 0.f)
 	{
 		FTimerHandle TimerHandle;
+		// Weak-bound: the timer is dropped if the actor is destroyed first (e.g. owning client disconnects).
 		GetWorldTimerManager().SetTimer(
-			TimerHandle,
-			[this]()
-			{
-				if (IsValid(this))
-				{
-					this->Destroy();
-				}
-			},
-			TimeBeforeDestroy, false);
+			TimerHandle, FTimerDelegate::CreateWeakLambda(this, [this]() { Destroy(); }), TimeBeforeDestroy, false);
 	}
 	else
 	{

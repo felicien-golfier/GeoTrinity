@@ -12,6 +12,9 @@
 
 // ---------------------------------------------------------------------------------------------------------------------
 UGeoHealingAuraAbility::UGeoHealingAuraAbility()
+	// Only game-thread constructions may register as tickable: async-loaded Blueprint CDOs are built on the loading
+	// thread and must not register (registration is game-thread-only; the CDO never ticks anyway).
+	: FTickableGameObject(IsInGameThread() ? ETickableTickType::Conditional : ETickableTickType::Never)
 {
 	// Passives are server-owned: a client cancel request must never end the server's instance.
 	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;

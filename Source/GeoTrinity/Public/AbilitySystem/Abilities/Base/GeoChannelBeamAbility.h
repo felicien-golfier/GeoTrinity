@@ -24,6 +24,9 @@ class GEOTRINITY_API UGeoChannelBeamAbility
 {
 	GENERATED_BODY()
 
+public:
+	UGeoChannelBeamAbility();
+
 protected:
 	/** Server: adds the replicated BeamVFXComponent to the avatar for as long as the ability is granted. */
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;

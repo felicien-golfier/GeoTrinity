@@ -184,6 +184,13 @@ protected:
 	 * value in RandomPitchMultiplierRange. Virtual so subclasses can layer additional pitch factors (e.g. size). */
 	virtual float GetPitch(FProjectileSoundEntry const& Entry) const;
 
+	/** Returns Entry.Volume, divided by NonLocalOwnerVolumeDivider when the projectile's instigator is not the local
+	 * player's avatar, so other players' projectiles are quieter than your own. */
+	float GetVolume(FProjectileSoundEntry const& Entry) const;
+
+	/** Volume divider applied to every projectile sound whose instigator is not the local player's avatar. */
+	static constexpr float NonLocalOwnerVolumeDivider = 2.f;
+
 	/** Plays the mapped sound once at the actor's location with its volume and attribute-driven pitch. */
 	void PlaySoundOneShot(EProjectileSoundType SoundType) const;
 
@@ -195,7 +202,8 @@ protected:
 	TMap<EProjectileSoundType, FProjectileSoundEntry> SoundMap;
 
 	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
-	 * by default. */
+	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
+	 * replicated destruction, so a local Destroy() can never race a later replication bunch into a ghost re-spawn. */
 	virtual void EndProjectileLife();
 	/** Configures the UProjectileMovementComponent from the projectile's UPROPERTY settings. */
 	void InitProjectileMovementComponent();

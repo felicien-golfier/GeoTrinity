@@ -34,7 +34,7 @@ class GEOTRINITY_API UGeoRecallTurretAbility : public UGeoGameplayAbility
 
 protected:
 	/**
-	 * Returns the list of player ASCs that should receive the recall effect.
+	 * Returns the ASCs of interactable agents lying on the turret-to-player line (LineHalfWidth wide).
 	 * Uses OverlapAttitude to filter by team (hostile ASCs = players who deal or receive the buff).
 	 */
 	TArray<UGeoAbilitySystemComponent*> FindTargets(AActor const* Instigator, FRecallInfo const& RecallInfo) const;
@@ -47,4 +47,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
 	int32 OverlapAttitude = TeamAttitudeMask::HostileOrNeutral;
+
+	/** Half-width of the recall line, added to each target's collision radius when testing hits. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Recall")
+	float LineHalfWidth = 50.f;
 };

@@ -64,12 +64,10 @@ void APlayableCharacter::SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Abi
 	}
 	else
 	{
+		// Weak-bound: the timer is dropped if the character is destroyed first.
 		GetWorld()->GetTimerManager().SetTimer(
 			ChargeDeployHideTimerHandle,
-			[this]()
-			{
-				DeployChargeGaugeComponent->SetHiddenInGame(true);
-			},
+			FTimerDelegate::CreateWeakLambda(this, [this]() { DeployChargeGaugeComponent->SetHiddenInGame(true); }),
 			0.15f, false);
 	}
 }
@@ -99,12 +97,10 @@ void APlayableCharacter::SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability,
 			Widget->UpdateVisualChargeRatio();
 			Widget->SetChargeBeamAbility(nullptr);
 		}
+		// Weak-bound: the timer is dropped if the character is destroyed first.
 		GetWorld()->GetTimerManager().SetTimer(
 			ChargeBeamHideTimerHandle,
-			[this]()
-			{
-				ChargeBeamGaugeComponent->SetHiddenInGame(true);
-			},
+			FTimerDelegate::CreateWeakLambda(this, [this]() { ChargeBeamGaugeComponent->SetHiddenInGame(true); }),
 			0.15f, false);
 	}
 }

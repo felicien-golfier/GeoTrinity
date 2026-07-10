@@ -80,14 +80,15 @@ void UGeoGameFeelComponent::FlashOnHit()
 	}
 
 	TargetMesh->SetOverlayMaterial(FlashMaterial);
-	GetWorld()->GetTimerManager().SetTimer(
-		HitFlashTimerHandle,
-		[this]()
-		{
-			TargetMesh->SetOverlayMaterial(nullptr);
-			HitFlashTimerHandle.Invalidate();
-		},
-		GDSettings->HitFlashDuration, false);
+	// Weak-bound: the timer is dropped if the component is destroyed first.
+	GetWorld()->GetTimerManager().SetTimer(HitFlashTimerHandle,
+										   FTimerDelegate::CreateWeakLambda(this,
+																			[this]()
+																			{
+																				TargetMesh->SetOverlayMaterial(nullptr);
+																				HitFlashTimerHandle.Invalidate();
+																			}),
+										   GDSettings->HitFlashDuration, false);
 }
 
 void UGeoGameFeelComponent::ApplyRecoil(float Distance)
