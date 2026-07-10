@@ -28,7 +28,29 @@ FActiveGameplayEffectHandle FGameplayEffectData::ApplyEffect(FGameplayEffectCont
 {
 	checkf(GameplayEffect, TEXT("No valid DamageEffectClass !"));
 
-	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GameplayEffect, AbilityLevel, ContextHandle);
+	if (bReplaceExistingInstance)
+	{
+		for (FActiveGameplayEffectHandle const& ActiveHandle :
+			 TargetASC->GetActiveGameplayEffects().GetAllActiveEffectHandles())
+		{
+			FActiveGameplayEffect const* ActiveEffect = TargetASC->GetActiveGameplayEffect(ActiveHandle);
+			if (ActiveEffect && ActiveEffect->Spec.Def && ActiveEffect->Spec.Def->GetClass() == GameplayEffect
+				&& ActiveEffect->Spec.GetContext().GetOriginalInstigatorAbilitySystemComponent() == SourceASC)
+			{
+				TargetASC->RemoveActiveGameplayEffect(ActiveHandle);
+				break;
+			}
+		}
+	}
+
+	FGameplayEffectContextHandle SpecContextHandle = ContextHandle;
+	if (Icon)
+	{
+		SpecContextHandle = ContextHandle.Duplicate();
+		static_cast<FGeoGameplayEffectContext*>(SpecContextHandle.Get())->SetIcon(Icon);
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GameplayEffect, AbilityLevel, SpecContextHandle);
 
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, DataTag,
 																  Magnitude.GetValueAtLevel(AbilityLevel));

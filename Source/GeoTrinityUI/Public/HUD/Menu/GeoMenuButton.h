@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
 #include "Fonts/SlateFontInfo.h"
+#include "HUD/Menu/GeoMenuPanelWidget.h"
 #include "Styling/SlateBrush.h"
 #include "Styling/SlateColor.h"
 
 #include "GeoMenuButton.generated.h"
 
-class UButton;
+class UGeoButton;
 class UTextBlock;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoButtonClickedSignature);
@@ -18,10 +18,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoButtonClickedSignature);
 /**
  * Reusable styled button widget. Blueprint subclasses configure appearance via EditAnywhere properties;
  * all click logic is wired through the BlueprintAssignable OnClicked delegate in C++.
- * Required in the BP hierarchy: a UButton named "Button". Optional: a UTextBlock named "ButtonText".
+ * Required in the BP hierarchy: a UGeoButton named "ButtonWidget". Optional: a UTextBlock named "ButtonText".
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoMenuButton : public UUserWidget
+class GEOTRINITYUI_API UGeoMenuButton : public UGeoMenuPanelWidget
 {
 	GENERATED_BODY()
 
@@ -51,9 +51,11 @@ protected:
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual FReply NativeOnFocusReceived(FGeometry const& InGeometry, FFocusEvent const& InFocusEvent) override;
+	virtual UWidget* GetInitialFocusWidget() const override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UButton> ButtonWidget;
+	TObjectPtr<UGeoButton> ButtonWidget;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> ButtonText;

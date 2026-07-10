@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
+#include "HUD/Menu/GeoMenuPanelWidget.h"
 
 #include "GeoPauseMenuWidget.generated.h"
 
@@ -17,13 +17,15 @@ class UGeoSettingsWidget;
  * "QuitButton", and a UGeoSettingsWidget "SettingsWidget" panel (Collapsed by default).
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoPauseMenuWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoPauseMenuWidget : public UGeoMenuPanelWidget
 {
 	GENERATED_BODY()
 
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual UWidget* GetInitialFocusWidget() const override;
+	virtual bool HandleBackAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> ResumeButton;

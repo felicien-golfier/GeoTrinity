@@ -22,6 +22,7 @@ namespace
 		REP_RadialDamageInnerRadius,
 		REP_RadialDamageOuterRadius,
 		REP_RadialDamageOrigin,
+		REP_Icon,
 		REP_MAX
 	};
 } // namespace
@@ -94,6 +95,10 @@ bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 				RepBits |= 1 << REP_RadialDamageOrigin;
 			}
 		}
+		if (Icon)
+		{
+			RepBits |= 1 << REP_Icon;
+		}
 	}
 
 	Ar.SerializeBits(&RepBits, REP_MAX);
@@ -147,6 +152,10 @@ bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 		{
 			RadialDamageOrigin.NetSerialize(Ar, Map, bOutSuccess);
 		}
+	}
+	if (RepBits & (1 << REP_Icon))
+	{
+		Ar << Icon;
 	}
 
 	bOutSuccess = true;

@@ -3,6 +3,7 @@
 #include "HUD/Menu/GeoMenuButton.h"
 
 #include "Components/Button.h"
+#include "HUD/Menu/GeoButton.h"
 #include "Components/TextBlock.h"
 #include "Styling/SlateTypes.h"
 
@@ -19,7 +20,7 @@ void UGeoMenuButton::NativeConstruct()
 
 	if (!ButtonWidget)
 	{
-		ensureMsgf(ButtonWidget, TEXT("UGeoMenuButton: Button widget is not bound — add a UButton named 'Button' to the widget hierarchy"));
+		ensureMsgf(ButtonWidget, TEXT("UGeoMenuButton: Button widget is not bound — add a UGeoButton named 'ButtonWidget' to the widget hierarchy"));
 		return;
 	}
 
@@ -33,6 +34,20 @@ void UGeoMenuButton::NativeDestruct()
 		ButtonWidget->OnClicked.RemoveDynamic(this, &UGeoMenuButton::HandleButtonClicked);
 	}
 	Super::NativeDestruct();
+}
+
+FReply UGeoMenuButton::NativeOnFocusReceived(FGeometry const& InGeometry, FFocusEvent const& InFocusEvent)
+{
+	if (!ButtonWidget)
+	{
+		return Super::NativeOnFocusReceived(InGeometry, InFocusEvent);
+	}
+	return FReply::Handled().SetUserFocus(ButtonWidget->TakeWidget(), InFocusEvent.GetCause());
+}
+
+UWidget* UGeoMenuButton::GetInitialFocusWidget() const
+{
+	return ButtonWidget;
 }
 
 void UGeoMenuButton::ApplyStyle()

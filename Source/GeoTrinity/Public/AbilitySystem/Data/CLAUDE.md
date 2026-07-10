@@ -17,7 +17,7 @@ Data assets and structs that configure abilities and effects.
 | `FDamageEffectData` | Flat damage. `bSuppressGameplayCue` suppresses hit flash unconditionally. `bLimitGameplayCue` rate-limits the cue via the target's `UGeoGameFeelComponent` (use on tick-based effects). `bSuppressCombatStats` skips the DPS meter |
 | `FHealEffectData` | Flat heal. `bSuppressHealProvided` suppresses `OnHealProvided` delegate. `bSuppressGameplayCue` suppresses heal visual unconditionally. `bLimitGameplayCue` rate-limits the cue via the target's `UGeoGameFeelComponent`. `bSuppressCombatStats` skips the HPS meter |
 | `FShieldEffectData` | Flat shield amount |
-| `FGameplayEffectData` | Applies arbitrary `UGameplayEffect` with SetByCaller magnitude/duration |
+| `FGameplayEffectData` | Applies arbitrary `UGameplayEffect` with SetByCaller magnitude/duration. Optional `Icon` — shown in the HUD status bar while active; baked into a duplicated context on this spec only, so siblings in the same apply call are unaffected |
 | `FSingleUseDamageMultiplierEffectData` | Sets `SingleUseDamageMultiplier` on context in `UpdateContextHandle`. Read by `ExecCalc_Damage`. **Do NOT read in `FDamageEffectData::ApplyEffect`** |
 | `FStatusEffectData` | Probabilistic status (StatusChance 0..100%). Uses seeded roll from context for determinism |
 | `FLethalEffectData` | Instantly kills the target via `GameDataSettings.LethalEffect`. No parameters — BP sets health to 0 |

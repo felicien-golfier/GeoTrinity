@@ -44,6 +44,9 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsFromBasicAbility() const { return bIsFromBasicAbility; }
 	/** Returns true when this damage must never be captured by a sacrificed target (redirected shares, drains, ...). */
 	bool DoNotRedirectSacrifice() const { return bDoNotRedirectSacrifice; }
+	/** Icon (UTexture2D or UMaterialInterface) shown in the HUD status bar while the applied effect is active;
+	 * null when the effect has no icon. */
+	UObject* GetIcon() const { return Icon; }
 
 	void SetIsBlockedHit(bool isBlockedHit) { bIsBlockedHit = isBlockedHit; }
 	void SetIsCriticalHit(bool isCriticalHit) { bIsCriticalHit = isCriticalHit; }
@@ -69,6 +72,9 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetIsFromBasicAbility(bool value) { bIsFromBasicAbility = value; }
 	/** When true, PostGameplayEffectExecute never captures this damage for sacrifice redirection. */
 	void SetDoNotRedirectSacrifice(bool value) { bDoNotRedirectSacrifice = value; }
+	/** Sets the icon (UTexture2D or UMaterialInterface) the HUD status bar displays while the applied effect is
+	 * active. */
+	void SetIcon(UObject* value) { Icon = value; }
 
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
 
@@ -98,6 +104,8 @@ protected:
 	FVector DeathImpulseVector{FVector::ZeroVector};
 	UPROPERTY()
 	FVector KnockbackVector{FVector::ZeroVector};
+	UPROPERTY()
+	TObjectPtr<UObject> Icon{nullptr};
 
 	// Call-site scoped — set by UpdateContextHandle, baked into the spec context via Duplicate() at MakeOutgoingSpec time.
 	// Not serialized: consumed server-side from the spec's embedded context copy in ExecCalc / PostGameplayEffectExecute.

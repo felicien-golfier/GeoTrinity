@@ -7,6 +7,7 @@ Extends `FGameplayEffectContext` with GeoTrinity-specific data.
 ### Standard hit info
 - `bIsBlockedHit`, `bIsCriticalHit`
 - `StatusTag` — gameplay tag of applied status
+- `Icon` — replicated texture shown in the HUD status bar while the applied effect is active; set per-spec by `FGameplayEffectData::ApplyEffect` (via a duplicated context) and by `ApplyStatusToTarget` (from `FRpgStatusInfo.Icon`); read client-side by `AGeoHUD::GetActiveEffectIcons`
 - Debuff: `DebuffDamage`, `DebuffDuration`, `DebuffFrequency`
 - Physics: `DeathImpulseVector`, `KnockbackVector`
 - Radial: `bIsRadialDamage`, `InnerRadius`, `OuterRadius`, `Origin`

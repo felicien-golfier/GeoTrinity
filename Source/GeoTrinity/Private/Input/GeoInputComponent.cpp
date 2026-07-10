@@ -30,8 +30,8 @@ void UGeoInputComponent::UpdateMouseLook()
 		return;
 	}
 
-	APlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoPlayerController();
-	if (!IsValid(GeoPlayerController))
+	AGeoPlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoPlayerController();
+	if (!IsValid(GeoPlayerController) || GeoPlayerController->IsPauseMenuOpen())
 	{
 		return;
 	}
@@ -47,6 +47,7 @@ void UGeoInputComponent::UpdateMouseLook()
 	if (!ScreenPosition.Equals(LastMouseInput, 1.f))
 	{
 		bIsUsingController = false;
+		GeoPlayerController->CurrentMouseCursor = EMouseCursor::Crosshairs;
 		GeoPlayerController->SetShowMouseCursor(true);
 		LastMouseInput = ScreenPosition;
 	}
@@ -91,7 +92,9 @@ void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 	}
 	else
 	{
-		GetGeoCharacter()->GetGeoPlayerController()->SetShowMouseCursor(false);
+		AGeoPlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoPlayerController();
+		GeoPlayerController->CurrentMouseCursor = EMouseCursor::None;
+		GeoPlayerController->SetShowMouseCursor(false);
 		LastLookInput = LookInput;
 	}
 }

@@ -28,6 +28,10 @@ Compose these primitives from Python to add, move, wrap, reorder, or delete any 
 
 The commit primitive reconciles the variable-name-to-GUID map against the tree before compiling, so a batch of tree ops is consistent however it ended. Defer GUID assignment to commit rather than at construction, so an aborted batch leaves no dangling GUID. Every tree widget needs a GUID, not only the ones flagged as variables — the root panel and any named widget count too. The reconciliation set is the root plus all descendants; mint a GUID for any tree widget missing one and prune entries whose widget is gone, leaving animation GUIDs alone. The widget-BP compiler runs the same validation and is self-healing — it adds a missing GUID and continues — so a GUID-map mismatch surfaces as a logged ensure during compile, not a corrupted asset. See `GeoWidgetBuilderUtil.cpp` (`CommitTree`).
 
+The compiler validates against every widget **outer-owned by the WidgetTree**, parented or not — a superset of the root-walk the reconciliation uses. To take a widget out of a tree, always rename it out to the transient package after detaching it, so both walks agree; detaching alone leaves it in the compiler's set with no GUID entry, and after the following save/reload it leaves a GUID entry with no widget. The remove and construct primitives do this rename; any new code path that drops a widget must too. See `GeoWidgetBuilderUtil.cpp` (`RemoveWidget`, `ConstructWidgetInTree`).
+
+When the editor runs under a debugger, these compiler ensures trap as breakpoints and freeze the bridge until execution resumes; the compile then continues and heals the map.
+
 ---
 
 ## Widget Tree Shim (C++)

@@ -85,6 +85,12 @@ void UGeoMainMenuWidget::NativeConstruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoMainMenuWidget::GetInitialFocusWidget() const
+{
+	return CreateServerButton;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleCreateServer()
 {
 	SetButtonsVisible(false);
@@ -121,6 +127,7 @@ void UGeoMainMenuWidget::HandleCreateServerClosed()
 {
 	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
+	CreateServerButton->SetFocus();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -128,6 +135,7 @@ void UGeoMainMenuWidget::HandleBrowseServerClosed()
 {
 	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
+	CreateServerButton->SetFocus();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -135,6 +143,7 @@ void UGeoMainMenuWidget::HandleLocalConnectClosed()
 {
 	LocalConnectWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
+	CreateServerButton->SetFocus();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -18,6 +18,7 @@ All editor automation in this project goes through `mcp-unreal` `execute_script`
 - Unreal Editor must be open before starting Claude Code — MCP tools are registered at session start.
 - Tags added to `Config/Tags/GeoGameplayTags.ini` require an **editor restart** to resolve in Python.
 - Adding a new `UFUNCTION` to a shim requires a **full build** (close editor). Implementation-only `.cpp` changes can use Live Coding.
+- Asset-mutating MCP tools modify assets in memory only. After any change, list the dirty content packages and save every one you modified, repeating until none of yours remain dirty — see `AI/Python/save_dirty_assets.py`.
 
 ---
 

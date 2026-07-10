@@ -8,6 +8,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemInterface.h"
 #include "Blueprint/UserWidget.h"
@@ -23,6 +24,7 @@
 #include "HUD/GenericCombattantWidget.h"
 #include "HUD/GeoDamageNumberWidget.h"
 #include "HUD/GeoOverlayWidget.h"
+#include "HUD/GeoStatusBarWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "Styling/CoreStyle.h"
@@ -74,7 +76,59 @@ void AGeoHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySyste
 		BindCallbacksToDependencies();
 
 		OverlayWidget->AddToViewport();
+
+		StatusBarWidget = CreateWidget<UGeoStatusBarWidget>(GetWorld(), UGeoStatusBarWidget::StaticClass());
+		StatusBarWidget->InitStatusBar(this);
+		StatusBarWidget->AddToViewport();
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
+{
+	TArray<FGeoActiveEffectIcon> Entries;
+
+	UAbilitySystemComponent* ASC = HudPlayerParams.AbilitySystemComponent;
+	if (!ASC)
+	{
+		return Entries;
+	}
+
+	float const WorldTime = ASC->GetActiveGameplayEffects().GetServerWorldTime();
+	for (FActiveGameplayEffectHandle const& Handle : ASC->GetActiveEffects(FGameplayEffectQuery()))
+	{
+		FActiveGameplayEffect const* ActiveEffect = ASC->GetActiveGameplayEffect(Handle);
+		if (!ActiveEffect)
+		{
+			continue;
+		}
+
+		FGeoGameplayEffectContext const* Context =
+			static_cast<FGeoGameplayEffectContext const*>(ActiveEffect->Spec.GetContext().Get());
+		if (!Context || !Context->GetIcon())
+		{
+			continue;
+		}
+
+		FGeoActiveEffectIcon* Entry = Entries.FindByPredicate(
+			[Context](FGeoActiveEffectIcon const& Candidate)
+			{
+				return Candidate.Icon == Context->GetIcon();
+			});
+		if (!Entry)
+		{
+			Entry = &Entries.AddDefaulted_GetRef();
+			Entry->Icon = Context->GetIcon();
+		}
+
+		Entry->Count++;
+		float const TimeRemaining = ActiveEffect->GetTimeRemaining(WorldTime);
+		Entry->TimeRemaining = TimeRemaining < 0.f || Entry->TimeRemaining < 0.f
+								   ? -1.f
+								   : FMath::Max(Entry->TimeRemaining, TimeRemaining);
+	}
+
+	return Entries;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

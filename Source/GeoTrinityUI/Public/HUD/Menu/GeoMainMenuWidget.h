@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
+#include "HUD/Menu/GeoMenuPanelWidget.h"
 
 #include "GeoMainMenuWidget.generated.h"
 
@@ -20,7 +20,7 @@ class UGeoMenuButton;
  * (panels set Collapsed by default in the BP layout).
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoMainMenuWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoMainMenuWidget : public UGeoMenuPanelWidget
 {
 	GENERATED_BODY()
 
@@ -31,6 +31,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual UWidget* GetInitialFocusWidget() const override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> CreateServerButton;

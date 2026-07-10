@@ -261,6 +261,11 @@ void UGeoWidgetBuilderUtil::RemoveWidget(UWidgetBlueprint* WidgetBlueprint, FNam
 	Tree->Modify();
 	WidgetBlueprint->Modify();
 	Widget->RemoveFromParent();
+	// Detaching is not enough: the widget stays outer-owned by the tree, and the compiler's source-widget enumeration
+	// still sees it while CommitTree's root-walk reconciliation does not — that mismatch trips the compiler's GUID
+	// ensures ("added but did not get a GUID", then "deleted but still has a GUID" after reload). Renaming it out of
+	// the tree makes both walks agree.
+	Widget->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

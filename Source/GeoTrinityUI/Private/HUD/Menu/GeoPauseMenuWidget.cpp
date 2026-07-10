@@ -78,6 +78,19 @@ void UGeoPauseMenuWidget::NativeDestruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoPauseMenuWidget::GetInitialFocusWidget() const
+{
+	return ResumeButton;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoPauseMenuWidget::HandleBackAction()
+{
+	HandleResume();
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoPauseMenuWidget::HandleResume()
 {
 	if (AGeoPlayerController* PlayerController = Cast<AGeoPlayerController>(GetOwningPlayer()))
@@ -91,6 +104,7 @@ void UGeoPauseMenuWidget::HandleSettings()
 {
 	SetButtonsVisible(false);
 	SettingsWidget->SetVisibility(ESlateVisibility::Visible);
+	SettingsWidget->SetFocus();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -126,6 +140,7 @@ void UGeoPauseMenuWidget::HandleSettingsClosed()
 {
 	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
+	ResumeButton->SetFocus();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -184,6 +184,11 @@ bool UGeoAbilitySystemLibrary::ApplyStatusToTarget(UAbilitySystemComponent* pTar
 	FGameplayEffectContextHandle contextHandle = pSourceASC->MakeEffectContext();
 	contextHandle.AddSourceObject(pSourceASC->GetAvatarActor());
 
+	if (UObject* IconResource = statusInfo.Icon.GetResourceObject())
+	{
+		static_cast<FGeoGameplayEffectContext*>(contextHandle.Get())->SetIcon(IconResource);
+	}
+
 	OutSpecHandle = pSourceASC->MakeOutgoingSpec(statusInfo.StatusEffect, level, contextHandle);
 
 	pSourceASC->ApplyGameplayEffectSpecToTarget(*OutSpecHandle.Data, pTargetASC);

@@ -94,6 +94,19 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	// If the GE is Instant or infinite, it's not used.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat Duration;
+
+	/** When set, the HUD status bar shows this icon (texture or material) on the target while the effect is active.
+	 * Carried to the client through FGeoGameplayEffectContext::Icon on this effect's spec only (the shared apply
+	 * context is not touched). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
+			  meta = (AllowedClasses = "/Script/Engine.Texture2D,/Script/Engine.MaterialInterface"))
+	TObjectPtr<UObject> Icon;
+
+	/** When true, an existing active instance of GameplayEffect from the same source on the target is removed before
+	 * applying the new spec, so reapplication refreshes duration and magnitude instead of stacking. GE stacking
+	 * settings alone only refresh the duration timer, not the SetByCaller magnitude, so this is a full replace. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bReplaceExistingInstance = false;
 };
 
 /** Applies a flat damage amount. DamageAmount is evaluated at the given ability level. */

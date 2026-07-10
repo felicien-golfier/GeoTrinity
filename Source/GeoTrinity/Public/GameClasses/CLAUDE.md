@@ -8,7 +8,7 @@ Core Unreal game framework classes.
 | `GeoGameMode.h` | Game rules, player class assignment; `Tick` override |
 | `GeoGameState.h` | Replicated game state — enemy lifecycle, match transitions, arena barrier |
 | `GeoGameInstance.h` | Persistent across levels; `LeaveSessionAndReturnToMenu()` — destroys the Steam session (if any) then opens `MainMenuMap`, used by the pause menu's "Return to Main Menu" |
-| `GeoPlayerController.h` | Player controller; owns the pause menu widget (`PauseMenuWidgetClass`), toggled via `ToggleMenuAction`/`TogglePauseMenu()`/`ClosePauseMenu()` bound in `SetupInputComponent()` |
+| `GeoPlayerController.h` | Player controller; owns the pause menu widget (`PauseMenuWidgetClass`), toggled via `ToggleMenuAction`/`TogglePauseMenu()`/`ClosePauseMenu()` bound in `SetupInputComponent()`. While the menu is open, `SetMenuInputMappingActive` swaps the gameplay `InputMapping` for `MenuInputMapping` (`IMC_Menu`: only `IA_ToggleMenu`) so abilities can't fire behind the menu, flushes pressed keys, and focuses the menu widget for gamepad navigation |
 | `GeoPlayerState.h` | **Hosts ASC + attribute sets for playable characters** |
 | `GeoMainMenuGameMode.h` | Menu level GameMode (`AGameModeBase`); no pawn; sets `PlayerControllerClass` to `AGeoMainMenuPlayerController` |
 | `GeoMainMenuPlayerController.h` | Menu player controller; creates `UGeoMainMenuWidget` on `BeginPlay`, adds to viewport, sets UI-only input |

@@ -23,6 +23,7 @@ class UGenericCombattantWidget;
 class UGeoDamageNumberWidget;
 class AEnemyCharacter;
 class APlayableCharacter;
+class UGeoStatusBarWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeModifiedSignature, float, NewValue);
 /** Tagless "a deploy count changed" ping. Slots re-query GetDeployCountForAbility for their own tag on receipt. */
@@ -51,6 +52,25 @@ struct FGeoAbilityBarEntry
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsDeployable = false;
+};
+
+
+/** Active effects sharing the same icon on the local player, grouped for the status bar: stack count and the longest
+ * remaining time (-1 when any instance is infinite). */
+USTRUCT(BlueprintType)
+struct FGeoActiveEffectIcon
+{
+	GENERATED_BODY()
+
+	/** UTexture2D or UMaterialInterface, as configured on the applying effect data or status. */
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UObject> Icon;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 Count = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	float TimeRemaining = 0.f;
 };
 
 
@@ -159,6 +179,12 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "AbilityBar")
 	FOnDeployCountChangedSignature OnPlayerDeployCountChanged;
 
+	/** Returns every active gameplay effect on the player ASC whose context carries an icon (set on
+	 * FGameplayEffectData::Icon or the status's UStatusInfo icon), grouped by icon with stack count and the longest
+	 * remaining time. Polled by UGeoStatusBarWidget. */
+	UFUNCTION(BlueprintCallable, Category = "StatusBar")
+	TArray<FGeoActiveEffectIcon> GetActiveEffectIcons() const;
+
 	/** Binds Health and Shield attribute delegates on ASC so delta changes spawn floating numbers at OwnerActor. */
 	void RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor);
 	/** Finds or creates a pooled UGeoDamageNumberWidget and activates it at the projected screen position. */
@@ -206,6 +232,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UGenericCombattantWidget> BossHealthBarWidget;
+
+	/** Active-status icon row, created in InitOverlay alongside the overlay. */
+	UPROPERTY()
+	TObjectPtr<UGeoStatusBarWidget> StatusBarWidget;
 
 	FHudPlayerParams HudPlayerParams;
 
