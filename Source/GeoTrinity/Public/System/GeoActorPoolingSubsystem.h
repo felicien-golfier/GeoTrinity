@@ -11,6 +11,10 @@ class AGeoProjectile;
 class AActor;
 class APawn;
 
+/**
+ * World subsystem for actor reuse. Maintains per-class pools of inactive actors to avoid runtime spawn cost;
+ * callers request actors via RequestActor and return them via ReleaseActor.
+ */
 UCLASS()
 class GEOTRINITY_API UGeoActorPoolingSubsystem : public UWorldSubsystem
 {
