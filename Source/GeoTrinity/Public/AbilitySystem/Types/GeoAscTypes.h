@@ -22,6 +22,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsCriticalHit() const { return bIsCriticalHit; }
 	bool IsBlockedHit() const { return bIsBlockedHit; }
 	FGameplayTag GetStatusTag() const { return StatusTag; }
+	/** Returns true when a status effect was successfully applied (indicated by a valid StatusTag). */
 	bool GetIsSuccessfulDebuff() const { return StatusTag.IsValid(); }
 	float GetDebuffDamage() const { return DebuffDamage; }
 	float GetDebuffDuration() const { return DebuffDuration; }
@@ -33,6 +34,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	float GetRadialDamageOuterRadius() const { return RadialDamageOuterRadius; }
 	FVector const& GetRadialDamageOrigin() const { return RadialDamageOrigin; }
 	float GetSingleUseDamageMultiplier() const { return SingleUseDamageMultiplier; }
+	/** Returns true when OnHealProvided is suppressed on the source ASC for this context. */
 	bool IsSuppressHealProvided() const { return bSuppressHealProvided; }
 	/** Returns true when the GameplayCue embedded in the applied effect should be skipped unconditionally. */
 	bool IsSuppressGameplayCue() const { return bSuppressGameplayCue; }
@@ -61,6 +63,7 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetRadialDamageOuterRadius(float value) { RadialDamageOuterRadius = value; }
 	void SetRadialDamageOrigin(FVector const& inVector) { RadialDamageOrigin = inVector; }
 	void SetSingleUseDamageMultiplier(float value) { SingleUseDamageMultiplier = value; }
+	/** When true, OnHealProvided is not broadcast on the source ASC (suppressed in ExecCalc_Heal). */
 	void SetSuppressHealProvided(bool value) { bSuppressHealProvided = value; }
 	/** When true, the GameplayCue embedded in the applied effect will be suppressed unconditionally. */
 	void SetSuppressGameplayCue(bool value) { bSuppressGameplayCue = value; }
