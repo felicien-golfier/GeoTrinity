@@ -27,6 +27,7 @@ class GEOTRINITYUI_API UGeoKeyBindingSelector : public UInputKeySelector
 	GENERATED_BODY()
 
 public:
+	/** Configures this selector for the given mapping and slot (keyboard when bInGamepad is false, gamepad when true). */
 	void InitBinding(FName InMappingName, EPlayerMappableKeySlot InSlot, bool bInGamepad);
 
 private:
