@@ -28,7 +28,9 @@ public:
 	void InitStatusBar(AGeoHUD* GeoHUD);
 
 protected:
+	/** Constructs the widget tree: a canvas panel containing an auto-sized horizontal box anchored bottom-center. */
 	virtual bool Initialize() override;
+	/** Polls AGeoHUD::GetActiveEffectIcons and rebuilds the icon row when the set changes; updates count and timer texts in place each tick. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
 private:

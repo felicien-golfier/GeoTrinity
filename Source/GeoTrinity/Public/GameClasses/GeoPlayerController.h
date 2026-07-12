@@ -24,10 +24,13 @@ public:
 	AGeoPlayerController(FObjectInitializer const& ObjectInitializer);
 
 protected:
+	/** Sets the camera view target, input mode, and activates the gameplay mapping context; seeds key bindings for the active keyboard layout on the first run. */
 	virtual void BeginPlay() override;
+	/** Binds ToggleMenuAction to HandleToggleMenu via the Enhanced Input component. */
 	virtual void SetupInputComponent() override;
 
 #if !UE_BUILD_SHIPPING
+	/** Shows the on-screen ping readout when Geo.ShowPing is set; ticks UGeoCombatStatsSubsystem when Geo.ShowCombatStats is enabled. */
 	virtual void Tick(float DeltaTime) override;
 #endif
 

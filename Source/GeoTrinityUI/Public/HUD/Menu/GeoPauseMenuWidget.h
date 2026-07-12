@@ -22,9 +22,13 @@ class GEOTRINITYUI_API UGeoPauseMenuWidget : public UGeoMenuPanelWidget
 	GENERATED_BODY()
 
 protected:
+	/** Wires each pause-menu button and the SettingsWidget close delegate; collapses SettingsWidget by default. */
 	virtual void NativeConstruct() override;
+	/** Removes all button and sub-panel delegates bound in NativeConstruct. */
 	virtual void NativeDestruct() override;
+	/** Returns ResumeButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Calls HandleResume (closes the pause menu) and consumes the back input. */
 	virtual bool HandleBackAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

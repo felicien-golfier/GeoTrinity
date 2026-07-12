@@ -20,10 +20,14 @@ class GEOTRINITYUI_API UGeoMenuPanelWidget : public UUserWidget
 	GENERATED_BODY()
 
 protected:
+	/** Marks the panel focusable so it can hold focus between selections. */
 	virtual void NativeConstruct() override;
+	/** Routes gamepad B / BackSpace to HandleBackAction; on any navigation input while the panel itself is focused, advances focus to GetInitialFocusWidget(). */
 	virtual FReply NativeOnKeyDown(FGeometry const& InGeometry, FKeyEvent const& InKeyEvent) override;
+	/** Advances focus to GetInitialFocusWidget() on the first d-pad/stick input while the panel itself is focused. */
 	virtual FReply NativeOnAnalogValueChanged(FGeometry const& InGeometry,
 											  FAnalogInputEvent const& InAnalogEvent) override;
+	/** Returns focus to the panel when the mouse moves while an SGeoButton is focused, clearing the gamepad highlight. */
 	virtual FReply NativeOnMouseMove(FGeometry const& InGeometry, FPointerEvent const& InMouseEvent) override;
 
 	/** Widget that receives focus on the first navigation input while the panel itself is focused. */
