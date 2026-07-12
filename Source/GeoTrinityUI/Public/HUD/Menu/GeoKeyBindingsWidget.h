@@ -56,9 +56,13 @@ public:
 	FGeoKeyBindingsClosedSignature OnClosed;
 
 protected:
+	/** Binds BackButton and populates KeyBindingsList from the active Enhanced Input key profile. */
 	virtual void NativeConstruct() override;
+	/** Removes the BackButton click delegate bound in NativeConstruct. */
 	virtual void NativeDestruct() override;
+	/** Returns BackButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Fires OnClosed and consumes the back input. */
 	virtual bool HandleBackAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

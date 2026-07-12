@@ -193,6 +193,7 @@ public:
 
 protected:
 #if !UE_BUILD_SHIPPING
+	/** Rebuilds the debug combat-stats panel when the active player list changes. */
 	virtual void DrawHUD() override;
 	/** Removes the combat-stats panel from the viewport before calling Super. */
 	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
