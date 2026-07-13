@@ -30,7 +30,9 @@ public:
 	FString GetLocalPlayerName() const;
 
 protected:
+	/** Wires each main-menu button to its handler and registers sub-panel close delegates. */
 	virtual void NativeConstruct() override;
+	/** Returns CreateServerButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

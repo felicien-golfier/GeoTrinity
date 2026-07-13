@@ -180,10 +180,48 @@ static FString BuildEffectsSummary(TArray<TInstancedStruct<FEffectData>> const& 
 	return FString::Join(Lines, TEXT("\n"));
 }
 
+/** Resolves a numeric or FScalableFloat property to its scalar value at the given level; false if not such a property. */
+static bool ResolvePropertyScalar(FString const& PropertyName, UGeoGameplayAbility const& AbilityCDO, int32 Level,
+								  float& OutValue)
+{
+	FProperty const* Property = AbilityCDO.GetClass()->FindPropertyByName(*PropertyName);
+	if (FNumericProperty const* Numeric = CastField<FNumericProperty>(Property))
+	{
+		void const* ValuePtr = Numeric->ContainerPtrToValuePtr<void>(&AbilityCDO);
+		OutValue = Numeric->IsFloatingPoint() ? Numeric->GetFloatingPointPropertyValue(ValuePtr)
+											  : Numeric->GetSignedIntPropertyValue(ValuePtr);
+		return true;
+	}
+	if (FStructProperty const* Struct = CastField<FStructProperty>(Property);
+		Struct && Struct->Struct == TBaseStructure<FScalableFloat>::Get())
+	{
+		OutValue = Struct->ContainerPtrToValuePtr<FScalableFloat>(&AbilityCDO)->GetValueAtLevel(Level);
+		return true;
+	}
+	return false;
+}
+
 /** Resolves Token to its formatted value at the Format levels (range when they differ). */
 static bool ResolveDescriptionToken(FString const& Token, UGeoGameplayAbility const& AbilityCDO,
 									FDescriptionFormat const& Format, FString& OutValue)
 {
+	// {A*B} multiplies two numeric/scalable properties — e.g. a per-unit value by its max count for a cap.
+	FString LeftName;
+	FString RightName;
+	if (Token.Split(TEXT("*"), &LeftName, &RightName))
+	{
+		float LeftMin, LeftMax, RightMin, RightMax;
+		if (ResolvePropertyScalar(LeftName, AbilityCDO, Format.MinLevel(), LeftMin)
+			&& ResolvePropertyScalar(LeftName, AbilityCDO, Format.MaxLevel(), LeftMax)
+			&& ResolvePropertyScalar(RightName, AbilityCDO, Format.MinLevel(), RightMin)
+			&& ResolvePropertyScalar(RightName, AbilityCDO, Format.MaxLevel(), RightMax))
+		{
+			OutValue = FormatValueRange(LeftMin * RightMin, LeftMax * RightMax, Format);
+			return true;
+		}
+		return false;
+	}
+
 	if (Token == TEXT("Cooldown"))
 	{
 		OutValue = FormatValueRange(AbilityCDO.GetCooldown(Format.MinLevel()), AbilityCDO.GetCooldown(Format.MaxLevel()),
@@ -227,21 +265,16 @@ static bool ResolveDescriptionToken(FString const& Token, UGeoGameplayAbility co
 		return bFound;
 	}
 
+	float Min, Max;
+	if (ResolvePropertyScalar(Token, AbilityCDO, Format.MinLevel(), Min)
+		&& ResolvePropertyScalar(Token, AbilityCDO, Format.MaxLevel(), Max))
+	{
+		OutValue = FormatValueRange(Min, Max, Format);
+		return true;
+	}
+
 	FProperty const* Property = AbilityCDO.GetClass()->FindPropertyByName(*Token);
-	if (FNumericProperty const* Numeric = CastField<FNumericProperty>(Property))
-	{
-		void const* ValuePtr = Numeric->ContainerPtrToValuePtr<void>(&AbilityCDO);
-		float const Value = Numeric->IsFloatingPoint() ? Numeric->GetFloatingPointPropertyValue(ValuePtr)
-													   : Numeric->GetSignedIntPropertyValue(ValuePtr);
-		OutValue = FormatValueRange(Value, Value, Format);
-		return true;
-	}
 	FStructProperty const* Struct = CastField<FStructProperty>(Property);
-	if (Struct && Struct->Struct == TBaseStructure<FScalableFloat>::Get())
-	{
-		OutValue = FormatScalableRange(*Struct->ContainerPtrToValuePtr<FScalableFloat>(&AbilityCDO), Format);
-		return true;
-	}
 	FArrayProperty const* Array = CastField<FArrayProperty>(Property);
 	FStructProperty const* Inner = Array ? CastField<FStructProperty>(Array->Inner) : nullptr;
 	if (Inner && Inner->Struct == TBaseStructure<FInstancedStruct>::Get())

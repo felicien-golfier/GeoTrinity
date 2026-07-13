@@ -53,10 +53,15 @@ public:
 	}
 
 protected:
+	/** Applies visual style from properties for design-time preview in the Blueprint editor. */
 	virtual void NativePreConstruct() override;
+	/** Applies visual style and binds ButtonWidget's click delegate to HandleButtonClicked. */
 	virtual void NativeConstruct() override;
+	/** Removes the click delegate bound in NativeConstruct. */
 	virtual void NativeDestruct() override;
+	/** Forwards focus directly to ButtonWidget so the inner UGeoButton enters its hover/focus state. */
 	virtual FReply NativeOnFocusReceived(FGeometry const& InGeometry, FFocusEvent const& InFocusEvent) override;
+	/** Returns ButtonWidget so gamepad navigation descends into the inner button. */
 	virtual UWidget* GetInitialFocusWidget() const override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

@@ -17,5 +17,6 @@ class GEOTRINITYUI_API UGeoButton : public UButton
 	GENERATED_BODY()
 
 protected:
+	/** Builds an SGeoButton (focus → hover mapping) in place of the default SButton. */
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 };

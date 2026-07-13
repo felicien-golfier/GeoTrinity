@@ -33,7 +33,9 @@ public:
 	void InitStatusBar(AGeoHUD* GeoHUD);
 
 protected:
+	/** Constructs the widget tree: a canvas panel containing an auto-sized horizontal box anchored bottom-center. */
 	virtual bool Initialize() override;
+	/** Polls AGeoHUD::GetActiveEffectIcons and rebuilds the icon row when the set changes; updates count and timer texts in place each tick. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
 	/** Material on M_CooldownSweep whose Fill scalar (0=full icon, 1=fully depleted) the depletion sweep uses. */

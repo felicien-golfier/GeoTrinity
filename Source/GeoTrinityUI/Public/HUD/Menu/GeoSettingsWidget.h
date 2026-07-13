@@ -29,9 +29,13 @@ public:
 	FGeoSettingsClosedSignature OnClosed;
 
 protected:
+	/** Wires SoundButton, KeyBindingsButton, BackButton handlers, and sub-panel close delegates. */
 	virtual void NativeConstruct() override;
+	/** Removes all button and sub-panel delegates bound in NativeConstruct. */
 	virtual void NativeDestruct() override;
+	/** Returns SoundButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Fires OnClosed and consumes the back input. */
 	virtual bool HandleBackAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
