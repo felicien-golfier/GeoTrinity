@@ -25,6 +25,7 @@ class GEOTRINITY_API UGeoChannelBeamAbility
 	GENERATED_BODY()
 
 public:
+	/** Registers as a Conditional tickable on the game thread; opts out on async loading threads where CDO construction may run. */
 	UGeoChannelBeamAbility();
 
 protected:
