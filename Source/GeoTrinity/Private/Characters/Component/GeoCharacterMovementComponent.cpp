@@ -5,6 +5,11 @@
 UGeoCharacterMovementComponent::UGeoCharacterMovementComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true; // movement driven via ProcessInput calls
+
+	// Corrections are eased into the mesh as a world-space offset; the default 0.1s blend reads as a visible
+	// wobble at 50+ ping. Blend faster and snap past capsule-sized errors instead of gliding through them.
+	NetworkSimulatedSmoothLocationTime = 0.05f;
+	NetworkMaxSmoothUpdateDistance = 140.f;
 }
 
 void UGeoCharacterMovementComponent::OnRegister()

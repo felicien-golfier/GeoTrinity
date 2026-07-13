@@ -31,6 +31,21 @@ struct FGameplayAbilityInfo
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
 	FString Description;
+
+	/**
+	 * Returns the description text with every {Token} replaced by the matching live value from the ability CDO.
+	 * The text comes from the [AbilityTag] section of Content/Data/AbilityDescriptions.txt when present
+	 * (editable plain-text file, re-read on every call), falling back to the Description field otherwise.
+	 * Supported tokens: Cooldown, FireDelay, Damage/Heal/Shield (summed from the ability's effect data),
+	 * Effects (one line per effect entry: damage/heal/shield, buffs with magnitude and duration, statuses
+	 * with chance), or the name of any numeric / FScalableFloat property on the ability class.
+	 * Scalable values are evaluated at AbilityLevel; a {Token:range} suffix renders them as a "min-max" range
+	 * over curve levels 1-10 instead (for values driven by another system than ability level, e.g. the reload's
+	 * remaining ammo). A {Token:%} / {Token:+%} suffix formats the scalar as a percentage / bonus percentage;
+	 * suffixes combine in any order. With bRichTextValues, every resolved value is wrapped in a <Value>...</>
+	 * rich-text style tag so the UI can color it. Unresolved tokens are kept as-is and logged.
+	 */
+	GEOTRINITY_API FString GetResolvedDescription(int32 AbilityLevel = 1, bool bRichTextValues = false) const;
 };
 
 /** Extends FGameplayAbilityInfo with player-specific data: input binding, class filter, and cosmetic icon. */
@@ -134,6 +149,14 @@ public:
 	void PopulateAbilityTags();
 
 private:
+	/** Pointers to every entry across all arrays, viewed as the shared base struct. */
+	TArray<FGameplayAbilityInfo*> GetAllAbilityInfoPtrs();
+
+#if WITH_EDITOR
+	/** Resolves the entry at Index in the array named ArrayName (one of the ability arrays), or nullptr. */
+	FGameplayAbilityInfo* FindAbilityInfo(FName ArrayName, int32 Index);
+#endif
+
 	// Lazily-built tag->class map backing GetAbilityClassForTag. Cleared in PostLoad/PopulateAbilityTags so it rebuilds
 	// after the ability arrays or their tags change. Mutable: GetAbilityClassForTag is logically const.
 	mutable TMap<FGameplayTag, TSubclassOf<UGameplayAbility>> AbilityClassByTag;

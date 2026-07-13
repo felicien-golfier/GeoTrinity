@@ -6,6 +6,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemInterface.h"
+#include "Characters/PlayableCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Curves/CurveFloat.h"
@@ -146,13 +147,8 @@ void AGeoBuffPickup::OnOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimit
 		return;
 	}
 
-	if (Cast<AGeoBuffPickup>(OtherActor))
-	{
-		return;
-	}
-
 	IAbilitySystemInterface const* OtherActorAbilitySystem = Cast<IAbilitySystemInterface>(OtherActor);
-	if (!OtherActorAbilitySystem)
+	if (!Cast<APlayableCharacter>(OtherActor) || !OtherActorAbilitySystem)
 	{
 		return;
 	}

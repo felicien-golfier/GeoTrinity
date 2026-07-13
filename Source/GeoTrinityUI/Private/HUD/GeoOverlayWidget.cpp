@@ -4,6 +4,7 @@
 
 #include "Characters/PlayableCharacter.h"
 #include "HUD/GeoAbilityBarWidget.h"
+#include "HUD/GeoStatusBarWidget.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoOverlayWidget::BuildAbilityBar(AGeoHUD* GeoHUD, APlayableCharacter* PlayableCharacter)
@@ -14,4 +15,15 @@ void UGeoOverlayWidget::BuildAbilityBar(AGeoHUD* GeoHUD, APlayableCharacter* Pla
 	}
 
 	AbilityBar->BuildBar(GeoHUD, PlayableCharacter);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoOverlayWidget::InitStatusBar(AGeoHUD* GeoHUD)
+{
+	if (!ensureMsgf(StatusBar, TEXT("UGeoOverlayWidget::InitStatusBar — StatusBar is not bound on %s"), *GetName()))
+	{
+		return;
+	}
+
+	StatusBar->InitStatusBar(GeoHUD);
 }

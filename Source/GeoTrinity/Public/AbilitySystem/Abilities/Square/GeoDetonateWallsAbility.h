@@ -34,7 +34,7 @@ private:
 	 */
 	void FireRay(FGeoAbilityTargetData const& AbilityTargetData) const;
 
-	// Per-wall multiplier applied multiplicatively to both damage and shield (N walls → WallBoostMultiplier^N).
+	// Per-wall fraction of base output added by each consumed wall (N walls → WallBoostMultiplier * N); no walls means no ray.
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Detonate", meta = (AllowPrivateAccess = true))
 	float WallBoostMultiplier = .5f;
 

@@ -23,7 +23,6 @@ class UGenericCombattantWidget;
 class UGeoDamageNumberWidget;
 class AEnemyCharacter;
 class APlayableCharacter;
-class UGeoStatusBarWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeModifiedSignature, float, NewValue);
 /** Tagless "a deploy count changed" ping. Slots re-query GetDeployCountForAbility for their own tag on receipt. */
@@ -71,6 +70,11 @@ struct FGeoActiveEffectIcon
 
 	UPROPERTY(BlueprintReadOnly)
 	float TimeRemaining = 0.f;
+
+	/** Longest total duration among stacked instances; -1 when TimeRemaining is infinite. Used to normalize the
+	 * status bar's depletion sweep. */
+	UPROPERTY(BlueprintReadOnly)
+	float Duration = 0.f;
 };
 
 
@@ -232,10 +236,6 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UGenericCombattantWidget> BossHealthBarWidget;
-
-	/** Active-status icon row, created in InitOverlay alongside the overlay. */
-	UPROPERTY()
-	TObjectPtr<UGeoStatusBarWidget> StatusBarWidget;
 
 	FHudPlayerParams HudPlayerParams;
 

@@ -23,6 +23,7 @@ void AGeoPooledProjectile::End()
 	}
 	Sphere->OnComponentBeginOverlap.RemoveDynamic(this, &ThisClass::OnSphereOverlap);
 	Sphere->OnComponentHit.RemoveDynamic(this, &ThisClass::OnSphereHit);
+	UnbindFromInstigatorRevive();
 
 	ProjectileMovement->StopMovementImmediately();
 }

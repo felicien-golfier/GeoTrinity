@@ -66,7 +66,7 @@ void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTarge
 			}
 		}
 	}
-	float const Multiplier = 1.f + WallBoostMultiplier * WallCount;
+	float const Multiplier = WallBoostMultiplier * WallCount;
 	bool bHasAppliedEffectWithABoostedValue = false;
 
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();

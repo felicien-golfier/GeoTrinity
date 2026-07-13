@@ -27,12 +27,13 @@ Flow:
 2. Damage increments internal gauge
 3. At 100%: `Charge()` starts, `ChargeTime` later → spawns `AGeoShieldBurstProjectile` toward nearest ally
 4. Projectile bounces off enemies (multiplying `ShieldAmount`), shields first ally it hits
+5. In-flight bursts end when the Square revives — base `AGeoProjectile` binds to the instigator's `OnRevived` delegate
 
 ---
 
 ## `GeoDetonateWallsAbility.h` — boosting ray
 A ray in front of the character (like `GeoChargeBeamAbility`), length `GeneralSpellDistance`, width `LineHalfWidth`.
-- **Pass 1**: counts the player's own `AGeoWall`s on the ray and **recalls** them (consumed, no explosion). Multiplier = `WallBoostMultiplier ^ WallCount` (multiplicative, like Moira's zone absorption).
+- **Pass 1**: counts the player's own `AGeoWall`s on the ray and **recalls** them (consumed, no explosion). Multiplier = `WallBoostMultiplier * WallCount` (each wall adds that fraction of base output; no walls → ×0, so the ray does nothing without a consumed wall).
 - **Pass 2**: along the same ray, instantly deals `BaseDamage * Multiplier` to enemies and grants `BaseShield * Multiplier` shield to allies (inline `FDamageEffectData`/`FShieldEffectData`, mirroring `GeoMoiraBeamAbility`).
 - Target scan: `GeoASLib::GetInteractableActorsInLine(... TeamAttitudeMask::All ...)`; walls skipped in pass 2.
 - Single `FireRay()` is called from `Fire` (host/client) and `OnFireTargetDataReceived` (server). It counts walls everywhere (client needs the count for the cue scale), but **recalls walls + applies damage/shield only on the server**, and fires the cue **only on the locally-controlled client**.

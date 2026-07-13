@@ -107,6 +107,10 @@ public:
 	/** Entry point for reviving a downed player. Sets bIsDead = false and delegates to ReviveLogic(). */
 	void Revive();
 
+	/** Fires when this character revives, on the server (Revive) and on clients (OnRep_IsDead). Spawned elements that
+	 * must not outlive a downed phase (e.g. shield burst projectiles) bind to this and end themselves. */
+	FSimpleMulticastDelegate OnRevived;
+
 	/** Returns true while the player is downed (health reached 0 and not yet revived). */
 	bool IsDead() const { return bIsDead; }
 

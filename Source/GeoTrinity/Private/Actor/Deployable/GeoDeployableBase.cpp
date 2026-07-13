@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
@@ -84,8 +85,24 @@ void AGeoDeployableBase::PushAway()
 		PushDirection.Normalize();
 
 		constexpr float PushDuration = 0.15f;
-		FVector const PushTarget =
-			Actor->GetActorLocation() + PushDirection * (Radius + Actor->GetSimpleCollisionRadius());
+		float const PushDistance = Radius + Actor->GetSimpleCollisionRadius();
+		FVector PushTarget = Actor->GetActorLocation() + PushDirection * PushDistance;
+
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+		QueryParams.AddIgnoredActor(Actor);
+		if (GetWorld()->SweepTestByChannel(Actor->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
+										   FCollisionShape::MakeSphere(Actor->GetSimpleCollisionRadius()), QueryParams))
+		{
+			TArray<AActor*> const FightCenters = GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().Arena_FightCenter);
+			if (ensureMsgf(!FightCenters.IsEmpty(), TEXT("AGeoDeployableBase: no TargetPoint tagged Arena.FightCenter in the map")))
+			{
+				FVector ToCenter = FightCenters[0]->GetActorLocation() - GetActorLocation();
+				ToCenter.Z = 0.f;
+				PushTarget = GetActorLocation() + ToCenter.GetSafeNormal() * PushDistance;
+				PushTarget.Z = Actor->GetActorLocation().Z;
+			}
+		}
 
 		TSharedPtr<FRootMotionSource_MoveToForce> PushRootMotion = MakeShared<FRootMotionSource_MoveToForce>();
 		PushRootMotion->InstanceName = TEXT("PillarPush");

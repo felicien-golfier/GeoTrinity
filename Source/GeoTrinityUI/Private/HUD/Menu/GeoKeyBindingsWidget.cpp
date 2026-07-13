@@ -32,37 +32,71 @@ void UGeoKeyBindingSelector::InitBinding(FName InMappingName, EPlayerMappableKey
 	MappingName = InMappingName;
 	Slot = InSlot;
 	bGamepad = bInGamepad;
-	OnKeySelected.AddUniqueDynamic(this, &UGeoKeyBindingSelector::HandleBindingKeySelected);
+
+	KeyText = NewObject<UTextBlock>(this);
+	FSlateFontInfo KeyFont = KeyText->GetFont();
+	KeyFont.Size = 14;
+	KeyText->SetFont(KeyFont);
+	KeyText->SetJustification(ETextJustify::Center);
+	KeyText->SetTextOverflowPolicy(ETextOverflowPolicy::Ellipsis);
+	AddChild(KeyText);
+
+	OnClicked.AddUniqueDynamic(this, &UGeoKeyBindingSelector::HandleClicked);
+	RefreshDisplayedKey();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoKeyBindingSelector::HandleBindingKeySelected(FInputChord SelectedKeyChord)
+void UGeoKeyBindingSelector::HandleClicked()
 {
+	bListening = true;
+	KeyText->SetText(NSLOCTEXT("GeoSettings", "KeyBindingListening", "..."));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoKeyBindingSelector::CommitKey(FKey Key)
+{
+	bListening = false;
 	UEnhancedInputUserSettings* UserSettings = GetUserSettings(GetOwningLocalPlayer());
 	if (!ensureMsgf(UserSettings, TEXT("UGeoKeyBindingSelector: Enhanced Input user settings are not available")))
 	{
 		return;
 	}
 
-	FMapPlayerKeyArgs Args;
-	Args.MappingName = MappingName;
-	Args.Slot = Slot;
-	Args.NewKey = SelectedKeyChord.Key;
-
 	FGameplayTagContainer FailureReason;
-	if (SelectedKeyChord.Key.IsGamepadKey() == bGamepad)
+	if (Key.IsGamepadKey() == bGamepad)
 	{
+		FMapPlayerKeyArgs Args;
+		Args.MappingName = MappingName;
+		Args.Slot = Slot;
+		Args.NewKey = Key;
 		UserSettings->MapPlayerKey(Args, FailureReason);
 	}
-	if (SelectedKeyChord.Key.IsGamepadKey() != bGamepad || !FailureReason.IsEmpty())
+	if (Key.IsGamepadKey() != bGamepad || !FailureReason.IsEmpty())
 	{
-		FPlayerKeyMapping const* Current = UserSettings->FindCurrentMappingForSlot(MappingName, Slot);
-		SetSelectedKey(FInputChord(Current ? Current->GetCurrentKey() : FKey()));
-		UE_LOG(LogTemp, Log, TEXT("UGeoKeyBindingSelector: rejected key %s for %s (%s)"),
-			   *SelectedKeyChord.Key.ToString(), *MappingName.ToString(), *FailureReason.ToString());
-		return;
+		UE_LOG(LogTemp, Log, TEXT("UGeoKeyBindingSelector: rejected key %s for %s (%s)"), *Key.ToString(),
+			   *MappingName.ToString(), *FailureReason.ToString());
 	}
-	UserSettings->SaveSettings();
+	else
+	{
+		UserSettings->SaveSettings();
+	}
+	RefreshDisplayedKey();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoKeyBindingSelector::CancelListening()
+{
+	bListening = false;
+	RefreshDisplayedKey();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoKeyBindingSelector::RefreshDisplayedKey()
+{
+	UEnhancedInputUserSettings* UserSettings = GetUserSettings(GetOwningLocalPlayer());
+	FPlayerKeyMapping const* Current =
+		UserSettings ? UserSettings->FindCurrentMappingForSlot(MappingName, Slot) : nullptr;
+	KeyText->SetText(Current ? Current->GetCurrentKey().GetDisplayName(false) : FText::GetEmpty());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -84,6 +118,7 @@ void UGeoKeyBindingsWidget::NativeConstruct()
 	BackButton->OnClicked.AddDynamic(this, &UGeoKeyBindingsWidget::HandleBack);
 
 	KeyBindingsList->ClearChildren();
+	Selectors.Empty();
 	BuildKeyBindingsList();
 }
 
@@ -95,6 +130,36 @@ void UGeoKeyBindingsWidget::NativeDestruct()
 		BackButton->OnClicked.RemoveDynamic(this, &UGeoKeyBindingsWidget::HandleBack);
 	}
 	Super::NativeDestruct();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FReply UGeoKeyBindingsWidget::NativeOnPreviewKeyDown(FGeometry const& InGeometry, FKeyEvent const& InKeyEvent)
+{
+	if (UGeoKeyBindingSelector* Listening = FindListeningSelector())
+	{
+		if (InKeyEvent.GetKey() == EKeys::Escape)
+		{
+			Listening->CancelListening();
+		}
+		else
+		{
+			Listening->CommitKey(InKeyEvent.GetKey());
+		}
+		return FReply::Handled();
+	}
+	return Super::NativeOnPreviewKeyDown(InGeometry, InKeyEvent);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FReply UGeoKeyBindingsWidget::NativeOnPreviewMouseButtonDown(FGeometry const& InGeometry,
+															 FPointerEvent const& InMouseEvent)
+{
+	if (UGeoKeyBindingSelector* Listening = FindListeningSelector())
+	{
+		Listening->CommitKey(InMouseEvent.GetEffectingButton());
+		return FReply::Handled();
+	}
+	return Super::NativeOnPreviewMouseButtonDown(InGeometry, InMouseEvent);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -114,6 +179,14 @@ bool UGeoKeyBindingsWidget::HandleBackAction()
 void UGeoKeyBindingsWidget::HandleBack()
 {
 	OnClosed.Broadcast();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UGeoKeyBindingSelector* UGeoKeyBindingsWidget::FindListeningSelector() const
+{
+	TObjectPtr<UGeoKeyBindingSelector> const* Listening =
+		Selectors.FindByPredicate([](UGeoKeyBindingSelector const* Selector) { return Selector->IsListening(); });
+	return Listening ? *Listening : nullptr;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -178,6 +251,7 @@ void UGeoKeyBindingsWidget::BuildKeyBindingsList()
 												: A.DisplayName.CompareTo(B.DisplayName) < 0;
 		});
 
+	TArray<UGeoKeyBindingSelector*> GamepadColumn;
 	for (FBindingRow const& Row : Rows)
 	{
 		// One UI line per keyboard mapping (rows sharing one mapping name); the gamepad cell sits on the
@@ -194,34 +268,46 @@ void UGeoKeyBindingsWidget::BuildKeyBindingsList()
 											   Row.DisplayName, Keyboard->GetDefaultKey().GetDisplayName(false))
 							   : Row.DisplayName);
 			UHorizontalBoxSlot* LabelSlot = RowBox->AddChildToHorizontalBox(Label);
-			LabelSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+			FSlateChildSize LabelSize(ESlateSizeRule::Fill);
+			LabelSize.Value = 0.7f;
+			LabelSlot->SetSize(LabelSize);
 			LabelSlot->SetVerticalAlignment(VAlign_Center);
 
 			AddBindingCell(RowBox, Row.MappingName, Keyboard, false);
-			AddBindingCell(RowBox, Row.MappingName, Line == 0 ? Row.Gamepad : nullptr, true);
+			if (UGeoKeyBindingSelector* GamepadSelector =
+					AddBindingCell(RowBox, Row.MappingName, Line == 0 ? Row.Gamepad : nullptr, true))
+			{
+				GamepadColumn.Add(GamepadSelector);
+			}
 
 			KeyBindingsList->AddChild(RowBox);
 		}
 	}
+
+	// Spacer lines (keyboard-only extra lines) let geometric vertical navigation escape the gamepad column,
+	// so chain it explicitly.
+	for (int32 Index = 1; Index < GamepadColumn.Num(); ++Index)
+	{
+		GamepadColumn[Index - 1]->SetNavigationRuleExplicit(EUINavigation::Down, GamepadColumn[Index]);
+		GamepadColumn[Index]->SetNavigationRuleExplicit(EUINavigation::Up, GamepadColumn[Index - 1]);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoKeyBindingsWidget::AddBindingCell(UHorizontalBox* RowBox, FName MappingName, FPlayerKeyMapping const* Mapping,
-										   bool bGamepad)
+UGeoKeyBindingSelector* UGeoKeyBindingsWidget::AddBindingCell(UHorizontalBox* RowBox, FName MappingName,
+															  FPlayerKeyMapping const* Mapping, bool bGamepad)
 {
+	UGeoKeyBindingSelector* Selector = nullptr;
 	UWidget* Cell = nullptr;
 	if (Mapping)
 	{
-		UGeoKeyBindingSelector* Selector = NewObject<UGeoKeyBindingSelector>(WidgetTree);
+		Selector = NewObject<UGeoKeyBindingSelector>(WidgetTree);
 		Selector->InitBinding(MappingName, Mapping->GetSlot(), bGamepad);
-		Selector->SetAllowGamepadKeys(bGamepad);
-		Selector->SetAllowModifierKeys(false);
-		Selector->SetEscapeKeys({EKeys::Escape});
-		Selector->SetSelectedKey(FInputChord(Mapping->GetCurrentKey()));
-
-		FTextBlockStyle KeyTextStyle = Selector->GetTextStyle();
-		KeyTextStyle.Font.Size = 14;
-		Selector->SetTextStyle(KeyTextStyle);
+		if (UGeoButton* StyleSource = BackButton->GetButtonWidget())
+		{
+			Selector->SetStyle(StyleSource->GetStyle());
+		}
+		Selectors.Add(Selector);
 		Cell = Selector;
 	}
 	else
@@ -233,4 +319,5 @@ void UGeoKeyBindingsWidget::AddBindingCell(UHorizontalBox* RowBox, FName Mapping
 	CellSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	CellSlot->SetPadding(FMargin(8.f, 2.f));
 	CellSlot->SetVerticalAlignment(VAlign_Center);
+	return Selector;
 }

@@ -43,6 +43,8 @@ public:
 	FScalableFloat ShieldAmount = 0.f;
 	/** Factor applied to both ShieldAmount and sphere radius each time the projectile bounces off an enemy. */
 	float EnemyBounceMultiplier;
+	float SphereRadiusToAdd;
+	float ShieldAmounToAdd;
 
 protected:
 	/** Sound played each time the projectile bounces, off a wall or an enemy. */

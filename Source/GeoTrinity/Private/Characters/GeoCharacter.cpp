@@ -203,6 +203,7 @@ void AGeoCharacter::OnRep_IsDead(bool const bOldValue)
 	else if (!bIsDead && bOldValue)
 	{
 		ReviveLogic();
+		OnRevived.Broadcast();
 	}
 }
 
@@ -215,4 +216,5 @@ void AGeoCharacter::Revive()
 	}
 	bIsDead = false;
 	ReviveLogic();
+	OnRevived.Broadcast();
 }

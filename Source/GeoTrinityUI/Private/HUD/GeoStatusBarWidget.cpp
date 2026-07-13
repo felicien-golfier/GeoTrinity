@@ -9,12 +9,19 @@
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
+#include "Components/ScaleBox.h"
 #include "Components/OverlaySlot.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "HUD/GeoHUD.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Styling/CoreStyle.h"
+
+namespace
+{
+	FName const DepletionFillParam(TEXT("Fill"));
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoStatusBarWidget::InitStatusBar(AGeoHUD* GeoHUD)
@@ -34,11 +41,11 @@ bool UGeoStatusBarWidget::Initialize()
 
 		StatusBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("StatusBox"));
 		UCanvasPanelSlot* CanvasSlot = Canvas->AddChildToCanvas(StatusBox);
-		CanvasSlot->SetAnchors(FAnchors(0.5f, 1.f));
-		CanvasSlot->SetAlignment(FVector2D(0.5f, 1.f));
+		// Stretch to the bar height, auto-size the width so the icons cluster centered instead of spreading.
+		CanvasSlot->SetAnchors(FAnchors(0.5f, 0.f, 0.5f, 1.f));
+		CanvasSlot->SetAlignment(FVector2D(0.5f, 0.f));
+		CanvasSlot->SetOffsets(FMargin(0.f));
 		CanvasSlot->SetAutoSize(true);
-		// Bottom-center, above the ability bar.
-		CanvasSlot->SetPosition(FVector2D(0.f, -140.f));
 	}
 
 	return bResult;
@@ -68,6 +75,8 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 		StatusBox->ClearChildren();
 		CountTexts.Reset();
 		TimerTexts.Reset();
+		DepletionSweeps.Reset();
+		DepletionSweepMIDs.Reset();
 
 		for (FGeoActiveEffectIcon const& Entry : Entries)
 		{
@@ -82,14 +91,28 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			{
 				IconImage->SetBrushFromMaterial(Material);
 			}
-			IconImage->SetDesiredSizeOverride(FVector2D(48.f));
-
 			// Round icon: half-height rounding turns the square brush into a circle.
 			FSlateBrush RoundBrush = IconImage->GetBrush();
 			RoundBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
 			RoundBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::HalfHeightRadius;
 			IconImage->SetBrush(RoundBrush);
 			EntryOverlay->AddChildToOverlay(IconImage);
+
+			UImage* SweepImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+			UMaterialInstanceDynamic* SweepMID = nullptr;
+			if (DepletionSweepMaterial)
+			{
+				SweepMID = UMaterialInstanceDynamic::Create(DepletionSweepMaterial, this);
+				SweepMID->SetScalarParameterValue(DepletionFillParam, 0.f);
+				SweepImage->SetBrushFromMaterial(SweepMID);
+			}
+			else
+			{
+				SweepImage->SetVisibility(ESlateVisibility::Collapsed);
+			}
+			EntryOverlay->AddChildToOverlay(SweepImage);
+			DepletionSweeps.Add(SweepImage);
+			DepletionSweepMIDs.Add(SweepMID);
 
 			UTextBlock* TimerText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 			TimerText->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 14));
@@ -105,7 +128,13 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			CountSlot->SetVerticalAlignment(VAlign_Bottom);
 			CountTexts.Add(CountText);
 
-			StatusBox->AddChildToHorizontalBox(EntryOverlay)->SetPadding(FMargin(2.f, 0.f));
+			UScaleBox* ScaleBox = WidgetTree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass());
+			ScaleBox->SetStretch(EStretch::ScaleToFit);
+			ScaleBox->AddChild(EntryOverlay);
+
+			UHorizontalBoxSlot* EntrySlot = StatusBox->AddChildToHorizontalBox(ScaleBox);
+			EntrySlot->SetVerticalAlignment(VAlign_Fill);
+			EntrySlot->SetPadding(FMargin(2.f, 0.f));
 		}
 	}
 
@@ -125,6 +154,14 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 		if (Entry.Count > 1)
 		{
 			CountTexts[Index]->SetText(FText::AsNumber(Entry.Count));
+		}
+
+		if (DepletionSweepMIDs[Index])
+		{
+			float const Fill = (Entry.TimeRemaining < 0.f || Entry.Duration <= 0.f)
+									? 0.f
+									: 1.f - FMath::Clamp(Entry.TimeRemaining / Entry.Duration, 0.f, 1.f);
+			DepletionSweepMIDs[Index]->SetScalarParameterValue(DepletionFillParam, Fill);
 		}
 	}
 }

@@ -23,6 +23,14 @@
 void AGeoGameState::HandleMatchHasStarted()
 {
 	AEnemyCharacter* Boss = GetBossEnemy();
+	if (!GeoLib::IsServer(this) && !IsValid(Boss))
+	{
+		// Late-joining client: MatchState replicated before the Boss actor did. It will show up shortly;
+		// nothing to do here since the server already drove StartBossFight().
+		UE_LOG(LogTemp, Log, TEXT("HandleMatchHasStarted: Boss not yet replicated to this client"));
+		return;
+	}
+
 	if (ensureMsgf(IsValid(Boss),
 				   TEXT("No Boss found in the world, ensure an EnemyCharacter with bIsBoss=true is spawned")))
 	{

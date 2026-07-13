@@ -52,6 +52,13 @@ public:
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
+	/** Blocks activation while the avatar character is dead. Evaluated by both client prediction and server
+	 * validation, so a press sent during the death replication window is rejected and rolled back cleanly. */
+	virtual bool CanActivateAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
+									FGameplayTagContainer const* SourceTags = nullptr,
+									FGameplayTagContainer const* TargetTags = nullptr,
+									FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
 	/** Returns the primary gameplay tag identifying this ability (first owned tag under "Ability"). */
 	FGameplayTag GetAbilityTag() const;
 

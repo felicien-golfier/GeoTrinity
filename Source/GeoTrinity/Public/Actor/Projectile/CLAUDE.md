@@ -16,6 +16,8 @@ Poolable, effect-applying projectile.
 - `HandleValidOverlap(OtherActor)` — override for custom hit logic; default applies `EffectDataArray` to target
 - `OnProjectileHit(HitActor)` — `BlueprintNativeEvent`; fired on all clients after a valid hit
 
+**Instigator revive:** `InitProjectileLife` binds to the instigator's `AGeoCharacter::OnRevived` delegate (when the instigator is a GeoCharacter) and ends the projectile when it fires; the binding is removed via `UnbindFromInstigatorRevive` — called from the base `EndProjectileLife` and from `AGeoPooledProjectile::End` (pool release) — so a reused projectile never keeps a stale binding to a previous instigator.
+
 **Network:**
 - `IsNetRelevantFor()` — returns false for the **owning client** (they keep their predicted copy)
 - `PredictionKeyId` — replicated; used to match server projectile to client's predicted one
@@ -23,7 +25,8 @@ Poolable, effect-applying projectile.
 **Key fields:**
 - `EffectDataArray` — effects applied on hit
 - `Payload` (`FAbilityPayload`) — owner/instigator/ability info
-- `DistanceSpan = 1000 cm` — override with `OverrideDistanceSpan(float)`
+- `DistanceSpan = 1000 cm` — override with `OverrideDistanceSpan(float)`; or leave `bUseGeneralSpellDistance` on to use `GameDataSettings::GeneralSpellDistance`
+- **Speed** — `bUseGeneralSpellSpeed` (default on) applies `GameDataSettings::GeneralSpellSpeed` to the movement component in `InitProjectileLife`; override per-instance with `OverrideSpeed(float)` (sets `InitialSpeed`/`MaxSpeed`, clears the flag). Mirrors the distance source pattern
 - `LifeSpanInSec = 30` — safeguard max lifespan
 - `bCanOverlapInstigator = false`, `LifeTimeThresholdBeforeOverlapSelf = 0.2` — prevent self-hit on spawn
 - `ImpactEffect` (Niagara) — cosmetic only.

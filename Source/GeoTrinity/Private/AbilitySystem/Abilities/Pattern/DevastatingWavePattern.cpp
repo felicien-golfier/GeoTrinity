@@ -79,7 +79,6 @@ void UDevastatingWavePattern::ClearData()
 {
 	HitActors.Empty();
 	PillarsWaveData.Empty();
-
 	// The MPC is global state — clear slots left over from a previous wave before the AOE starts rendering.
 	for (int32 SlotIndex = 0; SlotIndex < MaxMaskedPillarSlots; ++SlotIndex)
 	{
@@ -162,6 +161,12 @@ FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FAbilityPayload con
 void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 {
 	float const CurrentRadius = ExpansionSpeed * SpentTime;
+	if (CurrentRadius <= 0.f)
+	{
+		// GetInteractableActors treats a radius of 0 as "no distance filter" — querying now would hit the whole map.
+		return;
+	}
+
 	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
 	if (ensureMsgf(SourceASC, TEXT("UDevastatingWavePattern: SourceASC is null — Owner has no ASC")))
 	{

@@ -126,6 +126,10 @@ protected:
 	/** Mirror of StopCharacter: restores controls, collision, and the alive material. */
 	void RestartCharacter();
 
+	/** Cancels every active ability and (server-only, replicated down) purges all active gameplay effects.
+	 * Shared reset used by death, revive, and class change. */
+	void ResetAbilitiesAndEffects();
+
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))

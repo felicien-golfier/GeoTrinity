@@ -47,6 +47,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button|Appearance")
 	FSlateBrush PressedBrush;
 
+	UGeoButton* GetButtonWidget() const
+	{
+		return ButtonWidget;
+	}
+
 protected:
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;

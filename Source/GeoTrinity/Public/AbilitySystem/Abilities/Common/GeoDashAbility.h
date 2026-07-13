@@ -32,6 +32,12 @@ protected:
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
+	/** Dash direction: current movement direction, falling back to aim yaw when standing still. Computed once on
+	 * the activating client and carried in the payload — client and server must build identical root motion
+	 * sources (FRootMotionSource_MoveToForce::Matches compares TargetLocation within 0.1cm) or the client can
+	 * never reconcile the server's source and receives corrections for the whole dash. */
+	virtual float GetFireYaw(AActor const* Instigator) const override;
+
 	/** Dash distance in units */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")
 	float DashDistance = 500.f;

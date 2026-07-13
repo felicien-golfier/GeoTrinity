@@ -41,17 +41,7 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 		return;
 	}
 
-	// Direction comes from character velocity, if no, use Yaw.
-	FVector DashDirection;
-	if (MovementComponent->Velocity.SizeSquared() < SMALL_NUMBER)
-	{
-		DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
-	}
-	else
-	{
-		DashDirection = MovementComponent->Velocity.GetSafeNormal();
-	}
-
+	FVector const DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
 	FVector const StartLocation = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
 	FVector const TargetLocation = StartLocation + DashDirection * DashDistance;
 
@@ -79,6 +69,17 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 								 });
 
 	Character->GetWorldTimerManager().SetTimer(DashEndTimerHandle, TimerDelegate, DashDuration, false);
+}
+
+float UGeoDashAbility::GetFireYaw(AActor const* Instigator) const
+{
+	ACharacter const* Character = Cast<ACharacter>(Instigator);
+	if (IsValid(Character) && Character->GetVelocity().SizeSquared() >= SMALL_NUMBER)
+	{
+		return Character->GetVelocity().Rotation().Yaw;
+	}
+
+	return Super::GetFireYaw(Instigator);
 }
 
 void UGeoDashAbility::EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,

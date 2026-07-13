@@ -66,6 +66,13 @@ protected:
 					  EditConditionHides = "true", UIMin = "0"))
 	float DistanceSpan = 2000.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	bool bOverrideSpeed = false;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability",
+			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideSpeed",
+					  EditConditionHides = "true", UIMin = "0"))
+	float ProjectileSpeed = 3000.f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	EProjectileTarget Target;
 };

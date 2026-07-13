@@ -55,6 +55,21 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 	ScheduleFireTrigger(ActivationInfo, ActorInfo->GetAnimInstance());
 }
 
+bool UGeoGameplayAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Handle,
+											 FGameplayAbilityActorInfo const* ActorInfo,
+											 FGameplayTagContainer const* SourceTags,
+											 FGameplayTagContainer const* TargetTags,
+											 FGameplayTagContainer* OptionalRelevantTags) const
+{
+	AGeoCharacter const* Character = ActorInfo ? Cast<AGeoCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
+	if (Character && Character->IsDead())
+	{
+		return false;
+	}
+
+	return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
+}
+
 FGameplayTag UGeoGameplayAbility::GetAbilityTag() const
 {
 	return GeoASLib::GetAbilityTagFromAbility(*this);

@@ -15,8 +15,9 @@ The combatant widget component is **created in C++** on both `AGeoCharacter` and
 ## Architecture
 ```
 AGeoHUD  (owns OverlayWidget)
-├── OverlayWidget (UGeoUserWidget) — main player HUD, created in InitOverlay()
-│     └── player BP widget inherits UGeoUserWidget directly — NOT UGenericCombattantWidget
+├── OverlayWidget (UGeoOverlayWidget) — main player HUD, created in InitOverlay()
+│     ├── AbilityBar (UGeoAbilityBarWidget, BindWidget) — bottom-center
+│     └── StatusBar (UGeoStatusBarWidget, BindWidget) — bottom-center, above the ability bar
 └── BossHealthBarWidget (UGenericCombattantWidget) — separate, shown during boss fights
 ```
 
@@ -24,10 +25,10 @@ AGeoHUD  (owns OverlayWidget)
 | File | Role |
 |---|---|
 | `GeoHUD.h` | Main HUD; `InitOverlay()`, `BindToPawn()`, `BuildAbilityBar()`, `ShowBossHealthBar()`, attribute delegates, `GetHudPlayerParams()`, ability-bar data helpers (`GetAbilityCooldown`, `IsAbilityActive`, `GetDeployCountForAbility`); `RegisterASCForDamageNumbers(ASC, AvatarActor)` binds Health/Shield attribute delegates to spawn floating numbers from `DamageNumberPool`; `SpawnDamageNumber(Amount, bIsHeal, WorldPos)` acquires an available widget from the pool or creates a new one; non-shipping debug combat-stats table (top-right, gated by `Geo.ShowCombatStats`) — pure Slate panel (no WBP asset) built in `UpdateCombatStatsPanel()`, cells poll `AGeoPlayerState` via `TAttribute` lambdas, tree rebuilt from `DrawHUD()` only when the player list changes |
-| `GeoOverlayWidget.h` | Root player overlay; holds `AbilityBar` as BindWidget so the HUD rebuilds it from C++ without Blueprint wiring |
+| `GeoOverlayWidget.h` | Root player overlay; holds `AbilityBar` and `StatusBar` as BindWidgets so the HUD drives them from C++ (`BuildAbilityBar`, `InitStatusBar`) without Blueprint wiring |
 | `GeoAbilityBarWidget.h` | Bottom-center ability bar widget; builds slots from `GetAbilityBarEntries()`, refreshes deploy badges on HUD ping |
 | `GeoAbilitySlotWidget.h` | Single ability slot: icon + radial cooldown sweep (material) + countdown text + optional deploy count badge + live key-binding label (`KeyText`, queried from Enhanced Input each tick). Holds **all** abilities sharing its InputTag (bar groups entries); each tick displays the last active/activatable entry (`AGeoHUD::CanActivateAbility`), falling back to the first — e.g. Square's sacrifice channel↔detonate swap |
-| `GeoStatusBarWidget.h` | Icon row for active effects on the local player, bottom-center above the ability bar. Pure C++ (no WBP): tree built in `Initialize()` (canvas → auto-sized HorizontalBox), created and added to viewport by `AGeoHUD::InitOverlay`. Polls `AGeoHUD::GetActiveEffectIcons()` each tick — one icon per active GE whose replicated `FGeoGameplayEffectContext::Icon` is set (from `FGameplayEffectData::Icon` or the status's `UStatusInfo` icon) — and rebuilds the `UImage` row only when the icon set changes |
+| `GeoStatusBarWidget.h` | Icon row for active effects on the local player, bottom-center above the ability bar. Pure C++ internal tree (no WBP content, but the widget class itself is bound as `StatusBar` on `UGeoOverlayWidget`/WBP_MainOverlay): tree built in `Initialize()` (canvas → auto-sized HorizontalBox), given the HUD reference by `AGeoHUD::InitOverlay` → `UGeoOverlayWidget::InitStatusBar`. Polls `AGeoHUD::GetActiveEffectIcons()` each tick — one icon per active GE whose replicated `FGeoGameplayEffectContext::Icon` is set (from `FGameplayEffectData::Icon` or the status's `UStatusInfo` icon) — and rebuilds the `UImage` row only when the icon set changes |
 | `GeoUserWidget.h` | Base widget; `InitFromHUD(AGeoHUD*)`, `BindCallbacksFromHUD` BP event |
 | `GenericCombattantWidget.h` | Reusable health/shield bar for enemies/boss/deployables — **not for player overlay**; `ShieldBar` overlays `HealthBar` (shield = Shield / MaxHealth); optional `CurrentHealthText` (BindWidgetOptional) shows the current health value (no max), set in `UpdateHealthRatio`; `InitializeWithAbilitySystemComponent` also calls `GeoHUD->RegisterASCForDamageNumbers` so every actor with a combattant widget registers for floating damage-number display |
 | `GeoDamageNumberWidget.h` | Pooled transient screen-space widget for a single floating damage/heal number; `Activate(Amount, bIsHeal, InWorldPos)` takes the widget from the pool, applies random X/Y jitter up to `LocationStartDrift`, picks a random upward-biased drift direction, and makes the widget visible — `NativeTick` re-projects the world anchor to screen each frame and fades out over `VisibleDuration`; Blueprint implements `SetData(Amount, bIsHeal)` for text/color; `ReturnToPool()` (BlueprintCallable) resets availability |

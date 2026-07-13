@@ -23,6 +23,7 @@ Use `AI/Commands.md` Bash build for editor/dev builds. To package a distributabl
 | Build commands, dev environment, copyright | `AI/Commands.md` |
 | Packaging a distributable build of the game | `AI/BuildPackage.md` |
 | Networking, data structures, effect system | `AI/Architecture.md` |
+| Writing ability descriptions ({Token} syntax) | `AI/AbilityDescriptions.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
 | Any MCP / Python editor automation | `AI/MCP/CLAUDE.md` |
 | AbilitySystem code | `Source/GeoTrinity/Public/AbilitySystem/CLAUDE.md` |

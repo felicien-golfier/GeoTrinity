@@ -167,21 +167,29 @@ void APlayableCharacter::InitGAS()
 	}
 }
 
+void APlayableCharacter::ResetAbilitiesAndEffects()
+{
+	if (!IsValid(AbilitySystemComponent))
+	{
+		return;
+	}
+	AbilitySystemComponent->CancelAllAbilities();
+	// RemoveActiveEffects only runs on the authoritative ASC; on clients the removal replicates down.
+	// Calling it client-side is a no-op that leaves locally-predicted effects (e.g. dash cooldown) lingering.
+	if (GeoLib::IsServer(this))
+	{
+		AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
+	}
+}
+
 void APlayableCharacter::DeathLogic()
 {
-	if (IsValid(AbilitySystemComponent))
+	ResetAbilitiesAndEffects();
+	if (IsValid(AbilitySystemComponent) && GeoLib::IsServer(this))
 	{
-		AbilitySystemComponent->CancelAllAbilities();
-		// RemoveActiveEffects only runs on the authoritative ASC; on clients the removal replicates down.
-		// Calling it client-side is a no-op that leaves locally-predicted effects (e.g. dash cooldown) lingering.
-		if (GeoLib::IsServer(this))
-		{
-			AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
-			// Death disarms the sacrifice detonation (the DetonateReady GE just went away with the purge above).
-			AbilitySystemComponent->SetNumericAttributeBase(UCharacterAttributeSet::GetSacrificeValueAttribute(), 0.f);
-		}
+		// Death disarms the sacrifice detonation (the DetonateReady GE just went away with the purge above).
+		AbilitySystemComponent->SetNumericAttributeBase(UCharacterAttributeSet::GetSacrificeValueAttribute(), 0.f);
 	}
-	StopAllSpawnedElements();
 	StopCharacter();
 	SetCanBeDamaged(false);
 
@@ -198,14 +206,10 @@ void APlayableCharacter::DeathLogic()
 
 void APlayableCharacter::ReviveLogic()
 {
+	ResetAbilitiesAndEffects();
+	StopAllSpawnedElements();
 	if (IsValid(AbilitySystemComponent))
 	{
-		AbilitySystemComponent->CancelAllAbilities();
-		// RemoveActiveEffects only runs on the authoritative ASC; on clients the removal replicates down.
-		if (GeoLib::IsServer(this))
-		{
-			AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());
-		}
 		ApplyClassData(GetPlayerClass());
 	}
 	GiveLife();
@@ -355,6 +359,7 @@ void APlayableCharacter::ChangeClass(EPlayerClass NewClass)
 	}
 
 	GeoPlayerState->SetPlayerClass(NewClass);
+	ResetAbilitiesAndEffects();
 	StopAllSpawnedElements();
 	AbilitySystemComponent->ClearPlayerClassAbilities();
 	AbilitySystemComponent->GiveStartupAbilities(NewClass);

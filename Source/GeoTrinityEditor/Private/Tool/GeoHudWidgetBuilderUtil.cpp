@@ -226,6 +226,48 @@ void UGeoHudWidgetBuilderUtil::AddAbilityBarToOverlay(UWidgetBlueprint* WidgetBl
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::BuildStatusBarWidget(UWidgetBlueprint* WidgetBlueprint)
+{
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildStatusBarWidget"));
+	if (!Tree)
+	{
+		return;
+	}
+
+	UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, UCanvasPanel::StaticClass(), TEXT("Root"));
+
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_StatusBar (placeholder root; tree is native)"));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::AddStatusBarToOverlay(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
+													 TSubclassOf<UUserWidget> StatusBarClass, float WidthFraction,
+													 float HeightFraction, float BottomFraction)
+{
+	UCanvasPanelSlot* BarSlot = UGeoWidgetBuilderUtil::AddChildToCanvasPanel(WidgetBlueprint, ParentPanelName,
+																			 StatusBarClass, TEXT("StatusBar"));
+	if (!BarSlot)
+	{
+		return;
+	}
+
+	float const HalfWidth = WidthFraction * 0.5f;
+	float const Bottom = 1.f - BottomFraction;
+	float const Top = Bottom - HeightFraction;
+	BarSlot->SetAnchors(FAnchors(0.5f - HalfWidth, Top, 0.5f + HalfWidth, Bottom));
+	BarSlot->SetAlignment(FVector2D(0.f, 0.f));
+	BarSlot->SetAutoSize(false);
+	BarSlot->SetOffsets(FMargin(0.f, 0.f, 0.f, 0.f));
+
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added StatusBar (%s) to '%s' bottom-center (%.0f%%x%.0f%% of screen)"),
+		   *StatusBarClass->GetName(), *WidgetBlueprint->GetName(), WidthFraction * 100.f, HeightFraction * 100.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoHudWidgetBuilderUtil::BuildCombattantLifeBarWidget(UWidgetBlueprint* WidgetBlueprint, float BarWidth,
 															float BarHeight)
 {

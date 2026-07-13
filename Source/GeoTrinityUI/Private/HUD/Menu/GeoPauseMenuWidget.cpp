@@ -4,6 +4,7 @@
 
 #include "GameClasses/GeoGameInstance.h"
 #include "GameClasses/GeoPlayerController.h"
+#include "HUD/Menu/GeoAbilityDescriptionsWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "HUD/Menu/GeoSettingsWidget.h"
 
@@ -21,6 +22,11 @@ void UGeoPauseMenuWidget::NativeConstruct()
 		ensureMsgf(ResumeButton, TEXT("UGeoPauseMenuWidget: ResumeButton is not bound"));
 		return;
 	}
+	if (!AbilitiesButton)
+	{
+		ensureMsgf(AbilitiesButton, TEXT("UGeoPauseMenuWidget: AbilitiesButton is not bound"));
+		return;
+	}
 	if (!SettingsButton)
 	{
 		ensureMsgf(SettingsButton, TEXT("UGeoPauseMenuWidget: SettingsButton is not bound"));
@@ -36,6 +42,11 @@ void UGeoPauseMenuWidget::NativeConstruct()
 		ensureMsgf(QuitButton, TEXT("UGeoPauseMenuWidget: QuitButton is not bound"));
 		return;
 	}
+	if (!AbilitiesWidget)
+	{
+		ensureMsgf(AbilitiesWidget, TEXT("UGeoPauseMenuWidget: AbilitiesWidget is not bound"));
+		return;
+	}
 	if (!SettingsWidget)
 	{
 		ensureMsgf(SettingsWidget, TEXT("UGeoPauseMenuWidget: SettingsWidget is not bound"));
@@ -43,12 +54,18 @@ void UGeoPauseMenuWidget::NativeConstruct()
 	}
 
 	ResumeButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleResume);
+	AbilitiesButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleAbilities);
 	SettingsButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleSettings);
 	ReturnToMainMenuButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleReturnToMainMenu);
 	QuitButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleQuit);
-	SettingsWidget->OnClosed.AddDynamic(this, &UGeoPauseMenuWidget::HandleSettingsClosed);
+	AbilitiesWidget->OnClosed.AddDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
+	SettingsWidget->OnClosed.AddDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
 
+	// Reset to the top-level buttons: the menu can close from anywhere (e.g. ESC while a sub-panel is open), and
+	// this instance is reused on the next open.
+	AbilitiesWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
+	SetButtonsVisible(true);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -57,6 +74,10 @@ void UGeoPauseMenuWidget::NativeDestruct()
 	if (ResumeButton)
 	{
 		ResumeButton->OnClicked.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleResume);
+	}
+	if (AbilitiesButton)
+	{
+		AbilitiesButton->OnClicked.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleAbilities);
 	}
 	if (SettingsButton)
 	{
@@ -70,9 +91,13 @@ void UGeoPauseMenuWidget::NativeDestruct()
 	{
 		QuitButton->OnClicked.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleQuit);
 	}
+	if (AbilitiesWidget)
+	{
+		AbilitiesWidget->OnClosed.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
+	}
 	if (SettingsWidget)
 	{
-		SettingsWidget->OnClosed.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleSettingsClosed);
+		SettingsWidget->OnClosed.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
 	}
 	Super::NativeDestruct();
 }
@@ -100,11 +125,15 @@ void UGeoPauseMenuWidget::HandleResume()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::HandleAbilities()
+{
+	OpenSubPanel(AbilitiesWidget);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoPauseMenuWidget::HandleSettings()
 {
-	SetButtonsVisible(false);
-	SettingsWidget->SetVisibility(ESlateVisibility::Visible);
-	SettingsWidget->SetFocus();
+	OpenSubPanel(SettingsWidget);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -136,11 +165,20 @@ void UGeoPauseMenuWidget::HandleQuit()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoPauseMenuWidget::HandleSettingsClosed()
+void UGeoPauseMenuWidget::HandleSubPanelClosed()
 {
+	AbilitiesWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
 	ResumeButton->SetFocus();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::OpenSubPanel(UGeoMenuPanelWidget* SubPanel)
+{
+	SetButtonsVisible(false);
+	SubPanel->SetVisibility(ESlateVisibility::Visible);
+	SubPanel->SetFocus();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -148,6 +186,7 @@ void UGeoPauseMenuWidget::SetButtonsVisible(bool bVisible)
 {
 	ESlateVisibility const NewVisibility = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
 	ResumeButton->SetVisibility(NewVisibility);
+	AbilitiesButton->SetVisibility(NewVisibility);
 	SettingsButton->SetVisibility(NewVisibility);
 	ReturnToMainMenuButton->SetVisibility(NewVisibility);
 	QuitButton->SetVisibility(NewVisibility);

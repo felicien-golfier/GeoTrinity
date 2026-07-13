@@ -11,6 +11,7 @@
 
 #include "GeoProjectile.generated.h"
 
+class AGeoCharacter;
 class UCurveFloat;
 class UGeoAbilitySystemComponent;
 class UProjectileMovementComponent;
@@ -123,6 +124,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OverrideDistanceSpan(float Distance);
 
+	/**
+	 * Overrides the travel speed for this projectile instance.
+	 *
+	 * @param Speed  Movement speed in cm/s applied to the projectile movement component.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void OverrideSpeed(float Speed);
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
@@ -212,6 +221,9 @@ protected:
 	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
 	 * replicated destruction, so a local Destroy() can never race a later replication bunch into a ghost re-spawn. */
 	virtual void EndProjectileLife();
+	/** Removes the OnRevived binding made in InitProjectileLife. Called from EndProjectileLife (non-pooled) and
+	 * AGeoPooledProjectile::End (pool release) so a reused projectile never keeps a binding to a previous instigator. */
+	void UnbindFromInstigatorRevive();
 	/** Configures the UProjectileMovementComponent from the projectile's UPROPERTY settings. */
 	void InitProjectileMovementComponent();
 
@@ -241,12 +253,22 @@ private:
 	float DistanceSpan = 1000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
+	bool bUseGeneralSpellSpeed = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
 	bool bCanOverlapInstigator = false;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (EditConditionHides, EditCondition = bCanOverlapInstigator, AllowPrivateAccess = true))
 	float LifeTimeThresholdBeforeOverlapSelf = 0.2f;
 
 	bool bIsEnding{false};
+
+	/** Ends the projectile when its instigating GeoCharacter revives. Bound in InitProjectileLife, unbound in
+	 * EndProjectileLife so pooled reuse never keeps a binding to a previous instigator. */
+	void OnInstigatorRevived();
+
+	TWeakObjectPtr<AGeoCharacter> ReviveBoundInstigator;
+	FDelegateHandle InstigatorRevivedHandle;
 
 	/** Sound played by PlayImpactFx; switched to ValidOverlapEnd by HandleValidOverlap, reset to NoOverlapEnd in
 	 * InitProjectileLife. */

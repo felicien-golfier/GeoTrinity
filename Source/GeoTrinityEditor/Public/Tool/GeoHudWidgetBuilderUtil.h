@@ -75,6 +75,27 @@ public:
 									   float HeightFraction = 0.08f, float BottomFraction = 0.02f);
 
 	/**
+	 * Builds the WBP_StatusBar tree: an empty CanvasPanel root. UGeoStatusBarWidget builds its own icon-row tree
+	 * entirely in C++ (UGeoStatusBarWidget::Initialize) and only needs a compilable placeholder root here so the
+	 * asset exists as a Blueprint the designer can reparent-configure (e.g. tweak DepletionSweepMaterial). Compiles
+	 * and saves the asset.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void BuildStatusBarWidget(UWidgetBlueprint* WidgetBlueprint);
+
+	/**
+	 * Adds StatusBarClass into the overlay's CanvasPanel ParentPanelName as a child named "StatusBar" (matching the
+	 * BindWidget on UGeoOverlayWidget), anchored bottom-center, sitting BottomFraction above AbilityBar's own bottom
+	 * offset so the row reads above the ability bar. Sizing/positioning is expressed as fractions of the canvas so it
+	 * holds the same screen proportion at any resolution. Composes UGeoWidgetBuilderUtil::AddChildToCanvasPanel;
+	 * compiles and saves the asset.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void AddStatusBarToOverlay(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
+									  TSubclassOf<UUserWidget> StatusBarClass, float WidthFraction = 0.4f,
+									  float HeightFraction = 0.06f, float BottomFraction = 0.1f);
+
+	/**
 	 * Builds the WBP_CombattantLifeBar tree: a SizeBox (BarWidth x BarHeight) → Overlay → HealthBar (fill) under
 	 * ShieldBar (fill, semi-transparent cyan). Both progress bars fill the same rect so the shield overlays the health,
 	 * mirroring WBP_MainOverlay. Names match the BindWidgetOptional members on UGenericCombattantWidget; the health color

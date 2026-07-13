@@ -91,6 +91,8 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 							   "Spawn points inside the arena for fight start.");
 	CreateAndAssignGameplayTag(GameplayTags.Arena_Entrance, "Arena.Entrance",
 							   "Entry point outside arena — dead players teleport here.");
+	CreateAndAssignGameplayTag(GameplayTags.Arena_FightCenter, "Arena.FightCenter",
+							   "TargetPoint at the center of the fight area.");
 
 	// CAMERA //
 	CreateAndAssignGameplayTag(GameplayTags.Camera_Bounds_Intro, "Camera.Bounds.Intro",

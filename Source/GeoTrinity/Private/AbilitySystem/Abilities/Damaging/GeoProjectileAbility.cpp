@@ -98,6 +98,10 @@ void UGeoProjectileAbility::SpawnProjectile(FTransform const& SpawnTransform, fl
 	{
 		Projectile->OverrideDistanceSpan(DistanceSpan);
 	}
+	if (bOverrideSpeed)
+	{
+		Projectile->OverrideSpeed(ProjectileSpeed);
+	}
 
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
 }

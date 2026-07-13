@@ -43,8 +43,11 @@ void UGeoSettingsWidget::NativeConstruct()
 	SoundWidget->OnClosed.AddDynamic(this, &UGeoSettingsWidget::HandleSubPanelClosed);
 	KeyBindingsWidget->OnClosed.AddDynamic(this, &UGeoSettingsWidget::HandleSubPanelClosed);
 
+	// Reset to the chooser: the menu can close from anywhere (e.g. ESC while a sub-panel is open), and this
+	// instance is reused on the next open.
 	SoundWidget->SetVisibility(ESlateVisibility::Collapsed);
 	KeyBindingsWidget->SetVisibility(ESlateVisibility::Collapsed);
+	SetButtonsVisible(true);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -7,6 +7,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
+#include "Characters/GeoCharacter.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "DrawDebugHelpers.h"
@@ -331,6 +332,8 @@ void AGeoProjectile::PlayImpactFx() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::EndProjectileLife()
 {
+	UnbindFromInstigatorRevive();
+
 	PlayImpactFx();
 
 	OnProjectileEndLifeDelegate.Broadcast(this);
@@ -353,6 +356,11 @@ void AGeoProjectile::EndProjectileLife()
 
 void AGeoProjectile::InitProjectileMovementComponent()
 {
+	if (bUseGeneralSpellSpeed)
+	{
+		ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = GetDefault<UGameDataSettings>()->GeneralSpellSpeed;
+	}
+
 	// Clear any previous movement state
 	ProjectileMovement->SetUpdatedComponent(GetRootComponent());
 
@@ -429,6 +437,13 @@ void AGeoProjectile::OverrideDistanceSpan(float const Distance)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::OverrideSpeed(float const Speed)
+{
+	bUseGeneralSpellSpeed = false;
+	ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = Speed;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::InitProjectileLife()
 {
 	if (!GeoLib::IsDedicatedServer(this))
@@ -454,4 +469,33 @@ void AGeoProjectile::InitProjectileLife()
 
 	bIsEnding = false;
 	EndSoundType = EProjectileSoundType::NoOverlapEnd;
+
+	AActor* const CurrentInstigator = IsValid(Payload.Instigator) ? Payload.Instigator : GetInstigator();
+	ReviveBoundInstigator = Cast<AGeoCharacter>(CurrentInstigator);
+	if (ReviveBoundInstigator.IsValid())
+	{
+		InstigatorRevivedHandle =
+			ReviveBoundInstigator->OnRevived.AddUObject(this, &AGeoProjectile::OnInstigatorRevived);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::UnbindFromInstigatorRevive()
+{
+	if (ReviveBoundInstigator.IsValid())
+	{
+		ReviveBoundInstigator->OnRevived.Remove(InstigatorRevivedHandle);
+	}
+	ReviveBoundInstigator = nullptr;
+	InstigatorRevivedHandle.Reset();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::OnInstigatorRevived()
+{
+	if (!bIsEnding)
+	{
+		bIsEnding = true;
+		EndProjectileLife();
+	}
 }

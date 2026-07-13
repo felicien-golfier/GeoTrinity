@@ -13,6 +13,7 @@ Projectile-firing ability base classes.
 - `OnFireTargetDataReceived()` → server spawns authoritative projectile
 - `SpawnProjectile()` — virtual override point for custom projectile initialization; uses `StartSpawnProjectile` + `FinishSpawnProjectile` to allow per-projectile property injection mid-spawn
 - `bOverrideDistanceSpan` / `DistanceSpan` — when enabled, calls `Projectile->OverrideDistanceSpan(DistanceSpan)` between start- and finish-spawn; lets a BP subclass set a different travel range per ability without subclassing the projectile
+- `bOverrideSpeed` / `ProjectileSpeed` — same pattern for travel speed: when enabled, calls `Projectile->OverrideSpeed(ProjectileSpeed)` between start- and finish-spawn. Otherwise the projectile uses `GameDataSettings::GeneralSpellSpeed` (its `bUseGeneralSpellSpeed` default). Because `ProjectileSpeed` is a plain float on the ability CDO, `{ProjectileSpeed}` resolves in the ability description like `{DistanceSpan}`
 - `SpawnProjectilesUsingTarget()` — spawns one projectile per direction from `GetTargetDirections()`
 - `GetTargetDirections()` — returns directions based on target mode (Forward, AllPlayers, etc.)
 

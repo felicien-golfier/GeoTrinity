@@ -24,7 +24,6 @@
 #include "HUD/GenericCombattantWidget.h"
 #include "HUD/GeoDamageNumberWidget.h"
 #include "HUD/GeoOverlayWidget.h"
-#include "HUD/GeoStatusBarWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "Styling/CoreStyle.h"
@@ -77,9 +76,10 @@ void AGeoHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySyste
 
 		OverlayWidget->AddToViewport();
 
-		StatusBarWidget = CreateWidget<UGeoStatusBarWidget>(GetWorld(), UGeoStatusBarWidget::StaticClass());
-		StatusBarWidget->InitStatusBar(this);
-		StatusBarWidget->AddToViewport();
+		if (UGeoOverlayWidget* Overlay = Cast<UGeoOverlayWidget>(OverlayWidget))
+		{
+			Overlay->InitStatusBar(this);
+		}
 	}
 }
 
@@ -123,9 +123,15 @@ TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
 
 		Entry->Count++;
 		float const TimeRemaining = ActiveEffect->GetTimeRemaining(WorldTime);
-		Entry->TimeRemaining = TimeRemaining < 0.f || Entry->TimeRemaining < 0.f
-								   ? -1.f
-								   : FMath::Max(Entry->TimeRemaining, TimeRemaining);
+		if (TimeRemaining < 0.f || Entry->TimeRemaining < 0.f)
+		{
+			Entry->TimeRemaining = -1.f;
+		}
+		else if (TimeRemaining >= Entry->TimeRemaining)
+		{
+			Entry->TimeRemaining = TimeRemaining;
+			Entry->Duration = ActiveEffect->GetDuration();
+		}
 	}
 
 	return Entries;

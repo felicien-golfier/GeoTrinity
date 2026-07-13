@@ -18,7 +18,7 @@ namespace RootTagNames
  *
  * Singleton containing native gameplay tags
  */
-struct FGeoGameplayTags
+struct GEOTRINITY_API FGeoGameplayTags
 {
 	/** Returns the singleton instance of all native gameplay tags. */
 	static FGeoGameplayTags const& Get() { return GameplayTags; }
@@ -77,6 +77,7 @@ struct FGeoGameplayTags
 	// ARENA LOCATION //
 	FGameplayTag Arena_FightLocation;
 	FGameplayTag Arena_Entrance;
+	FGameplayTag Arena_FightCenter;
 
 	// CAMERA //
 	FGameplayTag Camera_Bounds_Intro;
