@@ -48,3 +48,5 @@ Has no real GAS cooldown, so overrides `GetCooldownTimeRemainingAndDuration` to 
 
 Extends `UGeoAutomaticFireAbility`. Implements `ExecuteShot()` to spawn projectiles using `ProjectileClass`.
 No further extension needed for basic projectile auto-fire — configure via `ProjectileClass` and effect data in BP.
+
+- `bOverrideDistanceSpan` / `DistanceSpan` and `bOverrideSpeed` / `ProjectileSpeed` — same per-ability overrides as `GeoProjectileAbility`. `ExecuteShot` spawns via `StartSpawnProjectile` → applies enabled overrides → `FinishSpawnProjectile`, so each auto-fired projectile gets the per-ability travel range / speed. `{DistanceSpan}` / `{ProjectileSpeed}` resolve in the ability description.

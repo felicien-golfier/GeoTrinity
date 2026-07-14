@@ -35,12 +35,6 @@ protected:
 	/** Builds target data encoding the deploy distance (derived from charge ratio) in the Seed field as integer cm. */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy")
-	float MinDeployDistance = 300.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy")
-	float MaxDeployDistance = 1500.f;
-
 	// LifeDrainMaxDuration is used to define the life drain rate base on "How long the deployable would stay alive in
 	// sec if nothing else deplete its life", Size is the DeployableSize, for example it is used by the HealingZone to
 	// determine the size of the deployable.

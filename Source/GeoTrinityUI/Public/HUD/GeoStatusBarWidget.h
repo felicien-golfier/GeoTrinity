@@ -17,11 +17,11 @@ class AGeoHUD;
 /**
  * Row of icons showing every active effect on the local player that carries one, with a stack-count badge when the
  * same icon is active more than once, a remaining-time countdown, and a radial depletion sweep like the ability
- * slots. Built entirely in C++ (no WBP asset): the widget tree is a canvas with a horizontal box filling the slot
- * the widget gets in WBP_MainOverlay; each icon sits in a ScaleBox so it scales to fit the bar. Polls
- * AGeoHUD::GetActiveEffectIcons each tick; the row is rebuilt only when the icon set changes,
- * count/timer texts and the sweep fill are updated in place. Bound as "StatusBar" on
- * UGeoOverlayWidget (WBP_MainOverlay); InitStatusBar is called from AGeoHUD::InitOverlay via the overlay.
+ * slots. Built entirely in C++ (no WBP asset): the widget tree is a canvas filling the slot the widget gets in
+ * WBP_MainOverlay, holding a centered horizontal box; each icon is a square sized to the bar's height, so resizing
+ * the StatusBar slot in the overlay is what drives the icon size. Polls AGeoHUD::GetActiveEffectIcons each tick; the
+ * row is rebuilt only when the icon set changes, count/timer texts and the sweep fill are updated in place. Bound as
+ * "StatusBar" on UGeoOverlayWidget (WBP_MainOverlay); InitStatusBar is called from AGeoHUD::InitOverlay via the overlay.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoStatusBarWidget : public UGeoUserWidget
@@ -53,6 +53,13 @@ private:
 	/** Icons currently displayed (textures or materials); the row is rebuilt only when this set changes. */
 	UPROPERTY()
 	TArray<UObject*> DisplayedIcons;
+
+	/** Square side (bar height) last applied to the icons; icons are resized only when the bar height changes. */
+	float AppliedIconSize = 0.f;
+
+	/** Per-icon image, parallel to DisplayedIcons; square-sized to the bar height. */
+	UPROPERTY()
+	TArray<TObjectPtr<UImage>> IconImages;
 
 	/** Per-icon stack-count badge, parallel to DisplayedIcons; updated in place each tick. */
 	UPROPERTY()

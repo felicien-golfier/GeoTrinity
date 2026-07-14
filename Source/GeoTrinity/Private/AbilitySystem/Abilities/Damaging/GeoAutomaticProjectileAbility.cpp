@@ -41,11 +41,25 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	for (FVector const& Direction : Directions)
 	{
 		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
-		if (GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, StoredPayload,
-										   GetEffectDataArray(), StoredPayload.ServerSpawnTime, PredictionKey))
+		AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform,
+																   StoredPayload, GetEffectDataArray(), PredictionKey);
+		if (!ensureMsgf(Projectile, TEXT("GeoAutomaticProjectileAbility: Failed to spawn projectile!")))
 		{
-			bAnySpawned = true;
+			continue;
 		}
+
+		if (bOverrideDistanceSpan)
+		{
+			Projectile->OverrideDistanceSpan(DistanceSpan);
+		}
+		if (bOverrideSpeed)
+		{
+			Projectile->OverrideSpeed(ProjectileSpeed);
+		}
+
+		GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, StoredPayload.ServerSpawnTime,
+										PredictionKey);
+		bAnySpawned = true;
 	}
 
 	return bAnySpawned;

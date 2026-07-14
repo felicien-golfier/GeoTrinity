@@ -57,6 +57,11 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	UPROPERTY()
 	TObjectPtr<UShieldBurstPassiveComponent> PassiveComponent;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability",
+			  meta = (ClampMin = "0", AllowPrivateAccess = true, UIMin = "0"))
+	float ProjectileSpeed = 500.f;
+
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst")
 	float ChargeTime = 1.f; // Needs to be accessible from the passive comp via CDO

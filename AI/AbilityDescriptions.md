@@ -9,9 +9,11 @@ An ability with no section falls back to the `Description` field of its entry in
 `FGameplayAbilityInfo::GetResolvedDescription()` (`AbilitySystem/Data/AbilityInfo.cpp`).
 
 You can edit descriptions either directly in this file or in the AbilityInfo asset — they stay in sync (editor-only).
-The asset's `Description` field shows each ability's section text; editing it writes that section back to this file,
-and it reloads from the file on open and on every edit (so external edits to other sections are never overwritten).
-The file remains the source of truth and is the only thing read at runtime.
+The asset's `Description` field shows each ability's section text (loaded from the file when the asset opens); editing
+it pushes every entry's description back to this file. The asset edit path only writes — it never re-reads on edit, so a
+value you just typed is never reset. When you change this file externally and want the asset to reflect it, click the
+**Reload Descriptions From Disc** button on the asset (next to **Populate Ability Tags**). The file remains the source
+of truth and is the only thing read at runtime.
 
 Write plain text with `{Token}` placeholders. Tokens are replaced with the **live values configured on the ability**
 (CDO + its effect data), so descriptions never drift from balance changes. Never hardcode a number that exists on the
@@ -28,7 +30,9 @@ ability — use a token.
 | `{Shield}` | Sum of all `FShieldEffectData` amounts |
 | `{Effects}` | Auto-generated list, one line per effect entry (see below) |
 | `{PropertyName}` | Any numeric or `FScalableFloat` UPROPERTY on the ability class, by exact C++ name (e.g. `{MaxSpawnRadius}`, `{DashDistance}`) |
+| `{EffectProperty}` | A single `TInstancedStruct<FEffectData>` UPROPERTY holding an `FGameplayEffectData` — resolves to its `Magnitude` scalar (e.g. `{SpeedBuffEffect:%}` on the Moira beam) |
 | `{ArrayName}` | Any `TArray<TInstancedStruct<FEffectData>>` UPROPERTY, by exact C++ name — expands like `{Effects}` over that array (e.g. `{BlinkBonusEffect}` on the turret recall) |
+| `{A*B}` | Product of two numeric/`FScalableFloat` properties — for a derived cap like per-unit × max-count (e.g. `{DamageAndHealBoostPerAbsorbedZone*MaximumZoneAbsorbed:%}` → the max Moira zone boost). Honors suffixes. |
 
 An unresolved token stays visible in the text (`{Typo}`) and logs a warning — check the log if a brace shows up in-game.
 

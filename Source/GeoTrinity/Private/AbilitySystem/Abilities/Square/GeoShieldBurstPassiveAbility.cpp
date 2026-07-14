@@ -147,6 +147,7 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 
 	Projectile->ShieldAmount = ShieldAmount;
 	Projectile->EnemyBounceMultiplier = EnemyBounceMultiplier;
+	Projectile->OverrideSpeed(ProjectileSpeed);
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, GeoLib::GetServerTime(GetWorld()),
 									FPredictionKey{});
 }

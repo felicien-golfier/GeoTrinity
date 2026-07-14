@@ -10,7 +10,6 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
-
 /**
  * Walks the CDO's asset tags and returns the first tag under the AbilitySpell root.
  * Called once at asset load / property change, not at runtime — synchronous CDO access is intentional.
@@ -88,7 +87,7 @@ namespace
 		int32 MinLevel() const { return bShowRange ? MinDescriptionLevel : AbilityLevel; }
 		int32 MaxLevel() const { return bShowRange ? MaxDescriptionLevel : AbilityLevel; }
 	};
-}
+} // namespace
 
 /** Wraps a resolved value in the <Value> rich-text style tag so the UI can color it. */
 static FString MarkUpValue(FString const& Value, FDescriptionFormat const& Format)
@@ -146,9 +145,8 @@ static FString BuildEffectsSummary(TArray<TInstancedStruct<FEffectData>> const& 
 		}
 		else if (FStatusEffectData const* Status = Data.GetPtr<FStatusEffectData>())
 		{
-			Lines.Add(FString::Printf(
-				TEXT("%s status (%s chance)"), *GetTagLeafName(Status->StatusTag),
-				*MarkUpValue(FString::Printf(TEXT("%d%%"), Status->StatusChance), Format)));
+			Lines.Add(FString::Printf(TEXT("%s status (%s chance)"), *GetTagLeafName(Status->StatusTag),
+									  *MarkUpValue(FString::Printf(TEXT("%d%%"), Status->StatusChance), Format)));
 		}
 		else if (FGameplayEffectData const* Effect = Data.GetPtr<FGameplayEffectData>())
 		{
@@ -156,8 +154,8 @@ static FString BuildEffectsSummary(TArray<TInstancedStruct<FEffectData>> const& 
 			{
 				continue;
 			}
-			FString const Name = Effect->DataTag.IsValid() ? GetTagLeafName(Effect->DataTag)
-														   : Effect->GameplayEffect->GetName();
+			FString const Name =
+				Effect->DataTag.IsValid() ? GetTagLeafName(Effect->DataTag) : Effect->GameplayEffect->GetName();
 			FString Line = FString::Printf(TEXT("%s: %s"), *Name, *FormatScalableRange(Effect->Magnitude, Format));
 			if (Effect->Duration.GetValueAtLevel(Format.MinLevel()) > 0.f)
 			{
@@ -165,7 +163,8 @@ static FString BuildEffectsSummary(TArray<TInstancedStruct<FEffectData>> const& 
 			}
 			Lines.Add(Line);
 		}
-		else if (FContextDamageMultiplierEffectData const* Multiplier = Data.GetPtr<FContextDamageMultiplierEffectData>())
+		else if (FContextDamageMultiplierEffectData const* Multiplier =
+					 Data.GetPtr<FContextDamageMultiplierEffectData>())
 		{
 			FDescriptionFormat BonusPercentFormat = Format;
 			BonusPercentFormat.ValueFormat = EValueFormat::BonusPercent;
@@ -180,7 +179,8 @@ static FString BuildEffectsSummary(TArray<TInstancedStruct<FEffectData>> const& 
 	return FString::Join(Lines, TEXT("\n"));
 }
 
-/** Resolves a numeric or FScalableFloat property to its scalar value at the given level; false if not such a property. */
+/** Resolves a numeric or FScalableFloat property to its scalar value at the given level; false if not such a property.
+ */
 static bool ResolvePropertyScalar(FString const& PropertyName, UGeoGameplayAbility const& AbilityCDO, int32 Level,
 								  float& OutValue)
 {
@@ -224,8 +224,8 @@ static bool ResolveDescriptionToken(FString const& Token, UGeoGameplayAbility co
 
 	if (Token == TEXT("Cooldown"))
 	{
-		OutValue = FormatValueRange(AbilityCDO.GetCooldown(Format.MinLevel()), AbilityCDO.GetCooldown(Format.MaxLevel()),
-									Format);
+		OutValue = FormatValueRange(AbilityCDO.GetCooldown(Format.MinLevel()),
+									AbilityCDO.GetCooldown(Format.MaxLevel()), Format);
 		return true;
 	}
 	if (Token == TEXT("FireDelay"))
@@ -385,7 +385,8 @@ static void WriteDescriptionToFile(FGameplayTag const& AbilityTag, FString const
 		OutLines.Add(Description);
 	}
 
-	FFileHelper::SaveStringToFile(FString::Join(OutLines, TEXT("\n")) + TEXT("\n"), *FilePath);
+	FFileHelper::SaveStringToFile(FString::Join(OutLines, TEXT("\n")) + TEXT("\n"), *FilePath,
+								  FFileHelper::EEncodingOptions::ForceUTF8);
 }
 #endif
 
@@ -413,9 +414,8 @@ FString FGameplayAbilityInfo::GetResolvedDescription(int32 AbilityLevel, bool bR
 	{
 		int32 const OpenBrace = Text.Find(TEXT("{"), ESearchCase::CaseSensitive, ESearchDir::FromStart, Index);
 		int32 const CloseBrace = OpenBrace == INDEX_NONE
-									 ? INDEX_NONE
-									 : Text.Find(TEXT("}"), ESearchCase::CaseSensitive, ESearchDir::FromStart,
-												 OpenBrace + 1);
+			? INDEX_NONE
+			: Text.Find(TEXT("}"), ESearchCase::CaseSensitive, ESearchDir::FromStart, OpenBrace + 1);
 		if (CloseBrace == INDEX_NONE)
 		{
 			Resolved += Text.Mid(Index);
@@ -496,6 +496,18 @@ static void LoadDescriptionsFromFile(TArray<FGameplayAbilityInfo*> const& Infos)
 		}
 	}
 }
+
+/** Writes every entry's Description back to its file section, making the asset the source of truth. */
+static void WriteAllDescriptionsToFile(TArray<FGameplayAbilityInfo*> const& Infos)
+{
+	for (FGameplayAbilityInfo const* Info : Infos)
+	{
+		if (Info->AbilityTag.IsValid())
+		{
+			WriteDescriptionToFile(Info->AbilityTag, Info->Description);
+		}
+	}
+}
 #endif
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -549,32 +561,9 @@ void UAbilityInfo::PostLoad()
 
 #if WITH_EDITOR
 // ---------------------------------------------------------------------------------------------------------------------
-FGameplayAbilityInfo* UAbilityInfo::FindAbilityInfo(FName ArrayName, int32 Index)
+void UAbilityInfo::ReloadDescriptionsFromDisc()
 {
-	auto const IndexInto = [Index](auto& Array) -> FGameplayAbilityInfo*
-	{ return Array.IsValidIndex(Index) ? &Array[Index] : nullptr; };
-
-	if (ArrayName == GET_MEMBER_NAME_CHECKED(UAbilityInfo, TriangleAbilities))
-	{
-		return IndexInto(TriangleAbilities);
-	}
-	if (ArrayName == GET_MEMBER_NAME_CHECKED(UAbilityInfo, CircleAbilities))
-	{
-		return IndexInto(CircleAbilities);
-	}
-	if (ArrayName == GET_MEMBER_NAME_CHECKED(UAbilityInfo, SquareAbilities))
-	{
-		return IndexInto(SquareAbilities);
-	}
-	if (ArrayName == GET_MEMBER_NAME_CHECKED(UAbilityInfo, SharedAbilities))
-	{
-		return IndexInto(SharedAbilities);
-	}
-	if (ArrayName == GET_MEMBER_NAME_CHECKED(UAbilityInfo, EnemyAbilityInfos))
-	{
-		return IndexInto(EnemyAbilityInfos);
-	}
-	return nullptr;
+	LoadDescriptionsFromFile(GetAllAbilityInfoPtrs());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -585,16 +574,8 @@ void UAbilityInfo::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 
 	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(FGameplayAbilityInfo, Description))
 	{
-		FName const ArrayName = PropertyChangedEvent.GetMemberPropertyName();
-		// Write only the entry the user just edited; reloading first would clobber it with the on-disk value.
-		FGameplayAbilityInfo const* Edited = FindAbilityInfo(ArrayName, PropertyChangedEvent.GetArrayIndex(ArrayName.ToString()));
-		if (Edited && Edited->AbilityTag.IsValid())
-		{
-			WriteDescriptionToFile(Edited->AbilityTag, Edited->Description);
-		}
+		WriteAllDescriptionsToFile(GetAllAbilityInfoPtrs());
 	}
-	// Merge external edits to other sections back into the asset (also refreshes after an AbilityClass/tag change).
-	LoadDescriptionsFromFile(GetAllAbilityInfoPtrs());
 }
 #endif
 

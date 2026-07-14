@@ -9,7 +9,6 @@
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
-#include "Components/ScaleBox.h"
 #include "Components/OverlaySlot.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
@@ -39,13 +38,16 @@ bool UGeoStatusBarWidget::Initialize()
 		UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("Canvas"));
 		WidgetTree->RootWidget = Canvas;
 
-		StatusBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("StatusBox"));
-		UCanvasPanelSlot* CanvasSlot = Canvas->AddChildToCanvas(StatusBox);
-		// Stretch to the bar height, auto-size the width so the icons cluster centered instead of spreading.
-		CanvasSlot->SetAnchors(FAnchors(0.5f, 0.f, 0.5f, 1.f));
-		CanvasSlot->SetAlignment(FVector2D(0.5f, 0.f));
+		// Wrapper fills the whole bar; the box inside is centered and only as wide as its icons.
+		UOverlay* Wrapper = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
+		UCanvasPanelSlot* CanvasSlot = Canvas->AddChildToCanvas(Wrapper);
+		CanvasSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
 		CanvasSlot->SetOffsets(FMargin(0.f));
-		CanvasSlot->SetAutoSize(true);
+
+		StatusBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("StatusBox"));
+		UOverlaySlot* BoxSlot = Wrapper->AddChildToOverlay(StatusBox);
+		BoxSlot->SetHorizontalAlignment(HAlign_Center);
+		BoxSlot->SetVerticalAlignment(VAlign_Center);
 	}
 
 	return bResult;
@@ -73,10 +75,12 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 	{
 		DisplayedIcons = Icons;
 		StatusBox->ClearChildren();
+		IconImages.Reset();
 		CountTexts.Reset();
 		TimerTexts.Reset();
 		DepletionSweeps.Reset();
 		DepletionSweepMIDs.Reset();
+		AppliedIconSize = 0.f;
 
 		for (FGeoActiveEffectIcon const& Entry : Entries)
 		{
@@ -97,6 +101,7 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			RoundBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::HalfHeightRadius;
 			IconImage->SetBrush(RoundBrush);
 			EntryOverlay->AddChildToOverlay(IconImage);
+			IconImages.Add(IconImage);
 
 			UImage* SweepImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 			UMaterialInstanceDynamic* SweepMID = nullptr;
@@ -128,13 +133,18 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			CountSlot->SetVerticalAlignment(VAlign_Bottom);
 			CountTexts.Add(CountText);
 
-			UScaleBox* ScaleBox = WidgetTree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass());
-			ScaleBox->SetStretch(EStretch::ScaleToFit);
-			ScaleBox->AddChild(EntryOverlay);
+			StatusBox->AddChildToHorizontalBox(EntryOverlay)->SetPadding(FMargin(2.f, 0.f));
+		}
+	}
 
-			UHorizontalBoxSlot* EntrySlot = StatusBox->AddChildToHorizontalBox(ScaleBox);
-			EntrySlot->SetVerticalAlignment(VAlign_Fill);
-			EntrySlot->SetPadding(FMargin(2.f, 0.f));
+	float const IconSize = MyGeometry.GetLocalSize().Y;
+	if (!FMath::IsNearlyEqual(IconSize, AppliedIconSize))
+	{
+		AppliedIconSize = IconSize;
+		for (int32 Index = 0; Index < IconImages.Num(); ++Index)
+		{
+			IconImages[Index]->SetDesiredSizeOverride(FVector2D(IconSize));
+			DepletionSweeps[Index]->SetDesiredSizeOverride(FVector2D(IconSize));
 		}
 	}
 

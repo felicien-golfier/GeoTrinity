@@ -118,7 +118,7 @@ public:
 	/** Re-reads all ability CDO asset tags and syncs description text from the plain-text file after loading. */
 	virtual void PostLoad() override;
 #if WITH_EDITOR
-	/** Writes the changed Description entry back to the plain-text file whenever a Description property is edited in the Details panel. */
+	/** Pushes every entry's Description back to the plain-text file whenever a Description is edited in the Details panel. */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
@@ -150,14 +150,15 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	void PopulateAbilityTags();
 
+#if WITH_EDITOR
+	/** Pulls every entry's Description from the plain-text file, discarding unsaved in-asset edits (external-edit merge). */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	void ReloadDescriptionsFromDisc();
+#endif
+
 private:
 	/** Pointers to every entry across all arrays, viewed as the shared base struct. */
 	TArray<FGameplayAbilityInfo*> GetAllAbilityInfoPtrs();
-
-#if WITH_EDITOR
-	/** Resolves the entry at Index in the array named ArrayName (one of the ability arrays), or nullptr. */
-	FGameplayAbilityInfo* FindAbilityInfo(FName ArrayName, int32 Index);
-#endif
 
 	// Lazily-built tag->class map backing GetAbilityClassForTag. Cleared in PostLoad/PopulateAbilityTags so it rebuilds
 	// after the ability arrays or their tags change. Mutable: GetAbilityClassForTag is logically const.

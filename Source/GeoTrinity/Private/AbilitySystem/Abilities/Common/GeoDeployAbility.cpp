@@ -8,11 +8,14 @@
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoDeployAbility::UGeoDeployAbility()
 {
 	FireMode = EFireMode::ChargeForFireDelay;
+	bOverrideSpeed = true;
+	ProjectileSpeed = 2000.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -42,7 +45,9 @@ bool UGeoDeployAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Hand
 // ---------------------------------------------------------------------------------------------------------------------
 FGeoAbilityTargetData UGeoDeployAbility::GetUpdatedTargetData()
 {
-	float PendingDeployDistance = FMath::Lerp(MinDeployDistance, MaxDeployDistance, GetChargeRatio());
+	UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
+	float PendingDeployDistance =
+		FMath::Lerp(GameDataSettings->MinDeployDistance, GameDataSettings->MaxDeployDistance, GetChargeRatio());
 	// Encode deploy distance as integer cm in Seed so the server receives it
 	StoredPayload.Seed = FMath::RoundToInt(PendingDeployDistance);
 	return Super::GetUpdatedTargetData();
@@ -76,6 +81,14 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 	checkf(DeployableSpawnerProjectile, TEXT("SpawnerProjectile  must be a ADeployableSpawnerProjectile"));
 	DeployableSpawnerProjectile->Params = Params;
 	DeployableSpawnerProjectile->DeployableActorClass = DeployableActorClass;
+	if (bOverrideDistanceSpan)
+	{
+		Projectile->OverrideDistanceSpan(DistanceSpan);
+	}
+	if (bOverrideSpeed)
+	{
+		Projectile->OverrideSpeed(ProjectileSpeed);
+	}
 
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
 }

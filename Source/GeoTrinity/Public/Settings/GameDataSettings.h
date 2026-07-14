@@ -59,6 +59,12 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralSpellSpeed = 550.f;
 
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	float MinDeployDistance = 150.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	float MaxDeployDistance = 1500.f;
+
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	TSoftObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
