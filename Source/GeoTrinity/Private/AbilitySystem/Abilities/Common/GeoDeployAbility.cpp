@@ -8,23 +8,10 @@
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
-#include "Net/UnrealNetwork.h"
-#include "Tool/UGeoGameplayLibrary.h"
 
 UGeoDeployAbility::UGeoDeployAbility()
 {
 	FireMode = EFireMode::ChargeForFireDelay;
-	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateYes;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoDeployAbility::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME_CONDITION(UGeoDeployAbility, CurrentCharges, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(UGeoDeployAbility, NextChargeReadyServerTime, COND_OwnerOnly);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -82,7 +69,7 @@ void UGeoDeployAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo
 	Super::OnGiveAbility(ActorInfo, Spec);
 
 	CurrentCharges = MaxCharges;
-	NextChargeReadyServerTime = 0.f;
+	NextChargeReadyWorldTime = 0.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -98,9 +85,8 @@ void UGeoDeployAbility::GetCooldownTimeRemainingAndDuration(FGameplayAbilitySpec
 void UGeoDeployAbility::GetChargeRechargeTimeRemainingAndDuration(float& OutTimeRemaining, float& OutDuration) const
 {
 	OutDuration = ChargeRechargeTime;
-	OutTimeRemaining = CurrentCharges >= MaxCharges
-						 ? 0.f
-						 : FMath::Max(NextChargeReadyServerTime - GeoLib::GetServerTime(GetWorld(), true), 0.f);
+	OutTimeRemaining =
+		CurrentCharges >= MaxCharges ? 0.f : FMath::Max(NextChargeReadyWorldTime - GetWorld()->GetTimeSeconds(), 0.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -108,11 +94,7 @@ void UGeoDeployAbility::ConsumeCharge()
 {
 	CurrentCharges = FMath::Max(CurrentCharges - 1, 0);
 	LastActivationWorldTime = GetWorld()->GetTimeSeconds();
-
-	if (GeoLib::IsServer(GetWorld()))
-	{
-		StartRechargeTimerIfNeeded();
-	}
+	StartRechargeTimerIfNeeded();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -123,7 +105,7 @@ void UGeoDeployAbility::StartRechargeTimerIfNeeded()
 		return;
 	}
 
-	NextChargeReadyServerTime = GeoLib::GetServerTime(GetWorld(), false) + ChargeRechargeTime;
+	NextChargeReadyWorldTime = GetWorld()->GetTimeSeconds() + ChargeRechargeTime;
 	GetWorld()->GetTimerManager().SetTimer(RechargeTimerHandle, this, &UGeoDeployAbility::OnChargeRecharged,
 											ChargeRechargeTime, false);
 }
