@@ -115,8 +115,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FGameplayAbilityInfo> EnemyAbilityInfos;
 
+	/** Re-reads all ability CDO asset tags and syncs description text from the plain-text file after loading. */
 	virtual void PostLoad() override;
 #if WITH_EDITOR
+	/** Writes the changed Description entry back to the plain-text file whenever a Description property is edited in the Details panel. */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 

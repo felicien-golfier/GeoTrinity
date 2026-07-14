@@ -47,6 +47,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button|Appearance")
 	FSlateBrush PressedBrush;
 
+	/** Returns the inner UGeoButton that receives forwarded focus and fires the click delegate. */
 	UGeoButton* GetButtonWidget() const
 	{
 		return ButtonWidget;

@@ -30,14 +30,18 @@ class GEOTRINITYUI_API UGeoKeyBindingSelector : public UGeoButton
 	GENERATED_BODY()
 
 public:
+	/** Stores the mapping name, slot, and device type (keyboard or gamepad) for this binding button. */
 	void InitBinding(FName InMappingName, EPlayerMappableKeySlot InSlot, bool bInGamepad);
 
+	/** Returns true while the selector is armed and waiting for the player to press a new key. */
 	bool IsListening() const
 	{
 		return bListening;
 	}
 
+	/** Writes Key to the Enhanced Input user settings for this selector's mapping/slot; rejects the wrong device type and reverts the display. */
 	void CommitKey(FKey Key);
+	/** Disarms the selector without changing the binding; restores the display to the current mapped key. */
 	void CancelListening();
 
 private:

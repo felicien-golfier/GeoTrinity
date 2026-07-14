@@ -21,6 +21,7 @@ class GEOTRINITY_API AGeoPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 public:
+	/** Shows the mouse cursor by default; all further setup (camera, input mapping) runs in BeginPlay. */
 	AGeoPlayerController(FObjectInitializer const& ObjectInitializer);
 
 protected:

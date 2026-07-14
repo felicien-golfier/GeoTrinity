@@ -75,6 +75,7 @@ USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
 	GENERATED_BODY()
+	/** Applies GameplayEffect with SetByCaller magnitude and duration; replaces any existing active instance first when bReplaceExistingInstance is set. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -115,8 +116,10 @@ struct FDamageEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Flags the context as bIsFromBasicAbility when the source ability carries the Ability.Type.Basic asset tag. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
+	/** Applies the DamageEffect GE; propagates bSuppressGameplayCue, bLimitGameplayCue, bSuppressCombatStats, and bDoNotRedirectSacrifice flags onto the context. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -148,8 +151,10 @@ struct FHealEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Sets bSuppressHealProvided on the context when configured, so ExecCalc_Heal skips the OnHealProvided broadcast on the source ASC. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
+	/** Applies the HealthEffect GE; propagates bSuppressGameplayCue, bLimitGameplayCue, and bSuppressCombatStats flags onto the context. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -182,6 +187,7 @@ struct FShieldEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Applies the ShieldEffect GE with ShieldAmount as the SetByCaller magnitude, scaled by AbilityLevel. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -201,6 +207,7 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Sets SingleUseDamageMultiplier on the context to Multiplier, scaling the next damage application in the same apply call. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
 
@@ -214,6 +221,7 @@ struct FLethalEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Applies GameDataSettings::LethalEffect to the target, setting its health to zero. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -229,6 +237,7 @@ struct FStatusEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Rolls StatusChance (0–100) against a seeded random and applies the GE for StatusTag only on success. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
