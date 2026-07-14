@@ -8,11 +8,23 @@
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoDeployAbility::UGeoDeployAbility()
 {
 	FireMode = EFireMode::ChargeForFireDelay;
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateYes;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(UGeoDeployAbility, CurrentCharges, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(UGeoDeployAbility, NextChargeReadyServerTime, COND_OwnerOnly);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -27,6 +39,16 @@ bool UGeoDeployAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Hand
 		return false;
 	}
 
+	if (CurrentCharges <= 0)
+	{
+		return false;
+	}
+
+	if (GetWorld()->GetTimeSeconds() - LastActivationWorldTime < MinTimeBetweenDeploys)
+	{
+		return false;
+	}
+
 	UGeoDeployableManagerComponent* DeployableManager =
 		ActorInfo->AvatarActor->GetComponentByClass<UGeoDeployableManagerComponent>();
 	ensureMsgf(DeployableManager, TEXT("GeoDeployAbility: No UGeoDeployableManagerComponent on avatar '%s'!"),
@@ -37,6 +59,81 @@ bool UGeoDeployAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Hand
 	}
 
 	return DeployableManager->CanDeploy(DeployableActorClass);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
+										FGameplayAbilityActorInfo const* ActorInfo,
+										FGameplayAbilityActivationInfo const ActivationInfo,
+										FGameplayEventData const* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	// Super may have already ended the ability (e.g. a failed cost commit) — don't spend a charge on a no-op.
+	if (!bIsAbilityEnding && IsActive())
+	{
+		ConsumeCharge();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
+{
+	Super::OnGiveAbility(ActorInfo, Spec);
+
+	CurrentCharges = MaxCharges;
+	NextChargeReadyServerTime = 0.f;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::GetCooldownTimeRemainingAndDuration(FGameplayAbilitySpecHandle Handle,
+															FGameplayAbilityActorInfo const* ActorInfo,
+															float& TimeRemaining, float& CooldownDuration) const
+{
+	CooldownDuration = MinTimeBetweenDeploys;
+	TimeRemaining = FMath::Max(MinTimeBetweenDeploys - (GetWorld()->GetTimeSeconds() - LastActivationWorldTime), 0.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::GetChargeRechargeTimeRemainingAndDuration(float& OutTimeRemaining, float& OutDuration) const
+{
+	OutDuration = ChargeRechargeTime;
+	OutTimeRemaining = CurrentCharges >= MaxCharges
+						 ? 0.f
+						 : FMath::Max(NextChargeReadyServerTime - GeoLib::GetServerTime(GetWorld(), true), 0.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::ConsumeCharge()
+{
+	CurrentCharges = FMath::Max(CurrentCharges - 1, 0);
+	LastActivationWorldTime = GetWorld()->GetTimeSeconds();
+
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		StartRechargeTimerIfNeeded();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::StartRechargeTimerIfNeeded()
+{
+	if (CurrentCharges >= MaxCharges || RechargeTimerHandle.IsValid())
+	{
+		return;
+	}
+
+	NextChargeReadyServerTime = GeoLib::GetServerTime(GetWorld(), false) + ChargeRechargeTime;
+	GetWorld()->GetTimerManager().SetTimer(RechargeTimerHandle, this, &UGeoDeployAbility::OnChargeRecharged,
+											ChargeRechargeTime, false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::OnChargeRecharged()
+{
+	RechargeTimerHandle.Invalidate();
+	CurrentCharges = FMath::Min(CurrentCharges + 1, MaxCharges);
+	StartRechargeTimerIfNeeded();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

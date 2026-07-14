@@ -34,6 +34,10 @@ public:
 	UFUNCTION()
 	void RefreshDeployCount();
 
+	/** Re-queries this slot's banked deploy charges and refreshes the badge. Charges tick in the background (server
+	 * recharge), so this is called every tick rather than only on the deploy-count ping. */
+	void RefreshDeployCharges();
+
 	/** Re-queries the live key mapped to this slot's input action and updates KeyText only when the key changed. */
 	void RefreshKeyLabel();
 
@@ -54,9 +58,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> CountdownText;
 
-	/** Remaining-deployable count, shown only for deployable abilities. */
+	/** Remaining-deployable count (world-alive cap), shown only for deployable abilities. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> CountText;
+
+	/** Banked deploy charges (usage economy), shown only for deployable abilities alongside CountText. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> ChargesText;
 
 	/** Live key binding (e.g. "LMB", "RMB", "Shift"), shown just under the slot. Refreshed each tick so rebinds appear
 	 * immediately. */

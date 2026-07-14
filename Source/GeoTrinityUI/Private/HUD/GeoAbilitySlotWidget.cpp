@@ -48,8 +48,14 @@ void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntrie
 		CountText->SetVisibility(DisplayedEntry().bIsDeployable ? ESlateVisibility::HitTestInvisible
 																: ESlateVisibility::Collapsed);
 	}
+	if (ChargesText)
+	{
+		ChargesText->SetVisibility(DisplayedEntry().bIsDeployable ? ESlateVisibility::HitTestInvisible
+																  : ESlateVisibility::Collapsed);
+	}
 
 	RefreshDeployCount();
+	RefreshDeployCharges();
 	RefreshKeyLabel();
 }
 
@@ -84,7 +90,13 @@ void UGeoAbilitySlotWidget::SelectDisplayedEntry()
 		CountText->SetVisibility(DisplayedEntry().bIsDeployable ? ESlateVisibility::HitTestInvisible
 																: ESlateVisibility::Collapsed);
 	}
+	if (ChargesText)
+	{
+		ChargesText->SetVisibility(DisplayedEntry().bIsDeployable ? ESlateVisibility::HitTestInvisible
+																  : ESlateVisibility::Collapsed);
+	}
 	RefreshDeployCount();
+	RefreshDeployCharges();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -129,6 +141,20 @@ void UGeoAbilitySlotWidget::RefreshDeployCount()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::RefreshDeployCharges()
+{
+	if (!DisplayedEntry().bIsDeployable || !ChargesText || !HUD)
+	{
+		return;
+	}
+
+	int32 Current = 0;
+	int32 Max = 0;
+	HUD->GetDeployChargesForAbility(DisplayedEntry().AbilityTag, Current, Max);
+	ChargesText->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Current, Max)));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
@@ -140,6 +166,7 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 
 	SelectDisplayedEntry();
 	RefreshKeyLabel();
+	RefreshDeployCharges();
 
 	FGameplayTag const& AbilityTag = DisplayedEntry().AbilityTag;
 	float Remaining = 0.f;

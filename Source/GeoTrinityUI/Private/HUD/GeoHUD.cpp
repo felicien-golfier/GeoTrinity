@@ -449,6 +449,38 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::GetDeployChargesForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const
+{
+	OutCurrent = 0;
+	OutMax = 0;
+
+	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
+	{
+		UGeoDeployAbility const* DeployAbility = Cast<UGeoDeployAbility>(Spec.Ability);
+		if (!DeployAbility || DeployAbility->GetAbilityTag() != AbilityTag)
+		{
+			continue;
+		}
+
+		// Spec.Ability is the CDO for instanced abilities; query the active instance for the live replicated
+		// charge count instead of the CDO's default state.
+		if (UGeoDeployAbility const* Instance = Cast<UGeoDeployAbility>(Spec.GetPrimaryInstance()))
+		{
+			DeployAbility = Instance;
+		}
+		OutCurrent = DeployAbility->GetCurrentCharges();
+		OutMax = DeployAbility->GetMaxCharges();
+		return;
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor)
 {
 	if (!ASC || !IsValid(OwnerActor))

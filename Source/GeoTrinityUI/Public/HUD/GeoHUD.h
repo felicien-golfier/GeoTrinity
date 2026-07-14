@@ -172,6 +172,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AbilityBar")
 	void GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;
 
+	/** Outputs the current and maximum banked deploy charges for the deploy ability with AbilityTag. This is the
+	 * usage economy (how many more times the player can press the button), independent of GetDeployCountForAbility
+	 * (how many are currently alive in the world). */
+	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	void GetDeployChargesForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;
+
 	/**
 	 * (Re)builds the overlay's ability-bar slots from GetAbilityBarEntries. Called from BindToPawn once the pawn exists
 	 * and from AGeoPlayerState::OnRep_PlayerClass after a class change re-grants abilities.

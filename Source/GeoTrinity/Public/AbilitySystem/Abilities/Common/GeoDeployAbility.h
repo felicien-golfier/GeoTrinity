@@ -12,6 +12,10 @@
  * Hold to charge, release to deploy a projectile at a distance proportional to charge duration.
  * Intended for deployable spawner projectiles (turrets, etc.) shared across player classes.
  * Deploy distance is encoded in the target data Seed field (as integer cm) for server replication.
+ *
+ * Deploy uses are banked as charges (stacks): activating consumes one charge immediately, and the server recharges
+ * one charge at a time in the background (ChargeRechargeTime each) up to MaxCharges. This is independent of
+ * UGeoDeployableManagerComponent's cap on simultaneously-alive deployables — that cap still applies on top.
  */
 UCLASS()
 class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
@@ -19,18 +23,51 @@ class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
 	GENERATED_BODY()
 
 public:
-	/** Sets FireMode to ChargeForFireDelay (hold-to-charge, release-to-deploy). */
+	/** Sets FireMode to ChargeForFireDelay (hold-to-charge, release-to-deploy) and enables replication for the
+	 * charge-count state. */
 	UGeoDeployAbility();
 
 	/** Returns the deployable class this ability spawns. Used by the HUD to resolve the matching deployable-manager slot. */
 	TSubclassOf<AGeoDeployableBase> GetDeployableActorClass() const { return DeployableActorClass; }
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** Returns the number of deploy charges currently available (0..GetMaxCharges). */
+	UFUNCTION(BlueprintPure, Category = "Ability|Deploy|Charges")
+	int32 GetCurrentCharges() const { return CurrentCharges; }
+
+	/** Returns the configured maximum number of banked deploy charges. */
+	UFUNCTION(BlueprintPure, Category = "Ability|Deploy|Charges")
+	int32 GetMaxCharges() const { return MaxCharges; }
+
+	/**
+	 * Outputs the time remaining (seconds) until the next charge finishes recharging, and the full per-charge
+	 * recharge duration. Both are 0 while already at max charges. Used by the HUD to draw a recharge indicator
+	 * alongside the charge count.
+	 */
+	void GetChargeRechargeTimeRemainingAndDuration(float& OutTimeRemaining, float& OutDuration) const;
+
 protected:
-	/** Checks the base GAS cost/cooldown and also verifies that the player's deployable manager has room for another. */
+	/** Checks the base GAS cost/cooldown, that a charge is available, that the small per-deploy delay has elapsed,
+	 * and that the player's deployable manager has room for another. */
 	virtual bool CanActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 									FGameplayTagContainer const* SourceTags = nullptr,
 									FGameplayTagContainer const* TargetTags = nullptr,
 									FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
+	/** Consumes one charge (both the predicting client and the server run this symmetrically, like cost/cooldown). */
+	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+								 FGameplayAbilityActivationInfo ActivationInfo,
+								 FGameplayEventData const* TriggerEventData) override;
+
+	/** Fills the charge bank to MaxCharges when the ability is (re)granted. */
+	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
+
+	/** Reports the small per-deploy delay (not a real GAS cooldown) so the ability-bar sweep flashes once per deploy
+	 * instead of reflecting an unrelated cooldown effect. */
+	virtual void GetCooldownTimeRemainingAndDuration(FGameplayAbilitySpecHandle Handle,
+													 FGameplayAbilityActorInfo const* ActorInfo, float& TimeRemaining,
+													 float& CooldownDuration) const override;
 
 	/** Builds target data encoding the deploy distance (derived from charge ratio) in the Seed field as integer cm. */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData() override;
@@ -50,6 +87,44 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
+	/** Maximum number of deploy uses banked at once. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy|Charges", meta = (ClampMin = "1"))
+	int32 MaxCharges = 3;
+
+	/** Seconds to recharge one charge in the background. Recharges sequentially: only one charge regenerates at a
+	 * time even if several are missing. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy|Charges", meta = (ClampMin = "0.1"))
+	float ChargeRechargeTime = 5.f;
+
+	/** Minimum time between two consecutive deploys, even when charges are available — lets the player spend banked
+	 * charges only one at a time instead of all at once. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy|Charges", meta = (ClampMin = "0"))
+	float MinTimeBetweenDeploys = 0.4f;
+
 private:
 	virtual void SpawnProjectile(FTransform const& SpawnTransform, float SpawnServerTime) const override;
+
+	/** Decrements CurrentCharges and, on the server, (re)starts the recharge timer. */
+	void ConsumeCharge();
+	/** Server-only: starts the recharge timer if below max and no recharge is already ticking. */
+	void StartRechargeTimerIfNeeded();
+	/** Server-only timer callback: adds one charge back and restarts the timer if still below max. */
+	void OnChargeRecharged();
+
+	/** Current number of banked deploy charges. Replicated (owner-only) so the local HUD can display it without the
+	 * client running its own recharge timer. */
+	UPROPERTY(Transient, Replicated)
+	int32 CurrentCharges = 0;
+
+	/** Server world time (GeoLib::GetServerTime) at which the currently-recharging charge completes; 0 when no
+	 * recharge is in progress (already at max charges). Replicated (owner-only) for the HUD countdown. */
+	UPROPERTY(Transient, Replicated)
+	float NextChargeReadyServerTime = 0.f;
+
+	/** Local world time of the last activation, used only to enforce MinTimeBetweenDeploys. Deliberately not
+	 * replicated: both the predicting client and the server maintain their own copy, same as cost/cooldown commit. */
+	float LastActivationWorldTime = -1.f;
+
+	/** Server-only: ticks down ChargeRechargeTime for the charge currently recharging. */
+	FTimerHandle RechargeTimerHandle;
 };
