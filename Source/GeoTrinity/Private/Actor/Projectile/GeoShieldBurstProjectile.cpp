@@ -92,6 +92,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			FVector ReflectedVelocity = CurrentVelocity - 2.f * (FVector::DotProduct(CurrentVelocity, Normal) * Normal);
 			ReflectedVelocity.Normalize();
 			ReflectedVelocity *= Speed;
+			ReflectedVelocity.Z = 0.f;
 			ProjectileMovement->Velocity = ReflectedVelocity;
 			ProjectileMovement->UpdateComponentVelocity();
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() + SphereRadiusToAdd);
