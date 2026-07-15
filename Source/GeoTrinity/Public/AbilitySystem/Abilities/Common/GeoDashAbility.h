@@ -22,6 +22,7 @@ class GEOTRINITY_API UGeoDashAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Sets instancing policy to InstancedPerActor, required for per-ability root motion source ID tracking. */
 	UGeoDashAbility();
 
 protected:
