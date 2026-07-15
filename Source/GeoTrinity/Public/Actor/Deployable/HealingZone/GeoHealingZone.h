@@ -19,7 +19,8 @@ class GEOTRINITY_API AGeoHealingZone : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
-	/** Initializes drain behavior: bUseRegularDrain=false and marks the zone non-damageable so only GAS effects alter its health. */
+	/** Initializes drain behavior: bUseRegularDrain=false and marks the zone non-damageable so only GAS effects alter
+	 * its health. */
 	AGeoHealingZone(FObjectInitializer const& ObjectInitializer);
 	/** Sets capsule size from Data.Params.Size and binds overlap delegates to track actors inside the zone. */
 	virtual void InitInteractable(FInteractableActorData* Data) override;
@@ -30,8 +31,6 @@ public:
 
 protected:
 	virtual FDeployableData const* GetData() const override { return &Data; }
-
-	virtual void InitDrain() override;
 
 private:
 	UFUNCTION()

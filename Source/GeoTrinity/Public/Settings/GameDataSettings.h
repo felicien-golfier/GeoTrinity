@@ -5,6 +5,7 @@
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
+#include "GameplayTagContainer.h"
 
 #include "GameDataSettings.generated.h"
 
@@ -68,6 +69,10 @@ public:
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	TSoftObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
+
+	/** Shared generic-sound cue tag, executed locally for one-off gameplay sounds (e.g. deploy stack refilled). */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	FGameplayTag GenericGameplayCueSoundTag;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	TSoftClassPtr<UGameplayEffect> HealthEffect;

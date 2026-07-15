@@ -3,21 +3,23 @@
 
 #include "AbilitySystem/Data/GeoSoundRow.h"
 
-USoundBase* UGeoSoundRowLibrary::FindSoundForTag(UDataTable const* SoundTable, FGameplayTag Tag)
+FGeoSoundRow UGeoSoundRowLibrary::FindSoundForTag(UDataTable const* SoundTable, FGameplayTag Tag, bool& bFound)
 {
+	bFound = false;
+	FGeoSoundRow FoundRow;
 	if (!ensureMsgf(SoundTable, TEXT("FindSoundForTag called with null SoundTable")))
 	{
-		return nullptr;
+		return FoundRow;
 	}
 
-	USoundBase* FoundSound = nullptr;
 	SoundTable->ForeachRow<FGeoSoundRow>(TEXT("FindSoundForTag"),
-		[&Tag, &FoundSound](FName const& /*RowName*/, FGeoSoundRow const& Row)
+		[&Tag, &FoundRow, &bFound](FName const& /*RowName*/, FGeoSoundRow const& Row)
 		{
-			if (!FoundSound && Row.Tag.MatchesTagExact(Tag))
+			if (!bFound && Row.Tag.MatchesTagExact(Tag))
 			{
-				FoundSound = Row.Sound;
+				bFound = true;
+				FoundRow = Row;
 			}
 		});
-	return FoundSound;
+	return FoundRow;
 }

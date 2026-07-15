@@ -2,10 +2,10 @@
 
 #include "AbilitySystem/Abilities/Common/GeoDashAbility.h"
 
+#include "Abilities/Tasks/AbilityTask_ApplyRootMotionMoveToForce.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
-#include "Tool/UGeoGameplayLibrary.h"
 
 UGeoDashAbility::UGeoDashAbility()
 {
@@ -42,33 +42,22 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	}
 
 	FVector const DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
-	FVector const StartLocation = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
-	FVector const TargetLocation = StartLocation + DashDirection * DashDistance;
+	FVector const TargetLocation = Character->GetActorLocation() + DashDirection * DashDistance;
 
-	// FRootMotionSource_MoveToForce is saved in FSavedMove_Character, so both client and
-	// server apply identical movement when the server replays saved moves — no CMC corrections.
-	TSharedPtr<FRootMotionSource_MoveToForce> DashRootMotion = MakeShared<FRootMotionSource_MoveToForce>();
-	DashRootMotion->InstanceName = TEXT("Dash");
-	DashRootMotion->AccumulateMode = ERootMotionAccumulateMode::Override;
-	DashRootMotion->StartLocation = StartLocation;
-	DashRootMotion->TargetLocation = TargetLocation;
-	DashRootMotion->Duration = DashDuration;
-	DashRootMotion->bRestrictSpeedToExpected = false;
-	DashRootMotion->FinishVelocityParams.Mode = ERootMotionFinishVelocityMode::ClampVelocity;
-	DashRootMotion->FinishVelocityParams.ClampVelocity = MovementComponent->MaxWalkSpeed;
+	// The task replicates the root motion source by ID and reconciles it through the CMC saved-move
+	// system, owning the single authoritative timeout and the clamped finish velocity.
+	UAbilityTask_ApplyRootMotionMoveToForce* DashTask =
+		UAbilityTask_ApplyRootMotionMoveToForce::ApplyRootMotionMoveToForce(
+			this, TEXT("Dash"), TargetLocation, DashDuration, false, MOVE_None, false, nullptr,
+			ERootMotionFinishVelocityMode::ClampVelocity, FVector::ZeroVector, MovementComponent->MaxWalkSpeed);
+	DashTask->OnTimedOut.AddDynamic(this, &UGeoDashAbility::OnDashFinished);
+	DashTask->OnTimedOutAndDestinationReached.AddDynamic(this, &UGeoDashAbility::OnDashFinished);
+	DashTask->ReadyForActivation();
+}
 
-	ensureMsgf(DashRootMotionSourceID == 0,
-			   TEXT("Activating Dash with DashRootMotionSourceID already set — ability has not ended properly"));
-	DashRootMotionSourceID = MovementComponent->ApplyRootMotionSource(DashRootMotion);
-
-	FTimerDelegate TimerDelegate;
-	TimerDelegate.BindWeakLambda(this,
-								 [this, Handle, ActorInfo, ActivationInfo]()
-								 {
-									 EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
-								 });
-
-	Character->GetWorldTimerManager().SetTimer(DashEndTimerHandle, TimerDelegate, DashDuration, false);
+void UGeoDashAbility::OnDashFinished()
+{
+	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 
 float UGeoDashAbility::GetFireYaw(AActor const* Instigator) const
@@ -80,24 +69,4 @@ float UGeoDashAbility::GetFireYaw(AActor const* Instigator) const
 	}
 
 	return Super::GetFireYaw(Instigator);
-}
-
-void UGeoDashAbility::EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
-								 FGameplayAbilityActivationInfo const ActivationInfo, bool const bReplicateEndAbility,
-								 bool const bWasCancelled)
-{
-	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	if (IsValid(Character))
-	{
-		Character->GetWorldTimerManager().ClearTimer(DashEndTimerHandle);
-		UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
-		if (IsValid(MovementComponent))
-		{
-			MovementComponent->RemoveRootMotionSourceByID(DashRootMotionSourceID);
-			MovementComponent->SetMovementMode(MOVE_Walking);
-		}
-	}
-	DashRootMotionSourceID = 0;
-
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

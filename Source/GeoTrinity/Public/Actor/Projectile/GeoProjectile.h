@@ -147,6 +147,12 @@ public:
 	UPROPERTY(Replicated)
 	int16 PredictionKeyId = 0;
 
+	/** Resolved travel speed replicated from the server so simulated proxies move at the same speed as authority
+	 * (server-authoritative projectiles have no client-side OverrideSpeed to clear bUseGeneralSpellSpeed). 0 = unset,
+	 * fall back to the local bUseGeneralSpellSpeed resolution. */
+	UPROPERTY(Replicated)
+	float ReplicatedSpeed = 0.f;
+
 	FOnProjectileEndLife OnProjectileEndLifeDelegate;
 
 protected:

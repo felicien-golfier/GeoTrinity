@@ -210,6 +210,8 @@ protected:
 	bool HasBlinkingGameplayCueTag() const { return BlinkingGameplayCueTag.IsValid(); }
 	UFUNCTION()
 	bool HasExplodeGameplayCueTag() const { return ExplodeGameplayCueTag.IsValid(); }
+	UFUNCTION()
+	bool HasExpireGameplayCueTag() const { return ExpireGameplayCueTag.IsValid(); }
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag SpawnGameplayCueTag;
@@ -231,6 +233,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
 			  meta = (EditCondition = "HasExplodeGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
 	FGameplayTag ExplodeSoundTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	FGameplayTag ExpireGameplayCueTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
+			  meta = (EditCondition = "HasExpireGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
+	FGameplayTag ExpireSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 

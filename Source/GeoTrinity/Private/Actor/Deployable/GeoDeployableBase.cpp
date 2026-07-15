@@ -94,8 +94,10 @@ void AGeoDeployableBase::PushAway()
 		if (GetWorld()->SweepTestByChannel(Actor->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
 										   FCollisionShape::MakeSphere(Actor->GetSimpleCollisionRadius()), QueryParams))
 		{
-			TArray<AActor*> const FightCenters = GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().Arena_FightCenter);
-			if (ensureMsgf(!FightCenters.IsEmpty(), TEXT("AGeoDeployableBase: no TargetPoint tagged Arena.FightCenter in the map")))
+			TArray<AActor*> const FightCenters =
+				GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().Arena_FightCenter);
+			if (ensureMsgf(!FightCenters.IsEmpty(),
+						   TEXT("AGeoDeployableBase: no TargetPoint tagged Arena.FightCenter in the map")))
 			{
 				FVector ToCenter = FightCenters[0]->GetActorLocation() - GetActorLocation();
 				ToCenter.Z = 0.f;
@@ -121,7 +123,8 @@ void AGeoDeployableBase::PushAway()
 										FTimerDelegate::CreateWeakLambda(Movement,
 																		 [Movement, SourceID]()
 																		 {
-																			 Movement->RemoveRootMotionSourceByID(SourceID);
+																			 Movement->RemoveRootMotionSourceByID(
+																				 SourceID);
 																			 Movement->SetMovementMode(MOVE_Falling);
 																		 }),
 										PushDuration, false);
@@ -139,7 +142,7 @@ void AGeoDeployableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 void AGeoDeployableBase::InitDrain()
 {
-	if (!HasAuthority() || GetData()->Params.LifeDrainMaxDuration <= 0.f)
+	if (!GeoLib::IsServer(GetWorld()) || GetData()->Params.LifeDrainMaxDuration <= 0.f)
 	{
 		return;
 	}
@@ -340,6 +343,8 @@ void AGeoDeployableBase::Expire(float const TimeBeforeDestroy)
 	SetActorHiddenInGame(true);
 	OnDeployableExpiredEvent.Broadcast(this);
 	SetActorTickEnabled(false);
+	ExecuteCue(ExpireGameplayCueTag, GetGenericCueParams(ExpireSoundTag));
+
 
 	// A simulated proxy must never Destroy() itself: the server still replicates the actor, and a later property bunch
 	// would re-create it client-side. Stay dark (hidden, tick off) and let the server's replicated destruction remove
@@ -353,8 +358,13 @@ void AGeoDeployableBase::Expire(float const TimeBeforeDestroy)
 	if (TimeBeforeDestroy > 0.f)
 	{
 		FTimerHandle TimerHandle;
-		GetWorldTimerManager().SetTimer(
-			TimerHandle, FTimerDelegate::CreateWeakLambda(this, [this]() { Destroy(); }), TimeBeforeDestroy, false);
+		GetWorldTimerManager().SetTimer(TimerHandle,
+										FTimerDelegate::CreateWeakLambda(this,
+																		 [this]()
+																		 {
+																			 Destroy();
+																		 }),
+										TimeBeforeDestroy, false);
 	}
 	else
 	{

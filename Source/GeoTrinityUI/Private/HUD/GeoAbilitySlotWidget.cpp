@@ -125,7 +125,7 @@ void UGeoAbilitySlotWidget::RefreshDeployCount()
 	int32 Current = 0;
 	int32 Max = 0;
 	HUD->GetDeployCountForAbility(DisplayedEntry().AbilityTag, Current, Max);
-	CountText->SetText(FText::AsNumber(Max - Current));
+	CountText->SetText(FText::AsNumber(Current));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -145,6 +145,26 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 	float Remaining = 0.f;
 	float Duration = 0.f;
 	HUD->GetAbilityCooldown(AbilityTag, Remaining, Duration);
+
+	// A deploy ability's charges change on the refill timer, not on the manager's live-deployable event, so the badge
+	// is refreshed here every tick rather than only on the OnPlayerDeployCountChanged ping. The same charge count also
+	// gates the gray-out: the refill cooldown must only gray the slot at zero charges — while a charge is available the
+	// slot reads as ready.
+	if (DisplayedEntry().bIsDeployable)
+	{
+		int32 CurrentStacks = 0;
+		int32 MaxStacks = 0;
+		HUD->GetDeployCountForAbility(AbilityTag, CurrentStacks, MaxStacks);
+		if (CountText)
+		{
+			CountText->SetText(FText::AsNumber(CurrentStacks));
+		}
+		if (CurrentStacks > 0)
+		{
+			Remaining = 0.f;
+		}
+	}
+
 
 	// While the ability is active, keep the sweep fully filled so the slot reads as "in use". The cooldown (if any)
 	// takes over depleting it once the ability ends; an active ability with no cooldown stays grayed until it ends.

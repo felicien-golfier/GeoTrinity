@@ -6,6 +6,18 @@
 #include "Components/ProgressBar.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployChargeGaugeWidget::UpdateVisualChargeRatio() const
+{
+	if (!ChargeBar)
+	{
+		ensureMsgf(false, TEXT("ChargeBar is null"));
+		return;
+	}
+
+	ChargeBar->SetPercent(DeployAbility->GetChargeRatio());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoDeployChargeGaugeWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
@@ -15,11 +27,5 @@ void UGeoDeployChargeGaugeWidget::NativeTick(FGeometry const& MyGeometry, float 
 		return;
 	}
 
-	if (!ChargeBar)
-	{
-		ensureMsgf(false, TEXT("ChargeBar is null"));
-		return;
-	}
-
-	ChargeBar->SetPercent(DeployAbility->GetChargeRatio());
+	UpdateVisualChargeRatio();
 }

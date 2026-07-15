@@ -90,7 +90,7 @@ protected:
 	bool bPatternIsActive = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
-	FGameplayTag DelayGameplayCueTag;
+	FGameplayTag InitGameplayCueTag;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
 	FGameplayTag StartGameplayCueTag;

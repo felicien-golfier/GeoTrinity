@@ -88,7 +88,6 @@ void UDevastatingWavePattern::ClearData()
 }
 void UDevastatingWavePattern::StartPattern()
 {
-	Super::StartPattern();
 
 	if (!IsValid(AOEVfxComponent))
 	{
@@ -101,6 +100,8 @@ void UDevastatingWavePattern::StartPattern()
 	// so the wave origin and grow params are re-pushed here.
 	GetWorld()->GetTimerManager().ClearTimer(TelegraphBlinkTimerHandle);
 	ActivateAOEVfx();
+
+	Super::StartPattern();
 }
 
 void UDevastatingWavePattern::ActivateAoeVfxTelegraph() const
@@ -161,9 +162,16 @@ FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FAbilityPayload con
 void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 {
 	float const CurrentRadius = ExpansionSpeed * SpentTime;
+	if (HitActors.IsEmpty() && CurrentRadius > 0.f)
+	{
+		UE_LOG(LogPattern, Warning,
+			   TEXT("[WaveDiag] first damaging tick: StartDelay=%.3f ServerTime=%.3f ServerSpawnTime=%.3f "
+					"SpentTime=%.3f CurrentRadius=%.1f MaxRadius=%.1f Server=%d"),
+			   StartDelay, ServerTime, StoredPayload.ServerSpawnTime, SpentTime, CurrentRadius, MaxRadius,
+			   GeoLib::IsServer(this) ? 1 : 0);
+	}
 	if (CurrentRadius <= 0.f)
 	{
-		// GetInteractableActors treats a radius of 0 as "no distance filter" — querying now would hit the whole map.
 		return;
 	}
 
@@ -178,7 +186,22 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 			{
 				continue;
 			}
+
+			if (!ensureMsgf(
+					FVector2D::DistSquared(StoredPayload.Origin, FVector2D(HitActor->GetActorLocation())),
+					TEXT(
+						"Hit actors  are not in the given Radius, GetInteractableActors failed to calculate correctly")))
+			{
+				return;
+			}
+
 			HitActors.Add(HitActor);
+
+			FVector const HitLocation = HitActor->GetActorLocation();
+			UE_LOG(LogPattern, Warning,
+				   TEXT("[WaveDiag] hit actor %s at (%.1f, %.1f, %.1f) dist=%.1f CurrentRadius=%.1f"),
+				   *HitActor->GetName(), HitLocation.X, HitLocation.Y, HitLocation.Z,
+				   FVector2D::Distance(StoredPayload.Origin, FVector2D(HitLocation)), CurrentRadius);
 
 			AGeoPillar* Pillar = Cast<AGeoPillar>(HitActor);
 			if (IsValid(Pillar))

@@ -26,4 +26,6 @@ class IGeoDeployGaugeWidgetInterface
 public:
 	/** Sets the deploy ability whose charge ratio drives the gauge fill. */
 	virtual void SetDeployAbility(UGeoGameplayAbility* Ability) = 0;
+	/** Syncs the bar fill to the current ability charge ratio. Safe to call outside of tick. */
+	virtual void UpdateVisualChargeRatio() const = 0;
 };

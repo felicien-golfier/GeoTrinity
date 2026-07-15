@@ -399,6 +399,12 @@ bool AGeoHUD::CanActivateAbility(FGameplayTag const AbilityTag) const
 		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
 		if (Ability && Ability->GetAbilityTag() == AbilityTag)
 		{
+			// Spec.Ability is the CDO; query the active instance so per-instance state (e.g. deploy-ability stacks) is
+			// read instead of the CDO's defaults.
+			if (UGeoGameplayAbility const* Instance = Cast<UGeoGameplayAbility>(Spec.GetPrimaryInstance()))
+			{
+				Ability = Instance;
+			}
 			return Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get());
 		}
 	}
@@ -413,39 +419,26 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 	OutMax = 0;
 
 	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
-	APlayableCharacter const* PlayableCharacter = Cast<APlayableCharacter>(
-		HudPlayerParams.PlayerController ? HudPlayerParams.PlayerController->GetPawn() : nullptr);
-	if (!ASC || !PlayableCharacter)
+	if (!ASC)
 	{
 		return;
 	}
 
-	UGeoDeployableManagerComponent* Manager = PlayableCharacter->GetComponentByClass<UGeoDeployableManagerComponent>();
-	if (!Manager)
-	{
-		return;
-	}
-
-	// Resolve the deployable class from the deploy ability so we can pick the matching manager slot.
-	TSubclassOf<AGeoDeployableBase> DeployableClass = nullptr;
 	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
 	{
 		UGeoDeployAbility const* DeployAbility = Cast<UGeoDeployAbility>(Spec.Ability);
 		if (DeployAbility && DeployAbility->GetAbilityTag() == AbilityTag)
 		{
-			DeployableClass = DeployAbility->GetDeployableActorClass();
-			break;
+			// Spec.Ability is the CDO; query the active instance so per-instance stack state is read.
+			if (UGeoDeployAbility const* Instance = Cast<UGeoDeployAbility>(Spec.GetPrimaryInstance()))
+			{
+				DeployAbility = Instance;
+			}
+			OutCurrent = DeployAbility->GetCurrentStacks();
+			OutMax = DeployAbility->GetMaxStacks();
+			return;
 		}
 	}
-	if (!DeployableClass)
-	{
-		return;
-	}
-
-	OutCurrent = Manager->GetDeployables(DeployableClass).Num();
-
-	int32 const* SlotCap = Manager->DeployableSlots.Find(DeployableClass);
-	OutMax = SlotCap ? *SlotCap : Manager->GetMaxDeployables();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

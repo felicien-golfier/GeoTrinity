@@ -59,6 +59,7 @@ void AGeoProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoProjectile, PredictionKeyId);
+	DOREPLIFETIME(AGeoProjectile, ReplicatedSpeed);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -356,7 +357,11 @@ void AGeoProjectile::EndProjectileLife()
 
 void AGeoProjectile::InitProjectileMovementComponent()
 {
-	if (bUseGeneralSpellSpeed)
+	if (ReplicatedSpeed > 0.f)
+	{
+		ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = ReplicatedSpeed;
+	}
+	else if (bUseGeneralSpellSpeed)
 	{
 		ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = GetDefault<UGameDataSettings>()->GeneralSpellSpeed;
 	}
@@ -440,6 +445,7 @@ void AGeoProjectile::OverrideDistanceSpan(float const Distance)
 void AGeoProjectile::OverrideSpeed(float const Speed)
 {
 	bUseGeneralSpellSpeed = false;
+	ReplicatedSpeed = Speed;
 	ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = Speed;
 }
 

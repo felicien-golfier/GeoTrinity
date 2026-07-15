@@ -52,7 +52,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
 
-	ExecuteGameplayCue(DelayGameplayCueTag);
+	ExecuteGameplayCue(InitGameplayCueTag);
 
 	if (TravelTime > StartDelay)
 	{

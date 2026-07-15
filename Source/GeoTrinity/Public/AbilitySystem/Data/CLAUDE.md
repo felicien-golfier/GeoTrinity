@@ -70,4 +70,4 @@ Status effect configuration data (types, durations, visuals). Referenced by `FSt
 
 ## `GeoSoundRow.h`
 `FGeoSoundRow : FTableRowBase` — `Tag` (`FGameplayTag`) + `Sound` (`USoundBase`). DataTable row type for tag→sound lookup; the tag is an explicit field (picked from the tag tree), **not** the row name.
-`UGeoSoundRowLibrary::FindSoundForTag(SoundTable, Tag)` — `BlueprintPure`, returns the `Sound` of the first row whose `Tag` matches exactly (`MatchesTagExact`), else nullptr. Used by the `GenericSound` GameplayCueNotify: `MatchedTagName` → `FindSoundForTag` → `Play Sound`.
+`UGeoSoundRowLibrary::FindSoundForTag(SoundTable, Tag, bFound)` — `BlueprintPure`, returns the full `FGeoSoundRow` (Sound + PitchRandomMinMax) of the first row whose `Tag` matches exactly (`MatchesTagExact`); `bFound` is false and a default row is returned on miss. Used by the `GenericSound` GameplayCueNotify: `MatchedTagName` → `FindSoundForTag` → `Play Sound` with pitch randomized from the row.

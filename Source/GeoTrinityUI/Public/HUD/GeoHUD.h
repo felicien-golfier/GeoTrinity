@@ -167,8 +167,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AbilityBar")
 	bool CanActivateAbility(FGameplayTag AbilityTag) const;
 
-	/** Outputs the live and maximum deployable count for the deploy ability with AbilityTag, read from the avatar's
-	 * manager. */
+	/** Outputs the deploy ability's current and maximum charges (stacks) for AbilityTag — the badge count and the
+	 * gray-out gate (grayed only at zero charges), not the manager's live-deployable count. */
 	UFUNCTION(BlueprintPure, Category = "AbilityBar")
 	void GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;
 

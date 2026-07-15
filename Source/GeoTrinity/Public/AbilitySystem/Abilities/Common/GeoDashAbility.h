@@ -7,14 +7,16 @@
 
 #include "GeoDashAbility.generated.h"
 
+class UAbilityTask_ApplyRootMotionMoveToForce;
+
 /**
  * Dash ability shared by all player classes.
  *
- * Uses FRootMotionSource_MoveToForce so the dash movement is part of the CMC saved-move
- * system. This means the server replays client moves with the exact same root motion
- * applied, avoiding the CMC position-correction artifacts that LaunchCharacter causes
- * (LaunchCharacter is not saved in FSavedMove_Character, so server/client velocities
- * diverge and the CMC sends corrections that manifest as snap-teleport artefacts).
+ * Drives the dash with UAbilityTask_ApplyRootMotionMoveToForce so the root motion source is
+ * replicated by ID from the server and reconciled through the CMC saved-move system. The task
+ * owns the single authoritative timeout and the finish velocity, so the ability ends off its
+ * replicated OnTimedOut on both machines instead of a client-only wall-clock timer that could
+ * race ahead of the server and cut the dash short.
  */
 UCLASS()
 class GEOTRINITY_API UGeoDashAbility : public UGeoGameplayAbility
@@ -28,9 +30,10 @@ protected:
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
-	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
-							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
-							bool bWasCancelled) override;
+
+	/** Ends the ability when the root motion task times out (fires on both server and predicting client). */
+	UFUNCTION()
+	void OnDashFinished();
 
 	/** Dash direction: current movement direction, falling back to aim yaw when standing still. Computed once on
 	 * the activating client and carried in the payload — client and server must build identical root motion
@@ -45,8 +48,4 @@ protected:
 	/** Dash duration in seconds */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")
 	float DashDuration = 0.2f;
-
-private:
-	uint16 DashRootMotionSourceID{0};
-	FTimerHandle DashEndTimerHandle;
 };

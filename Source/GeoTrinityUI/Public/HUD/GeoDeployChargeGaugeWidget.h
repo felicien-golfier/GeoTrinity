@@ -27,6 +27,9 @@ public:
 	/** Sets the deploy ability whose charge ratio drives the ChargeBar fill. */
 	virtual void SetDeployAbility(UGeoGameplayAbility* Ability) override { DeployAbility = Ability; }
 
+	/** Syncs ChargeBar fill to the current DeployAbility charge ratio. Safe to call outside of tick. */
+	virtual void UpdateVisualChargeRatio() const override;
+
 	/** The deploy ability whose charge ratio drives the ChargeBar fill. Must be set before the widget ticks. */
 	UPROPERTY(BlueprintReadOnly, Category = "Deploy")
 	TObjectPtr<UGeoGameplayAbility> DeployAbility;

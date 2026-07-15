@@ -1,10 +1,9 @@
 ﻿#include "Characters/PlayableCharacter.h"
 
-#include "Characters/Component/ShieldBurstPassiveComponent.h"
-
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/Component/ShieldBurstPassiveComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerState.h"
@@ -47,26 +46,33 @@ void APlayableCharacter::BeginPlay()
 
 void APlayableCharacter::SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Ability, bool const bVisible)
 {
-	DeployChargeGaugeComponent->SetHiddenInGame(false);
-	GetWorld()->GetTimerManager().ClearTimer(ChargeDeployHideTimerHandle);
 
 	IGeoDeployGaugeWidgetInterface* Widget =
 		Cast<IGeoDeployGaugeWidgetInterface>(DeployChargeGaugeComponent->GetUserWidgetObject());
-	ensureMsgf(Widget, TEXT("DeployChargeGaugeComponent has no widget or wrong widget class on %s"), *GetName());
-	if (Widget)
+	if (!ensureMsgf(Widget, TEXT("DeployChargeGaugeComponent has no widget or wrong widget class on %s"), *GetName()))
 	{
-		Widget->SetDeployAbility(Ability);
+		return;
 	}
 
 	if (bVisible)
 	{
+		GetWorld()->GetTimerManager().ClearTimer(ChargeDeployHideTimerHandle);
 		DeployChargeGaugeComponent->SetHiddenInGame(false);
+		Widget->SetDeployAbility(Ability);
 	}
 	else
 	{
+		Widget->SetDeployAbility(Ability); // In case we haven't got time to enter visibility.
+		Widget->UpdateVisualChargeRatio();
+		Widget->SetDeployAbility(nullptr);
+
 		GetWorld()->GetTimerManager().SetTimer(
 			ChargeDeployHideTimerHandle,
-			FTimerDelegate::CreateWeakLambda(this, [this]() { DeployChargeGaugeComponent->SetHiddenInGame(true); }),
+			FTimerDelegate::CreateWeakLambda(this,
+											 [this]()
+											 {
+												 DeployChargeGaugeComponent->SetHiddenInGame(true);
+											 }),
 			0.15f, false);
 	}
 }
@@ -76,29 +82,32 @@ void APlayableCharacter::SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability,
 {
 	IGeoChargeBeamGaugeWidgetInterface* Widget =
 		Cast<IGeoChargeBeamGaugeWidgetInterface>(ChargeBeamGaugeComponent->GetUserWidgetObject());
+	if (!ensureMsgf(Widget, TEXT("ChargeBeamGaugeComponent has no widget or wrong widget class on %s"), *GetName()))
+	{
+		return;
+	}
 
 	if (bVisible)
 	{
 		ChargeBeamGaugeComponent->SetHiddenInGame(false);
 		GetWorld()->GetTimerManager().ClearTimer(ChargeBeamHideTimerHandle);
-		ensureMsgf(Widget, TEXT("ChargeBeamGaugeComponent has no widget or wrong widget class on %s"), *GetName());
-		if (Widget)
-		{
-			Widget->SetChargeBeamAbility(Ability);
-			Widget->SetSweetSpotRatios(SweetSpotMinRatio, SweetSpotMaxRatio);
-		}
+
+		Widget->SetChargeBeamAbility(Ability);
+		Widget->SetSweetSpotRatios(SweetSpotMinRatio, SweetSpotMaxRatio);
 	}
 	else
 	{
-		if (Widget)
-		{
-			Widget->SetChargeBeamAbility(Ability); // In case we haven't got time to enter visibility.
-			Widget->UpdateVisualChargeRatio();
-			Widget->SetChargeBeamAbility(nullptr);
-		}
+		Widget->SetChargeBeamAbility(Ability); // In case we haven't got time to enter visibility.
+		Widget->UpdateVisualChargeRatio();
+		Widget->SetChargeBeamAbility(nullptr);
+
 		GetWorld()->GetTimerManager().SetTimer(
 			ChargeBeamHideTimerHandle,
-			FTimerDelegate::CreateWeakLambda(this, [this]() { ChargeBeamGaugeComponent->SetHiddenInGame(true); }),
+			FTimerDelegate::CreateWeakLambda(this,
+											 [this]()
+											 {
+												 ChargeBeamGaugeComponent->SetHiddenInGame(true);
+											 }),
 			0.15f, false);
 	}
 }

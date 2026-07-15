@@ -11,29 +11,7 @@
 
 AGeoHealingZone::AGeoHealingZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
-	bUseRegularDrain = false;
 	SetCanBeDamaged(false);
-}
-
-void AGeoHealingZone::InitDrain()
-{
-	ensureMsgf(Data.Params.LifeDrainMaxDuration > 0.f,
-			   TEXT("HealingZone cannot have no duration. please fill your data correctly"));
-
-	if (!GeoLib::IsServer(GetWorld()))
-	{
-		return;
-	}
-
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	float const MaxHealth = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
-	ensureMsgf(MaxHealth > 0.f, TEXT("AGeoHealingZone: MaxHealth is 0 — DefaultAttributes may not be applied."));
-	if (MaxHealth <= 0.f)
-	{
-		return;
-	}
-
-	DrainMagnitudePerSecond = MaxHealth / Data.Params.LifeDrainMaxDuration;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
