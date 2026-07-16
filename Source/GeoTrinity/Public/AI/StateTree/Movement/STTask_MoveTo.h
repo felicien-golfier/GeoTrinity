@@ -40,6 +40,7 @@ struct GEOTRINITY_API FSTTask_MoveTo : public FStateTreeMoveToTask
 
 	using FInstanceDataType = FSTTask_MoveToInstanceData;
 
+	/** Declares FSTTask_MoveToInstanceData as the per-execution instance data type so StateTree allocates the correct struct for each context. */
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 
 	/** Spawns a UGeoAITask_MoveTo (nav-mesh recalculation on invalidation) and passes it the move sound + pitch curve. */
