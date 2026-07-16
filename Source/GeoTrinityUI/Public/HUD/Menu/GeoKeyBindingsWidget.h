@@ -31,6 +31,7 @@ class GEOTRINITYUI_API UGeoKeyBindingSelector : public UGeoButton
 
 public:
 	/** Stores the mapping name, slot, and device type (keyboard or gamepad) for this binding button. */
+	/** Stores the mapping name, slot, and device type for this selector so CommitKey knows which Enhanced Input binding to update. */
 	void InitBinding(FName InMappingName, EPlayerMappableKeySlot InSlot, bool bInGamepad);
 
 	/** Returns true while the selector is armed and waiting for the player to press a new key. */
