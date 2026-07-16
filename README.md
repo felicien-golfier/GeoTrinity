@@ -37,13 +37,24 @@ Work together in co-op to defeat challenging bosses by splitting and coordinatin
 
 Generate project files and build through JetBrains Rider or the command line:
 
-```bash
-# Generate project files (Windows)
-"C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\GenerateProjectFiles.bat" GeoTrinity.uproject
+Requires Unreal Engine 5.7 — either the launcher build or a source build. The `.uproject` binds to it via
+`"EngineAssociation": "5.7"`, and the build scripts resolve that per-machine, so no path needs editing.
 
-# Build from command line
-"C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" GeoTrinity Win64 Development
+```bash
+# Build (engine resolved automatically; works from any clone location)
+Tools\Build_Editor.bat       # editor — GeoTrinityEditor Win64 DebugGame
+Tools\Build_Standalone.bat   # game   — GeoTrinity Win64 Development
+Tools\Build_Package.bat      # packaged client into Build\
+
+# Generate project files — launcher installs ship no GenerateProjectFiles.bat, so use
+# UnrealVersionSelector (same as right-clicking the .uproject → "Generate Visual Studio project files")
+"C:\Program Files (x86)\Epic Games\Launcher\Engine\Binaries\Win64\UnrealVersionSelector.exe" /projectfiles "C:\GeoTrinity\GeoTrinity.uproject"
 ```
+
+> Unreal registers engines itself, so no setup is needed — the scripts find launcher installs by version and
+> source builds by reading their `Engine\Build\Build.version`.
+> The `GeoTrinityServer` dedicated-server target only builds on a machine with a **source** engine — launcher
+> installs cannot. See [`AI/Commands.md`](AI/Commands.md).
 
 ## Project Structure
 

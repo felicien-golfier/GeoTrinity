@@ -11,9 +11,12 @@
 #include "NavigationData.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-namespace
+// ---------------------------------------------------------------------------------------------------------------------
+UGeoAITask_MoveTo::UGeoAITask_MoveTo(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	constexpr float MoveSoundPitchUpdateInterval = 0.05f;
+	// UAITask_MoveTo::ResetTimers clears every timer bound to this task on each PerformMove, so the pitch cannot be
+	// driven from a world timer.
+	bTickingTask = true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -29,9 +32,31 @@ void UGeoAITask_MoveTo::PerformMove()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoAITask_MoveTo::TickTask(float DeltaTime)
+{
+	Super::TickTask(DeltaTime);
+
+	if (!MoveSoundComponent)
+	{
+		return;
+	}
+
+	MoveSoundElapsedTime += DeltaTime;
+	float const Alpha = FMath::Clamp(MoveSoundElapsedTime / MoveSoundTravelTime, 0.f, 1.f);
+	MoveSoundComponent->SetPitchMultiplier(GetMoveSoundPitch(Alpha));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoAITask_MoveTo::OnDestroy(bool bInOwnerFinished)
 {
-	StopMoveSound();
+	if (MoveSoundComponent)
+	{
+		MoveSoundComponent->Stop();
+		MoveSoundComponent = nullptr;
+	}
+
+	PlayEndSound();
+
 	Super::OnDestroy(bInOwnerFinished);
 }
 
@@ -63,56 +88,26 @@ void UGeoAITask_MoveTo::PlayMoveSound()
 		return;
 	}
 
-	MoveSoundComponent = UGameplayStatics::SpawnSoundAttached(MoveSound, Character->GetRootComponent(), NAME_None,
-	                                                          FVector::ZeroVector, EAttachLocation::KeepRelativeOffset,
-	                                                          true, 1.f, GetMoveSoundPitch(0.f));
-	if (!MoveSoundComponent)
-	{
-		return;
-	}
-
-	MoveSoundStartTime = GetWorld()->GetTimeSeconds();
-	GetWorld()->GetTimerManager().SetTimer(MoveSoundTimerHandle, this, &UGeoAITask_MoveTo::UpdateMoveSoundPitch,
-	                                        MoveSoundPitchUpdateInterval, true);
+	MoveSoundComponent =
+		UGameplayStatics::SpawnSoundAttached(MoveSound, Character->GetRootComponent(), NAME_None, FVector::ZeroVector,
+											 EAttachLocation::KeepRelativeOffset, true, 1.f, GetMoveSoundPitch(0.f));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAITask_MoveTo::UpdateMoveSoundPitch()
+void UGeoAITask_MoveTo::PlayEndSound()
 {
-	if (!MoveSoundComponent)
+	AAIController* Controller = GetAIController();
+	APawn* Pawn = Controller ? Controller->GetPawn() : nullptr;
+	if (!EndSound || !Pawn || GeoLib::IsDedicatedServer(GetWorld()))
 	{
-		StopMoveSound();
 		return;
 	}
 
-	float const Alpha = FMath::Clamp((GetWorld()->GetTimeSeconds() - MoveSoundStartTime) / MoveSoundTravelTime, 0.f, 1.f);
-	MoveSoundComponent->SetPitchMultiplier(GetMoveSoundPitch(Alpha));
-
-	// Pitch has reached the curve's end; hold it there and stop ticking. The loop plays on until the move actually
-	// finishes (OnDestroy → StopMoveSound), so a move that overruns the length/speed estimate stays audible.
-	if (Alpha >= 1.f)
-	{
-		GetWorld()->GetTimerManager().ClearTimer(MoveSoundTimerHandle);
-	}
+	UGameplayStatics::PlaySoundAtLocation(this, EndSound, Pawn->GetActorLocation());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 float UGeoAITask_MoveTo::GetMoveSoundPitch(float Alpha) const
 {
 	return PitchCurve ? PitchCurve->GetFloatValue(Alpha) : 1.f;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoAITask_MoveTo::StopMoveSound()
-{
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(MoveSoundTimerHandle);
-	}
-
-	if (MoveSoundComponent)
-	{
-		MoveSoundComponent->Stop();
-		MoveSoundComponent = nullptr;
-	}
 }

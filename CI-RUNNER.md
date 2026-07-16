@@ -30,9 +30,13 @@ Results reported back → visible in GitHub → Actions tab
 ```
 .github/
 └── workflows/
-    ├── build.yml           triggers on push to `build`        → builds Client + Dedicated Server
-    └── build-listen.yml    triggers on push to `build-listen` → builds Game target only (listen server)
+    ├── build-auto.yml     triggers on push to `build` → calls build-custom.yml with defaults
+    └── build-custom.yml   the real job: checkout → resolve engine → package client (+ server)
 ```
+
+`build-auto.yml` is a thin wrapper; every real step lives in `build-custom.yml`, which is also runnable
+by hand from **Actions → Build GeoTrinity (Custom) → Run workflow** (pick branch, config, whether to
+also build the dedicated server, and whether to clean first).
 
 The `.yml` files are the entire job definition. They tell GitHub:
 - **When** to run (`on: push: branches`)
@@ -49,7 +53,7 @@ H:\actions-runner\
 ├── bin\
 │   ├── RunnerService.exe    — the Windows service process (auto-starts on boot)
 │   └── Runner.Listener.exe  — the runner logic, spawned by the service
-└── _work\           — default job workspace (not used, we build from H:\Work\Git\GeoTrinity)
+└── _work\           — job workspace; actions/checkout puts the repo here ($env:GITHUB_WORKSPACE)
 ```
 
 `.runner` is the key file that links everything:
@@ -64,11 +68,16 @@ H:\actions-runner\
 
 ### Source Code
 
-```
-H:\Work\Git\GeoTrinity\   — the runner builds directly from this local clone
-```
+The workflow uses `actions/checkout`, so GitHub decides where the repo lives and tells the job via
+`$env:GITHUB_WORKSPACE` (in practice `H:\actions-runner\_work\GeoTrinity\GeoTrinity`).
 
-The workflow does a `git pull` here instead of a full checkout, so builds are incremental and fast.
+**No path to the repo or to the engine is written down in this repo, deliberately** — the same workflow
+has to run on any machine. The engine comes from `Tools\Resolve-Engine.ps1`, which resolves the
+`.uproject`'s `EngineAssociation` through the registry; see `AI/Commands.md`.
+
+Checkout passes `clean: false` so `Binaries\`, `Intermediate\` and `DerivedDataCache\` (all gitignored)
+survive between runs and builds stay incremental. The default `clean: true` runs `git clean -ffdx`,
+which would wipe them and turn every run into a 1-3 hour full rebuild.
 
 ---
 
@@ -100,44 +109,47 @@ No other configuration is needed — GitHub matches by repo automatically.
 
 ---
 
-## Workflow Breakdown — `build-listen.yml`
+## Workflow Breakdown — `build-custom.yml`
+
+The two steps worth understanding; the rest (notifications, optional clean, archive tidy-up) are
+straightforward. Read the file itself for the full picture.
 
 ```yaml
-on:
-  push:
-    branches: [build-listen]   # fires on every push to this branch
-  workflow_dispatch:            # or manually from GitHub UI → Actions
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          clean: false          # keep Binaries/Intermediate so builds stay incremental
 
-jobs:
-  build:
-    runs-on: self-hosted
-    timeout-minutes: 240        # UE full rebuilds can take 1-3 hours
-
-    steps:
-      - name: Pull latest
-        # Pulls the latest commits into the local source folder.
-        # GITHUB_TOKEN is injected automatically by GitHub and used for HTTPS auth.
-        # safe.directory is handled via C:\Windows\System32\config\systemprofile\.gitconfig
-        # (SYSTEM's global gitconfig) so it doesn't need to be passed here.
+      - name: Resolve engine
+        # Derives the engine from the .uproject's EngineAssociation rather than hardcoding a path,
+        # so this workflow is not tied to one machine's layout. Sets UE for the later steps.
+        # Override with the repo variable UE_ROOT if detection ever fails.
         run: |
-          "C:\Program Files\Git\cmd\git.exe" ^
-            -C "H:\Work\Git\GeoTrinity" ^
-            -c "http.https://github.com/.extraheader=Authorization: Bearer %GITHUB_TOKEN%" pull
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Game (GeoTrinity Win64 Development)
-        # Builds the Game target = listen server capable binary.
-        # GeoTrinity    → Type = TargetType.Game  (listen server)
-        # GeoTrinityServer → Type = TargetType.Server (dedicated only, not built here)
-        run: |
-          "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" ^
-            GeoTrinity Win64 Development ^
-            "H:\Work\Git\GeoTrinity\GeoTrinity.uproject" ^
-            -WaitMutex -NoHotReloadFromIDE
-        env:
-          UE_IgnoreOutdatedImportedLibraries: 1
+          $ue = & "$env:GITHUB_WORKSPACE\Tools\Resolve-Engine.ps1" -Verbose
+          "UE=$ue" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 ```
+
+**Gotcha — the runner is SYSTEM, and source builds register in HKCU.** Unreal registers a source build under
+`HKCU\SOFTWARE\Epic Games\Unreal Engine\Builds`, i.e. in the hive of whoever was logged in when it was
+registered. The service runs as `LocalSystem`, whose `HKCU` is `HKEY_USERS\S-1-5-18` — a *different* hive. So
+auto-detection can come up empty here even though the engine is plainly registered for the desktop user, and
+it would then fall back to a launcher install (which cannot build the dedicated server) or fail outright.
+
+Run this once on the runner box, from an elevated prompt, in the desktop session where the source engine is
+registered. It auto-detects that engine, copies the answer into a machine-wide `UE` variable that SYSTEM
+*can* read (the resolver honours it as an override), and restarts the runner service so it picks it up:
+
+```powershell
+.\Tools\Setup-Runner.ps1                              # or -EngineRoot "H:\Epic\UE_5.7" to pin one
+.\Tools\Setup-Runner.ps1 -WhatIf                      # preview, changes nothing
+```
+
+It warns if the engine it finds is a launcher install, since `build_server: true` would then fail. No path
+goes into the repo — it stays on the machine it describes.
+
+Alternative, if you would rather configure it from GitHub: set the repo variable `UE_ROOT`
+(Settings → Secrets and variables → Actions); the workflow passes it to the resolver as `-Override`.
 
 ---
 
@@ -149,8 +161,13 @@ jobs:
 | `Source/GeoTrinityServer.Target.cs` | `TargetType.Server` | Dedicated server only |
 | `Source/GeoTrinityEditor.Target.cs` | `TargetType.Editor` | Editor only |
 
-`build-listen.yml` builds `GeoTrinity` (Game).  
-`build.yml` builds both `GeoTrinity` (Game) and `GeoTrinityServer` (Dedicated).
+`build-custom.yml` always packages `GeoTrinity` (Game), and adds `GeoTrinityServer` (Dedicated) when the
+`build_server` input is true.
+
+**Only this runner can build the dedicated server.** `GeoTrinityServer` links against engine libs that
+launcher installs do not ship (they carry `UnrealEditor` and `UnrealGame` only — no `UnrealServer`), so it
+needs the source engine that lives on this machine. The main dev PC has a launcher install and cannot do
+it; `Tools\Build_Server.bat` there detects that and says so.
 
 ---
 
@@ -159,16 +176,16 @@ jobs:
 ### Option A — Push to the trigger branch
 
 ```bash
-# From H:\Work\Git\GeoTrinity
-git checkout build-listen
+git checkout build
 git merge master              # bring in latest changes
-git push origin build-listen
+git push origin build         # fires build-auto.yml -> build-custom.yml
 git checkout master           # return to normal work
 ```
 
 ### Option B — GitHub UI
 
-Go to **GitHub → Actions → Build GeoTrinity (Listen Server) → Run workflow**.
+**GitHub → Actions → Build GeoTrinity (Custom) → Run workflow**, then pick branch, config, and whether to
+build the dedicated server.
 
 ---
 
@@ -176,7 +193,8 @@ Go to **GitHub → Actions → Build GeoTrinity (Listen Server) → Run workflow
 
 | Issue | Cause | Fix applied |
 |---|---|---|
-| `git pull` exits 128 instantly | Git 2.36+ rejects repos owned by a different user when run as SYSTEM | `safe.directory = *` written to `C:\Windows\System32\config\systemprofile\.gitconfig` (SYSTEM's global gitconfig) |
-| `git pull` auth failure | SYSTEM has no stored HTTPS credentials for GitHub | `GITHUB_TOKEN` passed as HTTP header |
+| Source engine invisible to CI | Unreal registers source builds under `HKCU`; the runner is a service running as SYSTEM, whose `HKCU` is `HKEY_USERS\S-1-5-18` — a different hive from the desktop user's | `Tools\Setup-Runner.ps1` (elevated), or the repo variable `UE_ROOT` |
+| `git pull` exits 128 instantly | Git 2.36+ rejects repos owned by a different user when run as SYSTEM | `safe.directory = *` written to `C:\Windows\System32\config\systemprofile\.gitconfig` (SYSTEM's global gitconfig). *Historical — the workflow now uses `actions/checkout`, which handles this itself. The setting is harmless and still in place.* |
+| `git pull` auth failure | SYSTEM has no stored HTTPS credentials for GitHub | `GITHUB_TOKEN` passed as HTTP header. *Historical — `actions/checkout` now handles auth.* |
 | Windows service wouldn't start | `ImagePath` in registry had 3 corrupt trailing characters | Fixed registry key directly |
 | `.service` file missing | File was absent so runner reported `IsServiceConfigured: False` | Created `H:\actions-runner\.service` |

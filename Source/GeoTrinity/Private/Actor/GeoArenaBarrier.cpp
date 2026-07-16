@@ -8,6 +8,8 @@
 AGeoArenaBarrier::AGeoArenaBarrier()
 {
 	bReplicates = true;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 }
 
 void AGeoArenaBarrier::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -18,19 +20,13 @@ void AGeoArenaBarrier::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void AGeoArenaBarrier::BeginPlay()
 {
 	Super::BeginPlay();
-	TickLerp();
+	SetActorTickEnabled(true);
 }
 
 void AGeoArenaBarrier::SetClosed(bool bNewClosed)
 {
 	bIsClosed = bNewClosed;
 	OnRep_bIsClosed();
-	OnBarrierStateChanged(bIsClosed);
-}
-
-void AGeoArenaBarrier::OnBarrierStateChanged_Implementation(bool bClosed)
-{
-	TickLerp();
 }
 
 void AGeoArenaBarrier::CaptureFightOnTransforms()
@@ -79,20 +75,22 @@ void AGeoArenaBarrier::SetToFightOffTransforms()
 
 void AGeoArenaBarrier::OnRep_bIsClosed()
 {
+	SetActorTickEnabled(true);
 	OnBarrierStateChanged(bIsClosed);
 }
 
-void AGeoArenaBarrier::TickLerp()
+void AGeoArenaBarrier::Tick(float DeltaSeconds)
 {
-	float LerpDuration = GetWorld()->GetGameStateChecked<AGeoGameState>()->CommitFightTime;
-	float const Step = LerpDuration > 0.0f ? GetWorld()->GetDeltaSeconds() / LerpDuration : 1.0f;
+	Super::Tick(DeltaSeconds);
+
+	float const LerpDuration = GetWorld()->GetGameStateChecked<AGeoGameState>()->CommitFightTime;
+	float const Step = LerpDuration > 0.0f ? DeltaSeconds / LerpDuration : 1.0f;
 	LerpAlpha = FMath::Clamp(LerpAlpha + (bIsClosed ? Step : -Step), 0.0f, 1.0f);
 
 	for (FBarrierAnimatedActor const& AnimatedActor : AnimatedActors)
 	{
-		if (!AnimatedActor.Actor)
+		if (!ensureMsgf(AnimatedActor.Actor, TEXT("AGeoArenaBarrier: AnimatedActors entry has no Actor assigned.")))
 		{
-			ensureMsgf(AnimatedActor.Actor, TEXT("AGeoArenaBarrier: AnimatedActors entry has no Actor assigned."));
 			continue;
 		}
 
@@ -102,8 +100,8 @@ void AGeoArenaBarrier::TickLerp()
 		AnimatedActor.Actor->SetActorTransform(LerpedTransform);
 	}
 
-	if ((bIsClosed && LerpAlpha <= 1.0f) || (!bIsClosed && LerpAlpha >= 0.0f))
+	if (bIsClosed ? LerpAlpha >= 1.0f : LerpAlpha <= 0.0f)
 	{
-		GetWorldTimerManager().SetTimerForNextTick(this, &AGeoArenaBarrier::TickLerp);
+		SetActorTickEnabled(false);
 	}
 }

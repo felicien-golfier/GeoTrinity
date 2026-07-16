@@ -5,6 +5,7 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
+#include "Settings/GameDataSettings.h"
 #include "StructUtils/InstancedStruct.h"
 #include "Tool/Team.h"
 
@@ -203,15 +204,35 @@ protected:
 	float DrainMagnitudePerSecond = 0.f;
 
 	UFUNCTION()
-	bool HasSpawnGameplayCueTag() const { return SpawnGameplayCueTag.IsValid(); }
+	bool HasSpawnGameplayCueTag() const
+	{
+		return SpawnGameplayCueTag.IsValid()
+			&& SpawnGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
+	}
 	UFUNCTION()
-	bool HasRecallGameplayCueTag() const { return RecallGameplayCueTag.IsValid(); }
+	bool HasRecallGameplayCueTag() const
+	{
+		return RecallGameplayCueTag.IsValid()
+			&& RecallGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
+	}
 	UFUNCTION()
-	bool HasBlinkingGameplayCueTag() const { return BlinkingGameplayCueTag.IsValid(); }
+	bool HasBlinkingGameplayCueTag() const
+	{
+		return BlinkingGameplayCueTag.IsValid()
+			&& BlinkingGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
+	}
 	UFUNCTION()
-	bool HasExplodeGameplayCueTag() const { return ExplodeGameplayCueTag.IsValid(); }
+	bool HasExplodeGameplayCueTag() const
+	{
+		return ExplodeGameplayCueTag.IsValid()
+			&& ExplodeGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
+	}
 	UFUNCTION()
-	bool HasExpireGameplayCueTag() const { return ExpireGameplayCueTag.IsValid(); }
+	bool HasExpireGameplayCueTag() const
+	{
+		return ExpireGameplayCueTag.IsValid()
+			&& ExpireGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
+	}
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag SpawnGameplayCueTag;

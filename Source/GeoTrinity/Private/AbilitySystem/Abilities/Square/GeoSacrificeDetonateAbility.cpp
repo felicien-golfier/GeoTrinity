@@ -60,7 +60,8 @@ void UGeoSacrificeDetonateAbility::Detonate(FGeoAbilityTargetData const& Ability
 	if (GeoLib::IsServer(GetWorld()))
 	{
 		FDamageEffectData DamageEffect;
-		DamageEffect.DamageAmount = FScalableFloat(BaseDamage.GetValueAtLevel(GetAbilityLevel()) + SacrificeValue);
+		DamageEffect.DamageAmount =
+			FScalableFloat(BaseDamage.GetValueAtLevel(GetAbilityLevel()) + SacrificeValue * SacrificeValueMultiplier);
 		for (AActor* Target : GeoASLib::GetInteractableActorsInLine(
 				 this, GeoASLib::GetTeamId(StoredPayload.Instigator), TeamAttitudeMask::Hostile, true,
 				 AbilityTargetData.Origin, ForwardVector, MaxRange, LineHalfWidth))

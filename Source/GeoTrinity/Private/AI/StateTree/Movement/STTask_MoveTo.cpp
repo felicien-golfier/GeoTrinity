@@ -21,6 +21,7 @@ UAITask_MoveTo* FSTTask_MoveTo::PrepareMoveToTask(FStateTreeExecutionContext& Co
 
 	MoveTask->MoveSound = InstanceData.MoveSound;
 	MoveTask->PitchCurve = InstanceData.MovePitchCurve;
+	MoveTask->EndSound = InstanceData.MoveEndSound;
 	MoveTask->SetUp(&Controller, MoveRequest);
 	return MoveTask;
 }

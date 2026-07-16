@@ -42,6 +42,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat BaseDamage;
 
+	/** Flat damage added to the consumed SacrificeValue. Scales with ability level. */
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	float SacrificeValueMultiplier = .7f;
+
 	/** Local cue fired on detonation (endpoint in Location, aim direction in Normal, value in RawMagnitude). */
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag FireGameplayCueTag;

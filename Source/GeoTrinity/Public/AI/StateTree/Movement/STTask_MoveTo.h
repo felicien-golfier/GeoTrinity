@@ -26,12 +26,16 @@ struct GEOTRINITY_API FSTTask_MoveToInstanceData : public FStateTreeMoveToTaskIn
 	/** Pitch multiplier for MoveSound sampled at the 0..1 move progress (X=0 start, X=1 arrival). Pitch stays 1 when unset. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	TObjectPtr<UCurveFloat> MovePitchCurve;
+
+	/** One-shot sound played at the pawn when the move ends, whether it arrived or was interrupted. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	TObjectPtr<USoundBase> MoveEndSound;
 };
 
 /**
  * StateTree Move To task that replans around dynamic obstacles (e.g. pillars) when the nav mesh changes.
  * Uses UGeoAITask_MoveTo instead of the base UAITask_MoveTo to enable path recalculation on invalidation,
- * and forwards MoveSound / MovePitchCurve to it so the enemy plays a distance-scaled move sound.
+ * and forwards MoveSound / MovePitchCurve / MoveEndSound to it so the enemy plays a distance-scaled move sound.
  */
 USTRUCT(DisplayName = "Move To (Geo)", Category = "GeoTrinity|AI")
 struct GEOTRINITY_API FSTTask_MoveTo : public FStateTreeMoveToTask
@@ -42,7 +46,7 @@ struct GEOTRINITY_API FSTTask_MoveTo : public FStateTreeMoveToTask
 
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 
-	/** Spawns a UGeoAITask_MoveTo (nav-mesh recalculation on invalidation) and passes it the move sound + pitch curve. */
+	/** Spawns a UGeoAITask_MoveTo (nav-mesh recalculation on invalidation) and passes it the move sounds + pitch curve. */
 	virtual UAITask_MoveTo* PrepareMoveToTask(FStateTreeExecutionContext& Context, AAIController& Controller,
 	                                          UAITask_MoveTo* ExistingTask, FAIMoveRequest& MoveRequest) const override;
 };

@@ -10,12 +10,26 @@ Everything needed to **package** GeoTrinity (cook + stage + pak + archive into a
 ## Packaging (cook + stage + pak + archive)
 **Always archive packaged builds into `C:\GeoTrinity\Build` — never `Packaged` or any other folder.**
 
-Always use the **source** engine's BatchFiles (`C:\UnrealEngine\Engine\...`), never the launcher path.
+**Never hardcode an engine path** — it differs per machine (launcher install on the dev PC, source build on the
+CI box). Use the wrapper, which resolves it from the `.uproject`'s `EngineAssociation`:
 
 ```bash
-# Listen-server-capable standalone client (boots MainMenu → Play Local → Host = listen server)
-"C:\UnrealEngine\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="C:\GeoTrinity\GeoTrinity.uproject" -noP4 -platform=Win64 -clientconfig=Development -cook -build -stage -pak -archive -archivedirectory="C:\GeoTrinity\Build"
+Tools\Build_Package.bat
 ```
+
+Or resolve it yourself (the path has spaces — **keep it quoted**):
+
+```powershell
+$ue = & Tools\Resolve-Engine.ps1
+& "$ue\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="C:\GeoTrinity\GeoTrinity.uproject" -noP4 -platform=Win64 -clientconfig=Development -cook -build -stage -pak -archive -archivedirectory="C:\GeoTrinity\Build"
+```
+
+Client packaging (`Development`, `DebugGame`, `Shipping`) works from a launcher install — it ships the
+precompiled `UnrealGame` engine libs those configs link against.
+
+**A dedicated-server package needs a source engine**: launcher installs ship no `UnrealServer` libs and no
+launcher option adds them, so `-server` / `-serverconfig` fails there. The dev PC has a launcher install, so
+package the server on CI — run the **Build GeoTrinity (Custom)** workflow with `build_server: true`.
 
 - Output initially lands in `C:\GeoTrinity\Build\Windows`. After a successful build, rename and reorganise to match the CI convention (see `.github/workflows/build-custom.yml`):
   - Rename `C:\GeoTrinity\Build` → `C:\GeoTrinity\Build\GeoTrinity_{branch}_{config}_{timestamp}` (branch from `git rev-parse --abbrev-ref HEAD`, `/`→`-`; timestamp `yyyyMMdd_HHmmss`; config = `Development` unless specified)
