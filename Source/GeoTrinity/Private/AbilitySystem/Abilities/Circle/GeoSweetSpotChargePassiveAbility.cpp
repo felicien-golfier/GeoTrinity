@@ -13,41 +13,22 @@ UGeoSweetSpotChargePassiveAbility::UGeoSweetSpotChargePassiveAbility()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-UGeoSweetSpotChargePassiveAbility const* UGeoSweetSpotChargePassiveAbility::FindOnASC(UAbilitySystemComponent const& ASC)
-{
-	for (FGameplayAbilitySpec const& Spec : ASC.GetActivatableAbilities())
-	{
-		if (UGeoSweetSpotChargePassiveAbility const* Passive = Cast<UGeoSweetSpotChargePassiveAbility>(Spec.Ability))
-		{
-			return Passive;
-		}
-	}
-	return nullptr;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 float UGeoSweetSpotChargePassiveAbility::GetGaugeRatio(UAbilitySystemComponent const& ASC) const
 {
-	float const StartTime = ASC.GetNumericAttribute(UCharacterAttributeSet::GetHealChargeStartTimeAttribute());
-	if (StartTime <= 0.f)
-	{
-		return 0.f;
-	}
-	float const Elapsed = ASC.GetActiveGameplayEffects().GetServerWorldTime() - StartTime;
-	return FMath::Clamp(Elapsed / ChargeDuration, 0.f, 1.f);
+	float const HealCharge = ASC.GetNumericAttribute(UCharacterAttributeSet::GetHealChargeAttribute());
+	return FMath::Clamp(HealCharge / HealRequiredForFullCharge, 0.f, 1.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float UGeoSweetSpotChargePassiveAbility::GetBoostDamage(UAbilitySystemComponent const& ASC) const
+float UGeoSweetSpotChargePassiveAbility::GetHealsToDamageMultiplier(float const SweetSpotPrecision) const
 {
-	return HealToDamageRatio * ASC.GetNumericAttribute(UCharacterAttributeSet::GetHealChargeAttribute());
+	return FMath::Lerp(EdgeDamageMultiplierBoost, CenterDamageMultiplierBoost, SweetSpotPrecision);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoSweetSpotChargePassiveAbility::ConsumeGauge(UAbilitySystemComponent& ASC) const
 {
 	ASC.SetNumericAttributeBase(UCharacterAttributeSet::GetHealChargeAttribute(), 0.f);
-	ASC.SetNumericAttributeBase(UCharacterAttributeSet::GetHealChargeStartTimeAttribute(), 0.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -99,19 +80,8 @@ void UGeoSweetSpotChargePassiveAbility::OnHealProvidedCallback(float HealDone)
 		return;
 	}
 
-	float const Now = SourceASC->GetActiveGameplayEffects().GetServerWorldTime();
-	float const StartTime = SourceASC->GetNumericAttribute(UCharacterAttributeSet::GetHealChargeStartTimeAttribute());
-	if (StartTime <= 0.f)
-	{
-		SourceASC->SetNumericAttributeBase(UCharacterAttributeSet::GetHealChargeStartTimeAttribute(), Now);
-	}
-	else if (Now - StartTime >= ChargeDuration)
-	{
-		// Window elapsed: the gauge holds its recorded healing until a sweet-spot release consumes it.
-		return;
-	}
-
 	SourceASC->SetNumericAttributeBase(
 		UCharacterAttributeSet::GetHealChargeAttribute(),
-		SourceASC->GetNumericAttribute(UCharacterAttributeSet::GetHealChargeAttribute()) + HealDone);
+		FMath::Min(SourceASC->GetNumericAttribute(UCharacterAttributeSet::GetHealChargeAttribute()) + HealDone,
+				   HealRequiredForFullCharge));
 }

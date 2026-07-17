@@ -60,17 +60,12 @@ public:
 	FGameplayAttributeData SacrificeValue;
 	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, SacrificeValue)
 
-	/** Circle: healing recorded during the sweet-spot passive's charge window, converted to damage by a full-gauge
-	 * sweet-spot release of the charge beam. */
+	/** Circle: healing recorded since the sweet-spot passive's gauge was last consumed; a full gauge grants the charge
+	 * beam's next sweet-spot release the passive's damage-multiplier boost. Replicated so the HUD status-bar gauge shows
+	 * the fill. */
 	UPROPERTY(BlueprintReadOnly, Category = "HealCharge", ReplicatedUsing = OnRep_HealCharge)
 	FGameplayAttributeData HealCharge;
 	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, HealCharge)
-
-	/** Circle: server world time when the sweet-spot passive's charge window started (0 = idle). Replicated so the HUD
-	 * status-bar gauge can display the time-based fill. */
-	UPROPERTY(BlueprintReadOnly, Category = "HealCharge", ReplicatedUsing = OnRep_HealChargeStartTime)
-	FGameplayAttributeData HealChargeStartTime;
-	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, HealChargeStartTime)
 
 protected:
 	UFUNCTION()
@@ -93,6 +88,4 @@ protected:
 	void OnRep_SacrificeValue(FGameplayAttributeData const& OldSacrificeValue);
 	UFUNCTION()
 	void OnRep_HealCharge(FGameplayAttributeData const& OldHealCharge);
-	UFUNCTION()
-	void OnRep_HealChargeStartTime(FGameplayAttributeData const& OldHealChargeStartTime);
 };

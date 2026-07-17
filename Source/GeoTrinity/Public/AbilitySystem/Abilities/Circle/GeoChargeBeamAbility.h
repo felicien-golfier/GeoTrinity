@@ -33,9 +33,8 @@ protected:
 	/**
 	 * Appends a FContextDamageMultiplierEffectData entry to the base effect array.
 	 * Non-sweet-spot: multiplier lerped from MinDamageMultiplier to MaxDamageMultiplier by charge ratio.
-	 * Sweet-spot: SweetSpotDamageMultiplier used instead; when the sweet-spot charge passive's gauge is full, the base
-	 * damage entries are replaced by the passive's GetBoostDamage (healing recorded during the charge window) and the
-	 * multiplier drops to 1.
+	 * Sweet-spot: SweetSpotDamageMultiplier used instead; when the sweet-spot charge passive's gauge is full, the
+	 * passive's GetHealsToDamageMultiplier boost (lerped by GetSweetSpotPrecision) is added on top of it.
 	 */
 	virtual TArray<TInstancedStruct<FEffectData>> GetEffectDataArray() const override;
 
@@ -44,6 +43,11 @@ protected:
 
 	/** Returns true when the stored charge ratio falls within the sweet-spot window. */
 	bool IsSweetSpotRelease() const;
+
+	/** Returns how close the stored charge ratio is to the sweet-spot center: 1 at dead center, 0 at the window edges.
+	 */
+	float GetSweetSpotPrecision() const;
+
 	/** Fires FireGameplayCueTag on the locally-controlled client, encoding the beam endpoint, charge ratio, and
 	 * sweet-spot flag into cue params. */
 	void FireGameplayCue(FGeoAbilityTargetData const& AbilityTargetData);

@@ -24,6 +24,9 @@ namespace
 {
 	FName const DepletionFillParam(TEXT("Fill"));
 	FLinearColor const GaugeEmptyTint(0.2f, 0.2f, 0.2f, 1.f);
+	// Slate clamps each channel after the tint multiply, so an over-1 tint whites the icon out toward FullColor — the
+	// closest UMG gets to an emissive shine.
+	float constexpr GaugeFullEmissiveBoost = 10.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -194,12 +197,14 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			CountTexts[Index]->SetText(FText::AsNumber(Entry.Count));
 		}
 
-		// Gauge entries fill bottom-to-top with FillRatio and tint FullColor once full; regular effect entries
-		// deplete with TimeRemaining.
+		// Gauge entries fill bottom-to-top with FillRatio in the icon's own colors and shine emissive FullColor once
+		// full; regular effect entries deplete with TimeRemaining.
 		if (GaugeBars[Index])
 		{
 			GaugeBars[Index]->SetPercent(FMath::Clamp(Entry.FillRatio, 0.f, 1.f));
-			GaugeBars[Index]->SetFillColorAndOpacity(Entry.FillRatio >= 1.f ? Entry.FullColor : FLinearColor::White);
+			GaugeBars[Index]->SetFillColorAndOpacity(
+				Entry.FillRatio >= 1.f ? (Entry.FullColor * GaugeFullEmissiveBoost).CopyWithNewOpacity(1.f)
+									   : FLinearColor::White);
 		}
 		else if (DepletionSweepMIDs[Index])
 		{

@@ -9,8 +9,8 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
-#include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemInterface.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
@@ -136,7 +136,8 @@ TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
 		}
 	}
 
-	UGeoSweetSpotChargePassiveAbility const* SweetSpotPassive = UGeoSweetSpotChargePassiveAbility::FindOnASC(*ASC);
+	UGeoSweetSpotChargePassiveAbility const* SweetSpotPassive =
+		GeoASLib::GetGrantedAbility<UGeoSweetSpotChargePassiveAbility>(*ASC);
 	if (SweetSpotPassive && SweetSpotPassive->GetGaugeIcon())
 	{
 		FGeoActiveEffectIcon& Entry = Entries.AddDefaulted_GetRef();
@@ -537,33 +538,33 @@ void AGeoHUD::SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocatio
 #if !UE_BUILD_SHIPPING
 namespace
 {
-// Compact display so the panel stays narrow once totals grow.
-FText CompactNumber(float const Value)
-{
-	return FText::FromString(Value >= 1000.f ? FString::Printf(TEXT("%.1fk"), Value / 1000.f)
-											 : FString::Printf(TEXT("%.0f"), Value));
-}
-
-struct FPlayerClassStyle
-{
-	TCHAR const* Label;
-	FLinearColor Color;
-};
-
-FPlayerClassStyle GetPlayerClassStyle(EPlayerClass const PlayerClass)
-{
-	switch (PlayerClass)
+	// Compact display so the panel stays narrow once totals grow.
+	FText CompactNumber(float const Value)
 	{
-	case EPlayerClass::Triangle:
-		return {TEXT("Tri"), FLinearColor(1.f, 0.35f, 0.35f, 1.f)};
-	case EPlayerClass::Circle:
-		return {TEXT("Cir"), FLinearColor(0.35f, 1.f, 0.35f, 1.f)};
-	case EPlayerClass::Square:
-		return {TEXT("Sqr"), FLinearColor(0.45f, 0.65f, 1.f, 1.f)};
-	default:
-		return {TEXT("?"), FLinearColor::White};
+		return FText::FromString(Value >= 1000.f ? FString::Printf(TEXT("%.1fk"), Value / 1000.f)
+												 : FString::Printf(TEXT("%.0f"), Value));
 	}
-}
+
+	struct FPlayerClassStyle
+	{
+		TCHAR const* Label;
+		FLinearColor Color;
+	};
+
+	FPlayerClassStyle GetPlayerClassStyle(EPlayerClass const PlayerClass)
+	{
+		switch (PlayerClass)
+		{
+		case EPlayerClass::Triangle:
+			return {TEXT("Tri"), FLinearColor(1.f, 0.35f, 0.35f, 1.f)};
+		case EPlayerClass::Circle:
+			return {TEXT("Cir"), FLinearColor(0.35f, 1.f, 0.35f, 1.f)};
+		case EPlayerClass::Square:
+			return {TEXT("Sqr"), FLinearColor(0.45f, 0.65f, 1.f, 1.f)};
+		default:
+			return {TEXT("?"), FLinearColor::White};
+		}
+	}
 } // namespace
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -586,8 +587,8 @@ void AGeoHUD::UpdateCombatStatsPanel()
 {
 	AGameStateBase const* GameState = GetWorld()->GetGameState();
 	UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
-	bool const bShow = UGeoCombatStatsSubsystem::IsDebugDisplayEnabled() && Viewport && GameState
-					   && !GameState->PlayerArray.IsEmpty();
+	bool const bShow =
+		UGeoCombatStatsSubsystem::IsDebugDisplayEnabled() && Viewport && GameState && !GameState->PlayerArray.IsEmpty();
 	if (!bShow)
 	{
 		RemoveCombatStatsPanel();
@@ -608,12 +609,11 @@ void AGeoHUD::UpdateCombatStatsPanel()
 
 	auto MakeCell = [&StatsFont](float const Width, TAttribute<FText> Text, TAttribute<FSlateColor> Color)
 	{
-		return SNew(SBox).WidthOverride(Width)
-			[SNew(STextBlock)
-				 .Text(MoveTemp(Text))
-				 .ColorAndOpacity(MoveTemp(Color))
-				 .Font(StatsFont)
-				 .OverflowPolicy(ETextOverflowPolicy::Ellipsis)];
+		return SNew(SBox).WidthOverride(Width)[SNew(STextBlock)
+												   .Text(MoveTemp(Text))
+												   .ColorAndOpacity(MoveTemp(Color))
+												   .Font(StatsFont)
+												   .OverflowPolicy(ETextOverflowPolicy::Ellipsis)];
 	};
 
 	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
@@ -650,9 +650,9 @@ void AGeoHUD::UpdateCombatStatsPanel()
 				{
 					return FText::GetEmpty();
 				}
-				return FText::FromString(FString::Printf(
-					TEXT("[%s] %s"), GetPlayerClassStyle(WeakPlayerState->GetPlayerClass()).Label,
-					*WeakPlayerState->GetPlayerName()));
+				return FText::FromString(FString::Printf(TEXT("[%s] %s"),
+														 GetPlayerClassStyle(WeakPlayerState->GetPlayerClass()).Label,
+														 *WeakPlayerState->GetPlayerName()));
 			});
 
 		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox);
@@ -678,17 +678,15 @@ void AGeoHUD::UpdateCombatStatsPanel()
 	CombatStatsRowCount = GameState->PlayerArray.Num();
 
 	// Anchored top-right, below the boss health bar which hugs the top edge of the screen.
-	TSharedRef<SConstraintCanvas> Panel =
-		SNew(SConstraintCanvas)
+	TSharedRef<SConstraintCanvas> Panel = SNew(SConstraintCanvas)
 		+ SConstraintCanvas::Slot()
 			  .Anchors(FAnchors(1.f, 0.08f))
 			  .Alignment(FVector2D(1.f, 0.f))
 			  .Offset(FMargin(-12.f, 0.f, 0.f, 0.f))
-			  .AutoSize(true)
-				  [SNew(SBorder)
-					   .BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					   .BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.65f))
-					   .Padding(FMargin(6.f, 4.f))[Rows]];
+			  .AutoSize(true)[SNew(SBorder)
+								  .BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								  .BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.65f))
+								  .Padding(FMargin(6.f, 4.f))[Rows]];
 
 	Viewport->AddViewportWidgetContent(Panel);
 	CombatStatsPanel = Panel;

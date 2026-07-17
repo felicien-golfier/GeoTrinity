@@ -19,7 +19,6 @@ void UCharacterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, RotationSpeedMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, SacrificeValue, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, HealCharge, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, HealChargeStartTime, COND_None, REPNOTIFY_Always);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -80,10 +79,4 @@ void UCharacterAttributeSet::OnRep_SacrificeValue(FGameplayAttributeData const& 
 void UCharacterAttributeSet::OnRep_HealCharge(FGameplayAttributeData const& OldHealCharge)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, HealCharge, OldHealCharge);
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void UCharacterAttributeSet::OnRep_HealChargeStartTime(FGameplayAttributeData const& OldHealChargeStartTime)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, HealChargeStartTime, OldHealChargeStartTime);
 }

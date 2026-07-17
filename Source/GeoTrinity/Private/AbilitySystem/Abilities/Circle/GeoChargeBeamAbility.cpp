@@ -54,6 +54,18 @@ bool UGeoChargeBeamAbility::IsSweetSpotRelease() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+float UGeoChargeBeamAbility::GetSweetSpotPrecision() const
+{
+	float const HalfWidth = (SweetSpotMaxRatio - SweetSpotMinRatio) * 0.5f;
+	if (HalfWidth <= 0.f)
+	{
+		return 1.f;
+	}
+	float const Center = (SweetSpotMinRatio + SweetSpotMaxRatio) * 0.5f;
+	return FMath::Clamp(1.f - FMath::Abs(GetStoredChargeRatio() - Center) / HalfWidth, 0.f, 1.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 TArray<TInstancedStruct<FEffectData>> UGeoChargeBeamAbility::GetEffectDataArray() const
 {
 	TArray<TInstancedStruct<FEffectData>> Effects = Super::GetEffectDataArray();
@@ -67,19 +79,10 @@ TArray<TInstancedStruct<FEffectData>> UGeoChargeBeamAbility::GetEffectDataArray(
 		{
 			UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
 			UGeoSweetSpotChargePassiveAbility const* Passive =
-				ASC ? UGeoSweetSpotChargePassiveAbility::FindOnASC(*ASC) : nullptr;
+				ASC ? GeoASLib::GetGrantedAbility<UGeoSweetSpotChargePassiveAbility>(*ASC) : nullptr;
 			if (Passive && Passive->GetGaugeRatio(*ASC) >= 1.f)
 			{
-				// Full gauge: the release's damage comes solely from the healing the passive recorded.
-				MultiplierValue = 1.f;
-				FScalableFloat const BoostDamage(Passive->GetBoostDamage(*ASC));
-				for (TInstancedStruct<FEffectData>& Effect : Effects)
-				{
-					if (FDamageEffectData* DamageEffect = Effect.GetMutablePtr<FDamageEffectData>())
-					{
-						DamageEffect->DamageAmount = BoostDamage;
-					}
-				}
+				MultiplierValue += Passive->GetHealsToDamageMultiplier(GetSweetSpotPrecision());
 			}
 		}
 	}
@@ -160,7 +163,8 @@ void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTarge
 	}
 
 	// A sweet-spot release spends the full gauge whether or not it hit anything — the boosted beam was fired.
-	UGeoSweetSpotChargePassiveAbility const* Passive = UGeoSweetSpotChargePassiveAbility::FindOnASC(*SourceASC);
+	UGeoSweetSpotChargePassiveAbility const* Passive =
+		GeoASLib::GetGrantedAbility<UGeoSweetSpotChargePassiveAbility>(*SourceASC);
 	if (IsSweetSpotRelease() && Passive && Passive->GetGaugeRatio(*SourceASC) >= 1.f)
 	{
 		Passive->ConsumeGauge(*SourceASC);

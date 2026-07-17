@@ -33,5 +33,4 @@ Lives on `AGeoPlayerState` alongside the ASC.
 | `MovementSpeedMultiplier` | Read by `UGeoCharacterMovementComponent::ApplySpeedMultiplier()` |
 | `RotationSpeedMultiplier` | Read by `APlayableCharacter::UpdateAimRotation()` |
 | `SacrificeValue` | Damage captured by the Square's sacrifice channel, consumed by the sacrifice detonation. Replicated for HUD display; zeroed on death (`DeathLogic`) |
-| `HealCharge` | Healing recorded during the Circle's `GeoSweetSpotChargePassiveAbility` charge window, converted to damage by a full-gauge sweet-spot release of the charge beam |
-| `HealChargeStartTime` | Server world time when the passive's charge window started (0 = idle). Replicated so the HUD status-bar gauge shows the time-based fill |
+| `HealCharge` | Healing recorded since the Circle's `GeoSweetSpotChargePassiveAbility` gauge was last consumed; a full gauge grants the charge beam's next sweet-spot release the passive's damage-multiplier boost. Replicated for HUD gauge display |

@@ -35,6 +35,7 @@
 
 **Ability CDO:**
 - `GetAbilityCDO<T>(ASC, Tag)` — get ability CDO by gameplay tag (for reading config values)
+- `GetGrantedAbility<T>(ASC)` — first granted ability on ASC that is a T (e.g. resolving a class passive); nullptr when none
 
 ---
 

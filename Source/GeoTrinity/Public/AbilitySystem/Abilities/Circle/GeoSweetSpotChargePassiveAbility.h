@@ -11,12 +11,12 @@ class UTexture2D;
 
 /**
  * Passive ability for the Circle player.
- * Listens to OnHealProvided on the owner's ASC (server). The first heal after the gauge was last consumed starts a
- * charge window of ChargeDuration seconds (start stored in the HealChargeStartTime attribute); healing done during the
- * window accumulates into the HealCharge attribute while the HUD status-bar gauge fills bottom-to-top with elapsed
- * time. Once the window elapses the gauge is full (tinted GaugeFullColor) and the next charge-beam sweet-spot release
- * deals HealToDamageRatio × HealCharge damage instead of its base damage, then consumes the gauge
- * (UGeoChargeBeamAbility::DealDamage → ConsumeGauge).
+ * Listens to OnHealProvided on the owner's ASC (server): every heal provided accumulates into the HealCharge attribute
+ * (capped at HealRequiredForFullCharge) while the HUD status-bar gauge fills bottom-to-top. Once the cap is reached
+ * the gauge is full (shining GaugeFullColor) and the next charge-beam sweet-spot release adds
+ * GetHealsToDamageMultiplier to its damage multiplier: a boost lerped from EdgeDamageMultiplierBoost to
+ * CenterDamageMultiplierBoost by how close the release lands to the sweet-spot center. The release then consumes the
+ * gauge (UGeoChargeBeamAbility::DealDamage → ConsumeGauge).
  */
 UCLASS()
 class GEOTRINITY_API UGeoSweetSpotChargePassiveAbility : public UGeoGameplayAbility
@@ -26,16 +26,14 @@ class GEOTRINITY_API UGeoSweetSpotChargePassiveAbility : public UGeoGameplayAbil
 public:
 	UGeoSweetSpotChargePassiveAbility();
 
-	/** Returns the granted passive on ASC, or nullptr when the owner doesn't have it (non-Circle players). */
-	static UGeoSweetSpotChargePassiveAbility const* FindOnASC(UAbilitySystemComponent const& ASC);
-
-	/** Returns the gauge fill (0–1): time elapsed since the charge window started over ChargeDuration; 0 while idle. */
+	/** Returns the gauge fill (0–1): recorded HealCharge over HealRequiredForFullCharge, clamped. */
 	float GetGaugeRatio(UAbilitySystemComponent const& ASC) const;
 
-	/** Returns the damage a full-gauge sweet-spot release deals: HealToDamageRatio × the recorded HealCharge. */
-	float GetBoostDamage(UAbilitySystemComponent const& ASC) const;
+	/** Returns the damage-multiplier boost a full-gauge sweet-spot release adds: lerped from EdgeDamageMultiplierBoost
+	 * to CenterDamageMultiplierBoost by SweetSpotPrecision (0 = window edge, 1 = dead center). */
+	float GetHealsToDamageMultiplier(float SweetSpotPrecision) const;
 
-	/** Zeroes HealCharge and HealChargeStartTime, so the next heal starts a fresh charge window. Server only. */
+	/** Zeroes HealCharge, so the gauge starts charging from empty again. Server only. */
 	void ConsumeGauge(UAbilitySystemComponent& ASC) const;
 
 	UTexture2D* GetGaugeIcon() const { return GaugeIcon; }
@@ -52,15 +50,20 @@ private:
 	UFUNCTION()
 	void OnHealProvidedCallback(float HealDone);
 
-	// Duration of the charge window: starts on the first heal after consumption, gauge is full once it elapses.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.1"))
-	float ChargeDuration = 8.f;
+	// Healing the player must provide to fill the gauge; HealCharge is capped there — extra healing is discarded.
+	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "1.0"))
+	float HealRequiredForFullCharge = 300.f;
 
-	// Fraction of the healing recorded during the charge window dealt as sweet-spot damage on a full-gauge release.
+	// Damage-multiplier boost added to the charge beam's sweet-spot multiplier when the full-gauge release lands at the
+	// sweet-spot window edge (EdgeDamageMultiplierBoost) versus dead center (CenterDamageMultiplierBoost); lerped
+	// between them by release precision.
 	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.0"))
-	float HealToDamageRatio = 0.5f;
+	float EdgeDamageMultiplierBoost = 13.f;
 
-	// Icon shown in the HUD status bar; fills with the gauge and tints GaugeFullColor when full.
+	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.0"))
+	float CenterDamageMultiplierBoost = 15.f;
+
+	// Icon shown in the HUD status bar; fills with the gauge in its own colors and shines GaugeFullColor when full.
 	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UTexture2D> GaugeIcon;
 

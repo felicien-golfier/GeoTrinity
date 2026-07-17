@@ -10,6 +10,7 @@
 
 
 class UGeoGameplayAbility;
+class UImage;
 class UProgressBar;
 
 /**
@@ -17,6 +18,8 @@ class UProgressBar;
  * Placed on the character's ChargeBeamGaugeComponent (left of character).
  * ChargeBar fills with the ability's charge ratio.
  * SweetSpotBar overlays the sweet-spot window in a distinct color.
+ * While the sweet-spot charge passive's gauge is full, gradient bands shade the window toward its center — the aim
+ * point for the maximum damage boost.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoChargeBeamGaugeWidget
@@ -51,6 +54,11 @@ protected:
 
 private:
 	void UpdateSweetSpotLayout();
+
+	/** Gradient bands overlaying the sweet-spot window, brighter toward its center. Collapsed unless the sweet-spot
+	 * charge passive's gauge is full. */
+	UPROPERTY()
+	TArray<TObjectPtr<UImage>> SweetSpotGradientBands;
 
 	float SweetSpotMinRatio = 0.6f;
 	float SweetSpotMaxRatio = 0.7f;

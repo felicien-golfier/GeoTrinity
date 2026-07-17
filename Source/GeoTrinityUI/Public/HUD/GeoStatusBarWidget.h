@@ -18,8 +18,8 @@ class AGeoHUD;
 /**
  * Row of icons showing every active effect on the local player that carries one, with a stack-count badge when the
  * same icon is active more than once, a remaining-time countdown, and a radial depletion sweep like the ability
- * slots. Synthetic gauge entries (FillRatio >= 0) instead reveal their icon bottom-to-top with the fill and tint it
- * FullColor when full. Built entirely in C++ (no WBP asset): the widget tree is a canvas filling the slot the widget gets in
+ * slots. Synthetic gauge entries (FillRatio >= 0) instead reveal their icon bottom-to-top with the fill in the icon's
+ * own colors, shining an over-bright FullColor when full. Built entirely in C++ (no WBP asset): the widget tree is a canvas filling the slot the widget gets in
  * WBP_MainOverlay, holding a centered horizontal box; each icon is a square sized to the bar's height, so resizing
  * the StatusBar slot in the overlay is what drives the icon size. Polls AGeoHUD::GetActiveEffectIcons each tick; the
  * row is rebuilt only when the icon set changes, count/timer texts and the sweep fill are updated in place. Bound as

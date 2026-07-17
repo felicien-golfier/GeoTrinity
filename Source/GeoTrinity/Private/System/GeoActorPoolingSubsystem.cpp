@@ -18,22 +18,31 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, FTransform const&
 	// Try reuse from pool
 	TArray<TWeakObjectPtr<AActor>>& PoolForClass = Pool.FindOrAdd(Class);
 
-	if (PoolForClass.Num() == 0)
+	AActor* Actor = nullptr;
+	while (PoolForClass.Num() > 0)
+	{
+		TWeakObjectPtr<AActor> Weak = PoolForClass.Pop();
+		if (Weak.IsValid())
+		{
+			Actor = Weak.Get();
+			break;
+		}
+		UE_LOG(LogTemp, Error, TEXT("[Pool] Discarding stale weak pointer for %s! Actor was GC'd?"), *Class->GetName());
+	}
+
+	if (!Actor)
 	{
 		FActorSpawnParameters Params;
 		Params.Owner = Owner;
 		Params.Instigator = Instigator;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		SpawnActor(Class, Params);
+		Actor = SpawnActor(Class, Params);
 	}
 
-	TWeakObjectPtr<AActor> Weak = PoolForClass.Pop();
-	if (!Weak.IsValid())
+	if (!Actor)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Pool] INVALID weak pointer for %s! Actor was GC'd?"), *Class->GetName());
+		return nullptr;
 	}
-	AActor* Actor = Weak.Get();
-	ensureMsgf(IsValid(Actor), TEXT("Weak Ptr from pool is empty !"));
 
 	Actor->SetOwner(Owner);
 	Actor->SetInstigator(Instigator);

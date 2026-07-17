@@ -190,8 +190,8 @@ FActiveGameplayEffectHandle FShieldEffectData::ApplyEffect(FGameplayEffectContex
 void FContextDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext,
 															 int32 AbilityLevel, FGameplayTag) const
 {
-	checkf(Multiplier != 1.f,
-		   TEXT("You've set Single Use Damage Multiplier but value is 1. So it's not useful, you douchebag !"));
+	ensureMsgf(Multiplier != 1.f,
+			   TEXT("You've set Single Use Damage Multiplier but value is 1. So it's not useful, you douchebag !"));
 	EffectContext->SetSingleUseDamageMultiplier(Multiplier.GetValueAtLevel(AbilityLevel));
 }
 

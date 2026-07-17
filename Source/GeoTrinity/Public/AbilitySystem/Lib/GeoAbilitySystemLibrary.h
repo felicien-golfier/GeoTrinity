@@ -122,6 +122,20 @@ public:
 	/** Non-template overload; returns the CDO cast to UGeoGameplayAbility const*. */
 	static UGeoGameplayAbility const* GetAbilityCDO(FGameplayTag AbilityTag);
 
+	/** Returns the first ability granted to ASC that is a T (or subclass), or nullptr when none is granted. */
+	template <typename T>
+	static T const* GetGrantedAbility(UAbilitySystemComponent const& ASC)
+	{
+		for (FGameplayAbilitySpec const& Spec : ASC.GetActivatableAbilities())
+		{
+			if (T const* Ability = Cast<T>(Spec.Ability))
+			{
+				return Ability;
+			}
+		}
+		return nullptr;
+	}
+
 	/** Extracts the EffectDataInstances array from a UEffectDataAsset. */
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(UEffectDataAsset const* EffectDataAsset);
 	/** Returns the effect data array registered for the ability identified by AbilityTag in UAbilityInfo. */
@@ -129,7 +143,8 @@ public:
 
 	/**
 	 * Fully spawns and initializes a deployable actor: deferred-spawn, fills FDeployableData, calls InitInteractable,
-	 * then FinishSpawning. Equivalent to calling StartSpawnDeployable → InitDeployable → FinishSpawnDeployable in one call.
+	 * then FinishSpawning. Equivalent to calling StartSpawnDeployable → InitDeployable → FinishSpawnDeployable in one
+	 * call.
 	 *
 	 * @param DeployableActorClass  The deployable class to spawn.
 	 * @param Payload               Network sync data (owner, instigator, ability tag, seed, etc.).
