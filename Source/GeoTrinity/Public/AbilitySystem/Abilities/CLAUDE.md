@@ -9,7 +9,7 @@ All gameplay ability classes. **Base class for everything: `UGeoGameplayAbility`
 | `Damaging/` | `GeoProjectileAbility`, `GeoAutomaticFireAbility`, `GeoAutomaticProjectileAbility` |
 | `Boss/` | `GeoPeriodicFireAbility`, `GeoDevastatingWaveAbility`, `GeoSpawnPillarAbility` — boss abilities |
 | `Pattern/` | `Pattern`, `SpiralPattern`, `SpawnPillarPattern`, `DevastatingWavePattern` — deterministic enemy bullet patterns |
-| `Circle/` | `GeoHealingAuraAbility`, `GeoMoiraBeamAbility`, `GeoChargeBeamAbility`, `GeoHealReturnPassiveAbility` |
+| `Circle/` | `GeoHealingAuraAbility`, `GeoMoiraBeamAbility`, `GeoChargeBeamAbility`, `GeoHealReturnPassiveAbility`, `GeoSweetSpotChargePassiveAbility` |
 | `Square/` | `GeoShieldBurstPassiveAbility`, `GeoDetonateWallsAbility` (wall deploy uses shared `GeoDeployAbility`) |
 | `Triangle/` | `GeoReloadAbility`, `GeoRecallTurretAbility` |
 | `Common/` | `GeoDashAbility`, `GeoDeployAbility` — shared across all classes |

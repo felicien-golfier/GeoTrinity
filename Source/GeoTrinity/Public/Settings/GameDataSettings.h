@@ -13,6 +13,7 @@ class UStatusInfo;
 class UUserWidget;
 class UWidgetComponent;
 class UGameplayEffect;
+class USoundBase;
 
 /**
  * Project Settings panel (Game Data Settings) that holds soft references to all global data assets
@@ -50,6 +51,14 @@ public:
 	/** Default health-bar WBP (UGenericCombattantWidget subclass) for player/enemy characters. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UUserWidget> DefaultCharacterHealthBarWidgetClass;
+
+	/** Default click sound for UGeoButton, used when a button's own style doesn't set PressedSlateSound. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
+	TSoftObjectPtr<USoundBase> DefaultButtonClickSound;
+
+	/** Default hover sound for UGeoButton, used when a button's own style doesn't set HoveredSlateSound. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
+	TSoftObjectPtr<USoundBase> DefaultButtonHoverSound;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;

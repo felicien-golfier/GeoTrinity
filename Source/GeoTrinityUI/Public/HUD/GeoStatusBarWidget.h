@@ -12,12 +12,14 @@ class UHorizontalBox;
 class UImage;
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
+class UProgressBar;
 class AGeoHUD;
 
 /**
  * Row of icons showing every active effect on the local player that carries one, with a stack-count badge when the
  * same icon is active more than once, a remaining-time countdown, and a radial depletion sweep like the ability
- * slots. Built entirely in C++ (no WBP asset): the widget tree is a canvas filling the slot the widget gets in
+ * slots. Synthetic gauge entries (FillRatio >= 0) instead reveal their icon bottom-to-top with the fill and tint it
+ * FullColor when full. Built entirely in C++ (no WBP asset): the widget tree is a canvas filling the slot the widget gets in
  * WBP_MainOverlay, holding a centered horizontal box; each icon is a square sized to the bar's height, so resizing
  * the StatusBar slot in the overlay is what drives the icon size. Polls AGeoHUD::GetActiveEffectIcons each tick; the
  * row is rebuilt only when the icon set changes, count/timer texts and the sweep fill are updated in place. Bound as
@@ -76,4 +78,9 @@ private:
 	/** Per-icon depletion sweep material instances, parallel to DisplayedIcons. */
 	UPROPERTY()
 	TArray<TObjectPtr<UMaterialInstanceDynamic>> DepletionSweepMIDs;
+
+	/** Per-icon bottom-to-top gauge fill (icon revealed by a masked progress bar over a dimmed copy), parallel to
+	 * DisplayedIcons; nullptr for regular effect entries, which use the depletion sweep instead. */
+	UPROPERTY()
+	TArray<TObjectPtr<UProgressBar>> GaugeBars;
 };

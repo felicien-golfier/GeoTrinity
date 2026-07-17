@@ -3,6 +3,7 @@
 #include "HUD/GeoHUD.h"
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Circle/GeoSweetSpotChargePassiveAbility.h"
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
@@ -17,6 +18,7 @@
 #include "Characters/PlayableCharacter.h"
 #include "Characters/PlayerClassTypes.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/Texture2D.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerController.h"
 #include "GameClasses/GeoPlayerState.h"
@@ -132,6 +134,17 @@ TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
 			Entry->TimeRemaining = TimeRemaining;
 			Entry->Duration = ActiveEffect->GetDuration();
 		}
+	}
+
+	UGeoSweetSpotChargePassiveAbility const* SweetSpotPassive = UGeoSweetSpotChargePassiveAbility::FindOnASC(*ASC);
+	if (SweetSpotPassive && SweetSpotPassive->GetGaugeIcon())
+	{
+		FGeoActiveEffectIcon& Entry = Entries.AddDefaulted_GetRef();
+		Entry.Icon = SweetSpotPassive->GetGaugeIcon();
+		Entry.Count = 1;
+		Entry.TimeRemaining = -1.f;
+		Entry.FillRatio = SweetSpotPassive->GetGaugeRatio(*ASC);
+		Entry.FullColor = SweetSpotPassive->GetGaugeFullColor();
 	}
 
 	return Entries;

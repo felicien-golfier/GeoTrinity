@@ -10,8 +10,8 @@
 
 /**
  * Execution calculation that applies IncomingHeal to the target.
- * Captures HealMultiplier from the source and broadcasts OnHealProvided on the source ASC
- * unless bSuppressHealProvided is set on the effect context.
+ * Captures AppliedHealBoost from the source and ReceivedHealBoost from the target, and broadcasts
+ * OnHealProvided on the source ASC unless bSuppressHealProvided is set on the effect context.
  */
 UCLASS()
 class GEOTRINITY_API UExecCalc_Heal : public UGameplayEffectExecutionCalculation
@@ -24,5 +24,6 @@ public:
 										FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
 
 private:
-	FGameplayEffectAttributeCaptureDefinition HealMultiplierCaptureDef;
+	FGameplayEffectAttributeCaptureDefinition AppliedHealBoostCaptureDef;
+	FGameplayEffectAttributeCaptureDefinition ReceivedHealBoostCaptureDef;
 };

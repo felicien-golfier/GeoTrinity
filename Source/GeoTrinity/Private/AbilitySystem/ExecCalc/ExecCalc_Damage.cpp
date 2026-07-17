@@ -6,12 +6,10 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
-#include "Kismet/GameplayStatics.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UExecCalc_Damage::UExecCalc_Damage()
@@ -34,7 +32,6 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	FGameplayEffectContextHandle contextHandle = specGE.GetContext();
 	UAbilitySystemComponent const* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
 	UAbilitySystemComponent const* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
-	AActor* SourceAvatar = SourceASC ? SourceASC->GetAvatarActor() : nullptr;
 	AActor* TargetAvatar = TargetASC ? TargetASC->GetAvatarActor() : nullptr;
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
 
@@ -55,10 +52,12 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 				bSuppressGameplayCue = !GameFeelComponent->IsDamageCueAvailable();
 			}
 		}
+
 		if (bSuppressGameplayCue)
 		{
 			OutExecutionOutput.MarkGameplayCuesHandledManually();
 		}
+
 		if (GeoContext->IsFromBasicAbility() && IsValid(TargetAvatar))
 		{
 			if (UGeoAbilitySystemComponent* SourceGeoASC =
@@ -82,18 +81,6 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageReductionCaptureDef, EvaluationParams,
 															   DamageReduction);
 	Damage *= 1.f - FMath::Clamp(DamageReduction, 0.f, 1.f);
-
-
-#pragma region Radial damage
-	if (UGeoAbilitySystemLibrary::GetIsRadialDamage(contextHandle))
-	{
-		UGameplayStatics::ApplyRadialDamageWithFalloff(
-			TargetAvatar, Damage, 0.f, UGeoAbilitySystemLibrary::GetRadialDamageOrigin(contextHandle),
-			UGeoAbilitySystemLibrary::GetRadialDamageInnerRadius(contextHandle),
-			UGeoAbilitySystemLibrary::GetRadialDamageOuterRadius(contextHandle), 1.f, UDamageType::StaticClass(),
-			TArray<AActor*>(), SourceAvatar, nullptr);
-	}
-#pragma endregion
 
 	/*** OUTPUT ***/
 	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingDamageAttribute(),

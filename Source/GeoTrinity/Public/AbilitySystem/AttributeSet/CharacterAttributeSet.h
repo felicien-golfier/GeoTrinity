@@ -30,9 +30,13 @@ public:
 	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, MaxAmmo)
 
 	// Multipliers
-	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_HealMultiplier)
-	FGameplayAttributeData HealMultiplier;
-	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, HealMultiplier)
+	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_AppliedHealBoost)
+	FGameplayAttributeData AppliedHealBoost;
+	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, AppliedHealBoost)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_ReceivedHealBoost)
+	FGameplayAttributeData ReceivedHealBoost;
+	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, ReceivedHealBoost)
 
 	UPROPERTY(BlueprintReadOnly, Category = "Multiplier", ReplicatedUsing = OnRep_DamageMultiplier)
 	FGameplayAttributeData DamageMultiplier;
@@ -56,13 +60,27 @@ public:
 	FGameplayAttributeData SacrificeValue;
 	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, SacrificeValue)
 
+	/** Circle: healing recorded during the sweet-spot passive's charge window, converted to damage by a full-gauge
+	 * sweet-spot release of the charge beam. */
+	UPROPERTY(BlueprintReadOnly, Category = "HealCharge", ReplicatedUsing = OnRep_HealCharge)
+	FGameplayAttributeData HealCharge;
+	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, HealCharge)
+
+	/** Circle: server world time when the sweet-spot passive's charge window started (0 = idle). Replicated so the HUD
+	 * status-bar gauge can display the time-based fill. */
+	UPROPERTY(BlueprintReadOnly, Category = "HealCharge", ReplicatedUsing = OnRep_HealChargeStartTime)
+	FGameplayAttributeData HealChargeStartTime;
+	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, HealChargeStartTime)
+
 protected:
 	UFUNCTION()
 	void OnRep_Ammo(FGameplayAttributeData const& OldAmmo);
 	UFUNCTION()
 	void OnRep_MaxAmmo(FGameplayAttributeData const& OldMaxAmmo);
 	UFUNCTION()
-	void OnRep_HealMultiplier(FGameplayAttributeData const& OldHealMultiplier);
+	void OnRep_AppliedHealBoost(FGameplayAttributeData const& OldAppliedHealBoost);
+	UFUNCTION()
+	void OnRep_ReceivedHealBoost(FGameplayAttributeData const& OldReceivedHealBoost);
 	UFUNCTION()
 	void OnRep_DamageMultiplier(FGameplayAttributeData const& OldDamageMultiplier);
 	UFUNCTION()
@@ -73,4 +91,8 @@ protected:
 	void OnRep_RotationSpeedMultiplier(FGameplayAttributeData const& OldRotationSpeedMultiplier);
 	UFUNCTION()
 	void OnRep_SacrificeValue(FGameplayAttributeData const& OldSacrificeValue);
+	UFUNCTION()
+	void OnRep_HealCharge(FGameplayAttributeData const& OldHealCharge);
+	UFUNCTION()
+	void OnRep_HealChargeStartTime(FGameplayAttributeData const& OldHealChargeStartTime);
 };

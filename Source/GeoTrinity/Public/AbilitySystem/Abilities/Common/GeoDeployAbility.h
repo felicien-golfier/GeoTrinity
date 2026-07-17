@@ -14,9 +14,9 @@
  * Deploy distance is encoded in the target data Seed field (as integer cm) for server replication.
  *
  * Deployment is gated by a charge/stack system rather than the live-deployable count: each activation spends one
- * stack, a single shared timer (the ability's Cooldown GE) refills one stack at a time while below MaxStacks, and
- * activation is blocked only at zero stacks. Fully client-predicted — the stack count is driven off the predicted
- * cooldown tag on both client and server.
+ * charge and activation is blocked only at zero charges. The charge pool is the stack count of the ability's Cooldown
+ * GE — spending applies one stack, and the GE's own RemoveSingleStackAndRefreshDuration expiry hands one back per
+ * duration, so a single timer refills the pool sequentially. The pool size is the GE's StackLimitCount.
  */
 UCLASS()
 class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
@@ -30,33 +30,33 @@ public:
 	/** Returns the deployable class this ability spawns. Used by the HUD to resolve the matching deployable-manager slot. */
 	TSubclassOf<AGeoDeployableBase> GetDeployableActorClass() const { return DeployableActorClass; }
 
-	/** Number of charges currently available to spend. */
+	/** Number of charges currently available to spend: the pool size minus the Cooldown GE's replicated stack count. */
 	UFUNCTION(BlueprintPure, Category = "Ability|Deploy")
-	int32 GetCurrentStacks() const { return CurrentStacks; }
+	int32 GetCurrentStacks() const;
 
-	/** Maximum number of charges this ability can hold. */
+	/** Maximum number of charges this ability can hold — the Cooldown GE's StackLimitCount. */
 	UFUNCTION(BlueprintPure, Category = "Ability|Deploy")
-	int32 GetMaxStacks() const { return MaxStacks; }
+	int32 GetMaxStacks() const;
 
 protected:
-	/** Initializes CurrentStacks to full and binds the cooldown-tag event that refills a stack when the cooldown expires. */
+	/** Binds the cooldown-tag event that plays the charge-refilled sound. */
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
 	/** Unbinds the cooldown-tag event. */
 	virtual void OnRemoveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
-	/** Spends one stack, starts the refill cooldown if it is not already running, then runs the normal fire flow. */
+	/** Spends one charge by applying a stack of the Cooldown GE, then runs the normal fire flow. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
-	/** Blocks activation only when no stacks remain (plus the base death check). The alive-deployable count no longer gates. */
+	/** Blocks activation only when no charges remain (plus the base death check). The alive-deployable count no longer gates. */
 	virtual bool CanActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 									FGameplayTagContainer const* SourceTags = nullptr,
 									FGameplayTagContainer const* TargetTags = nullptr,
 									FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
-	/** Always true: the Cooldown GE is repurposed as the stack-refill clock, so its tag must not gate activation. */
+	/** Always true: the Cooldown GE is repurposed as the charge pool, so its tag must not gate activation. */
 	virtual bool CheckCooldown(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
@@ -72,16 +72,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
-	/** Maximum charges. Each activation spends one; the Cooldown GE refills one at a time while below this. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy", meta = (ClampMin = "1"))
-	int32 MaxStacks = 3;
-
 private:
-	/** Refills a stack when the cooldown tag clears, re-arming the cooldown while still below MaxStacks. */
+	/** Plays the charge-refilled sound when the Cooldown GE's stack count drops a charge back into the pool. */
 	void OnCooldownTagChanged(FGameplayTag CooldownTag, int32 NewCount);
 
 	virtual void SpawnProjectile(FTransform const& SpawnTransform, float SpawnServerTime) const override;
 
-	int32 CurrentStacks = 0;
+	int32 LastKnownStacks = 0;
 	FDelegateHandle CooldownTagDelegateHandle;
 };

@@ -39,7 +39,8 @@ Hold to charge, release to fire. Uses `ChargeForFireDelay` FireMode.
 
 - `SweetSpotMinRatio` (default 0.5) / `SweetSpotMaxRatio` (default 0.7) — charge window that grants `MaxDamageMultiplier` on release
 - `MinDamageMultiplier` / `MaxDamageMultiplier` — damage multiplier lerped by charge ratio for non-sweet-spot releases
-- `SweetSpotDamageMultiplier` — separate multiplier applied instead when released within the sweet-spot window
+- `SweetSpotDamageMultiplier` — separate multiplier applied instead when released within the sweet-spot window; when `GeoSweetSpotChargePassiveAbility`'s gauge is full, the base damage entries are replaced by the passive's `GetBoostDamage` (multiplier drops to 1) and the gauge is consumed at the end of `DealDamage`, hit or miss
+- `GetStoredChargeRatio()` / `IsSweetSpotRelease()` — decode `StoredPayload.Seed` back to the 0–1 charge ratio / sweet-spot window test
 - Charge ratio encoded in `StoredPayload.Seed` as integer permillage 0..1000 (set at release time in `GetUpdatedTargetData`)
 - `GetChargeRatio()` on base ability returns 0..1 with easing curve applied
 - `FireGameplayCue` — fires beam VFX/SFX (endpoint, charge ratio, sweet-spot flag) on the locally-controlled client only
@@ -51,3 +52,12 @@ Hold to charge, release to fire. Uses `ChargeForFireDelay` FireMode.
 - Binds to `OnHealProvided` delegate on owner's ASC
 - On each heal event, returns `SelfHealPercent` (0..1) of the heal amount back to self
 - Passive — always active while Circle class is active
+
+---
+
+## `GeoSweetSpotChargePassiveAbility.h` — passive sweet-spot boost gauge
+- Binds to `OnHealProvided` on the owner's ASC (server). The first heal after consumption starts a `ChargeDuration`-second charge window (`HealChargeStartTime` attribute = server world time, 0 = idle); healing done inside the window accumulates into `HealCharge`; heals after the window elapses are ignored until consumption
+- Gauge fill is **time-based**: `GetGaugeRatio(ASC)` = elapsed/`ChargeDuration` (server world time from the ASC's active-effects container, consistent on clients)
+- Full gauge: the charge beam's next sweet-spot release deals `GetBoostDamage(ASC)` = `HealToDamageRatio` × `HealCharge` **instead of its base damage**, then `ConsumeGauge(ASC)` zeroes both attributes (called in `UGeoChargeBeamAbility::DealDamage`; also on `EndAbility`, so death/class change clears the gauge)
+- `FindOnASC(ASC)` (static) — resolves the granted passive on an ASC
+- HUD: `AGeoHUD::GetActiveEffectIcons` appends a synthetic status-bar entry (`GaugeIcon`, `FillRatio`, `GaugeFullColor`); the status bar reveals the icon bottom-to-top with the fill and tints it `GaugeFullColor` when full

@@ -4,13 +4,9 @@
 
 Extends `FGameplayEffectContext` with GeoTrinity-specific data.
 
-### Standard hit info
-- `bIsBlockedHit`, `bIsCriticalHit`
-- `StatusTag` — gameplay tag of applied status
+### Replicated hit info
+- `StatusTag` — gameplay tag of applied status. Replicated + exposed via `GeoASLib::GetStatusTag` / `SetStatusTag`; no C++ call site sets it today
 - `Icon` — replicated texture shown in the HUD status bar while the applied effect is active; set per-spec by `FGameplayEffectData::ApplyEffect` (via a duplicated context) and by `ApplyStatusToTarget` (from `FRpgStatusInfo.Icon`); read client-side by `AGeoHUD::GetActiveEffectIcons`
-- Debuff: `DebuffDamage`, `DebuffDuration`, `DebuffFrequency`
-- Physics: `DeathImpulseVector`, `KnockbackVector`
-- Radial: `bIsRadialDamage`, `InnerRadius`, `OuterRadius`, `Origin`
 
 ### Call-site scoped fields
 These are **not replicated** and **not included in `NetSerialize`**. They are embedded into the spec via `Duplicate()` so they survive `MakeOutgoingSpec` and reach `ExecCalc`. They auto-reset per `ApplyEffectFromEffectData` call (fresh context each call).

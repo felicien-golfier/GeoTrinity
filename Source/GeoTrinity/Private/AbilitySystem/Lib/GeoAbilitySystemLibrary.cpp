@@ -95,14 +95,20 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
 												 FGameplayEffectContextHandle ContextHandle)
 {
-	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
+	AActor* SourceAvatarActor = IsValid(SourceASC) ? SourceASC->GetAvatarActor() : nullptr;
+	if (IsValid(SourceAvatarActor))
+	{
+		ContextHandle.AddSourceObject(SourceAvatarActor);
+	}
+
 
 	if (AActor* TargetAvatar = TargetASC->GetAvatarActor())
 	{
 		FHitResult HitResult;
 		HitResult.ImpactPoint = TargetAvatar->GetActorLocation();
-		HitResult.ImpactNormal =
-			(TargetAvatar->GetActorLocation() - SourceASC->GetAvatarActor()->GetActorLocation()).GetSafeNormal2D();
+		HitResult.ImpactNormal = IsValid(SourceAvatarActor)
+			? (TargetAvatar->GetActorLocation() - SourceAvatarActor->GetActorLocation()).GetSafeNormal2D()
+			: FVector::Zero();
 		ContextHandle.AddHitResult(HitResult);
 	}
 }
@@ -378,121 +384,12 @@ AActor* UGeoAbilitySystemLibrary::GetNearestActorFromList(AActor const* FromActo
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool UGeoAbilitySystemLibrary::IsBlockedHit(FGameplayEffectContextHandle const& effectContextHandle)
+FGameplayTag UGeoAbilitySystemLibrary::GetStatusTag(FGameplayEffectContextHandle const& effectContextHandle)
 {
 	FGeoGameplayEffectContext const* pGeoContext =
 		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
 
-	return pGeoContext ? pGeoContext->IsBlockedHit() : false;
-}
-
-bool UGeoAbilitySystemLibrary::IsCriticalHit(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->IsCriticalHit() : false;
-}
-
-bool UGeoAbilitySystemLibrary::IsSuccessfulDebuff(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetStatusTag().IsValid() : false;
-}
-
-float UGeoAbilitySystemLibrary::GetDebuffDamage(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetDebuffDamage() : 0.f;
-}
-
-float UGeoAbilitySystemLibrary::GetDebuffDuration(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetDebuffDuration() : 0.f;
-}
-
-float UGeoAbilitySystemLibrary::GetDebuffFrequency(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetDebuffFrequency() : 0.f;
-}
-
-FVector UGeoAbilitySystemLibrary::GetDeathImpulseVector(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetDeathImpulseVector() : FVector::ZeroVector;
-}
-
-FVector UGeoAbilitySystemLibrary::GetKnockbackVector(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetKnockbackVector() : FVector::ZeroVector;
-}
-
-bool UGeoAbilitySystemLibrary::GetIsRadialDamage(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetIsRadialDamage() : false;
-}
-
-float UGeoAbilitySystemLibrary::GetRadialDamageInnerRadius(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetRadialDamageInnerRadius() : 0.f;
-}
-
-float UGeoAbilitySystemLibrary::GetRadialDamageOuterRadius(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetRadialDamageOuterRadius() : 0.f;
-}
-
-FVector UGeoAbilitySystemLibrary::GetRadialDamageOrigin(FGameplayEffectContextHandle const& effectContextHandle)
-{
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
-
-	return pGeoContext ? pGeoContext->GetRadialDamageOrigin() : FVector::ZeroVector;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemLibrary::SetIsBlockedHit(FGameplayEffectContextHandle& effectContextHandle,
-											   bool const bIsBlockedHit)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetIsBlockedHit(bIsBlockedHit);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetIsCriticalHit(FGameplayEffectContextHandle& effectContextHandle,
-												bool const bIsCriticalHit)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetIsCriticalHit(bIsCriticalHit);
-	}
+	return pGeoContext ? pGeoContext->GetStatusTag() : FGameplayTag{};
 }
 
 void UGeoAbilitySystemLibrary::SetStatusTag(FGameplayEffectContextHandle& effectContextHandle,
@@ -502,96 +399,6 @@ void UGeoAbilitySystemLibrary::SetStatusTag(FGameplayEffectContextHandle& effect
 	if (pGeoContext)
 	{
 		pGeoContext->SetStatusTag(statusTag);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetDebuffDamage(FGameplayEffectContextHandle& effectContextHandle,
-											   float const debuffDamage)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetDebuffDamage(debuffDamage);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetDebuffFrequency(FGameplayEffectContextHandle& effectContextHandle,
-												  float const debuffFrequency)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetDebuffFrequency(debuffFrequency);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetDebuffDuration(FGameplayEffectContextHandle& effectContextHandle,
-												 float const debuffDuration)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetDebuffDuration(debuffDuration);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetDeathImpulseVector(FGameplayEffectContextHandle& effectContextHandle,
-													 FVector const& inVector)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetDeathImpulseVector(inVector);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetKnockbackVector(FGameplayEffectContextHandle& effectContextHandle,
-												  FVector const& inVector)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetKnockbackVector(inVector);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetIsRadialDamage(FGameplayEffectContextHandle& effectContextHandle,
-												 bool const bIsRadialDamage)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetIsRadialDamage(bIsRadialDamage);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetRadialDamageInnerRadius(FGameplayEffectContextHandle& effectContextHandle,
-														  float const radialDamageInnerRadius)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetRadialDamageInnerRadius(radialDamageInnerRadius);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetRadialDamageOuterRadius(FGameplayEffectContextHandle& effectContextHandle,
-														  float const radialDamageOuterRadius)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetRadialDamageOuterRadius(radialDamageOuterRadius);
-	}
-}
-
-void UGeoAbilitySystemLibrary::SetRadialDamageOrigin(FGameplayEffectContextHandle& effectContextHandle,
-													 FVector const& inVector)
-{
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
-	{
-		pGeoContext->SetRadialDamageOrigin(inVector);
 	}
 }
 

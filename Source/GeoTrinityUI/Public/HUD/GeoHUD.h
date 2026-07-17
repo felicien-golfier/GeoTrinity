@@ -75,6 +75,15 @@ struct FGeoActiveEffectIcon
 	 * status bar's depletion sweep. */
 	UPROPERTY(BlueprintReadOnly)
 	float Duration = 0.f;
+
+	/** Gauge fill (0–1) for synthetic gauge entries (Circle's sweet-spot charge); -1 for regular effect entries, whose
+	 * sweep depletes with TimeRemaining instead. */
+	UPROPERTY(BlueprintReadOnly)
+	float FillRatio = -1.f;
+
+	/** Icon tint applied once FillRatio reaches 1. */
+	UPROPERTY(BlueprintReadOnly)
+	FLinearColor FullColor = FLinearColor::White;
 };
 
 

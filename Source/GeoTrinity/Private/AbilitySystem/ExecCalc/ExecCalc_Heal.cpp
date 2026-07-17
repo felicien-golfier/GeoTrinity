@@ -12,10 +12,13 @@
 // ---------------------------------------------------------------------------------------------------------------------
 UExecCalc_Heal::UExecCalc_Heal()
 {
-	// TODO: Here the heal multiplicator is on the target. It's not the intend way. it is a received heal multiplicator
-	HealMultiplierCaptureDef = FGameplayEffectAttributeCaptureDefinition(
-		UCharacterAttributeSet::GetHealMultiplierAttribute(), EGameplayEffectAttributeCaptureSource::Target, false);
-	RelevantAttributesToCapture.Add(HealMultiplierCaptureDef);
+	AppliedHealBoostCaptureDef = FGameplayEffectAttributeCaptureDefinition(
+		UCharacterAttributeSet::GetAppliedHealBoostAttribute(), EGameplayEffectAttributeCaptureSource::Source, true);
+	RelevantAttributesToCapture.Add(AppliedHealBoostCaptureDef);
+
+	ReceivedHealBoostCaptureDef = FGameplayEffectAttributeCaptureDefinition(
+		UCharacterAttributeSet::GetReceivedHealBoostAttribute(), EGameplayEffectAttributeCaptureSource::Target, false);
+	RelevantAttributesToCapture.Add(ReceivedHealBoostCaptureDef);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -54,10 +57,15 @@ void UExecCalc_Heal::Execute_Implementation(FGameplayEffectCustomExecutionParame
 	EvaluationParams.SourceTags = specGE.CapturedSourceTags.GetAggregatedTags();
 	EvaluationParams.TargetTags = specGE.CapturedTargetTags.GetAggregatedTags();
 
-	float HealMultiplier = 1.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(HealMultiplierCaptureDef, EvaluationParams,
-															   HealMultiplier);
-	HealAmount *= HealMultiplier;
+	float AppliedHealBoost = 1.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(AppliedHealBoostCaptureDef, EvaluationParams,
+															   AppliedHealBoost);
+
+	float ReceivedHealBoost = 1.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(ReceivedHealBoostCaptureDef, EvaluationParams,
+															   ReceivedHealBoost);
+
+	HealAmount *= AppliedHealBoost * ReceivedHealBoost;
 
 	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingHealAttribute(),
 													   EGameplayModOp::Additive, HealAmount};

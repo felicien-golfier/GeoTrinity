@@ -37,6 +37,9 @@ Allies touching you are healed for {HealPerSecond}/sec.
 [Ability.Spell.HealsYouWhatYouHeal]
 You heal yourself for {SelfHealPercent:%} of every heal you provide to allies.
 
+[Ability.Spell.SweetSpotCharge]
+Your first heal starts a {ChargeDuration}s charge that records all healing you provide. Once charged, your next sweet-spot beam release deals {HealToDamageRatio:%} of the recorded healing as damage instead of its base damage, emptying the gauge.
+
 [Ability.Spell.ShieldBurst]
 Every point of damage you deal fills a gauge. At {GaugeFillThreshold} damage dealt, fire a slow shield projectile forward. It bounces off enemies, growing its shield by {EnemyBounceMultiplier:+%} per bounce, then ends by granting {ShieldAmount} shield to the first ally it touches. Passes through your own walls; bouncing off walls or terrain does not grow it.
 

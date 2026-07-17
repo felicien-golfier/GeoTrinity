@@ -3,6 +3,7 @@
 #include "HUD/GeoStatusBarWidget.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Brushes/SlateNoResource.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
@@ -10,16 +11,19 @@
 #include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
+#include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "HUD/GeoHUD.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateTypes.h"
 
 namespace
 {
 	FName const DepletionFillParam(TEXT("Fill"));
+	FLinearColor const GaugeEmptyTint(0.2f, 0.2f, 0.2f, 1.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -80,6 +84,7 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 		TimerTexts.Reset();
 		DepletionSweeps.Reset();
 		DepletionSweepMIDs.Reset();
+		GaugeBars.Reset();
 		AppliedIconSize = 0.f;
 
 		for (FGeoActiveEffectIcon const& Entry : Entries)
@@ -103,9 +108,32 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			EntryOverlay->AddChildToOverlay(IconImage);
 			IconImages.Add(IconImage);
 
+			bool const bIsGauge = Entry.FillRatio >= 0.f;
+
+			// Gauge entries: the dimmed icon is the empty background, revealed bottom-to-top by a masked progress
+			// bar whose fill brush is the icon itself.
+			UProgressBar* GaugeBar = nullptr;
+			if (bIsGauge)
+			{
+				IconImage->SetColorAndOpacity(GaugeEmptyTint);
+
+				GaugeBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass());
+				FProgressBarStyle BarStyle;
+				BarStyle.SetBackgroundImage(FSlateNoResource());
+				BarStyle.SetFillImage(RoundBrush);
+				BarStyle.SetMarqueeImage(FSlateNoResource());
+				GaugeBar->SetWidgetStyle(BarStyle);
+				GaugeBar->SetBarFillType(EProgressBarFillType::BottomToTop);
+				GaugeBar->SetBarFillStyle(EProgressBarFillStyle::Mask);
+				UOverlaySlot* BarSlot = EntryOverlay->AddChildToOverlay(GaugeBar);
+				BarSlot->SetHorizontalAlignment(HAlign_Fill);
+				BarSlot->SetVerticalAlignment(VAlign_Fill);
+			}
+			GaugeBars.Add(GaugeBar);
+
 			UImage* SweepImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 			UMaterialInstanceDynamic* SweepMID = nullptr;
-			if (DepletionSweepMaterial)
+			if (DepletionSweepMaterial && !bIsGauge)
 			{
 				SweepMID = UMaterialInstanceDynamic::Create(DepletionSweepMaterial, this);
 				SweepMID->SetScalarParameterValue(DepletionFillParam, 0.f);
@@ -166,7 +194,14 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			CountTexts[Index]->SetText(FText::AsNumber(Entry.Count));
 		}
 
-		if (DepletionSweepMIDs[Index])
+		// Gauge entries fill bottom-to-top with FillRatio and tint FullColor once full; regular effect entries
+		// deplete with TimeRemaining.
+		if (GaugeBars[Index])
+		{
+			GaugeBars[Index]->SetPercent(FMath::Clamp(Entry.FillRatio, 0.f, 1.f));
+			GaugeBars[Index]->SetFillColorAndOpacity(Entry.FillRatio >= 1.f ? Entry.FullColor : FLinearColor::White);
+		}
+		else if (DepletionSweepMIDs[Index])
 		{
 			float const Fill = (Entry.TimeRemaining < 0.f || Entry.Duration <= 0.f)
 									? 0.f

@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/Abilities/Circle/GeoChargeBeamAbility.h"
 
+#include "AbilitySystem/Abilities/Circle/GeoSweetSpotChargePassiveAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -9,6 +10,9 @@
 #include "Settings/GameDataSettings.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+// Permillage headroom absorbing RPC jitter between the client's release and the server observing it.
+static constexpr int32 ChargeRatioTolerancePermille = 100;
 
 UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 {
@@ -37,14 +41,48 @@ FGeoAbilityTargetData UGeoChargeBeamAbility::GetUpdatedTargetData()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+float UGeoChargeBeamAbility::GetStoredChargeRatio() const
+{
+	return FMath::Clamp(static_cast<float>(StoredPayload.Seed) / 1000.f, 0.f, 1.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoChargeBeamAbility::IsSweetSpotRelease() const
+{
+	float const ChargeRatio = GetStoredChargeRatio();
+	return ChargeRatio >= SweetSpotMinRatio && ChargeRatio <= SweetSpotMaxRatio;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 TArray<TInstancedStruct<FEffectData>> UGeoChargeBeamAbility::GetEffectDataArray() const
 {
 	TArray<TInstancedStruct<FEffectData>> Effects = Super::GetEffectDataArray();
 
-	float const ChargeRatio = FMath::Clamp(static_cast<float>(StoredPayload.Seed) / 1000.f, 0.f, 1.f);
-	bool const bSweetSpot = ChargeRatio >= SweetSpotMinRatio && ChargeRatio <= SweetSpotMaxRatio;
-	float const MultiplierValue =
-		bSweetSpot ? SweetSpotDamageMultiplier : FMath::Lerp(MinDamageMultiplier, MaxDamageMultiplier, ChargeRatio);
+	float MultiplierValue = FMath::Lerp(MinDamageMultiplier, MaxDamageMultiplier, GetStoredChargeRatio());
+	if (IsSweetSpotRelease())
+	{
+		MultiplierValue = SweetSpotDamageMultiplier;
+		// GetCurrentActorInfo is null when the CDO resolves ability descriptions — no ASC, no gauge to read.
+		if (GetCurrentActorInfo())
+		{
+			UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
+			UGeoSweetSpotChargePassiveAbility const* Passive =
+				ASC ? UGeoSweetSpotChargePassiveAbility::FindOnASC(*ASC) : nullptr;
+			if (Passive && Passive->GetGaugeRatio(*ASC) >= 1.f)
+			{
+				// Full gauge: the release's damage comes solely from the healing the passive recorded.
+				MultiplierValue = 1.f;
+				FScalableFloat const BoostDamage(Passive->GetBoostDamage(*ASC));
+				for (TInstancedStruct<FEffectData>& Effect : Effects)
+				{
+					if (FDamageEffectData* DamageEffect = Effect.GetMutablePtr<FDamageEffectData>())
+					{
+						DamageEffect->DamageAmount = BoostDamage;
+					}
+				}
+			}
+		}
+	}
 
 	TInstancedStruct<FContextDamageMultiplierEffectData> ChargeMultiplier;
 	ChargeMultiplier.InitializeAs<FContextDamageMultiplierEffectData>();
@@ -61,14 +99,13 @@ void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& Ability
 		FVector2D ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
 		ForwardVector *= GetDefault<UGameDataSettings>()->GeneralSpellDistance;
 
-		float const ChargeRatio = FMath::Clamp(static_cast<float>(StoredPayload.Seed) / 1000.f, 0.f, 1.f);
+		float const ChargeRatio = GetStoredChargeRatio();
 
 		FGameplayCueParameters CueParams;
 		CueParams.Location = FVector(AbilityTargetData.Origin + ForwardVector, ArbitraryCharacterZ);
 		CueParams.Instigator = StoredPayload.Instigator;
 		CueParams.AbilityLevel = StoredPayload.AbilityLevel;
-		CueParams.NormalizedMagnitude =
-			ChargeRatio >= SweetSpotMinRatio && ChargeRatio <= SweetSpotMaxRatio || ChargeRatio >= .95f;
+		CueParams.NormalizedMagnitude = IsSweetSpotRelease() || ChargeRatio >= .95f;
 		CueParams.Normal = FRotator(0, AbilityTargetData.Yaw, 0).Vector();
 		CueParams.RawMagnitude = ChargeRatio;
 		UAbilitySystemComponent* const ASC = GetAbilitySystemComponentFromActorInfo();
@@ -121,6 +158,13 @@ void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTarge
 		GeoASLib::ApplyEffectFromEffectData(GetEffectDataArray(), SourceASC, TargetASC, GetAbilityLevel(),
 											AbilityTargetData.Seed, GetAbilityTag());
 	}
+
+	// A sweet-spot release spends the full gauge whether or not it hit anything — the boosted beam was fired.
+	UGeoSweetSpotChargePassiveAbility const* Passive = UGeoSweetSpotChargePassiveAbility::FindOnASC(*SourceASC);
+	if (IsSweetSpotRelease() && Passive && Passive->GetGaugeRatio(*SourceASC) >= 1.f)
+	{
+		Passive->ConsumeGauge(*SourceASC);
+	}
 }
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
@@ -128,6 +172,10 @@ void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataH
 {
 	// Call Super first to get the Payload Seed updated.
 	Super::OnFireTargetDataReceived(DataHandle, ApplicationTag);
+
+	StoredPayload.Seed =
+		FMath::Min(StoredPayload.Seed, FMath::RoundToInt(GetChargeRatio() * 1000.f) + ChargeRatioTolerancePermille);
+	ClampRemoteClientOrigin();
 
 	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
 	if (!ensureMsgf(AbilityTargetData,

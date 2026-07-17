@@ -3,39 +3,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Tasks/StateTreeMoveToTask.h"
 
 #include "STTask_MoveTo.generated.h"
 
-class UCurveFloat;
-class USoundBase;
-
 /**
- * Instance data for FSTTask_MoveTo — extends the base Move To data with a looping move sound and its pitch curve,
- * which the task hands to the spawned UGeoAITask_MoveTo. Appends fields only, so base Move To logic is unaffected.
+ * Instance data for FSTTask_MoveTo — extends the base Move To data with the gameplay cue played for the duration of
+ * the move, which the task hands to the spawned UGeoAITask_MoveTo. Appends fields only, so base Move To logic is
+ * unaffected.
  */
 USTRUCT()
 struct GEOTRINITY_API FSTTask_MoveToInstanceData : public FStateTreeMoveToTaskInstanceData
 {
 	GENERATED_BODY()
 
-	/** Looping sound played for the whole move; its pitch follows MovePitchCurve across the travel time. */
-	UPROPERTY(EditAnywhere, Category = "Parameter")
-	TObjectPtr<USoundBase> MoveSound;
-
-	/** Pitch multiplier for MoveSound sampled at the 0..1 move progress (X=0 start, X=1 arrival). Pitch stays 1 when unset. */
-	UPROPERTY(EditAnywhere, Category = "Parameter")
-	TObjectPtr<UCurveFloat> MovePitchCurve;
-
-	/** One-shot sound played at the pawn when a started move ends, whether it arrived or was interrupted. */
-	UPROPERTY(EditAnywhere, Category = "Parameter")
-	TObjectPtr<USoundBase> MoveEndSound;
+	/** Cue added when the move starts and removed when it ends, whether it arrived or was interrupted. Its
+	 *  RawMagnitude carries the path length in world units, so the notify can scale playback to the distance. */
+	UPROPERTY(EditAnywhere, Category = "Parameter", meta = (Categories = "GameplayCue"))
+	FGameplayTag MoveGameplayCueTag;
 };
 
 /**
  * StateTree Move To task that replans around dynamic obstacles (e.g. pillars) when the nav mesh changes.
  * Uses UGeoAITask_MoveTo instead of the base UAITask_MoveTo to enable path recalculation on invalidation,
- * and forwards MoveSound / MovePitchCurve / MoveEndSound to it so the enemy plays a distance-scaled move sound.
+ * and forwards MoveGameplayCueTag to it so every machine plays the move's cosmetics.
  */
 USTRUCT(DisplayName = "Move To (Geo)", Category = "GeoTrinity|AI")
 struct GEOTRINITY_API FSTTask_MoveTo : public FStateTreeMoveToTask
@@ -47,7 +39,7 @@ struct GEOTRINITY_API FSTTask_MoveTo : public FStateTreeMoveToTask
 	/** Declares FSTTask_MoveToInstanceData as the per-execution instance data type so StateTree allocates the correct struct for each context. */
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 
-	/** Spawns a UGeoAITask_MoveTo (nav-mesh recalculation on invalidation) and passes it the move sounds + pitch curve. */
+	/** Spawns a UGeoAITask_MoveTo (nav-mesh recalculation on invalidation) and passes it the move cue tag. */
 	virtual UAITask_MoveTo* PrepareMoveToTask(FStateTreeExecutionContext& Context, AAIController& Controller,
 	                                          UAITask_MoveTo* ExistingTask, FAIMoveRequest& MoveRequest) const override;
 };

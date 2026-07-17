@@ -3,6 +3,8 @@
 #include "HUD/Menu/GeoButton.h"
 
 #include "Components/ButtonSlot.h"
+#include "Settings/GameDataSettings.h"
+#include "Sound/SoundBase.h"
 #include "Widgets/Input/SButton.h"
 
 // Maps focus onto SButton's protected hover state so focus renders and sounds exactly like mouse-over.
@@ -35,6 +37,24 @@ public:
 
 TSharedRef<SWidget> UGeoButton::RebuildWidget()
 {
+	UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
+	USoundBase* DefaultClickSound = GameDataSettings->GetLoadedDataAsset(GameDataSettings->DefaultButtonClickSound);
+	USoundBase* DefaultHoverSound = GameDataSettings->GetLoadedDataAsset(GameDataSettings->DefaultButtonHoverSound);
+	if ((!GetStyle().PressedSlateSound.GetResourceObject() && DefaultClickSound) ||
+		(!GetStyle().HoveredSlateSound.GetResourceObject() && DefaultHoverSound))
+	{
+		FButtonStyle NewStyle = GetStyle();
+		if (!NewStyle.PressedSlateSound.GetResourceObject() && DefaultClickSound)
+		{
+			NewStyle.PressedSlateSound.SetResourceObject(DefaultClickSound);
+		}
+		if (!NewStyle.HoveredSlateSound.GetResourceObject() && DefaultHoverSound)
+		{
+			NewStyle.HoveredSlateSound.SetResourceObject(DefaultHoverSound);
+		}
+		SetStyle(NewStyle);
+	}
+
 	MyButton = SNew(SGeoButton)
 				   .OnClicked(BIND_UOBJECT_DELEGATE(FOnClicked, SlateHandleClicked))
 				   .OnPressed(BIND_UOBJECT_DELEGATE(FSimpleDelegate, SlateHandlePressed))

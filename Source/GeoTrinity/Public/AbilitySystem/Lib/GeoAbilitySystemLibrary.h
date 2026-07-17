@@ -304,103 +304,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Toolbox")
 	static AActor* GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList);
 
-	/**
-	 * Getters and setters for the context
-	 */
-	/** Returns true when the effect context marks the hit as blocked. */
+	/** Returns the status gameplay tag stored in the effect context (invalid tag when none). */
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool IsBlockedHit(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns true when the effect context marks the hit as critical. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool IsCriticalHit(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns true when the effect context marks a successful debuff application. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool IsSuccessfulDebuff(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns the per-tick debuff damage magnitude stored in the effect context. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetDebuffDamage(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns the total debuff duration in seconds stored in the effect context. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetDebuffDuration(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns the debuff application interval in seconds stored in the effect context. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetDebuffFrequency(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns the death impulse vector stored in the effect context. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static FVector GetDeathImpulseVector(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns the knockback vector stored in the effect context. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static FVector GetKnockbackVector(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns true when the effect context marks the damage as radial. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static bool GetIsRadialDamage(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns the inner radius for radial damage stored in the effect context. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetRadialDamageInnerRadius(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns the outer radius for radial damage stored in the effect context. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static float GetRadialDamageOuterRadius(FGameplayEffectContextHandle const& effectContextHandle);
-	/** Returns the world-space origin for radial damage stored in the effect context. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static FVector GetRadialDamageOrigin(FGameplayEffectContextHandle const& effectContextHandle);
-
-	/** Marks the hit as blocked in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetIsBlockedHit(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-								bool const bIsBlockedHit);
-	/** Marks the hit as critical in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetIsCriticalHit(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-								 bool const bIsCriticalHit);
-	/** Sets the status gameplay tag in the effect context (read by ExecCalc_Damage to apply the matching status GE). */
+	static FGameplayTag GetStatusTag(FGameplayEffectContextHandle const& effectContextHandle);
+	/** Sets the status gameplay tag in the effect context. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
 	static void SetStatusTag(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
 							 FGameplayTag const statusTag);
-	/** Sets the per-tick debuff damage magnitude in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetDebuffDamage(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-								float const debuffDamage);
-	/** Sets the debuff application interval in seconds in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetDebuffFrequency(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-								   float const debuffFrequency);
-	/** Sets the total debuff duration in seconds in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetDebuffDuration(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-								  float const debuffDuration);
-	/** Sets the death impulse vector in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetDeathImpulseVector(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-									  FVector const& inVector);
-	/** Sets the knockback vector in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetKnockbackVector(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-								   FVector const& inVector);
-	/** Marks the damage as radial in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetIsRadialDamage(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-								  bool const bIsRadialDamage);
-	/** Sets the inner radius for radial damage in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetRadialDamageInnerRadius(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-										   float const radialDamageInnerRadius);
-	/** Sets the outer radius for radial damage in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetRadialDamageOuterRadius(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-										   float const radialDamageOuterRadius);
-	/** Sets the world-space origin for radial damage in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetRadialDamageOrigin(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-									  FVector const& inVector);
 
 	/** Returns the ASC from Actor cast to UGeoAbilitySystemComponent, or nullptr if Actor does not implement
 	 * IAbilitySystemInterface. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary")
 	static UGeoAbilitySystemComponent* GetGeoAscFromActor(AActor* Actor);
-
-	/**
-	 * END context getter setters
-	 */
 };
 
 using GeoASLib = UGeoAbilitySystemLibrary;

@@ -233,6 +233,9 @@ void AGeoGameState::TeleportPlayersTo(FGameplayTag const LocationTag, FName cons
 		return;
 	}
 
+	TArray<AActor*> ExemptZone;
+	UGameplayStatics::GetAllActorsWithTag(this, ExemptZoneName, ExemptZone);
+
 	int32 SpawnIndex = 0;
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
@@ -241,10 +244,12 @@ void AGeoGameState::TeleportPlayersTo(FGameplayTag const LocationTag, FName cons
 			continue;
 		}
 		APawn* Pawn = (*It)->GetPawn();
-		bool bTeleport = IsValid(Pawn);
+		if (!IsValid(Pawn))
+		{
+			continue;
+		}
 
-		TArray<AActor*> ExemptZone;
-		UGameplayStatics::GetAllActorsWithTag(this, ExemptZoneName, ExemptZone);
+		bool bTeleport = true;
 		for (AActor const* Zone : ExemptZone)
 		{
 			bTeleport &= !Pawn->IsOverlappingActor(Zone);

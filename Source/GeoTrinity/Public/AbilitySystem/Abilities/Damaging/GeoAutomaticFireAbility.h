@@ -71,6 +71,8 @@ protected:
 
 private:
 	bool bWantsToFire = true;
+	/** Server-side shot clock: earliest world time the next client-requested shot may execute. */
+	float NextAllowedShotTime = 0.f;
 
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;

@@ -11,12 +11,15 @@ void UCharacterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	// even on unchanged values to handle prediction rollbacks correctly
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, Ammo, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, MaxAmmo, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, HealMultiplier, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, AppliedHealBoost, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, ReceivedHealBoost, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, DamageMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, DamageReduction, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, MovementSpeedMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, RotationSpeedMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, SacrificeValue, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, HealCharge, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UCharacterAttributeSet, HealChargeStartTime, COND_None, REPNOTIFY_Always);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -32,9 +35,15 @@ void UCharacterAttributeSet::OnRep_MaxAmmo(FGameplayAttributeData const& OldMaxA
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UCharacterAttributeSet::OnRep_HealMultiplier(FGameplayAttributeData const& OldHealMultiplier)
+void UCharacterAttributeSet::OnRep_AppliedHealBoost(FGameplayAttributeData const& OldAppliedHealBoost)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, HealMultiplier, OldHealMultiplier);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, AppliedHealBoost, OldAppliedHealBoost);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UCharacterAttributeSet::OnRep_ReceivedHealBoost(FGameplayAttributeData const& OldReceivedHealBoost)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, ReceivedHealBoost, OldReceivedHealBoost);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -65,4 +74,16 @@ void UCharacterAttributeSet::OnRep_RotationSpeedMultiplier(FGameplayAttributeDat
 void UCharacterAttributeSet::OnRep_SacrificeValue(FGameplayAttributeData const& OldSacrificeValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, SacrificeValue, OldSacrificeValue);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UCharacterAttributeSet::OnRep_HealCharge(FGameplayAttributeData const& OldHealCharge)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, HealCharge, OldHealCharge);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UCharacterAttributeSet::OnRep_HealChargeStartTime(FGameplayAttributeData const& OldHealChargeStartTime)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSet, HealChargeStartTime, OldHealChargeStartTime);
 }

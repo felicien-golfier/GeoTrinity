@@ -26,9 +26,12 @@ Lives on `AGeoPlayerState` alongside the ASC.
 | Attribute | Purpose |
 |---|---|
 | `Ammo` / `MaxAmmo` | Triangle's ammo system; basic attack costs 1 ammo per shot |
-| `HealMultiplier` | Captured by `ExecCalc_Heal` as source multiplier |
+| `AppliedHealBoost` | Captured by `ExecCalc_Heal` as source multiplier (healer's outgoing boost) |
+| `ReceivedHealBoost` | Captured by `ExecCalc_Heal` as target multiplier (recipient's incoming boost) |
 | `DamageMultiplier` | Captured by `ExecCalc_Damage` as source multiplier |
 | `DamageReduction` | Captured by `ExecCalc_Damage` as target reduction |
 | `MovementSpeedMultiplier` | Read by `UGeoCharacterMovementComponent::ApplySpeedMultiplier()` |
 | `RotationSpeedMultiplier` | Read by `APlayableCharacter::UpdateAimRotation()` |
 | `SacrificeValue` | Damage captured by the Square's sacrifice channel, consumed by the sacrifice detonation. Replicated for HUD display; zeroed on death (`DeathLogic`) |
+| `HealCharge` | Healing recorded during the Circle's `GeoSweetSpotChargePassiveAbility` charge window, converted to damage by a full-gauge sweet-spot release of the charge beam |
+| `HealChargeStartTime` | Server world time when the passive's charge window started (0 = idle). Replicated so the HUD status-bar gauge shows the time-based fill |

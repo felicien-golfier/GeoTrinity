@@ -31,7 +31,7 @@
 - `IsTeamAttitudeAligned(Agent1, Agent2)` — checks alignment
 
 **Context helpers:**
-- Getters/setters for all `FGeoGameplayEffectContext` custom fields (crit, block, knockback, radial, debuff)
+- `GetStatusTag` / `SetStatusTag` — the only Blueprint-exposed `FGeoGameplayEffectContext` field accessors. The call-site scoped fields are set through `FEffectData::UpdateContextHandle`, not from Blueprints
 
 **Ability CDO:**
 - `GetAbilityCDO<T>(ASC, Tag)` — get ability CDO by gameplay tag (for reading config values)

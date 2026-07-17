@@ -24,7 +24,8 @@ GameplayCue gating: suppresses the cue when `bSuppressGameplayCue` is set on the
 ## `ExecCalc_Heal.h`
 
 Captures:
-- `HealMultiplier` from **source** `UCharacterAttributeSet`
+- `AppliedHealBoost` from **source** `UCharacterAttributeSet` (healer's outgoing heal boost)
+- `ReceivedHealBoost` from **target** `UCharacterAttributeSet` (recipient's incoming heal boost)
 
 Applies to `IncomingHeal` meta-attribute on `UGeoAttributeSetBase`.
 

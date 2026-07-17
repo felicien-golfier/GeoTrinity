@@ -17,7 +17,9 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 										  FGameplayAbilityActivationInfo const ActivationInfo,
 										  FGameplayEventData const* TriggerEventData)
 {
-	if (CommitBehaviour != ECommitBehaviour::AtActivate && !CheckCost(Handle, ActorInfo)
+	if ((CommitBehaviour == ECommitBehaviour::DoNotAutoCommit && !CheckCost(Handle, ActorInfo))
+		|| (CommitBehaviour == ECommitBehaviour::CostAtActivateCooldownAtEnd
+			&& !CommitAbilityCost(Handle, ActorInfo, ActivationInfo))
 		|| (CommitBehaviour == ECommitBehaviour::AtActivate && !CommitAbility(Handle, ActorInfo, ActivationInfo)))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
