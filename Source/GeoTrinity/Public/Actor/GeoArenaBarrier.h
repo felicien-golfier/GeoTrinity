@@ -46,10 +46,13 @@ class GEOTRINITY_API AGeoArenaBarrier : public AActor
 	GENERATED_BODY()
 
 public:
+	/** Sets up replication and enables tick capability; tick starts disabled and is re-enabled by BeginPlay and OnRep_bIsClosed. */
 	AGeoArenaBarrier();
 
+	/** Registers bIsClosed for replication so open/close state is pushed to all clients. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/** Enables one tick so animated actors snap to their default (fight-off) positions, after which Tick disables itself. */
 	virtual void BeginPlay() override;
 	/** Advances the open/close lerp, then disables itself once the animated actors reach their resting transform. */
 	virtual void Tick(float DeltaSeconds) override;
