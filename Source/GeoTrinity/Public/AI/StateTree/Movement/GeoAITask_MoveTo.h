@@ -26,6 +26,7 @@ class GEOTRINITY_API UGeoAITask_MoveTo : public UAITask_MoveTo
 	GENERATED_BODY()
 
 public:
+	/** Enables per-frame tick so TickTask drives the pitch curve; world timers are unsafe here because ResetTimers clears them on each path replan. */
 	UGeoAITask_MoveTo(const FObjectInitializer& ObjectInitializer);
 
 	/** Looping sound played for the duration of a move. Its pitch is driven by PitchCurve over the move. Set by

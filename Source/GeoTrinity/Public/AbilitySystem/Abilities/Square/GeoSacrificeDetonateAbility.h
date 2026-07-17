@@ -21,6 +21,7 @@ class GEOTRINITY_API UGeoSacrificeDetonateAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Sets bActivateOnFreshPressOnly so a held button never chain-activates the detonation while the sacrifice channel is still active on the same input. */
 	UGeoSacrificeDetonateAbility();
 
 protected:
@@ -42,7 +43,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat BaseDamage;
 
-	/** Flat damage added to the consumed SacrificeValue. Scales with ability level. */
+	/** Fraction of consumed SacrificeValue added to the ray's total damage (total = BaseDamage + SacrificeValue × this). */
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	float SacrificeValueMultiplier = .7f;
 
