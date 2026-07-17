@@ -45,6 +45,8 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 	// Bind Delegate on server to receive Fire data from client
 	if (GeoLib::IsServer(GetWorld()))
 	{
+		ClampRemoteClientOrigin();
+
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey()).RemoveAll(this);
 		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey())
@@ -316,6 +318,26 @@ void UGeoGameplayAbility::UpdatePayloadFromTargetData(FGeoAbilityTargetData cons
 	StoredPayload.ServerSpawnTime = TargetData.ServerSpawnTime;
 	StoredPayload.Origin = TargetData.Origin;
 	StoredPayload.Yaw = TargetData.Yaw;
+}
+
+void UGeoGameplayAbility::ClampRemoteClientOrigin()
+{
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (IsLocallyControlled() || !IsValid(Avatar))
+	{
+		return;
+	}
+
+	float const MaxDeviation = GetDefault<UGameDataSettings>()->MaxFireOriginDeviation;
+	if (FVector2D::DistSquared(StoredPayload.Origin, FVector2D(Avatar->GetActorLocation()))
+		<= FMath::Square(MaxDeviation))
+	{
+		return;
+	}
+
+	UE_LOG(LogGeoASC, Warning, TEXT("%s: rejected fire origin %s from %s, snapped to fire socket."),
+		   *GetAbilityTag().ToString(), *StoredPayload.Origin.ToString(), *Avatar->GetName());
+	StoredPayload.Origin = GetFireOrigin2D(Avatar, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
 }
 
 FGeoAbilityTargetData UGeoGameplayAbility::GetUpdatedTargetData()

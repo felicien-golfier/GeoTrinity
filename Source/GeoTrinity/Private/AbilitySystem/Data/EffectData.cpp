@@ -52,16 +52,25 @@ FActiveGameplayEffectHandle FGameplayEffectData::ApplyEffect(FGameplayEffectCont
 
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GameplayEffect, AbilityLevel, SpecContextHandle);
 
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, DataTag,
-																  Magnitude.GetValueAtLevel(AbilityLevel));
-	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_DurationMagnitude,
-																  Duration.GetValueAtLevel(AbilityLevel));
+	if (DataTag.IsValid())
+	{
+		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, DataTag,
+																	  Magnitude.GetValueAtLevel(AbilityLevel));
+	}
+
+	float const DurationToSet = Duration.GetValueAtLevel(AbilityLevel);
+	if (DurationToSet > 0.f)
+	{
+		FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_DurationMagnitude,
+																	  Duration.GetValueAtLevel(AbilityLevel));
+	}
 
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
-void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32, FGameplayTag AbilityTag) const
+void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32,
+											FGameplayTag AbilityTag) const
 {
 	if (bSuppressGameplayCue)
 	{
@@ -80,8 +89,9 @@ void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectCon
 		EffectContext->SetDoNotRedirectSacrifice(true);
 	}
 
-	// Basic-ability identity comes from the firing ability's own tags, not a per-effect flag. Many effect sources (zones,
-	// drains) have no originating ability — guard the invalid tag so we never run the lookup or log a spurious warning.
+	// Basic-ability identity comes from the firing ability's own tags, not a per-effect flag. Many effect sources
+	// (zones, drains) have no originating ability — guard the invalid tag so we never run the lookup or log a spurious
+	// warning.
 	if (!AbilityTag.IsValid())
 	{
 		return;

@@ -56,6 +56,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float FireInterval = 1.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	bool bOverrideDistanceSpan = true;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
+			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideDistanceSpan",
+					  EditConditionHides = "true", UIMin = "0"))
+	float DistanceSpan = 2000.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	bool bOverrideSpeed = true;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
+			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideSpeed",
+					  EditConditionHides = "true", UIMin = "0"))
+	float ProjectileSpeed = 4000.f;
+
+
 private:
 	// Set on the server each tick from FindBestTarget; replicated so clients can orient toward the live target
 	// location.

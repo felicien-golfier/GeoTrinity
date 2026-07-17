@@ -31,7 +31,7 @@ precompiled `UnrealGame` engine libs those configs link against.
 launcher option adds them, so `-server` / `-serverconfig` fails there. The dev PC has a launcher install, so
 package the server on CI — run the **Build GeoTrinity (Custom)** workflow with `build_server: true`.
 
-- Output initially lands in `C:\GeoTrinity\Build\Windows`. After a successful build, rename and reorganise to match the CI convention (see `.github/workflows/build-custom.yml`):
+- UAT archives to `C:\GeoTrinity\Build\Windows`. `Tools\Build_Package.bat` then renames that folder to `C:\GeoTrinity\Build\GeoTrinity` and zips it to `C:\GeoTrinity\Build\GeoTrinity.zip` alongside it (the zip contains a top-level `GeoTrinity\` folder). The raw RunUAT command does neither — it leaves `Windows\`. After a successful build, rename and reorganise to match the CI convention (see `.github/workflows/build-custom.yml`):
   - Rename `C:\GeoTrinity\Build` → `C:\GeoTrinity\Build\GeoTrinity_{branch}_{config}_{timestamp}` (branch from `git rev-parse --abbrev-ref HEAD`, `/`→`-`; timestamp `yyyyMMdd_HHmmss`; config = `Development` unless specified)
   - Move contents of `Windows\` up into the renamed folder, then remove the empty `Windows\` subfolder.
 - Run the listen server: `GeoTrinity.exe` in the renamed folder → MainMenu → Play Local → Host.

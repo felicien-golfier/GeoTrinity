@@ -70,13 +70,8 @@ private:
 	void HandleQuit();
 
 	UFUNCTION()
-	void HandleCreateServerClosed();
+	void HandleSubPanelClosed();
 
-	UFUNCTION()
-	void HandleBrowseServerClosed();
-
-	UFUNCTION()
-	void HandleLocalConnectClosed();
-
+	void OpenSubPanel(UGeoMenuPanelWidget* SubPanel);
 	void SetButtonsVisible(bool bVisible);
 };

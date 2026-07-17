@@ -118,8 +118,23 @@ void AGeoTurret::TryFire()
 	Payload.AbilityLevel = Data.Level;
 	Payload.AbilityTag = GetData()->AbilityTag;
 
-	GeoASLib::FullySpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform, Payload,
-								   GetData()->EffectDataArray, SpawnServerTime);
+	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform,
+																Payload, GetData()->EffectDataArray);
+	if (!ensureMsgf(Projectile, TEXT("TurretProjectile: Failed to spawn projectile!")))
+	{
+		return;
+	}
+
+	if (bOverrideDistanceSpan)
+	{
+		Projectile->OverrideDistanceSpan(DistanceSpan);
+	}
+	if (bOverrideSpeed)
+	{
+		Projectile->OverrideSpeed(ProjectileSpeed);
+	}
+
+	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, FPredictionKey());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

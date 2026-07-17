@@ -60,6 +60,19 @@ void UGeoCreateServerWidget::NativeConstruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoCreateServerWidget::GetInitialFocusWidget() const
+{
+	return CreateButton;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoCreateServerWidget::HandleBackAction()
+{
+	HandleBack();
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoCreateServerWidget::PopulateComboBoxes()
 {
 	MapComboBox->ClearOptions();

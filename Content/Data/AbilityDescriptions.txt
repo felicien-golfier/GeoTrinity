@@ -50,7 +50,7 @@ Fires a ray that consumes your walls on its path — each consumed wall powers t
 Channels a beam that marks allies inside it: marked allies take no damage — it's split evenly between you and your alive walls instead, and every point is stored for the detonation. Channel ends after {MaxChannelDuration}s, arming the detonation automatically.
 
 [Ability.Spell.SacrificeDetonate]
-Unleashes the stored sacrifice as a ray, dealing {BaseDamage} damage plus all absorbed damage to every enemy on its path. Pressing during the channel detonates immediately.
+Unleashes the stored sacrifice as a ray, dealing {BaseDamage} damage plus {SacrificeValueMultiplier:%} of absorbed damage to every enemy on its path. Pressing during the channel detonates immediately.
 
 [Ability.Spell.SpiralHellfire]
 Launch a projectile spiral spree

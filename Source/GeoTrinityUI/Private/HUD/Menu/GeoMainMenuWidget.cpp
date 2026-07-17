@@ -75,9 +75,9 @@ void UGeoMainMenuWidget::NativeConstruct()
 	JoinServerButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleJoinServer);
 	PlayLocalButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandlePlayLocal);
 	QuitButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleQuit);
-	CreateServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleCreateServerClosed);
-	BrowseServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleBrowseServerClosed);
-	LocalConnectWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleLocalConnectClosed);
+	CreateServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
+	BrowseServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
+	LocalConnectWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
 
 	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
@@ -93,22 +93,19 @@ UWidget* UGeoMainMenuWidget::GetInitialFocusWidget() const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleCreateServer()
 {
-	SetButtonsVisible(false);
-	CreateServerWidget->SetVisibility(ESlateVisibility::Visible);
+	OpenSubPanel(CreateServerWidget);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleJoinServer()
 {
-	SetButtonsVisible(false);
-	BrowseServerWidget->SetVisibility(ESlateVisibility::Visible);
+	OpenSubPanel(BrowseServerWidget);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandlePlayLocal()
 {
-	SetButtonsVisible(false);
-	LocalConnectWidget->SetVisibility(ESlateVisibility::Visible);
+	OpenSubPanel(LocalConnectWidget);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -123,27 +120,21 @@ void UGeoMainMenuWidget::HandleQuit()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoMainMenuWidget::HandleCreateServerClosed()
+void UGeoMainMenuWidget::HandleSubPanelClosed()
 {
 	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
-	SetButtonsVisible(true);
-	CreateServerButton->SetFocus();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoMainMenuWidget::HandleBrowseServerClosed()
-{
 	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
-	SetButtonsVisible(true);
-	CreateServerButton->SetFocus();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoMainMenuWidget::HandleLocalConnectClosed()
-{
 	LocalConnectWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
 	CreateServerButton->SetFocus();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMainMenuWidget::OpenSubPanel(UGeoMenuPanelWidget* SubPanel)
+{
+	SetButtonsVisible(false);
+	SubPanel->SetVisibility(ESlateVisibility::Visible);
+	SubPanel->SetFocus();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -180,6 +180,10 @@ protected:
 	 * snapshot. */
 	void UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData);
 
+	/** Server-side: snaps StoredPayload.Origin back to the fire socket when a remote client reports an origin
+	 *  further than GameDataSettings::MaxFireOriginDeviation from its avatar. */
+	void ClampRemoteClientOrigin();
+
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;

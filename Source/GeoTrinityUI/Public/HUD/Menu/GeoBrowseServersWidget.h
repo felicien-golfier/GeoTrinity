@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
+#include "HUD/Menu/GeoMenuPanelWidget.h"
 #include "OnlineSessionSettings.h"
 
 #include "GeoBrowseServersWidget.generated.h"
@@ -22,13 +22,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoBrowseServersClosedSignature);
 /**
  * Browse-servers panel. Finds and lists online sessions; allows filtering by name (client-side)
  * and language (server-side query). Blueprint subclasses build the visual layout and configure
- * data through EditAnywhere properties.
+ * data through EditAnywhere properties. Communicates back to the main menu exclusively via the OnClosed
+ * delegate, which fires from both BackButton and the panel's back input.
  * Required in the BP hierarchy: UEditableTextBox "SearchInput", UComboBoxString "LanguageComboBox",
  * UProgressBar "SearchProgressBar", UGeoMenuButton "RefreshButton", "BackButton",
  * UScrollBox "ServerListScrollBox".
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoBrowseServersWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoBrowseServersWidget : public UGeoMenuPanelWidget
 {
 	GENERATED_BODY()
 
@@ -45,7 +46,11 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
-	
+	/** Returns RefreshButton. */
+	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Fires OnClosed and consumes the back input. */
+	virtual bool HandleBackAction() override;
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Server")
 	void BP_FindSessions();
 

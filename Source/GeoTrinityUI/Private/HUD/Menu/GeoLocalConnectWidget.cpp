@@ -51,6 +51,19 @@ void UGeoLocalConnectWidget::NativeConstruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoLocalConnectWidget::GetInitialFocusWidget() const
+{
+	return HostButton;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoLocalConnectWidget::HandleBackAction()
+{
+	HandleBack();
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoLocalConnectWidget::HandleHost()
 {
 	UGeoSessionSubsystem* Session = GetGameInstance()->GetSubsystem<UGeoSessionSubsystem>();

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
+#include "HUD/Menu/GeoMenuPanelWidget.h"
 
 #include "GeoCreateServerWidget.generated.h"
 
@@ -16,12 +16,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoCreateServerClosedSignature);
 /**
  * "Create Server" form widget. Reads server settings from its form fields and creates a session.
  * Blueprint subclasses build the visual layout and set the data arrays (MapDisplayNames, MapURLs, etc.).
- * Communicates back to the main menu exclusively via the OnClosed delegate — no hard upward reference.
+ * Communicates back to the main menu exclusively via the OnClosed delegate — no hard upward reference — which
+ * fires from both BackButton and the panel's back input.
  * Required in the BP hierarchy: UEditableTextBox "ServerNameInput", UComboBoxString "MapComboBox",
  * "SlotsComboBox", "LanguageComboBox", "PrivacyComboBox", UGeoMenuButton "CreateButton", "BackButton".
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoCreateServerWidget : public UUserWidget
+class GEOTRINITYUI_API UGeoCreateServerWidget : public UGeoMenuPanelWidget
 {
 	GENERATED_BODY()
 
@@ -46,6 +47,10 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	/** Returns CreateButton. */
+	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Fires OnClosed and consumes the back input. */
+	virtual bool HandleBackAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UEditableTextBox> ServerNameInput;

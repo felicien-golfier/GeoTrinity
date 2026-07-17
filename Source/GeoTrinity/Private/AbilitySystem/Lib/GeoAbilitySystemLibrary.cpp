@@ -812,7 +812,8 @@ void UGeoAbilitySystemLibrary::FinishSpawnProjectile(UWorld const* World, AGeoPr
 
 	if (GeoLib::IsServer(World))
 	{
-		float const TimeDelta = GeoLib::GetServerTime(World) - SpawnServerTime;
+		float const TimeDelta = FMath::Clamp(GeoLib::GetServerTime(World) - SpawnServerTime, 0.f,
+											 GetDefault<UGameDataSettings>()->MaxLatencyCompensation);
 		if (TimeDelta > 0.f)
 		{
 			Projectile->AdvanceProjectile(TimeDelta);

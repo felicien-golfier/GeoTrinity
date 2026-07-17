@@ -4,6 +4,18 @@ Creating and configuring UMG Widget Blueprints via `execute_script` and C++ shim
 
 ---
 
+## Always Reuse the Existing Menu System
+
+Never author a menu widget, panel, or button from the engine base classes. Every menu-facing widget derives from the project's menu panel base, and every clickable element from the project's button class — see `Source/GeoTrinityUI/Public/HUD/Menu/` and the table in `Source/GeoTrinityUI/Public/HUD/CLAUDE.md`.
+
+The base classes are what make a menu gamepad-usable: they route the gamepad back button and BackSpace to the innermost panel's back action, hand focus to a declared initial widget on the first navigation input, and map focus onto hover so gamepad selection and mouse selection render and sound identically. A widget built on the engine bases inherits none of this, so it is unreachable by controller and cannot be backed out of, even when it looks correct with a mouse.
+
+Deriving from the panel base obliges the widget to declare its initial focus target and, if it can be dismissed, its back action. A nested sub-panel needs both just as much as a top-level menu does — a panel that only forwards its close through a delegate still has to be its own panel to receive the back input.
+
+New buttons match the existing ones by reusing the styled button class and configuring its exposed appearance properties, never by restyling a raw engine button.
+
+---
+
 ## Creating a Widget Blueprint
 
 Use `WidgetBlueprintFactory` with `parent_class` set, then create via `AssetTools`. See `AI/Python/charge_beam_gauge.py` for a full example.

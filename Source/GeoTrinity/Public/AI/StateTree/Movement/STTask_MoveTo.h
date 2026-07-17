@@ -27,7 +27,7 @@ struct GEOTRINITY_API FSTTask_MoveToInstanceData : public FStateTreeMoveToTaskIn
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	TObjectPtr<UCurveFloat> MovePitchCurve;
 
-	/** One-shot sound played at the pawn when the move ends, whether it arrived or was interrupted. */
+	/** One-shot sound played at the pawn when a started move ends, whether it arrived or was interrupted. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	TObjectPtr<USoundBase> MoveEndSound;
 };

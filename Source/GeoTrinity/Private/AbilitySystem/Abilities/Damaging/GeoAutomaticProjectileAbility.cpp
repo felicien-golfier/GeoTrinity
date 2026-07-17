@@ -34,7 +34,7 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 
 	FVector const Origin{StoredPayload.Origin, ArbitraryCharacterZ};
 	AActor const* Avatar = GetAvatarActorFromActorInfo();
-	float const ProjectileYaw = Avatar->GetActorRotation().Yaw;
+	float const ProjectileYaw = StoredPayload.Yaw;
 	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
 
 	bool bAnySpawned = false;
@@ -42,7 +42,7 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	{
 		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
 		AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform,
-																   StoredPayload, GetEffectDataArray(), PredictionKey);
+																	StoredPayload, GetEffectDataArray(), PredictionKey);
 		if (!ensureMsgf(Projectile, TEXT("GeoAutomaticProjectileAbility: Failed to spawn projectile!")))
 		{
 			continue;

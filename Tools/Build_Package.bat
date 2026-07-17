@@ -13,4 +13,27 @@ if not defined UE (
 )
 echo Engine: %UE%
 
-"%UE%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="%REPO%\GeoTrinity.uproject" -noP4 -platform=Win64 -clientconfig=Development -cook -build -stage -pak -archive -archivedirectory="%REPO%\Build"
+call "%UE%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="%REPO%\GeoTrinity.uproject" -noP4 -platform=Win64 -clientconfig=Development -cook -build -stage -pak -archive -archivedirectory="%REPO%\Build"
+if errorlevel 1 exit /b %errorlevel%
+
+if not exist "%REPO%\Build\Windows" (
+  echo Expected staged build at "%REPO%\Build\Windows" but it does not exist.
+  exit /b 1
+)
+
+REM UAT always archives to a platform-named folder; rename it to the product name.
+if exist "%REPO%\Build\GeoTrinity" rmdir /s /q "%REPO%\Build\GeoTrinity"
+move "%REPO%\Build\Windows" "%REPO%\Build\GeoTrinity" >nul
+if errorlevel 1 (
+  echo Failed to rename "%REPO%\Build\Windows" to "%REPO%\Build\GeoTrinity".
+  exit /b 1
+)
+echo Build: %REPO%\Build\GeoTrinity
+
+echo Zipping "%REPO%\Build\GeoTrinity" to "%REPO%\Build\GeoTrinity.zip"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path '%REPO%\Build\GeoTrinity' -DestinationPath '%REPO%\Build\GeoTrinity.zip' -Force"
+if errorlevel 1 (
+  echo Failed to create "%REPO%\Build\GeoTrinity.zip".
+  exit /b 1
+)
+echo Zip: %REPO%\Build\GeoTrinity.zip

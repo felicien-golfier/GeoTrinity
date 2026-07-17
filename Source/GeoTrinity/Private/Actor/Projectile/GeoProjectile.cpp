@@ -217,7 +217,7 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 	bIsEnding = true;
 	EndSoundType = EProjectileSoundType::ValidOverlapEnd;
 
-	if (HasAuthority())
+	if (GeoLib::IsServer(this))
 	{
 		GeoASLib::ApplyEffectFromEffectData(EffectDataArray, GeoASLib::GetGeoAscFromActor(Payload.Owner),
 											GeoASLib::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel,
@@ -363,7 +363,8 @@ void AGeoProjectile::InitProjectileMovementComponent()
 	}
 	else if (bUseGeneralSpellSpeed)
 	{
-		ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = GetDefault<UGameDataSettings>()->GeneralSpellSpeed;
+		ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed =
+			GetDefault<UGameDataSettings>()->GeneralSpellSpeed;
 	}
 
 	// Clear any previous movement state

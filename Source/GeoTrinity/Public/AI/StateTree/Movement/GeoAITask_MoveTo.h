@@ -51,7 +51,8 @@ protected:
 	 *  re-enter here) or on a dedicated server. */
 	void PlayMoveSound();
 
-	/** Plays EndSound once at the pawn's location. No-op when no end sound is set or on a dedicated server. */
+	/** Plays EndSound once at the pawn's location. No-op when no end sound is set or on a dedicated server.
+	 *  Only called for a move that actually started — a request that failed or was already at the goal plays nothing. */
 	void PlayEndSound();
 
 	/** Pitch multiplier for the given 0..1 move progress: PitchCurve sampled at Alpha, or 1 when no curve is set. */
@@ -66,4 +67,7 @@ protected:
 
 	/** Travel time (path length / speed) the pitch interpolation spans. */
 	float MoveSoundTravelTime = 0.f;
+
+	/** True once a move request has actually started pathing; EndSound only plays for a move that started. */
+	bool bMoveStarted = false;
 };

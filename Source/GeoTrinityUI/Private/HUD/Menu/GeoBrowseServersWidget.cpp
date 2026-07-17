@@ -86,6 +86,19 @@ void UGeoBrowseServersWidget::NativeDestruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoBrowseServersWidget::GetInitialFocusWidget() const
+{
+	return RefreshButton;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoBrowseServersWidget::HandleBackAction()
+{
+	HandleBack();
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoBrowseServersWidget::PopulateListFromBP(TArray<FBlueprintSessionResult> const& ListOfResults)
 {
 	UE_LOG(LogTemp, Log, TEXT("Populating list from BP with %u results"), ListOfResults.Num());

@@ -7,12 +7,13 @@
 #include "Curves/CurveFloat.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "NavigationData.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-UGeoAITask_MoveTo::UGeoAITask_MoveTo(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UGeoAITask_MoveTo::UGeoAITask_MoveTo(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	// UAITask_MoveTo::ResetTimers clears every timer bound to this task on each PerformMove, so the pitch cannot be
 	// driven from a world timer.
@@ -27,6 +28,7 @@ void UGeoAITask_MoveTo::PerformMove()
 	if (Path.IsValid())
 	{
 		Path->EnableRecalculationOnInvalidation(true);
+		bMoveStarted = true;
 		PlayMoveSound();
 	}
 }
@@ -55,7 +57,10 @@ void UGeoAITask_MoveTo::OnDestroy(bool bInOwnerFinished)
 		MoveSoundComponent = nullptr;
 	}
 
-	PlayEndSound();
+	if (bMoveStarted)
+	{
+		PlayEndSound();
+	}
 
 	Super::OnDestroy(bInOwnerFinished);
 }
@@ -63,7 +68,7 @@ void UGeoAITask_MoveTo::OnDestroy(bool bInOwnerFinished)
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAITask_MoveTo::PlayMoveSound()
 {
-	// PerformMove re-runs on every path replan; keep the single loop started at the move's start playing across them.
+	// PerformMove re-runs when a move is resumed or restarted; keep the loop started at the move's start playing.
 	if (MoveSoundComponent || !MoveSound || GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		return;
@@ -71,26 +76,27 @@ void UGeoAITask_MoveTo::PlayMoveSound()
 
 	AAIController* Controller = GetAIController();
 	ACharacter* Character = Controller ? Cast<ACharacter>(Controller->GetPawn()) : nullptr;
-	if (!Character)
+	if (!ensureMsgf(Character, TEXT("UGeoAITask_MoveTo: MoveSound needs an ACharacter pawn to attach to")))
 	{
 		return;
 	}
 
-	float const MoveSpeed = Character->GetCharacterMovement()->GetMaxSpeed();
-	if (MoveSpeed <= 0.f)
+	UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
+	float const MoveSpeed = MovementComponent->GetMaxSpeed();
+	FVector::FReal const PathLength = Path->GetLength();
+	if (MoveSpeed <= 0.f || PathLength <= 0.f)
 	{
+		UE_LOG(LogGeoTrinity, Warning, TEXT("%s: no move sound, path length %.1f, max speed %.1f, movement mode %d"),
+			   *Character->GetName(), PathLength, MoveSpeed, int32(MovementComponent->MovementMode.GetValue()));
 		return;
 	}
 
-	MoveSoundTravelTime = Path->GetLength() / MoveSpeed;
-	if (MoveSoundTravelTime <= 0.f)
-	{
-		return;
-	}
-
+	MoveSoundTravelTime = PathLength / MoveSpeed;
 	MoveSoundComponent =
 		UGameplayStatics::SpawnSoundAttached(MoveSound, Character->GetRootComponent(), NAME_None, FVector::ZeroVector,
 											 EAttachLocation::KeepRelativeOffset, true, 1.f, GetMoveSoundPitch(0.f));
+	UE_CLOG(!MoveSoundComponent, LogGeoTrinity, Warning, TEXT("%s: SpawnSoundAttached returned null for %s"),
+			*Character->GetName(), *MoveSound->GetName());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

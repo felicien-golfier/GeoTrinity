@@ -62,17 +62,15 @@ void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 {
 	Super::OnCreate(AbilityTag, Owner);
 
-	if (GeoLib::IsDedicatedServer(GetWorld())
-		|| !ensureMsgf(AOEVfxSystem && MaskMaterialParameterCollection,
-					   TEXT("UDevastatingWavePattern: AOEVfxSystem or MaskMaterialParameterCollection is not set")))
+	if (!GeoLib::IsDedicatedServer(GetWorld())
+		&& ensureMsgf(AOEVfxSystem && MaskMaterialParameterCollection,
+					  TEXT("UDevastatingWavePattern: AOEVfxSystem or MaskMaterialParameterCollection is not set")))
 	{
-		return;
+		AOEVfxComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			this, AOEVfxSystem, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
+			/*bAutoDestroy*/ false, /*bAutoActivate*/ false);
+		ensureMsgf(AOEVfxComponent, TEXT("UDevastatingWavePattern: failed to spawn the AOE VFX system"));
 	}
-
-	AOEVfxComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, AOEVfxSystem, FVector::ZeroVector,
-																	 FRotator::ZeroRotator, FVector::OneVector,
-																	 /*bAutoDestroy*/ false, /*bAutoActivate*/ false);
-	ensureMsgf(AOEVfxComponent, TEXT("UDevastatingWavePattern: failed to spawn the AOE VFX system"));
 }
 
 void UDevastatingWavePattern::ClearData()
@@ -88,18 +86,15 @@ void UDevastatingWavePattern::ClearData()
 }
 void UDevastatingWavePattern::StartPattern()
 {
-
-	if (!IsValid(AOEVfxComponent))
-	{
-		return;
-	}
-
 	ClearData();
 
 	// Leave the telegraph behind and start the real expanding wave. Re-activating keeps the same component alive,
 	// so the wave origin and grow params are re-pushed here.
 	GetWorld()->GetTimerManager().ClearTimer(TelegraphBlinkTimerHandle);
-	ActivateAOEVfx();
+	if (IsValid(AOEVfxComponent))
+	{
+		ActivateAOEVfx();
+	}
 
 	Super::StartPattern();
 }

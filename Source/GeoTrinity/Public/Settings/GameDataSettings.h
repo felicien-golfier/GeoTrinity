@@ -66,6 +66,14 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float MaxDeployDistance = 1500.f;
 
+	/** Maximum time the server fast-forwards a projectile to compensate the client's reported spawn time. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay", meta = (ClampMin = "0"))
+	float MaxLatencyCompensation = .5f;
+
+	/** Maximum distance a client-reported fire origin may deviate from the server's avatar before it is snapped back. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay", meta = (ClampMin = "0"))
+	float MaxFireOriginDeviation = 300.f;
+
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	TSoftObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
