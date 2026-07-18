@@ -14,6 +14,7 @@ class UBoxComponent;
  * FightOnTransform is the resting place while the fight is active (barrier closed),
  * FightOffTransform while the fight is inactive (barrier open).
  */
+/** An actor paired with the transforms it lerps between when the barrier opens or closes. */
 USTRUCT(BlueprintType)
 struct FBarrierAnimatedActor
 {
