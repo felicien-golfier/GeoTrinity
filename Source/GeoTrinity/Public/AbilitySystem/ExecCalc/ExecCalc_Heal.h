@@ -18,8 +18,10 @@ class GEOTRINITY_API UExecCalc_Heal : public UGameplayEffectExecutionCalculation
 {
 	GENERATED_BODY()
 public:
+	/** Registers AppliedHealBoost (source) and ReceivedHealBoost (target) attribute capture definitions. */
 	UExecCalc_Heal();
 
+	/** Captures heal boosts from source and target, scales IncomingHeal accordingly, and broadcasts OnHealProvided on the source ASC. */
 	virtual void Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
 										FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
 

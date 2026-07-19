@@ -10,9 +10,9 @@
 class UBoxComponent;
 
 /**
- * An actor moved between two world locations when the barrier opens/closes.
- * FightOnTransform is the resting place while the fight is active (barrier closed),
- * FightOffTransform while the fight is inactive (barrier open).
+ * An actor paired with the transforms it lerps between when the barrier opens or closes.
+ * FightOnTransform is the resting place while the fight is active (barrier closed);
+ * FightOffTransform is the resting place while the fight is inactive (barrier open).
  */
 USTRUCT(BlueprintType)
 struct FBarrierAnimatedActor

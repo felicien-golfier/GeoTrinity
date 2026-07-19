@@ -24,6 +24,7 @@ class GEOTRINITY_API UGeoSweetSpotChargePassiveAbility : public UGeoGameplayAbil
 	GENERATED_BODY()
 
 public:
+	/** Sets NetSecurityPolicy to ServerOnly so a client cancel request cannot end the server's passive instance after a revive. */
 	UGeoSweetSpotChargePassiveAbility();
 
 	/** Returns the gauge fill (0–1): recorded HealCharge over HealRequiredForFullCharge, clamped. */

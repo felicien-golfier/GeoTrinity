@@ -20,6 +20,7 @@ class GEOTRINITY_API UGeoAutomaticFireAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Sets instancing policy to InstancedPerActor, enables replication, and configures CommitBehaviour to DoNotAutoCommit — cost is committed per shot inside Fire(). */
 	UGeoAutomaticFireAbility();
 
 protected:
