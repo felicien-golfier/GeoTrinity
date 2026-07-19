@@ -4,8 +4,6 @@
 
 #include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "AbilitySystemBlueprintLibrary.h"
-#include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "Components/AudioComponent.h"
@@ -178,7 +176,7 @@ bool AGeoProjectile::IsValidOverlap(AActor* OtherActor)
 {
 	// When we are on a fully replicated projectile, Payload is not replicated, but Owner and Instigator are.
 	AActor* const CurrentOwner = IsValid(Payload.Owner) ? Payload.Owner : GetOwner();
-	AActor* const CurrentInstigator = IsValid(Payload.Instigator) ? Payload.Instigator : GetInstigator();
+	AActor* const CurrentInstigator = GetCurrentInstigator();
 
 	if (!IsValid(CurrentOwner) || !IsValid(CurrentInstigator) || !IsValid(OtherActor))
 	{
@@ -230,7 +228,7 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 
 float AGeoProjectile::GetPitch_Implementation(EProjectileSoundType SoundType) const
 {
-	FProjectileSoundEntry const* Entry = SoundMap.Find(SoundType);
+	FGeoSoundEntry const* Entry = SoundMap.Find(SoundType);
 	if (!Entry)
 	{
 		return 1.f;
@@ -240,52 +238,35 @@ float AGeoProjectile::GetPitch_Implementation(EProjectileSoundType SoundType) co
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float AGeoProjectile::GetPitch(FProjectileSoundEntry const& Entry) const
+float AGeoProjectile::GetPitch(FGeoSoundEntry const& Entry) const
 {
-	float Pitch = 1.f;
-
-	if (IsValid(Entry.PitchCurve) && Entry.PitchAttribute.IsValid())
-	{
-		UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetInstigator());
-		if (IsValid(ASC))
-		{
-			bool bFound = false;
-			float const AttributeValue = ASC->GetGameplayAttributeValue(Entry.PitchAttribute, bFound);
-			if (bFound)
-			{
-				Pitch = Entry.PitchCurve->GetFloatValue(AttributeValue);
-			}
-		}
-	}
-
-	Pitch *= FMath::RandRange(Entry.RandomPitchMultiplierRange.X, Entry.RandomPitchMultiplierRange.Y);
-
-	return Pitch;
+	return UGeoSoundRowLibrary::GetPitch(Entry, GetCurrentInstigator());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float AGeoProjectile::GetVolume(FProjectileSoundEntry const& Entry) const
+AActor* AGeoProjectile::GetCurrentInstigator() const
 {
-	AActor const* const CurrentInstigator = IsValid(Payload.Instigator) ? Payload.Instigator : GetInstigator();
-	return GeoLib::IsLocalPlayerAvatar(CurrentInstigator) ? Entry.Volume : Entry.Volume / NonLocalOwnerVolumeDivider;
+	// When we are on a fully replicated projectile, Payload is not replicated, but Instigator is.
+	return IsValid(Payload.Instigator) ? Payload.Instigator : GetInstigator();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlaySoundOneShot(EProjectileSoundType const SoundType) const
 {
-	if (FProjectileSoundEntry const* Entry = SoundMap.Find(SoundType))
+	if (FGeoSoundEntry const* Entry = SoundMap.Find(SoundType))
 	{
 		PlaySoundOneShot(*Entry);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::PlaySoundOneShot(FProjectileSoundEntry const& Entry) const
+void AGeoProjectile::PlaySoundOneShot(FGeoSoundEntry const& Entry) const
 {
-	if (IsValid(Entry.Sound))
+	if (UGeoSoundRowLibrary::ShouldPlay(this, Entry, GetCurrentInstigator()))
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, Entry.Sound, GetActorLocation(), FRotator::ZeroRotator,
-											  GetVolume(Entry), GetPitch(Entry), Entry.StartTime);
+											  UGeoSoundRowLibrary::GetVolume(Entry, GetCurrentInstigator()),
+											  GetPitch(Entry), Entry.StartTime);
 	}
 }
 
@@ -455,10 +436,12 @@ void AGeoProjectile::InitProjectileLife()
 {
 	if (!GeoLib::IsDedicatedServer(this))
 	{
-		if (FProjectileSoundEntry const* LoopingEntry = SoundMap.Find(EProjectileSoundType::Looping))
+		if (FGeoSoundEntry const* LoopingEntry = SoundMap.Find(EProjectileSoundType::Looping);
+			LoopingEntry && UGeoSoundRowLibrary::ShouldPlay(this, *LoopingEntry, GetCurrentInstigator()))
 		{
 			LoopingSoundComponent->SetSound(LoopingEntry->Sound);
-			LoopingSoundComponent->SetVolumeMultiplier(GetVolume(*LoopingEntry));
+			LoopingSoundComponent->SetVolumeMultiplier(
+				UGeoSoundRowLibrary::GetVolume(*LoopingEntry, GetCurrentInstigator()));
 			LoopingSoundComponent->SetPitchMultiplier(GetPitch(EProjectileSoundType::Looping));
 			LoopingSoundComponent->Play();
 		}
@@ -477,8 +460,7 @@ void AGeoProjectile::InitProjectileLife()
 	bIsEnding = false;
 	EndSoundType = EProjectileSoundType::NoOverlapEnd;
 
-	AActor* const CurrentInstigator = IsValid(Payload.Instigator) ? Payload.Instigator : GetInstigator();
-	ReviveBoundInstigator = Cast<AGeoCharacter>(CurrentInstigator);
+	ReviveBoundInstigator = Cast<AGeoCharacter>(GetCurrentInstigator());
 	if (ReviveBoundInstigator.IsValid())
 	{
 		InstigatorRevivedHandle =

@@ -68,7 +68,7 @@ void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 			{
 				FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
 				CueParams.Location = FVector(Location, ArbitraryCharacterZ);
-				InstigatorASC->InvokeGameplayCueEvent(GameplayCueTag, EGameplayCueEvent::Executed, CueParams);
+				GeoASLib::ExecuteLocalGameplayCue(InstigatorASC, GameplayCueTag, CueParams);
 			}
 		}
 	}

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
-#include "AttributeSet.h"
+#include "AbilitySystem/Data/GeoSoundRow.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "StructUtils/InstancedStruct.h"
@@ -12,13 +12,11 @@
 #include "GeoProjectile.generated.h"
 
 class AGeoCharacter;
-class UCurveFloat;
 class UGeoAbilitySystemComponent;
 class UProjectileMovementComponent;
 class UNiagaraSystem;
 class USphereComponent;
 class USceneComponent;
-class USoundBase;
 class UAudioComponent;
 class UPrimitiveComponent;
 struct FHitResult;
@@ -32,36 +30,6 @@ enum class EProjectileSoundType : uint8
 	NoOverlapEnd,
 	/** Played when the projectile overlaps a valid target. */
 	ValidOverlapEnd,
-};
-
-/**
- * A projectile sound: the asset, its volume, and an attribute-driven pitch modifier with optional random variance.
- * The base pitch is read from the instigator's ASC attribute value sampled against PitchCurve;
- * the result is then multiplied by a random value in RandomPitchMultiplierRange.
- */
-USTRUCT(BlueprintType)
-struct FProjectileSoundEntry
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<USoundBase> Sound;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
-	float Volume = 1.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
-	float StartTime = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FGameplayAttribute PitchAttribute;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UCurveFloat> PitchCurve;
-
-	/** Random pitch multiplier range applied on top of the curve result. X = min, Y = max. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
-	FVector2D RandomPitchMultiplierRange = FVector2D(1.f, 1.f);
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
@@ -195,33 +163,28 @@ protected:
 
 	/**
 	 * Returns the pitch multiplier for the sound identified by SoundType.
-	 * Default: looks up SoundMap, reads the mapped gameplay attribute from the instigator's ASC,
-	 * evaluates the pitch curve at that value, then multiplies by a random value in RandomPitchMultiplierRange.
-	 * Returns 1.0 if no entry exists or the attribute cannot be read. Override in Blueprint for custom logic.
+	 * Default: looks up SoundMap and forwards to GetPitch(Entry).
+	 * Returns 1.0 if no entry exists. Override in Blueprint for custom logic.
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|Audio")
 	float GetPitch(EProjectileSoundType SoundType) const;
 
-	/** Returns the pitch multiplier for Entry: attribute value sampled against PitchCurve, then multiplied by a random
-	 * value in RandomPitchMultiplierRange. Virtual so subclasses can layer additional pitch factors (e.g. size). */
-	virtual float GetPitch(FProjectileSoundEntry const& Entry) const;
+	/** Returns the pitch multiplier for Entry via UGeoSoundRowLibrary::GetPitch with the projectile's instigator.
+	 * Virtual so subclasses can layer additional pitch factors (e.g. size). */
+	virtual float GetPitch(FGeoSoundEntry const& Entry) const;
 
-	/** Returns Entry.Volume, divided by NonLocalOwnerVolumeDivider when the projectile's instigator is not the local
-	 * player's avatar, so other players' projectiles are quieter than your own. */
-	float GetVolume(FProjectileSoundEntry const& Entry) const;
-
-	/** Volume divider applied to every projectile sound whose instigator is not the local player's avatar. */
-	static constexpr float NonLocalOwnerVolumeDivider = 2.f;
-
-	/** Plays the mapped sound once at the actor's location with its volume and attribute-driven pitch. */
+	/** Plays the mapped sound once at the actor's location with its audience-gated volume and attribute-driven pitch. */
 	void PlaySoundOneShot(EProjectileSoundType SoundType) const;
 
-	/** Plays Entry once at the actor's location with its volume and attribute-driven pitch. */
-	void PlaySoundOneShot(FProjectileSoundEntry const& Entry) const;
+	/** Plays Entry once at the actor's location with its audience-gated volume and attribute-driven pitch. */
+	void PlaySoundOneShot(FGeoSoundEntry const& Entry) const;
 
-	/** Per-sound-type sound asset + volume + attribute-driven pitch mapping. */
+	/** Returns Payload.Instigator, falling back to GetInstigator() when the payload is not replicated. */
+	AActor* GetCurrentInstigator() const;
+
+	/** Per-sound-type sound asset + volume + audience + attribute-driven pitch mapping. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoProjectile|Audio")
-	TMap<EProjectileSoundType, FProjectileSoundEntry> SoundMap;
+	TMap<EProjectileSoundType, FGeoSoundEntry> SoundMap;
 
 	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
 	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
@@ -275,9 +238,6 @@ private:
 
 	TWeakObjectPtr<AGeoCharacter> ReviveBoundInstigator;
 	FDelegateHandle InstigatorRevivedHandle;
-
-	/** Sound played by PlayImpactFx; switched to ValidOverlapEnd by HandleValidOverlap, reset to NoOverlapEnd in
-	 * InitProjectileLife. */
 
 	FVector InitialPosition;
 	float DistanceSpanSqr;

@@ -384,6 +384,19 @@ AActor* UGeoAbilitySystemLibrary::GetNearestActorFromList(AActor const* FromActo
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemLibrary::ExecuteLocalGameplayCue(UAbilitySystemComponent* ASC, FGameplayTag const& CueTag,
+													   FGameplayCueParameters const& CueParams)
+{
+	if (!CueTag.IsValid()
+		|| !ensureMsgf(IsValid(ASC), TEXT("ExecuteLocalGameplayCue: null ASC for cue %s"), *CueTag.ToString()))
+	{
+		return;
+	}
+
+	ASC->InvokeGameplayCueEvent(CueTag, EGameplayCueEvent::Executed, CueParams);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 FGameplayTag UGeoAbilitySystemLibrary::GetStatusTag(FGameplayEffectContextHandle const& effectContextHandle)
 {
 	FGeoGameplayEffectContext const* pGeoContext =

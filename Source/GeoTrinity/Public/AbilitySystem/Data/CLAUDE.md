@@ -68,6 +68,18 @@ Status effect configuration data (types, durations, visuals). Referenced by `FSt
 
 ---
 
-## `GeoSoundRow.h`
-`FGeoSoundRow : FTableRowBase` — `Tag` (`FGameplayTag`) + `Sound` (`USoundBase`). DataTable row type for tag→sound lookup; the tag is an explicit field (picked from the tag tree), **not** the row name.
-`UGeoSoundRowLibrary::FindSoundForTag(SoundTable, Tag, bFound)` — `BlueprintPure`, returns the full `FGeoSoundRow` (Sound + PitchRandomMinMax) of the first row whose `Tag` matches exactly (`MatchesTagExact`); `bFound` is false and a default row is returned on miss. Used by the `GenericSound` GameplayCueNotify: `MatchedTagName` → `FindSoundForTag` → `Play Sound` with pitch randomized from the row.
+## `GeoSoundRow.h` — the one sound system
+
+`FGeoSoundEntry` — **the single sound-definition struct for the whole project** (projectile SoundMap, DataTable rows, one-off entries). Fields: `Sound`, `Volume`, `StartTime`, `Audience` (bitmask of `EGeoSoundAudienceBitflag`: `InstigatorMachine` / `OtherMachines`; default both), `OtherMachinesVolumeMultiplier` (default 0.5 — other players' sounds are half volume on your machine), attribute-driven pitch (`PitchAttribute` + `PitchCurve`), `RandomPitchMultiplierRange`. A `CoreRedirects` struct redirect maps the old `FProjectileSoundEntry` name.
+
+`UGeoSoundRowLibrary` — the single playback path; never call `PlaySoundAtLocation`/`PlaySound2D` directly for gameplay sounds:
+- `ShouldPlay(WorldContext, Entry, SoundInstigator)` — false on dedicated server, no Sound asset, or when the Audience mask excludes this machine (instigator == local player's avatar → `InstigatorMachine` bit, else `OtherMachines`; null instigator always plays)
+- `GetVolume(Entry, SoundInstigator)` — applies `OtherMachinesVolumeMultiplier` when the instigator is not the local player's avatar
+- `GetPitch(Entry, SoundInstigator)` — instigator-ASC attribute sampled against `PitchCurve`, × random range
+- `PlaySoundEntry2D(WorldContext, Entry, SoundInstigator)` — `BlueprintCallable`; combines the three above
+- `FindSoundForTag(SoundTable, Tag, bFound)` — `BlueprintPure`; first row whose `Tag` matches exactly (`MatchesTagExact`)
+
+`FGeoSoundRow : FTableRowBase` — `Tag` (`FGameplayTag`, explicit field, **not** the row name) + `Entry` (`FGeoSoundEntry`). Row type of `DT_GenericSound`.
+
+## `GeoGenericSoundCueNotify.h`
+`UGeoGenericSoundCueNotify : UGameplayCueNotify_Burst` — C++ handler for the generic-sound GameplayCue (`GenericGameplayCueSoundTag` in `UGameDataSettings`). `OnExecute`: for each tag in the cue's `AggregatedSourceTags`, `FindSoundForTag(SoundTable, tag)` → `PlaySoundEntry2D` with `Parameters.Instigator`. The `GenericSound` BP in `/Game/AbilitySystem/GameplayCues/` is reparented to it with no graph logic; to add a new one-off sound, add a row to `DT_GenericSound` and fire the cue with the sound tag in `AggregatedSourceTags` (set `CueParameters.Instigator`).

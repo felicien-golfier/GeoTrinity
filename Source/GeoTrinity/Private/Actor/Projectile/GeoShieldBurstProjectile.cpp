@@ -59,7 +59,7 @@ void AGeoShieldBurstProjectile::UpdateVisualRadius(float Radius) const
 	Niagara->SetVariableFloat(FName("User.Bullet_Radius"), Radius);
 }
 
-float AGeoShieldBurstProjectile::GetPitch(FProjectileSoundEntry const& Entry) const
+float AGeoShieldBurstProjectile::GetPitch(FGeoSoundEntry const& Entry) const
 {
 	float Pitch = Super::GetPitch(Entry);
 	if (IsValid(BounceSoundSizePitchCurve))

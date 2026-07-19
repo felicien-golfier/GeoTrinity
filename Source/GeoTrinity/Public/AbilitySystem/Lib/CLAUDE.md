@@ -30,6 +30,9 @@
 - Use these instead of any physics overlap when filtering game agents.
 - `IsTeamAttitudeAligned(Agent1, Agent2)` — checks alignment
 
+**GameplayCues:**
+- `ExecuteLocalGameplayCue(ASC, CueTag, CueParams)` — executes the cue on this machine only via `InvokeGameplayCueEvent(Executed)`. Use for cosmetics fired by logic already running on every relevant machine (OnReps, locally-gated ability code); `ExecuteGameplayCue` would additionally multicast from a listen-server host and double-play on clients. No-op when CueTag is invalid.
+
 **Context helpers:**
 - `GetStatusTag` / `SetStatusTag` — the only Blueprint-exposed `FGeoGameplayEffectContext` field accessors. The call-site scoped fields are set through `FEffectData::UpdateContextHandle`, not from Blueprints
 

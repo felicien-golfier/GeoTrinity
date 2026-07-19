@@ -23,6 +23,8 @@ Open a command prompt and run:
 
 # GAS — Gameplay Cues
 
+## Passive ability won't auto start if ClientOnly OR ClientPredicted (That is the default value)
+
 ## ExecCalc attribute capture: Source vs Target
 When adding a new ExecCalc that captures a multiplier attribute (e.g. `HealMultiplier`), capture from **Target** if the GE is applied by a non-character source (deployable, pickup). Capture from **Source** only when the caster/attacker is the source and owns the attribute (e.g. `DamageMultiplier` on the attacker).
 

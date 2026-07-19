@@ -319,6 +319,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Toolbox")
 	static AActor* GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList);
 
+	/**
+	 * Executes CueTag on ASC locally, on this machine only, via InvokeGameplayCueEvent(Executed).
+	 * Use for cosmetics fired by logic that already runs on every relevant machine (OnReps, locally-gated ability
+	 * code): ExecuteGameplayCue would additionally multicast from a listen-server host, double-playing the cue on
+	 * clients. No-op when CueTag is invalid (optional cue not configured).
+	 */
+	static void ExecuteLocalGameplayCue(UAbilitySystemComponent* ASC, FGameplayTag const& CueTag,
+										FGameplayCueParameters const& CueParams);
+
 	/** Returns the status gameplay tag stored in the effect context (invalid tag when none). */
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
 	static FGameplayTag GetStatusTag(FGameplayEffectContextHandle const& effectContextHandle);

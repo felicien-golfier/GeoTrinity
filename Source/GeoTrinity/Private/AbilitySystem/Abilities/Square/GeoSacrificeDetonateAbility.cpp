@@ -87,8 +87,6 @@ void UGeoSacrificeDetonateAbility::Detonate(FGeoAbilityTargetData const& Ability
 		CueParams.AbilityLevel = GetAbilityLevel();
 		CueParams.RawMagnitude = SacrificeValue; // Replicated attribute — read before the server-side reset.
 
-		// Local-only: the call is already gated to the locally-controlled machine, so each client fires the cue itself.
-		// ExecuteGameplayCue would additionally multicast on the host, double-playing it on clients.
-		SourceASC->InvokeGameplayCueEvent(FireGameplayCueTag, EGameplayCueEvent::Executed, CueParams);
+		GeoASLib::ExecuteLocalGameplayCue(SourceASC, FireGameplayCueTag, CueParams);
 	}
 }

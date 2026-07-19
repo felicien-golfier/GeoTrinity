@@ -49,7 +49,7 @@ public:
 protected:
 	/** Sound played each time the projectile bounces, off a wall or an enemy. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile|Audio")
-	FProjectileSoundEntry BounceSound;
+	FGeoSoundEntry BounceSound;
 
 	/** Extra pitch multiplier for BounceSound, evaluated against the sphere's current scaled radius. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile|Audio")
@@ -70,7 +70,7 @@ protected:
 
 	/** Extends base pitch with an extra factor from BounceSoundSizePitchCurve, evaluated at the sphere's current
 	 * scaled radius, so bigger bursts pitch differently. */
-	virtual float GetPitch(FProjectileSoundEntry const& Entry) const override;
+	virtual float GetPitch(FGeoSoundEntry const& Entry) const override;
 
 	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients.
 	 */

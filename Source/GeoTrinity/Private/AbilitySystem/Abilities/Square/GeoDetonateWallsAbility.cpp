@@ -125,9 +125,6 @@ void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTarge
 		CueParams.NormalizedMagnitude = bHasAppliedEffectWithABoostedValue;
 		CueParams.RawMagnitude = bHasAppliedEffectWithABoostedValue;
 
-		// Local-only: the call is already gated to the locally-controlled machine, so each client fires the cue itself.
-		// ExecuteGameplayCue would additionally multicast on the host, double-playing it on clients.
-		GetAbilitySystemComponentFromActorInfo()->InvokeGameplayCueEvent(FireGameplayCueTag, EGameplayCueEvent::Executed,
-																		 CueParams);
+		GeoASLib::ExecuteLocalGameplayCue(GetAbilitySystemComponentFromActorInfo(), FireGameplayCueTag, CueParams);
 	}
 }

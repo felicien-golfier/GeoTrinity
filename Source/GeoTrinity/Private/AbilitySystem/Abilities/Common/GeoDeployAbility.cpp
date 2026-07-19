@@ -133,9 +133,8 @@ void UGeoDeployAbility::OnCooldownTagChanged(FGameplayTag const /*CooldownTag*/,
 		CueParams.Instigator = GetAvatarActorFromActorInfo();
 		CueParams.AggregatedSourceTags.AddTag(SoundTag);
 
-		// Local-only: each client fires the cue itself off its own predicted/replicated tag edge, so no multicast.
-		GetAbilitySystemComponentFromActorInfo()->InvokeGameplayCueEvent(CueTag, EGameplayCueEvent::Executed,
-																		 CueParams);
+		// Each client fires the cue itself off its own predicted/replicated tag edge.
+		GeoASLib::ExecuteLocalGameplayCue(GetAbilitySystemComponentFromActorInfo(), CueTag, CueParams);
 	}
 }
 

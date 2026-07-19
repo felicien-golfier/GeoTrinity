@@ -269,21 +269,8 @@ void AGeoDeployableBase::Recall(float Value)
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::ExecuteCue(FGameplayTag const& GameplayCueTag, FGameplayCueParameters const& CueParams) const
 {
-	if (!GameplayCueTag.IsValid())
-	{
-		return;
-	}
-
-	UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponent());
-	if (!IsValid(ASC))
-	{
-		ensureMsgf(IsValid(ASC), TEXT("AGeoDeployableBase: no ASC on self"));
-		return;
-	}
-
-	// Local-only: each machine fires the cue once (host via the call site, clients via OnRep). ExecuteGameplayCue would
-	// multicast on the authority, double-playing it on clients with engine-stripped params.
-	ASC->InvokeGameplayCueEvent(GameplayCueTag, EGameplayCueEvent::Executed, CueParams);
+	// Each machine fires the cue once: host via the call site, clients via OnRep.
+	GeoASLib::ExecuteLocalGameplayCue(GetAbilitySystemComponent(), GameplayCueTag, CueParams);
 }
 
 void AGeoDeployableBase::RecallEffect(float Value)
