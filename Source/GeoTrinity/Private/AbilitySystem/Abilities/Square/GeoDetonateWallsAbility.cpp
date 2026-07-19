@@ -15,13 +15,11 @@ void UGeoDetonateWallsAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 {
 	Super::Fire(AbilityTargetData);
 
-	if (GeoLib::IsDedicatedServer(this))
+	if (IsLocallyControlled())
 	{
-		return; // Stop here on dedicated server it will all execute from the OnFireTargetDataReceived.
+		FireRay(AbilityTargetData);
+		EndAbility(false);
 	}
-
-	FireRay(AbilityTargetData);
-	EndAbility(false);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

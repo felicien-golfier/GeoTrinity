@@ -65,6 +65,7 @@ Source/GeoTrinity/
 │   │   ├── Turret/            # GeoTurret
 │   │   ├── GeoClassChangeTrigger.h
 │   │   ├── GeoEffectZone.h
+│   │   ├── GeoHexArena.h      # Destructible hex-tile boss platform (fall check, dash-jump exemption, owns its boss)
 │   │   └── GeoInteractableActor.h
 │   ├── Characters/
 │   │   ├── Component/         # GeoCharacterMovementComponent, GeoDeployableManagerComponent, GeoGameFeelComponent, ShieldBurstPassiveComponent, GeoBeamVFXComponent
@@ -76,7 +77,7 @@ Source/GeoTrinity/
 │   │   ├── StateTree/
 │   │   │   ├── Ability/       # STTask_FireAbility
 │   │   │   ├── Blackboard/    # STTask_UpdateBlackboard
-│   │   │   ├── Movement/      # STTask_MoveTo, GeoAITask_MoveTo, STTask_SelectNextFiringPoint
+│   │   │   ├── Movement/      # STTask_MoveTo, GeoAITask_MoveTo, STTask_SelectNextFiringPoint, STTask_ChaseTarget
 │   │   │   ├── Property/      # STPropertyFunction_GetHealthRatio, STPropertyFunction_GetBlackboard
 │   │   │   └── Utility/       # STTask_SendEventAfterNCycles
 │   │   ├── GeoAIBlackboardComponent.h

@@ -20,6 +20,7 @@ Each method validates, compiles (`FCompilerManager::CompileSynchronously`), and 
 - `ClearTransitions` / `AddTransition` — manage `GotoState` transitions; `AddTransition` takes a trigger and, for `OnEvent`, an event tag name
 - `AddFloatEnterCondition` — appends a `FStateTreeCompareFloatCondition` to a state's `EnterConditions`
 - `BindConditionPropertyToPropertyFunction` — binds a condition property to a Property Function output (e.g. `FSTGetHealthRatioPropertyFunction`) and wires the function's input to a context object
+- `AddTaskToState` — appends a task of any struct type (unqualified USTRUCT name) to an existing state with default instance data; context properties auto-bind at compile
 - `AddSendEventAfterNCyclesTask` — appends an `FSTTask_SendEventAfterNCycles` task to an existing state
 - `ClearEnterConditions` — removes all enter conditions from a state
 - `SetRequiredEventToEnter` / `ClearRequiredEventToEnter` — set or clear the Required Event To Enter on a state

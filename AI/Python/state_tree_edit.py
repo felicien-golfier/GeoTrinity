@@ -35,6 +35,9 @@ cdo.bind_condition_property_to_property_function(
     "FSTGetHealthRatioPropertyFunction", "Output", "Input",
     "GeoEnemyAIController")
 
+# Add a task of any struct type to an existing state (default instance data, context auto-binds at compile)
+# cdo.add_task_to_state(st, "StateName", "STTask_ChaseTarget")
+
 # Add STTask_SendEventAfterNCycles to an existing state
 # cdo.add_send_event_after_n_cycles_task(st, "StateName", CyclesRequired, "Event.Tag.Name")
 

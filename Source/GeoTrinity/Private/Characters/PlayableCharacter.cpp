@@ -18,10 +18,6 @@
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
 
-static TAutoConsoleVariable<bool> CVarPlayerInvincible(TEXT("Geo.PlayerInvincible"), false,
-													   TEXT("When true, players never die from health reaching zero."),
-													   ECVF_Cheat);
-
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	DeployChargeGaugeComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("DeployChargeGaugeComponent"));
@@ -273,7 +269,7 @@ void APlayableCharacter::SetBodyMaterial(UMaterialInterface* Material)
 
 void APlayableCharacter::OnHealthChanged(float const NewValue)
 {
-	if (NewValue <= 0.f && !CVarPlayerInvincible.GetValueOnGameThread())
+	if (NewValue <= 0.f)
 	{
 		Death();
 	}
@@ -356,6 +352,13 @@ void APlayableCharacter::PossessedBy(AController* NewController)
 	// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
 	InitGAS();
 	ChangeClass(PickStartingClass());
+
+	// Late joiners during an active fight arrive dead and spectate until the arena resets.
+	AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
+	if (GameState && GameState->IsMatchInProgress())
+	{
+		Death();
+	}
 }
 
 void APlayableCharacter::ChangeClass(EPlayerClass NewClass)

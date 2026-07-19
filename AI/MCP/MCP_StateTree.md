@@ -25,6 +25,7 @@ Make UFUNCTIONs as generic as possible — accept struct type, state name, paren
 |---|---|
 | `ListStates` | Logs all states recursively with indent, task tags, and transitions |
 | `AddState` | Adds an empty state with no task; for idle states gated by an event transition |
+| `AddTaskToState` | Adds a task of any struct type (by unqualified name) to an existing state with default instance data |
 | `AddFireAbilityStateByTagName` | Adds a state with a fire-projectile task; pass `"None"` (string) for root parent, `InsertIndex=-1` to append |
 | `ReplaceFireAbilityTagInState` | Finds a state by name, replaces its task tag, compiles, saves |
 | `AddFloatEnterCondition` | Appends a `Float Compare` enter condition to a state; sets `Right` (threshold) and operator |

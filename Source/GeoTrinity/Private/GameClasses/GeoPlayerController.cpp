@@ -2,6 +2,7 @@
 
 #include "GameClasses/GeoPlayerController.h"
 
+#include "Actor/GeoHexArena.h"
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraActor.h"
 #include "Engine/Engine.h"
@@ -29,6 +30,36 @@ static FAutoConsoleCommandWithWorld GShowPingCommand(TEXT("Geo.ShowPing"), TEXT(
 														 {
 															 bShowPing = !bShowPing;
 														 }));
+
+static FAutoConsoleCommandWithWorld GDestroyTileUnderMouseCommand(
+	TEXT("Geo.DestroyTileUnderMouse"), TEXT("Destroys the hex arena tile under the mouse cursor"),
+	FConsoleCommandWithWorldDelegate::CreateLambda(
+		[](UWorld* World)
+		{
+			AGeoPlayerController* PC = AGeoPlayerController::GetLocalGeoPlayerController(World);
+			AGeoHexArena* Arena =
+				Cast<AGeoHexArena>(UGameplayStatics::GetActorOfClass(World, AGeoHexArena::StaticClass()));
+			if (!ensureMsgf(PC && Arena, TEXT("Geo.DestroyTileUnderMouse: no local player controller or hex arena")))
+			{
+				return;
+			}
+
+			FVector WorldLocation;
+			FVector WorldDirection;
+			if (!PC->DeprojectMousePositionToWorld(WorldLocation, WorldDirection) ||
+				FMath::IsNearlyZero(WorldDirection.Z))
+			{
+				return;
+			}
+			float const PlaneT = (Arena->GetActorLocation().Z - WorldLocation.Z) / WorldDirection.Z;
+			FVector2D const MouseWorldLocation(WorldLocation + WorldDirection * PlaneT);
+
+			FIntPoint Tile;
+			if (Arena->GetTileUnderLocation(MouseWorldLocation, Tile))
+			{
+				Arena->DestroyTiles({Tile});
+			}
+		}));
 #endif
 
 AGeoPlayerController::AGeoPlayerController(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)

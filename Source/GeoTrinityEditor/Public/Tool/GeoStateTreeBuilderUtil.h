@@ -80,6 +80,14 @@ public:
 														FName FunctionOutputPropertyName,
 														FName FunctionInputPropertyName, FName ContextClassName);
 
+	/**
+	 * Adds a task of any type to an existing state, with default instance data. TaskStructName is the unqualified
+	 * USTRUCT name (e.g. "STTask_ChaseTarget"). Context properties (Category = Context) are auto-bound by the schema at
+	 * compile; other instance data keeps its defaults. Compiles and saves.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void AddTaskToState(UStateTree* StateTree, FName StateName, FName TaskStructName);
+
 	/** Adds an FSTTask_SendEventAfterNCycles task to an existing state. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddSendEventAfterNCyclesTask(UStateTree* StateTree, FName StateName, int32 CyclesRequired,

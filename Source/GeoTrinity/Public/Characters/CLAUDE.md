@@ -35,6 +35,8 @@ the server. **`RemoveActiveEffects` is server-guarded inside both**: it only act
 removal replicates to clients. Calling it client-side is a no-op that would otherwise leave locally-predicted effects
 (e.g. dash cooldown) lingering after death — the cause of dash being unavailable on the client after respawn. Each class entry in `ClassData` (`FPlayerClassData`) configures `AliveMaterial` + `DeathMaterial`;
 both swap on mesh slot 0.
+Late joiners: `PossessedBy` calls `Death()` right after `ChangeClass` when the match is InProgress, so players joining
+mid-fight arrive dead and spectate (free camera panned with move input) until the arena resets and revives everyone.
 
 ## Component Subfolder
 

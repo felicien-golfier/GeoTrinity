@@ -14,6 +14,7 @@
 #include "StateTreeEditorData.h"
 #include "StateTreeEditorPropertyBindings.h"
 #include "StateTreeState.h"
+#include "StateTreeTaskBase.h"
 #include "StateTreeTypes.h"
 
 static UStateTreeState* FindStateRecursive(TArray<TObjectPtr<UStateTreeState>> const& States, FName StateName)
@@ -419,6 +420,47 @@ void UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction(
 
 	EditorData->Modify();
 	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction"));
+}
+
+void UGeoStateTreeBuilderUtil::AddTaskToState(UStateTree* StateTree, FName StateName, FName TaskStructName)
+{
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddTaskToState"));
+	if (!EditorData)
+	{
+		return;
+	}
+
+	UStateTreeState* State = FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::AddTaskToState"));
+	if (!State)
+	{
+		return;
+	}
+
+	UScriptStruct const* TaskStruct = FindFirstObject<UScriptStruct>(*TaskStructName.ToString());
+	if (!ensureMsgf(TaskStruct && TaskStruct->IsChildOf(FStateTreeTaskBase::StaticStruct()),
+					TEXT("UGeoStateTreeBuilderUtil::AddTaskToState — '%s' is not a StateTree task struct"),
+					*TaskStructName.ToString()))
+	{
+		return;
+	}
+
+	EditorData->Modify();
+	State->Modify();
+
+	FStateTreeEditorNode& TaskItem = State->Tasks.AddDefaulted_GetRef();
+	TaskItem.ID = FGuid::NewGuid();
+	TaskItem.Node.InitializeAs(TaskStruct);
+	FStateTreeNodeBase const& Node = TaskItem.Node.Get<FStateTreeNodeBase>();
+	if (UScriptStruct const* InstanceType = Cast<UScriptStruct const>(Node.GetInstanceDataType()))
+	{
+		TaskItem.Instance.InitializeAs(InstanceType);
+	}
+	if (UScriptStruct const* InstanceType = Cast<UScriptStruct const>(Node.GetExecutionRuntimeDataType()))
+	{
+		TaskItem.ExecutionRuntimeData.InitializeAs(InstanceType);
+	}
+
+	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddTaskToState"));
 }
 
 void UGeoStateTreeBuilderUtil::AddSendEventAfterNCyclesTask(UStateTree* StateTree, FName StateName,

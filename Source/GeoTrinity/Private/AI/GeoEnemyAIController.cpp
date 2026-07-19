@@ -161,4 +161,8 @@ void AGeoEnemyAIController::TriggerAggro()
 	{
 		GeoGameMode->StartMatch();
 	}
+	else
+	{
+		StateTreeComp->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
+	}
 }

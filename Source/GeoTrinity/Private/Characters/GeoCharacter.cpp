@@ -14,6 +14,10 @@
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
+static TAutoConsoleVariable<bool> CVarPlayerInvincible(TEXT("Geo.PlayerInvincible"), false,
+													   TEXT("When true, players never die (zero health or falling)."),
+													   ECVF_Cheat);
+
 static TAutoConsoleVariable CVarShowCharacterServerLocation(
 	TEXT("Geo.ShowCharacterServerLocation"), false,
 	TEXT("When true, the character server location will appear as draw sphere with simple collision size"));
@@ -176,7 +180,7 @@ void AGeoCharacter::BeginPlay()
 
 void AGeoCharacter::Death()
 {
-	if (bIsDead)
+	if (bIsDead || CVarPlayerInvincible.GetValueOnGameThread())
 	{
 		return;
 	}

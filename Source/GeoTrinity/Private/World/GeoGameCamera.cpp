@@ -4,12 +4,17 @@
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Camera/CameraComponent.h"
+#include "Characters/GeoCharacter.h"
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedPlayerInput.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameFramework/GameMode.h"
 #include "GameFramework/GameState.h"
 #include "GameFramework/PlayerController.h"
+#include "Input/GeoInputComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoGameCamera::AGeoGameCamera()
@@ -59,14 +64,17 @@ void AGeoGameCamera::CalculateBounds()
 {
 	AGameState const* GameState = GetWorld()->GetGameState<AGameState>();
 	bool const bFightInProgress = GameState && GameState->GetMatchState() == MatchState::InProgress;
-	FGameplayTag const BoundsTag =
-		bFightInProgress ? FGeoGameplayTags::Get().Camera_Bounds_Fight : FGeoGameplayTags::Get().Camera_Bounds_Intro;
+	SetBoundsTag(bFightInProgress ? FGeoGameplayTags::Get().Camera_Bounds_Fight
+								  : FGeoGameplayTags::Get().Camera_Bounds_Intro);
+}
 
+void AGeoGameCamera::SetBoundsTag(FGameplayTag BoundsTag)
+{
 	TArray<AActor*> BoundPoints = UGeoGameplayLibrary::GetTargetPoints(this, BoundsTag);
 	if (BoundPoints.IsEmpty())
 	{
 		UE_LOG(LogTemp, Warning,
-			   TEXT("AGeoGameCamera: No AGeoTargetPoint with tag %s found — using default bounds ±500."),
+			   TEXT("AGeoGameCamera: No AGeoTargetPoint with tag %s found — keeping previous bounds."),
 			   *BoundsTag.ToString());
 		return;
 	}
@@ -80,6 +88,25 @@ void AGeoGameCamera::CalculateBounds()
 		}
 	}
 	Bounds = Result;
+}
+
+FVector2D AGeoGameCamera::GetSpectateMoveInput(APlayerController const* PlayerController,
+											   AGeoCharacter const* LocalCharacter) const
+{
+	UInputAction const* MoveAction = LocalCharacter->GetGeoInputComponent()->MoveAction;
+	ULocalPlayer const* LocalPlayer = PlayerController->GetLocalPlayer();
+	if (!MoveAction || !LocalPlayer)
+	{
+		return FVector2D::ZeroVector;
+	}
+
+	UEnhancedInputLocalPlayerSubsystem const* InputSubsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
+	if (!InputSubsystem)
+	{
+		return FVector2D::ZeroVector;
+	}
+	return InputSubsystem->GetPlayerInput()->GetActionValue(MoveAction).Get<FVector2D>();
 }
 
 void AGeoGameCamera::Tick(float DeltaTime)
@@ -97,6 +124,14 @@ void AGeoGameCamera::Tick(float DeltaTime)
 	{
 		return;
 	}
+
+	AGeoCharacter const* LocalCharacter = Cast<AGeoCharacter>(LocalPawn);
+	bool const bDead = LocalCharacter && LocalCharacter->IsDead();
+	if (bDead && !bSpectating)
+	{
+		SpectateTarget = FVector2D(GetActorLocation());
+	}
+	bSpectating = bDead;
 
 	float const OrthoHalfWidth = GetCameraComponent()->OrthoWidth * 0.5f;
 
@@ -125,11 +160,21 @@ void AGeoGameCamera::Tick(float DeltaTime)
 	float const MinCameraY = Bounds.Min.Y + ViewportHalfExtentY;
 	float const MaxCameraY = Bounds.Max.Y - ViewportHalfExtentY;
 
-	FVector2D const PawnXY(LocalPawn->GetActorLocation());
+	FVector2D TargetXY(LocalPawn->GetActorLocation());
+	if (bSpectating)
+	{
+		SpectateTarget += GetSpectateMoveInput(LocalPlayerController, LocalCharacter) * SpectateMoveSpeed * DeltaTime;
+		TargetXY = SpectateTarget;
+	}
+
 	FVector2D const BoundsCenter = Bounds.GetCenter();
 	FVector2D const ClampedTarget(
-		MinCameraX <= MaxCameraX ? FMath::Clamp(PawnXY.X, MinCameraX, MaxCameraX) : BoundsCenter.X,
-		MinCameraY <= MaxCameraY ? FMath::Clamp(PawnXY.Y, MinCameraY, MaxCameraY) : BoundsCenter.Y);
+		MinCameraX <= MaxCameraX ? FMath::Clamp(TargetXY.X, MinCameraX, MaxCameraX) : BoundsCenter.X,
+		MinCameraY <= MaxCameraY ? FMath::Clamp(TargetXY.Y, MinCameraY, MaxCameraY) : BoundsCenter.Y);
+	if (bSpectating)
+	{
+		SpectateTarget = ClampedTarget;
+	}
 
 	FVector2D const CameraXY(GetActorLocation());
 	FVector2D const NewXY = FMath::Vector2DInterpTo(CameraXY, ClampedTarget, DeltaTime, FollowInterpSpeed);

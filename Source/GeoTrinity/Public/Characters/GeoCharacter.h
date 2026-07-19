@@ -114,6 +114,10 @@ public:
 	/** Returns true while the player is downed (health reached 0 and not yet revived). */
 	bool IsDead() const { return bIsDead; }
 
+	/** Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from
+	 * OnHealthChanged and from arena fall checks. No-op while Geo.PlayerInvincible is set. */
+	void Death();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -131,9 +135,6 @@ protected:
 	// GAS END
 	//----------------------------------------------------------------------//
 
-	/** Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from
-	 * OnHealthChanged. */
-	void Death();
 	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
 	 */
 	virtual void DeathLogic();

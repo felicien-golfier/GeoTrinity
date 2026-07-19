@@ -29,6 +29,17 @@ Helper AI task spawned by `STTask_MoveTo`. Overrides `PerformMove()` to call `Pa
   be gated on the same condition, or the end half fires for moves that never happened.
 - **Never drive anything from a world timer in a `UAITask_MoveTo` subclass.** `UAITask_MoveTo::ResetTimers()` calls `ClearAllTimersForObject(this)`, which kills *every* timer bound to the task — including ones a subclass registered. It runs at the top of every `PerformMove()` (so on each replan), plus `Pause()` and `OnDestroy()`. It also does not invalidate your `FTimerHandle`, so the handle keeps reading as valid while the timer is already gone. Use `TickTask` instead (the base class neither ticks nor sets `bTickingTask` — a subclass must opt in).
 
+### `STTask_ChaseTarget`
+Straight-line chase for bosses that ignore navmesh and terrain holes (hex arena boss). Ticks every frame:
+- Resolves its target each tick via `GeoASLib::GetInteractableActors<APlayableCharacter>` — prefers a live player of
+  `PreferredTargetClass` (default Square/Tank), falls back to the nearest live player, stands still (still `Running`)
+  when nobody is alive
+- Drives facing via `AIController::SetFocus(Target)` — `UpdateControlRotation` overwrites `SetControlRotation` every
+  frame, so focus is the only reliable input — and `AddMovementInput` while the 2D distance exceeds `StopDistance`;
+  speed comes from the pawn's movement component
+- Never returns Succeeded — end it with transitions. Wake the tree with `AI.Boss.AggroEvent` (sent by
+  `AGeoEnemyAIController::TriggerAggro` for non-match bosses)
+
 ### `STTask_SelectNextFiringPoint`
 Picks a random firing point (tagged `AI.FiringPoint`) excluding the last one used.
 - `FInstanceDataType`: `TargetLocation` (output `FVector`)

@@ -137,9 +137,10 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 			BeamRatio = FMath::Min(BeamRatio + DrainRatio + BoostFinishedZone, MaximumZoneAbsorbed + 1.f);
 			RemainingDuration += DurationPerAbsorbedZone * DrainRatio;
 		}
-		else if (Target->CanBeDamaged())
+		else if (GeoLib::IsServer(GetWorld()) && Target->CanBeDamaged())
 		{
 			float BoostPerAbsorbedZone = 1 + FMath::Max(BeamRatio - 1.f, 0.f) * DamageAndHealBoostPerAbsorbedZone;
+
 			if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::Hostile))
 			{
 				FDamageEffectData DamageEffect;
@@ -151,6 +152,7 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 			}
 			else if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::FriendlyOrNeutral))
 			{
+
 				FHealEffectData HealEffect;
 				HealEffect.HealAmount =
 					HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BoostPerAbsorbedZone * DeltaTime;

@@ -396,7 +396,13 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 	{
 		for (FHitResult const& Hit : HitResults)
 		{
-			if (AActor* HitActor = Hit.GetActor(); HitActor && IsValidOverlap(HitActor))
+			AActor* const HitActor = Hit.GetActor();
+			if (!HitActor)
+			{
+				continue;
+			}
+
+			if (IsValidOverlap(HitActor))
 			{
 				SetActorLocation(Hit.ImpactPoint);
 				if (Hit.bBlockingHit)
@@ -407,6 +413,13 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 				{
 					OnSphereOverlap(nullptr, HitActor, nullptr, 0, false, Hit);
 				}
+				return;
+			}
+
+			if (Hit.bBlockingHit)
+			{
+				SetActorLocation(Hit.ImpactPoint);
+				OnSphereHit(nullptr, HitActor, nullptr, FVector::ZeroVector, Hit);
 				return;
 			}
 		}
