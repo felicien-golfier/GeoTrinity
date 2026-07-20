@@ -24,10 +24,11 @@ EnemyCharacter.md
 ## Death / downed flow (PlayableCharacter)
 
 On health ≤ 0, `Death()` (server) sets replicated `bIsDead`, calls `StopCharacter()` (disable input, stop+disable
-movement, disable collision, swap mesh to the class death material via `SetDeathMaterial`), then `GameState->NotifyPlayerDied()` which triggers `HandlePotentialWipe()` during
-InProgress or immediately revives the player outside InProgress. The corpse **stays in place** — no per-death teleport.
-When all players are dead the GameState resets the boss and requests WaitingToStart; `HandleMatchIsWaitingToStart`
-teleports everyone to the entrance and calls `Revive()` per player (cancels active abilities, removes all gameplay
+movement, disable collision, swap mesh to the class death material via `SetDeathMaterial`), then hands the death to
+**the arena the players are in**: `GameState->GetActiveArena()->RespawnPlayer(*this)`. What a death *means* is the
+arena's decision, not the GameState's — the base `AGeoArena` waits for a full wipe, `AGeoDummyArena` revives on the
+spot. The corpse **stays in place** — no per-death teleport. On a wipe the arena's `RespawnGroup()`
+teleports everyone to its `TargetPoint.Entrance` and calls `Revive()` per player (cancels active abilities, removes all gameplay
 effects, `StopAllSpawnedElements()` — deployables persist while the player is down and expire on revive — re-applies class visuals, and broadcasts `OnRevived` (fired on server in `Revive()` and on clients in `OnRep_IsDead`; in-flight projectiles bind to it and end themselves) via `ApplyClassData()`, then `GiveLife()` — re-applies per-class default attributes
 and restarts passives — then `RestartCharacter()`). The state replicates to
 clients via `OnRep_IsDead(bool)`, which calls `DeathLogic()` or `ReviveLogic()` directly — same bodies that run on

@@ -13,9 +13,10 @@ class AGeoCharacter;
 /**
  * Orthographic follow camera for GeoTrinity.
  * Always follows the local player with exponential smoothing — no edge-trigger dead zone.
- * World-space bounds are computed at BeginPlay from the AGeoTargetPoint actors tagged TargetPoint.CameraBounds
- * for the arena currently being played.
- * Camera decelerates naturally at borders because the clamped target shrinks the interp gap.
+ * World-space bounds are computed from the AGeoTargetPoint actors tagged TargetPoint.CameraBounds for the arena
+ * currently being played. They constrain the camera only during a boss fight (MatchState InProgress); outside a
+ * fight — hub, walking in, post-wipe at the entrance — it follows the local player freely.
+ * Near a border the clamped target shrinks the interp gap, so the camera decelerates naturally.
  * Z position is fixed to the actor's initial spawn height.
  */
 UCLASS(BlueprintType, Blueprintable)

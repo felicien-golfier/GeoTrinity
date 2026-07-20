@@ -19,17 +19,13 @@ void AGeoGameMode::Tick(float DeltaSeconds)
 void AGeoGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
-	AGeoGameState* GeoGameState = GetGameState<AGeoGameState>();
-	if (!GeoGameState || !GeoGameState->IsMatchInProgress())
-	{
-		return;
-	}
+	AGeoGameState const* GeoGameState = GetGameState<AGeoGameState>();
 	APlayableCharacter* PlayableCharacter = Exiting ? Cast<APlayableCharacter>(Exiting->GetPawn()) : nullptr;
-	if (!PlayableCharacter)
+	// Logout runs before the controller unpossesses, so the leaver would otherwise still read as standing.
+	if (GeoGameState && GeoGameState->IsMatchInProgress() && PlayableCharacter)
 	{
-		return;
+		PlayableCharacter->Death();
 	}
-	GeoGameState->NotifyPlayerLeft(PlayableCharacter);
 }
 
 bool AGeoGameMode::ReadyToStartMatch_Implementation()

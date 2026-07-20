@@ -24,7 +24,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	/**
-	 * Notifies the game state when a playable character's controller disconnects during an active fight.
+	 * Downs a disconnecting player's character so the arena stops counting them among the living.
 	 * Non-playable controller exits are silently ignored.
 	 */
 	virtual void Logout(AController* Exiting) override;

@@ -48,16 +48,6 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 {
 	Super::HandleMatchIsWaitingToStart();
 
-	GetWorld()->GetTimerManager().ClearTimer(LootTimer);
-	for (TWeakObjectPtr<UGeoDeployableManagerComponent> const& Manager : LootBoostedManagers)
-	{
-		if (UGeoDeployableManagerComponent* DeployableManager = Manager.Get())
-		{
-			DeployableManager->RemoveDeployableSlot(LootPickupClass);
-		}
-	}
-	LootBoostedManagers.Empty();
-
 	if (GeoLib::IsServer(this))
 	{
 		if (ActiveArena)
@@ -70,14 +60,6 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 			SetActiveArena(FindArena(DefaultArenaTag));
 		}
 	}
-
-	TeleportPlayersTo(FGeoGameplayTags::Get().TargetPoint_Entrance, EntranceZoneTagName);
-}
-
-void AGeoGameState::HandleMatchHasEnded()
-{
-	Super::HandleMatchHasEnded();
-	StopBossFight();
 }
 
 void AGeoGameState::OnRep_MatchState()
@@ -102,7 +84,6 @@ void AGeoGameState::StopBossFight()
 
 	if (GeoLib::IsServer(this))
 	{
-		GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
 		if (ActiveArena)
 		{
 			ActiveArena->EndFight();
@@ -124,6 +105,7 @@ void AGeoGameState::StartBossFight(AEnemyCharacter* Boss)
 
 	if (GeoLib::IsServer(this))
 	{
+		StopLoot();
 		Boss->OnEnemyDefeated.AddUniqueDynamic(this, &AGeoGameState::NotifyBossDefeated);
 
 		if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(Boss->GetController()))
@@ -131,30 +113,8 @@ void AGeoGameState::StartBossFight(AEnemyCharacter* Boss)
 			EnemyAIController->GetStateTreeComp()->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
 		}
 
-		PlayersInFight.Reset();
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-		{
-			if (APlayableCharacter* Player = It->IsValid() ? Cast<APlayableCharacter>((*It)->GetPawn()) : nullptr)
-			{
-				PlayersInFight.Add(Player);
-			}
-		}
-
 		ActiveArena->StartFight();
-
-		GetWorld()->GetTimerManager().SetTimer(CommitFightTimer, this, &AGeoGameState::CommitFightStart,
-											   CommitFightTime, false);
 	}
-}
-
-void AGeoGameState::CommitFightStart()
-{
-	if (!ensureMsgf(ActiveArena, TEXT("Fight-commit timer fired with no active arena")))
-	{
-		return;
-	}
-	TeleportPlayersTo(FGeoGameplayTags::Get().TargetPoint_FightLocation, FightZoneTagName);
-	ActiveArena->CommitFight();
 }
 
 FGameplayTag AGeoGameState::GetActiveArenaTag() const
@@ -194,56 +154,6 @@ AGeoArena* AGeoGameState::FindArena(FGameplayTag const ArenaTag) const
 	return nullptr;
 }
 
-void AGeoGameState::TeleportPlayersTo(FGameplayTag const PurposeTag, FName const& ExemptZoneName) const
-{
-	FGameplayTag const ArenaTag = GetActiveArenaTag();
-	TArray<AActor*> SpawnPoints = GeoLib::GetTargetPoints(this, PurposeTag, ArenaTag);
-	if (SpawnPoints.IsEmpty())
-	{
-		ensureMsgf(false, TEXT("Ensure to add Spawn points tagged %s + %s in your map, DUMBASS"),
-				   *PurposeTag.GetTagName().ToString(), *ArenaTag.GetTagName().ToString());
-		return;
-	}
-
-	TArray<AActor*> ExemptZone;
-	UGameplayStatics::GetAllActorsWithTag(this, ExemptZoneName, ExemptZone);
-
-	int32 SpawnIndex = 0;
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		if (!It->IsValid())
-		{
-			continue;
-		}
-		APawn* Pawn = (*It)->GetPawn();
-		if (!IsValid(Pawn))
-		{
-			continue;
-		}
-
-		bool bTeleport = true;
-		for (AActor const* Zone : ExemptZone)
-		{
-			bTeleport &= !Pawn->IsOverlappingActor(Zone);
-		}
-
-		if (bTeleport)
-		{
-			AActor const* SpawnPoint = SpawnPoints[SpawnIndex % SpawnPoints.Num()];
-			Pawn->SetActorLocation(SpawnPoint->GetActorLocation());
-			++SpawnIndex;
-		}
-	}
-}
-
-void AGeoGameState::RequestWaitingToStart() const
-{
-	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GeoGameMode->RequestWaitingToStart();
-	}
-}
-
 void AGeoGameState::RevivePlayers() const
 {
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
@@ -255,47 +165,6 @@ void AGeoGameState::RevivePlayers() const
 	}
 }
 
-bool AGeoGameState::AreAllPlayersDead() const
-{
-	for (APlayableCharacter* Player : PlayersInFight)
-	{
-		if (IsValid(Player) && !Player->IsDead())
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-void AGeoGameState::NotifyPlayerDied(APlayableCharacter* PlayableCharacter)
-{
-	if (MatchState != MatchState::InProgress)
-	{
-		// Player died while not in progress (e.g. during the fight-commit transition); just revive that player.
-		PlayableCharacter->Revive();
-		return;
-	}
-
-	HandlePotentialWipe();
-}
-
-void AGeoGameState::NotifyPlayerLeft(APlayableCharacter* PlayableCharacter)
-{
-	PlayersInFight.Remove(PlayableCharacter);
-	HandlePotentialWipe();
-}
-
-void AGeoGameState::HandlePotentialWipe()
-{
-	if (!AreAllPlayersDead())
-	{
-		return;
-	}
-
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AGeoGameState::RequestWaitingToStart, DeathTime, false);
-}
-
 void AGeoGameState::NotifyBossDefeated()
 {
 	// Capture before the boss destroys itself right after broadcasting its defeat.
@@ -304,11 +173,8 @@ void AGeoGameState::NotifyBossDefeated()
 		LootOrigin = ActiveArena->GetBoss()->GetActorLocation();
 	}
 
-	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GeoGameMode->RequestWaitingPostMatch();
-	}
 	Loot();
+	RequestWaitingToStart();
 }
 
 void AGeoGameState::Loot()
@@ -318,6 +184,28 @@ void AGeoGameState::Loot()
 		return;
 	}
 	GetWorld()->GetTimerManager().SetTimer(LootTimer, this, &AGeoGameState::SpawnLootBurst, LootSpawnInterval, true);
+}
+
+void AGeoGameState::StopLoot()
+{
+	GetWorld()->GetTimerManager().ClearTimer(LootTimer);
+	for (TWeakObjectPtr<UGeoDeployableManagerComponent> const& Manager : LootBoostedManagers)
+	{
+		if (UGeoDeployableManagerComponent* DeployableManager = Manager.Get())
+		{
+			DeployableManager->RemoveDeployableSlot(LootPickupClass);
+		}
+	}
+	LootBoostedManagers.Empty();
+}
+
+void AGeoGameState::RequestWaitingToStart() const
+{
+	AGeoGameMode* GeoGameMode = GetWorld()->GetAuthGameMode<AGeoGameMode>();
+	if (ensureMsgf(GeoGameMode, TEXT("RequestWaitingToStart is server-only")))
+	{
+		GeoGameMode->RequestWaitingToStart();
+	}
 }
 
 void AGeoGameState::SpawnLootBurst()

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Actor/GeoArena.h"
+#include "Characters/PlayableCharacter.h"
 #include "CoreMinimal.h"
 
 #include "GeoDummyArena.generated.h"
@@ -21,4 +22,7 @@ class GEOTRINITY_API AGeoDummyArena : public AGeoArena
 
 public:
 	virtual bool IsBoss(AActor const* Enemy) const override { return false; }
+
+	/** There is no wipe to wait for at a dummy: whoever dies gets straight back up where they fell. */
+	virtual void RespawnPlayer(APlayableCharacter& Player) override { Player.Revive(); }
 };

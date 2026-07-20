@@ -153,17 +153,24 @@ void AGeoGameCamera::Tick(float DeltaTime)
 		TargetXY = SpectateTarget;
 	}
 
-	FVector2D const BoundsCenter = Bounds.GetCenter();
-	FVector2D const ClampedTarget(
-		MinCameraX <= MaxCameraX ? FMath::Clamp(TargetXY.X, MinCameraX, MaxCameraX) : BoundsCenter.X,
-		MinCameraY <= MaxCameraY ? FMath::Clamp(TargetXY.Y, MinCameraY, MaxCameraY) : BoundsCenter.Y);
+	AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
+	bool const bInFight = GameState && GameState->IsMatchInProgress();
+
+	FVector2D FollowTarget = TargetXY;
+	if (bInFight)
+	{
+		FVector2D const BoundsCenter = Bounds.GetCenter();
+		FollowTarget = FVector2D(
+			MinCameraX <= MaxCameraX ? FMath::Clamp(TargetXY.X, MinCameraX, MaxCameraX) : BoundsCenter.X,
+			MinCameraY <= MaxCameraY ? FMath::Clamp(TargetXY.Y, MinCameraY, MaxCameraY) : BoundsCenter.Y);
+	}
 	if (bSpectating)
 	{
-		SpectateTarget = ClampedTarget;
+		SpectateTarget = FollowTarget;
 	}
 
 	FVector2D const CameraXY(GetActorLocation());
-	FVector2D const NewXY = FMath::Vector2DInterpTo(CameraXY, ClampedTarget, DeltaTime, FollowInterpSpeed);
+	FVector2D const NewXY = FMath::Vector2DInterpTo(CameraXY, FollowTarget, DeltaTime, FollowInterpSpeed);
 
 	FVector const CurrentLocation = GetActorLocation();
 	SetActorLocation(FVector(NewXY.X, NewXY.Y, CurrentLocation.Z));

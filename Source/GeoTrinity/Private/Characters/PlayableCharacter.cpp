@@ -3,6 +3,7 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/GeoArena.h"
 #include "Characters/Component/ShieldBurstPassiveComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameClasses/GeoGameState.h"
@@ -200,12 +201,17 @@ void APlayableCharacter::DeathLogic()
 
 	if (GeoLib::IsServer(this))
 	{
-		AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
+		AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
 		if (!ensureMsgf(GameState, TEXT("No GameState in %s"), *GetName()))
 		{
 			return;
 		}
-		GameState->NotifyPlayerDied(this);
+		AGeoArena* Arena = GameState->GetActiveArena();
+		if (!ensureMsgf(Arena, TEXT("No active arena to respawn %s in"), *GetName()))
+		{
+			return;
+		}
+		Arena->RespawnPlayer(*this);
 	}
 }
 

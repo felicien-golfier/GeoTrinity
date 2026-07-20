@@ -19,10 +19,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FActiveArenaChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMatchStateChanged, FName, MatchState, FName, PreviousMatchState);
 
 /**
- * Replicated game state for GeoTrinity. Drives the boss fight lifecycle via UE's MatchState hooks: coordinates the
- * fight-commit timer, tracks how many players are still alive, and runs the post-match loot shower.
- * A level holds one AGeoArena per encounter; the match runs whichever one is active, so nothing here knows about a
- * particular boss, barrier or room.
+ * Replicated game state for GeoTrinity. Answers two independent questions and nothing else: which arena the players
+ * are in (ActiveArena) and whether a boss fight is running (MatchState). The encounter itself — target points, fight
+ * commit, respawn policy — belongs to AGeoArena, so nothing here knows about a particular boss, barrier or room.
  */
 UCLASS()
 class GEOTRINITY_API AGeoGameState : public AGameState
@@ -37,27 +36,20 @@ public:
 	virtual void HandleMatchHasStarted() override;
 	/** Server. Revives all players currently in the world by calling ReviveLogic() on each pawn. */
 	void RevivePlayers() const;
-	/** Destroys the boss, hides the boss health bar locally, opens the arena barrier, and revives players (server). */
+	/** Hides the boss health bar locally, ends the active arena's fight, and revives players (server). */
 	void StopBossFight();
 
-	/** Resets the active arena's enemies (claiming the DefaultArenaTag arena on the first call), then teleports players
-	 * back to that arena's entrance. */
+	/**
+	 * Server. Stands the match down so the next boss aggro can start a new one. WaitingToStart is the only state
+	 * AGameMode::StartMatch will act on — it early-outs on HasMatchStarted(), which is true in WaitingPostMatch too.
+	 */
+	void RequestWaitingToStart() const;
+
+	/** Resets the active arena's enemies, claiming the DefaultArenaTag arena on the level's first call. */
 	virtual void HandleMatchIsWaitingToStart() override;
 
-	/** Calls StopBossFight(). */
-	virtual void HandleMatchHasEnded() override;
-
-	/** Client-side: calls StopBossFight() when the match transitions away from InProgress. */
+	/** Calls StopBossFight() when the match transitions away from InProgress, on the server and on clients alike. */
 	virtual void OnRep_MatchState() override;
-
-	/**
-	 * Server-only. Called when a player dies. Outside InProgress (e.g. during the fight-commit transition) it just
-	 * revives that player; during the fight it re-checks for a full wipe.
-	 */
-	void NotifyPlayerDied(APlayableCharacter* PlayableCharacter);
-
-	/** Server-only. Stops tracking a player who left the fight, then re-checks for a full wipe. */
-	void NotifyPlayerLeft(APlayableCharacter* PlayableCharacter);
 
 	/** Server-only. Called when the boss health reaches 0. Captures the loot origin, transitions to WaitingPostMatch.
 	 */
@@ -67,8 +59,8 @@ public:
 	void Loot();
 
 	/**
-	 * Shows boss health bar locally, binds the defeat delegate, sends the aggro StateTree event,
-	 * starts the active arena's fight, and schedules the fight-commit timer. Server-side bindings only.
+	 * Shows boss health bar locally, binds the defeat delegate, sends the aggro StateTree event and starts the active
+	 * arena's fight. Server-side bindings only.
 	 */
 	void StartBossFight(AEnemyCharacter* Boss);
 
@@ -82,6 +74,9 @@ public:
 	/** The level's arena carrying ArenaTag, or null when none does. */
 	AGeoArena* FindArena(FGameplayTag ArenaTag) const;
 
+	/** Arena the players are in — their checkpoint, their fight location, and the respawn policy their deaths run. */
+	AGeoArena* GetActiveArena() const { return ActiveArena; }
+
 	/** ArenaTag of the arena the players are in; DefaultArenaTag on a client until ActiveArena has replicated. */
 	FGameplayTag GetActiveArenaTag() const;
 
@@ -92,18 +87,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	FGameplayTag DefaultArenaTag;
 
+	/** Seconds from a fight starting to its commit. Shared by every arena; also the barrier's lerp duration. */
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	float CommitFightTime = 3.f;
-	UPROPERTY(EditAnywhere, Category = "Fight")
-	float DeathTime = 3.f;
-	/**
-	 * Level reference to a trigger volume. On fight commit, players already overlapping this volume
-	 * are left in place instead of being teleported to the arena's fight location. Set in the editor.
-	 */
-	UPROPERTY(EditAnywhere, Category = "Fight")
-	FName FightZoneTagName = "FightZone";
-	UPROPERTY(EditAnywhere, Category = "Fight")
-	FName EntranceZoneTagName = "EntranceZone";
 
 	/** Seconds between loot pickup bursts after the boss dies. */
 	UPROPERTY(EditAnywhere, Category = "Loot")
@@ -130,20 +116,6 @@ private:
 	UFUNCTION()
 	void OnRep_ActiveArena();
 
-	/** Players being tracked for the current fight. Their individual life is checked to detect a full wipe. */
-	UPROPERTY()
-	TArray<TObjectPtr<APlayableCharacter>> PlayersInFight;
-
-	/** Returns true when every tracked player is gone (dead or no longer valid). */
-	bool AreAllPlayersDead() const;
-
-	/**
-	 * Re-checks whether every tracked player is dead and, if so, resets the boss and schedules the transition
-	 * back to WaitingToStart.
-	 */
-	void HandlePotentialWipe();
-
-	FTimerHandle CommitFightTimer;
 	FTimerHandle LootTimer;
 	FVector LootOrigin = FVector::ZeroVector;
 
@@ -154,9 +126,6 @@ private:
 	/** Spawns one burst of loot pickups from LootOrigin. Timer callback started by Loot(). */
 	void SpawnLootBurst();
 
-	void CommitFightStart();
-	/** Teleports players to the current arena's points carrying PurposeTag, skipping anyone inside the exempt zone. */
-	void TeleportPlayersTo(FGameplayTag PurposeTag, FName const& ExemptZoneName = NAME_None) const;
-	UFUNCTION()
-	void RequestWaitingToStart() const;
+	/** Server. Stops the shower and gives back the pickup slots it borrowed. Runs when the next fight starts. */
+	void StopLoot();
 };
