@@ -37,7 +37,9 @@ public:
 	/** Zeroes HealCharge, so the gauge starts charging from empty again. Server only. */
 	void ConsumeGauge(UAbilitySystemComponent& ASC) const;
 
+	/** Returns the HUD status-bar icon texture for this passive's gauge. */
 	UTexture2D* GetGaugeIcon() const { return GaugeIcon; }
+	/** Returns the color the status-bar icon shines when the gauge is full. */
 	FLinearColor GetGaugeFullColor() const { return GaugeFullColor; }
 
 private:
