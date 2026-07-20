@@ -6,11 +6,13 @@ Level-specific actors.
 Orthographic follow camera for GeoTrinity.
 
 **Always follows** the local player with exponential smoothing (`FollowInterpSpeed`, default 5) — no edge-trigger dead zone.
-World-space movement bounds are computed from `AGeoTargetPoint` actors tagged `Camera.Bounds` for the current match state.
+World-space movement bounds are computed from the `AGeoTargetPoint` actors tagged `TargetPoint.CameraBounds` for the arena currently being played.
 Camera decelerates naturally near borders (clamped target shrinks the interp gap). Z is fixed to spawn height.
 
-- Bounds recalculate on `CommitFightDelegate` (fight start) and on `OnMatchStateChanged` for any state except the InProgress transition (CommitFight handles that)
-- `SetBoundsTag(FGameplayTag)` (public) — recomputes bounds from the `AGeoTargetPoint`s carrying an arbitrary tag; used by `AGeoTeleporter` to reframe the camera on zone changes. No point matches → previous bounds kept. Match-state transitions later recompute from their own Intro/Fight tags
+- **One trigger: `GeoGameState::OnActiveArenaChanged`.** The bounds are a pure function of `GetActiveArenaTag()` — the arena the players are *in*, never the match state — so the camera has exactly one binding and `CalculateBounds` has no branches. Match state, fight commit and teleport pads all reach the camera through that one signal, because each of them either changes `ActiveArena` or does not concern the framing. Don't reintroduce a `MatchState` test or a per-event binding here: a fight reframes because aggro moved the arena, a teleport reframes because the pad moved it
+- Because the signal is the replicated `ActiveArena` (broadcast from `OnRep_ActiveArena`, and manually on the server), clients reframe too — the old path had `AGeoTeleporter` calling the camera locally, which left a client framed on the arena it had just *left* when the arrival overlap re-applied the destination pad's tag. Cost of the fix: a client's reframe now waits one replication hop
+- `SetArenaTag(FGameplayTag)` is private — recomputes bounds from that arena's `TargetPoint.CameraBounds` points; no point matches → previous bounds kept
+- Corner points are shared where arenas overlap: `UP_LEFT`/`UP_RIGHT` carry both `Arena.Entrance` and `Arena.Main`, so the hub and the first arena share their upper edge
 - `FollowInterpSpeed` — exponential follow speed; higher = snappier. Range 2–8 typical
 
 Follows the **local player only** — not a centroid of all players.

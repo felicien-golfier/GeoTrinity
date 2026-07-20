@@ -8,7 +8,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
-#include "Actor/GeoArenaBarrier.h"
+#include "Actor/GeoArena.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
@@ -18,21 +18,27 @@
 #include "GameplayTagContainer.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+void AGeoGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AGeoGameState, ActiveArena);
+}
 
 void AGeoGameState::HandleMatchHasStarted()
 {
-	AEnemyCharacter* Boss = GetBossEnemy();
+	AEnemyCharacter* Boss = ActiveArena ? ActiveArena->GetBoss() : nullptr;
 	if (!GeoLib::IsServer(this) && !IsValid(Boss))
 	{
-		// Late-joining client: MatchState replicated before the Boss actor did. It will show up shortly;
-		// nothing to do here since the server already drove StartBossFight().
+		// Late-joining client: MatchState replicated before the arena or the Boss actor did. They will show up
+		// shortly; nothing to do here since the server already drove StartBossFight().
 		UE_LOG(LogTemp, Log, TEXT("HandleMatchHasStarted: Boss not yet replicated to this client"));
 		return;
 	}
 
-	if (ensureMsgf(IsValid(Boss),
-				   TEXT("No Boss found in the world, ensure an EnemyCharacter with bIsBoss=true is spawned")))
+	if (ensureMsgf(IsValid(Boss), TEXT("Match started with no boss on the active arena")))
 	{
 		StartBossFight(Boss);
 	}
@@ -52,9 +58,20 @@ void AGeoGameState::HandleMatchIsWaitingToStart()
 	}
 	LootBoostedManagers.Empty();
 
-	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_Entrance, EntranceZoneTagName);
+	if (GeoLib::IsServer(this))
+	{
+		if (ActiveArena)
+		{
+			ActiveArena->ResetBoss();
+		}
+		else
+		{
+			// The level's first WaitingToStart runs before any actor BeginPlay, so no arena can claim this itself.
+			SetActiveArena(FindArena(DefaultArenaTag));
+		}
+	}
 
-	ResetEnemies();
+	TeleportPlayersTo(FGeoGameplayTags::Get().TargetPoint_Entrance, EntranceZoneTagName);
 }
 
 void AGeoGameState::HandleMatchHasEnded()
@@ -73,84 +90,8 @@ void AGeoGameState::OnRep_MatchState()
 	Super::OnRep_MatchState();
 }
 
-void AGeoGameState::ResetEnemies()
-{
-	if (!GeoLib::IsServer(this) || (!BossToSpawn.EnemyClass.Get() && !DummyToSpawn.EnemyClass.Get()))
-	{
-		return;
-	}
-
-	if (!GetBossEnemy() || GetBossEnemy()->IsActorBeingDestroyed())
-	{
-		SpawnEnemy(BossToSpawn);
-	}
-	else
-	{
-		GetBossEnemy()->ResetForNewAttempt();
-	}
-
-	if (!GetDummyEnemy() || GetDummyEnemy()->IsActorBeingDestroyed())
-	{
-		SpawnEnemy(DummyToSpawn);
-	}
-}
-
-void AGeoGameState::SpawnEnemy(FEnemySpawnEntry const& Entry)
-{
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Owner = this;
-	TArray<AActor*> Points = GeoLib::GetTargetPoints(this, Entry.SpawnTag);
-	FVector SpawnLocation = Points.Num() > 0 ? Points[0]->GetActorLocation() : FVector(100.f, 100.f, 0.f);
-	SpawnLocation.Z = ArbitraryCharacterZ;
-	GetWorld()->SpawnActor<AEnemyCharacter>(Entry.EnemyClass, FTransform(SpawnLocation), SpawnParams);
-}
-
-bool AGeoGameState::IsBoss(AActor const* Enemy) const
-{
-	return IsValid(Enemy) && Enemy->GetClass() == BossToSpawn.EnemyClass;
-}
-
-bool AGeoGameState::IsDummy(AActor const* Enemy) const
-{
-	return IsValid(Enemy) && Enemy->GetClass() == DummyToSpawn.EnemyClass;
-}
-
-AEnemyCharacter* AGeoGameState::GetBossEnemy() const
-{
-	TArray<AActor*> Enemies;
-	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Enemies);
-	for (AActor* Enemy : Enemies)
-	{
-		if (IsBoss(Enemy))
-		{
-			return Cast<AEnemyCharacter>(Enemy);
-		}
-	}
-	return nullptr;
-}
-
-AEnemyCharacter* AGeoGameState::GetDummyEnemy() const
-{
-	TArray<AActor*> Enemies;
-	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Enemies);
-	for (AActor* Enemy : Enemies)
-	{
-		if (IsDummy(Enemy))
-		{
-			return Cast<AEnemyCharacter>(Enemy);
-		}
-	}
-	return nullptr;
-}
-
 void AGeoGameState::StopBossFight()
 {
-	if (GetBossEnemy())
-	{
-		GetBossEnemy()->Destroy();
-	}
-
 	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
 	{
 		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(LocalPlayerController->GetHUD()))
@@ -162,9 +103,9 @@ void AGeoGameState::StopBossFight()
 	if (GeoLib::IsServer(this))
 	{
 		GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
-		if (AGeoArenaBarrier* ArenaBarrier = GetArenaBarrier())
+		if (ActiveArena)
 		{
-			ArenaBarrier->SetClosed(false);
+			ActiveArena->EndFight();
 		}
 
 		RevivePlayers();
@@ -183,9 +124,6 @@ void AGeoGameState::StartBossFight(AEnemyCharacter* Boss)
 
 	if (GeoLib::IsServer(this))
 	{
-		ensureMsgf(!Boss->OnEnemyDefeated.IsAlreadyBound(this, &AGeoGameState::NotifyBossDefeated),
-				   TEXT("Boss %s already has OnEnemyDefeated bound to this GameState"), *Boss->GetName());
-
 		Boss->OnEnemyDefeated.AddUniqueDynamic(this, &AGeoGameState::NotifyBossDefeated);
 
 		if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(Boss->GetController()))
@@ -202,34 +140,68 @@ void AGeoGameState::StartBossFight(AEnemyCharacter* Boss)
 			}
 		}
 
-		if (AGeoArenaBarrier* ArenaBarrier = GetArenaBarrier())
-		{
-			ArenaBarrier->SetClosed(true);
-		}
+		ActiveArena->StartFight();
 
 		GetWorld()->GetTimerManager().SetTimer(CommitFightTimer, this, &AGeoGameState::CommitFightStart,
 											   CommitFightTime, false);
 	}
 }
 
-AGeoArenaBarrier* AGeoGameState::GetArenaBarrier() const
+void AGeoGameState::CommitFightStart()
 {
-	return Cast<AGeoArenaBarrier>(UGameplayStatics::GetActorOfClass(this, AGeoArenaBarrier::StaticClass()));
+	if (!ensureMsgf(ActiveArena, TEXT("Fight-commit timer fired with no active arena")))
+	{
+		return;
+	}
+	TeleportPlayersTo(FGeoGameplayTags::Get().TargetPoint_FightLocation, FightZoneTagName);
+	ActiveArena->CommitFight();
 }
 
-void AGeoGameState::CommitFightStart() const
+FGameplayTag AGeoGameState::GetActiveArenaTag() const
 {
-	TeleportPlayersTo(FGeoGameplayTags::Get().Arena_FightLocation, FightZoneTagName);
-	CommitFightDelegate.Broadcast();
+	return ActiveArena ? ActiveArena->ArenaTag : DefaultArenaTag;
 }
 
-void AGeoGameState::TeleportPlayersTo(FGameplayTag const LocationTag, FName const& ExemptZoneName) const
+void AGeoGameState::SetActiveArena(AGeoArena* Arena)
 {
-	TArray<AActor*> SpawnPoints = GeoLib::GetTargetPoints(this, LocationTag);
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("SetActiveArena is server-only"))
+		|| !ensureMsgf(Arena, TEXT("SetActiveArena called with no arena — check the caller's Arena.* tag"))
+		|| ActiveArena == Arena)
+	{
+		return;
+	}
+	ActiveArena = Arena;
+	OnRep_ActiveArena();
+}
+
+void AGeoGameState::OnRep_ActiveArena()
+{
+	OnActiveArenaChanged.Broadcast();
+}
+
+AGeoArena* AGeoGameState::FindArena(FGameplayTag const ArenaTag) const
+{
+	TArray<AActor*> Arenas;
+	UGameplayStatics::GetAllActorsOfClass(this, AGeoArena::StaticClass(), Arenas);
+	for (AActor* Actor : Arenas)
+	{
+		AGeoArena* Arena = CastChecked<AGeoArena>(Actor);
+		if (Arena->ArenaTag == ArenaTag)
+		{
+			return Arena;
+		}
+	}
+	return nullptr;
+}
+
+void AGeoGameState::TeleportPlayersTo(FGameplayTag const PurposeTag, FName const& ExemptZoneName) const
+{
+	FGameplayTag const ArenaTag = GetActiveArenaTag();
+	TArray<AActor*> SpawnPoints = GeoLib::GetTargetPoints(this, PurposeTag, ArenaTag);
 	if (SpawnPoints.IsEmpty())
 	{
-		ensureMsgf(false, TEXT("Ensure to add Spawn points with tag %s in your map, DUMBASS"),
-				   *LocationTag.GetTagName().ToString());
+		ensureMsgf(false, TEXT("Ensure to add Spawn points tagged %s + %s in your map, DUMBASS"),
+				   *PurposeTag.GetTagName().ToString(), *ArenaTag.GetTagName().ToString());
 		return;
 	}
 
@@ -326,10 +298,10 @@ void AGeoGameState::HandlePotentialWipe()
 
 void AGeoGameState::NotifyBossDefeated()
 {
-	// Capture before the WaitingPostMatch transition: HandleMatchHasEnded → StopBossFight destroys the boss.
-	if (AEnemyCharacter const* Boss = GetBossEnemy())
+	// Capture before the boss destroys itself right after broadcasting its defeat.
+	if (ActiveArena && IsValid(ActiveArena->GetBoss()))
 	{
-		LootOrigin = Boss->GetActorLocation();
+		LootOrigin = ActiveArena->GetBoss()->GetActorLocation();
 	}
 
 	if (AGeoGameMode* GeoGameMode = Cast<AGeoGameMode>(GetWorld()->GetAuthGameMode()))

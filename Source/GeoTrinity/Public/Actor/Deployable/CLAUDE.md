@@ -68,3 +68,6 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 ## `BuffPickup/` — Launched pickup that applies a random buff to whoever collects it. See `BuffPickup/CLAUDE.md`.
 ## `Turret/` — Auto-targets and fires at the nearest enemy on a timer. See `Turret/CLAUDE.md`.
 ## `Pillar/` — Pillar that blocks the boss's devastating wave; explodes via `Recall()` when health hits zero. See `Pillar/CLAUDE.md`.
+## `Mine/` — Hex-boss mine: drain-driven fuse, radial projectile burst, inert once its arena tile is gone. See `Mine/CLAUDE.md`.
+
+**On the hex arena, every deployable falls with its tile.** `AGeoHexArena`'s fall-check tick `Recall()`s any deployable standing over a destroyed tile — player walls and turrets included, not just the boss's. Subclasses that do something on recall (`AGeoMine`) must decide whether that path should still fire.

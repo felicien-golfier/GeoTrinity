@@ -46,8 +46,10 @@ Source/GeoTrinity/
 │   │   ├── Abilities/
 │   │   │   ├── Base/          # GeoGameplayAbility, PatternAbility, AbilityPayload
 │   │   │   ├── Damaging/      # GeoProjectileAbility, GeoAutomaticFireAbility, GeoAutomaticProjectileAbility
-│   │   │   ├── Boss/          # GeoPeriodicFireAbility, GeoDevastatingWaveAbility, GeoSpawnPillarAbility
-│   │   │   ├── Pattern/       # Pattern, SpiralPattern, SpawnPillarPattern, DevastatingWavePattern
+│   │   │   ├── Boss/          # GeoPeriodicFireAbility, GeoDevastatingWaveAbility, GeoSpawnPillarAbility,
+│   │   │   │                  #   GeoSweepBeamAbility, GeoTileBombAbility, GeoSpawnOnTileAbility (hex boss)
+│   │   │   ├── Pattern/       # Pattern, SpiralPattern, SpawnPillarPattern, DevastatingWavePattern,
+│   │   │   │                  #   BeamPattern, ConeSprayPattern, TileBombPattern (hex boss)
 │   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility, GeoSweetSpotChargePassiveAbility
 │   │   │   ├── Square/        # GeoShieldBurstPassiveAbility, GeoDetonateWallsAbility (wall uses shared GeoDeployAbility)
 │   │   │   ├── Triangle/      # GeoReloadAbility, GeoRecallTurretAbility
@@ -61,11 +63,13 @@ Source/GeoTrinity/
 │   │   └── Types/             # GeoAscTypes (FGeoGameplayEffectContext)
 │   ├── Actor/
 │   │   ├── Projectile/        # GeoProjectile, GeoPooledProjectile, GeoShieldBurstProjectile, DeployableSpawnerProjectile
-│   │   ├── Deployable/        # GeoDeployableBase, GeoWall, GeoHealingZone, GeoBuffPickup
+│   │   ├── Deployable/        # GeoDeployableBase, GeoWall, GeoHealingZone, GeoBuffPickup, GeoPillar, GeoMine
 │   │   ├── Turret/            # GeoTurret
 │   │   ├── GeoClassChangeTrigger.h
 │   │   ├── GeoEffectZone.h
-│   │   ├── GeoHexArena.h      # Destructible hex-tile boss platform (fall check, dash-jump exemption, owns its boss)
+│   │   ├── GeoArena.h         # One boss encounter: its boss, its tags, its barrier. Base for every arena
+│   │   ├── GeoHexArena.h      # AGeoArena on destructible hex tiles (fall check gated on fight commit)
+│   │   ├── GeoDummyArena.h    # AGeoArena whose enemy never starts a match (training dummy)
 │   │   └── GeoInteractableActor.h
 │   ├── Characters/
 │   │   ├── Component/         # GeoCharacterMovementComponent, GeoDeployableManagerComponent, GeoGameFeelComponent, ShieldBurstPassiveComponent, GeoBeamVFXComponent

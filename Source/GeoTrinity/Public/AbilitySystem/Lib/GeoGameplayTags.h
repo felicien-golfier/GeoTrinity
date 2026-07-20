@@ -11,6 +11,7 @@ namespace RootTagNames
 	FString const SpellSubTag{"Spell"};
 	FString const AbilitySpellTag{AbilityTag + "." + SpellSubTag};
 	FString const AbilityTypeTag{AbilityTag + "." + "Type"};
+	FString const TargetPointTag{"TargetPoint"};
 } // namespace RootTagNames
 
 /**
@@ -69,19 +70,20 @@ struct GEOTRINITY_API FGeoGameplayTags
 	FGameplayTag Ability_Spell_ShieldBurst;
 
 	// AI
-	FGameplayTag AI_FiringPoint;
 	FGameplayTag AI_Boss_AggroEvent;
-	FGameplayTag AI_Boss_Spawn;
-	FGameplayTag AI_Dummy_Spawn;
 
-	// ARENA LOCATION //
-	FGameplayTag Arena_FightLocation;
-	FGameplayTag Arena_Entrance;
-	FGameplayTag Arena_FightCenter;
-
-	// CAMERA //
-	FGameplayTag Camera_Bounds_Intro;
-	FGameplayTag Camera_Bounds_Fight;
+	/**
+	 * TARGET POINTS — what an AGeoTargetPoint is for.
+	 * Every placed point also carries an editor-authored Arena.* tag naming the encounter it belongs to, so the same
+	 * purposes are reused by every arena and GeoLib::GetTargetPoints matches on both halves.
+	 */
+	FGameplayTag TargetPoint_BossSpawn;
+	FGameplayTag TargetPoint_Entrance;
+	FGameplayTag TargetPoint_FightLocation;
+	FGameplayTag TargetPoint_FightCenter;
+	FGameplayTag TargetPoint_CameraBounds;
+	FGameplayTag TargetPoint_FallRespawn;
+	FGameplayTag TargetPoint_FiringPoint;
 
 private:
 	static FGeoGameplayTags GameplayTags;

@@ -12,9 +12,8 @@ class UTextRenderComponent;
 
 /**
  * Overlap pad that teleports the touching playable character to the next AGeoTeleporter sharing its
- * TeleportTag (sorted by actor name, wrapping). CameraTag drives the camera: place AGeoTargetPoints
- * carrying it as camera bounds, and whenever the local player touches a pad (walk-in or arrival) the
- * camera recomputes its bounds from those points.
+ * TeleportTag (sorted by actor name, wrapping). ArenaTag names the arena on the far side of the trip: the pad makes it
+ * the GameState's active arena, which is what reframes the camera and moves the checkpoint.
  */
 UCLASS()
 class GEOTRINITY_API AGeoTeleporter : public AActor
@@ -39,10 +38,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Teleport")
 	FGameplayTag TeleportTag;
 
-	/** Camera bounds of the zone this pad sits in (AGeoTargetPoints carrying this tag). Applied to the local camera
-	 * whenever the local player touches the pad (walk-in or arrival). Unset = pad never changes the camera. */
+	/** Arena this pad sends the player to; becomes AGeoGameState::ActiveArena on use, which reframes the camera on that
+	 * arena's camera-bounds points. Unset = pad never changes arena. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Teleport")
-	FGameplayTag CameraTag;
+	FGameplayTag ArenaTag;
 
 	/** Label shown above the pad (e.g. to tell teleporters in the same tag group apart in-editor/in-game). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Teleport")

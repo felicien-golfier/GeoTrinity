@@ -53,6 +53,7 @@ Always: `FRandomStream Stream(StoredPayload.Seed)`. Never call `FMath::Rand*` di
 - `GetEffectDataArray()` — merges both; pass result to `ApplyEffectFromEffectData()`
 
 ### Key Invariants
+- **Activation without `TriggerEventData` is legal for server-driven abilities.** `ActivateAbility` asserts that target data exists, *unless* the ability is passive or its `NetExecutionPolicy` is `ServerInitiated` **or `ServerOnly`** (`bIsServerDriven`) — those build `StoredPayload` from avatar state instead. `STTask_FireAbility` activates by tag via `TryActivateAbilitiesByTag` and passes no event data, so every AI-fired `UGeoGameplayAbility` lands on that path. `UPatternAbility` sidesteps it entirely by not calling `Super::ActivateAbility`.
 - `OnFireTargetDataReceived` is **server-only by design** — never add `IsServer` guards inside it
 - Never override `Fire()` as a no-op — it sends the RPC that triggers `OnFireTargetDataReceived`; a no-op silently breaks the server chain
 - `bActivateOnFreshPressOnly` — when true, the per-frame Held input never activates the ability; only a fresh press does (`UGeoAbilitySystemComponent::AbilityInputTagPressed`). For abilities sharing one input (sacrifice channel/detonate) so a held button cannot chain-activate the counterpart.

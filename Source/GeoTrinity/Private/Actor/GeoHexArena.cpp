@@ -3,12 +3,11 @@
 #include "Actor/GeoHexArena.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Characters/EnemyCharacter.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/InstancedStaticMeshComponent.h"
-#include "GameClasses/GeoGameState.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/GameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -39,11 +38,10 @@ namespace
 AGeoHexArena::AGeoHexArena()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	bReplicates = true;
-	bAlwaysRelevant = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	TileMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("TileMeshComponent"));
-	SetRootComponent(TileMeshComponent);
+	TileMeshComponent->SetupAttachment(RootComponent);
 	TileMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
@@ -72,15 +70,24 @@ void AGeoHexArena::BeginPlay()
 	{
 		TileStates.Init(1, TileCoords.Num());
 		AppliedTileStates = TileStates;
-		SpawnBoss();
-		GetWorld()->GetGameStateChecked<AGeoGameState>()->OnMatchStateChanged.AddUniqueDynamic(
-			this, &AGeoHexArena::HandleMatchStateChanged);
 	}
 	else
 	{
-		SetActorTickEnabled(false);
 		ApplyTileVisuals();
 	}
+}
+
+void AGeoHexArena::CommitFight()
+{
+	Super::CommitFight();
+	SetActorTickEnabled(true);
+}
+
+void AGeoHexArena::EndFight()
+{
+	Super::EndFight();
+	SetActorTickEnabled(false);
+	ResetAllTiles();
 }
 
 void AGeoHexArena::BuildGrid()
@@ -124,6 +131,70 @@ bool AGeoHexArena::IsTileAlive(FIntPoint const Tile) const
 {
 	int32 const* Index = CoordToIndex.Find(Tile);
 	return Index && TileStates.IsValidIndex(*Index) && TileStates[*Index] != 0;
+}
+
+bool AGeoHexArena::IsOverAliveTile(FVector2D const WorldLocation) const
+{
+	FIntPoint Tile;
+	return GetTileUnderLocation(WorldLocation, Tile) && IsTileAlive(Tile);
+}
+
+AGeoHexArena* AGeoHexArena::GetArenaOfBoss(AActor const* Boss)
+{
+	return Cast<AGeoHexArena>(AGeoArena::GetArenaOfBoss(Boss));
+}
+
+int32 AGeoHexArena::GetTileRing(FIntPoint const Tile)
+{
+	return (FMath::Abs(Tile.X) + FMath::Abs(Tile.Y) + FMath::Abs(Tile.X + Tile.Y)) / 2;
+}
+
+TArray<FIntPoint> AGeoHexArena::GetRandomAliveTiles(FRandomStream& Stream, int32 const Ring, int32 const Count) const
+{
+	TArray<FIntPoint> Candidates;
+	for (FIntPoint const Tile : TileCoords)
+	{
+		if (IsTileAlive(Tile) && (Ring < 0 || GetTileRing(Tile) == Ring))
+		{
+			Candidates.Add(Tile);
+		}
+	}
+	if (Candidates.IsEmpty() && Ring >= 0)
+	{
+		return GetRandomAliveTiles(Stream, -1, Count);
+	}
+
+	TArray<FIntPoint> PickedTiles;
+	while (PickedTiles.Num() < Count && !Candidates.IsEmpty())
+	{
+		int32 const CandidateIndex = Stream.RandHelper(Candidates.Num());
+		PickedTiles.Add(Candidates[CandidateIndex]);
+		Candidates.RemoveAtSwap(CandidateIndex);
+	}
+	return PickedTiles;
+}
+
+bool AGeoHexArena::GetLastAliveTileAlongRay(FVector2D const Origin, FVector2D const Direction, float const MaxRange,
+										   FIntPoint& OutTile) const
+{
+	FVector2D const Forward = Direction.GetSafeNormal();
+	// Half a tile keeps the walk from stepping over a tile the ray only clips.
+	float const StepSize = TileSize * 0.5f;
+	// Past the far edge of the platform there is nothing left to cross, however long the ray is.
+	float const WalkDistance = FMath::Min(
+		MaxRange, FVector2D::Distance(Origin, FVector2D(GetActorLocation())) + GridRadius * TileSize * Sqrt3);
+
+	bool bFoundTile = false;
+	for (float Distance = 0.f; Distance <= WalkDistance; Distance += StepSize)
+	{
+		FIntPoint Tile;
+		if (GetTileUnderLocation(Origin + Forward * Distance, Tile) && IsTileAlive(Tile))
+		{
+			OutTile = Tile;
+			bFoundTile = true;
+		}
+	}
+	return bFoundTile;
 }
 
 void AGeoHexArena::DestroyTiles(TConstArrayView<FIntPoint> const Tiles)
@@ -214,59 +285,34 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 	FVector2D const Center(GetActorLocation());
 	for (AActor* Actor : GeoASLib::GetInteractableActors(this, /*bMustBeDamageable*/ false, Center, FallCheckRadius))
 	{
-		APlayableCharacter* Player = Cast<APlayableCharacter>(Actor);
-		if (!Player || Player->IsDead() || Player->GetCharacterMovement()->HasRootMotionSources())
+		if (IsOverAliveTile(FVector2D(Actor->GetActorLocation())))
 		{
 			continue;
 		}
-		FIntPoint Tile;
-		if (!GetTileUnderLocation(FVector2D(Player->GetActorLocation()), Tile) || !IsTileAlive(Tile))
+
+		if (APlayableCharacter* Player = Cast<APlayableCharacter>(Actor))
 		{
-			Player->Death();
-			TArray<AActor*> const RespawnPoints = GeoLib::GetTargetPoints(this, FallRespawnTag);
-			if (!ensureMsgf(!RespawnPoints.IsEmpty(), TEXT("%s has no AGeoTargetPoint tagged %s for FallRespawnTag"),
-							*GetName(), *FallRespawnTag.ToString()))
+			if (!Player->IsDead() && !Player->GetCharacterMovement()->HasRootMotionSources())
 			{
-				continue;
+				KillFallenPlayer(*Player);
 			}
-			Player->SetActorLocation(RespawnPoints[0]->GetActorLocation());
+		}
+		else if (AGeoDeployableBase* Deployable = Cast<AGeoDeployableBase>(Actor))
+		{
+			Deployable->Recall();
 		}
 	}
 }
 
-void AGeoHexArena::SpawnBoss()
+void AGeoHexArena::KillFallenPlayer(APlayableCharacter& Player) const
 {
-	if (!ensureMsgf(HexBossClass, TEXT("%s has no HexBossClass configured"), *GetName()))
+	Player.Death();
+	TArray<AActor*> const RespawnPoints =
+		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FallRespawn, ArenaTag);
+	if (!ensureMsgf(!RespawnPoints.IsEmpty(), TEXT("%s has no TargetPoint.FallRespawn point tagged %s"), *GetName(),
+					*ArenaTag.ToString()))
 	{
 		return;
 	}
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Owner = this;
-	FVector SpawnLocation = GetActorLocation();
-	SpawnLocation.Z = ArbitraryCharacterZ;
-	HexBoss = GetWorld()->SpawnActor<AEnemyCharacter>(HexBossClass, FTransform(SpawnLocation), SpawnParams);
-	HexBoss->OnEnemyDefeated.AddUniqueDynamic(this, &AGeoHexArena::HandleBossDefeated);
-}
-
-void AGeoHexArena::HandleBossDefeated()
-{
-	ResetAllTiles();
-}
-
-void AGeoHexArena::HandleMatchStateChanged(FName const NewMatchState, FName const /*PreviousMatchState*/)
-{
-	if (NewMatchState != MatchState::WaitingToStart)
-	{
-		return;
-	}
-	ResetAllTiles();
-	if (IsValid(HexBoss))
-	{
-		HexBoss->ResetForNewAttempt();
-	}
-	else
-	{
-		SpawnBoss();
-	}
+	Player.SetActorLocation(RespawnPoints[0]->GetActorLocation());
 }

@@ -10,7 +10,7 @@
 
 /**
  * Boss ability that teleports the boss to an AGeoTargetPoint, then launches the DevastatingWavePattern
- * from that position. The destination is the first AGeoTargetPoint tagged with TeleportLocationTag,
+ * from that position. The destination is the first point in the boss's own arena carrying TeleportLocationTag,
  * resolved server-side inside GetFireOrigin2D so the payload Origin is already the teleport destination
  * when the pattern multicast fires.
  */
@@ -24,6 +24,7 @@ protected:
 									  int Seed) const override;
 
 private:
+	/** Which of the arena's points to land on (TargetPoint.*); the arena itself comes from the boss. */
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave")
 	FGameplayTag TeleportLocationTag;
 };

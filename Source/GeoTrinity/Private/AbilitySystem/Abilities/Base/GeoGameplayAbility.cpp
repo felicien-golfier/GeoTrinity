@@ -28,12 +28,15 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 
 	bool const bIsPassive = IsPassive();
 	bool const bHasTargetData = TriggerEventData && TriggerEventData->TargetData.Num() > 0;
-	bool const bIsServerInitiated = GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::ServerInitiated;
-	ensureMsgf(bIsServerInitiated || bIsPassive || bHasTargetData,
+	// Server-driven abilities build their payload from avatar state: no client ever sends them target data. That covers
+	// ServerOnly too, not just ServerInitiated — an AI ability fired by STTask_FireAbility carries no TriggerEventData.
+	bool const bIsServerDriven = GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::ServerInitiated
+		|| GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::ServerOnly;
+	ensureMsgf(bIsServerDriven || bIsPassive || bHasTargetData,
 			   TEXT("No TargetData in TriggerEventData! This ability is not set as passive, it should exist"));
 	FGeoAbilityTargetData const* TargetData =
 		bHasTargetData ? static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)) : nullptr;
-	ensureMsgf(bIsServerInitiated || bIsPassive || TargetData, TEXT("Target Data 0 is not a FGeoAbilityTargetData"));
+	ensureMsgf(bIsServerDriven || bIsPassive || TargetData, TEXT("Target Data 0 is not a FGeoAbilityTargetData"));
 
 	if (!bIsPassive && bHasTargetData && TargetData)
 	{

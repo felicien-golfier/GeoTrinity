@@ -8,6 +8,13 @@ Pattern flow:
 3. Pattern uses server time for deterministic spawning across all machines
 4. On completion, `OnPatternEnd` delegate ends the ability
 
+**One live instance per pattern class, per ASC.** `UGeoAbilitySystemComponent::FindPatternByClass` matches with
+`IsA`, and the instance is reused across activations — so two abilities that want the same pattern with different
+settings need **two BP subclasses**, not the same class twice (they would fight over one instance and one config).
+That is why every knob lives on the pattern, not the ability: `UBeamPattern` ships the hex boss's sweeping laser and
+its tile-carving ray as two separate BP children. It also means per-activation state must be reset in `InitPattern`
+or `StartPattern` — never assume a fresh object.
+
 ---
 
 ## `Pattern.h` — base pattern object
@@ -55,6 +62,54 @@ Non-ticking pattern. **Zone locations are resolved on the server** by `UGeoSpawn
 Runs on all clients via `PatternStartMulticast`. Launched by `UGeoSpawnPillarAbility` (see `Boss/CLAUDE.md`).
 
 ---
+
+## `BeamPattern.h` — static or sweeping beam (hex boss)
+
+Ticking, non-projectile. Beam fired from `StoredPayload.Origin` along `StoredPayload.Yaw`, on for `BeamDuration`.
+Covers **both** hex-boss beams — configure two BP children, never one class for both (see the instance rule above).
+
+- `SweepAngle` — full arc swept over `BeamDuration`, centred on the payload yaw. Starts at `Yaw - SweepAngle/2`.
+  **0 = static beam**, which is the tile-carving ray; 90 is the sweeping laser.
+- `BeamDuration`, `BeamRange`, `BeamHalfWidth` — on-time and geometry; half-width feeds `GetInteractableActorsInLine`
+- `bDestroyLastTileHit` — on the tick where the beam goes live, `StartPattern` carves the furthest still-standing tile
+  the beam reaches (`AGeoHexArena::GetLastAliveTileAlongRay`), server-only. The tank picks which rim tile that is by
+  choosing where they stand when the boss locks on — that is the whole mechanic
+- Each actor is hit **once per activation** (`HitActors`, cleared in both `StartPattern` and `EndPattern`), so crossing
+  the beam costs one hit however slowly you walk through it. Damage is server-only; the VFX runs everywhere
+- `BeamVfxSystem` — optional Niagara, spawned deactivated in `OnCreate` and re-used across activations (like
+  `UDevastatingWavePattern`'s AOE component). Driven with the **same user parameters as `UGeoBeamVFXComponent`**
+  (`User.Beam_Length`, `User.Beam_Width`), so beam systems are interchangeable between the two; author it local-space
+  pointing +X. `EndPattern` deactivates gracefully on a natural end, `DeactivateImmediate` on force-stop — an
+  interrupted beam must not linger
+- Effect data comes from the launching ability's `GetEffectDataArray()`, like every pattern
+
+## `ConeSprayPattern.h` — cone of scattered bullets (hex boss)
+
+Ticking projectile pattern. Sprays `ProjectileCount` projectiles at random angles inside `ConeAngle` (centred on the
+payload yaw), spread evenly over `SprayDuration`. Ends as soon as the last projectile is out — the bullets fly on by
+themselves, the pattern does not own them (unlike `SpiralPattern`, which drives its projectiles' positions every tick).
+
+- **Determinism**: projectile *i* seeds its own `FRandomStream(Payload.Seed + i)` rather than drawing from one shared
+  stream. A machine that catches up on several projectiles in one tick still gives each the same angle as everyone
+  else — a shared stream would desync the moment tick counts differed
+- Each projectile is stamped with **its own** `ServerSpawnTime` (`Payload.ServerSpawnTime + StartDelay + i * interval`),
+  so `FullySpawnProjectile` fast-forwards a late spawn to where it should already be
+- `SpawnedCount` is reset in `InitPattern` — the instance is reused
+- `OnCreate` pre-warms the pool for a full spray
+
+## `TileBombPattern.h` — bomb riding a player (hex boss)
+
+Non-ticking. The bomb sticks to one player for the whole wind-up, then detonates **wherever that player is standing
+when it goes off**: effect data to everyone within `BlastRadius`, then `DestroyTilesInRadius` at the same spot. The
+carrier chooses where the hole ends up — walk it to the rim, or lose the middle of the platform.
+
+- `FTileBombPatternData` (same header) — `FPatternData` subclass carrying `BombCarrier`; drawn once on the server by
+  `UGeoTileBombAbility` and shipped through the multicast, so every machine shows the countdown on the same player
+- `FillCueParam` puts the carrier in `EffectCauser` and their location in `Location`, so the countdown cue notify can
+  attach itself to them and ride along
+- A carrier who dies or leaves during the wind-up simply fizzles the bomb (`EndPattern`, no blast)
+- Damage is applied **before** the tiles are carved, so the blast catches whoever is standing on ground that is about
+  to stop existing
 
 ## `DevastatingWavePattern.h` — expanding radial wave
 

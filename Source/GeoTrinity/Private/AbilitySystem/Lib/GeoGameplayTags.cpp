@@ -31,6 +31,12 @@ namespace
 	{
 		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::AbilitySpellTag + "." + tagName), comment);
 	}
+
+	/** Prepends the shared TargetPointTag root so call sites only specify the leaf name. */
+	void AddTargetPointTag(FGameplayTag& outTag, FString const& tagName, FString const& comment)
+	{
+		CreateAndAssignGameplayTag(outTag, FName(RootTagNames::TargetPointTag + "." + tagName), comment);
+	}
 } // namespace
 
 void FGeoGameplayTags::InitializeNativeGameplayTags()
@@ -86,26 +92,20 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	// ABILITY SPELLS NEEDED IN CODE //
 	AddAbilitySpellTag(GameplayTags.Ability_Spell_ShieldBurst, "ShieldBurst", "Ability spell for shield burst");
 
-	// ARENA LOCATION //
-	CreateAndAssignGameplayTag(GameplayTags.Arena_FightLocation, "Arena.FightLocation",
-							   "Spawn points inside the arena for fight start.");
-	CreateAndAssignGameplayTag(GameplayTags.Arena_Entrance, "Arena.Entrance",
-							   "Entry point outside arena — dead players teleport here.");
-	CreateAndAssignGameplayTag(GameplayTags.Arena_FightCenter, "Arena.FightCenter",
-							   "TargetPoint at the center of the fight area.");
-
-	// CAMERA //
-	CreateAndAssignGameplayTag(GameplayTags.Camera_Bounds_Intro, "Camera.Bounds.Intro",
-							   "Camera bounds used before the fight starts.");
-	CreateAndAssignGameplayTag(GameplayTags.Camera_Bounds_Fight, "Camera.Bounds.Fight",
-							   "Camera bounds used during the fight.");
+	// TARGET POINTS //
+	AddTargetPointTag(GameplayTags.TargetPoint_BossSpawn, "BossSpawn", "Where the arena spawns its boss.");
+	AddTargetPointTag(GameplayTags.TargetPoint_Entrance, "Entrance",
+					  "Outside the arena — players stand here between fights.");
+	AddTargetPointTag(GameplayTags.TargetPoint_FightLocation, "FightLocation",
+					  "Inside the arena — players are teleported here on fight commit.");
+	AddTargetPointTag(GameplayTags.TargetPoint_FightCenter, "FightCenter", "Center of the fight area.");
+	AddTargetPointTag(GameplayTags.TargetPoint_CameraBounds, "CameraBounds",
+					  "Corner markers the camera bounds are built from.");
+	AddTargetPointTag(GameplayTags.TargetPoint_FallRespawn, "FallRespawn",
+					  "Where a fallen player's corpse is moved, outside the fall zone.");
+	AddTargetPointTag(GameplayTags.TargetPoint_FiringPoint, "FiringPoint", "Where the AI can fire from.");
 
 	// AI //
 	CreateAndAssignGameplayTag(GameplayTags.AI_Boss_AggroEvent, "AI.Boss.AggroEvent",
 							   "StateTree event sent when the boss is aggroed.");
-	CreateAndAssignGameplayTag(GameplayTags.AI_FiringPoint, "AI.Boss.FiringPoint", "Where the AI can fire from.");
-	CreateAndAssignGameplayTag(GameplayTags.AI_Boss_Spawn, "AI.Boss.SpawnLocation",
-							   "Tag to determine the spawn of a boss");
-	CreateAndAssignGameplayTag(GameplayTags.AI_Dummy_Spawn, "AI.Dummy.SpawnLocation",
-							   "Tag to determine the spawn of a Dummy");
 }

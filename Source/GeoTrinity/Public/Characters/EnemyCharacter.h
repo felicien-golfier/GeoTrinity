@@ -8,6 +8,8 @@
 
 #include "EnemyCharacter.generated.h"
 
+
+class AGeoArena;
 class UStateTree;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossDefeated);
@@ -32,6 +34,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Boss")
 	FOnBossDefeated OnEnemyDefeated;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Boss")
+	TWeakObjectPtr<AGeoArena> Arena;
 
 	/** Resets health to max and restarts the StateTree. Called on full-wipe to start a new attempt. */
 	void ResetForNewAttempt();

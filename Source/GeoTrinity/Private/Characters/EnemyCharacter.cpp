@@ -8,7 +8,6 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
-#include "GameClasses/GeoGameState.h"
 #include "GameFramework/Character.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -52,7 +51,7 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 {
 	if (GeoLib::IsServer(this) && NewValue <= 0.f)
 	{
-		if (GetWorld()->GetGameState<AGeoGameState>()->IsDummy(this))
+		if (ResetToFullLifeWhenReachingZero)
 		{
 			AbilitySystemComponent->InitializeDefaultAttributes();
 		}

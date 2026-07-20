@@ -9,7 +9,7 @@ Enemy AI system using `AGeoEnemyAIController` with the GameplayStateTree plugin.
 | `GeoAIBlackboardComponent.h` | Persistent AI state (cross-state blackboard); linked by tasks via `TStateTreeExternalDataHandle<UGeoAIBlackboardComponent>` |
 | `StateTree/Ability/` | Fire ability tasks |
 | `StateTree/Blackboard/` | SetBlackboard task |
-| `StateTree/Movement/` | MoveTo, SelectNextFiringPoint |
+| `StateTree/Movement/` | MoveTo, SelectNextFiringPoint (draws from the boss's **own** arena — resolves the pawn's `AGeoArena` via `GetArenaOfBoss` and queries `TargetPoint.FiringPoint` + that arena's `ArenaTag`, so a second boss can never path to another room's points; fails the task when the pawn has no arena) |
 | `StateTree/Property/` | Property functions (GetHealthRatio, GetBlackboard) |
 | `StateTree/Utility/` | SendEventAfterNCycles |
 

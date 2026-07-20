@@ -11,7 +11,6 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameClasses/GeoGameState.h"
-#include "GameFramework/GameMode.h"
 #include "GameFramework/GameState.h"
 #include "GameFramework/PlayerController.h"
 #include "Input/GeoInputComponent.h"
@@ -39,43 +38,30 @@ void AGeoGameCamera::TryBindToGameState()
 		return;
 	}
 
-	GameState->CommitFightDelegate.AddUniqueDynamic(this, &AGeoGameCamera::CalculateBounds);
-	GameState->OnMatchStateChanged.AddUniqueDynamic(this, &AGeoGameCamera::OnMatchStateChanged);
-	CalculateBounds();
-}
-
-void AGeoGameCamera::OnMatchStateChanged(FName MatchState, FName PreviousMatchState)
-{
-	if (PreviousMatchState == MatchState)
-	{
-		return;
-	}
-
-	// Let Commit Fight update the bounds
-	if (MatchState == MatchState::InProgress)
-	{
-		return;
-	}
-
+	GameState->OnActiveArenaChanged.AddUniqueDynamic(this, &AGeoGameCamera::CalculateBounds);
 	CalculateBounds();
 }
 
 void AGeoGameCamera::CalculateBounds()
 {
-	AGameState const* GameState = GetWorld()->GetGameState<AGameState>();
-	bool const bFightInProgress = GameState && GameState->GetMatchState() == MatchState::InProgress;
-	SetBoundsTag(bFightInProgress ? FGeoGameplayTags::Get().Camera_Bounds_Fight
-								  : FGeoGameplayTags::Get().Camera_Bounds_Intro);
+	AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
+	if (!ensureMsgf(GameState, TEXT("AGeoGameCamera: bounds recalculated with no AGeoGameState")))
+	{
+		return;
+	}
+
+	SetArenaTag(GameState->GetActiveArenaTag());
 }
 
-void AGeoGameCamera::SetBoundsTag(FGameplayTag BoundsTag)
+void AGeoGameCamera::SetArenaTag(FGameplayTag ArenaTag)
 {
-	TArray<AActor*> BoundPoints = UGeoGameplayLibrary::GetTargetPoints(this, BoundsTag);
+	TArray<AActor*> BoundPoints =
+		UGeoGameplayLibrary::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_CameraBounds, ArenaTag);
 	if (BoundPoints.IsEmpty())
 	{
 		UE_LOG(LogTemp, Warning,
-			   TEXT("AGeoGameCamera: No AGeoTargetPoint with tag %s found — keeping previous bounds."),
-			   *BoundsTag.ToString());
+			   TEXT("AGeoGameCamera: No camera-bounds AGeoTargetPoint for arena %s — keeping previous bounds."),
+			   *ArenaTag.ToString());
 		return;
 	}
 

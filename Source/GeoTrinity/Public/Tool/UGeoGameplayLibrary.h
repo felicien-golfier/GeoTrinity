@@ -101,9 +101,14 @@ public:
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
 
-	/** Returns all AGeoTargetPoint actors in the world whose tags include LocationTag. */
+	/**
+	 * Returns the AGeoTargetPoint actors carrying both halves of the point's identity: PurposeTag (TargetPoint.*,
+	 * what the point is for) and ArenaTag (Arena.*, the encounter it belongs to). A point can carry several of
+	 * either, so the same actor can serve two purposes or two neighbouring arenas.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
-	static TArray<AActor*> GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const LocationTag);
+	static TArray<AActor*> GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const PurposeTag,
+										   FGameplayTag const ArenaTag);
 };
 
 using GeoLib = UGeoGameplayLibrary;

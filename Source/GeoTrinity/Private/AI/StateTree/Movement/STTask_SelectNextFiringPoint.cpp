@@ -4,6 +4,8 @@
 
 #include "AI/GeoAIBlackboardComponent.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Actor/GeoArena.h"
+#include "GameFramework/Controller.h"
 #include "StateTreeExecutionContext.h"
 #include "StateTreeLinker.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -20,7 +22,16 @@ EStateTreeRunStatus FSTTask_SelectNextFiringPoint::EnterState(FStateTreeExecutio
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	UGeoAIBlackboardComponent& Blackboard = Context.GetExternalData(BlackboardHandle);
 
-	TArray<AActor*> FiringPoints = GeoLib::GetTargetPoints(Context.GetOwner(), FGeoGameplayTags::Get().AI_FiringPoint);
+	AActor const* Owner = Cast<AActor>(Context.GetOwner());
+	AController const* Controller = Cast<AController>(Owner);
+	AGeoArena const* Arena = AGeoArena::GetArenaOfBoss(Controller ? Controller->GetPawn() : Owner);
+	if (!ensureMsgf(Arena, TEXT("FSTTask_SelectNextFiringPoint: %s was not spawned by an arena"), *GetNameSafe(Owner)))
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	TArray<AActor*> FiringPoints =
+		GeoLib::GetTargetPoints(Owner, FGeoGameplayTags::Get().TargetPoint_FiringPoint, Arena->ArenaTag);
 
 	FiringPoints.Sort(
 		[](AActor const& A, AActor const& B)

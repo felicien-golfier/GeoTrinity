@@ -4,9 +4,9 @@
 
 #include "Characters/PlayableCharacter.h"
 #include "Components/TextRenderComponent.h"
+#include "GameClasses/GeoGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
-#include "World/GeoGameCamera.h"
 
 AGeoTeleporter::AGeoTeleporter()
 {
@@ -61,21 +61,6 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 		return;
 	}
 
-	if (PlayableCharacter->IsLocallyControlled() && CameraTag.IsValid())
-	{
-		AGeoGameCamera* Camera =
-			Cast<AGeoGameCamera>(UGameplayStatics::GetActorOfClass(GetWorld(), AGeoGameCamera::StaticClass()));
-		if (ensureMsgf(Camera, TEXT("AGeoTeleporter %s: no AGeoGameCamera in the level."), *GetName()))
-		{
-			Camera->SetBoundsTag(CameraTag);
-		}
-	}
-
-	if (!GeoLib::IsServer(GetWorld()))
-	{
-		return;
-	}
-
 	AGeoTeleporter* NextTeleporter = FindNextTeleporter();
 	if (!NextTeleporter)
 	{
@@ -86,6 +71,18 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 	}
 
 	NextTeleporter->PendingArrivals.Add(PlayableCharacter);
+
+	if (!GeoLib::IsServer(GetWorld()))
+	{
+		return;
+	}
+
+	if (ArenaTag.IsValid())
+	{
+		AGeoGameState* GameState = GetWorld()->GetGameStateChecked<AGeoGameState>();
+		GameState->SetActiveArena(GameState->FindArena(ArenaTag));
+	}
+
 	FVector const Destination = NextTeleporter->GetActorLocation();
 	PlayableCharacter->SetActorLocation(FVector(Destination.X, Destination.Y, PlayableCharacter->GetActorLocation().Z),
 										false, nullptr, ETeleportType::TeleportPhysics);

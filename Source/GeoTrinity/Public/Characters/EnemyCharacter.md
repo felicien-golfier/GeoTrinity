@@ -13,5 +13,5 @@ Extends `AGeoCharacter`. Creates its own ASC directly on the character (not on P
 - `AGeoEnemyAIController` starts the tree on `OnPossess`
 
 ## Health reset
-- `ResetToFullLifeWhenReachingZero` — if true, health is restored to max instead of destroying the actor at zero health (useful for infinite-respawn enemies)
+- `ResetToFullLifeWhenReachingZero` — if true, health is restored to max instead of broadcasting `OnEnemyDefeated` and destroying the actor at zero health. **This is what makes an enemy a training dummy** — set it on the dummy BP. It replaced a `GameState->IsDummy(this)` class compare, so the dummy no longer has to be the one class the GameState knows about
 - `OnHealthChanged(float)` — `BlueprintNativeEvent`; override in BP for death VFX, loot, etc.

@@ -13,7 +13,8 @@ class AGeoCharacter;
 /**
  * Orthographic follow camera for GeoTrinity.
  * Always follows the local player with exponential smoothing — no edge-trigger dead zone.
- * World-space bounds are computed at BeginPlay from AGeoTargetPoint actors tagged Camera.Bounds.
+ * World-space bounds are computed at BeginPlay from the AGeoTargetPoint actors tagged TargetPoint.CameraBounds
+ * for the arena currently being played.
  * Camera decelerates naturally at borders because the clamped target shrinks the interp gap.
  * Z position is fixed to the actor's initial spawn height.
  */
@@ -28,10 +29,6 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-	/** Recomputes the world-space bounds from the AGeoTargetPoints carrying BoundsTag (e.g. after a teleport).
-	 * Keeps the previous bounds when no point matches. Match-state transitions recompute from their own tags. */
-	void SetBoundsTag(FGameplayTag BoundsTag);
-
 protected:
 	/** Exponential follow speed. Higher = snappier. Typical range 2–8. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Movement", meta = (ClampMin = "0.1"))
@@ -42,15 +39,14 @@ protected:
 	float SpectateMoveSpeed = 1500.f;
 
 private:
-	/** Binds the match-state delegates and runs the initial bounds calc once the replicated GameState exists. On a late
+	/** Binds OnActiveArenaChanged and runs the initial bounds calc once the replicated GameState exists. On a late
 	 * joiner the GameState may not have replicated by BeginPlay, so this retries on the next tick until it is valid. */
 	void TryBindToGameState();
-	/** Recomputes the bounds from the tag matching the current match state (Intro/Fight). */
+	/** Recomputes the bounds from the arena the players are currently in. */
 	UFUNCTION()
 	void CalculateBounds();
-	/** Recalculates camera bounds for the new match state; skips InProgress transitions (CommitFight handles those). */
-	UFUNCTION()
-	void OnMatchStateChanged(FName MatchState, FName PreviousMatchState);
+	/** Frames the camera on ArenaTag's TargetPoint.CameraBounds points. Keeps the previous bounds when none match. */
+	void SetArenaTag(FGameplayTag ArenaTag);
 
 	/** Reads the move-action value straight from the Enhanced Input player subsystem — the dead pawn's input
 	 * component is disabled, so the pawn's own move callback never fires while spectating. */

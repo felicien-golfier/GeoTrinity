@@ -6,6 +6,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Actor/GeoArena.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"
@@ -155,10 +156,11 @@ void AGeoEnemyAIController::TriggerAggro()
 	bAggroed = true;
 	ClearAggro();
 
-	AGeoGameState const* GeoGameState = GetWorld()->GetGameStateChecked<AGeoGameState>();
+	AGeoArena* Arena = AGeoArena::GetArenaOfBoss(GetPawn());
 	AGeoGameMode* GeoGameMode = GetWorld()->GetAuthGameMode<AGeoGameMode>();
-	if (GeoGameState && GeoGameMode && GeoGameState->IsBoss(GetPawn()))
+	if (Arena && GeoGameMode && Arena->IsBoss(GetPawn()))
 	{
+		GetWorld()->GetGameStateChecked<AGeoGameState>()->SetActiveArena(Arena);
 		GeoGameMode->StartMatch();
 	}
 	else

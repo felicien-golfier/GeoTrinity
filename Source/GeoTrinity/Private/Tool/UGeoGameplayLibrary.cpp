@@ -143,21 +143,23 @@ float UGeoGameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdate
 	return ServerTimeSeconds;
 }
 
-TArray<AActor*> UGeoGameplayLibrary::GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const LocationTag)
+TArray<AActor*> UGeoGameplayLibrary::GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const PurposeTag,
+													 FGameplayTag const ArenaTag)
 {
 	TArray<AActor*> AllPoints;
 	UGameplayStatics::GetAllActorsOfClass(WorldContextObject->GetWorld(), AGeoTargetPoint::StaticClass(), AllPoints);
 
 	TArray<AActor*> SpawnPoints = AllPoints.FilterByPredicate(
-		[&LocationTag](AActor const* Actor)
+		[&PurposeTag, &ArenaTag](AActor const* Actor)
 		{
-			return CastChecked<AGeoTargetPoint>(Actor)->GameplayTags.HasTag(LocationTag);
+			FGameplayTagContainer const& Tags = CastChecked<AGeoTargetPoint>(Actor)->GameplayTags;
+			return Tags.HasTag(PurposeTag) && Tags.HasTag(ArenaTag);
 		});
 
 	if (SpawnPoints.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GeoLib::GetTargetPoints — no AGeoTargetPoint found for tag %s"),
-			   *LocationTag.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("GeoLib::GetTargetPoints — no AGeoTargetPoint tagged %s for arena %s"),
+			   *PurposeTag.ToString(), *ArenaTag.ToString());
 	}
 
 	return SpawnPoints;

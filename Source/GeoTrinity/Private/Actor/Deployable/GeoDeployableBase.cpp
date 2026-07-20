@@ -12,6 +12,7 @@
 #include "Components/WidgetComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameClasses/GeoGameState.h"
 #include "GameFramework/RootMotionSource.h"
 #include "GameplayEffect.h"
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
@@ -94,10 +95,12 @@ void AGeoDeployableBase::PushAway()
 		if (GetWorld()->SweepTestByChannel(Actor->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
 										   FCollisionShape::MakeSphere(Actor->GetSimpleCollisionRadius()), QueryParams))
 		{
+			FGameplayTag const ArenaTag = GetWorld()->GetGameStateChecked<AGeoGameState>()->GetActiveArenaTag();
 			TArray<AActor*> const FightCenters =
-				GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().Arena_FightCenter);
+				GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightCenter, ArenaTag);
 			if (ensureMsgf(!FightCenters.IsEmpty(),
-						   TEXT("AGeoDeployableBase: no TargetPoint tagged Arena.FightCenter in the map")))
+						   TEXT("AGeoDeployableBase: no TargetPoint.FightCenter point in arena %s"),
+						   *ArenaTag.ToString()))
 			{
 				FVector ToCenter = FightCenters[0]->GetActorLocation() - GetActorLocation();
 				ToCenter.Z = 0.f;

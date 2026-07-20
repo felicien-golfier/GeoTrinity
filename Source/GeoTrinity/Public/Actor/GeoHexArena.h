@@ -2,24 +2,24 @@
 
 #pragma once
 
+#include "Actor/GeoArena.h"
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 
 #include "GeoHexArena.generated.h"
 
-class AEnemyCharacter;
+class APlayableCharacter;
 class UInstancedStaticMeshComponent;
 
 /**
  * Destructible hexagonal boss platform. Owns a single ISM holding one instance per tile; tiles are pure visuals
  * (no collision) laid over a flat invisible floor — "falling" is game logic, not physics. The replicated TileStates
  * array is the single source of truth; every machine applies it to the ISM in ApplyTileVisuals.
- * The arena also owns its boss (spawn, defeat, wipe reset), deliberately outside the GameState single-boss
- * match-state machinery.
+ * Fall checks only run between CommitFight and EndFight: before the fight commits nobody has been teleported onto
+ * the platform yet, so anyone standing in the void around it is simply not in the fight.
  */
 UCLASS()
-class GEOTRINITY_API AGeoHexArena : public AActor
+class GEOTRINITY_API AGeoHexArena : public AGeoArena
 {
 	GENERATED_BODY()
 
@@ -33,6 +33,11 @@ public:
 	/** Server. Kills every player inside FallCheckRadius standing over a destroyed tile or the surrounding void. */
 	virtual void Tick(float DeltaSeconds) override;
 
+	/** Starts the fall checks: players are on the platform now. */
+	virtual void CommitFight() override;
+	/** Stops the fall checks and restores the platform. */
+	virtual void EndFight() override;
+
 	/** Server. Destroys the given tiles; holes appear on every machine via replication. Unknown coords are ignored. */
 	void DestroyTiles(TConstArrayView<FIntPoint> Tiles);
 	/** Server. Destroys every tile whose center lies within Radius world units of Center. */
@@ -44,8 +49,26 @@ public:
 	bool IsTileAlive(FIntPoint Tile) const;
 	/** Maps a world location to the tile containing it. Returns false when the location is outside the platform. */
 	bool GetTileUnderLocation(FVector2D WorldLocation, FIntPoint& OutTile) const;
+	/** Returns true when WorldLocation stands over a tile that is still up — false over a hole or off the platform. */
+	bool IsOverAliveTile(FVector2D WorldLocation) const;
 	/** Returns the world-space center of Tile. */
 	FVector2D TileToWorld(FIntPoint Tile) const;
+
+	/** Returns the arena that spawned Boss — every arena owns the boss it spawns. Null when Boss is not one of them. */
+	static AGeoHexArena* GetArenaOfBoss(AActor const* Boss);
+	/** Hex-disc radius in rings: 0 is the single center tile, GetGridRadius() the outer ring. */
+	int32 GetGridRadius() const { return GridRadius; }
+	/** Returns the ring Tile sits on, counted outward from the center tile. */
+	static int32 GetTileRing(FIntPoint Tile);
+
+	/**
+	 * Picks up to Count distinct tiles that are still standing.
+	 *
+	 * @param Ring  Ring to draw from; the whole platform when negative, and also when that ring has nothing left.
+	 */
+	TArray<FIntPoint> GetRandomAliveTiles(FRandomStream& Stream, int32 Ring, int32 Count) const;
+	/** Returns the furthest still-standing tile the ray crosses within MaxRange. False when it crosses none. */
+	bool GetLastAliveTileAlongRay(FVector2D Origin, FVector2D Direction, float MaxRange, FIntPoint& OutTile) const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -66,16 +89,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexArena", meta = (ClampMin = "0.0"))
 	float FallCheckRadius = 3000.f;
 
-	/** Tag of the AGeoTargetPoint a fallen player's body is teleported to. Place it over solid ground outside the
-	 * fall zone: outside InProgress the GameState instantly revives a dead player in place. */
-	UPROPERTY(EditAnywhere, Category = "HexArena")
-	FGameplayTag FallRespawnTag;
-
-	/** Boss spawned and owned by this arena at its center. */
-	UPROPERTY(EditAnywhere, Category = "HexArena")
-	TSubclassOf<AEnemyCharacter> HexBossClass;
-
 private:
+	/** Kills Player and moves the corpse off the platform, to this arena's TargetPoint.FallRespawn point. */
+	void KillFallenPlayer(APlayableCharacter& Player) const;
 	/** Deterministically fills TileCoords / CoordToIndex for the configured GridRadius. Idempotent. */
 	void BuildGrid();
 	/** Applies TileStates to the ISM instances, diffing against AppliedTileStates. Runs on every machine. */
@@ -83,15 +99,9 @@ private:
 	/** Returns the actor-space center of Tile (pointy-top axial layout). */
 	FVector TileToLocal(FIntPoint Tile) const;
 	FTransform GetTileTransform(FVector const& TileLocation) const;
-	/** Server. Spawns HexBossClass at the arena center and binds its defeat to the tile reset. */
-	void SpawnBoss();
 
 	UFUNCTION()
 	void OnRep_TileStates();
-	UFUNCTION()
-	void HandleBossDefeated();
-	UFUNCTION()
-	void HandleMatchStateChanged(FName NewMatchState, FName PreviousMatchState);
 
 	/** 1 = alive, 0 = destroyed; indexed like TileCoords. */
 	UPROPERTY(ReplicatedUsing = OnRep_TileStates)
@@ -101,7 +111,4 @@ private:
 	TArray<uint8> AppliedTileStates;
 	TArray<FIntPoint> TileCoords;
 	TMap<FIntPoint, int32> CoordToIndex;
-
-	UPROPERTY()
-	TObjectPtr<AEnemyCharacter> HexBoss;
 };

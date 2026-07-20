@@ -10,31 +10,19 @@
 #include "GeoGameState.generated.h"
 
 class AEnemyCharacter;
-class AGeoArenaBarrier;
+class AGeoArena;
 class AGeoDeployableBase;
 class UGeoDeployableManagerComponent;
 
-USTRUCT(BlueprintType)
-struct FEnemySpawnEntry
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Enemy")
-	TSubclassOf<AEnemyCharacter> EnemyClass;
-
-	UPROPERTY(EditAnywhere, Category = "Enemy")
-	FGameplayTag SpawnTag;
-};
-
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, AEnemyCharacter*, Enemy);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCommitFight);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FActiveArenaChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMatchStateChanged, FName, MatchState, FName, PreviousMatchState);
 
 /**
- * Replicated game state for GeoTrinity. Drives the boss fight lifecycle via
- * UE's MatchState hooks: spawns enemies, manages the arena barrier, coordinates
- * the fight-commit timer, and tracks how many players are still alive.
+ * Replicated game state for GeoTrinity. Drives the boss fight lifecycle via UE's MatchState hooks: coordinates the
+ * fight-commit timer, tracks how many players are still alive, and runs the post-match loot shower.
+ * A level holds one AGeoArena per encounter; the match runs whichever one is active, so nothing here knows about a
+ * particular boss, barrier or room.
  */
 UCLASS()
 class GEOTRINITY_API AGeoGameState : public AGameState
@@ -42,17 +30,18 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 	GENERATED_BODY()
 
 public:
-	/**
-	 * Calls StartBossFight() on the existing boss enemy. Enemies are spawned during HandleMatchIsWaitingToStart;
-	 * this hook assumes the boss is already in the world when the match begins.
-	 */
+	/** Registers ActiveArena, which clients need to resolve the boss health bar and the fight camera bounds. */
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** Calls StartBossFight() on the active arena's boss, which each arena spawned in its own BeginPlay. */
 	virtual void HandleMatchHasStarted() override;
 	/** Server. Revives all players currently in the world by calling ReviveLogic() on each pawn. */
 	void RevivePlayers() const;
 	/** Destroys the boss, hides the boss health bar locally, opens the arena barrier, and revives players (server). */
 	void StopBossFight();
 
-	/** Teleports players to the entrance zone and spawns enemies (if not already alive). */
+	/** Resets the active arena's enemies (claiming the DefaultArenaTag arena on the first call), then teleports players
+	 * back to that arena's entrance. */
 	virtual void HandleMatchIsWaitingToStart() override;
 
 	/** Calls StopBossFight(). */
@@ -60,17 +49,6 @@ public:
 
 	/** Client-side: calls StopBossFight() when the match transitions away from InProgress. */
 	virtual void OnRep_MatchState() override;
-
-	/** Spawns a single enemy from Entry at the tagged spawn point. Server-only. */
-	void SpawnEnemy(FEnemySpawnEntry const& Entry);
-	/** Returns true if Enemy's class matches BossToSpawn. */
-	bool IsBoss(AActor const* Enemy) const;
-	/** Returns true if Enemy's class matches DummyToSpawn. */
-	bool IsDummy(AActor const* Enemy) const;
-	/** Finds and returns the live boss enemy actor in the world, or nullptr if none exists. */
-	AEnemyCharacter* GetBossEnemy() const;
-	/** Finds and returns the live dummy enemy actor in the world, or nullptr if none exists. */
-	AEnemyCharacter* GetDummyEnemy() const;
 
 	/**
 	 * Server-only. Called when a player dies. Outside InProgress (e.g. during the fight-commit transition) it just
@@ -90,20 +68,29 @@ public:
 
 	/**
 	 * Shows boss health bar locally, binds the defeat delegate, sends the aggro StateTree event,
-	 * closes the arena barrier, and schedules the fight-commit timer. Server-side bindings only.
+	 * starts the active arena's fight, and schedules the fight-commit timer. Server-side bindings only.
 	 */
 	void StartBossFight(AEnemyCharacter* Boss);
-	/** Finds and returns the AGeoArenaBarrier in the level, or nullptr if none exists. */
-	AGeoArenaBarrier* GetArenaBarrier() const;
-	/** Spawns both boss and dummy enemies on the server. No-op on clients or if already spawned. */
-	void ResetEnemies();
 
 	UPROPERTY(BlueprintAssignable, Category = "Enemy")
 	FOnEnemySpawned OnEnemySpawned;
-	UPROPERTY(EditAnywhere, Category = "Enemy")
-	FEnemySpawnEntry BossToSpawn;
-	UPROPERTY(EditAnywhere, Category = "Enemy")
-	FEnemySpawnEntry DummyToSpawn;
+
+	/** Server. Moves the players into Arena — a teleport to another room, or a boss aggro. Broadcasts
+	 * OnActiveArenaChanged on every machine. */
+	void SetActiveArena(AGeoArena* Arena);
+
+	/** The level's arena carrying ArenaTag, or null when none does. */
+	AGeoArena* FindArena(FGameplayTag ArenaTag) const;
+
+	/** ArenaTag of the arena the players are in; DefaultArenaTag on a client until ActiveArena has replicated. */
+	FGameplayTag GetActiveArenaTag() const;
+
+	/** Broadcast whenever the players change arena, on server and clients alike. Drives the camera bounds. */
+	FActiveArenaChanged OnActiveArenaChanged;
+
+	/** Arena the players start the level in — the hub. Claimed as the first ActiveArena. */
+	UPROPERTY(EditAnywhere, Category = "Fight")
+	FGameplayTag DefaultArenaTag;
 
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	float CommitFightTime = 3.f;
@@ -111,7 +98,7 @@ public:
 	float DeathTime = 3.f;
 	/**
 	 * Level reference to a trigger volume. On fight commit, players already overlapping this volume
-	 * are left in place instead of being teleported to the fight location. Set in the editor.
+	 * are left in place instead of being teleported to the arena's fight location. Set in the editor.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	FName FightZoneTagName = "FightZone";
@@ -128,10 +115,21 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Loot")
 	float LootMaxRadius = 1500.f;
 
-	FCommitFight CommitFightDelegate;
 	FMatchStateChanged OnMatchStateChanged;
 
 private:
+	/**
+	 * Arena the players are currently in — the hub at level start, then whichever room they teleported to or boss they
+	 * aggroed. Never null on the server: it stays on the last arena entered, so a wipe sends everyone back to that
+	 * arena's entrance rather than to the hub. Replicated because clients need it for the boss health bar and the
+	 * camera bounds.
+	 */
+	UPROPERTY(ReplicatedUsing = OnRep_ActiveArena)
+	TObjectPtr<AGeoArena> ActiveArena;
+
+	UFUNCTION()
+	void OnRep_ActiveArena();
+
 	/** Players being tracked for the current fight. Their individual life is checked to detect a full wipe. */
 	UPROPERTY()
 	TArray<TObjectPtr<APlayableCharacter>> PlayersInFight;
@@ -156,8 +154,9 @@ private:
 	/** Spawns one burst of loot pickups from LootOrigin. Timer callback started by Loot(). */
 	void SpawnLootBurst();
 
-	void CommitFightStart() const;
-	void TeleportPlayersTo(FGameplayTag LocationTag, FName const& ExemptZoneName = NAME_None) const;
+	void CommitFightStart();
+	/** Teleports players to the current arena's points carrying PurposeTag, skipping anyone inside the exempt zone. */
+	void TeleportPlayersTo(FGameplayTag PurposeTag, FName const& ExemptZoneName = NAME_None) const;
 	UFUNCTION()
 	void RequestWaitingToStart() const;
 };
