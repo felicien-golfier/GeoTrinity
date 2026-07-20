@@ -40,6 +40,7 @@ struct GEOTRINITY_API FSTTask_ChaseTarget : public FStateTreeAIActionTaskBase
 
 	using FInstanceDataType = FSTTask_ChaseTargetInstanceData;
 
+	/** Declares FSTTask_ChaseTargetInstanceData as the per-execution instance data type so StateTree allocates the correct struct for each context. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Resolves the target and rotates/moves the pawn toward it. Always returns Running while the pawn is valid. */
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, float DeltaTime) const override;
