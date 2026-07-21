@@ -5,63 +5,64 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Camera/CameraComponent.h"
 #include "Characters/GeoCharacter.h"
-#include "EnhancedInputSubsystems.h"
-#include "EnhancedPlayerInput.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
-#include "GameClasses/GeoGameState.h"
-#include "GameFramework/GameState.h"
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedPlayerInput.h"
 #include "GameFramework/PlayerController.h"
+#include "GameplayTagContainer.h"
 #include "Input/GeoInputComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/GeoCameraVolume.h"
 
 AGeoGameCamera::AGeoGameCamera()
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void AGeoGameCamera::BeginPlay()
+void AGeoGameCamera::EnterVolume(AGeoCameraVolume* Volume)
 {
-	Super::BeginPlay();
-
-	TryBindToGameState();
+	ActiveVolumes.AddUnique(Volume);
+	RefreshBounds();
 }
 
-void AGeoGameCamera::TryBindToGameState()
+void AGeoGameCamera::ExitVolume(AGeoCameraVolume* Volume)
 {
-	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
-	if (!GameState)
+	ActiveVolumes.Remove(Volume);
+	RefreshBounds();
+}
+
+AGeoCameraVolume* AGeoGameCamera::GetActiveVolume()
+{
+	for (int32 Index = ActiveVolumes.Num() - 1; Index >= 0; --Index)
 	{
-		// Late joiner: the replicated GameState has not arrived yet. Retry next tick rather than dereferencing null.
-		GetWorldTimerManager().SetTimerForNextTick(this, &AGeoGameCamera::TryBindToGameState);
+		if (AGeoCameraVolume* Volume = ActiveVolumes[Index].Get())
+		{
+			return Volume;
+		}
+		ActiveVolumes.RemoveAt(Index);
+	}
+	return nullptr;
+}
+
+void AGeoGameCamera::RefreshBounds()
+{
+	AGeoCameraVolume* Volume = GetActiveVolume();
+	if (!Volume)
+	{
+		bBounded = false;
 		return;
 	}
 
-	GameState->OnActiveArenaChanged.AddUniqueDynamic(this, &AGeoGameCamera::CalculateBounds);
-	CalculateBounds();
-}
-
-void AGeoGameCamera::CalculateBounds()
-{
-	AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
-	if (!ensureMsgf(GameState, TEXT("AGeoGameCamera: bounds recalculated with no AGeoGameState")))
-	{
-		return;
-	}
-
-	SetArenaTag(GameState->GetActiveArenaTag());
-}
-
-void AGeoGameCamera::SetArenaTag(FGameplayTag ArenaTag)
-{
-	TArray<AActor*> BoundPoints =
-		UGeoGameplayLibrary::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_CameraBounds, ArenaTag);
+	TArray<AActor*> const BoundPoints =
+		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_CameraBounds, Volume->GetArenaTag());
 	if (BoundPoints.IsEmpty())
 	{
 		UE_LOG(LogTemp, Warning,
-			   TEXT("AGeoGameCamera: No camera-bounds AGeoTargetPoint for arena %s — keeping previous bounds."),
-			   *ArenaTag.ToString());
+			   TEXT("AGeoGameCamera: no TargetPoint.CameraBounds for arena %s — camera unbounded in that volume."),
+			   *Volume->GetArenaTag().ToString());
+		bBounded = false;
 		return;
 	}
 
@@ -74,6 +75,7 @@ void AGeoGameCamera::SetArenaTag(FGameplayTag ArenaTag)
 		}
 	}
 	Bounds = Result;
+	bBounded = true;
 }
 
 FVector2D AGeoGameCamera::GetSpectateMoveInput(APlayerController const* PlayerController,
@@ -119,33 +121,6 @@ void AGeoGameCamera::Tick(float DeltaTime)
 	}
 	bSpectating = bDead;
 
-	float const OrthoHalfWidth = GetCameraComponent()->OrthoWidth * 0.5f;
-
-	float AspectRatio = 16.f / 9.f;
-	if (UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport())
-	{
-		FVector2D ViewportSize;
-		ViewportClient->GetViewportSize(ViewportSize);
-		if (ViewportSize.X > 0.f && ViewportSize.Y > 0.f)
-		{
-			AspectRatio = ViewportSize.X / ViewportSize.Y;
-		}
-	}
-	float const OrthoHalfHeight = OrthoHalfWidth / AspectRatio;
-
-	FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
-	FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
-
-	float const ViewportHalfExtentX =
-		OrthoHalfWidth * FMath::Abs(ScreenRight.X) + OrthoHalfHeight * FMath::Abs(ScreenUp.X);
-	float const ViewportHalfExtentY =
-		OrthoHalfWidth * FMath::Abs(ScreenRight.Y) + OrthoHalfHeight * FMath::Abs(ScreenUp.Y);
-
-	float const MinCameraX = Bounds.Min.X + ViewportHalfExtentX;
-	float const MaxCameraX = Bounds.Max.X - ViewportHalfExtentX;
-	float const MinCameraY = Bounds.Min.Y + ViewportHalfExtentY;
-	float const MaxCameraY = Bounds.Max.Y - ViewportHalfExtentY;
-
 	FVector2D TargetXY(LocalPawn->GetActorLocation());
 	if (bSpectating)
 	{
@@ -153,16 +128,39 @@ void AGeoGameCamera::Tick(float DeltaTime)
 		TargetXY = SpectateTarget;
 	}
 
-	AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
-	bool const bInFight = GameState && GameState->IsMatchInProgress();
-
 	FVector2D FollowTarget = TargetXY;
-	if (bInFight)
+	if (bBounded)
 	{
+		float const OrthoHalfWidth = GetCameraComponent()->OrthoWidth * 0.5f;
+		float AspectRatio = 16.f / 9.f;
+		if (UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport())
+		{
+			FVector2D ViewportSize;
+			ViewportClient->GetViewportSize(ViewportSize);
+			if (ViewportSize.X > 0.f && ViewportSize.Y > 0.f)
+			{
+				AspectRatio = ViewportSize.X / ViewportSize.Y;
+			}
+		}
+		float const OrthoHalfHeight = OrthoHalfWidth / AspectRatio;
+
+		FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
+		FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
+
+		float const ViewportHalfExtentX =
+			OrthoHalfWidth * FMath::Abs(ScreenRight.X) + OrthoHalfHeight * FMath::Abs(ScreenUp.X);
+		float const ViewportHalfExtentY =
+			OrthoHalfWidth * FMath::Abs(ScreenRight.Y) + OrthoHalfHeight * FMath::Abs(ScreenUp.Y);
+
+		float const MinCameraX = Bounds.Min.X + ViewportHalfExtentX;
+		float const MaxCameraX = Bounds.Max.X - ViewportHalfExtentX;
+		float const MinCameraY = Bounds.Min.Y + ViewportHalfExtentY;
+		float const MaxCameraY = Bounds.Max.Y - ViewportHalfExtentY;
+
 		FVector2D const BoundsCenter = Bounds.GetCenter();
-		FollowTarget = FVector2D(
-			MinCameraX <= MaxCameraX ? FMath::Clamp(TargetXY.X, MinCameraX, MaxCameraX) : BoundsCenter.X,
-			MinCameraY <= MaxCameraY ? FMath::Clamp(TargetXY.Y, MinCameraY, MaxCameraY) : BoundsCenter.Y);
+		FollowTarget =
+			FVector2D(MinCameraX <= MaxCameraX ? FMath::Clamp(TargetXY.X, MinCameraX, MaxCameraX) : BoundsCenter.X,
+					  MinCameraY <= MaxCameraY ? FMath::Clamp(TargetXY.Y, MinCameraY, MaxCameraY) : BoundsCenter.Y);
 	}
 	if (bSpectating)
 	{

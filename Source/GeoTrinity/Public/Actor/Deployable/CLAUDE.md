@@ -40,6 +40,7 @@ Handles drain GE, blink-before-expiry, recall, explode, and Blueprint events.
 **Spawn-push helper — `PushAway()`:**
 - If `bPushActorsOnSpawn = true`, `InitInteractable` calls `PushAway()` on the server before Super
 - Disables capsule collision, root-motion-pushes all overlapping characters outward (`FRootMotionSource_MoveToForce`, 0.15 s), then re-enables blocking collision after 0.3 s
+- A push whose outward sweep is blocked (character squeezed against a wall) is redirected toward the fighting arena's `TargetPoint.FightCenter` (`AGeoArena::GetFightingArena`). Ensures if no fight is running — only fight-spawned deployables (the boss pillar) set `bPushActorsOnSpawn`, so a push outside a fight is a config bug, and the redirect would have nowhere to aim
 - Push radius = `Params.Size` if set, otherwise the capsule's scaled radius
 
 **Key fields:**

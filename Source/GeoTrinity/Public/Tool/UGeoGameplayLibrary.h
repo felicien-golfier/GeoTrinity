@@ -111,6 +111,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const PurposeTag,
 										   FGameplayTag const ArenaTag);
+
+	/**
+	 * Server. Teleports player pawns to the AGeoTargetPoints carrying PurposeTag + ArenaTag (round-robin). With no
+	 * ExemptZoneName it moves everyone — the group respawn, which always teleports. Pass a zone tag to skip any pawn
+	 * already standing inside an actor carrying it — the arena's fight-commit move leaves players already in position.
+	 */
+	static void TeleportPlayersToTargetPoints(UObject const* WorldContextObject, FGameplayTag PurposeTag,
+											  FGameplayTag ArenaTag, FName ExemptZoneName = NAME_None);
 };
 
 using GeoLib = UGeoGameplayLibrary;

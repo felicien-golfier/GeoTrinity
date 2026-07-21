@@ -37,8 +37,9 @@ struct FBarrierAnimatedActor
 /**
  * Replicated barrier that blocks the arena entrance. Collision and visibility sync to all clients
  * via OnRep_bIsClosed. Visual/VFX are handled by BlueprintImplementableEvent.
- * On state change, animated actors lerp between their fight-on and fight-off locations over the
- * game state's CommitFightTime. Ticks only while that lerp is in flight.
+ * On state change, animated actors lerp between their fight-on and fight-off locations — closing over the game
+ * state's CommitFightTime, opening over its DeathTime (the wipe's death window). Ticks only while that lerp is
+ * in flight.
  */
 UCLASS()
 class GEOTRINITY_API AGeoArenaBarrier : public AActor
@@ -84,13 +85,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Barrier")
 	TArray<FBarrierAnimatedActor> AnimatedActors;
 
+	/** Lerp progress: 0 = fight-off location, 1 = fight-on location. */
+	float LerpAlpha = 0.0f;
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_bIsClosed, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsClosed = false;
-
-	/** Lerp progress: 0 = fight-off location, 1 = fight-on location. */
-	float LerpAlpha = 0.0f;
 
 	UFUNCTION()
 	void OnRep_bIsClosed();

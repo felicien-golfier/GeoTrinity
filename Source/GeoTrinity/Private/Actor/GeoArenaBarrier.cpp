@@ -83,7 +83,8 @@ void AGeoArenaBarrier::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	float const LerpDuration = GetWorld()->GetGameStateChecked<AGeoGameState>()->CommitFightTime;
+	AGeoGameState const* GameState = GetWorld()->GetGameStateChecked<AGeoGameState>();
+	float const LerpDuration = bIsClosed ? GameState->CommitFightTime : GameState->DeathTime;
 	float const Step = LerpDuration > 0.0f ? DeltaSeconds / LerpDuration : 1.0f;
 	LerpAlpha = FMath::Clamp(LerpAlpha + (bIsClosed ? Step : -Step), 0.0f, 1.0f);
 

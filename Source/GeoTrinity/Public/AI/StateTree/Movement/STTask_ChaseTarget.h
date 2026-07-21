@@ -25,7 +25,7 @@ struct GEOTRINITY_API FSTTask_ChaseTargetInstanceData
 
 	/** 2D distance at which the pawn stops advancing while still facing the target. */
 	UPROPERTY(EditAnywhere, Category = Parameter, meta = (ClampMin = "0.0"))
-	float StopDistance = 150.f;
+	float StopDistance = 300.f;
 };
 
 /**
@@ -40,7 +40,8 @@ struct GEOTRINITY_API FSTTask_ChaseTarget : public FStateTreeAIActionTaskBase
 
 	using FInstanceDataType = FSTTask_ChaseTargetInstanceData;
 
-	/** Declares FSTTask_ChaseTargetInstanceData as the per-execution instance data type so StateTree allocates the correct struct for each context. */
+	/** Declares FSTTask_ChaseTargetInstanceData as the per-execution instance data type so StateTree allocates the
+	 * correct struct for each context. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Resolves the target and rotates/moves the pawn toward it. Always returns Running while the pawn is valid. */
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, float DeltaTime) const override;

@@ -21,6 +21,10 @@ Blueprint-callable static helpers:
 **Camera shake**:
 - `TriggerCameraShake(WorldContext, ShakeClass, Scale)` — local player only
 
+**Target points / respawn** (server):
+- `GetTargetPoints(WorldContext, PurposeTag, ArenaTag)` — the `AGeoTargetPoint`s carrying both a `TargetPoint.*` purpose and an `Arena.*` tag.
+- `TeleportPlayersToTargetPoints(WorldContext, PurposeTag, ArenaTag, ExemptZoneName = NAME_None)` — teleports player pawns to those points round-robin. **No exempt zone → teleports everyone** (the group respawn, which always moves the whole group to the checkpoint); pass a zone tag to skip pawns already standing inside an actor carrying it (the arena's fight-commit move leaves players already in position).
+
 **Debug**:
 - `GetColorForObject(Object)` — deterministic debug color per object
 

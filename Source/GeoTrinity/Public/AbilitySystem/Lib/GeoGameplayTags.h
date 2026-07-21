@@ -82,7 +82,6 @@ struct GEOTRINITY_API FGeoGameplayTags
 	FGameplayTag TargetPoint_FightLocation;
 	FGameplayTag TargetPoint_FightCenter;
 	FGameplayTag TargetPoint_CameraBounds;
-	FGameplayTag TargetPoint_FallRespawn;
 	FGameplayTag TargetPoint_FiringPoint;
 
 private:

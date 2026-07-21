@@ -125,7 +125,7 @@ void AGeoEnemyAIController::OnUnPossess()
 
 void AGeoEnemyAIController::CheckAggroDistance()
 {
-	if (bAggroed || !GetPawn())
+	if (bAggroed || !GetPawn() || GetWorld()->GetGameStateChecked<AGeoGameState>()->IsMatchInProgress())
 	{
 		return;
 	}
@@ -156,15 +156,13 @@ void AGeoEnemyAIController::TriggerAggro()
 	bAggroed = true;
 	ClearAggro();
 
+	StateTreeComp->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
+
 	AGeoArena* Arena = AGeoArena::GetArenaOfBoss(GetPawn());
 	AGeoGameMode* GeoGameMode = GetWorld()->GetAuthGameMode<AGeoGameMode>();
 	if (Arena && GeoGameMode && Arena->IsBoss(GetPawn()))
 	{
-		GetWorld()->GetGameStateChecked<AGeoGameState>()->SetActiveArena(Arena);
+		Arena->StartFight();
 		GeoGameMode->StartMatch();
-	}
-	else
-	{
-		StateTreeComp->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
 	}
 }

@@ -10,14 +10,18 @@
 
 class AEnemyCharacter;
 class AGeoArenaBarrier;
-class APlayableCharacter;
+class AGeoDeployableBase;
+class UGeoDeployableManagerComponent;
 
 /**
- * One boss encounter: the boss it owns, the target points its players are moved between, its barrier, and what
- * happens when a player dies in it. AGeoGameState only tracks which arena is active and whether a match is running,
- * so a level can hold several arenas without the match machinery knowing any of them by class.
- * The fight runs Start (barrier closes, players walk in) -> Commit (players teleported in) -> End; subclasses hook
- * those to arm whatever only makes sense once the fight is really live.
+ * One boss encounter, and it runs itself. It owns its boss (spawn + reset), its barrier, its fight-commit, the boss
+ * health bar and the post-victory loot shower. The GameState tells it nothing: on aggro TriggerAggro calls StartFight
+ * directly, and it subscribes to AGeoGameState::OnMatchStateChanged to tear the fight down when the match leaves
+ * InProgress (a wipe or a victory). Whether this arena's fight is live is the replicated bFighting flag, so clients
+ * resolve their own boss bar and the GameState needs no arena pointer at all. What a player's death means stays the
+ * GameState's policy; the arena's only part in it is registering its ArenaTag as the respawn CheckpointTag.
+ * The fight runs Start (bFighting set, barrier closes, players walk in) -> Commit (players teleported in) -> End;
+ * CommitFight and EndFight are virtual so subclasses arm whatever only makes sense once the fight is really live.
  */
 UCLASS()
 class GEOTRINITY_API AGeoArena : public AActor
@@ -27,24 +31,20 @@ class GEOTRINITY_API AGeoArena : public AActor
 public:
 	AGeoArena();
 
-	/** Registers the boss pointer, which clients need to bind the boss health bar. */
+	/** Registers Boss (clients bind the health bar) and bFighting (clients show/hide it). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Server. Spawns the boss, or resets the one already standing, for a fresh attempt. */
 	void ResetBoss();
 
-	/** Server. Closes the barrier and starts the commit countdown. Players are still walking in. */
+	/** Server. Marks this fight live (barrier closes, boss bar shows, checkpoint registered), and starts the commit
+	 *  countdown. Called by AGeoEnemyAIController::TriggerAggro the moment this arena's boss is aggroed. Ignored
+	 *  while a match is already in progress. */
 	virtual void StartFight();
 	/** Server. Teleports players to this arena's fight location; the encounter is now fully live. */
 	virtual void CommitFight();
-	/** Server. Opens the barrier and stands the encounter down. */
+	/** Server. Opens the barrier, hides the boss bar, and resets the boss. Runs when the match leaves InProgress. */
 	virtual void EndFight();
-
-	/**
-	 * Server. A player just went down in this arena, by death or by disconnecting. Base: leaves them down until
-	 * nobody is left standing, then puts the whole group back at the entrance after DeathTime.
-	 */
-	virtual void RespawnPlayer(APlayableCharacter& Player);
 
 	/** Returns this arena's boss character; nullptr before BeginPlay spawns it. */
 	AEnemyCharacter* GetBoss() const { return Boss; }
@@ -54,6 +54,8 @@ public:
 	/** Returns the arena that spawned Boss — every arena spawns its boss with Owner = this. Null when Boss is not one.
 	 */
 	static AGeoArena* GetArenaOfBoss(AActor const* Boss);
+	/** Returns the arena whose fight is currently live, or null when no fight runs. At most one arena is ever fighting. */
+	static AGeoArena* GetFightingArena(UObject const* WorldContextObject);
 
 	/**
 	 * Names this encounter. Every AGeoTargetPoint it uses carries this tag alongside its TargetPoint.* purpose, so a
@@ -67,7 +69,7 @@ protected:
 	UFUNCTION()
 	void OnRep_Boss();
 
-	/** Server. Spawns this arena's boss so it exists to be aggroed. */
+	/** Server. Spawns this arena's boss and subscribes to the match state so the arena can end its own fight. */
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, Category = "Arena")
@@ -77,29 +79,61 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Arena")
 	TObjectPtr<AGeoArenaBarrier> Barrier;
 
-	/** Seconds the group stays down after a wipe before this arena puts it back on its feet. */
-	UPROPERTY(EditAnywhere, Category = "Arena")
-	float DeathTime = 3.f;
-
-	/** Level trigger volumes; players already inside are left where they are instead of being teleported. */
+	/** Level trigger volume tag; players already inside it keep their position instead of being pulled to the fight
+	 *  location on commit. */
 	UPROPERTY(EditAnywhere, Category = "Arena")
 	FName FightZoneTagName = "FightZone";
-	UPROPERTY(EditAnywhere, Category = "Arena")
-	FName EntranceZoneTagName = "EntranceZone";
+
+	/** Seconds between loot pickup bursts after the boss dies. */
+	UPROPERTY(EditAnywhere, Category = "Loot")
+	float LootSpawnInterval = 0.1f;
+	/** Pickups spawned per burst. */
+	UPROPERTY(EditAnywhere, Category = "Loot")
+	int32 LootPickupsPerBurst = 1;
+	/** Scatter radius around the dead boss the pickups are launched to. */
+	UPROPERTY(EditAnywhere, Category = "Loot")
+	float LootMaxRadius = 1500.f;
 
 private:
-	/** Server. Moves players to this arena's points carrying PurposeTag, skipping anyone inside ExemptZoneName. */
-	void TeleportPlayersTo(FGameplayTag PurposeTag, FName ExemptZoneName) const;
-
-	/** Returns true when no player is left standing. */
-	bool AreAllPlayersDead() const;
-
-	/** Server. Puts the downed group back on its feet at this arena's entrance and stands the match down. */
-	void RespawnGroup();
-
 	UPROPERTY(ReplicatedUsing = OnRep_Boss)
 	TObjectPtr<AEnemyCharacter> Boss;
 
+	/** True while this arena's fight is live. Replicated so every client shows/hides the boss bar off OnRep_bFighting. */
+	UPROPERTY(ReplicatedUsing = OnRep_bFighting)
+	bool bFighting = false;
+
+	UFUNCTION()
+	void OnRep_bFighting();
+
+	/** Shows the boss bar for Boss while bFighting, hides it otherwise. Local HUD only; a no-op on a dedicated server. */
+	void ApplyBossBar();
+
+	/** Ends the fight when the match leaves InProgress. Bound to AGeoGameState::OnMatchStateChanged (server only). */
+	UFUNCTION()
+	void OnMatchStateChanged(FName NewMatchState, FName PreviousMatchState);
+
+	/** The fight is lost but the match still stands: cancels a pending commit and opens the barrier, so it spends the
+	 *  DeathTime window opening and finishes right as the group respawns. Bound to AGeoGameState::OnWipe (server only). */
+	UFUNCTION()
+	void OnWipe(float DeathTime);
+
+	/** Starts the loot shower from the dead boss and stands the match down. Bound to Boss->OnEnemyDefeated. */
+	UFUNCTION()
+	void OnBossDefeated();
+
+	/** Server. Starts the looping loot shower erupting from LootOrigin. */
+	void Loot();
+	/** Server. Stops the shower and hands back the pickup slots it borrowed. Runs when any fight starts. */
+	void StopLoot();
+	/** Spawns one burst of loot pickups from LootOrigin. Timer callback started by Loot(). */
+	void SpawnLootBurst();
+
 	FTimerHandle CommitFightTimer;
-	FTimerHandle RespawnTimer;
+
+	FTimerHandle LootTimer;
+	FVector LootOrigin = FVector::ZeroVector;
+
+	/** Managers granted an unlimited pickup slot for the loot shower; restored when the next fight starts. */
+	TArray<TWeakObjectPtr<UGeoDeployableManagerComponent>> LootBoostedManagers;
+	TSubclassOf<AGeoDeployableBase> LootPickupClass;
 };

@@ -4,7 +4,6 @@
 
 #include "Characters/PlayableCharacter.h"
 #include "Components/TextRenderComponent.h"
-#include "GameClasses/GeoGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -75,12 +74,6 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 	if (!GeoLib::IsServer(GetWorld()))
 	{
 		return;
-	}
-
-	if (ArenaTag.IsValid())
-	{
-		AGeoGameState* GameState = GetWorld()->GetGameStateChecked<AGeoGameState>();
-		GameState->SetActiveArena(GameState->FindArena(ArenaTag));
 	}
 
 	FVector const Destination = NextTeleporter->GetActorLocation();

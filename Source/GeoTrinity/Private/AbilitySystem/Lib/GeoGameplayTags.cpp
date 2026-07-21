@@ -100,9 +100,7 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 					  "Inside the arena — players are teleported here on fight commit.");
 	AddTargetPointTag(GameplayTags.TargetPoint_FightCenter, "FightCenter", "Center of the fight area.");
 	AddTargetPointTag(GameplayTags.TargetPoint_CameraBounds, "CameraBounds",
-					  "Corner markers the camera bounds are built from.");
-	AddTargetPointTag(GameplayTags.TargetPoint_FallRespawn, "FallRespawn",
-					  "Where a fallen player's corpse is moved, outside the fall zone.");
+					  "Corner markers a camera volume's bounds are built from.");
 	AddTargetPointTag(GameplayTags.TargetPoint_FiringPoint, "FiringPoint", "Where the AI can fire from.");
 
 	// AI //

@@ -25,10 +25,11 @@ EnemyCharacter.md
 
 On health ≤ 0, `Death()` (server) sets replicated `bIsDead`, calls `StopCharacter()` (disable input, stop+disable
 movement, disable collision, swap mesh to the class death material via `SetDeathMaterial`), then hands the death to
-**the arena the players are in**: `GameState->GetActiveArena()->RespawnPlayer(*this)`. What a death *means* is the
-arena's decision, not the GameState's — the base `AGeoArena` waits for a full wipe, `AGeoDummyArena` revives on the
-spot. The corpse **stays in place** — no per-death teleport. On a wipe the arena's `RespawnGroup()`
-teleports everyone to its `TargetPoint.Entrance` and calls `Revive()` per player (cancels active abilities, removes all gameplay
+the GameState: `GameState->NotifyPlayerDied(*this)`. What a death *means* is the GameState's single policy, not the
+arena's — **out of a fight** the player is revived on the spot; **in a fight** they stay down until everyone who
+started the fight is down, then the whole group respawns at the `CheckpointTag` the arena registered. The corpse
+**stays in place** — no per-death teleport. On a wipe the GameState's `RespawnGroup()`
+teleports everyone to the checkpoint's `TargetPoint.Entrance` and calls `Revive()` per player (cancels active abilities, removes all gameplay
 effects, `StopAllSpawnedElements()` — deployables persist while the player is down and expire on revive — re-applies class visuals, and broadcasts `OnRevived` (fired on server in `Revive()` and on clients in `OnRep_IsDead`; in-flight projectiles bind to it and end themselves) via `ApplyClassData()`, then `GiveLife()` — re-applies per-class default attributes
 and restarts passives — then `RestartCharacter()`). The state replicates to
 clients via `OnRep_IsDead(bool)`, which calls `DeathLogic()` or `ReviveLogic()` directly — same bodies that run on
@@ -36,8 +37,11 @@ the server. **`RemoveActiveEffects` is server-guarded inside both**: it only act
 removal replicates to clients. Calling it client-side is a no-op that would otherwise leave locally-predicted effects
 (e.g. dash cooldown) lingering after death — the cause of dash being unavailable on the client after respawn. Each class entry in `ClassData` (`FPlayerClassData`) configures `AliveMaterial` + `DeathMaterial`;
 both swap on mesh slot 0.
-Late joiners: `PossessedBy` calls `Death()` right after `ChangeClass` when the match is InProgress, so players joining
-mid-fight arrive dead and spectate (free camera panned with move input) until the arena resets and revives everyone.
+Late joiners spawn **alive**, even mid-fight — free to play on the hub dummy while others fight. They are not in the
+fight-start `FightPlayers` snapshot, so they never block or trigger the wipe; the group teleports (fight commit, wipe
+respawn) move them like everyone else, and a death while a match runs anywhere leaves them down until it ends (the
+global death policy — there is no per-room aliveness). `PossessedBy` used to `Death()` them into spectate; that guard
+existed for the pre-snapshot wipe counter and is gone.
 
 ## Component Subfolder
 

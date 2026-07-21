@@ -3,7 +3,10 @@
 #include "Actor/GeoTargetPoint.h"
 #include "Camera/CameraShakeBase.h"
 #include "Characters/GeoCharacter.h"
+#include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/GameplayStatics.h"
@@ -163,4 +166,54 @@ TArray<AActor*> UGeoGameplayLibrary::GetTargetPoints(UObject const* WorldContext
 	}
 
 	return SpawnPoints;
+}
+
+void UGeoGameplayLibrary::TeleportPlayersToTargetPoints(UObject const* WorldContextObject, FGameplayTag const PurposeTag,
+													    FGameplayTag const ArenaTag, FName const ExemptZoneName)
+{
+	UWorld* World = WorldContextObject ? WorldContextObject->GetWorld() : nullptr;
+	if (!ensureMsgf(World, TEXT("TeleportPlayersToTargetPoints: no world")))
+	{
+		return;
+	}
+
+	TArray<AActor*> const SpawnPoints = GetTargetPoints(WorldContextObject, PurposeTag, ArenaTag);
+	if (!ensureMsgf(!SpawnPoints.IsEmpty(), TEXT("Ensure to add Spawn points tagged %s + %s in your map, DUMBASS"),
+					*PurposeTag.GetTagName().ToString(), *ArenaTag.GetTagName().ToString()))
+	{
+		return;
+	}
+
+	// No exempt zone -> teleport everyone (the death respawn); otherwise skip any pawn standing in one.
+	TArray<AActor*> ExemptZones;
+	if (!ExemptZoneName.IsNone())
+	{
+		UGameplayStatics::GetAllActorsWithTag(WorldContextObject, ExemptZoneName, ExemptZones);
+	}
+
+	int32 SpawnIndex = 0;
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APawn* Pawn = It->IsValid() ? (*It)->GetPawn() : nullptr;
+		if (!IsValid(Pawn))
+		{
+			continue;
+		}
+
+		bool bInExemptZone = false;
+		for (AActor const* Zone : ExemptZones)
+		{
+			if (Pawn->IsOverlappingActor(Zone))
+			{
+				bInExemptZone = true;
+				break;
+			}
+		}
+
+		if (!bInExemptZone)
+		{
+			Pawn->SetActorLocation(SpawnPoints[SpawnIndex % SpawnPoints.Num()]->GetActorLocation());
+			++SpawnIndex;
+		}
+	}
 }

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Characters/PlayableCharacter.h"
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
 #include "GameplayTagContainer.h"
@@ -10,18 +9,18 @@
 #include "GeoGameState.generated.h"
 
 class AEnemyCharacter;
-class AGeoArena;
-class AGeoDeployableBase;
-class UGeoDeployableManagerComponent;
+class APlayableCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, AEnemyCharacter*, Enemy);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FActiveArenaChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMatchStateChanged, FName, MatchState, FName, PreviousMatchState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWipe, float, DeathTime);
 
 /**
- * Replicated game state for GeoTrinity. Answers two independent questions and nothing else: which arena the players
- * are in (ActiveArena) and whether a boss fight is running (MatchState). The encounter itself — target points, fight
- * commit, respawn policy — belongs to AGeoArena, so nothing here knows about a particular boss, barrier or room.
+ * Replicated game state for GeoTrinity. It runs the match lifecycle (MatchState: WaitingToStart until a boss is
+ * aggroed, InProgress while a fight runs) and the player death policy, and nothing else — it holds no pointer to any
+ * arena, boss, barrier or room. The encounter reacts to the lifecycle on its own: see AGeoArena, which subscribes to
+ * OnMatchStateChanged. The one thing a death needs from the encounter is where to come back, and that arrives as a
+ * plain tag (CheckpointTag) the aggroed arena registers.
  */
 UCLASS()
 class GEOTRINITY_API AGeoGameState : public AGameState
@@ -29,15 +28,22 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 	GENERATED_BODY()
 
 public:
-	/** Registers ActiveArena, which clients need to resolve the boss health bar and the fight camera bounds. */
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	/** Calls StartBossFight() on the active arena's boss, which each arena spawned in its own BeginPlay. */
+	/** Server. Snapshots the players alive as the fight begins into FightPlayers, the set a wipe is measured against. */
 	virtual void HandleMatchHasStarted() override;
-	/** Server. Revives all players currently in the world by calling ReviveLogic() on each pawn. */
+
+	/** Server. Revives every player pawn currently in the world (no-op on a living one, so overlapping calls are free). */
 	void RevivePlayers() const;
-	/** Hides the boss health bar locally, ends the active arena's fight, and revives players (server). */
-	void StopBossFight();
+
+	/**
+	 * Server. A player just went down (death or disconnect). Out of a fight the player is revived on the spot; during a
+	 * fight (match in progress) they stay down, and once every player who was alive when the fight began is down, the
+	 * whole group respawns at the checkpoint after DeathTime. This is the single death policy — no arena is consulted.
+	 */
+	void NotifyPlayerDied(APlayableCharacter& Player);
+
+	/** Server. The arena owning the current fight registers where a wipe returns the group (its own Arena.* tag, or the
+	 *  next one to advance the checkpoint). Read only during a respawn, so it never needs to replicate. */
+	void SetCheckpointTag(FGameplayTag Tag) { CheckpointTag = Tag; }
 
 	/**
 	 * Server. Stands the match down so the next boss aggro can start a new one. WaitingToStart is the only state
@@ -45,87 +51,42 @@ public:
 	 */
 	void RequestWaitingToStart() const;
 
-	/** Resets the active arena's enemies, claiming the DefaultArenaTag arena on the level's first call. */
-	virtual void HandleMatchIsWaitingToStart() override;
-
-	/** Calls StopBossFight() when the match transitions away from InProgress, on the server and on clients alike. */
+	/** Server-side revives on leaving InProgress (mid-fight casualties on a victory); broadcasts OnMatchStateChanged. */
 	virtual void OnRep_MatchState() override;
-
-	/** Server-only. Called when the boss health reaches 0. Captures the loot origin, transitions to WaitingPostMatch.
-	 */
-	UFUNCTION()
-	void NotifyBossDefeated();
-	/** Server-only. Starts the post-match loot shower: bursts of buff pickups erupting from the dead boss. */
-	void Loot();
-
-	/**
-	 * Shows boss health bar locally, binds the defeat delegate, sends the aggro StateTree event and starts the active
-	 * arena's fight. Server-side bindings only.
-	 */
-	void StartBossFight(AEnemyCharacter* Boss);
 
 	UPROPERTY(BlueprintAssignable, Category = "Enemy")
 	FOnEnemySpawned OnEnemySpawned;
 
-	/** Server. Moves the players into Arena — a teleport to another room, or a boss aggro. Broadcasts
-	 * OnActiveArenaChanged on every machine. */
-	void SetActiveArena(AGeoArena* Arena);
-
-	/** The level's arena carrying ArenaTag, or null when none does. */
-	AGeoArena* FindArena(FGameplayTag ArenaTag) const;
-
-	/** Arena the players are in — their checkpoint, their fight location, and the respawn policy their deaths run. */
-	AGeoArena* GetActiveArena() const { return ActiveArena; }
-
-	/** ArenaTag of the arena the players are in; DefaultArenaTag on a client until ActiveArena has replicated. */
-	FGameplayTag GetActiveArenaTag() const;
-
-	/** Broadcast whenever the players change arena, on server and clients alike. Drives the camera bounds. */
-	FActiveArenaChanged OnActiveArenaChanged;
-
-	/** Arena the players start the level in — the hub. Claimed as the first ActiveArena. */
-	UPROPERTY(EditAnywhere, Category = "Fight")
-	FGameplayTag DefaultArenaTag;
-
-	/** Seconds from a fight starting to its commit. Shared by every arena; also the barrier's lerp duration. */
+	/** Seconds from a fight starting to its commit. Shared by every arena; also the barrier's closing lerp duration.
+	 *  A plain timing constant, not an arena reference, so it stays here where the arena and the barrier both read it. */
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	float CommitFightTime = 3.f;
 
-	/** Seconds between loot pickup bursts after the boss dies. */
-	UPROPERTY(EditAnywhere, Category = "Loot")
-	float LootSpawnInterval = 0.1f;
-	/** Pickups spawned per burst. */
-	UPROPERTY(EditAnywhere, Category = "Loot")
-	int32 LootPickupsPerBurst = 1;
-	/** Scatter radius around the dead boss the pickups are launched to. */
-	UPROPERTY(EditAnywhere, Category = "Loot")
-	float LootMaxRadius = 1500.f;
+	/** Seconds the downed group stays on the ground after a wipe before it respawns at the checkpoint; also the
+	 *  barrier's opening lerp duration, so it finishes opening right as the group comes back. */
+	UPROPERTY(EditAnywhere, Category = "Fight")
+	float DeathTime = 3.f;
 
+	/** Broadcast on every match state transition, on server and clients alike. AGeoArena subscribes to run its fight. */
 	FMatchStateChanged OnMatchStateChanged;
 
+	/** Server. Broadcast the moment every fight player is down — DeathTime seconds before the group respawns. */
+	FOnWipe OnWipe;
+
 private:
-	/**
-	 * Arena the players are currently in — the hub at level start, then whichever room they teleported to or boss they
-	 * aggroed. Never null on the server: it stays on the last arena entered, so a wipe sends everyone back to that
-	 * arena's entrance rather than to the hub. Replicated because clients need it for the boss health bar and the
-	 * camera bounds.
+	/** Arena.* tag a wipe respawns at; set by the arena that owns the current fight. */
+	FGameplayTag CheckpointTag;
+
+	/** Players alive when the current fight began. A wipe is "all of these are down", so late joiners — who are not
+	 *  in this snapshot — can neither block a wipe nor trigger one. */
+	TArray<TWeakObjectPtr<APlayableCharacter>> FightPlayers;
+
+	FTimerHandle RespawnTimer;
+
+	/** Returns true when no player from the fight-start snapshot is still standing. */
+	bool AreFightPlayersDead() const;
+
+	/** Server. Teleports the group to the checkpoint, revives everyone, and stands the match down. Wipe timer callback.
 	 */
-	UPROPERTY(ReplicatedUsing = OnRep_ActiveArena)
-	TObjectPtr<AGeoArena> ActiveArena;
-
-	UFUNCTION()
-	void OnRep_ActiveArena();
-
-	FTimerHandle LootTimer;
-	FVector LootOrigin = FVector::ZeroVector;
-
-	/** Managers granted an unlimited pickup slot for the loot shower; restored when the arena resets. */
-	TArray<TWeakObjectPtr<UGeoDeployableManagerComponent>> LootBoostedManagers;
-	TSubclassOf<AGeoDeployableBase> LootPickupClass;
-
-	/** Spawns one burst of loot pickups from LootOrigin. Timer callback started by Loot(). */
-	void SpawnLootBurst();
-
-	/** Server. Stops the shower and gives back the pickup slots it borrowed. Runs when the next fight starts. */
-	void StopLoot();
+	void RespawnGroup();
 };

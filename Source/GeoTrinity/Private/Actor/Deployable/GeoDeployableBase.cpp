@@ -6,13 +6,13 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
+#include "Actor/GeoArena.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameClasses/GeoGameState.h"
 #include "GameFramework/RootMotionSource.h"
 #include "GameplayEffect.h"
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
@@ -60,6 +60,10 @@ void AGeoDeployableBase::InitInteractable(FInteractableActorData* Data)
 
 void AGeoDeployableBase::PushAway()
 {
+	AGeoArena const* FightingArena = AGeoArena::GetFightingArena(this);
+	ensureMsgf(FightingArena, TEXT("%s: PushAway outside a fight — no fighting arena to redirect blocked pushes toward"),
+			   *GetName());
+
 	FVector2D const Location2D(GetActorLocation());
 	float const Radius = CapsuleComponent->GetScaledCapsuleRadius();
 
@@ -92,15 +96,15 @@ void AGeoDeployableBase::PushAway()
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this);
 		QueryParams.AddIgnoredActor(Actor);
-		if (GetWorld()->SweepTestByChannel(Actor->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
-										   FCollisionShape::MakeSphere(Actor->GetSimpleCollisionRadius()), QueryParams))
+		if (FightingArena
+			&& GetWorld()->SweepTestByChannel(Actor->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
+											  FCollisionShape::MakeSphere(Actor->GetSimpleCollisionRadius()), QueryParams))
 		{
-			FGameplayTag const ArenaTag = GetWorld()->GetGameStateChecked<AGeoGameState>()->GetActiveArenaTag();
 			TArray<AActor*> const FightCenters =
-				GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightCenter, ArenaTag);
+				GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightCenter, FightingArena->ArenaTag);
 			if (ensureMsgf(!FightCenters.IsEmpty(),
 						   TEXT("AGeoDeployableBase: no TargetPoint.FightCenter point in arena %s"),
-						   *ArenaTag.ToString()))
+						   *FightingArena->ArenaTag.ToString()))
 			{
 				FVector ToCenter = FightCenters[0]->GetActorLocation() - GetActorLocation();
 				ToCenter.Z = 0.f;

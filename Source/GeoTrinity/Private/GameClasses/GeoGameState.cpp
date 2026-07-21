@@ -2,156 +2,42 @@
 
 #include "GameClasses/GeoGameState.h"
 
-#include "AI/GeoEnemyAIController.h"
-#include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
-#include "AbilitySystem/Data/AbilityInfo.h"
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
-#include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
-#include "Actor/GeoArena.h"
-#include "Characters/Component/GeoDeployableManagerComponent.h"
-#include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
-#include "Components/StateTreeAIComponent.h"
+#include "Engine/World.h"
 #include "GameClasses/GeoGameMode.h"
-#include "GameFramework/HUD.h"
-#include "GameplayTagContainer.h"
-#include "HUD/Interface/GeoHUDInterface.h"
-#include "Kismet/GameplayStatics.h"
-#include "Net/UnrealNetwork.h"
+#include "GameFramework/PlayerController.h"
 #include "Tool/UGeoGameplayLibrary.h"
-
-void AGeoGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AGeoGameState, ActiveArena);
-}
 
 void AGeoGameState::HandleMatchHasStarted()
 {
-	AEnemyCharacter* Boss = ActiveArena ? ActiveArena->GetBoss() : nullptr;
-	if (!GeoLib::IsServer(this) && !IsValid(Boss))
+	Super::HandleMatchHasStarted();
+
+	if (!GeoLib::IsServer(this))
 	{
-		// Late-joining client: MatchState replicated before the arena or the Boss actor did. They will show up
-		// shortly; nothing to do here since the server already drove StartBossFight().
-		UE_LOG(LogTemp, Log, TEXT("HandleMatchHasStarted: Boss not yet replicated to this client"));
 		return;
 	}
 
-	if (ensureMsgf(IsValid(Boss), TEXT("Match started with no boss on the active arena")))
+	FightPlayers.Reset();
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		StartBossFight(Boss);
-	}
-}
-
-void AGeoGameState::HandleMatchIsWaitingToStart()
-{
-	Super::HandleMatchIsWaitingToStart();
-
-	if (GeoLib::IsServer(this))
-	{
-		if (ActiveArena)
+		APlayableCharacter* Player = It->IsValid() ? Cast<APlayableCharacter>((*It)->GetPawn()) : nullptr;
+		if (IsValid(Player) && !Player->IsDead())
 		{
-			ActiveArena->ResetBoss();
-		}
-		else
-		{
-			// The level's first WaitingToStart runs before any actor BeginPlay, so no arena can claim this itself.
-			SetActiveArena(FindArena(DefaultArenaTag));
+			FightPlayers.Add(Player);
 		}
 	}
 }
 
 void AGeoGameState::OnRep_MatchState()
 {
-	if (PreviousMatchState != MatchState && PreviousMatchState == MatchState::InProgress)
+	if (PreviousMatchState != MatchState && PreviousMatchState == MatchState::InProgress && GeoLib::IsServer(this))
 	{
-		StopBossFight();
+		GetWorld()->GetTimerManager().ClearTimer(RespawnTimer);
+		RevivePlayers();
 	}
 	OnMatchStateChanged.Broadcast(MatchState, PreviousMatchState);
 	Super::OnRep_MatchState();
-}
-
-void AGeoGameState::StopBossFight()
-{
-	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
-	{
-		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(LocalPlayerController->GetHUD()))
-		{
-			GeoHUD->HideBossHealthBar();
-		}
-	}
-
-	if (GeoLib::IsServer(this))
-	{
-		if (ActiveArena)
-		{
-			ActiveArena->EndFight();
-		}
-
-		RevivePlayers();
-	}
-}
-
-void AGeoGameState::StartBossFight(AEnemyCharacter* Boss)
-{
-	if (APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController())
-	{
-		if (IGeoHUDInterface* GeoHUD = Cast<IGeoHUDInterface>(LocalPlayerController->GetHUD()))
-		{
-			GeoHUD->ShowBossHealthBar(Boss);
-		}
-	}
-
-	if (GeoLib::IsServer(this))
-	{
-		StopLoot();
-		Boss->OnEnemyDefeated.AddUniqueDynamic(this, &AGeoGameState::NotifyBossDefeated);
-
-		if (AGeoEnemyAIController* EnemyAIController = Cast<AGeoEnemyAIController>(Boss->GetController()))
-		{
-			EnemyAIController->GetStateTreeComp()->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
-		}
-
-		ActiveArena->StartFight();
-	}
-}
-
-FGameplayTag AGeoGameState::GetActiveArenaTag() const
-{
-	return ActiveArena ? ActiveArena->ArenaTag : DefaultArenaTag;
-}
-
-void AGeoGameState::SetActiveArena(AGeoArena* Arena)
-{
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("SetActiveArena is server-only"))
-		|| !ensureMsgf(Arena, TEXT("SetActiveArena called with no arena — check the caller's Arena.* tag"))
-		|| ActiveArena == Arena)
-	{
-		return;
-	}
-	ActiveArena = Arena;
-	OnRep_ActiveArena();
-}
-
-void AGeoGameState::OnRep_ActiveArena()
-{
-	OnActiveArenaChanged.Broadcast();
-}
-
-AGeoArena* AGeoGameState::FindArena(FGameplayTag const ArenaTag) const
-{
-	TArray<AActor*> Arenas;
-	UGameplayStatics::GetAllActorsOfClass(this, AGeoArena::StaticClass(), Arenas);
-	for (AActor* Actor : Arenas)
-	{
-		AGeoArena* Arena = CastChecked<AGeoArena>(Actor);
-		if (Arena->ArenaTag == ArenaTag)
-		{
-			return Arena;
-		}
-	}
-	return nullptr;
 }
 
 void AGeoGameState::RevivePlayers() const
@@ -165,38 +51,45 @@ void AGeoGameState::RevivePlayers() const
 	}
 }
 
-void AGeoGameState::NotifyBossDefeated()
+void AGeoGameState::NotifyPlayerDied(APlayableCharacter& Player)
 {
-	// Capture before the boss destroys itself right after broadcasting its defeat.
-	if (ActiveArena && IsValid(ActiveArena->GetBoss()))
-	{
-		LootOrigin = ActiveArena->GetBoss()->GetActorLocation();
-	}
-
-	Loot();
-	RequestWaitingToStart();
-}
-
-void AGeoGameState::Loot()
-{
-	if (!GeoLib::IsServer(this))
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("NotifyPlayerDied is server-only")))
 	{
 		return;
 	}
-	GetWorld()->GetTimerManager().SetTimer(LootTimer, this, &AGeoGameState::SpawnLootBurst, LootSpawnInterval, true);
+
+	// Out of a fight every death is independent: stand the player straight back up where they fell.
+	if (!IsMatchInProgress())
+	{
+		Player.Revive();
+		return;
+	}
+
+	// In a fight the player stays down; the group only comes back once everyone who started the fight is down.
+	if (AreFightPlayersDead())
+	{
+		OnWipe.Broadcast(DeathTime);
+		GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &AGeoGameState::RespawnGroup, DeathTime, false);
+	}
 }
 
-void AGeoGameState::StopLoot()
+bool AGeoGameState::AreFightPlayersDead() const
 {
-	GetWorld()->GetTimerManager().ClearTimer(LootTimer);
-	for (TWeakObjectPtr<UGeoDeployableManagerComponent> const& Manager : LootBoostedManagers)
+	for (TWeakObjectPtr<APlayableCharacter> const& Player : FightPlayers)
 	{
-		if (UGeoDeployableManagerComponent* DeployableManager = Manager.Get())
+		if (Player.IsValid() && !Player->IsDead())
 		{
-			DeployableManager->RemoveDeployableSlot(LootPickupClass);
+			return false;
 		}
 	}
-	LootBoostedManagers.Empty();
+	return true;
+}
+
+void AGeoGameState::RespawnGroup()
+{
+	GeoLib::TeleportPlayersToTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_Entrance, CheckpointTag);
+	RevivePlayers();
+	RequestWaitingToStart();
 }
 
 void AGeoGameState::RequestWaitingToStart() const
@@ -205,94 +98,5 @@ void AGeoGameState::RequestWaitingToStart() const
 	if (ensureMsgf(GeoGameMode, TEXT("RequestWaitingToStart is server-only")))
 	{
 		GeoGameMode->RequestWaitingToStart();
-	}
-}
-
-void AGeoGameState::SpawnLootBurst()
-{
-	// Resolve the Blueprint-derived reload ability CDO that owns the pickup config (class, buff pool, color palette).
-	// The ability catalog is keyed by the Spell AbilityTag, which has no native constant, so find the entry by class.
-	UGeoReloadAbility const* ReloadCDO = nullptr;
-	FGameplayTag ReloadTag;
-	if (UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo())
-	{
-		for (FGameplayAbilityInfo const& Info : AbilityInfo->GetAllAbilityInfos())
-		{
-			if (Info.AbilityClass && Info.AbilityClass->IsChildOf(UGeoReloadAbility::StaticClass()))
-			{
-				ReloadCDO = Info.AbilityClass->GetDefaultObject<UGeoReloadAbility>();
-				ReloadTag = Info.AbilityTag;
-				break;
-			}
-		}
-	}
-	if (!ensureMsgf(ReloadCDO && ReloadCDO->BuffPickupClass,
-					TEXT("SpawnLootBurst: no reload ability with a BuffPickupClass registered in AbilityInfo")))
-	{
-		GetWorld()->GetTimerManager().ClearTimer(LootTimer);
-		return;
-	}
-
-	TArray<TInstancedStruct<FEffectData>> const BuffEffects = ReloadCDO->GetEffectDataArray();
-
-	// The pickup needs a live player as Owner: its ASC is the effect source and drives the Friendly attitude check.
-	APlayableCharacter* PayloadOwner = nullptr;
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		PayloadOwner = It->IsValid() ? Cast<APlayableCharacter>((*It)->GetPawn()) : nullptr;
-		if (IsValid(PayloadOwner))
-		{
-			break;
-		}
-	}
-	if (BuffEffects.IsEmpty() || !IsValid(PayloadOwner))
-	{
-		return;
-	}
-
-	// The pickups register on PayloadOwner's deployable manager; lift its cap for the shower so pickups
-	// don't expire each other. Restored in HandleMatchIsWaitingToStart.
-	if (UGeoDeployableManagerComponent* DeployableManager =
-			PayloadOwner->GetComponentByClass<UGeoDeployableManagerComponent>())
-	{
-		DeployableManager->SetDeployableInfinitCount(ReloadCDO->BuffPickupClass);
-		LootBoostedManagers.AddUnique(DeployableManager);
-		LootPickupClass = ReloadCDO->BuffPickupClass;
-	}
-
-	FAbilityPayload Payload;
-	Payload.Origin = FVector2D(LootOrigin);
-	Payload.ServerSpawnTime = GetWorld()->GetTimeSeconds();
-	Payload.AbilityTag = ReloadTag;
-	Payload.Owner = PayloadOwner;
-	Payload.Instigator = PayloadOwner;
-
-	FTransform const SpawnTransform{LootOrigin};
-	for (int32 PickupIndex = 0; PickupIndex < LootPickupsPerBurst; ++PickupIndex)
-	{
-		AGeoBuffPickup* Pickup = GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(
-			ReloadCDO->BuffPickupClass, SpawnTransform, PayloadOwner, PayloadOwner,
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (!ensureMsgf(IsValid(Pickup), TEXT("SpawnLootBurst: failed to spawn AGeoBuffPickup")))
-		{
-			return;
-		}
-		// Server-only spawning of replicated actors — no client prediction, so plain RNG is fine here.
-		float const Angle = FMath::FRandRange(0.f, 2.f * PI);
-		float const Radius = LootMaxRadius * FMath::Sqrt(FMath::FRand()); // sqrt → uniform over the disc
-		float const PowerScale = FMath::FRandRange(0.3f, 1.f);
-		Payload.Seed = FMath::Rand();
-		int32 const BuffIndex = Payload.Seed % BuffEffects.Num();
-
-		FBuffPickupData PickupData;
-		GeoASLib::FillDeployableData(PickupData, Payload, BuffEffects, FDeployableDataParams());
-		PickupData.EffectDataArray = {BuffEffects[BuffIndex]};
-		PickupData.BuffIndex = BuffIndex;
-		PickupData.PowerScale = PowerScale;
-		PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
-		PickupData.TargetLocation = LootOrigin + FVector{FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f};
-
-		Pickup->InitInteractable(&PickupData);
-		Pickup->FinishSpawning(SpawnTransform);
 	}
 }

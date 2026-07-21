@@ -3,7 +3,6 @@
 #include "Actor/GeoHexArena.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -175,7 +174,7 @@ TArray<FIntPoint> AGeoHexArena::GetRandomAliveTiles(FRandomStream& Stream, int32
 }
 
 bool AGeoHexArena::GetLastAliveTileAlongRay(FVector2D const Origin, FVector2D const Direction, float const MaxRange,
-										   FIntPoint& OutTile) const
+											FIntPoint& OutTile) const
 {
 	FVector2D const Forward = Direction.GetSafeNormal();
 	// Half a tile keeps the walk from stepping over a tile the ray only clips.
@@ -294,7 +293,7 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 		{
 			if (!Player->IsDead() && !Player->GetCharacterMovement()->HasRootMotionSources())
 			{
-				KillFallenPlayer(*Player);
+				Player->Death();
 			}
 		}
 		else if (AGeoDeployableBase* Deployable = Cast<AGeoDeployableBase>(Actor))
@@ -302,17 +301,4 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 			Deployable->Recall();
 		}
 	}
-}
-
-void AGeoHexArena::KillFallenPlayer(APlayableCharacter& Player) const
-{
-	Player.Death();
-	TArray<AActor*> const RespawnPoints =
-		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FallRespawn, ArenaTag);
-	if (!ensureMsgf(!RespawnPoints.IsEmpty(), TEXT("%s has no TargetPoint.FallRespawn point tagged %s"), *GetName(),
-					*ArenaTag.ToString()))
-	{
-		return;
-	}
-	Player.SetActorLocation(RespawnPoints[0]->GetActorLocation());
 }
