@@ -27,7 +27,9 @@ class GEOTRINITY_API AGeoGameCamera : public ACameraActor
 public:
 	AGeoGameCamera();
 
+	/** Binds to GameState's OnActiveArenaChanged and computes the initial camera bounds. */
 	virtual void BeginPlay() override;
+	/** Follows the local player with exponential smoothing; clamps to arena bounds during a fight; pans freely when spectating. */
 	virtual void Tick(float DeltaTime) override;
 
 protected:

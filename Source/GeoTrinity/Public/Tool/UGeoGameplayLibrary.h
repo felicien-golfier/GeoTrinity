@@ -64,6 +64,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsDedicatedServer(UObject const* WorldContextObject);
+	/** Returns true when World is running as a dedicated server (no local viewport). */
 	static bool IsDedicatedServer(UWorld const* World);
 	/** Non-pawn overload of IsLocalPlayerAvatar; casts Actor to APawn before applying the same check. Returns false for
 	 * non-pawn actors. */
@@ -99,6 +100,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
+	/** Returns the current server world time in seconds. @see GetServerTime(UObject*) for parameter and warning details. */
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
 
 	/**

@@ -21,6 +21,7 @@ class GEOTRINITY_API AGeoDummyArena : public AGeoArena
 	GENERATED_BODY()
 
 public:
+	/** Always returns false — the dummy's enemy never triggers a boss fight via TriggerAggro. */
 	virtual bool IsBoss(AActor const* Enemy) const override { return false; }
 
 	/** There is no wipe to wait for at a dummy: whoever dies gets straight back up where they fell. */

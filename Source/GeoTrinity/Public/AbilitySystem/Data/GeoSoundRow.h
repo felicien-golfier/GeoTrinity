@@ -85,6 +85,12 @@ struct FGeoSoundRow : public FTableRowBase
 	FGeoSoundEntry Entry;
 };
 
+/**
+ * Static helpers for playing FGeoSoundEntry sounds. The only valid playback path for gameplay sounds in the
+ * project — never call PlaySoundAtLocation or PlaySound2D directly. Centralises audience gating,
+ * dedicated-server suppression, instigator-relative volume, and attribute-driven pitch so every call site
+ * behaves consistently.
+ */
 UCLASS()
 class GEOTRINITY_API UGeoSoundRowLibrary : public UBlueprintFunctionLibrary
 {
