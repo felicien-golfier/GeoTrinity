@@ -46,6 +46,7 @@ public:
 	 */
 	virtual void RespawnPlayer(APlayableCharacter& Player);
 
+	/** Returns this arena's boss character; nullptr before BeginPlay spawns it. */
 	AEnemyCharacter* GetBoss() const { return Boss; }
 	/** Returns true when Enemy is this arena's boss — the enemy whose aggro starts the match. */
 	virtual bool IsBoss(AActor const* Enemy) const;

@@ -21,6 +21,7 @@ public:
 	/** Sets DefaultPawnClass to AGeoCharacter. */
 	AGeoGameMode(FObjectInitializer const& ObjectInitializer);
 
+	/** Drives deferred match-state work each frame. */
 	virtual void Tick(float DeltaSeconds) override;
 
 	/**
@@ -28,7 +29,9 @@ public:
 	 * Non-playable controller exits are silently ignored.
 	 */
 	virtual void Logout(AController* Exiting) override;
+	/** Returns true when all connected players have been assigned a class and are ready to start. */
 	virtual bool ReadyToStartMatch_Implementation() override;
+	/** Assigns the joining player's class from join order and completes server-side pawn setup. */
 	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
 
 	/** Transitions the match back to WaitingToStart, resetting the round. */

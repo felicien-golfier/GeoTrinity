@@ -13,6 +13,11 @@ class UStateTree;
 class UStateTreeState;
 class UStateTreeEditorData;
 
+/**
+ * Editor utility object for mutating UStateTree assets from Python or Blueprint automation.
+ * Each method validates, compiles, and saves the asset atomically, so StateTree assets stay consistent
+ * after every programmatic edit without requiring a manual recompile.
+ */
 UCLASS()
 class GEOTRINITYEDITOR_API UGeoStateTreeBuilderUtil : public UEditorUtilityObject
 {
