@@ -118,7 +118,7 @@ void APlayableCharacter::Tick(float DeltaSeconds)
 	}
 }
 
-void APlayableCharacter::UpdateAimRotation(float DeltaSeconds) const
+void APlayableCharacter::UpdateAimRotation(float /*DeltaSeconds*/)
 {
 	FVector2D Look;
 	if (!GeoInputComponent->GetLookVector(Look))
@@ -127,12 +127,7 @@ void APlayableCharacter::UpdateAimRotation(float DeltaSeconds) const
 	}
 
 	float const DesiredYaw = FMath::Atan2(Look.Y, Look.X) * (180.f / PI);
-	float const CurrentYaw = Controller->GetControlRotation().Yaw;
-	float const DeltaAngle = FMath::FindDeltaAngleDegrees(CurrentYaw, DesiredYaw);
-	float const MaxDelta = MaxRotationSpeed * DeltaSeconds;
-	float const ClampedDelta = FMath::Clamp(DeltaAngle, -MaxDelta, MaxDelta);
-
-	Controller->SetControlRotation(FRotator(0.f, CurrentYaw + ClampedDelta, 0.f));
+	SetTargetYaw(DesiredYaw);
 }
 
 void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

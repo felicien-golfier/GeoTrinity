@@ -134,7 +134,12 @@ bool AGeoHexArena::IsTileAlive(FIntPoint const Tile) const
 bool AGeoHexArena::IsOverAliveTile(FVector2D const WorldLocation) const
 {
 	FIntPoint Tile;
-	return GetTileUnderLocation(WorldLocation, Tile) && IsTileAlive(Tile);
+	return IsOverAliveTile(WorldLocation, Tile);
+}
+
+bool AGeoHexArena::IsOverAliveTile(FVector2D const WorldLocation, FIntPoint& OutTile) const
+{
+	return GetTileUnderLocation(WorldLocation, OutTile) && IsTileAlive(OutTile);
 }
 
 AGeoHexArena* AGeoHexArena::GetArenaOfBoss(AActor const* Boss)
@@ -172,21 +177,20 @@ TArray<FIntPoint> AGeoHexArena::GetRandomAliveTiles(FRandomStream& Stream, int32
 	return PickedTiles;
 }
 
-bool AGeoHexArena::GetLastAliveTileAlongRay(FVector2D const Origin, FVector2D const Direction, float const MaxRange,
-											FIntPoint& OutTile) const
+bool AGeoHexArena::GetLastAliveTileAlongRay(FVector2D const Origin, FVector2D const Direction, FIntPoint& OutTile) const
 {
 	FVector2D const Forward = Direction.GetSafeNormal();
 	// Half a tile keeps the walk from stepping over a tile the ray only clips.
 	float const StepSize = TileSize * 0.5f;
 	// Past the far edge of the platform there is nothing left to cross, however long the ray is.
-	float const WalkDistance = FMath::Min(
-		MaxRange, FVector2D::Distance(Origin, FVector2D(GetActorLocation())) + GridRadius * TileSize * Sqrt3);
+	float const MaxDistance =
+		FVector2D::Distance(Origin, FVector2D(GetActorLocation())) + GridRadius * TileSize * Sqrt3;
 
 	bool bFoundTile = false;
-	for (float Distance = 0.f; Distance <= WalkDistance; Distance += StepSize)
+	for (float Distance = MaxDistance; Distance >= 0.f; Distance -= StepSize)
 	{
 		FIntPoint Tile;
-		if (GetTileUnderLocation(Origin + Forward * Distance, Tile) && IsTileAlive(Tile))
+		if (IsOverAliveTile(Origin + Forward * Distance, Tile))
 		{
 			OutTile = Tile;
 			bFoundTile = true;
@@ -249,15 +253,31 @@ void AGeoHexArena::ResetAllTiles()
 	ApplyTileVisuals();
 }
 
+void AGeoHexArena::HighlightTile(AActor* Requester, FIntPoint Tile)
+{
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("HighlightTile is server-only because it's replicated."))
+		|| !ensureMsgf(Requester != nullptr, TEXT("HighlightTile Requester is not valid !")))
+	{
+		return;
+	}
+	SetHighlightedTiles(Requester, {CoordToIndex[Tile]});
+}
+
 void AGeoHexArena::HighlightTiles(AActor* Requester, FVector2D const Location, float const Radius)
 {
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("HighlightTile is server-only because it's replicated."))
+		|| !ensureMsgf(Requester != nullptr, TEXT("HighlightTile Requester is not valid !")))
+	{
+		return;
+	}
+
 	if (Radius <= 0.f)
 	{
 		TArray<int32> Indices;
 		FIntPoint Tile;
 		if (GetTileUnderLocation(Location, Tile))
 		{
-			SetHighlightedTiles(Requester, {CoordToIndex[Tile]});
+			HighlightTile(Requester, Tile);
 		}
 	}
 	else

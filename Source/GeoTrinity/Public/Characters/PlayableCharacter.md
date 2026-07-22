@@ -24,8 +24,7 @@ Per-frame: `AbilityInputTagHeld(Tag)` called for every held action.
 - `DeployChargeGaugeComponent` is a `UWidgetComponent` with `Space = Screen`
 
 ## Rotation
-- `MaxRotationSpeed = 720 deg/s`
-- `UpdateAimRotation(DeltaSeconds)` — rotates character toward `GeoInputComponent::GetLookVector()`; scaled by `RotationSpeedMultiplier` attribute
+- `UpdateAimRotation(DeltaSeconds)` — computes the desired yaw from `GeoInputComponent::GetLookVector()` and calls `AGeoCharacter::SetTargetYaw()`; the actual turn-rate clamp (`MaxRotationSpeed`, 720 deg/s default) lives in the base class's `Tick` — see `AGeoCharacter.h`
 
 ## GAS init flow
 `PossessedBy` (server) / `OnRep_PlayerState` (client) → `InitGAS()` → fetches ASC from `AGeoPlayerState`, calls `InitAbilityActorInfo(PlayerState, Self)`.

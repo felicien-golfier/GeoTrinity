@@ -65,10 +65,11 @@ public:
 
 	/** Returns true when Tile exists on the platform and has not been destroyed. */
 	bool IsTileAlive(FIntPoint Tile) const;
+	bool IsOverAliveTile(FVector2D WorldLocation) const;
 	/** Maps a world location to the tile containing it. Returns false when the location is outside the platform. */
 	bool GetTileUnderLocation(FVector2D WorldLocation, FIntPoint& OutTile) const;
 	/** Returns true when WorldLocation stands over a tile that is still up — false over a hole or off the platform. */
-	bool IsOverAliveTile(FVector2D WorldLocation) const;
+	bool IsOverAliveTile(FVector2D WorldLocation, FIntPoint& OutTile) const;
 	/** Returns the world-space center of Tile. */
 	FVector2D TileToWorld(FIntPoint Tile) const;
 
@@ -86,11 +87,12 @@ public:
 	 */
 	TArray<FIntPoint> GetRandomAliveTiles(FRandomStream& Stream, int32 Ring, int32 Count) const;
 	/** Returns the furthest still-standing tile the ray crosses within MaxRange. False when it crosses none. */
-	bool GetLastAliveTileAlongRay(FVector2D Origin, FVector2D Direction, float MaxRange, FIntPoint& OutTile) const;
+	bool GetLastAliveTileAlongRay(FVector2D Origin, FVector2D Direction, FIntPoint& OutTile) const;
 
 	/** Server. Highlights the tiles within Radius of Location for Requester, or the single tile under Location when
 	 * Radius is 0. */
 	void HighlightTiles(AActor* Requester, FVector2D Location, float Radius = 0.f);
+	void HighlightTile(AActor* Requester, FIntPoint Tile);
 	/** Server. Drops Requester's highlight. */
 	void ClearHighlight(AActor* Requester);
 

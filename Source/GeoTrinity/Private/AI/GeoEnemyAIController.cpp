@@ -123,6 +123,66 @@ void AGeoEnemyAIController::OnUnPossess()
 	Super::OnUnPossess();
 }
 
+void AGeoEnemyAIController::Tick(float const DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	UpdateCurrentTarget(DeltaTime);
+}
+
+void AGeoEnemyAIController::UpdateCurrentTarget(float const DeltaTime)
+{
+	APawn const* EnemyPawn = GetPawn();
+	if (!EnemyPawn)
+	{
+		CurrentTarget = nullptr;
+		PendingTarget = nullptr;
+		PendingTargetElapsedTime = 0.f;
+		return;
+	}
+
+	FVector2D const PawnLocation(EnemyPawn->GetActorLocation());
+	APlayableCharacter* Closest = nullptr;
+	float BestDistanceSquared = 0.f;
+	for (APlayableCharacter* Player : GeoASLib::GetInteractableActors<APlayableCharacter>(
+			 EnemyPawn, GeoASLib::GetTeamId(EnemyPawn), TeamAttitudeMask::Hostile, /*bMustBeDamageable*/ false,
+			 PawnLocation,
+			 /*MaxDistance*/ 0.f))
+	{
+		if (Player->IsDead())
+		{
+			continue;
+		}
+		float const DistanceSquared = FVector2D::DistSquared(FVector2D(Player->GetActorLocation()), PawnLocation);
+		if (!Closest || DistanceSquared < BestDistanceSquared)
+		{
+			Closest = Player;
+			BestDistanceSquared = DistanceSquared;
+		}
+	}
+
+	if (!Closest || Closest == CurrentTarget)
+	{
+		CurrentTarget = Closest;
+		PendingTarget = nullptr;
+		PendingTargetElapsedTime = 0.f;
+		return;
+	}
+
+	if (Closest != PendingTarget)
+	{
+		PendingTarget = Closest;
+		PendingTargetElapsedTime = 0.f;
+	}
+
+	PendingTargetElapsedTime += DeltaTime;
+	if (!CurrentTarget || PendingTargetElapsedTime >= TargetSwitchDelay)
+	{
+		CurrentTarget = PendingTarget;
+		PendingTarget = nullptr;
+		PendingTargetElapsedTime = 0.f;
+	}
+}
+
 void AGeoEnemyAIController::CheckAggroDistance()
 {
 	if (bAggroed || !GetPawn() || GetWorld()->GetGameStateChecked<AGeoGameState>()->IsMatchInProgress())

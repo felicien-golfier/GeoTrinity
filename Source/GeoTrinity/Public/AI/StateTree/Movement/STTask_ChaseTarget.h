@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
 #include "Tasks/StateTreeAITask.h"
 
@@ -16,12 +15,9 @@ struct GEOTRINITY_API FSTTask_ChaseTargetInstanceData
 {
 	GENERATED_BODY()
 
+	/** Bound to the running AGeoEnemyAIController (the schema's context is typed AAIController; cast at each use). */
 	UPROPERTY(EditAnywhere, Category = Context)
 	TObjectPtr<AAIController> AIController = nullptr;
-
-	/** Player class chased in priority; falls back to the nearest live player when none of this class is alive. */
-	UPROPERTY(EditAnywhere, Category = Parameter)
-	EPlayerClass PreferredTargetClass = EPlayerClass::Square;
 
 	/** 2D distance at which the pawn stops advancing while still facing the target. */
 	UPROPERTY(EditAnywhere, Category = Parameter, meta = (ClampMin = "0.0"))
@@ -29,9 +25,9 @@ struct GEOTRINITY_API FSTTask_ChaseTargetInstanceData
 };
 
 /**
- * Chases the preferred player class in a straight line — no navmesh, so destroyed arena tiles are ignored — while
- * keeping the pawn facing its target (control rotation; pawns use bUseControllerRotationYaw). Speed comes from the
- * pawn's movement component. Never succeeds; transitions end it.
+ * Chases AIController::GetCurrentTarget() in a straight line — no navmesh, so destroyed arena tiles are ignored —
+ * while facing it: sets AGeoCharacter::SetTargetYaw() each tick, which the character turns toward at its own
+ * MaxRotationSpeed. Speed comes from the pawn's movement component. Never succeeds; transitions end it.
  */
 USTRUCT(DisplayName = "Chase Target (Geo)", Category = "GeoTrinity|AI")
 struct GEOTRINITY_API FSTTask_ChaseTarget : public FStateTreeAIActionTaskBase
@@ -43,6 +39,7 @@ struct GEOTRINITY_API FSTTask_ChaseTarget : public FStateTreeAIActionTaskBase
 	/** Declares FSTTask_ChaseTargetInstanceData as the per-execution instance data type so StateTree allocates the
 	 * correct struct for each context. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
-	/** Resolves the target and rotates/moves the pawn toward it. Always returns Running while the pawn is valid. */
+	/** Resolves the target, sets its facing as the pawn's target yaw, and moves toward it. Always returns Running
+	 * while the pawn is valid. */
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, float DeltaTime) const override;
 };

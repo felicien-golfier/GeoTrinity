@@ -25,6 +25,8 @@ class GEOTRINITY_API UGeoAITask_MoveTo : public UAITask_MoveTo
 	GENERATED_BODY()
 
 public:
+	UGeoAITask_MoveTo(FObjectInitializer const& ObjectInitializer);
+
 	/** Looping cue added for the whole move and removed when it ends; its RawMagnitude carries the path length in
 	 *  world units. Set by FSTTask_MoveTo. */
 	FGameplayTag MoveGameplayCueTag;
@@ -34,6 +36,9 @@ protected:
 	virtual void PerformMove() override;
 	/** Removes the active move gameplay cue from the pawn's ASC on task completion or cancellation. */
 	virtual void OnDestroy(bool bInOwnerFinished) override;
+	/** Faces the pawn toward its current movement direction via AGeoCharacter::SetTargetYaw(), which turns at the
+	 *  character's own MaxRotationSpeed. Opted in via bTickingTask since the base class doesn't tick. */
+	virtual void TickTask(float DeltaTime) override;
 
 private:
 	/** Adds MoveGameplayCueTag on the pawn's ASC, passing the path length as RawMagnitude. No-op when no cue is

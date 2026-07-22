@@ -93,6 +93,15 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetSimpleCollisionRadius(), 8,
 						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
+
+	if (Controller)
+	{
+		float const CurrentYaw = Controller->GetControlRotation().Yaw;
+		float const DeltaAngle = FMath::FindDeltaAngleDegrees(CurrentYaw, TargetYaw);
+		float const MaxDelta = MaxRotationSpeed * DeltaSeconds;
+		float const ClampedDelta = FMath::Clamp(DeltaAngle, -MaxDelta, MaxDelta);
+		Controller->SetControlRotation(FRotator(0.f, CurrentYaw + ClampedDelta, 0.f));
+	}
 }
 
 void AGeoCharacter::StopAllSpawnedElements()
@@ -164,6 +173,7 @@ void AGeoCharacter::InitGAS()
 void AGeoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	TargetYaw = GetActorRotation().Yaw;
 	ensureMsgf(CharacterWidgetComponent || GeoLib::IsDedicatedServer(GetWorld()),
 			   TEXT("%s has no CharacterWidgetComponent — set CombattantWidgetComponentClass in Game Data Settings"),
 			   *GetName());

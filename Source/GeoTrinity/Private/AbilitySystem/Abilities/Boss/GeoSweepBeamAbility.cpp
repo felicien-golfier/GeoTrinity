@@ -14,5 +14,7 @@ float UGeoSweepBeamAbility::GetFireYaw(AActor const* Instigator) const
 
 	FVector ToCenter = Arena->GetActorLocation() - Instigator->GetActorLocation();
 	ToCenter.Z = 0.f;
+
+	ToCenter = ToCenter.RotateAngleAxis(Angle * (StoredPayload.Seed % 2 == 0 ? 1 : -1), FVector(0.f, 0.f, 1.f));
 	return ToCenter.Rotation().Yaw;
 }

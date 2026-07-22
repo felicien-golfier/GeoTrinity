@@ -131,10 +131,6 @@ protected:
 	void ResetAbilitiesAndEffects();
 
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
-			  meta = (ClampMin = "1.0", UIMin = "10.0"))
-	float MaxRotationSpeed = 720.f;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> DeployChargeGaugeComponent;
 
@@ -145,7 +141,7 @@ protected:
 	TMap<EPlayerClass, FPlayerClassData> ClassData;
 
 private:
-	void UpdateAimRotation(float DeltaSeconds) const;
+	void UpdateAimRotation(float DeltaSeconds);
 	EPlayerClass PickStartingClass() const;
 	/** Swaps the mesh material to the current class's death (bDead) or alive material. */
 	void SetDeathMaterial(bool bDead);

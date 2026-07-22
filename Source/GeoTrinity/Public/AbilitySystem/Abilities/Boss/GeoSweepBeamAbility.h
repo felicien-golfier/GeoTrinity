@@ -16,7 +16,13 @@ class GEOTRINITY_API UGeoSweepBeamAbility : public UPatternAbility
 {
 	GENERATED_BODY()
 
+public:
+	float GetSweepAngle() const { return Angle; }
+
 protected:
 	/** Yaw from Instigator toward the arena center; falls back to its facing when it is not a hex arena boss. */
 	virtual float GetFireYaw(AActor const* Instigator) const override;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern", meta = (AllowPrivateAccess = "true"))
+	float Angle = 60.f;
 };

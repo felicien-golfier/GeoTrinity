@@ -34,15 +34,6 @@ void AGeoMine::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 
 void AGeoMine::RecallEffect(float const Value)
 {
-	// Checked before Super so a mine recalled by the arena for losing its tile skips the base explode too: losing the
-	// ground under a mine has to defuse it whole, or destroying the tile becomes a way to set it off.
-	AGeoHexArena const* const Arena = AGeoHexArena::GetArenaOfBoss(MineData.Owner);
-	if (!ensureMsgf(Arena, TEXT("AGeoMine: owner %s is not a hex arena boss"), *GetNameSafe(MineData.Owner))
-		|| !Arena->IsOverAliveTile(FVector2D(GetActorLocation())))
-	{
-		return;
-	}
-
 	Super::RecallEffect(Value);
 
 	if (!ensureMsgf(BurstProjectileClass, TEXT("AGeoMine: BurstProjectileClass is not set")))
@@ -66,8 +57,8 @@ void AGeoMine::RecallEffect(float const Value)
 		Payload.Yaw = AngleBetweenProjectiles * Index;
 		FTransform const SpawnTransform(FRotator(0.f, Payload.Yaw, 0.f), GetActorLocation());
 
-		AGeoProjectile* const Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), BurstProjectileClass,
-																		  SpawnTransform, Payload, MineData.EffectDataArray);
+		AGeoProjectile* const Projectile = GeoASLib::StartSpawnProjectile(
+			GetWorld(), BurstProjectileClass, SpawnTransform, Payload, MineData.EffectDataArray);
 		if (!ensureMsgf(Projectile, TEXT("AGeoMine: failed to spawn burst projectile")))
 		{
 			return;

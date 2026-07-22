@@ -75,7 +75,8 @@ USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
 	GENERATED_BODY()
-	/** Applies GameplayEffect with SetByCaller magnitude and duration; replaces any existing active instance first when bReplaceExistingInstance is set. */
+	/** Applies GameplayEffect with SetByCaller magnitude and duration; replaces any existing active instance first when
+	 * bReplaceExistingInstance is set. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -119,7 +120,8 @@ struct FDamageEffectData : public FEffectData
 	/** Flags the context as bIsFromBasicAbility when the source ability carries the Ability.Type.Basic asset tag. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
-	/** Applies the DamageEffect GE; propagates bSuppressGameplayCue, bLimitGameplayCue, bSuppressCombatStats, and bDoNotRedirectSacrifice flags onto the context. */
+	/** Applies the DamageEffect GE; propagates bSuppressGameplayCue, bLimitGameplayCue, bSuppressCombatStats, and
+	 * bDoNotRedirectSacrifice flags onto the context. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -128,15 +130,20 @@ struct FDamageEffectData : public FEffectData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat DamageAmount;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bIsDamagePerSecond{false};
+
 	/** When true, unconditionally suppresses the GameplayCue embedded in the DamageEffect GE. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
 
-	/** When true, UExecCalc_Damage rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based effects. */
+	/** When true, UExecCalc_Damage rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on
+	 * tick-based effects. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bLimitGameplayCue{false};
 
-	/** When true, the damage is not reported to the DPS meter (UGeoCombatStatsSubsystem). Use for self-inflicted drains. */
+	/** When true, the damage is not reported to the DPS meter (UGeoCombatStatsSubsystem). Use for self-inflicted
+	 * drains. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressCombatStats{false};
 
@@ -151,10 +158,12 @@ struct FHealEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	/** Sets bSuppressHealProvided on the context when configured, so ExecCalc_Heal skips the OnHealProvided broadcast on the source ASC. */
+	/** Sets bSuppressHealProvided on the context when configured, so ExecCalc_Heal skips the OnHealProvided broadcast
+	 * on the source ASC. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
-	/** Applies the HealthEffect GE; propagates bSuppressGameplayCue, bLimitGameplayCue, and bSuppressCombatStats flags onto the context. */
+	/** Applies the HealthEffect GE; propagates bSuppressGameplayCue, bLimitGameplayCue, and bSuppressCombatStats flags
+	 * onto the context. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -162,6 +171,9 @@ struct FHealEffectData : public FEffectData
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat HealAmount;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bIsHealPerSecond{false};
 
 	// When true, the heal will not broadcast OnHealProvided on the source ASC.
 	// Set on the context in UpdateContextHandle; baked into the spec via Duplicate() at MakeOutgoingSpec time.
@@ -172,7 +184,8 @@ struct FHealEffectData : public FEffectData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
 
-	/** When true, UExecCalc_Heal rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based effects. */
+	/** When true, UExecCalc_Heal rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based
+	 * effects. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bLimitGameplayCue{false};
 
@@ -195,6 +208,9 @@ struct FShieldEffectData : public FEffectData
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat ShieldAmount;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bIsShieldPerSecond{false};
 };
 
 /**
@@ -207,7 +223,8 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	/** Sets SingleUseDamageMultiplier on the context to Multiplier, scaling the next damage application in the same apply call. */
+	/** Sets SingleUseDamageMultiplier on the context to Multiplier, scaling the next damage application in the same
+	 * apply call. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
 

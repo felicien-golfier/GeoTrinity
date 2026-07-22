@@ -15,17 +15,26 @@ Helper AI task spawned by `STTask_MoveTo`. Overrides `PerformMove()` to call `Pa
 - **`AddGameplayCue` never dedups** — guard every add (`MoveCueASC`), or a replan mid-move stacks a second looping cue.
 - **`Super::PerformMove()` can destroy the task synchronously** (on `Failed`/`AlreadyAtGoal`, via `FinishMoveTask`→`OnDestroy`, which nulls `Path`). Any `if (Path.IsValid())` block after `Super::PerformMove()` silently no-ops — gate the paired add/remove logic on the same condition or the cue leaks.
 - **Never drive logic off a world timer here** — `UAITask_MoveTo::ResetTimers()` calls `ClearAllTimersForObject(this)` on every replan/Pause/OnDestroy, killing subclass timers too (without invalidating the handle). Use `TickTask` instead (opt in; base class doesn't tick).
+- Opts into `TickTask` (`bTickingTask = true` in the constructor) to face the pawn along its current velocity via `AGeoCharacter::SetTargetYaw()` every frame — same facing mechanism as `STTask_ChaseTarget`.
 
 ### `STTask_ChaseTarget`
 Straight-line chase for bosses that ignore navmesh and terrain holes (hex arena boss). Ticks every frame:
-- Resolves its target each tick via `GeoASLib::GetInteractableActors<APlayableCharacter>` — prefers a live player of
-  `PreferredTargetClass` (default Square/Tank), falls back to the nearest live player, stands still (still `Running`)
-  when nobody is alive
-- Drives facing via `AIController::SetFocus(Target)` — `UpdateControlRotation` overwrites `SetControlRotation` every
-  frame, so focus is the only reliable input — and `AddMovementInput` while the 2D distance exceeds `StopDistance`;
-  speed comes from the pawn's movement component
+- Reads `AGeoEnemyAIController::GetCurrentTarget()` — resolved once per frame on the controller (see
+  `AI/CLAUDE.md`), not re-resolved per task — stands still (still `Running`) when nobody is alive
+- Sets the pawn's facing via `AGeoCharacter::SetTargetYaw()` — **does not use `AIController::SetFocus`**, since
+  `UpdateControlRotation` snaps `SetControlRotation` straight to the focal point every frame, bypassing any turn-rate
+  clamp — and `AddMovementInput` while the 2D distance exceeds `StopDistance`; speed comes from the pawn's movement
+  component. The actual turn-rate clamp lives in `AGeoCharacter::Tick` (`MaxRotationSpeed`), shared with
+  `APlayableCharacter::UpdateAimRotation` and `GeoAITask_MoveTo::TickTask`.
+- **`InstanceData.AIController` is typed `AAIController`** (the schema's context type) — cast to
+  `AGeoEnemyAIController` before calling `GetCurrentTarget()`.
 - Never returns Succeeded — end it with transitions. Wake the tree with `AI.Boss.AggroEvent` (sent by
   `AGeoEnemyAIController::TriggerAggro` for non-match bosses)
+
+### `STTask_FaceTarget`
+Same target read (`AGeoEnemyAIController::GetCurrentTarget()`) and `SetTargetYaw()` facing as `STTask_ChaseTarget`,
+minus the movement — for bosses that must track a target while rooted (e.g. a channeled attack). Never returns
+Succeeded; end it with transitions.
 
 ### `STTask_SelectNextFiringPoint`
 Picks a random firing point (tagged `AI.FiringPoint`) excluding the last one used.

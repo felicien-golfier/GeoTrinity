@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/Abilities/Pattern/BeamPattern.h"
 
+#include "AbilitySystem/Abilities/Boss/GeoSweepBeamAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/GeoHexArena.h"
@@ -20,36 +21,36 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
 	Super::OnCreate(AbilityTag, Owner);
 
+	if (UGeoSweepBeamAbility const* SweepBeamAbility = GeoASLib::GetAbilityCDO<UGeoSweepBeamAbility>(AbilityTag))
+	{
+		SweepAngle = SweepBeamAbility->GetSweepAngle();
+	}
+
 	if (BeamVfxSystem && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		BeamVfxComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			this, BeamVfxSystem, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
 			/*bAutoDestroy*/ false, /*bAutoActivate*/ false);
 		ensureMsgf(BeamVfxComponent, TEXT("UBeamPattern: failed to spawn the beam VFX system"));
+		BeamVfxComponent->SetColorParameter("Color", BeamColor);
 	}
 }
 
 float UBeamPattern::GetBeamYaw(float const SpentTime) const
 {
+	if (FollowBossOrientation && IsValid(StoredPayload.Instigator))
+	{
+		return StoredPayload.Instigator->GetActorRotation().Yaw;
+	}
+
 	float const SweptFraction = FMath::Clamp(SpentTime / BeamDuration, 0.f, 1.f);
-	return StoredPayload.Yaw - SweepAngle * 0.5f + SweepAngle * SweptFraction;
+	float const SweepSign = StoredPayload.Seed % 2 == 0 ? 1 : -1;
+	return StoredPayload.Yaw - SweepSign * (SweepAngle * 0.5f + SweepAngle * SweptFraction);
 }
 
 void UBeamPattern::StartPattern()
 {
 	HitActors.Empty();
-
-	if (bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
-	{
-		AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
-		FVector2D const Forward(FRotator(0.f, GetBeamYaw(0.f), 0.f).Vector());
-		FIntPoint LastTile;
-		if (ensureMsgf(Arena, TEXT("UBeamPattern: %s is not a hex arena boss"), *GetNameSafe(StoredPayload.Owner))
-			&& Arena->GetLastAliveTileAlongRay(StoredPayload.Origin, Forward, BeamRange, LastTile))
-		{
-			Arena->DestroyTiles({LastTile});
-		}
-	}
 
 	if (IsValid(BeamVfxComponent))
 	{
@@ -65,14 +66,26 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 {
 	FRotator const BeamRotation(0.f, GetBeamYaw(SpentTime), 0.f);
 	FVector2D const Forward(BeamRotation.Vector());
-
+	FVector Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
+										  : FVector(StoredPayload.Origin, ArbitraryCharacterZ);
 	if (IsValid(BeamVfxComponent))
 	{
-		BeamVfxComponent->SetWorldLocationAndRotation(FVector(StoredPayload.Origin, ArbitraryCharacterZ), BeamRotation);
+		BeamVfxComponent->SetWorldLocationAndRotation(Location, BeamRotation);
 	}
 
 	if (GeoLib::IsServer(GetWorld()))
 	{
+		if (bDestroyLastTileHit)
+		{
+			AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
+			FIntPoint LastTile;
+			if (ensureMsgf(Arena, TEXT("UBeamPattern: %s is not a hex arena boss"), *GetNameSafe(StoredPayload.Owner))
+				&& Arena->GetLastAliveTileAlongRay(FVector2D(Location), Forward, LastTile))
+			{
+				Arena->HighlightTile(StoredPayload.Instigator, LastTile);
+			}
+		}
+
 		UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
 		// A missing ASC only costs the damage: falling through still lets the beam reach its end and stop ticking.
 		if (ensureMsgf(SourceASC, TEXT("UBeamPattern: Owner has no ASC")))
@@ -117,18 +130,33 @@ FGameplayCueParameters UBeamPattern::FillCueParam(FAbilityPayload const& Payload
 
 void UBeamPattern::EndPattern(bool const bForceStop)
 {
-	// UPatternAbility::EndAbility force-ends the pattern a second time right after a natural end; the IsPatternActive
-	// guard keeps that redundant call from cutting the graceful fade short with DeactivateImmediate.
-	if (IsPatternActive() && IsValid(BeamVfxComponent))
+	if (IsPatternActive())
 	{
-		// A force-stopped beam must vanish at once; a natural end can play out its fade.
-		if (bForceStop)
+		if (!bForceStop && bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
 		{
-			BeamVfxComponent->DeactivateImmediate();
+			AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
+			FVector2D const Forward(FRotator(0.f, GetBeamYaw(0.f), 0.f).Vector());
+			FIntPoint LastTile;
+			FVector Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
+												  : FVector(StoredPayload.Origin, ArbitraryCharacterZ);
+			if (ensureMsgf(Arena, TEXT("UBeamPattern: %s is not a hex arena boss"), *GetNameSafe(StoredPayload.Owner))
+				&& Arena->GetLastAliveTileAlongRay(FVector2D(Location), Forward, LastTile))
+			{
+				Arena->DestroyTiles({LastTile});
+			}
 		}
-		else
+
+		if (IsValid(BeamVfxComponent))
 		{
-			BeamVfxComponent->Deactivate();
+			// A force-stopped beam must vanish at once; a natural end can play out its fade.
+			if (bForceStop)
+			{
+				BeamVfxComponent->DeactivateImmediate();
+			}
+			else
+			{
+				BeamVfxComponent->Deactivate();
+			}
 		}
 	}
 

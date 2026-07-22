@@ -18,6 +18,10 @@ Implements `IAbilitySystemInterface` and `IGenericTeamAgentInterface`.
 - `GetGeoMovementComponent()` — typed cast to `UGeoCharacterMovementComponent`
 - `DrawDebugVectorFromCharacter(Direction, Message[, Color])` — dev utility
 
+## Rotation
+`SetTargetYaw(float)` sets the yaw the character turns toward; `Tick` closes the gap at up to `MaxRotationSpeed` (deg/s, default 720) each frame via `Controller->SetControlRotation`. `TargetYaw` is initialized from the actor's spawn rotation in `BeginPlay` so nothing snaps on possession.
+**All facing must go through `SetTargetYaw` — never call `Controller::SetControlRotation` or `AIController::SetFocus` directly**, since `AAIController::UpdateControlRotation` snaps the control rotation straight to the focal point every frame, bypassing any clamp. Callers: `APlayableCharacter::UpdateAimRotation` (aim input), `FSTTask_ChaseTarget::Tick`, `UGeoAITask_MoveTo::TickTask` (faces along velocity).
+
 ## Team
 - `ETeam TeamId` — implements `IGenericTeamAgentInterface`; used by AI perception and `GetAllAgentsWithRelationTowardsActor()`
 

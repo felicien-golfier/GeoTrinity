@@ -118,6 +118,11 @@ public:
 	 * OnHealthChanged and from arena fall checks. No-op while Geo.PlayerInvincible is set. */
 	void Death();
 
+	/** Sets the yaw (degrees) the character turns toward, at up to MaxRotationSpeed, in Tick. Callers (aim input,
+	 * AI chase/move tasks) drive facing entirely through this — never through Controller::SetControlRotation or
+	 * AIController::SetFocus, both of which snap rotation instantly. */
+	void SetTargetYaw(float NewTargetYaw) { TargetYaw = NewTargetYaw; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -149,6 +154,15 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
 	bool bIsDead = false;
+
+	/** Max yaw turn rate in degrees/second, applied in Tick to close the gap toward TargetYaw. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
+			  meta = (ClampMin = "1.0", UIMin = "10.0"))
+	float MaxRotationSpeed = 720.f;
+
+	/** Yaw (degrees) the character is currently turning toward. Set via SetTargetYaw(); initialized to the actor's
+	 * starting yaw in BeginPlay so nothing snaps on possession. */
+	float TargetYaw = 0.f;
 
 
 	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

@@ -23,7 +23,8 @@ class GEOTRINITY_API UBeamPattern : public UTickablePattern
 	GENERATED_BODY()
 
 protected:
-	/** Spawns the deactivated beam Niagara component; the pattern instance and its component are reused per activation. */
+	/** Spawns the deactivated beam Niagara component; the pattern instance and its component are reused per activation.
+	 */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
 	/** Carves the last tile under the beam and switches the beam VFX on before the tick loop starts. */
 	virtual void StartPattern() override;
@@ -38,8 +39,7 @@ protected:
 	float GetBeamYaw(float SpentTime) const;
 
 	/** Full arc swept over BeamDuration, in degrees, centered on the payload yaw. 0 keeps the beam static. */
-	UPROPERTY(EditDefaultsOnly, Category = "Beam")
-	float SweepAngle = 90.f;
+	float SweepAngle;
 
 	/** How long the beam stays on, in seconds. */
 	UPROPERTY(EditDefaultsOnly, Category = "Beam", meta = (ClampMin = "0.01"))
@@ -55,9 +55,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Beam")
 	bool bDestroyLastTileHit = false;
 
+	// NOT DETERMINISTIC !!
+	UPROPERTY(EditDefaultsOnly, Category = "Beam")
+	bool FollowBossOrientation = false;
+
+	// NOT DETERMINISTIC !!
+	UPROPERTY(EditDefaultsOnly, Category = "Beam")
+	bool FollowBossLocation = false;
+
 	/** Beam visual, authored local-space pointing +X like the systems UGeoBeamVFXComponent drives. Optional. */
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
 	TObjectPtr<UNiagaraSystem> BeamVfxSystem;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
+	FColor BeamColor;
 
 private:
 	UPROPERTY(Transient)

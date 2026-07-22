@@ -334,7 +334,6 @@ void AGeoDeployableBase::Expire(float const TimeBeforeDestroy)
 	SetActorTickEnabled(false);
 	ExecuteCue(ExpireGameplayCueTag, GetGenericCueParams(ExpireSoundTag));
 
-
 	// A simulated proxy must never Destroy() itself: the server still replicates the actor, and a later property bunch
 	// would re-create it client-side. Stay dark (hidden, tick off) and let the server's replicated destruction remove
 	// the actor (mirrors AGeoProjectile::EndProjectileLife).

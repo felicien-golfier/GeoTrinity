@@ -5,8 +5,15 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AIController.h"
+#include "Characters/GeoCharacter.h"
 #include "GameplayEffectTypes.h"
 #include "NavigationData.h"
+
+// ---------------------------------------------------------------------------------------------------------------------
+UGeoAITask_MoveTo::UGeoAITask_MoveTo(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
+{
+	bTickingTask = true;
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAITask_MoveTo::PerformMove()
@@ -30,6 +37,25 @@ void UGeoAITask_MoveTo::OnDestroy(bool bInOwnerFinished)
 	}
 
 	Super::OnDestroy(bInOwnerFinished);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAITask_MoveTo::TickTask(float const DeltaTime)
+{
+	Super::TickTask(DeltaTime);
+
+	AAIController* Controller = GetAIController();
+	AGeoCharacter* GeoPawn = Controller ? Cast<AGeoCharacter>(Controller->GetPawn()) : nullptr;
+	if (!GeoPawn)
+	{
+		return;
+	}
+
+	FVector2D const Velocity2D(GeoPawn->GetVelocity());
+	if (Velocity2D.SizeSquared() > FMath::Square(KINDA_SMALL_NUMBER))
+	{
+		GeoPawn->SetTargetYaw(FMath::Atan2(Velocity2D.Y, Velocity2D.X) * (180.f / PI));
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

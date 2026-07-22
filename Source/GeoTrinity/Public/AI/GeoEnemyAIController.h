@@ -9,6 +9,7 @@
 #include "GeoEnemyAIController.generated.h"
 
 
+class APlayableCharacter;
 class UGeoAIBlackboardComponent;
 class UStateTree;
 class UStateTreeAIComponent;
@@ -37,6 +38,7 @@ public:
 
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
+	virtual void Tick(float DeltaTime) override;
 	UStateTreeAIComponent* GetStateTreeComp() const { return StateTreeComp; }
 
 	/** Stops the StateTree logic and restarts it from the root (Dormant state). Resets aggro. */
@@ -45,12 +47,23 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Aggro")
 	float AggroRadius = 1500.f;
 
+	/** Seconds a closer player must remain the closest before target switches to them. */
+	UPROPERTY(EditAnywhere, Category = "Aggro")
+	float TargetSwitchDelay = 1.f;
+
+	/** Recomputed every Tick by UpdateCurrentTarget(); read by StateTree movement/facing tasks instead of each
+	 * resolving a target themselves. */
+	APlayableCharacter* GetCurrentTarget() const { return CurrentTarget; }
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UStateTreeAIComponent> StateTreeComp;
 
 private:
 	void CheckAggroDistance();
+	/** Targets the nearest live player; a different player must stay the nearest for TargetSwitchDelay seconds
+	 * before it replaces the current target. */
+	void UpdateCurrentTarget(float DeltaTime);
 
 	UFUNCTION()
 	void OnGEApplied(UAbilitySystemComponent* Source, FGameplayEffectSpec const& Spec,
@@ -63,4 +76,12 @@ private:
 
 	bool bAggroed = false;
 	FTimerHandle AggroCheckTimer;
+
+	UPROPERTY(Transient)
+	TObjectPtr<APlayableCharacter> CurrentTarget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<APlayableCharacter> PendingTarget;
+
+	float PendingTargetElapsedTime = 0.f;
 };

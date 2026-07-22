@@ -119,8 +119,13 @@ FActiveGameplayEffectHandle FDamageEffectData::ApplyEffect(FGameplayEffectContex
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageEffectClass, AbilityLevel, ContextHandle);
 
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	float CalculatedDamageAmount = DamageAmount.GetValueAtLevel(AbilityLevel);
+	if (bIsDamagePerSecond)
+	{
+		CalculatedDamageAmount *= SourceASC->GetWorld()->GetDeltaSeconds();
+	}
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Damage,
-																  DamageAmount.GetValueAtLevel(AbilityLevel));
+																  CalculatedDamageAmount);
 
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
@@ -160,8 +165,12 @@ FActiveGameplayEffectHandle FHealEffectData::ApplyEffect(FGameplayEffectContextH
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(HealEffectClass, AbilityLevel, ContextHandle);
 
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Heal,
-																  HealAmount.GetValueAtLevel(AbilityLevel));
+	float CalculatedHealAmount = HealAmount.GetValueAtLevel(AbilityLevel);
+	if (bIsHealPerSecond)
+	{
+		CalculatedHealAmount *= SourceASC->GetWorld()->GetDeltaSeconds();
+	}
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Heal, CalculatedHealAmount);
 
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
@@ -181,8 +190,14 @@ FActiveGameplayEffectHandle FShieldEffectData::ApplyEffect(FGameplayEffectContex
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(ShieldEffectClass, AbilityLevel, ContextHandle);
 
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	float CalculatedShieldAmount = ShieldAmount.GetValueAtLevel(AbilityLevel);
+	if (bIsShieldPerSecond)
+	{
+		CalculatedShieldAmount *= SourceASC->GetWorld()->GetDeltaSeconds();
+	}
+
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Shield,
-																  ShieldAmount.GetValueAtLevel(AbilityLevel));
+																  CalculatedShieldAmount);
 
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
