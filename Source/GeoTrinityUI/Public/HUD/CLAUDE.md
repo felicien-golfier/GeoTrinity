@@ -1,67 +1,63 @@
 # HUD
 
-Widget and HUD classes for all UI. **This is the `GeoTrinityUI` module** (Type=Runtime), separate from the `GeoTrinity` gameplay module so the dedicated-server target ships no Slate/UMG. `GeoTrinityUI` depends on `GeoTrinity`; gameplay must **never** reference a concrete class here.
+Widget and HUD classes for all UI. **This is the `GeoTrinityUI` module** (Type=Runtime), separate from `GeoTrinity` so the dedicated-server target ships no Slate/UMG. Depends on `GeoTrinity`; gameplay must **never** reference a concrete class here.
 
 ## Gameplay→UI seam (interfaces)
-Gameplay holds engine base pointers (`UWidgetComponent*`, `UUserWidget*`, `AHUD*`) and calls UI behavior through interfaces declared in **`GeoTrinity/Public/HUD/Interface/`** and implemented here:
-| Interface (gameplay module) | Implemented by | Used by |
+Gameplay holds engine base pointers (`UWidgetComponent*`, `UUserWidget*`, `AHUD*`) and calls UI behavior via interfaces declared in `GeoTrinity/Public/HUD/Interface/`:
+| Interface | Implemented by | Used by |
 |---|---|---|
-| `IGeoHUDInterface` | `AGeoHUD` | `AGeoPlayerState`, `AGeoGameState` (via `Cast<IGeoHUDInterface>(GetHUD())`) |
+| `IGeoHUDInterface` | `AGeoHUD` | `AGeoPlayerState`, `AGeoGameState` |
 | `IGeoCombattantWidgetHost` | `UGeoCombattantWidgetComp` | `AGeoCharacter`, `AGeoDeployableBase` |
 | `IGeoDeployGaugeWidgetInterface` | `UGeoDeployChargeGaugeWidget` | `APlayableCharacter` |
 | `IGeoChargeBeamGaugeWidgetInterface` | `UGeoChargeBeamGaugeWidget` | `APlayableCharacter` |
-The combatant widget component is **created in C++** on both `AGeoCharacter` and `AGeoDeployableBase` via `ObjectInitializer.CreateDefaultSubobject` with the runtime class from `GameDataSettings::CombattantWidgetComponentClass` (a soft class, so gameplay never names the UI type), attached to a non-rotating `WidgetAnchorComponent`. Because the class is runtime-resolved, the component's own Details panel is empty — per-BP tuning is exposed as gameplay-side fields on the owner (e.g. `AGeoDeployableBase::HealthBarDrawSize`/`HealthBarRelativeTransform`/`HealthBarWidgetClassOverride`). The two gauge components are still added in Blueprint. The menu widget needs no interface — the controller only calls engine `UUserWidget::AddToViewport`/`TakeWidget`.
+
+The combatant widget component is **created in C++** on `AGeoCharacter`/`AGeoDeployableBase` via `CreateDefaultSubobject` with the runtime class from `GameDataSettings::CombattantWidgetComponentClass` (soft class — gameplay never names the UI type). Per-BP tuning is exposed as gameplay-side fields on the owner instead of the component's Details panel. Gauge components are still added in Blueprint.
 
 ## Architecture
 ```
 AGeoHUD  (owns OverlayWidget)
-├── OverlayWidget (UGeoOverlayWidget) — main player HUD, created in InitOverlay()
-│     ├── AbilityBar (UGeoAbilityBarWidget, BindWidget) — bottom-center
-│     └── StatusBar (UGeoStatusBarWidget, BindWidget) — bottom-center, above the ability bar
-└── BossHealthBarWidget (UGenericCombattantWidget) — separate, shown during boss fights
+├── OverlayWidget (UGeoOverlayWidget) — main HUD, created in InitOverlay()
+│     ├── AbilityBar (UGeoAbilityBarWidget)
+│     └── StatusBar (UGeoStatusBarWidget)
+└── BossHealthBarWidget (UGenericCombattantWidget) — shown during boss fights
 ```
 
 ## Files
 | File | Role |
 |---|---|
-| `GeoHUD.h` | Main HUD; `InitOverlay()`, `BindToPawn()`, `BuildAbilityBar()`, `ShowBossHealthBar()`, attribute delegates, `GetHudPlayerParams()`, ability-bar data helpers (`GetAbilityCooldown`, `IsAbilityActive`, `GetDeployCountForAbility`); `RegisterASCForDamageNumbers(ASC, AvatarActor)` binds Health/Shield attribute delegates to spawn floating numbers from `DamageNumberPool`; `SpawnDamageNumber(Amount, bIsHeal, WorldPos)` acquires an available widget from the pool or creates a new one; non-shipping debug combat-stats table (top-right, gated by `Geo.ShowCombatStats`) — pure Slate panel (no WBP asset) built in `UpdateCombatStatsPanel()`, cells poll `AGeoPlayerState` via `TAttribute` lambdas, tree rebuilt from `DrawHUD()` only when the player list changes |
-| `GeoOverlayWidget.h` | Root player overlay; holds `AbilityBar` and `StatusBar` as BindWidgets so the HUD drives them from C++ (`BuildAbilityBar`, `InitStatusBar`) without Blueprint wiring |
-| `GeoAbilityBarWidget.h` | Bottom-center ability bar widget; builds slots from `GetAbilityBarEntries()`, refreshes deploy badges on HUD ping |
-| `GeoAbilitySlotWidget.h` | Single ability slot: icon + radial cooldown sweep (material) + countdown text + optional deploy count badge + live key-binding label (`KeyText`, queried from Enhanced Input each tick). Holds **all** abilities sharing its InputTag (bar groups entries); each tick displays the last active/activatable entry (`AGeoHUD::CanActivateAbility`), falling back to the first — e.g. Square's sacrifice channel↔detonate swap |
-| `GeoStatusBarWidget.h` | Icon row for active effects on the local player, bottom-center above the ability bar. Pure C++ internal tree (no WBP content, but the widget class itself is bound as `StatusBar` on `UGeoOverlayWidget`/WBP_MainOverlay): tree built in `Initialize()` (canvas → auto-sized HorizontalBox), given the HUD reference by `AGeoHUD::InitOverlay` → `UGeoOverlayWidget::InitStatusBar`. Polls `AGeoHUD::GetActiveEffectIcons()` each tick — one icon per active GE whose replicated `FGeoGameplayEffectContext::Icon` is set (from `FGameplayEffectData::Icon` or the status's `UStatusInfo` icon), plus a synthetic gauge entry for the Circle's sweet-spot charge passive (`FillRatio >= 0`: a masked `UProgressBar` reveals the icon bottom-to-top over a dimmed copy as the gauge fills, shining the fill over-bright `FullColor` when full; no depletion sweep) — and rebuilds the `UImage` row only when the icon set changes |
-| `GeoUserWidget.h` | Base widget; `InitFromHUD(AGeoHUD*)`, `BindCallbacksFromHUD` BP event |
-| `GenericCombattantWidget.h` | Reusable health/shield bar for enemies/boss/deployables — **not for player overlay**; `ShieldBar` overlays `HealthBar` (shield = Shield / MaxHealth); optional `CurrentHealthText` (BindWidgetOptional) shows the current health value (no max), set in `UpdateHealthRatio`; `InitializeWithAbilitySystemComponent` also calls `GeoHUD->RegisterASCForDamageNumbers` so every actor with a combattant widget registers for floating damage-number display |
-| `GeoDamageNumberWidget.h` | Pooled transient screen-space widget for a single floating damage/heal number; `Activate(Amount, bIsHeal, InWorldPos)` takes the widget from the pool, applies random X/Y jitter up to `LocationStartDrift`, picks a random upward-biased drift direction, and makes the widget visible — `NativeTick` re-projects the world anchor to screen each frame and fades out over `VisibleDuration`; Blueprint implements `SetData(Amount, bIsHeal)` for text/color; `ReturnToPool()` (BlueprintCallable) resets availability |
-| `GeoDeployChargeGaugeWidget.h` | World-space deploy charge gauge; ticks from ability's `GetChargeRatio()` |
-| `GeoChargeBeamGaugeWidget.h` | World-space charge-beam gauge with sweet-spot overlay bar; bound to `ChargeBeamGaugeComponent` on `PlayableCharacter`; ticks from ability's `GetChargeRatio()`; while the sweet-spot charge passive's gauge is full, runtime-built gradient bands shade the window toward its center (max damage-boost aim point) |
+| `GeoHUD.h` | Main HUD; `InitOverlay`, `BindToPawn`, `BuildAbilityBar`, `ShowBossHealthBar`, ability-bar data helpers; `RegisterASCForDamageNumbers` binds Health/Shield deltas to spawn floating numbers from `DamageNumberPool`; non-shipping debug combat-stats panel (pure Slate, `Geo.ShowCombatStats`), rebuilt only when player list changes |
+| `GeoOverlayWidget.h` | Root player overlay; `AbilityBar`/`StatusBar` as BindWidgets, driven from C++ |
+| `GeoAbilityBarWidget.h` | Bottom-center bar; builds slots from `GetAbilityBarEntries()` |
+| `GeoAbilitySlotWidget.h` | One slot: icon + cooldown sweep + countdown + deploy badge + live key label. Holds **all** abilities sharing its InputTag; shows last active/activatable, else first (e.g. Square's channel↔detonate swap) |
+| `GeoStatusBarWidget.h` | Active-effect icon row, local player only. Pure C++ tree, polls `AGeoHUD::GetActiveEffectIcons()`; one icon per active GE with a set `Icon`, plus a synthetic gauge entry for Circle's sweet-spot charge passive |
+| `GeoUserWidget.h` | Base widget; `InitFromHUD`, `BindCallbacksFromHUD` BP event |
+| `GenericCombattantWidget.h` | Reusable health/shield bar for enemies/boss/deployables (not player overlay); `ShieldBar` overlays `HealthBar`; registers for floating damage numbers via `InitializeWithAbilitySystemComponent` |
+| `GeoDamageNumberWidget.h` | Pooled floating damage/heal number; `Activate` applies jitter + upward drift, `NativeTick` re-projects world anchor + fades; `ReturnToPool()` resets availability |
+| `GeoDeployChargeGaugeWidget.h` | World-space deploy charge gauge, ticks from ability's `GetChargeRatio()` |
+| `GeoChargeBeamGaugeWidget.h` | World-space charge-beam gauge + sweet-spot overlay; gradient bands shade toward center while sweet-spot passive gauge is full |
 | `HudFunctionLibrary.h` | `ShouldDrawHUD()`, `GetHealthRatio()` |
-| `Component/GeoCombattantWidgetComp.h` | WidgetComponent on actors; implements `IGeoCombattantWidgetHost`; binds widget to owner's ASC on `InitWidget`; `BindToOwnerASC()` (interface method) is idempotent — call it again once the ASC becomes available. **Created in C++** on `AGeoCharacter`/`AGeoDeployableBase` from the soft class in `GameDataSettings`. No editable UPROPERTYs of its own. |
-| `Menu/GeoMenuPanelWidget.h` | Abstract base for gamepad-navigable menu widgets: focusable and holds focus while nothing is selected — first navigation input (d-pad/stick) focuses `GetInitialFocusWidget()` (pure virtual), mouse move while an `SGeoButton` is focused refocuses the panel so the gamepad highlight clears. Base of `GeoMenuButton`, `GeoPauseMenuWidget`, `GeoMainMenuWidget`, `GeoSettingsWidget` |
-| `Menu/GeoButton.h` | `UGeoButton : UButton` building `SGeoButton`, an SButton that maps focus onto its hover state — gamepad focus renders/sounds via the exact mouse-over path (hovered brush, HoveredSlateSound, OnHovered). `RebuildWidget()` also fills in `PressedSlateSound`/`HoveredSlateSound` from `UGameDataSettings::DefaultButtonClickSound`/`DefaultButtonHoverSound` when the button's own style doesn't already set them, so every `UGeoButton` clicks/hovers with a shared sound by default without per-BP wiring |
-| `Menu/GeoMenuButton.h` | Reusable styled button; `BlueprintAssignable OnClicked`; appearance fully configurable via `EditAnywhere` props; inner `ButtonWidget` is a `UGeoButton` (BindWidget) and receives forwarded focus for gamepad navigation |
-| `Menu/GeoMainMenuWidget.h` | Lobby menu; 3× `BindWidget UGeoMenuButton` + `BindWidget UGeoCreateServerWidget` + `BindWidget UGeoBrowseServersWidget`; C++ shows/hides the create-server and browse-server panels and handles quit |
-| `Menu/GeoCreateServerWidget.h` | "Create Server" form; fields: ServerNameInput, MapComboBox, SlotsComboBox, LanguageComboBox, PrivacyComboBox, CreateButton, BackButton (all BindWidget); `BlueprintAssignable OnClosed` delegate fires on Back; session creation logic fully in C++; sets SERVER_NAME, LANGUAGE, MAP session keys; data arrays (MapDisplayNames, MapURLs, SlotOptions, LanguageOptions) set via `EditAnywhere` in BP |
-| `Menu/GeoBrowseServersWidget.h` | Browse-servers panel; BindWidgets: SearchInput, LanguageComboBox, SearchProgressBar, RefreshButton, BackButton, ServerListScrollBox; `EditAnywhere ServerRowWidgetClass` (set in BP); client-side name filter, server-side language filter; `BlueprintAssignable OnClosed` fires on Back; calls `GeoGameInstance::JoinAdvancedSession` on row select |
-| `Menu/GeoLocalConnectWidget.h` | "Play Local" panel — direct-IP host/join **without Steam** via `UGeoSessionSubsystem`; BindWidgets: HostButton, JoinButton, BackButton (UGeoMenuButton), IPInput, LocalIPText; `EditAnywhere HostMap` (`TSoftObjectPtr<UWorld>`) = map the listen-server host travels to (host is authority and plays); `OnClosed` fires on Back |
-| `Menu/GeoServerRowWidget.h` | Single row in the server list; BindWidgets: RowButton, ServerNameText, MapText, PlayersText, PingText; optional FlagImage; raw multicast `OnSelected` delegate carries `FOnlineSessionSearchResult`; call `InitFromSearchResult` after `CreateWidget` |
-| `Menu/GeoPauseMenuWidget.h` | In-game pause menu, owned/shown by `AGeoPlayerController` (not nested, no `OnClosed`); BindWidgets: ResumeButton, SettingsButton, ReturnToMainMenuButton, QuitButton (UGeoMenuButton), SettingsWidget (UGeoSettingsWidget, Collapsed by default); Resume calls `AGeoPlayerController::ClosePauseMenu()`, Return-to-Main-Menu calls `UGeoGameInstance::LeaveSessionAndReturnToMenu()`, Quit calls `GEditor->RequestEndPlayMap()` in PIE (`WITH_EDITOR`-gated) or `UKismetSystemLibrary::QuitGame` otherwise |
-| `Menu/GeoSettingsWidget.h` | Settings chooser layer; BindWidgets: SoundButton, KeyBindingsButton, BackButton (UGeoMenuButton), SoundWidget (UGeoSoundSettingsWidget), KeyBindingsWidget (UGeoKeyBindingsWidget) — sub-panels Collapsed by default, shown one at a time while the chooser buttons hide; `OnClosed` fires on Back |
-| `Menu/GeoSoundSettingsWidget.h` | Sound settings window; BindWidgets: BackButton (UGeoMenuButton), MasterVolumeSlider (USlider, placeholder — no audio mixer wired up yet); `OnClosed` fires on Back |
-| `Menu/GeoKeyBindingsWidget.h` | Key-bindings window; BindWidgets: BackButton (UGeoMenuButton), KeyBindingsList (UScrollBox) — rebuilt from the Enhanced Input active key profile, one keyboard + one gamepad `UGeoKeyBindingSelector` per row; rows follow the fixed `MappingOrder` table in the .cpp (movement forward/backward/left/right, Dash, Basic Attack, Special Ability, Special Alternatif, Reload, Menu; unknown mappings last), labels come from the mappings' asset display names; `OnClosed` fires on Back |
+| `Component/GeoCombattantWidgetComp.h` | WidgetComponent on actors; implements `IGeoCombattantWidgetHost`; `BindToOwnerASC()` idempotent, call again once ASC available. Created in C++ from `GameDataSettings` soft class |
+| `Menu/GeoMenuPanelWidget.h` | Abstract gamepad-navigable menu base — focus-holding, first d-pad input focuses `GetInitialFocusWidget()`. Base of `GeoMenuButton`, `GeoPauseMenuWidget`, `GeoMainMenuWidget`, `GeoSettingsWidget` |
+| `Menu/GeoButton.h` | `UGeoButton : UButton` — gamepad focus renders/sounds via the mouse-hover path; fills default click/hover sounds from `GameDataSettings` if the BP style doesn't set them |
+| `Menu/GeoMenuButton.h` | Reusable styled button; inner `UGeoButton` receives forwarded focus |
+| `Menu/GeoMainMenuWidget.h` | Lobby menu; shows/hides create/browse-server panels, handles quit |
+| `Menu/GeoCreateServerWidget.h` | "Create Server" form; session creation logic in C++; sets SERVER_NAME/LANGUAGE/MAP session keys |
+| `Menu/GeoBrowseServersWidget.h` | Browse-servers panel; client-side name filter, server-side language filter |
+| `Menu/GeoLocalConnectWidget.h` | "Play Local" panel — direct-IP host/join **without Steam** via `UGeoSessionSubsystem`; `HostMap` = listen-server travel target |
+| `Menu/GeoServerRowWidget.h` | Server list row; `OnSelected` carries `FOnlineSessionSearchResult`; call `InitFromSearchResult` after `CreateWidget` |
+| `Menu/GeoPauseMenuWidget.h` | Pause menu, owned/shown by `AGeoPlayerController`; Quit uses `GEditor->RequestEndPlayMap()` in PIE, else `QuitGame` |
+| `Menu/GeoSettingsWidget.h` | Settings chooser; shows one sub-panel at a time |
+| `Menu/GeoSoundSettingsWidget.h` | Sound settings; `MasterVolumeSlider` is a placeholder — no audio mixer wired yet |
+| `Menu/GeoKeyBindingsWidget.h` | Key-bindings window; rebuilt from Enhanced Input active profile, fixed `MappingOrder` table in .cpp |
 
 ## Adding HUD Changes
-**Screen-space UI** (boss bar, cooldown): add `BlueprintImplementableEvent` to `AGeoHUD` → implement in HUD BP → forward to `OverlayWidget`.
+**Screen-space** (boss bar, cooldown): add `BlueprintImplementableEvent` to `AGeoHUD` → implement in HUD BP → forward to `OverlayWidget`.
+**World-space** (deploy gauge): `UWidgetComponent` on character BP (`Space=Screen`). Attach to the actor's `WidgetAnchorComponent` (non-rotating), never the rotating root — a root-relative offset orbits the actor as it yaws even in Screen space.
 
-**World-space UI** (deploy gauge): `UWidgetComponent` on character BP, `Space = Screen`. Ability calls `GetAvatarActor → Cast PlayableCharacter → Show/HideDeployChargeGauge`. No HUD involvement. Attach to the actor's `WidgetAnchorComponent` (non-rotating anchor on `AGeoCharacter`/`AGeoDeployableBase`), never to the rotating root — a root-relative offset orbits the actor as it yaws, even in Screen space.
-
-## `FHudPlayerParams`
-Snapshot held by `AGeoHUD`: `PlayerController`, `PlayerState`, `AbilitySystemComponent`, `AttributeSet`. Access via `GetHudPlayerParams()`.
-
-## Ability Bar (bottom-center icons + cooldowns + deploy counts)
-C++ data layer on `AGeoHUD`; layout is BP (`WBP_AbilityBar` / `WBP_AbilitySlot` under `/Game/HUD/`).
-- `GetAbilityBarEntries()` → `TArray<FGeoAbilityBarEntry>` (AbilityTag, InputTag, Icon, bIsDeployable). Iterates the avatar's granted activatable abilities, skips passives, matches the global `UAbilityInfo` entry for the player's class to pull icon/input/`bShowDeployCount`.
-- `GetAbilityCooldown(Tag, OutRemaining, OutDuration)` — native `GetCooldownTimeRemainingAndDuration` on the granted spec.
-- `IsAbilityActive(Tag)` — `FGameplayAbilitySpec::IsActive()` on the granted spec. The slot keeps the cooldown sweep filled at 1.0 while the ability is active (grayed-out "in use" look); when the ability ends, the cooldown depletes the sweep, or it clears immediately if there is no cooldown.
-- `GetDeployCountForAbility(Tag, OutCurrent, OutMax)` — resolves the `UGeoDeployAbility` for the tag (primary instance for live state) and returns its charges: `OutCurrent = GetCurrentStacks()`, `OutMax = GetMaxStacks()`. The slot's badge shows `OutCurrent` (charges left), and the slot only grays out (shows the refill cooldown) when `OutCurrent == 0` — with a charge available it reads as ready even while the refill clock ticks. Not the live-deployable count (the manager still tracks that for size/recall, but it no longer gates deployment).
-- `BuildAbilityBar()` — C++ (not a Blueprint event); called from `BindToPawn` once the pawn's granted abilities exist, and from `AGeoPlayerState::OnRep_PlayerClass` after a class change re-grants abilities. Delegates to `UGeoOverlayWidget::BuildAbilityBar` → `UGeoAbilityBarWidget::BuildBar`.
-- `OnPlayerDeployCountChanged` (`BlueprintAssignable`, **no args**) — tagless "a deploy count changed" ping, fired from `HandleDeployCountChanged` (bound to the avatar manager's `OnDeployCountChanged` via `AddUniqueDynamic`). The manager count is global and carries no ability tag, so each slot re-queries `GetDeployCountForAbility(its own tag)` on receipt rather than reading the ping's payload. Set `bShowDeployCount` on the deploy ability's `UAbilityInfo` entry to enable a slot's badge.
+## Ability Bar
+C++ data layer on `AGeoHUD`, layout is BP (`WBP_AbilityBar`/`WBP_AbilitySlot`).
+- `GetAbilityBarEntries()` — iterates avatar's granted activatable abilities, skips passives, matches class's `UAbilityInfo` entry.
+- `GetAbilityCooldown` / `IsAbilityActive` — slot keeps cooldown sweep filled at 1.0 while active, then depletes on end (or clears immediately if no cooldown).
+- `GetDeployCountForAbility` — reads `UGeoDeployAbility` charges; badge shows current, slot only grays out at `OutCurrent==0` — a charge available reads as ready even while refill ticks. Not the live-deployable count.
+- `BuildAbilityBar()` — C++, called from `BindToPawn` and `OnRep_PlayerClass` after class change.
+- `OnPlayerDeployCountChanged` — tagless ping; each slot re-queries its own tag rather than reading a payload.

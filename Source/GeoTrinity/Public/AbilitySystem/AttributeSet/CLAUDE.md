@@ -1,36 +1,24 @@
 # AbilitySystem/AttributeSet
 
----
-
 ## `GeoAttributeSetBase.h` — shared attributes (all characters)
-
 Attributes: `Health`, `MaxHealth`, `Shield`, `IncomingDamage` (meta), `IncomingHeal` (meta)
 
-**`PreAttributeChange()`** clamps `Shield` to `[0, MaxHealth]` before any modification lands, so shield can never exceed max life regardless of source (GE modifier, setter, OnRep).
-
-**`PostGameplayEffectExecute()` does three things:**
-1. Clamps `Health` to `[0, MaxHealth]`
-2. Reports damage/heal to `UGeoCombatStatsSubsystem`
-3. Ends the actor (calls `Destroy` or equivalent) when health reaches 0
-
-`GetHealthRatio()` — returns `Health / MaxHealth`, 0 when `MaxHealth = 0`.
-
-Meta-attributes (`IncomingDamage`, `IncomingHeal`) are transient — they accumulate the ExecCalc result and are reset to 0 after `PostGameplayEffectExecute`. Never read them outside of `PostGameplayEffectExecute`.
-
----
+- `PreAttributeChange()` clamps `Shield` to `[0, MaxHealth]` before any modification lands.
+- `PostGameplayEffectExecute()`: clamps `Health` to `[0, MaxHealth]`, reports damage/heal to `UGeoCombatStatsSubsystem`, ends the actor at 0 health.
+- `GetHealthRatio()` — `Health/MaxHealth`, 0 when `MaxHealth = 0`.
+- Meta-attributes (`IncomingDamage`, `IncomingHeal`) are transient — accumulate ExecCalc result, reset to 0 after `PostGameplayEffectExecute`. Never read outside it.
 
 ## `CharacterAttributeSet.h` — player-only attributes
-
 Lives on `AGeoPlayerState` alongside the ASC.
 
 | Attribute | Purpose |
 |---|---|
-| `Ammo` / `MaxAmmo` | Triangle's ammo system; basic attack costs 1 ammo per shot |
-| `AppliedHealBoost` | Captured by `ExecCalc_Heal` as source multiplier (healer's outgoing boost) |
-| `ReceivedHealBoost` | Captured by `ExecCalc_Heal` as target multiplier (recipient's incoming boost) |
-| `DamageMultiplier` | Captured by `ExecCalc_Damage` as source multiplier |
-| `DamageReduction` | Captured by `ExecCalc_Damage` as target reduction |
+| `Ammo` / `MaxAmmo` | Triangle's ammo; basic attack costs 1/shot |
+| `AppliedHealBoost` | `ExecCalc_Heal` source multiplier (healer's outgoing boost) |
+| `ReceivedHealBoost` | `ExecCalc_Heal` target multiplier (recipient's incoming boost) |
+| `DamageMultiplier` | `ExecCalc_Damage` source multiplier |
+| `DamageReduction` | `ExecCalc_Damage` target reduction |
 | `MovementSpeedMultiplier` | Read by `UGeoCharacterMovementComponent::ApplySpeedMultiplier()` |
 | `RotationSpeedMultiplier` | Read by `APlayableCharacter::UpdateAimRotation()` |
-| `SacrificeValue` | Damage captured by the Square's sacrifice channel, consumed by the sacrifice detonation. Replicated for HUD display; zeroed on death (`DeathLogic`) |
-| `HealCharge` | Healing recorded since the Circle's `GeoSweetSpotChargePassiveAbility` gauge was last consumed; a full gauge grants the charge beam's next sweet-spot release the passive's damage-multiplier boost. Replicated for HUD gauge display |
+| `SacrificeValue` | Damage captured by Square's sacrifice channel, consumed on detonation. Replicated for HUD; zeroed on death |
+| `HealCharge` | Heal accrued for Circle's `GeoSweetSpotChargePassiveAbility` gauge; full gauge boosts next sweet-spot release. Replicated for HUD gauge |

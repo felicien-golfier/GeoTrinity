@@ -1,59 +1,44 @@
 # GeoTrinityEditor / Tool
 
-Editor-only Python/Blueprint automation utilities. These are `UEditorUtilityObject` subclasses that mutate StateTree
-and Widget assets. They live in the **`GeoTrinityEditor` module** (Type `Editor` in `.uproject`, built only when
-`bBuildEditor`) — NOT in the runtime `GeoTrinity` module — because `UEditorUtilityObject` depends on the editor-only
-`Blutility` module, which is absent in packaged Game/Shipping builds. Keeping them here is what lets the project
-package; do not move them back under a `#if WITH_EDITOR` in `GeoTrinity` (UHT emits the class registration regardless of
-that guard, so the packaged runtime module fails to find `UEditorUtilityObject`).
+Editor-only Python/Blueprint automation utilities (`UEditorUtilityObject` subclasses mutating StateTree and Widget assets). Live in the **`GeoTrinityEditor`** module (Type `Editor`), not runtime `GeoTrinity`, because `UEditorUtilityObject` depends on the editor-only `Blutility` module — packaged Game/Shipping builds need this split. Do **not** move them back under `#if WITH_EDITOR` in `GeoTrinity` (UHT still emits class registration regardless, breaking the packaged runtime).
 
-The module depends on `GeoTrinity` (public headers only), so these utils can include runtime types like
-`AI/StateTree/Ability/STTask_FireAbility.h` and `HUD/Menu/GeoMenuButton.h`.
+Module depends on `GeoTrinity` (public headers only), so these utils can include runtime types (`STTask_FireAbility.h`, `GeoMenuButton.h`).
 
 ## `GeoStateTreeBuilderUtil.h`
-`UEditorUtilityObject` for mutating `UStateTree` assets from Python/Blueprint automation.
-Each method validates, compiles (`FCompilerManager::CompileSynchronously`), and saves the asset atomically.
-- `AddState` — creates an empty (taskless) state at a given parent/index; use for idle/dormant states that wait on an `OnEvent` transition
-- `AddFireAbilityStateByTagName` — creates a state with an `FSTTask_FireAbility` task at a given parent/index
-- `ReplaceFireAbilityTagInState` — swaps the ability tag on an existing state's fire task
-- `RemoveState` — deletes a state by name (recursive search)
-- `ClearTransitions` / `AddTransition` — manage `GotoState` transitions; `AddTransition` takes a trigger and, for `OnEvent`, an event tag name
-- `AddFloatEnterCondition` — appends a `FStateTreeCompareFloatCondition` to a state's `EnterConditions`
-- `BindConditionPropertyToPropertyFunction` — binds a condition property to a Property Function output (e.g. `FSTGetHealthRatioPropertyFunction`) and wires the function's input to a context object
-- `AddTaskToState` — appends a task of any struct type (unqualified USTRUCT name) to an existing state with default instance data; context properties auto-bind at compile
-- `AddSendEventAfterNCyclesTask` — appends an `FSTTask_SendEventAfterNCycles` task to an existing state
-- `ClearEnterConditions` — removes all enter conditions from a state
-- `SetRequiredEventToEnter` / `ClearRequiredEventToEnter` — set or clear the Required Event To Enter on a state
-- `ListStates` — logs the full tree with indent and task tags to `LogTemp`
-- `ListEnterConditions` — logs all enter conditions on a named state
+Mutates `UStateTree` assets from Python/Blueprint. Each method validates, compiles, saves atomically.
+- `AddState` (taskless, for idle/dormant states waiting on `OnEvent`), `AddFireAbilityStateByTagName`, `ReplaceFireAbilityTagInState`, `RemoveState`
+- `ClearTransitions`/`AddTransition` (trigger + event tag for `OnEvent`)
+- `AddFloatEnterCondition`, `ClearEnterConditions`
+- `BindConditionPropertyToPropertyFunction` — binds a condition property to a Property Function output, wires its input to a context object
+- `AddTaskToState` (any struct type by name, auto-binds context props at compile), `AddSendEventAfterNCyclesTask`
+- `SetRequiredEventToEnter`/`ClearRequiredEventToEnter`
+- `ListStates`/`ListEnterConditions` — log to `LogTemp`
 
 ## `GeoWidgetBuilderUtil.h`
-`UEditorUtilityObject` — generic, reusable widget-tree primitives. Keep this file free of per-asset functions; content-specific builders belong in `GeoHudWidgetBuilderUtil.h`.
-- `SetRootPanel(Blueprint, PanelClass, RootName)` — replaces root with a freshly constructed panel (CanvasPanel, Overlay, HorizontalBox, …), named for BindWidget, compiles and saves
-- `SetImageRoot` — replaces root with a single Image (texture + desired size), compiles and saves
-- `SetImageRootFromMaterial` — like `SetImageRoot` but draws a material (e.g. a luminance-to-alpha mask) instead of a raw texture
-- `InspectWidgetBlueprint` — logs the full widget tree (type, name, slot layout, widget properties) to `LogTemp`
+Generic, reusable widget-tree primitives — keep free of per-asset functions (those belong in `GeoHudWidgetBuilderUtil.h`).
+- `SetRootPanel`/`SetImageRoot`/`SetImageRootFromMaterial` — replace root, compile+save
+- `InspectWidgetBlueprint` — logs full tree to `LogTemp`
 
-### Low-level tree primitives (compose from Python — no recompile for new tree shapes)
-The `WidgetTree` property is **protected**, so Python cannot construct/re-parent/remove/save/look up widgets itself — but it CAN call every `set_*` on an already-existing widget or slot object (`set_text`, `set_brush`, `set_padding`, `set_anchors`, `set_color_and_opacity`, …). These primitives expose exactly the tree ops Python lacks; everything else is done from Python on the returned objects. **Batch Construct/Attach/Remove + Python slot edits, then call `CommitTree` once.** Adding a new "add/move/wrap/reorder/delete widget X" capability needs NO new `UFUNCTION` — compose these in `execute_script`.
-- `ConstructWidgetInTree(Blueprint, WidgetClass, WidgetName, bIsVariable=true)` → `UWidget*` — constructs any `UWidget` (unparented); sets `bIsVariable`. GUID assignment is deferred to `CommitTree`, so an aborted batch never leaks a dangling GUID. Reuse-safe (renames any same-name occupant out first). No save.
-- `AttachWidget(Blueprint, ParentName, ChildName, Index=-1)` → `UPanelSlot*` — (re)parents an existing widget into a panel at `Index` (-1 appends); detaches first so it survives the move with its name/graph bindings. Resolves names even for just-constructed, not-yet-parented widgets. Returns the slot for Python to position (cast to the concrete slot type, call its `set_*`). No save.
-- `RemoveWidget(Blueprint, Name)` — detaches/deletes a widget. No save.
-- `CommitTree(Blueprint)` — reconciles the variable→GUID map against the tree (mints a GUID for every tree widget lacking one, prunes orphan entries; animation GUIDs untouched), then compiles + saves. This single self-healing point keeps any Construct/Attach/Remove batch consistent regardless of how it ended. Call once after a batch.
-- `FindWidget(Blueprint, Name)` → `UWidget*` — read-only lookup of an existing widget by name (parented or not), no mutation. Use to fetch a widget or its `Slot` for property edits (sizing, alignment, …) without reconstructing it — avoids the destructive `ConstructWidgetInTree`-on-an-existing-name dance just to get a reference. Null if not found.
+### Low-level tree primitives
+`WidgetTree` is **protected** — Python can call `set_*` on existing widgets/slots but can't construct/reparent/remove/save itself. These expose exactly the missing ops; compose everything else from Python on the returned objects. **Batch Construct/Attach/Remove + Python slot edits, then call `CommitTree` once.**
+- `ConstructWidgetInTree` → unparented widget; GUID deferred to `CommitTree` (aborted batch never leaks one). Reuse-safe. No save.
+- `AttachWidget` → `UPanelSlot*`; (re)parents at `Index` (-1 appends), resolves names even for unparented widgets. No save.
+- `RemoveWidget` — detach/delete. No save.
+- `CommitTree` — reconciles variable→GUID map (mints/prunes), compiles+saves. Self-healing regardless of batch outcome — call once per batch.
+- `FindWidget` — read-only lookup, no mutation.
 
-### Convenience wrappers (one-call common cases over the primitives)
-- `AddWidgetToPanel(Blueprint, ParentPanelName, WidgetClass, WidgetName, Offsets)` → `UWidget*` — Construct + Attach + Commit: adds a graph-variable widget into any panel; on a CanvasPanel also applies top-left-anchored pixel `Offsets`. Reuse-safe.
-- `GroupWidgetsIntoPanel(Blueprint, ParentPanelName, GroupName, GroupPanelClass, ChildNames, GroupOffsets)` → `UPanelWidget*` — Construct a group panel, Attach it under `ParentPanelName` (pixel `GroupOffsets` when that parent is a CanvasPanel), then re-Attach each existing `ChildNames` into it in z-order, then Commit. Children keep names/GUIDs/graph bindings. Caller re-positions each child via its slot from Python. Use to wrap the bars + HP texts under one anchored container so they scale together.
+### Convenience wrappers
+- `AddWidgetToPanel` — Construct+Attach+Commit in one call; applies pixel `Offsets` on a CanvasPanel parent.
+- `GroupWidgetsIntoPanel` — builds a group panel under a parent, re-attaches existing children into it in z-order, commits; children keep names/GUIDs/bindings.
 
-Building-block helpers for content builders (public but not `UFUNCTION`): `BeginBuild` (validate/mark/clear root), `FinishBuild` (compile/save), `ConstructRootPanel`, `AddChildToCanvasPanel`, `AddCenteredChildToVerticalBox(VerticalBox, Child, Padding)` (center-aligned slot with padding), `ConstructLabeledButton(Tree, Name, LabelText)` (Button + TextBlock label), `ConstructProgressBar(Tree, Name, FillColor, BackgroundColor, bIsVariable)` (styled empty ProgressBar, LeftToRight default; set `bIsVariable` when C++ BindWidgets it), `AddFillChildToOverlay(Overlay, Child)` (fill/fill overlay slot covering the full rect).
+Non-`UFUNCTION` building blocks: `BeginBuild`/`FinishBuild`, `ConstructRootPanel`, `AddChildToCanvasPanel`, `AddCenteredChildToVerticalBox`, `ConstructLabeledButton`, `ConstructProgressBar`, `AddFillChildToOverlay`.
 
 ## `GeoHudWidgetBuilderUtil.h`
-`UEditorUtilityObject` — content-specific HUD widget-tree builders that compose the generic primitives from `GeoWidgetBuilderUtil.h`. New per-widget builders go here.
-- `BuildAbilitySlotWidget(Blueprint, SquareSize, KeyLabelPlacement)` — builds WBP_AbilitySlot tree: SizeBox ("Square") → Icon / CooldownSweep / CountdownText / CountText, plus a `KeyText` live key-binding label placed per `EAbilitySlotKeyLabelPlacement` (`Below` = VerticalBox root, label under the square (default); `OverlayBottom` = label bottom-center over the icon; `None` = no label). Names match BindWidget members on `UGeoAbilitySlotWidget`
-- `BuildAbilityBarWidget(Blueprint)` — builds WBP_AbilityBar tree: Overlay root with centered SlotBox HorizontalBox (BindWidget on `UGeoAbilityBarWidget`)
-- `BuildChargeBeamGaugeWidget(Blueprint, SweetSpotMinRatio, SweetSpotMaxRatio)` — builds WBP_ChargeBeamGauge tree (ChargeBar + SweetSpotBar overlay on CanvasPanel)
-- `BuildCombattantLifeBarWidget(Blueprint, BarWidth, BarHeight)` — builds WBP_CombattantLifeBar tree: SizeBox root (BarWidth × BarHeight) → Overlay → `HealthBar` (fill) under `ShieldBar` (fill, semi-transparent cyan). Both bars fill the same rect so shield overlays health, matching `WBP_MainOverlay`. Names match `BindWidgetOptional` members on `UGenericCombattantWidget`; shield percent driven by `UpdateShieldRatio` (Shield / MaxHealth)
-- `AddAbilityBarToOverlay(Blueprint, ParentPanelName, AbilityBarClass, fractions)` — adds AbilityBarClass child named "AbilityBar" to the overlay's CanvasPanel, anchored bottom-center, sized as fractions of the canvas
-- `BuildLocalConnectWidget(Blueprint, MenuButtonClass)` — builds WBP_LocalConnect ("Play Local" direct-IP panel): Overlay root → centered VerticalBox → HostButton / IPInput / JoinButton / LocalIPText / BackButton; buttons are `MenuButtonClass` (UGeoMenuButton WBP) instances with per-instance labels; names match BindWidgets on `UGeoLocalConnectWidget`
-- `AddLocalConnectToMainMenu(Blueprint, ParentPanelName, ButtonsBoxName, MenuButtonClass, LocalConnectClass)` — appends to the existing WBP_MainMenuWidget without rebuilding: PlayLocalButton + spacer inserted above QuitButton in `ButtonsBoxName`, LocalConnectClass added centered on the canvas as "LocalConnectWidget"; re-run-safe
+Content-specific HUD widget-tree builders composing the generic primitives. New per-widget builders go here.
+- `BuildAbilitySlotWidget` — WBP_AbilitySlot tree (icon/cooldown/countdown/count badge + `KeyText` per `EAbilitySlotKeyLabelPlacement`)
+- `BuildAbilityBarWidget` — WBP_AbilityBar tree
+- `BuildChargeBeamGaugeWidget` — ChargeBar + SweetSpotBar overlay
+- `BuildCombattantLifeBarWidget` — HealthBar under ShieldBar (shield overlays health), matches `WBP_MainOverlay`
+- `AddAbilityBarToOverlay` — adds bar to overlay canvas, bottom-center
+- `BuildLocalConnectWidget` — WBP_LocalConnect direct-IP panel
+- `AddLocalConnectToMainMenu` — appends Play-Local entry to WBP_MainMenuWidget without rebuilding; re-run-safe

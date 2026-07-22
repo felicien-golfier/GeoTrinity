@@ -1,6 +1,6 @@
 # Abilities
 
-All gameplay ability classes. **Base class for everything: `UGeoGameplayAbility`** (`Base/GeoGameplayAbility.h`). Never use `UGameplayAbility` directly — it bypasses StoredPayload, fire flow, CommitAbility, and cost infrastructure.
+All gameplay ability classes. Base for everything: `UGeoGameplayAbility` (`Base/GeoGameplayAbility.h`). Never use `UGameplayAbility` directly — bypasses StoredPayload, fire flow, CommitAbility, and cost infrastructure.
 
 ## Subfolders
 | Folder | Contents |
@@ -16,23 +16,19 @@ All gameplay ability classes. **Base class for everything: `UGeoGameplayAbility`
 
 ## Fire Flow (all abilities)
 ```
-ActivateAbility(TriggerEventData)
-  ← Origin, Yaw, ServerSpawnTime, Seed already set from TriggerEventData
-  ← server already has this data — no RPC needed yet
+ActivateAbility(TriggerEventData)  ← Origin/Yaw/ServerSpawnTime/Seed set from TriggerEventData; server already has this, no RPC yet
   CommitAbility()                  ← cost + cooldown, once at activation
   ScheduleFireTrigger()            ← waits FireDelay (or ChargeForFireDelay mode)
     Fire()                         ← client: spawns predicted projectile
       [optional] SendFireDataToServer()
-        OnFireTargetDataReceived() ← server-only: spawns authoritative projectile
-                                     with updated values (e.g. current aim yaw at fire time)
+        OnFireTargetDataReceived() ← server-only: spawns authoritative projectile, updated values (e.g. current aim yaw)
 ```
-
-`SendFireDataToServer` / `OnFireTargetDataReceived` are **not mandatory** — only used when an ability needs a value that changes during `FireDelay` (e.g. projectile aim direction). The server already has the activation-time data from `TriggerEventData`.
+`SendFireDataToServer`/`OnFireTargetDataReceived` are optional — only needed when a value changes during `FireDelay` (e.g. aim direction).
 
 ## Passive abilities
-Passives (`Ability.Type.Passive` tag) are server-owned: activated by `ReactivatePassiveAbilities()` (GiveLife) and set `NetSecurityPolicy = ServerOnly` in their C++ constructor. Without it, the client-side `CancelAllAbilities()` in Death/ReviveLogic sends `ServerCancelAbility` that kills the server's freshly reactivated instance after a revive (client processes the revive after the server already reactivated).
+Passives (`Ability.Type.Passive` tag) are server-owned: activated by `ReactivatePassiveAbilities()` (GiveLife), `NetSecurityPolicy = ServerOnly` in C++ constructor. Without it, a client-side `CancelAllAbilities()` on revive can kill the server's freshly reactivated instance.
 
 ## Effect Data on Abilities
-- `TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets` — shared/reused effects (asset references)
+- `TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets` — shared/reused effects
 - `TArray<TInstancedStruct<FEffectData>> EffectDataInstances` — ability-specific inline effects
-- `GetEffectDataArray()` merges both into one array for `ApplyEffectFromEffectData()`
+- `GetEffectDataArray()` merges both for `ApplyEffectFromEffectData()`

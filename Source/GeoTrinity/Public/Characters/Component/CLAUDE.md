@@ -3,49 +3,29 @@
 Character components attached to `AGeoCharacter` and its subclasses.
 
 ## `GeoCharacterMovementComponent.h`
-Extends `UCharacterMovementComponent`. Caches base speed and acceleration on `OnRegister`.
-
-- `ApplySpeedMultiplier(float Multiplier)` — scales `MaxWalkSpeed` and `MaxAcceleration` relative to cached base values
-- Driven by `MovementSpeedMultiplier` attribute changes from `UCharacterAttributeSet`
-- `GetGeoCharacter()` — typed owner access
+Extends `UCharacterMovementComponent`; caches base speed/accel on `OnRegister`.
+- `ApplySpeedMultiplier(float)` — scales `MaxWalkSpeed`/`MaxAcceleration` relative to cached base, driven by the `MovementSpeedMultiplier` attribute.
 
 ## `GeoDeployableManagerComponent.h`
-Attached to `APlayableCharacter`. Tracks active deployables, enforces max count with optional per-class caps.
-
-- `MaxDeployables = 3` — global cap; applies to classes without a `DeployableSlots` entry
-- `DeployableSlots` — `TMap<TSubclassOf, int32>`; add an entry to give a class its own independent limit. Set value to 0 for unlimited.
-- `CanDeploy(TSubclassOf)` — true if deployment is allowed; always true when the class has `bDestroyOldestWhenLimitReached` set (oldest expires on register instead of blocking). Otherwise delegates to `HasReachMaxLimit`.
-- `HasReachMaxLimit(TSubclassOf)` — checks the per-class slot if one exists, otherwise checks the global pool
-- `SetDeployableInfinitCount(Class)` — adds `DeployableSlots[Class] = 0`; used by patterns that must spawn an arbitrary number of pillars and by the boss loot shower (`AGeoGameState::SpawnLootBurst`)
-- `RemoveDeployableSlot(Class)` — removes the `DeployableSlots` entry, putting the class back on the global `MaxDeployables` pool
-- `RegisterDeployable(AGeoDeployableBase*)` — registers + binds to destroy/expire delegates; expires oldest if `bDestroyOldestWhenLimitReached` and slot is full
-- `ForceExpireAll()` — immediately expires all tracked deployables; called on character EndPlay and class switch
-- `GetDeployables()` / `GetDeployables<T>()` — all live deployables (optionally filtered by class)
-- `OnDeployCountChanged` delegate — broadcast to HUD/UI on count change
+On `APlayableCharacter`. Tracks active deployables, enforces max count (global `MaxDeployables=3`, or per-class caps via `DeployableSlots` — 0 = unlimited).
+- `CanDeploy`/`HasReachMaxLimit` — true always when `bDestroyOldestWhenLimitReached` (oldest expires on register instead of blocking).
+- `SetDeployableInfinitCount(Class)` — used by patterns spawning arbitrary pillar counts and by boss loot shower.
+- `ForceExpireAll()` — called on character EndPlay and class switch.
+- `OnDeployCountChanged` — broadcast to HUD/UI on count change.
 
 ## `GeoGameFeelComponent.h`
-Attached to all characters. Centralizes cosmetic reactions — never drives game logic.
-
-- `FlashOnHit()` — flashes mesh with HitFlashMaterial for HitFlashDuration
-- `ApplyRecoil(float Distance)` — kicks mesh backward opposite to yaw, springs back at `RecoilRecoverySpeed = 14`
-- `IsDamageCueAvailable()` / `IsHealCueAvailable()` — rate-limit cue triggers; consumed by `ExecCalc_Damage` / `ExecCalc_Heal` when `bLimitGameplayCue` is set on the effect data — don't call from effect call sites
-- Auto-discovers owner's first mesh on `BeginPlay` (`TargetMesh`)
+Cosmetic-only reactions on all characters (never drives game logic).
+- `FlashOnHit()`, `ApplyRecoil(float)` (springs back at `RecoilRecoverySpeed=14`).
+- `IsDamageCueAvailable()`/`IsHealCueAvailable()` — rate-limit; consumed by `ExecCalc_Damage`/`ExecCalc_Heal` when `bLimitGameplayCue` is set — don't call from effect call sites.
 
 ## `GeoBeamVFXComponent.h`
-Replicated beam-VFX holder, dynamically added by a beam ability on the server in `OnGiveAbility` (`NewObject` + `RegisterComponent`) and destroyed in `OnRemoveAbility` — it exists for as long as the ability is granted, and is toggled on/off per activation. Generic: reusable by any beam ability.
-
-- `SetBeamState(bActive, HalfWidth, Length)` — writes replicated `FBeamVFXState`. The **server** write replicates to everyone; the owning client may also call it for lag-free local visuals
-- Each rendering machine (clients + listen host; dedicated server skips) spawns a local non-replicated `UNiagaraComponent`, attached to the owner's **root** so the beam rotates with aim. On clients the component arrives via replication with `BeginPlay` running **before** the initial `BeamSystem` value lands, so creation happens in the `BeamSystem` RepNotify (`CreateNiagaraComponent`), which must end with `ApplyBeamState()` — `OnRep_BeamState` fires before it (declaration order) and is a no-op while the Niagara component is null
-- `OnRep_BeamState` → `ApplyBeamState()`: `SetActive` + pushes `User.BeamHalfWidth` / `User.BeamLength` (param names editable per BP subclass)
-- `SetBeamColor(FLinearColor)` — set from the ability's `OnGiveAbility` (like `SetNiagaraSystem`); replicated (plain `COND_None` — `COND_InitialOnly` never delivers on dynamically added components since the actor channel's initial bunch already went out) and pushed once to the `User.Color` Niagara parameter at component creation
-- `BeamSystem` (`UNiagaraSystem`) must be assigned in the BP subclass defaults; author the system **local-space pointing +X**
+Replicated beam-VFX holder, dynamically added by a beam ability on the server in `OnGiveAbility`/destroyed in `OnRemoveAbility` — lives as long as the ability is granted, toggled per activation. Generic, reusable by any beam ability.
+- `SetBeamState(bActive, HalfWidth, Length)` — writes replicated `FBeamVFXState`; server write replicates to all, owning client may also call for lag-free local visuals.
+- Each rendering machine spawns a local non-replicated `UNiagaraComponent` attached to the owner's **root**. On clients `BeginPlay` runs **before** the initial `BeamSystem` value lands, so creation happens in the `BeamSystem` RepNotify (must end with `ApplyBeamState()` — `OnRep_BeamState` fires first per declaration order and no-ops while Niagara component is null).
+- `SetBeamColor` replicates `COND_None` (not `COND_InitialOnly` — dynamically added components miss the initial bunch).
+- `BeamSystem` must be authored **local-space pointing +X**.
 
 ## `ShieldBurstPassiveComponent.h`
-Dynamically added to Square while `GeoShieldBurstPassiveAbility` is active. Removed when ability ends.
-
-- `SetGaugeRatio(float)` — **server-side only**; updates replicated `GaugeRatio`
-- `OnGaugeRatioChanged(float)` — `BlueprintImplementableEvent`; fires on all clients via `OnRep_GaugeRatio`
-- Drives shader parameter `"GlowGauge"` on slot-0 dynamic material instance (`CharacterMaterialInstance`)
-- The MID is discarded whenever a raw material is set on slot 0 — every slot-0 material change must go through `APlayableCharacter::SetBodyMaterial`, which re-calls `InitializeMaterialInstances()` (death/revive/class swap, any replication order)
-- `Charge()` — plays charge animation when gauge reaches 100%
-- `ChargeTime` and `DischargeTime = 0.3f` control animation timing
+Dynamically added to Square while `GeoShieldBurstPassiveAbility` is active; removed when it ends.
+- `SetGaugeRatio(float)` — **server-only**; replicates via `OnRep_GaugeRatio` → `OnGaugeRatioChanged` BP event.
+- Drives shader param `"GlowGauge"` on slot-0 dynamic material instance. The MID is discarded on any raw slot-0 material set — must go through `APlayableCharacter::SetBodyMaterial`, which re-calls `InitializeMaterialInstances()`.

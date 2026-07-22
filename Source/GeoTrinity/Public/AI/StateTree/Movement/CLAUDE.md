@@ -9,25 +9,12 @@ Replacement for the built-in `Move To` StateTree task. Replans around dynamic na
 - **Always use this task instead of the built-in `Move To` in `ST_EnemyBehaviour`**
 
 ### `GeoAITask_MoveTo`
-Helper AI task spawned by `STTask_MoveTo`. Overrides `PerformMove()` to call `Path->EnableRecalculationOnInvalidation(true)` after `Super`, enabling the nav system to auto-repath when tiles are rebuilt.
-- Also adds `MoveGameplayCueTag` on the pawn's ASC in `PerformMove` and removes it in `OnDestroy`, so the cue spans the
-  move and ends on arrival *and* on interruption/cancel. `RawMagnitude` carries the path length; the notify owns the
-  sound/VFX and any pitch or duration scaling.
-- **The cue is how AI cosmetics reach clients.** StateTree AI runs on the server only — clients have no move task, so
-  `UGameplayStatics::SpawnSoundAttached`/`PlaySoundAtLocation` here are audible on the listen host and nowhere else.
-  `AddGameplayCue` writes `ActiveGameplayCues`, which replicates unconditionally (`COND_None`) regardless of the ASC's
-  replication mode, so Minimal-mode enemy ASCs are fine. Unlike `ExecuteGameplayCue`'s context-only multicast, the
-  `AddGameplayCue` path sends full `FGameplayCueParameters` — `RawMagnitude` survives to `OnActive` and `WhileActive`
-  (it is only serialized when non-zero).
-- **`AddGameplayCue` never dedups** — `FActiveGameplayCueContainer::AddCue` appends unconditionally, and `PerformMove`
-  re-enters on every replan. Guard every add (`MoveCueASC`), or replans stack a second looping cue.
-- **`Super::PerformMove()` can destroy the task before it returns.** `UAITask_MoveTo::PerformMove` calls
-  `AAIController::MoveTo`, and on `Failed` (goal won't project to the navmesh — e.g. a pillar carved it out) or
-  `AlreadyAtGoal` (`PathFollowingComponent::HasReached`) it runs `FinishMoveTask` → `EndTask` → `OnDestroy`
-  *synchronously, inside the `Super` call*. `OnDestroy` then nulls `Path`, so any `if (Path.IsValid())` block after
-  `Super::PerformMove()` is silently skipped. Anything paired with such a block (adding a cue vs. removing it) must
-  be gated on the same condition, or the end half fires for moves that never happened.
-- **Never drive anything from a world timer in a `UAITask_MoveTo` subclass.** `UAITask_MoveTo::ResetTimers()` calls `ClearAllTimersForObject(this)`, which kills *every* timer bound to the task — including ones a subclass registered. It runs at the top of every `PerformMove()` (so on each replan), plus `Pause()` and `OnDestroy()`. It also does not invalidate your `FTimerHandle`, so the handle keeps reading as valid while the timer is already gone. Use `TickTask` instead (the base class neither ticks nor sets `bTickingTask` — a subclass must opt in).
+Helper AI task spawned by `STTask_MoveTo`. Overrides `PerformMove()` to call `Path->EnableRecalculationOnInvalidation(true)`, letting the nav system auto-repath when tiles are rebuilt.
+- Adds `MoveGameplayCueTag` on the pawn's ASC in `PerformMove`, removes it in `OnDestroy`, so the cue spans the move and ends on arrival or cancel. `RawMagnitude` carries path length for pitch/duration scaling.
+- **The cue is how AI cosmetics reach clients** — StateTree AI is server-only, so direct sound calls here are host-only. `AddGameplayCue` replicates unconditionally (`COND_None`) even on Minimal-mode ASCs, and (unlike `ExecuteGameplayCue`) carries full `FGameplayCueParameters` including `RawMagnitude`.
+- **`AddGameplayCue` never dedups** — guard every add (`MoveCueASC`), or a replan mid-move stacks a second looping cue.
+- **`Super::PerformMove()` can destroy the task synchronously** (on `Failed`/`AlreadyAtGoal`, via `FinishMoveTask`→`OnDestroy`, which nulls `Path`). Any `if (Path.IsValid())` block after `Super::PerformMove()` silently no-ops — gate the paired add/remove logic on the same condition or the cue leaks.
+- **Never drive logic off a world timer here** — `UAITask_MoveTo::ResetTimers()` calls `ClearAllTimersForObject(this)` on every replan/Pause/OnDestroy, killing subclass timers too (without invalidating the handle). Use `TickTask` instead (opt in; base class doesn't tick).
 
 ### `STTask_ChaseTarget`
 Straight-line chase for bosses that ignore navmesh and terrain holes (hex arena boss). Ticks every frame:

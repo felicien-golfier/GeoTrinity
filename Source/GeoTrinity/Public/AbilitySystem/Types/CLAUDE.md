@@ -1,26 +1,25 @@
 # AbilitySystem/Types
 
 ## `GeoAscTypes.h` — `FGeoGameplayEffectContext`
-
-Extends `FGameplayEffectContext` with GeoTrinity-specific data.
+Extends `FGameplayEffectContext` with GeoTrinity data.
 
 ### Replicated hit info
-- `StatusTag` — gameplay tag of applied status. Replicated + exposed via `GeoASLib::GetStatusTag` / `SetStatusTag`; no C++ call site sets it today
-- `Icon` — replicated texture shown in the HUD status bar while the applied effect is active; set per-spec by `FGameplayEffectData::ApplyEffect` (via a duplicated context) and by `ApplyStatusToTarget` (from `FRpgStatusInfo.Icon`); read client-side by `AGeoHUD::GetActiveEffectIcons`
+- `StatusTag` — applied status tag, replicated via `GeoASLib::GetStatusTag`/`SetStatusTag`
+- `Icon` — replicated texture shown in HUD status bar while effect active; set by `FGameplayEffectData::ApplyEffect` and `ApplyStatusToTarget`; read by `AGeoHUD::GetActiveEffectIcons`
 
 ### Call-site scoped fields
-These are **not replicated** and **not included in `NetSerialize`**. They are embedded into the spec via `Duplicate()` so they survive `MakeOutgoingSpec` and reach `ExecCalc`. They auto-reset per `ApplyEffectFromEffectData` call (fresh context each call).
+Not replicated, not in `NetSerialize`. Embedded via `Duplicate()` so they survive `MakeOutgoingSpec` and reach ExecCalc. Auto-reset each `ApplyEffectFromEffectData` call.
 
 | Field | Set by | Read by |
 |---|---|---|
-| `SingleUseDamageMultiplier` | `FSingleUseDamageMultiplierEffectData::UpdateContextHandle` | `ExecCalc_Damage` |
-| `bSuppressHealProvided` | `FHealEffectData::UpdateContextHandle` | `ExecCalc_Heal` |
-| `bSuppressGameplayCue` | `FDamageEffectData` / `FHealEffectData` | `ExecCalc_*` (unconditional suppress) |
-| `bLimitGameplayCue` | `FDamageEffectData` / `FHealEffectData` | `ExecCalc_*` (rate-limits via target's `UGeoGameFeelComponent`) |
-| `bSuppressCombatStats` | `FDamageEffectData` / `FHealEffectData` | `UGeoAttributeSetBase::PostGameplayEffectExecute` |
-| `bIsFromBasicAbility` | `FDamageEffectData::UpdateContextHandle` (when ability's owned tags include `Ability.Basic`) | `ExecCalc_Damage` → records hit target on source ASC via `SetLastBasicAbilityTarget`; used by `AGeoTurret::FindBestTarget` |
-| `bDoNotRedirectSacrifice` | `FDamageEffectData` (redirect shares from `UGeoSacrificeBeamAbility`, deployable life drain, any damage that must not be captured) | `UGeoSacrificeBeamAbility::TryRedirectIncomingDamage` (called from `PostGameplayEffectExecute`) — skips sacrifice capture |
+| `SingleUseDamageMultiplier` | `FSingleUseDamageMultiplierEffectData` | `ExecCalc_Damage` |
+| `bSuppressHealProvided` | `FHealEffectData` | `ExecCalc_Heal` |
+| `bSuppressGameplayCue` | `FDamageEffectData`/`FHealEffectData` | `ExecCalc_*` (unconditional suppress) |
+| `bLimitGameplayCue` | `FDamageEffectData`/`FHealEffectData` | `ExecCalc_*` (rate-limit via `UGeoGameFeelComponent`) |
+| `bSuppressCombatStats` | `FDamageEffectData`/`FHealEffectData` | `UGeoAttributeSetBase::PostGameplayEffectExecute` |
+| `bIsFromBasicAbility` | `FDamageEffectData` (ability owns `Ability.Basic`) | `ExecCalc_Damage` → `SetLastBasicAbilityTarget`, used by `AGeoTurret::FindBestTarget` |
+| `bDoNotRedirectSacrifice` | `FDamageEffectData` (redirect shares, deployable life drain) | `UGeoSacrificeBeamAbility::TryRedirectIncomingDamage` — skips sacrifice capture |
 
 ### `GeoAbilitySystemGlobals` (`Globals/GeoAbilitySystemGlobals.h`)
-- `AllocGameplayEffectContext()` — allocates `FGeoGameplayEffectContext` instead of the default engine context. This is what makes all GEs use the custom context automatically.
-- `InitGameplayCueParameters()` — populates GC params with Instigator, EffectCauser, hit location/normal.
+- `AllocGameplayEffectContext()` — allocates `FGeoGameplayEffectContext` (makes all GEs use it automatically)
+- `InitGameplayCueParameters()` — populates GC params with Instigator, EffectCauser, hit location/normal

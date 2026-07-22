@@ -13,7 +13,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 - ALWAYS read AI/CodingStyle.md before coding. If planing or just answering, don't, but if you write any line of code, read it.
 - When opening a cpp file, read it entirely.
 - ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
-- Instead of creating a memory, place it in the relevant subfolder's CLAUDE.md.
+- Instead of creating a memory, place it in the relevant subfolder's CLAUDE.md. Keep each CLAUDE.md an architectural map, not documentation: one line of folder purpose, a list of key classes with a one-line purpose each, and only non-trivial points code/comments don't already say (ordering constraints, replication gotchas, pooling, invariants, cross-class relationships). No restating obvious getters/setters, no prose for a new class — just add it to the list.
 - Don't spawn Explore agents to discover files before reading CLAUDE.md files — they already map every subsystem to its paths. Read the relevant CLAUDE.md (root + subfolder), then Read/Grep/Glob those files directly. Only spawn Explore for genuinely undocumented or ambiguous areas.
 - ALWAYS read `AI/MCP/CLAUDE.md` before any MCP / Python editor automation task — it maps every topic to the right file.
 

@@ -8,9 +8,7 @@ Circle's area-heal deployable.
 | `GeoHealingZone.h/.cpp` | Static HoT zone — heals allies in range; drains on a fixed timer AND extra per healed target |
 
 ## Key Points
-- `bUseRegularDrain = true` (base default) — base class's fixed-timer drain always applies, regardless of occupancy
-- `AGeoHealingZone::Tick()` adds extra drain of `DrainMagnitudePerSecond * DeltaSeconds * HealedNum` on top, scaling with players healed
-- `ActorsInZone` (TSet) tracks overlapping actors via `OnBeginOverlap` / `OnEndOverlap`
-- `Tick()` — server-only; skips hostiles and full-health targets; applies `FHealEffectData` per target, then drains zone by `DrainMagnitudePerSecond * DeltaSeconds * HealedNum`
-- `GetDurationPercent()` override — returns health ratio (no duration fallback)
-- `OnRep_Data()` — updates capsule size on clients when initial data replicates
+- `bUseRegularDrain = true` — fixed-timer drain always applies regardless of occupancy; `Tick()` (server-only) adds extra drain of `DrainMagnitudePerSecond * DeltaSeconds * HealedNum` on top, scaling with players healed.
+- `ActorsInZone` (TSet) tracks overlaps; `Tick()` skips hostiles/full-health targets and applies `FHealEffectData` per healed target.
+- `GetDurationPercent()` returns health ratio (no duration fallback).
+- `OnRep_Data()` syncs capsule size on clients.

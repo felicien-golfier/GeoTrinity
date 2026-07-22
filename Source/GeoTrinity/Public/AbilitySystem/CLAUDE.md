@@ -1,12 +1,12 @@
 # AbilitySystem
 
-All GAS infrastructure: abilities, attributes, execution calculations, effect data, library, tags, and custom context.
+All GAS infrastructure: abilities, attributes, execution calculations, effect data, library, tags, custom context.
 
 ## Subfolders
 | Folder | What's inside |
 |---|---|
 | `Abilities/` | All gameplay ability classes — see `Abilities/CLAUDE.md` |
-| `AttributeSet/` | Attribute definitions: `GeoAttributeSetBase` (all chars), `CharacterAttributeSet` (players) |
+| `AttributeSet/` | `GeoAttributeSetBase` (all chars), `CharacterAttributeSet` (players) |
 | `Components/` | `UGeoAbilitySystemComponent` — custom ASC |
 | `Data/` | `AbilityInfo` catalog, `EffectData` polymorphic effects, `GeoAbilityTargetTypes`, `StatusInfo` |
 | `ExecCalc/` | Damage and heal execution calculations |
@@ -15,7 +15,5 @@ All GAS infrastructure: abilities, attributes, execution calculations, effect da
 | `Types/` | `GeoAscTypes` — `FGeoGameplayEffectContext` |
 
 ## Key Rules
-**Always use `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()`** to apply effects — never apply GEs directly.
-Two-pass loop: all `UpdateContextHandle()` first, then all `ApplyEffect()`. Order in the array doesn't matter for context setup.
-
-**Never use `SphereOverlapActors` or `OverlapMultiByChannel` to find game agents** — use `GeoASLib::GetInteractableActors(...)` instead. It iterates only the ~20 relevant actors and skips the physics scene entirely.
+- Always apply effects via `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()` — never apply GEs directly. Two-pass: all `UpdateContextHandle()` first, then all `ApplyEffect()`.
+- Never use `SphereOverlapActors`/`OverlapMultiByChannel` to find game agents — use `GeoASLib::GetInteractableActors(...)` (iterates ~20 relevant actors, skips the physics scene).
