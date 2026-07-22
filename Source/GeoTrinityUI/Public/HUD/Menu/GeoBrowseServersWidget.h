@@ -44,13 +44,16 @@ public:
 	TArray<FString> LanguageOptions;
 
 protected:
+	/** Populates the language combo box, wires button and text-change delegates, and triggers an initial session search. */
 	virtual void NativeConstruct() override;
+	/** Removes the find-sessions delegate handle to avoid stale callbacks after the widget is destroyed. */
 	virtual void NativeDestruct() override;
 	/** Returns RefreshButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
 	/** Fires OnClosed and consumes the back input. */
 	virtual bool HandleBackAction() override;
 
+	/** Implemented in Blueprint to trigger the async session search. C++ calls this on widget construct and on refresh. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Server")
 	void BP_FindSessions();
 

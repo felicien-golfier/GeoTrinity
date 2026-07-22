@@ -46,6 +46,7 @@ public:
 	FString DefaultServerName = TEXT("My Server");
 
 protected:
+	/** Populates the combo boxes from the data arrays, resets the server name to DefaultServerName, and wires button delegates. */
 	virtual void NativeConstruct() override;
 	/** Returns CreateButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
