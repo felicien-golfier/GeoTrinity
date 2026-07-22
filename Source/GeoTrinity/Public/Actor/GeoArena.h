@@ -29,6 +29,7 @@ class GEOTRINITY_API AGeoArena : public AActor
 	GENERATED_BODY()
 
 public:
+	/** Enables actor replication. */
 	AGeoArena();
 
 	/** Registers Boss (clients bind the health bar) and bFighting (clients show/hide it). */

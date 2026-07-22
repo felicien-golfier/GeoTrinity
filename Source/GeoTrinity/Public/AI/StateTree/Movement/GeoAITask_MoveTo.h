@@ -30,7 +30,9 @@ public:
 	FGameplayTag MoveGameplayCueTag;
 
 protected:
+	/** Enables path recalculation on nav mesh invalidation (disabled in the base class) and starts the move gameplay cue on the pawn's ASC. */
 	virtual void PerformMove() override;
+	/** Removes the active move gameplay cue from the pawn's ASC on task completion or cancellation. */
 	virtual void OnDestroy(bool bInOwnerFinished) override;
 
 private:

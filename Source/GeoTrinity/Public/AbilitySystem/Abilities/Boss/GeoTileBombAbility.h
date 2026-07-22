@@ -18,5 +18,6 @@ class GEOTRINITY_API UGeoTileBombAbility : public UPatternAbility
 	GENERATED_BODY()
 
 protected:
+	/** Draws the bomb carrier from live players using the payload seed so every machine attaches the countdown to the same player. */
 	virtual TInstancedStruct<FPatternData> CreatePatternData() const override;
 };

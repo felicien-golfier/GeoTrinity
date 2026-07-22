@@ -36,6 +36,7 @@ public:
 	TSoftObjectPtr<UWorld> HostMap;
 
 protected:
+	/** Populates LocalIPText with this machine's IPv4 address and wires button delegates. */
 	virtual void NativeConstruct() override;
 	/** Returns HostButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;

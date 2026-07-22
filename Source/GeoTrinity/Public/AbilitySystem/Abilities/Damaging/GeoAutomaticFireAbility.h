@@ -24,10 +24,12 @@ public:
 	UGeoAutomaticFireAbility();
 
 protected:
+	/** Starts the repeating shot timer that drives the auto-fire cycle for the duration of the input hold. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
+	/** Clears the repeating shot timer before delegating to the base end-ability logic. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
@@ -40,9 +42,11 @@ protected:
 													 FGameplayAbilityActorInfo const* ActorInfo, float& TimeRemaining,
 													 float& CooldownDuration) const override;
 
+	/** Ends the ability when the player releases input, stopping the auto-fire loop. */
 	virtual void InputReleased(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo const ActivationInfo) override;
 
+	/** Commits cost for this shot, calls ExecuteShot, and sends the shot data to the server. Runs on the client once per fire timer tick. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	/**
@@ -53,6 +57,7 @@ protected:
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Ability|AutoFire")
 	bool ExecuteShot();
+	/** Returns false by default; override in a concrete C++ subclass to define the per-shot behavior. */
 	virtual bool ExecuteShot_Implementation();
 
 	/** Advances to the next fire section when the montage has Fire sections; resets to 0 when it does not. */
