@@ -40,12 +40,6 @@ Ticking projectile pattern. Sprays `ProjectileCount` at random angles inside `Co
 - Each projectile stamped with its own `ServerSpawnTime` so a late spawn fast-forwards correctly
 - `SpawnedCount` reset in `InitPattern`; `OnCreate` pre-warms the pool
 
-## `TileBombPattern.h` — bomb riding a player (hex boss)
-Non-ticking. Sticks to one player through wind-up, detonates wherever they're standing: effect data within `BlastRadius`, then `DestroyTilesInRadius` at the same spot. Carrier chooses where the hole lands.
-- `FTileBombPatternData::BombCarrier` — drawn once server-side by `UGeoTileBombAbility`, shipped via multicast
-- Carrier dying/leaving during wind-up fizzles the bomb (no blast)
-- Damage applied before tiles are carved (catches whoever's on ground about to disappear)
-
 ## `DevastatingWavePattern.h` — expanding radial wave
 Non-projectile ticking. `InitPattern` teleports instigator to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; hostiles within `CurrentRadius` hit once (pillars recalled, others get the ability's effect data). Ends at `CurrentRadius >= MaxRadius`.
 - `ClearData()` — resets `HitActors`/`PillarsWaveData`/8 MPC pillar slots to sentinel; called at start of `InitPattern`/`StartPattern` and end of `EndPattern`, so stale data never bleeds in

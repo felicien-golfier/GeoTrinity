@@ -14,8 +14,8 @@ bool ADeployableSpawnerProjectile::IsValidOverlap(AActor* OtherActor)
 // ---------------------------------------------------------------------------------------------------------------------
 void ADeployableSpawnerProjectile::EndProjectileLife()
 {
-	Super::EndProjectileLife();
 	SpawnDeployableActor();
+	Super::EndProjectileLife();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

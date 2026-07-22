@@ -99,30 +99,6 @@ void AGeoInteractableActor::OnMaxHealthChanged_Implementation(float NewValue)
 {
 }
 
-void AGeoInteractableActor::ApplyEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> gameplayEffectClass,
-															 float level)
-{
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!IsValid(ASC))
-	{
-		return;
-	}
-
-	// TODO : Not sure about setting correctly Instigator as SourceObject
-	FGameplayEffectContextHandle EffectContextHandle = ASC->MakeEffectContext();
-	EffectContextHandle.AddSourceObject(GetData()->Instigator);
-	// We use Owner here, because the effect instigator is the one that Owns the ASC...
-	EffectContextHandle.AddInstigator(GetData()->Owner, this);
-
-	FGameplayEffectSpecHandle const SpecHandle = ASC->MakeOutgoingSpec(gameplayEffectClass, level, EffectContextHandle);
-
-	if (SpecHandle.IsValid())
-	{
-		FPredictionKey PredictionKey;
-		ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), ASC, PredictionKey);
-	}
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoInteractableActor::InitGas(AActor* OwnerActor)
 {

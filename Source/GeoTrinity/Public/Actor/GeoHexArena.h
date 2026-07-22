@@ -11,6 +11,22 @@
 class APlayableCharacter;
 class UInstancedStaticMeshComponent;
 
+/** Replicated per-tile state: whether the tile is standing, and whether a telegraph currently tints it. */
+USTRUCT()
+struct FHexTileState
+{
+	GENERATED_BODY()
+
+	/** 1 = alive, 0 = destroyed. */
+	UPROPERTY()
+	uint8 bAlive = 1;
+
+	/** 1 = tinted by at least one telegraph. Union computed server-side (which requester owns which tiles never
+	 *  replicates — only this bool does), so overlapping requesters coexist. */
+	UPROPERTY()
+	uint8 bHighlighted = 0;
+};
+
 /**
  * Destructible hexagonal boss platform. Owns a single ISM holding one instance per tile; tiles are pure visuals
  * (no collision) laid over a flat invisible floor — "falling" is game logic, not physics. The replicated TileStates
@@ -41,6 +57,7 @@ public:
 
 	/** Server. Destroys the given tiles; holes appear on every machine via replication. Unknown coords are ignored. */
 	void DestroyTiles(TConstArrayView<FIntPoint> Tiles);
+	TArray<int> GetTilesIndexInRadius(FVector2D Center, float Radius);
 	/** Server. Destroys every tile whose center lies within Radius world units of Center. */
 	void DestroyTilesInRadius(FVector2D Center, float Radius);
 	/** Server. Restores every tile. Called when the boss is defeated or the group wipes. */
@@ -71,6 +88,12 @@ public:
 	/** Returns the furthest still-standing tile the ray crosses within MaxRange. False when it crosses none. */
 	bool GetLastAliveTileAlongRay(FVector2D Origin, FVector2D Direction, float MaxRange, FIntPoint& OutTile) const;
 
+	/** Server. Highlights the tiles within Radius of Location for Requester, or the single tile under Location when
+	 * Radius is 0. */
+	void HighlightTiles(AActor* Requester, FVector2D Location, float Radius = 0.f);
+	/** Server. Drops Requester's highlight. */
+	void ClearHighlight(AActor* Requester);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -95,8 +118,15 @@ private:
 	void KillFallenPlayer(APlayableCharacter& Player) const;
 	/** Deterministically fills TileCoords / CoordToIndex for the configured GridRadius. Idempotent. */
 	void BuildGrid();
-	/** Applies TileStates to the ISM instances, diffing against AppliedTileStates. Runs on every machine. */
+	/** Applies TileStates (alive scale + highlight custom data) to the ISM instances, diffing against
+	 * AppliedTileStates. */
 	void ApplyTileVisuals();
+	/** Records Requester's highlighted tile indices (empty = drop it), then refreshes. Server-only core of the
+	 * highlight API. */
+	void SetHighlightedTiles(AActor* Requester, TConstArrayView<int32> Indices);
+	/** Recomputes every tile's bHighlighted from the union of live HighlightRequests, drops stale ones, then applies.
+	 */
+	void RefreshHighlightStates();
 	/** Returns the actor-space center of Tile (pointy-top axial layout). */
 	FVector TileToLocal(FIntPoint Tile) const;
 	FTransform GetTileTransform(FVector const& TileLocation) const;
@@ -104,12 +134,15 @@ private:
 	UFUNCTION()
 	void OnRep_TileStates();
 
-	/** 1 = alive, 0 = destroyed; indexed like TileCoords. */
+	/** Alive + highlight state per tile; indexed like TileCoords. Single source of truth, replicated. */
 	UPROPERTY(ReplicatedUsing = OnRep_TileStates)
-	TArray<uint8> TileStates;
+	TArray<FHexTileState> TileStates;
 
 	/** Last states applied to the ISM on this machine; lets ApplyTileVisuals touch only changed instances. */
-	TArray<uint8> AppliedTileStates;
+	TArray<FHexTileState> AppliedTileStates;
 	TArray<FIntPoint> TileCoords;
 	TMap<FIntPoint, int32> CoordToIndex;
+
+	/** Server-only: each requester's highlighted tile indices. Their union drives the replicated bHighlighted bit. */
+	TMap<TWeakObjectPtr<AActor>, TArray<int32>> HighlightRequests;
 };

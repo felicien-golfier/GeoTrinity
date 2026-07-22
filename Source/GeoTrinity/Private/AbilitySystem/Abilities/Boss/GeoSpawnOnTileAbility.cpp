@@ -38,9 +38,16 @@ void UGeoSpawnOnTileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData
 void UGeoSpawnOnTileAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
 {
 	Super::OnGiveAbility(ActorInfo, Spec);
+	AActor* Avatar = GetAvatarActorFromActorInfo();
 	// The boss's own deployable limit is meant for player deployables; the arena's tiles bound these instead.
-	if (UGeoDeployableManagerComponent* const DeployableManager =
-			StoredPayload.Instigator->GetComponentByClass<UGeoDeployableManagerComponent>())
+	if (!ensureMsgf(Avatar, TEXT("Avatar of the ability not set")))
+	{
+		return;
+	}
+
+	UGeoDeployableManagerComponent* const DeployableManager =
+		Avatar->GetComponentByClass<UGeoDeployableManagerComponent>();
+	if (ensureMsgf(DeployableManager, TEXT("Avatar of the ability has no UGeoDeployableManagerComponent")))
 	{
 		DeployableManager->SetDeployableInfinitCount(DeployableClass);
 	}

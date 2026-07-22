@@ -172,7 +172,10 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 		return;
 	}
 
-	Projectile->OverrideDistanceSpan(StoredPayload.Seed);
+	UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
+	int32 const ClampedDeployDistance = FMath::Clamp(StoredPayload.Seed, FMath::RoundToInt(GameDataSettings->MinDeployDistance),
+													   FMath::RoundToInt(GameDataSettings->MaxDeployDistance));
+	Projectile->OverrideDistanceSpan(ClampedDeployDistance);
 	ADeployableSpawnerProjectile* DeployableSpawnerProjectile = Cast<ADeployableSpawnerProjectile>(Projectile);
 	checkf(DeployableSpawnerProjectile, TEXT("SpawnerProjectile  must be a ADeployableSpawnerProjectile"));
 	DeployableSpawnerProjectile->Params = Params;

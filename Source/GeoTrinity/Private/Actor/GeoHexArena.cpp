@@ -12,8 +12,6 @@
 
 namespace
 {
-	constexpr float Sqrt3 = 1.7320508f;
-
 	FIntPoint RoundToNearestTile(float const Q, float const R)
 	{
 		int32 RoundedQ = FMath::RoundToInt32(Q);
@@ -42,6 +40,7 @@ AGeoHexArena::AGeoHexArena()
 	TileMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("TileMeshComponent"));
 	TileMeshComponent->SetupAttachment(RootComponent);
 	TileMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TileMeshComponent->NumCustomDataFloats = 1;
 }
 
 void AGeoHexArena::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -67,7 +66,7 @@ void AGeoHexArena::BeginPlay()
 	BuildGrid();
 	if (GeoLib::IsServer(this))
 	{
-		TileStates.Init(1, TileCoords.Num());
+		TileStates.Init(FHexTileState(), TileCoords.Num());
 		AppliedTileStates = TileStates;
 	}
 	else
@@ -129,7 +128,7 @@ bool AGeoHexArena::GetTileUnderLocation(FVector2D const WorldLocation, FIntPoint
 bool AGeoHexArena::IsTileAlive(FIntPoint const Tile) const
 {
 	int32 const* Index = CoordToIndex.Find(Tile);
-	return Index && TileStates.IsValidIndex(*Index) && TileStates[*Index] != 0;
+	return Index && TileStates.IsValidIndex(*Index) && TileStates[*Index].bAlive != 0;
 }
 
 bool AGeoHexArena::IsOverAliveTile(FVector2D const WorldLocation) const
@@ -206,10 +205,23 @@ void AGeoHexArena::DestroyTiles(TConstArrayView<FIntPoint> const Tiles)
 	{
 		if (int32 const* Index = CoordToIndex.Find(Tile))
 		{
-			TileStates[*Index] = 0;
+			TileStates[*Index].bAlive = 0;
 		}
 	}
 	ApplyTileVisuals();
+}
+
+TArray<int> AGeoHexArena::GetTilesIndexInRadius(FVector2D const Center, float const Radius)
+{
+	TArray<int> Tiles;
+	for (int32 Index = 0; Index < TileCoords.Num(); ++Index)
+	{
+		if (FVector2D::DistSquared(TileToWorld(TileCoords[Index]), Center) <= FMath::Square(Radius))
+		{
+			Tiles.Add(Index);
+		}
+	}
+	return Tiles;
 }
 
 void AGeoHexArena::DestroyTilesInRadius(FVector2D const Center, float const Radius)
@@ -218,13 +230,11 @@ void AGeoHexArena::DestroyTilesInRadius(FVector2D const Center, float const Radi
 	{
 		return;
 	}
-	for (int32 Index = 0; Index < TileCoords.Num(); ++Index)
+	for (int const Index : GetTilesIndexInRadius(Center, Radius))
 	{
-		if (FVector2D::DistSquared(TileToWorld(TileCoords[Index]), Center) <= FMath::Square(Radius))
-		{
-			TileStates[Index] = 0;
-		}
+		TileStates[Index].bAlive = 0;
 	}
+
 	ApplyTileVisuals();
 }
 
@@ -234,7 +244,74 @@ void AGeoHexArena::ResetAllTiles()
 	{
 		return;
 	}
-	TileStates.Init(1, TileCoords.Num());
+	HighlightRequests.Reset();
+	TileStates.Init(FHexTileState(), TileCoords.Num());
+	ApplyTileVisuals();
+}
+
+void AGeoHexArena::HighlightTiles(AActor* Requester, FVector2D const Location, float const Radius)
+{
+	if (Radius <= 0.f)
+	{
+		TArray<int32> Indices;
+		FIntPoint Tile;
+		if (GetTileUnderLocation(Location, Tile))
+		{
+			SetHighlightedTiles(Requester, {CoordToIndex[Tile]});
+		}
+	}
+	else
+	{
+		SetHighlightedTiles(Requester, GetTilesIndexInRadius(Location, Radius));
+	}
+}
+
+void AGeoHexArena::ClearHighlight(AActor* Requester)
+{
+	SetHighlightedTiles(Requester, {});
+}
+
+void AGeoHexArena::SetHighlightedTiles(AActor* Requester, TConstArrayView<int32> const Indices)
+{
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("Highlighting tiles is server-only"))
+		|| !ensureMsgf(Requester, TEXT("SetHighlightedTiles needs a requester to key the highlight on")))
+	{
+		return;
+	}
+	if (Indices.IsEmpty())
+	{
+		HighlightRequests.Remove(Requester);
+	}
+	else
+	{
+		HighlightRequests.FindOrAdd(Requester) = Indices;
+	}
+	RefreshHighlightStates();
+}
+
+void AGeoHexArena::RefreshHighlightStates()
+{
+	for (FHexTileState& State : TileStates)
+	{
+		State.bHighlighted = 0;
+	}
+
+	for (auto It = HighlightRequests.CreateIterator(); It; ++It)
+	{
+		if (!It->Key.IsValid())
+		{
+			It.RemoveCurrent();
+			continue;
+		}
+		for (int32 const Index : It->Value)
+		{
+			if (TileStates.IsValidIndex(Index))
+			{
+				TileStates[Index].bHighlighted = 1;
+			}
+		}
+	}
+
 	ApplyTileVisuals();
 }
 
@@ -251,26 +328,30 @@ void AGeoHexArena::ApplyTileVisuals()
 	}
 	if (AppliedTileStates.Num() != TileStates.Num())
 	{
-		AppliedTileStates.Init(1, TileStates.Num());
+		AppliedTileStates.Init(FHexTileState(), TileStates.Num());
 	}
 
 	bool bAnyChange = false;
 	for (int32 Index = 0; Index < TileStates.Num(); ++Index)
 	{
-		if (TileStates[Index] == AppliedTileStates[Index])
+		FHexTileState const& State = TileStates[Index];
+		FHexTileState const& Applied = AppliedTileStates[Index];
+		if (State.bAlive == Applied.bAlive && State.bHighlighted == Applied.bHighlighted)
 		{
 			continue;
 		}
 		FTransform TileTransform(GetTileTransform(TileToLocal(TileCoords[Index])));
-		if (TileStates[Index] == 0)
+		if (State.bAlive == 0)
 		{
 			TileTransform.SetScale3D(FVector::ZeroVector);
 		}
 		TileMeshComponent->UpdateInstanceTransform(Index, TileTransform, /*bWorldSpace*/ false,
 												   /*bMarkRenderStateDirty*/ false, /*bTeleport*/ true);
-		AppliedTileStates[Index] = TileStates[Index];
+		TileMeshComponent->SetCustomDataValue(Index, 0, State.bHighlighted, /*bMarkRenderStateDirty*/ false);
+		AppliedTileStates[Index] = State;
 		bAnyChange = true;
 	}
+
 	if (bAnyChange)
 	{
 		TileMeshComponent->MarkRenderStateDirty();
@@ -298,7 +379,10 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 		}
 		else if (AGeoDeployableBase* Deployable = Cast<AGeoDeployableBase>(Actor))
 		{
-			Deployable->Recall();
+			if (!Deployable->SurviveOverTheVoid())
+			{
+				Deployable->Expire();
+			}
 		}
 	}
 }

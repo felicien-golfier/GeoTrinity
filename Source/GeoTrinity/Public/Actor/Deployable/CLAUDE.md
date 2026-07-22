@@ -33,5 +33,6 @@ Drain GE, blink-before-expiry, recall, explode, Blueprint hooks.
 - `Turret/` — auto-targets and fires on a timer.
 - `Pillar/` — blocks the boss's devastating wave; explodes via `Recall()` at zero health.
 - `Mine/` — hex-boss mine: drain-driven fuse, radial burst, defused if its tile dies.
+- `BombZone/` — hex-boss tile bomb: rides its carrier through the drain, plants + carves tiles at the blink.
 
 **On the hex arena, every deployable falls with its tile** — `AGeoHexArena`'s fall-check tick `Recall()`s anything over a destroyed tile, player-placed included. Subclasses with recall side effects (e.g. `AGeoMine`) must account for this path.

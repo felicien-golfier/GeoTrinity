@@ -48,6 +48,25 @@ Emissive    = RingColor * Ring  +  FillColor * Fill
 
 **Material settings:** Unlit, Masked, Two-Sided.
 
+**Actual `M_ZoneIndicator`** on disk is Unlit, **Additive**, Two-Sided with a single `FillOpacity` scalar (colors baked in-graph) — the table above is the idealized pattern, not the shipped node set.
+
+---
+
+## Ray (bar) zone indicator — `M_ZoneIndicatorRay`
+
+Horizontal variant: fill grows from the center to **both** side edges; thin lines mark the two outer edges (always visible extent). Built by `AI/Python/make_zone_indicator_ray.py` (idempotent — deletes + recreates).
+
+```
+u   = TexCoord.x
+dX  = abs((u - 0.5) * 2)              → 0 at center, 1 at both edges
+Fill = Step(dX, FillOpacity)          → 1 where dX <= FillOpacity
+Edge = Step(1 - LineThickness, dX)    → 1 near the two outer edges
+Emissive = FillColor*Fill + LineColor*Edge
+Opacity  = max(Fill, Edge)
+```
+
+Params: `FillOpacity` (drive 0→1 to telegraph), `LineThickness`, `FillColor`, `LineColor`. Settings mirror the circle: Unlit, Additive, Two-Sided.
+
 Reference: `M_HealingZone` (`/Game/AbilitySystem/Abilities/Circle/HealingZone/VFX/M_HealingZone`) uses the same Masked + Unlit pattern with a `DurationPercent` scalar.
 
 ---

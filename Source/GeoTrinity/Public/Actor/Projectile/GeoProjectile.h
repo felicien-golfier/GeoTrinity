@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/Pattern/Pattern.h"
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Data/GeoSoundRow.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -173,7 +173,8 @@ protected:
 	 * Virtual so subclasses can layer additional pitch factors (e.g. size). */
 	virtual float GetPitch(FGeoSoundEntry const& Entry) const;
 
-	/** Plays the mapped sound once at the actor's location with its audience-gated volume and attribute-driven pitch. */
+	/** Plays the mapped sound once at the actor's location with its audience-gated volume and attribute-driven pitch.
+	 */
 	void PlaySoundOneShot(EProjectileSoundType SoundType) const;
 
 	/** Plays Entry once at the actor's location with its audience-gated volume and attribute-driven pitch. */
@@ -191,7 +192,8 @@ protected:
 	 * replicated destruction, so a local Destroy() can never race a later replication bunch into a ghost re-spawn. */
 	virtual void EndProjectileLife();
 	/** Removes the OnRevived binding made in InitProjectileLife. Called from EndProjectileLife (non-pooled) and
-	 * AGeoPooledProjectile::End (pool release) so a reused projectile never keeps a binding to a previous instigator. */
+	 * AGeoPooledProjectile::End (pool release) so a reused projectile never keeps a binding to a previous instigator.
+	 */
 	void UnbindFromInstigatorRevive();
 	/** Configures the UProjectileMovementComponent from the projectile's UPROPERTY settings. */
 	void InitProjectileMovementComponent();

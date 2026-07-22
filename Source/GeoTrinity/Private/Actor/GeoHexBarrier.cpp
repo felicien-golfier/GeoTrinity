@@ -3,11 +3,7 @@
 #include "Actor/GeoHexBarrier.h"
 
 #include "Components/InstancedStaticMeshComponent.h"
-
-namespace
-{
-	constexpr float Sqrt3 = 1.7320508f;
-} // namespace
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoHexBarrier::AGeoHexBarrier()
 {

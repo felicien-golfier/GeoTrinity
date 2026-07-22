@@ -82,9 +82,6 @@ protected:
 	virtual void OnMaxHealthChanged_Implementation(float NewValue);
 
 private:
-	UFUNCTION(Server, Reliable)
-	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> gameplayEffectClass, float level);
-
 	UPROPERTY(Category = "GAS", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UGeoAbilitySystemComponent> AbilitySystemComponent;
 	UPROPERTY(Category = "GAS", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

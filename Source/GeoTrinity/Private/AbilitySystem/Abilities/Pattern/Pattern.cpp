@@ -54,7 +54,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 
 	ExecuteGameplayCue(InitGameplayCueTag);
 
-	if (TravelTime > StartDelay)
+	if (TravelTime >= StartDelay)
 	{
 		UE_LOG(LogPattern, Warning, TEXT("We start the montage too late, starting from loop directly"));
 		StartPattern();

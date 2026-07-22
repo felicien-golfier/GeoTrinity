@@ -1,16 +1,22 @@
-﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Boss/GeoTileBombAbility.h"
 
-#include "AbilitySystem/Abilities/Pattern/TileBombPattern.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/PlayableCharacter.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/Team.h"
 
-TInstancedStruct<FPatternData> UGeoTileBombAbility::CreatePatternData() const
+UGeoTileBombAbility::UGeoTileBombAbility()
 {
-	FTileBombPatternData BombData;
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
+	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateNo;
+}
+
+void UGeoTileBombAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
+{
+	Super::Fire(AbilityTargetData);
 
 	TArray<APlayableCharacter*> const Candidates = GeoASLib::GetInteractableActors<APlayableCharacter>(
 		this, GeoASLib::GetTeamId(StoredPayload.Owner), TeamAttitudeMask::HostileOrNeutral,
@@ -19,11 +25,18 @@ TInstancedStruct<FPatternData> UGeoTileBombAbility::CreatePatternData() const
 	if (Candidates.IsEmpty())
 	{
 		UE_LOG(LogGeoASC, Warning, TEXT("UGeoTileBombAbility: no live player to carry the bomb"));
-		return TInstancedStruct<FPatternData>::Make<FTileBombPatternData>(BombData);
+		EndAbility();
+		return;
 	}
 
 	FRandomStream Stream(StoredPayload.Seed);
-	BombData.BombCarrier = Candidates[Stream.RandHelper(Candidates.Num())];
+	APlayableCharacter* const Carrier = Candidates[Stream.RandHelper(Candidates.Num())];
 
-	return TInstancedStruct<FPatternData>::Make<FTileBombPatternData>(BombData);
+	if (AGeoDeployableBase* const Bomb = GeoASLib::FullySpawnDeployable(
+			BombClass, StoredPayload, GetEffectDataArray(), BombParams, Carrier->GetActorTransform()))
+	{
+		Bomb->AttachToActor(Carrier, FAttachmentTransformRules::KeepWorldTransform);
+	}
+
+	EndAbility();
 }

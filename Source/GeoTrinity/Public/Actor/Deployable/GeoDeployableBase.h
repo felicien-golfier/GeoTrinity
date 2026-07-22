@@ -120,19 +120,14 @@ public:
 	 *
 	 * @param Value  Scalar forwarded to ExplodeEffect for damage/effect scaling.
 	 */
-	void Explode(float Value);
-	/**
-	 * Called once per valid target found by Explode(). Override to change what is applied.
-	 * Default applies GetData()->EffectDataArray to the target via ApplyEffectFromEffectData.
-	 */
-	virtual void ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
-									UGeoAbilitySystemComponent* TargetASC);
+	void Explode(float const Value);
+	virtual void ExplodeEffect(float const Value);
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDurationPercent() const;
 	/** Starts the pre-expiry blink timer for the given duration in seconds. */
-	void StartBlinking(float BlinkDuration);
+	virtual void StartBlinking();
 
 	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
 	UFUNCTION()
@@ -147,13 +142,17 @@ public:
 	/** Returns true during the pre-expiry blink window (blink timer is running). */
 	UFUNCTION(BlueprintPure)
 	bool IsBlinking() const;
+	virtual FGameplayCueParameters GetSpawnCueParams(FGameplayTag SoundTag);
+	FGameplayCueParameters GetBlinkCueParams(FGameplayTag SoundTag);
 
 	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
 	 * instigator. */
-	FGameplayCueParameters GetGenericCueParams(FGameplayTag SoundTag = FGameplayTag());
+	virtual FGameplayCueParameters GetGenericCueParams(FGameplayTag SoundTag = FGameplayTag());
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams();
+
+	bool SurviveOverTheVoid() const { return bSurviveOverTheVoid; }
 
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployableDestroyed OnDeployableExpiredEvent;
@@ -189,9 +188,10 @@ protected:
 
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
 
+
 	UFUNCTION(BlueprintNativeEvent)
-	void OnBlinkVisualStarted();
-	virtual void OnBlinkVisualStarted_Implementation();
+	void OnBlinkStart();
+	void OnBlinkStart_Implementation();
 
 	UFUNCTION()
 	virtual void OnRep_Active(bool bOldValue);
@@ -293,6 +293,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bCanSacrificeDrain = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	bool bSurviveOverTheVoid = false;
 
 private:
 	UFUNCTION()

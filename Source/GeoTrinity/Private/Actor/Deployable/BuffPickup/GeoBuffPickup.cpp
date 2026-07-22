@@ -28,6 +28,7 @@ AGeoBuffPickup::AGeoBuffPickup(FObjectInitializer const& ObjectInitializer) : Su
 
 	bUseRegularDrain = false;
 	bDestroyOldestWhenLimitReached = true;
+	bSurviveOverTheVoid = true;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

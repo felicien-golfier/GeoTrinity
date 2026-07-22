@@ -501,6 +501,11 @@ UGeoAbilitySystemLibrary::StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 void UGeoAbilitySystemLibrary::FinishSpawnDeployable(AGeoDeployableBase* const Deployable,
 													 FTransform const& SpawnTransform)
 {
+	if (!ensureMsgf(Deployable->IsActive(), TEXT("Deployable not active when finishing spawning. something got wrong")))
+	{
+		return;
+	}
+
 	Deployable->FinishSpawning(SpawnTransform);
 }
 

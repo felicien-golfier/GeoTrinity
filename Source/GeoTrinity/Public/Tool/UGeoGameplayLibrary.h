@@ -9,6 +9,7 @@ struct FGameplayTag;
 // Should be used as default value to spawn projectiles / characters etc... Also should be Playable Character's half
 // capsule height.
 constexpr float ArbitraryCharacterZ = 50.0f;
+constexpr float Sqrt3 = 1.7320508f;
 
 
 class AEnemyCharacter;
@@ -100,7 +101,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
-	/** Returns the current server world time in seconds. @see GetServerTime(UObject*) for parameter and warning details. */
+	/** Returns the current server world time in seconds. @see GetServerTime(UObject*) for parameter and warning
+	 * details. */
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
 
 	/**

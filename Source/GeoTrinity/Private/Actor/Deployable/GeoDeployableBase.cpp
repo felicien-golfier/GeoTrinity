@@ -61,8 +61,8 @@ void AGeoDeployableBase::InitInteractable(FInteractableActorData* Data)
 void AGeoDeployableBase::PushAway()
 {
 	AGeoArena const* FightingArena = AGeoArena::GetFightingArena(this);
-	ensureMsgf(FightingArena, TEXT("%s: PushAway outside a fight — no fighting arena to redirect blocked pushes toward"),
-			   *GetName());
+	ensureMsgf(FightingArena,
+			   TEXT("%s: PushAway outside a fight — no fighting arena to redirect blocked pushes toward"), *GetName());
 
 	FVector2D const Location2D(GetActorLocation());
 	float const Radius = CapsuleComponent->GetScaledCapsuleRadius();
@@ -98,7 +98,8 @@ void AGeoDeployableBase::PushAway()
 		QueryParams.AddIgnoredActor(Actor);
 		if (FightingArena
 			&& GetWorld()->SweepTestByChannel(Actor->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
-											  FCollisionShape::MakeSphere(Actor->GetSimpleCollisionRadius()), QueryParams))
+											  FCollisionShape::MakeSphere(Actor->GetSimpleCollisionRadius()),
+											  QueryParams))
 		{
 			TArray<AActor*> const FightCenters =
 				GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightCenter, FightingArena->ArenaTag);
@@ -250,7 +251,7 @@ void AGeoDeployableBase::BeginPlay()
 		CombattantWidgetComponent->SetHiddenInGame(true);
 	}
 
-	ExecuteCue(SpawnGameplayCueTag, GetGenericCueParams(SpawnSoundTag));
+	ExecuteCue(SpawnGameplayCueTag, GetSpawnCueParams(SpawnSoundTag));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -280,7 +281,7 @@ void AGeoDeployableBase::ExecuteCue(FGameplayTag const& GameplayCueTag, FGamepla
 	GeoASLib::ExecuteLocalGameplayCue(GetAbilitySystemComponent(), GameplayCueTag, CueParams);
 }
 
-void AGeoDeployableBase::RecallEffect(float Value)
+void AGeoDeployableBase::RecallEffect(float const Value)
 {
 	if (bExplodeAtRecall)
 	{
@@ -288,7 +289,18 @@ void AGeoDeployableBase::RecallEffect(float Value)
 	}
 }
 
-void AGeoDeployableBase::Explode(float Value)
+void AGeoDeployableBase::Explode(float const Value)
+{
+	ExplodeEffect(Value);
+	if (!GeoLib::IsDedicatedServer(this) && ExplodeGameplayCueTag.IsValid())
+	{
+		FGameplayCueParameters CueParams = GetGenericCueParams(ExplodeSoundTag);
+		CueParams.Normal = FVector(Value, 0.f, 0.f);
+		ExecuteCue(ExplodeGameplayCueTag, CueParams);
+	}
+}
+
+void AGeoDeployableBase::ExplodeEffect(float const Value)
 {
 	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
 	if (!ensureMsgf(SourceASC, TEXT("AGeoDeployableBase: no ASC on Owner")))
@@ -296,36 +308,19 @@ void AGeoDeployableBase::Explode(float Value)
 		return;
 	}
 
-	if (GeoLib::IsServer(GetWorld()))
+	TArray<AActor*> OverlappingActors =
+		GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(GetData()->Owner), ExplodeAttitude, true,
+										FVector2D(GetActorLocation()), GetData()->Params.Size);
+
+	for (AActor* Actor : OverlappingActors)
 	{
-		TArray<AActor*> OverlappingActors =
-			GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(GetData()->Owner), ExplodeAttitude, true,
-											FVector2D(GetActorLocation()), GetData()->Params.Size);
-
-		for (AActor* Actor : OverlappingActors)
+		UGeoAbilitySystemComponent* ActorASC = GeoASLib::GetGeoAscFromActor(Actor);
+		if (IsValid(ActorASC))
 		{
-			UGeoAbilitySystemComponent* ActorASC = GeoASLib::GetGeoAscFromActor(Actor);
-			if (!IsValid(ActorASC))
-			{
-				continue;
-			}
-
-			ApplyExplodeEffect(Value, SourceASC, Actor, ActorASC);
+			GeoASLib::ApplyEffectFromEffectData(GetData()->EffectDataArray, SourceASC, ActorASC, GetData()->Level,
+												GetData()->Seed, GetData()->AbilityTag);
 		}
 	}
-
-	if (!GeoLib::IsDedicatedServer(this) && ExplodeGameplayCueTag.IsValid())
-	{
-		ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeSoundTag));
-		// TODO: Pass the Value in the Cue ?
-	}
-}
-
-void AGeoDeployableBase::ApplyExplodeEffect(float Value, UGeoAbilitySystemComponent* SourceASC, AActor* Actor,
-											UGeoAbilitySystemComponent* TargetASC)
-{
-	GeoASLib::ApplyEffectFromEffectData(GetData()->EffectDataArray, SourceASC, TargetASC, GetData()->Level,
-										GetData()->Seed, GetData()->AbilityTag);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -388,20 +383,20 @@ float AGeoDeployableBase::GetDurationPercent() const
 	return FMath::Clamp(ASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute()) / MaxHealth, 0.f, 1.f);
 }
 
-void AGeoDeployableBase::StartBlinking(float const BlinkDuration)
+void AGeoDeployableBase::StartBlinking()
 {
 	bBlinking = true;
-	GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::TryRecallOrExpire, BlinkDuration, false);
+	GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::TryRecallOrExpire,
+										   GetData()->Params.BlinkDuration, false);
 
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
 	if (BlinkingGameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(this))
 	{
-		FGameplayCueParameters CueParams = GetGenericCueParams(BlinkingSoundTag);
-		CueParams.Normal = FVector(BlinkDuration, 0.f, 0.f);
+		FGameplayCueParameters CueParams = GetBlinkCueParams(BlinkingSoundTag);
 		ExecuteCue(BlinkingGameplayCueTag, CueParams);
 	}
 
-	OnBlinkVisualStarted();
+	OnBlinkStart();
 	SetActorEnableCollision(false);
 	SetCanBeDamaged(false);
 }
@@ -410,10 +405,9 @@ void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 {
 	if (NewValue <= 0.f && bActive && !BlinkTimerHandle.IsValid())
 	{
-		float const BlinkDuration = GetData()->Params.BlinkDuration;
-		if (BlinkDuration > 0.f)
+		if (GetData()->Params.BlinkDuration)
 		{
-			StartBlinking(BlinkDuration);
+			StartBlinking();
 		}
 		else
 		{
@@ -423,7 +417,7 @@ void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::OnBlinkVisualStarted_Implementation()
+void AGeoDeployableBase::OnBlinkStart_Implementation()
 {
 	float constexpr BlinkRate = 0.2f;
 	GetWorld()->GetTimerManager().SetTimer(BlinkVisibilityTimerHandle, this, &ThisClass::OnBlinkVisibilityTick,
@@ -449,7 +443,7 @@ void AGeoDeployableBase::OnRep_Blinking(bool bOldValue)
 {
 	if (!bOldValue && bBlinking && GetData()->Params.BlinkDuration > 0.f)
 	{
-		StartBlinking(GetData()->Params.BlinkDuration);
+		StartBlinking();
 	}
 }
 
@@ -482,6 +476,20 @@ bool AGeoDeployableBase::IsBlinking() const
 
 
 // ---------------------------------------------------------------------------------------------------------------------
+
+FGameplayCueParameters AGeoDeployableBase::GetSpawnCueParams(FGameplayTag SoundTag)
+{
+	FGameplayCueParameters CueParams = GetGenericCueParams(SoundTag);
+	CueParams.Normal = FVector(GetData()->Params.LifeDrainMaxDuration, 0.f, 0.f);
+	return CueParams;
+}
+
+FGameplayCueParameters AGeoDeployableBase::GetBlinkCueParams(FGameplayTag SoundTag)
+{
+	FGameplayCueParameters CueParams = GetGenericCueParams(SoundTag);
+	CueParams.Normal = FVector(GetData()->Params.BlinkDuration, 0.f, 0.f);
+	return CueParams;
+}
 
 FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGameplayTag SoundTag)
 {

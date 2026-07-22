@@ -49,7 +49,7 @@ Source/GeoTrinity/
 │   │   │   ├── Boss/          # GeoPeriodicFireAbility, GeoDevastatingWaveAbility, GeoSpawnPillarAbility,
 │   │   │   │                  #   GeoSweepBeamAbility, GeoTileBombAbility, GeoSpawnOnTileAbility (hex boss)
 │   │   │   ├── Pattern/       # Pattern, SpiralPattern, SpawnPillarPattern, DevastatingWavePattern,
-│   │   │   │                  #   BeamPattern, ConeSprayPattern, TileBombPattern (hex boss)
+│   │   │   │                  #   BeamPattern, ConeSprayPattern (hex boss)
 │   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility, GeoSweetSpotChargePassiveAbility
 │   │   │   ├── Square/        # GeoShieldBurstPassiveAbility, GeoDetonateWallsAbility (wall uses shared GeoDeployAbility)
 │   │   │   ├── Triangle/      # GeoReloadAbility, GeoRecallTurretAbility
@@ -63,7 +63,7 @@ Source/GeoTrinity/
 │   │   └── Types/             # GeoAscTypes (FGeoGameplayEffectContext)
 │   ├── Actor/
 │   │   ├── Projectile/        # GeoProjectile, GeoPooledProjectile, GeoShieldBurstProjectile, DeployableSpawnerProjectile
-│   │   ├── Deployable/        # GeoDeployableBase, GeoWall, GeoHealingZone, GeoBuffPickup, GeoPillar, GeoMine
+│   │   ├── Deployable/        # GeoDeployableBase, GeoWall, GeoHealingZone, GeoBuffPickup, GeoPillar, GeoMine, GeoBombZone
 │   │   ├── Turret/            # GeoTurret
 │   │   ├── GeoClassChangeTrigger.h
 │   │   ├── GeoEffectZone.h
