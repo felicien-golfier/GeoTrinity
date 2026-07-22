@@ -20,6 +20,7 @@ class GEOTRINITY_API UGeoChargeBeamAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
 
+	/** Sets FireMode to ChargeForFireDelay so the beam charges on hold and fires on release. */
 	UGeoChargeBeamAbility();
 
 protected:

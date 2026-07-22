@@ -20,6 +20,7 @@ class GEOTRINITY_API UGeoDevastatingWaveAbility : public UPatternAbility
 	GENERATED_BODY()
 
 protected:
+	/** Returns the 2D location of the arena's TeleportLocationTag point; the wave pattern teleports the boss there before it starts. */
 	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
 									  int Seed) const override;
 

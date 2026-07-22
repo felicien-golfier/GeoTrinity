@@ -21,6 +21,7 @@ class GEOTRINITY_API AGeoTeleporter : public AActor
 	GENERATED_BODY()
 
 public:
+	/** Creates the MeshComponent, TextComponent, and overlap collision used to detect arriving characters. */
 	AGeoTeleporter();
 
 protected:

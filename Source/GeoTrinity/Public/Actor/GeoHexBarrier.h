@@ -20,6 +20,7 @@ class GEOTRINITY_API AGeoHexBarrier : public AGeoArenaBarrier
 	GENERATED_BODY()
 
 public:
+	/** Creates the TileMeshComponent ISM as the root component and enables continuous Tick capability. */
 	AGeoHexBarrier();
 
 	/** Rebuilds the alley's ISM instances whenever the actor is edited or moved in the editor. */

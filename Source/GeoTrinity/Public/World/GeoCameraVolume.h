@@ -23,6 +23,7 @@ class GEOTRINITY_API AGeoCameraVolume : public AActor
 	GENERATED_BODY()
 
 public:
+	/** Creates the TriggerBox as the root component. Overlap callbacks are bound in BeginPlay. */
 	AGeoCameraVolume();
 
 	/** The Arena.* tag whose `TargetPoint.CameraBounds` corner points frame the camera while this volume is active. */

@@ -24,6 +24,7 @@ class GEOTRINITY_API AGeoHexArena : public AGeoArena
 	GENERATED_BODY()
 
 public:
+	/** Creates the TileMeshComponent ISM and disables tick at start — fall checks are gated on the fight lifecycle. */
 	AGeoHexArena();
 
 	/** Registers the replicated tile state array. */

@@ -26,6 +26,7 @@ class GEOTRINITY_API AGeoGameCamera : public ACameraActor
 	GENERATED_BODY()
 
 public:
+	/** Configures the camera component for orthographic projection and initialises movement defaults. */
 	AGeoGameCamera();
 
 	/** Follows the local player with exponential smoothing; clamps to the active volume's bounds; pans freely when spectating. */
