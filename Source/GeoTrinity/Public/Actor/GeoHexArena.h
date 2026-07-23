@@ -57,6 +57,7 @@ public:
 
 	/** Server. Destroys the given tiles; holes appear on every machine via replication. Unknown coords are ignored. */
 	void DestroyTiles(TConstArrayView<FIntPoint> Tiles);
+	/** Returns the ISM instance indices of all tiles whose centers lie within Radius world units of Center. */
 	TArray<int> GetTilesIndexInRadius(FVector2D Center, float Radius);
 	/** Server. Destroys every tile whose center lies within Radius world units of Center. */
 	void DestroyTilesInRadius(FVector2D Center, float Radius);
@@ -65,6 +66,7 @@ public:
 
 	/** Returns true when Tile exists on the platform and has not been destroyed. */
 	bool IsTileAlive(FIntPoint Tile) const;
+	/** Returns true when WorldLocation stands over a tile that is still up — false over a hole or off the platform. */
 	bool IsOverAliveTile(FVector2D WorldLocation) const;
 	/** Maps a world location to the tile containing it. Returns false when the location is outside the platform. */
 	bool GetTileUnderLocation(FVector2D WorldLocation, FIntPoint& OutTile) const;
@@ -92,6 +94,7 @@ public:
 	/** Server. Highlights the tiles within Radius of Location for Requester, or the single tile under Location when
 	 * Radius is 0. */
 	void HighlightTiles(AActor* Requester, FVector2D Location, float Radius = 0.f);
+	/** Server. Highlights the single tile at Tile for Requester, replacing any previous highlight from that requester. */
 	void HighlightTile(AActor* Requester, FIntPoint Tile);
 	/** Server. Drops Requester's highlight. */
 	void ClearHighlight(AActor* Requester);

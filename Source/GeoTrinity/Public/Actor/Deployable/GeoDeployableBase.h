@@ -121,6 +121,12 @@ public:
 	 * @param Value  Scalar forwarded to ExplodeEffect for damage/effect scaling.
 	 */
 	void Explode(float const Value);
+	/**
+	 * Override hook called per valid target inside Explode(). Default applies EffectDataArray to the target.
+	 * Server only.
+	 *
+	 * @param Value  Scalar forwarded from Explode(), used for damage/effect scaling.
+	 */
 	virtual void ExplodeEffect(float const Value);
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
@@ -142,7 +148,18 @@ public:
 	/** Returns true during the pre-expiry blink window (blink timer is running). */
 	UFUNCTION(BlueprintPure)
 	bool IsBlinking() const;
+	/**
+	 * Builds and returns the GameplayCue parameters used when firing the spawn cue.
+	 * Override to add class-specific source location or effect context.
+	 *
+	 * @param SoundTag  Optional sound tag forwarded into the cue parameters.
+	 */
 	virtual FGameplayCueParameters GetSpawnCueParams(FGameplayTag SoundTag);
+	/**
+	 * Builds and returns the GameplayCue parameters used when firing the pre-expiry blink cue.
+	 *
+	 * @param SoundTag  Optional sound tag forwarded into the cue parameters.
+	 */
 	FGameplayCueParameters GetBlinkCueParams(FGameplayTag SoundTag);
 
 	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
