@@ -95,7 +95,8 @@ public:
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
-	/** Shows or hides the charge gauge on the owning PlayableCharacter. Base implementation is client-only (no-op on server). Override to use a different widget. */
+	/** Shows or hides the charge gauge on the owning PlayableCharacter. Base implementation is client-only (no-op on
+	 * server). Override to use a different widget. */
 	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible);
 
 	/** Convenience overload that ends this ability instance without requiring handle/actorinfo parameters. */
@@ -138,11 +139,12 @@ public:
 	/** Returns a fresh random seed for the next shot. Override for deterministic seed strategies. */
 	virtual int GetNewSeed() const;
 	/** Returns the instigator's facing yaw in degrees. Override to aim toward a specific target instead. */
-	virtual float GetFireYaw(AActor const* Instigator) const;
+	virtual float GetFireYaw(AActor const* Instigator, int Seed) const;
 	/** Applies the designer-tunable GaugeChargingSpeedCurve easing to a raw charge ratio in [0, 1]. */
 	float ApplyChargingCurve(float RawRatio) const;
 
-	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. Public so subclasses can bind it directly to timer delegates. */
+	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. Public
+	 * so subclasses can bind it directly to timer delegates. */
 	UFUNCTION()
 	void BuildDataAndFire();
 

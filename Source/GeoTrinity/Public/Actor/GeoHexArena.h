@@ -8,6 +8,7 @@
 
 #include "GeoHexArena.generated.h"
 
+class AGeoDeployableBase;
 class APlayableCharacter;
 class UInstancedStaticMeshComponent;
 
@@ -66,6 +67,8 @@ public:
 
 	/** Returns true when Tile exists on the platform and has not been destroyed. */
 	bool IsTileAlive(FIntPoint Tile) const;
+	/** Returns true when a still-living deployable occupies Tile (recorded by SetTileOccupant). */
+	bool IsTileOccupied(FIntPoint Tile) const;
 	/** Returns true when WorldLocation stands over a tile that is still up — false over a hole or off the platform. */
 	bool IsOverAliveTile(FVector2D WorldLocation) const;
 	/** Maps a world location to the tile containing it. Returns false when the location is outside the platform. */
@@ -83,11 +86,15 @@ public:
 	static int32 GetTileRing(FIntPoint Tile);
 
 	/**
-	 * Picks up to Count distinct tiles that are still standing.
+	 * Picks up to Count distinct tiles that are still standing and not already occupied by a deployable.
 	 *
 	 * @param Ring  Ring to draw from; the whole platform when negative, and also when that ring has nothing left.
 	 */
 	TArray<FIntPoint> GetRandomAliveTiles(FRandomStream& Stream, int32 Ring, int32 Count) const;
+
+	/** Server. Records Deployable as the occupant of Tile so GetRandomAliveTiles skips it. Cleared automatically when
+	 * the deployable is destroyed (weak ptr goes stale) and on arena reset. */
+	void SetTileOccupant(FIntPoint Tile, AGeoDeployableBase* Deployable);
 	/** Returns the furthest still-standing tile the ray crosses within MaxRange. False when it crosses none. */
 	bool GetLastAliveTileAlongRay(FVector2D Origin, FVector2D Direction, FIntPoint& OutTile) const;
 
@@ -139,6 +146,11 @@ private:
 	UFUNCTION()
 	void OnRep_TileStates();
 
+	/** Drops the expired deployable from TileOccupants so its tile is immediately available again — bound to each
+	 * occupant's OnDeployableExpiredEvent, which fires at Expire() ahead of the delayed Destroy(). */
+	UFUNCTION()
+	void OnTileOccupantExpired(AGeoDeployableBase* Deployable);
+
 	/** Alive + highlight state per tile; indexed like TileCoords. Single source of truth, replicated. */
 	UPROPERTY(ReplicatedUsing = OnRep_TileStates)
 	TArray<FHexTileState> TileStates;
@@ -150,4 +162,7 @@ private:
 
 	/** Server-only: each requester's highlighted tile indices. Their union drives the replicated bHighlighted bit. */
 	TMap<TWeakObjectPtr<AActor>, TArray<int32>> HighlightRequests;
+
+	/** Server-only: deployable currently sitting on each tile. Stale entries (destroyed deployables) read as vacant. */
+	TMap<FIntPoint, TWeakObjectPtr<AGeoDeployableBase>> TileOccupants;
 };

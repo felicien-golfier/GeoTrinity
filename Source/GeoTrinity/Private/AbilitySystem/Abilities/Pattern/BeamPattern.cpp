@@ -30,6 +30,25 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor);
 	}
 }
+void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
+{
+	Super::InitPattern(Payload, PatternData);
+
+	if (IsValid(BeamVfxComponent))
+	{
+		BeamVfxComponent->Activate(true);
+		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
+		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth);
+		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamInitColor);
+		FRotator const BeamRotation(0.f, GetBeamYaw(0.f), 0.f);
+		FVector const Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
+													: FVector(StoredPayload.Origin, ArbitraryCharacterZ);
+		if (IsValid(BeamVfxComponent))
+		{
+			BeamVfxComponent->SetWorldLocationAndRotation(Location, BeamRotation);
+		}
+	}
+}
 
 float UBeamPattern::GetBeamYaw(float const SpentTime) const
 {
@@ -39,8 +58,8 @@ float UBeamPattern::GetBeamYaw(float const SpentTime) const
 	}
 
 	float const SweptFraction = FMath::Clamp(SpentTime / BeamDuration, 0.f, 1.f);
-	float const SweepSign = StoredPayload.Seed % 2 == 0 ? 1 : -1;
-	return StoredPayload.Yaw - SweepSign * (SweepAngle * 0.5f + SweepAngle * SweptFraction);
+	float const SweepSign = StoredPayload.Seed % 2 == 0 ? 1.f : -1.f;
+	return StoredPayload.Yaw - SweepSign * (2.f * SweepAngle * SweptFraction);
 }
 
 void UBeamPattern::StartPattern()
@@ -50,6 +69,7 @@ void UBeamPattern::StartPattern()
 		BeamVfxComponent->Activate(true);
 		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
 		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth);
+		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor);
 	}
 
 	Super::StartPattern();

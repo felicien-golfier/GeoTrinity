@@ -5,7 +5,6 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Pillar/GeoPillar.h"
-#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -14,12 +13,6 @@ void USpawnPillarPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 	Super::OnCreate(AbilityTag, Owner);
 	// TODO: why not having deployables in the pooling system. Need to set it up properly
 	//  UGeoActorPoolingSubsystem::Get(GetWorld())->PreSpawn(PillarClass, 10);
-	UGeoDeployableManagerComponent* DeployablesManagerComp =
-		Owner.GetComponentByClass<UGeoDeployableManagerComponent>();
-	if (DeployablesManagerComp)
-	{
-		DeployablesManagerComp->SetDeployableInfinitCount(PillarClass);
-	}
 
 	if (!IsValid(PillarClass))
 	{

@@ -5,6 +5,7 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
+#include "HUD/Interface/GeoDamageNumberHost.h"
 #include "Settings/GameDataSettings.h"
 #include "StructUtils/InstancedStruct.h"
 #include "Tool/Team.h"
@@ -60,7 +61,7 @@ struct FDeployableData : public FInteractableActorData
  * Replicated actors — spawned by the server and destroyed when expired or recalled.
  */
 UCLASS(Abstract)
-class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor
+class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor, public IGeoDamageNumberHost
 {
 	GENERATED_BODY()
 
@@ -95,6 +96,12 @@ public:
 	 * blocked. */
 	UFUNCTION(BlueprintCallable)
 	bool DestroyOldestWhenLimitReached() const { return bDestroyOldestWhenLimitReached; }
+	/** True if this class is exempt from the DeployableManagerComponent's slot/count limit entirely. Class-level (CDO)
+	 * property, so every machine agrees without needing SetDeployableInfinitCount to reach clients. Defaults true —
+	 * deployable caps are the exception, not the rule (e.g. AGeoBuffPickup overrides to false so the reload buff
+	 * shower still evicts its oldest pickup). */
+	UFUNCTION(BlueprintCallable)
+	bool IsUnlimitedDeploy() const { return bUnlimitedDeploy; }
 	/**
 	 * Ends this deployable's lifetime. Calls RecallEffect then Expire.
 	 * Always use this instead of Expire or Destroy directly — it is the sole valid end-of-life path.
@@ -194,6 +201,13 @@ public:
 	FVector HealthBarLocation = FVector(100.f, 0.f, 0.f);
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UUserWidget> HealthBarWidgetClassOverride;
+
+	// When false, the deployable's Health/Shield changes (life drain, incoming damage) spawn no floating combat numbers.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	bool bShowDamageNumbers = true;
+
+	/** IGeoDamageNumberHost: gates the HUD's floating-number registration for this deployable. */
+	virtual bool ShowsDamageNumbers() const override { return bShowDamageNumbers; }
 
 protected:
 	// subclasses MUST override this with their own data struct inherited from FDeployableData
@@ -307,6 +321,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bDestroyOldestWhenLimitReached = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	bool bUnlimitedDeploy = true;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bCanSacrificeDrain = true;

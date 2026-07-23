@@ -29,8 +29,6 @@ public:
 protected:
 	/** Server. Spawns up to SpawnCount deployables on picked tiles, then ends the ability. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
-	/** Removes the deployable slot cap for DeployableClass so arena tile availability is the only spawn limit. */
-	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
 	/** Ring to spawn on, scaled by the boss's remaining health, or negative to draw from the whole platform. */
 	int32 GetSpawnRing(AGeoHexArena const& Arena) const;

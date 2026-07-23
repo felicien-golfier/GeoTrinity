@@ -365,7 +365,7 @@ bool UGeoAbilitySystemComponent::FindPatternByClass(UClass* PatternClass, UPatte
 }
 
 void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload, UClass* PatternClass,
-																	 TInstancedStruct<FPatternData> PatternData)
+																	  TInstancedStruct<FPatternData> PatternData)
 {
 	checkf(PatternClass, TEXT("PatternStartMulticast: Invalid PatternClass"));
 
@@ -408,8 +408,9 @@ bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbili
 
 		FGameplayAbilityTargetDataHandle TargetDataHandle;
 		int const Seed = CDO->GetNewSeed();
-		FGeoAbilityTargetData* TargetData = new FGeoAbilityTargetData(
-			CDO->GetFireOrigin2D(Avatar, this, Seed), CDO->GetFireYaw(Avatar), CDO->GetStartTime(GetWorld()), Seed);
+		FGeoAbilityTargetData* TargetData =
+			new FGeoAbilityTargetData(CDO->GetFireOrigin2D(Avatar, this, Seed), CDO->GetFireYaw(Avatar, Seed),
+									  CDO->GetStartTime(GetWorld()), Seed);
 		TargetDataHandle.Add(TargetData);
 		EventData.TargetData = TargetDataHandle;
 		EventData.Instigator = Avatar;

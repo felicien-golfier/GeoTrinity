@@ -89,9 +89,10 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayloadFromTargetData(FGeoAbil
 
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload() const
 {
+	int const Seed = GetNewSeed();
 	return CreateAbilityPayload(
 		GetFireOrigin2D(GetAvatarActorFromActorInfo(), GetGeoAbilitySystemComponentFromActorInfo(), GetNewSeed()),
-		GetFireYaw(GetAvatarActorFromActorInfo()), GetStartTime(GetWorld()), GetNewSeed());
+		GetFireYaw(GetAvatarActorFromActorInfo(), Seed), GetStartTime(GetWorld()), Seed);
 }
 
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(FVector2D const& Origin, float const Yaw,
@@ -349,7 +350,7 @@ FGeoAbilityTargetData UGeoGameplayAbility::GetUpdatedTargetData()
 {
 	FVector2D const Origin =
 		GetFireOrigin2D(StoredPayload.Instigator, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
-	float const Yaw = GetFireYaw(StoredPayload.Instigator);
+	float const Yaw = GetFireYaw(StoredPayload.Instigator, StoredPayload.Seed);
 	float const ServerTime = GetStartTime(GetWorld());
 	return FGeoAbilityTargetData(Origin, Yaw, ServerTime, StoredPayload.Seed);
 }
@@ -443,7 +444,7 @@ float UGeoGameplayAbility::GetStartTime(UWorld const* World) const
 	return GeoLib::GetServerTime(World, true);
 }
 
-float UGeoGameplayAbility::GetFireYaw(AActor const* Instigator) const
+float UGeoGameplayAbility::GetFireYaw(AActor const* Instigator, int const Seed) const
 {
 	return IsValid(Instigator) ? Instigator->GetActorRotation().Yaw : 0.f;
 }

@@ -6,7 +6,6 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/GeoHexArena.h"
-#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoSpawnOnTileAbility::UGeoSpawnOnTileAbility()
@@ -27,30 +26,14 @@ void UGeoSpawnOnTileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData
 		FRandomStream Stream(StoredPayload.Seed);
 		for (FIntPoint const Tile : Arena->GetRandomAliveTiles(Stream, GetSpawnRing(*Arena), SpawnCount))
 		{
-			GeoASLib::FullySpawnDeployable(DeployableClass, StoredPayload, GetEffectDataArray(), DeployableParams,
-										   FTransform(FVector(Arena->TileToWorld(Tile), ArbitraryCharacterZ)));
+			AGeoDeployableBase* const Deployable = GeoASLib::FullySpawnDeployable(
+				DeployableClass, StoredPayload, GetEffectDataArray(), DeployableParams,
+				FTransform(FVector(Arena->TileToWorld(Tile), ArbitraryCharacterZ)));
+			Arena->SetTileOccupant(Tile, Deployable);
 		}
 	}
 
 	EndAbility();
-}
-
-void UGeoSpawnOnTileAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
-{
-	Super::OnGiveAbility(ActorInfo, Spec);
-	AActor* Avatar = GetAvatarActorFromActorInfo();
-	// The boss's own deployable limit is meant for player deployables; the arena's tiles bound these instead.
-	if (!ensureMsgf(Avatar, TEXT("Avatar of the ability not set")))
-	{
-		return;
-	}
-
-	UGeoDeployableManagerComponent* const DeployableManager =
-		Avatar->GetComponentByClass<UGeoDeployableManagerComponent>();
-	if (ensureMsgf(DeployableManager, TEXT("Avatar of the ability has no UGeoDeployableManagerComponent")))
-	{
-		DeployableManager->SetDeployableInfinitCount(DeployableClass);
-	}
 }
 
 int32 UGeoSpawnOnTileAbility::GetSpawnRing(AGeoHexArena const& Arena) const

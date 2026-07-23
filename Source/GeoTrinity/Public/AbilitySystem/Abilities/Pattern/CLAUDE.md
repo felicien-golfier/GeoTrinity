@@ -25,7 +25,7 @@ Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`, `DistanceSp
 ## `SpawnPillarPattern.h` — zone-and-pillar boss pattern
 Non-ticking. Zone locations resolved server-side by `UGeoSpawnPillarAbility::CreatePatternData()`, shipped via `PatternStartMulticast` as `FSpawnPillarPatternData` — `InitPattern` just reads `ZoneLocations` (no per-client recompute). `StartPattern` spawns pillars, applies `PillarSpawnEffects` to hostiles in each zone (server-only), calls `EndPattern`. `DelayGameplayCueTag` countdown cue fires per spawn point.
 - `FSpawnPillarPatternData` — `ZoneLocations`; `InitPattern` `ensureMsgf`s if launched from a plain `UPatternAbility`
-- `PillarClass` also passed to `SetDeployableInfinitCount` in `OnCreate` to bypass slot limits
+- Deployables default to unlimited (`AGeoDeployableBase::bUnlimitedDeploy`), so `PillarClass` needs no manual slot-cap bypass
 
 ## `BeamPattern.h` — static or sweeping beam (hex boss)
 Ticking, non-projectile. Fired from `StoredPayload.Origin` along `Yaw`, on for `BeamDuration`. Covers both hex-boss beams via two BP children (see instance rule above).

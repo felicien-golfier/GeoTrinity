@@ -13,42 +13,44 @@ void UConeSprayPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 
 	if (ensureMsgf(ProjectileClass, TEXT("UConeSprayPattern: ProjectileClass is not set")))
 	{
-		UGeoActorPoolingSubsystem::Get(GetWorld())->PreSpawn(ProjectileClass, static_cast<uint16>(ProjectileCount));
+		UGeoActorPoolingSubsystem::Get(GetWorld())
+			->PreSpawn(ProjectileClass, static_cast<uint16>(ProjectileCountPerSalve * SalveNumber));
 	}
 }
 
 void UConeSprayPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
-	SpawnedCount = 0;
+	SpawnedSalveCount = 0;
 	Super::InitPattern(Payload, PatternData);
 }
 
 void UConeSprayPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 {
-	int32 const DueCount = FMath::Min(ProjectileCount, FMath::FloorToInt32(SpentTime / GetSpawnInterval()) + 1);
-	while (SpawnedCount < DueCount)
+	if (SpentTime > SpawnedSalveCount * SalveFrequencySec)
 	{
-		SpawnSprayProjectile(SpawnedCount++);
+		SpawnSprayProjectile(SpentTime);
+		++SpawnedSalveCount;
 	}
 
-	if (SpawnedCount >= ProjectileCount)
+	if (SpawnedSalveCount >= SalveNumber)
 	{
 		EndPattern();
 	}
 }
 
-void UConeSprayPattern::SpawnSprayProjectile(int32 const Index) const
+void UConeSprayPattern::SpawnSprayProjectile(float const SpentTime) const
 {
-	// Seeding per index rather than drawing from one stream keeps the angle of a given projectile identical on every
-	// machine, even when a machine catches up on several projectiles in the same tick.
-	FRandomStream Stream(StoredPayload.Seed + Index);
+	for (int Index = 0; Index < ProjectileCountPerSalve; ++Index)
+	{
+		FAbilityPayload ProjectilePayload = StoredPayload;
+		ProjectilePayload.Yaw = StoredPayload.Yaw
+			+ FMath::Lerp(-ConeAngle * 0.5f, ConeAngle * 0.5f,
+						  static_cast<float>(Index) / static_cast<float>(ProjectileCountPerSalve - 1));
+		ProjectilePayload.ServerSpawnTime = StoredPayload.ServerSpawnTime + SpentTime;
 
-	FAbilityPayload ProjectilePayload = StoredPayload;
-	ProjectilePayload.Yaw = StoredPayload.Yaw + Stream.FRandRange(-ConeAngle * 0.5f, ConeAngle * 0.5f);
-	ProjectilePayload.ServerSpawnTime = StoredPayload.ServerSpawnTime + StartDelay + Index * GetSpawnInterval();
-
-	FTransform const SpawnTransform(FRotator(0.f, ProjectilePayload.Yaw, 0.f),
-									FVector(StoredPayload.Origin, ArbitraryCharacterZ));
-	GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, ProjectilePayload, EffectDataArray,
-								   ProjectilePayload.ServerSpawnTime);
+		FTransform const SpawnTransform(FRotator(0.f, ProjectilePayload.Yaw, 0.f),
+										FVector(StoredPayload.Origin, ArbitraryCharacterZ));
+		GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, ProjectilePayload, EffectDataArray,
+									   ProjectilePayload.ServerSpawnTime);
+	}
 }

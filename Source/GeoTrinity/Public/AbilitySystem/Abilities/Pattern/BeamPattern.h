@@ -26,6 +26,9 @@ protected:
 	/** Spawns the deactivated beam Niagara component; the pattern instance and its component are reused per activation.
 	 */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
+
+	virtual void InitPattern(FAbilityPayload const& Payload,
+							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** Carves the last tile under the beam and switches the beam VFX on before the tick loop starts. */
 	virtual void StartPattern() override;
 	/** Aims the beam for the elapsed sweep fraction and applies the effect data to every actor it newly crosses. */
@@ -69,6 +72,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
 	FColor BeamColor;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
+	FColor BeamInitColor;
 
 	/** Niagara user param names, matching UGeoBeamVFXComponent's User.Beam_Length/Width/Color. */
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")

@@ -10,6 +10,7 @@ Gameplay holds engine base pointers (`UWidgetComponent*`, `UUserWidget*`, `AHUD*
 | `IGeoCombattantWidgetHost` | `UGeoCombattantWidgetComp` | `AGeoCharacter`, `AGeoDeployableBase` |
 | `IGeoDeployGaugeWidgetInterface` | `UGeoDeployChargeGaugeWidget` | `APlayableCharacter` |
 | `IGeoChargeBeamGaugeWidgetInterface` | `UGeoChargeBeamGaugeWidget` | `APlayableCharacter` |
+| `IGeoDamageNumberHost` | `AGeoDeployableBase` | `AGeoHUD::RegisterASCForDamageNumbers` (skips registration when `ShowsDamageNumbers()` is false) |
 
 The combatant widget component is **created in C++** on `AGeoCharacter`/`AGeoDeployableBase` via `CreateDefaultSubobject` with the runtime class from `GameDataSettings::CombattantWidgetComponentClass` (soft class — gameplay never names the UI type). Per-BP tuning is exposed as gameplay-side fields on the owner instead of the component's Details panel. Gauge components are still added in Blueprint.
 

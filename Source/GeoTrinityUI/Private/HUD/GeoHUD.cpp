@@ -23,11 +23,13 @@
 #include "GameClasses/GeoPlayerController.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
+#include "GameplayEffectExtension.h"
 #include "HUD/GenericCombattantWidget.h"
 #include "HUD/GeoDamageNumberWidget.h"
 #include "HUD/GeoOverlayWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
+#include "HUD/Interface/GeoDamageNumberHost.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateTypes.h"
 #include "System/GeoCombatStatsSubsystem.h"
@@ -459,6 +461,12 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor)
 {
 	if (!ASC || !IsValid(OwnerActor))
+	{
+		return;
+	}
+
+	if (IGeoDamageNumberHost const* NumberHost = Cast<IGeoDamageNumberHost>(OwnerActor);
+		NumberHost && !NumberHost->ShowsDamageNumbers())
 	{
 		return;
 	}

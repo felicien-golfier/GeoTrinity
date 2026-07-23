@@ -382,15 +382,9 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(Payload.Instigator);
 
-	FCollisionObjectQueryParams ObjectQueryParams = FCollisionObjectQueryParams(ECC_GeoCharacter); // GeoCharacter ECC
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_GeoProjectile);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-
 	TArray<FHitResult> HitResults;
-	bool const bHit = GetWorld()->LineTraceMultiByObjectType(HitResults, CurrentLocation, AdvancedPosition,
-															 ObjectQueryParams, QueryParams);
+	bool const bHit = GetWorld()->LineTraceMultiByChannel(HitResults, CurrentLocation, AdvancedPosition,
+														  ECC_GeoProjectile, QueryParams);
 
 	if (bHit)
 	{

@@ -40,7 +40,7 @@ protected:
 	 * the activating client and carried in the payload — client and server must build identical root motion
 	 * sources (FRootMotionSource_MoveToForce::Matches compares TargetLocation within 0.1cm) or the client can
 	 * never reconcile the server's source and receives corrections for the whole dash. */
-	virtual float GetFireYaw(AActor const* Instigator) const override;
+	virtual float GetFireYaw(AActor const* Instigator, int Seed) const override;
 
 	/** Dash distance in units */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")

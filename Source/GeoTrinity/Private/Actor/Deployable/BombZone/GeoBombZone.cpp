@@ -14,6 +14,7 @@ AGeoBombZone::AGeoBombZone(FObjectInitializer const& ObjectInitializer) : Super(
 	bExplodeAtRecall = true;
 	bDestroyOldestWhenLimitReached = true;
 	bSurviveOverTheVoid = true;
+	bShowDamageNumbers = false;
 	SetCanBeDamaged(false);
 	CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }

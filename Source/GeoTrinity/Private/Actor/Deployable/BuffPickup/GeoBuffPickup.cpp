@@ -29,6 +29,8 @@ AGeoBuffPickup::AGeoBuffPickup(FObjectInitializer const& ObjectInitializer) : Su
 	bUseRegularDrain = false;
 	bDestroyOldestWhenLimitReached = true;
 	bSurviveOverTheVoid = true;
+	// The reload buff shower relies on the manager's count limit to evict the oldest uncollected pickup.
+	bUnlimitedDeploy = false;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

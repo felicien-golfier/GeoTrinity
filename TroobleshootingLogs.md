@@ -83,3 +83,15 @@ IsLocallyControlled() is true for host AI too, so we need to use also IsPlayerCo
 ie SetCombattantWidgetVisible(!(IsPlayerControlled() && IsLocallyControlled()));
 
 ---
+
+# AI — StateTree
+
+## Failing Enter Condition falls back to Root, not to a sibling — 23/07/2026
+
+A direct `GotoState → SweepBeam` whose enter condition fails bubbles to Root (stuck at Dormant waiting for the init event). The state's own transitions never run (state never entered), and adding a sibling doesn't help — sibling fallthrough only happens when a transition targets the **parent**.
+
+**Fix:** Condition the transition *into* the state, not the state. On the source: `→ SweepBeam` if `CycleCount >= 3`, else `→ MoveBackToChase`; remove SweepBeam's enter condition.
+
+---
+
+# Rewind debugger is not working for listen server in PIE

@@ -131,6 +131,34 @@ bool AGeoHexArena::IsTileAlive(FIntPoint const Tile) const
 	return Index && TileStates.IsValidIndex(*Index) && TileStates[*Index].bAlive != 0;
 }
 
+bool AGeoHexArena::IsTileOccupied(FIntPoint const Tile) const
+{
+	TWeakObjectPtr<AGeoDeployableBase> const* const Occupant = TileOccupants.Find(Tile);
+	return Occupant && Occupant->IsValid();
+}
+
+void AGeoHexArena::SetTileOccupant(FIntPoint const Tile, AGeoDeployableBase* const Deployable)
+{
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("SetTileOccupant is server-only")) || !Deployable)
+	{
+		return;
+	}
+	TileOccupants.Add(Tile, Deployable);
+	Deployable->OnDeployableExpiredEvent.AddDynamic(this, &AGeoHexArena::OnTileOccupantExpired);
+}
+
+void AGeoHexArena::OnTileOccupantExpired(AGeoDeployableBase* const Deployable)
+{
+	for (auto It = TileOccupants.CreateIterator(); It; ++It)
+	{
+		if (It->Value == Deployable)
+		{
+			It.RemoveCurrent();
+			break;
+		}
+	}
+}
+
 bool AGeoHexArena::IsOverAliveTile(FVector2D const WorldLocation) const
 {
 	FIntPoint Tile;
@@ -157,7 +185,7 @@ TArray<FIntPoint> AGeoHexArena::GetRandomAliveTiles(FRandomStream& Stream, int32
 	TArray<FIntPoint> Candidates;
 	for (FIntPoint const Tile : TileCoords)
 	{
-		if (IsTileAlive(Tile) && (Ring < 0 || GetTileRing(Tile) == Ring))
+		if (IsTileAlive(Tile) && !IsTileOccupied(Tile) && (Ring < 0 || GetTileRing(Tile) == Ring))
 		{
 			Candidates.Add(Tile);
 		}
@@ -248,6 +276,7 @@ void AGeoHexArena::ResetAllTiles()
 		return;
 	}
 	HighlightRequests.Reset();
+	TileOccupants.Reset();
 	TileStates.Init(FHexTileState(), TileCoords.Num());
 	ApplyTileVisuals();
 }

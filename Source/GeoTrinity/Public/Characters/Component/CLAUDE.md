@@ -8,8 +8,9 @@ Extends `UCharacterMovementComponent`; caches base speed/accel on `OnRegister`.
 
 ## `GeoDeployableManagerComponent.h`
 On `APlayableCharacter`. Tracks active deployables, enforces max count (global `MaxDeployables=3`, or per-class caps via `DeployableSlots` — 0 = unlimited).
+- `HasReachMaxLimit` first checks the class CDO's `AGeoDeployableBase::IsUnlimitedDeploy()` (default true) and short-circuits to "not at max" — this is a class-level property so every machine agrees without needing `DeployableSlots` to replicate (it doesn't). `AGeoBuffPickup` is the one class that overrides it to false, since the reload buff shower relies on the count limit to evict the oldest uncollected pickup.
 - `CanDeploy`/`HasReachMaxLimit` — true always when `bDestroyOldestWhenLimitReached` (oldest expires on register instead of blocking).
-- `SetDeployableInfinitCount(Class)` — used by patterns spawning arbitrary pillar counts and by boss loot shower.
+- `SetDeployableInfinitCount(Class)`/`RemoveDeployableSlot(Class)` — only still needed to dynamically lift/restore a normally-limited class's cap (the reload buff loot shower); anything unlimited by default doesn't need it.
 - `ForceExpireAll()` — called on character EndPlay and class switch.
 - `OnDeployCountChanged` — broadcast to HUD/UI on count change.
 

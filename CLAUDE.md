@@ -87,7 +87,7 @@ Source/GeoTrinity/
 │   │   ├── GeoAIBlackboardComponent.h
 │   │   └── GeoEnemyAIController.h
 │   ├── HUD/Interface/        # Gameplay↔UI seam (UINTERFACEs implemented by GeoTrinityUI widgets):
-│   │                         #   GeoHUDInterface, GeoCombattantWidgetHost, GeoDeployGaugeWidgetInterface, GeoChargeBeamGaugeWidgetInterface
+│   │                         #   GeoHUDInterface, GeoCombattantWidgetHost, GeoDeployGaugeWidgetInterface, GeoChargeBeamGaugeWidgetInterface, GeoDamageNumberHost
 │   ├── Input/                 # GeoInputComponent
 │   ├── Settings/              # GameDataSettings
 │   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem, GeoSessionSubsystem

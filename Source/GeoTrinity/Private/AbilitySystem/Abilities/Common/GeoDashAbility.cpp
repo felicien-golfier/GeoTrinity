@@ -60,7 +60,7 @@ void UGeoDashAbility::OnDashFinished()
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 
-float UGeoDashAbility::GetFireYaw(AActor const* Instigator) const
+float UGeoDashAbility::GetFireYaw(AActor const* Instigator, int const Seed) const
 {
 	ACharacter const* Character = Cast<ACharacter>(Instigator);
 	if (IsValid(Character) && Character->GetVelocity().SizeSquared() >= SMALL_NUMBER)
@@ -68,5 +68,5 @@ float UGeoDashAbility::GetFireYaw(AActor const* Instigator) const
 		return Character->GetVelocity().Rotation().Yaw;
 	}
 
-	return Super::GetFireYaw(Instigator);
+	return Super::GetFireYaw(Instigator, Seed);
 }

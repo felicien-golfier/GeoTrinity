@@ -30,6 +30,6 @@ Server-only (`ServerOnly`/`InstancedPerActor`/`ReplicateNo`). One class covers b
 
 - `DeployableClass`/`DeployableParams`/`SpawnCount`. `DeployableParams.LifeDrainMaxDuration` arms a mine's fuse (drain→blink→burst); 0 for turrets (live until killed)
 - `bSpawnOnHealthScaledRing` — spawn ring = `HealthRatio * GridRadius` (turrets creep in as boss loses health); off for mines (any standing tile). Stateless by design — survives a boss reset
-- `GetRandomAliveTiles` returns distinct tiles — multi-spawn never stacks two deployables on one tile
-- Calls `SetDeployableInfinitCount` before spawning (deployable cap is meant for player deployables; the arena's tiles are the real limit here)
+- `GetRandomAliveTiles` returns distinct tiles — multi-spawn never stacks two deployables on one tile. It also skips tiles already occupied (`Fire` calls `Arena->SetTileOccupant(Tile, Deployable)` after each spawn), so re-activations don't stack a new deployable on a tile that still holds one
+- Deployables default to unlimited (`AGeoDeployableBase::bUnlimitedDeploy`) — the arena's tiles are the real limit here, no manual cap bypass needed
 - Anything spawned here is recalled by the arena when its tile is destroyed — the shared counterplay to both turrets and mines

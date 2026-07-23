@@ -11,6 +11,7 @@
 
 AGeoHealingZone::AGeoHealingZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
+	bShowDamageNumbers = false;
 	SetCanBeDamaged(false);
 }
 

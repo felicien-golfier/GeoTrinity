@@ -25,6 +25,12 @@ bool UGeoDeployableManagerComponent::HasReachMaxLimit(TSubclassOf<AGeoDeployable
 		return true;
 	}
 
+	// Class-level (CDO) property, agreed on by every machine without needing DeployableSlots to replicate.
+	if (DeployableClass->GetDefaultObject<AGeoDeployableBase>()->IsUnlimitedDeploy())
+	{
+		return false;
+	}
+
 	if (int32 const* ClassMax = DeployableSlots.Find(DeployableClass))
 	{
 		if (*ClassMax <= 0) // 0 = unlimited

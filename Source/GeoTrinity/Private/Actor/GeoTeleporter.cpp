@@ -4,6 +4,7 @@
 
 #include "Characters/PlayableCharacter.h"
 #include "Components/TextRenderComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -76,9 +77,11 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 		return;
 	}
 
+	PlayableCharacter->GetCharacterMovement()->CurrentRootMotion.Clear();
+
 	FVector const Destination = NextTeleporter->GetActorLocation();
-	PlayableCharacter->SetActorLocation(FVector(Destination.X, Destination.Y, PlayableCharacter->GetActorLocation().Z),
-										false, nullptr, ETeleportType::TeleportPhysics);
+	PlayableCharacter->TeleportTo(FVector(Destination.X, Destination.Y, PlayableCharacter->GetActorLocation().Z),
+								   PlayableCharacter->GetActorRotation());
 }
 
 void AGeoTeleporter::OnEndOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,
