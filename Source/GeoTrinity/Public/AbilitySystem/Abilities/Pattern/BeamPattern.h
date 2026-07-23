@@ -70,9 +70,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
 	FColor BeamColor;
 
+	/** Niagara user param names, matching UGeoBeamVFXComponent's User.Beam_Length/Width/Color. */
+	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
+	FName BeamLengthParamName = "Beam_Length";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
+	FName BeamWidthParamName = "Beam_Width";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
+	FName BeamColorParamName = "Color";
+
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> BeamVfxComponent;
-
-	TSet<TWeakObjectPtr<AActor>> HitActors;
 };

@@ -11,8 +11,8 @@ EStateTreeRunStatus FSTTask_ChaseTarget::Tick(FStateTreeExecutionContext& Contex
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AGeoEnemyAIController* AIController = Cast<AGeoEnemyAIController>(InstanceData.AIController);
-	AGeoCharacter* Pawn = AIController ? Cast<AGeoCharacter>(AIController->GetPawn()) : nullptr;
-	if (!ensureMsgf(Pawn, TEXT("ChaseTarget: AIController has no GeoCharacter pawn")))
+	AGeoCharacter* GeoCharacter = AIController ? Cast<AGeoCharacter>(AIController->GetPawn()) : nullptr;
+	if (!ensureMsgf(GeoCharacter, TEXT("ChaseTarget: AIController has no GeoCharacter pawn")))
 	{
 		return EStateTreeRunStatus::Failed;
 	}
@@ -23,12 +23,12 @@ EStateTreeRunStatus FSTTask_ChaseTarget::Tick(FStateTreeExecutionContext& Contex
 		return EStateTreeRunStatus::Running;
 	}
 
-	FVector2D const ToTarget = FVector2D(Target->GetActorLocation()) - FVector2D(Pawn->GetActorLocation());
-	Pawn->SetTargetYaw(FMath::Atan2(ToTarget.Y, ToTarget.X) * (180.f / PI));
+	FVector const ToTarget = Target->GetActorLocation() - GeoCharacter->GetActorLocation();
+	GeoCharacter->SetTargetYaw(ToTarget.ToOrientationRotator().Yaw);
 
 	if (ToTarget.SizeSquared() > FMath::Square(InstanceData.StopDistance))
 	{
-		Pawn->AddMovementInput(FVector(ToTarget.GetSafeNormal(), 0.f));
+		GeoCharacter->AddMovementInput(ToTarget.GetSafeNormal());
 	}
 	return EStateTreeRunStatus::Running;
 }

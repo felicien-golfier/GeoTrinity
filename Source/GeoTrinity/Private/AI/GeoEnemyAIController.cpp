@@ -19,6 +19,11 @@ AGeoEnemyAIController::AGeoEnemyAIController(FObjectInitializer const& ObjectIni
 {
 	StateTreeComp = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComp"));
 	GeoBlackBoard = CreateDefaultSubobject<UGeoAIBlackboardComponent>(TEXT("GeoBlackBoard"));
+
+	// AGeoCharacter::Tick drives ControlRotation itself (clamped turn toward TargetYaw). Leaving this on would have
+	// AAIController::Tick snap ControlRotation back to the pawn's (stale, previous-frame) actor rotation every
+	// frame, fighting that clamp and preventing the boss from ever visibly turning.
+	bSetControlRotationFromPawnOrientation = false;
 }
 
 void AGeoEnemyAIController::SetGenericTeamId(FGenericTeamId const& NewTeamId)

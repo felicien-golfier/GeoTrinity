@@ -76,7 +76,7 @@ void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectCon
 	{
 		EffectContext->SetSuppressGameplayCue(true);
 	}
-	if (bLimitGameplayCue)
+	if (bLimitGameplayCue || bIsDamagePerSecond)
 	{
 		EffectContext->SetLimitGameplayCue(true);
 	}
@@ -140,7 +140,7 @@ void FHealEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectConte
 	{
 		EffectContext->SetSuppressGameplayCue(true);
 	}
-	if (bLimitGameplayCue)
+	if (bLimitGameplayCue || bIsHealPerSecond)
 	{
 		EffectContext->SetLimitGameplayCue(true);
 	}

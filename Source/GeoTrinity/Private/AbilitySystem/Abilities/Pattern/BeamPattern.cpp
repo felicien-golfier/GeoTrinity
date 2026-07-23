@@ -11,11 +11,6 @@
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-namespace
-{
-	FName const BeamLengthParamName{"User.Beam_Length"};
-	FName const BeamWidthParamName{"User.Beam_Width"};
-} // namespace
 
 void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
@@ -32,7 +27,7 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 			this, BeamVfxSystem, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
 			/*bAutoDestroy*/ false, /*bAutoActivate*/ false);
 		ensureMsgf(BeamVfxComponent, TEXT("UBeamPattern: failed to spawn the beam VFX system"));
-		BeamVfxComponent->SetColorParameter("Color", BeamColor);
+		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor);
 	}
 }
 
@@ -50,13 +45,11 @@ float UBeamPattern::GetBeamYaw(float const SpentTime) const
 
 void UBeamPattern::StartPattern()
 {
-	HitActors.Empty();
-
 	if (IsValid(BeamVfxComponent))
 	{
+		BeamVfxComponent->Activate(true);
 		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
 		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth);
-		BeamVfxComponent->Activate(true);
 	}
 
 	Super::StartPattern();
@@ -92,14 +85,8 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 		{
 			for (AActor* HitActor : GeoASLib::GetInteractableActorsInLine(
 					 this, GeoASLib::GetTeamId(StoredPayload.Owner), TeamAttitudeMask::HostileOrNeutral,
-					 /*bMustBeDamageable*/ true, StoredPayload.Origin, Forward, BeamRange, BeamHalfWidth))
+					 /*bMustBeDamageable*/ true, FVector2D(Location), Forward, BeamRange, BeamHalfWidth))
 			{
-				if (HitActors.Contains(HitActor))
-				{
-					continue;
-				}
-				HitActors.Add(HitActor);
-
 				if (UGeoAbilitySystemComponent* const TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
 				{
 					GeoASLib::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
@@ -160,6 +147,5 @@ void UBeamPattern::EndPattern(bool const bForceStop)
 		}
 	}
 
-	HitActors.Empty();
 	Super::EndPattern(bForceStop);
 }

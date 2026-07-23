@@ -4,10 +4,8 @@
 
 #include "AI/GeoEnemyAIController.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
-#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "GameFramework/Character.h"
 #include "Tool/UGeoGameplayLibrary.h"
 

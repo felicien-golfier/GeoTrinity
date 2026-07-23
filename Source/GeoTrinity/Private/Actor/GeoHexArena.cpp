@@ -186,17 +186,16 @@ bool AGeoHexArena::GetLastAliveTileAlongRay(FVector2D const Origin, FVector2D co
 	float const MaxDistance =
 		FVector2D::Distance(Origin, FVector2D(GetActorLocation())) + GridRadius * TileSize * Sqrt3;
 
-	bool bFoundTile = false;
 	for (float Distance = MaxDistance; Distance >= 0.f; Distance -= StepSize)
 	{
 		FIntPoint Tile;
 		if (IsOverAliveTile(Origin + Forward * Distance, Tile))
 		{
 			OutTile = Tile;
-			bFoundTile = true;
+			return true;
 		}
 	}
-	return bFoundTile;
+	return false;
 }
 
 void AGeoHexArena::DestroyTiles(TConstArrayView<FIntPoint> const Tiles)

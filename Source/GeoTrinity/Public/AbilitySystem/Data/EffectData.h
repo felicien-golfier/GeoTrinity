@@ -139,7 +139,7 @@ struct FDamageEffectData : public FEffectData
 
 	/** When true, UExecCalc_Damage rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on
 	 * tick-based effects. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "!bIsDamagePerSecond", EditoConditionHides))
 	bool bLimitGameplayCue{false};
 
 	/** When true, the damage is not reported to the DPS meter (UGeoCombatStatsSubsystem). Use for self-inflicted
@@ -186,7 +186,7 @@ struct FHealEffectData : public FEffectData
 
 	/** When true, UExecCalc_Heal rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based
 	 * effects. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "!bIsHealPerSecond", EditoConditionHides))
 	bool bLimitGameplayCue{false};
 
 	/** When true, the heal is not reported to the HPS meter (UGeoCombatStatsSubsystem). */
