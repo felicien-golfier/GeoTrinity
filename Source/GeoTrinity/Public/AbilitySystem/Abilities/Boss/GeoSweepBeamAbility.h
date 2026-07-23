@@ -17,6 +17,7 @@ class GEOTRINITY_API UGeoSweepBeamAbility : public UPatternAbility
 	GENERATED_BODY()
 
 public:
+	/** Returns the sweep arc angle in degrees fed to the BeamPattern for this ability. */
 	float GetSweepAngle() const { return Angle; }
 
 protected:

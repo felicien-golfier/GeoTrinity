@@ -31,6 +31,13 @@ public:
 	virtual void SetGenericTeamId(FGenericTeamId const& NewTeamId) override;
 
 	virtual FGenericTeamId GetGenericTeamId() const override;
+
+	/**
+	 * Starts the proximity aggro timer and binds the damage-received delegate on the given enemy.
+	 * Once called, the AI will begin targeting the nearest player and immediately aggro on any incoming hit.
+	 *
+	 * @param EnemyChar   The possessed enemy whose ASC receives the on-damage aggro binding.
+	 */
 	void InitializeAggro(AEnemyCharacter const* EnemyChar);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
