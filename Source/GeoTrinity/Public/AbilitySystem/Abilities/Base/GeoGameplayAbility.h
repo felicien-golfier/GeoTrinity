@@ -142,9 +142,9 @@ public:
 	/** Applies the designer-tunable GaugeChargingSpeedCurve easing to a raw charge ratio in [0, 1]. */
 	float ApplyChargingCurve(float RawRatio) const;
 
-	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. */
+	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. Public so subclasses can bind it directly to timer delegates. */
 	UFUNCTION()
-	void BuildDataAndFire(); // Public to let subclass call it in Timers.
+	void BuildDataAndFire();
 
 protected:
 	/**
