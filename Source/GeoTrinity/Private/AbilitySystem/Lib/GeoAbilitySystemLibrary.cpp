@@ -14,6 +14,7 @@
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/GeoInteractableActor.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "Characters/GeoCharacter.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerState.h"
@@ -560,14 +561,13 @@ void UGeoAbilitySystemLibrary::InitDeployable(AGeoDeployableBase* Deployable, FA
 }
 
 AGeoProjectile*
-UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> const ProjectileClass,
+UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, FGeoProjectileParams const& Params,
 											   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 											   float const SpawnServerTime, FPredictionKey PredictionKey)
 {
-
 	AGeoProjectile* Projectile =
-		StartSpawnProjectile(World, ProjectileClass, SpawnTransform, Payload, EffectDataArray, PredictionKey);
+		StartSpawnProjectile(World, Params, SpawnTransform, Payload, EffectDataArray, PredictionKey);
 	if (!Projectile)
 	{
 		return nullptr;
@@ -577,42 +577,40 @@ UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, TSubclassOf<
 }
 
 AGeoProjectile*
-UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> const ProjectileClass,
+UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, FGeoProjectileParams const& Params,
 											   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 											   FPredictionKey PredictionKey)
 {
-
-	if (!World || !ProjectileClass)
+	if (!World || !Params.ProjectileClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[UGeoAbilitySystemLibrary::SpawnProjectile] Invalid World or ProjectileClass"));
+		UE_LOG(LogTemp, Error, TEXT("[UGeoAbilitySystemLibrary::StartSpawnProjectile] Invalid World or ProjectileClass"));
 		return nullptr;
 	}
 
 	AGeoProjectile* Projectile;
-	if (ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
+	if (Params.ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
 	{
-		Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(ProjectileClass, SpawnTransform, Payload.Owner,
-																		 Cast<APawn>(Payload.Instigator), false);
+		Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(
+			Params.ProjectileClass, SpawnTransform, Payload.Owner, Cast<APawn>(Payload.Instigator), false);
 		if (!Projectile)
 		{
 			UE_LOG(LogTemp, Error,
-				   TEXT("[UGeoAbilitySystemLibrary::SpawnProjectile] RequestActor returned nullptr for %s"),
-				   *ProjectileClass->GetName());
+				   TEXT("[UGeoAbilitySystemLibrary::StartSpawnProjectile] RequestActor returned nullptr for %s"),
+				   *Params.ProjectileClass->GetName());
 			return nullptr;
 		}
 	}
 	else
 	{
-		Projectile = World->SpawnActorDeferred<AGeoProjectile>(ProjectileClass, SpawnTransform, Payload.Owner,
+		Projectile = World->SpawnActorDeferred<AGeoProjectile>(Params.ProjectileClass, SpawnTransform, Payload.Owner,
 															   Cast<APawn>(Payload.Instigator),
 															   ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
 		if (!Projectile)
 		{
 			UE_LOG(LogTemp, Error,
-				   TEXT("[UGeoAbilitySystemLibrary::SpawnProjectile] SpawnActor returned nullptr for %s"),
-				   *ProjectileClass->GetName());
+				   TEXT("[UGeoAbilitySystemLibrary::StartSpawnProjectile] SpawnActor returned nullptr for %s"),
+				   *Params.ProjectileClass->GetName());
 			return nullptr;
 		}
 	}
@@ -620,6 +618,7 @@ UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, TSubclassOf<
 	Projectile->Payload = Payload;
 	Projectile->EffectDataArray = EffectDataArray;
 	Projectile->PredictionKeyId = PredictionKey.Current;
+	Projectile->ApplyProjectileParams(Params);
 
 	return Projectile;
 }

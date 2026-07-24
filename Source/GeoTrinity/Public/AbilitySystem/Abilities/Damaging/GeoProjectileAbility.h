@@ -4,12 +4,12 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "GeoProjectileAbility.generated.h"
 
 enum class EProjectileTarget : uint8;
-class AGeoProjectile;
 /**
  * Single-shot ability that spawns one or more projectiles on activation.
  * Fires client-predicted on the local machine and authoritative on the server via OnFireTargetDataReceived.
@@ -57,21 +57,7 @@ protected:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
-	TSubclassOf<AGeoProjectile> ProjectileClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
-	bool bOverrideDistanceSpan = false;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideDistanceSpan",
-					  EditConditionHides = "true", UIMin = "0"))
-	float DistanceSpan = 2000.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
-	bool bOverrideSpeed = false;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideSpeed",
-					  EditConditionHides = "true", UIMin = "0"))
-	float ProjectileSpeed = 3000.f;
+	FGeoProjectileParams ProjectileParams;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	EProjectileTarget Target;

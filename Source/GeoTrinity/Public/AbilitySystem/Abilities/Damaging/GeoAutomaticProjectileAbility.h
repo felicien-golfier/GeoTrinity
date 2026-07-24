@@ -3,12 +3,12 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "GeoAutomaticProjectileAbility.generated.h"
 
 enum class EProjectileTarget : uint8;
-class AGeoProjectile;
 
 /**
  * High fire rate ability that spawns projectiles while input is held.
@@ -24,21 +24,7 @@ protected:
 	virtual bool ExecuteShot_Implementation() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
-	TSubclassOf<AGeoProjectile> ProjectileClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
-	bool bOverrideDistanceSpan = false;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideDistanceSpan",
-					  EditConditionHides = "true", UIMin = "0"))
-	float DistanceSpan = 2000.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
-	bool bOverrideSpeed = false;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideSpeed",
-					  EditConditionHides = "true", UIMin = "0"))
-	float ProjectileSpeed = 3000.f;
+	FGeoProjectileParams ProjectileParams;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	EProjectileTarget Target;

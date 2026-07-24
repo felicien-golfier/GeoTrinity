@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "Components/AudioComponent.h"
@@ -14,10 +15,13 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
 #include "System/GeoPoolableInterface.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "UObject/ConstructorHelpers.h"
 
 static TAutoConsoleVariable CVarDrawServerProjectiles(TEXT("Geo.DrawServerProjectiles"), false,
 													  TEXT("Draw debug spheres for projectiles on the server"));
@@ -25,6 +29,30 @@ static TAutoConsoleVariable CVarDrawServerProjectiles(TEXT("Geo.DrawServerProjec
 static TAutoConsoleVariable
 	CVarReplaceLocalProjectiles(TEXT("Geo.ReplaceLocalProjectiles"), false,
 								TEXT("When true, server projectile Does replicate to owner and override local one"));
+
+namespace
+{
+	FName const VfxRadiusParam(TEXT("User.Bullet_Radius"));
+	FName const VfxHeadColorParam(TEXT("User.Bullet_HeadColor"));
+	FName const VfxTrailColorParam(TEXT("User.Bullet_TrailColor"));
+	FName const VfxTrailLifetimeParam(TEXT("User.Trail_LifetimeScale"));
+
+	template <typename T>
+	T ResolveOverrideParam(EOverrideParam Mode, T const& OverrideValue, T const& SettingsValue,
+						   T const& BlueprintDefault)
+	{
+		switch (Mode)
+		{
+		case EOverrideParam::OverrideValue:
+			return OverrideValue;
+		case EOverrideParam::UseGameDataSettings:
+			return SettingsValue;
+		case EOverrideParam::KeepBlueprintDefaultValue:
+			return BlueprintDefault;
+		}
+		return BlueprintDefault;
+	}
+} // namespace
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoProjectile::AGeoProjectile()
@@ -50,6 +78,15 @@ AGeoProjectile::AGeoProjectile()
 
 	LoopingSoundComponent = CreateDefaultSubobject<UAudioComponent>("LoopingSoundComponent");
 	LoopingSoundComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+
+	BulletVFX = CreateDefaultSubobject<UNiagaraComponent>("BulletVFX");
+	BulletVFX->SetupAttachment(Sphere);
+	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> BulletSystem(
+		TEXT("/Game/VFX/Assets/NS_GeoTrinity_Projectile01.NS_GeoTrinity_Projectile01"));
+	if (BulletSystem.Succeeded())
+	{
+		BulletVFX->SetAsset(BulletSystem.Object);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -79,6 +116,13 @@ bool AGeoProjectile::IsNetRelevantFor(AActor const* RealViewer, AActor const* Vi
 void AGeoProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Simulated proxies never run ApplyProjectileParams (that happens where the projectile is spawned), so give them the
+	// per-Blueprint look here. Authoritative and predicted instances are locally ROLE_Authority and already applied it.
+	if (GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		ApplyCosmetics(DefaultCosmetics);
+	}
 
 	if (!Implements<UGeoPoolableInterface>())
 	{
@@ -342,11 +386,6 @@ void AGeoProjectile::InitProjectileMovementComponent()
 	{
 		ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = ReplicatedSpeed;
 	}
-	else if (bUseGeneralSpellSpeed)
-	{
-		ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed =
-			GetDefault<UGameDataSettings>()->GeneralSpellSpeed;
-	}
 
 	// Clear any previous movement state
 	ProjectileMovement->SetUpdatedComponent(GetRootComponent());
@@ -425,7 +464,6 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OverrideDistanceSpan(float const Distance)
 {
-	bUseGeneralSpellDistance = false;
 	DistanceSpan = Distance;
 	DistanceSpanSqr = FMath::Square(DistanceSpan);
 }
@@ -433,9 +471,71 @@ void AGeoProjectile::OverrideDistanceSpan(float const Distance)
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OverrideSpeed(float const Speed)
 {
-	bUseGeneralSpellSpeed = false;
 	ReplicatedSpeed = Speed;
 	ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = Speed;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::ApplyCosmetics(FProjectileCosmeticParams const& Cosmetics)
+{
+	Sphere->SetSphereRadius(Cosmetics.Radius);
+	BulletVFX->SetVariableFloat(VfxRadiusParam, Cosmetics.Radius);
+	BulletVFX->SetVariableLinearColor(VfxHeadColorParam, Cosmetics.HeadColor);
+	BulletVFX->SetVariableLinearColor(VfxTrailColorParam, Cosmetics.TrailColor);
+	BulletVFX->SetVariableFloat(VfxTrailLifetimeParam, Cosmetics.TrailLifetimeScale);
+}
+
+#if WITH_EDITOR
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::PreviewCosmetics()
+{
+	ApplyCosmetics(DefaultCosmetics);
+	BulletVFX->ReinitializeSystem();
+}
+#endif
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::ApplyProjectileParams(FGeoProjectileParams const& Params)
+{
+	UGameDataSettings const* Settings = GetDefault<UGameDataSettings>();
+
+	switch (Params.OverrideDistanceSpan)
+	{
+	case EOverrideParam::UseGameDataSettings:
+		OverrideDistanceSpan(Settings->GeneralSpellDistance);
+		break;
+	case EOverrideParam::OverrideValue:
+		OverrideDistanceSpan(Params.DistanceSpan);
+		break;
+	case EOverrideParam::KeepBlueprintDefaultValue:
+		break;
+	}
+
+	switch (Params.OverrideSpeed)
+	{
+	case EOverrideParam::UseGameDataSettings:
+		OverrideSpeed(Settings->GeneralSpellSpeed);
+		break;
+	case EOverrideParam::OverrideValue:
+		OverrideSpeed(Params.ProjectileSpeed);
+		break;
+	case EOverrideParam::KeepBlueprintDefaultValue:
+		break;
+	}
+
+	// Colors and trail lifetime have no settings value, so their UseGameDataSettings resolves to DefaultCosmetics, same
+	// as KeepBlueprintDefaultValue; only an explicit OverrideValue changes them. Radius does read a settings value.
+	FProjectileCosmeticParams Resolved;
+	Resolved.Radius = ResolveOverrideParam(Params.OverrideRadius, Params.Radius, Settings->GeneralProjectileRadius,
+										   DefaultCosmetics.Radius);
+	Resolved.HeadColor = ResolveOverrideParam(Params.OverrideHeadColor, Params.HeadColor, DefaultCosmetics.HeadColor,
+											  DefaultCosmetics.HeadColor);
+	Resolved.TrailColor = ResolveOverrideParam(Params.OverrideTrailColor, Params.TrailColor, DefaultCosmetics.TrailColor,
+											   DefaultCosmetics.TrailColor);
+	Resolved.TrailLifetimeScale =
+		ResolveOverrideParam(Params.OverrideTrailLifetimeScale, Params.TrailLifetimeScale,
+							 DefaultCosmetics.TrailLifetimeScale, DefaultCosmetics.TrailLifetimeScale);
+	ApplyCosmetics(Resolved);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -460,8 +560,7 @@ void AGeoProjectile::InitProjectileLife()
 	Sphere->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnSphereHit);
 
 	InitialPosition = GetActorLocation();
-	DistanceSpanSqr =
-		FMath::Square(bUseGeneralSpellDistance ? GetDefault<UGameDataSettings>()->GeneralSpellDistance : DistanceSpan);
+	DistanceSpanSqr = FMath::Square(DistanceSpan);
 	InitProjectileMovementComponent();
 
 	bIsEnding = false;

@@ -9,7 +9,7 @@ Projectile-firing ability base classes.
 - Cost committed once at activation
 - `Fire()` → client spawns predicted projectile; `OnFireTargetDataReceived()` → server spawns authoritative
 - `SpawnProjectile()` — virtual override point; uses `StartSpawnProjectile`+`FinishSpawnProjectile` for mid-spawn property injection
-- `bOverrideDistanceSpan`/`DistanceSpan`, `bOverrideSpeed`/`ProjectileSpeed` — per-ability overrides applied between start/finish-spawn; otherwise projectile uses `GameDataSettings::GeneralSpellSpeed`. Resolve in ability descriptions as `{DistanceSpan}`/`{ProjectileSpeed}`
+- `ProjectileParams` (`FGeoProjectileParams`, see `Actor/Projectile/CLAUDE.md`) — one member holding the projectile class + its distance/speed/radius/color overrides; the struct overload of `StartSpawnProjectile` applies it. Descriptions resolve `{DistanceSpan}`/`{ProjectileSpeed}` off `ProjectileParams`
 - `SpawnProjectilesUsingTarget()` — one projectile per direction from `GetTargetDirections()` (Forward/AllPlayers/etc.)
 
 ## `GeoAutomaticFireAbility.h` — hold-to-fire loop (abstract)
@@ -22,4 +22,4 @@ Projectile-firing ability base classes.
 - No real GAS cooldown — overrides `GetCooldownTimeRemainingAndDuration` to report the per-shot fire-delay timer, so the ability-bar sweep fills/depletes per shot instead of staying grayed for the whole hold
 
 ## `GeoAutomaticProjectileAbility.h` — concrete auto-fire
-Extends `UGeoAutomaticFireAbility`, implements `ExecuteShot()` spawning via `ProjectileClass`. Configure via `ProjectileClass` + effect data in BP; same `bOverrideDistanceSpan`/`bOverrideSpeed` per-ability overrides as `GeoProjectileAbility`.
+Extends `UGeoAutomaticFireAbility`, implements `ExecuteShot()` spawning via `ProjectileParams.ProjectileClass`. Configure via `ProjectileParams` + effect data in BP; same `FGeoProjectileParams` overrides as `GeoProjectileAbility`.

@@ -29,6 +29,7 @@ struct FGameplayAbilitySpec;
 class UGameplayAbility;
 struct FGameplayEffectContextHandle;
 struct FGameplayTag;
+struct FGeoProjectileParams;
 class UAbilitySystemComponent;
 /**
  * A library of helper functions for the ASC
@@ -178,24 +179,26 @@ public:
 	/** PROJECTILES **/
 
 	/**
-	 * Fully spawns and activates a projectile from the actor pool.
-	 * Calls StartSpawnProjectile followed by FinishSpawnProjectile (which fast-forwards position by elapsed ping time).
+	 * Fully spawns and activates a projectile from Params.ProjectileClass, applying Params
+	 * (distance/speed/radius/colors). Calls StartSpawnProjectile then FinishSpawnProjectile (which fast-forwards
+	 * position by elapsed ping time).
 	 *
 	 * @param World            The world to spawn into.
-	 * @param ProjectileClass  The projectile class to spawn.
+	 * @param Params           Projectile class plus its distance/speed/radius/color overrides.
 	 * @param SpawnTransform   Initial world transform for the projectile.
 	 * @param Payload          Network sync data (owner, instigator, origin, yaw, timing, seed).
 	 * @param EffectDataArray  Effects to apply on hit.
 	 * @param SpawnServerTime  Synchronized server time at spawn, used to fast-forward position by elapsed ping.
 	 * @return                 The spawned projectile, or nullptr on failure.
 	 */
-	static AGeoProjectile* FullySpawnProjectile(UWorld* const World, TSubclassOf<AGeoProjectile> ProjectileClass,
+	static AGeoProjectile* FullySpawnProjectile(UWorld* const World, FGeoProjectileParams const& Params,
 												FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 												TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 												float SpawnServerTime, FPredictionKey PredictionKey = FPredictionKey{});
 
-	/** Begins deferred spawn of a projectile, sets its payload and effect data, but does not call FinishSpawning. */
-	static AGeoProjectile* StartSpawnProjectile(UWorld* World, TSubclassOf<AGeoProjectile> ProjectileClass,
+	/** Begins deferred spawn from Params.ProjectileClass, sets payload/effect data, and applies Params
+	 * (distance/speed/radius/colors) before FinishSpawning. */
+	static AGeoProjectile* StartSpawnProjectile(UWorld* World, FGeoProjectileParams const& Params,
 												FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 												TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 												FPredictionKey PredictionKey = FPredictionKey{});

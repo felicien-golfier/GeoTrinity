@@ -3,11 +3,10 @@
 #pragma once
 
 #include "Actor/Deployable/GeoDeployableBase.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "GeoMine.generated.h"
-
-class AGeoProjectile;
 
 /**
  * Boss mine: sits on one arena tile and runs a fuse. If it survives the fuse it bursts projectiles in every direction.
@@ -39,7 +38,7 @@ protected:
 	virtual void RecallEffect(float Value) override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mine")
-	TSubclassOf<AGeoProjectile> BurstProjectileClass;
+	FGeoProjectileParams ProjectileParams;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mine", meta = (ClampMin = "1"))
 	int32 BurstProjectileCount = 12;

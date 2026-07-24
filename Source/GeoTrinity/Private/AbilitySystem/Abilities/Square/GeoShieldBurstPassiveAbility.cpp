@@ -14,6 +14,9 @@ UGeoShieldBurstPassiveAbility::UGeoShieldBurstPassiveAbility()
 	// Passives are server-owned: without this, the client-side CancelAllAbilities in Death/ReviveLogic sends
 	// ServerCancelAbility and kills the server's freshly reactivated instance after a revive.
 	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
+
+	ProjectileParams.OverrideSpeed = EOverrideParam::OverrideValue;
+	ProjectileParams.ProjectileSpeed = 500.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -111,7 +114,8 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 	PassiveComponent->SetGaugeRatio(0.f);
 	ChargeTimerHandle.Invalidate();
 
-	if (!ensureMsgf(ShieldBurstClass, TEXT("UGeoShieldBurstPassiveAbility: ShieldBurstClass is not set")))
+	if (!ensureMsgf(ProjectileParams.ProjectileClass,
+					TEXT("UGeoShieldBurstPassiveAbility: ProjectileParams.ProjectileClass is not set")))
 	{
 		return;
 	}
@@ -139,7 +143,7 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 	FTransform const SpawnTransform{Directions[0].Rotation().Quaternion(), Origin};
 
 	AGeoShieldBurstProjectile* Projectile = Cast<AGeoShieldBurstProjectile>(
-		GeoASLib::StartSpawnProjectile(GetWorld(), ShieldBurstClass, SpawnTransform, StoredPayload, {}));
+		GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform, StoredPayload, {}));
 	if (!ensureMsgf(Projectile, TEXT("UGeoShieldBurstPassiveAbility: failed to spawn GeoShieldBurstProjectile")))
 	{
 		return;
@@ -147,7 +151,6 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 
 	Projectile->ShieldAmount = ShieldAmount;
 	Projectile->EnemyBounceMultiplier = EnemyBounceMultiplier;
-	Projectile->OverrideSpeed(ProjectileSpeed);
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, GeoLib::GetServerTime(GetWorld()),
 									FPredictionKey{});
 }

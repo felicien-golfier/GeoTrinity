@@ -11,10 +11,10 @@ void UConeSprayPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
 	Super::OnCreate(AbilityTag, Owner);
 
-	if (ensureMsgf(ProjectileClass, TEXT("UConeSprayPattern: ProjectileClass is not set")))
+	if (ensureMsgf(ProjectileParams.ProjectileClass, TEXT("UConeSprayPattern: ProjectileClass is not set")))
 	{
 		UGeoActorPoolingSubsystem::Get(GetWorld())
-			->PreSpawn(ProjectileClass, static_cast<uint16>(ProjectileCountPerSalve * SalveNumber));
+			->PreSpawn(ProjectileParams.ProjectileClass, static_cast<uint16>(ProjectileCountPerSalve * SalveNumber));
 	}
 }
 
@@ -54,7 +54,7 @@ void UConeSprayPattern::SpawnSprayProjectile() const
 
 		FTransform const SpawnTransform(FRotator(0.f, ProjectilePayload.Yaw, 0.f),
 										FVector(StoredPayload.Origin, ArbitraryCharacterZ));
-		GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform, ProjectilePayload, EffectDataArray,
+		GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform, ProjectilePayload, EffectDataArray,
 									   ProjectilePayload.ServerSpawnTime);
 	}
 }

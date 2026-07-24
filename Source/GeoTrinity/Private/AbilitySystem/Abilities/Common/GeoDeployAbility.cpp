@@ -14,8 +14,8 @@ UGeoDeployAbility::UGeoDeployAbility()
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	FireMode = EFireMode::ChargeForFireDelay;
 	CommitBehaviour = ECommitBehaviour::DoNotAutoCommit;
-	bOverrideSpeed = true;
-	ProjectileSpeed = 2000.f;
+	ProjectileParams.OverrideSpeed = EOverrideParam::OverrideValue;
+	ProjectileParams.ProjectileSpeed = 2000.f;
 	bActivateOnFreshPressOnly = true;
 }
 
@@ -153,7 +153,7 @@ FGeoAbilityTargetData UGeoDeployAbility::GetUpdatedTargetData()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float const SpawnServerTime) const
 {
-	checkf(ProjectileClass, TEXT("No ProjectileClass set on GeoDeployAbility!"));
+	checkf(ProjectileParams.ProjectileClass, TEXT("No ProjectileClass set on GeoDeployAbility!"));
 
 	FPredictionKey PredictionKey;
 	EGameplayAbilityActivationMode::Type const ActivationMode = GetCurrentActivationInfo().ActivationMode;
@@ -164,30 +164,28 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 		PredictionKey = GetCurrentActivationInfo().GetActivationPredictionKey();
 	}
 
-	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform,
-																StoredPayload, GetEffectDataArray(), PredictionKey);
+	// The charge-derived deploy distance is the default; an explicit ProjectileParams override (if set) takes over.
+	UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
+	FGeoProjectileParams SpawnParams = ProjectileParams;
+	if (SpawnParams.OverrideDistanceSpan != EOverrideParam::OverrideValue)
+	{
+		SpawnParams.OverrideDistanceSpan = EOverrideParam::OverrideValue;
+		SpawnParams.DistanceSpan = FMath::Clamp(StoredPayload.Seed, FMath::RoundToInt(GameDataSettings->MinDeployDistance),
+												FMath::RoundToInt(GameDataSettings->MaxDeployDistance));
+	}
+
+	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), SpawnParams, SpawnTransform, StoredPayload,
+																GetEffectDataArray(), PredictionKey);
 	if (!IsValid(Projectile))
 	{
 		ensureMsgf(false, TEXT("GeoDeployAbility: Failed to spawn projectile!"));
 		return;
 	}
 
-	UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
-	int32 const ClampedDeployDistance = FMath::Clamp(StoredPayload.Seed, FMath::RoundToInt(GameDataSettings->MinDeployDistance),
-													   FMath::RoundToInt(GameDataSettings->MaxDeployDistance));
-	Projectile->OverrideDistanceSpan(ClampedDeployDistance);
 	ADeployableSpawnerProjectile* DeployableSpawnerProjectile = Cast<ADeployableSpawnerProjectile>(Projectile);
 	checkf(DeployableSpawnerProjectile, TEXT("SpawnerProjectile  must be a ADeployableSpawnerProjectile"));
 	DeployableSpawnerProjectile->Params = Params;
 	DeployableSpawnerProjectile->DeployableActorClass = DeployableActorClass;
-	if (bOverrideDistanceSpan)
-	{
-		Projectile->OverrideDistanceSpan(DistanceSpan);
-	}
-	if (bOverrideSpeed)
-	{
-		Projectile->OverrideSpeed(ProjectileSpeed);
-	}
 
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
 }

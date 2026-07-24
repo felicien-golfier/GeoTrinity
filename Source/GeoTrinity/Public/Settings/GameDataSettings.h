@@ -44,7 +44,8 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UUserWidget> DefaultDeployableHealthBarWidgetClass;
 
-	/** Combatant health-bar WidgetComponent class (UGeoCombattantWidgetComp). Soft so gameplay never names the UI type. */
+	/** Combatant health-bar WidgetComponent class (UGeoCombattantWidgetComp). Soft so gameplay never names the UI type.
+	 */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UWidgetComponent> CombattantWidgetComponentClass;
 
@@ -69,22 +70,28 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralSpellSpeed = 550.f;
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	/** Project-wide default projectile radius, used when a spawn's FGeoProjectileParams leaves OverrideRadius on
+	 * UseGameDataSettings. Drives both the Niagara bullet visual and the sphere collider. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile")
+	float GeneralProjectileRadius = 15.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile")
 	float MinDeployDistance = 150.f;
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile")
 	float MaxDeployDistance = 1500.f;
 
 	/** Maximum time the server fast-forwards a projectile to compensate the client's reported spawn time. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay", meta = (ClampMin = "0"))
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile", meta = (ClampMin = "0"))
 	float MaxLatencyCompensation = .5f;
 
-	/** Maximum distance a client-reported fire origin may deviate from the server's avatar before it is snapped back. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay", meta = (ClampMin = "0"))
+	/** Maximum distance a client-reported fire origin may deviate from the server's avatar before it is snapped back.
+	 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile", meta = (ClampMin = "0"))
 	float MaxFireOriginDeviation = 300.f;
 
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile")
 	TSoftObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
 
 	/** Shared generic-sound cue tag, executed locally for one-off gameplay sounds (e.g. deploy stack refilled). */

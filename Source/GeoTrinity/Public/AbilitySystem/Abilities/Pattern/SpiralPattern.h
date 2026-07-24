@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "SpiralPattern.generated.h"
@@ -32,9 +33,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
 	float RoundNumber;
 	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
-	float DistanceSpan = 2000.f;
-	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
-	TSubclassOf<AGeoProjectile> ProjectileClass;
+	FGeoProjectileParams ProjectileParams;
 
 	UPROPERTY(Transient)
 	TArray<AGeoProjectile*> Projectiles;

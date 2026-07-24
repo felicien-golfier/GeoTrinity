@@ -12,7 +12,7 @@
 
 **Projectile spawning** (pool-aware):
 - `FullySpawnProjectile(...)` — request from pool, init, advance position
-- `StartSpawnProjectile()`/`FinishSpawnProjectile()` — split spawn for deferred init
+- `StartSpawnProjectile()`/`FinishSpawnProjectile()` — split spawn for deferred init. `StartSpawnProjectile`/`FullySpawnProjectile` take **only** `FGeoProjectileParams` (class + overrides) and apply it via `ApplyProjectileParams` — there is no raw `TSubclassOf` overload, so every spawn carries its params. `SpiralPattern` (requests from the pool directly, not through these) calls `Projectile->ApplyProjectileParams` itself
 - `AdvanceProjectile(ElapsedSinceServerSpawnTime)` compensates for replication lag
 
 **Targeting:**

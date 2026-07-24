@@ -12,6 +12,11 @@ AGeoTurret::AGeoTurret(FObjectInitializer const& ObjectInitializer) : Super(Obje
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = 0.f;
+
+	ProjectileParams.OverrideDistanceSpan = EOverrideParam::OverrideValue;
+	ProjectileParams.DistanceSpan = 2000.f;
+	ProjectileParams.OverrideSpeed = EOverrideParam::OverrideValue;
+	ProjectileParams.ProjectileSpeed = 4000.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -98,9 +103,9 @@ void AGeoTurret::TryFire()
 		return;
 	}
 
-	if (!TurretProjectileClass)
+	if (!ProjectileParams.ProjectileClass)
 	{
-		ensureMsgf(TurretProjectileClass, TEXT("AGeoTurret: TurretProjectileClass is not set!"));
+		ensureMsgf(ProjectileParams.ProjectileClass, TEXT("AGeoTurret: ProjectileParams.ProjectileClass is not set!"));
 		return;
 	}
 
@@ -118,20 +123,11 @@ void AGeoTurret::TryFire()
 	Payload.AbilityLevel = Data.Level;
 	Payload.AbilityTag = GetData()->AbilityTag;
 
-	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), TurretProjectileClass, SpawnTransform,
-																Payload, GetData()->EffectDataArray);
+	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform, Payload,
+																GetData()->EffectDataArray);
 	if (!ensureMsgf(Projectile, TEXT("TurretProjectile: Failed to spawn projectile!")))
 	{
 		return;
-	}
-
-	if (bOverrideDistanceSpan)
-	{
-		Projectile->OverrideDistanceSpan(DistanceSpan);
-	}
-	if (bOverrideSpeed)
-	{
-		Projectile->OverrideSpeed(ProjectileSpeed);
 	}
 
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, FPredictionKey());

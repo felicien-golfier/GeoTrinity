@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Data/GeoSoundRow.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "StructUtils/InstancedStruct.h"
@@ -15,6 +16,7 @@ class AGeoCharacter;
 class UGeoAbilitySystemComponent;
 class UProjectileMovementComponent;
 class UNiagaraSystem;
+class UNiagaraComponent;
 class USphereComponent;
 class USceneComponent;
 class UAudioComponent;
@@ -100,6 +102,21 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OverrideSpeed(float Speed);
 
+	/**
+	 * Applies a spawn-params bundle to this instance: distance/speed plus the cosmetics (radius/colors/trail). Each value
+	 * resolves per its EOverrideParam toggle — GameDataSettings value, the projectile's DefaultCosmetics, or explicit
+	 * override — then the resolved cosmetics are pushed via ApplyCosmetics. A reused pooled projectile is fully
+	 * re-resolved each spawn, so it never keeps the previous instance's look.
+	 */
+	void ApplyProjectileParams(FGeoProjectileParams const& Params);
+
+#if WITH_EDITOR
+	/** Editor-only preview button: pushes DefaultCosmetics onto BulletVFX and reinitializes it so the look is visible
+	 * without entering play. Acts on the object being edited — use a placed instance or the Blueprint preview actor. */
+	UFUNCTION(CallInEditor, Category = "GeoProjectile|Cosmetics")
+	void PreviewCosmetics();
+#endif
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
@@ -116,8 +133,8 @@ public:
 	int16 PredictionKeyId = 0;
 
 	/** Resolved travel speed replicated from the server so simulated proxies move at the same speed as authority
-	 * (server-authoritative projectiles have no client-side OverrideSpeed to clear bUseGeneralSpellSpeed). 0 = unset,
-	 * fall back to the local bUseGeneralSpellSpeed resolution. */
+	 * (server-authoritative projectiles never ran ApplyProjectileParams client-side). 0 = unset, keep the movement
+	 * component's own InitialSpeed. */
 	UPROPERTY(Replicated)
 	float ReplicatedSpeed = 0.f;
 
@@ -204,6 +221,17 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> LoopingSoundComponent;
 
+	/** Bullet visual. Native subobject (its system asset is set in the constructor; the Blueprint may override it). Its
+	 * User.* params are write-only from C++ — ApplyCosmetics pushes radius/colors/trail; nothing reads them back, which
+	 * is why the look lives in DefaultCosmetics rather than in the Niagara asset's own user-param defaults. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
+	TObjectPtr<UNiagaraComponent> BulletVFX;
+
+	/** Per-Blueprint default look, edited in Class Defaults. Resolved against for KeepBlueprintDefaultValue and pushed
+	 * onto BulletVFX by ApplyCosmetics. Preview it in-editor with the PreviewCosmetics button. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Cosmetics")
+	FProjectileCosmeticParams DefaultCosmetics;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
 	int32 OverlapAttitude = TeamAttitudeMask::HostileOrNeutral;
@@ -216,15 +244,12 @@ private:
 	float LifeSpanInSec = 30.f;
 
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
-	bool bUseGeneralSpellDistance = true;
+	/** Blueprint-default travel distance, used when a spawn's FGeoProjectileParams keeps OverrideDistanceSpan on
+	 * KeepBlueprintDefaultValue, and as the client-side fallback for non-pooled replicated projectiles (distance is not
+	 * replicated). Overwritten by OverrideDistanceSpan for the settings/override cases. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "!bUseGeneralSpellDistance",
-					  EditConditionHides = "true", UIMin = "0"))
+			  meta = (ClampMin = "0", AllowPrivateAccess = true, UIMin = "0"))
 	float DistanceSpan = 1000.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
-	bool bUseGeneralSpellSpeed = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
 	bool bCanOverlapInstigator = false;
@@ -243,6 +268,11 @@ private:
 
 	FVector InitialPosition;
 	float DistanceSpanSqr;
+
+	/** Pushes the given cosmetics onto BulletVFX (radius/colors/trail) and resizes the sphere collider to match. Single
+	 * write path shared by ApplyProjectileParams (resolved values), the simulated-proxy default apply, and the editor
+	 * preview button. */
+	void ApplyCosmetics(FProjectileCosmeticParams const& Cosmetics);
 
 	/** Cosmetic (let the juice flow) **/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))

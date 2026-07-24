@@ -76,7 +76,7 @@ void UGeoProjectileAbility::SpawnProjectilesUsingTarget(float const ProjectileYa
 
 void UGeoProjectileAbility::SpawnProjectile(FTransform const& SpawnTransform, float const SpawnServerTime) const
 {
-	checkf(ProjectileClass, TEXT("No ProjectileClass in the projectile spell!"));
+	checkf(ProjectileParams.ProjectileClass, TEXT("No ProjectileClass in the projectile spell!"));
 
 	FPredictionKey PredictionKey;
 	EGameplayAbilityActivationMode::Type const ActivationMode = GetCurrentActivationInfo().ActivationMode;
@@ -87,20 +87,11 @@ void UGeoProjectileAbility::SpawnProjectile(FTransform const& SpawnTransform, fl
 		PredictionKey = GetCurrentActivationInfo().GetActivationPredictionKey();
 	}
 
-	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileClass, SpawnTransform,
+	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform,
 																StoredPayload, GetEffectDataArray(), PredictionKey);
 	if (!ensureMsgf(Projectile, TEXT("GeoProjectileAbility: Failed to spawn projectile!")))
 	{
 		return;
-	}
-
-	if (bOverrideDistanceSpan)
-	{
-		Projectile->OverrideDistanceSpan(DistanceSpan);
-	}
-	if (bOverrideSpeed)
-	{
-		Projectile->OverrideSpeed(ProjectileSpeed);
 	}
 
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);

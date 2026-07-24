@@ -4,12 +4,12 @@
 
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/GeoInteractableActor.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
 #include "GeoTurret.generated.h"
 
-class AGeoProjectile;
 class UCapsuleComponent;
 
 /**
@@ -52,27 +52,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
 			  meta = (AllowPrivateAccess = true))
-	TSubclassOf<AGeoProjectile> TurretProjectileClass;
+	FGeoProjectileParams ProjectileParams;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
 			  meta = (AllowPrivateAccess = true))
 	float FireInterval = 1.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
-			  meta = (AllowPrivateAccess = true))
-	bool bOverrideDistanceSpan = true;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideDistanceSpan",
-					  EditConditionHides = "true", UIMin = "0"))
-	float DistanceSpan = 2000.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
-			  meta = (AllowPrivateAccess = true))
-	bool bOverrideSpeed = true;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideSpeed",
-					  EditConditionHides = "true", UIMin = "0"))
-	float ProjectileSpeed = 4000.f;
 
 
 private:

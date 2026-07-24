@@ -71,7 +71,7 @@ void AGeoMine::RecallEffect(float const Value)
 {
 	Super::RecallEffect(Value);
 
-	if (!ensureMsgf(BurstProjectileClass, TEXT("AGeoMine: BurstProjectileClass is not set")))
+	if (!ensureMsgf(ProjectileParams.ProjectileClass, TEXT("AGeoMine: ProjectileParams.ProjectileClass is not set")))
 	{
 		return;
 	}
@@ -93,7 +93,7 @@ void AGeoMine::RecallEffect(float const Value)
 		FTransform const SpawnTransform(FRotator(0.f, Payload.Yaw, 0.f), GetActorLocation());
 
 		AGeoProjectile* const Projectile = GeoASLib::StartSpawnProjectile(
-			GetWorld(), BurstProjectileClass, SpawnTransform, Payload, MineData.EffectDataArray);
+			GetWorld(), ProjectileParams, SpawnTransform, Payload, MineData.EffectDataArray);
 		if (!ensureMsgf(Projectile, TEXT("AGeoMine: failed to spawn burst projectile")))
 		{
 			return;

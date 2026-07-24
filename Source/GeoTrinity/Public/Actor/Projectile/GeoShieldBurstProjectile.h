@@ -4,6 +4,7 @@
 
 #include "Actor/Projectile/GeoProjectile.h"
 #include "CoreMinimal.h"
+#include "ScalableFloat.h"
 
 #include "GeoShieldBurstProjectile.generated.h"
 
@@ -44,7 +45,7 @@ public:
 	/** Factor applied to both ShieldAmount and sphere radius each time the projectile bounces off an enemy. */
 	float EnemyBounceMultiplier;
 	float SphereRadiusToAdd;
-	float ShieldAmounToAdd;
+	float ShieldAmountToAdd;
 
 protected:
 	/** Sound played each time the projectile bounces, off a wall or an enemy. */

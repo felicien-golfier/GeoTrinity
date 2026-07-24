@@ -3,11 +3,10 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "ConeSprayPattern.generated.h"
-
-class AGeoProjectile;
 
 /**
  * Sprays ProjectileCountPerSalve projectiles at random angles inside ConeAngle, spread evenly over SprayDuration.
@@ -46,7 +45,7 @@ protected:
 	float SalveFrequencySec = .5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spray")
-	TSubclassOf<AGeoProjectile> ProjectileClass;
+	FGeoProjectileParams ProjectileParams;
 
 private:
 	int32 SpawnedSalveCount = 0;

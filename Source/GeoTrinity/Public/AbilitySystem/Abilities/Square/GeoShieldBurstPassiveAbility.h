@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "Actor/Projectile/GeoProjectileParams.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 
@@ -46,7 +47,7 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	float EnemyBounceMultiplier = 1.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
-	TSubclassOf<AGeoShieldBurstProjectile> ShieldBurstClass;
+	FGeoProjectileParams ProjectileParams;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
 	TSubclassOf<UShieldBurstPassiveComponent> PassiveComponentClass;
@@ -56,11 +57,6 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 
 	UPROPERTY()
 	TObjectPtr<UShieldBurstPassiveComponent> PassiveComponent;
-
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, UIMin = "0"))
-	float ProjectileSpeed = 500.f;
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst")

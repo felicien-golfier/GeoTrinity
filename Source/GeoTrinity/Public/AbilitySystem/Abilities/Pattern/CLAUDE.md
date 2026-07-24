@@ -20,7 +20,7 @@ Flow: `UPatternAbility::ActivateAbility()` → `PatternStartMulticast()` RPC →
 - Always seed randomness from `Payload.Seed`
 
 ## `SpiralPattern.h` — concrete spiral example
-Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`, `DistanceSpan`. Expanding circular sprays; tracks active projectiles, auto-ends them on actor destruction.
+Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`, `ProjectileParams` (`FGeoProjectileParams` — class + distance/speed/radius/color overrides). Expanding circular sprays; tracks active projectiles, auto-ends them on actor destruction. Distance span is now the struct's `bOverrideDistanceSpan`/`DistanceSpan` (BP must toggle it for the old always-override behavior).
 
 ## `SpawnPillarPattern.h` — zone-and-pillar boss pattern
 Non-ticking. Zone locations resolved server-side by `UGeoSpawnPillarAbility::CreatePatternData()`, shipped via `PatternStartMulticast` as `FSpawnPillarPatternData` — `InitPattern` just reads `ZoneLocations` (no per-client recompute). `StartPattern` spawns pillars, applies `PillarSpawnEffects` to hostiles in each zone (server-only), calls `EndPattern`. `DelayGameplayCueTag` countdown cue fires per spawn point.

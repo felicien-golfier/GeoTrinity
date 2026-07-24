@@ -16,13 +16,13 @@ void USpiralPattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 	ensureMsgf(MaxProjectileNum > 0, TEXT("No projectile set in the spiral ! please fill your pattern values in BP"));
 	Projectiles.Reserve(MaxProjectileNum);
 
-	ensureMsgf(ProjectileClass, TEXT("You must fill the projectile class in the Spiral pattern."));
-	ProjectileSpeed = ProjectileClass->GetDefaultObject<AGeoProjectile>()->ProjectileMovement->InitialSpeed;
+	ensureMsgf(ProjectileParams.ProjectileClass, TEXT("You must fill the projectile class in the Spiral pattern."));
+	ProjectileSpeed = ProjectileParams.ProjectileClass->GetDefaultObject<AGeoProjectile>()->ProjectileMovement->InitialSpeed;
 	TimeDiffBetweenProjectiles = TimeForOneRound / NumberProjectileByRound;
 	AngleBetweenProjectiles = 360.f / NumberProjectileByRound;
 
 	UGeoActorPoolingSubsystem::Get(GetWorld())
-		->PreSpawn(ProjectileClass,
+		->PreSpawn(ProjectileParams.ProjectileClass,
 				   MaxProjectileNum * 0.67f /*Create a first estimation number of projectiles in the pool.*/);
 }
 
@@ -53,14 +53,15 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 		if (Projectiles.Num() <= i)
 		{
 
-			AGeoProjectile* Projectile = UGeoActorPoolingSubsystem::Get(GetWorld())
-											 ->RequestActor(ProjectileClass, FTransform::Identity, StoredPayload.Owner,
-															Cast<APawn>(StoredPayload.Instigator), false, false);
+			AGeoProjectile* Projectile =
+				UGeoActorPoolingSubsystem::Get(GetWorld())
+					->RequestActor(ProjectileParams.ProjectileClass, FTransform::Identity, StoredPayload.Owner,
+								   Cast<APawn>(StoredPayload.Instigator), false, false);
 
 			Projectile->Payload = StoredPayload;
 			Projectile->EffectDataArray = EffectDataArray;
 			Projectile->OnProjectileEndLifeDelegate.AddUniqueDynamic(this, &USpiralPattern::EndProjectile);
-			Projectile->OverrideDistanceSpan(DistanceSpan);
+			Projectile->ApplyProjectileParams(ProjectileParams);
 			Projectiles.Add(Projectile);
 		}
 
@@ -86,7 +87,7 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 		if (!UGeoActorPoolingSubsystem::Get(GetWorld())->GetActorState(Projectile))
 		{
 			UGeoActorPoolingSubsystem::Get(GetWorld())->ChangeActorState(Projectile, true);
-			if (ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
+			if (ProjectileParams.ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
 			{
 				CastChecked<IGeoPoolableInterface>(Projectile)->Init();
 			}

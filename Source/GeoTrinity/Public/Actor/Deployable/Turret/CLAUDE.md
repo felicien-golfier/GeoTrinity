@@ -10,6 +10,6 @@ Triangle's deployable auto-firing turret.
 ## Key Points
 - `FindBestTarget()` prefers the owner's `LastBasicAbilityTarget` (set by ExecCalc_Damage via `bIsFromBasicAbility`) so the turret chases the same enemy the Triangle player is attacking; falls back to nearest hostile in range.
 - `CurrentTarget` — replicated, updated each Tick; clients orient the mesh toward it.
-- `TryFire()` — server-only, scheduled by `ScheduleFire()`.
+- `TryFire()` — server-only, scheduled by `ScheduleFire()`; spawns `ProjectileParams` (`FGeoProjectileParams`, class + overrides). Constructor defaults force distance/speed overrides (2000 / 4000) as before the struct move.
 - `Expire()` override clears the fire timer before `Super::Expire()`.
 - Deployed via `GeoDeployAbility` → `ADeployableSpawnerProjectile`; recalled by `GeoRecallTurretAbility`.

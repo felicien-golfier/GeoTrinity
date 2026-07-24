@@ -37,7 +37,7 @@ void AGeoShieldBurstProjectile::InitProjectileLife()
 	Super::InitProjectileLife();
 	ProjectileMovement->OnProjectileBounce.AddUniqueDynamic(this, &ThisClass::OnWallBounce);
 	SphereRadiusToAdd = Sphere->GetScaledSphereRadius() * EnemyBounceMultiplier - Sphere->GetScaledSphereRadius();
-	ShieldAmounToAdd = ShieldAmount.Value * EnemyBounceMultiplier - ShieldAmount.Value;
+	ShieldAmountToAdd = ShieldAmount.Value * EnemyBounceMultiplier - ShieldAmount.Value;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -51,12 +51,10 @@ void AGeoShieldBurstProjectile::OnRep_BounceSnapshot()
 
 void AGeoShieldBurstProjectile::UpdateVisualRadius(float Radius) const
 {
-	UNiagaraComponent* Niagara = GetComponentByClass<UNiagaraComponent>();
-	if (!ensureMsgf(Niagara, TEXT("AGeoShieldBurstProjectile: no Niagara on %s"), *GetName()))
+	if (BulletVFX)
 	{
-		return;
+		BulletVFX->SetVariableFloat(FName("User.Bullet_Radius"), Radius);
 	}
-	Niagara->SetVariableFloat(FName("User.Bullet_Radius"), Radius);
 }
 
 float AGeoShieldBurstProjectile::GetPitch(FGeoSoundEntry const& Entry) const
@@ -96,7 +94,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			ProjectileMovement->Velocity = ReflectedVelocity;
 			ProjectileMovement->UpdateComponentVelocity();
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() + SphereRadiusToAdd);
-			ShieldAmount.Value += ShieldAmounToAdd;
+			ShieldAmount.Value += ShieldAmountToAdd;
 			UpdateVisualRadius(Sphere->GetScaledSphereRadius());
 			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
 			LastOverlapHostileActor = OtherActor;
