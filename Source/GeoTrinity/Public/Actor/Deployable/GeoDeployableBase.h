@@ -177,6 +177,7 @@ public:
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams();
 
+	/** True if this deployable is exempt from the hex arena's fall-check recall when its tile is destroyed. */
 	bool SurviveOverTheVoid() const { return bSurviveOverTheVoid; }
 
 	UPROPERTY(BlueprintAssignable)

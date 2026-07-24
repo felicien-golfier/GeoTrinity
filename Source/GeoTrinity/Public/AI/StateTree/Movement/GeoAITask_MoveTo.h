@@ -25,6 +25,7 @@ class GEOTRINITY_API UGeoAITask_MoveTo : public UAITask_MoveTo
 	GENERATED_BODY()
 
 public:
+	/** Opts into TickTask (bTickingTask = true) to enable per-frame facing updates that the base class does not provide. */
 	UGeoAITask_MoveTo(FObjectInitializer const& ObjectInitializer);
 
 	/** Looping cue added for the whole move and removed when it ends; its RawMagnitude carries the path length in

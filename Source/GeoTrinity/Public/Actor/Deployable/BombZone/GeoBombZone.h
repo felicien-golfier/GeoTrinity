@@ -24,12 +24,14 @@ public:
 	 */
 	AGeoBombZone(FObjectInitializer const& ObjectInitializer);
 
+	/** Drives the carrier-ride phase; delegates drain progression and expiry logic to the base class. */
 	virtual void Tick(float DeltaSeconds) override;
 	/** Copies Data into the replicated BombData field, then delegates to Super. */
 	virtual void InitInteractable(FInteractableActorData* Data) override;
 	/** Registers BombData (COND_InitialOnly) in addition to the base-class replicants. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/** Extends the base spawn-cue parameters with the bomb carrier's current world location as the effect origin. */
 	virtual FGameplayCueParameters GetSpawnCueParams(FGameplayTag SoundTag = FGameplayTag()) override;
 
 
