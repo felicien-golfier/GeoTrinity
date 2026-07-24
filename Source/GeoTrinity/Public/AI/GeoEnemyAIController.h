@@ -25,11 +25,13 @@ class GEOTRINITY_API AGeoEnemyAIController : public AAIController
 	GENERATED_BODY()
 
 public:
+	/** Disables control rotation sync from pawn orientation so the base AAIController::Tick cannot override the character's clamped turn toward TargetYaw. */
 	AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer = FObjectInitializer::Get());
 
 	/** Assigns Team Agent to given TeamID */
 	virtual void SetGenericTeamId(FGenericTeamId const& NewTeamId) override;
 
+	/** Returns the team ID used for attitude queries and team-based targeting. */
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
 	/**
@@ -43,9 +45,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UGeoAIBlackboardComponent> GeoBlackBoard;
 
+	/** Initializes the StateTree component and begins aggro detection on the newly possessed enemy pawn. */
 	virtual void OnPossess(APawn* InPawn) override;
+	/** Clears aggro state and stops the StateTree when the pawn is unpossessed. */
 	virtual void OnUnPossess() override;
+	/** Updates the current aggro target each frame based on proximity and the target-switch delay. */
 	virtual void Tick(float DeltaTime) override;
+	/** Returns the StateTree AI component that drives this controller's behavior logic. */
 	UStateTreeAIComponent* GetStateTreeComp() const { return StateTreeComp; }
 
 	/** Stops the StateTree logic and restarts it from the root (Dormant state). Resets aggro. */

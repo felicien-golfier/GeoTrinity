@@ -27,6 +27,7 @@ protected:
 	 */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
 
+	/** Reads SweepAngle from PatternData and stores the activation payload for use during the tick sweep. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** Carves the last tile under the beam and switches the beam VFX on before the tick loop starts. */

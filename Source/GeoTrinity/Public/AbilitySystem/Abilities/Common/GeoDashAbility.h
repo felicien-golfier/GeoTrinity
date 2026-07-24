@@ -28,6 +28,7 @@ public:
 	UGeoDashAbility();
 
 protected:
+	/** Launches the root-motion move task that drives the dash toward the direction encoded in StoredPayload.Yaw. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
