@@ -7,6 +7,22 @@
 #include "GeoAbilityTargetTypes.generated.h"
 
 /**
+ * Whether an interactable query counts a target's own collision radius toward the overlap test.
+ * Automatic: decide from the querying source's team — Enemy sources (harmful zones/beams) are
+ *   center-only so players can hug the edge; every other source (Player/ally, Neutral, teamless)
+ *   includes the radius so beneficial areas reach a target's whole body.
+ * IncludeRadius: always add the target's SimpleCollisionRadius.
+ * CenterOnly: always test the target's center only.
+ */
+UENUM(BlueprintType)
+enum class ETargetOverlapMode : uint8
+{
+	Automatic,
+	IncludeRadius,
+	CenterOnly
+};
+
+/**
  * Target data containing client-predicted orientation for projectile abilities.
  * Sent via ServerSetReplicatedTargetData for prediction/rollback support.
  */

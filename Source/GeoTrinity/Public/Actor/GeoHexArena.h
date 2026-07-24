@@ -125,7 +125,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexArena", meta = (ClampMin = "0.0"))
 	float FallCheckRadius = 3000.f;
 
+	/** Grace distance in world units: an actor whose center is over a hole still stands as long as an alive tile lies
+	 * within this radius, so perching on a neighbouring tile's edge doesn't drop you. 0 = center must be over a tile. */
+	UPROPERTY(EditAnywhere, Category = "HexArena", meta = (ClampMin = "0.0"))
+	float FallGraceMargin = 30.f;
+
 private:
+	/** The fall check: true when WorldLocation is over an alive tile, or within FallGraceMargin of the shared border of
+	 * the alive neighbour it leans toward (perpendicular distance, so the grace band is uniform around the tile). */
+	bool IsSupported(FVector2D WorldLocation) const;
+	/** Converts a world location to fractional axial (Q, R) hex coordinates in this arena's frame. */
+	FVector2D WorldToAxial(FVector2D WorldLocation) const;
 	/** Kills Player and moves the corpse off the platform, to this arena's TargetPoint.FallRespawn point. */
 	void KillFallenPlayer(APlayableCharacter& Player) const;
 	/** Deterministically fills TileCoords / CoordToIndex for the configured GridRadius. Idempotent. */

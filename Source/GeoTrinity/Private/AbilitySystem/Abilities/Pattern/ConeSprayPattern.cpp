@@ -28,7 +28,7 @@ void UConeSprayPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 {
 	if (SpentTime > SpawnedSalveCount * SalveFrequencySec)
 	{
-		SpawnSprayProjectile(SpentTime);
+		SpawnSprayProjectile();
 		++SpawnedSalveCount;
 	}
 
@@ -38,15 +38,19 @@ void UConeSprayPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 	}
 }
 
-void UConeSprayPattern::SpawnSprayProjectile(float const SpentTime) const
+void UConeSprayPattern::SpawnSprayProjectile() const
 {
+	// Scheduled server time of this salve, not the current tick time: on time this spawns the projectiles at the
+	// origin, and a tick that fires the salve late stamps them in the past so they fast-forward into place.
+	float const SalveSpawnTime = StoredPayload.ServerSpawnTime + StartDelay + SpawnedSalveCount * SalveFrequencySec;
+
 	for (int Index = 0; Index < ProjectileCountPerSalve; ++Index)
 	{
 		FAbilityPayload ProjectilePayload = StoredPayload;
 		ProjectilePayload.Yaw = StoredPayload.Yaw
 			+ FMath::Lerp(-ConeAngle * 0.5f, ConeAngle * 0.5f,
 						  static_cast<float>(Index) / static_cast<float>(ProjectileCountPerSalve - 1));
-		ProjectilePayload.ServerSpawnTime = StoredPayload.ServerSpawnTime + SpentTime;
+		ProjectilePayload.ServerSpawnTime = SalveSpawnTime;
 
 		FTransform const SpawnTransform(FRotator(0.f, ProjectilePayload.Yaw, 0.f),
 										FVector(StoredPayload.Origin, ArbitraryCharacterZ));

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "CoreMinimal.h"
 
 #include "BeamPattern.generated.h"
@@ -53,6 +54,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Beam", meta = (ClampMin = "0.0"))
 	float BeamHalfWidth = 60.f;
+
+	/** How a target's own collision radius counts toward the beam hit test. Automatic = center-only for hostiles. */
+	UPROPERTY(EditDefaultsOnly, Category = "Beam")
+	ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic;
 
 	/** Destroys the furthest arena tile the beam reaches, at the moment it fires. */
 	UPROPERTY(EditDefaultsOnly, Category = "Beam")

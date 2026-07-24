@@ -29,8 +29,8 @@ protected:
 	/** Spawns every projectile whose scheduled time has passed, and ends once the last one is out. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 
-	/** Spawns the projectile at Index with its seed-derived angle and its own scheduled spawn time. */
-	void SpawnSprayProjectile(float SpentTime) const;
+	/** Spawns one salve: every projectile fanned across the cone, each stamped with the salve's scheduled spawn time. */
+	void SpawnSprayProjectile() const;
 
 	/** Full opening of the spray cone in degrees, centered on the payload yaw. */
 	UPROPERTY(EditDefaultsOnly, Category = "Spray", meta = (ClampMin = "0.0"))

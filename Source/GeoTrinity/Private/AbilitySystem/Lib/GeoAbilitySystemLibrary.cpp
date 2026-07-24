@@ -248,7 +248,8 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,
 																bool bMustBeDamageable, FVector2D const Location,
 																float MaxDistance,
-																TFunctionRef<bool(AActor*)> const& ExtraFilter)
+																TFunctionRef<bool(AActor*)> const& ExtraFilter,
+																ETargetOverlapMode OverlapMode)
 {
 	TArray<AActor*> Result;
 
@@ -260,6 +261,7 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 
 	bool const bHasDistanceCheck = MaxDistance > 0.f;
 	float const MaxDistanceSqr = MaxDistance * MaxDistance;
+	bool const bIncludeTargetRadius = ShouldIncludeTargetRadius(OverlapMode, SourceTeam);
 
 	auto TryAddActor = [&](AActor* OtherActor, TCHAR const* ClassName)
 	{
@@ -283,7 +285,7 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 			return;
 		}
 
-		float const OtherActorRadius = OtherActor->GetSimpleCollisionRadius();
+		float const OtherActorRadius = bIncludeTargetRadius ? OtherActor->GetSimpleCollisionRadius() : 0.f;
 		if (bHasDistanceCheck
 			&& FVector2D::DistSquared(Location, FVector2D(OtherActor->GetActorLocation()))
 				> MaxDistanceSqr + OtherActorRadius * OtherActorRadius)
@@ -315,20 +317,23 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
 																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,
 																bool bMustBeDamageable, FVector2D const Location,
-																float MaxDistance)
+																float MaxDistance, ETargetOverlapMode OverlapMode)
 {
 	return GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location,
 								 MaxDistance,
 								 [](AActor*)
 								 {
 									 return true;
-								 });
+								 },
+								 OverlapMode);
 }
 
 TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActorsInLine(
 	UObject const* WorldContextObject, FGenericTeamId const SourceTeam, int32 AttitudeBitmask, bool bMustBeDamageable,
-	FVector2D const Origin, FVector2D const ForwardVector, float const MaxRange, float const LineHalfWidth)
+	FVector2D const Origin, FVector2D const ForwardVector, float const MaxRange, float const LineHalfWidth,
+	ETargetOverlapMode OverlapMode)
 {
+	bool const bIncludeTargetRadius = ShouldIncludeTargetRadius(OverlapMode, SourceTeam);
 	return GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Origin, MaxRange,
 								 [&](AActor const* Target)
 								 {
@@ -339,9 +344,26 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActorsInLine(
 										 return false;
 									 }
 									 float const PerpDistSqr = (ToTarget - ForwardVector * AlongBeam).SizeSquared();
-									 float const HitRadius = Target->GetSimpleCollisionRadius() + LineHalfWidth;
+									 float const TargetRadius =
+										 bIncludeTargetRadius ? Target->GetSimpleCollisionRadius() : 0.f;
+									 float const HitRadius = TargetRadius + LineHalfWidth;
 									 return PerpDistSqr <= HitRadius * HitRadius;
-								 });
+								 },
+								 OverlapMode);
+}
+
+bool UGeoAbilitySystemLibrary::ShouldIncludeTargetRadius(ETargetOverlapMode OverlapMode, FGenericTeamId const SourceTeam)
+{
+	switch (OverlapMode)
+	{
+	case ETargetOverlapMode::IncludeRadius:
+		return true;
+	case ETargetOverlapMode::CenterOnly:
+		return false;
+	case ETargetOverlapMode::Automatic:
+	default:
+		return SourceTeam.GetId() != static_cast<uint8>(ETeam::Enemy);
+	}
 }
 TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
 																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,

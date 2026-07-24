@@ -22,6 +22,7 @@
 - `GetInteractableActors(World, SourceTeam, AttitudeBitmask, ...)` — agents matching `ETeamAttitudeBitflag`, with typed/distance/damageable/predicate overloads
 - `GetInteractableActorsInLine(...)` — actors overlapping a 2D beam segment; used by beam abilities
 - `IsTeamAttitudeAligned(Agent1, Agent2)`
+- `ETargetOverlapMode` (trailing param on the distance/line overloads, default `Automatic`): whether a target's own `SimpleCollisionRadius` counts. Resolved **from the source team** (`ShouldIncludeTargetRadius`), not per-target attitude — `Enemy` source → `CenterOnly` (players hug the edge of harmful zones/beams), any other source (Player/Neutral/teamless) → `IncludeRadius`. Line half-width is always kept; the mode only gates the *target's* body radius.
 
 **GameplayCues:**
 - `ExecuteLocalGameplayCue(ASC, CueTag, CueParams)` — this-machine-only (`InvokeGameplayCueEvent(Executed)`); use for cosmetics from logic already running on every relevant machine — `ExecuteGameplayCue` would double-play on clients via listen-server multicast

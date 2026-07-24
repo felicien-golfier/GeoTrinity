@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
 #include "HUD/Interface/GeoDamageNumberHost.h"
@@ -307,6 +308,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deployable",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
 	int32 ExplodeAttitude = TeamAttitudeMask::HostileOrNeutral;
+	/** How a target's own collision radius counts toward the explosion overlap. Automatic = center-only for enemies. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	ETargetOverlapMode ExplodeOverlapMode = ETargetOverlapMode::Automatic;
 	// Wether should recall or expire when the deployable ends its life on its own.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bExplodeAtRecall = false;

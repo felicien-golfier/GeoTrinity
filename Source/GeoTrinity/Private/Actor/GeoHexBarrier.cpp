@@ -3,6 +3,7 @@
 #include "Actor/GeoHexBarrier.h"
 
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Curves/CurveVector.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoHexBarrier::AGeoHexBarrier()
@@ -33,31 +34,59 @@ FTransform AGeoHexBarrier::GetTileTransform(int32 const Index) const
 
 void AGeoHexBarrier::Tick(float const DeltaSeconds)
 {
+	float const PreviousLerpAlpha = LerpAlpha;
 	Super::Tick(DeltaSeconds);
-	ApplyTileVisuals();
+	ApplyTileVisuals(/*bRemoving*/ LerpAlpha > PreviousLerpAlpha);
 }
 
-void AGeoHexBarrier::ApplyTileVisuals()
+void AGeoHexBarrier::ApplyTileVisuals(bool const bRemoving)
 {
 	int32 const NumTiles = NumColumns * NumRows;
 	int32 const HiddenCount = FMath::RoundToInt32(LerpAlpha * NumTiles);
-	if (HiddenCount == AppliedHiddenCount)
+
+	if (HiddenCount != AppliedHiddenCount)
 	{
-		return;
+		int32 const FirstChanged = FMath::Min(HiddenCount, AppliedHiddenCount);
+		int32 const LastChanged = FMath::Max(HiddenCount, AppliedHiddenCount);
+		for (int32 Index = FirstChanged; Index < LastChanged; ++Index)
+		{
+			FTransform TileTransform = GetTileTransform(Index);
+			if (Index < HiddenCount)
+			{
+				TileTransform.SetScale3D(FVector::ZeroVector);
+			}
+			TileMeshComponent->UpdateInstanceTransform(Index, TileTransform, /*bWorldSpace*/ false,
+													   /*bMarkRenderStateDirty*/ false, /*bTeleport*/ true);
+		}
+		AppliedHiddenCount = HiddenCount;
+		TileMeshComponent->MarkRenderStateDirty();
 	}
 
-	int32 const FirstChanged = FMath::Min(HiddenCount, AppliedHiddenCount);
-	int32 const LastChanged = FMath::Max(HiddenCount, AppliedHiddenCount);
-	for (int32 Index = FirstChanged; Index < LastChanged; ++Index)
+	// All still-visible tiles shake together the instant removal starts, so their imminent vanish reads clearly.
+	if (bRemoving && HiddenCount < NumTiles && ShakeCurve)
 	{
-		FTransform TileTransform = GetTileTransform(Index);
-		if (Index < HiddenCount)
+		FVector const ShakeParams = ShakeCurve->GetVectorValue(LerpAlpha);
+		float const CurrentTime = GetWorld()->GetTimeSeconds();
+		for (int32 Index = HiddenCount; Index < NumTiles; ++Index)
 		{
-			TileTransform.SetScale3D(FVector::ZeroVector);
+			float const RandomPhase = FMath::FRandRange(0.f, 2.f * PI);
+			float const ShakeOffset = FMath::Sin(CurrentTime * ShakeParams.Y + RandomPhase) * ShakeParams.X;
+			FTransform ShakeTransform = GetTileTransform(Index);
+			ShakeTransform.AddToTranslation(FVector(ShakeOffset, 0.f, 0.f));
+			TileMeshComponent->UpdateInstanceTransform(Index, ShakeTransform, /*bWorldSpace*/ false,
+													   /*bMarkRenderStateDirty*/ false, /*bTeleport*/ true);
 		}
-		TileMeshComponent->UpdateInstanceTransform(Index, TileTransform, /*bWorldSpace*/ false,
-												   /*bMarkRenderStateDirty*/ false, /*bTeleport*/ true);
+		TileMeshComponent->MarkRenderStateDirty();
+		bWasShaking = true;
 	}
-	AppliedHiddenCount = HiddenCount;
-	TileMeshComponent->MarkRenderStateDirty();
+	else if (bWasShaking)
+	{
+		for (int32 Index = HiddenCount; Index < NumTiles; ++Index)
+		{
+			TileMeshComponent->UpdateInstanceTransform(Index, GetTileTransform(Index), /*bWorldSpace*/ false,
+													   /*bMarkRenderStateDirty*/ false, /*bTeleport*/ true);
+		}
+		TileMeshComponent->MarkRenderStateDirty();
+		bWasShaking = false;
+	}
 }

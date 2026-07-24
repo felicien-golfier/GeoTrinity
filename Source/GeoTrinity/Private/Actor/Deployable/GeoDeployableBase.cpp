@@ -310,7 +310,7 @@ void AGeoDeployableBase::ExplodeEffect(float const Value)
 
 	TArray<AActor*> OverlappingActors =
 		GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(GetData()->Owner), ExplodeAttitude, true,
-										FVector2D(GetActorLocation()), GetData()->Params.Size);
+										FVector2D(GetActorLocation()), GetData()->Params.Size, ExplodeOverlapMode);
 
 	for (AActor* Actor : OverlappingActors)
 	{

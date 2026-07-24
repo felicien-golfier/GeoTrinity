@@ -8,6 +8,7 @@
 #include "GeoHexBarrier.generated.h"
 
 class UInstancedStaticMeshComponent;
+class UCurveVector;
 
 /**
  * Arena barrier whose blocking element is an alley floor of hex tiles matching AGeoHexArena's platform.
@@ -48,12 +49,25 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Barrier", meta = (ClampMin = "1.0"))
 	float TileSize = 100.f;
 
+	/**
+	 * Drives the pre-vanish tile shake, sampled by the inherited LerpAlpha (0 = removal just started, 1 = fully
+	 * closed): X = offset amplitude, Y = oscillation speed (radians/sec). Lets designers ramp the shake up (or
+	 * taper it) as the barrier finishes closing.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Barrier")
+	TObjectPtr<UCurveVector> ShakeCurve;
+
 private:
 	/** Actor-space transform of the Index-th tile in vanish order — pointy-top layout, odd rows shifted half a tile. */
 	FTransform GetTileTransform(int32 Index) const;
-	/** Zero-scales the first LerpAlpha * NumTiles tiles and restores the rest, touching only changed instances. */
-	void ApplyTileVisuals();
+	/**
+	 * Zero-scales the first LerpAlpha * NumTiles tiles and restores the rest, touching only changed instances.
+	 * While bRemoving, shakes every still-visible tile together so their imminent vanish reads clearly.
+	 */
+	void ApplyTileVisuals(bool bRemoving);
 
 	/** Number of tiles currently hidden on this machine; index 0 vanishes first. */
 	int32 AppliedHiddenCount = 0;
+	/** Whether the still-visible tiles were shaking last tick; used to restore them once shaking stops. */
+	bool bWasShaking = false;
 };

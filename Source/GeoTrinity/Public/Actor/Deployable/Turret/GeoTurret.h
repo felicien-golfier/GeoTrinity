@@ -50,22 +50,26 @@ protected:
 	UPROPERTY(Replicated)
 	FDeployableData Data;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
+			  meta = (AllowPrivateAccess = true))
 	TSubclassOf<AGeoProjectile> TurretProjectileClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
+			  meta = (AllowPrivateAccess = true))
 	float FireInterval = 1.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
+			  meta = (AllowPrivateAccess = true))
 	bool bOverrideDistanceSpan = true;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
 			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideDistanceSpan",
 					  EditConditionHides = "true", UIMin = "0"))
 	float DistanceSpan = 2000.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
+			  meta = (AllowPrivateAccess = true))
 	bool bOverrideSpeed = true;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
 			  meta = (ClampMin = "0", AllowPrivateAccess = true, EditCondition = "bOverrideSpeed",
 					  EditConditionHides = "true", UIMin = "0"))
 	float ProjectileSpeed = 4000.f;

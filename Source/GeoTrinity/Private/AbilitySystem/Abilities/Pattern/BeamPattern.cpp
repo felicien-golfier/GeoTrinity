@@ -6,6 +6,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/GeoHexArena.h"
+#include "DrawDebugHelpers.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Tool/Team.h"
@@ -38,7 +39,7 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 	{
 		BeamVfxComponent->Activate(true);
 		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
-		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth);
+		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth * 2.f);
 		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamInitColor);
 		FRotator const BeamRotation(0.f, GetBeamYaw(0.f), 0.f);
 		FVector const Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
@@ -68,7 +69,7 @@ void UBeamPattern::StartPattern()
 	{
 		BeamVfxComponent->Activate(true);
 		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
-		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth);
+		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth * 2.f);
 		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor);
 	}
 
@@ -88,6 +89,18 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 
 	if (GeoLib::IsServer(GetWorld()))
 	{
+#ifdef WITH_EDITOR
+		FVector const Right = FVector::CrossProduct(FVector::UpVector, FVector(Forward, 0.f));
+		FVector const BeamStart = Location;
+		FVector const BeamEnd = Location + FVector(Forward, 0.f) * BeamRange;
+		DrawDebugLine(GetWorld(), BeamStart + Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
+					  false, 0.f);
+		DrawDebugLine(GetWorld(), BeamStart - Right * BeamHalfWidth, BeamEnd - Right * BeamHalfWidth, FColor::Red,
+					  false, 0.f);
+		DrawDebugLine(GetWorld(), BeamEnd - Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red, false,
+					  0.f);
+#endif
+
 		if (bDestroyLastTileHit)
 		{
 			AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
@@ -105,7 +118,7 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 		{
 			for (AActor* HitActor : GeoASLib::GetInteractableActorsInLine(
 					 this, GeoASLib::GetTeamId(StoredPayload.Owner), TeamAttitudeMask::HostileOrNeutral,
-					 /*bMustBeDamageable*/ true, FVector2D(Location), Forward, BeamRange, BeamHalfWidth))
+					 /*bMustBeDamageable*/ true, FVector2D(Location), Forward, BeamRange, BeamHalfWidth, OverlapMode))
 			{
 				if (UGeoAbilitySystemComponent* const TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
 				{

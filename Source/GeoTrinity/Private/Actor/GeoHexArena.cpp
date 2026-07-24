@@ -116,12 +116,16 @@ FVector2D AGeoHexArena::TileToWorld(FIntPoint const Tile) const
 	return FVector2D(GetActorTransform().TransformPosition(TileToLocal(Tile)));
 }
 
-bool AGeoHexArena::GetTileUnderLocation(FVector2D const WorldLocation, FIntPoint& OutTile) const
+FVector2D AGeoHexArena::WorldToAxial(FVector2D const WorldLocation) const
 {
 	FVector const Local = GetActorTransform().InverseTransformPosition(FVector(WorldLocation, 0.f));
-	float const Q = (Local.X / Sqrt3 - Local.Y / 3.f) / TileSize;
-	float const R = (2.f / 3.f) * Local.Y / TileSize;
-	OutTile = RoundToNearestTile(Q, R);
+	return FVector2D((Local.X / Sqrt3 - Local.Y / 3.f) / TileSize, (2.f / 3.f) * Local.Y / TileSize);
+}
+
+bool AGeoHexArena::GetTileUnderLocation(FVector2D const WorldLocation, FIntPoint& OutTile) const
+{
+	FVector2D const Axial = WorldToAxial(WorldLocation);
+	OutTile = RoundToNearestTile(Axial.X, Axial.Y);
 	return CoordToIndex.Contains(OutTile);
 }
 
@@ -168,6 +172,55 @@ bool AGeoHexArena::IsOverAliveTile(FVector2D const WorldLocation) const
 bool AGeoHexArena::IsOverAliveTile(FVector2D const WorldLocation, FIntPoint& OutTile) const
 {
 	return GetTileUnderLocation(WorldLocation, OutTile) && IsTileAlive(OutTile);
+}
+
+bool AGeoHexArena::IsSupported(FVector2D const WorldLocation) const
+{
+	if (IsOverAliveTile(WorldLocation))
+	{
+		return true;
+	}
+	if (FallGraceMargin <= 0.f)
+	{
+		return false;
+	}
+
+	FVector2D const Axial = WorldToAxial(WorldLocation);
+	FIntPoint const Tile = RoundToNearestTile(Axial.X, Axial.Y);
+
+	// Cube offset from the tile centre; its most-positive and most-negative axes name the nearest edge, hence the one
+	// neighbour we could be perched on.
+	float const OffsetQ = Axial.X - Tile.X;
+	float const OffsetR = Axial.Y - Tile.Y;
+	float const Cube[3] = {OffsetQ, -OffsetQ - OffsetR, OffsetR};
+	int32 HighAxis = 0;
+	int32 LowAxis = 0;
+	for (int32 Axis = 1; Axis < 3; ++Axis)
+	{
+		if (Cube[Axis] > Cube[HighAxis])
+		{
+			HighAxis = Axis;
+		}
+		if (Cube[Axis] < Cube[LowAxis])
+		{
+			LowAxis = Axis;
+		}
+	}
+	int32 CubeDelta[3] = {0, 0, 0};
+	CubeDelta[HighAxis] = 1;
+	CubeDelta[LowAxis] = -1;
+	FIntPoint const Neighbor(Tile.X + CubeDelta[0], Tile.Y + CubeDelta[2]);
+	if (!IsTileAlive(Neighbor))
+	{
+		return false;
+	}
+
+	// Distance to the shared border, measured perpendicular to it (centre-to-centre is normal to the edge, which sits at
+	// the inradius). A uniform band all around the tile, unlike a fixed-length radial sample that bulges at the corners.
+	FVector2D const TileCenter = TileToWorld(Tile);
+	FVector2D const ToNeighbor = (TileToWorld(Neighbor) - TileCenter).GetSafeNormal();
+	float const DistanceToEdge = TileSize * Sqrt3 * 0.5f - FVector2D::DotProduct(WorldLocation - TileCenter, ToNeighbor);
+	return DistanceToEdge <= FallGraceMargin;
 }
 
 AGeoHexArena* AGeoHexArena::GetArenaOfBoss(AActor const* Boss)
@@ -413,7 +466,7 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 	FVector2D const Center(GetActorLocation());
 	for (AActor* Actor : GeoASLib::GetInteractableActors(this, /*bMustBeDamageable*/ false, Center, FallCheckRadius))
 	{
-		if (IsOverAliveTile(FVector2D(Actor->GetActorLocation())))
+		if (IsSupported(FVector2D(Actor->GetActorLocation())))
 		{
 			continue;
 		}

@@ -33,12 +33,13 @@ Ticking, non-projectile. Fired from `StoredPayload.Origin` along `Yaw`, on for `
 - `bDestroyLastTileHit` — on go-live tick, carves the furthest still-standing tile the beam reaches (`GetLastAliveTileAlongRay`), server-only — tank chooses the rim tile by where they stand when the boss locks on
 - Each actor hit once per activation (`HitActors`, cleared in `StartPattern`/`EndPattern`) — damage server-only, VFX everywhere
 - `BeamVfxSystem` — spawned deactivated in `OnCreate`, reused across activations, driven with the same user params as `UGeoBeamVFXComponent` (`User.Beam_Length`/`Width`); author local-space +X. `EndPattern`: graceful `Deactivate` on natural end, `DeactivateImmediate` on force-stop
+- `TickPattern`'s server branch draws the actual hit-scan rectangle (`BeamRange`/`BeamHalfWidth`) fed to `GetInteractableActorsInLine`, `WITH_EDITOR`-gated red `DrawDebugLine`s — matches the pattern in `UGeoChannelBeamAbility::DrawBeamDebugLines`
+- `OverlapMode` (`ETargetOverlapMode`, BP knob, default `Automatic`) → the line query's target-radius rule; `Automatic` resolves to center-only because the boss is an `Enemy` source
 
-## `ConeSprayPattern.h` — cone of scattered bullets (hex boss)
-Ticking projectile pattern. Sprays `ProjectileCount` at random angles inside `ConeAngle` over `SprayDuration`; ends once the last projectile is out (bullets fly on their own, unlike `SpiralPattern`).
-- Determinism: projectile *i* seeds its own `FRandomStream(Payload.Seed + i)` (not a shared stream) so a machine catching up on several projectiles in one tick still matches everyone else
-- Each projectile stamped with its own `ServerSpawnTime` so a late spawn fast-forwards correctly
-- `SpawnedCount` reset in `InitPattern`; `OnCreate` pre-warms the pool
+## `ConeSprayPattern.h` — cone of bullets in timed salves (hex boss)
+Ticking projectile pattern. Fires `SalveNumber` salves `SalveFrequencySec` apart; each salve fans `ProjectileCountPerSalve` projectiles evenly across `ConeAngle` (centred on payload yaw). Ends once the last salve is out (bullets fly on their own, unlike `SpiralPattern`).
+- Each salve is stamped with its *scheduled* `ServerSpawnTime` (`payload spawn + StartDelay + N*SalveFrequencySec`), **not** the current tick time — so an on-time salve spawns at the origin (`TimeDelta≈0`) and a late one fast-forwards into place. Using the tick time instead advanced every projectile by `StartDelay` and was per-machine non-deterministic
+- `SpawnedSalveCount` reset in `InitPattern`; `OnCreate` pre-warms the pool for a full spray
 
 ## `DevastatingWavePattern.h` — expanding radial wave
 Non-projectile ticking. `InitPattern` teleports instigator to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; hostiles within `CurrentRadius` hit once (pillars recalled, others get the ability's effect data). Ends at `CurrentRadius >= MaxRadius`.

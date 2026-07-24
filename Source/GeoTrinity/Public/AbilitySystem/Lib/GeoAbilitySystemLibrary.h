@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
@@ -253,7 +254,8 @@ public:
 	template <typename T>
 	static TArray<T*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 											int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
-											float MaxDistance)
+											float MaxDistance,
+											ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic)
 	{
 		TArray<T*> Result;
 		for (AActor* Actor : GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable,
@@ -261,7 +263,8 @@ public:
 												   [](AActor* Actor)
 												   {
 													   return IsValid(Actor) && Actor->IsA(T::StaticClass());
-												   }))
+												   },
+												   OverlapMode))
 		{
 			Result.Add(CastChecked<T>(Actor));
 		}
@@ -275,16 +278,19 @@ public:
 	 * @param Location           2D world origin for the distance check.
 	 * @param MaxDistance        Maximum distance in world units. 0 = no distance check.
 	 * @param ExtraFilter        Optional per-actor predicate; actors for which it returns false are excluded.
+	 * @param OverlapMode        How a target's own collision radius counts toward the distance test.
 	 */
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 												 int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
-												 float MaxDistance, TFunctionRef<bool(AActor*)> const& ExtraFilter);
+												 float MaxDistance, TFunctionRef<bool(AActor*)> const& ExtraFilter,
+												 ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic);
 
 	/** Same as above without an extra filter. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 												 int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
-												 float MaxDistance);
+												 float MaxDistance,
+												 ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic);
 
 	/** Returns all interactable agents matching AttitudeBitmask relative to SourceTeam, without a distance filter. */
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
@@ -301,11 +307,13 @@ public:
 	 * @param ForwardVector  Normalized 2D beam direction.
 	 * @param MaxRange       Beam length in world units.
 	 * @param LineHalfWidth  Half-width added to each target's SimpleCollisionRadius for hit testing. 0 = point test.
+	 * @param OverlapMode    How a target's own collision radius counts toward the hit test (the beam half-width is
+	 *                       always kept; CenterOnly only drops the target's body radius).
 	 */
 	static TArray<AActor*> GetInteractableActorsInLine(UObject const* WorldContextObject, FGenericTeamId SourceTeam,
 													   int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Origin,
-													   FVector2D ForwardVector, float MaxRange,
-													   float LineHalfWidth = 0.f);
+													   FVector2D ForwardVector, float MaxRange, float LineHalfWidth = 0.f,
+													   ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic);
 
 	/** Converts a UE ETeamAttitude enum value to its corresponding ETeamAttitudeBitflag bit. */
 	static ETeamAttitudeBitflag GetAttitudeBitflag(ETeamAttitude::Type Attitude);
@@ -313,6 +321,9 @@ public:
 	static bool IsAttitudeIntBitflag(ETeamAttitudeBitflag AttitudeBitflag, ETeamAttitude::Type Attitude);
 	/** Returns true when OtherActor's team attitude toward Owner is set in OverlapAttitudeBitMask. */
 	static bool IsTeamAttitudeAligned(AActor const* Owner, AActor const* OtherActor, uint8 OverlapAttitudeBitMask);
+
+	/** Resolves OverlapMode for a query cast by SourceTeam: whether targets' own collision radius is counted. */
+	static bool ShouldIncludeTargetRadius(ETargetOverlapMode OverlapMode, FGenericTeamId SourceTeam);
 
 
 	/** Returns the actor in ActorList with the smallest 3D distance to FromActor, or nullptr if the list is empty. */

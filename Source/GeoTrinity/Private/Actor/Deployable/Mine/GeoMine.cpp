@@ -3,14 +3,13 @@
 #include "Actor/Deployable/Mine/GeoMine.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/GeoHexArena.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoMine::AGeoMine(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
-	bUseRegularDrain = true;
+	bUseRegularDrain = false;
 	bAutoRecallAtEndLife = true;
 }
 
@@ -30,6 +29,42 @@ void AGeoMine::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(AGeoMine, MineData, COND_InitialOnly);
+}
+
+void AGeoMine::InitDrain()
+{
+	if (!GeoLib::IsServer(GetWorld()) || MineData.Params.LifeDrainMaxDuration <= 0.f)
+	{
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(FuseTimerHandle, this, &AGeoMine::OnFuseElapsed,
+									MineData.Params.LifeDrainMaxDuration, false);
+}
+
+void AGeoMine::OnHealthChanged_Implementation(float const NewValue)
+{
+	if (NewValue <= 0.f && bActive)
+	{
+		Expire();
+	}
+}
+
+void AGeoMine::OnFuseElapsed()
+{
+	if (!bActive)
+	{
+		return;
+	}
+
+	if (MineData.Params.BlinkDuration > 0.f)
+	{
+		StartBlinking();
+	}
+	else
+	{
+		Recall();
+	}
 }
 
 void AGeoMine::RecallEffect(float const Value)
