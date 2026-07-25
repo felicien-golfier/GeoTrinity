@@ -149,8 +149,8 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 		return;
 	}
 
-	Projectile->ShieldAmount = ShieldAmount;
-	Projectile->EnemyBounceMultiplier = EnemyBounceMultiplier;
+	Projectile->ShieldAmount = ShieldAmount.GetValueAtLevel(GetAbilityLevel());
+	Projectile->EnemyBounceAdditiveMultiplier = EnemyBounceAdditiveMultiplier;
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, GeoLib::GetServerTime(GetWorld()),
 									FPredictionKey{});
 }

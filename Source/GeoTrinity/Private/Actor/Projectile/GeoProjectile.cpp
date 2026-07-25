@@ -118,10 +118,10 @@ void AGeoProjectile::BeginPlay()
 	Super::BeginPlay();
 
 	// Simulated proxies never run ApplyProjectileParams (that happens where the projectile is spawned), so give them the
-	// per-Blueprint look here. Authoritative and predicted instances are locally ROLE_Authority and already applied it.
+	// per-Blueprint params here. Authoritative and predicted instances are locally ROLE_Authority and already applied it.
 	if (GetLocalRole() == ROLE_SimulatedProxy)
 	{
-		ApplyCosmetics(DefaultCosmetics);
+		ApplyParams(DefaultParams);
 	}
 
 	if (!Implements<UGeoPoolableInterface>())
@@ -476,20 +476,20 @@ void AGeoProjectile::OverrideSpeed(float const Speed)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::ApplyCosmetics(FProjectileCosmeticParams const& Cosmetics)
+void AGeoProjectile::ApplyParams(FProjectileParams const& Params)
 {
-	Sphere->SetSphereRadius(Cosmetics.Radius);
-	BulletVFX->SetVariableFloat(VfxRadiusParam, Cosmetics.Radius);
-	BulletVFX->SetVariableLinearColor(VfxHeadColorParam, Cosmetics.HeadColor);
-	BulletVFX->SetVariableLinearColor(VfxTrailColorParam, Cosmetics.TrailColor);
-	BulletVFX->SetVariableFloat(VfxTrailLifetimeParam, Cosmetics.TrailLifetimeScale);
+	Sphere->SetSphereRadius(Params.Radius);
+	BulletVFX->SetVariableFloat(VfxRadiusParam, Params.Radius);
+	BulletVFX->SetVariableLinearColor(VfxHeadColorParam, Params.HeadColor);
+	BulletVFX->SetVariableLinearColor(VfxTrailColorParam, Params.TrailColor);
+	BulletVFX->SetVariableFloat(VfxTrailLifetimeParam, Params.TrailLifetimeScale);
 }
 
 #if WITH_EDITOR
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::PreviewCosmetics()
+void AGeoProjectile::PreviewParams()
 {
-	ApplyCosmetics(DefaultCosmetics);
+	ApplyParams(DefaultParams);
 	BulletVFX->ReinitializeSystem();
 }
 #endif
@@ -523,19 +523,19 @@ void AGeoProjectile::ApplyProjectileParams(FGeoProjectileParams const& Params)
 		break;
 	}
 
-	// Colors and trail lifetime have no settings value, so their UseGameDataSettings resolves to DefaultCosmetics, same
-	// as KeepBlueprintDefaultValue; only an explicit OverrideValue changes them. Radius does read a settings value.
-	FProjectileCosmeticParams Resolved;
+	// Colors and trail lifetime have no settings value, so their UseGameDataSettings resolves to DefaultParams, same as
+	// KeepBlueprintDefaultValue; only an explicit OverrideValue changes them. Radius does read a settings value.
+	FProjectileParams Resolved;
 	Resolved.Radius = ResolveOverrideParam(Params.OverrideRadius, Params.Radius, Settings->GeneralProjectileRadius,
-										   DefaultCosmetics.Radius);
-	Resolved.HeadColor = ResolveOverrideParam(Params.OverrideHeadColor, Params.HeadColor, DefaultCosmetics.HeadColor,
-											  DefaultCosmetics.HeadColor);
-	Resolved.TrailColor = ResolveOverrideParam(Params.OverrideTrailColor, Params.TrailColor, DefaultCosmetics.TrailColor,
-											   DefaultCosmetics.TrailColor);
+										   DefaultParams.Radius);
+	Resolved.HeadColor = ResolveOverrideParam(Params.OverrideHeadColor, Params.HeadColor, DefaultParams.HeadColor,
+											  DefaultParams.HeadColor);
+	Resolved.TrailColor = ResolveOverrideParam(Params.OverrideTrailColor, Params.TrailColor, DefaultParams.TrailColor,
+											   DefaultParams.TrailColor);
 	Resolved.TrailLifetimeScale =
 		ResolveOverrideParam(Params.OverrideTrailLifetimeScale, Params.TrailLifetimeScale,
-							 DefaultCosmetics.TrailLifetimeScale, DefaultCosmetics.TrailLifetimeScale);
-	ApplyCosmetics(Resolved);
+							 DefaultParams.TrailLifetimeScale, DefaultParams.TrailLifetimeScale);
+	ApplyParams(Resolved);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -103,18 +103,19 @@ public:
 	void OverrideSpeed(float Speed);
 
 	/**
-	 * Applies a spawn-params bundle to this instance: distance/speed plus the cosmetics (radius/colors/trail). Each value
-	 * resolves per its EOverrideParam toggle — GameDataSettings value, the projectile's DefaultCosmetics, or explicit
-	 * override — then the resolved cosmetics are pushed via ApplyCosmetics. A reused pooled projectile is fully
-	 * re-resolved each spawn, so it never keeps the previous instance's look.
+	 * Applies a spawn-params bundle to this instance: distance/speed plus the per-instance values (radius/colors/trail).
+	 * Each value resolves per its EOverrideParam toggle — GameDataSettings value, the projectile's DefaultParams, or
+	 * explicit override — then the resolved values are pushed via ApplyParams. A reused pooled projectile is fully
+	 * re-resolved each spawn, so it never keeps the previous instance's values.
 	 */
 	void ApplyProjectileParams(FGeoProjectileParams const& Params);
 
 #if WITH_EDITOR
-	/** Editor-only preview button: pushes DefaultCosmetics onto BulletVFX and reinitializes it so the look is visible
-	 * without entering play. Acts on the object being edited — use a placed instance or the Blueprint preview actor. */
-	UFUNCTION(CallInEditor, Category = "GeoProjectile|Cosmetics")
-	void PreviewCosmetics();
+	/** Editor-only preview button: pushes DefaultParams onto BulletVFX (and the collider) and reinitializes it so the
+	 * result is visible without entering play. Acts on the object being edited — use a placed instance or the Blueprint
+	 * preview actor. */
+	UFUNCTION(CallInEditor, Category = "GeoProjectile|Params")
+	void PreviewParams();
 #endif
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -222,15 +223,16 @@ protected:
 	TObjectPtr<UAudioComponent> LoopingSoundComponent;
 
 	/** Bullet visual. Native subobject (its system asset is set in the constructor; the Blueprint may override it). Its
-	 * User.* params are write-only from C++ — ApplyCosmetics pushes radius/colors/trail; nothing reads them back, which
-	 * is why the look lives in DefaultCosmetics rather than in the Niagara asset's own user-param defaults. */
+	 * User.* params are write-only from C++ — ApplyParams pushes radius/colors/trail; nothing reads them back, which is
+	 * why the values live in DefaultParams rather than in the Niagara asset's own user-param defaults. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
 	TObjectPtr<UNiagaraComponent> BulletVFX;
 
-	/** Per-Blueprint default look, edited in Class Defaults. Resolved against for KeepBlueprintDefaultValue and pushed
-	 * onto BulletVFX by ApplyCosmetics. Preview it in-editor with the PreviewCosmetics button. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Cosmetics")
-	FProjectileCosmeticParams DefaultCosmetics;
+	/** Per-Blueprint default values (radius/colors/trail), edited in Class Defaults. Resolved against for
+	 * KeepBlueprintDefaultValue and pushed onto BulletVFX (and the collider) by ApplyParams. Preview them in-editor with
+	 * the PreviewParams button. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Params")
+	FProjectileParams DefaultParams;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
@@ -269,10 +271,10 @@ private:
 	FVector InitialPosition;
 	float DistanceSpanSqr;
 
-	/** Pushes the given cosmetics onto BulletVFX (radius/colors/trail) and resizes the sphere collider to match. Single
-	 * write path shared by ApplyProjectileParams (resolved values), the simulated-proxy default apply, and the editor
-	 * preview button. */
-	void ApplyCosmetics(FProjectileCosmeticParams const& Cosmetics);
+	/** Pushes the given params onto BulletVFX (radius/colors/trail) and resizes the sphere collider to match. Single write
+	 * path shared by ApplyProjectileParams (resolved values), the simulated-proxy default apply, and the editor preview
+	 * button. */
+	void ApplyParams(FProjectileParams const& Params);
 
 	/** Cosmetic (let the juice flow) **/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))

@@ -9,9 +9,9 @@ Shared `UGeoDeployAbility` (`Common/`) configured in BP with `DeployableActorCla
 
 ## `GeoShieldBurstPassiveAbility.h` — passive burst shield
 Auto-attack damage fills a gauge; at 100% a shield burst is sent to nearby allies.
-- `GaugeFillThreshold`, `ShieldAmount` (`FScalableFloat`, level-scaled), `EnemyBounceMultiplier`, `ChargeTime = 1s`
+- `GaugeFillThreshold`, `ShieldAmount` (`FScalableFloat`, level-scaled), `EnemyBounceAdditiveMultiplier` (additive per-bounce growth: adds this fraction of base shield+radius each bounce, linear not compounding), `ChargeTime = 1s`
 - Uses `UShieldBurstPassiveComponent` for the replicated `GaugeRatio` material visual
-- Flow: binds `OnDamageDealt` → gauge increments → at 100% `Charge()` → after `ChargeTime`, spawns `AGeoShieldBurstProjectile` toward nearest ally → bounces off enemies (multiplying `ShieldAmount`), shields first ally hit
+- Flow: binds `OnDamageDealt` → gauge increments → at 100% `Charge()` → after `ChargeTime`, spawns `AGeoShieldBurstProjectile` toward nearest ally → bounces off enemies (each bounce adds `EnemyBounceAdditiveMultiplier` × base to `ShieldAmount` + radius), shields first ally hit
 - In-flight bursts end on Square revive (`AGeoProjectile` binds to instigator's `OnRevived`)
 
 ## `GeoDetonateWallsAbility.h` — boosting ray

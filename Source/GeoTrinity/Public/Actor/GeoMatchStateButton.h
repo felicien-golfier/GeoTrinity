@@ -16,7 +16,9 @@ enum class EGeoMatchStateRequest : uint8
 {
 	StartMatch,
 	WaitingToStart,
-	WaitingPostMatch
+	WaitingPostMatch,
+	/** No state transition: respawns the boss of every arena whose boss was defeated. */
+	RespawnBosses
 };
 
 /**

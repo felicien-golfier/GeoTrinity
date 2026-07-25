@@ -41,9 +41,10 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Shield magnitude applied to allies on contact. Scales up with each enemy bounce. */
-	FScalableFloat ShieldAmount = 0.f;
-	/** Factor applied to both ShieldAmount and sphere radius each time the projectile bounces off an enemy. */
-	float EnemyBounceMultiplier;
+	float ShieldAmount;
+	/** Additive growth per enemy bounce: each bounce adds this fraction of the base ShieldAmount and sphere radius
+	 * (fixed increment snapshotted at spawn), so growth is linear rather than compounding. */
+	float EnemyBounceAdditiveMultiplier;
 	float SphereRadiusToAdd;
 	float ShieldAmountToAdd;
 
@@ -60,7 +61,7 @@ protected:
 	virtual void InitProjectileLife() override;
 	/**
 	 * On enemy overlap: plays BounceSound on every machine; on the server also reflects the projectile and scales
-	 * ShieldAmount and sphere radius by EnemyBounceMultiplier.
+	 * ShieldAmount and sphere radius by EnemyBounceAdditiveMultiplier.
 	 * On ally overlap (server): applies ShieldAmount as a shield effect and ends the projectile life.
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor) override;

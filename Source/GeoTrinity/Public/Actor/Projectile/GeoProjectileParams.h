@@ -25,13 +25,13 @@ enum class EOverrideParam : uint8
 };
 
 /**
- * A projectile's cosmetic values: radius, head/trail color, trail lifetime. Used directly as a projectile's per-Blueprint
- * default look (edited in Class Defaults) and as the resolved bundle AGeoProjectile::ApplyCosmetics pushes into the bullet
- * Niagara component. FGeoProjectileParams derives from this so a spawn's override values share one declaration with the
- * default look. Radius drives both the sphere collider and the "User.Bullet_Radius" param so the hitbox matches the visual.
+ * A projectile's per-instance values: radius (drives both the sphere collider and the "User.Bullet_Radius" param — so it
+ * is gameplay, not just visual), plus head/trail color and trail lifetime. Used directly as a projectile's per-Blueprint
+ * defaults (edited in Class Defaults) and as the resolved bundle AGeoProjectile::ApplyParams pushes onto the projectile.
+ * FGeoProjectileParams derives from this so a spawn's override values share one declaration with the defaults.
  */
 USTRUCT(BlueprintType)
-struct FProjectileCosmeticParams
+struct FProjectileParams
 {
 	GENERATED_BODY()
 
@@ -50,13 +50,13 @@ struct FProjectileCosmeticParams
 
 /**
  * Bundles a projectile class with the values it should spawn with, so a projectile class and its params always travel
- * together. Inherits the cosmetic values from FProjectileCosmeticParams and adds a per-value EOverrideParam toggle
+ * together. Inherits the per-instance values from FProjectileParams and adds a per-value EOverrideParam toggle
  * (settings / Blueprint default / explicit override) plus distance/speed. Applied by AGeoProjectile::ApplyProjectileParams.
- * Note: the inherited cosmetic value fields can't carry EditConditionHides (meta can't be added to an inherited property),
- * so they show unconditionally; the toggle still decides whether the value is used.
+ * Note: the inherited value fields can't carry EditConditionHides (meta can't be added to an inherited property), so they
+ * show unconditionally; the toggle still decides whether the value is used.
  */
 USTRUCT(BlueprintType)
-struct FGeoProjectileParams : public FProjectileCosmeticParams
+struct FGeoProjectileParams : public FProjectileParams
 {
 	GENERATED_BODY()
 

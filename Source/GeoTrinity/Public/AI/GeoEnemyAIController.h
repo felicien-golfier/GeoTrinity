@@ -25,7 +25,8 @@ class GEOTRINITY_API AGeoEnemyAIController : public AAIController
 	GENERATED_BODY()
 
 public:
-	/** Disables control rotation sync from pawn orientation so the base AAIController::Tick cannot override the character's clamped turn toward TargetYaw. */
+	/** Disables control rotation sync from pawn orientation so the base AAIController::Tick cannot override the
+	 * character's clamped turn toward TargetYaw. */
 	AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer = FObjectInitializer::Get());
 
 	/** Assigns Team Agent to given TeamID */
@@ -58,7 +59,7 @@ public:
 	void ResetAI();
 
 	UPROPERTY(EditAnywhere, Category = "Aggro")
-	float AggroRadius = 1500.f;
+	float AggroRadius = 1000.f;
 
 	/** Seconds a closer player must remain the closest before target switches to them. */
 	UPROPERTY(EditAnywhere, Category = "Aggro")

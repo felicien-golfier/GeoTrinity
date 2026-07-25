@@ -104,7 +104,7 @@ AGeoArena* AGeoArena::GetArenaOfBoss(AActor const* Boss)
 AGeoArena* AGeoArena::GetFightingArena(UObject const* WorldContextObject)
 {
 	TArray<AActor*> Arenas;
-	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, AGeoArena::StaticClass(), Arenas);
+	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, StaticClass(), Arenas);
 	for (AActor* Actor : Arenas)
 	{
 		AGeoArena* Arena = CastChecked<AGeoArena>(Actor);
@@ -172,7 +172,36 @@ void AGeoArena::EndFight()
 	GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
 	bFighting = false;
 	ApplyBossBar();
+	// A defeated boss stays defeated: respawning it here would have it re-aggro the players still standing on its
+	// corpse. Only RespawnBoss (a match-state button, or a fresh server) brings it back.
+	if (bBossDefeated)
+	{
+		if (Barrier)
+		{
+			Barrier->SetClosed(false);
+		}
+	}
+	else
+	{
+		ResetBoss();
+	}
+}
+
+void AGeoArena::RespawnBoss()
+{
+	bBossDefeated = false;
 	ResetBoss();
+}
+
+void AGeoArena::RespawnAllBosses(UObject const* WorldContextObject)
+{
+	TArray<AActor*> Arenas;
+	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, StaticClass(), Arenas);
+	for (AActor* Actor : Arenas)
+	{
+		AGeoArena* Arena = CastChecked<AGeoArena>(Actor);
+		Arena->RespawnBoss();
+	}
 }
 
 bool AGeoArena::IsBoss(AActor const* Enemy) const
@@ -226,6 +255,7 @@ void AGeoArena::OnBossDefeated()
 	{
 		LootOrigin = Boss->GetActorLocation();
 	}
+	bBossDefeated = true;
 
 	Loot();
 	GetWorld()->GetGameStateChecked<AGeoGameState>()->RequestWaitingToStart();

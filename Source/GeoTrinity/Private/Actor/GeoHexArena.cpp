@@ -480,7 +480,10 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 		}
 		else if (AGeoDeployableBase* Deployable = Cast<AGeoDeployableBase>(Actor))
 		{
-			if (!Deployable->SurviveOverTheVoid())
+			// IsActive() flips false on the first Expire(), but the actor lingers (collision stays enabled on authority)
+			// through the delayed-destroy window and keeps matching this overlap — without this guard Expire() (and its
+			// cue) would re-fire every tick, looping the expire/recall sound.
+			if (Deployable->IsActive() && !Deployable->SurviveOverTheVoid())
 			{
 				Deployable->Expire();
 			}

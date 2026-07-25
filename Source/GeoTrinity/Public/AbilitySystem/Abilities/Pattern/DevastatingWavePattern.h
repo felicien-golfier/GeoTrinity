@@ -24,7 +24,7 @@ struct FPillarWaveData
 
 /**
  * Expanding radial wave fired from the boss's center position.
- * Hits each interactable actor exactly once as the wave radius passes through them.
+ * Hits interactable actors only while the wave front passes over them (center within AnnulusWidth of the edge).
  * Pillars are recalled (triggering their explosion); all other hostiles receive WaveEffectDataArray.
  * Runs identically on all clients via PatternStartMulticast. Damage is server-only; pillar detection runs on
  * every machine (deterministic from server time + replicated pillars) to drive the masked AOE VFX.
@@ -37,7 +37,7 @@ class GEOTRINITY_API UDevastatingWavePattern : public UTickablePattern
 public:
 	/** Spawns the masked AOE Niagara component deactivated — the pattern instance is reused across activations. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
-	/** Clears hit-actor tracking, wave pillar data, and resets all MPC pillar mask slots to the unused sentinel.
+	/** Clears wave pillar data and resets all MPC pillar mask slots to the unused sentinel.
 	 * Called at the start of both InitPattern and StartPattern so stale data from a previous activation never bleeds in. */
 	void ClearData();
 
@@ -58,8 +58,9 @@ protected:
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
 	/**
 	 * Expands the wave radius by ExpansionSpeed * SpentTime each tick.
-	 * Hits each actor in range exactly once: pillars are added to the VFX mask on all machines;
-	 * other hostiles receive effect data server-side only. Ends the pattern when MaxRadius is reached.
+	 * Hits actors whose center sits within AnnulusWidth of the wave front: pillars are added to the VFX mask on all
+	 * machines as the front reaches them; other hostiles on the edge receive effect data server-side only.
+	 * Ends the pattern when MaxRadius is reached.
 	 */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** Ends the wave; deactivates the AOE VFX gracefully on natural completion or immediately on force-stop. */
@@ -71,16 +72,20 @@ private:
 	void AddPillarToVfxMask();
 	/** Positions the AOE component at the wave origin, pushes its user params and activates it. */
 	void ActivateAOEVfx() const;
-#if WITH_EDITOR
-	void DrawDebugSafeZones(float CurrentRadius) const;
-#endif
-	;
+	/** Draws the wave front (red) and inner annulus (green) circles, plus each pillar's safe-zone shadow.
+	 * Gated on the Geo.DrawDevastatingWave CVar. */
+	void DrawDebugWave(float CurrentRadius) const;
 
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave")
 	float ExpansionSpeed = 800.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave")
 	float MaxRadius = 3000.f;
+
+	/** Width of the damaging band just inside the wave front. Actors are hit only while their center sits between
+	 * CurrentRadius and CurrentRadius - AnnulusWidth; once the front passes beyond that band they are safe. */
+	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave")
+	float AnnulusWidth = 200.f;
 
 	/** Masked AOE system (NS_PillarsAOE) grown alongside the wave on every rendering machine. */
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
@@ -111,6 +116,5 @@ private:
 
 	FTimerHandle TelegraphBlinkTimerHandle;
 
-	TSet<TWeakObjectPtr<AActor>> HitActors;
 	TArray<FPillarWaveData> PillarsWaveData;
 };

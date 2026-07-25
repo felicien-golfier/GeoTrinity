@@ -13,6 +13,10 @@
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+static TAutoConsoleVariable CVarDrawDevastatingWave(
+	TEXT("Geo.DrawDevastatingWave"), false,
+	TEXT("When true, draws the devastating wave's front / inner radius and pillar safe zones"));
+
 namespace
 {
 	constexpr int32 MaxMaskedPillarSlots = 8;
@@ -75,7 +79,6 @@ void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 
 void UDevastatingWavePattern::ClearData()
 {
-	HitActors.Empty();
 	PillarsWaveData.Empty();
 	// The MPC is global state — clear slots left over from a previous wave before the AOE starts rendering.
 	for (int32 SlotIndex = 0; SlotIndex < MaxMaskedPillarSlots; ++SlotIndex)
@@ -106,6 +109,7 @@ void UDevastatingWavePattern::ActivateAoeVfxTelegraph() const
 	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_Radius"), MaxRadius);
 	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_GrowDuration"), StartDelay - TravelTime);
 	AOEVfxComponent->SetVariableFloat(TEXT("User.FadeOut_Duration"), TelegraphFadeOutDuration);
+	AOEVfxComponent->SetVariableFloat(TEXT("User.AnnulusRadius"), MaxRadius);
 	AOEVfxComponent->SetVariableLinearColor(TEXT("User.AOE_Color"), TelegraphColor);
 	AOEVfxComponent->Activate(true);
 }
@@ -117,6 +121,7 @@ void UDevastatingWavePattern::ActivateAOEVfx() const
 	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_Radius"), MaxRadius);
 	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_GrowDuration"), MaxRadius / ExpansionSpeed);
 	AOEVfxComponent->SetVariableFloat(TEXT("User.FadeOut_Duration"), FadeOutDuration);
+	AOEVfxComponent->SetVariableFloat(TEXT("User.AnnulusRadius"), AnnulusWidth);
 	AOEVfxComponent->SetVariableLinearColor(TEXT("User.AOE_Color"), AOEColor);
 	AOEVfxComponent->Activate(true);
 }
@@ -157,14 +162,7 @@ FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FAbilityPayload con
 void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 {
 	float const CurrentRadius = ExpansionSpeed * SpentTime;
-	if (HitActors.IsEmpty() && CurrentRadius > 0.f)
-	{
-		UE_LOG(LogPattern, Warning,
-			   TEXT("[WaveDiag] first damaging tick: StartDelay=%.3f ServerTime=%.3f ServerSpawnTime=%.3f "
-					"SpentTime=%.3f CurrentRadius=%.1f MaxRadius=%.1f Server=%d"),
-			   StartDelay, ServerTime, StoredPayload.ServerSpawnTime, SpentTime, CurrentRadius, MaxRadius,
-			   GeoLib::IsServer(this) ? 1 : 0);
-	}
+
 	if (CurrentRadius <= 0.f)
 	{
 		return;
@@ -173,38 +171,28 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
 	if (ensureMsgf(SourceASC, TEXT("UDevastatingWavePattern: SourceASC is null — Owner has no ASC")))
 	{
+		float const InnerRadius = FMath::Max(0.f, CurrentRadius - AnnulusWidth);
 		for (AActor* HitActor : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Owner),
 																TeamAttitudeMask::HostileOrNeutral, true,
 																StoredPayload.Origin, CurrentRadius))
 		{
-			if (HitActors.Contains(HitActor))
-			{
-				continue;
-			}
-
-			if (!ensureMsgf(
-					FVector2D::DistSquared(StoredPayload.Origin, FVector2D(HitActor->GetActorLocation())),
-					TEXT(
-						"Hit actors  are not in the given Radius, GetInteractableActors failed to calculate correctly")))
-			{
-				return;
-			}
-
-			HitActors.Add(HitActor);
-
-			FVector const HitLocation = HitActor->GetActorLocation();
-			UE_LOG(LogPattern, Warning,
-				   TEXT("[WaveDiag] hit actor %s at (%.1f, %.1f, %.1f) dist=%.1f CurrentRadius=%.1f"),
-				   *HitActor->GetName(), HitLocation.X, HitLocation.Y, HitLocation.Z,
-				   FVector2D::Distance(StoredPayload.Origin, FVector2D(HitLocation)), CurrentRadius);
-
 			AGeoPillar* Pillar = Cast<AGeoPillar>(HitActor);
-			if (IsValid(Pillar))
+			if (IsValid(Pillar)
+				&& !PillarsWaveData.ContainsByPredicate(
+					[Pillar](FPillarWaveData const& Data)
+					{
+						return Data.Pillar.Get() == Pillar;
+					}))
 			{
-
 				PillarsWaveData.Add(
 					{FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Pillar});
 				AddPillarToVfxMask();
+			}
+
+			if (FVector2D::DistSquared(StoredPayload.Origin, FVector2D(HitActor->GetActorLocation()))
+				< InnerRadius * InnerRadius)
+			{
+				continue;
 			}
 
 			if (GeoLib::IsServer(this) && ShouldHitActor(HitActor))
@@ -218,6 +206,11 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 				}
 			}
 		}
+	}
+
+	if (CVarDrawDevastatingWave.GetValueOnGameThread())
+	{
+		DrawDebugWave(CurrentRadius);
 	}
 
 	if (CurrentRadius >= MaxRadius)
@@ -253,9 +246,14 @@ bool UDevastatingWavePattern::ShouldHitActor(AActor const* Actor) const
 	return true;
 }
 
-#if WITH_EDITOR
-void UDevastatingWavePattern::DrawDebugSafeZones(float CurrentRadius) const
+void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
 {
+	FVector const Center(StoredPayload.Origin, ArbitraryCharacterZ);
+	DrawDebugCircle(GetWorld(), Center, CurrentRadius, 64, FColor::Red, false, 0.f, 0, 3.f, FVector::XAxisVector,
+					FVector::YAxisVector, false);
+	DrawDebugCircle(GetWorld(), Center, FMath::Max(0.f, CurrentRadius - AnnulusWidth), 64, FColor::Green, false, 0.f, 0,
+					3.f, FVector::XAxisVector, FVector::YAxisVector, false);
+
 	int i = 0;
 	for (FPillarWaveData const& PillarData : PillarsWaveData)
 	{
@@ -280,7 +278,7 @@ void UDevastatingWavePattern::DrawDebugSafeZones(float CurrentRadius) const
 					  Color, false, 0.f, 0, 3.f);
 	}
 }
-#endif
+
 void UDevastatingWavePattern::EndPattern(bool bForceStop)
 {
 	GetWorld()->GetTimerManager().ClearTimer(TelegraphBlinkTimerHandle);

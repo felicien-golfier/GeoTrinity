@@ -12,6 +12,8 @@
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+static TAutoConsoleVariable CVarDrawBeamBorder(TEXT("Geo.DrawBeamBorder"), false,
+											   TEXT("When true, draws the beam pattern's hit-scan rectangle borders"));
 
 void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
@@ -89,17 +91,18 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 
 	if (GeoLib::IsServer(GetWorld()))
 	{
-#ifdef WITH_EDITOR
-		FVector const Right = FVector::CrossProduct(FVector::UpVector, FVector(Forward, 0.f));
-		FVector const BeamStart = Location;
-		FVector const BeamEnd = Location + FVector(Forward, 0.f) * BeamRange;
-		DrawDebugLine(GetWorld(), BeamStart + Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
-					  false, 0.f);
-		DrawDebugLine(GetWorld(), BeamStart - Right * BeamHalfWidth, BeamEnd - Right * BeamHalfWidth, FColor::Red,
-					  false, 0.f);
-		DrawDebugLine(GetWorld(), BeamEnd - Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red, false,
-					  0.f);
-#endif
+		if (CVarDrawBeamBorder.GetValueOnGameThread())
+		{
+			FVector const Right = FVector::CrossProduct(FVector::UpVector, FVector(Forward, 0.f));
+			FVector const BeamStart = Location;
+			FVector const BeamEnd = Location + FVector(Forward, 0.f) * BeamRange;
+			DrawDebugLine(GetWorld(), BeamStart + Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
+						  false, 0.f);
+			DrawDebugLine(GetWorld(), BeamStart - Right * BeamHalfWidth, BeamEnd - Right * BeamHalfWidth, FColor::Red,
+						  false, 0.f);
+			DrawDebugLine(GetWorld(), BeamEnd - Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
+						  false, 0.f);
+		}
 
 		if (bDestroyLastTileHit)
 		{

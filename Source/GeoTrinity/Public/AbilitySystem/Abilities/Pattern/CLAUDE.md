@@ -33,7 +33,7 @@ Ticking, non-projectile. Fired from `StoredPayload.Origin` along `Yaw`, on for `
 - `bDestroyLastTileHit` — on go-live tick, carves the furthest still-standing tile the beam reaches (`GetLastAliveTileAlongRay`), server-only — tank chooses the rim tile by where they stand when the boss locks on
 - Each actor hit once per activation (`HitActors`, cleared in `StartPattern`/`EndPattern`) — damage server-only, VFX everywhere
 - `BeamVfxSystem` — spawned deactivated in `OnCreate`, reused across activations, driven with the same user params as `UGeoBeamVFXComponent` (`User.Beam_Length`/`Width`); author local-space +X. `EndPattern`: graceful `Deactivate` on natural end, `DeactivateImmediate` on force-stop
-- `TickPattern`'s server branch draws the actual hit-scan rectangle (`BeamRange`/`BeamHalfWidth`) fed to `GetInteractableActorsInLine`, `WITH_EDITOR`-gated red `DrawDebugLine`s — matches the pattern in `UGeoChannelBeamAbility::DrawBeamDebugLines`
+- `TickPattern`'s server branch draws the actual hit-scan rectangle (`BeamRange`/`BeamHalfWidth`) fed to `GetInteractableActorsInLine` as red `DrawDebugLine`s, gated on the `Geo.DrawBeamBorder` CVar — matches the pattern in `UGeoChannelBeamAbility::DrawBeamDebugLines`
 - `OverlapMode` (`ETargetOverlapMode`, BP knob, default `Automatic`) → the line query's target-radius rule; `Automatic` resolves to center-only because the boss is an `Enemy` source
 
 ## `ConeSprayPattern.h` — cone of bullets in timed salves (hex boss)
@@ -42,9 +42,11 @@ Ticking projectile pattern. Fires `SalveNumber` salves `SalveFrequencySec` apart
 - `SpawnedSalveCount` reset in `InitPattern`; `OnCreate` pre-warms the pool for a full spray
 
 ## `DevastatingWavePattern.h` — expanding radial wave
-Non-projectile ticking. `InitPattern` teleports instigator to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; hostiles within `CurrentRadius` hit once (pillars recalled, others get the ability's effect data). Ends at `CurrentRadius >= MaxRadius`.
-- `ClearData()` — resets `HitActors`/`PillarsWaveData`/8 MPC pillar slots to sentinel; called at start of `InitPattern`/`StartPattern` and end of `EndPattern`, so stale data never bleeds in
-- `ExpansionSpeed` (default 800 cm/s), `MaxRadius` (default 3000)
+Non-projectile ticking. `InitPattern` teleports instigator to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; only hostiles whose center sits in the band `[CurrentRadius - AnnulusWidth, CurrentRadius]` are hit (the moving wave front) — once the front passes them they are safe. Pillars are added to the VFX mask as soon as the front reaches them (deduped against `PillarsWaveData`, no per-hit set). Ends at `CurrentRadius >= MaxRadius`.
+- `ClearData()` — resets `PillarsWaveData`/8 MPC pillar slots to sentinel; called at start of `InitPattern`/`StartPattern` and end of `EndPattern`, so stale data never bleeds in
+- `ExpansionSpeed` (default 800 cm/s), `MaxRadius` (default 3000), `AnnulusWidth` (default 200 — damaging band width just inside the front)
+- No `HitActors` dedup — an actor lingering in the band is hit each tick it stays there
+- `DrawDebugWave(CurrentRadius)` — red circle = wave front, green = inner annulus edge, plus per-pillar safe-zone tangent lines; called every tick, gated on the `Geo.DrawDevastatingWave` CVar
 
 **Masked AOE VFX** (all rendering machines, gated `!IsDedicatedServer`):
 - `OnCreate` spawns `AOEVfxSystem` (NS_PillarsAOE) once, deactivated, `bAutoDestroy=false`, reused across activations

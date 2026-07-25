@@ -43,8 +43,10 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
 	FScalableFloat ShieldAmount;
 
+	/** Additive growth per enemy bounce: each bounce adds this fraction of the projectile's *base* shield and radius
+	 * (0.5 = +50% of base every bounce, so N bounces = base × (1 + 0.5·N)) — a linear increase, not compounding. */
 	UPROPERTY(EditDefaultsOnly, Category = "ShieldBurst", meta = (AllowPrivateAccess = true))
-	float EnemyBounceMultiplier = 1.5f;
+	float EnemyBounceAdditiveMultiplier = .5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
 	FGeoProjectileParams ProjectileParams;

@@ -36,8 +36,8 @@ void AGeoShieldBurstProjectile::InitProjectileLife()
 {
 	Super::InitProjectileLife();
 	ProjectileMovement->OnProjectileBounce.AddUniqueDynamic(this, &ThisClass::OnWallBounce);
-	SphereRadiusToAdd = Sphere->GetScaledSphereRadius() * EnemyBounceMultiplier - Sphere->GetScaledSphereRadius();
-	ShieldAmountToAdd = ShieldAmount.Value * EnemyBounceMultiplier - ShieldAmount.Value;
+	SphereRadiusToAdd = Sphere->GetScaledSphereRadius() * EnemyBounceAdditiveMultiplier;
+	ShieldAmountToAdd = ShieldAmount * EnemyBounceAdditiveMultiplier;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 			ProjectileMovement->Velocity = ReflectedVelocity;
 			ProjectileMovement->UpdateComponentVelocity();
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() + SphereRadiusToAdd);
-			ShieldAmount.Value += ShieldAmountToAdd;
+			ShieldAmount += ShieldAmountToAdd;
 			UpdateVisualRadius(Sphere->GetScaledSphereRadius());
 			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
 			LastOverlapHostileActor = OtherActor;

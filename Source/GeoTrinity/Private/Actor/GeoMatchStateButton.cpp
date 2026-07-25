@@ -2,6 +2,7 @@
 
 #include "Actor/GeoMatchStateButton.h"
 
+#include "Actor/GeoArena.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/BoxComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -58,6 +59,9 @@ void AGeoMatchStateButton::OnBeginOverlap(UPrimitiveComponent* OverlappedCompone
 			break;
 		case EGeoMatchStateRequest::WaitingPostMatch:
 			GeoGameMode->RequestWaitingPostMatch();
+			break;
+		case EGeoMatchStateRequest::RespawnBosses:
+			AGeoArena::RespawnAllBosses(this);
 			break;
 	}
 }

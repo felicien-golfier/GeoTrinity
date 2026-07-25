@@ -44,8 +44,14 @@ public:
 	virtual void StartFight();
 	/** Server. Teleports players to this arena's fight location; the encounter is now fully live. */
 	virtual void CommitFight();
-	/** Server. Opens the barrier, hides the boss bar, and resets the boss. Runs when the match leaves InProgress. */
+	/** Server. Opens the barrier, hides the boss bar, and resets the boss — unless the boss was defeated, in which case
+	 *  it is left dead until RespawnBoss. Runs when the match leaves InProgress. */
 	virtual void EndFight();
+
+	/** Server. Clears the defeated state and spawns the boss again — the only way back after a victory. */
+	void RespawnBoss();
+	/** Server. RespawnBoss on every arena whose boss was defeated. What a respawn button drives. */
+	static void RespawnAllBosses(UObject const* WorldContextObject);
 
 	/** Returns this arena's boss character; nullptr before BeginPlay spawns it. */
 	AEnemyCharacter* GetBoss() const { return Boss; }
@@ -102,6 +108,10 @@ private:
 	/** True while this arena's fight is live. Replicated so every client shows/hides the boss bar off OnRep_bFighting. */
 	UPROPERTY(ReplicatedUsing = OnRep_bFighting)
 	bool bFighting = false;
+
+	/** True once this arena's boss has been beaten. Blocks the EndFight respawn until RespawnBoss clears it, so a
+	 *  victory doesn't drop a fresh boss on the players looting the corpse. Server-only state. */
+	bool bBossDefeated = false;
 
 	UFUNCTION()
 	void OnRep_bFighting();
