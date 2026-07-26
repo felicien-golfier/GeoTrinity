@@ -212,22 +212,29 @@ public:
 	virtual bool ShowsDamageNumbers() const override { return bShowDamageNumbers; }
 
 protected:
-	// subclasses MUST override this with their own data struct inherited from FDeployableData
+	/**
+	 * Returns the deployable's data block.
+	 * @warning Subclasses must override and return their own FDeployableData-derived struct. This base implementation asserts.
+	 */
 	virtual FDeployableData const* GetData() const override
 	{
 		checkNoEntry();
 		return nullptr;
 	}
 
+	/** Triggers StartBlinking when health reaches zero. */
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
 
 
+	/** Blueprint hook fired when the pre-expiry blink window starts — override to play blink visuals (shake, tint, etc.). */
 	UFUNCTION(BlueprintNativeEvent)
 	void OnBlinkStart();
 	void OnBlinkStart_Implementation();
 
+	/** Fires the recall or expiry gameplay cue on clients when bActive becomes false. */
 	UFUNCTION()
 	virtual void OnRep_Active(bool bOldValue);
+	/** Fires the blink gameplay cue on clients when bBlinking becomes true. */
 	UFUNCTION()
 	virtual void OnRep_Blinking(bool bOldValue);
 

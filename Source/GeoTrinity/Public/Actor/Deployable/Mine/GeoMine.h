@@ -29,6 +29,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
+	/** Returns the mine's replicated data block. */
 	virtual FDeployableData const* GetData() const override { return &MineData; }
 	/** Server. Arms the fuse timer (LifeDrainMaxDuration) instead of the base life drain. */
 	virtual void InitDrain() override;

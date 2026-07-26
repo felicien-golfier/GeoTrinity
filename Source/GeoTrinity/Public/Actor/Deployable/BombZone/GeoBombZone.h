@@ -36,10 +36,12 @@ public:
 
 
 protected:
+	/** Returns the bomb's replicated data block. */
 	virtual FDeployableData const* GetData() const override { return &BombData; }
 	/** Server. Explodes (base effect data within Size), then carves the arena tiles under the plant. */
 	virtual void ExplodeEffect(float const Value) override;
 
+	/** Server. Detaches the bomb from its carrier, planting it at the carrier's current world position before the blink telegraph plays. */
 	virtual void StartBlinking() override;
 
 private:
