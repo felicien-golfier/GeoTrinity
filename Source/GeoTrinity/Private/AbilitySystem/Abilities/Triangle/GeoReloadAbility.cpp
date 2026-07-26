@@ -147,7 +147,7 @@ FLinearColor UGeoReloadAbility::GetColorForIndex(int32 Index) const
 	{
 		return FLinearColor::White;
 	}
-	return BuffColors[((Index % BuffColors.Num()) + BuffColors.Num()) % BuffColors.Num()];
+	return BuffColors[((Index % BuffColors.Num()) + BuffColors.Num()) % BuffColors.Num()].GetColor();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

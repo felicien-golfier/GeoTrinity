@@ -10,6 +10,7 @@
 #include "Kismet/KismetMaterialLibrary.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -22,6 +23,8 @@ namespace
 	constexpr int32 MaxMaskedPillarSlots = 8;
 	// Matches the "unused slot" default of MPC_MaskedArea's PillarPosWS_XX parameters.
 	constexpr FLinearColor UnusedPillarSlotValue(-10000.f, -10000.f, -10000.f, 0.f);
+
+	FName const PillarRadiusParam(TEXT("Pillar_Radius"));
 
 	FName GetPillarSlotParameterName(int32 const SlotIndex)
 	{
@@ -106,11 +109,11 @@ void UDevastatingWavePattern::ActivateAoeVfxTelegraph() const
 {
 	AOEVfxComponent->ReinitializeSystem();
 	AOEVfxComponent->SetWorldLocation(FVector(StoredPayload.Origin, 0.f));
-	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_Radius"), MaxRadius);
-	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_GrowDuration"), StartDelay - TravelTime);
-	AOEVfxComponent->SetVariableFloat(TEXT("User.FadeOut_Duration"), TelegraphFadeOutDuration);
-	AOEVfxComponent->SetVariableFloat(TEXT("User.AnnulusRadius"), MaxRadius);
-	AOEVfxComponent->SetVariableLinearColor(TEXT("User.AOE_Color"), TelegraphColor);
+	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOERadius, MaxRadius);
+	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOEGrowDuration, StartDelay - TravelTime);
+	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::FadeOutDuration, TelegraphFadeOutDuration);
+	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AnnulusRadius, MaxRadius);
+	AOEVfxComponent->SetVariableLinearColor(GeoNiagaraParams::AOEColor, TelegraphColor.GetColor());
 	AOEVfxComponent->Activate(true);
 }
 
@@ -118,11 +121,11 @@ void UDevastatingWavePattern::ActivateAOEVfx() const
 {
 	AOEVfxComponent->ReinitializeSystem();
 	AOEVfxComponent->SetWorldLocation(FVector(StoredPayload.Origin, 0.f));
-	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_Radius"), MaxRadius);
-	AOEVfxComponent->SetVariableFloat(TEXT("User.AOE_GrowDuration"), MaxRadius / ExpansionSpeed);
-	AOEVfxComponent->SetVariableFloat(TEXT("User.FadeOut_Duration"), FadeOutDuration);
-	AOEVfxComponent->SetVariableFloat(TEXT("User.AnnulusRadius"), AnnulusWidth);
-	AOEVfxComponent->SetVariableLinearColor(TEXT("User.AOE_Color"), AOEColor);
+	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOERadius, MaxRadius);
+	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOEGrowDuration, MaxRadius / ExpansionSpeed);
+	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::FadeOutDuration, FadeOutDuration);
+	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AnnulusRadius, AnnulusWidth);
+	AOEVfxComponent->SetVariableLinearColor(GeoNiagaraParams::AOEColor, AOEColor.GetColor());
 	AOEVfxComponent->Activate(true);
 }
 
@@ -146,7 +149,7 @@ void UDevastatingWavePattern::AddPillarToVfxMask()
 	UKismetMaterialLibrary::SetVectorParameterValue(this, MaskMaterialParameterCollection,
 													GetPillarSlotParameterName(SlotIndex),
 													FLinearColor(PillarData.Location.X, PillarData.Location.Y, 0.f));
-	UKismetMaterialLibrary::SetScalarParameterValue(this, MaskMaterialParameterCollection, TEXT("Pillar_Radius"),
+	UKismetMaterialLibrary::SetScalarParameterValue(this, MaskMaterialParameterCollection, PillarRadiusParam,
 													PillarData.Radius);
 }
 

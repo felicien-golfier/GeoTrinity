@@ -29,7 +29,7 @@ struct FGameplayAbilitySpec;
 class UGameplayAbility;
 struct FGameplayEffectContextHandle;
 struct FGameplayTag;
-struct FGeoProjectileParams;
+struct FExternalProjectileParams;
 class UAbilitySystemComponent;
 /**
  * A library of helper functions for the ASC
@@ -191,14 +191,14 @@ public:
 	 * @param SpawnServerTime  Synchronized server time at spawn, used to fast-forward position by elapsed ping.
 	 * @return                 The spawned projectile, or nullptr on failure.
 	 */
-	static AGeoProjectile* FullySpawnProjectile(UWorld* const World, FGeoProjectileParams const& Params,
+	static AGeoProjectile* FullySpawnProjectile(UWorld* const World, FExternalProjectileParams const& Params,
 												FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 												TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 												float SpawnServerTime, FPredictionKey PredictionKey = FPredictionKey{});
 
 	/** Begins deferred spawn from Params.ProjectileClass, sets payload/effect data, and applies Params
 	 * (distance/speed/radius/colors) before FinishSpawning. */
-	static AGeoProjectile* StartSpawnProjectile(UWorld* World, FGeoProjectileParams const& Params,
+	static AGeoProjectile* StartSpawnProjectile(UWorld* World, FExternalProjectileParams const& Params,
 												FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 												TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 												FPredictionKey PredictionKey = FPredictionKey{});
@@ -261,13 +261,13 @@ public:
 											ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic)
 	{
 		TArray<T*> Result;
-		for (AActor* Actor : GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable,
-												   Location, MaxDistance,
-												   [](AActor* Actor)
-												   {
-													   return IsValid(Actor) && Actor->IsA(T::StaticClass());
-												   },
-												   OverlapMode))
+		for (AActor* Actor : GetInteractableActors(
+				 WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location, MaxDistance,
+				 [](AActor* Actor)
+				 {
+					 return IsValid(Actor) && Actor->IsA(T::StaticClass());
+				 },
+				 OverlapMode))
 		{
 			Result.Add(CastChecked<T>(Actor));
 		}
@@ -315,7 +315,8 @@ public:
 	 */
 	static TArray<AActor*> GetInteractableActorsInLine(UObject const* WorldContextObject, FGenericTeamId SourceTeam,
 													   int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Origin,
-													   FVector2D ForwardVector, float MaxRange, float LineHalfWidth = 0.f,
+													   FVector2D ForwardVector, float MaxRange,
+													   float LineHalfWidth = 0.f,
 													   ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic);
 
 	/** Converts a UE ETeamAttitude enum value to its corresponding ETeamAttitudeBitflag bit. */

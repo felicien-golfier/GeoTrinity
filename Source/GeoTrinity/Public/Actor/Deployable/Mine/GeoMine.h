@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Actor/Deployable/GeoDeployableBase.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "GeoMine.generated.h"
@@ -38,7 +38,7 @@ protected:
 	virtual void RecallEffect(float Value) override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mine")
-	FGeoProjectileParams ProjectileParams;
+	FExternalProjectileParams ProjectileParams;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mine", meta = (ClampMin = "1"))
 	int32 BurstProjectileCount = 12;

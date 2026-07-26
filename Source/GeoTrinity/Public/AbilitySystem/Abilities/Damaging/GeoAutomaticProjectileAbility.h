@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "GeoAutomaticProjectileAbility.generated.h"
@@ -24,7 +24,7 @@ protected:
 	virtual bool ExecuteShot_Implementation() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
-	FGeoProjectileParams ProjectileParams;
+	FExternalProjectileParams ProjectileParams;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	EProjectileTarget Target;

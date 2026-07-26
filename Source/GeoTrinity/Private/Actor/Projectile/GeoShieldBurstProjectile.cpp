@@ -11,13 +11,14 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "NiagaraComponent.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 AGeoShieldBurstProjectile::AGeoShieldBurstProjectile()
 {
-	OverlapAttitude = TeamAttitudeMask::All;
+	DefaultParams.OverlapAttitude = TeamAttitudeMask::All;
 
 	ProjectileMovement->bShouldBounce = true;
 	ProjectileMovement->Bounciness = 1.0f;
@@ -38,6 +39,16 @@ void AGeoShieldBurstProjectile::InitProjectileLife()
 	ProjectileMovement->OnProjectileBounce.AddUniqueDynamic(this, &ThisClass::OnWallBounce);
 	SphereRadiusToAdd = Sphere->GetScaledSphereRadius() * EnemyBounceAdditiveMultiplier;
 	ShieldAmountToAdd = ShieldAmount * EnemyBounceAdditiveMultiplier;
+
+	if (HasAuthority())
+	{
+		BounceSnapshot = {GetActorLocation(), ProjectileMovement->Velocity, Sphere->GetScaledSphereRadius()};
+	}
+	else
+	{
+		// OnRep_BounceSnapshot fired before BeginPlay, whose DefaultParams apply overwrote the radius it had set.
+		UpdateVisualRadius(BounceSnapshot.Radius);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -53,7 +64,7 @@ void AGeoShieldBurstProjectile::UpdateVisualRadius(float Radius) const
 {
 	if (BulletVFX)
 	{
-		BulletVFX->SetVariableFloat(FName("User.Bullet_Radius"), Radius);
+		BulletVFX->SetVariableFloat(GeoNiagaraParams::BulletRadius, Radius);
 	}
 }
 

@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
+#include "Tool/GeoColor.h"
 
 #include "GeoSweetSpotChargePassiveAbility.generated.h"
 
@@ -40,7 +41,7 @@ public:
 	/** Returns the HUD status-bar icon texture for this passive's gauge. */
 	UTexture2D* GetGaugeIcon() const { return GaugeIcon; }
 	/** Returns the color the status-bar icon shines when the gauge is full. */
-	FLinearColor GetGaugeFullColor() const { return GaugeFullColor; }
+	FLinearColor GetGaugeFullColor() const { return GaugeFullColor.GetColor(); }
 
 private:
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
@@ -71,5 +72,5 @@ private:
 	TObjectPtr<UTexture2D> GaugeIcon;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability")
-	FLinearColor GaugeFullColor = FLinearColor(1.f, 0.85f, 0.2f);
+	FGeoColorParam GaugeFullColor{FLinearColor(1.f, 0.85f, 0.2f)};
 };

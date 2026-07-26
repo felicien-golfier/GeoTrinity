@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "SpiralPattern.generated.h"
@@ -18,7 +18,8 @@ class GEOTRINITY_API USpiralPattern : public UTickablePattern
 	GENERATED_BODY()
 protected:
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
-	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData) override;
+	virtual void InitPattern(FAbilityPayload const& Payload,
+							 TInstancedStruct<FPatternData> const& PatternData) override;
 
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	virtual void EndPattern(bool bForceStop = false) override;
@@ -33,7 +34,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
 	float RoundNumber;
 	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
-	FGeoProjectileParams ProjectileParams;
+	FExternalProjectileParams ProjectileParams;
 
 	UPROPERTY(Transient)
 	TArray<AGeoProjectile*> Projectiles;

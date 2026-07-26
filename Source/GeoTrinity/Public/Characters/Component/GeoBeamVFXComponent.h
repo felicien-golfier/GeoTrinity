@@ -4,6 +4,7 @@
 
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "Tool/GeoNiagaraParams.h"
 
 #include "GeoBeamVFXComponent.generated.h"
 
@@ -77,13 +78,13 @@ private:
 	FLinearColor BeamColor = FLinearColor::White;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BeamVFX")
-	FName HalfWidthParamName = "User.Beam_Width";
+	FName HalfWidthParamName = GeoNiagaraParams::BeamWidth;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BeamVFX")
-	FName LengthParamName = "User.Beam_Length";
+	FName LengthParamName = GeoNiagaraParams::BeamLength;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BeamVFX")
-	FName ColorParamName = "User.Color";
+	FName ColorParamName = GeoNiagaraParams::BeamColor;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> NiagaraComponent;

@@ -5,6 +5,7 @@
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "NiagaraComponent.h"
 #include "System/GeoActorPoolingSubsystem.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -20,6 +21,9 @@ void AGeoPooledProjectile::End()
 	if (!GeoLib::IsDedicatedServer(this))
 	{
 		LoopingSoundComponent->Stop();
+		// Hiding the actor and disabling component ticks does not stop a Niagara system (the world manager ticks it),
+		// so a pooled projectile keeps its particles alive and the next reuse renders them for one frame.
+		BulletVFX->DeactivateImmediate();
 	}
 	Sphere->OnComponentBeginOverlap.RemoveDynamic(this, &ThisClass::OnSphereOverlap);
 	Sphere->OnComponentHit.RemoveDynamic(this, &ThisClass::OnSphereHit);
@@ -30,6 +34,10 @@ void AGeoPooledProjectile::End()
 
 void AGeoPooledProjectile::Init()
 {
+	if (!GeoLib::IsDedicatedServer(this))
+	{
+		BulletVFX->Activate(true);
+	}
 	InitProjectileLife();
 }
 

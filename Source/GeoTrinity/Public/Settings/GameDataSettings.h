@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
+#include "Tool/GeoColor.h"
 
 #include "GameDataSettings.generated.h"
 
@@ -61,6 +62,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftObjectPtr<USoundBase> DefaultButtonHoverSound;
 
+	/** Color every FGeoColorParam of the game resolves its slot through; EGeoColor::Override is never looked up here. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Colors")
+	TMap<EGeoColor, FLinearColor> ColorPalette;
+
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;
 
@@ -70,10 +75,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralSpellSpeed = 550.f;
 
-	/** Project-wide default projectile radius, used when a spawn's FGeoProjectileParams leaves OverrideRadius on
+	/** Project-wide default projectile radius, used when a spawn's FExternalProjectileParams leaves OverrideRadius on
 	 * UseGameDataSettings. Drives both the Niagara bullet visual and the sphere collider. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile")
-	float GeneralProjectileRadius = 15.f;
+	float GeneralProjectileRadius = 30.f;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile")
 	float MinDeployDistance = 150.f;

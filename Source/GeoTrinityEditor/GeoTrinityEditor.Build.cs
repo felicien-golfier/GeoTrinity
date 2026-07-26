@@ -25,6 +25,7 @@ public class GeoTrinityEditor : ModuleRules
 			"Slate",
 			"UMG",
 			"UMGEditor",
+			"PropertyEditor",
 			"AIModule",
 			"GameplayTags",
 			"StateTreeModule",

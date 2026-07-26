@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "CoreMinimal.h"
+#include "Tool/GeoColor.h"
 
 class AGeoPillar;
 class UMaterialParameterCollection;
@@ -96,7 +97,7 @@ private:
 	TObjectPtr<UMaterialParameterCollection> MaskMaterialParameterCollection;
 
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
-	FLinearColor AOEColor = FLinearColor::Yellow;
+	FGeoColorParam AOEColor{FLinearColor::Yellow};
 
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
 	float FadeOutDuration = 0.5f;
@@ -108,7 +109,7 @@ private:
 
 	/** Color of the full-range telegraph shown during the wind-up, before the wave starts expanding. */
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
-	FLinearColor TelegraphColor = FLinearColor::Red;
+	FGeoColorParam TelegraphColor{FLinearColor::Red};
 
 
 	UPROPERTY(Transient)

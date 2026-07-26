@@ -38,7 +38,7 @@ void UGeoChannelBeamAbility::OnGiveAbility(FGameplayAbilityActorInfo const* Acto
 		UGeoBeamVFXComponent* BeamVFXComponent =
 			NewObject<UGeoBeamVFXComponent>(Avatar, UGeoBeamVFXComponent::StaticClass());
 		BeamVFXComponent->SetNiagaraSystem(BeamNiagaraSystem);
-		BeamVFXComponent->SetBeamColor(BeamColor);
+		BeamVFXComponent->SetBeamColor(BeamColor.GetColor());
 		BeamVFXComponent->RegisterComponent();
 	}
 }

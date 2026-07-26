@@ -37,6 +37,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 | Gameplay↔UI interfaces (in gameplay module) | `Source/GeoTrinity/Public/HUD/Interface/` |
 | Subsystems & pooling | `Source/GeoTrinity/Public/System/CLAUDE.md` |
 | Editor automation utils (StateTree/Widget builders) | `Source/GeoTrinityEditor/Public/Tool/CLAUDE.md` |
+| Details-panel customizations | `Source/GeoTrinityEditor/Public/Detail/CLAUDE.md` |
 
 ## Source Structure (Every public folder has it's CLAUDE.md to explore)
 ```
@@ -91,7 +92,7 @@ Source/GeoTrinity/
 │   ├── Input/                 # GeoInputComponent
 │   ├── Settings/              # GameDataSettings
 │   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem, GeoSessionSubsystem
-│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team
+│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoColor (EGeoColor + FGeoColorParam)
 │   ├── World/                 # GeoGameCamera, GeoWorldSettings
 │   ├── Animation/             # FireAnimNotify
 │   └── GameClasses/           # GeoGameMode, GeoGameState, GeoGameInstance, GeoPlayerController, GeoPlayerState
@@ -106,5 +107,6 @@ Source/GeoTrinityUI/           # Runtime UI module (Type=Runtime) — all HUD/wi
                               # GenericCombattantWidget, GeoDamageNumberWidget, GeoDeployChargeGaugeWidget, GeoChargeBeamGaugeWidget, HudFunctionLibrary
 Source/GeoTrinityEditor/       # Editor-only module (Type=Editor) — UEditorUtilityObject automation utils kept out of packaged builds
 └── Public/ & Private/
-    └── Tool/                  # GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil
+    ├── Tool/                  # GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil
+    └── Detail/                # Details-panel customizations (ExternalProjectileParamsCustomization)
 ```

@@ -4,7 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "GeoProjectileAbility.generated.h"
@@ -57,7 +57,7 @@ protected:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
-	FGeoProjectileParams ProjectileParams;
+	FExternalProjectileParams ProjectileParams;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	EProjectileTarget Target;

@@ -30,7 +30,7 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 			this, BeamVfxSystem, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
 			/*bAutoDestroy*/ false, /*bAutoActivate*/ false);
 		ensureMsgf(BeamVfxComponent, TEXT("UBeamPattern: failed to spawn the beam VFX system"));
-		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor);
+		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor.GetColor());
 	}
 }
 void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
@@ -42,7 +42,7 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 		BeamVfxComponent->Activate(true);
 		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
 		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth * 2.f);
-		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamInitColor);
+		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamInitColor.GetColor());
 		FRotator const BeamRotation(0.f, GetBeamYaw(0.f), 0.f);
 		FVector const Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
 													: FVector(StoredPayload.Origin, ArbitraryCharacterZ);
@@ -72,7 +72,7 @@ void UBeamPattern::StartPattern()
 		BeamVfxComponent->Activate(true);
 		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
 		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth * 2.f);
-		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor);
+		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor.GetColor());
 	}
 
 	Super::StartPattern();

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 
 #include "ConeSprayPattern.generated.h"
@@ -28,7 +28,8 @@ protected:
 	/** Spawns every projectile whose scheduled time has passed, and ends once the last one is out. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 
-	/** Spawns one salve: every projectile fanned across the cone, each stamped with the salve's scheduled spawn time. */
+	/** Spawns one salve: every projectile fanned across the cone, each stamped with the salve's scheduled spawn time.
+	 */
 	void SpawnSprayProjectile() const;
 
 	/** Full opening of the spray cone in degrees, centered on the payload yaw. */
@@ -45,7 +46,7 @@ protected:
 	float SalveFrequencySec = .5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spray")
-	FGeoProjectileParams ProjectileParams;
+	FExternalProjectileParams ProjectileParams;
 
 private:
 	int32 SpawnedSalveCount = 0;

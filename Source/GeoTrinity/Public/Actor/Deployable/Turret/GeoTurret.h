@@ -4,7 +4,7 @@
 
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/GeoInteractableActor.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
@@ -52,7 +52,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
 			  meta = (AllowPrivateAccess = true))
-	FGeoProjectileParams ProjectileParams;
+	FExternalProjectileParams ProjectileParams;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
 			  meta = (AllowPrivateAccess = true))

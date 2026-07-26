@@ -22,9 +22,12 @@ class GEOTRINITY_API AGeoPooledProjectile
 public:
 	AGeoPooledProjectile();
 
-	/** Returns this projectile to the actor pool and disables collision. */
+	/** Returns this projectile to the actor pool, disables collision, and kills the bullet VFX particles. */
 	virtual void End() override;
-	/** Resets projectile state and re-enables collision after retrieval from the pool. */
+	/**
+	 * Resets projectile state and re-enables collision after retrieval from the pool, and restarts the bullet VFX from
+	 * scratch. Must run after ApplyProjectileParams so the restarted system spawns with this instance's params.
+	 */
 	virtual void Init() override;
 
 protected:

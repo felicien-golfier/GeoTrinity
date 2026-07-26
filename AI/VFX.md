@@ -69,6 +69,8 @@ Sets a pin's `DefaultValue` on a named function call node, recompiles, saves.
 
 ## Niagara Parameter Store
 
+Every `User.*` name the game code writes is declared once in `Source/GeoTrinity/Public/Tool/GeoNiagaraParams.h` (namespace `GeoNiagaraParams`). Adding a user param to a system means adding it there too — never spell the name at a call site. Renaming one in the Niagara asset means renaming it there, and nothing else will tell you: an unmatched name is silently ignored and the system keeps its authored default.
+
 `RenameParameter()` leaves a stale redirect alias in `UserParameterRedirects`. Always use `GetUserParameters()` to display clean params — it skips aliases.
 
 `RecreateRedirections()` is not exported from the Niagara DLL — causes LNK2019. Do not call it.

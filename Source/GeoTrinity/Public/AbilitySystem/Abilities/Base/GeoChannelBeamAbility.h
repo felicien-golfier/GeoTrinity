@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
 #include "Tickable.h"
+#include "Tool/GeoColor.h"
 #include "Tool/Team.h"
 
 #include "GeoChannelBeamAbility.generated.h"
@@ -69,7 +70,7 @@ protected:
 
 	/** Tint pushed to the beam Niagara system's "Color" user parameter. */
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel", meta = (AllowPrivateAccess = true))
-	FLinearColor BeamColor = FLinearColor::White;
+	FGeoColorParam BeamColor;
 
 	bool bIsBeamActive = false;
 };

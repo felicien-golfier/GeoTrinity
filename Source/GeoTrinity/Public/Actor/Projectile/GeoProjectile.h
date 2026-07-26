@@ -4,11 +4,10 @@
 
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Data/GeoSoundRow.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "StructUtils/InstancedStruct.h"
-#include "Tool/Team.h"
 
 #include "GeoProjectile.generated.h"
 
@@ -22,17 +21,6 @@ class USceneComponent;
 class UAudioComponent;
 class UPrimitiveComponent;
 struct FHitResult;
-
-UENUM(BlueprintType)
-enum class EProjectileSoundType : uint8
-{
-	Start,
-	Looping,
-	/** Played when the projectile's life ends without a valid target: wall hit, distance span, or lifespan. */
-	NoOverlapEnd,
-	/** Played when the projectile overlaps a valid target. */
-	ValidOverlapEnd,
-};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectileEndLife, AGeoProjectile*, Projectile);
 
@@ -48,6 +36,9 @@ public:
 	/** Creates the sphere collider (root), projectile movement component, and looping audio component as
 	 *  default subobjects; enables replication and tick. */
 	AGeoProjectile();
+	/** Seeds ResolvedParams with DefaultParams, so a projectile spawned outside GeoASLib (never running
+	 *  ApplyProjectileParams) still runs on its Blueprint values. */
+	virtual void PostInitProperties() override;
 	/** Registers PredictionKeyId for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/**
@@ -103,19 +94,18 @@ public:
 	void OverrideSpeed(float Speed);
 
 	/**
-	 * Applies a spawn-params bundle to this instance: distance/speed plus the per-instance values (radius/colors/trail).
-	 * Each value resolves per its EOverrideParam toggle — GameDataSettings value, the projectile's DefaultParams, or
-	 * explicit override — then the resolved values are pushed via ApplyParams. A reused pooled projectile is fully
-	 * re-resolved each spawn, so it never keeps the previous instance's values.
+	 * Applies a spawn-params bundle to this instance. Each value resolves per its EOverrideParam toggle —
+	 * GameDataSettings value, the projectile's DefaultParams, or explicit override — and the resolved bundle is pushed
+	 * via ApplyParams. A reused pooled projectile is fully re-resolved each spawn (DefaultParams is never written to),
+	 * so it never keeps the previous instance's values.
 	 */
-	void ApplyProjectileParams(FGeoProjectileParams const& Params);
+	void ApplyProjectileParams(FExternalProjectileParams const& Params);
 
 #if WITH_EDITOR
-	/** Editor-only preview button: pushes DefaultParams onto BulletVFX (and the collider) and reinitializes it so the
-	 * result is visible without entering play. Acts on the object being edited — use a placed instance or the Blueprint
-	 * preview actor. */
-	UFUNCTION(CallInEditor, Category = "GeoProjectile|Params")
-	void PreviewParams();
+	/** Previews a DefaultParams edit without entering play. A Class Defaults edit lands on the CDO, whose BulletVFX is an
+	 * unregistered template nothing renders, so it forwards the preview to the live instances (Blueprint preview actor,
+	 * placed actors) instead. */
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -181,7 +171,7 @@ protected:
 
 	/**
 	 * Returns the pitch multiplier for the sound identified by SoundType.
-	 * Default: looks up SoundMap and forwards to GetPitch(Entry).
+	 * Default: looks up ResolvedParams.SoundMap and forwards to GetPitch(Entry).
 	 * Returns 1.0 if no entry exists. Override in Blueprint for custom logic.
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|Audio")
@@ -200,10 +190,6 @@ protected:
 
 	/** Returns Payload.Instigator, falling back to GetInstigator() when the payload is not replicated. */
 	AActor* GetCurrentInstigator() const;
-
-	/** Per-sound-type sound asset + volume + audience + attribute-driven pitch mapping. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoProjectile|Audio")
-	TMap<EProjectileSoundType, FGeoSoundEntry> SoundMap;
 
 	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
 	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
@@ -228,15 +214,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
 	TObjectPtr<UNiagaraComponent> BulletVFX;
 
-	/** Per-Blueprint default values (radius/colors/trail), edited in Class Defaults. Resolved against for
-	 * KeepBlueprintDefaultValue and pushed onto BulletVFX (and the collider) by ApplyParams. Preview them in-editor with
-	 * the PreviewParams button. */
+	/** Per-Blueprint default values, edited in Class Defaults. Resolved against for KeepBlueprintDefaultValue, seeds
+	 * ResolvedParams, and is never written to at runtime. Editing it previews live on any instance in an editor
+	 * viewport (see PostEditChangeProperty). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Params")
-	FProjectileParams DefaultParams;
+	FProjectileParamsBase DefaultParams;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
-			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
-	int32 OverlapAttitude = TeamAttitudeMask::HostileOrNeutral;
+	/** The values this instance is actually running with: DefaultParams until a spawn resolves its
+	 * FExternalProjectileParams over them (ApplyParams). Read it — never DefaultParams — for runtime behaviour. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "GeoProjectile|Params")
+	FProjectileParamsBase ResolvedParams;
 
 	EProjectileSoundType EndSoundType = EProjectileSoundType::NoOverlapEnd;
 
@@ -244,20 +231,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Tooltip = "Safe guard in case distance check fails", AllowPrivateAccess = true))
 	float LifeSpanInSec = 30.f;
-
-
-	/** Blueprint-default travel distance, used when a spawn's FGeoProjectileParams keeps OverrideDistanceSpan on
-	 * KeepBlueprintDefaultValue, and as the client-side fallback for non-pooled replicated projectiles (distance is not
-	 * replicated). Overwritten by OverrideDistanceSpan for the settings/override cases. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
-			  meta = (ClampMin = "0", AllowPrivateAccess = true, UIMin = "0"))
-	float DistanceSpan = 1000.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
-	bool bCanOverlapInstigator = false;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
-			  meta = (EditConditionHides, EditCondition = bCanOverlapInstigator, AllowPrivateAccess = true))
-	float LifeTimeThresholdBeforeOverlapSelf = 0.2f;
 
 	bool bIsEnding{false};
 
@@ -271,10 +244,15 @@ private:
 	FVector InitialPosition;
 	float DistanceSpanSqr;
 
-	/** Pushes the given params onto BulletVFX (radius/colors/trail) and resizes the sphere collider to match. Single write
-	 * path shared by ApplyProjectileParams (resolved values), the simulated-proxy default apply, and the editor preview
-	 * button. */
-	void ApplyParams(FProjectileParams const& Params);
+	/** Stores Params as ResolvedParams, pushes its radius/colors/trail onto BulletVFX and resizes the sphere collider to
+	 * match. Single write path shared by ApplyProjectileParams (resolved values), the simulated-proxy default apply, and
+	 * the editor preview. */
+	void ApplyParams(FProjectileParamsBase const& Params);
+
+#if WITH_EDITOR
+	/** Applies DefaultParams to this instance and restarts its bullet system so the new values are on screen. */
+	void PreviewParams();
+#endif
 
 	/** Cosmetic (let the juice flow) **/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))

@@ -4,7 +4,7 @@
 
 #include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "Components/AudioComponent.h"
@@ -20,6 +20,7 @@
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
 #include "System/GeoPoolableInterface.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -32,11 +33,6 @@ static TAutoConsoleVariable
 
 namespace
 {
-	FName const VfxRadiusParam(TEXT("User.Bullet_Radius"));
-	FName const VfxHeadColorParam(TEXT("User.Bullet_HeadColor"));
-	FName const VfxTrailColorParam(TEXT("User.Bullet_TrailColor"));
-	FName const VfxTrailLifetimeParam(TEXT("User.Trail_LifetimeScale"));
-
 	template <typename T>
 	T ResolveOverrideParam(EOverrideParam Mode, T const& OverrideValue, T const& SettingsValue,
 						   T const& BlueprintDefault)
@@ -51,6 +47,14 @@ namespace
 			return BlueprintDefault;
 		}
 		return BlueprintDefault;
+	}
+
+	/** Overload for params with no UGameDataSettings counterpart: UseGameDataSettings resolves to the Blueprint
+	 * default, exactly like KeepBlueprintDefaultValue. */
+	template <typename T>
+	T ResolveOverrideParam(EOverrideParam Mode, T const& OverrideValue, T const& BlueprintDefault)
+	{
+		return ResolveOverrideParam(Mode, OverrideValue, BlueprintDefault, BlueprintDefault);
 	}
 } // namespace
 
@@ -87,6 +91,13 @@ AGeoProjectile::AGeoProjectile()
 	{
 		BulletVFX->SetAsset(BulletSystem.Object);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::PostInitProperties()
+{
+	Super::PostInitProperties();
+	ResolvedParams = DefaultParams;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -245,12 +256,13 @@ bool AGeoProjectile::IsValidOverlap(AActor* OtherActor)
 	}
 
 	if (OtherActor == CurrentInstigator
-		&& (!bCanOverlapInstigator || LifeSpanInSec - GetLifeSpan() < LifeTimeThresholdBeforeOverlapSelf))
+		&& (!ResolvedParams.bCanOverlapInstigator
+			|| LifeSpanInSec - GetLifeSpan() < ResolvedParams.LifeTimeThresholdBeforeOverlapSelf))
 	{
 		return false;
 	}
 
-	return GeoASLib::IsTeamAttitudeAligned(CurrentOwner, OtherActor, OverlapAttitude);
+	return GeoASLib::IsTeamAttitudeAligned(CurrentOwner, OtherActor, ResolvedParams.OverlapAttitude);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -272,7 +284,7 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 
 float AGeoProjectile::GetPitch_Implementation(EProjectileSoundType SoundType) const
 {
-	FGeoSoundEntry const* Entry = SoundMap.Find(SoundType);
+	FGeoSoundEntry const* Entry = ResolvedParams.SoundMap.Find(SoundType);
 	if (!Entry)
 	{
 		return 1.f;
@@ -297,7 +309,7 @@ AActor* AGeoProjectile::GetCurrentInstigator() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlaySoundOneShot(EProjectileSoundType const SoundType) const
 {
-	if (FGeoSoundEntry const* Entry = SoundMap.Find(SoundType))
+	if (FGeoSoundEntry const* Entry = ResolvedParams.SoundMap.Find(SoundType))
 	{
 		PlaySoundOneShot(*Entry);
 	}
@@ -464,25 +476,28 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OverrideDistanceSpan(float const Distance)
 {
-	DistanceSpan = Distance;
-	DistanceSpanSqr = FMath::Square(DistanceSpan);
+	ResolvedParams.DistanceSpan = Distance;
+	DistanceSpanSqr = FMath::Square(Distance);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OverrideSpeed(float const Speed)
 {
+	ResolvedParams.ProjectileSpeed = Speed;
 	ReplicatedSpeed = Speed;
 	ProjectileMovement->InitialSpeed = ProjectileMovement->MaxSpeed = Speed;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::ApplyParams(FProjectileParams const& Params)
+void AGeoProjectile::ApplyParams(FProjectileParamsBase const& Params)
 {
+	ResolvedParams = Params;
+
 	Sphere->SetSphereRadius(Params.Radius);
-	BulletVFX->SetVariableFloat(VfxRadiusParam, Params.Radius);
-	BulletVFX->SetVariableLinearColor(VfxHeadColorParam, Params.HeadColor);
-	BulletVFX->SetVariableLinearColor(VfxTrailColorParam, Params.TrailColor);
-	BulletVFX->SetVariableFloat(VfxTrailLifetimeParam, Params.TrailLifetimeScale);
+	BulletVFX->SetVariableFloat(GeoNiagaraParams::BulletRadius, Params.Radius);
+	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletHeadColor, Params.HeadColor.GetColor());
+	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletTrailColor, Params.TrailColor.GetColor());
+	BulletVFX->SetVariableFloat(GeoNiagaraParams::TrailLifetimeScale, Params.TrailLifetimeScale);
 }
 
 #if WITH_EDITOR
@@ -492,50 +507,71 @@ void AGeoProjectile::PreviewParams()
 	ApplyParams(DefaultParams);
 	BulletVFX->ReinitializeSystem();
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.GetMemberPropertyName() != GET_MEMBER_NAME_CHECKED(AGeoProjectile, DefaultParams))
+	{
+		return;
+	}
+
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	{
+		PreviewParams();
+		return;
+	}
+
+	// The property editor already propagated the new value to every instance before calling this, so each one can just
+	// preview its own DefaultParams.
+	TArray<UObject*> Instances;
+	GetArchetypeInstances(Instances);
+	for (UObject* Instance : Instances)
+	{
+		if (!Instance->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+		{
+			CastChecked<AGeoProjectile>(Instance)->PreviewParams();
+		}
+	}
+}
 #endif
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::ApplyProjectileParams(FGeoProjectileParams const& Params)
+void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Params)
 {
 	UGameDataSettings const* Settings = GetDefault<UGameDataSettings>();
 
-	switch (Params.OverrideDistanceSpan)
-	{
-	case EOverrideParam::UseGameDataSettings:
-		OverrideDistanceSpan(Settings->GeneralSpellDistance);
-		break;
-	case EOverrideParam::OverrideValue:
-		OverrideDistanceSpan(Params.DistanceSpan);
-		break;
-	case EOverrideParam::KeepBlueprintDefaultValue:
-		break;
-	}
-
-	switch (Params.OverrideSpeed)
-	{
-	case EOverrideParam::UseGameDataSettings:
-		OverrideSpeed(Settings->GeneralSpellSpeed);
-		break;
-	case EOverrideParam::OverrideValue:
-		OverrideSpeed(Params.ProjectileSpeed);
-		break;
-	case EOverrideParam::KeepBlueprintDefaultValue:
-		break;
-	}
-
-	// Colors and trail lifetime have no settings value, so their UseGameDataSettings resolves to DefaultParams, same as
-	// KeepBlueprintDefaultValue; only an explicit OverrideValue changes them. Radius does read a settings value.
-	FProjectileParams Resolved;
+	// Only distance, speed and radius have a settings value; every other param resolves UseGameDataSettings to
+	// DefaultParams, same as KeepBlueprintDefaultValue, so only an explicit OverrideValue changes it. The
+	// KeepBlueprintDefaultValue speed is the movement component's own InitialSpeed, not a DefaultParams value.
+	FProjectileParamsBase Resolved;
+	Resolved.DistanceSpan = ResolveOverrideParam(Params.OverrideDistanceSpan, Params.DistanceSpan,
+												 Settings->GeneralSpellDistance, DefaultParams.DistanceSpan);
+	Resolved.ProjectileSpeed = ResolveOverrideParam(Params.OverrideSpeed, Params.ProjectileSpeed,
+													Settings->GeneralSpellSpeed, ProjectileMovement->InitialSpeed);
 	Resolved.Radius = ResolveOverrideParam(Params.OverrideRadius, Params.Radius, Settings->GeneralProjectileRadius,
 										   DefaultParams.Radius);
-	Resolved.HeadColor = ResolveOverrideParam(Params.OverrideHeadColor, Params.HeadColor, DefaultParams.HeadColor,
-											  DefaultParams.HeadColor);
-	Resolved.TrailColor = ResolveOverrideParam(Params.OverrideTrailColor, Params.TrailColor, DefaultParams.TrailColor,
-											   DefaultParams.TrailColor);
-	Resolved.TrailLifetimeScale =
-		ResolveOverrideParam(Params.OverrideTrailLifetimeScale, Params.TrailLifetimeScale,
-							 DefaultParams.TrailLifetimeScale, DefaultParams.TrailLifetimeScale);
+	Resolved.HeadColor = ResolveOverrideParam(Params.OverrideHeadColor, Params.HeadColor, DefaultParams.HeadColor);
+	Resolved.TrailColor = ResolveOverrideParam(Params.OverrideTrailColor, Params.TrailColor, DefaultParams.TrailColor);
+	Resolved.TrailLifetimeScale = ResolveOverrideParam(Params.OverrideTrailLifetimeScale, Params.TrailLifetimeScale,
+													   DefaultParams.TrailLifetimeScale);
+	Resolved.SoundMap = ResolveOverrideParam(Params.OverrideSoundMap, Params.SoundMap, DefaultParams.SoundMap);
+	Resolved.OverlapAttitude =
+		ResolveOverrideParam(Params.OverrideOverlapAttitude, Params.OverlapAttitude, DefaultParams.OverlapAttitude);
+	Resolved.bCanOverlapInstigator = ResolveOverrideParam(
+		Params.OverrideCanOverlapInstigator, Params.bCanOverlapInstigator, DefaultParams.bCanOverlapInstigator);
+	Resolved.LifeTimeThresholdBeforeOverlapSelf =
+		ResolveOverrideParam(Params.OverrideCanOverlapInstigator, Params.LifeTimeThresholdBeforeOverlapSelf,
+							 DefaultParams.LifeTimeThresholdBeforeOverlapSelf);
+
 	ApplyParams(Resolved);
+
+	if (Params.OverrideSpeed != EOverrideParam::KeepBlueprintDefaultValue)
+	{
+		OverrideSpeed(Resolved.ProjectileSpeed);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -543,7 +579,7 @@ void AGeoProjectile::InitProjectileLife()
 {
 	if (!GeoLib::IsDedicatedServer(this))
 	{
-		if (FGeoSoundEntry const* LoopingEntry = SoundMap.Find(EProjectileSoundType::Looping);
+		if (FGeoSoundEntry const* LoopingEntry = ResolvedParams.SoundMap.Find(EProjectileSoundType::Looping);
 			LoopingEntry && UGeoSoundRowLibrary::ShouldPlay(this, *LoopingEntry, GetCurrentInstigator()))
 		{
 			LoopingSoundComponent->SetSound(LoopingEntry->Sound);
@@ -560,7 +596,7 @@ void AGeoProjectile::InitProjectileLife()
 	Sphere->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnSphereHit);
 
 	InitialPosition = GetActorLocation();
-	DistanceSpanSqr = FMath::Square(DistanceSpan);
+	DistanceSpanSqr = FMath::Square(ResolvedParams.DistanceSpan);
 	InitProjectileMovementComponent();
 
 	bIsEnding = false;

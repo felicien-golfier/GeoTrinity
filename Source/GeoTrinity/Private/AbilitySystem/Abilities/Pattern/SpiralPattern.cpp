@@ -16,8 +16,13 @@ void USpiralPattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 	ensureMsgf(MaxProjectileNum > 0, TEXT("No projectile set in the spiral ! please fill your pattern values in BP"));
 	Projectiles.Reserve(MaxProjectileNum);
 
-	ensureMsgf(ProjectileParams.ProjectileClass, TEXT("You must fill the projectile class in the Spiral pattern."));
-	ProjectileSpeed = ProjectileParams.ProjectileClass->GetDefaultObject<AGeoProjectile>()->ProjectileMovement->InitialSpeed;
+	if (!ensureMsgf(ProjectileParams.ProjectileClass,
+					TEXT("You must fill the projectile class in the Spiral pattern.")))
+	{
+		return;
+	}
+	ProjectileSpeed =
+		ProjectileParams.ProjectileClass->GetDefaultObject<AGeoProjectile>()->ProjectileMovement->InitialSpeed;
 	TimeDiffBetweenProjectiles = TimeForOneRound / NumberProjectileByRound;
 	AngleBetweenProjectiles = 360.f / NumberProjectileByRound;
 

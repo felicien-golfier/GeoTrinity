@@ -15,8 +15,9 @@ UGeoShieldBurstPassiveAbility::UGeoShieldBurstPassiveAbility()
 	// ServerCancelAbility and kills the server's freshly reactivated instance after a revive.
 	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
 
-	ProjectileParams.OverrideSpeed = EOverrideParam::OverrideValue;
-	ProjectileParams.ProjectileSpeed = 500.f;
+	ProjectileParams.OverrideSpeed = EOverrideParam::KeepBlueprintDefaultValue;
+	ProjectileParams.OverrideDistanceSpan = EOverrideParam::KeepBlueprintDefaultValue;
+	ProjectileParams.OverrideRadius = EOverrideParam::KeepBlueprintDefaultValue;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

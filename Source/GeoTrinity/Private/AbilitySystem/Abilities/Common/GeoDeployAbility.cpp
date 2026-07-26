@@ -126,8 +126,7 @@ void UGeoDeployAbility::OnCooldownTagChanged(FGameplayTag const /*CooldownTag*/,
 	FGameplayTag const CueTag = GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
 	if (bRefilled && IsLocallyControlled() && CueTag.IsValid())
 	{
-		static FGameplayTag const SoundTag =
-			FGameplayTag::RequestGameplayTag(FName("Event.Sound.DeployableAvailable"));
+		static FGameplayTag const SoundTag = FGameplayTag::RequestGameplayTag(FName("Event.Sound.DeployableAvailable"));
 
 		FGameplayCueParameters CueParams;
 		CueParams.Instigator = GetAvatarActorFromActorInfo();
@@ -166,12 +165,13 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 
 	// The charge-derived deploy distance is the default; an explicit ProjectileParams override (if set) takes over.
 	UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
-	FGeoProjectileParams SpawnParams = ProjectileParams;
+	FExternalProjectileParams SpawnParams = ProjectileParams;
 	if (SpawnParams.OverrideDistanceSpan != EOverrideParam::OverrideValue)
 	{
 		SpawnParams.OverrideDistanceSpan = EOverrideParam::OverrideValue;
-		SpawnParams.DistanceSpan = FMath::Clamp(StoredPayload.Seed, FMath::RoundToInt(GameDataSettings->MinDeployDistance),
-												FMath::RoundToInt(GameDataSettings->MaxDeployDistance));
+		SpawnParams.DistanceSpan =
+			FMath::Clamp(StoredPayload.Seed, FMath::RoundToInt(GameDataSettings->MinDeployDistance),
+						 FMath::RoundToInt(GameDataSettings->MaxDeployDistance));
 	}
 
 	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), SpawnParams, SpawnTransform, StoredPayload,

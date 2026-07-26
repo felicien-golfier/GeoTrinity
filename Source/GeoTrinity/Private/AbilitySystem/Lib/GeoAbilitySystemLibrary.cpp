@@ -13,8 +13,8 @@
 #include "AbilitySystemGlobals.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/GeoInteractableActor.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Actor/Projectile/GeoProjectile.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
 #include "Characters/GeoCharacter.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerState.h"
@@ -320,13 +320,13 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 																bool bMustBeDamageable, FVector2D const Location,
 																float MaxDistance, ETargetOverlapMode OverlapMode)
 {
-	return GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location,
-								 MaxDistance,
-								 [](AActor*)
-								 {
-									 return true;
-								 },
-								 OverlapMode);
+	return GetInteractableActors(
+		WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Location, MaxDistance,
+		[](AActor*)
+		{
+			return true;
+		},
+		OverlapMode);
 }
 
 TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActorsInLine(
@@ -335,25 +335,26 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActorsInLine(
 	ETargetOverlapMode OverlapMode)
 {
 	bool const bIncludeTargetRadius = ShouldIncludeTargetRadius(OverlapMode, SourceTeam);
-	return GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Origin, MaxRange,
-								 [&](AActor const* Target)
-								 {
-									 FVector2D const ToTarget = FVector2D(Target->GetActorLocation()) - Origin;
-									 float const AlongBeam = FVector2D::DotProduct(ToTarget, ForwardVector);
-									 if (AlongBeam < 0.f)
-									 {
-										 return false;
-									 }
-									 float const PerpDistSqr = (ToTarget - ForwardVector * AlongBeam).SizeSquared();
-									 float const TargetRadius =
-										 bIncludeTargetRadius ? Target->GetSimpleCollisionRadius() : 0.f;
-									 float const HitRadius = TargetRadius + LineHalfWidth;
-									 return PerpDistSqr <= HitRadius * HitRadius;
-								 },
-								 OverlapMode);
+	return GetInteractableActors(
+		WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Origin, MaxRange,
+		[&](AActor const* Target)
+		{
+			FVector2D const ToTarget = FVector2D(Target->GetActorLocation()) - Origin;
+			float const AlongBeam = FVector2D::DotProduct(ToTarget, ForwardVector);
+			if (AlongBeam < 0.f)
+			{
+				return false;
+			}
+			float const PerpDistSqr = (ToTarget - ForwardVector * AlongBeam).SizeSquared();
+			float const TargetRadius = bIncludeTargetRadius ? Target->GetSimpleCollisionRadius() : 0.f;
+			float const HitRadius = TargetRadius + LineHalfWidth;
+			return PerpDistSqr <= HitRadius * HitRadius;
+		},
+		OverlapMode);
 }
 
-bool UGeoAbilitySystemLibrary::ShouldIncludeTargetRadius(ETargetOverlapMode OverlapMode, FGenericTeamId const SourceTeam)
+bool UGeoAbilitySystemLibrary::ShouldIncludeTargetRadius(ETargetOverlapMode OverlapMode,
+														 FGenericTeamId const SourceTeam)
 {
 	switch (OverlapMode)
 	{
@@ -561,7 +562,7 @@ void UGeoAbilitySystemLibrary::InitDeployable(AGeoDeployableBase* Deployable, FA
 }
 
 AGeoProjectile*
-UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, FGeoProjectileParams const& Params,
+UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, FExternalProjectileParams const& Params,
 											   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 											   float const SpawnServerTime, FPredictionKey PredictionKey)
@@ -577,14 +578,15 @@ UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, FGeoProjecti
 }
 
 AGeoProjectile*
-UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, FGeoProjectileParams const& Params,
+UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, FExternalProjectileParams const& Params,
 											   FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 											   FPredictionKey PredictionKey)
 {
 	if (!World || !Params.ProjectileClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[UGeoAbilitySystemLibrary::StartSpawnProjectile] Invalid World or ProjectileClass"));
+		UE_LOG(LogTemp, Error,
+			   TEXT("[UGeoAbilitySystemLibrary::StartSpawnProjectile] Invalid World or ProjectileClass"));
 		return nullptr;
 	}
 

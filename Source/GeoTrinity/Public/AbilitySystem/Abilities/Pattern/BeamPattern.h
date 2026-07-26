@@ -5,6 +5,8 @@
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "CoreMinimal.h"
+#include "Tool/GeoColor.h"
+#include "Tool/GeoNiagaraParams.h"
 
 #include "BeamPattern.generated.h"
 
@@ -77,17 +79,17 @@ protected:
 	TObjectPtr<UNiagaraSystem> BeamVfxSystem;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
-	FColor BeamColor;
+	FGeoColorParam BeamColor;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
-	FColor BeamInitColor;
+	FGeoColorParam BeamInitColor;
 
-	/** Niagara user param names, matching UGeoBeamVFXComponent's User.Beam_Length/Width/Color. */
+	/** Niagara user param names, matching UGeoBeamVFXComponent's. */
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
-	FName BeamLengthParamName = "Beam_Length";
+	FName BeamLengthParamName = GeoNiagaraParams::BeamLength;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
-	FName BeamWidthParamName = "Beam_Width";
+	FName BeamWidthParamName = GeoNiagaraParams::BeamWidth;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
 	FName BeamColorParamName = "Color";

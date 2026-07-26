@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
-#include "Actor/Projectile/GeoProjectileParams.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 
@@ -49,7 +49,7 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	float EnemyBounceAdditiveMultiplier = .5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
-	FGeoProjectileParams ProjectileParams;
+	FExternalProjectileParams ProjectileParams;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
 	TSubclassOf<UShieldBurstPassiveComponent> PassiveComponentClass;

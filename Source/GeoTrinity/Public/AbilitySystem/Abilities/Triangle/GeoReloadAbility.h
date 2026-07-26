@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
+#include "Tool/GeoColor.h"
 
 #include "GeoReloadAbility.generated.h"
 
@@ -60,7 +61,7 @@ protected:
 	/** Per-buff colors, indexed in parallel with the merged buff effect array (see GetEffectDataArray). The pickup is
 	 * tinted with the entry matching the chosen buff; the HUD ammo number uses the same palette via GetColorForAmmo. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
-	TArray<FLinearColor> BuffColors;
+	TArray<FGeoColorParam> BuffColors;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
 	float MinSpawnRadius = 150.f;

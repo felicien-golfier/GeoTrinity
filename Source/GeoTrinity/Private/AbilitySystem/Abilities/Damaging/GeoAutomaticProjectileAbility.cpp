@@ -33,7 +33,6 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	}
 
 	FVector const Origin{StoredPayload.Origin, ArbitraryCharacterZ};
-	AActor const* Avatar = GetAvatarActorFromActorInfo();
 	float const ProjectileYaw = StoredPayload.Yaw;
 	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
 

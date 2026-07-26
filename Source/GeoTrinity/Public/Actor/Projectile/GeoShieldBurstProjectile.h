@@ -8,8 +8,8 @@
 
 #include "GeoShieldBurstProjectile.generated.h"
 
-/** Replication bundle that captures the full post-bounce state (location, velocity, sphere radius) for simulated
- * clients. */
+/** Replication bundle that captures the full state (location, velocity, sphere radius) for simulated clients: seeded at
+ * spawn, refreshed on every bounce. */
 USTRUCT()
 struct FShieldBounceSnapshot
 {
@@ -41,12 +41,12 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Shield magnitude applied to allies on contact. Scales up with each enemy bounce. */
-	float ShieldAmount;
+	float ShieldAmount = 0.f;
 	/** Additive growth per enemy bounce: each bounce adds this fraction of the base ShieldAmount and sphere radius
 	 * (fixed increment snapshotted at spawn), so growth is linear rather than compounding. */
-	float EnemyBounceAdditiveMultiplier;
-	float SphereRadiusToAdd;
-	float ShieldAmountToAdd;
+	float EnemyBounceAdditiveMultiplier = 0.f;
+	float SphereRadiusToAdd = 0.f;
+	float ShieldAmountToAdd = 0.f;
 
 protected:
 	/** Sound played each time the projectile bounces, off a wall or an enemy. */
@@ -57,7 +57,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile|Audio")
 	TObjectPtr<UCurveFloat> BounceSoundSizePitchCurve;
 
-	/** Extends base setup to bind the wall-bounce delegate. */
+	/** Extends base setup to bind the wall-bounce delegate; on the server seeds BounceSnapshot with the spawn state so
+	 * simulated clients start at the right size, on clients applies the radius the server already sent (the base
+	 * BeginPlay apply of DefaultParams runs first and would otherwise leave them at the Blueprint size until the first
+	 * bounce). */
 	virtual void InitProjectileLife() override;
 	/**
 	 * On enemy overlap: plays BounceSound on every machine; on the server also reflects the projectile and scales
@@ -79,7 +82,7 @@ protected:
 	UFUNCTION()
 	void OnRep_BounceSnapshot();
 
-	/** Sets the Niagara "User.Bullet_Radius" parameter. Called on every machine — the host updates it directly after a
+	/** Sets the GeoNiagaraParams::BulletRadius parameter. Called on every machine — the host updates it directly after a
 	 * bounce (where OnRep never runs), simulated clients via OnRep_BounceSnapshot. */
 	void UpdateVisualRadius(float Radius) const;
 
