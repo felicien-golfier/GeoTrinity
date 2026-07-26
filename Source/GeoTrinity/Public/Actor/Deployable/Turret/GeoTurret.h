@@ -33,8 +33,11 @@ public:
 protected:
 	virtual FDeployableData const* GetData() const override { return &Data; }
 
+	/** Arms the repeating fire timer. */
 	virtual void BeginPlay() override;
+	/** Recomputes the best target each frame and writes CurrentTarget for client mesh orientation. */
 	virtual void Tick(float DeltaSeconds) override;
+	/** Clears the fire timer before the actor is torn down. */
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	/**
@@ -45,6 +48,7 @@ protected:
 
 	/** Fires a projectile at the current best target if one exists. */
 	void TryFire();
+	/** Clears the fire timer, then delegates to Super. */
 	virtual void Expire(float TimeBeforeDestroy) override;
 
 	UPROPERTY(Replicated)

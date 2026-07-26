@@ -21,8 +21,10 @@ class GEOTRINITY_API UGeoProjectileAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 protected:
+	/** Spawns client-predicted projectiles toward each direction from GetTargetDirections for the payload target mode. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
+	/** Server. Spawns the authoritative projectile using the target data received from the predicting client. */
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 

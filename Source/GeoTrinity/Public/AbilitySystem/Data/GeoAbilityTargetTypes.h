@@ -49,11 +49,13 @@ struct GEOTRINITY_API FGeoAbilityTargetData : public FGameplayAbilityTargetData
 	UPROPERTY(Transient, BlueprintReadOnly)
 	int Seed{}; // RNG seed for deterministic variation
 
+	/** Required by FGameplayAbilityTargetData; returns this struct's static type definition so UE can identify and serialize it during target data replication. */
 	virtual UScriptStruct* GetScriptStruct() const override { return FGeoAbilityTargetData::StaticStruct(); }
 
 	/** Serializes Origin, Yaw, ServerSpawnTime, and Seed for replication. */
 	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
 
+	/** Returns a formatted debug string of all four target data fields. */
 	virtual FString ToString() const override
 	{
 		return FString::Printf(TEXT("Origin: %s, Yaw: %.2f, ServerSpawnTime : %f, Seed : %i"), *Origin.ToString(), Yaw,
