@@ -40,6 +40,7 @@ class GEOTRINITY_API UGeoBeamVFXComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	/** Enables component replication. */
 	UGeoBeamVFXComponent();
 
 	/** Spawns the local NiagaraComponent on rendering machines and applies any already-replicated BeamState. */

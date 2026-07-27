@@ -31,6 +31,7 @@ class GEOTRINITY_API AGeoMatchStateButton : public AActor
 	GENERATED_BODY()
 
 public:
+	/** Creates the TriggerBox collision volume and the Label text renderer rotated to face the top-down camera. */
 	AGeoMatchStateButton();
 
 protected:
