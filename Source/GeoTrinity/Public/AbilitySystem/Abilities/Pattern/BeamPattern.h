@@ -81,9 +81,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
 	FGeoColorParam BeamColor;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
-	FGeoColorParam BeamInitColor;
-
 	/** Niagara user param names, matching UGeoBeamVFXComponent's. */
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
 	FName BeamLengthParamName = GeoNiagaraParams::BeamLength;

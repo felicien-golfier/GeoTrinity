@@ -102,9 +102,9 @@ public:
 	void ApplyProjectileParams(FExternalProjectileParams const& Params);
 
 #if WITH_EDITOR
-	/** Previews a DefaultParams edit without entering play. A Class Defaults edit lands on the CDO, whose BulletVFX is an
-	 * unregistered template nothing renders, so it forwards the preview to the live instances (Blueprint preview actor,
-	 * placed actors) instead. */
+	/** Previews a DefaultParams edit without entering play. A Class Defaults edit lands on the CDO, whose BulletVFX is
+	 * an unregistered template nothing renders, so it forwards the preview to the live instances (Blueprint preview
+	 * actor, placed actors) instead. */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
@@ -227,12 +227,13 @@ protected:
 
 	EProjectileSoundType EndSoundType = EProjectileSoundType::NoOverlapEnd;
 
+	bool bIsEnding{false};
+
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Tooltip = "Safe guard in case distance check fails", AllowPrivateAccess = true))
 	float LifeSpanInSec = 30.f;
 
-	bool bIsEnding{false};
 
 	/** Ends the projectile when its instigating GeoCharacter revives. Bound in InitProjectileLife, unbound in
 	 * EndProjectileLife so pooled reuse never keeps a binding to a previous instigator. */
@@ -244,9 +245,9 @@ private:
 	FVector InitialPosition;
 	float DistanceSpanSqr;
 
-	/** Stores Params as ResolvedParams, pushes its radius/colors/trail onto BulletVFX and resizes the sphere collider to
-	 * match. Single write path shared by ApplyProjectileParams (resolved values), the simulated-proxy default apply, and
-	 * the editor preview. */
+	/** Stores Params as ResolvedParams, pushes its radius/colors/trail onto BulletVFX and resizes the sphere collider
+	 * to match. Single write path shared by ApplyProjectileParams (resolved values), the simulated-proxy default apply,
+	 * and the editor preview. */
 	void ApplyParams(FProjectileParamsBase const& Params);
 
 #if WITH_EDITOR

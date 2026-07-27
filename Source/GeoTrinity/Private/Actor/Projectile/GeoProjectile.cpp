@@ -128,8 +128,9 @@ void AGeoProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Simulated proxies never run ApplyProjectileParams (that happens where the projectile is spawned), so give them the
-	// per-Blueprint params here. Authoritative and predicted instances are locally ROLE_Authority and already applied it.
+	// Simulated proxies never run ApplyProjectileParams (that happens where the projectile is spawned), so give them
+	// the per-Blueprint params here. Authoritative and predicted instances are locally ROLE_Authority and already
+	// applied it.
 	if (GetLocalRole() == ROLE_SimulatedProxy)
 	{
 		ApplyParams(DefaultParams);
@@ -173,7 +174,6 @@ void AGeoProjectile::LifeSpanExpired()
 {
 	if (LifeSpanInSec != 0 && !bIsEnding)
 	{
-		bIsEnding = true;
 		EndProjectileLife();
 	}
 }
@@ -201,7 +201,6 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	float const ElapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
 	if (ElapsedDistanceSqr >= DistanceSpanSqr)
 	{
-		bIsEnding = true;
 		EndProjectileLife();
 	}
 
@@ -268,7 +267,6 @@ bool AGeoProjectile::IsValidOverlap(AActor* OtherActor)
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 {
-	bIsEnding = true;
 	EndSoundType = EProjectileSoundType::ValidOverlapEnd;
 
 	if (GeoLib::IsServer(this))
@@ -343,7 +341,6 @@ void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* Othe
 		return;
 	}
 
-	bIsEnding = true;
 	EndProjectileLife();
 }
 
@@ -370,6 +367,7 @@ void AGeoProjectile::PlayImpactFx() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::EndProjectileLife()
 {
+	bIsEnding = true;
 	UnbindFromInstigatorRevive();
 
 	PlayImpactFx();
@@ -626,7 +624,6 @@ void AGeoProjectile::OnInstigatorRevived()
 {
 	if (!bIsEnding)
 	{
-		bIsEnding = true;
 		EndProjectileLife();
 	}
 }

@@ -42,7 +42,6 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 		BeamVfxComponent->Activate(true);
 		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
 		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth * 2.f);
-		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamInitColor.GetColor());
 		FRotator const BeamRotation(0.f, GetBeamYaw(0.f), 0.f);
 		FVector const Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
 													: FVector(StoredPayload.Origin, ArbitraryCharacterZ);

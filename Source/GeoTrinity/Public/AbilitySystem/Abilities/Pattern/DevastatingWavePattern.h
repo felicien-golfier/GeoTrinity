@@ -52,7 +52,7 @@ protected:
 	void AddAllPillarsToVfxMask();
 	/** Resets wave tracking data and MPC pillar slots via ClearData(), then activates the real expanding-wave AOE. */
 	virtual void StartPattern() override;
-	/** Activates the AOE VFX component in telegraph mode: full MaxRadius extent at TelegraphColor, grow time =
+	/** Activates the AOE VFX component in telegraph mode: full MaxRadius extent at AOEColor, grow time =
 	 * StartDelay - TravelTime (remaining wind-up). Shows the full danger zone before the wave begins. */
 	void ActivateAoeVfxTelegraph() const;
 	/** Sets the cue source location to the boss's 2D wave origin. */
@@ -106,11 +106,6 @@ private:
 	 * handoff so the static telegraph and the expanding wave don't visually overlap). */
 	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
 	float TelegraphFadeOutDuration = 0.1f;
-
-	/** Color of the full-range telegraph shown during the wind-up, before the wave starts expanding. */
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
-	FGeoColorParam TelegraphColor{FLinearColor::Red};
-
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> AOEVfxComponent;

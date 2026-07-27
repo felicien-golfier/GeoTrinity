@@ -30,8 +30,28 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 protected:
+	/**
+	 * Editor: stores the tiles still present in the ISM as the alley's layout, so tiles deleted in the viewport stay
+	 * deleted. Press it before moving the actor or editing a property — either re-runs the construction script, which
+	 * rebuilds the alley from the last captured layout.
+	 */
+	UFUNCTION(CallInEditor, Category = "Barrier")
+	void CaptureLayout();
+
+	/** Editor: drops the captured layout, bringing the full NumColumns * NumRows rectangle back. */
+	UFUNCTION(CallInEditor, Category = "Barrier")
+	void ResetLayout();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Barrier")
 	TObjectPtr<UInstancedStaticMeshComponent> TileMeshComponent;
+
+	/**
+	 * The alley's tiles as (Column, Row) pairs, in vanish order. Empty means the full NumColumns * NumRows rectangle,
+	 * which is what a fresh barrier rebuilds itself into. Filled by CaptureLayout; changing the grid dimensions or the
+	 * sweep direction leaves it stale until the next ResetLayout.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Barrier")
+	TArray<FIntPoint> TileLayout;
 
 	/** Vanish sweep: column by column along local +X when true, row by row along local +Y when false. */
 	UPROPERTY(EditAnywhere, Category = "Barrier")
@@ -58,8 +78,14 @@ protected:
 	TObjectPtr<UCurveVector> ShakeCurve;
 
 private:
-	/** Actor-space transform of the Index-th tile in vanish order — pointy-top layout, odd rows shifted half a tile. */
-	FTransform GetTileTransform(int32 Index) const;
+	/** Actor-space transform of the (Column, Row) tile — pointy-top layout, odd rows shifted half a tile. */
+	FTransform GetTileTransform(FIntPoint Tile) const;
+	/** The (Column, Row) tile whose actor-space center is TileLocation — inverse of GetTileTransform. */
+	FIntPoint LocalToTile(FVector const& TileLocation) const;
+	/** Fills TileLayout with every tile of the NumColumns * NumRows rectangle, in vanish order. */
+	void BuildFullLayout();
+	/** Rebuilds the ISM from TileLayout, filling the layout with the full rectangle first when it is empty. */
+	void RebuildInstances();
 	/**
 	 * Zero-scales the first LerpAlpha * NumTiles tiles and restores the rest, touching only changed instances.
 	 * While bRemoving, shakes every still-visible tile together so their imminent vanish reads clearly.

@@ -113,7 +113,7 @@ void UDevastatingWavePattern::ActivateAoeVfxTelegraph() const
 	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOEGrowDuration, StartDelay - TravelTime);
 	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::FadeOutDuration, TelegraphFadeOutDuration);
 	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AnnulusRadius, MaxRadius);
-	AOEVfxComponent->SetVariableLinearColor(GeoNiagaraParams::AOEColor, TelegraphColor.GetColor());
+	AOEVfxComponent->SetVariableLinearColor(GeoNiagaraParams::AOEColor, AOEColor.GetColor());
 	AOEVfxComponent->Activate(true);
 }
 

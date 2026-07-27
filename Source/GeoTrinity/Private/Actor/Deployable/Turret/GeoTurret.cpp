@@ -103,9 +103,8 @@ void AGeoTurret::TryFire()
 		return;
 	}
 
-	if (!ProjectileParams.ProjectileClass)
+	if (!ensureMsgf(ProjectileParams.ProjectileClass, TEXT("AGeoTurret: ProjectileParams.ProjectileClass is not set!")))
 	{
-		ensureMsgf(ProjectileParams.ProjectileClass, TEXT("AGeoTurret: ProjectileParams.ProjectileClass is not set!"));
 		return;
 	}
 

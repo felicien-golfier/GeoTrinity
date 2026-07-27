@@ -14,19 +14,16 @@
 UENUM(BlueprintType)
 enum class EGeoColor : uint8
 {
-	DirectDamage,
-	DamageOverTime,
+	Damage,
+	AllyDamage,
 	LethalDamage,
-	DirectHeal,
-	HealOverTime,
+	Heal,
 	Shield,
-	BothHealAndDamageOverTime,
+	BothHealAndDamage,
 	DamageReduction,
 	DamageBoost,
 	HealBoost,
 	MoveSpeed,
-	/** Danger telegraphed before it lands: wind-up tints, pre-fire danger zones. */
-	Telegraph,
 	Override
 };
 

@@ -16,20 +16,64 @@ AGeoHexBarrier::AGeoHexBarrier()
 void AGeoHexBarrier::OnConstruction(FTransform const& Transform)
 {
 	Super::OnConstruction(Transform);
-	TileMeshComponent->ClearInstances();
+	RebuildInstances();
+}
+
+void AGeoHexBarrier::BuildFullLayout()
+{
+	TileLayout.Reset(NumColumns * NumRows);
 	for (int32 Index = 0; Index < NumColumns * NumRows; ++Index)
 	{
-		TileMeshComponent->AddInstance(GetTileTransform(Index));
+		TileLayout.Emplace(bVanishAlongColumns ? Index / NumRows : Index % NumColumns,
+						   bVanishAlongColumns ? Index % NumRows : Index / NumColumns);
+	}
+}
+
+void AGeoHexBarrier::RebuildInstances()
+{
+	if (TileLayout.IsEmpty())
+	{
+		BuildFullLayout();
+	}
+	TileMeshComponent->ClearInstances();
+	for (FIntPoint const Tile : TileLayout)
+	{
+		TileMeshComponent->AddInstance(GetTileTransform(Tile));
 	}
 	AppliedHiddenCount = 0;
 }
 
-FTransform AGeoHexBarrier::GetTileTransform(int32 const Index) const
+void AGeoHexBarrier::CaptureLayout()
 {
-	int32 const Column = bVanishAlongColumns ? Index / NumRows : Index % NumColumns;
-	int32 const Row = bVanishAlongColumns ? Index % NumRows : Index / NumColumns;
-	FVector const TileLocation(TileSize * Sqrt3 * (Column + 0.5f * (Row & 1)), TileSize * 1.5f * Row, 0.f);
+	TSet<FIntPoint> SurvivingTiles;
+	FTransform InstanceTransform;
+	for (int32 Index = 0; Index < TileMeshComponent->GetInstanceCount(); ++Index)
+	{
+		TileMeshComponent->GetInstanceTransform(Index, InstanceTransform);
+		SurvivingTiles.Add(LocalToTile(InstanceTransform.GetLocation()));
+	}
+
+	BuildFullLayout();
+	TileLayout.RemoveAll([&SurvivingTiles](FIntPoint const Tile) { return !SurvivingTiles.Contains(Tile); });
+	RebuildInstances();
+}
+
+void AGeoHexBarrier::ResetLayout()
+{
+	TileLayout.Reset();
+	RebuildInstances();
+}
+
+FTransform AGeoHexBarrier::GetTileTransform(FIntPoint const Tile) const
+{
+	FVector const TileLocation(TileSize * Sqrt3 * (Tile.X + 0.5f * (Tile.Y & 1)), TileSize * 1.5f * Tile.Y, 0.f);
 	return FTransform(FRotator::ZeroRotator, TileLocation, FVector(TileSize / 100.f, TileSize / 100.f, 1.f));
+}
+
+FIntPoint AGeoHexBarrier::LocalToTile(FVector const& TileLocation) const
+{
+	int32 const Row = FMath::RoundToInt32(TileLocation.Y / (TileSize * 1.5f));
+	return FIntPoint(FMath::RoundToInt32(TileLocation.X / (TileSize * Sqrt3) - 0.5f * (Row & 1)), Row);
 }
 
 void AGeoHexBarrier::Tick(float const DeltaSeconds)
@@ -41,7 +85,7 @@ void AGeoHexBarrier::Tick(float const DeltaSeconds)
 
 void AGeoHexBarrier::ApplyTileVisuals(bool const bRemoving)
 {
-	int32 const NumTiles = NumColumns * NumRows;
+	int32 const NumTiles = TileLayout.Num();
 	int32 const HiddenCount = FMath::RoundToInt32(LerpAlpha * NumTiles);
 
 	if (HiddenCount != AppliedHiddenCount)
@@ -50,7 +94,7 @@ void AGeoHexBarrier::ApplyTileVisuals(bool const bRemoving)
 		int32 const LastChanged = FMath::Max(HiddenCount, AppliedHiddenCount);
 		for (int32 Index = FirstChanged; Index < LastChanged; ++Index)
 		{
-			FTransform TileTransform = GetTileTransform(Index);
+			FTransform TileTransform = GetTileTransform(TileLayout[Index]);
 			if (Index < HiddenCount)
 			{
 				TileTransform.SetScale3D(FVector::ZeroVector);
@@ -71,7 +115,7 @@ void AGeoHexBarrier::ApplyTileVisuals(bool const bRemoving)
 		{
 			float const RandomPhase = FMath::FRandRange(0.f, 2.f * PI);
 			float const ShakeOffset = FMath::Sin(CurrentTime * ShakeParams.Y + RandomPhase) * ShakeParams.X;
-			FTransform ShakeTransform = GetTileTransform(Index);
+			FTransform ShakeTransform = GetTileTransform(TileLayout[Index]);
 			ShakeTransform.AddToTranslation(FVector(ShakeOffset, 0.f, 0.f));
 			TileMeshComponent->UpdateInstanceTransform(Index, ShakeTransform, /*bWorldSpace*/ false,
 													   /*bMarkRenderStateDirty*/ false, /*bTeleport*/ true);
@@ -83,8 +127,9 @@ void AGeoHexBarrier::ApplyTileVisuals(bool const bRemoving)
 	{
 		for (int32 Index = HiddenCount; Index < NumTiles; ++Index)
 		{
-			TileMeshComponent->UpdateInstanceTransform(Index, GetTileTransform(Index), /*bWorldSpace*/ false,
-													   /*bMarkRenderStateDirty*/ false, /*bTeleport*/ true);
+			TileMeshComponent->UpdateInstanceTransform(Index, GetTileTransform(TileLayout[Index]),
+													   /*bWorldSpace*/ false, /*bMarkRenderStateDirty*/ false,
+													   /*bTeleport*/ true);
 		}
 		TileMeshComponent->MarkRenderStateDirty();
 		bWasShaking = false;

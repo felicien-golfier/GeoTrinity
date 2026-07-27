@@ -9,7 +9,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 
 ## Big RULES
 - **NEVER run a build — ask the user and wait.** See the Build section above.
-- **NEVER close, kill, or restart the user's Unreal editor — not even to build.** It may hold unsaved work that closing destroys. When a build needs the editor closed, ask the user to close it and wait; never do it yourself.
+- **NEVER close, kill, or restart the user's Unreal editor — nor launch one — not even to build.** It may hold unsaved work that closing destroys. When a build needs the editor closed, ask the user to close it and wait; never do it yourself.
 - ALWAYS read AI/CodingStyle.md before coding. If planing or just answering, don't, but if you write any line of code, read it.
 - When opening a cpp file, read it entirely.
 - ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
