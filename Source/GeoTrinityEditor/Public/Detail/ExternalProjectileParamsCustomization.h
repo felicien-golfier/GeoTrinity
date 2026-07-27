@@ -19,6 +19,7 @@
 class FExternalProjectileParamsCustomization : public IPropertyTypeCustomization
 {
 public:
+	/** Returns a new instance of this customization; required by FPropertyEditorModule::RegisterCustomPropertyTypeLayout. */
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance();
 
 	/** Default name + value header (the struct's own row is untouched). */

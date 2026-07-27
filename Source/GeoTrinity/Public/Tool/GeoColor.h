@@ -40,6 +40,7 @@ struct GEOTRINITY_API FGeoColorParam
 	GENERATED_BODY()
 
 	FGeoColorParam() = default;
+	/** Constructs an explicit-override param (Color = Override) using InOverrideColor as the literal color. */
 	explicit FGeoColorParam(FLinearColor const& InOverrideColor) : OverrideColor(InOverrideColor) {}
 
 	/** The palette color configured for Color, or OverrideColor when Color is Override. */
