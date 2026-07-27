@@ -20,6 +20,7 @@ class GEOTRINITY_API AGeoPooledProjectile
 	GENERATED_BODY()
 
 public:
+	/** Disables actor replication (bReplicates = false) — pooled projectiles are server-managed, non-replicated actors. */
 	AGeoPooledProjectile();
 
 	/** Returns this projectile to the actor pool, disables collision, and kills the bullet VFX particles. */
