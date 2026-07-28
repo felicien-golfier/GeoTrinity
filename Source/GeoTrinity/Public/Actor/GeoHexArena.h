@@ -71,9 +71,18 @@ public:
 	bool IsTileOccupied(FIntPoint Tile) const;
 	/** Returns true when WorldLocation stands over a tile that is still up — false over a hole or off the platform. */
 	bool IsOverAliveTile(FVector2D WorldLocation) const;
-	/** Maps a world location to the tile containing it. Returns false when the location is outside the platform. */
+	/**
+	 * Maps a world location to the tile containing it.
+	 *
+	 * @param OutTile  Set to the coordinates of the tile that contains WorldLocation on success.
+	 * @return         False when the location is outside the platform.
+	 */
 	bool GetTileUnderLocation(FVector2D WorldLocation, FIntPoint& OutTile) const;
-	/** Returns true when WorldLocation stands over a tile that is still up — false over a hole or off the platform. */
+	/**
+	 * Returns true when WorldLocation stands over a tile that is still up — false over a hole or off the platform.
+	 *
+	 * @param OutTile  Set to the tile coordinates under WorldLocation when the function returns true.
+	 */
 	bool IsOverAliveTile(FVector2D WorldLocation, FIntPoint& OutTile) const;
 	/** Returns the world-space center of Tile. */
 	FVector2D TileToWorld(FIntPoint Tile) const;
@@ -88,14 +97,20 @@ public:
 	/**
 	 * Picks up to Count distinct tiles that are still standing and not already occupied by a deployable.
 	 *
-	 * @param Ring  Ring to draw from; the whole platform when negative, and also when that ring has nothing left.
+	 * @param Stream  Random stream consumed to select tiles; advanced by the function.
+	 * @param Ring    Ring to draw from; the whole platform when negative, and also when that ring has nothing left.
 	 */
 	TArray<FIntPoint> GetRandomAliveTiles(FRandomStream& Stream, int32 Ring, int32 Count) const;
 
 	/** Server. Records Deployable as the occupant of Tile so GetRandomAliveTiles skips it. Cleared automatically when
 	 * the deployable is destroyed (weak ptr goes stale) and on arena reset. */
 	void SetTileOccupant(FIntPoint Tile, AGeoDeployableBase* Deployable);
-	/** Returns the furthest still-standing tile the ray crosses within MaxRange. False when it crosses none. */
+	/**
+	 * Returns the furthest still-standing tile the ray crosses within MaxRange.
+	 *
+	 * @param OutTile  Set to the coordinates of the furthest alive tile found along the ray on success.
+	 * @return         False when no alive tile is found along the ray.
+	 */
 	bool GetLastAliveTileAlongRay(FVector2D Origin, FVector2D Direction, FIntPoint& OutTile) const;
 
 	/** Server. Highlights the tiles within Radius of Location for Requester, or the single tile under Location when
