@@ -24,6 +24,7 @@ enum class EGeoColor : uint8
 	DamageBoost,
 	HealBoost,
 	MoveSpeed,
+	Neutral,
 	Override
 };
 
@@ -41,7 +42,7 @@ struct GEOTRINITY_API FGeoColorParam
 	explicit FGeoColorParam(FLinearColor const& InOverrideColor) : OverrideColor(InOverrideColor) {}
 
 	/** The palette color configured for Color, or OverrideColor when Color is Override. */
-	FLinearColor GetColor() const;
+	FLinearColor GetColor(float Alpha = -1.f) const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGeoColor Color = EGeoColor::Override;

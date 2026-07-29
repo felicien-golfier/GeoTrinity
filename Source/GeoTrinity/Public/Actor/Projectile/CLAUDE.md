@@ -15,6 +15,7 @@ Every spawn site holds one `FExternalProjectileParams` member (no loose class + 
 Poolable, effect-applying projectile.
 
 **Lifecycle:** `InitProjectileLife()` binds hit/overlap, starts lifespan timer, applies movement (called by pool `Init()` on both machines; also from `BeginPlay` on clients for non-pooled replicated projectiles) → `AdvanceProjectile(TimeDelta)` fast-forwards position to compensate spawn lag → `EndProjectileLife()` (distance span / lifespan / hit) destroys by default.
+`bIsEnding` is the sole double-end guard — every caller (`Tick`, `LifeSpanExpired`, `OnSphereHit`, `IsValidOverlap`, `OnInstigatorRevived`) tests it, and **every `EndProjectileLife` override must set it**, including the ones that don't chain to `Super`. A projectile that overlaps two targets in one frame gets two `OnSphereOverlap` calls; without the flag the pooled override releases the same actor to the pool twice, the pool hands it to two spawns at once, and it visibly teleports/recolours mid-flight and detonates where nothing is flying.
 
 **Hit handling:** `OnSphereOverlap()` (private) → `IsValidOverlap()` (override to restrict targeting) → `HandleValidOverlap()` (override for custom hit logic; default applies `EffectDataArray`). `OnProjectileHit()` is `BlueprintNativeEvent`, fired on all clients.
 

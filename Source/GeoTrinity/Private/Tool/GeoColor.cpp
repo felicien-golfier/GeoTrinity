@@ -5,19 +5,27 @@
 #include "Settings/GameDataSettings.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-FLinearColor FGeoColorParam::GetColor() const
+FLinearColor FGeoColorParam::GetColor(float const Alpha) const
 {
+	FLinearColor ReturnColor = FLinearColor::White;
 	if (Color == EGeoColor::Override)
 	{
-		return OverrideColor;
+		ReturnColor = OverrideColor;
 	}
-
-	FLinearColor const* const PaletteColor = GetDefault<UGameDataSettings>()->ColorPalette.Find(Color);
-	if (!ensureMsgf(PaletteColor, TEXT("FGeoColorParam: %s has no entry in the Game Data Settings color palette"),
-					*UEnum::GetValueAsString(Color)))
+	else
 	{
-		return FLinearColor::White;
+		FLinearColor const* const PaletteColor = GetDefault<UGameDataSettings>()->ColorPalette.Find(Color);
+		if (ensureMsgf(PaletteColor, TEXT("FGeoColorParam: %s has no entry in the Game Data Settings color palette"),
+					   *UEnum::GetValueAsString(Color)))
+		{
+			ReturnColor = *PaletteColor;
+		}
 	}
 
-	return *PaletteColor;
+	if (Alpha >= 0)
+	{
+		ReturnColor.A = Alpha;
+	}
+
+	return ReturnColor;
 }

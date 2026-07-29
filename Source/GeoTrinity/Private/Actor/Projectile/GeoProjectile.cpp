@@ -493,8 +493,8 @@ void AGeoProjectile::ApplyParams(FProjectileParamsBase const& Params)
 
 	Sphere->SetSphereRadius(Params.Radius);
 	BulletVFX->SetVariableFloat(GeoNiagaraParams::BulletRadius, Params.Radius);
-	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletHeadColor, Params.HeadColor.GetColor());
-	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletTrailColor, Params.TrailColor.GetColor());
+	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletHeadColor, Params.HeadColor.GetColor(1.f));
+	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletTrailColor, Params.TrailColor.GetColor(1.f));
 	BulletVFX->SetVariableFloat(GeoNiagaraParams::TrailLifetimeScale, Params.TrailLifetimeScale);
 }
 

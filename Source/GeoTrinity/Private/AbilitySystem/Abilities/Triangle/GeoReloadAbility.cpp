@@ -4,8 +4,8 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
@@ -147,7 +147,7 @@ FLinearColor UGeoReloadAbility::GetColorForIndex(int32 Index) const
 	{
 		return FLinearColor::White;
 	}
-	return BuffColors[((Index % BuffColors.Num()) + BuffColors.Num()) % BuffColors.Num()].GetColor();
+	return BuffColors[((Index % BuffColors.Num()) + BuffColors.Num()) % BuffColors.Num()].GetColor(1.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -163,7 +163,7 @@ FLinearColor UGeoReloadAbility::GetColorForAmmo(int32 Ammo)
 
 	for (FGameplayAbilityInfo const& Info : AbilityInfo->GetAllAbilityInfos())
 	{
-		if (Info.AbilityClass && Info.AbilityClass->IsChildOf(UGeoReloadAbility::StaticClass()))
+		if (Info.AbilityClass && Info.AbilityClass->IsChildOf(StaticClass()))
 		{
 			return Info.AbilityClass->GetDefaultObject<UGeoReloadAbility>()->GetColorForIndex(Ammo);
 		}

@@ -43,6 +43,8 @@ void AGeoPooledProjectile::Init()
 
 void AGeoPooledProjectile::EndProjectileLife()
 {
+	bIsEnding = true;
+
 	PlayImpactFx();
 
 	UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
