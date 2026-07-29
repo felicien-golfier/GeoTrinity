@@ -55,8 +55,8 @@ TArray<AGeoDeployableBase*> UGeoDeployableManagerComponent::GetAllDeployables() 
 	return All;
 }
 
-TArray<AGeoDeployableBase*> UGeoDeployableManagerComponent::GetDeployables(
-	TSubclassOf<AGeoDeployableBase> const Class) const
+TArray<AGeoDeployableBase*>
+UGeoDeployableManagerComponent::GetDeployables(TSubclassOf<AGeoDeployableBase> const Class) const
 {
 	TArray<AGeoDeployableBase*> Result;
 	if (!Class)
@@ -150,7 +150,7 @@ void UGeoDeployableManagerComponent::ForceExpireAll() const
 	{
 		if (IsValid(Deployable))
 		{
-			Deployable->Expire(0.f);
+			Deployable->Expire(true);
 		}
 	}
 }

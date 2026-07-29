@@ -51,9 +51,9 @@ void AGeoBombZone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME_CONDITION(AGeoBombZone, BombData, COND_InitialOnly);
 }
 
-FGameplayCueParameters AGeoBombZone::GetSpawnCueParams(FGameplayTag SoundTag)
+FGameplayCueParameters AGeoBombZone::GetSpawnCueParams()
 {
-	FGameplayCueParameters CueParams = Super::GetSpawnCueParams(SoundTag);
+	FGameplayCueParameters CueParams = Super::GetSpawnCueParams();
 	CueParams.SourceObject = this;
 	return CueParams;
 }

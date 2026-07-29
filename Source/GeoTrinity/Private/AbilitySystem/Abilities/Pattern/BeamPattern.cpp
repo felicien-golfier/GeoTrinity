@@ -47,8 +47,8 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 
 	if (IsValid(BeamVfxComponent))
 	{
-		// Telegraphs where the beam will land during the windup (montage Start section); StartPattern swaps this to
-		// the real BeamVfxSystem once the beam actually goes live.
+		// Telegraphs where the beam will land during the windup (montage Start section), TickDuringInit keeping it
+		// aimed; StartPattern swaps this to the real BeamVfxSystem once the beam actually goes live.
 		GeoNiagaraParams::ApplySwappableAsset(BeamVfxComponent, {BeamVfxSystem, IndicatorSystem},
 											  /*bWantIndicator*/ true);
 		BeamVfxComponent->Activate(true);
@@ -56,13 +56,6 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, StartDelay);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamRange);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamHalfWidth * 2.f);
-		FRotator const BeamRotation(0.f, GetBeamYaw(0.f), 0.f);
-		FVector const Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
-													: FVector(StoredPayload.Origin, ArbitraryCharacterZ);
-		if (IsValid(BeamVfxComponent))
-		{
-			BeamVfxComponent->SetWorldLocationAndRotation(Location, BeamRotation);
-		}
 	}
 }
 
@@ -76,6 +69,29 @@ float UBeamPattern::GetBeamYaw(float const SpentTime) const
 	float const SweptFraction = FMath::Clamp(SpentTime / BeamDuration, 0.f, 1.f);
 	float const SweepSign = StoredPayload.Seed % 2 == 0 ? 1.f : -1.f;
 	return StoredPayload.Yaw - SweepSign * (2.f * SweepAngle * SweptFraction);
+}
+
+FVector UBeamPattern::GetBeamOrigin() const
+{
+	if (FollowBossLocation && IsValid(StoredPayload.Instigator))
+	{
+		return StoredPayload.Instigator->GetActorLocation();
+	}
+
+	return FVector(StoredPayload.Origin, ArbitraryCharacterZ);
+}
+
+void UBeamPattern::MoveBeamVfx(float const SpentTime)
+{
+	if (IsValid(BeamVfxComponent))
+	{
+		BeamVfxComponent->SetWorldLocationAndRotation(GetBeamOrigin(), FRotator(0.f, GetBeamYaw(SpentTime), 0.f));
+	}
+}
+
+void UBeamPattern::TickDuringInit(float const SpentTime)
+{
+	MoveBeamVfx(SpentTime);
 }
 
 void UBeamPattern::StartPattern()
@@ -95,17 +111,13 @@ void UBeamPattern::StartPattern()
 
 void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 {
-	FRotator const BeamRotation(0.f, GetBeamYaw(SpentTime), 0.f);
-	FVector2D const Forward(BeamRotation.Vector());
-	FVector Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
-										  : FVector(StoredPayload.Origin, ArbitraryCharacterZ);
-	if (IsValid(BeamVfxComponent))
-	{
-		BeamVfxComponent->SetWorldLocationAndRotation(Location, BeamRotation);
-	}
+	MoveBeamVfx(SpentTime);
 
 	if (GeoLib::IsServer(GetWorld()))
 	{
+		FVector const Location = GetBeamOrigin();
+		FVector2D const Forward(FRotator(0.f, GetBeamYaw(SpentTime), 0.f).Vector());
+
 		if (CVarDrawBeamBorder.GetValueOnGameThread())
 		{
 			FVector const Right = FVector::CrossProduct(FVector::UpVector, FVector(Forward, 0.f));
@@ -175,10 +187,8 @@ void UBeamPattern::EndPattern(bool const bForceStop)
 			AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
 			FVector2D const Forward(FRotator(0.f, GetBeamYaw(0.f), 0.f).Vector());
 			FIntPoint LastTile;
-			FVector Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
-												  : FVector(StoredPayload.Origin, ArbitraryCharacterZ);
 			if (ensureMsgf(Arena, TEXT("UBeamPattern: %s is not a hex arena boss"), *GetNameSafe(StoredPayload.Owner))
-				&& Arena->GetLastAliveTileAlongRay(FVector2D(Location), Forward, LastTile))
+				&& Arena->GetLastAliveTileAlongRay(FVector2D(GetBeamOrigin()), Forward, LastTile))
 			{
 				Arena->DestroyTiles({LastTile});
 			}

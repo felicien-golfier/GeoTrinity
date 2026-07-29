@@ -69,7 +69,6 @@ protected:
 	virtual void StartPattern();
 
 	void JumpMontageToEndSection() const;
-	float CalculateElapsedTime() const;
 
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 
@@ -113,10 +112,10 @@ public:
 	virtual void EndPattern(bool bForceStop = false) override;
 
 protected:
-	virtual void StartPattern() override;
+	/** Starts the tick loop, which then runs through the wind-up and the pattern itself until EndPattern. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
-	/** Timer callback: reads current server time, computes SpentTime, and delegates to TickPattern. */
+	/** Timer callback: reads server time, computes SpentTime, delegates to TickDuringInit or TickPattern. */
 	UFUNCTION()
 	void CalculateTimeAndTickPattern();
 
@@ -128,6 +127,14 @@ protected:
 	 * @param SpentTime   ServerTime minus the payload's ServerSpawnTime — elapsed time since pattern start.
 	 */
 	virtual void TickPattern(float ServerTime, float SpentTime);
+
+	/**
+	 * Same loop as TickPattern but for the wind-up preceding StartPattern — override to keep a telegraph following
+	 * its target. SpentTime shares TickPattern's timeline, so it is NEGATIVE here, counting up to 0 as the pattern
+	 * goes live. Not called on the too-late path, which has no wind-up.
+	 */
+	virtual void TickDuringInit(float SpentTime /* /!\ SpentTime is NEGATIVE value until 0 when StartPattern */
+	);
 
 	FTimerHandle TimeSyncTimerHandle;
 };

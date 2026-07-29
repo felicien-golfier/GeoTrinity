@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/Data/GeoSoundRow.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
 #include "HUD/Interface/GeoDamageNumberHost.h"
@@ -19,6 +20,18 @@ class UWidgetComponent;
 class UUserWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeployableDestroyed, AGeoDeployableBase*, Deployable);
+
+/** Moment of a deployable's life a sound plays at. Key of AGeoDeployableBase::SoundMap. */
+UENUM(BlueprintType)
+enum class EDeployableSoundType : uint8
+{
+	Spawn,
+	Blinking,
+	Recall,
+	Explode,
+	Expire,
+	ExpireButNotRecalled
+};
 
 /** Configuration parameters set by the deploy ability and passed to the deployable actor via FDeployableData. */
 USTRUCT(Blueprintable)
@@ -62,7 +75,9 @@ struct FDeployableData : public FInteractableActorData
  * Replicated actors — spawned by the server and destroyed when expired or recalled.
  */
 UCLASS(Abstract)
-class GEOTRINITY_API AGeoDeployableBase : public AGeoInteractableActor, public IGeoDamageNumberHost
+class GEOTRINITY_API AGeoDeployableBase
+	: public AGeoInteractableActor
+	, public IGeoDamageNumberHost
 {
 	GENERATED_BODY()
 
@@ -145,9 +160,7 @@ public:
 
 	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
 	UFUNCTION()
-	virtual void Expire(float TimeBeforeDestroy);
-	/** Overload that uses the default TimeBeforeDestroyAtExpire delay. */
-	virtual void Expire();
+	virtual void Expire(bool bForce = false);
 
 	/** Returns false once the deployable is dead / blinking (health or duration reached zero). */
 	UFUNCTION(BlueprintPure)
@@ -159,20 +172,14 @@ public:
 	/**
 	 * Builds and returns the GameplayCue parameters used when firing the spawn cue.
 	 * Override to add class-specific source location or effect context.
-	 *
-	 * @param SoundTag  Optional sound tag forwarded into the cue parameters.
 	 */
-	virtual FGameplayCueParameters GetSpawnCueParams(FGameplayTag SoundTag);
-	/**
-	 * Builds and returns the GameplayCue parameters used when firing the pre-expiry blink cue.
-	 *
-	 * @param SoundTag  Optional sound tag forwarded into the cue parameters.
-	 */
-	FGameplayCueParameters GetBlinkCueParams(FGameplayTag SoundTag);
+	virtual FGameplayCueParameters GetSpawnCueParams();
+	/** Builds and returns the GameplayCue parameters used when firing the pre-expiry blink cue. */
+	FGameplayCueParameters GetBlinkCueParams();
 
 	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
 	 * instigator. */
-	virtual FGameplayCueParameters GetGenericCueParams(FGameplayTag SoundTag = FGameplayTag());
+	virtual FGameplayCueParameters GetGenericCueParams();
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams();
@@ -204,7 +211,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UUserWidget> HealthBarWidgetClassOverride;
 
-	// When false, the deployable's Health/Shield changes (life drain, incoming damage) spawn no floating combat numbers.
+	// When false, the deployable's Health/Shield changes (life drain, incoming damage) spawn no floating combat
+	// numbers.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
 	bool bShowDamageNumbers = true;
 
@@ -214,7 +222,8 @@ public:
 protected:
 	/**
 	 * Returns the deployable's data block.
-	 * @warning Subclasses must override and return their own FDeployableData-derived struct. This base implementation asserts.
+	 * @warning Subclasses must override and return their own FDeployableData-derived struct. This base implementation
+	 * asserts.
 	 */
 	virtual FDeployableData const* GetData() const override
 	{
@@ -226,10 +235,18 @@ protected:
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
 
 
-	/** Blueprint hook fired when the pre-expiry blink window starts — override to play blink visuals (shake, tint, etc.). */
+	/** Blueprint hook fired when the pre-expiry blink window starts — override to play blink visuals (shake, tint,
+	 * etc.). */
 	UFUNCTION(BlueprintNativeEvent)
 	void OnBlinkStart();
 	void OnBlinkStart_Implementation();
+
+	/**
+	 * Plays the SoundMap entry for SoundType through UGeoSoundRowLibrary — audience-gated on the deploying instigator,
+	 * with its instigator-relative volume and attribute-driven pitch. Called on every machine that reaches the moment,
+	 * next to that moment's cue. Silent when the map holds no entry for SoundType.
+	 */
+	void PlaySoundOneShot(EDeployableSoundType SoundType) const;
 
 	/** Fires the recall or expiry gameplay cue on clients when bActive becomes false. */
 	UFUNCTION()
@@ -243,62 +260,22 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float DrainMagnitudePerSecond = 0.f;
 
-	UFUNCTION()
-	bool HasSpawnGameplayCueTag() const
-	{
-		return SpawnGameplayCueTag.IsValid()
-			&& SpawnGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
-	}
-	UFUNCTION()
-	bool HasRecallGameplayCueTag() const
-	{
-		return RecallGameplayCueTag.IsValid()
-			&& RecallGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
-	}
-	UFUNCTION()
-	bool HasBlinkingGameplayCueTag() const
-	{
-		return BlinkingGameplayCueTag.IsValid()
-			&& BlinkingGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
-	}
-	UFUNCTION()
-	bool HasExplodeGameplayCueTag() const
-	{
-		return ExplodeGameplayCueTag.IsValid()
-			&& ExplodeGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
-	}
-	UFUNCTION()
-	bool HasExpireGameplayCueTag() const
-	{
-		return ExpireGameplayCueTag.IsValid()
-			&& ExpireGameplayCueTag == GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
-	}
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag SpawnGameplayCueTag;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
-			  meta = (EditCondition = "HasSpawnGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag SpawnSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag RecallGameplayCueTag;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
-			  meta = (EditCondition = "HasRecallGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag RecallSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag BlinkingGameplayCueTag;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
-			  meta = (EditCondition = "HasBlinkingGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag BlinkingSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag ExplodeGameplayCueTag;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
-			  meta = (EditCondition = "HasExplodeGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag ExplodeSoundTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag ExpireGameplayCueTag;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel",
-			  meta = (EditCondition = "HasExpireGameplayCueTag", EditConditionHides, AllowPrivateAccess = true))
-	FGameplayTag ExpireSoundTag;
+
+	/** Sound played at each moment of the deployable's life, alongside that moment's gameplay cue. Sound asset, volume,
+	 * audience and attribute-driven pitch per entry; a moment with no entry plays nothing. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	TMap<EDeployableSoundType, FGeoSoundEntry> SoundMap;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 

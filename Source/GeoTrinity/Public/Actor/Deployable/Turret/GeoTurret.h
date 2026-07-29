@@ -49,7 +49,7 @@ protected:
 	/** Fires a projectile at the current best target if one exists. */
 	void TryFire();
 	/** Clears the fire timer, then delegates to Super. */
-	virtual void Expire(float TimeBeforeDestroy) override;
+	virtual void Expire(bool bForce) override;
 
 	UPROPERTY(Replicated)
 	FDeployableData Data;

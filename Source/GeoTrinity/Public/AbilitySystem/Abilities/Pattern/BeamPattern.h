@@ -33,8 +33,10 @@ protected:
 	/** Reads SweepAngle from PatternData and stores the activation payload for use during the tick sweep. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
-	/** Carves the last tile under the beam and switches the beam VFX on before the tick loop starts. */
+	/** Swaps the telegraph for the real beam VFX the moment the beam goes live. */
 	virtual void StartPattern() override;
+	/** Keeps the windup telegraph aimed while the boss moves and turns. */
+	virtual void TickDuringInit(float SpentTime) override;
 	/** Aims the beam for the elapsed sweep fraction and applies the effect data to every actor it newly crosses. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** Switches the beam VFX off and clears the per-activation hit set. */
@@ -44,6 +46,12 @@ protected:
 
 	/** Beam yaw at SpentTime: the payload yaw, offset by however much of the sweep arc has been travelled. */
 	float GetBeamYaw(float SpentTime) const;
+
+	/** Where the beam starts: the boss's live location with FollowBossLocation, the payload origin otherwise. */
+	FVector GetBeamOrigin() const;
+
+	/** Places the beam VFX where GetBeamOrigin/GetBeamYaw put it at SpentTime. */
+	void MoveBeamVfx(float SpentTime);
 
 	/** Full arc swept over BeamDuration, in degrees, centered on the payload yaw. 0 keeps the beam static. */
 	float SweepAngle;

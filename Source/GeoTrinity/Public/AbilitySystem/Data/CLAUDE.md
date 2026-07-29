@@ -41,6 +41,8 @@ Status effect configuration data (types, durations, visuals); referenced by `FSt
 
 `UGeoSoundRowLibrary` — the single playback path; never call `PlaySoundAtLocation`/`PlaySound2D` directly for gameplay sounds. `ShouldPlay`/`GetVolume`/`GetPitch`/`PlaySoundEntry2D` (combines all three)/`FindSoundForTag`.
 
+Two ways to reach an entry: **inline** on the actor that owns the moment (`AGeoProjectile`'s `ResolvedParams.SoundMap`, `AGeoDeployableBase::SoundMap`, `AGeoShieldBurstProjectile::BounceSound`) — preferred, no lookup, no table — or **by tag** through the generic sound cue below, for one-offs fired from abilities.
+
 `FGeoSoundRow : FTableRowBase` — `Tag` (explicit field, not row name) + `Entry`. Row type of `DT_GenericSound`.
 
 ## `GeoGenericSoundCueNotify.h`

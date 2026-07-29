@@ -151,11 +151,6 @@ void UPattern::JumpMontageToEndSection() const
 	}
 }
 
-float UPattern::CalculateElapsedTime() const
-{
-	return FMath::Max(0.f, GeoLib::GetServerTime(GetWorld(), true) - StoredPayload.ServerSpawnTime - StartDelay);
-}
-
 void UPattern::EndPattern(bool const bForceStop)
 {
 	if (!bPatternIsActive)
@@ -198,23 +193,32 @@ void UTickablePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStr
 	}
 
 	Super::InitPattern(Payload, PatternData);
-}
 
-void UTickablePattern::StartPattern()
-{
-	Super::StartPattern();
-	CalculateTimeAndTickPattern();
+	if (IsPatternActive())
+	{
+		CalculateTimeAndTickPattern();
+	}
 }
 
 /**
  * Drives the tick loop using SetTimerForNextTick rather than a regular Tick override so that
  * the pattern can stop itself cleanly (by simply not re-scheduling) without a separate bIsActive guard.
- * SpentTime excludes the Start-section length because projectiles are not spawned during that phase.
+ * SpentTime excludes the Start-section length because projectiles are not spawned during that phase; the loop
+ * already runs during that section, where the still-pending Start-section timer routes it to TickDuringInit.
  */
 void UTickablePattern::CalculateTimeAndTickPattern()
 {
 	float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
-	TickPattern(ServerTime, CalculateElapsedTime());
+	float const SpentTime = ServerTime - StoredPayload.ServerSpawnTime - StartDelay;
+	if (GetWorld()->GetTimerManager().IsTimerActive(StartSectionTimerHandle))
+	{
+		TickDuringInit(SpentTime);
+	}
+	else
+	{
+		TickPattern(ServerTime, FMath::Max(0.f, SpentTime));
+	}
+
 	if (IsPatternActive())
 	{
 		TimeSyncTimerHandle =
@@ -225,6 +229,11 @@ void UTickablePattern::CalculateTimeAndTickPattern()
 void UTickablePattern::TickPattern(float const ServerTime, float const SpentTime)
 {
 	// To be overriden by your own Tickable pattern !
+}
+
+void UTickablePattern::TickDuringInit(float /*SpentTime is NEGATIVE value until 0 when StartPattern*/)
+{
+	// To be overriden when your pattern must keep moving during the wind-up !
 }
 
 void UTickablePattern::EndPattern(bool bForceStop)
