@@ -126,9 +126,10 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 				GeoASLib::ApplySingleEffectData(ShieldEffect, GeoASLib::GetGeoAscFromActor(Payload.Owner), TargetASC,
 												Payload.AbilityLevel, Payload.Seed, Payload.AbilityTag);
 			}
-			OnProjectileHit(OtherActor);
-			EndProjectileLife();
 		}
+
+		OnProjectileHit(OtherActor);
+		EndProjectileLife();
 	}
 }
 bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor)

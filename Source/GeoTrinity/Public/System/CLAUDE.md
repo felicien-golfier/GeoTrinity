@@ -5,6 +5,8 @@ World subsystems and pooling interface.
 ### `GeoActorPoolingSubsystem.h`
 World subsystem for actor reuse: `RequestActor<T>`, `ReleaseActor`, `PreSpawn<T>`, `Get(World)` singleton access. Internally `TMap<UClass*, TArray<TWeakObjectPtr<AActor>>> Pool`.
 `ReleaseActor` ensures the actor isn't already pooled and bails if it is: a duplicate entry means two `RequestActor` calls pop the *same* actor, and the caller's own end-of-life guard (`AGeoProjectile::bIsEnding`) is what normally makes that impossible.
+Invariant: the `Pool` array holds **only** idle actors. `SpawnActor` never inserts — `PreSpawn` inserts what it spawns, and `RequestActor`'s empty-pool path hands the fresh actor straight to the caller. This also keeps the `Pool.FindOrAdd` reference held across a spawn from being invalidated by a rehash.
+`Pool` is deliberately not a `UPROPERTY` (nested `TArray` in a `TMap` isn't reflectable): pooled actors are kept alive by `ULevel::Actors`, not by this map, so entries only go stale if something `Destroy()`s a pooled actor.
 
 ### `GeoPoolableInterface.h`
 Interface for poolable actors: `Init()` on acquisition, `End()` on return.

@@ -4,6 +4,9 @@
 
 #include "Net/UnrealNetwork.h"
 #include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
+#include "Settings/GameDataSettings.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -19,8 +22,10 @@ void UGeoBeamVFXComponent::CreateNiagaraComponent()
 	{
 		NiagaraComponent = NewObject<UNiagaraComponent>(GetOwner());
 		NiagaraComponent->SetAutoActivate(false);
-		NiagaraComponent->SetAsset(BeamSystem);
-		NiagaraComponent->SetVariableLinearColor(ColorParamName, BeamColor);
+		// Asset is picked by ApplyBeamState below (BeamSystem vs IndicatorSystem, per BeamState.bIsIndicator).
+		UGameDataSettings const* const GDSettings = GetDefault<UGameDataSettings>();
+		IndicatorSystem = GDSettings->GetLoadedDataAsset(GDSettings->RayIndicatorSystem);
+		NiagaraComponent->SetVariableLinearColor(GeoNiagaraParams::Color, BeamColor);
 		NiagaraComponent->RegisterComponent();
 		NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
 											FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -68,9 +73,10 @@ void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const Width, float const Length)
+void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const Width, float const Length,
+										bool const bIsIndicator, float const IndicatorLifetime)
 {
-	BeamState = {bActive, Width, Length};
+	BeamState = {bActive, Width, Length, bIsIndicator, IndicatorLifetime};
 	// Apply locally too: the listen-server host renders but never receives OnRep for its own writes.
 	ApplyBeamState();
 }
@@ -92,13 +98,18 @@ void UGeoBeamVFXComponent::ApplyBeamState() const
 
 	if (BeamState.bActive)
 	{
+		// Reassigning the asset resets the system, which is exactly what a Indicator<->beam handoff needs.
+		GeoNiagaraParams::ApplySwappableAsset(NiagaraComponent, {BeamSystem, IndicatorSystem}, BeamState.bIsIndicator);
+
 		if (!NiagaraComponent->IsActive())
 		{
 			NiagaraComponent->SetActive(true);
 		}
 
-		NiagaraComponent->SetVariableFloat(HalfWidthParamName, BeamState.Width);
-		NiagaraComponent->SetVariableFloat(LengthParamName, BeamState.Length);
+		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, BeamState.IndicatorLifetime);
+		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamState.Width);
+		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamState.Length);
+		NiagaraComponent->SetVariableLinearColor(GeoNiagaraParams::Color, BeamColor);
 	}
 	else if (NiagaraComponent->IsActive())
 	{

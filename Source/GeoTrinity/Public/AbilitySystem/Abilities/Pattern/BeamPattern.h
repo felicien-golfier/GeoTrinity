@@ -6,7 +6,7 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "CoreMinimal.h"
 #include "Tool/GeoColor.h"
-#include "Tool/GeoNiagaraParams.h"
+#include "Tool/GeoNiagaraParams.h" // FBeamVfxAssetSet, ApplySwappableAsset
 
 #include "BeamPattern.generated.h"
 
@@ -81,17 +81,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
 	FGeoColorParam BeamColor;
 
-	/** Niagara user param names, matching UGeoBeamVFXComponent's. */
-	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
-	FName BeamLengthParamName = GeoNiagaraParams::BeamLength;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
-	FName BeamWidthParamName = GeoNiagaraParams::BeamWidth;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
-	FName BeamColorParamName = "Color";
-
 private:
+	/** Windup preview asset (Ray Zone Indicator), loaded once from UGameDataSettings::RayIndicatorSystem in OnCreate —
+	 * no per-pattern configuration needed. Same project-wide asset UGeoBeamVFXComponent uses; one NiagaraComponent
+	 * serves both looks, swapped via GeoNiagaraParams::ApplySwappableAsset. Leaving the settings value unset shows
+	 * BeamVfxSystem for the whole windup, as before. */
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> IndicatorSystem;
+
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> BeamVfxComponent;
 };

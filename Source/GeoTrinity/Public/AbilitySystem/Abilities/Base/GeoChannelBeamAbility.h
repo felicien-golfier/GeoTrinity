@@ -29,6 +29,11 @@ public:
 	/** Registers as a Conditional tickable on the game thread; opts out on async loading threads where CDO construction may run. */
 	UGeoChannelBeamAbility();
 
+	/** Shows the windup preview (Ray Zone Indicator) at the beam's resting dimensions before calling Super. */
+	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+								 FGameplayAbilityActivationInfo ActivationInfo,
+								 FGameplayEventData const* TriggerEventData) override;
+
 protected:
 	/** Server: adds the replicated BeamVFXComponent to the avatar for as long as the ability is granted. */
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;

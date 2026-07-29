@@ -15,6 +15,7 @@ class UUserWidget;
 class UWidgetComponent;
 class UGameplayEffect;
 class USoundBase;
+class UNiagaraSystem;
 
 /**
  * Project Settings panel (Game Data Settings) that holds soft references to all global data assets
@@ -62,7 +63,8 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftObjectPtr<USoundBase> DefaultButtonHoverSound;
 
-	/** Color every FGeoColorParam of the game resolves its slot through; EGeoColor::Override is never looked up here. */
+	/** Color every FGeoColorParam of the game resolves its slot through; EGeoColor::Override is never looked up here.
+	 */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Colors")
 	TMap<EGeoColor, FLinearColor> ColorPalette;
 
@@ -129,6 +131,12 @@ public:
 	TSoftObjectPtr<UMaterialInterface> LocalPlayerHitFlashMaterial;
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameFeel")
 	float HitFlashDuration = 0.9f;
+
+	/** Shared windup telegraph (Ray Zone Indicator) every beam swaps to during its wind-up: UGeoBeamVFXComponent
+	 * (player channel beams) and UBeamPattern (enemy/boss beams). One project-wide asset — no per-ability/per-pattern
+	 * configuration needed. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GameFeel")
+	TSoftObjectPtr<UNiagaraSystem> RayIndicatorSystem;
 };
 
 template <typename T>

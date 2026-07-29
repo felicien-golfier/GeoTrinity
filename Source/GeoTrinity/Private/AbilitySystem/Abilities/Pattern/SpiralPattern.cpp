@@ -55,19 +55,31 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 			return;
 		}
 
+		FVector const ProjectileDirection =
+			FirstProjectileOrientation.RotateAngleAxis(i * AngleBetweenProjectiles, FVector::UpVector);
+
+		FVector ProjectileLocation = FVector(StoredPayload.Origin, ArbitraryCharacterZ)
+			+ ProjectileDirection * ProjectileSpeed * (SpentTime - i * TimeDiffBetweenProjectiles);
+
 		if (Projectiles.Num() <= i)
 		{
-
+			UGeoActorPoolingSubsystem* Pooling = UGeoActorPoolingSubsystem::Get(GetWorld());
 			AGeoProjectile* Projectile =
-				UGeoActorPoolingSubsystem::Get(GetWorld())
-					->RequestActor(ProjectileParams.ProjectileClass, FTransform::Identity, StoredPayload.Owner,
-								   Cast<APawn>(StoredPayload.Instigator), false, false);
+				Pooling->RequestActor(ProjectileParams.ProjectileClass,
+									  FTransform(ProjectileDirection.ToOrientationRotator(), ProjectileLocation),
+									  StoredPayload.Owner, Cast<APawn>(StoredPayload.Instigator), false, false);
 
 			Projectile->Payload = StoredPayload;
 			Projectile->EffectDataArray = EffectDataArray;
 			Projectile->OnProjectileEndLifeDelegate.AddUniqueDynamic(this, &USpiralPattern::EndProjectile);
 			Projectile->ApplyProjectileParams(ProjectileParams);
 			Projectiles.Add(Projectile);
+
+			Pooling->ChangeActorState(Projectile, true);
+			if (ProjectileParams.ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
+			{
+				CastChecked<IGeoPoolableInterface>(Projectile)->Init();
+			}
 		}
 
 		AGeoProjectile* Projectile = Projectiles[i];
@@ -77,26 +89,16 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 			continue;
 		}
 
-		bHasValidProjectiles = true;
-
-		FVector const ProjectileDirection =
-			FirstProjectileOrientation.RotateAngleAxis(i * AngleBetweenProjectiles, FVector::UpVector);
 		Projectile->SetActorRotation(ProjectileDirection.Rotation());
-
-		FVector ProjectileLocation = FVector(StoredPayload.Origin, ArbitraryCharacterZ)
-			+ ProjectileDirection * ProjectileSpeed * (SpentTime - i * TimeDiffBetweenProjectiles);
 		Projectile->SetActorLocation(ProjectileLocation);
 
-		// Activate the projectile on the first tick that catches up to its spawn time.
-		// Checking the state prevents calling Init() again if we're re-ticking an already-active projectile.
-		if (!UGeoActorPoolingSubsystem::Get(GetWorld())->GetActorState(Projectile))
+		if (!IsValid(Projectile))
 		{
-			UGeoActorPoolingSubsystem::Get(GetWorld())->ChangeActorState(Projectile, true);
-			if (ProjectileParams.ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
-			{
-				CastChecked<IGeoPoolableInterface>(Projectile)->Init();
-			}
+			// Projectile May be ended after moving it.
+			continue;
 		}
+
+		bHasValidProjectiles = true;
 	}
 
 	if (ProjectileNumSpawned >= RoundNumber * NumberProjectileByRound)

@@ -9,6 +9,8 @@
 #include "DrawDebugHelpers.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -24,24 +26,36 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 		SweepAngle = SweepBeamAbility->GetSweepAngle();
 	}
 
-	if (BeamVfxSystem && !GeoLib::IsDedicatedServer(GetWorld()))
+	UGameDataSettings const* const GDSettings = GetDefault<UGameDataSettings>();
+	IndicatorSystem = GDSettings->GetLoadedDataAsset(GDSettings->RayIndicatorSystem);
+
+	UNiagaraSystem* const InitialAsset = IndicatorSystem ? IndicatorSystem : BeamVfxSystem;
+	if (InitialAsset && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		BeamVfxComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			this, BeamVfxSystem, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
+			this, InitialAsset, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
 			/*bAutoDestroy*/ false, /*bAutoActivate*/ false);
 		ensureMsgf(BeamVfxComponent, TEXT("UBeamPattern: failed to spawn the beam VFX system"));
-		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor.GetColor());
+		BeamVfxComponent->SetColorParameter(GeoNiagaraParams::Color, BeamColor.GetColor());
 	}
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
 	Super::InitPattern(Payload, PatternData);
 
 	if (IsValid(BeamVfxComponent))
 	{
+		// Telegraphs where the beam will land during the windup (montage Start section); StartPattern swaps this to
+		// the real BeamVfxSystem once the beam actually goes live.
+		GeoNiagaraParams::ApplySwappableAsset(BeamVfxComponent, {BeamVfxSystem, IndicatorSystem},
+											  /*bWantIndicator*/ true);
 		BeamVfxComponent->Activate(true);
-		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
-		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth * 2.f);
+		BeamVfxComponent->AdvanceSimulationByTime(FMath::Max(TravelTime, 0.f), GetWorld()->GetDeltaSeconds());
+		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, StartDelay);
+		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamRange);
+		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamHalfWidth * 2.f);
 		FRotator const BeamRotation(0.f, GetBeamYaw(0.f), 0.f);
 		FVector const Location = FollowBossLocation ? StoredPayload.Instigator->GetActorLocation()
 													: FVector(StoredPayload.Origin, ArbitraryCharacterZ);
@@ -68,10 +82,12 @@ void UBeamPattern::StartPattern()
 {
 	if (IsValid(BeamVfxComponent))
 	{
+		GeoNiagaraParams::ApplySwappableAsset(BeamVfxComponent, {BeamVfxSystem, IndicatorSystem},
+											  /*bWantIndicator*/ false);
 		BeamVfxComponent->Activate(true);
-		BeamVfxComponent->SetVariableFloat(BeamLengthParamName, BeamRange);
-		BeamVfxComponent->SetVariableFloat(BeamWidthParamName, BeamHalfWidth * 2.f);
-		BeamVfxComponent->SetColorParameter(BeamColorParamName, BeamColor.GetColor());
+		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamRange);
+		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamHalfWidth * 2.f);
+		BeamVfxComponent->SetColorParameter(GeoNiagaraParams::Color, BeamColor.GetColor());
 	}
 
 	Super::StartPattern();

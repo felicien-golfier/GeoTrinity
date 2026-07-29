@@ -137,14 +137,6 @@ void UGeoActorPoolingSubsystem::ReleaseActor(AActor* Actor)
 		return;
 	}
 
-	TArray<TWeakObjectPtr<AActor>> const* const PoolForClass = Pool.Find(Actor->GetClass());
-	if (!ensureMsgf(!PoolForClass || !PoolForClass->Contains(Actor),
-					TEXT("[Pool] %s released twice — it would then be handed out to two callers at once"),
-					*Actor->GetName()))
-	{
-		return;
-	}
-
 	if (IGeoPoolableInterface* Poolable = Cast<IGeoPoolableInterface>(Actor))
 	{
 		Poolable->End();

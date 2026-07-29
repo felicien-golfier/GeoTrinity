@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 
+class UNiagaraComponent;
+class UNiagaraSystem;
+
 /**
  * Every Niagara User parameter name written from C++, declared once. A name here must match the User Parameter authored
  * in the Niagara system — nothing validates it at compile or load time, so a mismatch is silent: the system just keeps
@@ -16,6 +19,9 @@
  */
 namespace GeoNiagaraParams
 {
+	inline FName const Lifetime(TEXT("User.Lifetime"));
+	inline FName const Color(TEXT("User.Color"));
+
 	/** NS_GeoTrinity_Projectile01 — AGeoProjectile::BulletVFX. */
 	inline FName const BulletRadius(TEXT("User.Bullet_Radius"));
 	inline FName const BulletHeadColor(TEXT("User.Bullet_HeadColor"));
@@ -25,7 +31,6 @@ namespace GeoNiagaraParams
 	/** Beam systems — UGeoBeamVFXComponent, UBeamPattern. */
 	inline FName const BeamWidth(TEXT("User.Beam_Width"));
 	inline FName const BeamLength(TEXT("User.Beam_Length"));
-	inline FName const BeamColor(TEXT("User.Color"));
 
 	/** Devastating wave AOE and its telegraph — UDevastatingWavePattern. */
 	inline FName const AOERadius(TEXT("User.AOE_Radius"));
@@ -33,4 +38,24 @@ namespace GeoNiagaraParams
 	inline FName const AOEColor(TEXT("User.AOE_Color"));
 	inline FName const AnnulusRadius(TEXT("User.AnnulusRadius"));
 	inline FName const FadeOutDuration(TEXT("User.FadeOut_Duration"));
+
+	/** A beam's live asset plus its optional windup-preview asset (the shared Ray Zone Indicator niagara), bundled so
+	 * ApplySwappableAsset callers pass one thing instead of two. Plain aggregate, not a UPROPERTY struct — each owner
+	 * (UGeoBeamVFXComponent, UBeamPattern) keeps its own authored fields (different replication needs) and just
+	 * assembles one of these at the call site. */
+	struct FBeamVfxAssetSet
+	{
+		UNiagaraSystem* BeamSystem = nullptr;
+		UNiagaraSystem* PreviewSystem = nullptr;
+
+		UNiagaraSystem* GetDesiredAsset(bool const bWantPreview) const
+		{
+			return (bWantPreview && PreviewSystem) ? PreviewSystem : BeamSystem;
+		}
+	};
+
+	/** Reassigns Component's asset to Assets.GetDesiredAsset(bWantIndicator) only when it differs — SetAsset resets the
+	 * system, so skipping the no-op case avoids restarting an already-correct beam. No-op if Component or the desired
+	 * asset is null. Shared by UGeoBeamVFXComponent and UBeamPattern's identical preview<->beam asset handoff. */
+	void ApplySwappableAsset(UNiagaraComponent* Component, FBeamVfxAssetSet const& Assets, bool bWantIndicator);
 } // namespace GeoNiagaraParams

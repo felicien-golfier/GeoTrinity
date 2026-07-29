@@ -22,9 +22,6 @@ public:
 	FDeployableDataParams Params;
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
-	/** Returns true only when OtherActor is the ground (static world geometry), triggering deployment. */
-	virtual bool IsValidOverlap(AActor* OtherActor) override;
-
 protected:
 	/** Spawns the deployable actor at the projectile's final position then destroys the projectile. */
 	virtual void EndProjectileLife() override;

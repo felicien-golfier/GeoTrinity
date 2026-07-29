@@ -19,6 +19,26 @@ UGeoChannelBeamAbility::UGeoChannelBeamAbility()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoChannelBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
+											 FGameplayAbilityActorInfo const* ActorInfo,
+											 FGameplayAbilityActivationInfo const ActivationInfo,
+											 FGameplayEventData const* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	// Telegraphs where the beam will land during the fire-delay windup, at the same dimensions Fire() starts with.
+	if (ACharacter const* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	{
+		if (UGeoBeamVFXComponent* BeamVFXComponent = Character->FindComponentByClass<UGeoBeamVFXComponent>())
+		{
+			BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character) * 2.f,
+										   GetDefault<UGameDataSettings>()->GeneralSpellDistance,
+										   /*bIsIndicator=*/true, /*IndicatorLifetime=*/GetFireDelay());
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // May run on the CDO (no primary instance yet) — derive everything from ActorInfo, never from GetWorld().
 void UGeoChannelBeamAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec)
 {
@@ -52,8 +72,8 @@ void UGeoChannelBeamAbility::OnRemoveAbility(FGameplayAbilityActorInfo const* Ac
 	// tear that one down instead, leaving the client without a beam.
 	AActor const* Avatar = ActorInfo->AvatarActor.Get();
 	if (UGeoBeamVFXComponent* BeamVFXComponent = IsValid(Avatar) && GeoLib::IsServer(Avatar)
-													 ? Avatar->FindComponentByClass<UGeoBeamVFXComponent>()
-													 : nullptr)
+			? Avatar->FindComponentByClass<UGeoBeamVFXComponent>()
+			: nullptr)
 	{
 		BeamVFXComponent->DestroyComponent();
 	}

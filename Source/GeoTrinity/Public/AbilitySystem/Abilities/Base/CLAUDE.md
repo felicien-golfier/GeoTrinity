@@ -44,8 +44,9 @@ Section cycling Start → Fire1 → Fire2 → … loops; montages with no Fire s
 ## `GeoChannelBeamAbility.h` — base for channelled beam abilities
 Shared infra for `GeoMoiraBeamAbility` (Circle) and `GeoSacrificeBeamAbility` (Square):
 - `OnGiveAbility`/`OnRemoveAbility` — server creates/destroys the replicated `UGeoBeamVFXComponent` (`BeamNiagaraSystem`+`BeamColor` feed Niagara `User.Color`)
+- `ActivateAbility` shows the windup preview (`UGeoBeamVFXComponent`'s `IndicatorSystem` — the shared Ray Zone Indicator niagara, loaded from `UGameDataSettings::RayIndicatorSystem`) at the beam's resting half-width/`GeneralSpellDistance`, telegraphing where the beam lands during the fire-delay wait; passes `GetFireDelay()` as `IndicatorLifetime` so the indicator's `Lifetime` user param matches the actual wait
 - `Fire()` sets `bIsBeamActive`; `EndAbility` clears it + `SetBeamState(false,…)`; `FTickableGameObject` ticks only while active
-- `Tick()` pushes beam VFX state, calls pure-virtual `TickBeam(DeltaTime, ActorsInLine)` from `GeoASLib::GetInteractableActorsInLine`
+- `Tick()` pushes beam VFX state (implicitly swapping the component off preview back to the real beam asset, since its `SetBeamState` call defaults `bIsPreview` to false), calls pure-virtual `TickBeam(DeltaTime, ActorsInLine)` from `GeoASLib::GetInteractableActorsInLine`
 - Virtual hooks: `GetCurrentBeamHalfWidth`, `GetScanAttitudeMask` (default `All`)
 - `Fire()` does **not** call `UGeoGameplayAbility::Fire` — channel beams don't send fire target data on start; subclasses needing a later RPC (sacrifice detonation) call `SendFireDataToServer` themselves.
 
