@@ -41,7 +41,11 @@ struct GEOTRINITY_API FGeoColorParam
 	/** Constructs an explicit-override param (Color = Override) using InOverrideColor as the literal color. */
 	explicit FGeoColorParam(FLinearColor const& InOverrideColor) : OverrideColor(InOverrideColor) {}
 
-	/** The palette color configured for Color, or OverrideColor when Color is Override. */
+	/**
+	 * The palette color configured for Color, or OverrideColor when Color is Override.
+	 *
+	 * @param Alpha  Alpha to apply to the returned color. Negative keeps the palette color's own alpha unchanged.
+	 */
 	FLinearColor GetColor(float Alpha = -1.f) const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

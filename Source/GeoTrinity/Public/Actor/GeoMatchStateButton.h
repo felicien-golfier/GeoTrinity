@@ -35,6 +35,7 @@ public:
 	AGeoMatchStateButton();
 
 protected:
+	/** Binds the OnBeginOverlap delegate to the trigger volume. */
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
