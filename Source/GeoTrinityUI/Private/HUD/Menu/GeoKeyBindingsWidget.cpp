@@ -204,10 +204,11 @@ void UGeoKeyBindingsWidget::HandleSecondPlayerGamepadChanged(bool bIsChecked)
 	ULocalPlayer const* LocalPlayer = GetOwningLocalPlayer();
 	UGeoGameViewportClient* ViewportClient =
 		LocalPlayer ? Cast<UGeoGameViewportClient>(LocalPlayer->ViewportClient) : nullptr;
-	if (ViewportClient)
+	if (!ensureMsgf(ViewportClient, TEXT("UGeoKeyBindingsWidget: no UGeoGameViewportClient, gamepads keep their old owners")))
 	{
-		ViewportClient->ApplyCouchCoopSetting();
+		return;
 	}
+	ViewportClient->ApplyCouchCoopSetting();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

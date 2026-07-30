@@ -265,7 +265,10 @@ void AGeoDeployableBase::Recall(float Value)
 	bActive = false;
 	bRecalled = true;
 
-	RecallEffect(Value);
+	if (bExplodeAtRecall)
+	{
+		Explode(Value);
+	}
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
 	if (!GeoLib::IsDedicatedServer(GetWorld()) && RecallGameplayCueTag.IsValid())
 	{
@@ -289,14 +292,6 @@ void AGeoDeployableBase::PlaySoundOneShot(EDeployableSoundType const SoundType) 
 	if (FGeoSoundEntry const* Entry = SoundMap.Find(SoundType))
 	{
 		UGeoSoundRowLibrary::PlaySoundEntry2D(this, *Entry, GetData()->Instigator);
-	}
-}
-
-void AGeoDeployableBase::RecallEffect(float const Value)
-{
-	if (bExplodeAtRecall)
-	{
-		Explode(Value);
 	}
 }
 
@@ -344,6 +339,8 @@ void AGeoDeployableBase::Expire(bool const bForce)
 	SetActorHiddenInGame(true);
 	OnDeployableExpiredEvent.Broadcast(this);
 	SetActorTickEnabled(false);
+	SetActorEnableCollision(false);
+	SetCanBeDamaged(false);
 	if (!bForce)
 	{
 
@@ -401,6 +398,12 @@ float AGeoDeployableBase::GetDurationPercent() const
 void AGeoDeployableBase::StartBlinking()
 {
 	bBlinking = true;
+	if (!bDamageableDuringBlink)
+	{
+		SetActorEnableCollision(false);
+		SetCanBeDamaged(false);
+	}
+
 	GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::TryRecallOrExpire,
 										   GetData()->Params.BlinkDuration, false);
 
@@ -412,8 +415,6 @@ void AGeoDeployableBase::StartBlinking()
 	PlaySoundOneShot(EDeployableSoundType::Blinking);
 
 	OnBlinkStart();
-	SetActorEnableCollision(false);
-	SetCanBeDamaged(false);
 }
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)

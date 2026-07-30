@@ -61,24 +61,41 @@ void UGeoGameViewportClient::ApplyCouchCoopSetting()
 
 	TArray<FInputDeviceId> Devices;
 	DeviceMapper.GetAllConnectedInputDevices(Devices);
-	FInputDeviceId FirstGamepad = INPUTDEVICEID_NONE;
+
+	// Whichever pad already holds SecondPlayerUser keeps it while it stays connected: re-deriving the owner from device
+	// ids on every call would hand player 2's pad back to player 1 the moment another pad enumerated below it.
+	FInputDeviceId HeldGamepad = INPUTDEVICEID_NONE;
+	FInputDeviceId LowestGamepad = INPUTDEVICEID_NONE;
 	for (FInputDeviceId const Device : Devices)
 	{
-		if (Device != KeyboardDevice && (!FirstGamepad.IsValid() || Device < FirstGamepad))
+		if (Device != KeyboardDevice && (!LowestGamepad.IsValid() || Device < LowestGamepad))
 		{
-			FirstGamepad = Device;
+			LowestGamepad = Device;
+		}
+		if (Device != KeyboardDevice && SecondPlayerUser.IsValid()
+			&& DeviceMapper.GetUserForInputDevice(Device) == SecondPlayerUser)
+		{
+			HeldGamepad = Device;
 		}
 	}
+	FInputDeviceId const SecondPlayerDevice = HeldGamepad.IsValid() ? HeldGamepad : LowestGamepad;
 
 	FPlatformUserId const PrimaryUser = DeviceMapper.GetPrimaryPlatformUser();
+	ULocalPlayer const* FirstPlayer = GameInstance ? GameInstance->GetLocalPlayerByIndex(0) : nullptr;
+	UE_LOG(LogTemp, Warning, TEXT("ApplyCouchCoopSetting: toggle=%d SecondPlayerUser=%d Primary=%d Player0=%d Players=%d"),
+		   bSecondPlayer, SecondPlayerUser.GetInternalId(), PrimaryUser.GetInternalId(),
+		   FirstPlayer ? FirstPlayer->GetPlatformUserId().GetInternalId() : -1,
+		   GameInstance ? GameInstance->GetNumLocalPlayers() : -1);
+
 	for (FInputDeviceId const Device : Devices)
 	{
 		FPlatformUserId const CurrentUser = DeviceMapper.GetUserForInputDevice(Device);
-		FPlatformUserId const TargetUser = bSecondPlayer && Device == FirstGamepad ? SecondPlayerUser : PrimaryUser;
-		if (Device != KeyboardDevice && CurrentUser != TargetUser)
-		{
-			DeviceMapper.Internal_ChangeInputDeviceUserMapping(Device, TargetUser, CurrentUser);
-		}
+		FPlatformUserId const TargetUser = bSecondPlayer && Device == SecondPlayerDevice ? SecondPlayerUser : PrimaryUser;
+		bool const bChanged = Device != KeyboardDevice && CurrentUser != TargetUser
+							  && DeviceMapper.Internal_ChangeInputDeviceUserMapping(Device, TargetUser, CurrentUser);
+		UE_LOG(LogTemp, Warning, TEXT("  device %d: user %d -> %d (keyboard=%d changed=%d, now %d)"), Device.GetId(),
+			   CurrentUser.GetInternalId(), TargetUser.GetInternalId(), Device == KeyboardDevice, bChanged,
+			   DeviceMapper.GetUserForInputDevice(Device).GetInternalId());
 	}
 
 	if (!bSecondPlayer && GameInstance && GameInstance->GetNumLocalPlayers() > 1)

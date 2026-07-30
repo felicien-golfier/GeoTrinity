@@ -36,7 +36,7 @@ protected:
 	/** Health reaching zero means players destroyed the mine: it defuses (Expire), never bursts. */
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
 	/** Server. Reached only when the fuse runs out: bursts BurstProjectileCount projectiles radially. */
-	virtual void RecallEffect(float Value) override;
+	virtual void ExplodeEffect(float Value) override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mine")
 	FExternalProjectileParams ProjectileParams;

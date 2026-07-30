@@ -11,6 +11,9 @@ AGeoMine::AGeoMine(FObjectInitializer const& ObjectInitializer) : Super(ObjectIn
 {
 	bUseRegularDrain = false;
 	bAutoRecallAtEndLife = true;
+	bExplodeAtRecall = true;
+	bDamageableDuringBlink = true;
+	bShowDamageNumbers = false;
 }
 
 void AGeoMine::InitInteractable(FInteractableActorData* Data)
@@ -57,20 +60,15 @@ void AGeoMine::OnFuseElapsed()
 		return;
 	}
 
-	if (MineData.Params.BlinkDuration > 0.f)
+	if (ensureMsgf(MineData.Params.BlinkDuration > 0.f, TEXT("A Mine without Blink duration is not readable")))
 	{
 		StartBlinking();
 	}
-	else
-	{
-		Recall();
-	}
 }
 
-void AGeoMine::RecallEffect(float const Value)
+void AGeoMine::ExplodeEffect(float const Value)
 {
-	Super::RecallEffect(Value);
-
+	// Don't call super, cuz we don;t want to apply effects on the zone.
 	if (!ensureMsgf(ProjectileParams.ProjectileClass, TEXT("AGeoMine: ProjectileParams.ProjectileClass is not set")))
 	{
 		return;
@@ -92,8 +90,8 @@ void AGeoMine::RecallEffect(float const Value)
 		Payload.Yaw = AngleBetweenProjectiles * Index;
 		FTransform const SpawnTransform(FRotator(0.f, Payload.Yaw, 0.f), GetActorLocation());
 
-		AGeoProjectile* const Projectile = GeoASLib::StartSpawnProjectile(
-			GetWorld(), ProjectileParams, SpawnTransform, Payload, MineData.EffectDataArray);
+		AGeoProjectile* const Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform,
+																		  Payload, MineData.EffectDataArray);
 		if (!ensureMsgf(Projectile, TEXT("AGeoMine: failed to spawn burst projectile")))
 		{
 			return;

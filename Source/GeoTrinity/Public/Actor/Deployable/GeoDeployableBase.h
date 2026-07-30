@@ -126,31 +126,10 @@ public:
 	 * @param Value  Scalar forwarded to RecallEffect for effect scaling (e.g. mine power).
 	 */
 	void Recall(float Value = 0.f);
-	/**
-	 * Override hook called inside Recall() on the server. Put class-specific end-of-life logic here
-	 * (apply effects, call Explode, etc.). Default is a no-op.
-	 *
-	 * @param Value  Scalar passed from Recall(), e.g. for explosion damage scaling.
-	 */
-	virtual void RecallEffect(float Value);
+
 	/** Executes the given GameplayCueTag on this actor's ASC with CueParams. Used by OnRep_Active and Recall() to fire
 	 * recall/blink cues locally. */
 	void ExecuteCue(FGameplayTag const& GameplayCueTag, FGameplayCueParameters const& CueParams) const;
-
-	/**
-	 * Sphere-overlaps interactable actors at the deployable's location with radius Params.Size,
-	 * then calls ApplyExplodeEffect per target matching ExplodeAttitude. Server only.
-	 *
-	 * @param Value  Scalar forwarded to ExplodeEffect for damage/effect scaling.
-	 */
-	void Explode(float const Value);
-	/**
-	 * Override hook called per valid target inside Explode(). Default applies EffectDataArray to the target.
-	 * Server only.
-	 *
-	 * @param Value  Scalar forwarded from Explode(), used for damage/effect scaling.
-	 */
-	virtual void ExplodeEffect(float const Value);
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
@@ -248,6 +227,14 @@ protected:
 	 */
 	void PlaySoundOneShot(EDeployableSoundType SoundType) const;
 
+	/**
+	 * Override hook called per valid target inside Explode(). Default applies EffectDataArray to the target.
+	 * Server only.
+	 *
+	 * @param Value  Scalar forwarded from Explode(), used for damage/effect scaling.
+	 */
+	virtual void ExplodeEffect(float const Value);
+
 	/** Fires the recall or expiry gameplay cue on clients when bActive becomes false. */
 	UFUNCTION()
 	virtual void OnRep_Active(bool bOldValue);
@@ -300,6 +287,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bExplodeAtRecall = false;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	bool bDamageableDuringBlink = false;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
 	bool bAutoRecallAtEndLife = false;
 
 	/** If true, pushes all damageable interactable actors away on spawn and re-enables blocking collision after
@@ -321,6 +310,14 @@ protected:
 	bool bSurviveOverTheVoid = false;
 
 private:
+	/**
+	 * Sphere-overlaps interactable actors at the deployable's location with radius Params.Size,
+	 * then calls ApplyExplodeEffect per target matching ExplodeAttitude. Server only.
+	 *
+	 * @param Value  Scalar forwarded to ExplodeEffect for damage/effect scaling.
+	 */
+	void Explode(float const Value);
+
 	UFUNCTION()
 	void TryRecallOrExpire();
 
