@@ -122,6 +122,7 @@ public:
 	void ClearHighlight(AActor* Requester);
 
 protected:
+	/** Builds the initial tile grid and applies base arena startup (boss spawn, match state subscription). */
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HexArena")
