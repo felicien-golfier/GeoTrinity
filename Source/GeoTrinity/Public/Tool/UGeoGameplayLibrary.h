@@ -13,8 +13,10 @@ constexpr float Sqrt3 = 1.7320508f;
 
 
 class AEnemyCharacter;
+class APlayableCharacter;
 class AGeoProjectile;
 class APawn;
+class APlayerController;
 class UCameraShakeBase;
 struct FAbilityPayload;
 struct FEffectData;
@@ -81,6 +83,13 @@ public:
 	static bool IsLocalPlayerAvatar(APawn const* Pawn);
 
 	/**
+	 * Returns true only for the local player that owns the keyboard and mouse, which is always local player 0.
+	 * There is exactly one mouse, so use this — NOT `IsLocalPlayerAvatar` — to gate anything reading it (aim, cursor,
+	 * keyboard-layout rebinds). Every other couch-coop player is gamepad-only.
+	 */
+	static bool IsKeyboardMousePlayer(APlayerController const* PlayerController);
+
+	/**
 	 * Returns Owner cast to AGeoCharacter; if Owner is a PlayerState, resolves and returns its pawn instead.
 	 * Returns nullptr when neither cast succeeds (e.g. non-character owner actor).
 	 */
@@ -121,6 +130,10 @@ public:
 	 */
 	static void TeleportPlayersToTargetPoints(UObject const* WorldContextObject, FGameplayTag PurposeTag,
 											  FGameplayTag ArenaTag, FName ExemptZoneName = NAME_None);
+
+	/** Returns every currently-alive APlayableCharacter, found by iterating player controllers' pawns. */
+	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	static TArray<APlayableCharacter*> GetAlivePlayers(UObject const* WorldContextObject);
 };
 
 using GeoLib = UGeoGameplayLibrary;

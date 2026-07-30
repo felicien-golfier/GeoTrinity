@@ -32,7 +32,7 @@ public:
 	AGeoPlayerState();
 	/** Registers OnMatchStateChanged delegate binding on the server for stat reset coordination. */
 	virtual void BeginPlay() override;
-	/** Registers all replicated combat stat fields (DebugDPS, DebugHPS, BestDPS, etc.) for replication. */
+	/** Registers all replicated combat stat fields (DebugDPS, DebugHPS, MaxBurstDamage, etc.) for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Binds PawnSetDelegate and calls InitOverlay once the owning controller is available on this machine. */
@@ -64,10 +64,10 @@ public:
 	float GetDebugDPS() const { return DebugDPS; }
 	/** Returns the exponentially smoothed healing-per-second (replicated, for HUD display). */
 	float GetDebugHPS() const { return DebugHPS; }
-	/** Returns the highest smoothed DPS reached this combat. */
-	float GetBestDPS() const { return BestDPS; }
-	/** Returns the highest smoothed HPS reached this combat. */
-	float GetBestHPS() const { return BestHPS; }
+	/** Returns the biggest damage total dealt within one burst window this combat. */
+	float GetMaxBurstDamage() const { return MaxBurstDamage; }
+	/** Returns the biggest healing total dealt within one burst window this combat. */
+	float GetMaxBurstHealing() const { return MaxBurstHealing; }
 	/** Returns the average damage-per-second over the whole current combat (fight start until now). */
 	float GetFightDPS() const { return FightDPS; }
 	/** Returns the average healing-per-second over the whole current combat (fight start until now). */
@@ -84,21 +84,21 @@ public:
 	 *
 	 * @param DPS      Exponentially smoothed damage-per-second.
 	 * @param HPS      Exponentially smoothed healing-per-second.
-	 * @param MaxDPS   Highest smoothed DPS reached this combat.
-	 * @param MaxHPS   Highest smoothed HPS reached this combat.
+	 * @param MaxDmg   Biggest damage total dealt within one burst window this combat.
+	 * @param MaxHeal  Biggest healing total dealt within one burst window this combat.
 	 * @param AvgDPS   Average DPS over the whole current combat.
 	 * @param AvgHPS   Average HPS over the whole current combat.
 	 * @param TotDmg   Cumulative damage dealt this combat.
 	 * @param TotHeal  Cumulative healing dealt this combat.
 	 * @param TotRecv  Cumulative damage received this combat.
 	 */
-	void SetDebugCombatStats(float DPS, float HPS, float MaxDPS, float MaxHPS, float AvgDPS, float AvgHPS, float TotDmg,
-							 float TotHeal, float TotRecv)
+	void SetDebugCombatStats(float DPS, float HPS, float MaxDmg, float MaxHeal, float AvgDPS, float AvgHPS,
+							 float TotDmg, float TotHeal, float TotRecv)
 	{
 		DebugDPS = DPS;
 		DebugHPS = HPS;
-		BestDPS = MaxDPS;
-		BestHPS = MaxHPS;
+		MaxBurstDamage = MaxDmg;
+		MaxBurstHealing = MaxHeal;
 		FightDPS = AvgDPS;
 		FightHPS = AvgHPS;
 		TotalDamageDealt = TotDmg;
@@ -141,9 +141,9 @@ protected:
 	UPROPERTY(Replicated)
 	float DebugHPS = 0.f;
 	UPROPERTY(Replicated)
-	float BestDPS = 0.f;
+	float MaxBurstDamage = 0.f;
 	UPROPERTY(Replicated)
-	float BestHPS = 0.f;
+	float MaxBurstHealing = 0.f;
 	UPROPERTY(Replicated)
 	float FightDPS = 0.f;
 	UPROPERTY(Replicated)

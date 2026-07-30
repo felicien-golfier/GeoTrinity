@@ -34,4 +34,5 @@ protected:
 	float FireIntervalMax = 5.f;
 
 	uint8 SalveCount = 0;
+	uint8 ExtraSalvePerDeadPlayerCount = 0;
 };

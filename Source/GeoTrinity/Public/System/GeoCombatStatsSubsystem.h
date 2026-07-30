@@ -9,12 +9,41 @@
 
 class AGeoPlayerState;
 
+/**
+ * Biggest amount a single spell landed, measured as the largest total accumulated inside one
+ * WindowSeconds window — one spell reaches its targets as many separate effect executions, spread over
+ * several frames. The window tumbles rather than slides: it opens on the first event after the previous
+ * one expired, which bounds the accumulation so sustained fire can't pile into one value.
+ */
+struct FBurstTracker
+{
+	float Max = 0.f;
+
+	/** Widest a spell's hits can be spread apart and still read as one value; short enough to exclude the next spell. */
+	static constexpr float WindowSeconds = 0.5f;
+
+	void Add(float Amount, float CurrentTime)
+	{
+		if (CurrentTime - StartTime > WindowSeconds)
+		{
+			StartTime = CurrentTime;
+			Current = 0.f;
+		}
+		Current += Amount;
+		Max = FMath::Max(Max, Current);
+	}
+
+private:
+	float Current = 0.f;
+	float StartTime = 0.f;
+};
+
 struct FActorCombatStats
 {
 	float SmoothedDPS = 0.f;
 	float SmoothedHPS = 0.f;
-	float BestDPS = 0.f;
-	float BestHPS = 0.f;
+	FBurstTracker DamageBurst;
+	FBurstTracker HealingBurst;
 	float TotalDamageDealt = 0.f;
 	float TotalHealingDealt = 0.f;
 	float TotalDamageReceived = 0.f;
@@ -22,7 +51,7 @@ struct FActorCombatStats
 
 /**
  * World subsystem that tracks per-player damage and healing and computes DPS / HPS (exponentially
- * smoothed current rate, best, and whole-combat average) for debug display. State is a fixed handful
+ * smoothed current rate, biggest burst, and whole-combat average) for debug display. State is a fixed handful
  * of floats per player — no per-event storage. Stats reset when a fight starts (match InProgress);
  * when it ends they are dropped and the last pushed values stay displayed on the player states.
  * Server-only; not replicated.
@@ -80,6 +109,6 @@ private:
 	bool IsMatchInProgress() const;
 	/** Exponentially decays every smoothed rate to CurrentTime, so a new event can be folded in undecayed. */
 	void DecayRates(float CurrentTime);
-	/** Updates the best rates and pushes all stats to the tracked player states. */
+	/** Pushes all stats to the tracked player states, dropping entries whose player state is gone. */
 	void PushPlayerStats(float CurrentTime);
 };

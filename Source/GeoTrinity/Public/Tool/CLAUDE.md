@@ -6,10 +6,12 @@ General-purpose utilities and helpers.
 Blueprint-callable static helpers:
 - `IsServer(...)` — true on dedicated **and** listen server. Always use this over `HasAuthority()`/`IsNetMode(NM_DedicatedServer)`.
 - `IsDedicatedServer(...)` — true only with no viewport. Use to gate cosmetic-only work (montages, local Gameplay Cues, VFX) — `!IsServer()` wrongly skips the listen-server host, which is a rendering player.
-- `IsLocalPlayerAvatar(APawn*/AActor*)` — true only for the viewing human's own avatar. On a listen server the host's AI pawns are also "locally controlled", so use this instead of `IsLocallyControlled()` for "my own pawn" cosmetics.
+- `IsLocalPlayerAvatar(APawn*/AActor*)` — true only for the viewing human's own avatar. On a listen server the host's AI pawns are also "locally controlled", so use this instead of `IsLocallyControlled()` for "my own pawn" cosmetics. In couch coop it is true for **every** local player, which is what cosmetics want.
+- `IsKeyboardMousePlayer(APlayerController*)` — local player 0, who always owns the keyboard and mouse (couch coop only ever *adds* a gamepad player, never takes the keyboard away). There is one mouse, so gate anything reading it (aim, cursor, keyboard-layout rebinds) on this, never on `IsLocalPlayerAvatar` — otherwise a mouse nudge steals both couch players' aim. Every other local player is gamepad-only.
 - `GetServerTime(...)` — network-approximated server time; **never** for local client timing (charge duration, UI) — use `GetWorld()->GetTimeSeconds()`.
 - `TriggerCameraShake(...)` — local player only.
 - `GetTargetPoints(WorldContext, PurposeTag, ArenaTag)` — `AGeoTargetPoint`s carrying both tags.
+- `GetAlivePlayers(WorldContext)` — every `APlayableCharacter` with a valid pawn and `!IsDead()`, found by iterating player controllers (same idiom as `AGeoGameState::HandleMatchHasStarted`).
 - `TeleportPlayersToTargetPoints(..., ExemptZoneName=NAME_None)` — round-robin teleport; no exempt zone means everyone moves (group respawn); pass a zone to skip pawns already standing inside it (arena fight-commit).
 - `GetColorForObject(Object)` — deterministic debug color.
 - `ArbitraryCharacterZ = 50.0f` — character spawn Z offset.

@@ -67,16 +67,26 @@ AGeoPlayerController::AGeoPlayerController(FObjectInitializer const& ObjectIniti
 	SetShowMouseCursor(true);
 }
 
-void AGeoPlayerController::BeginPlay()
+void AGeoPlayerController::ReceivedPlayer()
 {
-	Super::BeginPlay();
-	CurrentMouseCursor = EMouseCursor::Crosshairs;
+	Super::ReceivedPlayer();
+
+	// Not BeginPlay: a couch-coop player joining mid-game spawns their controller into a world that has already begun
+	// play, so BeginPlay runs before SetPlayer and every local player lookup below would come back null.
+	if (!GetLocalPlayer())
+	{
+		return;
+	}
+
+	bool const bKeyboardMousePlayer = GeoLib::IsKeyboardMousePlayer(this);
+	SetShowMouseCursor(bKeyboardMousePlayer);
+	CurrentMouseCursor = bKeyboardMousePlayer ? EMouseCursor::Crosshairs : EMouseCursor::None;
 	// With a visible cursor the viewport regularly loses mouse capture; the default GameOnly mode consumes the click
 	// that re-acquires capture, so most ability clicks would never reach input processing.
 	SetInputMode(FInputModeGameOnly().SetConsumeCaptureMouseDown(false));
 	SetViewTarget(UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass()));
 	SetMenuInputMappingActive(false);
-	if (IsLocalController())
+	if (bKeyboardMousePlayer)
 	{
 		SeedKeyBindingsForKeyboardLayout();
 	}
@@ -181,8 +191,9 @@ void AGeoPlayerController::SetMenuInputMappingActive(bool bMenuActive)
 	ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player);
 	UEnhancedInputLocalPlayerSubsystem* InputSystem =
 		LocalPlayer ? LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
-	if (!InputSystem || !ensureMsgf(!InputMapping.IsNull() && !MenuInputMapping.IsNull(),
-									TEXT("AGeoPlayerController: InputMapping or MenuInputMapping is not set")))
+	if (!ensureMsgf(InputSystem, TEXT("AGeoPlayerController: no Enhanced Input subsystem on %s"), *GetName())
+		|| !ensureMsgf(!InputMapping.IsNull() && !MenuInputMapping.IsNull(),
+					   TEXT("AGeoPlayerController: InputMapping or MenuInputMapping is not set")))
 	{
 		return;
 	}
@@ -214,6 +225,13 @@ AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(UWorld c
 void AGeoPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
+
+	// The pause menu is one shared window over one shared view: only player 1 opens it, whatever device they hold.
+	ULocalPlayer const* LocalPlayer = GetLocalPlayer();
+	if (!LocalPlayer || LocalPlayer->GetLocalPlayerIndex() != 0)
+	{
+		return;
+	}
 
 	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent);
 	if (!ensureMsgf(EnhancedInput && !ToggleMenuAction.IsNull(),

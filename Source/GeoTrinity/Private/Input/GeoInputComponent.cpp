@@ -7,6 +7,7 @@
 #include "Engine/Engine.h"
 #include "EnhancedInputComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
 UGeoInputComponent::UGeoInputComponent()
@@ -33,6 +34,14 @@ void UGeoInputComponent::UpdateMouseLook()
 	AGeoPlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoPlayerController();
 	if (!IsValid(GeoPlayerController) || GeoPlayerController->IsPauseMenuOpen())
 	{
+		return;
+	}
+
+	// There is one mouse: every other couch-coop player aims with the right stick only, and never sees the cursor
+	// steal their aim.
+	if (!GeoLib::IsKeyboardMousePlayer(GeoPlayerController))
+	{
+		bIsUsingController = true;
 		return;
 	}
 

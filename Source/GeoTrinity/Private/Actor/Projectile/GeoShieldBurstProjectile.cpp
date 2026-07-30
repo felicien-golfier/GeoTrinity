@@ -82,7 +82,11 @@ void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVe
 {
 	if (HasAuthority())
 	{
-		BounceSnapshot = {GetActorLocation(), ImpactVelocity, Sphere->GetScaledSphereRadius()};
+		FVector ReflectedVelocity = ImpactResult.ImpactNormal * ImpactVelocity.Size();
+		ReflectedVelocity.Z = 0.f;
+		ProjectileMovement->Velocity = ReflectedVelocity;
+		ProjectileMovement->UpdateComponentVelocity();
+		BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
 	}
 }
 

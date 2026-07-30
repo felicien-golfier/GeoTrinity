@@ -18,6 +18,7 @@
 #include "Characters/PlayableCharacter.h"
 #include "Characters/PlayerClassTypes.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/Texture2D.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerController.h"
@@ -73,7 +74,9 @@ void AGeoHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySyste
 	// can run twice on the client. Build the overlay and bind delegates only once.
 	if (!OverlayWidget && UHudFunctionLibrary::ShouldDrawHUD(GetOwner()))
 	{
-		OverlayWidget = CreateWidget<UGeoUserWidget>(GetWorld(), OverlayWidgetClass);
+		// Owned by the controller, not the world: the slot widgets resolve their key labels through
+		// GetOwningLocalPlayer(), which would otherwise read player 1's bindings for every couch-coop player.
+		OverlayWidget = CreateWidget<UGeoUserWidget>(PC, OverlayWidgetClass);
 		OverlayWidget->InitFromHUD(this);
 		BroadcastInitialValues();
 		BindCallbacksToDependencies();
@@ -266,7 +269,10 @@ void AGeoHUD::HandleDeployCountChanged(int32 /*CurrentCount*/, int32 /*MaxCount*
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::ShowBossHealthBar(AEnemyCharacter* Boss)
 {
-	if (!Boss || !BossHealthBarWidgetClass)
+	// One bar over one shared view: every couch-coop HUD would otherwise stack an identical copy on top.
+	APlayerController const* OwningController = GetOwningPlayerController();
+	ULocalPlayer const* LocalPlayer = OwningController ? OwningController->GetLocalPlayer() : nullptr;
+	if (!Boss || !BossHealthBarWidgetClass || !LocalPlayer || LocalPlayer->GetLocalPlayerIndex() != 0)
 	{
 		return;
 	}
@@ -629,7 +635,7 @@ void AGeoHUD::UpdateCombatStatsPanel()
 	FSlateColor const HeaderColor = FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
 	TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox);
 	HeaderRow->AddSlot().AutoWidth()[MakeCell(NameColumnWidth, FText::FromString(TEXT("Player")), HeaderColor)];
-	for (TCHAR const* Label : {TEXT("DPS"), TEXT("Best"), TEXT("Avg"), TEXT("Tot"), TEXT("HPS"), TEXT("Best"),
+	for (TCHAR const* Label : {TEXT("DPS"), TEXT("MAX"), TEXT("Avg"), TEXT("Tot"), TEXT("HPS"), TEXT("MAX"),
 							   TEXT("Avg"), TEXT("Tot"), TEXT("Rcv")})
 	{
 		HeaderRow->AddSlot().AutoWidth()[MakeCell(StatColumnWidth, FText::FromString(Label), HeaderColor)];
@@ -668,8 +674,9 @@ void AGeoHUD::UpdateCombatStatsPanel()
 
 		using FStatGetter = float (AGeoPlayerState::*)() const;
 		for (FStatGetter const Getter :
-			 {&AGeoPlayerState::GetDebugDPS, &AGeoPlayerState::GetBestDPS, &AGeoPlayerState::GetFightDPS,
-			  &AGeoPlayerState::GetTotalDamageDealt, &AGeoPlayerState::GetDebugHPS, &AGeoPlayerState::GetBestHPS,
+			 {&AGeoPlayerState::GetDebugDPS, &AGeoPlayerState::GetMaxBurstDamage, &AGeoPlayerState::GetFightDPS,
+			  &AGeoPlayerState::GetTotalDamageDealt, &AGeoPlayerState::GetDebugHPS,
+			  &AGeoPlayerState::GetMaxBurstHealing,
 			  &AGeoPlayerState::GetFightHPS, &AGeoPlayerState::GetTotalHealingDealt,
 			  &AGeoPlayerState::GetTotalDamageReceived})
 		{

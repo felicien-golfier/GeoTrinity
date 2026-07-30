@@ -28,6 +28,9 @@ public class GeoTrinity : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
+			// IPlatformInputDeviceMapper (UGeoGameViewportClient). Engine's dependency on it is conditional and
+			// does not propagate.
+			"ApplicationCore",
 			"GameplayTags",
 			"GameplayTasks",
 			"UMG",

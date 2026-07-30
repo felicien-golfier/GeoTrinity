@@ -26,8 +26,8 @@ AGeoHUD  (owns OverlayWidget)
 ## Files
 | File | Role |
 |---|---|
-| `GeoHUD.h` | Main HUD; `InitOverlay`, `BindToPawn`, `BuildAbilityBar`, `ShowBossHealthBar`, ability-bar data helpers; `RegisterASCForDamageNumbers` binds Health/Shield deltas to spawn floating numbers from `DamageNumberPool`; non-shipping debug combat-stats panel (pure Slate, `Geo.ShowCombatStats`), rebuilt only when player list changes |
-| `GeoOverlayWidget.h` | Root player overlay; `AbilityBar`/`StatusBar` as BindWidgets, driven from C++ |
+| `GeoHUD.h` | Main HUD; `InitOverlay` (overlay is created **owned by the PlayerController**, not the world — slot widgets resolve key labels through `GetOwningLocalPlayer()`, which would otherwise read player 1's bindings for every couch-coop player), `BindToPawn`, `BuildAbilityBar`, `ShowBossHealthBar` (**local player 0 only** — one bar over one shared view), ability-bar data helpers; `RegisterASCForDamageNumbers` binds Health/Shield deltas to spawn floating numbers from `DamageNumberPool`; non-shipping debug combat-stats panel (pure Slate, `Geo.ShowCombatStats`), rebuilt only when player list changes |
+| `GeoOverlayWidget.h` | Root player overlay; `AbilityBar`/`StatusBar` as BindWidgets, driven from C++. `ApplySideLayout()` moves the root canvas children onto this player's half — every local player's overlay lands in the **same** viewport, so the authored solo layout would stack them. Runs on `NativeConstruct` and again on `OnLocalPlayerAddedEvent` (player 1's overlay exists long before anyone presses Start); at most once, since it reads the authored anchors and a second pass would compound. Layout is C++, not BP, because the choice is runtime-only — the designer has one layout and the player index isn't known until construction |
 | `GeoAbilityBarWidget.h` | Bottom-center bar; builds slots from `GetAbilityBarEntries()` |
 | `GeoAbilitySlotWidget.h` | One slot: icon + cooldown sweep + countdown + deploy badge + live key label. Holds **all** abilities sharing its InputTag; shows last active/activatable, else first (e.g. Square's channel↔detonate swap) |
 | `GeoStatusBarWidget.h` | Active-effect icon row, local player only. Pure C++ tree, polls `AGeoHUD::GetActiveEffectIcons()`; one icon per active GE with a set `Icon`, plus a synthetic gauge entry for Circle's sweet-spot charge passive |
@@ -49,7 +49,7 @@ AGeoHUD  (owns OverlayWidget)
 | `Menu/GeoPauseMenuWidget.h` | Pause menu, owned/shown by `AGeoPlayerController`; Quit uses `GEditor->RequestEndPlayMap()` in PIE, else `QuitGame` |
 | `Menu/GeoSettingsWidget.h` | Settings chooser; shows one sub-panel at a time |
 | `Menu/GeoSoundSettingsWidget.h` | Sound settings; `MasterVolumeSlider` is a placeholder — no audio mixer wired yet |
-| `Menu/GeoKeyBindingsWidget.h` | Key-bindings window; rebuilt from Enhanced Input active profile, fixed `MappingOrder` table in .cpp |
+| `Menu/GeoKeyBindingsWidget.h` | Key-bindings window; rebuilt from Enhanced Input active profile, fixed `MappingOrder` table in .cpp. Optional `SecondPlayerGamepadCheckBox` ("Use first gamepad for second player", BindWidgetOptional — built by `AI/Python/second_player_gamepad_toggle.py`) drives `UGeoGameUserSettings::SetUseFirstGamepadForSecondPlayer` and then `UGeoGameViewportClient::ApplyCouchCoopSetting()`, which is what actually re-points the pads |
 
 ## Adding HUD Changes
 **Screen-space** (boss bar, cooldown): add `BlueprintImplementableEvent` to `AGeoHUD` → implement in HUD BP → forward to `OverlayWidget`.

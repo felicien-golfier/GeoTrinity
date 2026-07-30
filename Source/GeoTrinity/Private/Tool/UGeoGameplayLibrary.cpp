@@ -3,6 +3,8 @@
 #include "Actor/GeoTargetPoint.h"
 #include "Camera/CameraShakeBase.h"
 #include "Characters/GeoCharacter.h"
+#include "Characters/PlayableCharacter.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/Pawn.h"
@@ -81,6 +83,12 @@ bool UGeoGameplayLibrary::IsLocalPlayerAvatar(AActor const* Actor)
 bool UGeoGameplayLibrary::IsLocalPlayerAvatar(APawn const* Pawn)
 {
 	return Pawn && Pawn->IsPlayerControlled() && Pawn->IsLocallyControlled();
+}
+
+bool UGeoGameplayLibrary::IsKeyboardMousePlayer(APlayerController const* PlayerController)
+{
+	ULocalPlayer const* LocalPlayer = PlayerController ? PlayerController->GetLocalPlayer() : nullptr;
+	return LocalPlayer && LocalPlayer->GetLocalPlayerIndex() == 0;
 }
 AGeoCharacter* UGeoGameplayLibrary::GetCharacterFromOwner(AActor* Owner)
 {
@@ -216,4 +224,25 @@ void UGeoGameplayLibrary::TeleportPlayersToTargetPoints(UObject const* WorldCont
 			++SpawnIndex;
 		}
 	}
+}
+
+TArray<APlayableCharacter*> UGeoGameplayLibrary::GetAlivePlayers(UObject const* WorldContextObject)
+{
+	TArray<APlayableCharacter*> AlivePlayers;
+	UWorld const* World = WorldContextObject ? WorldContextObject->GetWorld() : nullptr;
+	if (!ensureMsgf(World, TEXT("GetAlivePlayers: no world")))
+	{
+		return AlivePlayers;
+	}
+
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayableCharacter* Player = It->IsValid() ? Cast<APlayableCharacter>((*It)->GetPawn()) : nullptr;
+		if (IsValid(Player) && !Player->IsDead())
+		{
+			AlivePlayers.Add(Player);
+		}
+	}
+
+	return AlivePlayers;
 }

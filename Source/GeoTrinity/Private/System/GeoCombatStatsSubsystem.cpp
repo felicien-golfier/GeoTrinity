@@ -97,6 +97,7 @@ void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float 
 	FActorCombatStats& Stats = FindOrAddStats(Source, CurrentTime);
 	Stats.TotalDamageDealt += Amount;
 	Stats.SmoothedDPS += Amount / SmoothingWindowSeconds;
+	Stats.DamageBurst.Add(Amount, CurrentTime);
 	PushPlayerStats(CurrentTime);
 }
 
@@ -125,6 +126,7 @@ void UGeoCombatStatsSubsystem::ReportHealingDealt(AGeoPlayerState* Source, float
 	FActorCombatStats& Stats = FindOrAddStats(Source, CurrentTime);
 	Stats.TotalHealingDealt += Amount;
 	Stats.SmoothedHPS += Amount / SmoothingWindowSeconds;
+	Stats.HealingBurst.Add(Amount, CurrentTime);
 	PushPlayerStats(CurrentTime);
 }
 
@@ -173,12 +175,9 @@ void UGeoCombatStatsSubsystem::PushPlayerStats(float CurrentTime)
 			continue;
 		}
 
-		FActorCombatStats& Stats = It.Value();
-		Stats.BestDPS = FMath::Max(Stats.BestDPS, Stats.SmoothedDPS);
-		Stats.BestHPS = FMath::Max(Stats.BestHPS, Stats.SmoothedHPS);
-
-		GeoPlayerState->SetDebugCombatStats(Stats.SmoothedDPS, Stats.SmoothedHPS, Stats.BestDPS, Stats.BestHPS,
-											Stats.TotalDamageDealt / CombatDuration,
+		FActorCombatStats const& Stats = It.Value();
+		GeoPlayerState->SetDebugCombatStats(Stats.SmoothedDPS, Stats.SmoothedHPS, Stats.DamageBurst.Max,
+											Stats.HealingBurst.Max, Stats.TotalDamageDealt / CombatDuration,
 											Stats.TotalHealingDealt / CombatDuration, Stats.TotalDamageDealt,
 											Stats.TotalHealingDealt, Stats.TotalDamageReceived);
 	}

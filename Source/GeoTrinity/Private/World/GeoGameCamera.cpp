@@ -21,15 +21,22 @@ AGeoGameCamera::AGeoGameCamera()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void AGeoGameCamera::BeginPlay()
+{
+	Super::BeginPlay();
+	BaseOrthoWidth = GetCameraComponent()->OrthoWidth;
+	CurrentOrthoWidth = BaseOrthoWidth;
+}
+
 void AGeoGameCamera::EnterVolume(AGeoCameraVolume* Volume)
 {
-	ActiveVolumes.AddUnique(Volume);
+	ActiveVolumes.Add(Volume);
 	RefreshBounds();
 }
 
 void AGeoGameCamera::ExitVolume(AGeoCameraVolume* Volume)
 {
-	ActiveVolumes.Remove(Volume);
+	ActiveVolumes.RemoveSingle(Volume);
 	RefreshBounds();
 }
 
@@ -101,51 +108,90 @@ void AGeoGameCamera::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	APlayerController* LocalPlayerController = GetWorld()->GetFirstPlayerController();
-	if (!LocalPlayerController)
+	APlayerController* FirstLocalController = nullptr;
+	AGeoCharacter const* FirstLocalCharacter = nullptr;
+	TArray<FVector2D, TInlineAllocator<4>> LivingPlayers;
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		APlayerController* PlayerController = Iterator->Get();
+		APawn const* Pawn =
+			PlayerController && PlayerController->IsLocalController() ? PlayerController->GetPawn() : nullptr;
+		if (!Pawn)
+		{
+			continue;
+		}
+
+		AGeoCharacter const* Character = Cast<AGeoCharacter>(Pawn);
+		if (!FirstLocalController)
+		{
+			FirstLocalController = PlayerController;
+			FirstLocalCharacter = Character;
+		}
+		if (!Character || !Character->IsDead())
+		{
+			LivingPlayers.Add(FVector2D(Pawn->GetActorLocation()));
+		}
+	}
+	if (!FirstLocalController)
 	{
 		return;
 	}
 
-	APawn* LocalPawn = LocalPlayerController->GetPawn();
-	if (!LocalPawn)
-	{
-		return;
-	}
-
-	AGeoCharacter const* LocalCharacter = Cast<AGeoCharacter>(LocalPawn);
-	bool const bDead = LocalCharacter && LocalCharacter->IsDead();
-	if (bDead && !bSpectating)
+	bool const bAllDead = LivingPlayers.IsEmpty();
+	if (bAllDead && !bSpectating)
 	{
 		SpectateTarget = FVector2D(GetActorLocation());
 	}
-	bSpectating = bDead;
+	bSpectating = bAllDead;
 
-	FVector2D TargetXY(LocalPawn->GetActorLocation());
+	FVector2D TargetXY = FVector2D::ZeroVector;
 	if (bSpectating)
 	{
-		SpectateTarget += GetSpectateMoveInput(LocalPlayerController, LocalCharacter) * SpectateMoveSpeed * DeltaTime;
+		SpectateTarget +=
+			GetSpectateMoveInput(FirstLocalController, FirstLocalCharacter) * SpectateMoveSpeed * DeltaTime;
 		TargetXY = SpectateTarget;
 	}
+	else
+	{
+		for (FVector2D const& PlayerXY : LivingPlayers)
+		{
+			TargetXY += PlayerXY;
+		}
+		TargetXY /= LivingPlayers.Num();
+	}
+
+	float AspectRatio = 16.f / 9.f;
+	if (UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport())
+	{
+		FVector2D ViewportSize;
+		ViewportClient->GetViewportSize(ViewportSize);
+		if (ViewportSize.X > 0.f && ViewportSize.Y > 0.f)
+		{
+			AspectRatio = ViewportSize.X / ViewportSize.Y;
+		}
+	}
+	FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
+	FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
+
+	float MaxRight = 0.f;
+	float MaxUp = 0.f;
+	for (FVector2D const& PlayerXY : LivingPlayers)
+	{
+		FVector2D const Offset = PlayerXY - TargetXY;
+		MaxRight = FMath::Max(MaxRight, FMath::Abs(FVector2D::DotProduct(Offset, ScreenRight)));
+		MaxUp = FMath::Max(MaxUp, FMath::Abs(FVector2D::DotProduct(Offset, ScreenUp)));
+	}
+	float const DesiredOrthoWidth = FMath::Min(
+		FMath::Max3(BaseOrthoWidth, 2.f * (MaxRight + ZoomMargin), 2.f * (MaxUp + ZoomMargin) * AspectRatio),
+		MaxOrthoWidth);
+	CurrentOrthoWidth = FMath::FInterpTo(CurrentOrthoWidth, DesiredOrthoWidth, DeltaTime, ZoomInterpSpeed);
+	GetCameraComponent()->SetOrthoWidth(CurrentOrthoWidth);
 
 	FVector2D FollowTarget = TargetXY;
 	if (bBounded)
 	{
-		float const OrthoHalfWidth = GetCameraComponent()->OrthoWidth * 0.5f;
-		float AspectRatio = 16.f / 9.f;
-		if (UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport())
-		{
-			FVector2D ViewportSize;
-			ViewportClient->GetViewportSize(ViewportSize);
-			if (ViewportSize.X > 0.f && ViewportSize.Y > 0.f)
-			{
-				AspectRatio = ViewportSize.X / ViewportSize.Y;
-			}
-		}
+		float const OrthoHalfWidth = CurrentOrthoWidth * 0.5f;
 		float const OrthoHalfHeight = OrthoHalfWidth / AspectRatio;
-
-		FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
-		FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
 
 		float const ViewportHalfExtentX =
 			OrthoHalfWidth * FMath::Abs(ScreenRight.X) + OrthoHalfHeight * FMath::Abs(ScreenUp.X);

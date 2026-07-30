@@ -14,19 +14,20 @@ struct FInputActionInstance;
 
 /**
  * Player controller for GeoTrinity. Configures the camera view target and Enhanced Input
- * mapping context on BeginPlay. In non-shipping builds also drives the per-frame combat stats update.
+ * mapping context once its local player is assigned. In non-shipping builds also drives the per-frame combat stats
+ * update.
  */
 UCLASS()
 class GEOTRINITY_API AGeoPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 public:
-	/** Shows the mouse cursor by default; all further setup (camera, input mapping) runs in BeginPlay. */
+	/** Shows the mouse cursor by default; all further setup (camera, input mapping) runs in ReceivedPlayer. */
 	AGeoPlayerController(FObjectInitializer const& ObjectInitializer);
 
 protected:
 	/** Sets the camera view target, input mode, and activates the gameplay mapping context; seeds key bindings for the active keyboard layout on the first run. */
-	virtual void BeginPlay() override;
+	virtual void ReceivedPlayer() override;
 	/** Binds ToggleMenuAction to HandleToggleMenu via the Enhanced Input component. */
 	virtual void SetupInputComponent() override;
 

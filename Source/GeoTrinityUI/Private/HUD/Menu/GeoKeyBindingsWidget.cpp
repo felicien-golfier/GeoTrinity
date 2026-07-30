@@ -3,13 +3,16 @@
 #include "HUD/Menu/GeoKeyBindingsWidget.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Components/CheckBox.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/ScrollBox.h"
 #include "Components/Spacer.h"
 #include "Components/TextBlock.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameClasses/GeoGameViewportClient.h"
 #include "HUD/Menu/GeoMenuButton.h"
+#include "Settings/GeoGameUserSettings.h"
 #include "UserSettings/EnhancedInputUserSettings.h"
 
 namespace
@@ -117,6 +120,13 @@ void UGeoKeyBindingsWidget::NativeConstruct()
 
 	BackButton->OnClicked.AddDynamic(this, &UGeoKeyBindingsWidget::HandleBack);
 
+	if (SecondPlayerGamepadCheckBox)
+	{
+		SecondPlayerGamepadCheckBox->SetIsChecked(UGeoGameUserSettings::Get()->UseFirstGamepadForSecondPlayer());
+		SecondPlayerGamepadCheckBox->OnCheckStateChanged.AddDynamic(
+			this, &UGeoKeyBindingsWidget::HandleSecondPlayerGamepadChanged);
+	}
+
 	KeyBindingsList->ClearChildren();
 	Selectors.Empty();
 	BuildKeyBindingsList();
@@ -128,6 +138,11 @@ void UGeoKeyBindingsWidget::NativeDestruct()
 	if (BackButton)
 	{
 		BackButton->OnClicked.RemoveDynamic(this, &UGeoKeyBindingsWidget::HandleBack);
+	}
+	if (SecondPlayerGamepadCheckBox)
+	{
+		SecondPlayerGamepadCheckBox->OnCheckStateChanged.RemoveDynamic(
+			this, &UGeoKeyBindingsWidget::HandleSecondPlayerGamepadChanged);
 	}
 	Super::NativeDestruct();
 }
@@ -179,6 +194,20 @@ bool UGeoKeyBindingsWidget::HandleBackAction()
 void UGeoKeyBindingsWidget::HandleBack()
 {
 	OnClosed.Broadcast();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoKeyBindingsWidget::HandleSecondPlayerGamepadChanged(bool bIsChecked)
+{
+	UGeoGameUserSettings::Get()->SetUseFirstGamepadForSecondPlayer(bIsChecked);
+
+	ULocalPlayer const* LocalPlayer = GetOwningLocalPlayer();
+	UGeoGameViewportClient* ViewportClient =
+		LocalPlayer ? Cast<UGeoGameViewportClient>(LocalPlayer->ViewportClient) : nullptr;
+	if (ViewportClient)
+	{
+		ViewportClient->ApplyCouchCoopSetting();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

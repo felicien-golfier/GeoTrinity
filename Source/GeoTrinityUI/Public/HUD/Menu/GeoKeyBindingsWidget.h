@@ -8,6 +8,7 @@
 
 #include "GeoKeyBindingsWidget.generated.h"
 
+class UCheckBox;
 class UGeoMenuButton;
 class UHorizontalBox;
 class UScrollBox;
@@ -67,6 +68,8 @@ private:
  * reload and menu last. While a selector is listening, the panel captures the next key or mouse button in the
  * preview (tunnel) phase and commits it (Escape cancels). Communicates back to the parent menu exclusively via
  * the OnClosed delegate. Required in the BP hierarchy: UGeoMenuButton "BackButton", UScrollBox "KeyBindingsList".
+ * Optionally a UCheckBox "SecondPlayerGamepadCheckBox" ("Use first gamepad for second player"), which exposes the
+ * couch-coop device choice: unchecked, gamepad and mouse both drive player 1.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoKeyBindingsWidget : public UGeoMenuPanelWidget
@@ -92,9 +95,16 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UScrollBox> KeyBindingsList;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UCheckBox> SecondPlayerGamepadCheckBox;
+
 private:
 	UFUNCTION()
 	void HandleBack();
+
+	/** Stores the choice and has the viewport client re-point the gamepads at their new owners immediately. */
+	UFUNCTION()
+	void HandleSecondPlayerGamepadChanged(bool bIsChecked);
 
 	void BuildKeyBindingsList();
 	UGeoKeyBindingSelector* AddBindingCell(UHorizontalBox* RowBox, FName MappingName, FPlayerKeyMapping const* Mapping,

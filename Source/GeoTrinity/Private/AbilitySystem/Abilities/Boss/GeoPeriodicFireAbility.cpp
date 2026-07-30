@@ -30,19 +30,21 @@ void UGeoPeriodicFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 	}
 
 	float const HealthRatio = AttributeSet->GetHealthRatio();
-	bool bShouldSalve = SalveCount < 3;
+	bool bShouldSalve;
+
+	int const MissingPlayerNum = 3 - GeoLib::GetAlivePlayers(this).Num();
 
 	if (HealthRatio < .2f)
 	{
-		bShouldSalve = SalveCount < 2;
+		bShouldSalve = SalveCount < MissingPlayerNum + 2;
 	}
 	else if (HealthRatio < .5f)
 	{
-		bShouldSalve = SalveCount < 1;
+		bShouldSalve = SalveCount < MissingPlayerNum + 1;
 	}
 	else
 	{
-		bShouldSalve = false;
+		bShouldSalve = SalveCount < MissingPlayerNum;
 	}
 
 	float const Time = bShouldSalve ? SalveInterval : FMath::FRandRange(FireIntervalMin, FireIntervalMax);
