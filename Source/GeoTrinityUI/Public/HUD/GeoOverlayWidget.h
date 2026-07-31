@@ -19,7 +19,7 @@ class AGeoHUD;
  * "StatusBar" anchored bottom-center.
  *
  * In couch coop every local player's overlay is added to the same viewport, so the authored solo layout would stack
- * them on top of each other; ApplySideLayout gives each player their own half.
+ * them on top of each other; ApplyColumnLayout gives each player their own column.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoOverlayWidget : public UGeoUserWidget
@@ -34,7 +34,7 @@ public:
 	void InitStatusBar(AGeoHUD* GeoHUD);
 
 protected:
-	/** Lays the overlay out for its own player, and re-runs once a second local player joins. */
+	/** Lays the overlay out for its own player, and re-runs whenever a local player joins or leaves. */
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
@@ -48,12 +48,15 @@ protected:
 
 private:
 	/**
-	 * Moves the root canvas's children onto this player's half of the shared view, keeping their authored anchor
-	 * widths: elements straddling the centre line tuck against it, right-anchored ones normalise to the left, then
-	 * player 2's whole set mirrors to the right. No-op while there is a single local player, so solo is exactly as
-	 * authored. Applied at most once — it reads the authored anchors, so a second pass would compound.
+	 * Squeezes the root canvas's children into this player's column of the shared view — player 1 left, player 2
+	 * middle, player 3 right — keeping the authored layout inside it. With a single local player the columns are the
+	 * whole screen, so solo is exactly as authored.
 	 */
-	void ApplySideLayout();
+	void ApplyColumnLayout();
 
-	bool bSideLayoutApplied = false;
+	/** Column the anchors currently sit in, so a re-layout recovers the authored ones rather than compounding. */
+	int32 AppliedColumn = 0;
+
+	/** Number of columns the anchors were divided into; 1 means they are still exactly as authored. */
+	int32 AppliedColumnCount = 1;
 };

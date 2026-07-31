@@ -10,10 +10,9 @@
 /**
  * Viewport client for GeoTrinity, owning couch-coop device assignment.
  *
- * `input.DeviceMappingPolicy=2` (Config/Windows/WindowsInput.ini) gives every device its own platform user, so each
- * gamepad is independently assignable. The engine routes input strictly by platform user and never falls back to
- * player 0, so this class decides which platform user each gamepad points at, from the one couch-coop setting in
- * UGeoGameUserSettings.
+ * Keyboard and mouse always drive local player 0. `input.DeviceMappingPolicy=2` (Config/Windows/WindowsInput.ini)
+ * gives every gamepad its own platform user, and the engine routes input strictly by platform user, so pointing a
+ * gamepad at a character is just a matter of giving it that character's platform user.
  *
  * Splitscreen rendering is force-disabled: every local player shares one view, framed by AGeoGameCamera.
  */
@@ -30,25 +29,19 @@ public:
 	/** Focuses every Slate user on the game viewport, so gamepads drive the game rather than menu navigation. */
 	virtual void ReceivedFocus(FViewport* Viewport) override;
 
-	/** Re-points a gamepad that drives nobody, then joins it as player 2 on Start; otherwise routes as usual. */
+	/** Settles gamepad ownership before the engine can drop the key, then joins an unassigned gamepad on Start. */
 	virtual bool InputKey(FInputKeyEventArgs const& EventArgs) override;
 
 	/**
-	 * Makes the running game match UGeoGameUserSettings: with the setting on, the first gamepad gets a platform user
-	 * of its own so it can own a second local player; every other gamepad — and all of them with the setting off —
-	 * shares the keyboard's platform user, so gamepad and mouse both drive player 1. Turning the setting off also
-	 * drops player 2, whose gamepad has just gone back to player 1.
+	 * Seats every connected gamepad on a character: they start on the keyboard's, or one further along while
+	 * UGeoGameUserSettings shifts them up. A gamepad already playing keeps its character, so a controller that comes
+	 * back takes over the one its old device left behind; changing the setting instead re-seats the whole row in
+	 * device order. A gamepad whose character does not exist yet creates it on Start, and a character left with no
+	 * device at all is dropped.
 	 */
 	void ApplyCouchCoopSetting();
 
 private:
-	/**
-	 * Adds a second local player owned by InputDevice, which must be the gamepad holding SecondPlayerUser.
-	 *
-	 * @return True when the player was created, meaning the press should be consumed.
-	 */
-	bool TryCreateSecondPlayer(FInputDeviceId InputDevice);
-
-	/** Platform user of the gamepad driving player 2; allocated once and reused, so toggling cannot exhaust user ids. */
-	FPlatformUserId SecondPlayerUser;
+	/** First character gamepads may take as of the last pass; a different one means the setting flipped. */
+	int32 AppliedFirstCharacter = INDEX_NONE;
 };

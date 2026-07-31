@@ -10,12 +10,6 @@
 #include "HUD/GeoAbilityBarWidget.h"
 #include "HUD/GeoStatusBarWidget.h"
 
-namespace
-{
-	// Anchor-space gap left between the screen centre line and the inner edge of a player's centred HUD elements.
-	constexpr float CenterGap = 0.02f;
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoOverlayWidget::BuildAbilityBar(AGeoHUD* GeoHUD, APlayableCharacter* PlayableCharacter)
 {
@@ -43,16 +37,14 @@ void UGeoOverlayWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// Player 1's overlay is built long before anyone presses Start, so it has to re-lay-out when they do.
+	// Player 1's overlay is built long before anyone presses Start, and a column is only as wide as the player count
+	// makes it, so the layout has to follow players joining and leaving.
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
-		GameInstance->OnLocalPlayerAddedEvent.AddWeakLambda(this,
-															[this](ULocalPlayer*)
-															{
-																ApplySideLayout();
-															});
+		GameInstance->OnLocalPlayerAddedEvent.AddWeakLambda(this, [this](ULocalPlayer*) { ApplyColumnLayout(); });
+		GameInstance->OnLocalPlayerRemovedEvent.AddWeakLambda(this, [this](ULocalPlayer*) { ApplyColumnLayout(); });
 	}
-	ApplySideLayout();
+	ApplyColumnLayout();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -61,56 +53,41 @@ void UGeoOverlayWidget::NativeDestruct()
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		GameInstance->OnLocalPlayerAddedEvent.RemoveAll(this);
+		GameInstance->OnLocalPlayerRemovedEvent.RemoveAll(this);
 	}
 	Super::NativeDestruct();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoOverlayWidget::ApplySideLayout()
+void UGeoOverlayWidget::ApplyColumnLayout()
 {
-	UCanvasPanel* RootCanvas = Cast<UCanvasPanel>(GetRootWidget());
+	UCanvasPanel const* RootCanvas = Cast<UCanvasPanel>(GetRootWidget());
 	UGameInstance const* GameInstance = GetGameInstance();
 	ULocalPlayer const* LocalPlayer = GetOwningLocalPlayer();
-	if (bSideLayoutApplied || !RootCanvas || !GameInstance || !LocalPlayer || GameInstance->GetNumLocalPlayers() <= 1)
+	// INDEX_NONE covers the removal broadcast reaching the overlay of the player that was just dropped.
+	int32 const Column = LocalPlayer ? LocalPlayer->GetLocalPlayerIndex() : INDEX_NONE;
+	if (!RootCanvas || !GameInstance || Column == INDEX_NONE)
 	{
 		return;
 	}
-	bSideLayoutApplied = true;
 
-	bool const bMirror = LocalPlayer->GetLocalPlayerIndex() % 2 == 1;
+	int32 const ColumnCount = GameInstance->GetNumLocalPlayers();
 	for (UWidget* Child : RootCanvas->GetAllChildren())
 	{
-		UCanvasPanelSlot* CanvasSlot = Child ? Cast<UCanvasPanelSlot>(Child->Slot) : nullptr;
+		UCanvasPanelSlot* const CanvasSlot = Child ? Cast<UCanvasPanelSlot>(Child->Slot) : nullptr;
 		if (!CanvasSlot)
 		{
 			continue;
 		}
 
+		// Undo the column the anchors are standing in to recover the authored full-width ones, then squeeze those into
+		// the new column, so a third player joining moves everyone from halves to thirds instead of compounding.
 		FAnchors Anchors = CanvasSlot->GetAnchors();
-		FMargin Offsets = CanvasSlot->GetOffsets();
-		float const AnchorWidth = Anchors.Maximum.X - Anchors.Minimum.X;
-		if (Anchors.Minimum.X < 0.5f && Anchors.Maximum.X > 0.5f)
-		{
-			Anchors.Maximum.X = 0.5f - CenterGap;
-			Anchors.Minimum.X = Anchors.Maximum.X - AnchorWidth;
-		}
-		else if (Anchors.Minimum.X >= 0.5f)
-		{
-			float const NormalisedMinX = 1.f - Anchors.Maximum.X;
-			Anchors.Maximum.X = 1.f - Anchors.Minimum.X;
-			Anchors.Minimum.X = NormalisedMinX;
-			Swap(Offsets.Left, Offsets.Right);
-		}
-
-		if (bMirror)
-		{
-			float const MirroredMinX = 1.f - Anchors.Maximum.X;
-			Anchors.Maximum.X = 1.f - Anchors.Minimum.X;
-			Anchors.Minimum.X = MirroredMinX;
-			Swap(Offsets.Left, Offsets.Right);
-		}
-
+		Anchors.Minimum.X = (Anchors.Minimum.X * AppliedColumnCount - AppliedColumn + Column) / ColumnCount;
+		Anchors.Maximum.X = (Anchors.Maximum.X * AppliedColumnCount - AppliedColumn + Column) / ColumnCount;
 		CanvasSlot->SetAnchors(Anchors);
-		CanvasSlot->SetOffsets(Offsets);
 	}
+
+	AppliedColumn = Column;
+	AppliedColumnCount = ColumnCount;
 }

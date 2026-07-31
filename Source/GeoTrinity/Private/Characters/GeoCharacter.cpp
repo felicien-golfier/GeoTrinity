@@ -106,10 +106,13 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 
 void AGeoCharacter::StopAllSpawnedElements()
 {
-	AbilitySystemComponent->StopAllActivePatterns();
-	if (DeployableManagerComponent)
+	if (AbilitySystemComponent)
 	{
-		DeployableManagerComponent->ForceExpireAll();
+		AbilitySystemComponent->StopAllActivePatterns();
+		if (DeployableManagerComponent)
+		{
+			DeployableManagerComponent->ForceExpireAll();
+		}
 	}
 }
 void AGeoCharacter::EndPlay(EEndPlayReason::Type const EndPlayReason)
