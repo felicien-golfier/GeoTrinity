@@ -31,6 +31,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
+	/** Returns the turret's replicated data block. */
 	virtual FDeployableData const* GetData() const override { return &Data; }
 
 	/** Arms the repeating fire timer. */

@@ -22,6 +22,7 @@ public:
 	UGeoPeriodicFireAbility();
 
 protected:
+	/** Fires one salvo at all players; rescheduled on a random interval by BuildDataAndFire. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.1"))

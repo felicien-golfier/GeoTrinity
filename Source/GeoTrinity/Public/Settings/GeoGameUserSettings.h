@@ -21,6 +21,7 @@ public:
 	/** The engine's settings object, which DefaultEngine.ini points at this class. Never null in a running game. */
 	static UGeoGameUserSettings* Get();
 
+	/** Returns true when the first connected gamepad drives a second local player instead of sharing player 1 with the keyboard and mouse. */
 	bool UseFirstGamepadForSecondPlayer() const { return bUseFirstGamepadForSecondPlayer; }
 
 	/** Sets the value and persists it; call UGeoGameViewportClient::ApplyCouchCoopSetting to act on it. */
