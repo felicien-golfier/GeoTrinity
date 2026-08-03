@@ -8,6 +8,11 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+void UGeoProjectileAbility::RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const
+{
+	SpawnRemoteProjectiles(Avatar, SourceASC, ProjectileParams, Target);
+}
+
 void UGeoProjectileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	Super::Fire(AbilityTargetData);

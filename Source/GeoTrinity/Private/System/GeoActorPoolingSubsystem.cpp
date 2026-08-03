@@ -53,10 +53,8 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, FTransform const&
 		ChangeActorState(Actor, true);
 	}
 
-	// Force replication update for networked actors
 	if (Actor->GetIsReplicated())
 	{
-		// Force a net update
 		Actor->ForceNetUpdate();
 	}
 

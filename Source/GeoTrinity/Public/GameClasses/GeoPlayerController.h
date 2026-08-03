@@ -40,6 +40,13 @@ public:
 	/** Returns the first local AGeoPlayerController found in World, or nullptr if none exists. */
 	static AGeoPlayerController* GetLocalGeoPlayerController(UWorld const* World);
 
+	/**
+	 * Shows this player's crosshair mouse cursor or hides it entirely, taking effect immediately.
+	 *
+	 * @param bVisible  True to draw the crosshair cursor, false to remove it (the gamepad aim cursor stands in for it).
+	 */
+	void SetMouseCursorVisible(bool bVisible);
+
 	/** Opens the pause menu if closed, or closes it (resumes) if already open. */
 	void TogglePauseMenu();
 

@@ -14,10 +14,12 @@
 
 struct FGeoAbilityTargetData;
 struct FAbilityPayload;
+struct FExternalProjectileParams;
 class UEffectDataAsset;
 class UGeoAbilitySystemComponent;
 class UPattern;
 class APlayableCharacter;
+enum class EProjectileTarget : uint8;
 
 UENUM(BlueprintType)
 enum class EFireMode : uint8
@@ -114,6 +116,11 @@ public:
 	 */
 	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo ActivationInfo) override;
+	/**
+	 * Second input whose *press* releases this ability while it runs, on top of its own input's release. Lets a charge
+	 * fire on a button press instead of on a key-up. Invalid by default — abilities opt in by overriding.
+	 */
+	virtual FGameplayTag GetAlternateReleaseInputTag() const { return FGameplayTag{}; }
 	/** Returns the effective fire delay: reads GeneralChargeTime from GameDataSettings when
 	 * bUseGeneralChargeTimeForFireDelay is set, otherwise uses the per-ability FireDelay. */
 	UFUNCTION(BlueprintCallable)
@@ -148,7 +155,31 @@ public:
 	UFUNCTION()
 	void BuildDataAndFire();
 
+	/**
+	 * Replays this ability's visible shot on a machine that owns no instance of it — a client watching an ally, whose
+	 * ActivatableAbilities never replicate. Driven by UGeoAbilitySystemComponent off RemoteFireTag, purely cosmetic:
+	 * projectiles spawned here are client-side and apply no effects.
+	 *
+	 * Called on the class default object, so it must read nothing but its EditDefaultsOnly fields and its arguments:
+	 * GetWorld(), GetCurrentActorInfo() and StoredPayload are all invalid on a CDO, and the CDO is shared by every
+	 * ally on the machine.
+	 *
+	 * @param Avatar     The ally character that fired, source of the origin and yaw.
+	 * @param SourceASC  The ally's ability system component.
+	 */
+	virtual void RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const;
+
+	/** True when RemoteFireShot repeats every GetFireDelay() until RemoteFireTag is removed (hold-to-fire abilities). */
+	virtual bool IsRemoteFireLooping() const { return false; }
+
 protected:
+	/**
+	 * Builds a cosmetic payload from Avatar's replicated state and spawns Params' projectiles along Target's
+	 * directions. Shared body of the RemoteFireShot overrides — same CDO-only constraints apply.
+	 */
+	void SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC,
+								FExternalProjectileParams const& Params, EProjectileTarget Target) const;
+
 	/**
 	 * Starts a timer (or charge window) after which BuildDataAndFire is called.
 	 * Duration is FireDelay for ShootAfterFireDelay mode, or unbounded for charge mode (fires on input release).
@@ -201,6 +232,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	bool bActivateOnFreshPressOnly = false;
 
+	/**
+	 * Loose tag the server holds on the owner's ASC for this ability's whole run, replicated to every client so
+	 * non-owning ones can drive RemoteFireShot. Leave invalid on abilities whose visuals already reach other clients
+	 * (replicated actors, gameplay cues, patterns) — only ability-spawned client-side projectiles need it.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (Categories = "Ability.Remote"))
+	FGameplayTag RemoteFireTag;
+
 
 protected:
 	FAbilityPayload StoredPayload;
@@ -222,4 +261,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
 	float ChargeStartTime = 0.f;
+	// Server-only. Keeps the add/remove of RemoteFireTag balanced when EndAbility runs more than once.
+	bool bRemoteFireTagApplied = false;
 };

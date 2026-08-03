@@ -56,8 +56,7 @@ void UGeoInputComponent::UpdateMouseLook()
 	if (!ScreenPosition.Equals(LastMouseInput, 1.f))
 	{
 		bIsUsingController = false;
-		GeoPlayerController->CurrentMouseCursor = EMouseCursor::Crosshairs;
-		GeoPlayerController->SetShowMouseCursor(true);
+		GeoPlayerController->SetMouseCursorVisible(true);
 		LastMouseInput = ScreenPosition;
 	}
 
@@ -101,9 +100,7 @@ void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 	}
 	else
 	{
-		AGeoPlayerController* const GeoPlayerController = GetGeoCharacter()->GetGeoPlayerController();
-		GeoPlayerController->CurrentMouseCursor = EMouseCursor::None;
-		GeoPlayerController->SetShowMouseCursor(false);
+		GetGeoCharacter()->GetGeoPlayerController()->SetMouseCursorVisible(false);
 		LastLookInput = LookInput;
 	}
 }

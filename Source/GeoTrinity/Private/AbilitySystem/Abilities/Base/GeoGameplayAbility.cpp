@@ -56,6 +56,12 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey()).RemoveAll(this);
 		ASC->AbilityTargetDataSetDelegate(Handle, ActivationInfo.GetActivationPredictionKey())
 			.AddUObject(this, &ThisClass::OnFireTargetDataReceived);
+
+		if (RemoteFireTag.IsValid())
+		{
+			ASC->AddLooseGameplayTag(RemoteFireTag, 1, EGameplayTagReplicationState::TagOnly);
+			bRemoteFireTagApplied = true;
+		}
 	}
 
 	// Schedule fire with network delay compensation (plays montage on client, timer-only on server)
@@ -154,6 +160,13 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 
 	GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 	FireTriggerTimerHandle.Invalidate();
+
+	if (bRemoteFireTagApplied)
+	{
+		bRemoteFireTagApplied = false;
+		GetAbilitySystemComponentFromActorInfo()->RemoveLooseGameplayTag(RemoteFireTag, 1,
+																		 EGameplayTagReplicationState::TagOnly);
+	}
 
 	if (FireMode == EFireMode::ChargeForFireDelay)
 	{
@@ -412,6 +425,32 @@ FVector UGeoGameplayAbility::GetFireOrigin(AActor* Instigator, UGeoAbilitySystem
 										   int const Seed) const
 {
 	return FVector(GetFireOrigin2D(Instigator, SourceASC, Seed), ArbitraryCharacterZ);
+}
+
+void UGeoGameplayAbility::RemoteFireShot(AActor* /*Avatar*/, UGeoAbilitySystemComponent* /*SourceASC*/) const
+{
+	ensureMsgf(false, TEXT("%s carries a RemoteFireTag but does not override RemoteFireShot — other clients see nothing."),
+			   *GetName());
+}
+
+void UGeoGameplayAbility::SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC,
+												 FExternalProjectileParams const& Params,
+												 EProjectileTarget const Target) const
+{
+	int const Seed = GetNewSeed();
+	FVector const Origin = GetFireOrigin(Avatar, SourceASC, Seed);
+	float const Yaw = GetFireYaw(Avatar, Seed);
+
+	FAbilityPayload Payload;
+	Payload.Owner = SourceASC->GetOwnerActor();
+	Payload.Instigator = Avatar;
+	Payload.Origin = FVector2D(Origin);
+	Payload.Yaw = Yaw;
+	Payload.Seed = Seed;
+	Payload.AbilityLevel = 1;
+	Payload.AbilityTag = GetAbilityTag();
+
+	GeoASLib::SpawnProjectileSpread(Avatar->GetWorld(), Params, Target, Origin, Yaw, 0.f, Payload, {});
 }
 
 void UGeoGameplayAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)

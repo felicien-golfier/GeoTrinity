@@ -126,6 +126,29 @@ public:
 	FOnAttributeChangedSignature OnMaxHealthChanged;
 
 private:
+	/** Pipes an input release into an active spec: notifies its instances and replicates the InputReleased event. */
+	void ReleaseAbilitySpec(FGameplayAbilitySpec& AbilitySpec);
+
+	/**
+	 * Client-side. Registers a tag-change listener for every ability CDO that declares a RemoteFireTag: an ally's
+	 * abilities never instance on this machine, so their shots are replayed from the CDO instead. No-op once bound.
+	 */
+	void BindRemoteFireTags();
+	/** Starts (tag added) or stops (tag removed) the replay timer for the ability owning RemoteFireTag. */
+	void OnRemoteFireTagChanged(FGameplayTag RemoteFireTag, int32 NewCount);
+	/** Timer callback: replays one shot of the ability owning RemoteFireTag through its CDO. */
+	void RemoteFireShot(FGameplayTag RemoteFireTag);
+
+	/** One watched ability: the CDO that knows how to replay it, and the timer driving its shots. */
+	struct FRemoteFire
+	{
+		TObjectPtr<UGeoGameplayAbility> AbilityCDO;
+		FTimerHandle ShotTimer;
+	};
+
+	// Keyed by RemoteFireTag. Doubles as the bound/unbound flag for BindRemoteFireTags.
+	TMap<FGameplayTag, FRemoteFire> RemoteFires;
+
 	TMap<FGameplayTag, int32> FireSectionIndices;
 	bool bStartupAbilitiesGiven{false};
 

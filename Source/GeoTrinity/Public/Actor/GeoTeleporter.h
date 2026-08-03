@@ -11,9 +11,10 @@
 class UTextRenderComponent;
 
 /**
- * Overlap pad that teleports the touching playable character to the next AGeoTeleporter sharing its
- * TeleportTag (sorted by actor name, wrapping). Purely a position move — the camera reframes on its own because the
- * arriving player overlaps the destination room's AGeoCameraVolume.
+ * Overlap pad that teleports the touching playable character — and every other player sharing its machine, since couch
+ * coop players share one camera — to the next AGeoTeleporter sharing its TeleportTag (sorted by actor name, wrapping).
+ * Purely a position move — the camera reframes on its own because the arriving player overlaps the destination room's
+ * AGeoCameraVolume.
  */
 UCLASS()
 class GEOTRINITY_API AGeoTeleporter : public AActor

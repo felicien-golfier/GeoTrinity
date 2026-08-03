@@ -51,6 +51,9 @@ public:
 	 */
 	bool GetLookVector(FVector2D& OutLook) const;
 
+	/** Returns true while the right stick owns the aim (and the mouse cursor is therefore hidden). */
+	bool IsUsingController() const { return bIsUsingController; }
+
 	/**
 	 * Binds started/completed/triggered events for every ability action defined in AbilityInfo.
 	 * Deduplicates (InputAction, InputTag) pairs so the same action is bound only once per event type.

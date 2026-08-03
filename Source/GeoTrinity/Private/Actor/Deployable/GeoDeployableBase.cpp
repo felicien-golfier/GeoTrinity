@@ -10,6 +10,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/MeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -206,9 +207,37 @@ void AGeoDeployableBase::EnableActorCollision()
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 
+void AGeoDeployableBase::ApplyOutlineStencil() const
+{
+	if (!ensureMsgf(OutlineColor != EGeoColor::Override,
+					TEXT("%s: OutlineColor is Override — the outline post-process resolves palette slots only"),
+					*GetName()))
+	{
+		return;
+	}
+
+	// Stencil 0 means "no outline" to the post-process, so the slot index is shifted up by one.
+	uint8 const StencilValue = static_cast<uint8>(OutlineColor) + 1;
+
+	TInlineComponentArray<UMeshComponent*> const MeshComponents(this);
+	for (UMeshComponent* const MeshComponent : MeshComponents)
+	{
+		// UWidgetComponent derives from UMeshComponent — without this the health bar would be outlined too.
+		if (!MeshComponent->IsA<UWidgetComponent>())
+		{
+			MeshComponent->SetRenderCustomDepth(true);
+			MeshComponent->SetCustomDepthStencilValue(StencilValue);
+		}
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+
 void AGeoDeployableBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ApplyOutlineStencil();
 
 	if (CombattantWidgetComponent)
 	{

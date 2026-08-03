@@ -1,10 +1,11 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Boss/GeoPeriodicFireAbility.h"
 
+#include "AbilitySystem/Abilities/Pattern/PeriodicFirePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "Characters/PlayableCharacter.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoPeriodicFireAbility::UGeoPeriodicFireAbility()
@@ -14,40 +15,49 @@ UGeoPeriodicFireAbility::UGeoPeriodicFireAbility()
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateNo;
 }
 
-void UGeoPeriodicFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
+TInstancedStruct<FPatternData> UGeoPeriodicFireAbility::CreatePatternData() const
 {
-	SpawnProjectilesUsingTarget(AbilityTargetData.Yaw, FVector(AbilityTargetData.Origin, ArbitraryCharacterZ),
-								AbilityTargetData.ServerSpawnTime);
+	FPeriodicFirePatternData FireData;
 
-	UGeoAbilitySystemComponent* GeoAsc = GetGeoAbilitySystemComponentFromActorInfo();
-	UGeoAttributeSetBase const* AttributeSet =
-		Cast<UGeoAttributeSetBase>(GeoAsc->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
-
-	if (!IsValid(AttributeSet))
+	UGeoAttributeSetBase const* AttributeSet = Cast<UGeoAttributeSetBase>(
+		GetGeoAbilitySystemComponentFromActorInfo()->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
+	if (!ensureMsgf(IsValid(AttributeSet), TEXT("GeoPeriodicFireAbility: OwnerASC has no UGeoAttributeSetBase")))
 	{
-		ensureMsgf(AttributeSet, TEXT("SpawnPillarPattern: OwnerASC has no UGeoAttributeSetBase"));
-		return;
+		return TInstancedStruct<FPatternData>::Make<FPeriodicFirePatternData>(FireData);
 	}
 
 	float const HealthRatio = AttributeSet->GetHealthRatio();
-	bool bShouldSalve;
-
-	int const MissingPlayerNum = 3 - GeoLib::GetAlivePlayers(this).Num();
-
 	if (HealthRatio < .2f)
 	{
-		bShouldSalve = SalveCount < MissingPlayerNum + 2;
+		FireData.SalveCount = 3;
 	}
 	else if (HealthRatio < .5f)
 	{
-		bShouldSalve = SalveCount < MissingPlayerNum + 1;
+		FireData.SalveCount = 2;
 	}
 	else
 	{
-		bShouldSalve = SalveCount < MissingPlayerNum;
+		FireData.SalveCount = 1;
 	}
 
-	float const Time = bShouldSalve ? SalveInterval : FMath::FRandRange(FireIntervalMin, FireIntervalMax);
-	GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::BuildDataAndFire, Time);
-	SalveCount = bShouldSalve ? SalveCount + 1 : 0;
+	FVector const Origin(StoredPayload.Origin, ArbitraryCharacterZ);
+	for (APlayableCharacter const* Player : GeoLib::GetAlivePlayers(this))
+	{
+		FireData.TargetYaws.Add((Player->GetActorLocation() - Origin).Rotation().Yaw);
+	}
+
+	return TInstancedStruct<FPatternData>::Make<FPeriodicFirePatternData>(FireData);
+}
+
+void UGeoPeriodicFireAbility::LaunchPattern()
+{
+	Super::LaunchPattern();
+
+	// Super ends the ability when its pattern instance is missing; scheduling then would relaunch a dead ability.
+	if (IsActive())
+	{
+		FRandomStream Stream(StoredPayload.Seed);
+		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoPeriodicFireAbility::LaunchPattern,
+											   Stream.FRandRange(FireIntervalMin, FireIntervalMax));
+	}
 }

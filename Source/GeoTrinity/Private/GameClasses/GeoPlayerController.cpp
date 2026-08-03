@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "EnhancedInput/Public/EnhancedInputComponent.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
+#include "Framework/Application/SlateApplication.h"
 #include "GameFramework/PlayerState.h"
 #include "InputAction.h"
 #include "Kismet/GameplayStatics.h"
@@ -79,8 +80,7 @@ void AGeoPlayerController::ReceivedPlayer()
 	}
 
 	bool const bKeyboardMousePlayer = GeoLib::IsKeyboardMousePlayer(this);
-	SetShowMouseCursor(bKeyboardMousePlayer);
-	CurrentMouseCursor = bKeyboardMousePlayer ? EMouseCursor::Crosshairs : EMouseCursor::None;
+	SetMouseCursorVisible(bKeyboardMousePlayer);
 	// With a visible cursor the viewport regularly loses mouse capture; the default GameOnly mode consumes the click
 	// that re-acquires capture, so most ability clicks would never reach input processing.
 	SetInputMode(FInputModeGameOnly().SetConsumeCaptureMouseDown(false));
@@ -90,6 +90,21 @@ void AGeoPlayerController::ReceivedPlayer()
 	{
 		SeedKeyBindingsForKeyboardLayout();
 	}
+}
+
+void AGeoPlayerController::SetMouseCursorVisible(bool const bVisible)
+{
+	EMouseCursor::Type const DesiredCursor = bVisible ? EMouseCursor::Crosshairs : EMouseCursor::None;
+	if (bShowMouseCursor == bVisible && CurrentMouseCursor == DesiredCursor)
+	{
+		return;
+	}
+
+	CurrentMouseCursor = DesiredCursor;
+	SetShowMouseCursor(bVisible);
+	// Slate reads the controller's cursor only when a query is requested, and nothing requests one while the mouse sits
+	// still — without this the cursor keeps drawing until it next moves.
+	FSlateApplication::Get().QueryCursor();
 }
 
 #if PLATFORM_WINDOWS

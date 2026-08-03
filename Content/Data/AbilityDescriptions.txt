@@ -50,10 +50,10 @@ Hold to aim, release to deploy a wall between {MinDeployDistance} and {MaxDeploy
 Fires a ray that consumes your walls on its path — each consumed wall powers the ray with {WallBoostMultiplier:%} of its base output. The ray deals {BaseDamage} damage to enemies and grants {BaseShield} shield to allies it crosses.
 
 [Ability.Spell.SacrificeBeam]
-Channels a beam that marks allies inside it: marked allies take no damage — it's split evenly between you and your alive walls instead, and every point is stored for the detonation. Channel ends after {MaxChannelDuration}s, arming the detonation automatically.
+Channels a beam that protects allies inside it: protected allies take no damage — instead damages are split evenly between you and your spawned walls. Every damage is stored for the Martyr's Wrath. Channel ends after {MaxChannelDuration}s, arming the Martyr's Wrath automatically.
 
 [Ability.Spell.SacrificeDetonate]
-Unleashes the stored sacrifice as a ray, dealing {BaseDamage} damage plus {SacrificeValueMultiplier:%} of absorbed damage to every enemy on its path. Pressing during the channel detonates immediately.
+Unleashes the stored Martyr Beam's damages as a ray, dealing {BaseDamage} damage plus {SacrificeValueMultiplier:%} of absorbed damage to every enemy on its path. Pressing during the Martyr Beam unleash the beam immediately.
 
 [Ability.Spell.SpiralHellfire]
 Launch a projectile spiral spree
@@ -66,4 +66,22 @@ Boss teleports to center and fires an expanding radial wave of projectiles outwa
 
 [Ability.Spell.ProjectileToAllPlayers]
 Fires a projectile toward each player simultaneously.
+
+[Ability.Spell.TileBomb]
+Sticks a bomb to a player; carves the tiles where they stand when it blows
+
+[Ability.Spell.SweepBeam]
+Sweeps a 90 deg laser across the arena centre
+
+[Ability.Spell.ConeSpray]
+Sprays a mess of bullets in a 60 deg cone the boss faces
+
+[Ability.Spell.TileCarveRay]
+Locks onto the tank, then carves the furthest rim tile it reaches
+
+[Ability.Spell.SpawnTurrets]
+Drops turrets that creep in from the rim as the boss loses health
+
+[Ability.Spell.SpawnMine]
+Arms a mine on a random tile that bursts unless its tile is destroyed first
 

@@ -222,6 +222,20 @@ public:
 											   FVector const& Origin);
 
 	/**
+	 * Fully spawns one projectile per direction returned by GetTargetDirections.
+	 *
+	 * @param Origin           World-space spawn point, shared by every projectile of the spread.
+	 * @param Yaw              Instigator facing yaw in degrees, defining the Forward direction.
+	 * @param SpawnServerTime  Synchronized server time at spawn, used to fast-forward position by elapsed ping.
+	 * @return                 Number of projectiles actually spawned.
+	 */
+	static int32 SpawnProjectileSpread(UWorld* World, FExternalProjectileParams const& Params, EProjectileTarget Target,
+									   FVector const& Origin, float Yaw, float SpawnServerTime,
+									   FAbilityPayload const& Payload,
+									   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+									   FPredictionKey PredictionKey = FPredictionKey{});
+
+	/**
 	 * Looks up the status GE for statusTag in UStatusInfo and applies it to pTargetASC.
 	 *
 	 * @param OutSpecHandle  Populated with the applied spec handle on success.

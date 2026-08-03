@@ -4,9 +4,22 @@
 
 #include "Characters/PlayableCharacter.h"
 #include "Components/TextRenderComponent.h"
+#include "Engine/ChildConnection.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+namespace
+{
+	/** The connection of the machine an actor's player sits on: a couch-coop player owns a UChildConnection of its
+	 * machine's connection, and a locally hosted player owns none at all (nullptr, one "machine"). */
+	UNetConnection* GetMachineConnection(AActor const* Actor)
+	{
+		UNetConnection* const Connection = Actor->GetNetConnection();
+		UChildConnection* const ChildConnection = Connection ? Connection->GetUChildConnection() : nullptr;
+		return ChildConnection ? ChildConnection->GetParentConnection() : Connection;
+	}
+} // namespace
 
 AGeoTeleporter::AGeoTeleporter()
 {
@@ -70,18 +83,31 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 		return;
 	}
 
-	NextTeleporter->PendingArrivals.Add(PlayableCharacter);
-
-	if (!GeoLib::IsServer(GetWorld()))
-	{
-		return;
-	}
-
-	PlayableCharacter->GetCharacterMovement()->CurrentRootMotion.Clear();
-
+	UNetConnection const* const MachineConnection = GetMachineConnection(PlayableCharacter);
 	FVector const Destination = NextTeleporter->GetActorLocation();
-	PlayableCharacter->TeleportTo(FVector(Destination.X, Destination.Y, PlayableCharacter->GetActorLocation().Z),
-								   PlayableCharacter->GetActorRotation());
+	int32 PlayerIndex = 0;
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		APlayableCharacter* const Traveller = Iterator->IsValid() ? Cast<APlayableCharacter>((*Iterator)->GetPawn())
+																  : nullptr;
+		if (!Traveller || GetMachineConnection(Traveller) != MachineConnection)
+		{
+			continue;
+		}
+
+		NextTeleporter->PendingArrivals.Add(Traveller);
+		if (GeoLib::IsServer(GetWorld()))
+		{
+			Traveller->GetCharacterMovement()->CurrentRootMotion.Clear();
+
+			FVector const Offset =
+				NextTeleporter->GetActorRightVector() * (PlayerIndex * Traveller->GetSimpleCollisionRadius() * 2.0f);
+			Traveller->TeleportTo(FVector(Destination.X + Offset.X, Destination.Y + Offset.Y,
+										  Traveller->GetActorLocation().Z),
+								  Traveller->GetActorRotation());
+		}
+		++PlayerIndex;
+	}
 }
 
 void AGeoTeleporter::OnEndOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,

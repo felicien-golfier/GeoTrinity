@@ -5,6 +5,8 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Camera/CameraComponent.h"
 #include "Characters/GeoCharacter.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -15,6 +17,10 @@
 #include "Input/GeoInputComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "World/GeoCameraVolume.h"
+
+static TAutoConsoleVariable CVarShowCameraZoom(
+	TEXT("Geo.ShowCameraZoom"), false,
+	TEXT("When true, draws a line from every living local player to the camera and prints the zoom distance"));
 
 AGeoGameCamera::AGeoGameCamera()
 {
@@ -137,10 +143,12 @@ void AGeoGameCamera::Tick(float DeltaTime)
 		return;
 	}
 
+	FVector2D const CameraXY(GetActorLocation());
+
 	bool const bAllDead = LivingPlayers.IsEmpty();
 	if (bAllDead && !bSpectating)
 	{
-		SpectateTarget = FVector2D(GetActorLocation());
+		SpectateTarget = CameraXY;
 	}
 	bSpectating = bAllDead;
 
@@ -160,36 +168,45 @@ void AGeoGameCamera::Tick(float DeltaTime)
 		TargetXY /= LivingPlayers.Num();
 	}
 
-	float AspectRatio = 16.f / 9.f;
-	if (UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport())
-	{
-		FVector2D ViewportSize;
-		ViewportClient->GetViewportSize(ViewportSize);
-		if (ViewportSize.X > 0.f && ViewportSize.Y > 0.f)
-		{
-			AspectRatio = ViewportSize.X / ViewportSize.Y;
-		}
-	}
-	FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
-	FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
-
-	float MaxRight = 0.f;
-	float MaxUp = 0.f;
+	float FarthestDistance = 0.f;
 	for (FVector2D const& PlayerXY : LivingPlayers)
 	{
-		FVector2D const Offset = PlayerXY - TargetXY;
-		MaxRight = FMath::Max(MaxRight, FMath::Abs(FVector2D::DotProduct(Offset, ScreenRight)));
-		MaxUp = FMath::Max(MaxUp, FMath::Abs(FVector2D::DotProduct(Offset, ScreenUp)));
+		FarthestDistance = FMath::Max(FarthestDistance, static_cast<float>(FVector2D::Distance(PlayerXY, CameraXY)));
 	}
-	float const DesiredOrthoWidth = FMath::Min(
-		FMath::Max3(BaseOrthoWidth, 2.f * (MaxRight + ZoomMargin), 2.f * (MaxUp + ZoomMargin) * AspectRatio),
-		MaxOrthoWidth);
+	float const DesiredOrthoWidth = FMath::GetMappedRangeValueClamped(
+		FVector2f(ZoomMinDistance, ZoomMaxDistance), FVector2f(BaseOrthoWidth, MaxOrthoWidth), FarthestDistance);
 	CurrentOrthoWidth = FMath::FInterpTo(CurrentOrthoWidth, DesiredOrthoWidth, DeltaTime, ZoomInterpSpeed);
 	GetCameraComponent()->SetOrthoWidth(CurrentOrthoWidth);
+
+	if (CVarShowCameraZoom.GetValueOnGameThread())
+	{
+		for (FVector2D const& PlayerXY : LivingPlayers)
+		{
+			DrawDebugLine(GetWorld(), FVector(PlayerXY, ArbitraryCharacterZ), FVector(CameraXY, ArbitraryCharacterZ),
+						  FColor::Yellow, false, 0.f, 0, 3.f);
+		}
+		GEngine->AddOnScreenDebugMessage(
+			-1, 0.f, FColor::Yellow,
+			FString::Printf(TEXT("Camera zoom: farthest %.0f (min %.0f / max %.0f) | OrthoWidth %.0f"), FarthestDistance,
+							ZoomMinDistance, ZoomMaxDistance, CurrentOrthoWidth));
+	}
 
 	FVector2D FollowTarget = TargetXY;
 	if (bBounded)
 	{
+		float AspectRatio = 16.f / 9.f;
+		if (UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport())
+		{
+			FVector2D ViewportSize;
+			ViewportClient->GetViewportSize(ViewportSize);
+			if (ViewportSize.X > 0.f && ViewportSize.Y > 0.f)
+			{
+				AspectRatio = ViewportSize.X / ViewportSize.Y;
+			}
+		}
+		FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
+		FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
+
 		float const OrthoHalfWidth = CurrentOrthoWidth * 0.5f;
 		float const OrthoHalfHeight = OrthoHalfWidth / AspectRatio;
 
@@ -213,7 +230,6 @@ void AGeoGameCamera::Tick(float DeltaTime)
 		SpectateTarget = FollowTarget;
 	}
 
-	FVector2D const CameraXY(GetActorLocation());
 	FVector2D const NewXY = FMath::Vector2DInterpTo(CameraXY, FollowTarget, DeltaTime, FollowInterpSpeed);
 
 	FVector const CurrentLocation = GetActorLocation();

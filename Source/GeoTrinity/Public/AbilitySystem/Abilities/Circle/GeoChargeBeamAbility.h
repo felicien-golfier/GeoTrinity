@@ -23,6 +23,10 @@ class GEOTRINITY_API UGeoChargeBeamAbility : public UGeoGameplayAbility
 	/** Sets FireMode to ChargeForFireDelay so the beam charges on hold and fires on release. */
 	UGeoChargeBeamAbility();
 
+public:
+	/** Reload, so the sweet spot can be caught on a button press instead of on the charge input's release. */
+	virtual FGameplayTag GetAlternateReleaseInputTag() const override;
+
 protected:
 	/** Overrides the base to show the charge-beam gauge (ChargeBeamGaugeComponent) instead of the deploy gauge. */
 	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible) override;

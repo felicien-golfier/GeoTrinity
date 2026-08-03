@@ -19,6 +19,10 @@ class GEOTRINITY_API UGeoAutomaticProjectileAbility : public UGeoAutomaticFireAb
 {
 	GENERATED_BODY()
 
+public:
+	/** Spawns the cosmetic spread on a client watching an ally fire this ability. */
+	virtual void RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const override;
+
 protected:
 	/** Spawns a projectile of ProjectileClass aimed according to the Target mode. Returns true on success. */
 	virtual bool ExecuteShot_Implementation() override;

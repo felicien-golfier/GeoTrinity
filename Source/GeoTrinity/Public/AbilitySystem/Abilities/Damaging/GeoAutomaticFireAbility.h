@@ -23,6 +23,9 @@ public:
 	/** Sets instancing policy to InstancedPerActor, enables replication, and configures CommitBehaviour to DoNotAutoCommit — cost is committed per shot inside Fire(). */
 	UGeoAutomaticFireAbility();
 
+	/** Hold-to-fire: the remote replay repeats until the owner's RemoteFireTag goes away. */
+	virtual bool IsRemoteFireLooping() const override { return true; }
+
 protected:
 	/** Starts the repeating shot timer that drives the auto-fire cycle for the duration of the input hold. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,

@@ -577,6 +577,33 @@ UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, FExternalPro
 	return Projectile;
 }
 
+int32 UGeoAbilitySystemLibrary::SpawnProjectileSpread(UWorld* const World, FExternalProjectileParams const& Params,
+													  EProjectileTarget const Target, FVector const& Origin,
+													  float const Yaw, float const SpawnServerTime,
+													  FAbilityPayload const& Payload,
+													  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+													  FPredictionKey PredictionKey)
+{
+	if (!ensureMsgf(Params.ProjectileClass, TEXT("SpawnProjectileSpread: no ProjectileClass set!")))
+	{
+		return 0;
+	}
+
+	int32 SpawnedCount = 0;
+	for (FVector const& Direction : GetTargetDirections(World, Target, Yaw, Origin))
+	{
+		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
+		if (ensureMsgf(FullySpawnProjectile(World, Params, SpawnTransform, Payload, EffectDataArray, SpawnServerTime,
+											PredictionKey),
+					   TEXT("SpawnProjectileSpread: failed to spawn projectile!")))
+		{
+			++SpawnedCount;
+		}
+	}
+
+	return SpawnedCount;
+}
+
 AGeoProjectile*
 UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, FExternalProjectileParams const& Params,
 											   FTransform const& SpawnTransform, FAbilityPayload const& Payload,

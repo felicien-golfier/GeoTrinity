@@ -47,10 +47,11 @@ class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
 {
 	GENERATED_BODY()
 public:
-	/** Creates widget components for the deploy and charge-beam gauges, and the deployable manager component. */
+	/** Creates widget components for the deploy and charge-beam gauges and the aim cursor, and the deployable manager
+	 * component. */
 	APlayableCharacter(FObjectInitializer const& ObjectInitializer);
 
-	/** Drives aim rotation toward the cursor and refreshes gauge widgets each frame. */
+	/** Drives aim rotation toward the cursor and shows the aim cursor while a gamepad owns the aim. */
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Forwards an input-press event to the ASC for ability activation. */
@@ -136,6 +137,17 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> ChargeBeamGaugeComponent;
+
+	// This player's own crosshair, shown only while they aim with a gamepad — there is one mouse cursor, so every other
+	// couch-coop player would have none. Attached to the rotating root, not WidgetAnchorComponent: this is the one
+	// world widget whose offset is meant to orbit the actor, keeping it in front of the character as it turns toward
+	// the aim.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	TObjectPtr<UWidgetComponent> AimCursorComponent;
+
+	/** Distance in world units from the character to its aim cursor. Applied in BeginPlay. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD", meta = (ClampMin = "0.0"))
+	float AimCursorDistance = 800.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Class")
 	TMap<EPlayerClass, FPlayerClassData> ClassData;

@@ -14,6 +14,7 @@ class UStatusInfo;
 class UUserWidget;
 class UWidgetComponent;
 class UGameplayEffect;
+class UMaterialParameterCollection;
 class USoundBase;
 class UNiagaraSystem;
 
@@ -55,6 +56,12 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UUserWidget> DefaultCharacterHealthBarWidgetClass;
 
+	/** Crosshair WBP a gamepad player gets in front of their character, in place of the mouse cursor. Keep it the same
+	 * asset as the Crosshairs software cursor (Project Settings -> User Interface) so both devices aim with one visual.
+	 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
+	TSoftClassPtr<UUserWidget> AimCursorWidgetClass;
+
 	/** Default click sound for UGeoButton, used when a button's own style doesn't set PressedSlateSound. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftObjectPtr<USoundBase> DefaultButtonClickSound;
@@ -67,6 +74,11 @@ public:
 	 */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Colors")
 	TMap<EGeoColor, FLinearColor> ColorPalette;
+
+	/** Shader-side mirror of ColorPalette: one vector parameter per slot, named after its EGeoColor value. Filled from
+	 * ColorPalette by AGeoWorldSettings::BeginPlay, so a material reading a slot can never drift from the palette. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Colors")
+	TSoftObjectPtr<UMaterialParameterCollection> ColorPaletteCollection;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;

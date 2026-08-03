@@ -47,6 +47,79 @@ void UGeoAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AAct
 	Super::InitAbilityActorInfo(InOwnerActor, InAvatarActor);
 
 	BindAttributeCallbacks();
+
+	if (!GeoLib::IsServer(this))
+	{
+		BindRemoteFireTags();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::BindRemoteFireTags()
+{
+	if (!RemoteFires.IsEmpty())
+	{
+		return;
+	}
+
+	for (FGameplayAbilityInfo const& AbilityInfo : UGeoAbilitySystemLibrary::GetAbilityInfo()->GetAllAbilityInfos())
+	{
+		UGeoGameplayAbility* AbilityCDO = Cast<UGeoGameplayAbility>(AbilityInfo.AbilityClass->GetDefaultObject());
+		if (!AbilityCDO || !AbilityCDO->RemoteFireTag.IsValid())
+		{
+			continue;
+		}
+
+		if (!ensureMsgf(!RemoteFires.Contains(AbilityCDO->RemoteFireTag),
+						TEXT("%s reuses RemoteFireTag %s: each ability needs its own, or both replay on every shot."),
+						*AbilityCDO->GetName(), *AbilityCDO->RemoteFireTag.ToString()))
+		{
+			continue;
+		}
+
+		RemoteFires.Add(AbilityCDO->RemoteFireTag, FRemoteFire{AbilityCDO});
+		RegisterGameplayTagEvent(AbilityCDO->RemoteFireTag, EGameplayTagEventType::NewOrRemoved)
+			.AddUObject(this, &ThisClass::OnRemoteFireTagChanged);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::OnRemoteFireTagChanged(FGameplayTag const RemoteFireTag, int32 const NewCount)
+{
+	FRemoteFire& RemoteFire = RemoteFires.FindChecked(RemoteFireTag);
+	GetWorld()->GetTimerManager().ClearTimer(RemoteFire.ShotTimer);
+
+	// Same predicate UGeoGameplayAbility::Fire uses to spawn the real projectile, so the two can never both run.
+	// Checked here rather than at the binding site: the pawn's controller can still be unset when the ASC is
+	// initialised, and InitAbilityActorInfo runs again once it is.
+	if (NewCount <= 0 || AbilityActorInfo->IsLocallyControlledPlayer())
+	{
+		return;
+	}
+
+	// Mirrors ScheduleFireTrigger: the shot lands one fire delay after activation, or right away when there is none.
+	float const FireDelay = RemoteFire.AbilityCDO->GetFireDelay();
+	if (FireDelay <= 0.f)
+	{
+		RemoteFireShot(RemoteFireTag);
+		return;
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		RemoteFire.ShotTimer, FTimerDelegate::CreateUObject(this, &ThisClass::RemoteFireShot, RemoteFireTag), FireDelay,
+		RemoteFire.AbilityCDO->IsRemoteFireLooping());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::RemoteFireShot(FGameplayTag const RemoteFireTag)
+{
+	AActor* Avatar = GetAvatarActor();
+	if (!IsValid(Avatar))
+	{
+		return;
+	}
+
+	RemoteFires.FindChecked(RemoteFireTag).AbilityCDO->RemoteFireShot(Avatar, this);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -168,6 +241,14 @@ void UGeoAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag const& inpu
 	FScopedAbilityListLock activeScopeLock(*this);
 	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())
 	{
+		UGeoGameplayAbility const* GeoAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability);
+
+		// An ability can name a second input that fires it: this press releases it, its own input still does too.
+		if (GeoAbility && GeoAbility->GetAlternateReleaseInputTag() == inputTag && abilitySpec.IsActive())
+		{
+			ReleaseAbilitySpec(abilitySpec);
+		}
+
 		// Only activate ability of given input tag
 		if (!abilitySpec.GetDynamicSpecSourceTags().HasTagExact(inputTag))
 		{
@@ -177,7 +258,6 @@ void UGeoAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag const& inpu
 		AbilitySpecInputPressed(abilitySpec);
 
 		// Fresh-press-only abilities are excluded from the per-frame Held activation, so the press activates them.
-		UGeoGameplayAbility const* GeoAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability);
 		if (!abilitySpec.IsActive() && GeoAbility && GeoAbility->bActivateOnFreshPressOnly)
 		{
 			TryActivateAbilityWithTargetData(abilitySpec.Handle, GeoASLib::GetAbilityTagFromSpec(abilitySpec));
@@ -238,21 +318,25 @@ void UGeoAbilitySystemComponent::AbilityInputTagReleased(FGameplayTag const& inp
 	{
 		if (abilitySpec.GetDynamicSpecSourceTags().HasTagExact(inputTag) && abilitySpec.IsActive())
 		{
-			AbilitySpecInputReleased(abilitySpec);
-
-			PRAGMA_DISABLE_DEPRECATION_WARNINGS
-			// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
-			UGameplayAbility const* Instance = abilitySpec.GetPrimaryInstance();
-			FPredictionKey originalPredictionKey = Instance
-				? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
-				: abilitySpec.ActivationInfo.GetActivationPredictionKey();
-			PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-			// Needed to use Wait for input release in blueprint
-			InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, abilitySpec.Handle,
-								  originalPredictionKey);
+			ReleaseAbilitySpec(abilitySpec);
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::ReleaseAbilitySpec(FGameplayAbilitySpec& AbilitySpec)
+{
+	AbilitySpecInputReleased(AbilitySpec);
+
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
+	UGameplayAbility const* Instance = AbilitySpec.GetPrimaryInstance();
+	FPredictionKey originalPredictionKey = Instance ? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
+													: AbilitySpec.ActivationInfo.GetActivationPredictionKey();
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+	// Needed to use Wait for input release in blueprint
+	InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, AbilitySpec.Handle, originalPredictionKey);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

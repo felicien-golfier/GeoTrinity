@@ -20,6 +20,10 @@ class GEOTRINITY_API UGeoProjectileAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
 
+public:
+	/** Spawns the cosmetic spread on a client watching an ally fire this ability. */
+	virtual void RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const override;
+
 protected:
 	/** Spawns client-predicted projectiles toward each direction from GetTargetDirections for the payload target mode. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;

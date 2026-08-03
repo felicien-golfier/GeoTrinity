@@ -6,6 +6,7 @@
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Engine/GameInstance.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Input/GeoInputComponent.h"
@@ -184,6 +185,19 @@ void AGeoCharacter::BeginPlay()
 	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
 	{
 		WidgetHost->BindToOwnerASC();
+	}
+
+	// A screen-space UWidgetComponent draws in the game layer of its pawn's own local player, and couch coop forces
+	// splitscreen off, which leaves every local player above 0 with a zero-sized view: their layer is clipped away and
+	// ULocalPlayer::GetProjectionData refuses to project into it, so player 2's bars would never appear. Point them all
+	// at the player that owns the one shared view.
+	if (ULocalPlayer* const SharedViewPlayer = GetGameInstance()->GetFirstGamePlayer())
+	{
+		TInlineComponentArray<UWidgetComponent*> const WidgetComponents(this);
+		for (UWidgetComponent* const WidgetComponent : WidgetComponents)
+		{
+			WidgetComponent->SetOwnerPlayer(SharedViewPlayer);
+		}
 	}
 #ifdef UE_EDITOR
 	LocalRoleForDebugPurpose = GetLocalRole();

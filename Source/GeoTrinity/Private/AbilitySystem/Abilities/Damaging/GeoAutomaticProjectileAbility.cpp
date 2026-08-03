@@ -4,17 +4,15 @@
 
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Projectile/GeoProjectile.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+void UGeoAutomaticProjectileAbility::RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const
+{
+	SpawnRemoteProjectiles(Avatar, SourceASC, ProjectileParams, Target);
+}
 
 bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 {
-	if (!ProjectileParams.ProjectileClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[GeoAutomaticProjectileAbility] No ProjectileClass set!"));
-		return false;
-	}
-
 	FPredictionKey PredictionKey;
 	switch (GetCurrentActivationInfo().ActivationMode)
 	{
@@ -33,24 +31,8 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	}
 
 	FVector const Origin{StoredPayload.Origin, ArbitraryCharacterZ};
-	float const ProjectileYaw = StoredPayload.Yaw;
-	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
-
-	bool bAnySpawned = false;
-	for (FVector const& Direction : Directions)
-	{
-		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
-		AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform,
-																	StoredPayload, GetEffectDataArray(), PredictionKey);
-		if (!ensureMsgf(Projectile, TEXT("GeoAutomaticProjectileAbility: Failed to spawn projectile!")))
-		{
-			continue;
-		}
-
-		GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, StoredPayload.ServerSpawnTime,
-										PredictionKey);
-		bAnySpawned = true;
-	}
-
-	return bAnySpawned;
+	return GeoASLib::SpawnProjectileSpread(GetWorld(), ProjectileParams, Target, Origin, StoredPayload.Yaw,
+										   StoredPayload.ServerSpawnTime, StoredPayload, GetEffectDataArray(),
+										   PredictionKey)
+		> 0;
 }

@@ -13,7 +13,7 @@ class AGeoCameraVolume;
 /**
  * Orthographic follow camera for GeoTrinity.
  * Always follows the living local players with exponential smoothing — no edge-trigger dead zone. In couch coop it
- * frames their midpoint and widens `OrthoWidth` far enough to keep everyone on screen; there is never a split view.
+ * frames their midpoint and widens `OrthoWidth` as they spread away from the camera; there is never a split view.
  * Its movement bounds are the `TargetPoint.CameraBounds` corner points of whichever `AGeoCameraVolume` a local
  * player currently stands in: framing is a pure function of location, unrelated to the arena or the match state.
  * Inside a volume the follow target is clamped to those bounds; outside every volume the camera follows freely
@@ -30,13 +30,15 @@ public:
 	/** Configures the camera component for orthographic projection and initialises movement defaults. */
 	AGeoGameCamera();
 
-	/** Caches the authored OrthoWidth as the zoomed-in baseline every zoom-to-fit starts from. */
+	/** Caches the authored OrthoWidth as the zoomed-in baseline every zoom-out starts from. */
 	virtual void BeginPlay() override;
 
-	/** Follows the living local players with exponential smoothing; clamps to the active volume's bounds; pans freely when spectating. */
+	/** Follows the living local players with exponential smoothing; clamps to the active volume's bounds; pans freely
+	 * when spectating. */
 	virtual void Tick(float DeltaTime) override;
 
-	/** Called by an AGeoCameraVolume when a local player enters it; the most recently entered volume frames the camera. */
+	/** Called by an AGeoCameraVolume when a local player enters it; the most recently entered volume frames the camera.
+	 */
 	void EnterVolume(AGeoCameraVolume* Volume);
 	/** Called by an AGeoCameraVolume when a local player leaves it. */
 	void ExitVolume(AGeoCameraVolume* Volume);
@@ -50,22 +52,29 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Movement", meta = (ClampMin = "0.0"))
 	float SpectateMoveSpeed = 1500.f;
 
-	/** World-space padding kept between the outermost local player and the screen edge while zoomed out. */
+	/** Distance from the camera to the farthest local player the camera stays fully zoomed in below. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Zoom", meta = (ClampMin = "0.0"))
-	float ZoomMargin = 300.f;
+	float ZoomMinDistance = 600.f;
 
-	/** Upper limit on the zoom-to-fit OrthoWidth; past it players simply leave the screen. */
+	/** Distance to the farthest local player at which the camera reaches `MaxOrthoWidth`; past it, it stops widening.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Zoom", meta = (ClampMin = "0.0"))
-	float MaxOrthoWidth = 6000.f;
+	float ZoomMaxDistance = 1500.f;
+
+	/** OrthoWidth reached at `ZoomMaxDistance`; past it players simply leave the screen. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Zoom", meta = (ClampMin = "0.0"))
+	float MaxOrthoWidth = 5000.f;
 
 	/** Exponential zoom speed. Deliberately slower than FollowInterpSpeed so framing doesn't pump. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Zoom", meta = (ClampMin = "0.1"))
 	float ZoomInterpSpeed = 3.f;
 
 private:
-	/** The volume framing the camera: the most recently entered one still overlapping the player, or null when in none. */
+	/** The volume framing the camera: the most recently entered one still overlapping the player, or null when in none.
+	 */
 	AGeoCameraVolume* GetActiveVolume();
-	/** Recomputes `Bounds` from the active volume's `TargetPoint.CameraBounds` points; clears `bBounded` when in none. */
+	/** Recomputes `Bounds` from the active volume's `TargetPoint.CameraBounds` points; clears `bBounded` when in none.
+	 */
 	void RefreshBounds();
 
 	/** Reads the move-action value straight from the Enhanced Input player subsystem — the dead pawn's input

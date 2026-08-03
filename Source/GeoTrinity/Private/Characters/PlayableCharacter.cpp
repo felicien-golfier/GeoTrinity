@@ -14,6 +14,7 @@
 #include "HUD/Interface/GeoDeployGaugeWidgetInterface.h"
 #include "Input/GeoInputComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
@@ -32,12 +33,25 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 	ChargeBeamGaugeComponent->SetRelativeLocation(FVector(0.f, -100.f, 0.f));
 	ChargeBeamGaugeComponent->SetHiddenInGame(true);
 
+	AimCursorComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("AimCursorComponent"));
+	AimCursorComponent->SetupAttachment(GetRootComponent());
+	AimCursorComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	AimCursorComponent->SetDrawAtDesiredSize(true);
+	AimCursorComponent->SetHiddenInGame(true);
+	if (UClass* const AimCursorWidgetClass = GetDefault<UGameDataSettings>()->AimCursorWidgetClass.LoadSynchronous())
+	{
+		AimCursorComponent->SetWidgetClass(AimCursorWidgetClass);
+	}
+
 	TeamId = ETeam::Player;
 }
 
 void APlayableCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Not the constructor: a Blueprint-authored AimCursorDistance is only applied to the CDO after it has run.
+	AimCursorComponent->SetRelativeLocation(FVector(AimCursorDistance, 0.f, 0.f));
 }
 
 void APlayableCharacter::SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Ability, bool const bVisible)
@@ -115,6 +129,7 @@ void APlayableCharacter::Tick(float DeltaSeconds)
 	if (IsLocallyControlled())
 	{
 		UpdateAimRotation(DeltaSeconds);
+		AimCursorComponent->SetHiddenInGame(!GeoInputComponent->IsUsingController() || IsDead());
 	}
 }
 

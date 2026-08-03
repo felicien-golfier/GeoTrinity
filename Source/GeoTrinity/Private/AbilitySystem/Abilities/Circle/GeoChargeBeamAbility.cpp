@@ -6,6 +6,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Characters/PlayableCharacter.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/Team.h"
@@ -18,6 +19,12 @@ UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 {
 	FireMode = EFireMode::ChargeForFireDelay;
 	CommitBehaviour = ECommitBehaviour::AtActivate;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FGameplayTag UGeoChargeBeamAbility::GetAlternateReleaseInputTag() const
+{
+	return FGeoGameplayTags::Get().InputTag_Reload;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

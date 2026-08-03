@@ -20,6 +20,11 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 		return;
 	}
 
+	LaunchPattern();
+}
+
+void UPatternAbility::LaunchPattern()
+{
 	StoredPayload = CreateAbilityPayload();
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch, CreatePatternData());
@@ -27,7 +32,7 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
 	{
 		ensureMsgf(false, TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, true);
 		return;
 	}
 	PatternInstance->OnPatternEnd.AddUniqueDynamic(this, &UPatternAbility::OnPatternEnd);
@@ -46,6 +51,7 @@ void UPatternAbility::OnPatternEnd()
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 	PatternInstance->OnPatternEnd.RemoveDynamic(this, &UPatternAbility::OnPatternEnd);
 }
+
 void UPatternAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 								 bool bWasCancelled)

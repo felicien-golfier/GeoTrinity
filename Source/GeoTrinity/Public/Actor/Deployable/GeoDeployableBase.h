@@ -10,6 +10,7 @@
 #include "HUD/Interface/GeoDamageNumberHost.h"
 #include "Settings/GameDataSettings.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Tool/GeoColor.h"
 #include "Tool/Team.h"
 
 #include "GeoDeployableBase.generated.h"
@@ -266,6 +267,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 
+	/** Palette slot the outline post-process draws this deployable's silhouette in. Written to the custom-depth pass as
+	 * a stencil index, which M_DeployableOutline resolves back to a color through MPC_GeoColorPalette. Override is not
+	 * a valid choice — it has no palette color for the shader to look up. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	EGeoColor OutlineColor = EGeoColor::Neutral;
+
 
 	UPROPERTY(ReplicatedUsing = OnRep_Active)
 	bool bActive = true;
@@ -320,6 +327,10 @@ private:
 
 	UFUNCTION()
 	void TryRecallOrExpire();
+
+	/** Renders every mesh of this deployable into the custom-depth pass with OutlineColor's slot index, so the outline
+	 * post-process material can draw its silhouette in that color. */
+	void ApplyOutlineStencil() const;
 
 	void OnBlinkVisibilityTick();
 	void EnableActorCollision();
