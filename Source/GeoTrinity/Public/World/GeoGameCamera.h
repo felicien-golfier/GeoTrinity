@@ -9,6 +9,7 @@
 
 class AGeoCharacter;
 class AGeoCameraVolume;
+class UMaterialInterface;
 
 /**
  * Orthographic follow camera for GeoTrinity.
@@ -30,7 +31,8 @@ public:
 	/** Configures the camera component for orthographic projection and initialises movement defaults. */
 	AGeoGameCamera();
 
-	/** Caches the authored OrthoWidth as the zoomed-in baseline every zoom-out starts from. */
+	/** Caches the authored OrthoWidth as the zoomed-in baseline every zoom-out starts from, and installs the outline
+	 * post-process. */
 	virtual void BeginPlay() override;
 
 	/** Follows the living local players with exponential smoothing; clamps to the active volume's bounds; pans freely
@@ -69,7 +71,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Zoom", meta = (ClampMin = "0.1"))
 	float ZoomInterpSpeed = 3.f;
 
+	/** Deployable outline post-process (MI_DeployableOutline). Installed as a blendable in BeginPlay rather than
+	 * authored on the camera component, because it only works once fed the palette texture. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Outline")
+	TObjectPtr<UMaterialInterface> OutlineMaterial;
+
 private:
+	/** Installs OutlineMaterial as a post-process blendable, with ColorPalette baked into the lookup texture it
+	 * indexes with its custom-depth stencil value. */
+	void ApplyOutlineMaterial();
+
 	/** The volume framing the camera: the most recently entered one still overlapping the player, or null when in none.
 	 */
 	AGeoCameraVolume* GetActiveVolume();

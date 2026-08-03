@@ -56,7 +56,11 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 
 	if (TravelTime >= StartDelay)
 	{
-		UE_LOG(LogPattern, Warning, TEXT("We start the montage too late, starting from loop directly"));
+		// A pattern with no wind-up at all is not late, it is meant to fire on arrival.
+		if (StartDelay > 0.f)
+		{
+			UE_LOG(LogPattern, Warning, TEXT("We start the montage too late, starting from loop directly"));
+		}
 		StartPattern();
 	}
 	else

@@ -2,11 +2,14 @@
 
 #include "AbilitySystem/Abilities/Boss/GeoPeriodicFireAbility.h"
 
-#include "AbilitySystem/Abilities/Pattern/PeriodicFirePattern.h"
+#include "AbilitySystem/Abilities/Pattern/ProjectilePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+// Party size the burst is balanced around: every player short of it adds one salve to each round.
+static constexpr int32 ReferencePlayerCount = 3;
 
 UGeoPeriodicFireAbility::UGeoPeriodicFireAbility()
 {
@@ -15,49 +18,80 @@ UGeoPeriodicFireAbility::UGeoPeriodicFireAbility()
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateNo;
 }
 
+void UGeoPeriodicFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
+											  FGameplayAbilityActorInfo const* ActorInfo,
+											  FGameplayAbilityActivationInfo const ActivationInfo,
+											  FGameplayEventData const* TriggerEventData)
+{
+	RemainingSalveCount = 0;
+
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+}
+
 TInstancedStruct<FPatternData> UGeoPeriodicFireAbility::CreatePatternData() const
 {
-	FPeriodicFirePatternData FireData;
-
-	UGeoAttributeSetBase const* AttributeSet = Cast<UGeoAttributeSetBase>(
-		GetGeoAbilitySystemComponentFromActorInfo()->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
-	if (!ensureMsgf(IsValid(AttributeSet), TEXT("GeoPeriodicFireAbility: OwnerASC has no UGeoAttributeSetBase")))
-	{
-		return TInstancedStruct<FPatternData>::Make<FPeriodicFirePatternData>(FireData);
-	}
-
-	float const HealthRatio = AttributeSet->GetHealthRatio();
-	if (HealthRatio < .2f)
-	{
-		FireData.SalveCount = 3;
-	}
-	else if (HealthRatio < .5f)
-	{
-		FireData.SalveCount = 2;
-	}
-	else
-	{
-		FireData.SalveCount = 1;
-	}
+	FProjectilePatternData SalveData;
 
 	FVector const Origin(StoredPayload.Origin, ArbitraryCharacterZ);
 	for (APlayableCharacter const* Player : GeoLib::GetAlivePlayers(this))
 	{
-		FireData.TargetYaws.Add((Player->GetActorLocation() - Origin).Rotation().Yaw);
+		SalveData.Yaws.Add((Player->GetActorLocation() - Origin).Rotation().Yaw);
 	}
 
-	return TInstancedStruct<FPatternData>::Make<FPeriodicFirePatternData>(FireData);
+	return TInstancedStruct<FPatternData>::Make<FProjectilePatternData>(SalveData);
+}
+
+void UGeoPeriodicFireAbility::SizeBurst()
+{
+	int32 RoundCount = 1;
+	UGeoAttributeSetBase const* AttributeSet = Cast<UGeoAttributeSetBase>(
+		GetGeoAbilitySystemComponentFromActorInfo()->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
+	if (ensureMsgf(IsValid(AttributeSet), TEXT("GeoPeriodicFireAbility: OwnerASC has no UGeoAttributeSetBase")))
+	{
+		float const HealthRatio = AttributeSet->GetHealthRatio();
+		if (HealthRatio < .2f)
+		{
+			RoundCount = 3;
+		}
+		else if (HealthRatio < .5f)
+		{
+			RoundCount = 2;
+		}
+	}
+
+	int32 const SalvesPerRound = FMath::Max(1, ReferencePlayerCount - GeoLib::GetAlivePlayers(this).Num() + 1);
+	TimeBetweenSalves = RoundDuration / SalvesPerRound;
+	RemainingSalveCount = RoundCount * SalvesPerRound;
+
+	ensureMsgf(GetFireDelay() <= TimeBetweenSalves,
+			   TEXT("GeoPeriodicFireAbility: FireDelay (%f) is longer than the time between two salves (%f) — the "
+					"pattern instance is shared, so a salve still winding up is dropped by the next one"),
+			   GetFireDelay(), TimeBetweenSalves);
 }
 
 void UGeoPeriodicFireAbility::LaunchPattern()
 {
+	if (RemainingSalveCount <= 0)
+	{
+		SizeBurst();
+	}
+
 	Super::LaunchPattern();
 
 	// Super ends the ability when its pattern instance is missing; scheduling then would relaunch a dead ability.
-	if (IsActive())
+	if (!IsActive())
+	{
+		return;
+	}
+
+	--RemainingSalveCount;
+	float NextSalveDelay = TimeBetweenSalves;
+	if (RemainingSalveCount <= 0)
 	{
 		FRandomStream Stream(StoredPayload.Seed);
-		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoPeriodicFireAbility::LaunchPattern,
-											   Stream.FRandRange(FireIntervalMin, FireIntervalMax));
+		NextSalveDelay = Stream.FRandRange(FireIntervalMin, FireIntervalMax);
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoPeriodicFireAbility::LaunchPattern,
+										   NextSalveDelay);
 }

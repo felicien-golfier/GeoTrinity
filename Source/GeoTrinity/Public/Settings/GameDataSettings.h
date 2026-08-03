@@ -14,7 +14,6 @@ class UStatusInfo;
 class UUserWidget;
 class UWidgetComponent;
 class UGameplayEffect;
-class UMaterialParameterCollection;
 class USoundBase;
 class UNiagaraSystem;
 
@@ -71,14 +70,9 @@ public:
 	TSoftObjectPtr<USoundBase> DefaultButtonHoverSound;
 
 	/** Color every FGeoColorParam of the game resolves its slot through; EGeoColor::Override is never looked up here.
-	 */
+	 * Materials read the same values through the palette texture AGeoGameCamera builds from this map. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Colors")
 	TMap<EGeoColor, FLinearColor> ColorPalette;
-
-	/** Shader-side mirror of ColorPalette: one vector parameter per slot, named after its EGeoColor value. Filled from
-	 * ColorPalette by AGeoWorldSettings::BeginPlay, so a material reading a slot can never drift from the palette. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Colors")
-	TSoftObjectPtr<UMaterialParameterCollection> ColorPaletteCollection;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;

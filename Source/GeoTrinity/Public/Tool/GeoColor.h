@@ -25,6 +25,10 @@ enum class EGeoColor : uint8
 	HealBoost,
 	MoveSpeed,
 	Neutral,
+	DeployableBlockingAll,
+	DeployableBlockingEnemies,
+	DeployableBlockingAllies,
+	DeployableNotBlocking,
 	Override
 };
 
@@ -55,3 +59,24 @@ struct GEOTRINITY_API FGeoColorParam
 			  meta = (EditCondition = "Color == EGeoColor::Override", EditConditionHides))
 	FLinearColor OverrideColor = FLinearColor::White;
 };
+
+class UTexture2D;
+
+namespace GeoColor
+{
+	/** Number of palette slots: Override is last and carries no color of its own, so its ordinal is the count. */
+	constexpr int32 SlotCount = static_cast<int32>(EGeoColor::Override);
+
+	/** Palette texture parameter of the outline post-process, and the texel count it needs to turn a stencil index into
+	 * a UV. Written by AGeoGameCamera, authored by AI/Python/make_deployable_outline_material.py — the two must agree.
+	 */
+	inline FName const PaletteTextureParam = TEXT("Palette");
+	inline FName const PaletteSizeParam = TEXT("PaletteSize");
+
+	/**
+	 * Builds ColorPalette into a one-pixel-tall texture, one texel per slot at its own EGeoColor ordinal — the form the
+	 * outline post-process reads, since a material can index a texture but not a name. Transient and rebuilt per level,
+	 * so retinting stays a Game Data Settings edit with no asset to resave, and adding a slot needs no material work.
+	 */
+	GEOTRINITY_API UTexture2D* CreatePaletteTexture();
+} // namespace GeoColor

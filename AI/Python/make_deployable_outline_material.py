@@ -1,4 +1,4 @@
-"""Create M_DeployableOutline — the cel-shading outline post-process material — and MPC_GeoColorPalette.
+"""Create M_DeployableOutline — the cel-shading outline post-process material.
 
 Deployables render into the custom-depth pass with their AGeoDeployableBase::OutlineColor slot index
 (EGeoColor ordinal + 1; 0 = no outline) as their stencil value. This material draws a constant-width
@@ -9,19 +9,17 @@ Per pixel:
   center    = CustomStencil here
   neighbour = max( CustomStencil at the 4 taps one Thickness away in X and Y )
   Outline   = saturate(neighbour) * (1 - saturate(center))   -> 1 only just outside a tagged shape
-  Color     = SLOTS[neighbour - 1], selected by the Step/Lerp cascade below
+  Color     = Palette texel (neighbour - 0.5) / PaletteSize
   Result    = lerp(PostProcessInput0, Color, Outline)
 
-The index -> color step is a cascade, not a branch: starting from SLOTS[0], each following slot i is
-lerped in with `Step(i + 1, neighbour)` (1 once neighbour >= i + 1), so the highest threshold the
-stencil clears wins and the last write is the right color. Exact float compares are safe — the
-stencil is an integer stored in a float. MaterialExpressionIf is avoided on purpose: its inline
-scalar constants are not reachable from Python (see AI/MCP/MCP_Material.md).
+Colors arrive as a texture, not as named parameters: AGeoGameCamera::ApplyOutlineMaterial builds a
+1 x SlotCount lookup from UGameDataSettings::ColorPalette (one texel per EGeoColor ordinal) and sets
+it on a MID of MI_DeployableOutline, with the texel count in PaletteSize. That is the only way a
+material can index a palette — collection parameters are name-keyed and cannot be indexed — and it
+is what keeps this material enum-agnostic: adding an EGeoColor slot needs NO rerun of this script,
+the texture simply gets one more texel. Sampling is point/clamped, so no two slots ever blend.
 
-Colors come from MPC_GeoColorPalette, one vector parameter per EGeoColor slot, named after the enum
-value. AGeoWorldSettings::BeginPlay fills it from UGameDataSettings::ColorPalette on every level, so
-the palette in Project Settings > Game Data Settings > Colors stays the single source of truth. The
-collection's own defaults are left at black, which is what the outline renders as outside PIE.
+Outside PIE the material shows its default texture, since nothing fills the palette until BeginPlay.
 
 Thickness is in pixels: the tap offset is the scene texture InvSize * Thickness, so the line
 keeps its width at every resolution. The stencil taps are point-sampled (SceneTexture
@@ -44,67 +42,49 @@ and additive materials do not write custom depth unless their material ticks
 Translucency > Allow Custom Depth Writes.
 
 Requires r.CustomDepth = 3 in Config/DefaultEngine.ini (stencil read/write) — already set.
-Also creates MI_DeployableOutline: put THAT one in BP_GeoCam > CameraComponent > Post Process
-> Post Process Materials, and tune Thickness on it.
+Also creates MI_DeployableOutline: assign THAT one to BP_GeoCam > Camera|Outline > Outline Material
+(the camera installs it as a blendable itself), and tune Thickness on it.
 """
 import unreal
 
 PKG_PATH = "/Game/Art/Mat"
 NAME = "M_DeployableOutline"
 INSTANCE_NAME = "MI_DeployableOutline"
-COLLECTION_NAME = "MPC_GeoColorPalette"
 FULL = f"{PKG_PATH}/{NAME}.{NAME}"
 
-# EGeoColor in declaration order, minus Override (no palette color to look up). Position IS the
-# meaning: stencil value = index + 1, matching AGeoDeployableBase::ApplyOutlineStencil. Reordering
-# this list without reordering the enum silently recolors every deployable.
-SLOTS = [
-    "Damage",
-    "AllyDamage",
-    "LethalDamage",
-    "Heal",
-    "Shield",
-    "BothHealAndDamage",
-    "DamageReduction",
-    "DamageBoost",
-    "HealBoost",
-    "MoveSpeed",
-    "Neutral",
-]
+# Only ever shown before BeginPlay swaps the real palette in, but it has to be non-sRGB or the
+# LinearColor sampler refuses to compile — engine content offers few of those.
+DEFAULT_PALETTE_TEXTURE = "/Engine/EngineMaterials/DefaultBloomKernel"
 
 mel = unreal.MaterialEditingLibrary
 at = unreal.AssetToolsHelpers.get_asset_tools()
-
-# --- the palette collection, extended in place: rewriting the whole array would mint new parameter
-# --- GUIDs and break every material already pointing at a slot.
-if unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{COLLECTION_NAME}"):
-    collection = unreal.EditorAssetLibrary.load_asset(f"{PKG_PATH}/{COLLECTION_NAME}")
-else:
-    collection = at.create_asset(COLLECTION_NAME, PKG_PATH, unreal.MaterialParameterCollection,
-                                 unreal.MaterialParameterCollectionFactoryNew())
-
-collection_params = list(collection.get_editor_property("vector_parameters"))
-existing_names = [str(param.get_editor_property("parameter_name")) for param in collection_params]
-for slot in SLOTS:
-    if slot not in existing_names:
-        param = unreal.CollectionVectorParameter()
-        param.set_editor_property("parameter_name", slot)
-        collection_params.append(param)
-collection.set_editor_property("vector_parameters", collection_params)
-unreal.EditorAssetLibrary.save_asset(f"{PKG_PATH}/{COLLECTION_NAME}")
 
 # Rebuilt in place, never deleted and recreated: the camera references the instance and the
 # instance references the material, so a delete stops on the "still referenced / force delete"
 # modal, which blocks the game thread with nobody to answer it.
 if unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{NAME}"):
     mat = unreal.EditorAssetLibrary.load_asset(f"{PKG_PATH}/{NAME}")
-    mel.delete_all_material_expressions(mat)
+    # UMaterialEditingLibrary::DeleteAllMaterialExpressions range-iterates the very array each delete
+    # removes from, so one call drops only every other node. Repeat until the graph is really empty —
+    # leftovers keep the material referencing whatever they pointed at, and pile up on every rerun.
+    while mel.get_num_material_expressions(mat):
+        before = mel.get_num_material_expressions(mat)
+        mel.delete_all_material_expressions(mat)
+        assert mel.get_num_material_expressions(mat) < before, "material graph would not clear"
 else:
     mat = at.create_asset(NAME, PKG_PATH, unreal.Material, unreal.MaterialFactoryNew())
 
 
 def expr(cls, x, y):
     return mel.create_material_expression(mat, cls, x, y)
+
+
+def connect(source, source_output, target, target_input):
+    # A wrong pin name is not an error, it is a no-op that leaves the input on its default — and a
+    # texture sample defaulting its UVs samples screen space, which looks like a working outline
+    # whose color drifts across the viewport. Never call the library's connect directly.
+    assert mel.connect_material_expressions(source, source_output, target, target_input), (
+        f"{type(source).__name__}.{source_output or 'out'} -> {type(target).__name__}.{target_input}")
 
 
 def stencil(x, y):
@@ -119,23 +99,14 @@ def mask(source, source_output, x, y, r, g, b=False):
     node.set_editor_property("g", g)
     node.set_editor_property("b", b)
     node.set_editor_property("a", False)
-    mel.connect_material_expressions(source, source_output, node, "")
+    connect(source, source_output, node, "")
     return node
 
 
 def maximum(a, a_output, b, b_output, x, y):
     node = expr(unreal.MaterialExpressionMax, x, y)
-    mel.connect_material_expressions(a, a_output, node, "A")
-    mel.connect_material_expressions(b, b_output, node, "B")
-    return node
-
-
-def palette_slot(slot, x, y):
-    node = expr(unreal.MaterialExpressionCollectionParameter, x, y)
-    node.set_editor_property("collection", collection)
-    node.set_editor_property("parameter_name", slot)
-    # Resolves ParameterId from ParameterName against Collection — without it the node compiles to 0.
-    node.post_edit_change()
+    connect(a, a_output, node, "A")
+    connect(b, b_output, node, "B")
     return node
 
 
@@ -149,8 +120,8 @@ thickness.set_editor_property("default_value", 2.0)
 
 # --- offset of one tap, in UV space: InvSize (1/buffer size) * Thickness pixels ---
 offset = expr(unreal.MaterialExpressionMultiply, -1650, -60)
-mel.connect_material_expressions(center_tex, "InvSize", offset, "A")
-mel.connect_material_expressions(thickness, "", offset, "B")
+connect(center_tex, "InvSize", offset, "A")
+connect(thickness, "", offset, "B")
 
 offset_x = mask(offset, "", -1450, -140, True, False)
 offset_y = mask(offset, "", -1450, 20, False, True)
@@ -159,21 +130,21 @@ zero = expr(unreal.MaterialExpressionConstant, -1450, 180)
 zero.set_editor_property("r", 0.0)
 
 uv_offset_x = expr(unreal.MaterialExpressionAppendVector, -1250, -140)
-mel.connect_material_expressions(offset_x, "", uv_offset_x, "A")
-mel.connect_material_expressions(zero, "", uv_offset_x, "B")
+connect(offset_x, "", uv_offset_x, "A")
+connect(zero, "", uv_offset_x, "B")
 
 uv_offset_y = expr(unreal.MaterialExpressionAppendVector, -1250, 40)
-mel.connect_material_expressions(zero, "", uv_offset_y, "A")
-mel.connect_material_expressions(offset_y, "", uv_offset_y, "B")
+connect(zero, "", uv_offset_y, "A")
+connect(offset_y, "", uv_offset_y, "B")
 
 
 # --- the 4 neighbour stencil taps ---
 def tap(uv_offset, offset_class, y):
     uv_tap = expr(offset_class, -1000, y)
-    mel.connect_material_expressions(uv, "", uv_tap, "A")
-    mel.connect_material_expressions(uv_offset, "", uv_tap, "B")
+    connect(uv, "", uv_tap, "A")
+    connect(uv_offset, "", uv_tap, "B")
     node = stencil(-780, y)
-    mel.connect_material_expressions(uv_tap, "", node, "")
+    connect(uv_tap, "", node, "")
     return node
 
 
@@ -195,47 +166,60 @@ center_value = mask(center_tex, "Color", -140, -260, True, False)
 
 # --- Outline = saturate(neighbour) * (1 - saturate(center)) ---
 neighbour_hit = expr(unreal.MaterialExpressionSaturate, 40, -620)
-mel.connect_material_expressions(neighbour_value, "", neighbour_hit, "")
+connect(neighbour_value, "", neighbour_hit, "")
 
 center_hit = expr(unreal.MaterialExpressionSaturate, 40, -260)
-mel.connect_material_expressions(center_value, "", center_hit, "")
+connect(center_value, "", center_hit, "")
 
 outside_shape = expr(unreal.MaterialExpressionOneMinus, 220, -260)
-mel.connect_material_expressions(center_hit, "", outside_shape, "")
+connect(center_hit, "", outside_shape, "")
 
 outline = expr(unreal.MaterialExpressionMultiply, 400, -440)
-mel.connect_material_expressions(neighbour_hit, "", outline, "A")
-mel.connect_material_expressions(outside_shape, "", outline, "B")
+connect(neighbour_hit, "", outline, "A")
+connect(outside_shape, "", outline, "B")
 
-# --- Color = the palette slot the stencil index names ---
-outline_color = palette_slot(SLOTS[0], 0, 200)
-for index, slot in enumerate(SLOTS[1:], start=1):
-    row = 200 + index * 180
-    slot_param = palette_slot(slot, 0, row)
+# --- Color = the palette texel the stencil index points at ---
+# Texel i sits at (i + 0.5) / PaletteSize and holds EGeoColor ordinal i, and the stencil is that
+# ordinal + 1 — so the sample lands at (neighbour - 0.5) / PaletteSize. Where neighbour is 0 the UV
+# goes negative and clamps to texel 0, which never shows: Outline is 0 on those pixels.
+texel_offset = expr(unreal.MaterialExpressionSubtract, 60, 200)
+texel_offset.set_editor_property("const_b", 0.5)
+connect(neighbour_value, "", texel_offset, "A")
 
-    reaches_slot = expr(unreal.MaterialExpressionStep, 260, row + 60)
-    reaches_slot.set_editor_property("const_y", float(index + 1))
-    mel.connect_material_expressions(neighbour_value, "", reaches_slot, "X")
+palette_size = expr(unreal.MaterialExpressionScalarParameter, 60, 380)
+palette_size.set_editor_property("parameter_name", "PaletteSize")
+palette_size.set_editor_property("default_value", 11.0)
 
-    blend = expr(unreal.MaterialExpressionLinearInterpolate, 520, row)
-    mel.connect_material_expressions(outline_color, "", blend, "A")
-    mel.connect_material_expressions(slot_param, "", blend, "B")
-    mel.connect_material_expressions(reaches_slot, "", blend, "Alpha")
-    outline_color = blend
+palette_u = expr(unreal.MaterialExpressionDivide, 300, 260)
+connect(texel_offset, "", palette_u, "A")
+connect(palette_size, "", palette_u, "B")
+
+row_v = expr(unreal.MaterialExpressionConstant, 300, 440)
+row_v.set_editor_property("r", 0.5)
+
+palette_uv = expr(unreal.MaterialExpressionAppendVector, 500, 300)
+connect(palette_u, "", palette_uv, "A")
+connect(row_v, "", palette_uv, "B")
+
+palette = expr(unreal.MaterialExpressionTextureSampleParameter2D, 700, 240)
+palette.set_editor_property("parameter_name", "Palette")
+palette.set_editor_property("texture", unreal.EditorAssetLibrary.load_asset(DEFAULT_PALETTE_TEXTURE))
+palette.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR)
+# "UVs", not "Coordinates": inputs are matched by their SHORTENED display name.
+connect(palette_uv, "", palette, "UVs")
 
 # --- Result = lerp(scene, Color, Outline) ---
 scene = expr(unreal.MaterialExpressionSceneTexture, 700, -300)
 scene.set_editor_property("scene_texture_id", unreal.SceneTextureId.PPI_POST_PROCESS_INPUT0)
 
-# SceneTexture Color and a collection parameter are both float4 — the lerp needs both sides at the
-# width the emissive output takes, and the palette's authored alpha has no meaning for an outline.
+# SceneTexture Color is a float4 — the lerp needs both sides at the width the emissive output takes,
+# and the palette's authored alpha has no meaning for an outline.
 scene_color = mask(scene, "Color", 880, -300, True, True, True)
-outline_rgb = mask(outline_color, "", 780, 140, True, True, True)
 
 result = expr(unreal.MaterialExpressionLinearInterpolate, 1060, -160)
-mel.connect_material_expressions(scene_color, "", result, "A")
-mel.connect_material_expressions(outline_rgb, "", result, "B")
-mel.connect_material_expressions(outline, "", result, "Alpha")
+connect(scene_color, "", result, "A")
+connect(palette, "RGB", result, "B")
+connect(outline, "", result, "Alpha")
 
 mel.connect_material_property(result, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 
@@ -255,4 +239,4 @@ if not unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{INSTANCE_NAME}")
     mel.set_material_instance_scalar_parameter_value(instance, "Thickness", 2.0)
     unreal.EditorAssetLibrary.save_asset(f"{PKG_PATH}/{INSTANCE_NAME}")
 
-unreal.log(f"OUTLINEMAT::built {FULL} + {INSTANCE_NAME} + {COLLECTION_NAME}")
+unreal.log(f"OUTLINEMAT::built {FULL} + {INSTANCE_NAME}")

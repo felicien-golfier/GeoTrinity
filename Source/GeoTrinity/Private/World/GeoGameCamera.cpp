@@ -15,6 +15,8 @@
 #include "GameFramework/PlayerController.h"
 #include "GameplayTagContainer.h"
 #include "Input/GeoInputComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Tool/GeoColor.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "World/GeoCameraVolume.h"
 
@@ -32,6 +34,22 @@ void AGeoGameCamera::BeginPlay()
 	Super::BeginPlay();
 	BaseOrthoWidth = GetCameraComponent()->OrthoWidth;
 	CurrentOrthoWidth = BaseOrthoWidth;
+	ApplyOutlineMaterial();
+}
+
+void AGeoGameCamera::ApplyOutlineMaterial()
+{
+	if (GeoLib::IsDedicatedServer(this)
+		|| !ensureMsgf(OutlineMaterial,
+					   TEXT("AGeoGameCamera: no OutlineMaterial — deployables render without an outline")))
+	{
+		return;
+	}
+
+	UMaterialInstanceDynamic* const PaletteMaterial = UMaterialInstanceDynamic::Create(OutlineMaterial, this);
+	PaletteMaterial->SetTextureParameterValue(GeoColor::PaletteTextureParam, GeoColor::CreatePaletteTexture());
+	PaletteMaterial->SetScalarParameterValue(GeoColor::PaletteSizeParam, static_cast<float>(GeoColor::SlotCount));
+	GetCameraComponent()->PostProcessSettings.AddBlendable(PaletteMaterial, 1.f);
 }
 
 void AGeoGameCamera::EnterVolume(AGeoCameraVolume* Volume)

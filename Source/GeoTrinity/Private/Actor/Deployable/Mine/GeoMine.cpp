@@ -14,6 +14,8 @@ AGeoMine::AGeoMine(FObjectInitializer const& ObjectInitializer) : Super(ObjectIn
 	bExplodeAtRecall = true;
 	bDamageableDuringBlink = true;
 	bShowDamageNumbers = false;
+
+	OutlineColor = EGeoColor::DeployableBlockingEnemies;
 }
 
 void AGeoMine::InitInteractable(FInteractableActorData* Data)

@@ -268,8 +268,8 @@ protected:
 	bool bSuppressDrainDamageVisuals = true;
 
 	/** Palette slot the outline post-process draws this deployable's silhouette in. Written to the custom-depth pass as
-	 * a stencil index, which M_DeployableOutline resolves back to a color through MPC_GeoColorPalette. Override is not
-	 * a valid choice — it has no palette color for the shader to look up. */
+	 * a stencil index, which M_DeployableOutline turns back into a color by indexing the palette texture the camera
+	 * builds. Override is not a valid choice — it has no palette color for the shader to look up. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	EGeoColor OutlineColor = EGeoColor::Neutral;
 

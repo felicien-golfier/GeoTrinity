@@ -10,6 +10,12 @@ All material node wiring goes through `execute_script` (Python) using `MaterialE
 - Set `blend_mode` and `shading_model` **after** all nodes are wired, not before.
 - `MaterialExpressionIf` scalar constant properties are not accessible via `set_editor_property` in Python. Use `MaterialExpressionStep` instead for hard thresholds.
 - Unused expression nodes that are not connected still compile fine but clutter the graph.
+- Deleting all expressions removes only every other node per call — loop until the count reaches zero, or a rebuild script silently accumulates dead nodes and stale asset references.
+- A collection parameter node resolves its parameter id in its post-change notification, so set its name with the notify mode forced to always; a node left unresolved compiles to zero.
+- Connecting expressions returns a bool and does nothing on an unknown pin name — always assert on it, or an input silently keeps its default (a texture sample with no UVs samples screen space, which still looks plausible).
+- Inputs are matched by their **shortened** display name, not the name the expression reports: a texture sample's UV pin is `UVs`, its texture pin is `Tex`. An empty name always means input 0.
+- A texture sample's sampler type must match the assigned texture's sRGB setting or the material fails to compile.
+- Creating expressions fails while PIE is running — stop the session before rebuilding a material.
 
 ---
 

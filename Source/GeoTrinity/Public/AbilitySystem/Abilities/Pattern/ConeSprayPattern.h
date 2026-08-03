@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/Pattern/Pattern.h"
-#include "Actor/Projectile/ExternalProjectileParams.h"
+#include "AbilitySystem/Abilities/Pattern/ProjectilePattern.h"
 #include "CoreMinimal.h"
 
 #include "ConeSprayPattern.generated.h"
@@ -15,7 +14,7 @@
  * The cone only covers what the boss faces, which is what makes turning the boss away from the group worth doing.
  */
 UCLASS(Blueprintable)
-class GEOTRINITY_API UConeSprayPattern : public UTickablePattern
+class GEOTRINITY_API UConeSprayPattern : public UProjectilePattern
 {
 	GENERATED_BODY()
 
@@ -28,9 +27,8 @@ protected:
 	/** Spawns every projectile whose scheduled time has passed, and ends once the last one is out. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 
-	/** Spawns one salve: every projectile fanned across the cone, each stamped with the salve's scheduled spawn time.
-	 */
-	void SpawnSprayProjectile() const;
+	/** Fans the yaws of one salve evenly across the cone and spawns it. */
+	void SpawnSpraySalve() const;
 
 	/** Full opening of the spray cone in degrees, centered on the payload yaw. */
 	UPROPERTY(EditDefaultsOnly, Category = "Spray", meta = (ClampMin = "0.0"))
@@ -44,9 +42,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spray", meta = (ClampMin = "0.01"))
 	float SalveFrequencySec = .5f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Spray")
-	FExternalProjectileParams ProjectileParams;
 
 private:
 	int32 SpawnedSalveCount = 0;
