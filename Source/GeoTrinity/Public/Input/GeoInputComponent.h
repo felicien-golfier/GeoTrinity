@@ -14,6 +14,11 @@ class AGeoCharacter;
 
 #include "GeoInputComponent.generated.h"
 
+/**
+ * Enhanced Input component that bridges raw player input to the GAS ability activation pipeline.
+ * Handles per-frame mouse aim tracking, gamepad-vs-mouse detection, and binding all ability
+ * input actions from UAbilityInfo to their pressed/released/held GAS callbacks.
+ */
 UCLASS(Blueprintable, BlueprintType, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GEOTRINITY_API UGeoInputComponent : public UEnhancedInputComponent
 {
@@ -22,7 +27,9 @@ class GEOTRINITY_API UGeoInputComponent : public UEnhancedInputComponent
 	friend class AGeoPlayerController;
 
 public:
+	/** Enables per-frame ticking so UpdateMouseLook can track mouse aim each frame. */
 	UGeoInputComponent();
+	/** Calls UpdateMouseLook each tick to keep mouse aim current. */
 	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType,
 							   FActorComponentTickFunction* ThisTickFunction) override;
 
