@@ -26,7 +26,9 @@ class GEOTRINITY_API UGeoAbilitySystemComponent : public UAbilitySystemComponent
 	GENERATED_BODY()
 
 public:
+	/** Pre-creates pattern instances for every UPatternAbility-derived ability in StartupAbilityTags so PatternStartMulticast can always find one; no-op in non-game worlds. */
 	virtual void InitializeComponent() override;
+	/** Binds health and speed attribute change delegates; also registers ally remote-fire tag listeners on clients so cosmetic shot replay works for observed allies. */
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
 
 	/** Creates a GeoGameplayEffectContext pre-populated with this component's owner. */
