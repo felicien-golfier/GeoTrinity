@@ -14,8 +14,9 @@ class ACharacter;
 /**
  * Square special ability, phase 1 of the sacrifice pair (phase 2 = UGeoSacrificeDetonateAbility, same button):
  * channels a beam that marks every ally/neutral inside it as sacrificed (Status.Sacrificed via
- * SacrificeMarkEffect). While marked, a victim takes zero damage — the full amount is redirected, split equally
- * across the Square's alive walls + the Square, and accumulated into the CharacterAttributeSet's SacrificeValue.
+ * SacrificeMarkEffect). While marked, a victim takes zero damage — what it would actually have lost is redirected
+ * (overkill beyond its life is dropped), split equally across the Square's alive walls + the Square, and accumulated
+ * into the CharacterAttributeSet's SacrificeValue.
  * Activation applies DetonateReadyEffect (Status.Square.DetonateReady), which blocks this channel from
  * re-activating and arms the detonate ability until it fires or the Square dies. The channel ends at
  * MaxChannelDuration or when the detonation cancels it. Cooldown commits at activation.

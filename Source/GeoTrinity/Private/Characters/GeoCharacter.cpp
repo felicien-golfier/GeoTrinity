@@ -1,6 +1,8 @@
 #include "Characters/GeoCharacter.h"
 
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
@@ -80,6 +82,7 @@ void AGeoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoCharacter, bIsDead);
+	DOREPLIFETIME(AGeoCharacter, bDiedFromFall);
 }
 
 void AGeoCharacter::Tick(float DeltaSeconds)
@@ -205,12 +208,13 @@ void AGeoCharacter::BeginPlay()
 }
 
 
-void AGeoCharacter::Death()
+void AGeoCharacter::Death(bool const bFromFall)
 {
 	if (bIsDead || CVarPlayerInvincible.GetValueOnGameThread())
 	{
 		return;
 	}
+	bDiedFromFall = bFromFall;
 	bIsDead = true;
 	DeathLogic();
 }
@@ -223,6 +227,25 @@ void AGeoCharacter::DeathLogic()
 void AGeoCharacter::ReviveLogic()
 {
 	// does nothing by default
+}
+
+void AGeoCharacter::SetDeathVisuals(bool const bDead)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	UAnimMontage* Montage = GetDeathMontage();
+	if (!AnimInstance || !Montage)
+	{
+		return;
+	}
+
+	if (bDead)
+	{
+		AnimInstance->Montage_Play(Montage);
+	}
+	else
+	{
+		AnimInstance->Montage_Stop(Montage->GetDefaultBlendOutTime(), Montage);
+	}
 }
 
 void AGeoCharacter::OnRep_IsDead(bool const bOldValue)

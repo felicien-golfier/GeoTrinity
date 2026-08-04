@@ -379,6 +379,12 @@ void UGeoAbilitySystemComponent::InitializeDefaultAttributes(int32 Level /*= 1*/
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySystemComponent::BindAttributeCallbacks()
 {
+	if (bAttributeCallbacksBound)
+	{
+		return;
+	}
+	bAttributeCallbacksBound = true;
+
 	GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
 		.AddWeakLambda(this,
 					   [this](FOnAttributeChangeData const& Data)

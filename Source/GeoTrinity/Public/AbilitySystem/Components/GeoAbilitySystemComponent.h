@@ -153,6 +153,7 @@ private:
 
 	TMap<FGameplayTag, int32> FireSectionIndices;
 	bool bStartupAbilitiesGiven{false};
+	bool bAttributeCallbacksBound{false};
 
 	// Server-only: weak so a destroyed target reads back null without manual cleanup.
 	TWeakObjectPtr<AActor> LastBasicAbilityTarget;

@@ -41,6 +41,16 @@ protected:
 	/** Recalls all deployed turrets, applies effects per turret, and fires the recall gameplay cue. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
+	/** Blocks activation while the avatar owns no still-active turret (plus the base death check). */
+	virtual bool CanActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+									FGameplayTagContainer const* SourceTags = nullptr,
+									FGameplayTagContainer const* TargetTags = nullptr,
+									FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
+	/** Returns Avatar's turrets a recall would actually pull back: still tracked, still active (an expired one lingers
+	 * in the manager until its delayed destroy). Tracking is fed by BeginPlay, so clients agree with the server. */
+	TArray<AGeoTurret*> GetActiveTurrets(AActor const* Avatar) const;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Recall")
 	TArray<TInstancedStruct<FEffectData>> BlinkBonusEffect;
 

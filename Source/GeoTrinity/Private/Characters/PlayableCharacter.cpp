@@ -1,6 +1,7 @@
 ﻿#include "Characters/PlayableCharacter.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/ShieldBurstPassiveComponent.h"
@@ -202,6 +203,9 @@ void APlayableCharacter::DeathLogic()
 	ResetAbilitiesAndEffects();
 	if (IsValid(AbilitySystemComponent) && GeoLib::IsServer(this))
 	{
+		// A death that never went through the health path (an arena fall) still leaves health and shield behind.
+		AbilitySystemComponent->SetNumericAttributeBase(UGeoAttributeSetBase::GetHealthAttribute(), 0.f);
+		AbilitySystemComponent->SetNumericAttributeBase(UGeoAttributeSetBase::GetShieldAttribute(), 0.f);
 		// Death disarms the sacrifice detonation (the DetonateReady GE just went away with the purge above).
 		AbilitySystemComponent->SetNumericAttributeBase(UCharacterAttributeSet::GetSacrificeValueAttribute(), 0.f);
 	}
@@ -241,7 +245,7 @@ void APlayableCharacter::StopCharacter()
 	// off there is no floor to rest on, so disable gravity to keep the corpse where it died.
 	GetGeoMovementComponent()->GravityScale = 0.f;
 	SetActorEnableCollision(false);
-	SetDeathMaterial(true);
+	SetDeathVisuals(true);
 }
 
 void APlayableCharacter::RestartCharacter()
@@ -250,17 +254,29 @@ void APlayableCharacter::RestartCharacter()
 	GetGeoMovementComponent()->GravityScale = 1.f;
 	GetGeoMovementComponent()->SetMovementMode(MOVE_Walking);
 	SetActorEnableCollision(true);
-	SetDeathMaterial(false);
+	SetDeathVisuals(false);
 }
 
-void APlayableCharacter::SetDeathMaterial(bool const bDead)
+void APlayableCharacter::SetDeathVisuals(bool const bDead)
 {
+	Super::SetDeathVisuals(bDead);
+
 	FPlayerClassData const* VisualData = ClassData.Find(GetPlayerClass());
-	if (!ensureMsgf(VisualData, TEXT("SetDeathMaterial: No visual data for class on %s"), *GetName()))
+	if (!ensureMsgf(VisualData, TEXT("SetDeathVisuals: No visual data for class on %s"), *GetName()))
 	{
 		return;
 	}
 	SetBodyMaterial(bDead ? VisualData->DeathMaterial : VisualData->AliveMaterial);
+}
+
+UAnimMontage* APlayableCharacter::GetDeathMontage() const
+{
+	FPlayerClassData const* VisualData = ClassData.Find(GetPlayerClass());
+	if (!VisualData)
+	{
+		return nullptr;
+	}
+	return bDiedFromFall ? VisualData->FallMontage : VisualData->DeathMontage;
 }
 
 void APlayableCharacter::SetBodyMaterial(UMaterialInterface* Material)

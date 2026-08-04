@@ -21,6 +21,7 @@ void UGeoMoiraBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	RemainingDuration = InitialDuration;
 	BeamRatio = 1.f;
+	FinishedZones.Reset();
 
 	if (!SpeedBuffEffect.IsValid())
 	{

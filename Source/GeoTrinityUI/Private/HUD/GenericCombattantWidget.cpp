@@ -11,6 +11,9 @@
 #include "HUD/GeoHUD.h"
 #include "HUD/HudFunctionLibrary.h"
 
+// Tint the whole bar drops to once its owner has no life left.
+static FLinearColor const DeadTint{0.35f, 0.35f, 0.35f, 1.f};
+
 // ---------------------------------------------------------------------------------------------------------------------
 void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementation(UAbilitySystemComponent* ASC)
 {
@@ -47,6 +50,9 @@ void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementati
 // ---------------------------------------------------------------------------------------------------------------------
 void UGenericCombattantWidget::UpdateHealthRatio_Implementation(float NewHealthRatio)
 {
+	// Death zeroes health and shield, so an empty bar means a downed combatant: grey the whole widget out.
+	SetColorAndOpacity(NewHealthRatio > 0.f ? FLinearColor::White : DeadTint);
+
 	if (HealthBar)
 	{
 		HealthBar->SetPercent(NewHealthRatio);

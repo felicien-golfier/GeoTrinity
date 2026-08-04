@@ -11,6 +11,7 @@
 
 class USkeletalMesh;
 class UAnimInstance;
+class UAnimMontage;
 class UMaterialInterface;
 class UGameplayEffect;
 class UWidgetComponent;
@@ -33,6 +34,14 @@ struct FPlayerClassData
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UAnimInstance> AnimClass;
+
+	/** Played when the character goes down and stopped on revive, so it holds for the whole downed state. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> DeathMontage = nullptr;
+
+	/** Takes DeathMontage's place when the character dies by dropping into the void (the hex arena's holes). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> FallMontage = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
@@ -121,15 +130,22 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(float NewValue);
 
-	/** Disables controls and collision and swaps to the death material. */
+	/** Disables controls and collision and applies the death visuals. */
 	void StopCharacter();
 
-	/** Mirror of StopCharacter: restores controls, collision, and the alive material. */
+	/** Mirror of StopCharacter: restores controls, collision, and the alive visuals. */
 	void RestartCharacter();
 
 	/** Cancels every active ability and (server-only, replicated down) purges all active gameplay effects.
 	 * Shared reset used by death, revive, and class change. */
 	void ResetAbilitiesAndEffects();
+
+	/** Adds the current class's death (bDead) or alive material on top of the base's montage handling. */
+	virtual void SetDeathVisuals(bool bDead) override;
+
+	/** Returns the current class's fall or death montage — each class brings its own skeleton, so the montages follow
+	 * it. */
+	virtual UAnimMontage* GetDeathMontage() const override;
 
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
@@ -155,8 +171,6 @@ protected:
 private:
 	void UpdateAimRotation(float DeltaSeconds);
 	EPlayerClass PickStartingClass() const;
-	/** Swaps the mesh material to the current class's death (bDead) or alive material. */
-	void SetDeathMaterial(bool bDead);
 	/** Sets Material on mesh slot 0 and recreates the shield-burst gauge MID that the raw material set discards. */
 	void SetBodyMaterial(UMaterialInterface* Material);
 

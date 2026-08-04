@@ -26,6 +26,7 @@ class UGeoGameFeelComponent;
 class UGeoCharacterMovementComponent;
 class UStaticMeshComponent;
 class UWidgetComponent;
+class UAnimMontage;
 
 /**
  * Abstract base character shared by APlayableCharacter and AEnemyCharacter.
@@ -48,7 +49,7 @@ public:
 	 * null on dedicated server), GameFeelComponent, and DeployableManagerComponent.
 	 */
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
-	/** Registers replicated character properties (bIsDead). */
+	/** Registers replicated character properties (bIsDead, bDiedFromFall). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Emits a visual-log entry at the character's location; optionally draws a debug sphere on the server
@@ -114,9 +115,14 @@ public:
 	/** Returns true while the player is downed (health reached 0 and not yet revived). */
 	bool IsDead() const { return bIsDead; }
 
-	/** Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from
-	 * OnHealthChanged and from arena fall checks. No-op while Geo.PlayerInvincible is set. */
-	void Death();
+	/**
+	 * Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from
+	 * OnHealthChanged and from arena fall checks. No-op while Geo.PlayerInvincible is set.
+	 *
+	 * @param bFromFall  True when the character dropped into the void instead of running out of health. Replicated
+	 *                   with bIsDead so DeathLogic picks the same montage on every machine.
+	 */
+	void Death(bool bFromFall = false);
 
 	/** Sets the yaw (degrees) the character turns toward, at up to MaxRotationSpeed, in Tick. Callers (aim input,
 	 * AI chase/move tasks) drive facing entirely through this — never through Controller::SetControlRotation or
@@ -151,9 +157,26 @@ protected:
 	UFUNCTION()
 	void OnRep_IsDead(bool bOldValue);
 
+	/** Applies the visuals of a downed (bDead) or living character: plays or stops GetDeathMontage(). Runs on every
+	 * machine — call it from the death/revive paths, which replicate through bIsDead. */
+	virtual void SetDeathVisuals(bool bDead);
+
+	/** Montage played while this character is down. Override where the montage varies with the character's state
+	 * (a player's class swaps the skeleton the montage is bound to). */
+	virtual UAnimMontage* GetDeathMontage() const { return DeathMontage; }
+
 
 	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
 	bool bIsDead = false;
+
+	/** How the current death happened, for GetDeathMontage(). Always re-assigned by Death(), so it never goes stale —
+	 * and it must survive until ReviveLogic() stops the montage it selected. */
+	UPROPERTY(Replicated)
+	bool bDiedFromFall = false;
+
+	/** Death montage of characters that keep one skeleton. Ignored where GetDeathMontage() is overridden. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Animation")
+	TObjectPtr<UAnimMontage> DeathMontage = nullptr;
 
 	/** Max yaw turn rate in degrees/second, applied in Tick to close the gap toward TargetYaw. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",

@@ -3,6 +3,7 @@
 #include "AbilitySystem/Abilities/Square/GeoSacrificeBeamAbility.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
@@ -53,7 +54,12 @@ bool UGeoSacrificeBeamAbility::TryRedirectIncomingDamage(UAbilitySystemComponent
 		return false;
 	}
 
-	RedirectCapturedDamage(Damage, DamageContext.GetOriginalInstigatorAbilitySystemComponent(), *SquareASC,
+	// The victim is saved from the hit, never from more than it was worth: only what it would actually have lost
+	// (shield absorbs before health) is redirected, the overkill evaporates.
+	float const RedirectedDamage =
+		FMath::Min(Damage, VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute())
+							   + VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute()));
+	RedirectCapturedDamage(RedirectedDamage, DamageContext.GetOriginalInstigatorAbilitySystemComponent(), *SquareASC,
 						   static_cast<int32>(MarkEffect->Spec.GetLevel()));
 	return true;
 }

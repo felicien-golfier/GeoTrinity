@@ -14,22 +14,9 @@ void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 {
 	AActor* Instigator = GetAvatarActorFromActorInfo();
 
-	UGeoDeployableManagerComponent* DeployableManager =
-		Instigator->GetComponentByClass<UGeoDeployableManagerComponent>();
-	ensureMsgf(DeployableManager, TEXT("GeoRecallTurretAbility: No UGeoDeployableManagerComponent on avatar!"));
-	if (!DeployableManager)
-	{
-		EndAbility(false, true);
-		return;
-	}
-
 	TArray<FRecallInfo> RecallInfos;
-	for (AGeoTurret* Turret : TArray(DeployableManager->GetDeployables<AGeoTurret>()))
+	for (AGeoTurret* Turret : GetActiveTurrets(Instigator))
 	{
-		if (!IsValid(Turret))
-		{
-			continue;
-		}
 		RecallInfos.Add({Turret, Turret->GetActorLocation(), Turret->IsBlinking()});
 	}
 
@@ -63,6 +50,43 @@ void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 	}
 
 	EndAbility(false, false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoRecallTurretAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Handle,
+												 FGameplayAbilityActorInfo const* ActorInfo,
+												 FGameplayTagContainer const* SourceTags,
+												 FGameplayTagContainer const* TargetTags,
+												 FGameplayTagContainer* OptionalRelevantTags) const
+{
+	return ActorInfo && !GetActiveTurrets(ActorInfo->AvatarActor.Get()).IsEmpty()
+		&& Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<AGeoTurret*> UGeoRecallTurretAbility::GetActiveTurrets(AActor const* Avatar) const
+{
+	TArray<AGeoTurret*> Turrets;
+	if (!IsValid(Avatar))
+	{
+		return Turrets;
+	}
+
+	UGeoDeployableManagerComponent const* DeployableManager =
+		Avatar->GetComponentByClass<UGeoDeployableManagerComponent>();
+	if (!ensureMsgf(DeployableManager, TEXT("GeoRecallTurretAbility: No UGeoDeployableManagerComponent on avatar!")))
+	{
+		return Turrets;
+	}
+
+	for (AGeoTurret* Turret : DeployableManager->GetDeployables<AGeoTurret>())
+	{
+		if (IsValid(Turret) && (Turret->IsActive() || Turret->IsBlinking()))
+		{
+			Turrets.Add(Turret);
+		}
+	}
+	return Turrets;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

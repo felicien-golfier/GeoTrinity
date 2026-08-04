@@ -86,6 +86,13 @@ void UGeoOverlayWidget::ApplyColumnLayout()
 		Anchors.Minimum.X = (Anchors.Minimum.X * AppliedColumnCount - AppliedColumn + Column) / ColumnCount;
 		Anchors.Maximum.X = (Anchors.Maximum.X * AppliedColumnCount - AppliedColumn + Column) / ColumnCount;
 		CanvasSlot->SetAnchors(Anchors);
+
+		// Offsets.Left/Right hold Position.X/Size.X for a point anchor, or left/right margins for a stretch anchor;
+		// both need to shrink with the column width or the authored full-width layout overflows a narrower column.
+		FMargin Offsets = CanvasSlot->GetOffsets();
+		Offsets.Left = Offsets.Left * AppliedColumnCount / ColumnCount;
+		Offsets.Right = Offsets.Right * AppliedColumnCount / ColumnCount;
+		CanvasSlot->SetOffsets(Offsets);
 	}
 
 	AppliedColumn = Column;
