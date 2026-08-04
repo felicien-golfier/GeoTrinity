@@ -32,7 +32,10 @@ struct FGameplayTag;
 struct FExternalProjectileParams;
 class UAbilitySystemComponent;
 /**
- * A library of helper functions for the ASC
+ * Static helper library for GeoTrinity's ability system (alias: GeoASLib).
+ * Centralizes two-pass effect application, projectile and deployable spawning, team-attitude
+ * queries, gameplay cue utilities, and ability CDO lookups so individual ability classes can
+ * focus on their own logic without reimplementing common GAS plumbing.
  */
 UCLASS()
 class GEOTRINITY_API UGeoAbilitySystemLibrary : public UBlueprintFunctionLibrary
