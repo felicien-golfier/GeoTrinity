@@ -301,7 +301,10 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 
 	float const PlayRate = SectionLength / GetFireDelay();
 
-	if (!AnimInstance->Montage_IsPlaying(AnimMontage))
+	// Only PlayMontage bumps the replicated PlayInstanceId, the single thing that makes a non-owning client restart the
+	// montage. A section jump reaches it as a position correction, which does nothing once its montage instance ended.
+	// So every fresh activation plays; only the extra shots of one activation (auto-fire) may jump between sections.
+	if (!ASC->IsAnimatingAbility(this) || !AnimInstance->Montage_IsPlaying(AnimMontage))
 	{
 		ASC->PlayMontage(this, ActivationInfo, AnimMontage, PlayRate, SectionToJumpTo);
 	}
@@ -431,6 +434,25 @@ void UGeoGameplayAbility::RemoteFireShot(AActor* /*Avatar*/, UGeoAbilitySystemCo
 {
 	ensureMsgf(false, TEXT("%s carries a RemoteFireTag but does not override RemoteFireShot — other clients see nothing."),
 			   *GetName());
+}
+
+int32 UGeoGameplayAbility::GetPlayingFireSectionIndex(AActor const* Avatar) const
+{
+	ACharacter const* Character = Cast<ACharacter>(Avatar);
+	USkeletalMeshComponent const* Mesh = IsValid(Character) ? Character->GetMesh() : nullptr;
+	UAnimInstance const* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
+	if (!AnimInstance || !AnimMontage)
+	{
+		return 0;
+	}
+
+	FString const SectionName = AnimInstance->Montage_GetCurrentSection(AnimMontage).ToString();
+	if (!SectionName.StartsWith(GeoASLib::SectionFireString))
+	{
+		return 0;
+	}
+
+	return FCString::Atoi(*SectionName.RightChop(GeoASLib::SectionFireString.Len()));
 }
 
 void UGeoGameplayAbility::SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC,

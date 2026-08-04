@@ -36,7 +36,6 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 			this, InitialAsset, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
 			/*bAutoDestroy*/ false, /*bAutoActivate*/ false);
 		ensureMsgf(BeamVfxComponent, TEXT("UBeamPattern: failed to spawn the beam VFX system"));
-		BeamVfxComponent->SetColorParameter(GeoNiagaraParams::Color, BeamColor.GetColor());
 	}
 }
 
@@ -56,6 +55,7 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, StartDelay);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamRange);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamHalfWidth * 2.f);
+		BeamVfxComponent->SetColorParameter(GeoNiagaraParams::Color, BeamColor.GetColor());
 	}
 }
 

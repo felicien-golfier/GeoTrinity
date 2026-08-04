@@ -3,6 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+
+#include "GeoNiagaraParams.generated.h"
 
 class UNiagaraComponent;
 class UNiagaraSystem;
@@ -21,6 +24,7 @@ namespace GeoNiagaraParams
 {
 	inline FName const Lifetime(TEXT("User.Lifetime"));
 	inline FName const Color(TEXT("User.Color"));
+	inline FName const Radius(TEXT("User.Radius"));
 
 	/** NS_GeoTrinity_Projectile01 — AGeoProjectile::BulletVFX. */
 	inline FName const BulletRadius(TEXT("User.Bullet_Radius"));
@@ -59,3 +63,53 @@ namespace GeoNiagaraParams
 	 * asset is null. Shared by UGeoBeamVFXComponent and UBeamPattern's identical preview<->beam asset handoff. */
 	void ApplySwappableAsset(UNiagaraComponent* Component, FBeamVfxAssetSet const& Assets, bool bWantIndicator);
 } // namespace GeoNiagaraParams
+
+/** Blueprint-callable access to the GeoNiagaraParams::* names, since Blueprint cannot see a C++ namespace. */
+UCLASS()
+class GEOTRINITY_API UGeoNiagaraParamsLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+
+public:
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetLifetime() { return GeoNiagaraParams::Lifetime; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetColor() { return GeoNiagaraParams::Color; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetRadius() { return GeoNiagaraParams::Radius; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetBulletRadius() { return GeoNiagaraParams::BulletRadius; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetBulletHeadColor() { return GeoNiagaraParams::BulletHeadColor; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetBulletTrailColor() { return GeoNiagaraParams::BulletTrailColor; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetTrailLifetimeScale() { return GeoNiagaraParams::TrailLifetimeScale; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetBeamWidth() { return GeoNiagaraParams::BeamWidth; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetBeamLength() { return GeoNiagaraParams::BeamLength; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetAOERadius() { return GeoNiagaraParams::AOERadius; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetAOEGrowDuration() { return GeoNiagaraParams::AOEGrowDuration; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetAOEColor() { return GeoNiagaraParams::AOEColor; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetAnnulusRadius() { return GeoNiagaraParams::AnnulusRadius; }
+
+	UFUNCTION(BlueprintPure, Category = "Niagara Params")
+	static FName GetFadeOutDuration() { return GeoNiagaraParams::FadeOutDuration; }
+};

@@ -172,6 +172,13 @@ public:
 	/** True when RemoteFireShot repeats every GetFireDelay() until RemoteFireTag is removed (hold-to-fire abilities). */
 	virtual bool IsRemoteFireLooping() const { return false; }
 
+	/**
+	 * Reads back the fire section Avatar's montage is playing right now, so the fire socket can be picked without an
+	 * ability instance to advance the counter — the case on a client watching an ally. Returns 0, the "Start" socket,
+	 * whenever no numbered fire section is playing. CDO-safe, same constraints as RemoteFireShot.
+	 */
+	int32 GetPlayingFireSectionIndex(AActor const* Avatar) const;
+
 protected:
 	/**
 	 * Builds a cosmetic payload from Avatar's replicated state and spawns Params' projectiles along Target's

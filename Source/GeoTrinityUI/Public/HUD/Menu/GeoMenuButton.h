@@ -56,7 +56,7 @@ public:
 protected:
 	/** Applies visual style from properties for design-time preview in the Blueprint editor. */
 	virtual void NativePreConstruct() override;
-	/** Applies visual style and binds ButtonWidget's click delegate to HandleButtonClicked. */
+	/** Binds ButtonWidget's click delegate to HandleButtonClicked. */
 	virtual void NativeConstruct() override;
 	/** Removes the click delegate bound in NativeConstruct. */
 	virtual void NativeDestruct() override;

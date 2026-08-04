@@ -158,8 +158,8 @@ public:
 	FGameplayCueParameters GetBlinkCueParams();
 
 	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
-	 * instigator. */
-	virtual FGameplayCueParameters GetGenericCueParams();
+	 * instigator and CueColor's palette slot as GameplayEffectLevel. */
+	virtual FGameplayCueParameters GetGenericCueParams(EGeoColor CueColor);
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams();
@@ -248,16 +248,29 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float DrainMagnitudePerSecond = 0.f;
 
+	// Each cue tag and the palette slot its VFX draws in. The slot travels to the cue Blueprint as GameplayEffectLevel,
+	// which GeoLib::GetPaletteColorFromIndex turns back into a color — not packed into Normal, which the recall cue
+	// already fills with its direction.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag SpawnGameplayCueTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	EGeoColor SpawnGameplayCueColor = EGeoColor::Neutral;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag RecallGameplayCueTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	EGeoColor RecallGameplayCueColor = EGeoColor::Neutral;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag BlinkingGameplayCueTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	EGeoColor BlinkingGameplayCueColor = EGeoColor::Neutral;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag ExplodeGameplayCueTag;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	EGeoColor ExplodeGameplayCueColor = EGeoColor::Neutral;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag ExpireGameplayCueTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	EGeoColor ExpireGameplayCueColor = EGeoColor::Neutral;
 
 	/** Sound played at each moment of the deployable's life, alongside that moment's gameplay cue. Sound asset, volume,
 	 * audience and attribute-driven pitch per entry; a moment with no entry plays nothing. */

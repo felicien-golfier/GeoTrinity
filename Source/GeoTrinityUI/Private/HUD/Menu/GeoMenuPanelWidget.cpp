@@ -23,19 +23,13 @@ FReply UGeoMenuPanelWidget::NativeOnKeyDown(FGeometry const& InGeometry, FKeyEve
 		return FReply::Handled();
 	}
 
-	// Only when the panel itself is focused (nothing selected): key events bubble up the focus path, so
-	// without this guard a navigation key travelling from a focused button would be swallowed here and
-	// break Slate's button-to-button navigation.
-	UWidget* InitialFocusWidget = GetInitialFocusWidget();
-	if (InitialFocusWidget && HasUserFocus(GetOwningPlayer())
-		&& FSlateApplication::Get().GetNavigationDirectionFromKey(InKeyEvent) != EUINavigation::Invalid)
+	if (FSlateApplication::Get().GetNavigationDirectionFromKey(InKeyEvent) != EUINavigation::Invalid)
 	{
-		if (APlayerController* OwningPlayer = GetOwningPlayer())
+		FReply const Reply = FocusInitialWidgetForNavigation();
+		if (Reply.IsEventHandled())
 		{
-			OwningPlayer->CurrentMouseCursor = EMouseCursor::None;
-			OwningPlayer->SetShowMouseCursor(false);
+			return Reply;
 		}
-		return FReply::Handled().SetUserFocus(InitialFocusWidget->TakeWidget(), EFocusCause::Navigation);
 	}
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
@@ -44,16 +38,13 @@ FReply UGeoMenuPanelWidget::NativeOnKeyDown(FGeometry const& InGeometry, FKeyEve
 FReply UGeoMenuPanelWidget::NativeOnAnalogValueChanged(FGeometry const& InGeometry,
 													   FAnalogInputEvent const& InAnalogEvent)
 {
-	UWidget* InitialFocusWidget = GetInitialFocusWidget();
-	if (InitialFocusWidget && HasUserFocus(GetOwningPlayer())
-		&& FSlateApplication::Get().GetNavigationDirectionFromAnalog(InAnalogEvent) != EUINavigation::Invalid)
+	if (FSlateApplication::Get().GetNavigationDirectionFromAnalog(InAnalogEvent) != EUINavigation::Invalid)
 	{
-		if (APlayerController* OwningPlayer = GetOwningPlayer())
+		FReply const Reply = FocusInitialWidgetForNavigation();
+		if (Reply.IsEventHandled())
 		{
-			OwningPlayer->CurrentMouseCursor = EMouseCursor::None;
-			OwningPlayer->SetShowMouseCursor(false);
+			return Reply;
 		}
-		return FReply::Handled().SetUserFocus(InitialFocusWidget->TakeWidget(), EFocusCause::Navigation);
 	}
 	return Super::NativeOnAnalogValueChanged(InGeometry, InAnalogEvent);
 }
@@ -61,27 +52,51 @@ FReply UGeoMenuPanelWidget::NativeOnAnalogValueChanged(FGeometry const& InGeomet
 // ---------------------------------------------------------------------------------------------------------------------
 FReply UGeoMenuPanelWidget::NativeOnMouseMove(FGeometry const& InGeometry, FPointerEvent const& InMouseEvent)
 {
-	// Mouse takes over: pull focus off any gamepad-selected menu button ("SGeoButton" is the Slate type
-	// UGeoButton builds) so only the widget really under the cursor shows as hovered. On a UGeoMenuButton
-	// this refocuses its own inner button via NativeOnFocusReceived, keeping selection and hover in sync.
 	FVector2D const MousePosition = InMouseEvent.GetScreenSpacePosition();
 	bool const bMoved = !bHasLastFocusStealMousePosition || !MousePosition.Equals(LastFocusStealMousePosition, 1.f);
 	LastFocusStealMousePosition = MousePosition;
 	bHasLastFocusStealMousePosition = true;
-
-	if (bMoved)
+	if (!bMoved)
 	{
-		if (APlayerController* OwningPlayer = GetOwningPlayer())
-		{
-			OwningPlayer->CurrentMouseCursor = EMouseCursor::Crosshairs;
-			OwningPlayer->SetShowMouseCursor(true);
-		}
+		return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
 	}
 
-	TSharedPtr<SWidget> FocusedWidget = FSlateApplication::Get().GetUserFocusedWidget(InMouseEvent.GetUserIndex());
-	if (bMoved && FocusedWidget && FocusedWidget->GetType() == "SGeoButton")
+	SetMouseCursorVisible(true);
+
+	// Mouse takes over: pull focus off any gamepad-selected menu button ("SGeoButton" is the Slate type
+	// UGeoButton builds) so only the widget really under the cursor shows as hovered. On a UGeoMenuButton
+	// this refocuses its own inner button via NativeOnFocusReceived, keeping selection and hover in sync.
+	TSharedPtr<SWidget> const FocusedWidget =
+		FSlateApplication::Get().GetUserFocusedWidget(InMouseEvent.GetUserIndex());
+	if (FocusedWidget && FocusedWidget->GetType() == "SGeoButton")
 	{
 		return FReply::Handled().SetUserFocus(TakeWidget(), EFocusCause::Mouse);
 	}
 	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FReply UGeoMenuPanelWidget::FocusInitialWidgetForNavigation()
+{
+	UWidget* InitialFocusWidget = GetInitialFocusWidget();
+	if (!InitialFocusWidget || !HasUserFocus(GetOwningPlayer()))
+	{
+		return FReply::Unhandled();
+	}
+
+	SetMouseCursorVisible(false);
+	return FReply::Handled().SetUserFocus(InitialFocusWidget->TakeWidget(), EFocusCause::Navigation);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMenuPanelWidget::SetMouseCursorVisible(bool const bVisible)
+{
+	APlayerController* OwningPlayer = GetOwningPlayer();
+	if (!OwningPlayer)
+	{
+		return;
+	}
+
+	OwningPlayer->CurrentMouseCursor = bVisible ? EMouseCursor::Crosshairs : EMouseCursor::None;
+	OwningPlayer->SetShowMouseCursor(bVisible);
 }

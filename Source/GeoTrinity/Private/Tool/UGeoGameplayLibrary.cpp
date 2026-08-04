@@ -12,10 +12,11 @@
 #include "GameFramework/PlayerState.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/GameplayStatics.h"
+#include "Tool/GeoColor.h"
 #include "VisualLogger/VisualLogger.h"
 
 
-FColor UGeoGameplayLibrary::GetRandomColorFromPalette()
+FColor UGeoGameplayLibrary::GetRandomColor()
 {
 	return ColorPalette[FMath::RandRange(0, std::size(ColorPalette) - 1)];
 }
@@ -28,6 +29,18 @@ FColor UGeoGameplayLibrary::GetColorForObject(UObject const* Object)
 	}
 
 	return ColorPalette[Object->GetUniqueID() % std::size(ColorPalette)];
+}
+
+FLinearColor UGeoGameplayLibrary::GetPaletteColorFromIndex(int const ColorIndex, float const Alpha)
+{
+	return GetPaletteColor(static_cast<EGeoColor>(ColorIndex), Alpha);
+}
+
+FLinearColor UGeoGameplayLibrary::GetPaletteColor(EGeoColor const Color, float const Alpha)
+{
+	FGeoColorParam ColorParam;
+	ColorParam.Color = Color;
+	return ColorParam.GetColor(Alpha);
 }
 
 void UGeoGameplayLibrary::TriggerCameraShake(UObject const* WorldContextObject,
@@ -116,6 +129,25 @@ float UGeoGameplayLibrary::GetServerTime(UObject const* WorldContextObject, bool
 	return GetServerTime(WorldContextObject->GetWorld(), bUpdatedWithPing);
 }
 
+float UGeoGameplayLibrary::GetOnWayPingSec(UWorld const* World)
+{
+	APlayerController const* LocalPlayerController = World->GetFirstPlayerController();
+	if (!IsValid(LocalPlayerController))
+	{
+		UE_LOG(LogTemp, Error, TEXT("No local player controller found"));
+		return 0.f;
+	}
+
+	APlayerState const* PlayerState = LocalPlayerController->GetPlayerState<APlayerState>();
+	if (!IsValid(PlayerState))
+	{
+		UE_LOG(LogTemp, Error, TEXT("No local player state found"));
+		return 0.f;
+	}
+
+	float const OnWayPingSec = LocalPlayerController->GetPlayerState<APlayerState>()->GetPingInMilliseconds() * 0.0005f;
+	return OnWayPingSec;
+}
 float UGeoGameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdatedWithPing)
 {
 	if (IsServer(World))
@@ -133,22 +165,7 @@ float UGeoGameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdate
 
 	if (bUpdatedWithPing)
 	{
-		APlayerController const* LocalPlayerController = World->GetFirstPlayerController();
-		if (!IsValid(LocalPlayerController))
-		{
-			UE_LOG(LogTemp, Error, TEXT("No local player controller found"));
-			return ServerTimeSeconds;
-		}
-
-		APlayerState const* PlayerState = LocalPlayerController->GetPlayerState<APlayerState>();
-		if (!IsValid(PlayerState))
-		{
-			UE_LOG(LogTemp, Error, TEXT("No local player state found"));
-			return ServerTimeSeconds;
-		}
-		float const OnWayPingSec =
-			LocalPlayerController->GetPlayerState<APlayerState>()->GetPingInMilliseconds() * 0.0005f;
-		ServerTimeSeconds += OnWayPingSec;
+		ServerTimeSeconds += GetOnWayPingSec(World);
 	}
 
 	return ServerTimeSeconds;
@@ -176,8 +193,9 @@ TArray<AActor*> UGeoGameplayLibrary::GetTargetPoints(UObject const* WorldContext
 	return SpawnPoints;
 }
 
-void UGeoGameplayLibrary::TeleportPlayersToTargetPoints(UObject const* WorldContextObject, FGameplayTag const PurposeTag,
-													    FGameplayTag const ArenaTag, FName const ExemptZoneName)
+void UGeoGameplayLibrary::TeleportPlayersToTargetPoints(UObject const* WorldContextObject,
+														FGameplayTag const PurposeTag, FGameplayTag const ArenaTag,
+														FName const ExemptZoneName)
 {
 	UWorld* World = WorldContextObject ? WorldContextObject->GetWorld() : nullptr;
 	if (!ensureMsgf(World, TEXT("TeleportPlayersToTargetPoints: no world")))

@@ -330,8 +330,8 @@ void AGeoDeployableBase::Explode(float const Value)
 	ExplodeEffect(Value);
 	if (!GeoLib::IsDedicatedServer(this) && ExplodeGameplayCueTag.IsValid())
 	{
-		FGameplayCueParameters CueParams = GetGenericCueParams();
-		CueParams.Normal = FVector(Value, 0.f, 0.f);
+		FGameplayCueParameters CueParams = GetGenericCueParams(ExplodeGameplayCueColor);
+		CueParams.Normal.X = Value;
 		ExecuteCue(ExplodeGameplayCueTag, CueParams);
 	}
 	PlaySoundOneShot(EDeployableSoundType::Explode);
@@ -374,7 +374,7 @@ void AGeoDeployableBase::Expire(bool const bForce)
 	if (!bForce)
 	{
 
-		ExecuteCue(ExpireGameplayCueTag, GetGenericCueParams());
+		ExecuteCue(ExpireGameplayCueTag, GetGenericCueParams(ExpireGameplayCueColor));
 		PlaySoundOneShot(EDeployableSoundType::Expire);
 		if (!bRecalled)
 		{
@@ -480,7 +480,7 @@ void AGeoDeployableBase::OnRep_Active(bool bOldValue)
 			PlaySoundOneShot(EDeployableSoundType::Recall);
 			if (bExplodeAtRecall)
 			{
-				ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams());
+				ExecuteCue(ExplodeGameplayCueTag, GetGenericCueParams(ExplodeGameplayCueColor));
 				PlaySoundOneShot(EDeployableSoundType::Explode);
 			}
 		}
@@ -527,19 +527,19 @@ bool AGeoDeployableBase::IsBlinking() const
 
 FGameplayCueParameters AGeoDeployableBase::GetSpawnCueParams()
 {
-	FGameplayCueParameters CueParams = GetGenericCueParams();
-	CueParams.Normal = FVector(GetData()->Params.LifeDrainMaxDuration, 0.f, 0.f);
+	FGameplayCueParameters CueParams = GetGenericCueParams(SpawnGameplayCueColor);
+	CueParams.Normal.X = GetData()->Params.LifeDrainMaxDuration;
 	return CueParams;
 }
 
 FGameplayCueParameters AGeoDeployableBase::GetBlinkCueParams()
 {
-	FGameplayCueParameters CueParams = GetGenericCueParams();
-	CueParams.Normal = FVector(GetData()->Params.BlinkDuration, 0.f, 0.f);
+	FGameplayCueParameters CueParams = GetGenericCueParams(BlinkingGameplayCueColor);
+	CueParams.Normal.X = GetData()->Params.BlinkDuration;
 	return CueParams;
 }
 
-FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams()
+FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(EGeoColor const CueColor)
 {
 	FGameplayCueParameters CueParams;
 	CueParams.Location = GetActorLocation();
@@ -548,6 +548,7 @@ FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams()
 	CueParams.EffectCauser = this;
 	CueParams.Instigator = GetData()->Instigator;
 	CueParams.AbilityLevel = GetData()->Level;
+	CueParams.GameplayEffectLevel = static_cast<int32>(CueColor);
 	CueParams.RawMagnitude = GetData()->Params.Size;
 	CueParams.NormalizedMagnitude = GetData()->Params.Value;
 	return CueParams;
@@ -555,7 +556,7 @@ FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams()
 
 FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
 {
-	FGameplayCueParameters CueParams = GetGenericCueParams();
+	FGameplayCueParameters CueParams = GetGenericCueParams(RecallGameplayCueColor);
 	CueParams.Normal = (GetData()->Instigator->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 	CueParams.NormalizedMagnitude = IsBlinking() ? 1.f : 0.f;
 	return CueParams;

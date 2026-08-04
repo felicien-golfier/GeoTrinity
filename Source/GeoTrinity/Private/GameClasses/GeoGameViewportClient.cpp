@@ -8,6 +8,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
 #include "Settings/GeoGameUserSettings.h"
+#include "Widgets/SViewport.h"
 
 void UGeoGameViewportClient::Init(FWorldContext& WorldContext, UGameInstance* OwningGameInstance,
 								  bool bCreateNewAudioDevice)
@@ -26,9 +27,13 @@ void UGeoGameViewportClient::ReceivedFocus(FViewport* InViewport)
 	// player's index, which never covers a pad that has not joined yet. Focusing all of them also arms Slate's
 	// "last all users" focus widget, which FSlateApplication::RegisterNewUser copies onto every Slate user created
 	// afterwards — that inheritance is what lets a pad's first press reach InputKey.
-	if (FSlateApplication::IsInitialized())
+	// This client's own viewport, never SetAllUserFocusToGameViewport: that one targets Slate's single global game
+	// viewport widget, so with several client windows every window pulls focus into whichever registered last, and the
+	// window losing it hands it straight back through its own input-mode focus reply.
+	TSharedPtr<SViewport> const ViewportWidget = GetGameViewportWidget();
+	if (FSlateApplication::IsInitialized() && ViewportWidget)
 	{
-		FSlateApplication::Get().SetAllUserFocusToGameViewport();
+		FSlateApplication::Get().SetAllUserFocus(ViewportWidget);
 	}
 }
 

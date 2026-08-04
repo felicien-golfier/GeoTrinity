@@ -98,7 +98,7 @@ void UGeoAbilitySystemComponent::OnRemoteFireTagChanged(FGameplayTag const Remot
 	}
 
 	// Mirrors ScheduleFireTrigger: the shot lands one fire delay after activation, or right away when there is none.
-	float const FireDelay = RemoteFire.AbilityCDO->GetFireDelay();
+	float const FireDelay = RemoteFire.AbilityCDO->GetFireDelay() - GeoLib::GetOnWayPingSec(GetWorld());
 	if (FireDelay <= 0.f)
 	{
 		RemoteFireShot(RemoteFireTag);
@@ -119,7 +119,13 @@ void UGeoAbilitySystemComponent::RemoteFireShot(FGameplayTag const RemoteFireTag
 		return;
 	}
 
-	RemoteFires.FindChecked(RemoteFireTag).AbilityCDO->RemoteFireShot(Avatar, this);
+	UGeoGameplayAbility const* AbilityCDO = RemoteFires.FindChecked(RemoteFireTag).AbilityCDO;
+
+	// Nothing advanced the counter here: the ally's ability never instances on this machine. The montage does
+	// replicate, so the section it is playing tells which fire socket the shot leaves from.
+	FireSectionIndices.Add(AbilityCDO->GetAbilityTag(), AbilityCDO->GetPlayingFireSectionIndex(Avatar));
+
+	AbilityCDO->RemoteFireShot(Avatar, this);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

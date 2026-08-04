@@ -41,6 +41,15 @@ protected:
 	}
 
 private:
+	/**
+	 * Moves focus to GetInitialFocusWidget() and hides the mouse cursor. Unhandled unless the panel itself holds
+	 * focus: navigation input bubbles up the focus path, so without that guard a key travelling from an already
+	 * focused button would be swallowed here and break Slate's button-to-button navigation.
+	 */
+	FReply FocusInitialWidgetForNavigation();
+
+	void SetMouseCursorVisible(bool bVisible);
+
 	// Screen-space position at the last mouse-move that actually stole focus. Distinguishes real mouse
 	// motion from OS-level jitter, which otherwise fires NativeOnMouseMove every frame and keeps yanking
 	// focus back from gamepad navigation.

@@ -2,9 +2,8 @@
 
 #include "HUD/Menu/GeoMenuButton.h"
 
-#include "Components/Button.h"
-#include "HUD/Menu/GeoButton.h"
 #include "Components/TextBlock.h"
+#include "HUD/Menu/GeoButton.h"
 #include "Styling/SlateTypes.h"
 
 void UGeoMenuButton::NativePreConstruct()
@@ -16,13 +15,15 @@ void UGeoMenuButton::NativePreConstruct()
 void UGeoMenuButton::NativeConstruct()
 {
 	Super::NativeConstruct();
-	ApplyStyle();
 
 	if (!ButtonWidget)
 	{
 		ensureMsgf(ButtonWidget, TEXT("UGeoMenuButton: Button widget is not bound — add a UGeoButton named 'ButtonWidget' to the widget hierarchy"));
 		return;
 	}
+
+	ensureMsgf(ButtonWidget->GetIsFocusable(),
+			   TEXT("UGeoMenuButton: ButtonWidget is not focusable — forwarded focus lands back on this widget"));
 
 	ButtonWidget->OnClicked.AddDynamic(this, &UGeoMenuButton::HandleButtonClicked);
 }

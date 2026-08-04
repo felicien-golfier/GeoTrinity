@@ -14,6 +14,7 @@ constexpr float Sqrt3 = 1.7320508f;
 
 class AEnemyCharacter;
 class APlayableCharacter;
+enum class EGeoColor : uint8;
 class AGeoProjectile;
 class APawn;
 class APlayerController;
@@ -42,10 +43,23 @@ class UGeoGameplayLibrary : public UBlueprintFunctionLibrary
 
 public:
 	/** Returns a randomly selected color from the static debug ColorPalette array. */
-	static FColor GetRandomColorFromPalette();
+	static FColor GetRandomColor();
 	/** Returns a deterministic debug color for WorldContextObject based on its object hash. */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static FColor GetColorForObject(UObject const* WorldContextObject);
+
+	/**
+	 * Returns the Game Data Settings palette color of Color — the same lookup the outline post-process does through the
+	 * palette texture, for Blueprints (Gameplay Cues) that receive a slot as a number. A byte pin auto-casts to the
+	 * Color pin, so an index carried in cue parameters plugs straight in.
+	 *
+	 * @param Alpha  Alpha to apply to the returned color. Negative keeps the palette color's own alpha unchanged.
+	 */
+	UFUNCTION(BlueprintPure, Category = "GameplayLibrary")
+	static FLinearColor GetPaletteColorFromIndex(int ColorIndex, float Alpha = -1.f);
+
+	UFUNCTION(BlueprintPure, Category = "GameplayLibrary")
+	static FLinearColor GetPaletteColor(EGeoColor Color, float Alpha = -1.f);
 
 	/** Returns true when running with authority (listen server or dedicated server). */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
@@ -110,6 +124,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
+	static float GetOnWayPingSec(UWorld const* World);
 	/** Returns the current server world time in seconds. @see GetServerTime(UObject*) for parameter and warning
 	 * details. */
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
