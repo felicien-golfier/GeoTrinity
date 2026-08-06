@@ -71,45 +71,59 @@ class GEOTRINITY_API UGeoNiagaraParamsLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
+	/** Returns the Niagara user parameter name for system or actor lifetime. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetLifetime() { return GeoNiagaraParams::Lifetime; }
 
+	/** Returns the Niagara user parameter name for a generic color tint. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetColor() { return GeoNiagaraParams::Color; }
 
+	/** Returns the Niagara user parameter name for a generic radius. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetRadius() { return GeoNiagaraParams::Radius; }
 
+	/** Returns the Niagara user parameter name for the projectile bullet radius (NS_GeoTrinity_Projectile01). */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetBulletRadius() { return GeoNiagaraParams::BulletRadius; }
 
+	/** Returns the Niagara user parameter name for the projectile bullet head color. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetBulletHeadColor() { return GeoNiagaraParams::BulletHeadColor; }
 
+	/** Returns the Niagara user parameter name for the projectile bullet trail color. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetBulletTrailColor() { return GeoNiagaraParams::BulletTrailColor; }
 
+	/** Returns the Niagara user parameter name for the projectile trail lifetime scale. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetTrailLifetimeScale() { return GeoNiagaraParams::TrailLifetimeScale; }
 
+	/** Returns the Niagara user parameter name for beam visual width (UGeoBeamVFXComponent, UBeamPattern). */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetBeamWidth() { return GeoNiagaraParams::BeamWidth; }
 
+	/** Returns the Niagara user parameter name for beam visual length (UGeoBeamVFXComponent, UBeamPattern). */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetBeamLength() { return GeoNiagaraParams::BeamLength; }
 
+	/** Returns the Niagara user parameter name for the devastating-wave AOE outer radius. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetAOERadius() { return GeoNiagaraParams::AOERadius; }
 
+	/** Returns the Niagara user parameter name for the devastating-wave AOE grow animation duration. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetAOEGrowDuration() { return GeoNiagaraParams::AOEGrowDuration; }
 
+	/** Returns the Niagara user parameter name for the devastating-wave AOE color tint. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetAOEColor() { return GeoNiagaraParams::AOEColor; }
 
+	/** Returns the Niagara user parameter name for the devastating-wave AOE inner annulus radius. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetAnnulusRadius() { return GeoNiagaraParams::AnnulusRadius; }
 
+	/** Returns the Niagara user parameter name for the devastating-wave AOE fade-out duration. */
 	UFUNCTION(BlueprintPure, Category = "Niagara Params")
 	static FName GetFadeOutDuration() { return GeoNiagaraParams::FadeOutDuration; }
 };
