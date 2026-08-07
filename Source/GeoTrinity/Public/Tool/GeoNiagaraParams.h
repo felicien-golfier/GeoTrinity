@@ -52,7 +52,8 @@ namespace GeoNiagaraParams
 		UNiagaraSystem* BeamSystem = nullptr;
 		UNiagaraSystem* PreviewSystem = nullptr;
 
-		UNiagaraSystem* GetDesiredAsset(bool const bWantPreview) const
+		/** Returns PreviewSystem when bWantPreview is true and a preview asset is set; otherwise returns BeamSystem. */
+	UNiagaraSystem* GetDesiredAsset(bool const bWantPreview) const
 		{
 			return (bWantPreview && PreviewSystem) ? PreviewSystem : BeamSystem;
 		}
