@@ -41,6 +41,7 @@ class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoChannelBeamAbility
 	/** Beam half-width in cm: half the capsule radius, grown by HalfWidthGrowthPerAbsorbedZone per absorbed zone. */
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const override;
 
+	virtual float GetBeamDuration() const override;
 	/** Damage applied per second to each enemy inside the beam cylinder. Scales with ability level. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat DamagePerSecond;

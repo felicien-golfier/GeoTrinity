@@ -26,7 +26,7 @@ public:
 	/** Registers Data (COND_InitialOnly) for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/** Returns health / max-health ratio (0–1); drives the health bar. Zero if max-health is not yet initialized. */
-	virtual float GetDurationPercent() const override;
+	virtual float GetDrainDurationRatio() const override;
 
 protected:
 	virtual FDeployableData const* GetData() const override { return &Data; }

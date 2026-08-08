@@ -18,7 +18,7 @@ static constexpr int32 ChargeRatioTolerancePermille = 100;
 UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 {
 	FireMode = EFireMode::ChargeForFireDelay;
-	CommitBehaviour = ECommitBehaviour::AtActivate;
+	CommitBehaviour = ECommitBehaviour::CostAtActivateCooldownAtEnd;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

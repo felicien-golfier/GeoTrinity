@@ -26,7 +26,8 @@ class GEOTRINITY_API UGeoChannelBeamAbility
 	GENERATED_BODY()
 
 public:
-	/** Registers as a Conditional tickable on the game thread; opts out on async loading threads where CDO construction may run. */
+	/** Registers as a Conditional tickable on the game thread; opts out on async loading threads where CDO construction
+	 * may run. */
 	UGeoChannelBeamAbility();
 
 	/** Shows the windup preview (Ray Zone Indicator) at the beam's resting dimensions before calling Super. */
@@ -62,6 +63,8 @@ protected:
 
 	/** Beam half-width in cm. Default: half the avatar's capsule radius. */
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const;
+
+	virtual float GetBeamDuration() const;
 
 	/** Attitude bitmask used by the per-tick line scan. */
 	virtual uint8 GetScanAttitudeMask() const { return TeamAttitudeMask::All; }

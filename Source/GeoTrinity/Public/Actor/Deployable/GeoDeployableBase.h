@@ -17,6 +17,7 @@
 
 
 struct FEffectData;
+class UMeshComponent;
 class UWidgetComponent;
 class UUserWidget;
 
@@ -134,7 +135,7 @@ public:
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
-	virtual float GetDurationPercent() const;
+	virtual float GetDrainDurationRatio() const;
 	/** Starts the pre-expiry blink timer for the given duration in seconds. */
 	virtual void StartBlinking();
 
@@ -344,6 +345,10 @@ private:
 	/** Renders every mesh of this deployable into the custom-depth pass with OutlineColor's slot index, so the outline
 	 * post-process material can draw its silhouette in that color. */
 	void ApplyOutlineStencil() const;
+
+	/** Every mesh drawing this deployable. UWidgetComponent derives from UMeshComponent, so the health bar is filtered
+	 * out — it is not part of the deployable's look. */
+	TInlineComponentArray<UMeshComponent*> GetVisualMeshComponents() const;
 
 	void OnBlinkVisibilityTick();
 	void EnableActorCollision();

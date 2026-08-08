@@ -74,9 +74,9 @@ void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const Width, float const Length,
-										bool const bIsIndicator, float const IndicatorLifetime)
+										bool const bIsIndicator, float const LifeTime)
 {
-	BeamState = {bActive, Width, Length, bIsIndicator, IndicatorLifetime};
+	BeamState = {bActive, Width, Length, bIsIndicator, LifeTime};
 	// Apply locally too: the listen-server host renders but never receives OnRep for its own writes.
 	ApplyBeamState();
 }
@@ -106,7 +106,7 @@ void UGeoBeamVFXComponent::ApplyBeamState() const
 			NiagaraComponent->SetActive(true);
 		}
 
-		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, BeamState.IndicatorLifetime);
+		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, BeamState.Lifetime);
 		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamState.Width);
 		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamState.Length);
 		NiagaraComponent->SetVariableLinearColor(GeoNiagaraParams::Color, BeamColor);

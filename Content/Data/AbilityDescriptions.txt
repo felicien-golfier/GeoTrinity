@@ -23,7 +23,7 @@ Recalls all your deployed turrets. Each returning turret damages every enemy on 
 Blinking turrets (about to expire) deal {BlinkBonusEffect}.
 
 [Ability.Spell.BasicBeam]
-Hold to charge, release to fire a beam dealing {Damage} damage, scaled to {MinDamageMultiplier:%} (no charge) up to {MaxDamageMultiplier:%} (full charge). Release in the sweet spot for {SweetSpotDamageMultiplier:%} instead.
+Hold to charge, release to fire a beam dealing {Damage} damage, scaled to {MinDamageMultiplier:%} (no charge) up to {MaxDamageMultiplier:%} (full charge). Release in the sweet spot for {SweetSpotDamageMultiplier:%} instead. Reload fires the charged beam too, to catch the sweet spot on a press rather than a release.
 
 [Ability.Spell.MoiraBeam]
 Channels a beam for {InitialDuration}s that deals {DamagePerSecond}/sec damage to enemies and heals allies for {HealPerSecond}/sec, while boosting your movement speed by {SpeedBuffEffect:%}. Absorbing your Healing Zones on the beam path extends it by {DurationPerAbsorbedZone}s, widens it, and boosts its damage and healing by {DamageAndHealBoostPerAbsorbedZone:%} per zone and {BoostPerFinishedZone:%} bonus per finished absorbed zone, up to {DamageAndHealBoostPerAbsorbedZone*MaximumZoneAbsorbed:%} boost;

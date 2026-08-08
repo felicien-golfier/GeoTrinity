@@ -32,10 +32,8 @@ struct FBeamVFXState
 	UPROPERTY()
 	bool bIsIndicator = false;
 
-	/** Indicator-only: pushed to the indicator system's Lifetime user param so its telegraph animation matches the
-	 * ability's actual fire delay. Ignored while showing BeamSystem. */
 	UPROPERTY()
-	float IndicatorLifetime = 0.f;
+	float Lifetime = 0.f;
 };
 
 /**
@@ -66,12 +64,11 @@ public:
 	 * owning client may also call it for lag-free local visuals (its write only feeds the local NiagaraComponent).
 	 * bIsIndicator swaps the NiagaraComponent onto the component's own IndicatorSystem instead of the ability's
 	 * BeamSystem — used for the windup telegraph shown before Fire(). IndicatorSystem is a class default (same asset
-	 * on every machine already), so only the bool needs to replicate, not a second system pointer. IndicatorLifetime
+	 * on every machine already), so only the bool needs to replicate, not a second system pointer. Lifetime
 	 * (only meaningful while bIsIndicator) is pushed to the indicator's Lifetime user param, e.g. the ability's fire
 	 * delay, so the telegraph animation times out exactly when the beam actually fires.
 	 */
-	void SetBeamState(bool bActive, float Width, float Length, bool bIsIndicator = false,
-					  float IndicatorLifetime = 0.f);
+	void SetBeamState(bool bActive, float Width, float Length, bool bIsIndicator = false, float LifeTime = 0.f);
 	/** Assigns the Niagara system before BeginPlay; call from the owning ability's OnGiveAbility. */
 	void SetNiagaraSystem(TObjectPtr<UNiagaraSystem> const Object) { BeamSystem = Object; };
 	/** Assigns the beam tint pushed to the Niagara Color user parameter; call from the owning ability's OnGiveAbility.

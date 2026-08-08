@@ -53,6 +53,8 @@ protected:
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const override { return BeamHalfWidth; }
 	virtual uint8 GetScanAttitudeMask() const override { return TeamAttitudeMask::FriendlyOrNeutral; }
 
+	virtual float GetBeamDuration() const override;
+
 private:
 	/**
 	 * Server: adds the captured damage to the Square's SacrificeValue and splits it across its alive walls + the

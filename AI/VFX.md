@@ -41,8 +41,31 @@ for a in ar.get_assets(filter):
 | Unlit particle material | `/Game/VFX/Generic/Materials/M_Particle_Unlit_Advanced` |
 | Zone indicator (ring + hard fill) | `/Game/VFX/Generic/Materials/M_ZoneIndicator` |
 | Zone indicator ray (bar, center→edges) | `/Game/VFX/Generic/Materials/M_ZoneIndicatorRay` |
+| Pulse circle (outline ring + inward pulsing fill) | `/Game/VFX/Generic/Materials/M_PulseCircle` |
+| Pulse beam (outline frame + pulse running to target) | `/Game/VFX/Generic/Materials/M_PulseBeam` |
+| Clock-wipe mask function (remaining-life readout) | `/Game/VFX/Generic/Materials/Functions/MF_DurationWipe` |
+| Moira beam niagara (`Beam_Length`/`Beam_Width`/`Color`) | `/Game/VFX/Assets/NS_Cirlce_MoiraBeam` |
 
 Note: The turret recall asset has a typo — "Rurret" not "Turret".
+
+## Custom Primitive Data
+
+Slot 0 is the deployable duration wipe and is the only slot in use. `AGeoDeployableBase::Tick` writes
+`1 - GetDurationPercent()` onto every visual mesh; `M_PulseCircle`'s `DurationSpent` parameter reads it back
+with `bUseCustomPrimitiveData`. This replaces a per-actor dynamic material instance — one shared material
+serves every zone in the level.
+
+The value is the fraction **spent**, never the fraction remaining, and inverting it is not cosmetic: custom
+primitive data nobody writes reads 0, so "remaining" would render every unwritten primitive as fully drained.
+`MI_PulseCircle`'s sibling instance `PulseCircleInst` on `BP_DamageZone` is exactly that case — a
+`GeoEffectZone`, not a deployable, so nothing ever writes its slot.
+
+Claiming a new slot means picking an unused index and adding it here — the material addresses the slot by
+index, so nothing warns when two features collide on one.
+
+`M_PulseBeam` carries the same readout under the same `DurationSpent` name but as a plain scalar parameter,
+because it is driven from a Niagara emitter: a renderer binds material parameters, and custom primitive data
+belongs to a primitive component, which a sprite is not.
 
 ## MCP Tool Schema Constraint
 

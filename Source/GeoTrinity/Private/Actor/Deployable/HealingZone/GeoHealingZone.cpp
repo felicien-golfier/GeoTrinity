@@ -41,7 +41,7 @@ void AGeoHealingZone::InitInteractable(FInteractableActorData* InputData)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float AGeoHealingZone::GetDurationPercent() const
+float AGeoHealingZone::GetDrainDurationRatio() const
 {
 	UAbilitySystemComponent const* ASC = GetAbilitySystemComponent();
 	float const MaxHealth = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());

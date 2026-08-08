@@ -57,8 +57,9 @@ bool UGeoSacrificeBeamAbility::TryRedirectIncomingDamage(UAbilitySystemComponent
 	// The victim is saved from the hit, never from more than it was worth: only what it would actually have lost
 	// (shield absorbs before health) is redirected, the overkill evaporates.
 	float const RedirectedDamage =
-		FMath::Min(Damage, VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute())
-							   + VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute()));
+		FMath::Min(Damage,
+				   VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute())
+					   + VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute()));
 	RedirectCapturedDamage(RedirectedDamage, DamageContext.GetOriginalInstigatorAbilitySystemComponent(), *SquareASC,
 						   static_cast<int32>(MarkEffect->Spec.GetLevel()));
 	return true;
@@ -164,6 +165,10 @@ void UGeoSacrificeBeamAbility::TickBeam(float const /*DeltaTime*/, TArray<AActor
 	}
 }
 
+float UGeoSacrificeBeamAbility::GetBeamDuration() const
+{
+	return MaxChannelDuration;
+}
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage, UAbilitySystemComponent* SourceAsc,
 													  UAbilitySystemComponent& SquareASC, int32 const AbilityLevel)

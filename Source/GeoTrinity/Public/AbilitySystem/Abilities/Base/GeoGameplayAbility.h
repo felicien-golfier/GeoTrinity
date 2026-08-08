@@ -169,7 +169,8 @@ public:
 	 */
 	virtual void RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const;
 
-	/** True when RemoteFireShot repeats every GetFireDelay() until RemoteFireTag is removed (hold-to-fire abilities). */
+	/** True when RemoteFireShot repeats every GetFireDelay() until RemoteFireTag is removed (hold-to-fire abilities).
+	 */
 	virtual bool IsRemoteFireLooping() const { return false; }
 
 	/**
@@ -250,8 +251,10 @@ public:
 
 protected:
 	FAbilityPayload StoredPayload;
-	ECommitBehaviour CommitBehaviour = ECommitBehaviour::AtActivate;
 	FTimerHandle FireTriggerTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	ECommitBehaviour CommitBehaviour = ECommitBehaviour::AtActivate;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))

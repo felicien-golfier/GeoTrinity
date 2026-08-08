@@ -21,6 +21,10 @@
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+// M_PulseCircle's DurationSpent parameter reads this slot. Custom primitive data is addressed by index and never by
+// name, so this constant and the material's PrimitiveDataIndex are the whole contract between them.
+int32 constexpr DurationSpentPrimitiveDataIndex = 0;
+
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoDeployableBase::AGeoDeployableBase(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -174,6 +178,12 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	float const DurationSpent = 1.f - GetDrainDurationRatio();
+	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
+	{
+		MeshComponent->SetCustomPrimitiveDataFloat(DurationSpentPrimitiveDataIndex, DurationSpent);
+	}
+
 	if (bUseRegularDrain && GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
@@ -220,16 +230,24 @@ void AGeoDeployableBase::ApplyOutlineStencil() const
 	// Stencil 0 means "no outline" to the post-process, so the slot index is shifted up by one.
 	uint8 const StencilValue = static_cast<uint8>(OutlineColor) + 1;
 
-	TInlineComponentArray<UMeshComponent*> const MeshComponents(this);
-	for (UMeshComponent* const MeshComponent : MeshComponents)
+	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
 	{
-		// UWidgetComponent derives from UMeshComponent — without this the health bar would be outlined too.
-		if (!MeshComponent->IsA<UWidgetComponent>())
-		{
-			MeshComponent->SetRenderCustomDepth(true);
-			MeshComponent->SetCustomDepthStencilValue(StencilValue);
-		}
+		MeshComponent->SetRenderCustomDepth(true);
+		MeshComponent->SetCustomDepthStencilValue(StencilValue);
 	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+
+TInlineComponentArray<UMeshComponent*> AGeoDeployableBase::GetVisualMeshComponents() const
+{
+	TInlineComponentArray<UMeshComponent*> MeshComponents(this);
+	MeshComponents.RemoveAll(
+		[](UMeshComponent const* MeshComponent)
+		{
+			return MeshComponent->IsA<UWidgetComponent>();
+		});
+	return MeshComponents;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -409,7 +427,7 @@ void AGeoDeployableBase::Expire(bool const bForce)
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-float AGeoDeployableBase::GetDurationPercent() const
+float AGeoDeployableBase::GetDrainDurationRatio() const
 {
 	if (GetData()->Params.LifeDrainMaxDuration <= 0.f)
 	{

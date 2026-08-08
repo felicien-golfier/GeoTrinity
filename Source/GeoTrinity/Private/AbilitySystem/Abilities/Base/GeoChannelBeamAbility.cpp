@@ -33,7 +33,7 @@ void UGeoChannelBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle const Ha
 		{
 			BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character) * 2.f,
 										   GetDefault<UGameDataSettings>()->GeneralSpellDistance,
-										   /*bIsIndicator=*/true, /*IndicatorLifetime=*/GetFireDelay());
+										   /*bIsIndicator=*/true, /*Lifetime=*/GetFireDelay());
 		}
 	}
 }
@@ -113,6 +113,11 @@ float UGeoChannelBeamAbility::GetCurrentBeamHalfWidth(ACharacter const* Characte
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+float UGeoChannelBeamAbility::GetBeamDuration() const
+{
+	// By default, the ChannelBeam ability doesn't have duration. Needs to be overriden
+	return 0.f;
+}
 void UGeoChannelBeamAbility::Tick(float const DeltaTime)
 {
 	ACharacter const* const Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
@@ -127,7 +132,7 @@ void UGeoChannelBeamAbility::Tick(float const DeltaTime)
 	if (UGeoBeamVFXComponent* BeamVFXComponent = Character->FindComponentByClass<UGeoBeamVFXComponent>())
 	{
 		BeamVFXComponent->SetBeamState(true, CurrentBeamHalfWidth * 2.f,
-									   GetDefault<UGameDataSettings>()->GeneralSpellDistance);
+									   GetDefault<UGameDataSettings>()->GeneralSpellDistance, false, GetBeamDuration());
 	}
 	else
 	{
