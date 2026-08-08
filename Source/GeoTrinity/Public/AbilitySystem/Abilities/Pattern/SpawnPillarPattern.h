@@ -43,7 +43,7 @@ protected:
 private:
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
-	virtual void ExecuteGameplayCue(FGameplayTag GameplayCueTag) override;
+	virtual void ExecuteGameplayCue(FGeoCueParam const& Cue) override;
 	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* InstigatorAsc) const;
 	virtual void StartPattern() override;
 
@@ -61,7 +61,7 @@ private:
 	TArray<TInstancedStruct<FEffectData>> PillarSpawnEffects;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
-	FGameplayTag DirectionCue;
+	FGeoCueParam DirectionCue;
 
 	TSet<FVector2D> PillarSpawnLocations;
 };

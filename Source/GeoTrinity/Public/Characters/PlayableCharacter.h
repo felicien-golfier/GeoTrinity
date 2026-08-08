@@ -17,6 +17,7 @@ class UGameplayEffect;
 class UWidgetComponent;
 class UGeoChargeAbility;
 class UGeoDeployableManagerComponent;
+class UGeoDeploySatelliteComponent;
 
 USTRUCT(BlueprintType)
 struct FPlayerClassData
@@ -56,8 +57,8 @@ class GEOTRINITY_API APlayableCharacter : public AGeoCharacter
 {
 	GENERATED_BODY()
 public:
-	/** Creates widget components for the deploy and charge-beam gauges and the aim cursor, and the deployable manager
-	 * component. */
+	/** Creates widget components for the deploy and charge-beam gauges and the aim cursor, the deployable manager
+	 * component, and the deploy satellite ring. */
 	APlayableCharacter(FObjectInitializer const& ObjectInitializer);
 
 	/** Drives aim rotation toward the cursor and shows the aim cursor while a gamepad owns the aim. */
@@ -160,6 +161,11 @@ protected:
 	// the aim.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> AimCursorComponent;
+
+	// Sits on WidgetAnchorComponent, not the root: the satellites orbit the player themselves, so the ring must not
+	// also be swung around by the character turning toward its aim.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
+	TObjectPtr<UGeoDeploySatelliteComponent> DeploySatelliteComponent;
 
 	/** Distance in world units from the character to its aim cursor. Applied in BeginPlay. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD", meta = (ClampMin = "0.0"))

@@ -4,6 +4,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/Component/GeoDeploySatelliteComponent.h"
 #include "Characters/Component/ShieldBurstPassiveComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameClasses/GeoGameState.h"
@@ -43,6 +44,9 @@ APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializ
 	{
 		AimCursorComponent->SetWidgetClass(AimCursorWidgetClass);
 	}
+
+	DeploySatelliteComponent = CreateDefaultSubobject<UGeoDeploySatelliteComponent>(TEXT("DeploySatelliteComponent"));
+	DeploySatelliteComponent->SetupAttachment(WidgetAnchorComponent);
 
 	TeamId = ETeam::Player;
 }

@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Characters/Component/GeoDeploySatelliteComponent.h"
 #include "Settings/GameDataSettings.h"
 
 UGeoDeployAbility::UGeoDeployAbility()
@@ -174,7 +175,21 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 						 FMath::RoundToInt(GameDataSettings->MaxDeployDistance));
 	}
 
-	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), SpawnParams, SpawnTransform, StoredPayload,
+	// Local by construction: satellites only exist on the machine that renders the ring, so this moves that player's
+	// own view of their shot and never the authoritative spawn a server runs for a remote client. Nothing about the
+	// ring is sent up — the deployable still lands off the fire socket the target data carries.
+	FTransform LaunchTransform = SpawnTransform;
+	UGeoDeploySatelliteComponent* SatelliteRing =
+		IsValid(StoredPayload.Instigator)
+			? StoredPayload.Instigator->GetComponentByClass<UGeoDeploySatelliteComponent>()
+			: nullptr;
+	FVector LaunchLocation;
+	if (SatelliteRing && SatelliteRing->LaunchSatellite(LaunchLocation))
+	{
+		LaunchTransform.SetLocation(FVector(FVector2D(LaunchLocation), SpawnTransform.GetLocation().Z));
+	}
+
+	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), SpawnParams, LaunchTransform, StoredPayload,
 																GetEffectDataArray(), PredictionKey);
 	if (!IsValid(Projectile))
 	{
@@ -187,5 +202,5 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 	DeployableSpawnerProjectile->Params = Params;
 	DeployableSpawnerProjectile->DeployableActorClass = DeployableActorClass;
 
-	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
+	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, LaunchTransform, SpawnServerTime, PredictionKey);
 }

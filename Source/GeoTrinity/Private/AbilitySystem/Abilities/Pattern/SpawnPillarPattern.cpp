@@ -48,10 +48,10 @@ void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload, TInstanced
 
 	ExecuteGameplayCue(DirectionCue); // Call after super to have Storedpayload
 }
-void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
+void USpawnPillarPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 {
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
-	if (GameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
+	if (Cue.CueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
 		if (ensureMsgf(IsValid(InstigatorASC), TEXT("Pattern Instigator %s has no ASC !"),
@@ -60,8 +60,9 @@ void USpawnPillarPattern::ExecuteGameplayCue(FGameplayTag GameplayCueTag)
 			for (FVector2D const& Location : PillarSpawnLocations)
 			{
 				FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
+				Cue.FillCueParams(CueParams);
 				CueParams.Location = FVector(Location, ArbitraryCharacterZ);
-				GeoASLib::ExecuteLocalGameplayCue(InstigatorASC, GameplayCueTag, CueParams);
+				GeoASLib::ExecuteLocalGameplayCue(InstigatorASC, Cue.CueTag, CueParams);
 			}
 		}
 	}

@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "AbilitySystem/Data/GeoSoundRow.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
@@ -129,9 +130,9 @@ public:
 	 */
 	void Recall(float Value = 0.f);
 
-	/** Executes the given GameplayCueTag on this actor's ASC with CueParams. Used by OnRep_Active and Recall() to fire
-	 * recall/blink cues locally. */
-	void ExecuteCue(FGameplayTag const& GameplayCueTag, FGameplayCueParameters const& CueParams) const;
+	/** Executes Cue's tag on this actor's ASC with CueParams. Used by OnRep_Active and Recall() to fire recall/blink
+	 * cues locally. */
+	void ExecuteCue(FGeoCueParam const& Cue, FGameplayCueParameters const& CueParams) const;
 
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
@@ -159,8 +160,8 @@ public:
 	FGameplayCueParameters GetBlinkCueParams();
 
 	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
-	 * instigator and CueColor's palette slot as GameplayEffectLevel. */
-	virtual FGameplayCueParameters GetGenericCueParams(EGeoColor CueColor);
+	 * instigator and Cue's own color/sound fields filled in. */
+	virtual FGameplayCueParameters GetGenericCueParams(FGeoCueParam const& Cue);
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
 	virtual FGameplayCueParameters GetRecallCueParams();
@@ -249,29 +250,17 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float DrainMagnitudePerSecond = 0.f;
 
-	// Each cue tag and the palette slot its VFX draws in. The slot travels to the cue Blueprint as GameplayEffectLevel,
-	// which GeoLib::GetPaletteColorFromIndex turns back into a color — not packed into Normal, which the recall cue
-	// already fills with its direction.
+	// Cue fired at each moment of the deployable's life: tag, palette slot and sound tag per moment.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	FGameplayTag SpawnGameplayCueTag;
+	FGeoCueParam SpawnCue;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	EGeoColor SpawnGameplayCueColor = EGeoColor::Neutral;
+	FGeoCueParam RecallCue;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	FGameplayTag RecallGameplayCueTag;
+	FGeoCueParam BlinkingCue;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	EGeoColor RecallGameplayCueColor = EGeoColor::Neutral;
+	FGeoCueParam ExplodeCue;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	FGameplayTag BlinkingGameplayCueTag;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	EGeoColor BlinkingGameplayCueColor = EGeoColor::Neutral;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	FGameplayTag ExplodeGameplayCueTag;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	EGeoColor ExplodeGameplayCueColor = EGeoColor::Neutral;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	FGameplayTag ExpireGameplayCueTag;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
-	EGeoColor ExpireGameplayCueColor = EGeoColor::Neutral;
+	FGeoCueParam ExpireCue;
 
 	/** Sound played at each moment of the deployable's life, alongside that moment's gameplay cue. Sound asset, volume,
 	 * audience and attribute-driven pitch per entry; a moment with no entry plays nothing. */

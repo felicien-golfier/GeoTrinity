@@ -3,6 +3,7 @@
 #pragma once
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "GameplayTagContainer.h"
 #include "StructUtils/InstancedStruct.h"
 
@@ -32,11 +33,11 @@ public:
 	 * Owner is the enemy character that activated the ability; subclasses may access its components here.
 	 */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner);
-	/** Client-only. Fires GameplayCueTag at the pattern's zone location(s) via the instigator's ASC. Override to fire
+	/** Client-only. Fires Cue at the pattern's zone location(s) via the instigator's ASC. Override to fire
 	 * at multiple locations (e.g. one cue per pillar spawn point). */
-	virtual void ExecuteGameplayCue(FGameplayTag GameplayCueTag);
+	virtual void ExecuteGameplayCue(FGeoCueParam const& Cue);
 	/** Builds the FGameplayCueParameters for this pattern's start cue. Override to inject custom fields (location,
-	 * magnitude, etc.). */
+	 * magnitude, etc.). The firing cue's own color and sound are added on top by ExecuteGameplayCue. */
 	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload);
 
 	/**
@@ -88,11 +89,12 @@ protected:
 
 	bool bPatternIsActive = false;
 
+	// Cue fired when the pattern is created (wind-up telegraph) and when it goes live.
 	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
-	FGameplayTag InitGameplayCueTag;
+	FGeoCueParam InitCue;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
-	FGameplayTag StartGameplayCueTag;
+	FGeoCueParam StartCue;
 
 	FTimerHandle StartSectionTimerHandle;
 };

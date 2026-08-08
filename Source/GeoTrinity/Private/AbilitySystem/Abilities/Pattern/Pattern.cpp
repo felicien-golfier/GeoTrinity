@@ -52,7 +52,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
 
-	ExecuteGameplayCue(InitGameplayCueTag);
+	ExecuteGameplayCue(InitCue);
 
 	if (TravelTime >= StartDelay)
 	{
@@ -79,11 +79,11 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 	}
 }
 
-void UPattern::ExecuteGameplayCue(FGameplayTag const GameplayCueTag)
+void UPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 {
 	// Local (non-replicated) cue: execute on every rendering machine including the listen-server host; skip only on a
 	// dedicated server, which has no viewport.
-	if (GameplayCueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
+	if (Cue.CueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
 		if (!IsValid(InstigatorASC))
@@ -94,7 +94,8 @@ void UPattern::ExecuteGameplayCue(FGameplayTag const GameplayCueTag)
 		{
 			FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
 			FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
-			InstigatorASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
+			Cue.FillCueParams(CueParams);
+			InstigatorASC->ExecuteGameplayCue(Cue.CueTag, CueParams);
 		}
 	}
 }
@@ -139,7 +140,7 @@ void UPattern::StartPattern()
 		}
 	}
 
-	ExecuteGameplayCue(StartGameplayCueTag);
+	ExecuteGameplayCue(StartCue);
 
 	OnPatternStart.Broadcast();
 }
