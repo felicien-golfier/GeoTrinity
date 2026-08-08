@@ -15,6 +15,7 @@ class UTextRenderComponent;
  * coop players share one camera — to the next AGeoTeleporter sharing its TeleportTag (sorted by actor name, wrapping).
  * Purely a position move — the camera reframes on its own because the arriving player overlaps the destination room's
  * AGeoCameraVolume.
+ * Inert while the match is in progress: no leaving (or joining) a live fight through a pad.
  */
 UCLASS()
 class GEOTRINITY_API AGeoTeleporter : public AActor

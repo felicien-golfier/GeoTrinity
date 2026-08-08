@@ -10,6 +10,10 @@
  * Semantic color slots of the game. Every slot but Override resolves through UGameDataSettings::ColorPalette, so
  * retinting a gameplay meaning across the whole game is a single edit there. Override is the escape hatch: the owning
  * FGeoColorParam then uses its own OverrideColor.
+ *
+ * The Deployable* slots are declared in ascending priority, because M_DeployableOutline resolves the border between two
+ * touching or overlapping deployables with a max over stencil indices: the later slot is the one that paints it. Order
+ * them by how much the deployable constrains the player, so the shared border always reads as the stronger obstacle.
  */
 UENUM(BlueprintType)
 enum class EGeoColor : uint8
@@ -25,10 +29,10 @@ enum class EGeoColor : uint8
 	HealBoost,
 	MoveSpeed,
 	Neutral,
-	DeployableBlockingAll,
+	DeployableNotBlocking,
 	DeployableBlockingEnemies,
 	DeployableBlockingAllies,
-	DeployableNotBlocking,
+	DeployableBlockingAll,
 	Override
 };
 

@@ -437,6 +437,7 @@ void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)
 	GetMesh()->SetAnimInstanceClass(PlayerClassData->AnimClass);
 	ensureMsgf(PlayerClassData->AliveMaterial, TEXT("ApplyClassData: No AliveMaterial for class on %s"), *GetName());
 	SetBodyMaterial(PlayerClassData->AliveMaterial);
+	DeploySatelliteComponent->SetParams(PlayerClassData->SatelliteParams);
 }
 
 EPlayerClass APlayableCharacter::GetPlayerClass() const

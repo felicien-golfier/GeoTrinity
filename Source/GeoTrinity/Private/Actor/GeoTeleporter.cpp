@@ -5,6 +5,7 @@
 #include "Characters/PlayableCharacter.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/ChildConnection.h"
+#include "GameClasses/GeoGameState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -63,7 +64,7 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 {
 
 	APlayableCharacter* PlayableCharacter = Cast<APlayableCharacter>(OtherActor);
-	if (!PlayableCharacter
+	if (!PlayableCharacter || GetWorld()->GetGameStateChecked<AGeoGameState>()->IsMatchInProgress()
 		|| !ensureMsgf(TeleportTag.IsValid(), TEXT("AGeoTeleporter %s has no TeleportTag."), *GetName()))
 	{
 		return;

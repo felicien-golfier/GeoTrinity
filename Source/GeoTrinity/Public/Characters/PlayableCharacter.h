@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Characters/Component/GeoDeploySatelliteComponent.h"
 #include "CoreMinimal.h"
 #include "Curves/CurveFloat.h"
 #include "GeoCharacter.h"
@@ -46,6 +47,10 @@ struct FPlayerClassData
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
+
+	/** Look of the deploy-charge satellites orbiting this class. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FSatelliteParams SatelliteParams;
 };
 
 /**

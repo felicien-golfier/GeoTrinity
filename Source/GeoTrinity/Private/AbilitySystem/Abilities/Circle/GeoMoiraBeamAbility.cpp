@@ -64,11 +64,6 @@ float UGeoMoiraBeamAbility::GetCurrentBeamHalfWidth(ACharacter const* Character)
 	return Super::GetCurrentBeamHalfWidth(Character) + HalfWidthGrowthPerAbsorbedZone * (BeamRatio - 1);
 }
 
-float UGeoMoiraBeamAbility::GetBeamDuration() const
-{
-	return RemainingDuration;
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 {

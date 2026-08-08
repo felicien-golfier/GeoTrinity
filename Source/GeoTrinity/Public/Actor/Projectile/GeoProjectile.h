@@ -94,6 +94,16 @@ public:
 	void OverrideSpeed(float Speed);
 
 	/**
+	 * Cosmetic only: draws the bullet from WorldLocation instead of the actor, then slides it back onto the actor over
+	 * the first moments of flight (Tick). Collision, travel distance and impact all keep running from the actor's own
+	 * spawn point, so a caller can show a shot leaving somewhere else (a deploy leaving its satellite ring) without
+	 * moving anything the game reads.
+	 *
+	 * @param WorldLocation  World point the visual starts from.
+	 */
+	void SetVisualLaunchLocation(FVector const& WorldLocation);
+
+	/**
 	 * Applies a spawn-params bundle to this instance. Each value resolves per its EOverrideParam toggle —
 	 * GameDataSettings value, the projectile's DefaultParams, or explicit override — and the resolved bundle is pushed
 	 * via ApplyParams. A reused pooled projectile is fully re-resolved each spawn (DefaultParams is never written to),

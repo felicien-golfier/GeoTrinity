@@ -31,6 +31,10 @@ static TAutoConsoleVariable
 	CVarReplaceLocalProjectiles(TEXT("Geo.ReplaceLocalProjectiles"), false,
 								TEXT("When true, server projectile Does replicate to owner and override local one"));
 
+// Rate the visual slides back onto the actor at (SetVisualLaunchLocation): ~1% of the offset is left after 0.2s, short
+// enough that the bullet is on its true path well before anything can be read off its position.
+static constexpr float VisualCatchUpSpeed = 25.f;
+
 namespace
 {
 	template <typename T>
@@ -196,6 +200,15 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	if (bIsEnding)
 	{
 		return;
+	}
+
+	// A visual placed off the actor by SetVisualLaunchLocation slides home, so what the player sees converges onto the
+	// trajectory that actually counts. Exactly zero on every projectile that never asked for it.
+	FVector const VisualOffset = BulletVFX->GetRelativeLocation();
+	if (!VisualOffset.IsNearlyZero())
+	{
+		BulletVFX->SetRelativeLocation(
+			FMath::VInterpTo(VisualOffset, FVector::ZeroVector, DeltaSeconds, VisualCatchUpSpeed));
 	}
 
 	float const ElapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
@@ -487,6 +500,12 @@ void AGeoProjectile::OverrideSpeed(float const Speed)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::SetVisualLaunchLocation(FVector const& WorldLocation)
+{
+	BulletVFX->SetWorldLocation(WorldLocation);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::ApplyParams(FProjectileParamsBase const& Params)
 {
 	ResolvedParams = Params;
@@ -596,6 +615,9 @@ void AGeoProjectile::InitProjectileLife()
 	InitialPosition = GetActorLocation();
 	DistanceSpanSqr = FMath::Square(ResolvedParams.DistanceSpan);
 	InitProjectileMovementComponent();
+	// A pooled instance can come back holding the previous shot's launch offset; the spawner re-applies its own after
+	// this runs.
+	BulletVFX->SetRelativeLocation(FVector::ZeroVector);
 
 	bIsEnding = false;
 	EndSoundType = EProjectileSoundType::NoOverlapEnd;

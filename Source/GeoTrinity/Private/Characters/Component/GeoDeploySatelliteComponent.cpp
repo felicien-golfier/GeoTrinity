@@ -6,6 +6,8 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/StaticMeshComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // An exponential interp is within 1% of its target after five time constants, so this turns TravelTime into a speed.
@@ -38,15 +40,27 @@ void UGeoDeploySatelliteComponent::TickComponent(float const DeltaTime, ELevelTi
 		AddSatellite();
 	}
 
-	OrbitAngle = FMath::Fmod(OrbitAngle + OrbitSpeed * DeltaTime, 360.f);
+	OrbitAngle = FMath::Fmod(OrbitAngle + Params.OrbitSpeed * DeltaTime, 360.f);
 	for (int32 Index = 0; Index < Satellites.Num(); ++Index)
 	{
 		// One interp covers both moves: it flies a fresh satellite out from the character, and slides the survivors
 		// into their new spacing when one leaves the ring.
 		Satellites[Index]->SetRelativeLocation(FMath::VInterpTo(Satellites[Index]->GetRelativeLocation(),
 															   GetSlotLocation(Index, Satellites.Num()), DeltaTime,
-															   TimeConstantsToSettle / TravelTime));
+															   TimeConstantsToSettle / Params.TravelTime));
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeploySatelliteComponent::SetParams(FSatelliteParams const& NewParams)
+{
+	Params = NewParams;
+
+	for (UPrimitiveComponent* Satellite : Satellites)
+	{
+		Satellite->DestroyComponent();
+	}
+	Satellites.Empty();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -72,7 +86,7 @@ bool UGeoDeploySatelliteComponent::LaunchSatellite(FVector& OutLaunchLocation)
 		}
 	}
 
-	UStaticMeshComponent* Launched = Satellites[LaunchedIndex];
+	UPrimitiveComponent* Launched = Satellites[LaunchedIndex];
 	OutLaunchLocation = Launched->GetComponentLocation();
 	Satellites.RemoveAt(LaunchedIndex);
 	Launched->DestroyComponent();
@@ -104,20 +118,36 @@ int32 UGeoDeploySatelliteComponent::GetDesiredSatelliteCount() const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoDeploySatelliteComponent::AddSatellite()
 {
-	if (!ensureMsgf(SatelliteMesh, TEXT("%s: no SatelliteMesh set, deploy charges show nothing."),
+	if (!ensureMsgf(Params.Mesh || Params.System,
+					TEXT("%s: its class data sets neither a satellite Mesh nor System, deploy charges show nothing."),
 					*GetNameSafe(GetOwner())))
 	{
 		return;
 	}
 
-	UStaticMeshComponent* Satellite = NewObject<UStaticMeshComponent>(GetOwner());
-	Satellite->SetStaticMesh(SatelliteMesh);
+	// A satellite is one component or the other, never a mesh and a system on the same slot.
+	UPrimitiveComponent* Satellite;
+	if (Params.System)
+	{
+		UNiagaraComponent* NiagaraSatellite = NewObject<UNiagaraComponent>(GetOwner());
+		NiagaraSatellite->SetAsset(Params.System);
+		Satellite = NiagaraSatellite;
+	}
+	else
+	{
+		UStaticMeshComponent* MeshSatellite = NewObject<UStaticMeshComponent>(GetOwner());
+		MeshSatellite->SetStaticMesh(Params.Mesh);
+		Satellite = MeshSatellite;
+	}
+
 	Satellite->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Satellite->SetCastShadow(false);
-	Satellite->SetRelativeScale3D(FVector(SatelliteScale));
+	Satellite->SetRelativeScale3D(FVector(Params.Scale));
+	// Attached before registering, so it is already on the character when it first ticks: a Niagara satellite
+	// auto-activates on registration and would spawn its first particles at the world origin otherwise. Relative zero
+	// puts every satellite at the character's centre; the tick flies it out to its slot.
+	Satellite->SetupAttachment(this);
 	Satellite->RegisterComponent();
-	// Snapping to this component spawns every satellite at the character's centre; the tick flies it out to its slot.
-	Satellite->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	Satellites.Add(Satellite);
 }
 
@@ -125,5 +155,5 @@ void UGeoDeploySatelliteComponent::AddSatellite()
 FVector UGeoDeploySatelliteComponent::GetSlotLocation(int32 const Index, int32 const Count) const
 {
 	float const SlotAngle = FMath::DegreesToRadians(OrbitAngle + Index * 360.f / Count);
-	return FVector(FMath::Cos(SlotAngle), FMath::Sin(SlotAngle), 0.f) * OrbitRadius;
+	return FVector(FMath::Cos(SlotAngle), FMath::Sin(SlotAngle), 0.f) * Params.OrbitRadius;
 }

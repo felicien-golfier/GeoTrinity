@@ -175,21 +175,7 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 						 FMath::RoundToInt(GameDataSettings->MaxDeployDistance));
 	}
 
-	// Local by construction: satellites only exist on the machine that renders the ring, so this moves that player's
-	// own view of their shot and never the authoritative spawn a server runs for a remote client. Nothing about the
-	// ring is sent up — the deployable still lands off the fire socket the target data carries.
-	FTransform LaunchTransform = SpawnTransform;
-	UGeoDeploySatelliteComponent* SatelliteRing =
-		IsValid(StoredPayload.Instigator)
-			? StoredPayload.Instigator->GetComponentByClass<UGeoDeploySatelliteComponent>()
-			: nullptr;
-	FVector LaunchLocation;
-	if (SatelliteRing && SatelliteRing->LaunchSatellite(LaunchLocation))
-	{
-		LaunchTransform.SetLocation(FVector(FVector2D(LaunchLocation), SpawnTransform.GetLocation().Z));
-	}
-
-	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), SpawnParams, LaunchTransform, StoredPayload,
+	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), SpawnParams, SpawnTransform, StoredPayload,
 																GetEffectDataArray(), PredictionKey);
 	if (!IsValid(Projectile))
 	{
@@ -202,5 +188,18 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 	DeployableSpawnerProjectile->Params = Params;
 	DeployableSpawnerProjectile->DeployableActorClass = DeployableActorClass;
 
-	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, LaunchTransform, SpawnServerTime, PredictionKey);
+	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
+
+	// Cosmetic hand-off, and local by construction: only the machine rendering the ring holds satellites, so nowhere
+	// else moves anything. The projectile itself stays on the fire socket, so the deployable lands where it always did
+	// — a host and a remote client deploy identically.
+	UGeoDeploySatelliteComponent* SatelliteRing =
+		IsValid(StoredPayload.Instigator)
+			? StoredPayload.Instigator->GetComponentByClass<UGeoDeploySatelliteComponent>()
+			: nullptr;
+	FVector LaunchLocation;
+	if (SatelliteRing && SatelliteRing->LaunchSatellite(LaunchLocation))
+	{
+		Projectile->SetVisualLaunchLocation(LaunchLocation);
+	}
 }

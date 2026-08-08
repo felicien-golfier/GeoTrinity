@@ -13,8 +13,8 @@
  * there keeps the dummy out of the match machinery entirely: no boss health bar, no barrier, no fight commit, no loot.
  * Because it never runs a match, a death at the dummy is always "out of a fight", which the GameState already handles
  * by reviving on the spot — so IsBoss is the only override needed. The dummy still receives its StateTree aggro event
- * and fights back. It subscribes to the match state like any arena, but since its bFighting flag never goes true its
- * EndFight is never reached — the subscription is inert on a dummy.
+ * and fights back, and like every arena it ends its fight when a match ends anywhere: that is what puts a dummy which
+ * chased the players into someone else's fight back on its spot, un-aggroed.
  */
 UCLASS()
 class GEOTRINITY_API AGeoDummyArena : public AGeoArena

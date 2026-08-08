@@ -2,15 +2,24 @@
 
 Deployables render into the custom-depth pass with their AGeoDeployableBase::OutlineColor slot index
 (EGeoColor ordinal + 1; 0 = no outline) as their stencil value. This material draws a constant-width
-line on the pixels just OUTSIDE those silhouettes, so the shapes themselves are untouched, and tints
-that line with the palette color the stencil index names.
+line wherever the stencil CHANGES, so the shapes themselves are untouched, and tints that line with
+the palette color the stencil index names.
 
 Per pixel:
   center    = CustomStencil here
   neighbour = max( CustomStencil at the 4 taps one Thickness away in X and Y )
-  Outline   = saturate(neighbour) * (1 - saturate(center))   -> 1 only just outside a tagged shape
-  Color     = Palette texel (neighbour - 0.5) / PaletteSize
+  slot      = max(neighbour, center)
+  Outline   = saturate(abs(neighbour - center))   -> 1 on any stencil discontinuity
+  Color     = Palette texel (slot - 0.5) / PaletteSize
   Result    = lerp(PostProcessInput0, Color, Outline)
+
+The gate is a discontinuity and not "outside a shape" so that overlapping deployables keep the border
+between them. Testing center == 0 instead suppresses the line on every tagged pixel, which erases the
+inner shape's edge and merges the pair into one silhouette — and once a zone material writes custom
+depth, it swallows the outline of anything standing inside it. A pixel strictly inside one shape reads
+the same index on all four taps and stays dark either way, so single deployables look identical. Two
+overlapping deployables that share a slot still merge: 8 stencil bits carry the palette index, with no
+room for a per-object id to separate them.
 
 Colors arrive as a texture, not as named parameters: AGeoGameCamera::ApplyOutlineMaterial builds a
 1 x SlotCount lookup from UGameDataSettings::ColorPalette (one texel per EGeoColor ordinal) and sets
@@ -62,8 +71,12 @@ at = unreal.AssetToolsHelpers.get_asset_tools()
 # Rebuilt in place, never deleted and recreated: the camera references the instance and the
 # instance references the material, so a delete stops on the "still referenced / force delete"
 # modal, which blocks the game thread with nobody to answer it.
-if unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{NAME}"):
-    mat = unreal.EditorAssetLibrary.load_asset(f"{PKG_PATH}/{NAME}")
+#
+# Existence is decided by attempting the load, not by does_asset_exist: that one answers from the asset
+# registry, which reports "missing" for everything it has not scanned yet. Run this on a just-opened
+# editor and it takes the create branch against an asset that is already there.
+mat = unreal.EditorAssetLibrary.load_asset(f"{PKG_PATH}/{NAME}")
+if mat:
     # UMaterialEditingLibrary::DeleteAllMaterialExpressions range-iterates the very array each delete
     # removes from, so one call drops only every other node. Repeat until the graph is really empty —
     # leftovers keep the material referencing whatever they pointed at, and pile up on every rerun.
@@ -73,6 +86,15 @@ if unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{NAME}"):
         assert mel.get_num_material_expressions(mat) < before, "material graph would not clear"
 else:
     mat = at.create_asset(NAME, PKG_PATH, unreal.Material, unreal.MaterialFactoryNew())
+
+assert mat, f"{NAME}: neither loaded nor created"
+
+# Domain before the first node, not with the settings at the end: a SceneTexture expression is only
+# valid on a post-process material, and create_material_expression just returns None on any other
+# domain — no error, no log. A rebuild inherits the domain from the saved asset, which is the only
+# reason setting it last ever worked; a from-scratch create could never have got past the first tap.
+mat.set_editor_property("material_domain", unreal.MaterialDomain.MD_POST_PROCESS)
+mat.set_editor_property("blendable_location", unreal.BlendableLocation.BL_SCENE_COLOR_AFTER_DOF)
 
 
 def expr(cls, x, y):
@@ -153,8 +175,9 @@ left = tap(uv_offset_x, unreal.MaterialExpressionSubtract, -700)
 up = tap(uv_offset_y, unreal.MaterialExpressionAdd, -500)
 down = tap(uv_offset_y, unreal.MaterialExpressionSubtract, -300)
 
-# The neighbour max keeps the stencil INDEX (not just 0/1) — the palette cascade below branches on it.
-# Two touching deployables of different slots resolve to the higher index along their shared border.
+# The neighbour max keeps the stencil INDEX (not just 0/1) — the palette lookup below reads it.
+# Two touching or overlapping deployables resolve to the higher index along their shared border, which
+# is why EGeoColor declares its Deployable* slots in ascending priority — see GeoColor.h.
 neighbour = maximum(maximum(right, "Color", left, "Color", -520, -820),
                     "",
                     maximum(up, "Color", down, "Color", -520, -420),
@@ -164,31 +187,37 @@ neighbour = maximum(maximum(right, "Color", left, "Color", -520, -820),
 neighbour_value = mask(neighbour, "", -140, -620, True, False)
 center_value = mask(center_tex, "Color", -140, -260, True, False)
 
-# --- Outline = saturate(neighbour) * (1 - saturate(center)) ---
-neighbour_hit = expr(unreal.MaterialExpressionSaturate, 40, -620)
-connect(neighbour_value, "", neighbour_hit, "")
+# --- Outline = saturate(abs(neighbour - center)) ---
+# Stencil values are integers, so neighbours that differ at all differ by 1 and saturate to a
+# full-strength line; no scaling is needed to turn the difference into a mask.
+stencil_step = expr(unreal.MaterialExpressionSubtract, 40, -440)
+connect(neighbour_value, "", stencil_step, "A")
+connect(center_value, "", stencil_step, "B")
 
-center_hit = expr(unreal.MaterialExpressionSaturate, 40, -260)
-connect(center_value, "", center_hit, "")
+stencil_step_size = expr(unreal.MaterialExpressionAbs, 220, -440)
+connect(stencil_step, "", stencil_step_size, "")
 
-outside_shape = expr(unreal.MaterialExpressionOneMinus, 220, -260)
-connect(center_hit, "", outside_shape, "")
-
-outline = expr(unreal.MaterialExpressionMultiply, 400, -440)
-connect(neighbour_hit, "", outline, "A")
-connect(outside_shape, "", outline, "B")
+outline = expr(unreal.MaterialExpressionSaturate, 400, -440)
+connect(stencil_step_size, "", outline, "")
 
 # --- Color = the palette texel the stencil index points at ---
+# The higher of the two sides owns the border, which is why EGeoColor declares its Deployable* slots in
+# ascending priority — see GeoColor.h. Reading `neighbour` alone would work only for the outside-only
+# gate: on the inner side of a shared border the neighbour is the lower slot.
+outline_slot = maximum(neighbour_value, "", center_value, "", -140, -60)
+
 # Texel i sits at (i + 0.5) / PaletteSize and holds EGeoColor ordinal i, and the stencil is that
-# ordinal + 1 — so the sample lands at (neighbour - 0.5) / PaletteSize. Where neighbour is 0 the UV
-# goes negative and clamps to texel 0, which never shows: Outline is 0 on those pixels.
+# ordinal + 1 — so the sample lands at (slot - 0.5) / PaletteSize. Where slot is 0 the UV goes negative
+# and clamps to texel 0, which never shows: Outline is 0 on those pixels.
 texel_offset = expr(unreal.MaterialExpressionSubtract, 60, 200)
 texel_offset.set_editor_property("const_b", 0.5)
-connect(neighbour_value, "", texel_offset, "A")
+connect(outline_slot, "", texel_offset, "A")
 
 palette_size = expr(unreal.MaterialExpressionScalarParameter, 60, 380)
 palette_size.set_editor_property("parameter_name", "PaletteSize")
-palette_size.set_editor_property("default_value", 11.0)
+# Only ever read before BeginPlay overwrites it with GeoColor::SlotCount, so it just needs to match that
+# count to keep the editor viewport honest.
+palette_size.set_editor_property("default_value", 15.0)
 
 palette_u = expr(unreal.MaterialExpressionDivide, 300, 260)
 connect(texel_offset, "", palette_u, "A")
@@ -222,10 +251,6 @@ connect(palette, "RGB", result, "B")
 connect(outline, "", result, "Alpha")
 
 mel.connect_material_property(result, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-
-# --- settings (after wiring) ---
-mat.set_editor_property("material_domain", unreal.MaterialDomain.MD_POST_PROCESS)
-mat.set_editor_property("blendable_location", unreal.BlendableLocation.BL_SCENE_COLOR_AFTER_DOF)
 
 mel.recompile_material(mat)
 unreal.EditorAssetLibrary.save_asset(f"{PKG_PATH}/{NAME}")

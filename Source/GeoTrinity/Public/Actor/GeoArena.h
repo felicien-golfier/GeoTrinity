@@ -45,7 +45,9 @@ public:
 	/** Server. Teleports players to this arena's fight location; the encounter is now fully live. */
 	virtual void CommitFight();
 	/** Server. Opens the barrier, hides the boss bar, and resets the boss — unless the boss was defeated, in which case
-	 *  it is left dead until RespawnBoss. Runs when the match leaves InProgress. */
+	 *  it is left dead until RespawnBoss. Runs on *every* arena when the match leaves InProgress, not just the one that
+	 *  was fighting: aggro is not exclusive (a hit aggroes a boss whatever the match state), so a boss pulled while
+	 *  another arena's fight was live has to be put back too. */
 	virtual void EndFight();
 
 	/** Server. Clears the defeated state and spawns the boss again — the only way back after a victory. */
@@ -119,7 +121,8 @@ private:
 	/** Shows the boss bar for Boss while bFighting, hides it otherwise. Local HUD only; a no-op on a dedicated server. */
 	void ApplyBossBar();
 
-	/** Ends the fight when the match leaves InProgress. Bound to AGeoGameState::OnMatchStateChanged (server only). */
+	/** Ends this arena's fight — fighting or not — when the match leaves InProgress. Bound to
+	 *  AGeoGameState::OnMatchStateChanged (server only). */
 	UFUNCTION()
 	void OnMatchStateChanged(FName NewMatchState, FName PreviousMatchState);
 

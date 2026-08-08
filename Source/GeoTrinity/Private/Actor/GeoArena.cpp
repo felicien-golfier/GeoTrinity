@@ -14,6 +14,7 @@
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "GameClasses/GeoGameState.h"
+#include "GameFramework/GameMode.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HUD/Interface/GeoHUDInterface.h"
@@ -209,13 +210,13 @@ bool AGeoArena::IsBoss(AActor const* Enemy) const
 	return IsValid(Enemy) && Enemy == Boss;
 }
 
-void AGeoArena::OnMatchStateChanged(FName /*NewMatchState*/, FName /*PreviousMatchState*/)
+void AGeoArena::OnMatchStateChanged(FName NewMatchState, FName PreviousMatchState)
 {
-	if (GetWorld()->GetGameStateChecked<AGeoGameState>()->IsMatchInProgress())
+	if (NewMatchState == MatchState::InProgress)
 	{
 		StopLoot();
 	}
-	else if (bFighting)
+	else if (PreviousMatchState == MatchState::InProgress)
 	{
 		EndFight();
 	}
