@@ -194,8 +194,10 @@ void APlayableCharacter::ResetAbilitiesAndEffects()
 		return;
 	}
 	AbilitySystemComponent->CancelAllAbilities();
-	// RemoveActiveEffects only runs on the authoritative ASC; on clients the removal replicates down.
-	// Calling it client-side is a no-op that leaves locally-predicted effects (e.g. dash cooldown) lingering.
+	AbilitySystemComponent->ResetCooldowns();
+
+	// Effect removal is authoritative and replicates down; a client running it would drop replicated effects out of the
+	// fast array without their granted tags.
 	if (GeoLib::IsServer(this))
 	{
 		AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery());

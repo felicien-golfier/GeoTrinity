@@ -41,6 +41,9 @@ struct GEOTRINITY_API FGeoGameplayTags
 	FGameplayTag InputTag_Reload;
 	FGameplayTag InputTag_Dash;
 
+	// Parent of every ability's cooldown tag
+	FGameplayTag Ability_Cooldown;
+
 	// Ability types
 	FGameplayTag Ability_Type;
 	FGameplayTag Ability_Type_Basic;

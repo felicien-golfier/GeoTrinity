@@ -88,9 +88,10 @@ public:
 	/**
 	 * Returns the cooldown duration in seconds for the given ability level.
 	 *
-	 * @param level  Ability level to evaluate the cooldown at. Defaults to 1.
+	 * @param level  Ability level to evaluate the cooldown at. Pass the spec's, never a literal — a difficulty is a
+	 *               level, so a hardcoded one reads the wrong row of the cooldown curve.
 	 */
-	float GetCooldown(int32 level = 1) const;
+	float GetCooldown(int32 level) const;
 
 	/** Cancels the pending fire timer and hides the charge gauge (ChargeForFireDelay mode) before calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,

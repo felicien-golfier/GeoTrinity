@@ -469,7 +469,7 @@ void UGeoGameplayAbility::SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySyst
 	Payload.Origin = FVector2D(Origin);
 	Payload.Yaw = Yaw;
 	Payload.Seed = Seed;
-	Payload.AbilityLevel = 1;
+	Payload.AbilityLevel = SourceASC->GetCombatLevel();
 	Payload.AbilityTag = GetAbilityTag();
 
 	GeoASLib::SpawnProjectileSpread(Avatar->GetWorld(), Params, Target, Origin, Yaw, 0.f, Payload, {});

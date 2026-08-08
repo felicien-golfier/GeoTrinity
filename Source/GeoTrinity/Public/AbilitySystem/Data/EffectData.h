@@ -8,6 +8,7 @@
 #include "GameplayTagContainer.h"
 #include "ScalableFloat.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Tool/GeoDifficulty.h"
 #include "UObject/Class.h"
 
 #include "EffectData.generated.h"
@@ -68,6 +69,27 @@ struct GEOTRINITY_API FEffectData
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const;
+
+	/**
+	 * True when this entry applies at AbilityLevel.
+	 *
+	 * A level is only an EGeoDifficulty bit when a boss is the source; elsewhere it is a plain magnitude scalar (a
+	 * loot pickup levels 3-10 off its power roll). Masking those would drop level 8 on the nose, so the untouched
+	 * all-difficulties value short-circuits instead — narrowing the mask is what opts an entry into the gate, and
+	 * only boss effects ever do.
+	 */
+	bool AppliesAtLevel(int32 AbilityLevel) const
+	{
+		return Difficulties == GeoDifficultyMask::All || (Difficulties & AbilityLevel) != 0;
+	}
+
+	/**
+	 * Difficulties this entry applies at, all three by default. Unticking Safe keeps a lethal hit out of the easy
+	 * tuning without a second copy of the ability.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
+			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.EGeoDifficulty"))
+	int32 Difficulties = GeoDifficultyMask::All;
 };
 
 /** Applies an arbitrary UGameplayEffect with optional SetByCaller magnitude and duration. General-purpose. */

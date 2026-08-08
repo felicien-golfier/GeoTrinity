@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
+#include "Tool/GeoDifficulty.h"
 
 #include "GeoArena.generated.h"
 
@@ -73,6 +74,14 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category = "Arena")
 	FGameplayTag ArenaTag;
+
+	/**
+	 * Which of this encounter's three tunings to run. Its bit value is the level the boss's abilities, attributes and
+	 * effects are all applied at, so lowering it both walks every FScalableFloat in the kit down its curve and drops
+	 * the effect entries whose difficulty mask excludes it (lethal hits). Read once by AEnemyCharacter::InitGAS.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Arena")
+	EGeoDifficulty Difficulty = EGeoDifficulty::Original;
 
 protected:
 	UFUNCTION()

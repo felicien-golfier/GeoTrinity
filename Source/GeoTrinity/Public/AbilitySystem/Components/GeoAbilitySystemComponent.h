@@ -32,13 +32,13 @@ public:
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
 
 	/** Grants all abilities whose tags are in AbilitiesToGive, looked up from the global UAbilityInfo asset. */
-	void GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, int32 Level = 1);
+	void GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive);
 
 	/** Grants all class-agnostic startup abilities defined in the global UAbilityInfo asset. */
-	void GiveStartupAbilities(int32 Level = 1);
+	void GiveStartupAbilities();
 
 	/** Grants all abilities defined for PlayerClass in the global UAbilityInfo asset. */
-	void GiveStartupAbilities(EPlayerClass PlayerClass, int32 Level = 1);
+	void GiveStartupAbilities(EPlayerClass PlayerClass);
 
 	/** Removes all abilities that were granted for a specific player class. */
 	void ClearPlayerClassAbilities();
@@ -61,11 +61,31 @@ public:
 	 */
 	void ReactivatePassiveAbilities();
 
-	/** Applies a gameplay effect to this component's owner at the given level. */
-	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, int32 Level = 1);
+	/**
+	 * Clears every ability cooldown: the server drops the cooldown effects, and each machine drops the cooldown tags it
+	 * still holds locally.
+	 *
+	 * Must be called from a path that runs on every machine — drive it from replicated state (bIsDead, OnRep_PlayerClass),
+	 * never from the server alone. A client raises the cooldown tag itself when it predicts an activation and never
+	 * lowers it; only the replicated count does, and it cannot when the server drops the effect on the frame it was
+	 * applied — the count then goes 0 -> 1 -> 0 between two replication passes and no delta is ever sent.
+	 */
+	void ResetCooldowns();
+
+	/** Applies a gameplay effect to this component's owner at CombatLevel. */
+	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass);
 
 	/** Applies the DefaultAttributes gameplay effect to initialize base attribute values. */
-	void InitializeDefaultAttributes(int32 Level = 1);
+	void InitializeDefaultAttributes();
+
+	/**
+	 * Sets the level everything this component grants or applies is stamped with. A boss's is the EGeoDifficulty bit
+	 * of its arena, so one write levels its whole kit. Call it before GiveStartupAbilities and
+	 * InitializeDefaultAttributes — neither re-levels what has already been granted or applied.
+	 */
+	void SetCombatLevel(int32 Level) { CombatLevel = Level; }
+	/** Level every ability spec, effect and payload from this component carries. */
+	int32 GetCombatLevel() const { return CombatLevel; }
 
 	/** Binds OnHealthChanged and OnMaxHealthChanged delegates to the Health/MaxHealth attribute change callbacks. */
 	void BindAttributeCallbacks();
@@ -149,6 +169,8 @@ private:
 	TMap<FGameplayTag, FRemoteFire> RemoteFires;
 
 	TMap<FGameplayTag, int32> FireSectionIndices;
+	// Ability level of everything this component grants or applies. Stays 1 for players, who have no difficulty.
+	int32 CombatLevel{1};
 	bool bStartupAbilitiesGiven{false};
 	bool bAttributeCallbacksBound{false};
 

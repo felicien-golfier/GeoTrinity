@@ -8,6 +8,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/GeoCharacter.h"
@@ -162,7 +163,7 @@ void UGeoAbilitySystemComponent::RemoteFireShot(FGameplayTag const RemoteFireTag
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, int32 const Level)
+void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive)
 {
 	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	if (!AbilityInfos)
@@ -175,7 +176,7 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const
 
 	for (FGameplayAbilityInfo const& AbilityInfo : AbilityInfoList)
 	{
-		FGameplayAbilitySpec abilitySpec{AbilityInfo.AbilityClass, Level};
+		FGameplayAbilitySpec abilitySpec{AbilityInfo.AbilityClass, CombatLevel};
 		GiveAbility(abilitySpec);
 	}
 
@@ -183,13 +184,13 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities(int32 const Level)
+void UGeoAbilitySystemComponent::GiveStartupAbilities()
 {
-	GiveStartupAbilities(StartupAbilityTags, Level);
+	GiveStartupAbilities(StartupAbilityTags);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerClass, int32 const Level)
+void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerClass)
 {
 	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
 	if (!AbilityInfos)
@@ -205,7 +206,7 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerC
 			continue;
 		}
 
-		FGameplayAbilitySpec AbilitySpec{AbilityInfo.AbilityClass, Level};
+		FGameplayAbilitySpec AbilitySpec{AbilityInfo.AbilityClass, CombatLevel};
 
 		if (AbilityInfo.InputAction && !AbilityInfo.InputTag.IsValid())
 		{
@@ -372,13 +373,12 @@ void UGeoAbilitySystemComponent::ReleaseAbilitySpec(FGameplayAbilitySpec& Abilit
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass,
-												   int32 Level /*= 1*/)
+void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass)
 {
 	FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext();
 	EffectContextHandle.AddSourceObject(this);
 
-	FGameplayEffectSpecHandle const SpecHandle = MakeOutgoingSpec(GameplayEffectClass, Level, EffectContextHandle);
+	FGameplayEffectSpecHandle const SpecHandle = MakeOutgoingSpec(GameplayEffectClass, CombatLevel, EffectContextHandle);
 	if (!SpecHandle.IsValid())
 	{
 		ensureMsgf(false, TEXT("ApplyEffectToSelf: SpecHandle is invalid!"));
@@ -394,7 +394,7 @@ void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> 
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::InitializeDefaultAttributes(int32 Level /*= 1*/)
+void UGeoAbilitySystemComponent::InitializeDefaultAttributes()
 {
 	if (!IsValid(DefaultAttributes))
 	{
@@ -404,7 +404,7 @@ void UGeoAbilitySystemComponent::InitializeDefaultAttributes(int32 Level /*= 1*/
 		return;
 	}
 
-	ApplyEffectToSelf(DefaultAttributes, Level);
+	ApplyEffectToSelf(DefaultAttributes);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -558,6 +558,32 @@ void UGeoAbilitySystemComponent::ReactivatePassiveAbilities()
 		if (AbilityCDO && AbilityCDO->IsPassive() && !abilitySpec.IsActive())
 		{
 			TryActivateAbility(abilitySpec.Handle, false);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::ResetCooldowns()
+{
+	FGameplayTag const CooldownRoot = FGeoGameplayTags::Get().Ability_Cooldown;
+
+	if (GeoLib::IsServer(this))
+	{
+		FGameplayEffectQuery Query;
+		Query.OwningTagQuery = FGameplayTagQuery::MakeQuery_MatchAnyTags(CooldownRoot.GetSingleTagContainer());
+		RemoveActiveEffects(Query);
+	}
+
+	// Iterated over a copy, so clearing a count as we go is safe. On the server the removal above already took every
+	// count to zero and this finds nothing; on a client it is the whole reset, since the effect removal replicates down
+	// without ever lowering a tag the client raised itself.
+	FGameplayTagContainer OwnedTags;
+	GetOwnedGameplayTags(OwnedTags);
+	for (FGameplayTag const& Tag : OwnedTags)
+	{
+		if (Tag.MatchesTag(CooldownRoot))
+		{
+			SetTagMapCount(Tag, 0);
 		}
 	}
 }

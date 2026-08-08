@@ -45,7 +45,7 @@ struct FGameplayAbilityInfo
 	 * suffixes combine in any order. With bRichTextValues, every resolved value is wrapped in a <Value>...</>
 	 * rich-text style tag so the UI can color it. Unresolved tokens are kept as-is and logged.
 	 */
-	GEOTRINITY_API FString GetResolvedDescription(int32 AbilityLevel = 1, bool bRichTextValues = false) const;
+	GEOTRINITY_API FString GetResolvedDescription(int32 AbilityLevel, bool bRichTextValues) const;
 };
 
 /** Extends FGameplayAbilityInfo with player-specific data: input binding, class filter, and cosmetic icon. */

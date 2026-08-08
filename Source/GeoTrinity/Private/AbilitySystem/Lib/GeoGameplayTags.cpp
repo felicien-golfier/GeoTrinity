@@ -58,6 +58,10 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	AddInputTag(GameplayTags.InputTag_Reload, "Reload", "Input tag for reload action");
 	AddInputTag(GameplayTags.InputTag_Dash, "Dash", "Input tag for dash ability");
 
+	// ABILITY COOLDOWNS //
+	CreateAndAssignGameplayTag(GameplayTags.Ability_Cooldown, "Ability.Cooldown",
+							   "Root tag for the tags cooldown gameplay effects grant");
+
 	// ABILITY TYPES //
 	CreateAndAssignGameplayTag(GameplayTags.Ability_Type, FName(RootTagNames::AbilityTypeTag),
 							   "Root tag for ability types");

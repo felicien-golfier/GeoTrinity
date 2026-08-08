@@ -84,6 +84,11 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 		return FActiveGameplayEffectHandle();
 	}
 
+	if (!EffectData.AppliesAtLevel(AbilityLevel))
+	{
+		return FActiveGameplayEffectHandle();
+	}
+
 	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
 	FillEffectContext(SourceASC, TargetASC, ContextHandle);
 
@@ -140,16 +145,25 @@ TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEff
 	checkf(GeoEffectContext,
 		   TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Failed to create GeoEffectContext"));
 
+	TArray<FEffectData const*> ApplicableEffects;
+	ApplicableEffects.Reserve(DataArray.Num());
 	for (auto const& EffectDataInstance : DataArray)
 	{
 		FEffectData const* EffectData = EffectDataInstance.GetPtr<FEffectData>();
 		checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
+		if (EffectData->AppliesAtLevel(AbilityLevel))
+		{
+			ApplicableEffects.Add(EffectData);
+		}
+	}
+
+	for (FEffectData const* EffectData : ApplicableEffects)
+	{
 		EffectData->UpdateContextHandle(GeoEffectContext, AbilityLevel, AbilityTag);
 	}
 
-	for (auto const& EffectDataInstance : DataArray)
+	for (FEffectData const* EffectData : ApplicableEffects)
 	{
-		FEffectData const* EffectData = EffectDataInstance.GetPtr<FEffectData>();
 		SpecHandles.Add(EffectData->ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed));
 	}
 

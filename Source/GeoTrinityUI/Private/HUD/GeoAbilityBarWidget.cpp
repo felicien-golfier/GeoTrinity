@@ -2,6 +2,7 @@
 
 #include "HUD/GeoAbilityBarWidget.h"
 
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "HUD/GeoAbilitySlotWidget.h"
@@ -10,6 +11,10 @@ namespace
 {
 	/** Small horizontal gap (px each side) between packed ability slots. */
 	constexpr float SlotGap = 3.f;
+
+	/** Extra gap left of the dash slot, setting movement apart from the ability run — half of WBP_AbilitySlot's
+	 * 64px square. */
+	constexpr float DashSlotGap = 32.f;
 } // namespace
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -56,8 +61,9 @@ void UGeoAbilityBarWidget::BuildBar(AGeoHUD* InHUD, APlayableCharacter* Playable
 		// centered and resolution-independent (the bar is a fixed fraction of the screen).
 		if (UHorizontalBoxSlot* BoxSlot = SlotBox->AddChildToHorizontalBox(SlotWidget))
 		{
+			bool const bIsDash = Group[0].InputTag == FGeoGameplayTags::Get().InputTag_Dash;
 			BoxSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
-			BoxSlot->SetPadding(FMargin(SlotGap, 0.f));
+			BoxSlot->SetPadding(FMargin(bIsDash ? SlotGap + DashSlotGap : SlotGap, 0.f, SlotGap, 0.f));
 			BoxSlot->SetVerticalAlignment(VAlign_Fill);
 		}
 		Slots.Add(SlotWidget);

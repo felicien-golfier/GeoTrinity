@@ -10,8 +10,10 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemInterface.h"
+#include "Algo/StableSort.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
@@ -40,6 +42,24 @@
 #include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
+
+namespace
+{
+	/** Left-to-right ability-bar position of an input tag, so the bar reads the same for every class and never follows
+	 * the order abilities happened to be granted in. */
+	int32 GetInputTagBarOrder(FGameplayTag const& InputTag)
+	{
+		FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+		TArray<FGameplayTag> const BarOrder = {Tags.InputTag_Basic, Tags.InputTag_Special,
+											   Tags.InputTag_SpecialAlternative, Tags.InputTag_Reload,
+											   Tags.InputTag_Dash};
+
+		int32 const Order = BarOrder.IndexOfByKey(InputTag);
+		ensureMsgf(Order != INDEX_NONE, TEXT("GetInputTagBarOrder: %s has no ability-bar position"),
+				   *InputTag.ToString());
+		return Order;
+	}
+} // namespace
 
 // ---------------------------------------------------------------------------------------------------------------------
 // FHudPlayerParams
@@ -359,6 +379,13 @@ TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries(APlayableCharacter* Pl
 		Entry.Icon = Info->AbilityIcon;
 		Entry.bIsDeployable = Info->bShowDeployCount;
 	}
+
+	// Stable so abilities sharing one input (the slot's channel/detonate swap) keep the order the slot expects.
+	Algo::StableSortBy(Entries,
+					   [](FGeoAbilityBarEntry const& Entry)
+					   {
+						   return GetInputTagBarOrder(Entry.InputTag);
+					   });
 
 	return Entries;
 }

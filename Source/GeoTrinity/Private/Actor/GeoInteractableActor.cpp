@@ -35,6 +35,7 @@ void AGeoInteractableActor::InitInteractable(FInteractableActorData* Data)
 	ensureMsgf(Data, TEXT("Data is invalid!"));
 	ensureMsgf(GetData(),
 			   TEXT("Subclass must store data into their UPROPERTY before calling Super::InitInteractable!"));
+	AbilitySystemComponent->SetCombatLevel(GetData()->Level);
 	InitGas(Data->Owner);
 }
 
@@ -45,7 +46,7 @@ void AGeoInteractableActor::BeginPlay()
 
 	ensureMsgf(GetData(), TEXT("Deployable hasn't been init properly, please call InitInteractable before spawn !"));
 
-	AbilitySystemComponent->InitializeDefaultAttributes(GetData()->Level);
+	AbilitySystemComponent->InitializeDefaultAttributes();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

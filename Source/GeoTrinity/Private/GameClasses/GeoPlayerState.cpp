@@ -105,6 +105,9 @@ void AGeoPlayerState::InitOverlay()
 
 void AGeoPlayerState::OnRep_PlayerClass()
 {
+	// Client half of APlayableCharacter::ChangeClass, which resets cooldowns server-side: the tags a client raised by
+	// predicting an activation only come down when it clears them itself.
+	AbilitySystemComponent->ResetCooldowns();
 	ApplyClassDataToPawn();
 	// The class change re-grants abilities; rebuild the ability bar so it reflects the new class's ability set.
 	RebuildAbilityBar();
