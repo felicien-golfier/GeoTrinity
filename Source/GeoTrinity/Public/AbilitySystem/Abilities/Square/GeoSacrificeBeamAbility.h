@@ -27,6 +27,7 @@ class GEOTRINITY_API UGeoSacrificeBeamAbility : public UGeoChannelBeamAbility
 	GENERATED_BODY()
 
 public:
+	/** Configures the sacrifice channel ability's GAS instancing, net execution, and commit behaviour. */
 	UGeoSacrificeBeamAbility();
 
 	/**

@@ -58,6 +58,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GameplayLibrary")
 	static FLinearColor GetPaletteColorFromIndex(int ColorIndex, float Alpha = -1.f);
 
+	/**
+	 * Returns the Game Data Settings palette color for the given semantic color slot.
+	 *
+	 * @param Alpha  Alpha to apply to the returned color. Negative keeps the palette color's own alpha unchanged.
+	 */
 	UFUNCTION(BlueprintPure, Category = "GameplayLibrary")
 	static FLinearColor GetPaletteColor(EGeoColor Color, float Alpha = -1.f);
 
@@ -124,6 +129,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
+	/** Returns the estimated one-way network latency in seconds for the world's first local player controller. */
 	static float GetOnWayPingSec(UWorld const* World);
 	/** Returns the current server world time in seconds. @see GetServerTime(UObject*) for parameter and warning
 	 * details. */
