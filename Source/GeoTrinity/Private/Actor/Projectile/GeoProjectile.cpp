@@ -176,7 +176,7 @@ void AGeoProjectile::BeginPlay()
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::LifeSpanExpired()
 {
-	if (LifeSpanInSec != 0 && !bIsEnding)
+	if (LifeSpanInSec != 0)
 	{
 		EndProjectileLife();
 	}
@@ -349,7 +349,7 @@ void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* Othe
 								 FVector NormalImpulse, FHitResult const& Hit)
 
 {
-	if (bIsEnding || ProjectileMovement->bShouldBounce)
+	if (ProjectileMovement->bShouldBounce)
 	{
 		return;
 	}
@@ -360,7 +360,7 @@ void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* Othe
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlayImpactFx() const
 {
-	if (!IsValid(this))
+	if (!IsValid(this) || GeoLib::IsDedicatedServer(this))
 	{
 		return;
 	}
@@ -380,6 +380,10 @@ void AGeoProjectile::PlayImpactFx() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::EndProjectileLife()
 {
+	if (bIsEnding)
+	{
+		return;
+	}
 	bIsEnding = true;
 	UnbindFromInstigatorRevive();
 
@@ -644,8 +648,5 @@ void AGeoProjectile::UnbindFromInstigatorRevive()
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::OnInstigatorRevived()
 {
-	if (!bIsEnding)
-	{
-		EndProjectileLife();
-	}
+	EndProjectileLife();
 }

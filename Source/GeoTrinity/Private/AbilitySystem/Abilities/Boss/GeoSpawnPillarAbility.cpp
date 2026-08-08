@@ -58,17 +58,18 @@ TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
 	}
 
 	NumPillarToSpawn = FMath::Min(NumPillarToSpawn, AlivePawns.Num() + DeadPawns.Num());
+	int32 const AbsSeed = FMath::Abs(StoredPayload.Seed);
 	for (uint8 i = 0; i < NumPillarToSpawn && i < Players.Num(); i++)
 	{
 		if (PillarData.ZoneLocations.Num() < AlivePawns.Num())
 		{
 			PillarData.ZoneLocations.Add(
-				FVector2D(AlivePawns[(StoredPayload.Seed % AlivePawns.Num() + i) % AlivePawns.Num()]->GetActorLocation()));
+				FVector2D(AlivePawns[(AbsSeed % AlivePawns.Num() + i) % AlivePawns.Num()]->GetActorLocation()));
 		}
 		else
 		{
 			PillarData.ZoneLocations.Add(
-				FVector2D(DeadPawns[(StoredPayload.Seed % DeadPawns.Num() + i) % DeadPawns.Num()]->GetActorLocation()));
+				FVector2D(DeadPawns[(AbsSeed % DeadPawns.Num() + i) % DeadPawns.Num()]->GetActorLocation()));
 		}
 	}
 

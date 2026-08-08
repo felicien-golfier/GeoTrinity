@@ -222,7 +222,7 @@ private:
 
 	/** Debug per-player DPS/HPS table, top-right of the viewport. Plain Slate: no widget Blueprint asset needed. */
 	TSharedPtr<SWidget> CombatStatsPanel;
-	int32 CombatStatsRowCount = 0;
+	TArray<TWeakObjectPtr<APlayerState>> CombatStatsRoster;
 #endif
 
 	void BroadcastInitialValues() const;
@@ -246,6 +246,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UGenericCombattantWidget> BossHealthBarWidget;
+
+	/** Boss whose floating world-space bar was hidden in favor of BossHealthBarWidget; restored when the bar closes. */
+	UPROPERTY()
+	TWeakObjectPtr<AEnemyCharacter> BossWithSuppressedBar;
 
 	FHudPlayerParams HudPlayerParams;
 

@@ -98,7 +98,6 @@ void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float 
 	Stats.TotalDamageDealt += Amount;
 	Stats.SmoothedDPS += Amount / SmoothingWindowSeconds;
 	Stats.DamageBurst.Add(Amount, CurrentTime);
-	PushPlayerStats(CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -111,7 +110,6 @@ void UGeoCombatStatsSubsystem::ReportDamageReceived(AGeoPlayerState* Target, flo
 	float const CurrentTime = GetWorld()->GetTimeSeconds();
 	DecayRates(CurrentTime);
 	FindOrAddStats(Target, CurrentTime).TotalDamageReceived += Amount;
-	PushPlayerStats(CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -127,7 +125,6 @@ void UGeoCombatStatsSubsystem::ReportHealingDealt(AGeoPlayerState* Source, float
 	Stats.TotalHealingDealt += Amount;
 	Stats.SmoothedHPS += Amount / SmoothingWindowSeconds;
 	Stats.HealingBurst.Add(Amount, CurrentTime);
-	PushPlayerStats(CurrentTime);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

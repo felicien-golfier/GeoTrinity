@@ -226,12 +226,10 @@ AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(UWorld c
 {
 	for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
-		if (APlayerController* PlayerController = Iterator->Get())
+		AGeoPlayerController* GeoPlayerController = Cast<AGeoPlayerController>(Iterator->Get());
+		if (GeoPlayerController && GeoPlayerController->IsLocalController())
 		{
-			if (PlayerController && PlayerController->IsLocalController() && PlayerController->IsA(StaticClass()))
-			{
-				return CastChecked<AGeoPlayerController>(PlayerController);
-			}
+			return GeoPlayerController;
 		}
 	}
 	return nullptr;

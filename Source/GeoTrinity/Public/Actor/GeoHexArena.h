@@ -59,7 +59,7 @@ public:
 	/** Server. Destroys the given tiles; holes appear on every machine via replication. Unknown coords are ignored. */
 	void DestroyTiles(TConstArrayView<FIntPoint> Tiles);
 	/** Returns the ISM instance indices of all tiles whose centers lie within Radius world units of Center. */
-	TArray<int> GetTilesIndexInRadius(FVector2D Center, float Radius);
+	TArray<int32> GetTilesIndexInRadius(FVector2D Center, float Radius) const;
 	/** Server. Destroys every tile whose center lies within Radius world units of Center. */
 	void DestroyTilesInRadius(FVector2D Center, float Radius);
 	/** Server. Restores every tile. Called when the boss is defeated or the group wipes. */

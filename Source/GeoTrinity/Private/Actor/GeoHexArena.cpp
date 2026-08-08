@@ -295,9 +295,9 @@ void AGeoHexArena::DestroyTiles(TConstArrayView<FIntPoint> const Tiles)
 	ApplyTileVisuals();
 }
 
-TArray<int> AGeoHexArena::GetTilesIndexInRadius(FVector2D const Center, float const Radius)
+TArray<int32> AGeoHexArena::GetTilesIndexInRadius(FVector2D const Center, float const Radius) const
 {
-	TArray<int> Tiles;
+	TArray<int32> Tiles;
 	for (int32 Index = 0; Index < TileCoords.Num(); ++Index)
 	{
 		if (FVector2D::DistSquared(TileToWorld(TileCoords[Index]), Center) <= FMath::Square(Radius))
@@ -314,7 +314,7 @@ void AGeoHexArena::DestroyTilesInRadius(FVector2D const Center, float const Radi
 	{
 		return;
 	}
-	for (int const Index : GetTilesIndexInRadius(Center, Radius))
+	for (int32 const Index : GetTilesIndexInRadius(Center, Radius))
 	{
 		TileStates[Index].bAlive = 0;
 	}
@@ -341,20 +341,22 @@ void AGeoHexArena::HighlightTile(AActor* Requester, FIntPoint Tile)
 	{
 		return;
 	}
-	SetHighlightedTiles(Requester, {CoordToIndex[Tile]});
+	if (int32 const* Index = CoordToIndex.Find(Tile))
+	{
+		SetHighlightedTiles(Requester, {*Index});
+	}
 }
 
 void AGeoHexArena::HighlightTiles(AActor* Requester, FVector2D const Location, float const Radius)
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("HighlightTile is server-only because it's replicated."))
-		|| !ensureMsgf(Requester != nullptr, TEXT("HighlightTile Requester is not valid !")))
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("HighlightTiles is server-only because it's replicated."))
+		|| !ensureMsgf(Requester != nullptr, TEXT("HighlightTiles Requester is not valid !")))
 	{
 		return;
 	}
 
 	if (Radius <= 0.f)
 	{
-		TArray<int32> Indices;
 		FIntPoint Tile;
 		if (GetTileUnderLocation(Location, Tile))
 		{

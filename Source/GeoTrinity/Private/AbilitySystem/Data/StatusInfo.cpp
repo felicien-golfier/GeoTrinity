@@ -8,7 +8,7 @@ bool UStatusInfo::FillStatusInfoFromTag(FGameplayTag const& tag, FRpgStatusInfo&
 	FRpgStatusInfo const* pInfo = StatusInfos.FindByPredicate(
 		[&tag](FRpgStatusInfo const& info)
 		{
-			return info.StatusTag.MatchesTag(tag);
+			return info.StatusTag.MatchesTagExact(tag);
 		});
 	if (!pInfo)
 	{

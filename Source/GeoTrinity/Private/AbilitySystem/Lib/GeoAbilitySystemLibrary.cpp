@@ -261,7 +261,6 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 	}
 
 	bool const bHasDistanceCheck = MaxDistance > 0.f;
-	float const MaxDistanceSqr = MaxDistance * MaxDistance;
 	bool const bIncludeTargetRadius = ShouldIncludeTargetRadius(OverlapMode, SourceTeam);
 
 	auto TryAddActor = [&](AActor* OtherActor, TCHAR const* ClassName)
@@ -287,9 +286,10 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 		}
 
 		float const OtherActorRadius = bIncludeTargetRadius ? OtherActor->GetSimpleCollisionRadius() : 0.f;
+		float const DistanceThreshold = MaxDistance + OtherActorRadius;
 		if (bHasDistanceCheck
 			&& FVector2D::DistSquared(Location, FVector2D(OtherActor->GetActorLocation()))
-				> MaxDistanceSqr + OtherActorRadius * OtherActorRadius)
+				> DistanceThreshold * DistanceThreshold)
 		{
 			return;
 		}

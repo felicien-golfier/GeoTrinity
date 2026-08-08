@@ -64,4 +64,6 @@ private:
 	void OnHealthChanged(float NewValue);
 	/** Recomputes the shield bar as Shield / MaxHealth (shield is capped at MaxHealth by design — no MaxShield). */
 	void RefreshShield();
+
+	FDelegateHandle ShieldChangedHandle;
 };

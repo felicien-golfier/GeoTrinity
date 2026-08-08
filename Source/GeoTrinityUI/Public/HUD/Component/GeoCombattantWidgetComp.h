@@ -32,9 +32,4 @@ public:
 protected:
 	/** Calls UnbindStatCallbacks on the widget before delegating to Super. */
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
-
-
-public:
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-							   FActorComponentTickFunction* ThisTickFunction) override;
 };

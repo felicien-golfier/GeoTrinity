@@ -36,8 +36,6 @@ public:
 
 	/** Joins an existing Steam session and travels to the host. */
 	void JoinAdvancedSession(const FOnlineSessionSearchResult& SearchResult);
-	/** Delegate callback for session join; performs client travel on success. */
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 	/** Blueprint entry point for joining: resolves the search result from Blueprint and calls JoinAdvancedSession. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Online")
 	void BP_JoinAdvancedSession(FBlueprintSessionResult const& SessionData);
@@ -78,6 +76,6 @@ private:
 
 	FString PendingMapURL;
 	FDelegateHandle CreateSessionDelegateHandle;
-	FDelegateHandle JoinSessionDelegateHandle;
-	FDelegateHandle DestroySessionDelegateHandle;
+	FDelegateHandle LeaveSessionDelegateHandle;
+	FDelegateHandle QuitSessionDelegateHandle;
 };

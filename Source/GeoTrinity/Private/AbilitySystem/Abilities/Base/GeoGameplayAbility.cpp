@@ -97,7 +97,7 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload() const
 {
 	int const Seed = GetNewSeed();
 	return CreateAbilityPayload(
-		GetFireOrigin2D(GetAvatarActorFromActorInfo(), GetGeoAbilitySystemComponentFromActorInfo(), GetNewSeed()),
+		GetFireOrigin2D(GetAvatarActorFromActorInfo(), GetGeoAbilitySystemComponentFromActorInfo(), Seed),
 		GetFireYaw(GetAvatarActorFromActorInfo(), Seed), GetStartTime(GetWorld()), Seed);
 }
 
@@ -477,8 +477,8 @@ void UGeoGameplayAbility::SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySyst
 
 void UGeoGameplayAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
 {
-	// Gauge is local UI: show on every rendering machine incl. the listen-server host; skip only the dedicated server.
-	if (!GeoLib::IsDedicatedServer(this))
+	// Gauge is local UI: show only on the machine controlling this pawn.
+	if (GeoLib::IsLocalPlayerAvatar(Character))
 	{
 		Character->SetDeployChargeGaugeVisibility(this, bVisible);
 	}

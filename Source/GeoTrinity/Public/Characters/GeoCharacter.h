@@ -203,6 +203,7 @@ protected:
 	// Non-rotating attachment point for all world widgets: their relative offsets would orbit the actor as the
 	// capsule yaws if attached to the root (absolute rotation alone doesn't fix it — the offset is composed with the
 	// parent rotation before the rotation override applies).
+	UPROPERTY()
 	TObjectPtr<USceneComponent> WidgetAnchorComponent;
 
 	// World-space health bar. Held as the engine base; the concrete UGeoCombattantWidgetComp (UI module) is set as the
@@ -216,7 +217,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
-#ifdef UE_EDITOR
+#if WITH_EDITOR
 private:
 	ENetRole LocalRoleForDebugPurpose = ROLE_None;
 #endif

@@ -62,10 +62,10 @@ UGeoAttributeSetBase* FHudPlayerParams::GetGeoAttributeSet() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS)
 {
-	checkf(OverlayWidgetClass, TEXT("Overlay Widget Class uninitialized, please fill out HUD %s"), *GetName())
+	checkf(OverlayWidgetClass, TEXT("Overlay Widget Class uninitialized, please fill out HUD %s"), *GetName());
 
-		// Setup params the HUD may very probably need to access
-		HudPlayerParams.PlayerController = PC;
+	// Setup params the HUD may very probably need to access
+	HudPlayerParams.PlayerController = PC;
 	HudPlayerParams.PlayerState = PS;
 	HudPlayerParams.AbilitySystemComponent = ASC;
 	HudPlayerParams.AttributeSet = AS;
@@ -288,7 +288,7 @@ void AGeoHUD::ShowBossHealthBar(AEnemyCharacter* Boss)
 	BossHealthBarWidget = CreateWidget<UGenericCombattantWidget>(GetWorld(), BossHealthBarWidgetClass);
 	if (BossHealthBarWidget)
 	{
-		if (UAbilitySystemComponent* BossASC = Cast<IAbilitySystemInterface>(Boss)->GetAbilitySystemComponent())
+		if (UAbilitySystemComponent* BossASC = Boss->GetAbilitySystemComponent())
 		{
 			BossHealthBarWidget->InitializeWithAbilitySystemComponent(BossASC);
 		}
@@ -297,6 +297,7 @@ void AGeoHUD::ShowBossHealthBar(AEnemyCharacter* Boss)
 
 	// The on-screen boss bar replaces the boss's floating bar.
 	Boss->SetCombattantWidgetVisible(false);
+	BossWithSuppressedBar = Boss;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -307,6 +308,12 @@ void AGeoHUD::HideBossHealthBar()
 		BossHealthBarWidget->RemoveFromParent();
 		BossHealthBarWidget = nullptr;
 	}
+
+	if (AEnemyCharacter* PrevBoss = BossWithSuppressedBar.Get())
+	{
+		PrevBoss->SetCombattantWidgetVisible(true);
+	}
+	BossWithSuppressedBar = nullptr;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -610,8 +617,20 @@ void AGeoHUD::UpdateCombatStatsPanel()
 	}
 
 	// Cell texts and colors poll their player state through Slate attributes, so the tree only needs rebuilding when
-	// the player list changes.
-	if (CombatStatsPanel && CombatStatsRowCount == GameState->PlayerArray.Num())
+	// the player roster changes (not merely its count — a leave+join in the same count would otherwise go unnoticed).
+	bool const bRosterChanged = CombatStatsRoster.Num() != GameState->PlayerArray.Num()
+		|| [&]
+		{
+			for (int32 Index = 0; Index < CombatStatsRoster.Num(); ++Index)
+			{
+				if (CombatStatsRoster[Index].Get() != GameState->PlayerArray[Index])
+				{
+					return true;
+				}
+			}
+			return false;
+		}();
+	if (CombatStatsPanel && !bRosterChanged)
 	{
 		return;
 	}
@@ -690,7 +709,11 @@ void AGeoHUD::UpdateCombatStatsPanel()
 		}
 		Rows->AddSlot().AutoHeight()[Row];
 	}
-	CombatStatsRowCount = GameState->PlayerArray.Num();
+	CombatStatsRoster.Reset(GameState->PlayerArray.Num());
+	for (APlayerState* PlayerState : GameState->PlayerArray)
+	{
+		CombatStatsRoster.Add(PlayerState);
+	}
 
 	// Anchored top-right, below the boss health bar which hugs the top edge of the screen.
 	TSharedRef<SConstraintCanvas> Panel = SNew(SConstraintCanvas)
@@ -720,5 +743,6 @@ void AGeoHUD::RemoveCombatStatsPanel()
 		Viewport->RemoveViewportWidgetContent(CombatStatsPanel.ToSharedRef());
 	}
 	CombatStatsPanel.Reset();
+	CombatStatsRoster.Reset();
 }
 #endif

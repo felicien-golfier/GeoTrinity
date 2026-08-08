@@ -65,5 +65,8 @@ void AEnemyCharacter::ResetForNewAttempt()
 {
 	StopAllSpawnedElements();
 	AbilitySystemComponent->InitializeDefaultAttributes();
-	GetController<AGeoEnemyAIController>()->ResetAI();
+	if (AGeoEnemyAIController* AIController = GetController<AGeoEnemyAIController>())
+	{
+		AIController->ResetAI();
+	}
 }

@@ -31,9 +31,6 @@ public:
 	/** Binds health and speed attribute change delegates; also registers ally remote-fire tag listeners on clients so cosmetic shot replay works for observed allies. */
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
 
-	/** Creates a GeoGameplayEffectContext pre-populated with this component's owner. */
-	FGeoGameplayEffectContext* MakeGeoEffectContext() const;
-
 	/** Grants all abilities whose tags are in AbilitiesToGive, looked up from the global UAbilityInfo asset. */
 	void GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive, int32 Level = 1);
 

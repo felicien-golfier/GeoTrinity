@@ -27,20 +27,28 @@ void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementati
 	bool const bAlreadyBound = (OwnerASC == ASC);
 	OwnerASC = ASC;
 
+	AGeoHUD* GeoHUD = nullptr;
+	if (APlayerController* PlayerController = GetOwningPlayer())
+	{
+		GeoHUD = PlayerController->GetHUD<AGeoHUD>();
+	}
+
 	if (bAlreadyBound)
 	{
 		// Already bound to this ASC: just refresh the displayed values (attributes may have been 0 at first bind).
+		// Retry damage-number registration too — the avatar may not have existed at the first bind.
+		if (GeoHUD)
+		{
+			GeoHUD->RegisterASCForDamageNumbers(ASC, ASC->GetAvatarActor());
+		}
 		InitStats();
 		return;
 	}
 
-	if (APlayerController* PlayerController = GetOwningPlayer())
+	if (GeoHUD)
 	{
-		if (AGeoHUD* GeoHUD = PlayerController->GetHUD<AGeoHUD>())
-		{
-			InitFromHUD(GeoHUD);
-			GeoHUD->RegisterASCForDamageNumbers(ASC, ASC->GetAvatarActor());
-		}
+		InitFromHUD(GeoHUD);
+		GeoHUD->RegisterASCForDamageNumbers(ASC, ASC->GetAvatarActor());
 	}
 
 	BindStatCallbacks();
@@ -138,14 +146,13 @@ void UGenericCombattantWidget::BindStatCallbacks()
 	GeoASC->OnHealthChanged.AddDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
 	GeoASC->OnMaxHealthChanged.AddDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
 
-	// The ASC exposes no Shield delegate (unlike Health/MaxHealth), so bind the attribute directly. A weak lambda
-	// self-cleans when this widget is destroyed, so no matching removal is needed in UnbindStatCallbacks.
-	GeoASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
-		.AddWeakLambda(this,
-					   [this](FOnAttributeChangeData const&)
-					   {
-						   RefreshShield();
-					   });
+	// The ASC exposes no Shield delegate (unlike Health/MaxHealth), so bind the attribute directly.
+	ShieldChangedHandle = GeoASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
+							   .AddWeakLambda(this,
+											  [this](FOnAttributeChangeData const&)
+											  {
+												  RefreshShield();
+											  });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -162,6 +169,9 @@ void UGenericCombattantWidget::UnbindStatCallbacks()
 	}
 	GeoASC->OnHealthChanged.RemoveDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
 	GeoASC->OnMaxHealthChanged.RemoveDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
+	GeoASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
+		.Remove(ShieldChangedHandle);
+	ShieldChangedHandle.Reset();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

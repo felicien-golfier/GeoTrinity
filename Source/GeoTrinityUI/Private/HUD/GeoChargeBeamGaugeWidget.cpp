@@ -42,8 +42,6 @@ void UGeoChargeBeamGaugeWidget::UpdateVisualChargeRatio() const
 
 		if (ChargeRatio < SweetSpotMinRatio || SweetSpotRange <= 0.f)
 		{
-			FProgressBarStyle Style = SweetSpotBar->GetWidgetStyle();
-			SweetSpotBar->SetWidgetStyle(Style);
 			SweetSpotBar->SetPercent(0.f);
 		}
 		else

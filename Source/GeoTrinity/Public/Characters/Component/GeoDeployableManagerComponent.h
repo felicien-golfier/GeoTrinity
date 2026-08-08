@@ -43,8 +43,8 @@ public:
 
 	/**
 	 * Returns true if another deployable of the given class can be deployed.
-	 * If the class has an entry in DeployableSlots, that per-class cap is checked.
-	 * Otherwise falls back to the global MaxDeployables limit.
+	 * Classes exempt via IsUnlimitedDeploy are never at max. If the class has an entry in DeployableSlots, that
+	 * per-class cap is checked; otherwise the global MaxDeployables pool, shared with every other capped class.
 	 */
 	UFUNCTION(BlueprintPure)
 	bool HasReachMaxLimit(TSubclassOf<AGeoDeployableBase> DeployableClass);
@@ -104,6 +104,16 @@ public:
 private:
 	UFUNCTION()
 	void OnDeployableDestroyed(AGeoDeployableBase* Deployable);
+
+	/** Returns Class's own DeployableSlots cap, or the shared MaxDeployables when it has no entry. */
+	int32 GetEffectiveMax(TSubclassOf<AGeoDeployableBase> Class) const;
+
+	/**
+	 * Live deployables counted against Class's cap, oldest first: its own bucket when it has a DeployableSlots entry,
+	 * otherwise every class sharing the global MaxDeployables pool (no slot entry and not exempt via IsUnlimitedDeploy).
+	 * Single source for both the limit test and the deployable it evicts, so the two can never disagree.
+	 */
+	TArray<AGeoDeployableBase*> GetDeployablesCountedAgainstLimit(TSubclassOf<AGeoDeployableBase> Class) const;
 
 	UPROPERTY()
 	TMap<TSubclassOf<AGeoDeployableBase>, FDeployableBucket> Deployables;

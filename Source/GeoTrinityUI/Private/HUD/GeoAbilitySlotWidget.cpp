@@ -12,6 +12,12 @@
 namespace
 {
 	FName const CooldownFillParam(TEXT("Fill"));
+
+	bool IsAutomaticFireAbility(FGameplayTag const& AbilityTag)
+	{
+		UGeoGameplayAbility const* const AbilityCDO = GeoASLib::GetAbilityCDO(AbilityTag);
+		return AbilityCDO && AbilityCDO->GetClass()->IsChildOf(UGeoAutomaticFireAbility::StaticClass());
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -26,11 +32,6 @@ void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntrie
 	DisplayedIndex = 0;
 	HUD = InHUD;
 
-	if (Icon && DisplayedEntry().Icon)
-	{
-		Icon->SetBrushFromTexture(const_cast<UTexture2D*>(DisplayedEntry().Icon.Get()));
-	}
-
 	if (CooldownSweep && CooldownSweepMaterial)
 	{
 		CooldownSweepMID = UMaterialInstanceDynamic::Create(CooldownSweepMaterial, this);
@@ -38,18 +39,8 @@ void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntrie
 		CooldownSweep->SetBrushFromMaterial(CooldownSweepMID);
 	}
 
-	if (CountdownText)
-	{
-		CountdownText->SetVisibility(ESlateVisibility::Hidden);
-	}
-
-	if (CountText)
-	{
-		CountText->SetVisibility(DisplayedEntry().bIsDeployable ? ESlateVisibility::HitTestInvisible
-																: ESlateVisibility::Collapsed);
-	}
-
-	RefreshDeployCount();
+	SetCountdownVisible(false);
+	ApplyDisplayedEntry();
 	RefreshKeyLabel();
 }
 
@@ -74,7 +65,12 @@ void UGeoAbilitySlotWidget::SelectDisplayedEntry()
 		return;
 	}
 	DisplayedIndex = NewIndex;
+	ApplyDisplayedEntry();
+}
 
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::ApplyDisplayedEntry()
+{
 	if (Icon && DisplayedEntry().Icon)
 	{
 		Icon->SetBrushFromTexture(const_cast<UTexture2D*>(DisplayedEntry().Icon.Get()));
@@ -85,6 +81,16 @@ void UGeoAbilitySlotWidget::SelectDisplayedEntry()
 																: ESlateVisibility::Collapsed);
 	}
 	RefreshDeployCount();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::SetCountdownVisible(bool const bVisible)
+{
+	ESlateVisibility const Target = bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden;
+	if (CountdownText && CountdownText->GetVisibility() != Target)
+	{
+		CountdownText->SetVisibility(Target);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -115,17 +121,21 @@ void UGeoAbilitySlotWidget::RefreshKeyLabel()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySlotWidget::RefreshDeployCount()
+int32 UGeoAbilitySlotWidget::RefreshDeployCount()
 {
-	if (!DisplayedEntry().bIsDeployable || !CountText || !HUD)
+	if (!DisplayedEntry().bIsDeployable || !HUD)
 	{
-		return;
+		return 0;
 	}
 
 	int32 Current = 0;
 	int32 Max = 0;
 	HUD->GetDeployCountForAbility(DisplayedEntry().AbilityTag, Current, Max);
-	CountText->SetText(FText::AsNumber(Current));
+	if (CountText)
+	{
+		CountText->SetText(FText::AsNumber(Current));
+	}
+	return Current;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -150,35 +160,20 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 	// is refreshed here every tick rather than only on the OnPlayerDeployCountChanged ping. The same charge count also
 	// gates the gray-out: the refill cooldown must only gray the slot at zero charges — while a charge is available the
 	// slot reads as ready.
-	if (DisplayedEntry().bIsDeployable)
+	if (RefreshDeployCount() > 0)
 	{
-		int32 CurrentStacks = 0;
-		int32 MaxStacks = 0;
-		HUD->GetDeployCountForAbility(AbilityTag, CurrentStacks, MaxStacks);
-		if (CountText)
-		{
-			CountText->SetText(FText::AsNumber(CurrentStacks));
-		}
-		if (CurrentStacks > 0)
-		{
-			Remaining = 0.f;
-		}
+		Remaining = 0.f;
 	}
-
 
 	// While the ability is active, keep the sweep fully filled so the slot reads as "in use". The cooldown (if any)
 	// takes over depleting it once the ability ends; an active ability with no cooldown stays grayed until it ends.
-	if (Remaining <= 0.f && HUD->IsAbilityActive(AbilityTag)
-		&& !GeoASLib::GetAbilityCDO(AbilityTag)->GetClass()->IsChildOf(UGeoAutomaticFireAbility::StaticClass()))
+	if (Remaining <= 0.f && HUD->IsAbilityActive(AbilityTag) && !IsAutomaticFireAbility(AbilityTag))
 	{
 		if (CooldownSweepMID)
 		{
 			CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, 1.f);
 		}
-		if (CountdownText && CountdownText->GetVisibility() != ESlateVisibility::Hidden)
-		{
-			CountdownText->SetVisibility(ESlateVisibility::Hidden);
-		}
+		SetCountdownVisible(false);
 		return;
 	}
 
@@ -188,10 +183,7 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 	// cooldown. The SetScalarParameterValue is a no-op when the value is unchanged, so idle slots stay cheap.
 	if (Remaining <= 0.f)
 	{
-		if (CountdownText && CountdownText->GetVisibility() != ESlateVisibility::Hidden)
-		{
-			CountdownText->SetVisibility(ESlateVisibility::Hidden);
-		}
+		SetCountdownVisible(false);
 		if (CooldownSweepMID)
 		{
 			CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, 0.f);
@@ -204,9 +196,9 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 		CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, Remaining / Duration);
 	}
 
+	SetCountdownVisible(true);
 	if (CountdownText)
 	{
-		CountdownText->SetVisibility(ESlateVisibility::HitTestInvisible);
 		CountdownText->SetText(FText::FromString(FString::Printf(TEXT("%.1f"), Remaining)));
 	}
 }

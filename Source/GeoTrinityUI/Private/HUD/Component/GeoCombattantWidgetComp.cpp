@@ -35,6 +35,11 @@ void UGeoCombattantWidgetComp::BindToOwnerASC() const
 	}
 
 	AActor const* OwnerActor = GetOwner();
+	if (!OwnerActor)
+	{
+		return;
+	}
+
 	if (!OwnerActor->Implements<UAbilitySystemInterface>())
 	{
 		UE_LOG(LogGeoASC, Warning,
@@ -58,11 +63,4 @@ void UGeoCombattantWidgetComp::EndPlay(EEndPlayReason::Type const EndPlayReason)
 		CombattantWidget->UnbindStatCallbacks();
 	}
 	Super::EndPlay(EndPlayReason);
-}
-
-// Called every frame
-void UGeoCombattantWidgetComp::TickComponent(float DeltaTime, ELevelTick TickType,
-											 FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }

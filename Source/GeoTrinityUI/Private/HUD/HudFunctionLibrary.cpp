@@ -40,5 +40,5 @@ float UHudFunctionLibrary::GetHealthRatio(UAbilitySystemComponent const* Ability
 	{
 		return 0.0f;
 	}
-	return CurrentHealth / MaxHealth;
+	return FMath::Clamp(CurrentHealth / MaxHealth, 0.f, 1.f);
 }

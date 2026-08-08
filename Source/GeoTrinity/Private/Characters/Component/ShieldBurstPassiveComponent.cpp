@@ -54,9 +54,10 @@ void UShieldBurstPassiveComponent::InitializeMaterialInstances()
 
 	CharacterMaterialInstance = Character->GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
 
-	if (!IsValid(CharacterMaterialInstance))
+	if (!ensureMsgf(IsValid(CharacterMaterialInstance),
+					TEXT("UShieldBurstPassiveComponent: invalid MaterialInstance")))
 	{
-		ensureMsgf(IsValid(CharacterMaterialInstance), TEXT("UShieldBurstPassiveComponent: invalid MaterialInstance"));
+		return;
 	}
 
 	CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, GaugeRatio);

@@ -30,9 +30,9 @@ public:
 	 * material instance. */
 	void InitSlot(TArray<FGeoAbilityBarEntry> const& InEntries, AGeoHUD* InHUD);
 
-	/** Re-queries this slot's deploy count and refreshes the badge. Bound to AGeoHUD::OnPlayerDeployCountChanged. */
+	/** Re-queries this slot's deploy count, refreshes the badge, and returns the current charge count. */
 	UFUNCTION()
-	void RefreshDeployCount();
+	int32 RefreshDeployCount();
 
 	/** Re-queries the live key mapped to this slot's input action and updates KeyText only when the key changed. */
 	void RefreshKeyLabel();
@@ -70,6 +70,10 @@ protected:
 private:
 	/** Picks which entry to display (last active/activatable, else the first) and refreshes the visuals on change. */
 	void SelectDisplayedEntry();
+	/** Applies the displayed entry's icon and deploy-badge visibility, then refreshes the badge. */
+	void ApplyDisplayedEntry();
+	/** Shows or hides the countdown text, skipping the call when it is already in that state. */
+	void SetCountdownVisible(bool bVisible);
 	FGeoAbilityBarEntry const& DisplayedEntry() const { return Entries[DisplayedIndex]; }
 
 	/** Abilities sharing this slot's input; Entries[DisplayedIndex] drives every visual. UPROPERTY so the GC keeps the

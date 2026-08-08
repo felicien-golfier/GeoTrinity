@@ -30,7 +30,7 @@ FGameplayTag UGeoChargeBeamAbility::GetAlternateReleaseInputTag() const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoChargeBeamAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)
 {
-	if (!GeoLib::IsDedicatedServer(this))
+	if (GeoLib::IsLocalPlayerAvatar(Character))
 	{
 		Character->SetChargeBeamGaugeVisible(this, bVisible, SweetSpotMinRatio, SweetSpotMaxRatio);
 	}
@@ -150,6 +150,7 @@ void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTarge
 	FVector2D const ForwardVector = FVector2D(FRotator(0, AbilityTargetData.Yaw, 0).Vector());
 
 	AActor const* const Avatar = GetAvatarActorFromActorInfo();
+	TArray<TInstancedStruct<FEffectData>> const Effects = GetEffectDataArray();
 	for (AActor* Target :
 		 GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(Avatar), TeamAttitudeMask::HostileOrNeutral,
 											   true, AbilityTargetData.Origin, ForwardVector, MaxRange))
@@ -165,8 +166,8 @@ void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTarge
 			continue;
 		}
 
-		GeoASLib::ApplyEffectFromEffectData(GetEffectDataArray(), SourceASC, TargetASC, GetAbilityLevel(),
-											AbilityTargetData.Seed, GetAbilityTag());
+		GeoASLib::ApplyEffectFromEffectData(Effects, SourceASC, TargetASC, GetAbilityLevel(), AbilityTargetData.Seed,
+											GetAbilityTag());
 	}
 
 	// A sweet-spot release spends the full gauge whether or not it hit anything — the boosted beam was fired.

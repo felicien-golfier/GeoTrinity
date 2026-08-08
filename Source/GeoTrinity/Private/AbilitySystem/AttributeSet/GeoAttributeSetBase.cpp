@@ -30,7 +30,7 @@ void UGeoAttributeSetBase::PreAttributeChange(FGameplayAttribute const& Attribut
 {
 	Super::PreAttributeChange(Attribute, NewValue);
 
-	if (Attribute == GetShieldAttribute())
+	if (Attribute == GetShieldAttribute() || Attribute == GetHealthAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
 	}

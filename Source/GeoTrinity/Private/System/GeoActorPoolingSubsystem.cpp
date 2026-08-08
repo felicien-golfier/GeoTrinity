@@ -9,9 +9,8 @@
 AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, FTransform const& Transform, AActor* Owner,
 												APawn* Instigator, bool bInit, bool bActivate)
 {
-	if (!Class)
+	if (!ensureMsgf(Class, TEXT("PopWithClass called with invalid Class")))
 	{
-		ensureMsgf(false, TEXT("PopWithClass called with invalid Class"));
 		return nullptr;
 	}
 
@@ -71,10 +70,10 @@ AActor* UGeoActorPoolingSubsystem::PopWithClass(UClass* Class, FTransform const&
 
 void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, uint16 const Count, AActor* Owner, APawn* Instigator)
 {
-	UWorld* World = GetWorld();
-	ensureMsgf(World, TEXT("World is invalid"));
-	ensureMsgf(Class, TEXT("Class is invalid"));
-	ensureMsgf(Count > 0, TEXT("Count must be greater than 0"));
+	if (!ensureMsgf(Class && Count > 0, TEXT("PreSpawn requires a valid Class and a Count greater than 0")))
+	{
+		return;
+	}
 
 	FActorSpawnParameters Params;
 	Params.Owner = Owner;
@@ -87,7 +86,10 @@ void UGeoActorPoolingSubsystem::PreSpawn(UClass* Class, uint16 const Count, AAct
 
 	for (int32 i = 0; i < MissingCount; ++i)
 	{
-		SpawnActor(Class, Params);
+		if (AActor* NewActor = SpawnActor(Class, Params))
+		{
+			PoolByClass.Add(NewActor);
+		}
 	}
 }
 
@@ -122,16 +124,18 @@ AActor* UGeoActorPoolingSubsystem::SpawnActor(UClass* Class, FActorSpawnParamete
 
 	ChangeActorState(NewActor, false);
 
-	Pool.FindOrAdd(Class).Add(NewActor);
 	return NewActor;
 }
 
 void UGeoActorPoolingSubsystem::ReleaseActor(AActor* Actor)
 {
-	if (!IsValid(Actor))
+	if (!ensureMsgf(IsValid(Actor), TEXT("[Pool] ReleaseActor called with invalid actor!")))
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Pool] ReleaseActor called with invalid actor!"));
-		ensureMsgf(false, TEXT("[Pool] ReleaseActor called with invalid actor!"));
+		return;
+	}
+
+	if (!ensureMsgf(GetActorState(Actor), TEXT("[Pool] ReleaseActor called twice on %s"), *Actor->GetName()))
+	{
 		return;
 	}
 

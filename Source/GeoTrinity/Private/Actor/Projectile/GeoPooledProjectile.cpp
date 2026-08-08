@@ -43,6 +43,10 @@ void AGeoPooledProjectile::Init()
 
 void AGeoPooledProjectile::EndProjectileLife()
 {
+	if (bIsEnding)
+	{
+		return;
+	}
 	bIsEnding = true;
 
 	PlayImpactFx();

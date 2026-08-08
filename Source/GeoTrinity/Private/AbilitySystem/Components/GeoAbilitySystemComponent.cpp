@@ -12,8 +12,30 @@
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "Characters/PlayerClassTypes.h"
+#include "GameplayEffect.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+namespace
+{
+// GAS executes an effect's modifiers strictly in array order, and UGeoAttributeSetBase::PreAttributeChange clamps
+// Health and Shield against MaxHealth. A modifier listed before MaxHealth therefore lands clamped against a MaxHealth
+// of 0 — and the clamp hits the current value only, so raising MaxHealth afterwards never brings it back.
+bool IsMaxHealthModifiedFirst(UGameplayEffect const& Effect)
+{
+	bool bSeenClampedAttribute = false;
+	for (FGameplayModifierInfo const& Modifier : Effect.Modifiers)
+	{
+		if (Modifier.Attribute == UGeoAttributeSetBase::GetMaxHealthAttribute())
+		{
+			return !bSeenClampedAttribute;
+		}
+		bSeenClampedAttribute |= Modifier.Attribute == UGeoAttributeSetBase::GetHealthAttribute()
+			|| Modifier.Attribute == UGeoAttributeSetBase::GetShieldAttribute();
+	}
+	return true;
+}
+} // namespace
 
 void UGeoAbilitySystemComponent::InitializeComponent()
 {
@@ -26,8 +48,19 @@ void UGeoAbilitySystemComponent::InitializeComponent()
 		return;
 	}
 
-	for (FGameplayAbilityInfo const& AbilityInfo : UGeoAbilitySystemLibrary::GetAbilityInfo()->GetAllAbilityInfos())
+	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo();
+	if (!ensureMsgf(AbilityInfos, TEXT("UGeoAbilitySystemComponent: AbilityInfo data asset is not loaded")))
 	{
+		return;
+	}
+
+	for (FGameplayAbilityInfo const& AbilityInfo : AbilityInfos->GetAllAbilityInfos())
+	{
+		if (!AbilityInfo.AbilityClass)
+		{
+			continue;
+		}
+
 		if (AbilityInfo.AbilityClass->IsChildOf(UPatternAbility::StaticClass())
 			&& StartupAbilityTags.Contains(AbilityInfo.AbilityTag))
 		{
@@ -126,13 +159,6 @@ void UGeoAbilitySystemComponent::RemoteFireShot(FGameplayTag const RemoteFireTag
 	FireSectionIndices.Add(AbilityCDO->GetAbilityTag(), AbilityCDO->GetPlayingFireSectionIndex(Avatar));
 
 	AbilityCDO->RemoteFireShot(Avatar, this);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-FGeoGameplayEffectContext* UGeoAbilitySystemComponent::MakeGeoEffectContext() const
-{
-	FGameplayEffectContextHandle handle = MakeEffectContext();
-	return static_cast<FGeoGameplayEffectContext*>(handle.Get());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -358,6 +384,11 @@ void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> 
 		ensureMsgf(false, TEXT("ApplyEffectToSelf: SpecHandle is invalid!"));
 		return;
 	}
+
+	ensureMsgf(IsMaxHealthModifiedFirst(*SpecHandle.Data->Def),
+			   TEXT("%s modifies Health or Shield before MaxHealth, so they land clamped to 0. Move the MaxHealth "
+					"modifier to the top of the effect's Modifiers array."),
+			   *GameplayEffectClass->GetName());
 
 	ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), this);
 }

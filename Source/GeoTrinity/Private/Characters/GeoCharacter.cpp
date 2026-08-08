@@ -113,10 +113,10 @@ void AGeoCharacter::StopAllSpawnedElements()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->StopAllActivePatterns();
-		if (DeployableManagerComponent)
-		{
-			DeployableManagerComponent->ForceExpireAll();
-		}
+	}
+	if (DeployableManagerComponent)
+	{
+		DeployableManagerComponent->ForceExpireAll();
 	}
 }
 void AGeoCharacter::EndPlay(EEndPlayReason::Type const EndPlayReason)
@@ -164,7 +164,7 @@ void AGeoCharacter::DrawDebugVectorFromCharacter(FVector const& Direction, FStri
 void AGeoCharacter::InitGAS()
 {
 	AbilitySystemComponent->InitializeDefaultAttributes();
-	if (HasAuthority())
+	if (GeoLib::IsServer(this))
 	{
 		AbilitySystemComponent->GiveStartupAbilities();
 	}
@@ -202,7 +202,7 @@ void AGeoCharacter::BeginPlay()
 			WidgetComponent->SetOwnerPlayer(SharedViewPlayer);
 		}
 	}
-#ifdef UE_EDITOR
+#if WITH_EDITOR
 	LocalRoleForDebugPurpose = GetLocalRole();
 #endif
 }

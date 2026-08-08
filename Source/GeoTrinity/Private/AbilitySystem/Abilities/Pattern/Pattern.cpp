@@ -11,9 +11,8 @@ void UPattern::OnCreate(FGameplayTag AbilityTag, AActor&)
 		TEXT(
 			"EffectDataArray is not empty when creating a Pattern ! Ensure you call this function only at the spawn of the pattern."));
 	UGeoGameplayAbility const* AbilityCDO = GeoASLib::GetAbilityCDO(AbilityTag);
-	if (!AbilityCDO)
+	if (!ensureMsgf(AbilityCDO, TEXT("Pattern %s has no AbilityCDO !"), *AbilityTag.ToString()))
 	{
-		ensureMsgf(false, TEXT("Pattern %s has no AbilityCDO !"), *AbilityTag.ToString());
 		return;
 	}
 
@@ -83,21 +82,21 @@ void UPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 {
 	// Local (non-replicated) cue: execute on every rendering machine including the listen-server host; skip only on a
 	// dedicated server, which has no viewport.
-	if (Cue.CueTag.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
+	if (!Cue.CueTag.IsValid() || GeoLib::IsDedicatedServer(GetWorld()))
 	{
-		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
-		if (!IsValid(InstigatorASC))
-		{
-			ensureMsgf(false, TEXT("Pattern Instigator %s has no ASC !"), *StoredPayload.Instigator->GetName());
-		}
-		else
-		{
-			FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
-			FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
-			Cue.FillCueParams(CueParams);
-			InstigatorASC->ExecuteGameplayCue(Cue.CueTag, CueParams);
-		}
+		return;
 	}
+
+	UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
+	if (!ensureMsgf(IsValid(InstigatorASC), TEXT("Pattern %s: instigator has no ASC"), *GetName()))
+	{
+		return;
+	}
+
+	FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
+	FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
+	Cue.FillCueParams(CueParams);
+	InstigatorASC->ExecuteGameplayCue(Cue.CueTag, CueParams);
 }
 
 FGameplayCueParameters UPattern::FillCueParam(FAbilityPayload const& Payload)
@@ -106,8 +105,17 @@ FGameplayCueParameters UPattern::FillCueParam(FAbilityPayload const& Payload)
 	CueParams.Location = FVector(Payload.Origin, 0.f);
 	CueParams.Instigator = Payload.Instigator;
 	CueParams.AbilityLevel = Payload.AbilityLevel;
+	float WindUpRatio = 1.f;
+	if (StartDelay > 0.f)
+	{
+		WindUpRatio = TravelTime / StartDelay;
+	}
+	else
+	{
+		UE_LOG(LogPattern, Verbose, TEXT("%s has no wind-up, packing a cue timing ratio of 1."), *GetName());
+	}
 	// Hack Normale to pack timing info into (start delay, elapsed time before stating, ratio)
-	CueParams.Normal = FVector(StartDelay, TravelTime, 1 - ((StartDelay - TravelTime) / StartDelay));
+	CueParams.Normal = FVector(StartDelay, TravelTime, WindUpRatio);
 	return CueParams;
 }
 

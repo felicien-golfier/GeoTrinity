@@ -81,6 +81,10 @@ void AGeoArena::ResetBoss()
 	FVector SpawnLocation = SpawnPoints.IsEmpty() ? GetActorLocation() : SpawnPoints[0]->GetActorLocation();
 	SpawnLocation.Z = ArbitraryCharacterZ;
 	Boss = GetWorld()->SpawnActor<AEnemyCharacter>(BossClass, FTransform(SpawnLocation), SpawnParams);
+	if (!ensureMsgf(Boss, TEXT("%s: failed to spawn %s"), *GetName(), *BossClass->GetName()))
+	{
+		return;
+	}
 	Boss->Arena = this;
 
 	if (Barrier)

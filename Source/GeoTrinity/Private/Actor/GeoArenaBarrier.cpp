@@ -95,7 +95,7 @@ void AGeoArenaBarrier::Tick(float DeltaSeconds)
 			continue;
 		}
 
-		float const Alpha = AnimatedActor.bHasMovement ? LerpAlpha : static_cast<float>(!bIsClosed);
+		float const Alpha = AnimatedActor.bHasMovement ? LerpAlpha : static_cast<float>(bIsClosed);
 		FTransform LerpedTransform;
 		LerpedTransform.Blend(AnimatedActor.FightOffTransform, AnimatedActor.FightOnTransform, Alpha);
 		AnimatedActor.Actor->SetActorTransform(LerpedTransform);

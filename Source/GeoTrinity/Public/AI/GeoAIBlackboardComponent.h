@@ -36,5 +36,6 @@ class GEOTRINITY_API UGeoAIBlackboardComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	UPROPERTY()
 	FGeoAIBlackboardData Data;
 };

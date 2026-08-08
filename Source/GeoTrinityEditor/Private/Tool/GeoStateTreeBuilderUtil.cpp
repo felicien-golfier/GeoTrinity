@@ -206,8 +206,12 @@ void UGeoStateTreeBuilderUtil::AddFireAbilityStateByTagName(UStateTree* StateTre
 															int32 InsertIndex)
 {
 	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(AbilityTagName, false);
-	ensureMsgf(Tag.IsValid(), TEXT("UGeoStateTreeBuilderUtil::AddFireAbilityStateByTagName — tag '%s' not found"),
-			   *AbilityTagName.ToString());
+	if (!ensureMsgf(Tag.IsValid(),
+					TEXT("UGeoStateTreeBuilderUtil::AddFireAbilityStateByTagName — tag '%s' not found"),
+					*AbilityTagName.ToString()))
+	{
+		return;
+	}
 	AddFireAbilityState(StateTree, StateName, Tag, ParentStateName, InsertIndex);
 }
 
@@ -400,6 +404,8 @@ void UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction(
 		return;
 	}
 
+	EditorData->Modify();
+
 	FStateTreeEditorNode const& CondNode = State->EnterConditions[ConditionIndex];
 	FPropertyBindingPath TargetPath(CondNode.ID, ConditionPropertyName);
 
@@ -418,7 +424,6 @@ void UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction(
 		EditorData->AddPropertyBinding(InputSourcePath, InputTargetPath);
 	}
 
-	EditorData->Modify();
 	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction"));
 }
 

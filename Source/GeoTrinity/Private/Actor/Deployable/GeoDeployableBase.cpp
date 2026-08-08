@@ -184,7 +184,7 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 		MeshComponent->SetCustomPrimitiveDataFloat(DurationSpentPrimitiveDataIndex, DurationSpent);
 	}
 
-	if (bUseRegularDrain && GeoLib::IsServer(GetWorld()))
+	if (bUseRegularDrain && DrainMagnitudePerSecond > 0.f && bActive && !IsBlinking() && GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		FDamageEffectData DrainEffectData;
@@ -299,7 +299,10 @@ void AGeoDeployableBase::BeginPlay()
 		CombattantWidgetComponent->SetHiddenInGame(true);
 	}
 
-	ExecuteCue(SpawnCue, GetSpawnCueParams());
+	if (!GeoLib::IsDedicatedServer(this))
+	{
+		ExecuteCue(SpawnCue, GetSpawnCueParams());
+	}
 	PlaySoundOneShot(EDeployableSoundType::Spawn);
 }
 
@@ -391,8 +394,10 @@ void AGeoDeployableBase::Expire(bool const bForce)
 	SetCanBeDamaged(false);
 	if (!bForce)
 	{
-
-		ExecuteCue(ExpireCue, GetGenericCueParams(ExpireCue));
+		if (!GeoLib::IsDedicatedServer(this))
+		{
+			ExecuteCue(ExpireCue, GetGenericCueParams(ExpireCue));
+		}
 		PlaySoundOneShot(EDeployableSoundType::Expire);
 		if (!bRecalled)
 		{
@@ -405,7 +410,6 @@ void AGeoDeployableBase::Expire(bool const bForce)
 	// the actor (mirrors AGeoProjectile::EndProjectileLife).
 	if (GetLocalRole() < ROLE_Authority)
 	{
-		SetActorEnableCollision(false);
 		return;
 	}
 
@@ -575,7 +579,10 @@ FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGeoCueParam cons
 FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
 {
 	FGameplayCueParameters CueParams = GetGenericCueParams(RecallCue);
-	CueParams.Normal = (GetData()->Instigator->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	AActor const* CueInstigator = GetData()->Instigator;
+	CueParams.Normal = IsValid(CueInstigator)
+							? (CueInstigator->GetActorLocation() - GetActorLocation()).GetSafeNormal()
+							: FVector::ZeroVector;
 	CueParams.NormalizedMagnitude = IsBlinking() ? 1.f : 0.f;
 	return CueParams;
 }

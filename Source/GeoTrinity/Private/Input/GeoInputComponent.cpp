@@ -86,7 +86,10 @@ void UGeoInputComponent::BindInput(UInputComponent* PlayerInputComponent)
 
 void UGeoInputComponent::MoveFromInput(FInputActionInstance const& Instance)
 {
-	GetGeoCharacter()->AddMovementInput(FVector(Instance.GetValue().Get<FVector2D>(), 0.f));
+	if (AGeoCharacter* GeoCharacter = GetGeoCharacter())
+	{
+		GeoCharacter->AddMovementInput(FVector(Instance.GetValue().Get<FVector2D>(), 0.f));
+	}
 }
 
 void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
@@ -100,7 +103,12 @@ void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 	}
 	else
 	{
-		GetGeoCharacter()->GetGeoPlayerController()->SetMouseCursorVisible(false);
+		AGeoCharacter* GeoCharacter = GetGeoCharacter();
+		AGeoPlayerController* PlayerController = GeoCharacter ? GeoCharacter->GetGeoPlayerController() : nullptr;
+		if (PlayerController)
+		{
+			PlayerController->SetMouseCursorVisible(false);
+		}
 		LastLookInput = LookInput;
 	}
 }

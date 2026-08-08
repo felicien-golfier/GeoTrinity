@@ -17,7 +17,7 @@ class GEOTRINITYUI_API UHudFunctionLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
-	/** Returns true when the local machine should draw the player HUD (local controller with a valid pawn). */
+	/** Returns false only on dedicated servers or without a world; true for standalone, client, or listen server. */
 	static bool ShouldDrawHUD(UObject const* WorldContextObject);
 
 	/** Returns Health / MaxHealth clamped to [0, 1]. Returns 0 if AbilitySystemComponent is null. */

@@ -125,74 +125,6 @@ void UGeoGameInstance::JoinAdvancedSession(const FOnlineSessionSearchResult& Sea
 	FBlueprintSessionResult BPResult;
 	BPResult.OnlineResult = SearchResult;
 	BP_JoinAdvancedSession(BPResult);
-	
-	/*
-	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
-	if (!ensureMsgf(OnlineSubsystem, TEXT("GeoGameInstance::JoinAdvancedSession: Online subsystem not available")))
-	{
-		return;
-	}
-	IOnlineSessionPtr Sessions = OnlineSubsystem->GetSessionInterface();
-	if (!ensureMsgf(Sessions.IsValid(), TEXT("GeoGameInstance::JoinAdvancedSession: Session interface not valid")))
-	{
-		return;
-	}
-
-	JoinSessionDelegateHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(
-		FOnJoinSessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnJoinSessionComplete)
-	);
-
-	Sessions->JoinSession(0, FName(TEXT("GameSession")), SearchResult);
-	*/
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
-{
-	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
-	if (OnlineSub)
-	{
-		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-		if (Sessions.IsValid())
-		{
-			Sessions->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionDelegateHandle);
-		}
-	}
-
-	if (Result != EOnJoinSessionCompleteResult::Success)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GeoGameInstance: Failed to join session '%s': %s"), *SessionName.ToString(), LexToString(Result));
-		return;
-	}
-
-	if (!OnlineSub)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GeoGameInstance::OnJoinSessionComplete: Online subsystem not available for travel"));
-		return;
-	}
-
-	IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-	if (!Sessions.IsValid())
-	{
-		UE_LOG(LogTemp, Error, TEXT("GeoGameInstance::OnJoinSessionComplete: Session interface not valid for travel"));
-		return;
-	}
-
-	FString ConnectString;
-	if (!Sessions->GetResolvedConnectString(SessionName, ConnectString))
-	{
-		UE_LOG(LogTemp, Error, TEXT("GeoGameInstance::OnJoinSessionComplete: Failed to get connect string for '%s'"), *SessionName.ToString());
-		return;
-	}
-
-	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
-	if (!PlayerController)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GeoGameInstance::OnJoinSessionComplete: No player controller available"));
-		return;
-	}
-
-	PlayerController->ClientTravel(ConnectString, TRAVEL_Absolute);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -213,7 +145,7 @@ void UGeoGameInstance::LeaveSessionAndReturnToMenu()
 		return;
 	}
 
-	DestroySessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
+	LeaveSessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
 		FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnDestroySessionComplete));
 	Sessions->DestroySession(FName(TEXT("GameSession")));
 }
@@ -224,7 +156,7 @@ void UGeoGameInstance::OnDestroySessionComplete(FName /*SessionName*/, bool /*bW
 	IOnlineSessionPtr Sessions = GetSessionInterface();
 	if (Sessions.IsValid())
 	{
-		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
+		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(LeaveSessionDelegateHandle);
 	}
 
 	UGameplayStatics::OpenLevel(this, FName(*MainMenuMap.ToSoftObjectPath().GetLongPackageName()));
@@ -240,7 +172,7 @@ void UGeoGameInstance::QuitGame()
 		return;
 	}
 
-	DestroySessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
+	QuitSessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
 		FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnDestroySessionForQuitComplete));
 	Sessions->DestroySession(FName(TEXT("GameSession")));
 }
@@ -251,7 +183,7 @@ void UGeoGameInstance::OnDestroySessionForQuitComplete(FName /*SessionName*/, bo
 	IOnlineSessionPtr Sessions = GetSessionInterface();
 	if (Sessions.IsValid())
 	{
-		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
+		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(QuitSessionDelegateHandle);
 	}
 
 	UKismetSystemLibrary::QuitGame(this, GetFirstLocalPlayerController(), EQuitPreference::Quit, true);

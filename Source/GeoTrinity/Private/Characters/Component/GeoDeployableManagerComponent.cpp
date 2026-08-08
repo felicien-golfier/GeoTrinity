@@ -2,6 +2,7 @@
 
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 UGeoDeployableManagerComponent::UGeoDeployableManagerComponent()
@@ -13,6 +14,11 @@ UGeoDeployableManagerComponent::UGeoDeployableManagerComponent()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 bool UGeoDeployableManagerComponent::CanDeploy(TSubclassOf<AGeoDeployableBase> const DeployableClass)
 {
+	if (!ensureMsgf(DeployableClass, TEXT("CanDeploy: null class")))
+	{
+		return false;
+	}
+
 	return DeployableClass->GetDefaultObject<AGeoDeployableBase>()->DestroyOldestWhenLimitReached()
 		|| !HasReachMaxLimit(DeployableClass);
 }
@@ -31,17 +37,34 @@ bool UGeoDeployableManagerComponent::HasReachMaxLimit(TSubclassOf<AGeoDeployable
 		return false;
 	}
 
-	if (int32 const* ClassMax = DeployableSlots.Find(DeployableClass))
+	// A DeployableSlots entry of 0 means unlimited.
+	int32 const Max = GetEffectiveMax(DeployableClass);
+	return Max > 0 && GetDeployablesCountedAgainstLimit(DeployableClass).Num() >= Max;
+}
+
+TArray<AGeoDeployableBase*>
+UGeoDeployableManagerComponent::GetDeployablesCountedAgainstLimit(TSubclassOf<AGeoDeployableBase> const Class) const
+{
+	TArray<AGeoDeployableBase*> Counted;
+	if (DeployableSlots.Contains(Class))
 	{
-		if (*ClassMax <= 0) // 0 = unlimited
+		if (FDeployableBucket const* Bucket = Deployables.Find(Class))
 		{
-			return false;
+			Counted.Append(Bucket->Deployables);
 		}
-		FDeployableBucket const* Bucket = Deployables.Find(DeployableClass);
-		return Bucket && Bucket->Deployables.Num() >= *ClassMax;
+		return Counted;
 	}
 
-	return Deployables.FindOrAdd(DeployableClass).Deployables.Num() >= MaxDeployables;
+	for (auto const& [StoredClass, Bucket] : Deployables)
+	{
+		// A class exempt from the cap must not spend the budget of the classes that are subject to it.
+		if (!DeployableSlots.Contains(StoredClass)
+			&& !StoredClass->GetDefaultObject<AGeoDeployableBase>()->IsUnlimitedDeploy())
+		{
+			Counted.Append(Bucket.Deployables);
+		}
+	}
+	return Counted;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -103,30 +126,34 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 		return;
 	}
 
-	FDeployableBucket& Bucket = Deployables.FindOrAdd(Deployable->GetClass());
-	if (Bucket.Deployables.Contains(Deployable))
+	TSubclassOf<AGeoDeployableBase> const DeployableClass = Deployable->GetClass();
+	if (FDeployableBucket* ExistingBucket = Deployables.Find(DeployableClass))
 	{
-		ensureMsgf(false, TEXT("GeoDeployableManagerComponent: Tried to register '%s' twice."),
-				   *GetNameSafe(Deployable));
-		return;
+		if (ExistingBucket->Deployables.Contains(Deployable))
+		{
+			ensureMsgf(false, TEXT("GeoDeployableManagerComponent: Tried to register '%s' twice."),
+					   *GetNameSafe(Deployable));
+			return;
+		}
+		RemoveInvalidDeployables(*ExistingBucket);
 	}
 
-	RemoveInvalidDeployables(Bucket);
-
-	if (HasReachMaxLimit(Deployable->GetClass()))
+	// Clients track for the HUD only: DeployableSlots never replicates, so their limit is a guess, and Expire() on a
+	// simulated proxy only hides a deployable the server still owns.
+	if (GeoLib::IsServer(GetWorld()) && HasReachMaxLimit(DeployableClass))
 	{
 		if (Deployable->DestroyOldestWhenLimitReached())
 		{
-			checkf(Bucket.Deployables.Num() > 0,
-				   TEXT("Deployables reach the max limit but their is nothing in the array."));
+			// Oldest of the set HasReachMaxLimit counted — non-empty since it reached the cap, and not necessarily of
+			// the registering class when they share the global pool.
 			// Expire() synchronously broadcasts OnDeployableExpiredEvent, which routes to OnDeployableDestroyed and
-			// removes the oldest from the bucket. Do NOT also RemoveAt(0) here — that would drop a second, still-alive
+			// removes it from its bucket. Do NOT also RemoveAt(0) here — that would drop a second, still-alive
 			// deployable from tracking, so the limit would only visibly enforce every other spawn.
-			Bucket.Deployables[0]->Expire();
+			GetDeployablesCountedAgainstLimit(DeployableClass)[0]->Expire();
 		}
 		else
 		{
-			// TODO : Can happen between the time a deployable projectile is spawned and deployable is here.
+			// Can happen between the time a deployable projectile is spawned and the deployable registers here.
 			UE_LOG(LogTemp, Error,
 				   TEXT("GeoDeployableManagerComponent: Tried to register '%s' but already at max. "
 						"Deploy ability should have been blocked by CanActivateAbility."),
@@ -134,11 +161,19 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 		}
 	}
 
+	// Fetched after the eviction: Expire() re-enters through OnDeployableDestroyed, which can rehash Deployables.
+	FDeployableBucket& Bucket = Deployables.FindOrAdd(DeployableClass);
 	Bucket.Deployables.Add(Deployable);
 	// Use OnDestroy to ensure we remove it also on client even if forced expired by server.
 	// And keep in array even if blinking
 	Deployable->OnDestroyed.AddDynamic(this, &ThisClass::OnDeployableDestroyed);
-	OnDeployCountChanged.Broadcast(Bucket.Deployables.Num(), MaxDeployables);
+	OnDeployCountChanged.Broadcast(Bucket.Deployables.Num(), GetEffectiveMax(DeployableClass));
+}
+
+int32 UGeoDeployableManagerComponent::GetEffectiveMax(TSubclassOf<AGeoDeployableBase> const Class) const
+{
+	int32 const* ClassMax = DeployableSlots.Find(Class);
+	return ClassMax ? *ClassMax : MaxDeployables;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -172,5 +207,5 @@ void UGeoDeployableManagerComponent::OnDeployableDestroyed(AGeoDeployableBase* D
 		return;
 	}
 
-	OnDeployCountChanged.Broadcast(Bucket.Deployables.Num(), MaxDeployables);
+	OnDeployCountChanged.Broadcast(Bucket.Deployables.Num(), GetEffectiveMax(Deployable->GetClass()));
 }
