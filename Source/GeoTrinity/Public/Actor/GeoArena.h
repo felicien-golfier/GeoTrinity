@@ -61,8 +61,7 @@ public:
 	/** Returns true when Enemy is this arena's boss — the enemy whose aggro starts the match. */
 	virtual bool IsBoss(AActor const* Enemy) const;
 
-	/** Returns the arena that spawned Boss — every arena spawns its boss with Owner = this. Null when Boss is not one.
-	 */
+	/** Returns this boss's owning arena via AEnemyCharacter::Arena. Null if Boss is null or not an AEnemyCharacter. */
 	static AGeoArena* GetArenaOfBoss(AActor const* Boss);
 	/** Returns the arena whose fight is currently live, or null when no fight runs. At most one arena is ever fighting. */
 	static AGeoArena* GetFightingArena(UObject const* WorldContextObject);

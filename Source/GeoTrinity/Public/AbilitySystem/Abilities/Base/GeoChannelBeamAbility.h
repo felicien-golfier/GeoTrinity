@@ -64,6 +64,7 @@ protected:
 	/** Beam half-width in cm. Default: half the avatar's capsule radius. */
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const;
 
+	/** Maximum duration in seconds the beam may actively run; 0 means unlimited (channel runs until EndAbility). Forwarded to the beam Niagara system's Lifetime user parameter each tick. */
 	virtual float GetBeamDuration() const;
 
 	/** Attitude bitmask used by the per-tick line scan. */
