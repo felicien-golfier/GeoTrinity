@@ -16,7 +16,7 @@ Orthographic follow camera. **Always follows** the living local players with exp
 - `FollowInterpSpeed` range 2–8 typical.
 - Follows the **midpoint of every living local player**, and zooms `OrthoWidth` out (`ZoomMargin`/`MaxOrthoWidth`/`ZoomInterpSpeed`) until the outermost fits — measured along the camera's own `ScreenRight`/`ScreenUp`, so it stays right at any yaw. Never below `BaseOrthoWidth`, so solo play is unchanged. In a small arena the bounds clamp then snaps to `Bounds.GetCenter()`, which reads as a fixed room camera. There is **no split screen** — `UGeoGameViewportClient` force-disables it.
 - **Owns the deployable outline post-process.** `OutlineMaterial` (MI_DeployableOutline) is installed as a blendable in `BeginPlay`, not authored on the camera component, because it only renders correctly once fed the palette lookup texture — see `Tool/CLAUDE.md` for the palette. Skipped on a dedicated server.
-- Spectates only when **every** local player is dead: free camera panning `SpectateTarget` via raw Enhanced Input read from the first local controller (the pawns' input components are disabled). One survivor keeps the camera following normally.
+- Spectates only when **every** local player is dead: `SpectateTarget` freezes at the death position and only starts panning (raw Enhanced Input read from the first local controller, since the pawns' input components are disabled) once `SpectateDelayRemaining` — seeded from `AGeoGameState::DeathTime` on the death transition — counts down to zero. One survivor keeps the camera following normally.
 
 ## `GeoWorldSettings.h`
 Custom `AWorldSettings` subclass for GeoTrinity levels. Header-only — `StartingClassOverride` is its whole surface.

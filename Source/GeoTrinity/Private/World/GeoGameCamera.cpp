@@ -12,6 +12,7 @@
 #include "Engine/World.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedPlayerInput.h"
+#include "GameClasses/GeoGameState.h"
 #include "GameFramework/PlayerController.h"
 #include "GameplayTagContainer.h"
 #include "Input/GeoInputComponent.h"
@@ -163,18 +164,31 @@ void AGeoGameCamera::Tick(float DeltaTime)
 
 	FVector2D const CameraXY(GetActorLocation());
 
-	bool const bAllDead = LivingPlayers.IsEmpty();
-	if (bAllDead && !bSpectating)
+	bool const bAllLocalPlayerDead = LivingPlayers.IsEmpty();
+	if (bAllLocalPlayerDead && !bSpectating)
 	{
 		SpectateTarget = CameraXY;
+		AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
+		SpectateDelayRemaining = GameState ? GameState->DeathTime : 0.f;
 	}
-	bSpectating = bAllDead;
+	bSpectating = bAllLocalPlayerDead;
+
+	bool bSpectatePanAllowed = false;
+	if (bSpectating)
+	{
+		SpectateDelayRemaining = FMath::Max(SpectateDelayRemaining - DeltaTime, 0.f);
+		bSpectatePanAllowed = SpectateDelayRemaining <= 0.f;
+	}
 
 	FVector2D TargetXY = FVector2D::ZeroVector;
-	if (bSpectating)
+	if (bSpectatePanAllowed)
 	{
 		SpectateTarget +=
 			GetSpectateMoveInput(FirstLocalController, FirstLocalCharacter) * SpectateMoveSpeed * DeltaTime;
+		TargetXY = SpectateTarget;
+	}
+	else if (bSpectating)
+	{
 		TargetXY = SpectateTarget;
 	}
 	else
@@ -205,8 +219,8 @@ void AGeoGameCamera::Tick(float DeltaTime)
 		}
 		GEngine->AddOnScreenDebugMessage(
 			-1, 0.f, FColor::Yellow,
-			FString::Printf(TEXT("Camera zoom: farthest %.0f (min %.0f / max %.0f) | OrthoWidth %.0f"), FarthestDistance,
-							ZoomMinDistance, ZoomMaxDistance, CurrentOrthoWidth));
+			FString::Printf(TEXT("Camera zoom: farthest %.0f (min %.0f / max %.0f) | OrthoWidth %.0f"),
+							FarthestDistance, ZoomMinDistance, ZoomMaxDistance, CurrentOrthoWidth));
 	}
 
 	FVector2D FollowTarget = TargetXY;

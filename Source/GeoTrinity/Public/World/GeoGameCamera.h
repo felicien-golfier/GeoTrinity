@@ -35,8 +35,8 @@ public:
 	 * post-process. */
 	virtual void BeginPlay() override;
 
-	/** Follows the living local players with exponential smoothing; clamps to the active volume's bounds; pans freely
-	 * when spectating. */
+	/** Follows the living local players with exponential smoothing; clamps to the active volume's bounds; once every
+	 * local player is dead, holds at the death position for `AGeoGameState::DeathTime` before accepting pan input. */
 	virtual void Tick(float DeltaTime) override;
 
 	/** Called by an AGeoCameraVolume when a local player enters it; the most recently entered volume frames the camera.
@@ -103,6 +103,9 @@ private:
 	/** Free-camera target while every local player is dead; driven by move input, clamped to `Bounds` while bounded. */
 	FVector2D SpectateTarget = FVector2D::ZeroVector;
 	bool bSpectating = false;
+	/** Counts down from `AGeoGameState::DeathTime` (captured on death) before panning input is accepted; the camera
+	 * holds still at its death position until it reaches zero. */
+	float SpectateDelayRemaining = 0.f;
 	/** Authored OrthoWidth, captured in BeginPlay: the zoomed-in framing zoom-to-fit never goes below. */
 	float BaseOrthoWidth = 0.f;
 	float CurrentOrthoWidth = 0.f;
