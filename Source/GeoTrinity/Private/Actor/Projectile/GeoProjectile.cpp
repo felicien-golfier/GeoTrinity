@@ -232,37 +232,40 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 									 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex,
 									 bool bFromSweep, FHitResult const& SweepResult)
 {
-	if (IsValidOverlap(OtherActor))
+	UGeoAbilitySystemComponent* OwnerASC = nullptr;
+	UGeoAbilitySystemComponent* TargetASC = nullptr;
+	if (IsValidOverlap(OtherActor, OwnerASC, TargetASC))
 	{
-		HandleValidOverlap(OtherActor);
+		HandleValidOverlap(OtherActor, OwnerASC, TargetASC);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool AGeoProjectile::IsValidOverlap(AActor* OtherActor)
+bool AGeoProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
+									UGeoAbilitySystemComponent*& OutTargetASC)
 {
-	// When we are on a fully replicated projectile, Payload is not replicated, but Owner and Instigator are.
-	AActor* const CurrentOwner = IsValid(Payload.Owner) ? Payload.Owner : GetOwner();
+	AActor* CurrentOwner = Payload.Owner;
+	if (!IsValid(CurrentOwner))
+	{
+		// Expected on a simulated proxy: Payload does not replicate, so a server-spawned projectile only carries the
+		// replicated Owner there. Anywhere else it means the spawn never filled the payload.
+		CurrentOwner = GetOwner();
+		UE_LOG(LogGeoTrinity, Verbose, TEXT("%hs: %s has no Payload.Owner, falling back to the replicated Owner %s"),
+			   __FUNCTION__, *GetName(), *GetNameSafe(CurrentOwner));
+	}
+
 	AActor* const CurrentInstigator = GetCurrentInstigator();
 
-	if (!IsValid(CurrentOwner) || !IsValid(CurrentInstigator) || !IsValid(OtherActor))
+	if (bIsEnding || !IsValid(CurrentOwner) || !IsValid(CurrentInstigator) || !IsValid(OtherActor)
+		|| !OtherActor->CanBeDamaged())
 	{
 		return false;
 	}
 
-	if (!IsValid(GeoASLib::GetGeoAscFromActor(CurrentOwner))
-		|| !IsValid(GeoASLib::GetGeoAscFromActor(CurrentInstigator))
-		|| !IsValid(GeoASLib::GetGeoAscFromActor(OtherActor)))
-	{
-		return false;
-	}
-
-	if (bIsEnding)
-	{
-		return false;
-	}
-
-	if (!OtherActor->CanBeDamaged())
+	OutOwnerASC = GeoASLib::GetGeoAscFromActor(CurrentOwner);
+	OutTargetASC = GeoASLib::GetGeoAscFromActor(OtherActor);
+	if (!IsValid(OutOwnerASC) || !IsValid(OutTargetASC)
+		|| !IsValid(GeoASLib::GetGeoAscFromActor(CurrentInstigator)))
 	{
 		return false;
 	}
@@ -278,15 +281,15 @@ bool AGeoProjectile::IsValidOverlap(AActor* OtherActor)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
+void AGeoProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
+										UGeoAbilitySystemComponent* TargetASC)
 {
 	EndSoundType = EProjectileSoundType::ValidOverlapEnd;
 
 	if (GeoLib::IsServer(this))
 	{
-		GeoASLib::ApplyEffectFromEffectData(EffectDataArray, GeoASLib::GetGeoAscFromActor(Payload.Owner),
-											GeoASLib::GetGeoAscFromActor(OtherActor), Payload.AbilityLevel,
-											Payload.Seed, Payload.AbilityTag);
+		GeoASLib::ApplyEffectFromEffectData(EffectDataArray, OwnerASC, TargetASC, Payload.AbilityLevel, Payload.Seed,
+											Payload.AbilityTag);
 	}
 
 	OnProjectileHit(OtherActor);
@@ -296,12 +299,7 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor)
 float AGeoProjectile::GetPitch_Implementation(EProjectileSoundType SoundType) const
 {
 	FGeoSoundEntry const* Entry = ResolvedParams.SoundMap.Find(SoundType);
-	if (!Entry)
-	{
-		return 1.f;
-	}
-
-	return GetPitch(*Entry);
+	return Entry ? GetPitch(*Entry) : 1.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -360,7 +358,7 @@ void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* Othe
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlayImpactFx() const
 {
-	if (!IsValid(this) || GeoLib::IsDedicatedServer(this))
+	if (GeoLib::IsDedicatedServer(this))
 	{
 		return;
 	}
@@ -462,7 +460,9 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 				continue;
 			}
 
-			if (IsValidOverlap(HitActor))
+			UGeoAbilitySystemComponent* OwnerASC = nullptr;
+			UGeoAbilitySystemComponent* TargetASC = nullptr;
+			if (IsValidOverlap(HitActor, OwnerASC, TargetASC))
 			{
 				SetActorLocation(Hit.ImpactPoint);
 				if (Hit.bBlockingHit)
@@ -583,6 +583,8 @@ void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Para
 		ResolveOverrideParam(Params.OverrideOverlapAttitude, Params.OverlapAttitude, DefaultParams.OverlapAttitude);
 	Resolved.bCanOverlapInstigator = ResolveOverrideParam(
 		Params.OverrideCanOverlapInstigator, Params.bCanOverlapInstigator, DefaultParams.bCanOverlapInstigator);
+	// The self-overlap threshold intentionally shares bCanOverlapInstigator's override mode: the two describe one
+	// decision, so overriding self-overlap without its delay would be meaningless.
 	Resolved.LifeTimeThresholdBeforeOverlapSelf =
 		ResolveOverrideParam(Params.OverrideCanOverlapInstigator, Params.LifeTimeThresholdBeforeOverlapSelf,
 							 DefaultParams.LifeTimeThresholdBeforeOverlapSelf);
@@ -600,14 +602,10 @@ void AGeoProjectile::InitProjectileLife()
 {
 	if (!GeoLib::IsDedicatedServer(this))
 	{
-		if (FGeoSoundEntry const* LoopingEntry = ResolvedParams.SoundMap.Find(EProjectileSoundType::Looping);
-			LoopingEntry && UGeoSoundRowLibrary::ShouldPlay(this, *LoopingEntry, GetCurrentInstigator()))
+		if (FGeoSoundEntry const* LoopingEntry = ResolvedParams.SoundMap.Find(EProjectileSoundType::Looping))
 		{
-			LoopingSoundComponent->SetSound(LoopingEntry->Sound);
-			LoopingSoundComponent->SetVolumeMultiplier(
-				UGeoSoundRowLibrary::GetVolume(*LoopingEntry, GetCurrentInstigator()));
-			LoopingSoundComponent->SetPitchMultiplier(GetPitch(EProjectileSoundType::Looping));
-			LoopingSoundComponent->Play();
+			UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, *LoopingEntry, GetCurrentInstigator(),
+														 GetPitch(EProjectileSoundType::Looping));
 		}
 		PlaySoundOneShot(EProjectileSoundType::Start);
 	}

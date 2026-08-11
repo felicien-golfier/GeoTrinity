@@ -23,9 +23,8 @@ void UGeoMoiraBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	BeamRatio = 1.f;
 	FinishedZones.Reset();
 
-	if (!SpeedBuffEffect.IsValid())
+	if (!ensureMsgf(SpeedBuffEffect.IsValid(), TEXT("SpeedBuffEffect is not valid, pls fill the asset")))
 	{
-		ensureMsgf(false, TEXT("SpeedBuffEffect is not valid, pls fill the asset"));
 		UGeoGameplayAbility::EndAbility(true, true);
 		return;
 	}
@@ -87,9 +86,8 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 	}
 
 	UAbilitySystemComponent* const SourceASC = GetAbilitySystemComponentFromActorInfo();
-	if (!SourceASC)
+	if (!ensureMsgf(SourceASC, TEXT("%hs: invalid ASC"), __FUNCTION__))
 	{
-		ensureMsgf(SourceASC, TEXT("UGeoMoiraBeamAbility: invalid ASC on activation"));
 		return;
 	}
 

@@ -21,37 +21,6 @@ void UGeoBrowseServersWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!SearchInput)
-	{
-		ensureMsgf(SearchInput, TEXT("UGeoBrowseServersWidget: SearchInput is not bound"));
-		return;
-	}
-	if (!LanguageComboBox)
-	{
-		ensureMsgf(LanguageComboBox, TEXT("UGeoBrowseServersWidget: LanguageComboBox is not bound"));
-		return;
-	}
-	if (!SearchProgressBar)
-	{
-		ensureMsgf(SearchProgressBar, TEXT("UGeoBrowseServersWidget: SearchProgressBar is not bound"));
-		return;
-	}
-	if (!RefreshButton)
-	{
-		ensureMsgf(RefreshButton, TEXT("UGeoBrowseServersWidget: RefreshButton is not bound"));
-		return;
-	}
-	if (!BackButton)
-	{
-		ensureMsgf(BackButton, TEXT("UGeoBrowseServersWidget: BackButton is not bound"));
-		return;
-	}
-	if (!ServerListScrollBox)
-	{
-		ensureMsgf(ServerListScrollBox, TEXT("UGeoBrowseServersWidget: ServerListScrollBox is not bound"));
-		return;
-	}
-
 	LanguageComboBox->ClearOptions();
 	LanguageComboBox->AddOption(TEXT("All"));
 	for (const FString& Language : LanguageOptions)
@@ -60,9 +29,9 @@ void UGeoBrowseServersWidget::NativeConstruct()
 	}
 	LanguageComboBox->SetSelectedIndex(0);
 
-	RefreshButton->OnClicked.AddDynamic(this, &UGeoBrowseServersWidget::HandleRefresh);
-	BackButton->OnClicked.AddDynamic(this, &UGeoBrowseServersWidget::HandleBack);
-	SearchInput->OnTextChanged.AddDynamic(this, &UGeoBrowseServersWidget::HandleSearchTextChanged);
+	RefreshButton->OnClicked.AddUniqueDynamic(this, &UGeoBrowseServersWidget::HandleRefresh);
+	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoBrowseServersWidget::HandleBack);
+	SearchInput->OnTextChanged.AddUniqueDynamic(this, &UGeoBrowseServersWidget::HandleSearchTextChanged);
 
 	SearchProgressBar->SetVisibility(ESlateVisibility::Hidden);
 
@@ -193,10 +162,9 @@ void UGeoBrowseServersWidget::OnFindSessionsComplete(bool bWasSuccessful)
 		return;
 	}
 
-	uint32 CodeHash = FNetworkVersion::GetLocalNetworkVersion();
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(
-		TEXT("[%u] OnFindSessionsComplete complete, found %u results"), CodeHash, SessionSearch->SearchResults.Num()));
-	
+	UE_LOG(LogTemp, Log, TEXT("%hs: network version %u, found %d results"), __FUNCTION__,
+		   FNetworkVersion::GetLocalNetworkVersion(), SessionSearch->SearchResults.Num());
+
 	CachedResults = SessionSearch->SearchResults;
 	PopulateServerList();
 }
@@ -207,9 +175,8 @@ void UGeoBrowseServersWidget::PopulateServerList()
 	UE_LOG(LogTemp, Log, TEXT("Populating Server list with %u results"), CachedResults.Num());
 	ServerListScrollBox->ClearChildren();
 
-	if (!ServerRowWidgetClass)
+	if (!ensureMsgf(ServerRowWidgetClass, TEXT("%hs: ServerRowWidgetClass is not set"), __FUNCTION__))
 	{
-		ensureMsgf(ServerRowWidgetClass, TEXT("UGeoBrowseServersWidget: ServerRowWidgetClass is not set"));
 		return;
 	}
 
@@ -239,9 +206,8 @@ void UGeoBrowseServersWidget::PopulateServerList()
 		RowWidget->OnSelected.AddUObject(this, &UGeoBrowseServersWidget::HandleServerSelected);
 		ServerListScrollBox->AddChild(RowWidget);
 	}
-	
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(
-		TEXT("PopulateServerList, ServerListScrollBox contains %u results"), ServerListScrollBox->GetChildrenCount()));
+
+	UE_LOG(LogTemp, Log, TEXT("%hs: listing %d server rows"), __FUNCTION__, ServerListScrollBox->GetChildrenCount());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

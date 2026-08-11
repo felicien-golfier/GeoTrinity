@@ -6,7 +6,8 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/GeoArena.h"
+#include "Engine/World.h"
+#include "GameClasses/GeoGameState.h"
 #include "GameFramework/Character.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -40,12 +41,9 @@ void AEnemyCharacter::InitGAS()
 {
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-	// Read off the owner, not the Arena member: an arena assigns that only once SpawnActor has returned, which is
-	// after this runs. Super grants the abilities and applies the attributes, so the level has to be in place first.
-	if (AGeoArena const* OwningArena = Cast<AGeoArena>(GetOwner()))
-	{
-		AbilitySystemComponent->SetCombatLevel(static_cast<int32>(OwningArena->Difficulty));
-	}
+	// Super grants the abilities and applies the attributes, so the level has to be in place first.
+	AbilitySystemComponent->SetCombatLevel(
+		static_cast<int32>(GetWorld()->GetGameStateChecked<AGeoGameState>()->GetDifficulty()));
 
 	Super::InitGAS();
 

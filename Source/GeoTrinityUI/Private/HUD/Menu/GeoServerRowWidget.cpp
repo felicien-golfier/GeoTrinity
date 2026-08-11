@@ -10,33 +10,7 @@ void UGeoServerRowWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!RowButton)
-	{
-		ensureMsgf(RowButton, TEXT("UGeoServerRowWidget: RowButton is not bound"));
-		return;
-	}
-	if (!ServerNameText)
-	{
-		ensureMsgf(ServerNameText, TEXT("UGeoServerRowWidget: ServerNameText is not bound"));
-		return;
-	}
-	if (!MapText)
-	{
-		ensureMsgf(MapText, TEXT("UGeoServerRowWidget: MapText is not bound"));
-		return;
-	}
-	if (!PlayersText)
-	{
-		ensureMsgf(PlayersText, TEXT("UGeoServerRowWidget: PlayersText is not bound"));
-		return;
-	}
-	if (!PingText)
-	{
-		ensureMsgf(PingText, TEXT("UGeoServerRowWidget: PingText is not bound"));
-		return;
-	}
-
-	RowButton->OnClicked.AddDynamic(this, &UGeoServerRowWidget::HandleRowClicked);
+	RowButton->OnClicked.AddUniqueDynamic(this, &UGeoServerRowWidget::HandleRowClicked);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -36,7 +36,8 @@ public:
 protected:
 	/** Lays the overlay out for its own player, and re-runs whenever a local player joins or leaves. */
 	virtual void NativeConstruct() override;
-	/** Unregisters local-player add/remove delegates so the layout callback cannot fire on a destroyed widget. */
+	/** Unregisters the local-player add/remove delegates: NativeConstruct runs again on a reused instance, which
+	 *  would otherwise stack a second layout callback on top of the first. */
 	virtual void NativeDestruct() override;
 
 	/** Bottom-center ability bar. Bound from WBP_MainOverlay; rebuilt by the HUD when abilities are granted/changed. */

@@ -8,9 +8,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoDeployChargeGaugeWidget::UpdateVisualChargeRatio() const
 {
-	if (!ChargeBar)
+	if (!ensureMsgf(ChargeBar && DeployAbility, TEXT("%hs: ChargeBar or DeployAbility is not set on %s"), __FUNCTION__,
+					*GetName()))
 	{
-		ensureMsgf(false, TEXT("ChargeBar is null"));
 		return;
 	}
 

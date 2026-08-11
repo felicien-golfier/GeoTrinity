@@ -19,9 +19,8 @@ void UGeoReloadAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo
 	Super::OnGiveAbility(ActorInfo, Spec);
 
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
-	if (!IsValid(ASC))
+	if (!ensureMsgf(IsValid(ASC), TEXT("%hs: no ASC"), __FUNCTION__))
 	{
-		ensureMsgf(ASC, TEXT("GeoReloadAbility::OnGiveAbility: No ASC"));
 		return;
 	}
 

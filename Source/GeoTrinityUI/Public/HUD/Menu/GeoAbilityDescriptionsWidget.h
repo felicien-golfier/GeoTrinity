@@ -30,7 +30,6 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
 	virtual UWidget* GetInitialFocusWidget() const override;
 	virtual bool HandleBackAction() override;
 

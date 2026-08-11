@@ -17,6 +17,8 @@
 #include "GeoDeployableBase.generated.h"
 
 
+class UCharacterMovementComponent;
+class AGeoArena;
 struct FEffectData;
 class UMeshComponent;
 class UWidgetComponent;
@@ -155,16 +157,16 @@ public:
 	 * Builds and returns the GameplayCue parameters used when firing the spawn cue.
 	 * Override to add class-specific source location or effect context.
 	 */
-	virtual FGameplayCueParameters GetSpawnCueParams();
+	virtual FGameplayCueParameters GetSpawnCueParams() const;
 	/** Builds and returns the GameplayCue parameters used when firing the pre-expiry blink cue. */
-	FGameplayCueParameters GetBlinkCueParams();
+	FGameplayCueParameters GetBlinkCueParams() const;
 
 	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
 	 * instigator and Cue's own color/sound fields filled in. */
-	virtual FGameplayCueParameters GetGenericCueParams(FGeoCueParam const& Cue);
+	virtual FGameplayCueParameters GetGenericCueParams(FGeoCueParam const& Cue) const;
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */
-	virtual FGameplayCueParameters GetRecallCueParams();
+	virtual FGameplayCueParameters GetRecallCueParams() const;
 
 	/** True if this deployable is exempt from the hex arena's fall-check recall when its tile is destroyed. */
 	bool SurviveOverTheVoid() const { return bSurviveOverTheVoid; }
@@ -231,10 +233,11 @@ protected:
 	void PlaySoundOneShot(EDeployableSoundType SoundType) const;
 
 	/**
-	 * Override hook called per valid target inside Explode(). Default applies EffectDataArray to the target.
-	 * Server only.
+	 * The gameplay half of an explode-at-recall: sphere-overlaps interactable actors at Params.Size filtered by
+	 * ExplodeAttitude and applies EffectDataArray to each. Called from Recall on the server; the matching cosmetics
+	 * live in PlayRecallCosmetics so both machines spell them the same way. Override to change what an explosion does.
 	 *
-	 * @param Value  Scalar forwarded from Explode(), used for damage/effect scaling.
+	 * @param Value  Scalar used for damage/effect scaling.
 	 */
 	virtual void ExplodeEffect(float const Value);
 
@@ -249,6 +252,9 @@ protected:
 	bool bUseRegularDrain = true;
 	UPROPERTY(BlueprintReadOnly)
 	float DrainMagnitudePerSecond = 0.f;
+
+	/** The per-tick drain, described once in InitDrain; Tick only refreshes DamageAmount. */
+	FDamageEffectData DrainEffectData;
 
 	// Cue fired at each moment of the deployable's life: tag, palette slot and sound tag per moment.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
@@ -320,13 +326,16 @@ protected:
 	bool bSurviveOverTheVoid = false;
 
 private:
-	/**
-	 * Sphere-overlaps interactable actors at the deployable's location with radius Params.Size,
-	 * then calls ApplyExplodeEffect per target matching ExplodeAttitude. Server only.
-	 *
-	 * @param Value  Scalar forwarded to ExplodeEffect for damage/effect scaling.
-	 */
-	void Explode(float const Value);
+	/** Fires the recall cue and sound, plus the explode cue and sound when bExplodeAtRecall. The one description of
+	 * "what a recall looks like", shared by the server path (Recall) and the client path (OnRep_Active). */
+	void PlayRecallCosmetics(float Value);
+
+	/** Where Target should end up when pushed PushDistance away from this deployable: straight outward, or — when that
+	 * is blocked — toward FightingArena's fight centre. */
+	FVector ComputePushTarget(AActor* Target, float PushDistance, AGeoArena const* FightingArena) const;
+
+	/** Drives Movement from From to To with a short root-motion source, and schedules its removal. */
+	void ApplyPushRootMotion(UCharacterMovementComponent* Movement, FVector const& From, FVector const& To);
 
 	UFUNCTION()
 	void TryRecallOrExpire();

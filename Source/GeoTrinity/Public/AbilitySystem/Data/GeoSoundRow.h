@@ -11,6 +11,7 @@
 #include "GeoSoundRow.generated.h"
 
 
+class UAudioComponent;
 class USoundBase;
 class UCurveFloat;
 
@@ -117,4 +118,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoTrinity|Sound", meta = (DefaultToSelf = "WorldContextObject"))
 	static void PlaySoundEntry2D(UObject const* WorldContextObject, FGeoSoundEntry const& Entry,
 								 AActor* SoundInstigator);
+
+	/** Sets Entry's sound, volume and Pitch on AudioComponent and starts it — the looping counterpart of
+	 * PlaySoundEntry2D, applying the same ShouldPlay gating. Does nothing when the entry must not play here.
+	 * Pitch is a parameter so callers owning a pitch hook (AGeoProjectile::GetPitch) keep it; pass
+	 * GetPitch(Entry, SoundInstigator) otherwise. */
+	static void ConfigureAudioComponent(UAudioComponent* AudioComponent, FGeoSoundEntry const& Entry,
+										AActor* SoundInstigator, float Pitch);
 };

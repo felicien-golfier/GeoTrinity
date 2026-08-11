@@ -67,11 +67,13 @@ protected:
 	 * ShieldAmount and sphere radius by EnemyBounceAdditiveMultiplier.
 	 * On ally overlap (server): applies ShieldAmount as a shield effect and ends the projectile life.
 	 */
-	virtual void HandleValidOverlap(AActor* OtherActor) override;
+	virtual void HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
+									UGeoAbilitySystemComponent* TargetASC) override;
 
 	/** Returns false for AGeoWall (passes through the Square's own deployable walls) and for the same hostile actor
 	 * within 0.5 s (prevents double-hit on glancing overlaps). */
-	virtual bool IsValidOverlap(AActor* OtherActor) override;
+	virtual bool IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
+								UGeoAbilitySystemComponent*& OutTargetASC) override;
 
 	/** Extends base pitch with an extra factor from BounceSoundSizePitchCurve, evaluated at the sphere's current
 	 * scaled radius, so bigger bursts pitch differently. */

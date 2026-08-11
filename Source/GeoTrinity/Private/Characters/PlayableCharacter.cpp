@@ -12,14 +12,19 @@
 #include "GameFramework/GameStateBase.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Interface/GeoChargeBeamGaugeWidgetInterface.h"
-#include "HUD/Interface/GeoCombattantWidgetHost.h"
-#include "HUD/Interface/GeoDeployGaugeWidgetInterface.h"
+#include "HUD/Interface/GeoChargeGaugeWidgetInterface.h"
 #include "Input/GeoInputComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VectorTypes.h"
 #include "World/GeoWorldSettings.h"
+
+namespace
+{
+	/** How long a gauge lingers after its charge ends, so the final fill is seen before the widget disappears. */
+	constexpr float GaugeHideDelay = 0.15f;
+}
 
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -59,71 +64,57 @@ void APlayableCharacter::BeginPlay()
 	AimCursorComponent->SetRelativeLocation(FVector(AimCursorDistance, 0.f, 0.f));
 }
 
-void APlayableCharacter::SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Ability, bool const bVisible)
+void APlayableCharacter::SetChargeGaugeVisible(UWidgetComponent* Component, FTimerHandle& HideHandle,
+											   UGeoGameplayAbility* Ability, bool const bVisible)
 {
-
-	IGeoDeployGaugeWidgetInterface* Widget =
-		Cast<IGeoDeployGaugeWidgetInterface>(DeployChargeGaugeComponent->GetUserWidgetObject());
-	if (!ensureMsgf(Widget, TEXT("DeployChargeGaugeComponent has no widget or wrong widget class on %s"), *GetName()))
+	IGeoChargeGaugeWidgetInterface* Widget =
+		Cast<IGeoChargeGaugeWidgetInterface>(Component->GetUserWidgetObject());
+	if (!ensureMsgf(Widget, TEXT("%s has no widget or wrong widget class on %s"), *Component->GetName(), *GetName()))
 	{
 		return;
 	}
 
 	if (bVisible)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(ChargeDeployHideTimerHandle);
-		DeployChargeGaugeComponent->SetHiddenInGame(false);
-		Widget->SetDeployAbility(Ability);
+		GetWorld()->GetTimerManager().ClearTimer(HideHandle);
+		Component->SetHiddenInGame(false);
+		Widget->SetChargeAbility(Ability);
+		return;
 	}
-	else
-	{
-		Widget->SetDeployAbility(Ability); // In case we haven't got time to enter visibility.
-		Widget->UpdateVisualChargeRatio();
-		Widget->SetDeployAbility(nullptr);
 
-		GetWorld()->GetTimerManager().SetTimer(
-			ChargeDeployHideTimerHandle,
-			FTimerDelegate::CreateWeakLambda(this,
-											 [this]()
-											 {
-												 DeployChargeGaugeComponent->SetHiddenInGame(true);
-											 }),
-			0.15f, false);
-	}
+	// Attach before the final sync: a charge too short to ever reach the visible branch still has to render its end
+	// state once before the gauge detaches.
+	Widget->SetChargeAbility(Ability);
+	Widget->UpdateVisualChargeRatio();
+	Widget->SetChargeAbility(nullptr);
+
+	GetWorld()->GetTimerManager().SetTimer(HideHandle,
+										   FTimerDelegate::CreateWeakLambda(this,
+																			[Component]()
+																			{
+																				Component->SetHiddenInGame(true);
+																			}),
+										   GaugeHideDelay, false);
+}
+
+void APlayableCharacter::SetDeployChargeGaugeVisibility(UGeoGameplayAbility* Ability, bool const bVisible)
+{
+	SetChargeGaugeVisible(DeployChargeGaugeComponent, ChargeDeployHideTimerHandle, Ability, bVisible);
 }
 
 void APlayableCharacter::SetChargeBeamGaugeVisible(UGeoGameplayAbility* Ability, bool bVisible, float SweetSpotMinRatio,
 												   float SweetSpotMaxRatio)
 {
-	IGeoChargeBeamGaugeWidgetInterface* Widget =
-		Cast<IGeoChargeBeamGaugeWidgetInterface>(ChargeBeamGaugeComponent->GetUserWidgetObject());
-	if (!ensureMsgf(Widget, TEXT("ChargeBeamGaugeComponent has no widget or wrong widget class on %s"), *GetName()))
+	SetChargeGaugeVisible(ChargeBeamGaugeComponent, ChargeBeamHideTimerHandle, Ability, bVisible);
+
+	if (!bVisible)
 	{
 		return;
 	}
-
-	if (bVisible)
+	if (IGeoChargeBeamGaugeWidgetInterface* Widget =
+			Cast<IGeoChargeBeamGaugeWidgetInterface>(ChargeBeamGaugeComponent->GetUserWidgetObject()))
 	{
-		ChargeBeamGaugeComponent->SetHiddenInGame(false);
-		GetWorld()->GetTimerManager().ClearTimer(ChargeBeamHideTimerHandle);
-
-		Widget->SetChargeBeamAbility(Ability);
 		Widget->SetSweetSpotRatios(SweetSpotMinRatio, SweetSpotMaxRatio);
-	}
-	else
-	{
-		Widget->SetChargeBeamAbility(Ability); // In case we haven't got time to enter visibility.
-		Widget->UpdateVisualChargeRatio();
-		Widget->SetChargeBeamAbility(nullptr);
-
-		GetWorld()->GetTimerManager().SetTimer(
-			ChargeBeamHideTimerHandle,
-			FTimerDelegate::CreateWeakLambda(this,
-											 [this]()
-											 {
-												 ChargeBeamGaugeComponent->SetHiddenInGame(true);
-											 }),
-			0.15f, false);
 	}
 }
 
@@ -155,7 +146,7 @@ void APlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	GeoInputComponent->BindInput(PlayerInputComponent);
 
-	UAbilityInfo* AbilityInfo = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
+	UAbilityInfo* AbilityInfo = UGeoAbilitySystemLibrary::GetAbilityInfo();
 	GeoInputComponent->BindAbilityActions(this, &ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased,
 										  &ThisClass::AbilityInputTagHeld, AbilityInfo);
 }
@@ -180,11 +171,7 @@ void APlayableCharacter::InitGAS()
 		AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &APlayableCharacter::OnHealthChanged);
 	}
 
-	// On a remote proxy the ASC arrives via OnRep_PlayerState, after the bar's first bind; re-bind now that it exists.
-	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
-	{
-		WidgetHost->BindToOwnerASC();
-	}
+	BindCombattantWidgetToASC();
 }
 
 void APlayableCharacter::ResetAbilitiesAndEffects()
@@ -267,8 +254,8 @@ void APlayableCharacter::SetDeathVisuals(bool const bDead)
 {
 	Super::SetDeathVisuals(bDead);
 
-	FPlayerClassData const* VisualData = ClassData.Find(GetPlayerClass());
-	if (!ensureMsgf(VisualData, TEXT("SetDeathVisuals: No visual data for class on %s"), *GetName()))
+	FPlayerClassData const* VisualData = GetClassData(GetPlayerClass());
+	if (!VisualData)
 	{
 		return;
 	}
@@ -277,12 +264,20 @@ void APlayableCharacter::SetDeathVisuals(bool const bDead)
 
 UAnimMontage* APlayableCharacter::GetDeathMontage() const
 {
-	FPlayerClassData const* VisualData = ClassData.Find(GetPlayerClass());
+	FPlayerClassData const* VisualData = GetClassData(GetPlayerClass());
 	if (!VisualData)
 	{
 		return nullptr;
 	}
 	return bDiedFromFall ? VisualData->FallMontage : VisualData->DeathMontage;
+}
+
+FPlayerClassData const* APlayableCharacter::GetClassData(EPlayerClass Class) const
+{
+	FPlayerClassData const* PlayerClassData = ClassData.Find(Class);
+	ensureMsgf(PlayerClassData, TEXT("%hs: no ClassData entry for %s on %s"), __FUNCTION__,
+			   *UEnum::GetValueAsString(Class), *GetName());
+	return PlayerClassData;
 }
 
 void APlayableCharacter::SetBodyMaterial(UMaterialInterface* Material)
@@ -415,9 +410,10 @@ void APlayableCharacter::GiveLife()
 		return;
 	}
 
-	FPlayerClassData const* PlayerClassData = ClassData.Find(GetPlayerClass());
-	if (!ensureMsgf(PlayerClassData && PlayerClassData->DefaultAttributes,
-					TEXT("GiveLife: No DefaultAttributes for class on %s"), *GetName()))
+	FPlayerClassData const* PlayerClassData = GetClassData(GetPlayerClass());
+	if (!PlayerClassData
+		|| !ensureMsgf(PlayerClassData->DefaultAttributes, TEXT("GiveLife: No DefaultAttributes for class on %s"),
+					   *GetName()))
 	{
 		return;
 	}
@@ -428,10 +424,9 @@ void APlayableCharacter::GiveLife()
 
 void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)
 {
-	FPlayerClassData const* PlayerClassData = ClassData.Find(NewClass);
+	FPlayerClassData const* PlayerClassData = GetClassData(NewClass);
 	if (!PlayerClassData)
 	{
-		ensureMsgf(PlayerClassData, TEXT("ApplyClassData: No visual data for class on %s"), *GetName());
 		return;
 	}
 

@@ -58,8 +58,6 @@ protected:
 	virtual void NativePreConstruct() override;
 	/** Binds ButtonWidget's click delegate to HandleButtonClicked. */
 	virtual void NativeConstruct() override;
-	/** Removes the click delegate bound in NativeConstruct. */
-	virtual void NativeDestruct() override;
 	/** Forwards focus directly to ButtonWidget so the inner UGeoButton enters its hover/focus state. */
 	virtual FReply NativeOnFocusReceived(FGeometry const& InGeometry, FFocusEvent const& InFocusEvent) override;
 	/** Returns ButtonWidget so gamepad navigation descends into the inner button. */

@@ -4,6 +4,7 @@
 #include "AbilitySystem/Data/GeoSoundRow.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Components/AudioComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
@@ -88,4 +89,20 @@ void UGeoSoundRowLibrary::PlaySoundEntry2D(UObject const* WorldContextObject, FG
 		UGameplayStatics::PlaySound2D(WorldContextObject, Entry.Sound, GetVolume(Entry, SoundInstigator),
 									  GetPitch(Entry, SoundInstigator), Entry.StartTime);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoSoundRowLibrary::ConfigureAudioComponent(UAudioComponent* AudioComponent, FGeoSoundEntry const& Entry,
+												  AActor* SoundInstigator, float Pitch)
+{
+	if (!ensureMsgf(AudioComponent, TEXT("%hs: null AudioComponent"), __FUNCTION__)
+		|| !ShouldPlay(AudioComponent, Entry, SoundInstigator))
+	{
+		return;
+	}
+
+	AudioComponent->SetSound(Entry.Sound);
+	AudioComponent->SetVolumeMultiplier(GetVolume(Entry, SoundInstigator));
+	AudioComponent->SetPitchMultiplier(Pitch);
+	AudioComponent->Play(Entry.StartTime);
 }

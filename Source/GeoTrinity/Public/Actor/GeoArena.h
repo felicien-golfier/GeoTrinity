@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
-#include "Tool/GeoDifficulty.h"
 
 #include "GeoArena.generated.h"
 
@@ -13,6 +12,7 @@ class AEnemyCharacter;
 class AGeoArenaBarrier;
 class AGeoDeployableBase;
 class UGeoDeployableManagerComponent;
+class UGeoReloadAbility;
 
 /**
  * One boss encounter, and it runs itself. It owns its boss (spawn + reset), its barrier, its fight-commit, the boss
@@ -39,6 +39,9 @@ public:
 	/** Server. Spawns the boss, or resets the one already standing, for a fresh attempt. */
 	void ResetBoss();
 
+	/** Opens or seals the barrier, if this arena has one. Barrier state is owned by the fight-lifecycle functions. */
+	void SetBarrierClosed(bool bClosed) const;
+
 	/** Server. Marks this fight live (barrier closes, boss bar shows, checkpoint registered), and starts the commit
 	 *  countdown. Called by AGeoEnemyAIController::TriggerAggro the moment this arena's boss is aggroed. Ignored
 	 *  while a match is already in progress. */
@@ -51,7 +54,10 @@ public:
 	 *  another arena's fight was live has to be put back too. */
 	virtual void EndFight();
 
-	/** Server. Clears the defeated state and spawns the boss again — the only way back after a victory. */
+	/** Server. Clears the defeated state and spawns the boss again — the only way back after a victory, and how this
+	 *  arena picks up a difficulty change: bound to AGeoGameState::OnDifficultyChanged, since the level a boss runs at
+	 *  is stamped on its ASC when it spawns and nothing re-levels a boss already standing. */
+	UFUNCTION()
 	void RespawnBoss();
 	/** Server. RespawnBoss on every arena whose boss was defeated. What a respawn button drives. */
 	static void RespawnAllBosses(UObject const* WorldContextObject);
@@ -73,14 +79,6 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category = "Arena")
 	FGameplayTag ArenaTag;
-
-	/**
-	 * Which of this encounter's three tunings to run. Its bit value is the level the boss's abilities, attributes and
-	 * effects are all applied at, so lowering it both walks every FScalableFloat in the kit down its curve and drops
-	 * the effect entries whose difficulty mask excludes it (lethal hits). Read once by AEnemyCharacter::InitGAS.
-	 */
-	UPROPERTY(EditAnywhere, Category = "Arena")
-	EGeoDifficulty Difficulty = EGeoDifficulty::Original;
 
 protected:
 	UFUNCTION()
@@ -143,7 +141,8 @@ private:
 	UFUNCTION()
 	void OnBossDefeated();
 
-	/** Server. Starts the looping loot shower erupting from LootOrigin. */
+	/** Server. Resolves the reload ability that configures the pickups, then starts the looping loot shower erupting
+	 *  from LootOrigin. Declines to start the timer when no such ability is registered. */
 	void Loot();
 	/** Server. Stops the shower and hands back the pickup slots it borrowed. Runs when any fight starts. */
 	void StopLoot();
@@ -154,6 +153,10 @@ private:
 
 	FTimerHandle LootTimer;
 	FVector LootOrigin = FVector::ZeroVector;
+
+	/** Pickup configuration for the running shower, resolved once in Loot() rather than re-scanned on every burst. */
+	UGeoReloadAbility const* LootReloadCDO = nullptr;
+	FGameplayTag LootReloadTag;
 
 	/** Managers granted an unlimited pickup slot for the loot shower; restored when the next fight starts. */
 	TArray<TWeakObjectPtr<UGeoDeployableManagerComponent>> LootBoostedManagers;

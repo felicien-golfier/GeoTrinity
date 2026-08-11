@@ -38,14 +38,19 @@ private:
 	float StartTime = 0.f;
 };
 
+/** One accumulating side of a fight — damage dealt or healing dealt. Both sides are tracked identically. */
+struct FCombatRate
+{
+	float Total = 0.f;
+	/** Exponentially smoothed per-second rate; see UGeoCombatStatsSubsystem::SmoothingWindowSeconds. */
+	float Smoothed = 0.f;
+	FBurstTracker Burst;
+};
+
 struct FActorCombatStats
 {
-	float SmoothedDPS = 0.f;
-	float SmoothedHPS = 0.f;
-	FBurstTracker DamageBurst;
-	FBurstTracker HealingBurst;
-	float TotalDamageDealt = 0.f;
-	float TotalHealingDealt = 0.f;
+	FCombatRate Damage;
+	FCombatRate Healing;
 	float TotalDamageReceived = 0.f;
 };
 
@@ -105,8 +110,10 @@ private:
 	void ResetStats();
 
 	/** Returns Actor's stats entry, creating it. The first event outside a match restarts the combat timer. */
-	FActorCombatStats& FindOrAddStats(AGeoPlayerState* Actor, float CurrentTime);
+	FActorCombatStats& FindOrAddStats(AGeoPlayerState* Actor);
 	bool IsMatchInProgress() const;
+	/** Decays the rates to now, then folds Amount into one side of Source's stats. Backs both Report*Dealt methods. */
+	void ReportRate(AGeoPlayerState* Source, float Amount, FCombatRate FActorCombatStats::* Side);
 	/** Exponentially decays every smoothed rate to CurrentTime, so a new event can be folded in undecayed. */
 	void DecayRates(float CurrentTime);
 	/** Pushes all stats to the tracked player states, dropping entries whose player state is gone. */

@@ -25,9 +25,8 @@ bool UGeoDeployableManagerComponent::CanDeploy(TSubclassOf<AGeoDeployableBase> c
 
 bool UGeoDeployableManagerComponent::HasReachMaxLimit(TSubclassOf<AGeoDeployableBase> const DeployableClass)
 {
-	if (!DeployableClass)
+	if (!ensureMsgf(DeployableClass, TEXT("%hs: tried to deploy a null class"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("GeoDeployableManagerComponent: Tried to deploy a null class."));
 		return true;
 	}
 
@@ -129,10 +128,9 @@ void UGeoDeployableManagerComponent::RegisterDeployable(AGeoDeployableBase* Depl
 	TSubclassOf<AGeoDeployableBase> const DeployableClass = Deployable->GetClass();
 	if (FDeployableBucket* ExistingBucket = Deployables.Find(DeployableClass))
 	{
-		if (ExistingBucket->Deployables.Contains(Deployable))
+		if (!ensureMsgf(!ExistingBucket->Deployables.Contains(Deployable), TEXT("%hs: '%s' registered twice"),
+						__FUNCTION__, *GetNameSafe(Deployable)))
 		{
-			ensureMsgf(false, TEXT("GeoDeployableManagerComponent: Tried to register '%s' twice."),
-					   *GetNameSafe(Deployable));
 			return;
 		}
 		RemoveInvalidDeployables(*ExistingBucket);

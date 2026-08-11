@@ -17,89 +17,19 @@ void UGeoPauseMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!ResumeButton)
-	{
-		ensureMsgf(ResumeButton, TEXT("UGeoPauseMenuWidget: ResumeButton is not bound"));
-		return;
-	}
-	if (!AbilitiesButton)
-	{
-		ensureMsgf(AbilitiesButton, TEXT("UGeoPauseMenuWidget: AbilitiesButton is not bound"));
-		return;
-	}
-	if (!SettingsButton)
-	{
-		ensureMsgf(SettingsButton, TEXT("UGeoPauseMenuWidget: SettingsButton is not bound"));
-		return;
-	}
-	if (!ReturnToMainMenuButton)
-	{
-		ensureMsgf(ReturnToMainMenuButton, TEXT("UGeoPauseMenuWidget: ReturnToMainMenuButton is not bound"));
-		return;
-	}
-	if (!QuitButton)
-	{
-		ensureMsgf(QuitButton, TEXT("UGeoPauseMenuWidget: QuitButton is not bound"));
-		return;
-	}
-	if (!AbilitiesWidget)
-	{
-		ensureMsgf(AbilitiesWidget, TEXT("UGeoPauseMenuWidget: AbilitiesWidget is not bound"));
-		return;
-	}
-	if (!SettingsWidget)
-	{
-		ensureMsgf(SettingsWidget, TEXT("UGeoPauseMenuWidget: SettingsWidget is not bound"));
-		return;
-	}
-
-	ResumeButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleResume);
-	AbilitiesButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleAbilities);
-	SettingsButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleSettings);
-	ReturnToMainMenuButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleReturnToMainMenu);
-	QuitButton->OnClicked.AddDynamic(this, &UGeoPauseMenuWidget::HandleQuit);
-	AbilitiesWidget->OnClosed.AddDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
-	SettingsWidget->OnClosed.AddDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
+	ResumeButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleResume);
+	AbilitiesButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleAbilities);
+	SettingsButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSettings);
+	ReturnToMainMenuButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleReturnToMainMenu);
+	QuitButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleQuit);
+	AbilitiesWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
+	SettingsWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
 
 	// Reset to the top-level buttons: the menu can close from anywhere (e.g. ESC while a sub-panel is open), and
 	// this instance is reused on the next open.
 	AbilitiesWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoPauseMenuWidget::NativeDestruct()
-{
-	if (ResumeButton)
-	{
-		ResumeButton->OnClicked.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleResume);
-	}
-	if (AbilitiesButton)
-	{
-		AbilitiesButton->OnClicked.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleAbilities);
-	}
-	if (SettingsButton)
-	{
-		SettingsButton->OnClicked.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleSettings);
-	}
-	if (ReturnToMainMenuButton)
-	{
-		ReturnToMainMenuButton->OnClicked.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleReturnToMainMenu);
-	}
-	if (QuitButton)
-	{
-		QuitButton->OnClicked.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleQuit);
-	}
-	if (AbilitiesWidget)
-	{
-		AbilitiesWidget->OnClosed.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
-	}
-	if (SettingsWidget)
-	{
-		SettingsWidget->OnClosed.RemoveDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
-	}
-	Super::NativeDestruct();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

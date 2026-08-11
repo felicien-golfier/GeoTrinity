@@ -10,33 +10,8 @@ void UGeoSoundSettingsWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!BackButton)
-	{
-		ensureMsgf(BackButton, TEXT("UGeoSoundSettingsWidget: BackButton is not bound"));
-		return;
-	}
-	if (!MasterVolumeSlider)
-	{
-		ensureMsgf(MasterVolumeSlider, TEXT("UGeoSoundSettingsWidget: MasterVolumeSlider is not bound"));
-		return;
-	}
-
-	BackButton->OnClicked.AddDynamic(this, &UGeoSoundSettingsWidget::HandleBack);
-	MasterVolumeSlider->OnValueChanged.AddDynamic(this, &UGeoSoundSettingsWidget::HandleMasterVolumeChanged);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoSoundSettingsWidget::NativeDestruct()
-{
-	if (BackButton)
-	{
-		BackButton->OnClicked.RemoveDynamic(this, &UGeoSoundSettingsWidget::HandleBack);
-	}
-	if (MasterVolumeSlider)
-	{
-		MasterVolumeSlider->OnValueChanged.RemoveDynamic(this, &UGeoSoundSettingsWidget::HandleMasterVolumeChanged);
-	}
-	Super::NativeDestruct();
+	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoSoundSettingsWidget::HandleBack);
+	MasterVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UGeoSoundSettingsWidget::HandleMasterVolumeChanged);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

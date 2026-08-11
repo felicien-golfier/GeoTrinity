@@ -29,9 +29,8 @@ bool UHudFunctionLibrary::ShouldDrawHUD(UObject const* WorldContextObject)
 
 float UHudFunctionLibrary::GetHealthRatio(UAbilitySystemComponent const* AbilitySystemComponent)
 {
-	if (!AbilitySystemComponent)
+	if (!ensureMsgf(AbilitySystemComponent, TEXT("%hs: AbilitySystemComponent must be valid"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("AbilitySystemComponent must be valid to GetHealthRatio!"));
 		return 0.0f;
 	}
 	float const CurrentHealth = AbilitySystemComponent->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());

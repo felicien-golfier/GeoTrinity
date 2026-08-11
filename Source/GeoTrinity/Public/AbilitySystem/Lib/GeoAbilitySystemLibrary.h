@@ -23,14 +23,8 @@ enum class EProjectileTarget : uint8
 };
 
 class UStatusInfo;
-struct FDamageEffectParams;
-class UAbilityInfo;
-struct FGameplayAbilitySpec;
-class UGameplayAbility;
-struct FGameplayEffectContextHandle;
-struct FGameplayTag;
 struct FExternalProjectileParams;
-class UAbilitySystemComponent;
+struct FGeoGameplayEffectContext;
 /**
  * Static helper library for GeoTrinity's ability system (alias: GeoASLib).
  * Centralizes two-pass effect application, projectile and deployable spawning, team-attitude
@@ -62,13 +56,11 @@ public:
 	static UAnimInstance* GetAnimInstance(FAbilityPayload const& Payload);
 
 	/** Returns the global UAbilityInfo data asset from UGameDataSettings. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))
-	static UAbilityInfo* GetAbilityInfo(UObject const* WorldContextObject);
-	/** Returns the global UAbilityInfo data asset from UGameDataSettings without a world context. */
+	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|Info")
 	static UAbilityInfo* GetAbilityInfo();
 	/** Returns the global UStatusInfo data asset from UGameDataSettings. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Info", meta = (DefaultToSelf = "WorldContextObject"))
-	static UStatusInfo* GetStatusInfo(UObject const* WorldContextObject);
+	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|Info")
+	static UStatusInfo* GetStatusInfo();
 
 
 	/**
@@ -99,6 +91,17 @@ public:
 	/** Fills SourceASC and TargetASC into ContextHandle for access by downstream execution calculations. */
 	static void FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
 								  FGameplayEffectContextHandle ContextHandle);
+
+	/**
+	 * Builds the effect context both apply paths run on: makes it from SourceASC, fills it, and hands back the Geo
+	 * context to write scoped fields into. The returned handle owns the context — keep it alive for the whole
+	 * application.
+	 *
+	 * @param OutGeoContext  Set to the context behind the returned handle; never null (checked).
+	 */
+	static FGameplayEffectContextHandle MakeGeoEffectContext(UAbilitySystemComponent* SourceASC,
+															 UAbilitySystemComponent* TargetASC,
+															 FGeoGameplayEffectContext*& OutGeoContext);
 
 	/**
 	 * Returns the class default object for the ability registered under AbilityTag, cast to T.
@@ -141,15 +144,12 @@ public:
 		return nullptr;
 	}
 
-	/** Extracts the EffectDataInstances array from a UEffectDataAsset. */
-	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(UEffectDataAsset const* EffectDataAsset);
 	/** Returns the effect data array registered for the ability identified by AbilityTag in UAbilityInfo. */
 	static TArray<TInstancedStruct<FEffectData>> GetEffectDataArray(FGameplayTag AbilityTag);
 
 	/**
 	 * Fully spawns and initializes a deployable actor: deferred-spawn, fills FDeployableData, calls InitInteractable,
-	 * then FinishSpawning. Equivalent to calling StartSpawnDeployable → InitDeployable → FinishSpawnDeployable in one
-	 * call.
+	 * then FinishSpawning.
 	 *
 	 * @param DeployableActorClass  The deployable class to spawn.
 	 * @param Payload               Network sync data (owner, instigator, ability tag, seed, etc.).
@@ -163,21 +163,15 @@ public:
 													TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 													FDeployableDataParams const& Params,
 													FTransform const& SpawnTransform);
-	/** Deferred-spawns a deployable actor without calling FinishSpawning; caller must call FinishSpawnDeployable
-	 * after configuring the deployable's data (via InitInteractable). Returns nullptr on failure. */
+	/** Deferred-spawns a deployable actor without calling FinishSpawning; caller must call InitInteractable and then
+	 * FinishSpawning itself. Returns nullptr on failure. */
 	static AGeoDeployableBase* StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> DeployableActorClass, AActor* Owner,
 													APawn* Instigator, FTransform const& SpawnTransform);
-	/** Fills FDeployableData from Payload + Params + EffectDataArray and calls InitInteractable on Deployable. */
-	static void InitDeployable(AGeoDeployableBase* Deployable, FAbilityPayload const& Payload,
-							   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
-							   FDeployableDataParams const& Params);
 	/** Populates Data from Payload, EffectDataArray, and Params without calling InitInteractable. Used when the caller
 	 * needs to modify Data fields before passing it to InitInteractable manually. */
 	static void FillDeployableData(FDeployableData& Data, FAbilityPayload const& Payload,
 								   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 								   FDeployableDataParams const& Params);
-	/** Completes a deferred deployable spawn started by StartSpawnDeployable; triggers BeginPlay. */
-	static void FinishSpawnDeployable(AGeoDeployableBase* Deployable, FTransform const& SpawnTransform);
 
 	/** PROJECTILES **/
 
@@ -239,29 +233,22 @@ public:
 									   FPredictionKey PredictionKey = FPredictionKey{});
 
 	/**
-	 * Looks up the status GE for statusTag in UStatusInfo and applies it to pTargetASC.
+	 * Looks up the status GE for StatusTag in UStatusInfo and applies it to TargetASC.
 	 *
 	 * @param OutSpecHandle  Populated with the applied spec handle on success.
 	 * @return               True if the status GE was found and applied.
 	 */
-	static bool ApplyStatusToTarget(UAbilitySystemComponent* pTargetASC, UAbilitySystemComponent* pSourceASC,
-									FGameplayTag const& statusTag, int32 level,
+	static bool ApplyStatusToTarget(UAbilitySystemComponent* TargetASC, UAbilitySystemComponent* SourceASC,
+									FGameplayTag const& StatusTag, int32 AbilityLevel,
 									FGameplayEffectSpecHandle& OutSpecHandle);
 
-	/** Returns the gameplay tag that has StringOfTag as its leaf name, searching within the global tag container. */
-	static FGameplayTag GetGameplayTagFromRootTagString(FString const& StringOfTag);
+	/** Returns Ability's first asset tag sitting under Root, or an invalid tag when it carries none. The single
+	 * "which tag identifies this ability" walk — ability tag, ability type, and any future root all go through it. */
+	static FGameplayTag GetFirstAssetTagUnderRoot(UGameplayAbility const& Ability, FGameplayTag Root);
 	/** Returns the first asset tag under the "Ability" root from the spec's ability CDO. */
 	static FGameplayTag GetAbilityTagFromSpec(FGameplayAbilitySpec const& Spec);
 	/** Returns the first asset tag under the "Ability" root from the given ability CDO. */
 	static FGameplayTag GetAbilityTagFromAbility(UGameplayAbility const& Ability);
-
-	/**
-	 * Retrieves the IGenericTeamAgentInterface from Actor.
-	 *
-	 * @param OutInterface  Set to the found interface on success.
-	 * @return              True if Actor implements the interface.
-	 */
-	static bool GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface);
 
 	/** Returns the GenericTeamId for Actor, or FGenericTeamId::NoTeam if Actor does not implement
 	 * IGenericTeamAgentInterface. */
@@ -308,16 +295,9 @@ public:
 	/** Same as above without an extra filter. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
-												 int32 AttitudeBitmask, bool bMustBeDamageable, FVector2D Location,
-												 float MaxDistance,
+												 int32 AttitudeBitmask, bool bMustBeDamageable = false,
+												 FVector2D Location = FVector2D::ZeroVector, float MaxDistance = 0.f,
 												 ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic);
-
-	/** Returns all interactable agents matching AttitudeBitmask relative to SourceTeam, without a distance filter. */
-	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
-												 int32 AttitudeBitmask, bool bMustBeDamageable = true);
-	/** Returns all interactable agents within MaxDistance of Location regardless of team. */
-	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, bool bMustBeDamageable,
-												 FVector2D Location, float MaxDistance);
 
 	/**
 	 * Returns all interactable agents that lie within a beam segment.
@@ -362,11 +342,10 @@ public:
 
 	/** Returns the status gameplay tag stored in the effect context (invalid tag when none). */
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
-	static FGameplayTag GetStatusTag(FGameplayEffectContextHandle const& effectContextHandle);
+	static FGameplayTag GetStatusTag(FGameplayEffectContextHandle const& EffectContextHandle);
 	/** Sets the status gameplay tag in the effect context. */
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
-	static void SetStatusTag(UPARAM(ref) FGameplayEffectContextHandle& effectContextHandle,
-							 FGameplayTag const statusTag);
+	static void SetStatusTag(UPARAM(ref) FGameplayEffectContextHandle& EffectContextHandle, FGameplayTag StatusTag);
 
 	/** Returns the ASC from Actor cast to UGeoAbilitySystemComponent, or nullptr if Actor does not implement
 	 * IAbilitySystemInterface. */

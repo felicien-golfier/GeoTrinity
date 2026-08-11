@@ -107,44 +107,18 @@ void UGeoKeyBindingsWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!BackButton)
-	{
-		ensureMsgf(BackButton, TEXT("UGeoKeyBindingsWidget: BackButton is not bound"));
-		return;
-	}
-	if (!KeyBindingsList)
-	{
-		ensureMsgf(KeyBindingsList, TEXT("UGeoKeyBindingsWidget: KeyBindingsList is not bound"));
-		return;
-	}
-
-	BackButton->OnClicked.AddDynamic(this, &UGeoKeyBindingsWidget::HandleBack);
+	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoKeyBindingsWidget::HandleBack);
 
 	if (SecondPlayerGamepadCheckBox)
 	{
 		SecondPlayerGamepadCheckBox->SetIsChecked(UGeoGameUserSettings::Get()->UseFirstGamepadForSecondPlayer());
-		SecondPlayerGamepadCheckBox->OnCheckStateChanged.AddDynamic(
+		SecondPlayerGamepadCheckBox->OnCheckStateChanged.AddUniqueDynamic(
 			this, &UGeoKeyBindingsWidget::HandleSecondPlayerGamepadChanged);
 	}
 
 	KeyBindingsList->ClearChildren();
 	Selectors.Empty();
 	BuildKeyBindingsList();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoKeyBindingsWidget::NativeDestruct()
-{
-	if (BackButton)
-	{
-		BackButton->OnClicked.RemoveDynamic(this, &UGeoKeyBindingsWidget::HandleBack);
-	}
-	if (SecondPlayerGamepadCheckBox)
-	{
-		SecondPlayerGamepadCheckBox->OnCheckStateChanged.RemoveDynamic(
-			this, &UGeoKeyBindingsWidget::HandleSecondPlayerGamepadChanged);
-	}
-	Super::NativeDestruct();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

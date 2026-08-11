@@ -145,14 +145,18 @@ protected:
 	/**
 	 * Returns true when OtherActor is a valid hit target for this projectile.
 	 * Default implementation checks team attitude bitmask. Override to restrict targeting (e.g. ground only).
+	 * On success OutOwnerASC / OutTargetASC hold the ASCs it already had to resolve, so HandleValidOverlap does not
+	 * look them up a second time.
 	 */
-	virtual bool IsValidOverlap(AActor* OtherActor);
+	virtual bool IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
+								UGeoAbilitySystemComponent*& OutTargetASC);
 
 	/**
-	 * Called from OnSphereOverlap after IsValidOverlap passes. Override to customise hit behaviour.
-	 * Default: applies EffectDataArray to target, calls OnProjectileHit, ends projectile life.
+	 * Called from OnSphereOverlap after IsValidOverlap passes, with the ASCs it resolved. Override to customise hit
+	 * behaviour. Default: applies EffectDataArray to target, calls OnProjectileHit, ends projectile life.
 	 */
-	virtual void HandleValidOverlap(AActor* OtherActor);
+	virtual void HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
+									UGeoAbilitySystemComponent* TargetASC);
 
 	/** Dispatches overlap events to IsValidOverlap then HandleValidOverlap. */
 	UFUNCTION()

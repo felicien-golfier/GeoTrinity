@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
 #include "GameplayTagContainer.h"
+#include "Tool/GeoDifficulty.h"
 
 #include "GeoGameState.generated.h"
 
@@ -14,6 +15,7 @@ class APlayableCharacter;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, AEnemyCharacter*, Enemy);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMatchStateChanged, FName, MatchState, FName, PreviousMatchState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWipe, float, DeathTime);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDifficultyChanged);
 
 /**
  * Replicated game state for GeoTrinity. It runs the match lifecycle (MatchState: WaitingToStart until a boss is
@@ -28,8 +30,20 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 	GENERATED_BODY()
 
 public:
+	/** Registers Difficulty, so a floor pad lights up for the live tuning on every machine. */
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	/** Server. Snapshots the players alive as the fight begins into FightPlayers, the set a wipe is measured against. */
 	virtual void HandleMatchHasStarted() override;
+
+	/**
+	 * Server. Retunes the run and broadcasts, which is all a retune is: every arena respawns its boss off
+	 * OnDifficultyChanged, and the floor pads repaint. Refused while a fight is in progress, since the boss it would
+	 * delete is the one being fought.
+	 */
+	void SetDifficulty(EGeoDifficulty NewDifficulty);
+	/** The tuning every boss runs. Its bit value is the level AEnemyCharacter::InitGAS stamps on the boss ASC. */
+	EGeoDifficulty GetDifficulty() const { return Difficulty; }
 
 	/** Server. Revives every player pawn currently in the world (no-op on a living one, so overlapping calls are free). */
 	void RevivePlayers() const;
@@ -73,7 +87,21 @@ public:
 	/** Server. Broadcast the moment every fight player is down — DeathTime seconds before the group respawns. */
 	FOnWipe OnWipe;
 
+	/** Broadcast on every machine when the difficulty changes. AGeoArena respawns its boss off it, the pads repaint. */
+	FOnDifficultyChanged OnDifficultyChanged;
+
 private:
+	/**
+	 * The one difficulty knob, held here rather than per arena so the pads have a single value to read and no two
+	 * encounters can disagree about what the run is set to. Editable as the tuning a session opens on; from there it is
+	 * SetDifficulty's alone, which is why it is private.
+	 */
+	UPROPERTY(EditDefaultsOnly, ReplicatedUsing = OnRep_Difficulty, Category = "Fight")
+	EGeoDifficulty Difficulty = EGeoDifficulty::Original;
+
+	UFUNCTION()
+	void OnRep_Difficulty();
+
 	/** Arena.* tag a wipe respawns at; set by the arena that owns the current fight. */
 	FGameplayTag CheckpointTag;
 

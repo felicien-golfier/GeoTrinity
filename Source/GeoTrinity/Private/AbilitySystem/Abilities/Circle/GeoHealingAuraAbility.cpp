@@ -32,10 +32,7 @@ void UGeoHealingAuraAbility::ActivateAbility(FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
-	if (!HealPerSecond.IsValid())
-	{
-		ensureMsgf(HealPerSecond.IsValid(), TEXT("Fill your data dumb ass"));
-	}
+	ensureMsgf(HealPerSecond.IsValid(), TEXT("%hs: HealPerSecond is not set on %s"), __FUNCTION__, *GetName());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -47,18 +44,15 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 	}
 
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
-	if (!IsValid(Character))
+	if (!ensureMsgf(IsValid(Character), TEXT("%hs: invalid Character"), __FUNCTION__))
 	{
-		ensureMsgf(IsValid(Character), TEXT("UGeoHealingAuraAbility: invalid Character on activation"));
 		return;
 	}
 
 	UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
 	IGenericTeamAgentInterface const* OwnerTeamAgent = Cast<IGenericTeamAgentInterface>(Character);
-	if (!SourceASC || !OwnerTeamAgent)
+	if (!ensureMsgf(SourceASC && OwnerTeamAgent, TEXT("%hs: invalid ASC or OwnerTeamAgent"), __FUNCTION__))
 	{
-		ensureMsgf(SourceASC && OwnerTeamAgent,
-				   TEXT("UGeoHealingAuraAbility: invalid ASC or OwnerTeamAgent on activation"));
 		return;
 	}
 

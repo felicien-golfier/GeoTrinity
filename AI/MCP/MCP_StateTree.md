@@ -40,7 +40,7 @@ Enter conditions gate whether a state can be entered on each tick — they are e
 
 - `FStateTreeCompareFloatCondition` is the standard struct for numeric comparisons; use `AddFloatEnterCondition` to append one via Python.
 - Call `BindConditionPropertyToPropertyFunction` immediately after `AddFloatEnterCondition` to wire unbound properties.
-- `BindConditionPropertyToPropertyFunction` takes the condition property name, the Property Function struct name, the function's output and input property names, and the context class name — all as `FName`; nothing is hardcoded.
+- `BindConditionPropertyToPropertyFunction` takes a binding struct naming the condition property, the Property Function struct, its output and input properties, and the context class; nothing is hardcoded.
 
 ## StateTree Property Functions
 

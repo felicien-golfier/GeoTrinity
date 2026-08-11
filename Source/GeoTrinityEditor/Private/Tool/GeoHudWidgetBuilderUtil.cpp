@@ -26,7 +26,7 @@
 void UGeoHudWidgetBuilderUtil::BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBlueprint, float SquareSize,
 													  EAbilitySlotKeyLabelPlacement KeyLabelPlacement)
 {
-	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildAbilitySlotWidget"));
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree)
 	{
 		return;
@@ -126,7 +126,7 @@ void UGeoHudWidgetBuilderUtil::BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBl
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoHudWidgetBuilderUtil::BuildAbilityBarWidget(UWidgetBlueprint* WidgetBlueprint)
 {
-	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildAbilityBarWidget"));
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree)
 	{
 		return;
@@ -152,7 +152,7 @@ void UGeoHudWidgetBuilderUtil::BuildAbilityBarWidget(UWidgetBlueprint* WidgetBlu
 void UGeoHudWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* WidgetBlueprint, float SweetSpotMinRatio,
 														  float SweetSpotMaxRatio)
 {
-	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildChargeBeamGaugeWidget"));
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree)
 	{
 		return;
@@ -228,7 +228,7 @@ void UGeoHudWidgetBuilderUtil::AddAbilityBarToOverlay(UWidgetBlueprint* WidgetBl
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoHudWidgetBuilderUtil::BuildStatusBarWidget(UWidgetBlueprint* WidgetBlueprint)
 {
-	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildStatusBarWidget"));
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree)
 	{
 		return;
@@ -291,7 +291,7 @@ void UGeoHudWidgetBuilderUtil::BuildCombattantLifeBarWidget(UWidgetBlueprint* Wi
 			});
 	}
 
-	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildCombattantLifeBarWidget"));
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree)
 	{
 		return;
@@ -335,7 +335,7 @@ void UGeoHudWidgetBuilderUtil::BuildLocalConnectWidget(UWidgetBlueprint* WidgetB
 		return;
 	}
 
-	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, TEXT("BuildLocalConnectWidget"));
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree)
 	{
 		return;

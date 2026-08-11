@@ -60,10 +60,9 @@ void UGeoGameplayLibrary::TriggerCameraShake(UObject const* WorldContextObject,
 
 bool UGeoGameplayLibrary::IsServer(UObject const* WorldContextObject)
 {
-	if (!WorldContextObject)
+	if (!ensureMsgf(WorldContextObject, TEXT("%hs: WorldContextObject is invalid"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("WorldContextObject is invalid!"));
-		return 0.f;
+		return false;
 	}
 	return IsServer(WorldContextObject->GetWorld());
 }
@@ -75,9 +74,8 @@ bool UGeoGameplayLibrary::IsServer(UWorld const* World)
 
 bool UGeoGameplayLibrary::IsDedicatedServer(UObject const* WorldContextObject)
 {
-	if (!WorldContextObject)
+	if (!ensureMsgf(WorldContextObject, TEXT("%hs: WorldContextObject is invalid"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("WorldContextObject is invalid!"));
 		return false;
 	}
 	return IsDedicatedServer(WorldContextObject->GetWorld());
@@ -120,9 +118,8 @@ AGeoCharacter* UGeoGameplayLibrary::GetCharacterFromOwner(AActor* Owner)
 
 float UGeoGameplayLibrary::GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing)
 {
-	if (!WorldContextObject)
+	if (!ensureMsgf(WorldContextObject, TEXT("%hs: WorldContextObject is invalid"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("WorldContextObject is invalid!"));
 		return 0.f;
 	}
 
@@ -155,9 +152,8 @@ float UGeoGameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdate
 		return World->GetTimeSeconds();
 	}
 
-	if (!World->GetGameState())
+	if (!ensureMsgf(World->GetGameState(), TEXT("%hs: GameState does not exist"), __FUNCTION__))
 	{
-		ensureMsgf(World->GetGameState(), TEXT("GameState does not exist"));
 		return 0.f;
 	}
 

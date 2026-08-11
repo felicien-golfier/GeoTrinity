@@ -80,7 +80,7 @@ void AGeoTurret::Tick(float DeltaSeconds)
 AActor* AGeoTurret::FindBestTarget() const
 {
 	TArray<AActor*> const HostileActors = UGeoAbilitySystemLibrary::GetInteractableActors(
-		this, GeoASLib::GetTeamId(this), TeamAttitudeMask::HostileOrNeutral);
+		this, GeoASLib::GetTeamId(this), TeamAttitudeMask::HostileOrNeutral, true);
 
 	if (UGeoAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner))
 	{

@@ -23,6 +23,10 @@
  * Registered once in Init() via FGenericTeamId::SetAttitudeSolver — any two actors that implement
  * IGenericTeamAgentInterface will route through here for team-based queries (damage filtering, aura targeting, etc.).
  */
+// The one session this game ever creates. Sessions are matched by name equality, so the name is spelled once here
+// rather than at each call.
+static FName const GeoSessionName(TEXT("GameSession"));
+
 static ETeamAttitude::Type GeoAttitudeSolver(FGenericTeamId A, FGenericTeamId B)
 {
 	ETeam const TeamA = static_cast<ETeam>(A.GetId());
@@ -57,65 +61,40 @@ void UGeoGameInstance::Init()
 void UGeoGameInstance::CreateAdvancedSession(FOnlineSessionSettings const& SessionSettings, FString MapToGoTo/* = ""*/)
 {
 	// Advanced session plugin only wraps for blueprint with a latent task, so better do it directly when in CPP
-	
-	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
-	if (!ensureMsgf(OnlineSubsystem, TEXT("UGeoCreateServerWidget: Online subsystem not available")))
+	IOnlineSessionPtr Sessions = GetSessionInterface();
+	if (!ensureMsgf(Sessions.IsValid(), TEXT("%hs: no online session interface"), __FUNCTION__))
 	{
 		return;
 	}
-	IOnlineSessionPtr Sessions = OnlineSubsystem->GetSessionInterface();
-	if (!ensureMsgf(Sessions.IsValid(), TEXT("UGeoCreateServerWidget: Session interface not valid")))
-	{
-		return;
-	}
-	
-	CreateSessionDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(
-		FOnCreateSessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnCreateSessionComplete)
-	);
 
-	// Map
-	if (MapToGoTo.IsEmpty())
+	if (MapToGoTo.IsEmpty()
+		&& !ensureMsgf(!DefaultMap.IsNull(),
+					   TEXT("%hs: no map URL — DefaultMap is not set on the Blueprint subclass"), __FUNCTION__))
 	{
-		if (!ensureMsgf(!DefaultMap.IsNull(), TEXT("GeoGameInstance: No map URL — DefaultMap is not set on the Blueprint subclass")))
-		{
-			return;
-		}
-		PendingMapURL = DefaultMap.ToSoftObjectPath().GetLongPackageName();
+		return;
 	}
-	else
-	{
-		PendingMapURL = MapToGoTo;
-	}
-	
-	Sessions->CreateSession(0, FName(TEXT("GameSession")), SessionSettings);
-	
-	
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, 
-		FString::Printf(TEXT("[%u] CreateAdvancedSession done, waiting for callback"), FNetworkVersion::GetLocalNetworkVersion()));
+	PendingMapURL = MapToGoTo.IsEmpty() ? DefaultMap.ToSoftObjectPath().GetLongPackageName() : MapToGoTo;
+
+	CreateSessionDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(
+		FOnCreateSessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnCreateSessionComplete));
+	Sessions->CreateSession(0, GeoSessionName, SessionSettings);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("OnCreateSessionComplete complete")));
-
-	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
-	if (OnlineSub)
+	if (IOnlineSessionPtr Sessions = GetSessionInterface())
 	{
-		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-		if (Sessions.IsValid())
-		{
-			Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
-		}
+		Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
 	}
 
 	if (!bWasSuccessful)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UGeoCreateServerWidget: Failed to create session '%s'"), *SessionName.ToString());
+		UE_LOG(LogTemp, Error, TEXT("%hs: failed to create session '%s'"), __FUNCTION__, *SessionName.ToString());
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("UGeoCreateServerWidget: Session created, traveling to %s"), *PendingMapURL);
+	UE_LOG(LogTemp, Log, TEXT("%hs: session created, traveling to %s"), __FUNCTION__, *PendingMapURL);
 	GetWorld()->ServerTravel(PendingMapURL + TEXT("?listen"));
 }
 
@@ -130,63 +109,51 @@ void UGeoGameInstance::JoinAdvancedSession(const FOnlineSessionSearchResult& Sea
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::LeaveSessionAndReturnToMenu()
 {
-	if (!ensureMsgf(!MainMenuMap.IsNull(), TEXT("UGeoGameInstance::LeaveSessionAndReturnToMenu: MainMenuMap is not set")))
+	if (!ensureMsgf(!MainMenuMap.IsNull(), TEXT("%hs: MainMenuMap is not set"), __FUNCTION__))
 	{
 		return;
 	}
 
-	IOnlineSessionPtr Sessions = GetSessionInterface();
-	EOnlineSessionState::Type const SessionState =
-		Sessions.IsValid() ? Sessions->GetSessionState(FName(TEXT("GameSession"))) : EOnlineSessionState::NoSession;
-
-	if (SessionState == EOnlineSessionState::NoSession)
-	{
-		UGameplayStatics::OpenLevel(this, FName(*MainMenuMap.ToSoftObjectPath().GetLongPackageName()));
-		return;
-	}
-
-	LeaveSessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
-		FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnDestroySessionComplete));
-	Sessions->DestroySession(FName(TEXT("GameSession")));
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoGameInstance::OnDestroySessionComplete(FName /*SessionName*/, bool /*bWasSuccessful*/)
-{
-	IOnlineSessionPtr Sessions = GetSessionInterface();
-	if (Sessions.IsValid())
-	{
-		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(LeaveSessionDelegateHandle);
-	}
-
-	UGameplayStatics::OpenLevel(this, FName(*MainMenuMap.ToSoftObjectPath().GetLongPackageName()));
+	DestroySessionThen(
+		[this]()
+		{
+			UGameplayStatics::OpenLevel(this, FName(*MainMenuMap.ToSoftObjectPath().GetLongPackageName()));
+		});
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::QuitGame()
 {
-	IOnlineSessionPtr Sessions = GetSessionInterface();
-	if (!Sessions.IsValid() || Sessions->GetSessionState(FName(TEXT("GameSession"))) == EOnlineSessionState::NoSession)
-	{
-		UKismetSystemLibrary::QuitGame(this, GetFirstLocalPlayerController(), EQuitPreference::Quit, true);
-		return;
-	}
-
-	QuitSessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
-		FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnDestroySessionForQuitComplete));
-	Sessions->DestroySession(FName(TEXT("GameSession")));
+	DestroySessionThen(
+		[this]()
+		{
+			UKismetSystemLibrary::QuitGame(this, GetFirstLocalPlayerController(), EQuitPreference::Quit, true);
+		});
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGameInstance::OnDestroySessionForQuitComplete(FName /*SessionName*/, bool /*bWasSuccessful*/)
+void UGeoGameInstance::DestroySessionThen(TFunction<void()> OnDone)
 {
 	IOnlineSessionPtr Sessions = GetSessionInterface();
-	if (Sessions.IsValid())
+	if (!Sessions.IsValid() || Sessions->GetSessionState(GeoSessionName) == EOnlineSessionState::NoSession)
 	{
-		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(QuitSessionDelegateHandle);
+		// Direct-IP/no-Steam session, or none at all: nothing to tear down, so run the ending now.
+		OnDone();
+		return;
 	}
 
-	UKismetSystemLibrary::QuitGame(this, GetFirstLocalPlayerController(), EQuitPreference::Quit, true);
+	DestroySessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
+		FOnDestroySessionCompleteDelegate::CreateWeakLambda(
+			this,
+			[this, OnDone = MoveTemp(OnDone)](FName /*SessionName*/, bool /*bWasSuccessful*/)
+			{
+				if (IOnlineSessionPtr CompletedSessions = GetSessionInterface())
+				{
+					CompletedSessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
+				}
+				OnDone();
+			}));
+	Sessions->DestroySession(GeoSessionName);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

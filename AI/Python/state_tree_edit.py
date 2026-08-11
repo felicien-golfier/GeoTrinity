@@ -28,12 +28,13 @@ cdo.add_transition(st, "MyState",  "SomeState", unreal.StateTreeTransitionTrigge
 # Float enter condition (e.g. HP < 50%)
 cdo.add_float_enter_condition(st, "MyState", 0.5, unreal.GenericAICheck.LESS, False)
 # Bind condition property to a Property Function (call immediately after add_float_enter_condition)
-# ConditionIndex=0, ConditionProperty="Left", FuncStruct="FSTGetHealthRatioPropertyFunction",
-# FuncOutput="Output", FuncInput="Input", ContextClass="GeoEnemyAIController"
-cdo.bind_condition_property_to_property_function(
-    st, "MyState", 0, "Left",
-    "FSTGetHealthRatioPropertyFunction", "Output", "Input",
-    "GeoEnemyAIController")
+binding = unreal.GeoPropertyFunctionBinding()
+binding.condition_property_name = "Left"
+binding.property_function_struct_name = "FSTGetHealthRatioPropertyFunction"
+binding.function_output_property_name = "Output"
+binding.function_input_property_name = "Input"
+binding.context_class_name = "GeoEnemyAIController"
+cdo.bind_condition_property_to_property_function(st, "MyState", 0, binding)
 
 # Add a task of any struct type to an existing state (default instance data, context auto-binds at compile)
 # cdo.add_task_to_state(st, "StateName", "STTask_ChaseTarget")

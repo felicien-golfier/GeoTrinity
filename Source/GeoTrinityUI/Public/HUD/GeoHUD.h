@@ -6,6 +6,7 @@
 #include "GameFramework/HUD.h"
 #include "GameplayTagContainer.h"
 #include "HUD/Interface/GeoHUDInterface.h"
+#include "Templates/Function.h"
 
 #include "GeoHUD.generated.h"
 
@@ -23,6 +24,9 @@ class UGenericCombattantWidget;
 class UGeoDamageNumberWidget;
 class AEnemyCharacter;
 class APlayableCharacter;
+class UGeoGameplayAbility;
+struct FGameplayAbilitySpec;
+struct FGameplayAttribute;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeModifiedSignature, float, NewValue);
 /** Tagless "a deploy count changed" ping. Slots re-query GetDeployCountForAbility for their own tag on receipt. */
@@ -224,6 +228,24 @@ private:
 	TSharedPtr<SWidget> CombatStatsPanel;
 	TArray<TWeakObjectPtr<APlayerState>> CombatStatsRoster;
 #endif
+
+	/**
+	 * Finds the granted spec whose ability carries AbilityTag. The one place the CDO → primary-instance promotion is
+	 * written: OutAbility is the live instance when there is one, else the CDO.
+	 *
+	 * @param OutAbility  Set to the ability to query for per-instance state; null when no spec matches.
+	 * @return            The matching spec, or nullptr.
+	 */
+	FGameplayAbilitySpec const* FindSpecForTag(FGameplayTag AbilityTag, UGeoGameplayAbility const*& OutAbility) const;
+
+	/**
+	 * Visits every attribute the overlay displays, handing each one to Visitor together with the delegate that carries
+	 * it to the widgets. The single list of what the HUD shows: BroadcastInitialValues and BindCallbacksToDependencies
+	 * both walk it, so a new attribute is one row here rather than an edit in two functions that must agree.
+	 * No-op when no attribute set is resolved yet.
+	 */
+	void ForEachHudAttribute(
+		TFunctionRef<void(FGameplayAttribute const&, FOnAttributeModifiedSignature const&)> Visitor) const;
 
 	void BroadcastInitialValues() const;
 	void BindCallbacksToDependencies();

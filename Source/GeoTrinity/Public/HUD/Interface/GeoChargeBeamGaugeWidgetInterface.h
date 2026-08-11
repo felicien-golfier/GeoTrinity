@@ -3,31 +3,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/Interface.h"
+#include "HUD/Interface/GeoChargeGaugeWidgetInterface.h"
 
 #include "GeoChargeBeamGaugeWidgetInterface.generated.h"
 
-class UGeoGameplayAbility;
-
 UINTERFACE()
-class UGeoChargeBeamGaugeWidgetInterface : public UInterface
+class UGeoChargeBeamGaugeWidgetInterface : public UGeoChargeGaugeWidgetInterface
 {
 	GENERATED_BODY()
 };
 
 /**
- * Implemented by the UI module's charge-beam gauge widget so gameplay (APlayableCharacter) can drive the gauge
- * without naming the concrete UI type.
+ * The charge-beam gauge on top of the shared charge-gauge seam: it is the only one with a sweet-spot window to mark.
  */
-class IGeoChargeBeamGaugeWidgetInterface
+class IGeoChargeBeamGaugeWidgetInterface : public IGeoChargeGaugeWidgetInterface
 {
 	GENERATED_BODY()
 
 public:
-	/** Sets the charging ability that drives the gauge fill. */
-	virtual void SetChargeBeamAbility(UGeoGameplayAbility* Ability) = 0;
 	/** Sets the sweet-spot window boundaries, marking the layout dirty for the next tick. */
 	virtual void SetSweetSpotRatios(float MinRatio, float MaxRatio) = 0;
-	/** Syncs the bar fill/color to the current ability charge ratio. Safe to call outside of tick. */
-	virtual void UpdateVisualChargeRatio() const = 0;
 };

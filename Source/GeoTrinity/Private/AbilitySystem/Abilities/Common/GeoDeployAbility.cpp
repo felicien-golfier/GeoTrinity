@@ -177,9 +177,8 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 
 	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), SpawnParams, SpawnTransform, StoredPayload,
 																GetEffectDataArray(), PredictionKey);
-	if (!IsValid(Projectile))
+	if (!ensureMsgf(IsValid(Projectile), TEXT("%hs: failed to spawn projectile"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("GeoDeployAbility: Failed to spawn projectile!"));
 		return;
 	}
 

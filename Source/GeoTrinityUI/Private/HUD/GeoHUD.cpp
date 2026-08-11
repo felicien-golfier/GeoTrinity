@@ -177,7 +177,8 @@ TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::BroadcastInitialValues() const
+void AGeoHUD::ForEachHudAttribute(
+	TFunctionRef<void(FGameplayAttribute const&, FOnAttributeModifiedSignature const&)> Visitor) const
 {
 	UGeoAttributeSetBase const* GeoAttributeSet = HudPlayerParams.GetGeoAttributeSet();
 	if (!GeoAttributeSet)
@@ -185,68 +186,42 @@ void AGeoHUD::BroadcastInitialValues() const
 		return;
 	}
 
-	OnHealthChanged.Broadcast(GeoAttributeSet->GetHealth());
-	OnMaxHealthChanged.Broadcast(GeoAttributeSet->GetMaxHealth());
-	OnShieldChanged.Broadcast(GeoAttributeSet->GetShield());
+	Visitor(UGeoAttributeSetBase::GetHealthAttribute(), OnHealthChanged);
+	Visitor(UGeoAttributeSetBase::GetMaxHealthAttribute(), OnMaxHealthChanged);
+	Visitor(UGeoAttributeSetBase::GetShieldAttribute(), OnShieldChanged);
 
-	if (UCharacterAttributeSet const* CharacterAttributeSet = Cast<UCharacterAttributeSet>(GeoAttributeSet))
+	// Ammo lives on the player-only attribute set, so these two rows exist for a playable character and nothing else.
+	if (GeoAttributeSet->IsA<UCharacterAttributeSet>())
 	{
-		OnAmmoChanged.Broadcast(CharacterAttributeSet->GetAmmo());
-		OnMaxAmmoChanged.Broadcast(CharacterAttributeSet->GetMaxAmmo());
+		Visitor(UCharacterAttributeSet::GetAmmoAttribute(), OnAmmoChanged);
+		Visitor(UCharacterAttributeSet::GetMaxAmmoAttribute(), OnMaxAmmoChanged);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::BroadcastInitialValues() const
+{
+	UGeoAttributeSetBase const* GeoAttributeSet = HudPlayerParams.GetGeoAttributeSet();
+	ForEachHudAttribute(
+		[GeoAttributeSet](FGameplayAttribute const& Attribute, FOnAttributeModifiedSignature const& Delegate)
+		{
+			Delegate.Broadcast(Attribute.GetNumericValue(GeoAttributeSet));
+		});
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoHUD::BindCallbacksToDependencies()
 {
-	UGeoAttributeSetBase const* GeoAttributeSet = HudPlayerParams.GetGeoAttributeSet();
-	if (!GeoAttributeSet)
-	{
-		return;
-	}
-
-	HudPlayerParams.AbilitySystemComponent
-		->GetGameplayAttributeValueChangeDelegate(GeoAttributeSet->GetHealthAttribute())
-		.AddWeakLambda(this,
-					   [this](FOnAttributeChangeData const& data)
-					   {
-						   OnHealthChanged.Broadcast(data.NewValue);
-					   });
-
-	HudPlayerParams.AbilitySystemComponent
-		->GetGameplayAttributeValueChangeDelegate(GeoAttributeSet->GetMaxHealthAttribute())
-		.AddWeakLambda(this,
-					   [this](FOnAttributeChangeData const& data)
-					   {
-						   OnMaxHealthChanged.Broadcast(data.NewValue);
-					   });
-
-	HudPlayerParams.AbilitySystemComponent
-		->GetGameplayAttributeValueChangeDelegate(GeoAttributeSet->GetShieldAttribute())
-		.AddWeakLambda(this,
-					   [this](FOnAttributeChangeData const& data)
-					   {
-						   OnShieldChanged.Broadcast(data.NewValue);
-					   });
-
-	if (UCharacterAttributeSet const* CharacterAttributeSet = Cast<UCharacterAttributeSet>(GeoAttributeSet))
-	{
-		HudPlayerParams.AbilitySystemComponent
-			->GetGameplayAttributeValueChangeDelegate(CharacterAttributeSet->GetAmmoAttribute())
-			.AddWeakLambda(this,
-						   [this](FOnAttributeChangeData const& data)
-						   {
-							   OnAmmoChanged.Broadcast(data.NewValue);
-						   });
-
-		HudPlayerParams.AbilitySystemComponent
-			->GetGameplayAttributeValueChangeDelegate(CharacterAttributeSet->GetMaxAmmoAttribute())
-			.AddWeakLambda(this,
-						   [this](FOnAttributeChangeData const& data)
-						   {
-							   OnMaxAmmoChanged.Broadcast(data.NewValue);
-						   });
-	}
+	ForEachHudAttribute(
+		[this](FGameplayAttribute const& Attribute, FOnAttributeModifiedSignature const& Delegate)
+		{
+			HudPlayerParams.AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(Attribute).AddWeakLambda(
+				this,
+				[Target = &Delegate](FOnAttributeChangeData const& Data)
+				{
+					Target->Broadcast(Data.NewValue);
+				});
+		});
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -256,9 +231,8 @@ void AGeoHUD::BindToPawn(APlayableCharacter* PlayableCharacter)
 	// bindings live here, not in InitOverlay/BindCallbacksToDependencies, which run before the pawn may exist.
 	UGeoDeployableManagerComponent* Manager =
 		PlayableCharacter ? PlayableCharacter->GetComponentByClass<UGeoDeployableManagerComponent>() : nullptr;
-	if (!Manager)
+	if (!ensureMsgf(Manager, TEXT("%hs: pawn has no UGeoDeployableManagerComponent on %s"), __FUNCTION__, *GetName()))
 	{
-		ensureMsgf(Manager, TEXT("BindToPawn: pawn has no UGeoDeployableManagerComponent on %s"), *GetName());
 		return;
 	}
 
@@ -343,10 +317,9 @@ TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries(APlayableCharacter* Pl
 
 	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
 	UAbilityInfo const* AbilityInfo = UGeoAbilitySystemLibrary::GetAbilityInfo();
-	if (!ASC || !PlayableCharacter || !AbilityInfo)
+	if (!ensureMsgf(ASC && PlayableCharacter && AbilityInfo,
+					TEXT("%hs: missing ASC, PlayableCharacter, or AbilityInfo on %s"), __FUNCTION__, *GetName()))
 	{
-		ensureMsgf(ASC && PlayableCharacter && AbilityInfo,
-				   TEXT("GetAbilityBarEntries: missing ASC, PlayableCharacter, or AbilityInfo on %s"), *GetName());
 		return Entries;
 	}
 
@@ -391,81 +364,67 @@ TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries(APlayableCharacter* Pl
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, float& OutDuration) const
+FGameplayAbilitySpec const* AGeoHUD::FindSpecForTag(FGameplayTag AbilityTag,
+													UGeoGameplayAbility const*& OutAbility) const
 {
-	OutRemaining = 0.f;
-	OutDuration = 0.f;
+	OutAbility = nullptr;
 
-	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
+	UGeoAbilitySystemComponent const* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
 	if (!ASC)
 	{
-		return;
+		return nullptr;
 	}
 
 	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
 	{
 		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
-		if (Ability && Ability->GetAbilityTag() == AbilityTag)
+		if (!Ability || Ability->GetAbilityTag() != AbilityTag)
 		{
-			// Spec.Ability is the CDO for instanced abilities; query the active instance so per-instance state
-			// (e.g. UGeoAutomaticFireAbility's fire-delay timer) is read instead of the CDO's empty timer.
-			if (UGeoGameplayAbility const* Instance = Cast<UGeoGameplayAbility>(Spec.GetPrimaryInstance()))
-			{
-				Ability = Instance;
-			}
-			Ability->GetCooldownTimeRemainingAndDuration(Spec.Handle, ASC->AbilityActorInfo.Get(), OutRemaining,
-														 OutDuration);
-			return;
+			continue;
 		}
+		// Spec.Ability is the CDO for instanced abilities; hand back the active instance so per-instance state
+		// (a fire-delay timer, deploy stacks) is read instead of the CDO's defaults.
+		UGeoGameplayAbility const* const Instance = Cast<UGeoGameplayAbility>(Spec.GetPrimaryInstance());
+		OutAbility = Instance ? Instance : Ability;
+		return &Spec;
+	}
+
+	return nullptr;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, float& OutDuration) const
+{
+	OutRemaining = 0.f;
+	OutDuration = 0.f;
+
+	UGeoGameplayAbility const* Ability = nullptr;
+	if (FGameplayAbilitySpec const* Spec = FindSpecForTag(AbilityTag, Ability))
+	{
+		Ability->GetCooldownTimeRemainingAndDuration(
+			Spec->Handle, HudPlayerParams.GetGeoAbilitySystemComponent()->AbilityActorInfo.Get(), OutRemaining,
+			OutDuration);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 bool AGeoHUD::IsAbilityActive(FGameplayTag AbilityTag) const
 {
-	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
-	if (!ASC)
-	{
-		return false;
-	}
-
-	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
-	{
-		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
-		if (Ability && Ability->GetAbilityTag() == AbilityTag)
-		{
-			return Spec.IsActive();
-		}
-	}
-
-	return false;
+	// Deliberately the spec and not the instance: "is this ability running" is spec state, and an instanced ability
+	// with no live instance is simply not active.
+	UGeoGameplayAbility const* Ability = nullptr;
+	FGameplayAbilitySpec const* Spec = FindSpecForTag(AbilityTag, Ability);
+	return Spec && Spec->IsActive();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 bool AGeoHUD::CanActivateAbility(FGameplayTag const AbilityTag) const
 {
-	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
-	if (!ASC)
-	{
-		return false;
-	}
-
-	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
-	{
-		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
-		if (Ability && Ability->GetAbilityTag() == AbilityTag)
-		{
-			// Spec.Ability is the CDO; query the active instance so per-instance state (e.g. deploy-ability stacks) is
-			// read instead of the CDO's defaults.
-			if (UGeoGameplayAbility const* Instance = Cast<UGeoGameplayAbility>(Spec.GetPrimaryInstance()))
-			{
-				Ability = Instance;
-			}
-			return Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get());
-		}
-	}
-
-	return false;
+	UGeoGameplayAbility const* Ability = nullptr;
+	FGameplayAbilitySpec const* Spec = FindSpecForTag(AbilityTag, Ability);
+	return Spec
+		&& Ability->CanActivateAbility(Spec->Handle,
+									   HudPlayerParams.GetGeoAbilitySystemComponent()->AbilityActorInfo.Get());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -474,26 +433,12 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 	OutCurrent = 0;
 	OutMax = 0;
 
-	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
-	if (!ASC)
+	UGeoGameplayAbility const* Ability = nullptr;
+	FindSpecForTag(AbilityTag, Ability);
+	if (UGeoDeployAbility const* DeployAbility = Cast<UGeoDeployAbility>(Ability))
 	{
-		return;
-	}
-
-	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
-	{
-		UGeoDeployAbility const* DeployAbility = Cast<UGeoDeployAbility>(Spec.Ability);
-		if (DeployAbility && DeployAbility->GetAbilityTag() == AbilityTag)
-		{
-			// Spec.Ability is the CDO; query the active instance so per-instance stack state is read.
-			if (UGeoDeployAbility const* Instance = Cast<UGeoDeployAbility>(Spec.GetPrimaryInstance()))
-			{
-				DeployAbility = Instance;
-			}
-			OutCurrent = DeployAbility->GetCurrentStacks();
-			OutMax = DeployAbility->GetMaxStacks();
-			return;
-		}
+		OutCurrent = DeployAbility->GetCurrentStacks();
+		OutMax = DeployAbility->GetMaxStacks();
 	}
 }
 

@@ -98,7 +98,7 @@ void AGeoCharacter::Tick(float DeltaSeconds)
 						GeoLib::GetColorForObject(GetOuter()), false, 0.f);
 	}
 
-	if (Controller)
+	if (Controller && !bIsDead)
 	{
 		float const CurrentYaw = Controller->GetControlRotation().Yaw;
 		float const DeltaAngle = FMath::FindDeltaAngleDegrees(CurrentYaw, TargetYaw);
@@ -169,8 +169,15 @@ void AGeoCharacter::InitGAS()
 		AbilitySystemComponent->GiveStartupAbilities();
 	}
 
-	// The host sets attributes synchronously (no replication callback), so re-bind now that they exist or the bar reads
-	// MaxHealth as 0 and collapses.
+	BindCombattantWidgetToASC();
+}
+
+void AGeoCharacter::BindCombattantWidgetToASC()
+{
+	// Called from every point the ASC or its attributes can become available, because none of them alone covers both
+	// roles: the host sets attributes synchronously with no replication callback to bind on, while a remote proxy only
+	// receives its ASC with OnRep_PlayerState — after the bar's first bind. Miss one and the bar reads MaxHealth as 0
+	// and collapses. BindToOwnerASC is idempotent, so binding again costs nothing.
 	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
 	{
 		WidgetHost->BindToOwnerASC();
@@ -184,11 +191,7 @@ void AGeoCharacter::BeginPlay()
 	ensureMsgf(CharacterWidgetComponent || GeoLib::IsDedicatedServer(GetWorld()),
 			   TEXT("%s has no CharacterWidgetComponent — set CombattantWidgetComponentClass in Game Data Settings"),
 			   *GetName());
-	// The host sets attributes synchronously (no replication callback to bind the bar), so bind here once they exist.
-	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
-	{
-		WidgetHost->BindToOwnerASC();
-	}
+	BindCombattantWidgetToASC();
 
 	// A screen-space UWidgetComponent draws in the game layer of its pawn's own local player, and couch coop forces
 	// splitscreen off, which leaves every local player above 0 with a zero-sized view: their layer is clipped away and
@@ -256,8 +259,7 @@ void AGeoCharacter::OnRep_IsDead(bool const bOldValue)
 	}
 	else if (!bIsDead && bOldValue)
 	{
-		ReviveLogic();
-		OnRevived.Broadcast();
+		HandleRevived();
 	}
 }
 
@@ -269,6 +271,11 @@ void AGeoCharacter::Revive()
 		return;
 	}
 	bIsDead = false;
+	HandleRevived();
+}
+
+void AGeoCharacter::HandleRevived()
+{
 	ReviveLogic();
 	OnRevived.Broadcast();
 }

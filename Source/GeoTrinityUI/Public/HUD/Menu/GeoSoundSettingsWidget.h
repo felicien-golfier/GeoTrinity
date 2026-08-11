@@ -29,8 +29,6 @@ public:
 protected:
 	/** Wires BackButton and MasterVolumeSlider delegates. */
 	virtual void NativeConstruct() override;
-	/** Removes BackButton and MasterVolumeSlider delegates bound in NativeConstruct. */
-	virtual void NativeDestruct() override;
 	/** Returns BackButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
 	/** Fires OnClosed and consumes the back input. */

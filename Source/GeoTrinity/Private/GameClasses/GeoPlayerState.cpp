@@ -24,15 +24,7 @@ void AGeoPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AGeoPlayerState, PlayerClass);
-	DOREPLIFETIME(AGeoPlayerState, DebugDPS);
-	DOREPLIFETIME(AGeoPlayerState, DebugHPS);
-	DOREPLIFETIME(AGeoPlayerState, MaxBurstDamage);
-	DOREPLIFETIME(AGeoPlayerState, MaxBurstHealing);
-	DOREPLIFETIME(AGeoPlayerState, FightDPS);
-	DOREPLIFETIME(AGeoPlayerState, FightHPS);
-	DOREPLIFETIME(AGeoPlayerState, TotalDamageDealt);
-	DOREPLIFETIME(AGeoPlayerState, TotalHealingDealt);
-	DOREPLIFETIME(AGeoPlayerState, TotalDamageReceived);
+	DOREPLIFETIME(AGeoPlayerState, CombatStats);
 }
 
 void AGeoPlayerState::BeginPlay()

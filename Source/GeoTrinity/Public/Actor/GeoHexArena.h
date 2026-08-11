@@ -147,6 +147,10 @@ protected:
 	float FallGraceMargin = 30.f;
 
 private:
+	/** Server-only core of both destroy entry points: kills the given instance indices and pushes the visuals (OnReps
+	 * don't fire on authority), so the mutation and its refresh can never drift apart. */
+	void DestroyTileIndices(TConstArrayView<int32> Indices);
+
 	/** The fall check: true when WorldLocation is over an alive tile, or within FallGraceMargin of the shared border of
 	 * the alive neighbour it leans toward (perpendicular distance, so the grace band is uniform around the tile). */
 	bool IsSupported(FVector2D WorldLocation) const;

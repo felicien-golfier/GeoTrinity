@@ -45,9 +45,6 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 	StoredPayload = Payload;
 	StoredPatternData = PatternData;
 	TravelTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
-	// Cosmetic montage gate: any machine that renders this boss must play it, including the listen-server host.
-	// Only a dedicated server (no viewport) skips it. !IsServer() would wrongly skip the host.
-	bool const bRendersLocally = !GeoLib::IsDedicatedServer(GetWorld());
 
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
 
@@ -64,7 +61,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 	}
 	else
 	{
-		if (bRendersLocally && IsValid(AnimMontage) && IsValid(AnimInstance))
+		if (CanPlayMontageLocally(AnimInstance))
 		{
 			int const StartSection = GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionStartName);
 			float const PlayRate = AnimMontage->GetSectionLength(StartSection) / StartDelay;
@@ -119,10 +116,15 @@ FGameplayCueParameters UPattern::FillCueParam(FAbilityPayload const& Payload)
 	return CueParams;
 }
 
+bool UPattern::CanPlayMontageLocally(UAnimInstance const* AnimInstance) const
+{
+	return IsValid(AnimMontage) && IsValid(AnimInstance) && !GeoLib::IsDedicatedServer(GetWorld());
+}
+
 void UPattern::StartPattern()
 {
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
-	if (IsValid(AnimMontage) && !GeoLib::IsDedicatedServer(GetWorld()) && IsValid(AnimInstance))
+	if (CanPlayMontageLocally(AnimInstance))
 	{
 		if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 		{
@@ -156,8 +158,7 @@ void UPattern::StartPattern()
 void UPattern::JumpMontageToEndSection() const
 {
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
-	if (IsValid(AnimMontage) && !GeoLib::IsDedicatedServer(GetWorld()) && IsValid(AnimInstance)
-		&& AnimInstance->Montage_IsPlaying(AnimMontage)
+	if (CanPlayMontageLocally(AnimInstance) && AnimInstance->Montage_IsPlaying(AnimMontage)
 		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != GeoASLib::SectionEndName)
 	{
 		AnimInstance->Montage_JumpToSection(GeoASLib::SectionEndName);
@@ -198,13 +199,6 @@ void UPattern::EndPattern(bool const bForceStop)
 
 void UTickablePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
-	if (TimeSyncTimerHandle.IsValid())
-	{
-		UE_LOG(LogPattern, Error,
-			   TEXT("Starting pattern when the Previous pattern of the same instance is still active !"));
-		EndPattern();
-	}
-
 	Super::InitPattern(Payload, PatternData);
 
 	if (IsPatternActive())

@@ -105,7 +105,7 @@ public:
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage, FColor Color) const;
 
 
-	/** Entry point for reviving a downed player. Sets bIsDead = false and delegates to ReviveLogic(). */
+	/** Entry point for reviving a downed player. Sets bIsDead = false and runs HandleRevived(). */
 	void Revive();
 
 	/** Fires when this character revives, on the server (Revive) and on clients (OnRep_IsDead). Spawned elements that
@@ -146,6 +146,10 @@ protected:
 	// GAS END
 	//----------------------------------------------------------------------//
 
+	/** Points the combatant health bar at this character's ASC. Idempotent — call it from every point the ASC or its
+	 *  attributes can first become available; the .cpp explains why no single one of them is enough. */
+	void BindCombattantWidgetToASC();
+
 	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
 	 */
 	virtual void DeathLogic();
@@ -153,6 +157,10 @@ protected:
 	/** Server. Revives a downed player: cancels active abilities, removes all gameplay effects, re-applies per-class
 	 * default attributes, and restores the character. */
 	virtual void ReviveLogic();
+
+	/** The whole revive sequence, shared by the server path (Revive) and the replicated one (OnRep_IsDead) — the
+	 *  counterpart of DeathLogic() on the death side. */
+	void HandleRevived();
 
 	UFUNCTION()
 	void OnRep_IsDead(bool bOldValue);

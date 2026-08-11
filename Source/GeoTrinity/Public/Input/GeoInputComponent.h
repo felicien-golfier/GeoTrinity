@@ -105,11 +105,11 @@ void UGeoInputComponent::BindAbilityActions(UserClass* Object, PressedFuncType P
 	{
 		if (!Info.InputAction || !Info.InputTag.IsValid())
 		{
-			if (Info.InputAction || Info.InputTag.IsValid())
-			{
-				ensureMsgf(false, TEXT("Ability Info has not filled all input in the Data !"));
-			}
-
+			// One of the two set and not the other means the AbilityInfo row is half-filled; neither set is a
+			// legitimately unbound ability.
+			ensureMsgf(!Info.InputAction && !Info.InputTag.IsValid(),
+					   TEXT("%hs: ability info row has an InputAction without an InputTag, or the reverse"),
+					   __FUNCTION__);
 			continue;
 		}
 

@@ -73,76 +73,90 @@ void AGeoDeployableBase::PushAway()
 	FVector2D const Location2D(GetActorLocation());
 	float const Radius = CapsuleComponent->GetScaledCapsuleRadius();
 
-	for (AActor* Actor : GeoASLib::GetInteractableActors(this, true, Location2D, Radius))
+	for (AActor* Actor :
+		 GeoASLib::GetInteractableActors(this, FGenericTeamId::NoTeam, TeamAttitudeMask::All, true, Location2D, Radius))
 	{
 		ACharacter* Character = Cast<ACharacter>(Actor);
-		if (!IsValid(Character))
-		{
-			continue;
-		}
-
-		UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
+		UCharacterMovementComponent* Movement = IsValid(Character) ? Character->GetCharacterMovement() : nullptr;
 		if (!IsValid(Movement))
 		{
 			continue;
 		}
 
-		FVector PushDirection = (Actor->GetActorLocation() - GetActorLocation());
-		PushDirection.Z = 0.f;
-		if (PushDirection.IsNearlyZero())
-		{
-			PushDirection = FVector(1.f, 0.f, 0.f);
-		}
-		PushDirection.Normalize();
-
-		constexpr float PushDuration = 0.15f;
 		float const PushDistance = Radius + Actor->GetSimpleCollisionRadius();
-		FVector PushTarget = Actor->GetActorLocation() + PushDirection * PushDistance;
-
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(this);
-		QueryParams.AddIgnoredActor(Actor);
-		if (FightingArena
-			&& GetWorld()->SweepTestByChannel(Actor->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
-											  FCollisionShape::MakeSphere(Actor->GetSimpleCollisionRadius()),
-											  QueryParams))
-		{
-			TArray<AActor*> const FightCenters =
-				GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightCenter, FightingArena->ArenaTag);
-			if (ensureMsgf(!FightCenters.IsEmpty(),
-						   TEXT("AGeoDeployableBase: no TargetPoint.FightCenter point in arena %s"),
-						   *FightingArena->ArenaTag.ToString()))
-			{
-				FVector ToCenter = FightCenters[0]->GetActorLocation() - GetActorLocation();
-				ToCenter.Z = 0.f;
-				PushTarget = GetActorLocation() + ToCenter.GetSafeNormal() * PushDistance;
-				PushTarget.Z = Actor->GetActorLocation().Z;
-			}
-		}
-
-		TSharedPtr<FRootMotionSource_MoveToForce> PushRootMotion = MakeShared<FRootMotionSource_MoveToForce>();
-		PushRootMotion->InstanceName = TEXT("PillarPush");
-		PushRootMotion->AccumulateMode = ERootMotionAccumulateMode::Override;
-		PushRootMotion->StartLocation = Actor->GetActorLocation();
-		PushRootMotion->TargetLocation = PushTarget;
-		PushRootMotion->Duration = PushDuration;
-		PushRootMotion->bRestrictSpeedToExpected = false;
-		PushRootMotion->FinishVelocityParams.Mode = ERootMotionFinishVelocityMode::SetVelocity;
-		PushRootMotion->FinishVelocityParams.SetVelocity = FVector::ZeroVector;
-
-		uint16 const SourceID = Movement->ApplyRootMotionSource(PushRootMotion);
-
-		FTimerHandle RemoveHandle;
-		GetWorldTimerManager().SetTimer(RemoveHandle,
-										FTimerDelegate::CreateWeakLambda(Movement,
-																		 [Movement, SourceID]()
-																		 {
-																			 Movement->RemoveRootMotionSourceByID(
-																				 SourceID);
-																			 Movement->SetMovementMode(MOVE_Falling);
-																		 }),
-										PushDuration, false);
+		ApplyPushRootMotion(Movement, Actor->GetActorLocation(),
+							ComputePushTarget(Actor, PushDistance, FightingArena));
 	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+FVector AGeoDeployableBase::ComputePushTarget(AActor* Target, float const PushDistance,
+											  AGeoArena const* FightingArena) const
+{
+	FVector PushDirection = Target->GetActorLocation() - GetActorLocation();
+	PushDirection.Z = 0.f;
+	if (PushDirection.IsNearlyZero())
+	{
+		PushDirection = FVector(1.f, 0.f, 0.f);
+	}
+	PushDirection.Normalize();
+
+	FVector const PushTarget = Target->GetActorLocation() + PushDirection * PushDistance;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(Target);
+	if (!FightingArena
+		|| !GetWorld()->SweepTestByChannel(Target->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
+										   FCollisionShape::MakeSphere(Target->GetSimpleCollisionRadius()), QueryParams))
+	{
+		return PushTarget;
+	}
+
+	// Pushing outward is blocked, so push toward the arena's centre instead — the one direction guaranteed to be
+	// inside the fight.
+	TArray<AActor*> const FightCenters =
+		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightCenter, FightingArena->ArenaTag);
+	if (!ensureMsgf(!FightCenters.IsEmpty(), TEXT("%hs: no TargetPoint.FightCenter point in arena %s"), __FUNCTION__,
+					*FightingArena->ArenaTag.ToString()))
+	{
+		return PushTarget;
+	}
+
+	FVector ToCenter = FightCenters[0]->GetActorLocation() - GetActorLocation();
+	ToCenter.Z = 0.f;
+	FVector RedirectedTarget = GetActorLocation() + ToCenter.GetSafeNormal() * PushDistance;
+	RedirectedTarget.Z = Target->GetActorLocation().Z;
+	return RedirectedTarget;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::ApplyPushRootMotion(UCharacterMovementComponent* Movement, FVector const& From,
+											 FVector const& To)
+{
+	constexpr float PushDuration = 0.15f;
+
+	TSharedPtr<FRootMotionSource_MoveToForce> PushRootMotion = MakeShared<FRootMotionSource_MoveToForce>();
+	PushRootMotion->InstanceName = TEXT("PillarPush");
+	PushRootMotion->AccumulateMode = ERootMotionAccumulateMode::Override;
+	PushRootMotion->StartLocation = From;
+	PushRootMotion->TargetLocation = To;
+	PushRootMotion->Duration = PushDuration;
+	PushRootMotion->bRestrictSpeedToExpected = false;
+	PushRootMotion->FinishVelocityParams.Mode = ERootMotionFinishVelocityMode::SetVelocity;
+	PushRootMotion->FinishVelocityParams.SetVelocity = FVector::ZeroVector;
+
+	uint16 const SourceID = Movement->ApplyRootMotionSource(PushRootMotion);
+
+	FTimerHandle RemoveHandle;
+	GetWorldTimerManager().SetTimer(RemoveHandle,
+									FTimerDelegate::CreateWeakLambda(Movement,
+																	 [Movement, SourceID]()
+																	 {
+																		 Movement->RemoveRootMotionSourceByID(SourceID);
+																		 Movement->SetMovementMode(MOVE_Falling);
+																	 }),
+									PushDuration, false);
 }
 
 void AGeoDeployableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -163,13 +177,19 @@ void AGeoDeployableBase::InitDrain()
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	float const MaxHealth = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
-	if (MaxHealth <= 0.f)
+	if (!ensureMsgf(MaxHealth > 0.f, TEXT("%hs: MaxHealth is 0 on %s — DefaultAttributes may not be applied"),
+					__FUNCTION__, *GetName()))
 	{
-		ensureMsgf(MaxHealth > 0.f, TEXT("AGeoDeployableBase: MaxHealth is 0 — DefaultAttributes may not be applied."));
 		return;
 	}
 
 	DrainMagnitudePerSecond = MaxHealth / GetData()->Params.LifeDrainMaxDuration;
+
+	// Everything but the per-tick magnitude is fixed for this deployable, so the drain is described once here rather
+	// than rebuilt on every Tick.
+	DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
+	DrainEffectData.bLimitGameplayCue = true;
+	DrainEffectData.bDoNotRedirectSacrifice = !bCanSacrificeDrain;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -187,11 +207,7 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 	if (bUseRegularDrain && DrainMagnitudePerSecond > 0.f && bActive && !IsBlinking() && GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		FDamageEffectData DrainEffectData;
 		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
-		DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
-		DrainEffectData.bLimitGameplayCue = true;
-		DrainEffectData.bDoNotRedirectSacrifice = !bCanSacrificeDrain;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed,
 														GetData()->AbilityTag);
 	}
@@ -318,15 +334,37 @@ void AGeoDeployableBase::Recall(float Value)
 
 	if (bExplodeAtRecall)
 	{
-		Explode(Value);
+		ExplodeEffect(Value);
 	}
-	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
-	if (!GeoLib::IsDedicatedServer(GetWorld()) && RecallCue.CueTag.IsValid())
+	PlayRecallCosmetics(Value);
+	Expire();
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void AGeoDeployableBase::PlayRecallCosmetics(float const Value)
+{
+	// Local cues: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
+	bool const bRendersLocally = !GeoLib::IsDedicatedServer(this);
+
+	if (bRendersLocally && RecallCue.CueTag.IsValid())
 	{
 		ExecuteCue(RecallCue, GetRecallCueParams());
 	}
 	PlaySoundOneShot(EDeployableSoundType::Recall);
-	Expire();
+
+	if (!bExplodeAtRecall)
+	{
+		return;
+	}
+
+	if (bRendersLocally && ExplodeCue.CueTag.IsValid())
+	{
+		FGameplayCueParameters CueParams = GetGenericCueParams(ExplodeCue);
+		// Value is server-side only (never replicated), so a client's copy of this cue always carries 0.
+		CueParams.Normal.X = Value;
+		ExecuteCue(ExplodeCue, CueParams);
+	}
+	PlaySoundOneShot(EDeployableSoundType::Explode);
 }
 
 
@@ -344,18 +382,6 @@ void AGeoDeployableBase::PlaySoundOneShot(EDeployableSoundType const SoundType) 
 	{
 		UGeoSoundRowLibrary::PlaySoundEntry2D(this, *Entry, GetData()->Instigator);
 	}
-}
-
-void AGeoDeployableBase::Explode(float const Value)
-{
-	ExplodeEffect(Value);
-	if (!GeoLib::IsDedicatedServer(this) && ExplodeCue.CueTag.IsValid())
-	{
-		FGameplayCueParameters CueParams = GetGenericCueParams(ExplodeCue);
-		CueParams.Normal.X = Value;
-		ExecuteCue(ExplodeCue, CueParams);
-	}
-	PlaySoundOneShot(EDeployableSoundType::Explode);
 }
 
 void AGeoDeployableBase::ExplodeEffect(float const Value)
@@ -385,6 +411,7 @@ void AGeoDeployableBase::ExplodeEffect(float const Value)
 void AGeoDeployableBase::Expire(bool const bForce)
 {
 	bActive = false;
+	bBlinking = false;
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(BlinkVisibilityTimerHandle);
 	SetActorHiddenInGame(true);
@@ -471,7 +498,7 @@ void AGeoDeployableBase::StartBlinking()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 {
-	if (NewValue <= 0.f && bActive && !BlinkTimerHandle.IsValid())
+	if (NewValue <= 0.f && bActive && !IsBlinking())
 	{
 		if (GetData()->Params.BlinkDuration)
 		{
@@ -498,13 +525,7 @@ void AGeoDeployableBase::OnRep_Active(bool bOldValue)
 	{
 		if (bRecalled)
 		{
-			ExecuteCue(RecallCue, GetRecallCueParams());
-			PlaySoundOneShot(EDeployableSoundType::Recall);
-			if (bExplodeAtRecall)
-			{
-				ExecuteCue(ExplodeCue, GetGenericCueParams(ExplodeCue));
-				PlaySoundOneShot(EDeployableSoundType::Explode);
-			}
+			PlayRecallCosmetics(0.f);
 		}
 		Expire();
 	}
@@ -541,33 +562,33 @@ void AGeoDeployableBase::TryRecallOrExpire()
 
 bool AGeoDeployableBase::IsBlinking() const
 {
-	return BlinkTimerHandle.IsValid();
+	return bBlinking;
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-FGameplayCueParameters AGeoDeployableBase::GetSpawnCueParams()
+FGameplayCueParameters AGeoDeployableBase::GetSpawnCueParams() const
 {
 	FGameplayCueParameters CueParams = GetGenericCueParams(SpawnCue);
 	CueParams.Normal.X = GetData()->Params.LifeDrainMaxDuration;
 	return CueParams;
 }
 
-FGameplayCueParameters AGeoDeployableBase::GetBlinkCueParams()
+FGameplayCueParameters AGeoDeployableBase::GetBlinkCueParams() const
 {
 	FGameplayCueParameters CueParams = GetGenericCueParams(BlinkingCue);
 	CueParams.Normal.X = GetData()->Params.BlinkDuration;
 	return CueParams;
 }
 
-FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGeoCueParam const& Cue)
+FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGeoCueParam const& Cue) const
 {
 	FGameplayCueParameters CueParams;
 	CueParams.Location = GetActorLocation();
 	// TODO: find a better solution
 	CueParams.Location.Z = 1.f; // Ensure all Cues happens just above the floor
-	CueParams.EffectCauser = this;
+	CueParams.EffectCauser = const_cast<AGeoDeployableBase*>(this);
 	CueParams.Instigator = GetData()->Instigator;
 	CueParams.AbilityLevel = GetData()->Level;
 	Cue.FillCueParams(CueParams);
@@ -576,7 +597,7 @@ FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGeoCueParam cons
 	return CueParams;
 }
 
-FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams()
+FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams() const
 {
 	FGameplayCueParameters CueParams = GetGenericCueParams(RecallCue);
 	AActor const* CueInstigator = GetData()->Instigator;

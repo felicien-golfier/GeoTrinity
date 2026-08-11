@@ -133,11 +133,9 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(
 		GetWorld(), EProjectileTarget::Forward, GetFireYaw(StoredPayload.Instigator, StoredPayload.Seed), Origin);
 
-	if (Directions.Num() != 1)
+	if (!ensureMsgf(Directions.Num() == 1, TEXT("%hs: expected a single fire direction, got %d"), __FUNCTION__,
+					Directions.Num()))
 	{
-		ensureMsgf(false,
-				   TEXT("UGeoShieldBurstPassiveAbility: We should only have one single direction for that spell (%d)"),
-				   Directions.Num());
 		return;
 	}
 

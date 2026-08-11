@@ -83,7 +83,14 @@ private:
 	void OnGEApplied(UAbilitySystemComponent* Source, FGameplayEffectSpec const& Spec,
 					 FActiveGameplayEffectHandle Handle);
 
-	void ClearAggro();
+	/** Stops watching for aggro triggers: cancels the distance timer and unbinds the damage delegate. Called both to
+	 * reset the watch (ResetAI, InitializeAggro) and to retire it once the boss is aggroed. */
+	void StopAggroWatch();
+	/** Casts InPawn to AEnemyCharacter and runs the state-tree + aggro setup. The one possession path, shared by
+	 * OnPossess and ResetAI. */
+	void InitializeForPawn(APawn* InPawn);
+	/** Returns the possessed pawn's team interface, ensuring when there is no pawn or it does not implement it. */
+	IGenericTeamAgentInterface* GetPawnTeamAgent() const;
 	void InitializeStateTree(AEnemyCharacter const* EnemyChar) const;
 
 	void TriggerAggro();

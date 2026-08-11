@@ -81,7 +81,6 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
 	virtual FReply NativeOnPreviewKeyDown(FGeometry const& InGeometry, FKeyEvent const& InKeyEvent) override;
 	virtual FReply NativeOnPreviewMouseButtonDown(FGeometry const& InGeometry,
 												  FPointerEvent const& InMouseEvent) override;

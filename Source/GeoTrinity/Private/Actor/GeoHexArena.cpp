@@ -143,7 +143,7 @@ bool AGeoHexArena::IsTileOccupied(FIntPoint const Tile) const
 
 void AGeoHexArena::SetTileOccupant(FIntPoint const Tile, AGeoDeployableBase* const Deployable)
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("SetTileOccupant is server-only")) || !Deployable)
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("%hs: server-only"), __FUNCTION__) || !Deployable)
 	{
 		return;
 	}
@@ -281,17 +281,29 @@ bool AGeoHexArena::GetLastAliveTileAlongRay(FVector2D const Origin, FVector2D co
 
 void AGeoHexArena::DestroyTiles(TConstArrayView<FIntPoint> const Tiles)
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("DestroyTiles is server-only")))
-	{
-		return;
-	}
+	TArray<int32> Indices;
+	Indices.Reserve(Tiles.Num());
 	for (FIntPoint const Tile : Tiles)
 	{
 		if (int32 const* Index = CoordToIndex.Find(Tile))
 		{
-			TileStates[*Index].bAlive = 0;
+			Indices.Add(*Index);
 		}
 	}
+	DestroyTileIndices(Indices);
+}
+
+void AGeoHexArena::DestroyTileIndices(TConstArrayView<int32> const Indices)
+{
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("%hs: destroying tiles is server-only"), __FUNCTION__))
+	{
+		return;
+	}
+	for (int32 const Index : Indices)
+	{
+		TileStates[Index].bAlive = 0;
+	}
+	// OnReps don't fire on authority, so the server has to push the visuals itself.
 	ApplyTileVisuals();
 }
 
@@ -310,21 +322,12 @@ TArray<int32> AGeoHexArena::GetTilesIndexInRadius(FVector2D const Center, float 
 
 void AGeoHexArena::DestroyTilesInRadius(FVector2D const Center, float const Radius)
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("DestroyTilesInRadius is server-only")))
-	{
-		return;
-	}
-	for (int32 const Index : GetTilesIndexInRadius(Center, Radius))
-	{
-		TileStates[Index].bAlive = 0;
-	}
-
-	ApplyTileVisuals();
+	DestroyTileIndices(GetTilesIndexInRadius(Center, Radius));
 }
 
 void AGeoHexArena::ResetAllTiles()
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("ResetAllTiles is server-only")))
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("%hs: server-only"), __FUNCTION__))
 	{
 		return;
 	}
@@ -336,11 +339,6 @@ void AGeoHexArena::ResetAllTiles()
 
 void AGeoHexArena::HighlightTile(AActor* Requester, FIntPoint Tile)
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("HighlightTile is server-only because it's replicated."))
-		|| !ensureMsgf(Requester != nullptr, TEXT("HighlightTile Requester is not valid !")))
-	{
-		return;
-	}
 	if (int32 const* Index = CoordToIndex.Find(Tile))
 	{
 		SetHighlightedTiles(Requester, {*Index});
@@ -349,23 +347,15 @@ void AGeoHexArena::HighlightTile(AActor* Requester, FIntPoint Tile)
 
 void AGeoHexArena::HighlightTiles(AActor* Requester, FVector2D const Location, float const Radius)
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("HighlightTiles is server-only because it's replicated."))
-		|| !ensureMsgf(Requester != nullptr, TEXT("HighlightTiles Requester is not valid !")))
+	if (Radius > 0.f)
 	{
+		SetHighlightedTiles(Requester, GetTilesIndexInRadius(Location, Radius));
 		return;
 	}
 
-	if (Radius <= 0.f)
+	if (FIntPoint Tile; GetTileUnderLocation(Location, Tile))
 	{
-		FIntPoint Tile;
-		if (GetTileUnderLocation(Location, Tile))
-		{
-			HighlightTile(Requester, Tile);
-		}
-	}
-	else
-	{
-		SetHighlightedTiles(Requester, GetTilesIndexInRadius(Location, Radius));
+		HighlightTile(Requester, Tile);
 	}
 }
 
@@ -376,8 +366,9 @@ void AGeoHexArena::ClearHighlight(AActor* Requester)
 
 void AGeoHexArena::SetHighlightedTiles(AActor* Requester, TConstArrayView<int32> const Indices)
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("Highlighting tiles is server-only"))
-		|| !ensureMsgf(Requester, TEXT("SetHighlightedTiles needs a requester to key the highlight on")))
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("%hs: highlighting tiles is server-only because it replicates"),
+					__FUNCTION__)
+		|| !ensureMsgf(Requester, TEXT("%hs: needs a requester to key the highlight on"), __FUNCTION__))
 	{
 		return;
 	}
@@ -466,7 +457,8 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	FVector2D const Center(GetActorLocation());
-	for (AActor* Actor : GeoASLib::GetInteractableActors(this, /*bMustBeDamageable*/ false, Center, FallCheckRadius))
+	for (AActor* Actor : GeoASLib::GetInteractableActors(this, FGenericTeamId::NoTeam, TeamAttitudeMask::All,
+														 /*bMustBeDamageable*/ false, Center, FallCheckRadius))
 	{
 		if (IsSupported(FVector2D(Actor->GetActorLocation())))
 		{

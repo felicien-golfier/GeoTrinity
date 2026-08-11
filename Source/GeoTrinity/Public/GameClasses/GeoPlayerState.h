@@ -15,6 +15,45 @@ class APlayableCharacter;
 
 class UCharacterAttributeSet;
 class UGeoAbilitySystemComponent;
+
+/**
+ * Per-player combat figures pushed from UGeoCombatStatsSubsystem for HUD display. Replicated as one property
+ * because the subsystem always writes the whole set together.
+ */
+USTRUCT()
+struct FGeoCombatDisplayStats
+{
+	GENERATED_BODY()
+
+	/** Exponentially smoothed damage-per-second. */
+	UPROPERTY()
+	float DebugDPS = 0.f;
+	/** Exponentially smoothed healing-per-second. */
+	UPROPERTY()
+	float DebugHPS = 0.f;
+	/** Biggest damage total dealt within one burst window this combat. */
+	UPROPERTY()
+	float MaxBurstDamage = 0.f;
+	/** Biggest healing total dealt within one burst window this combat. */
+	UPROPERTY()
+	float MaxBurstHealing = 0.f;
+	/** Average damage-per-second over the whole current combat. */
+	UPROPERTY()
+	float FightDPS = 0.f;
+	/** Average healing-per-second over the whole current combat. */
+	UPROPERTY()
+	float FightHPS = 0.f;
+	/** Cumulative damage dealt this combat. */
+	UPROPERTY()
+	float TotalDamageDealt = 0.f;
+	/** Cumulative healing dealt this combat. */
+	UPROPERTY()
+	float TotalHealingDealt = 0.f;
+	/** Cumulative damage received this combat. */
+	UPROPERTY()
+	float TotalDamageReceived = 0.f;
+};
+
 /**
  * Player state for GeoTrinity. Owns the ASC and UCharacterAttributeSet for playable characters
  * (ASC lives here so it survives pawn respawns). Also tracks the player's current class,
@@ -32,7 +71,7 @@ public:
 	AGeoPlayerState();
 	/** Registers OnMatchStateChanged delegate binding on the server for stat reset coordination. */
 	virtual void BeginPlay() override;
-	/** Registers all replicated combat stat fields (DebugDPS, DebugHPS, MaxBurstDamage, etc.) for replication. */
+	/** Registers PlayerClass and the combat stat block for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Binds PawnSetDelegate and calls InitOverlay once the owning controller is available on this machine. */
@@ -60,51 +99,18 @@ public:
 	/** Sets the player's current playable class. Does not grant or remove abilities — call GiveStartupAbilities separately. */
 	void SetPlayerClass(EPlayerClass NewClass) { PlayerClass = NewClass; }
 
-	/** Returns the exponentially smoothed damage-per-second (replicated, for HUD display). */
-	float GetDebugDPS() const { return DebugDPS; }
-	/** Returns the exponentially smoothed healing-per-second (replicated, for HUD display). */
-	float GetDebugHPS() const { return DebugHPS; }
-	/** Returns the biggest damage total dealt within one burst window this combat. */
-	float GetMaxBurstDamage() const { return MaxBurstDamage; }
-	/** Returns the biggest healing total dealt within one burst window this combat. */
-	float GetMaxBurstHealing() const { return MaxBurstHealing; }
-	/** Returns the average damage-per-second over the whole current combat (fight start until now). */
-	float GetFightDPS() const { return FightDPS; }
-	/** Returns the average healing-per-second over the whole current combat (fight start until now). */
-	float GetFightHPS() const { return FightHPS; }
-	/** Returns the cumulative damage dealt over the combat. */
-	float GetTotalDamageDealt() const { return TotalDamageDealt; }
-	/** Returns the cumulative healing dealt over the combat. */
-	float GetTotalHealingDealt() const { return TotalHealingDealt; }
-	/** Returns the cumulative damage received over the combat. */
-	float GetTotalDamageReceived() const { return TotalDamageReceived; }
+	float GetDebugDPS() const { return CombatStats.DebugDPS; }
+	float GetDebugHPS() const { return CombatStats.DebugHPS; }
+	float GetMaxBurstDamage() const { return CombatStats.MaxBurstDamage; }
+	float GetMaxBurstHealing() const { return CombatStats.MaxBurstHealing; }
+	float GetFightDPS() const { return CombatStats.FightDPS; }
+	float GetFightHPS() const { return CombatStats.FightHPS; }
+	float GetTotalDamageDealt() const { return CombatStats.TotalDamageDealt; }
+	float GetTotalHealingDealt() const { return CombatStats.TotalHealingDealt; }
+	float GetTotalDamageReceived() const { return CombatStats.TotalDamageReceived; }
 
-	/**
-	 * Batch-updates all replicated combat stat fields in one call. Called by UGeoCombatStatsSubsystem on the server.
-	 *
-	 * @param DPS      Exponentially smoothed damage-per-second.
-	 * @param HPS      Exponentially smoothed healing-per-second.
-	 * @param MaxDmg   Biggest damage total dealt within one burst window this combat.
-	 * @param MaxHeal  Biggest healing total dealt within one burst window this combat.
-	 * @param AvgDPS   Average DPS over the whole current combat.
-	 * @param AvgHPS   Average HPS over the whole current combat.
-	 * @param TotDmg   Cumulative damage dealt this combat.
-	 * @param TotHeal  Cumulative healing dealt this combat.
-	 * @param TotRecv  Cumulative damage received this combat.
-	 */
-	void SetDebugCombatStats(float DPS, float HPS, float MaxDmg, float MaxHeal, float AvgDPS, float AvgHPS,
-							 float TotDmg, float TotHeal, float TotRecv)
-	{
-		DebugDPS = DPS;
-		DebugHPS = HPS;
-		MaxBurstDamage = MaxDmg;
-		MaxBurstHealing = MaxHeal;
-		FightDPS = AvgDPS;
-		FightHPS = AvgHPS;
-		TotalDamageDealt = TotDmg;
-		TotalHealingDealt = TotHeal;
-		TotalDamageReceived = TotRecv;
-	}
+	/** Replaces every displayed combat stat in one write. Called by UGeoCombatStatsSubsystem on the server. */
+	void SetDebugCombatStats(FGeoCombatDisplayStats const& NewStats) { CombatStats = NewStats; }
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -137,21 +143,5 @@ public:
 protected:
 
 	UPROPERTY(Replicated)
-	float DebugDPS = 0.f;
-	UPROPERTY(Replicated)
-	float DebugHPS = 0.f;
-	UPROPERTY(Replicated)
-	float MaxBurstDamage = 0.f;
-	UPROPERTY(Replicated)
-	float MaxBurstHealing = 0.f;
-	UPROPERTY(Replicated)
-	float FightDPS = 0.f;
-	UPROPERTY(Replicated)
-	float FightHPS = 0.f;
-	UPROPERTY(Replicated)
-	float TotalDamageDealt = 0.f;
-	UPROPERTY(Replicated)
-	float TotalHealingDealt = 0.f;
-	UPROPERTY(Replicated)
-	float TotalDamageReceived = 0.f;
+	FGeoCombatDisplayStats CombatStats;
 };

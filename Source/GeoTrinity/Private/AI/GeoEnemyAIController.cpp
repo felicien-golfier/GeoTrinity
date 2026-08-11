@@ -26,40 +26,40 @@ AGeoEnemyAIController::AGeoEnemyAIController(FObjectInitializer const& ObjectIni
 	bSetControlRotationFromPawnOrientation = false;
 }
 
-void AGeoEnemyAIController::SetGenericTeamId(FGenericTeamId const& NewTeamId)
+IGenericTeamAgentInterface* AGeoEnemyAIController::GetPawnTeamAgent() const
 {
 	IGenericTeamAgentInterface* TeamAgentInterface = Cast<IGenericTeamAgentInterface>(GetPawn());
-	if (!TeamAgentInterface)
-	{
-		ensureMsgf(GetPawn(), TEXT("No Pawn on %s"), *GetName());
-		ensureMsgf(TeamAgentInterface, TEXT("No IGenericTeamAgentInterface on %s"), *GetName());
-		return;
-	}
+	ensureMsgf(TeamAgentInterface, TEXT("%hs: %s has %s"), __FUNCTION__, *GetName(),
+			   GetPawn() ? TEXT("a pawn with no IGenericTeamAgentInterface") : TEXT("no pawn"));
+	return TeamAgentInterface;
+}
 
-	TeamAgentInterface->SetGenericTeamId(NewTeamId);
+void AGeoEnemyAIController::SetGenericTeamId(FGenericTeamId const& NewTeamId)
+{
+	if (IGenericTeamAgentInterface* TeamAgentInterface = GetPawnTeamAgent())
+	{
+		TeamAgentInterface->SetGenericTeamId(NewTeamId);
+	}
 }
 
 FGenericTeamId AGeoEnemyAIController::GetGenericTeamId() const
 {
-	IGenericTeamAgentInterface* TeamAgentInterface = Cast<IGenericTeamAgentInterface>(GetPawn());
-	if (!TeamAgentInterface)
-	{
-		ensureMsgf(GetPawn(), TEXT("No Pawn on %s"), *GetName());
-		ensureMsgf(TeamAgentInterface, TEXT("No IGenericTeamAgentInterface on %s"), *GetName());
-		return FGenericTeamId::NoTeam;
-	}
-
-	return TeamAgentInterface->GetGenericTeamId();
+	IGenericTeamAgentInterface const* TeamAgentInterface = GetPawnTeamAgent();
+	return TeamAgentInterface ? TeamAgentInterface->GetGenericTeamId() : FGenericTeamId::NoTeam;
 }
 
 void AGeoEnemyAIController::ResetAI()
 {
-	ClearAggro();
+	StopAggroWatch();
 	bAggroed = false;
-	AEnemyCharacter* EnemyChar = Cast<AEnemyCharacter>(GetPawn());
-	if (!IsValid(EnemyChar))
+	InitializeForPawn(GetPawn());
+}
+
+void AGeoEnemyAIController::InitializeForPawn(APawn* InPawn)
+{
+	AEnemyCharacter* EnemyChar = Cast<AEnemyCharacter>(InPawn);
+	if (!ensureMsgf(IsValid(EnemyChar), TEXT("%hs: pawn is not an AEnemyCharacter"), __FUNCTION__))
 	{
-		ensureMsgf(IsValid(EnemyChar), TEXT("Pawn is not an EnemyCharacter"));
 		return;
 	}
 
@@ -69,29 +69,27 @@ void AGeoEnemyAIController::ResetAI()
 
 void AGeoEnemyAIController::InitializeAggro(AEnemyCharacter const* EnemyChar)
 {
-	ClearAggro();
+	StopAggroWatch();
 
 	GetWorld()->GetTimerManager().SetTimer(AggroCheckTimer, this, &AGeoEnemyAIController::CheckAggroDistance, 0.5f,
 										   true);
 
 	UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(EnemyChar->GetAbilitySystemComponent());
-	if (!ASC)
+	if (!ensureMsgf(ASC, TEXT("%hs: %s has no GeoAbilitySystemComponent"), __FUNCTION__, *EnemyChar->GetName()))
 	{
-		ensureMsgf(false, TEXT("GeoEnemyAIController::OnPossess — boss has no GeoAbilitySystemComponent"));
 		return;
 	}
 
 	ASC->OnGameplayEffectAppliedDelegateToSelf.AddUObject(this, &AGeoEnemyAIController::OnGEApplied);
 }
 
-void AGeoEnemyAIController::ClearAggro()
+void AGeoEnemyAIController::StopAggroWatch()
 {
 	GetWorld()->GetTimerManager().ClearTimer(AggroCheckTimer);
 
 	UGeoAbilitySystemComponent* ASC = GeoASLib::GetGeoAscFromActor(GetPawn());
-	if (!ASC)
+	if (!ensureMsgf(ASC, TEXT("%hs: %s has no GeoAbilitySystemComponent"), __FUNCTION__, *GetNameSafe(GetPawn())))
 	{
-		ensureMsgf(false, TEXT("GeoEnemyAIController::OnPossess — boss has no GeoAbilitySystemComponent"));
 		return;
 	}
 
@@ -111,20 +109,12 @@ void AGeoEnemyAIController::OnPossess(APawn* InPawn)
 {
 	// Only called on server
 	Super::OnPossess(InPawn);
-	AEnemyCharacter* EnemyChar = Cast<AEnemyCharacter>(InPawn);
-	if (!IsValid(EnemyChar))
-	{
-		ensureMsgf(IsValid(EnemyChar), TEXT("Pawn is not an EnemyCharacter"));
-		return;
-	}
-
-	InitializeStateTree(EnemyChar);
-	InitializeAggro(EnemyChar);
+	InitializeForPawn(InPawn);
 }
 
 void AGeoEnemyAIController::OnUnPossess()
 {
-	ClearAggro();
+	StopAggroWatch();
 	Super::OnUnPossess();
 }
 
@@ -219,7 +209,7 @@ void AGeoEnemyAIController::TriggerAggro()
 		return;
 	}
 	bAggroed = true;
-	ClearAggro();
+	StopAggroWatch();
 
 	StateTreeComp->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
 

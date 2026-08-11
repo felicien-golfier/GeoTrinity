@@ -6,7 +6,40 @@ Every entry is **What** (the observation) / **Why** (why it is worth changing) /
 Rules referenced come from `AI/CodingStyle.md`.
 
 **16 sections, 95 findings.** Three cross-cutting themes and a suggested order of work are at the end — start
-there. Nothing in this report has been applied to the code, and nothing has been compiled or run.
+there.
+
+---
+
+## Status — what is left (2026-08-11)
+
+Tiers 0a–13 of the order-of-work table are **applied**. The bug-fix tiers (0a–0c) landed in commit `4af2ae7`
+"Fix all audits."; every simplification tier landed after it. Per-finding status lives in the table at the end of
+this file; this section is the short version of what is still open.
+
+**Not applied — remaining work, in the order it should be done:**
+
+| # | Item | Why it is still open |
+|---|---|---|
+| 12 | **8.4 + 8.5** — collapse the two attribute-change fan-out mechanisms | Real work: deletes `UGenericCombattantWidget::UnbindStatCallbacks` and two ASC delegates. Touches `GeoHUD`, `GenericCombattantWidget`, `GeoCombattantWidgetComp`. 8.7 (weak-lambda unbind policy) is decided as part of it |
+| 14 | **2.1 + 2.2 + 2.3** — `FEffectData` hierarchy collapse | Largest structural win, and the only item that **cannot be verified by a compile**: it renames serialized `UPROPERTY` names, so it needs `[CoreRedirects]` in `DefaultEngine.ini` plus a PIE check on a damage ability, or designer-authored values silently reset to defaults |
+| 15 | **2.5** — `AbilityDescriptions.txt` hand-rolled INI section handling | Editor-only path; still parses with `ParseIntoArrayLines` + `StartsWith(TEXT("["))` in two places |
+| 15 | **12.1** — `AGeoGameCamera::Tick` is ~137 lines doing five jobs | `GeoGameCamera.cpp` has uncommitted local edits from other work; do it on a clean file so the diff is readable |
+| — | **13.7** — three hand-written recursive walkers over the StateTree | `FindStateRecursive` / `RemoveStateRecursive` / `LogStatesRecursive` are still three separate traversals |
+| — | **1.9 (second half)** — drop `GeoDeployableBase.h` / `GeoAbilitySystemComponent.h` from the module-wide library header | Deliberately deferred: worth its own commit where the compiler drives which translation units need the include added back |
+| — | **1.10** — `ApplyStatusToTarget` / `GetStatusTag` naming drift | Renames public API for consistency only; no behaviour, low value, do it when that header is touched anyway |
+| — | **9.4** — `GetFightingArena` and `RespawnAllBosses` are the same traversal twice | Judged low value on re-reading: 8 lines each, and the shared part is only "resolve world, iterate arenas" |
+
+**Needs a runtime check, not a compiler** — applied but unverified in PIE:
+- **11.1** pooled-actor hand-out (exhaust the pre-spawned pool)
+- **3.2** projectile impact FX on the `Destroyed()` path
+- **3.6** unified deployable recall cosmetics
+- **3.7** `IsBlinking()` now reads `bBlinking` instead of the timer handle — check a turret recall after the blink expires
+- **7.2** / **12.2** — re-read before closing them out; the audit could not confirm from the current source whether the double montage-section validation and the unguarded `LocalCharacter` deref are gone
+
+**Doc drift introduced by this work** (left for the daily agent, per the CLAUDE.md rule that interactive sessions
+do not edit subfolder docs): `Source/GeoTrinityUI/Public/HUD/CLAUDE.md` still lists
+`IGeoDeployGaugeWidgetInterface`, which finding 4.1 deleted — the deploy gauge now implements the shared
+`IGeoChargeGaugeWidgetInterface`.
 
 ---
 
@@ -1327,32 +1360,40 @@ Ranked by (lines removed) × (risk of the duplication causing a future bug), low
 Three things are worth doing before anything else, because they are behaviour bugs rather than tidiness, and none
 of them depends on any other item.
 
-| # | Item | Effort | Payoff |
-|---|---|---|---|
-| **0a** | **11.1 — pooled actors are handed out while still in the free list** | small | **two callers can share one actor**; needs a PIE check |
-| **0b** | 7.1 — `CreateAbilityPayload` draws two seeds | one token | latent client/server desync |
-| **0c** | 14.1 — `FillCueParam` divides by a `StartDelay` that is documented to be 0 | one ternary | NaN into a Gameplay Cue |
-| 1 | Theme C — the seven unchecked dereferences (8.3, 9.2, 9.7, 11.2, 13.3, 14.2, 16.1) | one line each | seven crashes become no-ops |
-| 2 | 6.1 — delete dead `MakeGeoEffectContext` | trivial | removes a dangling-pointer trap |
-| 3 | 13.5 — `Modify()` after the mutation it is supposed to record | move one line | editor undo actually works |
-| 4 | 5.1 + 5.2 — menu-widget ensure blocks and `NativeDestruct` | mechanical, ~11 files | **~400 lines** |
-| 5 | 13.1 + 13.2 — `__FUNCTION__` and one scoped envelope in the builder utils | mechanical | **~260 lines**, 64 literals |
-| 6 | Theme A — the `ensureMsgf` pass, starting with the 32 `ensureMsgf(false, …)` | mechanical | consistency + real diagnostics |
-| 7 | 3.1, 3.2, 4.4, 3.8, 8.6, 9.6, 9.8, 10.7 — guard/dead-code/`const` cleanups | small | correctness + clarity |
-| 8 | 10.4 — delete the 65 dead lines in `JoinAdvancedSession` / `OnJoinSessionComplete` | trivial | git already has them |
-| 9 | 8.1 — one `FindSpecForTag` helper for the four HUD queries | small | ~70 lines |
-| 10 | 1.x — `GeoAbilitySystemLibrary` overload and wrapper pruning | medium | ~80 lines, smaller API |
-| 11 | 4.1–4.3, 6.2–6.5, 8.2, 9.1, 9.9, 10.1–10.3, 11.4–11.5, 13.4, 14.3, 15.1, 15.3, 16.2–16.4 — extract-shared-helper items | medium | **~400 lines** |
-| 12 | 8.4 + 8.5 — collapse the two attribute-change fan-out mechanisms into one | medium | deletes `UnbindStatCallbacks` and two ASC delegates |
-| 13 | 11.6 + 13.6 — replace long positional parameter lists with structs | small | removes two transposition traps |
-| 14 | 2.1 + 2.2 + 2.3 — `FEffectData` hierarchy collapse | **large, needs CoreRedirects** | ~150 lines, best structural win |
-| 15 | 2.5, 2.6, 3.10, 9.3, 12.1 — parser/traversal/long-function cleanups | medium | clarity |
+| # | Item | Effort | Payoff | Status |
+|---|---|---|---|---|
+| **0a** | **11.1 — pooled actors are handed out while still in the free list** | small | **two callers can share one actor**; needs a PIE check | done, PIE check owed |
+| **0b** | 7.1 — `CreateAbilityPayload` draws two seeds | one token | latent client/server desync | done |
+| **0c** | 14.1 — `FillCueParam` divides by a `StartDelay` that is documented to be 0 | one ternary | NaN into a Gameplay Cue | done |
+| 1 | Theme C — the seven unchecked dereferences (8.3, 9.2, 9.7, 11.2, 13.3, 14.2, 16.1) | one line each | seven crashes become no-ops | done |
+| 2 | 6.1 — delete dead `MakeGeoEffectContext` | trivial | removes a dangling-pointer trap | done |
+| 3 | 13.5 — `Modify()` after the mutation it is supposed to record | move one line | editor undo actually works | done |
+| 4 | 5.1 + 5.2 — menu-widget ensure blocks and `NativeDestruct` | mechanical, ~11 files | **~400 lines** | done |
+| 5 | 13.1 + 13.2 — `__FUNCTION__` and one scoped envelope in the builder utils | mechanical | **~260 lines**, 64 literals | done |
+| 6 | Theme A — the `ensureMsgf` pass, starting with the 32 `ensureMsgf(false, …)` | mechanical | consistency + real diagnostics | done |
+| 7 | 3.1, 3.2, 4.4, 3.8, 8.6, 9.6, 9.8, 10.7 — guard/dead-code/`const` cleanups | small | correctness + clarity | done |
+| 8 | 10.4 — delete the 65 dead lines in `JoinAdvancedSession` / `OnJoinSessionComplete` | trivial | git already has them | done |
+| 9 | 8.1 — one `FindSpecForTag` helper for the four HUD queries | small | ~70 lines | done |
+| 10 | 1.x — `GeoAbilitySystemLibrary` overload and wrapper pruning | medium | ~80 lines, smaller API | done except 1.9 (second half) and 1.10 |
+| 11 | 4.1–4.3, 6.2–6.5, 8.2, 9.1, 9.9, 10.1–10.3, 11.4–11.5, 13.4, 14.3, 15.1, 15.3, 16.2–16.4 — extract-shared-helper items | medium | **~400 lines** | done (also 4.5, 14.4) |
+| 12 | 8.4 + 8.5 — collapse the two attribute-change fan-out mechanisms into one | medium | deletes `UnbindStatCallbacks` and two ASC delegates | **open** |
+| 13 | 11.6 + 13.6 — replace long positional parameter lists with structs | small | removes two transposition traps | done |
+| 14 | 2.1 + 2.2 + 2.3 — `FEffectData` hierarchy collapse | **large, needs CoreRedirects** | ~150 lines, best structural win | **open** |
+| 15 | 2.5, 2.6, 3.10, 9.3, 12.1 — parser/traversal/long-function cleanups | medium | clarity | 2.6 / 3.10 / 9.3 done; **2.5 and 12.1 open** |
+| — | 13.7 — three hand-written recursive StateTree walkers | small | one traversal instead of three | **open** |
 
-**Verification note**: I have not compiled or run any of this — per `CLAUDE.md` I never run builds. Every item is
-a reading of the source. Four need more than a compile before being trusted: **11.1** (pool double-entry — needs a
-PIE test that exhausts the pre-spawned pool), **2.1** (renames serialized `UPROPERTY` names — needs
-`[CoreRedirects]` or designer values silently reset), **5.1** (depends on `BindWidget` compile-time semantics),
-and **13.5** (editor undo behaviour, only observable in-editor).
+Two findings that were reported but should **not** be applied as written:
+
+- **3.4** is wrong. It says to delete `AGeoProjectile::GetPitch(FGeoSoundEntry const&)`. That function is `virtual`
+  and `AGeoShieldBurstProjectile::GetPitch` overrides it to layer `BounceSoundSizePitchCurve` on top of `Super`;
+  deleting it silently drops per-size bounce pitch. What was done instead: the virtual stays, and
+  `UGeoSoundRowLibrary::ConfigureAudioComponent` grew a `float Pitch` parameter so the looping path still routes
+  through it.
+- **9.4** was judged not worth it on re-reading — see the status section at the top.
+
+**Verification note**: the report itself was written without compiling. The applied work has been compiled
+(Editor / DebugGame target, all three modules) except for the last batch, which is pending a build. The items
+that still need more than a compile are listed under "Needs a runtime check" at the top of this file.
 
 ## Coverage
 

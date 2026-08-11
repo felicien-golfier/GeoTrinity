@@ -28,18 +28,6 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo(UObject const* WorldContextObject)
-{
-	if (!WorldContextObject)
-	{
-		return nullptr;
-	}
-
-	UGameDataSettings const* GDSettings = GetDefault<UGameDataSettings>();
-
-	return GDSettings->GetLoadedDataAsset(GDSettings->AbilityInfo);
-}
-
 UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo()
 {
 	UGameDataSettings const* GDSettings = GetDefault<UGameDataSettings>();
@@ -47,17 +35,25 @@ UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-UStatusInfo* UGeoAbilitySystemLibrary::GetStatusInfo(UObject const* WorldContextObject)
+UStatusInfo* UGeoAbilitySystemLibrary::GetStatusInfo()
 {
-	if (!WorldContextObject)
-	{
-		return nullptr;
-	}
-
 	UGameDataSettings const* GDSettings = GetDefault<UGameDataSettings>();
-
 	return GDSettings->GetLoadedDataAsset(GDSettings->StatusInfo);
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+FGameplayEffectContextHandle UGeoAbilitySystemLibrary::MakeGeoEffectContext(UAbilitySystemComponent* SourceASC,
+																			UAbilitySystemComponent* TargetASC,
+																			FGeoGameplayEffectContext*& OutGeoContext)
+{
+	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
+	FillEffectContext(SourceASC, TargetASC, ContextHandle);
+
+	OutGeoContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
+	checkf(OutGeoContext, TEXT("%hs: failed to create the Geo effect context"), __FUNCTION__);
+	return ContextHandle;
+}
+
 FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(TInstancedStruct<FEffectData> const& Data,
 																			UAbilitySystemComponent* SourceASC,
 																			UAbilitySystemComponent* TargetASC,
@@ -65,7 +61,7 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(TIns
 																			FGameplayTag AbilityTag)
 {
 	FEffectData const* EffectData = Data.GetPtr<FEffectData>();
-	checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
+	checkf(EffectData, TEXT("%hs: invalid EffectData"), __FUNCTION__);
 	return ApplySingleEffectData(*EffectData, SourceASC, TargetASC, AbilityLevel, Seed, AbilityTag);
 }
 
@@ -75,24 +71,15 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 																			int32 AbilityLevel, int32 Seed,
 																			FGameplayTag AbilityTag)
 {
-	if (!IsValid(SourceASC) || !IsValid(TargetASC))
-	{
-		ensureMsgf(
-			IsValid(SourceASC) && IsValid(TargetASC),
-			TEXT(
-				"AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source and Target ASC to apply effect"));
-		return FActiveGameplayEffectHandle();
-	}
-
-	if (!EffectData.AppliesAtLevel(AbilityLevel))
+	if (!ensureMsgf(IsValid(SourceASC) && IsValid(TargetASC),
+					TEXT("%hs: needs a valid Source and Target ASC to apply an effect"), __FUNCTION__)
+		|| !EffectData.AppliesAtLevel(AbilityLevel))
 	{
 		return FActiveGameplayEffectHandle();
 	}
 
-	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
-	FillEffectContext(SourceASC, TargetASC, ContextHandle);
-
-	FGeoGameplayEffectContext* GeoEffectContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
+	FGeoGameplayEffectContext* GeoEffectContext = nullptr;
+	FGameplayEffectContextHandle ContextHandle = MakeGeoEffectContext(SourceASC, TargetASC, GeoEffectContext);
 
 	EffectData.UpdateContextHandle(GeoEffectContext, AbilityLevel, AbilityTag);
 	return EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
@@ -124,33 +111,21 @@ TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEff
 	UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag)
 {
 	TArray<FActiveGameplayEffectHandle> SpecHandles;
-	if (!ensureMsgf(
-			IsValid(SourceASC),
-			TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Source ASC to apply effect")))
+	if (!ensureMsgf(IsValid(SourceASC) && IsValid(TargetASC),
+					TEXT("%hs: needs a valid Source and Target ASC to apply an effect"), __FUNCTION__))
 	{
 		return SpecHandles;
 	}
 
-	if (!ensureMsgf(
-			IsValid(TargetASC),
-			TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: needs a valid Target ASC to apply effect")))
-	{
-		return SpecHandles;
-	}
-
-	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
-	FillEffectContext(SourceASC, TargetASC, ContextHandle);
-
-	FGeoGameplayEffectContext* GeoEffectContext = static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get());
-	checkf(GeoEffectContext,
-		   TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Failed to create GeoEffectContext"));
+	FGeoGameplayEffectContext* GeoEffectContext = nullptr;
+	FGameplayEffectContextHandle ContextHandle = MakeGeoEffectContext(SourceASC, TargetASC, GeoEffectContext);
 
 	TArray<FEffectData const*> ApplicableEffects;
 	ApplicableEffects.Reserve(DataArray.Num());
 	for (auto const& EffectDataInstance : DataArray)
 	{
 		FEffectData const* EffectData = EffectDataInstance.GetPtr<FEffectData>();
-		checkf(EffectData, TEXT("AbilitySystemLibrary::ApplyEffectFromDamageParams: Invalid EffectData"));
+		checkf(EffectData, TEXT("%hs: invalid EffectData"), __FUNCTION__);
 		if (EffectData->AppliesAtLevel(AbilityLevel))
 		{
 			ApplicableEffects.Add(EffectData);
@@ -171,66 +146,60 @@ TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEff
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool UGeoAbilitySystemLibrary::ApplyStatusToTarget(UAbilitySystemComponent* pTargetASC,
-												   UAbilitySystemComponent* pSourceASC, FGameplayTag const& statusTag,
-												   int32 level, FGameplayEffectSpecHandle& OutSpecHandle)
+bool UGeoAbilitySystemLibrary::ApplyStatusToTarget(UAbilitySystemComponent* TargetASC,
+												   UAbilitySystemComponent* SourceASC, FGameplayTag const& StatusTag,
+												   int32 AbilityLevel, FGameplayEffectSpecHandle& OutSpecHandle)
 {
-	if (!pTargetASC || !pSourceASC)
+	if (!TargetASC || !SourceASC)
 	{
 		return false;
 	}
 
-	UGameDataSettings const* GDSettings = GetDefault<UGameDataSettings>();
-
-	UStatusInfo const* pStatusInfos = GDSettings->GetLoadedDataAsset(GDSettings->StatusInfo);
-	if (!pStatusInfos)
+	UStatusInfo const* StatusInfos = GetStatusInfo();
+	if (!StatusInfos)
 	{
 		return false;
 	}
 
-	// INFOS
-	FRpgStatusInfo statusInfo;
-	if (!pStatusInfos->FillStatusInfoFromTag(statusTag, statusInfo))
+	FRpgStatusInfo StatusInfo;
+	if (!StatusInfos->FillStatusInfoFromTag(StatusTag, StatusInfo))
 	{
 		return false;
 	}
 
-	if (!IsValid(statusInfo.StatusEffect))
+	if (!IsValid(StatusInfo.StatusEffect))
 	{
-		UE_VLOG(pSourceASC, LogGeoASC, VeryVerbose, TEXT("No valid effect registered for Status %s"),
-				*statusInfo.StatusDisplayName);
+		UE_VLOG(SourceASC, LogGeoASC, VeryVerbose, TEXT("No valid effect registered for Status %s"),
+				*StatusInfo.StatusDisplayName);
 		return false;
 	}
 
-	FGameplayEffectContextHandle contextHandle = pSourceASC->MakeEffectContext();
-	contextHandle.AddSourceObject(pSourceASC->GetAvatarActor());
+	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
+	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
 
-	if (UObject* IconResource = statusInfo.Icon.GetResourceObject())
+	if (UObject* IconResource = StatusInfo.Icon.GetResourceObject())
 	{
-		static_cast<FGeoGameplayEffectContext*>(contextHandle.Get())->SetIcon(IconResource);
+		static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get())->SetIcon(IconResource);
 	}
 
-	OutSpecHandle = pSourceASC->MakeOutgoingSpec(statusInfo.StatusEffect, level, contextHandle);
+	OutSpecHandle = SourceASC->MakeOutgoingSpec(StatusInfo.StatusEffect, AbilityLevel, ContextHandle);
 
-	pSourceASC->ApplyGameplayEffectSpecToTarget(*OutSpecHandle.Data, pTargetASC);
+	SourceASC->ApplyGameplayEffectSpecToTarget(*OutSpecHandle.Data, TargetASC);
 
 	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-/**
- * Resolves a tag string to a FGameplayTag and caches the result.
- * RequestGameplayTag involves a hash-map lookup inside the tags manager on every call;
- * the local static cache avoids that cost for frequently queried root tags.
- */
-FGameplayTag UGeoAbilitySystemLibrary::GetGameplayTagFromRootTagString(FString const& StringOfTag)
+FGameplayTag UGeoAbilitySystemLibrary::GetFirstAssetTagUnderRoot(UGameplayAbility const& Ability, FGameplayTag Root)
 {
-	static TMap<FString, FGameplayTag> RootTagNameToTagMap{};
-	if (!RootTagNameToTagMap.Find(StringOfTag))
+	for (FGameplayTag const& AssetTag : Ability.GetAssetTags())
 	{
-		RootTagNameToTagMap.Add(StringOfTag, FGameplayTag::RequestGameplayTag(FName(StringOfTag)));
+		if (AssetTag.MatchesTag(Root))
+		{
+			return AssetTag;
+		}
 	}
-	return RootTagNameToTagMap[StringOfTag];
+	return FGameplayTag();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -247,15 +216,8 @@ FGameplayTag UGeoAbilitySystemLibrary::GetAbilityTagFromSpec(FGameplayAbilitySpe
 // ---------------------------------------------------------------------------------------------------------------------
 FGameplayTag UGeoAbilitySystemLibrary::GetAbilityTagFromAbility(UGameplayAbility const& Ability)
 {
-	FGameplayTag const tagToMatch = GetGameplayTagFromRootTagString(RootTagNames::AbilitySpellTag);
-	for (FGameplayTag const& currentTag : Ability.GetAssetTags())
-	{
-		if (currentTag.MatchesTag(tagToMatch))
-		{
-			return currentTag;
-		}
-	}
-	return FGameplayTag();
+	static FGameplayTag const SpellRoot = FGameplayTag::RequestGameplayTag(FName(RootTagNames::AbilitySpellTag));
+	return GetFirstAssetTagUnderRoot(Ability, SpellRoot);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -381,20 +343,6 @@ bool UGeoAbilitySystemLibrary::ShouldIncludeTargetRadius(ETargetOverlapMode Over
 		return SourceTeam.GetId() != static_cast<uint8>(ETeam::Enemy);
 	}
 }
-TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
-																FGenericTeamId const SourceTeam, int32 AttitudeBitmask,
-																bool bMustBeDamageable)
-{
-	return GetInteractableActors(WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable,
-								 FVector2D::ZeroVector, 0.0f);
-}
-TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* WorldContextObject,
-																bool bMustBeDamageable, FVector2D Location,
-																float MaxDistance)
-{
-	return GetInteractableActors(WorldContextObject, FGenericTeamId(), 0, bMustBeDamageable, Location, MaxDistance);
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 AActor* UGeoAbilitySystemLibrary::GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList)
 {
@@ -435,21 +383,19 @@ void UGeoAbilitySystemLibrary::ExecuteLocalGameplayCue(UAbilitySystemComponent* 
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGameplayTag UGeoAbilitySystemLibrary::GetStatusTag(FGameplayEffectContextHandle const& effectContextHandle)
+FGameplayTag UGeoAbilitySystemLibrary::GetStatusTag(FGameplayEffectContextHandle const& EffectContextHandle)
 {
-	FGeoGameplayEffectContext const* pGeoContext =
-		static_cast<FGeoGameplayEffectContext const*>(effectContextHandle.Get());
+	FGeoGameplayEffectContext const* GeoContext =
+		static_cast<FGeoGameplayEffectContext const*>(EffectContextHandle.Get());
 
-	return pGeoContext ? pGeoContext->GetStatusTag() : FGameplayTag{};
+	return GeoContext ? GeoContext->GetStatusTag() : FGameplayTag{};
 }
 
-void UGeoAbilitySystemLibrary::SetStatusTag(FGameplayEffectContextHandle& effectContextHandle,
-											FGameplayTag const statusTag)
+void UGeoAbilitySystemLibrary::SetStatusTag(FGameplayEffectContextHandle& EffectContextHandle, FGameplayTag StatusTag)
 {
-	FGeoGameplayEffectContext* pGeoContext = static_cast<FGeoGameplayEffectContext*>(effectContextHandle.Get());
-	if (pGeoContext)
+	if (FGeoGameplayEffectContext* GeoContext = static_cast<FGeoGameplayEffectContext*>(EffectContextHandle.Get()))
 	{
-		pGeoContext->SetStatusTag(statusTag);
+		GeoContext->SetStatusTag(StatusTag);
 	}
 }
 
@@ -461,17 +407,6 @@ UGeoAbilitySystemComponent* UGeoAbilitySystemLibrary::GetGeoAscFromActor(AActor*
 UGeoGameplayAbility const* UGeoAbilitySystemLibrary::GetAbilityCDO(FGameplayTag const AbilityTag)
 {
 	return GetAbilityCDO<UGeoGameplayAbility>(AbilityTag);
-}
-
-TArray<TInstancedStruct<FEffectData>>
-UGeoAbilitySystemLibrary::GetEffectDataArray(UEffectDataAsset const* EffectDataAsset)
-{
-	if (!ensureMsgf(IsValid(EffectDataAsset), TEXT("EffectDataAsset is not valid !")))
-	{
-		return {};
-	}
-
-	return EffectDataAsset->EffectDataInstances;
 }
 
 TArray<TInstancedStruct<FEffectData>> UGeoAbilitySystemLibrary::GetEffectDataArray(FGameplayTag const AbilityTag)
@@ -492,12 +427,22 @@ UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 {
 	AGeoDeployableBase* Deployable =
 		StartSpawnDeployable(DeployableActorClass, Payload.Owner, Cast<APawn>(Payload.Instigator), SpawnTransform);
-	if (!ensureMsgf(IsValid(Deployable), TEXT("Failed to spawn deployable! %s"), *DeployableActorClass->GetName()))
+	if (!ensureMsgf(IsValid(Deployable), TEXT("%hs: failed to spawn %s"), __FUNCTION__,
+					*DeployableActorClass->GetName()))
 	{
 		return nullptr;
 	}
-	InitDeployable(Deployable, Payload, EffectDataArray, Params);
-	FinishSpawnDeployable(Deployable, SpawnTransform);
+
+	FDeployableData Data;
+	FillDeployableData(Data, Payload, EffectDataArray, Params);
+	Deployable->InitInteractable(&Data);
+
+	if (!ensureMsgf(Deployable->IsActive(), TEXT("%hs: %s went inactive during init"), __FUNCTION__,
+					*DeployableActorClass->GetName()))
+	{
+		return nullptr;
+	}
+	Deployable->FinishSpawning(SpawnTransform);
 
 	return Deployable;
 }
@@ -506,21 +451,15 @@ AGeoDeployableBase*
 UGeoAbilitySystemLibrary::StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> const DeployableActorClass,
 											   AActor* Owner, APawn* Instigator, FTransform const& SpawnTransform)
 {
-	if (!IsValid(DeployableActorClass))
+	if (!ensureMsgf(IsValid(DeployableActorClass) && IsValid(Owner),
+					TEXT("%hs: needs a DeployableActorClass and a valid Owner"), __FUNCTION__))
 	{
-		ensureMsgf(DeployableActorClass, TEXT("SpawnDeployableActor: No DeployableActorClass set!"));
-		return nullptr;
-	}
-
-	if (!IsValid(Owner))
-	{
-		ensureMsgf(Owner, TEXT("SpawnDeployableActor : No valid Owner "));
 		return nullptr;
 	}
 
 	if (!IsValid(Instigator))
 	{
-		UE_LOG(LogTemp, Error, TEXT("SpawnDeployableActor: No valid pawn to spawn deployable!"));
+		UE_LOG(LogTemp, Error, TEXT("%hs: no valid pawn to spawn the deployable from"), __FUNCTION__);
 		return nullptr;
 	}
 
@@ -529,22 +468,11 @@ UGeoAbilitySystemLibrary::StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 
 	if (!IsValid(Deployable))
 	{
-		UE_LOG(LogTemp, Error, TEXT("DeployableSpawnerProjectile: Failed to spawn deployable!"));
+		UE_LOG(LogTemp, Error, TEXT("%hs: failed to spawn %s"), __FUNCTION__, *DeployableActorClass->GetName());
 		return nullptr;
 	}
 
 	return Deployable;
-}
-
-void UGeoAbilitySystemLibrary::FinishSpawnDeployable(AGeoDeployableBase* const Deployable,
-													 FTransform const& SpawnTransform)
-{
-	if (!ensureMsgf(Deployable->IsActive(), TEXT("Deployable not active when finishing spawning. something got wrong")))
-	{
-		return;
-	}
-
-	Deployable->FinishSpawning(SpawnTransform);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -564,15 +492,6 @@ void UGeoAbilitySystemLibrary::FillDeployableData(FDeployableData& Data, FAbilit
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
 	}
-}
-
-void UGeoAbilitySystemLibrary::InitDeployable(AGeoDeployableBase* Deployable, FAbilityPayload const& Payload,
-											  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
-											  FDeployableDataParams const& Params)
-{
-	FDeployableData Data;
-	FillDeployableData(Data, Payload, EffectDataArray, Params);
-	Deployable->InitInteractable(&Data);
 }
 
 AGeoProjectile*
@@ -626,36 +545,28 @@ UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, FExternalPro
 {
 	if (!World || !Params.ProjectileClass)
 	{
-		UE_LOG(LogTemp, Error,
-			   TEXT("[UGeoAbilitySystemLibrary::StartSpawnProjectile] Invalid World or ProjectileClass"));
+		UE_LOG(LogTemp, Error, TEXT("%hs: invalid World or ProjectileClass"), __FUNCTION__);
 		return nullptr;
 	}
 
-	AGeoProjectile* Projectile;
+	AGeoProjectile* Projectile = nullptr;
 	if (Params.ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
 	{
 		Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(
 			Params.ProjectileClass, SpawnTransform, Payload.Owner, Cast<APawn>(Payload.Instigator), false);
-		if (!Projectile)
-		{
-			UE_LOG(LogTemp, Error,
-				   TEXT("[UGeoAbilitySystemLibrary::StartSpawnProjectile] RequestActor returned nullptr for %s"),
-				   *Params.ProjectileClass->GetName());
-			return nullptr;
-		}
 	}
 	else
 	{
 		Projectile = World->SpawnActorDeferred<AGeoProjectile>(Params.ProjectileClass, SpawnTransform, Payload.Owner,
 															   Cast<APawn>(Payload.Instigator),
 															   ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (!Projectile)
-		{
-			UE_LOG(LogTemp, Error,
-				   TEXT("[UGeoAbilitySystemLibrary::StartSpawnProjectile] SpawnActor returned nullptr for %s"),
-				   *Params.ProjectileClass->GetName());
-			return nullptr;
-		}
+	}
+
+	if (!Projectile)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%hs: no projectile came back for %s"), __FUNCTION__,
+			   *Params.ProjectileClass->GetName());
+		return nullptr;
 	}
 
 	Projectile->Payload = Payload;
@@ -773,10 +684,9 @@ bool UGeoAbilitySystemLibrary::IsTeamAttitudeAligned(AActor const* Owner, AActor
 		return false;
 	}
 
-	IGenericTeamAgentInterface const* OwnerTeamInterface = nullptr;
-	if (!GetTeamInterface(Owner, OwnerTeamInterface))
+	IGenericTeamAgentInterface const* const OwnerTeamInterface = Cast<IGenericTeamAgentInterface const>(Owner);
+	if (!ensureMsgf(OwnerTeamInterface, TEXT("%hs: %s has no team interface"), __FUNCTION__, *Owner->GetName()))
 	{
-		ensureMsgf(false, TEXT("Projectile owner has no team interface"));
 		return false;
 	}
 
@@ -787,12 +697,8 @@ bool UGeoAbilitySystemLibrary::IsTeamAttitudeAligned(AActor const* Owner, AActor
 int UGeoAbilitySystemLibrary::GetAndCheckSection(UAnimMontage const* AnimMontage, FName const Section)
 {
 	int const SectionIndex = AnimMontage->GetSectionIndex(Section);
-	if (SectionIndex == INDEX_NONE)
-	{
-		ensureMsgf(false, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(), *AnimMontage->GetName());
-		UE_LOG(LogPattern, Error, TEXT("Section %s not found in AnimMontage %s"), *Section.ToString(),
-			   *AnimMontage->GetName());
-	}
+	ensureMsgf(SectionIndex != INDEX_NONE, TEXT("%hs: section %s not found in AnimMontage %s"), __FUNCTION__,
+			   *Section.ToString(), *AnimMontage->GetName());
 	return SectionIndex;
 }
 
@@ -818,16 +724,6 @@ UAnimInstance* UGeoAbilitySystemLibrary::GetAnimInstance(FAbilityPayload const& 
 
 FGenericTeamId UGeoAbilitySystemLibrary::GetTeamId(AActor const* Actor)
 {
-	IGenericTeamAgentInterface const* TeamInterface = nullptr;
-	if (GetTeamInterface(Actor, TeamInterface))
-	{
-		return TeamInterface->GetGenericTeamId();
-	}
-	return FGenericTeamId::NoTeam;
-}
-
-bool UGeoAbilitySystemLibrary::GetTeamInterface(AActor const* Actor, IGenericTeamAgentInterface const*& OutInterface)
-{
-	OutInterface = Cast<IGenericTeamAgentInterface const>(Actor);
-	return OutInterface != nullptr;
+	IGenericTeamAgentInterface const* const TeamInterface = Cast<IGenericTeamAgentInterface const>(Actor);
+	return TeamInterface ? TeamInterface->GetGenericTeamId() : FGenericTeamId::NoTeam;
 }

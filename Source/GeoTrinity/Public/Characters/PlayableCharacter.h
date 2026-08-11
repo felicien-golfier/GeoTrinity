@@ -153,6 +153,10 @@ protected:
 	 * it. */
 	virtual UAnimMontage* GetDeathMontage() const override;
 
+	/** Returns Class's authored data, or null with an ensure — a class the map has no entry for is a configuration bug.
+	 *  The single answer to "what is this character's class data?", so every caller fails the same way. */
+	FPlayerClassData const* GetClassData(EPlayerClass Class) const;
+
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	TObjectPtr<UWidgetComponent> DeployChargeGaugeComponent;
@@ -182,6 +186,17 @@ protected:
 private:
 	void UpdateAimRotation(float DeltaSeconds);
 	EPlayerClass PickStartingClass() const;
+
+	/**
+	 * Shows or hides one world-space charge gauge. Showing binds Ability and cancels any pending hide; hiding pushes a
+	 * last fill update, detaches the ability and collapses the widget after GaugeHideDelay.
+	 *
+	 * @param Component   The gauge's widget component; its user widget must implement IGeoChargeGaugeWidgetInterface.
+	 * @param HideHandle  Timer handle owning this gauge's delayed hide.
+	 */
+	void SetChargeGaugeVisible(UWidgetComponent* Component, FTimerHandle& HideHandle, UGeoGameplayAbility* Ability,
+							   bool bVisible);
+
 	/** Sets Material on mesh slot 0 and recreates the shield-burst gauge MID that the raw material set discards. */
 	void SetBodyMaterial(UMaterialInterface* Material);
 

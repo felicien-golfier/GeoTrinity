@@ -36,6 +36,14 @@ bool IsMaxHealthModifiedFirst(UGameplayEffect const& Effect)
 	}
 	return true;
 }
+
+/** The ability catalog, or null after one ensure naming Caller. Every reader of the catalog goes through here. */
+UAbilityInfo* GetCheckedAbilityInfo(ANSICHAR const* const Caller)
+{
+	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo();
+	ensureMsgf(AbilityInfos, TEXT("%hs: AbilityInfo data asset is not loaded"), Caller);
+	return AbilityInfos;
+}
 } // namespace
 
 void UGeoAbilitySystemComponent::InitializeComponent()
@@ -49,8 +57,8 @@ void UGeoAbilitySystemComponent::InitializeComponent()
 		return;
 	}
 
-	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo();
-	if (!ensureMsgf(AbilityInfos, TEXT("UGeoAbilitySystemComponent: AbilityInfo data asset is not loaded")))
+	UAbilityInfo const* AbilityInfos = GetCheckedAbilityInfo(__FUNCTION__);
+	if (!AbilityInfos)
 	{
 		return;
 	}
@@ -96,8 +104,19 @@ void UGeoAbilitySystemComponent::BindRemoteFireTags()
 		return;
 	}
 
-	for (FGameplayAbilityInfo const& AbilityInfo : UGeoAbilitySystemLibrary::GetAbilityInfo()->GetAllAbilityInfos())
+	UAbilityInfo const* AbilityInfos = GetCheckedAbilityInfo(__FUNCTION__);
+	if (!AbilityInfos)
 	{
+		return;
+	}
+
+	for (FGameplayAbilityInfo const& AbilityInfo : AbilityInfos->GetAllAbilityInfos())
+	{
+		if (!AbilityInfo.AbilityClass)
+		{
+			continue;
+		}
+
 		UGeoGameplayAbility* AbilityCDO = Cast<UGeoGameplayAbility>(AbilityInfo.AbilityClass->GetDefaultObject());
 		if (!AbilityCDO || !AbilityCDO->RemoteFireTag.IsValid())
 		{
@@ -132,16 +151,19 @@ void UGeoAbilitySystemComponent::OnRemoteFireTagChanged(FGameplayTag const Remot
 	}
 
 	// Mirrors ScheduleFireTrigger: the shot lands one fire delay after activation, or right away when there is none.
-	float const FireDelay = RemoteFire.AbilityCDO->GetFireDelay() - GeoLib::GetOnWayPingSec(GetWorld());
+	float const FireDelay = RemoteFire.AbilityCDO->GetFireDelay();
 	if (FireDelay <= 0.f)
 	{
 		RemoteFireShot(RemoteFireTag);
 		return;
 	}
 
+	// The tag spent a ping reaching us, so only the first shot is that much closer: subtracting it from the rate too
+	// would make a looping replay fire faster the worse the local connection is.
 	GetWorld()->GetTimerManager().SetTimer(
 		RemoteFire.ShotTimer, FTimerDelegate::CreateUObject(this, &ThisClass::RemoteFireShot, RemoteFireTag), FireDelay,
-		RemoteFire.AbilityCDO->IsRemoteFireLooping());
+		RemoteFire.AbilityCDO->IsRemoteFireLooping(),
+		FMath::Max(FireDelay - GeoLib::GetOnWayPingSec(GetWorld()), 0.f));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -163,39 +185,40 @@ void UGeoAbilitySystemComponent::RemoteFireShot(FGameplayTag const RemoteFireTag
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive)
+void UGeoAbilitySystemComponent::GiveAbilitySpec(TSubclassOf<UGameplayAbility> const AbilityClass,
+												 FGameplayTag const InputTag)
 {
-	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
+	FGameplayAbilitySpec AbilitySpec{AbilityClass, CombatLevel};
+	if (InputTag.IsValid())
+	{
+		AbilitySpec.GetDynamicSpecSourceTags().AddTag(InputTag);
+	}
+	GiveAbility(AbilitySpec);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::GiveStartupAbilities()
+{
+	UAbilityInfo const* AbilityInfos = GetCheckedAbilityInfo(__FUNCTION__);
 	if (!AbilityInfos)
 	{
-		ensureMsgf(AbilityInfos, TEXT("GiveStartupAbilities: AbilityInfo not set!"));
 		return;
 	}
 
-	TArray<FGameplayAbilityInfo> AbilityInfoList = AbilityInfos->FindAbilityInfoForListOfTag(AbilitiesToGive, true);
-
-	for (FGameplayAbilityInfo const& AbilityInfo : AbilityInfoList)
+	for (FGameplayAbilityInfo const& AbilityInfo : AbilityInfos->FindAbilityInfoForListOfTag(StartupAbilityTags, true))
 	{
-		FGameplayAbilitySpec abilitySpec{AbilityInfo.AbilityClass, CombatLevel};
-		GiveAbility(abilitySpec);
+		GiveAbilitySpec(AbilityInfo.AbilityClass, FGameplayTag());
 	}
 
 	bStartupAbilitiesGiven = true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::GiveStartupAbilities()
-{
-	GiveStartupAbilities(StartupAbilityTags);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerClass)
 {
-	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
+	UAbilityInfo const* AbilityInfos = GetCheckedAbilityInfo(__FUNCTION__);
 	if (!AbilityInfos)
 	{
-		ensureMsgf(AbilityInfos, TEXT("GiveStartupAbilities: AbilityInfo not set!"));
 		return;
 	}
 
@@ -206,20 +229,12 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerC
 			continue;
 		}
 
-		FGameplayAbilitySpec AbilitySpec{AbilityInfo.AbilityClass, CombatLevel};
+		bool const bHasInput = AbilityInfo.InputAction != nullptr;
+		ensureMsgf(!bHasInput || AbilityInfo.InputTag.IsValid(),
+				   TEXT("Ability %s has an InputAction but no InputTag — fill InputTag in DA_AbilityInfo"),
+				   *AbilityInfo.AbilityClass->GetName());
 
-		if (AbilityInfo.InputAction && !AbilityInfo.InputTag.IsValid())
-		{
-			ensureMsgf(AbilityInfo.InputTag.IsValid(),
-					   TEXT("Ability %s has an InputAction but no InputTag — fill InputTag in DA_AbilityInfo"),
-					   *AbilityInfo.AbilityClass->GetName());
-		}
-		else if (AbilityInfo.InputAction)
-		{
-			AbilitySpec.GetDynamicSpecSourceTags().AddTag(AbilityInfo.InputTag);
-		}
-
-		GiveAbility(AbilitySpec);
+		GiveAbilitySpec(AbilityInfo.AbilityClass, bHasInput ? AbilityInfo.InputTag : FGameplayTag());
 	}
 
 	bStartupAbilitiesGiven = true;
@@ -228,10 +243,9 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerC
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySystemComponent::ClearPlayerClassAbilities()
 {
-	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo(this);
+	UAbilityInfo const* AbilityInfos = GetCheckedAbilityInfo(__FUNCTION__);
 	if (!AbilityInfos)
 	{
-		ensureMsgf(AbilityInfos, TEXT("ClearPlayerClassAbilities: AbilityInfo not set!"));
 		return;
 	}
 
@@ -262,96 +276,89 @@ void UGeoAbilitySystemComponent::ClearPlayerClassAbilities()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag const& inputTag)
+FPredictionKey UGeoAbilitySystemComponent::GetActivationPredictionKey(FGameplayAbilitySpec const& AbilitySpec)
 {
-	if (!inputTag.IsValid())
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
+	UGameplayAbility const* Instance = AbilitySpec.GetPrimaryInstance();
+	return Instance ? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
+					: AbilitySpec.ActivationInfo.GetActivationPredictionKey();
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::ActivateAbilitiesForInput(FGameplayTag const& InputTag, bool const bFreshPress)
+{
+	FScopedAbilityListLock ActiveScopeLock(*this);
+	for (FGameplayAbilitySpec& AbilitySpec : GetActivatableAbilities())
 	{
-		return;
-	}
+		UGeoGameplayAbility const* GeoAbility = Cast<UGeoGameplayAbility>(AbilitySpec.Ability);
 
-	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("AbilityInputTag Pressed of INPUT %s"), *inputTag.ToString());
-
-	FScopedAbilityListLock activeScopeLock(*this);
-	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())
-	{
-		UGeoGameplayAbility const* GeoAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability);
-
-		// An ability can name a second input that fires it: this press releases it, its own input still does too.
-		if (GeoAbility && GeoAbility->GetAlternateReleaseInputTag() == inputTag && abilitySpec.IsActive())
+		// An ability can name a second input that fires it: that press releases it, its own input still does too.
+		if (bFreshPress && GeoAbility && GeoAbility->GetAlternateReleaseInputTag() == InputTag && AbilitySpec.IsActive())
 		{
-			ReleaseAbilitySpec(abilitySpec);
+			ReleaseAbilitySpec(AbilitySpec);
 		}
 
-		// Only activate ability of given input tag
-		if (!abilitySpec.GetDynamicSpecSourceTags().HasTagExact(inputTag))
+		if (!AbilitySpec.GetDynamicSpecSourceTags().HasTagExact(InputTag))
 		{
 			continue;
 		}
 
-		AbilitySpecInputPressed(abilitySpec);
+		AbilitySpecInputPressed(AbilitySpec);
 
-		// Fresh-press-only abilities are excluded from the per-frame Held activation, so the press activates them.
-		if (!abilitySpec.IsActive() && GeoAbility && GeoAbility->bActivateOnFreshPressOnly)
+		// Fresh-press-only abilities are excluded from the per-frame Held activation, so only the press activates them.
+		bool const bFreshPressOnly = GeoAbility && GeoAbility->bActivateOnFreshPressOnly;
+		if (!AbilitySpec.IsActive() && bFreshPressOnly == bFreshPress)
 		{
-			TryActivateAbilityWithTargetData(abilitySpec.Handle, GeoASLib::GetAbilityTagFromSpec(abilitySpec));
+			TryActivateAbilityWithTargetData(AbilitySpec.Handle, GeoASLib::GetAbilityTagFromSpec(AbilitySpec));
 		}
 
-		if (abilitySpec.IsActive())
+		if (bFreshPress && AbilitySpec.IsActive())
 		{
-			PRAGMA_DISABLE_DEPRECATION_WARNINGS
-			// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
-			UGameplayAbility const* Instance = abilitySpec.GetPrimaryInstance();
-			FPredictionKey originalPredictionKey = Instance
-				? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
-				: abilitySpec.ActivationInfo.GetActivationPredictionKey();
-			PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-			InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputPressed, abilitySpec.Handle,
-								  originalPredictionKey);
+			InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputPressed, AbilitySpec.Handle,
+								  GetActivationPredictionKey(AbilitySpec));
 		}
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AbilityInputTagHeld(FGameplayTag const& inputTag)
+void UGeoAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag const& InputTag)
 {
-	if (!inputTag.IsValid())
+	if (!InputTag.IsValid())
 	{
 		return;
 	}
 
-	FScopedAbilityListLock activeScopeLock(*this);
-	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())
-	{
-		if (!abilitySpec.GetDynamicSpecSourceTags().HasTagExact(inputTag))
-		{
-			continue;
-		}
-
-		AbilitySpecInputPressed(abilitySpec);
-
-		UGeoGameplayAbility const* GeoAbility = Cast<UGeoGameplayAbility>(abilitySpec.Ability);
-		if (!abilitySpec.IsActive() && !(GeoAbility && GeoAbility->bActivateOnFreshPressOnly))
-		{
-			TryActivateAbilityWithTargetData(abilitySpec.Handle, GeoASLib::GetAbilityTagFromSpec(abilitySpec));
-		}
-	}
+	UE_VLOG(this, LogGeoASC, VeryVerbose, TEXT("AbilityInputTag Pressed of INPUT %s"), *InputTag.ToString());
+	ActivateAbilitiesForInput(InputTag, /*bFreshPress=*/true);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemComponent::AbilityInputTagReleased(FGameplayTag const& inputTag)
+void UGeoAbilitySystemComponent::AbilityInputTagHeld(FGameplayTag const& InputTag)
 {
-	if (!inputTag.IsValid())
+	if (!InputTag.IsValid())
 	{
 		return;
 	}
 
-	FScopedAbilityListLock activeScopeLock(*this);
-	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())
+	ActivateAbilitiesForInput(InputTag, /*bFreshPress=*/false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::AbilityInputTagReleased(FGameplayTag const& InputTag)
+{
+	if (!InputTag.IsValid())
 	{
-		if (abilitySpec.GetDynamicSpecSourceTags().HasTagExact(inputTag) && abilitySpec.IsActive())
+		return;
+	}
+
+	FScopedAbilityListLock ActiveScopeLock(*this);
+	for (FGameplayAbilitySpec& AbilitySpec : GetActivatableAbilities())
+	{
+		if (AbilitySpec.GetDynamicSpecSourceTags().HasTagExact(InputTag) && AbilitySpec.IsActive())
 		{
-			ReleaseAbilitySpec(abilitySpec);
+			ReleaseAbilitySpec(AbilitySpec);
 		}
 	}
 }
@@ -361,15 +368,9 @@ void UGeoAbilitySystemComponent::ReleaseAbilitySpec(FGameplayAbilitySpec& Abilit
 {
 	AbilitySpecInputReleased(AbilitySpec);
 
-	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	// Code from Lyra starter game (if they disable Deprecation warnings, I don't see why not do the same)
-	UGameplayAbility const* Instance = AbilitySpec.GetPrimaryInstance();
-	FPredictionKey originalPredictionKey = Instance ? Instance->GetCurrentActivationInfo().GetActivationPredictionKey()
-													: AbilitySpec.ActivationInfo.GetActivationPredictionKey();
-	PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
 	// Needed to use Wait for input release in blueprint
-	InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, AbilitySpec.Handle, originalPredictionKey);
+	InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, AbilitySpec.Handle,
+						  GetActivationPredictionKey(AbilitySpec));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -379,9 +380,8 @@ void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> 
 	EffectContextHandle.AddSourceObject(this);
 
 	FGameplayEffectSpecHandle const SpecHandle = MakeOutgoingSpec(GameplayEffectClass, CombatLevel, EffectContextHandle);
-	if (!SpecHandle.IsValid())
+	if (!ensureMsgf(SpecHandle.IsValid(), TEXT("%hs: SpecHandle is invalid"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("ApplyEffectToSelf: SpecHandle is invalid!"));
 		return;
 	}
 
@@ -449,9 +449,8 @@ UPattern* UGeoAbilitySystemComponent::CreatePatternInstance(UClass const* Patter
 		return nullptr;
 	}
 
-	if (!IsValid(GetOwnerActor()))
+	if (!ensureMsgf(IsValid(GetOwnerActor()), TEXT("%hs: invalid OwnerActor"), __FUNCTION__))
 	{
-		ensureMsgf(IsValid(GetOwnerActor()), TEXT("CreatePatternInstance: Invalid OwnerActor"));
 		return nullptr;
 	}
 
@@ -526,10 +525,9 @@ bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbili
 	{
 		UGeoGameplayAbility const* CDO = GeoASLib::GetAbilityCDO(AbilityTag);
 
-		if (!IsValid(CDO))
+		if (!ensureMsgf(IsValid(CDO), TEXT("%hs: no ability CDO found for tag %s"), __FUNCTION__,
+						*AbilityTag.ToString()))
 		{
-			ensureMsgf(CDO, TEXT("TryActivateAbilityWithTargetData: no ability CDO found for Tag %s"),
-					   *AbilityTag.ToString());
 			return false;
 		}
 

@@ -91,7 +91,8 @@ void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVe
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
+void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
+												   UGeoAbilitySystemComponent* TargetASC)
 {
 	AActor* const CurrentOwner = IsValid(Payload.Owner) ? Payload.Owner : GetOwner();
 	if (GeoASLib::IsTeamAttitudeAligned(CurrentOwner, OtherActor, TeamAttitudeMask::HostileOrNeutral))
@@ -121,34 +122,27 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor)
 		EndSoundType = EProjectileSoundType::ValidOverlapEnd;
 		if (GeoLib::IsServer(GetWorld()))
 		{
-			// TODO: as we don;t call super, we should ensure few things before the ensure
-			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(OtherActor);
-			if (ensureMsgf(TargetASC, TEXT("AGeoShieldBurstProjectile: no ASC on ally %s"), *OtherActor->GetName()))
-			{
-				FShieldEffectData ShieldEffect;
-				ShieldEffect.ShieldAmount = ShieldAmount;
-				GeoASLib::ApplySingleEffectData(ShieldEffect, GeoASLib::GetGeoAscFromActor(Payload.Owner), TargetASC,
-												Payload.AbilityLevel, Payload.Seed, Payload.AbilityTag);
-			}
+			FShieldEffectData ShieldEffect;
+			ShieldEffect.ShieldAmount = ShieldAmount;
+			GeoASLib::ApplySingleEffectData(ShieldEffect, OwnerASC, TargetASC, Payload.AbilityLevel, Payload.Seed,
+											Payload.AbilityTag);
 		}
 
 		OnProjectileHit(OtherActor);
 		EndProjectileLife();
 	}
 }
-bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor)
+bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
+											   UGeoAbilitySystemComponent*& OutTargetASC)
 {
-	if (OtherActor->IsA(AGeoWall::StaticClass()))
-	{
-		return false;
-	}
-
 	constexpr float TimeThresholdBetweenSameHostileOverlap = 0.5f;
-	if (LastOverlapHostileActor.IsValid() && LastOverlapHostileActor == OtherActor
-		&& GetWorld()->GetTimeSeconds() - LastOverlapTime < TimeThresholdBetweenSameHostileOverlap)
+	bool const bRepeatHostileOverlap =
+		LastOverlapHostileActor.IsValid() && LastOverlapHostileActor == OtherActor
+		&& GetWorld()->GetTimeSeconds() - LastOverlapTime < TimeThresholdBetweenSameHostileOverlap;
+	if (OtherActor->IsA(AGeoWall::StaticClass()) || bRepeatHostileOverlap)
 	{
 		return false;
 	}
 
-	return Super::IsValidOverlap(OtherActor);
+	return Super::IsValidOverlap(OtherActor, OutOwnerASC, OutTargetASC);
 }

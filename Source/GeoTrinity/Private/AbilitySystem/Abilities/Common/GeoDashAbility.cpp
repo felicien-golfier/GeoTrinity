@@ -26,17 +26,15 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	}
 
 	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	if (!IsValid(Character))
+	if (!ensureMsgf(IsValid(Character), TEXT("%hs: invalid Character"), __FUNCTION__))
 	{
-		ensureMsgf(IsValid(Character), TEXT("UGeoDashAbility: invalid Character on activation"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
 
 	UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
-	if (!IsValid(MovementComponent))
+	if (!ensureMsgf(IsValid(MovementComponent), TEXT("%hs: invalid MovementComponent"), __FUNCTION__))
 	{
-		ensureMsgf(IsValid(MovementComponent), TEXT("UGeoDashAbility: invalid MovementComponent on activation"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}

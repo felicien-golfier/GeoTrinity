@@ -76,6 +76,8 @@ private:
 
 	void HandleToggleMenu(FInputActionInstance const& Instance);
 	void SetMenuInputMappingActive(bool bMenuActive);
+	/** Puts input back in gameplay mode, keeping the non-obvious mouse-capture setting the game needs. */
+	void SetGameplayInputMode();
 
 	/**
 	 * First-run keyboard layout detection: remaps every default key binding to the key sitting at the same

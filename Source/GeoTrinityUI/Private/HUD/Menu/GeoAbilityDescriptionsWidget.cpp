@@ -38,31 +38,10 @@ void UGeoAbilityDescriptionsWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!BackButton)
-	{
-		ensureMsgf(BackButton, TEXT("UGeoAbilityDescriptionsWidget: BackButton is not bound"));
-		return;
-	}
-	if (!AbilityList)
-	{
-		ensureMsgf(AbilityList, TEXT("UGeoAbilityDescriptionsWidget: AbilityList is not bound"));
-		return;
-	}
-
-	BackButton->OnClicked.AddDynamic(this, &UGeoAbilityDescriptionsWidget::HandleBack);
+	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoAbilityDescriptionsWidget::HandleBack);
 
 	AbilityList->ClearChildren();
 	BuildAbilityList();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilityDescriptionsWidget::NativeDestruct()
-{
-	if (BackButton)
-	{
-		BackButton->OnClicked.RemoveDynamic(this, &UGeoAbilityDescriptionsWidget::HandleBack);
-	}
-	Super::NativeDestruct();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -88,7 +67,7 @@ void UGeoAbilityDescriptionsWidget::HandleBack()
 void UGeoAbilityDescriptionsWidget::BuildAbilityList()
 {
 	APlayableCharacter* PlayableCharacter = Cast<APlayableCharacter>(GetOwningPlayerPawn());
-	UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo(this);
+	UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo();
 	if (!PlayableCharacter || !AbilityInfo)
 	{
 		UE_LOG(LogTemp, Log,

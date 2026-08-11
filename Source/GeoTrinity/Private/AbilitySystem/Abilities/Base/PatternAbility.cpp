@@ -29,9 +29,9 @@ void UPatternAbility::LaunchPattern()
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch, CreatePatternData());
 	UPattern* PatternInstance = nullptr;
-	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
+	if (!ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
+					TEXT("Pattern Instance doesn't exist when launching PatternAbility !")))
 	{
-		ensureMsgf(false, TEXT("Pattern Instance doesn't exist when launching PatternAbility !"));
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, true);
 		return;
 	}
@@ -42,9 +42,9 @@ void UPatternAbility::OnPatternEnd()
 {
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	UPattern* PatternInstance = nullptr;
-	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
+	if (!ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
+					TEXT("Pattern Instance doesn't exist at the end of the pattern on server !")))
 	{
-		ensureMsgf(false, TEXT("Pattern Instance doesn't exist at the end of the pattern on server  !"));
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, true);
 		return;
 	}
@@ -58,11 +58,8 @@ void UPatternAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbi
 {
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	UPattern* PatternInstance = nullptr;
-	if (!ASC->FindPatternByClass(PatternToLaunch, PatternInstance))
-	{
-		ensureMsgf(false, TEXT("Pattern Instance doesn't exist at ability end !"));
-	}
-	else
+	if (ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
+				   TEXT("Pattern Instance doesn't exist at ability end !")))
 	{
 		PatternInstance->EndPattern(true);
 	}

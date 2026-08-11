@@ -12,13 +12,14 @@
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/SceneComponent.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameFramework/GameMode.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HUD/Interface/GeoHUDInterface.h"
-#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -56,6 +57,7 @@ void AGeoArena::BeginPlay()
 		AGeoGameState* GameState = GetWorld()->GetGameStateChecked<AGeoGameState>();
 		GameState->OnMatchStateChanged.AddUniqueDynamic(this, &AGeoArena::OnMatchStateChanged);
 		GameState->OnWipe.AddUniqueDynamic(this, &AGeoArena::OnWipe);
+		GameState->OnDifficultyChanged.AddUniqueDynamic(this, &AGeoArena::RespawnBoss);
 	}
 }
 
@@ -86,10 +88,13 @@ void AGeoArena::ResetBoss()
 		return;
 	}
 	Boss->Arena = this;
+}
 
+void AGeoArena::SetBarrierClosed(bool const bClosed) const
+{
 	if (Barrier)
 	{
-		Barrier->SetClosed(false);
+		Barrier->SetClosed(bClosed);
 	}
 }
 
@@ -108,14 +113,16 @@ AGeoArena* AGeoArena::GetArenaOfBoss(AActor const* Boss)
 
 AGeoArena* AGeoArena::GetFightingArena(UObject const* WorldContextObject)
 {
-	TArray<AActor*> Arenas;
-	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, StaticClass(), Arenas);
-	for (AActor* Actor : Arenas)
+	UWorld* const World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
+	if (!World)
 	{
-		AGeoArena* Arena = CastChecked<AGeoArena>(Actor);
-		if (Arena->bFighting)
+		return nullptr;
+	}
+	for (TActorIterator<AGeoArena> It(World); It; ++It)
+	{
+		if (It->bFighting)
 		{
-			return Arena;
+			return *It;
 		}
 	}
 	return nullptr;
@@ -144,10 +151,7 @@ void AGeoArena::StartFight()
 		Boss->OnEnemyDefeated.AddUniqueDynamic(this, &AGeoArena::OnBossDefeated);
 	}
 
-	if (Barrier)
-	{
-		Barrier->SetClosed(true);
-	}
+	SetBarrierClosed(true);
 
 	GetWorld()->GetTimerManager().SetTimer(CommitFightTimer, this, &AGeoArena::CommitFight, GameState->CommitFightTime,
 										   false);
@@ -166,10 +170,7 @@ void AGeoArena::OnWipe(float /*DeathTime*/)
 		return;
 	}
 	GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
-	if (Barrier)
-	{
-		Barrier->SetClosed(false);
-	}
+	SetBarrierClosed(false);
 }
 
 void AGeoArena::EndFight()
@@ -177,16 +178,10 @@ void AGeoArena::EndFight()
 	GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
 	bFighting = false;
 	ApplyBossBar();
+	SetBarrierClosed(false);
 	// A defeated boss stays defeated: respawning it here would have it re-aggro the players still standing on its
 	// corpse. Only RespawnBoss (a match-state button, or a fresh server) brings it back.
-	if (bBossDefeated)
-	{
-		if (Barrier)
-		{
-			Barrier->SetClosed(false);
-		}
-	}
-	else
+	if (!bBossDefeated)
 	{
 		ResetBoss();
 	}
@@ -200,12 +195,14 @@ void AGeoArena::RespawnBoss()
 
 void AGeoArena::RespawnAllBosses(UObject const* WorldContextObject)
 {
-	TArray<AActor*> Arenas;
-	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, StaticClass(), Arenas);
-	for (AActor* Actor : Arenas)
+	UWorld* const World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
+	if (!World)
 	{
-		AGeoArena* Arena = CastChecked<AGeoArena>(Actor);
-		Arena->RespawnBoss();
+		return;
+	}
+	for (TActorIterator<AGeoArena> It(World); It; ++It)
+	{
+		It->RespawnBoss();
 	}
 }
 
@@ -272,6 +269,30 @@ void AGeoArena::Loot()
 	{
 		return;
 	}
+
+	// Resolve the Blueprint-derived reload ability CDO that owns the pickup config (class, buff pool, color palette)
+	// once for the whole shower. The ability catalog is keyed by the Spell AbilityTag, which has no native constant,
+	// so find the entry by class.
+	LootReloadCDO = nullptr;
+	LootReloadTag = FGameplayTag();
+	if (UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo())
+	{
+		for (FGameplayAbilityInfo const& Info : AbilityInfo->GetAllAbilityInfos())
+		{
+			if (Info.AbilityClass && Info.AbilityClass->IsChildOf(UGeoReloadAbility::StaticClass()))
+			{
+				LootReloadCDO = Info.AbilityClass->GetDefaultObject<UGeoReloadAbility>();
+				LootReloadTag = Info.AbilityTag;
+				break;
+			}
+		}
+	}
+	if (!ensureMsgf(LootReloadCDO && LootReloadCDO->BuffPickupClass,
+					TEXT("%hs: no reload ability with a BuffPickupClass registered in AbilityInfo"), __FUNCTION__))
+	{
+		return;
+	}
+
 	GetWorld()->GetTimerManager().SetTimer(LootTimer, this, &AGeoArena::SpawnLootBurst, LootSpawnInterval, true);
 }
 
@@ -290,30 +311,7 @@ void AGeoArena::StopLoot()
 
 void AGeoArena::SpawnLootBurst()
 {
-	// Resolve the Blueprint-derived reload ability CDO that owns the pickup config (class, buff pool, color palette).
-	// The ability catalog is keyed by the Spell AbilityTag, which has no native constant, so find the entry by class.
-	UGeoReloadAbility const* ReloadCDO = nullptr;
-	FGameplayTag ReloadTag;
-	if (UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo())
-	{
-		for (FGameplayAbilityInfo const& Info : AbilityInfo->GetAllAbilityInfos())
-		{
-			if (Info.AbilityClass && Info.AbilityClass->IsChildOf(UGeoReloadAbility::StaticClass()))
-			{
-				ReloadCDO = Info.AbilityClass->GetDefaultObject<UGeoReloadAbility>();
-				ReloadTag = Info.AbilityTag;
-				break;
-			}
-		}
-	}
-	if (!ensureMsgf(ReloadCDO && ReloadCDO->BuffPickupClass,
-					TEXT("SpawnLootBurst: no reload ability with a BuffPickupClass registered in AbilityInfo")))
-	{
-		GetWorld()->GetTimerManager().ClearTimer(LootTimer);
-		return;
-	}
-
-	TArray<TInstancedStruct<FEffectData>> const BuffEffects = ReloadCDO->GetEffectDataArray();
+	TArray<TInstancedStruct<FEffectData>> const BuffEffects = LootReloadCDO->GetEffectDataArray();
 
 	// The pickup needs a live player as Owner: its ASC is the effect source and drives the Friendly attitude check.
 	APlayableCharacter* PayloadOwner = nullptr;
@@ -335,15 +333,15 @@ void AGeoArena::SpawnLootBurst()
 	if (UGeoDeployableManagerComponent* DeployableManager =
 			PayloadOwner->GetComponentByClass<UGeoDeployableManagerComponent>())
 	{
-		DeployableManager->SetDeployableInfinitCount(ReloadCDO->BuffPickupClass);
+		DeployableManager->SetDeployableInfinitCount(LootReloadCDO->BuffPickupClass);
 		LootBoostedManagers.AddUnique(DeployableManager);
-		LootPickupClass = ReloadCDO->BuffPickupClass;
+		LootPickupClass = LootReloadCDO->BuffPickupClass;
 	}
 
 	FAbilityPayload Payload;
 	Payload.Origin = FVector2D(LootOrigin);
 	Payload.ServerSpawnTime = GetWorld()->GetTimeSeconds();
-	Payload.AbilityTag = ReloadTag;
+	Payload.AbilityTag = LootReloadTag;
 	Payload.Owner = PayloadOwner;
 	Payload.Instigator = PayloadOwner;
 
@@ -351,9 +349,9 @@ void AGeoArena::SpawnLootBurst()
 	for (int32 PickupIndex = 0; PickupIndex < LootPickupsPerBurst; ++PickupIndex)
 	{
 		AGeoBuffPickup* Pickup = GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(
-			ReloadCDO->BuffPickupClass, SpawnTransform, PayloadOwner, PayloadOwner,
+			LootReloadCDO->BuffPickupClass, SpawnTransform, PayloadOwner, PayloadOwner,
 			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (!ensureMsgf(IsValid(Pickup), TEXT("SpawnLootBurst: failed to spawn AGeoBuffPickup")))
+		if (!ensureMsgf(IsValid(Pickup), TEXT("%hs: failed to spawn AGeoBuffPickup"), __FUNCTION__))
 		{
 			return;
 		}

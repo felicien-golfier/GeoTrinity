@@ -126,7 +126,12 @@ TArray<TInstancedStruct<FEffectData>> UGeoGameplayAbility::GetEffectDataArray() 
 	TArray<TInstancedStruct<FEffectData>> FilledEffectData;
 	for (auto EffectDataAsset : EffectDataAssets)
 	{
-		FilledEffectData.Append(GeoASLib::GetEffectDataArray(EffectDataAsset.LoadSynchronous()));
+		UEffectDataAsset const* const LoadedAsset = EffectDataAsset.LoadSynchronous();
+		if (ensureMsgf(IsValid(LoadedAsset), TEXT("%hs: %s lists an EffectDataAsset that failed to load"), __FUNCTION__,
+					   *GetName()))
+		{
+			FilledEffectData.Append(LoadedAsset->EffectDataInstances);
+		}
 	}
 
 	FilledEffectData.Append(EffectDataInstances);

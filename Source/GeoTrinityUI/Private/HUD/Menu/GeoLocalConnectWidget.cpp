@@ -13,38 +13,12 @@ void UGeoLocalConnectWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!HostButton)
-	{
-		ensureMsgf(HostButton, TEXT("UGeoLocalConnectWidget: HostButton is not bound"));
-		return;
-	}
-	if (!JoinButton)
-	{
-		ensureMsgf(JoinButton, TEXT("UGeoLocalConnectWidget: JoinButton is not bound"));
-		return;
-	}
-	if (!BackButton)
-	{
-		ensureMsgf(BackButton, TEXT("UGeoLocalConnectWidget: BackButton is not bound"));
-		return;
-	}
-	if (!IPInput)
-	{
-		ensureMsgf(IPInput, TEXT("UGeoLocalConnectWidget: IPInput is not bound"));
-		return;
-	}
-	if (!LocalIPText)
-	{
-		ensureMsgf(LocalIPText, TEXT("UGeoLocalConnectWidget: LocalIPText is not bound"));
-		return;
-	}
-
-	HostButton->OnClicked.AddDynamic(this, &UGeoLocalConnectWidget::HandleHost);
-	JoinButton->OnClicked.AddDynamic(this, &UGeoLocalConnectWidget::HandleJoin);
-	BackButton->OnClicked.AddDynamic(this, &UGeoLocalConnectWidget::HandleBack);
+	HostButton->OnClicked.AddUniqueDynamic(this, &UGeoLocalConnectWidget::HandleHost);
+	JoinButton->OnClicked.AddUniqueDynamic(this, &UGeoLocalConnectWidget::HandleJoin);
+	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoLocalConnectWidget::HandleBack);
 
 	UGeoSessionSubsystem const* Session = GetGameInstance()->GetSubsystem<UGeoSessionSubsystem>();
-	if (ensureMsgf(Session, TEXT("UGeoLocalConnectWidget: GeoSessionSubsystem missing")))
+	if (ensureMsgf(Session, TEXT("%hs: GeoSessionSubsystem missing"), __FUNCTION__))
 	{
 		LocalIPText->SetText(FText::FromString(FString::Printf(TEXT("Your IP: %s"), *Session->GetLocalIPv4())));
 	}

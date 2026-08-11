@@ -7,7 +7,35 @@
 #include "Engine/World.h"
 #include "GameClasses/GeoGameMode.h"
 #include "GameFramework/PlayerController.h"
+#include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+void AGeoGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AGeoGameState, Difficulty);
+}
+
+void AGeoGameState::SetDifficulty(EGeoDifficulty NewDifficulty)
+{
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("SetDifficulty is server-only")) || Difficulty == NewDifficulty)
+	{
+		return;
+	}
+	if (IsMatchInProgress())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Difficulty change ignored — a fight is in progress"));
+		return;
+	}
+
+	Difficulty = NewDifficulty;
+	OnRep_Difficulty();
+}
+
+void AGeoGameState::OnRep_Difficulty()
+{
+	OnDifficultyChanged.Broadcast();
+}
 
 void AGeoGameState::HandleMatchHasStarted()
 {

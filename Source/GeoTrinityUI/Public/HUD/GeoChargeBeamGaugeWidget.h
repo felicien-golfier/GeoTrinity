@@ -34,7 +34,7 @@ public:
 	TObjectPtr<UGeoGameplayAbility> ChargeBeamAbility;
 
 	/** Sets the charging ability that drives ChargeBar fill. */
-	virtual void SetChargeBeamAbility(UGeoGameplayAbility* Ability) override { ChargeBeamAbility = Ability; }
+	virtual void SetChargeAbility(UGeoGameplayAbility* Ability) override { ChargeBeamAbility = Ability; }
 	/** Sets the sweet-spot window boundaries and marks the SweetSpotBar position dirty for update on next tick. */
 	virtual void SetSweetSpotRatios(float MinRatio, float MaxRatio) override;
 	/** Syncs ChargeBar and SweetSpotBar fill/color to the current ability charge ratio. Safe to call outside of tick. */

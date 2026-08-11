@@ -31,10 +31,7 @@ public:
 	/** Binds health and speed attribute change delegates; also registers ally remote-fire tag listeners on clients so cosmetic shot replay works for observed allies. */
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
 
-	/** Grants all abilities whose tags are in AbilitiesToGive, looked up from the global UAbilityInfo asset. */
-	void GiveStartupAbilities(TArray<FGameplayTag> const& AbilitiesToGive);
-
-	/** Grants all class-agnostic startup abilities defined in the global UAbilityInfo asset. */
+	/** Grants every ability in StartupAbilityTags, looked up from the global UAbilityInfo asset. */
 	void GiveStartupAbilities();
 
 	/** Grants all abilities defined for PlayerClass in the global UAbilityInfo asset. */
@@ -43,14 +40,14 @@ public:
 	/** Removes all abilities that were granted for a specific player class. */
 	void ClearPlayerClassAbilities();
 
-	/** Notifies the ASC that the input mapped to inputTag was pressed this frame. */
-	void AbilityInputTagPressed(FGameplayTag const& inputTag);
+	/** Notifies the ASC that the input mapped to InputTag was pressed this frame. */
+	void AbilityInputTagPressed(FGameplayTag const& InputTag);
 
-	/** Notifies the ASC that the input mapped to inputTag is held this frame. */
-	void AbilityInputTagHeld(FGameplayTag const& inputTag);
+	/** Notifies the ASC that the input mapped to InputTag is held this frame. */
+	void AbilityInputTagHeld(FGameplayTag const& InputTag);
 
-	/** Notifies the ASC that the input mapped to inputTag was released this frame. */
-	void AbilityInputTagReleased(FGameplayTag const& inputTag);
+	/** Notifies the ASC that the input mapped to InputTag was released this frame. */
+	void AbilityInputTagReleased(FGameplayTag const& InputTag);
 
 	/** Activates ability with event data containing avatar orientation. Used for projectile abilities. */
 	bool TryActivateAbilityWithTargetData(FGameplayAbilitySpecHandle Handle, FGameplayTag AbilityTag);
@@ -145,6 +142,21 @@ public:
 	FOnAttributeChangedSignature OnMaxHealthChanged;
 
 private:
+	/** Grants AbilityClass at CombatLevel, tagging the spec with InputTag when it is valid. The single grant path
+	 * shared by both GiveStartupAbilities overloads. */
+	void GiveAbilitySpec(TSubclassOf<UGameplayAbility> AbilityClass, FGameplayTag InputTag);
+
+	/**
+	 * Walks the granted specs matching InputTag and pushes the press into them. bFreshPress selects the polarity:
+	 * true is the frame the key went down (activates bActivateOnFreshPressOnly abilities, handles the alternate
+	 * release, replicates InputPressed), false is the per-frame hold (activates everything else).
+	 */
+	void ActivateAbilitiesForInput(FGameplayTag const& InputTag, bool bFreshPress);
+
+	/** Returns the prediction key an already-activated spec is running under — the live instance's when there is one.
+	 * Wraps the deprecated-API workaround so an engine upgrade has one place to fix. */
+	static FPredictionKey GetActivationPredictionKey(FGameplayAbilitySpec const& AbilitySpec);
+
 	/** Pipes an input release into an active spec: notifies its instances and replicates the InputReleased event. */
 	void ReleaseAbilitySpec(FGameplayAbilitySpec& AbilitySpec);
 

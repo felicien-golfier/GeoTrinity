@@ -35,49 +35,13 @@ void UGeoMainMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!CreateServerButton)
-	{
-		ensureMsgf(CreateServerButton, TEXT("UGeoMainMenuWidget: CreateServerButton is not bound"));
-		return;
-	}
-	if (!JoinServerButton)
-	{
-		ensureMsgf(JoinServerButton, TEXT("UGeoMainMenuWidget: JoinServerButton is not bound"));
-		return;
-	}
-	if (!PlayLocalButton)
-	{
-		ensureMsgf(PlayLocalButton, TEXT("UGeoMainMenuWidget: PlayLocalButton is not bound"));
-		return;
-	}
-	if (!QuitButton)
-	{
-		ensureMsgf(QuitButton, TEXT("UGeoMainMenuWidget: QuitButton is not bound"));
-		return;
-	}
-	if (!CreateServerWidget)
-	{
-		ensureMsgf(CreateServerWidget, TEXT("UGeoMainMenuWidget: CreateServerWidget is not bound"));
-		return;
-	}
-	if (!BrowseServerWidget)
-	{
-		ensureMsgf(BrowseServerWidget, TEXT("UGeoMainMenuWidget: BrowseServerWidget is not bound"));
-		return;
-	}
-	if (!LocalConnectWidget)
-	{
-		ensureMsgf(LocalConnectWidget, TEXT("UGeoMainMenuWidget: LocalConnectWidget is not bound"));
-		return;
-	}
-
-	CreateServerButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleCreateServer);
-	JoinServerButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleJoinServer);
-	PlayLocalButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandlePlayLocal);
-	QuitButton->OnClicked.AddDynamic(this, &UGeoMainMenuWidget::HandleQuit);
-	CreateServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
-	BrowseServerWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
-	LocalConnectWidget->OnClosed.AddDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
+	CreateServerButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleCreateServer);
+	JoinServerButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleJoinServer);
+	PlayLocalButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandlePlayLocal);
+	QuitButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleQuit);
+	CreateServerWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
+	BrowseServerWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
+	LocalConnectWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
 
 	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);

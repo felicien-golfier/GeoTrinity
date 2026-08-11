@@ -57,7 +57,7 @@ void UGeoCombatStatsSubsystem::ResetStats()
 		{
 			if (AGeoPlayerState* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState))
 			{
-				GeoPlayerState->SetDebugCombatStats(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+				GeoPlayerState->SetDebugCombatStats({});
 			}
 		}
 	}
@@ -67,7 +67,7 @@ void UGeoCombatStatsSubsystem::ResetStats()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-FActorCombatStats& UGeoCombatStatsSubsystem::FindOrAddStats(AGeoPlayerState* Actor, float CurrentTime)
+FActorCombatStats& UGeoCombatStatsSubsystem::FindOrAddStats(AGeoPlayerState* Actor)
 {
 	// First event outside a match (e.g. training dummy) opens a new combat session, resetting values
 	// like the InProgress transition does; during a match the session runs from that transition.
@@ -86,7 +86,7 @@ bool UGeoCombatStatsSubsystem::IsMatchInProgress() const
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float Amount)
+void UGeoCombatStatsSubsystem::ReportRate(AGeoPlayerState* Source, float Amount, FCombatRate FActorCombatStats::* Side)
 {
 	if (!IsValid(Source))
 	{
@@ -94,10 +94,16 @@ void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float 
 	}
 	float const CurrentTime = GetWorld()->GetTimeSeconds();
 	DecayRates(CurrentTime);
-	FActorCombatStats& Stats = FindOrAddStats(Source, CurrentTime);
-	Stats.TotalDamageDealt += Amount;
-	Stats.SmoothedDPS += Amount / SmoothingWindowSeconds;
-	Stats.DamageBurst.Add(Amount, CurrentTime);
+	FCombatRate& Rate = FindOrAddStats(Source).*Side;
+	Rate.Total += Amount;
+	Rate.Smoothed += Amount / SmoothingWindowSeconds;
+	Rate.Burst.Add(Amount, CurrentTime);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float Amount)
+{
+	ReportRate(Source, Amount, &FActorCombatStats::Damage);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -107,24 +113,14 @@ void UGeoCombatStatsSubsystem::ReportDamageReceived(AGeoPlayerState* Target, flo
 	{
 		return;
 	}
-	float const CurrentTime = GetWorld()->GetTimeSeconds();
-	DecayRates(CurrentTime);
-	FindOrAddStats(Target, CurrentTime).TotalDamageReceived += Amount;
+	DecayRates(GetWorld()->GetTimeSeconds());
+	FindOrAddStats(Target).TotalDamageReceived += Amount;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ReportHealingDealt(AGeoPlayerState* Source, float Amount)
 {
-	if (!IsValid(Source))
-	{
-		return;
-	}
-	float const CurrentTime = GetWorld()->GetTimeSeconds();
-	DecayRates(CurrentTime);
-	FActorCombatStats& Stats = FindOrAddStats(Source, CurrentTime);
-	Stats.TotalHealingDealt += Amount;
-	Stats.SmoothedHPS += Amount / SmoothingWindowSeconds;
-	Stats.HealingBurst.Add(Amount, CurrentTime);
+	ReportRate(Source, Amount, &FActorCombatStats::Healing);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -153,8 +149,8 @@ void UGeoCombatStatsSubsystem::DecayRates(float CurrentTime)
 	LastDecayTime = CurrentTime;
 	for (TPair<TWeakObjectPtr<AGeoPlayerState>, FActorCombatStats>& Pair : StatsPerActor)
 	{
-		Pair.Value.SmoothedDPS *= Decay;
-		Pair.Value.SmoothedHPS *= Decay;
+		Pair.Value.Damage.Smoothed *= Decay;
+		Pair.Value.Healing.Smoothed *= Decay;
 	}
 }
 
@@ -173,9 +169,16 @@ void UGeoCombatStatsSubsystem::PushPlayerStats(float CurrentTime)
 		}
 
 		FActorCombatStats const& Stats = It.Value();
-		GeoPlayerState->SetDebugCombatStats(Stats.SmoothedDPS, Stats.SmoothedHPS, Stats.DamageBurst.Max,
-											Stats.HealingBurst.Max, Stats.TotalDamageDealt / CombatDuration,
-											Stats.TotalHealingDealt / CombatDuration, Stats.TotalDamageDealt,
-											Stats.TotalHealingDealt, Stats.TotalDamageReceived);
+		FGeoCombatDisplayStats Display;
+		Display.DebugDPS = Stats.Damage.Smoothed;
+		Display.DebugHPS = Stats.Healing.Smoothed;
+		Display.MaxBurstDamage = Stats.Damage.Burst.Max;
+		Display.MaxBurstHealing = Stats.Healing.Burst.Max;
+		Display.FightDPS = Stats.Damage.Total / CombatDuration;
+		Display.FightHPS = Stats.Healing.Total / CombatDuration;
+		Display.TotalDamageDealt = Stats.Damage.Total;
+		Display.TotalHealingDealt = Stats.Healing.Total;
+		Display.TotalDamageReceived = Stats.TotalDamageReceived;
+		GeoPlayerState->SetDebugCombatStats(Display);
 	}
 }

@@ -24,16 +24,15 @@
 #include "WidgetBlueprint.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-UWidgetTree* UGeoWidgetBuilderUtil::BeginBuild(UWidgetBlueprint* WidgetBlueprint, TCHAR const* FunctionName)
+UWidgetTree* UGeoWidgetBuilderUtil::BeginBuild(UWidgetBlueprint* WidgetBlueprint, ANSICHAR const* CallerName)
 {
-	if (!ensureMsgf(WidgetBlueprint, TEXT("UGeoWidgetBuilderUtil::%s — WidgetBlueprint is null"), FunctionName))
+	if (!ensureMsgf(WidgetBlueprint, TEXT("%hs — WidgetBlueprint is null"), CallerName))
 	{
 		return nullptr;
 	}
 
 	UWidgetTree* Tree = WidgetBlueprint->WidgetTree;
-	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::%s — WidgetTree is null on '%s'"), FunctionName,
-					*WidgetBlueprint->GetName()))
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), CallerName, *WidgetBlueprint->GetName()))
 	{
 		return nullptr;
 	}
@@ -86,7 +85,7 @@ UPanelWidget* UGeoWidgetBuilderUtil::ConstructRootPanel(UWidgetTree* Tree, TSubc
 void UGeoWidgetBuilderUtil::SetRootPanel(UWidgetBlueprint* WidgetBlueprint, TSubclassOf<UPanelWidget> PanelClass,
 										 FName RootName)
 {
-	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("SetRootPanel"));
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree || !ConstructRootPanel(Tree, PanelClass, RootName))
 	{
 		return;
@@ -106,7 +105,7 @@ void UGeoWidgetBuilderUtil::SetImageRoot(UWidgetBlueprint* WidgetBlueprint, UTex
 		return;
 	}
 
-	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("SetImageRoot"));
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree)
 	{
 		return;
@@ -132,7 +131,7 @@ void UGeoWidgetBuilderUtil::SetImageRootFromMaterial(UWidgetBlueprint* WidgetBlu
 		return;
 	}
 
-	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, TEXT("SetImageRootFromMaterial"));
+	UWidgetTree* Tree = BeginBuild(WidgetBlueprint, __FUNCTION__);
 	if (!Tree)
 	{
 		return;

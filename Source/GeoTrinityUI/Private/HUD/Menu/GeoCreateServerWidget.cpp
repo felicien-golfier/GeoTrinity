@@ -16,47 +16,10 @@ void UGeoCreateServerWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!ServerNameInput)
-	{
-		ensureMsgf(ServerNameInput, TEXT("UGeoCreateServerWidget: ServerNameInput is not bound"));
-		return;
-	}
-	if (!MapComboBox)
-	{
-		ensureMsgf(MapComboBox, TEXT("UGeoCreateServerWidget: MapComboBox is not bound"));
-		return;
-	}
-	if (!SlotsComboBox)
-	{
-		ensureMsgf(SlotsComboBox, TEXT("UGeoCreateServerWidget: SlotsComboBox is not bound"));
-		return;
-	}
-	if (!LanguageComboBox)
-	{
-		ensureMsgf(LanguageComboBox, TEXT("UGeoCreateServerWidget: LanguageComboBox is not bound"));
-		return;
-	}
-	if (!PrivacyComboBox)
-	{
-		ensureMsgf(PrivacyComboBox, TEXT("UGeoCreateServerWidget: PrivacyComboBox is not bound"));
-		return;
-	}
-	if (!CreateButton)
-	{
-		ensureMsgf(CreateButton, TEXT("UGeoCreateServerWidget: CreateButton is not bound"));
-		return;
-	}
-	if (!BackButton)
-	{
-		ensureMsgf(BackButton, TEXT("UGeoCreateServerWidget: BackButton is not bound"));
-		return;
-	}
-
 	PopulateComboBoxes();
 	ServerNameInput->SetHintText(FText::FromString(DefaultServerName));
 
-	//CreateButton->OnClicked.AddDynamic(this, &UGeoCreateServerWidget::HandleCreate);
-	BackButton->OnClicked.AddDynamic(this, &UGeoCreateServerWidget::HandleBack);
+	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoCreateServerWidget::HandleBack);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

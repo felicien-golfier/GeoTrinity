@@ -46,9 +46,8 @@ void UShieldBurstPassiveComponent::InitializeMaterialInstances()
 {
 	ACharacter const* Character = Cast<ACharacter>(GetOwner());
 
-	if (!IsValid(Character))
+	if (!ensureMsgf(IsValid(Character), TEXT("%hs: invalid Instigator"), __FUNCTION__))
 	{
-		ensureMsgf(IsValid(Character), TEXT("UShieldBurstPassiveComponent: invalid Instigator"));
 		return;
 	}
 

@@ -10,6 +10,7 @@
 #include "Pattern.generated.h"
 
 struct FGameplayTagContainer;
+class UAnimInstance;
 class UEffectDataAsset;
 class UGameplayEffect;
 class AGeoProjectile;
@@ -70,6 +71,13 @@ protected:
 	virtual void StartPattern();
 
 	void JumpMontageToEndSection() const;
+
+	/**
+	 * True when this machine should play the pattern's montage: the montage and its anim instance both exist, and this
+	 * is not a dedicated server. The test is IsDedicatedServer and not !IsServer because the montage is cosmetic — every
+	 * machine that renders this boss must play it, listen-server host included; only a viewport-less server skips it.
+	 */
+	bool CanPlayMontageLocally(UAnimInstance const* AnimInstance) const;
 
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 

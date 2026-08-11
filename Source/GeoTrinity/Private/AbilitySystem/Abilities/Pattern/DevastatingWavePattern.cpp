@@ -36,9 +36,8 @@ void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
 										  TInstancedStruct<FPatternData> const& PatternData)
 {
 	Super::InitPattern(Payload, PatternData);
-	if (!IsValid(StoredPayload.Owner))
+	if (!ensureMsgf(IsValid(StoredPayload.Owner), TEXT("%hs: StoredPayload.Owner is null"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("UDevastatingWavePattern: StoredPayload.Owner is null"));
 		return;
 	}
 
@@ -306,9 +305,8 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 	}
 
 	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
-	if (!SourceASC)
+	if (!ensureMsgf(SourceASC, TEXT("%hs: Owner has no ASC on wave end"), __FUNCTION__))
 	{
-		ensureMsgf(false, TEXT("UDevastatingWavePattern: SourceASC is null on wave end — Owner has no ASC"));
 		Super::EndPattern(bForceStop);
 		return;
 	}
@@ -322,9 +320,8 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 				continue;
 			}
 			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(PillarData.Pillar.Get());
-			if (!TargetASC)
+			if (!ensureMsgf(TargetASC, TEXT("%hs: alive pillar has no ASC"), __FUNCTION__))
 			{
-				ensureMsgf(false, TEXT("UDevastatingWavePattern: alive pillar has no ASC"));
 				continue;
 			}
 			UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,

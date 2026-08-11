@@ -124,6 +124,14 @@ AActor* UGeoActorPoolingSubsystem::SpawnActor(UClass* Class, FActorSpawnParamete
 
 	ChangeActorState(NewActor, false);
 
+	// An actor spawned before the world begins play (PreSpawn from a pattern's InitializeComponent) registers its tick
+	// functions at its own BeginPlay, after the deactivation above, and registration ORs bStartWithTickEnabled back
+	// into the enable state (AActor::RegisterActorTickFunctions, UActorComponent::SetupActorComponentTickFunction).
+	// The flag is only read there, so clearing it once here is what makes the deactivation stick.
+	NewActor->PrimaryActorTick.bStartWithTickEnabled = false;
+	NewActor->ForEachComponent<UActorComponent>(false, [](UActorComponent* Component)
+												{ Component->PrimaryComponentTick.bStartWithTickEnabled = false; });
+
 	return NewActor;
 }
 

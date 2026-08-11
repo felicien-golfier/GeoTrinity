@@ -11,69 +11,17 @@ void UGeoSettingsWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!SoundButton)
-	{
-		ensureMsgf(SoundButton, TEXT("UGeoSettingsWidget: SoundButton is not bound"));
-		return;
-	}
-	if (!KeyBindingsButton)
-	{
-		ensureMsgf(KeyBindingsButton, TEXT("UGeoSettingsWidget: KeyBindingsButton is not bound"));
-		return;
-	}
-	if (!BackButton)
-	{
-		ensureMsgf(BackButton, TEXT("UGeoSettingsWidget: BackButton is not bound"));
-		return;
-	}
-	if (!SoundWidget)
-	{
-		ensureMsgf(SoundWidget, TEXT("UGeoSettingsWidget: SoundWidget is not bound"));
-		return;
-	}
-	if (!KeyBindingsWidget)
-	{
-		ensureMsgf(KeyBindingsWidget, TEXT("UGeoSettingsWidget: KeyBindingsWidget is not bound"));
-		return;
-	}
-
-	SoundButton->OnClicked.AddDynamic(this, &UGeoSettingsWidget::HandleSound);
-	KeyBindingsButton->OnClicked.AddDynamic(this, &UGeoSettingsWidget::HandleKeyBindings);
-	BackButton->OnClicked.AddDynamic(this, &UGeoSettingsWidget::HandleBack);
-	SoundWidget->OnClosed.AddDynamic(this, &UGeoSettingsWidget::HandleSubPanelClosed);
-	KeyBindingsWidget->OnClosed.AddDynamic(this, &UGeoSettingsWidget::HandleSubPanelClosed);
+	SoundButton->OnClicked.AddUniqueDynamic(this, &UGeoSettingsWidget::HandleSound);
+	KeyBindingsButton->OnClicked.AddUniqueDynamic(this, &UGeoSettingsWidget::HandleKeyBindings);
+	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoSettingsWidget::HandleBack);
+	SoundWidget->OnClosed.AddUniqueDynamic(this, &UGeoSettingsWidget::HandleSubPanelClosed);
+	KeyBindingsWidget->OnClosed.AddUniqueDynamic(this, &UGeoSettingsWidget::HandleSubPanelClosed);
 
 	// Reset to the chooser: the menu can close from anywhere (e.g. ESC while a sub-panel is open), and this
 	// instance is reused on the next open.
 	SoundWidget->SetVisibility(ESlateVisibility::Collapsed);
 	KeyBindingsWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoSettingsWidget::NativeDestruct()
-{
-	if (SoundButton)
-	{
-		SoundButton->OnClicked.RemoveDynamic(this, &UGeoSettingsWidget::HandleSound);
-	}
-	if (KeyBindingsButton)
-	{
-		KeyBindingsButton->OnClicked.RemoveDynamic(this, &UGeoSettingsWidget::HandleKeyBindings);
-	}
-	if (BackButton)
-	{
-		BackButton->OnClicked.RemoveDynamic(this, &UGeoSettingsWidget::HandleBack);
-	}
-	if (SoundWidget)
-	{
-		SoundWidget->OnClosed.RemoveDynamic(this, &UGeoSettingsWidget::HandleSubPanelClosed);
-	}
-	if (KeyBindingsWidget)
-	{
-		KeyBindingsWidget->OnClosed.RemoveDynamic(this, &UGeoSettingsWidget::HandleSubPanelClosed);
-	}
-	Super::NativeDestruct();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

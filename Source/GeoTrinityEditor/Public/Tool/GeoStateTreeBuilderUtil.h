@@ -13,6 +13,33 @@ class UStateTree;
 class UStateTreeState;
 class UStateTreeEditorData;
 
+/** Names resolving one enter-condition property binding to a Property Function output and its context input. */
+USTRUCT(BlueprintType)
+struct FGeoPropertyFunctionBinding
+{
+	GENERATED_BODY()
+
+	/** Property on the condition struct to bind (e.g. "Left", "Right"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTrinity|Editor")
+	FName ConditionPropertyName;
+
+	/** Unqualified USTRUCT name of the Property Function (e.g. "FSTGetHealthRatioPropertyFunction"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTrinity|Editor")
+	FName PropertyFunctionStructName;
+
+	/** Output property on the function's InstanceData (e.g. "Output"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTrinity|Editor")
+	FName FunctionOutputPropertyName;
+
+	/** Input property on the function's InstanceData to bind to the context object (e.g. "Input"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTrinity|Editor")
+	FName FunctionInputPropertyName;
+
+	/** Unqualified UClass name of the context object to bind Input to (e.g. "GeoEnemyAIController"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTrinity|Editor")
+	FName ContextClassName;
+};
+
 /**
  * Editor utility object for mutating UStateTree assets from Python or Blueprint automation.
  * Each method validates, compiles, and saves the asset atomically, so StateTree assets stay consistent
@@ -70,20 +97,13 @@ public:
 									   EGenericAICheck Operator, bool bInvert = false);
 
 	/**
-	 * Binds any property on a enter condition to a Property Function output, and binds the function's Input to a
-	 * context object. ConditionIndex        — 0-based index into the state's EnterConditions array.
-	 * ConditionPropertyName — property on the condition struct to bind (e.g. "Left", "Right").
-	 * PropertyFunctionStructName — unqualified USTRUCT name of the Property Function (e.g.
-	 * "FSTGetHealthRatioPropertyFunction"). FunctionOutputPropertyName — output property on the function's InstanceData
-	 * (e.g. "Output"). FunctionInputPropertyName  — input property on the function's InstanceData to bind to context
-	 * (e.g. "Input"). ContextClassName      — unqualified UClass name of the context object to bind Input to (e.g.
-	 * "GeoEnemyAIController").
+	 * Binds any property on an enter condition to a Property Function output, and binds the function's Input to a
+	 * context object. ConditionIndex is the 0-based index into the state's EnterConditions array; Binding names the
+	 * condition property, the function struct and its output/input properties, and the context class.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void BindConditionPropertyToPropertyFunction(UStateTree* StateTree, FName StateName, int32 ConditionIndex,
-														FName ConditionPropertyName, FName PropertyFunctionStructName,
-														FName FunctionOutputPropertyName,
-														FName FunctionInputPropertyName, FName ContextClassName);
+														FGeoPropertyFunctionBinding const& Binding);
 
 	/**
 	 * Adds a task of any type to an existing state, with default instance data. TaskStructName is the unqualified

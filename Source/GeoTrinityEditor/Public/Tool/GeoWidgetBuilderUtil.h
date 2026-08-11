@@ -139,7 +139,7 @@ public:
 	// --- Building blocks for content builders (UGeoHudWidgetBuilderUtil and future per-widget builders) ---
 
 	/** Validates the blueprint and its tree, marks both for modification, and clears the root. Returns null on failure. */
-	static UWidgetTree* BeginBuild(UWidgetBlueprint* WidgetBlueprint, TCHAR const* FunctionName);
+	static UWidgetTree* BeginBuild(UWidgetBlueprint* WidgetBlueprint, ANSICHAR const* CallerName);
 
 	/** Compiles and saves the widget blueprint after its tree has been built. */
 	static void FinishBuild(UWidgetBlueprint* WidgetBlueprint);

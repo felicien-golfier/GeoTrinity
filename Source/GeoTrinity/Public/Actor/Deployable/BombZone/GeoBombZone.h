@@ -32,7 +32,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Extends the base spawn-cue parameters with the bomb carrier's current world location as the effect origin. */
-	virtual FGameplayCueParameters GetSpawnCueParams() override;
+	virtual FGameplayCueParameters GetSpawnCueParams() const override;
 
 
 protected:

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "HUD/GeoUserWidget.h"
-#include "HUD/Interface/GeoDeployGaugeWidgetInterface.h"
+#include "HUD/Interface/GeoChargeGaugeWidgetInterface.h"
 
 #include "GeoDeployChargeGaugeWidget.generated.h"
 
@@ -19,13 +19,13 @@ class UProgressBar;
 UCLASS()
 class GEOTRINITYUI_API UGeoDeployChargeGaugeWidget
 	: public UGeoUserWidget
-	, public IGeoDeployGaugeWidgetInterface
+	, public IGeoChargeGaugeWidgetInterface
 {
 	GENERATED_BODY()
 
 public:
 	/** Sets the deploy ability whose charge ratio drives the ChargeBar fill. */
-	virtual void SetDeployAbility(UGeoGameplayAbility* Ability) override { DeployAbility = Ability; }
+	virtual void SetChargeAbility(UGeoGameplayAbility* Ability) override { DeployAbility = Ability; }
 
 	/** Syncs ChargeBar fill to the current DeployAbility charge ratio. Safe to call outside of tick. */
 	virtual void UpdateVisualChargeRatio() const override;

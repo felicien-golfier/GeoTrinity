@@ -81,9 +81,7 @@ void AGeoPlayerController::ReceivedPlayer()
 
 	bool const bKeyboardMousePlayer = GeoLib::IsKeyboardMousePlayer(this);
 	SetMouseCursorVisible(bKeyboardMousePlayer);
-	// With a visible cursor the viewport regularly loses mouse capture; the default GameOnly mode consumes the click
-	// that re-acquires capture, so most ability clicks would never reach input processing.
-	SetInputMode(FInputModeGameOnly().SetConsumeCaptureMouseDown(false));
+	SetGameplayInputMode();
 	SetViewTarget(UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass()));
 	SetMenuInputMappingActive(false);
 	if (bKeyboardMousePlayer)
@@ -296,6 +294,13 @@ void AGeoPlayerController::ClosePauseMenu()
 		PauseMenuWidget->RemoveFromParent();
 	}
 	SetMenuInputMappingActive(false);
+	SetGameplayInputMode();
+}
+
+void AGeoPlayerController::SetGameplayInputMode()
+{
+	// With a visible cursor the viewport regularly loses mouse capture; the default GameOnly mode consumes the click
+	// that re-acquires capture, so most ability clicks would never reach input processing.
 	SetInputMode(FInputModeGameOnly().SetConsumeCaptureMouseDown(false));
 }
 

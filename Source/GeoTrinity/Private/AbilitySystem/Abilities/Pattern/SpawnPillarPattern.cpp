@@ -14,10 +14,7 @@ void USpawnPillarPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 	// TODO: why not having deployables in the pooling system. Need to set it up properly
 	//  UGeoActorPoolingSubsystem::Get(GetWorld())->PreSpawn(PillarClass, 10);
 
-	if (!IsValid(PillarClass))
-	{
-		ensureMsgf(false, TEXT("PillarClass null, please fill the class in the FatalZonePattern"));
-	}
+	ensureMsgf(IsValid(PillarClass), TEXT("%hs: PillarClass is not set on %s"), __FUNCTION__, *GetName());
 }
 
 FGameplayCueParameters USpawnPillarPattern::FillCueParam(FAbilityPayload const& Payload)

@@ -121,12 +121,14 @@ void AGeoHealingZone::Tick(float DeltaSeconds)
 
 	if (HealedNum > 0)
 	{
-		FDamageEffectData DrainEffectData;
-		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
-		DrainEffectData.bSuppressGameplayCue = true;
-		DrainEffectData.bSuppressCombatStats = true;
-		DrainEffectData.bDoNotRedirectSacrifice = true;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, OwnerASC, GetAbilitySystemComponent(),
+		// The zone pays for what it healed — scaled by how many allies it reached, so distinct from the base class's
+		// flat per-second DrainEffectData.
+		FDamageEffectData HealingCostData;
+		HealingCostData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
+		HealingCostData.bSuppressGameplayCue = true;
+		HealingCostData.bSuppressCombatStats = true;
+		HealingCostData.bDoNotRedirectSacrifice = true;
+		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealingCostData, OwnerASC, GetAbilitySystemComponent(),
 														Data.Level, Data.Seed, Data.AbilityTag);
 	}
 }

@@ -5,58 +5,39 @@
 
 #include "Abilities/GameplayAbility.h"
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GameplayTagsManager.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
-/**
- * Walks the CDO's asset tags and returns the first tag under the AbilitySpell root.
- * Called once at asset load / property change, not at runtime — synchronous CDO access is intentional.
- */
-static FGameplayTag GetAbilityTagFromCDO(TSubclassOf<UGameplayAbility> const& AbilityClass)
-{
 
+/** Returns the CDO's first asset tag under Root, ensuring when the Blueprint's Tag category is missing it.
+ *  Called at asset load / property change, not at runtime — synchronous CDO access is intentional. */
+static FGameplayTag GetAssetTagFromCDO(TSubclassOf<UGameplayAbility> const& AbilityClass, FGameplayTag Root,
+									   TCHAR const* TagPurpose)
+{
 	if (!AbilityClass)
 	{
 		return FGameplayTag();
 	}
 
+	FGameplayTag const Found = GeoASLib::GetFirstAssetTagUnderRoot(*AbilityClass.GetDefaultObject(), Root);
+	ensureMsgf(Found.IsValid(), TEXT("Ability %s has no %s, please fill the AssetTags in the BP under Tag category"),
+			   *AbilityClass->GetName(), TagPurpose);
+	return Found;
+}
+
+static FGameplayTag GetAbilityTagFromCDO(TSubclassOf<UGameplayAbility> const& AbilityClass)
+{
 	FGameplayTag const SpellRoot =
 		UGameplayTagsManager::Get().RequestGameplayTag(FName(RootTagNames::AbilitySpellTag), false);
-	for (FGameplayTag const& Tag : AbilityClass.GetDefaultObject()->GetAssetTags())
-	{
-		if (Tag.MatchesTag(SpellRoot))
-		{
-			return Tag;
-		}
-	}
-
-	ensureMsgf(false, TEXT("Ability %s has no AbilityTag, please fill the AssetTags in the BP under Tag category"),
-			   *AbilityClass->GetName());
-
-	return FGameplayTag();
+	return GetAssetTagFromCDO(AbilityClass, SpellRoot, TEXT("AbilityTag"));
 }
 
 static FGameplayTag GetAbilityTypeTagFromCDO(TSubclassOf<UGameplayAbility> const& AbilityClass)
 {
-	if (!AbilityClass)
-	{
-		return FGameplayTag();
-	}
-
-	FGameplayTag const AbilityTypeRoot = FGeoGameplayTags::Get().Ability_Type;
-	for (FGameplayTag const& Tag : AbilityClass.GetDefaultObject()->GetAssetTags())
-	{
-		if (Tag.MatchesTag(AbilityTypeRoot))
-		{
-			return Tag;
-		}
-	}
-
-	ensureMsgf(false, TEXT("Ability %s has no Ability Type, please fill the AssetTags in the BP under Tag category"),
-			   *AbilityClass->GetName());
-	return FGameplayTag();
+	return GetAssetTagFromCDO(AbilityClass, FGeoGameplayTags::Get().Ability_Type, TEXT("Ability Type"));
 }
 
 namespace

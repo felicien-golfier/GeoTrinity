@@ -27,7 +27,7 @@ protected:
 	virtual void EndProjectileLife() override;
 
 private:
-	/** Spawns the deployable using the library helpers (StartSpawnDeployable → InitDeployable → FinishSpawnDeployable).
-	 */
+	/** Spawns the deployable through GeoASLib::FullySpawnDeployable, letting the subclass hook fill class-specific
+	 * data first. */
 	void SpawnDeployableActor();
 };

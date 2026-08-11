@@ -16,33 +16,14 @@ void UGeoMenuButton::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!ButtonWidget)
-	{
-		ensureMsgf(ButtonWidget, TEXT("UGeoMenuButton: Button widget is not bound — add a UGeoButton named 'ButtonWidget' to the widget hierarchy"));
-		return;
-	}
-
 	ensureMsgf(ButtonWidget->GetIsFocusable(),
 			   TEXT("UGeoMenuButton: ButtonWidget is not focusable — forwarded focus lands back on this widget"));
 
-	ButtonWidget->OnClicked.AddDynamic(this, &UGeoMenuButton::HandleButtonClicked);
-}
-
-void UGeoMenuButton::NativeDestruct()
-{
-	if (ButtonWidget)
-	{
-		ButtonWidget->OnClicked.RemoveDynamic(this, &UGeoMenuButton::HandleButtonClicked);
-	}
-	Super::NativeDestruct();
+	ButtonWidget->OnClicked.AddUniqueDynamic(this, &UGeoMenuButton::HandleButtonClicked);
 }
 
 FReply UGeoMenuButton::NativeOnFocusReceived(FGeometry const& InGeometry, FFocusEvent const& InFocusEvent)
 {
-	if (!ButtonWidget)
-	{
-		return Super::NativeOnFocusReceived(InGeometry, InFocusEvent);
-	}
 	return FReply::Handled().SetUserFocus(ButtonWidget->TakeWidget(), InFocusEvent.GetCause());
 }
 

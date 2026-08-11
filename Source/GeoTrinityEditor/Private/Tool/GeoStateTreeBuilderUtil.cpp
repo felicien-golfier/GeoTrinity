@@ -41,12 +41,16 @@ static bool RemoveStateRecursive(TArray<TObjectPtr<UStateTreeState>>& States, FN
 {
 	for (int32 i = 0; i < States.Num(); ++i)
 	{
-		if (States[i] && States[i]->Name == StateName)
+		if (!States[i])
+		{
+			continue;
+		}
+		if (States[i]->Name == StateName)
 		{
 			States.RemoveAt(i);
 			return true;
 		}
-		if (States[i] && RemoveStateRecursive(States[i]->Children, StateName))
+		if (RemoveStateRecursive(States[i]->Children, StateName))
 		{
 			return true;
 		}
@@ -54,31 +58,66 @@ static bool RemoveStateRecursive(TArray<TObjectPtr<UStateTreeState>>& States, FN
 	return false;
 }
 
-static void CompileAndSave(UStateTree* StateTree, TCHAR const* CallerName)
+static void CompileAndSave(UStateTree* StateTree, ANSICHAR const* CallerName)
 {
 	UStateTreeEditingSubsystem::ValidateStateTree(StateTree);
 	bool const bSuccess = UE::StateTree::Compiler::FCompilerManager::CompileSynchronously(StateTree);
-	ensureMsgf(bSuccess, TEXT("%s — StateTree compile failed for '%s'"), CallerName, *StateTree->GetName());
+	ensureMsgf(bSuccess, TEXT("%hs — StateTree compile failed for '%s'"), CallerName, *StateTree->GetName());
 	UEditorLoadingAndSavingUtils::SavePackages({StateTree->GetPackage()}, false);
 }
 
-static UStateTreeEditorData* GetEditorData(UStateTree* StateTree, TCHAR const* CallerName)
+static UStateTreeEditorData* GetEditorData(UStateTree* StateTree, ANSICHAR const* CallerName)
 {
-	if (!ensureMsgf(StateTree, TEXT("%s — StateTree is null"), CallerName))
+	if (!ensureMsgf(StateTree, TEXT("%hs — StateTree is null"), CallerName))
 	{
 		return nullptr;
 	}
 
 	UStateTreeEditorData* EditorData = Cast<UStateTreeEditorData>(StateTree->EditorData);
-	ensureMsgf(EditorData, TEXT("%s — EditorData is null on '%s'"), CallerName, *StateTree->GetName());
+	ensureMsgf(EditorData, TEXT("%hs — EditorData is null on '%s'"), CallerName, *StateTree->GetName());
 	return EditorData;
 }
 
-static UStateTreeState* FindState(UStateTreeEditorData* EditorData, FName StateName, TCHAR const* CallerName)
+static UStateTreeState* FindState(UStateTreeEditorData* EditorData, FName StateName, ANSICHAR const* CallerName)
 {
 	UStateTreeState* State = FindStateRecursive(EditorData->SubTrees, StateName);
-	ensureMsgf(State, TEXT("%s — state '%s' not found"), CallerName, *StateName.ToString());
+	ensureMsgf(State, TEXT("%hs — state '%s' not found"), CallerName, *StateName.ToString());
 	return State;
+}
+
+static bool ResolveTag(FName TagName, ANSICHAR const* CallerName, FGameplayTag& OutTag)
+{
+	OutTag = FGameplayTag::RequestGameplayTag(TagName, false);
+	return ensureMsgf(OutTag.IsValid(), TEXT("%hs — gameplay tag '%s' not found"), CallerName, *TagName.ToString());
+}
+
+/**
+ * Resolves editor data + the named state, brackets the edit in Modify(), and compiles+saves once Edit reports
+ * success. Edit returning false aborts without compiling, so a failed validation leaves the asset untouched.
+ */
+static void WithState(UStateTree* StateTree, FName StateName, ANSICHAR const* CallerName,
+					  TFunctionRef<bool(UStateTreeEditorData&, UStateTreeState&)> Edit)
+{
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, CallerName);
+	if (!EditorData)
+	{
+		return;
+	}
+
+	UStateTreeState* State = FindState(EditorData, StateName, CallerName);
+	if (!State)
+	{
+		return;
+	}
+
+	EditorData->Modify();
+	State->Modify();
+	if (!Edit(*EditorData, *State))
+	{
+		return;
+	}
+
+	CompileAndSave(StateTree, CallerName);
 }
 
 static void LogStatesRecursive(TArray<TObjectPtr<UStateTreeState>> const& States, int32 Depth)
@@ -140,8 +179,7 @@ UStateTreeState* UGeoStateTreeBuilderUtil::CreateAndInsertState(UStateTreeEditor
 	}
 
 	UStateTreeState* ParentState = FindStateRecursive(EditorData->SubTrees, ParentStateName);
-	if (!ensureMsgf(ParentState, TEXT("UGeoStateTreeBuilderUtil::CreateAndInsertState — parent state '%s' not found"),
-					*ParentStateName.ToString()))
+	if (!ensureMsgf(ParentState, TEXT("%hs — parent state '%s' not found"), __FUNCTION__, *ParentStateName.ToString()))
 	{
 		return nullptr;
 	}
@@ -166,24 +204,19 @@ UStateTreeState* UGeoStateTreeBuilderUtil::CreateAndInsertState(UStateTreeEditor
 void UGeoStateTreeBuilderUtil::AddState(UStateTree* StateTree, FName StateName, FName ParentStateName,
 										int32 InsertIndex)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddState"));
-	if (!EditorData)
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, __FUNCTION__);
+	if (!EditorData || !CreateAndInsertState(EditorData, StateName, ParentStateName, InsertIndex))
 	{
 		return;
 	}
 
-	if (!CreateAndInsertState(EditorData, StateName, ParentStateName, InsertIndex))
-	{
-		return;
-	}
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddState"));
+	CompileAndSave(StateTree, __FUNCTION__);
 }
 
 void UGeoStateTreeBuilderUtil::AddFireAbilityState(UStateTree* StateTree, FName StateName, FGameplayTag AbilityTag,
 												   FName ParentStateName, int32 InsertIndex)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddFireAbilityState"));
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, __FUNCTION__);
 	if (!EditorData)
 	{
 		return;
@@ -198,17 +231,15 @@ void UGeoStateTreeBuilderUtil::AddFireAbilityState(UStateTree* StateTree, FName 
 	TStateTreeEditorNode<FSTTask_FireAbility>& TaskNode = NewState->AddTask<FSTTask_FireAbility>();
 	TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = AbilityTag;
 
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddFireAbilityState"));
+	CompileAndSave(StateTree, __FUNCTION__);
 }
 
 void UGeoStateTreeBuilderUtil::AddFireAbilityStateByTagName(UStateTree* StateTree, FName StateName,
 															FName AbilityTagName, FName ParentStateName,
 															int32 InsertIndex)
 {
-	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(AbilityTagName, false);
-	if (!ensureMsgf(Tag.IsValid(),
-					TEXT("UGeoStateTreeBuilderUtil::AddFireAbilityStateByTagName — tag '%s' not found"),
-					*AbilityTagName.ToString()))
+	FGameplayTag Tag;
+	if (!ResolveTag(AbilityTagName, __FUNCTION__, Tag))
 	{
 		return;
 	}
@@ -218,94 +249,69 @@ void UGeoStateTreeBuilderUtil::AddFireAbilityStateByTagName(UStateTree* StateTre
 void UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState(UStateTree* StateTree, FName StateName,
 															FName NewAbilityTagName)
 {
-	UStateTreeEditorData* EditorData =
-		GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState"));
-	if (!EditorData)
-	{
-		return;
-	}
+	ANSICHAR const* const Caller = __FUNCTION__;
+	WithState(StateTree, StateName, Caller,
+			  [NewAbilityTagName, Caller](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  FGameplayTag NewTag;
+				  if (!ResolveTag(NewAbilityTagName, Caller, NewTag))
+				  {
+					  return false;
+				  }
 
-	UStateTreeState* TargetState =
-		FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState"));
-	if (!TargetState)
-	{
-		return;
-	}
-
-	FGameplayTag NewTag = FGameplayTag::RequestGameplayTag(NewAbilityTagName, false);
-	if (!ensureMsgf(NewTag.IsValid(),
-					TEXT("UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState — tag '%s' not found"),
-					*NewAbilityTagName.ToString()))
-	{
-		return;
-	}
-
-	TargetState->Modify();
-	for (FStateTreeEditorNode& TaskNode : TargetState->Tasks)
-	{
-		if (TaskNode.GetInstance().GetStruct()
-			&& TaskNode.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
-		{
-			TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = NewTag;
-			break;
-		}
-	}
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState"));
+				  for (FStateTreeEditorNode& TaskNode : State.Tasks)
+				  {
+					  if (TaskNode.GetInstance().GetStruct()
+						  && TaskNode.GetInstance().GetStruct()->IsChildOf(
+							  FSTTask_FireAbilityInstanceData::StaticStruct()))
+					  {
+						  TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = NewTag;
+						  break;
+					  }
+				  }
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::RemoveState(UStateTree* StateTree, FName StateName)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::RemoveState"));
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, __FUNCTION__);
 	if (!EditorData)
 	{
 		return;
 	}
 
 	EditorData->Modify();
-	bool const bFound = RemoveStateRecursive(EditorData->SubTrees, StateName);
-	if (!ensureMsgf(bFound, TEXT("UGeoStateTreeBuilderUtil::RemoveState — state '%s' not found"),
-					*StateName.ToString()))
+	if (!ensureMsgf(RemoveStateRecursive(EditorData->SubTrees, StateName), TEXT("%hs — state '%s' not found"),
+					__FUNCTION__, *StateName.ToString()))
 	{
 		return;
 	}
 
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::RemoveState"));
+	CompileAndSave(StateTree, __FUNCTION__);
 }
 
 void UGeoStateTreeBuilderUtil::ClearTransitions(UStateTree* StateTree, FName StateName)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::ClearTransitions"));
-	if (!EditorData)
-	{
-		return;
-	}
-
-	UStateTreeState* State = FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::ClearTransitions"));
-	if (!State)
-	{
-		return;
-	}
-
-	EditorData->Modify();
-	State->Modify();
-	State->Transitions.Empty();
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::ClearTransitions"));
+	WithState(StateTree, StateName, __FUNCTION__,
+			  [](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  State.Transitions.Empty();
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::AddTransition(UStateTree* StateTree, FName SourceStateName, FName TargetStateName,
 											 EStateTreeTransitionTrigger Trigger, FName EventTagName)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddTransition"));
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, __FUNCTION__);
 	if (!EditorData)
 	{
 		return;
 	}
 
-	UStateTreeState* SourceState =
-		FindState(EditorData, SourceStateName, TEXT("UGeoStateTreeBuilderUtil::AddTransition (source)"));
-	UStateTreeState* TargetState =
-		FindState(EditorData, TargetStateName, TEXT("UGeoStateTreeBuilderUtil::AddTransition (target)"));
+	UStateTreeState* SourceState = FindState(EditorData, SourceStateName, __FUNCTION__);
+	UStateTreeState* TargetState = FindState(EditorData, TargetStateName, __FUNCTION__);
 	if (!SourceState || !TargetState)
 	{
 		return;
@@ -316,11 +322,8 @@ void UGeoStateTreeBuilderUtil::AddTransition(UStateTree* StateTree, FName Source
 
 	if (Trigger == EStateTreeTransitionTrigger::OnEvent)
 	{
-		FGameplayTag EventTag = FGameplayTag::RequestGameplayTag(EventTagName, false);
-		if (!ensureMsgf(EventTag.IsValid(),
-						TEXT("UGeoStateTreeBuilderUtil::AddTransition — OnEvent transition needs a valid event tag, got "
-							 "'%s'"),
-						*EventTagName.ToString()))
+		FGameplayTag EventTag;
+		if (!ResolveTag(EventTagName, __FUNCTION__, EventTag))
 		{
 			return;
 		}
@@ -331,264 +334,169 @@ void UGeoStateTreeBuilderUtil::AddTransition(UStateTree* StateTree, FName Source
 		SourceState->AddTransition(Trigger, EStateTreeTransitionType::GotoState, TargetState);
 	}
 
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddTransition"));
+	CompileAndSave(StateTree, __FUNCTION__);
 }
 
 void UGeoStateTreeBuilderUtil::AddFloatEnterCondition(UStateTree* StateTree, FName StateName, float Threshold,
 													  EGenericAICheck Operator, bool bInvert)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddFloatEnterCondition"));
-	if (!EditorData)
-	{
-		return;
-	}
-
-	UStateTreeState* State = FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::AddFloatEnterCondition"));
-	if (!State)
-	{
-		return;
-	}
-
-	EditorData->Modify();
-	State->Modify();
-
-	TStateTreeEditorNode<FStateTreeCompareFloatCondition>& CondNode =
-		State->AddEnterCondition<FStateTreeCompareFloatCondition>(Operator);
-	CondNode.GetInstanceData().Right = Threshold;
-	CondNode.GetNode().bInvert = bInvert;
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddFloatEnterCondition"));
+	WithState(StateTree, StateName, __FUNCTION__,
+			  [Threshold, Operator, bInvert](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  TStateTreeEditorNode<FStateTreeCompareFloatCondition>& CondNode =
+					  State.AddEnterCondition<FStateTreeCompareFloatCondition>(Operator);
+				  CondNode.GetInstanceData().Right = Threshold;
+				  CondNode.GetNode().bInvert = bInvert;
+				  return true;
+			  });
 }
 
-void UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction(
-	UStateTree* StateTree, FName StateName, int32 ConditionIndex, FName ConditionPropertyName,
-	FName PropertyFunctionStructName, FName FunctionOutputPropertyName, FName FunctionInputPropertyName,
-	FName ContextClassName)
+void UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction(UStateTree* StateTree, FName StateName,
+																	   int32 ConditionIndex,
+																	   FGeoPropertyFunctionBinding const& Binding)
 {
-	UStateTreeEditorData* EditorData =
-		GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction"));
-	if (!EditorData)
-	{
-		return;
-	}
+	ANSICHAR const* const Caller = __FUNCTION__;
+	WithState(
+		StateTree, StateName, Caller,
+		[StateName, ConditionIndex, &Binding, Caller](UStateTreeEditorData& EditorData, UStateTreeState& State)
+		{
+			if (!ensureMsgf(State.EnterConditions.IsValidIndex(ConditionIndex),
+							TEXT("%hs — condition index %d out of range on state '%s'"), Caller, ConditionIndex,
+							*StateName.ToString()))
+			{
+				return false;
+			}
 
-	UStateTreeState* State =
-		FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction"));
-	if (!State)
-	{
-		return;
-	}
+			UScriptStruct const* FuncStruct =
+				FindFirstObject<UScriptStruct>(*Binding.PropertyFunctionStructName.ToString());
+			UClass const* ContextClass = FindFirstObject<UClass>(*Binding.ContextClassName.ToString());
+			if (!ensureMsgf(FuncStruct, TEXT("%hs — struct '%s' not found"), Caller,
+							*Binding.PropertyFunctionStructName.ToString())
+				|| !ensureMsgf(ContextClass, TEXT("%hs — class '%s' not found"), Caller,
+							   *Binding.ContextClassName.ToString()))
+			{
+				return false;
+			}
 
-	if (!ensureMsgf(
-			State->EnterConditions.IsValidIndex(ConditionIndex),
-			TEXT(
-				"UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — condition index %d out of range on state '%s'"),
-			ConditionIndex, *StateName.ToString()))
-	{
-		return;
-	}
+			FStateTreeEditorNode const& CondNode = State.EnterConditions[ConditionIndex];
+			FPropertyBindingPath TargetPath(CondNode.ID, Binding.ConditionPropertyName);
 
-	UScriptStruct const* FuncStruct = FindFirstObject<UScriptStruct>(*PropertyFunctionStructName.ToString());
-	if (!ensureMsgf(FuncStruct,
-					TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — struct '%s' not found"),
-					*PropertyFunctionStructName.ToString()))
-	{
-		return;
-	}
+			FPropertyBindingPath SourcePath = EditorData.GetPropertyEditorBindings()->AddFunctionBinding(
+				FuncStruct, {FPropertyBindingPathSegment(Binding.FunctionOutputPropertyName)}, TargetPath);
 
-	UClass const* ContextClass = FindFirstObject<UClass>(*ContextClassName.ToString());
-	if (!ensureMsgf(ContextClass,
-					TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — class '%s' not found"),
-					*ContextClassName.ToString()))
-	{
-		return;
-	}
-
-	EditorData->Modify();
-
-	FStateTreeEditorNode const& CondNode = State->EnterConditions[ConditionIndex];
-	FPropertyBindingPath TargetPath(CondNode.ID, ConditionPropertyName);
-
-	FPropertyBindingPath SourcePath = EditorData->GetPropertyEditorBindings()->AddFunctionBinding(
-		FuncStruct, {FPropertyBindingPathSegment(FunctionOutputPropertyName)}, TargetPath);
-
-	FStateTreeBindableStructDesc ContextDesc = EditorData->FindContextData(ContextClass, TEXT(""));
-	if (ensureMsgf(
-			ContextDesc.ID.IsValid(),
-			TEXT(
-				"UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction — class '%s' not found in StateTree context"),
-			*ContextClassName.ToString()))
-	{
-		FPropertyBindingPath InputSourcePath(ContextDesc.ID);
-		FPropertyBindingPath InputTargetPath(SourcePath.GetStructID(), FunctionInputPropertyName);
-		EditorData->AddPropertyBinding(InputSourcePath, InputTargetPath);
-	}
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction"));
+			FStateTreeBindableStructDesc ContextDesc = EditorData.FindContextData(ContextClass, TEXT(""));
+			if (ensureMsgf(ContextDesc.ID.IsValid(), TEXT("%hs — class '%s' not found in StateTree context"), Caller,
+						   *Binding.ContextClassName.ToString()))
+			{
+				FPropertyBindingPath InputSourcePath(ContextDesc.ID);
+				FPropertyBindingPath InputTargetPath(SourcePath.GetStructID(), Binding.FunctionInputPropertyName);
+				EditorData.AddPropertyBinding(InputSourcePath, InputTargetPath);
+			}
+			return true;
+		});
 }
 
 void UGeoStateTreeBuilderUtil::AddTaskToState(UStateTree* StateTree, FName StateName, FName TaskStructName)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddTaskToState"));
-	if (!EditorData)
-	{
-		return;
-	}
+	ANSICHAR const* const Caller = __FUNCTION__;
+	WithState(StateTree, StateName, Caller,
+			  [TaskStructName, Caller](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  UScriptStruct const* TaskStruct = FindFirstObject<UScriptStruct>(*TaskStructName.ToString());
+				  if (!ensureMsgf(TaskStruct && TaskStruct->IsChildOf(FStateTreeTaskBase::StaticStruct()),
+								  TEXT("%hs — '%s' is not a StateTree task struct"), Caller,
+								  *TaskStructName.ToString()))
+				  {
+					  return false;
+				  }
 
-	UStateTreeState* State = FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::AddTaskToState"));
-	if (!State)
-	{
-		return;
-	}
-
-	UScriptStruct const* TaskStruct = FindFirstObject<UScriptStruct>(*TaskStructName.ToString());
-	if (!ensureMsgf(TaskStruct && TaskStruct->IsChildOf(FStateTreeTaskBase::StaticStruct()),
-					TEXT("UGeoStateTreeBuilderUtil::AddTaskToState — '%s' is not a StateTree task struct"),
-					*TaskStructName.ToString()))
-	{
-		return;
-	}
-
-	EditorData->Modify();
-	State->Modify();
-
-	FStateTreeEditorNode& TaskItem = State->Tasks.AddDefaulted_GetRef();
-	TaskItem.ID = FGuid::NewGuid();
-	TaskItem.Node.InitializeAs(TaskStruct);
-	FStateTreeNodeBase const& Node = TaskItem.Node.Get<FStateTreeNodeBase>();
-	if (UScriptStruct const* InstanceType = Cast<UScriptStruct const>(Node.GetInstanceDataType()))
-	{
-		TaskItem.Instance.InitializeAs(InstanceType);
-	}
-	if (UScriptStruct const* InstanceType = Cast<UScriptStruct const>(Node.GetExecutionRuntimeDataType()))
-	{
-		TaskItem.ExecutionRuntimeData.InitializeAs(InstanceType);
-	}
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddTaskToState"));
+				  FStateTreeEditorNode& TaskItem = State.Tasks.AddDefaulted_GetRef();
+				  TaskItem.ID = FGuid::NewGuid();
+				  TaskItem.Node.InitializeAs(TaskStruct);
+				  FStateTreeNodeBase const& Node = TaskItem.Node.Get<FStateTreeNodeBase>();
+				  if (UScriptStruct const* InstanceType = Cast<UScriptStruct const>(Node.GetInstanceDataType()))
+				  {
+					  TaskItem.Instance.InitializeAs(InstanceType);
+				  }
+				  if (UScriptStruct const* InstanceType = Cast<UScriptStruct const>(Node.GetExecutionRuntimeDataType()))
+				  {
+					  TaskItem.ExecutionRuntimeData.InitializeAs(InstanceType);
+				  }
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::AddSendEventAfterNCyclesTask(UStateTree* StateTree, FName StateName,
 															int32 CyclesRequired, FName EventTagName)
 {
-	UStateTreeEditorData* EditorData =
-		GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddSendEventAfterNCyclesTask"));
-	if (!EditorData)
-	{
-		return;
-	}
+	ANSICHAR const* const Caller = __FUNCTION__;
+	WithState(StateTree, StateName, Caller,
+			  [CyclesRequired, EventTagName, Caller](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  FGameplayTag EventTag;
+				  if (!ResolveTag(EventTagName, Caller, EventTag))
+				  {
+					  return false;
+				  }
 
-	UStateTreeState* State =
-		FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::AddSendEventAfterNCyclesTask"));
-	if (!State)
-	{
-		return;
-	}
-
-	FGameplayTag EventTag = FGameplayTag::RequestGameplayTag(EventTagName, false);
-	if (!ensureMsgf(EventTag.IsValid(),
-					TEXT("UGeoStateTreeBuilderUtil::AddSendEventAfterNCyclesTask — tag '%s' not found"),
-					*EventTagName.ToString()))
-	{
-		return;
-	}
-
-	EditorData->Modify();
-	State->Modify();
-
-	TStateTreeEditorNode<FSTTask_SendEventAfterNCycles>& TaskNode = State->AddTask<FSTTask_SendEventAfterNCycles>();
-	FSTTask_SendEventAfterNCyclesInstanceData* Data =
-		TaskNode.GetInstance().GetMutablePtr<FSTTask_SendEventAfterNCyclesInstanceData>();
-	Data->CyclesRequired = CyclesRequired;
-	Data->EventTag = EventTag;
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::AddSendEventAfterNCyclesTask"));
+				  TStateTreeEditorNode<FSTTask_SendEventAfterNCycles>& TaskNode =
+					  State.AddTask<FSTTask_SendEventAfterNCycles>();
+				  FSTTask_SendEventAfterNCyclesInstanceData* Data =
+					  TaskNode.GetInstance().GetMutablePtr<FSTTask_SendEventAfterNCyclesInstanceData>();
+				  Data->CyclesRequired = CyclesRequired;
+				  Data->EventTag = EventTag;
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::ClearEnterConditions(UStateTree* StateTree, FName StateName)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::ClearEnterConditions"));
-	if (!EditorData)
-	{
-		return;
-	}
-
-	UStateTreeState* State = FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::ClearEnterConditions"));
-	if (!State)
-	{
-		return;
-	}
-
-	FStateTreeEditorPropertyBindings* Bindings = EditorData->GetPropertyEditorBindings();
-	for (FStateTreeEditorNode const& CondNode : State->EnterConditions)
-	{
-		Bindings->RemoveBindings(FPropertyBindingPath(CondNode.ID),
-								 FStateTreeEditorPropertyBindings::ESearchMode::Includes);
-	}
-
-	EditorData->Modify();
-	State->Modify();
-	State->EnterConditions.Empty();
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::ClearEnterConditions"));
+	WithState(StateTree, StateName, __FUNCTION__,
+			  [](UStateTreeEditorData& EditorData, UStateTreeState& State)
+			  {
+				  FStateTreeEditorPropertyBindings* Bindings = EditorData.GetPropertyEditorBindings();
+				  for (FStateTreeEditorNode const& CondNode : State.EnterConditions)
+				  {
+					  Bindings->RemoveBindings(FPropertyBindingPath(CondNode.ID),
+											   FStateTreeEditorPropertyBindings::ESearchMode::Includes);
+				  }
+				  State.EnterConditions.Empty();
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::SetRequiredEventToEnter(UStateTree* StateTree, FName StateName, FName EventTagName)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::SetRequiredEventToEnter"));
-	if (!EditorData)
-	{
-		return;
-	}
+	ANSICHAR const* const Caller = __FUNCTION__;
+	WithState(StateTree, StateName, Caller,
+			  [EventTagName, Caller](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  FGameplayTag EventTag;
+				  if (!ResolveTag(EventTagName, Caller, EventTag))
+				  {
+					  return false;
+				  }
 
-	UStateTreeState* State = FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::SetRequiredEventToEnter"));
-	if (!State)
-	{
-		return;
-	}
-
-	FGameplayTag EventTag = FGameplayTag::RequestGameplayTag(EventTagName, false);
-	if (!ensureMsgf(EventTag.IsValid(), TEXT("UGeoStateTreeBuilderUtil::SetRequiredEventToEnter — tag '%s' not found"),
-					*EventTagName.ToString()))
-	{
-		return;
-	}
-
-	EditorData->Modify();
-	State->Modify();
-	State->bHasRequiredEventToEnter = true;
-	State->RequiredEventToEnter.Tag = EventTag;
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::SetRequiredEventToEnter"));
+				  State.bHasRequiredEventToEnter = true;
+				  State.RequiredEventToEnter.Tag = EventTag;
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::ClearRequiredEventToEnter(UStateTree* StateTree, FName StateName)
 {
-	UStateTreeEditorData* EditorData =
-		GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::ClearRequiredEventToEnter"));
-	if (!EditorData)
-	{
-		return;
-	}
-
-	UStateTreeState* State =
-		FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::ClearRequiredEventToEnter"));
-	if (!State)
-	{
-		return;
-	}
-
-	EditorData->Modify();
-	State->Modify();
-	State->bHasRequiredEventToEnter = false;
-	State->RequiredEventToEnter.Tag = FGameplayTag();
-
-	CompileAndSave(StateTree, TEXT("UGeoStateTreeBuilderUtil::ClearRequiredEventToEnter"));
+	WithState(StateTree, StateName, __FUNCTION__,
+			  [](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  State.bHasRequiredEventToEnter = false;
+				  State.RequiredEventToEnter.Tag = FGameplayTag();
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::ListStates(UStateTree* StateTree)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::ListStates"));
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, __FUNCTION__);
 	if (!EditorData)
 	{
 		return;
@@ -599,13 +507,13 @@ void UGeoStateTreeBuilderUtil::ListStates(UStateTree* StateTree)
 
 void UGeoStateTreeBuilderUtil::ListEnterConditions(UStateTree* StateTree, FName StateName)
 {
-	UStateTreeEditorData* EditorData = GetEditorData(StateTree, TEXT("UGeoStateTreeBuilderUtil::ListEnterConditions"));
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, __FUNCTION__);
 	if (!EditorData)
 	{
 		return;
 	}
 
-	UStateTreeState* State = FindState(EditorData, StateName, TEXT("UGeoStateTreeBuilderUtil::ListEnterConditions"));
+	UStateTreeState* State = FindState(EditorData, StateName, __FUNCTION__);
 	if (!State)
 	{
 		return;
