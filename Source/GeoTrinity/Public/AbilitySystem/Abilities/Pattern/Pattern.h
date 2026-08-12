@@ -49,6 +49,8 @@ public:
 	virtual void InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData);
 
 	/** Returns true while the pattern is running (after InitPattern, before EndPattern). */
+	/** Returns true while the pattern is running — set on entering InitPattern, cleared on leaving EndPattern.
+	 * A pattern that has been created via OnCreate but not yet initialised via InitPattern returns false. */
 	bool IsPatternActive() const { return bPatternIsActive; }
 
 	/**
