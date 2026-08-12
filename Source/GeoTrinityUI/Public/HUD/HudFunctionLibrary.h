@@ -9,7 +9,9 @@
 
 class UAbilitySystemComponent;
 /**
- * A library of helper functions related to HUD
+ * Blueprint-callable HUD utility functions shared across widgets that have no single natural owner.
+ * Centralises the draw-gate check (hides the HUD on dedicated servers transparently) and common
+ * attribute accessors so widgets can query health state without holding a direct ASC reference.
  */
 UCLASS()
 class GEOTRINITYUI_API UHudFunctionLibrary : public UBlueprintFunctionLibrary

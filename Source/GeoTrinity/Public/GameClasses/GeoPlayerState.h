@@ -68,6 +68,7 @@ class GEOTRINITY_API AGeoPlayerState
 	GENERATED_BODY()
 
 public:
+	/** Creates the ASC and attribute set that this player state owns and keeps alive across pawn respawns. */
 	AGeoPlayerState();
 	/** Registers OnMatchStateChanged delegate binding on the server for stat reset coordination. */
 	virtual void BeginPlay() override;
@@ -99,14 +100,23 @@ public:
 	/** Sets the player's current playable class. Does not grant or remove abilities — call GiveStartupAbilities separately. */
 	void SetPlayerClass(EPlayerClass NewClass) { PlayerClass = NewClass; }
 
+	/** Returns the current exponentially smoothed damage-per-second rate; decays between events so it reads as a live rate, not a peak. */
 	float GetDebugDPS() const { return CombatStats.DebugDPS; }
+	/** Returns the current exponentially smoothed healing-per-second rate; decays between events so it reads as a live rate, not a peak. */
 	float GetDebugHPS() const { return CombatStats.DebugHPS; }
+	/** Returns the biggest damage total accumulated inside a single burst window this combat (largest single-spell landing, not a rate). */
 	float GetMaxBurstDamage() const { return CombatStats.MaxBurstDamage; }
+	/** Returns the biggest healing total accumulated inside a single burst window this combat (largest single-spell landing, not a rate). */
 	float GetMaxBurstHealing() const { return CombatStats.MaxBurstHealing; }
+	/** Returns the whole-combat average damage-per-second (cumulative damage divided by elapsed fight time). */
 	float GetFightDPS() const { return CombatStats.FightDPS; }
+	/** Returns the whole-combat average healing-per-second (cumulative healing divided by elapsed fight time). */
 	float GetFightHPS() const { return CombatStats.FightHPS; }
+	/** Returns the cumulative damage dealt by this player since the current combat began. */
 	float GetTotalDamageDealt() const { return CombatStats.TotalDamageDealt; }
+	/** Returns the cumulative healing dealt by this player since the current combat began. */
 	float GetTotalHealingDealt() const { return CombatStats.TotalHealingDealt; }
+	/** Returns the cumulative damage received by this player since the current combat began. */
 	float GetTotalDamageReceived() const { return CombatStats.TotalDamageReceived; }
 
 	/** Replaces every displayed combat stat in one write. Called by UGeoCombatStatsSubsystem on the server. */
