@@ -42,9 +42,10 @@ public:
 	bool CanDeploy(TSubclassOf<AGeoDeployableBase> DeployableClass);
 
 	/**
-	 * Returns true if another deployable of the given class can be deployed.
-	 * Classes exempt via IsUnlimitedDeploy are never at max. If the class has an entry in DeployableSlots, that
-	 * per-class cap is checked; otherwise the global MaxDeployables pool, shared with every other capped class.
+	 * Returns true when the deployable limit has been reached for the given class; false means more can still be
+	 * deployed. Classes exempt via IsUnlimitedDeploy always return false. If the class has an entry in
+	 * DeployableSlots, that per-class cap is checked; otherwise the global MaxDeployables pool, shared with every
+	 * other capped class.
 	 */
 	UFUNCTION(BlueprintPure)
 	bool HasReachMaxLimit(TSubclassOf<AGeoDeployableBase> DeployableClass);
