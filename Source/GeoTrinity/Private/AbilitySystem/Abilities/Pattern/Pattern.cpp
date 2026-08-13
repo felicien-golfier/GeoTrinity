@@ -201,10 +201,28 @@ void UTickablePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStr
 {
 	Super::InitPattern(Payload, PatternData);
 
+	OverlappingActors.Reset();
+
 	if (IsPatternActive())
 	{
 		CalculateTimeAndTickPattern();
 	}
+}
+
+void UTickablePattern::KeepActorsEnteringOverlap(TArray<AActor*>& ActorsInVolume)
+{
+	TSet<TWeakObjectPtr<AActor>> const PreviousOverlaps = MoveTemp(OverlappingActors);
+
+	for (AActor* Actor : ActorsInVolume)
+	{
+		OverlappingActors.Add(Actor);
+	}
+
+	ActorsInVolume.RemoveAll(
+		[&PreviousOverlaps](AActor* Actor)
+		{
+			return PreviousOverlaps.Contains(Actor);
+		});
 }
 
 /**

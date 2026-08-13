@@ -146,9 +146,12 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 		// A missing ASC only costs the damage: falling through still lets the beam reach its end and stop ticking.
 		if (ensureMsgf(SourceASC, TEXT("UBeamPattern: Owner has no ASC")))
 		{
-			for (AActor* HitActor : GeoASLib::GetInteractableActorsInLine(
-					 this, GeoASLib::GetTeamId(StoredPayload.Owner), TeamAttitudeMask::HostileOrNeutral,
-					 /*bMustBeDamageable*/ true, FVector2D(Location), Forward, BeamRange, BeamHalfWidth, OverlapMode))
+			TArray<AActor*> ActorsInBeam = GeoASLib::GetInteractableActorsInLine(
+				this, GeoASLib::GetTeamId(StoredPayload.Owner), TeamAttitudeMask::HostileOrNeutral,
+				/*bMustBeDamageable*/ true, FVector2D(Location), Forward, BeamRange, BeamHalfWidth, OverlapMode);
+			KeepActorsEnteringOverlap(ActorsInBeam);
+
+			for (AActor* HitActor : ActorsInBeam)
 			{
 				if (UGeoAbilitySystemComponent* const TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
 				{

@@ -60,7 +60,8 @@ protected:
 	/**
 	 * Expands the wave radius by ExpansionSpeed * SpentTime each tick.
 	 * Hits actors whose center sits within AnnulusWidth of the wave front: pillars are added to the VFX mask on all
-	 * machines as the front reaches them; other hostiles on the edge receive effect data server-side only.
+	 * machines as the front reaches them; other hostiles receive effect data server-side only, the tick they enter
+	 * the band (staying in it costs nothing more, stepping back into it costs another hit).
 	 * Ends the pattern when MaxRadius is reached.
 	 */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;

@@ -146,5 +146,14 @@ protected:
 	virtual void TickDuringInit(float SpentTime /* /!\ SpentTime is NEGATIVE value until 0 when StartPattern */
 	);
 
+	/**
+	 * Drops from ActorsInVolume everyone already inside the pattern's damaging volume on the previous call, then keeps
+	 * ActorsInVolume as the new overlap state — an actor that walks out and back in counts as entering again.
+	 */
+	void KeepActorsEnteringOverlap(TArray<AActor*>& ActorsInVolume);
+
 	FTimerHandle TimeSyncTimerHandle;
+
+private:
+	TSet<TWeakObjectPtr<AActor>> OverlappingActors;
 };

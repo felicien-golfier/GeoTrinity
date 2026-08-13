@@ -174,6 +174,7 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 	if (ensureMsgf(SourceASC, TEXT("UDevastatingWavePattern: SourceASC is null — Owner has no ASC")))
 	{
 		float const InnerRadius = FMath::Max(0.f, CurrentRadius - AnnulusWidth);
+		TArray<AActor*> ActorsInWaveFront;
 		for (AActor* HitActor : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Owner),
 																TeamAttitudeMask::HostileOrNeutral, true,
 																StoredPayload.Origin, CurrentRadius))
@@ -199,13 +200,19 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 
 			if (GeoLib::IsServer(this) && ShouldHitActor(HitActor))
 			{
-				UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
-				if (IsValid(TargetASC))
-				{
-					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
-																		StoredPayload.AbilityLevel, StoredPayload.Seed,
-																		StoredPayload.AbilityTag);
-				}
+				ActorsInWaveFront.Add(HitActor);
+			}
+		}
+
+		KeepActorsEnteringOverlap(ActorsInWaveFront);
+		for (AActor* HitActor : ActorsInWaveFront)
+		{
+			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
+			if (IsValid(TargetASC))
+			{
+				UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
+																	StoredPayload.AbilityLevel, StoredPayload.Seed,
+																	StoredPayload.AbilityTag);
 			}
 		}
 	}

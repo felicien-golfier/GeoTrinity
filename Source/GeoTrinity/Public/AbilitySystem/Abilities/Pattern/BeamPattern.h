@@ -15,8 +15,8 @@ class UNiagaraSystem;
 
 /**
  * Beam fired from the payload origin along the payload yaw, staying on for BeamDuration.
- * SweepAngle turns it into a rotating sweep (0 leaves it pointing straight ahead); every hostile it crosses is hit
- * once per activation, so crossing the beam costs one hit no matter how slowly you walk through it.
+ * SweepAngle turns it into a rotating sweep (0 leaves it pointing straight ahead); every hostile is hit the tick it
+ * enters the beam, so crossing it costs one hit no matter how slowly you walk through — and one more per re-entry.
  * With bDestroyLastTileHit the shot also carves out the furthest arena tile it reaches — the tank picks which rim
  * tile that is by choosing where they stand when the boss locks on.
  */
@@ -37,7 +37,7 @@ protected:
 	virtual void StartPattern() override;
 	/** Keeps the windup telegraph aimed while the boss moves and turns. */
 	virtual void TickDuringInit(float SpentTime) override;
-	/** Aims the beam for the elapsed sweep fraction and applies the effect data to every actor it newly crosses. */
+	/** Aims the beam for the elapsed sweep fraction and applies the effect data to every actor entering it this tick. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** Switches the beam VFX off and clears the per-activation hit set. */
 	virtual void EndPattern(bool bForceStop = false) override;
