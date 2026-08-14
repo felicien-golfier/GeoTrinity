@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
+#include "World/GeoBackgroundPulseComponent.h"
 
 #include "GeoArena.generated.h"
 
@@ -80,6 +81,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Arena")
 	FGameplayTag ArenaTag;
 
+	/** Background lattice behaviour while this arena's fight is live; the pulse driver's own authored mode returns
+	 * when it ends. Cosmetic only — it is applied off bFighting, so it lands on every machine and replicates nothing
+	 * of its own. */
+	UPROPERTY(EditAnywhere, Category = "Arena")
+	EGeoPulseMode PulseMode = EGeoPulseMode::Actors;
+
 protected:
 	UFUNCTION()
 	void OnRep_Boss();
@@ -124,8 +131,16 @@ private:
 	UFUNCTION()
 	void OnRep_bFighting();
 
+	/** Every local cosmetic that keys off this arena's fight state. Called from the three places bFighting changes —
+	 * StartFight and EndFight on the server, OnRep_bFighting on the clients — so both halves land on every machine. */
+	void ApplyFightVisuals();
+
 	/** Shows the boss bar for Boss while bFighting, hides it otherwise. Local HUD only; a no-op on a dedicated server. */
 	void ApplyBossBar();
+
+	/** Hands PulseMode to the background lattice while this fight runs, and gives the driver its own mode back when it
+	 * ends. Silently does nothing where no driver exists, which is every dedicated server. */
+	void ApplyBackgroundPulse() const;
 
 	/** Ends this arena's fight — fighting or not — when the match leaves InProgress. Bound to
 	 *  AGeoGameState::OnMatchStateChanged (server only). */

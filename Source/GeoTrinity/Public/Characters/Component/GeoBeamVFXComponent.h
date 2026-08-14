@@ -73,11 +73,13 @@ public:
 	void SetNiagaraSystem(TObjectPtr<UNiagaraSystem> const Object) { BeamSystem = Object; };
 	/** Assigns the beam tint pushed to the Niagara Color user parameter; call from the owning ability's OnGiveAbility.
 	 */
-	void SetBeamColor(FLinearColor const Color) { BeamColor = Color; };
+	void SetBeamColor(FLinearColor const Color) ;
 
 private:
 	UFUNCTION()
-	void OnRep_BeamState() const;
+	void OnRep_BeamState() const;	
+	UFUNCTION()
+	void OnRep_BeamColor() const;
 	UFUNCTION()
 	void CreateNiagaraComponent();
 
@@ -97,7 +99,7 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraSystem> IndicatorSystem;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_BeamColor)
 	FLinearColor BeamColor = FLinearColor::White;
 
 	UPROPERTY(Transient)

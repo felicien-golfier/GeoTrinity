@@ -16,18 +16,30 @@
 #include "GameFramework/PlayerController.h"
 #include "GameplayTagContainer.h"
 #include "Input/GeoInputComponent.h"
+#include "Kismet/KismetMaterialLibrary.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Tool/GeoColor.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/GeoBackdropComponent.h"
+#include "World/GeoBackgroundPulseComponent.h"
 #include "World/GeoCameraVolume.h"
 
 static TAutoConsoleVariable CVarShowCameraZoom(
 	TEXT("Geo.ShowCameraZoom"), false,
 	TEXT("When true, draws a line from every living local player to the camera and prints the zoom distance"));
 
+namespace
+{
+	FName const CameraXYParam(TEXT("CameraXY"));
+	FName const ZoomRatioParam(TEXT("ZoomRatio"));
+} // namespace
+
 AGeoGameCamera::AGeoGameCamera()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	BackgroundPulse = CreateDefaultSubobject<UGeoBackgroundPulseComponent>(TEXT("BackgroundPulse"));
+	Backdrop = CreateDefaultSubobject<UGeoBackdropComponent>(TEXT("Backdrop"));
+	Backdrop->SetupAttachment(GetCameraComponent());
 }
 
 void AGeoGameCamera::BeginPlay()
@@ -36,6 +48,20 @@ void AGeoGameCamera::BeginPlay()
 	BaseOrthoWidth = GetCameraComponent()->OrthoWidth;
 	CurrentOrthoWidth = BaseOrthoWidth;
 	ApplyOutlineMaterial();
+	ensureMsgf(CameraParameters, TEXT("AGeoGameCamera: no CameraParameters — backdrop layers stay welded to the floor"));
+}
+
+void AGeoGameCamera::PublishCameraParameters(FVector2D CameraXY)
+{
+	if (!CameraParameters)
+	{
+		return;
+	}
+
+	UKismetMaterialLibrary::SetVectorParameterValue(this, CameraParameters, CameraXYParam,
+												   FLinearColor(CameraXY.X, CameraXY.Y, 0.f));
+	UKismetMaterialLibrary::SetScalarParameterValue(this, CameraParameters, ZoomRatioParam,
+													BaseOrthoWidth / CurrentOrthoWidth);
 }
 
 void AGeoGameCamera::ApplyOutlineMaterial()
@@ -266,4 +292,5 @@ void AGeoGameCamera::Tick(float DeltaTime)
 
 	FVector const CurrentLocation = GetActorLocation();
 	SetActorLocation(FVector(NewXY.X, NewXY.Y, CurrentLocation.Z));
+	PublishCameraParameters(NewXY);
 }

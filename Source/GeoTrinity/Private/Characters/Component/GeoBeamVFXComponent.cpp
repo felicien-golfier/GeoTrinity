@@ -81,10 +81,27 @@ void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const Width, f
 	ApplyBeamState();
 }
 
+void UGeoBeamVFXComponent::SetBeamColor(FLinearColor const Color)
+{
+	BeamColor = Color;
+	if (!GeoLib::IsDedicatedServer(this))
+	{
+		OnRep_BeamColor();
+	}
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBeamVFXComponent::OnRep_BeamState() const
 {
 	ApplyBeamState();
+}
+
+void UGeoBeamVFXComponent::OnRep_BeamColor() const
+{
+	if (NiagaraComponent)
+	{
+		NiagaraComponent->SetVariableLinearColor(GeoNiagaraParams::Color, BeamColor);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -142,7 +142,7 @@ void AGeoArena::StartFight()
 	}
 
 	bFighting = true;
-	ApplyBossBar();
+	ApplyFightVisuals();
 
 	GameState->SetCheckpointTag(ArenaTag);
 
@@ -177,7 +177,7 @@ void AGeoArena::EndFight()
 {
 	GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
 	bFighting = false;
-	ApplyBossBar();
+	ApplyFightVisuals();
 	SetBarrierClosed(false);
 	// A defeated boss stays defeated: respawning it here would have it re-aggro the players still standing on its
 	// corpse. Only RespawnBoss (a match-state button, or a fresh server) brings it back.
@@ -225,7 +225,31 @@ void AGeoArena::OnMatchStateChanged(FName NewMatchState, FName PreviousMatchStat
 
 void AGeoArena::OnRep_bFighting()
 {
+	ApplyFightVisuals();
+}
+
+void AGeoArena::ApplyFightVisuals()
+{
 	ApplyBossBar();
+	ApplyBackgroundPulse();
+}
+
+void AGeoArena::ApplyBackgroundPulse() const
+{
+	UGeoBackgroundPulseComponent* const Pulse = UGeoBackgroundPulseComponent::Get(this);
+	if (!Pulse)
+	{
+		return;
+	}
+
+	if (bFighting)
+	{
+		Pulse->SetMode(PulseMode);
+	}
+	else
+	{
+		Pulse->ResetMode();
+	}
 }
 
 void AGeoArena::ApplyBossBar()

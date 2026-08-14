@@ -17,6 +17,7 @@
   - **Extract by concept, not by textual match.** If the same *operation* (e.g. "reset per-cycle state") happens in more than one method, pull it into one named function — even when the pieces aren't identical lines, aren't adjacent, and span different statement kinds (assignments + a loop). Don't wait for a copy-paste duplicate to justify the extraction; the shared *intent* is enough.
 - **Before adding or removing any field/function**: Grep for all read and write sites across the codebase. Never assume a field is unused or needs a new setter based on the header alone — it may already be populated elsewhere (e.g. a base class method).
 - **Before adding a function**: check if an existing function already covers the same operation. If two functions differ only by a constant (e.g. a trigger type, a flag), merge them into one with a parameter. Never add a wrapper that just forwards with a hardcoded argument.
+- **Every `UPROPERTY`/`UFUNCTION` `Category` starts with `Geo`** (e.g. `"GeoCamera|Zoom"`), so our params are recognizable among engine ones in the editor
 - Be consistent: same code style, same naming convention throughout
 - `Super` call placement: choose what makes semantic sense (Init = top, Destroy = bottom); when no ordering dependency exists, always top
 - No abbreviations in variable names; full class names except `ASC` for AbilitySystemComponent
