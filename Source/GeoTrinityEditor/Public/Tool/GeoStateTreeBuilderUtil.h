@@ -53,17 +53,19 @@ class GEOTRINITYEDITOR_API UGeoStateTreeBuilderUtil : public UEditorUtilityObjec
 public:
 	/**
 	 * Adds a new state with one FSTTask_FireAbility task, compiles, and saves.
-	 * ParentStateName — name of the parent state; pass NAME_None to add at root.
-	 * InsertIndex     — position inside the parent's children; pass -1 to append.
+	 *
+	 * @param ParentStateName  Name of the parent state; pass NAME_None to add at the root.
+	 * @param InsertIndex      Position inside the parent's children; pass -1 to append.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddFireAbilityStateByTagName(UStateTree* StateTree, FName StateName, FName AbilityTagName,
 											 FName ParentStateName, int32 InsertIndex = -1);
 
 	/**
-	 * Adds a new empty state (no tasks) and compiles/saves. Use for idle/dormant states that wait on an OnEvent
-	 * transition. ParentStateName — name of the parent; pass NAME_None to add at root. InsertIndex — position in the
-	 * parent's children; pass -1 to append.
+	 * Adds a new empty state (no tasks) and compiles/saves. Use for idle/dormant states waiting on an OnEvent transition.
+	 *
+	 * @param ParentStateName  Name of the parent state; pass NAME_None to add at the root.
+	 * @param InsertIndex      Position inside the parent's children; pass -1 to append.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddState(UStateTree* StateTree, FName StateName, FName ParentStateName, int32 InsertIndex = -1);
@@ -80,35 +82,42 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void ClearTransitions(UStateTree* StateTree, FName StateName);
 
-	/** Adds a GotoState transition from SourceStateName to TargetStateName. Trigger: OnStateSucceeded, OnStateFailed,
-	 * OnStateCompleted, or OnEvent. For OnEvent transitions pass the event tag name in EventTagName; leave it None for
-	 * completion triggers. Compiles and saves. */
+	/**
+	 * Adds a GotoState transition from SourceStateName to TargetStateName. Compiles and saves.
+	 *
+	 * @param Trigger       When the transition fires: OnStateSucceeded, OnStateFailed, OnStateCompleted, or OnEvent.
+	 * @param EventTagName  Gameplay tag name that arms the transition; pass NAME_None for completion triggers.
+	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddTransition(UStateTree* StateTree, FName SourceStateName, FName TargetStateName,
 							  EStateTreeTransitionTrigger Trigger, FName EventTagName = NAME_None);
 
 	/**
 	 * Appends a FStateTreeCompareFloatCondition to a state's EnterConditions.
-	 * Sets the Right (threshold) value and operator. Left must be bound manually in the editor.
-	 * Operator: 0=Equal, 1=NotEqual, 2=Less, 3=LessOrEqual, 4=Greater, 5=GreaterOrEqual
+	 * Left must be bound to a Property Function output after calling BindConditionPropertyToPropertyFunction.
+	 *
+	 * @param Threshold  Right-hand threshold value to compare against.
+	 * @param Operator   Comparison operator (Equal, NotEqual, Less, LessOrEqual, Greater, GreaterOrEqual).
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddFloatEnterCondition(UStateTree* StateTree, FName StateName, float Threshold,
 									   EGenericAICheck Operator, bool bInvert = false);
 
 	/**
-	 * Binds any property on an enter condition to a Property Function output, and binds the function's Input to a
-	 * context object. ConditionIndex is the 0-based index into the state's EnterConditions array; Binding names the
-	 * condition property, the function struct and its output/input properties, and the context class.
+	 * Binds a property on an enter condition to a Property Function output and wires the function's Input to a context object.
+	 *
+	 * @param ConditionIndex  Zero-based index into the state's EnterConditions array.
+	 * @param Binding         Names the condition property, the function struct, its output/input properties, and the context class.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void BindConditionPropertyToPropertyFunction(UStateTree* StateTree, FName StateName, int32 ConditionIndex,
 														FGeoPropertyFunctionBinding const& Binding);
 
 	/**
-	 * Adds a task of any type to an existing state, with default instance data. TaskStructName is the unqualified
-	 * USTRUCT name (e.g. "STTask_ChaseTarget"). Context properties (Category = Context) are auto-bound by the schema at
-	 * compile; other instance data keeps its defaults. Compiles and saves.
+	 * Adds a task of any type to an existing state with default instance data. Context properties (Category = Context)
+	 * are auto-bound by the schema at compile; other instance data keeps its authored defaults. Compiles and saves.
+	 *
+	 * @param TaskStructName  Unqualified USTRUCT name of the task (e.g. "STTask_ChaseTarget").
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddTaskToState(UStateTree* StateTree, FName StateName, FName TaskStructName);
