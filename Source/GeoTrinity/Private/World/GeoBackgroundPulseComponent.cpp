@@ -87,6 +87,15 @@ void UGeoBackgroundPulseComponent::TickComponent(float DeltaTime, ELevelTick Tic
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if (Mode == EGeoPulseMode::None)
+	{
+		for (int32 SlotIndex = 0; SlotIndex < Pulses.Num(); ++SlotIndex)
+		{
+			SetSlot(SlotIndex, UnusedSlotValue);
+		}
+		return;
+	}
+	
 	TArray<AActor*> TrackedActors;
 	if (Mode == EGeoPulseMode::Actors)
 	{

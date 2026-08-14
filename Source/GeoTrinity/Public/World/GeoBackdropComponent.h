@@ -34,6 +34,9 @@ public:
 	virtual void BeginPlay() override;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoBackdrop")
+	bool Active = true;
+	
 	/** Plane the layers are drawn on (/Engine/BasicShapes/Plane). Its own size is read from its bounds, so any flat
 	 * mesh facing +Z works. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoBackdrop")
@@ -48,10 +51,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoBackdrop", meta = (ClampMin = "1"))
 	float LayerSize = 8000.f;
 
-	/** How far behind the camera the first plane sits. Everything from here back must stay inside the camera's ortho
-	 * far clip plane. */
+	/** Distance from the camera to the first plane, along the view direction — so it must be larger than the camera's
+	 * own height above the play plane, or the layers draw in front of the floor and their additive light washes over
+	 * the whole scene instead of showing through the lattice. Bounded the other way by the ortho far clip plane. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoBackdrop", meta = (ClampMin = "0"))
-	float FirstLayerDistance = 2000.f;
+	float FirstLayerDistance = 6000.f;
 
 	/** Gap between consecutive planes — depth ordering only; orthographic projection makes the distance itself
 	 * invisible. */

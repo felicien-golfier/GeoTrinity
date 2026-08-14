@@ -17,7 +17,8 @@ enum class EGeoPulseMode : uint8
 	/** Origins travel along a fixed heading, turning back on reaching AreaRadius. */
 	Straight,
 	/** Origins travel while their heading drifts at up to TurnRate degrees per second. */
-	Wander
+	Wander, 
+	None
 };
 
 /** One pulse's simulated state. Location and Direction go unused in Actors mode, where the origin is read off the

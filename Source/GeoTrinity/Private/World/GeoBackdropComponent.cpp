@@ -15,7 +15,7 @@ void UGeoBackdropComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GeoLib::IsDedicatedServer(this))
+	if (!Active || GeoLib::IsDedicatedServer(this))
 	{
 		return;
 	}
