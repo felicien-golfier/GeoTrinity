@@ -31,7 +31,7 @@ class GEOTRINITY_API AGeoGameCamera : public ACameraActor
 	GENERATED_BODY()
 
 public:
-	/** Configures the camera component for orthographic projection and initialises movement defaults. */
+	/** Enables tick and creates the BackgroundPulse and Backdrop native subobjects. */
 	AGeoGameCamera();
 
 	/** Caches the authored OrthoWidth as the zoomed-in baseline every zoom-out starts from, and installs the outline
