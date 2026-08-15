@@ -28,6 +28,7 @@ class GEOTRINITY_API UGeoBackdropComponent : public USceneComponent
 	GENERATED_BODY()
 
 public:
+	/** Disables tick — the backdrop planes are created once in BeginPlay and need no per-frame update. */
 	UGeoBackdropComponent();
 
 	/** Creates and attaches one plane per layer. */
