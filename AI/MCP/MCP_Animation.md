@@ -22,11 +22,33 @@ Subtracting a bone's local translation from its component translation gives its 
 
 A skeleton and the skeletal mesh built on it are separate assets, so anything about deformation needs the mesh rather than the skeleton it is named after.
 
+A skeletal mesh carries its own bone list holding only the bones it is skinned to, so the modifiers report fewer bones than the skeleton asset does.
+
 Which bones actually deform a mesh is readable per vertex from its skin weights, through the modifier object that edits them. A bone that an existing animation moves is not necessarily a bone carrying much of the mesh, so weigh a bone by its vertex count and weight total before building motion on it.
 
 A mesh's bounds give a box and a sphere derived from that box's corner, never the geometry, so they cannot locate a feature. Read vertex positions instead — a static-mesh section yields them directly — and group them by radius and angle to recover the layout that radial motion has to hit.
 
-See `AI/Python/anim_sequence_authoring.py` for the reference-pose, skin-weight and vertex-ring reports.
+Nothing exposes a skeletal mesh's geometry to script, only the static-mesh side, so pairing a vertex's weights with where that vertex sits needs an editor shim. The weight modifier indexes the mesh description cloned from the first LOD, so a shim walking that same description lines up index for index — see `MCP_EditorUtility.md`.
+
+A static mesh and the skeletal mesh built from it index their vertices differently, and a mesh's render section, mesh description and weight list each hold a different count, so one is never a stand-in for another.
+
+Evenly spaced radial features keep their phase readable: multiplying every angle by the feature count collapses them onto one direction whose circular mean gives the ring's keying, so no feature has to be assumed to sit at zero degrees.
+
+See `AI/Python/anim_sequence_authoring.py` for the reference-pose, skin-weight, vertex-ring and per-vertex position-with-weights reports.
+
+---
+
+## Editing the Rig
+
+Bones are added through the skeleton modifier, each with a transform in its parent's space, then committed to the mesh. Weights are set per vertex through the weight modifier and committed separately.
+
+Commit the skeleton before touching weights — a vertex cannot be bound to a bone the mesh does not carry yet.
+
+Committing a bone hierarchy the skeleton asset cannot absorb raises a modal merge dialog that stalls an unattended script; adding leaf bones stays on the silent path.
+
+Replacing a vertex's weights drops its other influences, so a re-bound vertex stops following the bones it shared before and moves rigidly with its new one. Parenting a new bone under the one that drove those vertices keeps existing animation on them.
+
+See `AI/Python/anim_sequence_authoring.py` for the bone-adding and vertex-binding helpers.
 
 ---
 

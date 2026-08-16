@@ -4,7 +4,9 @@
 
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequence.h"
+#include "Engine/SkeletalMesh.h"
 #include "FileHelpers.h"
+#include "MeshDescription.h"
 
 namespace
 {
@@ -107,4 +109,28 @@ void UGeoAnimBuilderUtil::InspectMontage(UAnimMontage* Montage)
 		UE_LOG(LogTemp, Display, TEXT("  section '%s' at %.3f -> '%s'"), *Section.SectionName.ToString(),
 			   Section.GetTime(), *Section.NextSectionName.ToString());
 	}
+}
+
+TArray<FVector> UGeoAnimBuilderUtil::GetSkeletalMeshVertexPositions(USkeletalMesh* Mesh)
+{
+	TArray<FVector> Positions;
+	if (!ensureMsgf(Mesh, TEXT("GetSkeletalMeshVertexPositions needs a SkeletalMesh")))
+	{
+		return Positions;
+	}
+
+	FMeshDescription MeshDescription;
+	if (!ensureMsgf(Mesh->CloneMeshDescription(0, MeshDescription),
+					TEXT("SkeletalMesh %s has no LOD 0 mesh description"), *Mesh->GetName()))
+	{
+		return Positions;
+	}
+
+	int32 const NumVertices = MeshDescription.Vertices().Num();
+	Positions.Reserve(NumVertices);
+	for (int32 Index = 0; Index < NumVertices; ++Index)
+	{
+		Positions.Add(FVector(MeshDescription.GetVertexPosition(FVertexID(Index))));
+	}
+	return Positions;
 }

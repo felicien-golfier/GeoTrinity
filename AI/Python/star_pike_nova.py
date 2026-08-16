@@ -1,207 +1,217 @@
-# Builds SK_Star_Sequence_PikeNova — the Star boss firing its spikes one at a time around itself — plus
-# the montage that plays it, wired into the pillar-spawn pattern.
-#
-# Rig facts this is built on, read out of the mesh's skin weights and the shipped attack animation:
-#   - Only five bones skin anything: apexes_inside (26 verts), apexes_outside (26), up (19), Root (17) and
-#     mid (16). Every joint* bone influences nothing.
-#   - apexes_outside drives the eight tips and apexes_inside the valleys between them; mid is a minor
-#     11%-of-the-mesh influence, not the apex owner. Root is the whole star.
-#   - There is one bone per ring and no per-apex bone, so radial scale extends all eight tips together.
-#     Translation is the only per-direction control: offsetting a ring pushes the tips on that side out
-#     and sinks the opposite ones below the valley radius, where they vanish into the body. Sweeping that
-#     offset direction around the star is what fires the spikes one at a time, each retracting as the
-#     next leaves.
-#   - The eight tips sit at exactly 0/45/…/315 degrees, radius 70.71, with the valley ring at 50. The
-#     sweep therefore lines up with a tip eight times per revolution, and the revolution is timed so those
-#     eight beats land on whole frames — off-frame beats read as flicker rather than as eight even pops.
-#   - apexes_outside and apexes_inside only ever yaw in the shipped animation, at different rates. That
-#     differential twist is kept here as an accent.
-#   - The star is flat in XY, so Z scale stays at rest; only X/Y read under the orthographic camera.
+"""Star boss "pike nova": the tip bones fire one at a time around the star, then all together in a finale.
+
+Each tip retracts as the next leaves, and once the sweep reaches its last tip the finale takes every tip out
+together, further than any of them travelled on its own.
+
+Drives the apexe_outside_N bones that come with the rig — the script never edits the skeleton or the skin
+weights, so whatever each bone is painted to move is what moves. Bones are discovered by name and fire in
+their numeric order, and each one's outward direction is read from where it sits, so the sequence follows the
+rig rather than assuming a tip sits at any particular angle.
+
+Writes the sequence, wraps it in the montage, points the pattern Blueprint at it, then evaluates the result.
+Run via mcp-unreal execute_script. Re-runnable: rewrites the same assets in place.
+"""
 import math
 
 import unreal
 
 APE = unreal.AnimPoseExtensions
-PKG = "/Game/Characters/Anim/Star"
+
+SKELETON_PATH = "/Game/Characters/Meshes/Star/SK_Star"
+MESH_PATH = "/Game/Characters/Meshes/Star/SKM_Star"
+ANIM_PACKAGE = "/Game/Characters/Anim/Star"
 SEQ_NAME = "SK_Star_Sequence_PikeNova"
 MONTAGE_NAME = "SK_Star_PikeNova_Montage"
-SEQ_PATH = "{}/{}".format(PKG, SEQ_NAME)
-MONTAGE_PATH = "{}/{}".format(PKG, MONTAGE_NAME)
 PATTERN_BP = "/Game/AbilitySystem/Abilities/Enemy/SpawnPillar/BP_SpawnPillarPattern"
+REPORT = "C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/43c49c4b-16e7-4c2d-ab55-b98aad7877bc/scratchpad/pike_nova.txt"
+
+SPIKE_PREFIX = "apexe_outside_"
 
 FPS = 30
-FRAMES = 52  # 1.733s
-TURN_START = 5  # anticipation bottoms out and the sweep begins
-TURN_END = 45  # one full revolution, 40 frames — eight tips at a whole 5 frames each
+LEAD_IN = 3         # beat before the first tip leaves, so the burst has an attack
+OUT_FRAMES = 4      # a tip's travel out
+BACK_FRAMES = 8     # its slower retract, still running as the next two leave
+STEP = OUT_FRAMES   # the next tip leaves exactly as the previous one peaks
+REACH = 100.0       # units the bone travels; a vertex moves this scaled by its weight on that bone
 
-# The lean has to beat the valley radius, or the trailing tips never drop out of the silhouette and every
-# spike reads as permanently out: at the held extension a tip sits at 70.71 * TIP_BASE, so a lean larger
-# than that minus 50 sinks the trailing ones into the body.
-TIP_OFFSET = 52.0  # how far the tip ring leans towards the spike currently firing
-TIP_BASE = 1.10  # tip extension held all through the sweep
-TIP_PEAK = 1.55  # tip extension as the sweep lines up with a tip, eight times per revolution
-TIP_SWIRL = 60.0  # degrees the tip ring turns across the revolution
-VALLEY_OFFSET = 14.0  # the valley ring follows the lean, but far less, so the rings decouple
-VALLEY_SWIRL = 35.0  # and lags the tips, reproducing the shipped animation's twist
-MID_SWELL = 1.35
-ROOT_SWELL = 1.10
-ROOT_OFFSET = 6.0  # the body leans away from whichever spike is out
+FINALE_REACH = 150.0  # every tip together, further than any of them reached on its own
+FINALE_OUT = 6
+FINALE_HOLD = 3
+FINALE_BACK = 10
 
-# frame -> how far into the burst the star is; negative is the anticipation squeeze.
-ENVELOPE = [(0, 0.0), (TURN_START, -0.35), (10, 1.0), (40, 1.0), (TURN_END, 0.55), (FRAMES, 0.0)]
-
-# Sections cut on the beats above: Start is the anticipation, which UPattern stretches to the ability's
-# FireDelay, so the first spike must leave in Fire rather than at the tail of the wind-up.
 SECTION_NAMES = ["Start", "Fire", "End"]
-SECTION_STARTS = [0.0, TURN_START / float(FPS), TURN_END / float(FPS)]
 SECTION_NEXT = ["Fire", "End", "None"]
 
-SKELETON = unreal.load_asset("/Game/Characters/Meshes/Star/SK_Star")
+LOG = []
 
 
-def smoothstep(a, b, t):
-    t = max(0.0, min(1.0, t))
-    return a + (b - a) * t * t * (3.0 - 2.0 * t)
+def reference_pose():
+    """Bone name -> (local transform, component transform) for the skeleton's reference pose."""
+    ref = APE.get_reference_pose(unreal.load_asset(SKELETON_PATH))
+    return {str(bone): (APE.get_bone_pose(ref, str(bone), unreal.AnimPoseSpaces.LOCAL),
+                        APE.get_bone_pose(ref, str(bone), unreal.AnimPoseSpaces.WORLD))
+            for bone in APE.get_bone_names(ref)}
 
 
-def envelope(frame):
-    for i in range(len(ENVELOPE) - 1):
-        f0, v0 = ENVELOPE[i]
-        f1, v1 = ENVELOPE[i + 1]
-        if f0 <= frame <= f1:
-            return smoothstep(v0, v1, 0.0 if f1 == f0 else float(frame - f0) / float(f1 - f0))
-    return ENVELOPE[-1][1]
+def spike_axes(rest):
+    """Tip bone name -> (outward unit x, outward unit y, firing order), read from where each bone sits."""
+    names = sorted((name for name in rest if name.startswith(SPIKE_PREFIX)),
+                   key=lambda name: int(name[len(SPIKE_PREFIX):]))
+    axes = {}
+    for order, name in enumerate(names):
+        position = rest[name][1].translation
+        length = math.hypot(position.x, position.y)
+        axes[name] = (position.x / length, position.y / length, order)
+    return axes
 
 
-def turn_ratio(frame):
-    """0..1 across the revolution, linear so the sweep turns at a constant speed."""
-    return max(0.0, min(1.0, float(frame - TURN_START) / float(TURN_END - TURN_START)))
+def finale_start(spikes):
+    """The frame the sweep's last tip peaks on, which is where the finale takes over."""
+    return LEAD_IN + STEP * (spikes - 1) + OUT_FRAMES
 
 
-def sample(frame, bone, rest_local):
-    """Frame and bone -> the local (translation, rotation, scale) to key."""
-    extension = envelope(frame)
-    ratio = turn_ratio(frame)
-    angle = 2.0 * math.pi * ratio
-    translation = unreal.Vector(rest_local.translation.x, rest_local.translation.y, rest_local.translation.z)
-    scale = unreal.Vector(rest_local.scale3d.x, rest_local.scale3d.y, rest_local.scale3d.z)
-    rotator = rest_local.rotation.rotator()
-
-    if bone == "apexes_outside":
-        aligned = 0.5 + 0.5 * math.cos(8.0 * angle)
-        factor = 1.0 + extension * ((TIP_BASE - 1.0) + (TIP_PEAK - TIP_BASE) * aligned)
-        translation.x += extension * TIP_OFFSET * math.cos(angle)
-        translation.y += extension * TIP_OFFSET * math.sin(angle)
-        scale.x *= factor
-        scale.y *= factor
-        rotator.yaw += extension * TIP_SWIRL * ratio
-    elif bone == "apexes_inside":
-        translation.x += extension * VALLEY_OFFSET * math.cos(angle)
-        translation.y += extension * VALLEY_OFFSET * math.sin(angle)
-        rotator.yaw += extension * VALLEY_SWIRL * ratio
-    elif bone == "mid":
-        factor = 1.0 + extension * (MID_SWELL - 1.0)
-        scale.x *= factor
-        scale.y *= factor
-    elif bone == "Root":
-        factor = 1.0 + extension * (ROOT_SWELL - 1.0)
-        translation.x -= extension * ROOT_OFFSET * math.cos(angle)
-        translation.y -= extension * ROOT_OFFSET * math.sin(angle)
-        scale.x *= factor
-        scale.y *= factor
-
-    return translation, rotator.quaternion(), scale
+def frame_count(spikes):
+    return finale_start(spikes) + FINALE_OUT + FINALE_HOLD + FINALE_BACK
 
 
-def get_or_create(path, name, asset_class, factory):
-    # Never delete-then-recreate: delete_asset on a loaded animation asset trips ForceDeleteObjects'
-    # package-unload ensure and leaves the package permanently unloadable.
-    if unreal.EditorAssetLibrary.does_asset_exist(path):
-        return unreal.load_asset(path)
-    return unreal.AssetToolsHelpers.get_asset_tools().create_asset(name, PKG, asset_class, factory)
+def section_starts(spikes):
+    return [0.0, LEAD_IN / float(FPS), (finale_start(spikes) + FINALE_OUT + FINALE_HOLD) / float(FPS)]
 
 
-def build_sequence():
+def smoothstep(alpha):
+    return alpha * alpha * (3.0 - 2.0 * alpha)
+
+
+def extension(frame, order):
+    """0 at rest, 1 fully out — a fast push out then a slower retract, one tip after another."""
+    elapsed = frame - LEAD_IN - order * STEP
+    if elapsed <= 0.0 or elapsed >= OUT_FRAMES + BACK_FRAMES:
+        return 0.0
+    return smoothstep(elapsed / float(OUT_FRAMES) if elapsed < OUT_FRAMES
+                      else 1.0 - (elapsed - OUT_FRAMES) / float(BACK_FRAMES))
+
+
+def finale(frame, spikes):
+    """0 to 1 for every tip at once — the sweep's last beat opens into one push out and a slower release."""
+    elapsed = frame - finale_start(spikes)
+    if elapsed <= 0.0:
+        return 0.0
+    if elapsed < FINALE_OUT:
+        return smoothstep(elapsed / float(FINALE_OUT))
+    if elapsed < FINALE_OUT + FINALE_HOLD:
+        return 1.0
+    released = (elapsed - FINALE_OUT - FINALE_HOLD) / float(FINALE_BACK)
+    return 0.0 if released >= 1.0 else 1.0 - smoothstep(released)
+
+
+def build_sequence(rest, axes, frames):
     factory = unreal.AnimSequenceFactory()
-    factory.set_editor_property("target_skeleton", SKELETON)
-    seq = get_or_create(SEQ_PATH, SEQ_NAME, unreal.AnimSequence, factory)
+    factory.set_editor_property("target_skeleton", unreal.load_asset(SKELETON_PATH))
+    path = "{}/{}".format(ANIM_PACKAGE, SEQ_NAME)
+    sequence = unreal.load_asset(path) if unreal.EditorAssetLibrary.does_asset_exist(path) else \
+        unreal.AssetToolsHelpers.get_asset_tools().create_asset(SEQ_NAME, ANIM_PACKAGE, unreal.AnimSequence, factory)
 
-    ref = APE.get_reference_pose(SKELETON)
-    rest = {}
-    for bone in APE.get_bone_names(ref):
-        rest[str(bone)] = APE.get_bone_pose(ref, str(bone), unreal.AnimPoseSpaces.LOCAL)
-
-    controller = seq.get_editor_property("controller")
+    controller = sequence.get_editor_property("controller")
     controller.open_bracket("Build pike nova")
     controller.set_frame_rate(unreal.FrameRate(FPS, 1))
-    controller.set_number_of_frames(unreal.FrameNumber(FRAMES))
-    for bone, rest_local in rest.items():
+    controller.set_number_of_frames(unreal.FrameNumber(frames))
+    for bone, (rest_local, _) in rest.items():
         positions, rotations, scales = [], [], []
-        for frame in range(FRAMES + 1):  # a sequence holds one more key than its frame count
-            translation, rotation, scale = sample(frame, bone, rest_local)
+        for frame in range(frames + 1):  # a sequence holds one more key than its frame count
+            translation = unreal.Vector(rest_local.translation.x, rest_local.translation.y, rest_local.translation.z)
+            if bone in axes:
+                x, y, order = axes[bone]
+                # Whichever is further out: the tip's own beat in the sweep, or the finale that takes every tip.
+                offset = max(REACH * extension(frame, order), FINALE_REACH * finale(frame, len(axes)))
+                translation.x += x * offset
+                translation.y += y * offset
             positions.append(translation)
-            rotations.append(rotation)
-            scales.append(scale)
-        # The track must exist first: set_bone_track_keys reports success but writes nothing when it does
-        # not. add_bone_curve reports failure for a track already there, so its result is not an error.
+            rotations.append(rest_local.rotation)
+            scales.append(unreal.Vector(rest_local.scale3d.x, rest_local.scale3d.y, rest_local.scale3d.z))
+        # Unconditional and result ignored: the adder reports failure for an existing track, and the key setter
+        # reports success whether or not a track is there.
         controller.add_bone_curve(bone)
         controller.set_bone_track_keys(bone, positions, rotations, scales)
     controller.close_bracket()
-    unreal.EditorAssetLibrary.save_asset(SEQ_PATH)
-    return seq
+    unreal.EditorAssetLibrary.save_asset(path)
+    return sequence
 
 
-def build_montage(seq):
+def build_montage(sequence, starts):
     factory = unreal.AnimMontageFactory()
-    factory.set_editor_property("target_skeleton", SKELETON)
-    # source_animation is the one part of a montage's layout Python reaches: the factory builds the
-    # DefaultSlot track and its segment itself. Sections have no scripting path and need the C++ shim.
-    factory.set_editor_property("source_animation", seq)
-    montage = get_or_create(MONTAGE_PATH, MONTAGE_NAME, unreal.AnimMontage, factory)
+    factory.set_editor_property("target_skeleton", sequence.get_skeleton())
+    factory.set_editor_property("source_animation", sequence)  # the factory builds the slot track and its segment
+    path = "{}/{}".format(ANIM_PACKAGE, MONTAGE_NAME)
+    montage = unreal.load_asset(path) if unreal.EditorAssetLibrary.does_asset_exist(path) else \
+        unreal.AssetToolsHelpers.get_asset_tools().create_asset(MONTAGE_NAME, ANIM_PACKAGE, unreal.AnimMontage, factory)
 
-    if hasattr(unreal, "GeoAnimBuilderUtil"):
-        util = unreal.get_default_object(unreal.GeoAnimBuilderUtil)
-        util.set_montage_slot_segment(montage, seq, "DefaultSlot")
-        util.set_montage_sections(montage, [unreal.Name(n) for n in SECTION_NAMES], SECTION_STARTS,
-                                  [unreal.Name(n) for n in SECTION_NEXT])
-    unreal.EditorAssetLibrary.save_asset(MONTAGE_PATH)
+    util = unreal.get_default_object(unreal.GeoAnimBuilderUtil)
+    util.set_montage_slot_segment(montage, sequence, "DefaultSlot")
+    util.set_montage_sections(montage, [unreal.Name(n) for n in SECTION_NAMES], starts,
+                              [unreal.Name(n) for n in SECTION_NEXT])
+    unreal.EditorAssetLibrary.save_asset(path)
     return montage
 
 
 def link_to_pattern(montage):
-    """Wire the montage into the pillar pattern, but only once it carries the sections UPattern jumps
-    between: a missing Start section makes InitPattern compute a play rate of 0 and freeze the montage."""
+    """Only point the pattern at the montage once its sections are readable — the pattern jumps between them."""
     sections = [str(montage.get_section_name(i)) for i in range(montage.get_num_sections())]
     if not set(SECTION_NAMES).issubset(sections):
-        print("NOT linked — montage sections are {}, need {}.".format(sections, SECTION_NAMES))
+        LOG.append("NOT linked — montage sections are {}, need {}".format(sections, SECTION_NAMES))
         return
     pattern = unreal.load_asset(PATTERN_BP)
     unreal.get_default_object(pattern.generated_class()).set_editor_property("AnimMontage", montage)
     unreal.EditorAssetLibrary.save_loaded_asset(pattern)
-    print("linked {} -> {}".format(MONTAGE_NAME, PATTERN_BP))
+    LOG.append("linked {} to {}".format(montage.get_name(), pattern.get_name()))
 
 
-sequence = build_sequence()
-link_to_pattern(build_montage(sequence))
+def report_weights(axes):
+    """How far a vertex actually travels: the bone's travel scaled by that vertex's weight on it."""
+    mesh = unreal.load_asset(MESH_PATH)
+    modifier = unreal.SkinWeightModifier()
+    modifier.set_skeletal_mesh(mesh)
+    carried = {}
+    for index in range(modifier.get_num_vertices()):
+        for bone, weight in modifier.get_vertex_weights(index).items():
+            if str(bone) in axes and weight > 0.001:
+                carried.setdefault(str(bone), []).append((index, round(weight, 3)))
+    for bone in sorted(carried, key=lambda name: axes[name][2]):
+        moved = carried[bone]
+        LOG.append("  %-18s drives %d vert(s) %s -> they travel %s of %.0f" % (
+            bone, len(moved), moved, [round(REACH * w, 1) for _, w in moved], REACH))
 
-length = sequence.get_editor_property("sequence_length")
-options = unreal.AnimPoseEvaluationOptions()
-print("{} len={:.3f} frames={}".format(SEQ_NAME, length, FRAMES))
-print("frame  tip.S  lean  bearing   tip.yaw  reach   sunk")
-peaks, previous, rising = 0, None, False
-for frame in range(FRAMES + 1):
-    pose = APE.get_anim_pose_at_time(sequence, frame / float(FPS), options)
-    tip = APE.get_bone_pose(pose, "apexes_outside", unreal.AnimPoseSpaces.LOCAL)
-    lean = math.hypot(tip.translation.x, tip.translation.y)
-    bearing = math.degrees(math.atan2(tip.translation.y, tip.translation.x)) % 360.0
-    # Tip radius is 70.71 and the valley ring 50: a tip below 50 has sunk into the body.
-    print("{:5d}  {:5.2f}  {:4.0f}  {:7.1f}  {:7.1f}  {:5.1f}  {:5.1f}".format(
-        frame, tip.scale3d.x, lean, bearing, tip.rotation.rotator().yaw,
-        70.71 * tip.scale3d.x + lean, 70.71 * tip.scale3d.x - lean))
-    if previous is not None:
-        if tip.scale3d.x > previous:
-            rising = True
-        elif tip.scale3d.x < previous and rising:
-            rising, peaks = False, peaks + 1
-    previous = tip.scale3d.x
-print("tip-extension peaks across the clip: {} (one per spike)".format(peaks))
+
+def report_reach(sequence, axes, frames):
+    """Evaluate the finished sequence — the track list reads a legacy path and reports empty for every sequence."""
+    options = unreal.AnimPoseEvaluationOptions()
+    order = sorted(axes, key=lambda name: axes[name][2])
+    LOG.append("frame  " + "  ".join("%6s" % name[len(SPIKE_PREFIX):] for name in order))
+    for frame in range(0, frames + 1, 2):
+        pose = APE.get_anim_pose_at_time(sequence, frame / float(FPS), options)
+        reach = []
+        for name in order:
+            position = APE.get_bone_pose(pose, name, unreal.AnimPoseSpaces.WORLD).translation
+            reach.append(math.hypot(position.x, position.y))
+        LOG.append("%5d  " % frame + "  ".join("%6.1f" % r for r in reach))
+
+
+rest = reference_pose()
+axes = spike_axes(rest)
+if not axes:
+    LOG.append("ABORTED: no bone named {}N in the skeleton".format(SPIKE_PREFIX))
+else:
+    frames = frame_count(len(axes))
+    starts = section_starts(len(axes))
+    sequence = build_sequence(rest, axes, frames)
+    link_to_pattern(build_montage(sequence, starts))
+    LOG.append("{} tip bones, firing order {}".format(
+        len(axes), [name[len(SPIKE_PREFIX):] for name in sorted(axes, key=lambda n: axes[n][2])]))
+    LOG.append("bearings {}".format([round(math.degrees(math.atan2(axes[n][1], axes[n][0])) % 360.0)
+                                     for n in sorted(axes, key=lambda n: axes[n][2])]))
+    LOG.append("sequence {:.3f}s over {} frames at {} fps".format(frames / float(FPS), frames, FPS))
+    LOG.append("sections {} at {}".format(SECTION_NAMES, [round(s, 3) for s in starts]))
+    report_weights(axes)
+    report_reach(sequence, axes, frames)
+
+with open(REPORT, "w") as handle:
+    handle.write("\n".join(LOG))

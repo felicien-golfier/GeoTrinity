@@ -35,4 +35,4 @@ Pattern for exposing C++ editor operations to Python when `get/set_editor_proper
 | `UGeoStateTreeBuilderUtil` | `Public/Tool/GeoStateTreeBuilderUtil.h` | Add/remove states, manage transitions on `UStateTree` assets |
 | `UGeoWidgetBuilderUtil` | `Public/Tool/GeoWidgetBuilderUtil.h` | Generic widget-tree primitives + inspect on `UWidgetBlueprint` assets (see `MCP_UI.md`) |
 | `UGeoHudWidgetBuilderUtil` | `Public/Tool/GeoHudWidgetBuilderUtil.h` | Content-specific widget trees composed from the generic primitives (see `MCP_UI.md`) |
-| `UGeoAnimBuilderUtil` | `Public/Tool/GeoAnimBuilderUtil.h` | Set a montage's slot segment, sections and next-section links; inspect its layout (see `MCP_Animation.md`) |
+| `UGeoAnimBuilderUtil` | `Public/Tool/GeoAnimBuilderUtil.h` | Set a montage's slot segment, sections and next-section links; inspect its layout; read a skeletal mesh's vertex positions (see `MCP_Animation.md`) |

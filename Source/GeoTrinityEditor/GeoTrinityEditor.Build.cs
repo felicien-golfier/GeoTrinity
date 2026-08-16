@@ -27,6 +27,7 @@ public class GeoTrinityEditor : ModuleRules
 			"UMGEditor",
 			"PropertyEditor",
 			"AIModule",
+			"MeshDescription",
 			"GameplayTags",
 			"StateTreeModule",
 			"GameplayStateTreeModule",

@@ -20,7 +20,7 @@ All editor automation goes through `mcp-unreal` `execute_script` (Python), or a 
 | Blueprint asset creation, CDO properties, GameplayTag, components | `MCP_Blueprint.md` |
 | Material creation, node wiring, hard-edge circle fill | `MCP_Material.md` |
 | StateTree editing | `MCP_StateTree.md` |
-| Reading/authoring skeletal animation, montage structure | `MCP_Animation.md` |
+| Reading/authoring skeletal animation, montage structure, rig editing | `MCP_Animation.md` |
 | C++ editor utility pattern | `MCP_EditorUtility.md` |
 | New enemy ability end-to-end (tag → BP → AbilityInfo → ASC → StateTree) | `MCP_NewEnemyAbility.md` |
 | Widget Blueprint creation, widget tree shim, WidgetComponent setup | `MCP_UI.md` |
@@ -32,6 +32,7 @@ All editor automation goes through `mcp-unreal` `execute_script` (Python), or a 
 
 ## Python scripts
 Multi-step/reusable operations go in `AI/Python/` as `.py` — reference by path, never paste inline.
+Run one by compiling and executing the file's own source in the editor rather than resending its text.
 
 ## Doc style
 Always read `MCP_DocStyle.md` before editing docs here.

@@ -1,9 +1,10 @@
-"""Generic helpers for reading and authoring skeletal AnimSequences.
+"""Generic helpers for reading and authoring skeletal rigs and AnimSequences.
 
 Run via mcp-unreal execute_script against the editor world. Covers what Python can do on animation
 assets: report which bones a sequence actually animates, dump a skeleton's reference pose and hierarchy,
-report which bones actually deform the mesh, recover the mesh's radial layout, write bone tracks from a
-caller-supplied per-frame sampler, and build the montage that plays the result.
+report which bones actually deform the mesh, recover the mesh's radial layout, add bones and re-bind
+vertices to them, write bone tracks from a caller-supplied per-frame sampler, and build the montage that
+plays the result.
 
 Adjust the example call at the bottom for the asset you are working on.
 """
@@ -108,6 +109,84 @@ def radial_vertex_rings(static_mesh_path, tolerance=1.0):
     return [(radius, sorted(rings[radius])) for radius in sorted(rings, reverse=True)]
 
 
+def vertex_weight_report(skeletal_mesh_path):
+    """Every vertex paired with its weights -> [(index, position, radius, angle_degrees, {bone: weight})].
+
+    Nothing reaches a skeletal mesh's geometry from script, so positions come from the editor shim; it walks the
+    same mesh description the weight modifier indexes, which is what makes the two line up per index.
+    """
+    mesh = unreal.load_asset(skeletal_mesh_path)
+    positions = unreal.get_default_object(unreal.GeoAnimBuilderUtil).get_skeletal_mesh_vertex_positions(mesh)
+    modifier = unreal.SkinWeightModifier()
+    modifier.set_skeletal_mesh(mesh)
+    report = []
+    for index in range(modifier.get_num_vertices()):
+        position = positions[index]
+        report.append((index, position, math.hypot(position.x, position.y),
+                       math.degrees(math.atan2(position.y, position.x)) % 360.0,
+                       {str(bone): weight for bone, weight in modifier.get_vertex_weights(index).items()}))
+    return report
+
+
+def radial_slots(report, slot_count, radius_ratio=0.9):
+    """Split the outermost ring of a vertex_weight_report into evenly spaced directions.
+
+    Returns (ring_radius, phase_radians, {slot: [vertex index]}). Multiplying every angle by the slot count
+    collapses evenly spaced features onto one direction whose circular mean recovers the phase, so nothing has to
+    be assumed to sit at zero degrees.
+    """
+    ring_radius = max(entry[2] for entry in report)
+    ring = [(entry[0], math.radians(entry[3])) for entry in report if entry[2] > ring_radius * radius_ratio]
+    phase = math.atan2(sum(math.sin(slot_count * angle) for _, angle in ring),
+                       sum(math.cos(slot_count * angle) for _, angle in ring)) / slot_count
+    slots = {}
+    for index, angle in ring:
+        slots.setdefault(int(round(slot_count * (angle - phase) / (2.0 * math.pi))) % slot_count, []).append(index)
+    return ring_radius, phase, slots
+
+
+def add_child_bones(skeletal_mesh_path, parent_bone, locations):
+    """Add a bone per entry of locations ({bone name: component-space Vector}) under parent_bone, and commit.
+
+    The modifier wants each transform in its parent's space. Commit the skeleton before any weighting — a vertex
+    cannot be bound to a bone the mesh does not carry yet. Adding leaf bones keeps the commit off the path that
+    raises a modal merge dialog.
+    """
+    mesh = unreal.load_asset(skeletal_mesh_path)
+    modifier = unreal.SkeletonModifier()
+    modifier.set_skeletal_mesh(mesh)
+    skeleton = mesh.get_editor_property("skeleton")
+    parent = APE.get_bone_pose(APE.get_reference_pose(skeleton), parent_bone, unreal.AnimPoseSpaces.WORLD)
+
+    names, parents, transforms = [], [], []
+    for name, location in locations.items():
+        placed = unreal.Transform()
+        placed.translation = location
+        names.append(unreal.Name(name))
+        parents.append(unreal.Name(parent_bone))
+        transforms.append(unreal.MathLibrary.make_relative_transform(placed, parent))
+    modifier.add_bones(names, parents, transforms)
+    modifier.commit_skeleton_to_skeletal_mesh()
+
+    unreal.EditorAssetLibrary.save_asset(skeletal_mesh_path)
+    unreal.EditorAssetLibrary.save_loaded_asset(skeleton)
+
+
+def bind_vertices(skeletal_mesh_path, assignments):
+    """Bind vertices wholly to bones ({bone name: [vertex index]}) and commit.
+
+    Replacing a vertex's weights drops its other influences, so a re-bound vertex stops following the bones it
+    shared before and moves rigidly with its new one.
+    """
+    modifier = unreal.SkinWeightModifier()
+    modifier.set_skeletal_mesh(unreal.load_asset(skeletal_mesh_path))
+    for bone, indices in assignments.items():
+        for index in indices:
+            modifier.set_vertex_weights(index, {unreal.Name(bone): 1.0}, True)
+    modifier.commit_weights_to_skeletal_mesh()
+    unreal.EditorAssetLibrary.save_asset(skeletal_mesh_path)
+
+
 def write_bone_tracks(sequence, skeleton_path, fps, frames, sampler, bracket="Author animation"):
     """Write bone tracks into `sequence` from `sampler`.
 
@@ -184,6 +263,14 @@ def _delta(current, base):
 # Which bones actually carry the mesh, and where its features sit
 # print(report_skin_weights("/Game/Characters/Meshes/Star/SKM_Star"))
 # print(radial_vertex_rings("/Game/Characters/Meshes/Star/Star"))
+
+# Give each of a ring's features its own bone, so one can be moved without the others
+# MESH, RING_PARENT, SLOT_COUNT = "/Game/Characters/Meshes/Star/SKM_Star", "apexes_outside", 8
+# radius, phase, slots = radial_slots(vertex_weight_report(MESH), SLOT_COUNT)
+# angles = {slot: phase + slot * 2.0 * math.pi / SLOT_COUNT for slot in slots}
+# add_child_bones(MESH, RING_PARENT, {"spike_{}".format(slot): unreal.Vector(
+#     radius * math.cos(angle), radius * math.sin(angle), 0.0) for slot, angle in angles.items()})
+# bind_vertices(MESH, {"spike_{}".format(slot): indices for slot, indices in slots.items()})
 
 # Author a sequence: a sampler scaling one bone up then back down over the clip
 # SKELETON, PACKAGE, FPS, FRAMES, BONE = "/Game/Characters/Meshes/Star/SK_Star", "/Game/Characters/Anim/Star", 30, 30, "mid"
