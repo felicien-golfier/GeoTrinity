@@ -176,6 +176,75 @@ def skinned_vertex_positions(skeletal_mesh_path, sequence, times):
     return sampled
 
 
+def rigid_vertex_groups(skeletal_mesh_path, skeleton_path):
+    """Vertices grouped by the single bone that drives each -> {bone: [position in that bone's space]}.
+
+    For a rig that binds every vertex wholly to one bone, this is all a silhouette needs: putting a vertex back
+    out through its bone's posed transform is exactly where the renderer draws it, with none of the blending a
+    split vertex forces. Raises on any vertex carrying more than one influence rather than picking one of them.
+    """
+    mesh = unreal.load_asset(skeletal_mesh_path)
+    positions = unreal.get_default_object(unreal.GeoAnimBuilderUtil).get_skeletal_mesh_vertex_positions(mesh)
+    modifier = unreal.SkinWeightModifier()
+    modifier.set_skeletal_mesh(mesh)
+    reference = _component_transforms(APE.get_reference_pose(unreal.load_asset(skeleton_path)))
+
+    groups = {}
+    for index, position in enumerate(positions):
+        weights = modifier.get_vertex_weights(index)
+        if len(weights) != 1:
+            raise RuntimeError("vertex {} is split across {} bones".format(index, len(weights)))
+        bone = str(next(iter(weights)))
+        groups.setdefault(bone, []).append(unreal.MathLibrary.inverse_transform_location(reference[bone], position))
+    return groups
+
+
+def place_groups(groups, posed):
+    """Every group's vertices where a pose puts them -> {bone: [component-space position]}.
+
+    Takes the posed component transforms already extracted from an evaluated pose, since those alias one buffer.
+    """
+    return {bone: [unreal.MathLibrary.transform_location(posed[bone], local) for local in locals]
+            for bone, locals in groups.items()}
+
+
+def feature_protrusion(placed, posed, feature_bone, parent_bone):
+    """How far a feature stands past the surface it grows out of, in units; negative means it is still buried.
+
+    A shape's outermost radius cannot answer this — its corners sit further out than any of its faces, so a
+    feature clears its own surface long before it beats that radius. Both sets of vertices are projected onto the
+    feature's own outward direction, taken from where its bone sits rather than from its axis, which the scaling
+    that hides such a feature would collapse.
+    """
+    axis = posed[feature_bone].translation
+    length = math.hypot(axis.x, axis.y)
+    along = lambda group: max(v.x * axis.x / length + v.y * axis.y / length for v in placed[group])
+    return along(feature_bone) - along(parent_bone)
+
+
+def polygon_reach(vertices, angle, sides=6):
+    """Distance from the axis out to a regular polygon's boundary in direction `angle` (radians).
+
+    The boundary is fixed by its nearest vertex: that vertex's radius is the circumradius and its direction the
+    phase. The shortest vertex distance on its own reports the boundary as closer than it is everywhere except at
+    the corners, which is exactly where a ring inside it aims its features.
+    """
+    radius, phase = min((math.hypot(vertex.x, vertex.y), math.atan2(vertex.y, vertex.x)) for vertex in vertices)
+    span = math.pi / sides
+    return radius * math.cos(span) / math.cos((angle - phase) % (2.0 * span) - span)
+
+
+def nested_clearance(placed, inner_bones, boundary_bone, sides=6):
+    """Smallest gap in units between the parts on `inner_bones` and the wall of `boundary_bone`.
+
+    Negative means the two interpenetrate, which no bone track shows — nested parts have to be checked for it
+    numerically.
+    """
+    inside = [vertex for bone in inner_bones for vertex in placed[bone]]
+    return min(polygon_reach(placed[boundary_bone], math.atan2(vertex.y, vertex.x), sides)
+               - math.hypot(vertex.x, vertex.y) for vertex in inside)
+
+
 def add_child_bones(skeletal_mesh_path, parent_bone, locations):
     """Add a bone per entry of locations ({bone name: component-space Vector}) under parent_bone, and commit.
 
@@ -323,6 +392,17 @@ def _component_transforms(pose):
 # for frame, positions in enumerate(skinned_vertex_positions(
 #         "/Game/Characters/Meshes/Star/SKM_Star", SEQUENCE, [f / float(FPS) for f in frames])):
 #     print(frame, max(math.hypot(p.x, p.y) for p in positions))
+
+# Check what a clip actually looks like: does a feature clear its own face, and do nested parts collide
+# MESH, SKELETON = "/Game/Characters/Meshes/HexBoss/SKM_HexBoss", "/Game/Characters/Meshes/HexBoss/SK_HexBoss"
+# SEQUENCE, FPS = unreal.load_asset("/Game/Characters/Anim/HexBoss/SK_HexBoss_Idle"), 30
+# groups = rigid_vertex_groups(MESH, SKELETON)
+# for frame in range(0, 241, 12):
+#     posed = _component_transforms(APE.get_anim_pose_at_time(
+#         SEQUENCE, frame / float(FPS), unreal.AnimPoseEvaluationOptions()))
+#     placed = place_groups(groups, posed)
+#     print(frame, feature_protrusion(placed, posed, "HexOuter_Spike_0", "HexOuter"),
+#           nested_clearance(placed, [b for b in groups if b.startswith("HexMid")], "HexOuter"))
 
 # Give each of a ring's features its own bone, so one can be moved without the others
 # MESH, RING_PARENT, SLOT_COUNT = "/Game/Characters/Meshes/Star/SKM_Star", "apexes_outside", 8

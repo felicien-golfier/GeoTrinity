@@ -54,6 +54,10 @@ Commit the skeleton before touching weights — a vertex cannot be bound to a bo
 
 Committing a bone hierarchy the skeleton asset cannot absorb raises a modal merge dialog that stalls an unattended script; adding leaf bones stays on the silent path.
 
+Building a skinned copy of a static mesh over a whole hierarchy at once goes through an editor shim instead: neither factory behind the editor's own conversion command is reachable from script, and the conversion takes the reference skeleton to build against, so nothing afterwards has to reconcile a mesh against a skeleton it was not built on. A reference skeleton wants its root first and every parent declared before its children. Weights are the only half of that reachable from script, so the conversion lands every vertex on the root and a weighting pass moves them onto the bones meant to drive them.
+
+A part that has to disappear gets a bone of its own, placed inside solid geometry, and is scaled away rather than moved; a zero scale is safe because skinning only ever multiplies forward. Scaling its length alone keeps the part's full width and height for when it slides back out.
+
 Replacing a vertex's weights drops its other influences, so a re-bound vertex stops following the bones it shared before and moves rigidly with its new one. Parenting a new bone under the one that drove those vertices keeps existing animation on them.
 
 See `AI/Python/anim_sequence_authoring.py` for the bone-adding and vertex-binding helpers.
@@ -67,6 +71,8 @@ The animation data controller is reached as an editor property on the sequence. 
 Set the frame rate and frame count before writing keys; the frame count takes a frame-number struct. A sequence holds one more key than its frame count.
 
 A motion with a repeating beat needs a whole number of frames per beat, or the beats fall between samples and come out uneven.
+
+A stretch of a clip that loops must hold the same pose on its last key as on its first. Where parts read the driving curve at a delay, the plateau preceding that stretch has to be at least as long as the largest delay, or the delayed parts read different values at its two ends.
 
 Add a bone's track before setting its keys, unconditionally and ignoring the result — the adder reports failure for an existing track, and the key setter reports success whether or not a track is there. Supply position, rotation and scale arrays of equal length.
 
@@ -102,7 +108,21 @@ Under an orthographic camera, motion along the view axis is spent for nothing.
 
 Starting and ending a clip on the reference pose is what lets it blend in and out without a pop.
 
-See `AI/Python/star_spike_nova.py` for a hit built on these, and `AI/Python/star_idle_breath.py` for the looping counterpart.
+A part with rotational symmetry that turns a whole fraction of a turn matching that symmetry lands on a pose indistinguishable from the one it left, so a rotation can carry across a loop or hold at the end of a clip without ever being unwound backwards.
+
+See `AI/Python/star_spike_nova.py` for a hit built on these and `AI/Python/star_idle_breath.py` for the looping counterpart, `AI/Python/hex_boss_idle.py` for a loop closed on symmetry rather than on stillness, and `AI/Python/hex_boss_abilities.py` for several clips driven from one parameter table.
+
+---
+
+## Checking a Clip's Silhouette
+
+A shape's outermost radius cannot show a feature standing proud of a flat face: the shape's corners sit further out than any of its faces, so the feature clears its own surface long before it beats that radius. Project the feature's vertices and its parent's onto the feature's own outward direction and compare the two.
+
+Take that direction from where the bone sits rather than from its axis, which the very scaling being measured would collapse.
+
+Parts nested inside one another have to be checked for interpenetration numerically, since no bone track shows it. The distance from the axis out to a polygonal boundary in a given direction follows from its nearest vertex's radius and direction together, never from that radius alone.
+
+See `AI/Python/anim_sequence_authoring.py` for the protrusion, boundary-distance and clearance reports.
 
 ---
 
@@ -117,6 +137,10 @@ Load an existing asset and rewrite it in place. Deleting a loaded asset routes t
 Creating a montage through its factory with the source-animation property set makes the factory build the slot track and its segment, so a montage that plays a single sequence needs no shim.
 
 Section names and count are readable through the montage's own lookup functions.
+
+A pattern's wind-up section is stretched to the ability's configured delay, so its authored length sets only the proportions inside it.
+
+The jump that takes a montage live matches any section whose name contains the fire section's, so a phase of no fixed length is authored as a second fire section looping on itself until the end jump takes it.
 
 The section list and the slot-track array are declared without edit or Blueprint access, and the call that keeps a section's cached segment link consistent is C++ only — writing sections needs a C++ shim, see `MCP_EditorUtility.md`.
 
