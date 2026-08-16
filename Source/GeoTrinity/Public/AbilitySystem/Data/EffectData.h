@@ -70,6 +70,10 @@ struct GEOTRINITY_API FEffectData
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const;
 
+	/** True when the magnitude is a rate scaled by delta time on apply, so continuous sources (beams, zones) must
+	 * re-apply it every tick a target stays inside instead of once on entry. */
+	virtual bool IsPerSecond() const { return false; }
+
 	/**
 	 * True when this entry applies at AbilityLevel.
 	 *
@@ -149,6 +153,8 @@ struct FDamageEffectData : public FEffectData
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const override;
 
+	virtual bool IsPerSecond() const override { return bIsDamagePerSecond; }
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat DamageAmount;
 
@@ -191,6 +197,8 @@ struct FHealEffectData : public FEffectData
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const override;
 
+	virtual bool IsPerSecond() const override { return bIsHealPerSecond; }
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat HealAmount;
 
@@ -227,6 +235,8 @@ struct FShieldEffectData : public FEffectData
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const override;
+
+	virtual bool IsPerSecond() const override { return bIsShieldPerSecond; }
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat ShieldAmount;

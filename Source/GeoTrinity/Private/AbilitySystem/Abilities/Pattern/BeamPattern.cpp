@@ -149,28 +149,51 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 			TArray<AActor*> ActorsInBeam = GeoASLib::GetInteractableActorsInLine(
 				this, GeoASLib::GetTeamId(StoredPayload.Owner), TeamAttitudeMask::HostileOrNeutral,
 				/*bMustBeDamageable*/ true, FVector2D(Location), Forward, BeamRange, BeamHalfWidth, OverlapMode);
-			KeepActorsEnteringOverlap(ActorsInBeam);
 
-			for (AActor* HitActor : ActorsInBeam)
+			ApplyBeamEffects(/*bPerSecond*/ true, ActorsInBeam, SourceASC);
+			if (!bPatternIsActive)
 			{
-				if (UGeoAbilitySystemComponent* const TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
-				{
-					GeoASLib::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
-														StoredPayload.AbilityLevel, StoredPayload.Seed,
-														StoredPayload.AbilityTag);
-				}
-
-				if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
-				{
-					return;
-				}
+				return;
 			}
+
+			KeepActorsEnteringOverlap(ActorsInBeam);
+			ApplyBeamEffects(/*bPerSecond*/ false, ActorsInBeam, SourceASC);
 		}
 	}
 
 	if (SpentTime >= BeamDuration)
 	{
 		EndPattern();
+	}
+}
+
+void UBeamPattern::ApplyBeamEffects(bool const bPerSecond, TArray<AActor*> const& Actors,
+									UGeoAbilitySystemComponent* SourceASC) const
+{
+	TArray<TInstancedStruct<FEffectData>> const Effects = EffectDataArray.FilterByPredicate(
+		[bPerSecond](TInstancedStruct<FEffectData> const& Effect)
+		{
+			FEffectData const* const EffectData = Effect.GetPtr();
+			return EffectData && EffectData->IsPerSecond() == bPerSecond;
+		});
+
+	if (Effects.IsEmpty())
+	{
+		return;
+	}
+
+	for (AActor* const HitActor : Actors)
+	{
+		if (UGeoAbilitySystemComponent* const TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
+		{
+			GeoASLib::ApplyEffectFromEffectData(Effects, SourceASC, TargetASC, StoredPayload.AbilityLevel,
+												StoredPayload.Seed, StoredPayload.AbilityTag);
+		}
+
+		if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
+		{
+			return;
+		}
 	}
 }
 

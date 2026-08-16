@@ -6,8 +6,9 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "GameFramework/GameStateBase.h"
-#include "GameFramework/PlayerState.h"
+#include "Characters/PlayableCharacter.h"
+#include "GeoTrinity/GeoTrinity.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
 {
@@ -27,50 +28,27 @@ TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
 	}
 
 	float const HealthRatio = AttributeSet->GetHealthRatio();
-	int NumPillarToSpawn = HealthRatio < .2f ? 3 : HealthRatio < .5f ? 2 : 1;
+	int32 const NumPillarToSpawn = HealthRatio < .2f ? 3 : HealthRatio < .5f ? 2 : 1;
 
-	TArray<TObjectPtr<APlayerState>> Players = GetWorld()->GetGameState()->PlayerArray;
-	if (Players.Num() == 0)
+	TArray<APlayableCharacter*> const AlivePlayers = GeoLib::GetAlivePlayers(this);
+	if (AlivePlayers.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GeoSpawnPillarAbility: No player in the game"));
+		UE_LOG(LogGeoASC, Warning, TEXT("GeoSpawnPillarAbility: no alive player to target"));
+		return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);
 	}
 
-	TArray<APawn*> AlivePawns;
-	TArray<APawn*> DeadPawns;
-
-	for (auto Player : Players)
+	FRandomStream Stream(StoredPayload.Seed);
+	int32 const FirstPlayerIndex = Stream.RandHelper(AlivePlayers.Num());
+	for (int32 Index = 0; Index < NumPillarToSpawn; ++Index)
 	{
-		if (IsValid(Player))
+		FVector2D Location(AlivePlayers[(FirstPlayerIndex + Index) % AlivePlayers.Num()]->GetActorLocation());
+		if (Index >= AlivePlayers.Num())
 		{
-			APawn* TargetPawn = Player->GetPawn();
-			if (IsValid(TargetPawn))
-			{
-				if (TargetPawn->CanBeDamaged())
-				{
-					AlivePawns.Add(TargetPawn);
-				}
-				else
-				{
-					DeadPawns.Add(TargetPawn);
-				}
-			}
+			float const RandomAngle = Stream.FRandRange(0.f, 2.f * PI);
+			float const RandomRadius = Stream.FRandRange(MinScatterRadius, MaxScatterRadius);
+			Location += FVector2D(FMath::Cos(RandomAngle), FMath::Sin(RandomAngle)) * RandomRadius;
 		}
-	}
-
-	NumPillarToSpawn = FMath::Min(NumPillarToSpawn, AlivePawns.Num() + DeadPawns.Num());
-	int32 const AbsSeed = FMath::Abs(StoredPayload.Seed);
-	for (uint8 i = 0; i < NumPillarToSpawn && i < Players.Num(); i++)
-	{
-		if (PillarData.ZoneLocations.Num() < AlivePawns.Num())
-		{
-			PillarData.ZoneLocations.Add(
-				FVector2D(AlivePawns[(AbsSeed % AlivePawns.Num() + i) % AlivePawns.Num()]->GetActorLocation()));
-		}
-		else
-		{
-			PillarData.ZoneLocations.Add(
-				FVector2D(DeadPawns[(AbsSeed % DeadPawns.Num() + i) % DeadPawns.Num()]->GetActorLocation()));
-		}
+		PillarData.ZoneLocations.Add(Location);
 	}
 
 	return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);

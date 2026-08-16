@@ -20,6 +20,7 @@ All editor automation goes through `mcp-unreal` `execute_script` (Python), or a 
 | Blueprint asset creation, CDO properties, GameplayTag, components | `MCP_Blueprint.md` |
 | Material creation, node wiring, hard-edge circle fill | `MCP_Material.md` |
 | StateTree editing | `MCP_StateTree.md` |
+| Reading/authoring skeletal animation, montage structure | `MCP_Animation.md` |
 | C++ editor utility pattern | `MCP_EditorUtility.md` |
 | New enemy ability end-to-end (tag → BP → AbilityInfo → ASC → StateTree) | `MCP_NewEnemyAbility.md` |
 | Widget Blueprint creation, widget tree shim, WidgetComponent setup | `MCP_UI.md` |

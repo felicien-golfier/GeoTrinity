@@ -10,6 +10,7 @@
 
 #include "BeamPattern.generated.h"
 
+class UGeoAbilitySystemComponent;
 class UNiagaraComponent;
 class UNiagaraSystem;
 
@@ -17,6 +18,7 @@ class UNiagaraSystem;
  * Beam fired from the payload origin along the payload yaw, staying on for BeamDuration.
  * SweepAngle turns it into a rotating sweep (0 leaves it pointing straight ahead); every hostile is hit the tick it
  * enters the beam, so crossing it costs one hit no matter how slowly you walk through — and one more per re-entry.
+ * Per-second effects are the exception: they keep ticking on everyone standing in the beam.
  * With bDestroyLastTileHit the shot also carves out the furthest arena tile it reaches — the tank picks which rim
  * tile that is by choosing where they stand when the boss locks on.
  */
@@ -52,6 +54,11 @@ protected:
 
 	/** Places the beam VFX where GetBeamOrigin/GetBeamYaw put it at SpentTime. */
 	void MoveBeamVfx(float SpentTime);
+
+	/** Applies the EffectDataArray entries matching bPerSecond to every actor of Actors, stopping early if one of them
+	 * ends the pattern. */
+	void ApplyBeamEffects(bool bPerSecond, TArray<AActor*> const& Actors,
+						  UGeoAbilitySystemComponent* SourceASC) const;
 
 	/** Full arc swept over BeamDuration, in degrees, centered on the payload yaw. 0 keeps the beam static. */
 	float SweepAngle;

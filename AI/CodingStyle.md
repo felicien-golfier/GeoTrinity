@@ -5,6 +5,7 @@
   - **One mechanism, not two.** Pick the single construct that expresses the whole behaviour; don't bolt extra state or a parallel path alongside it.
   - **Don't add state to track what an existing construct already bounds.** Before adding a member, check whether something already in scope answers the same question.
   - **Write the simplest version first, then stop.** The simple version is the deliverable — don't ship an elaborate one "to be safe" and simplify only on request.
+  - **Always minimalist.** Ship the smallest correct diff: fewest new members, functions, files, branches and lines. When two designs both work, the shorter one wins — reuse or extend what exists rather than adding alongside it.
 - Prefer fewer but longer `if` statements — merge conditions with `&&` rather than nesting
 - `const` by default; remove only when mutation is needed
 - Prefer non-const parameters over creating new variables (`FTransform SpawnTransform` not `const FTransform& SpawnTransform` + local copy)

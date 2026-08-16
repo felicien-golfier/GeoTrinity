@@ -1,0 +1,206 @@
+"""Generic helpers for reading and authoring skeletal AnimSequences.
+
+Run via mcp-unreal execute_script against the editor world. Covers what Python can do on animation
+assets: report which bones a sequence actually animates, dump a skeleton's reference pose and hierarchy,
+report which bones actually deform the mesh, recover the mesh's radial layout, write bone tracks from a
+caller-supplied per-frame sampler, and build the montage that plays the result.
+
+Adjust the example call at the bottom for the asset you are working on.
+"""
+import math
+
+import unreal
+
+APE = unreal.AnimPoseExtensions
+
+
+def get_or_create_asset(package_path, asset_name, asset_class, factory):
+    """Load the asset if it exists, else create it. Never deletes: deleting a loaded asset leaves the
+    package unloadable for the rest of the editor session."""
+    path = "{}/{}".format(package_path, asset_name)
+    if unreal.EditorAssetLibrary.does_asset_exist(path):
+        return unreal.load_asset(path)
+    return unreal.AssetToolsHelpers.get_asset_tools().create_asset(asset_name, package_path, asset_class, factory)
+
+
+def reference_pose_table(skeleton_path):
+    """Skeleton path -> {bone: (local_transform, component_transform)} for the reference pose."""
+    skeleton = unreal.load_asset(skeleton_path)
+    ref = APE.get_reference_pose(skeleton)
+    table = {}
+    for bone in APE.get_bone_names(ref):
+        name = str(bone)
+        table[name] = (APE.get_bone_pose(ref, name, unreal.AnimPoseSpaces.LOCAL),
+                       APE.get_bone_pose(ref, name, unreal.AnimPoseSpaces.WORLD))
+    return table
+
+
+def infer_parents(skeleton_path):
+    """Reconstruct the hierarchy: a bone's parent sits at (component - local) translation."""
+    table = reference_pose_table(skeleton_path)
+    parents = {}
+    for name, (local, comp) in table.items():
+        parent_pos = comp.translation - local.translation
+        parents[name] = [other for other, (_, other_comp) in table.items()
+                         if other != name and (other_comp.translation - parent_pos).length() < 0.01]
+    return parents
+
+
+def report_moving_bones(sequence_path, samples=12, tolerance=0.05):
+    """Which bones a sequence actually animates, and by how much.
+
+    The legacy track/curve accessors report empty for every sequence, so this evaluates the pose
+    instead. Returns {bone: max_delta} for bones that move.
+    """
+    seq = unreal.load_asset(sequence_path)
+    length = seq.get_editor_property("sequence_length")
+    options = unreal.AnimPoseEvaluationOptions()
+
+    base = {}
+    first = APE.get_anim_pose_at_time(seq, 0.0, options)
+    names = [str(b) for b in APE.get_bone_names(first)]
+    for name in names:
+        # Extract immediately: evaluated poses alias one shared buffer.
+        base[name] = _snapshot(APE.get_bone_pose(first, name, unreal.AnimPoseSpaces.LOCAL))
+
+    moving = {}
+    for i in range(1, samples + 1):
+        pose = APE.get_anim_pose_at_time(seq, length * i / float(samples), options)
+        for name in names:
+            delta = _delta(_snapshot(APE.get_bone_pose(pose, name, unreal.AnimPoseSpaces.LOCAL)), base[name])
+            if delta > tolerance:
+                moving[name] = max(moving.get(name, 0.0), delta)
+    return moving
+
+
+def report_skin_weights(skeletal_mesh_path):
+    """Which bones actually deform the mesh -> {bone: (vertex_count, total_weight)}.
+
+    A bone a sequence animates is not necessarily a bone that carries much of the mesh, so weigh a bone's
+    influence with this before building motion on it. Takes the skeletal mesh, not the skeleton.
+    """
+    modifier = unreal.SkinWeightModifier()
+    modifier.set_skeletal_mesh(unreal.load_asset(skeletal_mesh_path))
+    counts, totals = {}, {}
+    for index in range(modifier.get_num_vertices()):
+        for bone, weight in modifier.get_vertex_weights(index).items():
+            if weight > 0.001:
+                name = str(bone)
+                counts[name] = counts.get(name, 0) + 1
+                totals[name] = totals.get(name, 0.0) + weight
+    return {name: (counts[name], round(totals[name], 2)) for name in counts}
+
+
+def radial_vertex_rings(static_mesh_path, tolerance=1.0):
+    """Vertex layout in the XY plane -> [(radius, [angles])], outermost ring first.
+
+    Bounds cannot stand in for this: a mesh's sphere radius is derived from its box corner rather than its
+    geometry, so features have to be recovered from vertex positions.
+    """
+    mesh = unreal.load_asset(static_mesh_path)
+    vertices = unreal.ProceduralMeshLibrary.get_section_from_static_mesh(mesh, 0, 0)[0]
+    rings = {}
+    for vertex in vertices:
+        radius = math.hypot(vertex.x, vertex.y)
+        if radius >= tolerance:
+            key = round(round(radius / tolerance) * tolerance, 2)
+            rings.setdefault(key, set()).add(round(math.degrees(math.atan2(vertex.y, vertex.x)) % 360.0, 1))
+    return [(radius, sorted(rings[radius])) for radius in sorted(rings, reverse=True)]
+
+
+def write_bone_tracks(sequence, skeleton_path, fps, frames, sampler, bracket="Author animation"):
+    """Write bone tracks into `sequence` from `sampler`.
+
+    sampler(frame, bone, rest_local_transform) -> (translation, rotation_quat, scale) for that frame.
+    Returns the sequence. Verify the result with report_moving_bones, not the track list.
+    """
+    rest = {name: local for name, (local, _) in reference_pose_table(skeleton_path).items()}
+
+    controller = sequence.get_editor_property("controller")
+    controller.open_bracket(bracket)
+    controller.set_frame_rate(unreal.FrameRate(fps, 1))
+    controller.set_number_of_frames(unreal.FrameNumber(frames))
+    for bone, rest_local in rest.items():
+        positions, rotations, scales = [], [], []
+        for frame in range(frames + 1):  # a sequence holds one more key than its frame count
+            translation, rotation, scale = sampler(frame, bone, rest_local)
+            positions.append(translation)
+            rotations.append(rotation)
+            scales.append(scale)
+        # Unconditional and result ignored: the adder reports failure for an existing track, and the
+        # key setter reports success whether or not a track is there.
+        controller.add_bone_curve(bone)
+        controller.set_bone_track_keys(bone, positions, rotations, scales)
+    controller.close_bracket()
+    unreal.EditorAssetLibrary.save_asset(sequence.get_path_name().split(".")[0])
+    return sequence
+
+
+def build_montage(sequence, package_path, asset_name, section_names, section_starts, section_next,
+                  slot_name="DefaultSlot"):
+    """Create or load a montage playing the whole of `sequence` and give it its sections.
+
+    The factory builds the slot track and its segment itself when handed a source animation. Sections have
+    no scripting path, so they are written only where the C++ editor shim is compiled.
+    """
+    factory = unreal.AnimMontageFactory()
+    factory.set_editor_property("target_skeleton", sequence.get_skeleton())
+    factory.set_editor_property("source_animation", sequence)
+    montage = get_or_create_asset(package_path, asset_name, unreal.AnimMontage, factory)
+    if hasattr(unreal, "GeoAnimBuilderUtil"):
+        util = unreal.get_default_object(unreal.GeoAnimBuilderUtil)
+        util.set_montage_slot_segment(montage, sequence, slot_name)
+        util.set_montage_sections(montage, [unreal.Name(n) for n in section_names], section_starts,
+                                  [unreal.Name(n) for n in section_next])
+    unreal.EditorAssetLibrary.save_asset("{}/{}".format(package_path, asset_name))
+    return montage
+
+
+def montage_sections(montage):
+    """Section names in order — the only part of a montage's layout Python reads back."""
+    return [str(montage.get_section_name(i)) for i in range(montage.get_num_sections())]
+
+
+def _snapshot(transform):
+    return (unreal.Vector(transform.translation.x, transform.translation.y, transform.translation.z),
+            unreal.Vector(transform.scale3d.x, transform.scale3d.y, transform.scale3d.z),
+            transform.rotation.rotator().yaw)
+
+
+def _delta(current, base):
+    return max((current[0] - base[0]).length(), (current[1] - base[1]).length() * 100.0,
+               abs(current[2] - base[2]))
+
+
+# --- Example calls — uncomment and adjust paths -------------------------------------------------
+
+# Report which bones a sequence animates, and by how much
+# print(report_moving_bones("/Game/Characters/Anim/Star/SK_Star_Sequence_Start"))
+
+# Dump the rig: reference-pose transforms, and the reconstructed hierarchy
+# print(reference_pose_table("/Game/Characters/Meshes/Star/SK_Star"))
+# print(infer_parents("/Game/Characters/Meshes/Star/SK_Star"))
+
+# Which bones actually carry the mesh, and where its features sit
+# print(report_skin_weights("/Game/Characters/Meshes/Star/SKM_Star"))
+# print(radial_vertex_rings("/Game/Characters/Meshes/Star/Star"))
+
+# Author a sequence: a sampler scaling one bone up then back down over the clip
+# SKELETON, PACKAGE, FPS, FRAMES, BONE = "/Game/Characters/Meshes/Star/SK_Star", "/Game/Characters/Anim/Star", 30, 30, "mid"
+#
+# def pulse(frame, bone, rest_local):
+#     alpha = 1.0 - abs(frame / float(FRAMES) * 2.0 - 1.0)
+#     scale = 1.0 + 2.0 * alpha if bone == BONE else 1.0
+#     return (unreal.Vector(rest_local.translation.x, rest_local.translation.y, rest_local.translation.z),
+#             rest_local.rotation.rotator().quaternion(),
+#             unreal.Vector(rest_local.scale3d.x * scale, rest_local.scale3d.y * scale, rest_local.scale3d.z))
+#
+# factory = unreal.AnimSequenceFactory()
+# factory.set_editor_property("target_skeleton", unreal.load_asset(SKELETON))
+# target = get_or_create_asset(PACKAGE, "SK_Example_Pulse", unreal.AnimSequence, factory)
+# write_bone_tracks(target, SKELETON, FPS, FRAMES, pulse)
+
+# Wrap it in a montage, then confirm the sections exist before anything is pointed at it
+# montage = build_montage(target, PACKAGE, "SK_Example_Pulse_Montage",
+#                         ["Start", "Fire", "End"], [0.0, 0.1, 0.7], ["Fire", "End", "None"])
+# print(montage_sections(montage))

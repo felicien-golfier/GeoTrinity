@@ -10,11 +10,11 @@ Pattern for exposing C++ editor operations to Python when `get/set_editor_proper
 
 ## Pattern
 
-**Header** — `Source/GeoTrinity/Public/Tool/GeoXxxUtil.h`
-- Extend `UEditorUtilityObject`, wrap in `#if WITH_EDITOR`
+**Header** — `Source/GeoTrinityEditor/Public/Tool/GeoXxxUtil.h`
+- Extend `UEditorUtilityObject`; no `#if WITH_EDITOR` guard — the whole module is editor-only
 - All methods `static`, decorated `UFUNCTION(BlueprintCallable, CallInEditor)`
 
-**Implementation** — `Source/GeoTrinity/Private/Tool/GeoXxxUtil.cpp`
+**Implementation** — `Source/GeoTrinityEditor/Private/Tool/GeoXxxUtil.cpp`
 - Save assets with `UEditorLoadingAndSavingUtils::SavePackages({ Asset->GetPackage() }, false)` from `FileHelpers.h`
 
 **Build.cs** — add editor-only deps inside `if (Target.bBuildEditor)`:
@@ -35,3 +35,4 @@ Pattern for exposing C++ editor operations to Python when `get/set_editor_proper
 | `UGeoStateTreeBuilderUtil` | `Public/Tool/GeoStateTreeBuilderUtil.h` | Add/remove states, manage transitions on `UStateTree` assets |
 | `UGeoWidgetBuilderUtil` | `Public/Tool/GeoWidgetBuilderUtil.h` | Generic widget-tree primitives + inspect on `UWidgetBlueprint` assets (see `MCP_UI.md`) |
 | `UGeoHudWidgetBuilderUtil` | `Public/Tool/GeoHudWidgetBuilderUtil.h` | Content-specific widget trees composed from the generic primitives (see `MCP_UI.md`) |
+| `UGeoAnimBuilderUtil` | `Public/Tool/GeoAnimBuilderUtil.h` | Set a montage's slot segment, sections and next-section links; inspect its layout (see `MCP_Animation.md`) |

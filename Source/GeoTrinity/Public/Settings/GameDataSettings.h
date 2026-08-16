@@ -29,7 +29,8 @@ class GEOTRINITY_API UGameDataSettings : public UDeveloperSettings
 
 public:
 	/**
-	 * Synchronously loads and returns the data asset pointed to by SoftObject.
+	 * Synchronously loads and returns the data asset pointed to by SoftObject, and keeps it resident for the rest of
+	 * the process.
 	 * @warning Should only be called after the asset has been async-loaded; synchronous loads during gameplay cause
 	 * hitches.
 	 */
@@ -148,5 +149,13 @@ public:
 template <typename T>
 T* UGameDataSettings::GetLoadedDataAsset(TSoftObjectPtr<T> const& SoftObject)
 {
-	return SoftObject.LoadSynchronous();
+	T* const Asset = SoftObject.LoadSynchronous();
+	if (Asset)
+	{
+		// A soft pointer holds a path, not a reference, and RF_Standalone only survives garbage collection in the
+		// editor: outside it every asset returned here is collected and synchronously reloaded on the next access,
+		// leaving anything that cached a pointer into it — an ability class, its CDO — dangling.
+		Asset->AddToRoot();
+	}
+	return Asset;
 }

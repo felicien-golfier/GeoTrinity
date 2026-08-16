@@ -15,6 +15,19 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageDealt, float, DamageAmount
 
 class UGeoGameplayAbility;
 struct FGeoGameplayEffectContext;
+
+/** One watched ability: the CDO that knows how to replay it, and the timer driving its shots. */
+USTRUCT()
+struct FRemoteFire
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TObjectPtr<UGeoGameplayAbility> AbilityCDO;
+
+	FTimerHandle ShotTimer;
+};
+
 /**
  * Ability system component tailored for the GeoTrinity 2D top-down game.
  * Adds input-tag-driven ability activation, startup ability management per player class,
@@ -170,14 +183,8 @@ private:
 	/** Timer callback: replays one shot of the ability owning RemoteFireTag through its CDO. */
 	void RemoteFireShot(FGameplayTag RemoteFireTag);
 
-	/** One watched ability: the CDO that knows how to replay it, and the timer driving its shots. */
-	struct FRemoteFire
-	{
-		TObjectPtr<UGeoGameplayAbility> AbilityCDO;
-		FTimerHandle ShotTimer;
-	};
-
 	// Keyed by RemoteFireTag. Doubles as the bound/unbound flag for BindRemoteFireTags.
+	UPROPERTY(Transient)
 	TMap<FGameplayTag, FRemoteFire> RemoteFires;
 
 	TMap<FGameplayTag, int32> FireSectionIndices;
