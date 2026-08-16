@@ -10,6 +10,8 @@
 class UAnimMontage;
 class UAnimSequence;
 class USkeletalMesh;
+class USkeleton;
+class UStaticMesh;
 
 /**
  * Generic animation-authoring primitives for Python/Blueprint automation.
@@ -58,4 +60,26 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static TArray<FVector> GetSkeletalMeshVertexPositions(USkeletalMesh* Mesh);
+
+	/**
+	 * Generic: rebuilds Mesh as a skinned copy of StaticMesh over the bone hierarchy the three parallel arrays
+	 * describe, rebuilds Skeleton to match it, and pairs the two assets up. Saves both.
+	 *
+	 * Bones are listed parents before children, the first being the root, and each transform is in its parent's
+	 * space (ParentNames[0] is ignored). Every vertex lands rigidly on the root — move them onto the bones that
+	 * should drive them with USkinWeightModifier afterwards, which is reachable from Python.
+	 *
+	 * This is the editor's "convert static mesh to skeletal mesh" minus its dialog: neither of the factories behind
+	 * that command can be driven from Python, one taking its reference skeleton through a plain C++ member and the
+	 * other through bare UPROPERTY()s that get/set_editor_property cannot see. The hierarchy is built here rather
+	 * than added afterwards because the conversion takes the reference skeleton to build against, so no later pass
+	 * has to reconcile a mesh against a skeleton it was not built on.
+	 *
+	 * Both assets are rebuilt in place, which a re-run does wholesale — that invalidates any animation authored
+	 * against the previous bone list, and beats deleting packages the session could no longer load.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool RebuildSkeletalMeshFromStaticMesh(USkeletalMesh* Mesh, UStaticMesh* StaticMesh, USkeleton* Skeleton,
+												  TArray<FName> BoneNames, TArray<FName> ParentNames,
+												  TArray<FTransform> Transforms);
 };

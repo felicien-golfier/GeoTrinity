@@ -4,9 +4,14 @@
 
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/Skeleton.h"
 #include "Engine/SkeletalMesh.h"
+#include "Engine/StaticMesh.h"
 #include "FileHelpers.h"
 #include "MeshDescription.h"
+#include "ReferenceSkeleton.h"
+#include "Rendering/SkeletalMeshModel.h"
+#include "StaticToSkeletalMeshConverter.h"
 
 namespace
 {
@@ -133,4 +138,58 @@ TArray<FVector> UGeoAnimBuilderUtil::GetSkeletalMeshVertexPositions(USkeletalMes
 		Positions.Add(FVector(MeshDescription.GetVertexPosition(FVertexID(Index))));
 	}
 	return Positions;
+}
+
+bool UGeoAnimBuilderUtil::RebuildSkeletalMeshFromStaticMesh(USkeletalMesh* Mesh, UStaticMesh* StaticMesh,
+															USkeleton* Skeleton, TArray<FName> BoneNames,
+															TArray<FName> ParentNames, TArray<FTransform> Transforms)
+{
+	if (!ensureMsgf(Mesh && StaticMesh && Skeleton,
+					TEXT("RebuildSkeletalMeshFromStaticMesh needs a Mesh, a StaticMesh and a Skeleton")))
+	{
+		return false;
+	}
+	if (!ensureMsgf(BoneNames.Num() > 0 && BoneNames.Num() == ParentNames.Num()
+						&& BoneNames.Num() == Transforms.Num(),
+					TEXT("RebuildSkeletalMeshFromStaticMesh needs three non-empty arrays of equal length (got %d/%d/%d)"),
+					BoneNames.Num(), ParentNames.Num(), Transforms.Num()))
+	{
+		return false;
+	}
+
+	FReferenceSkeleton ReferenceSkeleton;
+	{
+		FReferenceSkeletonModifier Builder(ReferenceSkeleton, Skeleton);
+		for (int32 Index = 0; Index < BoneNames.Num(); ++Index)
+		{
+			int32 const ParentIndex = Builder.FindBoneIndex(ParentNames[Index]);
+			if (!ensureMsgf(Index == 0 || ParentIndex != INDEX_NONE,
+							TEXT("Bone %s parents to %s, which no earlier bone declares"),
+							*BoneNames[Index].ToString(), *ParentNames[Index].ToString()))
+			{
+				return false;
+			}
+			Builder.Add(FMeshBoneInfo(BoneNames[Index], BoneNames[Index].ToString(),
+									  Index == 0 ? INDEX_NONE : ParentIndex),
+						Transforms[Index]);
+		}
+	}
+
+	Mesh->GetImportedModel()->LODModels.Empty();
+	Mesh->SetNumSourceModels(0);
+
+	if (!ensureMsgf(FStaticToSkeletalMeshConverter::InitializeSkeletalMeshFromStaticMesh(Mesh, StaticMesh,
+																						 ReferenceSkeleton),
+					TEXT("Could not build SkeletalMesh %s out of StaticMesh %s"), *Mesh->GetName(),
+					*StaticMesh->GetName()))
+	{
+		return false;
+	}
+
+	Mesh->SetSkeleton(Skeleton);
+	Skeleton->RecreateBoneTree(Mesh);
+	Skeleton->SetPreviewMesh(Mesh);
+
+	UEditorLoadingAndSavingUtils::SavePackages({Mesh->GetPackage(), Skeleton->GetPackage()}, false);
+	return true;
 }

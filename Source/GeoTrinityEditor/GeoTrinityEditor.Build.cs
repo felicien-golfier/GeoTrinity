@@ -28,6 +28,7 @@ public class GeoTrinityEditor : ModuleRules
 			"PropertyEditor",
 			"AIModule",
 			"MeshDescription",
+			"SkeletalMeshUtilitiesCommon",
 			"GameplayTags",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
