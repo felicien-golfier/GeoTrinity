@@ -36,15 +36,15 @@ def reference_pose_table(skeleton_path):
     return table
 
 
-def infer_parents(skeleton_path):
-    """Reconstruct the hierarchy: a bone's parent sits at (component - local) translation."""
-    table = reference_pose_table(skeleton_path)
-    parents = {}
-    for name, (local, comp) in table.items():
-        parent_pos = comp.translation - local.translation
-        parents[name] = [other for other, (_, other_comp) in table.items()
-                         if other != name and (other_comp.translation - parent_pos).length() < 0.01]
-    return parents
+def bone_parents(skeletal_mesh_path):
+    """The hierarchy: {bone: parent bone} for every bone the mesh carries, 'None' at the root.
+
+    Read by name from the modifier rather than derived from positions, which cannot separate bones that sit at the
+    same place.
+    """
+    modifier = unreal.SkeletonModifier()
+    modifier.set_skeletal_mesh(unreal.load_asset(skeletal_mesh_path))
+    return {str(bone): str(modifier.get_parent_name(bone)) for bone in modifier.get_all_bone_names()}
 
 
 def report_moving_bones(sequence_path, samples=12, tolerance=0.05):
@@ -145,6 +145,37 @@ def radial_slots(report, slot_count, radius_ratio=0.9):
     return ring_radius, phase, slots
 
 
+def skinned_vertex_positions(skeletal_mesh_path, sequence, times):
+    """Where a sequence puts every vertex of a mesh -> [[position per vertex] per time].
+
+    Blends each vertex through its bones the way the renderer does, so this is the silhouette a pose actually has:
+    a vertex split across bones lands between what those bones do, and no bone track reads as that on its own.
+    Vertex positions come from the editor shim and weights from the modifier, which index alike.
+    """
+    mesh = unreal.load_asset(skeletal_mesh_path)
+    rest = unreal.get_default_object(unreal.GeoAnimBuilderUtil).get_skeletal_mesh_vertex_positions(mesh)
+    modifier = unreal.SkinWeightModifier()
+    modifier.set_skeletal_mesh(mesh)
+    weights = [modifier.get_vertex_weights(index) for index in range(modifier.get_num_vertices())]
+
+    # Extract the whole reference pose before evaluating any other: evaluated poses alias one shared buffer.
+    reference = _component_transforms(APE.get_reference_pose(mesh.get_editor_property("skeleton")))
+
+    options = unreal.AnimPoseEvaluationOptions()
+    sampled = []
+    for time in times:
+        posed = _component_transforms(APE.get_anim_pose_at_time(sequence, time, options))
+        positions = []
+        for index, vertex_weights in enumerate(weights):
+            blended = unreal.Vector(0.0, 0.0, 0.0)
+            for bone, weight in vertex_weights.items():
+                local = unreal.MathLibrary.inverse_transform_location(reference[str(bone)], rest[index])
+                blended = blended + unreal.MathLibrary.transform_location(posed[str(bone)], local) * weight
+            positions.append(blended)
+        sampled.append(positions)
+    return sampled
+
+
 def add_child_bones(skeletal_mesh_path, parent_bone, locations):
     """Add a bone per entry of locations ({bone name: component-space Vector}) under parent_bone, and commit.
 
@@ -191,7 +222,8 @@ def write_bone_tracks(sequence, skeleton_path, fps, frames, sampler, bracket="Au
     """Write bone tracks into `sequence` from `sampler`.
 
     sampler(frame, bone, rest_local_transform) -> (translation, rotation_quat, scale) for that frame.
-    Returns the sequence. Verify the result with report_moving_bones, not the track list.
+    Returns the sequence. Verify the result with report_moving_bones, not the track list, and verify that it plays
+    with playable_key_count.
     """
     rest = {name: local for name, (local, _) in reference_pose_table(skeleton_path).items()}
 
@@ -211,8 +243,19 @@ def write_bone_tracks(sequence, skeleton_path, fps, frames, sampler, bracket="Au
         controller.add_bone_curve(bone)
         controller.set_bone_track_keys(bone, positions, rotations, scales)
     controller.close_bracket()
+    # The keys above are the raw model; this builds the data that actually plays back from them.
+    unreal.AnimationLibrary.finalize_bone_animation(sequence)
     unreal.EditorAssetLibrary.save_asset(sequence.get_path_name().split(".")[0])
     return sequence
+
+
+def playable_key_count(sequence):
+    """Keys in the built data, which is one more than the frame count once the sequence plays back.
+
+    Pose evaluation reads the raw model and reports the same whether or not that build ever happened, so this is
+    what says a written sequence plays.
+    """
+    return sequence.get_editor_property("number_of_sampled_keys")
 
 
 def build_montage(sequence, package_path, asset_name, section_names, section_starts, section_next,
@@ -251,18 +294,35 @@ def _delta(current, base):
                abs(current[2] - base[2]))
 
 
+def _component_transforms(pose):
+    """Every bone of an evaluated pose, copied out of its shared buffer. Transforms take the location first."""
+    transforms = {}
+    for bone in APE.get_bone_names(pose):
+        component = APE.get_bone_pose(pose, str(bone), unreal.AnimPoseSpaces.WORLD)
+        transforms[str(bone)] = unreal.Transform(component.translation, component.rotation.rotator(),
+                                                 component.scale3d)
+    return transforms
+
+
 # --- Example calls — uncomment and adjust paths -------------------------------------------------
 
 # Report which bones a sequence animates, and by how much
 # print(report_moving_bones("/Game/Characters/Anim/Star/SK_Star_Sequence_Start"))
 
-# Dump the rig: reference-pose transforms, and the reconstructed hierarchy
+# Dump the rig: reference-pose transforms, and the hierarchy
 # print(reference_pose_table("/Game/Characters/Meshes/Star/SK_Star"))
-# print(infer_parents("/Game/Characters/Meshes/Star/SK_Star"))
+# print(bone_parents("/Game/Characters/Meshes/Star/SKM_Star"))
 
 # Which bones actually carry the mesh, and where its features sit
 # print(report_skin_weights("/Game/Characters/Meshes/Star/SKM_Star"))
 # print(radial_vertex_rings("/Game/Characters/Meshes/Star/Star"))
+
+# What a pose actually looks like: every vertex where the renderer would put it, frame by frame
+# SEQUENCE, FPS = unreal.load_asset("/Game/Characters/Anim/Star/SK_Star_Idle"), 30
+# frames = range(int(round(SEQUENCE.get_editor_property("sequence_length") * FPS)) + 1)
+# for frame, positions in enumerate(skinned_vertex_positions(
+#         "/Game/Characters/Meshes/Star/SKM_Star", SEQUENCE, [f / float(FPS) for f in frames])):
+#     print(frame, max(math.hypot(p.x, p.y) for p in positions))
 
 # Give each of a ring's features its own bone, so one can be moved without the others
 # MESH, RING_PARENT, SLOT_COUNT = "/Game/Characters/Meshes/Star/SKM_Star", "apexes_outside", 8

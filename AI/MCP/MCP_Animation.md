@@ -18,7 +18,7 @@ See `AI/Python/anim_sequence_authoring.py` for the moving-bone report.
 
 The reference pose is obtainable from the skeleton alone and yields every bone transform in both local and component space.
 
-Subtracting a bone's local translation from its component translation gives its parent's component position, which reconstructs the hierarchy when no parent accessor is exposed.
+A bone's parent is readable by name from the skeleton modifier; deriving it from positions instead cannot separate bones that sit at the same place.
 
 A skeleton and the skeletal mesh built on it are separate assets, so anything about deformation needs the mesh rather than the skeleton it is named after.
 
@@ -34,7 +34,15 @@ A static mesh and the skeletal mesh built from it index their vertices different
 
 Evenly spaced radial features keep their phase readable: multiplying every angle by the feature count collapses them onto one direction whose circular mean gives the ring's keying, so no feature has to be assumed to sit at zero degrees.
 
-See `AI/Python/anim_sequence_authoring.py` for the reference-pose, skin-weight, vertex-ring and per-vertex position-with-weights reports.
+Blending a vertex through each of its bones — into that bone's space with its reference component transform, back out with its posed one, weighted and summed — reproduces where the renderer puts it.
+
+A vertex split across bones lands between what those bones do, so a bone track never reads as the silhouette on its own.
+
+A bone carrying only some of a feature's vertices can push that feature past its neighbours but cannot pull it back behind them, because the ones it does not carry hold the silhouette.
+
+Composing a transform in script takes the location first, then the rotation and the scale.
+
+See `AI/Python/anim_sequence_authoring.py` for the reference-pose, hierarchy, skin-weight, vertex-ring, per-vertex position-with-weights and posed-vertex reports.
 
 ---
 
@@ -62,9 +70,39 @@ A motion with a repeating beat needs a whole number of frames per beat, or the b
 
 Add a bone's track before setting its keys, unconditionally and ignoring the result — the adder reports failure for an existing track, and the key setter reports success whether or not a track is there. Supply position, rotation and scale arrays of equal length.
 
-Confirm the write by evaluating the finished sequence.
+Keys land in the sequence's raw model, and the data that actually plays back is built from it separately, so finish a write by finalizing the animation through the animation library.
+
+Confirm the write by evaluating the finished sequence, and confirm the build by reading the sequence's sampled key count against its frame count — pose evaluation reads the raw model and reports the same either way.
+
+Sampling a bone at a frame through the animation library reads that built data instead, which is what the sequence plays.
 
 See `AI/Python/anim_sequence_authoring.py` for the authoring driver.
+
+---
+
+## Making Motion Read as Dynamic
+
+A hit is three beats — a wind-up that accelerates, a few frames at the extreme, a recoil back to rest — and the wind-up takes most of the frames.
+
+Anticipation runs opposite to the action, and the further it goes the larger the action reads.
+
+A vibration on the wind-up alternates every single frame and grows as the wind-up tightens; alternating any slower reads as a wobble.
+
+Hold the last frames of the wind-up dead still — that stillness is what makes the hit land.
+
+Cross from the wind-up's extreme to the action's extreme in two frames, one of them mid-flight, so the spacing itself reads as speed.
+
+Overshoot the extreme by about a tenth on the landing frame, then settle onto it and hold: a pose the eye never rests on does not register.
+
+Never ease the recoil straight into rest — cross rest, swing short of it and settle, the way a spring does.
+
+Drive every part from one curve that each part reads a fixed number of frames late, rather than writing a curve per part: light parts lead, heavy parts drag, and a part still in its wind-up pose while the leading part is out gives the extreme its contrast for nothing.
+
+Under an orthographic camera, motion along the view axis is spent for nothing.
+
+Starting and ending a clip on the reference pose is what lets it blend in and out without a pop.
+
+See `AI/Python/star_spike_nova.py` for a hit built on these, and `AI/Python/star_idle_breath.py` for the looping counterpart.
 
 ---
 

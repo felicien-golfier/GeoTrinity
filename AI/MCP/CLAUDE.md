@@ -12,7 +12,7 @@ All editor automation goes through `mcp-unreal` `execute_script` (Python), or a 
 - Unreal Editor must be open before starting Claude Code — MCP tools register at session start.
 - Tags added to `Config/Tags/GeoGameplayTags.ini` need an **editor restart** to resolve in Python.
 - New `UFUNCTION` on a shim needs a **full build** (close editor); implementation-only `.cpp` changes can use Live Coding.
-- Asset-mutating MCP tools change assets in memory only — save dirty packages after, repeat until none remain (`AI/Python/save_dirty_assets.py`).
+- Asset-mutating MCP tools change assets in memory only — save dirty packages after, repeat until none remain (`AI/Python/save_dirty_assets.py`); that pass also writes packages the editor itself dirtied, so save by path when only the script's own assets should move.
 
 ## Reference files
 | Topic | File |
@@ -33,6 +33,11 @@ All editor automation goes through `mcp-unreal` `execute_script` (Python), or a 
 ## Python scripts
 Multi-step/reusable operations go in `AI/Python/` as `.py` — reference by path, never paste inline.
 Run one by compiling and executing the file's own source in the editor rather than resending its text.
+A script that raises still reports success to the caller; its traceback goes to the editor log under the Python category.
+Nothing a script prints comes back through the tool, so a script with results to report writes them to a file the caller reads.
+
+## Animation
+Always read the motion rules in `MCP_Animation.md` before authoring an animation.
 
 ## Doc style
 Always read `MCP_DocStyle.md` before editing docs here.

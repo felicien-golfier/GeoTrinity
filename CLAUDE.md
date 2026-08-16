@@ -27,6 +27,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | Writing ability descriptions ({Token} syntax) | `AI/AbilityDescriptions.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
+| Authoring or tuning an animation | `AI/MCP/MCP_Animation.md` |
 | Any MCP / Python editor automation | `AI/MCP/CLAUDE.md` |
 | AbilitySystem code | `Source/GeoTrinity/Public/AbilitySystem/CLAUDE.md` |
 | Abilities (all classes) | `Source/GeoTrinity/Public/AbilitySystem/Abilities/CLAUDE.md` |

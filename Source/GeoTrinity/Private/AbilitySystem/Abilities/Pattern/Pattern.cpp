@@ -28,7 +28,6 @@ void UPattern::OnCreate(FGameplayTag AbilityTag, AActor&)
 		}
 
 		(void)GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionFireName);
-		(void)GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionEndName);
 	}
 }
 
@@ -159,7 +158,8 @@ void UPattern::JumpMontageToEndSection() const
 {
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
 	if (CanPlayMontageLocally(AnimInstance) && AnimInstance->Montage_IsPlaying(AnimMontage)
-		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != GeoASLib::SectionEndName)
+		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != GeoASLib::SectionEndName
+		&& AnimMontage->IsValidSectionName(GeoASLib::SectionEndName))
 	{
 		AnimInstance->Montage_JumpToSection(GeoASLib::SectionEndName);
 	}
