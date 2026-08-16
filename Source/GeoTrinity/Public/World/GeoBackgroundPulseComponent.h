@@ -49,6 +49,7 @@ class GEOTRINITY_API UGeoBackgroundPulseComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	/** Enables tick for the per-frame pulse simulation. */
 	UGeoBackgroundPulseComponent();
 
 	/** Captures the authored Mode as the one ResetMode returns to, then seeds each pulse's position, heading and
