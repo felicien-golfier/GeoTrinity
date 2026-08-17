@@ -3,7 +3,12 @@
 The charge is a spin that accelerates the whole way while the star shrinks and its arms thin out, and a crest of
 needles travels around the tips against the spin, so two turning motions pull opposite ways. The crest dies out
 over the last frames of the charge, the spin stops dead, and the star sits perfectly still for a beat — then
-every spike goes out at once, further than the spike nova takes them, and the recoil settles it back.
+every spike goes out at once, further than the spike nova takes them.
+
+Once the hit lands the star doesn't just hold — it dances: the body breathes a few times while each spike sways
+side to side, the sway's phase offset per spike so the wobble ripples slowly around the ring instead of moving as
+one block. Both are enveloped to fade in from the landed hit and fade back out into the recoil, rather than
+cutting on or off. Then the recoil settles it back.
 
 The spin covers exactly one turn, so the clip ends on the orientation it started from and blends out without
 unwinding. The crest advances less than one tip per frame and the spin stays under half a tip per frame, or
@@ -43,7 +48,11 @@ WAVE_REACH = 110.0  # units a tip bone travels under the crest, before its ramp 
 CREST = 4.0         # higher narrows the crest to fewer needles out at once
 STILL = 4           # frames stopped dead at the tightest point of the charge
 BURST = [0.45, 1.15, 1.0]  # the mid-flight frame, the overshoot that lands the hit, then full extension
-HOLD = 5            # frames held with every spike out
+DANCE_FRAMES = 32   # frames of pulsing sway held with every spike out, before the recoil takes it
+DANCE_PULSES = 4    # body/ring breaths across the dance window; DANCE_FRAMES / DANCE_PULSES must be a whole number
+DANCE_SWAY_TURNS = 1.0  # turns the sway ripple travels around the ring across the dance, so spikes lead/lag each other
+PULSE_AMOUNT = 0.05      # fraction the body/ring breathe by, at the dance's peak
+SWAY_AMOUNT = 10.0       # units a tip sways tangentially, at the dance's peak
 RETURN = 14         # frames of recoil back to rest
 DAMP = 2.0          # how fast the recoil dies
 SPRING = 4.8        # how far past rest it swings on the way
@@ -55,8 +64,10 @@ BODY = (1, 0.55, 1.28)      # scale of the whole star
 WAIST = (2, 0.40, 1.15)     # scale of the valley ring: what thins the arms down to spindles
 YAW_KICK = (1, 0.0, 22.0)   # degrees the burst whips on past the spin before the recoil takes it back
 
-FRAMES = CHARGE + STILL + len(BURST) + HOLD + RETURN - 1 + max(part[0] for part in
-                                                               (NEEDLE, RING, BODY, WAIST, YAW_KICK))
+DANCE_START = CHARGE + STILL + len(BURST)  # first frame of the post-hit dance window
+
+FRAMES = CHARGE + STILL + len(BURST) + DANCE_FRAMES + RETURN - 1 + max(part[0] for part in
+                                                                        (NEEDLE, RING, BODY, WAIST, YAW_KICK))
 
 LOG = []
 
@@ -97,10 +108,29 @@ def drive(frame):
     if frame < len(BURST):
         return BURST[frame]
     frame -= len(BURST)
-    if frame < HOLD:
+    if frame < DANCE_FRAMES:
         return BURST[-1]
-    alpha = (frame - HOLD + 1) / float(RETURN)
+    alpha = (frame - DANCE_FRAMES + 1) / float(RETURN)
     return 0.0 if alpha >= 1.0 else math.exp(-DAMP * alpha) * math.cos(SPRING * alpha) * (1.0 - alpha)
+
+
+def dance_envelope(frame):
+    """0 to 1 to 0 across the dance window — fades the wobble in from the landed hit and out into the recoil."""
+    if frame < 0 or frame >= DANCE_FRAMES:
+        return 0.0
+    return math.sin(math.pi * frame / float(DANCE_FRAMES))
+
+
+def pulse(frame):
+    """The body/ring breath: enveloped sine, DANCE_PULSES cycles across the dance window."""
+    return dance_envelope(frame) * math.sin(2.0 * math.pi * DANCE_PULSES * frame / float(DANCE_FRAMES))
+
+
+def sway(frame, order, spikes):
+    """One spike's tangential wobble — phase offset by its place in the ring so the sway ripples slowly around
+    it rather than every spike moving as one block, enveloped like the pulse."""
+    phase = 2.0 * math.pi * (DANCE_PULSES * frame / float(DANCE_FRAMES) + DANCE_SWAY_TURNS * order / float(spikes))
+    return dance_envelope(frame) * math.sin(phase)
 
 
 def read(frame, part, rest):
@@ -129,10 +159,13 @@ def sample(frame, bone, rest_local, axes):
         x, y, order = axes[bone]
         # Whichever is further out: this needle's turn under the travelling crest, or the burst that takes them all.
         reach = max(WAVE_REACH * crest(frame, order, len(axes)), read(frame, NEEDLE, 0.0))
-        translation.x += x * reach
-        translation.y += y * reach
+        # Tangential wobble during the post-hit dance, perpendicular to the spike's own outward axis.
+        wobble = sway(frame - DANCE_START, order, len(axes)) * SWAY_AMOUNT
+        translation.x += x * reach - y * wobble
+        translation.y += y * reach + x * wobble
     elif bone in (RING_BONE, WAIST_BONE, BODY_BONE):
         factor = read(frame, {RING_BONE: RING, WAIST_BONE: WAIST, BODY_BONE: BODY}[bone], 1.0)
+        factor *= 1.0 + PULSE_AMOUNT * pulse(frame - DANCE_START)
         scale.x *= factor
         scale.y *= factor
         if bone == BODY_BONE:
@@ -213,9 +246,9 @@ def report(sequence, radii):
     LOG.append("{} at {} fps: {} frames, {:.3f}s, {} playable keys (expect {})".format(
         SEQ_NAME, FPS, FRAMES, FRAMES / float(FPS),
         sequence.get_editor_property("number_of_sampled_keys"), FRAMES + 1))
-    LOG.append("charge f0-f{}, still f{}-f{}, spikes out f{}-f{}, recoil f{}-f{}".format(
-        CHARGE - 1, CHARGE, CHARGE + STILL - 1, CHARGE + STILL, CHARGE + STILL + len(BURST) + HOLD - 1,
-        CHARGE + STILL + len(BURST) + HOLD, FRAMES))
+    LOG.append("charge f0-f{}, still f{}-f{}, spikes out f{}-f{}, dance f{}-f{}, recoil f{}-f{}".format(
+        CHARGE - 1, CHARGE, CHARGE + STILL - 1, CHARGE + STILL, CHARGE + STILL + len(BURST) - 1,
+        DANCE_START, DANCE_START + DANCE_FRAMES - 1, DANCE_START + DANCE_FRAMES, FRAMES))
     LOG.append("spin tops out at {:.1f} deg/frame, crest at {:.2f} tips/frame".format(
         SPIN * (charged(CHARGE - 1) - charged(CHARGE - 2)),
         8.0 * WAVE_TURNS * (charged(CHARGE - 1) - charged(CHARGE - 2))))

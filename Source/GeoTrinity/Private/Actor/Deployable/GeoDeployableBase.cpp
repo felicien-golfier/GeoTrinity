@@ -16,6 +16,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
 #include "GameplayEffect.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
@@ -67,8 +68,6 @@ void AGeoDeployableBase::InitInteractable(FInteractableActorData* Data)
 void AGeoDeployableBase::PushAway()
 {
 	AGeoArena const* FightingArena = AGeoArena::GetFightingArena(this);
-	ensureMsgf(FightingArena,
-			   TEXT("%s: PushAway outside a fight — no fighting arena to redirect blocked pushes toward"), *GetName());
 
 	FVector2D const Location2D(GetActorLocation());
 	float const Radius = CapsuleComponent->GetScaledCapsuleRadius();
@@ -106,10 +105,16 @@ FVector AGeoDeployableBase::ComputePushTarget(AActor* Target, float const PushDi
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(Target);
-	if (!FightingArena
-		|| !GetWorld()->SweepTestByChannel(Target->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
-										   FCollisionShape::MakeSphere(Target->GetSimpleCollisionRadius()), QueryParams))
+	if (!GetWorld()->SweepTestByChannel(Target->GetActorLocation(), PushTarget, FQuat::Identity, ECC_Pawn,
+										FCollisionShape::MakeSphere(Target->GetSimpleCollisionRadius()), QueryParams))
 	{
+		return PushTarget;
+	}
+
+	if (!FightingArena)
+	{
+		UE_LOG(LogGeoTrinity, Warning, TEXT("%s: blocked push outside a fight — no arena centre to redirect toward"),
+			   *GetName());
 		return PushTarget;
 	}
 
