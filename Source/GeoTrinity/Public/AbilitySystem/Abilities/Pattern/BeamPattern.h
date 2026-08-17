@@ -19,8 +19,6 @@ class UNiagaraSystem;
  * SweepAngle turns it into a rotating sweep (0 leaves it pointing straight ahead); every hostile is hit the tick it
  * enters the beam, so crossing it costs one hit no matter how slowly you walk through — and one more per re-entry.
  * Per-second effects are the exception: they keep ticking on everyone standing in the beam.
- * With bDestroyLastTileHit the shot also carves out the furthest arena tile it reaches — the tank picks which rim
- * tile that is by choosing where they stand when the boss locks on.
  */
 UCLASS(Blueprintable)
 class GEOTRINITY_API UBeamPattern : public UTickablePattern
@@ -76,10 +74,6 @@ protected:
 	/** How a target's own collision radius counts toward the beam hit test. Automatic = center-only for hostiles. */
 	UPROPERTY(EditDefaultsOnly, Category = "Beam")
 	ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic;
-
-	/** Destroys the furthest arena tile the beam reaches, at the moment it fires. */
-	UPROPERTY(EditDefaultsOnly, Category = "Beam")
-	bool bDestroyLastTileHit = false;
 
 	// NOT DETERMINISTIC !!
 	UPROPERTY(EditDefaultsOnly, Category = "Beam")

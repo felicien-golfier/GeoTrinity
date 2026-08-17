@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/GeoHexArena.h"
+#include "Actor/Arena/GeoHexArena.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
@@ -215,11 +215,13 @@ bool AGeoHexArena::IsSupported(FVector2D const WorldLocation) const
 		return false;
 	}
 
-	// Distance to the shared border, measured perpendicular to it (centre-to-centre is normal to the edge, which sits at
-	// the inradius). A uniform band all around the tile, unlike a fixed-length radial sample that bulges at the corners.
+	// Distance to the shared border, measured perpendicular to it (centre-to-centre is normal to the edge, which sits
+	// at the inradius). A uniform band all around the tile, unlike a fixed-length radial sample that bulges at the
+	// corners.
 	FVector2D const TileCenter = TileToWorld(Tile);
 	FVector2D const ToNeighbor = (TileToWorld(Neighbor) - TileCenter).GetSafeNormal();
-	float const DistanceToEdge = TileSize * Sqrt3 * 0.5f - FVector2D::DotProduct(WorldLocation - TileCenter, ToNeighbor);
+	float const DistanceToEdge =
+		TileSize * Sqrt3 * 0.5f - FVector2D::DotProduct(WorldLocation - TileCenter, ToNeighbor);
 	return DistanceToEdge <= FallGraceMargin;
 }
 
@@ -474,9 +476,9 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 		}
 		else if (AGeoDeployableBase* Deployable = Cast<AGeoDeployableBase>(Actor))
 		{
-			// IsActive() flips false on the first Expire(), but the actor lingers (collision stays enabled on authority)
-			// through the delayed-destroy window and keeps matching this overlap — without this guard Expire() (and its
-			// cue) would re-fire every tick, looping the expire/recall sound.
+			// IsActive() flips false on the first Expire(), but the actor lingers (collision stays enabled on
+			// authority) through the delayed-destroy window and keeps matching this overlap — without this guard
+			// Expire() (and its cue) would re-fire every tick, looping the expire/recall sound.
 			if (Deployable->IsActive() && !Deployable->SurviveOverTheVoid())
 			{
 				Deployable->Expire();

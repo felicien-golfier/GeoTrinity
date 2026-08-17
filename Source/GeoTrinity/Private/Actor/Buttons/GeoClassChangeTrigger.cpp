@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/GeoClassChangeTrigger.h"
+#include "Actor/Buttons/GeoClassChangeTrigger.h"
 
 #include "Characters/PlayableCharacter.h"
 #include "Tool/UGeoGameplayLibrary.h"

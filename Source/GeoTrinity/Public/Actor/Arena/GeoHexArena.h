@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Actor/GeoArena.h"
+#include "Actor/Arena/GeoArena.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 
@@ -116,7 +116,8 @@ public:
 	/** Server. Highlights the tiles within Radius of Location for Requester, or the single tile under Location when
 	 * Radius is 0. */
 	void HighlightTiles(AActor* Requester, FVector2D Location, float Radius = 0.f);
-	/** Server. Highlights the single tile at Tile for Requester, replacing any previous highlight from that requester. */
+	/** Server. Highlights the single tile at Tile for Requester, replacing any previous highlight from that requester.
+	 */
 	void HighlightTile(AActor* Requester, FIntPoint Tile);
 	/** Server. Drops Requester's highlight. */
 	void ClearHighlight(AActor* Requester);
@@ -142,7 +143,8 @@ protected:
 	float FallCheckRadius = 3000.f;
 
 	/** Grace distance in world units: an actor whose center is over a hole still stands as long as an alive tile lies
-	 * within this radius, so perching on a neighbouring tile's edge doesn't drop you. 0 = center must be over a tile. */
+	 * within this radius, so perching on a neighbouring tile's edge doesn't drop you. 0 = center must be over a tile.
+	 */
 	UPROPERTY(EditAnywhere, Category = "HexArena", meta = (ClampMin = "0.0"))
 	float FallGraceMargin = 30.f;
 

@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/GeoDifficultyButton.h"
+#include "Actor/Buttons/GeoDifficultyButton.h"
 
 #include "Components/TextRenderComponent.h"
 #include "Engine/World.h"

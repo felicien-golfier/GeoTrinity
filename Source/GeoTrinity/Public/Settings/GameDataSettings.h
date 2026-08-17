@@ -10,6 +10,7 @@
 
 #include "GameDataSettings.generated.h"
 
+class AGeoEffectZone;
 class UStatusInfo;
 class UUserWidget;
 class UWidgetComponent;
@@ -74,6 +75,11 @@ public:
 	 * Materials read the same values through the palette texture AGeoGameCamera builds from this map. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Colors")
 	TMap<EGeoColor, FLinearColor> ColorPalette;
+
+	/** Zone every ability that leaves one behind spawns, unless it names a class of its own. One Blueprint for the whole
+	 * game: what a zone does and the colour it draws in both come from the ability, through FDeployableDataParams. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	TSoftClassPtr<AGeoEffectZone> DefaultZoneClass;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;

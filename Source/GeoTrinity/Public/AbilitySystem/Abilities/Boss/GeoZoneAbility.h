@@ -11,9 +11,10 @@
 
 /**
  * Server-only enemy ability that telegraphs a circle on the ground for its whole FireDelay, then delivers its effects
- * there. Setting ZoneClass leaves a zone behind that carries the effects for its own life-drain duration; leaving it
- * unset lands them all at once on whoever stands in the circle, which is the same telegraph with a burst instead of a
- * lingering zone.
+ * there. A ZoneParams.LifeDrainMaxDuration above zero leaves a zone behind that carries the effects for that long;
+ * zero lands them all at once on whoever stands in the circle, which is the same telegraph with a burst instead of a
+ * lingering zone. The lingering form needs no Blueprint of its own — ZoneParams.Color tells one zone from another, and
+ * the class comes from UGameDataSettings::DefaultZoneClass unless ZoneClass overrides it.
  *
  * The ability owns no rhythm of its own beyond that single telegraph-then-deliver pass: it ends the moment it fires, so
  * how often a zone comes back is the caster's StateTree to decide, not this class.
@@ -36,11 +37,12 @@ protected:
 	/** Server. Spawns ZoneClass at the telegraphed circle, or bursts the effects there when it is unset, then ends. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
-	/** Zone left behind by this ability. Unset makes it a one-shot burst instead. */
+	/** Zone left behind by this ability. Unset uses UGameDataSettings::DefaultZoneClass. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Zone")
 	TSubclassOf<AGeoDeployableBase> ZoneClass;
 
-	/** Size (the telegraphed radius), life-drain duration and blink of the zone. Size is the burst radius too. */
+	/** Size (the telegraphed radius), colour, blink and life-drain duration of the zone — a zero duration makes the
+	 * ability a one-shot burst instead. Size is the burst radius too. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Zone")
 	FDeployableDataParams ZoneParams;
 
@@ -62,6 +64,9 @@ protected:
 	FGeoCueParam BurstCue;
 
 private:
+	/** ZoneClass, or the project-wide zone from UGameDataSettings when this ability names none. */
+	TSubclassOf<AGeoDeployableBase> GetZoneClass() const;
+
 	/** Applies the ability's effects to everything BurstAttitude matches inside the circle, then plays BurstCue. */
 	void Burst(FVector const& ZoneLocation) const;
 

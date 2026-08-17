@@ -1,13 +1,13 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/GeoArena.h"
+#include "Actor/Arena/GeoArena.h"
 
 #include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Actor/Arena/GeoArenaBarrier.h"
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
-#include "Actor/GeoArenaBarrier.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"

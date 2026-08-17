@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Abilities/Boss/GeoDevastatingWaveAbility.h"
 
-#include "Actor/GeoArena.h"
+#include "Actor/Arena/GeoArena.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 FVector2D UGeoDevastatingWaveAbility::GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* /*SourceASC*/,

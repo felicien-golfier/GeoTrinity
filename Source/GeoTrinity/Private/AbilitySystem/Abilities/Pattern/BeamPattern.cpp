@@ -5,7 +5,6 @@
 #include "AbilitySystem/Abilities/Boss/GeoSweepBeamAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/GeoHexArena.h"
 #include "DrawDebugHelpers.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -131,17 +130,6 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 						  false, 0.f);
 		}
 
-		if (bDestroyLastTileHit)
-		{
-			AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
-			FIntPoint LastTile;
-			if (ensureMsgf(Arena, TEXT("UBeamPattern: %s is not a hex arena boss"), *GetNameSafe(StoredPayload.Owner))
-				&& Arena->GetLastAliveTileAlongRay(FVector2D(Location), Forward, LastTile))
-			{
-				Arena->HighlightTile(StoredPayload.Instigator, LastTile);
-			}
-		}
-
 		UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
 		// A missing ASC only costs the damage: falling through still lets the beam reach its end and stop ticking.
 		if (ensureMsgf(SourceASC, TEXT("UBeamPattern: Owner has no ASC")))
@@ -206,31 +194,16 @@ FGameplayCueParameters UBeamPattern::FillCueParam(FAbilityPayload const& Payload
 
 void UBeamPattern::EndPattern(bool const bForceStop)
 {
-	if (IsPatternActive())
+	if (IsPatternActive() && IsValid(BeamVfxComponent))
 	{
-		if (!bForceStop && bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
+		// A force-stopped beam must vanish at once; a natural end can play out its fade.
+		if (bForceStop)
 		{
-			AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
-			FVector2D const Forward(FRotator(0.f, GetBeamYaw(0.f), 0.f).Vector());
-			FIntPoint LastTile;
-			if (ensureMsgf(Arena, TEXT("UBeamPattern: %s is not a hex arena boss"), *GetNameSafe(StoredPayload.Owner))
-				&& Arena->GetLastAliveTileAlongRay(FVector2D(GetBeamOrigin()), Forward, LastTile))
-			{
-				Arena->DestroyTiles({LastTile});
-			}
+			BeamVfxComponent->DeactivateImmediate();
 		}
-
-		if (IsValid(BeamVfxComponent))
+		else
 		{
-			// A force-stopped beam must vanish at once; a natural end can play out its fade.
-			if (bForceStop)
-			{
-				BeamVfxComponent->DeactivateImmediate();
-			}
-			else
-			{
-				BeamVfxComponent->Deactivate();
-			}
+			BeamVfxComponent->Deactivate();
 		}
 	}
 

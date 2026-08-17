@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Actor/GeoArena.h"
+#include "Actor/Arena/GeoArena.h"
 #include "CoreMinimal.h"
 
 #include "GeoDummyArena.generated.h"

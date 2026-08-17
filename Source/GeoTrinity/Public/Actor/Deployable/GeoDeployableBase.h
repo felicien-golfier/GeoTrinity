@@ -55,6 +55,15 @@ struct FDeployableDataParams
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float Value = 0.f;
+
+	/** Colour the deployable tints its material with, so one Blueprint can serve every ability that spawns it. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGeoColorParam Color;
+
+	/** Which attitudes, relative to the deployable's own team, it acts on. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,
+			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
+	int32 Attitude = TeamAttitudeMask::All;
 };
 
 /** Runtime init data passed from the spawner projectile to the deployable actor before BeginPlay. */
@@ -241,6 +250,10 @@ protected:
 	 */
 	virtual void ExplodeEffect(float const Value);
 
+	/** Every mesh drawing this deployable. UWidgetComponent derives from UMeshComponent, so the health bar is filtered
+	 * out — it is not part of the deployable's look. */
+	TInlineComponentArray<UMeshComponent*> GetVisualMeshComponents() const;
+
 	/** Fires the recall or expiry gameplay cue on clients when bActive becomes false. */
 	UFUNCTION()
 	virtual void OnRep_Active(bool bOldValue);
@@ -343,10 +356,6 @@ private:
 	/** Renders every mesh of this deployable into the custom-depth pass with OutlineColor's slot index, so the outline
 	 * post-process material can draw its silhouette in that color. */
 	void ApplyOutlineStencil() const;
-
-	/** Every mesh drawing this deployable. UWidgetComponent derives from UMeshComponent, so the health bar is filtered
-	 * out — it is not part of the deployable's look. */
-	TInlineComponentArray<UMeshComponent*> GetVisualMeshComponents() const;
 
 	void OnBlinkVisibilityTick();
 	void EnableActorCollision();

@@ -6,7 +6,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
-#include "Actor/GeoArena.h"
+#include "Actor/Arena/GeoArena.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"

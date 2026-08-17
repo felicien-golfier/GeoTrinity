@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/GeoArenaBarrier.h"
+#include "Actor/Arena/GeoArenaBarrier.h"
 
 #include "GameClasses/GeoGameState.h"
 #include "Net/UnrealNetwork.h"

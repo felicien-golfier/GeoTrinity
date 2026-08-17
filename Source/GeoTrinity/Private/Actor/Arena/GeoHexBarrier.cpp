@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/GeoHexBarrier.h"
+#include "Actor/Arena/GeoHexBarrier.h"
 
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Curves/CurveVector.h"
@@ -54,7 +54,11 @@ void AGeoHexBarrier::CaptureLayout()
 	}
 
 	BuildFullLayout();
-	TileLayout.RemoveAll([&SurvivingTiles](FIntPoint const Tile) { return !SurvivingTiles.Contains(Tile); });
+	TileLayout.RemoveAll(
+		[&SurvivingTiles](FIntPoint const Tile)
+		{
+			return !SurvivingTiles.Contains(Tile);
+		});
 	RebuildInstances();
 }
 

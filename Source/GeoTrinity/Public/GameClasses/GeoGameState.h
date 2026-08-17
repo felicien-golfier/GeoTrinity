@@ -49,9 +49,10 @@ public:
 	void RevivePlayers() const;
 
 	/**
-	 * Server. A player just went down (death or disconnect). Out of a fight the player is revived on the spot; during a
-	 * fight (match in progress) they stay down, and once every player who was alive when the fight began is down, the
-	 * whole group respawns at the checkpoint after DeathTime. This is the single death policy — no arena is consulted.
+	 * Server. A player just went down (death or disconnect). Every death plays out the same way — down for DeathTime,
+	 * then back at the checkpoint; the only difference is who waits for whom. Out of a fight the player comes back
+	 * alone; during a fight (match in progress) the whole group waits until every player who was alive when the fight
+	 * began is down. This is the single death policy — no arena is consulted.
 	 */
 	void NotifyPlayerDied(APlayableCharacter& Player);
 
@@ -76,8 +77,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	float CommitFightTime = 3.f;
 
-	/** Seconds the downed group stays on the ground after a wipe before it respawns at the checkpoint; also the
-	 *  barrier's opening lerp duration, so it finishes opening right as the group comes back. */
+	/** Seconds a downed player stays on the ground before respawning at the checkpoint; also the barrier's opening
+	 *  lerp duration on a wipe, so it finishes opening right as the group comes back. */
 	UPROPERTY(EditAnywhere, Category = "Fight")
 	float DeathTime = 3.f;
 
@@ -102,7 +103,10 @@ private:
 	UFUNCTION()
 	void OnRep_Difficulty();
 
-	/** Arena.* tag a wipe respawns at; set by the arena that owns the current fight. */
+	/** Arena.* tag a respawn returns to, through the TargetPoint.Entrance points carrying it. Editable as the
+	 *  checkpoint a session opens on — the hub, since a death in there or in the tutorial comes before any fight;
+	 *  from there it is the fighting arena's alone, which is why it is private. */
+	UPROPERTY(EditDefaultsOnly, Category = "Fight", meta = (Categories = "Arena"))
 	FGameplayTag CheckpointTag;
 
 	/** Players alive when the current fight began. A wipe is "all of these are down", so late joiners — who are not
@@ -117,4 +121,7 @@ private:
 	/** Server. Teleports the group to the checkpoint, revives everyone, and stands the match down. Wipe timer callback.
 	 */
 	void RespawnGroup();
+
+	/** Server. Teleports one player to the checkpoint and revives them. Out-of-fight death timer callback. */
+	void RespawnPlayer(APlayableCharacter& Player);
 };

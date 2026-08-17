@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Actor/GeoArenaBarrier.h"
+#include "Actor/Arena/GeoArenaBarrier.h"
 #include "CoreMinimal.h"
 
 #include "GeoHexBarrier.generated.h"

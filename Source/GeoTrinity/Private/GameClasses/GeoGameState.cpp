@@ -86,10 +86,17 @@ void AGeoGameState::NotifyPlayerDied(APlayableCharacter& Player)
 		return;
 	}
 
-	// Out of a fight every death is independent: stand the player straight back up where they fell.
+	// Out of a fight every death is independent: this player alone comes back, once their death has played out.
 	if (!IsMatchInProgress())
 	{
-		Player.Revive();
+		FTimerHandle DeathTimer;
+		GetWorld()->GetTimerManager().SetTimer(DeathTimer,
+											   FTimerDelegate::CreateWeakLambda(&Player,
+																				[this, &Player]
+																				{
+																					RespawnPlayer(Player);
+																				}),
+											   DeathTime, false);
 		return;
 	}
 
@@ -118,6 +125,26 @@ void AGeoGameState::RespawnGroup()
 	GeoLib::TeleportPlayersToTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_Entrance, CheckpointTag);
 	RevivePlayers();
 	RequestWaitingToStart();
+}
+
+void AGeoGameState::RespawnPlayer(APlayableCharacter& Player)
+{
+	// A fight starting and ending within DeathTime revives the whole group first, leaving nothing to bring back here.
+	if (!Player.IsDead())
+	{
+		return;
+	}
+
+	TArray<AActor*> const SpawnPoints =
+		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_Entrance, CheckpointTag);
+	if (!ensureMsgf(!SpawnPoints.IsEmpty(), TEXT("No TargetPoint.Entrance point tagged %s to respawn %s at"),
+					*CheckpointTag.ToString(), *Player.GetName()))
+	{
+		return;
+	}
+
+	Player.SetActorLocation(SpawnPoints[FMath::RandHelper(SpawnPoints.Num())]->GetActorLocation());
+	Player.Revive();
 }
 
 void AGeoGameState::RequestWaitingToStart() const

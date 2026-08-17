@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Abilities/Boss/GeoSweepBeamAbility.h"
 
-#include "Actor/GeoHexArena.h"
+#include "Actor/Arena/GeoHexArena.h"
 
 float UGeoSweepBeamAbility::GetFireYaw(AActor const* Instigator, int const Seed) const
 {

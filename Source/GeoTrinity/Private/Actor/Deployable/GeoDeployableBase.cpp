@@ -6,7 +6,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
-#include "Actor/GeoArena.h"
+#include "Actor/Arena/GeoArena.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -83,8 +83,7 @@ void AGeoDeployableBase::PushAway()
 		}
 
 		float const PushDistance = Radius + Actor->GetSimpleCollisionRadius();
-		ApplyPushRootMotion(Movement, Actor->GetActorLocation(),
-							ComputePushTarget(Actor, PushDistance, FightingArena));
+		ApplyPushRootMotion(Movement, Actor->GetActorLocation(), ComputePushTarget(Actor, PushDistance, FightingArena));
 	}
 }
 
@@ -606,9 +605,8 @@ FGameplayCueParameters AGeoDeployableBase::GetRecallCueParams() const
 {
 	FGameplayCueParameters CueParams = GetGenericCueParams(RecallCue);
 	AActor const* CueInstigator = GetData()->Instigator;
-	CueParams.Normal = IsValid(CueInstigator)
-							? (CueInstigator->GetActorLocation() - GetActorLocation()).GetSafeNormal()
-							: FVector::ZeroVector;
+	CueParams.Normal = IsValid(CueInstigator) ? (CueInstigator->GetActorLocation() - GetActorLocation()).GetSafeNormal()
+											  : FVector::ZeroVector;
 	CueParams.NormalizedMagnitude = IsBlinking() ? 1.f : 0.f;
 	return CueParams;
 }

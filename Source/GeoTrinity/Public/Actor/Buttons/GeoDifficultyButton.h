@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Actor/GeoFloorButton.h"
+#include "Actor/Buttons/GeoFloorButton.h"
 #include "CoreMinimal.h"
 #include "Tool/GeoDifficulty.h"
 

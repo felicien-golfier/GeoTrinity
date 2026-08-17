@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/GeoTeleporter.h"
+#include "Actor/Buttons/GeoTeleporter.h"
 
 #include "Characters/PlayableCharacter.h"
 #include "Components/TextRenderComponent.h"
@@ -89,8 +89,8 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 	int32 PlayerIndex = 0;
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
-		APlayableCharacter* const Traveller = Iterator->IsValid() ? Cast<APlayableCharacter>((*Iterator)->GetPawn())
-																  : nullptr;
+		APlayableCharacter* const Traveller =
+			Iterator->IsValid() ? Cast<APlayableCharacter>((*Iterator)->GetPawn()) : nullptr;
 		if (!Traveller || GetMachineConnection(Traveller) != MachineConnection)
 		{
 			continue;
@@ -103,9 +103,9 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 
 			FVector const Offset =
 				NextTeleporter->GetActorRightVector() * (PlayerIndex * Traveller->GetSimpleCollisionRadius() * 2.0f);
-			Traveller->TeleportTo(FVector(Destination.X + Offset.X, Destination.Y + Offset.Y,
-										  Traveller->GetActorLocation().Z),
-								  Traveller->GetActorRotation());
+			Traveller->TeleportTo(
+				FVector(Destination.X + Offset.X, Destination.Y + Offset.Y, Traveller->GetActorLocation().Z),
+				Traveller->GetActorRotation());
 		}
 		++PlayerIndex;
 	}

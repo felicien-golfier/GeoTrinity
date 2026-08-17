@@ -6,135 +6,34 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Net/UnrealNetwork.h"
-#include "Tool/UGeoGameplayLibrary.h"
 
-AGeoHealingZone::AGeoHealingZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
+void AGeoHealingZone::ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor,
+									   UGeoAbilitySystemComponent* SourceASC, float const DeltaSeconds)
 {
-	bShowDamageNumbers = false;
-	SetCanBeDamaged(false);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHealingZone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME_CONDITION(AGeoHealingZone, Data, COND_InitialOnly);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHealingZone::InitInteractable(FInteractableActorData* InputData)
-{
-	FDeployableData* DeployableData = static_cast<FDeployableData*>(InputData);
-	ensureMsgf(DeployableData, TEXT("AGeoHealingZone: Data is not FHealingZoneData!"));
-	if (!DeployableData)
-	{
-		return;
-	}
-	Data = *DeployableData;
-
-	CapsuleComponent->SetCapsuleHalfHeight(Data.Params.Size);
-	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
-	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
-	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
-	Super::InitInteractable(InputData);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-float AGeoHealingZone::GetDrainDurationRatio() const
-{
-	UAbilitySystemComponent const* ASC = GetAbilitySystemComponent();
-	float const MaxHealth = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
-	if (MaxHealth <= 0.f)
-	{
-		return 0.f;
-	}
-	return FMath::Clamp(ASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute()) / MaxHealth, 0.f, 1.f);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHealingZone::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-									 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-									 FHitResult const& SweepResult)
-{
-	if (!UGeoAbilitySystemLibrary::GetGeoAscFromActor(OtherActor) || OtherActor == this)
-	{
-		return;
-	}
-	ActorsInZone.Add(OtherActor);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHealingZone::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-								   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	ActorsInZone.Remove(OtherActor);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHealingZone::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	if (!GeoLib::IsServer(GetWorld()))
-	{
-		return;
-	}
-
-
-	UAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
-
-	int HealedNum = 0;
-
-	for (TWeakObjectPtr<AActor> const WeakActor : ActorsInZone)
-	{
-		AActor* Actor = WeakActor.Get();
-		if (!IsValid(Actor))
-		{
-			continue;
-		}
-		if (GeoASLib::IsTeamAttitudeAligned(Actor, this, TeamAttitudeMask::Hostile))
-		{
-			continue;
-		}
-		UGeoAbilitySystemComponent* TargetASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(Actor);
-		if (!TargetASC || !TargetASC->GetAvatarActor()->CanBeDamaged())
-		{
-			continue;
-		}
-
-		if (TargetASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute())
+	AActor* Actor = TrackedActor.Get();
+	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
+	if (!TargetASC || !TargetASC->GetAvatarActor()->CanBeDamaged()
+		|| TargetASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute())
 			>= TargetASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute()))
-		{
-			continue; // Do not heal, neither count allies full life.
-		}
-
-		// Also add the array, but that not the heal. This is to let game design decide if they want to add something
-		UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(Data.EffectDataArray, OwnerASC, TargetASC, Data.Level,
-															Data.Seed, Data.AbilityTag);
-		FHealEffectData HealEffectData;
-		HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
-		HealEffectData.bLimitGameplayCue = true;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffectData, OwnerASC, TargetASC, Data.Level, Data.Seed,
-														Data.AbilityTag);
-		++HealedNum;
-	}
-
-	if (HealedNum > 0)
 	{
-		// The zone pays for what it healed — scaled by how many allies it reached, so distinct from the base class's
-		// flat per-second DrainEffectData.
-		FDamageEffectData HealingCostData;
-		HealingCostData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds * HealedNum;
-		HealingCostData.bSuppressGameplayCue = true;
-		HealingCostData.bSuppressCombatStats = true;
-		HealingCostData.bDoNotRedirectSacrifice = true;
-		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealingCostData, OwnerASC, GetAbilitySystemComponent(),
-														Data.Level, Data.Seed, Data.AbilityTag);
+		return; // Neither heal nor pay for an ally already at full life.
 	}
-}
 
-void AGeoHealingZone::OnRep_Data() const
-{
-	CapsuleComponent->SetCapsuleHalfHeight(Data.Params.Size);
-	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
+	// The authored array on top, so game design can add something to the heal without touching this class.
+	Super::ApplyZoneEffects(TrackedActor, SourceASC, DeltaSeconds);
+
+	FHealEffectData HealEffectData;
+	HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
+	HealEffectData.bLimitGameplayCue = true;
+	GeoASLib::ApplySingleEffectData(HealEffectData, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
+
+	// The zone pays for what it healed — once per healed ally, so it burns down faster the more it reaches. Distinct
+	// from the base class's flat per-second drain.
+	FDamageEffectData HealingCostData;
+	HealingCostData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
+	HealingCostData.bSuppressGameplayCue = true;
+	HealingCostData.bSuppressCombatStats = true;
+	HealingCostData.bDoNotRedirectSacrifice = true;
+	GeoASLib::ApplySingleEffectData(HealingCostData, SourceASC, GetAbilitySystemComponent(), Data.Level, Data.Seed,
+									Data.AbilityTag);
 }

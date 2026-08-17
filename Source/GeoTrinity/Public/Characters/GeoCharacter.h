@@ -105,7 +105,11 @@ public:
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage, FColor Color) const;
 
 
-	/** Entry point for reviving a downed player. Sets bIsDead = false and runs HandleRevived(). */
+	/**
+	 * Entry point for reviving a downed player. Plays GetReviveMontage() and only stands the character back up when it
+	 * ends: bIsDead stays true and the character stays stopped for the whole montage, so nothing targets, damages or
+	 * moves it while it gets up. Without a montage it revives on the spot.
+	 */
 	void Revive();
 
 	/** Fires when this character revives, on the server (Revive) and on clients (OnRep_IsDead). Spawned elements that
@@ -114,6 +118,9 @@ public:
 
 	/** Returns true while the player is downed (health reached 0 and not yet revived). */
 	bool IsDead() const { return bIsDead; }
+
+	/** Returns true while the player is playing its revive montage — still down, but no longer a corpse. */
+	bool IsReviving() const { return bReviving; }
 
 	/**
 	 * Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from
@@ -162,8 +169,15 @@ protected:
 	 *  counterpart of DeathLogic() on the death side. */
 	void HandleRevived();
 
+	/** Server. Ends the getting-up state and revives for real. Revive montage timer callback. */
+	void FinishRevive();
+
 	UFUNCTION()
 	void OnRep_IsDead(bool bOldValue);
+
+	/** Plays the revive montage on every machine — the getting-up counterpart of SetDeathVisuals(true). */
+	UFUNCTION()
+	void OnRep_Reviving();
 
 	/** Applies the visuals of a downed (bDead) or living character: plays or stops GetDeathMontage(). Runs on every
 	 * machine — call it from the death/revive paths, which replicate through bIsDead. */
@@ -173,9 +187,18 @@ protected:
 	 * (a player's class swaps the skeleton the montage is bound to). */
 	virtual UAnimMontage* GetDeathMontage() const { return DeathMontage; }
 
+	/** Montage played while this character gets back up, and the length of the revive itself. None by default — a
+	 *  character without one revives on the spot. */
+	virtual UAnimMontage* GetReviveMontage() const { return nullptr; }
+
 
 	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
 	bool bIsDead = false;
+
+	/** True from the revive montage's first frame to its last, while bIsDead is still true — the character is on its
+	 *  way back but counts as down until it is standing. */
+	UPROPERTY(ReplicatedUsing = OnRep_Reviving)
+	bool bReviving = false;
 
 	/** How the current death happened, for GetDeathMontage(). Always re-assigned by Death(), so it never goes stale —
 	 * and it must survive until ReviveLogic() stops the montage it selected. */
@@ -194,6 +217,8 @@ protected:
 	/** Yaw (degrees) the character is currently turning toward. Set via SetTargetYaw(); initialized to the actor's
 	 * starting yaw in BeginPlay so nothing snaps on possession. */
 	float TargetYaw = 0.f;
+
+	FTimerHandle ReviveTimer;
 
 
 	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

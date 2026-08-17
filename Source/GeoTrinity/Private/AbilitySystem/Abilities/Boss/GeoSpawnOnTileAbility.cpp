@@ -5,7 +5,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/GeoHexArena.h"
+#include "Actor/Arena/GeoHexArena.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoSpawnOnTileAbility::UGeoSpawnOnTileAbility()
@@ -26,9 +26,9 @@ void UGeoSpawnOnTileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData
 		FRandomStream Stream(StoredPayload.Seed);
 		for (FIntPoint const Tile : Arena->GetRandomAliveTiles(Stream, GetSpawnRing(*Arena), SpawnCount))
 		{
-			AGeoDeployableBase* const Deployable = GeoASLib::FullySpawnDeployable(
-				DeployableClass, StoredPayload, GetEffectDataArray(), DeployableParams,
-				FTransform(FVector(Arena->TileToWorld(Tile), ArbitraryCharacterZ)));
+			AGeoDeployableBase* const Deployable =
+				GeoASLib::FullySpawnDeployable(DeployableClass, StoredPayload, GetEffectDataArray(), DeployableParams,
+											   FTransform(FVector(Arena->TileToWorld(Tile), ArbitraryCharacterZ)));
 			Arena->SetTileOccupant(Tile, Deployable);
 		}
 	}

@@ -5,6 +5,8 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Actor/Deployable/Zones/GeoEffectZone.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoZoneAbility::UGeoZoneAbility()
@@ -35,9 +37,9 @@ void UGeoZoneAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	Super::Fire(AbilityTargetData);
 
 	FVector const ZoneLocation = GetZoneLocation();
-	if (ZoneClass)
+	if (ZoneParams.LifeDrainMaxDuration > 0.f)
 	{
-		GeoASLib::FullySpawnDeployable(ZoneClass, StoredPayload, GetEffectDataArray(), ZoneParams,
+		GeoASLib::FullySpawnDeployable(GetZoneClass(), StoredPayload, GetEffectDataArray(), ZoneParams,
 									   FTransform(ZoneLocation));
 	}
 	else
@@ -46,6 +48,21 @@ void UGeoZoneAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	}
 
 	EndAbility();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TSubclassOf<AGeoDeployableBase> UGeoZoneAbility::GetZoneClass() const
+{
+	if (ZoneClass)
+	{
+		return ZoneClass;
+	}
+
+	TSubclassOf<AGeoDeployableBase> const DefaultZoneClass =
+		GetDefault<UGameDataSettings>()->DefaultZoneClass.LoadSynchronous();
+	ensureMsgf(DefaultZoneClass, TEXT("%hs: no DefaultZoneClass in Game Data Settings and %s names no ZoneClass"),
+			   __FUNCTION__, *GetName());
+	return DefaultZoneClass;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

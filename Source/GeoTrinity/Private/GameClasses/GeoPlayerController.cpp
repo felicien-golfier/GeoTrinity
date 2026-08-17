@@ -2,7 +2,7 @@
 
 #include "GameClasses/GeoPlayerController.h"
 
-#include "Actor/GeoHexArena.h"
+#include "Actor/Arena/GeoHexArena.h"
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraActor.h"
 #include "Engine/Engine.h"

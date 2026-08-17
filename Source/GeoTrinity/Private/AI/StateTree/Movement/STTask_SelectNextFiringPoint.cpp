@@ -4,7 +4,7 @@
 
 #include "AI/GeoAIBlackboardComponent.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
-#include "Actor/GeoArena.h"
+#include "Actor/Arena/GeoArena.h"
 #include "GameFramework/Controller.h"
 #include "StateTreeExecutionContext.h"
 #include "StateTreeLinker.h"

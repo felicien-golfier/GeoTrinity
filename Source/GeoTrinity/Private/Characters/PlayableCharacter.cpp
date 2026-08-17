@@ -272,6 +272,16 @@ UAnimMontage* APlayableCharacter::GetDeathMontage() const
 	return bDiedFromFall ? VisualData->FallMontage : VisualData->DeathMontage;
 }
 
+UAnimMontage* APlayableCharacter::GetReviveMontage() const
+{
+	FPlayerClassData const* VisualData = GetClassData(GetPlayerClass());
+	if (!VisualData)
+	{
+		return nullptr;
+	}
+	return VisualData->ReviveMontage;
+}
+
 FPlayerClassData const* APlayableCharacter::GetClassData(EPlayerClass Class) const
 {
 	FPlayerClassData const* PlayerClassData = ClassData.Find(Class);

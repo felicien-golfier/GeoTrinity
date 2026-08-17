@@ -178,7 +178,9 @@ void AGeoGameCamera::Tick(float DeltaTime)
 			FirstLocalController = PlayerController;
 			FirstLocalCharacter = Character;
 		}
-		if (!Character || !Character->IsDead())
+		// A reviving player is framed like a living one: they have already been moved to where they come back, and
+		// spectating through their own revive would leave the camera behind on the corpse's last room.
+		if (!Character || !Character->IsDead() || Character->IsReviving())
 		{
 			LivingPlayers.Add(FVector2D(Pawn->GetActorLocation()));
 		}

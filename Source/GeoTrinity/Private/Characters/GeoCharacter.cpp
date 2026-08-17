@@ -14,6 +14,7 @@
 #include "Input/GeoInputComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
+#include "TimerManager.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
@@ -83,6 +84,7 @@ void AGeoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoCharacter, bIsDead);
+	DOREPLIFETIME(AGeoCharacter, bReviving);
 	DOREPLIFETIME(AGeoCharacter, bDiedFromFall);
 }
 
@@ -267,10 +269,37 @@ void AGeoCharacter::OnRep_IsDead(bool const bOldValue)
 
 void AGeoCharacter::Revive()
 {
-	if (!bIsDead)
+	if (!bIsDead || bReviving)
 	{
 		return;
 	}
+
+	UAnimMontage const* const ReviveMontage = GetReviveMontage();
+	if (!ReviveMontage)
+	{
+		FinishRevive();
+		return;
+	}
+
+	bReviving = true;
+	OnRep_Reviving();
+	GetWorld()->GetTimerManager().SetTimer(ReviveTimer, this, &AGeoCharacter::FinishRevive,
+										   ReviveMontage->GetPlayLength(), false);
+}
+
+void AGeoCharacter::OnRep_Reviving()
+{
+	UAnimInstance* const AnimInstance = GetMesh()->GetAnimInstance();
+	UAnimMontage* const ReviveMontage = GetReviveMontage();
+	if (bReviving && AnimInstance && ReviveMontage)
+	{
+		AnimInstance->Montage_Play(ReviveMontage);
+	}
+}
+
+void AGeoCharacter::FinishRevive()
+{
+	bReviving = false;
 	bIsDead = false;
 	HandleRevived();
 }

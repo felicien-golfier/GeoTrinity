@@ -1,6 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Actor/GeoFloorButton.h"
+#include "Actor/Buttons/GeoFloorButton.h"
 
 #include "Characters/PlayableCharacter.h"
 #include "Components/BoxComponent.h"

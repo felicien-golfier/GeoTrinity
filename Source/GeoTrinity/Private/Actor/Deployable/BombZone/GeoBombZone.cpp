@@ -2,7 +2,7 @@
 
 #include "Actor/Deployable/BombZone/GeoBombZone.h"
 
-#include "Actor/GeoHexArena.h"
+#include "Actor/Arena/GeoHexArena.h"
 #include "Components/CapsuleComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
