@@ -16,12 +16,15 @@ APE = unreal.AnimPoseExtensions
 
 
 def get_or_create_asset(package_path, asset_name, asset_class, factory):
-    """Load the asset if it exists, else create it. Never deletes: deleting a loaded asset leaves the
-    package unloadable for the rest of the editor session."""
-    path = "{}/{}".format(package_path, asset_name)
-    if unreal.EditorAssetLibrary.does_asset_exist(path):
-        return unreal.load_asset(path)
-    return unreal.AssetToolsHelpers.get_asset_tools().create_asset(asset_name, package_path, asset_class, factory)
+    """Load the asset if it exists, else create it.
+
+    Loaded rather than looked up in the asset registry: a registry still scanning reports an asset that is on disk
+    as missing, and creating over it then fails and hands back nothing. Never deletes: deleting a loaded asset
+    leaves the package unloadable for the rest of the editor session.
+    """
+    asset = unreal.load_asset("{}/{}".format(package_path, asset_name))
+    return asset or unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        asset_name, package_path, asset_class, factory)
 
 
 def reference_pose_table(skeleton_path):
@@ -199,6 +202,34 @@ def rigid_vertex_groups(skeletal_mesh_path, skeleton_path):
     return groups
 
 
+def local_pose_table(pose):
+    """An evaluated pose in parent space, as plain numbers -> {bone: ((x, y, z), yaw, (sx, sy, sz))}.
+
+    Copied out rather than held as transforms, since evaluated poses alias one shared buffer. Yaw alone stands for
+    the rotation on a rig whose bones are all placed with one.
+    """
+    table = {}
+    for bone in APE.get_bone_names(pose):
+        local = APE.get_bone_pose(pose, str(bone), unreal.AnimPoseSpaces.LOCAL)
+        table[str(bone)] = ((local.translation.x, local.translation.y, local.translation.z),
+                            local.rotation.rotator().yaw,
+                            (local.scale3d.x, local.scale3d.y, local.scale3d.z))
+    return table
+
+
+def feature_directions(posed, marker):
+    """Features whose bones are named `<parent><marker><n>` -> {feature: (parent, resting direction in degrees)}.
+
+    Read from where each bone sits rather than from a list, so it follows the rig instead of restating it.
+    """
+    layout = {}
+    for bone, transform in posed.items():
+        if marker in bone:
+            position = transform.translation
+            layout[bone] = (bone.split(marker)[0], math.degrees(math.atan2(position.y, position.x)))
+    return layout
+
+
 def place_groups(groups, posed):
     """Every group's vertices where a pose puts them -> {bone: [component-space position]}.
 
@@ -222,14 +253,26 @@ def feature_protrusion(placed, posed, feature_bone, parent_bone):
     return along(feature_bone) - along(parent_bone)
 
 
-def polygon_reach(vertices, angle, sides=6):
-    """Distance from the axis out to a regular polygon's boundary in direction `angle` (radians).
+def polygon_fit(vertices):
+    """The polygon a ring of vertices outlines -> (centre x, centre y, circumradius, phase).
 
-    The boundary is fixed by its nearest vertex: that vertex's radius is the circumradius and its direction the
-    phase. The shortest vertex distance on its own reports the boundary as closer than it is everywhere except at
-    the corners, which is exactly where a ring inside it aims its features.
+    The centre is fitted rather than assumed to sit on the axis, so a ring an animation has drifted off it is not
+    mistaken for one that has shrunk. Circumradius and phase come from the vertex nearest that centre.
     """
-    radius, phase = min((math.hypot(vertex.x, vertex.y), math.atan2(vertex.y, vertex.x)) for vertex in vertices)
+    centre_x = sum(vertex.x for vertex in vertices) / float(len(vertices))
+    centre_y = sum(vertex.y for vertex in vertices) / float(len(vertices))
+    radius, phase = min((math.hypot(vertex.x - centre_x, vertex.y - centre_y),
+                         math.atan2(vertex.y - centre_y, vertex.x - centre_x)) for vertex in vertices)
+    return centre_x, centre_y, radius, phase
+
+
+def polygon_reach(radius, phase, angle, sides=6):
+    """Distance from a regular polygon's centre out to its boundary in direction `angle` (radians).
+
+    Measured from a corner, so at the phase itself this gives back the circumradius and a half-span round from it
+    the apothem. The nearest vertex distance on its own reports the boundary as closer than it is everywhere
+    except at the corners, which is exactly where a ring inside it aims its features.
+    """
     span = math.pi / sides
     return radius * math.cos(span) / math.cos((angle - phase) % (2.0 * span) - span)
 
@@ -238,11 +281,17 @@ def nested_clearance(placed, inner_bones, boundary_bone, sides=6):
     """Smallest gap in units between the parts on `inner_bones` and the wall of `boundary_bone`.
 
     Negative means the two interpenetrate, which no bone track shows — nested parts have to be checked for it
-    numerically.
+    numerically. Everything is measured from the boundary's own fitted centre, so a boundary that has drifted is
+    compared against where the inner parts sit relative to it rather than to the axis.
     """
-    inside = [vertex for bone in inner_bones for vertex in placed[bone]]
-    return min(polygon_reach(placed[boundary_bone], math.atan2(vertex.y, vertex.x), sides)
-               - math.hypot(vertex.x, vertex.y) for vertex in inside)
+    centre_x, centre_y, radius, phase = polygon_fit(placed[boundary_bone])
+    gaps = []
+    for bone in inner_bones:
+        for vertex in placed[bone]:
+            offset_x, offset_y = vertex.x - centre_x, vertex.y - centre_y
+            gaps.append(polygon_reach(radius, phase, math.atan2(offset_y, offset_x), sides)
+                        - math.hypot(offset_x, offset_y))
+    return min(gaps)
 
 
 def add_child_bones(skeletal_mesh_path, parent_bone, locations):
@@ -397,11 +446,12 @@ def _component_transforms(pose):
 # MESH, SKELETON = "/Game/Characters/Meshes/HexBoss/SKM_HexBoss", "/Game/Characters/Meshes/HexBoss/SK_HexBoss"
 # SEQUENCE, FPS = unreal.load_asset("/Game/Characters/Anim/HexBoss/SK_HexBoss_Idle"), 30
 # groups = rigid_vertex_groups(MESH, SKELETON)
+# layout = feature_directions(_component_transforms(APE.get_reference_pose(unreal.load_asset(SKELETON))), "_Spike_")
 # for frame in range(0, 241, 12):
-#     posed = _component_transforms(APE.get_anim_pose_at_time(
-#         SEQUENCE, frame / float(FPS), unreal.AnimPoseEvaluationOptions()))
+#     pose = APE.get_anim_pose_at_time(SEQUENCE, frame / float(FPS), unreal.AnimPoseEvaluationOptions())
+#     local, posed = local_pose_table(pose), _component_transforms(pose)
 #     placed = place_groups(groups, posed)
-#     print(frame, feature_protrusion(placed, posed, "HexOuter_Spike_0", "HexOuter"),
+#     print(frame, local["HexOuter"][1], feature_protrusion(placed, posed, "HexOuter_Spike_0", "HexOuter"),
 #           nested_clearance(placed, [b for b in groups if b.startswith("HexMid")], "HexOuter"))
 
 # Give each of a ring's features its own bone, so one can be moved without the others

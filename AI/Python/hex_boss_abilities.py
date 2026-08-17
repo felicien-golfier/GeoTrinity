@@ -14,6 +14,10 @@ nothing ever has to unwind a spin backwards. The same identity closes FireLoop o
 Everything reads one curve a fixed number of frames late — the core leads, the outer ring drags — so the boss
 never moves as a single block. Negative while it winds up, positive while it is deployed, zero at rest.
 
+The wind-up rattles: a whole-boss vibration that alternates every frame and grows as the charge tightens, then
+cuts out for the last frames before the hit. That silence is what the hit lands against, so the rattle stops
+short of it rather than running into it.
+
 The three read apart by how they use the spikes. A focus of zero extends every spike alike; a sharp focus
 extends only the ones pointing where the boss is aimed, and it reads a spike's angle from where it points now
 rather than where it rests, so a turning ring pushes blades out as they sweep through the front and folds them
@@ -39,6 +43,7 @@ ANIM_PACKAGE = "/Game/Characters/Anim/HexBoss"
 REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
           "0b3b8214-c633-4920-a4b1-c68d4e9de203/scratchpad/hex_boss_abilities.txt")
 
+ROOT = "Root"
 OUTER, MID, CORE = "HexOuter", "HexMid", "HexCore"
 SPIKE_MARK = "_Spike_"
 
@@ -51,32 +56,33 @@ BURST = [0.45, 1.15, 1.0]  # the mid-flight frame, the overshoot that lands the 
 SETTLE = 2          # frames after the overshoot before the loop takes over
 DAMP = 2.0          # how fast the recoil dies
 SPRING = 4.8        # how far past rest it swings on the way
+SHAKE_RAMP = 2.0    # above 1 the rattle keeps out of the way until the wind-up is nearly tight
 
 # (frames this ring lags the curve, its scale wound tightest, its scale deployed, sixths of a turn it makes
 #  winding up, sixths it makes per loop, how much it pulses over the loop)
 Ring = collections.namedtuple("Ring", "lag charge_scale burst_scale charge_sixths loop_sixths loop_pulse")
 
 # (asset suffix, wind-up frames, loop frames, recoil frames, how sharply the spikes favour the front,
-#  spike reach wound tightest, spike reach deployed, the rings)
-Clip = collections.namedtuple("Clip", "name start loop end focus charge_spike burst_spike rings")
+#  spike reach wound tightest, spike reach deployed, units the wind-up rattles at its tightest, the rings)
+Clip = collections.namedtuple("Clip", "name start loop end focus charge_spike burst_spike shake rings")
 
 CLIPS = [
     # Sweeping laser: the boss winds all three rings up, snaps open and turns into a spinning emitter, teeth out
     # all the way round because the beam covers the whole arc.
-    Clip("SweepBeam", 54, 36, 20, 0.0, 0.30, 0.95, {
+    Clip("SweepBeam", 54, 36, 20, 0.0, 0.30, 0.95, 5.0, {
         OUTER: Ring(3, 0.86, 1.14, 2, 1, 0.000),
         MID: Ring(2, 0.82, 1.06, -3, -2, 0.000),
         CORE: Ring(0, 1.22, 1.05, 6, 3, 0.000)}),
-    # Tile-carving ray: direction locks at activation, so the boss stops dead instead of turning — the whole tell
-    # is the idle's constant motion stopping — clamps down hard and grows a barrel of spikes along the beam,
-    # then throbs while it grinds.
-    Clip("CarvingRay", 48, 10, 24, 8.0, 0.45, 1.00, {
+    # Tile-carving ray: direction locks at activation, so the boss stops dead instead of turning — the tell is the
+    # idle's constant motion giving way to a rattle, the hardest of the three since nothing else is moving —
+    # clamps down hard and grows a barrel of spikes along the beam, then throbs while it grinds.
+    Clip("CarvingRay", 48, 10, 24, 8.0, 0.45, 1.00, 7.0, {
         OUTER: Ring(3, 0.80, 1.16, 0, 0, 0.020),
         MID: Ring(2, 0.84, 1.12, 0, 0, 0.028),
         CORE: Ring(0, 1.24, 1.10, 0, 0, 0.040)}),
     # Cone spray: salvos pumped out of the front. The rings pulse once per loop so a loop reads as one salve,
     # and the core keeps turning so its blades ripple through the cone rather than sitting in it.
-    Clip("ConeSpray", 36, 15, 18, 3.0, 0.25, 0.85, {
+    Clip("ConeSpray", 36, 15, 18, 3.0, 0.25, 0.85, 4.0, {
         OUTER: Ring(3, 0.92, 1.08, 0, 0, 0.045),
         MID: Ring(2, 0.88, 1.12, -1, 0, 0.060),
         CORE: Ring(0, 1.22, 1.18, 2, 1, 0.080)}),
@@ -116,30 +122,16 @@ def snapshot(pose):
     return table
 
 
-def component_transforms(pose):
-    """Every bone's component-space transform, copied out of the pose's shared buffer.
-
-    Composing a transform takes the location first, then the rotation and the scale.
-    """
-    table = {}
-    for bone in APE.get_bone_names(pose):
-        world = APE.get_bone_pose(pose, str(bone), unreal.AnimPoseSpaces.WORLD)
-        table[str(bone)] = unreal.Transform(world.translation, world.rotation.rotator(), world.scale3d)
-    return table
-
-
-def spike_layout():
+def spike_layout(placed):
     """Spike bone -> (the ring it hangs off, the direction it rests pointing in degrees).
 
     Read from where each bone sits rather than from a list, so it follows the rig instead of restating it.
     """
-    reference = component_transforms(APE.get_reference_pose(unreal.load_asset(SKELETON_PATH)))
     layout = {}
-    for bone, transform in reference.items():
+    for bone, transform in placed.items():
         if SPIKE_MARK in bone:
             position = transform.translation
-            layout[bone] = (bone.split(SPIKE_MARK)[0],
-                            math.degrees(math.atan2(position.y, position.x)))
+            layout[bone] = (bone.split(SPIKE_MARK)[0], math.degrees(math.atan2(position.y, position.x)))
     return layout
 
 
@@ -164,6 +156,32 @@ def drive(frame, clip):
     return 0.0 if alpha >= 1.0 else math.exp(-DAMP * alpha) * math.cos(SPRING * alpha) * (1.0 - alpha)
 
 
+def rattle(frame, clip):
+    """The whole boss's offset this frame -> (x, y), growing as the wind-up tightens and stopping before the hit.
+
+    Alternates every frame, since anything slower reads as a wobble rather than a vibration, and its two axes
+    alternate a beat apart so it never settles onto one line. It dies the moment the boss stops dead: that
+    stillness is what the hit lands against, and a rattle running through it would spend it.
+    """
+    if frame >= clip.start - STILL:
+        return 0.0, 0.0
+    reach = clip.shake * charged(frame, clip) ** SHAKE_RAMP
+    return (reach if frame % 2 else -reach), (reach * 0.6 if frame % 4 < 2 else -reach * 0.6)
+
+
+def lagged(frame, clip, ring):
+    """The curve this ring reads, delayed by its own weight — but the delay reverses while the boss opens.
+
+    Light parts leading and heavy ones dragging is what keeps the boss from moving as one block, and closing is
+    the direction that wants. Opening, it is the wrong way round: an inner ring swelling into a shell that has not
+    opened yet goes straight through it. So from the burst until the pattern stops the order flips, and the outer
+    ring is first open and last shut. The plateau either side of the loop outlasts the largest delay, so the flip
+    lands on the same value at both ends of it and no ring jumps.
+    """
+    delay = MAX_LAG - ring.lag if clip.start <= frame <= loop_end(clip) else ring.lag
+    return drive(frame - delay, clip)
+
+
 def ring_yaw(frame, clip, ring):
     """Degrees the ring has turned by `frame`, kept rather than unwound.
 
@@ -178,7 +196,7 @@ def ring_yaw(frame, clip, ring):
 
 def ring_scale(frame, clip, ring):
     """The ring's XY scale: the curve it lags, spread between its wound and its deployed size, plus the loop pulse."""
-    value = drive(frame - ring.lag, clip)
+    value = lagged(frame, clip, ring)
     scale = 1.0 + value * ((1.0 - ring.charge_scale) if value < 0.0 else (ring.burst_scale - 1.0))
     if burst_end(clip) <= frame <= loop_end(clip):
         scale *= 1.0 + ring.loop_pulse * math.sin(2.0 * math.pi * (frame - burst_end(clip)) / float(clip.loop))
@@ -191,16 +209,22 @@ def spike_reach(frame, clip, ring, angle):
     Weighted by where the spike points at this frame rather than where it rests, so a turning ring pushes its
     blades out as they sweep through the boss's front and folds them again as they leave it. A focus of zero
     flattens that to every spike alike.
+
+    Capped at the blade the mesh gives it. The burst's overshoot belongs to the rings, which are meant to swell
+    past where they land, but a reach past 1 is a stretched blade rather than a further-out one.
     """
-    value = drive(frame - ring.lag, clip)
-    reach = -value * clip.charge_spike if value < 0.0 else value * clip.burst_spike
+    value = lagged(frame, clip, ring)
+    reach = -value * clip.charge_spike if value < 0.0 else min(1.0, value * clip.burst_spike)
     return reach * max(0.0, math.cos(math.radians(angle))) ** clip.focus
 
 
 def key(frame, bone, clip, rest, layout):
     """The bone's local transform at `frame` -> (translation, yaw, scale)."""
     (x, y, z), yaw, (sx, sy, sz) = rest[bone]
-    if bone in clip.rings:
+    if bone == ROOT:
+        shake_x, shake_y = rattle(frame, clip)
+        x, y = x + shake_x, y + shake_y
+    elif bone in clip.rings:
         ring = clip.rings[bone]
         yaw += ring_yaw(frame, clip, ring)
         factor = ring_scale(frame, clip, ring)
@@ -213,12 +237,15 @@ def key(frame, bone, clip, rest, layout):
 
 
 def get_or_create(asset_name, asset_class, factory):
-    """Load the asset if it exists, else create it. Never deletes: deleting a loaded asset leaves the package
-    unloadable for the rest of the editor session."""
-    path = "{}/{}".format(ANIM_PACKAGE, asset_name)
-    if unreal.EditorAssetLibrary.does_asset_exist(path):
-        return unreal.load_asset(path)
-    return unreal.AssetToolsHelpers.get_asset_tools().create_asset(asset_name, ANIM_PACKAGE, asset_class, factory)
+    """Load the asset if it exists, else create it.
+
+    Loaded rather than looked up in the asset registry: a registry still scanning reports an asset that is on disk
+    as missing, and creating over it then fails and hands back nothing. Never deletes: deleting a loaded asset
+    leaves the package unloadable for the rest of the editor session.
+    """
+    asset = unreal.load_asset("{}/{}".format(ANIM_PACKAGE, asset_name))
+    return asset or unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        asset_name, ANIM_PACKAGE, asset_class, factory)
 
 
 def build_sequence(clip, rest, layout):
@@ -274,89 +301,35 @@ def build_montage(clip, sequence):
     return montage, names, starts
 
 
-def rest_vertices():
-    """The mesh's vertices grouped by the bone they hang off -> {bone: [position in that bone's space]}.
-
-    Positions come from the editor shim and weights from the modifier; both walk the mesh description cloned
-    from LOD 0, which is what makes them line up index for index.
-    """
-    mesh = unreal.load_asset(MESH_PATH)
-    positions = unreal.get_default_object(unreal.GeoAnimBuilderUtil).get_skeletal_mesh_vertex_positions(mesh)
-    modifier = unreal.SkinWeightModifier()
-    modifier.set_skeletal_mesh(mesh)
-    reference = component_transforms(APE.get_reference_pose(unreal.load_asset(SKELETON_PATH)))
-
-    bound = {}
-    for index, position in enumerate(positions):
-        weights = modifier.get_vertex_weights(index)
-        if len(weights) != 1:
-            raise RuntimeError("vertex {} is split across {} bones — this rig binds each to one".format(
-                index, len(weights)))
-        bone = str(next(iter(weights)))
-        bound.setdefault(bone, []).append(MATH.inverse_transform_location(reference[bone], position))
-    return bound
-
-
-def hexagon_reach(vertices, angle):
-    """Distance from the axis out to a ring's inner wall in direction `angle` (radians).
-
-    Every ring is a hexagon, so its inner wall is fixed by its nearest vertex: that vertex's radius is the wall's
-    circumradius and its direction the phase. Taking that shortest distance on its own would report the wall as
-    closer than it is everywhere except at the six corners — which is exactly where the ring inside it aims its
-    spikes, so it would condemn the one arrangement that has the most room.
-    """
-    radius, phase = min((math.hypot(vertex.x, vertex.y), math.atan2(vertex.y, vertex.x)) for vertex in vertices)
-    # Measured from a corner, so the offset runs a corner to a face: at the phase itself this gives back the
-    # circumradius, and a sixth of a turn away from it the apothem.
-    return radius * math.cos(math.pi / 6.0) / math.cos((angle - phase) % (math.pi / 3.0) - math.pi / 6.0)
-
-
-def clearance(placed, layout, inner, outer):
-    """Smallest gap in units between everything hanging off ring `inner` and ring `outer`'s wall.
-
-    Negative means the two rings interpenetrate, which no amount of bone-track inspection would show.
-    """
-    inside = [vertex for bone, group in placed.items()
-              if bone == inner or layout.get(bone, (None,))[0] == inner for vertex in group]
-    return min(hexagon_reach(placed[outer], math.atan2(vertex.y, vertex.x)) - math.hypot(vertex.x, vertex.y)
-               for vertex in inside)
-
-
-def protrusion(sequence, bound, layout, frames):
+def protrusion(sequence, toolkit, groups, layout, frames):
     """What the boss actually looks like, per frame -> {frame: ({spike: units past its face}, (gap, gap))}.
 
     The gaps are how much room the core has inside the middle ring and the middle ring inside the outer one.
-
-    The boss's outermost radius cannot answer this: a hexagon's corners sit far further out than the middle of a
-    face, so a blade clears its face long before it beats the corners it stands between. Projecting the spike's
-    vertices and its ring's onto that spike's own outward direction compares the two where it matters. That
-    direction is read off where the bone sits rather than from its axis, which the very scaling being measured
-    would collapse.
-
-    Every vertex is bound wholly to one bone, so putting it back out through that bone's posed transform is
-    exactly where the renderer draws it.
+    Both measurements come from the shared toolkit, which is also what the clockwork cut reads them with.
     """
     options = unreal.AnimPoseEvaluationOptions()
+    inner = {CORE: [bone for bone in groups if bone.startswith(CORE)],
+             MID: [bone for bone in groups if bone.startswith(MID)]}
     reach = {}
     for frame in frames:
-        posed = component_transforms(APE.get_anim_pose_at_time(sequence, frame / float(FPS), options))
-        placed = {bone: [MATH.transform_location(posed[bone], local) for local in locals]
-                  for bone, locals in bound.items()}
-        past = {}
-        for spike, (parent, _) in layout.items():
-            axis = posed[spike].translation
-            length = math.hypot(axis.x, axis.y)
-            along = lambda group: max(v.x * axis.x / length + v.y * axis.y / length for v in placed[group])
-            past[spike] = along(spike) - along(parent)
-        reach[frame] = (past, (clearance(placed, layout, CORE, MID), clearance(placed, layout, MID, OUTER)))
+        posed = toolkit["_component_transforms"](
+            APE.get_anim_pose_at_time(sequence, frame / float(FPS), options))
+        placed = toolkit["place_groups"](groups, posed)
+        past = {spike: toolkit["feature_protrusion"](placed, posed, spike, parent)
+                for spike, (parent, _) in layout.items()}
+        reach[frame] = (past, (toolkit["nested_clearance"](placed, inner[CORE], MID),
+                               toolkit["nested_clearance"](placed, inner[MID], OUTER)))
     return reach
 
 
-def report(clip, sequence, montage_names, montage_starts, bound, layout):
+def report(clip, sequence, montage_names, montage_starts, toolkit, groups, layout):
     frames = total_frames(clip)
+    peak, hush = clip.start - STILL - 1, clip.start - STILL
     marks = sorted(set(list(range(0, frames + 1, SAMPLE))
-                       + [clip.start, burst_end(clip), loop_end(clip), frames]))
-    reach = protrusion(sequence, bound, layout, marks)
+                       + [peak, hush, clip.start, burst_end(clip), loop_end(clip), frames]))
+    # Every frame rather than only the printed rows: a coarse sample steps straight over the two or three frames
+    # where the rings cross each other, which is exactly where they would collide.
+    reach = protrusion(sequence, toolkit, groups, layout, range(frames + 1))
     options = unreal.AnimPoseEvaluationOptions()
     spin = 60.0 * max(abs(ring.charge_sixths) for ring in clip.rings.values()) \
         * (charged(clip.start - STILL - 1, clip) - charged(clip.start - STILL - 2, clip))
@@ -368,16 +341,18 @@ def report(clip, sequence, montage_names, montage_starts, bound, layout):
         sequence.get_editor_property("number_of_sampled_keys"), frames + 1))
     LOG.append("sections " + ", ".join("%s f%d (%.2fs)" % (name, round(start * FPS), start)
                                        for name, start in zip(montage_names, montage_starts)))
-    LOG.append("focus {:.0f}, spikes reach {:.2f} wound and {:.2f} deployed; fastest wind-up spin {:.1f} deg/frame"
-               " (strobes past 30)".format(clip.focus, clip.charge_spike, clip.burst_spike, spin))
+    LOG.append("focus {:.0f}, spikes reach {:.2f} wound and {:.2f} deployed, wind-up rattles {:.0f} units;"
+               " fastest wind-up spin {:.1f} deg/frame (strobes past 30)".format(
+                   clip.focus, clip.charge_spike, clip.burst_spike, clip.shake, spin))
     LOG.append("")
-    LOG.append("frame  drive   outer          mid            core           blade past face   room inside")
-    LOG.append("               yaw   scale    yaw   scale    yaw   scale    max    out (18)  core   mid")
+    LOG.append("frame  drive  shake   outer          mid            core           blade past face   room inside")
+    LOG.append("               x   y  yaw   scale    yaw   scale    yaw   scale    max    out (18)  core   mid")
 
+    poses = {}
     for frame in marks:
-        local = snapshot(APE.get_anim_pose_at_time(sequence, frame / float(FPS), options))
+        local = poses[frame] = snapshot(APE.get_anim_pose_at_time(sequence, frame / float(FPS), options))
         past, gaps = reach[frame]
-        LOG.append("%5d %+6.2f " % (frame, drive(frame, clip))
+        LOG.append("%5d %+6.2f %4.0f %3.0f " % ((frame, drive(frame, clip)) + local[ROOT][0][:2])
                    + " ".join("%6.1f %6.3f " % (local[ring][1], local[ring][2][0]) for ring in (OUTER, MID, CORE))
                    + "  %6.1f %5d  %6.1f %6.1f  %s" % (
                        max(past.values()), sum(1 for value in past.values() if value > 0.0), gaps[0], gaps[1],
@@ -385,12 +360,14 @@ def report(clip, sequence, montage_names, montage_starts, bound, layout):
 
     folded = [max(reach[frame][0].values()) for frame in (0, frames)]
     closure = [sorted(reach[burst_end(clip)][0].values()), sorted(reach[loop_end(clip)][0].values())]
-    rings = [snapshot(APE.get_anim_pose_at_time(sequence, frame / float(FPS), options))
-             for frame in (burst_end(clip), loop_end(clip))]
+    rings = [poses[burst_end(clip)], poses[loop_end(clip)]]
     room = min(min(gaps) for _, gaps in reach.values())
     LOG.append("")
     LOG.append("folded at both ends: frame 0 max blade %.1f, frame %d max blade %.1f (negative = buried)" % (
         folded[0], frames, folded[1]))
+    LOG.append("rattle grows to %.1f units by frame %d, then dead still: %.1f units over the %d frames before the"
+               " hit" % (math.hypot(*poses[peak][ROOT][0][:2]), peak,
+                         math.hypot(*poses[hush][ROOT][0][:2]), STILL))
     LOG.append("FireLoop closes: silhouette gap %.4f units, ring scale gap %.5f, ring yaw gap %.4f deg (mod 60)" % (
         max(abs(a - b) for a, b in zip(*closure)),
         max(abs(rings[0][ring][2][0] - rings[1][ring][2][0]) for ring in clip.rings),
@@ -399,9 +376,15 @@ def report(clip, sequence, montage_names, montage_starts, bound, layout):
 
 
 try:
+    # Loading the shared toolkit the same way a script is run, so the silhouette maths lives in one place.
+    toolkit_path = unreal.Paths.project_dir() + "AI/Python/anim_sequence_authoring.py"
+    toolkit = {}
+    exec(compile(open(toolkit_path).read(), toolkit_path, "exec"), toolkit)
+
     rest = snapshot(APE.get_reference_pose(unreal.load_asset(SKELETON_PATH)))
-    layout = spike_layout()
-    bound = rest_vertices()
+    layout = spike_layout(toolkit["_component_transforms"](
+        APE.get_reference_pose(unreal.load_asset(SKELETON_PATH))))
+    groups = toolkit["rigid_vertex_groups"](MESH_PATH, SKELETON_PATH)
     missing = [bone for clip in CLIPS for bone in clip.rings if bone not in rest]
     if missing or not layout:
         raise RuntimeError("skeleton is missing rings {} or has no {} bones".format(missing, SPIKE_MARK))
@@ -412,7 +395,7 @@ try:
     for clip in CLIPS:
         sequence = build_sequence(clip, rest, layout)
         montage, names, starts = build_montage(clip, sequence)
-        report(clip, sequence, names, starts, bound, layout)
+        report(clip, sequence, names, starts, toolkit, groups, layout)
         LOG.append("montage sections read back: {}".format(
             [str(montage.get_section_name(i)) for i in range(montage.get_num_sections())]))
 except Exception:

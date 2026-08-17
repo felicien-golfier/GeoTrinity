@@ -94,7 +94,7 @@ Anticipation runs opposite to the action, and the further it goes the larger the
 
 A vibration on the wind-up alternates every single frame and grows as the wind-up tightens; alternating any slower reads as a wobble.
 
-Hold the last frames of the wind-up dead still — that stillness is what makes the hit land.
+Hold the last frames of the wind-up dead still — that stillness is what makes the hit land, so the vibration stops where it begins rather than running into it.
 
 Cross from the wind-up's extreme to the action's extreme in two frames, one of them mid-flight, so the spacing itself reads as speed.
 
@@ -110,7 +110,13 @@ Starting and ending a clip on the reference pose is what lets it blend in and ou
 
 A part with rotational symmetry that turns a whole fraction of a turn matching that symmetry lands on a pose indistinguishable from the one it left, so a rotation can carry across a loop or hold at the end of a clip without ever being unwound backwards.
 
-See `AI/Python/star_spike_nova.py` for a hit built on these and `AI/Python/star_idle_breath.py` for the looping counterpart, `AI/Python/hex_boss_idle.py` for a loop closed on symmetry rather than on stillness, and `AI/Python/hex_boss_abilities.py` for several clips driven from one parameter table.
+That same symmetry bounds how fast such a part can be spun: crossing half of it between two frames reads as likely to be turning the other way, and crossing all of it reads as standing still. Stepping one deliberately has the matching bounds — a step of the whole fraction is invisible and half of it reads either way, so a ratchet needs finer teeth than its own symmetry, with a whole number of steps making up one.
+
+Nested parts have to open from the outside in and close from the inside out, whichever order their weights would otherwise give: an inner part swelling into a shell that has not opened yet interpenetrates it. Where a clip both opens and closes, the delay that keeps the parts from moving as one block has to reverse between the two, across a plateau at least as long as the largest delay so that no part jumps as it flips.
+
+A part that slides out of its housing is capped at the reach its mesh gives it: the overshoot that lands a hit belongs to the body, which is meant to swell past where it settles, but past full reach such a part is stretched rather than further out — and a stretched one runs through whatever the part carrying it sits inside.
+
+See `AI/Python/star_spike_nova.py` for a hit built on these and `AI/Python/star_idle_breath.py` for the looping counterpart, `AI/Python/hex_boss_idle.py` for a loop closed on symmetry rather than on stillness, and `AI/Python/hex_boss_abilities.py` for several clips driven from one parameter table. The same abilities are cut three ways from three drivers — one eased curve, one run of steps, one spin held at the symmetry's speed limit — in that file and its `_clockwork` and `_frenzy` siblings, and `AI/Python/hex_boss_launch.py` cuts the eased one down to a single beat with no loop and no direction in it.
 
 ---
 
@@ -120,7 +126,11 @@ A shape's outermost radius cannot show a feature standing proud of a flat face: 
 
 Take that direction from where the bone sits rather than from its axis, which the very scaling being measured would collapse.
 
-Parts nested inside one another have to be checked for interpenetration numerically, since no bone track shows it. The distance from the axis out to a polygonal boundary in a given direction follows from its nearest vertex's radius and direction together, never from that radius alone.
+Parts nested inside one another have to be checked for interpenetration numerically, since no bone track shows it. The distance from the centre out to a polygonal boundary in a given direction follows from its nearest vertex's radius and direction together, never from that radius alone.
+
+Fit that boundary's centre rather than assuming it sits on the axis, and measure what is inside it from the same fitted centre. A clip that drifts a part off the axis otherwise reads as having shrunk it, and reports an overlap that is not there.
+
+Measure every frame rather than the ones a report prints. Nested parts cross each other over two or three frames, so a sample coarse enough to step past those calls a clip clear that is not.
 
 See `AI/Python/anim_sequence_authoring.py` for the protrusion, boundary-distance and clearance reports.
 
@@ -129,6 +139,8 @@ See `AI/Python/anim_sequence_authoring.py` for the protrusion, boundary-distance
 ## Re-runnable Asset Scripts
 
 Load an existing asset and rewrite it in place. Deleting a loaded asset routes through the force-delete path, which leaves the package unloadable for the rest of the editor session and the file on disk.
+
+Decide whether the asset is there by attempting that load rather than by asking the asset registry, which reports an asset that is on disk as missing while it is still scanning; creating over it then fails and hands back nothing.
 
 ---
 
@@ -141,6 +153,8 @@ Section names and count are readable through the montage's own lookup functions.
 A pattern's wind-up section is stretched to the ability's configured delay, so its authored length sets only the proportions inside it.
 
 The jump that takes a montage live matches any section whose name contains the fire section's, so a phase of no fixed length is authored as a second fire section looping on itself until the end jump takes it.
+
+An ability playing a montage of its own rather than a pattern's jumps to the wind-up section on a fresh activation and to a numbered fire section on a repeat, so the section following the wind-up is numbered: an unnumbered one satisfies the test for having a fire section and is then never reached. Nothing jumps to an end section on a fixed-delay ability, so a clip with no phase to hold through needs only those two.
 
 The section list and the slot-track array are declared without edit or Blueprint access, and the call that keeps a section's cached segment link consistent is C++ only — writing sections needs a C++ shim, see `MCP_EditorUtility.md`.
 

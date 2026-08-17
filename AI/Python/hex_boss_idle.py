@@ -134,8 +134,9 @@ def key(frame, bone, rest, ripple):
 def build(rest, ripple):
     factory = unreal.AnimSequenceFactory()
     factory.set_editor_property("target_skeleton", unreal.load_asset(SKELETON_PATH))
-    path = "{}/{}".format(ANIM_PACKAGE, SEQ_NAME)
-    sequence = unreal.load_asset(path) if unreal.EditorAssetLibrary.does_asset_exist(path) else \
+    # Loaded rather than looked up in the asset registry: a registry still scanning reports an asset that is on
+    # disk as missing, and creating over it then fails and hands back nothing.
+    sequence = unreal.load_asset("{}/{}".format(ANIM_PACKAGE, SEQ_NAME)) or \
         unreal.AssetToolsHelpers.get_asset_tools().create_asset(SEQ_NAME, ANIM_PACKAGE, unreal.AnimSequence, factory)
 
     controller = sequence.get_editor_property("controller")
