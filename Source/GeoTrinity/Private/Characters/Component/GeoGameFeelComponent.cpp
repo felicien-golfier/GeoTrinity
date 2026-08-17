@@ -92,7 +92,10 @@ void UGeoGameFeelComponent::FlashOnHit()
 
 void UGeoGameFeelComponent::ApplyRecoil(float Distance)
 {
-	if (!TargetMesh)
+	// A pawn this machine doesn't control is network-smoothed through the mesh's relative location — the same slot the
+	// kick writes — so recoiling it would cancel that smoothing. Turrets and deployables own their mesh outright.
+	APawn const* const OwnerPawn = Cast<APawn>(GetOwner());
+	if (!TargetMesh || (OwnerPawn && !OwnerPawn->IsLocallyControlled()))
 	{
 		return;
 	}

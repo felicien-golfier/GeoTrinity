@@ -426,6 +426,39 @@ void UGeoStateTreeBuilderUtil::AddTaskToState(UStateTree* StateTree, FName State
 			  });
 }
 
+void UGeoStateTreeBuilderUtil::SetTaskProperty(UStateTree* StateTree, FName StateName, FName TaskStructName,
+											   FName PropertyName, FString Value)
+{
+	ANSICHAR const* const Caller = __FUNCTION__;
+	WithState(StateTree, StateName, Caller,
+			  [TaskStructName, PropertyName, Value, Caller, StateName](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  for (FStateTreeEditorNode& TaskNode : State.Tasks)
+				  {
+					  UScriptStruct const* NodeStruct = TaskNode.Node.GetScriptStruct();
+					  UScriptStruct const* InstanceStruct = TaskNode.Instance.GetScriptStruct();
+					  if (!NodeStruct || NodeStruct->GetFName() != TaskStructName || !InstanceStruct)
+					  {
+						  continue;
+					  }
+
+					  FProperty const* Property = InstanceStruct->FindPropertyByName(PropertyName);
+					  if (!ensureMsgf(Property, TEXT("%hs — '%s' instance data has no property '%s'"), Caller,
+									  *TaskStructName.ToString(), *PropertyName.ToString()))
+					  {
+						  return false;
+					  }
+
+					  Property->ImportText_InContainer(*Value, TaskNode.Instance.GetMutableMemory(), nullptr, PPF_None);
+					  return true;
+				  }
+
+				  ensureMsgf(false, TEXT("%hs — state '%s' has no '%s' task"), Caller, *StateName.ToString(),
+							 *TaskStructName.ToString());
+				  return false;
+			  });
+}
+
 void UGeoStateTreeBuilderUtil::AddSendEventAfterNCyclesTask(UStateTree* StateTree, FName StateName,
 															int32 CyclesRequired, FName EventTagName)
 {

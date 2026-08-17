@@ -5,14 +5,34 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/CapsuleComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoEffectZone::AGeoEffectZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
-	PrimaryActorTick.bCanEverTick = true;
-	CapsuleComponent->SetCapsuleRadius(Radius);
-	CapsuleComponent->SetCapsuleHalfHeight(Radius);
+	bShowDamageNumbers = false;
 	SetCanBeDamaged(false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoEffectZone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION(AGeoEffectZone, Data, COND_InitialOnly);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoEffectZone::InitInteractable(FInteractableActorData* InputData)
+{
+	FDeployableData* const DeployableData = static_cast<FDeployableData*>(InputData);
+	if (!ensureMsgf(DeployableData, TEXT("AGeoEffectZone: Data is not an FDeployableData!")))
+	{
+		return;
+	}
+	Data = *DeployableData;
+	ApplyRadius();
+
+	Super::InitInteractable(InputData);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -20,31 +40,51 @@ void AGeoEffectZone::OnConstruction(FTransform const& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	CapsuleComponent->SetCapsuleRadius(Radius);
-	CapsuleComponent->SetCapsuleHalfHeight(Radius);
+	// A spawned zone is already initialized by the time OnConstruction runs (FinishSpawning comes after
+	// InitInteractable), so only a placed one still needs its radius pushed into Data.
+	if (!Data.Owner)
+	{
+		Data.Params.Size = Radius;
+	}
+	ApplyRadius();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoEffectZone::BeginPlay()
 {
-	// Editor-placed: no spawner calls InitInteractable, so initialize GAS here before Super inits default attributes.
-	Data.Owner = this;
-	Data.TeamID = FGenericTeamId(static_cast<uint8>(Team));
-	Data.Level = Level;
-	Data.Instigator = this;
-	InitGas(Data.Owner);
+	// Hand-placed: no spawner calls InitInteractable, so initialize GAS here before Super inits default attributes.
+	if (!Data.Owner)
+	{
+		Data.Owner = this;
+		Data.Instigator = this;
+		Data.TeamID = FGenericTeamId(static_cast<uint8>(Team));
+		Data.Level = Level;
+		Data.Params.Size = Radius;
+		Data.EffectDataArray = EffectDataArray;
+		InitGas(Data.Owner);
+	}
 
 	Super::BeginPlay();
+	ApplyRadius();
 
 	if (!GeoLib::IsServer(GetWorld()))
 	{
 		return;
 	}
 
-	ensureMsgf(EffectDataArray.Num() > 0, TEXT("AGeoEffectZone has no effects configured — it will do nothing."));
+	ensureMsgf(!Data.EffectDataArray.IsEmpty(), TEXT("AGeoEffectZone has no effects configured — it will do nothing."));
 
 	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
 	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
+
+	// A zone that lands on top of someone never gets a begin-overlap for them: the capsule grew to its real
+	// radius back in InitInteractable, before these delegates existed. Catch whoever is already inside.
+	TArray<AActor*> AlreadyInside;
+	CapsuleComponent->GetOverlappingActors(AlreadyInside);
+	for (AActor* Actor : AlreadyInside)
+	{
+		EnterZone(Actor);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -52,30 +92,21 @@ void AGeoEffectZone::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 									UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/, bool /*bFromSweep*/,
 									FHitResult const& /*SweepResult*/)
 {
-	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(OtherActor);
-	if (!TargetASC || OtherActor == this || !GeoASLib::IsTeamAttitudeAligned(this, OtherActor, AttitudeBitmask))
+	EnterZone(OtherActor);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoEffectZone::EnterZone(AActor* OtherActor)
+{
+	if (OtherActor == this || !GeoASLib::GetGeoAscFromActor(OtherActor)
+		|| !GeoASLib::IsTeamAttitudeAligned(this, OtherActor, AttitudeBitmask))
 	{
 		return;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(this);
-	ensureMsgf(SourceASC, TEXT("AGeoEffectZone: missing ASC."));
-	if (!SourceASC)
-	{
-		return;
-	}
-
-	// Persistent (non heal/damage) effects are applied once on entry and removed on exit; their handles are stored.
-	TArray<FActiveGameplayEffectHandle>& Handles = ActorsInZone.Add(OtherActor);
-	for (TInstancedStruct<FEffectData> const& Entry : EffectDataArray)
-	{
-		// Heal/damage entries tick in Tick(); everything else is a persistent effect applied once here.
-		if (Entry.GetPtr<FHealEffectData>() || Entry.GetPtr<FDamageEffectData>())
-		{
-			continue;
-		}
-		Handles.Add(GeoASLib::ApplySingleEffectData(Entry, SourceASC, TargetASC, Level, Data.Seed, FGameplayTag()));
-	}
+	// Membership only — Tick does every apply. A downed actor stays tracked and simply stops receiving effects until
+	// it can be damaged again, which is what lets someone revived inside the zone keep taking it.
+	ActorsInZone.Add(OtherActor);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -108,22 +139,28 @@ void AGeoEffectZone::Tick(float DeltaSeconds)
 		return;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(this);
+	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(Data.Owner);
+	ensureMsgf(SourceASC, TEXT("AGeoEffectZone: missing ASC."));
 	if (!SourceASC)
 	{
 		return;
 	}
 
-	for (auto const& Pair : TMap<TWeakObjectPtr<AActor>, TArray<FActiveGameplayEffectHandle>>{ActorsInZone})
+	TArray<TWeakObjectPtr<AActor>> Tracked;
+	ActorsInZone.GetKeys(Tracked);
+	for (TWeakObjectPtr<AActor> const& Key : Tracked)
 	{
-		AActor* Actor = Pair.Key.Get();
+		AActor* Actor = Key.Get();
 		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-		if (!TargetASC)
+		TArray<FActiveGameplayEffectHandle> const* Handles = ActorsInZone.Find(Key);
+		if (!TargetASC || !Handles)
 		{
 			continue;
 		}
 
-		for (TInstancedStruct<FEffectData> const& Entry : EffectDataArray)
+		bool const bApplyPersistent = Handles->IsEmpty();
+		TArray<FActiveGameplayEffectHandle> AppliedHandles;
+		for (TInstancedStruct<FEffectData> const& Entry : Data.EffectDataArray)
 		{
 			if (!IsValid(Actor) || !IsValid(TargetASC) || !Actor->CanBeDamaged())
 			{
@@ -133,15 +170,40 @@ void AGeoEffectZone::Tick(float DeltaSeconds)
 			if (FHealEffectData const* Heal = Entry.GetPtr<FHealEffectData>())
 			{
 				FHealEffectData Scaled = *Heal;
-				Scaled.HealAmount = Heal->HealAmount.GetValueAtLevel(Level) * DeltaSeconds;
-				GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Level, Data.Seed, FGameplayTag());
+				Scaled.HealAmount = Heal->HealAmount.GetValueAtLevel(Data.Level) * DeltaSeconds;
+				GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
 			}
 			else if (FDamageEffectData const* Damage = Entry.GetPtr<FDamageEffectData>())
 			{
 				FDamageEffectData Scaled = *Damage;
-				Scaled.DamageAmount = Damage->DamageAmount.GetValueAtLevel(Level) * DeltaSeconds;
-				GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Level, Data.Seed, FGameplayTag());
+				Scaled.DamageAmount = Damage->DamageAmount.GetValueAtLevel(Data.Level) * DeltaSeconds;
+				GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
+			}
+			else if (bApplyPersistent)
+			{
+				AppliedHandles.Add(
+					GeoASLib::ApplySingleEffectData(Entry, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag));
 			}
 		}
+
+		// Looked up again rather than held across the loop: a lethal entry runs its target's whole death and revive
+		// from inside the apply above, and both ends of that re-enter the zone through the overlap delegates.
+		if (TArray<FActiveGameplayEffectHandle>* Current = ActorsInZone.Find(Key); Current && !AppliedHandles.IsEmpty())
+		{
+			*Current = MoveTemp(AppliedHandles);
+		}
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoEffectZone::OnRep_Data() const
+{
+	ApplyRadius();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoEffectZone::ApplyRadius() const
+{
+	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
+	CapsuleComponent->SetCapsuleHalfHeight(Data.Params.Size);
 }

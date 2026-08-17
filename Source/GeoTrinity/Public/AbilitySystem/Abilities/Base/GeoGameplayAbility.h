@@ -200,7 +200,8 @@ protected:
 	 * Override in subclasses that cycle through multiple fire animations.
 	 */
 	virtual int32& GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance);
-	/** Plays AnimMontage and jumps to the correct section based on the current fire section index. */
+	/** Plays AnimMontage from the section the current fire section index selects. No-op when the ability has no montage
+	 * or the avatar no anim instance. */
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;

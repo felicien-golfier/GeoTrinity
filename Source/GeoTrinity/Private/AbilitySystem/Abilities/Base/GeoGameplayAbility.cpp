@@ -218,10 +218,7 @@ void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo con
 {
 	if (GetFireDelay() > 0.f)
 	{
-		if (AnimInstance && AnimMontage)
-		{
-			HandleAnimationMontage(AnimInstance, ActivationInfo);
-		}
+		HandleAnimationMontage(AnimInstance, ActivationInfo);
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoGameplayAbility::BuildDataAndFire,
 											   GetFireDelay());
@@ -268,7 +265,11 @@ int32& UGeoGameplayAbility::GetFireSectionIndex(UGeoAbilitySystemComponent* ASC,
 void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 												 FGameplayAbilityActivationInfo const& ActivationInfo)
 {
-	ensureMsgf(AnimMontage && AnimInstance, TEXT("No valid AnimMontage or AnimInstance"));
+	if (!AnimMontage || !AnimInstance)
+	{
+		return;
+	}
+
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	int32& FireSectionIndex = GetFireSectionIndex(ASC, AnimInstance);
 
@@ -307,17 +308,9 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	float const PlayRate = SectionLength / GetFireDelay();
 
 	// Only PlayMontage bumps the replicated PlayInstanceId, the single thing that makes a non-owning client restart the
-	// montage. A section jump reaches it as a position correction, which does nothing once its montage instance ended.
-	// So every fresh activation plays; only the extra shots of one activation (auto-fire) may jump between sections.
-	if (!ASC->IsAnimatingAbility(this) || !AnimInstance->Montage_IsPlaying(AnimMontage))
-	{
-		ASC->PlayMontage(this, ActivationInfo, AnimMontage, PlayRate, SectionToJumpTo);
-	}
-	else
-	{
-		ASC->CurrentMontageJumpToSection(SectionToJumpTo);
-		AnimInstance->Montage_SetPlayRate(AnimMontage, PlayRate);
-	}
+	// montage. A section jump reaches it as a position correction, which does nothing once that client's montage
+	// instance ended — and it ends whenever the correction lands a ping too late. So every shot plays outright.
+	ASC->PlayMontage(this, ActivationInfo, AnimMontage, PlayRate, SectionToJumpTo);
 }
 
 void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const

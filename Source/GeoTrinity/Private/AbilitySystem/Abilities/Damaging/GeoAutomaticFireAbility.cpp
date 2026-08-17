@@ -228,4 +228,9 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	// the client's target data, so a cheating client cannot fabricate a seed that bypasses status-proc checks.
 	StoredPayload.Seed += CurrentShotIndex;
 	CurrentShotIndex++;
+
+	// The tail of Fire(), which the shooting client alone runs, is what advances the montage every shot. This is the
+	// server's half of that loop: without it the avatar only ever plays the activation's first section, and that is the
+	// one every non-shooting client replays.
+	HandleAnimationMontage(ActorInfo->GetAnimInstance(), ActivationInfo);
 }

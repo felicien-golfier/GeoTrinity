@@ -33,6 +33,8 @@ public:
 
 	/**
 	 * Kicks the mesh backward opposite to Yaw by Distance cm, then springs back automatically.
+	 * No-op on a pawn this machine doesn't control, whose mesh relative location belongs to network smoothing.
+	 *
 	 * @param Distance  How far the mesh snaps back in cm.
 	 */
 	void ApplyRecoil(float Distance);

@@ -32,8 +32,9 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 
+	// Never replicate the mesh: its relative transform is how UCharacterMovementComponent applies network smoothing, so
+	// replicating it makes a listen server broadcast its own smoothing offsets over every client's.
 	USkeletalMeshComponent* MeshComp = GetMesh();
-	MeshComp->SetIsReplicated(true);
 	MeshComp->SetCastShadow(false);
 	// Set default collision profiles
 	MeshComp->SetCollisionProfileName(TEXT("GeoShape"));

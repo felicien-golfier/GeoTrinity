@@ -83,6 +83,8 @@ private:
 	/** Server-side shot clock: earliest world time the next client-requested shot may execute. */
 	float NextAllowedShotTime = 0.f;
 
+	/** Executes one shot from a remote client's target data, rate-clamped, and advances the fire montage for it — the
+	 * server's counterpart of the per-shot loop Fire() runs on the shooting client. */
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 };

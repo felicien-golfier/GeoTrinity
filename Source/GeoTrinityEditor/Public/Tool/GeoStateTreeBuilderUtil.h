@@ -122,6 +122,18 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddTaskToState(UStateTree* StateTree, FName StateName, FName TaskStructName);
 
+	/**
+	 * Sets one property on a state task's instance data, importing Value the way the Details panel exports it.
+	 * The one knob for tuning a task added by AddTaskToState, which otherwise leaves it on its struct defaults.
+	 *
+	 * @param TaskStructName  Unqualified USTRUCT name of the task to edit (e.g. "StateTreeDelayTask").
+	 * @param PropertyName    Property on that task's instance data (e.g. "Duration").
+	 * @param Value           New value in text form (e.g. "2.0").
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void SetTaskProperty(UStateTree* StateTree, FName StateName, FName TaskStructName, FName PropertyName,
+								FString Value);
+
 	/** Adds an FSTTask_SendEventAfterNCycles task to an existing state. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddSendEventAfterNCyclesTask(UStateTree* StateTree, FName StateName, int32 CyclesRequired,
