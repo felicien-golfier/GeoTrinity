@@ -19,12 +19,18 @@ class GEOTRINITY_API UGeoSpawnPillarAbility : public UPatternAbility
 	GENERATED_BODY()
 
 protected:
+	/**
+	 * Server-only. Reads the boss's current health ratio to choose 1–3 pillar count, sorts alive players by PlayerId
+	 * for determinism, seeds offsets from StoredPayload.Seed, and returns an FSpawnPillarPatternData carrying the
+	 * resolved ZoneLocations — so every client spawns pillars at identical positions without recomputing.
+	 */
 	virtual TInstancedStruct<FPatternData> CreatePatternData() const override;
 
 	/** Distance range a surplus pillar is offset by from the alive player it falls back to. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pillar")
 	float MinScatterRadius = 300.f;
 
+	/** Upper bound of the scatter-offset distance. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pillar")
 	float MaxScatterRadius = 800.f;
 };
