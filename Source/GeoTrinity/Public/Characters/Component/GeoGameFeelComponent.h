@@ -21,9 +21,12 @@ class GEOTRINITY_API UGeoGameFeelComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	/** Enables tick and initializes default values. */
 	UGeoGameFeelComponent();
 
+	/** Discovers and caches the owner's first mesh for hit-flash and recoil application. */
 	virtual void BeginPlay() override;
+	/** Springs the recoil offset back toward the mesh's resting position. */
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 							   FActorComponentTickFunction* ThisTickFunction) override;
 

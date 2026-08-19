@@ -20,6 +20,7 @@ class GEOTRINITY_API AGeoClassChangeTrigger : public AActor
 	GENERATED_BODY()
 
 public:
+	/** Creates the overlap trigger and mesh subobjects. */
 	AGeoClassChangeTrigger();
 
 protected:
