@@ -39,6 +39,12 @@ cdo.bind_condition_property_to_property_function(st, "MyState", 0, binding)
 # Add a task of any struct type to an existing state (default instance data, context auto-binds at compile)
 # cdo.add_task_to_state(st, "StateName", "STTask_ChaseTarget")
 
+# Add a fire-ability task to an existing state; several in one state fire their abilities together
+# cdo.add_fire_ability_task_to_state(st, "StateName", "Ability.Spell.MyAbility")
+
+# Make a state wait for all its tasks instead of completing on the first one
+# cdo.set_tasks_completion(st, "StateName", unreal.StateTreeTaskCompletionType.ALL)
+
 # Add STTask_SendEventAfterNCycles to an existing state
 # cdo.add_send_event_after_n_cycles_task(st, "StateName", CyclesRequired, "Event.Tag.Name")
 

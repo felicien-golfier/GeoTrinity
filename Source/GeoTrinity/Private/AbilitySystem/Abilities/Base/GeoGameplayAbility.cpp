@@ -322,8 +322,6 @@ void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& Abil
 		FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
 		FGameplayAbilityActivationInfo const ActivationInfo = GetCurrentActivationInfo();
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-		FScopedPredictionWindow ScopedPrediction(ASC);
-
 
 		FGameplayAbilityTargetDataHandle DataHandle;
 		DataHandle.Add(new FGeoAbilityTargetData(AbilityTargetData)); // Duplicate Data to ensure we keep it alive.
@@ -374,6 +372,12 @@ void UGeoGameplayAbility::BuildDataAndFire()
 	// This ref to AbilityTargetData needs to exist only during Fire as we create a new pointer in SendFireDataToServer
 	FGeoAbilityTargetData const AbilityTargetData = GetUpdatedTargetData();
 	UpdatePayloadFromTargetData(AbilityTargetData);
+
+	// The activation prediction window closed when ActivateAbility returned, so the shot needs one of its own: without
+	// it a client fails HasAuthorityOrPredictionKey and silently applies neither cost nor cooldown, leaving it free to
+	// re-press until the server's cooldown lands a ping later and rejects the activation. SendFireDataToServer hands
+	// this key to the server, which re-enters it around OnFireTargetDataReceived, so both sides commit under it.
+	FScopedPredictionWindow ScopedPrediction(GetAbilitySystemComponentFromActorInfo());
 	Fire(AbilityTargetData);
 }
 

@@ -6,6 +6,7 @@
 #include "AbilitySystem/Data/GeoCueParam.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 
 #include "GeoZoneAbility.generated.h"
 
@@ -37,6 +38,10 @@ protected:
 	/** Server. Spawns ZoneClass at the telegraphed circle, or bursts the effects there when it is unset, then ends. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
+	/** Returns the location of the caster arena's TargetPointTag point, where the circle lands instead. */
+	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
+									  int Seed) const override;
+
 	/** Zone left behind by this ability. Unset uses UGameDataSettings::DefaultZoneClass. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Zone")
 	TSubclassOf<AGeoDeployableBase> ZoneClass;
@@ -46,7 +51,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Zone")
 	FDeployableDataParams ZoneParams;
 
-	/** Where the circle lands relative to the caster, in its facing frame. Zero drops it on the caster itself. */
+	/** Which AGeoTargetPoint of the caster's own arena the circle lands on. Unset lands it on the caster itself. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Zone")
+	FGameplayTag TargetPointTag;
+
+	/** Offset from that origin, in the caster's facing frame. Zero lands the circle right on it. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Zone")
 	FVector2D Offset = FVector2D::ZeroVector;
 

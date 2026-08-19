@@ -120,6 +120,12 @@ static void WithState(UStateTree* StateTree, FName StateName, ANSICHAR const* Ca
 	CompileAndSave(StateTree, CallerName);
 }
 
+static void AddFireAbilityTask(UStateTreeState& State, FGameplayTag AbilityTag)
+{
+	TStateTreeEditorNode<FSTTask_FireAbility>& TaskNode = State.AddTask<FSTTask_FireAbility>();
+	TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = AbilityTag;
+}
+
 static void LogStatesRecursive(TArray<TObjectPtr<UStateTreeState>> const& States, int32 Depth)
 {
 	for (UStateTreeState const* State : States)
@@ -228,8 +234,7 @@ void UGeoStateTreeBuilderUtil::AddFireAbilityState(UStateTree* StateTree, FName 
 		return;
 	}
 
-	TStateTreeEditorNode<FSTTask_FireAbility>& TaskNode = NewState->AddTask<FSTTask_FireAbility>();
-	TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = AbilityTag;
+	AddFireAbilityTask(*NewState, AbilityTag);
 
 	CompileAndSave(StateTree, __FUNCTION__);
 }
@@ -244,6 +249,23 @@ void UGeoStateTreeBuilderUtil::AddFireAbilityStateByTagName(UStateTree* StateTre
 		return;
 	}
 	AddFireAbilityState(StateTree, StateName, Tag, ParentStateName, InsertIndex);
+}
+
+void UGeoStateTreeBuilderUtil::AddFireAbilityTaskToState(UStateTree* StateTree, FName StateName, FName AbilityTagName)
+{
+	ANSICHAR const* const Caller = __FUNCTION__;
+	WithState(StateTree, StateName, Caller,
+			  [AbilityTagName, Caller](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  FGameplayTag AbilityTag;
+				  if (!ResolveTag(AbilityTagName, Caller, AbilityTag))
+				  {
+					  return false;
+				  }
+
+				  AddFireAbilityTask(State, AbilityTag);
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState(UStateTree* StateTree, FName StateName,
@@ -456,6 +478,17 @@ void UGeoStateTreeBuilderUtil::SetTaskProperty(UStateTree* StateTree, FName Stat
 				  ensureMsgf(false, TEXT("%hs — state '%s' has no '%s' task"), Caller, *StateName.ToString(),
 							 *TaskStructName.ToString());
 				  return false;
+			  });
+}
+
+void UGeoStateTreeBuilderUtil::SetTasksCompletion(UStateTree* StateTree, FName StateName,
+												  EStateTreeTaskCompletionType Completion)
+{
+	WithState(StateTree, StateName, __FUNCTION__,
+			  [Completion](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  State.TasksCompletion = Completion;
+				  return true;
 			  });
 }
 

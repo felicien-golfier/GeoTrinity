@@ -62,6 +62,13 @@ public:
 											 FName ParentStateName, int32 InsertIndex = -1);
 
 	/**
+	 * Adds one FSTTask_FireAbility to an existing state. A state runs all its tasks at once, so several of these
+	 * fire their abilities together — SetTasksCompletion then decides whether the state waits for all of them.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void AddFireAbilityTaskToState(UStateTree* StateTree, FName StateName, FName AbilityTagName);
+
+	/**
 	 * Adds a new empty state (no tasks) and compiles/saves. Use for idle/dormant states waiting on an OnEvent transition.
 	 *
 	 * @param ParentStateName  Name of the parent state; pass NAME_None to add at the root.
@@ -134,6 +141,10 @@ public:
 	static void SetTaskProperty(UStateTree* StateTree, FName StateName, FName TaskStructName, FName PropertyName,
 								FString Value);
 
+	/** Sets whether a state completes once every one of its tasks has completed, or as soon as any single one does. */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void SetTasksCompletion(UStateTree* StateTree, FName StateName, EStateTreeTaskCompletionType Completion);
+
 	/** Adds an FSTTask_SendEventAfterNCycles task to an existing state. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddSendEventAfterNCyclesTask(UStateTree* StateTree, FName StateName, int32 CyclesRequired,
@@ -161,7 +172,7 @@ public:
 
 private:
 	/** Creates a state and inserts it under the named parent (NAME_None = root subtree). Returns the new state, or
-	 * nullptr if the parent was not found. Does not compile/save — callers do that after any further setup. */
+	 * nullptr if the parent was not found. Does not compile/save â callers do that after any further setup. */
 	static UStateTreeState* CreateAndInsertState(UStateTreeEditorData* EditorData, FName StateName,
 												 FName ParentStateName, int32 InsertIndex);
 

@@ -49,6 +49,7 @@ void AGeoEffectZone::OnConstruction(FTransform const& Transform)
 		Data.Params.Size = Radius;
 		Data.Params.Color = Color;
 		Data.Params.Attitude = AttitudeBitmask;
+		Data.EffectDataArray = EffectDataArray;
 	}
 	ApplyRadius();
 	ApplyColor();

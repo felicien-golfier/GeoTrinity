@@ -29,7 +29,7 @@ class GEOTRINITY_API UEffectDataAsset : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TArray<TInstancedStruct<struct FEffectData>> EffectDataInstances;
 };
 
@@ -91,7 +91,7 @@ struct GEOTRINITY_API FEffectData
 	 * Difficulties this entry applies at, all three by default. Unticking Safe keeps a lethal hit out of the easy
 	 * tuning without a second copy of the ability.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.EGeoDifficulty"))
 	int32 Difficulties = GeoDifficultyMask::All;
 };
@@ -108,32 +108,32 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UGameplayEffect> GameplayEffect;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGameplayTag DataTag;
 
 	// Will set the Magnitude of the GE SetByCaller with given SetByCallerDataTag tag.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FScalableFloat Magnitude;
 
 	// Will set the Duration magnitude of the GE SetByCaller with Data.DurationMagnitude tag.
 	// If the GE is Instant or infinite, it's not used.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FScalableFloat Duration;
 
 	/** When set, the HUD status bar shows this icon (texture or material) on the target while the effect is active.
 	 * Carried to the client through FGeoGameplayEffectContext::Icon on this effect's spec only (the shared apply
 	 * context is not touched). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (AllowedClasses = "/Script/Engine.Texture2D,/Script/Engine.MaterialInterface"))
 	TObjectPtr<UObject> Icon;
 
 	/** When true, an existing active instance of GameplayEffect from the same source on the target is removed before
 	 * applying the new spec, so reapplication refreshes duration and magnitude instead of stacking. GE stacking
 	 * settings alone only refresh the duration timer, not the SetByCaller magnitude, so this is a full replace. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bReplaceExistingInstance = false;
 };
 
@@ -155,28 +155,28 @@ struct FDamageEffectData : public FEffectData
 
 	virtual bool IsPerSecond() const override { return bIsDamagePerSecond; }
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FScalableFloat DamageAmount;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsDamagePerSecond{false};
 
 	/** When true, unconditionally suppresses the GameplayCue embedded in the DamageEffect GE. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
 
 	/** When true, UExecCalc_Damage rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on
 	 * tick-based effects. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "!bIsDamagePerSecond", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "!bIsDamagePerSecond", EditConditionHides))
 	bool bLimitGameplayCue{false};
 
 	/** When true, the damage is not reported to the DPS meter (UGeoCombatStatsSubsystem). Use for self-inflicted
 	 * drains. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressCombatStats{false};
 
 	/** When true, this damage is never captured by a sacrificed receiver (redirected shares, drains, ...). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bDoNotRedirectSacrifice{false};
 };
 
@@ -199,28 +199,28 @@ struct FHealEffectData : public FEffectData
 
 	virtual bool IsPerSecond() const override { return bIsHealPerSecond; }
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FScalableFloat HealAmount;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsHealPerSecond{false};
 
 	// When true, the heal will not broadcast OnHealProvided on the source ASC.
 	// Set on the context in UpdateContextHandle; baked into the spec via Duplicate() at MakeOutgoingSpec time.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressHealProvided{false};
 
 	/** When true, unconditionally suppresses the GameplayCue embedded in the HealthEffect GE. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
 
 	/** When true, UExecCalc_Heal rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based
 	 * effects. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "!bIsHealPerSecond", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "!bIsHealPerSecond", EditConditionHides))
 	bool bLimitGameplayCue{false};
 
 	/** When true, the heal is not reported to the HPS meter (UGeoCombatStatsSubsystem). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressCombatStats{false};
 };
 
@@ -238,10 +238,10 @@ struct FShieldEffectData : public FEffectData
 
 	virtual bool IsPerSecond() const override { return bIsShieldPerSecond; }
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FScalableFloat ShieldAmount;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsShieldPerSecond{false};
 };
 
@@ -260,7 +260,7 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
 	FScalableFloat Multiplier{2.f};
 };
 
@@ -292,9 +292,9 @@ struct FStatusEffectData : public FEffectData
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (ClampMin = "0", ClampMax = "100", UIMin = "0", UIMax = "100"))
 	uint8 StatusChance = 100;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGameplayTag StatusTag{};
 };

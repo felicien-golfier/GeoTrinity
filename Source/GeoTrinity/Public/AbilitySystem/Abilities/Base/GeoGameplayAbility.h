@@ -151,8 +151,13 @@ public:
 	/** Applies the designer-tunable GaugeChargingSpeedCurve easing to a raw charge ratio in [0, 1]. */
 	float ApplyChargingCurve(float RawRatio) const;
 
-	/** Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. Public
-	 * so subclasses can bind it directly to timer delegates. */
+	/**
+	 * Timer callback that calls BuildAbilityTargetData, sends it to the server, and calls Fire on the client. Public
+	 * so subclasses can bind it directly to timer delegates.
+	 *
+	 * Opens the shot's prediction window around Fire: everything a client commits from there (cost, cooldown, cues)
+	 * shares the key SendFireDataToServer ships, which the server re-enters around OnFireTargetDataReceived.
+	 */
 	UFUNCTION()
 	void BuildDataAndFire();
 

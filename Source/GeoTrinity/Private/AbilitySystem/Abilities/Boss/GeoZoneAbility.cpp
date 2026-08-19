@@ -5,6 +5,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Actor/Arena/GeoArena.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -48,6 +49,32 @@ void UGeoZoneAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	}
 
 	EndAbility();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FVector2D UGeoZoneAbility::GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
+										   int const Seed) const
+{
+	if (!TargetPointTag.IsValid())
+	{
+		return Super::GetFireOrigin2D(Instigator, SourceASC, Seed);
+	}
+
+	AGeoArena const* const Arena = AGeoArena::GetArenaOfBoss(Instigator);
+	if (!ensureMsgf(Arena, TEXT("%hs: %s was not spawned by an arena, so it has no points to land on"), __FUNCTION__,
+					*GetNameSafe(Instigator)))
+	{
+		return Super::GetFireOrigin2D(Instigator, SourceASC, Seed);
+	}
+
+	TArray<AActor*> const TargetPoints = GeoLib::GetTargetPoints(Instigator, TargetPointTag, Arena->ArenaTag);
+	if (!ensureMsgf(!TargetPoints.IsEmpty(), TEXT("%hs: no AGeoTargetPoint tagged %s in arena %s"), __FUNCTION__,
+					*TargetPointTag.ToString(), *Arena->ArenaTag.ToString()))
+	{
+		return Super::GetFireOrigin2D(Instigator, SourceASC, Seed);
+	}
+
+	return FVector2D(TargetPoints[0]->GetActorLocation());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

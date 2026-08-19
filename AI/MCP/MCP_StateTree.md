@@ -33,6 +33,8 @@ Make UFUNCTIONs as generic as possible — accept struct type, state name, paren
 | `RemoveState` | Removes a state by name (recursive), compiles, saves |
 | `ClearTransitions` | Removes all transitions from a state, compiles, saves |
 | `AddTransition` | Adds a GotoState transition with a trigger enum; pass an event tag name for `OnEvent` triggers, compiles, saves |
+| `AddFireAbilityTaskToState` | Adds one fire-ability task to an existing state; several in one state fire together |
+| `SetTasksCompletion` | Sets whether a state waits for all its tasks or completes on the first one |
 
 ## Enter Conditions
 

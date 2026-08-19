@@ -118,9 +118,7 @@ void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& Ability
 		CueParams.NormalizedMagnitude = IsSweetSpotRelease() || ChargeRatio >= .95f;
 		CueParams.Normal = FRotator(0, AbilityTargetData.Yaw, 0).Vector();
 		CueParams.RawMagnitude = ChargeRatio;
-		UAbilitySystemComponent* const ASC = GetAbilitySystemComponentFromActorInfo();
-		FScopedPredictionWindow ScopedPredictionWindow(ASC);
-		ASC->ExecuteGameplayCue(FireGameplayCueTag, CueParams);
+		GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(FireGameplayCueTag, CueParams);
 	}
 }
 // ---------------------------------------------------------------------------------------------------------------------
