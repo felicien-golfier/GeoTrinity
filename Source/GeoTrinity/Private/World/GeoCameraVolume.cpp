@@ -15,6 +15,29 @@ AGeoCameraVolume::AGeoCameraVolume()
 	TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	TriggerBox->SetCollisionResponseToAllChannels(ECR_Overlap);
 	TriggerBox->SetGenerateOverlapEvents(true);
+
+	BoundsBox = CreateDefaultSubobject<UBoxComponent>(TEXT("BoundsBox"));
+	BoundsBox->SetupAttachment(TriggerBox);
+	BoundsBox->SetBoxExtent(FVector(1000.f));
+	BoundsBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	BoundsBox->ShapeColor = FColor::Cyan;
+}
+
+FBox2D AGeoCameraVolume::GetViewBounds() const
+{
+	if (!bLimitView)
+	{
+		return FBox2D(ForceInit);
+	}
+
+	FBox const Box = BoundsBox->Bounds.GetBox();
+	return FBox2D(FVector2D(Box.Min), FVector2D(Box.Max));
+}
+
+void AGeoCameraVolume::OnConstruction(FTransform const& Transform)
+{
+	Super::OnConstruction(Transform);
+	BoundsBox->SetVisibility(bLimitView);
 }
 
 void AGeoCameraVolume::BeginPlay()

@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
+#include "World/GeoGameCamera.h"
 
 UGeoInputComponent::UGeoInputComponent()
 {
@@ -82,6 +83,12 @@ void UGeoInputComponent::BindInput(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Completed, this,
 										   &UGeoInputComponent::LookFromInput);
 	}
+
+	if (ZoomAction)
+	{
+		EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this,
+										   &UGeoInputComponent::ZoomFromInput);
+	}
 }
 
 void UGeoInputComponent::MoveFromInput(FInputActionInstance const& Instance)
@@ -110,6 +117,15 @@ void UGeoInputComponent::LookFromInput(FInputActionInstance const& Instance)
 			PlayerController->SetMouseCursorVisible(false);
 		}
 		LastLookInput = LookInput;
+	}
+}
+
+void UGeoInputComponent::ZoomFromInput(FInputActionInstance const& Instance)
+{
+	if (AGeoGameCamera* const Camera =
+			Cast<AGeoGameCamera>(UGameplayStatics::GetActorOfClass(this, AGeoGameCamera::StaticClass())))
+	{
+		Camera->AddZoomInput(Instance.GetValue().Get<float>());
 	}
 }
 

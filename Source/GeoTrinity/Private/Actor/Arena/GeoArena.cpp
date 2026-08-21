@@ -87,6 +87,61 @@ void AGeoArena::ResetBoss()
 		return;
 	}
 	Boss->Arena = this;
+
+	ResetAdds();
+}
+
+void AGeoArena::ResetAdds()
+{
+	DestroyAdds();
+	if (AddClasses.IsEmpty())
+	{
+		return;
+	}
+
+	TArray<AActor*> const SpawnPoints =
+		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_AddSpawn, ArenaTag);
+	if (!ensureMsgf(!SpawnPoints.IsEmpty(), TEXT("%s: AddClasses set but no TargetPoint.AddSpawn carries %s"),
+					*GetName(), *ArenaTag.ToString()))
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Owner = this;
+
+	for (int32 AddIndex = 0; AddIndex < AddClasses.Num(); ++AddIndex)
+	{
+		TSubclassOf<AEnemyCharacter> const AddClass = AddClasses[AddIndex];
+		if (!ensureMsgf(AddClass, TEXT("%s: AddClasses[%d] is empty"), *GetName(), AddIndex))
+		{
+			continue;
+		}
+		FVector SpawnLocation = SpawnPoints[AddIndex % SpawnPoints.Num()]->GetActorLocation();
+		SpawnLocation.Z = ArbitraryCharacterZ;
+
+		AEnemyCharacter* Add =
+			GetWorld()->SpawnActor<AEnemyCharacter>(AddClass, FTransform(SpawnLocation), SpawnParams);
+		if (!ensureMsgf(Add, TEXT("%s: failed to spawn %s"), *GetName(), *AddClass->GetName()))
+		{
+			continue;
+		}
+		Add->Arena = this;
+		Adds.Add(Add);
+	}
+}
+
+void AGeoArena::DestroyAdds()
+{
+	for (AEnemyCharacter* Add : Adds)
+	{
+		if (IsValid(Add) && !Add->IsActorBeingDestroyed())
+		{
+			Add->Destroy();
+		}
+	}
+	Adds.Empty();
 }
 
 void AGeoArena::SetBarrierClosed(bool const bClosed) const
@@ -143,7 +198,7 @@ void AGeoArena::StartFight()
 	bFighting = true;
 	ApplyFightVisuals();
 
-	GameState->SetCheckpointTag(ArenaTag);
+	GameState->SetCurrentArenaTag(ArenaTag);
 
 	if (ensureMsgf(IsValid(Boss), TEXT("%s: StartFight with no boss to bind"), *GetName()))
 	{
@@ -158,8 +213,7 @@ void AGeoArena::StartFight()
 
 void AGeoArena::CommitFight()
 {
-	GeoLib::TeleportPlayersToTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightLocation, ArenaTag,
-										  FightZoneTagName);
+	GeoLib::TeleportPlayersToTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightLocation, ArenaTag, true);
 }
 
 void AGeoArena::OnWipe(float /*DeathTime*/)
@@ -281,6 +335,7 @@ void AGeoArena::OnBossDefeated()
 		LootOrigin = Boss->GetActorLocation();
 	}
 	bBossDefeated = true;
+	DestroyAdds();
 
 	Loot();
 	GetWorld()->GetGameStateChecked<AGeoGameState>()->RequestWaitingToStart();

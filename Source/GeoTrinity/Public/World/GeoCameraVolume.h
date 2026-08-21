@@ -4,18 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "GameplayTagContainer.h"
 
 #include "GeoCameraVolume.generated.h"
 
 class UBoxComponent;
 
 /**
- * Box trigger that selects the camera's bounds while the local player stands inside it. It carries one tag, ArenaTag,
- * and hands it to AGeoGameCamera on overlap; the camera frames the `TargetPoint.CameraBounds` corner points that carry
- * that tag — the same bounds computation used before, now driven by where the player is rather than by an active arena.
- * Framing is therefore pure location: no boss, no match state. Place one volume per room you want framed; leave the
- * hub/corridors uncovered to let the camera follow freely. Purely local — the overlap is a client-side query.
+ * Two boxes, one job: TriggerBox is where the local player has to stand for this volume to frame the camera, and
+ * BoundsBox is what the camera may then show — the view is kept inside it and the camera zooms to OrthoWidth. With
+ * bLimitView off the volume only sets the zoom and BoundsBox is hidden. Framing is therefore pure location — no
+ * arena, no boss, no match state. Leave the hub and corridors uncovered to let the camera follow freely. Purely
+ * local — the overlap is a client-side query.
  */
 UCLASS()
 class GEOTRINITY_API AGeoCameraVolume : public AActor
@@ -23,22 +22,39 @@ class GEOTRINITY_API AGeoCameraVolume : public AActor
 	GENERATED_BODY()
 
 public:
-	/** Creates the TriggerBox as the root component. Overlap callbacks are bound in BeginPlay. */
+	/** Creates TriggerBox as the root component and BoundsBox under it. Overlaps are bound in BeginPlay. */
 	AGeoCameraVolume();
 
-	/** The Arena.* tag whose `TargetPoint.CameraBounds` corner points frame the camera while this volume is active. */
-	FGameplayTag GetArenaTag() const { return ArenaTag; }
+	/** World-space XY footprint of BoundsBox: the rectangle the camera view is kept inside while this volume is
+	 * active. Invalid while bLimitView is off — nothing to clamp to. */
+	FBox2D GetViewBounds() const;
+
+	/** OrthoWidth the camera interpolates to while inside this volume. */
+	float GetOrthoWidth() const { return OrthoWidth; }
 
 protected:
 	virtual void BeginPlay() override;
 
+	/** Hides BoundsBox while it has no say over the view. */
+	virtual void OnConstruction(FTransform const& Transform) override;
+
+	/** Where the local player has to stand for this volume to take the camera over. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCamera")
 	TObjectPtr<UBoxComponent> TriggerBox;
 
-	/** Names which `TargetPoint.CameraBounds` corner points to frame — the same Arena.* tag those points already carry.
+	/** What the camera may show: the view stops on this box's sides. Collides with nothing — a marker, not a trigger.
 	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCamera")
+	TObjectPtr<UBoxComponent> BoundsBox;
+
+	/** Whether BoundsBox limits the view. Off = this volume only sets the zoom and the camera keeps following freely,
+	 * and BoundsBox is hidden. */
 	UPROPERTY(EditAnywhere, Category = "GeoCamera")
-	FGameplayTag ArenaTag;
+	bool bLimitView = true;
+
+	/** Framing width of the room, zoomed to on entering. Coop players spreading out still widen the view past it. */
+	UPROPERTY(EditAnywhere, Category = "GeoCamera", meta = (ClampMin = "1.0"))
+	float OrthoWidth = 3000.f;
 
 private:
 	UFUNCTION()

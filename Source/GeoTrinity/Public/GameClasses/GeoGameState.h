@@ -22,7 +22,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDifficultyChanged);
  * aggroed, InProgress while a fight runs) and the player death policy, and nothing else — it holds no pointer to any
  * arena, boss, barrier or room. The encounter reacts to the lifecycle on its own: see AGeoArena, which subscribes to
  * OnMatchStateChanged. The one thing a death needs from the encounter is where to come back, and that arrives as a
- * plain tag (CheckpointTag) the aggroed arena registers.
+ * plain tag (CurrentArenaTag) written by whichever AGeoArenaVolume the players walked into, or by the arena whose
+ * fight is live.
  */
 UCLASS()
 class GEOTRINITY_API AGeoGameState : public AGameState
@@ -56,9 +57,12 @@ public:
 	 */
 	void NotifyPlayerDied(APlayableCharacter& Player);
 
-	/** Server. The arena owning the current fight registers where a wipe returns the group (its own Arena.* tag, or the
-	 *  next one to advance the checkpoint). Read only during a respawn, so it never needs to replicate. */
-	void SetCheckpointTag(FGameplayTag Tag) { CheckpointTag = Tag; }
+	/** Server. Registers the arena the players count as being in, and so where a death returns them. Written by
+	 *  AGeoArenaVolume on entry out of a fight, and by AGeoArena::StartFight, which takes it over for the whole fight
+	 *  wherever the players stand. Read only during a respawn, so it never needs to replicate. */
+	void SetCurrentArenaTag(FGameplayTag Tag) { CurrentArenaTag = Tag; }
+	/** The Arena.* tag the players count as being in. */
+	FGameplayTag GetCurrentArenaTag() const { return CurrentArenaTag; }
 
 	/**
 	 * Server. Stands the match down so the next boss aggro can start a new one. WaitingToStart is the only state
@@ -103,11 +107,11 @@ private:
 	UFUNCTION()
 	void OnRep_Difficulty();
 
-	/** Arena.* tag a respawn returns to, through the TargetPoint.Entrance points carrying it. Editable as the
-	 *  checkpoint a session opens on — the hub, since a death in there or in the tutorial comes before any fight;
-	 *  from there it is the fighting arena's alone, which is why it is private. */
+	/** Arena.* tag a respawn returns to, through the TargetPoint.Entrance points carrying it. Editable as the arena a
+	 *  session opens on — the hub, since the players start there before touching any volume; from there it is
+	 *  SetCurrentArenaTag's alone, which is why it is private. */
 	UPROPERTY(EditDefaultsOnly, Category = "Fight", meta = (Categories = "Arena"))
-	FGameplayTag CheckpointTag;
+	FGameplayTag CurrentArenaTag;
 
 	/** Players alive when the current fight began. A wipe is "all of these are down", so late joiners — who are not
 	 *  in this snapshot — can neither block a wipe nor trigger one. */

@@ -2,23 +2,22 @@
 
 #include "World/GeoGameCamera.h"
 
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Camera/CameraComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "Containers/ArrayView.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/Engine.h"
-#include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedPlayerInput.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameFramework/PlayerController.h"
-#include "GameplayTagContainer.h"
 #include "Input/GeoInputComponent.h"
+#include "InputActionValue.h"
 #include "Kismet/KismetMaterialLibrary.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/GeoColor.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "World/GeoBackdropComponent.h"
@@ -57,9 +56,15 @@ void AGeoGameCamera::BeginPlay()
 {
 	Super::BeginPlay();
 	BaseOrthoWidth = GetCameraComponent()->OrthoWidth;
-	CurrentOrthoWidth = BaseOrthoWidth;
+	TargetZoom = BaseOrthoWidth;
+	RefreshVolumeZoom();
+	CurrentOrthoWidth = TargetZoom;
 	ApplyOutlineMaterial();
-	ensureMsgf(CameraParameters, TEXT("AGeoGameCamera: no CameraParameters — backdrop layers stay welded to the floor"));
+	ensureMsgf(CameraParameters,
+			   TEXT("AGeoGameCamera: no CameraParameters — backdrop layers stay welded to the floor"));
+	ensureMsgf(GetCameraComponent()->bConstrainAspectRatio,
+			   TEXT("AGeoGameCamera: unconstrained aspect ratio — the view is then shaped by the window instead of "
+					"the camera's AspectRatio, and the volume clamp insets by the wrong height"));
 }
 
 void AGeoGameCamera::PublishCameraParameters(FVector2D CameraXY)
@@ -70,7 +75,7 @@ void AGeoGameCamera::PublishCameraParameters(FVector2D CameraXY)
 	}
 
 	UKismetMaterialLibrary::SetVectorParameterValue(this, CameraParameters, CameraXYParam,
-												   FLinearColor(CameraXY.X, CameraXY.Y, 0.f));
+													FLinearColor(CameraXY.X, CameraXY.Y, 0.f));
 	UKismetMaterialLibrary::SetScalarParameterValue(this, CameraParameters, ZoomRatioParam,
 													BaseOrthoWidth / CurrentOrthoWidth);
 }
@@ -93,13 +98,12 @@ void AGeoGameCamera::ApplyOutlineMaterial()
 void AGeoGameCamera::EnterVolume(AGeoCameraVolume* Volume)
 {
 	ActiveVolumes.Add(Volume);
-	RefreshBounds();
+	RefreshVolumeZoom();
 }
 
 void AGeoGameCamera::ExitVolume(AGeoCameraVolume* Volume)
 {
 	ActiveVolumes.RemoveSingle(Volume);
-	RefreshBounds();
 }
 
 AGeoCameraVolume* AGeoGameCamera::GetActiveVolume()
@@ -115,61 +119,35 @@ AGeoCameraVolume* AGeoGameCamera::GetActiveVolume()
 	return nullptr;
 }
 
-void AGeoGameCamera::RefreshBounds()
+void AGeoGameCamera::RefreshVolumeZoom()
 {
-	AGeoCameraVolume* Volume = GetActiveVolume();
-	if (!Volume)
+	if (AGeoCameraVolume const* const Volume = GetActiveVolume())
 	{
-		bBounded = false;
-		return;
+		TargetZoom = Volume->GetOrthoWidth();
 	}
-
-	TArray<AActor*> const BoundPoints =
-		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_CameraBounds, Volume->GetArenaTag());
-	if (BoundPoints.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning,
-			   TEXT("AGeoGameCamera: no TargetPoint.CameraBounds for arena %s — camera unbounded in that volume."),
-			   *Volume->GetArenaTag().ToString());
-		bBounded = false;
-		return;
-	}
-
-	FBox2D Result(ForceInit);
-	for (AActor const* Point : BoundPoints)
-	{
-		if (Point)
-		{
-			Result += FVector2D(Point->GetActorLocation());
-		}
-	}
-	Bounds = Result;
-	bBounded = true;
 }
 
-FVector2D AGeoGameCamera::GetSpectateMoveInput(APlayerController const* PlayerController,
-											   AGeoCharacter const* LocalCharacter) const
+void AGeoGameCamera::AddZoomInput(float WheelValue)
 {
-	UGeoInputComponent const* const GeoInputComponent =
-		LocalCharacter ? LocalCharacter->GetGeoInputComponent() : nullptr;
-	ULocalPlayer const* const LocalPlayer = PlayerController->GetLocalPlayer();
-	if (!GeoInputComponent || !GeoInputComponent->MoveAction || !LocalPlayer)
-	{
-		return FVector2D::ZeroVector;
-	}
+	TargetZoom -= WheelValue * ZoomWheelStep;
+}
 
-	UEnhancedInputLocalPlayerSubsystem const* InputSubsystem =
-		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
-	if (!InputSubsystem)
+FInputActionValue AGeoGameCamera::ReadInputValue(APlayerController const* PlayerController,
+												 UInputAction const* Action) const
+{
+	ULocalPlayer const* const LocalPlayer = PlayerController->GetLocalPlayer();
+	UEnhancedInputLocalPlayerSubsystem const* const InputSubsystem =
+		LocalPlayer ? ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer) : nullptr;
+	if (!Action || !InputSubsystem)
 	{
-		return FVector2D::ZeroVector;
+		return FInputActionValue();
 	}
-	return InputSubsystem->GetPlayerInput()->GetActionValue(GeoInputComponent->MoveAction).Get<FVector2D>();
+	return InputSubsystem->GetPlayerInput()->GetActionValue(Action);
 }
 
 void AGeoGameCamera::GatherLocalPlayers(TArray<FVector2D, TInlineAllocator<4>>& OutLivingPlayers,
 										APlayerController const*& OutFirstController,
-										AGeoCharacter const*& OutFirstCharacter) const
+										UGeoInputComponent const*& OutFirstInputComponent) const
 {
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
@@ -185,7 +163,7 @@ void AGeoGameCamera::GatherLocalPlayers(TArray<FVector2D, TInlineAllocator<4>>& 
 		if (!OutFirstController)
 		{
 			OutFirstController = PlayerController;
-			OutFirstCharacter = Character;
+			OutFirstInputComponent = Character ? Character->GetGeoInputComponent() : nullptr;
 		}
 		// A reviving player is framed like a living one: they have already been moved to where they come back, and
 		// spectating through their own revive would leave the camera behind on the corpse's last room.
@@ -198,7 +176,7 @@ void AGeoGameCamera::GatherLocalPlayers(TArray<FVector2D, TInlineAllocator<4>>& 
 
 void AGeoGameCamera::UpdateSpectateState(bool bAllLocalPlayerDead, FVector2D CameraXY,
 										 APlayerController const* FirstLocalController,
-										 AGeoCharacter const* FirstLocalCharacter, float DeltaTime)
+										 UGeoInputComponent const* FirstLocalInputComponent, float DeltaTime)
 {
 	if (bAllLocalPlayerDead && !bSpectating)
 	{
@@ -213,22 +191,29 @@ void AGeoGameCamera::UpdateSpectateState(bool bAllLocalPlayerDead, FVector2D Cam
 	}
 
 	SpectateDelayRemaining = FMath::Max(SpectateDelayRemaining - DeltaTime, 0.f);
-	if (SpectateDelayRemaining <= 0.f)
+	if (SpectateDelayRemaining <= 0.f && FirstLocalInputComponent)
 	{
-		SpectateTarget +=
-			GetSpectateMoveInput(FirstLocalController, FirstLocalCharacter) * SpectateMoveSpeed * DeltaTime;
+		SpectateTarget += ReadInputValue(FirstLocalController, FirstLocalInputComponent->MoveAction).Get<FVector2D>()
+			* SpectateMoveSpeed * DeltaTime;
 	}
 }
 
 void AGeoGameCamera::UpdateZoom(TConstArrayView<FVector2D> LivingPlayers, FVector2D CameraXY, float DeltaTime)
 {
+	UGameDataSettings const* const Settings = GetDefault<UGameDataSettings>();
+	TargetZoom = FMath::Clamp(TargetZoom, Settings->MinOrthoWidth, Settings->MaxOrthoWidth);
+
 	float FarthestDistance = 0.f;
-	for (FVector2D const& PlayerXY : LivingPlayers)
+	if (LivingPlayers.Num() > 1)
 	{
-		FarthestDistance = FMath::Max(FarthestDistance, static_cast<float>(FVector2D::Distance(PlayerXY, CameraXY)));
+		for (FVector2D const& PlayerXY : LivingPlayers)
+		{
+			FarthestDistance =
+				FMath::Max(FarthestDistance, static_cast<float>(FVector2D::Distance(PlayerXY, CameraXY)));
+		}
 	}
 	float const DesiredOrthoWidth = FMath::GetMappedRangeValueClamped(
-		FVector2f(ZoomMinDistance, ZoomMaxDistance), FVector2f(BaseOrthoWidth, MaxOrthoWidth), FarthestDistance);
+		FVector2f(ZoomMinDistance, ZoomMaxDistance), FVector2f(TargetZoom, Settings->MaxOrthoWidth), FarthestDistance);
 	CurrentOrthoWidth = FMath::FInterpTo(CurrentOrthoWidth, DesiredOrthoWidth, DeltaTime, ZoomInterpSpeed);
 	GetCameraComponent()->SetOrthoWidth(CurrentOrthoWidth);
 
@@ -248,32 +233,24 @@ void AGeoGameCamera::DrawZoomDebug(TConstArrayView<FVector2D> LivingPlayers, FVe
 	}
 	GEngine->AddOnScreenDebugMessage(
 		-1, 0.f, FColor::Yellow,
-		FString::Printf(TEXT("Camera zoom: farthest %.0f (min %.0f / max %.0f) | OrthoWidth %.0f"), FarthestDistance,
-						ZoomMinDistance, ZoomMaxDistance, CurrentOrthoWidth));
+		FString::Printf(TEXT("Camera zoom: farthest %.0f (min %.0f / max %.0f) | Zoom %.0f | OrthoWidth %.0f"),
+						FarthestDistance, ZoomMinDistance, ZoomMaxDistance, TargetZoom, CurrentOrthoWidth));
 }
 
-FVector2D AGeoGameCamera::ClampToBounds(FVector2D Target) const
+FVector2D AGeoGameCamera::ClampToVolume(FVector2D Target, AGeoCameraVolume const* Volume) const
 {
-	if (!bBounded)
+	FBox2D const Bounds = Volume ? Volume->GetViewBounds() : FBox2D(ForceInit);
+	if (!Bounds.bIsValid)
 	{
 		return Target;
 	}
 
-	float AspectRatio = 16.f / 9.f;
-	if (UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport())
-	{
-		FVector2D ViewportSize;
-		ViewportClient->GetViewportSize(ViewportSize);
-		if (ViewportSize.X > 0.f && ViewportSize.Y > 0.f)
-		{
-			AspectRatio = ViewportSize.X / ViewportSize.Y;
-		}
-	}
-	FVector2D const ScreenRight = FVector2D(GetActorRightVector()).GetSafeNormal();
-	FVector2D const ScreenUp = FVector2D(GetActorUpVector()).GetSafeNormal();
+	UCameraComponent const* const Camera = GetCameraComponent();
+	FVector2D const ScreenRight = FVector2D(Camera->GetRightVector()).GetSafeNormal();
+	FVector2D const ScreenUp = FVector2D(Camera->GetUpVector()).GetSafeNormal();
 
 	float const OrthoHalfWidth = CurrentOrthoWidth * 0.5f;
-	float const OrthoHalfHeight = OrthoHalfWidth / AspectRatio;
+	float const OrthoHalfHeight = OrthoHalfWidth / Camera->AspectRatio;
 
 	float const ViewportHalfExtentX =
 		OrthoHalfWidth * FMath::Abs(ScreenRight.X) + OrthoHalfHeight * FMath::Abs(ScreenUp.X);
@@ -296,18 +273,19 @@ void AGeoGameCamera::Tick(float DeltaTime)
 
 	TArray<FVector2D, TInlineAllocator<4>> LivingPlayers;
 	APlayerController const* FirstLocalController = nullptr;
-	AGeoCharacter const* FirstLocalCharacter = nullptr;
-	GatherLocalPlayers(LivingPlayers, FirstLocalController, FirstLocalCharacter);
+	UGeoInputComponent const* FirstLocalInputComponent = nullptr;
+	GatherLocalPlayers(LivingPlayers, FirstLocalController, FirstLocalInputComponent);
 	if (!FirstLocalController)
 	{
 		return;
 	}
 
+	AGeoCameraVolume const* const ActiveVolume = GetActiveVolume();
 	FVector2D const CameraXY(GetActorLocation());
-	UpdateSpectateState(LivingPlayers.IsEmpty(), CameraXY, FirstLocalController, FirstLocalCharacter, DeltaTime);
+	UpdateSpectateState(LivingPlayers.IsEmpty(), CameraXY, FirstLocalController, FirstLocalInputComponent, DeltaTime);
 	UpdateZoom(LivingPlayers, CameraXY, DeltaTime);
 
-	FVector2D const FollowTarget = ClampToBounds(bSpectating ? SpectateTarget : Average(LivingPlayers));
+	FVector2D const FollowTarget = ClampToVolume(bSpectating ? SpectateTarget : Average(LivingPlayers), ActiveVolume);
 	if (bSpectating)
 	{
 		SpectateTarget = FollowTarget;

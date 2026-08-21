@@ -42,12 +42,6 @@ public:
 	/** Registers PredictionKeyId for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/**
-	 * Server-spawned projectiles are hidden from their owning client so the client's locally predicted
-	 * copy remains authoritative for that player's view. All other clients receive normal replication.
-	 */
-	virtual bool IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget,
-								  FVector const& SrcLocation) const override;
-	/**
 	 * For non-pooled projectiles: re-applies movement on the server (Blueprint construction resets velocity),
 	 * and calls InitProjectileLife on clients. Also destroys the matching predicted projectile on the owning client
 	 * when CVarReplaceLocalProjectiles is enabled.

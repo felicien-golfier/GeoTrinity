@@ -81,10 +81,10 @@ struct GEOTRINITY_API FGeoGameplayTags
 	 * purposes are reused by every arena and GeoLib::GetTargetPoints matches on both halves.
 	 */
 	FGameplayTag TargetPoint_BossSpawn;
+	FGameplayTag TargetPoint_AddSpawn;
 	FGameplayTag TargetPoint_Entrance;
 	FGameplayTag TargetPoint_FightLocation;
 	FGameplayTag TargetPoint_FightCenter;
-	FGameplayTag TargetPoint_CameraBounds;
 	FGameplayTag TargetPoint_FiringPoint;
 
 private:

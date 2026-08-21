@@ -28,10 +28,6 @@
 static TAutoConsoleVariable CVarDrawServerProjectiles(TEXT("Geo.DrawServerProjectiles"), false,
 													  TEXT("Draw debug spheres for projectiles on the server"));
 
-static TAutoConsoleVariable
-	CVarReplaceLocalProjectiles(TEXT("Geo.ReplaceLocalProjectiles"), false,
-								TEXT("When true, server projectile Does replicate to owner and override local one"));
-
 // Rate the visual slides back onto the actor at (SetVisualLaunchLocation): ~1% of the offset is left after 0.2s, short
 // enough that the bullet is on its true path well before anything can be read off its position.
 static constexpr float VisualCatchUpSpeed = 25.f;
@@ -114,21 +110,6 @@ void AGeoProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool AGeoProjectile::IsNetRelevantFor(AActor const* RealViewer, AActor const* ViewTarget,
-									  FVector const& SrcLocation) const
-{
-	// Decides if yes or not it needs to replicate on this client.
-	// Here we don't want to replicate on the projectile owner.
-	if (!CVarReplaceLocalProjectiles.GetValueOnGameThread() && PredictionKeyId != 0 && GetNetConnection()
-		&& GetNetConnection() == RealViewer->GetNetConnection())
-	{
-		return false;
-	}
-
-	return Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::BeginPlay()
 {
 	Super::BeginPlay();
@@ -152,24 +133,6 @@ void AGeoProjectile::BeginPlay()
 		{
 			// Replicated server projectile arriving on client: InitProjectileLife was never called here.
 			InitProjectileLife();
-		}
-	}
-
-	// When a real (server-replicated) projectile arrives on the owning client,
-	// find and destroy the matching predicted fake spawned earlier by the client.
-	if (!CVarReplaceLocalProjectiles.GetValueOnGameThread() || PredictionKeyId == 0 || GeoLib::IsServer(GetWorld())
-		|| Implements<UGeoPoolableInterface>())
-	{
-		return;
-	}
-
-	for (TActorIterator<AGeoProjectile> It(GetWorld(), GetClass()); It; ++It)
-	{
-		AGeoProjectile* Other = *It;
-		if (Other != this && Other->PredictionKeyId == PredictionKeyId && Other->GetIsReplicated()
-			&& Other->GetOwner() == GetOwner())
-		{
-			Other->Destroy();
 		}
 	}
 }
@@ -265,8 +228,7 @@ bool AGeoProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemCompone
 
 	OutOwnerASC = GeoASLib::GetGeoAscFromActor(CurrentOwner);
 	OutTargetASC = GeoASLib::GetGeoAscFromActor(OtherActor);
-	if (!IsValid(OutOwnerASC) || !IsValid(OutTargetASC)
-		|| !IsValid(GeoASLib::GetGeoAscFromActor(CurrentInstigator)))
+	if (!IsValid(OutOwnerASC) || !IsValid(OutTargetASC) || !IsValid(GeoASLib::GetGeoAscFromActor(CurrentInstigator)))
 	{
 		return false;
 	}

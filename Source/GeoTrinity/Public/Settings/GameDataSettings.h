@@ -76,10 +76,20 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Colors")
 	TMap<EGeoColor, FLinearColor> ColorPalette;
 
-	/** Zone every ability that leaves one behind spawns, unless it names a class of its own. One Blueprint for the whole
-	 * game: what a zone does and the colour it draws in both come from the ability, through FDeployableDataParams. */
+	/** Zone every ability that leaves one behind spawns, unless it names a class of its own. One Blueprint for the
+	 * whole game: what a zone does and the colour it draws in both come from the ability, through
+	 * FDeployableDataParams. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	TSoftClassPtr<AGeoEffectZone> DefaultZoneClass;
+
+	/** Closest AGeoGameCamera may zoom in — the floor for the wheel and for an AGeoCameraVolume's OrthoWidth. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Camera", meta = (ClampMin = "1.0"))
+	float MinOrthoWidth = 2000.f;
+
+	/** Farthest AGeoGameCamera may zoom out — the wheel's ceiling, and the width the couch-coop spread widens to
+	 * once the farthest player reaches ZoomMaxDistance. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Camera", meta = (ClampMin = "1.0"))
+	float MaxOrthoWidth = 6000.f;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;

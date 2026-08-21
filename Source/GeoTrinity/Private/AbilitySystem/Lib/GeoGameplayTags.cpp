@@ -98,13 +98,12 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 
 	// TARGET POINTS //
 	AddTargetPointTag(GameplayTags.TargetPoint_BossSpawn, "BossSpawn", "Where the arena spawns its boss.");
+	AddTargetPointTag(GameplayTags.TargetPoint_AddSpawn, "AddSpawn", "Where the arena spawns its adds.");
 	AddTargetPointTag(GameplayTags.TargetPoint_Entrance, "Entrance",
 					  "Outside the arena — players stand here between fights.");
 	AddTargetPointTag(GameplayTags.TargetPoint_FightLocation, "FightLocation",
 					  "Inside the arena — players are teleported here on fight commit.");
 	AddTargetPointTag(GameplayTags.TargetPoint_FightCenter, "FightCenter", "Center of the fight area.");
-	AddTargetPointTag(GameplayTags.TargetPoint_CameraBounds, "CameraBounds",
-					  "Corner markers a camera volume's bounds are built from.");
 	AddTargetPointTag(GameplayTags.TargetPoint_FiringPoint, "FiringPoint", "Where the AI can fire from.");
 
 	// AI //

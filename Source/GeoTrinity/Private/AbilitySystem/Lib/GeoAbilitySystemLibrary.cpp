@@ -612,25 +612,6 @@ void UGeoAbilitySystemLibrary::FinishSpawnProjectile(UWorld const* World, AGeoPr
 	{
 		Projectile->InitProjectileLife();
 		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTransform);
-
-		// Cache the CVar pointer once rather than re-querying the console manager on every projectile spawn.
-		static IConsoleVariable* const LocalOverrideCVar =
-			IConsoleManager::Get().FindConsoleVariable(TEXT("Geo.ReplaceLocalProjectiles"));
-		ensureMsgf(LocalOverrideCVar,
-				   TEXT("LocalOverrideCVar is invalid, please ensure ReplaceLocalProjectiles still exist"));
-		if (!GeoLib::IsServer(World) && PredictionKey.IsLocalClientKey() && LocalOverrideCVar->GetBool())
-		{
-			TWeakObjectPtr<AGeoProjectile> WeakProjectile(Projectile);
-			auto DestroyFake = [WeakProjectile]()
-			{
-				if (WeakProjectile.IsValid())
-				{
-					WeakProjectile->Destroy();
-				}
-			};
-			PredictionKey.NewCaughtUpDelegate().BindLambda(DestroyFake);
-			PredictionKey.NewRejectedDelegate().BindLambda(DestroyFake);
-		}
 	}
 
 	if (GeoLib::IsServer(World))

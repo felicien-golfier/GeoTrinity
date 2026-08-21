@@ -3,8 +3,11 @@ Tutorial room builder for GeoTrinity (DraftMap).
 
 Builds the training room the players spawn into: its AI StateTrees, its dummy and totem Blueprints,
 the zone ability/deployable Blueprints, the zone material instances, and the room itself (floor, walls,
-dummy arenas, the zone row and its target points, class-change pads, teleporter pair, player starts).
+the arena, the zone row and its target points, class-change pads, teleporter pair, player starts).
 Idempotent — assets and actors are keyed by path/label, so a re-run updates instead of duplicating.
+
+The room is one AGeoDummyArena, not one per enemy: the hidden zone caster is its boss and every station
+enemy is an add on its own TargetPoint.AddSpawn, so the whole room spawns and resets as a single unit.
 
 The zones are ability-driven, not placed: one hidden caster holds all six UGeoZoneAbility Blueprints and
 fires them at once, each onto the AGeoTargetPoint carrying its own TargetPoint.Tutorial.* tag. An ability
@@ -29,7 +32,7 @@ Stages (call from execute_script):
 import unreal
 
 REPORT_PATH = (r"C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity"
-               r"/bf7fea61-cff7-43d5-afe5-31dfbde7211f/scratchpad/tutorial_report.txt")
+               r"/815bf150-b301-4e36-8455-df35c78d0614/scratchpad/tutorial_report.txt")
 
 # Names the room twice over: the teleporter pads that lead here, and the arena the zone caster belongs to,
 # which is what makes its abilities resolve against this room's AGeoTargetPoints and no other arena's.
@@ -49,6 +52,7 @@ ZONE_SRC_HEAL = "/Game/Actors/BP_HealingZone"
 
 TARGET_POINT_BP = "/Game/Actors/GeoTargetPoint"
 BOSS_SPAWN_TAG = "TargetPoint.BossSpawn"
+ADD_SPAWN_TAG = "TargetPoint.AddSpawn"
 
 MI_DIR = "/Game/Art/VFX/AOE"
 MI_SRC = MI_DIR + "/MI_PulseCircle"
@@ -82,8 +86,6 @@ ROW_STATION_SIGN = -6000.0
 ROW_STATION = -6350.0
 ROW_ENTRY_SIGN = -6800.0
 ROW_ENTRY = -7050.0
-
-ZONE_Z = 150.0
 
 # FColor is stored BGRA, so its positional constructor is not (r, g, b) — always name the channels.
 GREY = unreal.Color(r=199, g=199, b=199, a=255)
@@ -205,7 +207,9 @@ def zone_specs():
 # key was renamed keeps its old label forever otherwise, sitting under the sign that replaced it.
 LEGACY_LABELS = ("Tuto_Arena_Zones", "Tuto_HazardZone",
                  "Tuto_Zone_HealOnce", "Tuto_Sign_Zone_HealOnce",
-                 "Tuto_Zone_DamageOnce", "Tuto_Sign_Zone_DamageOnce")
+                 "Tuto_Zone_DamageOnce", "Tuto_Sign_Zone_DamageOnce",
+                 "Tuto_Arena_Chaser", "Tuto_Sign_Chaser",
+                 "Tuto_Arena_Ally", "Tuto_Arena_Bullets", "Tuto_Arena_Target")
 
 
 # zone Blueprint key -> (source Blueprint, material override or None)
@@ -492,20 +496,6 @@ def sign(label, location, text, size=55.0, color=GREY):
     component.set_text_render_color(color)
 
 
-def station(label, location, blueprint, text, sign_location, arena_tag=None):
-    """A GeoDummyArena spawning one enemy. Untagged, no TargetPoint.BossSpawn matches and it spawns its dummy
-    on its own actor, which is what puts a station where it stands; an arena_tag names the encounter instead,
-    so the enemy spawns on that tag's BossSpawn point and its abilities can find the room's other points.
-    IsBoss() is false on this arena class, so walking up to one starts no match."""
-    arena = dup_actor("EntranceArena", label, location)
-    if arena is None:
-        return
-    arena.set_editor_property("BossClass", blueprint.generated_class())
-    arena.set_editor_property("ArenaTag", tag(arena_tag) if arena_tag else unreal.GameplayTag())
-    if text:
-        sign(label.replace("Arena", "Sign"), sign_location, text)
-
-
 def build_room():
     log("-- geometry")
     dup_actor("Floor", "Tuto_Floor", (CX, CY, 0.0), scale=(HALF_X / 500.0, HALF_Y / 500.0, 1.0))
@@ -518,25 +508,31 @@ def build_room():
 
 
 def build_stations(blueprints):
-    """Four dummies to shoot, heal, dodge and run from."""
+    """Three dummies to shoot, heal and dodge, spawned as the room arena's adds. Returns their classes in the
+    order their TargetPoint.AddSpawn points are created: ResetAdds walks AddClasses and the points GetTargetPoints
+    returns in step, so the two orders have to agree. The keys are listed alphabetically, which is that creation
+    order, so the pairing also holds for any name-ordered lookup."""
     log("-- stations")
     stations = [
-        ("Tuto_Arena_Chaser", -1200.0, blueprints["BP_TutorialChaser"], "CHASER\nit runs straight at you"),
-        ("Tuto_Arena_Target", -400.0, unreal.load_asset(BP_DUMMY), "TRAINING DUMMY\nshoot it"),
-        ("Tuto_Arena_Ally", 400.0, blueprints["BP_TutorialAlly"], "ALLY ON FIRE\nheal it (its zone burns you too)"),
-        ("Tuto_Arena_Bullets", 1200.0, blueprints["BP_TutorialTotemBullets"], "BULLET TOTEM\ndodge the shots"),
+        ("Ally", 400.0, blueprints["BP_TutorialAlly"], "ALLY ON FIRE\nheal it (its zone burns you too)"),
+        ("Bullets", 1200.0, blueprints["BP_TutorialTotemBullets"], "BULLET TOTEM\ndodge the shots"),
+        ("Target", -400.0, unreal.load_asset(BP_DUMMY), "TRAINING DUMMY\nshoot it"),
     ]
-    for label, offset, blueprint, text in stations:
-        station(label, (ROW_STATION, offset, 0.0), blueprint, text, (ROW_STATION_SIGN, offset, 0.0))
-        log("  ", label, "->", blueprint.get_name())
+    add_classes = []
+    for key, offset, blueprint, text in stations:
+        target_point("Tuto_AddSpawn_" + key, (ROW_STATION, offset, 0.0), ADD_SPAWN_TAG)
+        sign("Tuto_Sign_" + key, (ROW_STATION_SIGN, offset, 0.0), text)
+        add_classes.append(blueprint.generated_class())
+        log("  ", key, "->", blueprint.get_name())
 
     # Constant drain on the ally so there is always something to heal.
-    dup_actor("BP_DamageZone", "Tuto_AllyDrain", (ROW_STATION, 400.0, ZONE_Z))
+    dup_actor("BP_DamageZone", "Tuto_Drain", (ROW_STATION, 400.0, 0.0))
+    return add_classes
 
 
 def target_point(label, location, purpose_tag):
-    """An AGeoTargetPoint the zone caster aims at: its purpose plus this room's arena tag, which is both halves
-    of what GeoLib::GetTargetPoints matches on."""
+    """An AGeoTargetPoint of this room: its purpose plus this room's arena tag, which is both halves of what
+    GeoLib::GetTargetPoints matches on."""
     subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
     actor = find_actor(label)
     if actor is None:
@@ -559,7 +555,22 @@ def prune_zone_totems():
                 log("  deleted", asset)
 
 
-def build_zones():
+def build_arena(add_classes):
+    """The one GeoDummyArena the whole room hangs off. Its boss is the hidden zone caster, spawned on the room's
+    TargetPoint.BossSpawn, which is what makes the caster's abilities resolve against this room's points and no
+    other arena's; the station enemies are its adds. IsBoss() is false on this class, so walking up to any of them
+    starts no match — and one arena means one ResetBoss brings the entire room back."""
+    arena = dup_actor("EntranceArena", "Tuto_ZoneArena", (ROW_ZONE, 0.0, 0.0))
+    if arena is None:
+        return
+    arena.set_editor_property("BossClass",
+                              unreal.load_asset(BP_DIR + "/BP_TutorialZoneCaster").generated_class())
+    arena.set_editor_property("ArenaTag", tag(TUTORIAL_TAG))
+    arena.set_editor_property("AddClasses", add_classes)
+    log("  arena adds ->", [c.get_name() for c in add_classes])
+
+
+def build_zones(add_classes):
     """One hidden caster in the middle of the row, dropping every zone at once on its own tagged point."""
     log("-- zone caster")
     for label in LEGACY_LABELS:
@@ -568,8 +579,7 @@ def build_zones():
     sign("Tuto_Sign_Zones", (ROW_TITLE, 0.0, 0.0),
          "EFFECT ZONES\nthey all land together on a loop, step in to see what each one does", size=90.0)
     target_point("Tuto_ZoneSpawn", (ROW_ZONE, 0.0, 0.0), BOSS_SPAWN_TAG)
-    station("Tuto_ZoneArena", (ROW_ZONE, 0.0, 0.0), unreal.load_asset(BP_DIR + "/BP_TutorialZoneCaster"),
-            None, None, arena_tag=TUTORIAL_TAG)
+    build_arena(add_classes)
     for key, offset, _, _, _, _, text, color in zone_specs():
         target_point("Tuto_ZonePoint_" + key, (ROW_ZONE, offset, 0.0), point_tag(key))
         sign("Tuto_Sign_Zone_" + key, (ROW_ZONE_SIGN, offset, 0.0), text, size=45.0, color=color)
@@ -608,11 +618,10 @@ def build_level():
     REPORT[:] = []
     try:
         blueprints = {}
-        for name in ("BP_TutorialChaser", "BP_TutorialAlly", "BP_TutorialTotemBullets"):
+        for name in ("BP_TutorialAlly", "BP_TutorialTotemBullets"):
             blueprints[name] = unreal.load_asset("%s/%s" % (BP_DIR, name))
         build_room()
-        build_stations(blueprints)
-        build_zones()
+        build_zones(build_stations(blueprints))
         build_access()
         unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
         log("LEVEL OK")

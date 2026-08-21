@@ -36,7 +36,7 @@ public:
 	/** Updates the character's aim rotation from the latest mouse or right-stick look input. */
 	void UpdateMouseLook();
 
-	/** Binds movement, look, and all ability input actions to their respective callbacks. */
+	/** Binds movement, look, camera zoom, and all ability input actions to their respective callbacks. */
 	void BindInput(UInputComponent* PlayerInputComponent);
 
 	/** Callback for the move input action. Applies directional movement to the owning character. */
@@ -46,6 +46,10 @@ public:
 	/** Callback for the look input action. Caches the latest look vector for rotation processing. */
 	UFUNCTION()
 	void LookFromInput(FInputActionInstance const& Instance);
+
+	/** Callback for the zoom input action. Moves AGeoGameCamera's target zoom by the wheel value. */
+	UFUNCTION()
+	void ZoomFromInput(FInputActionInstance const& Instance);
 
 	/** Returns the GeoCharacter that owns this component, or nullptr if the owner is not a GeoCharacter. */
 	AGeoCharacter* GetGeoCharacter() const;
@@ -81,6 +85,10 @@ public:
 	// Right stick / mouse delta look action (Value: Vector2D). Assign in the Input Mapping.
 	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
 	TObjectPtr<UInputAction> LookAction;
+
+	// Mouse wheel camera zoom (Value: Axis1D, positive zooms in). Drives AGeoGameCamera's target zoom.
+	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
+	TObjectPtr<UInputAction> ZoomAction;
 
 private:
 	// Cached latest right stick vector in viewport space (X,Y), not normalized. Zero when idle.

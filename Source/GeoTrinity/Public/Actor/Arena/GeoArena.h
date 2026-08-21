@@ -16,12 +16,13 @@ class UGeoDeployableManagerComponent;
 class UGeoReloadAbility;
 
 /**
- * One boss encounter, and it runs itself. It owns its boss (spawn + reset), its barrier, its fight-commit, the boss
- * health bar and the post-victory loot shower. The GameState tells it nothing: on aggro TriggerAggro calls StartFight
- * directly, and it subscribes to AGeoGameState::OnMatchStateChanged to tear the fight down when the match leaves
- * InProgress (a wipe or a victory). Whether this arena's fight is live is the replicated bFighting flag, so clients
- * resolve their own boss bar and the GameState needs no arena pointer at all. What a player's death means stays the
- * GameState's policy; the arena's only part in it is registering its ArenaTag as the respawn CheckpointTag.
+ * One boss encounter, and it runs itself. It owns its boss and its adds (spawn + reset), its barrier, its fight-commit,
+ * the boss health bar and the post-victory loot shower. The GameState tells it nothing: on aggro TriggerAggro calls
+ * StartFight directly, and it subscribes to AGeoGameState::OnMatchStateChanged to tear the fight down when the match
+ * leaves InProgress (a wipe or a victory). Whether this arena's fight is live is the replicated bFighting flag, so
+ * clients resolve their own boss bar and the GameState needs no arena pointer at all. What a player's death means
+ * stays the GameState's policy; the arena's only part in it is taking over the GameState's CurrentArenaTag for as
+ * long as its fight runs, which is what makes a wipe come back here rather than wherever the players last walked.
  * The fight runs Start (bFighting set, barrier closes, players walk in) -> Commit (players teleported in) -> End;
  * CommitFight and EndFight are virtual so subclasses arm whatever only makes sense once the fight is really live.
  */
@@ -43,11 +44,12 @@ public:
 	/** Opens or seals the barrier, if this arena has one. Barrier state is owned by the fight-lifecycle functions. */
 	void SetBarrierClosed(bool bClosed) const;
 
-	/** Server. Marks this fight live (barrier closes, boss bar shows, checkpoint registered), and starts the commit
+	/** Server. Marks this fight live (barrier closes, boss bar shows, current arena taken over), and starts the commit
 	 *  countdown. Called by AGeoEnemyAIController::TriggerAggro the moment this arena's boss is aggroed. Ignored
 	 *  while a match is already in progress. */
 	virtual void StartFight();
-	/** Server. Teleports players to this arena's fight location; the encounter is now fully live. */
+	/** Server. Teleports players to this arena's fight location — bar those already standing in one of its
+	 *  AGeoArenaVolumes — and the encounter is now fully live. */
 	virtual void CommitFight();
 	/** Server. Opens the barrier, hides the boss bar, and resets the boss — unless the boss was defeated, in which case
 	 *  it is left dead until RespawnBoss. Runs on *every* arena when the match leaves InProgress, not just the one that
@@ -97,14 +99,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Arena")
 	TSubclassOf<AEnemyCharacter> BossClass;
 
+	/** Extra enemies spawned with the boss, one per entry, at the arena's TargetPoint.AddSpawn points. They never gate
+	 *  the fight: IsBoss ignores them, they get no health bar, and they are wiped the moment the boss dies. */
+	UPROPERTY(EditAnywhere, Category = "Arena")
+	TArray<TSubclassOf<AEnemyCharacter>> AddClasses;
+
 	/** Barrier sealing this arena while the fight runs. Optional — arenas without one never seal. */
 	UPROPERTY(EditAnywhere, Category = "Arena")
 	TObjectPtr<AGeoArenaBarrier> Barrier;
-
-	/** Level trigger volume tag; players already inside it keep their position instead of being pulled to the fight
-	 *  location on commit. */
-	UPROPERTY(EditAnywhere, Category = "Arena")
-	FName FightZoneTagName = "FightZone";
 
 	/** Seconds between loot pickup bursts after the boss dies. */
 	UPROPERTY(EditAnywhere, Category = "Loot")
@@ -119,6 +121,16 @@ protected:
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_Boss)
 	TObjectPtr<AEnemyCharacter> Boss;
+
+	/** The live adds. Server-only bookkeeping — each add replicates itself as a normal actor, so clients never need the
+	 *  list. */
+	UPROPERTY()
+	TArray<TObjectPtr<AEnemyCharacter>> Adds;
+
+	/** Server. Clears the standing adds and spawns a fresh set from AddClasses. Called by ResetBoss. */
+	void ResetAdds();
+	/** Server. Destroys every standing add and empties the list. */
+	void DestroyAdds();
 
 	/** True while this arena's fight is live. Replicated so every client shows/hides the boss bar off OnRep_bFighting. */
 	UPROPERTY(ReplicatedUsing = OnRep_bFighting)

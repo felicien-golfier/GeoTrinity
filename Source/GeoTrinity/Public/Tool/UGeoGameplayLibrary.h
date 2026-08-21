@@ -145,12 +145,13 @@ public:
 										   FGameplayTag const ArenaTag);
 
 	/**
-	 * Server. Teleports player pawns to the AGeoTargetPoints carrying PurposeTag + ArenaTag (round-robin). With no
-	 * ExemptZoneName it moves everyone — the group respawn, which always teleports. Pass a zone tag to skip any pawn
-	 * already standing inside an actor carrying it — the arena's fight-commit move leaves players already in position.
+	 * Server. Teleports player pawns to the AGeoTargetPoints carrying PurposeTag + ArenaTag (round-robin). By default
+	 * it moves everyone — the group respawn, which always teleports. Pass bSkipPlayersInArenaVolume to leave behind any
+	 * pawn already standing in an AGeoArenaVolume carrying ArenaTag: the arena's fight-commit move does not drag in
+	 * players who walked to their place themselves.
 	 */
 	static void TeleportPlayersToTargetPoints(UObject const* WorldContextObject, FGameplayTag PurposeTag,
-											  FGameplayTag ArenaTag, FName ExemptZoneName = NAME_None);
+											  FGameplayTag ArenaTag, bool bSkipPlayersInArenaVolume = false);
 
 	/** Returns every currently-alive APlayableCharacter, found by iterating player controllers' pawns. */
 	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))

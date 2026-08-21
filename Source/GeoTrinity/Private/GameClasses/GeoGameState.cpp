@@ -122,7 +122,7 @@ bool AGeoGameState::AreFightPlayersDead() const
 
 void AGeoGameState::RespawnGroup()
 {
-	GeoLib::TeleportPlayersToTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_Entrance, CheckpointTag);
+	GeoLib::TeleportPlayersToTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_Entrance, CurrentArenaTag);
 	RevivePlayers();
 	RequestWaitingToStart();
 }
@@ -136,9 +136,9 @@ void AGeoGameState::RespawnPlayer(APlayableCharacter& Player)
 	}
 
 	TArray<AActor*> const SpawnPoints =
-		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_Entrance, CheckpointTag);
+		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_Entrance, CurrentArenaTag);
 	if (!ensureMsgf(!SpawnPoints.IsEmpty(), TEXT("No TargetPoint.Entrance point tagged %s to respawn %s at"),
-					*CheckpointTag.ToString(), *Player.GetName()))
+					*CurrentArenaTag.ToString(), *Player.GetName()))
 	{
 		return;
 	}
