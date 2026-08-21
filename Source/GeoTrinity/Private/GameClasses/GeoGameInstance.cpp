@@ -134,6 +134,15 @@ void UGeoGameInstance::QuitGame()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::DestroySessionThen(TFunction<void()> OnDone)
 {
+	if (bDestroyingSession)
+	{
+		// Already tearing down (e.g. the leave/quit button was pressed twice before the async destroy completed):
+		// registering a second lambda here would leave two of them on the session interface's shared multicast
+		// delegate while DestroySessionDelegateHandle only ever remembers one, so the first completion would clear
+		// the wrong, still-pending delegate mid-broadcast.
+		return;
+	}
+
 	IOnlineSessionPtr Sessions = GetSessionInterface();
 	if (!Sessions.IsValid() || Sessions->GetSessionState(GeoSessionName) == EOnlineSessionState::NoSession)
 	{
@@ -142,6 +151,7 @@ void UGeoGameInstance::DestroySessionThen(TFunction<void()> OnDone)
 		return;
 	}
 
+	bDestroyingSession = true;
 	DestroySessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
 		FOnDestroySessionCompleteDelegate::CreateWeakLambda(
 			this,
@@ -151,6 +161,7 @@ void UGeoGameInstance::DestroySessionThen(TFunction<void()> OnDone)
 				{
 					CompletedSessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
 				}
+				bDestroyingSession = false;
 				OnDone();
 			}));
 	Sessions->DestroySession(GeoSessionName);

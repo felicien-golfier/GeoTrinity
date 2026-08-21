@@ -401,6 +401,32 @@ def montage_sections(montage):
     return [str(montage.get_section_name(i)) for i in range(montage.get_num_sections())]
 
 
+def set_notify(anim, track_name, time, notify_class, properties, clear=True):
+    """Put one notify of `notify_class` on `anim` at `time` and return it, `properties` set on the notify itself.
+
+    A sequence's notify array is not readable as a property, so both halves of this go through the animation
+    library. Clearing every track first drops the notifies on them, which is what lets a re-run replace rather
+    than stack. A notify on a montage links to the segment beneath it, so add it only once the slot track is there.
+    """
+    if clear:
+        unreal.AnimationLibrary.remove_all_animation_notify_tracks(anim)
+    unreal.AnimationLibrary.add_animation_notify_track(anim, track_name)
+    notify = unreal.AnimationLibrary.add_animation_notify_event(anim, track_name, time, notify_class)
+    for name, value in properties.items():
+        notify.set_editor_property(name, value)
+    return notify
+
+
+def notify_events(anim):
+    """Every notify on `anim` -> [(trigger time, the notify object)].
+
+    The time comes from the library rather than off the event, whose link fields are not exposed.
+    """
+    return [(unreal.AnimationLibrary.get_anim_notify_event_trigger_time(event),
+             event.get_editor_property("notify"))
+            for event in unreal.AnimationLibrary.get_animation_notify_events(anim)]
+
+
 def _snapshot(transform):
     return (unreal.Vector(transform.translation.x, transform.translation.y, transform.translation.z),
             unreal.Vector(transform.scale3d.x, transform.scale3d.y, transform.scale3d.z),
@@ -481,3 +507,8 @@ def _component_transforms(pose):
 # montage = build_montage(target, PACKAGE, "SK_Example_Pulse_Montage",
 #                         ["Start", "Fire", "End"], [0.0, 0.1, 0.7], ["Fire", "End", "None"])
 # print(montage_sections(montage))
+
+# Fire an effect part-way through it — added after the slot track, so the notify links to the segment
+# set_notify(montage, "1", 0.1, unreal.AnimNotify_PlayNiagaraEffect,
+#            {"template": unreal.load_asset("/Game/Art/VFX/Assets/NS_DeathDebris")})
+# print(notify_events(montage))

@@ -19,43 +19,8 @@ class UWidgetComponent;
 class UGeoChargeAbility;
 class UGeoDeployableManagerComponent;
 class UGeoDeploySatelliteComponent;
-
-USTRUCT(BlueprintType)
-struct FPlayerClassData
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<USkeletalMesh> Mesh = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UMaterialInterface> AliveMaterial = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UMaterialInterface> DeathMaterial = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UAnimInstance> AnimClass;
-
-	/** Played when the character goes down and stopped on revive, so it holds for the whole downed state. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> DeathMontage = nullptr;
-
-	/** Takes DeathMontage's place when the character dies by dropping into the void (the hex arena's holes). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> FallMontage = nullptr;
-
-	/** Played when the character gets back up, and the length of the revive it belongs to. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> ReviveMontage = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UGameplayEffect> DefaultAttributes;
-
-	/** Look of the deploy-charge satellites orbiting this class. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FSatelliteParams SatelliteParams;
-};
+class UPlayerClassDataAsset;
+struct FPlayerClassData;
 
 /**
  * Human-controlled character. Bridges Enhanced Input with the GAS ability activation pipeline and
@@ -186,9 +151,6 @@ protected:
 	/** Distance in world units from the character to its aim cursor. Applied in BeginPlay. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD", meta = (ClampMin = "0.0"))
 	float AimCursorDistance = 800.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Class")
-	TMap<EPlayerClass, FPlayerClassData> ClassData;
 
 private:
 	void UpdateAimRotation(float DeltaSeconds);

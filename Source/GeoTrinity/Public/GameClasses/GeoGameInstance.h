@@ -75,4 +75,8 @@ private:
 	FString PendingMapURL;
 	FDelegateHandle CreateSessionDelegateHandle;
 	FDelegateHandle DestroySessionDelegateHandle;
+	/** Set while a DestroySessionThen() call is waiting on its completion delegate. A second call in that window
+	 * would register a second lambda on the session interface's shared multicast delegate while only ever
+	 * remembering one handle, so the first completion clears the wrong (still-pending) delegate mid-broadcast. */
+	bool bDestroyingSession = false;
 };

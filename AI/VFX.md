@@ -48,6 +48,12 @@ for a in ar.get_assets(filter):
 
 Note: The turret recall asset has a typo — "Rurret" not "Turret".
 
+## Mesh Renderer Material Usage
+
+A material a mesh renderer draws with has its mesh-particle usage flag set the first time the system renders, which
+dirties that material asset. Save it along with the system — without the flag the effect falls back to the default
+material outside the editor.
+
 ## Custom Primitive Data
 
 Slot 0 is the deployable duration wipe and is the only slot in use. `AGeoDeployableBase::Tick` writes
@@ -73,22 +79,15 @@ The Go MCP server only forwards JSON fields defined in the tool's schema. Extra 
 
 ## MCP Niagara Operations (C++)
 
-Custom operations in `NiagaraRoutes.cpp` (`/api/niagara/ops`):
+Operations in `NiagaraRoutes.cpp` (`/api/niagara/ops`): `spawn_system`, `set_parameter`, `get_system_info`,
+`add_emitter`, `remove_emitter`, `activate`, `deactivate`. Any other name is rejected as unknown.
 
 ### `get_system_info`
 Lists emitters and user parameters. Uses `GetUserParameters()` (not `ReadParameterVariables()`) to skip stale redirect aliases.
 
-### `configure_system`
-Renames user params, adds new ones, swaps ribbon renderer material, recompiles, saves.
-
-### `setup_beam_params`
-One-shot: renames `User.TurretPositionWS` → `User.BeamEnd`, adds `User.BeamStart`, swaps ribbon material to `MI_Glow01`. Only needs `system_path`.
-
-### `list_graph_nodes`
-Lists all `UNiagaraNodeFunctionCall` nodes in a spawn/update script graph with pin names and default values.
-
-### `set_function_call_pin`
-Sets a pin's `DefaultValue` on a named function call node, recompiles, saves.
+### Module stacks
+These routes do not reach a module stack. Adding modules, setting static switches, writing input values and
+nesting dynamic inputs go through the editor utility shim — see `AI/MCP/MCP_Niagara.md`.
 
 ## Niagara Parameter Store
 
@@ -136,7 +135,8 @@ To set up `User.BeamStart` → `User.BeamEnd`:
 2. `InitializeParticle` → `Position` pin = `User.BeamStart`
 3. `LerpPosition` → `B` pin = `User.BeamEnd`
 
-Use `list_graph_nodes` first to get exact pin names.
+Dump the stage first to get exact names — see `AI/MCP/MCP_Niagara.md`. Steps 2 and 3 link an input to a user
+parameter and step 1 sets a static switch, so all three go through the builder utility rather than a route.
 
 ## Build.cs
 

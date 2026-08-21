@@ -17,6 +17,7 @@ class UWidgetComponent;
 class UGameplayEffect;
 class USoundBase;
 class UNiagaraSystem;
+class UPlayerClassDataAsset;
 
 /**
  * Project Settings panel (Game Data Settings) that holds soft references to all global data assets
@@ -44,6 +45,9 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
 	TSoftObjectPtr<UAbilityInfo> AbilityInfo;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
+	TSoftObjectPtr<UPlayerClassDataAsset> PlayerClassData;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSoftClassPtr<UUserWidget> DefaultDeployableHealthBarWidgetClass;
@@ -94,8 +98,15 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralChargeTime = .5f;
 
+	/** Range of every player beam / line ability, and the distance span a projectile fired by a Player-team instigator
+	 * resolves UseGameDataSettings to. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralSpellDistance = 1500.f;
+
+	/** Distance span an Enemy- or Neutral-team instigator's projectile resolves UseGameDataSettings to: a boss shoots
+	 * across its whole arena, far past what a player standing inside it needs. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	float EnemySpellDistance = 2500.f;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	float GeneralSpellSpeed = 550.f;

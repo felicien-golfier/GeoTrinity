@@ -16,6 +16,7 @@ AGeoCharacter  (base — IAbilitySystemInterface, IGenericTeamAgentInterface)
 | `PlayableCharacter.h` | Human player — input forwarding, `ChangeClass()`, deploy/charge-beam gauges, downed/revive |
 | `EnemyCharacter.h` | AI enemy — own ASC, boss-death handling (`OnHealthChanged`/`ResetForNewAttempt`) |
 | `PlayerClassTypes.h` | `EPlayerClass` enum: `Triangle=1`, `Circle=2`, `Square=3`, `All=4` |
+| `PlayerClassDataAsset.h` | `UPlayerClassDataAsset` — `TMap<EPlayerClass, FPlayerClassData>` (mesh/materials/anim/montages/DefaultAttributes/satellite look). Referenced by `UGameDataSettings::PlayerClassData`, not owned by the character |
 
 ## Death/downed flow (PlayableCharacter)
 On health ≤ 0, `Death()` (server) sets replicated `bIsDead`, calls `StopCharacter()`, then hands the death to the GameState (`NotifyPlayerDied`) — **death policy is the GameState's, not the arena's**: out of a fight the player revives on the spot; in a fight they stay down until the whole starting group is down, then everyone respawns at the arena's registered `CheckpointTag`. Corpse stays in place, no per-death teleport.
@@ -26,7 +27,7 @@ Replicates via `OnRep_IsDead(bool)`, which calls the same `DeathLogic()`/`Revive
 
 Late joiners spawn **alive** even mid-fight — not in the fight-start `FightPlayers` snapshot, so they never block/trigger a wipe; a death while any match runs anywhere still leaves them down until it ends (no per-room aliveness).
 
-Each `ClassData` entry (`FPlayerClassData`) sets `AliveMaterial`/`DeathMaterial`, both swapped on mesh slot 0.
+Each `UPlayerClassDataAsset::ClassData` entry (`FPlayerClassData`) sets `AliveMaterial`/`DeathMaterial`, both swapped on mesh slot 0. `APlayableCharacter::GetClassData()` resolves the class through `GetDefault<UGameDataSettings>()->PlayerClassData` — never carries a per-character ClassData map.
 
 ## Component Subfolder
 | Component | Role |

@@ -40,11 +40,17 @@ A byte property backed by an unexposed enum cannot be read or written from Pytho
 
 A gameplay-tag container is read as exported text with its `export_text` method (there is no `to_string`), and written by building a fresh container and round-tripping the desired tags through its `import_text` method.
 
-## Editing a Struct Array
+## Editing a Struct Container
 
-Elements read from a struct array are by-value copies, so mutating one in place does not write back.
+Elements read from a struct array or a struct map are by-value copies, so mutating one in place does not write back.
 
-`EditDefaultsOnly` struct fields reject the property setter even on the copy; clone the element by round-tripping its exported text into a fresh struct, then merge overrides — a single-field text import sets only that field and preserves the rest. Reassign the whole rebuilt array to the asset and save. See `AI/Python/ability_info_icons.py`.
+`EditDefaultsOnly` struct fields reject the property setter even on the copy; clone the element by round-tripping its exported text into a fresh struct, then merge overrides — a single-field text import sets only that field and preserves the rest. Reassign the whole rebuilt container to the asset and save.
+
+An object reference merges in as its exported text, never as the asset itself.
+
+A container edit can leave the package clean, so save it unconditionally rather than only when dirty.
+
+See `AI/Python/struct_container_edit.py` for both container kinds, and `AI/Python/ability_info_icons.py` for a worked array case.
 
 ## Naming Conventions
 

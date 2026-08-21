@@ -5,9 +5,9 @@ Extends `AGeoCharacter`. ASC lives on `AGeoPlayerState`.
 ## Class switching
 - `ChangeClass(EPlayerClass)` — swaps mesh, animation, and ability sets at runtime; ends with `GiveLife()`
 - `ApplyClassData(EPlayerClass)` — applies mesh, animation, and material **only** (pure visuals, no attributes, no abilities). Safe to run on every client for every pawn (driven by `AGeoPlayerState::ApplyClassDataToPawn`).
-- `ClassData` (`TMap<EPlayerClass, FPlayerClassData>`) — configured in BP; one entry per class
+- `GetClassData(EPlayerClass)` resolves through `GetDefault<UGameDataSettings>()->PlayerClassData` (a `UPlayerClassDataAsset`), not a map on the character
 
-`FPlayerClassData`: `USkeletalMesh* Mesh`, `TSubclassOf<UAnimInstance> AnimClass`, `TSubclassOf<UGameplayEffect> DefaultAttributes`
+`FPlayerClassData` (in `PlayerClassDataAsset.h`): `USkeletalMesh* Mesh`, `TSubclassOf<UAnimInstance> AnimClass`, `TSubclassOf<UGameplayEffect> DefaultAttributes`
 
 ## GiveLife — "becomes alive" hook (server-only)
 `GiveLife()` is the single place that brings the character to the alive state: it applies the current class's `DefaultAttributes` (resets HP/attributes to full) and starts passives via `ASC->ReactivatePassiveAbilities()`. Called at the end of `ChangeClass` (initial spawn + class switch) and `ReviveLogic` (revive). Server-guarded — attributes and passive activation are authoritative concerns.

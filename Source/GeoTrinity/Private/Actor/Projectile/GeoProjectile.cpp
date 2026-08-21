@@ -526,13 +526,17 @@ void AGeoProjectile::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Params)
 {
 	UGameDataSettings const* Settings = GetDefault<UGameDataSettings>();
+	bool const bPlayerInstigator =
+		GeoASLib::GetTeamId(GetCurrentInstigator()).GetId() == static_cast<uint8>(ETeam::Player);
 
 	// Only distance, speed and radius have a settings value; every other param resolves UseGameDataSettings to
 	// DefaultParams, same as KeepBlueprintDefaultValue, so only an explicit OverrideValue changes it. The
 	// KeepBlueprintDefaultValue speed is the movement component's own InitialSpeed, not a DefaultParams value.
 	FProjectileParamsBase Resolved;
-	Resolved.DistanceSpan = ResolveOverrideParam(Params.OverrideDistanceSpan, Params.DistanceSpan,
-												 Settings->GeneralSpellDistance, DefaultParams.DistanceSpan);
+	Resolved.DistanceSpan = ResolveOverrideParam(
+		Params.OverrideDistanceSpan, Params.DistanceSpan,
+		bPlayerInstigator ? Settings->GeneralSpellDistance : Settings->EnemySpellDistance,
+		DefaultParams.DistanceSpan);
 	Resolved.ProjectileSpeed = ResolveOverrideParam(Params.OverrideSpeed, Params.ProjectileSpeed,
 													Settings->GeneralSpellSpeed, ProjectileMovement->InitialSpeed);
 	Resolved.Radius = ResolveOverrideParam(Params.OverrideRadius, Params.Radius, Settings->GeneralProjectileRadius,

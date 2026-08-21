@@ -76,6 +76,10 @@ A stretch of a clip that loops must hold the same pose on its last key as on its
 
 Add a bone's track before setting its keys, unconditionally and ignoring the result — the adder reports failure for an existing track, and the key setter reports success whether or not a track is there. Supply position, rotation and scale arrays of equal length.
 
+A non-uniform scale written on the root reaches the whole mesh through it: descendants inherit it into their offsets and their own scales alike, so a vertex blended across several bones lands exactly where one scaled transform would put it.
+
+Where that scaling converges is decided by the root's own translation rather than by the scale. Leaving the translation alone converges the shape on the root; scaling it by the same factor converges on the component origin instead, which is the point the shape turns about wherever its rig hangs the root.
+
 Keys land in the sequence's raw model, and the data that actually plays back is built from it separately, so finish a write by finalizing the animation through the animation library.
 
 Confirm the write by evaluating the finished sequence, and confirm the build by reading the sequence's sampled key count against its frame count — pose evaluation reads the raw model and reports the same either way.
@@ -132,6 +136,8 @@ Fit that boundary's centre rather than assuming it sits on the axis, and measure
 
 Measure every frame rather than the ones a report prints. Nested parts cross each other over two or three frames, so a sample coarse enough to step past those calls a clip clear that is not.
 
+A clip that only scales needs no mesh to check: the point it converges on is the root's translation with its own scaling undone, and reading that per frame catches a rig whose root sits off the shape.
+
 See `AI/Python/anim_sequence_authoring.py` for the protrusion, boundary-distance and clearance reports.
 
 ---
@@ -161,6 +167,26 @@ The section list and the slot-track array are declared without edit or Blueprint
 A montage whose sections a caller jumps between is only safe to reference once those sections exist; gate the wiring on reading them back.
 
 See `AI/Python/anim_sequence_authoring.py` for the montage builder and the section read-back.
+
+---
+
+## Notifies
+
+A sequence's notify array is not readable as a property, but the animation library reads and writes both the notifies and the tracks they sit on.
+
+A notify belongs to a named track, so the track has to exist before an event can be added to it.
+
+Clearing every track drops the notifies on them, which is what lets a notify pass be re-run without stacking.
+
+The adder hands back the notify object, and what that notify plays is one of its own properties.
+
+An event's trigger time is read through the library rather than off the event, whose link fields are not exposed.
+
+A notify on a montage links to the segment beneath it, so the slot track has to be in place before the notify is added.
+
+Which animation triggers a given effect is readable from that effect's referencer list, since the notify holding it is a subobject of the animation asset.
+
+See `AI/Python/anim_sequence_authoring.py` for the notify writer and the read-back.
 
 ---
 

@@ -87,8 +87,6 @@ void AGeoEffectZone::BeginPlay()
 	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
 	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
 
-	// A zone that lands on top of someone never gets a begin-overlap for them: the capsule grew to its real
-	// radius back in InitInteractable, before these delegates existed. Catch whoever is already inside.
 	TArray<AActor*> AlreadyInside;
 	CapsuleComponent->GetOverlappingActors(AlreadyInside);
 	for (AActor* Actor : AlreadyInside)

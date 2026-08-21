@@ -11,6 +11,7 @@
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Characters/PlayerClassDataAsset.h"
 #include "HUD/Interface/GeoChargeBeamGaugeWidgetInterface.h"
 #include "HUD/Interface/GeoChargeGaugeWidgetInterface.h"
 #include "Input/GeoInputComponent.h"
@@ -284,10 +285,13 @@ UAnimMontage* APlayableCharacter::GetReviveMontage() const
 
 FPlayerClassData const* APlayableCharacter::GetClassData(EPlayerClass Class) const
 {
-	FPlayerClassData const* PlayerClassData = ClassData.Find(Class);
-	ensureMsgf(PlayerClassData, TEXT("%hs: no ClassData entry for %s on %s"), __FUNCTION__,
-			   *UEnum::GetValueAsString(Class), *GetName());
-	return PlayerClassData;
+	UPlayerClassDataAsset* DataAsset =
+		UGameDataSettings::GetLoadedDataAsset(GetDefault<UGameDataSettings>()->PlayerClassData);
+	if (!ensureMsgf(DataAsset, TEXT("GetClassData: No PlayerClassData set in Game Data Settings")))
+	{
+		return nullptr;
+	}
+	return DataAsset->GetClassData(Class);
 }
 
 void APlayableCharacter::SetBodyMaterial(UMaterialInterface* Material)

@@ -12,7 +12,8 @@ public class GeoTrinityEditor : ModuleRules
 		{
 			"Core",
 			"CoreUObject",
-			"Engine"
+			"Engine",
+			"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new[]
@@ -21,6 +22,7 @@ public class GeoTrinityEditor : ModuleRules
 			"GeoTrinityUI",
 			"UnrealEd",
 			"Blutility",
+			"NiagaraEditor",
 			"SlateCore",
 			"Slate",
 			"UMG",

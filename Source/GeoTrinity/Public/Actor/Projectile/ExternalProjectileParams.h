@@ -26,7 +26,8 @@ enum class EProjectileSoundType : uint8
 /**
  * How a single projectile spawn param resolves its value:
  * - UseGameDataSettings: read the project-wide value from UGameDataSettings. Only distance, speed and radius have such
- *   a setting; for every other param this behaves exactly like KeepBlueprintDefaultValue.
+ *   a setting; for every other param this behaves exactly like KeepBlueprintDefaultValue. Distance has one value per
+ *   side — GeneralSpellDistance for a Player-team instigator, EnemySpellDistance for an Enemy or Neutral one.
  * - KeepBlueprintDefaultValue: use the projectile Blueprint's own DefaultParams value.
  * - OverrideValue: use the explicit value stored in the same struct.
  */
