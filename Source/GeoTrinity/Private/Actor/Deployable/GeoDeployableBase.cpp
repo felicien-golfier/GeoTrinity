@@ -3,6 +3,7 @@
 #include "Actor/Deployable/GeoDeployableBase.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
@@ -31,7 +32,6 @@ AGeoDeployableBase::AGeoDeployableBase(FObjectInitializer const& ObjectInitializ
 {
 	CapsuleComponent->SetCollisionProfileName(TEXT("GeoShape"));
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickInterval = GetDefault<UGameDataSettings>()->RegularTickInterval;
 
 	WidgetAnchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("WidgetAnchorComponent"));
 	WidgetAnchorComponent->SetupAttachment(GetRootComponent());
@@ -189,10 +189,10 @@ void AGeoDeployableBase::InitDrain()
 
 	DrainMagnitudePerSecond = MaxHealth / GetData()->Params.LifeDrainMaxDuration;
 
-	// Everything but the per-tick magnitude is fixed for this deployable, so the drain is described once here rather
-	// than rebuilt on every Tick.
+	// The drain never changes for this deployable — Tick only hands it the length of the tick it covers.
+	DrainEffectData.Amount = DrainMagnitudePerSecond;
+	DrainEffectData.bIsPerSecond = true;
 	DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
-	DrainEffectData.bLimitGameplayCue = true;
 	DrainEffectData.bDoNotRedirectSacrifice = !bCanSacrificeDrain;
 }
 
@@ -211,7 +211,6 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 	if (bUseRegularDrain && DrainMagnitudePerSecond > 0.f && bActive && !IsBlinking() && GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		DrainEffectData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed,
 														GetData()->AbilityTag);
 	}

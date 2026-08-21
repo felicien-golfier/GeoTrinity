@@ -63,7 +63,7 @@ void UGeoWidgetBuilderUtil::FinishBuild(UWidgetBlueprint* WidgetBlueprint)
 UPanelWidget* UGeoWidgetBuilderUtil::ConstructRootPanel(UWidgetTree* Tree, TSubclassOf<UPanelWidget> PanelClass,
 														FName Name)
 {
-	if (!ensureMsgf(PanelClass, TEXT("UGeoWidgetBuilderUtil::ConstructRootPanel — PanelClass is null")))
+	if (!ensureMsgf(PanelClass, TEXT("%hs — PanelClass is null"), __FUNCTION__))
 	{
 		return nullptr;
 	}
@@ -93,14 +93,14 @@ void UGeoWidgetBuilderUtil::SetRootPanel(UWidgetBlueprint* WidgetBlueprint, TSub
 
 	FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Set root panel '%s' (named '%s') on '%s'"), *PanelClass->GetName(),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Set root panel '%s' (named '%s') on '%s'"), __FUNCTION__, *PanelClass->GetName(),
 		   *RootName.ToString(), *WidgetBlueprint->GetName());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoWidgetBuilderUtil::SetImageRoot(UWidgetBlueprint* WidgetBlueprint, UTexture2D* Texture, FVector2D DesiredSize)
 {
-	if (!ensureMsgf(Texture, TEXT("UGeoWidgetBuilderUtil::SetImageRoot — Texture is null")))
+	if (!ensureMsgf(Texture, TEXT("%hs — Texture is null"), __FUNCTION__))
 	{
 		return;
 	}
@@ -118,7 +118,7 @@ void UGeoWidgetBuilderUtil::SetImageRoot(UWidgetBlueprint* WidgetBlueprint, UTex
 
 	FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Set image root on '%s' with texture '%s' (%gx%g)"),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Set image root on '%s' with texture '%s' (%gx%g)"), __FUNCTION__,
 		   *WidgetBlueprint->GetName(), *Texture->GetName(), DesiredSize.X, DesiredSize.Y);
 }
 
@@ -126,7 +126,7 @@ void UGeoWidgetBuilderUtil::SetImageRoot(UWidgetBlueprint* WidgetBlueprint, UTex
 void UGeoWidgetBuilderUtil::SetImageRootFromMaterial(UWidgetBlueprint* WidgetBlueprint, UMaterialInterface* Material,
 													 FVector2D DesiredSize)
 {
-	if (!ensureMsgf(Material, TEXT("UGeoWidgetBuilderUtil::SetImageRootFromMaterial — Material is null")))
+	if (!ensureMsgf(Material, TEXT("%hs — Material is null"), __FUNCTION__))
 	{
 		return;
 	}
@@ -144,20 +144,20 @@ void UGeoWidgetBuilderUtil::SetImageRootFromMaterial(UWidgetBlueprint* WidgetBlu
 
 	FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Set image root on '%s' with material '%s' (%gx%g)"),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Set image root on '%s' with material '%s' (%gx%g)"), __FUNCTION__,
 		   *WidgetBlueprint->GetName(), *Material->GetName(), DesiredSize.X, DesiredSize.Y);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoWidgetBuilderUtil::InspectWidgetBlueprint(UWidgetBlueprint* WidgetBlueprint)
 {
-	if (!ensureMsgf(WidgetBlueprint, TEXT("UGeoWidgetBuilderUtil::InspectWidgetBlueprint — WidgetBlueprint is null")))
+	if (!ensureMsgf(WidgetBlueprint, TEXT("%hs — WidgetBlueprint is null"), __FUNCTION__))
 	{
 		return;
 	}
 
 	UWidgetTree* Tree = WidgetBlueprint->WidgetTree;
-	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::InspectWidgetBlueprint — WidgetTree is null on '%s'"),
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), __FUNCTION__,
 					*WidgetBlueprint->GetName()))
 	{
 		return;
@@ -178,13 +178,13 @@ void UGeoWidgetBuilderUtil::InspectWidgetBlueprint(UWidgetBlueprint* WidgetBluep
 UWidget* UGeoWidgetBuilderUtil::ConstructWidgetInTree(UWidgetBlueprint* WidgetBlueprint, TSubclassOf<UWidget> WidgetClass,
 													  FName WidgetName, bool bIsVariable)
 {
-	if (!ensureMsgf(WidgetClass, TEXT("ConstructWidgetInTree — WidgetClass is null")))
+	if (!ensureMsgf(WidgetClass, TEXT("%hs — WidgetClass is null"), __FUNCTION__))
 	{
 		return nullptr;
 	}
 
 	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
-	if (!ensureMsgf(Tree, TEXT("ConstructWidgetInTree — WidgetTree is null on '%s'"),
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), __FUNCTION__,
 					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
 	{
 		return nullptr;
@@ -214,7 +214,7 @@ UPanelSlot* UGeoWidgetBuilderUtil::AttachWidget(UWidgetBlueprint* WidgetBlueprin
 												int32 Index)
 {
 	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
-	if (!ensureMsgf(Tree, TEXT("AttachWidget — WidgetTree is null on '%s'"),
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), __FUNCTION__,
 					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
 	{
 		return nullptr;
@@ -222,9 +222,9 @@ UPanelSlot* UGeoWidgetBuilderUtil::AttachWidget(UWidgetBlueprint* WidgetBlueprin
 
 	UPanelWidget* Parent = Cast<UPanelWidget>(FindTreeWidget(Tree, ParentName));
 	UWidget* Child = FindTreeWidget(Tree, ChildName);
-	if (!ensureMsgf(Parent, TEXT("AttachWidget — no panel named '%s' in '%s'"), *ParentName.ToString(),
+	if (!ensureMsgf(Parent, TEXT("%hs — no panel named '%s' in '%s'"), __FUNCTION__, *ParentName.ToString(),
 					*WidgetBlueprint->GetName())
-		|| !ensureMsgf(Child, TEXT("AttachWidget — no widget named '%s' in '%s'"), *ChildName.ToString(),
+		|| !ensureMsgf(Child, TEXT("%hs — no widget named '%s' in '%s'"), __FUNCTION__, *ChildName.ToString(),
 					   *WidgetBlueprint->GetName()))
 	{
 		return nullptr;
@@ -244,14 +244,14 @@ UPanelSlot* UGeoWidgetBuilderUtil::AttachWidget(UWidgetBlueprint* WidgetBlueprin
 void UGeoWidgetBuilderUtil::RemoveWidget(UWidgetBlueprint* WidgetBlueprint, FName Name)
 {
 	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
-	if (!ensureMsgf(Tree, TEXT("RemoveWidget — WidgetTree is null on '%s'"),
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), __FUNCTION__,
 					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
 	{
 		return;
 	}
 
 	UWidget* Widget = FindTreeWidget(Tree, Name);
-	if (!ensureMsgf(Widget, TEXT("RemoveWidget — no widget named '%s' in '%s'"), *Name.ToString(),
+	if (!ensureMsgf(Widget, TEXT("%hs — no widget named '%s' in '%s'"), __FUNCTION__, *Name.ToString(),
 					*WidgetBlueprint->GetName()))
 	{
 		return;
@@ -270,7 +270,7 @@ void UGeoWidgetBuilderUtil::RemoveWidget(UWidgetBlueprint* WidgetBlueprint, FNam
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoWidgetBuilderUtil::CommitTree(UWidgetBlueprint* WidgetBlueprint)
 {
-	if (!ensureMsgf(WidgetBlueprint, TEXT("CommitTree — WidgetBlueprint is null")))
+	if (!ensureMsgf(WidgetBlueprint, TEXT("%hs — WidgetBlueprint is null"), __FUNCTION__))
 	{
 		return;
 	}
@@ -320,7 +320,7 @@ void UGeoWidgetBuilderUtil::CommitTree(UWidgetBlueprint* WidgetBlueprint)
 UWidget* UGeoWidgetBuilderUtil::FindWidget(UWidgetBlueprint* WidgetBlueprint, FName Name)
 {
 	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
-	if (!ensureMsgf(Tree, TEXT("FindWidget — WidgetTree is null on '%s'"),
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), __FUNCTION__,
 					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
 	{
 		return nullptr;
@@ -352,7 +352,7 @@ UWidget* UGeoWidgetBuilderUtil::AddWidgetToPanel(UWidgetBlueprint* WidgetBluepri
 
 	CommitTree(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Added %s '%s' under '%s' on '%s'"), *WidgetClass->GetName(),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Added %s '%s' under '%s' on '%s'"), __FUNCTION__, *WidgetClass->GetName(),
 		   *WidgetName.ToString(), *ParentPanelName.ToString(), *WidgetBlueprint->GetName());
 	return Widget;
 }
@@ -384,7 +384,7 @@ UPanelWidget* UGeoWidgetBuilderUtil::GroupWidgetsIntoPanel(UWidgetBlueprint* Wid
 
 	CommitTree(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoWidgetBuilderUtil: Grouped %d widget(s) into %s '%s' under '%s' on '%s'"),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Grouped %d widget(s) into %s '%s' under '%s' on '%s'"), __FUNCTION__,
 		   ChildNames.Num(), *GroupPanelClass->GetName(), *GroupName.ToString(), *ParentPanelName.ToString(),
 		   *WidgetBlueprint->GetName());
 	return Group;
@@ -394,14 +394,14 @@ UPanelWidget* UGeoWidgetBuilderUtil::GroupWidgetsIntoPanel(UWidgetBlueprint* Wid
 UCanvasPanelSlot* UGeoWidgetBuilderUtil::AddChildToCanvasPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
 															   TSubclassOf<UUserWidget> ChildWidgetClass, FName ChildName)
 {
-	if (!ensureMsgf(WidgetBlueprint, TEXT("UGeoWidgetBuilderUtil::AddChildToCanvasPanel — WidgetBlueprint is null")) ||
-		!ensureMsgf(ChildWidgetClass, TEXT("UGeoWidgetBuilderUtil::AddChildToCanvasPanel — ChildWidgetClass is null")))
+	if (!ensureMsgf(WidgetBlueprint, TEXT("%hs — WidgetBlueprint is null"), __FUNCTION__) ||
+		!ensureMsgf(ChildWidgetClass, TEXT("%hs — ChildWidgetClass is null"), __FUNCTION__))
 	{
 		return nullptr;
 	}
 
 	UWidgetTree* Tree = WidgetBlueprint->WidgetTree;
-	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::AddChildToCanvasPanel — WidgetTree is null on '%s'"),
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), __FUNCTION__,
 					*WidgetBlueprint->GetName()))
 	{
 		return nullptr;
@@ -411,7 +411,7 @@ UCanvasPanelSlot* UGeoWidgetBuilderUtil::AddChildToCanvasPanel(UWidgetBlueprint*
 	// widgets keep their GUIDs; only the new child's variable name needs a fresh GUID registered (the compiler auto-
 	// assigns GUIDs only when WidgetVariableNameToGuidMap is empty, which it is not on an already-built asset).
 	UCanvasPanel* Parent = Cast<UCanvasPanel>(Tree->FindWidget(ParentPanelName));
-	if (!ensureMsgf(Parent, TEXT("AddChildToCanvasPanel — no CanvasPanel named '%s' in '%s'"),
+	if (!ensureMsgf(Parent, TEXT("%hs — no CanvasPanel named '%s' in '%s'"), __FUNCTION__,
 					*ParentPanelName.ToString(), *WidgetBlueprint->GetName()))
 	{
 		return nullptr;
@@ -440,7 +440,7 @@ UCanvasPanelSlot* UGeoWidgetBuilderUtil::AddChildToCanvasPanel(UWidgetBlueprint*
 UVerticalBoxSlot* UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(UVerticalBox* VerticalBox, UWidget* Child,
 																	   FMargin Padding)
 {
-	if (!ensureMsgf(VerticalBox && Child, TEXT("UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox — null arg")))
+	if (!ensureMsgf(VerticalBox && Child, TEXT("%hs — null arg"), __FUNCTION__))
 	{
 		return nullptr;
 	}
@@ -457,7 +457,7 @@ UVerticalBoxSlot* UGeoWidgetBuilderUtil::AddCenteredChildToVerticalBox(UVertical
 // ---------------------------------------------------------------------------------------------------------------------
 UButton* UGeoWidgetBuilderUtil::ConstructLabeledButton(UWidgetTree* Tree, FName Name, FText LabelText)
 {
-	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::ConstructLabeledButton — Tree is null")))
+	if (!ensureMsgf(Tree, TEXT("%hs — Tree is null"), __FUNCTION__))
 	{
 		return nullptr;
 	}
@@ -473,7 +473,7 @@ UButton* UGeoWidgetBuilderUtil::ConstructLabeledButton(UWidgetTree* Tree, FName 
 UProgressBar* UGeoWidgetBuilderUtil::ConstructProgressBar(UWidgetTree* Tree, FName Name, FLinearColor FillColor,
 														  FLinearColor BackgroundColor, bool bIsVariable)
 {
-	if (!ensureMsgf(Tree, TEXT("UGeoWidgetBuilderUtil::ConstructProgressBar — Tree is null")))
+	if (!ensureMsgf(Tree, TEXT("%hs — Tree is null"), __FUNCTION__))
 	{
 		return nullptr;
 	}
@@ -492,7 +492,7 @@ UProgressBar* UGeoWidgetBuilderUtil::ConstructProgressBar(UWidgetTree* Tree, FNa
 // ---------------------------------------------------------------------------------------------------------------------
 UOverlaySlot* UGeoWidgetBuilderUtil::AddFillChildToOverlay(UOverlay* Overlay, UWidget* Child)
 {
-	if (!ensureMsgf(Overlay && Child, TEXT("UGeoWidgetBuilderUtil::AddFillChildToOverlay — Overlay or Child is null")))
+	if (!ensureMsgf(Overlay && Child, TEXT("%hs — Overlay or Child is null"), __FUNCTION__))
 	{
 		return nullptr;
 	}

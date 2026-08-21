@@ -42,6 +42,8 @@ void AGeoEffectZone::OnConstruction(FTransform const& Transform)
 {
 	Super::OnConstruction(Transform);
 
+	SetActorRotation(FRotator::ZeroRotator);
+
 	// A spawned zone is already initialized by the time OnConstruction runs (FinishSpawning comes after
 	// InitInteractable), so only a placed one still needs its Details-panel fields pushed into Data.
 	if (!Data.Owner)
@@ -73,6 +75,7 @@ void AGeoEffectZone::BeginPlay()
 	}
 
 	Super::BeginPlay();
+	SetActorRotation(FRotator::ZeroRotator);
 	ApplyRadius();
 	ApplyColor();
 
@@ -157,23 +160,22 @@ void AGeoEffectZone::Tick(float DeltaSeconds)
 	ActorsInZone.GetKeys(Tracked);
 	for (TWeakObjectPtr<AActor> const& TrackedActor : Tracked)
 	{
-		ApplyZoneEffects(TrackedActor, SourceASC, DeltaSeconds);
+		ApplyZoneEffects(TrackedActor, SourceASC);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoEffectZone::ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor, UGeoAbilitySystemComponent* SourceASC,
-									  float const DeltaSeconds)
+void AGeoEffectZone::ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor, UGeoAbilitySystemComponent* SourceASC)
 {
 	AActor* Actor = TrackedActor.Get();
 	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-	TArray<FActiveGameplayEffectHandle> const* Handles = ActorsInZone.Find(TrackedActor);
-	if (!TargetASC || !Handles)
+	TArray<FActiveGameplayEffectHandle> const* ActiveGameplayEffectHandles = ActorsInZone.Find(TrackedActor);
+	if (!TargetASC || !ActiveGameplayEffectHandles)
 	{
 		return;
 	}
 
-	bool const bApplyPersistent = Handles->IsEmpty();
+	bool const bPersistentEffectsEmpty = ActiveGameplayEffectHandles->IsEmpty();
 	TArray<FActiveGameplayEffectHandle> AppliedHandles;
 	for (TInstancedStruct<FEffectData> const& Entry : Data.EffectDataArray)
 	{
@@ -182,19 +184,11 @@ void AGeoEffectZone::ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor
 			break; // Do not continue if the actor is dead or destroyed during this loop.
 		}
 
-		if (FHealEffectData const* Heal = Entry.GetPtr<FHealEffectData>())
+		if (Entry.Get().IsPerSecond())
 		{
-			FHealEffectData Scaled = *Heal;
-			Scaled.HealAmount = Heal->HealAmount.GetValueAtLevel(Data.Level) * DeltaSeconds;
-			GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
+			GeoASLib::ApplySingleEffectData(Entry, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
 		}
-		else if (FDamageEffectData const* Damage = Entry.GetPtr<FDamageEffectData>())
-		{
-			FDamageEffectData Scaled = *Damage;
-			Scaled.DamageAmount = Damage->DamageAmount.GetValueAtLevel(Data.Level) * DeltaSeconds;
-			GeoASLib::ApplySingleEffectData(Scaled, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
-		}
-		else if (bApplyPersistent)
+		else if (bPersistentEffectsEmpty) // Ignore all other effect if they have already been applied
 		{
 			AppliedHandles.Add(
 				GeoASLib::ApplySingleEffectData(Entry, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag));
@@ -220,8 +214,16 @@ void AGeoEffectZone::OnRep_Data()
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoEffectZone::ApplyRadius() const
 {
-	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
 	CapsuleComponent->SetCapsuleHalfHeight(Data.Params.Size);
+	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
+
+	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
+	{
+		FVector Scale = MeshComponent->GetRelativeScale3D();
+		Scale.X = Data.Params.Size * .02f;
+		Scale.Y = Data.Params.Size * .02f;
+		MeshComponent->SetRelativeScale3D(Scale);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

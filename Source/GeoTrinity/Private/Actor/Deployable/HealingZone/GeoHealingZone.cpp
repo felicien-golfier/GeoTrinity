@@ -8,7 +8,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 
 void AGeoHealingZone::ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor,
-									   UGeoAbilitySystemComponent* SourceASC, float const DeltaSeconds)
+									   UGeoAbilitySystemComponent* SourceASC)
 {
 	AActor* Actor = TrackedActor.Get();
 	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
@@ -20,17 +20,18 @@ void AGeoHealingZone::ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActo
 	}
 
 	// The authored array on top, so game design can add something to the heal without touching this class.
-	Super::ApplyZoneEffects(TrackedActor, SourceASC, DeltaSeconds);
+	Super::ApplyZoneEffects(TrackedActor, SourceASC);
 
 	FHealEffectData HealEffectData;
-	HealEffectData.HealAmount = DrainMagnitudePerSecond * DeltaSeconds;
-	HealEffectData.bLimitGameplayCue = true;
+	HealEffectData.Amount = DrainMagnitudePerSecond;
+	HealEffectData.bIsPerSecond = true;
 	GeoASLib::ApplySingleEffectData(HealEffectData, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
 
 	// The zone pays for what it healed — once per healed ally, so it burns down faster the more it reaches. Distinct
 	// from the base class's flat per-second drain.
 	FDamageEffectData HealingCostData;
-	HealingCostData.DamageAmount = DrainMagnitudePerSecond * DeltaSeconds;
+	HealingCostData.Amount = DrainMagnitudePerSecond;
+	HealingCostData.bIsPerSecond = true;
 	HealingCostData.bSuppressGameplayCue = true;
 	HealingCostData.bSuppressCombatStats = true;
 	HealingCostData.bDoNotRedirectSacrifice = true;

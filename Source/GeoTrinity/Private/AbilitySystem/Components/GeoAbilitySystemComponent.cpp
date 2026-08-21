@@ -19,31 +19,31 @@
 
 namespace
 {
-// GAS executes an effect's modifiers strictly in array order, and UGeoAttributeSetBase::PreAttributeChange clamps
-// Health and Shield against MaxHealth. A modifier listed before MaxHealth therefore lands clamped against a MaxHealth
-// of 0 — and the clamp hits the current value only, so raising MaxHealth afterwards never brings it back.
-bool IsMaxHealthModifiedFirst(UGameplayEffect const& Effect)
-{
-	bool bSeenClampedAttribute = false;
-	for (FGameplayModifierInfo const& Modifier : Effect.Modifiers)
+	// GAS executes an effect's modifiers strictly in array order, and UGeoAttributeSetBase::PreAttributeChange clamps
+	// Health and Shield against MaxHealth. A modifier listed before MaxHealth therefore lands clamped against a
+	// MaxHealth of 0 — and the clamp hits the current value only, so raising MaxHealth afterwards never brings it back.
+	bool IsMaxHealthModifiedFirst(UGameplayEffect const& Effect)
 	{
-		if (Modifier.Attribute == UGeoAttributeSetBase::GetMaxHealthAttribute())
+		bool bSeenClampedAttribute = false;
+		for (FGameplayModifierInfo const& Modifier : Effect.Modifiers)
 		{
-			return !bSeenClampedAttribute;
+			if (Modifier.Attribute == UGeoAttributeSetBase::GetMaxHealthAttribute())
+			{
+				return !bSeenClampedAttribute;
+			}
+			bSeenClampedAttribute |= Modifier.Attribute == UGeoAttributeSetBase::GetHealthAttribute()
+				|| Modifier.Attribute == UGeoAttributeSetBase::GetShieldAttribute();
 		}
-		bSeenClampedAttribute |= Modifier.Attribute == UGeoAttributeSetBase::GetHealthAttribute()
-			|| Modifier.Attribute == UGeoAttributeSetBase::GetShieldAttribute();
+		return true;
 	}
-	return true;
-}
 
-/** The ability catalog, or null after one ensure naming Caller. Every reader of the catalog goes through here. */
-UAbilityInfo* GetCheckedAbilityInfo(ANSICHAR const* const Caller)
-{
-	UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo();
-	ensureMsgf(AbilityInfos, TEXT("%hs: AbilityInfo data asset is not loaded"), Caller);
-	return AbilityInfos;
-}
+	/** The ability catalog, or null after one ensure naming Caller. Every reader of the catalog goes through here. */
+	UAbilityInfo* GetCheckedAbilityInfo(ANSICHAR const* const Caller)
+	{
+		UAbilityInfo* AbilityInfos = UGeoAbilitySystemLibrary::GetAbilityInfo();
+		ensureMsgf(AbilityInfos, TEXT("%hs: AbilityInfo data asset is not loaded"), Caller);
+		return AbilityInfos;
+	}
 } // namespace
 
 void UGeoAbilitySystemComponent::InitializeComponent()
@@ -162,8 +162,7 @@ void UGeoAbilitySystemComponent::OnRemoteFireTagChanged(FGameplayTag const Remot
 	// would make a looping replay fire faster the worse the local connection is.
 	GetWorld()->GetTimerManager().SetTimer(
 		RemoteFire.ShotTimer, FTimerDelegate::CreateUObject(this, &ThisClass::RemoteFireShot, RemoteFireTag), FireDelay,
-		RemoteFire.AbilityCDO->IsRemoteFireLooping(),
-		FMath::Max(FireDelay - GeoLib::GetOnWayPingSec(GetWorld()), 0.f));
+		RemoteFire.AbilityCDO->IsRemoteFireLooping(), FMath::Max(FireDelay - GeoLib::GetOnWayPingSec(GetWorld()), 0.f));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -295,7 +294,8 @@ void UGeoAbilitySystemComponent::ActivateAbilitiesForInput(FGameplayTag const& I
 		UGeoGameplayAbility const* GeoAbility = Cast<UGeoGameplayAbility>(AbilitySpec.Ability);
 
 		// An ability can name a second input that fires it: that press releases it, its own input still does too.
-		if (bFreshPress && GeoAbility && GeoAbility->GetAlternateReleaseInputTag() == InputTag && AbilitySpec.IsActive())
+		if (bFreshPress && GeoAbility && GeoAbility->GetAlternateReleaseInputTag() == InputTag
+			&& AbilitySpec.IsActive())
 		{
 			ReleaseAbilitySpec(AbilitySpec);
 		}
@@ -379,7 +379,8 @@ void UGeoAbilitySystemComponent::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> 
 	FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext();
 	EffectContextHandle.AddSourceObject(this);
 
-	FGameplayEffectSpecHandle const SpecHandle = MakeOutgoingSpec(GameplayEffectClass, CombatLevel, EffectContextHandle);
+	FGameplayEffectSpecHandle const SpecHandle =
+		MakeOutgoingSpec(GameplayEffectClass, CombatLevel, EffectContextHandle);
 	if (!ensureMsgf(SpecHandle.IsValid(), TEXT("%hs: SpecHandle is invalid"), __FUNCTION__))
 	{
 		return;
@@ -506,6 +507,12 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 		Pattern = CreatePatternInstance(PatternClass, Payload.AbilityTag);
 	}
 
+	if (!GetWorld()->GetGameState())
+	{
+		UE_LOG(LogGeoASC, Warning, TEXT("PatternStartMulticast for pattern %s: No game state!"), *Pattern->GetName());
+		return;
+	}
+
 	Pattern->InitPattern(Payload, PatternData);
 }
 
@@ -549,13 +556,13 @@ bool UGeoAbilitySystemComponent::TryActivateAbilityWithTargetData(FGameplayAbili
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySystemComponent::ReactivatePassiveAbilities()
 {
-	FScopedAbilityListLock activeScopeLock(*this);
-	for (FGameplayAbilitySpec& abilitySpec : GetActivatableAbilities())
+	FScopedAbilityListLock ActiveScopeLock(*this);
+	for (FGameplayAbilitySpec& AbilitySpec : GetActivatableAbilities())
 	{
-		UGeoGameplayAbility const* AbilityCDO = Cast<UGeoGameplayAbility>(abilitySpec.Ability);
-		if (AbilityCDO && AbilityCDO->IsPassive() && !abilitySpec.IsActive())
+		UGeoGameplayAbility const* AbilityCDO = Cast<UGeoGameplayAbility>(AbilitySpec.Ability);
+		if (AbilityCDO && AbilityCDO->IsPassive() && !AbilitySpec.IsActive())
 		{
-			TryActivateAbility(abilitySpec.Handle, false);
+			TryActivateAbility(AbilitySpec.Handle, false);
 		}
 	}
 }

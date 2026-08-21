@@ -6,10 +6,10 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
-#include "Characters/Component/GeoGameFeelComponent.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UExecCalc_Damage::UExecCalc_Damage()
@@ -28,32 +28,20 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 											  FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const
 {
 	/** GET SOURCE DATA **/
-	FGameplayEffectSpec const& specGE = ExecutionParams.GetOwningSpec();
-	FGameplayEffectContextHandle contextHandle = specGE.GetContext();
+	FGameplayEffectSpec const& EffectSpec = ExecutionParams.GetOwningSpec();
+	FGameplayEffectContextHandle ContextHandle = EffectSpec.GetContext();
 	UAbilitySystemComponent const* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
 	UAbilitySystemComponent const* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
 	AActor* TargetAvatar = TargetASC ? TargetASC->GetAvatarActor() : nullptr;
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
 
-	float Damage = specGE.GetSetByCallerMagnitude(Tags.Gameplay_Damage, false, 0.f);
+	float Damage = EffectSpec.GetSetByCallerMagnitude(Tags.Gameplay_Damage, false, 0.f);
 
-	FGeoGameplayEffectContext const* GeoContext = static_cast<FGeoGameplayEffectContext const*>(contextHandle.Get());
+	FGeoGameplayEffectContext const* GeoContext = static_cast<FGeoGameplayEffectContext const*>(ContextHandle.Get());
 	if (GeoContext)
 	{
 		Damage *= GeoContext->GetSingleUseDamageMultiplier();
-		bool bSuppressGameplayCue = GeoContext->IsSuppressGameplayCue();
-		if (!bSuppressGameplayCue && GeoContext->IsLimitGameplayCue() && IsValid(TargetAvatar))
-		{
-			UGeoGameFeelComponent* GameFeelComponent = TargetAvatar->FindComponentByClass<UGeoGameFeelComponent>();
-			if (ensureMsgf(GameFeelComponent,
-						   TEXT("UExecCalc_Damage: bLimitGameplayCue set but target %s has no GeoGameFeelComponent"),
-						   *TargetAvatar->GetName()))
-			{
-				bSuppressGameplayCue = !GameFeelComponent->IsDamageCueAvailable();
-			}
-		}
-
-		if (bSuppressGameplayCue)
+		if (GeoASLib::ShouldSuppressGameplayCue(*GeoContext, TargetAvatar, /*bIsHeal*/ false))
 		{
 			OutExecutionOutput.MarkGameplayCuesHandledManually();
 		}
@@ -69,8 +57,8 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	}
 
 	FAggregatorEvaluateParameters EvaluationParams;
-	EvaluationParams.SourceTags = specGE.CapturedSourceTags.GetAggregatedTags();
-	EvaluationParams.TargetTags = specGE.CapturedTargetTags.GetAggregatedTags();
+	EvaluationParams.SourceTags = EffectSpec.CapturedSourceTags.GetAggregatedTags();
+	EvaluationParams.TargetTags = EffectSpec.CapturedTargetTags.GetAggregatedTags();
 
 	float DamageMultiplier = 1.f;
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageMultiplierCaptureDef, EvaluationParams,

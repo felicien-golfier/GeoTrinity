@@ -50,6 +50,8 @@ void UGeoOverlayWidget::NativeConstruct()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoOverlayWidget::NativeDestruct()
 {
+	// The weak lambdas above would self-clean, but NativeConstruct runs again every time the overlay is re-added to
+	// the viewport, so without this removal each re-construction stacks another pair on the game instance.
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		GameInstance->OnLocalPlayerAddedEvent.RemoveAll(this);

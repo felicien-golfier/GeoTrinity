@@ -55,12 +55,3 @@ void UGeoCombattantWidgetComp::BindToOwnerASC() const
 	}
 }
 
-
-void UGeoCombattantWidgetComp::EndPlay(EEndPlayReason::Type const EndPlayReason)
-{
-	if (UGenericCombattantWidget* CombattantWidget = Cast<UGenericCombattantWidget>(GetUserWidgetObject()))
-	{
-		CombattantWidget->UnbindStatCallbacks();
-	}
-	Super::EndPlay(EndPlayReason);
-}

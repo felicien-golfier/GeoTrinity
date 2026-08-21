@@ -198,7 +198,7 @@ void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage, UAbili
 	}
 
 	FDamageEffectData RedirectEffect;
-	RedirectEffect.DamageAmount = FScalableFloat(Damage / (AliveWalls.Num() + 1));
+	RedirectEffect.Amount = FScalableFloat(Damage / (AliveWalls.Num() + 1));
 	RedirectEffect.bDoNotRedirectSacrifice = true;
 	RedirectEffect.bLimitGameplayCue = true;
 

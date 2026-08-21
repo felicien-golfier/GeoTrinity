@@ -28,8 +28,4 @@ public:
 
 	/** Binds the (already-created) widget to the owner's ASC if both exist. No-op otherwise. */
 	virtual void BindToOwnerASC() const override;
-
-protected:
-	/** Calls UnbindStatCallbacks on the widget before delegating to Super. */
-	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 };

@@ -22,12 +22,9 @@ class GEOTRINITYUI_API UGenericCombattantWidget : public UGeoUserWidget
 	GENERATED_BODY()
 
 public:
-	/** Stores ASC, calls BindStatCallbacks, then fires InitStats so BP subclasses can populate initial values. */
+	/** Stores ASC, calls BindStatCallbacks, then fires RefreshStats so BP subclasses can populate initial values. */
 	UFUNCTION(BlueprintNativeEvent)
 	void InitializeWithAbilitySystemComponent(UAbilitySystemComponent* ASC);
-
-	/** Removes attribute change delegates bound by BindStatCallbacks. Call before the ASC is destroyed. */
-	void UnbindStatCallbacks();
 
 protected:
 	UFUNCTION(BlueprintNativeEvent)
@@ -43,7 +40,11 @@ protected:
 	void UpdateHealthBarVisibility();
 	virtual void UpdateHealthBarVisibility_Implementation();
 
-	virtual void InitStats();
+	/** Pushes the current ASC values into the bar: health ratio, shield ratio, and the bar visibility — which depends
+	 * on MaxHealth, so it is only correct once the owner's attributes are initialized. Every attribute the bar shows
+	 * calls this, which is what recovers the listen-server host, where MaxHealth is set synchronously before the
+	 * widget's first refresh. */
+	virtual void RefreshStats();
 
 	UPROPERTY(BlueprintReadOnly, Category = "Runtime")
 	TWeakObjectPtr<UAbilitySystemComponent> OwnerASC;
@@ -59,11 +60,8 @@ protected:
 	TObjectPtr<UTextBlock> CurrentHealthText;
 
 private:
+	/** Binds every attribute the bar shows to RefreshStats, with weak lambdas that need no matching removal. */
 	void BindStatCallbacks();
-	UFUNCTION()
-	void OnHealthChanged(float NewValue);
 	/** Recomputes the shield bar as Shield / MaxHealth (shield is capped at MaxHealth by design — no MaxShield). */
 	void RefreshShield();
-
-	FDelegateHandle ShieldChangedHandle;
 };

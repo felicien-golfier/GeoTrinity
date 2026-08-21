@@ -5,10 +5,12 @@
 
 #include "Abilities/GameplayAbility.h"
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "GameplayTagsManager.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
@@ -40,121 +42,18 @@ static FGameplayTag GetAbilityTypeTagFromCDO(TSubclassOf<UGameplayAbility> const
 	return GetAssetTagFromCDO(AbilityClass, FGeoGameplayTags::Get().Ability_Type, TEXT("Ability Type"));
 }
 
-namespace
-{
-	// Level bounds a {Token:range} suffix evaluates over — for values whose curve is driven by another system than
-	// ability level (e.g. the reload's remaining-ammo scale), rendered as a level 1 → 10 min-max range.
-	constexpr int32 MinDescriptionLevel = 1;
-	constexpr int32 MaxDescriptionLevel = 10;
-
-	// How a resolved scalar value is rendered: as-is, or as a percentage (raw ×100) / bonus percentage ((raw−1)×100),
-	// selected per token by a {Token:%} / {Token:+%} suffix so a 1.5 multiplier reads "150%" or "50%".
-	enum class EValueFormat : uint8
-	{
-		Plain,
-		Percent,
-		BonusPercent
-	};
-
-	// Per-token render options. Levels are equal unless bShowRange, in which case a value is evaluated at
-	// MinDescriptionLevel and MaxDescriptionLevel to show its full curve range.
-	struct FDescriptionFormat
-	{
-		int32 AbilityLevel = 1;
-		bool bShowRange = false;
-		bool bRichTextValues = false;
-		EValueFormat ValueFormat = EValueFormat::Plain;
-
-		int32 MinLevel() const { return bShowRange ? MinDescriptionLevel : AbilityLevel; }
-		int32 MaxLevel() const { return bShowRange ? MaxDescriptionLevel : AbilityLevel; }
-	};
-} // namespace
-
-/** Wraps a resolved value in the <Value> rich-text style tag so the UI can color it. */
-static FString MarkUpValue(FString const& Value, FDescriptionFormat const& Format)
-{
-	return Format.bRichTextValues ? FString::Printf(TEXT("<Value>%s</>"), *Value) : Value;
-}
-
-static FString FormatValueRange(float Min, float Max, FDescriptionFormat const& Format)
-{
-	TCHAR const* Suffix = TEXT("");
-	if (Format.ValueFormat != EValueFormat::Plain)
-	{
-		float const Base = Format.ValueFormat == EValueFormat::BonusPercent ? 1.f : 0.f;
-		Min = (Min - Base) * 100.f;
-		Max = (Max - Base) * 100.f;
-		Suffix = TEXT("%");
-	}
-	return MarkUpValue(FMath::IsNearlyEqual(Min, Max) ? FString::Printf(TEXT("%g%s"), Min, Suffix)
-													  : FString::Printf(TEXT("%g-%g%s"), Min, Max, Suffix),
-					   Format);
-}
-
-static FString FormatScalableRange(FScalableFloat const& Scalable, FDescriptionFormat const& Format)
-{
-	return FormatValueRange(Scalable.GetValueAtLevel(Format.MinLevel()), Scalable.GetValueAtLevel(Format.MaxLevel()),
-							Format);
-}
-
-static FString GetTagLeafName(FGameplayTag const& Tag)
-{
-	FString LeafName = Tag.GetTagName().ToString();
-	int32 LastDotIndex = INDEX_NONE;
-	LeafName.FindLastChar(TEXT('.'), LastDotIndex);
-	return LastDotIndex == INDEX_NONE ? LeafName : LeafName.Mid(LastDotIndex + 1);
-}
-
-/** Expands an effect-data array ({Effects} or a named array property): one line per effect entry. */
+/** Expands an effect-data array ({Effects} or a named array property): one line per effect entry that has one. */
 static FString BuildEffectsSummary(TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 								   FDescriptionFormat const& Format)
 {
 	TArray<FString> Lines;
 	for (TInstancedStruct<FEffectData> const& Data : EffectDataArray)
 	{
-		if (FDamageEffectData const* Damage = Data.GetPtr<FDamageEffectData>())
+		FEffectData const* Effect = Data.GetPtr<FEffectData>();
+		FString Line = Effect ? Effect->GetDescriptionLine(Format) : FString();
+		if (!Line.IsEmpty())
 		{
-			Lines.Add(FString::Printf(TEXT("Damage: %s"), *FormatScalableRange(Damage->DamageAmount, Format)));
-		}
-		else if (FHealEffectData const* Heal = Data.GetPtr<FHealEffectData>())
-		{
-			Lines.Add(FString::Printf(TEXT("Heal: %s"), *FormatScalableRange(Heal->HealAmount, Format)));
-		}
-		else if (FShieldEffectData const* Shield = Data.GetPtr<FShieldEffectData>())
-		{
-			Lines.Add(FString::Printf(TEXT("Shield: %s"), *FormatScalableRange(Shield->ShieldAmount, Format)));
-		}
-		else if (FStatusEffectData const* Status = Data.GetPtr<FStatusEffectData>())
-		{
-			Lines.Add(FString::Printf(TEXT("%s status (%s chance)"), *GetTagLeafName(Status->StatusTag),
-									  *MarkUpValue(FString::Printf(TEXT("%d%%"), Status->StatusChance), Format)));
-		}
-		else if (FGameplayEffectData const* Effect = Data.GetPtr<FGameplayEffectData>())
-		{
-			if (!Effect->GameplayEffect)
-			{
-				continue;
-			}
-			FString const Name =
-				Effect->DataTag.IsValid() ? GetTagLeafName(Effect->DataTag) : Effect->GameplayEffect->GetName();
-			FString Line = FString::Printf(TEXT("%s: %s"), *Name, *FormatScalableRange(Effect->Magnitude, Format));
-			if (Effect->Duration.GetValueAtLevel(Format.MinLevel()) > 0.f)
-			{
-				Line += FString::Printf(TEXT(" for %ss"), *FormatScalableRange(Effect->Duration, Format));
-			}
-			Lines.Add(Line);
-		}
-		else if (FContextDamageMultiplierEffectData const* Multiplier =
-					 Data.GetPtr<FContextDamageMultiplierEffectData>())
-		{
-			FDescriptionFormat BonusPercentFormat = Format;
-			BonusPercentFormat.ValueFormat = EValueFormat::BonusPercent;
-			Lines.Add(FString::Printf(TEXT("%s more damage"),
-									  *FormatScalableRange(Multiplier->Multiplier, BonusPercentFormat)));
-		}
-		else if (Data.GetPtr<FLethalEffectData>())
-		{
-			Lines.Add(TEXT("Lethal"));
+			Lines.Add(MoveTemp(Line));
 		}
 	}
 	return FString::Join(Lines, TEXT("\n"));
@@ -180,6 +79,25 @@ static bool ResolvePropertyScalar(FString const& PropertyName, UGeoGameplayAbili
 		return true;
 	}
 	return false;
+}
+
+/** The SetByCaller tag a {Damage} / {Heal} / {Shield} token sums the effect array over; invalid for any other. */
+static FGameplayTag GetMagnitudeTagForToken(FString const& Token)
+{
+	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	if (Token == TEXT("Damage"))
+	{
+		return Tags.Gameplay_Damage;
+	}
+	if (Token == TEXT("Heal"))
+	{
+		return Tags.Gameplay_Heal;
+	}
+	if (Token == TEXT("Shield"))
+	{
+		return Tags.Gameplay_Shield;
+	}
+	return FGameplayTag();
 }
 
 /** Resolves Token to its formatted value at the Format levels (range when they differ). */
@@ -214,31 +132,18 @@ static bool ResolveDescriptionToken(FString const& Token, UGeoGameplayAbility co
 		OutValue = FormatValueRange(AbilityCDO.GetFireDelay(), AbilityCDO.GetFireDelay(), Format);
 		return true;
 	}
-	if (Token == TEXT("Damage") || Token == TEXT("Heal") || Token == TEXT("Shield"))
+	if (FGameplayTag const MagnitudeTag = GetMagnitudeTagForToken(Token); MagnitudeTag.IsValid())
 	{
 		float Min = 0.f;
 		float Max = 0.f;
 		bool bFound = false;
 		for (TInstancedStruct<FEffectData> const& Data : AbilityCDO.GetEffectDataArray())
 		{
-			FScalableFloat const* Amount = nullptr;
-			if (FDamageEffectData const* Damage = Token == TEXT("Damage") ? Data.GetPtr<FDamageEffectData>() : nullptr)
+			FMagnitudeEffectData const* Magnitude = Data.GetPtr<FMagnitudeEffectData>();
+			if (Magnitude && Magnitude->GetMagnitudeTag() == MagnitudeTag)
 			{
-				Amount = &Damage->DamageAmount;
-			}
-			else if (FHealEffectData const* Heal = Token == TEXT("Heal") ? Data.GetPtr<FHealEffectData>() : nullptr)
-			{
-				Amount = &Heal->HealAmount;
-			}
-			else if (FShieldEffectData const* Shield =
-						 Token == TEXT("Shield") ? Data.GetPtr<FShieldEffectData>() : nullptr)
-			{
-				Amount = &Shield->ShieldAmount;
-			}
-			if (Amount)
-			{
-				Min += Amount->GetValueAtLevel(Format.MinLevel());
-				Max += Amount->GetValueAtLevel(Format.MaxLevel());
+				Min += Magnitude->Amount.GetValueAtLevel(Format.MinLevel());
+				Max += Magnitude->Amount.GetValueAtLevel(Format.MaxLevel());
 				bFound = true;
 			}
 		}
@@ -284,38 +189,67 @@ static FString GetDescriptionsFilePath()
 }
 
 /**
- * Returns the [AbilityTag] section of Content/Data/AbilityDescriptions.txt, empty when the file or section is
- * missing. Lines starting with # are comments. Re-read on every call so the file can be edited live.
+ * Content/Data/AbilityDescriptions.txt parsed into section header ("[AbilityTag]") → body. Lines starting with # are
+ * comments. Re-parsed whenever the file's timestamp changes, so an edit still shows live while a description list
+ * built for every ability at once reads the file once instead of once per entry.
  */
-static FString LoadDescriptionFromFile(FGameplayTag const& AbilityTag)
+static TMap<FString, FString> const& GetDescriptionsBySection()
 {
-	FString FileContent;
-	if (!FFileHelper::LoadFileToString(FileContent, *GetDescriptionsFilePath()))
+	static TMap<FString, FString> Descriptions;
+	static FDateTime ParsedTimeStamp = FDateTime::MinValue();
+
+	FString const FilePath = GetDescriptionsFilePath();
+	FDateTime const TimeStamp = IFileManager::Get().GetTimeStamp(*FilePath);
+	if (TimeStamp == ParsedTimeStamp)
 	{
-		return FString();
+		return Descriptions;
+	}
+	ParsedTimeStamp = TimeStamp;
+	Descriptions.Reset();
+
+	FString FileContent;
+	if (!FFileHelper::LoadFileToString(FileContent, *FilePath))
+	{
+		return Descriptions;
 	}
 
 	TArray<FString> Lines;
 	FileContent.ParseIntoArrayLines(Lines, false);
-	FString const SectionHeader = FString::Printf(TEXT("[%s]"), *AbilityTag.ToString());
+	FString SectionHeader;
 	TArray<FString> SectionLines;
-	bool bInSection = false;
+	auto CommitSection = [&SectionHeader, &SectionLines]()
+	{
+		if (!SectionHeader.IsEmpty())
+		{
+			Descriptions.Add(SectionHeader, FString::Join(SectionLines, TEXT("\n")).TrimStartAndEnd());
+		}
+		SectionLines.Reset();
+	};
 	for (FString const& Line : Lines)
 	{
 		if (Line.StartsWith(TEXT("[")))
 		{
-			if (bInSection)
-			{
-				break;
-			}
-			bInSection = Line.TrimEnd() == SectionHeader;
+			CommitSection();
+			SectionHeader = Line.TrimEnd();
 		}
-		else if (bInSection && !Line.StartsWith(TEXT("#")))
+		else if (!Line.StartsWith(TEXT("#")))
 		{
 			SectionLines.Add(Line);
 		}
 	}
-	return FString::Join(SectionLines, TEXT("\n")).TrimStartAndEnd();
+	CommitSection();
+	return Descriptions;
+}
+
+/** Returns the [AbilityTag] section body, empty when the file or the section is missing. */
+static FString LoadDescriptionFromFile(FGameplayTag const& AbilityTag)
+{
+	if (FString const* Description =
+			GetDescriptionsBySection().Find(FString::Printf(TEXT("[%s]"), *AbilityTag.ToString())))
+	{
+		return *Description;
+	}
+	return FString();
 }
 
 #if WITH_EDITOR

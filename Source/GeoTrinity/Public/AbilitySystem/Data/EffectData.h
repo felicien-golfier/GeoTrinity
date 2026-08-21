@@ -33,6 +33,42 @@ public:
 	TArray<TInstancedStruct<struct FEffectData>> EffectDataInstances;
 };
 
+// Level bounds a description value evaluated as a range is rendered over — for values whose curve is driven by
+// another system than ability level (e.g. the reload's remaining-ammo scale), rendered as a level 1 → 10 range.
+constexpr int32 MinDescriptionLevel = 1;
+constexpr int32 MaxDescriptionLevel = 10;
+
+// How a resolved scalar value is rendered: as-is, or as a percentage (raw ×100) / bonus percentage ((raw−1)×100),
+// selected per token by a {Token:%} / {Token:+%} suffix so a 1.5 multiplier reads "150%" or "50%".
+enum class EValueFormat : uint8
+{
+	Plain,
+	Percent,
+	BonusPercent
+};
+
+// Per-token render options. Levels are equal unless bShowRange, in which case a value is evaluated at
+// MinDescriptionLevel and MaxDescriptionLevel to show its full curve range.
+struct FDescriptionFormat
+{
+	int32 AbilityLevel = 1;
+	bool bShowRange = false;
+	bool bRichTextValues = false;
+	EValueFormat ValueFormat = EValueFormat::Plain;
+
+	int32 MinLevel() const { return bShowRange ? MinDescriptionLevel : AbilityLevel; }
+	int32 MaxLevel() const { return bShowRange ? MaxDescriptionLevel : AbilityLevel; }
+};
+
+/** Wraps a resolved value in the <Value> rich-text style tag so the UI can color it. */
+FString MarkUpValue(FString const& Value, FDescriptionFormat const& Format);
+/** Renders "Min-Max" (or a single value when both are equal) with the format's percentage suffix and mark-up. */
+FString FormatValueRange(float Min, float Max, FDescriptionFormat const& Format);
+/** FormatValueRange over the scalable's values at the format's min and max levels. */
+FString FormatScalableRange(FScalableFloat const& Scalable, FDescriptionFormat const& Format);
+/** Last segment of a tag's name ("Status.Burn" → "Burn"), used as a display label. */
+FString GetTagLeafName(FGameplayTag const& Tag);
+
 /**
  * Polymorphic base for all gameplay effect descriptors.
  * Used with TInstancedStruct so arrays of mixed effect types can be stored in a UPROPERTY.
@@ -70,9 +106,17 @@ struct GEOTRINITY_API FEffectData
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const;
 
-	/** True when the magnitude is a rate scaled by delta time on apply, so continuous sources (beams, zones) must
-	 * re-apply it every tick a target stays inside instead of once on entry. */
+	/** True when the magnitude is a rate scaled on apply by the tick it covers (the frame, or the length a slower
+	 * applier passed), so continuous sources (beams, zones) must re-apply it every tick a target stays inside instead
+	 * of once on entry. */
 	virtual bool IsPerSecond() const { return false; }
+
+	/**
+	 * One tooltip line describing this entry ("Damage: 30-50"), empty when the entry shows nothing. Every {Effects}
+	 * token in an ability description is the non-empty lines of its effect array, so a new subclass only has to
+	 * override this to appear in tooltips.
+	 */
+	virtual FString GetDescriptionLine(FDescriptionFormat const& Format) const;
 
 	/**
 	 * True when this entry applies at AbilityLevel.
@@ -91,8 +135,7 @@ struct GEOTRINITY_API FEffectData
 	 * Difficulties this entry applies at, all three by default. Unticking Safe keeps a lethal hit out of the easy
 	 * tuning without a second copy of the ability.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly,
-			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.EGeoDifficulty"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.EGeoDifficulty"))
 	int32 Difficulties = GeoDifficultyMask::All;
 };
 
@@ -101,6 +144,9 @@ USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 {
 	GENERATED_BODY()
+	/** "DataTag or GE name: Magnitude" plus " for Durations" when the GE has one. */
+	virtual FString GetDescriptionLine(FDescriptionFormat const& Format) const override;
+
 	/** Applies GameplayEffect with SetByCaller magnitude and duration; replaces any existing active instance first when
 	 * bReplaceExistingInstance is set. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
@@ -137,43 +183,68 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	bool bReplaceExistingInstance = false;
 };
 
-/** Applies a flat damage amount. DamageAmount is evaluated at the given ability level. */
+/**
+ * A magnitude applied through one of the UGameDataSettings gameplay effects: damage, heal, shield.
+ * Everything but the effect class and the SetByCaller tag is identical between them, so subclasses only supply
+ * those two — GetMagnitudeTag also names the value in tooltips and is what a {Damage} / {Heal} / {Shield} token
+ * sums over.
+ */
 USTRUCT(BlueprintType)
-struct FDamageEffectData : public FEffectData
+struct GEOTRINITY_API FMagnitudeEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
-	/** Flags the context as bIsFromBasicAbility when the source ability carries the Ability.Type.Basic asset tag. */
+	/** The UGameDataSettings GE this magnitude is applied through, loaded synchronously; null when unconfigured. */
+	virtual TSubclassOf<UGameplayEffect> GetEffectClass() const { return nullptr; }
+	/** SetByCaller tag Amount is assigned to, and the label the tooltip line uses. */
+	virtual FGameplayTag GetMagnitudeTag() const { return FGameplayTag(); }
+
+	/** Propagates bSuppressGameplayCue, bLimitGameplayCue and bSuppressCombatStats onto the context. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
-	/** Applies the DamageEffect GE; propagates bSuppressGameplayCue, bLimitGameplayCue, bSuppressCombatStats, and
-	 * bDoNotRedirectSacrifice flags onto the context. */
+	/** Applies GetEffectClass() with Amount (per second: times the context's delta) under GetMagnitudeTag(). */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const override;
 
-	virtual bool IsPerSecond() const override { return bIsDamagePerSecond; }
+	virtual bool IsPerSecond() const override { return bIsPerSecond; }
+	virtual FString GetDescriptionLine(FDescriptionFormat const& Format) const override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FScalableFloat DamageAmount;
+	FScalableFloat Amount;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsDamagePerSecond{false};
+	bool bIsPerSecond{false};
 
-	/** When true, unconditionally suppresses the GameplayCue embedded in the DamageEffect GE. */
+	/** When true, unconditionally suppresses the GameplayCue embedded in the applied GE. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressGameplayCue{false};
 
-	/** When true, UExecCalc_Damage rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on
-	 * tick-based effects. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "!bIsDamagePerSecond", EditConditionHides))
+	/** When true, the ExecCalc rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based
+	 * effects. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "!bIsPerSecond", EditConditionHides))
 	bool bLimitGameplayCue{false};
 
-	/** When true, the damage is not reported to the DPS meter (UGeoCombatStatsSubsystem). Use for self-inflicted
-	 * drains. */
+	/** When true, the magnitude is not reported to the DPS/HPS meter (UGeoCombatStatsSubsystem). Use for
+	 * self-inflicted drains. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressCombatStats{false};
+};
+
+/** Applies a flat damage amount. Amount is evaluated at the given ability level. */
+USTRUCT(BlueprintType)
+struct FDamageEffectData : public FMagnitudeEffectData
+{
+	GENERATED_BODY()
+
+	virtual TSubclassOf<UGameplayEffect> GetEffectClass() const override;
+	virtual FGameplayTag GetMagnitudeTag() const override;
+
+	/** Adds bDoNotRedirectSacrifice, and flags the context as bIsFromBasicAbility when the source ability carries the
+	 * Ability.Type.Basic asset tag. */
+	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
+									 FGameplayTag AbilityTag) const override;
 
 	/** When true, this damage is never captured by a sacrificed receiver (redirected shares, drains, ...). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -182,67 +253,31 @@ struct FDamageEffectData : public FEffectData
 
 /** Applies a flat heal amount. Sets bSuppressHealProvided on the context when configured. */
 USTRUCT(BlueprintType)
-struct FHealEffectData : public FEffectData
+struct FHealEffectData : public FMagnitudeEffectData
 {
 	GENERATED_BODY()
 
-	/** Sets bSuppressHealProvided on the context when configured, so ExecCalc_Heal skips the OnHealProvided broadcast
-	 * on the source ASC. */
+	virtual TSubclassOf<UGameplayEffect> GetEffectClass() const override;
+	virtual FGameplayTag GetMagnitudeTag() const override;
+
+	/** Adds bSuppressHealProvided, so ExecCalc_Heal skips the OnHealProvided broadcast on the source ASC. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
-	/** Applies the HealthEffect GE; propagates bSuppressGameplayCue, bLimitGameplayCue, and bSuppressCombatStats flags
-	 * onto the context. */
-	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-													UAbilitySystemComponent* SourceASC,
-													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-													int32 Seed) const override;
-
-	virtual bool IsPerSecond() const override { return bIsHealPerSecond; }
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FScalableFloat HealAmount;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsHealPerSecond{false};
 
 	// When true, the heal will not broadcast OnHealProvided on the source ASC.
 	// Set on the context in UpdateContextHandle; baked into the spec via Duplicate() at MakeOutgoingSpec time.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressHealProvided{false};
-
-	/** When true, unconditionally suppresses the GameplayCue embedded in the HealthEffect GE. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bSuppressGameplayCue{false};
-
-	/** When true, UExecCalc_Heal rate-limits the GameplayCue via the target's UGeoGameFeelComponent. Use on tick-based
-	 * effects. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "!bIsHealPerSecond", EditConditionHides))
-	bool bLimitGameplayCue{false};
-
-	/** When true, the heal is not reported to the HPS meter (UGeoCombatStatsSubsystem). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bSuppressCombatStats{false};
 };
 
 /** Applies a flat shield amount to the target. */
 USTRUCT(BlueprintType)
-struct FShieldEffectData : public FEffectData
+struct FShieldEffectData : public FMagnitudeEffectData
 {
 	GENERATED_BODY()
 
-	/** Applies the ShieldEffect GE with ShieldAmount as the SetByCaller magnitude, scaled by AbilityLevel. */
-	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-													UAbilitySystemComponent* SourceASC,
-													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-													int32 Seed) const override;
-
-	virtual bool IsPerSecond() const override { return bIsShieldPerSecond; }
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FScalableFloat ShieldAmount;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsShieldPerSecond{false};
+	virtual TSubclassOf<UGameplayEffect> GetEffectClass() const override;
+	virtual FGameplayTag GetMagnitudeTag() const override;
 };
 
 /**
@@ -259,6 +294,8 @@ struct FContextDamageMultiplierEffectData : public FEffectData
 	 * apply call. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
+	/** "X% more damage". */
+	virtual FString GetDescriptionLine(FDescriptionFormat const& Format) const override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
 	FScalableFloat Multiplier{2.f};
@@ -270,31 +307,11 @@ struct FLethalEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	virtual FString GetDescriptionLine(FDescriptionFormat const& Format) const override;
+
 	/** Applies GameDataSettings::LethalEffect to the target, setting its health to zero. */
 	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 													UAbilitySystemComponent* SourceASC,
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const override;
-};
-
-/**
- * Probabilistically applies a status effect (debuff) to the target.
- * StatusChance (0–100) is rolled on each apply; on failure nothing happens.
- */
-USTRUCT(BlueprintType)
-struct FStatusEffectData : public FEffectData
-{
-	GENERATED_BODY()
-
-	/** Rolls StatusChance (0–100) against a seeded random and applies the GE for StatusTag only on success. */
-	virtual FActiveGameplayEffectHandle ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-													UAbilitySystemComponent* SourceASC,
-													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-													int32 Seed) const override;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly,
-			  meta = (ClampMin = "0", ClampMax = "100", UIMin = "0", UIMax = "100"))
-	uint8 StatusChance = 100;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FGameplayTag StatusTag{};
 };

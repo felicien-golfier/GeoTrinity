@@ -2,6 +2,7 @@
 
 #include "Actor/Projectile/GeoShieldBurstProjectile.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Wall/GeoWall.h"
@@ -123,7 +124,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 		if (GeoLib::IsServer(GetWorld()))
 		{
 			FShieldEffectData ShieldEffect;
-			ShieldEffect.ShieldAmount = ShieldAmount;
+			ShieldEffect.Amount = ShieldAmount;
 			GeoASLib::ApplySingleEffectData(ShieldEffect, OwnerASC, TargetASC, Payload.AbilityLevel, Payload.Seed,
 											Payload.AbilityTag);
 		}

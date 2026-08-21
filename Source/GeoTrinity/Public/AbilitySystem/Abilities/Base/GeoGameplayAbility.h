@@ -91,7 +91,7 @@ public:
 	 * @param level  Ability level to evaluate the cooldown at. Pass the spec's, never a literal — a difficulty is a
 	 *               level, so a hardcoded one reads the wrong row of the cooldown curve.
 	 */
-	float GetCooldown(int32 level) const;
+	float GetCooldown(int32 AbilityLevel) const;
 
 	/** Cancels the pending fire timer and hides the charge gauge (ChargeForFireDelay mode) before calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,

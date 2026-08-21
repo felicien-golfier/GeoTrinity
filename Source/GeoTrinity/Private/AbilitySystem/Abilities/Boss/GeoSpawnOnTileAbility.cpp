@@ -6,6 +6,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoHexArena.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoSpawnOnTileAbility::UGeoSpawnOnTileAbility()

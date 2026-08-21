@@ -80,7 +80,7 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 		}
 
 		FHealEffectData HealEffect;
-		HealEffect.HealAmount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime;
+		HealEffect.Amount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime;
 		HealEffect.bLimitGameplayCue = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
 														StoredPayload.Seed, StoredPayload.AbilityTag);

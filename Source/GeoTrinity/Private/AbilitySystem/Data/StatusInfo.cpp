@@ -3,17 +3,17 @@
 
 #include "AbilitySystem/Data/StatusInfo.h"
 
-bool UStatusInfo::FillStatusInfoFromTag(FGameplayTag const& tag, FRpgStatusInfo& outInfo) const
+bool UStatusInfo::FillStatusInfoFromTag(FGameplayTag const& Tag, FRpgStatusInfo& OutInfo) const
 {
-	FRpgStatusInfo const* pInfo = StatusInfos.FindByPredicate(
-		[&tag](FRpgStatusInfo const& info)
+	FRpgStatusInfo const* FoundInfo = StatusInfos.FindByPredicate(
+		[&Tag](FRpgStatusInfo const& Info)
 		{
-			return info.StatusTag.MatchesTagExact(tag);
+			return Info.StatusTag.MatchesTagExact(Tag);
 		});
-	if (!pInfo)
+	if (!FoundInfo)
 	{
 		return false;
 	}
-	outInfo = *pInfo;
+	OutInfo = *FoundInfo;
 	return true;
 }

@@ -11,7 +11,6 @@
 AGeoTurret::AGeoTurret(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickInterval = 0.f;
 
 	ProjectileParams.OverrideDistanceSpan = EOverrideParam::OverrideValue;
 	ProjectileParams.DistanceSpan = 2000.f;

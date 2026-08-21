@@ -3,6 +3,7 @@
 #include "AbilitySystem/Abilities/Boss/GeoTileBombAbility.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "Characters/PlayableCharacter.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/Team.h"

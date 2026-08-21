@@ -7,9 +7,48 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Settings/GameDataSettings.h"
 
+FString MarkUpValue(FString const& Value, FDescriptionFormat const& Format)
+{
+	return Format.bRichTextValues ? FString::Printf(TEXT("<Value>%s</>"), *Value) : Value;
+}
+
+FString FormatValueRange(float Min, float Max, FDescriptionFormat const& Format)
+{
+	TCHAR const* Suffix = TEXT("");
+	if (Format.ValueFormat != EValueFormat::Plain)
+	{
+		float const Base = Format.ValueFormat == EValueFormat::BonusPercent ? 1.f : 0.f;
+		Min = (Min - Base) * 100.f;
+		Max = (Max - Base) * 100.f;
+		Suffix = TEXT("%");
+	}
+	return MarkUpValue(FMath::IsNearlyEqual(Min, Max) ? FString::Printf(TEXT("%g%s"), Min, Suffix)
+													  : FString::Printf(TEXT("%g-%g%s"), Min, Max, Suffix),
+					   Format);
+}
+
+FString FormatScalableRange(FScalableFloat const& Scalable, FDescriptionFormat const& Format)
+{
+	return FormatValueRange(Scalable.GetValueAtLevel(Format.MinLevel()), Scalable.GetValueAtLevel(Format.MaxLevel()),
+							Format);
+}
+
+FString GetTagLeafName(FGameplayTag const& Tag)
+{
+	FString LeafName = Tag.GetTagName().ToString();
+	int32 LastDotIndex = INDEX_NONE;
+	LeafName.FindLastChar(TEXT('.'), LastDotIndex);
+	return LastDotIndex == INDEX_NONE ? LeafName : LeafName.Mid(LastDotIndex + 1);
+}
+
 void FEffectData::UpdateContextHandle(FGeoGameplayEffectContext*, int32, FGameplayTag) const
 {
 	// By default does nothing. Override for your needs
+}
+
+FString FEffectData::GetDescriptionLine(FDescriptionFormat const& /*Format*/) const
+{
+	return FString();
 }
 
 FActiveGameplayEffectHandle FEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
@@ -69,14 +108,13 @@ FActiveGameplayEffectHandle FGameplayEffectData::ApplyEffect(FGameplayEffectCont
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
-void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32,
-											FGameplayTag AbilityTag) const
+void FMagnitudeEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32, FGameplayTag) const
 {
 	if (bSuppressGameplayCue)
 	{
 		EffectContext->SetSuppressGameplayCue(true);
 	}
-	if (bLimitGameplayCue || bIsDamagePerSecond)
+	if (bLimitGameplayCue || bIsPerSecond)
 	{
 		EffectContext->SetLimitGameplayCue(true);
 	}
@@ -84,6 +122,58 @@ void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectCon
 	{
 		EffectContext->SetSuppressCombatStats(true);
 	}
+}
+
+FActiveGameplayEffectHandle FMagnitudeEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
+															  UAbilitySystemComponent* SourceASC,
+															  UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
+															  int32) const
+{
+	TSubclassOf<UGameplayEffect> const EffectClass = GetEffectClass();
+	if (!ensureMsgf(EffectClass, TEXT("%hs: UGameDataSettings has no instant effect for %s — add one."), __FUNCTION__,
+					*GetMagnitudeTag().ToString()))
+	{
+		return FActiveGameplayEffectHandle();
+	}
+
+	if (!ensureMsgf(SourceASC && TargetASC, TEXT("%hs: no Source or Target ASC"), __FUNCTION__))
+	{
+		return FActiveGameplayEffectHandle();
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(EffectClass, AbilityLevel, ContextHandle);
+
+	float CalculatedAmount = Amount.GetValueAtLevel(AbilityLevel);
+	if (bIsPerSecond)
+	{
+
+		CalculatedAmount *= SourceASC->GetWorld()->GetDeltaSeconds();
+	}
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, GetMagnitudeTag(), CalculatedAmount);
+
+	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+}
+
+FString FMagnitudeEffectData::GetDescriptionLine(FDescriptionFormat const& Format) const
+{
+	return FString::Printf(TEXT("%s: %s"), *GetTagLeafName(GetMagnitudeTag()), *FormatScalableRange(Amount, Format));
+}
+
+TSubclassOf<UGameplayEffect> FDamageEffectData::GetEffectClass() const
+{
+	return GetDefault<UGameDataSettings>()->DamageEffect.LoadSynchronous();
+}
+
+FGameplayTag FDamageEffectData::GetMagnitudeTag() const
+{
+	return FGeoGameplayTags::Get().Gameplay_Damage;
+}
+
+void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
+											FGameplayTag AbilityTag) const
+{
+	FMagnitudeEffectData::UpdateContextHandle(EffectContext, AbilityLevel, AbilityTag);
+
 	if (bDoNotRedirectSacrifice)
 	{
 		EffectContext->SetDoNotRedirectSacrifice(true);
@@ -103,103 +193,51 @@ void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectCon
 	}
 }
 
-FActiveGameplayEffectHandle FDamageEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-														   UAbilitySystemComponent* SourceASC,
-														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-														   int32) const
+TSubclassOf<UGameplayEffect> FHealEffectData::GetEffectClass() const
 {
-	TSubclassOf<UGameplayEffect> const DamageEffectClass =
-		GetDefault<UGameDataSettings>()->DamageEffect.LoadSynchronous();
-	if (!DamageEffectClass)
-	{
-		ensureMsgf(DamageEffectClass, TEXT("Add an instant Damage Effect using ExecCalc_Damage in UGameDataSettings!"));
-		return FActiveGameplayEffectHandle();
-	}
-
-	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageEffectClass, AbilityLevel, ContextHandle);
-
-	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-	float CalculatedDamageAmount = DamageAmount.GetValueAtLevel(AbilityLevel);
-	if (bIsDamagePerSecond)
-	{
-		CalculatedDamageAmount *= SourceASC->GetWorld()->GetDeltaSeconds();
-	}
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Damage,
-																  CalculatedDamageAmount);
-
-	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	return GetDefault<UGameDataSettings>()->HealthEffect.LoadSynchronous();
 }
 
-void FHealEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32, FGameplayTag) const
+FGameplayTag FHealEffectData::GetMagnitudeTag() const
 {
+	return FGeoGameplayTags::Get().Gameplay_Heal;
+}
+
+void FHealEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
+										  FGameplayTag AbilityTag) const
+{
+	FMagnitudeEffectData::UpdateContextHandle(EffectContext, AbilityLevel, AbilityTag);
+
 	if (bSuppressHealProvided)
 	{
 		EffectContext->SetSuppressHealProvided(true);
 	}
-	if (bSuppressGameplayCue)
-	{
-		EffectContext->SetSuppressGameplayCue(true);
-	}
-	if (bLimitGameplayCue || bIsHealPerSecond)
-	{
-		EffectContext->SetLimitGameplayCue(true);
-	}
-	if (bSuppressCombatStats)
-	{
-		EffectContext->SetSuppressCombatStats(true);
-	}
 }
 
-FActiveGameplayEffectHandle FHealEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-														 UAbilitySystemComponent* SourceASC,
-														 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-														 int32) const
+TSubclassOf<UGameplayEffect> FShieldEffectData::GetEffectClass() const
 {
-	TSubclassOf<UGameplayEffect> const HealEffectClass =
-		GetDefault<UGameDataSettings>()->HealthEffect.LoadSynchronous();
-	if (!HealEffectClass)
-	{
-		ensureMsgf(HealEffectClass, TEXT("Add an instant Heal Effect using ExecCalc_Heal in UGameDataSettings!"));
-		return FActiveGameplayEffectHandle();
-	}
-	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(HealEffectClass, AbilityLevel, ContextHandle);
-
-	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-	float CalculatedHealAmount = HealAmount.GetValueAtLevel(AbilityLevel);
-	if (bIsHealPerSecond)
-	{
-		CalculatedHealAmount *= SourceASC->GetWorld()->GetDeltaSeconds();
-	}
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Heal, CalculatedHealAmount);
-
-	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	return GetDefault<UGameDataSettings>()->ShieldEffect.LoadSynchronous();
 }
 
-FActiveGameplayEffectHandle FShieldEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-														   UAbilitySystemComponent* SourceASC,
-														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-														   int32) const
+FGameplayTag FShieldEffectData::GetMagnitudeTag() const
 {
-	TSubclassOf<UGameplayEffect> const ShieldEffectClass =
-		GetDefault<UGameDataSettings>()->ShieldEffect.LoadSynchronous();
-	if (!ensureMsgf(ShieldEffectClass, TEXT("Add a Shield Effect in UGameDataSettings!")))
+	return FGeoGameplayTags::Get().Gameplay_Shield;
+}
+
+FString FGameplayEffectData::GetDescriptionLine(FDescriptionFormat const& Format) const
+{
+	if (!GameplayEffect)
 	{
-		return FActiveGameplayEffectHandle();
+		return FString();
 	}
 
-	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(ShieldEffectClass, AbilityLevel, ContextHandle);
-
-	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-	float CalculatedShieldAmount = ShieldAmount.GetValueAtLevel(AbilityLevel);
-	if (bIsShieldPerSecond)
+	FString const Name = DataTag.IsValid() ? GetTagLeafName(DataTag) : GameplayEffect->GetName();
+	FString Line = FString::Printf(TEXT("%s: %s"), *Name, *FormatScalableRange(Magnitude, Format));
+	if (Duration.GetValueAtLevel(Format.MinLevel()) > 0.f)
 	{
-		CalculatedShieldAmount *= SourceASC->GetWorld()->GetDeltaSeconds();
+		Line += FString::Printf(TEXT(" for %ss"), *FormatScalableRange(Duration, Format));
 	}
-
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_Shield,
-																  CalculatedShieldAmount);
-
-	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	return Line;
 }
 
 void FContextDamageMultiplierEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectContext,
@@ -226,18 +264,14 @@ FActiveGameplayEffectHandle FLethalEffectData::ApplyEffect(FGameplayEffectContex
 	return TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }
 
-FActiveGameplayEffectHandle FStatusEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
-														   UAbilitySystemComponent* SourceASC,
-														   UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-														   int32 Seed) const
+FString FContextDamageMultiplierEffectData::GetDescriptionLine(FDescriptionFormat const& Format) const
 {
-	// Seed is a deterministic pseudo-random value replicated to all machines; mapping it to [0,100] gives
-	// a consistent proc roll — all machines agree on whether the status was applied without a server RPC.
-	if (static_cast<float>(static_cast<uint32>(Seed)) / static_cast<float>(MAX_uint32) * 100.f <= StatusChance)
-	{
-		FGameplayEffectSpecHandle SpecHandle;
-		return UGeoAbilitySystemLibrary::ApplyStatusToTarget(TargetASC, SourceASC, StatusTag, AbilityLevel, SpecHandle);
-	}
+	FDescriptionFormat BonusPercentFormat = Format;
+	BonusPercentFormat.ValueFormat = EValueFormat::BonusPercent;
+	return FString::Printf(TEXT("%s more damage"), *FormatScalableRange(Multiplier, BonusPercentFormat));
+}
 
-	return FActiveGameplayEffectHandle();
+FString FLethalEffectData::GetDescriptionLine(FDescriptionFormat const& /*Format*/) const
+{
+	return TEXT("Lethal");
 }

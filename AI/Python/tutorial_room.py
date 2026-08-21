@@ -152,11 +152,12 @@ def effect(text):
     return value
 
 
-def flat_effect(struct, field, amount):
-    """One heal/damage entry. Inside a zone AGeoEffectZone::Tick multiplies it by DeltaSeconds, so the
-    value reads as a per-second rate there and as a flat one-shot hit from a burst ability. Either way
-    the per-second flag must stay off — set it too and the magnitude is scaled by delta twice."""
-    return effect('/Script/GeoTrinity.%s(%s=(Value=%f),bLimitGameplayCue=True)' % (struct, field, amount))
+def flat_effect(struct, amount, per_second=False):
+    """One heal/damage entry. The per-second flag is what a zone reads to tell a rate it re-applies for
+    every tick an actor stays inside from a one-shot it lands once on entry, so a lingering zone sets it
+    and a burst does not — the same value then reads as HP/sec or as a flat hit."""
+    return effect('/Script/GeoTrinity.%s(Amount=(Value=%f),bIsPerSecond=%s,bLimitGameplayCue=True)'
+                  % (struct, amount, per_second))
 
 
 def gameplay_effect(effect_class, data_tag, magnitude, duration=0.0, icon=None):
@@ -180,19 +181,19 @@ def point_tag(key):
 def zone_specs():
     return [
         ("HealOverTime", -1500.0, "Ability.Spell.TutorialHealOverTime", "HealOverTime",
-         flat_effect("HealEffectData", "HealAmount", 15.0), "Heal",
+         flat_effect("HealEffectData", 15.0, per_second=True), "Heal",
          "HEAL OVER TIME\n+15 HP / sec\nwhile inside", GREEN),
         ("BurstHeal", -900.0, "Ability.Spell.TutorialBurstHeal", None,
-         flat_effect("HealEffectData", "HealAmount", 25.0), "Heal",
+         flat_effect("HealEffectData", 25.0), "Heal",
          "HEAL BURST\n+25 HP\nwhen it lands", GREEN),
         ("DamageReduction", -300.0, "Ability.Spell.TutorialDamageReduction", "DamageReduction",
          gameplay_effect(GE_REDUCTION, "Status.Buff.DamageReduction", .5, REDUCTION_DURATION, REDUCTION_ICON),
          "DamageReduction", "DAMAGE REDUCTION\n-50% damage taken\nwhile inside", BLUE),
         ("DamageOverTime", 300.0, "Ability.Spell.TutorialDamageOverTime", "DamageOverTime",
-         flat_effect("DamageEffectData", "DamageAmount", 15.0), "Damage",
+         flat_effect("DamageEffectData", 15.0, per_second=True), "Damage",
          "DAMAGE OVER TIME\n-15 HP / sec\nwhile inside", RED),
         ("BurstDamage", 900.0, "Ability.Spell.TutorialBurstDamage", None,
-         flat_effect("DamageEffectData", "DamageAmount", 25.0), "Damage",
+         flat_effect("DamageEffectData", 25.0), "Damage",
          "DAMAGE BURST\n-25 HP\nwhen it lands", RED),
         ("Lethal", 1500.0, "Ability.Spell.TutorialLethal", "Lethal",
          effect('/Script/GeoTrinity.LethalEffectData()'), "LethalDamage",

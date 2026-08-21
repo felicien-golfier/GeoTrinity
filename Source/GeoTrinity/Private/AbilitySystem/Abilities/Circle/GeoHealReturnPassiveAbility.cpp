@@ -70,7 +70,7 @@ void UGeoHealReturnPassiveAbility::OnHealProvidedCallback(float HealDone)
 	}
 
 	FHealEffectData HealEffect;
-	HealEffect.HealAmount = FScalableFloat(HealDone * SelfHealPercent);
+	HealEffect.Amount = FScalableFloat(HealDone * SelfHealPercent);
 	HealEffect.bSuppressHealProvided = true;
 	HealEffect.bLimitGameplayCue = true;
 

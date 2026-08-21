@@ -28,6 +28,6 @@ public:
 
 protected:
 	/** Heals a hurt ally at the zone's drain rate and charges the zone the same amount, on top of Super's effects. */
-	virtual void ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor, UGeoAbilitySystemComponent* SourceASC,
-								  float DeltaSeconds) override;
+	virtual void ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor,
+								  UGeoAbilitySystemComponent* SourceASC) override;
 };

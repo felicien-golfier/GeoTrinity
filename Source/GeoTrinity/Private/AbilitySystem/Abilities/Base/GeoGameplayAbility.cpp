@@ -139,18 +139,18 @@ TArray<TInstancedStruct<FEffectData>> UGeoGameplayAbility::GetEffectDataArray() 
 	return FilledEffectData;
 }
 
-float UGeoGameplayAbility::GetCooldown(int32 level) const
+float UGeoGameplayAbility::GetCooldown(int32 AbilityLevel) const
 {
-	float cooldown = 0.f;
+	float Cooldown = 0.f;
 
-	UGameplayEffect* pCooldownEffect = GetCooldownGameplayEffect();
-	if (!pCooldownEffect)
+	UGameplayEffect* CooldownEffect = GetCooldownGameplayEffect();
+	if (!CooldownEffect)
 	{
-		return cooldown;
+		return Cooldown;
 	}
 
-	pCooldownEffect->DurationMagnitude.GetStaticMagnitudeIfPossible(level, cooldown);
-	return cooldown;
+	CooldownEffect->DurationMagnitude.GetStaticMagnitudeIfPossible(AbilityLevel, Cooldown);
+	return Cooldown;
 }
 
 void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
@@ -374,8 +374,8 @@ void UGeoGameplayAbility::BuildDataAndFire()
 	UpdatePayloadFromTargetData(AbilityTargetData);
 
 	// The activation prediction window closed when ActivateAbility returned, so the shot needs one of its own: without
-	// it a client fails HasAuthorityOrPredictionKey and silently applies neither cost nor cooldown, leaving it free to
-	// re-press until the server's cooldown lands a ping later and rejects the activation. SendFireDataToServer hands
+	// it a client fails HasAuthorityOrPredictionKey and silently applies neither cost nor Cooldown, leaving it free to
+	// re-press until the server's Cooldown lands a ping later and rejects the activation. SendFireDataToServer hands
 	// this key to the server, which re-enters it around OnFireTargetDataReceived, so both sides commit under it.
 	FScopedPredictionWindow ScopedPrediction(GetAbilitySystemComponentFromActorInfo());
 	Fire(AbilityTargetData);

@@ -17,11 +17,11 @@ class UGeoAbilitySystemComponent;
  * Hostile attitude), so a spawned zone needs no Blueprint of its own beyond the project-wide one in
  * UGameDataSettings::DefaultZoneClass — Params.Color is what tells the two apart on screen.
  *
- * Every effect is applied from Tick, never from the overlap delegates: heal/damage entries on each tick, with their
- * magnitude treated as a per-second rate (scaled by DeltaTime), and any other effect type on the first tick after the
- * actor enters, removed when it leaves. Applying from the delegate instead would run a lethal entry's whole
- * death-and-revive chain inside the overlap notification that started it, and a revive re-enables collision — so the
- * zone would re-enter itself until the stack ran out.
+ * Every effect is applied from Tick, never from the overlap delegates: a per-second entry on each tick, for the slice
+ * of time that tick covers, and any other entry on the first tick after the actor enters, removed when it leaves.
+ * Applying from the delegate instead would run a lethal entry's whole death-and-revive chain inside the overlap
+ * notification that started it, and a revive re-enables collision — so the zone would re-enter itself until the stack
+ * ran out.
  *
  * Subclasses change what a zone does to whoever stands in it by overriding ApplyZoneEffects — the tracking, the
  * capsule, the replicated data and the effect rules above are all inherited (see AGeoHealingZone).
@@ -54,14 +54,14 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 
 	/**
-	 * What the zone does to one actor standing in it, for a single tick: heal/damage entries scaled by DeltaSeconds,
-	 * the persistent ones on that actor's first tick inside. Override to give a zone its own rules.
+	 * What the zone does to one actor standing in it, for a single tick: the per-second entries, which scale
+	 * themselves by the frame, and the persistent ones on that actor's first tick inside. Override to give a zone its
+	 * own rules.
 	 *
 	 * @param TrackedActor  Key into ActorsInZone — looked up again rather than passed as a raw pointer, since a lethal
 	 *                      entry can run its target's whole death and revive from inside this call.
 	 */
-	virtual void ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor, UGeoAbilitySystemComponent* SourceASC,
-								  float DeltaSeconds);
+	virtual void ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor, UGeoAbilitySystemComponent* SourceASC);
 
 	/** Actors currently inside the zone, mapped to the persistent effect handles Tick applied to them. An empty array
 	 * is what marks an actor as still owed those effects, so a revive inside the zone gets them back. */
@@ -72,7 +72,7 @@ protected:
 
 private:
 	// Hand-placed zones only — a spawned zone reads all six off the FDeployableData its ability filled in.
-	/** Effects applied to every matching actor: heal/damage tick per second, others persist while inside. */
+	/** Effects applied to every matching actor: the per-second ones tick, the others persist while inside. */
 	UPROPERTY(EditAnywhere, Category = "GeoEffectZone")
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 	/** Team this zone belongs to; drives the attitude check against overlapping actors. */

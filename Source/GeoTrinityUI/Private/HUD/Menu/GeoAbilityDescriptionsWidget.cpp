@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "Algo/StableSort.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"

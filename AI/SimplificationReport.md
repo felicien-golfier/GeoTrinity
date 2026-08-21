@@ -6,40 +6,157 @@ Every entry is **What** (the observation) / **Why** (why it is worth changing) /
 Rules referenced come from `AI/CodingStyle.md`.
 
 **16 sections, 95 findings.** Three cross-cutting themes and a suggested order of work are at the end — start
-there.
+there. **The audit was not exhaustive**: `## Coverage` at the very end now lists ~1,790 lines across 23 files that
+were never opened, so "no finding here" does not mean "nothing to find here".
 
 ---
 
-## Status — what is left (2026-08-11)
+## Status — what is left (audited 2026-08-11, worked 2026-08-20)
 
-Tiers 0a–13 of the order-of-work table are **applied**. The bug-fix tiers (0a–0c) landed in commit `4af2ae7`
-"Fix all audits."; every simplification tier landed after it. Per-finding status lives in the table at the end of
-this file; this section is the short version of what is still open.
+Tiers 0a–15 of the order-of-work table are **applied**. The bug-fix tiers (0a–0c) landed in commit `4af2ae7`
+"Fix all audits."; every simplification tier landed after it. Status lives in the table at the end of this file,
+which groups findings by tier rather than listing all 95 — this section is the short version of what is still
+open, and every finding is accounted for in one place or the other.
 
-**Not applied — remaining work, in the order it should be done:**
+**The 2026-08-20 session closed the whole open list** except the two items already judged not worth doing (9.4,
+5.3), the doc-only 2.7 (the daily agent's job), and finishing the audit itself. The batch **compiles**:
+`Tools\Build_Editor.bat` (GeoTrinityEditor Win64 DebugGame) links all three modules. The `FEffectData` collapse
+still needs a PIE check — a compiler cannot see a serialized property that silently reset to 0.
+
+**Not applied — remaining work:**
 
 | # | Item | Why it is still open |
 |---|---|---|
-| 12 | **8.4 + 8.5** — collapse the two attribute-change fan-out mechanisms | Real work: deletes `UGenericCombattantWidget::UnbindStatCallbacks` and two ASC delegates. Touches `GeoHUD`, `GenericCombattantWidget`, `GeoCombattantWidgetComp`. 8.7 (weak-lambda unbind policy) is decided as part of it |
-| 14 | **2.1 + 2.2 + 2.3** — `FEffectData` hierarchy collapse | Largest structural win, and the only item that **cannot be verified by a compile**: it renames serialized `UPROPERTY` names, so it needs `[CoreRedirects]` in `DefaultEngine.ini` plus a PIE check on a damage ability, or designer-authored values silently reset to defaults |
-| 15 | **2.5** — `AbilityDescriptions.txt` hand-rolled INI section handling | Editor-only path; still parses with `ParseIntoArrayLines` + `StartsWith(TEXT("["))` in two places |
-| 15 | **12.1** — `AGeoGameCamera::Tick` is ~137 lines doing five jobs | `GeoGameCamera.cpp` has uncommitted local edits from other work; do it on a clean file so the diff is readable |
-| — | **13.7** — three hand-written recursive walkers over the StateTree | `FindStateRecursive` / `RemoveStateRecursive` / `LogStatesRecursive` are still three separate traversals |
-| — | **1.9 (second half)** — drop `GeoDeployableBase.h` / `GeoAbilitySystemComponent.h` from the module-wide library header | Deliberately deferred: worth its own commit where the compiler drives which translation units need the include added back |
-| — | **1.10** — `ApplyStatusToTarget` / `GetStatusTag` naming drift | Renames public API for consistency only; no behaviour, low value, do it when that header is touched anyway |
+| — | **Finish the audit** — 23 files / ~1,790 lines were never opened | See `## Coverage` at the end. `ExecCalc_Damage` vs `ExecCalc_Heal`, `Tool/` and `Actor/Buttons` are the three worth a real pass; the rest is a skim. (`ExecCalc_*` had their camelCase locals renamed on 2026-08-20 as part of 7.3, but were still not audited) |
 | — | **9.4** — `GetFightingArena` and `RespawnAllBosses` are the same traversal twice | Judged low value on re-reading: 8 lines each, and the shared part is only "resolve world, iterate arenas" |
+| — | **2.7** — `Data/CLAUDE.md` still names `FSingleUseDamageMultiplierEffectData` | Doc-only, and still wrong. Deliberately left for the daily agent per the `CLAUDE.md` rule |
+| — | **5.3** — `SetButtonsVisible` enumerates five buttons by hand | **Declined**, as the finding itself recommends: explicit is more readable at five entries. Revisit only if the pause menu grows |
+| — | **2.5 (first half)** — `FConfigFile` instead of the hand-rolled `[Section]` parser | **Declined on inspection.** `AbilityDescriptions.txt` is *not* key/value INI: a section header is followed by free-text prose (`[Ability.Spell.Dash]` → a sentence, sometimes several lines with `{Token}`s). `FConfigFile` would force a `Description=` key on every line, mangle multi-line bodies, and drop the five-line hand-authored header comment. The second half of the finding — the per-ability re-parse — **is** applied |
+
+**Applied on 2026-08-20** — compiled as one batch (`Tools\Build_Editor.bat`, DebugGame, all three modules):
+- **7.3 + 1.10** — naming drift. `GetCooldown(int32 AbilityLevel)` / `Cooldown` / `CooldownEffect`
+  (`GeoGameplayAbility`), `ActiveScopeLock` / `AbilitySpec` (`GeoAbilitySystemComponent`), `Tag` / `OutInfo` /
+  `FoundInfo` / `Info` (`StatusInfo`), `EffectSpec` / `ContextHandle` / `Tags` / `TargetASC` / `TargetAvatar`
+  (both `ExecCalc`s). `ApplyStatusToTarget` had already been renamed before this session
+- **12.1 + 12.2** — `AGeoGameCamera::Tick` is 20 lines over five named stages: `GatherLocalPlayers`,
+  `UpdateSpectateState`, `UpdateZoom` (+ `DrawZoomDebug`), `ClampToBounds`, and an `Average` file-local helper.
+  12.2's latent deref is gone: `GetSpectateMoveInput` guards the character and its input component in one
+  condition with the local player
+- **13.7** — one `ForEachStateRecursive(States, Visitor, Depth)` walker; `FindStateRecursive` and
+  `RemoveStateRecursive` are visitors over it (the latter via `RemoveAll` on the sibling array, which also
+  removes the double `States[i]` test), and `LogStatesRecursive` became a per-state `LogState`
+- **Theme B (remainder)** — `GeoWidgetBuilderUtil.cpp` and `GeoHudWidgetBuilderUtil.cpp` are now `%hs` +
+  `__FUNCTION__` throughout; no hand-typed self-names remain in either file
+- **2.5 (second half)** — `GetDescriptionsBySection()` parses `AbilityDescriptions.txt` once into a
+  `TMap<FString, FString>` cached against the file's timestamp, so a description list for N abilities loads the
+  file once and a live edit still shows up on the next open
+- **8.4 + 8.5 + 8.7** — `UGenericCombattantWidget::BindStatCallbacks` binds Health, MaxHealth and Shield the same
+  way (one weak lambda each) to a single parameterless `RefreshStats()` (the old `InitStats`).
+  `UnbindStatCallbacks`, the `OnHealthChanged(float)` handler, `ShieldChangedHandle` and
+  `UGeoCombattantWidgetComp::EndPlay` (which existed only to call it) are all deleted. 8.7: the overlay's
+  `NativeDestruct` removal now says *why* it removes (re-construction stacking).
+  **Deviation from the finding**: `UGeoAbilitySystemComponent::OnHealthChanged` / `OnMaxHealthChanged` were
+  **kept**. The finding assumed the widget was their only consumer; it is not — `GeoInteractableActor`,
+  `GeoDeployableBase`, `GeoMine`, `EnemyCharacter` and `PlayableCharacter` all bind them for gameplay (death,
+  drain, boss defeat). They are a gameplay delegate the UI was piggybacking on, not a second UI fan-out
+- **1.9 (second half)** — `GeoDeployableBase.h` and `GeoAbilitySystemComponent.h` are out of
+  `GeoAbilitySystemLibrary.h` (`class AGeoDeployableBase;` forward-declared; the ASC's forward declaration comes
+  from `GeoGameplayAbility.h`, still included for the `GetAbilityCDO<T>` body). The ten translation units that
+  were reaching those types transitively got the direct include: `Pattern`, `GeoSoundRow`,
+  `STPropertyFunction_GetHealthRatio`, `GeoAbilityDescriptionsWidget`, `GeoProjectile`,
+  `GeoShieldBurstProjectile`, `GeoDeployableBase`, `GeoSpawnOnTileAbility`, `GeoTileBombAbility`,
+  `GeoZoneAbility`. This was the only item that failed to compile first time, and the compiler named exactly what
+  the grep could not: the header itself still needed `class AGeoProjectile;`, `struct FDeployableData;` and
+  `struct FDeployableDataParams;` (all pointer/reference use), plus the engine's `AbilitySystemComponent.h` for
+  the `GetGrantedAbility<T>` body, which calls `ASC.GetActivatableAbilities()` and so needs the complete type
+  our ASC header used to drag in. The net effect still holds: the deployable and our ASC hierarchies are out of
+  every TU that includes the library
+- **2.1 + 2.2 + 2.3** — the `FEffectData` collapse, below
+
+### 2.1–2.3 as applied — what to check in PIE
+
+`FMagnitudeEffectData : FEffectData` now owns `Amount`, `bIsPerSecond`, `bSuppressGameplayCue`,
+`bLimitGameplayCue`, `bSuppressCombatStats`, the whole `ApplyEffect` (load GE → spec → per-second multiply →
+SetByCaller → apply) and the shared `UpdateContextHandle` flag block. Damage, Heal and Shield are down to two
+one-line virtuals each — `GetEffectClass()` (the `UGameDataSettings` field) and `GetMagnitudeTag()` (the
+SetByCaller tag) — plus Damage's `bDoNotRedirectSacrifice` + basic-ability lookup and Heal's
+`bSuppressHealProvided`. `FLethalEffectData` stays on `FEffectData`: it has no magnitude, and inheriting one
+would put a dead `Amount` field in front of designers.
+
+2.2: `GetDescriptionLine(FDescriptionFormat const&)` is virtual on `FEffectData`, so `BuildEffectsSummary` is a
+loop that appends non-empty lines and a new subclass appears in tooltips by overriding one function.
+`FDescriptionFormat`, `EValueFormat`, `MarkUpValue`, `FormatValueRange`, `FormatScalableRange` and
+`GetTagLeafName` moved from the anonymous namespace in `AbilityInfo.cpp` to `EffectData.h`/`.cpp`. The magnitude
+line derives its label from `GetTagLeafName(GetMagnitudeTag())` ("Gameplay.Damage" → "Damage"), which is why the
+collapse needs only the two virtuals the finding asked for.
+
+2.3: the `{Damage}` / `{Heal}` / `{Shield}` branch resolves its tag **once** through `GetMagnitudeTagForToken`,
+then sums `Amount` over every entry whose `GetMagnitudeTag()` matches.
+
+**Serialized renames — `[CoreRedirects]` added to `DefaultEngine.ini`**: `DamageAmount` / `HealAmount` /
+`ShieldAmount` → `Amount`, and `bIsDamagePerSecond` / `bIsHealPerSecond` / `bIsShieldPerSecond` → `bIsPerSecond`,
+one `+PropertyRedirects` per pair. The three flags that moved *up* to `FMagnitudeEffectData` kept their names, so
+they need no redirect. `AI/Python/tutorial_room.py` built its effect entries from the old property names in
+`ImportText` strings and was updated with them.
+
+**PIE check owed, in this order**: open an ability with an authored damage value (e.g. the basic projectile) and
+confirm the number in the details panel is **not 0** — that is the redirect working. Then a healing zone (per
+second), a shield burst, and the pause-menu Abilities view (`{Damage}`, `{Effects}` tokens must still render).
+If a value did reset, it reset in the asset the moment it was saved, so check before saving anything.
+
+### Newly enabled follow-up (applied 2026-08-20, second pass)
+
+`AGeoEffectZone::ApplyZoneEffects`'s two struct-type branches are gone, and not by the copy this section first
+suggested: the zone now asks `IsPerSecond()` and hands the entry straight to `ApplySingleEffectData`, so a rate
+ticks and everything else lands once on entry. The scaling moved to where it was already described —
+`FMagnitudeEffectData::ApplyEffect` — which now reads the seconds off the context (a `DeltaSeconds` field seeded
+with the frame delta in `MakeGeoEffectContext`) instead of asking the world for the frame. That is what lets a
+deployable, which ticks on `RegularTickInterval` and not on the frame, pass its own tick length through the new
+trailing `DeltaSeconds` on `ApplySingleEffectData` and still mean "per second".
+`AGeoHealingZone` and `AGeoDeployableBase`'s drain went the same way: a rate plus `bIsPerSecond`, described once,
+with `Tick` only handing over the length of the tick (3.9's per-tick `Amount` write is now gone too).
+
+**Data owed, not code**: a zone entry only ticks if its `bIsPerSecond` is ticked. Every zone effect authored
+before this read as a rate whatever the flag said, so any that still wants to be a rate needs the box checked —
+the tutorial room's `HealOverTime` / `DamageOverTime` (already done in `tutorial_room.py`, needs a re-run), the
+placed zone in `DraftMap`, and anything the Circle's `GA_DeployHealingZone` adds on top of the zone's own heal.
+
+`ExecCalc_Damage` / `ExecCalc_Heal` — the pair the coverage table calls out — lost their duplicated cue block to
+`GeoASLib::ShouldSuppressGameplayCue(Context, TargetAvatar, bIsHeal)`, and `UGeoGameFeelComponent`'s
+`IsDamageCueAvailable` / `IsHealCueAvailable` (the same eight lines against two timestamps) became
+`IsCueAvailable(bIsHeal)`. Neither ExecCalc knows about the game-feel component any more.
 
 **Needs a runtime check, not a compiler** — applied but unverified in PIE:
 - **11.1** pooled-actor hand-out (exhaust the pre-spawned pool)
 - **3.2** projectile impact FX on the `Destroyed()` path
 - **3.6** unified deployable recall cosmetics
 - **3.7** `IsBlinking()` now reads `bBlinking` instead of the timer handle — check a turret recall after the blink expires
-- **7.2** / **12.2** — re-read before closing them out; the audit could not confirm from the current source whether the double montage-section validation and the unguarded `LocalCharacter` deref are gone
+- **7.2** — re-read 2026-08-20, **still open**, and not what the finding says: the two `IsValidSectionName` calls
+  (`GeoGameplayAbility.cpp:286`, `:295`) are *not* the same check — `:286` picks `FireN` or falls back to
+  `Fire1`, `:295` catches the case where `Fire1` (or `Start`) is missing too. It is a fallback chain, so the fix
+  is to make that chain explicit, not to delete a call.
+
+**Verified applied on 2026-08-20** — these twelve carried no status anywhere in this file until now; ten were
+re-read against the current source and confirmed done: 2.4 (`GetFirstAssetTagUnderRoot` exists, all three call
+sites use it), 3.3 (`IsValidOverlap` takes `OutOwnerASC`/`OutTargetASC`), 3.5 (the paired-override comment is at
+`GeoProjectile.cpp:585`), 3.9 (`DrainEffectData` is a member, `Tick` only sets the magnitude), 9.5, 10.5, 15.4
+(all now `%hs` + `__FUNCTION__`), 10.6 (both sites under `#if !UE_BUILD_SHIPPING` / a CVar), 10.8
+(`AGeoPlayerController::SetGameplayInputMode`), 15.2 (`ClearAggro` is gone; only `TriggerAggro` remains). The
+other two — 2.7 and 5.3 — are in the open table above.
 
 **Doc drift introduced by this work** (left for the daily agent, per the CLAUDE.md rule that interactive sessions
-do not edit subfolder docs): `Source/GeoTrinityUI/Public/HUD/CLAUDE.md` still lists
-`IGeoDeployGaugeWidgetInterface`, which finding 4.1 deleted — the deploy gauge now implements the shared
-`IGeoChargeGaugeWidgetInterface`.
+do not edit subfolder docs):
+- `Source/GeoTrinityUI/Public/HUD/CLAUDE.md` still lists `IGeoDeployGaugeWidgetInterface`, which finding 4.1
+  deleted — the deploy gauge now implements the shared `IGeoChargeGaugeWidgetInterface`.
+- `Source/GeoTrinity/Public/AbilitySystem/Data/CLAUDE.md` predates 2.1: it needs the `FMagnitudeEffectData` row
+  (Damage/Heal/Shield differ only by GE + SetByCaller tag; `Amount`/`bIsPerSecond` and the three cue/stats flags
+  live there), the `GetDescriptionLine` virtual as the tooltip mechanism, and the `FSingleUseDamageMultiplier`
+  → `FContextDamageMultiplier` fix that 2.7 already flags.
+- `Source/GeoTrinity/Public/AbilitySystem/ExecCalc/CLAUDE.md` and `Characters/Component/CLAUDE.md` still name
+  `IsDamageCueAvailable()` / `IsHealCueAvailable()`; both are now `IsCueAvailable(bIsHeal)`, reached only through
+  `GeoASLib::ShouldSuppressGameplayCue`.
+- `Source/GeoTrinity/Public/Actor/CLAUDE.md` still says the zone "re-applies heal/damage each frame (magnitude =
+  per-second rate)" — it now re-applies whatever entry is flagged per-second, on its own tick.
 
 ---
 
@@ -1341,6 +1458,12 @@ Meanwhile `__FUNCTION__` appears exactly **twice** in the entire `Source` tree. 
 small `GEO_ENSURE(cond)` macro that captures it — removes ~70 string literals and makes the class of bug
 impossible.
 
+**Status (2026-08-20)**: the four named findings are done, and `__FUNCTION__` went from 2 occurrences repo-wide to
+115 across 31 files. The general case: tier 5 converted `GeoStateTreeBuilderUtil`, and 2026-08-20 converted its two
+siblings `GeoWidgetBuilderUtil.cpp` and `GeoHudWidgetBuilderUtil.cpp` — neither hand-types a name now. A grep for
+`TEXT("Class::` / `TEXT("Class: ` still finds ~170 sites repo-wide — not all of them self-naming, so that number is
+an upper bound, not a work item count. `ensureMsgf(false, …)` is down from 32 sites to 5.
+
 ### C. A careful guard immediately followed by an unchecked dereference
 
 Findings 8.3, 9.2, 9.7, 11.2, 13.3, 14.2, 16.1. The recurring shape is a function that null-checks two or three
@@ -1374,13 +1497,14 @@ of them depends on any other item.
 | 7 | 3.1, 3.2, 4.4, 3.8, 8.6, 9.6, 9.8, 10.7 — guard/dead-code/`const` cleanups | small | correctness + clarity | done |
 | 8 | 10.4 — delete the 65 dead lines in `JoinAdvancedSession` / `OnJoinSessionComplete` | trivial | git already has them | done |
 | 9 | 8.1 — one `FindSpecForTag` helper for the four HUD queries | small | ~70 lines | done |
-| 10 | 1.x — `GeoAbilitySystemLibrary` overload and wrapper pruning | medium | ~80 lines, smaller API | done except 1.9 (second half) and 1.10 |
+| 10 | 1.x — `GeoAbilitySystemLibrary` overload and wrapper pruning | medium | ~80 lines, smaller API | done |
 | 11 | 4.1–4.3, 6.2–6.5, 8.2, 9.1, 9.9, 10.1–10.3, 11.4–11.5, 13.4, 14.3, 15.1, 15.3, 16.2–16.4 — extract-shared-helper items | medium | **~400 lines** | done (also 4.5, 14.4) |
-| 12 | 8.4 + 8.5 — collapse the two attribute-change fan-out mechanisms into one | medium | deletes `UnbindStatCallbacks` and two ASC delegates | **open** |
+| 12 | 8.4 + 8.5 — collapse the two attribute-change fan-out mechanisms into one | medium | deletes `UnbindStatCallbacks`, the float handler and an EndPlay override; the two ASC delegates stay (gameplay uses them) | done |
 | 13 | 11.6 + 13.6 — replace long positional parameter lists with structs | small | removes two transposition traps | done |
-| 14 | 2.1 + 2.2 + 2.3 — `FEffectData` hierarchy collapse | **large, needs CoreRedirects** | ~150 lines, best structural win | **open** |
-| 15 | 2.5, 2.6, 3.10, 9.3, 12.1 — parser/traversal/long-function cleanups | medium | clarity | 2.6 / 3.10 / 9.3 done; **2.5 and 12.1 open** |
-| — | 13.7 — three hand-written recursive StateTree walkers | small | one traversal instead of three | **open** |
+| 14 | 2.1 + 2.2 + 2.3 — `FEffectData` hierarchy collapse | **large, needs CoreRedirects** | ~150 lines, best structural win | done; **PIE check owed** |
+| 15 | 2.5, 2.6, 3.10, 9.3, 12.1 — parser/traversal/long-function cleanups | medium | clarity | done (2.5: the re-parse half only — the `FConfigFile` half is declined, see the status section) |
+| — | 13.7 — three hand-written recursive StateTree walkers | small | one traversal instead of three | done |
+| — | Theme B — `__FUNCTION__` instead of hand-typed class names, outside the StateTree builder | mechanical | ~170 literals, one class of wrong-file log | both builder utils done; the rest of the repo untouched |
 
 Two findings that were reported but should **not** be applied as written:
 
@@ -1391,20 +1515,48 @@ Two findings that were reported but should **not** be applied as written:
   through it.
 - **9.4** was judged not worth it on re-reading — see the status section at the top.
 
-**Verification note**: the report itself was written without compiling. The applied work has been compiled
-(Editor / DebugGame target, all three modules) except for the last batch, which is pending a build. The items
-that still need more than a compile are listed under "Needs a runtime check" at the top of this file.
+**Verification note**: the report itself was written without compiling. Every applied tier, including the
+2026-08-20 batch, has since been compiled (`Tools\Build_Editor.bat` — GeoTrinityEditor Win64 DebugGame, all three
+modules). The items needing more than a compile are listed under "Needs a runtime check" at the top of this file.
 
 ## Coverage
 
-Audited folder by folder: `AbilitySystem/{Lib,Data,Components,Abilities/Base,Abilities/Pattern}`,
-`Actor/{Projectile,Deployable}`, `Actor/GeoArena` + `GeoHexArena`, `Characters/`, `GameClasses/`, `System/`,
-`World/`, `AI/`, `GeoTrinityUI/HUD` (menu and non-menu), `GeoTrinityEditor/Tool`.
+**Read folder by folder**: `AbilitySystem/{Lib,Data,Components,Abilities/Base,Abilities/Pattern}`,
+`Actor/{Projectile,Deployable}`, `Actor/Arena` (`GeoArena` + `GeoHexArena` only — see below), `Characters/`,
+`GameClasses/`, `System/`, `World/`, `AI/` (the controller), `GeoTrinityUI/HUD` (menu and non-menu),
+`GeoTrinityEditor/Tool`.
 
-Sampled rather than read line by line — the per-class ability folders
+**Sampled, not read line by line** — the per-class ability folders
 (`Abilities/{Boss,Circle,Square,Triangle,Common,Damaging}`) and the StateTree task classes. They were scanned for
 the patterns this report already names (`ensureMsgf(false, …)`, duplicated guards, copy-pasted messages) and the
 counts quoted in the cross-cutting themes include them, but no per-file findings were written up. The beam family
 in particular (`GeoChannelBeamAbility` → `GeoMoiraBeamAbility` / `GeoSacrificeBeamAbility` /
 `GeoChargeBeamAbility`) already has a proper `Tick`/`TickBeam` base-class split and did not look like a
 duplication candidate on inspection.
+
+### Not audited at all
+
+The 2026-08-11 pass never opened these. They are not in the finding numbering, they are not in the theme counts,
+and no claim in this report — including the `ensureMsgf` totals in Theme A — covers them:
+
+| Folder / file | .cpp | lines | Note |
+|---|---|---|---|
+| `Actor/Buttons` | 5 | 293 | `GeoClassChangeTrigger`, `GeoDifficultyButton`, `GeoFloorButton`, `GeoMatchStateButton`, `GeoTeleporter`. Not in the root `CLAUDE.md` source tree either |
+| `Tool/` | 4 | 359 | `UGeoGameplayLibrary` (8 `ensureMsgf` alone), `GeoAssetManager`, `GeoColor`, `GeoNiagaraParams` |
+| `AbilitySystem/AttributeSet` | 2 | 278 | `CharacterAttributeSet`, `GeoAttributeSetBase` |
+| `AbilitySystem/ExecCalc` | 2 | 162 | `ExecCalc_Damage` / `ExecCalc_Heal` — 89 and 73 lines that stay near-identical after normalising Damage↔Heal. Same shape as finding 11.4 |
+| `Actor/Arena` barriers | 2 | 249 | `GeoArenaBarrier`, `GeoHexBarrier`. Section 9 discusses the barrier only through `EndFight` (9.1); the classes themselves were not read |
+| `Actor/GeoInteractableActor.cpp` | 1 | 117 | Named in passing by finding 1.6, never audited |
+| `Input/` | 1 | 124 | `GeoInputComponent` |
+| `GeoTrinityEditor/Detail` | 1 | 104 | `ExternalProjectileParamsCustomization` — finding 3.5 reasons *about* it without reading it |
+| `Settings/` | 2 | 22 | `GameDataSettings`, `GeoGameUserSettings` |
+| `AbilitySystem/Types` | 1 | 56 | `GeoAscTypes` (`FGeoGameplayEffectContext`) |
+| `AbilitySystem/Globals` | 1 | 22 | `GeoAbilitySystemGlobals` |
+| `Animation/` | 1 | 4 | `FireAnimNotify` |
+
+**~1,790 lines across 23 files.** `ExecCalc`, `Tool/` and `Actor/Buttons` are the three worth a pass — the rest
+are small enough that a skim would close them out.
+
+Two consequences for numbers already quoted in this file: Theme A's "163 `ensureMsgf` across 52 files" was
+measured over the audited set only, and Theme B's literal count likewise. Re-measure before treating either as a
+baseline.

@@ -266,7 +266,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float DrainMagnitudePerSecond = 0.f;
 
-	/** The per-tick drain, described once in InitDrain; Tick only refreshes DamageAmount. */
+	/** The drain as a per-second rate, described once in InitDrain; Tick only passes it the tick's length. */
 	FDamageEffectData DrainEffectData;
 
 	// Cue fired at each moment of the deployable's life: tag, palette slot and sound tag per moment.

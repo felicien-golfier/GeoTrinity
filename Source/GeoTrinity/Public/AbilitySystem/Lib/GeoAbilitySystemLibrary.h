@@ -3,10 +3,9 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
-#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
-#include "Actor/Deployable/GeoDeployableBase.h"
+#include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -22,7 +21,11 @@ enum class EProjectileTarget : uint8
 	AllPlayers
 };
 
+class AGeoDeployableBase;
+class AGeoProjectile;
 class UStatusInfo;
+struct FDeployableData;
+struct FDeployableDataParams;
 struct FExternalProjectileParams;
 struct FGeoGameplayEffectContext;
 /**
@@ -102,6 +105,15 @@ public:
 	static FGameplayEffectContextHandle MakeGeoEffectContext(UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC,
 															 FGeoGameplayEffectContext*& OutGeoContext);
+
+	/**
+	 * True when the GameplayCue embedded in the applied effect must not play: suppressed outright by the context, or
+	 * spent from the target's UGeoGameFeelComponent budget for that kind of cue. The one rule both ExecCalcs ask.
+	 *
+	 * @param bIsHeal  Which budget the rate limit is taken from — the heal one, or the damage one.
+	 */
+	static bool ShouldSuppressGameplayCue(FGeoGameplayEffectContext const& GeoContext, AActor* TargetAvatar,
+										  bool bIsHeal);
 
 	/**
 	 * Returns the class default object for the ability registered under AbilityTag, cast to T.

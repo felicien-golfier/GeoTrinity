@@ -124,7 +124,7 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 			if (GeoLib::IsServer(GetWorld()))
 			{
 				FDamageEffectData DrainEffectData;
-				DrainEffectData.DamageAmount = ActualDrain;
+				DrainEffectData.Amount = ActualDrain;
 				DrainEffectData.bSuppressGameplayCue = true;
 				DrainEffectData.bSuppressCombatStats = true;
 				DrainEffectData.bDoNotRedirectSacrifice = true;
@@ -143,7 +143,7 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 			if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::Hostile))
 			{
 				FDamageEffectData DamageEffect;
-				DamageEffect.DamageAmount =
+				DamageEffect.Amount =
 					DamagePerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BoostPerAbsorbedZone * DeltaTime;
 				DamageEffect.bLimitGameplayCue = true;
 				GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
@@ -153,7 +153,7 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 			{
 
 				FHealEffectData HealEffect;
-				HealEffect.HealAmount =
+				HealEffect.Amount =
 					HealPerSecond.GetValueAtLevel(StoredPayload.AbilityLevel) * BoostPerAbsorbedZone * DeltaTime;
 				HealEffect.bLimitGameplayCue = true;
 				GeoASLib::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,

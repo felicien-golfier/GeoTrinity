@@ -6,6 +6,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Arena/GeoArena.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"

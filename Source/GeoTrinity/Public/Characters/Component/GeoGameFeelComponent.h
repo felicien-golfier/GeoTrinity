@@ -43,18 +43,11 @@ public:
 	void ApplyRecoil(float Distance);
 
 	/**
-	 * Returns true when enough time has passed since the last damage GameplayCue to fire a new one.
+	 * Returns true when enough time has passed since the last heal (bIsHeal) or damage GameplayCue to fire a new one.
 	 * Records the current time on success so subsequent calls within the rate window return false.
 	 * Call server-side only — the rate state is not replicated.
 	 */
-	bool IsDamageCueAvailable();
-
-	/**
-	 * Returns true when enough time has passed since the last heal GameplayCue to fire a new one.
-	 * Records the current time on success so subsequent calls within the rate window return false.
-	 * Call server-side only — the rate state is not replicated.
-	 */
-	bool IsHealCueAvailable();
+	bool IsCueAvailable(bool bIsHeal);
 
 	UPROPERTY(EditDefaultsOnly, Category = "GameFeel", meta = (ClampMin = "0"))
 	float RecoilRecoverySpeed = 14.f;

@@ -120,7 +120,7 @@ void UGeoHudWidgetBuilderUtil::BuildAbilitySlotWidget(UWidgetBlueprint* WidgetBl
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_AbilitySlot (square, fills bar slot)"));
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built WBP_AbilitySlot (square, fills bar slot)"), __FUNCTION__);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ void UGeoHudWidgetBuilderUtil::BuildAbilityBarWidget(UWidgetBlueprint* WidgetBlu
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_AbilityBar (centered SlotBox)"));
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built WBP_AbilityBar (centered SlotBox)"), __FUNCTION__);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -192,7 +192,7 @@ void UGeoHudWidgetBuilderUtil::BuildChargeBeamGaugeWidget(UWidgetBlueprint* Widg
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_ChargeBeamGauge (sweet spot %.2f–%.2f)"),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built WBP_ChargeBeamGauge (sweet spot %.2f–%.2f)"), __FUNCTION__,
 		   SweetSpotMinRatio, SweetSpotMaxRatio);
 }
 
@@ -221,7 +221,7 @@ void UGeoHudWidgetBuilderUtil::AddAbilityBarToOverlay(UWidgetBlueprint* WidgetBl
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added AbilityBar (%s) to '%s' bottom-center (%.0f%%x%.0f%% of screen)"),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Added AbilityBar (%s) to '%s' bottom-center (%.0f%%x%.0f%% of screen)"), __FUNCTION__,
 		   *AbilityBarClass->GetName(), *WidgetBlueprint->GetName(), WidthFraction * 100.f, HeightFraction * 100.f);
 }
 
@@ -238,7 +238,7 @@ void UGeoHudWidgetBuilderUtil::BuildStatusBarWidget(UWidgetBlueprint* WidgetBlue
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_StatusBar (placeholder root; tree is native)"));
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built WBP_StatusBar (placeholder root; tree is native)"), __FUNCTION__);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -263,7 +263,7 @@ void UGeoHudWidgetBuilderUtil::AddStatusBarToOverlay(UWidgetBlueprint* WidgetBlu
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added StatusBar (%s) to '%s' bottom-center (%.0f%%x%.0f%% of screen)"),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Added StatusBar (%s) to '%s' bottom-center (%.0f%%x%.0f%% of screen)"), __FUNCTION__,
 		   *StatusBarClass->GetName(), *WidgetBlueprint->GetName(), WidthFraction * 100.f, HeightFraction * 100.f);
 }
 
@@ -321,7 +321,7 @@ void UGeoHudWidgetBuilderUtil::BuildCombattantLifeBarWidget(UWidgetBlueprint* Wi
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_CombattantLifeBar (%.0fx%.0f, shield over health)"),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built WBP_CombattantLifeBar (%.0fx%.0f, shield over health)"), __FUNCTION__,
 		   BarWidth, BarHeight);
 }
 
@@ -330,7 +330,7 @@ void UGeoHudWidgetBuilderUtil::BuildLocalConnectWidget(UWidgetBlueprint* WidgetB
 													   TSubclassOf<UUserWidget> MenuButtonClass)
 {
 	if (!ensureMsgf(MenuButtonClass && MenuButtonClass->IsChildOf(UGeoMenuButton::StaticClass()),
-					TEXT("BuildLocalConnectWidget — MenuButtonClass must derive from UGeoMenuButton")))
+					TEXT("%hs — MenuButtonClass must derive from UGeoMenuButton"), __FUNCTION__))
 	{
 		return;
 	}
@@ -386,7 +386,7 @@ void UGeoHudWidgetBuilderUtil::BuildLocalConnectWidget(UWidgetBlueprint* WidgetB
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Built WBP_LocalConnect (centered Play Local panel)"));
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built WBP_LocalConnect (centered Play Local panel)"), __FUNCTION__);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -394,16 +394,16 @@ void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* Widge
 														 FName ButtonsBoxName, TSubclassOf<UUserWidget> MenuButtonClass,
 														 TSubclassOf<UUserWidget> LocalConnectClass)
 {
-	if (!ensureMsgf(WidgetBlueprint && LocalConnectClass, TEXT("AddLocalConnectToMainMenu — null arg")) ||
+	if (!ensureMsgf(WidgetBlueprint && LocalConnectClass, TEXT("%hs — null arg"), __FUNCTION__) ||
 		!ensureMsgf(MenuButtonClass && MenuButtonClass->IsChildOf(UGeoMenuButton::StaticClass()),
-					TEXT("AddLocalConnectToMainMenu — MenuButtonClass must derive from UGeoMenuButton")))
+					TEXT("%hs — MenuButtonClass must derive from UGeoMenuButton"), __FUNCTION__))
 	{
 		return;
 	}
 
 	UWidgetTree* Tree = WidgetBlueprint->WidgetTree;
 	UVerticalBox* ButtonsBox = Tree ? Cast<UVerticalBox>(Tree->FindWidget(ButtonsBoxName)) : nullptr;
-	if (!ensureMsgf(ButtonsBox, TEXT("AddLocalConnectToMainMenu — no VerticalBox named '%s' in '%s'"),
+	if (!ensureMsgf(ButtonsBox, TEXT("%hs — no VerticalBox named '%s' in '%s'"), __FUNCTION__,
 					*ButtonsBoxName.ToString(), *WidgetBlueprint->GetName()))
 	{
 		return;
@@ -457,7 +457,7 @@ void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* Widge
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("GeoHudWidgetBuilderUtil: Added PlayLocalButton + LocalConnectWidget (%s) to '%s'"),
+	UE_LOG(LogTemp, Log, TEXT("%hs: Added PlayLocalButton + LocalConnectWidget (%s) to '%s'"), __FUNCTION__,
 		   *LocalConnectClass->GetName(), *WidgetBlueprint->GetName());
 }
 

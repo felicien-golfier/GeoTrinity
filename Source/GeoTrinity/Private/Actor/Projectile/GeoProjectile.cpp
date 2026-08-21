@@ -2,6 +2,7 @@
 
 #include "Actor/Projectile/GeoProjectile.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"

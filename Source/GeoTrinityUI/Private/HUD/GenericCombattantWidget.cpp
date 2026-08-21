@@ -4,7 +4,6 @@
 #include "HUD/GenericCombattantWidget.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -17,13 +16,7 @@ static FLinearColor const DeadTint{0.35f, 0.35f, 0.35f, 1.f};
 // ---------------------------------------------------------------------------------------------------------------------
 void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementation(UAbilitySystemComponent* ASC)
 {
-	// Idempotent: the owner may re-initialize once its ASC is ready. Bound to a different ASC → unbind before rebinding
-	// so callbacks don't stack. Same ASC → fall through and refresh stats only (no rebind).
-	if (OwnerASC.IsValid() && OwnerASC != ASC)
-	{
-		UnbindStatCallbacks();
-	}
-
+	// Idempotent: the owner may re-initialize once its ASC is ready. Same ASC → refresh the stats only (no rebind).
 	bool const bAlreadyBound = (OwnerASC == ASC);
 	OwnerASC = ASC;
 
@@ -41,7 +34,7 @@ void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementati
 		{
 			GeoHUD->RegisterASCForDamageNumbers(ASC, ASC->GetAvatarActor());
 		}
-		InitStats();
+		RefreshStats();
 		return;
 	}
 
@@ -52,7 +45,7 @@ void UGenericCombattantWidget::InitializeWithAbilitySystemComponent_Implementati
 	}
 
 	BindStatCallbacks();
-	InitStats();
+	RefreshStats();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -100,7 +93,7 @@ void UGenericCombattantWidget::RefreshShield()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGenericCombattantWidget::InitStats()
+void UGenericCombattantWidget::RefreshStats()
 {
 	if (OwnerASC.IsValid())
 	{
@@ -109,7 +102,7 @@ void UGenericCombattantWidget::InitStats()
 	else
 	{
 		UE_LOG(LogGeoTrinity, Warning,
-			   TEXT("Initializing UI stats with default values, probably not ideal. Please fix missing OwnerASC in %s"),
+			   TEXT("Showing UI stats with default values, probably not ideal. Please fix missing OwnerASC in %s"),
 			   *GetName());
 		UpdateHealthRatio(1.f);
 	}
@@ -137,57 +130,16 @@ void UGenericCombattantWidget::BindStatCallbacks()
 		return;
 	}
 
-	UGeoAbilitySystemComponent* GeoASC = Cast<UGeoAbilitySystemComponent>(OwnerASC.Get());
-	if (!GeoASC)
+	// A weak lambda self-cleans when this widget is destroyed, so there is no matching removal. Re-binding to another
+	// ASC leaves the old bindings behind, which is harmless: RefreshStats always reads the current OwnerASC.
+	for (FGameplayAttribute const& Attribute :
+		 {UGeoAttributeSetBase::GetHealthAttribute(), UGeoAttributeSetBase::GetMaxHealthAttribute(),
+		  UGeoAttributeSetBase::GetShieldAttribute()})
 	{
-		return;
+		OwnerASC->GetGameplayAttributeValueChangeDelegate(Attribute).AddWeakLambda(this,
+																				  [this](FOnAttributeChangeData const&)
+																				  {
+																					  RefreshStats();
+																				  });
 	}
-
-	GeoASC->OnHealthChanged.AddDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
-	GeoASC->OnMaxHealthChanged.AddDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
-
-	// The ASC exposes no Shield delegate (unlike Health/MaxHealth), so bind the attribute directly.
-	ShieldChangedHandle = GeoASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
-							   .AddWeakLambda(this,
-											  [this](FOnAttributeChangeData const&)
-											  {
-												  RefreshShield();
-											  });
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGenericCombattantWidget::UnbindStatCallbacks()
-{
-	if (!OwnerASC.IsValid())
-	{
-		return;
-	}
-	UGeoAbilitySystemComponent* GeoASC = Cast<UGeoAbilitySystemComponent>(OwnerASC.Get());
-	if (!GeoASC)
-	{
-		return;
-	}
-	GeoASC->OnHealthChanged.RemoveDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
-	GeoASC->OnMaxHealthChanged.RemoveDynamic(this, &UGenericCombattantWidget::OnHealthChanged);
-	GeoASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
-		.Remove(ShieldChangedHandle);
-	ShieldChangedHandle.Reset();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGenericCombattantWidget::OnHealthChanged(float NewValue)
-{
-	if (!OwnerASC.IsValid())
-	{
-		return;
-	}
-	// Don't use NewValue, just get the ratio from ASC (it might be health or max health)
-	UpdateHealthRatio(UHudFunctionLibrary::GetHealthRatio(OwnerASC.Get()));
-	// MaxHealth is the shield denominator, so a max-health change moves the shield ratio too.
-	RefreshShield();
-	// Re-evaluate visibility too: on the listen-server host InitStats() runs before the owner's attributes are
-	// initialized, reading MaxHealth as 0 and collapsing the bar. Clients recover because MaxHealth arrives via
-	// replication and fires this delegate, but the host sets it synchronously — so without this call the bar stays
-	// collapsed on the host forever.
-	UpdateHealthBarVisibility();
 }

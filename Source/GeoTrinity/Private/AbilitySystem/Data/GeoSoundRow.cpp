@@ -3,6 +3,7 @@
 
 #include "AbilitySystem/Data/GeoSoundRow.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/AudioComponent.h"
 #include "Curves/CurveFloat.h"

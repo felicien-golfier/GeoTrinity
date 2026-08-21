@@ -15,6 +15,7 @@
 #include "Actor/GeoInteractableActor.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerState.h"
@@ -83,6 +84,28 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 
 	EffectData.UpdateContextHandle(GeoEffectContext, AbilityLevel, AbilityTag);
 	return EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoAbilitySystemLibrary::ShouldSuppressGameplayCue(FGeoGameplayEffectContext const& GeoContext,
+														 AActor* TargetAvatar, bool const bIsHeal)
+{
+	if (GeoContext.IsSuppressGameplayCue())
+	{
+		return true;
+	}
+	if (!GeoContext.IsLimitGameplayCue() || !IsValid(TargetAvatar))
+	{
+		return false;
+	}
+
+	UGeoGameFeelComponent* GameFeelComponent = TargetAvatar->FindComponentByClass<UGeoGameFeelComponent>();
+	if (!ensureMsgf(GameFeelComponent, TEXT("%hs: bLimitGameplayCue set but target %s has no GeoGameFeelComponent"),
+					__FUNCTION__, *TargetAvatar->GetName()))
+	{
+		return false;
+	}
+	return !GameFeelComponent->IsCueAvailable(bIsHeal);
 }
 
 void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,

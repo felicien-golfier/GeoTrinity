@@ -105,27 +105,15 @@ void UGeoGameFeelComponent::ApplyRecoil(float Distance)
 	SetComponentTickEnabled(true);
 }
 
-bool UGeoGameFeelComponent::IsDamageCueAvailable()
+bool UGeoGameFeelComponent::IsCueAvailable(bool const bIsHeal)
 {
+	double& LastCueTime = bIsHeal ? LastHealCueTime : LastDamageCueTime;
 	double const Now = GetWorld()->GetTimeSeconds();
 	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
-	if (Now - LastDamageCueTime < RateLimit)
+	if (Now - LastCueTime < RateLimit)
 	{
 		return false;
 	}
-	LastDamageCueTime = Now;
+	LastCueTime = Now;
 	return true;
-}
-
-bool UGeoGameFeelComponent::IsHealCueAvailable()
-{
-	double const Now = GetWorld()->GetTimeSeconds();
-	float const RateLimit = 1.f / GetDefault<UGameDataSettings>()->GameplayCueRateLimitPerSecond;
-	if (Now - LastHealCueTime >= RateLimit)
-	{
-		LastHealCueTime = Now;
-		return true;
-	}
-
-	return false;
 }

@@ -63,8 +63,7 @@ void AGeoArena::BeginPlay()
 
 void AGeoArena::ResetBoss()
 {
-	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("%s: ResetBoss is server-only"), *GetName())
-		|| !ensureMsgf(BossClass, TEXT("%s: no BossClass configured"), *GetName()))
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("%s: ResetBoss is server-only"), *GetName()) || !BossClass)
 	{
 		return;
 	}

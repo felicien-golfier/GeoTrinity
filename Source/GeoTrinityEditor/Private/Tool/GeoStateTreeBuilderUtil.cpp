@@ -17,45 +17,56 @@
 #include "StateTreeTaskBase.h"
 #include "StateTreeTypes.h"
 
-static UStateTreeState* FindStateRecursive(TArray<TObjectPtr<UStateTreeState>> const& States, FName StateName)
+/**
+ * Depth-first walk of every state under `States`, parents before children. `Visitor` returning true stops the walk
+ * and is reported back to the caller; `Depth` counts the levels below `States`.
+ */
+static bool ForEachStateRecursive(TArray<TObjectPtr<UStateTreeState>> const& States,
+								  TFunctionRef<bool(UStateTreeState&, int32 Depth)> Visitor, int32 Depth = 0)
 {
 	for (UStateTreeState* State : States)
 	{
-		if (!State)
-		{
-			continue;
-		}
-		if (State->Name == StateName)
-		{
-			return State;
-		}
-		if (UStateTreeState* Found = FindStateRecursive(State->Children, StateName))
-		{
-			return Found;
-		}
-	}
-	return nullptr;
-}
-
-static bool RemoveStateRecursive(TArray<TObjectPtr<UStateTreeState>>& States, FName StateName)
-{
-	for (int32 i = 0; i < States.Num(); ++i)
-	{
-		if (!States[i])
-		{
-			continue;
-		}
-		if (States[i]->Name == StateName)
-		{
-			States.RemoveAt(i);
-			return true;
-		}
-		if (RemoveStateRecursive(States[i]->Children, StateName))
+		if (State && (Visitor(*State, Depth) || ForEachStateRecursive(State->Children, Visitor, Depth + 1)))
 		{
 			return true;
 		}
 	}
 	return false;
+}
+
+static UStateTreeState* FindStateRecursive(TArray<TObjectPtr<UStateTreeState>> const& States, FName StateName)
+{
+	UStateTreeState* Found = nullptr;
+	ForEachStateRecursive(States,
+						  [StateName, &Found](UStateTreeState& State, int32)
+						  {
+							  if (State.Name != StateName)
+							  {
+								  return false;
+							  }
+							  Found = &State;
+							  return true;
+						  });
+	return Found;
+}
+
+static bool RemoveStateRecursive(TArray<TObjectPtr<UStateTreeState>>& States, FName StateName)
+{
+	auto RemoveFromSiblings = [StateName](TArray<TObjectPtr<UStateTreeState>>& Siblings)
+	{
+		return Siblings.RemoveAll(
+				   [StateName](UStateTreeState const* State)
+				   {
+					   return State && State->Name == StateName;
+				   })
+			   > 0;
+	};
+	return RemoveFromSiblings(States)
+		   || ForEachStateRecursive(States,
+									[&RemoveFromSiblings](UStateTreeState& State, int32)
+									{
+										return RemoveFromSiblings(State.Children);
+									});
 }
 
 static void CompileAndSave(UStateTree* StateTree, ANSICHAR const* CallerName)
@@ -126,50 +137,42 @@ static void AddFireAbilityTask(UStateTreeState& State, FGameplayTag AbilityTag)
 	TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = AbilityTag;
 }
 
-static void LogStatesRecursive(TArray<TObjectPtr<UStateTreeState>> const& States, int32 Depth)
+static void LogState(UStateTreeState const& State, int32 Depth)
 {
-	for (UStateTreeState const* State : States)
+	FString Indent = FString::ChrN(Depth * 2, ' ');
+	FString TaskTags;
+	for (FStateTreeEditorNode const& TaskNode : State.Tasks)
 	{
-		if (!State)
+		if (TaskNode.GetInstance().GetStruct()
+			&& TaskNode.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
 		{
-			continue;
+			FSTTask_FireAbilityInstanceData const* Data = TaskNode.GetInstance().GetPtr<FSTTask_FireAbilityInstanceData>();
+			TaskTags += FString::Printf(TEXT(" [tag=%s]"), *Data->AbilityTag.ToString());
 		}
-		FString Indent = FString::ChrN(Depth * 2, ' ');
-		FString TaskTags;
-		for (FStateTreeEditorNode const& TaskNode : State->Tasks)
-		{
-			if (TaskNode.GetInstance().GetStruct()
-				&& TaskNode.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
-			{
-				FSTTask_FireAbilityInstanceData const* Data =
-					TaskNode.GetInstance().GetPtr<FSTTask_FireAbilityInstanceData>();
-				TaskTags += FString::Printf(TEXT(" [tag=%s]"), *Data->AbilityTag.ToString());
-			}
-		}
-		if (State->SingleTask.GetInstance().GetStruct()
-			&& State->SingleTask.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
-		{
-			FSTTask_FireAbilityInstanceData const* Single =
-				State->SingleTask.GetInstance().GetPtr<FSTTask_FireAbilityInstanceData>();
-			TaskTags += FString::Printf(TEXT(" [singletask tag=%s]"), *Single->AbilityTag.ToString());
-		}
-		else if (UScriptStruct const* SingleStruct = Cast<UScriptStruct>(State->SingleTask.GetInstance().GetStruct()))
-		{
-			TaskTags += FString::Printf(TEXT(" [singletask=%s]"), *SingleStruct->GetName());
-		}
-		FString TransitionInfo;
-		for (FStateTreeTransition const& T : State->Transitions)
-		{
-			FString TriggerStr = UEnum::GetValueAsString(T.Trigger);
-			FString TypeStr = UEnum::GetValueAsString(T.State.LinkType);
-			FString TargetStr =
-				T.State.Name.IsNone() ? FString() : FString::Printf(TEXT("→'%s'"), *T.State.Name.ToString());
-			TransitionInfo += FString::Printf(TEXT(" [%s %s%s]"), *TriggerStr, *TypeStr, *TargetStr);
-		}
-		UE_LOG(LogTemp, Warning, TEXT("StateTree state: %s'%s'%s%s"), *Indent, *State->Name.ToString(), *TaskTags,
-			   *TransitionInfo);
-		LogStatesRecursive(State->Children, Depth + 1);
 	}
+	if (State.SingleTask.GetInstance().GetStruct()
+		&& State.SingleTask.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
+	{
+		FSTTask_FireAbilityInstanceData const* Single =
+			State.SingleTask.GetInstance().GetPtr<FSTTask_FireAbilityInstanceData>();
+		TaskTags += FString::Printf(TEXT(" [singletask tag=%s]"), *Single->AbilityTag.ToString());
+	}
+	else if (UScriptStruct const* SingleStruct = Cast<UScriptStruct>(State.SingleTask.GetInstance().GetStruct()))
+	{
+		TaskTags += FString::Printf(TEXT(" [singletask=%s]"), *SingleStruct->GetName());
+	}
+	FString TransitionInfo;
+	for (FStateTreeTransition const& Transition : State.Transitions)
+	{
+		FString TriggerStr = UEnum::GetValueAsString(Transition.Trigger);
+		FString TypeStr = UEnum::GetValueAsString(Transition.State.LinkType);
+		FString TargetStr = Transition.State.Name.IsNone()
+								? FString()
+								: FString::Printf(TEXT("→'%s'"), *Transition.State.Name.ToString());
+		TransitionInfo += FString::Printf(TEXT(" [%s %s%s]"), *TriggerStr, *TypeStr, *TargetStr);
+	}
+	UE_LOG(LogTemp, Warning, TEXT("StateTree state: %s'%s'%s%s"), *Indent, *State.Name.ToString(), *TaskTags,
+		   *TransitionInfo);
 }
 
 UStateTreeState* UGeoStateTreeBuilderUtil::CreateAndInsertState(UStateTreeEditorData* EditorData, FName StateName,
@@ -568,7 +571,12 @@ void UGeoStateTreeBuilderUtil::ListStates(UStateTree* StateTree)
 		return;
 	}
 
-	LogStatesRecursive(EditorData->SubTrees, 0);
+	ForEachStateRecursive(EditorData->SubTrees,
+						  [](UStateTreeState& State, int32 Depth)
+						  {
+							  LogState(State, Depth);
+							  return false;
+						  });
 }
 
 void UGeoStateTreeBuilderUtil::ListEnterConditions(UStateTree* StateTree, FName StateName)

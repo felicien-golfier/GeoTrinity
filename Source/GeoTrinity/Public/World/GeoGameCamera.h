@@ -116,6 +116,29 @@ private:
 	FVector2D GetSpectateMoveInput(APlayerController const* PlayerController,
 								   AGeoCharacter const* LocalCharacter) const;
 
+	/** Collects the XY of every local player the camera has to frame, plus the first local controller and its pawn
+	 * (null when that pawn is not an AGeoCharacter), which the spectate pan reads its input from. */
+	void GatherLocalPlayers(TArray<FVector2D, TInlineAllocator<4>>& OutLivingPlayers,
+							APlayerController const*& OutFirstController,
+							AGeoCharacter const*& OutFirstCharacter) const;
+
+	/** Enters and leaves spectate mode, freezing `SpectateTarget` on the death transition and advancing the pan once
+	 * `SpectateDelayRemaining` has run out. */
+	void UpdateSpectateState(bool bAllLocalPlayerDead, FVector2D CameraXY,
+							 APlayerController const* FirstLocalController, AGeoCharacter const* FirstLocalCharacter,
+							 float DeltaTime);
+
+	/** Interpolates `CurrentOrthoWidth` towards the width that frames the farthest local player from the camera. */
+	void UpdateZoom(TConstArrayView<FVector2D> LivingPlayers, FVector2D CameraXY, float DeltaTime);
+
+	/** Geo.ShowCameraZoom: one line per living local player plus the distances the zoom was derived from. */
+	void DrawZoomDebug(TConstArrayView<FVector2D> LivingPlayers, FVector2D CameraXY, float FarthestDistance) const;
+
+	/** Pulls the follow target in by the on-screen half-extents of the current OrthoWidth at this actor's yaw, so the
+	 * view never shows past `Bounds`; snaps to the bounds centre on an axis too small to fit the view. Identity while
+	 * unbounded. */
+	FVector2D ClampToBounds(FVector2D Target) const;
+
 	/** Volumes local players are currently inside; one entry per player per volume, so a volume stays active while
 	 * any of them remains inside. The last valid entry is the one that frames the camera. */
 	TArray<TWeakObjectPtr<AGeoCameraVolume>> ActiveVolumes;
