@@ -43,6 +43,7 @@ public:
 	static FName AddModule(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 						   FString ModuleScriptPath, int32 TargetIndex = -1);
 
+	/** Enables or disables one module in a stage's stack. Returns false when the system, emitter, or module could not be found. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static bool SetModuleEnabled(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 								 FName FunctionName, bool bEnabled);
@@ -79,6 +80,7 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void ListStack(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage);
 
+	/** Compiles and saves the Niagara system at SystemPath. Call once after batching mutations. Returns false if the asset was not found or compilation failed. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static bool CompileAndSave(FString SystemPath);
 };
