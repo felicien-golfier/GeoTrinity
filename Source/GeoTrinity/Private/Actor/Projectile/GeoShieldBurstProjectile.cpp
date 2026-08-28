@@ -121,6 +121,8 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 	else
 	{
 		EndSoundType = EProjectileSoundType::ValidOverlapEnd;
+
+
 		if (GeoLib::IsServer(GetWorld()))
 		{
 			FShieldEffectData ShieldEffect;
@@ -128,6 +130,8 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 			GeoASLib::ApplySingleEffectData(ShieldEffect, OwnerASC, TargetASC, Payload.AbilityLevel, Payload.Seed,
 											Payload.AbilityTag);
 		}
+
+		GeoASLib::NotifyAbilityHit(Payload, OtherActor);
 
 		OnProjectileHit(OtherActor);
 		EndProjectileLife();
@@ -137,8 +141,7 @@ bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySy
 											   UGeoAbilitySystemComponent*& OutTargetASC)
 {
 	constexpr float TimeThresholdBetweenSameHostileOverlap = 0.5f;
-	bool const bRepeatHostileOverlap =
-		LastOverlapHostileActor.IsValid() && LastOverlapHostileActor == OtherActor
+	bool const bRepeatHostileOverlap = LastOverlapHostileActor.IsValid() && LastOverlapHostileActor == OtherActor
 		&& GetWorld()->GetTimeSeconds() - LastOverlapTime < TimeThresholdBetweenSameHostileOverlap;
 	if (OtherActor->IsA(AGeoWall::StaticClass()) || bRepeatHostileOverlap)
 	{

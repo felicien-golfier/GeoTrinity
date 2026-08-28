@@ -40,6 +40,24 @@ struct GEOTRINITY_API FAbilityPayload
 
 	UPROPERTY(Transient, BlueprintReadOnly)
 	AActor* Instigator{nullptr};
+
+	/**
+	 * The single hit notification this shot is allowed, consumed by the first target it connects with
+	 * (GeoASLib::NotifyAbilityHit). Every carrier one shot spawns shares it, so the five projectiles of a spread report
+	 * one hit between them, and a beam ticking over four targets reports one.
+	 *
+	 * Deliberately outside reflection: it must not cross the wire with the payload (PatternStartMulticast), and a
+	 * machine that only received a copy is not the one that fired. A payload without it — a cosmetic remote-fire one, a
+	 * replicated copy, a default-constructed one — reports nothing.
+	 */
+	TSharedPtr<bool> HitNotified;
+
+	/**
+	 * Opens a fresh, unspent hit notification for a new shot. Called once per shot — at payload creation, and again
+	 * every time the payload is re-stamped for the next shot of a held trigger — so an auto-fire burst reports one hit
+	 * per shot rather than one for the whole hold.
+	 */
+	void OpenHitNotification() { HitNotified = MakeShared<bool>(false); }
 };
 
 /**

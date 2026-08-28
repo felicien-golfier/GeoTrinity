@@ -152,6 +152,15 @@ protected:
 	virtual void HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
 									UGeoAbilitySystemComponent* TargetASC);
 
+	/**
+	 * Runs the hit path against everything the projectile already sits inside, for a shot fired point-blank into a
+	 * hitbox. The pool enables collision — and broadcasts that first begin-overlap — before InitProjectileLife binds the
+	 * delegate, so nothing is listening when it fires and the engine never repeats it while the projectile stays inside.
+	 * Deferred to the next tick by InitProjectileLife so a spawn-frame hit cannot recycle the projectile under the
+	 * ability that is still spawning it.
+	 */
+	void ResolveInitialOverlaps();
+
 	/** Dispatches overlap events to IsValidOverlap then HandleValidOverlap. */
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

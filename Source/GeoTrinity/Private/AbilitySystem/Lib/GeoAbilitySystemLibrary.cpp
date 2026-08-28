@@ -87,6 +87,24 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemLibrary::NotifyAbilityHit(FAbilityPayload const& Payload, AActor* HitActor)
+{
+	if (!Payload.HitNotified.IsValid() || *Payload.HitNotified)
+	{
+		return;
+	}
+
+	UGeoAbilitySystemComponent* InstigatorASC = GetGeoAscFromActor(Payload.Owner);
+	if (!IsValid(InstigatorASC))
+	{
+		return;
+	}
+
+	*Payload.HitNotified = true;
+	InstigatorASC->OnAbilityHit.Broadcast(Payload.AbilityTag, Payload.Instigator, HitActor);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 bool UGeoAbilitySystemLibrary::ShouldSuppressGameplayCue(FGeoGameplayEffectContext const& GeoContext,
 														 AActor* TargetAvatar, bool const bIsHeal)
 {

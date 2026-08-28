@@ -98,6 +98,10 @@ Anticipation runs opposite to the action, and the further it goes the larger the
 
 A vibration on the wind-up alternates every single frame and grows as the wind-up tightens; alternating any slower reads as a wobble.
 
+A vibration on the root shakes the whole shape, while the same vibration on one part reads as that part working against the rest of it.
+
+A vibration inside a stretch that loops has to be counted from that stretch's own first frame, and its period has to divide that stretch's length, or its two ends hold different offsets.
+
 Hold the last frames of the wind-up dead still — that stillness is what makes the hit land, so the vibration stops where it begins rather than running into it.
 
 Cross from the wind-up's extreme to the action's extreme in two frames, one of them mid-flight, so the spacing itself reads as speed.
@@ -120,7 +124,33 @@ Nested parts have to open from the outside in and close from the inside out, whi
 
 A part that slides out of its housing is capped at the reach its mesh gives it: the overshoot that lands a hit belongs to the body, which is meant to swell past where it settles, but past full reach such a part is stretched rather than further out — and a stretched one runs through whatever the part carrying it sits inside.
 
+How far such a part may reach is set by the boundary in the direction it points, so one held still on a corner of that boundary has the most room there is, while one swept across the boundary is held to the shallowest point it crosses.
+
+Weighting a part's extension by how squarely it points where the shape is aimed is bounded by where that part rests: when none of a ring's parts rests aimed that way, a sharp weighting holds every one of them to a fraction of its reach however far it is told to go, and only turning that ring walks one through the aimed direction.
+
+Where several clips are cut from one driver, how each winds up is what tells them apart, so give each its own rather than the one that reads best.
+
 See `AI/Python/star_spike_nova.py` for a hit built on these and `AI/Python/star_idle_breath.py` for the looping counterpart, `AI/Python/hex_boss_idle.py` for a loop closed on symmetry rather than on stillness, and `AI/Python/hex_boss_abilities.py` for several clips driven from one parameter table. The same abilities are cut three ways from three drivers — one eased curve, one run of steps, one spin held at the symmetry's speed limit — in that file and its `_clockwork` and `_frenzy` siblings, and `AI/Python/hex_boss_launch.py` cuts the eased one down to a single beat with no loop and no direction in it.
+
+---
+
+## Making an Actor Read at a Small Size
+
+An actor small on screen reads by its whole silhouette rather than by its parts, so the shape's own scale carries the clip and no amount of motion inside a fixed outline substitutes for it.
+
+Drive that scale from the same curve the parts read and read it undelayed, so it leads every one of them and each part reads a size the shape has already moved.
+
+Draw the whole shape in harder than it goes out, since the clamp is what the action reads against and nothing has to hold it.
+
+A part extended only as far as its mesh gives it disappears at that size, so a legible one is stretched to several times that, and what bounds it is the shell around it rather than taste.
+
+Where a collision volume does not follow the mesh, it caps the size that may be held through a sustained phase, so let the driving curve's overshoot alone drive the extreme and everything below it drive the size held — which puts the size the volume cannot cover on the landing frame and nowhere else.
+
+A sustained phase pulses better shaped like a hit than like a wave — out over a fifth of it and decaying across the rest — since a wave of the same peak spends most of the phase halfway out, which reads as floating.
+
+Check the compounded scale of the shape and its outermost part against that volume on every frame, since either alone stays under a cap the two together pass.
+
+See `AI/Python/hex_boss_abilities.py` for clips cut this way and for the per-frame report of the compounded scale against the cap.
 
 ---
 

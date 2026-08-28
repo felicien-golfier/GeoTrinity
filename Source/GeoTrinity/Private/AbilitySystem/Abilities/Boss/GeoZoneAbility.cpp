@@ -103,6 +103,7 @@ void UGeoZoneAbility::Burst(FVector const& ZoneLocation) const
 	{
 		if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target))
 		{
+			GeoASLib::NotifyAbilityHit(StoredPayload, Target);
 			GeoASLib::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed, StoredPayload.AbilityTag);
 		}

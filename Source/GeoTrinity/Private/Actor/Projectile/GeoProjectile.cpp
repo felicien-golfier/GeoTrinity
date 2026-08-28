@@ -21,6 +21,7 @@
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
 #include "System/GeoPoolableInterface.h"
+#include "TimerManager.h"
 #include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "UObject/ConstructorHelpers.h"
@@ -205,6 +206,24 @@ void AGeoProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::ResolveInitialOverlaps()
+{
+	TArray<AActor*> OverlappingActors;
+	Sphere->GetOverlappingActors(OverlappingActors);
+
+	for (AActor* const OtherActor : OverlappingActors)
+	{
+		UGeoAbilitySystemComponent* OwnerASC = nullptr;
+		UGeoAbilitySystemComponent* TargetASC = nullptr;
+		if (IsValidOverlap(OtherActor, OwnerASC, TargetASC))
+		{
+			HandleValidOverlap(OtherActor, OwnerASC, TargetASC);
+			return;
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 bool AGeoProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
 									UGeoAbilitySystemComponent*& OutTargetASC)
 {
@@ -249,11 +268,13 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemCom
 {
 	EndSoundType = EProjectileSoundType::ValidOverlapEnd;
 
+
 	if (GeoLib::IsServer(this))
 	{
 		GeoASLib::ApplyEffectFromEffectData(EffectDataArray, OwnerASC, TargetASC, Payload.AbilityLevel, Payload.Seed,
 											Payload.AbilityTag);
 	}
+	GeoASLib::NotifyAbilityHit(Payload, OtherActor);
 
 	OnProjectileHit(OtherActor);
 	EndProjectileLife();
@@ -409,42 +430,40 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(Payload.Instigator);
 
+	// The sweep result is unused: it flags blocking hits only, and characters merely touch this channel.
 	TArray<FHitResult> HitResults;
-	bool const bHit = GetWorld()->LineTraceMultiByChannel(HitResults, CurrentLocation, AdvancedPosition,
-														  ECC_GeoProjectile, QueryParams);
+	GetWorld()->SweepMultiByChannel(HitResults, CurrentLocation, AdvancedPosition, FQuat::Identity, ECC_GeoProjectile,
+									FCollisionShape::MakeSphere(Sphere->GetScaledSphereRadius()), QueryParams);
 
-	if (bHit)
+	for (FHitResult const& Hit : HitResults)
 	{
-		for (FHitResult const& Hit : HitResults)
+		AActor* const HitActor = Hit.GetActor();
+		if (!HitActor)
 		{
-			AActor* const HitActor = Hit.GetActor();
-			if (!HitActor)
-			{
-				continue;
-			}
+			continue;
+		}
 
-			UGeoAbilitySystemComponent* OwnerASC = nullptr;
-			UGeoAbilitySystemComponent* TargetASC = nullptr;
-			if (IsValidOverlap(HitActor, OwnerASC, TargetASC))
-			{
-				SetActorLocation(Hit.ImpactPoint);
-				if (Hit.bBlockingHit)
-				{
-					OnSphereHit(nullptr, HitActor, nullptr, FVector::ZeroVector, Hit);
-				}
-				else
-				{
-					OnSphereOverlap(nullptr, HitActor, nullptr, 0, false, Hit);
-				}
-				return;
-			}
-
+		UGeoAbilitySystemComponent* OwnerASC = nullptr;
+		UGeoAbilitySystemComponent* TargetASC = nullptr;
+		if (IsValidOverlap(HitActor, OwnerASC, TargetASC))
+		{
+			SetActorLocation(Hit.Location);
 			if (Hit.bBlockingHit)
 			{
-				SetActorLocation(Hit.ImpactPoint);
 				OnSphereHit(nullptr, HitActor, nullptr, FVector::ZeroVector, Hit);
-				return;
 			}
+			else
+			{
+				OnSphereOverlap(nullptr, HitActor, nullptr, 0, false, Hit);
+			}
+			return;
+		}
+
+		if (Hit.bBlockingHit)
+		{
+			SetActorLocation(Hit.Location);
+			OnSphereHit(nullptr, HitActor, nullptr, FVector::ZeroVector, Hit);
+			return;
 		}
 	}
 
@@ -535,8 +554,7 @@ void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Para
 	FProjectileParamsBase Resolved;
 	Resolved.DistanceSpan = ResolveOverrideParam(
 		Params.OverrideDistanceSpan, Params.DistanceSpan,
-		bPlayerInstigator ? Settings->GeneralSpellDistance : Settings->EnemySpellDistance,
-		DefaultParams.DistanceSpan);
+		bPlayerInstigator ? Settings->GeneralSpellDistance : Settings->EnemySpellDistance, DefaultParams.DistanceSpan);
 	Resolved.ProjectileSpeed = ResolveOverrideParam(Params.OverrideSpeed, Params.ProjectileSpeed,
 													Settings->GeneralSpellSpeed, ProjectileMovement->InitialSpeed);
 	Resolved.Radius = ResolveOverrideParam(Params.OverrideRadius, Params.Radius, Settings->GeneralProjectileRadius,
@@ -597,6 +615,8 @@ void AGeoProjectile::InitProjectileLife()
 		InstigatorRevivedHandle =
 			ReviveBoundInstigator->OnRevived.AddUObject(this, &AGeoProjectile::OnInstigatorRevived);
 	}
+
+	GetWorldTimerManager().SetTimerForNextTick(this, &AGeoProjectile::ResolveInitialOverlaps);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

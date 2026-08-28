@@ -224,9 +224,14 @@ protected:
 	/** Builds the FGeoAbilityTargetData for the current shot from character position and facing. Override to customize.
 	 */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData();
-	/** Refreshes Seed, ServerSpawnTime, Origin, and Yaw in StoredPayload from the server's received TargetData
-	 * snapshot. */
-	void UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData);
+	/**
+	 * Opens the next shot on StoredPayload: refreshes Seed, ServerSpawnTime, Origin and Yaw from the TargetData
+	 * snapshot, and mints the shot's hit notification handle.
+	 *
+	 * @param bKeepSeed  Leaves Seed untouched, for auto-fire, which derives each shot's seed from its own authoritative
+	 *                   shot counter instead of trusting the client's.
+	 */
+	void UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData, bool bKeepSeed = false);
 
 	/** Server-side: snaps StoredPayload.Origin back to the fire socket when a remote client reports an origin
 	 *  further than GameDataSettings::MaxFireOriginDeviation from its avatar. */

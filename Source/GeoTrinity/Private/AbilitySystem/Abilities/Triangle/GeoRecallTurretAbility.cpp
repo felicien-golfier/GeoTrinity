@@ -41,10 +41,13 @@ void UGeoRecallTurretAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDat
 				EffectData.Append(BlinkBonusEffect);
 			}
 
+			// Each turret's drag-back is its own shot: one hit reported per turret
+			StoredPayload.OpenHitNotification();
 			for (auto const TargetASC : FindTargets(Instigator, RecallInfo))
 			{
 				GeoASLib::ApplyEffectFromEffectData(EffectData, PlayerASC, TargetASC, GetAbilityLevel(),
 													StoredPayload.Seed, StoredPayload.AbilityTag);
+				GeoASLib::NotifyAbilityHit(StoredPayload, TargetASC->GetAvatarActor());
 			}
 		}
 	}
@@ -103,9 +106,9 @@ TArray<UGeoAbilitySystemComponent*> UGeoRecallTurretAbility::FindTargets(AActor 
 		return Targets;
 	}
 
-	for (AActor* Target : GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(Instigator), OverlapAttitude,
-																false, Origin, ToInstigator / MaxRange, MaxRange,
-																LineHalfWidth))
+	for (AActor* Target :
+		 GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(Instigator), OverlapAttitude, false, Origin,
+											   ToInstigator / MaxRange, MaxRange, LineHalfWidth))
 	{
 		if (Target == Instigator)
 		{

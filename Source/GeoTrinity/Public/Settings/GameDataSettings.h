@@ -38,11 +38,7 @@ public:
 	 */
 	template <typename T>
 	static T* GetLoadedDataAsset(TSoftObjectPtr<T> const& SoftObject);
-
-	/* Soft path will be converted to content reference before use */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
-	TSoftObjectPtr<UStatusInfo> StatusInfo;
-
+	
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", AdvancedDisplay)
 	TSoftObjectPtr<UAbilityInfo> AbilityInfo;
 
@@ -132,7 +128,7 @@ public:
 	float MaxFireOriginDeviation = 300.f;
 
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Projectile")
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	TSoftObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
 
 	/** Shared generic-sound cue tag, executed locally for one-off gameplay sounds (e.g. deploy stack refilled). */

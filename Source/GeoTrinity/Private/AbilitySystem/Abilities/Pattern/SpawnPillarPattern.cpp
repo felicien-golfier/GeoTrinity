@@ -106,6 +106,7 @@ void USpawnPillarPattern::SpawnPillarAtLocation(FVector2D const& ZoneLocation,
 					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, InstigatorAsc, TargetASC,
 																		StoredPayload.AbilityLevel, StoredPayload.Seed,
 																		StoredPayload.AbilityTag);
+					UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, TargetActor);
 				}
 			}
 		}

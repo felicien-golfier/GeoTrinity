@@ -89,8 +89,7 @@ void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTarge
 				if (bIsServer)
 				{
 					FDamageEffectData DamageEffect;
-					DamageEffect.Amount =
-						FScalableFloat(BaseDamage.GetValueAtLevel(GetAbilityLevel()) * Multiplier);
+					DamageEffect.Amount = FScalableFloat(BaseDamage.GetValueAtLevel(GetAbilityLevel()) * Multiplier);
 					GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, GetAbilityLevel(),
 													AbilityTargetData.Seed, GetAbilityTag());
 				}
@@ -101,12 +100,13 @@ void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTarge
 				if (bIsServer)
 				{
 					FShieldEffectData ShieldEffect;
-					ShieldEffect.Amount =
-						FScalableFloat(BaseShield.GetValueAtLevel(GetAbilityLevel()) * Multiplier);
+					ShieldEffect.Amount = FScalableFloat(BaseShield.GetValueAtLevel(GetAbilityLevel()) * Multiplier);
 					GeoASLib::ApplySingleEffectData(ShieldEffect, SourceASC, TargetASC, GetAbilityLevel(),
 													AbilityTargetData.Seed, GetAbilityTag());
 				}
 			}
+
+			GeoASLib::NotifyAbilityHit(StoredPayload, Target);
 		}
 	}
 

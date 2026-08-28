@@ -22,6 +22,9 @@ Recalls all your deployed turrets. Each returning turret damages every enemy on 
 {Effects}
 Blinking turrets (about to expire) deal {BlinkBonusEffect}.
 
+[Ability.Spell.Momentum]
+Every hit you land, your turret included, stacks a {EffectValue:%} damage boost on you. Each stack falls off {EffectDuration}s after the hit that granted it.
+
 [Ability.Spell.BasicBeam]
 Hold to charge, release to fire a beam dealing {Damage} damage, scaled to {MinDamageMultiplier:%} (no charge) up to {MaxDamageMultiplier:%} (full charge). Release in the sweet spot for {SweetSpotDamageMultiplier:%} instead. Reload fires the charged beam too, to catch the sweet spot on a press rather than a release.
 
@@ -84,4 +87,22 @@ Drops turrets that creep in from the rim as the boss loses health
 
 [Ability.Spell.SpawnMine]
 Arms a mine on a random tile that bursts unless its tile is destroyed first
+
+[Ability.Spell.TutorialHealOverTime]
+Tutorial zone demonstration.
+
+[Ability.Spell.TutorialBurstHeal]
+Tutorial zone demonstration.
+
+[Ability.Spell.TutorialDamageReduction]
+Tutorial zone demonstration.
+
+[Ability.Spell.TutorialDamageOverTime]
+Tutorial zone demonstration.
+
+[Ability.Spell.TutorialBurstDamage]
+Tutorial zone demonstration.
+
+[Ability.Spell.TutorialLethal]
+Tutorial zone demonstration.
 

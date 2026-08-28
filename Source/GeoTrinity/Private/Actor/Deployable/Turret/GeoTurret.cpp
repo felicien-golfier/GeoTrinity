@@ -119,6 +119,7 @@ void AGeoTurret::TryFire()
 	Payload.Yaw = DirectionToTarget.Rotation().Yaw;
 	Payload.ServerSpawnTime = SpawnServerTime;
 	Payload.AbilityLevel = Data.Level;
+	Payload.HitNotified = MakeShared<bool>(false);
 	Payload.AbilityTag = GetData()->AbilityTag;
 
 	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform, Payload,

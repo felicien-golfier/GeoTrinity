@@ -66,6 +66,7 @@ void UGeoSacrificeDetonateAbility::Detonate(FGeoAbilityTargetData const& Ability
 		{
 			GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, GeoASLib::GetGeoAscFromActor(Target),
 											GetAbilityLevel(), AbilityTargetData.Seed, GetAbilityTag());
+			GeoASLib::NotifyAbilityHit(StoredPayload, Target);
 		}
 
 		// Consume the armed sacrifice: the channel becomes activatable again and the ability bar swaps back.

@@ -166,6 +166,7 @@ void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTarge
 
 		GeoASLib::ApplyEffectFromEffectData(Effects, SourceASC, TargetASC, GetAbilityLevel(), AbilityTargetData.Seed,
 											GetAbilityTag());
+		GeoASLib::NotifyAbilityHit(StoredPayload, Target);
 	}
 
 	// A sweet-spot release spends the full gauge whether or not it hit anything — the boosted beam was fired.

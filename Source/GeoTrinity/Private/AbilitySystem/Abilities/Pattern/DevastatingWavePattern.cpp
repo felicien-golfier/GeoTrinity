@@ -14,9 +14,9 @@
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-static TAutoConsoleVariable CVarDrawDevastatingWave(
-	TEXT("Geo.DrawDevastatingWave"), false,
-	TEXT("When true, draws the devastating wave's front / inner radius and pillar safe zones"));
+static TAutoConsoleVariable
+	CVarDrawDevastatingWave(TEXT("Geo.DrawDevastatingWave"), false,
+							TEXT("When true, draws the devastating wave's front / inner radius and pillar safe zones"));
 
 namespace
 {
@@ -213,6 +213,7 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 				UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
 																	StoredPayload.AbilityLevel, StoredPayload.Seed,
 																	StoredPayload.AbilityTag);
+				UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, HitActor);
 			}
 		}
 	}
@@ -334,6 +335,7 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 			UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
 																StoredPayload.AbilityLevel, StoredPayload.Seed,
 																StoredPayload.AbilityTag);
+			UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, PillarData.Pillar.Get());
 		}
 	}
 

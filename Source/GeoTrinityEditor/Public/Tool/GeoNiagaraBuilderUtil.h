@@ -26,6 +26,11 @@
  * Every mutation only dirties the asset; call CompileAndSave once per batch. Only static switches are pins on a
  * function call node — a value input is addressable through the rapid-iteration constant the compiler emits for
  * it, so a freshly added function needs one CompileAndSave before its values can be set.
+ *
+ * Adding an emitter handle is never enough on its own: the system's own spawn/update graph has to be rebuilt
+ * around the new handle list, or the emitter is never driven and the asset editor cannot open the system.
+ * AddEmitter goes through the editor's own path, which rebuilds both that graph and the overview. It repairs
+ * the whole system, so handles removed straight off the system only need one AddEmitter after them.
  */
 UCLASS()
 class GEOTRINITYEDITOR_API UGeoNiagaraBuilderUtil : public UEditorUtilityObject
@@ -33,6 +38,14 @@ class GEOTRINITYEDITOR_API UGeoNiagaraBuilderUtil : public UEditorUtilityObject
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Copies an emitter asset into a system, the way the emitter picker does.
+	 *
+	 * @return The handle name the emitter was registered under, or NAME_None on failure.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static FName AddEmitter(FString SystemPath, FString EmitterAssetPath);
+
 	/**
 	 * Inserts a module script into one emitter script stage.
 	 *

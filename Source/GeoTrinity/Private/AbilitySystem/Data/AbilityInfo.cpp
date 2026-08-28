@@ -150,6 +150,21 @@ static bool ResolveDescriptionToken(FString const& Token, UGeoGameplayAbility co
 		OutValue = FormatValueRange(Min, Max, Format);
 		return bFound;
 	}
+	// The magnitude and the duration of the ability's gameplay effect as two independent scalars, for a description
+	// that words them separately instead of taking the bundled "Name: Magnitude for Xs" of an {Effects} line.
+	if (Token == TEXT("EffectValue") || Token == TEXT("EffectDuration"))
+	{
+		for (TInstancedStruct<FEffectData> const& Data : AbilityCDO.GetEffectDataArray())
+		{
+			if (FGameplayEffectData const* Effect = Data.GetPtr<FGameplayEffectData>())
+			{
+				OutValue = FormatScalableRange(
+					Token == TEXT("EffectDuration") ? Effect->Duration : Effect->Magnitude, Format);
+				return true;
+			}
+		}
+		return false;
+	}
 
 	float Min, Max;
 	if (ResolvePropertyScalar(Token, AbilityCDO, Format.MinLevel(), Min)

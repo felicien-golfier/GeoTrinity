@@ -82,8 +82,7 @@ static void CollectFunctionNodes(UNiagaraScript& Script, ENiagaraScriptUsage Usa
 	}
 }
 
-static UNiagaraNodeFunctionCall* FindFunctionNode(UNiagaraScript& Script, ENiagaraScriptUsage Usage,
-												  FName FunctionName)
+static UNiagaraNodeFunctionCall* FindFunctionNode(UNiagaraScript& Script, ENiagaraScriptUsage Usage, FName FunctionName)
 {
 	TArray<UNiagaraNodeFunctionCall*> FunctionNodes;
 	CollectFunctionNodes(Script, Usage, FunctionNodes);
@@ -205,6 +204,30 @@ static bool WriteParameterValue(FNiagaraParameterStore& Store, FNiagaraVariable 
 	return true;
 }
 
+FName UGeoNiagaraBuilderUtil::AddEmitter(FString SystemPath, FString EmitterAssetPath)
+{
+	UNiagaraSystem* System = LoadNiagaraSystem(SystemPath);
+	UNiagaraEmitter* Emitter = LoadObject<UNiagaraEmitter>(nullptr, *EmitterAssetPath);
+	if (!ensureMsgf(System && Emitter, TEXT("GeoNiagaraBuilderUtil: cannot add emitter '%s' to '%s'"),
+					*EmitterAssetPath, *SystemPath))
+	{
+		return NAME_None;
+	}
+
+	FGuid const HandleId =
+		FNiagaraEditorUtilities::AddEmitterToSystem(*System, *Emitter, Emitter->GetExposedVersion().VersionGuid);
+	for (FNiagaraEmitterHandle const& Handle : System->GetEmitterHandles())
+	{
+		if (Handle.GetId() == HandleId)
+		{
+			System->MarkPackageDirty();
+			return Handle.GetName();
+		}
+	}
+	ensureMsgf(false, TEXT("GeoNiagaraBuilderUtil: '%s' produced no emitter handle"), *EmitterAssetPath);
+	return NAME_None;
+}
+
 FName UGeoNiagaraBuilderUtil::AddModule(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 										FString ModuleScriptPath, int32 TargetIndex)
 {
@@ -308,14 +331,13 @@ bool UGeoNiagaraBuilderUtil::SetInputLinkedParameter(FString SystemPath, FName E
 	UEdGraphPin* OverridePin = GetOverridePin(*FunctionNode, InputName, Constant.GetType());
 	FNiagaraVariableBase const LinkedParameter(Constant.GetType(), LinkedParameterName);
 	FNiagaraStackGraphUtilities::SetLinkedParameterValueForFunctionInput(*OverridePin, LinkedParameter,
-																		TSet<FNiagaraVariableBase>());
+																		 TSet<FNiagaraVariableBase>());
 	Stage.System->MarkPackageDirty();
 	return true;
 }
 
 FName UGeoNiagaraBuilderUtil::SetInputDynamicInput(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
-												   FName FunctionName, FName InputName,
-												   FString DynamicInputScriptPath)
+												   FName FunctionName, FName InputName, FString DynamicInputScriptPath)
 {
 	FGeoNiagaraStage const Stage = FindStage(SystemPath, EmitterName, Usage);
 	UNiagaraNodeFunctionCall* FunctionNode =
@@ -417,5 +439,5 @@ bool UGeoNiagaraBuilderUtil::CompileAndSave(FString SystemPath)
 
 	System->RequestCompile(true);
 	System->PollForCompilationComplete();
-	return UEditorLoadingAndSavingUtils::SavePackages({ System->GetPackage() }, false);
+	return UEditorLoadingAndSavingUtils::SavePackages({System->GetPackage()}, false);
 }

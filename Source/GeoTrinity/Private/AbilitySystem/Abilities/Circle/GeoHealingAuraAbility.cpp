@@ -79,10 +79,12 @@ void UGeoHealingAuraAbility::Tick(float const DeltaTime)
 			continue; // Do not heal, neither count in AlliesHealed full life mates.
 		}
 
+
 		FHealEffectData HealEffect;
 		HealEffect.Amount = HealPerSecond.GetValueAtLevel(GetAbilityLevel()) * DeltaTime;
 		HealEffect.bLimitGameplayCue = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(HealEffect, SourceASC, TargetASC, GetAbilityLevel(),
 														StoredPayload.Seed, StoredPayload.AbilityTag);
+		UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, Actor);
 	}
 }

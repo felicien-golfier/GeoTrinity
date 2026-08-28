@@ -235,7 +235,10 @@ FString FGameplayEffectData::GetDescriptionLine(FDescriptionFormat const& Format
 	FString Line = FString::Printf(TEXT("%s: %s"), *Name, *FormatScalableRange(Magnitude, Format));
 	if (Duration.GetValueAtLevel(Format.MinLevel()) > 0.f)
 	{
-		Line += FString::Printf(TEXT(" for %ss"), *FormatScalableRange(Duration, Format));
+		// Seconds, so the format's :%/:+% applies to the magnitude only.
+		FDescriptionFormat PlainFormat = Format;
+		PlainFormat.ValueFormat = EValueFormat::Plain;
+		Line += FString::Printf(TEXT(" for %ss"), *FormatScalableRange(Duration, PlainFormat));
 	}
 	return Line;
 }

@@ -125,9 +125,7 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 		return;
 	}
 
-	StoredPayload.Origin = FVector2D(AbilityTargetData.Origin);
-	StoredPayload.Yaw = AbilityTargetData.Yaw;
-	StoredPayload.ServerSpawnTime = AbilityTargetData.ServerSpawnTime;
+	UpdatePayloadFromTargetData(AbilityTargetData, /*bKeepSeed*/ true);
 
 	bool const bShotSucceeded = ExecuteShot();
 	StoredPayload.Seed += CurrentShotIndex;
@@ -216,9 +214,7 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 	NextAllowedShotTime += GetFireDelay();
 
 	// Update payload with the information, as we read from it to spawn projectile
-	StoredPayload.Origin = TargetData->Origin;
-	StoredPayload.Yaw = TargetData->Yaw;
-	StoredPayload.ServerSpawnTime = TargetData->ServerSpawnTime;
+	UpdatePayloadFromTargetData(*TargetData, /*bKeepSeed*/ true);
 	ClampRemoteClientOrigin();
 
 	ExecuteShot();

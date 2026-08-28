@@ -29,6 +29,7 @@ ability — use a token.
 | `{Heal}` | Sum of all `FHealEffectData` amounts |
 | `{Shield}` | Sum of all `FShieldEffectData` amounts |
 | `{Effects}` | Auto-generated list, one line per effect entry (see below) |
+| `{EffectValue}` / `{EffectDuration}` | The magnitude and the duration of the ability's first `FGameplayEffectData` entry, as two independent scalars — word and place them yourself (`{EffectValue:%} boost for {EffectDuration}s`) instead of taking the bundled `{Effects}` line. Append the `s` yourself |
 | `{PropertyName}` | Any numeric or `FScalableFloat` UPROPERTY on the ability class, by exact C++ name (e.g. `{MaxSpawnRadius}`, `{DashDistance}`) |
 | `{EffectProperty}` | A single `TInstancedStruct<FEffectData>` UPROPERTY holding an `FGameplayEffectData` — resolves to its `Magnitude` scalar (e.g. `{SpeedBuffEffect:%}` on the Moira beam) |
 | `{ArrayName}` | Any `TArray<TInstancedStruct<FEffectData>>` UPROPERTY, by exact C++ name — expands like `{Effects}` over that array (e.g. `{BlinkBonusEffect}` on the turret recall) |

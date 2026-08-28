@@ -113,6 +113,7 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(FVector2D const& Origi
 	Payload.Seed = Seed;
 	Payload.AbilityLevel = GetAbilityLevel();
 	Payload.AbilityTag = GetAbilityTag();
+	Payload.OpenHitNotification();
 	return Payload;
 }
 
@@ -330,12 +331,16 @@ void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& Abil
 	}
 }
 
-void UGeoGameplayAbility::UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData)
+void UGeoGameplayAbility::UpdatePayloadFromTargetData(FGeoAbilityTargetData const& TargetData, bool const bKeepSeed)
 {
-	StoredPayload.Seed = TargetData.Seed;
+	if (!bKeepSeed)
+	{
+		StoredPayload.Seed = TargetData.Seed;
+	}
 	StoredPayload.ServerSpawnTime = TargetData.ServerSpawnTime;
 	StoredPayload.Origin = TargetData.Origin;
 	StoredPayload.Yaw = TargetData.Yaw;
+	StoredPayload.OpenHitNotification();
 }
 
 void UGeoGameplayAbility::ClampRemoteClientOrigin()

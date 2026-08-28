@@ -146,6 +146,7 @@ void UGeoSacrificeBeamAbility::TickBeam(float const /*DeltaTime*/, TArray<AActor
 								 GeoASLib::ApplySingleEffectData(SacrificeMarkEffect, SourceASC, TargetASC,
 																 GetAbilityLevel(), StoredPayload.Seed,
 																 StoredPayload.AbilityTag));
+			GeoASLib::NotifyAbilityHit(StoredPayload, Target);
 		}
 	}
 

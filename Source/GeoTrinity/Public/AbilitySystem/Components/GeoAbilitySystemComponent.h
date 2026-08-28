@@ -12,6 +12,8 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeChangedSignature, float, NewValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealProvided, float, HealDone);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageDealt, float, DamageAmount, FGameplayTag, AbilityTag);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAbilityHit, FGameplayTag, AbilityTag, AActor*, Instigator, AActor*,
+											   HitActor);
 
 class UGeoGameplayAbility;
 struct FGeoGameplayEffectContext;
@@ -148,6 +150,15 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageDealt OnDamageDealt;
+
+	/**
+	 * One broadcast per shot, the first time that shot connects with anything — one for a whole projectile spread, one
+	 * per shot of a held trigger, one for a beam channel. Raised by GeoASLib::NotifyAbilityHit from the ability's or
+	 * the projectile's own hit path, never from effect application, which ticks, defers and re-applies far from the
+	 * moment of impact. Fires on the server, and on the machine that predicted the shot.
+	 */
+	UPROPERTY(BlueprintAssignable)
+	FOnAbilityHit OnAbilityHit;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;

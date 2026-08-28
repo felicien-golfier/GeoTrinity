@@ -105,6 +105,7 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 			continue;
 		}
 
+
 		if (Target->IsA<AGeoHealingZone>()) // We get the Healing zones.
 		{
 			AGeoHealingZone* Zone = CastChecked<AGeoHealingZone>(Target);
@@ -160,5 +161,7 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 												StoredPayload.Seed, StoredPayload.AbilityTag);
 			}
 		}
+
+		GeoASLib::NotifyAbilityHit(StoredPayload, Target);
 	}
 }

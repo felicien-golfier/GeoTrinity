@@ -20,6 +20,8 @@ UI capture uses an async screenshot request, so the overlay may lag the world by
 
 Read the saved PNG back to view it. To inspect a small on-screen element, crop the region and upscale with nearest-neighbour before reading — image manipulation runs locally, not through MCP.
 
+Only a session renders continuously. The level viewport draws while its tab is in front, so a capture taken with any other editor window focused returns the frame it last drew, and a camera move reads back as applied while the picture never changes. Capture a running session to see anything live.
+
 ---
 
 ## Targeting the Right World

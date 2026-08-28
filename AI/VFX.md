@@ -75,7 +75,10 @@ belongs to a primitive component, which a sprite is not.
 
 ## MCP Tool Schema Constraint
 
-The Go MCP server only forwards JSON fields defined in the tool's schema. Extra fields are silently dropped. To pass custom data to a C++ route, add a dedicated operation in `NiagaraRoutes.cpp` that takes only `system_path` and hardcodes the logic.
+The Go MCP server only forwards JSON fields defined in the tool's schema. Extra fields are silently dropped, so
+a route can only ever carry the arguments its schema already names. Anything needing more arguments than that
+goes through the editor utility shim from Python instead — never a route operation with the values baked in.
+See the generic-functions rule in `AI/MCP/MCP_EditorUtility.md`.
 
 ## MCP Niagara Operations (C++)
 
@@ -85,9 +88,67 @@ Operations in `NiagaraRoutes.cpp` (`/api/niagara/ops`): `spawn_system`, `set_par
 ### `get_system_info`
 Lists emitters and user parameters. Uses `GetUserParameters()` (not `ReadParameterVariables()`) to skip stale redirect aliases.
 
+### `add_emitter` / `remove_emitter`
+Both change the handle list without rebuilding the system graph around it — an emitter added this way never
+runs and the asset editor cannot open the system. Add emitters through the builder utility instead, which
+repairs the whole system, so a removal only needs one add after it. See `AI/MCP/MCP_Niagara.md`.
+
 ### Module stacks
 These routes do not reach a module stack. Adding modules, setting static switches, writing input values and
 nesting dynamic inputs go through the editor utility shim — see `AI/MCP/MCP_Niagara.md`.
+
+## Electric Effects
+
+Five systems in `/Game/Art/VFX/Generic/Niagara`, each carrying `User.Radius` so one number fits it to any
+character. No two share a mechanism, so pick by the read wanted rather than by tuning one into another:
+
+| System | Renderer | Placement | Motion | Emission |
+|---|---|---|---|---|
+| `NS_StaticElectricity` | ribbon | random beam endpoints | curl noise vs drag | restriking bursts |
+| `NS_ConeCoil` | ribbon | exec index helix on a cone | vortex velocity | one long strand |
+| `NS_SparkFizz` | sprite | random ring surface | outward push vs drag | continuous rate |
+| `NS_OrbitArc` | ribbon | orbiting beam endpoints | re-derived per frame | one held strand |
+| `NS_ShardStorm` | mesh | random ring surface | inward attraction | restriking bursts |
+
+Built by `AI/Python/static_electricity_vfx.py`, `cone_coil_vfx.py` and `lightning_variants.py`.
+
+## Bolt Emitters
+
+A bolt is a beam: `BeamEmitterSetup` names two endpoints, `SpawnBeam` lays a burst of particles between them
+in ribbon link order, and the ribbon renderer draws the strand.
+
+- The two endpoints are not symmetric. The start is an absolute position and needs the emitter's own position
+  added under it; the end is an offset the module adds that position to itself. Handing the end a position too
+  drops the emitter out of it and anchors that half of every strand at the world origin.
+- Endpoints are emitter scope, so a burst freezes whatever they held on the frame it fired. Nothing re-derives
+  a particle's position afterwards, so re-rolling them every frame costs nothing and gives every strike a new
+  place — until `UpdateBeam` is added, which re-derives the whole strand each frame and turns moving endpoints
+  into a sweeping arc. It has to sit above anything that displaces the strand, or the re-derivation wins.
+- One burst per loop, with a lifetime shorter than the loop, keeps one strand alive per emitter. Two bursts
+  overlapping share the beam's ribbon id and chain into a single snake.
+
+## Making a Strand Read as Lightning
+
+- Split the motion by coherence: a curl noise field bends the whole strand as one shape because neighbouring
+  particles are pulled the same way, while jitter is incoherent at every scale and can only ever be the fine
+  crackle on top. A strand driven by jitter alone reads as buzzing noise.
+- A force against drag settles at a terminal speed, so the bend a bolt picks up over its life is roughly
+  strength over drag times lifetime — budget it against the aura's radius rather than tuning the force blind.
+- Spawn-time noise only zigzags when its feature size is SMALLER than the gap between two neighbouring points;
+  sampled coarser than that, neighbours read almost the same value and the strand merely shifts.
+- Ribbon curve tension is sharpness, not smoothing: the higher it is, the sharper the corners. Lightning wants
+  it near the maximum. Tessellation cannot be disabled from Python — that property is an enum.
+- The `StaticBeam` emitter template carries a width curve indexed by ribbon link order and a colour curve over
+  particle age. Curve keys live in a data interface that no stack edit reaches, so inherit those curves and
+  set only their scale.
+
+The base system must loop: a system duplicated from a one-shot completes its emitters on the first tick
+whatever their own loop settings say.
+
+`DefaultRibbonMaterial` is additive, unlit and already flagged for ribbons, so an HDR particle colour glows
+without authoring a material. Ribbon renderer properties are reachable from Python by their exact C++ names
+(`Material`, `CurveTension`, `MaxNumRibbons`); the pythonised spelling is refused, and enum-typed ones can
+only be read, over the property API.
 
 ## Niagara Parameter Store
 

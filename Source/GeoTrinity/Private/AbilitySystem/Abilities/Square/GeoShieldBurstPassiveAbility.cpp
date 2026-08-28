@@ -141,6 +141,9 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 
 	FTransform const SpawnTransform{Directions[0].Rotation().Quaternion(), Origin};
 
+	// The passive activates once and lives on; each burst is its own shot and reports its own hit.
+	StoredPayload.OpenHitNotification();
+
 	AGeoShieldBurstProjectile* Projectile = Cast<AGeoShieldBurstProjectile>(
 		GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform, StoredPayload, {}));
 	if (!ensureMsgf(Projectile, TEXT("UGeoShieldBurstPassiveAbility: failed to spawn GeoShieldBurstProjectile")))

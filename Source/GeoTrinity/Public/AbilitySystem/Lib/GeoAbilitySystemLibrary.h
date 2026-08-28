@@ -91,6 +91,16 @@ public:
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 															 int32 Seed, FGameplayTag AbilityTag);
+	/**
+	 * Reports that Payload's shot connected with HitActor, broadcasting OnAbilityHit on the ASC behind Payload.Owner.
+	 * Call it from wherever an ability or a projectile decides it hit — never from effect application, which ticks,
+	 * defers and re-applies far away from the moment of impact.
+	 *
+	 * Only the first call per shot gets through: Payload.HitNotified is the handle a delayed carrier holds on the
+	 * shot's behalf, and this consumes it. A payload carrying no handle reports nothing.
+	 */
+	static void NotifyAbilityHit(FAbilityPayload const& Payload, AActor* HitActor);
+
 	/** Fills SourceASC and TargetASC into ContextHandle for access by downstream execution calculations. */
 	static void FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
 								  FGameplayEffectContextHandle ContextHandle);

@@ -35,5 +35,5 @@ Pattern for exposing C++ editor operations to Python when `get/set_editor_proper
 | `UGeoStateTreeBuilderUtil` | `Public/Tool/GeoStateTreeBuilderUtil.h` | Add/remove states, manage transitions on `UStateTree` assets |
 | `UGeoWidgetBuilderUtil` | `Public/Tool/GeoWidgetBuilderUtil.h` | Generic widget-tree primitives + inspect on `UWidgetBlueprint` assets (see `MCP_UI.md`) |
 | `UGeoHudWidgetBuilderUtil` | `Public/Tool/GeoHudWidgetBuilderUtil.h` | Content-specific widget trees composed from the generic primitives (see `MCP_UI.md`) |
-| `UGeoNiagaraBuilderUtil` | `Public/Tool/GeoNiagaraBuilderUtil.h` | Add/toggle a module, set static switches and input values, nest dynamic inputs, dump an emitter stage (see `MCP_Niagara.md`) |
+| `UGeoNiagaraBuilderUtil` | `Public/Tool/GeoNiagaraBuilderUtil.h` | Add an emitter to a system, add/toggle a module, set static switches and input values, nest dynamic inputs, dump an emitter stage (see `MCP_Niagara.md`) |
 | `UGeoAnimBuilderUtil` | `Public/Tool/GeoAnimBuilderUtil.h` | Set a montage's slot segment, sections and next-section links; inspect its layout; read a skeletal mesh's vertex positions; rebuild a skeletal mesh and its skeleton from a static mesh over a given bone hierarchy (see `MCP_Animation.md`) |

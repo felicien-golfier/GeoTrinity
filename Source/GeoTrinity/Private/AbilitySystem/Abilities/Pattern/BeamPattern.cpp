@@ -176,6 +176,7 @@ void UBeamPattern::ApplyBeamEffects(bool const bPerSecond, TArray<AActor*> const
 		{
 			GeoASLib::ApplyEffectFromEffectData(Effects, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed, StoredPayload.AbilityTag);
+			GeoASLib::NotifyAbilityHit(StoredPayload, HitActor);
 		}
 
 		if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.

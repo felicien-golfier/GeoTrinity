@@ -36,6 +36,11 @@ Multi-step/reusable operations go in `AI/Python/` as `.py` — reference by path
 Run one by compiling and executing the file's own source in the editor rather than resending its text.
 A script that raises still reports success to the caller; its traceback goes to the editor log under the Python category.
 Nothing a script prints comes back through the tool, so a script with results to report writes them to a file the caller reads.
+Every script is re-runnable: a script that writes an asset frees the path first, since creating one over a name already in use breaks in the editor rather than overwriting.
+A path the editor still holds refuses deletion, so free it by renaming it aside; an asset whose own editor window is open refuses both, and only closing that asset's editor frees it.
+A long script holds the editor's game thread, so every call times out until it returns — wait on the file it writes rather than sending it again.
+Comment only what the code cannot say: a constraint, an ordering, a bound. A few words, never prose, and never rationale or intent.
+Docstrings are one line; a second only where a caller would otherwise get it wrong.
 
 ## Animation
 Always read the motion rules in `MCP_Animation.md` before authoring an animation.
