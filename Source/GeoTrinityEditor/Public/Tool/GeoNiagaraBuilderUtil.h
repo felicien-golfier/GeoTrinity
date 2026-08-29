@@ -61,17 +61,20 @@ public:
 	static bool SetModuleEnabled(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 								 FName FunctionName, bool bEnabled);
 
-	/** Selects a compile-time switch entry by display name (e.g. SwitchName "Shape Primitive", entry "Cylinder"). */
+	/** Selects a compile-time switch entry by display name (e.g. SwitchName "Shape Primitive", entry "Cylinder").
+	 *  Returns false when the system, emitter, function node, or switch input is not found, or no enum entry matches. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static bool SetStaticSwitch(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 								FName FunctionName, FName SwitchName, FString EnumEntryDisplayName);
 
-	/** Writes an input's constant value. */
+	/** Writes an input's constant value. Returns false when the system, emitter, function node, or input constant is not
+	 *  found, or the value cannot be written. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static bool SetInputValue(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 							  FName FunctionName, FName InputName, FString Value);
 
-	/** Binds an input to another parameter in scope (e.g. "Particles.Position", "User.EffectColor"). */
+	/** Binds an input to another parameter in scope (e.g. "Particles.Position", "User.EffectColor"). Returns false when
+	 *  the system, emitter, function node, or input constant is not found. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static bool SetInputLinkedParameter(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 										FName FunctionName, FName InputName, FName LinkedParameterName);
@@ -85,7 +88,8 @@ public:
 	static FName SetInputDynamicInput(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 									  FName FunctionName, FName InputName, FString DynamicInputScriptPath);
 
-	/** Writes a value onto one of the system's exposed User parameters. */
+	/** Writes a value onto one of the system's exposed User parameters. Returns false when the system or parameter is not
+	 *  found, or the value cannot be written. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static bool SetUserParameter(FString SystemPath, FName ParameterName, FString Value);
 
