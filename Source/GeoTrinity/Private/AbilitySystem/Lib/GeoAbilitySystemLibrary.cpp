@@ -6,7 +6,6 @@
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystem/Data/StatusInfo.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
@@ -18,7 +17,6 @@
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "EngineUtils.h"
-#include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "InstancedStruct.h"
@@ -33,13 +31,6 @@ UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo()
 {
 	UGameDataSettings const* GDSettings = GetDefault<UGameDataSettings>();
 	return GDSettings->GetLoadedDataAsset(GDSettings->AbilityInfo);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-UStatusInfo* UGeoAbilitySystemLibrary::GetStatusInfo()
-{
-	UGameDataSettings const* GDSettings = GetDefault<UGameDataSettings>();
-	return GDSettings->GetLoadedDataAsset(GDSettings->StatusInfo);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -184,50 +175,6 @@ TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEff
 	}
 
 	return SpecHandles;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool UGeoAbilitySystemLibrary::ApplyStatusToTarget(UAbilitySystemComponent* TargetASC,
-												   UAbilitySystemComponent* SourceASC, FGameplayTag const& StatusTag,
-												   int32 AbilityLevel, FGameplayEffectSpecHandle& OutSpecHandle)
-{
-	if (!TargetASC || !SourceASC)
-	{
-		return false;
-	}
-
-	UStatusInfo const* StatusInfos = GetStatusInfo();
-	if (!StatusInfos)
-	{
-		return false;
-	}
-
-	FRpgStatusInfo StatusInfo;
-	if (!StatusInfos->FillStatusInfoFromTag(StatusTag, StatusInfo))
-	{
-		return false;
-	}
-
-	if (!IsValid(StatusInfo.StatusEffect))
-	{
-		UE_VLOG(SourceASC, LogGeoASC, VeryVerbose, TEXT("No valid effect registered for Status %s"),
-				*StatusInfo.StatusDisplayName);
-		return false;
-	}
-
-	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
-	ContextHandle.AddSourceObject(SourceASC->GetAvatarActor());
-
-	if (UObject* IconResource = StatusInfo.Icon.GetResourceObject())
-	{
-		static_cast<FGeoGameplayEffectContext*>(ContextHandle.Get())->SetIcon(IconResource);
-	}
-
-	OutSpecHandle = SourceASC->MakeOutgoingSpec(StatusInfo.StatusEffect, AbilityLevel, ContextHandle);
-
-	SourceASC->ApplyGameplayEffectSpecToTarget(*OutSpecHandle.Data, TargetASC);
-
-	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

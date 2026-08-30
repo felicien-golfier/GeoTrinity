@@ -61,9 +61,6 @@ public:
 	/** Returns the global UAbilityInfo data asset from UGameDataSettings. */
 	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|Info")
 	static UAbilityInfo* GetAbilityInfo();
-	/** Returns the global UStatusInfo data asset from UGameDataSettings. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|Info")
-	static UStatusInfo* GetStatusInfo();
 
 
 	/**
@@ -253,16 +250,6 @@ public:
 									   FAbilityPayload const& Payload,
 									   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 									   FPredictionKey PredictionKey = FPredictionKey{});
-
-	/**
-	 * Looks up the status GE for StatusTag in UStatusInfo and applies it to TargetASC.
-	 *
-	 * @param OutSpecHandle  Populated with the applied spec handle on success.
-	 * @return               True if the status GE was found and applied.
-	 */
-	static bool ApplyStatusToTarget(UAbilitySystemComponent* TargetASC, UAbilitySystemComponent* SourceASC,
-									FGameplayTag const& StatusTag, int32 AbilityLevel,
-									FGameplayEffectSpecHandle& OutSpecHandle);
 
 	/** Returns Ability's first asset tag sitting under Root, or an invalid tag when it carries none. The single
 	 * "which tag identifies this ability" walk — ability tag, ability type, and any future root all go through it. */
