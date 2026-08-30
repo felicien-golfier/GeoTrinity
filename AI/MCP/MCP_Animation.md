@@ -38,6 +38,10 @@ Blending a vertex through each of its bones — into that bone's space with its 
 
 A vertex split across bones lands between what those bones do, so a bone track never reads as the silhouette on its own.
 
+How far between them it lands is that bone's weight, so a scale written on a ring bone reaches the silhouette only in that share and the rest of the range is spent.
+
+Two rings given different scales can therefore cancel into a plain uniform shrink, which reads as the shape seen smaller rather than as a change of shape.
+
 A bone carrying only some of a feature's vertices can push that feature past its neighbours but cannot pull it back behind them, because the ones it does not carry hold the silhouette.
 
 Composing a transform in script takes the location first, then the rotation and the scale.
@@ -104,6 +108,8 @@ A vibration inside a stretch that loops has to be counted from that stretch's ow
 
 Hold the last frames of the wind-up dead still — that stillness is what makes the hit land, so the vibration stops where it begins rather than running into it.
 
+A wind-up that accelerates a turn stops that turn there too: a spin carried through the stillness spends it, and stopping one at its fastest is the strongest reading a wind-up has.
+
 Cross from the wind-up's extreme to the action's extreme in two frames, one of them mid-flight, so the spacing itself reads as speed.
 
 Overshoot the extreme by about a tenth on the landing frame, then settle onto it and hold: a pose the eye never rests on does not register.
@@ -118,11 +124,17 @@ Starting and ending a clip on the reference pose is what lets it blend in and ou
 
 A part with rotational symmetry that turns a whole fraction of a turn matching that symmetry lands on a pose indistinguishable from the one it left, so a rotation can carry across a loop or hold at the end of a clip without ever being unwound backwards.
 
+Writing such a turn as a rate integrated across the clip and normalised to its own total, rather than as an angle, lets it accelerate, freeze and bleed off however the shot wants and still land on a whole fraction, since only that total is ever scaled by it.
+
+A rate taken from how much of the shape has arrived escalates on its own, so the turn says how far along an assembly is without being keyed to it.
+
 That same symmetry bounds how fast such a part can be spun: crossing half of it between two frames reads as likely to be turning the other way, and crossing all of it reads as standing still. Stepping one deliberately has the matching bounds — a step of the whole fraction is invisible and half of it reads either way, so a ratchet needs finer teeth than its own symmetry, with a whole number of steps making up one.
 
 Nested parts have to open from the outside in and close from the inside out, whichever order their weights would otherwise give: an inner part swelling into a shell that has not opened yet interpenetrates it. Where a clip both opens and closes, the delay that keeps the parts from moving as one block has to reverse between the two, across a plateau at least as long as the largest delay so that no part jumps as it flips.
 
 A part that slides out of its housing is capped at the reach its mesh gives it: the overshoot that lands a hit belongs to the body, which is meant to swell past where it settles, but past full reach such a part is stretched rather than further out — and a stretched one runs through whatever the part carrying it sits inside.
+
+A bone carrying only the far end of a feature can push that feature out but never draw it in, since pulled the other way it turns the feature inside out; what draws such features back is the scale of the ring they hang off.
 
 How far such a part may reach is set by the boundary in the direction it points, so one held still on a corner of that boundary has the most room there is, while one swept across the boundary is held to the shallowest point it crosses.
 
@@ -131,6 +143,28 @@ Weighting a part's extension by how squarely it points where the shape is aimed 
 Where several clips are cut from one driver, how each winds up is what tells them apart, so give each its own rather than the one that reads best.
 
 See `AI/Python/star_spike_nova.py` for a hit built on these and `AI/Python/star_idle_breath.py` for the looping counterpart, `AI/Python/hex_boss_idle.py` for a loop closed on symmetry rather than on stillness, and `AI/Python/hex_boss_abilities.py` for several clips driven from one parameter table. The same abilities are cut three ways from three drivers — one eased curve, one run of steps, one spin held at the symmetry's speed limit — in that file and its `_clockwork` and `_frenzy` siblings, and `AI/Python/hex_boss_launch.py` cuts the eased one down to a single beat with no loop and no direction in it.
+
+---
+
+## Bringing a Shape Together
+
+A clip that assembles a shape runs on two clocks: until every part is home each part keeps its own schedule, since arriving one at a time is the whole point of that half, and from there one curve drives everything with the usual per-part delays.
+
+Such a clip does not start on the reference pose, so its montage blends in over nothing — a blend drags the scattered parts out of whatever pose the shape was already holding.
+
+A part waiting its turn has to clear whatever is already home for the whole wait rather than only as it lands: parked closer than the assembled shape's radius plus its own, it sits inside that shape for every frame of the wait, which reads as a mistake rather than as a part that has not arrived.
+
+The only frames a pair may overlap are the crossing's, so a schedule is checked by counting the frames a pair touches before the later one lands rather than by how deep the touch goes.
+
+Nesting clearance cannot answer that, since a part not yet home is outside the shell by definition; what answers it is the separation of whole parts, each part's centre measured against its own outermost reach.
+
+Arrivals whose gaps shrink by a fixed ratio escalate on their own, so the rhythm needs no beat-by-beat tuning and follows however many parts the rig turns out to carry.
+
+Where the parts are a ring of like features, waking them on a stride coprime with their count visits every one exactly once and reads as the shape waking all over, where stepping to the neighbour reads as a sweep round it.
+
+A shape with no separable parts assembles the same way through its own features: what arrives one at a time is a feature thrown out of a body that swells to meet it, and the shape gains one live part per beat as surely as a scattered one does.
+
+See `AI/Python/hex_boss_intro.py` for a shape whose parts exist from the first frame and fly together, and `AI/Python/star_intro.py` for one with nothing to scatter, which grows its own points instead.
 
 ---
 
@@ -167,6 +201,14 @@ Fit that boundary's centre rather than assuming it sits on the axis, and measure
 Measure every frame rather than the ones a report prints. Nested parts cross each other over two or three frames, so a sample coarse enough to step past those calls a clip clear that is not.
 
 A clip that only scales needs no mesh to check: the point it converges on is the root's translation with its own scaling undone, and reading that per frame catches a rig whose root sits off the shape.
+
+A silhouette measured off the rig is in the mesh's own units, which the actor's scale sits between and the camera, so it answers only as a ratio against the same clip's rest pose and never as a fraction of the view's width.
+
+That ratio is what a reach is authored in: the same number of units is a fraction of one rig's rest radius and several times another's.
+
+A uniform scale on the root cannot bring two parts together, so an overshoot placed there costs no clearance and the per-part scales stay at the values that were checked.
+
+A clip that folds features away does not end on the reference pose, so comparing the whole skeleton against that pose reports the fold as a mismatch; compare the parts that must return and check the folded ones by protrusion.
 
 See `AI/Python/anim_sequence_authoring.py` for the protrusion, boundary-distance and clearance reports.
 

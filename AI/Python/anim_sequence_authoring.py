@@ -294,6 +294,64 @@ def nested_clearance(placed, inner_bones, boundary_bone, sides=6):
     return min(gaps)
 
 
+def part_separations(placed, posed, members):
+    """Units between each pair of whole parts -> {(part, part): gap}, negative where their footprints touch.
+
+    Nesting clearance cannot answer this, since a part not yet home sits outside the shell it will end up in by
+    definition. `members` maps each part's bone to the bones its geometry hangs off.
+    """
+    reach, centre = {}, {}
+    for part, bones in members.items():
+        origin = posed[part].translation
+        centre[part] = origin
+        reach[part] = max(math.hypot(vertex.x - origin.x, vertex.y - origin.y)
+                          for bone in bones for vertex in placed[bone])
+    parts, gaps = list(members), {}
+    for index, part in enumerate(parts):
+        for other in parts[index + 1:]:
+            gaps[(part, other)] = math.hypot(centre[part].x - centre[other].x,
+                                             centre[part].y - centre[other].y) - reach[part] - reach[other]
+    return gaps
+
+
+def normalised_spin(rate, frames):
+    """A turn integrated from a per-frame rate -> [fraction of the whole turn, per frame].
+
+    Multiplying this by a whole number of a part's symmetry is what lets that part accelerate, stop and start
+    however it likes and still land on a pose indistinguishable from the one it left, since only the total is
+    ever scaled by it. Whatever units `rate(frame)` returns divide out.
+    """
+    cumulative, total = [0.0], 0.0
+    for frame in range(1, frames + 1):
+        total += rate(frame)
+        cumulative.append(total)
+    return [value / total for value in cumulative]
+
+
+def accelerating_schedule(first, count, gap, ratio, minimum=1):
+    """Frames a run of arrivals lands on, each gap `ratio` of the one before it -> [frame].
+
+    A rhythm that tightens on its own, so it follows however many parts the rig turns out to carry rather than
+    being keyed beat by beat.
+    """
+    frames, step, frame = [], float(gap), float(first)
+    for _ in range(count):
+        frames.append(int(round(frame)))
+        frame += step
+        step = max(minimum, step * ratio)
+    return frames
+
+
+def stride_order(count):
+    """The order to wake a ring of `count` like features in -> [feature index], one stride apart.
+
+    A stride coprime with the ring visits every feature exactly once, which reads as the shape waking all over,
+    where stepping to the neighbour reads as a sweep round it.
+    """
+    stride = next((step for step in range(count // 2, 1, -1) if math.gcd(step, count) == 1), 1)
+    return [(place * stride) % count for place in range(count)]
+
+
 def add_child_bones(skeletal_mesh_path, parent_bone, locations):
     """Add a bone per entry of locations ({bone name: component-space Vector}) under parent_bone, and commit.
 
@@ -479,6 +537,16 @@ def _component_transforms(pose):
 #     placed = place_groups(groups, posed)
 #     print(frame, local["HexOuter"][1], feature_protrusion(placed, posed, "HexOuter_Spike_0", "HexOuter"),
 #           nested_clearance(placed, [b for b in groups if b.startswith("HexMid")], "HexOuter"))
+
+# Schedule a shape assembling itself: when each part arrives, in what order, and how far apart they stay
+# ORDER = stride_order(8)
+# print(ORDER, accelerating_schedule(first=34, count=len(ORDER), gap=16.0, ratio=0.78, minimum=3))
+# members = {part: [b for b in groups if b.startswith(part)] for part in ("HexOuter", "HexMid", "HexCore")}
+# print(part_separations(place_groups(groups, posed), posed, members))
+
+# A turn that accelerates and still lands on the part's own symmetry, whatever it did in between
+# spun = normalised_spin(lambda frame: 1.0 if frame < 100 else 12.0, 220)
+# print([round(60.0 * 12 * spun[f], 2) for f in (0, 100, 220)])
 
 # Give each of a ring's features its own bone, so one can be moved without the others
 # MESH, RING_PARENT, SLOT_COUNT = "/Game/Characters/Meshes/Star/SKM_Star", "apexes_outside", 8

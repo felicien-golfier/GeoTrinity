@@ -39,6 +39,7 @@ Nothing a script prints comes back through the tool, so a script with results to
 Every script is re-runnable: a script that writes an asset frees the path first, since creating one over a name already in use breaks in the editor rather than overwriting.
 A path the editor still holds refuses deletion, so free it by renaming it aside; an asset whose own editor window is open refuses both, and only closing that asset's editor frees it.
 A long script holds the editor's game thread, so every call times out until it returns — wait on the file it writes rather than sending it again.
+A script that writes its assets before it reports leaves them written when the report raises, so a failed report is not a failed build and the traceback in the report file is the only sign of one.
 Comment only what the code cannot say: a constraint, an ordering, a bound. A few words, never prose, and never rationale or intent.
 Docstrings are one line; a second only where a caller would otherwise get it wrong.
 

@@ -157,7 +157,7 @@ def build(rest, ripple):
     controller.close_bracket()
     # The keys above land in the raw model; this builds the data that actually plays back from them.
     unreal.AnimationLibrary.finalize_bone_animation(sequence)
-    unreal.EditorAssetLibrary.save_asset(path)
+    unreal.EditorAssetLibrary.save_asset("{}/{}".format(ANIM_PACKAGE, SEQ_NAME))
     return sequence
 
 
