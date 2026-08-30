@@ -32,6 +32,7 @@ class GEOTRINITY_API UGeoTriggeredEffectAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Sets NetSecurityPolicy to ServerOnly — a client cancel request must never end the server's passive instance. */
 	UGeoTriggeredEffectAbility();
 
 private:
