@@ -6,6 +6,7 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/Arena/GeoArena.h"
 #include "Engine/World.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameFramework/Character.h"
@@ -29,6 +30,7 @@ AEnemyCharacter::AEnemyCharacter(FObjectInitializer const& ObjectInitializer) :
 	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
 
 	SetNetUpdateFrequency(100.f);
+	bAlwaysRelevant = true;
 }
 
 void AEnemyCharacter::BeginPlay()
@@ -66,6 +68,11 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 			Destroy();
 		}
 	}
+}
+
+bool AEnemyCharacter::IsFighting() const
+{
+	return Arena.IsValid() && Arena->IsFighting();
 }
 
 void AEnemyCharacter::ResetForNewAttempt()

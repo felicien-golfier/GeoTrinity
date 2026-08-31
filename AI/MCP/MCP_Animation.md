@@ -162,9 +162,17 @@ Arrivals whose gaps shrink by a fixed ratio escalate on their own, so the rhythm
 
 Where the parts are a ring of like features, waking them on a stride coprime with their count visits every one exactly once and reads as the shape waking all over, where stepping to the neighbour reads as a sweep round it.
 
+Every ordering fine enough to state as a rule is regular enough to be seen as one, so a ring that has to read as firing wrongly rather than in turn is shuffled from a fixed seed rather than strided.
+
+A feature thrown out one at a time has to stay out once it is, or the ring reads as a wave travelling round it rather than as features that have gone.
+
 A shape with no separable parts assembles the same way through its own features: what arrives one at a time is a feature thrown out of a body that swells to meet it, and the shape gains one live part per beat as surely as a scattered one does.
 
 See `AI/Python/hex_boss_intro.py` for a shape whose parts exist from the first frame and fly together, and `AI/Python/star_intro.py` for one with nothing to scatter, which grows its own points instead.
+
+Taking one apart is not that clip reversed. A shape coming together is winding up to be whole, so it may hold still before the beat that finishes it; one breaking has nothing to wind up for, and a frame of stillness anywhere in it reads as intent. Where such a clip ends on its parts at rest rather than cleared away, each has to stop turning on the frame it stops moving, or the wreckage keeps spinning where it lies.
+
+See `AI/Python/hex_boss_death.py` for parts that leave the axis one at a time and are thrown apart to stay, and `AI/Python/star_death.py` for a shape that throws its own features out and then swallows them.
 
 ---
 

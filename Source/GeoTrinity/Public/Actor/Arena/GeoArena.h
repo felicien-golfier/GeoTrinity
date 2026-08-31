@@ -67,6 +67,8 @@ public:
 
 	/** Returns this arena's boss character; nullptr before BeginPlay spawns it. */
 	AEnemyCharacter* GetBoss() const { return Boss; }
+	/** True while this arena's fight is live. Replicated, so it reads the same on every machine. */
+	bool IsFighting() const { return bFighting; }
 	/** Returns true when Enemy is this arena's boss — the enemy whose aggro starts the match. */
 	virtual bool IsBoss(AActor const* Enemy) const;
 

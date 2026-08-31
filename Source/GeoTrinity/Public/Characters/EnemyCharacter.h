@@ -38,6 +38,11 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Boss")
 	TWeakObjectPtr<AGeoArena> Arena;
 
+	/** True while this enemy's arena runs a fight, false before aggro and for an enemy with no arena. Reads the
+	 * arena's replicated flag, so every machine gets the same answer. */
+	UFUNCTION(BlueprintPure, Category = "GeoBoss")
+	bool IsFighting() const;
+
 	/** Resets health to max and restarts the StateTree. Called on full-wipe to start a new attempt. */
 	void ResetForNewAttempt();
 

@@ -9,6 +9,7 @@ plays the result.
 Adjust the example call at the bottom for the asset you are working on.
 """
 import math
+import random
 
 import unreal
 
@@ -350,6 +351,18 @@ def stride_order(count):
     """
     stride = next((step for step in range(count // 2, 1, -1) if math.gcd(step, count) == 1), 1)
     return [(place * stride) % count for place in range(count)]
+
+
+def scrambled_order(count, seed=17):
+    """The order to fire a ring of `count` like features in with no pattern to it -> [feature index].
+
+    A stride's gaps are all the same, which reads as a shape working correctly however far apart they are; only
+    uneven gaps read as one firing them off wrongly. Shuffled rather than built from a rule, since every rule
+    fine enough to state is regular enough to be seen. Fixed seed, so a clip is the same every time it is built.
+    """
+    order = list(range(count))
+    random.Random(seed).shuffle(order)
+    return order
 
 
 def add_child_bones(skeletal_mesh_path, parent_bone, locations):
