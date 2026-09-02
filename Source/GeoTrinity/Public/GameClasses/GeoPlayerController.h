@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -56,18 +56,18 @@ public:
 	/** Returns true while the pause menu is on screen (gameplay input suspended). */
 	bool IsPauseMenuOpen() const;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "GeoInput")
 	TSoftObjectPtr<UInputMappingContext> InputMapping;
 
 	// Replaces InputMapping while the pause menu is open, so gameplay abilities cannot fire behind the menu.
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "GeoInput")
 	TSoftObjectPtr<UInputMappingContext> MenuInputMapping;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "GeoInput")
 	TSoftObjectPtr<UInputAction> ToggleMenuAction;
 
 	// Engine base so gameplay never names the UI type; concrete UGeoPauseMenuWidget set in Blueprint.
-	UPROPERTY(EditAnywhere, Category = "UI")
+	UPROPERTY(EditAnywhere, Category = "GeoUI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
 private:

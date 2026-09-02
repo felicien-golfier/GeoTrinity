@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -18,11 +18,11 @@ struct GEOTRINITY_API FSTTask_PlayMontageInstanceData
 	GENERATED_BODY()
 
 	/** Montage played on the pawn when the state is entered. */
-	UPROPERTY(EditAnywhere, Category = "Parameter")
+	UPROPERTY(EditAnywhere, Category = "GeoParameter")
 	TObjectPtr<UAnimMontage> Montage = nullptr;
 
 	/** Speed multiplier applied to the montage. */
-	UPROPERTY(EditAnywhere, Category = "Parameter", meta = (ClampMin = "0.01"))
+	UPROPERTY(EditAnywhere, Category = "GeoParameter", meta = (ClampMin = "0.01"))
 	float PlayRate = 1.f;
 };
 

@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -30,6 +30,6 @@ private:
 	UFUNCTION()
 	void OnHealProvidedCallback(float HealDone);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float SelfHealPercent = 0.1f;
 };

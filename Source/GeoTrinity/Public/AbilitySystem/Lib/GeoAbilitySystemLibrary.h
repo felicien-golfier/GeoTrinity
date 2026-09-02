@@ -59,7 +59,7 @@ public:
 	static UAnimInstance* GetAnimInstance(FAbilityPayload const& Payload);
 
 	/** Returns the global UAbilityInfo data asset from UGameDataSettings. */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|Info")
+	UFUNCTION(BlueprintPure, Category = "GeoAbilitySystemLibrary|Info")
 	static UAbilityInfo* GetAbilityInfo();
 
 
@@ -71,7 +71,7 @@ public:
 	 * @return  Array of active effect handles, one per successfully applied effect. Invalid handles are included for
 	 * entries that do not apply effects.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Effects")
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|Effects")
 	static TArray<FActiveGameplayEffectHandle>
 	ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
 							  UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
@@ -302,7 +302,7 @@ public:
 												 ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic);
 
 	/** Same as above without an extra filter. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 												 int32 AttitudeBitmask, bool bMustBeDamageable = false,
 												 FVector2D Location = FVector2D::ZeroVector, float MaxDistance = 0.f,
@@ -337,7 +337,7 @@ public:
 
 
 	/** Returns the actor in ActorList with the smallest 3D distance to FromActor, or nullptr if the list is empty. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|Toolbox")
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|Toolbox")
 	static AActor* GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList);
 
 	/**
@@ -350,16 +350,32 @@ public:
 										FGameplayCueParameters const& CueParams);
 
 	/** Returns the status gameplay tag stored in the effect context (invalid tag when none). */
-	UFUNCTION(BlueprintPure, Category = "AbilitySystemLibrary|GameplayEffects")
+	UFUNCTION(BlueprintPure, Category = "GeoAbilitySystemLibrary|GameplayEffects")
 	static FGameplayTag GetStatusTag(FGameplayEffectContextHandle const& EffectContextHandle);
 	/** Sets the status gameplay tag in the effect context. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary|GameplayEffects")
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|GameplayEffects")
 	static void SetStatusTag(UPARAM(ref) FGameplayEffectContextHandle& EffectContextHandle, FGameplayTag StatusTag);
 
 	/** Returns the ASC from Actor cast to UGeoAbilitySystemComponent, or nullptr if Actor does not implement
 	 * IAbilitySystemInterface. */
-	UFUNCTION(BlueprintCallable, Category = "AbilitySystemLibrary")
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary")
 	static UGeoAbilitySystemComponent* GetGeoAscFromActor(AActor* Actor);
+
+	/** True when EffectDataArray holds at least one descriptor of type EffectDataType (or a subtype of it). */
+	static bool HasEffectInArray(TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+								 UScriptStruct const* EffectDataType);
+
+	/** True when Attribute sits above its base value on ASC — what "currently buffed" means everywhere. False when ASC
+	 * owns no attribute set holding it. */
+	static bool IsBuffed(UGeoAbilitySystemComponent const& ASC, FGameplayAttribute const& Attribute);
+
+	/**
+	 * Bonus Spec contributes on its own to the ratio stats it modifies, as a fraction (0.5 reads "+50%") — its own
+	 * share only, with the stat's other sources excluded and its own stacks included. Shown per icon by the status
+	 * bar. 0 when Spec modifies no ratio stat: a multiplier stat sits at 1 unboosted and a share like DamageReduction
+	 * at 0, while a count (health, ammo) has no percentage to show.
+	 */
+	static float GetEffectBoostBonus(UAbilitySystemComponent const& ASC, FGameplayEffectSpec const& Spec);
 };
 
 using GeoASLib = UGeoAbilitySystemLibrary;

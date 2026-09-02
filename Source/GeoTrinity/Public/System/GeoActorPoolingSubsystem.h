@@ -63,7 +63,7 @@ public:
 	static UGeoActorPoolingSubsystem* Get(UWorld const* World);
 
 	/** Returns the subsystem for the world of the given context object. Blueprint-callable. */
-	UFUNCTION(BlueprintCallable, Category = "ActorPoolingSystem", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoActorPoolingSystem", meta = (WorldContext = "WorldContextObject"))
 	static UGeoActorPoolingSubsystem* Get(UObject const* WorldContextObject);
 
 	/**

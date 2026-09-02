@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -74,11 +74,11 @@ protected:
 	void DrawBeamDebugLines(float DeltaTime) const;
 #endif
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
 	TObjectPtr<UNiagaraSystem> BeamNiagaraSystem;
 
 	/** Tint pushed to the beam Niagara system's "Color" user parameter. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
 	FGeoColorParam BeamColor;
 
 	bool bIsBeamActive = false;

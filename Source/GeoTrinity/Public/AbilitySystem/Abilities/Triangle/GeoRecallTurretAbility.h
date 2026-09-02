@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -51,7 +51,7 @@ protected:
 	 * in the manager until its delayed destroy). Tracking is fed by BeginPlay, so clients agree with the server. */
 	TArray<AGeoTurret*> GetActiveTurrets(AActor const* Avatar) const;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Recall")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Recall")
 	TArray<TInstancedStruct<FEffectData>> BlinkBonusEffect;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
@@ -59,6 +59,6 @@ protected:
 	int32 OverlapAttitude = TeamAttitudeMask::HostileOrNeutral;
 
 	/** Half-width of the recall line, added to each target's collision radius when testing hits. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Recall")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Recall")
 	float LineHalfWidth = 50.f;
 };

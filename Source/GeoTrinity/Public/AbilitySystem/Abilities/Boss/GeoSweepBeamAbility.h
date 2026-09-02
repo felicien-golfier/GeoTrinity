@@ -24,6 +24,6 @@ protected:
 	/** Yaw from Instigator toward the arena center; falls back to its facing when it is not a hex arena boss. */
 	virtual float GetFireYaw(AActor const* Instigator, int Seed) const override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Pattern", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))
 	float Angle = 60.f;
 };

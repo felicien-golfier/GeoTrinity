@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -37,21 +37,21 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 
 	void SpawnShieldBurst();
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|ShieldBurst", meta = (AllowPrivateAccess = true))
 	float GaugeFillThreshold = 100.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|ShieldBurst", meta = (AllowPrivateAccess = true))
 	FScalableFloat ShieldAmount;
 
 	/** Additive growth per enemy bounce: each bounce adds this fraction of the projectile's *base* shield and radius
 	 * (0.5 = +50% of base every bounce, so N bounces = base × (1 + 0.5·N)) — a linear increase, not compounding. */
-	UPROPERTY(EditDefaultsOnly, Category = "ShieldBurst", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoShieldBurst", meta = (AllowPrivateAccess = true))
 	float EnemyBounceAdditiveMultiplier = .5f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|ShieldBurst", meta = (AllowPrivateAccess = true))
 	FExternalProjectileParams ProjectileParams;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|ShieldBurst", meta = (AllowPrivateAccess = true))
 	TSubclassOf<UShieldBurstPassiveComponent> PassiveComponentClass;
 
 	float GaugeAccumulated = 0.f;
@@ -61,6 +61,6 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	TObjectPtr<UShieldBurstPassiveComponent> PassiveComponent;
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|ShieldBurst")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|ShieldBurst")
 	float ChargeTime = 1.f; // Needs to be accessible from the passive comp via CDO
 };

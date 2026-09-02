@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -20,7 +20,7 @@ struct GEOTRINITY_API FSTTask_MoveToInstanceData : public FStateTreeMoveToTaskIn
 
 	/** Cue added when the move starts and removed when it ends, whether it arrived or was interrupted. Its
 	 *  RawMagnitude carries the path length in world units, so the notify can scale playback to the distance. */
-	UPROPERTY(EditAnywhere, Category = "Parameter", meta = (Categories = "GameplayCue"))
+	UPROPERTY(EditAnywhere, Category = "GeoParameter", meta = (Categories = "GameplayCue"))
 	FGameplayTag MoveGameplayCueTag;
 };
 

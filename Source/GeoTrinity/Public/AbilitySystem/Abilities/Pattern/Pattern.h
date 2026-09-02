@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
@@ -58,7 +58,7 @@ public:
 	 * When bForceStop is true, stops all montages immediately and skips the OnPatternEnd broadcast —
 	 * used by PatternAbility::EndAbility to force-end a pattern without re-triggering the ability end chain.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Pattern")
+	UFUNCTION(BlueprintCallable, Category = "GeoPattern")
 	virtual void EndPattern(bool bForceStop = false);
 
 	UPROPERTY(BlueprintAssignable)
@@ -99,10 +99,10 @@ protected:
 	bool bPatternIsActive = false;
 
 	// Cue fired when the pattern is created (wind-up telegraph) and when it goes live.
-	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoPattern", meta = (AllowPrivateAccess = "true"))
 	FGeoCueParam InitCue;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Pattern", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoPattern", meta = (AllowPrivateAccess = "true"))
 	FGeoCueParam StartCue;
 
 	FTimerHandle StartSectionTimerHandle;

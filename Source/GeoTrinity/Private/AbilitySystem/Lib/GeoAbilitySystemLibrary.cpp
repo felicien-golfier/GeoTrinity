@@ -696,3 +696,49 @@ FGenericTeamId UGeoAbilitySystemLibrary::GetTeamId(AActor const* Actor)
 	IGenericTeamAgentInterface const* const TeamInterface = Cast<IGenericTeamAgentInterface const>(Actor);
 	return TeamInterface ? TeamInterface->GetGenericTeamId() : FGenericTeamId::NoTeam;
 }
+
+bool UGeoAbilitySystemLibrary::HasEffectInArray(TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
+												UScriptStruct const* const EffectDataType)
+{
+	return EffectDataArray.ContainsByPredicate(
+		[EffectDataType](TInstancedStruct<FEffectData> const& EffectData)
+		{
+			return EffectData.GetScriptStruct() && EffectData.GetScriptStruct()->IsChildOf(EffectDataType);
+		});
+}
+
+bool UGeoAbilitySystemLibrary::IsBuffed(UGeoAbilitySystemComponent const& ASC, FGameplayAttribute const& Attribute)
+{
+	return ASC.HasAttributeSetForAttribute(Attribute)
+		&& ASC.GetNumericAttribute(Attribute) > ASC.GetNumericAttributeBase(Attribute);
+}
+
+float UGeoAbilitySystemLibrary::GetEffectBoostBonus(UAbilitySystemComponent const& ASC,
+													FGameplayEffectSpec const& Spec)
+{
+	float Bonus = 0.f;
+	for (int32 ModifierIndex = 0; ModifierIndex < Spec.Modifiers.Num(); ++ModifierIndex)
+	{
+		FGameplayModifierInfo const& Modifier = Spec.Def->Modifiers[ModifierIndex];
+		if (!ASC.HasAttributeSetForAttribute(Modifier.Attribute))
+		{
+			continue;
+		}
+
+		// Only a ratio stat has a percentage to show: a multiplier sits at 1 unboosted, a share like DamageReduction
+		// at 0. Anything else (health, ammo) is a count, and its modifiers are not a boost.
+		float const BaseValue = ASC.GetNumericAttributeBase(Modifier.Attribute);
+		if (!FMath::IsNearlyZero(BaseValue) && !FMath::IsNearlyEqual(BaseValue, 1.f))
+		{
+			continue;
+		}
+
+		// Stacking and the bias a multiplying op carries (1.5 means +50%, 0.5 on an adding op means the same) are the
+		// aggregator's own rules — take them from it rather than restating them here.
+		float const StackedMagnitude = GameplayEffectUtilities::ComputeStackedModifierMagnitude(
+			Spec.Modifiers[ModifierIndex].GetEvaluatedMagnitude(), Spec.GetStackCount(), Modifier.ModifierOp);
+		Bonus += StackedMagnitude - GameplayEffectUtilities::GetModifierBiasByModifierOp(Modifier.ModifierOp);
+	}
+
+	return Bonus;
+}

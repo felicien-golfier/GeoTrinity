@@ -20,12 +20,60 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 		return;
 	}
 
-	LaunchPattern();
+	LaunchSeed = GetNewSeed();
+
+	if (PreLaunchDelay > 0.f)
+	{
+		BeginPreLaunch();
+		GetWorld()->GetTimerManager().SetTimer(PreLaunchTimerHandle, this, &UPatternAbility::LaunchPattern,
+											   PreLaunchDelay);
+	}
+	else
+	{
+		LaunchPattern();
+	}
+}
+
+void UPatternAbility::BeginPreLaunch()
+{
+	AddPreLaunchCue(GetGeoAbilitySystemComponentFromActorInfo());
+}
+
+void UPatternAbility::AddPreLaunchCue(UGeoAbilitySystemComponent* TargetASC)
+{
+	if (!PreLaunchCue.CueTag.IsValid() || PreLaunchCueASCs.Contains(TargetASC))
+	{
+		return;
+	}
+	if (!ensureMsgf(IsValid(TargetASC), TEXT("PatternAbility %s: pre-launch cue target has no ASC"), *GetName()))
+	{
+		return;
+	}
+
+	FGameplayCueParameters CueParams;
+	CueParams.RawMagnitude = PreLaunchDelay;
+	PreLaunchCue.FillCueParams(CueParams);
+	TargetASC->AddGameplayCue(PreLaunchCue.CueTag, CueParams);
+	PreLaunchCueASCs.Add(TargetASC);
+}
+
+void UPatternAbility::RemovePreLaunchCues()
+{
+	for (TWeakObjectPtr<UGeoAbilitySystemComponent> const& CueASC : PreLaunchCueASCs)
+	{
+		if (CueASC.IsValid())
+		{
+			CueASC->RemoveGameplayCue(PreLaunchCue.CueTag);
+		}
+	}
+	PreLaunchCueASCs.Reset();
 }
 
 void UPatternAbility::LaunchPattern()
 {
-	StoredPayload = CreateAbilityPayload();
+	RemovePreLaunchCues();
+	StoredPayload = CreateAbilityPayload(LaunchSeed);
+
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch, CreatePatternData());
 	UPattern* PatternInstance = nullptr;
@@ -56,6 +104,10 @@ void UPatternAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbi
 								 FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 								 bool bWasCancelled)
 {
+	GetWorld()->GetTimerManager().ClearTimer(PreLaunchTimerHandle);
+	PreLaunchTimerHandle.Invalidate();
+	RemovePreLaunchCues();
+
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	UPattern* PatternInstance = nullptr;
 	if (ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),

@@ -85,6 +85,7 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 		IconImages.Reset();
 		CountTexts.Reset();
 		TimerTexts.Reset();
+		BoostTexts.Reset();
 		DepletionSweeps.Reset();
 		DepletionSweepMIDs.Reset();
 		GaugeBars.Reset();
@@ -164,6 +165,13 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			CountSlot->SetVerticalAlignment(VAlign_Bottom);
 			CountTexts.Add(CountText);
 
+			UTextBlock* BoostText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+			BoostText->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 12));
+			UOverlaySlot* BoostSlot = EntryOverlay->AddChildToOverlay(BoostText);
+			BoostSlot->SetHorizontalAlignment(HAlign_Center);
+			BoostSlot->SetVerticalAlignment(VAlign_Top);
+			BoostTexts.Add(BoostText);
+
 			StatusBox->AddChildToHorizontalBox(EntryOverlay)->SetPadding(FMargin(2.f, 0.f));
 		}
 	}
@@ -195,6 +203,14 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 		if (Entry.Count > 1)
 		{
 			CountTexts[Index]->SetText(FText::AsNumber(Entry.Count));
+		}
+
+		float const BoostPercent = FMath::RoundToFloat(Entry.BoostBonus * 100.f);
+		BoostTexts[Index]->SetVisibility(BoostPercent == 0.f ? ESlateVisibility::Hidden
+															 : ESlateVisibility::HitTestInvisible);
+		if (BoostPercent != 0.f)
+		{
+			BoostTexts[Index]->SetText(FText::FromString(FString::Printf(TEXT("%+.0f%%"), BoostPercent)));
 		}
 
 		// Gauge entries fill bottom-to-top with FillRatio in the icon's own colors and shine emissive FullColor once

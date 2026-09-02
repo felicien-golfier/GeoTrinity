@@ -23,6 +23,6 @@ public:
 	static bool ShouldDrawHUD(UObject const* WorldContextObject);
 
 	/** Returns Health / MaxHealth clamped to [0, 1]. Returns 0 if AbilitySystemComponent is null. */
-	UFUNCTION(BlueprintCallable, Category = "Gas")
+	UFUNCTION(BlueprintCallable, Category = "GeoGAS")
 	static float GetHealthRatio(UAbilitySystemComponent const* AbilitySystemComponent);
 };

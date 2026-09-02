@@ -88,6 +88,10 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		// Index is set with the number of ammo remaining, except when out of ammo.
 		int32 const Index =
 			(CurrentAmmo == 0.f ? AbilityTargetData.Seed : FMath::RoundToInt(CurrentAmmo)) % BuffEffects.Num();
+		int32 const BuffLevel = FMath::RoundToInt32(PowerScale * 10.f);
+
+		GeoASLib::ApplySingleEffectData(BuffEffects[Index], ASC, ASC, BuffLevel, AbilityTargetData.Seed,
+										GetAbilityTag());
 
 		FRandomStream Rng(StoredPayload.Seed);
 		float const RandomAngle = Rng.FRandRange(0.f, 2.f * PI);
@@ -109,7 +113,7 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 
 		FBuffPickupData PickupData;
 		GeoASLib::FillDeployableData(PickupData, StoredPayload, BuffEffects, FDeployableDataParams());
-		PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
+		PickupData.Level = BuffLevel;
 		PickupData.EffectDataArray = {BuffEffects[Index]};
 		PickupData.PowerScale = PowerScale;
 		PickupData.BuffIndex = Index;

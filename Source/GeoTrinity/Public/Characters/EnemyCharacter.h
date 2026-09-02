@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -29,13 +29,13 @@ public:
 	 * PlayerState). Sets AGeoEnemyAIController as the AI controller class. */
 	AEnemyCharacter(FObjectInitializer const& ObjectInitializer);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAI")
 	TObjectPtr<UStateTree> StateTree;
 
-	UPROPERTY(BlueprintAssignable, Category = "Boss")
+	UPROPERTY(BlueprintAssignable, Category = "GeoBoss")
 	FOnBossDefeated OnEnemyDefeated;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Boss")
+	UPROPERTY(BlueprintReadOnly, Category = "GeoBoss")
 	TWeakObjectPtr<AGeoArena> Arena;
 
 	/** True while this enemy's arena runs a fight, false before aggro and for an enemy with no arena. Reads the
@@ -56,6 +56,6 @@ protected:
 	virtual void OnHealthChanged_Implementation(float NewValue);
 
 private:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "Enemy")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "GeoEnemy")
 	bool ResetToFullLifeWhenReachingZero = false;
 };

@@ -39,7 +39,7 @@ protected:
 	 * @param Origin           World-space spawn location.
 	 * @param SpawnServerTime  Synchronized server time used to fast-forward the projectile on the server.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	UFUNCTION(BlueprintCallable, Category = "GeoProjectile")
 	void SpawnProjectileUsingDirection(FVector const& Direction, FVector const& Origin, float SpawnServerTime);
 
 	/**
@@ -48,7 +48,7 @@ protected:
 	 * @param SpawnTransform   World transform for the new projectile.
 	 * @param SpawnServerTime  Synchronized server time for position fast-forwarding.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	UFUNCTION(BlueprintCallable, Category = "GeoProjectile")
 	virtual void SpawnProjectile(FTransform const& SpawnTransform, float SpawnServerTime) const;
 
 	/**
@@ -58,13 +58,13 @@ protected:
 	 * @param Origin           World-space origin for direction calculations.
 	 * @param SpawnServerTime  Synchronized server time for position fast-forwarding.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	UFUNCTION(BlueprintCallable, Category = "GeoProjectile")
 	void SpawnProjectilesUsingTarget(float ProjectileYaw, FVector const& Origin, float SpawnServerTime);
 
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbility")
 	FExternalProjectileParams ProjectileParams;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbility")
 	EProjectileTarget Target;
 };

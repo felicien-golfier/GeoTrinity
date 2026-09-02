@@ -172,19 +172,20 @@ void AGeoCharacter::InitGAS()
 		AbilitySystemComponent->GiveStartupAbilities();
 	}
 
-	BindCombattantWidgetToASC();
+	BindCosmeticsToASC();
 }
 
-void AGeoCharacter::BindCombattantWidgetToASC()
+void AGeoCharacter::BindCosmeticsToASC()
 {
 	// Called from every point the ASC or its attributes can become available, because none of them alone covers both
 	// roles: the host sets attributes synchronously with no replication callback to bind on, while a remote proxy only
 	// receives its ASC with OnRep_PlayerState — after the bar's first bind. Miss one and the bar reads MaxHealth as 0
-	// and collapses. BindToOwnerASC is idempotent, so binding again costs nothing.
+	// and collapses. Both binds are idempotent, so binding again costs nothing.
 	if (IGeoCombattantWidgetHost* WidgetHost = Cast<IGeoCombattantWidgetHost>(CharacterWidgetComponent))
 	{
 		WidgetHost->BindToOwnerASC();
 	}
+	GameFeelComponent->BindBuffVFX(AbilitySystemComponent);
 }
 
 void AGeoCharacter::BeginPlay()
@@ -194,7 +195,7 @@ void AGeoCharacter::BeginPlay()
 	ensureMsgf(CharacterWidgetComponent || GeoLib::IsDedicatedServer(GetWorld()),
 			   TEXT("%s has no CharacterWidgetComponent — set CombattantWidgetComponentClass in Game Data Settings"),
 			   *GetName());
-	BindCombattantWidgetToASC();
+	BindCosmeticsToASC();
 
 	// A screen-space UWidgetComponent draws in the game layer of its pawn's own local player, and couch coop forces
 	// splitscreen off, which leaves every local player above 0 with a zero-sized view: their layer is clipped away and

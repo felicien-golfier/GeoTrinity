@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -53,8 +53,8 @@ private:
 	UPROPERTY(Transient, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UMaterialInstanceDynamic> CharacterMaterialInstance;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ShieldBurst")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "GeoShieldBurst")
 	FName GaugeScalarParamName = "GlowGauge";
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ShieldBurst")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "GeoShieldBurst")
 	FName ChargeScalarParamName = "FullGlowGauge";
 };

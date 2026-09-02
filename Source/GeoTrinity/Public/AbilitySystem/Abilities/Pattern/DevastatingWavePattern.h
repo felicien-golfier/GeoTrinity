@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -78,34 +78,34 @@ private:
 	 * Gated on the Geo.DrawDevastatingWave CVar. */
 	void DrawDebugWave(float CurrentRadius) const;
 
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave")
 	float ExpansionSpeed = 800.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave")
 	float MaxRadius = 3000.f;
 
 	/** Width of the damaging band just inside the wave front. Actors are hit only while their center sits between
 	 * CurrentRadius and CurrentRadius - AnnulusWidth; once the front passes beyond that band they are safe. */
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave")
 	float AnnulusWidth = 200.f;
 
 	/** Masked AOE system (NS_PillarsAOE) grown alongside the wave on every rendering machine. */
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave|VFX")
 	TObjectPtr<UNiagaraSystem> AOEVfxSystem;
 
 	/** MPC_MaskedArea — receives pillar world positions to cut safe zones out of the AOE material. */
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave|VFX")
 	TObjectPtr<UMaterialParameterCollection> MaskMaterialParameterCollection;
 
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave|VFX")
 	FGeoColorParam AOEColor{FLinearColor::Yellow};
 
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave|VFX")
 	float FadeOutDuration = 0.5f;
 
 	/** Duration in seconds for the telegraph VFX to fade once the wave starts expanding (default 0.1 s — near-instant
 	 * handoff so the static telegraph and the expanding wave don't visually overlap). */
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave|VFX|Telegraph")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave|VFX|Telegraph")
 	float TelegraphFadeOutDuration = 0.1f;
 
 	UPROPERTY(Transient)

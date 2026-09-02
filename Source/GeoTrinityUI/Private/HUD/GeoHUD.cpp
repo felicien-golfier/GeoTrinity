@@ -132,7 +132,7 @@ TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
 
 		FGeoGameplayEffectContext const* Context =
 			static_cast<FGeoGameplayEffectContext const*>(ActiveEffect->Spec.GetContext().Get());
-		if (!Context || !Context->GetIcon())
+		if (!Context || !Context->GetIcon() || !ActiveEffect->Spec.Def)
 		{
 			continue;
 		}
@@ -151,6 +151,7 @@ TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
 		// A stacking GE is one active effect carrying its whole stack, an unstacked one is many effects of one stack
 		// each, and the badge means the same thing in both cases.
 		Entry->Count += ActiveEffect->Spec.GetStackCount();
+		Entry->BoostBonus += GeoASLib::GetEffectBoostBonus(*ASC, ActiveEffect->Spec);
 		float const TimeRemaining = ActiveEffect->GetTimeRemaining(WorldTime);
 		if (TimeRemaining < 0.f || Entry->TimeRemaining < 0.f)
 		{

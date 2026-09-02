@@ -13,6 +13,7 @@
 
 class AGeoCharacter;
 class UGeoAbilitySystemComponent;
+class UGeoGameFeelComponent;
 class UProjectileMovementComponent;
 class UNiagaraSystem;
 class UNiagaraComponent;
@@ -183,7 +184,7 @@ protected:
 	 *
 	 * @param HitActor  The actor that was struck. Cast to GeoCharacter to access its mesh.
 	 */
-	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|GameFeel")
+	UFUNCTION(BlueprintNativeEvent, Category = "GeoProjectile|GameFeel")
 	void OnProjectileHit(AActor* HitActor);
 
 	/**
@@ -191,7 +192,7 @@ protected:
 	 * Default: looks up ResolvedParams.SoundMap and forwards to GetPitch(Entry).
 	 * Returns 1.0 if no entry exists. Override in Blueprint for custom logic.
 	 */
-	UFUNCTION(BlueprintNativeEvent, Category = "Projectile|Audio")
+	UFUNCTION(BlueprintNativeEvent, Category = "GeoProjectile|Audio")
 	float GetPitch(EProjectileSoundType SoundType) const;
 
 	/** Returns the pitch multiplier for Entry via UGeoSoundRowLibrary::GetPitch with the projectile's instigator.
@@ -230,6 +231,12 @@ protected:
 	 * why the values live in DefaultParams rather than in the Niagara asset's own user-param defaults. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
 	TObjectPtr<UNiagaraComponent> BulletVFX;
+
+	/** Dresses the shot in whatever buff its owner is carrying (UGameDataSettings::BuffVFX). InitProjectileLife points
+	 * it at Payload.Owner's ASC — a shot has no attributes of its own. Native subobject so no projectile Blueprint can
+	 * be missing it. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
+	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
 
 	/** Per-Blueprint default values, edited in Class Defaults. Resolved against for KeepBlueprintDefaultValue, seeds
 	 * ResolvedParams, and is never written to at runtime. Editing it previews live on any instance in an editor

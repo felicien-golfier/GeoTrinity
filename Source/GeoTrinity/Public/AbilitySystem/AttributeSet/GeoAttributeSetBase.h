@@ -39,31 +39,31 @@ public:
 	 */
 	virtual void PostGameplayEffectExecute(FGameplayEffectModCallbackData const& Data) override;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_Health)
+	UPROPERTY(BlueprintReadOnly, Category = "GeoBasic", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS_BASIC(UGeoAttributeSetBase, Health)
 
 	/** MaxHealth is its own attribute since GameplayEffects may modify it */
-	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_MaxHealth)
+	UPROPERTY(BlueprintReadOnly, Category = "GeoBasic", ReplicatedUsing = OnRep_MaxHealth)
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, MaxHealth)
 
 	// Shield
-	UPROPERTY(BlueprintReadOnly, Category = "Basic", ReplicatedUsing = OnRep_Shield)
+	UPROPERTY(BlueprintReadOnly, Category = "GeoBasic", ReplicatedUsing = OnRep_Shield)
 	FGameplayAttributeData Shield;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, Shield)
 
-	UPROPERTY(BlueprintReadOnly, Category = "Meta")
+	UPROPERTY(BlueprintReadOnly, Category = "GeoMeta")
 	FGameplayAttributeData IncomingDamage;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, IncomingDamage)
 
-	UPROPERTY(BlueprintReadOnly, Category = "Meta")
+	UPROPERTY(BlueprintReadOnly, Category = "GeoMeta")
 	FGameplayAttributeData IncomingHeal;
 	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, IncomingHeal)
 
 
 	/** Returns Health / MaxHealth. Returns 0 when MaxHealth is zero. */
-	UFUNCTION(BlueprintCallable, Category = "Attribute")
+	UFUNCTION(BlueprintCallable, Category = "GeoAttribute")
 	float GetHealthRatio() const;
 
 protected:

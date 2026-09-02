@@ -24,7 +24,7 @@ class GEOTRINITYUI_API UGeoAbilityBarWidget : public UGeoUserWidget
 
 public:
 	/** Rebuilds the bar from the HUD's current ability set. Called via UGeoOverlayWidget::BuildAbilityBar. */
-	UFUNCTION(BlueprintCallable, Category = "AbilityBar")
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilityBar")
 	void BuildBar(AGeoHUD* InHUD, APlayableCharacter* PlayableCharacter);
 
 protected:
@@ -37,7 +37,7 @@ protected:
 	TObjectPtr<UHorizontalBox> SlotBox;
 
 	/** Slot widget class to instantiate per ability (set to WBP_AbilitySlot in the bar BP). */
-	UPROPERTY(EditDefaultsOnly, Category = "AbilityBar")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbilityBar")
 	TSubclassOf<UGeoAbilitySlotWidget> SlotWidgetClass;
 
 private:

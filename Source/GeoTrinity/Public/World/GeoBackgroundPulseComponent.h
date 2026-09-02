@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -71,36 +71,36 @@ public:
 
 protected:
 	/** MPC_BackgroundPulse. Without it there is nothing to drive and the component disables its own tick. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pulse")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPulse")
 	TObjectPtr<UMaterialParameterCollection> PulseCollection;
 
 	/** What plays outside any fight; each AGeoArena overrides it for the duration of its own. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pulse")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse")
 	EGeoPulseMode Mode = EGeoPulseMode::Actors;
 
 	/** Live pulses. The collection only has eight slots, so this is clamped to that on BeginPlay. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pulse", meta = (ClampMin = "1", ClampMax = "8"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse", meta = (ClampMin = "1", ClampMax = "8"))
 	int32 PulseCount = 8;
 
 	/** How fast a ring expands away from its origin, cm/s. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pulse", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse", meta = (ClampMin = "1"))
 	float RingSpeed = 900.f;
 
 	/** Radius a ring has fully faded at and restarts from zero. With RingSpeed this is also the pulse period. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pulse", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse", meta = (ClampMin = "1"))
 	float MaxRingRadius = 1500.f;
 
 	/** Region around the camera this covers: how far Actors mode looks, and the bound the moving modes turn at. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pulse", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse", meta = (ClampMin = "1"))
 	float AreaRadius = 2500.f;
 
 	/** How fast an origin travels, cm/s. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pulse|Movement",
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse|Movement",
 			  meta = (ClampMin = "0", EditCondition = "Mode != EGeoPulseMode::Actors", EditConditionHides))
 	float MoveSpeed = 400.f;
 
 	/** Largest heading change per second, in degrees. Zero makes Wander behave as Straight. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pulse|Movement",
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse|Movement",
 			  meta = (ClampMin = "0", EditCondition = "Mode == EGeoPulseMode::Wander", EditConditionHides))
 	float TurnRate = 120.f;
 

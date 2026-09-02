@@ -45,7 +45,7 @@ public:
 	/** Returns a randomly selected color from the static debug ColorPalette array. */
 	static FColor GetRandomColor();
 	/** Returns a deterministic debug color for WorldContextObject based on its object hash. */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static FColor GetColorForObject(UObject const* WorldContextObject);
 
 	/**
@@ -55,7 +55,7 @@ public:
 	 *
 	 * @param Alpha  Alpha to apply to the returned color. Negative keeps the palette color's own alpha unchanged.
 	 */
-	UFUNCTION(BlueprintPure, Category = "GameplayLibrary")
+	UFUNCTION(BlueprintPure, Category = "GeoGameplayLibrary")
 	static FLinearColor GetPaletteColorFromIndex(int ColorIndex, float Alpha = -1.f);
 
 	/**
@@ -63,16 +63,16 @@ public:
 	 *
 	 * @param Alpha  Alpha to apply to the returned color. Negative keeps the palette color's own alpha unchanged.
 	 */
-	UFUNCTION(BlueprintPure, Category = "GameplayLibrary")
+	UFUNCTION(BlueprintPure, Category = "GeoGameplayLibrary")
 	static FLinearColor GetPaletteColor(EGeoColor Color, float Alpha = -1.f);
 
 	/** Returns true when running with authority (listen server or dedicated server). */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsServer(UObject const* WorldContextObject);
 
 	/** Triggers a camera shake on the local player controller. Safe to call from any machine — no-op on dedicated
 	 * server. */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static void TriggerCameraShake(UObject const* WorldContextObject, TSubclassOf<UCameraShakeBase> ShakeClass,
 								   float Scale = 1.f);
 
@@ -84,7 +84,7 @@ public:
 	 * Use this to gate cosmetic-only work (montages, local Gameplay Cues, VFX): `if (!IsDedicatedServer(...))`.
 	 * Do NOT use `!IsServer()` for visuals — that wrongly skips the listen-server host, which IS a rendering player.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsDedicatedServer(UObject const* WorldContextObject);
 	/** Returns true when World is running as a dedicated server (no local viewport). */
 	static bool IsDedicatedServer(UWorld const* World);
@@ -98,7 +98,7 @@ public:
 	 * flash). On a listen server the host's AI pawns are also locally controlled, so `IsLocallyControlled()` alone is
 	 * true for every host enemy; the extra `IsPlayerControlled()` term excludes them.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary")
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary")
 	static bool IsLocalPlayerAvatar(APawn const* Pawn);
 
 	/**
@@ -112,7 +112,7 @@ public:
 	 * Returns Owner cast to AGeoCharacter; if Owner is a PlayerState, resolves and returns its pawn instead.
 	 * Returns nullptr when neither cast succeeds (e.g. non-character owner actor).
 	 */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary")
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary")
 	static AGeoCharacter* GetCharacterFromOwner(AActor* Owner);
 
 	/**
@@ -127,7 +127,7 @@ public:
 	 * @warning  Do NOT use this for measuring local durations (e.g. charge time, cooldown UI). The value is
 	 *           a network approximation and can drift or jump. Use GetWorld()->GetTimeSeconds() for local timing.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static float GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing = false);
 	/** Returns the estimated one-way network latency in seconds for the world's first local player controller. */
 	static float GetOnWayPingSec(UWorld const* World);
@@ -140,7 +140,7 @@ public:
 	 * what the point is for) and ArenaTag (Arena.*, the encounter it belongs to). A point can carry several of
 	 * either, so the same actor can serve two purposes or two neighbouring arenas.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const PurposeTag,
 										   FGameplayTag const ArenaTag);
 
@@ -154,7 +154,7 @@ public:
 											  FGameplayTag ArenaTag, bool bSkipPlayersInArenaVolume = false);
 
 	/** Returns every currently-alive APlayableCharacter, found by iterating player controllers' pawns. */
-	UFUNCTION(BlueprintCallable, Category = "GameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<APlayableCharacter*> GetAlivePlayers(UObject const* WorldContextObject);
 };
 

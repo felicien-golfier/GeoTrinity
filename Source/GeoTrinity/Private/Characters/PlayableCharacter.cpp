@@ -172,7 +172,7 @@ void APlayableCharacter::InitGAS()
 		AbilitySystemComponent->OnHealthChanged.AddDynamic(this, &APlayableCharacter::OnHealthChanged);
 	}
 
-	BindCombattantWidgetToASC();
+	BindCosmeticsToASC();
 }
 
 void APlayableCharacter::ResetAbilitiesAndEffects()

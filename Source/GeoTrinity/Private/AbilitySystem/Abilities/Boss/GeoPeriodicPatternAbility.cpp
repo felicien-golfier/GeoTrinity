@@ -1,6 +1,6 @@
 ﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AbilitySystem/Abilities/Boss/GeoPeriodicFireAbility.h"
+#include "AbilitySystem/Abilities/Boss/GeoPeriodicPatternAbility.h"
 
 #include "AbilitySystem/Abilities/Pattern/ProjectilePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
@@ -11,24 +11,24 @@
 // Party size the burst is balanced around: every player short of it adds one salve to each round.
 static constexpr int32 ReferencePlayerCount = 3;
 
-UGeoPeriodicFireAbility::UGeoPeriodicFireAbility()
+UGeoPeriodicPatternAbility::UGeoPeriodicPatternAbility()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateNo;
 }
 
-void UGeoPeriodicFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
-											  FGameplayAbilityActorInfo const* ActorInfo,
-											  FGameplayAbilityActivationInfo const ActivationInfo,
-											  FGameplayEventData const* TriggerEventData)
+void UGeoPeriodicPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
+												 FGameplayAbilityActorInfo const* ActorInfo,
+												 FGameplayAbilityActivationInfo const ActivationInfo,
+												 FGameplayEventData const* TriggerEventData)
 {
 	RemainingSalveCount = 0;
 
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 
-TInstancedStruct<FPatternData> UGeoPeriodicFireAbility::CreatePatternData() const
+TInstancedStruct<FPatternData> UGeoPeriodicPatternAbility::CreatePatternData() const
 {
 	FProjectilePatternData SalveData;
 
@@ -41,7 +41,7 @@ TInstancedStruct<FPatternData> UGeoPeriodicFireAbility::CreatePatternData() cons
 	return TInstancedStruct<FPatternData>::Make<FProjectilePatternData>(SalveData);
 }
 
-void UGeoPeriodicFireAbility::SizeBurst()
+void UGeoPeriodicPatternAbility::SizeBurst()
 {
 	int32 RoundCount = 1;
 	UGeoAttributeSetBase const* AttributeSet = Cast<UGeoAttributeSetBase>(
@@ -69,7 +69,7 @@ void UGeoPeriodicFireAbility::SizeBurst()
 			   GetFireDelay(), TimeBetweenSalves);
 }
 
-void UGeoPeriodicFireAbility::LaunchPattern()
+void UGeoPeriodicPatternAbility::LaunchPattern()
 {
 	if (RemainingSalveCount <= 0)
 	{
@@ -92,6 +92,7 @@ void UGeoPeriodicFireAbility::LaunchPattern()
 		NextSalveDelay = Stream.FRandRange(FireIntervalMin, FireIntervalMax);
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoPeriodicFireAbility::LaunchPattern,
+	LaunchSeed = GetNewSeed();
+	GetWorld()->GetTimerManager().SetTimer(FireTriggerTimerHandle, this, &UGeoPeriodicPatternAbility::LaunchPattern,
 										   NextSalveDelay);
 }

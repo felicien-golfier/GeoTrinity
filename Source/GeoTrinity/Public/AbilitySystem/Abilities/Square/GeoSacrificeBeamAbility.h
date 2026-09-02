@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -69,25 +69,25 @@ private:
 	void RemoveAllSacrificeMarks();
 
 	/** Beam half-width in cm used by the channel scan. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0", AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0", AllowPrivateAccess = true))
 	float BeamHalfWidth = 100.f;
 
 	/**
 	 * Infinite GE applied to each sacrificed victim. Must grant Status.Sacrificed and carry a
 	 * WhileActive GameplayCue so every client sees who is sacrificed.
 	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	TInstancedStruct<FEffectData> SacrificeMarkEffect;
 
 	/**
 	 * Infinite GE applied to the Square on activation. Must grant Status.Square.DetonateReady; removed by the
 	 * detonate ability (or death via the death-time effect purge).
 	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	TInstancedStruct<FEffectData> DetonateReadyEffect;
 
 	/** The channel ends (the detonation stays armed) after this many seconds. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0", AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0", AllowPrivateAccess = true))
 	float MaxChannelDuration = 15.f;
 
 	// Server-only bookkeeping: victim -> handle of its sacrifice mark GE.

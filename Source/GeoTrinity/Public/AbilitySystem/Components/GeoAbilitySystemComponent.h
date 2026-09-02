@@ -99,7 +99,8 @@ public:
 	/** Level every ability spec, effect and payload from this component carries. */
 	int32 GetCombatLevel() const { return CombatLevel; }
 
-	/** Binds OnHealthChanged and OnMaxHealthChanged delegates to the Health/MaxHealth attribute change callbacks. */
+	/** Binds OnHealthChanged and OnMaxHealthChanged delegates to the Health/MaxHealth attribute change callbacks, and
+	 * the movement multiplier to the movement component. */
 	void BindAttributeCallbacks();
 
 	/**
@@ -211,9 +212,9 @@ private:
 	TArray<UPattern*> Patterns;
 
 	// DATA //
-	UPROPERTY(EditAnywhere, Category = "GAS")
+	UPROPERTY(EditAnywhere, Category = "GeoGAS")
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
 
-	UPROPERTY(EditAnywhere, Category = "GAS")
+	UPROPERTY(EditAnywhere, Category = "GeoGAS")
 	TArray<FGameplayTag> StartupAbilityTags;
 };

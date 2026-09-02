@@ -31,7 +31,7 @@ public:
 	virtual void UpdateVisualChargeRatio() const override;
 
 	/** The deploy ability whose charge ratio drives the ChargeBar fill. Must be set before the widget ticks. */
-	UPROPERTY(BlueprintReadOnly, Category = "Deploy")
+	UPROPERTY(BlueprintReadOnly, Category = "GeoDeploy")
 	TObjectPtr<UGeoGameplayAbility> DeployAbility;
 
 protected:

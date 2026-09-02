@@ -26,25 +26,25 @@ class GEOTRINITYUI_API UGeoMenuButton : public UGeoMenuPanelWidget
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintAssignable, Category = "Button")
+	UPROPERTY(BlueprintAssignable, Category = "GeoButton")
 	FGeoButtonClickedSignature OnClicked;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button|Appearance")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
 	FText Label;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button|Appearance")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
 	FSlateFontInfo Font;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button|Appearance")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
 	FSlateColor TextColor;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button|Appearance")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
 	FSlateBrush NormalBrush;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button|Appearance")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
 	FSlateBrush HoveredBrush;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button|Appearance")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
 	FSlateBrush PressedBrush;
 
 	/** Returns the inner UGeoButton that receives forwarded focus and fires the click delegate. */

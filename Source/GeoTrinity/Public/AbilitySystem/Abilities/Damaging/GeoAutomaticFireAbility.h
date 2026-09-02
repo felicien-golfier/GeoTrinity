@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -58,7 +58,7 @@ protected:
 	 *
 	 * @return  True if the shot was executed successfully. False ends the ability immediately.
 	 */
-	UFUNCTION(BlueprintNativeEvent, Category = "Ability|AutoFire")
+	UFUNCTION(BlueprintNativeEvent, Category = "GeoAbility|AutoFire")
 	bool ExecuteShot();
 	/** Returns false by default; override in a concrete C++ subclass to define the per-shot behavior. */
 	virtual bool ExecuteShot_Implementation();
@@ -67,13 +67,13 @@ protected:
 	virtual int32& GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance) override;
 
 	/** Camera shake played on the local client each shot. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel")
 	TSubclassOf<UCameraShakeBase> FireCameraShakeClass;
 	/** How far (cm) the mesh snaps backward on each shot. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|GameFeel", meta = (ClampMin = "0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|GameFeel", meta = (ClampMin = "0"))
 	float RecoilDistance = 12.f;
 	/** GameplayCue executed locally on the shooting client each shot. Use for muzzle flash, fire sound, etc. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel", meta = (Categories = "GameplayCue"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (Categories = "GameplayCue"))
 	FGameplayTag FireGameplayCueTag;
 
 	int32 CurrentShotIndex = 0;

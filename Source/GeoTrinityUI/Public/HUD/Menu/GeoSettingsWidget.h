@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -25,7 +25,7 @@ class GEOTRINITYUI_API UGeoSettingsWidget : public UGeoMenuPanelWidget
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintAssignable, Category = "Menu")
+	UPROPERTY(BlueprintAssignable, Category = "GeoMenu")
 	FGeoSettingsClosedSignature OnClosed;
 
 protected:

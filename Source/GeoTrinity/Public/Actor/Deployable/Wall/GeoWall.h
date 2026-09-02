@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -38,7 +38,7 @@ protected:
 
 	// The wall's gameplay collider. Carries the GeoShape profile so projectiles and AoE queries hit the mesh shape
 	// instead of the root capsule (whose collision is disabled). Mesh asset is assigned on BP_Wall.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Wall")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoWall")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
 private:

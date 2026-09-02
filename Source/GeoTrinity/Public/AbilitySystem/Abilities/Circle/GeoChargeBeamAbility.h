@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -72,24 +72,24 @@ protected:
 										  FGameplayTag ApplicationTag) override;
 
 	// Sweet spot range (charge ratio 0–1). Releasing within this window applies SweetSpotBonusEffect.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")
 	float SweetSpotMinRatio = 0.5f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")
 	float SweetSpotMaxRatio = 0.7f;
 
 	// Gameplay Cue fired on the client at the moment of release to trigger beam VFX/SFX.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")
 	FGameplayTag FireGameplayCueTag;
 
 	// Damage multiplier lerped from Min (0% charge) to Max (100% charge).
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")
 	float MinDamageMultiplier = 0.5f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")
 	float MaxDamageMultiplier = 1.5f;
 
 	// Damage multiplier applied when the charge ratio is within the sweet-spot window.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|ChargeBeam")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")
 	float SweetSpotDamageMultiplier = 2.f;
 };

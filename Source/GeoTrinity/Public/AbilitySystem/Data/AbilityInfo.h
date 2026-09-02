@@ -19,17 +19,17 @@ struct FGameplayAbilityInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameplay")
 	TSubclassOf<UGameplayAbility> AbilityClass;
 
 	/** Populated automatically from the ability CDO's AssetTags on load — do not set manually */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (Categories = "Ability.Spell"))
 	FGameplayTag AbilityTag{};
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCosmetic")
 	FString AbilityDisplayName{"No name set"};
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCosmetic")
 	FString Description;
 
 	/**
@@ -58,21 +58,21 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (Categories = "Ability.Type"))
 	FGameplayTag TypeOfAbilityTag{};
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (Categories = "InputTag"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoInput", meta = (Categories = "InputTag"))
 	FGameplayTag InputTag{};
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoInput")
 	TObjectPtr<UInputAction> InputAction;
 
 	/** If true, this ability is automatically given to players of the matching PlayerClass at startup */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameplay")
 	bool bGiveAtStartup = true;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCosmetic")
 	TObjectPtr<UTexture2D const> AbilityIcon{nullptr};
 
 	/** When true, the ability bar slot shows a remaining-deployable count badge (Wall/Turret abilities). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cosmetic")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCosmetic")
 	bool bShowDeployCount = false;
 };
 
@@ -112,7 +112,7 @@ public:
 
 	/** Non-player abilities (enemies, passives, system). Used for tag-based CDO look-up. Not bound to any input or
 	 * class. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability Information", meta = (TitleProperty = "{AbilityTag}"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbilityInformation", meta = (TitleProperty = "{AbilityTag}"))
 	TArray<FGameplayAbilityInfo> EnemyAbilityInfos;
 
 	/** Re-reads all ability CDO asset tags and syncs description text from the plain-text file after loading. */

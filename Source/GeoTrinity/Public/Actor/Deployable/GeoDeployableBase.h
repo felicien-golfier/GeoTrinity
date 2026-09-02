@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -185,28 +185,28 @@ public:
 
 	// Non-rotating attachment point for the health bar: its relative offset would orbit the deployable as the capsule
 	// yaws if attached to the root (mirrors AGeoCharacter::WidgetAnchorComponent).
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TObjectPtr<USceneComponent> WidgetAnchorComponent;
 
 	// World-space health-bar widget component. Created in the constructor from
 	// GameDataSettings::CombattantWidgetComponentClass (the concrete UGeoCombattantWidgetComp lives in the UI module,
 	// so gameplay holds it as the engine base). Null on the dedicated server, which does not ship the UI class.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TObjectPtr<UWidgetComponent> CombattantWidgetComponent;
 
 	// Per-BP health-bar tuning, applied to CombattantWidgetComponent in BeginPlay (the component's own Details panel
 	// can't expose these because its class is resolved at runtime). Leave HealthBarWidgetClassOverride null to use the
 	// project default from GameDataSettings.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoHUD")
 	FVector2D HealthBarDrawSize = FVector2D(80.f, 10.f);
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoHUD")
 	FVector HealthBarLocation = FVector(100.f, 0.f, 0.f);
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoHUD")
 	TSoftClassPtr<UUserWidget> HealthBarWidgetClassOverride;
 
 	// When false, the deployable's Health/Shield changes (life drain, incoming damage) spawn no floating combat
 	// numbers.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoHUD")
 	bool bShowDamageNumbers = true;
 
 	/** IGeoDamageNumberHost: gates the HUD's floating-number registration for this deployable. */
@@ -270,29 +270,29 @@ protected:
 	FDamageEffectData DrainEffectData;
 
 	// Cue fired at each moment of the deployable's life: tag, palette slot and sound tag per moment.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam SpawnCue;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam RecallCue;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam BlinkingCue;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam ExplodeCue;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam ExpireCue;
 
 	/** Sound played at each moment of the deployable's life, alongside that moment's gameplay cue. Sound asset, volume,
 	 * audience and attribute-driven pitch per entry; a moment with no entry plays nothing. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	TMap<EDeployableSoundType, FGeoSoundEntry> SoundMap;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;
 
 	/** Palette slot the outline post-process draws this deployable's silhouette in. Written to the custom-depth pass as
 	 * a stencil index, which M_DeployableOutline turns back into a color by indexing the palette texture the camera
 	 * builds. Override is not a valid choice — it has no palette color for the shader to look up. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	EGeoColor OutlineColor = EGeoColor::Neutral;
 
 
@@ -306,36 +306,36 @@ protected:
 
 	float TimeBeforeDestroyAtExpire = 3.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deployable",
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
 	int32 ExplodeAttitude = TeamAttitudeMask::HostileOrNeutral;
 	/** How a target's own collision radius counts toward the explosion overlap. Automatic = center-only for enemies. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	ETargetOverlapMode ExplodeOverlapMode = ETargetOverlapMode::Automatic;
 	// Wether should recall or expire when the deployable ends its life on its own.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bExplodeAtRecall = false;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bDamageableDuringBlink = false;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bAutoRecallAtEndLife = false;
 
 	/** If true, pushes all damageable interactable actors away on spawn and re-enables blocking collision after
 	 * CollisionEnableDelay. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bPushActorsOnSpawn = false;
 	float const CollisionEnableDelay = 0.3f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bDestroyOldestWhenLimitReached = false;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bUnlimitedDeploy = true;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bCanSacrificeDrain = true;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bSurviveOverTheVoid = false;
 
 private:

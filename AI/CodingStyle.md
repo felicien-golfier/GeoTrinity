@@ -18,13 +18,16 @@
   - **Extract by concept, not by textual match.** If the same *operation* (e.g. "reset per-cycle state") happens in more than one method, pull it into one named function — even when the pieces aren't identical lines, aren't adjacent, and span different statement kinds (assignments + a loop). Don't wait for a copy-paste duplicate to justify the extraction; the shared *intent* is enough.
 - **Before adding or removing any field/function**: Grep for all read and write sites across the codebase. Never assume a field is unused or needs a new setter based on the header alone — it may already be populated elsewhere (e.g. a base class method).
 - **Before adding a function**: check if an existing function already covers the same operation. If two functions differ only by a constant (e.g. a trigger type, a flag), merge them into one with a parameter. Never add a wrapper that just forwards with a hardcoded argument.
+- **No unnamed namespaces, ever.** A file-local helper either belongs in a library — `GeoASLib` when it touches the ability system, `GeoLib` otherwise — or it belongs to the class using it: declare it as a `const` member function, even when it could be static. That is enough for this project.
 - **Every `UPROPERTY`/`UFUNCTION` `Category` starts with `Geo`** (e.g. `"GeoCamera|Zoom"`), so our params are recognizable among engine ones in the editor
 - Be consistent: same code style, same naming convention throughout
 - `Super` call placement: choose what makes semantic sense (Init = top, Destroy = bottom); when no ordering dependency exists, always top
 - No abbreviations in variable names; full class names except `ASC` for AbilitySystemComponent
 - **Unused parameters**: always name them in `.h` declarations; suppress with `/*name*/` in `.cpp` implementations when unused
 - **Never use `GetComponentByClass` to get an ASC** — always use `GeoASLib::GetGeoAscFromActor` instead
-- No comments that restate what the code says — code should be self-documenting. This applies to changes too: when fixing a bug or changing behavior, don't add a comment explaining what changed or why the old way was wrong — the diff/commit message is where that belongs, not the file. Only comment in the rare case (~1%) where the code is genuinely complex/hard to read on its own, or an uncommon code-style choice needs justification. Never write comments that explain history (e.g. "this is the correct procedure instead of X").
+- **No comments in a `.cpp` when the code speaks for itself.** The default is zero. Doc comments belong on the declaration in the `.h`; the body carries none. Before writing one, name the thing better instead — a named local or a named function beats a sentence.
+  - When a line genuinely is not self-explanatory, **a few words are enough** — never a paragraph, never a story. If it takes three lines to explain, the code is wrong, not under-commented.
+  - No comments that restate what the code says. No comments explaining what changed or why the old way was wrong — that belongs in the diff/commit message. No history (e.g. "this is the correct procedure instead of X").
 - Never assume method names or constants (including `FColor::X`) — they change between versions.
 **Check Epic source before using any UE named constant or method**: Always read the actual engine header to confirm it exists. If the constant doesn't exist, define it with explicit RGB/RGBA values instead.
 **Check Epic source before implementing UE features**: Always read actual engine/plugin headers before implementing StateTree tasks, GAS, AI, etc.

@@ -30,7 +30,7 @@ class GEOTRINITYUI_API UGeoChargeBeamGaugeWidget
 
 public:
 	/** The charging ability that drives ChargeBar fill. Must be set before the widget ticks. */
-	UPROPERTY(BlueprintReadOnly, Category = "ChargeBeam")
+	UPROPERTY(BlueprintReadOnly, Category = "GeoChargeBeam")
 	TObjectPtr<UGeoGameplayAbility> ChargeBeamAbility;
 
 	/** Sets the charging ability that drives ChargeBar fill. */

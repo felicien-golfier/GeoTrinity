@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -26,7 +26,7 @@ protected:
 
 	// The menu widget class lives in the UI module; held here as the engine base so gameplay never names the UI type.
 	// Set the concrete UGeoMainMenuWidget subclass in Blueprint.
-	UPROPERTY(EditAnywhere, Category = "UI")
+	UPROPERTY(EditAnywhere, Category = "GeoUI")
 	TSubclassOf<UUserWidget> MenuWidgetClass;
 
 private:

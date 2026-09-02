@@ -46,7 +46,7 @@ protected:
 	 * widget's first refresh. */
 	virtual void RefreshStats();
 
-	UPROPERTY(BlueprintReadOnly, Category = "Runtime")
+	UPROPERTY(BlueprintReadOnly, Category = "GeoRuntime")
 	TWeakObjectPtr<UAbilitySystemComponent> OwnerASC;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))

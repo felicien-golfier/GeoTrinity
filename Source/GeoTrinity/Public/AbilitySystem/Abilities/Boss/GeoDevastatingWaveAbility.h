@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -26,6 +26,6 @@ protected:
 
 private:
 	/** Which of the arena's points to land on (TargetPoint.*); the arena itself comes from the boss. */
-	UPROPERTY(EditDefaultsOnly, Category = "DevastatingWave")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoDevastatingWave")
 	FGameplayTag TeleportLocationTag;
 };

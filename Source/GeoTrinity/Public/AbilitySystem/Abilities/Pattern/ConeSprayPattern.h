@@ -31,16 +31,16 @@ protected:
 	void SpawnSpraySalve() const;
 
 	/** Full opening of the spray cone in degrees, centered on the payload yaw. */
-	UPROPERTY(EditDefaultsOnly, Category = "Spray", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSpray", meta = (ClampMin = "0.0"))
 	float ConeAngle = 60.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Spray", meta = (ClampMin = "1"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSpray", meta = (ClampMin = "1"))
 	int32 ProjectileCountPerSalve = 10;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Spray", meta = (ClampMin = "1"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSpray", meta = (ClampMin = "1"))
 	int32 SalveNumber = 3;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Spray", meta = (ClampMin = "0.01"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSpray", meta = (ClampMin = "0.01"))
 	float SalveFrequencySec = .5f;
 
 private:

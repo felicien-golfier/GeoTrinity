@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -31,11 +31,11 @@ protected:
 	/** Server. Runs when a playable character steps on this pad. */
 	virtual void Press() PURE_VIRTUAL(AGeoFloorButton::Press, );
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCollision")
 	TObjectPtr<UBoxComponent> TriggerBox;
 
 	/** Label oriented to face up toward the top-down camera. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Display")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoDisplay")
 	TObjectPtr<UTextRenderComponent> Label;
 
 private:

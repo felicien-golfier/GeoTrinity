@@ -58,8 +58,8 @@ struct FGeoAbilityBarEntry
 };
 
 
-/** Active effects sharing the same icon on the local player, grouped for the status bar: stack count and the longest
- * remaining time (-1 when any instance is infinite). */
+/** Active effects sharing the same icon on the local player, grouped for the status bar: stack count, the longest
+ * remaining time (-1 when any instance is infinite), and the boost they contribute. */
 USTRUCT(BlueprintType)
 struct FGeoActiveEffectIcon
 {
@@ -88,6 +88,11 @@ struct FGeoActiveEffectIcon
 	/** Icon tint applied once FillRatio reaches 1. */
 	UPROPERTY(BlueprintReadOnly)
 	FLinearColor FullColor = FLinearColor::White;
+
+	/** Boost these effects contribute on their own, as a fraction (0.5 is shown as "+50%"); summed over the group, so
+	 * it counts their stacks but no other source of the same stat. Zero when they boost no stat. */
+	UPROPERTY(BlueprintReadOnly)
+	float BoostBonus = 0.f;
 };
 
 
@@ -153,36 +158,36 @@ public:
 	virtual void BindToPawn(APlayableCharacter* PlayableCharacter) override;
 
 	/** Shows the boss health bar for the given enemy. Call this when a boss fight starts. */
-	UFUNCTION(BlueprintCallable, Category = "Boss")
+	UFUNCTION(BlueprintCallable, Category = "GeoBoss")
 	virtual void ShowBossHealthBar(AEnemyCharacter* Boss) override;
 
 	/** Hides the boss health bar. Call this when the boss fight ends. */
-	UFUNCTION(BlueprintCallable, Category = "Boss")
+	UFUNCTION(BlueprintCallable, Category = "GeoBoss")
 	virtual void HideBossHealthBar() override;
 
 	/**
 	 * Returns one entry per granted non-passive player ability, with icon/input/deployable flags resolved
 	 * from the global UAbilityInfo asset. Used by the ability bar widget to build its slots.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "AbilityBar")
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilityBar")
 	TArray<FGeoAbilityBarEntry> GetAbilityBarEntries(APlayableCharacter* PlayableCharacter) const;
 
 	/** Outputs the remaining cooldown and full cooldown duration (seconds) for the granted ability with AbilityTag. */
-	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	UFUNCTION(BlueprintPure, Category = "GeoAbilityBar")
 	void GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, float& OutDuration) const;
 
 	/** Returns true while any instance of the granted ability with AbilityTag is active. */
-	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	UFUNCTION(BlueprintPure, Category = "GeoAbilityBar")
 	bool IsAbilityActive(FGameplayTag AbilityTag) const;
 
 	/** Returns true when the granted ability with AbilityTag passes its activation checks (tags, cost, cooldown).
 	 * Lets a shared-input slot pick which of its abilities to display (e.g. sacrifice channel vs detonate). */
-	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	UFUNCTION(BlueprintPure, Category = "GeoAbilityBar")
 	bool CanActivateAbility(FGameplayTag AbilityTag) const;
 
 	/** Outputs the deploy ability's current and maximum charges (stacks) for AbilityTag — the badge count and the
 	 * gray-out gate (grayed only at zero charges), not the manager's live-deployable count. */
-	UFUNCTION(BlueprintPure, Category = "AbilityBar")
+	UFUNCTION(BlueprintPure, Category = "GeoAbilityBar")
 	void GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;
 
 	/**
@@ -193,13 +198,13 @@ public:
 
 	/** Tagless ping fired when any deployable count changes; ability-bar slots re-query their own count on receipt (no
 	 * polling). */
-	UPROPERTY(BlueprintAssignable, Category = "AbilityBar")
+	UPROPERTY(BlueprintAssignable, Category = "GeoAbilityBar")
 	FOnDeployCountChangedSignature OnPlayerDeployCountChanged;
 
 	/** Returns every active gameplay effect on the player ASC whose context carries an icon (set on
-	 * FGameplayEffectData::Icon or the status's UStatusInfo icon), grouped by icon with stack count and the longest
-	 * remaining time. Polled by UGeoStatusBarWidget. */
-	UFUNCTION(BlueprintCallable, Category = "StatusBar")
+	 * FGameplayEffectData::Icon or the status's UStatusInfo icon), grouped by icon with stack count, the longest
+	 * remaining time and the boost the group itself contributes. Polled by UGeoStatusBarWidget. */
+	UFUNCTION(BlueprintCallable, Category = "GeoStatusBar")
 	TArray<FGeoActiveEffectIcon> GetActiveEffectIcons() const;
 
 	/** Binds Health and Shield attribute delegates on ASC so delta changes spawn floating numbers at OwnerActor. */
@@ -255,15 +260,15 @@ private:
 	void HandleDeployCountChanged(int32 CurrentCount, int32 MaxCount);
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(BlueprintReadOnly, Category = "GeoHUD")
 	TObjectPtr<UGeoUserWidget> OverlayWidget;
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Overlay")
+	UPROPERTY(EditAnywhere, Category = "GeoOverlay")
 	TSubclassOf<UGeoUserWidget> OverlayWidgetClass;
 
 	/** Widget class for the boss health bar displayed at the top of the screen */
-	UPROPERTY(EditAnywhere, Category = "Boss")
+	UPROPERTY(EditAnywhere, Category = "GeoBoss")
 	TSubclassOf<UGenericCombattantWidget> BossHealthBarWidgetClass;
 
 	UPROPERTY()
@@ -275,7 +280,7 @@ private:
 
 	FHudPlayerParams HudPlayerParams;
 
-	UPROPERTY(EditAnywhere, Category = "DamageNumbers")
+	UPROPERTY(EditAnywhere, Category = "GeoDamageNumbers")
 	TSubclassOf<UGeoDamageNumberWidget> DamageNumberWidgetClass;
 
 	UPROPERTY()
@@ -285,14 +290,14 @@ private:
 	TSet<TObjectPtr<UAbilitySystemComponent>> RegisteredDamageNumberASCs;
 
 	// Delegate
-	UPROPERTY(BlueprintAssignable, Category = "GAS")
+	UPROPERTY(BlueprintAssignable, Category = "GeoGAS")
 	FOnAttributeModifiedSignature OnHealthChanged;
-	UPROPERTY(BlueprintAssignable, Category = "GAS")
+	UPROPERTY(BlueprintAssignable, Category = "GeoGAS")
 	FOnAttributeModifiedSignature OnMaxHealthChanged;
-	UPROPERTY(BlueprintAssignable, Category = "GAS")
+	UPROPERTY(BlueprintAssignable, Category = "GeoGAS")
 	FOnAttributeModifiedSignature OnAmmoChanged;
-	UPROPERTY(BlueprintAssignable, Category = "GAS")
+	UPROPERTY(BlueprintAssignable, Category = "GeoGAS")
 	FOnAttributeModifiedSignature OnMaxAmmoChanged;
-	UPROPERTY(BlueprintAssignable, Category = "GAS")
+	UPROPERTY(BlueprintAssignable, Category = "GeoGAS")
 	FOnAttributeModifiedSignature OnShieldChanged;
 };

@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -30,19 +30,19 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(FTransform const& Transform) override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCollision")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCollision")
 	TObjectPtr<UTextRenderComponent> TextComponent;
 
 	/** Links teleporters (you teleport to the next pad sharing this tag). Editor-created tags work — no native tag
 	 * needed. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Teleport")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTeleport")
 	FGameplayTag TeleportTag;
 
 	/** Label shown above the pad (e.g. to tell teleporters in the same tag group apart in-editor/in-game). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Teleport")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTeleport")
 	FText DisplayText;
 
 private:

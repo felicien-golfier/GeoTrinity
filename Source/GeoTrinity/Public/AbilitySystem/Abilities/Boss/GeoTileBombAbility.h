@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -28,10 +28,10 @@ protected:
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	/** Bomb dropped on the carrier — an AGeoBombZone whose drain/blink durations drive the two wind-up phases. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|TileBomb")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|TileBomb")
 	TSubclassOf<AGeoDeployableBase> BombClass;
 
 	/** Blast radius (Size), wind-up duration (LifeDrainMaxDuration) and planted-telegraph duration (BlinkDuration). */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|TileBomb")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|TileBomb")
 	FDeployableDataParams BombParams;
 };

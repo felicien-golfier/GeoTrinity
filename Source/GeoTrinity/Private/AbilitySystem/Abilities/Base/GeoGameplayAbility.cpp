@@ -95,7 +95,11 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayloadFromTargetData(FGeoAbil
 
 FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload() const
 {
-	int const Seed = GetNewSeed();
+	return CreateAbilityPayload(GetNewSeed());
+}
+
+FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(int const Seed) const
+{
 	return CreateAbilityPayload(
 		GetFireOrigin2D(GetAvatarActorFromActorInfo(), GetGeoAbilitySystemComponentFromActorInfo(), Seed),
 		GetFireYaw(GetAvatarActorFromActorInfo(), Seed), GetStartTime(GetWorld()), Seed);
@@ -479,7 +483,9 @@ void UGeoGameplayAbility::SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySyst
 	Payload.AbilityLevel = SourceASC->GetCombatLevel();
 	Payload.AbilityTag = GetAbilityTag();
 
-	GeoASLib::SpawnProjectileSpread(Avatar->GetWorld(), Params, Target, Origin, Yaw, 0.f, Payload, {});
+	// Cosmetic, but the effect data still has to ride along: it is what picks the shot's buff VFX.
+	GeoASLib::SpawnProjectileSpread(Avatar->GetWorld(), Params, Target, Origin, Yaw, 0.f, Payload,
+									GetEffectDataArray());
 }
 
 void UGeoGameplayAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)

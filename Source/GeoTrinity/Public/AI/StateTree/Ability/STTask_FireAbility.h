@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -17,7 +17,7 @@ struct GEOTRINITY_API FSTTask_FireAbilityInstanceData
 	GENERATED_BODY()
 
 	/** The GameplayTag of the ability to activate on the pawn's ASC. */
-	UPROPERTY(EditAnywhere, Category = "Parameter")
+	UPROPERTY(EditAnywhere, Category = "GeoParameter")
 	FGameplayTag AbilityTag;
 
 	/** Handle used to unbind the OnAbilityEnded delegate when the task exits. */

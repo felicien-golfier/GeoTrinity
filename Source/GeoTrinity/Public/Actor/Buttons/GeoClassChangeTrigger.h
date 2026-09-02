@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -26,10 +26,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCollision")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoClass")
 	EPlayerClass TargetClass = EPlayerClass::None;
 
 private:

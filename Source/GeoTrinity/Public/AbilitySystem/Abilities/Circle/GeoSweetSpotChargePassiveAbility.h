@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -56,22 +56,22 @@ private:
 	void OnHealProvidedCallback(float HealDone);
 
 	// Healing the player must provide to fill the gauge; HealCharge is capped there — extra healing is discarded.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "1.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "1.0"))
 	float HealRequiredForFullCharge = 300.f;
 
 	// Damage-multiplier boost added to the charge beam's sweet-spot multiplier when the full-gauge release lands at the
 	// sweet-spot window edge (EdgeDamageMultiplierBoost) versus dead center (CenterDamageMultiplierBoost); lerped
 	// between them by release precision.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.0"))
 	float EdgeDamageMultiplierBoost = 13.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.0"))
 	float CenterDamageMultiplierBoost = 15.f;
 
 	// Icon shown in the HUD status bar; fills with the gauge in its own colors and shines GaugeFullColor when full.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UTexture2D> GaugeIcon;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility")
 	FGeoColorParam GaugeFullColor{FLinearColor(1.f, 0.85f, 0.2f)};
 };

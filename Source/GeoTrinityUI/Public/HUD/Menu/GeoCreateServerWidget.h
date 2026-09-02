@@ -27,22 +27,22 @@ class GEOTRINITYUI_API UGeoCreateServerWidget : public UGeoMenuPanelWidget
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintAssignable, Category = "Server")
+	UPROPERTY(BlueprintAssignable, Category = "GeoServer")
 	FGeoCreateServerClosedSignature OnClosed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server|Maps")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer|Maps")
 	TArray<FString> MapDisplayNames;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server|Maps")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer|Maps")
 	TArray<FString> MapURLs;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer")
 	TArray<int32> SlotOptions;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer")
 	TArray<FString> LanguageOptions;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer")
 	FString DefaultServerName = TEXT("My Server");
 
 protected:

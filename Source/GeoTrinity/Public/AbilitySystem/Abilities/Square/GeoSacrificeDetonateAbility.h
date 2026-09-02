@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -36,18 +36,18 @@ private:
 	void Detonate(FGeoAbilityTargetData const& AbilityTargetData);
 
 	/** Detonation ray half-width in cm. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0", AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0", AllowPrivateAccess = true))
 	float LineHalfWidth = 100.f;
 
 	/** Flat damage added to the consumed SacrificeValue. Scales with ability level. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat BaseDamage;
 
 	/** Fraction of consumed SacrificeValue added to the ray's total damage (total = BaseDamage + SacrificeValue × this). */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	float SacrificeValueMultiplier = .7f;
 
 	/** Local cue fired on detonation (endpoint in Location, aim direction in Normal, value in RawMagnitude). */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|GameFeel", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
 	FGameplayTag FireGameplayCueTag;
 };

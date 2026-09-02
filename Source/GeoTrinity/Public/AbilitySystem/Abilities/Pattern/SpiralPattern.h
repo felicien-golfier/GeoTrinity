@@ -32,13 +32,13 @@ protected:
 	UFUNCTION()
 	void EndProjectile(AGeoProjectile* Projectile);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSpiral")
 	float NumberProjectileByRound;
-	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSpiral")
 	float TimeForOneRound;
-	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSpiral")
 	float RoundNumber;
-	UPROPERTY(EditDefaultsOnly, Category = "Spiral")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSpiral")
 	FExternalProjectileParams ProjectileParams;
 
 	UPROPERTY(Transient)

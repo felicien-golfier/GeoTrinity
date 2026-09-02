@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -35,22 +35,22 @@ private:
 	void FireRay(FGeoAbilityTargetData const& AbilityTargetData) const;
 
 	// Per-wall fraction of base output added by each consumed wall (N walls → WallBoostMultiplier * N); no walls means no ray.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Detonate", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Detonate", meta = (AllowPrivateAccess = true))
 	float WallBoostMultiplier = .5f;
 
 	// Half-width (cm) of the ray.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Detonate", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Detonate", meta = (AllowPrivateAccess = true))
 	float LineHalfWidth = 15.f;
 
 	// Base damage dealt to each enemy on the ray (before wall multiplier); scales with ability level.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat BaseDamage;
 
 	// Base shield granted to each ally on the ray (before wall multiplier); scales with ability level.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat BaseShield;
 
 	// Cue fired locally on the casting client for the ray VFX/SFX. RawMagnitude carries the consumed wall count.
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|Detonate", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Detonate", meta = (AllowPrivateAccess = true))
 	FGameplayTag FireGameplayCueTag;
 };

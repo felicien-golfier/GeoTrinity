@@ -10,21 +10,16 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
+void UGeoSpawnPillarAbility::BeginPreLaunch()
 {
-	FSpawnPillarPatternData PillarData;
+	PillarTargets.Reset();
 
-	UGeoAbilitySystemComponent* GeoAsc = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
-	if (!ensureMsgf(IsValid(GeoAsc), TEXT("GeoSpawnPillarAbility: Owner has no ASC")))
-	{
-		return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);
-	}
-
+	UGeoAbilitySystemComponent* GeoAsc = GetGeoAbilitySystemComponentFromActorInfo();
 	UGeoAttributeSetBase const* AttributeSet =
 		Cast<UGeoAttributeSetBase>(GeoAsc->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
 	if (!ensureMsgf(IsValid(AttributeSet), TEXT("GeoSpawnPillarAbility: OwnerASC has no UGeoAttributeSetBase")))
 	{
-		return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);
+		return;
 	}
 
 	float const HealthRatio = AttributeSet->GetHealthRatio();
@@ -34,21 +29,47 @@ TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
 	if (AlivePlayers.IsEmpty())
 	{
 		UE_LOG(LogGeoASC, Warning, TEXT("GeoSpawnPillarAbility: no alive player to target"));
-		return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);
+		return;
 	}
 
-	FRandomStream Stream(StoredPayload.Seed);
+	FRandomStream Stream(LaunchSeed);
 	int32 const FirstPlayerIndex = Stream.RandHelper(AlivePlayers.Num());
+	TArray<APlayableCharacter*> PreLaunchedCuePlayers;
+	PreLaunchedCuePlayers.Reserve(AlivePlayers.Num());
+
 	for (int32 Index = 0; Index < NumPillarToSpawn; ++Index)
 	{
-		FVector2D Location(AlivePlayers[(FirstPlayerIndex + Index) % AlivePlayers.Num()]->GetActorLocation());
+		APlayableCharacter* Player = AlivePlayers[(FirstPlayerIndex + Index) % AlivePlayers.Num()];
+		FPillarTarget& PillarTarget = PillarTargets.AddDefaulted_GetRef();
+		PillarTarget.Target = Player;
 		if (Index >= AlivePlayers.Num())
 		{
 			float const RandomAngle = Stream.FRandRange(0.f, 2.f * PI);
 			float const RandomRadius = Stream.FRandRange(MinScatterRadius, MaxScatterRadius);
-			Location += FVector2D(FMath::Cos(RandomAngle), FMath::Sin(RandomAngle)) * RandomRadius;
+			PillarTarget.Offset = FVector2D(FMath::Cos(RandomAngle), FMath::Sin(RandomAngle)) * RandomRadius;
 		}
-		PillarData.ZoneLocations.Add(Location);
+		PillarTarget.FallbackLocation = FVector2D(Player->GetActorLocation()) + PillarTarget.Offset;
+
+		if (!PreLaunchedCuePlayers.Contains(Player))
+		{
+			PreLaunchedCuePlayers.Add(Player);
+			AddPreLaunchCue(GeoASLib::GetGeoAscFromActor(Player));
+		}
+	}
+}
+
+TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
+{
+	FSpawnPillarPatternData PillarData;
+
+	for (FPillarTarget const& PillarTarget : PillarTargets)
+	{
+		FVector2D ZoneLocation = PillarTarget.FallbackLocation;
+		if (AActor const* Target = PillarTarget.Target.Get())
+		{
+			ZoneLocation = FVector2D(Target->GetActorLocation()) + PillarTarget.Offset;
+		}
+		PillarData.ZoneLocations.Add(ZoneLocation);
 	}
 
 	return TInstancedStruct<FPatternData>::Make<FSpawnPillarPatternData>(PillarData);

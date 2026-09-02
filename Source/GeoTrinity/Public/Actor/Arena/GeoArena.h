@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -82,13 +82,13 @@ public:
 	 * new arena only needs its own Arena.* tag — the purposes are shared by every arena and live in code.
 	 * Editor-authored: add the tag in the project settings, no native constant needed.
 	 */
-	UPROPERTY(EditAnywhere, Category = "Arena")
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
 	FGameplayTag ArenaTag;
 
 	/** Background lattice behaviour while this arena's fight is live; the pulse driver's own authored mode returns
 	 * when it ends. Cosmetic only — it is applied off bFighting, so it lands on every machine and replicates nothing
 	 * of its own. */
-	UPROPERTY(EditAnywhere, Category = "Arena")
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
 	EGeoPulseMode PulseMode = EGeoPulseMode::Actors;
 
 protected:
@@ -98,26 +98,26 @@ protected:
 	/** Server. Spawns this arena's boss and subscribes to the match state so the arena can end its own fight. */
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, Category = "Arena")
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
 	TSubclassOf<AEnemyCharacter> BossClass;
 
 	/** Extra enemies spawned with the boss, one per entry, at the arena's TargetPoint.AddSpawn points. They never gate
 	 *  the fight: IsBoss ignores them, they get no health bar, and they are wiped the moment the boss dies. */
-	UPROPERTY(EditAnywhere, Category = "Arena")
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
 	TArray<TSubclassOf<AEnemyCharacter>> AddClasses;
 
 	/** Barrier sealing this arena while the fight runs. Optional — arenas without one never seal. */
-	UPROPERTY(EditAnywhere, Category = "Arena")
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
 	TObjectPtr<AGeoArenaBarrier> Barrier;
 
 	/** Seconds between loot pickup bursts after the boss dies. */
-	UPROPERTY(EditAnywhere, Category = "Loot")
+	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	float LootSpawnInterval = 0.1f;
 	/** Pickups spawned per burst. */
-	UPROPERTY(EditAnywhere, Category = "Loot")
+	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	int32 LootPickupsPerBurst = 1;
 	/** Scatter radius around the dead boss the pickups are launched to. */
-	UPROPERTY(EditAnywhere, Category = "Loot")
+	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	float LootMaxRadius = 1500.f;
 
 private:

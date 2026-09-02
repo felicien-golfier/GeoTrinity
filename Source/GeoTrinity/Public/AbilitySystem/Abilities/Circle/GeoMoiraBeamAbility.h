@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -42,48 +42,48 @@ class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoChannelBeamAbility
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const override;
 
 	/** Damage applied per second to each enemy inside the beam cylinder. Scales with ability level. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat DamagePerSecond;
 
 	/** Heal applied per second to each ally inside the beam cylinder. Scales with ability level. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat HealPerSecond;
 
 	/** Infinite GE applied to self on activation. Should additively modify MovementSpeedMultiplier. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	TInstancedStruct<FEffectData> SpeedBuffEffect;
 
 	/** Base beam duration in seconds (before any zone absorption). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	float InitialDuration = 3.f;
 
 	/** Fuel added (in seconds) for a full HealingZone consumed by the beam. Scales proportionally with partial
 	 * drain. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	float DurationPerAbsorbedZone = 2.f;
 
 	/** Beam width growth (in cm) for a full HealingZone consumed. Scales proportionally with partial drain. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	float HalfWidthGrowthPerAbsorbedZone = 50.f;
 
 	/**
 	 * Additive boost to damage and heal for a fully absorbed HealingZone.
 	 * A value of 1 doubles damage and heal (adds 100% of the base amount). Scales proportionally with partial drain.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	float DamageAndHealBoostPerAbsorbedZone = 1.f;
 
 	/** Health drained from a HealingZone per beam tick. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility",
 			  meta = (ClampMin = "0", ClampMax = "100", AllowPrivateAccess = true))
 	float BeamZoneDrainPercentagePerSecond = 50.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	float BoostPerFinishedZone = .2f;
 	TArray<TWeakObjectPtr<AGeoHealingZone>> FinishedZones;
 
 	/** Maximum number of HealingZone actors the beam may fully absorb in a single activation. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	float MaximumZoneAbsorbed = 6.f;
 
 	FActiveGameplayEffectHandle SpeedBuffHandle;

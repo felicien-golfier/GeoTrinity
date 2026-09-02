@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -60,7 +60,7 @@ class GEOTRINITY_API UPlayerClassDataAsset : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Class")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoClass")
 	TMap<EPlayerClass, FPlayerClassData> ClassData;
 
 	/** Returns Class's authored data, or null with an ensure — a class the map has no entry for is a configuration

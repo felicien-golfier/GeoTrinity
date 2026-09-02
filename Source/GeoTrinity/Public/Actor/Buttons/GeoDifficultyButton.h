@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -31,15 +31,15 @@ protected:
 	virtual void Press() override;
 
 	/** The tuning this pad selects, and the one it lights up for. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Difficulty")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDifficulty")
 	EGeoDifficulty Difficulty = EGeoDifficulty::Original;
 
 	/** Label color while this pad's Difficulty is the live one. */
-	UPROPERTY(EditAnywhere, Category = "Difficulty")
+	UPROPERTY(EditAnywhere, Category = "GeoDifficulty")
 	FColor ActiveColor = FColor(255, 255, 255);
 
 	/** Label color while another pad holds the live difficulty. */
-	UPROPERTY(EditAnywhere, Category = "Difficulty")
+	UPROPERTY(EditAnywhere, Category = "GeoDifficulty")
 	FColor InactiveColor = FColor(80, 80, 80);
 
 private:

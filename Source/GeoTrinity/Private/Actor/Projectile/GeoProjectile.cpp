@@ -93,6 +93,8 @@ AGeoProjectile::AGeoProjectile()
 	{
 		BulletVFX->SetAsset(BulletSystem.Object);
 	}
+
+	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>("GameFeelComponent");
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -605,6 +607,7 @@ void AGeoProjectile::InitProjectileLife()
 	// A pooled instance can come back holding the previous shot's launch offset; the spawner re-applies its own after
 	// this runs.
 	BulletVFX->SetRelativeLocation(FVector::ZeroVector);
+	GameFeelComponent->BindBuffVFX(GeoASLib::GetGeoAscFromActor(Payload.Owner));
 
 	bIsEnding = false;
 	EndSoundType = EProjectileSoundType::NoOverlapEnd;

@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -27,9 +27,9 @@ protected:
 	/** Spawns a projectile of ProjectileClass aimed according to the Target mode. Returns true on success. */
 	virtual bool ExecuteShot_Implementation() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
 	FExternalProjectileParams ProjectileParams;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
 	EProjectileTarget Target;
 };

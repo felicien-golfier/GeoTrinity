@@ -28,11 +28,11 @@ class GEOTRINITYUI_API UGeoLocalConnectWidget : public UGeoMenuPanelWidget
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintAssignable, Category = "Session")
+	UPROPERTY(BlueprintAssignable, Category = "GeoSession")
 	FGeoLocalConnectClosedSignature OnClosed;
 
 	/** Gameplay map the listen-server host travels to. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Session")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoSession")
 	TSoftObjectPtr<UWorld> HostMap;
 
 protected:

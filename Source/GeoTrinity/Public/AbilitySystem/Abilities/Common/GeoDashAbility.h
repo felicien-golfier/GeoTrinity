@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -44,10 +44,10 @@ protected:
 	virtual float GetFireYaw(AActor const* Instigator, int Seed) const override;
 
 	/** Dash distance in units */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDash")
 	float DashDistance = 500.f;
 
 	/** Dash duration in seconds */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDash")
 	float DashDuration = 0.2f;
 };

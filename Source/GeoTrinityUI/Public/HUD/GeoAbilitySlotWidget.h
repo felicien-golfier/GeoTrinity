@@ -64,7 +64,7 @@ protected:
 	TObjectPtr<UTextBlock> KeyText;
 
 	/** Material on M_CooldownSweep whose Fill scalar (0=ready, 1=fully swept) the sweep image uses. */
-	UPROPERTY(EditDefaultsOnly, Category = "AbilityBar")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbilityBar")
 	TObjectPtr<UMaterialInterface> CooldownSweepMaterial;
 
 private:

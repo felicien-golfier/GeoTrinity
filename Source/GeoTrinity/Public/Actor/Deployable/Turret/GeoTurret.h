@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -55,11 +55,11 @@ protected:
 	UPROPERTY(Replicated)
 	FDeployableData Data;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable|Projectile",
 			  meta = (AllowPrivateAccess = true))
 	FExternalProjectileParams ProjectileParams;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable|Projectile",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable|Projectile",
 			  meta = (AllowPrivateAccess = true))
 	float FireInterval = 1.f;
 

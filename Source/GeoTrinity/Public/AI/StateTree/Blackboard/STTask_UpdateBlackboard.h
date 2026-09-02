@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -26,10 +26,10 @@ struct GEOTRINITY_API FGeoBlackboardIntFieldOp
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "Parameter")
+	UPROPERTY(EditAnywhere, Category = "GeoParameter")
 	EGeoBlackboardOp Op = EGeoBlackboardOp::None;
 
-	UPROPERTY(EditAnywhere, Category = "Parameter",
+	UPROPERTY(EditAnywhere, Category = "GeoParameter",
 			  meta = (EditCondition = "Op != EGeoBlackboardOp::None", EditConditionHides = false))
 	int32 Value = 0;
 
@@ -55,10 +55,10 @@ struct GEOTRINITY_API FGeoBlackboardFloatFieldOp
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "Parameter")
+	UPROPERTY(EditAnywhere, Category = "GeoParameter")
 	EGeoBlackboardOp Op = EGeoBlackboardOp::None;
 
-	UPROPERTY(EditAnywhere, Category = "Parameter",
+	UPROPERTY(EditAnywhere, Category = "GeoParameter",
 			  meta = (EditCondition = "Op != EGeoBlackboardOp::None", EditConditionHides = false))
 	float Value = 0.f;
 
@@ -83,7 +83,7 @@ struct GEOTRINITY_API FSTTask_UpdateBlackboardInstanceData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "Parameter")
+	UPROPERTY(EditAnywhere, Category = "GeoParameter")
 	FGeoBlackboardIntFieldOp CycleCount;
 };
 

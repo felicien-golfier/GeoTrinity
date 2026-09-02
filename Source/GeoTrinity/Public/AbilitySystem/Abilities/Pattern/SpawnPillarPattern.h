@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -47,20 +47,20 @@ private:
 	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* InstigatorAsc) const;
 	virtual void StartPattern() override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoPillar", meta = (AllowPrivateAccess = "true"))
 	float SpawningZoneSize = 300.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoPillar", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AGeoPillar> PillarClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPillar", meta = (AllowPrivateAccess = "true"))
 	FDeployableDataParams PillarParams;
 
 	// Effects applied to hostiles in the zone on expiry (server-only).
-	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoPillar", meta = (AllowPrivateAccess = "true"))
 	TArray<TInstancedStruct<FEffectData>> PillarSpawnEffects;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Pillar", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoPillar", meta = (AllowPrivateAccess = "true"))
 	FGeoCueParam DirectionCue;
 
 	TSet<FVector2D> PillarSpawnLocations;

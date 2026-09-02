@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -46,7 +46,7 @@ protected:
 	 */
 	void SpawnSalve(TArray<float> const& Yaws, float SalveSpawnTime) const;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile")
 	FExternalProjectileParams ProjectileParams;
 };
 

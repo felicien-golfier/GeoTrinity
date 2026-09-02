@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -25,7 +25,7 @@ class GEOTRINITYUI_API UGeoAbilityDescriptionsWidget : public UGeoMenuPanelWidge
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintAssignable, Category = "Menu")
+	UPROPERTY(BlueprintAssignable, Category = "GeoMenu")
 	FGeoAbilityDescriptionsClosedSignature OnClosed;
 
 protected:

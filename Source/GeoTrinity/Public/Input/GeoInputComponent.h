@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -79,15 +79,15 @@ public:
 	void BindAbilityActions(UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc,
 							HeldFuncType HeldFunc, UAbilityInfo* AbilityInfo);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoInput")
 	TObjectPtr<UInputAction> MoveAction;
 
 	// Right stick / mouse delta look action (Value: Vector2D). Assign in the Input Mapping.
-	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoInput")
 	TObjectPtr<UInputAction> LookAction;
 
 	// Mouse wheel camera zoom (Value: Axis1D, positive zooms in). Drives AGeoGameCamera's target zoom.
-	UPROPERTY(EditDefaultsOnly, Category = "Geo|Input")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoInput")
 	TObjectPtr<UInputAction> ZoomAction;
 
 private:

@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -27,6 +27,6 @@ class GEOTRINITY_API AGeoMatchStateButton : public AGeoFloorButton
 protected:
 	virtual void Press() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Match")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoMatch")
 	EGeoMatchStateRequest StateRequest = EGeoMatchStateRequest::StartMatch;
 };

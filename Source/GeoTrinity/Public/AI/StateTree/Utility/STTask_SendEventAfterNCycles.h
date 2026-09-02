@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -17,11 +17,11 @@ struct GEOTRINITY_API FSTTask_SendEventAfterNCyclesInstanceData
 	GENERATED_BODY()
 
 	/** Number of cycles before the event is sent. */
-	UPROPERTY(EditAnywhere, Category = "Parameter", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, Category = "GeoParameter", meta = (ClampMin = "1"))
 	int32 CyclesRequired = 3;
 
 	/** Event tag sent when the cycle count is reached. */
-	UPROPERTY(EditAnywhere, Category = "Parameter")
+	UPROPERTY(EditAnywhere, Category = "GeoParameter")
 	FGameplayTag EventTag;
 
 };

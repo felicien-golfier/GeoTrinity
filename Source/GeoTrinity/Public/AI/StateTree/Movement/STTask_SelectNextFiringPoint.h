@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -17,7 +17,7 @@ struct GEOTRINITY_API FSTTask_SelectNextFiringPointInstanceData
 	GENERATED_BODY()
 
 	/** Output: world location of the selected firing point, bound to a StateTree output parameter. */
-	UPROPERTY(EditAnywhere, Category = "Output")
+	UPROPERTY(EditAnywhere, Category = "GeoOutput")
 	FVector TargetLocation = FVector::ZeroVector;
 };
 

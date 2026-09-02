@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -19,17 +19,17 @@ struct FBarrierAnimatedActor
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Barrier")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoBarrier")
 	TObjectPtr<AActor> Actor = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Barrier")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoBarrier")
 	bool bHasMovement = true;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Barrier",
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoBarrier",
 			  meta = (EditCondition = "bHasMovement", EditConditionHides))
 	FTransform FightOnTransform = FTransform::Identity;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Barrier",
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoBarrier",
 			  meta = (EditCondition = "bHasMovement", EditConditionHides))
 	FTransform FightOffTransform = FTransform::Identity;
 };
@@ -62,27 +62,27 @@ public:
 
 protected:
 	/** BP implementable event so designers can add VFX / dissolve on state change. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Barrier")
+	UFUNCTION(BlueprintImplementableEvent, Category = "GeoBarrier")
 	void OnBarrierStateChanged(bool bClosed);
 
 	/** Editor: store each animated actor's current world transform as its fight-on transform. */
-	UFUNCTION(CallInEditor, Category = "Barrier")
+	UFUNCTION(CallInEditor, Category = "GeoBarrier")
 	void CaptureFightOnTransforms();
 
 	/** Editor: store each animated actor's current world transform as its fight-off transform. */
-	UFUNCTION(CallInEditor, Category = "Barrier")
+	UFUNCTION(CallInEditor, Category = "GeoBarrier")
 	void CaptureFightOffTransforms();
 
 	/** Editor: move each animated actor to its stored fight-on transform. */
-	UFUNCTION(CallInEditor, Category = "Barrier")
+	UFUNCTION(CallInEditor, Category = "GeoBarrier")
 	void SetToFightOnTransforms();
 
 	/** Editor: move each animated actor to its stored fight-off transform. */
-	UFUNCTION(CallInEditor, Category = "Barrier")
+	UFUNCTION(CallInEditor, Category = "GeoBarrier")
 	void SetToFightOffTransforms();
 
 	/** Actors lerped between their two locations when the barrier state changes. */
-	UPROPERTY(EditAnywhere, Category = "Barrier")
+	UPROPERTY(EditAnywhere, Category = "GeoBarrier")
 	TArray<FBarrierAnimatedActor> AnimatedActors;
 
 	/** Lerp progress: 0 = fight-off location, 1 = fight-on location. */

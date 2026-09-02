@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -76,6 +76,8 @@ public:
 	/** Constructs an FAbilityPayload from the current avatar's world state (position, facing, server time, new seed).
 	 */
 	FAbilityPayload CreateAbilityPayload() const;
+	/** Same, on a seed rolled earlier — for an ability that must decide what a shot does before it stamps it. */
+	FAbilityPayload CreateAbilityPayload(int Seed) const;
 	/** Reconstructs an FAbilityPayload from replicated target data received by the server. */
 	FAbilityPayload CreateAbilityPayloadFromTargetData(FGeoAbilityTargetData const& TargetData) const;
 
@@ -238,18 +240,18 @@ protected:
 	void ClampRemoteClientOrigin();
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;
 
 	// Define the way the ability start to Fire. After a charge time or directly after FireDelay.
 	// When FireMode = Charge, we use FireDelay as max charge time.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
 	EFireMode FireMode = EFireMode::ShootAfterFireDelay;
 
 	/** When true, only a fresh button press can activate this ability — the per-frame Held input never does.
 	 * Used by abilities sharing an input with another ability (sacrifice channel/detonate) so a held button
 	 * cannot chain-activate the counterpart the frame after the first one starts. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
 	bool bActivateOnFreshPressOnly = false;
 
 	/**
@@ -257,7 +259,7 @@ public:
 	 * non-owning ones can drive RemoteFireShot. Leave invalid on abilities whose visuals already reach other clients
 	 * (replicated actors, gameplay cues, patterns) — only ability-spawned client-side projectiles need it.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (Categories = "Ability.Remote"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (Categories = "Ability.Remote"))
 	FGameplayTag RemoteFireTag;
 
 
@@ -265,22 +267,22 @@ protected:
 	FAbilityPayload StoredPayload;
 	FTimerHandle FireTriggerTimerHandle;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	ECommitBehaviour CommitBehaviour = ECommitBehaviour::AtActivate;
 
 private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	bool bUseGeneralChargeTimeForFireDelay = true;
 
 	// We consider the ability to Fire at the end of the FireDelay delay.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility",
 			  meta = (EditCondition = "!bUseGeneralChargeTimeForFireDelay", EditConditionHides, ClampMin = "0",
 					  UIMin = "0", AllowPrivateAccess = true))
 	float FireDelay = 0.5f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Effects", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
 	float ChargeStartTime = 0.f;
 	// Server-only. Keeps the add/remove of RemoteFireTag balanced when EndAbility runs more than once.

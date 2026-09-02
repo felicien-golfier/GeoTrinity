@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -17,8 +17,9 @@ class AGeoHUD;
 
 /**
  * Row of icons showing every active effect on the local player that carries one, with a stack-count badge when the
- * same icon is active more than once, a remaining-time countdown, and a radial depletion sweep like the ability
- * slots. Synthetic gauge entries (FillRatio >= 0) instead reveal their icon bottom-to-top with the fill in the icon's
+ * same icon is active more than once, a remaining-time countdown, the whole-percent boost the effect itself
+ * contributes over the icon's top, and a radial depletion sweep like the ability slots. Synthetic gauge entries (FillRatio >= 0)
+ * instead reveal their icon bottom-to-top with the fill in the icon's
  * own colors, shining an over-bright FullColor when full. Built entirely in C++ (no WBP asset): the widget tree is a canvas filling the slot the widget gets in
  * WBP_MainOverlay, holding a centered horizontal box; each icon is a square sized to the bar's height, so resizing
  * the StatusBar slot in the overlay is what drives the icon size. Polls AGeoHUD::GetActiveEffectIcons each tick; the
@@ -41,7 +42,7 @@ protected:
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
 	/** Material on M_CooldownSweep whose Fill scalar (0=full icon, 1=fully depleted) the depletion sweep uses. */
-	UPROPERTY(EditDefaultsOnly, Category = "StatusBar", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoStatusBar", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMaterialInterface> DepletionSweepMaterial;
 
 private:
@@ -70,6 +71,11 @@ private:
 	/** Per-icon remaining-time countdown, parallel to DisplayedIcons; updated in place each tick. */
 	UPROPERTY()
 	TArray<TObjectPtr<UTextBlock>> TimerTexts;
+
+	/** Per-icon boost percentage over the icon, parallel to DisplayedIcons; updated in place each tick, hidden for
+	 * entries whose boost rounds to no whole percent. */
+	UPROPERTY()
+	TArray<TObjectPtr<UTextBlock>> BoostTexts;
 
 	/** Per-icon radial depletion overlay, parallel to DisplayedIcons; Fill scalar updated in place each tick. */
 	UPROPERTY()

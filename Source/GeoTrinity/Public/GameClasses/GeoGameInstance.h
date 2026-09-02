@@ -31,13 +31,13 @@ public:
 	/** Delegate callback for session creation; travels to the pending map on success. */
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	/** Blueprint entry point for hosting: assembles SessionSettings from human-readable params and calls CreateAdvancedSession. */
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Online")
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "GeoOnline")
 	void BP_CreateAdvancedSession(FString const& ServerName, int32 NbOfSlots, bool bUseLan);
 
 	/** Joins an existing Steam session and travels to the host. */
 	void JoinAdvancedSession(const FOnlineSessionSearchResult& SearchResult);
 	/** Blueprint entry point for joining: resolves the search result from Blueprint and calls JoinAdvancedSession. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Online")
+	UFUNCTION(BlueprintImplementableEvent, Category = "GeoOnline")
 	void BP_JoinAdvancedSession(FBlueprintSessionResult const& SessionData);
 
 	/**
@@ -45,22 +45,22 @@ public:
 	 * exists (travel happens in the destroy-completion callback); otherwise (direct-IP/no-Steam session, or no
 	 * session at all) opens the main menu map immediately.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Online")
+	UFUNCTION(BlueprintCallable, Category = "GeoOnline")
 	void LeaveSessionAndReturnToMenu();
 
 	/**
 	 * Quits the game process. Destroys the Steam online session first if one exists (exit happens in the
 	 * destroy-completion callback) — quitting with a live session leaves the process hanging on Steam shutdown.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Online")
+	UFUNCTION(BlueprintCallable, Category = "GeoOnline")
 	void QuitGame();
 
 	/** Default map to travel to when creating a session without an explicit map URL */
-	UPROPERTY(EditDefaultsOnly, Category = "Online")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoOnline")
 	TSoftObjectPtr<UWorld> DefaultMap;
 
 	/** Map to return to when leaving a session via LeaveSessionAndReturnToMenu. */
-	UPROPERTY(EditDefaultsOnly, Category = "Online")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoOnline")
 	TSoftObjectPtr<UWorld> MainMenuMap;
 
 private:

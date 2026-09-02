@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -43,7 +43,7 @@ public:
 	 */
 	void InitializeAggro(AEnemyCharacter const* EnemyChar);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoAI")
 	TObjectPtr<UGeoAIBlackboardComponent> GeoBlackBoard;
 
 	/** Initializes the StateTree component and begins aggro detection on the newly possessed enemy pawn. */
@@ -58,11 +58,11 @@ public:
 	/** Stops the StateTree logic and restarts it from the root (Dormant state). Resets aggro. */
 	void ResetAI();
 
-	UPROPERTY(EditAnywhere, Category = "Aggro")
+	UPROPERTY(EditAnywhere, Category = "GeoAggro")
 	float AggroRadius = 1000.f;
 
 	/** Seconds a closer player must remain the closest before target switches to them. */
-	UPROPERTY(EditAnywhere, Category = "Aggro")
+	UPROPERTY(EditAnywhere, Category = "GeoAggro")
 	float TargetSwitchDelay = 1.f;
 
 	/** Recomputed every Tick by UpdateCurrentTarget(); read by StateTree movement/facing tasks instead of each
@@ -70,7 +70,7 @@ public:
 	APlayableCharacter* GetCurrentTarget() const { return CurrentTarget; }
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoAI")
 	TObjectPtr<UStateTreeAIComponent> StateTreeComp;
 
 private:

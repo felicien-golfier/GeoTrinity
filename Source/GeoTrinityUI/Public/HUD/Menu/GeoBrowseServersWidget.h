@@ -34,13 +34,13 @@ class GEOTRINITYUI_API UGeoBrowseServersWidget : public UGeoMenuPanelWidget
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintAssignable, Category = "Server")
+	UPROPERTY(BlueprintAssignable, Category = "GeoServer")
 	FGeoBrowseServersClosedSignature OnClosed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer")
 	TSubclassOf<UGeoServerRowWidget> ServerRowWidgetClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Server")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer")
 	TArray<FString> LanguageOptions;
 
 protected:
@@ -54,11 +54,11 @@ protected:
 	virtual bool HandleBackAction() override;
 
 	/** Implemented in Blueprint to trigger the async session search. C++ calls this on widget construct and on refresh. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Server")
+	UFUNCTION(BlueprintImplementableEvent, Category = "GeoServer")
 	void BP_FindSessions();
 
 	/** Called from Blueprint after BP_FindSessions completes; fills ServerListScrollBox with a row per result. */
-	UFUNCTION(BlueprintCallable, Category = "Server")
+	UFUNCTION(BlueprintCallable, Category = "GeoServer")
 	void PopulateListFromBP(TArray<FBlueprintSessionResult> const& ListOfResults);
 	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -31,11 +31,11 @@ public:
 	TSubclassOf<AGeoDeployableBase> GetDeployableActorClass() const { return DeployableActorClass; }
 
 	/** Number of charges currently available to spend: the pool size minus the Cooldown GE's replicated stack count. */
-	UFUNCTION(BlueprintPure, Category = "Ability|Deploy")
+	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	int32 GetCurrentStacks() const;
 
 	/** Maximum number of charges this ability can hold — the Cooldown GE's StackLimitCount. */
-	UFUNCTION(BlueprintPure, Category = "Ability|Deploy")
+	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	int32 GetMaxStacks() const;
 
 protected:
@@ -66,10 +66,10 @@ protected:
 	// LifeDrainMaxDuration is used to define the life drain rate base on "How long the deployable would stay alive in
 	// sec if nothing else deplete its life", Size is the DeployableSize, for example it is used by the HealingZone to
 	// determine the size of the deployable.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Deploy")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Deploy")
 	FDeployableDataParams Params;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
 private:

@@ -33,18 +33,18 @@ protected:
 	/** Ring to spawn on, scaled by the boss's remaining health, or negative to draw from the whole platform. */
 	int32 GetSpawnRing(AGeoHexArena const& Arena) const;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|TileSpawn")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|TileSpawn")
 	TSubclassOf<AGeoDeployableBase> DeployableClass;
 
 	/** Size, blink and life-drain of the spawned deployable — the drain duration is what arms a mine's fuse. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|TileSpawn")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|TileSpawn")
 	FDeployableDataParams DeployableParams;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|TileSpawn", meta = (ClampMin = "1"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|TileSpawn", meta = (ClampMin = "1"))
 	int32 SpawnCount = 1;
 
 	/** Spawns on the ring matching the boss's remaining health: the outer ring at full health, the center near death.
 	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability|TileSpawn")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|TileSpawn")
 	bool bSpawnOnHealthScaledRing = false;
 };

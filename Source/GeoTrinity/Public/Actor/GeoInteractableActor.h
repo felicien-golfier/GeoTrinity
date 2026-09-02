@@ -82,15 +82,15 @@ protected:
 	virtual void OnMaxHealthChanged_Implementation(float NewValue);
 
 private:
-	UPROPERTY(Category = "GAS", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Category = "GeoGAS", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UGeoAbilitySystemComponent> AbilitySystemComponent;
-	UPROPERTY(Category = "GAS", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Category = "GeoGAS", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UGeoAttributeSetBase> AttributeSetBase;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
 	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
 };

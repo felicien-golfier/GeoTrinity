@@ -2,11 +2,19 @@
 
 #include "Characters/Component/GeoGameFeelComponent.h"
 
+#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/Projectile/GeoProjectile.h"
 #include "Components/MeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -30,7 +38,8 @@ void UGeoGameFeelComponent::BeginPlay()
 	{
 		InitialMeshRelativeLocation = TargetMesh->GetRelativeLocation();
 	}
-	else
+	// A projectile draws itself with Niagara: the one owner with no mesh by design.
+	else if (!GetOwner()->IsA<AGeoProjectile>())
 	{
 		UE_LOG(LogGeoTrinity, Warning,
 			   TEXT("[GeoGameFeelComponent] No mesh found on %s — hit flash and recoil will be no-ops."),
@@ -116,4 +125,121 @@ bool UGeoGameFeelComponent::IsCueAvailable(bool const bIsHeal)
 	}
 	LastCueTime = Now;
 	return true;
+}
+
+UNiagaraSystem* UGeoGameFeelComponent::GetBuffVFXSystem(FGeoBuffVFXEntry const& Entry) const
+{
+	AGeoProjectile const* const Projectile = Cast<AGeoProjectile>(GetOwner());
+	if (!Projectile)
+	{
+		return UGameDataSettings::GetLoadedDataAsset(Entry.CharacterVFX);
+	}
+
+	UScriptStruct const* ScaledType = nullptr;
+	if (Entry.Attribute == UCharacterAttributeSet::GetDamageMultiplierAttribute())
+	{
+		ScaledType = FDamageEffectData::StaticStruct();
+	}
+	else if (Entry.Attribute == UCharacterAttributeSet::GetAppliedHealBoostAttribute())
+	{
+		ScaledType = FHealEffectData::StaticStruct();
+	}
+
+	if (!ScaledType || !GeoASLib::HasEffectInArray(Projectile->EffectDataArray, ScaledType))
+	{
+		return nullptr;
+	}
+	return UGameDataSettings::GetLoadedDataAsset(Entry.ProjectileVFX);
+}
+
+void UGeoGameFeelComponent::SetBuffVFX(UNiagaraSystem* const System, bool const bShow)
+{
+	if (!System)
+	{
+		return;
+	}
+
+	int32 const Index = BuffVFXComponents.IndexOfByPredicate(
+		[System](UNiagaraComponent const* const BuffVFX)
+		{
+			return BuffVFX->GetAsset() == System;
+		});
+
+	if (bShow == (Index != INDEX_NONE))
+	{
+		return;
+	}
+
+	if (!bShow)
+	{
+		BuffVFXComponents[Index]->DestroyComponent();
+		BuffVFXComponents.RemoveAtSwap(Index);
+		return;
+	}
+
+	// Niagara returns nothing when it pre-culls the spawn.
+	if (UNiagaraComponent* const Spawned = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			System, GetOwner()->GetRootComponent(), NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget, false))
+	{
+		BuffVFXComponents.Add(Spawned);
+	}
+}
+
+void UGeoGameFeelComponent::BindBuffVFX(UGeoAbilitySystemComponent* const SourceASC)
+{
+	if (GeoLib::IsDedicatedServer(this) || !IsValid(SourceASC))
+	{
+		return;
+	}
+
+	if (BuffSourceASC != SourceASC)
+	{
+		ClearBuffVFX();
+		BuffSourceASC = SourceASC;
+
+		for (FGeoBuffVFXEntry const& Entry : GetDefault<UGameDataSettings>()->BuffVFX)
+		{
+			SourceASC->GetGameplayAttributeValueChangeDelegate(Entry.Attribute)
+				.AddWeakLambda(this,
+							   [this](FOnAttributeChangeData const& /*Data*/)
+							   {
+								   RefreshBuffVFX();
+							   });
+		}
+	}
+
+	RefreshBuffVFX();
+}
+
+void UGeoGameFeelComponent::RefreshBuffVFX()
+{
+	UGeoAbilitySystemComponent const* const SourceASC = BuffSourceASC.Get();
+	if (!SourceASC)
+	{
+		return;
+	}
+
+	for (FGeoBuffVFXEntry const& Entry : GetDefault<UGameDataSettings>()->BuffVFX)
+	{
+		SetBuffVFX(GetBuffVFXSystem(Entry), GeoASLib::IsBuffed(*SourceASC, Entry.Attribute));
+	}
+}
+
+void UGeoGameFeelComponent::ClearBuffVFX()
+{
+	if (UGeoAbilitySystemComponent* const SourceASC = BuffSourceASC.Get())
+	{
+		for (FGeoBuffVFXEntry const& Entry : GetDefault<UGameDataSettings>()->BuffVFX)
+		{
+			SourceASC->GetGameplayAttributeValueChangeDelegate(Entry.Attribute).RemoveAll(this);
+		}
+	}
+	BuffSourceASC = nullptr;
+
+	for (UNiagaraComponent* const BuffVFX : BuffVFXComponents)
+	{
+		BuffVFX->DestroyComponent();
+	}
+	BuffVFXComponents.Empty();
 }

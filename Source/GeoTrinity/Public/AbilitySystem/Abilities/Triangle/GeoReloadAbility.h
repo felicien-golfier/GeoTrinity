@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -27,15 +27,15 @@ public:
 	FLinearColor GetColorForIndex(int32 Index) const;
 
 	/**
-	 * Maps an ammo count to a buff color the same way Fire() maps it to a buff index, so the HUD ammo number can preview
-	 * the color the next reload will spawn. Static so the overlay needs only the ammo value: it resolves the reload
-	 * ability CDO itself via the Ability.Type.Reload tag. White when the CDO or palette is missing.
+	 * Maps an ammo count to a buff color the same way Fire() maps it to a buff index, so the HUD ammo number can
+	 * preview the color the next reload will spawn. Static so the overlay needs only the ammo value: it resolves the
+	 * reload ability CDO itself via the Ability.Type.Reload tag. White when the CDO or palette is missing.
 	 */
-	UFUNCTION(BlueprintPure, Category = "Ability|Reload")
+	UFUNCTION(BlueprintPure, Category = "GeoAbility|Reload")
 	static FLinearColor GetColorForAmmo(int32 Ammo);
 
 	/** Public so AGeoGameState::Loot() can spawn the same pickups from this CDO without duplicating the config. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Reload")
 	TSubclassOf<AGeoBuffPickup> BuffPickupClass;
 
 protected:
@@ -55,21 +55,21 @@ protected:
 	 */
 	FVector GetReachableSpawnOffset(FVector Origin, FVector DesiredOffset) const;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Reload")
 	TSubclassOf<UGameplayEffect> AmmoRestoreEffect;
 
 	/** Per-buff colors, indexed in parallel with the merged buff effect array (see GetEffectDataArray). The pickup is
 	 * tinted with the entry matching the chosen buff; the HUD ammo number uses the same palette via GetColorForAmmo. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Reload")
 	TArray<FGeoColorParam> BuffColors;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Reload")
 	float MinSpawnRadius = 150.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Reload")
 	float MaxSpawnRadius = 400.f;
 
 	/** Pickup half-width kept clear of a blocking wall when the spawn offset is pulled back to a reachable point. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Reload")
 	float PickupRadius = 50.f;
 };

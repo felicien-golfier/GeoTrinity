@@ -5,7 +5,7 @@
 #include "AbilitySystem/Abilities/Base/PatternAbility.h"
 #include "CoreMinimal.h"
 
-#include "GeoPeriodicFireAbility.generated.h"
+#include "GeoPeriodicPatternAbility.generated.h"
 
 /**
  * Fires salves at all players, again and again: the ability never ends on its own, every salve schedules the next one,
@@ -15,13 +15,13 @@
  * at the start of the burst.
  */
 UCLASS()
-class GEOTRINITY_API UGeoPeriodicFireAbility : public UPatternAbility
+class GEOTRINITY_API UGeoPeriodicPatternAbility : public UPatternAbility
 {
 	GENERATED_BODY()
 
 public:
 	/** Configures ServerOnly net execution, InstancedPerActor instancing, and no replication. */
-	UGeoPeriodicFireAbility();
+	UGeoPeriodicPatternAbility();
 
 	/** Drops what is left of the previous activation's burst — the instance is kept alive between activations. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
@@ -46,13 +46,13 @@ protected:
 	/** Time one round of the burst spans. A full party takes a single salve per round; every player short of it adds
 	 * one more salve inside that same window, so the burst carries the same number of projectiles whatever the party
 	 * size. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.01"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.01"))
 	float RoundDuration = .3f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.1"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.1"))
 	float FireIntervalMin = 3.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (ClampMin = "0.1"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.1"))
 	float FireIntervalMax = 5.f;
 
 private:

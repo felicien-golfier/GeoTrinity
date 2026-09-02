@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -153,9 +153,9 @@ protected:
 	// GAS END
 	//----------------------------------------------------------------------//
 
-	/** Points the combatant health bar at this character's ASC. Idempotent — call it from every point the ASC or its
-	 *  attributes can first become available; the .cpp explains why no single one of them is enough. */
-	void BindCombattantWidgetToASC();
+	/** Points the combatant health bar and the buff VFX at this character's ASC. Idempotent — call it from every point
+	 *  the ASC or its attributes can first become available; the .cpp explains why no single one of them is enough. */
+	void BindCosmeticsToASC();
 
 	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
 	 */
@@ -206,11 +206,11 @@ protected:
 	bool bDiedFromFall = false;
 
 	/** Death montage of characters that keep one skeleton. Ignored where GetDeathMontage() is overridden. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|Animation")
 	TObjectPtr<UAnimMontage> DeathMontage = nullptr;
 
 	/** Max yaw turn rate in degrees/second, applied in Tick to close the gap toward TargetYaw. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Rotation",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|Rotation",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))
 	float MaxRotationSpeed = 720.f;
 
@@ -241,13 +241,13 @@ protected:
 
 	// World-space health bar. Held as the engine base; the concrete UGeoCombattantWidgetComp (UI module) is set as the
 	// default subobject class from GameDataSettings so gameplay never names it. Edit per-BP in the component tree.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TObjectPtr<UWidgetComponent> CharacterWidgetComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameFeel")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
 	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 #if WITH_EDITOR

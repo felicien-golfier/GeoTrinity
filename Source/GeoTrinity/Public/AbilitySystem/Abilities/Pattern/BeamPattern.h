@@ -62,32 +62,32 @@ protected:
 	float SweepAngle;
 
 	/** How long the beam stays on, in seconds. */
-	UPROPERTY(EditDefaultsOnly, Category = "Beam", meta = (ClampMin = "0.01"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam", meta = (ClampMin = "0.01"))
 	float BeamDuration = 2.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Beam", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam", meta = (ClampMin = "0.0"))
 	float BeamRange = 3000.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Beam", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam", meta = (ClampMin = "0.0"))
 	float BeamHalfWidth = 60.f;
 
 	/** How a target's own collision radius counts toward the beam hit test. Automatic = center-only for hostiles. */
-	UPROPERTY(EditDefaultsOnly, Category = "Beam")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")
 	ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic;
 
 	// NOT DETERMINISTIC !!
-	UPROPERTY(EditDefaultsOnly, Category = "Beam")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")
 	bool FollowBossOrientation = false;
 
 	// NOT DETERMINISTIC !!
-	UPROPERTY(EditDefaultsOnly, Category = "Beam")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")
 	bool FollowBossLocation = false;
 
 	/** Beam visual, authored local-space pointing +X like the systems UGeoBeamVFXComponent drives. Optional. */
-	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
 	TObjectPtr<UNiagaraSystem> BeamVfxSystem;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Beam|GameFeel")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
 	FGeoColorParam BeamColor;
 
 private:

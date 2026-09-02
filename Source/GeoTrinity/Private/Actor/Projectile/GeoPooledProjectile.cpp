@@ -2,6 +2,7 @@
 
 #include "Actor/Projectile/GeoPooledProjectile.h"
 
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -24,6 +25,7 @@ void AGeoPooledProjectile::End()
 		// Hiding the actor and disabling component ticks does not stop a Niagara system (the world manager ticks it),
 		// so a pooled projectile keeps its particles alive and the next reuse renders them for one frame.
 		BulletVFX->DeactivateImmediate();
+		GameFeelComponent->ClearBuffVFX();
 	}
 	Sphere->OnComponentBeginOverlap.RemoveDynamic(this, &ThisClass::OnSphereOverlap);
 	Sphere->OnComponentHit.RemoveDynamic(this, &ThisClass::OnSphereHit);

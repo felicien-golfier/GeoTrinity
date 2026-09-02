@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -73,17 +73,17 @@ public:
 	/** Server-side revives on leaving InProgress (mid-fight casualties on a victory); broadcasts OnMatchStateChanged. */
 	virtual void OnRep_MatchState() override;
 
-	UPROPERTY(BlueprintAssignable, Category = "Enemy")
+	UPROPERTY(BlueprintAssignable, Category = "GeoEnemy")
 	FOnEnemySpawned OnEnemySpawned;
 
 	/** Seconds from a fight starting to its commit. Shared by every arena; also the barrier's closing lerp duration.
 	 *  A plain timing constant, not an arena reference, so it stays here where the arena and the barrier both read it. */
-	UPROPERTY(EditAnywhere, Category = "Fight")
+	UPROPERTY(EditAnywhere, Category = "GeoFight")
 	float CommitFightTime = 3.f;
 
 	/** Seconds a downed player stays on the ground before respawning at the checkpoint; also the barrier's opening
 	 *  lerp duration on a wipe, so it finishes opening right as the group comes back. */
-	UPROPERTY(EditAnywhere, Category = "Fight")
+	UPROPERTY(EditAnywhere, Category = "GeoFight")
 	float DeathTime = 3.f;
 
 	/** Broadcast on every match state transition, on server and clients alike. AGeoArena subscribes to run its fight. */
@@ -101,7 +101,7 @@ private:
 	 * encounters can disagree about what the run is set to. Editable as the tuning a session opens on; from there it is
 	 * SetDifficulty's alone, which is why it is private.
 	 */
-	UPROPERTY(EditDefaultsOnly, ReplicatedUsing = OnRep_Difficulty, Category = "Fight")
+	UPROPERTY(EditDefaultsOnly, ReplicatedUsing = OnRep_Difficulty, Category = "GeoFight")
 	EGeoDifficulty Difficulty = EGeoDifficulty::Original;
 
 	UFUNCTION()
@@ -110,7 +110,7 @@ private:
 	/** Arena.* tag a respawn returns to, through the TargetPoint.Entrance points carrying it. Editable as the arena a
 	 *  session opens on — the hub, since the players start there before touching any volume; from there it is
 	 *  SetCurrentArenaTag's alone, which is why it is private. */
-	UPROPERTY(EditDefaultsOnly, Category = "Fight", meta = (Categories = "Arena"))
+	UPROPERTY(EditDefaultsOnly, Category = "GeoFight", meta = (Categories = "Arena"))
 	FGameplayTag CurrentArenaTag;
 
 	/** Players alive when the current fight began. A wipe is "all of these are down", so late joiners — who are not

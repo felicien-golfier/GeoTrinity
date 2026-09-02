@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -133,7 +133,7 @@ protected:
 	 *  pawn link is momentarily absent (respawn, possession order on the server). */
 	ETeam TeamId = ETeam::Player;
 
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_PlayerClass, BlueprintReadOnly, Category = "Class")
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_PlayerClass, BlueprintReadOnly, Category = "GeoClass")
 	EPlayerClass PlayerClass = EPlayerClass::None;
 
 	UFUNCTION()

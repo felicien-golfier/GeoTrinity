@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -130,26 +130,26 @@ protected:
 	FPlayerClassData const* GetClassData(EPlayerClass Class) const;
 
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TObjectPtr<UWidgetComponent> DeployChargeGaugeComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TObjectPtr<UWidgetComponent> ChargeBeamGaugeComponent;
 
 	// This player's own crosshair, shown only while they aim with a gamepad — there is one mouse cursor, so every other
 	// couch-coop player would have none. Attached to the rotating root, not WidgetAnchorComponent: this is the one
 	// world widget whose offset is meant to orbit the actor, keeping it in front of the character as it turns toward
 	// the aim.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TObjectPtr<UWidgetComponent> AimCursorComponent;
 
 	// Sits on WidgetAnchorComponent, not the root: the satellites orbit the player themselves, so the ring must not
 	// also be swung around by the character turning toward its aim.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Deployable")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	TObjectPtr<UGeoDeploySatelliteComponent> DeploySatelliteComponent;
 
 	/** Distance in world units from the character to its aim cursor. Applied in BeginPlay. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoHUD", meta = (ClampMin = "0.0"))
 	float AimCursorDistance = 800.f;
 
 private:

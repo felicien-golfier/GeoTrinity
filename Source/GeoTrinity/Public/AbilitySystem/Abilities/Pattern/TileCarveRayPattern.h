@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -26,7 +26,7 @@ protected:
 	virtual void EndPattern(bool bForceStop = false) override;
 
 	/** Destroys the furthest arena tile the beam reaches, at the moment it fires. */
-	UPROPERTY(EditDefaultsOnly, Category = "Beam")
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")
 	bool bDestroyLastTileHit = true;
 
 private:

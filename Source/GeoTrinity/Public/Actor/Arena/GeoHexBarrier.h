@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -35,14 +35,14 @@ protected:
 	 * deleted. Press it before moving the actor or editing a property — either re-runs the construction script, which
 	 * rebuilds the alley from the last captured layout.
 	 */
-	UFUNCTION(CallInEditor, Category = "Barrier")
+	UFUNCTION(CallInEditor, Category = "GeoBarrier")
 	void CaptureLayout();
 
 	/** Editor: drops the captured layout, bringing the full NumColumns * NumRows rectangle back. */
-	UFUNCTION(CallInEditor, Category = "Barrier")
+	UFUNCTION(CallInEditor, Category = "GeoBarrier")
 	void ResetLayout();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Barrier")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoBarrier")
 	TObjectPtr<UInstancedStaticMeshComponent> TileMeshComponent;
 
 	/**
@@ -50,23 +50,23 @@ protected:
 	 * which is what a fresh barrier rebuilds itself into. Filled by CaptureLayout; changing the grid dimensions or the
 	 * sweep direction leaves it stale until the next ResetLayout.
 	 */
-	UPROPERTY(EditAnywhere, Category = "Barrier")
+	UPROPERTY(EditAnywhere, Category = "GeoBarrier")
 	TArray<FIntPoint> TileLayout;
 
 	/** Vanish sweep: column by column along local +X when true, row by row along local +Y when false. */
-	UPROPERTY(EditAnywhere, Category = "Barrier")
+	UPROPERTY(EditAnywhere, Category = "GeoBarrier")
 	bool bVanishAlongColumns = true;
 
 	/** Tiles along the alley (local +X). */
-	UPROPERTY(EditAnywhere, Category = "Barrier", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, Category = "GeoBarrier", meta = (ClampMin = "1"))
 	int32 NumColumns = 8;
 
 	/** Tiles across the alley (local +Y). */
-	UPROPERTY(EditAnywhere, Category = "Barrier", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, Category = "GeoBarrier", meta = (ClampMin = "1"))
 	int32 NumRows = 3;
 
 	/** Outer radius of one hexagon tile in world units (center to corner). Match the arena's TileSize. */
-	UPROPERTY(EditAnywhere, Category = "Barrier", meta = (ClampMin = "1.0"))
+	UPROPERTY(EditAnywhere, Category = "GeoBarrier", meta = (ClampMin = "1.0"))
 	float TileSize = 100.f;
 
 	/**
@@ -74,7 +74,7 @@ protected:
 	 * closed): X = offset amplitude, Y = oscillation speed (radians/sec). Lets designers ramp the shake up (or
 	 * taper it) as the barrier finishes closing.
 	 */
-	UPROPERTY(EditAnywhere, Category = "Barrier")
+	UPROPERTY(EditAnywhere, Category = "GeoBarrier")
 	TObjectPtr<UCurveVector> ShakeCurve;
 
 private:

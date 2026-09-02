@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -126,26 +126,26 @@ protected:
 	/** Builds the initial tile grid and applies base arena startup (boss spawn, match state subscription). */
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HexArena")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHexArena")
 	TObjectPtr<UInstancedStaticMeshComponent> TileMeshComponent;
 
 	/** Hex-disc radius in rings; tile count = 1 + 3 * R * (R + 1) (5 rings = 91 tiles). */
-	UPROPERTY(EditAnywhere, Category = "HexArena", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, Category = "GeoHexArena", meta = (ClampMin = "1"))
 	int32 GridRadius = 5;
 
 	/** Outer radius of one hexagon tile in world units (center to corner). */
-	UPROPERTY(EditAnywhere, Category = "HexArena", meta = (ClampMin = "1.0"))
+	UPROPERTY(EditAnywhere, Category = "GeoHexArena", meta = (ClampMin = "1.0"))
 	float TileSize = 100.f;
 
 	/** Players within this distance of the arena center are subject to the fall check. Must cover the platform plus
 	 * the surrounding void, and exclude the rest of the map. */
-	UPROPERTY(EditAnywhere, Category = "HexArena", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditAnywhere, Category = "GeoHexArena", meta = (ClampMin = "0.0"))
 	float FallCheckRadius = 3000.f;
 
 	/** Grace distance in world units: an actor whose center is over a hole still stands as long as an alive tile lies
 	 * within this radius, so perching on a neighbouring tile's edge doesn't drop you. 0 = center must be over a tile.
 	 */
-	UPROPERTY(EditAnywhere, Category = "HexArena", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditAnywhere, Category = "GeoHexArena", meta = (ClampMin = "0.0"))
 	float FallGraceMargin = 30.f;
 
 private:

@@ -38,10 +38,10 @@ protected:
 	/** Server. Reached only when the fuse runs out: bursts BurstProjectileCount projectiles radially. */
 	virtual void ExplodeEffect(float Value) override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mine")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoMine")
 	FExternalProjectileParams ProjectileParams;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mine", meta = (ClampMin = "1"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoMine", meta = (ClampMin = "1"))
 	int32 BurstProjectileCount = 12;
 
 private:

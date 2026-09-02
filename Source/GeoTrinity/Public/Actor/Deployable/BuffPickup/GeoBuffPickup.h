@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -65,7 +65,7 @@ protected:
 	FBuffPickupData Data;
 
 	/** Vector parameter on BuffMeshComponent's material that the buff color is written to. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPickup|Appearance")
 	FName ColorParameterName = TEXT("Color");
 
 private:
@@ -89,23 +89,23 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> BuffMaterialInstance;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPickup|Appearance", meta = (AllowPrivateAccess = true))
 	float RotationSpeed = 90.f;
 
 	/** Curve controlling the launch movement. X = time (seconds), Y = lerp alpha (0 to 1). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPickup|Appearance", meta = (AllowPrivateAccess = true))
 	TObjectPtr<UCurveFloat> LaunchCurve;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPickup|Appearance", meta = (AllowPrivateAccess = true))
 	float MinScale = .5f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPickup|Appearance", meta = (AllowPrivateAccess = true))
 	float MaxScale = 1.5f;
 
 	/** Minimum seconds after spawn before the overlap pickup logic activates. Prevents the spawning player from
 	 * immediately collecting their own pickup (especially on a listen-server host where InitInteractable and
 	 * the overlap fire on the same machine with no network delay). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Appearance", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPickup|Appearance", meta = (AllowPrivateAccess = true))
 	float TimeBeforePickup = .4f;
 	float StartTime;
 

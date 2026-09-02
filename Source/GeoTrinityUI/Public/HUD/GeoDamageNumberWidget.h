@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -41,13 +41,13 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void ReturnToPool();
 
-	UPROPERTY(EditAnywhere, Category = "DamageNumbers", meta = (ClampMin = "0.1"))
+	UPROPERTY(EditAnywhere, Category = "GeoDamageNumbers", meta = (ClampMin = "0.1"))
 	float VisibleDuration = 1.0f;
 
-	UPROPERTY(EditAnywhere, Category = "DamageNumbers", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditAnywhere, Category = "GeoDamageNumbers", meta = (ClampMin = "0.0"))
 	float DriftDistance = 60.f;
 
-	UPROPERTY(EditAnywhere, Category = "DamageNumbers")
+	UPROPERTY(EditAnywhere, Category = "GeoDamageNumbers")
 	float LocationStartDrift = 20.f;
 
 private:

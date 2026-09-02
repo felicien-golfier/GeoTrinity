@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -91,7 +91,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnDeployCountChanged OnDeployCountChanged;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable", meta = (ClampMin = "1"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (ClampMin = "1"))
 	int32 MaxDeployables = 3;
 
 	/**
@@ -99,7 +99,7 @@ public:
 	 * Classes without an entry share the global MaxDeployables pool.
 	 * Set class to 0 if you need infinit deployables.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Deployable")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable")
 	TMap<TSubclassOf<AGeoDeployableBase>, int32> DeployableSlots;
 
 private:
