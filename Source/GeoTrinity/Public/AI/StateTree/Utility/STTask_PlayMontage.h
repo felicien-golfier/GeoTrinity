@@ -37,6 +37,7 @@ struct GEOTRINITY_API FSTTask_PlayMontage : public FStateTreeAIActionTaskBase
 
 	using FInstanceDataType = FSTTask_PlayMontageInstanceData;
 
+	/** Disables tick; completion is driven by the montage-end delegate. */
 	FSTTask_PlayMontage();
 
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
