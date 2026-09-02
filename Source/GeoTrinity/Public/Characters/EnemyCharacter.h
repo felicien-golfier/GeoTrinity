@@ -49,8 +49,15 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	/** Sets the combat level from the current GameState difficulty before calling the base GAS init. */
 	virtual void InitGAS() override;
 
+	/**
+	 * Server-only gate on zero health: resets attributes to full when ResetToFullLifeWhenReachingZero is set,
+	 * otherwise broadcasts OnEnemyDefeated and destroys the actor.
+	 *
+	 * @param NewValue  Current health value after the change.
+	 */
 	UFUNCTION(BlueprintNativeEvent)
 	void OnHealthChanged(float NewValue);
 	virtual void OnHealthChanged_Implementation(float NewValue);
