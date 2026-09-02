@@ -19,7 +19,11 @@ class GEOTRINITY_API UPatternAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
-	/** Commits cost and cooldown, telegraphs the launch, then launches the pattern PreLaunchDelay seconds later. */
+	/**
+	 * Commits cost and cooldown, telegraphs the launch, then launches the pattern PreLaunchDelay seconds later.
+	 * Stamps StoredPayload up front so the telegraph names the same caster the launch will; LaunchPattern re-stamps it
+	 * on the server time of the actual launch.
+	 */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
@@ -62,7 +66,8 @@ protected:
 	/**
 	 * Marks TargetASC with PreLaunchCue until the pattern launches, at most once per ASC.
 	 * An added cue is replicated ASC state, so unlike an executed one it survives packet loss and a late joiner still
-	 * sees the telegraph already running.
+	 * sees the telegraph already running — including the caster its params name, which is why the payload is stamped
+	 * before the telegraph rather than at launch.
 	 */
 	void AddPreLaunchCue(UGeoAbilitySystemComponent* TargetASC);
 
@@ -72,7 +77,6 @@ protected:
 	 */
 	int LaunchSeed{};
 
-private:
 	/** Drops PreLaunchCue from every ASC it was added to. */
 	void RemovePreLaunchCues();
 

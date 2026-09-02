@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 
@@ -52,5 +53,5 @@ private:
 
 	// Cue fired locally on the casting client for the ray VFX/SFX. RawMagnitude carries the consumed wall count.
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Detonate", meta = (AllowPrivateAccess = true))
-	FGameplayTag FireGameplayCueTag;
+	FGeoCueParam FireCue;
 };

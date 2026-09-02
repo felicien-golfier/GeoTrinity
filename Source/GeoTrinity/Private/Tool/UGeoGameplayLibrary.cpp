@@ -3,7 +3,6 @@
 #include "Actor/Arena/GeoArenaVolume.h"
 #include "Actor/GeoTargetPoint.h"
 #include "Camera/CameraShakeBase.h"
-#include "Characters/GeoCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -102,21 +101,6 @@ bool UGeoGameplayLibrary::IsKeyboardMousePlayer(APlayerController const* PlayerC
 	ULocalPlayer const* LocalPlayer = PlayerController ? PlayerController->GetLocalPlayer() : nullptr;
 	return LocalPlayer && LocalPlayer->GetLocalPlayerIndex() == 0;
 }
-AGeoCharacter* UGeoGameplayLibrary::GetCharacterFromOwner(AActor* Owner)
-{
-	AGeoCharacter* Character = Cast<AGeoCharacter>(Owner);
-	if (!IsValid(Character))
-	{
-		APlayerState* PlayerState = Cast<APlayerState>(Owner);
-		if (IsValid(PlayerState))
-		{
-			Character = Cast<AGeoCharacter>(PlayerState->GetPawn());
-		}
-	}
-
-	return Character;
-}
-
 float UGeoGameplayLibrary::GetServerTime(UObject const* WorldContextObject, bool bUpdatedWithPing)
 {
 	if (!ensureMsgf(WorldContextObject, TEXT("%hs: WorldContextObject is invalid"), __FUNCTION__))

@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
 #include "Tasks/StateTreeMoveToTask.h"
 
 #include "STTask_MoveTo.generated.h"
@@ -20,14 +20,14 @@ struct GEOTRINITY_API FSTTask_MoveToInstanceData : public FStateTreeMoveToTaskIn
 
 	/** Cue added when the move starts and removed when it ends, whether it arrived or was interrupted. Its
 	 *  RawMagnitude carries the path length in world units, so the notify can scale playback to the distance. */
-	UPROPERTY(EditAnywhere, Category = "GeoParameter", meta = (Categories = "GameplayCue"))
-	FGameplayTag MoveGameplayCueTag;
+	UPROPERTY(EditAnywhere, Category = "GeoParameter")
+	FGeoCueParam MoveCue;
 };
 
 /**
  * StateTree Move To task that replans around dynamic obstacles (e.g. pillars) when the nav mesh changes.
  * Uses UGeoAITask_MoveTo instead of the base UAITask_MoveTo to enable path recalculation on invalidation,
- * and forwards MoveGameplayCueTag to it so every machine plays the move's cosmetics.
+ * and forwards MoveCue to it so every machine plays the move's cosmetics.
  */
 USTRUCT(DisplayName = "Move To (Geo)", Category = "GeoTrinity|AI")
 struct GEOTRINITY_API FSTTask_MoveTo : public FStateTreeMoveToTask

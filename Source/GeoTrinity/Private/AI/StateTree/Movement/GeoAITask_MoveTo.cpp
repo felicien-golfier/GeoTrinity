@@ -32,7 +32,7 @@ void UGeoAITask_MoveTo::OnDestroy(bool bInOwnerFinished)
 {
 	if (MoveCueASC.IsValid())
 	{
-		MoveCueASC->RemoveGameplayCue(MoveGameplayCueTag);
+		MoveCueASC->RemoveGameplayCue(MoveCue.CueTag);
 		MoveCueASC.Reset();
 	}
 
@@ -61,7 +61,7 @@ void UGeoAITask_MoveTo::TickTask(float const DeltaTime)
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAITask_MoveTo::AddMoveGameplayCue()
 {
-	if (MoveCueASC.IsValid() || !MoveGameplayCueTag.IsValid())
+	if (MoveCueASC.IsValid() || !MoveCue.CueTag.IsValid())
 	{
 		return;
 	}
@@ -70,13 +70,14 @@ void UGeoAITask_MoveTo::AddMoveGameplayCue()
 	APawn* Pawn = Controller ? Controller->GetPawn() : nullptr;
 	UGeoAbilitySystemComponent* ASC = GeoASLib::GetGeoAscFromActor(Pawn);
 	if (!ensureMsgf(ASC, TEXT("UGeoAITask_MoveTo: %s needs an ASC to add the move cue %s"), *GetNameSafe(Pawn),
-					*MoveGameplayCueTag.ToString()))
+					*MoveCue.CueTag.ToString()))
 	{
 		return;
 	}
 
-	FGameplayCueParameters CueParameters;
+	FGameplayCueParameters CueParameters =
+		MoveCue.MakeCueParams(Pawn, Pawn, Pawn->GetActorLocation(), 0, FGameplayTag());
 	CueParameters.RawMagnitude = static_cast<float>(Path->GetLength());
-	ASC->AddGameplayCue(MoveGameplayCueTag, CueParameters);
+	ASC->AddGameplayCue(MoveCue.CueTag, CueParameters);
 	MoveCueASC = ASC;
 }

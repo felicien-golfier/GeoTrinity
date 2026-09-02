@@ -104,21 +104,19 @@ TArray<TInstancedStruct<FEffectData>> UGeoChargeBeamAbility::GetEffectDataArray(
 
 void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& AbilityTargetData)
 {
-	if (FireGameplayCueTag.IsValid())
+	if (FireCue.IsValid())
 	{
 		FVector2D ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
 		ForwardVector *= GetDefault<UGameDataSettings>()->GeneralSpellDistance;
 
 		float const ChargeRatio = GetStoredChargeRatio();
 
-		FGameplayCueParameters CueParams;
-		CueParams.Location = FVector(AbilityTargetData.Origin + ForwardVector, ArbitraryCharacterZ);
-		CueParams.Instigator = StoredPayload.Instigator;
-		CueParams.AbilityLevel = StoredPayload.AbilityLevel;
+		FGameplayCueParameters CueParams = FireCue.MakeCueParams(
+			StoredPayload, FVector(AbilityTargetData.Origin + ForwardVector, ArbitraryCharacterZ));
 		CueParams.NormalizedMagnitude = IsSweetSpotRelease() || ChargeRatio >= .95f;
 		CueParams.Normal = FRotator(0, AbilityTargetData.Yaw, 0).Vector();
 		CueParams.RawMagnitude = ChargeRatio;
-		GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(FireGameplayCueTag, CueParams);
+		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponentFromActorInfo(), FireCue, CueParams, false);
 	}
 }
 // ---------------------------------------------------------------------------------------------------------------------

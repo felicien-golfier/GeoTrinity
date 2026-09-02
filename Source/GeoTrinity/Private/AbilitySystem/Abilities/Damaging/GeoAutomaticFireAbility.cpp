@@ -151,15 +151,13 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 				}
 			}
 
-			if (FireGameplayCueTag.IsValid())
+			if (FireCue.IsValid())
 			{
-				FGameplayCueParameters CueParams;
-				CueParams.Location = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
-				CueParams.Instigator = StoredPayload.Instigator;
-				CueParams.AbilityLevel = StoredPayload.AbilityLevel;
+				FGameplayCueParameters CueParams =
+					FireCue.MakeCueParams(StoredPayload, FVector(StoredPayload.Origin, ArbitraryCharacterZ));
 				CueParams.RawMagnitude = StoredPayload.Seed;
 				CueParams.Normal = FRotator(0, StoredPayload.Yaw, 0).Vector();
-				GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(FireGameplayCueTag, CueParams);
+				GeoASLib::ExecuteGeoCue(GetAbilitySystemComponentFromActorInfo(), FireCue, CueParams, true);
 			}
 		}
 		SendFireDataToServer(AbilityTargetData);

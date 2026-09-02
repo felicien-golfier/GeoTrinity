@@ -38,7 +38,7 @@ class GEOTRINITY_API USpawnPillarPattern : public UPattern
 
 protected:
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
-	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
+	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
 
 private:
 	virtual void InitPattern(FAbilityPayload const& Payload,

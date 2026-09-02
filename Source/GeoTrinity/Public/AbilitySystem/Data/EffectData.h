@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
 #include "GameplayEffectTypes.h"
@@ -106,6 +107,14 @@ struct GEOTRINITY_API FEffectData
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const;
 
+	/**
+	 * Fires OneShotCue on the target, called right after this entry's ApplyEffect. Executed from authority, so the
+	 * cue multicasts to every machine; the palette slot rides in GameplayEffectLevel and the sound tag in
+	 * AggregatedSourceTags, both of which FGameplayCueParameters::NetSerialize carries.
+	 */
+	void ExecuteOneShotCue(FGameplayEffectContextHandle const& ContextHandle, UAbilitySystemComponent* TargetASC,
+						   int32 AbilityLevel, FGameplayTag AbilityTag) const;
+
 	/** True when the magnitude is a rate scaled on apply by the tick it covers (the frame, or the length a slower
 	 * applier passed), so continuous sources (beams, zones) must re-apply it every tick a target stays inside instead
 	 * of once on entry. */
@@ -130,6 +139,21 @@ struct GEOTRINITY_API FEffectData
 	{
 		return Difficulties == GeoDifficultyMask::All || (Difficulties & AbilityLevel) != 0;
 	}
+
+	/**
+	 * Cue played on the target when this entry applies, in the palette color and with the sound of the FGeoCueParam.
+	 * Use it for a cue whose color varies per ability: a cue authored in the GameplayCues array of a UGameplayEffect
+	 * cannot carry one, because GameplayEffectLevel — the channel FGeoCueParam colors through — is overwritten with
+	 * the spec level, which here is the EGeoDifficulty mask.
+	 *
+	 * Executed only. OnActive / WhileActive / OnRemove need a cue *added* for the effect's lifetime, which only the
+	 * GameplayCues array of the UGameplayEffect asset does — author those there instead.
+	 *
+	 * CueTag and SoundTag are independent: the sound always goes out as its own GenericGameplayCueSoundTag cue, so it
+	 * does not depend on the notify class CueTag resolves to, and a sound-only entry leaves CueTag empty.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGeoCueParam OneShotCue;
 
 	/**
 	 * Difficulties this entry applies at, all three by default. Unticking Safe keeps a lethal hit out of the easy

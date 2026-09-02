@@ -122,20 +122,11 @@ FVector UGeoZoneAbility::GetZoneLocation() const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoZoneAbility::ExecuteZoneCue(FGeoCueParam const& Cue, FVector const& ZoneLocation, float const Duration) const
 {
-	if (!Cue.CueTag.IsValid())
-	{
-		return;
-	}
-
-	FGameplayCueParameters CueParams;
-	CueParams.Location = ZoneLocation;
-	CueParams.Instigator = StoredPayload.Instigator;
-	CueParams.AbilityLevel = StoredPayload.AbilityLevel;
+	FGameplayCueParameters CueParams = Cue.MakeCueParams(StoredPayload, ZoneLocation);
 	CueParams.RawMagnitude = ZoneParams.Size;
 	// Same packing the patterns use: the cue reads its own timing out of Normal.
 	CueParams.Normal = FVector(Duration, 0.f, 0.f);
-	Cue.FillCueParams(CueParams);
 
 	// The ability only ever runs on the server, so the cue has to be the replicated one to reach any client.
-	GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(Cue.CueTag, CueParams);
+	GeoASLib::ExecuteGeoCue(GetAbilitySystemComponentFromActorInfo(), Cue, CueParams, false);
 }

@@ -111,18 +111,15 @@ void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTarge
 	}
 
 
-	if (IsLocallyControlled() && FireGameplayCueTag.IsValid())
+	if (IsLocallyControlled() && FireCue.IsValid())
 	{
 		FVector2D const Endpoint = AbilityTargetData.Origin + ForwardVector * MaxRange;
 
-		FGameplayCueParameters CueParams;
-		CueParams.Location = FVector(Endpoint, ArbitraryCharacterZ);
+		FGameplayCueParameters CueParams = FireCue.MakeCueParams(StoredPayload, FVector(Endpoint, ArbitraryCharacterZ));
 		CueParams.Normal = FRotator(0, AbilityTargetData.Yaw, 0).Vector();
-		CueParams.Instigator = Avatar;
-		CueParams.AbilityLevel = GetAbilityLevel();
 		CueParams.NormalizedMagnitude = bHasAppliedEffectWithABoostedValue;
 		CueParams.RawMagnitude = bHasAppliedEffectWithABoostedValue;
 
-		GeoASLib::ExecuteLocalGameplayCue(GetAbilitySystemComponentFromActorInfo(), FireGameplayCueTag, CueParams);
+		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponentFromActorInfo(), FireCue, CueParams, true);
 	}
 }

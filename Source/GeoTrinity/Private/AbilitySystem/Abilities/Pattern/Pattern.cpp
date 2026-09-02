@@ -77,9 +77,8 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 
 void UPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 {
-	// Local (non-replicated) cue: execute on every rendering machine including the listen-server host; skip only on a
-	// dedicated server, which has no viewport.
-	if (!Cue.CueTag.IsValid() || GeoLib::IsDedicatedServer(GetWorld()))
+	// Skip only the dedicated server, which has no viewport; every rendering machine runs the pattern itself.
+	if (!Cue.IsValid() || GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		return;
 	}
@@ -91,17 +90,12 @@ void UPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 	}
 
 	FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
-	FGameplayCueParameters CueParams = FillCueParam(StoredPayload);
-	Cue.FillCueParams(CueParams);
-	InstigatorASC->ExecuteGameplayCue(Cue.CueTag, CueParams);
+	GeoASLib::ExecuteGeoCue(InstigatorASC, Cue, FillCueParam(Cue, StoredPayload), false);
 }
 
-FGameplayCueParameters UPattern::FillCueParam(FAbilityPayload const& Payload)
+FGameplayCueParameters UPattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)
 {
-	FGameplayCueParameters CueParams;
-	CueParams.Location = FVector(Payload.Origin, 0.f);
-	CueParams.Instigator = Payload.Instigator;
-	CueParams.AbilityLevel = Payload.AbilityLevel;
+	FGameplayCueParameters CueParams = Cue.MakeCueParams(Payload, FVector(Payload.Origin, 0.f));
 	float WindUpRatio = 1.f;
 	if (StartDelay > 0.f)
 	{

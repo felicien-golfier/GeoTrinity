@@ -56,7 +56,7 @@ protected:
 	 * StartDelay - TravelTime (remaining wind-up). Shows the full danger zone before the wave begins. */
 	void ActivateAoeVfxTelegraph() const;
 	/** Sets the cue source location to the boss's 2D wave origin. */
-	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
+	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
 	/**
 	 * Expands the wave radius by ExpansionSpeed * SpentTime each tick.
 	 * Hits actors whose center sits within AnnulusWidth of the wave front: pillars are added to the VFX mask on all

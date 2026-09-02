@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
 
@@ -53,7 +54,7 @@ protected:
 	 */
 	float GetSweetSpotPrecision() const;
 
-	/** Fires FireGameplayCueTag on the locally-controlled client, encoding the beam endpoint, charge ratio, and
+	/** Fires FireCue on the locally-controlled client, encoding the beam endpoint, charge ratio, and
 	 * sweet-spot flag into cue params. */
 	void FireGameplayCue(FGeoAbilityTargetData const& AbilityTargetData);
 
@@ -78,9 +79,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")
 	float SweetSpotMaxRatio = 0.7f;
 
-	// Gameplay Cue fired on the client at the moment of release to trigger beam VFX/SFX.
+	// Cue fired at the moment of release for the beam VFX/SFX: endpoint in Location, aim direction in Normal, charge
+	// ratio in RawMagnitude, sweet-spot release in NormalizedMagnitude.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")
-	FGameplayTag FireGameplayCueTag;
+	FGeoCueParam FireCue;
 
 	// Damage multiplier lerped from Min (0% charge) to Max (100% charge).
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|ChargeBeam")

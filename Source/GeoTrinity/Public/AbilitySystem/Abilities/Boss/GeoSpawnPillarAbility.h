@@ -30,6 +30,7 @@ class GEOTRINITY_API UGeoSpawnPillarAbility : public UPatternAbility
 	GENERATED_BODY()
 
 protected:
+	void FillPillarTargets();
 	/**
 	 * Server-only. Reads the boss's current health ratio to choose 1–3 pillar count, seeds the target pick and the
 	 * scatter offsets from LaunchSeed, and marks every chosen character with the telegraph cue. Runs before
@@ -37,6 +38,7 @@ protected:
 	 */
 	virtual void BeginPreLaunch() override;
 
+	virtual void LaunchPattern() override;
 	/** Returns an FSpawnPillarPatternData whose ZoneLocations follow the marked characters to wherever they stand at
 	 * launch — falling back to where each was marked once it is gone, so a death mid-cast drops no pillar. */
 	virtual TInstancedStruct<FPatternData> CreatePatternData() const override;

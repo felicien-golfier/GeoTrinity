@@ -152,9 +152,9 @@ void UDevastatingWavePattern::AddPillarToVfxMask()
 													PillarData.Radius);
 }
 
-FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FAbilityPayload const& Payload)
+FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)
 {
-	FGameplayCueParameters CueParams = Super::FillCueParam(Payload);
+	FGameplayCueParameters CueParams = Super::FillCueParam(Cue, Payload);
 	CueParams.RawMagnitude = MaxRadius;
 	float const LifeTime = MaxRadius / ExpansionSpeed;
 	CueParams.Normal = FVector(LifeTime, TravelTime, 1.f - (LifeTime - TravelTime) / LifeTime);

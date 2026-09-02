@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "AttributeSet.h"
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
@@ -64,7 +65,7 @@ public:
 	 */
 	template <typename T>
 	static T* GetLoadedDataAsset(TSoftObjectPtr<T> const& SoftObject);
-	
+
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGeneral", AdvancedDisplay)
 	TSoftObjectPtr<UAbilityInfo> AbilityInfo;
 
@@ -157,10 +158,6 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay")
 	TSoftObjectPtr<UCurveFloat> GaugeChargingSpeedCurve;
 
-	/** Shared generic-sound cue tag, executed locally for one-off gameplay sounds (e.g. deploy stack refilled). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay")
-	FGameplayTag GenericGameplayCueSoundTag;
-
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay")
 	TSoftClassPtr<UGameplayEffect> HealthEffect;
 
@@ -175,7 +172,7 @@ public:
 
 	/** Maximum number of times per second the GameplayCue on HealthEffect/DamageEffect may fire when applied every tick
 	 * (drain/heal). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay", meta = (ClampMin = "0.1"))
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue", meta = (ClampMin = "0.1"))
 	float GameplayCueRateLimitPerSecond = 3.f;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
@@ -184,6 +181,15 @@ public:
 	TSoftObjectPtr<UMaterialInterface> LocalPlayerHitFlashMaterial;
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
 	float HitFlashDuration = 0.9f;
+
+	/** Shared generic-sound cue tag, executed locally for one-off gameplay sounds (e.g. deploy stack refilled). */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
+	FGameplayTag GenericGameplayCueSoundTag;
+
+	/** Played on the deploying client when a deploy ability's charge pool refills a stack — shared by every deploy
+	 * ability (GA_DeployHealingZone, GA_Square_Special_Mine, GA_LaunchTurret) instead of a per-ability property. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
+	FGeoCueParam RefillDeployableCue;
 
 	/** Every buff the game shows, project-wide: one entry per attribute, with the systems its character and its shots
 	 * wear while it is boosted. Driven by UGeoGameFeelComponent. */

@@ -19,7 +19,7 @@ UAITask_MoveTo* FSTTask_MoveTo::PrepareMoveToTask(FStateTreeExecutionContext& Co
 		return nullptr;
 	}
 
-	MoveTask->MoveGameplayCueTag = InstanceData.MoveGameplayCueTag;
+	MoveTask->MoveCue = InstanceData.MoveCue;
 	MoveTask->SetUp(&Controller, MoveRequest);
 	return MoveTask;
 }

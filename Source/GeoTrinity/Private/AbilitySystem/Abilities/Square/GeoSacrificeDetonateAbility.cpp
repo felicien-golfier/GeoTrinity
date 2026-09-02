@@ -75,17 +75,14 @@ void UGeoSacrificeDetonateAbility::Detonate(FGeoAbilityTargetData const& Ability
 			FGameplayTagContainer(FGeoGameplayTags::Get().Status_Square_DetonateReady));
 	}
 
-	if (IsLocallyControlled() && FireGameplayCueTag.IsValid())
+	if (IsLocallyControlled() && FireCue.IsValid())
 	{
 		FVector2D const Endpoint = AbilityTargetData.Origin + ForwardVector * MaxRange;
 
-		FGameplayCueParameters CueParams;
-		CueParams.Location = FVector(Endpoint, ArbitraryCharacterZ);
+		FGameplayCueParameters CueParams = FireCue.MakeCueParams(StoredPayload, FVector(Endpoint, ArbitraryCharacterZ));
 		CueParams.Normal = FRotator(0, AbilityTargetData.Yaw, 0).Vector();
-		CueParams.Instigator = StoredPayload.Instigator;
-		CueParams.AbilityLevel = GetAbilityLevel();
 		CueParams.RawMagnitude = SacrificeValue; // Replicated attribute — read before the server-side reset.
 
-		GeoASLib::ExecuteLocalGameplayCue(SourceASC, FireGameplayCueTag, CueParams);
+		GeoASLib::ExecuteGeoCue(SourceASC, FireCue, CueParams, true);
 	}
 }

@@ -37,9 +37,9 @@ public:
 	/** Client-only. Fires Cue at the pattern's zone location(s) via the instigator's ASC. Override to fire
 	 * at multiple locations (e.g. one cue per pillar spawn point). */
 	virtual void ExecuteGameplayCue(FGeoCueParam const& Cue);
-	/** Builds the FGameplayCueParameters for this pattern's start cue. Override to inject custom fields (location,
-	 * magnitude, etc.). The firing cue's own color and sound are added on top by ExecuteGameplayCue. */
-	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload);
+	/** Builds the FGameplayCueParameters Cue is fired with, at the pattern origin. Override to inject custom fields
+	 * (magnitude, timing) on top of the base ones. */
+	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload);
 
 	/**
 	 * Stores the payload and triggers the start-section animation before delegating to StartPattern.

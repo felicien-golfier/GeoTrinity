@@ -42,7 +42,7 @@ protected:
 	/** Switches the beam VFX off and clears the per-activation hit set. */
 	virtual void EndPattern(bool bForceStop = false) override;
 	/** Adds the beam length so the telegraph cue can size itself. */
-	virtual FGameplayCueParameters FillCueParam(FAbilityPayload const& Payload) override;
+	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
 
 	/** Beam yaw at SpentTime: the payload yaw, offset by however much of the sweep arc has been travelled. */
 	float GetBeamYaw(float SpentTime) const;

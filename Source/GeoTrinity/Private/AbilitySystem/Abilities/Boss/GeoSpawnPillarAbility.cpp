@@ -10,11 +10,11 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-void UGeoSpawnPillarAbility::BeginPreLaunch()
+void UGeoSpawnPillarAbility::FillPillarTargets()
 {
 	PillarTargets.Reset();
 
-	UGeoAbilitySystemComponent* GeoAsc = GetGeoAbilitySystemComponentFromActorInfo();
+	UGeoAbilitySystemComponent const* GeoAsc = GetGeoAbilitySystemComponentFromActorInfo();
 	UGeoAttributeSetBase const* AttributeSet =
 		Cast<UGeoAttributeSetBase>(GeoAsc->GetAttributeSet(UGeoAttributeSetBase::StaticClass()));
 	if (!ensureMsgf(IsValid(AttributeSet), TEXT("GeoSpawnPillarAbility: OwnerASC has no UGeoAttributeSetBase")))
@@ -32,10 +32,8 @@ void UGeoSpawnPillarAbility::BeginPreLaunch()
 		return;
 	}
 
-	FRandomStream Stream(LaunchSeed);
+	FRandomStream const Stream(LaunchSeed);
 	int32 const FirstPlayerIndex = Stream.RandHelper(AlivePlayers.Num());
-	TArray<APlayableCharacter*> PreLaunchedCuePlayers;
-	PreLaunchedCuePlayers.Reserve(AlivePlayers.Num());
 
 	for (int32 Index = 0; Index < NumPillarToSpawn; ++Index)
 	{
@@ -49,14 +47,33 @@ void UGeoSpawnPillarAbility::BeginPreLaunch()
 			PillarTarget.Offset = FVector2D(FMath::Cos(RandomAngle), FMath::Sin(RandomAngle)) * RandomRadius;
 		}
 		PillarTarget.FallbackLocation = FVector2D(Player->GetActorLocation()) + PillarTarget.Offset;
+	}
+}
 
-		if (!PreLaunchedCuePlayers.Contains(Player))
+void UGeoSpawnPillarAbility::BeginPreLaunch()
+{
+	FillPillarTargets();
+
+	TArray<TWeakObjectPtr<AActor>> PreLaunchedCuePlayers;
+	for (FPillarTarget const& PillarTarget : PillarTargets)
+	{
+		if (IsValid(PillarTarget.Target.Get()) && !PreLaunchedCuePlayers.Contains(PillarTarget.Target))
 		{
-			PreLaunchedCuePlayers.Add(Player);
-			AddPreLaunchCue(GeoASLib::GetGeoAscFromActor(Player));
+			PreLaunchedCuePlayers.Add(PillarTarget.Target);
+			AddPreLaunchCue(GeoASLib::GetGeoAscFromActor(PillarTarget.Target.Get()));
 		}
 	}
 }
+void UGeoSpawnPillarAbility::LaunchPattern()
+{
+	if (PreLaunchDelay <= 0.f)
+	{
+		FillPillarTargets();
+	}
+
+	Super::LaunchPattern();
+}
+
 
 TInstancedStruct<FPatternData> UGeoSpawnPillarAbility::CreatePatternData() const
 {

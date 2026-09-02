@@ -141,10 +141,6 @@ public:
 	 */
 	void Recall(float Value = 0.f);
 
-	/** Executes Cue's tag on this actor's ASC with CueParams. Used by OnRep_Active and Recall() to fire recall/blink
-	 * cues locally. */
-	void ExecuteCue(FGeoCueParam const& Cue, FGameplayCueParameters const& CueParams) const;
-
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDrainDurationRatio() const;
@@ -170,8 +166,8 @@ public:
 	/** Builds and returns the GameplayCue parameters used when firing the pre-expiry blink cue. */
 	FGameplayCueParameters GetBlinkCueParams() const;
 
-	/** Returns gameplay cue parameters at this actor's location (Z raised just above the floor), with the deploying
-	 * instigator and Cue's own color/sound fields filled in. */
+	/** Returns Cue's parameters at this actor's location (Z raised just above the floor), causing them from the
+	 * deployable itself so a notify can tell the wall apart from whoever deployed it. */
 	virtual FGameplayCueParameters GetGenericCueParams(FGeoCueParam const& Cue) const;
 
 	/** Returns the GameplayCue parameters to use when firing the recall cue. */

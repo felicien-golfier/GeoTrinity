@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "CoreMinimal.h"
 
 #include "GeoSacrificeDetonateAbility.generated.h"
@@ -49,5 +50,5 @@ private:
 
 	/** Local cue fired on detonation (endpoint in Location, aim direction in Normal, value in RawMagnitude). */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
-	FGameplayTag FireGameplayCueTag;
+	FGeoCueParam FireCue;
 };

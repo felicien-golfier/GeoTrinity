@@ -27,6 +27,7 @@ class UStatusInfo;
 struct FDeployableData;
 struct FDeployableDataParams;
 struct FExternalProjectileParams;
+struct FGeoCueParam;
 struct FGeoGameplayEffectContext;
 /**
  * Static helper library for GeoTrinity's ability system (alias: GeoASLib).
@@ -67,6 +68,7 @@ public:
 	 * Applies all effect descriptors in DataArray using a two-pass strategy:
 	 * first pass calls UpdateContextHandle on every entry, second pass calls ApplyEffect on every entry.
 	 * This ensures context data (e.g. damage multipliers) is set before any effect is applied.
+	 * Each entry's OneShotCue is executed right after that entry applies.
 	 *
 	 * @return  Array of active effect handles, one per successfully applied effect. Invalid handles are included for
 	 * entries that do not apply effects.
@@ -77,13 +79,13 @@ public:
 							  UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
 							  int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag);
 
-	/** Applies a single TInstancedStruct<FEffectData> entry (calls UpdateContextHandle then ApplyEffect). */
+	/** Applies a single TInstancedStruct<FEffectData> entry (UpdateContextHandle, ApplyEffect, then its OneShotCue). */
 	static FActiveGameplayEffectHandle ApplySingleEffectData(TInstancedStruct<FEffectData> const& Data,
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 															 int32 Seed, FGameplayTag AbilityTag);
 
-	/** Applies a single FEffectData (calls UpdateContextHandle then ApplyEffect). */
+	/** Applies a single FEffectData (UpdateContextHandle, ApplyEffect, then its OneShotCue). */
 	static FActiveGameplayEffectHandle ApplySingleEffectData(FEffectData const& EffectData,
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
@@ -341,13 +343,16 @@ public:
 	static AActor* GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList);
 
 	/**
-	 * Executes CueTag on ASC locally, on this machine only, via InvokeGameplayCueEvent(Executed).
-	 * Use for cosmetics fired by logic that already runs on every relevant machine (OnReps, locally-gated ability
-	 * code): ExecuteGameplayCue would additionally multicast from a listen-server host, double-playing the cue on
-	 * clients. No-op when CueTag is invalid (optional cue not configured).
+	 * Executes Cue on ASC with CueParams: its CueTag when set, then the generic sound cue from UGameDataSettings when
+	 * SoundTag is set. No-op for an entry that plays neither.
+	 *
+	 * @param bLocalOnly  True fires on this machine only (InvokeGameplayCueEvent). Use for cosmetics whose call site
+	 *                    already runs on every relevant machine (OnReps, locally-gated ability code), where the
+	 *                    replicated form would additionally multicast from a listen-server host and double-play on
+	 *                    clients. False multicasts from authority.
 	 */
-	static void ExecuteLocalGameplayCue(UAbilitySystemComponent* ASC, FGameplayTag const& CueTag,
-										FGameplayCueParameters const& CueParams);
+	static void ExecuteGeoCue(UAbilitySystemComponent* ASC, FGeoCueParam const& Cue,
+							  FGameplayCueParameters const& CueParams, bool bLocalOnly);
 
 	/** Returns the status gameplay tag stored in the effect context (invalid tag when none). */
 	UFUNCTION(BlueprintPure, Category = "GeoAbilitySystemLibrary|GameplayEffects")
@@ -360,6 +365,16 @@ public:
 	 * IAbilitySystemInterface. */
 	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary")
 	static UGeoAbilitySystemComponent* GetGeoAscFromActor(AActor* Actor);
+
+	/**
+	 * Returns the avatar actor behind Actor's ASC: the pawn for a PlayerState, the actor itself for a character or a
+	 * deployable that owns its ASC. Null when Actor has no ASC.
+	 *
+	 * Use it wherever an owner and an avatar must not be told apart by hand — a gameplay cue's Instigator, a payload's
+	 * Owner, an effect context's instigator all name the same ASC through different actors.
+	 */
+	UFUNCTION(BlueprintPure, Category = "GeoAbilitySystemLibrary")
+	static AActor* GetAvatarFromActor(AActor* Actor);
 
 	/** True when EffectDataArray holds at least one descriptor of type EffectDataType (or a subtype of it). */
 	static bool HasEffectInArray(TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,

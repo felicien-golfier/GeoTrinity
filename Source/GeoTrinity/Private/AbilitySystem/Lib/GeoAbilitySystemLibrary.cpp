@@ -6,6 +6,7 @@
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
@@ -74,7 +75,10 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 	FGameplayEffectContextHandle ContextHandle = MakeGeoEffectContext(SourceASC, TargetASC, GeoEffectContext);
 
 	EffectData.UpdateContextHandle(GeoEffectContext, AbilityLevel, AbilityTag);
-	return EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
+	FActiveGameplayEffectHandle const EffectHandle =
+		EffectData.ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed);
+	EffectData.ExecuteOneShotCue(ContextHandle, TargetASC, AbilityLevel, AbilityTag);
+	return EffectHandle;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -172,6 +176,7 @@ TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEff
 	for (FEffectData const* EffectData : ApplicableEffects)
 	{
 		SpecHandles.Add(EffectData->ApplyEffect(ContextHandle, SourceASC, TargetASC, AbilityLevel, Seed));
+		EffectData->ExecuteOneShotCue(ContextHandle, TargetASC, AbilityLevel, AbilityTag);
 	}
 
 	return SpecHandles;
@@ -358,16 +363,40 @@ AActor* UGeoAbilitySystemLibrary::GetNearestActorFromList(AActor const* FromActo
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilitySystemLibrary::ExecuteLocalGameplayCue(UAbilitySystemComponent* ASC, FGameplayTag const& CueTag,
-													   FGameplayCueParameters const& CueParams)
+void UGeoAbilitySystemLibrary::ExecuteGeoCue(UAbilitySystemComponent* ASC, FGeoCueParam const& Cue,
+											 FGameplayCueParameters const& CueParams, bool const bLocalOnly)
 {
-	if (!CueTag.IsValid()
-		|| !ensureMsgf(IsValid(ASC), TEXT("ExecuteLocalGameplayCue: null ASC for cue %s"), *CueTag.ToString()))
+	if (!Cue.IsValid()
+		|| !ensureMsgf(IsValid(ASC), TEXT("%hs: null ASC for cue %s"), __FUNCTION__, *Cue.CueTag.ToString()))
 	{
 		return;
 	}
 
-	ASC->InvokeGameplayCueEvent(CueTag, EGameplayCueEvent::Executed, CueParams);
+	auto const Execute = [ASC, &CueParams, bLocalOnly](FGameplayTag const& Tag)
+	{
+		if (bLocalOnly)
+		{
+			ASC->InvokeGameplayCueEvent(Tag, EGameplayCueEvent::Executed, CueParams);
+		}
+		else
+		{
+			ASC->ExecuteGameplayCue(Tag, CueParams);
+		}
+	};
+
+	if (Cue.CueTag.IsValid())
+	{
+		Execute(Cue.CueTag);
+	}
+
+	FGameplayTag const SoundCueTag = GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
+	if (Cue.SoundTag.IsValid()
+		&& ensureMsgf(SoundCueTag.IsValid(),
+					  TEXT("%hs: sound %s needs UGameDataSettings::GenericGameplayCueSoundTag set"), __FUNCTION__,
+					  *Cue.SoundTag.ToString()))
+	{
+		Execute(SoundCueTag);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -390,6 +419,12 @@ void UGeoAbilitySystemLibrary::SetStatusTag(FGameplayEffectContextHandle& Effect
 UGeoAbilitySystemComponent* UGeoAbilitySystemLibrary::GetGeoAscFromActor(AActor* Actor)
 {
 	return Cast<UGeoAbilitySystemComponent>(UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor));
+}
+
+AActor* UGeoAbilitySystemLibrary::GetAvatarFromActor(AActor* Actor)
+{
+	UGeoAbilitySystemComponent const* const ASC = GetGeoAscFromActor(Actor);
+	return ASC ? ASC->GetAvatarActor() : nullptr;
 }
 
 UGeoGameplayAbility const* UGeoAbilitySystemLibrary::GetAbilityCDO(FGameplayTag const AbilityTag)

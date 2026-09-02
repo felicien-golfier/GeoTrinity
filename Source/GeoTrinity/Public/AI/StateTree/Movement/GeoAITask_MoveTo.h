@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
 #include "Tasks/AITask_MoveTo.h"
 
 #include "GeoAITask_MoveTo.generated.h"
@@ -15,7 +15,7 @@ class UGeoAbilitySystemComponent;
  * The base class disables auto-repath, which prevents the enemy from replanning around dynamic obstacles
  * (e.g. pillars) that appear after the initial path is computed. This subclass re-enables it.
  *
- * Also adds MoveGameplayCueTag on the pawn's ASC for the duration of a move, with the path length as the cue's
+ * Also adds MoveCue on the pawn's ASC for the duration of a move, with the path length as the cue's
  * RawMagnitude. The cue replicates, so every machine plays the move's cosmetics even though this task — like all
  * StateTree AI — only ever runs on the server.
  */
@@ -30,7 +30,7 @@ public:
 
 	/** Looping cue added for the whole move and removed when it ends; its RawMagnitude carries the path length in
 	 *  world units. Set by FSTTask_MoveTo. */
-	FGameplayTag MoveGameplayCueTag;
+	FGeoCueParam MoveCue;
 
 protected:
 	/** Enables path recalculation on nav mesh invalidation (disabled in the base class) and starts the move gameplay cue on the pawn's ASC. */
@@ -42,7 +42,7 @@ protected:
 	virtual void TickTask(float DeltaTime) override;
 
 private:
-	/** Adds MoveGameplayCueTag on the pawn's ASC, passing the path length as RawMagnitude. No-op when no cue is
+	/** Adds MoveCue on the pawn's ASC, passing the path length as RawMagnitude. No-op when no cue is
 	 *  configured, or when one is already added — PerformMove re-enters on every path replan, and AddGameplayCue
 	 *  appends unconditionally, so an unguarded call would stack a second cue. */
 	void AddMoveGameplayCue();

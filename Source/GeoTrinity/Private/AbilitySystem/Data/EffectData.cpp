@@ -60,6 +60,37 @@ FActiveGameplayEffectHandle FEffectData::ApplyEffect(FGameplayEffectContextHandl
 	return FActiveGameplayEffectHandle();
 }
 
+void FEffectData::ExecuteOneShotCue(FGameplayEffectContextHandle const& ContextHandle,
+									UAbilitySystemComponent* TargetASC, int32 const AbilityLevel,
+									FGameplayTag const AbilityTag) const
+{
+	if (!OneShotCue.IsValid())
+	{
+		return;
+	}
+
+	FGameplayTag const SoundCueTag = GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
+	AActor const* TargetAvatar = TargetASC->GetAvatarActor();
+	if (!ensureMsgf(!IsPerSecond(), TEXT("%hs: OneShotCue %s is on a per-second entry, it would fire on every tick"),
+					__FUNCTION__, *OneShotCue.CueTag.ToString())
+		|| !ensureMsgf(OneShotCue.Color != EGeoColor::Override,
+					   TEXT("%hs: OneShotCue %s has no palette slot, EGeoColor::Override draws white"), __FUNCTION__,
+					   *OneShotCue.CueTag.ToString())
+		|| !ensureMsgf(!OneShotCue.CueTag.IsValid() || OneShotCue.CueTag != SoundCueTag,
+					   TEXT("%hs: OneShotCue CueTag is the generic sound cue %s, put the sound in SoundTag instead"),
+					   __FUNCTION__, *SoundCueTag.ToString())
+		|| !ensureMsgf(IsValid(TargetAvatar), TEXT("%hs: OneShotCue %s has no target avatar to play on"), __FUNCTION__,
+					   *OneShotCue.CueTag.ToString()))
+	{
+		return;
+	}
+
+	GeoASLib::ExecuteGeoCue(TargetASC, OneShotCue,
+							OneShotCue.MakeCueParams(ContextHandle.GetInstigator(), ContextHandle.GetEffectCauser(),
+													 TargetAvatar->GetActorLocation(), AbilityLevel, AbilityTag),
+							false);
+}
+
 FActiveGameplayEffectHandle FGameplayEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,

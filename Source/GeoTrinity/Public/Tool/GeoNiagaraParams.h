@@ -24,6 +24,7 @@ namespace GeoNiagaraParams
 {
 	inline FName const Lifetime(TEXT("User.Lifetime"));
 	inline FName const Color(TEXT("User.Color"));
+	inline FName const Position(TEXT("User.Position"));
 	inline FName const Radius(TEXT("User.Radius"));
 
 	/** NS_GeoTrinity_Projectile01 — AGeoProjectile::BulletVFX. */
@@ -79,6 +80,10 @@ public:
 	/** Returns the Niagara user parameter name for a generic color tint. */
 	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
 	static FName GetColor() { return GeoNiagaraParams::Color; }
+
+	/** Returns the Niagara user parameter name for a generic color tint. */
+	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
+	static FName GetPosition() { return GeoNiagaraParams::Position; }
 
 	/** Returns the Niagara user parameter name for a generic radius. */
 	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")

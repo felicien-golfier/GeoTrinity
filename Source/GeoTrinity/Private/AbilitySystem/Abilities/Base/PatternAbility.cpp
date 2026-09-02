@@ -45,14 +45,17 @@ void UPatternAbility::AddPreLaunchCue(UGeoAbilitySystemComponent* TargetASC)
 	{
 		return;
 	}
-	if (!ensureMsgf(IsValid(TargetASC), TEXT("PatternAbility %s: pre-launch cue target has no ASC"), *GetName()))
+	AActor const* TargetAvatar = IsValid(TargetASC) ? TargetASC->GetAvatarActor() : nullptr;
+	if (!ensureMsgf(IsValid(TargetAvatar), TEXT("PatternAbility %s: pre-launch cue target has no ASC avatar"),
+					*GetName()))
 	{
 		return;
 	}
 
-	FGameplayCueParameters CueParams;
+	FGameplayCueParameters CueParams =
+		PreLaunchCue.MakeCueParams(GetAvatarActorFromActorInfo(), GetAvatarActorFromActorInfo(),
+								   TargetAvatar->GetActorLocation(), GetAbilityLevel(), GetAbilityTag());
 	CueParams.RawMagnitude = PreLaunchDelay;
-	PreLaunchCue.FillCueParams(CueParams);
 	TargetASC->AddGameplayCue(PreLaunchCue.CueTag, CueParams);
 	PreLaunchCueASCs.Add(TargetASC);
 }

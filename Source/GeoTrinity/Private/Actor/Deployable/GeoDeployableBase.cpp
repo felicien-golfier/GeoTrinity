@@ -320,7 +320,7 @@ void AGeoDeployableBase::BeginPlay()
 
 	if (!GeoLib::IsDedicatedServer(this))
 	{
-		ExecuteCue(SpawnCue, GetSpawnCueParams());
+		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), SpawnCue, GetSpawnCueParams(), true);
 	}
 	PlaySoundOneShot(EDeployableSoundType::Spawn);
 }
@@ -349,9 +349,9 @@ void AGeoDeployableBase::PlayRecallCosmetics(float const Value)
 	// Local cues: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
 	bool const bRendersLocally = !GeoLib::IsDedicatedServer(this);
 
-	if (bRendersLocally && RecallCue.CueTag.IsValid())
+	if (bRendersLocally && RecallCue.IsValid())
 	{
-		ExecuteCue(RecallCue, GetRecallCueParams());
+		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), RecallCue, GetRecallCueParams(), true);
 	}
 	PlaySoundOneShot(EDeployableSoundType::Recall);
 
@@ -360,23 +360,16 @@ void AGeoDeployableBase::PlayRecallCosmetics(float const Value)
 		return;
 	}
 
-	if (bRendersLocally && ExplodeCue.CueTag.IsValid())
+	if (bRendersLocally && ExplodeCue.IsValid())
 	{
 		FGameplayCueParameters CueParams = GetGenericCueParams(ExplodeCue);
 		// Value is server-side only (never replicated), so a client's copy of this cue always carries 0.
 		CueParams.Normal.X = Value;
-		ExecuteCue(ExplodeCue, CueParams);
+		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), ExplodeCue, CueParams, true);
 	}
 	PlaySoundOneShot(EDeployableSoundType::Explode);
 }
 
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::ExecuteCue(FGeoCueParam const& Cue, FGameplayCueParameters const& CueParams) const
-{
-	// Each machine fires the cue once: host via the call site, clients via OnRep.
-	GeoASLib::ExecuteLocalGameplayCue(GetAbilitySystemComponent(), Cue.CueTag, CueParams);
-}
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::PlaySoundOneShot(EDeployableSoundType const SoundType) const
@@ -426,7 +419,7 @@ void AGeoDeployableBase::Expire(bool const bForce)
 	{
 		if (!GeoLib::IsDedicatedServer(this))
 		{
-			ExecuteCue(ExpireCue, GetGenericCueParams(ExpireCue));
+			GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), ExpireCue, GetGenericCueParams(ExpireCue), true);
 		}
 		PlaySoundOneShot(EDeployableSoundType::Expire);
 		if (!bRecalled)
@@ -490,9 +483,9 @@ void AGeoDeployableBase::StartBlinking()
 										   GetData()->Params.BlinkDuration, false);
 
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
-	if (BlinkingCue.CueTag.IsValid() && !GeoLib::IsDedicatedServer(this))
+	if (BlinkingCue.IsValid() && !GeoLib::IsDedicatedServer(this))
 	{
-		ExecuteCue(BlinkingCue, GetBlinkCueParams());
+		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), BlinkingCue, GetBlinkCueParams(), true);
 	}
 	PlaySoundOneShot(EDeployableSoundType::Blinking);
 
@@ -587,14 +580,12 @@ FGameplayCueParameters AGeoDeployableBase::GetBlinkCueParams() const
 
 FGameplayCueParameters AGeoDeployableBase::GetGenericCueParams(FGeoCueParam const& Cue) const
 {
-	FGameplayCueParameters CueParams;
-	CueParams.Location = GetActorLocation();
+	FVector Location = GetActorLocation();
 	// TODO: find a better solution
-	CueParams.Location.Z = 1.f; // Ensure all Cues happens just above the floor
-	CueParams.EffectCauser = const_cast<AGeoDeployableBase*>(this);
-	CueParams.Instigator = GetData()->Instigator;
-	CueParams.AbilityLevel = GetData()->Level;
-	Cue.FillCueParams(CueParams);
+	Location.Z = 1.f; // Ensure all Cues happens just above the floor
+
+	FGameplayCueParameters CueParams = Cue.MakeCueParams(GetData()->Instigator, const_cast<AGeoDeployableBase*>(this),
+														 Location, GetData()->Level, GetData()->AbilityTag);
 	CueParams.RawMagnitude = GetData()->Params.Size;
 	CueParams.NormalizedMagnitude = GetData()->Params.Value;
 	return CueParams;

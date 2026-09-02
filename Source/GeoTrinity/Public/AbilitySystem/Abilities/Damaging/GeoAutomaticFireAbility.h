@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Data/GeoCueParam.h"
 #include "Camera/CameraShakeBase.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
@@ -72,9 +73,10 @@ protected:
 	/** How far (cm) the mesh snaps backward on each shot. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|GameFeel", meta = (ClampMin = "0"))
 	float RecoilDistance = 12.f;
-	/** GameplayCue executed locally on the shooting client each shot. Use for muzzle flash, fire sound, etc. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (Categories = "GameplayCue"))
-	FGameplayTag FireGameplayCueTag;
+	/** Cue executed on each shot for muzzle flash, fire sound, etc.: origin in Location, aim direction in Normal, the
+	 * shot's seed in RawMagnitude. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel")
+	FGeoCueParam FireCue;
 
 	int32 CurrentShotIndex = 0;
 

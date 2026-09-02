@@ -4,7 +4,6 @@
 #include "UGeoGameplayLibrary.generated.h"
 
 
-class AGeoCharacter;
 struct FGameplayTag;
 // Should be used as default value to spawn projectiles / characters etc... Also should be Playable Character's half
 // capsule height.
@@ -107,13 +106,6 @@ public:
 	 * keyboard-layout rebinds). Every other couch-coop player is gamepad-only.
 	 */
 	static bool IsKeyboardMousePlayer(APlayerController const* PlayerController);
-
-	/**
-	 * Returns Owner cast to AGeoCharacter; if Owner is a PlayerState, resolves and returns its pawn instead.
-	 * Returns nullptr when neither cast succeeds (e.g. non-character owner actor).
-	 */
-	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary")
-	static AGeoCharacter* GetCharacterFromOwner(AActor* Owner);
 
 	/**
 	 * Returns the current server world time in seconds.

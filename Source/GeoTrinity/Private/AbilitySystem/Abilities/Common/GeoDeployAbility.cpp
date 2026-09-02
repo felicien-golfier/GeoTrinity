@@ -124,17 +124,16 @@ void UGeoDeployAbility::OnCooldownTagChanged(FGameplayTag const /*CooldownTag*/,
 	bool const bRefilled = NewStacks > LastKnownStacks;
 	LastKnownStacks = NewStacks;
 
-	FGameplayTag const CueTag = GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
-	if (bRefilled && IsLocallyControlled() && CueTag.IsValid())
+	AActor* const Avatar = GetAvatarActorFromActorInfo();
+	if (bRefilled && IsLocallyControlled() && IsValid(Avatar))
 	{
-		static FGameplayTag const SoundTag = FGameplayTag::RequestGameplayTag(FName("Event.Sound.DeployableAvailable"));
-
-		FGameplayCueParameters CueParams;
-		CueParams.Instigator = GetAvatarActorFromActorInfo();
-		CueParams.AggregatedSourceTags.AddTag(SoundTag);
+		FGeoCueParam const& RefillCue = GetDefault<UGameDataSettings>()->RefillDeployableCue;
 
 		// Each client fires the cue itself off its own predicted/replicated tag edge.
-		GeoASLib::ExecuteLocalGameplayCue(GetAbilitySystemComponentFromActorInfo(), CueTag, CueParams);
+		GeoASLib::ExecuteGeoCue(
+			GetAbilitySystemComponentFromActorInfo(), RefillCue,
+			RefillCue.MakeCueParams(Avatar, Avatar, Avatar->GetActorLocation(), GetAbilityLevel(), GetAbilityTag()),
+			true);
 	}
 }
 

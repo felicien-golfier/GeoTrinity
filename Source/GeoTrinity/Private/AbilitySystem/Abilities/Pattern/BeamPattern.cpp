@@ -186,9 +186,9 @@ void UBeamPattern::ApplyBeamEffects(bool const bPerSecond, TArray<AActor*> const
 	}
 }
 
-FGameplayCueParameters UBeamPattern::FillCueParam(FAbilityPayload const& Payload)
+FGameplayCueParameters UBeamPattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)
 {
-	FGameplayCueParameters CueParams = Super::FillCueParam(Payload);
+	FGameplayCueParameters CueParams = Super::FillCueParam(Cue, Payload);
 	CueParams.RawMagnitude = BeamRange;
 	return CueParams;
 }
