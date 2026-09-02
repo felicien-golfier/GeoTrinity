@@ -92,6 +92,7 @@ public:
 	EGeoPulseMode PulseMode = EGeoPulseMode::Actors;
 
 protected:
+	/** Fires when Boss replicates; (re)applies the boss bar on the owning client. */
 	UFUNCTION()
 	void OnRep_Boss();
 
