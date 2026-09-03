@@ -60,9 +60,9 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 
 float UBeamPattern::GetBeamYaw(float const SpentTime) const
 {
-	if (FollowBossOrientation && IsValid(StoredPayload.Instigator))
+	if (FollowBossOrientation && IsValid(StoredPayload.SourceAvatar))
 	{
-		return StoredPayload.Instigator->GetActorRotation().Yaw;
+		return StoredPayload.SourceAvatar->GetActorRotation().Yaw;
 	}
 
 	float const SweptFraction = FMath::Clamp(SpentTime / BeamDuration, 0.f, 1.f);
@@ -72,9 +72,9 @@ float UBeamPattern::GetBeamYaw(float const SpentTime) const
 
 FVector UBeamPattern::GetBeamOrigin() const
 {
-	if (FollowBossLocation && IsValid(StoredPayload.Instigator))
+	if (FollowBossLocation && IsValid(StoredPayload.SourceAvatar))
 	{
-		return StoredPayload.Instigator->GetActorLocation();
+		return StoredPayload.SourceAvatar->GetActorLocation();
 	}
 
 	return FVector(StoredPayload.Origin, ArbitraryCharacterZ);
@@ -130,12 +130,12 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 						  false, 0.f);
 		}
 
-		UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
+		UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceOwner);
 		// A missing ASC only costs the damage: falling through still lets the beam reach its end and stop ticking.
 		if (ensureMsgf(SourceASC, TEXT("UBeamPattern: Owner has no ASC")))
 		{
 			TArray<AActor*> ActorsInBeam = GeoASLib::GetInteractableActorsInLine(
-				this, GeoASLib::GetTeamId(StoredPayload.Owner), TeamAttitudeMask::HostileOrNeutral,
+				this, GeoASLib::GetTeamId(StoredPayload.SourceOwner), TeamAttitudeMask::HostileOrNeutral,
 				/*bMustBeDamageable*/ true, FVector2D(Location), Forward, BeamRange, BeamHalfWidth, OverlapMode);
 
 			ApplyBeamEffects(/*bPerSecond*/ true, ActorsInBeam, SourceASC);

@@ -86,6 +86,44 @@ void AGeoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AGeoCharacter, bIsDead);
 	DOREPLIFETIME(AGeoCharacter, bReviving);
 	DOREPLIFETIME(AGeoCharacter, bDiedFromFall);
+	DOREPLIFETIME(AGeoCharacter, bInvulnerable);
+}
+
+void AGeoCharacter::SetInvulnerable(bool const bNewInvulnerable)
+{
+	bInvulnerable = bNewInvulnerable;
+	ApplyInvulnerability();
+
+	// Effect removal is authoritative and replicates down; a client running it would drop replicated effects out of
+	// the fast array without their granted tags.
+	if (bInvulnerable && IsValid(AbilitySystemComponent) && GeoLib::IsServer(this))
+	{
+		FGameplayEffectQuery Query;
+		Query.CustomMatchDelegate.BindLambda(
+			[OwnASC = AbilitySystemComponent.Get()](FActiveGameplayEffect const& ActiveEffect)
+			{
+				return ActiveEffect.Spec.GetEffectContext().GetOriginalInstigatorAbilitySystemComponent() != OwnASC;
+			});
+		AbilitySystemComponent->RemoveActiveEffects(Query);
+	}
+}
+
+void AGeoCharacter::OnRep_Invulnerable()
+{
+	ApplyInvulnerability();
+}
+
+void AGeoCharacter::ApplyInvulnerability()
+{
+	// Death owns collision/damage/gravity while the character is down; don't fight it.
+	if (bIsDead)
+	{
+		return;
+	}
+	SetCanBeDamaged(!bInvulnerable);
+	// With collision off there is no floor left to stand on, so gravity would drop the character while it waits.
+	SetActorEnableCollision(!bInvulnerable);
+	GetGeoMovementComponent()->GravityScale = bInvulnerable ? 0.f : 1.f;
 }
 
 void AGeoCharacter::Tick(float DeltaSeconds)

@@ -78,8 +78,8 @@ void AGeoMine::ExplodeEffect(float const Value)
 
 	float const SpawnServerTime = GeoLib::GetServerTime(GetWorld());
 	FAbilityPayload Payload;
-	Payload.Owner = MineData.Owner;
-	Payload.Instigator = this;
+	Payload.SourceOwner = MineData.Owner;
+	Payload.SourceAvatar = this;
 	Payload.Origin = FVector2D(GetActorLocation());
 	Payload.ServerSpawnTime = SpawnServerTime;
 	Payload.AbilityLevel = MineData.Level;

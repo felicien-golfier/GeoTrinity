@@ -20,8 +20,9 @@ void UGeoSpawnOnTileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData
 {
 	Super::Fire(AbilityTargetData);
 
-	AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
-	if (ensureMsgf(Arena, TEXT("UGeoSpawnOnTileAbility: %s is not a hex arena boss"), *GetNameSafe(StoredPayload.Owner))
+	AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.SourceAvatar);
+	if (ensureMsgf(Arena, TEXT("UGeoSpawnOnTileAbility: %s is not a hex arena boss"),
+				   *GetNameSafe(StoredPayload.SourceAvatar))
 		&& ensureMsgf(DeployableClass, TEXT("UGeoSpawnOnTileAbility: DeployableClass is not set")))
 	{
 		FRandomStream Stream(StoredPayload.Seed);

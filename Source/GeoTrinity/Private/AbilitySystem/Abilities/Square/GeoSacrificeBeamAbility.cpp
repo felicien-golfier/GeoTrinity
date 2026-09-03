@@ -134,7 +134,7 @@ void UGeoSacrificeBeamAbility::TickBeam(float const /*DeltaTime*/, TArray<AActor
 		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
 		// The Square is the final redirect receiver — never sacrifice it. Walls CAN be sacrificed; the redirect
 		// shares they receive (and their own drain) carry bDoNotRedirectSacrifice so nothing loops.
-		if (Target == StoredPayload.Instigator || !IsValid(TargetASC))
+		if (Target == StoredPayload.SourceAvatar || !IsValid(TargetASC))
 		{
 			continue;
 		}

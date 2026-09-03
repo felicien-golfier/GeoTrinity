@@ -148,6 +148,10 @@ public:
 	/** Returns every currently-alive APlayableCharacter, found by iterating player controllers' pawns. */
 	UFUNCTION(BlueprintCallable, Category = "GeoGameplayLibrary", meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<APlayableCharacter*> GetAlivePlayers(UObject const* WorldContextObject);
+
+	/** Resolves an owner (as returned by StateTree's Context.GetOwner(), an AIController or a Pawn depending on
+	 * schema) down to the controlled Pawn. Returns Owner itself already cast to APawn if it isn't a controller. */
+	static APawn* ResolveOwnerPawn(UObject* Owner);
 };
 
 using GeoLib = UGeoGameplayLibrary;

@@ -207,7 +207,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoStatusBar")
 	TArray<FGeoActiveEffectIcon> GetActiveEffectIcons() const;
 
-	/** Binds Health and Shield attribute delegates on ASC so delta changes spawn floating numbers at OwnerActor. */
+	/** Binds Health and Shield attribute delegates on ASC so deltas feed OwnerActor's floating-number buffer. */
 	void RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor);
 	/** Finds or creates a pooled UGeoDamageNumberWidget and activates it at the projected screen position. */
 	void SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocation);
@@ -258,6 +258,13 @@ private:
 	/** Bound to the avatar's deployable manager; fires the tagless OnPlayerDeployCountChanged ping (args ignored). */
 	UFUNCTION()
 	void HandleDeployCountChanged(int32 CurrentCount, int32 MaxCount);
+
+	/**
+	 * Adds Delta to Carry and spawns a number of the nearest whole value once it reaches 1, so sub-1 ticks stack into
+	 * a readable number instead of showing a fraction. Carry belongs to the one attribute delegate that feeds it, so
+	 * a heal and a shield chip in the same frame never cancel out.
+	 */
+	void BufferDamageNumber(AActor* OwnerActor, float& Carry, float Delta);
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GeoHUD")

@@ -16,6 +16,7 @@ UENUM(BlueprintType)
 enum class EProjectileSoundType : uint8
 {
 	Start,
+	/** Single entry only — the projectile owns one looping audio component. */
 	Looping,
 	/** Played when the projectile's life ends without a valid target: wall hit, distance span, or lifespan. */
 	NoOverlapEnd,
@@ -77,9 +78,9 @@ struct FProjectileParamsBase
 			  meta = (ClampMin = "0", UIMin = "0", OverrideToggle = "OverrideTrailLifetimeScale"))
 	float TrailLifetimeScale = 1.f;
 
-	/** Per-sound-type sound asset + volume + audience + attribute-driven pitch mapping. */
+	/** Sounds of each moment of the projectile's life. Every entry of a list plays together. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (OverrideToggle = "OverrideSoundMap"))
-	TMap<EProjectileSoundType, FGeoSoundEntry> SoundMap;
+	TMap<EProjectileSoundType, FGeoSoundEntryList> SoundMap;
 
 	/** Team attitudes (relative to the projectile's owner) whose actors count as a valid overlap. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,

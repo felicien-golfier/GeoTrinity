@@ -12,9 +12,9 @@ struct FPillarTarget
 {
 	TWeakObjectPtr<AActor> Target;
 	// Scatter of a surplus pillar, keeping it beside the character it shares instead of on top of the other pillar.
-	FVector2D Offset;
+	FVector2D Offset = FVector2D::ZeroVector;
 	// Zone position when the pillar was chosen, Offset included. Only read once Target no longer exists.
-	FVector2D FallbackLocation;
+	FVector2D FallbackLocation = FVector2D::ZeroVector;
 };
 
 /**

@@ -89,14 +89,14 @@ void UGeoAbilitySystemLibrary::NotifyAbilityHit(FAbilityPayload const& Payload, 
 		return;
 	}
 
-	UGeoAbilitySystemComponent* InstigatorASC = GetGeoAscFromActor(Payload.Owner);
-	if (!IsValid(InstigatorASC))
+	UGeoAbilitySystemComponent* SourceASC = GetGeoAscFromActor(Payload.SourceOwner);
+	if (!IsValid(SourceASC))
 	{
 		return;
 	}
 
 	*Payload.HitNotified = true;
-	InstigatorASC->OnAbilityHit.Broadcast(Payload.AbilityTag, Payload.Instigator, HitActor);
+	SourceASC->OnAbilityHit.Broadcast(Payload.AbilityTag, Payload.SourceAvatar, HitActor);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -448,8 +448,8 @@ UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 											   FDeployableDataParams const& Params, FTransform const& SpawnTransform)
 {
-	AGeoDeployableBase* Deployable =
-		StartSpawnDeployable(DeployableActorClass, Payload.Owner, Cast<APawn>(Payload.Instigator), SpawnTransform);
+	AGeoDeployableBase* Deployable = StartSpawnDeployable(DeployableActorClass, Payload.SourceOwner,
+														  Cast<APawn>(Payload.SourceAvatar), SpawnTransform);
 	if (!ensureMsgf(IsValid(Deployable), TEXT("%hs: failed to spawn %s"), __FUNCTION__,
 					*DeployableActorClass->GetName()))
 	{
@@ -504,14 +504,14 @@ void UGeoAbilitySystemLibrary::FillDeployableData(FDeployableData& Data, FAbilit
 												  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 												  FDeployableDataParams const& Params)
 {
-	Data.Owner = Payload.Owner;
-	Data.Instigator = Payload.Instigator;
+	Data.Owner = Payload.SourceOwner;
+	Data.Instigator = Payload.SourceAvatar;
 	Data.Level = Payload.AbilityLevel;
 	Data.Seed = Payload.Seed;
 	Data.Params = Params;
 	Data.EffectDataArray = EffectDataArray;
 	Data.AbilityTag = Payload.AbilityTag;
-	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Payload.Owner))
+	if (IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(Payload.SourceOwner))
 	{
 		Data.TeamID = TeamInterface->GetGenericTeamId();
 	}
@@ -576,12 +576,12 @@ UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, FExternalPro
 	if (Params.ProjectileClass->ImplementsInterface(UGeoPoolableInterface::StaticClass()))
 	{
 		Projectile = UGeoActorPoolingSubsystem::Get(World)->RequestActor(
-			Params.ProjectileClass, SpawnTransform, Payload.Owner, Cast<APawn>(Payload.Instigator), false);
+			Params.ProjectileClass, SpawnTransform, Payload.SourceOwner, Cast<APawn>(Payload.SourceAvatar), false);
 	}
 	else
 	{
-		Projectile = World->SpawnActorDeferred<AGeoProjectile>(Params.ProjectileClass, SpawnTransform, Payload.Owner,
-															   Cast<APawn>(Payload.Instigator),
+		Projectile = World->SpawnActorDeferred<AGeoProjectile>(Params.ProjectileClass, SpawnTransform,
+															   Payload.SourceOwner, Cast<APawn>(Payload.SourceAvatar),
 															   ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	}
 
@@ -708,15 +708,14 @@ int UGeoAbilitySystemLibrary::GetAndCheckSection(UAnimMontage const* AnimMontage
 
 UAnimInstance* UGeoAbilitySystemLibrary::GetAnimInstance(FAbilityPayload const& Payload)
 {
-	ACharacter* InstigatorCharacter = Cast<ACharacter>(Payload.Instigator);
-	if (!IsValid(InstigatorCharacter))
+	ACharacter* AvatarCharacter = Cast<ACharacter>(Payload.SourceAvatar);
+	if (!IsValid(AvatarCharacter))
 	{
 		UE_LOG(LogPattern, Error, TEXT("We support only animation montage for character in pattern for now !"));
 		return nullptr;
 	}
 
-	UAnimInstance* AnimInstance =
-		InstigatorCharacter->GetMesh() ? InstigatorCharacter->GetMesh()->GetAnimInstance() : nullptr;
+	UAnimInstance* AnimInstance = AvatarCharacter->GetMesh() ? AvatarCharacter->GetMesh()->GetAnimInstance() : nullptr;
 	if (!AnimInstance)
 	{
 		UE_LOG(LogPattern, Error, TEXT("Please set an anim instance (With the Default Slot filled in anim graph;)"));
@@ -748,8 +747,7 @@ bool UGeoAbilitySystemLibrary::IsBuffed(UGeoAbilitySystemComponent const& ASC, F
 		&& ASC.GetNumericAttribute(Attribute) > ASC.GetNumericAttributeBase(Attribute);
 }
 
-float UGeoAbilitySystemLibrary::GetEffectBoostBonus(UAbilitySystemComponent const& ASC,
-													FGameplayEffectSpec const& Spec)
+float UGeoAbilitySystemLibrary::GetEffectBoostBonus(UAbilitySystemComponent const& ASC, FGameplayEffectSpec const& Spec)
 {
 	float Bonus = 0.f;
 	for (int32 ModifierIndex = 0; ModifierIndex < Spec.Modifiers.Num(); ++ModifierIndex)

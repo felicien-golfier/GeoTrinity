@@ -50,15 +50,15 @@ void USpawnPillarPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 	// Local cue: run on every rendering machine incl. the listen-server host; skip only the dedicated server.
 	if (Cue.IsValid() && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
-		UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
-		if (ensureMsgf(IsValid(InstigatorASC), TEXT("Pattern Instigator %s has no ASC !"),
-					   *StoredPayload.Instigator->GetName()))
+		UGeoAbilitySystemComponent* AvatarASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceAvatar);
+		if (ensureMsgf(IsValid(AvatarASC), TEXT("Pattern source avatar %s has no ASC !"),
+					   *GetNameSafe(StoredPayload.SourceAvatar)))
 		{
 			for (FVector2D const& Location : PillarSpawnLocations)
 			{
 				FGameplayCueParameters CueParams = FillCueParam(Cue, StoredPayload);
 				CueParams.Location = FVector(Location, ArbitraryCharacterZ);
-				GeoASLib::ExecuteGeoCue(InstigatorASC, Cue, CueParams, true);
+				GeoASLib::ExecuteGeoCue(AvatarASC, Cue, CueParams, true);
 			}
 		}
 	}
@@ -67,13 +67,13 @@ void USpawnPillarPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 void USpawnPillarPattern::StartPattern()
 {
 	Super::StartPattern();
-	UGeoAbilitySystemComponent* InstigatorAsc = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
+	UGeoAbilitySystemComponent* AvatarASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceAvatar);
 
 	if (UGeoGameplayLibrary::IsServer(GetWorld()))
 	{
 		for (FVector2D const& Location : PillarSpawnLocations)
 		{
-			SpawnPillarAtLocation(Location, InstigatorAsc);
+			SpawnPillarAtLocation(Location, AvatarASC);
 			if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
 			{
 				return;
@@ -85,12 +85,12 @@ void USpawnPillarPattern::StartPattern()
 }
 
 void USpawnPillarPattern::SpawnPillarAtLocation(FVector2D const& ZoneLocation,
-												UGeoAbilitySystemComponent* InstigatorAsc) const
+												UGeoAbilitySystemComponent* AvatarASC) const
 {
-	if (InstigatorAsc && PillarSpawnEffects.Num() > 0)
+	if (AvatarASC && PillarSpawnEffects.Num() > 0)
 	{
 		for (AActor* TargetActor :
-			 GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Owner),
+			 GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.SourceOwner),
 											 TeamAttitudeMask::HostileOrNeutral, true, ZoneLocation, SpawningZoneSize))
 		{
 			if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
@@ -102,7 +102,7 @@ void USpawnPillarPattern::SpawnPillarAtLocation(FVector2D const& ZoneLocation,
 			{
 				if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
 				{
-					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, InstigatorAsc, TargetASC,
+					UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(PillarSpawnEffects, AvatarASC, TargetASC,
 																		StoredPayload.AbilityLevel, StoredPayload.Seed,
 																		StoredPayload.AbilityTag);
 					UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, TargetActor);

@@ -20,7 +20,7 @@ void UGeoTileBombAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	Super::Fire(AbilityTargetData);
 
 	TArray<APlayableCharacter*> const Candidates = GeoASLib::GetInteractableActors<APlayableCharacter>(
-		this, GeoASLib::GetTeamId(StoredPayload.Owner), TeamAttitudeMask::HostileOrNeutral,
+		this, GeoASLib::GetTeamId(StoredPayload.SourceOwner), TeamAttitudeMask::HostileOrNeutral,
 		/*bMustBeDamageable*/ true, StoredPayload.Origin, /*MaxDistance*/ 0.f);
 
 	if (Candidates.IsEmpty())
@@ -33,8 +33,8 @@ void UGeoTileBombAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	FRandomStream Stream(StoredPayload.Seed);
 	APlayableCharacter* const Carrier = Candidates[Stream.RandHelper(Candidates.Num())];
 
-	if (AGeoDeployableBase* const Bomb = GeoASLib::FullySpawnDeployable(
-			BombClass, StoredPayload, GetEffectDataArray(), BombParams, Carrier->GetActorTransform()))
+	if (AGeoDeployableBase* const Bomb = GeoASLib::FullySpawnDeployable(BombClass, StoredPayload, GetEffectDataArray(),
+																		BombParams, Carrier->GetActorTransform()))
 	{
 		Bomb->AttachToActor(Carrier, FAttachmentTransformRules::KeepWorldTransform);
 	}

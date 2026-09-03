@@ -7,6 +7,7 @@
 #include "Animation/AnimInstance.h"
 #include "StateTreeAsyncExecutionContext.h"
 #include "StateTreeExecutionContext.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 FSTTask_PlayMontage::FSTTask_PlayMontage()
 {
@@ -56,11 +57,5 @@ void FSTTask_PlayMontage::ExitState(FStateTreeExecutionContext& Context,
 
 UGeoAbilitySystemComponent* FSTTask_PlayMontage::GetASC(FStateTreeExecutionContext const& Context) const
 {
-	AActor* Actor = Cast<AActor>(Context.GetOwner());
-	if (AController const* const Controller = Cast<AController>(Actor))
-	{
-		Actor = Controller->GetPawn();
-	}
-
-	return GeoASLib::GetGeoAscFromActor(Actor);
+	return GeoASLib::GetGeoAscFromActor(GeoLib::ResolveOwnerPawn(Context.GetOwner()));
 }

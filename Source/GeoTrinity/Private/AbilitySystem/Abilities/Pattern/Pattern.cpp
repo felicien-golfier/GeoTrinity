@@ -83,14 +83,14 @@ void UPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 		return;
 	}
 
-	UGeoAbilitySystemComponent* InstigatorASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Instigator);
-	if (!ensureMsgf(IsValid(InstigatorASC), TEXT("Pattern %s: instigator has no ASC"), *GetName()))
+	UGeoAbilitySystemComponent* AvatarASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceAvatar);
+	if (!ensureMsgf(IsValid(AvatarASC), TEXT("Pattern %s: source avatar has no ASC"), *GetName()))
 	{
 		return;
 	}
 
-	FScopedPredictionWindow ScopedPredictionWindow(InstigatorASC);
-	GeoASLib::ExecuteGeoCue(InstigatorASC, Cue, FillCueParam(Cue, StoredPayload), false);
+	FScopedPredictionWindow ScopedPredictionWindow(AvatarASC);
+	GeoASLib::ExecuteGeoCue(AvatarASC, Cue, FillCueParam(Cue, StoredPayload), false);
 }
 
 FGameplayCueParameters UPattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)

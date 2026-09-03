@@ -96,13 +96,13 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		FRandomStream Rng(StoredPayload.Seed);
 		float const RandomAngle = Rng.FRandRange(0.f, 2.f * PI);
 		float const RandomRadius = Rng.FRandRange(MinSpawnRadius, MaxSpawnRadius);
-		FVector const InstigatorLocation = StoredPayload.Instigator->GetActorLocation();
+		FVector const AvatarLocation = StoredPayload.SourceAvatar->GetActorLocation();
 		FVector const SpawnOffset = GetReachableSpawnOffset(
-			InstigatorLocation, {FMath::Cos(RandomAngle) * RandomRadius, FMath::Sin(RandomAngle) * RandomRadius, 0.f});
-		FTransform const SpawnTransform{InstigatorLocation};
+			AvatarLocation, {FMath::Cos(RandomAngle) * RandomRadius, FMath::Sin(RandomAngle) * RandomRadius, 0.f});
+		FTransform const SpawnTransform{AvatarLocation};
 
 		AGeoBuffPickup* Pickup = GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(
-			BuffPickupClass, SpawnTransform, StoredPayload.Instigator, Cast<APawn>(StoredPayload.Instigator),
+			BuffPickupClass, SpawnTransform, StoredPayload.SourceAvatar, Cast<APawn>(StoredPayload.SourceAvatar),
 			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
 		if (!ensureMsgf(IsValid(Pickup), TEXT("GeoTriangleReloadAbility: Failed to spawn AGeoBuffPickup!")))
@@ -117,7 +117,7 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		PickupData.EffectDataArray = {BuffEffects[Index]};
 		PickupData.PowerScale = PowerScale;
 		PickupData.BuffIndex = Index;
-		PickupData.TargetLocation = InstigatorLocation + SpawnOffset;
+		PickupData.TargetLocation = AvatarLocation + SpawnOffset;
 
 		Pickup->InitInteractable(&PickupData);
 		Pickup->FinishSpawning(SpawnTransform);
@@ -133,7 +133,7 @@ FVector UGeoReloadAbility::GetReachableSpawnOffset(FVector Origin, FVector Desir
 
 	FHitResult Hit;
 	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(StoredPayload.Instigator);
+	QueryParams.AddIgnoredActor(StoredPayload.SourceAvatar);
 	if (!GetWorld()->LineTraceSingleByChannel(Hit, Origin, TargetLocation, ECC_GeoCharacter, QueryParams))
 	{
 		return DesiredOffset;

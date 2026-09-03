@@ -44,7 +44,7 @@ private:
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
 	virtual void ExecuteGameplayCue(FGeoCueParam const& Cue) override;
-	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* InstigatorAsc) const;
+	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* AvatarASC) const;
 	virtual void StartPattern() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoPillar", meta = (AllowPrivateAccess = "true"))

@@ -155,10 +155,10 @@ protected:
 
 	/**
 	 * Runs the hit path against everything the projectile already sits inside, for a shot fired point-blank into a
-	 * hitbox. The pool enables collision — and broadcasts that first begin-overlap — before InitProjectileLife binds the
-	 * delegate, so nothing is listening when it fires and the engine never repeats it while the projectile stays inside.
-	 * Deferred to the next tick by InitProjectileLife so a spawn-frame hit cannot recycle the projectile under the
-	 * ability that is still spawning it.
+	 * hitbox. The pool enables collision — and broadcasts that first begin-overlap — before InitProjectileLife binds
+	 * the delegate, so nothing is listening when it fires and the engine never repeats it while the projectile stays
+	 * inside. Deferred to the next tick by InitProjectileLife so a spawn-frame hit cannot recycle the projectile under
+	 * the ability that is still spawning it.
 	 */
 	void ResolveInitialOverlaps();
 
@@ -188,6 +188,18 @@ protected:
 	void OnProjectileHit(AActor* HitActor);
 
 	/**
+	 * Returns the volume multiplier for the sound identified by SoundType.
+	 * Default: looks up ResolvedParams.SoundMap and forwards to GetVolume(Entry).
+	 * Returns 1.0 if no entry exists. Override in Blueprint for custom logic.
+	 */
+	UFUNCTION(BlueprintNativeEvent, Category = "GeoProjectile|Audio")
+	float GetVolume(EProjectileSoundType SoundType) const;
+
+	/** Returns the volume for Entry via UGeoSoundRowLibrary::GetVolume with the projectile's instigator.
+	 * Virtual so subclasses can layer additional volume factors. */
+	virtual float GetVolume(FGeoSoundEntry const& Entry) const;
+
+	/**
 	 * Returns the pitch multiplier for the sound identified by SoundType.
 	 * Default: looks up ResolvedParams.SoundMap and forwards to GetPitch(Entry).
 	 * Returns 1.0 if no entry exists. Override in Blueprint for custom logic.
@@ -199,15 +211,20 @@ protected:
 	 * Virtual so subclasses can layer additional pitch factors (e.g. size). */
 	virtual float GetPitch(FGeoSoundEntry const& Entry) const;
 
-	/** Plays the mapped sound once at the actor's location with its audience-gated volume and attribute-driven pitch.
-	 */
+	/** Plays every sound mapped to SoundType once at the actor's location, with audience-gated volume and pitch. */
 	void PlaySoundOneShot(EProjectileSoundType SoundType) const;
 
 	/** Plays Entry once at the actor's location with its audience-gated volume and attribute-driven pitch. */
 	void PlaySoundOneShot(FGeoSoundEntry const& Entry) const;
 
-	/** Returns Payload.Instigator, falling back to GetInstigator() when the payload is not replicated. */
-	AActor* GetCurrentInstigator() const;
+	/** Returns the actor this shot belongs to — the ASC that applies its effects and answers for its team.
+	 *  Payload.SourceOwner, falling back to the replicated AActor Owner on a simulated proxy, where the payload never
+	 *  arrives. */
+	AActor* GetSourceOwner() const;
+
+	/** Returns the actor that emitted this shot. Payload.SourceAvatar, falling back to the replicated AActor Instigator
+	 *  on a simulated proxy — which only carries it for a pawn emitter, never a turret or a mine. */
+	AActor* GetSourceAvatar() const;
 
 	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
 	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
@@ -233,8 +250,8 @@ protected:
 	TObjectPtr<UNiagaraComponent> BulletVFX;
 
 	/** Dresses the shot in whatever buff its owner is carrying (UGameDataSettings::BuffVFX). InitProjectileLife points
-	 * it at Payload.Owner's ASC — a shot has no attributes of its own. Native subobject so no projectile Blueprint can
-	 * be missing it. */
+	 * it at Payload.SourceOwner's ASC — a shot has no attributes of its own. Native subobject so no projectile
+	 * Blueprint can be missing it. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
 	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
 

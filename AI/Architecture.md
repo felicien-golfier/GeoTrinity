@@ -39,8 +39,9 @@ Multicast RPC with deterministic time-synced spawning via `FAbilityPayload` (Ori
 
 ### `FAbilityPayload`
 Internal ability data stored as `StoredPayload` on ability instances; also used by the pattern system.
-- Fields: `Origin`, `Yaw`, `ServerSpawnTime`, `Seed`, `AbilityTag`, `Owner`, `Instigator`
+- Fields: `Origin`, `Yaw`, `ServerSpawnTime`, `Seed`, `AbilityTag`, `SourceOwner`, `SourceAvatar`
 - **Always use `StoredPayload` fields** instead of calling ability helper functions (`GetAvatarActor()`, etc.) — the payload is set by the client and may intentionally differ from ActorInfo.
+- `SourceOwner` is the actor the shot belongs to — its ASC applies the effects, answers for the team, and owns whatever the shot spawns. `SourceAvatar` is the actor that emitted it: origin, montage, self-ignore. They name one ASC seen from both sides for a player or a boss, but two different ASCs for a turret or a mine, whose `SourceOwner` stays the deployer. Do not read them as `AActor::Owner`/`AActor::Instigator` (net owner / responsible pawn) or as `FGameplayEffectContext`'s `Instigator`/`EffectCauser` — GAS's `Instigator` is this struct's `SourceOwner`.
 
 ### `FGeoAbilityTargetData`
 Per-shot RPC payload sent client→server via `ServerSetReplicatedTargetData`.

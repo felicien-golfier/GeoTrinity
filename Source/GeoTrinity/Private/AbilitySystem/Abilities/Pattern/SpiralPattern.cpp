@@ -67,7 +67,7 @@ void USpiralPattern::TickPattern(float const ServerTime, float const SpentTime)
 			AGeoProjectile* Projectile =
 				Pooling->RequestActor(ProjectileParams.ProjectileClass,
 									  FTransform(ProjectileDirection.ToOrientationRotator(), ProjectileLocation),
-									  StoredPayload.Owner, Cast<APawn>(StoredPayload.Instigator), false, false);
+									  StoredPayload.SourceOwner, Cast<APawn>(StoredPayload.SourceAvatar), false, false);
 
 			Projectile->Payload = StoredPayload;
 			Projectile->EffectDataArray = EffectDataArray;

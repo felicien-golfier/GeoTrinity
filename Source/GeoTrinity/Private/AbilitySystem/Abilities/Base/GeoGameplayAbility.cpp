@@ -109,8 +109,8 @@ FAbilityPayload UGeoGameplayAbility::CreateAbilityPayload(FVector2D const& Origi
 														  float const ServerSpawnTime, int const Seed) const
 {
 	FAbilityPayload Payload;
-	Payload.Owner = GetOwningActorFromActorInfo();
-	Payload.Instigator = GetAvatarActorFromActorInfo();
+	Payload.SourceOwner = GetOwningActorFromActorInfo();
+	Payload.SourceAvatar = GetAvatarActorFromActorInfo();
 	Payload.Origin = Origin;
 	Payload.Yaw = Yaw;
 	Payload.ServerSpawnTime = ServerSpawnTime;
@@ -180,7 +180,7 @@ void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 
 	if (FireMode == EFireMode::ChargeForFireDelay)
 	{
-		if (APlayableCharacter* Character = Cast<APlayableCharacter>(StoredPayload.Instigator))
+		if (APlayableCharacter* Character = Cast<APlayableCharacter>(StoredPayload.SourceAvatar))
 		{
 			SetChargeGaugeVisible(Character, false);
 		}
@@ -230,7 +230,7 @@ void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo con
 		if (FireMode == EFireMode::ChargeForFireDelay)
 		{
 			ChargeStartTime = GetWorld()->GetTimeSeconds();
-			if (APlayableCharacter* Character = Cast<APlayableCharacter>(StoredPayload.Instigator))
+			if (APlayableCharacter* Character = Cast<APlayableCharacter>(StoredPayload.SourceAvatar))
 			{
 				SetChargeGaugeVisible(Character, true);
 			}
@@ -370,8 +370,8 @@ void UGeoGameplayAbility::ClampRemoteClientOrigin()
 FGeoAbilityTargetData UGeoGameplayAbility::GetUpdatedTargetData()
 {
 	FVector2D const Origin =
-		GetFireOrigin2D(StoredPayload.Instigator, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
-	float const Yaw = GetFireYaw(StoredPayload.Instigator, StoredPayload.Seed);
+		GetFireOrigin2D(StoredPayload.SourceAvatar, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
+	float const Yaw = GetFireYaw(StoredPayload.SourceAvatar, StoredPayload.Seed);
 	float const ServerTime = GetStartTime(GetWorld());
 	return FGeoAbilityTargetData(Origin, Yaw, ServerTime, StoredPayload.Seed);
 }
@@ -443,7 +443,8 @@ FVector UGeoGameplayAbility::GetFireOrigin(AActor* Instigator, UGeoAbilitySystem
 
 void UGeoGameplayAbility::RemoteFireShot(AActor* /*Avatar*/, UGeoAbilitySystemComponent* /*SourceASC*/) const
 {
-	ensureMsgf(false, TEXT("%s carries a RemoteFireTag but does not override RemoteFireShot — other clients see nothing."),
+	ensureMsgf(false,
+			   TEXT("%s carries a RemoteFireTag but does not override RemoteFireShot — other clients see nothing."),
 			   *GetName());
 }
 
@@ -475,8 +476,8 @@ void UGeoGameplayAbility::SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySyst
 	float const Yaw = GetFireYaw(Avatar, Seed);
 
 	FAbilityPayload Payload;
-	Payload.Owner = SourceASC->GetOwnerActor();
-	Payload.Instigator = Avatar;
+	Payload.SourceOwner = SourceASC->GetOwnerActor();
+	Payload.SourceAvatar = Avatar;
 	Payload.Origin = FVector2D(Origin);
 	Payload.Yaw = Yaw;
 	Payload.Seed = Seed;

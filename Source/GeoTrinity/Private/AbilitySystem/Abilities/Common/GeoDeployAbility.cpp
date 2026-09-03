@@ -191,10 +191,9 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 	// Cosmetic hand-off, and local by construction: only the machine rendering the ring holds satellites, so nowhere
 	// else moves anything. The projectile itself stays on the fire socket, so the deployable lands where it always did
 	// — a host and a remote client deploy identically.
-	UGeoDeploySatelliteComponent* SatelliteRing =
-		IsValid(StoredPayload.Instigator)
-			? StoredPayload.Instigator->GetComponentByClass<UGeoDeploySatelliteComponent>()
-			: nullptr;
+	UGeoDeploySatelliteComponent* SatelliteRing = IsValid(StoredPayload.SourceAvatar)
+		? StoredPayload.SourceAvatar->GetComponentByClass<UGeoDeploySatelliteComponent>()
+		: nullptr;
 	FVector LaunchLocation;
 	if (SatelliteRing && SatelliteRing->LaunchSatellite(LaunchLocation))
 	{

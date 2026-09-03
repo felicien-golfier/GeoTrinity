@@ -12,7 +12,7 @@ void UTileCarveRayPattern::TickPattern(float const ServerTime, float const Spent
 		FIntPoint LastTile;
 		if (AGeoHexArena* const Arena = FindLastTileHit(SpentTime, LastTile))
 		{
-			Arena->HighlightTile(StoredPayload.Instigator, LastTile);
+			Arena->HighlightTile(StoredPayload.SourceAvatar, LastTile);
 		}
 	}
 
@@ -36,9 +36,10 @@ void UTileCarveRayPattern::EndPattern(bool const bForceStop)
 
 AGeoHexArena* UTileCarveRayPattern::FindLastTileHit(float const SpentTime, FIntPoint& OutTile) const
 {
-	AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.Owner);
+	AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.SourceAvatar);
 	FVector2D const Forward(FRotator(0.f, GetBeamYaw(SpentTime), 0.f).Vector());
-	if (!ensureMsgf(Arena, TEXT("UTileCarveRayPattern: %s is not a hex arena boss"), *GetNameSafe(StoredPayload.Owner))
+	if (!ensureMsgf(Arena, TEXT("UTileCarveRayPattern: %s is not a hex arena boss"),
+					*GetNameSafe(StoredPayload.SourceAvatar))
 		|| !Arena->GetLastAliveTileAlongRay(FVector2D(GetBeamOrigin()), Forward, OutTile))
 	{
 		return nullptr;

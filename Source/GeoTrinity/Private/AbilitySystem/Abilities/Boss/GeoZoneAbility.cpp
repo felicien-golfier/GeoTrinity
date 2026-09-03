@@ -98,8 +98,9 @@ void UGeoZoneAbility::Burst(FVector const& ZoneLocation) const
 {
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
 	TArray<TInstancedStruct<FEffectData>> const EffectDataArray = GetEffectDataArray();
-	for (AActor* Target : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Owner), BurstAttitude,
-														  true, FVector2D(ZoneLocation), ZoneParams.Size))
+	for (AActor* Target :
+		 GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.SourceOwner), BurstAttitude, true,
+										 FVector2D(ZoneLocation), ZoneParams.Size))
 	{
 		if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target))
 		{

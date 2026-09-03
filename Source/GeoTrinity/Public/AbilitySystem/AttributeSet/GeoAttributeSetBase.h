@@ -30,8 +30,12 @@ class GEOTRINITY_API UGeoAttributeSetBase : public UAttributeSet
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	/** Clamps Shield to [0, MaxHealth] before any modification lands. */
+	/** Clamps Health and Shield to [invulnerability floor, MaxHealth] before any modification lands. */
 	virtual void PreAttributeChange(FGameplayAttribute const& Attribute, float& NewValue) override;
+
+	/** The same floor on the base value, which the damage and heal paths write directly: without it the base drifts
+	 * below the clamped current value and the character snaps down at the next aggregator re-evaluation. */
+	virtual void PreAttributeBaseChange(FGameplayAttribute const& Attribute, float& NewValue) const override;
 
 	/**
 	 * Applies IncomingDamage and IncomingHeal meta attributes to Health, clamps to [0, MaxHealth],
@@ -41,7 +45,7 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "GeoBasic", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
-	ATTRIBUTE_ACCESSORS_BASIC(UGeoAttributeSetBase, Health)
+	ATTRIBUTE_ACCESSORS(UGeoAttributeSetBase, Health)
 
 	/** MaxHealth is its own attribute since GameplayEffects may modify it */
 	UPROPERTY(BlueprintReadOnly, Category = "GeoBasic", ReplicatedUsing = OnRep_MaxHealth)
@@ -67,6 +71,13 @@ public:
 	float GetHealthRatio() const;
 
 protected:
+	/**
+	 * Lowest value Attribute may be brought to: zero normally, its own value while the avatar is invulnerable — an
+	 * invulnerable character loses no health or shield, whichever route the modification took. bBaseValue selects
+	 * which value that is, so the base is floored against the base and never ratchets up to a buffed current value.
+	 */
+	float GetInvulnerabilityFloor(FGameplayAttribute const& Attribute, bool bBaseValue) const;
+
 	UFUNCTION()
 	virtual void OnRep_Health(FGameplayAttributeData const& OldHealth);
 	UFUNCTION()

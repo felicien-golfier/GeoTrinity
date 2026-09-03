@@ -231,9 +231,9 @@ protected:
 	void OnBlinkStart_Implementation();
 
 	/**
-	 * Plays the SoundMap entry for SoundType through UGeoSoundRowLibrary — audience-gated on the deploying instigator,
-	 * with its instigator-relative volume and attribute-driven pitch. Called on every machine that reaches the moment,
-	 * next to that moment's cue. Silent when the map holds no entry for SoundType.
+	 * Plays every sound SoundMap maps to SoundType through UGeoSoundRowLibrary — audience-gated on the deploying
+	 * instigator, with its instigator-relative volume and attribute-driven pitch. Called on every machine that reaches
+	 * the moment, next to that moment's cue. Silent when the map holds no entry for SoundType.
 	 */
 	void PlaySoundOneShot(EDeployableSoundType SoundType) const;
 
@@ -277,10 +277,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam ExpireCue;
 
-	/** Sound played at each moment of the deployable's life, alongside that moment's gameplay cue. Sound asset, volume,
-	 * audience and attribute-driven pitch per entry; a moment with no entry plays nothing. */
+	/** Sounds played at each moment of the deployable's life, alongside that moment's gameplay cue. Every entry of a
+	 * list plays together; a moment with no entry plays nothing. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
-	TMap<EDeployableSoundType, FGeoSoundEntry> SoundMap;
+	TMap<EDeployableSoundType, FGeoSoundEntryList> SoundMap;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;

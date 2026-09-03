@@ -36,14 +36,14 @@ void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
 										  TInstancedStruct<FPatternData> const& PatternData)
 {
 	Super::InitPattern(Payload, PatternData);
-	if (!ensureMsgf(IsValid(StoredPayload.Owner), TEXT("%hs: StoredPayload.Owner is null"), __FUNCTION__))
+	if (!ensureMsgf(IsValid(StoredPayload.SourceOwner), TEXT("%hs: StoredPayload.SourceOwner is null"), __FUNCTION__))
 	{
 		return;
 	}
 
 	ClearData();
 
-	StoredPayload.Instigator->SetActorLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
+	StoredPayload.SourceAvatar->SetActorLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
 
 	// Skipped on the "too late" path (Super::InitPattern ran StartPattern synchronously, no wind-up scheduled).
 	if (IsValid(AOEVfxComponent) && StartSectionTimerHandle.IsValid())
@@ -56,7 +56,7 @@ void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
 void UDevastatingWavePattern::AddAllPillarsToVfxMask()
 {
 	for (AGeoPillar* Pillar :
-		 GeoASLib::GetInteractableActors<AGeoPillar>(this, GeoASLib::GetTeamId(StoredPayload.Owner),
+		 GeoASLib::GetInteractableActors<AGeoPillar>(this, GeoASLib::GetTeamId(StoredPayload.SourceOwner),
 													 TeamAttitudeMask::HostileOrNeutral, true, StoredPayload.Origin, 0))
 	{
 		PillarsWaveData.Add({FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Pillar});
@@ -170,12 +170,12 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 		return;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
+	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceOwner);
 	if (ensureMsgf(SourceASC, TEXT("UDevastatingWavePattern: SourceASC is null — Owner has no ASC")))
 	{
 		float const InnerRadius = FMath::Max(0.f, CurrentRadius - AnnulusWidth);
 		TArray<AActor*> ActorsInWaveFront;
-		for (AActor* HitActor : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.Owner),
+		for (AActor* HitActor : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.SourceOwner),
 																TeamAttitudeMask::HostileOrNeutral, true,
 																StoredPayload.Origin, CurrentRadius))
 		{
@@ -312,7 +312,7 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 		return;
 	}
 
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.Owner);
+	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceOwner);
 	if (!ensureMsgf(SourceASC, TEXT("%hs: Owner has no ASC on wave end"), __FUNCTION__))
 	{
 		Super::EndPattern(bForceStop);
@@ -332,9 +332,10 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 			{
 				continue;
 			}
-			UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
-																StoredPayload.AbilityLevel, StoredPayload.Seed,
-																StoredPayload.AbilityTag);
+			FLethalEffectData LethalEffectData;
+			UGeoAbilitySystemLibrary::ApplySingleEffectData(LethalEffectData, SourceASC, TargetASC,
+															StoredPayload.AbilityLevel, StoredPayload.Seed,
+															StoredPayload.AbilityTag);
 			UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, PillarData.Pillar.Get());
 		}
 	}

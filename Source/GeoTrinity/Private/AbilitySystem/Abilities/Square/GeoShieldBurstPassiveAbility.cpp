@@ -48,7 +48,7 @@ void UGeoShieldBurstPassiveAbility::ActivateAbility(FGameplayAbilitySpecHandle H
 
 	if (GeoLib::IsServer(GetWorld()))
 	{
-		PassiveComponent = NewObject<UShieldBurstPassiveComponent>(StoredPayload.Instigator, PassiveComponentClass);
+		PassiveComponent = NewObject<UShieldBurstPassiveComponent>(StoredPayload.SourceAvatar, PassiveComponentClass);
 		if (!ensureMsgf(PassiveComponent,
 						TEXT("UGeoShieldBurstPassiveAbility: failed to spawn UShieldBurstPassiveComponent")))
 		{
@@ -121,17 +121,17 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 		return;
 	}
 
-	AActor* PayloadOwner = StoredPayload.Owner;
+	AActor* PayloadOwner = StoredPayload.SourceOwner;
 	if (!ensureMsgf(PayloadOwner,
-					TEXT("UGeoShieldBurstPassiveAbility: StoredPayload.Owner is null in SpawnShieldBurst")))
+					TEXT("UGeoShieldBurstPassiveAbility: StoredPayload.SourceOwner is null in SpawnShieldBurst")))
 	{
 		return;
 	}
 
 	FVector const Origin =
-		GetFireOrigin(StoredPayload.Instigator, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
+		GetFireOrigin(StoredPayload.SourceAvatar, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
 	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(
-		GetWorld(), EProjectileTarget::Forward, GetFireYaw(StoredPayload.Instigator, StoredPayload.Seed), Origin);
+		GetWorld(), EProjectileTarget::Forward, GetFireYaw(StoredPayload.SourceAvatar, StoredPayload.Seed), Origin);
 
 	if (!ensureMsgf(Directions.Num() == 1, TEXT("%hs: expected a single fire direction, got %d"), __FUNCTION__,
 					Directions.Num()))

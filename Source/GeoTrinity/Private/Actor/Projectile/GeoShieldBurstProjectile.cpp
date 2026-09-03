@@ -5,7 +5,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Deployable/Wall/GeoWall.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 #include "Components/SphereComponent.h"
 #include "Curves/CurveFloat.h"
 #include "DrawDebugHelpers.h"
@@ -95,8 +95,7 @@ void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVe
 void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
 												   UGeoAbilitySystemComponent* TargetASC)
 {
-	AActor* const CurrentOwner = IsValid(Payload.Owner) ? Payload.Owner : GetOwner();
-	if (GeoASLib::IsTeamAttitudeAligned(CurrentOwner, OtherActor, TeamAttitudeMask::HostileOrNeutral))
+	if (GeoASLib::IsTeamAttitudeAligned(GetSourceOwner(), OtherActor, TeamAttitudeMask::HostileOrNeutral))
 	{
 		PlaySoundOneShot(BounceSound);
 		if (GeoLib::IsServer(GetWorld()))
@@ -143,7 +142,9 @@ bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySy
 	constexpr float TimeThresholdBetweenSameHostileOverlap = 0.5f;
 	bool const bRepeatHostileOverlap = LastOverlapHostileActor.IsValid() && LastOverlapHostileActor == OtherActor
 		&& GetWorld()->GetTimeSeconds() - LastOverlapTime < TimeThresholdBetweenSameHostileOverlap;
-	if (OtherActor->IsA(AGeoWall::StaticClass()) || bRepeatHostileOverlap)
+	bool const bFriendlyDeployable = OtherActor->IsA(AGeoDeployableBase::StaticClass())
+		&& GeoASLib::IsTeamAttitudeAligned(GetSourceOwner(), OtherActor, TeamAttitudeMask::Friendly);
+	if (bFriendlyDeployable || bRepeatHostileOverlap)
 	{
 		return false;
 	}

@@ -420,8 +420,8 @@ void AGeoArena::SpawnLootBurst()
 	Payload.Origin = FVector2D(LootOrigin);
 	Payload.ServerSpawnTime = GetWorld()->GetTimeSeconds();
 	Payload.AbilityTag = LootReloadTag;
-	Payload.Owner = PayloadOwner;
-	Payload.Instigator = PayloadOwner;
+	Payload.SourceOwner = PayloadOwner;
+	Payload.SourceAvatar = PayloadOwner;
 
 	FTransform const SpawnTransform{LootOrigin};
 	for (int32 PickupIndex = 0; PickupIndex < LootPickupsPerBurst; ++PickupIndex)

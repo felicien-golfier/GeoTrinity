@@ -13,8 +13,8 @@ FGameplayCueParameters FGeoCueParam::MakeCueParams(AActor* Instigator, AActor* E
 	// Global ::IsValid, not this struct's own IsValid().
 	AActor* const InstigatorAvatar = GeoASLib::GetAvatarFromActor(Instigator);
 	ensureMsgf(!::IsValid(Instigator) || ::IsValid(InstigatorAvatar),
-			   TEXT("%hs: cue %s instigator %s has no ASC to resolve an avatar from"), __FUNCTION__,
-			   *CueTag.ToString(), *GetNameSafe(Instigator));
+			   TEXT("%hs: cue %s instigator %s has no ASC to resolve an avatar from"), __FUNCTION__, *CueTag.ToString(),
+			   *GetNameSafe(Instigator));
 
 	FGameplayCueParameters CueParams;
 	CueParams.Instigator = InstigatorAvatar;
@@ -35,5 +35,6 @@ FGameplayCueParameters FGeoCueParam::MakeCueParams(AActor* Instigator, AActor* E
 
 FGameplayCueParameters FGeoCueParam::MakeCueParams(FAbilityPayload const& Payload, FVector const Location) const
 {
-	return MakeCueParams(Payload.Instigator, Payload.Instigator, Location, Payload.AbilityLevel, Payload.AbilityTag);
+	return MakeCueParams(Payload.SourceAvatar, Payload.SourceAvatar, Location, Payload.AbilityLevel,
+						 Payload.AbilityTag);
 }

@@ -17,7 +17,7 @@ All editor automation goes through `mcp-unreal` `execute_script` (Python), or a 
 ## Reference files
 | Topic | File |
 |---|---|
-| Blueprint asset creation, CDO properties, GameplayTag, components | `MCP_Blueprint.md` |
+| Blueprint asset creation, CDO properties, instanced subobjects, curve assets, GameplayTag, components | `MCP_Blueprint.md` |
 | Material creation, node wiring, hard-edge circle fill | `MCP_Material.md` |
 | Niagara emitter stack editing (modules, static switches, input values, dynamic inputs) | `MCP_Niagara.md` |
 | StateTree editing | `MCP_StateTree.md` |

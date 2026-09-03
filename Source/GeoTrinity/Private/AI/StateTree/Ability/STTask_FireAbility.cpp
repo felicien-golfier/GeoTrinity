@@ -7,6 +7,7 @@
 #include "AbilitySystemInterface.h"
 #include "StateTreeAsyncExecutionContext.h"
 #include "StateTreeExecutionContext.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 FSTTask_FireAbility::FSTTask_FireAbility()
 {
@@ -62,17 +63,7 @@ void FSTTask_FireAbility::ExitState(FStateTreeExecutionContext& Context,
 
 UAbilitySystemComponent* FSTTask_FireAbility::GetASC(FStateTreeExecutionContext const& Context) const
 {
-	AActor const* Actor = Cast<AActor>(Context.GetOwner());
-	if (!Actor)
-	{
-		return nullptr;
-	}
-
-	if (AController const* Controller = Cast<AController>(Actor))
-	{
-		Actor = Controller->GetPawn();
-	}
-
-	IAbilitySystemInterface const* AbilitySystemInterface = Cast<IAbilitySystemInterface>(Actor);
+	IAbilitySystemInterface const* AbilitySystemInterface =
+		Cast<IAbilitySystemInterface>(GeoLib::ResolveOwnerPawn(Context.GetOwner()));
 	return AbilitySystemInterface ? AbilitySystemInterface->GetAbilitySystemComponent() : nullptr;
 }

@@ -49,7 +49,7 @@ public:
 	 * null on dedicated server), GameFeelComponent, and DeployableManagerComponent.
 	 */
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
-	/** Registers replicated character properties (bIsDead, bDiedFromFall). */
+	/** Registers replicated character properties (bIsDead, bDiedFromFall, bInvulnerable). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Emits a visual-log entry at the character's location; optionally draws a debug sphere on the server
@@ -124,12 +124,24 @@ public:
 
 	/**
 	 * Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from
-	 * OnHealthChanged and from arena fall checks. No-op while Geo.PlayerInvincible is set.
+	 * OnHealthChanged and from arena fall checks. Invulnerability deliberately does not guard this: it stops damage,
+	 * not the void, and a character left over a destroyed tile still falls. No-op while Geo.PlayerInvincible is set.
 	 *
 	 * @param bFromFall  True when the character dropped into the void instead of running out of health. Replicated
 	 *                   with bIsDead so DeathLogic picks the same montage on every machine.
 	 */
 	void Death(bool bFromFall = false);
+
+	/**
+	 * Server. Makes this character untouchable: nothing can be applied to it — every targeting and hit path in the
+	 * project gates on CanBeDamaged — its collision is off, and the effects others put on it are dropped, so nothing
+	 * keeps ticking through the invulnerability. Its own effects (passives, buffs it applied to itself) are left
+	 * standing. Replicated, so every half lands on every machine.
+	 */
+	void SetInvulnerable(bool bNewInvulnerable);
+
+	/** True while nothing can damage, touch, or take health off this character. */
+	bool IsInvulnerable() const { return bInvulnerable; }
 
 	/** Sets the yaw (degrees) the character turns toward, at up to MaxRotationSpeed, in Tick. Callers (aim input,
 	 * AI chase/move tasks) drive facing entirely through this — never through Controller::SetControlRotation or
@@ -173,6 +185,13 @@ protected:
 	void FinishRevive();
 
 	UFUNCTION()
+	void OnRep_Invulnerable();
+
+	/** Puts collision and the damageable state in sync with bInvulnerable. Called from the two places bInvulnerable
+	 * changes — SetInvulnerable on the server, OnRep_Invulnerable on the clients — so both halves land everywhere. */
+	void ApplyInvulnerability();
+
+	UFUNCTION()
 	void OnRep_IsDead(bool bOldValue);
 
 	/** Plays the revive montage on every machine — the getting-up counterpart of SetDeathVisuals(true). */
@@ -199,6 +218,10 @@ protected:
 	 *  way back but counts as down until it is standing. */
 	UPROPERTY(ReplicatedUsing = OnRep_Reviving)
 	bool bReviving = false;
+
+	/** True while this character can neither be hit nor affected. Driven by SetInvulnerable on the server. */
+	UPROPERTY(ReplicatedUsing = OnRep_Invulnerable)
+	bool bInvulnerable = false;
 
 	/** How the current death happened, for GetDeathMontage(). Always re-assigned by Death(), so it never goes stale —
 	 * and it must survive until ReviveLogic() stops the montage it selected. */

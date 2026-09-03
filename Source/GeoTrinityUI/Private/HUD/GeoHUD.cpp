@@ -469,27 +469,32 @@ void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* 
 
 	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
 		.AddWeakLambda(this,
-					   [this, WeakOwnerActor](FOnAttributeChangeData const& Data)
+					   [this, WeakOwnerActor, Carry = 0.f](FOnAttributeChangeData const& Data) mutable
 					   {
-						   AActor* OwnerActor = WeakOwnerActor.Get();
-						   float const Delta = Data.NewValue - Data.OldValue;
-						   if (FMath::Abs(Delta) >= 0.5f && IsValid(OwnerActor))
-						   {
-							   SpawnDamageNumber(FMath::Abs(Delta), Delta > 0.f, OwnerActor->GetActorLocation());
-						   }
+						   BufferDamageNumber(WeakOwnerActor.Get(), Carry, Data.NewValue - Data.OldValue);
 					   });
 
 	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
 		.AddWeakLambda(this,
-					   [this, WeakOwnerActor](FOnAttributeChangeData const& Data)
+					   [this, WeakOwnerActor, Carry = 0.f](FOnAttributeChangeData const& Data) mutable
 					   {
-						   AActor* OwnerActor = WeakOwnerActor.Get();
-						   float const Delta = Data.NewValue - Data.OldValue;
-						   if (Delta < -0.5f && IsValid(OwnerActor))
-						   {
-							   SpawnDamageNumber(-Delta, false, OwnerActor->GetActorLocation());
-						   }
+						   BufferDamageNumber(WeakOwnerActor.Get(), Carry,
+											  FMath::Min(Data.NewValue - Data.OldValue, 0.f));
 					   });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::BufferDamageNumber(AActor* OwnerActor, float& Carry, float const Delta)
+{
+	Carry += Delta;
+	if (!IsValid(OwnerActor) || FMath::Abs(Carry) < 1.f)
+	{
+		return;
+	}
+
+	float const Rounded = FMath::RoundToFloat(Carry);
+	Carry -= Rounded;
+	SpawnDamageNumber(FMath::Abs(Rounded), Rounded > 0.f, OwnerActor->GetActorLocation());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

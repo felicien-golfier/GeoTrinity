@@ -374,9 +374,12 @@ void AGeoDeployableBase::PlayRecallCosmetics(float const Value)
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::PlaySoundOneShot(EDeployableSoundType const SoundType) const
 {
-	if (FGeoSoundEntry const* Entry = SoundMap.Find(SoundType))
+	if (FGeoSoundEntryList const* SoundList = SoundMap.Find(SoundType))
 	{
-		UGeoSoundRowLibrary::PlaySoundEntry2D(this, *Entry, GetData()->Instigator);
+		for (FGeoSoundEntry const& Entry : SoundList->Entries)
+		{
+			UGeoSoundRowLibrary::PlaySoundEntry2D(this, Entry, GetData()->Instigator, GetData()->Level);
+		}
 	}
 }
 

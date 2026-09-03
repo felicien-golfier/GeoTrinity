@@ -2,8 +2,10 @@
 
 #include "GeoTrinityEditorModule.h"
 
+#include "AbilitySystem/Data/GeoSoundRow.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Detail/ExternalProjectileParamsCustomization.h"
+#include "Detail/GeoSoundEntryCustomization.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 
@@ -15,6 +17,9 @@ void FGeoTrinityEditorModule::StartupModule()
 	PropertyEditor.RegisterCustomPropertyTypeLayout(
 		FExternalProjectileParams::StaticStruct()->GetFName(),
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FExternalProjectileParamsCustomization::MakeInstance));
+	PropertyEditor.RegisterCustomPropertyTypeLayout(
+		FGeoSoundEntry::StaticStruct()->GetFName(),
+		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoSoundEntryCustomization::MakeInstance));
 	PropertyEditor.NotifyCustomizationModuleChanged();
 }
 
@@ -27,5 +32,6 @@ void FGeoTrinityEditorModule::ShutdownModule()
 
 	FPropertyEditorModule& PropertyEditor = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FExternalProjectileParams::StaticStruct()->GetFName());
+	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoSoundEntry::StaticStruct()->GetFName());
 	PropertyEditor.NotifyCustomizationModuleChanged();
 }

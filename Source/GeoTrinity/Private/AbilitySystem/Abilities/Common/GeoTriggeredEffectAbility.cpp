@@ -33,8 +33,7 @@ void UGeoTriggeredEffectAbility::ActivateAbility(FGameplayAbilitySpecHandle Hand
 	if (GeoLib::IsServer(GetWorld()))
 	{
 		SourceASC->OnAbilityHit.AddDynamic(this, &UGeoTriggeredEffectAbility::OnAbilityHitCallback);
-		SourceASC->AbilityActivatedCallbacks.AddUObject(this,
-														&UGeoTriggeredEffectAbility::OnAbilityActivatedCallback);
+		SourceASC->AbilityActivatedCallbacks.AddUObject(this, &UGeoTriggeredEffectAbility::OnAbilityActivatedCallback);
 	}
 }
 
@@ -60,9 +59,9 @@ void UGeoTriggeredEffectAbility::OnAbilityHitCallback(FGameplayTag AbilityTag, A
 {
 	// Deployables are spawned with the character that placed them as their pawn instigator, which is what tells a
 	// turret's or a mine's shot from the ones the character fired itself.
-	bool const bFiredItself = HitInstigator == StoredPayload.Instigator;
-	bool const bFiredByOwnedActor = !bFiredItself && IsValid(HitInstigator)
-									&& HitInstigator->GetInstigator() == StoredPayload.Instigator;
+	bool const bFiredItself = HitInstigator == StoredPayload.SourceAvatar;
+	bool const bFiredByOwnedActor =
+		!bFiredItself && IsValid(HitInstigator) && HitInstigator->GetInstigator() == StoredPayload.SourceAvatar;
 
 	if (((bFiredItself && HitTriggerSource != EGeoHitTriggerSource::OwnedActor)
 		 || (bFiredByOwnedActor && HitTriggerSource != EGeoHitTriggerSource::Instigator))

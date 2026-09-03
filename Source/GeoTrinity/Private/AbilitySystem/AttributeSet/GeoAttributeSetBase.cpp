@@ -10,6 +10,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/GeoCharacter.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
@@ -32,8 +33,38 @@ void UGeoAttributeSetBase::PreAttributeChange(FGameplayAttribute const& Attribut
 
 	if (Attribute == GetShieldAttribute() || Attribute == GetHealthAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
+		// MaxHealth wins over the floor: invulnerability never pushes a value above the cap.
+		float const Floor = FMath::Min(GetInvulnerabilityFloor(Attribute, false), GetMaxHealth());
+		NewValue = FMath::Clamp(NewValue, Floor, GetMaxHealth());
 	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoAttributeSetBase::PreAttributeBaseChange(FGameplayAttribute const& Attribute, float& NewValue) const
+{
+	Super::PreAttributeBaseChange(Attribute, NewValue);
+
+	if (Attribute == GetShieldAttribute() || Attribute == GetHealthAttribute())
+	{
+		NewValue = FMath::Max(NewValue, GetInvulnerabilityFloor(Attribute, true));
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+float UGeoAttributeSetBase::GetInvulnerabilityFloor(FGameplayAttribute const& Attribute, bool const bBaseValue) const
+{
+	UAbilitySystemComponent const* const ASC = GetOwningAbilitySystemComponent();
+	AGeoCharacter const* const Character = ASC ? Cast<AGeoCharacter>(ASC->GetAvatarActor()) : nullptr;
+	if (!Character || !Character->IsInvulnerable())
+	{
+		return 0.f;
+	}
+
+	if (Attribute == GetHealthAttribute())
+	{
+		return bBaseValue ? GetHealthBaseValue() : GetHealth();
+	}
+	return bBaseValue ? GetShieldBaseValue() : GetShield();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

@@ -24,6 +24,7 @@ The editor hosts the bridge HTTP server (see its startup line in the log for the
 - While the client is down, the bridge can be driven directly: POST `{"script": "..."}` to `/api/editor/execute_script` on the bound port.
 - When building that JSON in Windows PowerShell 5.1, cast the script to `[string]` before `ConvertTo-Json` — a `Get-Content -Raw` result otherwise serializes as an object and the route rejects the body.
 - Script `print`/stdout does not surface in the response; write results to a file under `Saved/` and read it back.
+- The route reports success even for a script that raises, so post the source wrapped in a handler that writes its traceback to a file the caller reads.
 
 ---
 

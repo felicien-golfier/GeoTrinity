@@ -70,8 +70,9 @@ protected:
 	virtual void HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
 									UGeoAbilitySystemComponent* TargetASC) override;
 
-	/** Returns false for AGeoWall (passes through the Square's own deployable walls) and for the same hostile actor
-	 * within 0.5 s (prevents double-hit on glancing overlaps). */
+	/** Returns false for friendly deployables (the burst flies through the team's walls, turrets and zones instead
+	 * of spending its shield on them) and for the same hostile actor within 0.5 s (prevents double-hit on glancing
+	 * overlaps). Hostile and neutral deployables stay valid, so the burst still bounces off them. */
 	virtual bool IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
 								UGeoAbilitySystemComponent*& OutTargetASC) override;
 

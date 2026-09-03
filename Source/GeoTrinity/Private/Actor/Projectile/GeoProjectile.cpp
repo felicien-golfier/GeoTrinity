@@ -229,39 +229,30 @@ void AGeoProjectile::ResolveInitialOverlaps()
 bool AGeoProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
 									UGeoAbilitySystemComponent*& OutTargetASC)
 {
-	AActor* CurrentOwner = Payload.Owner;
-	if (!IsValid(CurrentOwner))
-	{
-		// Expected on a simulated proxy: Payload does not replicate, so a server-spawned projectile only carries the
-		// replicated Owner there. Anywhere else it means the spawn never filled the payload.
-		CurrentOwner = GetOwner();
-		UE_LOG(LogGeoTrinity, Verbose, TEXT("%hs: %s has no Payload.Owner, falling back to the replicated Owner %s"),
-			   __FUNCTION__, *GetName(), *GetNameSafe(CurrentOwner));
-	}
+	AActor* const SourceOwner = GetSourceOwner();
+	AActor* const SourceAvatar = GetSourceAvatar();
 
-	AActor* const CurrentInstigator = GetCurrentInstigator();
-
-	if (bIsEnding || !IsValid(CurrentOwner) || !IsValid(CurrentInstigator) || !IsValid(OtherActor)
+	if (bIsEnding || !IsValid(SourceOwner) || !IsValid(SourceAvatar) || !IsValid(OtherActor)
 		|| !OtherActor->CanBeDamaged())
 	{
 		return false;
 	}
 
-	OutOwnerASC = GeoASLib::GetGeoAscFromActor(CurrentOwner);
+	OutOwnerASC = GeoASLib::GetGeoAscFromActor(SourceOwner);
 	OutTargetASC = GeoASLib::GetGeoAscFromActor(OtherActor);
-	if (!IsValid(OutOwnerASC) || !IsValid(OutTargetASC) || !IsValid(GeoASLib::GetGeoAscFromActor(CurrentInstigator)))
+	if (!IsValid(OutOwnerASC) || !IsValid(OutTargetASC) || !IsValid(GeoASLib::GetGeoAscFromActor(SourceAvatar)))
 	{
 		return false;
 	}
 
-	if (OtherActor == CurrentInstigator
+	if (OtherActor == SourceAvatar
 		&& (!ResolvedParams.bCanOverlapInstigator
 			|| LifeSpanInSec - GetLifeSpan() < ResolvedParams.LifeTimeThresholdBeforeOverlapSelf))
 	{
 		return false;
 	}
 
-	return GeoASLib::IsTeamAttitudeAligned(CurrentOwner, OtherActor, ResolvedParams.OverlapAttitude);
+	return GeoASLib::IsTeamAttitudeAligned(SourceOwner, OtherActor, ResolvedParams.OverlapAttitude);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -282,42 +273,62 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemCom
 	EndProjectileLife();
 }
 
+float AGeoProjectile::GetVolume_Implementation(EProjectileSoundType SoundType) const
+{
+	FGeoSoundEntryList const* SoundList = ResolvedParams.SoundMap.Find(SoundType);
+	return SoundList && !SoundList->Entries.IsEmpty() ? GetVolume(SoundList->Entries[0]) : 1.f;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float AGeoProjectile::GetVolume(FGeoSoundEntry const& Entry) const
+{
+	return UGeoSoundRowLibrary::GetVolume(Entry, GetSourceAvatar(), Payload.AbilityLevel);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 float AGeoProjectile::GetPitch_Implementation(EProjectileSoundType SoundType) const
 {
-	FGeoSoundEntry const* Entry = ResolvedParams.SoundMap.Find(SoundType);
-	return Entry ? GetPitch(*Entry) : 1.f;
+	FGeoSoundEntryList const* SoundList = ResolvedParams.SoundMap.Find(SoundType);
+	return SoundList && !SoundList->Entries.IsEmpty() ? GetPitch(SoundList->Entries[0]) : 1.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 float AGeoProjectile::GetPitch(FGeoSoundEntry const& Entry) const
 {
-	return UGeoSoundRowLibrary::GetPitch(Entry, GetCurrentInstigator());
+	return UGeoSoundRowLibrary::GetPitch(Entry, GetSourceAvatar(), Payload.AbilityLevel);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-AActor* AGeoProjectile::GetCurrentInstigator() const
+AActor* AGeoProjectile::GetSourceOwner() const
 {
-	// When we are on a fully replicated projectile, Payload is not replicated, but Instigator is.
-	return IsValid(Payload.Instigator) ? Payload.Instigator : GetInstigator();
+	return IsValid(Payload.SourceOwner) ? Payload.SourceOwner : GetOwner();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+AActor* AGeoProjectile::GetSourceAvatar() const
+{
+	return IsValid(Payload.SourceAvatar) ? Payload.SourceAvatar : GetInstigator();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlaySoundOneShot(EProjectileSoundType const SoundType) const
 {
-	if (FGeoSoundEntry const* Entry = ResolvedParams.SoundMap.Find(SoundType))
+	if (FGeoSoundEntryList const* SoundList = ResolvedParams.SoundMap.Find(SoundType))
 	{
-		PlaySoundOneShot(*Entry);
+		for (FGeoSoundEntry const& Entry : SoundList->Entries)
+		{
+			PlaySoundOneShot(Entry);
+		}
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::PlaySoundOneShot(FGeoSoundEntry const& Entry) const
 {
-	if (UGeoSoundRowLibrary::ShouldPlay(this, Entry, GetCurrentInstigator()))
+	if (UGeoSoundRowLibrary::ShouldPlay(this, Entry, GetSourceAvatar()))
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, Entry.Sound, GetActorLocation(), FRotator::ZeroRotator,
-											  UGeoSoundRowLibrary::GetVolume(Entry, GetCurrentInstigator()),
-											  GetPitch(Entry), Entry.StartTime);
+											  GetVolume(Entry), GetPitch(Entry), Entry.StartTime);
 	}
 }
 
@@ -430,7 +441,7 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
-	QueryParams.AddIgnoredActor(Payload.Instigator);
+	QueryParams.AddIgnoredActor(GetSourceAvatar());
 
 	// The sweep result is unused: it flags blocking hits only, and characters merely touch this channel.
 	TArray<FHitResult> HitResults;
@@ -547,8 +558,7 @@ void AGeoProjectile::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Params)
 {
 	UGameDataSettings const* Settings = GetDefault<UGameDataSettings>();
-	bool const bPlayerInstigator =
-		GeoASLib::GetTeamId(GetCurrentInstigator()).GetId() == static_cast<uint8>(ETeam::Player);
+	bool const bPlayerInstigator = GeoASLib::GetTeamId(GetSourceAvatar()).GetId() == static_cast<uint8>(ETeam::Player);
 
 	// Only distance, speed and radius have a settings value; every other param resolves UseGameDataSettings to
 	// DefaultParams, same as KeepBlueprintDefaultValue, so only an explicit OverrideValue changes it. The
@@ -589,9 +599,14 @@ void AGeoProjectile::InitProjectileLife()
 {
 	if (!GeoLib::IsDedicatedServer(this))
 	{
-		if (FGeoSoundEntry const* LoopingEntry = ResolvedParams.SoundMap.Find(EProjectileSoundType::Looping))
+		FGeoSoundEntryList const* LoopingSounds = ResolvedParams.SoundMap.Find(EProjectileSoundType::Looping);
+		if (LoopingSounds && !LoopingSounds->Entries.IsEmpty())
 		{
-			UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, *LoopingEntry, GetCurrentInstigator(),
+			ensureMsgf(LoopingSounds->Entries.Num() == 1,
+					   TEXT("%s: %d looping sounds, only the first plays — the projectile owns one audio component"),
+					   *GetName(), LoopingSounds->Entries.Num());
+			UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, LoopingSounds->Entries[0],
+														 GetSourceAvatar(), GetVolume(EProjectileSoundType::Looping),
 														 GetPitch(EProjectileSoundType::Looping));
 		}
 		PlaySoundOneShot(EProjectileSoundType::Start);
@@ -607,12 +622,12 @@ void AGeoProjectile::InitProjectileLife()
 	// A pooled instance can come back holding the previous shot's launch offset; the spawner re-applies its own after
 	// this runs.
 	BulletVFX->SetRelativeLocation(FVector::ZeroVector);
-	GameFeelComponent->BindBuffVFX(GeoASLib::GetGeoAscFromActor(Payload.Owner));
+	GameFeelComponent->BindBuffVFX(GeoASLib::GetGeoAscFromActor(GetSourceOwner()));
 
 	bIsEnding = false;
 	EndSoundType = EProjectileSoundType::NoOverlapEnd;
 
-	ReviveBoundInstigator = Cast<AGeoCharacter>(GetCurrentInstigator());
+	ReviveBoundInstigator = Cast<AGeoCharacter>(GetSourceAvatar());
 	if (ReviveBoundInstigator.IsValid())
 	{
 		InstigatorRevivedHandle =

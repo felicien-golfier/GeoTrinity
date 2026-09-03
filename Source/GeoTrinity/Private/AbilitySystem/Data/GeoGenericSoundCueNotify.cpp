@@ -18,7 +18,8 @@ bool UGeoGenericSoundCueNotify::OnExecute_Implementation(AActor* Target, FGamepl
 		FGeoSoundRow const Row = UGeoSoundRowLibrary::FindSoundForTag(SoundTable, SoundTag, bFound);
 		if (bFound)
 		{
-			UGeoSoundRowLibrary::PlaySoundEntry2D(Target, Row.Entry, Parameters.GetInstigator());
+			UGeoSoundRowLibrary::PlaySoundEntry2D(Target, Row.Entry, Parameters.GetInstigator(),
+												  Parameters.AbilityLevel);
 		}
 	}
 

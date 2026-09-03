@@ -113,8 +113,8 @@ void AGeoTurret::TryFire()
 	float const SpawnServerTime = GeoLib::GetServerTime(GetWorld());
 
 	FAbilityPayload Payload;
-	Payload.Owner = GetData()->Owner;
-	Payload.Instigator = this;
+	Payload.SourceOwner = GetData()->Owner;
+	Payload.SourceAvatar = this;
 	Payload.Origin = FVector2D(GetActorLocation());
 	Payload.Yaw = DirectionToTarget.Rotation().Yaw;
 	Payload.ServerSpawnTime = SpawnServerTime;

@@ -6,6 +6,7 @@
 #include "Characters/PlayableCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "GameFramework/Controller.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -225,4 +226,14 @@ TArray<APlayableCharacter*> UGeoGameplayLibrary::GetAlivePlayers(UObject const* 
 	}
 
 	return AlivePlayers;
+}
+
+APawn* UGeoGameplayLibrary::ResolveOwnerPawn(UObject* Owner)
+{
+	if (AController const* Controller = Cast<AController>(Owner))
+	{
+		return Controller->GetPawn();
+	}
+
+	return Cast<APawn>(Owner);
 }

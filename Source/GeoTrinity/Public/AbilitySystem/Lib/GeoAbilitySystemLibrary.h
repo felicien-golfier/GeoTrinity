@@ -56,7 +56,7 @@ public:
 	 * @warning Asserts in debug if the section is not found — callers must use valid section names.
 	 */
 	static int GetAndCheckSection(UAnimMontage const* AnimMontage, FName Section);
-	/** Returns the AnimInstance from the avatar actor stored in Payload.Owner. */
+	/** Returns the AnimInstance from the avatar actor stored in Payload.SourceAvatar. */
 	static UAnimInstance* GetAnimInstance(FAbilityPayload const& Payload);
 
 	/** Returns the global UAbilityInfo data asset from UGameDataSettings. */
@@ -91,9 +91,9 @@ public:
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 															 int32 Seed, FGameplayTag AbilityTag);
 	/**
-	 * Reports that Payload's shot connected with HitActor, broadcasting OnAbilityHit on the ASC behind Payload.Owner.
-	 * Call it from wherever an ability or a projectile decides it hit — never from effect application, which ticks,
-	 * defers and re-applies far away from the moment of impact.
+	 * Reports that Payload's shot connected with HitActor, broadcasting OnAbilityHit on the ASC behind
+	 * Payload.SourceOwner. Call it from wherever an ability or a projectile decides it hit — never from effect
+	 * application, which ticks, defers and re-applies far away from the moment of impact.
 	 *
 	 * Only the first call per shot gets through: Payload.HitNotified is the handle a delayed carrier holds on the
 	 * shot's behalf, and this consumes it. A payload carrying no handle reports nothing.
@@ -304,7 +304,8 @@ public:
 												 ETargetOverlapMode OverlapMode = ETargetOverlapMode::Automatic);
 
 	/** Same as above without an extra filter. */
-	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|Team", meta = (DefaultToSelf = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|Team",
+			  meta = (DefaultToSelf = "WorldContextObject"))
 	static TArray<AActor*> GetInteractableActors(UObject const* WorldContextObject, FGenericTeamId const SourceTeam,
 												 int32 AttitudeBitmask, bool bMustBeDamageable = false,
 												 FVector2D Location = FVector2D::ZeroVector, float MaxDistance = 0.f,

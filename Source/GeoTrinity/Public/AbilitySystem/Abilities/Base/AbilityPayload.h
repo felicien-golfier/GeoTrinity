@@ -35,11 +35,21 @@ struct GEOTRINITY_API FAbilityPayload
 	UPROPERTY(Transient, BlueprintReadOnly)
 	FGameplayTag AbilityTag{};
 
+	/**
+	 * The actor this shot belongs to: its ASC applies the effects, answers for the team, and takes the hit credit. Also
+	 * the UE Owner of everything the shot spawns, so net ownership follows it. Usually the ASC's owner actor — a
+	 * PlayerState for a player, the boss itself for an enemy — and for a turret or a mine it stays the deployer rather
+	 * than the deployable.
+	 */
 	UPROPERTY(Transient, BlueprintReadOnly)
-	AActor* Owner{nullptr};
+	AActor* SourceOwner{nullptr};
 
+	/**
+	 * The actor that emitted this shot: where it starts, whose montage plays, and what it must not hit. The caster's
+	 * pawn, or the turret / mine that fired — and those own an ASC of their own, distinct from SourceOwner's.
+	 */
 	UPROPERTY(Transient, BlueprintReadOnly)
-	AActor* Instigator{nullptr};
+	AActor* SourceAvatar{nullptr};
 
 	/**
 	 * The single hit notification this shot is allowed, consumed by the first target it connects with
