@@ -40,6 +40,7 @@ struct GEOTRINITY_API FSTTask_PlayMontage : public FStateTreeAIActionTaskBase
 	/** Disables tick; completion is driven by the montage-end delegate. */
 	FSTTask_PlayMontage();
 
+	/** Returns FSTTask_PlayMontageInstanceData as the per-execution instance data type. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Plays the montage on the ASC and binds its end delegate for async completion. Fails if the montage is not set,
 	 * the ASC is missing, or the montage could not be played. */
