@@ -20,7 +20,11 @@
 	GAMEPLAYATTRIBUTE_BASEVALUE_GETTER(PropertyName)
 
 /**
- * Attribute set that holds RPG stats for a pawn
+ * Core attribute set shared by every character (players and enemies): Health, MaxHealth, Shield, and the
+ * transient IncomingDamage / IncomingHeal meta-attributes that execution calculations write and
+ * PostGameplayEffectExecute consumes and resets to zero. Exists as a standalone base so CharacterAttributeSet
+ * can extend it with player-only stats (ammo, multipliers) without duplicating the clamping, death-at-zero,
+ * and UGeoCombatStatsSubsystem reporting logic.
  */
 UCLASS()
 class GEOTRINITY_API UGeoAttributeSetBase : public UAttributeSet
@@ -28,6 +32,8 @@ class GEOTRINITY_API UGeoAttributeSetBase : public UAttributeSet
 	GENERATED_BODY()
 
 public:
+	/** Registers Health, MaxHealth, and Shield for replication. IncomingDamage and IncomingHeal are transient
+	 * meta-attributes reset after every effect execute — they are never replicated. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Clamps Shield to [0, MaxHealth] before any modification lands. */

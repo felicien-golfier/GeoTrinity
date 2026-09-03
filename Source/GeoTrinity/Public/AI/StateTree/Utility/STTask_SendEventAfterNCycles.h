@@ -38,8 +38,10 @@ struct GEOTRINITY_API FSTTask_SendEventAfterNCycles : public FStateTreeTaskCommo
 
 	using FInstanceDataType = FSTTask_SendEventAfterNCyclesInstanceData;
 
+	/** Disables tick; this task always completes synchronously on state entry. */
 	FSTTask_SendEventAfterNCycles();
 
+	/** Returns FSTTask_SendEventAfterNCyclesInstanceData as the per-execution instance data type. */
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Registers the external data handle for UGeoAIBlackboardComponent. */
 	virtual bool Link(FStateTreeLinker& Linker) override;

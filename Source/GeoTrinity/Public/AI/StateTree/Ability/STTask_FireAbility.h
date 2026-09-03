@@ -34,8 +34,10 @@ struct GEOTRINITY_API FSTTask_FireAbility : public FStateTreeAIActionTaskBase
 
 	using FInstanceDataType = FSTTask_FireAbilityInstanceData;
 
+	/** Disables tick; completion is driven by the ability-end delegate. */
 	FSTTask_FireAbility();
 
+	/** Returns FSTTask_FireAbilityInstanceData as the per-execution instance data type. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Activates the configured ability by tag on the pawn's ASC. Binds to OnAbilityEnded for async completion. Returns
 	 * Running until the ability ends or failed if the ASC is missing or the tag is invalid. */
