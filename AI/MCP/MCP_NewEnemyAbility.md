@@ -2,25 +2,25 @@
 
 Steps required every time a new enemy `GA_` Blueprint ability is created.
 
-## Key Constraints
+1. Add the tag to `Config/Tags/GeoGameplayTags.ini` and **restart the editor** — tags do not resolve in Python
+   until then.
+2. Run `AI/Python/Ability/new_enemy_ability.py`, filling the variables at the top.
+3. **Always ask** whether the ability should join the boss behaviour StateTree before finishing. If yes, wire it
+   — see `MCP_StateTree.md` and `AI/Python/Ability/state_tree_edit.py`.
 
-- Tags in `Config/Tags/GeoGameplayTags.ini` require an **editor restart** to resolve — do this first.
-- Every `GA_` ability CDO must carry two asset tags in its `AbilityTags` container: one under `Ability.Spell.*` and one under `Ability.Type.*` (`Special`, `SpecialAlternative`, `Basic`, `Dash`, `Reload`, `Passive`). The `Ability.Type.*` value matches the input slot the ability is bound to. Missing either trips an ensure when the ability catalog is populated.
-- Reparenting an existing ability Blueprint to a different C++ base **clears its `AbilityTags`** — re-set both asset tags afterward and save; read or re-set them on an existing ability with `AI/Python/ability_tags.py`.
-- `AbilityTag` on `FGameplayAbilityInfo` must be set in the `import_text` call: `AbilityTag=(TagName="Ability.Spell.X")`.
-- `AbilityClass` on `FGameplayAbilityInfo` cannot be set via `set_editor_property` — use `import_text` instead.
-- `import_text` requires the full `BlueprintGeneratedClass` path prefix, not the raw `get_path_name()` result — see `AI/Python/new_enemy_ability.py`.
-- Always set `AbilityDisplayName` and `Description` in the same `import_text` call.
-- The ability tag must be in `BP_StarBoss` ASC `StartupAbilityTags` or it is never granted at `BeginPlay`.
-- After modifying any subobject property (e.g. ASC `StartupAbilityTags`), save with `EditorAssetLibrary.save_loaded_asset(bp_boss)`.
+## Constraints
 
-## Steps
-
-1. Add tag to `Config/Tags/GeoGameplayTags.ini`, restart editor.
-2. Run `AI/Python/new_enemy_ability.py` (fill the variables at the top).
-3. **Always ask** whether the ability should be added to the boss behaviour StateTree before finishing. If yes, wire it — see `MCP_StateTree.md` and `AI/Python/state_tree_edit.py`.
-
-## Assets
+- Every `GA_` CDO carries two asset tags in `AbilityTags`: one under `Ability.Spell.*` and one under
+  `Ability.Type.*` (`Special`, `SpecialAlternative`, `Basic`, `Dash`, `Reload`, `Passive`), the type matching
+  the input slot it binds to. Missing either trips an ensure when the ability catalog is populated.
+- Reparenting an existing ability Blueprint to a different C++ base **clears `AbilityTags`** — re-set both and
+  save. Read or re-set them on an existing ability with `AI/Python/Ability/ability_tags.py`.
+- On `FGameplayAbilityInfo`, both `AbilityTag` and `AbilityClass` go in through `import_text`
+  (`AbilityTag=(TagName="Ability.Spell.X")`); the property setter does not work for the class, and the import
+  needs the full `BlueprintGeneratedClass` path prefix rather than the raw path result. Set
+  `AbilityDisplayName` and `Description` in the same call.
+- The ability tag must be in `BP_StarBoss`'s ASC `StartupAbilityTags` or it is never granted at `BeginPlay`.
+  After modifying any subobject property, save the owning Blueprint explicitly.
 
 | Asset | Role |
 |---|---|

@@ -8,7 +8,7 @@
 - Widget classes: `UGeoAbilitySlotWidget` (`HUD/GeoAbilitySlotWidget.h/.cpp`) — BindWidget `Icon`/`CooldownSweep`/`CountdownText`/`CountText`(opt) + `CooldownSweepMaterial` + MID `Fill` param; `NativeTick` early-outs when ready; `InitSlot`/`RefreshDeployCount`. `UGeoAbilityBarWidget` (`HUD/GeoAbilityBarWidget.h/.cpp`) — BindWidget `SlotBox`(HorizontalBox) + `SlotWidgetClass`; `BuildBar(AGeoHUD*)` clears+rebuilds, AddUniqueDynamic to ping.
 - Shim split: `UGeoWidgetBuilderUtil` = generic primitives only (public static `BeginBuild`/`FinishBuild`/`ConstructRootPanel`; `SetRootPanel`, `SetImageRoot`, `SetImageRootFromMaterial`, `InspectWidgetBlueprint`). New `UGeoHudWidgetBuilderUtil` (`Tool/GeoHudWidgetBuilderUtil.h/.cpp`) = content builders `BuildAbilitySlotWidget(WBP, IconSize)` + `BuildChargeBeamGaugeWidget`. `charge_beam_gauge.py` updated to `GeoHudWidgetBuilderUtil`.
 - Docs: generic-shim rule added to `AI/MCP/MCP_EditorUtility.md`.
-- `AI/Python/ability_bar.py` written: builds `M_CooldownSweep` (UI/Translucent, `Fill` scalar → Step over atan2 angle), `WBP_AbilitySlot` (parent `GeoAbilitySlotWidget`, via `build_ability_slot_widget`), `WBP_AbilityBar` (parent `GeoAbilityBarWidget`, root HorizontalBox `Root` via `set_root_panel`). All under `/Game/HUD/AbilityBar`.
+- `AI/Python/UI/ability_bar.py` written: builds `M_CooldownSweep` (UI/Translucent, `Fill` scalar → Step over atan2 angle), `WBP_AbilitySlot` (parent `GeoAbilitySlotWidget`, via `build_ability_slot_widget`), `WBP_AbilityBar` (parent `GeoAbilityBarWidget`, root HorizontalBox `Root` via `set_root_panel`). All under `/Game/HUD/AbilityBar`.
 
 **DONE (compiled & live in editor):**
 - `M_CooldownSweep`, `WBP_AbilitySlot`, `WBP_AbilityBar` all built (`ability_bar.py`). Inspected: slot = Overlay `Root` → `Icon`/`CooldownSweep`/`CountdownText`/`CountText`; bar = HorizontalBox **`SlotBox`** (matches BindWidget).
@@ -120,7 +120,7 @@ ALWAYS read `AI/MCP/CLAUDE.md` (+ `MCP_UI.md`, `MCP_Material.md`) before this wo
 5. Populate `AbilityIcon` + `bShowDeployCount` on each `UAbilityInfo` entry (Python CDO/data-asset edit, `MCP_Blueprint.md`) for all player classes; Mine/Turret deploy abilities → `bShowDeployCount = true`.
 
 ### Reusable Python
-Per `MCP/CLAUDE.md`, multi-step builds go in `AI/Python/*.py` (referenced by path, not pasted). Model the asset-creation + shim-call flow on `AI/Python/charge_beam_gauge.py` (widget BP creation + `BuildChargeBeamGaugeWidget` shim call) and `AI/Python/crosshair_cursor.py` (image-root shim usage). Add e.g. `AI/Python/ability_bar.py`.
+Per `MCP/CLAUDE.md`, multi-step builds go in `AI/Python/*.py` (referenced by path, not pasted). Model the asset-creation + shim-call flow on `AI/Python/UI/charge_beam_gauge.py` (widget BP creation + `BuildChargeBeamGaugeWidget` shim call) and `AI/Python/UI/crosshair_cursor.py` (image-root shim usage). Add e.g. `AI/Python/UI/ability_bar.py`.
 
 ## Files to modify
 - `Source/GeoTrinity/Public/AbilitySystem/Data/AbilityInfo.h` — add `bShowDeployCount`.
@@ -128,7 +128,7 @@ Per `MCP/CLAUDE.md`, multi-step builds go in `AI/Python/*.py` (referenced by pat
 - `Source/GeoTrinity/Private/Characters/PlayableCharacter.cpp` — refresh bar after `ChangeClass()`.
 - `Source/GeoTrinity/Public/Tool/GeoWidgetBuilderUtil.h` + `.cpp` — new `BuildAbilitySlotWidget` / `BuildAbilityBarWidget` shim `UFUNCTION`s (editor-only; full build required).
 - New assets (under `/Game/HUD/`): `WBP_AbilityBar`, `WBP_AbilitySlot`, material `M_CooldownSweep`; edits to player overlay BP, HUD BP, `UAbilityInfo` data asset.
-- New Python: `AI/Python/ability_bar.py` (asset creation + shim calls).
+- New Python: `AI/Python/UI/ability_bar.py` (asset creation + shim calls).
 - Docs to update after implementation (follow `MCP_DocStyle.md`): `AI/MCP/MCP_UI.md` (new ability-bar shim functions), `Source/GeoTrinity/Public/Tool/CLAUDE.md` (list the new `GeoWidgetBuilderUtil` functions), `Source/GeoTrinity/Public/HUD/CLAUDE.md` (ability-bar widgets + `AGeoHUD` helpers).
 
 **Reuse:** `UAbilityInfo::GetAbilitiesForClass` / `GetAllPlayersAbilityInfos`, `UGeoGameplayAbility::GetAbilityTag` / `IsPassive`, native `GetCooldownTimeRemainingAndDuration`, `UGeoDeployableManagerComponent::GetDeployables<T>()` / `GetMaxDeployables()` / `OnDeployCountChanged`, `AGeoHUD::GetHudPlayerParams()`.

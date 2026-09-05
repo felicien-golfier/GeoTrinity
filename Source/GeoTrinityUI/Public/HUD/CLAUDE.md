@@ -49,7 +49,7 @@ AGeoHUD  (owns OverlayWidget)
 | `Menu/GeoPauseMenuWidget.h` | Pause menu, owned/shown by `AGeoPlayerController`; Quit uses `GEditor->RequestEndPlayMap()` in PIE, else `QuitGame` |
 | `Menu/GeoSettingsWidget.h` | Settings chooser; shows one sub-panel at a time |
 | `Menu/GeoSoundSettingsWidget.h` | Sound settings; `MasterVolumeSlider` is a placeholder — no audio mixer wired yet |
-| `Menu/GeoKeyBindingsWidget.h` | Key-bindings window; rebuilt from Enhanced Input active profile, fixed `MappingOrder` table in .cpp. Optional `SecondPlayerGamepadCheckBox` ("Use first gamepad for second player", BindWidgetOptional — built by `AI/Python/second_player_gamepad_toggle.py`) drives `UGeoGameUserSettings::SetUseFirstGamepadForSecondPlayer` and then `UGeoGameViewportClient::ApplyCouchCoopSetting()`, which is what actually re-points the pads |
+| `Menu/GeoKeyBindingsWidget.h` | Key-bindings window; rebuilt from Enhanced Input active profile, fixed `MappingOrder` table in .cpp. Optional `SecondPlayerGamepadCheckBox` ("Use first gamepad for second player", BindWidgetOptional — built by `AI/Python/UI/second_player_gamepad_toggle.py`) drives `UGeoGameUserSettings::SetUseFirstGamepadForSecondPlayer` and then `UGeoGameViewportClient::ApplyCouchCoopSetting()`, which is what actually re-points the pads |
 
 ## Adding HUD Changes
 **Screen-space** (boss bar, cooldown): add `BlueprintImplementableEvent` to `AGeoHUD` → implement in HUD BP → forward to `OverlayWidget`.

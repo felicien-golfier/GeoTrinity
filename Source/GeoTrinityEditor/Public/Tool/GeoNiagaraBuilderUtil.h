@@ -20,8 +20,8 @@
  *
  * `Value` is a comma separated component list matching the parameter's component count: floats for numeric
  * types ("40", "0,0,-980"), an integer or an enum entry's display name for enums ("Cylinder"), and anything
- * FString::ToBool accepts for bools ("true"). Renderer properties are plain UPROPERTYs — set those straight
- * from Python instead.
+ * FString::ToBool accepts for bools ("true"). An existing renderer's properties are plain UPROPERTYs and are
+ * reachable from Python even on a renderer class Python does not wrap — set those straight from there.
  *
  * Every mutation only dirties the asset; call CompileAndSave once per batch. Only static switches are pins on a
  * function call node — a value input is addressable through the rapid-iteration constant the compiler emits for
@@ -45,6 +45,27 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static FName AddEmitter(FString SystemPath, FString EmitterAssetPath);
+
+	/**
+	 * Writes one property of an emitter asset's exposed version, parsed by the property itself ("true" for a
+	 * flag). Everything a Niagara emitter owns beyond its stack lives there — local space, persistent IDs,
+	 * determinism, fixed bounds — and the Python bindings refuse the whole struct as deprecated.
+	 *
+	 * Set this on the emitter asset a system copies from: inside a system an emitter's object name is not its
+	 * handle name, so the same lookup there can land on another copy.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool SetEmitterProperty(FString EmitterAssetPath, FName PropertyName, FString Value);
+
+	/**
+	 * Adds a renderer to an emitter asset, carrying its class defaults and no material. Python reaches no
+	 * renderer class but the sprite one, and reaches the renderer list itself through neither binding.
+	 *
+	 * @param RendererClassPath  e.g. "/Script/Niagara.NiagaraRibbonRendererProperties".
+	 * @return The renderer object's name, which addresses its properties from Python; NAME_None on failure.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static FName AddRenderer(FString EmitterAssetPath, FString RendererClassPath);
 
 	/**
 	 * Inserts a module script into one emitter script stage.

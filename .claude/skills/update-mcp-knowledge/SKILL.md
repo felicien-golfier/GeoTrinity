@@ -15,17 +15,18 @@ Record everything genuinely new from the current session's MCP / Python editor-a
 
 2. **Read the doc-style rules.** Read `AI/MCP/MCP_DocStyle.md` before writing. Every edit must obey it: document how it works (not what failed), one sentence per constraint, generic concept names in prose (no project class/function names — those go in code), no inline C++ or Python.
 
-3. **Check what already exists.** Read `AI/MCP/CLAUDE.md` (the topic→file index), the candidate target docs, and the existing `AI/Python/*.py` scripts. Drop anything already covered — only genuinely-missing facts and scripts get written; extend an existing script's helpers rather than duplicating them.
+3. **Check what already exists.** Read `AI/MCP/CLAUDE.md` (the topic→file index), the candidate target docs, and the existing scripts indexed in `AI/Python/CLAUDE.md`. Drop anything already covered — only genuinely-missing facts and scripts get written; extend an existing script's helpers rather than duplicating them.
 
 4. **Update or create the relevant docs.**
    - A new fact about an existing topic → add a concise line/section to that topic's `.md`.
    - A whole new topic → create a new `AI/MCP/MCP_<Topic>.md` (mirror the structure of an existing one) and register it in the `AI/MCP/CLAUDE.md` index.
 
-5. **Write down the session's Python scripts.** Each retained sequence becomes a `.py` in `AI/Python/`:
+5. **Write down the session's Python scripts.** Each retained sequence becomes a `.py` in the `AI/Python/` topic subfolder matching what it touches (see `AI/Python/CLAUDE.md` for the folders):
    - Structure as **generic functions taking arguments** (asset paths, class names, property names, values) — no hardcoded assets inside function bodies.
    - Session-specific values appear only in one small example call at the bottom, which a future caller adjusts.
    - A docstring at the top states what the script does and how to run it (MCP `execute_script`, target world if relevant).
    - Reference each script by path from the doc section describing its technique — never inline scripts in `.md` files.
+   - Add a one-line row for the new script to its folder table in `AI/Python/CLAUDE.md`.
 
 6. **Verify compliance.** Re-read each edit against `MCP_DocStyle.md`: generic, concise, no failure history, no inline code, references for scripts. Confirm new scripts are argument-driven with the example call at the bottom.
 

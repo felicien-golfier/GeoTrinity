@@ -10,8 +10,11 @@
 #include "NiagaraEmitterHandle.h"
 #include "NiagaraNodeFunctionCall.h"
 #include "NiagaraNodeOutput.h"
+#include "NiagaraRendererProperties.h"
 #include "NiagaraScript.h"
+#include "NiagaraScriptSourceBase.h"
 #include "NiagaraSystem.h"
+#include "UObject/UnrealType.h"
 #include "ViewModels/Stack/NiagaraParameterHandle.h"
 #include "ViewModels/Stack/NiagaraStackGraphUtilities.h"
 
@@ -30,6 +33,13 @@ static UNiagaraSystem* LoadNiagaraSystem(FString const& SystemPath)
 	UNiagaraSystem* System = LoadObject<UNiagaraSystem>(nullptr, *SystemPath);
 	ensureMsgf(System, TEXT("GeoNiagaraBuilderUtil: no NiagaraSystem at '%s'"), *SystemPath);
 	return System;
+}
+
+static UNiagaraEmitter* LoadNiagaraEmitter(FString const& EmitterAssetPath)
+{
+	UNiagaraEmitter* Emitter = LoadObject<UNiagaraEmitter>(nullptr, *EmitterAssetPath);
+	ensureMsgf(Emitter, TEXT("GeoNiagaraBuilderUtil: no NiagaraEmitter at '%s'"), *EmitterAssetPath);
+	return Emitter;
 }
 
 static FGeoNiagaraStage FindStage(FString const& SystemPath, FName EmitterName, ENiagaraScriptUsage Usage)
@@ -207,9 +217,8 @@ static bool WriteParameterValue(FNiagaraParameterStore& Store, FNiagaraVariable 
 FName UGeoNiagaraBuilderUtil::AddEmitter(FString SystemPath, FString EmitterAssetPath)
 {
 	UNiagaraSystem* System = LoadNiagaraSystem(SystemPath);
-	UNiagaraEmitter* Emitter = LoadObject<UNiagaraEmitter>(nullptr, *EmitterAssetPath);
-	if (!ensureMsgf(System && Emitter, TEXT("GeoNiagaraBuilderUtil: cannot add emitter '%s' to '%s'"),
-					*EmitterAssetPath, *SystemPath))
+	UNiagaraEmitter* Emitter = LoadNiagaraEmitter(EmitterAssetPath);
+	if (!System || !Emitter)
 	{
 		return NAME_None;
 	}
@@ -226,6 +235,57 @@ FName UGeoNiagaraBuilderUtil::AddEmitter(FString SystemPath, FString EmitterAsse
 	}
 	ensureMsgf(false, TEXT("GeoNiagaraBuilderUtil: '%s' produced no emitter handle"), *EmitterAssetPath);
 	return NAME_None;
+}
+
+bool UGeoNiagaraBuilderUtil::SetEmitterProperty(FString EmitterAssetPath, FName PropertyName, FString Value)
+{
+	UNiagaraEmitter* Emitter = LoadNiagaraEmitter(EmitterAssetPath);
+	if (!Emitter)
+	{
+		return false;
+	}
+
+	FVersionedNiagaraEmitterData* EmitterData = Emitter->GetLatestEmitterData();
+	FProperty* Property = FVersionedNiagaraEmitterData::StaticStruct()->FindPropertyByName(PropertyName);
+	if (!ensureMsgf(EmitterData && Property, TEXT("GeoNiagaraBuilderUtil: no property '%s' on '%s'"),
+					*PropertyName.ToString(), *EmitterAssetPath))
+	{
+		return false;
+	}
+
+	Emitter->Modify();
+	if (!ensureMsgf(Property->ImportText_InContainer(*Value, EmitterData, Emitter, PPF_None) != nullptr,
+					TEXT("GeoNiagaraBuilderUtil: property '%s' does not accept '%s'"), *PropertyName.ToString(),
+					*Value))
+	{
+		return false;
+	}
+
+	if (EmitterData->GraphSource)
+	{
+		EmitterData->GraphSource->MarkNotSynchronized(TEXT("GeoNiagaraBuilderUtil set emitter property"));
+	}
+	Emitter->PostEditChange();
+	Emitter->MarkPackageDirty();
+	return true;
+}
+
+FName UGeoNiagaraBuilderUtil::AddRenderer(FString EmitterAssetPath, FString RendererClassPath)
+{
+	UNiagaraEmitter* Emitter = LoadNiagaraEmitter(EmitterAssetPath);
+	UClass* RendererClass = LoadClass<UNiagaraRendererProperties>(nullptr, *RendererClassPath);
+	if (!Emitter
+		|| !ensureMsgf(RendererClass, TEXT("GeoNiagaraBuilderUtil: no renderer class at '%s'"), *RendererClassPath))
+	{
+		return NAME_None;
+	}
+
+	Emitter->Modify();
+	UNiagaraRendererProperties* Renderer =
+		NewObject<UNiagaraRendererProperties>(Emitter, RendererClass, NAME_None, RF_Transactional);
+	Emitter->AddRenderer(Renderer, Emitter->GetExposedVersion().VersionGuid);
+	Emitter->MarkPackageDirty();
+	return Renderer->GetFName();
 }
 
 FName UGeoNiagaraBuilderUtil::AddModule(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,

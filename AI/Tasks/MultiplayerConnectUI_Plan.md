@@ -50,7 +50,7 @@ buys — which is why the subsystem seam matters.
 - `AI/MCP/CLAUDE.md` + `AI/MCP/MCP_UI.md` + `AI/MCP/MCP_Blueprint.md` + `AI/MCP/MCP_Settings.md`
   — **required before any MCP/Python editor automation** (widget tree, BP, map, ini).
 - `AI/MCP/MCP_DocStyle.md` — **required before editing any doc in `AI/MCP/`** (only if you touch those).
-- Reference example for widget building: `AI/Python/charge_beam_gauge.py` and
+- Reference example for widget building: `AI/Python/UI/charge_beam_gauge.py` and
   `Source/GeoTrinity/Private/Tool/GeoWidgetBuilderUtil.cpp`.
 
 ### Verified current state (from exploration, 2026-06-07)
@@ -262,7 +262,7 @@ CDO; the C++ shim (§4) for the widget tree. Put the reusable script at
 
 1. **Create `WBP_MainMenu`** under `/Game/HUD/Menu/`, parent class `UGeoMenuWidget`
    (use `WidgetBlueprintFactory` with `parent_class`, then `AssetTools` — see
-   `AI/Python/charge_beam_gauge.py`; do NOT set `use_inherited_viewport_size`).
+   `AI/Python/UI/charge_beam_gauge.py`; do NOT set `use_inherited_viewport_size`).
 2. **Call `BuildMainMenuWidget`** on the shim CDO from Python to build the tree (only works
    after the §1-4 build + editor restart).
 3. **BP graph wiring** (in editor or via the BP graph — minimal):

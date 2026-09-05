@@ -73,7 +73,7 @@ namespace GeoColor
 	constexpr int32 SlotCount = static_cast<int32>(EGeoColor::Override);
 
 	/** Palette texture parameter of the outline post-process, and the texel count it needs to turn a stencil index into
-	 * a UV. Written by AGeoGameCamera, authored by AI/Python/make_deployable_outline_material.py — the two must agree.
+	 * a UV. Written by AGeoGameCamera, authored by AI/Python/Material/make_deployable_outline_material.py — the two must agree.
 	 */
 	inline FName const PaletteTextureParam = TEXT("Palette");
 	inline FName const PaletteSizeParam = TEXT("PaletteSize");

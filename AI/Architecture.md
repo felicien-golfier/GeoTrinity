@@ -1,102 +1,66 @@
 # Architecture Reference
 
-## Project Overview
-GeoTrinity is a multiplayer 2D bullet-hell game built with Unreal Engine 5.7 using the Gameplay Ability System (GAS). Players control geometric shapes (Tank=Square, Heal=Circle, DPS=Triangle) in a co-op experience against bosses.
+Networking, data structures and the effect system. Class inventories and folder layout are in the root
+`CLAUDE.md`.
 
-**Camera**: Orthographic, pitch = -90 (looking straight down), no angle or tilt.
+## Networking
 
----
+ASC lives on `AGeoPlayerState` for players (full replication) and on the character for enemies (minimal).
 
-## Networking Model
+### Player abilities — custom client prediction, not GAS prediction
 
-- **Playable Characters**: ASC lives on `AGeoPlayerState` (full replication)
-- **Enemy Characters**: ASC on character (minimal replication mode)
+1. **`ActivateAbility(TriggerEventData)`** — `StoredPayload` (`Origin`, `Yaw`, `ServerSpawnTime`, `Seed`) is
+   filled from the trigger data. The server already holds it, so no RPC announces the activation.
+2. **`SendFireDataToServer` after `FireDelay`** — optional, ability-specific: sends an updated snapshot when a
+   value has changed since activation (current aim yaw, say).
 
-### Player Ability Replication (Custom Client-Prediction)
-NOT standard GAS prediction — custom system.
+Where `OnFireTargetDataReceived` is used, the server spawns the authoritative projectile from the received
+data and hides it from the owning client (`IsNetRelevantFor` false for the owner), which keeps its predicted
+one. `ServerSpawnTime` comes off the synchronized server clock (`UGameplayLibrary::GetServerTime`) and
+`AGeoProjectile::AdvanceProjectile()` fast-forwards by the elapsed time, so positions match everywhere. For
+hold-to-fire the client drives the shot timer and the server fires once per received `FGeoAbilityTargetData`.
 
-**Two-stage data flow:**
+**Never use `GetServerTime` for local timing** (charge duration, cooldown UI) — it is a replicated
+approximation. Use `GetWorld()->GetTimeSeconds()` or `FPlatformTime::Seconds()`.
 
-**Stage 1 — `ActivateAbility(TriggerEventData)`**: Payload fields (`Origin`, `Yaw`, `ServerSpawnTime`, `Seed`) are populated from `TriggerEventData` when the ability activates. The server already has this data at this point — no RPC is needed just to inform the server the ability fired.
+Enemy patterns replicate by multicast RPC, spawning deterministically from the same payload.
 
-**Stage 2 — `SendFireDataToServer` after `FireDelay` (optional)**: Some abilities send an updated snapshot after the fire delay expires, when a value has changed (e.g. current aim yaw for a projectile). This is ability-specific — not mandatory infrastructure.
+## Data structures
 
-When `OnFireTargetDataReceived` is used:
-1. Server spawns authoritative projectile using received `Origin`, `Yaw`, `ServerSpawnTime`
-2. Server projectile **not replicated to owning client** (`IsNetRelevantFor` returns false for owner) — client keeps its local predicted one
-3. `ServerSpawnTime` uses synchronized server clock (`UGameplayLibrary::GetServerTime`) so projectile positions match across all machines
-4. `AGeoProjectile::AdvanceProjectile()` fast-forwards projectile position by elapsed time since `ServerSpawnTime`
-5. For auto/hold-to-fire: client drives shot timer, server fires once per received `FGeoAbilityTargetData` (no server-side timer)
+| Type | Role |
+|---|---|
+| `FAbilityPayload` | Ability data as `StoredPayload`; also the pattern system's payload |
+| `FGeoAbilityTargetData` | Per-shot client→server RPC (`Origin`, `Yaw`, `ServerSpawnTime`, `Seed`; custom `NetSerialize`) |
+| `FEffectData` | Polymorphic effect base — damage, heal, shield, generic GE with SetByCaller, single-use damage multiplier, chance-based status |
+| `UAbilityInfo` | Data asset of per-class ability arrays; `GetAbilitiesForClass()` returns class + shared |
+| `FGameplayAbilityInfo` | One ability entry; carries `EPlayerClass` so one tag can mean a different ability per class |
+| `FPlayerClassData` | Per-class runtime data on `APlayableCharacter` — mesh, anim class, default attributes |
+| `FHudPlayerParams` | Snapshot of PC, PS, ASC and attribute set handed to the HUD |
 
-**NEVER use `GetServerTime` for local client timing** (charge duration, cooldown UI): it's a replicated approximation. Use `GetWorld()->GetTimeSeconds()` or `FPlatformTime::Seconds()` for local timing.
+**Always read `StoredPayload` fields** rather than the ability's own helpers (`GetAvatarActor()`, …) — the
+payload is set by the client and may deliberately differ from ActorInfo.
 
-### Enemy Pattern Replication
-Multicast RPC with deterministic time-synced spawning via `FAbilityPayload` (Origin, Yaw, ServerSpawnTime, Seed).
+`SourceOwner` is the actor the shot belongs to: its ASC applies the effects, answers for the team, and owns
+what the shot spawns. `SourceAvatar` is what emitted it: origin, montage, self-ignore. They name one ASC for
+a player or a boss and two for a turret or a mine, whose `SourceOwner` stays the deployer. They are not
+`AActor::Owner`/`Instigator`, and GAS's `Instigator` is this struct's `SourceOwner`.
 
----
+## Effect application
 
-## Key Data Structures
+- Always apply through `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()`.
+- An ability merges its `UEffectDataAsset` references with its inline instances before applying. Inline
+  `TArray<TInstancedStruct<FEffectData>>` for effects specific to one ability; `TSoftObjectPtr<UEffectDataAsset>`
+  for shared ones.
+- Two-pass loop — every `UpdateContextHandle` first, then every `ApplyEffect` — so array order never matters.
+- `FSingleUseDamageMultiplierEffectData` sets the multiplier on the context and `UExecCalc_Damage` reads it;
+  never read it in `FDamageEffectData::ApplyEffect`.
 
-### `FAbilityPayload`
-Internal ability data stored as `StoredPayload` on ability instances; also used by the pattern system.
-- Fields: `Origin`, `Yaw`, `ServerSpawnTime`, `Seed`, `AbilityTag`, `SourceOwner`, `SourceAvatar`
-- **Always use `StoredPayload` fields** instead of calling ability helper functions (`GetAvatarActor()`, etc.) — the payload is set by the client and may intentionally differ from ActorInfo.
-- `SourceOwner` is the actor the shot belongs to — its ASC applies the effects, answers for the team, and owns whatever the shot spawns. `SourceAvatar` is the actor that emitted it: origin, montage, self-ignore. They name one ASC seen from both sides for a player or a boss, but two different ASCs for a turret or a mine, whose `SourceOwner` stays the deployer. Do not read them as `AActor::Owner`/`AActor::Instigator` (net owner / responsible pawn) or as `FGameplayEffectContext`'s `Instigator`/`EffectCauser` — GAS's `Instigator` is this struct's `SourceOwner`.
+## Actor pooling
 
-### `FGeoAbilityTargetData`
-Per-shot RPC payload sent client→server via `ServerSetReplicatedTargetData`.
-- Fields: `Origin`, `Yaw`, `ServerSpawnTime`, `Seed`; custom `NetSerialize`
+`UGeoActorPoolingSubsystem` (world subsystem): `RequestActor<T>()`, `ReleaseActor()`, `PreSpawn<T>()`.
+Pooled actors implement `IGeoPoolableInterface` (`Init()` / `End()`).
 
-### `FEffectData` (polymorphic)
-- `FDamageEffectData` — applies damage via ExecCalc
-- `FHealEffectData` — applies heal via ExecCalc
-- `FShieldEffectData` — applies shield
-- `FGameplayEffectData` — generic GE with SetByCaller
-- `FSingleUseDamageMultiplierEffectData` — sets `SingleUseDamageMultiplier` on context; scoped per `ApplyEffectFromEffectData` call
-- `FStatusEffectData` — chance-based status
+## Class-specific abilities
 
-### `UAbilityInfo` (`AbilitySystem/Data/AbilityInfo.h`)
-Data asset with per-class ability arrays. Use `GetAbilitiesForClass(EPlayerClass)` to retrieve class abilities + shared.
-- `FPlayersGameplayAbilityInfo` holds `AbilityClass`, `AbilityTag`, `InputAction`, `InputTag`, `bGiveAtStartup`, `AbilityIcon`
-
-### `FGameplayAbilityInfo`
-Contains `EPlayerClass PlayerClass` for class-specific ability selection. Multiple abilities can share the same `AbilityTag` but differ by `PlayerClass`.
-
-### `FPlayerClassData`
-Per-class runtime data on `APlayableCharacter`: Mesh, AnimClass, DefaultAttributes.
-
-### `FHudPlayerParams`
-Snapshot of PC, PS, ASC, AttributeSet passed to HUD and widgets.
-
----
-
-## Effect Application Rules
-
-- `UEffectDataAsset` contains `TArray<TInstancedStruct<FEffectData>>` — ability merges its asset with inline instances before applying
-- **Always use** `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()` to apply effects
-- Two-pass loop: all `UpdateContextHandle` calls first, then all `ApplyEffect` — order in array doesn't matter for context setup
-- **Damage multipliers**: `FSingleUseDamageMultiplierEffectData` sets `SingleUseDamageMultiplier` on context. `UExecCalc_Damage` reads it. Do NOT read it in `FDamageEffectData::ApplyEffect`.
-- **Effect container choice**:
-  - `TArray<TInstancedStruct<FEffectData>>` (inline on ability) — for effects specific to one ability
-  - `TArray<TSoftObjectPtr<UEffectDataAsset>>` (asset reference) — for shared/reused effects
-
----
-
-## Actor Pooling (`UGeoActorPoolingSubsystem`)
-World Subsystem managing object reuse:
-- `RequestActor<T>()` — get from pool or spawn new
-- `ReleaseActor()` — return to pool
-- `PreSpawn<T>()` — pre-allocate actors
-- Actors implement `IGeoPoolableInterface` with `Init()/End()` callbacks
-
----
-
-## Class-Specific Ability Selection
-- Filter abilities by `EPlayerClass` when activating by input tag
-- Do NOT create separate ability classes for different player classes — use the `PlayerClass` filter on `FGameplayAbilityInfo`
-
-## Class Inventories
-- **Circle (Healer)**: `GeoHealingAuraAbility`, `GeoMoiraBeamAbility`, `GeoHealReturnPassiveAbility`, `GeoChargeBeamAbility`
-- **Square (Tank)**: `GeoShieldBurstPassiveAbility`, `GeoDetonateWallsAbility` (wall deploy uses shared `GeoDeployAbility`)
-- **Triangle (DPS)**: `GeoReloadAbility`, `GeoRecallTurretAbility`; basic attack = `UGeoAutomaticProjectileAbility` with ammo cost
-- **Common**: `GeoDeployAbility`, `GeoDashAbility`
+Filter by `EPlayerClass` when activating from an input tag. Never write a separate ability class per player
+class — use the `PlayerClass` field on `FGameplayAbilityInfo`.
