@@ -113,12 +113,86 @@ the mesh-placed ones take their shape from the character's own mesh and ignore i
 | `NS_OrbitArc` | ribbon | orbiting beam endpoints | re-derived per frame | one held strand |
 | `NS_ShardStorm` | mesh | random ring surface | inward attraction | restriking bursts |
 | `NS_EmpoweredArcRun` | sprite | mesh surface | velocity-aligned drift vs drag | rate plus restriking flash |
+| `NS_ChargedTrail` | ribbon | the owner's own path | curl noise vs drag | rate plus restriking bursts |
 
 The beam-placed ones draw their endpoints in emitter scope, so read Random Evaluation Scope before expecting a
 strike to move between loops.
 
-Built by `AI/Python/static_electricity_vfx.py`, `cone_coil_vfx.py`, `lightning_variants.py` and
-`empowered_arc_vfx.py`.
+`NS_ChargedTrail` is the only one worn by a projectile rather than a character, and the only one whose shape
+comes from the owner moving: see Trails Off a Moving Emitter. Its `User.Radius` is the shot's radius, not a
+body's. Its character-side counterpart is `NS_ChargedHalo` — see Buff VFX.
+
+Built by `AI/Python/static_electricity_vfx.py`, `cone_coil_vfx.py`, `lightning_variants.py`,
+`empowered_arc_vfx.py`, `charged_trail_vfx.py` and `buff_vfx.py`.
+
+## Trails Off a Moving Emitter
+
+A ribbon laid behind a mover needs no event handler and no link-order module. Spawn at a rate, take the
+position from the emitter's own, and let the ribbon renderer link particles in birth order: every particle
+stays where it was born, so the strand *is* the path travelled. `LocationBasedRibbon` is the template to
+duplicate — it carries the ribbon renderer and an `InitializeParticle` already set to offset from the
+simulation position, and its own `ReceiveLocationEvent` handler is inert with no source emitter, so adding
+`SpawnRate` to Emitter Update is the whole hookup.
+
+This only works because the emitter simulates in world space, which is Niagara's default and cannot be read or
+written from Python — `bLocalSpace` lives in the emitter's protected version data. A trail that rides along
+with its owner instead of trailing behind it is that checkbox, in the emitter's properties panel.
+
+What makes such a strand read as electricity is the size of the spawn scatter against the gap the owner covers
+between two spawns (speed / rate). Scatter each birth on a sphere about as wide as that gap and consecutive
+points step sideways as far as they step forward, so the strand is born zigzagged; scatter it smaller and the
+strand stays smooth however random the draw. Sample the sphere's surface rather than its volume, or the points
+drawn near the centre fall back onto the path and flatten that step.
+
+A curl noise force bends what is already laid, and since a curl field is spatially coherent the strand can only
+ever bend as one shape: how many of the field's features span the strand's own length is what separates a lean
+from an ondulation. Two layers given the same field at opposite strengths bend into mirror images of each
+other, which is how a pair of them braid.
+
+The birth point can only be the owner's own. The initialise-particle module's position-offset input is
+addressable and writable but does not move it, so a fixed offset from the owner needs a location module of its
+own — and every location module places at random within its shape, which no ribbon can be linked from. Nothing
+spreads such a strand while its owner stands still: the rotate-around-a-point modules turn every particle by
+the same wall-clock angle, which moves the whole clump without ever separating it, and a clump renders as
+nothing at all because a ribbon needs length. A strand that has to hold on a still owner is a beam — see
+Strands That Circle an Owner.
+
+## Strands That Circle an Owner
+
+An aura that must read while its owner stands still cannot be a trail, because a trail is the path travelled.
+Use a beam instead: two endpoints circling the owner on unrelated periods, with the update-beam module
+re-deriving every particle from them each frame, so the chord between them sweeps and stretches and never
+settles. `NS_OrbitArc` is the reference for it, and `NS_ChargedHalo` and `NS_VitalHalo` are built on the same
+mechanism.
+
+Since the endpoints live in emitter scope, this is also the one placement whose trig actually advances with
+time — the same cosine and sine drive nothing in a particle script, where each particle's angle is resolved
+once at birth.
+
+## Buff VFX
+
+Everything `UGameDataSettings::BuffVFX` names, one entry per attribute, built by `AI/Python/buff_vfx.py`
+except `NS_ChargedTrail`, which is built by `charged_trail_vfx.py`. A character wears the entry's
+`CharacterVFX` and the shots it fires wear its `ProjectileVFX`; a shot only carries the two boosts it can
+express, so the other three are character-side only.
+
+| System | Attribute | Worn by | The strand is | Emission |
+|---|---|---|---|---|
+| `NS_ChargedTrail` | DamageMultiplier | the shot | the path travelled | rate plus restriking bursts |
+| `NS_VitalTrail` | AppliedHealBoost | the shot | the path travelled | continuous rate |
+| `NS_SwiftWake` | MovementSpeedMultiplier | the body | the path travelled | continuous rate |
+| `NS_ChargedHalo` | DamageMultiplier | the body | a chord that circles | one held strand plus bursts |
+| `NS_VitalHalo` | AppliedHealBoost | the body | three chords that circle | three held strands |
+| `NS_MendingDrift` | ReceivedHealBoost | the body | no strand — sprites | continuous rate |
+| `NS_BulwarkShell` | DamageReduction | the body | no strand — sprites | continuous rate |
+
+The charged and vital systems are the same mechanisms at opposite settings — scatter, ribbon tension and
+colour — so a new attribute is a colour and a tuning, not a new effect. `NS_SwiftWake` is the only one that
+deliberately shows nothing at rest: a trail worn by a body draws a contrail while it runs and collapses to a
+knot when it stops, which is exactly when a movement-speed buff has nothing to say.
+
+Nothing writes `User.Radius` on these at runtime — a buff system is spawned with no parameters — so each is
+authored to the radius of the side it dresses.
 
 ## Empowerment Auras
 

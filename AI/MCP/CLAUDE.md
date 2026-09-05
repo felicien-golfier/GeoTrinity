@@ -27,6 +27,7 @@ All editor automation goes through `mcp-unreal` `execute_script` (Python), or a 
 | Widget Blueprint creation, widget tree shim, WidgetComponent setup | `MCP_UI.md` |
 | Level settings (World Settings, GameMode override, PlayerControllerClass) | `MCP_Level.md` |
 | Reading the running game in PIE | `MCP_PIE.md` |
+| Judging a visual change in the editor world, without PIE | `MCP_Preview.md` |
 | Live Coding builds with editor open, connecting MCP bridge | `MCP_LiveCodingAndConnect.md` |
 | Reading/writing config-backed project settings | `MCP_Settings.md` |
 | Doc style rules for `.md` files in this folder | `MCP_DocStyle.md` |

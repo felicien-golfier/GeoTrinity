@@ -45,9 +45,26 @@ An input's component count follows the module, not the name — the same name is
 and a vector on another — and a write whose count does not match is refused. Dump the stage before writing.
 
 Setting a static switch changes which inputs the branch exposes, so compile after it before addressing them.
+A switch is a pin and is addressable the moment its module is added, so switches and module additions belong
+in the same phase, ahead of the compile that makes any value addressable.
 
 A dynamic input script may drive one of its own inputs from the graph, which leaves that input unaddressable
 and makes its siblings the only controls over it.
+
+## Module order within a stage
+
+A module's position in the stack decides whether the stage's own solver reads it or overwrites it. Insert a
+force above the solver that integrates it, and anything that writes a position below the solver, which
+otherwise recomputes that position from velocity and discards the write. A module that re-derives a whole
+shape each frame has to sit above anything displacing that shape, or the re-derivation wins.
+
+## Modules a template does not carry
+
+Emitter templates carry different modules, so a stack edit written for one is not portable to another —
+a ribbon template has no burst to disable, and a sprite template has no beam. Addressing a module a template
+lacks fires the shim's ensure, which halts the editor's game thread outright while a debugger is attached.
+An ensure fires once per call site per editor session, so resuming lets the rest of the run complete and the
+remaining calls of that kind return false instead of breaking again.
 
 ## Value encoding
 

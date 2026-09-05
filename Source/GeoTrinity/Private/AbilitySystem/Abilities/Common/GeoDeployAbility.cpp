@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
+#include "Actor/Projectile/GeoProjectileFXComponent.h"
 #include "Characters/Component/GeoDeploySatelliteComponent.h"
 #include "Settings/GameDataSettings.h"
 
@@ -197,6 +198,6 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 	FVector LaunchLocation;
 	if (SatelliteRing && SatelliteRing->LaunchSatellite(LaunchLocation))
 	{
-		Projectile->SetVisualLaunchLocation(LaunchLocation);
+		Projectile->FXComponent->SetVisualLaunchLocation(LaunchLocation);
 	}
 }

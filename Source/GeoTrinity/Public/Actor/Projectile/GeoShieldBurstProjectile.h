@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "AbilitySystem/Data/GeoSoundRow.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "CoreMinimal.h"
 #include "ScalableFloat.h"
@@ -53,7 +54,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile|Audio")
 	FGeoSoundEntry BounceSound;
 
-	/** Extra pitch multiplier for BounceSound, evaluated against the sphere's current scaled radius. */
+	/** Extra pitch multiplier for every sound this burst plays, evaluated against its current scaled radius. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile|Audio")
 	TObjectPtr<UCurveFloat> BounceSoundSizePitchCurve;
 
@@ -76,18 +77,14 @@ protected:
 	virtual bool IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
 								UGeoAbilitySystemComponent*& OutTargetASC) override;
 
-	/** Extends base pitch with an extra factor from BounceSoundSizePitchCurve, evaluated at the sphere's current
-	 * scaled radius, so bigger bursts pitch differently. */
-	virtual float GetPitch(FGeoSoundEntry const& Entry) const override;
-
-	/** Teleports the projectile to the post-bounce state and updates the Niagara radius parameter on simulated clients.
-	 */
+	/** Teleports the projectile to the post-bounce state and re-sizes its FX on simulated clients. */
 	UFUNCTION()
 	void OnRep_BounceSnapshot();
 
-	/** Sets the GeoNiagaraParams::BulletRadius parameter. Called on every machine — the host updates it directly after a
-	 * bounce (where OnRep never runs), simulated clients via OnRep_BounceSnapshot. */
-	void UpdateVisualRadius(float Radius) const;
+	/** Matches everything that follows the burst's size to Radius: the bullet visual, and the pitch of its sounds
+	 * through BounceSoundSizePitchCurve, so bigger bursts sound different. Called on every machine — the host updates
+	 * it directly after a bounce (where OnRep never runs), simulated clients via OnRep_BounceSnapshot. */
+	void UpdateSizeFX(float Radius) const;
 
 private:
 	/** Plays BounceSound, then on the server records the post-bounce location, velocity, and radius in

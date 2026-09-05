@@ -3,7 +3,6 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
-#include "AbilitySystem/Data/GeoSoundRow.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -13,9 +12,8 @@
 
 class AGeoCharacter;
 class UGeoAbilitySystemComponent;
-class UGeoGameFeelComponent;
+class UGeoProjectileFXComponent;
 class UProjectileMovementComponent;
-class UNiagaraSystem;
 class UNiagaraComponent;
 class USphereComponent;
 class USceneComponent;
@@ -34,8 +32,9 @@ class GEOTRINITY_API AGeoProjectile : public AActor
 {
 	GENERATED_BODY()
 public:
-	/** Creates the sphere collider (root), projectile movement component, and looping audio component as
-	 *  default subobjects; enables replication and tick. */
+	/** Creates the sphere collider (root), projectile movement component, bullet visual, looping audio component and FX
+	 *  component as default subobjects, and hands the two playback subobjects to the FX component; enables replication
+	 *  and tick. */
 	AGeoProjectile();
 	/** Seeds ResolvedParams with DefaultParams, so a projectile spawned outside GeoASLib (never running
 	 *  ApplyProjectileParams) still runs on its Blueprint values. */
@@ -89,22 +88,22 @@ public:
 	void OverrideSpeed(float Speed);
 
 	/**
-	 * Cosmetic only: draws the bullet from WorldLocation instead of the actor, then slides it back onto the actor over
-	 * the first moments of flight (Tick). Collision, travel distance and impact all keep running from the actor's own
-	 * spawn point, so a caller can show a shot leaving somewhere else (a deploy leaving its satellite ring) without
-	 * moving anything the game reads.
-	 *
-	 * @param WorldLocation  World point the visual starts from.
-	 */
-	void SetVisualLaunchLocation(FVector const& WorldLocation);
-
-	/**
 	 * Applies a spawn-params bundle to this instance. Each value resolves per its EOverrideParam toggle —
 	 * GameDataSettings value, the projectile's DefaultParams, or explicit override — and the resolved bundle is pushed
 	 * via ApplyParams. A reused pooled projectile is fully re-resolved each spawn (DefaultParams is never written to),
 	 * so it never keeps the previous instance's values.
 	 */
 	void ApplyProjectileParams(FExternalProjectileParams const& Params);
+
+	/** Returns the actor this shot belongs to — the ASC that applies its effects and answers for its team.
+	 *  Payload.SourceOwner, falling back to the replicated AActor Owner on a simulated proxy, where the payload never
+	 *  arrives. */
+	AActor* GetSourceOwner() const;
+
+	/** Returns the actor that emitted this shot. Payload.SourceAvatar, falling back to the replicated AActor Instigator
+	 *  on a simulated proxy — which only carries it for a pawn emitter, never a turret or a mine. Whose sounds this
+	 *  shot's are, so it is what UGeoProjectileFXComponent gates its audience on. */
+	AActor* GetSourceAvatar() const;
 
 #if WITH_EDITOR
 	/** Previews a DefaultParams edit without entering play. A Class Defaults edit lands on the CDO, whose BulletVFX is
@@ -135,6 +134,16 @@ public:
 	float ReplicatedSpeed = 0.f;
 
 	FOnProjectileEndLife OnProjectileEndLifeDelegate;
+
+	/** Everything this shot looks and sounds like — the bullet visual, its looping audio, every FXMap moment, and the
+	 * buff VFX it wears from its shooter. Native subobject so no projectile Blueprint can be missing it. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
+	TObjectPtr<UGeoProjectileFXComponent> FXComponent;
+
+	/** The values this instance is actually running with: DefaultParams until a spawn resolves its
+	 * FExternalProjectileParams over them (ApplyParams). Read it — never DefaultParams — for runtime behaviour. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "GeoProjectile|Params")
+	FProjectileParamsBase ResolvedParams;
 
 protected:
 	/**
@@ -173,11 +182,6 @@ protected:
 	virtual void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 							 FVector NormalImpulse, FHitResult const& Hit);
 
-	/** Plays EndSoundType (ValidOverlapEnd after a valid overlap, NoOverlapEnd otherwise) and spawns ImpactEffect
-	 * (Niagara) at the actor's current location. */
-	UFUNCTION(BlueprintCallable)
-	virtual void PlayImpactFx() const;
-
 	/**
 	 * Called on every machine that has this projectile when it hits a valid actor.
 	 * Override in Blueprint to apply a hit flash or other cosmetic reaction on the HitActor's mesh.
@@ -186,45 +190,6 @@ protected:
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "GeoProjectile|GameFeel")
 	void OnProjectileHit(AActor* HitActor);
-
-	/**
-	 * Returns the volume multiplier for the sound identified by SoundType.
-	 * Default: looks up ResolvedParams.SoundMap and forwards to GetVolume(Entry).
-	 * Returns 1.0 if no entry exists. Override in Blueprint for custom logic.
-	 */
-	UFUNCTION(BlueprintNativeEvent, Category = "GeoProjectile|Audio")
-	float GetVolume(EProjectileSoundType SoundType) const;
-
-	/** Returns the volume for Entry via UGeoSoundRowLibrary::GetVolume with the projectile's instigator.
-	 * Virtual so subclasses can layer additional volume factors. */
-	virtual float GetVolume(FGeoSoundEntry const& Entry) const;
-
-	/**
-	 * Returns the pitch multiplier for the sound identified by SoundType.
-	 * Default: looks up ResolvedParams.SoundMap and forwards to GetPitch(Entry).
-	 * Returns 1.0 if no entry exists. Override in Blueprint for custom logic.
-	 */
-	UFUNCTION(BlueprintNativeEvent, Category = "GeoProjectile|Audio")
-	float GetPitch(EProjectileSoundType SoundType) const;
-
-	/** Returns the pitch multiplier for Entry via UGeoSoundRowLibrary::GetPitch with the projectile's instigator.
-	 * Virtual so subclasses can layer additional pitch factors (e.g. size). */
-	virtual float GetPitch(FGeoSoundEntry const& Entry) const;
-
-	/** Plays every sound mapped to SoundType once at the actor's location, with audience-gated volume and pitch. */
-	void PlaySoundOneShot(EProjectileSoundType SoundType) const;
-
-	/** Plays Entry once at the actor's location with its audience-gated volume and attribute-driven pitch. */
-	void PlaySoundOneShot(FGeoSoundEntry const& Entry) const;
-
-	/** Returns the actor this shot belongs to — the ASC that applies its effects and answers for its team.
-	 *  Payload.SourceOwner, falling back to the replicated AActor Owner on a simulated proxy, where the payload never
-	 *  arrives. */
-	AActor* GetSourceOwner() const;
-
-	/** Returns the actor that emitted this shot. Payload.SourceAvatar, falling back to the replicated AActor Instigator
-	 *  on a simulated proxy — which only carries it for a pawn emitter, never a turret or a mine. */
-	AActor* GetSourceAvatar() const;
 
 	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
 	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
@@ -240,20 +205,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<USphereComponent> Sphere;
 
+	/** Looping audio of the flight, driven by FXComponent. Stays a subobject of the projectile so a Blueprint keeps
+	 * editing it where it always has. */
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> LoopingSoundComponent;
 
-	/** Bullet visual. Native subobject (its system asset is set in the constructor; the Blueprint may override it). Its
-	 * User.* params are write-only from C++ — ApplyParams pushes radius/colors/trail; nothing reads them back, which is
-	 * why the values live in DefaultParams rather than in the Niagara asset's own user-param defaults. */
+	/** Bullet visual. Native subobject (its system asset is set in the constructor; the Blueprint may override it, and
+	 * so does the Looping moment's VFX). Driven by FXComponent, which pushes radius/colors/trail onto its write-only
+	 * User.* params — nothing reads them back, which is why the values live in DefaultParams rather than in the Niagara
+	 * asset's own user-param defaults. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
 	TObjectPtr<UNiagaraComponent> BulletVFX;
-
-	/** Dresses the shot in whatever buff its owner is carrying (UGameDataSettings::BuffVFX). InitProjectileLife points
-	 * it at Payload.SourceOwner's ASC — a shot has no attributes of its own. Native subobject so no projectile
-	 * Blueprint can be missing it. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoProjectile")
-	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
 
 	/** Per-Blueprint default values, edited in Class Defaults. Resolved against for KeepBlueprintDefaultValue, seeds
 	 * ResolvedParams, and is never written to at runtime. Editing it previews live on any instance in an editor
@@ -261,12 +223,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile|Params")
 	FProjectileParamsBase DefaultParams;
 
-	/** The values this instance is actually running with: DefaultParams until a spawn resolves its
-	 * FExternalProjectileParams over them (ApplyParams). Read it — never DefaultParams — for runtime behaviour. */
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "GeoProjectile|Params")
-	FProjectileParamsBase ResolvedParams;
-
-	EProjectileSoundType EndSoundType = EProjectileSoundType::NoOverlapEnd;
+	/** Whether the shot ended on a valid overlap rather than a wall, its distance span or its lifespan — which of the
+	 * two end moments FXComponent plays. */
+	bool bEndedOnValidOverlap = false;
 
 	bool bIsEnding{false};
 
@@ -286,17 +245,13 @@ private:
 	FVector InitialPosition;
 	float DistanceSpanSqr;
 
-	/** Stores Params as ResolvedParams, pushes its radius/colors/trail onto BulletVFX and resizes the sphere collider
-	 * to match. Single write path shared by ApplyProjectileParams (resolved values), the simulated-proxy default apply,
-	 * and the editor preview. */
+	/** Stores Params as ResolvedParams, resizes the sphere collider to match and hands the cosmetic half to
+	 * FXComponent. Single write path shared by ApplyProjectileParams (resolved values), the simulated-proxy default
+	 * apply, and the editor preview. */
 	void ApplyParams(FProjectileParamsBase const& Params);
 
 #if WITH_EDITOR
 	/** Applies DefaultParams to this instance and restarts its bullet system so the new values are on screen. */
 	void PreviewParams();
 #endif
-
-	/** Cosmetic (let the juice flow) **/
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile", meta = (AllowPrivateAccess = true))
-	TObjectPtr<UNiagaraSystem> ImpactEffect;
 };

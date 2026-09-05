@@ -7,7 +7,6 @@
 #include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "Serialization/StructuredArchiveFwd.h"
 
 #include "GeoSoundRow.generated.h"
 
@@ -15,7 +14,6 @@
 class UAudioComponent;
 class USoundBase;
 class UCurveFloat;
-struct FPropertyTag;
 
 UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
 enum class EGeoSoundAudienceBitflag : uint8
@@ -98,32 +96,6 @@ struct FGeoSoundEntry
 	/** Random pitch multiplier range applied on top of the curve result. X = min, Y = max. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
 	FVector2D RandomPitchMultiplierRange = FVector2D(1.f, 1.f);
-};
-
-/**
- * The sounds one moment plays: every entry fires together, so a moment can layer several assets.
- * A wrapper struct because a UPROPERTY TMap cannot hold a TArray as its value.
- */
-USTRUCT(BlueprintType)
-struct FGeoSoundEntryList
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TArray<FGeoSoundEntry> Entries;
-
-	/** Loads an asset saved when this property held a single FGeoSoundEntry, turning it into a one-element
-	 * Entries. Temporary migration hook — delete once every deployable asset has been resaved. */
-	bool SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
-};
-
-template <>
-struct TStructOpsTypeTraits<FGeoSoundEntryList> : public TStructOpsTypeTraitsBase2<FGeoSoundEntryList>
-{
-	enum
-	{
-		WithStructuredSerializeFromMismatchedTag = true,
-	};
 };
 
 /** DataTable row mapping a sound tag to the FGeoSoundEntry to play. The tag is an explicit field, not the row name. */

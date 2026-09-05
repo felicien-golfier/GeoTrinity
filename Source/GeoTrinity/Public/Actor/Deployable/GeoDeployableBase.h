@@ -5,7 +5,7 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Data/GeoCueParam.h"
-#include "AbilitySystem/Data/GeoSoundRow.h"
+#include "AbilitySystem/Data/GeoFXMoment.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
 #include "HUD/Interface/GeoDamageNumberHost.h"
@@ -277,10 +277,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam ExpireCue;
 
-	/** Sounds played at each moment of the deployable's life, alongside that moment's gameplay cue. Every entry of a
-	 * list plays together; a moment with no entry plays nothing. */
+	/** Sounds played at each moment of the deployable's life, alongside that moment's gameplay cue — which is where a
+	 * deployable's VFX comes from, so only the Sounds half of a moment is read here. Every sound of a moment plays
+	 * together; a moment with no entry plays nothing. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
-	TMap<EDeployableSoundType, FGeoSoundEntryList> SoundMap;
+	TMap<EDeployableSoundType, FGeoFXMoment> SoundMap;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;

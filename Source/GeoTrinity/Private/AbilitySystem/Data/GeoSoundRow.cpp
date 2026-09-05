@@ -8,22 +8,8 @@
 #include "Components/AudioComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
-#include "Serialization/StructuredArchive.h"
 #include "Sound/SoundBase.h"
 #include "Tool/UGeoGameplayLibrary.h"
-#include "UObject/PropertyTag.h"
-
-bool FGeoSoundEntryList::SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot)
-{
-	if (Tag.GetType().GetParameterName(0) != FGeoSoundEntry::StaticStruct()->GetFName())
-	{
-		return false;
-	}
-
-	Entries.Empty();
-	FGeoSoundEntry::StaticStruct()->SerializeItem(Slot, &Entries.AddDefaulted_GetRef(), nullptr);
-	return true;
-}
 
 // ---------------------------------------------------------------------------------------------------------------------
 FGeoSoundRow UGeoSoundRowLibrary::FindSoundForTag(UDataTable const* SoundTable, FGameplayTag Tag, bool& bFound)

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Data/GeoSoundRow.h"
+#include "AbilitySystem/Data/GeoFXMoment.h"
 #include "CoreMinimal.h"
 #include "Templates/SubclassOf.h"
 #include "Tool/GeoColor.h"
@@ -12,15 +12,18 @@
 
 class AGeoProjectile;
 
+/** Moment of a projectile's life its FX play at. Key of FProjectileParamsBase::FXMap. */
 UENUM(BlueprintType)
-enum class EProjectileSoundType : uint8
+enum class EProjectileMoment : uint8
 {
+	/** Fires as the shot launches. */
 	Start,
-	/** Single entry only — the projectile owns one looping audio component. */
+	/** Lasts the whole flight: its VFX replaces the bullet visual's own system, its sound loops. Single sound only —
+	 * the projectile owns one looping audio component. */
 	Looping,
-	/** Played when the projectile's life ends without a valid target: wall hit, distance span, or lifespan. */
+	/** Plays when the projectile's life ends without a valid target: wall hit, distance span, or lifespan. */
 	NoOverlapEnd,
-	/** Played when the projectile overlaps a valid target. */
+	/** Plays when the projectile overlaps a valid target. Its sounds layer over NoOverlapEnd's, which plays too. */
 	ValidOverlapEnd,
 };
 
@@ -42,7 +45,7 @@ enum class EOverrideParam : uint8
 
 /**
  * Every value a projectile runs with: travel distance and speed, radius (drives both the sphere collider and the
- * "User.Bullet_Radius" param), head/trail color, trail lifetime, the sound map, the overlap team attitude, and the
+ * "User.Bullet_Radius" param), head/trail color, trail lifetime, the FX map, the overlap team attitude, and the
  * self-overlap rule. Used as a projectile's per-Blueprint defaults (AGeoProjectile::DefaultParams, edited in Class
  * Defaults), as its resolved runtime bundle (AGeoProjectile::ResolvedParams), and as the override values of
  * FExternalProjectileParams, which derives from this so all three share one declaration.
@@ -78,9 +81,9 @@ struct FProjectileParamsBase
 			  meta = (ClampMin = "0", UIMin = "0", OverrideToggle = "OverrideTrailLifetimeScale"))
 	float TrailLifetimeScale = 1.f;
 
-	/** Sounds of each moment of the projectile's life. Every entry of a list plays together. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (OverrideToggle = "OverrideSoundMap"))
-	TMap<EProjectileSoundType, FGeoSoundEntryList> SoundMap;
+	/** VFX and sounds of each moment of the projectile's life. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (OverrideToggle = "OverrideFXMap"))
+	TMap<EProjectileMoment, FGeoFXMoment> FXMap;
 
 	/** Team attitudes (relative to the projectile's owner) whose actors count as a valid overlap. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
@@ -131,7 +134,7 @@ struct FExternalProjectileParams : public FProjectileParamsBase
 	EOverrideParam OverrideTrailLifetimeScale = EOverrideParam::KeepBlueprintDefaultValue;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EOverrideParam OverrideSoundMap = EOverrideParam::KeepBlueprintDefaultValue;
+	EOverrideParam OverrideFXMap = EOverrideParam::KeepBlueprintDefaultValue;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EOverrideParam OverrideOverlapAttitude = EOverrideParam::KeepBlueprintDefaultValue;

@@ -6,6 +6,7 @@
 #include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"
+#include "Actor/Projectile/GeoProjectileFXComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/GeoCharacter.h"
 #include "Components/AudioComponent.h"
@@ -14,24 +15,17 @@
 #include "EngineUtils.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
 #include "System/GeoPoolableInterface.h"
 #include "TimerManager.h"
-#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "UObject/ConstructorHelpers.h"
 
 static TAutoConsoleVariable CVarDrawServerProjectiles(TEXT("Geo.DrawServerProjectiles"), false,
 													  TEXT("Draw debug spheres for projectiles on the server"));
-
-// Rate the visual slides back onto the actor at (SetVisualLaunchLocation): ~1% of the offset is left after 0.2s, short
-// enough that the bullet is on its true path well before anything can be read off its position.
-static constexpr float VisualCatchUpSpeed = 25.f;
 
 namespace
 {
@@ -94,7 +88,8 @@ AGeoProjectile::AGeoProjectile()
 		BulletVFX->SetAsset(BulletSystem.Object);
 	}
 
-	GameFeelComponent = CreateDefaultSubobject<UGeoGameFeelComponent>("GameFeelComponent");
+	FXComponent = CreateDefaultSubobject<UGeoProjectileFXComponent>("FXComponent");
+	FXComponent->SetPlaybackSubobjects(BulletVFX, LoopingSoundComponent);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -154,7 +149,7 @@ void AGeoProjectile::Destroyed()
 {
 	if (!HasAuthority() && !bIsEnding)
 	{
-		PlayImpactFx();
+		FXComponent->PlayEnd(bEndedOnValidOverlap);
 	}
 	Super::Destroyed();
 }
@@ -167,15 +162,6 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 	if (bIsEnding)
 	{
 		return;
-	}
-
-	// A visual placed off the actor by SetVisualLaunchLocation slides home, so what the player sees converges onto the
-	// trajectory that actually counts. Exactly zero on every projectile that never asked for it.
-	FVector const VisualOffset = BulletVFX->GetRelativeLocation();
-	if (!VisualOffset.IsNearlyZero())
-	{
-		BulletVFX->SetRelativeLocation(
-			FMath::VInterpTo(VisualOffset, FVector::ZeroVector, DeltaSeconds, VisualCatchUpSpeed));
 	}
 
 	float const ElapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
@@ -259,8 +245,7 @@ bool AGeoProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemCompone
 void AGeoProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
 										UGeoAbilitySystemComponent* TargetASC)
 {
-	EndSoundType = EProjectileSoundType::ValidOverlapEnd;
-
+	bEndedOnValidOverlap = true;
 
 	if (GeoLib::IsServer(this))
 	{
@@ -273,32 +258,6 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemCom
 	EndProjectileLife();
 }
 
-float AGeoProjectile::GetVolume_Implementation(EProjectileSoundType SoundType) const
-{
-	FGeoSoundEntryList const* SoundList = ResolvedParams.SoundMap.Find(SoundType);
-	return SoundList && !SoundList->Entries.IsEmpty() ? GetVolume(SoundList->Entries[0]) : 1.f;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-float AGeoProjectile::GetVolume(FGeoSoundEntry const& Entry) const
-{
-	return UGeoSoundRowLibrary::GetVolume(Entry, GetSourceAvatar(), Payload.AbilityLevel);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-float AGeoProjectile::GetPitch_Implementation(EProjectileSoundType SoundType) const
-{
-	FGeoSoundEntryList const* SoundList = ResolvedParams.SoundMap.Find(SoundType);
-	return SoundList && !SoundList->Entries.IsEmpty() ? GetPitch(SoundList->Entries[0]) : 1.f;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-float AGeoProjectile::GetPitch(FGeoSoundEntry const& Entry) const
-{
-	return UGeoSoundRowLibrary::GetPitch(Entry, GetSourceAvatar(), Payload.AbilityLevel);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 AActor* AGeoProjectile::GetSourceOwner() const
 {
 	return IsValid(Payload.SourceOwner) ? Payload.SourceOwner : GetOwner();
@@ -308,28 +267,6 @@ AActor* AGeoProjectile::GetSourceOwner() const
 AActor* AGeoProjectile::GetSourceAvatar() const
 {
 	return IsValid(Payload.SourceAvatar) ? Payload.SourceAvatar : GetInstigator();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::PlaySoundOneShot(EProjectileSoundType const SoundType) const
-{
-	if (FGeoSoundEntryList const* SoundList = ResolvedParams.SoundMap.Find(SoundType))
-	{
-		for (FGeoSoundEntry const& Entry : SoundList->Entries)
-		{
-			PlaySoundOneShot(Entry);
-		}
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::PlaySoundOneShot(FGeoSoundEntry const& Entry) const
-{
-	if (UGeoSoundRowLibrary::ShouldPlay(this, Entry, GetSourceAvatar()))
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, Entry.Sound, GetActorLocation(), FRotator::ZeroRotator,
-											  GetVolume(Entry), GetPitch(Entry), Entry.StartTime);
-	}
 }
 
 void AGeoProjectile::OnProjectileHit_Implementation(AActor* HitActor)
@@ -353,26 +290,6 @@ void AGeoProjectile::OnSphereHit(UPrimitiveComponent* HitComponent, AActor* Othe
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::PlayImpactFx() const
-{
-	if (GeoLib::IsDedicatedServer(this))
-	{
-		return;
-	}
-
-	PlaySoundOneShot(EndSoundType);
-	if (EndSoundType == EProjectileSoundType::ValidOverlapEnd)
-	{
-		PlaySoundOneShot(EProjectileSoundType::NoOverlapEnd);
-	}
-
-	if (ImpactEffect)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ImpactEffect, GetActorLocation());
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::EndProjectileLife()
 {
 	if (bIsEnding)
@@ -382,7 +299,7 @@ void AGeoProjectile::EndProjectileLife()
 	bIsEnding = true;
 	UnbindFromInstigatorRevive();
 
-	PlayImpactFx();
+	FXComponent->PlayEnd(bEndedOnValidOverlap);
 
 	OnProjectileEndLifeDelegate.Broadcast(this);
 
@@ -395,7 +312,7 @@ void AGeoProjectile::EndProjectileLife()
 		SetActorHiddenInGame(true);
 		SetActorEnableCollision(false);
 		ProjectileMovement->StopMovementImmediately();
-		LoopingSoundComponent->Stop();
+		FXComponent->StopAll();
 		return;
 	}
 
@@ -499,21 +416,12 @@ void AGeoProjectile::OverrideSpeed(float const Speed)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoProjectile::SetVisualLaunchLocation(FVector const& WorldLocation)
-{
-	BulletVFX->SetWorldLocation(WorldLocation);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::ApplyParams(FProjectileParamsBase const& Params)
 {
 	ResolvedParams = Params;
 
 	Sphere->SetSphereRadius(Params.Radius);
-	BulletVFX->SetVariableFloat(GeoNiagaraParams::BulletRadius, Params.Radius);
-	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletHeadColor, Params.HeadColor.GetColor(1.f));
-	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletTrailColor, Params.TrailColor.GetColor(1.f));
-	BulletVFX->SetVariableFloat(GeoNiagaraParams::TrailLifetimeScale, Params.TrailLifetimeScale);
+	FXComponent->ApplyParams();
 }
 
 #if WITH_EDITOR
@@ -575,7 +483,7 @@ void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Para
 	Resolved.TrailColor = ResolveOverrideParam(Params.OverrideTrailColor, Params.TrailColor, DefaultParams.TrailColor);
 	Resolved.TrailLifetimeScale = ResolveOverrideParam(Params.OverrideTrailLifetimeScale, Params.TrailLifetimeScale,
 													   DefaultParams.TrailLifetimeScale);
-	Resolved.SoundMap = ResolveOverrideParam(Params.OverrideSoundMap, Params.SoundMap, DefaultParams.SoundMap);
+	Resolved.FXMap = ResolveOverrideParam(Params.OverrideFXMap, Params.FXMap, DefaultParams.FXMap);
 	Resolved.OverlapAttitude =
 		ResolveOverrideParam(Params.OverrideOverlapAttitude, Params.OverlapAttitude, DefaultParams.OverlapAttitude);
 	Resolved.bCanOverlapInstigator = ResolveOverrideParam(
@@ -597,21 +505,6 @@ void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Para
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoProjectile::InitProjectileLife()
 {
-	if (!GeoLib::IsDedicatedServer(this))
-	{
-		FGeoSoundEntryList const* LoopingSounds = ResolvedParams.SoundMap.Find(EProjectileSoundType::Looping);
-		if (LoopingSounds && !LoopingSounds->Entries.IsEmpty())
-		{
-			ensureMsgf(LoopingSounds->Entries.Num() == 1,
-					   TEXT("%s: %d looping sounds, only the first plays — the projectile owns one audio component"),
-					   *GetName(), LoopingSounds->Entries.Num());
-			UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, LoopingSounds->Entries[0],
-														 GetSourceAvatar(), GetVolume(EProjectileSoundType::Looping),
-														 GetPitch(EProjectileSoundType::Looping));
-		}
-		PlaySoundOneShot(EProjectileSoundType::Start);
-	}
-
 	SetLifeSpan(LifeSpanInSec);
 	Sphere->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnSphereOverlap);
 	Sphere->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnSphereHit);
@@ -619,13 +512,11 @@ void AGeoProjectile::InitProjectileLife()
 	InitialPosition = GetActorLocation();
 	DistanceSpanSqr = FMath::Square(ResolvedParams.DistanceSpan);
 	InitProjectileMovementComponent();
-	// A pooled instance can come back holding the previous shot's launch offset; the spawner re-applies its own after
-	// this runs.
-	BulletVFX->SetRelativeLocation(FVector::ZeroVector);
-	GameFeelComponent->BindBuffVFX(GeoASLib::GetGeoAscFromActor(GetSourceOwner()));
+	FXComponent->StartLife();
+	FXComponent->BindBuffVFX(GeoASLib::GetGeoAscFromActor(GetSourceOwner()));
 
 	bIsEnding = false;
-	EndSoundType = EProjectileSoundType::NoOverlapEnd;
+	bEndedOnValidOverlap = false;
 
 	ReviveBoundInstigator = Cast<AGeoCharacter>(GetSourceAvatar());
 	if (ReviveBoundInstigator.IsValid())

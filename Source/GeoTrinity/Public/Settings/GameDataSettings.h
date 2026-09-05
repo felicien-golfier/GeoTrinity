@@ -22,9 +22,10 @@ class UNiagaraSystem;
 class UPlayerClassDataAsset;
 
 /**
- * One buff attribute and the VFX it shows while it sits above its base value on a character. Read by
- * UGeoGameFeelComponent, which every character and every projectile carries: the character wears CharacterVFX, the
- * projectiles it fires wear ProjectileVFX. Either may be left empty to show the buff on one side only.
+ * One buff attribute and the VFX it shows while it sits above its base value on a character. Read by every
+ * UGeoFXComponent, each taking its own side: a character's UGeoGameFeelComponent wears CharacterVFX, and the shots it
+ * fires wear ProjectileVFX through their UGeoProjectileFXComponent. Either may be left empty to show the buff on one
+ * side only.
  */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGeoBuffVFXEntry
@@ -192,7 +193,7 @@ public:
 	FGeoCueParam RefillDeployableCue;
 
 	/** Every buff the game shows, project-wide: one entry per attribute, with the systems its character and its shots
-	 * wear while it is boosted. Driven by UGeoGameFeelComponent. */
+	 * wear while it is boosted. Driven by UGeoFXComponent. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
 	TArray<FGeoBuffVFXEntry> BuffVFX;
 

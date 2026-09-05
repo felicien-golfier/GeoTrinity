@@ -6,13 +6,12 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
+#include "Actor/Projectile/GeoProjectileFXComponent.h"
 #include "Components/SphereComponent.h"
 #include "Curves/CurveFloat.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "NiagaraComponent.h"
-#include "Tool/GeoNiagaraParams.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -45,11 +44,8 @@ void AGeoShieldBurstProjectile::InitProjectileLife()
 	{
 		BounceSnapshot = {GetActorLocation(), ProjectileMovement->Velocity, Sphere->GetScaledSphereRadius()};
 	}
-	else
-	{
-		// OnRep_BounceSnapshot fired before BeginPlay, whose DefaultParams apply overwrote the radius it had set.
-		UpdateVisualRadius(BounceSnapshot.Radius);
-	}
+	// On a client OnRep_BounceSnapshot fired before BeginPlay, whose DefaultParams apply overwrote the radius it set.
+	UpdateSizeFX(BounceSnapshot.Radius);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -58,25 +54,16 @@ void AGeoShieldBurstProjectile::OnRep_BounceSnapshot()
 	SetActorLocation(BounceSnapshot.Location);
 	ProjectileMovement->Velocity = BounceSnapshot.Velocity;
 	ProjectileMovement->UpdateComponentVelocity();
-	UpdateVisualRadius(BounceSnapshot.Radius);
+	UpdateSizeFX(BounceSnapshot.Radius);
 }
 
-void AGeoShieldBurstProjectile::UpdateVisualRadius(float Radius) const
+void AGeoShieldBurstProjectile::UpdateSizeFX(float const Radius) const
 {
-	if (BulletVFX)
-	{
-		BulletVFX->SetVariableFloat(GeoNiagaraParams::BulletRadius, Radius);
-	}
-}
-
-float AGeoShieldBurstProjectile::GetPitch(FGeoSoundEntry const& Entry) const
-{
-	float Pitch = Super::GetPitch(Entry);
+	FXComponent->SetBulletRadius(Radius);
 	if (IsValid(BounceSoundSizePitchCurve))
 	{
-		Pitch *= BounceSoundSizePitchCurve->GetFloatValue(Sphere->GetScaledSphereRadius());
+		FXComponent->SetPitchMultiplier(BounceSoundSizePitchCurve->GetFloatValue(Radius));
 	}
-	return Pitch;
 }
 
 void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity)
@@ -97,7 +84,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 {
 	if (GeoASLib::IsTeamAttitudeAligned(GetSourceOwner(), OtherActor, TeamAttitudeMask::HostileOrNeutral))
 	{
-		PlaySoundOneShot(BounceSound);
+		FXComponent->PlaySound(BounceSound);
 		if (GeoLib::IsServer(GetWorld()))
 		{
 			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
@@ -111,7 +98,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 			ProjectileMovement->UpdateComponentVelocity();
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() + SphereRadiusToAdd);
 			ShieldAmount += ShieldAmountToAdd;
-			UpdateVisualRadius(Sphere->GetScaledSphereRadius());
+			UpdateSizeFX(Sphere->GetScaledSphereRadius());
 			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
 			LastOverlapHostileActor = OtherActor;
 			LastOverlapTime = GetWorld()->GetTimeSeconds();
@@ -119,8 +106,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 	}
 	else
 	{
-		EndSoundType = EProjectileSoundType::ValidOverlapEnd;
-
+		bEndedOnValidOverlap = true;
 
 		if (GeoLib::IsServer(GetWorld()))
 		{
