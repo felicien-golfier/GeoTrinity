@@ -33,6 +33,7 @@ struct GEOTRINITY_API FGeoBlackboardIntFieldOp
 			  meta = (EditCondition = "Op != EGeoBlackboardOp::None", EditConditionHides = false))
 	int32 Value = 0;
 
+	/** Applies this operation to Current and returns the result. Returns Current unchanged when Op is None. */
 	int32 Apply(int32 Current) const
 	{
 		switch (Op)
@@ -62,6 +63,7 @@ struct GEOTRINITY_API FGeoBlackboardFloatFieldOp
 			  meta = (EditCondition = "Op != EGeoBlackboardOp::None", EditConditionHides = false))
 	float Value = 0.f;
 
+	/** Applies this operation to Current and returns the result. Returns Current unchanged when Op is None. */
 	float Apply(float Current) const
 	{
 		switch (Op)
@@ -97,10 +99,12 @@ struct GEOTRINITY_API FSTTask_UpdateBlackboard : public FStateTreeTaskCommonBase
 	GENERATED_BODY()
 
 
+	/** Disables tick; this task always completes synchronously. */
 	FSTTask_UpdateBlackboard() { bShouldCallTick = false; }
 
 	using FInstanceDataType = FSTTask_UpdateBlackboardInstanceData;
 
+	/** Returns FSTTask_UpdateBlackboardInstanceData as the per-execution instance data type. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Registers the external data handle for UGeoAIBlackboardComponent. */
 	virtual bool Link(FStateTreeLinker& Linker) override;

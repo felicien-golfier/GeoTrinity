@@ -17,10 +17,13 @@ class GEOTRINITY_API UShieldBurstPassiveComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	/** Enables component replication so GaugeRatio propagates to all clients. */
 	UShieldBurstPassiveComponent();
 	/** Finds the owner's mesh material at slot 0 and creates a dynamic material instance used to drive the gauge and charge shader parameters. */
 	void InitializeMaterialInstances();
+	/** Creates the dynamic material instance by calling InitializeMaterialInstances. */
 	virtual void BeginPlay() override;
+	/** Registers GaugeRatio for replication using OnRep_GaugeRatio. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Called server-side by the ability whenever the gauge value changes. */

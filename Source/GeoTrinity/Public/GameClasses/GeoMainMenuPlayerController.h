@@ -19,6 +19,7 @@ class GEOTRINITY_API AGeoMainMenuPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
+	/** Shows the mouse cursor and sets controller defaults for menu use. */
 	AGeoMainMenuPlayerController(FObjectInitializer const& ObjectInitializer);
 
 protected:

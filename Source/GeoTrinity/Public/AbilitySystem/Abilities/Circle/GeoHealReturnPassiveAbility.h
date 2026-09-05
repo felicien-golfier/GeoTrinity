@@ -17,6 +17,7 @@ class GEOTRINITY_API UGeoHealReturnPassiveAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** Sets NetSecurityPolicy to ServerOnly so a client cancel request cannot end the server's passive instance after a revive. */
 	UGeoHealReturnPassiveAbility();
 
 private:

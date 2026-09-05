@@ -22,6 +22,7 @@ class GEOTRINITY_API UGeoHealingAuraAbility
 	GENERATED_BODY()
 
 public:
+	/** Sets NetSecurityPolicy to ServerOnly so a client cancel request cannot end the server's passive instance after a revive. */
 	UGeoHealingAuraAbility();
 
 private:
