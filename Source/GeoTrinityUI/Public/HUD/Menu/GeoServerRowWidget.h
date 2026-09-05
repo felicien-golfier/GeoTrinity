@@ -28,6 +28,7 @@ class GEOTRINITYUI_API UGeoServerRowWidget : public UUserWidget
 public:
 	FGeoServerRowSelectedDelegate OnSelected;
 
+	/** Populates ServerNameText, MapText, PlayersText, PingText (and FlagImage if present) from the search result and stores it for the OnSelected broadcast. */
 	void InitFromSearchResult(const FOnlineSessionSearchResult& Result);
 
 protected:
