@@ -45,13 +45,16 @@ public:
 	FLinearColor GetGaugeFullColor() const { return GaugeFullColor.GetColor(1.f); }
 
 private:
+	/** Binds OnHealProvidedCallback to the owner ASC's OnHealProvided delegate to begin accumulating gauge charge. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
+	/** Consumes the gauge and unbinds the heal-provided delegate before calling Super, so death or class-change always starts fresh. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
+	/** Called when the owner provides a heal; accumulates HealDone into the HealCharge attribute, capped at HealRequiredForFullCharge. */
 	UFUNCTION()
 	void OnHealProvidedCallback(float HealDone);
 

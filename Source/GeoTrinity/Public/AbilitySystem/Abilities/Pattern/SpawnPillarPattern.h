@@ -37,14 +37,20 @@ class GEOTRINITY_API USpawnPillarPattern : public UPattern
 	GENERATED_BODY()
 
 protected:
+	/** Flags a missing pillar class so a misconfigured pattern is caught at creation time. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
+	/** Sets the cue source location to the first zone's world position. */
 	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
 
 private:
+	/** Reads ZoneLocations from FSpawnPillarPatternData and schedules the per-zone countdown cues. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
+	/** Fires the zone-indicator cue at every zone location rather than just the pattern origin. */
 	virtual void ExecuteGameplayCue(FGeoCueParam const& Cue) override;
+	/** Applies PillarSpawnEffects to hostiles in the zone and spawns PillarClass at ZoneLocation (server-only). */
 	void SpawnPillarAtLocation(FVector2D const& ZoneLocation, UGeoAbilitySystemComponent* AvatarASC) const;
+	/** Spawns a pillar at every zone location, applies spawn effects to nearby hostiles, then ends the pattern. */
 	virtual void StartPattern() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoPillar", meta = (AllowPrivateAccess = "true"))

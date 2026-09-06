@@ -84,10 +84,13 @@ protected:
 	 */
 	float GetInvulnerabilityFloor(FGameplayAttribute const& Attribute, bool bBaseValue) const;
 
+	/** Notifies the GAS aggregator that Health changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	virtual void OnRep_Health(FGameplayAttributeData const& OldHealth);
+	/** Notifies the GAS aggregator that MaxHealth changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(FGameplayAttributeData const& OldMaxHealth);
+	/** Notifies the GAS aggregator that Shield changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	virtual void OnRep_Shield(FGameplayAttributeData const& OldShield);
 };

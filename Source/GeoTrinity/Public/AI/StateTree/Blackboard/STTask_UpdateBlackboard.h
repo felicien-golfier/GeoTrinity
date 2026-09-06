@@ -80,6 +80,7 @@ struct GEOTRINITY_API FGeoBlackboardFloatFieldOp
 	}
 };
 
+/** Per-instance data for FSTTask_UpdateBlackboard (StateTree instance data pattern). */
 USTRUCT()
 struct GEOTRINITY_API FSTTask_UpdateBlackboardInstanceData
 {

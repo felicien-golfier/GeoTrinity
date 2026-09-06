@@ -81,7 +81,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
 	static FName GetColor() { return GeoNiagaraParams::Color; }
 
-	/** Returns the Niagara user parameter name for a generic color tint. */
+	/** Returns the Niagara user parameter name for a generic world-space position (origin). */
 	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
 	static FName GetPosition() { return GeoNiagaraParams::Position; }
 

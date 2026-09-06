@@ -11,6 +11,7 @@
 
 class UGeoAIBlackboardComponent;
 
+/** Per-instance data for FSTTask_SendEventAfterNCycles (StateTree instance data pattern). */
 USTRUCT()
 struct GEOTRINITY_API FSTTask_SendEventAfterNCyclesInstanceData
 {

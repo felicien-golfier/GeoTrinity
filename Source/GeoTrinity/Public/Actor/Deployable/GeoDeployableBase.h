@@ -147,7 +147,11 @@ public:
 	/** Starts the pre-expiry blink timer for the given duration in seconds. */
 	virtual void StartBlinking();
 
-	/** Called when duration or health reaches zero, when recalled, or when aborted from above. */
+	/**
+	 * Called when duration or health reaches zero, when recalled, or when aborted from above.
+	 *
+	 * @param bForce  When true, bypasses active-state guards and expires immediately — used by internal lifecycle paths.
+	 */
 	UFUNCTION()
 	virtual void Expire(bool bForce = false);
 

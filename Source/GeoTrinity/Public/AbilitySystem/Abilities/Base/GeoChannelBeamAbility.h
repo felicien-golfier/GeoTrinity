@@ -51,7 +51,9 @@ protected:
 
 	/** Pushes the beam VFX state, then calls TickBeam with the actors currently inside the beam. */
 	virtual void Tick(float DeltaTime) override;
+	/** Returns true while the ability is active and the beam channel is running; suspends tick otherwise. */
 	virtual bool IsTickable() const override { return IsInstantiated() && IsActive() && bIsBeamActive; }
+	/** Returns the stat id for profiling this ability's tick in Unreal's stats system. */
 	virtual TStatId GetStatId() const override
 	{
 		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoChannelBeamAbility, STATGROUP_Tickables);
@@ -71,6 +73,7 @@ protected:
 	virtual uint8 GetScanAttitudeMask() const { return TeamAttitudeMask::All; }
 
 #ifdef WITH_EDITOR
+	/** Editor-only: draws the beam sweep volume as debug lines in the viewport for the current tick. */
 	void DrawBeamDebugLines(float DeltaTime) const;
 #endif
 

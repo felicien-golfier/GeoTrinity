@@ -51,9 +51,12 @@ protected:
 	/** Server: marks entering allies/neutrals as sacrificed and unmarks leaving ones. */
 	virtual void TickBeam(float DeltaTime, TArray<AActor*> const& ActorsInLine) override;
 
+	/** Returns the configured BeamHalfWidth for the sacrifice channel beam scan. */
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const override { return BeamHalfWidth; }
+	/** Returns FriendlyOrNeutral so the scan marks only allies and neutral actors, never enemies. */
 	virtual uint8 GetScanAttitudeMask() const override { return TeamAttitudeMask::FriendlyOrNeutral; }
 
+	/** Returns MaxChannelDuration — the channel ends at this cap even when no detonation fires. */
 	virtual float GetBeamDuration() const override;
 
 private:
