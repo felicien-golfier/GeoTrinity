@@ -2,10 +2,11 @@
 
 #include "GeoTrinityEditorModule.h"
 
+#include "AbilitySystem/Data/GeoFXMoment.h"
 #include "AbilitySystem/Data/GeoSoundRow.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Detail/ExternalProjectileParamsCustomization.h"
-#include "Detail/GeoSoundEntryCustomization.h"
+#include "Detail/GeoCurveSourceCustomization.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 
@@ -19,7 +20,10 @@ void FGeoTrinityEditorModule::StartupModule()
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FExternalProjectileParamsCustomization::MakeInstance));
 	PropertyEditor.RegisterCustomPropertyTypeLayout(
 		FGeoSoundEntry::StaticStruct()->GetFName(),
-		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoSoundEntryCustomization::MakeInstance));
+		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoCurveSourceCustomization::MakeInstance));
+	PropertyEditor.RegisterCustomPropertyTypeLayout(
+		FGeoFXMoment::StaticStruct()->GetFName(),
+		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoCurveSourceCustomization::MakeInstance));
 	PropertyEditor.NotifyCustomizationModuleChanged();
 }
 
@@ -33,5 +37,6 @@ void FGeoTrinityEditorModule::ShutdownModule()
 	FPropertyEditorModule& PropertyEditor = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FExternalProjectileParams::StaticStruct()->GetFName());
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoSoundEntry::StaticStruct()->GetFName());
+	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoFXMoment::StaticStruct()->GetFName());
 	PropertyEditor.NotifyCustomizationModuleChanged();
 }

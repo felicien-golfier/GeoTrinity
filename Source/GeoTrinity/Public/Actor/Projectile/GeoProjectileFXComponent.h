@@ -75,7 +75,7 @@ public:
 
 protected:
 	/** The shot's shooter — a projectile carries no attributes and is never the local player's avatar itself. */
-	virtual AActor* GetSoundInstigator() const override;
+	virtual AActor* GetFXInstigator() const override;
 
 	/** The level the shot was fired at, off its payload. */
 	virtual int32 GetAbilityLevel() const override;

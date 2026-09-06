@@ -9,17 +9,17 @@ class IDetailPropertyRow;
 class IPropertyHandle;
 
 /**
- * Details customization for FGeoSoundEntry: gates each curve's two source rows against each other.
- * Volume and pitch each read from an attribute or from the ability level. The two are mutually exclusive, so each
- * hides while the other is set, and the curve stays hidden until one of them is — it has nothing to sample against
- * otherwise.
+ * Details customization for every struct holding a curve and the two sources it can read from: FGeoSoundEntry (volume
+ * and pitch) and FGeoFXMoment (magnitude). It gates each curve's two source rows against each other.
+ * A curve reads from an attribute or from the ability level. The two are mutually exclusive, so each hides while the
+ * other is set, and the curve stays hidden until one of them is — it has nothing to sample against otherwise.
  *
  * The half that gates on the ability-level bool could be a plain EditCondition, but the half that gates on the
  * attribute cannot: FEditConditionContext resolves an operand only to a bool, enum, numeric or object property, and
  * FGameplayAttribute is a struct. An unresolved EditCondition silently evaluates to true, so the row would stay
  * visible with only a LogEditCondition error to show for it. Both halves live here so one mechanism drives every row.
  */
-class FGeoSoundEntryCustomization : public IPropertyTypeCustomization
+class FGeoCurveSourceCustomization : public IPropertyTypeCustomization
 {
 public:
 	/** Returns a new instance of this customization; required by
@@ -30,7 +30,8 @@ public:
 	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> StructHandle, FDetailWidgetRow& HeaderRow,
 								 IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 
-	/** Emits every child in declaration order, gating the volume and the pitch source rows. */
+	/** Emits every child in declaration order, gating the source rows of every trio the customized struct holds. A trio
+	 * whose names belong to another struct matches no child and costs nothing. */
 	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> StructHandle, IDetailChildrenBuilder& ChildBuilder,
 								   IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 

@@ -1,7 +1,8 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "Detail/GeoSoundEntryCustomization.h"
+#include "Detail/GeoCurveSourceCustomization.h"
 
+#include "AbilitySystem/Data/GeoFXMoment.h"
 #include "AbilitySystem/Data/GeoSoundRow.h"
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
@@ -9,22 +10,23 @@
 #include "PropertyHandle.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-TSharedRef<IPropertyTypeCustomization> FGeoSoundEntryCustomization::MakeInstance()
+TSharedRef<IPropertyTypeCustomization> FGeoCurveSourceCustomization::MakeInstance()
 {
-	return MakeShared<FGeoSoundEntryCustomization>();
+	return MakeShared<FGeoCurveSourceCustomization>();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void FGeoSoundEntryCustomization::CustomizeHeader(TSharedRef<IPropertyHandle> StructHandle, FDetailWidgetRow& HeaderRow,
-												  IPropertyTypeCustomizationUtils& /*CustomizationUtils*/)
+void FGeoCurveSourceCustomization::CustomizeHeader(TSharedRef<IPropertyHandle> StructHandle,
+												   FDetailWidgetRow& HeaderRow,
+												   IPropertyTypeCustomizationUtils& /*CustomizationUtils*/)
 {
 	HeaderRow.NameContent()[StructHandle->CreatePropertyNameWidget()];
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void FGeoSoundEntryCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> StructHandle,
-													IDetailChildrenBuilder& ChildBuilder,
-													IPropertyTypeCustomizationUtils& /*CustomizationUtils*/)
+void FGeoCurveSourceCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> StructHandle,
+													 IDetailChildrenBuilder& ChildBuilder,
+													 IPropertyTypeCustomizationUtils& /*CustomizationUtils*/)
 {
 	uint32 ChildCount = 0;
 	StructHandle->GetNumChildren(ChildCount);
@@ -44,14 +46,17 @@ void FGeoSoundEntryCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> 
 		GateSourceRow(Row, ChildName, StructHandle, GET_MEMBER_NAME_CHECKED(FGeoSoundEntry, PitchAttribute),
 					  GET_MEMBER_NAME_CHECKED(FGeoSoundEntry, bPitchFromAbilityLevel),
 					  GET_MEMBER_NAME_CHECKED(FGeoSoundEntry, PitchCurve));
+		GateSourceRow(Row, ChildName, StructHandle, GET_MEMBER_NAME_CHECKED(FGeoFXMoment, MagnitudeAttribute),
+					  GET_MEMBER_NAME_CHECKED(FGeoFXMoment, bMagnitudeFromAbilityLevel),
+					  GET_MEMBER_NAME_CHECKED(FGeoFXMoment, MagnitudeCurve));
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void FGeoSoundEntryCustomization::GateSourceRow(IDetailPropertyRow& Row, FName const ChildName,
-												TSharedRef<IPropertyHandle> const& StructHandle,
-												FName const AttributeName, FName const AbilityLevelName,
-												FName const CurveName) const
+void FGeoCurveSourceCustomization::GateSourceRow(IDetailPropertyRow& Row, FName const ChildName,
+												 TSharedRef<IPropertyHandle> const& StructHandle,
+												 FName const AttributeName, FName const AbilityLevelName,
+												 FName const CurveName) const
 {
 	if (ChildName != AttributeName && ChildName != AbilityLevelName && ChildName != CurveName)
 	{
@@ -61,7 +66,7 @@ void FGeoSoundEntryCustomization::GateSourceRow(IDetailPropertyRow& Row, FName c
 	TSharedPtr<IPropertyHandle> const AttributeHandle = StructHandle->GetChildHandle(AttributeName);
 	TSharedPtr<IPropertyHandle> const AbilityLevelHandle = StructHandle->GetChildHandle(AbilityLevelName);
 	if (!ensureMsgf(AttributeHandle.IsValid() && AbilityLevelHandle.IsValid(),
-					TEXT("%hs: FGeoSoundEntry has no %s / %s to gate %s on"), __FUNCTION__, *AttributeName.ToString(),
+					TEXT("%hs: no %s / %s beside %s to gate it on"), __FUNCTION__, *AttributeName.ToString(),
 					*AbilityLevelName.ToString(), *ChildName.ToString()))
 	{
 		return;
@@ -95,7 +100,7 @@ void FGeoSoundEntryCustomization::GateSourceRow(IDetailPropertyRow& Row, FName c
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool FGeoSoundEntryCustomization::IsAttributeSet(TSharedPtr<IPropertyHandle> const& AttributeHandle) const
+bool FGeoCurveSourceCustomization::IsAttributeSet(TSharedPtr<IPropertyHandle> const& AttributeHandle) const
 {
 	TArray<void const*> RawData;
 	AttributeHandle->AccessRawData(RawData);
@@ -111,7 +116,7 @@ bool FGeoSoundEntryCustomization::IsAttributeSet(TSharedPtr<IPropertyHandle> con
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool FGeoSoundEntryCustomization::IsFromAbilityLevel(TSharedPtr<IPropertyHandle> const& AbilityLevelHandle) const
+bool FGeoCurveSourceCustomization::IsFromAbilityLevel(TSharedPtr<IPropertyHandle> const& AbilityLevelHandle) const
 {
 	bool bFromAbilityLevel = false;
 	AbilityLevelHandle->GetValue(bFromAbilityLevel);

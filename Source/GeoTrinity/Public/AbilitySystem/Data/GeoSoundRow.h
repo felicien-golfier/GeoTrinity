@@ -152,10 +152,4 @@ public:
 	 * them; pass GetVolume/GetPitch(Entry, SoundInstigator, AbilityLevel) otherwise. */
 	static void ConfigureAudioComponent(UAudioComponent* AudioComponent, FGeoSoundEntry const& Entry,
 										AActor* SoundInstigator, float Volume, float Pitch);
-
-private:
-	/** Returns Curve's value at the source the sound reads from — AbilityLevel when bFromAbilityLevel, otherwise
-	 * Attribute's value on SoundInstigator's ASC. Returns 1 when there is no curve, or no source to sample. */
-	static float SampleSourceCurve(UCurveFloat const* Curve, FGameplayAttribute const& Attribute,
-								   bool bFromAbilityLevel, AActor* SoundInstigator, int32 AbilityLevel);
 };

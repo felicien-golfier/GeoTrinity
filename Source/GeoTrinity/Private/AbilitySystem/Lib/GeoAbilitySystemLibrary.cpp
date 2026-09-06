@@ -17,6 +17,7 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/GeoCharacter.h"
+#include "Curves/CurveFloat.h"
 #include "EngineUtils.h"
 #include "GameplayEffectTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -745,6 +746,31 @@ bool UGeoAbilitySystemLibrary::IsBuffed(UGeoAbilitySystemComponent const& ASC, F
 {
 	return ASC.HasAttributeSetForAttribute(Attribute)
 		&& ASC.GetNumericAttribute(Attribute) > ASC.GetNumericAttributeBase(Attribute);
+}
+
+float UGeoAbilitySystemLibrary::SampleAttributeCurve(UCurveFloat const* const Curve,
+													 FGameplayAttribute const& Attribute, bool const bFromAbilityLevel,
+													 AActor* Instigator, int32 const AbilityLevel)
+{
+	if (!IsValid(Curve))
+	{
+		return 1.f;
+	}
+
+	if (bFromAbilityLevel)
+	{
+		return Curve->GetFloatValue(AbilityLevel);
+	}
+
+	UGeoAbilitySystemComponent* const ASC = GetGeoAscFromActor(Instigator);
+	if (!Attribute.IsValid() || !IsValid(ASC))
+	{
+		return 1.f;
+	}
+
+	bool bFound = false;
+	float const AttributeValue = ASC->GetGameplayAttributeValue(Attribute, bFound);
+	return bFound ? Curve->GetFloatValue(AttributeValue) : 1.f;
 }
 
 float UGeoAbilitySystemLibrary::GetEffectBoostBonus(UAbilitySystemComponent const& ASC, FGameplayEffectSpec const& Spec)

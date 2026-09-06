@@ -51,8 +51,8 @@ public:
 	void SetPitchMultiplier(float Multiplier);
 
 protected:
-	/** Spawns Moment's VFX at the owner's location and plays every sound it carries, all at once. One-shot: nothing is
-	 * kept, so it is the wrong call for a moment that lasts. */
+	/** Spawns Moment's VFX at the owner's location, on the parameters Moment authored, and plays every sound it
+	 * carries, all at once. One-shot: nothing is kept, so it is the wrong call for a moment that lasts. */
 	void PlayMoment(FGeoFXMoment const& Moment) const;
 
 	/** Stops listening to the buff source and destroys every attached system. Niagara keeps simulating through a hidden
@@ -65,11 +65,11 @@ protected:
 	/** Entry's pitch for this owner, scaled by PitchMultiplier. Every sound this component plays goes through it. */
 	float GetPitch(FGeoSoundEntry const& Entry) const;
 
-	/** Who the sounds belong to: audience gating and instigator-relative volume are resolved against it. The owner
-	 * itself unless a subclass answers otherwise. */
-	virtual AActor* GetSoundInstigator() const;
+	/** Who the feedback belongs to: sound audience gating, instigator-relative volume and every attribute a curve
+	 * samples resolve against it. The owner itself unless a subclass answers otherwise. */
+	virtual AActor* GetFXInstigator() const;
 
-	/** Level the sound curves sample at when an entry reads from the ability level. */
+	/** Level the curves sample at when a sound entry or an FX moment reads from the ability level. */
 	virtual int32 GetAbilityLevel() const;
 
 	/** The system Entry shows on this owner — its CharacterVFX, worn by anything that carries its own attributes.

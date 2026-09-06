@@ -104,7 +104,7 @@ void UGeoProjectileFXComponent::StartLife() const
 				   TEXT("%s: %d looping sounds, only the first plays — the projectile owns one audio component"),
 				   *GetOwner()->GetName(), Looping->Sounds.Num());
 		FGeoSoundEntry const& Entry = Looping->Sounds[0];
-		UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, Entry, GetSoundInstigator(),
+		UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, Entry, GetFXInstigator(),
 													 GetVolume(Entry), GetPitch(Entry));
 	}
 
@@ -159,7 +159,7 @@ void UGeoProjectileFXComponent::SetBulletRadius(float const Radius) const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-AActor* UGeoProjectileFXComponent::GetSoundInstigator() const
+AActor* UGeoProjectileFXComponent::GetFXInstigator() const
 {
 	return GetOwner<AGeoProjectile>()->GetSourceAvatar();
 }

@@ -10,6 +10,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void UGeoFXComponent::PlayMoment(FGeoFXMoment const& Moment) const
@@ -19,9 +20,28 @@ void UGeoFXComponent::PlayMoment(FGeoFXMoment const& Moment) const
 		return;
 	}
 
-	if (Moment.VFX)
+	// Spawned inactive: a User parameter has to be there before the first tick reads it. Niagara returns nothing when
+	// the moment carries no system, and when it pre-culls the spawn.
+	if (UNiagaraComponent* const Spawned = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			this, Moment.VFX, GetOwner()->GetActorLocation(), FRotator::ZeroRotator, FVector::OneVector,
+			/*bAutoDestroy*/ true, /*bAutoActivate*/ false))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, Moment.VFX, GetOwner()->GetActorLocation());
+		float const NormalizedMagnitude = FMath::Clamp(
+			GeoASLib::SampleAttributeCurve(Moment.MagnitudeCurve, Moment.MagnitudeAttribute,
+										   Moment.bMagnitudeFromAbilityLevel, GetFXInstigator(), GetAbilityLevel()),
+			0.f, 1.f);
+
+		Spawned->SetVariableLinearColor(GeoNiagaraParams::Color, Moment.Color.GetColor());
+		Spawned->SetVariableFloat(GeoNiagaraParams::NormalizedMagnitude, NormalizedMagnitude);
+		if (Moment.Radius > 0.f)
+		{
+			Spawned->SetVariableFloat(GeoNiagaraParams::Radius, Moment.Radius);
+		}
+		if (Moment.Lifetime > 0.f)
+		{
+			Spawned->SetVariableFloat(GeoNiagaraParams::Lifetime, Moment.Lifetime);
+		}
+		Spawned->Activate();
 	}
 
 	for (FGeoSoundEntry const& Entry : Moment.Sounds)
@@ -33,7 +53,7 @@ void UGeoFXComponent::PlayMoment(FGeoFXMoment const& Moment) const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoFXComponent::PlaySound(FGeoSoundEntry const& Entry) const
 {
-	if (UGeoSoundRowLibrary::ShouldPlay(this, Entry, GetSoundInstigator()))
+	if (UGeoSoundRowLibrary::ShouldPlay(this, Entry, GetFXInstigator()))
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, Entry.Sound, GetOwner()->GetActorLocation(), FRotator::ZeroRotator,
 											  GetVolume(Entry), GetPitch(Entry), Entry.StartTime);
@@ -43,13 +63,13 @@ void UGeoFXComponent::PlaySound(FGeoSoundEntry const& Entry) const
 // ---------------------------------------------------------------------------------------------------------------------
 float UGeoFXComponent::GetVolume(FGeoSoundEntry const& Entry) const
 {
-	return UGeoSoundRowLibrary::GetVolume(Entry, GetSoundInstigator(), GetAbilityLevel());
+	return UGeoSoundRowLibrary::GetVolume(Entry, GetFXInstigator(), GetAbilityLevel());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 float UGeoFXComponent::GetPitch(FGeoSoundEntry const& Entry) const
 {
-	return UGeoSoundRowLibrary::GetPitch(Entry, GetSoundInstigator(), GetAbilityLevel()) * PitchMultiplier;
+	return UGeoSoundRowLibrary::GetPitch(Entry, GetFXInstigator(), GetAbilityLevel()) * PitchMultiplier;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -94,7 +114,7 @@ void UGeoFXComponent::SetPitchMultiplier(float const Multiplier)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-AActor* UGeoFXComponent::GetSoundInstigator() const
+AActor* UGeoFXComponent::GetFXInstigator() const
 {
 	return GetOwner();
 }

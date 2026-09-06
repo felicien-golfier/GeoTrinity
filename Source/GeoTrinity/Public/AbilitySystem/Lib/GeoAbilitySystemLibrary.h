@@ -23,6 +23,7 @@ enum class EProjectileTarget : uint8
 
 class AGeoDeployableBase;
 class AGeoProjectile;
+class UCurveFloat;
 class UStatusInfo;
 struct FDeployableData;
 struct FDeployableDataParams;
@@ -384,6 +385,17 @@ public:
 	/** True when Attribute sits above its base value on ASC — what "currently buffed" means everywhere. False when ASC
 	 * owns no attribute set holding it. */
 	static bool IsBuffed(UGeoAbilitySystemComponent const& ASC, FGameplayAttribute const& Attribute);
+
+	/**
+	 * Returns Curve's value at the source it reads from — AbilityLevel when bFromAbilityLevel, Attribute's value on
+	 * Instigator's ASC otherwise. Returns 1 when there is no curve, or no source to sample, so an unauthored curve
+	 * leaves whatever it scales alone.
+	 *
+	 * The one way an authored curve reads a live value in this project: FGeoSoundEntry's volume and pitch and
+	 * FGeoFXMoment's magnitude all resolve through it.
+	 */
+	static float SampleAttributeCurve(UCurveFloat const* Curve, FGameplayAttribute const& Attribute,
+									  bool bFromAbilityLevel, AActor* Instigator, int32 AbilityLevel);
 
 	/**
 	 * Bonus Spec contributes on its own to the ratio stats it modifies, as a fraction (0.5 reads "+50%") — its own

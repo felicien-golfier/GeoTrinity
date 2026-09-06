@@ -3,10 +3,8 @@
 
 #include "AbilitySystem/Data/GeoSoundRow.h"
 
-#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/AudioComponent.h"
-#include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -58,42 +56,16 @@ float UGeoSoundRowLibrary::GetVolume(FGeoSoundEntry const& Entry, AActor* SoundI
 	bool const bInstigatorMachine = !IsValid(SoundInstigator) || GeoLib::IsLocalPlayerAvatar(SoundInstigator);
 	float const Volume = bInstigatorMachine ? Entry.Volume : Entry.Volume * Entry.OtherMachinesVolumeMultiplier;
 	return Volume
-		* SampleSourceCurve(Entry.VolumeMultiplierCurve, Entry.VolumeAttribute, Entry.bVolumeFromAbilityLevel,
-							SoundInstigator, AbilityLevel);
+		* GeoASLib::SampleAttributeCurve(Entry.VolumeMultiplierCurve, Entry.VolumeAttribute,
+										 Entry.bVolumeFromAbilityLevel, SoundInstigator, AbilityLevel);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 float UGeoSoundRowLibrary::GetPitch(FGeoSoundEntry const& Entry, AActor* SoundInstigator, int32 const AbilityLevel)
 {
-	float const Pitch = SampleSourceCurve(Entry.PitchCurve, Entry.PitchAttribute, Entry.bPitchFromAbilityLevel,
-										  SoundInstigator, AbilityLevel);
+	float const Pitch = GeoASLib::SampleAttributeCurve(Entry.PitchCurve, Entry.PitchAttribute,
+													   Entry.bPitchFromAbilityLevel, SoundInstigator, AbilityLevel);
 	return Pitch * FMath::RandRange(Entry.RandomPitchMultiplierRange.X, Entry.RandomPitchMultiplierRange.Y);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-float UGeoSoundRowLibrary::SampleSourceCurve(UCurveFloat const* Curve, FGameplayAttribute const& Attribute,
-											 bool const bFromAbilityLevel, AActor* SoundInstigator,
-											 int32 const AbilityLevel)
-{
-	if (!IsValid(Curve))
-	{
-		return 1.f;
-	}
-
-	if (bFromAbilityLevel)
-	{
-		return Curve->GetFloatValue(AbilityLevel);
-	}
-
-	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(SoundInstigator);
-	if (!Attribute.IsValid() || !IsValid(ASC))
-	{
-		return 1.f;
-	}
-
-	bool bFound = false;
-	float const AttributeValue = ASC->GetGameplayAttributeValue(Attribute, bFound);
-	return bFound ? Curve->GetFloatValue(AttributeValue) : 1.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
