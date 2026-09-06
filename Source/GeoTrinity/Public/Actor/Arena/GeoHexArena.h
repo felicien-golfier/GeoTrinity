@@ -99,6 +99,7 @@ public:
 	 *
 	 * @param Stream  Random stream consumed to select tiles; advanced by the function.
 	 * @param Ring    Ring to draw from; the whole platform when negative, and also when that ring has nothing left.
+	 * @param Count   Maximum number of tiles to return.
 	 */
 	TArray<FIntPoint> GetRandomAliveTiles(FRandomStream& Stream, int32 Ring, int32 Count) const;
 
@@ -106,10 +107,12 @@ public:
 	 * the deployable is destroyed (weak ptr goes stale) and on arena reset. */
 	void SetTileOccupant(FIntPoint Tile, AGeoDeployableBase* Deployable);
 	/**
-	 * Returns the furthest still-standing tile the ray crosses within MaxRange.
+	 * Returns the furthest still-standing tile the ray crosses.
 	 *
-	 * @param OutTile  Set to the coordinates of the furthest alive tile found along the ray on success.
-	 * @return         False when no alive tile is found along the ray.
+	 * @param Origin     World-space starting point of the ray.
+	 * @param Direction  Normalized direction the ray travels.
+	 * @param OutTile    Set to the coordinates of the furthest alive tile found along the ray on success.
+	 * @return           False when no alive tile is found along the ray.
 	 */
 	bool GetLastAliveTileAlongRay(FVector2D Origin, FVector2D Direction, FIntPoint& OutTile) const;
 

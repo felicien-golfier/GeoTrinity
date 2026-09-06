@@ -30,6 +30,7 @@ class GEOTRINITY_API UGeoSpawnPillarAbility : public UPatternAbility
 	GENERATED_BODY()
 
 protected:
+	/** Server. Chooses target players and populates PillarTargets, seeded from LaunchSeed; surplus pillars scatter at a random offset around an existing alive target. */
 	void FillPillarTargets();
 	/**
 	 * Server-only. Reads the boss's current health ratio to choose 1–3 pillar count, seeds the target pick and the
@@ -38,6 +39,7 @@ protected:
 	 */
 	virtual void BeginPreLaunch() override;
 
+	/** Resolves current zone locations from PillarTargets into pattern data and multicasts the pillar spawn, following up where players have moved since BeginPreLaunch. */
 	virtual void LaunchPattern() override;
 	/** Returns an FSpawnPillarPatternData whose ZoneLocations follow the marked characters to wherever they stand at
 	 * launch — falling back to where each was marked once it is gone, so a death mid-cast drops no pillar. */

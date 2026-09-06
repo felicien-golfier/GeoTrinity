@@ -26,12 +26,16 @@ public:
 	UGeoHealingAuraAbility();
 
 private:
+	/** Begins the aura; healing is sustained by the FTickableGameObject tick for as long as the ability is active. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
+	/** Scans for allies overlapping the avatar's capsule and applies a per-second heal scaled to DeltaTime. */
 	virtual void Tick(float DeltaTime) override;
+	/** Returns true while the ability is active, keeping the aura heal tick running. */
 	virtual bool IsTickable() const override { return IsInstantiated() && IsActive(); }
+	/** Returns the stat id for profiling this ability's tick in Unreal's stats system. */
 	virtual TStatId GetStatId() const override
 	{
 		RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoHealingAuraAbility, STATGROUP_Tickables);

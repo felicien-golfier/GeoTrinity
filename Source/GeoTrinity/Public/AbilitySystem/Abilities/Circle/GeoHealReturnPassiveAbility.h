@@ -21,13 +21,16 @@ public:
 	UGeoHealReturnPassiveAbility();
 
 private:
+	/** Binds OnHealProvidedCallback to the owner ASC's OnHealProvided delegate. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
+	/** Unbinds OnHealProvidedCallback from the owner ASC before calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
+	/** Called when the owner provides a heal; applies SelfHealPercent of HealDone back to self. */
 	UFUNCTION()
 	void OnHealProvidedCallback(float HealDone);
 

@@ -35,6 +35,7 @@ struct GEOTRINITY_API FSTTask_SetInvulnerable : public FStateTreeAIActionTaskBas
 	/** Disables tick; the task only acts on the state's entry and exit. */
 	FSTTask_SetInvulnerable();
 
+	/** Returns FSTTask_SetInvulnerableInstanceData as the per-execution instance data type. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 
 	/** Sets the pawn's invulnerability and keeps running so the state's other tasks decide when it ends. Fails when

@@ -57,7 +57,9 @@ struct FDescriptionFormat
 	bool bRichTextValues = false;
 	EValueFormat ValueFormat = EValueFormat::Plain;
 
+	/** Returns MinDescriptionLevel when showing a range, otherwise AbilityLevel. */
 	int32 MinLevel() const { return bShowRange ? MinDescriptionLevel : AbilityLevel; }
+	/** Returns MaxDescriptionLevel when showing a range, otherwise AbilityLevel. */
 	int32 MaxLevel() const { return bShowRange ? MaxDescriptionLevel : AbilityLevel; }
 };
 
@@ -232,7 +234,9 @@ struct GEOTRINITY_API FMagnitudeEffectData : public FEffectData
 													UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 													int32 Seed) const override;
 
+	/** Returns bIsPerSecond — whether the magnitude is scaled by the tick's duration before each application. */
 	virtual bool IsPerSecond() const override { return bIsPerSecond; }
+	/** Returns one tooltip line such as "Damage: 30" or "Heal: 10/s" for this magnitude entry. */
 	virtual FString GetDescriptionLine(FDescriptionFormat const& Format) const override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -262,7 +266,9 @@ struct FDamageEffectData : public FMagnitudeEffectData
 {
 	GENERATED_BODY()
 
+	/** Returns the damage UGameplayEffect from UGameDataSettings. */
 	virtual TSubclassOf<UGameplayEffect> GetEffectClass() const override;
+	/** Returns the SetByCaller tag the damage magnitude is assigned to. */
 	virtual FGameplayTag GetMagnitudeTag() const override;
 
 	/** Adds bDoNotRedirectSacrifice, and flags the context as bIsFromBasicAbility when the source ability carries the
@@ -281,7 +287,9 @@ struct FHealEffectData : public FMagnitudeEffectData
 {
 	GENERATED_BODY()
 
+	/** Returns the heal UGameplayEffect from UGameDataSettings. */
 	virtual TSubclassOf<UGameplayEffect> GetEffectClass() const override;
+	/** Returns the SetByCaller tag the heal magnitude is assigned to. */
 	virtual FGameplayTag GetMagnitudeTag() const override;
 
 	/** Adds bSuppressHealProvided, so ExecCalc_Heal skips the OnHealProvided broadcast on the source ASC. */
@@ -300,7 +308,9 @@ struct FShieldEffectData : public FMagnitudeEffectData
 {
 	GENERATED_BODY()
 
+	/** Returns the shield UGameplayEffect from UGameDataSettings. */
 	virtual TSubclassOf<UGameplayEffect> GetEffectClass() const override;
+	/** Returns the SetByCaller tag the shield magnitude is assigned to. */
 	virtual FGameplayTag GetMagnitudeTag() const override;
 };
 

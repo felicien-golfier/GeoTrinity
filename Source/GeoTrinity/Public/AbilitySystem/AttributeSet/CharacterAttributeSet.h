@@ -65,23 +65,32 @@ public:
 	ATTRIBUTE_ACCESSORS(UCharacterAttributeSet, HealCharge)
 
 protected:
+	/** Notifies the GAS aggregator that Ammo changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	void OnRep_Ammo(FGameplayAttributeData const& OldAmmo);
+	/** Notifies the GAS aggregator that MaxAmmo changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	void OnRep_MaxAmmo(FGameplayAttributeData const& OldMaxAmmo);
+	/** Notifies the GAS aggregator that AppliedHealBoost changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	void OnRep_AppliedHealBoost(FGameplayAttributeData const& OldAppliedHealBoost);
+	/** Notifies the GAS aggregator that ReceivedHealBoost changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	void OnRep_ReceivedHealBoost(FGameplayAttributeData const& OldReceivedHealBoost);
+	/** Notifies the GAS aggregator that DamageMultiplier changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	void OnRep_DamageMultiplier(FGameplayAttributeData const& OldDamageMultiplier);
+	/** Notifies the GAS aggregator that DamageReduction changed so dependent calculations re-evaluate. */
 	UFUNCTION()
 	void OnRep_DamageReduction(FGameplayAttributeData const& OldDamageReduction);
+	/** Notifies the GAS aggregator that MovementSpeedMultiplier changed so UGeoCharacterMovementComponent re-evaluates speed. */
 	UFUNCTION()
 	void OnRep_MovementSpeedMultiplier(FGameplayAttributeData const& OldMovementSpeedMultiplier);
 
+	/** Notifies the GAS aggregator that SacrificeValue changed so the HUD can display the updated armed value. */
 	UFUNCTION()
 	void OnRep_SacrificeValue(FGameplayAttributeData const& OldSacrificeValue);
+	/** Notifies the GAS aggregator that HealCharge changed so the HUD gauge can update its fill. */
 	UFUNCTION()
 	void OnRep_HealCharge(FGameplayAttributeData const& OldHealCharge);
 };

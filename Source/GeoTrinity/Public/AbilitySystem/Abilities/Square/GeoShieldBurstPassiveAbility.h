@@ -23,18 +23,23 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 {
 	GENERATED_BODY()
 
+	/** Configures GAS instancing and net security so the passive is server-owned. */
 	UGeoShieldBurstPassiveAbility();
 
+	/** Binds OnDamageDealt and creates the gauge visualization component on the server. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
+	/** Clears the charge timer and unbinds the damage-dealt callback before delegating to Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
 
+	/** Accumulates DamageAmount into the gauge; at GaugeFillThreshold starts the charge-and-burst sequence. */
 	UFUNCTION()
 	void OnDamageDealtCallback(float DamageAmount, FGameplayTag AbilityTag);
 
+	/** Spawns AGeoShieldBurstProjectile toward the nearest ally and resets the gauge to zero. */
 	void SpawnShieldBurst();
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|ShieldBurst", meta = (AllowPrivateAccess = true))

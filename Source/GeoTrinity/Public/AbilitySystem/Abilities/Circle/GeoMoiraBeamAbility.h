@@ -25,10 +25,13 @@ class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoChannelBeamAbility
 {
 	GENERATED_BODY()
 
+	/** Configures the ability as non-replicated and registers as a conditional tickable. */
 	UGeoMoiraBeamAbility();
 
+	/** Activates the beam channel, applies the self speed buff, and begins depleting fuel each tick. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
+	/** Removes the speed buff GE, then calls Super to switch the beam VFX off and end the ability. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
