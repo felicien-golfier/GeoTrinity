@@ -17,7 +17,7 @@ enum class EGeoPulseMode : uint8
 	/** Origins travel along a fixed heading, turning back on reaching AreaRadius. */
 	Straight,
 	/** Origins travel while their heading drifts at up to TurnRate degrees per second. */
-	Wander, 
+	Wander,
 	None
 };
 
@@ -32,9 +32,9 @@ struct FGeoPulse
 
 /**
  * Drives MPC_BackgroundPulse, the eight PulseSource_XX slots M_BackgroundLattice reads to light its triangle lines.
- * Each slot is (OriginX, OriginY, Radius, Intensity): a ring expands from its origin at RingSpeed, fading as it goes,
- * and restarts at MaxRingRadius. Mode decides only where the origins come from — the rings behave identically whether
- * they ride a player or wander on their own.
+ * Each slot is (OriginX, OriginY, RadiusOverride, Intensity): a ring expands from its origin at RingSpeed, fading as it
+ * goes, and restarts at MaxRingRadius. Mode decides only where the origins come from — the rings behave identically
+ * whether they ride a player or wander on their own.
  *
  * Lives on AGeoGameCamera as a native subobject, so every radius it measures is taken from the camera's own position
  * and its area is always over the part of the level someone can see. That also makes the whole thing authorable on
@@ -86,7 +86,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse", meta = (ClampMin = "1"))
 	float RingSpeed = 900.f;
 
-	/** Radius a ring has fully faded at and restarts from zero. With RingSpeed this is also the pulse period. */
+	/** RadiusOverride a ring has fully faded at and restarts from zero. With RingSpeed this is also the pulse period.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPulse", meta = (ClampMin = "1"))
 	float MaxRingRadius = 1500.f;
 

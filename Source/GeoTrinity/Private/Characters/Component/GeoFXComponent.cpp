@@ -36,13 +36,13 @@ void UGeoFXComponent::PlayBurst(FGeoBurstFXMoment const& Moment) const
 	// Spawned inactive: a User parameter has to be there before the first tick reads it. Niagara returns nothing when
 	// the moment carries no system, and when it pre-culls the spawn.
 	if (UNiagaraComponent* const Spawned = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			this, Moment.VFX, GetOwner()->GetActorLocation(), FRotator::ZeroRotator, FVector::OneVector,
+			this, Moment.VFX.System, GetOwner()->GetActorLocation(), FRotator::ZeroRotator, FVector::OneVector,
 			/*bAutoDestroy*/ true, /*bAutoActivate*/ false))
 	{
-		ApplyFXParams(Spawned, Moment);
-		if (Moment.Lifetime > 0.f)
+		ApplyFXParams(Spawned, Moment.VFX);
+		if (Moment.VFX.Lifetime > 0.f)
 		{
-			Spawned->SetVariableFloat(GeoNiagaraParams::Lifetime, Moment.Lifetime);
+			Spawned->SetVariableFloat(GeoNiagaraParams::Lifetime, Moment.VFX.Lifetime);
 		}
 		Spawned->Activate();
 	}
@@ -56,7 +56,7 @@ void UGeoFXComponent::PlayBurst(FGeoBurstFXMoment const& Moment) const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoFXComponent::SetSustainedFX(FGeoSustainedFXMoment const& Moment, bool const bShow)
 {
-	if (!Moment.VFX || GeoLib::IsDedicatedServer(this))
+	if (!Moment.VFX.System || GeoLib::IsDedicatedServer(this))
 	{
 		return;
 	}
@@ -64,7 +64,7 @@ void UGeoFXComponent::SetSustainedFX(FGeoSustainedFXMoment const& Moment, bool c
 	int32 const Index = RunningSustainedFX.IndexOfByPredicate(
 		[&Moment](FGeoRunningSustainedFX const& Running)
 		{
-			return Running.VFXComponent->GetAsset() == Moment.VFX;
+			return Running.VFXComponent->GetAsset() == Moment.VFX.System;
 		});
 
 	if (!bShow)
@@ -79,20 +79,20 @@ void UGeoFXComponent::SetSustainedFX(FGeoSustainedFXMoment const& Moment, bool c
 
 	if (Index != INDEX_NONE)
 	{
-		ApplyFXParams(RunningSustainedFX[Index].VFXComponent, Moment);
+		ApplyFXParams(RunningSustainedFX[Index].VFXComponent, Moment.VFX);
 		return;
 	}
 
 	// Spawned inactive for the same reason a burst is; Niagara returns nothing when it pre-culls the spawn.
 	UNiagaraComponent* const Spawned = UNiagaraFunctionLibrary::SpawnSystemAttached(
-		Moment.VFX, GetOwner()->GetRootComponent(), NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
+		Moment.VFX.System, GetOwner()->GetRootComponent(), NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
 		EAttachLocation::SnapToTarget, /*bAutoDestroy*/ false, /*bAutoActivate*/ false);
 	if (!Spawned)
 	{
 		return;
 	}
 
-	ApplyFXParams(Spawned, Moment);
+	ApplyFXParams(Spawned, Moment.VFX);
 	Spawned->Activate();
 
 	FGeoRunningSustainedFX& Running = RunningSustainedFX.AddDefaulted_GetRef();
@@ -103,7 +103,7 @@ void UGeoFXComponent::SetSustainedFX(FGeoSustainedFXMoment const& Moment, bool c
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoFXComponent::ApplyFXParams(UNiagaraComponent* const Component, FGeoFXParams const& Params) const
+void UGeoFXComponent::ApplyFXParams(UNiagaraComponent* const Component, FGeoVFXParams const& Params) const
 {
 	float const NormalizedMagnitude = FMath::Clamp(
 		GeoASLib::SampleAttributeCurve(Params.MagnitudeCurve, Params.MagnitudeAttribute,
@@ -112,9 +112,13 @@ void UGeoFXComponent::ApplyFXParams(UNiagaraComponent* const Component, FGeoFXPa
 
 	Component->SetVariableLinearColor(GeoNiagaraParams::Color, Params.Color.GetColor());
 	Component->SetVariableFloat(GeoNiagaraParams::NormalizedMagnitude, NormalizedMagnitude);
-	if (Params.Radius > 0.f)
+	if (Params.RadiusOverride > 0.f)
 	{
-		Component->SetVariableFloat(GeoNiagaraParams::Radius, Params.Radius);
+		Component->SetVariableFloat(GeoNiagaraParams::Radius, Params.RadiusOverride);
+	}
+	else
+	{
+		Component->SetVariableFloat(GeoNiagaraParams::Radius, GetFXInstigator()->GetSimpleCollisionRadius())
 	}
 }
 

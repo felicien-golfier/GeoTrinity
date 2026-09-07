@@ -57,7 +57,7 @@ void UGeoProjectileFXComponent::ApplyBulletSystem()
 		DefaultBulletSystem = BulletVFX->GetAsset();
 	}
 
-	UNiagaraSystem* const LoopingSystem = GetOwner<AGeoProjectile>()->ResolvedParams.LoopingFX.VFX;
+	UNiagaraSystem* const LoopingSystem = GetOwner<AGeoProjectile>()->ResolvedParams.LoopingFX.VFX.System;
 	UNiagaraSystem* const DesiredSystem = LoopingSystem ? LoopingSystem : DefaultBulletSystem.Get();
 	// SetAsset restarts the system, so a spawn that keeps the same one must not go through it.
 	if (DesiredSystem && BulletVFX->GetAsset() != DesiredSystem)
@@ -82,7 +82,7 @@ void UGeoProjectileFXComponent::ApplyParams()
 	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletHeadColor, Params.HeadColor.GetColor(1.f));
 	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletTrailColor, Params.TrailColor.GetColor(1.f));
 	BulletVFX->SetVariableFloat(GeoNiagaraParams::TrailLifetimeScale, Params.TrailLifetimeScale);
-	ApplyFXParams(BulletVFX, Params.LoopingFX);
+	ApplyFXParams(BulletVFX, Params.LoopingFX.VFX);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

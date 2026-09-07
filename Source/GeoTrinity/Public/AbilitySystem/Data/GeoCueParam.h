@@ -53,4 +53,10 @@ struct GEOTRINITY_API FGeoCueParam
 	// their own data (recall direction, pattern timing). Override is not a valid choice: it has no palette slot.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	EGeoColor Color = EGeoColor::Neutral;
+
+	// MIGRATION SHIM — delete with FGeoSoundRow once the sounds are re-authored as moments.
+	// Read-only: nothing plays it any more. It exists so the tagged property still deserializes out of the assets that
+	// authored it, instead of being dropped the next time one of them is saved.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Categories = "Event.Sound"))
+	FGameplayTag SoundTag;
 };

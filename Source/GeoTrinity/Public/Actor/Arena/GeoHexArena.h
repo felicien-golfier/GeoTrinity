@@ -58,9 +58,9 @@ public:
 
 	/** Server. Destroys the given tiles; holes appear on every machine via replication. Unknown coords are ignored. */
 	void DestroyTiles(TConstArrayView<FIntPoint> Tiles);
-	/** Returns the ISM instance indices of all tiles whose centers lie within Radius world units of Center. */
+	/** Returns the ISM instance indices of all tiles whose centers lie within RadiusOverride world units of Center. */
 	TArray<int32> GetTilesIndexInRadius(FVector2D Center, float Radius) const;
-	/** Server. Destroys every tile whose center lies within Radius world units of Center. */
+	/** Server. Destroys every tile whose center lies within RadiusOverride world units of Center. */
 	void DestroyTilesInRadius(FVector2D Center, float Radius);
 	/** Server. Restores every tile. Called when the boss is defeated or the group wipes. */
 	void ResetAllTiles();
@@ -116,8 +116,8 @@ public:
 	 */
 	bool GetLastAliveTileAlongRay(FVector2D Origin, FVector2D Direction, FIntPoint& OutTile) const;
 
-	/** Server. Highlights the tiles within Radius of Location for Requester, or the single tile under Location when
-	 * Radius is 0. */
+	/** Server. Highlights the tiles within RadiusOverride of Location for Requester, or the single tile under Location
+	 * when RadiusOverride is 0. */
 	void HighlightTiles(AActor* Requester, FVector2D Location, float Radius = 0.f);
 	/** Server. Highlights the single tile at Tile for Requester, replacing any previous highlight from that requester.
 	 */

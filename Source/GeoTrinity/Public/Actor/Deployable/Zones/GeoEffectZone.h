@@ -78,7 +78,7 @@ private:
 	/** Team this zone belongs to; drives the attitude check against overlapping actors. */
 	UPROPERTY(EditAnywhere, Category = "GeoEffectZone")
 	ETeam Team = ETeam::Neutral;
-	/** Radius of the zone in world units. */
+	/** RadiusOverride of the zone in world units. */
 	UPROPERTY(EditAnywhere, Category = "GeoEffectZone", meta = (ClampMin = "0.0"))
 	float Radius = 200.f;
 	/** Effect level used when applying the effects. */

@@ -391,7 +391,7 @@ public:
 	 * leaves whatever it scales alone.
 	 *
 	 * The one way an authored curve reads a live value in this project: FGeoSoundEntry's volume and pitch and
-	 * FGeoFXParams' magnitude all resolve through it.
+	 * FGeoVFXParams' magnitude all resolve through it.
 	 */
 	static float SampleAttributeCurve(UCurveFloat const* Curve, FGameplayAttribute const& Attribute,
 									  bool bFromAbilityLevel, AActor* Instigator, int32 AbilityLevel);

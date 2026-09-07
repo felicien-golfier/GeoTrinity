@@ -81,9 +81,9 @@ protected:
 	UFUNCTION()
 	void OnRep_BounceSnapshot();
 
-	/** Matches everything that follows the burst's size to Radius: the bullet visual, and the pitch of its sounds
-	 * through BounceSoundSizePitchCurve, so bigger bursts sound different. Called on every machine — the host updates
-	 * it directly after a bounce (where OnRep never runs), simulated clients via OnRep_BounceSnapshot. */
+	/** Matches everything that follows the burst's size to RadiusOverride: the bullet visual, and the pitch of its
+	 * sounds through BounceSoundSizePitchCurve, so bigger bursts sound different. Called on every machine — the host
+	 * updates it directly after a bounce (where OnRep never runs), simulated clients via OnRep_BounceSnapshot. */
 	void UpdateSizeFX(float Radius) const;
 
 private:

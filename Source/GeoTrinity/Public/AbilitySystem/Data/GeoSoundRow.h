@@ -4,6 +4,7 @@
 
 #include "AttributeSet.h"
 #include "CoreMinimal.h"
+#include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 
@@ -96,6 +97,21 @@ struct FGeoSoundEntry
 	/** Random pitch multiplier range applied on top of the curve result. X = min, Y = max. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
 	FVector2D RandomPitchMultiplierRange = FVector2D(1.f, 1.f);
+};
+
+// MIGRATION SHIM — delete with FGeoCueParam::SoundTag once the sounds are re-authored as moments.
+// DT_GenericSound stores this as its RowStruct, so without the type the asset loads with ten empty rows and its
+// authored entries are lost on the next save. Nothing reads it at runtime any more.
+USTRUCT(BlueprintType)
+struct FGeoSoundRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Categories = "Event.Sound"))
+	FGameplayTag Tag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGeoSoundEntry Entry;
 };
 
 /**

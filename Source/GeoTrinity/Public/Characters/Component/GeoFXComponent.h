@@ -13,7 +13,7 @@ class UNiagaraComponent;
 class UNiagaraSystem;
 struct FGeoBuffFXEntry;
 struct FGeoBurstFXMoment;
-struct FGeoFXParams;
+struct FGeoVFXParams;
 struct FGeoSoundEntry;
 struct FGeoSustainedFXMoment;
 
@@ -23,7 +23,7 @@ struct FGeoRunningSustainedFX
 {
 	GENERATED_BODY()
 
-	/** The attached system, and what identifies the running moment — matched by asset against FGeoFXParams::VFX. */
+	/** The attached system, and what identifies the running moment — matched by asset against FGeoVFXParams::System. */
 	UPROPERTY()
 	TObjectPtr<UNiagaraComponent> VFXComponent;
 
@@ -41,7 +41,7 @@ struct FGeoRunningSustainedFX
  * forced on every owner.
  *
  * Both kinds of playback live here — PlayBurst for a moment that fires and is gone, SetSustainedFX for one that is
- * turned on and back off — and both push their parameters through ApplyFXParams, the single place FGeoFXParams reaches
+ * turned on and back off — and both push their parameters through ApplyFXParams, the single place FGeoVFXParams reaches
  * a system.
  *
  * The one trigger it does own is the buff one, because both sides need the same one: it listens to every attribute of
@@ -90,10 +90,10 @@ protected:
 	 */
 	void SetSustainedFX(FGeoSustainedFXMoment const& Moment, bool bShow);
 
-	/** Pushes every parameter FGeoFXParams carries onto Component, resolving what a curve reads against this owner. The
+	/** Pushes every parameter FGeoVFXParams carries onto Component, resolving what a curve reads against this owner. The
 	 * one place they are written, burst or sustained: a new shared parameter is a field on the struct plus a line here.
 	 */
-	void ApplyFXParams(UNiagaraComponent* Component, FGeoFXParams const& Params) const;
+	void ApplyFXParams(UNiagaraComponent* Component, FGeoVFXParams const& Params) const;
 
 	/** Stops listening to the buff source and stops every sustained moment. Niagara keeps simulating through a hidden
 	 * actor, so a pooled owner must be cleared on release or the next reuse renders the previous one's FX. */
