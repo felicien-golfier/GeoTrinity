@@ -118,7 +118,7 @@ void UGeoFXComponent::ApplyFXParams(UNiagaraComponent* const Component, FGeoVFXP
 	}
 	else
 	{
-		Component->SetVariableFloat(GeoNiagaraParams::Radius, GetFXInstigator()->GetSimpleCollisionRadius())
+		Component->SetVariableFloat(GeoNiagaraParams::Radius, GetFXInstigator()->GetSimpleCollisionRadius());
 	}
 }
 
