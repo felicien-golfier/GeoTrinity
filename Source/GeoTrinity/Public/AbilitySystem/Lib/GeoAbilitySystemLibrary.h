@@ -345,8 +345,7 @@ public:
 	static AActor* GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList);
 
 	/**
-	 * Executes Cue on ASC with CueParams: its CueTag when set, then the generic sound cue from UGameDataSettings when
-	 * SoundTag is set. No-op for an entry that plays neither.
+	 * Executes Cue's tag on ASC with CueParams. No-op for an entry naming no tag.
 	 *
 	 * @param bLocalOnly  True fires on this machine only (InvokeGameplayCueEvent). Use for cosmetics whose call site
 	 *                    already runs on every relevant machine (OnReps, locally-gated ability code), where the
@@ -392,7 +391,7 @@ public:
 	 * leaves whatever it scales alone.
 	 *
 	 * The one way an authored curve reads a live value in this project: FGeoSoundEntry's volume and pitch and
-	 * FGeoFXMoment's magnitude all resolve through it.
+	 * FGeoFXParams' magnitude all resolve through it.
 	 */
 	static float SampleAttributeCurve(UCurveFloat const* Curve, FGameplayAttribute const& Attribute,
 									  bool bFromAbilityLevel, AActor* Instigator, int32 AbilityLevel);

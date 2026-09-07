@@ -22,11 +22,16 @@ anything above that re-derivation is overwritten, anything below it survives.
 The wave itself is one `Waveform` dynamic input read three times — size, alpha and a push off the line —
 because a crest that only brightens reads as a light running around a rail, and one that only bulges reads
 as a wobble. Together they read as a pulse travelling through the line and breaking it. Its input position
-is the perimeter coordinate, so a single crest crosses all three edges without a seam.
+is the perimeter coordinate, so a crest crosses the corners without a seam. Its level is `[1] Bias`, not
+`[1] Amplitude Min/Max` — that pair is the range the amplitude is DRAWN from — and the swing only survives
+once the globals over it are opened, since their default range clips it away while Bias goes on moving the
+level, which reads as one flat size with a tilt.
 
-PHASE and SPIN_PERIOD's sign are the two numbers that cannot be derived: which way a sprite rotation rate
-turns on screen, and where the material's own triangle points inside its quad, are both conventions. One
-frame of the system on screen shows the beat line against the frame line and settles them.
+SPIN_PERIOD's sign is the one number that cannot be derived, being which way a sprite rotation rate turns on
+screen. PHASE can: M_GeoShape puts a polygon's vertices at 60 degrees in sprite UV space and this camera's
+UV-to-world adds 90, so the frame's line sits a twelfth of a turn from a beat corner at zero. Both were
+confirmed against a capture, twice over, since a constant offset proves the two rotations are locked while a
+drifting one would prove they are not.
 
 A run is `prepare()`, then `main()`; `retune()` rewrites the numbers afterwards without adding a node.
 Re-running `main()` needs the previous Beat handles stripped over the `niagara_ops` route first —
@@ -64,18 +69,22 @@ SPIN_PERIOD = 360.0 / FRAME_SPIN  # seconds a turn; negate to turn the other way
 PHASE = 1.0 / 12.0  # turns, rotating the whole beat triangle onto the frame's own line
 
 # --- the beat ------------------------------------------------------------------------------------------
-COUNT = 9  # shapes per edge, so 27 hold the whole perimeter
-SIZE = 8.0
+COUNT = 40  # shapes per edge, close enough together that the chain reads as the line and not as dots
+SIZE = 14.0  # at rest a shape is about as wide as the frame's own stroke, so the chain sits inside it
 COLOR = "2.20,0.25,5.20,1"
 SPIN = 150.0  # each shape turning on itself, so the chain is never a row of identical stamps
 HELD = 100000.0  # a lifetime and a loop long enough that the burst never fires twice
 
-WAVES = 3.0  # crests around the whole frame: one per edge, so the beat is a shape and not a lean
-TRAVEL = 0.45  # Waveform phase scale — how fast that crest runs round
-SHARP = 1.0  # waveform exponent: an even power folds the trough into a second crest
-SWELL = (0.60, 0.62)  # sprite size multiplier: what it rests at, and how far the beat swings it
-GLOW = (0.50, 0.52)  # alpha, the same way
-BULGE = (0.0, 8.0)  # unreal units the crest throws the line off itself, to both sides
+# An EVEN exponent is what makes this a beat rather than a drift: sin^N never goes negative, so the wave is
+# a flat baseline with a narrow spike standing off it — a cardiogram, not a ripple. The higher N, the
+# narrower the spike and the longer the rest between two. A point on the line is crossed by every spike
+# once a lap, and a lap is WAVES / TRAVEL seconds, so the tempo is TRAVEL beats a second: 1.2 is 72 bpm.
+WAVES = 3.0  # spikes around the whole frame: one per edge, so the beat is a shape and not a lean
+TRAVEL = 1.2  # Waveform phase scale — how fast that spike runs round, and so the tempo
+SHARP = 8.0  # waveform exponent: even, and high enough that the spike is short against its own rest
+SWELL = (0.55, 0.85)  # sprite size multiplier: what it rests at, and how far the beat swings it
+GLOW = (0.55, 1.60)  # alpha, the same way — over 1 at the crest, so the spike blows out
+BULGE = (0.0, 26.0)  # unreal units the crest throws the line off itself, outward only
 CLAMP = (-1000.0, 1000.0)  # wide enough that only Bias and the swing decide the wave
 
 EMITTER_UPDATE = unreal.NiagaraScriptUsage.EMITTER_UPDATE_SCRIPT

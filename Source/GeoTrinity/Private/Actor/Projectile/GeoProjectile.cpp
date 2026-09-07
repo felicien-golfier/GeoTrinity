@@ -484,6 +484,7 @@ void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Para
 	Resolved.TrailLifetimeScale = ResolveOverrideParam(Params.OverrideTrailLifetimeScale, Params.TrailLifetimeScale,
 													   DefaultParams.TrailLifetimeScale);
 	Resolved.FXMap = ResolveOverrideParam(Params.OverrideFXMap, Params.FXMap, DefaultParams.FXMap);
+	Resolved.LoopingFX = ResolveOverrideParam(Params.OverrideLoopingFX, Params.LoopingFX, DefaultParams.LoopingFX);
 	Resolved.OverlapAttitude =
 		ResolveOverrideParam(Params.OverrideOverlapAttitude, Params.OverlapAttitude, DefaultParams.OverlapAttitude);
 	Resolved.bCanOverlapInstigator = ResolveOverrideParam(
@@ -513,7 +514,7 @@ void AGeoProjectile::InitProjectileLife()
 	DistanceSpanSqr = FMath::Square(ResolvedParams.DistanceSpan);
 	InitProjectileMovementComponent();
 	FXComponent->StartLife();
-	FXComponent->BindBuffVFX(GeoASLib::GetGeoAscFromActor(GetSourceOwner()));
+	FXComponent->BindBuffFX(GeoASLib::GetGeoAscFromActor(GetSourceOwner()));
 
 	bIsEnding = false;
 	bEndedOnValidOverlap = false;

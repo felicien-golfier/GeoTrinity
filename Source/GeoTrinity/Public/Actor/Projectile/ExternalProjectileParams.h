@@ -12,15 +12,13 @@
 
 class AGeoProjectile;
 
-/** Moment of a projectile's life its FX play at. Key of FProjectileParamsBase::FXMap. */
+/** Moment of a projectile's life a burst of FX fires at. Key of FProjectileParamsBase::FXMap. The flight itself is not
+ * one of them — it lasts, so it is FProjectileParamsBase::LoopingFX instead. */
 UENUM(BlueprintType)
 enum class EProjectileMoment : uint8
 {
 	/** Fires as the shot launches. */
 	Start,
-	/** Lasts the whole flight: its VFX replaces the bullet visual's own system, its sound loops. Single sound only —
-	 * the projectile owns one looping audio component. */
-	Looping,
 	/** Plays when the projectile's life ends without a valid target: wall hit, distance span, or lifespan. */
 	NoOverlapEnd,
 	/** Plays when the projectile overlaps a valid target. Its sounds layer over NoOverlapEnd's, which plays too. */
@@ -81,9 +79,14 @@ struct FProjectileParamsBase
 			  meta = (ClampMin = "0", UIMin = "0", OverrideToggle = "OverrideTrailLifetimeScale"))
 	float TrailLifetimeScale = 1.f;
 
-	/** VFX and sounds of each moment of the projectile's life. */
+	/** VFX and sounds fired at each moment of the projectile's life that is over as soon as it happens. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (OverrideToggle = "OverrideFXMap"))
-	TMap<EProjectileMoment, FGeoFXMoment> FXMap;
+	TMap<EProjectileMoment, FGeoBurstFXMoment> FXMap;
+
+	/** What the whole flight looks and sounds like: its VFX replaces the bullet visual's own system and its sound loops
+	 * on the projectile's one audio component — which is why it holds a single sound and not a list. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (OverrideToggle = "OverrideLoopingFX"))
+	FGeoSustainedFXMoment LoopingFX;
 
 	/** Team attitudes (relative to the projectile's owner) whose actors count as a valid overlap. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
@@ -135,6 +138,9 @@ struct FExternalProjectileParams : public FProjectileParamsBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EOverrideParam OverrideFXMap = EOverrideParam::KeepBlueprintDefaultValue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EOverrideParam OverrideLoopingFX = EOverrideParam::KeepBlueprintDefaultValue;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EOverrideParam OverrideOverlapAttitude = EOverrideParam::KeepBlueprintDefaultValue;

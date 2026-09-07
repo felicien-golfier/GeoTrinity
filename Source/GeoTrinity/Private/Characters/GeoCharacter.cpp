@@ -223,7 +223,7 @@ void AGeoCharacter::BindCosmeticsToASC()
 	{
 		WidgetHost->BindToOwnerASC();
 	}
-	GameFeelComponent->BindBuffVFX(AbilitySystemComponent);
+	GameFeelComponent->BindBuffFX(AbilitySystemComponent);
 }
 
 void AGeoCharacter::BeginPlay()

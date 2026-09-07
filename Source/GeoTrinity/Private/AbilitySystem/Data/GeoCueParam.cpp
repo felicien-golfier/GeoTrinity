@@ -22,10 +22,6 @@ FGameplayCueParameters FGeoCueParam::MakeCueParams(AActor* Instigator, AActor* E
 	CueParams.Location = Location;
 	CueParams.AbilityLevel = AbilityLevel;
 	CueParams.GameplayEffectLevel = static_cast<int32>(Color);
-	if (SoundTag.IsValid())
-	{
-		CueParams.AggregatedSourceTags.AddTag(SoundTag);
-	}
 	if (AbilityTag.IsValid())
 	{
 		CueParams.SourceObject = GeoASLib::GetAbilityCDO(AbilityTag);

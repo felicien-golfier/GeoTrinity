@@ -143,7 +143,7 @@ struct GEOTRINITY_API FEffectData
 	}
 
 	/**
-	 * Cue played on the target when this entry applies, in the palette color and with the sound of the FGeoCueParam.
+	 * Cue played on the target when this entry applies, in the palette color of the FGeoCueParam.
 	 * Use it for a cue whose color varies per ability: a cue authored in the GameplayCues array of a UGameplayEffect
 	 * cannot carry one, because GameplayEffectLevel — the channel FGeoCueParam colors through — is overwritten with
 	 * the spec level, which here is the EGeoDifficulty mask.
@@ -151,8 +151,6 @@ struct GEOTRINITY_API FEffectData
 	 * Executed only. OnActive / WhileActive / OnRemove need a cue *added* for the effect's lifetime, which only the
 	 * GameplayCues array of the UGameplayEffect asset does — author those there instead.
 	 *
-	 * CueTag and SoundTag are independent: the sound always goes out as its own GenericGameplayCueSoundTag cue, so it
-	 * does not depend on the notify class CueTag resolves to, and a sound-only entry leaves CueTag empty.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGeoCueParam OneShotCue;

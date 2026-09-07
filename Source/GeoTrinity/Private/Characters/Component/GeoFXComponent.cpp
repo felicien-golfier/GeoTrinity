@@ -3,8 +3,10 @@
 #include "Characters/Component/GeoFXComponent.h"
 
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Data/GeoBuffFXDataAsset.h"
 #include "AbilitySystem/Data/GeoFXMoment.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -13,7 +15,18 @@
 #include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-void UGeoFXComponent::PlayMoment(FGeoFXMoment const& Moment) const
+void FGeoRunningSustainedFX::Stop() const
+{
+	VFXComponent->DestroyComponent();
+	if (AudioComponent)
+	{
+		AudioComponent->Stop();
+		AudioComponent->DestroyComponent();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoFXComponent::PlayBurst(FGeoBurstFXMoment const& Moment) const
 {
 	if (GeoLib::IsDedicatedServer(this))
 	{
@@ -26,17 +39,7 @@ void UGeoFXComponent::PlayMoment(FGeoFXMoment const& Moment) const
 			this, Moment.VFX, GetOwner()->GetActorLocation(), FRotator::ZeroRotator, FVector::OneVector,
 			/*bAutoDestroy*/ true, /*bAutoActivate*/ false))
 	{
-		float const NormalizedMagnitude = FMath::Clamp(
-			GeoASLib::SampleAttributeCurve(Moment.MagnitudeCurve, Moment.MagnitudeAttribute,
-										   Moment.bMagnitudeFromAbilityLevel, GetFXInstigator(), GetAbilityLevel()),
-			0.f, 1.f);
-
-		Spawned->SetVariableLinearColor(GeoNiagaraParams::Color, Moment.Color.GetColor());
-		Spawned->SetVariableFloat(GeoNiagaraParams::NormalizedMagnitude, NormalizedMagnitude);
-		if (Moment.Radius > 0.f)
-		{
-			Spawned->SetVariableFloat(GeoNiagaraParams::Radius, Moment.Radius);
-		}
+		ApplyFXParams(Spawned, Moment);
 		if (Moment.Lifetime > 0.f)
 		{
 			Spawned->SetVariableFloat(GeoNiagaraParams::Lifetime, Moment.Lifetime);
@@ -47,6 +50,71 @@ void UGeoFXComponent::PlayMoment(FGeoFXMoment const& Moment) const
 	for (FGeoSoundEntry const& Entry : Moment.Sounds)
 	{
 		PlaySound(Entry);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoFXComponent::SetSustainedFX(FGeoSustainedFXMoment const& Moment, bool const bShow)
+{
+	if (!Moment.VFX || GeoLib::IsDedicatedServer(this))
+	{
+		return;
+	}
+
+	int32 const Index = RunningSustainedFX.IndexOfByPredicate(
+		[&Moment](FGeoRunningSustainedFX const& Running)
+		{
+			return Running.VFXComponent->GetAsset() == Moment.VFX;
+		});
+
+	if (!bShow)
+	{
+		if (Index != INDEX_NONE)
+		{
+			RunningSustainedFX[Index].Stop();
+			RunningSustainedFX.RemoveAtSwap(Index);
+		}
+		return;
+	}
+
+	if (Index != INDEX_NONE)
+	{
+		ApplyFXParams(RunningSustainedFX[Index].VFXComponent, Moment);
+		return;
+	}
+
+	// Spawned inactive for the same reason a burst is; Niagara returns nothing when it pre-culls the spawn.
+	UNiagaraComponent* const Spawned = UNiagaraFunctionLibrary::SpawnSystemAttached(
+		Moment.VFX, GetOwner()->GetRootComponent(), NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
+		EAttachLocation::SnapToTarget, /*bAutoDestroy*/ false, /*bAutoActivate*/ false);
+	if (!Spawned)
+	{
+		return;
+	}
+
+	ApplyFXParams(Spawned, Moment);
+	Spawned->Activate();
+
+	FGeoRunningSustainedFX& Running = RunningSustainedFX.AddDefaulted_GetRef();
+	Running.VFXComponent = Spawned;
+	Running.AudioComponent =
+		UGeoSoundRowLibrary::SpawnAudioComponent(GetOwner()->GetRootComponent(), Moment.Sound, GetFXInstigator(),
+												 GetVolume(Moment.Sound), GetPitch(Moment.Sound));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoFXComponent::ApplyFXParams(UNiagaraComponent* const Component, FGeoFXParams const& Params) const
+{
+	float const NormalizedMagnitude = FMath::Clamp(
+		GeoASLib::SampleAttributeCurve(Params.MagnitudeCurve, Params.MagnitudeAttribute,
+									   Params.bMagnitudeFromAbilityLevel, GetFXInstigator(), GetAbilityLevel()),
+		0.f, 1.f);
+
+	Component->SetVariableLinearColor(GeoNiagaraParams::Color, Params.Color.GetColor());
+	Component->SetVariableFloat(GeoNiagaraParams::NormalizedMagnitude, NormalizedMagnitude);
+	if (Params.Radius > 0.f)
+	{
+		Component->SetVariableFloat(GeoNiagaraParams::Radius, Params.Radius);
 	}
 }
 
@@ -73,41 +141,6 @@ float UGeoFXComponent::GetPitch(FGeoSoundEntry const& Entry) const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoFXComponent::SetAttachedVFX(UNiagaraSystem* const System, bool const bShow)
-{
-	if (!System || GeoLib::IsDedicatedServer(this))
-	{
-		return;
-	}
-
-	int32 const Index = AttachedVFXComponents.IndexOfByPredicate(
-		[System](UNiagaraComponent const* const AttachedVFX)
-		{
-			return AttachedVFX->GetAsset() == System;
-		});
-
-	if (bShow == (Index != INDEX_NONE))
-	{
-		return;
-	}
-
-	if (!bShow)
-	{
-		AttachedVFXComponents[Index]->DestroyComponent();
-		AttachedVFXComponents.RemoveAtSwap(Index);
-		return;
-	}
-
-	// Niagara returns nothing when it pre-culls the spawn.
-	if (UNiagaraComponent* const Spawned = UNiagaraFunctionLibrary::SpawnSystemAttached(
-			System, GetOwner()->GetRootComponent(), NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
-			EAttachLocation::SnapToTarget, false))
-	{
-		AttachedVFXComponents.Add(Spawned);
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UGeoFXComponent::SetPitchMultiplier(float const Multiplier)
 {
 	PitchMultiplier = Multiplier;
@@ -126,13 +159,13 @@ int32 UGeoFXComponent::GetAbilityLevel() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-UNiagaraSystem* UGeoFXComponent::GetBuffVFXSystem(FGeoBuffVFXEntry const& Entry) const
+FGeoSustainedFXMoment const* UGeoFXComponent::GetBuffMoment(FGeoBuffFXEntry const& Entry) const
 {
-	return UGameDataSettings::GetLoadedDataAsset(Entry.CharacterVFX);
+	return &Entry.CharacterFX;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoFXComponent::BindBuffVFX(UGeoAbilitySystemComponent* const SourceASC)
+void UGeoFXComponent::BindBuffFX(UGeoAbilitySystemComponent* const SourceASC)
 {
 	if (GeoLib::IsDedicatedServer(this) || !IsValid(SourceASC))
 	{
@@ -141,25 +174,25 @@ void UGeoFXComponent::BindBuffVFX(UGeoAbilitySystemComponent* const SourceASC)
 
 	if (BuffSourceASC != SourceASC)
 	{
-		ClearBuffVFX();
+		ClearBuffFX();
 		BuffSourceASC = SourceASC;
 
-		for (FGeoBuffVFXEntry const& Entry : GetDefault<UGameDataSettings>()->BuffVFX)
+		for (FGeoBuffFXEntry const& Entry : GetBuffEntries())
 		{
 			SourceASC->GetGameplayAttributeValueChangeDelegate(Entry.Attribute)
 				.AddWeakLambda(this,
 							   [this](FOnAttributeChangeData const& /*Data*/)
 							   {
-								   RefreshBuffVFX();
+								   RefreshBuffFX();
 							   });
 		}
 	}
 
-	RefreshBuffVFX();
+	RefreshBuffFX();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoFXComponent::RefreshBuffVFX()
+void UGeoFXComponent::RefreshBuffFX()
 {
 	UGeoAbilitySystemComponent const* const SourceASC = BuffSourceASC.Get();
 	if (!SourceASC)
@@ -167,27 +200,40 @@ void UGeoFXComponent::RefreshBuffVFX()
 		return;
 	}
 
-	for (FGeoBuffVFXEntry const& Entry : GetDefault<UGameDataSettings>()->BuffVFX)
+	for (FGeoBuffFXEntry const& Entry : GetBuffEntries())
 	{
-		SetAttachedVFX(GetBuffVFXSystem(Entry), GeoASLib::IsBuffed(*SourceASC, Entry.Attribute));
+		if (FGeoSustainedFXMoment const* const Moment = GetBuffMoment(Entry))
+		{
+			SetSustainedFX(*Moment, GeoASLib::IsBuffed(*SourceASC, Entry.Attribute));
+		}
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoFXComponent::ClearBuffVFX()
+void UGeoFXComponent::ClearBuffFX()
 {
 	if (UGeoAbilitySystemComponent* const SourceASC = BuffSourceASC.Get())
 	{
-		for (FGeoBuffVFXEntry const& Entry : GetDefault<UGameDataSettings>()->BuffVFX)
+		for (FGeoBuffFXEntry const& Entry : GetBuffEntries())
 		{
 			SourceASC->GetGameplayAttributeValueChangeDelegate(Entry.Attribute).RemoveAll(this);
 		}
 	}
 	BuffSourceASC = nullptr;
 
-	for (UNiagaraComponent* const AttachedVFX : AttachedVFXComponents)
+	for (FGeoRunningSustainedFX const& Running : RunningSustainedFX)
 	{
-		AttachedVFX->DestroyComponent();
+		Running.Stop();
 	}
-	AttachedVFXComponents.Empty();
+	RunningSustainedFX.Empty();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FGeoBuffFXEntry> const& UGeoFXComponent::GetBuffEntries()
+{
+	static TArray<FGeoBuffFXEntry> const NoBuffFXConfigured;
+
+	UGeoBuffFXDataAsset const* const Asset =
+		UGameDataSettings::GetLoadedDataAsset(GetDefault<UGameDataSettings>()->BuffFX);
+	return Asset ? Asset->Entries : NoBuffFXConfigured;
 }

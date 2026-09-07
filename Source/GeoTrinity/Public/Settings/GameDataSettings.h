@@ -19,33 +19,8 @@ class UWidgetComponent;
 class UGameplayEffect;
 class USoundBase;
 class UNiagaraSystem;
+class UGeoBuffFXDataAsset;
 class UPlayerClassDataAsset;
-
-/**
- * One buff attribute and the VFX it shows while it sits above its base value on a character. Read by every
- * UGeoFXComponent, each taking its own side: a character's UGeoGameFeelComponent wears CharacterVFX, and the shots it
- * fires wear ProjectileVFX through their UGeoProjectileFXComponent. Either may be left empty to show the buff on one
- * side only.
- */
-USTRUCT(BlueprintType)
-struct GEOTRINITY_API FGeoBuffVFXEntry
-{
-	GENERATED_BODY()
-
-	/** Watched on the buffed character's ASC — above its base value is what "buffed" means here. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FGameplayAttribute Attribute;
-
-	/** Played on the buffed character itself. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSoftObjectPtr<UNiagaraSystem> CharacterVFX;
-
-	/** Played on a projectile the buffed character fires. Only the damage and applied-heal boosts reach a shot at all,
-	 * and only on a shot that carries the matching effect — a damage buff must not light up a heal shot. Set on any
-	 * other attribute it stays unused; that buff shows on the character alone. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSoftObjectPtr<UNiagaraSystem> ProjectileVFX;
-};
 
 /**
  * Project Settings panel (Game Data Settings) that holds soft references to all global data assets
@@ -183,19 +158,17 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
 	float HitFlashDuration = 0.9f;
 
-	/** Shared generic-sound cue tag, executed locally for one-off gameplay sounds (e.g. deploy stack refilled). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
-	FGameplayTag GenericGameplayCueSoundTag;
-
 	/** Played on the deploying client when a deploy ability's charge pool refills a stack — shared by every deploy
 	 * ability (GA_DeployHealingZone, GA_Square_Special_Mine, GA_LaunchTurret) instead of a per-ability property. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
 	FGeoCueParam RefillDeployableCue;
 
-	/** Every buff the game shows, project-wide: one entry per attribute, with the systems its character and its shots
-	 * wear while it is boosted. Driven by UGeoFXComponent. */
+	/** Every buff the game shows, project-wide: one entry per attribute, with the moment its character and its shots
+	 * wear while it is boosted. Driven by UGeoFXComponent.
+	 * An asset and not a Config array, because an entry holds its systems and sounds hard: LoadConfig resolves a Config
+	 * property while this CDO is constructed, which would load all of them during engine startup. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
-	TArray<FGeoBuffVFXEntry> BuffVFX;
+	TSoftObjectPtr<UGeoBuffFXDataAsset> BuffFX;
 
 	/** Shared windup telegraph (Ray Zone Indicator) every beam swaps to during its wind-up: UGeoBeamVFXComponent
 	 * (player channel beams) and UBeamPattern (enemy/boss beams). One project-wide asset — no per-ability/per-pattern

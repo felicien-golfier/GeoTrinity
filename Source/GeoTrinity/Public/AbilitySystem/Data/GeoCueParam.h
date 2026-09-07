@@ -12,21 +12,24 @@ struct FAbilityPayload;
 struct FGameplayCueParameters;
 
 /**
- * One authored gameplay cue: its tag, the palette slot its VFX draws in, and the sound it plays.
+ * One authored gameplay cue: its tag and the palette slot its VFX draws in.
  * Every cue fired from C++ config (deployable moments, pattern init/start, ability fire, effect application) is typed
- * as this, so a designer sees the three knobs of a cue in one place instead of parallel tag and color fields.
+ * as this, so a designer sees the knobs of a cue in one place instead of parallel tag and color fields.
+ *
+ * A cue is what carries data into a notify Blueprint (a recall beam's two points, a pattern's timing). A moment that
+ * only spawns a system and plays sounds is an FGeoBurstFXMoment instead, authored where the moment happens.
  */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGeoCueParam
 {
 	GENERATED_BODY()
 
-	/** True when this entry plays anything at all — a cue, a sound, or both. */
-	bool IsValid() const { return CueTag.IsValid() || SoundTag.IsValid(); }
+	/** True when this entry plays anything at all. */
+	bool IsValid() const { return CueTag.IsValid(); }
 
 	/**
-	 * Builds the parameters this cue is fired with: who caused it, where it happens, and this entry's own palette slot
-	 * and sound. The single builder every Geo cue goes through — layer the cue's own data (Normal, RawMagnitude,
+	 * Builds the parameters this cue is fired with: who caused it, where it happens, and this entry's own palette slot.
+	 * The single builder every Geo cue goes through — layer the cue's own data (Normal, RawMagnitude,
 	 * NormalizedMagnitude) onto the result at the call site.
 	 *
 	 * Instigator is always resolved to its avatar actor, so a cue notify never has to tell a PlayerState from the pawn
@@ -50,8 +53,4 @@ struct GEOTRINITY_API FGeoCueParam
 	// their own data (recall direction, pattern timing). Override is not a valid choice: it has no palette slot.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	EGeoColor Color = EGeoColor::Neutral;
-
-	/** DT_GenericSound row to play, passed through AggregatedSourceTags for UGeoGenericSoundCueNotify to look up. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Categories = "Event.Sound"))
-	FGameplayTag SoundTag;
 };

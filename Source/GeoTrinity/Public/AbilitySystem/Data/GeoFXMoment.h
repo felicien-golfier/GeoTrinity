@@ -13,36 +13,35 @@ class UCurveFloat;
 class UNiagaraSystem;
 
 /**
- * Everything one moment of an actor's life plays: its Niagara system, the User parameters that system runs with, and
- * its sounds. Keyed by a per-actor moment enum (EProjectileMoment, EDeployableSoundType) so a designer configures a
- * moment's whole feedback in one place instead of a sound map beside a separate VFX field.
- * Every sound of a moment fires together, so a moment can layer several assets over the one system.
- * Played through UGeoFXComponent, which resolves the audience, volume and pitch rules and pushes the parameters below
- * onto the spawned system. A system that declares none of them just ignores them.
+ * What every authored moment of the game plays, and the User parameters it plays with. The shared half of the FX family:
+ * a parameter every moment should carry is added here, once, and reaches projectile moments, deployable moments and buff
+ * FX at the same time. UGeoFXComponent::ApplyFXParams is the one place that pushes them onto a system, so a new
+ * parameter is two edits and no call site.
+ *
+ * Never authored on its own — FGeoBurstFXMoment and FGeoSustainedFXMoment add what only their kind of playback can
+ * express. A leaf may only ever *add*: never hide or EditCondition a field declared here, since the engine resolves an
+ * EditCondition operand only against the struct that declares the conditioned property, and an unresolved one silently
+ * evaluates to true.
+ *
+ * A system that declares none of these parameters just ignores them.
  */
 USTRUCT(BlueprintType)
-struct FGeoFXMoment
+struct FGeoFXParams
 {
 	GENERATED_BODY()
 
-	/** Spawned at the owner when the moment fires — attached to it for a moment that lasts (EProjectileMoment::Looping),
-	 * one-shot at its location otherwise. */
+	/** Spawned when the moment plays: at the owner's location for a burst, attached to it for a sustained one. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UNiagaraSystem> VFX;
 
-	/** Pushed to the system's particle color parameter (GeoNiagaraParams::Color) on every play. Always written, so a
-	 * system reading it wears the moment's color rather than its own authored one. */
+	/** Pushed to GeoNiagaraParams::Color on every play. Always written, so a system reading it wears the moment's color
+	 * rather than its own authored one. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGeoColorParam Color;
 
-	/** Pushed to the system's GeoNiagaraParams::Radius. 0 writes nothing and leaves the system on its authored size. */
+	/** Pushed to GeoNiagaraParams::Radius. 0 writes nothing and leaves the system on its authored size. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
 	float Radius = 0.f;
-
-	/** Pushed to the system's GeoNiagaraParams::Lifetime. 0 writes nothing and leaves the system on its authored
-	 * duration. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
-	float Lifetime = 0.f;
 
 	/** Instigator attribute MagnitudeCurve is sampled at. Hidden while bMagnitudeFromAbilityLevel is set — one source
 	 * or the other, never both. */
@@ -60,7 +59,45 @@ struct FGeoFXMoment
 	 * otherwise; the parameter is then written as 1, the full-strength value. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UCurveFloat> MagnitudeCurve;
+};
 
+/**
+ * A moment that fires and is gone: one spawn of its system at the owner's location plus every sound it carries, all at
+ * once. Keyed by a per-owner moment enum (EProjectileMoment, EDeployableMoment) so a designer configures a moment's
+ * whole feedback in one place instead of a sound map beside a separate VFX field.
+ * Played through UGeoFXComponent::PlayBurst, which keeps nothing — the wrong struct for a moment that lasts.
+ */
+USTRUCT(BlueprintType)
+struct FGeoBurstFXMoment : public FGeoFXParams
+{
+	GENERATED_BODY()
+
+	/** Pushed to the system's GeoNiagaraParams::Lifetime. 0 writes nothing and leaves the system on its authored
+	 * duration. Burst only: a sustained moment runs until it is turned off, so it has no duration to give. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
+	float Lifetime = 0.f;
+
+	/** Every sound of the moment fires together, so it can layer several assets over the one system. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TArray<FGeoSoundEntry> Sounds;
+};
+
+/**
+ * A moment that is turned on and back off again: its system stays attached to the owner and its sound loops for as long
+ * as it runs — a buff worn while an attribute is boosted, a shot's whole flight.
+ * Played through UGeoFXComponent::SetSustainedFX, which keeps the running instance and re-pushes the inherited
+ * parameters whenever what drives them moves.
+ *
+ * A sustained moment naming no VFX shows nothing at all: the system is what identifies a running moment, so there is
+ * nothing for its sound to loop against.
+ */
+USTRUCT(BlueprintType)
+struct FGeoSustainedFXMoment : public FGeoFXParams
+{
+	GENERATED_BODY()
+
+	/** The one sound looping while the moment runs. One and not a list because a loop has to be stopped again: it plays
+	 * on a single audio component held for exactly this moment. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGeoSoundEntry Sound;
 };

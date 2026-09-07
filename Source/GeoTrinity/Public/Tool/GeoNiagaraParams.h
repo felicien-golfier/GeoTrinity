@@ -27,7 +27,7 @@ namespace GeoNiagaraParams
 	inline FName const Position(TEXT("User.Position"));
 	inline FName const Radius(TEXT("User.Radius"));
 
-	/** How strong the effect showing it is, on a 0..1 scale — FGeoFXMoment resolves it from an attribute or an ability
+	/** How strong the effect showing it is, on a 0..1 scale — FGeoFXParams resolves it from an attribute or an ability
 	 * level through its own curve, so a system reads one normalized number and never what drives it. */
 	inline FName const NormalizedMagnitude(TEXT("User.NormalizedMagnitude"));
 

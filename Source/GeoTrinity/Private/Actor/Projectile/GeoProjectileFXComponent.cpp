@@ -4,12 +4,12 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Data/EffectData.h"
+#include "AbilitySystem/Data/GeoBuffFXDataAsset.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Components/AudioComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -57,8 +57,8 @@ void UGeoProjectileFXComponent::ApplyBulletSystem()
 		DefaultBulletSystem = BulletVFX->GetAsset();
 	}
 
-	FGeoFXMoment const* const Looping = FindMoment(EProjectileMoment::Looping);
-	UNiagaraSystem* const DesiredSystem = Looping && Looping->VFX ? Looping->VFX : DefaultBulletSystem;
+	UNiagaraSystem* const LoopingSystem = GetOwner<AGeoProjectile>()->ResolvedParams.LoopingFX.VFX;
+	UNiagaraSystem* const DesiredSystem = LoopingSystem ? LoopingSystem : DefaultBulletSystem.Get();
 	// SetAsset restarts the system, so a spawn that keeps the same one must not go through it.
 	if (DesiredSystem && BulletVFX->GetAsset() != DesiredSystem)
 	{
@@ -67,7 +67,7 @@ void UGeoProjectileFXComponent::ApplyBulletSystem()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGeoFXMoment const* UGeoProjectileFXComponent::FindMoment(EProjectileMoment const Type) const
+FGeoBurstFXMoment const* UGeoProjectileFXComponent::FindMoment(EProjectileMoment const Type) const
 {
 	return GetOwner<AGeoProjectile>()->ResolvedParams.FXMap.Find(Type);
 }
@@ -82,6 +82,7 @@ void UGeoProjectileFXComponent::ApplyParams()
 	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletHeadColor, Params.HeadColor.GetColor(1.f));
 	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletTrailColor, Params.TrailColor.GetColor(1.f));
 	BulletVFX->SetVariableFloat(GeoNiagaraParams::TrailLifetimeScale, Params.TrailLifetimeScale);
+	ApplyFXParams(BulletVFX, Params.LoopingFX);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -97,42 +98,35 @@ void UGeoProjectileFXComponent::StartLife() const
 	BulletVFX->SetRelativeLocation(FVector::ZeroVector);
 	BulletVFX->Activate(true);
 
-	FGeoFXMoment const* const Looping = FindMoment(EProjectileMoment::Looping);
-	if (Looping && !Looping->Sounds.IsEmpty())
-	{
-		ensureMsgf(Looping->Sounds.Num() == 1,
-				   TEXT("%s: %d looping sounds, only the first plays — the projectile owns one audio component"),
-				   *GetOwner()->GetName(), Looping->Sounds.Num());
-		FGeoSoundEntry const& Entry = Looping->Sounds[0];
-		UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, Entry, GetFXInstigator(),
-													 GetVolume(Entry), GetPitch(Entry));
-	}
+	FGeoSoundEntry const& LoopingSound = GetOwner<AGeoProjectile>()->ResolvedParams.LoopingFX.Sound;
+	UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, LoopingSound, GetFXInstigator(),
+												 GetVolume(LoopingSound), GetPitch(LoopingSound));
 
-	if (FGeoFXMoment const* const Start = FindMoment(EProjectileMoment::Start))
+	if (FGeoBurstFXMoment const* const Start = FindMoment(EProjectileMoment::Start))
 	{
-		PlayMoment(*Start);
+		PlayBurst(*Start);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoProjectileFXComponent::PlayEnd(bool const bValidOverlap) const
 {
-	if (FGeoFXMoment const* const NoOverlapEnd = FindMoment(EProjectileMoment::NoOverlapEnd))
+	if (FGeoBurstFXMoment const* const NoOverlapEnd = FindMoment(EProjectileMoment::NoOverlapEnd))
 	{
-		PlayMoment(*NoOverlapEnd);
+		PlayBurst(*NoOverlapEnd);
 	}
 
-	FGeoFXMoment const* const ValidOverlapEnd = FindMoment(EProjectileMoment::ValidOverlapEnd);
+	FGeoBurstFXMoment const* const ValidOverlapEnd = FindMoment(EProjectileMoment::ValidOverlapEnd);
 	if (bValidOverlap && ValidOverlapEnd)
 	{
-		PlayMoment(*ValidOverlapEnd);
+		PlayBurst(*ValidOverlapEnd);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoProjectileFXComponent::StopAll()
 {
-	ClearBuffVFX();
+	ClearBuffFX();
 
 	if (GeoLib::IsDedicatedServer(this))
 	{
@@ -171,7 +165,7 @@ int32 UGeoProjectileFXComponent::GetAbilityLevel() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-UNiagaraSystem* UGeoProjectileFXComponent::GetBuffVFXSystem(FGeoBuffVFXEntry const& Entry) const
+FGeoSustainedFXMoment const* UGeoProjectileFXComponent::GetBuffMoment(FGeoBuffFXEntry const& Entry) const
 {
 	UScriptStruct const* ScaledType = nullptr;
 	if (Entry.Attribute == UCharacterAttributeSet::GetDamageMultiplierAttribute())
@@ -187,5 +181,5 @@ UNiagaraSystem* UGeoProjectileFXComponent::GetBuffVFXSystem(FGeoBuffVFXEntry con
 	{
 		return nullptr;
 	}
-	return UGameDataSettings::GetLoadedDataAsset(Entry.ProjectileVFX);
+	return &Entry.ProjectileFX;
 }

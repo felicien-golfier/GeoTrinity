@@ -373,30 +373,13 @@ void UGeoAbilitySystemLibrary::ExecuteGeoCue(UAbilitySystemComponent* ASC, FGeoC
 		return;
 	}
 
-	auto const Execute = [ASC, &CueParams, bLocalOnly](FGameplayTag const& Tag)
+	if (bLocalOnly)
 	{
-		if (bLocalOnly)
-		{
-			ASC->InvokeGameplayCueEvent(Tag, EGameplayCueEvent::Executed, CueParams);
-		}
-		else
-		{
-			ASC->ExecuteGameplayCue(Tag, CueParams);
-		}
-	};
-
-	if (Cue.CueTag.IsValid())
-	{
-		Execute(Cue.CueTag);
+		ASC->InvokeGameplayCueEvent(Cue.CueTag, EGameplayCueEvent::Executed, CueParams);
 	}
-
-	FGameplayTag const SoundCueTag = GetDefault<UGameDataSettings>()->GenericGameplayCueSoundTag;
-	if (Cue.SoundTag.IsValid()
-		&& ensureMsgf(SoundCueTag.IsValid(),
-					  TEXT("%hs: sound %s needs UGameDataSettings::GenericGameplayCueSoundTag set"), __FUNCTION__,
-					  *Cue.SoundTag.ToString()))
+	else
 	{
-		Execute(SoundCueTag);
+		ASC->ExecuteGameplayCue(Cue.CueTag, CueParams);
 	}
 }
 

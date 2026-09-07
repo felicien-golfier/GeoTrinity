@@ -46,9 +46,9 @@ void FGeoCurveSourceCustomization::CustomizeChildren(TSharedRef<IPropertyHandle>
 		GateSourceRow(Row, ChildName, StructHandle, GET_MEMBER_NAME_CHECKED(FGeoSoundEntry, PitchAttribute),
 					  GET_MEMBER_NAME_CHECKED(FGeoSoundEntry, bPitchFromAbilityLevel),
 					  GET_MEMBER_NAME_CHECKED(FGeoSoundEntry, PitchCurve));
-		GateSourceRow(Row, ChildName, StructHandle, GET_MEMBER_NAME_CHECKED(FGeoFXMoment, MagnitudeAttribute),
-					  GET_MEMBER_NAME_CHECKED(FGeoFXMoment, bMagnitudeFromAbilityLevel),
-					  GET_MEMBER_NAME_CHECKED(FGeoFXMoment, MagnitudeCurve));
+		GateSourceRow(Row, ChildName, StructHandle, GET_MEMBER_NAME_CHECKED(FGeoFXParams, MagnitudeAttribute),
+					  GET_MEMBER_NAME_CHECKED(FGeoFXParams, bMagnitudeFromAbilityLevel),
+					  GET_MEMBER_NAME_CHECKED(FGeoFXParams, MagnitudeCurve));
 	}
 }
 

@@ -22,7 +22,10 @@ void FGeoTrinityEditorModule::StartupModule()
 		FGeoSoundEntry::StaticStruct()->GetFName(),
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoCurveSourceCustomization::MakeInstance));
 	PropertyEditor.RegisterCustomPropertyTypeLayout(
-		FGeoFXMoment::StaticStruct()->GetFName(),
+		FGeoBurstFXMoment::StaticStruct()->GetFName(),
+		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoCurveSourceCustomization::MakeInstance));
+	PropertyEditor.RegisterCustomPropertyTypeLayout(
+		FGeoSustainedFXMoment::StaticStruct()->GetFName(),
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoCurveSourceCustomization::MakeInstance));
 	PropertyEditor.NotifyCustomizationModuleChanged();
 }
@@ -37,6 +40,7 @@ void FGeoTrinityEditorModule::ShutdownModule()
 	FPropertyEditorModule& PropertyEditor = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FExternalProjectileParams::StaticStruct()->GetFName());
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoSoundEntry::StaticStruct()->GetFName());
-	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoFXMoment::StaticStruct()->GetFName());
+	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoBurstFXMoment::StaticStruct()->GetFName());
+	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoSustainedFXMoment::StaticStruct()->GetFName());
 	PropertyEditor.NotifyCustomizationModuleChanged();
 }

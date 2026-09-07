@@ -4,7 +4,6 @@
 
 #include "AttributeSet.h"
 #include "CoreMinimal.h"
-#include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 
@@ -12,6 +11,7 @@
 
 
 class UAudioComponent;
+class USceneComponent;
 class USoundBase;
 class UCurveFloat;
 
@@ -98,19 +98,6 @@ struct FGeoSoundEntry
 	FVector2D RandomPitchMultiplierRange = FVector2D(1.f, 1.f);
 };
 
-/** DataTable row mapping a sound tag to the FGeoSoundEntry to play. The tag is an explicit field, not the row name. */
-USTRUCT(BlueprintType)
-struct FGeoSoundRow : public FTableRowBase
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Categories = "Event.Sound"))
-	FGameplayTag Tag;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FGeoSoundEntry Entry;
-};
-
 /**
  * Static helpers for playing FGeoSoundEntry sounds. The only valid playback path for gameplay sounds in the
  * project — never call PlaySoundAtLocation or PlaySound2D directly. Centralises audience gating,
@@ -123,10 +110,6 @@ class GEOTRINITY_API UGeoSoundRowLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
-	/** Returns the first row whose Tag matches Tag; bFound is false and a default row is returned if none. */
-	UFUNCTION(BlueprintPure, Category = "GeoTrinity|Sound", meta = (DataTablePin = "SoundTable"))
-	static FGeoSoundRow FindSoundForTag(UDataTable const* SoundTable, FGameplayTag Tag, bool& bFound);
-
 	/** Returns true when Entry should play on this machine: never on a dedicated server or without a valid Sound;
 	 * otherwise gated by Entry.Audience relative to SoundInstigator (always plays when SoundInstigator is null). */
 	static bool ShouldPlay(UObject const* WorldContextObject, FGeoSoundEntry const& Entry, AActor* SoundInstigator);
@@ -152,4 +135,11 @@ public:
 	 * them; pass GetVolume/GetPitch(Entry, SoundInstigator, AbilityLevel) otherwise. */
 	static void ConfigureAudioComponent(UAudioComponent* AudioComponent, FGeoSoundEntry const& Entry,
 										AActor* SoundInstigator, float Volume, float Pitch);
+
+	/** ConfigureAudioComponent for a caller owning no audio component: spawns one attached to AttachTo and starts Entry
+	 * on it, under the same gating and the same caller-resolved Volume and Pitch. Returns null when the entry must not
+	 * play here. The returned component never auto-destroys — a sustained sound is stopped by its moment ending, not by
+	 * the asset running out — so stopping and destroying it is the caller's. */
+	static UAudioComponent* SpawnAudioComponent(USceneComponent* AttachTo, FGeoSoundEntry const& Entry,
+												AActor* SoundInstigator, float Volume, float Pitch);
 };

@@ -9,29 +9,6 @@
 #include "Sound/SoundBase.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-// ---------------------------------------------------------------------------------------------------------------------
-FGeoSoundRow UGeoSoundRowLibrary::FindSoundForTag(UDataTable const* SoundTable, FGameplayTag Tag, bool& bFound)
-{
-	bFound = false;
-	FGeoSoundRow FoundRow;
-	if (!ensureMsgf(SoundTable, TEXT("FindSoundForTag called with null SoundTable")))
-	{
-		return FoundRow;
-	}
-
-	SoundTable->ForeachRow<FGeoSoundRow>(TEXT("FindSoundForTag"),
-										 [&Tag, &FoundRow, &bFound](FName const& /*RowName*/, FGeoSoundRow const& Row)
-										 {
-											 if (!bFound && Row.Tag.MatchesTagExact(Tag))
-											 {
-												 bFound = true;
-												 FoundRow = Row;
-											 }
-										 });
-	return FoundRow;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 bool UGeoSoundRowLibrary::ShouldPlay(UObject const* WorldContextObject, FGeoSoundEntry const& Entry,
 									 AActor* SoundInstigator)
 {
@@ -93,4 +70,20 @@ void UGeoSoundRowLibrary::ConfigureAudioComponent(UAudioComponent* AudioComponen
 	AudioComponent->SetVolumeMultiplier(Volume);
 	AudioComponent->SetPitchMultiplier(Pitch);
 	AudioComponent->Play(Entry.StartTime);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UAudioComponent* UGeoSoundRowLibrary::SpawnAudioComponent(USceneComponent* AttachTo, FGeoSoundEntry const& Entry,
+														  AActor* SoundInstigator, float Volume, float Pitch)
+{
+	if (!ensureMsgf(AttachTo, TEXT("%hs: null AttachTo"), __FUNCTION__)
+		|| !ShouldPlay(AttachTo, Entry, SoundInstigator))
+	{
+		return nullptr;
+	}
+
+	return UGameplayStatics::SpawnSoundAttached(Entry.Sound, AttachTo, NAME_None, FVector::ZeroVector,
+												EAttachLocation::SnapToTarget, /*bStopWhenAttachedToDestroyed*/ true,
+												Volume, Pitch, Entry.StartTime, nullptr, nullptr,
+												/*bAutoDestroy*/ false);
 }

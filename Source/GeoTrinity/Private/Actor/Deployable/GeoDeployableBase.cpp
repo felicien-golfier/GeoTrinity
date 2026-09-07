@@ -8,6 +8,7 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Arena/GeoArena.h"
+#include "Actor/Deployable/GeoDeployableFXComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -36,6 +37,8 @@ AGeoDeployableBase::AGeoDeployableBase(FObjectInitializer const& ObjectInitializ
 	WidgetAnchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("WidgetAnchorComponent"));
 	WidgetAnchorComponent->SetupAttachment(GetRootComponent());
 	WidgetAnchorComponent->SetUsingAbsoluteRotation(true);
+
+	FXComponent = CreateDefaultSubobject<UGeoDeployableFXComponent>(TEXT("FXComponent"));
 
 	OutlineColor = EGeoColor::DeployableNotBlocking;
 	// Concrete class comes from settings (a soft path) so gameplay never names the UI-module UGeoCombattantWidgetComp.
@@ -322,7 +325,7 @@ void AGeoDeployableBase::BeginPlay()
 	{
 		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), SpawnCue, GetSpawnCueParams(), true);
 	}
-	PlaySoundOneShot(EDeployableSoundType::Spawn);
+	PlayMoment(EDeployableMoment::Spawn);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -353,7 +356,7 @@ void AGeoDeployableBase::PlayRecallCosmetics(float const Value)
 	{
 		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), RecallCue, GetRecallCueParams(), true);
 	}
-	PlaySoundOneShot(EDeployableSoundType::Recall);
+	PlayMoment(EDeployableMoment::Recall);
 
 	if (!bExplodeAtRecall)
 	{
@@ -367,19 +370,16 @@ void AGeoDeployableBase::PlayRecallCosmetics(float const Value)
 		CueParams.Normal.X = Value;
 		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), ExplodeCue, CueParams, true);
 	}
-	PlaySoundOneShot(EDeployableSoundType::Explode);
+	PlayMoment(EDeployableMoment::Explode);
 }
 
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::PlaySoundOneShot(EDeployableSoundType const SoundType) const
+void AGeoDeployableBase::PlayMoment(EDeployableMoment const Moment) const
 {
-	if (FGeoFXMoment const* Moment = SoundMap.Find(SoundType))
+	if (FGeoBurstFXMoment const* const Burst = FXMap.Find(Moment))
 	{
-		for (FGeoSoundEntry const& Entry : Moment->Sounds)
-		{
-			UGeoSoundRowLibrary::PlaySoundEntry2D(this, Entry, GetData()->Instigator, GetData()->Level);
-		}
+		FXComponent->PlayBurst(*Burst);
 	}
 }
 
@@ -424,10 +424,10 @@ void AGeoDeployableBase::Expire(bool const bForce)
 		{
 			GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), ExpireCue, GetGenericCueParams(ExpireCue), true);
 		}
-		PlaySoundOneShot(EDeployableSoundType::Expire);
+		PlayMoment(EDeployableMoment::Expire);
 		if (!bRecalled)
 		{
-			PlaySoundOneShot(EDeployableSoundType::ExpireButNotRecalled);
+			PlayMoment(EDeployableMoment::ExpireButNotRecalled);
 		}
 	}
 
@@ -490,7 +490,7 @@ void AGeoDeployableBase::StartBlinking()
 	{
 		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), BlinkingCue, GetBlinkCueParams(), true);
 	}
-	PlaySoundOneShot(EDeployableSoundType::Blinking);
+	PlayMoment(EDeployableMoment::Blinking);
 
 	OnBlinkStart();
 }

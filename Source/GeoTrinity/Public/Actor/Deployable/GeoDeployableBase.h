@@ -18,6 +18,7 @@
 
 
 class UCharacterMovementComponent;
+class UGeoDeployableFXComponent;
 class AGeoArena;
 struct FEffectData;
 class UMeshComponent;
@@ -26,9 +27,9 @@ class UUserWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeployableDestroyed, AGeoDeployableBase*, Deployable);
 
-/** Moment of a deployable's life a sound plays at. Key of AGeoDeployableBase::SoundMap. */
+/** Moment of a deployable's life its FX play at. Key of AGeoDeployableBase::FXMap. */
 UENUM(BlueprintType)
-enum class EDeployableSoundType : uint8
+enum class EDeployableMoment : uint8
 {
 	Spawn,
 	Blinking,
@@ -212,9 +213,10 @@ public:
 	/** IGeoDamageNumberHost: gates the HUD's floating-number registration for this deployable. */
 	virtual bool ShowsDamageNumbers() const override { return bShowDamageNumbers; }
 
-protected:
+public:
 	/**
-	 * Returns the deployable's data block.
+	 * Returns the deployable's data block. Public where the base declares it protected, so UGeoDeployableFXComponent
+	 * can resolve the deployer its sounds are gated and scaled against.
 	 * @warning Subclasses must override and return their own FDeployableData-derived struct. This base implementation
 	 * asserts.
 	 */
@@ -224,6 +226,7 @@ protected:
 		return nullptr;
 	}
 
+protected:
 	/** Triggers StartBlinking when health reaches zero. */
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
 
@@ -235,11 +238,11 @@ protected:
 	void OnBlinkStart_Implementation();
 
 	/**
-	 * Plays every sound SoundMap maps to SoundType through UGeoSoundRowLibrary — audience-gated on the deploying
-	 * instigator, with its instigator-relative volume and attribute-driven pitch. Called on every machine that reaches
-	 * the moment, next to that moment's cue. Silent when the map holds no entry for SoundType.
+	 * Plays the VFX and every sound FXMap maps to Moment, audience-gated on the deploying instigator and with its
+	 * instigator-relative volume and attribute-driven pitch. Called on every machine that reaches the moment, next to
+	 * that moment's cue. Silent when the map holds no entry for Moment.
 	 */
-	void PlaySoundOneShot(EDeployableSoundType SoundType) const;
+	void PlayMoment(EDeployableMoment Moment) const;
 
 	/**
 	 * The gameplay half of an explode-at-recall: sphere-overlaps interactable actors at Params.Size filtered by
@@ -269,7 +272,9 @@ protected:
 	/** The drain as a per-second rate, described once in InitDrain; Tick only passes it the tick's length. */
 	FDamageEffectData DrainEffectData;
 
-	// Cue fired at each moment of the deployable's life: tag, palette slot and sound tag per moment.
+	// Cue fired at each moment of the deployable's life, beside that moment's FXMap entry: the cue carries whatever its
+	// notify Blueprint needs of the moment (a recall beam's two points, an explosion's magnitude), the FXMap entry
+	// carries the plain system and its sounds.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam SpawnCue;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
@@ -281,11 +286,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam ExpireCue;
 
-	/** Sounds played at each moment of the deployable's life, alongside that moment's gameplay cue — which is where a
-	 * deployable's VFX comes from, so only the Sounds half of a moment is read here. Every sound of a moment plays
-	 * together; a moment with no entry plays nothing. */
+	/** VFX and sounds played at each moment of the deployable's life, alongside that moment's gameplay cue. Every sound
+	 * of a moment plays together; a moment with no entry plays nothing. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
-	TMap<EDeployableSoundType, FGeoFXMoment> SoundMap;
+	TMap<EDeployableMoment, FGeoBurstFXMoment> FXMap;
+
+	/** Plays FXMap's moments; owned here so a deployable resolves audience, volume and pitch the same way every other
+	 * FX owner in the game does. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
+	TObjectPtr<UGeoDeployableFXComponent> FXComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	bool bSuppressDrainDamageVisuals = true;

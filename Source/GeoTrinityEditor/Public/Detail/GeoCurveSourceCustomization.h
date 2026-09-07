@@ -10,7 +10,8 @@ class IPropertyHandle;
 
 /**
  * Details customization for every struct holding a curve and the two sources it can read from: FGeoSoundEntry (volume
- * and pitch) and FGeoFXMoment (magnitude). It gates each curve's two source rows against each other.
+ * and pitch) and FGeoFXParams' two leaves, FGeoBurstFXMoment and FGeoSustainedFXMoment (magnitude). It gates each
+ * curve's two source rows against each other.
  * A curve reads from an attribute or from the ability level. The two are mutually exclusive, so each hides while the
  * other is set, and the curve stays hidden until one of them is — it has nothing to sample against otherwise.
  *
