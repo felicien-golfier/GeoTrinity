@@ -25,7 +25,7 @@ namespace GeoNiagaraParams
 	inline FName const Lifetime(TEXT("User.Lifetime"));
 	inline FName const Color(TEXT("User.Color"));
 	inline FName const Position(TEXT("User.Position"));
-	inline FName const Radius(TEXT("User.RadiusOverride"));
+	inline FName const Radius(TEXT("User.Radius"));
 
 	/** How strong the effect showing it is, on a 0..1 scale — FGeoVFXParams resolves it from an attribute or an ability
 	 * level through its own curve, so a system reads one normalized number and never what drives it. */

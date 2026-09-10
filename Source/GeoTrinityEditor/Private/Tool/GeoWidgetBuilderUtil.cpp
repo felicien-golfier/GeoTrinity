@@ -330,6 +330,73 @@ UWidget* UGeoWidgetBuilderUtil::FindWidget(UWidgetBlueprint* WidgetBlueprint, FN
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SetNamedSlotContent(UWidgetBlueprint* WidgetBlueprint, FName HostName, FName SlotName,
+												FName ContentName)
+{
+	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), __FUNCTION__,
+					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
+	{
+		return;
+	}
+
+	UUserWidget* Host = Cast<UUserWidget>(FindTreeWidget(Tree, HostName));
+	UWidget* Content = FindTreeWidget(Tree, ContentName);
+	if (!ensureMsgf(Host, TEXT("%hs — no UserWidget named '%s' in '%s'"), __FUNCTION__, *HostName.ToString(),
+					*WidgetBlueprint->GetName())
+		|| !ensureMsgf(Content, TEXT("%hs — no widget named '%s' in '%s'"), __FUNCTION__, *ContentName.ToString(),
+					   *WidgetBlueprint->GetName()))
+	{
+		return;
+	}
+
+	Tree->Modify();
+	WidgetBlueprint->Modify();
+
+	// A widget cannot be both a child of a panel here and the content of a slot over there.
+	Content->RemoveFromParent();
+	Host->SetContentForSlot(SlotName, Content);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SetRootWidget(UWidgetBlueprint* WidgetBlueprint, FName Name)
+{
+	UWidgetTree* Tree = WidgetBlueprint ? WidgetBlueprint->WidgetTree : nullptr;
+	if (!ensureMsgf(Tree, TEXT("%hs — WidgetTree is null on '%s'"), __FUNCTION__,
+					WidgetBlueprint ? *WidgetBlueprint->GetName() : TEXT("null")))
+	{
+		return;
+	}
+
+	UWidget* Widget = FindTreeWidget(Tree, Name);
+	if (!ensureMsgf(Widget, TEXT("%hs — no widget named '%s' in '%s'"), __FUNCTION__, *Name.ToString(),
+					*WidgetBlueprint->GetName()))
+	{
+		return;
+	}
+
+	Tree->Modify();
+	WidgetBlueprint->Modify();
+
+	Widget->RemoveFromParent();
+
+	// Whatever the old root still held is dropped for good: detaching is not enough, as the tree stays their Outer and
+	// the compiler then sees widgets its root walk does not, tripping its GUID ensures. Anything moved out of that
+	// subtree first — into a named slot, say — is no longer reachable from it and survives untouched.
+	if (Tree->RootWidget && Tree->RootWidget != Widget)
+	{
+		TArray<UWidget*> Discarded{Tree->RootWidget};
+		UWidgetTree::GetChildWidgets(Tree->RootWidget, Discarded);
+		for (UWidget* Orphan : Discarded)
+		{
+			Orphan->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional);
+		}
+	}
+
+	Tree->RootWidget = Widget;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 UWidget* UGeoWidgetBuilderUtil::AddWidgetToPanel(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
 												 TSubclassOf<UWidget> WidgetClass, FName WidgetName, FMargin Offsets)
 {

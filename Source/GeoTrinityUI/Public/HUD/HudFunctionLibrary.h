@@ -25,4 +25,9 @@ public:
 	/** Returns Health / MaxHealth clamped to [0, 1]. Returns 0 if AbilitySystemComponent is null. */
 	UFUNCTION(BlueprintCallable, Category = "GeoGAS")
 	static float GetHealthRatio(UAbilitySystemComponent const* AbilitySystemComponent);
+
+	/** Returns Seconds the way a fight clock reads it, "M:SS.t" — the format shared by the boss bar timer and the
+	 * leaderboard, so a recorded time is written exactly as it was watched. */
+	UFUNCTION(BlueprintPure, Category = "GeoHUD")
+	static FText FormatDuration(float Seconds);
 };

@@ -9,6 +9,7 @@
 
 class UGeoCreateServerWidget;
 class UGeoBrowseServersWidget;
+class UGeoLeaderboardWidget;
 class UGeoLocalConnectWidget;
 class UGeoMenuButton;
 
@@ -16,8 +17,8 @@ class UGeoMenuButton;
  * Main lobby menu widget. Composes the UGeoMenuButton instances and handles all action logic in C++.
  * Blueprint subclasses configure appearance through the button UPROPERTYs.
  * Required in the BP hierarchy: UGeoMenuButton widgets named "CreateServerButton", "JoinServerButton",
- * "PlayLocalButton", "QuitButton", and panel widgets "CreateServerWidget", "BrowseServerWidget", "LocalConnectWidget"
- * (panels set Collapsed by default in the BP layout).
+ * "PlayLocalButton", "LeaderboardButton", "QuitButton", and panel widgets "CreateServerWidget", "BrowseServerWidget",
+ * "LocalConnectWidget", "LeaderboardWidget" (panels set Collapsed by default in the BP layout).
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoMainMenuWidget : public UGeoMenuPanelWidget
@@ -45,6 +46,9 @@ protected:
 	TObjectPtr<UGeoMenuButton> PlayLocalButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UGeoMenuButton> LeaderboardButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> QuitButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
@@ -56,6 +60,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoLocalConnectWidget> LocalConnectWidget;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UGeoLeaderboardWidget> LeaderboardWidget;
+
 private:
 	UFUNCTION()
 	void HandleCreateServer();
@@ -65,6 +72,9 @@ private:
 
 	UFUNCTION()
 	void HandlePlayLocal();
+
+	UFUNCTION()
+	void HandleLeaderboard();
 
 	UFUNCTION()
 	void HandleQuit();

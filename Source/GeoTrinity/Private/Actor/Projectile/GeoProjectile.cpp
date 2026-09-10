@@ -82,7 +82,7 @@ AGeoProjectile::AGeoProjectile()
 	BulletVFX = CreateDefaultSubobject<UNiagaraComponent>("BulletVFX");
 	BulletVFX->SetupAttachment(Sphere);
 	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> BulletSystem(
-		TEXT("/Game/VFX/Assets/NS_GeoTrinity_Projectile01.NS_GeoTrinity_Projectile01"));
+		TEXT("/Game/Art/VFX/Assets/NS_GeoTrinity_Projectile01.NS_GeoTrinity_Projectile01"));
 	if (BulletSystem.Succeeded())
 	{
 		BulletVFX->SetAsset(BulletSystem.Object);
@@ -233,7 +233,7 @@ bool AGeoProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemCompone
 
 	if (OtherActor == SourceAvatar
 		&& (!ResolvedParams.bCanOverlapInstigator
-			|| LifeSpanInSec - GetLifeSpan() < ResolvedParams.LifeTimeThresholdBeforeOverlapSelf))
+			|| GetWorld()->GetTimeSeconds() - LifeStartTime < ResolvedParams.LifeTimeThresholdBeforeOverlapSelf))
 	{
 		return false;
 	}
@@ -511,6 +511,7 @@ void AGeoProjectile::InitProjectileLife()
 	Sphere->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnSphereHit);
 
 	InitialPosition = GetActorLocation();
+	LifeStartTime = GetWorld()->GetTimeSeconds();
 	DistanceSpanSqr = FMath::Square(ResolvedParams.DistanceSpan);
 	InitProjectileMovementComponent();
 	FXComponent->StartLife();

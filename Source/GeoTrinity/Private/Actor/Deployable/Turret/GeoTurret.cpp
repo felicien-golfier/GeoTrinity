@@ -114,7 +114,7 @@ void AGeoTurret::TryFire()
 
 	FAbilityPayload Payload;
 	Payload.SourceOwner = GetData()->Owner;
-	Payload.SourceAvatar = this;
+	Payload.SourceAvatar = GeoASLib::GetAvatarFromActor(GetData()->Owner);
 	Payload.Origin = FVector2D(GetActorLocation());
 	Payload.Yaw = DirectionToTarget.Rotation().Yaw;
 	Payload.ServerSpawnTime = SpawnServerTime;

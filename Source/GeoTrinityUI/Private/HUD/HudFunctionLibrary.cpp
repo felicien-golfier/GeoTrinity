@@ -41,3 +41,10 @@ float UHudFunctionLibrary::GetHealthRatio(UAbilitySystemComponent const* Ability
 	}
 	return FMath::Clamp(CurrentHealth / MaxHealth, 0.f, 1.f);
 }
+
+FText UHudFunctionLibrary::FormatDuration(float Seconds)
+{
+	int32 const Tenths = FMath::Max(0, FMath::FloorToInt32(Seconds * 10.f));
+	return FText::FromString(
+		FString::Printf(TEXT("%d:%02d.%d"), Tenths / 600, (Tenths / 10) % 60, Tenths % 10));
+}

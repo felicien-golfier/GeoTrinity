@@ -59,8 +59,9 @@ def setup_local_connect_menu(panel_name, panel_folder, panel_parent_class_path, 
     set_cdo_property(panel, 'HostMap', host_map)
 
     main_menu = unreal.load_asset(main_menu_path)
-    util.add_local_connect_to_main_menu(main_menu, canvas_name, buttons_box_name,
-                                        button_class, panel.generated_class())
+    util.add_panel_entry_to_main_menu(main_menu, canvas_name, buttons_box_name, button_class,
+                                      'PlayLocalButton', unreal.Text('Play Local'),
+                                      'LocalConnectWidget', panel.generated_class())
 
     # The injected template snapshots its values independently of the CDO — set per-template too.
     set_child_template_property(main_menu, f'{panel_name}_C', 'HostMap', host_map)
@@ -72,7 +73,7 @@ def setup_local_connect_menu(panel_name, panel_folder, panel_parent_class_path, 
 setup_local_connect_menu(
     panel_name='WBP_LocalConnect',
     panel_folder='/Game/HUD/MainMenu',
-    panel_parent_class_path='/Script/GeoTrinity.GeoLocalConnectWidget',
+    panel_parent_class_path='/Script/GeoTrinityUI.GeoLocalConnectWidget',
     button_class_path='/Game/HUD/WBP_GeoButton.WBP_GeoButton_C',
     main_menu_path='/Game/HUD/MainMenu/WBP_MainMenuWidget',
     canvas_name='CanvasPanel_0',

@@ -9,15 +9,21 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Components/EditableTextBox.h"
 #include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
+#include "Components/NamedSlot.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/ProgressBar.h"
 #include "Components/ScaleBox.h"
+#include "Components/ScrollBox.h"
 #include "Components/SizeBox.h"
 #include "Components/Spacer.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
+#include "HUD/Menu/GeoButton.h"
+#include "HUD/Menu/GeoListFrameWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "Tool/GeoWidgetBuilderUtil.h"
 #include "WidgetBlueprint.h"
@@ -390,11 +396,176 @@ void UGeoHudWidgetBuilderUtil::BuildLocalConnectWidget(UWidgetBlueprint* WidgetB
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
-														 FName ButtonsBoxName, TSubclassOf<UUserWidget> MenuButtonClass,
-														 TSubclassOf<UUserWidget> LocalConnectClass)
+void UGeoHudWidgetBuilderUtil::BuildLeaderboardWidget(UWidgetBlueprint* WidgetBlueprint,
+													  TSubclassOf<UUserWidget> ListPanelClass,
+													  TSubclassOf<UUserWidget> MenuButtonClass,
+													  FSlateFontInfo TitleFont)
 {
-	if (!ensureMsgf(WidgetBlueprint && LocalConnectClass, TEXT("%hs — null arg"), __FUNCTION__) ||
+	if (!ensureMsgf(MenuButtonClass && MenuButtonClass->IsChildOf(UGeoMenuButton::StaticClass()),
+					TEXT("%hs — MenuButtonClass must derive from UGeoMenuButton"), __FUNCTION__)
+		|| !ensureMsgf(ListPanelClass && ListPanelClass->IsChildOf(UGeoListFrameWidget::StaticClass()),
+					   TEXT("%hs — ListPanelClass must derive from UGeoListFrameWidget"), __FUNCTION__))
+	{
+		return;
+	}
+
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
+	if (!Tree)
+	{
+		return;
+	}
+
+	// The frame is the whole panel: it brings the backgrounds, the scroll box the rows go in, and the slots this
+	// tree fills. Everything below is what the leaderboard puts into those slots.
+	UUserWidget* ListFrame = Tree->ConstructWidget<UUserWidget>(ListPanelClass, TEXT("ListFrame"));
+	ListFrame->bIsVariable = true;
+	Tree->RootWidget = ListFrame;
+
+	UHorizontalBox* HeaderBox = Tree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("HeaderBox"));
+
+	UTextBlock* TitleText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleText"));
+	TitleText->SetText(FText::FromString(TEXT("Leaderboard")));
+	TitleText->SetFont(TitleFont);
+	if (UHorizontalBoxSlot* TitleSlot = HeaderBox->AddChildToHorizontalBox(TitleText))
+	{
+		TitleSlot->SetVerticalAlignment(VAlign_Center);
+		TitleSlot->SetPadding(FMargin(0.f, 0.f, 24.f, 0.f));
+	}
+
+	// One tab per boss, filled at runtime: the panel only carries the strip they sit in. Bottom-aligned, so the tabs
+	// sit on the header's edge where the list starts and the selected one reads as open onto it.
+	UHorizontalBox* TabsBox = Tree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("TabsBox"));
+	TabsBox->bIsVariable = true;
+	if (UHorizontalBoxSlot* TabsSlot = HeaderBox->AddChildToHorizontalBox(TabsBox))
+	{
+		TabsSlot->SetVerticalAlignment(VAlign_Bottom);
+	}
+
+	ListFrame->SetContentForSlot(TEXT("HeaderSlot"), HeaderBox);
+
+	UGeoMenuButton* BackButton =
+		Cast<UGeoMenuButton>(Tree->ConstructWidget<UUserWidget>(MenuButtonClass, TEXT("BackButton")));
+	BackButton->Label = FText::FromString(TEXT("Back"));
+	BackButton->bIsVariable = true;
+	ListFrame->SetContentForSlot(TEXT("FooterSlot"), BackButton);
+
+	// FinishBuild, never CommitTree: BeginBuild emptied the GUID map so the compiler mints one for every widget
+	// OUTERED to the tree — named-slot content and the previous tree's leftovers alike. CommitTree would refill the
+	// map from a root walk instead, which does not reach those leftovers, and the compiler then ensures on each.
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built the leaderboard panel on frame '%s'"), __FUNCTION__,
+		   *ListPanelClass->GetName());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::BuildListPanelWidget(UWidgetBlueprint* WidgetBlueprint)
+{
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
+	if (!Tree)
+	{
+		return;
+	}
+
+	// Insets of the two panels from the screen edge, and of their content from their own edge. The header and the list
+	// touch, with nothing inset between them, so a tab sitting at the bottom of the header opens onto the page.
+	FMargin const HeaderPadding(12.f, 12.f, 12.f, 0.f);
+	FMargin const ContentPadding(12.f, 0.f, 12.f, 12.f);
+	FMargin const HeaderInsidePadding(16.f, 10.f, 16.f, 0.f);
+	FMargin const ContentInsidePadding(16.f, 10.f);
+
+	UOverlay* Root = Cast<UOverlay>(UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, UOverlay::StaticClass(), TEXT("Root")));
+	if (!Root)
+	{
+		return;
+	}
+
+	UVerticalBox* FrameBox = Tree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("FrameBox"));
+	UGeoWidgetBuilderUtil::AddFillChildToOverlay(Root, FrameBox);
+
+	// The header hugs whatever the panel puts in it; the list takes every pixel left.
+	UOverlay* HeaderArea = Tree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("HeaderArea"));
+	if (UVerticalBoxSlot* HeaderAreaSlot = FrameBox->AddChildToVerticalBox(HeaderArea))
+	{
+		HeaderAreaSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+		HeaderAreaSlot->SetPadding(HeaderPadding);
+	}
+
+	UImage* HeaderBackground = Tree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("HeaderBackground"));
+	UGeoWidgetBuilderUtil::AddFillChildToOverlay(HeaderArea, HeaderBackground);
+
+	UNamedSlot* HeaderSlot = Tree->ConstructWidget<UNamedSlot>(UNamedSlot::StaticClass(), TEXT("HeaderSlot"));
+	HeaderSlot->bIsVariable = true;
+	if (UOverlaySlot* HeaderContentSlot = UGeoWidgetBuilderUtil::AddFillChildToOverlay(HeaderArea, HeaderSlot))
+	{
+		HeaderContentSlot->SetPadding(HeaderInsidePadding);
+	}
+
+	UOverlay* ContentArea = Tree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("ContentArea"));
+	if (UVerticalBoxSlot* ContentAreaSlot = FrameBox->AddChildToVerticalBox(ContentArea))
+	{
+		ContentAreaSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		ContentAreaSlot->SetPadding(ContentPadding);
+	}
+
+	UImage* ContentBackground = Tree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ContentBackground"));
+	UGeoWidgetBuilderUtil::AddFillChildToOverlay(ContentArea, ContentBackground);
+
+	UScrollBox* RowsBox = Tree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("RowsBox"));
+	RowsBox->bIsVariable = true;
+	if (UOverlaySlot* RowsSlot = UGeoWidgetBuilderUtil::AddFillChildToOverlay(ContentArea, RowsBox))
+	{
+		RowsSlot->SetPadding(ContentInsidePadding);
+	}
+
+	// The back button sits in the corner of the list area, over the rows, exactly as the server browser authored it.
+	UNamedSlot* FooterSlot = Tree->ConstructWidget<UNamedSlot>(UNamedSlot::StaticClass(), TEXT("FooterSlot"));
+	FooterSlot->bIsVariable = true;
+	if (UOverlaySlot* FooterContentSlot = Cast<UOverlaySlot>(ContentArea->AddChildToOverlay(FooterSlot)))
+	{
+		FooterContentSlot->SetHorizontalAlignment(HAlign_Right);
+		FooterContentSlot->SetVerticalAlignment(VAlign_Bottom);
+		FooterContentSlot->SetPadding(ContentInsidePadding);
+	}
+
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built the shared list frame"), __FUNCTION__);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::BuildListRowWidget(UWidgetBlueprint* WidgetBlueprint)
+{
+	UWidgetTree* Tree = UGeoWidgetBuilderUtil::BeginBuild(WidgetBlueprint, __FUNCTION__);
+	if (!Tree)
+	{
+		return;
+	}
+
+	// The button is the row's whole background, so its style is the skin every list in the game wears.
+	UPanelWidget* RowButton = UGeoWidgetBuilderUtil::ConstructRootPanel(Tree, UGeoButton::StaticClass(), TEXT("RowButton"));
+	if (!RowButton)
+	{
+		return;
+	}
+	RowButton->bIsVariable = true;
+
+	UHorizontalBox* ColumnsBox = Tree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ColumnsBox"));
+	ColumnsBox->bIsVariable = true;
+	RowButton->AddChild(ColumnsBox);
+
+	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
+
+	UE_LOG(LogTemp, Log, TEXT("%hs: Built the shared list row"), __FUNCTION__);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoHudWidgetBuilderUtil::AddPanelEntryToMainMenu(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName,
+													   FName ButtonsBoxName, TSubclassOf<UUserWidget> MenuButtonClass,
+													   FName ButtonName, FText ButtonLabel, FName PanelName,
+													   TSubclassOf<UUserWidget> PanelClass)
+{
+	if (!ensureMsgf(WidgetBlueprint && PanelClass, TEXT("%hs — null arg"), __FUNCTION__) ||
 		!ensureMsgf(MenuButtonClass && MenuButtonClass->IsChildOf(UGeoMenuButton::StaticClass()),
 					TEXT("%hs — MenuButtonClass must derive from UGeoMenuButton"), __FUNCTION__))
 	{
@@ -412,23 +583,23 @@ void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* Widge
 	Tree->Modify();
 	WidgetBlueprint->Modify();
 
+	FName const SpacerName(*(ButtonName.ToString() + TEXT("Spacer")));
+
 	// Re-run-safe: drop a previous run's widgets so the add rebuilds cleanly instead of duplicating.
-	if (UWidget* Existing = Tree->FindWidget(TEXT("PlayLocalButton")))
+	for (FName const Name : {ButtonName, SpacerName})
 	{
-		Existing->RemoveFromParent();
-	}
-	if (UWidget* Existing = Tree->FindWidget(TEXT("PlayLocalSpacer")))
-	{
-		Existing->RemoveFromParent();
+		if (UWidget* Existing = Tree->FindWidget(Name))
+		{
+			Existing->RemoveFromParent();
+		}
 	}
 
-	// Insert PlayLocalButton + spacer just above QuitButton, keeping the box's button/spacer rhythm.
-	UGeoMenuButton* PlayLocalButton =
-		Cast<UGeoMenuButton>(Tree->ConstructWidget<UUserWidget>(MenuButtonClass, TEXT("PlayLocalButton")));
-	PlayLocalButton->Label = FText::FromString(TEXT("Play Local"));
-	PlayLocalButton->bIsVariable = true;
+	// Insert the button + spacer just above QuitButton, keeping the box's button/spacer rhythm.
+	UGeoMenuButton* Button = Cast<UGeoMenuButton>(Tree->ConstructWidget<UUserWidget>(MenuButtonClass, ButtonName));
+	Button->Label = ButtonLabel;
+	Button->bIsVariable = true;
 
-	USpacer* Spacer = Tree->ConstructWidget<USpacer>(USpacer::StaticClass(), TEXT("PlayLocalSpacer"));
+	USpacer* Spacer = Tree->ConstructWidget<USpacer>(USpacer::StaticClass(), SpacerName);
 	Spacer->SetSize(FVector2D(1.f, 10.f));
 
 	int32 InsertIndex = ButtonsBox->GetChildIndex(Tree->FindWidget(TEXT("QuitButton")));
@@ -437,16 +608,16 @@ void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* Widge
 		InsertIndex = ButtonsBox->GetChildrenCount();
 	}
 	ButtonsBox->InsertChildAt(InsertIndex, Spacer);
-	ButtonsBox->InsertChildAt(InsertIndex, PlayLocalButton);
+	ButtonsBox->InsertChildAt(InsertIndex, Button);
 
 	// Appending to a built asset: the compiler only mints GUIDs when the map is empty, and its verify pass requires one
-	// for EVERY added widget (variable or not), so register both here (AddChildToCanvasPanel does it for
-	// LocalConnectWidget below).
-	WidgetBlueprint->WidgetVariableNameToGuidMap.Add(TEXT("PlayLocalButton"), FGuid::NewGuid());
-	WidgetBlueprint->WidgetVariableNameToGuidMap.Add(TEXT("PlayLocalSpacer"), FGuid::NewGuid());
+	// for EVERY added widget (variable or not), so register both here (AddChildToCanvasPanel does it for the panel
+	// below).
+	WidgetBlueprint->WidgetVariableNameToGuidMap.Add(ButtonName, FGuid::NewGuid());
+	WidgetBlueprint->WidgetVariableNameToGuidMap.Add(SpacerName, FGuid::NewGuid());
 
-	UCanvasPanelSlot* PanelSlot = UGeoWidgetBuilderUtil::AddChildToCanvasPanel(WidgetBlueprint, ParentPanelName,
-																			   LocalConnectClass, TEXT("LocalConnectWidget"));
+	UCanvasPanelSlot* PanelSlot =
+		UGeoWidgetBuilderUtil::AddChildToCanvasPanel(WidgetBlueprint, ParentPanelName, PanelClass, PanelName);
 	if (!PanelSlot)
 	{
 		return;
@@ -454,10 +625,13 @@ void UGeoHudWidgetBuilderUtil::AddLocalConnectToMainMenu(UWidgetBlueprint* Widge
 	PanelSlot->SetAnchors(FAnchors(0.5f, 0.5f, 0.5f, 0.5f));
 	PanelSlot->SetAlignment(FVector2D(0.5f, 0.5f));
 	PanelSlot->SetAutoSize(true);
+	// A sub-panel is off until its button opens it. The menu classes collapse it again on construct, but the authored
+	// value is what decides the frames before that — and what a menu whose C++ is not built yet shows.
+	PanelSlot->Content->SetVisibility(ESlateVisibility::Collapsed);
 
 	UGeoWidgetBuilderUtil::FinishBuild(WidgetBlueprint);
 
-	UE_LOG(LogTemp, Log, TEXT("%hs: Added PlayLocalButton + LocalConnectWidget (%s) to '%s'"), __FUNCTION__,
-		   *LocalConnectClass->GetName(), *WidgetBlueprint->GetName());
+	UE_LOG(LogTemp, Log, TEXT("%hs: Added %s + %s (%s) to '%s'"), __FUNCTION__, *ButtonName.ToString(),
+		   *PanelName.ToString(), *PanelClass->GetName(), *WidgetBlueprint->GetName());
 }
 

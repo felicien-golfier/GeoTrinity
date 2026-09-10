@@ -7,7 +7,7 @@
 #include "SceneView.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoDamageNumberWidget::Activate(float Amount, bool bIsHeal, FVector InWorldPos)
+void UGeoDamageNumberWidget::Activate(float Amount, EGeoDamageNumberType Type, FVector InWorldPos)
 {
 	WorldPos = InWorldPos;
 	WorldPos.X += FMath::RandRange(-LocationStartDrift, LocationStartDrift);
@@ -21,7 +21,7 @@ void UGeoDamageNumberWidget::Activate(float Amount, bool bIsHeal, FVector InWorl
 	SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
 	SetRenderOpacity(0.f);
 	SetVisibility(ESlateVisibility::HitTestInvisible);
-	SetData(Amount, bIsHeal);
+	SetData(Amount, Type);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

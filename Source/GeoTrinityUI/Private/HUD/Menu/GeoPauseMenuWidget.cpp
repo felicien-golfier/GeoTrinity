@@ -5,6 +5,7 @@
 #include "GameClasses/GeoGameInstance.h"
 #include "GameClasses/GeoPlayerController.h"
 #include "HUD/Menu/GeoAbilityDescriptionsWidget.h"
+#include "HUD/Menu/GeoLeaderboardWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "HUD/Menu/GeoSettingsWidget.h"
 
@@ -20,15 +21,18 @@ void UGeoPauseMenuWidget::NativeConstruct()
 	ResumeButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleResume);
 	AbilitiesButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleAbilities);
 	SettingsButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSettings);
+	LeaderboardButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleLeaderboard);
 	ReturnToMainMenuButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleReturnToMainMenu);
 	QuitButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleQuit);
 	AbilitiesWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
 	SettingsWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
+	LeaderboardWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
 
 	// Reset to the top-level buttons: the menu can close from anywhere (e.g. ESC while a sub-panel is open), and
 	// this instance is reused on the next open.
 	AbilitiesWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
+	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
 }
 
@@ -67,6 +71,12 @@ void UGeoPauseMenuWidget::HandleSettings()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::HandleLeaderboard()
+{
+	OpenSubPanel(LeaderboardWidget);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoPauseMenuWidget::HandleReturnToMainMenu()
 {
 	if (UGeoGameInstance* GameInstance = Cast<UGeoGameInstance>(GetGameInstance()))
@@ -99,6 +109,7 @@ void UGeoPauseMenuWidget::HandleSubPanelClosed()
 {
 	AbilitiesWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
+	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
 	ResumeButton->SetFocus();
 }
@@ -118,6 +129,7 @@ void UGeoPauseMenuWidget::SetButtonsVisible(bool bVisible)
 	ResumeButton->SetVisibility(NewVisibility);
 	AbilitiesButton->SetVisibility(NewVisibility);
 	SettingsButton->SetVisibility(NewVisibility);
+	LeaderboardButton->SetVisibility(NewVisibility);
 	ReturnToMainMenuButton->SetVisibility(NewVisibility);
 	QuitButton->SetVisibility(NewVisibility);
 }

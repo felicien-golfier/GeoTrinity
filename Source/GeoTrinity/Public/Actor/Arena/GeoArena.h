@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
+#include "System/GeoLeaderboardSave.h"
 #include "World/GeoBackgroundPulseComponent.h"
 
 #include "GeoArena.generated.h"
@@ -69,6 +70,12 @@ public:
 	AEnemyCharacter* GetBoss() const { return Boss; }
 	/** True while this arena's fight is live. Replicated, so it reads the same on every machine. */
 	bool IsFighting() const { return bFighting; }
+	/** Seconds this arena's fight has been running, or how long its last one ran once it has ended, so a timer freezes
+	 *  on the final time rather than dropping back to zero. While it runs it counts on the local clock, from a start
+	 *  converted out of the replicated one — the server clock a client reads is a ~10Hz approximation that jitters
+	 *  with the ping, which a timer shows as tenths stuttering and going backwards. Once it ends the value is the
+	 *  recorded duration itself, so every machine freezes on the very number the leaderboard stored. */
+	float GetFightElapsedSeconds() const;
 	/** Returns true when Enemy is this arena's boss — the enemy whose aggro starts the match. */
 	virtual bool IsBoss(AActor const* Enemy) const;
 
@@ -138,6 +145,37 @@ private:
 	/** True while this arena's fight is live. Replicated so every client shows/hides the boss bar off OnRep_bFighting. */
 	UPROPERTY(ReplicatedUsing = OnRep_bFighting)
 	bool bFighting = false;
+
+	/** Server time StartFight ran at. Replicated to be turned into LocalFightStartTime and nothing else — it is an
+	 *  exact server value, but the clock a client would compare it against is not. */
+	UPROPERTY(ReplicatedUsing = OnRep_FightStartTime)
+	float FightStartTime = 0.f;
+
+	/** This machine's own GetTimeSeconds the fight started at. Counting from here is what makes the timer linear;
+	 *  deriving it from FightStartTime is what keeps it agreeing with the other machines, mid-fight joiners included. */
+	float LocalFightStartTime = 0.f;
+
+	/** How long the fight that ended ran, taken straight from the recorded entry. */
+	float LastFightDuration = 0.f;
+
+	/** Restates FightStartTime on the local clock, folding the one-off network error into a fixed offset instead of
+	 *  one the timer re-reads every frame. Called wherever a fight's start becomes known. */
+	void AnchorFightStartLocally();
+
+	/** Fires when a fight's start replicates; anchors it on this machine's clock. */
+	UFUNCTION()
+	void OnRep_FightStartTime();
+
+	/** Server. Sums up the fight that just ended — how long it ran, how much boss was left, who played what — and
+	 *  hands it to every machine. Called from EndFight while bFighting still holds, so it only runs for the arena
+	 *  that was actually fighting. */
+	void RecordAttempt();
+
+	/** Writes one finished attempt into this machine's own leaderboard and freezes the fight timer on its duration,
+	 *  so what stays on screen is what was saved. Multicast, not a server-side write, so a player who fought on
+	 *  someone else's server keeps the run too; the server runs it as well, for the host's copy. */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRecordAttempt(FGeoLeaderboardEntry const& Entry);
 
 	/** True once this arena's boss has been beaten. Blocks the EndFight respawn until RespawnBoss clears it, so a
 	 *  victory doesn't drop a fresh boss on the players looting the corpse. Server-only state. */

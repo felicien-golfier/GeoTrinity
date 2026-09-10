@@ -39,7 +39,10 @@ public:
 	TSubclassOf<AGeoBuffPickup> BuffPickupClass;
 
 protected:
-	/** Binds the ammo-changed callback so the reload button is grayed out in the HUD when ammo is full. */
+	/** Binds the ammo-changed callback that auto-reloads at zero ammo. It fires on the controlling machine only: the
+	 * ability is LocalPredicted, so a server activating it from its own copy would beat the client's activation and
+	 * reject it. The check sits in the callback because the pawn's controller can still be unset when the ASC is
+	 * initialised, and InitAbilityActorInfo runs again once it is. */
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
 	/** Returns false when the character already has maximum ammo (reload is a no-op in that state). */

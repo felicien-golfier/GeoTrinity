@@ -50,7 +50,9 @@ protected:
 	virtual void InputReleased(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							   FGameplayAbilityActivationInfo const ActivationInfo) override;
 
-	/** Commits cost for this shot, calls ExecuteShot, and sends the shot data to the server. Runs on the client once per fire timer tick. */
+	/** Calls ExecuteShot, sends the shot data to the server, then commits its cost. Runs on the client once per fire
+	 * timer tick. The cost comes last because it is what empties the magazine, and an empty magazine auto-activates the
+	 * reload, whose CancelAbilitiesWithTag ends this ability before the shot could leave. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	/**

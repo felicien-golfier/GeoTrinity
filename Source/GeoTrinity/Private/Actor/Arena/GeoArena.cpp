@@ -3,6 +3,8 @@
 #include "Actor/Arena/GeoArena.h"
 
 #include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
@@ -16,11 +18,13 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameClasses/GeoGameState.h"
+#include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameMode.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Net/UnrealNetwork.h"
+#include "System/GeoLeaderboardSave.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoArena::AGeoArena()
@@ -37,6 +41,7 @@ void AGeoArena::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoArena, Boss);
 	DOREPLIFETIME(AGeoArena, bFighting);
+	DOREPLIFETIME(AGeoArena, FightStartTime);
 }
 
 void AGeoArena::OnRep_Boss()
@@ -196,6 +201,8 @@ void AGeoArena::StartFight()
 	}
 
 	bFighting = true;
+	FightStartTime = GeoLib::GetServerTime(this);
+	AnchorFightStartLocally();
 	ApplyFightVisuals();
 
 	GameState->SetCurrentArenaTag(ArenaTag);
@@ -229,6 +236,11 @@ void AGeoArena::OnWipe(float /*DeathTime*/)
 void AGeoArena::EndFight()
 {
 	GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
+	// EndFight runs on every arena, so bFighting is what tells the one that was fought from the ones that were not.
+	if (bFighting)
+	{
+		RecordAttempt();
+	}
 	bFighting = false;
 	ApplyFightVisuals();
 	SetBarrierClosed(false);
@@ -238,6 +250,69 @@ void AGeoArena::EndFight()
 	{
 		ResetBoss();
 	}
+}
+
+float AGeoArena::GetFightElapsedSeconds() const
+{
+	if (!bFighting)
+	{
+		return LastFightDuration;
+	}
+	return GetWorld()->GetTimeSeconds() - LocalFightStartTime;
+}
+
+void AGeoArena::AnchorFightStartLocally()
+{
+	LocalFightStartTime = GetWorld()->GetTimeSeconds() - (GeoLib::GetServerTime(this) - FightStartTime);
+}
+
+void AGeoArena::OnRep_FightStartTime()
+{
+	AnchorFightStartLocally();
+}
+
+void AGeoArena::RecordAttempt()
+{
+	FGeoLeaderboardEntry Entry;
+	Entry.AttemptId = FGuid::NewGuid();
+	Entry.ArenaTag = ArenaTag;
+	Entry.DurationSeconds = GetFightElapsedSeconds();
+
+	// A defeated boss has already destroyed itself, so a win is the flag saying so, never an attribute read.
+	Entry.BossHealthRatio = 0.f;
+	if (!bBossDefeated)
+	{
+		UGeoAbilitySystemComponent const* const BossASC = GeoASLib::GetGeoAscFromActor(Boss.Get());
+		UGeoAttributeSetBase const* const BossAttributes =
+			BossASC ? Cast<UGeoAttributeSetBase>(BossASC->GetAttributeSet(UGeoAttributeSetBase::StaticClass()))
+					: nullptr;
+		if (!ensureMsgf(BossAttributes, TEXT("%s: fight ended with no boss attributes to read the health left from"),
+						*GetName()))
+		{
+			return;
+		}
+		Entry.BossHealthRatio = BossAttributes->GetHealthRatio();
+	}
+
+	for (APlayerState const* PlayerState : GetWorld()->GetGameStateChecked<AGeoGameState>()->PlayerArray)
+	{
+		AGeoPlayerState const* const GeoPlayerState = Cast<AGeoPlayerState>(PlayerState);
+		if (!ensureMsgf(GeoPlayerState, TEXT("%s: %s is not a AGeoPlayerState"), *GetName(), *PlayerState->GetName()))
+		{
+			continue;
+		}
+		FGeoLeaderboardPlayer& Player = Entry.Players.AddDefaulted_GetRef();
+		Player.PlayerName = GeoPlayerState->GetPlayerName();
+		Player.PlayerClass = GeoPlayerState->GetPlayerClass();
+	}
+
+	MulticastRecordAttempt(Entry);
+}
+
+void AGeoArena::MulticastRecordAttempt_Implementation(FGeoLeaderboardEntry const& Entry)
+{
+	LastFightDuration = Entry.DurationSeconds;
+	UGeoLeaderboardSave::Record(Entry);
 }
 
 void AGeoArena::RespawnBoss()

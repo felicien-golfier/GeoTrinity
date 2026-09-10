@@ -13,6 +13,7 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemInterface.h"
+#include "Actor/Arena/GeoArena.h"
 #include "Algo/StableSort.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
@@ -274,6 +275,10 @@ void AGeoHUD::ShowBossHealthBar(AEnemyCharacter* Boss)
 		return;
 	}
 
+#if !UE_BUILD_SHIPPING
+	CombatStatsArena = AGeoArena::GetArenaOfBoss(Boss);
+#endif
+
 	// Hide existing boss bar if showing a different boss
 	HideBossHealthBar();
 
@@ -471,7 +476,9 @@ void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* 
 		.AddWeakLambda(this,
 					   [this, WeakOwnerActor, Carry = 0.f](FOnAttributeChangeData const& Data) mutable
 					   {
-						   BufferDamageNumber(WeakOwnerActor.Get(), Carry, Data.NewValue - Data.OldValue);
+						   float const Delta = Data.NewValue - Data.OldValue;
+						   BufferDamageNumber(WeakOwnerActor.Get(), Carry, Delta,
+											  Delta >= 0.f ? EGeoDamageNumberType::Heal : EGeoDamageNumberType::Damage);
 					   });
 
 	ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetShieldAttribute())
@@ -479,12 +486,13 @@ void AGeoHUD::RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* 
 					   [this, WeakOwnerActor, Carry = 0.f](FOnAttributeChangeData const& Data) mutable
 					   {
 						   BufferDamageNumber(WeakOwnerActor.Get(), Carry,
-											  FMath::Min(Data.NewValue - Data.OldValue, 0.f));
+											  FMath::Min(Data.NewValue - Data.OldValue, 0.f),
+											  EGeoDamageNumberType::ShieldHit);
 					   });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::BufferDamageNumber(AActor* OwnerActor, float& Carry, float const Delta)
+void AGeoHUD::BufferDamageNumber(AActor* OwnerActor, float& Carry, float const Delta, EGeoDamageNumberType const Type)
 {
 	Carry += Delta;
 	if (!IsValid(OwnerActor) || FMath::Abs(Carry) < 1.f)
@@ -494,11 +502,11 @@ void AGeoHUD::BufferDamageNumber(AActor* OwnerActor, float& Carry, float const D
 
 	float const Rounded = FMath::RoundToFloat(Carry);
 	Carry -= Rounded;
-	SpawnDamageNumber(FMath::Abs(Rounded), Rounded > 0.f, OwnerActor->GetActorLocation());
+	SpawnDamageNumber(FMath::Abs(Rounded), Type, OwnerActor->GetActorLocation());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocation)
+void AGeoHUD::SpawnDamageNumber(float Amount, EGeoDamageNumberType Type, FVector WorldLocation)
 {
 	if (!DamageNumberWidgetClass)
 	{
@@ -533,7 +541,7 @@ void AGeoHUD::SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocatio
 		DamageNumberPool.Add(Widget);
 	}
 
-	Widget->Activate(Amount, bIsHeal, WorldLocation);
+	Widget->Activate(Amount, Type, WorldLocation);
 }
 
 #if !UE_BUILD_SHIPPING
@@ -632,6 +640,21 @@ void AGeoHUD::UpdateCombatStatsPanel()
 	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
 
 	FSlateColor const HeaderColor = FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
+
+	TWeakObjectPtr<AGeoHUD> const WeakHud = this;
+	TAttribute<FText> FightTimeText = TAttribute<FText>::CreateLambda(
+		[WeakHud]() -> FText
+		{
+			AGeoArena const* const FightArena = WeakHud.IsValid() ? WeakHud->CombatStatsArena.Get() : nullptr;
+			if (!FightArena)
+			{
+				return FText::GetEmpty();
+			}
+			return FText::FromString(
+				TEXT("Fight  ") + UHudFunctionLibrary::FormatDuration(FightArena->GetFightElapsedSeconds()).ToString());
+		});
+	Rows->AddSlot().AutoHeight()[MakeCell(NameColumnWidth, MoveTemp(FightTimeText), HeaderColor)];
+
 	TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox);
 	HeaderRow->AddSlot().AutoWidth()[MakeCell(NameColumnWidth, FText::FromString(TEXT("Player")), HeaderColor)];
 	for (TCHAR const* Label : {TEXT("DPS"), TEXT("MAX"), TEXT("Avg"), TEXT("Tot"), TEXT("HPS"), TEXT("MAX"),

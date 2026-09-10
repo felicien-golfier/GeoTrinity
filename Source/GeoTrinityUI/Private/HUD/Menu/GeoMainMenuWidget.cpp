@@ -5,6 +5,7 @@
 #include "GameClasses/GeoGameInstance.h"
 #include "HUD/Menu/GeoBrowseServersWidget.h"
 #include "HUD/Menu/GeoCreateServerWidget.h"
+#include "HUD/Menu/GeoLeaderboardWidget.h"
 #include "HUD/Menu/GeoLocalConnectWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "Interfaces/OnlineIdentityInterface.h"
@@ -38,14 +39,17 @@ void UGeoMainMenuWidget::NativeConstruct()
 	CreateServerButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleCreateServer);
 	JoinServerButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleJoinServer);
 	PlayLocalButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandlePlayLocal);
+	LeaderboardButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleLeaderboard);
 	QuitButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleQuit);
 	CreateServerWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
 	BrowseServerWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
 	LocalConnectWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
+	LeaderboardWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
 
 	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	LocalConnectWidget->SetVisibility(ESlateVisibility::Collapsed);
+	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -73,6 +77,12 @@ void UGeoMainMenuWidget::HandlePlayLocal()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoMainMenuWidget::HandleLeaderboard()
+{
+	OpenSubPanel(LeaderboardWidget);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleQuit()
 {
 	UGeoGameInstance* GameInstance = Cast<UGeoGameInstance>(GetGameInstance());
@@ -89,6 +99,7 @@ void UGeoMainMenuWidget::HandleSubPanelClosed()
 	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	LocalConnectWidget->SetVisibility(ESlateVisibility::Collapsed);
+	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
 	SetButtonsVisible(true);
 	CreateServerButton->SetFocus();
 }
@@ -108,5 +119,6 @@ void UGeoMainMenuWidget::SetButtonsVisible(bool bVisible)
 	CreateServerButton->SetVisibility(NewVisibility);
 	JoinServerButton->SetVisibility(NewVisibility);
 	PlayLocalButton->SetVisibility(NewVisibility);
+	LeaderboardButton->SetVisibility(NewVisibility);
 	QuitButton->SetVisibility(NewVisibility);
 }

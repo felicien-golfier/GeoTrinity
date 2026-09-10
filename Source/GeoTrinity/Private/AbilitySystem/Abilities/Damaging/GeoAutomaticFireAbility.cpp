@@ -133,6 +133,8 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 
 	if (bShotSucceeded)
 	{
+		SendFireDataToServer(AbilityTargetData);
+
 		if (ActorInfo->IsLocallyControlledPlayer())
 		{
 			CommitAbility(Handle, ActorInfo, ActivationInfo);
@@ -160,7 +162,6 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 				GeoASLib::ExecuteGeoCue(GetAbilitySystemComponentFromActorInfo(), FireCue, CueParams, true);
 			}
 		}
-		SendFireDataToServer(AbilityTargetData);
 	}
 
 	if (bWantsToFire)

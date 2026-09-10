@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EditorUtilityObject.h"
+#include "Fonts/SlateFontInfo.h"
 
 #include "GeoHudWidgetBuilderUtil.generated.h"
 
@@ -116,14 +117,49 @@ public:
 	static void BuildLocalConnectWidget(UWidgetBlueprint* WidgetBlueprint, TSubclassOf<UUserWidget> MenuButtonClass);
 
 	/**
-	 * Appends the "Play Local" entry to the existing main-menu tree WITHOUT rebuilding it: inserts PlayLocalButton
-	 * (a MenuButtonClass instance) plus a spacer just above QuitButton in the VerticalBox ButtonsBoxName, and adds a
-	 * LocalConnectClass child named "LocalConnectWidget" centered on the CanvasPanel ParentPanelName. Names match the
-	 * BindWidgets on UGeoMainMenuWidget. Re-run-safe. Compiles and saves the asset.
+	 * Builds the WBP_Leaderboard tree (the recorded-fights panel). The panel owns no look: its whole tree is one
+	 * ListPanelClass instance named "ListFrame" (the shared list frame, matching the BindWidget on
+	 * UGeoListPanelWidget), with a HeaderBox holding the title and the TabsBox strip dropped into its header slot and
+	 * BackButton into its footer slot. TabsBox and BackButton match the BindWidgets on UGeoLeaderboardWidget, which
+	 * fills the strip with one tab per boss and the frame's scroll box with one row per recorded attempt at runtime.
+	 * The title wears TitleFont, so a built header carries the same typography as the authored menus.
+	 * Compiles and saves the asset.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
-	static void AddLocalConnectToMainMenu(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName, FName ButtonsBoxName,
-										  TSubclassOf<UUserWidget> MenuButtonClass,
-										  TSubclassOf<UUserWidget> LocalConnectClass);
+	static void BuildLeaderboardWidget(UWidgetBlueprint* WidgetBlueprint, TSubclassOf<UUserWidget> ListPanelClass,
+									   TSubclassOf<UUserWidget> MenuButtonClass, FSlateFontInfo TitleFont);
 
+	/**
+	 * Builds the shared list-frame tree (WBP_ListPanel): an Overlay root filling the screen, holding a VerticalBox of
+	 *   HeaderArea (auto height: HeaderBackground under the HeaderSlot the panel drops its controls into)
+	 *   ContentArea (the rest: ContentBackground under RowsBox, with FooterSlot in the bottom-right corner).
+	 * RowsBox matches the BindWidget on UGeoListFrameWidget; the two named slots are what each panel fills with its
+	 * own header controls and back button. Every list panel instantiates this one asset, so the two background images
+	 * are the skin of all of them — the caller keeps their brushes across a rebuild by reading them off first and
+	 * writing them back after. Compiles and saves the asset.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void BuildListPanelWidget(UWidgetBlueprint* WidgetBlueprint);
+
+	/**
+	 * Builds the shared list-row tree (WBP_ListRow): a UGeoButton root "RowButton" holding the HorizontalBox
+	 * "ColumnsBox", both matching the BindWidgets on UGeoListRowWidget, which fills the box with the columns of
+	 * whatever list built the row. Every list in the game instantiates this one asset, so the button style set on it
+	 * is the skin of all of them — the caller keeps that style across a rebuild by reading it off RowButton first and
+	 * writing it back after. Compiles and saves the asset.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void BuildListRowWidget(UWidgetBlueprint* WidgetBlueprint);
+
+	/**
+	 * Appends one entry to the existing main-menu tree WITHOUT rebuilding it: inserts a MenuButtonClass button named
+	 * ButtonName carrying ButtonLabel, plus its spacer, just above QuitButton in the VerticalBox ButtonsBoxName, and
+	 * adds a PanelClass child named PanelName centered on the CanvasPanel ParentPanelName. Both names must match the
+	 * BindWidgets on UGeoMainMenuWidget ("PlayLocalButton"/"LocalConnectWidget", "LeaderboardButton"/
+	 * "LeaderboardWidget", …). Re-run-safe. Compiles and saves the asset.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void AddPanelEntryToMainMenu(UWidgetBlueprint* WidgetBlueprint, FName ParentPanelName, FName ButtonsBoxName,
+										TSubclassOf<UUserWidget> MenuButtonClass, FName ButtonName, FText ButtonLabel,
+										FName PanelName, TSubclassOf<UUserWidget> PanelClass);
 };

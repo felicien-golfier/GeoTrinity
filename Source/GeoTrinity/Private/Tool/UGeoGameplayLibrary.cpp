@@ -234,6 +234,6 @@ APawn* UGeoGameplayLibrary::ResolveOwnerPawn(UObject* Owner)
 	{
 		return Controller->GetPawn();
 	}
-
+	
 	return Cast<APawn>(Owner);
 }

@@ -245,6 +245,11 @@ private:
 	FVector InitialPosition;
 	float DistanceSpanSqr;
 
+	/** World time InitProjectileLife ran, which is how long the shot has been alive on *this* machine. The lifespan
+	 * timer cannot answer that: SetLifeSpan only arms it on authority, so a client would read the shot as already
+	 * LifeSpanInSec old and let it overlap its own instigator on the first frame. */
+	float LifeStartTime = 0.f;
+
 	/** Stores Params as ResolvedParams, resizes the sphere collider to match and hands the cosmetic half to
 	 * FXComponent. Single write path shared by ApplyProjectileParams (resolved values), the simulated-proxy default
 	 * apply, and the editor preview. */

@@ -87,7 +87,7 @@ ones like spacers, and remove any existing widget of that name first to stay reu
 append, use the panel's insert-at-index call with an existing sibling's index.
 
 See `GeoWidgetBuilderUtil.cpp` (`CommitTree`, `RemoveWidget`, `ConstructWidgetInTree`, `BeginBuild`,
-`ConstructRootPanel`, `AddChildToCanvasPanel`) and `GeoHudWidgetBuilderUtil.cpp` (`AddLocalConnectToMainMenu`).
+`ConstructRootPanel`, `AddChildToCanvasPanel`) and `GeoHudWidgetBuilderUtil.cpp` (`AddPanelEntryToMainMenu`).
 
 ### Shim includes
 

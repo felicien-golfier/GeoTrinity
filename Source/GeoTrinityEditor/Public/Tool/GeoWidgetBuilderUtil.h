@@ -106,6 +106,25 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static UWidget* FindWidget(UWidgetBlueprint* WidgetBlueprint, FName Name);
 
+	/**
+	 * Puts the existing widget ContentName into the named slot SlotName of the UserWidget HostName — the one tree
+	 * operation Python cannot reach, as UUserWidget::SetContentForSlot is not exposed to script. This is how a panel
+	 * fills a slot of a shared frame widget it wears: the content keeps belonging to THIS tree (name, GUID and graph
+	 * bindings intact, BindWidget still resolves it), and the host injects it into its own tree when constructed.
+	 * Does NOT save — call CommitTree after a batch.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void SetNamedSlotContent(UWidgetBlueprint* WidgetBlueprint, FName HostName, FName SlotName,
+									FName ContentName);
+
+	/**
+	 * Makes the EXISTING widget Name the tree's root, keeping its name, GUID and graph bindings — the counterpart of
+	 * SetRootPanel for a widget already built. The previous root and everything still hanging off it are dropped from
+	 * the tree; move out first (into a named slot, say) whatever must survive. Does NOT save — call CommitTree after.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void SetRootWidget(UWidgetBlueprint* WidgetBlueprint, FName Name);
+
 	// --- Convenience wrappers over the primitives -------------------------------------------------------------------
 
 	/**

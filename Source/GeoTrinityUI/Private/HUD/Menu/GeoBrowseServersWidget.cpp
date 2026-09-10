@@ -7,14 +7,21 @@
 #include "Components/ProgressBar.h"
 #include "Components/ScrollBox.h"
 #include "GameClasses/GeoGameInstance.h"
+#include "HUD/Menu/GeoListFrameWidget.h"
+#include "HUD/Menu/GeoListRowWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
-#include "HUD/Menu/GeoServerRowWidget.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "GameFramework/PlayerState.h"
 #include "OnlineSubsystemUtils/Classes/FindSessionsCallbackProxy.h"
+
+// Share of the row each column takes, so every row lines up whatever the panel is wide.
+static float const ServerNameColumnWeight = 6.f;
+static float const MapColumnWeight = 4.f;
+static float const PlayersColumnWeight = 2.f;
+static float const PingColumnWeight = 2.f;
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBrowseServersWidget::NativeConstruct()
@@ -30,7 +37,6 @@ void UGeoBrowseServersWidget::NativeConstruct()
 	LanguageComboBox->SetSelectedIndex(0);
 
 	RefreshButton->OnClicked.AddUniqueDynamic(this, &UGeoBrowseServersWidget::HandleRefresh);
-	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoBrowseServersWidget::HandleBack);
 	SearchInput->OnTextChanged.AddUniqueDynamic(this, &UGeoBrowseServersWidget::HandleSearchTextChanged);
 
 	SearchProgressBar->SetVisibility(ESlateVisibility::Hidden);
@@ -58,13 +64,6 @@ void UGeoBrowseServersWidget::NativeDestruct()
 UWidget* UGeoBrowseServersWidget::GetInitialFocusWidget() const
 {
 	return RefreshButton;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool UGeoBrowseServersWidget::HandleBackAction()
-{
-	HandleBack();
-	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -173,12 +172,7 @@ void UGeoBrowseServersWidget::OnFindSessionsComplete(bool bWasSuccessful)
 void UGeoBrowseServersWidget::PopulateServerList()
 {
 	UE_LOG(LogTemp, Log, TEXT("Populating Server list with %u results"), CachedResults.Num());
-	ServerListScrollBox->ClearChildren();
-
-	if (!ensureMsgf(ServerRowWidgetClass, TEXT("%hs: ServerRowWidgetClass is not set"), __FUNCTION__))
-	{
-		return;
-	}
+	ListFrame->RowsBox->ClearChildren();
 
 	const FString FilterText = SearchInput->GetText().ToString().ToLower();
 
@@ -195,23 +189,53 @@ void UGeoBrowseServersWidget::PopulateServerList()
 			}
 		}
 
-		UGeoServerRowWidget* RowWidget = CreateWidget<UGeoServerRowWidget>(GetOwningPlayer(), ServerRowWidgetClass);
+		UGeoListRowWidget* const RowWidget = MakeRow();
 		if (!RowWidget)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("UGeoBrowseServersWidget: Failed to create server row widget"));
-			continue;
+			return;
 		}
 
-		RowWidget->InitFromSearchResult(Result);
-		RowWidget->OnSelected.AddUObject(this, &UGeoBrowseServersWidget::HandleServerSelected);
-		ServerListScrollBox->AddChild(RowWidget);
+		RowWidget->SetTint(ListFrame->RowsBox->GetChildrenCount() % 2 == 0 ? EGeoListRowTint::Normal
+																		 : EGeoListRowTint::Alternate);
+		FillServerRow(RowWidget, Result);
+		// The row carries the session it stands for as the payload of its click, so the row itself holds no state.
+		RowWidget->OnClicked.AddUObject(this, &UGeoBrowseServersWidget::HandleServerSelected, Result);
+		ListFrame->RowsBox->AddChild(RowWidget);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("%hs: listing %d server rows"), __FUNCTION__, ServerListScrollBox->GetChildrenCount());
+	UE_LOG(LogTemp, Log, TEXT("%hs: listing %d server rows"), __FUNCTION__,
+		   ListFrame->RowsBox->GetChildrenCount());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoBrowseServersWidget::HandleServerSelected(const FOnlineSessionSearchResult& Result)
+void UGeoBrowseServersWidget::FillServerRow(UGeoListRowWidget* RowWidget, const FOnlineSessionSearchResult& Result)
+{
+	FString ServerName;
+	if (!Result.Session.SessionSettings.Get(FName("SERVER_NAME"), ServerName))
+	{
+		ServerName = Result.Session.OwningUserName;
+	}
+	RowWidget->AddTextColumn(FText::FromString(ServerName), ServerNameColumnWeight);
+
+	FString MapName;
+	if (!Result.Session.SessionSettings.Get(FName("MAP"), MapName))
+	{
+		MapName = TEXT("-");
+	}
+	RowWidget->AddTextColumn(FText::FromString(MapName), MapColumnWeight);
+
+	const int32 MaxPlayers = Result.Session.SessionSettings.NumPublicConnections;
+	const int32 CurrentPlayers = MaxPlayers - Result.Session.NumOpenPublicConnections;
+	RowWidget->AddTextColumn(FText::FromString(FString::Printf(TEXT("%d/%d"), CurrentPlayers, MaxPlayers)),
+							 PlayersColumnWeight);
+
+	const FString PingString =
+		(Result.PingInMs < MAX_QUERY_PING) ? FString::Printf(TEXT("%dms"), Result.PingInMs) : TEXT("-");
+	RowWidget->AddTextColumn(FText::FromString(PingString), PingColumnWeight);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoBrowseServersWidget::HandleServerSelected(FOnlineSessionSearchResult Result)
 {
 	UGeoGameInstance* GeoGameInstance = Cast<UGeoGameInstance>(GetGameInstance());
 	if (!GeoGameInstance)
@@ -233,14 +257,8 @@ void UGeoBrowseServersWidget::SetSearchInProgress(bool bInProgress)
 void UGeoBrowseServersWidget::HandleRefresh()
 {
 	CachedResults.Empty();
-	ServerListScrollBox->ClearChildren();
+	ListFrame->RowsBox->ClearChildren();
 	StartFindSessions();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoBrowseServersWidget::HandleBack()
-{
-	OnClosed.Broadcast();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

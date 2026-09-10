@@ -29,7 +29,7 @@ void UGeoReloadAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo
 		.AddWeakLambda(this,
 					   [this, ASC, SpecHandle](FOnAttributeChangeData const& Data)
 					   {
-						   if (Data.NewValue > 0.f)
+						   if (Data.NewValue > 0.f || !ASC->AbilityActorInfo->IsLocallyControlledPlayer())
 						   {
 							   return;
 						   }

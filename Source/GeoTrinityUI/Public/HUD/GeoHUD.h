@@ -11,6 +11,7 @@
 #include "GeoHUD.generated.h"
 
 class SWidget;
+class AGeoArena;
 class UTexture2D;
 class UInputAction;
 class UGeoUserWidget;
@@ -27,6 +28,7 @@ class APlayableCharacter;
 class UGeoGameplayAbility;
 struct FGameplayAbilitySpec;
 struct FGameplayAttribute;
+enum class EGeoDamageNumberType : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeModifiedSignature, float, NewValue);
 /** Tagless "a deploy count changed" ping. Slots re-query GetDeployCountForAbility for their own tag on receipt. */
@@ -210,7 +212,7 @@ public:
 	/** Binds Health and Shield attribute delegates on ASC so deltas feed OwnerActor's floating-number buffer. */
 	void RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor);
 	/** Finds or creates a pooled UGeoDamageNumberWidget and activates it at the projected screen position. */
-	void SpawnDamageNumber(float Amount, bool bIsHeal, FVector WorldLocation);
+	void SpawnDamageNumber(float Amount, EGeoDamageNumberType Type, FVector WorldLocation);
 
 
 protected:
@@ -232,6 +234,9 @@ private:
 	/** Debug per-player DPS/HPS table, top-right of the viewport. Plain Slate: no widget Blueprint asset needed. */
 	TSharedPtr<SWidget> CombatStatsPanel;
 	TArray<TWeakObjectPtr<APlayerState>> CombatStatsRoster;
+	/** Arena the panel's fight timer reads. Taken when a boss bar goes up and never given back, which is the whole
+	 *  point of the copy: the boss bar carrying the same timer is destroyed the moment the fight ends. */
+	TWeakObjectPtr<AGeoArena> CombatStatsArena;
 #endif
 
 	/**
@@ -264,7 +269,7 @@ private:
 	 * a readable number instead of showing a fraction. Carry belongs to the one attribute delegate that feeds it, so
 	 * a heal and a shield chip in the same frame never cancel out.
 	 */
-	void BufferDamageNumber(AActor* OwnerActor, float& Carry, float Delta);
+	void BufferDamageNumber(AActor* OwnerActor, float& Carry, float Delta, EGeoDamageNumberType Type);
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GeoHUD")

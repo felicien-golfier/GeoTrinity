@@ -21,6 +21,11 @@ when the client connects, or the client registers as failed and its tools never 
 once the editor is up. Confirm the bridge is ready by requesting its root over HTTP — any response, 404
 included, means it is.
 
+A client that registered as failed says nothing about the bridge: the editor serves it either way, so a failed
+client is a reason to go direct, not a reason to stop automating. The ports are named in the client's own entry
+in `.mcp.json`, and each of them serves the same routes; a probe that times out rather than being refused means
+the editor is busy holding its game thread, while a listener that is absent from `netstat` means no editor is up.
+
 While the client is down the bridge can be driven directly by POSTing `{"script": "..."}` to
 `/api/editor/execute_script` on that port. In Windows PowerShell 5.1, cast the script to `[string]` before
 `ConvertTo-Json` — a raw file read otherwise serializes as an object and the route rejects the body. The route
