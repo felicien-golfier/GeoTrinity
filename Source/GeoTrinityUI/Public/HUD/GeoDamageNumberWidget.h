@@ -43,11 +43,14 @@ public:
 	bool IsAvailable() const { return bAvailable; }
 
 protected:
+	/** Re-projects WorldPos each frame, applies upward drift and fade, and returns the widget to the pool when VisibleDuration expires. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
+	/** Called from Activate; Blueprint updates the displayed text and picks a color from the Type. */
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetData(float Amount, EGeoDamageNumberType Type);
 
+	/** Marks this widget available again so the pool can reuse it for the next number. Call from Blueprint when the fade animation ends. */
 	UFUNCTION(BlueprintCallable)
 	void ReturnToPool();
 
