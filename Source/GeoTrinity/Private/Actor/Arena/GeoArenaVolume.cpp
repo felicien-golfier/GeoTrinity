@@ -18,6 +18,7 @@ AGeoArenaVolume::AGeoArenaVolume()
 	TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	TriggerBox->SetCollisionResponseToAllChannels(ECR_Overlap);
 	TriggerBox->SetGenerateOverlapEvents(true);
+	bGenerateOverlapEventsDuringLevelStreaming = true;
 }
 
 void AGeoArenaVolume::BeginPlay()
@@ -28,15 +29,6 @@ void AGeoArenaVolume::BeginPlay()
 		return;
 	}
 	TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
-
-	// Overlaps are resolved when the box registers, before this binding exists, so a player already standing here
-	// never fires it.
-	TArray<AActor*> PlayersInside;
-	TriggerBox->GetOverlappingActors(PlayersInside, APlayableCharacter::StaticClass());
-	if (!PlayersInside.IsEmpty())
-	{
-		ClaimCurrentArena();
-	}
 }
 
 void AGeoArenaVolume::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,

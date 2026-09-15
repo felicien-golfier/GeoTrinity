@@ -30,15 +30,17 @@ class GEOTRINITY_API AGeoArenaVolume : public AActor
 	GENERATED_BODY()
 
 public:
-	/** Creates the TriggerBox as the root component. The overlap callback is bound in BeginPlay. */
+	/** Creates the TriggerBox as the root component. The overlap callback is bound in BeginPlay.
+	 *  bGenerateOverlapEventsDuringLevelStreaming: a listen-server host's pawn spawns before world BeginPlay, and the
+	 *  level-load overlap pass after it runs silent by default — this volume's own pass, right after BeginPlay, is the
+	 *  only one that can notify the host already standing inside. */
 	AGeoArenaVolume();
 
 	/** True when Pawn stands inside any volume carrying ArenaTag. */
 	static bool IsPawnInside(UObject const* WorldContextObject, APawn const& Pawn, FGameplayTag ArenaTag);
 
 protected:
-	/** Binds the overlap registering the current arena, and claims it for anyone already standing inside. Server only —
-	 *  nothing reads the tag on a client. */
+	/** Binds the overlap registering the current arena. Server only — nothing reads the tag on a client. */
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoArena")
