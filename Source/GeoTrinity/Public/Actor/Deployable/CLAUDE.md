@@ -11,7 +11,7 @@ Drain GE, blink-before-expiry, recall, explode, Blueprint hooks.
 
 **Override points:**
 - `RecallEffect(Value)` — server-side "what happens at end of life" (default no-op).
-- `ExplodeEffect(...)` — per-target callback inside `Explode()` (default applies `EffectDataArray`).
+- `ExplodeEffect(...)` — default applies `EffectDataArray` to targets within `Params.Size`, lag-compensated: `JudgeExplosion` re-runs via `SetTimerForNextTick` (tick is off after `Expire`) and hits each player where it stood when replication showed it the blast (`FGeoLagCompensatedEvent`, see the rule in `AbilitySystem/Abilities/Pattern/CLAUDE.md`). Relies on `TimeBeforeDestroyAtExpire` outliving the 2 × `MaxLatencyCompensation` window.
 - `Explode(Value)` — server-only sphere overlap at `Params.Size`, filtered by `ExplodeAttitude` bitmask (default Hostile); call from inside `RecallEffect()` for an on-death explosion. `ExplodeOverlapMode` (`ETargetOverlapMode`, BP knob, default `Automatic`) sets whether targets' radius counts — `Automatic` is center-only for an `Enemy`-team caster (boss bomb) so players hug the edge.
 
 **`FInteractableActorData`:** `Owner` = ASC/team-check source; `Instigator` = origin avatar for cue params/direction (may differ, e.g. boss minions).

@@ -260,6 +260,7 @@ void AGeoCharacter::Death(bool const bFromFall)
 		return;
 	}
 	bDiedFromFall = bFromFall;
+	DeathServerTime = GeoLib::GetServerTime(GetWorld());
 	bIsDead = true;
 	DeathLogic();
 }

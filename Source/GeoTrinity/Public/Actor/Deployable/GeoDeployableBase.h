@@ -12,6 +12,7 @@
 #include "Settings/GameDataSettings.h"
 #include "StructUtils/InstancedStruct.h"
 #include "Tool/GeoColor.h"
+#include "Tool/GeoLagCompensatedEvent.h"
 #include "Tool/Team.h"
 
 #include "GeoDeployableBase.generated.h"
@@ -245,9 +246,10 @@ protected:
 	void PlayMoment(EDeployableMoment Moment) const;
 
 	/**
-	 * The gameplay half of an explode-at-recall: sphere-overlaps interactable actors at Params.Size filtered by
-	 * ExplodeAttitude and applies EffectDataArray to each. Called from Recall on the server; the matching cosmetics
-	 * live in PlayRecallCosmetics so both machines spell them the same way. Override to change what an explosion does.
+	 * The gameplay half of an explode-at-recall: applies EffectDataArray to the interactable actors within Params.Size
+	 * filtered by ExplodeAttitude, each judged where it stood when its screen showed the explosion (JudgeExplosion).
+	 * Called from Recall on the server; the matching cosmetics live in PlayRecallCosmetics so both machines spell them
+	 * the same way. Override to change what an explosion does.
 	 *
 	 * @param Value  Scalar used for damage/effect scaling.
 	 */
@@ -369,6 +371,13 @@ private:
 
 	void OnBlinkVisibilityTick();
 	void EnableActorCollision();
+
+	/** Server. Applies ExplodeEffect's effects to the targets Explosion judges this tick, then runs again next tick until
+	 * Explosion is over. A timer rather than Tick, which Expire turns off; the actor outlives the window because
+	 * TimeBeforeDestroyAtExpire is longer. */
+	void JudgeExplosion();
+
+	FGeoLagCompensatedEvent Explosion;
 
 	FTimerHandle BlinkTimerHandle;
 	FTimerHandle BlinkVisibilityTimerHandle;

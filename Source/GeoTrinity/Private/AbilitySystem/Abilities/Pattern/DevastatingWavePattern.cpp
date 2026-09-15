@@ -82,6 +82,7 @@ void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 void UDevastatingWavePattern::ClearData()
 {
 	PillarsWaveData.Empty();
+	FrontOffsets.Empty();
 	// The MPC is global state — clear slots left over from a previous wave before the AOE starts rendering.
 	for (int32 SlotIndex = 0; SlotIndex < MaxMaskedPillarSlots; ++SlotIndex)
 	{
@@ -170,11 +171,12 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 		return;
 	}
 
+	float OldestActorRadius = CurrentRadius;
 	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceOwner);
 	if (ensureMsgf(SourceASC, TEXT("UDevastatingWavePattern: SourceASC is null — Owner has no ASC")))
 	{
-		float const InnerRadius = FMath::Max(0.f, CurrentRadius - AnnulusWidth);
-		TArray<AActor*> ActorsInWaveFront;
+		TMap<TWeakObjectPtr<AActor>, float> const PreviousFrontOffsets = MoveTemp(FrontOffsets);
+		TArray<AActor*> ActorsEnteringWaveFront;
 		for (AActor* HitActor : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.SourceOwner),
 																TeamAttitudeMask::HostileOrNeutral, true,
 																StoredPayload.Origin, CurrentRadius))
@@ -192,20 +194,36 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 				AddPillarToVfxMask();
 			}
 
-			if (FVector2D::DistSquared(StoredPayload.Origin, FVector2D(HitActor->GetActorLocation()))
-				< InnerRadius * InnerRadius)
+			if (GeoLib::IsServer(this))
 			{
-				continue;
-			}
+				float const ActorRadius =
+					CurrentRadius - ExpansionSpeed * (ServerTime - GeoLib::GetPerceivedServerTime(HitActor));
+				OldestActorRadius = FMath::Min(OldestActorRadius, ActorRadius);
+				if (!ShouldHitActor(HitActor))
+				{
+					continue;
+				}
 
-			if (GeoLib::IsServer(this) && ShouldHitActor(HitActor))
-			{
-				ActorsInWaveFront.Add(HitActor);
+				float const FrontOffset = FMath::Clamp(ActorRadius, 0.f, MaxRadius)
+					- FVector2D::Distance(StoredPayload.Origin, FVector2D(HitActor->GetActorLocation()));
+				FrontOffsets.Add(HitActor, FrontOffset);
+
+				float const* const PreviousFrontOffset = PreviousFrontOffsets.Find(HitActor);
+				if (PreviousFrontOffset && *PreviousFrontOffset >= 0.f && *PreviousFrontOffset <= AnnulusWidth)
+				{
+					continue;
+				}
+
+				float const SweptFromOffset = PreviousFrontOffset ? *PreviousFrontOffset : FrontOffset;
+				if (FMath::Max(SweptFromOffset, FrontOffset) >= 0.f
+					&& FMath::Min(SweptFromOffset, FrontOffset) <= AnnulusWidth)
+				{
+					ActorsEnteringWaveFront.Add(HitActor);
+				}
 			}
 		}
 
-		KeepActorsEnteringOverlap(ActorsInWaveFront);
-		for (AActor* HitActor : ActorsInWaveFront)
+		for (AActor* HitActor : ActorsEnteringWaveFront)
 		{
 			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
 			if (IsValid(TargetASC))
@@ -223,7 +241,7 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 		DrawDebugWave(CurrentRadius);
 	}
 
-	if (CurrentRadius >= MaxRadius)
+	if (OldestActorRadius >= MaxRadius)
 	{
 		EndPattern();
 	}

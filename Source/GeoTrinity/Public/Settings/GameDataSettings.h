@@ -121,7 +121,9 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Projectile")
 	float MaxDeployDistance = 1500.f;
 
-	/** Maximum time the server fast-forwards a projectile to compensate the client's reported spawn time. */
+	/** Maximum one-way latency the server compensates: how far it fast-forwards a projectile to the client's reported
+	 * spawn time, and how far behind now a remote player may still be judged by time-driven hazards
+	 * (UGeoCharacterMovementComponent::GetPerceivedServerTime). */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Projectile", meta = (ClampMin = "0"))
 	float MaxLatencyCompensation = .5f;
 

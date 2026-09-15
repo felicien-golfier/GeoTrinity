@@ -384,19 +384,37 @@ void AGeoDeployableBase::PlayMoment(EDeployableMoment const Moment) const
 	}
 }
 
-void AGeoDeployableBase::ExplodeEffect(float const Value)
+void AGeoDeployableBase::ExplodeEffect(float const /*Value*/)
 {
+	Explosion.Start(GeoLib::GetServerTime(GetWorld()), /*bSeenThroughReplication*/ true);
+	JudgeExplosion();
+}
+
+void AGeoDeployableBase::JudgeExplosion()
+{
+	if (!IsValid(GetData()->Owner))
+	{
+		UE_LOG(LogGeoTrinity, Log, TEXT("%s: owner gone before every target of the explosion was judged"), *GetName());
+		return;
+	}
+
 	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
 	if (!ensureMsgf(SourceASC, TEXT("AGeoDeployableBase: no ASC on Owner")))
 	{
 		return;
 	}
 
-	TArray<AActor*> OverlappingActors =
-		GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(GetData()->Owner), ExplodeAttitude, true,
-										FVector2D(GetActorLocation()), GetData()->Params.Size, ExplodeOverlapMode);
+	FGenericTeamId const SourceTeam = GeoASLib::GetTeamId(GetData()->Owner);
+	TSet<AActor*> const ActorsReachingExplosion =
+		Explosion.JudgeActorsReachingEvent(GeoASLib::GetInteractableActors(this, SourceTeam, ExplodeAttitude, true));
 
-	for (AActor* Actor : OverlappingActors)
+	for (AActor* Actor : GeoASLib::GetInteractableActors(
+			 this, SourceTeam, ExplodeAttitude, true, FVector2D(GetActorLocation()), GetData()->Params.Size,
+			 [&ActorsReachingExplosion](AActor* Candidate)
+			 {
+				 return ActorsReachingExplosion.Contains(Candidate);
+			 },
+			 ExplodeOverlapMode))
 	{
 		UGeoAbilitySystemComponent* ActorASC = GeoASLib::GetGeoAscFromActor(Actor);
 		if (IsValid(ActorASC))
@@ -404,6 +422,11 @@ void AGeoDeployableBase::ExplodeEffect(float const Value)
 			GeoASLib::ApplyEffectFromEffectData(GetData()->EffectDataArray, SourceASC, ActorASC, GetData()->Level,
 												GetData()->Seed, GetData()->AbilityTag);
 		}
+	}
+
+	if (!Explosion.IsOver(GeoLib::GetServerTime(GetWorld())))
+	{
+		GetWorldTimerManager().SetTimerForNextTick(this, &ThisClass::JudgeExplosion);
 	}
 }
 

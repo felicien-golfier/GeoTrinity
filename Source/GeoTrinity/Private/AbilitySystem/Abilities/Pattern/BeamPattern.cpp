@@ -95,6 +95,8 @@ void UBeamPattern::TickDuringInit(float const SpentTime)
 
 void UBeamPattern::StartPattern()
 {
+	AnglesFromBeam.Reset();
+
 	if (IsValid(BeamVfxComponent))
 	{
 		GeoNiagaraParams::ApplySwappableAsset(BeamVfxComponent, {BeamVfxSystem, IndicatorSystem},
@@ -108,10 +110,11 @@ void UBeamPattern::StartPattern()
 	Super::StartPattern();
 }
 
-void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
+void UBeamPattern::TickPattern(float const ServerTime, float const SpentTime)
 {
 	MoveBeamVfx(SpentTime);
 
+	float OldestActorSpentTime = SpentTime;
 	if (GeoLib::IsServer(GetWorld()))
 	{
 		FVector const Location = GetBeamOrigin();
@@ -134,9 +137,51 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 		// A missing ASC only costs the damage: falling through still lets the beam reach its end and stop ticking.
 		if (ensureMsgf(SourceASC, TEXT("UBeamPattern: Owner has no ASC")))
 		{
-			TArray<AActor*> ActorsInBeam = GeoASLib::GetInteractableActorsInLine(
-				this, GeoASLib::GetTeamId(StoredPayload.SourceOwner), TeamAttitudeMask::HostileOrNeutral,
-				/*bMustBeDamageable*/ true, FVector2D(Location), Forward, BeamRange, BeamHalfWidth, OverlapMode);
+			FGenericTeamId const SourceTeam = GeoASLib::GetTeamId(StoredPayload.SourceOwner);
+			bool const bIncludeTargetRadius = GeoASLib::ShouldIncludeTargetRadius(OverlapMode, SourceTeam);
+			TMap<TWeakObjectPtr<AActor>, float> const PreviousAnglesFromBeam = MoveTemp(AnglesFromBeam);
+			TArray<AActor*> ActorsInBeam;
+			TArray<AActor*> ActorsEnteringBeam;
+			for (AActor* Actor :
+				 GeoASLib::GetInteractableActors(this, SourceTeam, TeamAttitudeMask::HostileOrNeutral,
+												 /*bMustBeDamageable*/ true, FVector2D(Location), BeamRange, OverlapMode))
+			{
+				float const ActorSpentTime = SpentTime - (ServerTime - GeoLib::GetPerceivedServerTime(Actor));
+				OldestActorSpentTime = FMath::Min(OldestActorSpentTime, ActorSpentTime);
+				if (ActorSpentTime < 0.f || ActorSpentTime > BeamDuration)
+				{
+					continue;
+				}
+
+				FVector2D const ToActor = FVector2D(Actor->GetActorLocation()) - FVector2D(Location);
+				float const HitRadius =
+					BeamHalfWidth + (bIncludeTargetRadius ? Actor->GetSimpleCollisionRadius() : 0.f);
+				float const HalfAngle =
+					FMath::RadiansToDegrees(FMath::Asin(HitRadius / FMath::Max(ToActor.Size(), HitRadius)));
+				float const AngleFromBeam = FMath::FindDeltaAngleDegrees(
+					GetBeamYaw(ActorSpentTime), FMath::RadiansToDegrees(FMath::Atan2(ToActor.Y, ToActor.X)));
+				AnglesFromBeam.Add(Actor, AngleFromBeam);
+
+				if (FMath::Abs(AngleFromBeam) <= HalfAngle)
+				{
+					ActorsInBeam.Add(Actor);
+				}
+
+				float const* const PreviousAngleFromBeam = PreviousAnglesFromBeam.Find(Actor);
+				if (PreviousAngleFromBeam && FMath::Abs(*PreviousAngleFromBeam) <= HalfAngle)
+				{
+					continue;
+				}
+
+				float const SweptFromAngle = PreviousAngleFromBeam
+					? AngleFromBeam + FMath::FindDeltaAngleDegrees(AngleFromBeam, *PreviousAngleFromBeam)
+					: AngleFromBeam;
+				if (FMath::Max(SweptFromAngle, AngleFromBeam) >= -HalfAngle
+					&& FMath::Min(SweptFromAngle, AngleFromBeam) <= HalfAngle)
+				{
+					ActorsEnteringBeam.Add(Actor);
+				}
+			}
 
 			ApplyBeamEffects(/*bPerSecond*/ true, ActorsInBeam, SourceASC);
 			if (!bPatternIsActive)
@@ -144,12 +189,11 @@ void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 				return;
 			}
 
-			KeepActorsEnteringOverlap(ActorsInBeam);
-			ApplyBeamEffects(/*bPerSecond*/ false, ActorsInBeam, SourceASC);
+			ApplyBeamEffects(/*bPerSecond*/ false, ActorsEnteringBeam, SourceASC);
 		}
 	}
 
-	if (SpentTime >= BeamDuration)
+	if (OldestActorSpentTime >= BeamDuration)
 	{
 		EndPattern();
 	}

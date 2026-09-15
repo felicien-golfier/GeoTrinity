@@ -8,6 +8,7 @@
 
 #include "GeoTeleporter.generated.h"
 
+class APlayableCharacter;
 class UTextRenderComponent;
 
 /**
@@ -45,6 +46,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTeleport")
 	FText DisplayText;
 
+	/** Seconds a traveller's move input stays ignored once it lands on this pad, so the camera reframes before they can
+	 * walk off — and back onto a pad. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoTeleport", meta = (ClampMin = "0.01"))
+	float ArrivalMoveLockDuration = 0.5f;
+
 private:
 	UFUNCTION()
 	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -55,6 +61,10 @@ private:
 					  int32 OtherBodyIndex);
 
 	AGeoTeleporter* FindNextTeleporter() const;
+
+	/** Stops Traveller and ignores its move input for ArrivalMoveLockDuration. Runs on its arrival overlap, after the
+	 * teleport, on every machine holding its controller. */
+	void LockArrivalMovement(APlayableCharacter& Traveller) const;
 
 	/** Characters another teleporter just sent here — kept until they walk off the pad (end overlap) so no arrival
 	 * overlap, however many times it fires, can chain-teleport them back. */

@@ -4,6 +4,33 @@ Deterministic enemy bullet pattern objects. Enemy-only, server-driven.
 
 Flow: `UPatternAbility::ActivateAbility()` → `PatternStartMulticast()` RPC → all clients instantiate the `UPattern` subclass → uses server time for deterministic spawning → completion fires `OnPatternEnd`, ending the ability.
 
+## Rule: every server hit test is lag-compensated
+Clients run a pattern at the current server time, but the server holds a remote player where they were about half a ping ago. A hazard tested at the server's own time therefore shrinks every dodge window. **Every pattern that hits a target on the server must judge that target at the target's own time** — no exceptions for new patterns.
+- **Target time:** `GeoLib::GetPerceivedServerTime(Actor)`.
+  - For a remote player it is the server-time stamp of the last move the server processed (moves carry it, see `UGeoCharacterMovementComponent`). It is clamped to `[now - MaxLatencyCompensation, now]`, so going silent never dodges.
+  - For everything else (AI, deployables, the listen-server host) it is simply now.
+- **Continuous hazard** (wave, beam, any volume that moves or turns with time):
+  - Evaluate its geometry at `SpentTime - (ServerTime - PerceivedTime)` for each target.
+  - The hazard is live for a target only over that target's own `[0, Duration]`.
+- **Swept test, not samples:**
+  - Keep last tick's per-target offset in a `TMap<TWeakObjectPtr<AActor>, float>` (reset in `StartPattern`), and test the whole span from that offset to the current one.
+  - Hit on entering only: skip a target whose previous offset was already inside.
+  - Sampling each tick misses targets on a long frame or a burst of moves.
+  - References: `DevastatingWavePattern` (`FrontOffsets`, radial) and `BeamPattern` (`AnglesFromBeam`, angular).
+- **End:** keep ticking until the *oldest* target's own time has reached the end, not the server's.
+- **Discrete event at a fixed time T** (zone expiry, explosion): use `FGeoLagCompensatedEvent` (`Tool/`), never a hand-written loop.
+  - Each target is judged once, the tick its own time reaches the moment its screen showed the event.
+    - For a pattern (`bSeenThroughReplication = false`) that moment is `T`.
+    - For an event clients only learn about through replication (a deployable exploding) it is `T` + that player's half ping, capped at `MaxLatencyCompensation`.
+  - Pass **every** potential target to `JudgeActorsReachingEvent`, then filter the returned set by the hit volume. A target judged outside the volume must not be hit by walking in later.
+  - Keep judging until `IsOver`, a **fixed** window: `T + MaxLatencyCompensation`, doubled for a replicated event. The clamp guarantees everyone has been judged by then. Never end early because "nobody is waiting".
+  - Server-spawned blocking geometry (pillars) spawns once `IsOver`, never at T. Otherwise the server simulates pre-T moves against geometry the client did not have.
+  - References:
+    - `SpawnPillarPattern`: driven by the pattern tick.
+    - `AGeoDeployableBase::JudgeExplosion`: driven by `SetTimerForNextTick`, because `Expire` turns the actor's tick off.
+- A pattern that needs this is a `UTickablePattern`, even if its hit is a single moment. Clients have no hit logic and end at their own time.
+- **Known gap:** projectile patterns (`SpiralPattern`, `ConeSprayPattern`, `USalvePattern`) still hit through `AGeoProjectile` overlap events at server time.
+
 **One live instance per pattern class, per ASC.** `FindPatternByClass` matches with `IsA` and reuses the instance across activations — two abilities wanting the same pattern with different settings need **two BP subclasses**, not one class twice (e.g. `UBeamPattern` ships the hex boss's sweep laser and tile-carving ray as separate BP children). Every knob lives on the pattern, not the ability. Per-activation state must be reset in `InitPattern`/`StartPattern` — never assume a fresh object.
 
 ---
@@ -26,7 +53,7 @@ Config: `NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`, `Projectile
 **Re-entrancy:** `TickPattern` drives each projectile by `SetActorLocation`, which resolves overlaps *synchronously* — a projectile can die, return to the pool and have its `Projectiles[i]` slot nulled in the middle of the iteration that moved it. Hence the two guards: `!bPatternIsActive` at the top of the loop, and the `Projectiles[i] != Projectile` re-check after the move. Without the latter, the `GetActorState()` "not started yet → Init()" branch resurrects a projectile that is already back in the pool (`GetActorState` is equally false for *dead* and for *not yet started*), leaving it live-and-pooled: the next `ReleaseActor` trips the released-twice ensure, its slot never nulls, and the pattern never ends.
 
 ## `SpawnPillarPattern.h` — zone-and-pillar boss pattern
-Non-ticking. Zone locations resolved server-side by `UGeoSpawnPillarAbility::CreatePatternData()`, shipped via `PatternStartMulticast` as `FSpawnPillarPatternData` — `InitPattern` just reads `ZoneLocations` (no per-client recompute). `StartPattern` spawns pillars, applies `PillarSpawnEffects` to hostiles in each zone (server-only), calls `EndPattern`. `DelayGameplayCueTag` countdown cue fires per spawn point.
+`UTickablePattern` (for the lag-compensation window). Zone locations resolved server-side by `UGeoSpawnPillarAbility::CreatePatternData()`, shipped via `PatternStartMulticast` as `FSpawnPillarPatternData` — `InitPattern` just reads `ZoneLocations` (no per-client recompute). Clients end in `StartPattern`. Server `TickPattern` applies `PillarSpawnEffects` to each hostile in a zone once `ZoneExpiry` (`FGeoLagCompensatedEvent`) judges it, then spawns the pillars and ends once `ZoneExpiry` is over. `DelayGameplayCueTag` countdown cue fires per spawn point.
 - `FSpawnPillarPatternData` — `ZoneLocations`; `InitPattern` `ensureMsgf`s if launched from a plain `UPatternAbility`
 - Deployables default to unlimited (`AGeoDeployableBase::bUnlimitedDeploy`), so `PillarClass` needs no manual slot-cap bypass
 
@@ -34,7 +61,7 @@ Non-ticking. Zone locations resolved server-side by `UGeoSpawnPillarAbility::Cre
 Ticking, non-projectile. Fired from `StoredPayload.Origin` along `Yaw`, on for `BeamDuration`. Covers both hex-boss beams via two BP children (see instance rule above).
 - `SweepAngle` — arc over `BeamDuration`, centred on payload yaw; **0 = static** (tile-carving ray), 90 = sweeping laser
 - `bDestroyLastTileHit` — on go-live tick, carves the furthest still-standing tile the beam reaches (`GetLastAliveTileAlongRay`), server-only — tank chooses the rim tile by where they stand when the boss locks on
-- Each actor hit once per activation (`HitActors`, cleared in `StartPattern`/`EndPattern`) — damage server-only, VFX everywhere
+- One-shot effects hit on entering the beam (swept angle per target, `AnglesFromBeam`, reset in `StartPattern`); per-second effects tick on everyone inside. Damage server-only, VFX everywhere
 - `BeamVfxSystem` — spawned deactivated in `OnCreate`, reused across activations, driven with the same user params as `UGeoBeamVFXComponent` (`User.Beam_Length`/`Width`); author local-space +X. `EndPattern`: graceful `Deactivate` on natural end, `DeactivateImmediate` on force-stop
 - `GetBeamOrigin()` + `MoveBeamVfx(SpentTime)` are the single aiming path, used by `TickDuringInit` and `TickPattern` alike — so the telegraph tracks a `FollowBossLocation`/`FollowBossOrientation` boss during the wind-up exactly like the live beam does. `InitPattern` only configures the component; the first `TickDuringInit` (fired from `Super::InitPattern`) has already placed it by then
 - `PreviewSystem` — windup telegraph (Ray Zone Indicator), loaded once in `OnCreate` from `UGameDataSettings::BeamPreviewSystem` (one project-wide asset, no per-pattern/BP configuration). Shown from `InitPattern` (montage Start section) until `StartPattern` swaps the same `BeamVfxComponent` over to `BeamVfxSystem`, both via the shared `GeoNiagaraParams::ApplySwappableAsset(Component, {BeamSystem, PreviewSystem}, bWantPreview)` helper (asset compare + `SetAsset`, no replication needed — patterns already run identically on every machine). Same helper `UGeoBeamVFXComponent` uses for its preview/beam handoff on `UGeoChannelBeamAbility` — see `Tool/CLAUDE.md`. Leaving the settings value unset shows `BeamVfxSystem` for the whole windup, as before.
@@ -50,7 +77,7 @@ Ticking projectile pattern. Fires `SalveNumber` salves `SalveFrequencySec` apart
 Non-projectile ticking. `InitPattern` teleports instigator to `StoredPayload.Origin`. Each tick expands a radius at `ExpansionSpeed`; only hostiles whose center sits in the band `[CurrentRadius - AnnulusWidth, CurrentRadius]` are hit (the moving wave front) — once the front passes them they are safe. Pillars are added to the VFX mask as soon as the front reaches them (deduped against `PillarsWaveData`, no per-hit set). Ends at `CurrentRadius >= MaxRadius`.
 - `ClearData()` — resets `PillarsWaveData`/8 MPC pillar slots to sentinel; called at start of `InitPattern`/`StartPattern` and end of `EndPattern`, so stale data never bleeds in
 - `ExpansionSpeed` (default 800 cm/s), `MaxRadius` (default 3000), `AnnulusWidth` (default 200 — damaging band width just inside the front)
-- No `HitActors` dedup — an actor lingering in the band is hit each tick it stays there
+- Hit on entering the band only (swept per-target front offset, `FrontOffsets`); ends once the oldest target's own radius reaches `MaxRadius`
 - `DrawDebugWave(CurrentRadius)` — red circle = wave front, green = inner annulus edge, plus per-pillar safe-zone tangent lines; called every tick, gated on the `Geo.DrawDevastatingWave` CVar
 
 **Masked AOE VFX** (all rendering machines, gated `!IsDedicatedServer`):

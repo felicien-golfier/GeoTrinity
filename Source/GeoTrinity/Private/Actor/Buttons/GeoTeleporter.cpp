@@ -8,6 +8,7 @@
 #include "GameClasses/GeoGameState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 namespace
@@ -72,6 +73,7 @@ void AGeoTeleporter::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/
 
 	if (PendingArrivals.Contains(PlayableCharacter))
 	{
+		LockArrivalMovement(*PlayableCharacter);
 		return;
 	}
 
@@ -115,6 +117,26 @@ void AGeoTeleporter::OnEndOverlap(UPrimitiveComponent* /*OverlappedComponent*/, 
 								  UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/)
 {
 	PendingArrivals.Remove(OtherActor);
+}
+
+void AGeoTeleporter::LockArrivalMovement(APlayableCharacter& Traveller) const
+{
+	AController* const Controller = Traveller.GetController();
+	if (!Controller)
+	{
+		return;
+	}
+
+	Controller->SetIgnoreMoveInput(true);
+	Traveller.GetCharacterMovement()->StopMovementImmediately();
+	FTimerHandle MoveLockTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(MoveLockTimerHandle,
+										   FTimerDelegate::CreateWeakLambda(Controller,
+																			[Controller]()
+																			{
+																				Controller->SetIgnoreMoveInput(false);
+																			}),
+										   ArrivalMoveLockDuration, false);
 }
 
 AGeoTeleporter* AGeoTeleporter::FindNextTeleporter() const

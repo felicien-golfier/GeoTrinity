@@ -126,6 +126,10 @@ public:
 	/** Returns the current server world time in seconds. @see GetServerTime(UObject*) for parameter and warning
 	 * details. */
 	static float GetServerTime(UWorld const* World, bool bUpdatedWithPing = false);
+	/** Server. Pattern time Actor's current location belongs to — behind now for a remote player, see
+	 * UGeoCharacterMovementComponent::GetPerceivedServerTime. Evaluate a time-driven hazard at this time before
+	 * testing it against Actor. Every non-character actor is simply at the current time. */
+	static float GetPerceivedServerTime(AActor const* Actor);
 
 	/**
 	 * Returns the AGeoTargetPoint actors carrying both halves of the point's identity: PurposeTag (TargetPoint.*,

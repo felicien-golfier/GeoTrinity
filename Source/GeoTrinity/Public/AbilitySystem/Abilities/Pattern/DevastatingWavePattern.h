@@ -38,7 +38,7 @@ class GEOTRINITY_API UDevastatingWavePattern : public UTickablePattern
 public:
 	/** Spawns the masked AOE Niagara component deactivated — the pattern instance is reused across activations. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
-	/** Clears wave pillar data and resets all MPC pillar mask slots to the unused sentinel.
+	/** Clears wave pillar data and front offsets, and resets all MPC pillar mask slots to the unused sentinel.
 	 * Called at the start of both InitPattern and StartPattern so stale data from a previous activation never bleeds in. */
 	void ClearData();
 
@@ -62,7 +62,10 @@ protected:
 	 * Hits actors whose center sits within AnnulusWidth of the wave front: pillars are added to the VFX mask on all
 	 * machines as the front reaches them; other hostiles receive effect data server-side only, the tick they enter
 	 * the band (staying in it costs nothing more, stepping back into it costs another hit).
-	 * Ends the pattern when MaxRadius is reached.
+	 * The server tests each target against the wave at the target's own time (GeoLib::GetPerceivedServerTime), so a
+	 * remote player is judged against the radius their client showed when they stood there. Its band stops at MaxRadius.
+	 * Ends the pattern once every target's own radius has reached MaxRadius — on the server that is up to one
+	 * compensated half ping after the front itself.
 	 */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** Ends the wave; deactivates the AOE VFX gracefully on natural completion or immediately on force-stop. */
@@ -114,4 +117,9 @@ private:
 	FTimerHandle TelegraphBlinkTimerHandle;
 
 	TArray<FPillarWaveData> PillarsWaveData;
+
+	/** Server. Last tick's distance of each unshadowed target's centre behind its own wave front — inside the band
+	 * when in [0, AnnulusWidth]. The band is tested over the whole span from that offset to the current one, so a
+	 * front jumping past a target in one step (a long frame, a burst of moves) still hits it. */
+	TMap<TWeakObjectPtr<AActor>, float> FrontOffsets;
 };

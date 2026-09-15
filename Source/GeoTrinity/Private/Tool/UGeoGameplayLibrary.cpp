@@ -3,6 +3,7 @@
 #include "Actor/Arena/GeoArenaVolume.h"
 #include "Actor/GeoTargetPoint.h"
 #include "Camera/CameraShakeBase.h"
+#include "Characters/GeoCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -151,6 +152,17 @@ float UGeoGameplayLibrary::GetServerTime(UWorld const* World, bool const bUpdate
 	}
 
 	return ServerTimeSeconds;
+}
+
+float UGeoGameplayLibrary::GetPerceivedServerTime(AActor const* Actor)
+{
+	AGeoCharacter const* const Character = Cast<AGeoCharacter>(Actor);
+	if (!IsValid(Character))
+	{
+		return GetServerTime(Actor, true);
+	}
+
+	return Character->GetGeoMovementComponent()->GetPerceivedServerTime();
 }
 
 TArray<AActor*> UGeoGameplayLibrary::GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const PurposeTag,

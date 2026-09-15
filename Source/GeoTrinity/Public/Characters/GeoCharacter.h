@@ -119,6 +119,9 @@ public:
 	/** Returns true while the player is downed (health reached 0 and not yet revived). */
 	bool IsDead() const { return bIsDead; }
 
+	/** Server. Server time of the last Death(). */
+	float GetDeathServerTime() const { return DeathServerTime; }
+
 	/** Returns true while the player is playing its revive montage — still down, but no longer a corpse. */
 	bool IsReviving() const { return bReviving; }
 
@@ -227,6 +230,8 @@ protected:
 	 * and it must survive until ReviveLogic() stops the montage it selected. */
 	UPROPERTY(Replicated)
 	bool bDiedFromFall = false;
+
+	float DeathServerTime = 0.f;
 
 	/** Death montage of characters that keep one skeleton. Ignored where GetDeathMontage() is overridden. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|Animation")

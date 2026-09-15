@@ -19,6 +19,8 @@ class UNiagaraSystem;
  * SweepAngle turns it into a rotating sweep (0 leaves it pointing straight ahead); every hostile is hit the tick it
  * enters the beam, so crossing it costs one hit no matter how slowly you walk through — and one more per re-entry.
  * Per-second effects are the exception: they keep ticking on everyone standing in the beam.
+ * The server tests each target against the beam at the target's own time (GeoLib::GetPerceivedServerTime), so a remote
+ * player is judged against the yaw their client showed when they stood there.
  */
 UCLASS(Blueprintable)
 class GEOTRINITY_API UBeamPattern : public UTickablePattern
@@ -33,11 +35,15 @@ protected:
 	/** Reads SweepAngle from PatternData and stores the activation payload for use during the tick sweep. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
-	/** Swaps the telegraph for the real beam VFX the moment the beam goes live. */
+	/** Swaps the telegraph for the real beam VFX the moment the beam goes live, and forgets the previous run's angles. */
 	virtual void StartPattern() override;
 	/** Keeps the windup telegraph aimed while the boss moves and turns. */
 	virtual void TickDuringInit(float SpentTime) override;
-	/** Aims the beam for the elapsed sweep fraction and applies the effect data to every actor entering it this tick. */
+	/**
+	 * Aims the beam for the elapsed sweep fraction. Server: applies the effect data to every actor entering the beam at
+	 * its own time, the beam being on for it over its own [0, BeamDuration]. Ends once every target's own time has
+	 * passed BeamDuration — on the server that is up to one compensated half ping after the beam itself.
+	 */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** Switches the beam VFX off and clears the per-activation hit set. */
 	virtual void EndPattern(bool bForceStop = false) override;
@@ -100,4 +106,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> BeamVfxComponent;
+
+	/** Server. Last tick's signed angle, in degrees, from each in-range target's own beam yaw to the target — inside the
+	 * beam within the half angle its hit radius covers at its distance. The beam is tested over the whole swept span
+	 * from that angle to the current one, so a beam or a target jumping across the other in one step still hits. */
+	TMap<TWeakObjectPtr<AActor>, float> AnglesFromBeam;
 };
