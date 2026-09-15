@@ -484,6 +484,26 @@ void UGeoStateTreeBuilderUtil::SetTaskProperty(UStateTree* StateTree, FName Stat
 			  });
 }
 
+void UGeoStateTreeBuilderUtil::SetLinkedAssetState(UStateTree* StateTree, FName StateName, UStateTree* LinkedAsset,
+												   FName StateTagName)
+{
+	ANSICHAR const* const Caller = __FUNCTION__;
+	WithState(StateTree, StateName, Caller,
+			  [LinkedAsset, StateTagName, Caller](UStateTreeEditorData&, UStateTreeState& State)
+			  {
+				  FGameplayTag StateTag;
+				  if (!ResolveTag(StateTagName, Caller, StateTag))
+				  {
+					  return false;
+				  }
+
+				  State.Type = EStateTreeStateType::LinkedAsset;
+				  State.Tag = StateTag;
+				  State.SetLinkedStateAsset(LinkedAsset);
+				  return true;
+			  });
+}
+
 void UGeoStateTreeBuilderUtil::SetTasksCompletion(UStateTree* StateTree, FName StateName,
 												  EStateTreeTaskCompletionType Completion)
 {

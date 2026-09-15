@@ -74,6 +74,8 @@ struct GEOTRINITY_API FGeoGameplayTags
 
 	// AI
 	FGameplayTag AI_Boss_AggroEvent;
+	/** Tags the linked-asset state an enemy's StateTree runs its BehaviourStateTree in. */
+	FGameplayTag AI_Boss_Behaviour;
 
 	/**
 	 * TARGET POINTS — what an AGeoTargetPoint is for.

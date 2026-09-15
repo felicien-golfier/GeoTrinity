@@ -11,6 +11,7 @@ operations with examples, and `MCP_EditorUtility.md` for the shim pattern and it
 - Guard `GetPtr<T>` with a struct type check — the assert fires on a mismatch.
 - A new `UFUNCTION` or a new USTRUCT needs a full build (UHT must run); implementation-only changes can use
   Live Coding.
+- A Linked Asset state has no tasks and no children; the linked tree needs the same schema as the tree linking it.
 
 ## Shim methods
 
@@ -24,6 +25,7 @@ operations with examples, and `MCP_EditorUtility.md` for the shim pattern and it
 | `AddFireAbilityTaskToState` | Adds one fire-ability task to an existing state; several in one state fire together |
 | `ReplaceFireAbilityTagInState` | Finds a state by name and replaces its task tag |
 | `SetTasksCompletion` | Whether a state waits for all its tasks or completes on the first |
+| `SetLinkedAssetState` | Turns a childless state into a tagged Linked Asset state, whose asset a StateTree component overrides at runtime by that tag |
 | `ClearTransitions` / `AddTransition` | Removes all transitions; adds a GotoState transition with a trigger enum (an event tag name for `OnEvent`) |
 | `AddFloatEnterCondition` | Appends a `Float Compare` enter condition, setting the threshold and operator |
 | `BindConditionPropertyToPropertyFunction` | Binds any condition property to a Property Function output and the function's input to a context class |

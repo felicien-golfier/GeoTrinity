@@ -30,8 +30,15 @@ public:
 	 * PlayerState). Sets AGeoEnemyAIController as the AI controller class. */
 	AEnemyCharacter(FObjectInitializer const& ObjectInitializer);
 
+	/** The tree the AI runs. Bosses share one base tree (the fight-start gate) and put their own spells in
+	 * BehaviourStateTree. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAI")
 	TObjectPtr<UStateTree> StateTree;
+
+	/** This enemy's own spell chain, run in StateTree's linked-asset state tagged AI.Boss.Behaviour. None = StateTree
+	 * runs as authored. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAI")
+	TObjectPtr<UStateTree> BehaviourStateTree;
 
 	/** Played by AGeoArena::PlayIntro on its arena's first aggro, before the fight starts. None = no intro. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoBoss")

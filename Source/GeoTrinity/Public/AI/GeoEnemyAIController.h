@@ -92,6 +92,8 @@ private:
 	void InitializeForPawn(APawn* InPawn);
 	/** Returns the possessed pawn's team interface, ensuring when there is no pawn or it does not implement it. */
 	IGenericTeamAgentInterface* GetPawnTeamAgent() const;
+	/** Starts EnemyChar's StateTree, with its BehaviourStateTree overriding the state tagged AI.Boss.Behaviour. The
+	 * override is read when the logic starts, so it is set before StartLogic. */
 	void InitializeStateTree(AEnemyCharacter const* EnemyChar) const;
 
 	/** Plays the boss's IntroMontage on its arena's first aggro and holds StartFight until it has played; starts the

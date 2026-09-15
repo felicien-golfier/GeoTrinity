@@ -45,6 +45,9 @@ cdo.bind_condition_property_to_property_function(st, "MyState", 0, binding)
 # Make a state wait for all its tasks instead of completing on the first one
 # cdo.set_tasks_completion(st, "StateName", unreal.StateTreeTaskCompletionType.ALL)
 
+# Turn a childless state into a Linked Asset state; the tag keys the runtime override (None = override only)
+# cdo.set_linked_asset_state(st, "StateName", unreal.load_asset("/Game/AI/ST_Other"), "AI.Boss.Behaviour")
+
 # Add STTask_SendEventAfterNCycles to an existing state
 # cdo.add_send_event_after_n_cycles_task(st, "StateName", CyclesRequired, "Event.Tag.Name")
 

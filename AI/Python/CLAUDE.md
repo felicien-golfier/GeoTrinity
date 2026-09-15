@@ -26,6 +26,7 @@ top of each file.
 |---|---|
 | `ability_info_icons.py` | Normalise the catalog's player entries — deploy-count flag, icon fallback |
 | `ability_tags.py` | Read or re-set the asset tag container on an ability Blueprint |
+| `boss_behaviour_trees.py` | Split the boss StateTrees into the shared base and one behaviour tree per boss |
 | `new_enemy_ability.py` | Create an enemy ability Blueprint and register it in the catalog |
 | `state_tree_edit.py` | StateTree editing through the builder shim — states, tasks, transitions |
 | `triangle_momentum_passive.py` | The Triangle stacking damage-boost passive, end to end |

@@ -5,6 +5,7 @@
 #include "AI/GeoAIBlackboardComponent.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
@@ -12,6 +13,7 @@
 #include "EngineUtils.h"
 #include "GameClasses/GeoGameMode.h"
 #include "GameClasses/GeoGameState.h"
+#include "StateTreeReference.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoEnemyAIController::AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -102,6 +104,13 @@ void AGeoEnemyAIController::InitializeStateTree(AEnemyCharacter const* EnemyChar
 	if (EnemyChar->StateTree)
 	{
 		StateTreeComp->SetStateTree(EnemyChar->StateTree);
+		if (EnemyChar->BehaviourStateTree)
+		{
+			FStateTreeReference BehaviourReference;
+			BehaviourReference.SetStateTree(EnemyChar->BehaviourStateTree);
+			StateTreeComp->AddLinkedStateTreeOverrides(FGeoGameplayTags::Get().AI_Boss_Behaviour,
+													   MoveTemp(BehaviourReference));
+		}
 		StateTreeComp->StartLogic();
 	}
 }

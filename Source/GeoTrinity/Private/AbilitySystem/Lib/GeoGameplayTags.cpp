@@ -109,4 +109,6 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	// AI //
 	CreateAndAssignGameplayTag(GameplayTags.AI_Boss_AggroEvent, "AI.Boss.AggroEvent",
 							   "StateTree event sent when the boss is aggroed.");
+	CreateAndAssignGameplayTag(GameplayTags.AI_Boss_Behaviour, "AI.Boss.Behaviour",
+							   "StateTree linked-asset state running the enemy's own BehaviourStateTree.");
 }

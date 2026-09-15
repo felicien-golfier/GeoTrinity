@@ -141,6 +141,17 @@ public:
 	static void SetTaskProperty(UStateTree* StateTree, FName StateName, FName TaskStructName, FName PropertyName,
 								FString Value);
 
+	/**
+	 * Turns a state into a Linked Asset state running LinkedAsset, and tags it so a StateTree component can override
+	 * that asset at runtime. Drops the state's tasks; the state must have no children.
+	 *
+	 * @param LinkedAsset   Default tree the state runs; pass None to leave it to the runtime override.
+	 * @param StateTagName  Gameplay tag the runtime override is keyed on.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void SetLinkedAssetState(UStateTree* StateTree, FName StateName, UStateTree* LinkedAsset,
+									FName StateTagName);
+
 	/** Sets whether a state completes once every one of its tasks has completed, or as soon as any single one does. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void SetTasksCompletion(UStateTree* StateTree, FName StateName, EStateTreeTaskCompletionType Completion);
