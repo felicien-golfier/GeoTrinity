@@ -41,6 +41,7 @@ class GEOTRINITYUI_API UGeoListRowWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	/** Seeds the column font (Regular/18), color, padding, and the four background tint colors for each row role. */
 	UGeoListRowWidget(FObjectInitializer const& ObjectInitializer);
 
 	/** Fires on click, for a row the list made selectable. */
