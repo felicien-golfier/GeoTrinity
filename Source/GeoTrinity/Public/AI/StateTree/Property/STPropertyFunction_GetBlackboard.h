@@ -22,7 +22,7 @@ struct FSTGetBlackboardPropertyFunctionInstanceData
 };
 
 /**
- * StateTree property function that reads CycleCount and LastFiringPointActor from UGeoAIBlackboardComponent.
+ * StateTree property function that reads the whole FGeoAIBlackboardData from UGeoAIBlackboardComponent.
  * Bind the outputs to any condition or task input that needs BB values.
  */
 USTRUCT(DisplayName = "Get Blackboard")

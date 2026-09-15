@@ -10,6 +10,7 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Arena/GeoArenaBarrier.h"
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
+#include "Animation/AnimMontage.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
@@ -24,6 +25,7 @@
 #include "GameFramework/PlayerController.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Net/UnrealNetwork.h"
+#include "System/GeoCombatStatsSubsystem.h"
 #include "System/GeoLeaderboardSave.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -42,6 +44,7 @@ void AGeoArena::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 	DOREPLIFETIME(AGeoArena, Boss);
 	DOREPLIFETIME(AGeoArena, bFighting);
 	DOREPLIFETIME(AGeoArena, FightStartTime);
+	DOREPLIFETIME(AGeoArena, bHasEverFought);
 }
 
 void AGeoArena::OnRep_Boss()
@@ -92,6 +95,7 @@ void AGeoArena::ResetBoss()
 		return;
 	}
 	Boss->Arena = this;
+	Boss->SetInvulnerable(IsIntroPending());
 
 	ResetAdds();
 }
@@ -273,9 +277,13 @@ void AGeoArena::OnRep_FightStartTime()
 
 void AGeoArena::RecordAttempt()
 {
+	AGeoGameState const* const GameState = GetWorld()->GetGameStateChecked<AGeoGameState>();
+
 	FGeoLeaderboardEntry Entry;
 	Entry.AttemptId = FGuid::NewGuid();
 	Entry.ArenaTag = ArenaTag;
+	// SetDifficulty refuses mid-match, so this is still the tuning the boss was fought at.
+	Entry.Difficulty = GameState->GetDifficulty();
 	Entry.DurationSeconds = GetFightElapsedSeconds();
 
 	// A defeated boss has already destroyed itself, so a win is the flag saying so, never an attribute read.
@@ -294,7 +302,15 @@ void AGeoArena::RecordAttempt()
 		Entry.BossHealthRatio = BossAttributes->GetHealthRatio();
 	}
 
-	for (APlayerState const* PlayerState : GetWorld()->GetGameStateChecked<AGeoGameState>()->PlayerArray)
+	// The stats subsystem hangs off the same match-state change this does, and drops its state on it: ask it for the
+	// fight's final tally rather than trusting it to have pushed one already. A no-op once it has.
+	UGeoCombatStatsSubsystem* const CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>();
+	if (ensureMsgf(CombatStats, TEXT("%s: no combat stats subsystem to tally this attempt from"), *GetName()))
+	{
+		CombatStats->ComputePlayerStats(GetWorld()->GetTimeSeconds());
+	}
+
+	for (APlayerState const* PlayerState : GameState->PlayerArray)
 	{
 		AGeoPlayerState const* const GeoPlayerState = Cast<AGeoPlayerState>(PlayerState);
 		if (!ensureMsgf(GeoPlayerState, TEXT("%s: %s is not a AGeoPlayerState"), *GetName(), *PlayerState->GetName()))
@@ -304,6 +320,11 @@ void AGeoArena::RecordAttempt()
 		FGeoLeaderboardPlayer& Player = Entry.Players.AddDefaulted_GetRef();
 		Player.PlayerName = GeoPlayerState->GetPlayerName();
 		Player.PlayerClass = GeoPlayerState->GetPlayerClass();
+		Player.DamageDealt = GeoPlayerState->GetTotalDamageDealt();
+		Player.HealingDealt = GeoPlayerState->GetTotalHealingDealt();
+		Player.DamageTaken = GeoPlayerState->GetTotalDamageReceived();
+		Player.BiggestHit = GeoPlayerState->GetMaxBurstDamage();
+		Player.BiggestHeal = GeoPlayerState->GetMaxBurstHealing();
 	}
 
 	MulticastRecordAttempt(Entry);
@@ -337,6 +358,29 @@ void AGeoArena::RespawnAllBosses(UObject const* WorldContextObject)
 bool AGeoArena::IsBoss(AActor const* Enemy) const
 {
 	return IsValid(Enemy) && Enemy == Boss;
+}
+
+bool AGeoArena::IsIntroPending() const
+{
+	return !bHasEverFought && IsValid(Boss) && Boss->IntroMontage;
+}
+
+float AGeoArena::PlayIntro()
+{
+	bool const bIntroPending = IsIntroPending();
+	bHasEverFought = true;
+	if (!bIntroPending)
+	{
+		return 0.f;
+	}
+
+	UGeoAbilitySystemComponent* const BossASC = GeoASLib::GetGeoAscFromActor(Boss.Get());
+	if (!ensureMsgf(BossASC, TEXT("%s: boss %s has no GeoAbilitySystemComponent to play its intro on"), *GetName(),
+					*Boss->GetName()))
+	{
+		return 0.f;
+	}
+	return BossASC->PlayMontage(nullptr, FGameplayAbilityActivationInfo(), Boss->IntroMontage, 1.f);
 }
 
 void AGeoArena::OnMatchStateChanged(FName NewMatchState, FName PreviousMatchState)
@@ -413,7 +457,9 @@ void AGeoArena::OnBossDefeated()
 	DestroyAdds();
 
 	Loot();
-	GetWorld()->GetGameStateChecked<AGeoGameState>()->RequestWaitingToStart();
+	// Next tick: this fires from inside the killing blow, which still has to be counted in the fight's combat stats.
+	GetWorld()->GetTimerManager().SetTimerForNextTick(GetWorld()->GetGameStateChecked<AGeoGameState>(),
+													  &AGeoGameState::RequestWaitingToStart);
 }
 
 void AGeoArena::Loot()

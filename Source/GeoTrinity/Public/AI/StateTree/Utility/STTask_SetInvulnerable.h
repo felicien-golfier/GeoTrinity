@@ -43,10 +43,6 @@ struct GEOTRINITY_API FSTTask_SetInvulnerable : public FStateTreeAIActionTaskBas
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 										   FStateTreeTransitionResult const& Transition) const override;
 
-	/** Restores the opposite invulnerability, whatever ended the state. */
-	virtual void ExitState(FStateTreeExecutionContext& Context,
-						   FStateTreeTransitionResult const& Transition) const override;
-
 private:
 	AGeoCharacter* GetCharacter(FStateTreeExecutionContext const& Context) const;
 };

@@ -48,3 +48,16 @@ FText UHudFunctionLibrary::FormatDuration(float Seconds)
 	return FText::FromString(
 		FString::Printf(TEXT("%d:%02d.%d"), Tenths / 600, (Tenths / 10) % 60, Tenths % 10));
 }
+
+FText UHudFunctionLibrary::FormatCompactNumber(float Value)
+{
+	if (Value >= 1000000.f)
+	{
+		return FText::FromString(FString::Printf(TEXT("%.1fm"), Value / 1000000.f));
+	}
+	if (Value >= 1000.f)
+	{
+		return FText::FromString(FString::Printf(TEXT("%.1fk"), Value / 1000.f));
+	}
+	return FText::FromString(FString::Printf(TEXT("%.0f"), Value));
+}

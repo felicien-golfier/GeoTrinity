@@ -21,7 +21,7 @@ enum class EGeoListRowTint : uint8
 	Normal,
 	/** The colour every other row wears, so a long list reads as separate lines. */
 	Alternate,
-	/** The line naming the columns, which is not one of the entries under it. */
+	/** A line framing the entries rather than one of them: the one naming the columns, or a strip filtering them. */
 	Header,
 	/** The row of a set that is in play — the open tab of a strip. */
 	Selected

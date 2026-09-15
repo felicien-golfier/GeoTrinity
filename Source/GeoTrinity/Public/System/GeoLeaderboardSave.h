@@ -7,11 +7,13 @@
 #include "GameFramework/SaveGame.h"
 #include "GameplayTagContainer.h"
 #include "Misc/Guid.h"
+#include "Tool/GeoDifficulty.h"
 
 #include "GeoLeaderboardSave.generated.h"
 
 /** One player as they were when a fight ended: the name their machine is logged in under (the Steam nickname, when
- *  Steam is the online subsystem) and the class they played. */
+ *  Steam is the online subsystem), the class they played, and what they did with it. The figures are the ones
+ *  UGeoCombatStatsSubsystem ends the fight on; an attempt saved before they were recorded reads as zeros. */
 USTRUCT()
 struct FGeoLeaderboardPlayer
 {
@@ -22,9 +24,30 @@ struct FGeoLeaderboardPlayer
 
 	UPROPERTY()
 	EPlayerClass PlayerClass = EPlayerClass::None;
+
+	/** Damage this player dealt over the whole attempt. */
+	UPROPERTY()
+	float DamageDealt = 0.f;
+
+	/** Healing this player dealt over the whole attempt. */
+	UPROPERTY()
+	float HealingDealt = 0.f;
+
+	/** Damage this player took over the whole attempt. */
+	UPROPERTY()
+	float DamageTaken = 0.f;
+
+	/** Biggest damage one spell of theirs landed — the biggest single hit, not a peak rate. See FBurstTracker. */
+	UPROPERTY()
+	float BiggestHit = 0.f;
+
+	/** Biggest healing one spell of theirs landed. */
+	UPROPERTY()
+	float BiggestHeal = 0.f;
 };
 
-/** One finished attempt at a boss: how long it lasted, how much of the boss was left, and who was in it. */
+/** One finished attempt at a boss: the difficulty it was fought at, how long it lasted, how much of the boss was left,
+ *  and who was in it. */
 USTRUCT()
 struct FGeoLeaderboardEntry
 {
@@ -38,6 +61,11 @@ struct FGeoLeaderboardEntry
 	/** Arena.* tag of the encounter, so attempts at different bosses stay tellable apart in one list. */
 	UPROPERTY()
 	FGameplayTag ArenaTag;
+
+	/** Tuning the boss was fought at, so attempts at different difficulties are never ranked against each other. An
+	 *  attempt saved before difficulties were recorded reads as Original. */
+	UPROPERTY()
+	EGeoDifficulty Difficulty = EGeoDifficulty::Original;
 
 	/** Seconds from the fight starting to it ending — the value the boss bar's timer stopped on. */
 	UPROPERTY()

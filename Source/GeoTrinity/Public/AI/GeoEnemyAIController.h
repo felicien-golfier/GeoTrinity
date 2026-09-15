@@ -55,7 +55,8 @@ public:
 	/** Returns the StateTree AI component that drives this controller's behavior logic. */
 	UStateTreeAIComponent* GetStateTreeComp() const { return StateTreeComp; }
 
-	/** Stops the StateTree logic and restarts it from the root (Dormant state). Resets aggro. */
+	/** Stops the StateTree logic and restarts it from the root (Dormant state). Resets aggro and cancels a pending
+	 * intro. */
 	void ResetAI();
 
 	UPROPERTY(EditAnywhere, Category = "GeoAggro")
@@ -93,10 +94,15 @@ private:
 	IGenericTeamAgentInterface* GetPawnTeamAgent() const;
 	void InitializeStateTree(AEnemyCharacter const* EnemyChar) const;
 
+	/** Plays the boss's IntroMontage on its arena's first aggro and holds StartFight until it has played; starts the
+	 * fight right away otherwise. The fight, its timer and the tree's aggro all wait for the intro. */
 	void TriggerAggro();
+	/** Sets the blackboard's bFightStarted and, for an arena's boss, lifts the invulnerability its pending intro gave it
+	 * and starts the arena fight and the match. */
+	void StartFight() const;
 
-	bool bAggroed = false;
 	FTimerHandle AggroCheckTimer;
+	FTimerHandle IntroTimer;
 
 	UPROPERTY(Transient)
 	TObjectPtr<APlayableCharacter> CurrentTarget;

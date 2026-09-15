@@ -21,16 +21,7 @@ EStateTreeRunStatus FSTTask_SetInvulnerable::EnterState(FStateTreeExecutionConte
 	}
 
 	Character->SetInvulnerable(Context.GetInstanceData(*this).bInvulnerable);
-	return EStateTreeRunStatus::Running;
-}
-
-void FSTTask_SetInvulnerable::ExitState(FStateTreeExecutionContext& Context,
-										FStateTreeTransitionResult const& /*Transition*/) const
-{
-	if (AGeoCharacter* const Character = GetCharacter(Context))
-	{
-		Character->SetInvulnerable(!Context.GetInstanceData(*this).bInvulnerable);
-	}
+	return EStateTreeRunStatus::Succeeded;
 }
 
 AGeoCharacter* FSTTask_SetInvulnerable::GetCharacter(FStateTreeExecutionContext const& Context) const

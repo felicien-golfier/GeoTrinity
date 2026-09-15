@@ -40,8 +40,10 @@ void UGeoCombatStatsSubsystem::OnMatchStateChanged(FName MatchState, FName Previ
 	}
 	else if (PreviousMatchState == MatchState::InProgress)
 	{
-		// Fight over: drop all per-player stats. Player states keep their last pushed values so the
-		// HUD still shows the final fight stats.
+		// Fight over: push one last time, then drop all per-player stats. Player states keep those values, which is
+		// what the HUD goes on showing and what the leaderboard records — and nothing has pushed them since the
+		// fight's last events unless the debug display was on to tick it.
+		ComputePlayerStats(GetWorld()->GetTimeSeconds());
 		StatsPerActor.Empty();
 	}
 }
@@ -69,9 +71,9 @@ void UGeoCombatStatsSubsystem::ResetStats()
 // -----------------------------------------------------------------------------------------------------------------------------------------
 FActorCombatStats& UGeoCombatStatsSubsystem::FindOrAddStats(AGeoPlayerState* Actor)
 {
-	// First event outside a match (e.g. training dummy) opens a new combat session, resetting values
-	// like the InProgress transition does; during a match the session runs from that transition.
-	if (StatsPerActor.IsEmpty() && !IsMatchInProgress())
+	// Out of a match only damage dealt gets here with no session running (e.g. at a training dummy): it opens a new
+	// one, resetting values like the InProgress transition does.
+	if (!IsSessionRunning())
 	{
 		ResetStats();
 	}
@@ -79,10 +81,10 @@ FActorCombatStats& UGeoCombatStatsSubsystem::FindOrAddStats(AGeoPlayerState* Act
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
-bool UGeoCombatStatsSubsystem::IsMatchInProgress() const
+bool UGeoCombatStatsSubsystem::IsSessionRunning() const
 {
 	AGameState const* GameState = GetWorld()->GetGameState<AGameState>();
-	return GameState && GameState->IsMatchInProgress();
+	return !StatsPerActor.IsEmpty() || (GameState && GameState->IsMatchInProgress());
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -109,7 +111,7 @@ void UGeoCombatStatsSubsystem::ReportDamageDealt(AGeoPlayerState* Source, float 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ReportDamageReceived(AGeoPlayerState* Target, float Amount)
 {
-	if (!IsValid(Target))
+	if (!IsValid(Target) || !IsSessionRunning())
 	{
 		return;
 	}
@@ -120,7 +122,10 @@ void UGeoCombatStatsSubsystem::ReportDamageReceived(AGeoPlayerState* Target, flo
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ReportHealingDealt(AGeoPlayerState* Source, float Amount)
 {
-	ReportRate(Source, Amount, &FActorCombatStats::Healing);
+	if (IsSessionRunning())
+	{
+		ReportRate(Source, Amount, &FActorCombatStats::Healing);
+	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

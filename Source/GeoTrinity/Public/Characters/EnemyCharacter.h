@@ -10,6 +10,7 @@
 
 
 class AGeoArena;
+class UAnimMontage;
 class UStateTree;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossDefeated);
@@ -31,6 +32,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAI")
 	TObjectPtr<UStateTree> StateTree;
+
+	/** Played by AGeoArena::PlayIntro on its arena's first aggro, before the fight starts. None = no intro. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoBoss")
+	TObjectPtr<UAnimMontage> IntroMontage;
 
 	UPROPERTY(BlueprintAssignable, Category = "GeoBoss")
 	FOnBossDefeated OnEnemyDefeated;

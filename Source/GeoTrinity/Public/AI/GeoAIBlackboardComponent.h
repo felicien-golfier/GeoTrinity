@@ -23,6 +23,15 @@ struct GEOTRINITY_API FGeoAIBlackboardData
 	/** Cycle counter — written by FSTTask_SendEventAfterNCycles. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 CycleCount = 0;
+
+	/** True from this enemy's aggro, before its intro plays — written by AGeoEnemyAIController. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bAggroed = false;
+
+	/** True once this enemy's fight has started (after its intro, if any) — written by AGeoEnemyAIController. A state,
+	 * not an event, so a tree back at its root still reads it. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bFightStarted = false;
 };
 
 /**

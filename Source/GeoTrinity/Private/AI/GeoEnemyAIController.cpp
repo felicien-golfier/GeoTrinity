@@ -5,7 +5,6 @@
 #include "AI/GeoAIBlackboardComponent.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
@@ -51,7 +50,9 @@ FGenericTeamId AGeoEnemyAIController::GetGenericTeamId() const
 void AGeoEnemyAIController::ResetAI()
 {
 	StopAggroWatch();
-	bAggroed = false;
+	GetWorld()->GetTimerManager().ClearTimer(IntroTimer);
+	GeoBlackBoard->Data.bAggroed = false;
+	GeoBlackBoard->Data.bFightStarted = false;
 	InitializeForPawn(GetPawn());
 }
 
@@ -180,7 +181,7 @@ void AGeoEnemyAIController::UpdateCurrentTarget(float const DeltaTime)
 
 void AGeoEnemyAIController::CheckAggroDistance()
 {
-	if (bAggroed || !GetPawn() || GetWorld()->GetGameStateChecked<AGeoGameState>()->IsMatchInProgress())
+	if (GeoBlackBoard->Data.bAggroed || !GetPawn() || GetWorld()->GetGameStateChecked<AGeoGameState>()->IsMatchInProgress())
 	{
 		return;
 	}
@@ -204,18 +205,48 @@ void AGeoEnemyAIController::OnGEApplied(UAbilitySystemComponent* Source, FGamepl
 
 void AGeoEnemyAIController::TriggerAggro()
 {
-	if (bAggroed)
+	if (GeoBlackBoard->Data.bAggroed)
 	{
 		return;
 	}
-	bAggroed = true;
+	GeoBlackBoard->Data.bAggroed = true;
 	StopAggroWatch();
 
-	StateTreeComp->SendStateTreeEvent(FGeoGameplayTags::Get().AI_Boss_AggroEvent);
+	AGeoArena* const Arena = AGeoArena::GetArenaOfBoss(GetPawn());
+	float IntroDuration = 0.f;
+	if (Arena && Arena->IsBoss(GetPawn()))
+	{
+		IntroDuration = Arena->PlayIntro();
+	}
+
+	if (IntroDuration > 0.f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(IntroTimer, this, &AGeoEnemyAIController::StartFight, IntroDuration,
+											   false);
+	}
+	else
+	{
+		StartFight();
+	}
+}
+
+void AGeoEnemyAIController::StartFight() const
+{
+	GeoBlackBoard->Data.bFightStarted = true;
+
+	AGeoCharacter* CharacterPawn = Cast<AGeoCharacter>(GetPawn());
+	if (ensureMsgf(CharacterPawn, TEXT("%hs: %s has no AGeoCharacter"), __FUNCTION__, *GetNameSafe(GetPawn())))
+	{
+		CharacterPawn->SetInvulnerable(false);
+	}
 
 	AGeoArena* Arena = AGeoArena::GetArenaOfBoss(GetPawn());
-	AGeoGameMode* GeoGameMode = GetWorld()->GetAuthGameMode<AGeoGameMode>();
-	if (Arena && GeoGameMode && Arena->IsBoss(GetPawn()))
+	if (!Arena || !Arena->IsBoss(GetPawn()))
+	{
+		return;
+	}
+
+	if (AGeoGameMode* GeoGameMode = GetWorld()->GetAuthGameMode<AGeoGameMode>())
 	{
 		Arena->StartFight();
 		GeoGameMode->StartMatch();

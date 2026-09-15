@@ -56,8 +56,9 @@ struct FActorCombatStats
 
 /**
  * World subsystem that tracks per-player damage and healing and computes DPS / HPS (exponentially
- * smoothed current rate, biggest burst, and whole-combat average) for debug display. State is a fixed handful
- * of floats per player — no per-event storage. Stats reset when a fight starts (match InProgress);
+ * smoothed current rate, biggest burst, and whole-combat average) for the debug display and for the totals
+ * the leaderboard records of a finished attempt. State is a fixed handful of floats per player — no per-event
+ * storage. Stats reset when a fight starts (match InProgress);
  * when it ends they are dropped and the last pushed values stay displayed on the player states.
  * Server-only; not replicated.
  */
@@ -70,16 +71,22 @@ public:
 	/** Server-only: subscribes to match state changes so stats reset when a fight starts and are freed when it ends. */
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 
-	/** Records an amount of damage dealt by Source and refreshes the displayed stats. */
+	/** Records an amount of damage dealt by Source and refreshes the displayed stats. Opens a new session when none is
+	 *  running: out of a match, combat starts when a player hits something, e.g. a training dummy. */
 	void ReportDamageDealt(AGeoPlayerState* Source, float Amount);
-	/** Records an amount of damage received by Target and refreshes the displayed stats. Only the total is tracked. */
+	/** Records an amount of damage received by Target and refreshes the displayed stats. Only the total is tracked.
+	 *  Ignored while no session is running, so a stray hit after a fight never replaces that fight's final stats. */
 	void ReportDamageReceived(AGeoPlayerState* Target, float Amount);
-	/** Records an amount of healing dealt by Source and refreshes the displayed stats. */
+	/** Records an amount of healing dealt by Source and refreshes the displayed stats. Ignored while no session is
+	 *  running, so a heal still ticking after a fight never replaces that fight's final stats. */
 	void ReportHealingDealt(AGeoPlayerState* Source, float Amount);
 	/**
 	 * Decays the smoothed rates to CurrentTime and pushes updated stats to each player state.
 	 * Ticked every frame; no-op while no combat session is running (StatsPerActor empty, e.g. right
 	 * after a fight ends), which keeps the last fight's values frozen on the display.
+	 * Also called as a fight ends — from here before the stats are dropped, and from AGeoArena::RecordAttempt
+	 * before it reads them — so the values frozen on the player states are that fight's final tally whichever of
+	 * the two match-state handlers runs first, and whether or not anything was ticking it.
 	 */
 	void ComputePlayerStats(float CurrentTime);
 
@@ -109,9 +116,11 @@ private:
 	/** Clears all recorded stats, restarts the combat timer, and pushes zeroed values to every tracked player state. */
 	void ResetStats();
 
-	/** Returns Actor's stats entry, creating it. The first event outside a match restarts the combat timer. */
+	/** Returns Actor's stats entry, creating it, and opens a new session first when none is running. */
 	FActorCombatStats& FindOrAddStats(AGeoPlayerState* Actor);
-	bool IsMatchInProgress() const;
+	/** True while a session is recording: for a whole match, and out of one from the damage that opened it. False from
+	 *  a fight's end until one of those starts, which is what keeps that fight's final stats on display. */
+	bool IsSessionRunning() const;
 	/** Decays the rates to now, then folds Amount into one side of Source's stats. Backs both Report*Dealt methods. */
 	void ReportRate(AGeoPlayerState* Source, float Amount, FCombatRate FActorCombatStats::* Side);
 	/** Exponentially decays every smoothed rate to CurrentTime, so a new event can be folded in undecayed. */

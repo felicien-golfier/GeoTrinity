@@ -119,9 +119,10 @@ public:
 	/**
 	 * Builds the WBP_Leaderboard tree (the recorded-fights panel). The panel owns no look: its whole tree is one
 	 * ListPanelClass instance named "ListFrame" (the shared list frame, matching the BindWidget on
-	 * UGeoListPanelWidget), with a HeaderBox holding the title and the TabsBox strip dropped into its header slot and
-	 * BackButton into its footer slot. TabsBox and BackButton match the BindWidgets on UGeoLeaderboardWidget, which
-	 * fills the strip with one tab per boss and the frame's scroll box with one row per recorded attempt at runtime.
+	 * UGeoListPanelWidget), with a HeaderBox holding the title and the TabsBox strip over the DifficultyTabsBox strip
+	 * dropped into its header slot and BackButton into its footer slot. The strips and BackButton match the BindWidgets
+	 * on UGeoLeaderboardWidget, which fills them with one tab per boss and one per difficulty, and the frame's scroll
+	 * box with one row per recorded attempt at runtime.
 	 * The title wears TitleFont, so a built header carries the same typography as the authored menus.
 	 * Compiles and saves the asset.
 	 */

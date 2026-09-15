@@ -30,4 +30,9 @@ public:
 	 * leaderboard, so a recorded time is written exactly as it was watched. */
 	UFUNCTION(BlueprintPure, Category = "GeoHUD")
 	static FText FormatDuration(float Seconds);
+
+	/** Returns Value short enough for a stat cell — "845", "12.4k", "1.2m" — shared by the combat stats panel and
+	 * the leaderboard, so a figure reads the same wherever it is shown. */
+	UFUNCTION(BlueprintPure, Category = "GeoHUD")
+	static FText FormatCompactNumber(float Value);
 };

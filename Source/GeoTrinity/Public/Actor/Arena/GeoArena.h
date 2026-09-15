@@ -39,7 +39,8 @@ public:
 	/** Registers Boss (clients bind the health bar) and bFighting (clients show/hide it). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	/** Server. Spawns the boss, or resets the one already standing, for a fresh attempt. */
+	/** Server. Spawns the boss, or resets the one already standing, for a fresh attempt. A boss spawned with its intro
+	 *  pending stays invulnerable until AGeoEnemyAIController::StartFight, once the intro has played. */
 	void ResetBoss();
 
 	/** Opens or seals the barrier, if this arena has one. Barrier state is owned by the fight-lifecycle functions. */
@@ -70,6 +71,14 @@ public:
 	AEnemyCharacter* GetBoss() const { return Boss; }
 	/** True while this arena's fight is live. Replicated, so it reads the same on every machine. */
 	bool IsFighting() const { return bFighting; }
+	/** True while this arena's boss still owes the players its intro: it has one and the arena was never aggroed. The
+	 *  intro plays on the first fight only, and a boss respawned for every attempt cannot remember that itself.
+	 *  Replicated, so the boss's anim BP reads it too, to hold the intro's opening pose. */
+	UFUNCTION(BlueprintPure, Category = "GeoArena")
+	bool IsIntroPending() const;
+	/** Server. Marks this arena fought and plays its boss's intro if IsIntroPending. Returns the intro's length, 0 when
+	 *  there is none. Called by AGeoEnemyAIController::TriggerAggro on its boss's aggro. */
+	float PlayIntro();
 	/** Seconds this arena's fight has been running, or how long its last one ran once it has ended, so a timer freezes
 	 *  on the final time rather than dropping back to zero. While it runs it counts on the local clock, from a start
 	 *  converted out of the replicated one — the server clock a client reads is a ~10Hz approximation that jitters
@@ -181,6 +190,10 @@ private:
 	 *  victory doesn't drop a fresh boss on the players looting the corpse. Server-only state. */
 	bool bBossDefeated = false;
 
+	/** True from this arena's first boss aggro to the end of the server. Replicated for IsIntroPending. */
+	UPROPERTY(Replicated)
+	bool bHasEverFought = false;
+
 	UFUNCTION()
 	void OnRep_bFighting();
 
@@ -205,7 +218,8 @@ private:
 	UFUNCTION()
 	void OnWipe(float DeathTime);
 
-	/** Starts the loot shower from the dead boss and stands the match down. Bound to Boss->OnEnemyDefeated. */
+	/** Starts the loot shower from the dead boss and stands the match down on the next tick. Bound to
+	 *  Boss->OnEnemyDefeated. */
 	UFUNCTION()
 	void OnBossDefeated();
 

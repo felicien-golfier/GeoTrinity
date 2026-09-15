@@ -432,13 +432,25 @@ void UGeoHudWidgetBuilderUtil::BuildLeaderboardWidget(UWidgetBlueprint* WidgetBl
 		TitleSlot->SetPadding(FMargin(0.f, 0.f, 24.f, 0.f));
 	}
 
-	// One tab per boss, filled at runtime: the panel only carries the strip they sit in. Bottom-aligned, so the tabs
-	// sit on the header's edge where the list starts and the selected one reads as open onto it.
+	// One tab per boss over one per difficulty, both filled at runtime: the panel only carries the strips they sit in.
+	// Bottom-aligned, so the difficulty tabs sit on the header's edge where the list starts and the selected one reads
+	// as open onto it. The gap keeps the two strips from reading as one grid.
+	UVerticalBox* TabsColumn = Tree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("TabsColumn"));
+	if (UHorizontalBoxSlot* TabsColumnSlot = HeaderBox->AddChildToHorizontalBox(TabsColumn))
+	{
+		TabsColumnSlot->SetVerticalAlignment(VAlign_Bottom);
+	}
+
 	UHorizontalBox* TabsBox = Tree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("TabsBox"));
 	TabsBox->bIsVariable = true;
-	if (UHorizontalBoxSlot* TabsSlot = HeaderBox->AddChildToHorizontalBox(TabsBox))
+	TabsColumn->AddChildToVerticalBox(TabsBox);
+
+	UHorizontalBox* DifficultyTabsBox =
+		Tree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("DifficultyTabsBox"));
+	DifficultyTabsBox->bIsVariable = true;
+	if (UVerticalBoxSlot* DifficultyTabsSlot = TabsColumn->AddChildToVerticalBox(DifficultyTabsBox))
 	{
-		TabsSlot->SetVerticalAlignment(VAlign_Bottom);
+		DifficultyTabsSlot->SetPadding(FMargin(0.f, 6.f, 0.f, 0.f));
 	}
 
 	ListFrame->SetContentForSlot(TEXT("HeaderSlot"), HeaderBox);

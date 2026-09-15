@@ -547,13 +547,6 @@ void AGeoHUD::SpawnDamageNumber(float Amount, EGeoDamageNumberType Type, FVector
 #if !UE_BUILD_SHIPPING
 namespace
 {
-	// Compact display so the panel stays narrow once totals grow.
-	FText CompactNumber(float const Value)
-	{
-		return FText::FromString(Value >= 1000.f ? FString::Printf(TEXT("%.1fk"), Value / 1000.f)
-												 : FString::Printf(TEXT("%.0f"), Value));
-	}
-
 	struct FPlayerClassStyle
 	{
 		TCHAR const* Label;
@@ -705,8 +698,9 @@ void AGeoHUD::UpdateCombatStatsPanel()
 			TAttribute<FText> StatText = TAttribute<FText>::CreateLambda(
 				[WeakPlayerState, Getter]
 				{
-					return WeakPlayerState.IsValid() ? CompactNumber((WeakPlayerState.Get()->*Getter)())
-													 : FText::GetEmpty();
+					return WeakPlayerState.IsValid()
+							   ? UHudFunctionLibrary::FormatCompactNumber((WeakPlayerState.Get()->*Getter)())
+							   : FText::GetEmpty();
 				});
 			Row->AddSlot().AutoWidth()[MakeCell(StatColumnWidth, MoveTemp(StatText), RowColor)];
 		}

@@ -57,6 +57,7 @@ top of each file.
 |---|---|
 | `curve_asset_authoring.py` | Write a curve asset from a table of keys |
 | `generate_headshot_ding.py` | Synthesise the headshot ding and import it as a sound wave |
+| `import_sound_waves.py` | Import every WAV in a folder as a sound wave, replacing same-named assets |
 | `save_dirty_assets.py` | List and save dirty content packages, reporting to a file |
 | `struct_container_edit.py` | Rewrite a struct array or struct map on an asset or a Blueprint |
 | `wheel_zoom_input.py` | Create the zoom input action and bind it to the mouse wheel |

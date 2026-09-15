@@ -196,6 +196,7 @@ void AGeoDeployableBase::InitDrain()
 	DrainEffectData.Amount = DrainMagnitudePerSecond;
 	DrainEffectData.bIsPerSecond = true;
 	DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
+	DrainEffectData.bSuppressCombatStats = true;
 	DrainEffectData.bDoNotRedirectSacrifice = !bCanSacrificeDrain;
 }
 

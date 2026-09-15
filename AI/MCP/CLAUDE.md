@@ -7,6 +7,7 @@ see `MCP_EditorUtility.md`.
 
 ## Prerequisites
 - The Unreal Editor must be open **before** starting Claude Code — MCP tools register at session start.
+- A failed `mcp-unreal` client never means the editor is unreachable — drive the bridge over HTTP on the `.mcp.json` port (`MCP_LiveCodingAndConnect.md`).
 - Tags added to `Config/Tags/GeoGameplayTags.ini` need an **editor restart** to resolve in Python.
 - A new `UFUNCTION`, new type or header change needs a full build with the editor closed; implementation-only
   `.cpp` changes use Live Coding — see `MCP_LiveCodingAndConnect.md`.
@@ -29,6 +30,10 @@ see `MCP_EditorUtility.md`.
 | Reading the running game in PIE | `MCP_PIE.md` |
 | Judging a visual change in the editor world, without PIE | `MCP_Preview.md` |
 | Live Coding builds with the editor open, connecting the MCP bridge | `MCP_LiveCodingAndConnect.md` |
+| Audio editing in Audacity: connection, selection model, generators, arguments that never apply | `Audacity/CLAUDE.md` |
+| Building game sound effects in Audacity: layers, sound grammar, recipes, export to Unreal | `Audacity/GameSoundDesign.md` |
+| Image editing in GIMP: connection, exec console drawing, verifying, export | `Gimp/CLAUDE.md` |
+| Authoring images in GIMP: canvas setup, building blocks, looks, game content, print pieces, export formats | `Gimp/ImageAuthoring.md` |
 | Doc style rules for `.md` files in this folder | `MCP_DocStyle.md` |
 
 ## Python scripts
