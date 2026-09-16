@@ -105,6 +105,7 @@ struct FHudPlayerParams
 {
 	GENERATED_BODY()
 	FHudPlayerParams() {}
+	/** Convenience constructor for building a fully populated snapshot from the four GAS references. */
 	FHudPlayerParams(TObjectPtr<APlayerController> const& playerController, TObjectPtr<APlayerState> const& playerState,
 					 TObjectPtr<UAbilitySystemComponent> const& abilitySystemComponent,
 					 TObjectPtr<UAttributeSet> const& attributeSet) :
