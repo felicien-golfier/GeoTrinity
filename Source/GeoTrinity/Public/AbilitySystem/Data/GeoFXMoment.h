@@ -100,11 +100,12 @@ struct FGeoBurstFXMoment
 /**
  * A moment that is turned on and back off again: its system stays attached to the owner and its sound loops for as long
  * as it runs — a buff worn while an attribute is boosted, a shot's whole flight.
- * Played through UGeoFXComponent::SetSustainedFX, which keeps the running instance and re-pushes the VFX parameters
- * whenever what drives them moves.
+ * Started through UGeoFXComponent::StartSustainedFX. A buff goes through SetSustainedFX, which keeps the running
+ * instance and re-pushes the VFX parameters and the loop's volume and pitch whenever what drives them moves; a
+ * projectile's flight is started on the projectile's own components.
  *
- * A sustained moment naming no system shows nothing at all: the system is what identifies a running moment, so there is
- * nothing for its sound to loop against.
+ * Either half may be left empty: a buff with only a sound loops it with no system, and one with only a system is
+ * silent.
  */
 USTRUCT(BlueprintType)
 struct FGeoSustainedFXMoment

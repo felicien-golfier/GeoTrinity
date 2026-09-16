@@ -38,11 +38,18 @@ float UGeoSoundRowLibrary::GetVolume(FGeoSoundEntry const& Entry, AActor* SoundI
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float UGeoSoundRowLibrary::GetPitch(FGeoSoundEntry const& Entry, AActor* SoundInstigator, int32 const AbilityLevel)
+float UGeoSoundRowLibrary::GetPitch(FGeoSoundEntry const& Entry, AActor* SoundInstigator, int32 const AbilityLevel,
+									 float const PitchVariation)
 {
 	float const Pitch = GeoASLib::SampleAttributeCurve(Entry.PitchCurve, Entry.PitchAttribute,
 													   Entry.bPitchFromAbilityLevel, SoundInstigator, AbilityLevel);
-	return Pitch * FMath::RandRange(Entry.RandomPitchMultiplierRange.X, Entry.RandomPitchMultiplierRange.Y);
+	return Pitch * PitchVariation;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float UGeoSoundRowLibrary::RollPitchVariation(FGeoSoundEntry const& Entry)
+{
+	return FMath::RandRange(Entry.RandomPitchMultiplierRange.X, Entry.RandomPitchMultiplierRange.Y);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -52,7 +59,8 @@ void UGeoSoundRowLibrary::PlaySoundEntry2D(UObject const* WorldContextObject, FG
 	if (ShouldPlay(WorldContextObject, Entry, SoundInstigator))
 	{
 		UGameplayStatics::PlaySound2D(WorldContextObject, Entry.Sound, GetVolume(Entry, SoundInstigator, AbilityLevel),
-									  GetPitch(Entry, SoundInstigator, AbilityLevel), Entry.StartTime);
+									  GetPitch(Entry, SoundInstigator, AbilityLevel, RollPitchVariation(Entry)),
+									  Entry.StartTime);
 	}
 }
 

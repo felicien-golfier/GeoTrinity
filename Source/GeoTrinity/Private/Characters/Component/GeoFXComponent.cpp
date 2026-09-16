@@ -17,7 +17,10 @@
 
 void FGeoRunningSustainedFX::Stop() const
 {
-	VFXComponent->DestroyComponent();
+	if (VFXComponent)
+	{
+		VFXComponent->DestroyComponent();
+	}
 	if (AudioComponent)
 	{
 		AudioComponent->Stop();
@@ -54,52 +57,70 @@ void UGeoFXComponent::PlayBurst(FGeoBurstFXMoment const& Moment) const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoFXComponent::SetSustainedFX(FGeoSustainedFXMoment const& Moment, bool const bShow)
+void UGeoFXComponent::SetSustainedFX(FGameplayAttribute const& Buff, FGeoSustainedFXMoment const& Moment,
+									 bool const bShow)
 {
-	if (!Moment.VFX.System || GeoLib::IsDedicatedServer(this))
+	if (GeoLib::IsDedicatedServer(this))
 	{
 		return;
 	}
 
-	int32 const Index = RunningSustainedFX.IndexOfByPredicate(
-		[&Moment](FGeoRunningSustainedFX const& Running)
-		{
-			return Running.VFXComponent->GetAsset() == Moment.VFX.System;
-		});
-
+	FGeoRunningSustainedFX const* const Running = RunningBuffFX.Find(Buff);
 	if (!bShow)
 	{
-		if (Index != INDEX_NONE)
+		if (Running)
 		{
-			RunningSustainedFX[Index].Stop();
-			RunningSustainedFX.RemoveAtSwap(Index);
+			Running->Stop();
+			RunningBuffFX.Remove(Buff);
 		}
 		return;
 	}
 
-	if (Index != INDEX_NONE)
+	if (Running)
 	{
-		ApplyFXParams(RunningSustainedFX[Index].VFXComponent, Moment.VFX);
+		if (Running->VFXComponent)
+		{
+			ApplyFXParams(Running->VFXComponent, Moment.VFX);
+		}
+		if (Running->AudioComponent)
+		{
+			Running->AudioComponent->SetVolumeMultiplier(GetVolume(Moment.Sound));
+			Running->AudioComponent->SetPitchMultiplier(GetPitch(Moment.Sound, Running->PitchVariation));
+		}
 		return;
 	}
 
-	// Spawned inactive for the same reason a burst is; Niagara returns nothing when it pre-culls the spawn.
-	UNiagaraComponent* const Spawned = UNiagaraFunctionLibrary::SpawnSystemAttached(
+	// Spawned inactive for the same reason a burst is. Niagara returns nothing when the moment names no system and when
+	// it pre-culls the spawn; the sound starts either way.
+	FGeoRunningSustainedFX& Started = RunningBuffFX.Add(Buff);
+	Started.VFXComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 		Moment.VFX.System, GetOwner()->GetRootComponent(), NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
 		EAttachLocation::SnapToTarget, /*bAutoDestroy*/ false, /*bAutoActivate*/ false);
-	if (!Spawned)
+	StartSustainedFX(Started, Moment);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoFXComponent::StartSustainedFX(FGeoRunningSustainedFX& Running, FGeoSustainedFXMoment const& Moment) const
+{
+	if (Running.VFXComponent)
 	{
-		return;
+		ApplyFXParams(Running.VFXComponent, Moment.VFX);
+		Running.VFXComponent->Activate(true);
 	}
 
-	ApplyFXParams(Spawned, Moment.VFX);
-	Spawned->Activate();
-
-	FGeoRunningSustainedFX& Running = RunningSustainedFX.AddDefaulted_GetRef();
-	Running.VFXComponent = Spawned;
-	Running.AudioComponent =
-		UGeoSoundRowLibrary::SpawnAudioComponent(GetOwner()->GetRootComponent(), Moment.Sound, GetFXInstigator(),
-												 GetVolume(Moment.Sound), GetPitch(Moment.Sound));
+	Running.PitchVariation = UGeoSoundRowLibrary::RollPitchVariation(Moment.Sound);
+	float const Volume = GetVolume(Moment.Sound);
+	float const Pitch = GetPitch(Moment.Sound, Running.PitchVariation);
+	if (Running.AudioComponent)
+	{
+		UGeoSoundRowLibrary::ConfigureAudioComponent(Running.AudioComponent, Moment.Sound, GetFXInstigator(), Volume,
+													 Pitch);
+	}
+	else
+	{
+		Running.AudioComponent = UGeoSoundRowLibrary::SpawnAudioComponent(GetOwner()->GetRootComponent(), Moment.Sound,
+																		  GetFXInstigator(), Volume, Pitch);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -127,8 +148,9 @@ void UGeoFXComponent::PlaySound(FGeoSoundEntry const& Entry) const
 {
 	if (UGeoSoundRowLibrary::ShouldPlay(this, Entry, GetFXInstigator()))
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, Entry.Sound, GetOwner()->GetActorLocation(), FRotator::ZeroRotator,
-											  GetVolume(Entry), GetPitch(Entry), Entry.StartTime);
+		UGameplayStatics::PlaySoundAtLocation(
+			this, Entry.Sound, GetOwner()->GetActorLocation(), FRotator::ZeroRotator, GetVolume(Entry),
+			GetPitch(Entry, UGeoSoundRowLibrary::RollPitchVariation(Entry)), Entry.StartTime);
 	}
 }
 
@@ -139,9 +161,9 @@ float UGeoFXComponent::GetVolume(FGeoSoundEntry const& Entry) const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-float UGeoFXComponent::GetPitch(FGeoSoundEntry const& Entry) const
+float UGeoFXComponent::GetPitch(FGeoSoundEntry const& Entry, float const PitchVariation) const
 {
-	return UGeoSoundRowLibrary::GetPitch(Entry, GetFXInstigator(), GetAbilityLevel()) * PitchMultiplier;
+	return UGeoSoundRowLibrary::GetPitch(Entry, GetFXInstigator(), GetAbilityLevel(), PitchVariation) * PitchMultiplier;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -208,7 +230,7 @@ void UGeoFXComponent::RefreshBuffFX()
 	{
 		if (FGeoSustainedFXMoment const* const Moment = GetBuffMoment(Entry))
 		{
-			SetSustainedFX(*Moment, GeoASLib::IsBuffed(*SourceASC, Entry.Attribute));
+			SetSustainedFX(Entry.Attribute, *Moment, GeoASLib::IsBuffed(*SourceASC, Entry.Attribute));
 		}
 	}
 }
@@ -225,11 +247,11 @@ void UGeoFXComponent::ClearBuffFX()
 	}
 	BuffSourceASC = nullptr;
 
-	for (FGeoRunningSustainedFX const& Running : RunningSustainedFX)
+	for (TPair<FGameplayAttribute, FGeoRunningSustainedFX> const& Running : RunningBuffFX)
 	{
-		Running.Stop();
+		Running.Value.Stop();
 	}
-	RunningSustainedFX.Empty();
+	RunningBuffFX.Empty();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

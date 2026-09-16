@@ -94,7 +94,8 @@ struct FGeoSoundEntry
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UCurveFloat> PitchCurve;
 
-	/** Random pitch multiplier range applied on top of the curve result. X = min, Y = max. */
+	/** Random pitch multiplier range applied on top of the curve result. X = min, Y = max. Rolled once per play: a loop
+	 * keeps its roll while its curve is re-pushed. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
 	FVector2D RandomPitchMultiplierRange = FVector2D(1.f, 1.f);
 };
@@ -136,9 +137,14 @@ public:
 
 	/**
 	 * Returns the pitch for Entry: PitchCurve sampled at AbilityLevel when bPitchFromAbilityLevel is set or at
-	 * SoundInstigator's PitchAttribute value otherwise, multiplied by a random value in RandomPitchMultiplierRange.
+	 * SoundInstigator's PitchAttribute value otherwise, multiplied by PitchVariation — a RollPitchVariation result the
+	 * caller keeps for as long as the sound plays.
 	 */
-	static float GetPitch(FGeoSoundEntry const& Entry, AActor* SoundInstigator, int32 AbilityLevel);
+	static float GetPitch(FGeoSoundEntry const& Entry, AActor* SoundInstigator, int32 AbilityLevel,
+						  float PitchVariation);
+
+	/** A random pitch multiplier in Entry.RandomPitchMultiplierRange, rolled once per play of Entry. */
+	static float RollPitchVariation(FGeoSoundEntry const& Entry);
 
 	/** Plays Entry once as a 2D sound, applying ShouldPlay gating and instigator-relative volume and pitch. */
 	UFUNCTION(BlueprintCallable, Category = "GeoTrinity|Sound", meta = (DefaultToSelf = "WorldContextObject"))
@@ -147,8 +153,8 @@ public:
 
 	/** Sets Entry's sound, Volume and Pitch on AudioComponent and starts it — the looping counterpart of
 	 * PlaySoundEntry2D, applying the same ShouldPlay gating. Does nothing when the entry must not play here.
-	 * Volume and Pitch are parameters so callers owning their own hooks (AGeoProjectile::GetVolume/GetPitch) keep
-	 * them; pass GetVolume/GetPitch(Entry, SoundInstigator, AbilityLevel) otherwise. */
+	 * Volume and Pitch are parameters so callers owning their own hooks (UGeoFXComponent::GetVolume/GetPitch) keep
+	 * them; pass GetVolume/GetPitch for Entry otherwise. */
 	static void ConfigureAudioComponent(UAudioComponent* AudioComponent, FGeoSoundEntry const& Entry,
 										AActor* SoundInstigator, float Volume, float Pitch);
 

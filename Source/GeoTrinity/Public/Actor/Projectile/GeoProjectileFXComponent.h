@@ -18,8 +18,8 @@ class UNiagaraComponent;
  *
  * It owns neither subobject it drives: the bullet visual and the looping audio are the projectile's, handed over in its
  * constructor, so a projectile Blueprint keeps editing them where it always has. That is also why the flight is the one
- * sustained moment not run through UGeoFXComponent::SetSustainedFX — it drives those two directly and only borrows
- * ApplyFXParams to push the shared parameters onto them.
+ * sustained moment not run through UGeoFXComponent::SetSustainedFX, which spawns and destroys its components: the
+ * flight holds the lent pair as its own FGeoRunningSustainedFX and only shares the start, StartSustainedFX.
  *
  * Sounds resolve their audience, volume and pitch against the shot's *shooter*, not the shot — a projectile has no
  * attributes of its own, and a shot fired by the local player must sound like their own shot.
@@ -44,17 +44,18 @@ public:
 	void SetPlaybackSubobjects(UNiagaraComponent* InBulletVFX, UAudioComponent* InLoopingSound);
 
 	/**
-	 * Pushes the owner's resolved radius, colors and trail lifetime onto the bullet visual along with everything
-	 * LoopingFX authors, and swaps its system for LoopingFX's VFX when it names one — which is how a spawn site
-	 * re-skins the bullet through FExternalProjectileParams. Leaves the Blueprint's own system in place otherwise.
+	 * Pushes the owner's resolved radius, colors and trail lifetime onto the bullet visual, and swaps its system for
+	 * LoopingFX's VFX when it names one — which is how a spawn site re-skins the bullet through
+	 * FExternalProjectileParams. Leaves the Blueprint's own system in place otherwise. LoopingFX's own parameters wait
+	 * for StartLife, since they resolve against a shooter a previewed projectile does not have.
 	 * Call it from AGeoProjectile::ApplyParams only, which stores ResolvedParams first.
 	 */
 	void ApplyParams();
 
-	/** Restarts the bullet visual on its current params, starts LoopingFX's sound and plays the Start moment. Called on
-	 * every spawn, a pooled reuse included — which is why the visual is re-activated here rather than left running:
-	 * hiding a pooled actor does not stop a Niagara system. */
-	void StartLife() const;
+	/** Starts LoopingFX on the bullet visual and the looping audio, then plays the Start moment. Called on every spawn,
+	 * a pooled reuse included — which is why the visual is restarted here rather than left running: hiding a pooled
+	 * actor does not stop a Niagara system. */
+	void StartLife();
 
 	/** Plays the moment the shot ended on. A valid overlap layers ValidOverlapEnd *over* NoOverlapEnd, so a shot that
 	 * connects still gets the plain impact plus whatever the hit adds. */
@@ -97,16 +98,13 @@ private:
 	 * a pooled projectile is re-resolved every reuse and must not keep the previous shot's skin. */
 	void ApplyBulletSystem();
 
-	/** The projectile's bullet visual — its User.* params are write-only from here; nothing reads them back. */
+	/** The projectile's bullet visual and its one looping audio component — the reason LoopingFX holds a single sound.
+	 * The visual's User.* params are write-only from here; nothing reads them back. */
 	UPROPERTY()
-	TObjectPtr<UNiagaraComponent> BulletVFX;
+	FGeoRunningSustainedFX Flight;
 
-	/** The system the projectile Blueprint authored on BulletVFX, captured on the first spawn — before LoopingFX has
-	 * replaced it — so it can be restored. */
+	/** The system the projectile Blueprint authored on the bullet visual, captured on the first spawn — before
+	 * LoopingFX has replaced it — so it can be restored. */
 	UPROPERTY()
 	TObjectPtr<UNiagaraSystem> DefaultBulletSystem;
-
-	/** The projectile's one looping audio component, which is why LoopingFX holds a single sound. */
-	UPROPERTY()
-	TObjectPtr<UAudioComponent> LoopingSoundComponent;
 };

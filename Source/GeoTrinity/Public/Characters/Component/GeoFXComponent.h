@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "AttributeSet.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 
@@ -17,21 +18,25 @@ struct FGeoVFXParams;
 struct FGeoSoundEntry;
 struct FGeoSustainedFXMoment;
 
-/** One sustained moment currently running on an owner: the system attached to it and the loop playing beside it. */
+/** What one sustained moment plays on: the system attached to its owner and the loop playing beside it. */
 USTRUCT()
 struct FGeoRunningSustainedFX
 {
 	GENERATED_BODY()
 
-	/** The attached system, and what identifies the running moment — matched by asset against FGeoVFXParams::System. */
+	/** The attached system. A buff's is null when its moment names none or when Niagara pre-culled the spawn. */
 	UPROPERTY()
 	TObjectPtr<UNiagaraComponent> VFXComponent;
 
-	/** The moment's looping sound, null when it carries none or when it must not play on this machine. */
+	/** The moment's looping sound. A buff's is null when it carries none or when it must not play on this machine. */
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> AudioComponent;
 
-	/** Takes both down. Niagara keeps simulating through a hidden actor, so a pooled owner has to go through this. */
+	/** Rolled when the loop starts and kept until it stops, so re-pushing the loop's pitch never jumps it. */
+	float PitchVariation = 1.f;
+
+	/** Destroys both components — a buff's teardown. An owner that lends its own components (a projectile's flight)
+	 * deactivates them instead. */
 	void Stop() const;
 };
 
@@ -83,12 +88,20 @@ public:
 
 protected:
 	/**
-	 * Turns Moment on or off on the owner: its system attached to the root, its sound looping beside it. An
-	 * already-running moment is left running and only has its parameters re-pushed, so every path that can change what
-	 * they resolve to just calls this again.
-	 * A moment naming no VFX does nothing at all — the system is what identifies a running moment.
+	 * Turns Buff's Moment on or off on the owner: its system attached to the root, its sound looping beside it, either
+	 * one optional. An already-running moment is left running and only has its parameters re-pushed — the VFX ones and
+	 * the loop's volume and pitch — so every path that can change what they resolve to just calls this again.
+	 * The running moment is found by Buff, the attribute it shows, not by its content: two buffs may share a system or
+	 * a sound and still run apart.
 	 */
-	void SetSustainedFX(FGeoSustainedFXMoment const& Moment, bool bShow);
+	void SetSustainedFX(FGameplayAttribute const& Buff, FGeoSustainedFXMoment const& Moment, bool bShow);
+
+	/**
+	 * Starts Moment on Running: pushes its VFX parameters, restarts the system when Running has one and starts the loop
+	 * on a fresh pitch variation. The one start path of every sustained moment, whether the owner spawned Running's
+	 * components or lent its own. Spawns the loop's audio component attached to the owner when Running holds none.
+	 */
+	void StartSustainedFX(FGeoRunningSustainedFX& Running, FGeoSustainedFXMoment const& Moment) const;
 
 	/** Pushes every parameter FGeoVFXParams carries onto Component, resolving what a curve reads against this owner. The
 	 * one place they are written, burst or sustained: a new shared parameter is a field on the struct plus a line here.
@@ -102,8 +115,9 @@ protected:
 	/** Entry's volume for this owner. Every sound this component plays goes through it, one-shot or looping. */
 	float GetVolume(FGeoSoundEntry const& Entry) const;
 
-	/** Entry's pitch for this owner, scaled by PitchMultiplier. Every sound this component plays goes through it. */
-	float GetPitch(FGeoSoundEntry const& Entry) const;
+	/** Entry's pitch for this owner on PitchVariation, scaled by PitchMultiplier. Every sound this component plays goes
+	 * through it. */
+	float GetPitch(FGeoSoundEntry const& Entry, float PitchVariation) const;
 
 	/** Who the feedback belongs to: sound audience gating, instigator-relative volume and every attribute a curve
 	 * samples resolve against it. The owner itself unless a subclass answers otherwise. */
@@ -125,9 +139,9 @@ private:
 	 * buff FX" the empty catalog means. Bind, refresh and clear all walk it, so they all see the same list. */
 	static TArray<FGeoBuffFXEntry> const& GetBuffEntries();
 
-	/** Sustained moments currently running on the owner, matched by the asset of their system. */
+	/** Buff moments currently running on the owner, keyed by the attribute each one shows. */
 	UPROPERTY()
-	TArray<FGeoRunningSustainedFX> RunningSustainedFX;
+	TMap<FGameplayAttribute, FGeoRunningSustainedFX> RunningBuffFX;
 
 	/** Whose buffs this owner shows. Weak: a projectile outliving its shooter must not keep that ASC alive. */
 	TWeakObjectPtr<UGeoAbilitySystemComponent> BuffSourceASC;

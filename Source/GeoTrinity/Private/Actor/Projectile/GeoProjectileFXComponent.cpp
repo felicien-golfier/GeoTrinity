@@ -29,15 +29,15 @@ void UGeoProjectileFXComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	FVector const VisualOffset = BulletVFX->GetRelativeLocation();
+	FVector const VisualOffset = Flight.VFXComponent->GetRelativeLocation();
 	if (VisualOffset.IsNearlyZero())
 	{
-		BulletVFX->SetRelativeLocation(FVector::ZeroVector);
+		Flight.VFXComponent->SetRelativeLocation(FVector::ZeroVector);
 		SetComponentTickEnabled(false);
 		return;
 	}
 
-	BulletVFX->SetRelativeLocation(
+	Flight.VFXComponent->SetRelativeLocation(
 		FMath::VInterpTo(VisualOffset, FVector::ZeroVector, DeltaTime, VisualCatchUpSpeed));
 }
 
@@ -45,8 +45,8 @@ void UGeoProjectileFXComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 void UGeoProjectileFXComponent::SetPlaybackSubobjects(UNiagaraComponent* const InBulletVFX,
 													  UAudioComponent* const InLoopingSound)
 {
-	BulletVFX = InBulletVFX;
-	LoopingSoundComponent = InLoopingSound;
+	Flight.VFXComponent = InBulletVFX;
+	Flight.AudioComponent = InLoopingSound;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -54,15 +54,15 @@ void UGeoProjectileFXComponent::ApplyBulletSystem()
 {
 	if (!DefaultBulletSystem)
 	{
-		DefaultBulletSystem = BulletVFX->GetAsset();
+		DefaultBulletSystem = Flight.VFXComponent->GetAsset();
 	}
 
 	UNiagaraSystem* const LoopingSystem = GetOwner<AGeoProjectile>()->ResolvedParams.LoopingFX.VFX.System;
 	UNiagaraSystem* const DesiredSystem = LoopingSystem ? LoopingSystem : DefaultBulletSystem.Get();
 	// SetAsset restarts the system, so a spawn that keeps the same one must not go through it.
-	if (DesiredSystem && BulletVFX->GetAsset() != DesiredSystem)
+	if (DesiredSystem && Flight.VFXComponent->GetAsset() != DesiredSystem)
 	{
-		BulletVFX->SetAsset(DesiredSystem);
+		Flight.VFXComponent->SetAsset(DesiredSystem);
 	}
 }
 
@@ -78,15 +78,14 @@ void UGeoProjectileFXComponent::ApplyParams()
 	ApplyBulletSystem();
 
 	FProjectileParamsBase const& Params = GetOwner<AGeoProjectile>()->ResolvedParams;
-	BulletVFX->SetVariableFloat(GeoNiagaraParams::BulletRadius, Params.Radius);
-	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletHeadColor, Params.HeadColor.GetColor(1.f));
-	BulletVFX->SetVariableLinearColor(GeoNiagaraParams::BulletTrailColor, Params.TrailColor.GetColor(1.f));
-	BulletVFX->SetVariableFloat(GeoNiagaraParams::TrailLifetimeScale, Params.TrailLifetimeScale);
-	ApplyFXParams(BulletVFX, Params.LoopingFX.VFX);
+	Flight.VFXComponent->SetVariableFloat(GeoNiagaraParams::BulletRadius, Params.Radius);
+	Flight.VFXComponent->SetVariableLinearColor(GeoNiagaraParams::BulletHeadColor, Params.HeadColor.GetColor(1.f));
+	Flight.VFXComponent->SetVariableLinearColor(GeoNiagaraParams::BulletTrailColor, Params.TrailColor.GetColor(1.f));
+	Flight.VFXComponent->SetVariableFloat(GeoNiagaraParams::TrailLifetimeScale, Params.TrailLifetimeScale);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoProjectileFXComponent::StartLife() const
+void UGeoProjectileFXComponent::StartLife()
 {
 	if (GeoLib::IsDedicatedServer(this))
 	{
@@ -95,12 +94,8 @@ void UGeoProjectileFXComponent::StartLife() const
 
 	// A pooled instance can come back holding the previous shot's launch offset; the spawner re-applies its own after
 	// this runs.
-	BulletVFX->SetRelativeLocation(FVector::ZeroVector);
-	BulletVFX->Activate(true);
-
-	FGeoSoundEntry const& LoopingSound = GetOwner<AGeoProjectile>()->ResolvedParams.LoopingFX.Sound;
-	UGeoSoundRowLibrary::ConfigureAudioComponent(LoopingSoundComponent, LoopingSound, GetFXInstigator(),
-												 GetVolume(LoopingSound), GetPitch(LoopingSound));
+	Flight.VFXComponent->SetRelativeLocation(FVector::ZeroVector);
+	StartSustainedFX(Flight, GetOwner<AGeoProjectile>()->ResolvedParams.LoopingFX);
 
 	if (FGeoBurstFXMoment const* const Start = FindMoment(EProjectileMoment::Start))
 	{
@@ -133,23 +128,23 @@ void UGeoProjectileFXComponent::StopAll()
 		return;
 	}
 
-	LoopingSoundComponent->Stop();
+	Flight.AudioComponent->Stop();
 	// Hiding the actor and disabling component ticks does not stop a Niagara system (the world manager ticks it), so a
 	// pooled projectile keeps its particles alive and the next reuse renders them for one frame.
-	BulletVFX->DeactivateImmediate();
+	Flight.VFXComponent->DeactivateImmediate();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoProjectileFXComponent::SetVisualLaunchLocation(FVector const& WorldLocation)
 {
-	BulletVFX->SetWorldLocation(WorldLocation);
+	Flight.VFXComponent->SetWorldLocation(WorldLocation);
 	SetComponentTickEnabled(true);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoProjectileFXComponent::SetBulletRadius(float const Radius) const
 {
-	BulletVFX->SetVariableFloat(GeoNiagaraParams::BulletRadius, Radius);
+	Flight.VFXComponent->SetVariableFloat(GeoNiagaraParams::BulletRadius, Radius);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

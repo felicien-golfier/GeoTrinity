@@ -16,8 +16,8 @@
  * side only.
  *
  * Sustained on both sides: a buff is turned on when the attribute rises and off again when it falls back, so its system
- * stays attached and its sound loops for exactly as long as the buff lasts. Its magnitude curve is re-sampled on every
- * change of the attribute, so a buff can grow with how boosted it is.
+ * stays attached and its sound loops for exactly as long as the buff lasts. Its magnitude, volume and pitch curves are
+ * re-sampled on every change of the attribute, so a buff can grow with how boosted it is.
  */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FGeoBuffFXEntry
