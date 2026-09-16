@@ -22,6 +22,7 @@ struct FBurstTracker
 	/** Widest a spell's hits can be spread apart and still read as one value; short enough to exclude the next spell. */
 	static constexpr float WindowSeconds = 0.5f;
 
+	/** Folds Amount into the current tumbling window, rolling it over if it has expired, and updates Max. */
 	void Add(float Amount, float CurrentTime)
 	{
 		if (CurrentTime - StartTime > WindowSeconds)

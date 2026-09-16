@@ -80,7 +80,7 @@ public:
 	//----------------------------------------------------------------------//
 	// IGenericTeamAgentInterface BEGIN
 	//----------------------------------------------------------------------//
-	/** Assigns Team Agent to given TeamID */
+	/** Stores the team as ETeam so team-based attitude queries and collision filtering use the correct identity. */
 	virtual void SetGenericTeamId(FGenericTeamId const& NewTeamId) override
 	{
 		TeamId = static_cast<ETeam>(NewTeamId.GetId());

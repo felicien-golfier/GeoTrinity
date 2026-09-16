@@ -15,7 +15,9 @@ class FGeoSavedMove_Character : public FSavedMove_Character
 	using Super = FSavedMove_Character;
 
 public:
+	/** Resets PerceivedServerTime to 0 so a recycled move does not carry a stale server-time stamp. */
 	virtual void Clear() override;
+	/** Stamps this move with the owning character's current perceived server time before the base fields are recorded. */
 	virtual void SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAcceleration,
 							FNetworkPredictionData_Client_Character& ClientData) override;
 
@@ -26,8 +28,10 @@ public:
 class FGeoNetworkPredictionData_Client_Character : public FNetworkPredictionData_Client_Character
 {
 public:
+	/** Passes the movement component reference to the base class prediction data. */
 	explicit FGeoNetworkPredictionData_Client_Character(UCharacterMovementComponent const& ClientMovement);
 
+	/** Allocates FGeoSavedMove_Character instead of the base type so each move carries a perceived-server-time stamp. */
 	virtual FSavedMovePtr AllocateNewMove() override;
 };
 
@@ -36,7 +40,9 @@ struct FGeoCharacterNetworkMoveData : public FCharacterNetworkMoveData
 {
 	using Super = FCharacterNetworkMoveData;
 
+	/** Copies PerceivedServerTime from the client's saved move into the packed network data alongside the base fields. */
 	virtual void ClientFillNetworkMoveData(FSavedMove_Character const& ClientMove, ENetworkMoveType MoveType) override;
+	/** Serializes PerceivedServerTime to/from the network packet so the server receives the client's pattern-clock stamp. */
 	virtual bool Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Archive, UPackageMap* PackageMap,
 						   ENetworkMoveType MoveType) override;
 
@@ -46,6 +52,7 @@ struct FGeoCharacterNetworkMoveData : public FCharacterNetworkMoveData
 /** Points the new, pending and old move slots at FGeoCharacterNetworkMoveData. */
 struct FGeoCharacterNetworkMoveDataContainer : public FCharacterNetworkMoveDataContainer
 {
+	/** Wires the three move slots (new, pending, old) to GeoMoveData so the engine allocates FGeoCharacterNetworkMoveData. */
 	FGeoCharacterNetworkMoveDataContainer();
 
 	FGeoCharacterNetworkMoveData GeoMoveData[3];
@@ -62,6 +69,7 @@ class GEOTRINITY_API UGeoCharacterMovementComponent : public UCharacterMovementC
 {
 	GENERATED_BODY()
 public:
+	/** Registers GeoNetworkMoveDataContainer so stamped FGeoCharacterNetworkMoveData is used for all server moves. */
 	UGeoCharacterMovementComponent();
 
 	/** Caches MaxWalkSpeed and MaxAcceleration as base values for subsequent multiplier application. */
@@ -74,6 +82,7 @@ public:
 	 */
 	void ApplySpeedMultiplier(float Multiplier);
 
+	/** Returns FGeoNetworkPredictionData_Client_Character so the engine allocates FGeoSavedMove_Character instances. */
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	/** Server. Records the pattern-clock stamp of the move once it is performed. */
 	virtual void ServerMove_PerformMovement(FCharacterNetworkMoveData const& MoveData) override;

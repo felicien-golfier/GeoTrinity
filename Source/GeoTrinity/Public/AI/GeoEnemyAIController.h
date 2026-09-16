@@ -29,7 +29,7 @@ public:
 	 * character's clamped turn toward TargetYaw. */
 	AGeoEnemyAIController(FObjectInitializer const& ObjectInitializer = FObjectInitializer::Get());
 
-	/** Assigns Team Agent to given TeamID */
+	/** Forwards the team assignment to the possessed pawn's IGenericTeamAgentInterface so controller and pawn report the same team for attitude queries and targeting. */
 	virtual void SetGenericTeamId(FGenericTeamId const& NewTeamId) override;
 
 	/** Returns the team ID used for attitude queries and team-based targeting. */
