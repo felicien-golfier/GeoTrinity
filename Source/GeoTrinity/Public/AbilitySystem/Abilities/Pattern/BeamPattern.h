@@ -10,7 +10,6 @@
 
 #include "BeamPattern.generated.h"
 
-class UGeoAbilitySystemComponent;
 class UNiagaraComponent;
 class UNiagaraSystem;
 
@@ -19,13 +18,15 @@ class UNiagaraSystem;
  * SweepAngle turns it into a rotating sweep (0 leaves it pointing straight ahead); every hostile is hit the tick it
  * enters the beam, so crossing it costs one hit no matter how slowly you walk through — and one more per re-entry.
  * Per-second effects are the exception: they keep ticking on everyone standing in the beam.
- * The server tests each target against the beam at the target's own time (GeoLib::GetPerceivedServerTime), so a remote
- * player is judged against the yaw their client showed when they stood there.
  */
 UCLASS(Blueprintable)
-class GEOTRINITY_API UBeamPattern : public UTickablePattern
+class GEOTRINITY_API UBeamPattern : public UPattern
 {
 	GENERATED_BODY()
+
+public:
+	/** Turns the hazard on. */
+	UBeamPattern();
 
 protected:
 	/** Spawns the deactivated beam Niagara component; the pattern instance and its component are reused per activation.
@@ -35,17 +36,19 @@ protected:
 	/** Reads SweepAngle from PatternData and stores the activation payload for use during the tick sweep. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
-	/** Swaps the telegraph for the real beam VFX the moment the beam goes live, and forgets the previous run's angles. */
+	/** Swaps the telegraph for the real beam VFX the moment the beam goes live. */
 	virtual void StartPattern() override;
 	/** Keeps the windup telegraph aimed while the boss moves and turns. */
 	virtual void TickDuringInit(float SpentTime) override;
-	/**
-	 * Aims the beam for the elapsed sweep fraction. Server: applies the effect data to every actor entering the beam at
-	 * its own time, the beam being on for it over its own [0, BeamDuration]. Ends once every target's own time has
-	 * passed BeamDuration — on the server that is up to one compensated half ping after the beam itself.
-	 */
+	/** Aims the beam VFX for the elapsed sweep fraction; the server also draws the hit rectangle when debugging. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
-	/** Switches the beam VFX off and clears the per-activation hit set. */
+	/** The beam is live for BeamDuration. */
+	virtual float GetHazardDuration() const override;
+	/** True when Target, at Location, overlaps the beam rectangle as aimed at SpentTime. */
+	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
+	/** Lets the beam VFX fade out. */
+	virtual void OnHazardEnd() override;
+	/** Removes the beam VFX at once on a force-stop. */
 	virtual void EndPattern(bool bForceStop = false) override;
 	/** Adds the beam length so the telegraph cue can size itself. */
 	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
@@ -58,11 +61,6 @@ protected:
 
 	/** Places the beam VFX where GetBeamOrigin/GetBeamYaw put it at SpentTime. */
 	void MoveBeamVfx(float SpentTime);
-
-	/** Applies the EffectDataArray entries matching bPerSecond to every actor of Actors, stopping early if one of them
-	 * ends the pattern. */
-	void ApplyBeamEffects(bool bPerSecond, TArray<AActor*> const& Actors,
-						  UGeoAbilitySystemComponent* SourceASC) const;
 
 	/** Full arc swept over BeamDuration, in degrees, centered on the payload yaw. 0 keeps the beam static. */
 	float SweepAngle;
@@ -106,9 +104,4 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> BeamVfxComponent;
-
-	/** Server. Last tick's signed angle, in degrees, from each in-range target's own beam yaw to the target — inside the
-	 * beam within the half angle its hit radius covers at its distance. The beam is tested over the whole swept span
-	 * from that angle to the current one, so a beam or a target jumping across the other in one step still hits. */
-	TMap<TWeakObjectPtr<AActor>, float> AnglesFromBeam;
 };

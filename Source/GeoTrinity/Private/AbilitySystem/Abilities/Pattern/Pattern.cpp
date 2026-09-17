@@ -44,6 +44,12 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 	bPatternIsActive = true;
 	StoredPayload = Payload;
 	StoredPatternData = PatternData;
+	if (bHasHazard && GeoLib::IsServer(GetWorld()))
+	{
+		HazardJudge.Start(Payload.ServerSpawnTime + StartDelay, GetHazardDuration(), TeamAttitude,
+						  /*bSeenThroughReplication*/ false);
+	}
+	bHazardEnded = false;
 	TravelTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
 
 	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
@@ -72,6 +78,11 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 		float const RemainingStartTime = StartDelay - TravelTime;
 		GetWorld()->GetTimerManager().SetTimer(StartSectionTimerHandle, this, &UPattern::StartPattern,
 											   RemainingStartTime);
+	}
+
+	if (IsPatternActive())
+	{
+		CalculateTimeAndTickPattern();
 	}
 }
 
@@ -185,20 +196,15 @@ void UPattern::EndPattern(bool const bForceStop)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(StartSectionTimerHandle);
 	}
+	GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
+	if (bHasHazard && GeoLib::IsServer(GetWorld()))
+	{
+		HazardJudge.Stop();
+	}
 
 	if (!bForceStop)
 	{
 		OnPatternEnd.Broadcast();
-	}
-}
-
-void UTickablePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
-{
-	Super::InitPattern(Payload, PatternData);
-
-	if (IsPatternActive())
-	{
-		CalculateTimeAndTickPattern();
 	}
 }
 
@@ -208,7 +214,7 @@ void UTickablePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStr
  * SpentTime excludes the Start-section length because projectiles are not spawned during that phase; the loop
  * already runs during that section, where the still-pending Start-section timer routes it to TickDuringInit.
  */
-void UTickablePattern::CalculateTimeAndTickPattern()
+void UPattern::CalculateTimeAndTickPattern()
 {
 	float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
 	float const SpentTime = ServerTime - StoredPayload.ServerSpawnTime - StartDelay;
@@ -221,25 +227,70 @@ void UTickablePattern::CalculateTimeAndTickPattern()
 		TickPattern(ServerTime, FMath::Max(0.f, SpentTime));
 	}
 
+	if (bHasHazard && IsPatternActive())
+	{
+		TickHazard(ServerTime, SpentTime);
+	}
+
 	if (IsPatternActive())
 	{
 		TimeSyncTimerHandle =
-			GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UTickablePattern::CalculateTimeAndTickPattern);
+			GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UPattern::CalculateTimeAndTickPattern);
 	}
 }
 
-void UTickablePattern::TickPattern(float const ServerTime, float const SpentTime)
+void UPattern::TickPattern(float /*ServerTime*/, float /*SpentTime*/)
 {
-	// To be overriden by your own Tickable pattern !
+	// To be overriden by your own ticking pattern !
 }
 
-void UTickablePattern::TickDuringInit(float /*SpentTime is NEGATIVE value until 0 when StartPattern*/)
+void UPattern::TickDuringInit(float /*SpentTime is NEGATIVE value until 0 when StartPattern*/)
 {
 	// To be overriden when your pattern must keep moving during the wind-up !
 }
 
-void UTickablePattern::EndPattern(bool bForceStop)
+float UPattern::GetHazardDuration() const
 {
-	Super::EndPattern(bForceStop);
-	GetWorld()->GetTimerManager().ClearTimer(TimeSyncTimerHandle);
+	return 0.f;
+}
+
+bool UPattern::IsInHazard(AActor const* /*Target*/, FVector2D /*Location*/, float /*SpentTime*/) const
+{
+	ensureMsgf(!bHasHazard, TEXT("Pattern %s has a hazard but IsInHazard is not overriden !"), *GetName());
+	return false;
+}
+
+TArray<TInstancedStruct<FEffectData>> const& UPattern::GetHazardEffects() const
+{
+	return EffectDataArray;
+}
+
+void UPattern::OnHazardEnd()
+{
+	JumpMontageToEndSection();
+}
+
+void UPattern::TickHazard(float const ServerTime, float const SpentTime)
+{
+	bool const bIsServer = GeoLib::IsServer(GetWorld());
+	if (bIsServer)
+	{
+		HazardJudge.Judge(StoredPayload, GetHazardEffects(),
+						  [this](AActor const* Target, FVector2D const Location, float const TargetSpentTime)
+						  {
+							  return IsInHazard(Target, Location, TargetSpentTime);
+						  });
+	}
+
+	// A judged effect can end the pattern, e.g. by killing the last player.
+	if (IsPatternActive() && !bHazardEnded && SpentTime >= GetHazardDuration())
+	{
+		bHazardEnded = true;
+		OnHazardEnd();
+	}
+
+	if (bHazardEnded && (!bIsServer || HazardJudge.IsOver(ServerTime)))
+	{
+		EndPattern();
+	}
 }

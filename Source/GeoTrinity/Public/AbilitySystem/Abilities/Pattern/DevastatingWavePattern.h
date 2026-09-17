@@ -31,14 +31,16 @@ struct FPillarWaveData
  * every machine (deterministic from server time + replicated pillars) to drive the masked AOE VFX.
  */
 UCLASS(Blueprintable)
-class GEOTRINITY_API UDevastatingWavePattern : public UTickablePattern
+class GEOTRINITY_API UDevastatingWavePattern : public UPattern
 {
 	GENERATED_BODY()
 
 public:
+	/** Turns the hazard on. */
+	UDevastatingWavePattern();
 	/** Spawns the masked AOE Niagara component deactivated — the pattern instance is reused across activations. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
-	/** Clears wave pillar data and front offsets, and resets all MPC pillar mask slots to the unused sentinel.
+	/** Clears wave pillar data and resets all MPC pillar mask slots to the unused sentinel.
 	 * Called at the start of both InitPattern and StartPattern so stale data from a previous activation never bleeds in. */
 	void ClearData();
 
@@ -57,22 +59,21 @@ protected:
 	void ActivateAoeVfxTelegraph() const;
 	/** Sets the cue source location to the boss's 2D wave origin. */
 	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
-	/**
-	 * Expands the wave radius by ExpansionSpeed * SpentTime each tick.
-	 * Hits actors whose center sits within AnnulusWidth of the wave front: pillars are added to the VFX mask on all
-	 * machines as the front reaches them; other hostiles receive effect data server-side only, the tick they enter
-	 * the band (staying in it costs nothing more, stepping back into it costs another hit).
-	 * The server tests each target against the wave at the target's own time (GeoLib::GetPerceivedServerTime), so a
-	 * remote player is judged against the radius their client showed when they stood there. Its band stops at MaxRadius.
-	 * Ends the pattern once every target's own radius has reached MaxRadius — on the server that is up to one
-	 * compensated half ping after the front itself.
-	 */
+	/** Adds the pillars the wave front has reached to the VFX mask, on every machine. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
-	/** Ends the wave; deactivates the AOE VFX gracefully on natural completion or immediately on force-stop. */
+	/** The wave is live until its front reaches MaxRadius. */
+	virtual float GetHazardDuration() const override;
+	/** True when Location sits within AnnulusWidth behind the wave front and no pillar shadows it: entering the band
+	 * costs a hit, staying in it costs nothing more, stepping back into it costs another one. */
+	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
+	/** Lets the AOE VFX play out its fade. */
+	virtual void OnHazardEnd() override;
+	/** Ends the wave: the server kills the pillars it reached; a force-stop also removes the AOE VFX at once. */
 	virtual void EndPattern(bool bForceStop = false) override;
 
 private:
-	bool ShouldHitActor(AActor const* Actor) const;
+	/** True when a pillar the wave reached stands between the wave origin and Location. */
+	bool IsBehindPillar(FVector2D Location) const;
 	/** Writes the last added PillarsWaveData entry into the next mask MPC pillar slot. */
 	void AddPillarToVfxMask();
 	/** Positions the AOE component at the wave origin, pushes its user params and activates it. */
@@ -117,9 +118,4 @@ private:
 	FTimerHandle TelegraphBlinkTimerHandle;
 
 	TArray<FPillarWaveData> PillarsWaveData;
-
-	/** Server. Last tick's distance of each unshadowed target's centre behind its own wave front — inside the band
-	 * when in [0, AnnulusWidth]. The band is tested over the whole span from that offset to the current one, so a
-	 * front jumping past a target in one step (a long frame, a burst of moves) still hits it. */
-	TMap<TWeakObjectPtr<AActor>, float> FrontOffsets;
 };

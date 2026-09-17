@@ -3,18 +3,21 @@
 #include "AbilitySystem/Abilities/Pattern/BeamPattern.h"
 
 #include "AbilitySystem/Abilities/Boss/GeoSweepBeamAbility.h"
-#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "DrawDebugHelpers.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 static TAutoConsoleVariable CVarDrawBeamBorder(TEXT("Geo.DrawBeamBorder"), false,
 											   TEXT("When true, draws the beam pattern's hit-scan rectangle borders"));
+
+UBeamPattern::UBeamPattern()
+{
+	bHasHazard = true;
+}
 
 void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
@@ -95,8 +98,6 @@ void UBeamPattern::TickDuringInit(float const SpentTime)
 
 void UBeamPattern::StartPattern()
 {
-	AnglesFromBeam.Reset();
-
 	if (IsValid(BeamVfxComponent))
 	{
 		GeoNiagaraParams::ApplySwappableAsset(BeamVfxComponent, {BeamVfxSystem, IndicatorSystem},
@@ -110,123 +111,48 @@ void UBeamPattern::StartPattern()
 	Super::StartPattern();
 }
 
-void UBeamPattern::TickPattern(float const ServerTime, float const SpentTime)
+void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 {
 	MoveBeamVfx(SpentTime);
 
-	float OldestActorSpentTime = SpentTime;
-	if (GeoLib::IsServer(GetWorld()))
+	if (GeoLib::IsServer(GetWorld()) && CVarDrawBeamBorder.GetValueOnGameThread())
 	{
 		FVector const Location = GetBeamOrigin();
-		FVector2D const Forward(FRotator(0.f, GetBeamYaw(SpentTime), 0.f).Vector());
-
-		if (CVarDrawBeamBorder.GetValueOnGameThread())
-		{
-			FVector const Right = FVector::CrossProduct(FVector::UpVector, FVector(Forward, 0.f));
-			FVector const BeamStart = Location;
-			FVector const BeamEnd = Location + FVector(Forward, 0.f) * BeamRange;
-			DrawDebugLine(GetWorld(), BeamStart + Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
-						  false, 0.f);
-			DrawDebugLine(GetWorld(), BeamStart - Right * BeamHalfWidth, BeamEnd - Right * BeamHalfWidth, FColor::Red,
-						  false, 0.f);
-			DrawDebugLine(GetWorld(), BeamEnd - Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
-						  false, 0.f);
-		}
-
-		UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceOwner);
-		// A missing ASC only costs the damage: falling through still lets the beam reach its end and stop ticking.
-		if (ensureMsgf(SourceASC, TEXT("UBeamPattern: Owner has no ASC")))
-		{
-			FGenericTeamId const SourceTeam = GeoASLib::GetTeamId(StoredPayload.SourceOwner);
-			bool const bIncludeTargetRadius = GeoASLib::ShouldIncludeTargetRadius(OverlapMode, SourceTeam);
-			TMap<TWeakObjectPtr<AActor>, float> const PreviousAnglesFromBeam = MoveTemp(AnglesFromBeam);
-			TArray<AActor*> ActorsInBeam;
-			TArray<AActor*> ActorsEnteringBeam;
-			for (AActor* Actor :
-				 GeoASLib::GetInteractableActors(this, SourceTeam, TeamAttitudeMask::HostileOrNeutral,
-												 /*bMustBeDamageable*/ true, FVector2D(Location), BeamRange, OverlapMode))
-			{
-				float const ActorSpentTime = SpentTime - (ServerTime - GeoLib::GetPerceivedServerTime(Actor));
-				OldestActorSpentTime = FMath::Min(OldestActorSpentTime, ActorSpentTime);
-				if (ActorSpentTime < 0.f || ActorSpentTime > BeamDuration)
-				{
-					continue;
-				}
-
-				FVector2D const ToActor = FVector2D(Actor->GetActorLocation()) - FVector2D(Location);
-				float const HitRadius =
-					BeamHalfWidth + (bIncludeTargetRadius ? Actor->GetSimpleCollisionRadius() : 0.f);
-				float const HalfAngle =
-					FMath::RadiansToDegrees(FMath::Asin(HitRadius / FMath::Max(ToActor.Size(), HitRadius)));
-				float const AngleFromBeam = FMath::FindDeltaAngleDegrees(
-					GetBeamYaw(ActorSpentTime), FMath::RadiansToDegrees(FMath::Atan2(ToActor.Y, ToActor.X)));
-				AnglesFromBeam.Add(Actor, AngleFromBeam);
-
-				if (FMath::Abs(AngleFromBeam) <= HalfAngle)
-				{
-					ActorsInBeam.Add(Actor);
-				}
-
-				float const* const PreviousAngleFromBeam = PreviousAnglesFromBeam.Find(Actor);
-				if (PreviousAngleFromBeam && FMath::Abs(*PreviousAngleFromBeam) <= HalfAngle)
-				{
-					continue;
-				}
-
-				float const SweptFromAngle = PreviousAngleFromBeam
-					? AngleFromBeam + FMath::FindDeltaAngleDegrees(AngleFromBeam, *PreviousAngleFromBeam)
-					: AngleFromBeam;
-				if (FMath::Max(SweptFromAngle, AngleFromBeam) >= -HalfAngle
-					&& FMath::Min(SweptFromAngle, AngleFromBeam) <= HalfAngle)
-				{
-					ActorsEnteringBeam.Add(Actor);
-				}
-			}
-
-			ApplyBeamEffects(/*bPerSecond*/ true, ActorsInBeam, SourceASC);
-			if (!bPatternIsActive)
-			{
-				return;
-			}
-
-			ApplyBeamEffects(/*bPerSecond*/ false, ActorsEnteringBeam, SourceASC);
-		}
-	}
-
-	if (OldestActorSpentTime >= BeamDuration)
-	{
-		EndPattern();
+		FVector const Forward = FRotator(0.f, GetBeamYaw(SpentTime), 0.f).Vector();
+		FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
+		FVector const BeamStart = Location;
+		FVector const BeamEnd = Location + Forward * BeamRange;
+		DrawDebugLine(GetWorld(), BeamStart + Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
+					  false, 0.f);
+		DrawDebugLine(GetWorld(), BeamStart - Right * BeamHalfWidth, BeamEnd - Right * BeamHalfWidth, FColor::Red,
+					  false, 0.f);
+		DrawDebugLine(GetWorld(), BeamEnd - Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
+					  false, 0.f);
 	}
 }
 
-void UBeamPattern::ApplyBeamEffects(bool const bPerSecond, TArray<AActor*> const& Actors,
-									UGeoAbilitySystemComponent* SourceASC) const
+float UBeamPattern::GetHazardDuration() const
 {
-	TArray<TInstancedStruct<FEffectData>> const Effects = EffectDataArray.FilterByPredicate(
-		[bPerSecond](TInstancedStruct<FEffectData> const& Effect)
-		{
-			FEffectData const* const EffectData = Effect.GetPtr();
-			return EffectData && EffectData->IsPerSecond() == bPerSecond;
-		});
+	return BeamDuration;
+}
 
-	if (Effects.IsEmpty())
+bool UBeamPattern::IsInHazard(AActor const* Target, FVector2D const Location, float const SpentTime) const
+{
+	bool const bIncludeTargetRadius =
+		GeoASLib::ShouldIncludeTargetRadius(OverlapMode, GeoASLib::GetTeamId(StoredPayload.SourceOwner));
+	float const TargetRadius = bIncludeTargetRadius ? Target->GetSimpleCollisionRadius() : 0.f;
+	FVector2D const ToTarget = Location - FVector2D(GetBeamOrigin());
+	FVector2D const Forward(FRotator(0.f, GetBeamYaw(SpentTime), 0.f).Vector());
+	return ToTarget.SizeSquared() <= FMath::Square(BeamRange + TargetRadius) && (ToTarget | Forward) >= 0.f
+		&& FMath::Abs(ToTarget ^ Forward) <= BeamHalfWidth + TargetRadius;
+}
+
+void UBeamPattern::OnHazardEnd()
+{
+	Super::OnHazardEnd();
+	if (IsValid(BeamVfxComponent))
 	{
-		return;
-	}
-
-	for (AActor* const HitActor : Actors)
-	{
-		if (UGeoAbilitySystemComponent* const TargetASC = GeoASLib::GetGeoAscFromActor(HitActor))
-		{
-			GeoASLib::ApplyEffectFromEffectData(Effects, SourceASC, TargetASC, StoredPayload.AbilityLevel,
-												StoredPayload.Seed, StoredPayload.AbilityTag);
-			GeoASLib::NotifyAbilityHit(StoredPayload, HitActor);
-		}
-
-		if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
-		{
-			return;
-		}
+		BeamVfxComponent->Deactivate();
 	}
 }
 
@@ -239,17 +165,9 @@ FGameplayCueParameters UBeamPattern::FillCueParam(FGeoCueParam const& Cue, FAbil
 
 void UBeamPattern::EndPattern(bool const bForceStop)
 {
-	if (IsPatternActive() && IsValid(BeamVfxComponent))
+	if (bForceStop && IsPatternActive() && IsValid(BeamVfxComponent))
 	{
-		// A force-stopped beam must vanish at once; a natural end can play out its fade.
-		if (bForceStop)
-		{
-			BeamVfxComponent->DeactivateImmediate();
-		}
-		else
-		{
-			BeamVfxComponent->Deactivate();
-		}
+		BeamVfxComponent->DeactivateImmediate();
 	}
 
 	Super::EndPattern(bForceStop);

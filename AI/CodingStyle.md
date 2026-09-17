@@ -16,6 +16,11 @@ an existing function, an existing member — and use it.
 
 ## Writing code
 - Prefer fewer, longer `if`s — merge with `&&` rather than nesting.
+- **No `return` that skips the rest of a function.** Once the function has started its work, never bail out
+  of it: wrap the remaining work in an `if` (or fold the condition into the loop's), so whoever appends code
+  later sees which case it runs in. Fine: an early return — a guard at the top, before any work (the
+  `if (!ensureMsgf(...)) { return; }` form included) — and a return that *is* the result, like a search loop
+  returning what it found, with the not-found return closing the function.
 - `const` by default. Prefer a non-const parameter over a const ref plus a local copy.
 - Forward declare in headers rather than including (`enum class EMyEnum : uint8;`).
 - No abbreviations in names, except `ASC`. Same style and naming throughout.

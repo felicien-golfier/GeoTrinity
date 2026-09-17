@@ -5,8 +5,12 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Pillar/GeoPillar.h"
-#include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+USpawnPillarPattern::USpawnPillarPattern()
+{
+	bHasHazard = true;
+}
 
 void USpawnPillarPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
@@ -64,64 +68,36 @@ void USpawnPillarPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 	}
 }
 
-void USpawnPillarPattern::StartPattern()
-{
-	Super::StartPattern();
-	ZoneExpiry.Start(StoredPayload.ServerSpawnTime + StartDelay, /*bSeenThroughReplication*/ false);
-
-	if (!GeoLib::IsServer(GetWorld()))
-	{
-		EndPattern();
-	}
-}
-
-void USpawnPillarPattern::TickPattern(float const ServerTime, float /*SpentTime*/)
+bool USpawnPillarPattern::IsInHazard(AActor const* Target, FVector2D const Location, float /*SpentTime*/) const
 {
 	FGenericTeamId const SourceTeam = GeoASLib::GetTeamId(StoredPayload.SourceOwner);
-	TSet<AActor*> const ActorsReachingExpiry = ZoneExpiry.JudgeActorsReachingEvent(
-		GeoASLib::GetInteractableActors(this, SourceTeam, TeamAttitudeMask::HostileOrNeutral, true));
-
-	UGeoAbilitySystemComponent* const AvatarASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceAvatar);
-	if (AvatarASC && PillarSpawnEffects.Num() > 0 && ActorsReachingExpiry.Num() > 0)
+	for (FVector2D const& ZoneLocation : PillarSpawnLocations)
 	{
-		for (FVector2D const& ZoneLocation : PillarSpawnLocations)
+		if (GeoASLib::IsInCircle(Target, Location, ZoneLocation, SpawningZoneSize, ETargetOverlapMode::Automatic,
+								 SourceTeam))
 		{
-			for (AActor* TargetActor : GeoASLib::GetInteractableActors(
-					 this, SourceTeam, TeamAttitudeMask::HostileOrNeutral, true, ZoneLocation, SpawningZoneSize,
-					 [&ActorsReachingExpiry](AActor* Actor)
-					 {
-						 return ActorsReachingExpiry.Contains(Actor);
-					 }))
-			{
-				if (IsValid(TargetActor) && !TargetActor->IsActorBeingDestroyed())
-				{
-					if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(TargetActor))
-					{
-						UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(
-							PillarSpawnEffects, AvatarASC, TargetASC, StoredPayload.AbilityLevel, StoredPayload.Seed,
-							StoredPayload.AbilityTag);
-						UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, TargetActor);
-					}
-				}
-
-				if (!bPatternIsActive) // Cuz previous effect can kill the last char and so delete the boss.
-				{
-					return;
-				}
-			}
+			return true;
 		}
 	}
+	return false;
+}
 
-	if (ZoneExpiry.IsOver(ServerTime))
+TArray<TInstancedStruct<FEffectData>> const& USpawnPillarPattern::GetHazardEffects() const
+{
+	return PillarSpawnEffects;
+}
+
+void USpawnPillarPattern::EndPattern(bool const bForceStop)
+{
+	if (IsPatternActive() && !bForceStop && GeoLib::IsServer(GetWorld()))
 	{
-
 		for (FVector2D const& ZoneLocation : PillarSpawnLocations)
 		{
 			GeoASLib::FullySpawnDeployable(PillarClass, StoredPayload,
 										   GeoASLib::GetEffectDataArray(StoredPayload.AbilityTag), PillarParams,
 										   FTransform(FVector(ZoneLocation, ArbitraryCharacterZ)));
 		}
-
-		EndPattern();
 	}
+
+	Super::EndPattern(bForceStop);
 }

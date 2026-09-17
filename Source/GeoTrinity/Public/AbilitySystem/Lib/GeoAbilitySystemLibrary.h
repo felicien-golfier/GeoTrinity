@@ -71,6 +71,7 @@ public:
 	 * This ensures context data (e.g. damage multipliers) is set before any effect is applied.
 	 * Each entry's OneShotCue is executed right after that entry applies.
 	 *
+	 * @param PerSecondDuration  Duration per-second entries are scaled by; 0 scales them by the current frame's delta.
 	 * @return  Array of active effect handles, one per successfully applied effect. Invalid handles are included for
 	 * entries that do not apply effects.
 	 */
@@ -78,7 +79,7 @@ public:
 	static TArray<FActiveGameplayEffectHandle>
 	ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
 							  UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
-							  int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag);
+							  int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag, float PerSecondDuration = 0.f);
 
 	/** Applies a single TInstancedStruct<FEffectData> entry (UpdateContextHandle, ApplyEffect, then its OneShotCue). */
 	static FActiveGameplayEffectHandle ApplySingleEffectData(TInstancedStruct<FEffectData> const& Data,
@@ -338,6 +339,10 @@ public:
 
 	/** Resolves OverlapMode for a query cast by SourceTeam: whether targets' own collision radius is counted. */
 	static bool ShouldIncludeTargetRadius(ETargetOverlapMode OverlapMode, FGenericTeamId SourceTeam);
+	/** True when Target, standing at Location, is within Radius of Center — its own collision radius counted as
+	 * ShouldIncludeTargetRadius resolves OverlapMode for SourceTeam. */
+	static bool IsInCircle(AActor const* Target, FVector2D Location, FVector2D Center, float Radius,
+						   ETargetOverlapMode OverlapMode, FGenericTeamId SourceTeam);
 
 
 	/** Returns the actor in ActorList with the smallest 3D distance to FromActor, or nullptr if the list is empty. */

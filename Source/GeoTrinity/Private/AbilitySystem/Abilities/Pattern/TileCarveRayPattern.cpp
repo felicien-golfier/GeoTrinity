@@ -7,7 +7,7 @@
 
 void UTileCarveRayPattern::TickPattern(float const ServerTime, float const SpentTime)
 {
-	if (bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
+	if (bDestroyLastTileHit && SpentTime < BeamDuration && GeoLib::IsServer(GetWorld()))
 	{
 		FIntPoint LastTile;
 		if (AGeoHexArena* const Arena = FindLastTileHit(SpentTime, LastTile))
@@ -19,9 +19,10 @@ void UTileCarveRayPattern::TickPattern(float const ServerTime, float const Spent
 	Super::TickPattern(ServerTime, SpentTime);
 }
 
-void UTileCarveRayPattern::EndPattern(bool const bForceStop)
+void UTileCarveRayPattern::OnHazardEnd()
 {
-	if (IsPatternActive() && !bForceStop && bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
+	Super::OnHazardEnd();
+	if (bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
 	{
 		// Yaw at SpentTime 0: the tile that dies is the one the beam locked onto when it went live.
 		FIntPoint LastTile;
@@ -30,8 +31,6 @@ void UTileCarveRayPattern::EndPattern(bool const bForceStop)
 			Arena->DestroyTiles({LastTile});
 		}
 	}
-
-	Super::EndPattern(bForceStop);
 }
 
 AGeoHexArena* UTileCarveRayPattern::FindLastTileHit(float const SpentTime, FIntPoint& OutTile) const

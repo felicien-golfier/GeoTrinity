@@ -28,7 +28,7 @@ struct FProjectilePatternData : public FPatternData
  * StartPattern.
  */
 UCLASS(Abstract)
-class GEOTRINITY_API UProjectilePattern : public UTickablePattern
+class GEOTRINITY_API UProjectilePattern : public UPattern
 {
 	GENERATED_BODY()
 

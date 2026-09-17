@@ -13,7 +13,7 @@
  * NumberProjectileByRound, TimeForOneRound, and RoundNumber configure the density and duration.
  */
 UCLASS()
-class GEOTRINITY_API USpiralPattern : public UTickablePattern
+class GEOTRINITY_API USpiralPattern : public UPattern
 {
 	GENERATED_BODY()
 protected:

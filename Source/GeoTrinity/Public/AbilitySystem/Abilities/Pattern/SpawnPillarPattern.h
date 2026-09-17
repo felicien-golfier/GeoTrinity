@@ -8,7 +8,6 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "StructUtils/InstancedStruct.h"
-#include "Tool/GeoLagCompensatedEvent.h"
 
 #include "SpawnPillarPattern.generated.h"
 
@@ -31,13 +30,19 @@ struct FSpawnPillarPatternData : public FPatternData
  * Pattern that marks a zone under a random player, shows a countdown visual, then on expiry:
  * fires an expiry cue, applies damage to hostiles in the zone, and spawns a GeoPillar.
  * Runs identically on all clients via PatternStartMulticast — server time ensures sync.
- * The server judges each hostile at its own time (GeoLib::GetPerceivedServerTime), so a remote player who left the zone
- * on their screen before it expired is not hit.
  */
 UCLASS(Blueprintable)
-class GEOTRINITY_API USpawnPillarPattern : public UTickablePattern
+class GEOTRINITY_API USpawnPillarPattern : public UPattern
 {
 	GENERATED_BODY()
+
+public:
+	/** Turns the hazard on. It keeps the default zero duration: the zones expire at the single instant the pattern goes
+	 * live. */
+	USpawnPillarPattern();
+	/** Server: spawns a pillar at every zone location, unless force-stopped. Coming once every hostile has been
+	 * judged, no pillar is simulated around a player who had already left. */
+	virtual void EndPattern(bool bForceStop = false) override;
 
 protected:
 	/** Flags a missing pillar class so a misconfigured pattern is caught at creation time. */
@@ -51,14 +56,10 @@ private:
 							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** Fires the zone-indicator cue at every zone location rather than just the pattern origin. */
 	virtual void ExecuteGameplayCue(FGeoCueParam const& Cue) override;
-	/** Starts judging hostiles on the server; ends the pattern right away everywhere else. */
-	virtual void StartPattern() override;
-	/**
-	 * Server. Applies PillarSpawnEffects to every hostile ZoneExpiry judges this tick, if it stands in a zone. Once
-	 * ZoneExpiry is over, spawns a pillar at every zone location and ends the pattern — no pillar is simulated around a
-	 * player who had already left.
-	 */
-	virtual void TickPattern(float ServerTime, float SpentTime) override;
+	/** True when Location stands in any zone. */
+	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
+	/** Returns PillarSpawnEffects. */
+	virtual TArray<TInstancedStruct<FEffectData>> const& GetHazardEffects() const override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoPillar", meta = (AllowPrivateAccess = "true"))
 	float SpawningZoneSize = 300.f;
@@ -77,7 +78,4 @@ private:
 	FGeoCueParam DirectionCue;
 
 	TSet<FVector2D> PillarSpawnLocations;
-
-	/** Server. Judges every hostile against the zones' expiry. */
-	FGeoLagCompensatedEvent ZoneExpiry;
 };

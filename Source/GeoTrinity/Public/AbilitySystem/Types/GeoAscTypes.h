@@ -34,6 +34,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsFromBasicAbility() const { return bIsFromBasicAbility; }
 	/** Returns true when this damage must never be captured by a sacrificed target (redirected shares, drains, ...). */
 	bool DoNotRedirectSacrifice() const { return bDoNotRedirectSacrifice; }
+	/** Returns the duration a per-second magnitude is scaled by; 0 means the current frame's delta. */
+	float GetPerSecondDuration() const { return PerSecondDuration; }
 	/** Icon (UTexture2D or UMaterialInterface) shown in the HUD status bar while the applied effect is active;
 	 * null when the effect has no icon. */
 	UObject* GetIcon() const { return Icon; }
@@ -54,6 +56,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetIsFromBasicAbility(bool value) { bIsFromBasicAbility = value; }
 	/** When true, PostGameplayEffectExecute never captures this damage for sacrifice redirection. */
 	void SetDoNotRedirectSacrifice(bool value) { bDoNotRedirectSacrifice = value; }
+	/** Sets the duration a per-second magnitude is scaled by, for an applier that does not run once per frame. */
+	void SetPerSecondDuration(float value) { PerSecondDuration = value; }
 	/** Sets the icon (UTexture2D or UMaterialInterface) the HUD status bar displays while the applied effect is
 	 * active. */
 	void SetIcon(UObject* value) { Icon = value; }
@@ -79,6 +83,7 @@ protected:
 	// Call-site scoped — set by UpdateContextHandle, baked into the spec context via Duplicate() at MakeOutgoingSpec time.
 	// Not serialized: consumed server-side from the spec's embedded context copy in ExecCalc / PostGameplayEffectExecute.
 	float SingleUseDamageMultiplier{1.f};
+	float PerSecondDuration{0.f};
 	bool bSuppressHealProvided{false};
 	bool bSuppressGameplayCue{false};
 	bool bLimitGameplayCue{false};

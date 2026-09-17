@@ -145,7 +145,8 @@ void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* Source
 // ---------------------------------------------------------------------------------------------------------------------
 TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(
 	TArray<TInstancedStruct<FEffectData>> const& DataArray, UAbilitySystemComponent* SourceASC,
-	UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag)
+	UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag,
+	float const PerSecondDuration)
 {
 	TArray<FActiveGameplayEffectHandle> SpecHandles;
 	if (!ensureMsgf(IsValid(SourceASC) && IsValid(TargetASC),
@@ -156,6 +157,7 @@ TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEff
 
 	FGeoGameplayEffectContext* GeoEffectContext = nullptr;
 	FGameplayEffectContextHandle ContextHandle = MakeGeoEffectContext(SourceASC, TargetASC, GeoEffectContext);
+	GeoEffectContext->SetPerSecondDuration(PerSecondDuration);
 
 	TArray<FEffectData const*> ApplicableEffects;
 	ApplicableEffects.Reserve(DataArray.Num());
@@ -336,6 +338,15 @@ bool UGeoAbilitySystemLibrary::ShouldIncludeTargetRadius(ETargetOverlapMode Over
 	default:
 		return SourceTeam.GetId() != static_cast<uint8>(ETeam::Enemy);
 	}
+}
+
+bool UGeoAbilitySystemLibrary::IsInCircle(AActor const* Target, FVector2D const Location, FVector2D const Center,
+										  float const Radius, ETargetOverlapMode const OverlapMode,
+										  FGenericTeamId const SourceTeam)
+{
+	float const TargetRadius =
+		ShouldIncludeTargetRadius(OverlapMode, SourceTeam) ? Target->GetSimpleCollisionRadius() : 0.f;
+	return FVector2D::DistSquared(Center, Location) <= FMath::Square(Radius + TargetRadius);
 }
 // ---------------------------------------------------------------------------------------------------------------------
 AActor* UGeoAbilitySystemLibrary::GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList)

@@ -173,8 +173,14 @@ FActiveGameplayEffectHandle FMagnitudeEffectData::ApplyEffect(FGameplayEffectCon
 	float CalculatedAmount = Amount.GetValueAtLevel(AbilityLevel);
 	if (bIsPerSecond)
 	{
-
-		CalculatedAmount *= SourceASC->GetWorld()->GetDeltaSeconds();
+		FGeoGameplayEffectContext const* const GeoContext =
+			static_cast<FGeoGameplayEffectContext const*>(ContextHandle.Get());
+		float PerSecondDuration = GeoContext->GetPerSecondDuration();
+		if (PerSecondDuration <= 0.f)
+		{
+			PerSecondDuration = SourceASC->GetWorld()->GetDeltaSeconds();
+		}
+		CalculatedAmount *= PerSecondDuration;
 	}
 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, GetMagnitudeTag(), CalculatedAmount);
 

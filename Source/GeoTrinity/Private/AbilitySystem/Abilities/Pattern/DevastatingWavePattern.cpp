@@ -32,6 +32,11 @@ namespace
 	}
 } // namespace
 
+UDevastatingWavePattern::UDevastatingWavePattern()
+{
+	bHasHazard = true;
+}
+
 void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
 										  TInstancedStruct<FPatternData> const& PatternData)
 {
@@ -82,7 +87,6 @@ void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 void UDevastatingWavePattern::ClearData()
 {
 	PillarsWaveData.Empty();
-	FrontOffsets.Empty();
 	// The MPC is global state — clear slots left over from a previous wave before the AOE starts rendering.
 	for (int32 SlotIndex = 0; SlotIndex < MaxMaskedPillarSlots; ++SlotIndex)
 	{
@@ -162,77 +166,26 @@ FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FGeoCueParam const&
 	return CueParams;
 }
 
-void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
+void UDevastatingWavePattern::TickPattern(float /*ServerTime*/, float const SpentTime)
 {
-	float const CurrentRadius = ExpansionSpeed * SpentTime;
-
+	float const CurrentRadius = FMath::Min(ExpansionSpeed * SpentTime, MaxRadius);
 	if (CurrentRadius <= 0.f)
 	{
 		return;
 	}
 
-	float OldestActorRadius = CurrentRadius;
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceOwner);
-	if (ensureMsgf(SourceASC, TEXT("UDevastatingWavePattern: SourceASC is null — Owner has no ASC")))
+	for (AGeoPillar* Pillar : GeoASLib::GetInteractableActors<AGeoPillar>(
+			 this, GeoASLib::GetTeamId(StoredPayload.SourceOwner), TeamAttitudeMask::HostileOrNeutral, true,
+			 StoredPayload.Origin, CurrentRadius))
 	{
-		TMap<TWeakObjectPtr<AActor>, float> const PreviousFrontOffsets = MoveTemp(FrontOffsets);
-		TArray<AActor*> ActorsEnteringWaveFront;
-		for (AActor* HitActor : GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.SourceOwner),
-																TeamAttitudeMask::HostileOrNeutral, true,
-																StoredPayload.Origin, CurrentRadius))
+		if (!PillarsWaveData.ContainsByPredicate(
+				[Pillar](FPillarWaveData const& Data)
+				{
+					return Data.Pillar.Get() == Pillar;
+				}))
 		{
-			AGeoPillar* Pillar = Cast<AGeoPillar>(HitActor);
-			if (IsValid(Pillar)
-				&& !PillarsWaveData.ContainsByPredicate(
-					[Pillar](FPillarWaveData const& Data)
-					{
-						return Data.Pillar.Get() == Pillar;
-					}))
-			{
-				PillarsWaveData.Add(
-					{FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Pillar});
-				AddPillarToVfxMask();
-			}
-
-			if (GeoLib::IsServer(this))
-			{
-				float const ActorRadius =
-					CurrentRadius - ExpansionSpeed * (ServerTime - GeoLib::GetPerceivedServerTime(HitActor));
-				OldestActorRadius = FMath::Min(OldestActorRadius, ActorRadius);
-				if (!ShouldHitActor(HitActor))
-				{
-					continue;
-				}
-
-				float const FrontOffset = FMath::Clamp(ActorRadius, 0.f, MaxRadius)
-					- FVector2D::Distance(StoredPayload.Origin, FVector2D(HitActor->GetActorLocation()));
-				FrontOffsets.Add(HitActor, FrontOffset);
-
-				float const* const PreviousFrontOffset = PreviousFrontOffsets.Find(HitActor);
-				if (PreviousFrontOffset && *PreviousFrontOffset >= 0.f && *PreviousFrontOffset <= AnnulusWidth)
-				{
-					continue;
-				}
-
-				float const SweptFromOffset = PreviousFrontOffset ? *PreviousFrontOffset : FrontOffset;
-				if (FMath::Max(SweptFromOffset, FrontOffset) >= 0.f
-					&& FMath::Min(SweptFromOffset, FrontOffset) <= AnnulusWidth)
-				{
-					ActorsEnteringWaveFront.Add(HitActor);
-				}
-			}
-		}
-
-		for (AActor* HitActor : ActorsEnteringWaveFront)
-		{
-			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
-			if (IsValid(TargetASC))
-			{
-				UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC,
-																	StoredPayload.AbilityLevel, StoredPayload.Seed,
-																	StoredPayload.AbilityTag);
-				UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, HitActor);
-			}
+			PillarsWaveData.Add({FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Pillar});
+			AddPillarToVfxMask();
 		}
 	}
 
@@ -240,21 +193,37 @@ void UDevastatingWavePattern::TickPattern(float ServerTime, float SpentTime)
 	{
 		DrawDebugWave(CurrentRadius);
 	}
+}
 
-	if (OldestActorRadius >= MaxRadius)
+float UDevastatingWavePattern::GetHazardDuration() const
+{
+	return MaxRadius / ExpansionSpeed;
+}
+
+bool UDevastatingWavePattern::IsInHazard(AActor const* /*Target*/, FVector2D const Location,
+										 float const SpentTime) const
+{
+	float const WaveRadius = FMath::Min(ExpansionSpeed * SpentTime, MaxRadius);
+	float const FrontOffset = WaveRadius - FVector2D::Distance(StoredPayload.Origin, Location);
+	return FrontOffset >= 0.f && FrontOffset <= AnnulusWidth && !IsBehindPillar(Location);
+}
+
+void UDevastatingWavePattern::OnHazardEnd()
+{
+	Super::OnHazardEnd();
+	if (IsValid(AOEVfxComponent))
 	{
-		EndPattern();
+		AOEVfxComponent->Deactivate();
 	}
 }
 
-bool UDevastatingWavePattern::ShouldHitActor(AActor const* Actor) const
+bool UDevastatingWavePattern::IsBehindPillar(FVector2D const Location) const
 {
+	FVector2D const CenterToLocation(Location - StoredPayload.Origin);
 	for (FPillarWaveData const& PillarData : PillarsWaveData)
 	{
-		FVector2D const ActorLocation(Actor->GetActorLocation());
-		FVector2D const CenterToActor(ActorLocation - StoredPayload.Origin);
 		FVector2D const CenterToPillar(PillarData.Location - StoredPayload.Origin);
-		float const Dot = CenterToActor | CenterToPillar;
+		float const Dot = CenterToLocation | CenterToPillar;
 		float const CenterToPillarSizeSquared = CenterToPillar.SizeSquared();
 
 		if (Dot < CenterToPillarSizeSquared) // Before the Pillar
@@ -262,16 +231,17 @@ bool UDevastatingWavePattern::ShouldHitActor(AActor const* Actor) const
 			continue;
 		}
 
-		FVector2D const ActorProjectedOnCenterToPillar = CenterToPillar * Dot / CenterToPillarSizeSquared;
-		float const DistanceSquaredToPillarVector = (ActorProjectedOnCenterToPillar - CenterToActor).SizeSquared();
+		FVector2D const LocationProjectedOnCenterToPillar = CenterToPillar * Dot / CenterToPillarSizeSquared;
+		float const DistanceSquaredToPillarVector =
+			(LocationProjectedOnCenterToPillar - CenterToLocation).SizeSquared();
 
 		if (DistanceSquaredToPillarVector < PillarData.Radius * PillarData.Radius)
 		{
-			return false;
+			return true;
 		}
 	}
 
-	return true;
+	return false;
 }
 
 void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
@@ -310,18 +280,9 @@ void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
 void UDevastatingWavePattern::EndPattern(bool bForceStop)
 {
 	GetWorld()->GetTimerManager().ClearTimer(TelegraphBlinkTimerHandle);
-	if (IsValid(AOEVfxComponent))
+	if (bForceStop && IsValid(AOEVfxComponent))
 	{
-		// Deactivate() lets live particles finish their full lifetime, which spans the whole grow+fade —
-		// fine when the wave ends naturally, but a force-stopped wave must vanish right away.
-		if (bForceStop)
-		{
-			AOEVfxComponent->DeactivateImmediate();
-		}
-		else
-		{
-			AOEVfxComponent->Deactivate();
-		}
+		AOEVfxComponent->DeactivateImmediate();
 	}
 
 	if (!UGeoGameplayLibrary::IsServer(GetWorld()))

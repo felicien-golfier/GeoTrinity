@@ -2,8 +2,8 @@
 
 #include "Actor/Deployable/GeoDeployableBase.h"
 
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
@@ -359,19 +359,17 @@ void AGeoDeployableBase::PlayRecallCosmetics(float const Value)
 	}
 	PlayMoment(EDeployableMoment::Recall);
 
-	if (!bExplodeAtRecall)
+	if (bExplodeAtRecall)
 	{
-		return;
+		if (bRendersLocally && ExplodeCue.IsValid())
+		{
+			FGameplayCueParameters CueParams = GetGenericCueParams(ExplodeCue);
+			// Value is server-side only (never replicated), so a client's copy of this cue always carries 0.
+			CueParams.Normal.X = Value;
+			GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), ExplodeCue, CueParams, true);
+		}
+		PlayMoment(EDeployableMoment::Explode);
 	}
-
-	if (bRendersLocally && ExplodeCue.IsValid())
-	{
-		FGameplayCueParameters CueParams = GetGenericCueParams(ExplodeCue);
-		// Value is server-side only (never replicated), so a client's copy of this cue always carries 0.
-		CueParams.Normal.X = Value;
-		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), ExplodeCue, CueParams, true);
-	}
-	PlayMoment(EDeployableMoment::Explode);
 }
 
 
@@ -386,43 +384,30 @@ void AGeoDeployableBase::PlayMoment(EDeployableMoment const Moment) const
 
 void AGeoDeployableBase::ExplodeEffect(float const /*Value*/)
 {
-	Explosion.Start(GeoLib::GetServerTime(GetWorld()), /*bSeenThroughReplication*/ true);
-	JudgeExplosion();
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		Explosion.Start(GeoLib::GetServerTime(GetWorld()), /*Duration*/ 0.f, ExplodeAttitude,
+						/*bSeenThroughReplication*/ true);
+		JudgeExplosion();
+	}
 }
 
 void AGeoDeployableBase::JudgeExplosion()
 {
-	if (!IsValid(GetData()->Owner))
-	{
-		UE_LOG(LogGeoTrinity, Log, TEXT("%s: owner gone before every target of the explosion was judged"), *GetName());
-		return;
-	}
+	FAbilityPayload Source;
+	Source.SourceOwner = GetData()->Owner;
+	Source.SourceAvatar = this;
+	Source.AbilityLevel = GetData()->Level;
+	Source.Seed = GetData()->Seed;
+	Source.AbilityTag = GetData()->AbilityTag;
 
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
-	if (!ensureMsgf(SourceASC, TEXT("AGeoDeployableBase: no ASC on Owner")))
-	{
-		return;
-	}
-
-	FGenericTeamId const SourceTeam = GeoASLib::GetTeamId(GetData()->Owner);
-	TSet<AActor*> const ActorsReachingExplosion =
-		Explosion.JudgeActorsReachingEvent(GeoASLib::GetInteractableActors(this, SourceTeam, ExplodeAttitude, true));
-
-	for (AActor* Actor : GeoASLib::GetInteractableActors(
-			 this, SourceTeam, ExplodeAttitude, true, FVector2D(GetActorLocation()), GetData()->Params.Size,
-			 [&ActorsReachingExplosion](AActor* Candidate)
-			 {
-				 return ActorsReachingExplosion.Contains(Candidate);
-			 },
-			 ExplodeOverlapMode))
-	{
-		UGeoAbilitySystemComponent* ActorASC = GeoASLib::GetGeoAscFromActor(Actor);
-		if (IsValid(ActorASC))
-		{
-			GeoASLib::ApplyEffectFromEffectData(GetData()->EffectDataArray, SourceASC, ActorASC, GetData()->Level,
-												GetData()->Seed, GetData()->AbilityTag);
-		}
-	}
+	Explosion.Judge(Source, GetData()->EffectDataArray,
+					[this](AActor const* Target, FVector2D const Location, float /*SpentTime*/)
+					{
+						return GeoASLib::IsInCircle(Target, Location, FVector2D(GetActorLocation()),
+													GetData()->Params.Size, ExplodeOverlapMode,
+													GeoASLib::GetTeamId(GetData()->Owner));
+					});
 
 	if (!Explosion.IsOver(GeoLib::GetServerTime(GetWorld())))
 	{

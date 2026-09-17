@@ -20,10 +20,10 @@ class GEOTRINITY_API UTileCarveRayPattern : public UBeamPattern
 	GENERATED_BODY()
 
 protected:
-	/** Highlights the tile the beam is about to carve, then runs the regular beam tick. */
+	/** Highlights the tile the beam is about to carve while it fires, then runs the regular beam tick. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
-	/** Destroys the tile the beam locked onto when it fired, unless the pattern was force-stopped. */
-	virtual void EndPattern(bool bForceStop = false) override;
+	/** Destroys the tile the beam locked onto when it fired — never reached by a force-stopped pattern. */
+	virtual void OnHazardEnd() override;
 
 	/** Destroys the furthest arena tile the beam reaches, at the moment it fires. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")
