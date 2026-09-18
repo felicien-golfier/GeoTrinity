@@ -72,7 +72,7 @@ public:
 	FOnPatternEvent OnPatternStart;
 
 protected:
-	// Called when montage start is done and starts the loop.
+	/** Called when the montage start section finishes; overridden by subclasses to begin the pattern loop. */
 	UFUNCTION()
 	virtual void StartPattern();
 
@@ -108,6 +108,7 @@ protected:
 	 * override to stop the hazard's visuals, since the server only ends the pattern later. */
 	virtual void OnHazardEnd();
 
+	/** Seeks the boss's active montage to its End section; no-op when the montage is not playing, already at End, or the End section does not exist. */
 	void JumpMontageToEndSection() const;
 
 	/**
