@@ -43,13 +43,12 @@ void UGeoZoneAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	{
 		GeoASLib::FullySpawnDeployable(GetZoneClass(), StoredPayload, GetEffectDataArray(), ZoneParams,
 									   FTransform(ZoneLocation));
+		EndAbility();
 	}
 	else
 	{
 		Burst(ZoneLocation);
 	}
-
-	EndAbility();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -94,23 +93,41 @@ TSubclassOf<AGeoDeployableBase> UGeoZoneAbility::GetZoneClass() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoZoneAbility::Burst(FVector const& ZoneLocation) const
+void UGeoZoneAbility::Burst(FVector const& ZoneLocation)
 {
-	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
-	TArray<TInstancedStruct<FEffectData>> const EffectDataArray = GetEffectDataArray();
-	for (AActor* Target :
-		 GeoASLib::GetInteractableActors(this, GeoASLib::GetTeamId(StoredPayload.SourceOwner), BurstAttitude, true,
-										 FVector2D(ZoneLocation), ZoneParams.Size))
+	ExecuteZoneCue(BurstCue, ZoneLocation, 0.f);
+
+	BurstJudge.Start(GeoLib::GetServerTime(GetWorld()), /*Duration*/ 0.f, /*bSeenThroughReplication*/ true,
+					 /*bEndsOnHit*/ false, /*bRemovesInfiniteEffectsOnLeave*/ false);
+	JudgeBurst();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoZoneAbility::JudgeBurst()
+{
+	if (!IsActive())
 	{
-		if (UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target))
-		{
-			GeoASLib::NotifyAbilityHit(StoredPayload, Target);
-			GeoASLib::ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC, StoredPayload.AbilityLevel,
-												StoredPayload.Seed, StoredPayload.AbilityTag);
-		}
+		return;
 	}
 
-	ExecuteZoneCue(BurstCue, ZoneLocation, 0.f);
+	FVector2D const ZoneCenter(GetZoneLocation());
+	BurstJudge.Judge(StoredPayload, GetEffectDataArray(),
+					 FGeoHazardJudge::FindCandidates(StoredPayload.SourceOwner, BurstAttitude),
+					 [this, ZoneCenter](AActor const* Target, FVector2D const Location, float /*SpentTime*/)
+					 {
+						 return GeoASLib::IsInCircle(Target, Location, ZoneCenter, ZoneParams.Size,
+													 ETargetOverlapMode::Automatic,
+													 GeoASLib::GetTeamId(StoredPayload.SourceOwner));
+					 });
+
+	if (!BurstJudge.IsOver(GeoLib::GetServerTime(GetWorld())))
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::JudgeBurst);
+	}
+	else if (IsActive())
+	{
+		EndAbility();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

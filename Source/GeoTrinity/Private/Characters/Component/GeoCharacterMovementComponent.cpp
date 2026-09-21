@@ -2,6 +2,7 @@
 
 #include "Characters/GeoCharacter.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/GeoNetcodeDebug.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void FGeoSavedMove_Character::Clear()
@@ -87,6 +88,7 @@ void UGeoCharacterMovementComponent::TickComponent(float const DeltaTime, ELevel
 			PoseHistory.PopFront();
 		}
 		PoseHistory.Add(Pose);
+		FGeoNetcodeDebug::DrawRecordedPose(GetOwner(), Pose, Pose.ServerTime - OldestTimeNeeded);
 	}
 }
 
@@ -128,7 +130,9 @@ float UGeoCharacterMovementComponent::GetPerceivedServerTime() const
 
 FGeoPose UGeoCharacterMovementComponent::GetPoseAt(float const ServerTime) const
 {
-	FGeoPose Later = GeoLib::GetCurrentPose(GetOwner());
+	FGeoPose const CurrentPose = GeoLib::GetCurrentPose(GetOwner());
+	FGeoPose Pose = CurrentPose;
+	FGeoPose Later = CurrentPose;
 	for (int32 Index = PoseHistory.Num() - 1; Index >= 0; --Index)
 	{
 		FGeoPose const& Earlier = PoseHistory[Index];
@@ -136,13 +140,16 @@ FGeoPose UGeoCharacterMovementComponent::GetPoseAt(float const ServerTime) const
 		{
 			float const Span = Later.ServerTime - Earlier.ServerTime;
 			float const Alpha = Span > 0.f ? FMath::Min((ServerTime - Earlier.ServerTime) / Span, 1.f) : 1.f;
-			return {ServerTime, FMath::Lerp(Earlier.Location, Later.Location, Alpha),
+			Pose = {ServerTime, FMath::Lerp(Earlier.Location, Later.Location, Alpha),
 					Earlier.Yaw + FMath::FindDeltaAngleDegrees(Earlier.Yaw, Later.Yaw) * Alpha};
+			break;
 		}
 		Later = Earlier;
+		Pose = Earlier;
 	}
 
-	return Later;
+	FGeoNetcodeDebug::DrawRewoundPose(GetOwner(), Pose, CurrentPose);
+	return Pose;
 }
 
 void UGeoCharacterMovementComponent::ServerMoveHandleClientError(float ClientTimeStamp, float DeltaTime,

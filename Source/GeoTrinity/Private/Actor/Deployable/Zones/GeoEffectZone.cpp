@@ -2,7 +2,7 @@
 
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 
-#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/MeshComponent.h"
@@ -79,126 +79,42 @@ void AGeoEffectZone::BeginPlay()
 	ApplyRadius();
 	ApplyColor();
 
-	if (!GeoLib::IsServer(GetWorld()))
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		return;
-	}
-
-	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
-	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
-
-	TArray<AActor*> AlreadyInside;
-	CapsuleComponent->GetOverlappingActors(AlreadyInside);
-	for (AActor* Actor : AlreadyInside)
-	{
-		EnterZone(Actor);
+		ZoneJudge.Start(GeoLib::GetServerTime(GetWorld()), FGeoHazardJudge::UntilEnded,
+						/*bSeenThroughReplication*/ true, /*bEndsOnHit*/ false,
+						/*bRemovesInfiniteEffectsOnLeave*/ true);
+		JudgeZone();
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoEffectZone::OnBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,
-									UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/, bool /*bFromSweep*/,
-									FHitResult const& /*SweepResult*/)
+void AGeoEffectZone::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
-	EnterZone(OtherActor);
+	ZoneJudge.Stop();
+	Super::EndPlay(EndPlayReason);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoEffectZone::EnterZone(AActor* OtherActor)
+void AGeoEffectZone::JudgeZone()
 {
-	if (OtherActor == this || !GeoASLib::GetGeoAscFromActor(OtherActor)
-		|| !GeoASLib::IsTeamAttitudeAligned(this, OtherActor, Data.Params.Attitude))
+	float const ServerTime = GeoLib::GetServerTime(GetWorld());
+	if (!IsActive() || IsBlinking())
 	{
-		return;
+		ZoneJudge.EndAt(ServerTime);
 	}
 
-	// Membership only — Tick does every apply. A downed actor stays tracked and simply stops receiving effects until
-	// it can be damaged again, which is what lets someone revived inside the zone keep taking it.
-	ActorsInZone.Add(OtherActor);
-}
+	ZoneJudge.Judge(MakeHazardSource(), Data.EffectDataArray,
+					FGeoHazardJudge::FindCandidates(Data.Owner, Data.Params.Attitude),
+					[this](AActor const* Target, FVector2D const Location, float /*SpentTime*/)
+					{
+						return GeoASLib::IsInCircle(Target, Location, FVector2D(GetActorLocation()), Data.Params.Size,
+													ETargetOverlapMode::IncludeRadius, GeoASLib::GetTeamId(Data.Owner));
+					});
 
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoEffectZone::OnEndOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,
-								  UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/)
-{
-	TArray<FActiveGameplayEffectHandle> Handles;
-	if (!ActorsInZone.RemoveAndCopyValue(OtherActor, Handles))
+	if (!ZoneJudge.IsOver(ServerTime))
 	{
-		return;
-	}
-
-	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(OtherActor);
-	if (!TargetASC)
-	{
-		return;
-	}
-	for (FActiveGameplayEffectHandle const& Handle : Handles)
-	{
-		TargetASC->RemoveActiveGameplayEffect(Handle);
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoEffectZone::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	if (!GeoLib::IsServer(GetWorld()) || ActorsInZone.IsEmpty())
-	{
-		return;
-	}
-
-	UGeoAbilitySystemComponent* SourceASC = GeoASLib::GetGeoAscFromActor(Data.Owner);
-	ensureMsgf(SourceASC, TEXT("AGeoEffectZone: missing ASC."));
-	if (!SourceASC)
-	{
-		return;
-	}
-
-	TArray<TWeakObjectPtr<AActor>> Tracked;
-	ActorsInZone.GetKeys(Tracked);
-	for (TWeakObjectPtr<AActor> const& TrackedActor : Tracked)
-	{
-		ApplyZoneEffects(TrackedActor, SourceASC);
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoEffectZone::ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor, UGeoAbilitySystemComponent* SourceASC)
-{
-	AActor* Actor = TrackedActor.Get();
-	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-	TArray<FActiveGameplayEffectHandle> const* ActiveGameplayEffectHandles = ActorsInZone.Find(TrackedActor);
-	if (!TargetASC || !ActiveGameplayEffectHandles)
-	{
-		return;
-	}
-
-	bool const bPersistentEffectsEmpty = ActiveGameplayEffectHandles->IsEmpty();
-	TArray<FActiveGameplayEffectHandle> AppliedHandles;
-	for (TInstancedStruct<FEffectData> const& Entry : Data.EffectDataArray)
-	{
-		if (!IsValid(Actor) || !IsValid(TargetASC) || !Actor->CanBeDamaged())
-		{
-			break; // Do not continue if the actor is dead or destroyed during this loop.
-		}
-
-		if (Entry.Get().IsPerSecond())
-		{
-			GeoASLib::ApplySingleEffectData(Entry, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
-		}
-		else if (bPersistentEffectsEmpty) // Ignore all other effect if they have already been applied
-		{
-			AppliedHandles.Add(
-				GeoASLib::ApplySingleEffectData(Entry, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag));
-		}
-	}
-
-	// Looked up again rather than held across the loop: a lethal entry runs its target's whole death and revive
-	// from inside the apply above, and both ends of that re-enter the zone through the overlap delegates.
-	if (TArray<FActiveGameplayEffectHandle>* Current = ActorsInZone.Find(TrackedActor);
-		Current && !AppliedHandles.IsEmpty())
-	{
-		*Current = MoveTemp(AppliedHandles);
+		GetWorldTimerManager().SetTimerForNextTick(this, &ThisClass::JudgeZone);
 	}
 }
 

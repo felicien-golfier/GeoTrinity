@@ -8,6 +8,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/GeoNetcodeDebug.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void FGeoHazardJudge::Start(float const InStartServerTime, float const InDuration, bool const bInSeenThroughReplication,
@@ -21,8 +22,7 @@ void FGeoHazardJudge::Start(float const InStartServerTime, float const InDuratio
 
 	Targets.Reset();
 	StartServerTime = InStartServerTime;
-	Duration = InDuration;
-	SampleCount = FMath::CeilToInt(Duration * SampleRate) + 1;
+	SetDuration(InDuration);
 	bSeenThroughReplication = bInSeenThroughReplication;
 	bEndsOnHit = bInEndsOnHit;
 	bRemovesInfiniteEffectsOnLeave = bInRemovesInfiniteEffectsOnLeave;
@@ -80,6 +80,9 @@ void FGeoHazardJudge::Judge(FAbilityPayload const& Source, TArray<TInstancedStru
 			State->LastLocation = TargetLocation;
 		}
 
+		FGeoNetcodeDebug::DrawHazardJudge(Target, State->LastLocation, State->LastTime, TargetLocation, TargetSpentTime,
+										  State->NextSampleIndex, SampleCount);
+
 		bool bEntered;
 		int32 const SamplesInside =
 			AdvanceSamples(*State, Target, TargetSpentTime, TargetLocation, IsInHazard, bEntered);
@@ -92,6 +95,17 @@ bool FGeoHazardJudge::IsOver(float const ServerTime) const
 	float const MaxLatencyCompensation = GetDefault<UGameDataSettings>()->MaxLatencyCompensation;
 	float const MaxSeenDelay = bSeenThroughReplication ? MaxLatencyCompensation : 0.f;
 	return ServerTime >= StartServerTime + Duration + MaxSeenDelay + MaxLatencyCompensation;
+}
+
+void FGeoHazardJudge::EndAt(float const EndServerTime)
+{
+	SetDuration(FMath::Min(Duration, FMath::Max(EndServerTime - StartServerTime, 0.f)));
+}
+
+void FGeoHazardJudge::SetDuration(float const InDuration)
+{
+	Duration = InDuration;
+	SampleCount = FMath::CeilToInt(Duration * SampleRate) + 1;
 }
 
 void FGeoHazardJudge::Stop()
@@ -126,6 +140,8 @@ int32 FGeoHazardJudge::AdvanceSamples(
 		float const TravelledFraction = (SampleTime - State.LastTime) / (TargetSpentTime - State.LastTime);
 		FVector2D const SampleLocation = FMath::Lerp(State.LastLocation, TargetLocation, TravelledFraction);
 		bool const bInside = IsInHazard(Target, SampleLocation, SampleTime);
+		FGeoNetcodeDebug::DrawHazardSample(Target, SampleLocation, SampleTime, State.NextSampleIndex, bInside);
+
 		if (bInside)
 		{
 			bOutEntered |= !State.bInside;

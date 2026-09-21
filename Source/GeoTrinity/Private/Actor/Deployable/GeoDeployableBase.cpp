@@ -392,16 +392,20 @@ void AGeoDeployableBase::ExplodeEffect(float const /*Value*/)
 	}
 }
 
-void AGeoDeployableBase::JudgeExplosion()
+FAbilityPayload AGeoDeployableBase::MakeHazardSource() const
 {
 	FAbilityPayload Source;
 	Source.SourceOwner = GetData()->Owner;
-	Source.SourceAvatar = this;
+	Source.SourceAvatar = const_cast<AGeoDeployableBase*>(this);
 	Source.AbilityLevel = GetData()->Level;
 	Source.Seed = GetData()->Seed;
 	Source.AbilityTag = GetData()->AbilityTag;
+	return Source;
+}
 
-	Explosion.Judge(Source, GetData()->EffectDataArray,
+void AGeoDeployableBase::JudgeExplosion()
+{
+	Explosion.Judge(MakeHazardSource(), GetData()->EffectDataArray,
 					FGeoHazardJudge::FindCandidates(GetData()->Owner, ExplodeAttitude),
 					[this](AActor const* Target, FVector2D const Location, float /*SpentTime*/)
 					{
@@ -534,6 +538,10 @@ void AGeoDeployableBase::OnRep_Active(bool bOldValue)
 	{
 		if (bRecalled)
 		{
+			if (bExplodeAtRecall)
+			{
+				ExplodeEffect(0.f);
+			}
 			PlayRecallCosmetics(0.f);
 		}
 		Expire();

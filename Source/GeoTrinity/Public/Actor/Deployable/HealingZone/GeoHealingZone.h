@@ -14,8 +14,8 @@
  * and the zone pays that same amount out of its health, so how long it lasts is how much it healed. Can be absorbed by
  * UGeoMoiraBeamAbility which drains its health and converts it into fuel, radius growth, and damage/heal boost.
  *
- * Everything else — capsule, tracking, replicated data, the authored EffectDataArray — is AGeoEffectZone's, including
- * who counts as an ally: only actors matching Params.Attitude are ever tracked, so nothing filters teams here.
+ * The authored EffectDataArray is still judged by AGeoEffectZone; the heal is not, since helping an ally is no hazard to
+ * lag-compensate — it goes to whoever stands inside on the server now.
  */
 UCLASS(Blueprintable, ClassGroup = (Custom))
 class GEOTRINITY_API AGeoHealingZone : public AGeoEffectZone
@@ -27,7 +27,11 @@ public:
 	AGeoHealingZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer) {}
 
 protected:
-	/** Heals a hurt ally at the zone's drain rate and charges the zone the same amount, on top of Super's effects. */
-	virtual void ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor,
-								  UGeoAbilitySystemComponent* SourceASC) override;
+	/** Server, until the zone blinks: heals every ally Params.Attitude matches inside the zone. */
+	virtual void Tick(float DeltaSeconds) override;
+
+private:
+	/** Heals Ally at the zone's drain rate for this tick and charges the zone the same amount, unless Ally is already
+	 * at full life. */
+	void HealAlly(AActor* Ally, UGeoAbilitySystemComponent* SourceASC);
 };

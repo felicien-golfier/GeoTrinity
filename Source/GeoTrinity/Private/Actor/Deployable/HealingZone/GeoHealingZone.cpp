@@ -6,21 +6,36 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
-void AGeoHealingZone::ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor,
-									   UGeoAbilitySystemComponent* SourceASC)
+void AGeoHealingZone::Tick(float const DeltaSeconds)
 {
-	AActor* Actor = TrackedActor.Get();
-	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Actor);
-	if (!TargetASC || !TargetASC->GetAvatarActor()->CanBeDamaged()
+	Super::Tick(DeltaSeconds);
+
+	if (GeoLib::IsServer(GetWorld()) && IsActive() && !IsBlinking())
+	{
+		UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(Data.Owner);
+		if (ensureMsgf(SourceASC, TEXT("AGeoHealingZone: missing ASC.")))
+		{
+			for (AActor* const Ally : GeoASLib::GetInteractableActors(
+					 this, GeoASLib::GetTeamId(this), Data.Params.Attitude, /*bMustBeDamageable*/ true,
+					 FVector2D(GetActorLocation()), Data.Params.Size, ETargetOverlapMode::IncludeRadius))
+			{
+				HealAlly(Ally, SourceASC);
+			}
+		}
+	}
+}
+
+void AGeoHealingZone::HealAlly(AActor* Ally, UGeoAbilitySystemComponent* SourceASC)
+{
+	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Ally);
+	if (!TargetASC
 		|| TargetASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute())
 			>= TargetASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute()))
 	{
 		return; // Neither heal nor pay for an ally already at full life.
 	}
-
-	// The authored array on top, so game design can add something to the heal without touching this class.
-	Super::ApplyZoneEffects(TrackedActor, SourceASC);
 
 	FHealEffectData HealEffectData;
 	HealEffectData.Amount = DrainMagnitudePerSecond;

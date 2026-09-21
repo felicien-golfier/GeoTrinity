@@ -81,9 +81,14 @@ public:
 	 *                      KeepBlueprintDefaultValue: a bullet is flown with no projectile Blueprint to read them from.
 	 * @param Effects       Applied to the target it hits.
 	 * @param TeamAttitude  Which attitudes, relative to the payload owner's team, it hits.
+	 * @param bSeenThroughReplication  True for a shot the server alone decides (a turret, a mine): each machine fires
+	 *                                 it when it hears of it, at its own current time, so it leaves the origin on every
+	 *                                 screen and the server judges each player as seen that much late. False when every
+	 *                                 machine fires it on the same server clock (a pattern).
 	 */
 	void FireBullet(FAbilityPayload const& Payload, FExternalProjectileParams const& Params,
-					TArray<TInstancedStruct<FEffectData>> const& Effects, int32 TeamAttitude);
+					TArray<TInstancedStruct<FEffectData>> const& Effects, int32 TeamAttitude,
+					bool bSeenThroughReplication);
 
 	/** Stops every bullet on the walls it flew into, judges them on the server, draws them all where they now are, ends
 	 * a drawing once its bullet has flown its range or is over, and drops the bullets that are over. */

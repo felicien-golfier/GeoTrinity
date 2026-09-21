@@ -18,6 +18,10 @@ struct FEffectData;
  */
 struct GEOTRINITY_API FGeoHazardJudge
 {
+	/** Duration of a hazard that lasts until EndAt says otherwise, like a zone placed in the level. Eleven days, not
+	 * infinity: its sample count still has to fit an int. */
+	static constexpr float UntilEnded = 1000000.f;
+
 	/**
 	 * Forgets every target and starts judging a new hazard.
 	 *
@@ -61,6 +65,11 @@ struct GEOTRINITY_API FGeoHazardJudge
 	 * trails the server by more than MaxLatencyCompensation. */
 	bool IsOver(float ServerTime) const;
 
+	/** Ends the hazard at EndServerTime if it was to last longer — a hazard stopping before its time, or an endless one
+	 * finally stopping. Targets whose own time is still before it go on being judged up to it; calling it again later
+	 * never extends it. */
+	void EndAt(float EndServerTime);
+
 	/** Stops judging, even midway through Judge, and removes the infinite effects still applied. */
 	void Stop();
 
@@ -82,6 +91,9 @@ private:
 	/** Samples per second, whatever the frame rate. */
 	static constexpr float SampleRate = 120.f;
 	static constexpr float SampleInterval = 1.f / SampleRate;
+
+	/** Sets Duration and the SampleCount it is worth. */
+	void SetDuration(float InDuration);
 
 	/** Target's own time on the hazard's timeline: its perceived time, minus how late its screen showed the hazard. */
 	float GetTargetSpentTime(AActor const* Target) const;

@@ -256,11 +256,16 @@ protected:
 	 */
 	virtual void ExplodeEffect(float const Value);
 
+	/** The shot a hazard of this deployable judges on behalf of: its owner applies the effects and takes the hit credit,
+	 * the deployable itself is the avatar. */
+	FAbilityPayload MakeHazardSource() const;
+
 	/** Every mesh drawing this deployable. UWidgetComponent derives from UMeshComponent, so the health bar is filtered
 	 * out — it is not part of the deployable's look. */
 	TInlineComponentArray<UMeshComponent*> GetVisualMeshComponents() const;
 
-	/** Fires the recall or expiry gameplay cue on clients when bActive becomes false. */
+	/** Fires the recall or expiry gameplay cue on clients when bActive becomes false, and runs the explosion when the
+	 * server's recall arrives before this client's own blink timer recalled it. */
 	UFUNCTION()
 	virtual void OnRep_Active(bool bOldValue);
 	/** Fires the blink gameplay cue on clients when bBlinking becomes true. */

@@ -7,6 +7,7 @@
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "Tool/GeoHazardJudge.h"
 
 #include "GeoZoneAbility.generated.h"
 
@@ -17,8 +18,9 @@
  * lingering zone. The lingering form needs no Blueprint of its own — ZoneParams.Color tells one zone from another, and
  * the class comes from UGameDataSettings::DefaultZoneClass unless ZoneClass overrides it.
  *
- * The ability owns no rhythm of its own beyond that single telegraph-then-deliver pass: it ends the moment it fires, so
- * how often a zone comes back is the caster's StateTree to decide, not this class.
+ * The ability owns no rhythm of its own beyond that single telegraph-then-deliver pass: it ends the moment it fires —
+ * a burst once every player has been judged, a fraction of a second later — so how often a zone comes back is the
+ * caster's StateTree to decide, not this class.
  */
 UCLASS()
 class GEOTRINITY_API UGeoZoneAbility : public UGeoGameplayAbility
@@ -76,8 +78,13 @@ private:
 	/** ZoneClass, or the project-wide zone from UGameDataSettings when this ability names none. */
 	TSubclassOf<AGeoDeployableBase> GetZoneClass() const;
 
-	/** Applies the ability's effects to everything BurstAttitude matches inside the circle, then plays BurstCue. */
-	void Burst(FVector const& ZoneLocation) const;
+	/** Plays BurstCue and starts judging the burst: an instant hazard over the circle, which clients only see through
+	 * the replicated cue. */
+	void Burst(FVector const& ZoneLocation);
+
+	/** Applies the ability's effects to everything BurstAttitude matches inside the circle, each where it stood when its
+	 * screen showed the burst, then runs again next tick until everyone is judged — and only then ends the ability. */
+	void JudgeBurst();
 
 	/** Centre of the circle: the caster's fire origin pushed by Offset along its facing. */
 	FVector GetZoneLocation() const;
@@ -88,4 +95,6 @@ private:
 	 * @param Duration  Seconds the cue lasts — the remaining fire delay for a telegraph, 0 for a one-frame burst.
 	 */
 	void ExecuteZoneCue(FGeoCueParam const& Cue, FVector const& ZoneLocation, float Duration) const;
+
+	FGeoHazardJudge BurstJudge;
 };

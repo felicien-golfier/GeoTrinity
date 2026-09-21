@@ -2,9 +2,9 @@
 
 #include "Actor/Deployable/Mine/GeoMine.h"
 
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Net/UnrealNetwork.h"
+#include "System/GeoBulletSubsystem.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoMine::AGeoMine(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -76,28 +76,21 @@ void AGeoMine::ExplodeEffect(float const Value)
 		return;
 	}
 
-	float const SpawnServerTime = GeoLib::GetServerTime(GetWorld());
 	FAbilityPayload Payload;
 	Payload.SourceOwner = MineData.Owner;
 	Payload.SourceAvatar = this;
 	Payload.Origin = FVector2D(GetActorLocation());
-	Payload.ServerSpawnTime = SpawnServerTime;
+	Payload.ServerSpawnTime = GeoLib::GetServerTime(GetWorld(), true);
 	Payload.AbilityLevel = MineData.Level;
 	Payload.AbilityTag = MineData.AbilityTag;
 	Payload.Seed = MineData.Seed;
 
+	UGeoBulletSubsystem* const BulletSubsystem = UGeoBulletSubsystem::Get(GetWorld());
 	float const AngleBetweenProjectiles = 360.f / BurstProjectileCount;
 	for (int32 Index = 0; Index < BurstProjectileCount; ++Index)
 	{
 		Payload.Yaw = AngleBetweenProjectiles * Index;
-		FTransform const SpawnTransform(FRotator(0.f, Payload.Yaw, 0.f), GetActorLocation());
-
-		AGeoProjectile* const Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform,
-																		  Payload, MineData.EffectDataArray);
-		if (!ensureMsgf(Projectile, TEXT("AGeoMine: failed to spawn burst projectile")))
-		{
-			return;
-		}
-		GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, FPredictionKey());
+		BulletSubsystem->FireBullet(Payload, ProjectileParams, MineData.EffectDataArray, ExplodeAttitude,
+									/*bSeenThroughReplication*/ true);
 	}
 }

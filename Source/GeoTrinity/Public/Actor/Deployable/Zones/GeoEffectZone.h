@@ -17,14 +17,9 @@ class UGeoAbilitySystemComponent;
  * Hostile attitude), so a spawned zone needs no Blueprint of its own beyond the project-wide one in
  * UGameDataSettings::DefaultZoneClass — Params.Color is what tells the two apart on screen.
  *
- * Every effect is applied from Tick, never from the overlap delegates: a per-second entry on each tick, for the slice
- * of time that tick covers, and any other entry on the first tick after the actor enters, removed when it leaves.
- * Applying from the delegate instead would run a lethal entry's whole death-and-revive chain inside the overlap
- * notification that started it, and a revive re-enables collision — so the zone would re-enter itself until the stack
- * ran out.
- *
- * Subclasses change what a zone does to whoever stands in it by overriding ApplyZoneEffects — the tracking, the
- * capsule, the replicated data and the effect rules above are all inherited (see AGeoHealingZone).
+ * The server judges the zone as a hazard (FGeoHazardJudge), each actor where it stood when its screen showed it: the
+ * per-second entries for the time spent inside, any other entry on entering, its infinite ones removed on leaving.
+ * The zone stops acting once it blinks or expires — a placed one never does.
  */
 UCLASS(Blueprintable, ClassGroup = (Custom))
 class GEOTRINITY_API AGeoEffectZone : public AGeoDeployableBase
@@ -47,25 +42,11 @@ protected:
 	virtual void OnConstruction(FTransform const& Transform) override;
 	/**
 	 * Fills Data from the Details panel and self-initializes GAS when no spawner did it (hand-placed zone).
-	 * On the server: binds the capsule overlap delegates that track actors inside the zone.
+	 * On the server: starts judging the zone.
 	 */
 	virtual void BeginPlay() override;
-	/** Server-only: runs ApplyZoneEffects for every actor inside the zone. */
-	virtual void Tick(float DeltaSeconds) override;
-
-	/**
-	 * What the zone does to one actor standing in it, for a single tick: the per-second entries, which scale
-	 * themselves by the frame, and the persistent ones on that actor's first tick inside. Override to give a zone its
-	 * own rules.
-	 *
-	 * @param TrackedActor  Key into ActorsInZone — looked up again rather than passed as a raw pointer, since a lethal
-	 *                      entry can run its target's whole death and revive from inside this call.
-	 */
-	virtual void ApplyZoneEffects(TWeakObjectPtr<AActor> const& TrackedActor, UGeoAbilitySystemComponent* SourceASC);
-
-	/** Actors currently inside the zone, mapped to the persistent effect handles Tick applied to them. An empty array
-	 * is what marks an actor as still owed those effects, so a revive inside the zone gets them back. */
-	TMap<TWeakObjectPtr<AActor>, TArray<FActiveGameplayEffectHandle>> ActorsInZone;
+	/** Removes the infinite effects the zone still holds on anyone. */
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Data)
 	FDeployableData Data;
@@ -96,16 +77,11 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoEffectZone")
 	TArray<FName> ColorParameterNames = {TEXT("InsideColor"), TEXT("OutlineColor")};
 
-	/** Starts tracking OtherActor so Tick applies the zone's effects to it. Both ways in — the overlap delegate and
-	 * the sweep BeginPlay runs for whoever the zone spawned on top of — go through here. */
-	void EnterZone(AActor* OtherActor);
+	/** Server. Judges ZoneJudge, ending it once the zone blinks or expires, then runs again next tick until it is
+	 * over. A timer rather than Tick, which Expire turns off before the judge is done. */
+	void JudgeZone();
 
-	UFUNCTION()
-	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-						int32 OtherBodyIndex, bool bFromSweep, FHitResult const& SweepResult);
-	UFUNCTION()
-	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-					  int32 OtherBodyIndex);
+	FGeoHazardJudge ZoneJudge;
 
 	/** Client-side sizing and tinting: a spawned zone's Data only arrives after the actor exists. */
 	UFUNCTION()

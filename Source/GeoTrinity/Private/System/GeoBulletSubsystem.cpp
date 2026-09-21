@@ -9,6 +9,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/GeoNetcodeDebug.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -20,7 +21,8 @@ UGeoBulletSubsystem* UGeoBulletSubsystem::Get(UWorld const* World)
 }
 
 void UGeoBulletSubsystem::FireBullet(FAbilityPayload const& Payload, FExternalProjectileParams const& Params,
-									 TArray<TInstancedStruct<FEffectData>> const& Effects, int32 const TeamAttitude)
+									 TArray<TInstancedStruct<FEffectData>> const& Effects, int32 const TeamAttitude,
+									 bool const bSeenThroughReplication)
 {
 	UGameDataSettings const* const Settings = GetDefault<UGameDataSettings>();
 	bool const bPlayerInstigator =
@@ -49,7 +51,7 @@ void UGeoBulletSubsystem::FireBullet(FAbilityPayload const& Payload, FExternalPr
 		float const SpentTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
 		if (GeoLib::IsServer(GetWorld()))
 		{
-			Bullet.Judge.Start(Payload.ServerSpawnTime, Bullet.FlightDuration, /*bSeenThroughReplication*/ false,
+			Bullet.Judge.Start(Payload.ServerSpawnTime, Bullet.FlightDuration, bSeenThroughReplication,
 							   /*bEndsOnHit*/ true, /*bRemovesInfiniteEffectsOnLeave*/ false);
 		}
 		if (!GeoLib::IsDedicatedServer(GetWorld()) && SpentTime < Bullet.FlightDuration)
@@ -100,10 +102,18 @@ void UGeoBulletSubsystem::Tick(float const DeltaTime)
 				[this, BulletIndex](AActor const* Target, FVector2D const Location, float const SpentTime)
 				{
 					FGeoBullet const& Bullet = Bullets[BulletIndex];
-					return SpentTime <= Bullet.FlightDuration
+					bool const bInside =
+						SpentTime <= Bullet.FlightDuration
 						&& GeoASLib::IsInCircle(Target, Location, Bullet.GetLocation(SpentTime), Bullet.Radius,
 												ETargetOverlapMode::IncludeRadius,
 												GeoASLib::GetTeamId(Bullet.Payload.SourceOwner));
+					if (bInside)
+					{
+						FGeoNetcodeDebug::DrawBulletHit(Target, Bullet.GetLocation(SpentTime), Bullet.Radius, Location,
+														SpentTime);
+					}
+
+					return bInside;
 				});
 		}
 
@@ -113,6 +123,12 @@ void UGeoBulletSubsystem::Tick(float const DeltaTime)
 		{
 			Bullet.Visual->SetActorLocation(
 				FVector(Bullet.GetLocation(FMath::Min(SpentTime, Bullet.FlightDuration)), ArbitraryCharacterZ));
+		}
+
+		if (SpentTime < Bullet.FlightDuration)
+		{
+			FGeoNetcodeDebug::DrawBullet(this, Bullet.GetLocation(SpentTime), Bullet.Direction, Bullet.Radius,
+										 SpentTime);
 		}
 
 		bool const bFlightOver = SpentTime >= Bullet.FlightDuration;
@@ -179,10 +195,14 @@ void UGeoBulletSubsystem::StopAtWall(FGeoBullet& Bullet, float const ServerTime)
 	QueryParams.AddIgnoredActor(Bullet.Payload.SourceAvatar);
 
 	// Characters only overlap this channel, so the first blocking hit is a wall.
+	FVector const SweepStart(Bullet.GetLocation(Bullet.SweptTime), ArbitraryCharacterZ);
+	FVector const SweepEnd(Bullet.GetLocation(SweepEndTime), ArbitraryCharacterZ);
 	FHitResult Hit;
-	if (GetWorld()->SweepSingleByChannel(Hit, FVector(Bullet.GetLocation(Bullet.SweptTime), ArbitraryCharacterZ),
-										 FVector(Bullet.GetLocation(SweepEndTime), ArbitraryCharacterZ), FQuat::Identity,
-										 ECC_GeoProjectile, FCollisionShape::MakeSphere(Bullet.Radius), QueryParams))
+	bool const bHitWall = GetWorld()->SweepSingleByChannel(Hit, SweepStart, SweepEnd, FQuat::Identity, ECC_GeoProjectile,
+														   FCollisionShape::MakeSphere(Bullet.Radius), QueryParams);
+	FGeoNetcodeDebug::DrawWallSweep(this, SweepStart, SweepEnd, Bullet.Radius, bHitWall, Hit);
+
+	if (bHitWall)
 	{
 		Bullet.FlightDuration = FMath::Lerp(Bullet.SweptTime, SweepEndTime, Hit.Time);
 		if (IsValid(Bullet.Visual))

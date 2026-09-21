@@ -35,7 +35,8 @@ protected:
 	virtual void InitDrain() override;
 	/** Health reaching zero means players destroyed the mine: it defuses (Expire), never bursts. */
 	virtual void OnHealthChanged_Implementation(float NewValue) override;
-	/** Server. Reached only when the fuse runs out: bursts BurstProjectileCount projectiles radially. */
+	/** Reached only when the fuse runs out: bursts BurstProjectileCount bullets radially, on every machine as it sees
+	 * the mine go off — the server judges them, the others draw them. */
 	virtual void ExplodeEffect(float Value) override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoMine")

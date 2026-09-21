@@ -34,7 +34,7 @@ protected:
 	/** Returns the turret's replicated data block. */
 	virtual FDeployableData const* GetData() const override { return &Data; }
 
-	/** Arms the repeating fire timer. */
+	/** Arms the repeating fire timer: on every machine for an ally turret, on the server alone for an enemy one. */
 	virtual void BeginPlay() override;
 	/** Recomputes the best target each frame and writes CurrentTarget for client mesh orientation. */
 	virtual void Tick(float DeltaSeconds) override;
@@ -47,8 +47,21 @@ protected:
 	 */
 	AActor* FindBestTarget() const;
 
-	/** Fires a projectile at the current best target if one exists. */
+	/** Aims at the current target, if there is one, and fires at it: an ally turret on this machine alone, an enemy
+	 * turret on every machine through MulticastFire. */
 	void TryFire();
+
+	/** Enemy turret. Fires along the server's aim on every machine, each as it hears of it, since each machine sees
+	 * the player it targets somewhere else. */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastFire(float Yaw);
+
+	/** Fires one bullet along Yaw on this machine: the server judges it, the others draw it. */
+	void Fire(float Yaw);
+
+	/** True for a player's turret. It only ever targets enemies, which stand where the server has them on every
+	 * machine, so each machine can aim and fire on its own. */
+	bool IsPlayerTurret() const;
 	/** Clears the fire timer, then delegates to Super. */
 	virtual void Expire(bool bForce) override;
 

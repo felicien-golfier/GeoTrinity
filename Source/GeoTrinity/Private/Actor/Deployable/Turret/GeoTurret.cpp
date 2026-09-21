@@ -6,6 +6,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Net/UnrealNetwork.h"
+#include "System/GeoBulletSubsystem.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoTurret::AGeoTurret(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -23,7 +24,10 @@ void AGeoTurret::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetWorldTimerManager().SetTimer(FireTimerHandle, this, &ThisClass::TryFire, FireInterval, true);
+	if (IsPlayerTurret() || GeoLib::IsServer(GetWorld()))
+	{
+		GetWorldTimerManager().SetTimer(FireTimerHandle, this, &ThisClass::TryFire, FireInterval, true);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -107,29 +111,48 @@ void AGeoTurret::TryFire()
 		return;
 	}
 
-	FVector const DirectionToTarget = (CurrentTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	FTransform const SpawnTransform{DirectionToTarget.Rotation().Quaternion(), GetActorLocation()};
+	float const Yaw = (CurrentTarget->GetActorLocation() - GetActorLocation()).Rotation().Yaw;
+	if (IsPlayerTurret())
+	{
+		Fire(Yaw);
+	}
+	else
+	{
+		MulticastFire(Yaw);
+	}
+}
 
-	float const SpawnServerTime = GeoLib::GetServerTime(GetWorld());
+// ---------------------------------------------------------------------------------------------------------------------
 
+void AGeoTurret::MulticastFire_Implementation(float const Yaw)
+{
+	Fire(Yaw);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+void AGeoTurret::Fire(float const Yaw)
+{
 	FAbilityPayload Payload;
 	Payload.SourceOwner = GetData()->Owner;
 	Payload.SourceAvatar = GeoASLib::GetAvatarFromActor(GetData()->Owner);
 	Payload.Origin = FVector2D(GetActorLocation());
-	Payload.Yaw = DirectionToTarget.Rotation().Yaw;
-	Payload.ServerSpawnTime = SpawnServerTime;
+	Payload.Yaw = Yaw;
+	Payload.ServerSpawnTime = GeoLib::GetServerTime(GetWorld(), true);
 	Payload.AbilityLevel = Data.Level;
 	Payload.HitNotified = MakeShared<bool>(false);
 	Payload.AbilityTag = GetData()->AbilityTag;
 
-	AGeoProjectile* Projectile = GeoASLib::StartSpawnProjectile(GetWorld(), ProjectileParams, SpawnTransform, Payload,
-																GetData()->EffectDataArray);
-	if (!ensureMsgf(Projectile, TEXT("TurretProjectile: Failed to spawn projectile!")))
-	{
-		return;
-	}
+	UGeoBulletSubsystem::Get(GetWorld())
+		->FireBullet(Payload, ProjectileParams, GetData()->EffectDataArray, TeamAttitudeMask::HostileOrNeutral,
+					 /*bSeenThroughReplication*/ true);
+}
 
-	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, FPredictionKey());
+// ---------------------------------------------------------------------------------------------------------------------
+
+bool AGeoTurret::IsPlayerTurret() const
+{
+	return GeoASLib::GetTeamId(GetData()->Owner).GetId() == static_cast<uint8>(ETeam::Player);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

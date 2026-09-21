@@ -30,7 +30,8 @@ void UProjectilePattern::SpawnSalve(TArray<float> const& Yaws, float const Salve
 		BulletPayload.Yaw = Yaw;
 		BulletPayload.ServerSpawnTime = SalveSpawnTime;
 
-		BulletSubsystem->FireBullet(BulletPayload, ProjectileParams, EffectDataArray, TeamAttitude);
+		BulletSubsystem->FireBullet(BulletPayload, ProjectileParams, EffectDataArray, TeamAttitude,
+									/*bSeenThroughReplication*/ false);
 	}
 }
 
