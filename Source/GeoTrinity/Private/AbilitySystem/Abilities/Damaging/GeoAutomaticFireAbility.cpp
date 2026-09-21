@@ -13,9 +13,6 @@
 // Burst credit, in shots, a client may redeem at once, so a network hitch that bunches several target-data packets
 // together costs no legitimate shots.
 static constexpr float MaxServerShotBurst = 10.f;
-// Arrival-jitter grace: jitter can compress two arrivals below FireDelay even when the client fired them a full
-// FireDelay apart. A fixed offset, not a rate multiplier — it never raises the sustained rate.
-static constexpr float ServerShotJitterTolerance = 0.05f;
 
 UGeoAutomaticFireAbility::UGeoAutomaticFireAbility()
 {
@@ -204,13 +201,10 @@ void UGeoAutomaticFireAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 		return;
 	}
 
-	float const Now = GetWorld()->GetTimeSeconds();
-	NextAllowedShotTime = FMath::Max(NextAllowedShotTime, Now - MaxServerShotBurst * GetFireDelay());
-	if (Now < NextAllowedShotTime - ServerShotJitterTolerance)
+	if (!TryConsumeShotSlot(GetWorld()->GetTimeSeconds(), GetFireDelay(), MaxServerShotBurst))
 	{
 		return;
 	}
-	NextAllowedShotTime += GetFireDelay();
 
 	// Update payload with the information, as we read from it to spawn projectile
 	UpdatePayloadFromTargetData(*TargetData, /*bKeepSeed*/ true);

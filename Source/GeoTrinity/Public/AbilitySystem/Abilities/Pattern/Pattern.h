@@ -101,7 +101,7 @@ protected:
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const;
 
 	/** Server. Effects the hazard applies: non per-second entries once per entry into the hazard, per-second entries
-	 * for the time spent inside. Infinite ones are removed when the target leaves. */
+	 * for the time spent inside. Infinite ones are removed when the target leaves, unless the hazard is instant. */
 	virtual TArray<TInstancedStruct<FEffectData>> const& GetHazardEffects() const;
 
 	/** Called once on every machine when SpentTime passes the hazard duration. Jumps the montage to its end section;

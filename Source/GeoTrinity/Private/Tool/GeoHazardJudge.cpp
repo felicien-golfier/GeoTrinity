@@ -6,30 +6,44 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "GameFramework/Pawn.h"
-#include "GameFramework/PlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-void FGeoHazardJudge::Start(float const InStartServerTime, float const InDuration, int32 const InTeamAttitude,
-							bool const bInSeenThroughReplication)
+void FGeoHazardJudge::Start(float const InStartServerTime, float const InDuration, bool const bInSeenThroughReplication,
+							bool const bInEndsOnHit, bool const bInRemovesInfiniteEffectsOnLeave)
 {
+	ensureMsgf(
+		InDuration > 0.f || !bInRemovesInfiniteEffectsOnLeave,
+		TEXT("%hs: an instant hazard cannot remove its infinite effects on leave, they would come off the moment "
+			 "they land"),
+		__FUNCTION__);
+
 	Targets.Reset();
 	StartServerTime = InStartServerTime;
 	Duration = InDuration;
-	TeamAttitude = InTeamAttitude;
+	SampleCount = FMath::CeilToInt(Duration * SampleRate) + 1;
 	bSeenThroughReplication = bInSeenThroughReplication;
+	bEndsOnHit = bInEndsOnHit;
+	bRemovesInfiniteEffectsOnLeave = bInRemovesInfiniteEffectsOnLeave;
 	bJudging = true;
 }
 
+TArray<AActor*> FGeoHazardJudge::FindCandidates(AActor const* SourceOwner, int32 const TeamAttitude)
+{
+	return GeoASLib::GetInteractableActors(SourceOwner, GeoASLib::GetTeamId(SourceOwner), TeamAttitude,
+										   /*bMustBeDamageable*/ true);
+}
+
 void FGeoHazardJudge::Judge(FAbilityPayload const& Source, TArray<TInstancedStruct<FEffectData>> const& Effects,
+							TArray<AActor*> const& Candidates,
 							TFunctionRef<bool(AActor const* Target, FVector2D Location, float SpentTime)> IsInHazard)
 {
 	if (!bJudging)
 	{
 		return;
 	}
+
 	if (!IsValid(Source.SourceOwner))
 	{
 		UE_LOG(LogGeoTrinity, Log, TEXT("%hs: owner of %s gone before every target of its hazard was judged"),
@@ -37,10 +51,6 @@ void FGeoHazardJudge::Judge(FAbilityPayload const& Source, TArray<TInstancedStru
 		Stop();
 		return;
 	}
-
-	int32 const SampleCount = FMath::CeilToInt(Duration * SampleRate) + 1;
-	TArray<AActor*> const Candidates = GeoASLib::GetInteractableActors(
-		Source.SourceOwner, GeoASLib::GetTeamId(Source.SourceOwner), TeamAttitude, /*bMustBeDamageable*/ true);
 
 	for (auto It = Targets.CreateIterator(); It; ++It)
 	{
@@ -70,47 +80,10 @@ void FGeoHazardJudge::Judge(FAbilityPayload const& Source, TArray<TInstancedStru
 			State->LastLocation = TargetLocation;
 		}
 
-		bool bEntered = false;
-		int32 SamplesInside = 0;
-		for (; State->NextSampleIndex < SampleCount; ++State->NextSampleIndex)
-		{
-			float const SampleTime = FMath::Min(State->NextSampleIndex * SampleInterval, Duration);
-			if (SampleTime > TargetSpentTime)
-			{
-				break;
-			}
-
-			float const TravelledFraction = (SampleTime - State->LastTime) / (TargetSpentTime - State->LastTime);
-			FVector2D const SampleLocation = FMath::Lerp(State->LastLocation, TargetLocation, TravelledFraction);
-			bool const bInside = IsInHazard(Target, SampleLocation, SampleTime);
-			if (bInside)
-			{
-				bEntered |= !State->bInside;
-				++SamplesInside;
-			}
-			State->bInside = bInside;
-		}
-
-		if (State->NextSampleIndex >= SampleCount)
-		{
-			State->bInside = false; // The hazard is over for this target, so it leaves it.
-		}
-		State->LastTime = TargetSpentTime;
-		State->LastLocation = TargetLocation;
-
-		if (bEntered)
-		{
-			RemoveInfiniteEffects(Target, *State); // It left and came back since the last judge.
-			State->InfiniteEffectHandles = ApplyEffects(Source, Effects, /*bPerSecond*/ false, Target, 0.f);
-		}
-		if (!State->bInside || !bJudging)
-		{
-			RemoveInfiniteEffects(Target, *State);
-		}
-		if (bJudging && SamplesInside > 0)
-		{
-			ApplyEffects(Source, Effects, /*bPerSecond*/ true, Target, SamplesInside * SampleInterval);
-		}
+		bool bEntered;
+		int32 const SamplesInside =
+			AdvanceSamples(*State, Target, TargetSpentTime, TargetLocation, IsInHazard, bEntered);
+		ApplySamplingResult(Source, Effects, Target, *State, bEntered, SamplesInside);
 	}
 }
 
@@ -132,21 +105,82 @@ void FGeoHazardJudge::Stop()
 
 float FGeoHazardJudge::GetTargetSpentTime(AActor const* Target) const
 {
-	float const PerceivedSpentTime = GeoLib::GetPerceivedServerTime(Target) - StartServerTime;
-	APawn const* const Pawn = Cast<APawn>(Target);
-	if (!bSeenThroughReplication || !IsValid(Pawn) || !Pawn->IsPlayerControlled() || Pawn->IsLocallyControlled())
+	float const SeenDelay = bSeenThroughReplication ? GeoLib::GetReplicationDelay(Target) : 0.f;
+	return GeoLib::GetPerceivedServerTime(Target) - SeenDelay - StartServerTime;
+}
+
+int32 FGeoHazardJudge::AdvanceSamples(
+	FTargetState& State, AActor const* Target, float const TargetSpentTime, FVector2D const TargetLocation,
+	TFunctionRef<bool(AActor const* Target, FVector2D Location, float SpentTime)> IsInHazard, bool& bOutEntered)
+{
+	bOutEntered = false;
+	int32 SamplesInside = 0;
+	for (; State.NextSampleIndex < SampleCount; ++State.NextSampleIndex)
 	{
-		return PerceivedSpentTime;
+		float const SampleTime = FMath::Min(State.NextSampleIndex * SampleInterval, Duration);
+		if (SampleTime > TargetSpentTime)
+		{
+			break;
+		}
+
+		float const TravelledFraction = (SampleTime - State.LastTime) / (TargetSpentTime - State.LastTime);
+		FVector2D const SampleLocation = FMath::Lerp(State.LastLocation, TargetLocation, TravelledFraction);
+		bool const bInside = IsInHazard(Target, SampleLocation, SampleTime);
+		if (bInside)
+		{
+			bOutEntered |= !State.bInside;
+			++SamplesInside;
+			if (bEndsOnHit)
+			{
+				// The hazard is spent here: nobody is judged past this sample, and this target has no sample left.
+				Duration = SampleTime;
+				SampleCount = State.NextSampleIndex + 1;
+			}
+		}
+
+		State.bInside = bInside;
 	}
 
-	float const HalfPing = Pawn->GetPlayerState()->GetPingInMilliseconds() * 0.0005f;
-	return PerceivedSpentTime - FMath::Min(HalfPing, GetDefault<UGameDataSettings>()->MaxLatencyCompensation);
+	if (State.NextSampleIndex >= SampleCount)
+	{
+		State.bInside = false; // The hazard is over for this target, so it leaves it.
+	}
+
+	State.LastTime = TargetSpentTime;
+	State.LastLocation = TargetLocation;
+	return SamplesInside;
+}
+
+void FGeoHazardJudge::ApplySamplingResult(FAbilityPayload const& Source,
+										  TArray<TInstancedStruct<FEffectData>> const& Effects, AActor* Target,
+										  FTargetState& State, bool const bEntered, int32 const SamplesInside)
+{
+	if (bEntered)
+	{
+		RemoveInfiniteEffects(Target, State); // It left and came back since the last judge.
+		TArray<FActiveGameplayEffectHandle> const InfiniteEffectHandles =
+			ApplyEffects(Source, Effects, /*bPerSecond*/ false, Target, 0.f);
+		if (bRemovesInfiniteEffectsOnLeave)
+		{
+			State.InfiniteEffectHandles = InfiniteEffectHandles;
+		}
+	}
+
+	if (!State.bInside)
+	{
+		RemoveInfiniteEffects(Target, State);
+	}
+
+	if (bJudging && SamplesInside > 0)
+	{
+		ApplyEffects(Source, Effects, /*bPerSecond*/ true, Target, SamplesInside * SampleInterval);
+	}
 }
 
 TArray<FActiveGameplayEffectHandle> FGeoHazardJudge::ApplyEffects(FAbilityPayload const& Source,
-																   TArray<TInstancedStruct<FEffectData>> const& Effects,
-																   bool const bPerSecond, AActor* Target,
-																   float const PerSecondDuration)
+																  TArray<TInstancedStruct<FEffectData>> const& Effects,
+																  bool const bPerSecond, AActor* Target,
+																  float const PerSecondDuration)
 {
 	TArray<TInstancedStruct<FEffectData>> const MatchingEffects = Effects.FilterByPredicate(
 		[bPerSecond](TInstancedStruct<FEffectData> const& Effect)
@@ -162,15 +196,13 @@ TArray<FActiveGameplayEffectHandle> FGeoHazardJudge::ApplyEffects(FAbilityPayloa
 	}
 
 	UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(Source.SourceOwner);
-	if (!ensureMsgf(SourceASC, TEXT("%hs: hazard owner %s has no ASC"), __FUNCTION__,
-					*GetNameSafe(Source.SourceOwner)))
+	if (!ensureMsgf(SourceASC, TEXT("%hs: hazard owner %s has no ASC"), __FUNCTION__, *GetNameSafe(Source.SourceOwner)))
 	{
 		return {};
 	}
 
-	TArray<FActiveGameplayEffectHandle> const AppliedHandles =
-		GeoASLib::ApplyEffectFromEffectData(MatchingEffects, SourceASC, TargetASC, Source.AbilityLevel, Source.Seed,
-											Source.AbilityTag, PerSecondDuration);
+	TArray<FActiveGameplayEffectHandle> const AppliedHandles = GeoASLib::ApplyEffectFromEffectData(
+		MatchingEffects, SourceASC, TargetASC, Source.AbilityLevel, Source.Seed, Source.AbilityTag, PerSecondDuration);
 	GeoASLib::NotifyAbilityHit(Source, Target);
 
 	return AppliedHandles.FilterByPredicate(

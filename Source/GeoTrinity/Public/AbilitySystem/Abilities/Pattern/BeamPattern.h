@@ -44,7 +44,9 @@ protected:
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** The beam is live for BeamDuration. */
 	virtual float GetHazardDuration() const override;
-	/** True when Target, at Location, overlaps the beam rectangle as aimed at SpentTime. */
+	/** True when Target, at Location, overlaps the beam rectangle as aimed at SpentTime. A beam following the boss follows
+	 * it as Target's screen showed it then — GeoLib::GetReplicationDelay earlier, the boss reaching it through
+	 * replication. */
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
 	/** Lets the beam VFX fade out. */
 	virtual void OnHazardEnd() override;
@@ -53,11 +55,13 @@ protected:
 	/** Adds the beam length so the telegraph cue can size itself. */
 	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
 
-	/** Beam yaw at SpentTime: the payload yaw, offset by however much of the sweep arc has been travelled. */
-	float GetBeamYaw(float SpentTime) const;
+	/** Beam yaw at SpentTime: the payload yaw, offset by however much of the sweep arc has been travelled; with
+	 * FollowBossOrientation, the boss's yaw at BossServerTime. */
+	float GetBeamYaw(float SpentTime, float BossServerTime) const;
 
-	/** Where the beam starts: the boss's live location with FollowBossLocation, the payload origin otherwise. */
-	FVector GetBeamOrigin() const;
+	/** Where the beam starts: the boss's location at BossServerTime with FollowBossLocation, the payload origin
+	 * otherwise. The current server time follows the boss this machine shows. */
+	FVector GetBeamOrigin(float BossServerTime) const;
 
 	/** Places the beam VFX where GetBeamOrigin/GetBeamYaw put it at SpentTime. */
 	void MoveBeamVfx(float SpentTime);

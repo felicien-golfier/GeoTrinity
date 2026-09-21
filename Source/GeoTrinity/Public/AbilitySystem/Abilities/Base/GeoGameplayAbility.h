@@ -213,6 +213,9 @@ protected:
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;
 
+	/** Seconds since ChargeStartTime, unclamped. Only meaningful when FireMode == EFireMode::ChargeForFireDelay. */
+	float GetChargeElapsedSeconds() const;
+
 	/** Client-side shot logic (spawn predicted projectile, play VFX). Override in subclasses. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData);
 
@@ -238,6 +241,16 @@ protected:
 	/** Server-side: snaps StoredPayload.Origin back to the fire socket when a remote client reports an origin
 	 *  further than GameDataSettings::MaxFireOriginDeviation from its avatar. */
 	void ClampRemoteClientOrigin();
+
+	/**
+	 * Server shot clock pacing a remote client's client-timed shots: accepts a shot paced at ShotTime unless it comes
+	 * more than a jitter tolerance ahead of schedule, then advances the schedule by Interval. Jitter therefore never
+	 * raises the sustained rate. A client back from idling may redeem up to MaxBurst intervals at once, so a hitch
+	 * bunching several shots together costs no legitimate one.
+	 *
+	 * @return  False when the shot must be dropped.
+	 */
+	bool TryConsumeShotSlot(float ShotTime, float Interval, float MaxBurst);
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Animation")
@@ -266,6 +279,11 @@ public:
 protected:
 	FAbilityPayload StoredPayload;
 	FTimerHandle FireTriggerTimerHandle;
+	/** When ScheduleFireTrigger began the charge: the press on the machine that pressed, the activation's arrival on
+	 * the server. */
+	float ChargeStartTime = 0.f;
+	/** Earliest time the next shot may happen, on this machine's clock: TryConsumeShotSlot's schedule on the server. */
+	float NextAllowedShotTime = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	ECommitBehaviour CommitBehaviour = ECommitBehaviour::AtActivate;
@@ -284,7 +302,6 @@ private:
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
-	float ChargeStartTime = 0.f;
 	// Server-only. Keeps the add/remove of RemoteFireTag balanced when EndAbility runs more than once.
 	bool bRemoteFireTagApplied = false;
 };

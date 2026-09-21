@@ -72,6 +72,24 @@ void UGeoCharacterMovementComponent::OnRegister()
 	BaseMaxAcceleration = MaxAcceleration;
 }
 
+void UGeoCharacterMovementComponent::TickComponent(float const DeltaTime, ELevelTick const TickType,
+												   FActorComponentTickFunction* const ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		FGeoPose const Pose = GeoLib::GetCurrentPose(GetOwner());
+		float const OldestTimeNeeded = Pose.ServerTime - 2.f * GetDefault<UGameDataSettings>()->MaxLatencyCompensation;
+		// Keeps the last pose at or before that time: a lookup there interpolates from it.
+		while (PoseHistory.Num() > 1 && PoseHistory[1].ServerTime <= OldestTimeNeeded)
+		{
+			PoseHistory.PopFront();
+		}
+		PoseHistory.Add(Pose);
+	}
+}
+
 void UGeoCharacterMovementComponent::ApplySpeedMultiplier(float Multiplier)
 {
 	MaxWalkSpeed = BaseMaxWalkSpeed * Multiplier;
@@ -108,30 +126,37 @@ float UGeoCharacterMovementComponent::GetPerceivedServerTime() const
 						ServerTime);
 }
 
+FGeoPose UGeoCharacterMovementComponent::GetPoseAt(float const ServerTime) const
+{
+	FGeoPose Later = GeoLib::GetCurrentPose(GetOwner());
+	for (int32 Index = PoseHistory.Num() - 1; Index >= 0; --Index)
+	{
+		FGeoPose const& Earlier = PoseHistory[Index];
+		if (Earlier.ServerTime <= ServerTime)
+		{
+			float const Span = Later.ServerTime - Earlier.ServerTime;
+			float const Alpha = Span > 0.f ? FMath::Min((ServerTime - Earlier.ServerTime) / Span, 1.f) : 1.f;
+			return {ServerTime, FMath::Lerp(Earlier.Location, Later.Location, Alpha),
+					Earlier.Yaw + FMath::FindDeltaAngleDegrees(Earlier.Yaw, Later.Yaw) * Alpha};
+		}
+		Later = Earlier;
+	}
+
+	return Later;
+}
+
 void UGeoCharacterMovementComponent::ServerMoveHandleClientError(float ClientTimeStamp, float DeltaTime,
 																 FVector const& Accel,
 																 FVector const& RelativeClientLocation,
 																 UPrimitiveComponent* ClientMovementBase,
 																 FName ClientBaseBoneName, uint8 ClientMovementMode)
 {
-	if (IsCorpseFollowingClient())
-	{
-		UpdatedComponent->SetWorldLocation(RelativeClientLocation);
-	}
+	bool const bCorpseFollowingClient = IsCorpseFollowingClient();
+	bIgnoreClientMovementErrorChecksAndCorrection = bCorpseFollowingClient;
+	bServerAcceptClientAuthoritativePosition = bCorpseFollowingClient;
 
 	Super::ServerMoveHandleClientError(ClientTimeStamp, DeltaTime, Accel, RelativeClientLocation, ClientMovementBase,
 									   ClientBaseBoneName, ClientMovementMode);
-}
-
-bool UGeoCharacterMovementComponent::ServerCheckClientError(float ClientTimeStamp, float DeltaTime,
-															FVector const& Accel, FVector const& ClientWorldLocation,
-															FVector const& RelativeClientLocation,
-															UPrimitiveComponent* ClientMovementBase,
-															FName ClientBaseBoneName, uint8 ClientMovementMode)
-{
-	return !IsCorpseFollowingClient()
-		&& Super::ServerCheckClientError(ClientTimeStamp, DeltaTime, Accel, ClientWorldLocation, RelativeClientLocation,
-										 ClientMovementBase, ClientBaseBoneName, ClientMovementMode);
 }
 
 bool UGeoCharacterMovementComponent::IsCorpseFollowingClient() const

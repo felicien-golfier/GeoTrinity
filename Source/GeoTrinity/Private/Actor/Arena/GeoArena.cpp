@@ -29,6 +29,14 @@
 #include "System/GeoLeaderboardSave.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+static TAutoConsoleVariable<bool> CVarSkipBossIntro(TEXT("Geo.SkipBossIntro"),
+#if WITH_EDITOR
+													 true,
+#else
+													 false,
+#endif
+													 TEXT("When true, boss intros never play."));
+
 AGeoArena::AGeoArena()
 {
 	bReplicates = true;
@@ -362,7 +370,7 @@ bool AGeoArena::IsBoss(AActor const* Enemy) const
 
 bool AGeoArena::IsIntroPending() const
 {
-	return !bHasEverFought && IsValid(Boss) && Boss->IntroMontage;
+	return !bHasEverFought && IsValid(Boss) && Boss->IntroMontage && !CVarSkipBossIntro.GetValueOnGameThread();
 }
 
 float AGeoArena::PlayIntro()

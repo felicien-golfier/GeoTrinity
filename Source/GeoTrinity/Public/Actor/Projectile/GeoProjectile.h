@@ -145,6 +145,18 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "GeoProjectile|Params")
 	FProjectileParamsBase ResolvedParams;
 
+	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
+	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
+	 * replicated destruction, so a local Destroy() can never race a later replication bunch into a ghost re-spawn. */
+	virtual void EndProjectileLife();
+
+	/** Called on a blocking hit (wall or environment): by physics, by AdvanceProjectile's sweep, and by
+	 * UGeoBulletSubsystem for a bullet it draws. Ends the projectile unless it bounces; override to implement a bounce.
+	 */
+	UFUNCTION()
+	virtual void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+							 FVector NormalImpulse, FHitResult const& Hit);
+
 protected:
 	/**
 	 * Returns true when OtherActor is a valid hit target for this projectile.
@@ -157,7 +169,7 @@ protected:
 
 	/**
 	 * Called from OnSphereOverlap after IsValidOverlap passes, with the ASCs it resolved. Override to customise hit
-	 * behaviour. Default: applies EffectDataArray to target, calls OnProjectileHit, ends projectile life.
+	 * behaviour. Default: applies EffectDataArray to target, calls OnProjectileConfirmedOverlap, ends projectile life.
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
 									UGeoAbilitySystemComponent* TargetASC);
@@ -176,11 +188,6 @@ protected:
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 						 UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep,
 						 FHitResult const& SweepResult);
-	/** Called on a physics blocking hit (wall or environment). Default is a no-op; override to implement bounce
-	 * behaviour. */
-	UFUNCTION()
-	virtual void OnSphereHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-							 FVector NormalImpulse, FHitResult const& Hit);
 
 	/**
 	 * Called on every machine that has this projectile when it hits a valid actor.
@@ -189,12 +196,8 @@ protected:
 	 * @param HitActor  The actor that was struck. Cast to GeoCharacter to access its mesh.
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "GeoProjectile|GameFeel")
-	void OnProjectileHit(AActor* HitActor);
+	void OnProjectileConfirmedOverlap(AActor* HitActor);
 
-	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
-	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
-	 * replicated destruction, so a local Destroy() can never race a later replication bunch into a ghost re-spawn. */
-	virtual void EndProjectileLife();
 	/** Removes the OnRevived binding made in InitProjectileLife. Called from EndProjectileLife (non-pooled) and
 	 * AGeoPooledProjectile::End (pool release) so a reused projectile never keeps a binding to a previous instigator.
 	 */

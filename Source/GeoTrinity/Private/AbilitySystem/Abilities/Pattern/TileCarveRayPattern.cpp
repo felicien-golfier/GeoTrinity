@@ -19,10 +19,11 @@ void UTileCarveRayPattern::TickPattern(float const ServerTime, float const Spent
 	Super::TickPattern(ServerTime, SpentTime);
 }
 
-void UTileCarveRayPattern::OnHazardEnd()
+void UTileCarveRayPattern::EndPattern(bool bForceStop)
 {
-	Super::OnHazardEnd();
-	if (bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
+	Super::EndPattern(bForceStop);
+
+	if (!bForceStop && bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
 	{
 		// Yaw at SpentTime 0: the tile that dies is the one the beam locked onto when it went live.
 		FIntPoint LastTile;
@@ -36,10 +37,11 @@ void UTileCarveRayPattern::OnHazardEnd()
 AGeoHexArena* UTileCarveRayPattern::FindLastTileHit(float const SpentTime, FIntPoint& OutTile) const
 {
 	AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.SourceAvatar);
-	FVector2D const Forward(FRotator(0.f, GetBeamYaw(SpentTime), 0.f).Vector());
+	float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
+	FVector2D const Forward(FRotator(0.f, GetBeamYaw(SpentTime, ServerTime), 0.f).Vector());
 	if (!ensureMsgf(Arena, TEXT("UTileCarveRayPattern: %s is not a hex arena boss"),
 					*GetNameSafe(StoredPayload.SourceAvatar))
-		|| !Arena->GetLastAliveTileAlongRay(FVector2D(GetBeamOrigin()), Forward, OutTile))
+		|| !Arena->GetLastAliveTileAlongRay(FVector2D(GetBeamOrigin(ServerTime)), Forward, OutTile))
 	{
 		return nullptr;
 	}

@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Boss/GeoSweepBeamAbility.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -61,11 +62,11 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 	}
 }
 
-float UBeamPattern::GetBeamYaw(float const SpentTime) const
+float UBeamPattern::GetBeamYaw(float const SpentTime, float const BossServerTime) const
 {
 	if (FollowBossOrientation && IsValid(StoredPayload.SourceAvatar))
 	{
-		return StoredPayload.SourceAvatar->GetActorRotation().Yaw;
+		return GeoLib::GetPoseAt(StoredPayload.SourceAvatar, BossServerTime).Yaw;
 	}
 
 	float const SweptFraction = FMath::Clamp(SpentTime / BeamDuration, 0.f, 1.f);
@@ -73,11 +74,11 @@ float UBeamPattern::GetBeamYaw(float const SpentTime) const
 	return StoredPayload.Yaw - SweepSign * (2.f * SweepAngle * SweptFraction);
 }
 
-FVector UBeamPattern::GetBeamOrigin() const
+FVector UBeamPattern::GetBeamOrigin(float const BossServerTime) const
 {
 	if (FollowBossLocation && IsValid(StoredPayload.SourceAvatar))
 	{
-		return StoredPayload.SourceAvatar->GetActorLocation();
+		return GeoLib::GetPoseAt(StoredPayload.SourceAvatar, BossServerTime).Location;
 	}
 
 	return FVector(StoredPayload.Origin, ArbitraryCharacterZ);
@@ -87,7 +88,9 @@ void UBeamPattern::MoveBeamVfx(float const SpentTime)
 {
 	if (IsValid(BeamVfxComponent))
 	{
-		BeamVfxComponent->SetWorldLocationAndRotation(GetBeamOrigin(), FRotator(0.f, GetBeamYaw(SpentTime), 0.f));
+		float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
+		BeamVfxComponent->SetWorldLocationAndRotation(GetBeamOrigin(ServerTime),
+													  FRotator(0.f, GetBeamYaw(SpentTime, ServerTime), 0.f));
 	}
 }
 
@@ -111,14 +114,14 @@ void UBeamPattern::StartPattern()
 	Super::StartPattern();
 }
 
-void UBeamPattern::TickPattern(float /*ServerTime*/, float const SpentTime)
+void UBeamPattern::TickPattern(float const ServerTime, float const SpentTime)
 {
 	MoveBeamVfx(SpentTime);
 
 	if (GeoLib::IsServer(GetWorld()) && CVarDrawBeamBorder.GetValueOnGameThread())
 	{
-		FVector const Location = GetBeamOrigin();
-		FVector const Forward = FRotator(0.f, GetBeamYaw(SpentTime), 0.f).Vector();
+		FVector const Location = GetBeamOrigin(ServerTime);
+		FVector const Forward = FRotator(0.f, GetBeamYaw(SpentTime, ServerTime), 0.f).Vector();
 		FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
 		FVector const BeamStart = Location;
 		FVector const BeamEnd = Location + Forward * BeamRange;
@@ -138,13 +141,11 @@ float UBeamPattern::GetHazardDuration() const
 
 bool UBeamPattern::IsInHazard(AActor const* Target, FVector2D const Location, float const SpentTime) const
 {
-	bool const bIncludeTargetRadius =
-		GeoASLib::ShouldIncludeTargetRadius(OverlapMode, GeoASLib::GetTeamId(StoredPayload.SourceOwner));
-	float const TargetRadius = bIncludeTargetRadius ? Target->GetSimpleCollisionRadius() : 0.f;
-	FVector2D const ToTarget = Location - FVector2D(GetBeamOrigin());
-	FVector2D const Forward(FRotator(0.f, GetBeamYaw(SpentTime), 0.f).Vector());
-	return ToTarget.SizeSquared() <= FMath::Square(BeamRange + TargetRadius) && (ToTarget | Forward) >= 0.f
-		&& FMath::Abs(ToTarget ^ Forward) <= BeamHalfWidth + TargetRadius;
+	float const TargetServerTime =
+		StoredPayload.ServerSpawnTime + StartDelay + SpentTime - GeoLib::GetReplicationDelay(Target);
+	FVector2D const Forward(FRotator(0.f, GetBeamYaw(SpentTime, TargetServerTime), 0.f).Vector());
+	return GeoASLib::IsInLine(Target, Location, FVector2D(GetBeamOrigin(TargetServerTime)), Forward, BeamRange,
+							  BeamHalfWidth, OverlapMode, GeoASLib::GetTeamId(StoredPayload.SourceOwner));
 }
 
 void UBeamPattern::OnHazardEnd()

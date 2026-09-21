@@ -28,6 +28,15 @@ void AGeoWall::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+bool AGeoWall::DoesOverlapShape(FVector2D const Location, FVector2D const Center, float const Radius) const
+{
+	// Location is where the caller holds the wall, so the circle moves by what it is off the wall's own place.
+	FVector2D const RelativeLocation = Center + FVector2D(GetActorLocation()) - Location;
+	FVector const RelativeLocation3D(RelativeLocation, MeshComponent->Bounds.Origin.Z);
+	return MeshComponent->OverlapComponent(RelativeLocation3D, FQuat::Identity, FCollisionShape::MakeSphere(Radius));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoWall::InitInteractable(FInteractableActorData* Data)
 {
 	FDeployableData* InputData = static_cast<FDeployableData*>(Data);

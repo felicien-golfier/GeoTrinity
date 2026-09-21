@@ -12,6 +12,10 @@
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
+// Arrival-jitter grace: jitter can compress two arrivals below their interval even when the client spaced them a full
+// interval apart. A fixed offset, not a rate multiplier — it never raises the sustained rate.
+static constexpr float ServerShotJitterTolerance = 0.05f;
+
 void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 										  FGameplayAbilityActorInfo const* ActorInfo,
 										  FGameplayAbilityActivationInfo const ActivationInfo,
@@ -367,6 +371,18 @@ void UGeoGameplayAbility::ClampRemoteClientOrigin()
 	StoredPayload.Origin = GetFireOrigin2D(Avatar, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
 }
 
+bool UGeoGameplayAbility::TryConsumeShotSlot(float const ShotTime, float const Interval, float const MaxBurst)
+{
+	NextAllowedShotTime = FMath::Max(NextAllowedShotTime, ShotTime - MaxBurst * Interval);
+	bool const bOnSchedule = ShotTime >= NextAllowedShotTime - ServerShotJitterTolerance;
+	if (bOnSchedule)
+	{
+		NextAllowedShotTime += Interval;
+	}
+
+	return bOnSchedule;
+}
+
 FGeoAbilityTargetData UGeoGameplayAbility::GetUpdatedTargetData()
 {
 	FVector2D const Origin =
@@ -534,9 +550,15 @@ float UGeoGameplayAbility::GetChargeRatio() const
 		return 1.f;
 	}
 
-	float RawRatio = FMath::Clamp((GetWorld()->GetTimeSeconds() - ChargeStartTime) / MaxChargeTime, 0.f, 1.f);
+	float RawRatio = FMath::Clamp(GetChargeElapsedSeconds() / MaxChargeTime, 0.f, 1.f);
 
 	return ApplyChargingCurve(RawRatio);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float UGeoGameplayAbility::GetChargeElapsedSeconds() const
+{
+	return GetWorld()->GetTimeSeconds() - ChargeStartTime;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

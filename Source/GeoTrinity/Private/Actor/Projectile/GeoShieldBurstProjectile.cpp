@@ -118,7 +118,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 
 		GeoASLib::NotifyAbilityHit(Payload, OtherActor);
 
-		OnProjectileHit(OtherActor);
+		OnProjectileConfirmedOverlap(OtherActor);
 		EndProjectileLife();
 	}
 }

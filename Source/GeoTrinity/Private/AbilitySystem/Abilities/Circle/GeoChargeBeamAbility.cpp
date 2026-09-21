@@ -7,24 +7,47 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-// Permillage headroom absorbing RPC jitter between the client's release and the server observing it.
-static constexpr int32 ChargeRatioTolerancePermille = 100;
+// Hold a remote client may claim beyond the one the server saw between its activation and its release arriving.
+static constexpr float ServerHoldTolerance = 0.1f;
+// Beams a remote client may redeem at once after idling, so a hitch bunching two together costs no legitimate one.
+static constexpr float MaxServerBeamBurst = 1.f;
 
 UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 {
 	FireMode = EFireMode::ChargeForFireDelay;
-	CommitBehaviour = ECommitBehaviour::CostAtActivateCooldownAtEnd;
+	CommitBehaviour = ECommitBehaviour::DoNotAutoCommit;
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 FGameplayTag UGeoChargeBeamAbility::GetAlternateReleaseInputTag() const
 {
 	return FGeoGameplayTags::Get().InputTag_Reload;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoChargeBeamAbility::CheckCooldown(FGameplayAbilitySpecHandle /*Handle*/,
+										  FGameplayAbilityActorInfo const* ActorInfo,
+										  FGameplayTagContainer* /*OptionalRelevantTags*/) const
+{
+	return !ActorInfo->IsLocallyControlled()
+		|| ActorInfo->AbilitySystemComponent->GetWorld()->GetTimeSeconds() >= NextAllowedShotTime;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoChargeBeamAbility::GetCooldownTimeRemainingAndDuration(FGameplayAbilitySpecHandle const Handle,
+																FGameplayAbilityActorInfo const* ActorInfo,
+																float& TimeRemaining, float& CooldownDuration) const
+{
+	float const Now = ActorInfo->AbilitySystemComponent->GetWorld()->GetTimeSeconds();
+	TimeRemaining = FMath::Max(NextAllowedShotTime - Now, 0.f);
+	CooldownDuration = GetCooldown(GetAbilityLevel(Handle, ActorInfo));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -40,17 +63,26 @@ void UGeoChargeBeamAbility::SetChargeGaugeVisible(APlayableCharacter* Character,
 
 FGeoAbilityTargetData UGeoChargeBeamAbility::GetUpdatedTargetData()
 {
-	// Seed field is repurposed to carry the charge ratio as an integer permillage (0–1000).
-	// This piggybacks on the existing RPC without adding a new field, since Seed is unused by the beam otherwise.
-	float const ChargeRatio = GetChargeRatio();
-	StoredPayload.Seed = FMath::RoundToInt(ChargeRatio * 1000.f);
+	SetStoredHeldSeconds(GetChargeElapsedSeconds());
 	return Super::GetUpdatedTargetData();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoChargeBeamAbility::SetStoredHeldSeconds(float const HeldSeconds)
+{
+	StoredPayload.Seed = FMath::RoundToInt(HeldSeconds * 1000.f);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float UGeoChargeBeamAbility::GetStoredHeldSeconds() const
+{
+	return StoredPayload.Seed / 1000.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 float UGeoChargeBeamAbility::GetStoredChargeRatio() const
 {
-	return FMath::Clamp(static_cast<float>(StoredPayload.Seed) / 1000.f, 0.f, 1.f);
+	return ApplyChargingCurve(FMath::Clamp(GetStoredHeldSeconds() / GetFireDelay(), 0.f, 1.f));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -127,14 +159,16 @@ void UGeoChargeBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	{
 		if (GeoLib::IsServer(this)) // Host Case
 		{
-			DealDamage(AbilityTargetData);
+			DealDamage();
 		}
+
 		FireGameplayCue(AbilityTargetData);
+		NextAllowedShotTime = GetWorld()->GetTimeSeconds() + GetCooldown(GetAbilityLevel());
 		EndAbility(false);
 	}
 }
 
-void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTargetData) const
+void UGeoChargeBeamAbility::DealDamage() const
 {
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
 	if (!ensureMsgf(SourceASC, TEXT("UGeoChargeBeamAbility: invalid ASC on server")))
@@ -143,15 +177,19 @@ void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTarge
 	}
 
 	float const MaxRange = GetDefault<UGameDataSettings>()->GeneralSpellDistance;
-	FVector2D const ForwardVector = FVector2D(FRotator(0, AbilityTargetData.Yaw, 0).Vector());
+	FVector2D const ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
 
 	AActor const* const Avatar = GetAvatarActorFromActorInfo();
+	FGenericTeamId const SourceTeam = GeoASLib::GetTeamId(Avatar);
+	float const SeenServerTime = GeoLib::GetPerceivedServerTime(Avatar) - GeoLib::GetReplicationDelay(Avatar);
 	TArray<TInstancedStruct<FEffectData>> const Effects = GetEffectDataArray();
-	for (AActor* Target :
-		 GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(Avatar), TeamAttitudeMask::HostileOrNeutral,
-											   true, AbilityTargetData.Origin, ForwardVector, MaxRange))
+	for (AActor* Target : GeoASLib::GetInteractableActors(this, SourceTeam, TeamAttitudeMask::HostileOrNeutral,
+														  /*bMustBeDamageable*/ true))
 	{
-		if (Target == Avatar)
+		FVector2D const SeenLocation(GeoLib::GetPoseAt(Target, SeenServerTime).Location);
+		if (Target == Avatar
+			|| !GeoASLib::IsInLine(Target, SeenLocation, StoredPayload.Origin, ForwardVector, MaxRange,
+								   /*LineHalfWidth*/ 0.f, ETargetOverlapMode::Automatic, SourceTeam))
 		{
 			continue;
 		}
@@ -162,7 +200,7 @@ void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTarge
 			continue;
 		}
 
-		GeoASLib::ApplyEffectFromEffectData(Effects, SourceASC, TargetASC, GetAbilityLevel(), AbilityTargetData.Seed,
+		GeoASLib::ApplyEffectFromEffectData(Effects, SourceASC, TargetASC, GetAbilityLevel(), StoredPayload.Seed,
 											GetAbilityTag());
 		GeoASLib::NotifyAbilityHit(StoredPayload, Target);
 	}
@@ -175,25 +213,24 @@ void UGeoChargeBeamAbility::DealDamage(FGeoAbilityTargetData const& AbilityTarge
 		Passive->ConsumeGauge(*SourceASC);
 	}
 }
+
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoChargeBeamAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 													 FGameplayTag const ApplicationTag)
 {
 	// Call Super first to get the Payload Seed updated.
 	Super::OnFireTargetDataReceived(DataHandle, ApplicationTag);
-
-	StoredPayload.Seed =
-		FMath::Min(StoredPayload.Seed, FMath::RoundToInt(GetChargeRatio() * 1000.f) + ChargeRatioTolerancePermille);
 	ClampRemoteClientOrigin();
 
-	FGeoAbilityTargetData const* AbilityTargetData = static_cast<FGeoAbilityTargetData const*>(DataHandle.Get(0));
-	if (!ensureMsgf(AbilityTargetData,
-					TEXT("No FGeoAbilityTargetData found in DataHandle — cannot update StoredPayload.")))
+	float const ServerSeenHold = GetChargeElapsedSeconds();
+	SetStoredHeldSeconds(FMath::Clamp(GetStoredHeldSeconds(), 0.f, ServerSeenHold + ServerHoldTolerance));
+
+	bool const bOnSchedule = TryConsumeShotSlot(
+		ChargeStartTime, GetStoredHeldSeconds() + GetCooldown(GetAbilityLevel()), MaxServerBeamBurst);
+	if (bOnSchedule)
 	{
-		EndAbility(true, true);
-		return;
+		DealDamage();
 	}
 
-	DealDamage(*AbilityTargetData);
-	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, false);
+	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, !bOnSchedule);
 }

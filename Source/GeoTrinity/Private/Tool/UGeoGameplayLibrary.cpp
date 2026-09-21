@@ -14,6 +14,7 @@
 #include "GameFramework/PlayerState.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/GameplayStatics.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/GeoColor.h"
 #include "VisualLogger/VisualLogger.h"
 
@@ -163,6 +164,34 @@ float UGeoGameplayLibrary::GetPerceivedServerTime(AActor const* Actor)
 	}
 
 	return Character->GetGeoMovementComponent()->GetPerceivedServerTime();
+}
+
+float UGeoGameplayLibrary::GetReplicationDelay(AActor const* Viewer)
+{
+	APawn const* const Pawn = Cast<APawn>(Viewer);
+	if (!IsValid(Pawn) || !Pawn->IsPlayerControlled() || Pawn->IsLocallyControlled())
+	{
+		return 0.f;
+	}
+
+	float const HalfPing = Pawn->GetPlayerState()->GetPingInMilliseconds() * 0.0005f;
+	return FMath::Min(HalfPing, GetDefault<UGameDataSettings>()->MaxLatencyCompensation);
+}
+
+FGeoPose UGeoGameplayLibrary::GetPoseAt(AActor const* Actor, float const ServerTime)
+{
+	AGeoCharacter const* const Character = Cast<AGeoCharacter>(Actor);
+	if (!IsValid(Character))
+	{
+		return GetCurrentPose(Actor);
+	}
+
+	return Character->GetGeoMovementComponent()->GetPoseAt(ServerTime);
+}
+
+FGeoPose UGeoGameplayLibrary::GetCurrentPose(AActor const* Actor)
+{
+	return {GetServerTime(Actor, true), Actor->GetActorLocation(), static_cast<float>(Actor->GetActorRotation().Yaw)};
 }
 
 TArray<AActor*> UGeoGameplayLibrary::GetTargetPoints(UObject const* WorldContextObject, FGameplayTag const PurposeTag,

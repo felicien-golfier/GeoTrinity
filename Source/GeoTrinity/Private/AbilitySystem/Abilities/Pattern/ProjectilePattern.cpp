@@ -2,29 +2,35 @@
 
 #include "AbilitySystem/Abilities/Pattern/ProjectilePattern.h"
 
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
-#include "Tool/UGeoGameplayLibrary.h"
+#include "System/GeoBulletSubsystem.h"
 
 void UProjectilePattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
 	Super::OnCreate(AbilityTag, Owner);
 
 	ensureMsgf(ProjectileParams.ProjectileClass, TEXT("%s: ProjectileClass is not set"), *GetName());
+
+	for (TInstancedStruct<FEffectData> const& Effect : EffectDataArray)
+	{
+		FEffectData const* const EffectData = Effect.GetPtr();
+		ensureMsgf(!EffectData || !EffectData->IsPerSecond(),
+				   TEXT("%s: a bullet carries a per-second effect, and a bullet only ever hits for an instant"),
+				   *GetName());
+	}
 }
 
 void UProjectilePattern::SpawnSalve(TArray<float> const& Yaws, float const SalveSpawnTime) const
 {
-	FVector const SpawnLocation(StoredPayload.Origin, ArbitraryCharacterZ);
+	UGeoBulletSubsystem* const BulletSubsystem = UGeoBulletSubsystem::Get(GetWorld());
 
 	for (float const Yaw : Yaws)
 	{
-		FAbilityPayload ProjectilePayload = StoredPayload;
-		ProjectilePayload.Yaw = Yaw;
-		ProjectilePayload.ServerSpawnTime = SalveSpawnTime;
+		FAbilityPayload BulletPayload = StoredPayload;
+		BulletPayload.Yaw = Yaw;
+		BulletPayload.ServerSpawnTime = SalveSpawnTime;
 
-		GeoASLib::FullySpawnProjectile(GetWorld(), ProjectileParams, FTransform(FRotator(0.f, Yaw, 0.f), SpawnLocation),
-									   ProjectilePayload, EffectDataArray, SalveSpawnTime);
+		BulletSubsystem->FireBullet(BulletPayload, ProjectileParams, EffectDataArray, TeamAttitude);
 	}
 }
 

@@ -23,26 +23,38 @@ struct GEOTRINITY_API FGeoHazardJudge
 	 *
 	 * @param InStartServerTime          Server time of the hazard's SpentTime 0.
 	 * @param InDuration                 How long the hazard stays live from SpentTime 0.
-	 * @param InTeamAttitude             Which attitudes, relative to the source owner's team, the hazard hits.
 	 * @param bInSeenThroughReplication  True when clients only learn about the hazard through replication (a deployable
 	 *                                   exploding), so each one saw it half its ping late; false when they run it on the
 	 *                                   server clock themselves (a pattern).
+	 * @param bInEndsOnHit               True for a hazard its first hit consumes (a bullet): the hazard ends at the
+	 *                                   moment of that hit, so nobody is judged past it — while a target whose own time
+	 *                                   is still before it can still be hit by it.
+	 * @param bInRemovesInfiniteEffectsOnLeave  True to remove a target's infinite effects when it leaves the hazard;
+	 *                                          false keeps them on for good. Only meaningful for a hazard that lasts.
 	 */
-	void Start(float InStartServerTime, float InDuration, int32 InTeamAttitude, bool bInSeenThroughReplication);
+	void Start(float InStartServerTime, float InDuration, bool bInSeenThroughReplication, bool bInEndsOnHit,
+			   bool bInRemovesInfiniteEffectsOnLeave);
+
+	/** Every actor a hazard owned by SourceOwner may hit, damageable ones only. Judge takes the list rather than
+	 * building it, so judging many hazards at once — a boss's bullets — walks the world once per tick. */
+	static TArray<AActor*> FindCandidates(AActor const* SourceOwner, int32 TeamAttitude);
 
 	/**
-	 * For each hostile, runs IsInHazard on every sample its own time has passed since its last judge, at its location
+	 * For each candidate, runs IsInHazard on every sample its own time has passed since its last judge, at its location
 	 * interpolated between the two, then applies Effects: the non per-second ones if it entered, the per-second ones
 	 * for the time it spent inside. A target leaves the hazard when a sample finds it outside, when the hazard is over
-	 * for it, or when it stops being a candidate; the infinite effects it got on entering go with it.
+	 * for it, or when it stops being a candidate; the infinite effects it got on entering go with it, unless
+	 * Start said to keep them.
 	 * A target seen for the first time, or back after missing a judge, is only judged from now. The last sample sits
 	 * exactly on the hazard's end. Does nothing once stopped, and stops for good if Source's owner is gone.
 	 *
 	 * @param Source      The shot the hazard belongs to: its owner applies Effects and takes the hit credit.
+	 * @param Candidates  Everything the hazard may hit this tick, from FindCandidates.
 	 * @param IsInHazard  Whether Target, standing at Location, is inside the hazard at SpentTime. Called for past
 	 *                    moments of each target, so it must derive everything from its arguments.
 	 */
 	void Judge(FAbilityPayload const& Source, TArray<TInstancedStruct<FEffectData>> const& Effects,
+			   TArray<AActor*> const& Candidates,
 			   TFunctionRef<bool(AActor const* Target, FVector2D Location, float SpentTime)> IsInHazard);
 
 	/** True once every target has been judged — guaranteed after a fixed window, since GetPerceivedServerTime never
@@ -75,6 +87,21 @@ private:
 	float GetTargetSpentTime(AActor const* Target) const;
 
 	/**
+	 * Runs IsInHazard on every sample Target's own time has passed since State's last judge, then moves State up to
+	 * TargetSpentTime. A hazard that ends on hit ends at the sample that hits.
+	 *
+	 * @param bOutEntered  Whether a sample found it inside right after one found it outside.
+	 * @return             How many samples found it inside.
+	 */
+	int32 AdvanceSamples(FTargetState& State, AActor const* Target, float TargetSpentTime, FVector2D TargetLocation,
+						 TFunctionRef<bool(AActor const* Target, FVector2D Location, float SpentTime)> IsInHazard,
+						 bool& bOutEntered);
+
+	/** Applies Effects to Target for what AdvanceSamples found, and removes its infinite effects if it is now outside. */
+	void ApplySamplingResult(FAbilityPayload const& Source, TArray<TInstancedStruct<FEffectData>> const& Effects,
+							 AActor* Target, FTargetState& State, bool bEntered, int32 SamplesInside);
+
+	/**
 	 * Applies the Effects entries matching bPerSecond to Target and reports the hit.
 	 *
 	 * @return  Handles of the infinite effects still active on Target after the apply.
@@ -90,7 +117,11 @@ private:
 
 	float StartServerTime = 0.f;
 	float Duration = 0.f;
-	int32 TeamAttitude = 0;
+	/** Samples the whole hazard is worth, the last one sitting on its end. Counted from Duration at Start, and cut down
+	 * to the hit's own sample when a hazard that ends on its first hit is hit. */
+	int32 SampleCount = 0;
 	bool bSeenThroughReplication = false;
+	bool bEndsOnHit = false;
+	bool bRemovesInfiniteEffectsOnLeave = false;
 	bool bJudging = false;
 };

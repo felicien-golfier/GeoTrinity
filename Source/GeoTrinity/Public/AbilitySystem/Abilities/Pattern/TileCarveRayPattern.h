@@ -23,8 +23,7 @@ protected:
 	/** Highlights the tile the beam is about to carve while it fires, then runs the regular beam tick. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** Destroys the tile the beam locked onto when it fired — never reached by a force-stopped pattern. */
-	virtual void OnHazardEnd() override;
-
+	virtual void EndPattern(bool bForceStop = false) override;
 	/** Destroys the furthest arena tile the beam reaches, at the moment it fires. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")
 	bool bDestroyLastTileHit = true;
@@ -32,7 +31,7 @@ protected:
 private:
 	/**
 	 * Returns the hex arena of the boss firing this beam, and the furthest still-standing tile the beam reaches at
-	 * SpentTime. Null when the beam crosses no living tile.
+	 * SpentTime, following the boss where it stands now. Null when the beam crosses no living tile.
 	 *
 	 * @param OutTile  Set to the furthest alive tile along the beam whenever an arena is returned.
 	 */

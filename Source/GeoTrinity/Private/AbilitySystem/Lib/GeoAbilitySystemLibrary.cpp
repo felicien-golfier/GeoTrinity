@@ -306,21 +306,12 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActorsInLine(
 	FVector2D const Origin, FVector2D const ForwardVector, float const MaxRange, float const LineHalfWidth,
 	ETargetOverlapMode OverlapMode)
 {
-	bool const bIncludeTargetRadius = ShouldIncludeTargetRadius(OverlapMode, SourceTeam);
 	return GetInteractableActors(
 		WorldContextObject, SourceTeam, AttitudeBitmask, bMustBeDamageable, Origin, MaxRange,
 		[&](AActor const* Target)
 		{
-			FVector2D const ToTarget = FVector2D(Target->GetActorLocation()) - Origin;
-			float const AlongBeam = FVector2D::DotProduct(ToTarget, ForwardVector);
-			if (AlongBeam < 0.f)
-			{
-				return false;
-			}
-			float const PerpDistSqr = (ToTarget - ForwardVector * AlongBeam).SizeSquared();
-			float const TargetRadius = bIncludeTargetRadius ? Target->GetSimpleCollisionRadius() : 0.f;
-			float const HitRadius = TargetRadius + LineHalfWidth;
-			return PerpDistSqr <= HitRadius * HitRadius;
+			return IsInLine(Target, FVector2D(Target->GetActorLocation()), Origin, ForwardVector, MaxRange,
+							LineHalfWidth, OverlapMode, SourceTeam);
 		},
 		OverlapMode);
 }
@@ -344,9 +335,27 @@ bool UGeoAbilitySystemLibrary::IsInCircle(AActor const* Target, FVector2D const 
 										  float const Radius, ETargetOverlapMode const OverlapMode,
 										  FGenericTeamId const SourceTeam)
 {
+	bool const bIncludeTargetRadius = ShouldIncludeTargetRadius(OverlapMode, SourceTeam);
+	AGeoInteractableActor const* const Interactable = Cast<AGeoInteractableActor>(Target);
+	if (bIncludeTargetRadius && Interactable)
+	{
+		return Interactable->DoesOverlapShape(Location, Center, Radius);
+	}
+
+	float const TargetRadius = bIncludeTargetRadius ? Target->GetSimpleCollisionRadius() : 0.f;
+	return FVector2D::DistSquared(Center, Location) <= FMath::Square(Radius + TargetRadius);
+}
+
+bool UGeoAbilitySystemLibrary::IsInLine(AActor const* Target, FVector2D const Location, FVector2D const Origin,
+										FVector2D const ForwardVector, float const MaxRange, float const LineHalfWidth,
+										ETargetOverlapMode const OverlapMode, FGenericTeamId const SourceTeam)
+{
 	float const TargetRadius =
 		ShouldIncludeTargetRadius(OverlapMode, SourceTeam) ? Target->GetSimpleCollisionRadius() : 0.f;
-	return FVector2D::DistSquared(Center, Location) <= FMath::Square(Radius + TargetRadius);
+	FVector2D const ToTarget = Location - Origin;
+	float const AlongBeam = FVector2D::DotProduct(ToTarget, ForwardVector);
+	return AlongBeam >= 0.f && ToTarget.SizeSquared() <= FMath::Square(MaxRange + TargetRadius)
+		&& (ToTarget - ForwardVector * AlongBeam).SizeSquared() <= FMath::Square(TargetRadius + LineHalfWidth);
 }
 // ---------------------------------------------------------------------------------------------------------------------
 AActor* UGeoAbilitySystemLibrary::GetNearestActorFromList(AActor const* FromActor, TArray<AActor*> const& ActorList)

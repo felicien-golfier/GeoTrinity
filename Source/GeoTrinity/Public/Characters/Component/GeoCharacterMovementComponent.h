@@ -2,12 +2,21 @@
 
 #pragma once
 
+#include "Containers/RingBuffer.h"
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 #include "GeoCharacterMovementComponent.generated.h"
 
 class AGeoCharacter;
+
+/** Where an actor stood, and which way it faced, at ServerTime. */
+struct FGeoPose
+{
+	float ServerTime = 0.f;
+	FVector Location = FVector::ZeroVector;
+	float Yaw = 0.f;
+};
 
 /** Client move stamped with the pattern clock (GeoLib::GetServerTime with ping) of the frame it was simulated on. */
 class FGeoSavedMove_Character : public FSavedMove_Character
@@ -75,6 +84,10 @@ public:
 	/** Caches MaxWalkSpeed and MaxAcceleration as base values for subsequent multiplier application. */
 	virtual void OnRegister() override;
 
+	/** Server. Records this frame's pose, dropping the ones no hazard can look back to anymore (see GetPoseAt). */
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+							   FActorComponentTickFunction* ThisTickFunction) override;
+
 	/**
 	 * Scales MaxWalkSpeed and MaxAcceleration by Multiplier relative to their cached base values.
 	 *
@@ -95,17 +108,25 @@ public:
 	 */
 	float GetPerceivedServerTime() const;
 
+	/**
+	 * Where the character stood, and which way it faced, at ServerTime, interpolated between the poses the server
+	 * records every frame. They reach 2 × MaxLatencyCompensation back, as far as a hazard can look: a target's own time
+	 * trails by up to one, and it saw this character up to one more earlier (GeoLib::GetReplicationDelay). An older time
+	 * gets the oldest pose kept; a time at or past now, the current one — and so does any time on a client, which
+	 * records none.
+	 */
+	FGeoPose GetPoseAt(float ServerTime) const;
+
 protected:
-	/** Server. Puts a following corpse (IsCorpseFollowingClient) on the location the client reports, then runs Super. */
+	/**
+	 * Server. While IsCorpseFollowingClient, turns on bIgnoreClientMovementErrorChecksAndCorrection and
+	 * bServerAcceptClientAuthoritativePosition so Super never corrects the corpse and puts it where the client reports,
+	 * movement base included; turns both off otherwise.
+	 */
 	virtual void ServerMoveHandleClientError(float ClientTimeStamp, float DeltaTime, FVector const& Accel,
 											 FVector const& RelativeClientLocation,
 											 UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName,
 											 uint8 ClientMovementMode) override;
-	/** Server. Never corrects a following corpse (IsCorpseFollowingClient). */
-	virtual bool ServerCheckClientError(float ClientTimeStamp, float DeltaTime, FVector const& Accel,
-										FVector const& ClientWorldLocation, FVector const& RelativeClientLocation,
-										UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName,
-										uint8 ClientMovementMode) override;
 
 private:
 	/**
@@ -121,6 +142,9 @@ private:
 	FGeoCharacterNetworkMoveDataContainer GeoNetworkMoveDataContainer;
 	/** Never decreases, so a client-side ping estimate jump cannot rewind a hazard it already passed. */
 	float LastMoveServerTime = 0.f;
+
+	/** Server. One pose per frame, oldest first. */
+	TRingBuffer<FGeoPose> PoseHistory;
 
 	AGeoCharacter* GetGeoCharacter() const;
 };

@@ -65,6 +65,16 @@ public:
 	 */
 	virtual void InitInteractable(FInteractableActorData* Data);
 
+	/**
+	 * True when the circle of Radius around Center touches this actor, shape included. The default is its collision
+	 * radius; override it wherever that circle is a poor stand-in for the actor (AGeoWall's long mesh).
+	 * Reached through GeoASLib::DoesOverlapShape, which every hazard tests its targets with.
+	 *
+	 * @param Location  Where the actor is judged to stand: its own location, unless a lag-compensated hazard holds it
+	 *                  where it was.
+	 */
+	virtual bool DoesOverlapShape(FVector2D Location, FVector2D Center, float Radius) const;
+
 protected:
 	virtual FInteractableActorData const* GetData() const { return nullptr; }
 

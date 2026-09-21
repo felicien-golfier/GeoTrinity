@@ -20,6 +20,7 @@ class APlayerController;
 class UCameraShakeBase;
 struct FAbilityPayload;
 struct FEffectData;
+struct FGeoPose;
 
 static FColor const ColorPalette[] = {
 	FColor::Black,		  FColor::Red,	   FColor::Green,  FColor::Blue,	   FColor::Yellow,
@@ -130,6 +131,14 @@ public:
 	 * UGeoCharacterMovementComponent::GetPerceivedServerTime. Evaluate a time-driven hazard at this time before
 	 * testing it against Actor. Every non-character actor is simply at the current time. */
 	static float GetPerceivedServerTime(AActor const* Actor);
+	/** Server. How late Viewer's screen shows what reaches it through replication, like another character moving: half
+	 * its ping, capped at MaxLatencyCompensation. 0 for a viewer the server runs itself — AI, the listen-server host. */
+	static float GetReplicationDelay(AActor const* Viewer);
+	/** Where Actor stood, and which way it faced, at ServerTime: a character's from its pose history
+	 * (UGeoCharacterMovementComponent::GetPoseAt, server only), any other actor's current one. */
+	static FGeoPose GetPoseAt(AActor const* Actor, float ServerTime);
+	/** Where Actor stands, and which way it faces, now. */
+	static FGeoPose GetCurrentPose(AActor const* Actor);
 
 	/**
 	 * Returns the AGeoTargetPoint actors carrying both halves of the point's identity: PurposeTag (TargetPoint.*,

@@ -30,6 +30,11 @@ AGeoInteractableActor::AGeoInteractableActor(FObjectInitializer const& ObjectIni
 	SetRootComponent(CapsuleComponent);
 }
 
+bool AGeoInteractableActor::DoesOverlapShape(FVector2D const Location, FVector2D const Center, float const Radius) const
+{
+	return FVector2D::DistSquared(Center, Location) <= FMath::Square(Radius + GetSimpleCollisionRadius());
+}
+
 void AGeoInteractableActor::InitInteractable(FInteractableActorData* Data)
 {
 	ensureMsgf(Data, TEXT("Data is invalid!"));

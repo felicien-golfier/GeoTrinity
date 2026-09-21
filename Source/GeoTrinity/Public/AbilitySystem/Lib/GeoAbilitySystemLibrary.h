@@ -340,9 +340,16 @@ public:
 	/** Resolves OverlapMode for a query cast by SourceTeam: whether targets' own collision radius is counted. */
 	static bool ShouldIncludeTargetRadius(ETargetOverlapMode OverlapMode, FGenericTeamId SourceTeam);
 	/** True when Target, standing at Location, is within Radius of Center — its own collision radius counted as
-	 * ShouldIncludeTargetRadius resolves OverlapMode for SourceTeam. */
+	 * ShouldIncludeTargetRadius resolves OverlapMode for SourceTeam. An AGeoInteractableActor answers for its own
+	 * shape (AGeoInteractableActor::DoesOverlapShape) whenever its radius counts, so a wall is hit where its mesh is. */
 	static bool IsInCircle(AActor const* Target, FVector2D Location, FVector2D Center, float Radius,
 						   ETargetOverlapMode OverlapMode, FGenericTeamId SourceTeam);
+	/** True when Target, standing at Location, overlaps the segment [Origin, Origin + ForwardVector * MaxRange] widened
+	 * by LineHalfWidth — its own collision radius counted as ShouldIncludeTargetRadius resolves OverlapMode for
+	 * SourceTeam. The test GetInteractableActorsInLine runs, for a caller holding Target where it was. */
+	static bool IsInLine(AActor const* Target, FVector2D Location, FVector2D Origin, FVector2D ForwardVector,
+						 float MaxRange, float LineHalfWidth, ETargetOverlapMode OverlapMode,
+						 FGenericTeamId SourceTeam);
 
 
 	/** Returns the actor in ActorList with the smallest 3D distance to FromActor, or nullptr if the list is empty. */

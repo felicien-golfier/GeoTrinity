@@ -254,7 +254,7 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemCom
 	}
 	GeoASLib::NotifyAbilityHit(Payload, OtherActor);
 
-	OnProjectileHit(OtherActor);
+	OnProjectileConfirmedOverlap(OtherActor);
 	EndProjectileLife();
 }
 
@@ -269,7 +269,7 @@ AActor* AGeoProjectile::GetSourceAvatar() const
 	return IsValid(Payload.SourceAvatar) ? Payload.SourceAvatar : GetInstigator();
 }
 
-void AGeoProjectile::OnProjectileHit_Implementation(AActor* HitActor)
+void AGeoProjectile::OnProjectileConfirmedOverlap_Implementation(AActor* HitActor)
 {
 	if (UGeoGameFeelComponent* GameFeel = HitActor->FindComponentByClass<UGeoGameFeelComponent>())
 	{

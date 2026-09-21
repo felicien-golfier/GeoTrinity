@@ -124,12 +124,12 @@ public:
 	/** Maximum one-way latency the server compensates: how far it fast-forwards a projectile to the client's reported
 	 * spawn time, and how far behind now a remote player may still be judged by time-driven hazards
 	 * (UGeoCharacterMovementComponent::GetPerceivedServerTime). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Projectile", meta = (ClampMin = "0"))
-	float MaxLatencyCompensation = .5f;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Network", meta = (ClampMin = "0"))
+	float MaxLatencyCompensation = .15f;
 
 	/** Maximum distance a client-reported fire origin may deviate from the server's avatar before it is snapped back.
 	 */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Projectile", meta = (ClampMin = "0"))
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Network", meta = (ClampMin = "0"))
 	float MaxFireOriginDeviation = 300.f;
 
 	/** Curve to remap the raw charge ratio (0-1) and influence its charge speed.*/

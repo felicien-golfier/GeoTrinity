@@ -46,8 +46,9 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 	StoredPatternData = PatternData;
 	if (bHasHazard && GeoLib::IsServer(GetWorld()))
 	{
-		HazardJudge.Start(Payload.ServerSpawnTime + StartDelay, GetHazardDuration(), TeamAttitude,
-						  /*bSeenThroughReplication*/ false);
+		float const HazardDuration = GetHazardDuration();
+		HazardJudge.Start(Payload.ServerSpawnTime + StartDelay, HazardDuration, /*bSeenThroughReplication*/ false,
+						  /*bEndsOnHit*/ false, /*bRemovesInfiniteEffectsOnLeave*/ HazardDuration > 0.f);
 	}
 	bHazardEnded = false;
 	TravelTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
@@ -276,6 +277,7 @@ void UPattern::TickHazard(float const ServerTime, float const SpentTime)
 	if (bIsServer)
 	{
 		HazardJudge.Judge(StoredPayload, GetHazardEffects(),
+						  FGeoHazardJudge::FindCandidates(StoredPayload.SourceOwner, TeamAttitude),
 						  [this](AActor const* Target, FVector2D const Location, float const TargetSpentTime)
 						  {
 							  return IsInHazard(Target, Location, TargetSpentTime);

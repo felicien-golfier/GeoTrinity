@@ -23,9 +23,12 @@ struct FProjectilePatternData : public FPatternData
 };
 
 /**
- * Base for every pattern that spawns projectiles: holds the projectile params and the salve spawn loop, so a subclass
- * only decides which yaws leave and when. Spawns nothing on its own — subclasses drive SpawnSalve from TickPattern or
+ * Base for every pattern that fires bullets: holds the projectile params and the salve firing loop, so a subclass only
+ * decides which yaws leave and when. Fires nothing on its own — subclasses drive SpawnSalve from TickPattern or
  * StartPattern.
+ *
+ * The bullets belong to UGeoBulletSubsystem, not to the pattern: they keep flying, and keep being judged, after the
+ * pattern that fired them has ended — which is what lets one pattern instance fire salve after salve.
  */
 UCLASS(Abstract)
 class GEOTRINITY_API UProjectilePattern : public UPattern
@@ -37,12 +40,12 @@ protected:
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
 
 	/**
-	 * Spawns one projectile per yaw at the payload origin, all stamped with the salve's scheduled spawn time.
+	 * Fires one bullet per yaw from the payload origin, all stamped with the salve's scheduled spawn time.
 	 *
-	 * @param Yaws            Direction of each projectile of the salve, in degrees.
-	 * @param SalveSpawnTime  Server time the salve was scheduled for, not the current tick time: on time this spawns
-	 *                        the projectiles at the origin, and a late tick stamps them in the past so they
-	 *                        fast-forward into place.
+	 * @param Yaws            Direction of each bullet of the salve, in degrees.
+	 * @param SalveSpawnTime  Server time the salve was scheduled for, not the current tick time: on time the bullets
+	 *                        leave the origin, and a late tick stamps them in the past so they are already on their
+	 *                        way.
 	 */
 	void SpawnSalve(TArray<float> const& Yaws, float SalveSpawnTime) const;
 

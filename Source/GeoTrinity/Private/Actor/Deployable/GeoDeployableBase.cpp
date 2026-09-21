@@ -386,8 +386,8 @@ void AGeoDeployableBase::ExplodeEffect(float const /*Value*/)
 {
 	if (GeoLib::IsServer(GetWorld()))
 	{
-		Explosion.Start(GeoLib::GetServerTime(GetWorld()), /*Duration*/ 0.f, ExplodeAttitude,
-						/*bSeenThroughReplication*/ true);
+		Explosion.Start(GeoLib::GetServerTime(GetWorld()), /*Duration*/ 0.f, /*bSeenThroughReplication*/ true,
+						/*bEndsOnHit*/ false, /*bRemovesInfiniteEffectsOnLeave*/ false);
 		JudgeExplosion();
 	}
 }
@@ -402,6 +402,7 @@ void AGeoDeployableBase::JudgeExplosion()
 	Source.AbilityTag = GetData()->AbilityTag;
 
 	Explosion.Judge(Source, GetData()->EffectDataArray,
+					FGeoHazardJudge::FindCandidates(GetData()->Owner, ExplodeAttitude),
 					[this](AActor const* Target, FVector2D const Location, float /*SpentTime*/)
 					{
 						return GeoASLib::IsInCircle(Target, Location, FVector2D(GetActorLocation()),

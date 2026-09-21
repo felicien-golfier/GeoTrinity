@@ -30,6 +30,10 @@ public:
 
 	/** Casts Data into WallData and delegates to Super. */
 	virtual void InitInteractable(FInteractableActorData* Data) override;
+
+	/** Asks the mesh itself: a wall is far longer than it is wide, so a circle around its centre would answer for
+	 * ground the wall does not cover. */
+	virtual bool DoesOverlapShape(FVector2D Location, FVector2D Center, float Radius) const override;
 	/** Registers WallData for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
