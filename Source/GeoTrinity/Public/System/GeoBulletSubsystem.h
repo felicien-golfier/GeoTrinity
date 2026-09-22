@@ -93,6 +93,7 @@ public:
 	/** Stops every bullet on the walls it flew into, judges them on the server, draws them all where they now are, ends
 	 * a drawing once its bullet has flown its range or is over, and drops the bullets that are over. */
 	virtual void Tick(float DeltaTime) override;
+	/** Required by UTickableWorldSubsystem; identifies this subsystem in Unreal's profiler stats. */
 	virtual TStatId GetStatId() const override;
 
 private:
