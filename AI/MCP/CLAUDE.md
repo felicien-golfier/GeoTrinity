@@ -55,6 +55,8 @@ new one, and put the new one in the folder matching what it touches.
   frees it. That window closes from a script; the running editor itself never does. An asset whose path cannot
   be freed at all is still rewritable in place — strip what it holds and add the new contents — which needs no
   free path and keeps every reference to it intact.
+- A script that writes a Blueprint's class defaults compiles that Blueprint before saving it, or no instance ever
+  sees the write — `MCP_Blueprint.md`.
 - Comment only what the code cannot say: a constraint, an ordering, a bound. A few words, never prose, never
   rationale. Docstrings are one line; a second only where a caller would otherwise get it wrong.
 

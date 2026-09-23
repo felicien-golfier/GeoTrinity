@@ -100,6 +100,7 @@ def create_effect():
     cdo.set_editor_property("Modifiers", [modifier])
     cdo.set_editor_property("StackingType", unreal.GameplayEffectStackingType.NONE)
 
+    unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
     unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
     note("effect %s -> %s" % (EFFECT_PATH, cdo.get_editor_property("Modifiers")[0].export_text()))
     return blueprint
@@ -128,6 +129,7 @@ def create_ability():
     cdo.set_editor_property("NetExecutionPolicy", unreal.GameplayAbilityNetExecutionPolicy.SERVER_INITIATED)
     cdo.set_editor_property("InstancingPolicy", unreal.GameplayAbilityInstancingPolicy.INSTANCED_PER_ACTOR)
 
+    unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
     unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
     note("ability %s -> tags %s / hit %s / activation %s / effects %s"
          % (ABILITY_PATH,

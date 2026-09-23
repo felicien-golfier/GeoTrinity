@@ -153,6 +153,7 @@ def build_shake(curve, shake_class, toolkit):
     shake = unreal.get_default_object(blueprint.generated_class())
     shake.get_editor_property("RootShakePattern").set_editor_property("ShakeCurve", curve)
     shake.set_editor_property("bSingleInstance", True)
+    unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
     unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
     return blueprint
 

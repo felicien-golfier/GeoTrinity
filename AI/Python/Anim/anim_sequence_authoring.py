@@ -525,6 +525,22 @@ def write_bone_tracks(sequence, skeleton_path, fps, frames, sampler, bracket="Au
     return sequence
 
 
+def offset_bone_tracks(sequence, bones, offset, bracket="Offset bone tracks"):
+    """Add `offset` (a Vector) to every translation key of `bones` in `sequence`, rotations and scales kept."""
+    library = unreal.AnimationLibrary
+    frames = library.get_num_frames(sequence)
+    controller = sequence.get_editor_property("controller")
+    controller.open_bracket(bracket)
+    for bone in bones:
+        poses = [library.get_bone_pose_for_frame(sequence, bone, frame, False) for frame in range(frames + 1)]
+        controller.set_bone_track_keys(bone, [pose.translation + offset for pose in poses],
+                                       [pose.rotation for pose in poses], [pose.scale3d for pose in poses])
+    controller.close_bracket()
+    library.finalize_bone_animation(sequence)
+    unreal.EditorAssetLibrary.save_asset(sequence.get_path_name().split(".")[0])
+    return sequence
+
+
 def playable_key_count(sequence):
     """Keys in the built data, which is one more than the frame count once the sequence plays back.
 

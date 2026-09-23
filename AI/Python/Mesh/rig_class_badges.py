@@ -14,9 +14,8 @@ Each vertex is painted wholly to one bone, so a layered blend filtered on the To
 parts while a bottom clip keeps the body, and neither reaches the other. A part bone sits on its part's own centre so
 a turn or a scale works in place; turning Top swings every part round the badge's centre instead.
 
-The fire sockets the abilities read, anim_socket_<n>, hang off the part that shoots, so a shot leaves from wherever
-the clip has carried that part. A badge whose part circles it instead hangs them off the root at that part's resting
-front edge, so a shot fired mid-orbit still leaves the front.
+The fire sockets the abilities read, anim_socket_<n>, hang off the root a fixed FIRE_SOCKET_REACH ahead, so a shot
+leaves the same point whatever the clip does to the part that seems to fire it.
 
 Outlines come from AI/Python/Mesh/generate_class_badge_meshes.py, loaded rather than restated: a vertex belongs to
 the part whose outline holds it, which needs no point list since the parts never touch.
@@ -39,16 +38,17 @@ ROOT, BOTTOM, TOP = "Root", "Bottom", "Top"
 LAYER_LIFT = 20.0  # Bottom and Top sit this far below and above the root, so the three stay pickable
 SNAP_TOLERANCE = 1.0  # a vertex further than this from every outline is not geometry the badge describes
 DEFAULT_SOCKET_NAME = "Socket"  # what a socket constructed from script is called
+FIRE_SOCKET_REACH = 50.0  # how far ahead of the origin every fire socket sits
 
-# Per badge: the name of each floating part in generator order (the body comes first and is not named), and the
-# part each fire socket hangs off, in socket order. anim_socket_0 is the first shot, then 1, 2 cycling on 1.
-# "on_root" keeps the sockets still on the root, at the part's resting front edge. "keyhole_socket" names a socket on
-# the body at the centre of the Square block's keyhole, where the sacrifice goes in and comes back out.
+# Per badge: the name of each floating part in generator order (the body comes first and is not named), and each
+# fire socket's sideways (Y) offset on the root, in socket order. anim_socket_0 is the first shot, then 1, 2 cycling
+# on 1. "keyhole_socket" names a socket on the body at the centre of the Square block's keyhole, where the sacrifice
+# goes in and comes back out.
 BADGES = {
-    "Square": {"parts": ["MandibleLeft", "MandibleRight"],
-               "sockets": ["MandibleRight", "MandibleLeft", "MandibleRight"], "keyhole_socket": "SacrificeHole"},
-    "Triangle": {"parts": ["Needle"], "sockets": ["Needle", "Needle"]},
-    "Circle": {"parts": ["Hourglass"], "sockets": ["Hourglass"], "on_root": True},
+    "Square": {"parts": ["MandibleLeft", "MandibleRight"], "sockets": [43.0, -43.0, 43.0],
+               "keyhole_socket": "SacrificeHole"},
+    "Triangle": {"parts": ["Needle"], "sockets": [0.0, 0.0]},
+    "Circle": {"parts": ["Hourglass"], "sockets": [0.0]},
 }
 
 
@@ -156,17 +156,12 @@ def write_socket(mesh, name, bone, location):
     return [bone, round(location.x, 2), round(location.y, 2)]
 
 
-def place_sockets(mesh, socket_parts, part_outlines, on_root):
-    """anim_socket_<n> at its part's forward (+X) edge on its centre line, on the part's bone or on the root."""
+def place_sockets(mesh, sides):
+    """anim_socket_<n> on the root, FIRE_SOCKET_REACH ahead and its side's Y across."""
     report = {}
-    for index, part in enumerate(socket_parts):
-        outline = part_outlines[part]
-        front = max(p[0] for p in outline)
-        # The root sits on the origin, so a point on it is the world point.
-        location = (unreal.Vector(front, centre(outline)[1], 0.0) if on_root
-                    else unreal.Vector(front - centre(outline)[0], 0.0, 0.0))
+    for index, side in enumerate(sides):
         name = "anim_socket_{}".format(index)
-        report[name] = write_socket(mesh, name, ROOT if on_root else part, location)
+        report[name] = write_socket(mesh, name, ROOT, unreal.Vector(FIRE_SOCKET_REACH, side, 0.0))
     return report
 
 
@@ -205,7 +200,7 @@ def rig_badge(generator, badge, setup):
 
     part_outlines = dict(zip(part_names, outlines[1:]))
     binding = bind_vertices(mesh, [(BOTTOM, outlines[0])] + list(part_outlines.items()))
-    sockets = place_sockets(mesh, setup["sockets"], part_outlines, setup.get("on_root", False))
+    sockets = place_sockets(mesh, setup["sockets"])
     if "keyhole_socket" in setup:
         hole_x, hole_y = keyhole_centre(generator)
         box_x, box_y = box_centre(outlines)

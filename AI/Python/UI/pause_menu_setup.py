@@ -24,6 +24,7 @@ def create_widget_blueprint(name, folder, parent_class_path):
 
 def set_cdo_property(wbp, prop_name, value):
     unreal.get_default_object(wbp.generated_class()).set_editor_property(prop_name, value)
+    unreal.BlueprintEditorLibrary.compile_blueprint(wbp)
     unreal.EditorAssetLibrary.save_loaded_asset(wbp)
 
 

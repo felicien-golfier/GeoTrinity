@@ -39,6 +39,8 @@ ABILITY_MONTAGES = {
         ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_FireCrossbow",
     "/Game/AbilitySystem/Abilities/Triangle/TurretRecall/GA_TurretRecall":
         ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_Recall",
+    "/Game/AbilitySystem/Abilities/Triangle/Reload/GA_Reload":
+        ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_Reload",
     "/Game/AbilitySystem/Abilities/Circle/ChargeBeam/GA_Circle_ChargeBeam":
         ANIM_FOLDER + "/Circle/SK_CircleBadge_Montage_ChargeOrbit",
     "/Game/AbilitySystem/Abilities/Circle/MoiraBeam/GA_MoiraBeam":
@@ -104,6 +106,8 @@ def wire_abilities():
         if montage is None:
             raise RuntimeError("{} is missing — run its clip script first".format(montage_path))
         unreal.get_default_object(blueprint.generated_class()).set_editor_property("anim_montage", montage)
+        # Instances copy only the defaults the last compile recorded, so an uncompiled default never reaches them.
+        unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
         unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
         LOG.append("{}: {}".format(blueprint.get_name(), unreal.get_default_object(
             blueprint.generated_class()).get_editor_property("anim_montage").get_name()))

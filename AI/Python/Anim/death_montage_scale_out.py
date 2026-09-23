@@ -158,6 +158,7 @@ def wire_class_data(montages):
                 montage.get_class().get_path_name(), montage.get_path_name()))
         rebuilt[player_class] = entry
     cdo.set_editor_property("class_data", rebuilt)
+    unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
     unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
 
     for player_class, entry in rebuilt.items():

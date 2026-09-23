@@ -3,7 +3,8 @@ starting to turn about its own long axis, rattling harder and harder, stops dead
 recoil before it hauls itself back.
 
 GA_Triangle_AutoProjectile fires every FireDelay and plays one section per shot, stretched to that delay, with the
-shot landing on the section's last frame from anim_socket_<section index>, both of which sit on the needle:
+shot landing on the section's last frame from anim_socket_<section index>, both held still on the root ahead of the
+badge, so the needle's drive never carries the shot:
 
     Start   wind up from rest                      -> End
     Fire1   recoil from the last shot, wind up again, loops on itself while firing lasts

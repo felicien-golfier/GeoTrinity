@@ -39,7 +39,7 @@ or wire them in.
 
 | Script | Purpose |
 |---|---|
-| `anim_sequence_authoring.py` | Read a rig, report animated bones, write bone tracks, build montages, turn a bone about a point, measure overlaps between outlines and in 3D |
+| `anim_sequence_authoring.py` | Read a rig, report animated bones, write or offset bone tracks, build montages, turn a bone about a point, measure overlaps between outlines and in 3D |
 | `class_badge_anim_blueprints.py` | One AnimBlueprint per class badge: the idle through the top slot moves the whole badge, a bottom-slot clip takes the body over it, plus a full-body slot and an additive slot over all |
 | `class_badge_body_turns.py` | Body-only rolls about the aim in the bottom slot, round the parts: the Circle rolls through the Moira beam, the Triangle rolls once reeling in its turrets; checked in 3D against the parts |
 | `class_badge_circle_charge.py` | Circle badge charge beam: the hourglass whips round the badge, swells shaking in front, flattens wide on release |
@@ -51,6 +51,7 @@ or wire them in.
 | `class_badge_square_sacrifice.py` | Square badge Martyr Beam and Martyr's Wrath, bottom slot on the block only: pumps the channel into its keyhole winding itself over about the aim, is slammed back and rolled over by the ray; checked against the auto-fire |
 | `class_badge_triangle_fire.py` | Triangle badge heavy shot: the needle drives out turning, stops dead, is flattened by the recoil |
 | `class_badge_triangle_fire_crossbow.py` | Triangle badge heavy shot, alternative: the needle draws back into the arrowhead like a crossbow bolt, the arrowhead flexing like its bow, and launches as a spear; top slot |
+| `class_badge_triangle_reload.py` | Triangle badge reload, heavy: braces with the needle drawn in, heaves the whole badge round a yaw turn, clunks past and rocks back; full-body slot |
 | `class_badge_wiring.py` | Swap the playable characters onto the badges: class data, character mesh, ability montages, materials |
 | `death_montage_scale_out.py` | Circle and Triangle death montages, cut to the Square's beat |
 | `hex_boss_abilities.py` | Hex boss sweep beam, tile-carving ray and cone spray |
@@ -111,7 +112,7 @@ or wire them in.
 | `generate_star_mesh.py` | Star boss body: eight long points with counter-points between, a star-shaped hole through the heart |
 | `rig_hex_boss.py` | Turn that body into a skeletal mesh on a new skeleton |
 | `rig_star.py` | Rebuild SKM_Star from that body on SK_Star's own hierarchy, weighted so every existing star clip plays unchanged |
-| `rig_class_badges.py` | Rig the three class badges: body on a bottom layer, each floating part on its own bone under a top layer, fire sockets on the parts or, for an orbiting part, the root, and the Square keyhole socket |
+| `rig_class_badges.py` | Rig the three class badges: body on a bottom layer, each floating part on its own bone under a top layer, fire sockets fixed on the root ahead of the badge, and the Square keyhole socket |
 
 ## Niagara
 

@@ -161,6 +161,7 @@ def link_to_pattern(montage):
         return
     pattern = unreal.load_asset(PATTERN_BP)
     unreal.get_default_object(pattern.generated_class()).set_editor_property("AnimMontage", montage)
+    unreal.BlueprintEditorLibrary.compile_blueprint(pattern)
     unreal.EditorAssetLibrary.save_loaded_asset(pattern)
     LOG.append("linked {} to {}".format(montage.get_name(), pattern.get_name()))
 

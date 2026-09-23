@@ -5,31 +5,31 @@ description: Capture new MCP/Python editor-automation techniques discovered this
 
 # Update MCP Knowledge
 
-Record everything genuinely new from the current session's MCP / Python editor-automation work, fully autonomously: facts go into `AI/MCP/` docs, reusable call sequences become generic scripts in `AI/Python/`. Skip anything already documented or specific to this one task. Do not ask the user what to capture — derive it from the conversation.
+Record only what a future session would genuinely miss from this session's MCP / Python editor-automation work: facts go into `AI/MCP/` docs, reusable call sequences into `AI/Python/` scripts. Work autonomously; don't ask the user what to capture.
+
+**Default to adding nothing.** Each candidate must pass this test: *without it, would a future session fail, or lose real time rediscovering it?* If not, drop it. "Nothing new worth recording" is a valid and common outcome.
+
+## What gets dropped
+- Anything already said, even in other words, in the docs or scripts.
+- Anything one API call, one doc lookup or one glance at the code reveals.
+- Anything specific to this session's assets or task.
+- Restatements, examples, rationale, or context around a fact.
+- A script for a sequence that is short, obvious, or unlikely to be re-run.
 
 ## Steps
 
-1. **Find what was new this session.** Review the MCP / Python editor-automation work done in the current conversation (e.g. `execute_script`, `blueprint_modify`, `level_ops`, C++ shim calls). List two kinds of output:
-   - *Facts*: each generic technique or constraint a future session would need (not the specific assets touched).
-   - *Scripts*: each `execute_script` sequence that solved a multi-step or non-obvious problem and would be re-run with different assets.
+1. **List candidates.** From this conversation's MCP / Python work (`execute_script`, `blueprint_modify`, C++ shim calls…), note each generic technique or constraint and each non-obvious multi-step script. Apply the test above; most candidates should fall out here.
 
-2. **Read the doc-style rules.** Read `AI/MCP/MCP_DocStyle.md` before writing. Every edit must obey it: document how it works (not what failed), one sentence per constraint, generic concept names in prose (no project class/function names — those go in code), no inline C++ or Python.
+2. **Check what exists.** Read `AI/MCP/MCP_DocStyle.md`, `AI/MCP/CLAUDE.md` (topic→file index), the target docs, and `AI/Python/CLAUDE.md`. Drop what's covered.
 
-3. **Check what already exists.** Read `AI/MCP/CLAUDE.md` (the topic→file index), the candidate target docs, and the existing scripts indexed in `AI/Python/CLAUDE.md`. Drop anything already covered — only genuinely-missing facts and scripts get written; extend an existing script's helpers rather than duplicating them.
+3. **Edit in the smallest form.**
+   - Prefer sharpening an existing line over adding one; if a new line makes an old one redundant, replace it. A doc should not grow when it can stay the same length.
+   - One sentence per fact, shortest wording that stays unambiguous, per `MCP_DocStyle.md`.
+   - New `MCP_<Topic>.md` only when the topic has no home at all; register it in `AI/MCP/CLAUDE.md`.
 
-4. **Update or create the relevant docs.**
-   - A new fact about an existing topic → add a concise line/section to that topic's `.md`.
-   - A whole new topic → create a new `AI/MCP/MCP_<Topic>.md` (mirror the structure of an existing one) and register it in the `AI/MCP/CLAUDE.md` index.
+4. **Scripts, only when earned.** Prefer extending an existing script's functions over a new file. A new script goes in the matching `AI/Python/` subfolder: generic functions taking arguments, a one-line docstring, session values only in one example call at the bottom. Reference it by path from its doc line, and add a one-line row in `AI/Python/CLAUDE.md`.
 
-5. **Write down the session's Python scripts.** Each retained sequence becomes a `.py` in the `AI/Python/` topic subfolder matching what it touches (see `AI/Python/CLAUDE.md` for the folders):
-   - Structure as **generic functions taking arguments** (asset paths, class names, property names, values) — no hardcoded assets inside function bodies.
-   - Session-specific values appear only in one small example call at the bottom, which a future caller adjusts.
-   - A docstring at the top states what the script does and how to run it (MCP `execute_script`, target world if relevant).
-   - Reference each script by path from the doc section describing its technique — never inline scripts in `.md` files.
-   - Add a one-line row for the new script to its folder table in `AI/Python/CLAUDE.md`.
-
-6. **Verify compliance.** Re-read each edit against `MCP_DocStyle.md`: generic, concise, no failure history, no inline code, references for scripts. Confirm new scripts are argument-driven with the example call at the bottom.
+5. **Re-read every edit** and cut any word, line or file that doesn't change what a future session would do.
 
 ## Output
-
-Briefly report each fact and script captured and where (file added/updated), plus anything deliberately skipped as already-covered.
+One line per item captured (where it went), or "nothing new" — no list of what was skipped unless asked.

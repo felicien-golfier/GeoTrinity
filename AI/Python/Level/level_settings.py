@@ -34,6 +34,7 @@ def configure_menu_map():
     gm_cdo = unreal.get_default_object(unreal.load_asset("/Game/Game/BP_MainMenuGameMode").generated_class())
     gm_cdo.set_editor_property("player_controller_class",
                               unreal.load_asset("/Game/Characters/Playable/BP_GeoPlayerController").generated_class())
+    unreal.BlueprintEditorLibrary.compile_blueprint(unreal.load_asset("/Game/Game/BP_MainMenuGameMode"))
     unreal.EditorAssetLibrary.save_loaded_asset(unreal.load_asset("/Game/Game/BP_MainMenuGameMode"))
 
     save_current_level()

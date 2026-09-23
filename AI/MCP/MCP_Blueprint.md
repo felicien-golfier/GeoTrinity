@@ -9,6 +9,10 @@ deleting and searching assets.
 
 - The CDO accessor is `unreal.get_default_object(bp.generated_class())`; calling `get_default_object()` on the
   class object fails.
+- A CDO write reaches no instance until the Blueprint compiles: new instances copy only the defaults the last
+  compile recorded as differing from the parent, so the CDO and the saved asset show the value while every spawned
+  or instanced object keeps the parent's. Compile after the last CDO write and before saving, and verify on a
+  freshly created instance of the class, never on the CDO.
 - Property names are **PascalCase**, matching the C++ `UPROPERTY`. A boolean answers to its C++ name with the
   `b` kept and to its snake_case name with the `b` dropped, but never to the `b`-less PascalCase form.
 - `EditDefaultsOnly` private properties need `meta=(AllowPrivateAccess="true")`. When the property is project

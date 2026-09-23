@@ -21,6 +21,7 @@ cdo = unreal.get_default_object(bp.generated_class())
 tag_container = unreal.GameplayTagContainer()
 tag_container.import_text(f'(GameplayTags=((TagName="{ABILITY_TAG}")))')
 cdo.set_editor_property("AbilityTags", tag_container)
+unreal.BlueprintEditorLibrary.compile_blueprint(bp)
 unreal.EditorAssetLibrary.save_loaded_asset(bp)
 
 # --- 3. Register in DA_AbilityInfo ---

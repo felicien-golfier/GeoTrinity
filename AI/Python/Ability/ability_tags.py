@@ -23,6 +23,7 @@ def set_ability_tags(ability_path, tag_names):
     entries = ",".join(f'(TagName="{name}")' for name in tag_names)
     container.import_text(f"(GameplayTags=({entries}))")
     cdo.set_editor_property("AbilityTags", container)
+    unreal.BlueprintEditorLibrary.compile_blueprint(bp)
     saved = unreal.EditorAssetLibrary.save_loaded_asset(bp)
     verify = cdo.get_editor_property("AbilityTags").export_text()
     unreal.log_warning(f"ABILITYTAGS:: {ability_path} saved={saved} -> [{verify}]")

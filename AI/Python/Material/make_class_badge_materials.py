@@ -1,8 +1,9 @@
-"""Class badge body material: the class colour with the logo's line art on its top face, one instance per class.
+"""Class badge body material: the class colour with the logo's line art on both caps, one instance per class.
 
 The badges carry no UVs. The mask is projected from the pre-skinned local position instead, through the same pixel
 frame generate_class_badge_meshes.py extruded the badge from, so the lines sit on the geometry and ride each bone.
-Pre-skinned data is vertex-shader only: the mask UV and the top-face flag cross to the pixel shader through one
+The projection runs straight through along Z, so the bottom cap shows the lines mirrored, as its outline is.
+Pre-skinned data is vertex-shader only: the mask UV and the cap-face flag cross to the pixel shader through one
 vertex interpolator, exact on the flat caps. The shield-burst gauge glow of MAT_Cube_Alive is carried over as is.
 
 Points DA_PlayerClassData's AliveMaterial and each SKM_<Class>Badge slot 0 at the class's instance. An existing
@@ -16,7 +17,7 @@ MESH_FOLDER = "/Game/Characters/Meshes/Class"
 CLASS_DATA = "/Game/Characters/Playable/DA_PlayerClassData"
 MASK_FOLDER = unreal.Paths.project_dir() + "GamePictures/"
 REPORT = unreal.Paths.project_saved_dir() + "class_badge_materials.txt"
-TOP_FACE_MIN_NORMAL_Z = 0.5  # the needle's sloped upper faces count as top
+CAP_FACE_MIN_NORMAL_Z = 0.5  # the needle's sloped faces count as caps
 
 # Badge -> (class, mask file, colour, line colour). Colours are those of the class's previous alive material.
 BADGES = {
@@ -67,13 +68,13 @@ def build_material(default_mask):
     uv = op(unreal.MaterialExpressionAdd, -1000, 0,
             op(unreal.MaterialExpressionMultiply, -1200, 0, image_direction, B=uv_per_cm),
             B=graph.mask(center, "rg", -1200, 320))
-    normal_z = graph.mask(node(unreal.MaterialExpressionPreSkinnedNormal, -1400, 480), "b", -1200, 480)
-    top_face = op(unreal.MaterialExpressionStep, -1000, 480, X=normal_z)
-    top_face.set_editor_property("const_y", TOP_FACE_MIN_NORMAL_Z)
+    normal_z = graph.mask(node(unreal.MaterialExpressionPreSkinnedNormal, -1400, 480), "b", -1300, 480)
+    cap_face = op(unreal.MaterialExpressionStep, -1000, 480, X=op(unreal.MaterialExpressionAbs, -1150, 480, normal_z))
+    cap_face.set_editor_property("const_y", CAP_FACE_MIN_NORMAL_Z)
     to_pixel = op(unreal.MaterialExpressionVertexInterpolator, -600, 200,
-                  op(unreal.MaterialExpressionAppendVector, -800, 200, A=uv, B=top_face))
+                  op(unreal.MaterialExpressionAppendVector, -800, 200, A=uv, B=cap_face))
 
-    # Pixel stage: the mask's lines, transparent pixels dropped, top face only.
+    # Pixel stage: the mask's lines, transparent pixels dropped, top and bottom faces only.
     sample = node(unreal.MaterialExpressionTextureSampleParameter2D, -300, 100, parameter_name="Mask",
                   texture=default_mask, sampler_type=unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR,
                   group="02 Mask", sort_priority=0, desc="White lines on the badge; alpha 0 draws nothing")
