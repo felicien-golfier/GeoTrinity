@@ -315,6 +315,93 @@ def part_separations(placed, posed, members):
     return gaps
 
 
+def convex_hull(points):
+    """The XY outline a set of placed vertices casts under a top-down view -> [(x, y)], counter-clockwise."""
+    unique = sorted(set((round(p.x, 4), round(p.y, 4)) for p in points))
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower, upper = [], []
+    for point in unique:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], point) <= 0.0:
+            lower.pop()
+        lower.append(point)
+    for point in reversed(unique):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], point) <= 0.0:
+            upper.pop()
+        upper.append(point)
+    return lower[:-1] + upper[:-1]
+
+
+def move_outline(outline, reference, posed):
+    """An XY outline carried from its bone's reference component transform to a posed one -> [(x, y)]."""
+    moved = []
+    for x, y in outline:
+        local = unreal.MathLibrary.inverse_transform_location(reference, unreal.Vector(x, y, reference.translation.z))
+        point = unreal.MathLibrary.transform_location(posed, local)
+        moved.append((point.x, point.y))
+    return moved
+
+
+def _inside_outline(point, outline):
+    x, y = point
+    hit = False
+    for (ax, ay), (bx, by) in zip(outline, outline[1:] + outline[:1]):
+        if (ay > y) != (by > y) and x < ax + (y - ay) * (bx - ax) / (by - ay):
+            hit = not hit
+    return hit
+
+
+def _distance_to_outline(point, outline):
+    nearest = float("inf")
+    for (ax, ay), (bx, by) in zip(outline, outline[1:] + outline[:1]):
+        dx, dy = bx - ax, by - ay
+        t = max(0.0, min(1.0, ((point[0] - ax) * dx + (point[1] - ay) * dy) / (dx * dx + dy * dy)))
+        nearest = min(nearest, math.hypot(point[0] - ax - t * dx, point[1] - ay - t * dy))
+    return nearest
+
+
+def outline_separation(first, second):
+    """Units between two XY outlines, or -1 once either has a corner inside the other.
+
+    Corners inside is what an overlap looks like between a convex part and any body; the distance otherwise is the
+    nearest corner of either to an edge of the other.
+    """
+    if any(_inside_outline(p, second) for p in first) or any(_inside_outline(p, first) for p in second):
+        return -1.0
+    return min(min(_distance_to_outline(p, second) for p in first),
+               min(_distance_to_outline(p, first) for p in second))
+
+
+def turn_about(translation, rotator, pivot):
+    """A bone's local translation and rotation once turned by `rotator` about `pivot`, a point in its own space.
+
+    A bone turns about its own origin, so one sitting off the middle of what it carries swings it off the axis.
+    """
+    rotation = rotator.quaternion()
+    turned = rotation.rotate_vector(pivot)
+    return (unreal.Vector(translation.x + pivot.x - turned.x, translation.y + pivot.y - turned.y,
+                          translation.z + pivot.z - turned.z), rotation)
+
+
+def sunk_depth(points, outline, bottom, top, reference, posed):
+    """How deep any of `points` sits inside a posed extruded body, in units; 0 when none is inside it.
+
+    A turn out of the view plane cannot be judged from the outlines the view casts, since a part the body has turned
+    over reads as covered rather than as inside it. `outline` and the height range [bottom, top] describe the body at
+    its bone's reference component transform, and each point is carried back there from the posed one.
+    """
+    deepest = 0.0
+    for point in points:
+        local = unreal.MathLibrary.inverse_transform_location(posed, point)
+        at_rest = unreal.MathLibrary.transform_location(reference, local)
+        if bottom < at_rest.z < top and _inside_outline((at_rest.x, at_rest.y), outline):
+            deepest = max(deepest, min(_distance_to_outline((at_rest.x, at_rest.y), outline),
+                                       at_rest.z - bottom, top - at_rest.z))
+    return deepest
+
+
 def normalised_spin(rate, frames):
     """A turn integrated from a per-frame rate -> [fraction of the whole turn, per frame].
 

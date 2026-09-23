@@ -49,6 +49,14 @@ first — a vertex cannot be bound to a bone the mesh does not carry yet. Commit
 asset cannot absorb raises a modal merge dialog that stalls an unattended script; adding leaf bones stays on the
 silent path.
 
+A shot reads its fire socket at the instant it fires, before any jump to the section that shows the release, so a
+socket on a part a clip carries round the shape fires from wherever that part is; hang such a socket on a bone no
+clip moves.
+
+A socket's name and bone are read-only from script: add one under its default name, rename it in place, and
+reparent it through its own setter. Nothing from script removes a socket, so a re-run reuses one left under the
+default name rather than adding another.
+
 Building a skinned copy of a static mesh over a whole hierarchy goes through a shim: neither factory behind the
 editor's own conversion command is reachable from script, and the conversion takes the reference skeleton to
 build against, so nothing afterwards has to reconcile a mesh against a skeleton it was not built on. A reference
@@ -72,6 +80,10 @@ frames per beat or the beats fall between samples.
 Add a bone's track before setting its keys, unconditionally and ignoring the result — the adder reports failure
 for an existing track, and the key setter reports success whether or not a track is there. Supply position,
 rotation and scale arrays of equal length.
+
+What plays back is resampled at the sequence's target frame rate, which comes from the project default and is
+read-only from script, so author at that rate; a clip that has to play faster than its frames allow is authored
+longer and sped up by the play rate its montage runs at.
 
 Keys land in the sequence's raw model and the data that actually plays back is built from it separately, so
 finish a write by finalizing through the animation library. Confirm the write by evaluating the sequence and the
@@ -237,6 +249,21 @@ end section on a fixed-delay ability, so a clip with no phase to hold through ne
 
 A montage whose sections a caller jumps between is only safe to reference once those sections exist; gate the
 wiring on reading them back.
+
+A slot overrides every bone its montage carries, so two clips moving the same bone at once cannot both be plain
+montages: the one playing over the other is authored additive against the reference pose and played in a slot
+applied on top of the rest of the graph, fed by the additive identity. An additive adds its translation and
+multiplies its scale into whatever the other clip holds, so a bound the other clip was checked against has to hold
+for their product, and the check is every frame of one against every frame of the other.
+
+Playing a montage stops only the montages of its own slot group, but the ability system replicates a single
+montage per character, so on other machines the latest one played is the one that is sure to show.
+
+Sections cut from one sequence share their boundary key, so a section's last frame interpolates toward whatever
+the section after it in the sequence starts on. Lay them out so each begins on the pose its neighbour ends on,
+rotations included as the same quaternion rather than a symmetric one; a jump between sections cuts rather than
+interpolates, so a pose it lands on only has to look the same. A section every shot replays wants no blend-in,
+since each replay would smear one beat into the next.
 
 ## Notifies
 

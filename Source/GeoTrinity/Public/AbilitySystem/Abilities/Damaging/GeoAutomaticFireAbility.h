@@ -72,9 +72,6 @@ protected:
 	/** Camera shake played on the local client each shot. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel")
 	TSubclassOf<UCameraShakeBase> FireCameraShakeClass;
-	/** How far (cm) the mesh snaps backward on each shot. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|GameFeel", meta = (ClampMin = "0"))
-	float RecoilDistance = 12.f;
 	/** Cue executed on each shot for muzzle flash, fire sound, etc.: origin in Location, aim direction in Normal, the
 	 * shot's seed in RawMagnitude. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel")

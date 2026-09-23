@@ -36,7 +36,9 @@ While the client is down the bridge can be driven directly by POSTing `{"script"
 `/api/editor/execute_script` on that port. In Windows PowerShell 5.1, cast the script to `[string]` before
 `ConvertTo-Json` — a raw file read otherwise serializes as an object and the route rejects the body. The route
 reports success even for a script that raises, and stdout does not surface in the response, so wrap the source
-in a handler that writes its traceback to a file under `Saved/` and read that back.
+in a handler that writes its traceback to a file under `Saved/` and read that back. The editor's working directory
+is not the project, so the script file is handed over by absolute path. `AI/Python/Runtime/run_via_bridge.py` does
+all of this from the host; a missing result file after the response means the editor never finished the script.
 
 ## Inspecting a specific PIE world
 

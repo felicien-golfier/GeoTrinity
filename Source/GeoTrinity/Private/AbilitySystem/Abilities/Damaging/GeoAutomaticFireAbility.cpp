@@ -7,7 +7,6 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // Burst credit, in shots, a client may redeem at once, so a network hitch that bunches several target-data packets
@@ -21,6 +20,7 @@ UGeoAutomaticFireAbility::UGeoAutomaticFireAbility()
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateYes;
 	CommitBehaviour = ECommitBehaviour::DoNotAutoCommit;
+	RecoilDistance = 12.f;
 }
 
 void UGeoAutomaticFireAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -141,14 +141,7 @@ void UGeoAutomaticFireAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 				GeoLib::TriggerCameraShake(this, FireCameraShakeClass);
 			}
 
-			if (RecoilDistance > 0.f)
-			{
-				if (UGeoGameFeelComponent* GameFeel =
-						GetAvatarActorFromActorInfo()->FindComponentByClass<UGeoGameFeelComponent>())
-				{
-					GameFeel->ApplyRecoil(RecoilDistance);
-				}
-			}
+			ApplyFireRecoil();
 
 			if (FireCue.IsValid())
 			{

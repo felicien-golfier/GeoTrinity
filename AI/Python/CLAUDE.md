@@ -34,11 +34,24 @@ top of each file.
 
 ## Anim
 
-`anim_sequence_authoring.py` is the toolkit every other file here imports; the rest are one boss clip each.
+`anim_sequence_authoring.py` is the toolkit every other file here imports; the rest each build one set of clips
+or wire them in.
 
 | Script | Purpose |
 |---|---|
-| `anim_sequence_authoring.py` | Read a rig, report animated bones, write bone tracks, build montages |
+| `anim_sequence_authoring.py` | Read a rig, report animated bones, write bone tracks, build montages, turn a bone about a point, measure overlaps between outlines and in 3D |
+| `class_badge_anim_blueprints.py` | One AnimBlueprint per class badge: the idle through the top slot moves the whole badge, a bottom-slot clip takes the body over it, plus a full-body slot and an additive slot over all |
+| `class_badge_body_turns.py` | Body-only rolls about the aim in the bottom slot, round the parts: the Circle rolls through the Moira beam, the Triangle rolls once reeling in its turrets; checked in 3D against the parts |
+| `class_badge_circle_charge.py` | Circle badge charge beam: the hourglass whips round the badge, swells shaking in front, flattens wide on release |
+| `class_badge_circle_charge_orbit.py` | Circle badge charge beam, alternative: the hourglass circles the swelling, trembling badge accelerating, then holds in front turned on release while the disc kicks back; top slot |
+| `class_badge_death.py` | The three badges swell and vanish, shedding their class debris |
+| `class_badge_idle.py` | The three badges breathe and, bored, play with their parts: twirling, drumming, looking round, flipping, rolling round the rim |
+| `class_badge_square_fire.py` | Square badge auto-fire: the mandibles take turns thrusting out, flaring and slamming back |
+| `class_badge_square_fire_piston.py` | Square badge auto-fire, alternative: the mandibles cock outward and jab out long, top slot only |
+| `class_badge_square_sacrifice.py` | Square badge Martyr Beam and Martyr's Wrath, bottom slot on the block only: pumps the channel into its keyhole winding itself over about the aim, is slammed back and rolled over by the ray; checked against the auto-fire |
+| `class_badge_triangle_fire.py` | Triangle badge heavy shot: the needle drives out turning, stops dead, is flattened by the recoil |
+| `class_badge_triangle_fire_crossbow.py` | Triangle badge heavy shot, alternative: the needle draws back into the arrowhead like a crossbow bolt, the arrowhead flexing like its bow, and launches as a spear; top slot |
+| `class_badge_wiring.py` | Swap the playable characters onto the badges: class data, character mesh, ability montages, materials |
 | `death_montage_scale_out.py` | Circle and Triangle death montages, cut to the Square's beat |
 | `hex_boss_abilities.py` | Hex boss sweep beam, tile-carving ray and cone spray |
 | `hex_boss_death.py` | The three rings wander off axis, blow apart and settle |
@@ -60,6 +73,7 @@ top of each file.
 | `curve_asset_authoring.py` | Write a curve asset from a table of keys |
 | `generate_headshot_ding.py` | Synthesise the headshot ding and import it as a sound wave |
 | `import_sound_waves.py` | Import every WAV in a folder as a sound wave, replacing same-named assets |
+| `import_textures.py` | Import image files as textures, replacing same-named assets, with the sRGB and compression they are sampled with |
 | `save_dirty_assets.py` | List and save dirty content packages, reporting to a file |
 | `struct_container_edit.py` | Rewrite a struct array or struct map on an asset or a Blueprint |
 | `wheel_zoom_input.py` | Create the zoom input action and bind it to the mouse wheel |
@@ -82,17 +96,22 @@ top of each file.
 | `make_background_lattice_material.py` | Floor triangle line art — the layer stack, its pattern and ring layers, the glow blend, the pulse collection |
 | `make_background_look_instances.py` | One material instance per floor look, the form arenas and the settings' pool cycle through |
 | `make_background_looks.py` | Floor glow looks, one layer each — two-tone, shock and polygon rings, halos, spiral, whirl, Sierpinski, radar, twinkle, fireflies |
+| `make_class_badge_materials.py` | Class badge body material: logo line masks projected from the pre-skinned position onto the top face, one instance per class, wired into the class data and the badge meshes |
 | `make_generic_material_functions.py` | Standard functions — distances to shapes, polar coordinates, triangle cells, strokes, two-tone glows, the Sierpinski mask, random per cell, Lissajous paths, the clock wipe |
 | `material_graph_authoring.py` | In-place graph rebuilds, asserted wiring, function and layer pins, calls, parameters, layer stacks |
+| `read_material_text.py` | Export a material as text and read the lines naming given properties, such as a constant-driven input |
 
 ## Mesh
 
 | Script | Purpose |
 |---|---|
 | `generate_bomb_mesh.py` | Round bomb mesh sized to replace the pillar |
-| `generate_class_badge_meshes.py` | The three class logo silhouettes, extruded flat into the character bounds |
+| `generate_class_badge_meshes.py` | The three class logo silhouettes, extruded to a height per class; the Triangle body thins toward its point and is centred on its centroid |
 | `generate_hex_boss_mesh.py` | Hex boss body as three concentric hexagons, and the rig it emits |
+| `generate_star_mesh.py` | Star boss body: eight long points with counter-points between, a star-shaped hole through the heart |
 | `rig_hex_boss.py` | Turn that body into a skeletal mesh on a new skeleton |
+| `rig_star.py` | Rebuild SKM_Star from that body on SK_Star's own hierarchy, weighted so every existing star clip plays unchanged |
+| `rig_class_badges.py` | Rig the three class badges: body on a bottom layer, each floating part on its own bone under a top layer, fire sockets on the parts or, for an orbiting part, the root, and the Square keyhole socket |
 
 ## Niagara
 
@@ -108,6 +127,8 @@ top of each file.
 | `geo_aura_vfx.py` | The five character auras, rebuilt as geometry |
 | `lightning_variants.py` | Three electric declinations, each on a mechanism the others lack |
 | `niagara_stack_edit.py` | Stack editing through the builder shim — modules, switches, inputs |
+| `sacrifice_release_vfx.py` | Square sacrifice detonation: the sacrifice spat out of the keyhole as a ray of square links, slugs shot down it |
+| `sacrifice_hole_vfx.py` | Square badge keyhole during the sacrifice channel: squares churning in the hole, frames and a ring of squares sucked into it |
 | `set_outline_vfx_flags.py` | The two flags deciding how a translucent effect meets the outline |
 | `static_electricity_vfx.py` | Blue bolts striking around a character |
 
@@ -118,6 +139,7 @@ top of each file.
 | `couch_coop_debug.py` | Dump couch-coop input ownership from a running session |
 | `pie_drive_menu_ui.py` | Drive live menu widgets without simulating input |
 | `pie_inject_input.py` | Inject input actions into a session and measure the gameplay result |
+| `run_via_bridge.py` | Host-side: run an editor script file over the bridge's HTTP route and print OK or its traceback |
 | `vfx_editor_preview.py` | Set up the editor world for the level viewport to judge — preview systems, collection values, the camera |
 
 ## UI

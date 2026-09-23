@@ -44,7 +44,8 @@ protected:
 	/** Starts the beam channel. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
-	/** Stops the channel and switches the beam VFX off before calling Super. */
+	/** Stops the channel, switches the beam VFX off and stops the ability's montage, whose channel section loops, before
+	 * calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;

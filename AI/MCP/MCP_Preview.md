@@ -13,7 +13,8 @@ sampling the owner's mesh resolves to nothing.
 Spawn a system from the asset the way a drag into the level does — setting the asset on an already registered
 component leaves its renderers uninitialised in the editor world. Place previews well away from level geometry,
 so an empty frame means an empty effect rather than something lost against the scene. Spawning and destroying
-preview actors leaves the map dirty whatever else happens.
+preview actors leaves the map dirty whatever else happens. While PIE runs there is no editor world to spawn into:
+it reads as null and every spawn returns nothing, so check the play state first.
 
 ## Reading the frame
 

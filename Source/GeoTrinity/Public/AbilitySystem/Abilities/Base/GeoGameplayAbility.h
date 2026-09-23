@@ -216,8 +216,12 @@ protected:
 	/** Seconds since ChargeStartTime, unclamped. Only meaningful when FireMode == EFireMode::ChargeForFireDelay. */
 	float GetChargeElapsedSeconds() const;
 
-	/** Client-side shot logic (spawn predicted projectile, play VFX). Override in subclasses. */
+	/** Client-side shot logic (spawn predicted projectile, play VFX). Override in subclasses. Base sends the data to the
+	 * server and kicks the fire recoil. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData);
+
+	/** Snaps the avatar's mesh backward by RecoilDistance. No-op at 0 or on an avatar this machine doesn't control. */
+	void ApplyFireRecoil() const;
 
 	/**
 	 * Server-side shot logic. Called when the server receives target data from the client.
@@ -287,6 +291,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
 	ECommitBehaviour CommitBehaviour = ECommitBehaviour::AtActivate;
+
+	/** How far (cm) the mesh snaps backward on each shot. 0 disables the recoil. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|GameFeel", meta = (ClampMin = "0"))
+	float RecoilDistance = 0.f;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))

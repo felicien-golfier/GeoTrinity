@@ -7,6 +7,7 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
@@ -411,6 +412,21 @@ void UGeoGameplayAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 	if (!GeoLib::IsServer(this))
 	{
 		SendFireDataToServer(AbilityTargetData);
+	}
+
+	ApplyFireRecoil();
+}
+
+void UGeoGameplayAbility::ApplyFireRecoil() const
+{
+	if (RecoilDistance <= 0.f)
+	{
+		return;
+	}
+
+	if (UGeoGameFeelComponent* GameFeel = GetAvatarActorFromActorInfo()->FindComponentByClass<UGeoGameFeelComponent>())
+	{
+		GameFeel->ApplyRecoil(RecoilDistance);
 	}
 }
 

@@ -23,6 +23,7 @@ UGeoChargeBeamAbility::UGeoChargeBeamAbility()
 	FireMode = EFireMode::ChargeForFireDelay;
 	CommitBehaviour = ECommitBehaviour::DoNotAutoCommit;
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+	RecoilDistance = 20.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

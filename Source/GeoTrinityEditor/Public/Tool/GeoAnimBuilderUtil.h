@@ -7,6 +7,7 @@
 
 #include "GeoAnimBuilderUtil.generated.h"
 
+class UAnimBlueprint;
 class UAnimMontage;
 class UAnimSequence;
 class USkeletalMesh;
@@ -82,4 +83,26 @@ public:
 	static bool RebuildSkeletalMeshFromStaticMesh(USkeletalMesh* Mesh, UStaticMesh* StaticMesh, USkeleton* Skeleton,
 												  TArray<FName> BoneNames, TArray<FName> ParentNames,
 												  TArray<FTransform> Transforms);
+
+	/**
+	 * Generic: rebuilds AnimBlueprint's AnimGraph as two animation layers split at LayerBone, with an additive on top:
+	 *
+	 *   Idle -> Slot LayerSlotName -> cached -> Slot BaseSlotName -> Layered blend, base pose -> Slot FullBodySlotName
+	 *                                 cached -------------------------> Layered blend, branch LayerBone at depth 0
+	 *   Additive identity -> Slot AdditiveSlotName, applied as an additive onto the full-body slot -> Output
+	 *
+	 * A montage in LayerSlotName moves the whole rig, but everything outside LayerBone's branch gives way to a montage
+	 * in BaseSlotName, which moves only that. So a layer montage may move the base while nothing plays over it there,
+	 * and both play at once otherwise. A montage in FullBodySlotName moves the whole rig over both; an additive montage
+	 * in AdditiveSlotName adds onto whatever the others play. Each slot is registered on the target skeleton in a slot
+	 * group named after it, since playing a montage stops every other montage of its group. A null idle plays the
+	 * reference pose.
+	 *
+	 * Every node but the output is replaced, so a re-run rebuilds the graph. Compiles and saves the asset and its
+	 * skeleton; returns false when the compile fails.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, FName LayerBone, FName BaseSlotName,
+									  FName LayerSlotName, FName FullBodySlotName, FName AdditiveSlotName,
+									  UAnimSequence* Idle);
 };

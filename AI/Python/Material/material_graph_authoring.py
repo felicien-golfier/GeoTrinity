@@ -129,7 +129,9 @@ class Graph:
             f"{self.asset.get_name()}: {node.get_name()}.{output} -> {target.get_name()}.{pin}"
 
     def op(self, cls, x, y, source=None, **pins):
-        """A node fed on its first input by source, and on each named pin by its value."""
+        """A node fed on its first input by source, and on each named pin by its value.
+
+        Every keyword is a pin; a node's own constants go through node() instead."""
         node = self.node(cls, x, y)
         if source is not None:
             self.connect(source, node)

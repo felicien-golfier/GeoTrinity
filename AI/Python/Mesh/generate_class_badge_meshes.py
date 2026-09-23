@@ -10,15 +10,19 @@ free inside that bite, separated by the ring of black the art draws between them
 two the same way — the arrowhead with its point cut off, and the needle standing free in the opening as
 that point. The square badge is three: the block, and the two mandibles lifted off its top edge.
 
-Most parts are PRISM, extruded the full Z_HALF. Two kinds are not, because they have to turn in place
-rather than read as a flat sliver: the needle is a DIAMOND, a waist ring with an apex above and below,
-and each mandible is a BAR. Both take their thickness from their own narrow side, so that section is
-square and a turn about the long axis leaves the silhouette unchanged.
+Most parts are PRISM, extruded to their badge's BODY_HEIGHT. The triangle's body is a WEDGE instead: that
+height at its base, thinning toward the point to WEDGE_TIP of it at the apex, so the point still reads while
+it rolls.
+Three kinds turn in place rather than read as a flat sliver: the needle is a DIAMOND, a waist ring with
+an apex above and below; each mandible is a BAR; and the circle's small disc is an HOURGLASS, pinched at
+mid height so that turning it shows something a cylinder never would. All three are as deep as their own
+narrow side is wide, so they turn without the silhouette swelling.
 
 Outlines are authored in the source images' pixel space (341x341, Y down) so the numbers stay checkable
 against the art, then mapped to world: image up -> +X (forward), image right -> +Y. A badge is centred on
-the bounding box of all its parts together and scaled so its longest side is BOX, matching the
-100x100x100 bounds of the SKM_Cube/Cone/Cylinder meshes it replaces — so all three keep one hitbox.
+the bounding box of all its parts together, or for one in CENTROID_ORIGIN on its footprint's centroid, so it
+turns about where its weight sits. It is scaled so its longest side is BOX, matching the 100-unit bounds of
+the SKM_Cube/Cone/Cylinder meshes it replaces — so all three keep one hitbox.
 
 Caps are ear-clipped: the square and the triangle are concave, so a convex fan would fill their notches.
 
@@ -35,12 +39,15 @@ SLOT_NAME = "Color"
 
 TOL = 1e-6  # area below which an ear-clip corner counts as flat
 BOX = 100.0  # longest XY side, matching the meshes these replace
-Z_HALF = 50.0  # half the extruded thickness; a BAR takes half its own narrow side instead
+BODY_HEIGHT = {"SM_CircleBadge": 75.0, "SM_SquareBadge": 85.0, "SM_TriangleBadge": 83.2}  # a WEDGE's at its base
+WEDGE_TIP = 0.0  # share of its base height a WEDGE keeps at the badge's front
+CENTROID_ORIGIN = ("SM_TriangleBadge",)  # centred on its footprint's centroid rather than its box
 
 # --- Circle badge: a big disc bitten out around a small one floating free, in image pixels. ---
 CIRCLE_BIG = (169.5, 200.0, 129.0)  # cx, cy, radius
 CIRCLE_SMALL = (169.5, 75.0, 47.5)
 CIRCLE_GAP = 13.5  # the black ring the art draws between the two; the bite is the small disc plus this
+CIRCLE_WAIST = 0.55  # how far the small disc is pinched in at mid height
 CIRCLE_BIG_SEGS = 20
 CIRCLE_BITE_SEGS = 10
 CIRCLE_SMALL_SEGS = 16
@@ -74,7 +81,7 @@ NEEDLE_CX = 168.0      # on the body's axis, not the art's 170.5, since the body
 NEEDLE_HALF = 15.0     # half-width at the waist, measured off the art's pale diamond
 NEEDLE_GAP = 12.5      # black between needle and body; 4.47 world units, matching the circle's CIRCLE_GAP
 
-PRISM, DIAMOND, BAR = "prism", "diamond", "bar"
+PRISM, WEDGE, DIAMOND, BAR, HOURGLASS = "prism", "wedge", "diamond", "bar", "hourglass"
 Part = collections.namedtuple("Part", "outline kind")
 
 
@@ -97,7 +104,8 @@ def circle_parts():
     """The big disc with a bite taken out of its top, and the small disc floating free inside that bite.
 
     The art keeps a black ring between the two rather than fusing them, so the bite is the small disc
-    grown by CIRCLE_GAP. The pieces never touch, which is what lets each move on its own.
+    grown by CIRCLE_GAP. The pieces never touch, which is what lets each move on its own — and the small
+    one is an HOURGLASS rather than a disc, so its turning is legible.
     """
     bx, by, big_r = CIRCLE_BIG
     sx, sy, small_r = CIRCLE_SMALL
@@ -115,7 +123,7 @@ def circle_parts():
     # Round the big disc the long way, then back along the underside of the bite.
     body = (arc(bx, by, big_r, big_right, 180.0 - big_right, CIRCLE_BIG_SEGS)[:-1]
             + arc(sx, sy, bite_r, 180.0 - bite_right, bite_right, CIRCLE_BITE_SEGS, True)[:-1])
-    return [body, disc(sx, sy, small_r, CIRCLE_SMALL_SEGS)]
+    return [Part(body, PRISM), Part(disc(sx, sy, small_r, CIRCLE_SMALL_SEGS), HOURGLASS)]
 
 
 def square_parts():
@@ -194,17 +202,36 @@ def triangle_parts():
     body = [line_cross(apex, base_left, left, base),
             base_left, chevron_left, chevron_tip, chevron_right, base_right,
             line_cross(apex, base_right, right, base), base]
-    return [Part(body, PRISM), Part(needle_kite(0.0), DIAMOND)]
+    return [Part(body, WEDGE), Part(needle_kite(0.0), DIAMOND)]
 
 
-def to_world(parts):
-    """Image pixels -> world XY. One centre and scale for the whole badge, so its parts keep their offsets."""
+def centroid(outline):
+    """An outline's area centroid."""
+    area = signed_area(outline)
+    edges = [(a, b, a[0] * b[1] - b[0] * a[1]) for a, b in zip(outline, outline[1:] + outline[:1])]
+    return (sum((a[0] + b[0]) * c for a, b, c in edges) / (6.0 * area),
+            sum((a[1] + b[1]) * c for a, b, c in edges) / (6.0 * area))
+
+
+def frame(name):
+    """The badge's centre in image pixels and its world units per pixel. make_class_badge_materials.py maps by it too."""
+    parts = badge_parts()[name]
     xs = [p[0] for part in parts for p in part.outline]
     ys = [p[1] for part in parts for p in part.outline]
-    cx, cy = (min(xs) + max(xs)) * 0.5, (min(ys) + max(ys)) * 0.5
     scale = BOX / max(max(xs) - min(xs), max(ys) - min(ys))
+    if name in CENTROID_ORIGIN:
+        weights = [(abs(signed_area(part.outline)), centroid(part.outline)) for part in parts]
+        total = sum(weight for weight, _ in weights)
+        return (sum(weight * c[0] for weight, c in weights) / total,
+                sum(weight * c[1] for weight, c in weights) / total, scale)
+    return (min(xs) + max(xs)) * 0.5, (min(ys) + max(ys)) * 0.5, scale
+
+
+def to_world(name):
+    """One badge's parts in world XY. One centre and scale for the whole badge, so its parts keep their offsets."""
+    cx, cy, scale = frame(name)
     return [Part([((cy - y) * scale, (x - cx) * scale) for x, y in part.outline], part.kind)
-            for part in parts]
+            for part in badge_parts()[name]]
 
 
 def signed_area(outline):
@@ -287,9 +314,26 @@ def build(name, parts):
             tri(ring[i], ring[n], top)
             tri(ring[n], ring[i], bottom)
 
-    def extrude(outline, half):
-        """One part: its own closed prism `half` thick either way, sharing no vertex with any other."""
-        layers = [[vert(x, y, z) for x, y in outline] for z in (-half, 0.0, half)]
+    xs = [p[0] for part in parts for p in part.outline]
+    body_half = 0.5 * BODY_HEIGHT[name]
+    back, front = min(xs), max(xs)
+
+    def wedge(x):
+        """The share of its full height a WEDGE keeps at `x`: all of it at the badge's back, WEDGE_TIP at its front."""
+        return 1.0 + (WEDGE_TIP - 1.0) * (x - back) / (front - back)
+
+    def extrude(outline, profile, height):
+        """One part: its own closed solid, the outline laid down once per (z, scale) layer of `profile`.
+
+        Only the ends carry a cap, so every profile keeps its outline at full size there; a middle layer
+        is free to pinch in. `height(x)` scales each layer's z where it stands, linear in x so a cap stays
+        flat. Nothing is shared with any other part.
+        """
+        cx, cy = narrow_side(outline)[1]
+        layers = []
+        for z, s in profile:
+            points = [(cx + (x - cx) * s, cy + (y - cy) * s) for x, y in outline]
+            layers.append([vert(x, y, z * height(x)) for x, y in points])
 
         count = len(outline)
         for low, high in zip(layers, layers[1:]):
@@ -309,7 +353,11 @@ def build(name, parts):
         if part.kind == DIAMOND:
             diamond(part.outline)
         else:
-            extrude(part.outline, Z_HALF if part.kind == PRISM else narrow_side(part.outline)[0])
+            # A body takes the badge's full depth; a part that has to turn is as deep as it is narrow.
+            half = body_half if part.kind in (PRISM, WEDGE) else narrow_side(part.outline)[0]
+            waist = CIRCLE_WAIST if part.kind == HOURGLASS else 1.0
+            height = wedge if part.kind == WEDGE else (lambda x: 1.0)
+            extrude(part.outline, ((-half, 1.0), (0.0, waist), (half, 1.0)), height)
 
     package = "{}/{}".format(FOLDER, name)
     if unreal.EditorAssetLibrary.does_asset_exist(package):
@@ -328,7 +376,7 @@ def build(name, parts):
 def badge_parts():
     """Every badge as its list of parts, in image pixels."""
     return {
-        "SM_CircleBadge": [Part(outline, PRISM) for outline in circle_parts()],
+        "SM_CircleBadge": circle_parts(),
         "SM_SquareBadge": square_parts(),
         "SM_TriangleBadge": triangle_parts(),
     }
@@ -337,8 +385,8 @@ def badge_parts():
 def main():
     result = {}
     try:
-        for name, pixels in badge_parts().items():
-            parts = to_world(pixels)
+        for name in badge_parts():
+            parts = to_world(name)
             for part in parts:
                 if signed_area(part.outline) < 0.0:
                     part.outline.reverse()

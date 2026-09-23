@@ -3,6 +3,8 @@
 #include "AbilitySystem/Abilities/Base/GeoChannelBeamAbility.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Characters/Component/GeoBeamVFXComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
@@ -103,6 +105,12 @@ void UGeoChannelBeamAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 			BeamVFXComponent->SetBeamState(false, 0.f, 0.f);
 		}
 	}
+
+	if (UAnimInstance* AnimInstance = GetActorInfo().GetAnimInstance(); AnimInstance && AnimMontage)
+	{
+		AnimInstance->Montage_Stop(AnimMontage->GetDefaultBlendOutTime(), AnimMontage);
+	}
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 

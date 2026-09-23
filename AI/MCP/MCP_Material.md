@@ -29,6 +29,10 @@ Material node wiring goes through `execute_script` using `MaterialEditingLibrary
 `expressions` on a material is protected and the route's parameter setter only works on instances, so changing a
 base material's parameter default goes through `find_object` on the auto-indexed inner path.
 
+A material input fed by a constant instead of a node has no Python property; its value is read from the text export
+of the material asset, and exporting the asset's editor-only-data subobject instead kills the editor
+(`AI/Python/Material/read_material_text.py`).
+
 | Property | Python value |
 |---|---|
 | Translucent / masked blend | `unreal.BlendMode.BLEND_TRANSLUCENT` / `BLEND_MASKED` |
@@ -75,6 +79,20 @@ material scripts build their graphs through the toolkit `AI/Python/Material/mate
 - The toolkit builds a whole stack in one assignment and swaps one layer of an existing one;
   `AI/Python/Material/compare_material_layers.py` compiles candidate layers in one slot and reports each one's
   instruction counts, then puts the slot's own layer back.
+
+## Projecting a texture onto a mesh with no UVs
+
+- The pre-skinned local position (the local-position node with its origin set to pre-skinned) and the pre-skinned
+  normal follow each bone, so a projection built on them rides every skinned part; the GPU skin cache path supplies
+  them too.
+- Both are vertex-shader only: compute the UV and any face flag in the vertex stage and pass them to the pixel stage
+  through one vertex interpolator, which is exact on flat faces.
+- A step on the pre-skinned normal's Z keeps the projection on the faces pointing up, off the walls it would streak.
+- A mask image with a transparent outside carries arbitrary colour under zero alpha, so the mask is its colour times
+  its alpha.
+
+`AI/Python/Material/make_class_badge_materials.py` projects line masks through the same pixel frame a procedural
+mesh was extruded from; `AI/Python/Asset/import_textures.py` imports the masks with sRGB off.
 
 ## Dry-running a build script
 
