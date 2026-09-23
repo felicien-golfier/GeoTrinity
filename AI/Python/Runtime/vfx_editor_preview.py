@@ -1,4 +1,5 @@
-"""Places systems in the editor world so the level viewport can judge them without PIE.
+"""Sets up the editor world so the level viewport can judge a visual change without PIE: preview systems, parameter
+collection values, the camera.
 
 Every function takes its assets and placement as arguments; the example call at the bottom is the only place a
 path appears. Run through MCP execute_script against the editor world, and read REPORT back — the script tool
@@ -13,12 +14,15 @@ leaves the map dirty either way.
 Reference: AI/MCP/MCP_Preview.md.
 """
 
+import json
+import os
 import traceback
 
 import unreal
 
 LABEL = "GeoVFXPreview"
 REPORT = "%sGeoTrinity_VFXPreview.txt" % unreal.Paths.project_saved_dir()
+CAMERA = "%sGeoTrinity_PreviewCamera.json" % unreal.Paths.project_saved_dir()
 
 out = []
 
@@ -81,6 +85,40 @@ def focus(index, count, origin, spacing=420.0, height=250.0):
     out.append("focused %d of %d, camera %s" % (index, count, editor.get_level_viewport_camera_info()))
 
 
+def remember_camera(path=CAMERA):
+    """Saves the viewport camera before a preview moves it; a second call keeps the first, which is the user's."""
+    location, rotation = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_level_viewport_camera_info()
+    if os.path.exists(path):
+        out.append("camera already remembered in %s" % path)
+    else:
+        with open(path, "w") as f:
+            json.dump({"location": [location.x, location.y, location.z],
+                       "rotation": [rotation.roll, rotation.pitch, rotation.yaw]}, f)
+        out.append("remembered camera %s %s" % (location, rotation))
+
+
+def restore_camera(path=CAMERA):
+    """Puts the viewport camera back where remember_camera found it, and forgets it."""
+    with open(path) as f:
+        camera = json.load(f)
+    unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).set_level_viewport_camera_info(
+        unreal.Vector(*camera["location"]), unreal.Rotator(*camera["rotation"]))
+    os.remove(path)
+    out.append("restored camera %s" % camera)
+
+
+def set_collection_values(collection_path, vectors=None, scalars=None):
+    """Writes parameter collection values in the editor world, where the materials reading them preview them."""
+    world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
+    collection = unreal.load_asset(collection_path)
+    for name, (r, g, b, a) in (vectors or {}).items():
+        unreal.MaterialLibrary.set_vector_parameter_value(world, collection, name, unreal.LinearColor(r, g, b, a))
+    for name, value in (scalars or {}).items():
+        unreal.MaterialLibrary.set_scalar_parameter_value(world, collection, name, value)
+    unreal.EditorLevelLibrary.editor_invalidate_viewports()
+    out.append("collection %s: %s %s" % (collection_path, vectors or {}, scalars or {}))
+
+
 def step(delta, label=LABEL):
     """Moves every preview once. Call once per step, or the world never ticks between them."""
     for actor in previews(label):
@@ -114,7 +152,11 @@ if __name__ == "__main__":
         clear()
         render_while_unfocused(True)
         place(SYSTEMS, ORIGIN)
+        remember_camera()
         focus(0, len(SYSTEMS), ORIGIN, height=250.0)
+        # A material reading a collection: one ring of the background pulse, (OriginX, OriginY, Radius, Intensity).
+        set_collection_values("/Game/Art/VFX/Background/MPC_BackgroundPulse",
+                              vectors={"PulseSource_00": (ORIGIN.x, ORIGIN.y, 500.0, 1.0)})
     except Exception:
         out.append("FAILED\n" + traceback.format_exc())
     report()

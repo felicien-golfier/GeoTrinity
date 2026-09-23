@@ -188,9 +188,13 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FScalableFloat Magnitude;
 
+	/** When true, the effect never expires on its own, overriding the GE's duration. The GE must not be Instant. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bInfiniteDuration = false;
+
 	// Will set the Duration magnitude of the GE SetByCaller with Data.DurationMagnitude tag.
 	// If the GE is Instant or infinite, it's not used.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "!bInfiniteDuration", EditConditionHides))
 	FScalableFloat Duration;
 
 	/** When set, the HUD status bar shows this icon (texture or material) on the target while the effect is active.

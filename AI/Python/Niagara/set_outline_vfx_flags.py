@@ -22,9 +22,9 @@ with custom depth writes off, so it silently tints every outline beneath it and 
 Any additive or translucent material drawn where a deployable outline must stay readable belongs below.
 
 Turning custom depth writes ON only reads correctly with the discontinuity form of the outline gate
-(saturate(abs(neighbour - center)) in make_deployable_outline_material.py). Under the older outside-only
+(saturate(abs(neighbour - center)) in M_DeployableOutline). Under the older outside-only
 gate a stencil-writing zone SUPPRESSES the outline of anything standing inside it, so a pillar in a zone
-loses its ring entirely — worse than the wrong color. Rerun that script if the graph predates the change.
+loses its ring entirely — worse than the wrong color.
 
 Run outside PIE. Results go to the log as TRANSVFX:: lines; the audit at the end lists every other
 translucent material under /Game/VFX still on After DOF, so the ones that matter get added deliberately

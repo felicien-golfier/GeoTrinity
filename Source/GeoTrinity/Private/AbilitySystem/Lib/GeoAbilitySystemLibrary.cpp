@@ -59,11 +59,10 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(TIns
 	return ApplySingleEffectData(*EffectData, SourceASC, TargetASC, AbilityLevel, Seed, AbilityTag);
 }
 
-FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEffectData const& EffectData,
-																			UAbilitySystemComponent* SourceASC,
-																			UAbilitySystemComponent* TargetASC,
-																			int32 AbilityLevel, int32 Seed,
-																			FGameplayTag AbilityTag)
+FActiveGameplayEffectHandle
+UGeoAbilitySystemLibrary::ApplySingleEffectData(FEffectData const& EffectData, UAbilitySystemComponent* SourceASC,
+												UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed,
+												FGameplayTag AbilityTag, float const PerSecondDuration)
 {
 	if (!ensureMsgf(IsValid(SourceASC) && IsValid(TargetASC),
 					TEXT("%hs: needs a valid Source and Target ASC to apply an effect"), __FUNCTION__)
@@ -74,6 +73,7 @@ FActiveGameplayEffectHandle UGeoAbilitySystemLibrary::ApplySingleEffectData(FEff
 
 	FGeoGameplayEffectContext* GeoEffectContext = nullptr;
 	FGameplayEffectContextHandle ContextHandle = MakeGeoEffectContext(SourceASC, TargetASC, GeoEffectContext);
+	GeoEffectContext->SetPerSecondDuration(PerSecondDuration);
 
 	EffectData.UpdateContextHandle(GeoEffectContext, AbilityLevel, AbilityTag);
 	FActiveGameplayEffectHandle const EffectHandle =
@@ -143,10 +143,11 @@ void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* Source
 	}
 }
 // ---------------------------------------------------------------------------------------------------------------------
-TArray<FActiveGameplayEffectHandle> UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(
-	TArray<TInstancedStruct<FEffectData>> const& DataArray, UAbilitySystemComponent* SourceASC,
-	UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed, FGameplayTag AbilityTag,
-	float const PerSecondDuration)
+TArray<FActiveGameplayEffectHandle>
+UGeoAbilitySystemLibrary::ApplyEffectFromEffectData(TArray<TInstancedStruct<FEffectData>> const& DataArray,
+													UAbilitySystemComponent* SourceASC,
+													UAbilitySystemComponent* TargetASC, int32 AbilityLevel, int32 Seed,
+													FGameplayTag AbilityTag, float const PerSecondDuration)
 {
 	TArray<FActiveGameplayEffectHandle> SpecHandles;
 	if (!ensureMsgf(IsValid(SourceASC) && IsValid(TargetASC),

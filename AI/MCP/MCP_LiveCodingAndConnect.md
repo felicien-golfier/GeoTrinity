@@ -26,6 +26,12 @@ client is a reason to go direct, not a reason to stop automating. The ports are 
 in `.mcp.json`, and each of them serves the same routes; a probe that times out rather than being refused means
 the editor is busy holding its game thread, while a listener that is absent from `netstat` means no editor is up.
 
+An editor started from the IDE runs under its debugger, where a failed engine assertion or ensure pauses the editor
+instead of crashing it. The bridge then times out, the process stops responding at zero CPU, and the log ends on a
+script-stack line. The IDE's window title names the source file it stopped in; grabbing that window shows the failed
+line and the call stack. Resuming or stopping the debugger is the user's call: continuing past a real fault crashes
+the editor, and stopping kills it.
+
 While the client is down the bridge can be driven directly by POSTing `{"script": "..."}` to
 `/api/editor/execute_script` on that port. In Windows PowerShell 5.1, cast the script to `[string]` before
 `ConvertTo-Json` — a raw file read otherwise serializes as an object and the route rejects the body. The route

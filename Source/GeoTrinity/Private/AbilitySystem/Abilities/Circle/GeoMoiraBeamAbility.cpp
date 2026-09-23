@@ -66,11 +66,14 @@ float UGeoMoiraBeamAbility::GetCurrentBeamHalfWidth(ACharacter const* Character)
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMoiraBeamAbility::Tick(float const DeltaTime)
 {
-	RemainingDuration -= DeltaTime;
-	if (RemainingDuration <= 0.f)
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		UGeoGameplayAbility::EndAbility(true, false);
-		return;
+		RemainingDuration -= DeltaTime;
+		if (RemainingDuration <= 0.f)
+		{
+			UGeoGameplayAbility::EndAbility(true, false);
+			return;
+		}
 	}
 
 	Super::Tick(DeltaTime);

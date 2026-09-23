@@ -6,28 +6,20 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Tool/UGeoGameplayLibrary.h"
 
-void AGeoHealingZone::Tick(float const DeltaSeconds)
+void AGeoHealingZone::OnZoneJudged(TArray<FGeoHazardJudge::FTargetResult> const& Results)
 {
-	Super::Tick(DeltaSeconds);
-
-	if (GeoLib::IsServer(GetWorld()) && IsActive() && !IsBlinking())
+	UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(Data.Owner);
+	if (ensureMsgf(SourceASC, TEXT("AGeoHealingZone: missing ASC.")))
 	{
-		UGeoAbilitySystemComponent* const SourceASC = GeoASLib::GetGeoAscFromActor(Data.Owner);
-		if (ensureMsgf(SourceASC, TEXT("AGeoHealingZone: missing ASC.")))
+		for (FGeoHazardJudge::FTargetResult const& Result : Results)
 		{
-			for (AActor* const Ally : GeoASLib::GetInteractableActors(
-					 this, GeoASLib::GetTeamId(this), Data.Params.Attitude, /*bMustBeDamageable*/ true,
-					 FVector2D(GetActorLocation()), Data.Params.Size, ETargetOverlapMode::IncludeRadius))
-			{
-				HealAlly(Ally, SourceASC);
-			}
+			HealAlly(Result.Target, SourceASC, Result.TimeInside);
 		}
 	}
 }
 
-void AGeoHealingZone::HealAlly(AActor* Ally, UGeoAbilitySystemComponent* SourceASC)
+void AGeoHealingZone::HealAlly(AActor* Ally, UGeoAbilitySystemComponent* SourceASC, float const TimeInside)
 {
 	UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Ally);
 	if (!TargetASC
@@ -40,7 +32,8 @@ void AGeoHealingZone::HealAlly(AActor* Ally, UGeoAbilitySystemComponent* SourceA
 	FHealEffectData HealEffectData;
 	HealEffectData.Amount = DrainMagnitudePerSecond;
 	HealEffectData.bIsPerSecond = true;
-	GeoASLib::ApplySingleEffectData(HealEffectData, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag);
+	GeoASLib::ApplySingleEffectData(HealEffectData, SourceASC, TargetASC, Data.Level, Data.Seed, Data.AbilityTag,
+									TimeInside);
 
 	// The zone pays for what it healed — once per healed ally, so it burns down faster the more it reaches. Distinct
 	// from the base class's flat per-second drain.
@@ -51,5 +44,5 @@ void AGeoHealingZone::HealAlly(AActor* Ally, UGeoAbilitySystemComponent* SourceA
 	HealingCostData.bSuppressCombatStats = true;
 	HealingCostData.bDoNotRedirectSacrifice = true;
 	GeoASLib::ApplySingleEffectData(HealingCostData, SourceASC, GetAbilitySystemComponent(), Data.Level, Data.Seed,
-									Data.AbilityTag);
+									Data.AbilityTag, TimeInside);
 }

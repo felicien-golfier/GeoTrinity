@@ -31,9 +31,12 @@ outside the editor.
 
 ## Custom Primitive Data
 
-Slot 0 is the deployable duration wipe and the only slot in use: `AGeoDeployableBase::Tick` writes
-`1 - GetDurationPercent()` onto every visual mesh and `M_PulseCircle`'s `DurationSpent` reads it back with
-`bUseCustomPrimitiveData`, so one shared material serves every zone instead of a per-actor MID.
+Slot 0 is the deployable duration wipe: `AGeoDeployableBase::Tick` writes `1 - GetDurationPercent()` onto every
+visual mesh and `M_PulseCircle`'s `DurationSpent` reads it back with `bUseCustomPrimitiveData`, so one shared
+material serves every zone instead of a per-actor MID.
+
+Slots 1–2 are the arena centre: `AGeoArena` writes its XY onto each of its `Floors`, and the floor looks centred on
+an arena read it through their `ArenaCenter` vector parameter (see the background lattice in `AI/Materials.md`).
 
 The value is the fraction **spent**, never remaining: custom primitive data nobody writes reads 0, so
 "remaining" would render every unwritten primitive as fully drained. `PulseCircleInst` on `BP_DamageZone` is
@@ -105,8 +108,8 @@ Built by `AI/Python/Niagara/static_electricity_vfx.py`, `cone_coil_vfx.py`, `lig
 `M_GeoShape` draws a regular polygon per pixel from the sprite's own UVs — no texture, so an edge stays a line
 at any size where a shape atlas is only crisp at its authored size. Sides, outline thickness, fill, dashes,
 halo and feather are material parameters, so the shape vocabulary is a folder of instances (`MI_GeoShape_*`)
-and swapping a shape is swapping the renderer's material. Built by `AI/Python/Material/geo_shape_material.py`, whose
-header carries the math.
+and swapping a shape is swapping the renderer's material. Its distance is the one `MF_PolygonDistance` computes:
+the pixel's distance from the centre along the nearest edge normal, against an apothem derived from the side count.
 
 - The apothem is derived from the side count rather than authored, inscribing every polygon in one circle.
   Without it a triangle's corners reach twice as far as its edges, so one sprite size would mean a different

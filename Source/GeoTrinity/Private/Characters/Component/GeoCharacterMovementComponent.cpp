@@ -89,6 +89,7 @@ void UGeoCharacterMovementComponent::TickComponent(float const DeltaTime, ELevel
 		}
 		PoseHistory.Add(Pose);
 		FGeoNetcodeDebug::DrawRecordedPose(GetOwner(), Pose, Pose.ServerTime - OldestTimeNeeded);
+		FGeoNetcodeDebug::DrawClientPose(CharacterOwner, Pose.ServerTime - OldestTimeNeeded);
 	}
 }
 

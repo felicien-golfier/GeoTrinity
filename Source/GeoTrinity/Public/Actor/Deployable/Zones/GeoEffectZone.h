@@ -48,6 +48,9 @@ protected:
 	/** Removes the infinite effects the zone still holds on anyone. */
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
+	/** Server. What a zone does beyond applying its effects, for every actor the judge just found inside it. */
+	virtual void OnZoneJudged(TArray<FGeoHazardJudge::FTargetResult> const& Results) {}
+
 	UPROPERTY(ReplicatedUsing = OnRep_Data)
 	FDeployableData Data;
 

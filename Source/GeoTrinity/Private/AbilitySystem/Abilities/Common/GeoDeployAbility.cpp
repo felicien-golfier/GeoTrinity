@@ -9,7 +9,10 @@
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Actor/Projectile/GeoProjectileFXComponent.h"
 #include "Characters/Component/GeoDeploySatelliteComponent.h"
+#include "Characters/PlayableCharacter.h"
+#include "GameplayCueManager.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 UGeoDeployAbility::UGeoDeployAbility()
 {
@@ -141,12 +144,52 @@ void UGeoDeployAbility::OnCooldownTagChanged(FGameplayTag const /*CooldownTag*/,
 // ---------------------------------------------------------------------------------------------------------------------
 FGeoAbilityTargetData UGeoDeployAbility::GetUpdatedTargetData()
 {
-	UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
-	float PendingDeployDistance =
-		FMath::Lerp(GameDataSettings->MinDeployDistance, GameDataSettings->MaxDeployDistance, GetChargeRatio());
 	// Encode deploy distance as integer cm in Seed so the server receives it
-	StoredPayload.Seed = FMath::RoundToInt(PendingDeployDistance);
+	StoredPayload.Seed = FMath::RoundToInt(GetChargedDeployDistance());
 	return Super::GetUpdatedTargetData();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float UGeoDeployAbility::GetChargedDeployDistance() const
+{
+	UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
+	return FMath::Lerp(GameDataSettings->MinDeployDistance, GameDataSettings->MaxDeployDistance, GetChargeRatio());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FVector UGeoDeployAbility::GetPendingDeployLocation() const
+{
+	// Mirrors SpawnProjectile: an explicit DistanceSpan override replaces the charge-derived distance.
+	float const DeployDistance = ProjectileParams.OverrideDistanceSpan == EOverrideParam::OverrideValue
+		? ProjectileParams.DistanceSpan
+		: GetChargedDeployDistance();
+	FVector const Origin =
+		GetFireOrigin(StoredPayload.SourceAvatar, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
+	float const Yaw = GetFireYaw(StoredPayload.SourceAvatar, StoredPayload.Seed);
+	return Origin + FRotator(0.f, Yaw, 0.f).Vector() * DeployDistance;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoDeployAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool const bVisible)
+{
+	Super::SetChargeGaugeVisible(Character, bVisible);
+
+	FGeoCueParam const& TargetCue = GetDefault<UGameDataSettings>()->DeployTargetCue;
+	if (TargetCue.IsValid() && GeoLib::IsLocalPlayerAvatar(Character))
+	{
+		FGameplayCueParameters CueParams = TargetCue.MakeCueParams(StoredPayload, GetPendingDeployLocation());
+		CueParams.SourceObject = this;
+		if (bVisible)
+		{
+			UGameplayCueManager::AddGameplayCue_NonReplicated(Character, TargetCue.CueTag, CueParams);
+		}
+		// EndAbility hides the gauge even when the activation bailed before charging: removing a cue never added would
+		// spawn its actor only to remove it.
+		else if (GetAbilitySystemComponentFromActorInfo()->GetTagCount(TargetCue.CueTag) > 0)
+		{
+			UGameplayCueManager::RemoveGameplayCue_NonReplicated(Character, TargetCue.CueTag, CueParams);
+		}
+	}
 }
 
 

@@ -94,6 +94,11 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoCamera", meta = (ClampMin = "1.0"))
 	float MaxOrthoWidth = 6000.f;
 
+	/** Floor looks every AGeoArena without BackgroundLooks of its own cycles through, one per attempt. Each is an
+	 * instance of M_BackgroundLattice whose glow layer is one look. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoBackground")
+	TArray<TSoftObjectPtr<UMaterialInterface>> BackgroundLooks;
+
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay")
 	float GeneralChargeTime = .5f;
 
@@ -164,6 +169,11 @@ public:
 	 * ability (GA_DeployHealingZone, GA_Square_Special_Mine, GA_LaunchTurret) instead of a per-ability property. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
 	FGeoCueParam RefillDeployableCue;
+
+	/** Looping cue added on the deploying client only while a deploy ability charges. Its SourceObject is the
+	 * UGeoDeployAbility instance, which AGeoDeployTargetCue follows each tick. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
+	FGeoCueParam DeployTargetCue;
 
 	/** Every buff the game shows, project-wide: one entry per attribute, with the moment its character and its shots
 	 * wear while it is boosted. Driven by UGeoFXComponent.

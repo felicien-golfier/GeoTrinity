@@ -112,7 +112,7 @@ private:
 
 	/**
 	 * Sweeps the path Bullet flew since the last check, up to ServerTime, and ends its flight on the first wall there,
-	 * its drawing ending on that wall through the projectile's own hit path.
+	 * its drawing ending on that wall through the projectile's own hit path, and its judge with it.
 	 * Runs before the judge: every time it judges is at or before now, so a flight cut short never takes back a hit.
 	 */
 	void StopAtWall(FGeoBullet& Bullet, float ServerTime);

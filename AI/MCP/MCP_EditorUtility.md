@@ -40,6 +40,7 @@ from the Python caller, and share setup/teardown through private helpers.
 | `UGeoHudWidgetBuilderUtil` | `GeoHudWidgetBuilderUtil.h` | Content-specific widget trees composed from those primitives — `MCP_UI.md` |
 | `UGeoNiagaraBuilderUtil` | `GeoNiagaraBuilderUtil.h` | Emitters, modules, static switches, input values, dynamic inputs, stage dumps — `MCP_Niagara.md` |
 | `UGeoAnimBuilderUtil` | `GeoAnimBuilderUtil.h` | Montage slots/sections/links, layout inspection, skeletal mesh vertex reads, rebuilding a skeletal mesh from a static mesh — `MCP_Animation.md` |
+| `UGeoMaterialBuilderUtil` | `GeoMaterialBuilderUtil.h` | One layer of a material instance's own layer stack — `MCP_Material.md` |
 
 ## Bridge-side C++ constraints
 

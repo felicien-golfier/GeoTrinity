@@ -104,13 +104,13 @@ void AGeoEffectZone::JudgeZone()
 		ZoneJudge.EndAt(ServerTime);
 	}
 
-	ZoneJudge.Judge(MakeHazardSource(), Data.EffectDataArray,
-					FGeoHazardJudge::FindCandidates(Data.Owner, Data.Params.Attitude),
-					[this](AActor const* Target, FVector2D const Location, float /*SpentTime*/)
-					{
-						return GeoASLib::IsInCircle(Target, Location, FVector2D(GetActorLocation()), Data.Params.Size,
-													ETargetOverlapMode::IncludeRadius, GeoASLib::GetTeamId(Data.Owner));
-					});
+	OnZoneJudged(ZoneJudge.Judge(
+		MakeHazardSource(), Data.EffectDataArray, FGeoHazardJudge::FindCandidates(Data.Owner, Data.Params.Attitude),
+		[this](AActor const* Target, FVector2D const Location, float /*SpentTime*/)
+		{
+			return GeoASLib::IsInCircle(Target, Location, FVector2D(GetActorLocation()), Data.Params.Size,
+										ETargetOverlapMode::IncludeRadius, GeoASLib::GetTeamId(Data.Owner));
+		}));
 
 	if (!ZoneJudge.IsOver(ServerTime))
 	{

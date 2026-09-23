@@ -22,10 +22,10 @@ void FGeoHazardJudge::Start(float const InStartServerTime, float const InDuratio
 
 	Targets.Reset();
 	StartServerTime = InStartServerTime;
-	SetDuration(InDuration);
 	bSeenThroughReplication = bInSeenThroughReplication;
 	bEndsOnHit = bInEndsOnHit;
 	bRemovesInfiniteEffectsOnLeave = bInRemovesInfiniteEffectsOnLeave;
+	Duration = InDuration;
 	bJudging = true;
 }
 
@@ -35,13 +35,14 @@ TArray<AActor*> FGeoHazardJudge::FindCandidates(AActor const* SourceOwner, int32
 										   /*bMustBeDamageable*/ true);
 }
 
-void FGeoHazardJudge::Judge(FAbilityPayload const& Source, TArray<TInstancedStruct<FEffectData>> const& Effects,
-							TArray<AActor*> const& Candidates,
-							TFunctionRef<bool(AActor const* Target, FVector2D Location, float SpentTime)> IsInHazard)
+TArray<FGeoHazardJudge::FTargetResult> FGeoHazardJudge::Judge(
+	FAbilityPayload const& Source, TArray<TInstancedStruct<FEffectData>> const& Effects,
+	TArray<AActor*> const& Candidates,
+	TFunctionRef<bool(AActor const* Target, FVector2D Location, float SpentTime)> IsInHazard)
 {
 	if (!bJudging)
 	{
-		return;
+		return {};
 	}
 
 	if (!IsValid(Source.SourceOwner))
@@ -49,7 +50,7 @@ void FGeoHazardJudge::Judge(FAbilityPayload const& Source, TArray<TInstancedStru
 		UE_LOG(LogGeoTrinity, Log, TEXT("%hs: owner of %s gone before every target of its hazard was judged"),
 			   __FUNCTION__, *GetNameSafe(Source.SourceAvatar));
 		Stop();
-		return;
+		return {};
 	}
 
 	for (auto It = Targets.CreateIterator(); It; ++It)
@@ -62,6 +63,7 @@ void FGeoHazardJudge::Judge(FAbilityPayload const& Source, TArray<TInstancedStru
 		}
 	}
 
+	TArray<FTargetResult> Results;
 	// bJudging drops when an applied effect ends the hazard, e.g. by killing the last player.
 	for (int32 CandidateIndex = 0; bJudging && CandidateIndex < Candidates.Num(); ++CandidateIndex)
 	{
@@ -81,13 +83,19 @@ void FGeoHazardJudge::Judge(FAbilityPayload const& Source, TArray<TInstancedStru
 		}
 
 		FGeoNetcodeDebug::DrawHazardJudge(Target, State->LastLocation, State->LastTime, TargetLocation, TargetSpentTime,
-										  State->NextSampleIndex, SampleCount);
+										  State->NextSampleIndex, Duration);
 
 		bool bEntered;
-		int32 const SamplesInside =
-			AdvanceSamples(*State, Target, TargetSpentTime, TargetLocation, IsInHazard, bEntered);
-		ApplySamplingResult(Source, Effects, Target, *State, bEntered, SamplesInside);
+		float const TimeInside =
+			AdvanceSamples(*State, Target, TargetSpentTime, TargetLocation, IsInHazard, bEntered) * SampleInterval;
+		ApplySamplingResult(Source, Effects, Target, *State, bEntered, TimeInside);
+		if (TimeInside > 0.f)
+		{
+			Results.Add({Target, TimeInside});
+		}
 	}
+
+	return Results;
 }
 
 bool FGeoHazardJudge::IsOver(float const ServerTime) const
@@ -99,13 +107,12 @@ bool FGeoHazardJudge::IsOver(float const ServerTime) const
 
 void FGeoHazardJudge::EndAt(float const EndServerTime)
 {
-	SetDuration(FMath::Min(Duration, FMath::Max(EndServerTime - StartServerTime, 0.f)));
+	Duration = FMath::Min(Duration, FMath::Max(EndServerTime - StartServerTime, 0.f));
 }
 
-void FGeoHazardJudge::SetDuration(float const InDuration)
+bool FGeoHazardJudge::IsPastEnd(int32 const SampleIndex) const
 {
-	Duration = InDuration;
-	SampleCount = FMath::CeilToInt(Duration * SampleRate) + 1;
+	return (SampleIndex - 1) * SampleInterval >= Duration;
 }
 
 void FGeoHazardJudge::Stop()
@@ -129,7 +136,7 @@ int32 FGeoHazardJudge::AdvanceSamples(
 {
 	bOutEntered = false;
 	int32 SamplesInside = 0;
-	for (; State.NextSampleIndex < SampleCount; ++State.NextSampleIndex)
+	for (; !IsPastEnd(State.NextSampleIndex); ++State.NextSampleIndex)
 	{
 		float const SampleTime = FMath::Min(State.NextSampleIndex * SampleInterval, Duration);
 		if (SampleTime > TargetSpentTime)
@@ -150,14 +157,13 @@ int32 FGeoHazardJudge::AdvanceSamples(
 			{
 				// The hazard is spent here: nobody is judged past this sample, and this target has no sample left.
 				Duration = SampleTime;
-				SampleCount = State.NextSampleIndex + 1;
 			}
 		}
 
 		State.bInside = bInside;
 	}
 
-	if (State.NextSampleIndex >= SampleCount)
+	if (IsPastEnd(State.NextSampleIndex))
 	{
 		State.bInside = false; // The hazard is over for this target, so it leaves it.
 	}
@@ -169,7 +175,7 @@ int32 FGeoHazardJudge::AdvanceSamples(
 
 void FGeoHazardJudge::ApplySamplingResult(FAbilityPayload const& Source,
 										  TArray<TInstancedStruct<FEffectData>> const& Effects, AActor* Target,
-										  FTargetState& State, bool const bEntered, int32 const SamplesInside)
+										  FTargetState& State, bool const bEntered, float const TimeInside)
 {
 	if (bEntered)
 	{
@@ -187,9 +193,9 @@ void FGeoHazardJudge::ApplySamplingResult(FAbilityPayload const& Source,
 		RemoveInfiniteEffects(Target, State);
 	}
 
-	if (bJudging && SamplesInside > 0)
+	if (bJudging && TimeInside > 0.f)
 	{
-		ApplyEffects(Source, Effects, /*bPerSecond*/ true, Target, SamplesInside * SampleInterval);
+		ApplyEffects(Source, Effects, /*bPerSecond*/ true, Target, TimeInside);
 	}
 }
 

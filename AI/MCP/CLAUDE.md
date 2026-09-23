@@ -19,7 +19,7 @@ see `MCP_EditorUtility.md`.
 | Topic | File |
 |---|---|
 | Blueprint asset creation, CDO properties, instanced subobjects, curve assets, GameplayTag, components | `MCP_Blueprint.md` |
-| Material creation, node wiring, hard-edge fill patterns | `MCP_Material.md` |
+| Material creation, node wiring, material layers, dry-running a build script, hard-edge fill patterns | `MCP_Material.md` |
 | Niagara emitter stack editing (modules, static switches, input values, dynamic inputs) | `MCP_Niagara.md` |
 | StateTree editing | `MCP_StateTree.md` |
 | Reading/authoring skeletal animation, montage structure, rig editing | `MCP_Animation.md` |

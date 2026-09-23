@@ -27,6 +27,7 @@ top of each file.
 | `ability_info_icons.py` | Normalise the catalog's player entries — deploy-count flag, icon fallback |
 | `ability_tags.py` | Read or re-set the asset tag container on an ability Blueprint |
 | `boss_behaviour_trees.py` | Split the boss StateTrees into the shared base and one behaviour tree per boss |
+| `deploy_target_cue.py` | The deploy landing marker cue — ring plane on an `AGeoDeployTargetCue` Blueprint |
 | `new_enemy_ability.py` | Create an enemy ability Blueprint and register it in the catalog |
 | `state_tree_edit.py` | StateTree editing through the builder shim — states, tasks, transitions |
 | `triangle_momentum_passive.py` | The Triangle stacking damage-boost passive, end to end |
@@ -72,25 +73,24 @@ top of each file.
 
 ## Material
 
+`material_graph_authoring.py` is the toolkit the function-based scripts import.
+
 | Script | Purpose |
 |---|---|
-| `empowerment_ring_material.py` | Empowerment sprite materials — dashed ground ring, spark, shard |
-| `geo_shape_material.py` | The one particle material every geometric effect draws with |
-| `make_background_lattice_material.py` | Floor triangle line-art and the pulse collection driving it |
-| `make_camera_mpc.py` | Camera parameter collection the parallax layers read |
-| `make_deployable_outline_material.py` | Cel-shading outline post-process material |
-| `make_duration_wipe_function.py` | Clock-wipe mask shared by every remaining-life readout |
-| `make_parallax_stars_material.py` | Backdrop star layers, far to near |
-| `make_pulse_beam_material.py` | Rectangular beam — outline frame, pulsing inside |
-| `make_pulse_circle_material.py` | Unlit additive circle — constant outline ring, pulsing inside |
-| `make_zone_indicator_ray.py` | Ray and bar variant of the zone indicator |
-| `set_camera_backdrop.py` | Fill the camera's backdrop component with the plane and star layers |
+| `compare_material_layers.py` | Compile candidate layers in one slot of a material's layer stack and report each one's instruction counts |
+| `dry_run_material_build.py` | Run material build scripts outside the editor against a stand-in module, checking every function-call pin |
+| `make_background_lattice_material.py` | Floor triangle line art — the layer stack, its pattern and ring layers, the glow blend, the pulse collection |
+| `make_background_look_instances.py` | One material instance per floor look, the form arenas and the settings' pool cycle through |
+| `make_background_looks.py` | Floor glow looks, one layer each — two-tone, shock and polygon rings, halos, spiral, whirl, Sierpinski, radar, twinkle, fireflies |
+| `make_generic_material_functions.py` | Standard functions — distances to shapes, polar coordinates, triangle cells, strokes, two-tone glows, the Sierpinski mask, random per cell, Lissajous paths, the clock wipe |
+| `material_graph_authoring.py` | In-place graph rebuilds, asserted wiring, function and layer pins, calls, parameters, layer stacks |
 
 ## Mesh
 
 | Script | Purpose |
 |---|---|
 | `generate_bomb_mesh.py` | Round bomb mesh sized to replace the pillar |
+| `generate_class_badge_meshes.py` | The three class logo silhouettes, extruded flat into the character bounds |
 | `generate_hex_boss_mesh.py` | Hex boss body as three concentric hexagons, and the rig it emits |
 | `rig_hex_boss.py` | Turn that body into a skeletal mesh on a new skeleton |
 
@@ -118,7 +118,7 @@ top of each file.
 | `couch_coop_debug.py` | Dump couch-coop input ownership from a running session |
 | `pie_drive_menu_ui.py` | Drive live menu widgets without simulating input |
 | `pie_inject_input.py` | Inject input actions into a session and measure the gameplay result |
-| `vfx_editor_preview.py` | Place systems in the editor world for the level viewport to judge |
+| `vfx_editor_preview.py` | Set up the editor world for the level viewport to judge — preview systems, collection values, the camera |
 
 ## UI
 

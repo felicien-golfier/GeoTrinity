@@ -27,6 +27,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | Writing ability descriptions ({Token} syntax) | `AI/AbilityDescriptions.md` |
 | How the game must look — shape/colour/motion rules | `AI/ArtDirection.md` |
+| Structuring a material — functions, parameters, readable graphs | `AI/Materials.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
 | Authoring or tuning an animation | `AI/MCP/MCP_Animation.md` |
 | Any MCP / Python editor automation | `AI/MCP/CLAUDE.md` |

@@ -38,6 +38,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	int32 GetMaxStacks() const;
 
+	/** World location the deployable would land at if the input were released now. Polled every tick by
+	 * AGeoDeployTargetCue, which receives this ability instance as its SourceObject. */
+	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
+	FVector GetPendingDeployLocation() const;
+
 protected:
 	/** Binds the cooldown-tag event that plays the charge-refilled sound. */
 	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
@@ -63,6 +68,9 @@ protected:
 	/** Builds target data encoding the deploy distance (derived from charge ratio) in the Seed field as integer cm. */
 	virtual FGeoAbilityTargetData GetUpdatedTargetData() override;
 
+	/** Also adds/removes the local-only DeployTargetCue that marks where the deployable will land. */
+	virtual void SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible) override;
+
 	// LifeDrainMaxDuration is used to define the life drain rate base on "How long the deployable would stay alive in
 	// sec if nothing else deplete its life", Size is the DeployableSize, for example it is used by the HealingZone to
 	// determine the size of the deployable.
@@ -75,6 +83,9 @@ protected:
 private:
 	/** Plays the charge-refilled sound when the Cooldown GE's stack count drops a charge back into the pool. */
 	void OnCooldownTagChanged(FGameplayTag CooldownTag, int32 NewCount);
+
+	/** Deploy distance for the current charge ratio, lerped between the project-wide Min/MaxDeployDistance. */
+	float GetChargedDeployDistance() const;
 
 	virtual void SpawnProjectile(FTransform const& SpawnTransform, float SpawnServerTime) const override;
 

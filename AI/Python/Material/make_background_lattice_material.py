@@ -1,307 +1,246 @@
-"""Create MPC_BackgroundPulse + M_BackgroundLattice — the floor's triangle line-art, pulsed from C++.
+"""Floor triangle line art: pattern and ring layers, the glow blend, the material, its instance, the pulse collection.
 
-Replaces FloorMat, which was Opaque/DefaultLit with a literally empty graph. Masked and Default Lit:
-only the lattice lines survive the clip, everything between them shows whatever is behind the floor.
-
-Per pixel:
-  p       = AbsoluteWorldPosition.xy      -> NOT TexCoord, see below
-  h       = ShapeSize * sqrt(3)/2         -> row spacing of the lattice
-  f_i     = abs(frac(dot(p, n_i)/h + 0.5) - 0.5)      for n_i in the three edge normals
-  fmin    = min(f_0, f_1, f_2)            -> distance to the nearest edge, in units of h
-  Line    = Step(fmin, LineThickness / (ShapeSize * sqrt(3)))
-  Pulse   = max_i saturate(1 - abs(length(p - Src_i.xy) - Src_i.z) / RingWidth) * Src_i.w
-
-  BaseColor   = LineColor
-  Emissive    = PulseColor * Pulse * PulseBrightness
-  OpacityMask = Line
-
-THE LATTICE IS MADE OF THE SHAPE IT DRAWS. Three families of evenly spaced parallel lines at 60
-degrees to each other cut the plane into equilateral triangles and nothing else, so one Step over
-the nearest-edge distance draws every triangle at once — there is no per-cell shape to instance and
-no cell index to compute. The three normals are (0,1), (-sqrt(3)/2, 1/2) and (sqrt(3)/2, 1/2), and
-all three families are phase-0: for lattice points V = S*(a,0) + S*(b/2, b*sqrt(3)/2) the three dot
-products come out to -a*h, (a+b)*h and b*h, all exact multiples of h. That alignment is the whole
-trick. Give any one family a phase offset and the lines stop meeting at shared vertices — the
-tiling turns into the kagome mix of small triangles and hexagons, which is a different pattern that
-happens to be one constant away.
-
-WORLD POSITION, NEVER TexCoord. The nine Floor_C actors in DraftMap carry non-uniform scales
-(1.4x2.8 up to 4.33x3.99) and rotations (-45, -90), so a UV-space lattice would draw a different
-triangle size on every floor piece and break at each seam. Reading absolute world position instead
-makes the lattice one continuous sheet across all of them for free, and puts it in the same space
-as the pulse origins the MPC carries, so no transform is needed on either side. WPT_Default is
-already absolute world position; it is left at the default rather than set, unlike M_PulseCircle's
-ObjectPositionWS which must be pinned away from Camera Relative.
-
-LineThickness and ShapeSize are both in world centimetres and independent of each other: ShapeSize
-is the triangle's side length, LineThickness the full drawn width of a line (hence the /2 folded
-into the threshold's sqrt(3) — the raw comparison is against distance to the line's centre, so
-without it the parameter would draw twice as wide as it reads).
-
-PULSES COME FROM THE MPC, NOT FROM ACTORS. The material knows nothing about who is pulsing: each of
-the eight PulseSource_XX vectors is (OriginX, OriginY, Radius, Intensity), and whatever fills them
-owns the animation entirely — following a character, sweeping a boss telegraph, or running a
-scripted pattern with no actor behind it at all. Radius is the ring's current distance from its
-origin, so a travelling wave is C++ raising Radius over time, not the shader deriving it from Time.
-That is the reason the shader has no Time node: a pattern the material times itself cannot be
-started, stopped or synchronised by gameplay.
-
-Intensity in .w is a SELF-CANCELLING SENTINEL: an unused slot is all zeroes, which contributes
-exactly nothing to the max, so there is no magic coordinate to keep in sync between the shader and
-the writer. MPC_MaskedArea needs (-10000,-10000,-10000,0) for its pillar slots precisely because it
-has no such multiplier, and UDevastatingWavePattern::ClearData exists to write that constant back.
-Nothing here needs a matching Clear: zeroing is the neutral value.
-
-The MPC is global state shared by every material that reads it, so this collection is its own asset
-rather than more slots on MPC_MaskedArea — the devastating wave clears all eight of those between
-activations and would blank the background with them.
-
-Also creates MI_BackgroundLattice: use THAT one on the floor. A base material's parameter defaults
-cannot be tuned from the Details panel, an instance's can.
-
-Run outside PIE — creating expressions fails while a session is running.
+The material is one layer stack. Layer 0 draws the lines, every layer above it adds a glow through MLB_AddGlow, and
+MI_BackgroundLattice swaps, adds or hides them. make_background_looks.py builds the other glow layers.
+Needs the generic functions from make_generic_material_functions.py. Run outside PIE.
 """
 import unreal
 
-PKG_PATH = "/Game/VFX/Generic/Materials"
-NAME = "M_BackgroundLattice"
-INSTANCE_NAME = "MI_BackgroundLattice"
-MPC_NAME = "MPC_BackgroundPulse"
+FOLDER = "/Game/Art/VFX/Background"
+FUNCTIONS = f"{FOLDER}/Functions"
+LAYERS = f"{FOLDER}/Layers"
+GENERIC = "/Game/Art/VFX/Generic/Materials/Functions"
+CATEGORY = "GeoTrinity|Background"
 SLOT_COUNT = 8
 SLOT_FORMAT = "PulseSource_{:02d}"
-
 SQRT3_OVER_2 = 0.8660254037844386
-SQRT3 = 1.7320508075688772
+ONE_OVER_SQRT3 = 0.5773502691896258
+EDGE_NORMALS = ((0.0, 1.0), (-SQRT3_OVER_2, 0.5), (SQRT3_OVER_2, 0.5))
+# Fixed, so an instance's own layer stack stays linked to this one across rebuilds.
+GLOW_LAYER_GUID = "6A3F2C1E8B4D4E9FA1C27D5B3E8F0A11"
 
-mel = unreal.MaterialEditingLibrary
-at = unreal.AssetToolsHelpers.get_asset_tools()
-ALWAYS = unreal.PropertyAccessChangeNotifyMode.ALWAYS
+SHAPE_SIZE = 200.0
+LINE_THICKNESS = 8.0
+LINE_GAP = 20.0
+LINE_COLOR = unreal.LinearColor(0.001, 0.001, 0.001, 1.0)
+INNER_SIZE = 60.0
+INNER_SCALE = 1.0
+INNER_TURN_SPEED = 0.02
+INNER_ROTATION = 0.0
+RING_WIDTH = 100.0
+PULSE_COLOR = unreal.LinearColor(0.114583, 0.050431, 0.094441, 1.0)
+PULSE_BRIGHTNESS = 3.0
 
+toolkit_path = unreal.Paths.project_dir() + "AI/Python/Material/material_graph_authoring.py"
+toolkit = {}
+exec(compile(open(toolkit_path).read(), toolkit_path, "exec"), toolkit)
+open_function = toolkit["open_function"]
+open_layer = toolkit["open_layer"]
+load = toolkit["load"]
+save = toolkit["save"]
+scalar = unreal.MaterialExpressionScalarParameter
+vector = unreal.MaterialExpressionVectorParameter
 
-def save(asset):
-    """Write asset to disk, or fail loudly.
+parallel_lines_distance = load(f"{GENERIC}/MF_ParallelLinesDistance")
+circle_distance = load(f"{GENERIC}/MF_CircleDistance")
+polygon_distance = load(f"{GENERIC}/MF_PolygonDistance")
+triangle_cell = load(f"{GENERIC}/MF_TriangleCell")
+double_line_distance = load(f"{GENERIC}/MF_DoubleLineDistance")
+stroke_hard = load(f"{GENERIC}/MF_Stroke_Hard")
+stroke_linear = load(f"{GENERIC}/MF_Stroke_Linear")
 
-    EditorAssetLibrary.save_asset defaults to only_if_is_dirty and reports the outcome only through a return
-    value, so a freshly created asset whose package never got flagged dirty writes NOTHING and says nothing.
-    That is not hypothetical: the first run of this script left MPC_BackgroundPulse and MI_BackgroundLattice
-    unsaved while the material went through (recompile_material had dirtied that one), and the material then
-    reloaded with all eight of its collection nodes pointing at an asset that did not exist. Forcing the write
-    and asserting on it is what makes a missing asset a failed run instead of a silently broken material.
-    """
-    assert unreal.EditorAssetLibrary.save_loaded_asset(asset, only_if_is_dirty=False), \
-        f"{asset.get_path_name()}: would not save"
+# --- MPC_BackgroundPulse: (OriginX, OriginY, Radius, Intensity) per slot, written by BP_GeoCam's BackgroundPulse ---
+collection = toolkit["load_or_create"](FOLDER, "MPC_BackgroundPulse", unreal.MaterialParameterCollection,
+                                       unreal.MaterialParameterCollectionFactoryNew())
+slot_names = [SLOT_FORMAT.format(index) for index in range(SLOT_COUNT)]
+if [str(name) for name in collection.get_vector_parameter_names()] != slot_names:
+    slots = []
+    for name in slot_names:
+        slot = unreal.CollectionVectorParameter()
+        slot.set_editor_property("parameter_name", name)
+        slot.set_editor_property("default_value", unreal.LinearColor(0.0, 0.0, 0.0, 0.0))
+        slots.append(slot)
 
-# --- MPC_BackgroundPulse -------------------------------------------------------------------------
-# Rebuilt every run: the slots carry no tuning worth preserving (all zero is the neutral value), and
-# the writer side is generated from the same SLOT_COUNT/SLOT_FORMAT constants above.
-if unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{MPC_NAME}"):
-    collection = unreal.EditorAssetLibrary.load_asset(f"{PKG_PATH}/{MPC_NAME}")
-else:
-    collection = at.create_asset(MPC_NAME, PKG_PATH, unreal.MaterialParameterCollection,
-                                 unreal.MaterialParameterCollectionFactoryNew())
+    # Each slot gets its id in the post-change notification.
+    collection.set_editor_property("vector_parameters", slots, toolkit["ALWAYS"])
+    assert [str(name) for name in collection.get_vector_parameter_names()] == slot_names, \
+        "MPC_BackgroundPulse: slots would not register"
+    save(collection)
 
-slots = []
-for index in range(SLOT_COUNT):
-    slot = unreal.CollectionVectorParameter()
-    slot.set_editor_property("parameter_name", SLOT_FORMAT.format(index))
-    slot.set_editor_property("default_value", unreal.LinearColor(0.0, 0.0, 0.0, 0.0))
-    slots.append(slot)
+# --- MF_Pattern_TriangleLattice: doubled triangle edges, and a small turning triangle inside each cell ---
+graph = open_function(FUNCTIONS, "MF_Pattern_TriangleLattice",
+                      "Pattern of ML_Pattern_TriangleLattice: equilateral triangles drawn with doubled edges, a small "
+                      "triangle inside each one. Every MF_Pattern_* takes Position, ShapeSize and LineThickness and "
+                      "gives LineMask, so one replaces another in the call's Material Function field; its other pins "
+                      "are its own.", CATEGORY)
+position = graph.input("Position", "Vector2", 0, "Where to draw, in cm.", -1560, -300)
+shape_size = graph.input("ShapeSize", "Scalar", 1, "Side length of one triangle, in cm.", -1560, 240)
+line_thickness = graph.input("LineThickness", "Scalar", 2, "Full width of every line, in cm.", -1560, 400)
+line_gap = graph.input("LineGap", "Scalar", 3, "Distance between the two lines of an edge, centre to centre, in cm. "
+                       "0 draws one line.", -1560, 520)
+inner_size = graph.input("InnerSize", "Scalar", 4, "Side length of the inner triangle, in cm.", -1560, 760)
+inner_rotation = graph.input("InnerRotation", "Scalar", 5, "Turn of the inner triangle, in turns.", -1560, 880)
+inner_scale = graph.input("InnerScale", "Scalar", 6, "Size multiplier of the inner triangle.", -1560, 1000)
 
-# Notify forced on: the collection assigns each parameter its Id in the post-change handler, and an
-# entry that never gets one is invisible to every CollectionParameter node that names it.
-collection.set_editor_property("vector_parameters", slots, ALWAYS)
+# Three sets of parallel lines 60 degrees apart, all through the origin, cut the plane into the triangles.
+# A triangle's height is the gap between two parallel edges.
+spacing = graph.node(unreal.MaterialExpressionMultiply, -1300, 240, const_b=SQRT3_OVER_2)
+graph.connect(shape_size, spacing, "A")
+distances = []
+for index, (normal_x, normal_y) in enumerate(EDGE_NORMALS):
+    row = -360 + index * 200
+    normal = graph.node(unreal.MaterialExpressionConstant2Vector, -1300, row + 40, r=normal_x, g=normal_y)
+    lines = graph.call(parallel_lines_distance, -1020, row, Position=position, Normal=normal, Spacing=spacing)
+    distances.append((lines, "Distance"))
 
-registered = [str(n) for n in collection.get_vector_parameter_names()]
-assert registered == [SLOT_FORMAT.format(i) for i in range(SLOT_COUNT)], \
-    f"{MPC_NAME}: parameters would not register, got {registered}"
-save(collection)
-# The material is about to take hard references to this collection, so it has to be on disk before that — a
-# reference to an unsaved package resolves to null on the next load and takes every pulse slot with it.
-assert unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{MPC_NAME}"), \
-    f"{MPC_NAME}: saved but is not on disk"
+nearest = graph.op(unreal.MaterialExpressionMin, -680, -260, A=distances[0], B=distances[1])
+nearest = graph.op(unreal.MaterialExpressionMin, -540, -80, A=nearest, B=distances[2])
+doubled = graph.call(double_line_distance, -380, 0, Distance=nearest, Gap=line_gap)
+edges = graph.call(stroke_hard, -80, 80, Distance=(doubled, "Distance"), Width=line_thickness)
 
-# --- M_BackgroundLattice -------------------------------------------------------------------------
-# Rebuilt in place, never deleted and recreated: the floor actors reference it, and a delete on a
-# referenced asset opens a "still referenced / force delete" modal that blocks the game thread with
-# nobody there to answer it.
-if unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{NAME}"):
-    mat = unreal.EditorAssetLibrary.load_asset(f"{PKG_PATH}/{NAME}")
-    # UMaterialEditingLibrary::DeleteAllMaterialExpressions range-iterates the very array each
-    # delete removes from, so one call drops only every other node. Repeat until it is really empty.
-    while mel.get_num_material_expressions(mat):
-        before = mel.get_num_material_expressions(mat)
-        mel.delete_all_material_expressions(mat)
-        assert mel.get_num_material_expressions(mat) < before, "material graph would not clear"
-else:
-    mat = at.create_asset(NAME, PKG_PATH, unreal.Material, unreal.MaterialFactoryNew())
+cell = graph.call(triangle_cell, -1020, 620, Position=position, Size=shape_size)
+scaled_size = graph.op(unreal.MaterialExpressionMultiply, -1300, 840, A=inner_size, B=inner_scale)
+corner_radius = graph.node(unreal.MaterialExpressionMultiply, -1140, 840, const_b=ONE_OVER_SQRT3)
+graph.connect(scaled_size, corner_radius, "A")
+sides = graph.node(unreal.MaterialExpressionConstant, -1020, 780, r=3.0)
+inner = graph.call(polygon_distance, -720, 680, Position=(cell, "CellPosition"), Sides=sides, Radius=corner_radius,
+                   Rotation=inner_rotation)
+inner_line = graph.call(stroke_hard, -380, 720, Distance=(inner, "Distance"), Width=line_thickness)
 
+line_mask = graph.op(unreal.MaterialExpressionMax, 160, 360, A=(edges, "Mask"), B=(inner_line, "Mask"))
+graph.output("LineMask", 0, "1 on the lines, 0 elsewhere.", line_mask, 320, 360)
+graph.finish()
+triangle_lattice = graph.asset
 
-def expr(cls, x, y):
-    return mel.create_material_expression(mat, cls, x, y)
+# --- MF_PulseRing: one slot's ring ---
+graph = open_function(FUNCTIONS, "MF_PulseRing",
+                      "One ring of the background wave, drawn from a PulseSource slot of MPC_BackgroundPulse.",
+                      CATEGORY)
+position = graph.input("Position", "Vector2", 0, "Where to draw, in cm.", -1000, -120)
+source = graph.input("PulseSource", "Vector4", 1, "(OriginX, OriginY, Radius, Intensity), in cm. An all-zero slot "
+                     "draws nothing.", -1000, 60)
+ring_width = graph.input("RingWidth", "Scalar", 2, "Width of the ring at half brightness, in cm.", -1000, 260)
+origin = graph.mask(source, "rg", -760, -20)
+radius = graph.mask(source, "b", -760, 80)
+intensity = graph.mask(source, "a", -760, 180)
+from_ring = graph.call(circle_distance, -560, -80, Position=position, Center=origin, Radius=radius)
+stroke = graph.call(stroke_linear, -260, 60, Distance=(from_ring, "Distance"), Width=ring_width)
+ring = graph.op(unreal.MaterialExpressionMultiply, 0, 140, A=(stroke, "Mask"), B=intensity)
+graph.output("Ring", 0, "Intensity on the ring, fading to 0 at RingWidth either side.", ring, 160, 140)
+graph.finish()
+pulse_ring = graph.asset
 
+# --- MF_Wave_PulseRings: the brightest ring over every slot ---
+graph = open_function(FUNCTIONS, "MF_Wave_PulseRings",
+                      "Rings of ML_Wave_Rings: the brightest of the rings MPC_BackgroundPulse holds. BP_GeoCam's "
+                      "BackgroundPulse component moves and grows them: speed, reach and count live there.", CATEGORY)
+position = graph.input("Position", "Vector2", 0, "Where to draw, in cm.", -1100, 240)
+ring_width = graph.input("RingWidth", "Scalar", 1, "Width of each ring at half brightness, in cm.", -1100, 880)
+rings = []
+for index, name in enumerate(slot_names):
+    row = index * 160
+    slot = graph.collection_parameter(collection, name, -820, row + 20)
+    ring = graph.call(pulse_ring, -520, row, Position=position, PulseSource=slot, RingWidth=ring_width)
+    rings.append((ring, "Ring"))
 
-def connect(source, target, target_input):
-    # A wrong pin name is not an error, it is a no-op that leaves the input on its default — and a
-    # defaulted Step input still compiles, into a lattice that is simply the wrong size. Never call
-    # the library's connect directly.
-    assert mel.connect_material_expressions(source, "", target, target_input), (
-        f"{type(source).__name__} -> {type(target).__name__}.{target_input}")
+pulse = rings[0]
+for index, ring in enumerate(rings[1:], 1):
+    pulse = graph.op(unreal.MaterialExpressionMax, -180, index * 160 + 30, A=pulse, B=ring)
 
+graph.output("Pulse", 0, "0 to 1: how brightly the wave lights each point.", pulse, 20, (SLOT_COUNT - 1) * 160 + 30)
+graph.finish()
+pulse_rings = graph.asset
 
-def binary(cls, a, b, x, y, first="A", second="B"):
-    node = expr(cls, x, y)
-    connect(a, node, first)
-    connect(b, node, second)
-    return node
+# --- ML_Pattern_TriangleLattice: layer 0, the lines themselves ---
+graph = open_layer(LAYERS, "ML_Pattern_TriangleLattice",
+                   "Pattern layer of M_BackgroundLattice: the triangle lines, lit by the scene. The glow layers add "
+                   "on top of it.", unreal.MaterialFunctionMaterialLayer, unreal.MaterialFunctionMaterialLayerFactory())
+# World XY, not UV: the floor pieces are scaled and rotated unevenly, world space keeps one seamless sheet.
+world_position = graph.node(unreal.MaterialExpressionWorldPosition, -1560, 160)
+world_xy = graph.mask(world_position, "rg", -1320, 160)
+line_color = graph.parameter(vector, "LineColor", LINE_COLOR, "01 Pattern", 3,
+                             "Colour of the lines, lit by the scene. The glow layers add on top.", -620, -80)
+shape_size = graph.parameter(scalar, "ShapeSize", SHAPE_SIZE, "01 Pattern", 0, "Side length of one triangle, in cm.",
+                             -1240, 300)
+line_thickness = graph.parameter(scalar, "LineThickness", LINE_THICKNESS, "01 Pattern", 1,
+                                 "Width of every line, in cm.", -1240, 400)
+line_gap = graph.parameter(scalar, "LineGap", LINE_GAP, "01 Pattern", 2,
+                           "Distance between the two lines of a triangle edge, centre to centre, in cm. 0 draws one "
+                           "line.", -1240, 500)
+inner_size = graph.parameter(scalar, "InnerSize", INNER_SIZE, "02 Inner Triangle", 0,
+                             "Side length of the small triangle inside each cell, in cm.", -1240, 620)
+inner_scale = graph.parameter(scalar, "InnerScale", INNER_SCALE, "02 Inner Triangle", 1,
+                              "Size multiplier of the inner triangles, 1 being InnerSize.", -1240, 720)
+inner_turn_speed = graph.parameter(scalar, "InnerTurnSpeed", INNER_TURN_SPEED, "02 Inner Triangle", 2,
+                                   "Spin of the inner triangles, in turns per second, counter-clockwise. A third of "
+                                   "a turn looks like none.", -1560, 960)
+inner_rotation = graph.parameter(scalar, "InnerRotation", INNER_ROTATION, "02 Inner Triangle", 3,
+                                 "Turn added on top of the spin, in turns.", -1320, 1000)
+time = graph.node(unreal.MaterialExpressionTime, -1560, 860)
+spin = graph.op(unreal.MaterialExpressionMultiply, -1320, 880, A=time, B=inner_turn_speed)
+turn = graph.op(unreal.MaterialExpressionAdd, -1100, 900, A=spin, B=inner_rotation)
+pattern = graph.call(triangle_lattice, -940, 300, Position=world_xy, ShapeSize=shape_size,
+                     LineThickness=line_thickness, LineGap=line_gap, InnerSize=inner_size,
+                     InnerRotation=turn, InnerScale=inner_scale)
+lines = graph.op(unreal.MaterialExpressionMakeMaterialAttributes, -380, 100, BaseColor=line_color,
+                 OpacityMask=(pattern, "LineMask"))
+graph.output("Attributes", 0, "Line colour and line mask, no glow.", lines, -120, 100)
+graph.finish()
+pattern_layer = graph.asset
 
+# --- ML_Wave_Rings: the rings in one colour ---
+graph = open_layer(LAYERS, "ML_Wave_Rings",
+                   "Glow layer of M_BackgroundLattice: the rings BP_GeoCam's BackgroundPulse component sends across "
+                   "the floor, in one colour.", unreal.MaterialFunctionMaterialLayer,
+                   unreal.MaterialFunctionMaterialLayerFactory())
+world_position = graph.node(unreal.MaterialExpressionWorldPosition, -1240, -80)
+world_xy = graph.mask(world_position, "rg", -1000, -80)
+ring_width = graph.parameter(scalar, "RingWidth", RING_WIDTH, "Rings", 0,
+                             "Width of a ring at half brightness, in cm. Ring speed, reach and count live on "
+                             "BP_GeoCam > BackgroundPulse.", -1000, 20)
+pulse_color = graph.parameter(vector, "PulseColor", PULSE_COLOR, "Rings", 1, "Glow colour of the rings.", -560, -220)
+pulse_brightness = graph.parameter(scalar, "PulseBrightness", PULSE_BRIGHTNESS, "Rings", 2,
+                                   "Glow strength, multiplying PulseColor.", -760, 120)
+wave = graph.call(pulse_rings, -760, -40, Position=world_xy, RingWidth=ring_width)
+glow = graph.op(unreal.MaterialExpressionMultiply, -520, 0, A=(wave, "Pulse"), B=pulse_brightness)
+emissive = graph.op(unreal.MaterialExpressionMultiply, -300, -60, A=pulse_color, B=glow)
+light = graph.op(unreal.MaterialExpressionMakeMaterialAttributes, -120, -60, EmissiveColor=emissive)
+graph.output("Attributes", 0, "The rings' glow alone.", light, 100, -60)
+graph.finish()
+rings_layer = graph.asset
 
-def unary(cls, source, x, y):
-    node = expr(cls, x, y)
-    connect(source, node, "")
-    return node
+# --- MLB_AddGlow: the glow of a layer added to everything below it ---
+graph = open_layer(LAYERS, "MLB_AddGlow",
+                   "Layer blend of M_BackgroundLattice: adds this layer's glow to everything below it and keeps the "
+                   "lines of layer 0. Pick it as the blend of every glow layer.",
+                   unreal.MaterialFunctionMaterialLayerBlend, unreal.MaterialFunctionMaterialLayerBlendFactory())
+# The stack feeds a blend's inputs in sort order: what is below first, the layer second.
+bottom = graph.input("Bottom", "MaterialAttributes", 0, "Everything below this layer.", -760, -80)
+top = graph.input("Top", "MaterialAttributes", 1, "This layer.", -760, 80)
+below = graph.op(unreal.MaterialExpressionBreakMaterialAttributes, -540, -120, Attr=bottom)
+layer = graph.op(unreal.MaterialExpressionBreakMaterialAttributes, -540, 160, Attr=top)
+glow = graph.op(unreal.MaterialExpressionAdd, -300, 60, A=(below, "EmissiveColor"), B=(layer, "EmissiveColor"))
+blended = graph.op(unreal.MaterialExpressionMakeMaterialAttributes, -140, -40, BaseColor=(below, "BaseColor"),
+                   OpacityMask=(below, "OpacityMask"), EmissiveColor=glow)
+graph.output("Attributes", 0, "The lines below, with both glows added.", blended, 80, -40)
+graph.finish()
+add_glow = graph.asset
 
+# --- M_BackgroundLattice: one layer stack, rebuilt in place, the Floor mesh's instance is its child ---
+graph = toolkit["open_material"](FOLDER, "M_BackgroundLattice")
+layer_stack = graph.layer_stack([pattern_layer, rings_layer], [add_glow], ["Pattern", "Glow"], [GLOW_LAYER_GUID],
+                                -400, 0)
+graph.to_property(layer_stack, unreal.MaterialProperty.MP_MATERIAL_ATTRIBUTES)
+graph.asset.set_editor_property("use_material_attributes", True)
+graph.asset.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
+graph.asset.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
+graph.finish()
 
-def scalar(name, value, x, y):
-    node = expr(unreal.MaterialExpressionScalarParameter, x, y)
-    node.set_editor_property("parameter_name", name)
-    node.set_editor_property("default_value", value)
-    return node
-
-
-def color(name, value, x, y):
-    node = expr(unreal.MaterialExpressionVectorParameter, x, y)
-    node.set_editor_property("parameter_name", name)
-    node.set_editor_property("default_value", value)
-    return node
-
-
-def mask(source, x, y, r=False, g=False, b=False, a=False):
-    node = expr(unreal.MaterialExpressionComponentMask, x, y)
-    connect(source, node, "")
-    node.set_editor_property("r", r)
-    node.set_editor_property("g", g)
-    node.set_editor_property("b", b)
-    node.set_editor_property("a", a)
-    return node
-
-
-def const2(x_value, y_value, x, y):
-    node = expr(unreal.MaterialExpressionConstant2Vector, x, y)
-    node.set_editor_property("r", x_value)
-    node.set_editor_property("g", y_value)
-    return node
-
-
-def times(a, b, x, y):
-    return binary(unreal.MaterialExpressionMultiply, a, b, x, y)
-
-
-def scaled(source, factor, x, y):
-    node = expr(unreal.MaterialExpressionMultiply, x, y)
-    connect(source, node, "A")
-    node.set_editor_property("const_b", factor)
-    return node
-
-
-# --- p = AbsoluteWorldPosition.xy ---
-world_position = expr(unreal.MaterialExpressionWorldPosition, -2600, -200)
-p = mask(world_position, -2400, -200, r=True, g=True)
-
-shape_size = scalar("ShapeSize", 200.0, -2600, 100)
-line_thickness = scalar("LineThickness", 8.0, -2600, 260)
-
-# --- the three edge families ---
-row_height = scaled(shape_size, SQRT3_OVER_2, -2340, 100)
-
-nearest = None
-for slot, (normal_x, normal_y) in enumerate(((0.0, 1.0), (-SQRT3_OVER_2, 0.5), (SQRT3_OVER_2, 0.5))):
-    row = -600 + slot * 240
-    normal = const2(normal_x, normal_y, -2200, row + 80)
-    projected = binary(unreal.MaterialExpressionDotProduct, p, normal, -2000, row)
-    steps = binary(unreal.MaterialExpressionDivide, projected, row_height, -1840, row)
-
-    # +0.5 before frac and -0.5 after folds the sawtooth into a symmetric triangle wave, so the
-    # result is distance to the NEAREST line of the family rather than distance since the last one.
-    shifted = expr(unreal.MaterialExpressionAdd, -1680, row)
-    shifted.set_editor_property("const_b", 0.5)
-    connect(steps, shifted, "A")
-
-    wrapped = unary(unreal.MaterialExpressionFrac, shifted, -1520, row)
-
-    centred = expr(unreal.MaterialExpressionSubtract, -1360, row)
-    centred.set_editor_property("const_b", 0.5)
-    connect(wrapped, centred, "A")
-
-    distance = unary(unreal.MaterialExpressionAbs, centred, -1200, row)
-    nearest = distance if nearest is None \
-        else binary(unreal.MaterialExpressionMin, nearest, distance, -1040, row - 120)
-
-# fmin is measured in units of row height, so the thickness has to be too. The extra factor of 2
-# (sqrt(3) rather than sqrt(3)/2) is the half-width conversion: fmin is distance to the line's
-# centre, so LineThickness reads as the full drawn width.
-threshold_scale = scaled(shape_size, SQRT3, -2340, 260)
-threshold = binary(unreal.MaterialExpressionDivide, line_thickness, threshold_scale, -2140, 260)
-
-# Step(Y, X) is 1 where X >= Y — here, wherever the nearest edge is within half a line width.
-line = binary(unreal.MaterialExpressionStep, nearest, threshold, -820, -300, first="Y", second="X")
-
-# --- Pulse = max over the eight MPC slots ---
-ring_width = scalar("RingWidth", 200.0, -2600, 420)
-
-pulse = None
-for index in range(SLOT_COUNT):
-    row = 700 + index * 260
-    source = expr(unreal.MaterialExpressionCollectionParameter, -2400, row)
-    source.set_editor_property("collection", collection, ALWAYS)
-    # The node resolves its parameter id in the post-change notification; assigned quietly it stays
-    # unresolved and compiles to zero, which reads as "this slot never pulses" and nothing warns.
-    # ParameterId itself is not reflected to Python, so the two inputs that notification reads are
-    # what gets checked here — an id derived from both of them holding cannot be the stale one.
-    source.set_editor_property("parameter_name", SLOT_FORMAT.format(index), ALWAYS)
-    assert source.get_editor_property("collection") == collection \
-        and str(source.get_editor_property("parameter_name")) == SLOT_FORMAT.format(index), \
-        f"{SLOT_FORMAT.format(index)}: collection parameter node would not take its binding"
-
-    origin = mask(source, -2180, row, r=True, g=True)
-    radius = mask(source, -2180, row + 80, b=True)
-    intensity = mask(source, -2180, row + 160, a=True)
-
-    offset = binary(unreal.MaterialExpressionSubtract, p, origin, -1980, row)
-    distance = unary(unreal.MaterialExpressionLength, offset, -1820, row)
-
-    from_ring = binary(unreal.MaterialExpressionSubtract, distance, radius, -1660, row)
-    depth = unary(unreal.MaterialExpressionAbs, from_ring, -1500, row)
-    normalised = binary(unreal.MaterialExpressionDivide, depth, ring_width, -1340, row)
-    falloff = unary(unreal.MaterialExpressionOneMinus, normalised, -1180, row)
-    clamped = unary(unreal.MaterialExpressionSaturate, falloff, -1020, row)
-
-    ring = times(clamped, intensity, -860, row)
-    pulse = ring if pulse is None \
-        else binary(unreal.MaterialExpressionMax, pulse, ring, -700, row - 130)
-
-# --- outputs ---
-line_color = color("LineColor", unreal.LinearColor(0.04, 0.05, 0.08, 1.0), -400, -520)
-pulse_color = color("PulseColor", unreal.LinearColor(0.15, 0.6, 1.0, 1.0), -400, 400)
-pulse_brightness = scalar("PulseBrightness", 4.0, -400, 560)
-
-emissive = times(pulse_color, times(pulse, pulse_brightness, -200, 460), 0, 420)
-
-mel.connect_material_property(line_color, "", unreal.MaterialProperty.MP_BASE_COLOR)
-mel.connect_material_property(emissive, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-mel.connect_material_property(line, "", unreal.MaterialProperty.MP_OPACITY_MASK)
-
-# --- settings (after wiring) ---
-mat.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
-mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
-
-mel.recompile_material(mat)
-save(mat)
-
-# Left alone on a rerun so tuned values live.
-if not unreal.EditorAssetLibrary.does_asset_exist(f"{PKG_PATH}/{INSTANCE_NAME}"):
-    instance = at.create_asset(INSTANCE_NAME, PKG_PATH, unreal.MaterialInstanceConstant,
-                               unreal.MaterialInstanceConstantFactoryNew())
-    mel.set_material_instance_parent(instance, mat)
+# Left alone once it exists, so its tuned values and its own layers live.
+if not unreal.EditorAssetLibrary.does_asset_exist(f"{FOLDER}/MI_BackgroundLattice"):
+    instance = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        "MI_BackgroundLattice", FOLDER, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+    unreal.MaterialEditingLibrary.set_material_instance_parent(instance, graph.asset)
     save(instance)
 
-unreal.log(f"BGLATTICE::built {PKG_PATH}/{NAME} + {INSTANCE_NAME} + {MPC_NAME}")
+unreal.log(f"BGLATTICE::built {FOLDER}/M_BackgroundLattice")

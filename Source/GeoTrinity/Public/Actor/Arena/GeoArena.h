@@ -13,12 +13,14 @@
 class AEnemyCharacter;
 class AGeoArenaBarrier;
 class AGeoDeployableBase;
+class AStaticMeshActor;
 class UGeoDeployableManagerComponent;
 class UGeoReloadAbility;
+class UMaterialInterface;
 
 /**
  * One boss encounter, and it runs itself. It owns its boss and its adds (spawn + reset), its barrier, its fight-commit,
- * the boss health bar and the post-victory loot shower. The GameState tells it nothing: on aggro TriggerAggro calls
+ * the boss health bar, the post-victory loot shower and the look of its floors. The GameState tells it nothing: on aggro TriggerAggro calls
  * StartFight directly, and it subscribes to AGeoGameState::OnMatchStateChanged to tear the fight down when the match
  * leaves InProgress (a wipe or a victory). Whether this arena's fight is live is the replicated bFighting flag, so
  * clients resolve their own boss bar and the GameState needs no arena pointer at all. What a player's death means
@@ -127,6 +129,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GeoArena")
 	TObjectPtr<AGeoArenaBarrier> Barrier;
 
+	/** Floor pieces showing this arena's background look, centred on this arena. Empty leaves every floor as placed. */
+	UPROPERTY(EditInstanceOnly, Category = "GeoArena|Background")
+	TArray<TObjectPtr<AStaticMeshActor>> Floors;
+
+	/** Looks the Floors cycle through, one per attempt: every wipe here moves them on to the next. Each is an instance
+	 *  of M_BackgroundLattice whose glow layer is one look. Empty takes the Game Data Settings' BackgroundLooks. */
+	UPROPERTY(EditAnywhere, Category = "GeoArena|Background")
+	TArray<TSoftObjectPtr<UMaterialInterface>> BackgroundLooks;
+
 	/** Seconds between loot pickup bursts after the boss dies. */
 	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	float LootSpawnInterval = 0.1f;
@@ -208,13 +219,27 @@ private:
 	 * ends. Silently does nothing where no driver exists, which is every dedicated server. */
 	void ApplyBackgroundPulse() const;
 
+	/** Which of the looks the Floors show, wrapping past the last one. Every wipe here moves it on; replicated so every
+	 *  machine shows the same look, late joiners included. */
+	UPROPERTY(ReplicatedUsing = OnRep_BackgroundLookIndex)
+	int32 BackgroundLookIndex = 0;
+
+	/** Shows the look a wipe moved to. */
+	UFUNCTION()
+	void OnRep_BackgroundLookIndex();
+
+	/** Puts the look BackgroundLookIndex picks on every floor, and this arena's XY in their custom primitive data 1-2,
+	 *  where a look centred on the arena reads it. Local and cosmetic: a no-op on a dedicated server. */
+	void ApplyBackgroundLook() const;
+
 	/** Ends this arena's fight — fighting or not — when the match leaves InProgress. Bound to
 	 *  AGeoGameState::OnMatchStateChanged (server only). */
 	UFUNCTION()
 	void OnMatchStateChanged(FName NewMatchState, FName PreviousMatchState);
 
 	/** The fight is lost but the match still stands: cancels a pending commit and opens the barrier, so it spends the
-	 *  DeathTime window opening and finishes right as the group respawns. Bound to AGeoGameState::OnWipe (server only). */
+	 *  DeathTime window opening and finishes right as the group respawns, and moves the Floors on to their next look.
+	 *  Bound to AGeoGameState::OnWipe (server only). */
 	UFUNCTION()
 	void OnWipe(float DeathTime);
 

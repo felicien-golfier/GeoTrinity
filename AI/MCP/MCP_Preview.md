@@ -1,7 +1,7 @@
 # MCP Preview — Judging a Visual Change Without PIE
 
-Placing an effect in the editor world and reading the level viewport back, for work with no reason to start a
-session. For capturing a running session see `MCP_PIE.md`.
+Placing an effect in the editor world, or feeding a material what gameplay would, and reading the level viewport
+back, for work with no reason to start a session. For capturing a running session see `MCP_PIE.md`.
 
 ## Where to judge
 
@@ -32,6 +32,19 @@ exactly like a broken one. Step the preview actor and capture after. Each step h
 inside one script holds the game thread, so the world never ticks between iterations and no motion is simulated.
 Keep the total travel inside the frame the camera covers.
 
+## Materials that gameplay drives
+
+A parameter collection's values can be written in the editor world through the material library's collection
+setters. A material reading them then renders in the level viewport as it would in a session. The values are
+saved nowhere, so write the neutral ones back when done. A material moved by the Time node animates in a realtime
+level viewport; two captures a few seconds apart show its motion only if the camera stayed put between them.
+
+## Sharing the viewport
+
+The level viewport is also the user's. Remember its camera before a preview moves it, and restore it afterwards. A
+camera that moves between two reads without a script moving it means the user is navigating: stop moving it,
+and leave it where they put it.
+
 ## Telling dead from invisible
 
 Particle counts separate "not simulating" from "simulating but not drawing", and the two have nothing in common
@@ -41,3 +54,5 @@ it with a console command filtered to a system name prefix, and disable it when 
 | Task | Script |
 |---|---|
 | Place a row of systems, optionally on meshes, focus one, step them, show particle counts | `AI/Python/Runtime/vfx_editor_preview.py` |
+| Remember and restore the camera, write collection values, keep rendering while unfocused | `AI/Python/Runtime/vfx_editor_preview.py` |
+| Compare candidate layers of a material's stack by instruction count | `AI/Python/Material/compare_material_layers.py` |

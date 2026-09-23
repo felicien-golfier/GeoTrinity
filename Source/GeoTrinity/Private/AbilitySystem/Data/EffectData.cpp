@@ -125,7 +125,13 @@ FActiveGameplayEffectHandle FGameplayEffectData::ApplyEffect(FGameplayEffectCont
 	}
 
 	float const DurationToSet = Duration.GetValueAtLevel(AbilityLevel);
-	if (DurationToSet > 0.f)
+	if (bInfiniteDuration)
+	{
+		ensureMsgf(GameplayEffect.GetDefaultObject()->DurationPolicy != EGameplayEffectDurationType::Instant,
+				   TEXT("%hs: bInfiniteDuration is ignored on Instant %s"), __FUNCTION__, *GameplayEffect->GetName());
+		SpecHandle.Data->SetDuration(FGameplayEffectConstants::INFINITE_DURATION, true);
+	}
+	else if (DurationToSet > 0.f)
 	{
 		FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
 		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tags.Gameplay_DurationMagnitude,
@@ -266,7 +272,7 @@ FString FGameplayEffectData::GetDescriptionLine(FDescriptionFormat const& Format
 
 	FString const Name = DataTag.IsValid() ? GetTagLeafName(DataTag) : GameplayEffect->GetName();
 	FString Line = FString::Printf(TEXT("%s: %s"), *Name, *FormatScalableRange(Magnitude, Format));
-	if (Duration.GetValueAtLevel(Format.MinLevel()) > 0.f)
+	if (!bInfiniteDuration && Duration.GetValueAtLevel(Format.MinLevel()) > 0.f)
 	{
 		// Seconds, so the format's :%/:+% applies to the magnitude only.
 		FDescriptionFormat PlainFormat = Format;

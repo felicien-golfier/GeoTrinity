@@ -18,9 +18,16 @@ struct FEffectData;
  */
 struct GEOTRINITY_API FGeoHazardJudge
 {
-	/** Duration of a hazard that lasts until EndAt says otherwise, like a zone placed in the level. Eleven days, not
-	 * infinity: its sample count still has to fit an int. */
-	static constexpr float UntilEnded = 1000000.f;
+	/** Duration of a hazard that lasts until EndAt says otherwise, like a zone placed in the level. */
+	static constexpr float UntilEnded = TNumericLimits<float>::Max();
+
+	/** What one Judge found for a target that spent time inside the hazard. */
+	struct FTargetResult
+	{
+		AActor* Target = nullptr;
+		/** Time the target spent inside since its last judge. */
+		float TimeInside = 0.f;
+	};
 
 	/**
 	 * Forgets every target and starts judging a new hazard.
@@ -53,11 +60,14 @@ struct GEOTRINITY_API FGeoHazardJudge
 	 * exactly on the hazard's end. Does nothing once stopped, and stops for good if Source's owner is gone.
 	 *
 	 * @param Source      The shot the hazard belongs to: its owner applies Effects and takes the hit credit.
+	 * @param Effects     What the hazard applies; may be empty for a hazard that only acts on the result.
 	 * @param Candidates  Everything the hazard may hit this tick, from FindCandidates.
 	 * @param IsInHazard  Whether Target, standing at Location, is inside the hazard at SpentTime. Called for past
 	 *                    moments of each target, so it must derive everything from its arguments.
+	 * @return            Every target that spent time inside since its last judge, for a hazard that does more than
+	 *                    apply Effects (a zone paying for its heal).
 	 */
-	void Judge(FAbilityPayload const& Source, TArray<TInstancedStruct<FEffectData>> const& Effects,
+	TArray<FTargetResult> Judge(FAbilityPayload const& Source, TArray<TInstancedStruct<FEffectData>> const& Effects,
 			   TArray<AActor*> const& Candidates,
 			   TFunctionRef<bool(AActor const* Target, FVector2D Location, float SpentTime)> IsInHazard);
 
@@ -92,8 +102,8 @@ private:
 	static constexpr float SampleRate = 120.f;
 	static constexpr float SampleInterval = 1.f / SampleRate;
 
-	/** Sets Duration and the SampleCount it is worth. */
-	void SetDuration(float InDuration);
+	/** True once SampleIndex comes after the sample sitting on the hazard's end. */
+	bool IsPastEnd(int32 SampleIndex) const;
 
 	/** Target's own time on the hazard's timeline: its perceived time, minus how late its screen showed the hazard. */
 	float GetTargetSpentTime(AActor const* Target) const;
@@ -111,7 +121,7 @@ private:
 
 	/** Applies Effects to Target for what AdvanceSamples found, and removes its infinite effects if it is now outside. */
 	void ApplySamplingResult(FAbilityPayload const& Source, TArray<TInstancedStruct<FEffectData>> const& Effects,
-							 AActor* Target, FTargetState& State, bool bEntered, int32 SamplesInside);
+							 AActor* Target, FTargetState& State, bool bEntered, float TimeInside);
 
 	/**
 	 * Applies the Effects entries matching bPerSecond to Target and reports the hit.
@@ -128,10 +138,8 @@ private:
 	TMap<TWeakObjectPtr<AActor>, FTargetState> Targets;
 
 	float StartServerTime = 0.f;
+	/** Cut down to the hit's own sample when a hazard that ends on its first hit is hit. */
 	float Duration = 0.f;
-	/** Samples the whole hazard is worth, the last one sitting on its end. Counted from Duration at Start, and cut down
-	 * to the hit's own sample when a hazard that ends on its first hit is hit. */
-	int32 SampleCount = 0;
 	bool bSeenThroughReplication = false;
 	bool bEndsOnHit = false;
 	bool bRemovesInfiniteEffectsOnLeave = false;

@@ -24,6 +24,10 @@ deleting and searching assets.
   refuses private properties — changing one needs a C++ shim.
 - A gameplay-tag container is read as exported text with `export_text` (there is no `to_string`) and written by
   round-tripping the desired tags through a fresh container's `import_text`.
+- A struct property read straight off an object is bound to it, not copied: each member set, on it or on a struct
+  nested in it, writes into the object and fires the object's post-edit change, one per set. A struct whose
+  members must agree with each other is edited on its `copy()` and assigned back in one set. Container elements
+  are the opposite case, below.
 - An instanced subobject property reaches spawned instances only when it holds the default subobject the owning
   C++ class creates under that name; one assigned afterwards stays on the class defaults and every instance gets
   none. Declare the subobject's class in C++ and let script author only its properties.

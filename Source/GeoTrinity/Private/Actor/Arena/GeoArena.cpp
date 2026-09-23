@@ -15,7 +15,9 @@
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
+#include "Engine/StaticMeshActor.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameClasses/GeoGameState.h"
@@ -24,7 +26,9 @@
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HUD/Interface/GeoHUDInterface.h"
+#include "Materials/MaterialInterface.h"
 #include "Net/UnrealNetwork.h"
+#include "Settings/GameDataSettings.h"
 #include "System/GeoCombatStatsSubsystem.h"
 #include "System/GeoLeaderboardSave.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -36,6 +40,8 @@ static TAutoConsoleVariable<bool> CVarSkipBossIntro(TEXT("Geo.SkipBossIntro"),
 													 false,
 #endif
 													 TEXT("When true, boss intros never play."));
+
+int32 constexpr ArenaCenterPrimitiveDataIndex = 1;
 
 AGeoArena::AGeoArena()
 {
@@ -53,6 +59,7 @@ void AGeoArena::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 	DOREPLIFETIME(AGeoArena, bFighting);
 	DOREPLIFETIME(AGeoArena, FightStartTime);
 	DOREPLIFETIME(AGeoArena, bHasEverFought);
+	DOREPLIFETIME(AGeoArena, BackgroundLookIndex);
 }
 
 void AGeoArena::OnRep_Boss()
@@ -75,6 +82,8 @@ void AGeoArena::BeginPlay()
 		GameState->OnWipe.AddUniqueDynamic(this, &AGeoArena::OnWipe);
 		GameState->OnDifficultyChanged.AddUniqueDynamic(this, &AGeoArena::RespawnBoss);
 	}
+
+	ApplyBackgroundLook();
 }
 
 void AGeoArena::ResetBoss()
@@ -243,6 +252,8 @@ void AGeoArena::OnWipe(float /*DeathTime*/)
 	}
 	GetWorld()->GetTimerManager().ClearTimer(CommitFightTimer);
 	SetBarrierClosed(false);
+	++BackgroundLookIndex;
+	ApplyBackgroundLook();
 }
 
 void AGeoArena::EndFight()
@@ -429,6 +440,40 @@ void AGeoArena::ApplyBackgroundPulse() const
 	else
 	{
 		Pulse->ResetMode();
+	}
+}
+
+void AGeoArena::OnRep_BackgroundLookIndex()
+{
+	ApplyBackgroundLook();
+}
+
+void AGeoArena::ApplyBackgroundLook() const
+{
+	TArray<TSoftObjectPtr<UMaterialInterface>> const& Looks =
+		BackgroundLooks.IsEmpty() ? GetDefault<UGameDataSettings>()->BackgroundLooks : BackgroundLooks;
+	if (GeoLib::IsDedicatedServer(this) || Floors.IsEmpty()
+		|| !ensureMsgf(!Looks.IsEmpty(),
+					   TEXT("%s: Floors set but no BackgroundLooks, here or in the Game Data Settings"), *GetName()))
+	{
+		return;
+	}
+
+	int32 const LookIndex = BackgroundLookIndex % Looks.Num();
+	UMaterialInterface* const Look = Looks[LookIndex].LoadSynchronous();
+	if (!ensureMsgf(Look, TEXT("%s: background look %d does not load"), *GetName(), LookIndex))
+	{
+		return;
+	}
+
+	for (AStaticMeshActor const* Floor : Floors)
+	{
+		if (ensureMsgf(IsValid(Floor), TEXT("%s: an empty entry in Floors"), *GetName()))
+		{
+			UStaticMeshComponent* const FloorMesh = Floor->GetStaticMeshComponent();
+			FloorMesh->SetMaterial(0, Look);
+			FloorMesh->SetCustomPrimitiveDataVector2(ArenaCenterPrimitiveDataIndex, FVector2D(GetActorLocation()));
+		}
 	}
 }
 

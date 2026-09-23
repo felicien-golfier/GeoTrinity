@@ -99,17 +99,18 @@ void UGeoBulletSubsystem::Tick(float const DeltaTime)
 
 			Bullets[BulletIndex].Judge.Judge(
 				Bullets[BulletIndex].Payload, Bullets[BulletIndex].Effects, Candidates,
-				[this, BulletIndex](AActor const* Target, FVector2D const Location, float const SpentTime)
+				[this, BulletIndex, ServerTime](AActor const* Target, FVector2D const Location, float const SpentTime)
 				{
 					FGeoBullet const& Bullet = Bullets[BulletIndex];
-					bool const bInside =
-						SpentTime <= Bullet.FlightDuration
-						&& GeoASLib::IsInCircle(Target, Location, Bullet.GetLocation(SpentTime), Bullet.Radius,
-												ETargetOverlapMode::IncludeRadius,
-												GeoASLib::GetTeamId(Bullet.Payload.SourceOwner));
+					bool const bInside = GeoASLib::IsInCircle(Target, Location, Bullet.GetLocation(SpentTime),
+															  Bullet.Radius, ETargetOverlapMode::IncludeRadius,
+															  GeoASLib::GetTeamId(Bullet.Payload.SourceOwner));
 					if (bInside)
 					{
-						FGeoNetcodeDebug::DrawBulletHit(Target, Bullet.GetLocation(SpentTime), Bullet.Radius, Location,
+						float const CurrentSpentTime =
+							FMath::Min(ServerTime - Bullet.Payload.ServerSpawnTime, Bullet.FlightDuration);
+						FGeoNetcodeDebug::DrawBulletHit(Target, Bullet.GetLocation(SpentTime),
+														Bullet.GetLocation(CurrentSpentTime), Bullet.Radius, Location,
 														SpentTime);
 					}
 
@@ -132,8 +133,8 @@ void UGeoBulletSubsystem::Tick(float const DeltaTime)
 		}
 
 		bool const bFlightOver = SpentTime >= Bullet.FlightDuration;
-		// A client has nobody to judge, so its bullets live exactly as long as they fly.
-		bool const bBulletOver = bIsServer ? Bullet.Judge.IsOver(ServerTime) : bFlightOver;
+		// A client has nobody to judge, so its bullets live exactly as long as they are drawn.
+		bool const bBulletOver = bIsServer ? Bullet.Judge.IsOver(ServerTime) : bFlightOver || !IsValid(Bullet.Visual);
 		// Checked again: moving it may just have ended it on a player.
 		if (IsValid(Bullet.Visual) && (bFlightOver || bBulletOver))
 		{
@@ -198,16 +199,23 @@ void UGeoBulletSubsystem::StopAtWall(FGeoBullet& Bullet, float const ServerTime)
 	FVector const SweepStart(Bullet.GetLocation(Bullet.SweptTime), ArbitraryCharacterZ);
 	FVector const SweepEnd(Bullet.GetLocation(SweepEndTime), ArbitraryCharacterZ);
 	FHitResult Hit;
-	bool const bHitWall = GetWorld()->SweepSingleByChannel(Hit, SweepStart, SweepEnd, FQuat::Identity, ECC_GeoProjectile,
-														   FCollisionShape::MakeSphere(Bullet.Radius), QueryParams);
+	bool const bHitWall =
+		GetWorld()->SweepSingleByChannel(Hit, SweepStart, SweepEnd, FQuat::Identity, ECC_GeoProjectile,
+										 FCollisionShape::MakeSphere(Bullet.Radius), QueryParams);
 	FGeoNetcodeDebug::DrawWallSweep(this, SweepStart, SweepEnd, Bullet.Radius, bHitWall, Hit);
 
 	if (bHitWall)
 	{
 		Bullet.FlightDuration = FMath::Lerp(Bullet.SweptTime, SweepEndTime, Hit.Time);
+		Bullet.Judge.EndAt(Bullet.Payload.ServerSpawnTime + Bullet.FlightDuration);
+
 		if (IsValid(Bullet.Visual))
 		{
 			Bullet.Visual->SetActorLocation(Hit.Location);
+		}
+
+		if (IsValid(Bullet.Visual)) // Visual can be destroyed on the move.
+		{
 			Bullet.Visual->OnSphereHit(nullptr, Hit.GetActor(), Hit.GetComponent(), FVector::ZeroVector, Hit);
 		}
 	}

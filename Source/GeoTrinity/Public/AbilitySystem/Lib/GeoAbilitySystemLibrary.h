@@ -87,11 +87,16 @@ public:
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
 															 int32 Seed, FGameplayTag AbilityTag);
 
-	/** Applies a single FEffectData (UpdateContextHandle, ApplyEffect, then its OneShotCue). */
+	/**
+	 * Applies a single FEffectData (UpdateContextHandle, ApplyEffect, then its OneShotCue).
+	 *
+	 * @param PerSecondDuration  Duration a per-second entry is scaled by; 0 scales it by the current frame's delta.
+	 */
 	static FActiveGameplayEffectHandle ApplySingleEffectData(FEffectData const& EffectData,
 															 UAbilitySystemComponent* SourceASC,
 															 UAbilitySystemComponent* TargetASC, int32 AbilityLevel,
-															 int32 Seed, FGameplayTag AbilityTag);
+															 int32 Seed, FGameplayTag AbilityTag,
+															 float PerSecondDuration = 0.f);
 	/**
 	 * Reports that Payload's shot connected with HitActor, broadcasting OnAbilityHit on the ASC behind
 	 * Payload.SourceOwner. Call it from wherever an ability or a projectile decides it hit — never from effect
@@ -341,7 +346,8 @@ public:
 	static bool ShouldIncludeTargetRadius(ETargetOverlapMode OverlapMode, FGenericTeamId SourceTeam);
 	/** True when Target, standing at Location, is within Radius of Center — its own collision radius counted as
 	 * ShouldIncludeTargetRadius resolves OverlapMode for SourceTeam. An AGeoInteractableActor answers for its own
-	 * shape (AGeoInteractableActor::DoesOverlapShape) whenever its radius counts, so a wall is hit where its mesh is. */
+	 * shape (AGeoInteractableActor::DoesOverlapShape) whenever its radius counts, so a wall is hit where its mesh is.
+	 */
 	static bool IsInCircle(AActor const* Target, FVector2D Location, FVector2D Center, float Radius,
 						   ETargetOverlapMode OverlapMode, FGenericTeamId SourceTeam);
 	/** True when Target, standing at Location, overlaps the segment [Origin, Origin + ForwardVector * MaxRange] widened
