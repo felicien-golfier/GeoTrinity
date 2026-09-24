@@ -20,8 +20,10 @@ class GEOTRINITY_API AGeoDeployTargetCue : public AGameplayCueNotify_Actor
 	GENERATED_BODY()
 
 public:
+	/** Enables auto-destruction when the cue is removed. */
 	AGeoDeployTargetCue();
 
+	/** Snaps this actor to the deploy ability's current pending drop location. */
 	virtual void Tick(float DeltaSeconds) override;
 
 protected:
