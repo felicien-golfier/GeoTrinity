@@ -5,8 +5,10 @@
 #include "Abilities/GameplayAbility.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "Engine/World.h"
 #include "StateTreeAsyncExecutionContext.h"
 #include "StateTreeExecutionContext.h"
+#include "TimerManager.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 FSTTask_FireAbility::FSTTask_FireAbility()
@@ -27,12 +29,22 @@ EStateTreeRunStatus FSTTask_FireAbility::EnterState(FStateTreeExecutionContext& 
 
 	// Bind to ability ended delegate before activating
 	InstanceData.AbilityEndedDelegateHandle = ASC->OnAbilityEnded.AddLambda(
-		[WeakContext = Context.MakeWeakExecutionContext(),
-		 Tag = InstanceData.AbilityTag](FAbilityEndedData const& EndedData)
+		[WeakContext = Context.MakeWeakExecutionContext(), Tag = InstanceData.AbilityTag,
+		 Delay = InstanceData.DelayAfterAbilityEnd, World = Context.GetWorld()](FAbilityEndedData const& EndedData)
 		{
 			if (EndedData.AbilityThatEnded && EndedData.AbilityThatEnded->GetAssetTags().HasTag(Tag))
 			{
-				WeakContext.FinishTask(EStateTreeFinishTaskType::Succeeded);
+				if (Delay > 0.f)
+				{
+					FTimerHandle TimerHandle;
+					World->GetTimerManager().SetTimer(
+						TimerHandle, [WeakContext]() { WeakContext.FinishTask(EStateTreeFinishTaskType::Succeeded); },
+						Delay, false);
+				}
+				else
+				{
+					WeakContext.FinishTask(EStateTreeFinishTaskType::Succeeded);
+				}
 			}
 		});
 

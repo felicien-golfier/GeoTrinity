@@ -18,19 +18,32 @@ struct FGeoPose
 	float Yaw = 0.f;
 };
 
-/** Client move stamped with the pattern clock (GeoLib::GetServerTime with ping) of the frame it was simulated on. */
+/**
+ * Client move stamped with the pattern clock (GeoLib::GetServerTime with ping) of the frame it was simulated on, and
+ * carrying the dash state it started with so a replay after a server correction dashes exactly as the original did.
+ */
 class FGeoSavedMove_Character : public FSavedMove_Character
 {
 	using Super = FSavedMove_Character;
 
 public:
-	/** Resets PerceivedServerTime to 0 so a recycled move does not carry a stale server-time stamp. */
+	/** Resets the server-time stamp and dash state so a recycled move carries neither. */
 	virtual void Clear() override;
-	/** Stamps this move with the owning character's current perceived server time before the base fields are recorded. */
+	/** Stamps this move with the owning character's current perceived server time and dash state. */
 	virtual void SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAcceleration,
 							FNetworkPredictionData_Client_Character& ClientData) override;
+	/** Restores the dash state this move started with before it is replayed. */
+	virtual void PrepMoveFor(ACharacter* Character) override;
+	/** Never combines a move that starts mid-dash: the combined move would restart from the older move's position
+	 * with the newer move's dash time. */
+	virtual bool CanCombineWith(FSavedMovePtr const& NewMove, ACharacter* Character, float MaxDelta) const override;
+	/** Adds FLAG_Custom_0 when this move starts a dash. */
+	virtual uint8 GetCompressedFlags() const override;
 
 	float PerceivedServerTime = 0.f;
+	bool bWantsToDash = false;
+	FVector DashVelocity = FVector::ZeroVector;
+	float DashTimeRemaining = 0.f;
 };
 
 /** Allocates FGeoSavedMove_Character so every client move carries its pattern-clock stamp. */
@@ -72,11 +85,15 @@ struct FGeoCharacterNetworkMoveDataContainer : public FCharacterNetworkMoveDataC
  * so that attribute-driven multipliers can be applied and restored correctly.
  * Also stamps every client move with the pattern clock, so the server knows at which pattern time a remote player
  * stood where it holds them (see GetPerceivedServerTime).
+ * Runs the dash inside the move itself, so client and server start it on the same move and simulate it identically.
  */
 UCLASS(Blueprintable, BlueprintType, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GEOTRINITY_API UGeoCharacterMovementComponent : public UCharacterMovementComponent
 {
 	GENERATED_BODY()
+
+	friend class FGeoSavedMove_Character;
+
 public:
 	/** Registers GeoNetworkMoveDataContainer so stamped FGeoCharacterNetworkMoveData is used for all server moves. */
 	UGeoCharacterMovementComponent();
@@ -94,6 +111,25 @@ public:
 	 * @param Multiplier  Scaling factor. 1.0 = base speed, 2.0 = double speed.
 	 */
 	void ApplySpeedMultiplier(float Multiplier);
+
+	/**
+	 * Called by UGeoDashAbility on every machine it runs on. The controlling machine starts the dash on its next move,
+	 * which carries the request to the server. The server starts a remote client's dash on that same move, and only
+	 * when its own ability granted one, so a client can never dash more often than the ability allows.
+	 *
+	 * @param RequestVelocity  Dash velocity, held for the whole dash.
+	 * @param RequestDuration  Dash length in seconds.
+	 */
+	void RequestDash(FVector const& RequestVelocity, float RequestDuration);
+
+	/** Starts the requested dash. */
+	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
+	/** Counts the dash down, and clamps the velocity back to walk speed when it ends. */
+	virtual void UpdateCharacterStateAfterMovement(float DeltaSeconds) override;
+	/** Holds the dash velocity while dashing, ignoring input. */
+	virtual void CalcVelocity(float DeltaTime, float Friction, bool bFluid, float BrakingDeceleration) override;
+	/** Also ends the dash, so a character stopped mid-dash (death) does not resume it when it moves again. */
+	virtual void StopMovementImmediately() override;
 
 	/** Returns FGeoNetworkPredictionData_Client_Character so the engine allocates FGeoSavedMove_Character instances. */
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
@@ -118,6 +154,11 @@ public:
 	FGeoPose GetPoseAt(float ServerTime) const;
 
 protected:
+	/** Reads the dash request (FLAG_Custom_0): the server's copy of a remote client's move, or a client replay. */
+	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
+	/** Keeps a dash requested since the last move through the replay, as Super does for jump and crouch. */
+	virtual bool ClientUpdatePositionAfterServerUpdate() override;
+
 	/**
 	 * Server. While IsCorpseFollowingClient, turns on bIgnoreClientMovementErrorChecksAndCorrection and
 	 * bServerAcceptClientAuthoritativePosition so Super never corrects the corpse and puts it where the client reports,
@@ -145,6 +186,14 @@ private:
 
 	/** Server. One pose per frame, oldest first. */
 	TRingBuffer<FGeoPose> PoseHistory;
+
+	/** The current move starts a dash. */
+	bool bWantsToDash = false;
+	/** Server, remote client. The ability granted a dash that no move has started yet. */
+	bool bDashGranted = false;
+	FVector DashVelocity = FVector::ZeroVector;
+	float DashDuration = 0.f;
+	float DashTimeRemaining = 0.f;
 
 	AGeoCharacter* GetGeoCharacter() const;
 };

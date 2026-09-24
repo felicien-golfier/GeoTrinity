@@ -39,12 +39,12 @@ public:
 	/** Seeds ResolvedParams with DefaultParams, so a projectile spawned outside GeoASLib (never running
 	 *  ApplyProjectileParams) still runs on its Blueprint values. */
 	virtual void PostInitProperties() override;
-	/** Registers PredictionKeyId for replication. */
+	/** Registers the prediction key, the resolved speed and the end state for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/**
 	 * For non-pooled projectiles: re-applies movement on the server (Blueprint construction resets velocity),
-	 * and calls InitProjectileLife on clients. Also destroys the matching predicted projectile on the owning client
-	 * when CVarReplaceLocalProjectiles is enabled.
+	 * and calls InitProjectileLife on clients, then ends a shot the server had already ended. Also destroys the
+	 * matching predicted projectile on the owning client when CVarReplaceLocalProjectiles is enabled.
 	 */
 	virtual void BeginPlay() override;
 	/** Guards against double-ending by checking bIsEnding before calling EndProjectileLife. */
@@ -145,9 +145,10 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "GeoProjectile|Params")
 	FProjectileParamsBase ResolvedParams;
 
-	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys the actor
-	 * on authority (including client-predicted fakes); simulated proxies only go dark and wait for the server's
-	 * replicated destruction, so a local Destroy() can never race a later replication bunch into a ghost re-spawn. */
+	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys
+	 * client-predicted fakes at once. The server goes dark and destroys after TimeBeforeDestroyAtEnd, so the end state
+	 * replicates first; simulated proxies only go dark and wait for the server's replicated destruction, so a local
+	 * Destroy() can never race a later replication bunch into a ghost re-spawn. */
 	virtual void EndProjectileLife();
 
 	/** Called on a blocking hit (wall or environment): by physics, by AdvanceProjectile's sweep, and by
@@ -227,7 +228,9 @@ protected:
 	FProjectileParamsBase DefaultParams;
 
 	/** Whether the shot ended on a valid overlap rather than a wall, its distance span or its lifespan — which of the
-	 * two end moments FXComponent plays. */
+	 * two end moments FXComponent plays. Replicated so a client whose lagging copy never reached the target still plays
+	 * the right one. */
+	UPROPERTY(Replicated)
 	bool bEndedOnValidOverlap = false;
 
 	bool bIsEnding{false};
@@ -236,6 +239,19 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
 			  meta = (Tooltip = "Safe guard in case distance check fails", AllowPrivateAccess = true))
 	float LifeSpanInSec = 30.f;
+
+	/** How long the server keeps an ended shot alive, dark, so bEndedOnServer reaches every client — including one the
+	 * shot has not replicated to yet — before its destruction does. */
+	float TimeBeforeDestroyAtEnd = 1.f;
+
+	/** Set by the server when the shot's life ends; ends it on clients, which otherwise only learn of it from the
+	 * replicated destruction. */
+	UPROPERTY(ReplicatedUsing = OnRep_EndedOnServer)
+	bool bEndedOnServer = false;
+
+	/** Ends the shot on a client. One that arrives already ended waits for BeginPlay, which starts its life first. */
+	UFUNCTION()
+	void OnRep_EndedOnServer();
 
 
 	/** Ends the projectile when its instigating GeoCharacter revives. Bound in InitProjectileLife, unbound in

@@ -49,9 +49,14 @@ void AGeoShieldBurstProjectile::InitProjectileLife()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoShieldBurstProjectile::OnRep_BounceSnapshot()
+void AGeoShieldBurstProjectile::OnRep_BounceSnapshot(FShieldBounceSnapshot const& PreviousSnapshot)
 {
 	SetActorLocation(BounceSnapshot.Location);
+	if (BounceSnapshot.EnemyBounceCount > PreviousSnapshot.EnemyBounceCount)
+	{
+		FXComponent->PlaySound(BounceSound);
+	}
+
 	ProjectileMovement->Velocity = BounceSnapshot.Velocity;
 	ProjectileMovement->UpdateComponentVelocity();
 	UpdateSizeFX(BounceSnapshot.Radius);
@@ -74,7 +79,8 @@ void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVe
 		ReflectedVelocity.Z = 0.f;
 		ProjectileMovement->Velocity = ReflectedVelocity;
 		ProjectileMovement->UpdateComponentVelocity();
-		BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
+		BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius(),
+						  BounceSnapshot.EnemyBounceCount};
 	}
 }
 
@@ -84,9 +90,9 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 {
 	if (GeoASLib::IsTeamAttitudeAligned(GetSourceOwner(), OtherActor, TeamAttitudeMask::HostileOrNeutral))
 	{
-		FXComponent->PlaySound(BounceSound);
 		if (GeoLib::IsServer(GetWorld()))
 		{
+			FXComponent->PlaySound(BounceSound);
 			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
 			float const Speed = ProjectileMovement->Velocity.Size();
 			FVector const CurrentVelocity = ProjectileMovement->Velocity.GetSafeNormal2D();
@@ -99,7 +105,8 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() + SphereRadiusToAdd);
 			ShieldAmount += ShieldAmountToAdd;
 			UpdateSizeFX(Sphere->GetScaledSphereRadius());
-			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius()};
+			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius(),
+							  BounceSnapshot.EnemyBounceCount + 1};
 			LastOverlapHostileActor = OtherActor;
 			LastOverlapTime = GetWorld()->GetTimeSeconds();
 		}

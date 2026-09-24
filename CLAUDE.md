@@ -27,6 +27,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | Writing ability descriptions ({Token} syntax) | `AI/AbilityDescriptions.md` |
 | How the game must look — shape/colour/motion rules | `AI/ArtDirection.md` |
+| Arena wall cubes — fixed scale/height, placement, barrier states | `AI/ArenaWalls.md` |
 | Structuring a material — functions, parameters, readable graphs | `AI/Materials.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
 | Authoring or tuning an animation | `AI/MCP/MCP_Animation.md` |

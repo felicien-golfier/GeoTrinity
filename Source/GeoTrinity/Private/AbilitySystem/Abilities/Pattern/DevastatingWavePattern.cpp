@@ -9,7 +9,6 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/KismetMaterialLibrary.h"
 #include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
 #include "Tool/GeoNiagaraParams.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -77,10 +76,7 @@ void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 		&& ensureMsgf(AOEVfxSystem && MaskMaterialParameterCollection,
 					  TEXT("UDevastatingWavePattern: AOEVfxSystem or MaskMaterialParameterCollection is not set")))
 	{
-		AOEVfxComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			this, AOEVfxSystem, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
-			/*bAutoDestroy*/ false, /*bAutoActivate*/ false);
-		ensureMsgf(AOEVfxComponent, TEXT("UDevastatingWavePattern: failed to spawn the AOE VFX system"));
+		AOEVfxComponent = SpawnPersistentVfx(AOEVfxSystem, Owner);
 	}
 }
 

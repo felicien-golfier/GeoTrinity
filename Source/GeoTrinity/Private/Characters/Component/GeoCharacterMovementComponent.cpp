@@ -9,6 +9,9 @@ void FGeoSavedMove_Character::Clear()
 {
 	Super::Clear();
 	PerceivedServerTime = 0.f;
+	bWantsToDash = false;
+	DashVelocity = FVector::ZeroVector;
+	DashTimeRemaining = 0.f;
 }
 
 void FGeoSavedMove_Character::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAcceleration,
@@ -16,6 +19,41 @@ void FGeoSavedMove_Character::SetMoveFor(ACharacter* Character, float InDeltaTim
 {
 	Super::SetMoveFor(Character, InDeltaTime, NewAcceleration, ClientData);
 	PerceivedServerTime = GeoLib::GetServerTime(Character->GetWorld(), true);
+
+	UGeoCharacterMovementComponent const* MovementComponent =
+		CastChecked<UGeoCharacterMovementComponent>(Character->GetCharacterMovement());
+	bWantsToDash = MovementComponent->bWantsToDash;
+	DashVelocity = MovementComponent->DashVelocity;
+	DashTimeRemaining = MovementComponent->DashTimeRemaining;
+}
+
+void FGeoSavedMove_Character::PrepMoveFor(ACharacter* Character)
+{
+	Super::PrepMoveFor(Character);
+
+	UGeoCharacterMovementComponent* MovementComponent =
+		CastChecked<UGeoCharacterMovementComponent>(Character->GetCharacterMovement());
+	MovementComponent->DashVelocity = DashVelocity;
+	MovementComponent->DashTimeRemaining = DashTimeRemaining;
+}
+
+bool FGeoSavedMove_Character::CanCombineWith(FSavedMovePtr const& NewMove, ACharacter* Character,
+											 float const MaxDelta) const
+{
+	FGeoSavedMove_Character const* NewGeoMove = static_cast<FGeoSavedMove_Character const*>(NewMove.Get());
+	return DashTimeRemaining == 0.f && NewGeoMove->DashTimeRemaining == 0.f
+		&& Super::CanCombineWith(NewMove, Character, MaxDelta);
+}
+
+uint8 FGeoSavedMove_Character::GetCompressedFlags() const
+{
+	uint8 Flags = Super::GetCompressedFlags();
+	if (bWantsToDash)
+	{
+		Flags |= FLAG_Custom_0;
+	}
+
+	return Flags;
 }
 
 FGeoNetworkPredictionData_Client_Character::FGeoNetworkPredictionData_Client_Character(
@@ -97,6 +135,80 @@ void UGeoCharacterMovementComponent::ApplySpeedMultiplier(float Multiplier)
 {
 	MaxWalkSpeed = BaseMaxWalkSpeed * Multiplier;
 	MaxAcceleration = BaseMaxAcceleration * Multiplier;
+}
+
+void UGeoCharacterMovementComponent::RequestDash(FVector const& RequestVelocity, float const RequestDuration)
+{
+	DashVelocity = RequestVelocity;
+	DashDuration = RequestDuration;
+	if (CharacterOwner->IsLocallyControlled())
+	{
+		bWantsToDash = true;
+	}
+	else
+	{
+		bDashGranted = true;
+	}
+}
+
+void UGeoCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float const DeltaSeconds)
+{
+	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
+
+	if (bWantsToDash && (CharacterOwner->IsLocallyControlled() || bDashGranted))
+	{
+		DashTimeRemaining = DashDuration;
+		bDashGranted = false;
+	}
+
+	bWantsToDash = false;
+}
+
+void UGeoCharacterMovementComponent::UpdateCharacterStateAfterMovement(float const DeltaSeconds)
+{
+	Super::UpdateCharacterStateAfterMovement(DeltaSeconds);
+
+	bool const bWasDashing = DashTimeRemaining > 0.f;
+	DashTimeRemaining = FMath::Max(DashTimeRemaining - DeltaSeconds, 0.f);
+	if (bWasDashing && DashTimeRemaining == 0.f)
+	{
+		Velocity = Velocity.GetClampedToMaxSize(GetMaxSpeed());
+	}
+}
+
+void UGeoCharacterMovementComponent::CalcVelocity(float const DeltaTime, float const Friction, bool const bFluid,
+												  float const BrakingDeceleration)
+{
+	if (DashTimeRemaining > 0.f)
+	{
+		Velocity = DashVelocity;
+	}
+	else
+	{
+		Super::CalcVelocity(DeltaTime, Friction, bFluid, BrakingDeceleration);
+	}
+}
+
+void UGeoCharacterMovementComponent::StopMovementImmediately()
+{
+	Super::StopMovementImmediately();
+	DashTimeRemaining = 0.f;
+}
+
+void UGeoCharacterMovementComponent::UpdateFromCompressedFlags(uint8 const Flags)
+{
+	Super::UpdateFromCompressedFlags(Flags);
+	bWantsToDash = (Flags & FSavedMove_Character::FLAG_Custom_0) != 0;
+}
+
+bool UGeoCharacterMovementComponent::ClientUpdatePositionAfterServerUpdate()
+{
+	bool const bRealWantsToDash = bWantsToDash;
+	FVector const RealDashVelocity = DashVelocity;
+	bool const bReplayed = Super::ClientUpdatePositionAfterServerUpdate();
+	bWantsToDash = bRealWantsToDash;
+	DashVelocity = RealDashVelocity;
+	return bReplayed;
 }
 
 FNetworkPredictionData_Client* UGeoCharacterMovementComponent::GetPredictionData_Client() const

@@ -24,6 +24,11 @@ struct FShieldBounceSnapshot
 
 	UPROPERTY()
 	float Radius = 0.f;
+
+	/** Enemy bounces so far. A client plays BounceSound when it grows, since its lagging copy often never overlaps the
+	 * enemy itself before this snapshot teleports it past. */
+	UPROPERTY()
+	int32 EnemyBounceCount = 0;
 };
 
 /**
@@ -50,7 +55,7 @@ public:
 	float ShieldAmountToAdd = 0.f;
 
 protected:
-	/** Sound played each time the projectile bounces, off a wall or an enemy. */
+	/** Sound played each time the projectile bounces off an enemy. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoProjectile|Audio")
 	FGeoSoundEntry BounceSound;
 
@@ -64,8 +69,8 @@ protected:
 	 * bounce). */
 	virtual void InitProjectileLife() override;
 	/**
-	 * On enemy overlap: plays BounceSound on every machine; on the server also reflects the projectile and scales
-	 * ShieldAmount and sphere radius by EnemyBounceAdditiveMultiplier.
+	 * On enemy overlap (server): plays BounceSound, reflects the projectile and scales ShieldAmount and sphere radius by
+	 * EnemyBounceAdditiveMultiplier. Clients play BounceSound from OnRep_BounceSnapshot instead.
 	 * On ally overlap (server): applies ShieldAmount as a shield effect and ends the projectile life.
 	 */
 	virtual void HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
@@ -77,9 +82,10 @@ protected:
 	virtual bool IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
 								UGeoAbilitySystemComponent*& OutTargetASC) override;
 
-	/** Teleports the projectile to the post-bounce state and re-sizes its FX on simulated clients. */
+	/** Teleports the projectile to the post-bounce state and re-sizes its FX on simulated clients, playing BounceSound
+	 * first when the snapshot carries a new enemy bounce. */
 	UFUNCTION()
-	void OnRep_BounceSnapshot();
+	void OnRep_BounceSnapshot(FShieldBounceSnapshot const& PreviousSnapshot);
 
 	/** Matches everything that follows the burst's size to RadiusOverride: the bullet visual, and the pitch of its
 	 * sounds through BounceSoundSizePitchCurve, so bigger bursts sound different. Called on every machine — the host
@@ -87,8 +93,8 @@ protected:
 	void UpdateSizeFX(float Radius) const;
 
 private:
-	/** Plays BounceSound, then on the server records the post-bounce location, velocity, and radius in
-	 * BounceSnapshot for replication to simulated clients. */
+	/** On the server, records the post-bounce location, velocity, and radius in BounceSnapshot for replication to
+	 * simulated clients. */
 	UFUNCTION()
 	void OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity);
 

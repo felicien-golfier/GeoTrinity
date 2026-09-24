@@ -23,6 +23,7 @@ deleting and searching assets.
   class the module omits can still be instanced, and its CDO is reachable by loading the script path with the
   `Default__` prefix — its reflected functions are then callable with the by-name method caller, which also
   works for static function libraries.
+- A property's script name is its C++ name in snake case, with a bool's `b` prefix dropped.
 - A soft-object-pointer property takes the loaded asset object; a soft-object-path value fails type conversion.
 - A byte property backed by an unexposed enum can be neither read nor written from Python, and the property API
   refuses private properties — changing one needs a C++ shim.

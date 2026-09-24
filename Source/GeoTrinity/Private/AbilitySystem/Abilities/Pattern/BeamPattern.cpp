@@ -7,7 +7,6 @@
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
 #include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -35,10 +34,7 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 	UNiagaraSystem* const InitialAsset = IndicatorSystem ? IndicatorSystem : BeamVfxSystem;
 	if (InitialAsset && !GeoLib::IsDedicatedServer(GetWorld()))
 	{
-		BeamVfxComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			this, InitialAsset, FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector,
-			/*bAutoDestroy*/ false, /*bAutoActivate*/ false);
-		ensureMsgf(BeamVfxComponent, TEXT("UBeamPattern: failed to spawn the beam VFX system"));
+		BeamVfxComponent = SpawnPersistentVfx(InitialAsset, Owner);
 	}
 }
 

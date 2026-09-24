@@ -16,6 +16,8 @@ class UAnimInstance;
 class UEffectDataAsset;
 class UGameplayEffect;
 class AGeoProjectile;
+class UNiagaraComponent;
+class UNiagaraSystem;
 struct FAbilityPayload;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPatternEvent);
@@ -107,6 +109,10 @@ protected:
 	/** Called once on every machine when SpentTime passes the hazard duration. Jumps the montage to its end section;
 	 * override to stop the hazard's visuals, since the server only ends the pattern later. */
 	virtual void OnHazardEnd();
+
+	/** Spawns an inactive System kept for the pattern's whole life. Attached to Owner so it is destroyed with it — the
+	 * pattern lives as long as Owner's ASC — but absolute, so the pattern places it in world space. */
+	UNiagaraComponent* SpawnPersistentVfx(UNiagaraSystem* System, AActor& Owner) const;
 
 	/** Seeks the boss's active montage to its End section; no-op when the montage is not playing, already at End, or the End section does not exist. */
 	void JumpMontageToEndSection() const;

@@ -3,6 +3,8 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void UPattern::OnCreate(FGameplayTag AbilityTag, AActor&)
@@ -269,6 +271,19 @@ TArray<TInstancedStruct<FEffectData>> const& UPattern::GetHazardEffects() const
 void UPattern::OnHazardEnd()
 {
 	JumpMontageToEndSection();
+}
+
+UNiagaraComponent* UPattern::SpawnPersistentVfx(UNiagaraSystem* System, AActor& Owner) const
+{
+	UNiagaraComponent* const Component = UNiagaraFunctionLibrary::SpawnSystemAttached(
+		System, Owner.GetRootComponent(), NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
+		EAttachLocation::KeepRelativeOffset, /*bAutoDestroy*/ false, /*bAutoActivate*/ false);
+	if (ensureMsgf(Component, TEXT("Pattern %s: failed to spawn %s"), *GetName(), *GetNameSafe(System)))
+	{
+		Component->SetAbsolute(true, true, true);
+	}
+
+	return Component;
 }
 
 void UPattern::TickHazard(float const ServerTime, float const SpentTime)

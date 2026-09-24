@@ -105,6 +105,8 @@ void AGeoProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoProjectile, PredictionKeyId);
 	DOREPLIFETIME(AGeoProjectile, ReplicatedSpeed);
+	DOREPLIFETIME(AGeoProjectile, bEndedOnValidOverlap);
+	DOREPLIFETIME(AGeoProjectile, bEndedOnServer);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -131,6 +133,10 @@ void AGeoProjectile::BeginPlay()
 		{
 			// Replicated server projectile arriving on client: InitProjectileLife was never called here.
 			InitProjectileLife();
+			if (bEndedOnServer)
+			{
+				EndProjectileLife();
+			}
 		}
 	}
 }
@@ -307,16 +313,39 @@ void AGeoProjectile::EndProjectileLife()
 	// bunch (e.g. a bounce snapshot) re-creates it client-side as a fresh, wrongly-moving ghost. Go dark instead and
 	// let the server's replicated destruction remove the actor. Predicted fakes are client-spawned and therefore
 	// locally ROLE_Authority, so they still destroy themselves here.
-	if (GetLocalRole() < ROLE_Authority)
+	bool const bPredictedFake = HasAuthority() && !GeoLib::IsServer(GetWorld());
+	if (bPredictedFake)
+	{
+		Destroy();
+	}
+	else
 	{
 		SetActorHiddenInGame(true);
 		SetActorEnableCollision(false);
 		ProjectileMovement->StopMovementImmediately();
 		FXComponent->StopAll();
-		return;
+		if (HasAuthority())
+		{
+			bEndedOnServer = true;
+			FTimerHandle TimerHandle;
+			GetWorldTimerManager().SetTimer(TimerHandle,
+											FTimerDelegate::CreateWeakLambda(this,
+																			 [this]()
+																			 {
+																				 Destroy();
+																			 }),
+											TimeBeforeDestroyAtEnd, false);
+		}
 	}
+}
 
-	Destroy();
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoProjectile::OnRep_EndedOnServer()
+{
+	if (HasActorBegunPlay())
+	{
+		EndProjectileLife();
+	}
 }
 
 void AGeoProjectile::InitProjectileMovementComponent()

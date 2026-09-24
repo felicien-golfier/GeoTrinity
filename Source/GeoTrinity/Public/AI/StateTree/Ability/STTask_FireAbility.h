@@ -20,6 +20,10 @@ struct GEOTRINITY_API FSTTask_FireAbilityInstanceData
 	UPROPERTY(EditAnywhere, Category = "GeoParameter")
 	FGameplayTag AbilityTag;
 
+	/** Seconds to wait after the ability ends before the task succeeds. */
+	UPROPERTY(EditAnywhere, Category = "GeoParameter", meta = (ClampMin = "0"))
+	float DelayAfterAbilityEnd = 0.f;
+
 	/** Handle used to unbind the OnAbilityEnded delegate when the task exits. */
 	FDelegateHandle AbilityEndedDelegateHandle;
 };
@@ -40,7 +44,7 @@ struct GEOTRINITY_API FSTTask_FireAbility : public FStateTreeAIActionTaskBase
 	/** Returns FSTTask_FireAbilityInstanceData as the per-execution instance data type. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Activates the configured ability by tag on the pawn's ASC. Binds to OnAbilityEnded for async completion. Returns
-	 * Running until the ability ends or failed if the ASC is missing or the tag is invalid. */
+	 * Running until the ability ends (plus DelayAfterAbilityEnd) or failed if the ASC is missing or the tag is invalid. */
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 										   FStateTreeTransitionResult const& Transition) const override;
 

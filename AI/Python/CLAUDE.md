@@ -83,6 +83,7 @@ or wire them in.
 
 | Script | Purpose |
 |---|---|
+| `arena_walls.py` | Place every arena wall and barrier wall state on its floor outline (`AI/ArenaWalls.md`) |
 | `level_settings.py` | Edit a level's world settings, GameMode override and controller class |
 | `tutorial_room.py` | Build the tutorial room in the draft map |
 
