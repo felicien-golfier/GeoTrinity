@@ -3,11 +3,12 @@
 
 #include "GameClasses/GeoGameInstance.h"
 
-#include "FindSessionsCallbackProxy.h"
+#include "Engine/Engine.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "GenericTeamAgentInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/NetDriver.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
@@ -53,57 +54,97 @@ void UGeoGameInstance::Init()
 	Super::Init();
 
 	FGenericTeamId::SetAttitudeSolver(&GeoAttitudeSolver);
+
+	GEngine->OnNetworkFailure().AddUObject(this, &UGeoGameInstance::OnNetworkFailure);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// ADVANCED SESSION
+// SESSION
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGameInstance::CreateAdvancedSession(FOnlineSessionSettings const& SessionSettings, FString MapToGoTo/* = ""*/)
+FName const UGeoGameInstance::GameSessionKey(TEXT("GEOGAME"));
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::CreateSession(FOnlineSessionSettings SessionSettings, FString const& MapPackageName)
 {
-	// Advanced session plugin only wraps for blueprint with a latent task, so better do it directly when in CPP
-	IOnlineSessionPtr Sessions = GetSessionInterface();
-	if (!ensureMsgf(Sessions.IsValid(), TEXT("%hs: no online session interface"), __FUNCTION__))
+	if (!ensureMsgf(GetSessionInterface().IsValid(), TEXT("%hs: no online session interface"), __FUNCTION__))
 	{
 		return;
 	}
 
-	if (MapToGoTo.IsEmpty()
-		&& !ensureMsgf(!DefaultMap.IsNull(),
-					   TEXT("%hs: no map URL — DefaultMap is not set on the Blueprint subclass"), __FUNCTION__))
-	{
-		return;
-	}
-	PendingMapURL = MapToGoTo.IsEmpty() ? DefaultMap.ToSoftObjectPath().GetLongPackageName() : MapToGoTo;
-
-	CreateSessionDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(
-		FOnCreateSessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnCreateSessionComplete));
-	Sessions->CreateSession(0, GeoSessionName, SessionSettings);
+	SessionSettings.Set(GameSessionKey, 1, EOnlineDataAdvertisementType::ViaOnlineService);
+	DestroySessionThen(
+		[this, SessionSettings, MapPackageName]()
+		{
+			PendingMapURL = MapPackageName;
+			IOnlineSessionPtr Sessions = GetSessionInterface();
+			CreateSessionDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(
+				FOnCreateSessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnCreateSessionComplete));
+			Sessions->CreateSession(0, GeoSessionName, SessionSettings);
+		});
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	if (IOnlineSessionPtr Sessions = GetSessionInterface())
-	{
-		Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
-	}
+	GetSessionInterface()->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionDelegateHandle);
 
-	if (!bWasSuccessful)
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Log, TEXT("%hs: session created, opening %s"), __FUNCTION__, *PendingMapURL);
+		UGameplayStatics::OpenLevel(this, FName(*PendingMapURL), true, TEXT("listen"));
+	}
+	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("%hs: failed to create session '%s'"), __FUNCTION__, *SessionName.ToString());
-		return;
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("%hs: session created, traveling to %s"), __FUNCTION__, *PendingMapURL);
-	GetWorld()->ServerTravel(PendingMapURL + TEXT("?listen"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGameInstance::JoinAdvancedSession(const FOnlineSessionSearchResult& SearchResult)
+void UGeoGameInstance::JoinSession(FOnlineSessionSearchResult const& SearchResult)
 {
-	FBlueprintSessionResult BPResult;
-	BPResult.OnlineResult = SearchResult;
-	BP_JoinAdvancedSession(BPResult);
+	if (!ensureMsgf(GetSessionInterface().IsValid(), TEXT("%hs: no online session interface"), __FUNCTION__))
+	{
+		return;
+	}
+
+	DestroySessionThen(
+		[this, SearchResult]()
+		{
+			IOnlineSessionPtr Sessions = GetSessionInterface();
+			JoinSessionDelegateHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(
+				FOnJoinSessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnJoinSessionComplete));
+			Sessions->JoinSession(0, GeoSessionName, SearchResult);
+		});
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	IOnlineSessionPtr Sessions = GetSessionInterface();
+	Sessions->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionDelegateHandle);
+
+	FString ConnectString;
+	if (Result == EOnJoinSessionCompleteResult::Success
+		&& Sessions->GetResolvedConnectString(SessionName, ConnectString))
+	{
+		UE_LOG(LogTemp, Log, TEXT("%hs: session joined, traveling to %s"), __FUNCTION__, *ConnectString);
+		GetFirstLocalPlayerController()->ClientTravel(ConnectString, TRAVEL_Absolute);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("%hs: failed to join session '%s' (%s)"), __FUNCTION__, *SessionName.ToString(),
+			   LexToString(Result));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::OnNetworkFailure(UWorld* /*World*/, UNetDriver* NetDriver, ENetworkFailure::Type /*FailureType*/,
+										FString const& /*ErrorString*/)
+{
+	if (NetDriver && NetDriver->GetNetMode() == NM_Client)
+	{
+		DestroySessionThen([]() {});
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -134,37 +175,36 @@ void UGeoGameInstance::QuitGame()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::DestroySessionThen(TFunction<void()> OnDone)
 {
-	if (bDestroyingSession)
+	if (AfterSessionDestroyed)
 	{
-		// Already tearing down (e.g. the leave/quit button was pressed twice before the async destroy completed):
-		// registering a second lambda here would leave two of them on the session interface's shared multicast
-		// delegate while DestroySessionDelegateHandle only ever remembers one, so the first completion would clear
-		// the wrong, still-pending delegate mid-broadcast.
+		UE_LOG(LogTemp, Warning, TEXT("%hs: a session teardown is already pending, request dropped"), __FUNCTION__);
 		return;
 	}
 
 	IOnlineSessionPtr Sessions = GetSessionInterface();
 	if (!Sessions.IsValid() || Sessions->GetSessionState(GeoSessionName) == EOnlineSessionState::NoSession)
 	{
-		// Direct-IP/no-Steam session, or none at all: nothing to tear down, so run the ending now.
+		// Direct-IP/no-Steam session, or none at all: nothing to tear down.
 		OnDone();
-		return;
 	}
+	else
+	{
+		AfterSessionDestroyed = MoveTemp(OnDone);
+		DestroySessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
+			FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGeoGameInstance::OnDestroySessionComplete));
+		Sessions->DestroySession(GeoSessionName);
+	}
+}
 
-	bDestroyingSession = true;
-	DestroySessionDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(
-		FOnDestroySessionCompleteDelegate::CreateWeakLambda(
-			this,
-			[this, OnDone = MoveTemp(OnDone)](FName /*SessionName*/, bool /*bWasSuccessful*/)
-			{
-				if (IOnlineSessionPtr CompletedSessions = GetSessionInterface())
-				{
-					CompletedSessions->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
-				}
-				bDestroyingSession = false;
-				OnDone();
-			}));
-	Sessions->DestroySession(GeoSessionName);
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::OnDestroySessionComplete(FName /*SessionName*/, bool /*bWasSuccessful*/)
+{
+	GetSessionInterface()->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionDelegateHandle);
+
+	// Emptied before the call, so OnDone can itself start another teardown.
+	TFunction<void()> const OnDone = MoveTemp(AfterSessionDestroyed);
+	AfterSessionDestroyed = nullptr;
+	OnDone();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

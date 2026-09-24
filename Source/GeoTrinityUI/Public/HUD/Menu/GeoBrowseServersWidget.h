@@ -14,7 +14,6 @@ class UEditableTextBox;
 class UGeoListRowWidget;
 class UGeoMenuButton;
 class UProgressBar;
-struct FBlueprintSessionResult;
 
 /**
  * Browse-servers panel. Finds and lists online sessions; allows filtering by name (client-side)
@@ -33,21 +32,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer")
 	TArray<FString> LanguageOptions;
 
+	/** Clears the list and searches Steam for GeoTrinity lobbies. Run on every open of the panel, not on construct: the
+	 * panel is built with the main menu, long before anyone may have hosted. Ignored while a search is in flight. */
+	UFUNCTION()
+	void FindSessions();
+
 protected:
-	/** Populates the language combo box, wires button and text-change delegates, and triggers an initial session search. */
+	/** Populates the language combo box and wires button and text-change delegates. */
 	virtual void NativeConstruct() override;
 	/** Removes the find-sessions delegate handle to avoid stale callbacks after the widget is destroyed. */
 	virtual void NativeDestruct() override;
 	/** Returns RefreshButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
-
-	/** Implemented in Blueprint to trigger the async session search. C++ calls this on widget construct and on refresh. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "GeoServer")
-	void BP_FindSessions();
-
-	/** Called from Blueprint after BP_FindSessions completes; fills the list with a row per result. */
-	UFUNCTION(BlueprintCallable, Category = "GeoServer")
-	void PopulateListFromBP(TArray<FBlueprintSessionResult> const& ListOfResults);
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UEditableTextBox> SearchInput;
@@ -66,8 +62,6 @@ private:
 	FDelegateHandle FindSessionsDelegateHandle;
 	TArray<FOnlineSessionSearchResult> CachedResults;
 
-	void StartFindSessions();
-	void Code_FindSessions();
 	void OnFindSessionsComplete(bool bWasSuccessful);
 	void PopulateServerList();
 	/** Fills RowWidget with the columns of one session: name, map, players, ping. */
@@ -75,9 +69,6 @@ private:
 	/** Joins the session the clicked row carried as its payload; taken by value, as a delegate payload must be. */
 	void HandleServerSelected(FOnlineSessionSearchResult Result);
 	void SetSearchInProgress(bool bInProgress);
-
-	UFUNCTION()
-	void HandleRefresh();
 
 	UFUNCTION()
 	void HandleSearchTextChanged(const FText& Text);

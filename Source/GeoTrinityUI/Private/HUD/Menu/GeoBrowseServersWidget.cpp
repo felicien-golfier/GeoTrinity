@@ -11,11 +11,10 @@
 #include "HUD/Menu/GeoListRowWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Online/OnlineSessionNames.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
-#include "GameFramework/PlayerState.h"
-#include "OnlineSubsystemUtils/Classes/FindSessionsCallbackProxy.h"
 
 // Share of the row each column takes, so every row lines up whatever the panel is wide.
 static float const ServerNameColumnWeight = 6.f;
@@ -36,12 +35,10 @@ void UGeoBrowseServersWidget::NativeConstruct()
 	}
 	LanguageComboBox->SetSelectedIndex(0);
 
-	RefreshButton->OnClicked.AddUniqueDynamic(this, &UGeoBrowseServersWidget::HandleRefresh);
+	RefreshButton->OnClicked.AddUniqueDynamic(this, &UGeoBrowseServersWidget::FindSessions);
 	SearchInput->OnTextChanged.AddUniqueDynamic(this, &UGeoBrowseServersWidget::HandleSearchTextChanged);
 
 	SearchProgressBar->SetVisibility(ESlateVisibility::Hidden);
-
-	StartFindSessions();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -67,78 +64,40 @@ UWidget* UGeoBrowseServersWidget::GetInitialFocusWidget() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoBrowseServersWidget::PopulateListFromBP(TArray<FBlueprintSessionResult> const& ListOfResults)
-{
-	UE_LOG(LogTemp, Log, TEXT("Populating list from BP with %u results"), ListOfResults.Num());
-	CachedResults.Empty();
-	for (const FBlueprintSessionResult& Result : ListOfResults)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Adding session by %s to CachedResults"), *Result.OnlineResult.Session.OwningUserName);
-		
-		CachedResults.Add(Result.OnlineResult);
-	}
-	
-	PopulateServerList();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoBrowseServersWidget::StartFindSessions()
-{
-	BP_FindSessions();
-	
-	//Code_FindSessions();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoBrowseServersWidget::Code_FindSessions()
+void UGeoBrowseServersWidget::FindSessions()
 {
 	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
-	if (!OnlineSubsystem)
+	IOnlineSessionPtr Sessions = OnlineSubsystem ? OnlineSubsystem->GetSessionInterface() : nullptr;
+	if (!ensureMsgf(Sessions.IsValid(), TEXT("%hs: no online session interface"), __FUNCTION__))
 	{
-		UE_LOG(LogTemp, Error, TEXT("UGeoBrowseServersWidget: Online subsystem not available"));
-		return;
-	}
-	IOnlineSessionPtr Sessions = OnlineSubsystem->GetSessionInterface();
-	if (!Sessions.IsValid())
-	{
-		UE_LOG(LogTemp, Error, TEXT("UGeoBrowseServersWidget: Session interface not valid"));
 		return;
 	}
 
-	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	if (SessionSearch.IsValid() && SessionSearch->SearchState == EOnlineAsyncTaskState::InProgress)
+	{
+		UE_LOG(LogTemp, Log, TEXT("%hs: a search is already in flight"), __FUNCTION__);
+		return;
+	}
+
+	CachedResults.Empty();
+	ListFrame->RowsBox->ClearChildren();
+
+	SessionSearch = MakeShared<FOnlineSessionSearch>();
 	SessionSearch->MaxSearchResults = 100;
-	SessionSearch->bIsLanQuery = false;
-	
-	const FString SelectedLanguage = LanguageComboBox->GetSelectedOption();
+	SessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
+	SessionSearch->QuerySettings.Set(UGeoGameInstance::GameSessionKey, 1, EOnlineComparisonOp::Equals);
+
+	FString const SelectedLanguage = LanguageComboBox->GetSelectedOption();
 	if (!SelectedLanguage.IsEmpty() && SelectedLanguage != TEXT("All"))
 	{
 		SessionSearch->QuerySettings.Set(FName("LANGUAGE"), SelectedLanguage, EOnlineComparisonOp::Equals);
 	}
+
 	FindSessionsDelegateHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(
-		FOnFindSessionsCompleteDelegate::CreateUObject(this, &UGeoBrowseServersWidget::OnFindSessionsComplete)
-	);
-
+		FOnFindSessionsCompleteDelegate::CreateUObject(this, &UGeoBrowseServersWidget::OnFindSessionsComplete));
 	SetSearchInProgress(true);
-	
-	// User ID
-	FUniqueNetIdPtr UserId;
-	APlayerState const* PlayerState = GetOwningPlayer()->GetPlayerState<APlayerState>();
-	if (PlayerState)
-	{
-		UserId = PlayerState->GetUniqueId().GetUniqueNetId();
-	}
-	
-	if (UserId.IsValid())
-	{
-		Sessions->FindSessions(*UserId, SessionSearch.ToSharedRef());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("UGeoBrowseServersWidget: Could not get user ID"));
-		Sessions->FindSessions(0, SessionSearch.ToSharedRef());
-	}
+	Sessions->FindSessions(0, SessionSearch.ToSharedRef());
 }
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBrowseServersWidget::OnFindSessionsComplete(bool bWasSuccessful)
@@ -243,7 +202,7 @@ void UGeoBrowseServersWidget::HandleServerSelected(FOnlineSessionSearchResult Re
 		UE_LOG(LogTemp, Error, TEXT("UGeoBrowseServersWidget: Could not get GeoGameInstance"));
 		return;
 	}
-	GeoGameInstance->JoinAdvancedSession(Result);
+	GeoGameInstance->JoinSession(Result);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -251,14 +210,6 @@ void UGeoBrowseServersWidget::SetSearchInProgress(bool bInProgress)
 {
 	SearchProgressBar->SetVisibility(bInProgress ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 	RefreshButton->SetIsEnabled(!bInProgress);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoBrowseServersWidget::HandleRefresh()
-{
-	CachedResults.Empty();
-	ListFrame->RowsBox->ClearChildren();
-	StartFindSessions();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

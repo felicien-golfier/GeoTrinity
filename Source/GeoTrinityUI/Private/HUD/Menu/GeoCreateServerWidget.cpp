@@ -19,6 +19,7 @@ void UGeoCreateServerWidget::NativeConstruct()
 	PopulateComboBoxes();
 	ServerNameInput->SetHintText(FText::FromString(DefaultServerName));
 
+	CreateButton->OnClicked.AddUniqueDynamic(this, &UGeoCreateServerWidget::HandleCreate);
 	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoCreateServerWidget::HandleBack);
 }
 
@@ -77,42 +78,40 @@ void UGeoCreateServerWidget::PopulateComboBoxes()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCreateServerWidget::HandleCreate()
 {
+	UGeoGameInstance* GeoGameInstance = Cast<UGeoGameInstance>(GetGameInstance());
+	int32 const MapIndex = MapComboBox->GetSelectedIndex();
+	int32 const SlotsIndex = SlotsComboBox->GetSelectedIndex();
+	if (!ensureMsgf(GeoGameInstance, TEXT("%hs: GameInstance is not a UGeoGameInstance"), __FUNCTION__)
+		|| !ensureMsgf(MapURLs.IsValidIndex(MapIndex), TEXT("%hs: no map URL for map %d"), __FUNCTION__, MapIndex)
+		|| !ensureMsgf(SlotOptions.IsValidIndex(SlotsIndex), TEXT("%hs: no slot option selected"), __FUNCTION__))
+	{
+		return;
+	}
 
-	const int32 SelectedMapIndex = MapComboBox->GetSelectedIndex();
-
-	const FText ServerNameText = ServerNameInput->GetText();
-	const FString ServerName = ServerNameText.IsEmpty() ? DefaultServerName : ServerNameText.ToString();
-
-	const FString SlotString = SlotsComboBox->GetSelectedOption();
-	const int32 NumSlots = SlotString.IsEmpty() ? 2 : FCString::Atoi(*SlotString);
-	const FString Language = LanguageComboBox->GetSelectedOption();
-	const bool bIsPublic = PrivacyComboBox->GetSelectedOption() == TEXT("Public");
+	FText const ServerNameText = ServerNameInput->GetText();
+	FString const ServerName = ServerNameText.IsEmpty() ? DefaultServerName : ServerNameText.ToString();
+	int32 const NumSlots = SlotOptions[SlotsIndex];
+	bool const bIsPublic = PrivacyComboBox->GetSelectedOption() == TEXT("Public");
 
 	FOnlineSessionSettings SessionSettings;
-	SessionSettings.NumPublicConnections = NumSlots;	// Should be at least 2 for listen server, according to doc on "CreateAdvancedSession" from Advanced session plugin
+	// A private session is an unlisted Steam lobby, reachable only through an invite.
+	SessionSettings.NumPublicConnections = bIsPublic ? NumSlots : 0;
 	SessionSettings.NumPrivateConnections = bIsPublic ? 0 : NumSlots;
 	SessionSettings.bShouldAdvertise = bIsPublic;
-	SessionSettings.bAllowJoinInProgress = false;
+	// The session starts with every boss fight (AGameSession::HandleMatchHasStarted), and Steam drops a lobby that
+	// refuses joins from every search.
+	SessionSettings.bAllowJoinInProgress = true;
+	SessionSettings.bAllowInvites = true;
 	SessionSettings.bIsLANMatch = false;
 	SessionSettings.bUsesPresence = true;
 	SessionSettings.bAllowJoinViaPresence = true;
 	SessionSettings.bUseLobbiesIfAvailable = true;
 	SessionSettings.Set(FName("SERVER_NAME"), ServerName, EOnlineDataAdvertisementType::ViaOnlineService);
-	SessionSettings.Set(FName("LANGUAGE"), Language, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(FName("LANGUAGE"), LanguageComboBox->GetSelectedOption(),
+						EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(FName("MAP"), MapComboBox->GetSelectedOption(), EOnlineDataAdvertisementType::ViaOnlineService);
 
-	UGeoGameInstance* GeoGameInstance = Cast<UGeoGameInstance>(GetGameInstance());
-	if (!GeoGameInstance)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UGeoCreateServerWidget: Could not get GeoGameInstance"));
-		return;
-	}
-	
-	// Testing the BP function
-	GeoGameInstance->BP_CreateAdvancedSession(ServerName, NumSlots, bIsPublic);
-	
-	// No maps for now, just go to the default one, set in game instance
-	//GeoGameInstance->CreateAdvancedSession(SessionSettings);
+	GeoGameInstance->CreateSession(SessionSettings, FSoftObjectPath(MapURLs[MapIndex]).GetLongPackageName());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

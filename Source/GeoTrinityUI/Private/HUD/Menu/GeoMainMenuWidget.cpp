@@ -68,6 +68,7 @@ void UGeoMainMenuWidget::HandleCreateServer()
 void UGeoMainMenuWidget::HandleJoinServer()
 {
 	OpenSubPanel(BrowseServerWidget);
+	BrowseServerWidget->FindSessions();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

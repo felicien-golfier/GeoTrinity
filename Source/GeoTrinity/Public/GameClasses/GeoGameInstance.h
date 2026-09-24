@@ -8,9 +8,9 @@
 
 #include "GeoGameInstance.generated.h"
 
-struct FBlueprintSessionResult;
 class FOnlineSessionSearchResult;
 class FOnlineSessionSettings;
+class UNetDriver;
 class UWorld;
 
 /**
@@ -26,19 +26,18 @@ public:
 	virtual void Init() override;
 
 	/** Online **/
-	/** Creates a Steam session with the given settings and travels to MapToGoTo when complete. */
-	void CreateAdvancedSession(FOnlineSessionSettings const& SessionSettings, FString MapToGoTo = "");
-	/** Delegate callback for session creation; travels to the pending map on success. */
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-	/** Blueprint entry point for hosting: assembles SessionSettings from human-readable params and calls CreateAdvancedSession. */
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "GeoOnline")
-	void BP_CreateAdvancedSession(FString const& ServerName, int32 NbOfSlots, bool bUseLan);
+	/** Session key every GeoTrinity session carries and the server browser filters on: under the Spacewar test app
+	 * id (480) a lobby search otherwise lists every game's lobbies. */
+	static FName const GameSessionKey;
 
-	/** Joins an existing Steam session and travels to the host. */
-	void JoinAdvancedSession(const FOnlineSessionSearchResult& SearchResult);
-	/** Blueprint entry point for joining: resolves the search result from Blueprint and calls JoinAdvancedSession. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "GeoOnline")
-	void BP_JoinAdvancedSession(FBlueprintSessionResult const& SessionData);
+	/**
+	 * Hosts a Steam session with SessionSettings, then opens MapPackageName as a listen server. A session left over
+	 * from an earlier game is destroyed first, or the create would fail on the already-used session name.
+	 */
+	void CreateSession(FOnlineSessionSettings SessionSettings, FString const& MapPackageName);
+
+	/** Joins SearchResult's session and travels to its host, destroying a leftover session first like CreateSession. */
+	void JoinSession(FOnlineSessionSearchResult const& SearchResult);
 
 	/**
 	 * Leaves the current game session and returns to the main menu. Destroys the Steam online session first if one
@@ -55,10 +54,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoOnline")
 	void QuitGame();
 
-	/** Default map to travel to when creating a session without an explicit map URL */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoOnline")
-	TSoftObjectPtr<UWorld> DefaultMap;
-
 	/** Map to return to when leaving a session via LeaveSessionAndReturnToMenu. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoOnline")
 	TSoftObjectPtr<UWorld> MainMenuMap;
@@ -69,14 +64,26 @@ private:
 	IOnlineSessionPtr GetSessionInterface() const;
 
 	/** Tears the online session down and then runs OnDone — immediately when there is no session to destroy. The one
-	 * description of "end the session, then leave", shared by the return-to-menu and quit endings. */
+	 * description of "end the session, then act", shared by hosting, joining, returning to the menu and quitting. */
 	void DestroySessionThen(TFunction<void()> OnDone);
+
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+
+	/** A client dropped by its host (or failing to connect) is sent back to the menu by the engine, which leaves its
+	 * session behind: still a member of the host's lobby, it would keep a dead lobby listed. */
+	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType,
+						  FString const& ErrorString);
 
 	FString PendingMapURL;
 	FDelegateHandle CreateSessionDelegateHandle;
+	FDelegateHandle JoinSessionDelegateHandle;
 	FDelegateHandle DestroySessionDelegateHandle;
-	/** Set while a DestroySessionThen() call is waiting on its completion delegate. A second call in that window
-	 * would register a second lambda on the session interface's shared multicast delegate while only ever
-	 * remembering one handle, so the first completion clears the wrong (still-pending) delegate mid-broadcast. */
-	bool bDestroyingSession = false;
+	/**
+	 * What runs once the pending DestroySession completes; set exactly while one is pending, so a second
+	 * DestroySessionThen() in that window is dropped rather than stacking a second completion. Held here and never
+	 * captured by the completion delegate: that delegate clears itself, which frees its captures mid-call.
+	 */
+	TFunction<void()> AfterSessionDestroyed;
 };

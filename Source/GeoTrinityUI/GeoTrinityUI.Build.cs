@@ -26,9 +26,7 @@ public class GeoTrinityUI : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
 			"OnlineSubsystem",
-			"OnlineSubsystemUtils",
-			"AdvancedSessions",
-			"AdvancedSteamSessions"
+			"OnlineSubsystemUtils"
 		});
 
 		if (Target.bBuildEditor)

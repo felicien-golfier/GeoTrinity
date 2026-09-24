@@ -37,8 +37,6 @@ public class GeoTrinity : ModuleRules
 			"Niagara",
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
-			"AdvancedSessions",
-			"AdvancedSteamSessions",
 			"Sockets"
 		});
 

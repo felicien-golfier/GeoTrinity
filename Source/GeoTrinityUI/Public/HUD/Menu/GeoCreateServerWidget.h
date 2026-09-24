@@ -82,6 +82,4 @@ private:
 	void HandleBack();
 
 	void PopulateComboBoxes();
-
-	FString PendingMapURL;
 };
