@@ -94,6 +94,7 @@ or wire them in.
 |---|---|
 | `compare_material_layers.py` | Compile candidate layers in one slot of a material's layer stack and report each one's instruction counts |
 | `dry_run_material_build.py` | Run material build scripts outside the editor against a stand-in module, checking every function-call pin |
+| `make_arena_rail_material.py` | Arena border rail — core line, halo and travelling quads on each wall's top face, one instance per arena, wired onto the placed walls |
 | `make_background_lattice_material.py` | Floor triangle line art — the layer stack, its pattern and ring layers, the glow blend, the pulse collection |
 | `make_background_look_instances.py` | One material instance per floor look, the form arenas and the settings' pool cycle through |
 | `make_background_looks.py` | Floor glow looks, one layer each — two-tone, shock and polygon rings, halos, spiral, whirl, Sierpinski, radar, twinkle, fireflies |

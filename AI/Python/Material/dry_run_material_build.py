@@ -198,7 +198,8 @@ for name in ("Obj", "Paths", "EditorAssetLibrary", "AssetToolsHelpers", "SystemL
              "MaterialEditingLibrary"):
     setattr(stand_in, name, globals()[name])
 for name in ("FunctionInputType", "PropertyAccessChangeNotifyMode", "MaterialProperty", "BlendMode",
-             "MaterialShadingModel", "MaterialLayerLinkState"):
+             "MaterialShadingModel", "MaterialLayerLinkState", "MaterialVectorCoordTransformSource",
+             "MaterialVectorCoordTransform"):
     setattr(stand_in, name, Enum())
 stand_in.Text = str
 stand_in.ObjectIterator = lambda cls: []
