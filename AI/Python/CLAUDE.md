@@ -44,7 +44,8 @@ or wire them in.
 | `class_badge_body_turns.py` | Body-only rolls about the aim in the bottom slot, round the parts: the Circle rolls through the Moira beam, the Triangle rolls once reeling in its turrets; checked in 3D against the parts |
 | `class_badge_circle_charge.py` | Circle badge charge beam: the hourglass whips round the badge, swells shaking in front, flattens wide on release |
 | `class_badge_circle_charge_orbit.py` | Circle badge charge beam, alternative: the hourglass circles the swelling, trembling badge accelerating, then holds in front turned on release while the disc kicks back; top slot |
-| `class_badge_death.py` | The three badges swell and vanish, shedding their class debris |
+| `class_badge_deploy.py` | The three badges throwing their deployable, full-body slot over the auto-fire: the Square's mandibles roll faster and faster then are crushed by the recoil against their pinned backs, the Triangle rears and stakes its turret, the Circle stands its hourglass up and pours it over |
+| `class_badge_death.py` | The three badges swell and vanish, shedding their class debris, and stay gone until revive |
 | `class_badge_idle.py` | The three badges breathe and, bored, play with their parts: twirling, drumming, looking round, flipping, rolling round the rim |
 | `class_badge_square_fire.py` | Square badge auto-fire: the mandibles take turns thrusting out, flaring and slamming back |
 | `class_badge_square_fire_piston.py` | Square badge auto-fire, alternative: the mandibles cock outward and jab out long, top slot only |
@@ -53,7 +54,6 @@ or wire them in.
 | `class_badge_triangle_fire_crossbow.py` | Triangle badge heavy shot, alternative: the needle draws back into the arrowhead like a crossbow bolt, the arrowhead flexing like its bow, and launches as a spear; top slot |
 | `class_badge_triangle_reload.py` | Triangle badge reload, heavy: braces with the needle drawn in, heaves the whole badge round a yaw turn, clunks past and rocks back; full-body slot |
 | `class_badge_wiring.py` | Swap the playable characters onto the badges: class data, character mesh, ability montages, materials |
-| `death_montage_scale_out.py` | Circle and Triangle death montages, cut to the Square's beat |
 | `hex_boss_abilities.py` | Hex boss sweep beam, tile-carving ray and cone spray |
 | `hex_boss_death.py` | The three rings wander off axis, blow apart and settle |
 | `hex_boss_idle.py` | Rings turning against each other, the outer one breathing |
@@ -96,9 +96,12 @@ or wire them in.
 | `compare_material_layers.py` | Compile candidate layers in one slot of a material's layer stack and report each one's instruction counts |
 | `dry_run_material_build.py` | Run material build scripts outside the editor against a stand-in module, checking every function-call pin |
 | `make_arena_rail_material.py` | Arena border rail — core line, halo and travelling quads on each wall's top face, one instance per arena, wired onto the placed walls |
+| `make_beam_and_telegraph_materials.py` | The beam and both zone telegraphs from shared functions — `M_PulseBeam`, `M_ZoneIndicatorRay`, `M_ZoneIndicator`: frame or ring, the beam's fill in the meaning pattern, the telegraphs' in world stripes of their colours (a lone colour paired with a shade of itself), the beam's pulse and life wipe |
 | `make_background_lattice_material.py` | Floor triangle line art — the layer stack, its pattern and ring layers, the glow blend, the pulse collection |
 | `make_background_look_instances.py` | One material instance per floor look, the form arenas and the settings' pool cycle through |
 | `make_background_looks.py` | Floor glow looks, one layer each — two-tone, shock and polygon rings, halos, spiral, whirl, Sierpinski, radar, twinkle, fireflies |
+| `make_color_pattern_functions.py` | Colour patterns splitting a surface into one region per gameplay meaning — zigzag bands, overlapping quads, stripes — index wrapping, colour picking, and `MF_MeaningColors`, the one call every multi-colour effect makes, laying the pattern over the world at `MPC_MeaningColors`' size and speed; its `PATTERN` picks the pattern for all of them |
+| `make_pulse_circle_material.py` | `M_PulseCircle`, every zone's disc, rebuilt from functions: outline, inward pulse, up to four fill colours through `MF_MeaningColors`, life wipe |
 | `make_class_badge_materials.py` | Class badge body material: logo line masks projected from the pre-skinned position onto the top face, one instance per class, wired into the class data and the badge meshes |
 | `make_generic_material_functions.py` | Standard functions — distances to shapes, polar coordinates, triangle cells, strokes, two-tone glows, the Sierpinski mask, random per cell, Lissajous paths, the clock wipe |
 | `material_graph_authoring.py` | In-place graph rebuilds, asserted wiring, function and layer pins, calls, parameters, layer stacks |
@@ -120,9 +123,11 @@ or wire them in.
 
 | Script | Purpose |
 |---|---|
+| `meaning_color_bindings.py` | The beam and telegraph systems' meaning colour User parameters, bound to their material's colour parameters |
 | `buff_vfx.py` | Every buff a character or its shots can wear, in one style |
 | `charged_trail_vfx.py` | Electric trail left behind a damage-boosted shot |
 | `cone_coil_vfx.py` | Electric helix wound around a cone, turning about its axis |
+| `death_debris_persist.py` | The class death debris stay on the floor until revive: particles never die, no fade or shrink |
 | `decode_niagara_parameters.py` | Decode a rapid-iteration store fetched from the property API |
 | `empowered_arc_vfx.py` | Electric arc running over a character's own mesh |
 | `empowered_aura_vfx.py` | Three empowerment auras — light flames wrapping a character |

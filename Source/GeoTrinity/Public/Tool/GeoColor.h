@@ -72,11 +72,13 @@ namespace GeoColor
 	/** Number of palette slots: Override is last and carries no color of its own, so its ordinal is the count. */
 	constexpr int32 SlotCount = static_cast<int32>(EGeoColor::Override);
 
-	/** Palette texture parameter of the outline post-process, and the texel count it needs to turn a stencil index into
-	 * a UV. Written by AGeoGameCamera, authored by AI/Python/Material/make_deployable_outline_material.py — the two must agree.
-	 */
-	inline FName const PaletteTextureParam = TEXT("Palette");
-	inline FName const PaletteSizeParam = TEXT("PaletteSize");
+	/** Most colours one effect shows at once, one per gameplay meaning: as many as MF_MeaningColors picks from. */
+	constexpr int32 MaxMeaningColorCount = 4;
+
+	/** Color, then SecondaryColors, resolved: the colours of an effect carrying several meanings, split by its
+	 * material's colour pattern. Ensures there are at most MaxMeaningColorCount and drops the rest. */
+	GEOTRINITY_API TArray<FLinearColor> GetMeaningColors(FGeoColorParam const& Color,
+														  TArray<FGeoColorParam> const& SecondaryColors);
 
 	/**
 	 * Builds ColorPalette into a one-pixel-tall texture, one texel per slot at its own EGeoColor ordinal — the form the

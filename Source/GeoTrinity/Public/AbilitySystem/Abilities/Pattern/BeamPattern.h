@@ -95,8 +95,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
 	TObjectPtr<UNiagaraSystem> BeamVfxSystem;
 
+	/** Colour of the beam and of its windup telegraph, and of their outlines. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
 	FGeoColorParam BeamColor;
+
+	/** Further colours the beam and its telegraph draw beside BeamColor, one per extra meaning the beam carries, split
+	 * by their materials' colour pattern. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
+	TArray<FGeoColorParam> SecondaryBeamColors;
 
 private:
 	/** Windup preview asset (Ray Zone Indicator), loaded once from UGameDataSettings::RayIndicatorSystem in OnCreate —

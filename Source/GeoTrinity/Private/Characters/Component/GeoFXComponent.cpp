@@ -13,7 +13,12 @@
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/GeoNiagaraParams.h"
+#include "TimerManager.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+static constexpr float BlinkInterval = 0.2f;
+static constexpr float FastBlinkWindow = 0.5f;
+static constexpr float FastBlinkSpeedMultiplier = 2.f;
 
 void FGeoRunningSustainedFX::Stop() const
 {
@@ -54,6 +59,39 @@ void UGeoFXComponent::PlayBurst(FGeoBurstFXMoment const& Moment) const
 	{
 		PlaySound(Entry);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoFXComponent::StartBlinking(float const Duration)
+{
+	if (GeoLib::IsDedicatedServer(this))
+	{
+		return;
+	}
+
+	BlinkEndTime = GetWorld()->GetTimeSeconds() + Duration;
+	ScheduleBlinkToggle();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoFXComponent::StopBlinking()
+{
+	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoFXComponent::ScheduleBlinkToggle()
+{
+	bool const bInFastWindow = BlinkEndTime - GetWorld()->GetTimeSeconds() <= FastBlinkWindow;
+	float const Interval = bInFastWindow ? BlinkInterval / FastBlinkSpeedMultiplier : BlinkInterval;
+	GetWorld()->GetTimerManager().SetTimer(BlinkTimerHandle, this, &ThisClass::ToggleBlink, Interval, false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoFXComponent::ToggleBlink()
+{
+	GetOwner()->SetActorHiddenInGame(!GetOwner()->IsHidden());
+	ScheduleBlinkToggle();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -126,10 +164,16 @@ void UGeoFXComponent::StartSustainedFX(FGeoRunningSustainedFX& Running, FGeoSust
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoFXComponent::ApplyFXParams(UNiagaraComponent* const Component, FGeoVFXParams const& Params) const
 {
-	float const NormalizedMagnitude = FMath::Clamp(
-		GeoASLib::SampleAttributeCurve(Params.MagnitudeCurve, Params.MagnitudeAttribute,
-									   Params.bMagnitudeFromAbilityLevel, GetFXInstigator(), GetAbilityLevel()),
-		0.f, 1.f);
+	AActor* FXInstigator = GetFXInstigator();
+	if (!IsValid(FXInstigator) || !IsValid(Component))
+	{
+		return;
+	}
+
+	float const NormalizedMagnitude =
+		FMath::Clamp(GeoASLib::SampleAttributeCurve(Params.MagnitudeCurve, Params.MagnitudeAttribute,
+													Params.bMagnitudeFromAbilityLevel, FXInstigator, GetAbilityLevel()),
+					 0.f, 1.f);
 
 	Component->SetVariableLinearColor(GeoNiagaraParams::Color, Params.Color.GetColor());
 	Component->SetVariableFloat(GeoNiagaraParams::NormalizedMagnitude, NormalizedMagnitude);
@@ -139,9 +183,10 @@ void UGeoFXComponent::ApplyFXParams(UNiagaraComponent* const Component, FGeoVFXP
 	}
 	else
 	{
-		Component->SetVariableFloat(GeoNiagaraParams::Radius, GetFXInstigator()->GetSimpleCollisionRadius());
+		Component->SetVariableFloat(GeoNiagaraParams::Radius, FXInstigator->GetSimpleCollisionRadius());
 	}
 }
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoFXComponent::PlaySound(FGeoSoundEntry const& Entry) const

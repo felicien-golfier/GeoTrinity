@@ -176,7 +176,8 @@ def wire(instances):
         slot.set_editor_property("material_interface", instances[player_class])
         mesh.set_editor_property("materials", [slot] + slots[1:])
         save(mesh)
-        LOG.append(f"{mesh.get_name()} slot 0: {slots[0].get_editor_property('material_interface').get_name()} -> "
+        previous = slots[0].get_editor_property("material_interface")  # empty after the rig rebuilds the mesh
+        LOG.append(f"{mesh.get_name()} slot 0: {previous.get_name() if previous else 'empty'} -> "
                    f"{instances[player_class].get_name()}")
 
 

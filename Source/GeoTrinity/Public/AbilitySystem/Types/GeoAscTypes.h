@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameplayEffectTypes.h"
+#include "Tool/GeoColor.h"
 
 #include "GeoAscTypes.generated.h"
 
@@ -39,6 +40,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	/** Icon (UTexture2D or UMaterialInterface) shown in the HUD status bar while the applied effect is active;
 	 * null when the effect has no icon. */
 	UObject* GetIcon() const { return Icon; }
+	/** Returns the palette slots a gameplay cue draws beside its own colour (FGeoCueParam::SecondaryColors). */
+	TArray<EGeoColor> const& GetSecondaryColors() const { return SecondaryColors; }
 
 	/** Records the tag of the status effect applied alongside this hit. */
 	void SetStatusTag(FGameplayTag statusTag) { StatusTag = statusTag; }
@@ -61,6 +64,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	/** Sets the icon (UTexture2D or UMaterialInterface) the HUD status bar displays while the applied effect is
 	 * active. */
 	void SetIcon(UObject* value) { Icon = value; }
+	/** Sets the palette slots a gameplay cue draws beside its own colour; replicated with the cue. */
+	void SetSecondaryColors(TArray<EGeoColor> Value) { SecondaryColors = MoveTemp(Value); }
 
 	/** Returns the static struct type for this context; required by the GAS replication system for type identification. */
 	virtual UScriptStruct* GetScriptStruct() const override { return StaticStruct(); }
@@ -79,6 +84,8 @@ protected:
 	FGameplayTag StatusTag{};
 	UPROPERTY()
 	TObjectPtr<UObject> Icon{nullptr};
+	UPROPERTY()
+	TArray<EGeoColor> SecondaryColors;
 
 	// Call-site scoped — set by UpdateContextHandle, baked into the spec context via Duplicate() at MakeOutgoingSpec time.
 	// Not serialized: consumed server-side from the spec's embedded context copy in ExecCalc / PostGameplayEffectExecute.

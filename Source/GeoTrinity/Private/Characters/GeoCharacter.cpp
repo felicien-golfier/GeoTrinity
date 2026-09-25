@@ -14,7 +14,7 @@
 #include "Input/GeoInputComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
-#include "TimerManager.h"
+#include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
 
@@ -84,8 +84,6 @@ void AGeoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoCharacter, bIsDead);
-	DOREPLIFETIME(AGeoCharacter, bReviving);
-	DOREPLIFETIME(AGeoCharacter, bDiedFromFall);
 	DOREPLIFETIME(AGeoCharacter, bInvulnerable);
 }
 
@@ -253,13 +251,12 @@ void AGeoCharacter::BeginPlay()
 }
 
 
-void AGeoCharacter::Death(bool const bFromFall)
+void AGeoCharacter::Death()
 {
-	if (bIsDead || CVarPlayerInvincible.GetValueOnGameThread())
+	if (bIsDead || (TeamId == ETeam::Player && CVarPlayerInvincible.GetValueOnGameThread()))
 	{
 		return;
 	}
-	bDiedFromFall = bFromFall;
 	DeathServerTime = GeoLib::GetServerTime(GetWorld());
 	bIsDead = true;
 	DeathLogic();
@@ -267,31 +264,41 @@ void AGeoCharacter::Death(bool const bFromFall)
 
 void AGeoCharacter::DeathLogic()
 {
-	Destroy();
+	SetDeathVisuals(true);
+	if (GeoLib::IsServer(this))
+	{
+		UAnimMontage const* const Montage = GetDeathMontage();
+		if (Montage)
+		{
+			SetLifeSpan(Montage->GetPlayLength());
+		}
+		else
+		{
+			Destroy();
+		}
+	}
+}
+
+void AGeoCharacter::SetDeathVisuals(bool const bDead)
+{
+	UAnimInstance* const AnimInstance = GetMesh()->GetAnimInstance();
+	UAnimMontage* const Montage = GetDeathMontage();
+	if (AnimInstance && Montage)
+	{
+		if (bDead)
+		{
+			AnimInstance->Montage_Play(Montage);
+		}
+		else
+		{
+			AnimInstance->Montage_Stop(Montage->GetDefaultBlendOutTime(), Montage);
+		}
+	}
 }
 
 void AGeoCharacter::ReviveLogic()
 {
 	// does nothing by default
-}
-
-void AGeoCharacter::SetDeathVisuals(bool const bDead)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	UAnimMontage* Montage = GetDeathMontage();
-	if (!AnimInstance || !Montage)
-	{
-		return;
-	}
-
-	if (bDead)
-	{
-		AnimInstance->Montage_Play(Montage);
-	}
-	else
-	{
-		AnimInstance->Montage_Stop(Montage->GetDefaultBlendOutTime(), Montage);
-	}
 }
 
 void AGeoCharacter::OnRep_IsDead(bool const bOldValue)
@@ -309,37 +316,11 @@ void AGeoCharacter::OnRep_IsDead(bool const bOldValue)
 
 void AGeoCharacter::Revive()
 {
-	if (!bIsDead || bReviving)
+	if (!bIsDead)
 	{
 		return;
 	}
 
-	UAnimMontage const* const ReviveMontage = GetReviveMontage();
-	if (!ReviveMontage)
-	{
-		FinishRevive();
-		return;
-	}
-
-	bReviving = true;
-	OnRep_Reviving();
-	GetWorld()->GetTimerManager().SetTimer(ReviveTimer, this, &AGeoCharacter::FinishRevive,
-										   ReviveMontage->GetPlayLength(), false);
-}
-
-void AGeoCharacter::OnRep_Reviving()
-{
-	UAnimInstance* const AnimInstance = GetMesh()->GetAnimInstance();
-	UAnimMontage* const ReviveMontage = GetReviveMontage();
-	if (bReviving && AnimInstance && ReviveMontage)
-	{
-		AnimInstance->Montage_Play(ReviveMontage);
-	}
-}
-
-void AGeoCharacter::FinishRevive()
-{
-	bReviving = false;
 	bIsDead = false;
 	HandleRevived();
 }

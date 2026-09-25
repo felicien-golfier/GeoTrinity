@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Tool/GeoColor.h"
 
 #include "GeoNiagaraParams.generated.h"
 
@@ -41,6 +42,17 @@ namespace GeoNiagaraParams
 	inline FName const BeamWidth(TEXT("User.Beam_Width"));
 	inline FName const BeamLength(TEXT("User.Beam_Length"));
 
+	/** Systems drawing a colour pattern through MF_MeaningColors — the beam and the zone telegraphs: one colour per
+	 * meaning, Color first, bound to the renderer's material by AI/Python/Niagara/meaning_color_bindings.py. */
+	inline FName const MeaningColors[] = {Color, FName(TEXT("User.Color2")), FName(TEXT("User.Color3")),
+										  FName(TEXT("User.Color4"))};
+	static_assert(UE_ARRAY_COUNT(MeaningColors) == GeoColor::MaxMeaningColorCount);
+	/** How many of MeaningColors the pattern cycles through. */
+	inline FName const ColorCount(TEXT("User.ColorCount"));
+
+	/** Writes Colors, as GeoColor::GetMeaningColors resolves them, into MeaningColors and ColorCount. */
+	void SetMeaningColors(UNiagaraComponent* Component, TArray<FLinearColor> const& Colors);
+
 	/** Devastating wave AOE and its telegraph — UDevastatingWavePattern. */
 	inline FName const AOERadius(TEXT("User.AOE_Radius"));
 	inline FName const AOEGrowDuration(TEXT("User.AOE_GrowDuration"));
@@ -69,6 +81,64 @@ namespace GeoNiagaraParams
 	 * asset is null. Shared by UGeoBeamVFXComponent and UBeamPattern's identical preview<->beam asset handoff. */
 	void ApplySwappableAsset(UNiagaraComponent* Component, FBeamVfxAssetSet const& Assets, bool bWantIndicator);
 } // namespace GeoNiagaraParams
+
+/**
+ * Every material, material parameter collection and custom primitive data name written from C++, declared once for the
+ * same reason as GeoNiagaraParams: a name the material lacks is silently ignored and it keeps its default. Custom
+ * primitive data is addressed by index rather than name, so its slots below double as the registry keeping two features
+ * off one slot — nothing else warns when they collide.
+ */
+namespace GeoMaterialParams
+{
+	/** Custom primitive data: the fraction of a deployable's life spent, 0..1 — AGeoDeployableBase, read by
+	 * M_PulseCircle's DurationSpent. Spent rather than remaining, so a primitive nobody writes reads as untouched. */
+	int32 constexpr DurationSpentPrimitiveDataIndex = 0;
+	/** Custom primitive data, two slots (1 and 2): an arena's XY on its floors — AGeoArena, read by the floor looks
+	 * centred on it through their ArenaCenter parameter. */
+	int32 constexpr ArenaCenterPrimitiveDataIndex = 1;
+
+	/** M_PulseCircle — AGeoEffectZone. Built by AI/Python/Material/make_pulse_circle_material.py. */
+	inline FName const ZoneOutlineColor(TEXT("OutlineColor"));
+	/** The fill colours, one per meaning, in order. */
+	inline FName const ZoneInsideColors[] = {TEXT("InsideColor"), TEXT("InsideColor2"), TEXT("InsideColor3"),
+											 TEXT("InsideColor4")};
+	static_assert(UE_ARRAY_COUNT(ZoneInsideColors) == GeoColor::MaxMeaningColorCount);
+	/** How many fill colours the zone's colour pattern cycles through. */
+	inline FName const ZoneColorCount(TEXT("ColorCount"));
+
+	/** Buff pickup mesh — AGeoBuffPickup's buff colour. */
+	inline FName const BuffPickupColor(TEXT("Color"));
+
+	/** Character body material 0 — UShieldBurstPassiveComponent: the gauge fill, then its full-face flash, both 0..1.
+	 * Built by AI/Python/Material/make_class_badge_materials.py. */
+	inline FName const ShieldBurstGauge(TEXT("GlowGauge"));
+	inline FName const ShieldBurstFullGauge(TEXT("FullGlowGauge"));
+
+	/** Deployable outline post-process — AGeoGameCamera: the palette texture (GeoColor::CreatePaletteTexture) and its
+	 * texel count. Built by AI/Python/Material/make_deployable_outline_material.py. */
+	inline FName const OutlinePalette(TEXT("Palette"));
+	inline FName const OutlinePaletteSize(TEXT("PaletteSize"));
+
+	/** AGeoGameCamera::CameraParameters collection: the camera's XY and zoom, read by the backdrop layers. */
+	inline FName const CameraXY(TEXT("CameraXY"));
+	inline FName const CameraZoomRatio(TEXT("ZoomRatio"));
+
+	/** MPC_BackgroundPulse — UGeoBackgroundPulseComponent: one (OriginX, OriginY, Radius, Intensity) per pulse slot. */
+	inline FName GetPulseSourceName(int32 const SlotIndex)
+	{
+		return FName(FString::Printf(TEXT("PulseSource_%02d"), SlotIndex));
+	}
+
+	/** MPC_MaskedArea — UDevastatingWavePattern: the pillars shadowing the wave, one position per slot, one radius. */
+	inline FName GetPillarPositionName(int32 const SlotIndex)
+	{
+		return FName(FString::Printf(TEXT("PillarPosWS_%02d"), SlotIndex));
+	}
+	inline FName const PillarRadius(TEXT("Pillar_Radius"));
+
+	/** HUD sweep materials, 0..1 — the cooldown (UGeoAbilitySlotWidget) and the effect depletion (UGeoStatusBarWidget). */
+	inline FName const SweepFill(TEXT("Fill"));
+} // namespace GeoMaterialParams
 
 /** Blueprint-callable access to the GeoNiagaraParams::* names, since Blueprint cannot see a C++ namespace. */
 UCLASS()

@@ -62,6 +62,11 @@ struct FDeployableDataParams
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGeoColorParam Color;
 
+	/** Further colours a zone draws beside Color, one per extra meaning it carries (damage and heal, say), split by its
+	 * material's colour pattern. Zones only; at most GeoColor::MaxMeaningColorCount - 1. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<FGeoColorParam> SecondaryColors;
+
 	/** Which attitudes, relative to the deployable's own team, it acts on. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
@@ -233,7 +238,7 @@ protected:
 
 
 	/** Blueprint hook fired when the pre-expiry blink window starts — override to play blink visuals (shake, tint,
-	 * etc.). */
+	 * etc.). The default blinks the deployable through FXComponent for BlinkDuration. */
 	UFUNCTION(BlueprintNativeEvent)
 	void OnBlinkStart();
 	void OnBlinkStart_Implementation();
@@ -375,7 +380,6 @@ private:
 	 * post-process material can draw its silhouette in that color. */
 	void ApplyOutlineStencil() const;
 
-	void OnBlinkVisibilityTick();
 	void EnableActorCollision();
 
 	/** Server. Judges Explosion, an instant hazard over Params.Size, then runs again next tick until it is over. A timer
@@ -386,6 +390,5 @@ private:
 	FGeoHazardJudge Explosion;
 
 	FTimerHandle BlinkTimerHandle;
-	FTimerHandle BlinkVisibilityTimerHandle;
 	FTimerHandle CollisionEnableTimerHandle;
 };

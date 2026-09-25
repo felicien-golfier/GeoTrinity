@@ -208,7 +208,10 @@ protected:
 	 */
 	virtual int32& GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance);
 	/** Plays AnimMontage from the section the current fire section index selects. No-op when the ability has no montage
-	 * or the avatar no anim instance. */
+	 * or the avatar no anim instance. Also a no-op while the ASC's montage is a full-body (DefaultSlot) one and this
+	 * one is not: the full-body slot covers every other layer, and the ASC replicates a single montage, so playing this
+	 * one would take the full-body montage away from every other machine while showing nowhere. The fire section index
+	 * still advances. */
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;

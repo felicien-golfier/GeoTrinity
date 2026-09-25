@@ -11,14 +11,17 @@ registry before quoting it — a wrong path fails silently in Python, which load
 | Asset | Path |
 |---|---|
 | Turret recall beam (note the `Rurret` typo) | `/Game/Art/VFX/Assets/NS_Square_RurretRecall_Beam` |
-| Moira beam (`Beam_Length`/`Beam_Width`/`Color`) | `/Game/Art/VFX/Assets/NS_Cirlce_MoiraBeam` |
+| Every beam: Moira, sacrifice, hex boss sweep and ray | `/Game/Art/VFX/Generic/Niagara/NS_Beam` |
+| Every beam's windup telegraph (`UGameDataSettings::RayIndicatorSystem`) | `/Game/Art/VFX/Generic/Niagara/NS_Ray_ZoneIndicator` |
 | Glow material instance (additive, unlit) | `/Game/Art/VFX/Generic/Materials/MatInstances/MI_Glow01` |
 | Unlit particle material | `/Game/Art/VFX/Generic/Materials/M_Particle_Unlit_Advanced` |
 | Clock-wipe mask function | `/Game/Art/VFX/Generic/Materials/Functions/MF_DurationWipe` |
-| Zone indicator (ring + hard fill) | `/Game/Art/VFX/AOE/M_ZoneIndicator` |
-| Zone indicator ray (bar, center→edges) | `/Game/Art/VFX/AOE/M_ZoneIndicatorRay` |
+| Zone indicator (ring, fill disc growing from the centre, meaning colours) | `/Game/Art/VFX/AOE/M_ZoneIndicator` |
+| Every round zone telegraph (`GC_ZoneIndicator`) | `/Game/Art/VFX/Generic/Niagara/NS_Round_ZoneIndicator` |
+| Marked circle (`GC_Marked`): the zone indicator as it was, one colour and stripes | `/Game/Art/VFX/AOE/M_MarkedCircle` |
+| Zone indicator ray (frame, fill growing from the middle line, meaning colours) | `/Game/Art/VFX/AOE/M_ZoneIndicatorRay` |
 | Pulse circle (outline ring + inward pulsing fill) | `/Game/Art/VFX/AOE/M_PulseCircle` |
-| Pulse beam (outline frame + pulse running to target) | `/Game/Art/VFX/AOE/M_PulseBeam` |
+| Pulse beam (outline frame, pulse running to target, meaning colours) | `/Game/Art/VFX/AOE/M_PulseBeam` |
 
 Duplicate a system by loading the object and handing it to the asset tools' duplicate call — the editor asset
 library's own duplicate silently returns nothing for a Niagara system, and a raw file copy leaves the package
@@ -42,8 +45,10 @@ The value is the fraction **spent**, never remaining: custom primitive data nobo
 "remaining" would render every unwritten primitive as fully drained. `PulseCircleInst` on `BP_DamageZone` is
 exactly that case — a `GeoEffectZone`, not a deployable, so nothing writes its slot.
 
-Claiming a new slot means picking an unused index and adding it here; the material addresses the slot by index,
-so nothing warns when two features collide on one.
+Claiming a new slot means picking an unused index and declaring it in `GeoMaterialParams`
+(`Source/GeoTrinity/Public/Tool/GeoNiagaraParams.h`), beside every other slot and every material and collection
+parameter name C++ writes; the material addresses the slot by index, so nothing warns when two features collide on
+one.
 
 `M_PulseBeam` carries the same readout under the same name but as a plain scalar, because it is driven from a
 Niagara emitter: a renderer binds material parameters, and custom primitive data belongs to a primitive
@@ -297,6 +302,21 @@ ignored and the system keeps its authored default.
 Renaming leaves a stale redirect alias in `UserParameterRedirects`, so read user parameters through
 `GetUserParameters()`, which skips aliases. `RecreateRedirections()` is not exported from the Niagara DLL and
 cannot be called.
+
+## Meaning Colours
+
+`NS_Beam`, `NS_Ray_ZoneIndicator` and `NS_Round_ZoneIndicator` carry `User.Color`, `User.Color2`–`4` and
+`User.ColorCount`, which the sprite renderer binds to the same-named material parameters
+(`AI/Python/Niagara/meaning_color_bindings.py`), so each effect draws through its own dynamic material instance.
+`GeoNiagaraParams::SetMeaningColors` writes them, from an owner's colour plus its secondary colours:
+`UGeoBeamVFXComponent` and `UBeamPattern` on whichever of their two systems their one component is showing, so the
+beam's telegraph announces every meaning the beam carries, and `GeoASLib::SetCueMeaningColors` from a cue Blueprint,
+out of the cue's `FGeoCueParam` colour and `SecondaryColors`. A cue's secondary colours travel in its effect context
+(`FGeoGameplayEffectContext`), since the cue's own level field replicates in five bits. The devastating wave keeps its
+own system and one colour.
+
+The beam's particle colour still carries the emitter's intro and outro fade, so `M_PulseBeam` scales every colour by
+how far the particle colour has faded from `Color` (`MF_ColorScale`) rather than reading the particle colour itself.
 
 ## Beam Wiring by User Parameter
 

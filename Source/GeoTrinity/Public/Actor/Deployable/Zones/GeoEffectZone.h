@@ -55,7 +55,7 @@ protected:
 	FDeployableData Data;
 
 private:
-	// Hand-placed zones only — a spawned zone reads all six off the FDeployableData its ability filled in.
+	// Hand-placed zones only — a spawned zone reads all of these off the FDeployableData its ability filled in.
 	/** Effects applied to every matching actor: the per-second ones tick, the others persist while inside. */
 	UPROPERTY(EditAnywhere, Category = "GeoEffectZone")
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
@@ -71,14 +71,13 @@ private:
 	/** Colour this zone draws in. */
 	UPROPERTY(EditAnywhere, Category = "GeoEffectZone")
 	FGeoColorParam Color;
+	/** Further colours this zone draws beside Color, one per extra meaning it carries. */
+	UPROPERTY(EditAnywhere, Category = "GeoEffectZone")
+	TArray<FGeoColorParam> SecondaryColors;
 	/** Which attitudes (relative to the zone's team) receive the effects. */
 	UPROPERTY(EditAnywhere, Category = "GeoEffectZone",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
 	int32 AttitudeBitmask = TeamAttitudeMask::All;
-
-	/** Vector parameters of the zone mesh's material the zone colour is written to. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoEffectZone")
-	TArray<FName> ColorParameterNames = {TEXT("InsideColor"), TEXT("OutlineColor")};
 
 	/** Server. Judges ZoneJudge, ending it once the zone blinks or expires, then runs again next tick until it is
 	 * over. A timer rather than Tick, which Expire turns off before the judge is done. */
@@ -92,6 +91,7 @@ private:
 
 	/** Matches the capsule to Data.Params.Size — the one radius both the placed and the spawned path end up in. */
 	void ApplyRadius() const;
-	/** Writes Data.Params.Color into ColorParameterNames on every mesh of the zone. */
+	/** Writes Data.Params.Color into the outline, and Color then its secondary colours into the fill colours, on every
+	 * mesh of the zone, with how many fill colours that makes (GeoMaterialParams::Zone*). */
 	void ApplyColor() const;
 };

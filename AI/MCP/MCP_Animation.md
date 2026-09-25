@@ -64,7 +64,9 @@ default name rather than adding another.
 Building a skinned copy of a static mesh over a whole hierarchy goes through a shim: neither factory behind the
 editor's own conversion command is reachable from script, and the conversion takes the reference skeleton to
 build against, so nothing afterwards has to reconcile a mesh against a skeleton it was not built on. A reference
-skeleton wants its root first and every parent declared before its children. Weights are the only half reachable
+skeleton wants its root first and every parent declared before its children. Rebuilding a rigged mesh onto more
+bones than it carries crashes the editor, so add the new bones through the skeleton modifier first, after the
+existing ones, and rebuild on that same order. Weights are the only half reachable
 from script, so the conversion lands every vertex on the root and a weighting pass moves them onto the bones
 meant to drive them.
 
@@ -122,8 +124,9 @@ parts read different values at its two ends.
 - **Drive every part from one curve** that each reads a fixed number of frames late rather than writing a curve
   per part: light parts lead, heavy parts drag, and a part still in its wind-up pose while the leading part is
   out gives the extreme its contrast for nothing.
-- Under an orthographic camera, motion along the view axis is spent for nothing. Starting and ending a clip on
-  the reference pose is what lets it blend in and out without a pop.
+- Under an orthographic camera, motion along the view axis is spent for nothing, and on an unlit shape a part
+  over another of the same colour vanishes into it, so a turn only reads where nothing lies under the part.
+  Starting and ending a clip on the reference pose is what lets it blend in and out without a pop.
 - **Rotational symmetry**: a part that turns a whole fraction of a turn matching its own symmetry lands on an
   indistinguishable pose, so a rotation can carry across a loop or hold at a clip's end without being unwound.
   Writing such a turn as a rate integrated across the clip and normalised to its own total, rather than as an
@@ -221,6 +224,8 @@ against the cap.
   vertex's radius and direction together, never from that radius alone. Fit that boundary's centre rather than
   assuming it sits on the axis, and measure what is inside it from the same fitted centre — a clip that drifts a
   part off the axis otherwise reads as having shrunk it and reports an overlap that is not there.
+- A skeletal mesh actor in the editor world never plays a sequence set on it from script, so a capture only shows
+  the reference pose; to see a clip, evaluate its poses, place the rig's vertex groups and draw their outlines.
 - Measure every frame, not the ones a report prints: nested parts cross over two or three frames, so a coarser
   sample calls a clip clear that is not.
 - A clip that only scales needs no mesh to check — the point it converges on is the root's translation with its

@@ -22,11 +22,8 @@
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
-
-// M_PulseCircle's DurationSpent parameter reads this slot. Custom primitive data is addressed by index and never by
-// name, so this constant and the material's PrimitiveDataIndex are the whole contract between them.
-int32 constexpr DurationSpentPrimitiveDataIndex = 0;
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoDeployableBase::AGeoDeployableBase(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -209,7 +206,7 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 	float const DurationSpent = 1.f - GetDrainDurationRatio();
 	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
 	{
-		MeshComponent->SetCustomPrimitiveDataFloat(DurationSpentPrimitiveDataIndex, DurationSpent);
+		MeshComponent->SetCustomPrimitiveDataFloat(GeoMaterialParams::DurationSpentPrimitiveDataIndex, DurationSpent);
 	}
 
 	if (bUseRegularDrain && DrainMagnitudePerSecond > 0.f && bActive && !IsBlinking() && GeoLib::IsServer(GetWorld()))
@@ -426,7 +423,7 @@ void AGeoDeployableBase::Expire(bool const bForce)
 	bActive = false;
 	bBlinking = false;
 	GetWorld()->GetTimerManager().ClearTimer(BlinkTimerHandle);
-	GetWorld()->GetTimerManager().ClearTimer(BlinkVisibilityTimerHandle);
+	FXComponent->StopBlinking();
 	SetActorHiddenInGame(true);
 	OnDeployableExpiredEvent.Broadcast(this);
 	SetActorTickEnabled(false);
@@ -527,9 +524,7 @@ void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void AGeoDeployableBase::OnBlinkStart_Implementation()
 {
-	float constexpr BlinkRate = 0.2f;
-	GetWorld()->GetTimerManager().SetTimer(BlinkVisibilityTimerHandle, this, &ThisClass::OnBlinkVisibilityTick,
-										   BlinkRate, true);
+	FXComponent->StartBlinking(GetData()->Params.BlinkDuration);
 }
 
 void AGeoDeployableBase::OnRep_Active(bool bOldValue)
@@ -553,12 +548,6 @@ void AGeoDeployableBase::OnRep_Blinking(bool bOldValue)
 	{
 		StartBlinking();
 	}
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------
-void AGeoDeployableBase::OnBlinkVisibilityTick()
-{
-	SetActorHiddenInGame(!IsHidden());
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

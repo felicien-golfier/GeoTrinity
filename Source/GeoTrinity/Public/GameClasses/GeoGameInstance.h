@@ -37,7 +37,7 @@ public:
 	void CreateSession(FOnlineSessionSettings SessionSettings, FString const& MapPackageName);
 
 	/** Joins SearchResult's session and travels to its host, destroying a leftover session first like CreateSession. */
-	void JoinSession(FOnlineSessionSearchResult const& SearchResult);
+	void JoinFoundSession(FOnlineSessionSearchResult const& SearchResult);
 
 	/**
 	 * Leaves the current game session and returns to the main menu. Destroys the Steam online session first if one

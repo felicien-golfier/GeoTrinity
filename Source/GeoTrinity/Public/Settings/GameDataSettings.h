@@ -170,8 +170,8 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
 	FGeoCueParam RefillDeployableCue;
 
-	/** Looping cue added on the deploying client only while a deploy ability charges. Its SourceObject is the
-	 * UGeoDeployAbility instance, which AGeoDeployTargetCue follows each tick. */
+	/** Looping cue marking the drop point on the deploying client only: follows the charging UGeoDeployAbility, then
+	 * stays on the landing point until the deploy projectile lands (see AGeoDeployTargetCue). */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
 	FGeoCueParam DeployTargetCue;
 

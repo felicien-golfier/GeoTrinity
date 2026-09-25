@@ -198,6 +198,10 @@ bool UGeoAnimBuilderUtil::RebuildSkeletalMeshFromStaticMesh(USkeletalMesh* Mesh,
 		return false;
 	}
 
+	// The cached bind pose only recomputes when the bone count changes, and a rebuild may move bones instead.
+	Mesh->GetRefBasesInvMatrix().Reset();
+	Mesh->CalculateInvRefMatrices();
+
 	// Mesh-sampled Niagara effects read the triangles on the CPU.
 	Mesh->GetLODInfo(0)->bAllowCPUAccess = true;
 	Mesh->SetSkeleton(Skeleton);

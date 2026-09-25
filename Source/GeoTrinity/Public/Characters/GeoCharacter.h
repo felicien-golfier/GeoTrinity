@@ -33,8 +33,11 @@ class UAnimMontage;
  * Implements IAbilitySystemInterface and IGenericTeamAgentInterface, and exposes
  * helpers for input, movement, and ASC access that both subclasses need.
  * GAS initialization is deferred to InitGAS() which subclasses must override.
+ * PrioritizeCategories also lists the subclasses' subcategories: they inherit this order, and one left out would sink
+ * to the bottom of the GeoCharacter group.
  */
-UCLASS()
+UCLASS(PrioritizeCategories = ("GeoCharacter|AI", "GeoCharacter|Boss", "GeoCharacter|Aim", "GeoCharacter|Movement",
+							   "GeoCharacter|Death", "GeoCharacter|Team", "GeoCharacter|Components"))
 class GEOTRINITY_API AGeoCharacter
 	: public ACharacter
 	, public IAbilitySystemInterface
@@ -49,7 +52,7 @@ public:
 	 * null on dedicated server), GameFeelComponent, and DeployableManagerComponent.
 	 */
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
-	/** Registers replicated character properties (bIsDead, bDiedFromFall, bInvulnerable). */
+	/** Registers replicated character properties (bIsDead, bInvulnerable). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Emits a visual-log entry at the character's location; optionally draws a debug sphere on the server
@@ -105,35 +108,25 @@ public:
 	void DrawDebugVectorFromCharacter(FVector const& Direction, FString const& DebugMessage, FColor Color) const;
 
 
-	/**
-	 * Entry point for reviving a downed player. Plays GetReviveMontage() and only stands the character back up when it
-	 * ends: bIsDead stays true and the character stays stopped for the whole montage, so nothing targets, damages or
-	 * moves it while it gets up. Without a montage it revives on the spot.
-	 */
+	/** Entry point for reviving a downed player: clears bIsDead and runs HandleRevived(). No-op while alive. */
 	void Revive();
 
 	/** Fires when this character revives, on the server (Revive) and on clients (OnRep_IsDead). Spawned elements that
 	 * must not outlive a downed phase (e.g. shield burst projectiles) bind to this and end themselves. */
 	FSimpleMulticastDelegate OnRevived;
 
-	/** Returns true while the player is downed (health reached 0 and not yet revived). */
+	/** Returns true while the character is down (health reached 0 and not yet revived, or dying for an enemy). */
 	bool IsDead() const { return bIsDead; }
 
 	/** Server. Server time of the last Death(). */
 	float GetDeathServerTime() const { return DeathServerTime; }
 
-	/** Returns true while the player is playing its revive montage — still down, but no longer a corpse. */
-	bool IsReviving() const { return bReviving; }
-
 	/**
-	 * Entry point for downing a player. Sets bIsDead = true and delegates to DeathLogic(). Called from
-	 * OnHealthChanged and from arena fall checks. Invulnerability deliberately does not guard this: it stops damage,
-	 * not the void, and a character left over a destroyed tile still falls. No-op while Geo.PlayerInvincible is set.
-	 *
-	 * @param bFromFall  True when the character dropped into the void instead of running out of health. Replicated
-	 *                   with bIsDead so DeathLogic picks the same montage on every machine.
+	 * Entry point for a death. Sets bIsDead = true and delegates to DeathLogic(). Called from OnHealthChanged and from
+	 * arena fall checks. Invulnerability deliberately does not guard this: it stops damage, not the void, and a
+	 * character left over a destroyed tile still falls. A player's is a no-op while Geo.PlayerInvincible is set.
 	 */
-	void Death(bool bFromFall = false);
+	void Death();
 
 	/**
 	 * Server. Makes this character untouchable: nothing can be applied to it — every targeting and hit path in the
@@ -172,8 +165,8 @@ protected:
 	 *  the ASC or its attributes can first become available; the .cpp explains why no single one of them is enough. */
 	void BindCosmeticsToASC();
 
-	/** Server. Puts the player in the downed state: stops spawned elements and the character, notifies the GameState.
-	 */
+	/** Runs on every machine (Death, OnRep_IsDead). Plays the death visuals; on the server the character is destroyed
+	 * once its death montage has played out, at once without one. */
 	virtual void DeathLogic();
 
 	/** Server. Revives a downed player: cancels active abilities, removes all gameplay effects, re-applies per-class
@@ -183,9 +176,6 @@ protected:
 	/** The whole revive sequence, shared by the server path (Revive) and the replicated one (OnRep_IsDead) — the
 	 *  counterpart of DeathLogic() on the death side. */
 	void HandleRevived();
-
-	/** Server. Ends the getting-up state and revives for real. Revive montage timer callback. */
-	void FinishRevive();
 
 	UFUNCTION()
 	void OnRep_Invulnerable();
@@ -197,48 +187,20 @@ protected:
 	UFUNCTION()
 	void OnRep_IsDead(bool bOldValue);
 
-	/** Plays the revive montage on every machine — the getting-up counterpart of SetDeathVisuals(true). */
-	UFUNCTION()
-	void OnRep_Reviving();
+	/** Plays GetDeathMontage() (bDead), or stops it. The montage never blends out on its own, so its last pose holds for
+	 * the whole downed state. Runs on every machine — call it from the death/revive paths, which replicate through
+	 * bIsDead. */
+	void SetDeathVisuals(bool bDead);
 
-	/** Applies the visuals of a downed (bDead) or living character: plays or stops GetDeathMontage(). Runs on every
-	 * machine — call it from the death/revive paths, which replicate through bIsDead. */
-	virtual void SetDeathVisuals(bool bDead);
-
-	/** Montage played while this character is down. Override where the montage varies with the character's state
-	 * (a player's class swaps the skeleton the montage is bound to). */
+	/** Montage played when this character dies. Override where it varies with the character's state (a player's class
+	 * swaps the skeleton the montage is bound to). */
 	virtual UAnimMontage* GetDeathMontage() const { return DeathMontage; }
 
-	/** Montage played while this character gets back up, and the length of the revive itself. None by default — a
-	 *  character without one revives on the spot. */
-	virtual UAnimMontage* GetReviveMontage() const { return nullptr; }
 
-
-	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
-	bool bIsDead = false;
-
-	/** True from the revive montage's first frame to its last, while bIsDead is still true — the character is on its
-	 *  way back but counts as down until it is standing. */
-	UPROPERTY(ReplicatedUsing = OnRep_Reviving)
-	bool bReviving = false;
-
-	/** True while this character can neither be hit nor affected. Driven by SetInvulnerable on the server. */
-	UPROPERTY(ReplicatedUsing = OnRep_Invulnerable)
-	bool bInvulnerable = false;
-
-	/** How the current death happened, for GetDeathMontage(). Always re-assigned by Death(), so it never goes stale —
-	 * and it must survive until ReviveLogic() stops the montage it selected. */
-	UPROPERTY(Replicated)
-	bool bDiedFromFall = false;
-
-	float DeathServerTime = 0.f;
-
-	/** Death montage of characters that keep one skeleton. Ignored where GetDeathMontage() is overridden. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|Animation")
-	TObjectPtr<UAnimMontage> DeathMontage = nullptr;
+	// Movement
 
 	/** Max yaw turn rate in degrees/second, applied in Tick to close the gap toward TargetYaw. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|Rotation",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|Movement",
 			  meta = (ClampMin = "1.0", UIMin = "10.0"))
 	float MaxRotationSpeed = 720.f;
 
@@ -246,20 +208,38 @@ protected:
 	 * starting yaw in BeginPlay so nothing snaps on possession. */
 	float TargetYaw = 0.f;
 
-	FTimerHandle ReviveTimer;
+	// Death and invulnerability
 
+	/** Death montage of characters that keep one skeleton (enemies). None = an enemy vanishes at once. Ignored where
+	 * GetDeathMontage() is overridden. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|Death")
+	TObjectPtr<UAnimMontage> DeathMontage = nullptr;
 
-	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
+	bool bIsDead = false;
+
+	float DeathServerTime = 0.f;
+
+	/** True while this character can neither be hit nor affected. Driven by SetInvulnerable on the server. */
+	UPROPERTY(ReplicatedUsing = OnRep_Invulnerable)
+	bool bInvulnerable = false;
+
+	// Team
+
+	UPROPERTY(Category = "GeoCharacter|Team", EditAnywhere, BlueprintReadOnly)
+	ETeam TeamId;
+
+	// Components
+
+	UPROPERTY(Category = "GeoCharacter|Components", EditAnywhere, BlueprintReadOnly,
+			  meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGeoInputComponent> GeoInputComponent;
 
-	UPROPERTY(Category = Geo, EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(Category = "GeoCharacter|Components", EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UGeoAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UGeoAttributeSetBase> AttributeSetBase;
-
-	UPROPERTY(Category = Team, EditAnywhere, BlueprintReadOnly)
-	ETeam TeamId;
 
 	// Non-rotating attachment point for all world widgets: their relative offsets would orbit the actor as the
 	// capsule yaws if attached to the root (absolute rotation alone doesn't fix it — the offset is composed with the
@@ -269,13 +249,13 @@ protected:
 
 	// World-space health bar. Held as the engine base; the concrete UGeoCombattantWidgetComp (UI module) is set as the
 	// default subobject class from GameDataSettings so gameplay never names it. Edit per-BP in the component tree.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
 	TObjectPtr<UWidgetComponent> CharacterWidgetComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
 	TObjectPtr<UGeoGameFeelComponent> GameFeelComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
 
 #if WITH_EDITOR

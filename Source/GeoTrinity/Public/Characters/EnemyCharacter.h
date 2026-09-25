@@ -32,22 +32,22 @@ public:
 
 	/** The tree the AI runs. Bosses share one base tree (the fight-start gate) and put their own spells in
 	 * BehaviourStateTree. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacter|AI")
 	TObjectPtr<UStateTree> StateTree;
 
 	/** This enemy's own spell chain, run in StateTree's linked-asset state tagged AI.Boss.Behaviour. None = StateTree
 	 * runs as authored. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacter|AI")
 	TObjectPtr<UStateTree> BehaviourStateTree;
 
 	/** Played by AGeoArena::PlayIntro on its arena's first aggro, before the fight starts. None = no intro. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoBoss")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Boss")
 	TObjectPtr<UAnimMontage> IntroMontage;
 
-	UPROPERTY(BlueprintAssignable, Category = "GeoBoss")
+	UPROPERTY(BlueprintAssignable, Category = "GeoCharacter|Boss")
 	FOnBossDefeated OnEnemyDefeated;
 
-	UPROPERTY(BlueprintReadOnly, Category = "GeoBoss")
+	UPROPERTY(BlueprintReadOnly, Category = "GeoCharacter|Boss")
 	TWeakObjectPtr<AGeoArena> Arena;
 
 	/** True while this enemy's arena runs a fight, false before aggro and for an enemy with no arena. Reads the
@@ -64,9 +64,13 @@ protected:
 	/** Sets the combat level from the current GameState difficulty before calling the base GAS init. */
 	virtual void InitGAS() override;
 
+	/** Takes the enemy out of the fight — spawned elements, abilities, AI, movement, collision, damage — then lets the
+	 * base play the death montage and destroy the actor once it has played out. */
+	virtual void DeathLogic() override;
+
 	/**
 	 * Server-only gate on zero health: resets attributes to full when ResetToFullLifeWhenReachingZero is set,
-	 * otherwise broadcasts OnEnemyDefeated and destroys the actor.
+	 * otherwise broadcasts OnEnemyDefeated and dies.
 	 *
 	 * @param NewValue  Current health value after the change.
 	 */
@@ -75,6 +79,6 @@ protected:
 	virtual void OnHealthChanged_Implementation(float NewValue);
 
 private:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "GeoEnemy")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "GeoCharacter|Boss")
 	bool ResetToFullLifeWhenReachingZero = false;
 };

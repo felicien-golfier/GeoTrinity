@@ -18,7 +18,9 @@ The fire sockets the abilities read, anim_socket_<n>, hang off the root a fixed 
 leaves the same point whatever the clip does to the part that seems to fire it.
 
 Outlines come from AI/Python/Mesh/generate_class_badge_meshes.py, loaded rather than restated: a vertex belongs to
-the part whose outline holds it, which needs no point list since the parts never touch.
+the part whose outline holds it, which needs no point list since the parts never touch. Parts stacked over one
+another share an outline, so between those the one standing nearest the vertex's height takes it; a lifted part's
+bone stands at its own height.
 
 Re-runnable: a re-run rebuilds both assets from the badges, which discards any animation authored on the old rig.
 
@@ -47,7 +49,7 @@ FIRE_SOCKET_REACH = 50.0  # how far ahead of the origin every fire socket sits
 BADGES = {
     "Square": {"parts": ["MandibleLeft", "MandibleRight"], "sockets": [43.0, -43.0, 43.0],
                "keyhole_socket": "SacrificeHole"},
-    "Triangle": {"parts": ["Needle"], "sockets": [0.0, 0.0]},
+    "Triangle": {"parts": ["Needle", "Plug"], "sockets": [0.0, 0.0]},
     "Circle": {"parts": ["Hourglass"], "sockets": [0.0]},
 }
 
@@ -60,10 +62,9 @@ def load_generator():
     return namespace
 
 
-def world_outlines(generator, static_mesh_name):
-    """Every part of one badge as its world-space XY outline, the body first."""
-    parts = generator["to_world"](static_mesh_name)
-    return [part.outline for part in parts]
+def world_parts(generator, static_mesh_name):
+    """Every part of one badge in world space, the body first."""
+    return generator["to_world"](static_mesh_name)
 
 
 def centre(outline):
@@ -91,15 +92,15 @@ def box_centre(outlines):
     return centre([point for outline in outlines for point in outline])
 
 
-def bone_table(part_names, outlines):
+def bone_table(part_names, parts):
     """The rig as (bone, parent, location in parent space), parents before children, the root first."""
-    box_x, box_y = box_centre(outlines)
+    box_x, box_y = box_centre([part.outline for part in parts])
     bones = [(ROOT, "None", (0.0, 0.0, 0.0)),
              (BOTTOM, ROOT, (box_x, box_y, -LAYER_LIFT)),
              (TOP, ROOT, (box_x, box_y, LAYER_LIFT))]
-    for name, outline in zip(part_names, outlines[1:]):
-        x, y = centre(outline)
-        bones.append((name, TOP, (x - box_x, y - box_y, -LAYER_LIFT)))
+    for name, part in zip(part_names, parts[1:]):
+        x, y = centre(part.outline)
+        bones.append((name, TOP, (x - box_x, y - box_y, part.lift - LAYER_LIFT)))
     return bones
 
 
@@ -112,11 +113,32 @@ def get_or_create(asset_name, asset_class):
     return asset or unreal.AssetToolsHelpers.get_asset_tools().create_asset(asset_name, FOLDER, asset_class, None)
 
 
+def add_missing_bones(mesh, bones):
+    """Adds each bone of the table the mesh does not carry yet as a leaf, through the skeleton modifier -> [name].
+
+    The rebuild only ever re-places bones: growing the count there rebuilds a mesh its skeleton cannot map yet, which
+    brings the editor down. Leaves added in table order also keep the order the rebuild then writes.
+    """
+    skeleton = mesh.get_editor_property("skeleton")
+    if skeleton is None:
+        return []  # a mesh created this run: nothing is live on it yet
+    existing = {str(name) for name in APE.get_bone_names(APE.get_reference_pose(skeleton))}
+    missing = [(name, parent, location) for name, parent, location in bones if name not in existing]
+    if missing:
+        modifier = unreal.SkeletonModifier()
+        modifier.set_skeletal_mesh(mesh)
+        modifier.add_bones([unreal.Name(name) for name, _, _ in missing],
+                           [unreal.Name(parent) for _, parent, _ in missing],
+                           [unreal.Transform(unreal.Vector(*location)) for _, _, location in missing])
+        modifier.commit_skeleton_to_skeletal_mesh()
+    return [name for name, _, _ in missing]
+
+
 def bind_vertices(mesh, owners):
     """Paint every vertex wholly to the bone of the outline holding it -> {bone: vertex count}.
 
-    `owners` is [(bone, outline)]. Positions come from the editor shim and weights from the modifier; both walk the
-    mesh description cloned from LOD 0, which is what makes them line up index for index.
+    `owners` is [(bone, outline, lift)]. Positions come from the editor shim and weights from the modifier; both walk
+    the mesh description cloned from LOD 0, which is what makes them line up index for index.
     """
     positions = unreal.get_default_object(unreal.GeoAnimBuilderUtil).get_skeletal_mesh_vertex_positions(mesh)
     modifier = unreal.SkinWeightModifier()
@@ -127,8 +149,8 @@ def bind_vertices(mesh, owners):
 
     report = {}
     for index, position in enumerate(positions):
-        distance, bone = min((distance_to_outline((position.x, position.y), outline), bone)
-                             for bone, outline in owners)
+        distance, _, bone = min((distance_to_outline((position.x, position.y), outline), abs(position.z - lift), bone)
+                                for bone, outline, lift in owners)
         if distance > SNAP_TOLERANCE:
             raise RuntimeError("vertex {} at {} sits {:.1f} away from every outline".format(index, position, distance))
         modifier.set_vertex_weights(index, {unreal.Name(bone): 1.0}, True)
@@ -179,17 +201,19 @@ def extent(outline):
 
 
 def rig_badge(generator, badge, setup):
-    outlines = world_outlines(generator, "SM_{}Badge".format(badge))
+    parts = world_parts(generator, "SM_{}Badge".format(badge))
+    outlines = [part.outline for part in parts]
     part_names = setup["parts"]
-    if len(outlines) != len(part_names) + 1:
+    if len(parts) != len(part_names) + 1:
         raise RuntimeError("{} has {} parts, the rig names {} plus the body".format(
-            badge, len(outlines), len(part_names)))
+            badge, len(parts), len(part_names)))
 
     static_mesh = unreal.load_asset("{}/SM_{}Badge".format(FOLDER, badge))
     skeleton = get_or_create("SK_{}Badge".format(badge), unreal.Skeleton)
     mesh = get_or_create("SKM_{}Badge".format(badge), unreal.SkeletalMesh)
 
-    bones = bone_table(part_names, outlines)
+    bones = bone_table(part_names, parts)
+    added = add_missing_bones(mesh, bones)
     if not unreal.get_default_object(unreal.GeoAnimBuilderUtil).rebuild_skeletal_mesh_from_static_mesh(
             mesh, static_mesh, skeleton,
             [unreal.Name(name) for name, _, _ in bones],
@@ -199,7 +223,8 @@ def rig_badge(generator, badge, setup):
         raise RuntimeError("RebuildSkeletalMeshFromStaticMesh failed for {} — see the editor log".format(badge))
 
     part_outlines = dict(zip(part_names, outlines[1:]))
-    binding = bind_vertices(mesh, [(BOTTOM, outlines[0])] + list(part_outlines.items()))
+    binding = bind_vertices(mesh, [(bone, part.outline, part.lift)
+                                   for bone, part in zip([BOTTOM] + part_names, parts)])
     sockets = place_sockets(mesh, setup["sockets"])
     if "keyhole_socket" in setup:
         hole_x, hole_y = keyhole_centre(generator)
@@ -211,7 +236,7 @@ def rig_badge(generator, badge, setup):
 
     reference = APE.get_reference_pose(skeleton)
     return {"mesh": mesh.get_path_name(), "skeleton": skeleton.get_path_name(),
-            "binding": binding, "sockets": sockets,
+            "added": added, "binding": binding, "sockets": sockets,
             "bones": {str(bone): [round(v, 2) for v in (lambda t: (t.x, t.y, t.z))(
                 APE.get_bone_pose(reference, str(bone), unreal.AnimPoseSpaces.WORLD).translation)]
                 for bone in APE.get_bone_names(reference)},

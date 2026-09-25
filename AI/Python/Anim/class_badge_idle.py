@@ -1,12 +1,13 @@
 """Class badge idles: the badge breathes, and every so often plays with its floating parts as if bored.
 
     Square    a mandible slides clear and twirls a full turn; both drum against each other; the other one twirls
-    Triangle  the needle slides out of its opening and twirls; later leans out and looks one way, then the other
+    Triangle  the needle slides out over the body and twirls; later leans out and looks one way, then the other; the
+              plug under it taps the front rim of its hole twice, then the back rim
     Circle    the hourglass hops out of its bite and flips over; later rolls out along the disc's rim and back
 
 The breath is the root's own X and Y scale, so it reaches the parts too and a part clear of the body stays clear; it
-also keeps playing under a top-slot montage. A part only turns once it has slid clear of everything round it, and every
-turn is a whole one, so the loop closes on the pose it opened on. Every key eases to a stop.
+also keeps playing under a top-slot montage. A part only turns where the turn cannot sweep it into anything round it,
+and every turn is a whole one, so the loop closes on the pose it opened on. Every key eases to a stop.
 
 One sequence per badge feeds both layers of its AnimBlueprint (AI/Python/Anim/class_badge_anim_blueprints.py), each
 layer taking its own bones from it.
@@ -62,6 +63,15 @@ def twirl(first, out, side, turn):
             (first + 49, REST, snap)]   # the same rotation, a whole turn round
 
 
+def tap(first, reach):
+    """Slides `reach` forward onto whatever stops it, twice, then back home."""
+    return [(first, REST, smooth),
+            (first + 10, pose(reach), accelerate),
+            (first + 15, pose(reach * 0.7), decelerate),
+            (first + 19, pose(reach), accelerate),
+            (first + 34, REST, smooth)]
+
+
 def drum(first, inward, taps):
     """Taps `taps` times toward the other mandible, `inward` units across."""
     keys = [(first, REST, smooth)]
@@ -107,6 +117,7 @@ def rim_roll(first, out, orbit, roll):
 #   root              X and Y scale gained at a full breath
 #   orbit_body        parts orbit round the body's own centre rather than the badge's
 #   parts             bone -> [(frame, pose, easing into this key)]; before the first key and after the last, rest
+#   lifted            parts standing clear above the body, which the top-down clearance checks leave out
 BADGES = {
     "Square": {
         "frames": 300, "breaths": 3,
@@ -121,7 +132,10 @@ BADGES = {
         "breath": [(0.0, 0.0), (0.36, 1.0), (0.5, 1.0), (0.66, -0.2), (1.0, 0.0)],
         "root": (0.03, 0.025),
         "orbit_body": False,
-        "parts": {"Needle": twirl(20, 14.0, 0.0, 360.0) + look(130, 8.0, 25.0)[1:]},
+        # The needle stands clear over the body, free to turn; the plug stands in its hole, 10.85 laying it on either rim.
+        "parts": {"Needle": twirl(20, 8.0, 0.0, 360.0) + look(130, 12.0, 30.0)[1:],
+                  "Plug": tap(85, 10.85) + tap(200, -10.85)[1:]},
+        "lifted": ("Needle",),
     },
     "Circle": {
         "frames": 270, "breaths": 3,
@@ -191,7 +205,7 @@ def report(toolkit, badge, setup, sequence, outline):
     skeleton_path = "{}/SK_{}Badge".format(MESH_FOLDER, badge)
     groups = toolkit["rigid_vertex_groups"]("{}/SKM_{}Badge".format(MESH_FOLDER, badge), skeleton_path)
     reference = toolkit["_component_transforms"](APE.get_reference_pose(unreal.load_asset(skeleton_path)))
-    parts = list(setup["parts"])
+    parts = [part for part in setup["parts"] if part not in setup.get("lifted", ())]
     options = unreal.AnimPoseEvaluationOptions()
 
     LOG.append("{} - {} keys for {} frames ({:.1f} s)".format(

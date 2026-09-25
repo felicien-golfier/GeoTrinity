@@ -7,6 +7,7 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Animation/Skeleton.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -317,10 +318,17 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 
 	float const PlayRate = SectionLength / GetFireDelay();
 
-	// Only PlayMontage bumps the replicated PlayInstanceId, the single thing that makes a non-owning client restart the
-	// montage. A section jump reaches it as a position correction, which does nothing once that client's montage
-	// instance ended — and it ends whenever the correction lands a ping too late. So every shot plays outright.
-	ASC->PlayMontage(this, ActivationInfo, AnimMontage, PlayRate, SectionToJumpTo);
+	UAnimMontage const* PlayingMontage = ASC->GetCurrentMontage();
+	bool const bCoveredByFullBodyMontage = PlayingMontage
+		&& PlayingMontage->IsValidSlot(FAnimSlotGroup::DefaultSlotName)
+		&& !AnimMontage->IsValidSlot(FAnimSlotGroup::DefaultSlotName);
+	if (!bCoveredByFullBodyMontage)
+	{
+		// Only PlayMontage bumps the replicated PlayInstanceId, the single thing that makes a non-owning client restart
+		// the montage. A section jump reaches it as a position correction, which does nothing once that client's montage
+		// instance ended — and it ends whenever the correction lands a ping too late. So every shot plays outright.
+		ASC->PlayMontage(this, ActivationInfo, AnimMontage, PlayRate, SectionToJumpTo);
+	}
 }
 
 void UGeoGameplayAbility::SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const

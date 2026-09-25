@@ -22,13 +22,6 @@ namespace
 	constexpr int32 MaxMaskedPillarSlots = 8;
 	// Matches the "unused slot" default of MPC_MaskedArea's PillarPosWS_XX parameters.
 	constexpr FLinearColor UnusedPillarSlotValue(-10000.f, -10000.f, -10000.f, 0.f);
-
-	FName const PillarRadiusParam(TEXT("Pillar_Radius"));
-
-	FName GetPillarSlotParameterName(int32 const SlotIndex)
-	{
-		return FName(FString::Printf(TEXT("PillarPosWS_%02d"), SlotIndex));
-	}
 } // namespace
 
 UDevastatingWavePattern::UDevastatingWavePattern()
@@ -87,7 +80,8 @@ void UDevastatingWavePattern::ClearData()
 	for (int32 SlotIndex = 0; SlotIndex < MaxMaskedPillarSlots; ++SlotIndex)
 	{
 		UKismetMaterialLibrary::SetVectorParameterValue(this, MaskMaterialParameterCollection,
-														GetPillarSlotParameterName(SlotIndex), UnusedPillarSlotValue);
+														GeoMaterialParams::GetPillarPositionName(SlotIndex),
+														UnusedPillarSlotValue);
 	}
 }
 void UDevastatingWavePattern::StartPattern()
@@ -147,10 +141,10 @@ void UDevastatingWavePattern::AddPillarToVfxMask()
 
 	FPillarWaveData const& PillarData = PillarsWaveData[SlotIndex];
 	UKismetMaterialLibrary::SetVectorParameterValue(this, MaskMaterialParameterCollection,
-													GetPillarSlotParameterName(SlotIndex),
+													GeoMaterialParams::GetPillarPositionName(SlotIndex),
 													FLinearColor(PillarData.Location.X, PillarData.Location.Y, 0.f));
-	UKismetMaterialLibrary::SetScalarParameterValue(this, MaskMaterialParameterCollection, PillarRadiusParam,
-													PillarData.Radius);
+	UKismetMaterialLibrary::SetScalarParameterValue(this, MaskMaterialParameterCollection,
+													GeoMaterialParams::PillarRadius, PillarData.Radius);
 }
 
 FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)

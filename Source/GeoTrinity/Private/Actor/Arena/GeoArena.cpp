@@ -31,6 +31,7 @@
 #include "Settings/GameDataSettings.h"
 #include "System/GeoCombatStatsSubsystem.h"
 #include "System/GeoLeaderboardSave.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 static TAutoConsoleVariable<bool> CVarSkipBossIntro(TEXT("Geo.SkipBossIntro"),
@@ -40,8 +41,6 @@ static TAutoConsoleVariable<bool> CVarSkipBossIntro(TEXT("Geo.SkipBossIntro"),
 													 false,
 #endif
 													 TEXT("When true, boss intros never play."));
-
-int32 constexpr ArenaCenterPrimitiveDataIndex = 1;
 
 AGeoArena::AGeoArena()
 {
@@ -472,7 +471,8 @@ void AGeoArena::ApplyBackgroundLook() const
 		{
 			UStaticMeshComponent* const FloorMesh = Floor->GetStaticMeshComponent();
 			FloorMesh->SetMaterial(0, Look);
-			FloorMesh->SetCustomPrimitiveDataVector2(ArenaCenterPrimitiveDataIndex, FVector2D(GetActorLocation()));
+			FloorMesh->SetCustomPrimitiveDataVector2(GeoMaterialParams::ArenaCenterPrimitiveDataIndex,
+													 FVector2D(GetActorLocation()));
 		}
 	}
 }

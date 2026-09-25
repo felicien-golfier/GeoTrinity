@@ -55,10 +55,11 @@ MOIRA_START = 15
 MOIRA_SPIN = 48                                  # frames per loop, two whole rolls in it
 MOIRA_WOUND = body(-6.0, 0.94, 1.06, roll=-40.0)
 RECALL_START = 3
-RECALL_HELD = body(-8.0, 0.9, 1.07, roll=360.0)
+RECALL_HELD = body(-1.6, 1.0, 1.03, roll=360.0)
 
 # Per clip: the badge, its sections as (name, first frame, next), and body keys as (frame, pose, easing into it).
-# The body only ever draws back and narrows: forward or longer, it would close on the part in front of it.
+# The body only ever draws back and narrows: forward or longer, it would close on the part in front of it. The
+# Triangle's draws back short of the room its hole leaves the plug, and never shortens, which closes the hole on it.
 CLIPS = {
     "MoiraBeam": {
         "badge": "Circle",
@@ -73,9 +74,9 @@ CLIPS = {
         "badge": "Triangle",
         "sections": [("Start", 0, "End"), ("End", RECALL_START, "None")],
         "keys": [(0, REST, smooth),
-                 (RECALL_START, body(-4.0, 0.96, 1.04, roll=-35.0), smooth),
-                 (4, body(-7.0, 0.92, 1.06, roll=5.0), snap),     # let go
-                 (30, body(-8.0, 0.9, 1.07, roll=375.0), decelerate),
+                 (RECALL_START, body(-1.0, 1.0, 1.02, roll=-35.0), smooth),
+                 (4, body(-1.5, 1.0, 1.03, roll=5.0), snap),      # let go
+                 (30, body(-1.8, 1.0, 1.035, roll=375.0), decelerate),
                  (36, RECALL_HELD, smooth),
                  (42, RECALL_HELD, smooth),
                  (62, body(roll=360.0), smooth),
@@ -107,12 +108,18 @@ def key(toolkit, clip, frame, bone, rest_local):
     return translation, rotation, scale
 
 
-def body_outline(badge):
-    """The badge body's world outline, from the generator that built it."""
+def body_shape(badge):
+    """The badge body's world outline, and its half height along X for a wedge, else None, from the generator."""
     path = unreal.Paths.project_dir() + GENERATOR
     generator = {"__name__": "badge_generator"}
     exec(compile(open(path).read(), path, "exec"), generator)
-    return generator["to_world"]("SM_{}Badge".format(badge))[0].outline
+    name = "SM_{}Badge".format(badge)
+    body = generator["to_world"](name)[0]
+    if body.kind != generator["WEDGE"]:
+        return body.outline, None
+    back, front = min(p[0] for p in body.outline), max(p[0] for p in body.outline)
+    half = 0.5 * generator["BODY_HEIGHT"][name]
+    return body.outline, lambda x: half * generator["wedge"](x, back, front)
 
 
 def build(toolkit, name, clip):
@@ -149,7 +156,7 @@ def report(toolkit, clip, sequence, montage):
     placed = toolkit["place_groups"](groups, reference)
     heights = [vertex.z for vertex in placed[BODY]]
     parts = [vertex for bone, vertices in placed.items() if bone != BODY for vertex in vertices]
-    outline = body_outline(badge)
+    outline, half_height = body_shape(badge)
     options = unreal.AnimPoseEvaluationOptions()
     frames = clip["keys"][-1][0]
 
@@ -161,7 +168,8 @@ def report(toolkit, clip, sequence, montage):
     deepest = 0.0
     for frame in range(frames + 1):
         posed = toolkit["_component_transforms"](APE.get_anim_pose_at_time(sequence, frame / float(FPS), options))
-        sunk = toolkit["sunk_depth"](parts, outline, min(heights), max(heights), reference[BODY], posed[BODY])
+        sunk = toolkit["sunk_depth"](parts, outline, min(heights), max(heights), reference[BODY], posed[BODY],
+                                     half_height)
         deepest = max(deepest, sunk)
         LOG.append("%5d  %+7.2f  %5.3f  %5.3f  %6.1f  %6.2f" % (
             (frame,) + body_pose(clip["keys"], frame) + (sunk,)))

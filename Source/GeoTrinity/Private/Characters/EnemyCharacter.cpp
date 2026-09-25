@@ -65,9 +65,20 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 		else
 		{
 			OnEnemyDefeated.Broadcast();
-			Destroy();
+			Death();
 		}
 	}
+}
+
+void AEnemyCharacter::DeathLogic()
+{
+	StopAllSpawnedElements();
+	AbilitySystemComponent->CancelAllAbilities();
+	DetachFromControllerPendingDestroy();
+	GetCharacterMovement()->DisableMovement();
+	SetActorEnableCollision(false);
+	SetCanBeDamaged(false);
+	Super::DeathLogic();
 }
 
 bool AEnemyCharacter::IsFighting() const

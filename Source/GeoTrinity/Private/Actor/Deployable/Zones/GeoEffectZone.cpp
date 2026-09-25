@@ -8,6 +8,7 @@
 #include "Components/MeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Net/UnrealNetwork.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AGeoEffectZone::AGeoEffectZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -50,6 +51,7 @@ void AGeoEffectZone::OnConstruction(FTransform const& Transform)
 	{
 		Data.Params.Size = Radius;
 		Data.Params.Color = Color;
+		Data.Params.SecondaryColors = SecondaryColors;
 		Data.Params.Attitude = AttitudeBitmask;
 		Data.EffectDataArray = EffectDataArray;
 	}
@@ -69,6 +71,7 @@ void AGeoEffectZone::BeginPlay()
 		Data.Level = Level;
 		Data.Params.Size = Radius;
 		Data.Params.Color = Color;
+		Data.Params.SecondaryColors = SecondaryColors;
 		Data.Params.Attitude = AttitudeBitmask;
 		Data.EffectDataArray = EffectDataArray;
 		InitGas(Data.Owner);
@@ -143,7 +146,7 @@ void AGeoEffectZone::ApplyRadius() const
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoEffectZone::ApplyColor() const
 {
-	FLinearColor const ZoneColor = Data.Params.Color.GetColor();
+	TArray<FLinearColor> const Colors = GeoColor::GetMeaningColors(Data.Params.Color, Data.Params.SecondaryColors);
 	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
 	{
 		for (int32 MaterialIndex = 0; MaterialIndex < MeshComponent->GetNumMaterials(); ++MaterialIndex)
@@ -156,10 +159,13 @@ void AGeoEffectZone::ApplyColor() const
 			{
 				continue;
 			}
-			for (FName const& ParameterName : ColorParameterNames)
+			Material->SetVectorParameterValue(GeoMaterialParams::ZoneOutlineColor, Colors[0]);
+			for (int32 Index = 0; Index < Colors.Num(); ++Index)
 			{
-				Material->SetVectorParameterValue(ParameterName, ZoneColor);
+				Material->SetVectorParameterValue(GeoMaterialParams::ZoneInsideColors[Index], Colors[Index]);
 			}
+
+			Material->SetScalarParameterValue(GeoMaterialParams::ZoneColorCount, Colors.Num());
 		}
 	}
 }

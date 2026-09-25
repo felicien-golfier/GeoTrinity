@@ -54,6 +54,13 @@ struct GEOTRINITY_API FGeoCueParam
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	EGeoColor Color = EGeoColor::Neutral;
 
+	// Further palette slots the cue's VFX draws beside Color, one per extra meaning of what it shows (damage beside
+	// heal, say), split by its material's colour pattern. Travel in the cue's effect context, which only carries them;
+	// a cue Blueprint hands them to its system through GeoASLib::SetCueMeaningColors. At most
+	// GeoColor::MaxMeaningColorCount - 1, Override excluded like Color.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<EGeoColor> SecondaryColors;
+
 	// MIGRATION SHIM — delete with FGeoSoundRow once the sounds are re-authored as moments.
 	// Read-only: nothing plays it any more. It exists so the tagged property still deserializes out of the assets that
 	// authored it, instead of being dropped the next time one of them is saved.

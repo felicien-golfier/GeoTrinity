@@ -7,24 +7,28 @@ belong to the material.
 A badge is a list of parts that never touch, so a part is free to be driven on its own bone once the mesh
 is rigged. The circle badge is two: the big disc carries a bite out of its top, and the small disc floats
 free inside that bite, separated by the ring of black the art draws between them. The triangle badge is
-two the same way — the arrowhead with its point cut off, and the needle standing free in the opening as
-that point. The square badge is three: the block, and the two mandibles lifted off its top edge.
+three — the arrowhead with a diamond hole through its upper half, the plug standing in that hole, and the
+needle, the plug's twin, standing NEEDLE_LIFT above it clear of the body's top, so from above the two read
+as one diamond until the needle moves. The square badge is three: the block, and the two mandibles lifted
+off its top edge.
 
 Most parts are PRISM, extruded to their badge's BODY_HEIGHT. The triangle's body is a WEDGE instead: that
 height at its base, thinning toward the point to WEDGE_TIP of it at the apex, so the point still reads while
 it rolls.
-Three kinds turn in place rather than read as a flat sliver: the needle is a DIAMOND, a waist ring with
+Three kinds turn in place rather than read as a flat sliver: plug and needle are DIAMONDs, a waist ring with
 an apex above and below; each mandible is a BAR; and the circle's small disc is an HOURGLASS, pinched at
 mid height so that turning it shows something a cylinder never would. All three are as deep as their own
 narrow side is wide, so they turn without the silhouette swelling.
 
 Outlines are authored in the source images' pixel space (341x341, Y down) so the numbers stay checkable
 against the art, then mapped to world: image up -> +X (forward), image right -> +Y. A badge is centred on
-the bounding box of all its parts together, or for one in CENTROID_ORIGIN on its footprint's centroid, so it
-turns about where its weight sits. It is scaled so its longest side is BOX, matching the 100-unit bounds of
+the bounding box of all its parts together, or for one in CENTROID_ORIGIN on its footprint's centroid, where a
+part lifted over another counts once, so it turns about where its weight sits. It is scaled so its longest side is BOX, matching the 100-unit bounds of
 the SKM_Cube/Cone/Cylinder meshes it replaces — so all three keep one hitbox.
 
 Caps are ear-clipped: the square and the triangle are concave, so a convex fan would fill their notches.
+A hole is cut by a slit: the outline runs in to the hole and back out along the same edge, so it stays one
+polygon to clip, and an edge walked both ways gets no side wall.
 
 Run via mcp-unreal execute_script. Summary written to Saved/class_badge_gen.json.
 """
@@ -68,7 +72,7 @@ SQ_MANDIBLE_EXTRA = 23.0  # reach past where the art ends them, so they read as 
 
 # --- Triangle badge: an arrowhead with a chevron bitten out of its base. ---
 TRI_OUTLINE = [
-    (168.0, 16.0),    # apex — the needle's own point, so the body stops short of it
+    (168.0, 16.0),    # apex
     (292.0, 314.0),   # base, right
     (185.0, 301.0),   # chevron shoulder, right
     (168.0, 277.0),   # chevron tip
@@ -76,13 +80,15 @@ TRI_OUTLINE = [
     (44.0, 314.0),    # base, left
 ]
 
-# --- Triangle needle: the pale diamond at the tip, a solid of its own standing in the body's opening. ---
+# --- Triangle needle: the pale diamond, a solid of its own standing in a hole through the body. ---
 NEEDLE_CX = 168.0      # on the body's axis, not the art's 170.5, since the body is symmetrised
-NEEDLE_HALF = 15.0     # half-width at the waist, measured off the art's pale diamond
-NEEDLE_GAP = 12.5      # black between needle and body; 4.47 world units, matching the circle's CIRCLE_GAP
+NEEDLE_CY = 120.0      # waist
+NEEDLE_HALF = 20.0     # half-width at the waist; leaves the hole a rim 9 px wide, 3 world units
+NEEDLE_GAP = 12.5      # black between plug and body; 4.2 world units, as on the other two
+NEEDLE_LIFT = 34.0     # world units the needle's waist stands over the plug's: clear of the body even rolled over
 
 PRISM, WEDGE, DIAMOND, BAR, HOURGLASS = "prism", "wedge", "diamond", "bar", "hourglass"
-Part = collections.namedtuple("Part", "outline kind")
+Part = collections.namedtuple("Part", "outline kind lift", defaults=(0.0,))  # lift: world units up
 
 
 def arc(cx, cy, radius, start_deg, end_deg, segments, negative=False):
@@ -162,47 +168,37 @@ def square_parts():
 
 
 def needle_kite(grow):
-    """The needle's four corners: the badge's own point, cut free as a rhombus and offset out by `grow`.
+    """The needle's four corners — tip, right, base, left — as a rhombus offset out by `grow`.
 
-    Its tip is the apex itself and its waist corners sit on the body's two edges, so it is exactly the
-    shape the arrowhead's point already had; the base mirrors the tip about the waist. Offsetting every
-    edge outward by `grow` is, on a rhombus, a scale about its centre — so the black between needle and
-    body keeps one width all the way round, as it does around the circle's small disc.
+    Its sides run parallel to the arrowhead's, so it is the arrowhead's point in miniature and the rim
+    between hole and edge keeps one width. Offsetting every edge outward by `grow` is, on a rhombus, a
+    scale about its centre — so the gap between needle and body keeps one width all the way round.
     """
     apex, base_right = TRI_OUTLINE[0], TRI_OUTLINE[1]
     half_height = NEEDLE_HALF * (base_right[1] - apex[1]) / (base_right[0] - apex[0])
     scale = 1.0 + grow * math.hypot(NEEDLE_HALF, half_height) / (NEEDLE_HALF * half_height)
     half_wide, half_long = NEEDLE_HALF * scale, half_height * scale
-    cy = apex[1] + half_height
-    return [(NEEDLE_CX, cy - half_long),
-            (NEEDLE_CX + half_wide, cy),
-            (NEEDLE_CX, cy + half_long),
-            (NEEDLE_CX - half_wide, cy)]
-
-
-def line_cross(a, b, c, d):
-    """Where the line through a,b meets the line through c,d. They must not be parallel."""
-    r = (b[0] - a[0], b[1] - a[1])
-    s = (d[0] - c[0], d[1] - c[1])
-    t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / (r[0] * s[1] - r[1] * s[0])
-    return (a[0] + t * r[0], a[1] + t * r[1])
+    return [(NEEDLE_CX, NEEDLE_CY - half_long),
+            (NEEDLE_CX + half_wide, NEEDLE_CY),
+            (NEEDLE_CX, NEEDLE_CY + half_long),
+            (NEEDLE_CX - half_wide, NEEDLE_CY)]
 
 
 def triangle_parts():
-    """The arrowhead with its point opened out around the needle, and the needle standing in the opening.
+    """The whole arrowhead with a hole through it, the plug standing in the hole, and the needle over the plug.
 
-    The needle is the point, so the body has to stop short of it: grown by NEEDLE_GAP it is wider than the
-    arrowhead at its waist and severs the apex outright, leaving the body bounded by the grown rhombus's
-    two trailing edges. The opening faces out, like the bite in the circle's big disc, and the body stays a
-    simple polygon with no hole to triangulate around.
+    The hole is the plug grown by NEEDLE_GAP, reached by a slit down the axis from the apex: the outline goes
+    round the arrowhead, down the slit, round the hole the other way and back up.
     """
     tip, right, base, left = needle_kite(NEEDLE_GAP)
-    apex, base_right, chevron_right, chevron_tip, chevron_left, base_left = TRI_OUTLINE
+    body = TRI_OUTLINE + [TRI_OUTLINE[0], tip, left, base, right, tip]
+    # The needle before the plug: the plug's bone was added after the needle's, and a rebuild keeps bone order.
+    return [Part(body, WEDGE), Part(needle_kite(0.0), DIAMOND, NEEDLE_LIFT), Part(needle_kite(0.0), DIAMOND)]
 
-    body = [line_cross(apex, base_left, left, base),
-            base_left, chevron_left, chevron_tip, chevron_right, base_right,
-            line_cross(apex, base_right, right, base), base]
-    return [Part(body, WEDGE), Part(needle_kite(0.0), DIAMOND)]
+
+def wedge(x, back, front):
+    """The share of its full height a WEDGE keeps at `x`: all of it at the badge's `back`, WEDGE_TIP at its `front`."""
+    return 1.0 + (WEDGE_TIP - 1.0) * (x - back) / (front - back)
 
 
 def centroid(outline):
@@ -220,7 +216,7 @@ def frame(name):
     ys = [p[1] for part in parts for p in part.outline]
     scale = BOX / max(max(xs) - min(xs), max(ys) - min(ys))
     if name in CENTROID_ORIGIN:
-        weights = [(abs(signed_area(part.outline)), centroid(part.outline)) for part in parts]
+        weights = [(abs(signed_area(part.outline)), centroid(part.outline)) for part in parts if not part.lift]
         total = sum(weight for weight, _ in weights)
         return (sum(weight * c[0] for weight, c in weights) / total,
                 sum(weight * c[1] for weight, c in weights) / total, scale)
@@ -230,7 +226,7 @@ def frame(name):
 def to_world(name):
     """One badge's parts in world XY. One centre and scale for the whole badge, so its parts keep their offsets."""
     cx, cy, scale = frame(name)
-    return [Part([((cy - y) * scale, (x - cx) * scale) for x, y in part.outline], part.kind)
+    return [Part([((cy - y) * scale, (x - cx) * scale) for x, y in part.outline], part.kind, part.lift)
             for part in badge_parts()[name]]
 
 
@@ -300,15 +296,15 @@ def build(name, parts):
         return (0.5 * (max(narrow) - min(narrow)),
                 ((low[0] + high[0]) * 0.5, (low[1] + high[1]) * 0.5))
 
-    def diamond(outline):
-        """The outline as a waist ring at z=0 with an apex above and below — 6 vertices, 8 triangles.
+    def diamond(outline, lift):
+        """The outline as a waist ring at z=`lift` with an apex above and below — 6 vertices, 8 triangles.
 
-        The apexes stand as far off the plane as the outline is wide across its narrow axis, so that
+        The apexes stand as far off the ring as the outline is wide across its narrow axis, so that
         section is a square diamond.
         """
         half, (cx, cy) = narrow_side(outline)
-        ring = [vert(x, y, 0.0) for x, y in outline]
-        top, bottom = vert(cx, cy, half), vert(cx, cy, -half)
+        ring = [vert(x, y, lift) for x, y in outline]
+        top, bottom = vert(cx, cy, lift + half), vert(cx, cy, lift - half)
         for i in range(len(ring)):
             n = (i + 1) % len(ring)
             tri(ring[i], ring[n], top)
@@ -317,10 +313,6 @@ def build(name, parts):
     xs = [p[0] for part in parts for p in part.outline]
     body_half = 0.5 * BODY_HEIGHT[name]
     back, front = min(xs), max(xs)
-
-    def wedge(x):
-        """The share of its full height a WEDGE keeps at `x`: all of it at the badge's back, WEDGE_TIP at its front."""
-        return 1.0 + (WEDGE_TIP - 1.0) * (x - back) / (front - back)
 
     def extrude(outline, profile, height):
         """One part: its own closed solid, the outline laid down once per (z, scale) layer of `profile`.
@@ -336,8 +328,10 @@ def build(name, parts):
             layers.append([vert(x, y, z * height(x)) for x, y in points])
 
         count = len(outline)
+        edges = [(outline[i], outline[(i + 1) % count]) for i in range(count)]
+        sides = [i for i, (a, b) in enumerate(edges) if (b, a) not in edges]  # a slit is no side
         for low, high in zip(layers, layers[1:]):
-            for i in range(count):
+            for i in sides:
                 n = (i + 1) % count
                 tri(low[i], low[n], high[n])
                 tri(low[i], high[n], high[i])
@@ -351,17 +345,18 @@ def build(name, parts):
 
     for part in parts:
         if part.kind == DIAMOND:
-            diamond(part.outline)
+            diamond(part.outline, part.lift)
         else:
             # A body takes the badge's full depth; a part that has to turn is as deep as it is narrow.
             half = body_half if part.kind in (PRISM, WEDGE) else narrow_side(part.outline)[0]
             waist = CIRCLE_WAIST if part.kind == HOURGLASS else 1.0
-            height = wedge if part.kind == WEDGE else (lambda x: 1.0)
+            height = (lambda x: wedge(x, back, front)) if part.kind == WEDGE else (lambda x: 1.0)
             extrude(part.outline, ((-half, 1.0), (0.0, waist), (half, 1.0)), height)
 
     package = "{}/{}".format(FOLDER, name)
     if unreal.EditorAssetLibrary.does_asset_exist(package):
         asset = unreal.load_asset(package)  # rewritten in place: a deleted loaded package stays unloadable
+        asset.get_num_vertices(0)  # finishes an async compile, or the rebuild deletes live render data
     else:
         asset = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
             name, FOLDER, unreal.StaticMesh, None)

@@ -214,9 +214,12 @@ stand_in.MaterialExpressionMaterialAttributeLayers = engine_class(
     {"default_layers": lambda: engine_class("MaterialLayersFunctions", Obj, {
         "layers": lambda: [None], "blends": list,
         "editor_only": lambda: Obj(layer_guids=[Obj(text="background")])})()})
-stand_in.MaterialParameterCollection = engine_class("MaterialParameterCollection")
+stand_in.MaterialParameterCollection = engine_class("MaterialParameterCollection", Obj,
+                                                   {"scalar_parameters": list, "vector_parameters": list})
 stand_in.MaterialParameterCollection.get_vector_parameter_names = \
     lambda self: [slot.get_editor_property("parameter_name") for slot in self.props.get("vector_parameters", [])]
+stand_in.MaterialParameterCollection.get_scalar_parameter_names = \
+    lambda self: [slot.get_editor_property("parameter_name") for slot in self.props.get("scalar_parameters", [])]
 sys.modules["unreal"] = stand_in
 
 failed = False

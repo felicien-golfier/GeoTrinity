@@ -82,11 +82,12 @@ public:
 	static bool SetModuleEnabled(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
 								 FName FunctionName, bool bEnabled);
 
-	/** Selects a compile-time switch entry by display name (e.g. SwitchName "Shape Primitive", entry "Cylinder").
+	/** Sets a compile-time switch: an enum one by entry display name (SwitchName "Shape Primitive", Value "Cylinder"),
+	 *  a bool one by "true"/"false" (SwitchName "Kill Particles When Lifetime Has Elapsed", Value "false").
 	 *  Returns false when the system, emitter, function node, or switch input is not found, or no enum entry matches. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static bool SetStaticSwitch(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
-								FName FunctionName, FName SwitchName, FString EnumEntryDisplayName);
+								FName FunctionName, FName SwitchName, FString Value);
 
 	/** Writes an input's constant value. Returns false when the system, emitter, function node, or input constant is not
 	 *  found, or the value cannot be written. */
@@ -113,6 +114,29 @@ public:
 	 *  found, or the value cannot be written. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static bool SetUserParameter(FString SystemPath, FName ParameterName, FString Value);
+
+	/**
+	 * Adds a User parameter to a system, keeping one already there. Python reaches neither the system's exposed
+	 * parameters nor a Niagara type definition.
+	 *
+	 * @param ParameterName  Fully qualified, e.g. "User.Color2".
+	 * @param TypeName       "LinearColor" or "Float".
+	 * @return False when the system is not found or the type is neither.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool AddUserParameter(FString SystemPath, FName ParameterName, FString TypeName);
+
+	/**
+	 * Binds a material parameter of every renderer of one emitter to a User parameter of the system, replacing any
+	 * binding that parameter already had, so each renderer draws through a dynamic material instance carrying it.
+	 * Compile afterwards: the renderer resolves its bindings then.
+	 *
+	 * @return False when the system, emitter or User parameter is not found, or the emitter has no renderer taking
+	 *         material bindings.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool BindMaterialParameterToUserParameter(FString SystemPath, FName EmitterName,
+													 FName MaterialParameterName, FName UserParameterName);
 
 	/** Logs every function call node of one stage to LogTemp with its inputs, their types and component counts. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")

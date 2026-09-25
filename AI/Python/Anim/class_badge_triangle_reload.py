@@ -1,14 +1,15 @@
-"""Triangle badge reload, heavy: the needle draws deep into the arrowhead and the whole badge braces, turned the
-wrong way and straining; it holds still, then heaves itself round a whole turn about its own middle, slow to get
+"""Triangle badge reload, heavy: the plug is pressed onto the back rim of its hole and the whole badge braces, turned
+the wrong way and straining; it holds still, then heaves itself round a whole turn about its own middle, slow to get
 going and hard to stop, throwing the buff pickup out as it swings through; it clunks past where it started, the
-needle slamming home and the arrowhead squashing under the weight, and rocks back to rest.
+plug slamming into the front rim and the arrowhead squashing under the weight, and rocks back to rest. The plug
+never scales: it only slides along its hole.
 
     SK_TriangleBadge_Montage_Reload      GA_Reload
         Start     braced, straining, and the heave under way   stretched to the 0.8 s FireDelay: 24 frames, 1x
         End       the rest of the turn, the clunk, rocking back to rest
 
-The turn is a yaw of the top and bottom layers together, which share their place in the view plane, so the needle
-goes round with the arrowhead instead of being swept through. The root and the fire sockets on it stay put. The
+The turn is a yaw of the top and bottom layers together, which share their place in the view plane, so the diamonds
+go round with the arrowhead instead of being swept through. The root and the fire sockets on it stay put. The
 montage goes in the full-body slot, over the auto-fire and any body turn: the badge is spinning as a whole.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/class_badge_wiring.py.
@@ -28,7 +29,7 @@ SEQUENCE_NAME = "SK_TriangleBadge_Sequence_Reload"
 MONTAGE_NAME = "SK_TriangleBadge_Montage_Reload"
 REPORT = unreal.Paths.project_saved_dir() + "class_badge_triangle_reload.txt"
 
-BODY, TOP, NEEDLE = "Bottom", "Top", "Needle"
+BODY, TOP, PLUG = "Bottom", "Top", "Plug"
 SLOT = "DefaultSlot"
 
 FPS = 30
@@ -42,7 +43,7 @@ FRAMES = LAND + 16
 WOUND_YAW = -34.0
 OVERSHOOT = 14.0
 TREMBLE_YAW = 2.5
-RATTLE = 1.0     # units the needle trembles sideways
+RATTLE = 1.0     # units the plug knocks off the back rim it is pressed on
 # Yaw rocking back after the clunk: (frame, yaw), eased between.
 ROCK = [(LAND, 360.0 + OVERSHOOT), (LAND + 5, 353.0), (LAND + 10, 362.5), (LAND + 15, 360.0)]
 
@@ -56,28 +57,30 @@ def snap(alpha):
 
 
 REST = (0.0, 1.0, 1.0)
-# Needle: forward offset, X scale, Y and Z scale. Drawn as deep as the crossbow draws it, then slammed home.
-NEEDLE_DRAWN = (-9.0, 0.8, 0.8)
-NEEDLE_KEYS = [(0, REST, smooth),
-               (5, NEEDLE_DRAWN, smooth),                 # leads the brace
-               (LAND - 2, NEEDLE_DRAWN, smooth),
-               (LAND - 1, (-2.0, 1.15, 0.85), snap),      # mid-flight
-               (LAND, (4.0, 1.2, 0.85), snap),            # slammed past home
-               (LAND + 3, (-1.5, 0.95, 1.05), smooth),
-               (LAND + 6, (0.5, 1.02, 0.99), smooth),
-               (LAND + 9, REST, smooth),
-               (FRAMES, REST, smooth)]
-# Arrowhead: backward offset, X scale, Y scale, its front edge pinned where it rests.
-BODY_STRAINED = (-1.5, 1.08, 0.93)
+# Plug: forward offset. RIM is the slide that lays its tip on either rim of the hole.
+RIM = 10.85
+PLUG_REST = (0.0,)
+PLUG_KEYS = [(0, PLUG_REST, smooth),
+             (5, (-RIM,), smooth),                      # leads the brace, pressed on the back rim
+             (LAND - 2, (-RIM,), smooth),
+             (LAND - 1, (-1.7,), snap),                 # mid-flight
+             (LAND, (RIM,), snap),                      # slammed into the front rim
+             (LAND + 3, (-4.3,), smooth),
+             (LAND + 6, (1.7,), smooth),
+             (LAND + 9, PLUG_REST, smooth),
+             (FRAMES, PLUG_REST, smooth)]
+# Arrowhead: backward offset, X scale, Y scale, its front edge pinned where it rests. Shortening it closes its hole
+# on the plug, which fills it, so its squash stays within a few hundredths.
+BODY_STRAINED = (-1.5, 1.03, 0.97)
 BODY_KEYS = [(0, REST, smooth),
-             (BRACED, (-1.0, 1.06, 0.95), smooth),
+             (BRACED, (-1.0, 1.02, 0.98), smooth),
              (STRAIN, BODY_STRAINED, smooth),
              (HEAVE, BODY_STRAINED, smooth),
-             (LAND - 1, (-0.5, 1.02, 0.98), smooth),
-             (LAND, (0.0, 0.95, 1.05), snap),
-             (LAND + 1, (0.0, 0.88, 1.12), snap),         # the weight lands on it
-             (LAND + 5, (0.0, 1.04, 0.97), smooth),
-             (LAND + 9, (0.0, 0.98, 1.01), smooth),
+             (LAND - 1, (-0.5, 1.01, 0.99), smooth),
+             (LAND, (0.0, 0.98, 1.02), snap),
+             (LAND + 1, (0.0, 0.96, 1.04), snap),         # the weight lands on it
+             (LAND + 5, (0.0, 1.015, 0.99), smooth),
+             (LAND + 9, (0.0, 0.995, 1.005), smooth),
              (LAND + 13, REST, smooth),
              (FRAMES, REST, smooth)]
 
@@ -104,7 +107,7 @@ SPIN = None  # filled from the toolkit's normalised_spin before any key is writt
 
 
 def yaw(frame):
-    """The whole badge's yaw -> (degrees, needle's sideways tremble)."""
+    """The whole badge's yaw -> (degrees, plug's knock off the back rim, every other frame)."""
     if frame <= BRACED:
         return WOUND_YAW * 0.8 * smooth(frame / float(BRACED)), 0.0
     if frame < STRAIN:
@@ -133,10 +136,10 @@ def key(front, frame, bone, rest_local):
         # The pin shift runs along the arrowhead's own axis, which the yaw has turned.
         shift = rotation.rotate_vector(unreal.Vector(front * (1.0 - body_x) + back, 0.0, 0.0))
         return (translation + shift, rotation, unreal.Vector(scale.x * body_x, scale.y * body_y, scale.z))
-    if bone == NEEDLE:
-        forward, scale_x, scale_yz = keyed(NEEDLE_KEYS, frame)
-        return (unreal.Vector(translation.x + forward, translation.y + tremble, translation.z), rest_local.rotation,
-                unreal.Vector(scale.x * scale_x, scale.y * scale_yz, scale.z * scale_yz))
+    if bone == PLUG:
+        forward, = keyed(PLUG_KEYS, frame)
+        return (unreal.Vector(translation.x + forward + max(0.0, tremble), translation.y, translation.z),
+                rest_local.rotation, scale)
     return translation, rest_local.rotation, scale
 
 
@@ -172,20 +175,20 @@ def report(toolkit, sequence, montage, groups, reference):
     options = unreal.AnimPoseEvaluationOptions()
     rest = toolkit["local_pose_table"](APE.get_reference_pose(unreal.load_asset(SKELETON_PATH)))
     gaps, ends = [], {}
-    LOG.append("frame     yaw  needle: dx     sx    syz  body: dx     sx     sy  to body")
+    LOG.append("frame     yaw  plug: dx  body: dx     sx     sy  to body")
     for frame in range(FRAMES + 1):
         pose = APE.get_anim_pose_at_time(sequence, frame / float(FPS), options)
         if frame in (0, FRAMES):
             ends[frame] = toolkit["local_pose_table"](pose)
         posed = toolkit["_component_transforms"](pose)
-        hull = toolkit["convex_hull"](toolkit["place_groups"](groups, posed)[NEEDLE])
+        hull = toolkit["convex_hull"](toolkit["place_groups"](groups, posed)[PLUG])
         gap = toolkit["outline_separation"](hull, toolkit["move_outline"](outline, reference[BODY], posed[BODY]))
         gaps.append(gap)
-        LOG.append("%5d  %6.1f   %+7.2f %6.3f %6.3f     %+6.2f %6.3f %6.3f  %+6.2f" % (
-            (frame, yaw(frame)[0]) + keyed(NEEDLE_KEYS, frame) + keyed(BODY_KEYS, frame) + (gap,)))
+        LOG.append("%5d  %6.1f   %+7.2f     %+6.2f %6.3f %6.3f  %+6.2f" % (
+            (frame, yaw(frame)[0]) + keyed(PLUG_KEYS, frame) + keyed(BODY_KEYS, frame) + (gap,)))
 
     LOG.append("")
-    LOG.append("closest the needle comes to the arrowhead: %.2f (-1 = overlapping)" % min(gaps))
+    LOG.append("closest the plug comes to the arrowhead: %.2f (-1 = overlapping)" % min(gaps))
     steps = [abs(yaw(f)[0] - yaw(f - 1)[0]) for f in range(1, FRAMES)]
     LOG.append("fastest turn %.1f deg/frame; yaw at the fire (frame %d) %.1f" % (max(steps), START, yaw(START)[0]))
     for frame, table in ends.items():

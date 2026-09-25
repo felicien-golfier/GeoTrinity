@@ -43,7 +43,7 @@ def rebuild_map(owner, property_name, struct_type, overrides_for):
 
 # Point one entry of a Blueprint's class table at an asset, leaving every other entry untouched
 # BLUEPRINT = unreal.load_asset("/Game/Characters/Playable/BP_GeoPlayableCharacter")
-# MONTAGE = unreal.load_asset("/Game/Characters/Anim/Cone/SK_ConeDeath_Montage")
+# MONTAGE = unreal.load_asset("/Game/Characters/Anim/ClassBadge/Triangle/SK_TriangleBadge_Montage_Death")
 # rebuild_map(unreal.get_default_object(BLUEPRINT.generated_class()), "class_data", unreal.PlayerClassData,
 #             lambda key, value: {"DeathMontage": object_literal(MONTAGE)}
 #             if key == unreal.PlayerClass.TRIANGLE else {})

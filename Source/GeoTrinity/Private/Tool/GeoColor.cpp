@@ -32,6 +32,22 @@ FLinearColor FGeoColorParam::GetColor(float const Alpha) const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+TArray<FLinearColor> GeoColor::GetMeaningColors(FGeoColorParam const& Color,
+												TArray<FGeoColorParam> const& SecondaryColors)
+{
+	ensureMsgf(SecondaryColors.Num() < MaxMeaningColorCount,
+			   TEXT("GeoColor: %d secondary colours, an effect shows at most %d colours"), SecondaryColors.Num(),
+			   MaxMeaningColorCount);
+
+	TArray<FLinearColor> Colors = {Color.GetColor()};
+	for (int32 Index = 0; Index < SecondaryColors.Num() && Colors.Num() < MaxMeaningColorCount; ++Index)
+	{
+		Colors.Add(SecondaryColors[Index].GetColor());
+	}
+	return Colors;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 UTexture2D* GeoColor::CreatePaletteTexture()
 {
 	TArray<FFloat16Color, TInlineAllocator<SlotCount>> Texels;

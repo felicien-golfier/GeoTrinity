@@ -64,10 +64,6 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_Data)
 	FBuffPickupData Data;
 
-	/** Vector parameter on BuffMeshComponent's material that the buff color is written to. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoPickup|Appearance")
-	FName ColorParameterName = TEXT("Color");
-
 private:
 	UFUNCTION()
 	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,

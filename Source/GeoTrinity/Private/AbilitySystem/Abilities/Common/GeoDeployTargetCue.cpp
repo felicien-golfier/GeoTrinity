@@ -3,6 +3,7 @@
 #include "AbilitySystem/Abilities/Common/GeoDeployTargetCue.h"
 
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
+#include "Actor/Projectile/GeoProjectile.h"
 
 AGeoDeployTargetCue::AGeoDeployTargetCue()
 {
@@ -12,15 +13,20 @@ AGeoDeployTargetCue::AGeoDeployTargetCue()
 // ---------------------------------------------------------------------------------------------------------------------
 bool AGeoDeployTargetCue::OnActive_Implementation(AActor* MyTarget, FGameplayCueParameters const& Parameters)
 {
-	DeployAbility = Cast<UGeoDeployAbility>(Parameters.SourceObject.Get());
-	if (!ensureMsgf(DeployAbility.IsValid(), TEXT("%s: SourceObject must be the UGeoDeployAbility instance."),
-					*GetName()))
+	SetActorLocation(Parameters.Location);
+
+	if (AGeoProjectile* LandingProjectile = Cast<AGeoProjectile>(MyTarget))
 	{
-		return false;
+		LandingProjectile->OnProjectileEndLifeDelegate.AddUniqueDynamic(this, &ThisClass::OnLandingProjectileEnded);
+	}
+	else
+	{
+		DeployAbility = Cast<UGeoDeployAbility>(Parameters.SourceObject.Get());
+		ensureMsgf(DeployAbility.IsValid(),
+				   TEXT("%s: a charging marker's SourceObject must be the UGeoDeployAbility instance."), *GetName());
+		SetActorTickEnabled(true);
 	}
 
-	SetActorLocation(Parameters.Location);
-	SetActorTickEnabled(true);
 	return Super::OnActive_Implementation(MyTarget, Parameters);
 }
 
@@ -30,6 +36,13 @@ bool AGeoDeployTargetCue::OnRemove_Implementation(AActor* MyTarget, FGameplayCue
 	SetActorTickEnabled(false);
 	DeployAbility.Reset();
 	return Super::OnRemove_Implementation(MyTarget, Parameters);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoDeployTargetCue::OnLandingProjectileEnded(AGeoProjectile* Projectile)
+{
+	Projectile->OnProjectileEndLifeDelegate.RemoveDynamic(this, &ThisClass::OnLandingProjectileEnded);
+	GameplayCueFinishedCallback();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

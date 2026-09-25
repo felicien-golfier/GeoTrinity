@@ -19,6 +19,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/GeoColor.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "World/GeoBackdropComponent.h"
 #include "World/GeoBackgroundPulseComponent.h"
@@ -30,9 +31,6 @@ static TAutoConsoleVariable CVarShowCameraZoom(
 
 namespace
 {
-	FName const CameraXYParam(TEXT("CameraXY"));
-	FName const ZoomRatioParam(TEXT("ZoomRatio"));
-
 	FVector2D Average(TConstArrayView<FVector2D> Points)
 	{
 		FVector2D Sum = FVector2D::ZeroVector;
@@ -74,9 +72,9 @@ void AGeoGameCamera::PublishCameraParameters(FVector2D CameraXY)
 		return;
 	}
 
-	UKismetMaterialLibrary::SetVectorParameterValue(this, CameraParameters, CameraXYParam,
+	UKismetMaterialLibrary::SetVectorParameterValue(this, CameraParameters, GeoMaterialParams::CameraXY,
 													FLinearColor(CameraXY.X, CameraXY.Y, 0.f));
-	UKismetMaterialLibrary::SetScalarParameterValue(this, CameraParameters, ZoomRatioParam,
+	UKismetMaterialLibrary::SetScalarParameterValue(this, CameraParameters, GeoMaterialParams::CameraZoomRatio,
 													BaseOrthoWidth / CurrentOrthoWidth);
 }
 
@@ -90,8 +88,9 @@ void AGeoGameCamera::ApplyOutlineMaterial()
 	}
 
 	UMaterialInstanceDynamic* const PaletteMaterial = UMaterialInstanceDynamic::Create(OutlineMaterial, this);
-	PaletteMaterial->SetTextureParameterValue(GeoColor::PaletteTextureParam, GeoColor::CreatePaletteTexture());
-	PaletteMaterial->SetScalarParameterValue(GeoColor::PaletteSizeParam, static_cast<float>(GeoColor::SlotCount));
+	PaletteMaterial->SetTextureParameterValue(GeoMaterialParams::OutlinePalette, GeoColor::CreatePaletteTexture());
+	PaletteMaterial->SetScalarParameterValue(GeoMaterialParams::OutlinePaletteSize,
+											 static_cast<float>(GeoColor::SlotCount));
 	GetCameraComponent()->PostProcessSettings.AddBlendable(PaletteMaterial, 1.f);
 }
 
@@ -165,9 +164,7 @@ void AGeoGameCamera::GatherLocalPlayers(TArray<FVector2D, TInlineAllocator<4>>& 
 			OutFirstController = PlayerController;
 			OutFirstInputComponent = Character ? Character->GetGeoInputComponent() : nullptr;
 		}
-		// A reviving player is framed like a living one: they have already been moved to where they come back, and
-		// spectating through their own revive would leave the camera behind on the corpse's last room.
-		if (!Character || !Character->IsDead() || Character->IsReviving())
+		if (!Character || !Character->IsDead())
 		{
 			OutLivingPlayers.Add(FVector2D(Pawn->GetActorLocation()));
 		}

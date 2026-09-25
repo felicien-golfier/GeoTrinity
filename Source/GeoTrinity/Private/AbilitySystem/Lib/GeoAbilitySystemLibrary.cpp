@@ -23,9 +23,11 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "InstancedStruct.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 #include "Settings/GameDataSettings.h"
 #include "System/GeoActorPoolingSubsystem.h"
 #include "System/GeoPoolableInterface.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -402,6 +404,30 @@ void UGeoAbilitySystemLibrary::ExecuteGeoCue(UAbilitySystemComponent* ASC, FGeoC
 	{
 		ASC->ExecuteGameplayCue(Cue.CueTag, CueParams);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemLibrary::SetCueMeaningColors(UNiagaraComponent* Component,
+												   FGameplayCueParameters const& Parameters)
+{
+	if (!ensureMsgf(Component, TEXT("%hs: no component to colour"), __FUNCTION__))
+	{
+		return;
+	}
+
+	FGeoColorParam Color;
+	Color.Color = static_cast<EGeoColor>(Parameters.GameplayEffectLevel);
+	TArray<FGeoColorParam> SecondaryColors;
+	if (FGeoGameplayEffectContext const* const Context =
+			static_cast<FGeoGameplayEffectContext const*>(Parameters.EffectContext.Get()))
+	{
+		for (EGeoColor const SecondaryColor : Context->GetSecondaryColors())
+		{
+			SecondaryColors.AddDefaulted_GetRef().Color = SecondaryColor;
+		}
+	}
+
+	GeoNiagaraParams::SetMeaningColors(Component, GeoColor::GetMeaningColors(Color, SecondaryColors));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

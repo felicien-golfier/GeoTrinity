@@ -61,7 +61,8 @@ public:
 	 * connects still gets the plain impact plus whatever the hit adds. */
 	void PlayEnd(bool bValidOverlap) const;
 
-	/** Takes down everything still running: the attached buff FX, the looping sound, and the bullet visual. */
+	/** Takes down everything still running: the blink, the attached buff FX, the looping sound, and the bullet
+	 * visual. */
 	void StopAll();
 
 	/**

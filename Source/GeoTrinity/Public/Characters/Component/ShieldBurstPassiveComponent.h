@@ -55,9 +55,4 @@ private:
 	// Has to stay material 0;
 	UPROPERTY(Transient, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UMaterialInstanceDynamic> CharacterMaterialInstance;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "GeoShieldBurst")
-	FName GaugeScalarParamName = "GlowGauge";
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "GeoShieldBurst")
-	FName ChargeScalarParamName = "FullGlowGauge";
 };

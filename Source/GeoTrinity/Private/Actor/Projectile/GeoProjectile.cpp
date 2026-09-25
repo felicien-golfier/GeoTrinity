@@ -170,9 +170,11 @@ void AGeoProjectile::Tick(float DeltaSeconds)
 		return;
 	}
 
-	float const ElapsedDistanceSqr = FVector::DistSquared(GetActorLocation(), InitialPosition);
-	if (ElapsedDistanceSqr >= DistanceSpanSqr)
+	FVector const Travelled = GetActorLocation() - InitialPosition;
+	if (Travelled.SizeSquared() >= DistanceSpanSqr)
 	{
+		// A tick overshoots the span by up to one frame of travel.
+		SetActorLocation(InitialPosition + Travelled.GetSafeNormal() * ResolvedParams.DistanceSpan);
 		EndProjectileLife();
 	}
 
@@ -382,8 +384,9 @@ void AGeoProjectile::AdvanceProjectile(float const TimeDelta)
 	}
 
 	FVector const CurrentLocation = GetActorLocation();
-	FVector const Velocity = ProjectileMovement->Velocity;
-	FVector const AdvancedPosition = CurrentLocation + Velocity * TimeDelta;
+	float const RemainingDistance = ResolvedParams.DistanceSpan - FVector::Dist(CurrentLocation, InitialPosition);
+	FVector const AdvancedPosition =
+		CurrentLocation + (ProjectileMovement->Velocity * TimeDelta).GetClampedToMaxSize(RemainingDistance);
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);

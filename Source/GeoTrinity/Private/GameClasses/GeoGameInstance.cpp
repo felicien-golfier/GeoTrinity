@@ -100,7 +100,7 @@ void UGeoGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGameInstance::JoinSession(FOnlineSessionSearchResult const& SearchResult)
+void UGeoGameInstance::JoinFoundSession(FOnlineSessionSearchResult const& SearchResult)
 {
 	if (!ensureMsgf(GetSessionInterface().IsValid(), TEXT("%hs: no online session interface"), __FUNCTION__))
 	{

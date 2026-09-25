@@ -385,21 +385,50 @@ def turn_about(translation, rotator, pivot):
                           translation.z + pivot.z - turned.z), rotation)
 
 
-def sunk_depth(points, outline, bottom, top, reference, posed):
+def sunk_depth(points, outline, bottom, top, reference, posed, half_height=None):
     """How deep any of `points` sits inside a posed extruded body, in units; 0 when none is inside it.
 
     A turn out of the view plane cannot be judged from the outlines the view casts, since a part the body has turned
     over reads as covered rather than as inside it. `outline` and the height range [bottom, top] describe the body at
-    its bone's reference component transform, and each point is carried back there from the posed one.
+    its bone's reference component transform, and each point is carried back there from the posed one. A body whose
+    height varies along X, such as a wedge, passes `half_height(x)` instead, and stands that far either side of z=0.
     """
     deepest = 0.0
     for point in points:
         local = unreal.MathLibrary.inverse_transform_location(posed, point)
         at_rest = unreal.MathLibrary.transform_location(reference, local)
+        if half_height:
+            bottom, top = -half_height(at_rest.x), half_height(at_rest.x)
         if bottom < at_rest.z < top and _inside_outline((at_rest.x, at_rest.y), outline):
             deepest = max(deepest, min(_distance_to_outline((at_rest.x, at_rest.y), outline),
                                        at_rest.z - bottom, top - at_rest.z))
     return deepest
+
+
+def diamond_samples(half_length, half_width, half_height, per_edge=4):
+    """Points over the surface of a diamond — the solid |x|/half_length + |y|/half_width + |z|/half_height <= 1 —
+    in its own bone's space: its six corners, points along its twelve edges and its eight face centres."""
+    corners = [unreal.Vector(sign * half_length, 0.0, 0.0) for sign in (1.0, -1.0)]
+    corners += [unreal.Vector(0.0, sign * half_width, 0.0) for sign in (1.0, -1.0)]
+    corners += [unreal.Vector(0.0, 0.0, sign * half_height) for sign in (1.0, -1.0)]
+    points = list(corners)
+    for first in range(6):
+        for second in range(first + 1, 6):
+            if first // 2 != second // 2:  # opposite corners share no edge
+                for step in range(1, per_edge + 1):
+                    alpha = step / float(per_edge + 1)
+                    points.append(corners[first] * (1.0 - alpha) + corners[second] * alpha)
+    for sx in (1.0, -1.0):
+        for sy in (1.0, -1.0):
+            for sz in (1.0, -1.0):
+                points.append(unreal.Vector(sx * half_length, sy * half_width, sz * half_height) * (1.0 / 3.0))
+    return points
+
+
+def diamond_reach(point, posed, half_length, half_width, half_height):
+    """Where a component-space point sits against a posed diamond: below 1 inside it, 1 on its surface."""
+    local = unreal.MathLibrary.inverse_transform_location(posed, point)
+    return abs(local.x) / half_length + abs(local.y) / half_width + abs(local.z) / half_height
 
 
 def normalised_spin(rate, frames):

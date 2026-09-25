@@ -12,6 +12,9 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "NiagaraComponent.h"
+#include "Settings/GameDataSettings.h"
+#include "TimerManager.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -33,6 +36,18 @@ void AGeoShieldBurstProjectile::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoShieldBurstProjectile::Tick(float const DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (GeoLib::IsServer(GetWorld()) && !bIsEnding
+		&& GetWorld()->GetTimeSeconds() >= BounceSnapshot.ServerTime + ResyncInterval)
+	{
+		BounceSnapshot = CaptureSnapshot(BounceSnapshot.EnemyBounceCount);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoShieldBurstProjectile::InitProjectileLife()
 {
 	Super::InitProjectileLife();
@@ -40,28 +55,79 @@ void AGeoShieldBurstProjectile::InitProjectileLife()
 	SphereRadiusToAdd = Sphere->GetScaledSphereRadius() * EnemyBounceAdditiveMultiplier;
 	ShieldAmountToAdd = ShieldAmount * EnemyBounceAdditiveMultiplier;
 
-	if (HasAuthority())
+	FTimerHandle BlinkStartHandle;
+	GetWorldTimerManager().SetTimer(BlinkStartHandle,
+									FTimerDelegate::CreateWeakLambda(this,
+																	 [this]()
+																	 {
+																		 if (!bIsEnding)
+																		 {
+																			 FXComponent->StartBlinking(BlinkDuration);
+																		 }
+																	 }),
+									LifeSpanInSec - BlinkDuration, false);
+
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		BounceSnapshot = {GetActorLocation(), ProjectileMovement->Velocity, Sphere->GetScaledSphereRadius()};
+		BounceSnapshot = CaptureSnapshot(0);
+		UpdateSizeFX(BounceSnapshot.Radius);
 	}
-	// On a client OnRep_BounceSnapshot fired before BeginPlay, whose DefaultParams apply overwrote the radius it set.
-	UpdateSizeFX(BounceSnapshot.Radius);
+	else
+	{
+		ApplyBounceSnapshot();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoShieldBurstProjectile::OnRep_BounceSnapshot(FShieldBounceSnapshot const& PreviousSnapshot)
+void AGeoShieldBurstProjectile::OnRep_BounceSnapshot()
 {
-	SetActorLocation(BounceSnapshot.Location);
-	if (BounceSnapshot.EnemyBounceCount > PreviousSnapshot.EnemyBounceCount)
+	bool const bOlderThanPredictedBounce = BounceSnapshot.EnemyBounceCount < ClientSnapshot.EnemyBounceCount
+		&& BounceSnapshot.ServerTime < ClientSnapshot.ServerTime;
+	if (bOlderThanPredictedBounce)
+	{
+		return;
+	}
+
+	if (BounceSnapshot.EnemyBounceCount > ClientSnapshot.EnemyBounceCount)
 	{
 		FXComponent->PlaySound(BounceSound);
 	}
 
-	ProjectileMovement->Velocity = BounceSnapshot.Velocity;
-	ProjectileMovement->UpdateComponentVelocity();
-	UpdateSizeFX(BounceSnapshot.Radius);
+	ClientSnapshot = BounceSnapshot;
+	// Before BeginPlay, InitProjectileLife applies it once the projectile's life has started.
+	if (HasActorBegunPlay() && !bIsEnding)
+	{
+		ApplyBounceSnapshot();
+	}
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoShieldBurstProjectile::ApplyBounceSnapshot()
+{
+	FVector const DrawnLocation = BulletVFX->GetComponentLocation();
+
+	// Velocity first: an overlap the teleport starts must see the velocity the burst leaves with.
+	ProjectileMovement->Velocity = BounceSnapshot.Velocity;
+	ProjectileMovement->UpdateComponentVelocity();
+	SetActorLocation(BounceSnapshot.Location);
+	Sphere->SetSphereRadius(BounceSnapshot.Radius);
+	UpdateSizeFX(BounceSnapshot.Radius);
+
+	float const TransitTime = FMath::Clamp(GeoLib::GetServerTime(GetWorld(), true) - BounceSnapshot.ServerTime, 0.f,
+										   GetDefault<UGameDataSettings>()->MaxLatencyCompensation);
+	ProjectileMovement->TickComponent(TransitTime, LEVELTICK_All, nullptr);
+
+	FXComponent->SetVisualLaunchLocation(DrawnLocation);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FShieldBounceSnapshot AGeoShieldBurstProjectile::CaptureSnapshot(int32 const EnemyBounceCount) const
+{
+	return {GetActorLocation(), ProjectileMovement->Velocity, Sphere->GetScaledSphereRadius(), EnemyBounceCount,
+			GeoLib::GetServerTime(GetWorld(), true)};
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoShieldBurstProjectile::UpdateSizeFX(float const Radius) const
 {
 	FXComponent->SetBulletRadius(Radius);
@@ -71,16 +137,17 @@ void AGeoShieldBurstProjectile::UpdateSizeFX(float const Radius) const
 	}
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVector const& ImpactVelocity)
 {
-	if (HasAuthority())
+	FVector ReflectedVelocity = ImpactResult.ImpactNormal * ImpactVelocity.Size();
+	ReflectedVelocity.Z = 0.f;
+	ProjectileMovement->Velocity = ReflectedVelocity;
+	ProjectileMovement->UpdateComponentVelocity();
+
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		FVector ReflectedVelocity = ImpactResult.ImpactNormal * ImpactVelocity.Size();
-		ReflectedVelocity.Z = 0.f;
-		ProjectileMovement->Velocity = ReflectedVelocity;
-		ProjectileMovement->UpdateComponentVelocity();
-		BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius(),
-						  BounceSnapshot.EnemyBounceCount};
+		BounceSnapshot = CaptureSnapshot(BounceSnapshot.EnemyBounceCount);
 	}
 }
 
@@ -88,47 +155,52 @@ void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVe
 void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
 												   UGeoAbilitySystemComponent* TargetASC)
 {
+	bool const bIsServer = GeoLib::IsServer(GetWorld());
 	if (GeoASLib::IsTeamAttitudeAligned(GetSourceOwner(), OtherActor, TeamAttitudeMask::HostileOrNeutral))
 	{
-		if (GeoLib::IsServer(GetWorld()))
+		FXComponent->PlaySound(BounceSound);
+		FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+		float const Speed = ProjectileMovement->Velocity.Size();
+		FVector const CurrentVelocity = ProjectileMovement->Velocity.GetSafeNormal2D();
+		FVector ReflectedVelocity = CurrentVelocity - 2.f * (FVector::DotProduct(CurrentVelocity, Normal) * Normal);
+		ReflectedVelocity.Normalize();
+		ReflectedVelocity *= Speed;
+		ReflectedVelocity.Z = 0.f;
+		ProjectileMovement->Velocity = ReflectedVelocity;
+		ProjectileMovement->UpdateComponentVelocity();
+		LastOverlapHostileActor = OtherActor;
+		LastOverlapTime = GetWorld()->GetTimeSeconds();
+
+		if (bIsServer)
 		{
-			FXComponent->PlaySound(BounceSound);
-			FVector const Normal = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
-			float const Speed = ProjectileMovement->Velocity.Size();
-			FVector const CurrentVelocity = ProjectileMovement->Velocity.GetSafeNormal2D();
-			FVector ReflectedVelocity = CurrentVelocity - 2.f * (FVector::DotProduct(CurrentVelocity, Normal) * Normal);
-			ReflectedVelocity.Normalize();
-			ReflectedVelocity *= Speed;
-			ReflectedVelocity.Z = 0.f;
-			ProjectileMovement->Velocity = ReflectedVelocity;
-			ProjectileMovement->UpdateComponentVelocity();
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() + SphereRadiusToAdd);
 			ShieldAmount += ShieldAmountToAdd;
 			UpdateSizeFX(Sphere->GetScaledSphereRadius());
-			BounceSnapshot = {GetActorLocation(), ReflectedVelocity, Sphere->GetScaledSphereRadius(),
-							  BounceSnapshot.EnemyBounceCount + 1};
-			LastOverlapHostileActor = OtherActor;
-			LastOverlapTime = GetWorld()->GetTimeSeconds();
+			BounceSnapshot = CaptureSnapshot(BounceSnapshot.EnemyBounceCount + 1);
+		}
+		else
+		{
+			ClientSnapshot = CaptureSnapshot(ClientSnapshot.EnemyBounceCount + 1);
 		}
 	}
 	else
 	{
-		bEndedOnValidOverlap = true;
+		OnProjectileConfirmedOverlap(OtherActor);
 
-		if (GeoLib::IsServer(GetWorld()))
+		if (bIsServer)
 		{
+			bEndedOnValidOverlap = true;
 			FShieldEffectData ShieldEffect;
 			ShieldEffect.Amount = ShieldAmount;
 			GeoASLib::ApplySingleEffectData(ShieldEffect, OwnerASC, TargetASC, Payload.AbilityLevel, Payload.Seed,
 											Payload.AbilityTag);
+			GeoASLib::NotifyAbilityHit(Payload, OtherActor);
+			EndProjectileLife();
 		}
-
-		GeoASLib::NotifyAbilityHit(Payload, OtherActor);
-
-		OnProjectileConfirmedOverlap(OtherActor);
-		EndProjectileLife();
 	}
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
 bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent*& OutOwnerASC,
 											   UGeoAbilitySystemComponent*& OutTargetASC)
 {
@@ -137,7 +209,10 @@ bool AGeoShieldBurstProjectile::IsValidOverlap(AActor* OtherActor, UGeoAbilitySy
 		&& GetWorld()->GetTimeSeconds() - LastOverlapTime < TimeThresholdBetweenSameHostileOverlap;
 	bool const bFriendlyDeployable = OtherActor->IsA(AGeoDeployableBase::StaticClass())
 		&& GeoASLib::IsTeamAttitudeAligned(GetSourceOwner(), OtherActor, TeamAttitudeMask::Friendly);
-	if (bFriendlyDeployable || bRepeatHostileOverlap)
+	bool const bMovingAwayFromHostile =
+		FVector::DotProduct(ProjectileMovement->Velocity, OtherActor->GetActorLocation() - GetActorLocation()) <= 0.f
+		&& GeoASLib::IsTeamAttitudeAligned(GetSourceOwner(), OtherActor, TeamAttitudeMask::HostileOrNeutral);
+	if (bFriendlyDeployable || bRepeatHostileOverlap || bMovingAwayFromHostile)
 	{
 		return false;
 	}

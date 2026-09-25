@@ -121,6 +121,7 @@ void UGeoProjectileFXComponent::PlayEnd(bool const bValidOverlap) const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoProjectileFXComponent::StopAll()
 {
+	StopBlinking();
 	ClearBuffFX();
 
 	if (GeoLib::IsDedicatedServer(this))

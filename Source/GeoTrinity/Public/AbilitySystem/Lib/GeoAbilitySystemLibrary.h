@@ -24,6 +24,7 @@ enum class EProjectileTarget : uint8
 class AGeoDeployableBase;
 class AGeoProjectile;
 class UCurveFloat;
+class UNiagaraComponent;
 class UStatusInfo;
 struct FDeployableData;
 struct FDeployableDataParams;
@@ -372,6 +373,11 @@ public:
 	 */
 	static void ExecuteGeoCue(UAbilitySystemComponent* ASC, FGeoCueParam const& Cue,
 							  FGameplayCueParameters const& CueParams, bool bLocalOnly);
+
+	/** Writes a cue's colours — its palette slot, then the secondary ones its FGeoCueParam carried — onto a system
+	 * drawing them through a colour pattern (GeoNiagaraParams::SetMeaningColors). For cue Blueprints. */
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|GameplayCues")
+	static void SetCueMeaningColors(UNiagaraComponent* Component, FGameplayCueParameters const& Parameters);
 
 	/** Returns the status gameplay tag stored in the effect context (invalid tag when none). */
 	UFUNCTION(BlueprintPure, Category = "GeoAbilitySystemLibrary|GameplayEffects")

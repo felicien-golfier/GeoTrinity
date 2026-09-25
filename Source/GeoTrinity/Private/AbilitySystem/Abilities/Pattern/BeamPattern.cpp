@@ -54,7 +54,8 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, StartDelay);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamRange);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamHalfWidth * 2.f);
-		BeamVfxComponent->SetColorParameter(GeoNiagaraParams::Color, BeamColor.GetColor());
+		GeoNiagaraParams::SetMeaningColors(BeamVfxComponent,
+										   GeoColor::GetMeaningColors(BeamColor, SecondaryBeamColors));
 	}
 }
 
@@ -104,7 +105,8 @@ void UBeamPattern::StartPattern()
 		BeamVfxComponent->Activate(true);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamRange);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamHalfWidth * 2.f);
-		BeamVfxComponent->SetColorParameter(GeoNiagaraParams::Color, BeamColor.GetColor());
+		GeoNiagaraParams::SetMeaningColors(BeamVfxComponent,
+										   GeoColor::GetMeaningColors(BeamColor, SecondaryBeamColors));
 	}
 
 	Super::StartPattern();

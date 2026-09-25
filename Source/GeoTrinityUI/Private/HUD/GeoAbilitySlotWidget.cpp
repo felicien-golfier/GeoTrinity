@@ -8,11 +8,10 @@
 #include "Components/TextBlock.h"
 #include "EnhancedInputSubsystems.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Tool/GeoNiagaraParams.h"
 
 namespace
 {
-	FName const CooldownFillParam(TEXT("Fill"));
-
 	bool IsAutomaticFireAbility(FGameplayTag const& AbilityTag)
 	{
 		UGeoGameplayAbility const* const AbilityCDO = GeoASLib::GetAbilityCDO(AbilityTag);
@@ -35,7 +34,7 @@ void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntrie
 	if (CooldownSweep && CooldownSweepMaterial)
 	{
 		CooldownSweepMID = UMaterialInstanceDynamic::Create(CooldownSweepMaterial, this);
-		CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, 0.f);
+		CooldownSweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, 0.f);
 		CooldownSweep->SetBrushFromMaterial(CooldownSweepMID);
 	}
 
@@ -171,7 +170,7 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 	{
 		if (CooldownSweepMID)
 		{
-			CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, 1.f);
+			CooldownSweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, 1.f);
 		}
 		SetCountdownVisible(false);
 		return;
@@ -186,14 +185,14 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 		SetCountdownVisible(false);
 		if (CooldownSweepMID)
 		{
-			CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, 0.f);
+			CooldownSweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, 0.f);
 		}
 		return;
 	}
 
 	if (CooldownSweepMID && Duration > 0.f)
 	{
-		CooldownSweepMID->SetScalarParameterValue(CooldownFillParam, Remaining / Duration);
+		CooldownSweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, Remaining / Duration);
 	}
 
 	SetCountdownVisible(true);

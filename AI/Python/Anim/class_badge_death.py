@@ -1,6 +1,7 @@
 """Death montages for the three class badges, on the beat of the old shapes' own: the badge swells a fifth over eight
-frames on a smoothstep, sheds its class's debris mid-swell, and is gone on the ninth, held gone for the rest of the
-half second.
+frames on a smoothstep, sheds its class's debris mid-swell, and is gone on the ninth. The montage never blends out on
+its own, so the badge stays gone until the revive stops it; the debris comes from a GeoDeathDebrisNotify, which hands
+it to the character so the revive clears it too.
 
 The scale is written on the root, which sits on the actor origin, so the whole badge — body and parts alike —
 shrinks onto the point it turns about. Only X and Y move: under the top-down orthographic camera Z is spent for
@@ -70,14 +71,16 @@ def build(toolkit, badge):
         blend.set_editor_property("blend_time", BLEND_TIME)
         blend.set_editor_property("blend_option", unreal.AlphaBlendOption.HERMITE_CUBIC)
         montage.set_editor_property(name, blend)
+    montage.set_editor_property("enable_auto_blend_out", False)
     # Added after the slot track exists: a notify on a montage links to the segment under it.
-    toolkit["set_notify"](montage, NOTIFY_TRACK, DEBRIS_FRAME / float(FPS), unreal.AnimNotify_PlayNiagaraEffect,
+    toolkit["set_notify"](montage, NOTIFY_TRACK, DEBRIS_FRAME / float(FPS), unreal.GeoDeathDebrisNotify,
                           {"template": unreal.load_asset(DEBRIS[badge])})
     unreal.EditorAssetLibrary.save_asset("{}/{}".format(package, montage_name))
 
-    LOG.append("{}: {} keys for {} frames, sections {}, notifies {}".format(
+    LOG.append("{}: {} keys for {} frames, sections {}, auto blend out {}, notifies {}".format(
         montage_name, toolkit["playable_key_count"](sequence), FRAMES, toolkit["montage_sections"](montage),
-        [(round(time, 3), str(notify.get_editor_property("template").get_name()))
+        montage.get_editor_property("enable_auto_blend_out"),
+        [(round(time, 3), notify.get_class().get_name(), str(notify.get_editor_property("template").get_name()))
          for time, notify in toolkit["notify_events"](montage)]))
     LOG.append("  root scale per frame: " + " ".join("%.2f" % LIBRARY.get_bone_pose_for_frame(
         sequence, ROOT, frame, False).scale3d.x for frame in range(FRAMES + 1)))

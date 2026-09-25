@@ -14,6 +14,7 @@ class USkeletalMesh;
 class UAnimInstance;
 class UAnimMontage;
 class UMaterialInterface;
+class UNiagaraComponent;
 class UGameplayEffect;
 class UWidgetComponent;
 class UGeoChargeAbility;
@@ -37,6 +38,11 @@ public:
 
 	/** Drives aim rotation toward the cursor and shows the aim cursor while a gamepad owns the aim. */
 	virtual void Tick(float DeltaSeconds) override;
+	/** Clears the death debris before delegating to Super. */
+	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
+
+	/** Takes the debris the death montage's UGeoDeathDebrisNotify just spawned, so the revive can clear it. */
+	void SetDeathDebris(UNiagaraComponent* Debris);
 
 	/** Forwards an input-press event to the ASC for ability activation. */
 	void AbilityInputTagPressed(FGameplayTag InputTag);
@@ -111,46 +117,50 @@ protected:
 	/** Mirror of StopCharacter: restores controls, collision, and the alive visuals. */
 	void RestartCharacter();
 
+	/** Destroys the debris of the last death, if any. */
+	void ClearDeathDebris();
+
 	/** Cancels every active ability and (server-only, replicated down) purges all active gameplay effects.
 	 * Shared reset used by death, revive, and class change. */
 	void ResetAbilitiesAndEffects();
 
-	/** Adds the current class's death (bDead) or alive material on top of the base's montage handling. */
-	virtual void SetDeathVisuals(bool bDead) override;
-
-	/** Returns the current class's fall or death montage — each class brings its own skeleton, so the montages follow
-	 * it. */
+	/** Returns the current class's death montage — each class brings its own skeleton, so the montage follows it. */
 	virtual UAnimMontage* GetDeathMontage() const override;
-
-	/** Returns the current class's revive montage, for the same reason GetDeathMontage() is overridden. */
-	virtual UAnimMontage* GetReviveMontage() const override;
 
 	/** Returns Class's authored data, or null with an ensure — a class the map has no entry for is a configuration bug.
 	 *  The single answer to "what is this character's class data?", so every caller fails the same way. */
 	FPlayerClassData const* GetClassData(EPlayerClass Class) const;
 
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
+	// Aim
+
+	/** Distance in world units from the character to its aim cursor. Applied in BeginPlay. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|Aim", meta = (ClampMin = "0.0"))
+	float AimCursorDistance = 800.f;
+
+	// Components
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
 	TObjectPtr<UWidgetComponent> DeployChargeGaugeComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
 	TObjectPtr<UWidgetComponent> ChargeBeamGaugeComponent;
 
 	// This player's own crosshair, shown only while they aim with a gamepad — there is one mouse cursor, so every other
 	// couch-coop player would have none. Attached to the rotating root, not WidgetAnchorComponent: this is the one
 	// world widget whose offset is meant to orbit the actor, keeping it in front of the character as it turns toward
 	// the aim.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoHUD")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
 	TObjectPtr<UWidgetComponent> AimCursorComponent;
 
 	// Sits on WidgetAnchorComponent, not the root: the satellites orbit the player themselves, so the ring must not
 	// also be swung around by the character turning toward its aim.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
 	TObjectPtr<UGeoDeploySatelliteComponent> DeploySatelliteComponent;
 
-	/** Distance in world units from the character to its aim cursor. Applied in BeginPlay. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoHUD", meta = (ClampMin = "0.0"))
-	float AimCursorDistance = 800.f;
+	/** The debris of the current death, handed over by SetDeathDebris. Null while alive. */
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraComponent> DeathDebrisComponent;
 
 private:
 	void UpdateAimRotation(float DeltaSeconds);

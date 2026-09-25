@@ -232,6 +232,15 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);
 
+	FGeoCueParam const& TargetCue = GameDataSettings->DeployTargetCue;
+	if (TargetCue.IsValid() && GeoLib::IsLocalPlayerAvatar(StoredPayload.SourceAvatar))
+	{
+		FVector const LandingLocation =
+			SpawnTransform.GetLocation() + SpawnTransform.GetRotation().Vector() * SpawnParams.DistanceSpan;
+		UGameplayCueManager::AddGameplayCue_NonReplicated(Projectile, TargetCue.CueTag,
+														  TargetCue.MakeCueParams(StoredPayload, LandingLocation));
+	}
+
 	// Cosmetic hand-off, and local by construction: only the machine rendering the ring holds satellites, so nowhere
 	// else moves anything. The projectile itself stays on the fire socket, so the deployable lands where it always did
 	// — a host and a remote client deploy identically.

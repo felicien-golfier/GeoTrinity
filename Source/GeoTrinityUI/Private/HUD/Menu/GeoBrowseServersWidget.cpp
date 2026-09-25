@@ -202,7 +202,7 @@ void UGeoBrowseServersWidget::HandleServerSelected(FOnlineSessionSearchResult Re
 		UE_LOG(LogTemp, Error, TEXT("UGeoBrowseServersWidget: Could not get GeoGameInstance"));
 		return;
 	}
-	GeoGameInstance->JoinSession(Result);
+	GeoGameInstance->JoinFoundSession(Result);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -27,22 +27,12 @@ struct FPlayerClassData
 	TObjectPtr<UMaterialInterface> AliveMaterial = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UMaterialInterface> DeathMaterial = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UAnimInstance> AnimClass;
 
-	/** Played when the character goes down and stopped on revive, so it holds for the whole downed state. */
+	/** Played when the character goes down and stopped on revive; it never blends out on its own, so its last pose (the
+	 *  badge gone, its debris left by a UGeoDeathDebrisNotify) holds for the whole downed state. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> DeathMontage = nullptr;
-
-	/** Takes DeathMontage's place when the character dies by dropping into the void (the hex arena's holes). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> FallMontage = nullptr;
-
-	/** Played when the character gets back up, and the length of the revive it belongs to. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> ReviveMontage = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UGameplayEffect> DefaultAttributes;

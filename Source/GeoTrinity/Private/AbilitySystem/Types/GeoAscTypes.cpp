@@ -12,6 +12,7 @@ namespace
 	enum RepFlag
 	{
 		REP_Icon,
+		REP_SecondaryColors,
 		REP_MAX
 	};
 } // namespace
@@ -39,6 +40,11 @@ bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 		RepBits |= 1 << REP_Icon;
 	}
 
+	if (Ar.IsSaving() && !SecondaryColors.IsEmpty())
+	{
+		RepBits |= 1 << REP_SecondaryColors;
+	}
+
 	Ar.SerializeBits(&RepBits, REP_MAX);
 
 	// Serialize StatusTag in both directions
@@ -49,6 +55,11 @@ bool FGeoGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 	if (RepBits & (1 << REP_Icon))
 	{
 		Ar << Icon;
+	}
+
+	if (RepBits & (1 << REP_SecondaryColors))
+	{
+		Ar << SecondaryColors;
 	}
 
 	bOutSuccess = true;

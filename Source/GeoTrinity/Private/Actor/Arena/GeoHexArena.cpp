@@ -471,7 +471,7 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 		{
 			if (!Player->IsDead() && !Player->GetCharacterMovement()->HasRootMotionSources())
 			{
-				Player->Death(/*bFromFall*/ true);
+				Player->Death();
 			}
 		}
 		else if (AGeoDeployableBase* Deployable = Cast<AGeoDeployableBase>(Actor))

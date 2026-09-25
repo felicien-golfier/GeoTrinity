@@ -5,6 +5,7 @@
 
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Types/GeoAscTypes.h"
 #include "GameplayEffectTypes.h"
 
 FGameplayCueParameters FGeoCueParam::MakeCueParams(AActor* Instigator, AActor* EffectCauser, FVector const Location,
@@ -22,6 +23,15 @@ FGameplayCueParameters FGeoCueParam::MakeCueParams(AActor* Instigator, AActor* E
 	CueParams.Location = Location;
 	CueParams.AbilityLevel = AbilityLevel;
 	CueParams.GameplayEffectLevel = static_cast<int32>(Color);
+	if (!SecondaryColors.IsEmpty())
+	{
+		FGeoGameplayEffectContext* const Context = new FGeoGameplayEffectContext();
+		// A cue with a context asks it whether its instigator is locally controlled.
+		Context->AddInstigator(InstigatorAvatar, EffectCauser);
+		Context->SetSecondaryColors(SecondaryColors);
+		CueParams.EffectContext = FGameplayEffectContextHandle(Context);
+	}
+
 	if (AbilityTag.IsValid())
 	{
 		CueParams.SourceObject = GeoASLib::GetAbilityCDO(AbilityTag);

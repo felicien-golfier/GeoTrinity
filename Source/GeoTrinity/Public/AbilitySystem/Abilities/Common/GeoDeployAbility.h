@@ -87,6 +87,8 @@ private:
 	/** Deploy distance for the current charge ratio, lerped between the project-wide Min/MaxDeployDistance. */
 	float GetChargedDeployDistance() const;
 
+	/** Spawns the deployable spawner projectile and, on the deployer's machine, the DeployTargetCue that marks its
+	 * landing point until it lands. */
 	virtual void SpawnProjectile(FTransform const& SpawnTransform, float SpawnServerTime) const override;
 
 	int32 LastKnownStacks = 0;

@@ -52,7 +52,8 @@ public:
 	/** Plays the impact FX on non-authority machines that did not already end locally (bIsEnding) — replicated
 	 * destruction never runs EndProjectileLife there. */
 	virtual void Destroyed() override;
-	/** Checks cumulative travel distance each tick and calls EndProjectileLife when DistanceSpanSqr is exceeded. */
+	/** Checks cumulative travel distance each tick; once DistanceSpanSqr is exceeded, snaps back onto the span and calls
+	 * EndProjectileLife, so every machine ends at the same point whatever its tick rate. */
 	virtual void Tick(float DeltaSeconds) override;
 
 	/**
@@ -65,7 +66,7 @@ public:
 	/**
 	 * Fast-forwards the projectile's position by TimeDelta seconds of movement.
 	 * Used on the server to align a newly spawned authoritative projectile with a client-predicted one
-	 * that has already been flying for the duration of the owning client's ping.
+	 * that has already been flying for the duration of the owning client's ping. Never advances past DistanceSpan.
 	 *
 	 * @param TimeDelta  Elapsed time in seconds to advance (typically half round-trip ping).
 	 */
@@ -235,11 +236,11 @@ protected:
 
 	bool bIsEnding{false};
 
-private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoProjectile",
-			  meta = (Tooltip = "Safe guard in case distance check fails", AllowPrivateAccess = true))
+			  meta = (Tooltip = "Safe guard in case distance check fails"))
 	float LifeSpanInSec = 30.f;
 
+private:
 	/** How long the server keeps an ended shot alive, dark, so bEndedOnServer reaches every client — including one the
 	 * shot has not replicated to yet — before its destruction does. */
 	float TimeBeforeDestroyAtEnd = 1.f;

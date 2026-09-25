@@ -7,6 +7,7 @@
 #include "EngineUtils.h"
 #include "Kismet/KismetMaterialLibrary.h"
 #include "Materials/MaterialParameterCollection.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "World/GeoGameCamera.h"
@@ -15,11 +16,6 @@ namespace
 {
 	constexpr int32 MaxPulseSlots = 8;
 	constexpr FLinearColor UnusedSlotValue(0.f, 0.f, 0.f, 0.f);
-
-	FName GetSlotParameterName(int32 const SlotIndex)
-	{
-		return FName(FString::Printf(TEXT("PulseSource_%02d"), SlotIndex));
-	}
 
 	FVector2D RandomUnitVector()
 	{
@@ -160,5 +156,6 @@ void UGeoBackgroundPulseComponent::MovePulse(FGeoPulse& Pulse, float DeltaTime) 
 
 void UGeoBackgroundPulseComponent::SetSlot(int32 SlotIndex, FLinearColor Value)
 {
-	UKismetMaterialLibrary::SetVectorParameterValue(this, PulseCollection, GetSlotParameterName(SlotIndex), Value);
+	UKismetMaterialLibrary::SetVectorParameterValue(this, PulseCollection,
+													GeoMaterialParams::GetPulseSourceName(SlotIndex), Value);
 }

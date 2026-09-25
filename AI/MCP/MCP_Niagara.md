@@ -11,7 +11,7 @@ rapid-iteration parameter store are all protected. Every stack edit goes through
 
 | Class | Header | What it does |
 |---|---|---|
-| `UGeoNiagaraBuilderUtil` | `Source/GeoTrinityEditor/Public/Tool/GeoNiagaraBuilderUtil.h` | Add an emitter or a renderer, write an emitter property, add/toggle a module, set static switches, set input values, nest dynamic inputs, set user parameters, dump a stage |
+| `UGeoNiagaraBuilderUtil` | `Source/GeoTrinityEditor/Public/Tool/GeoNiagaraBuilderUtil.h` | Add an emitter or a renderer, write an emitter property, add/toggle a module, set static switches, set input values, nest dynamic inputs, add and set user parameters, bind a renderer's material parameters to user parameters, dump a stage |
 
 The ops route (`/api/niagara/ops`, `NiagaraRoutes.cpp`) accepts only `spawn_system`, `set_parameter`,
 `get_system_info`, `add_emitter`, `remove_emitter`, `activate` and `deactivate`; any other name is rejected. It
@@ -42,8 +42,8 @@ switches with their current values and value inputs with their types and compone
   the editor closed.
 - A constant left over from a branch the stack has since switched away from still appears, so confirm an input
   belongs to the current branch by writing it rather than by reading the dump.
-- Only enum switches are addressable. A bool static switch is invisible to the dump and refused by the setter,
-  so a module whose behaviour hangs on one can only be used in the branch it already sits in.
+- Enum and bool switches are both addressable: an enum one takes an entry's display name, a bool one `true` or
+  `false`.
 - A dynamic input attaches only where the stack holds a plain value. An input a template already feeds cannot be
   rewired: add a second instance of the module, disable the first, and build on the fresh one.
 - An input's component count follows the module, not the name — the same name is a float on one module and a

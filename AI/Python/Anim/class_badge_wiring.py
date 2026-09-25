@@ -36,7 +36,7 @@ ABILITY_MONTAGES = {
     "/Game/AbilitySystem/Abilities/Square/SacrificeBeam/GA_Square_SpecAlt_SacrificeDetonate":
         ANIM_FOLDER + "/Square/SK_SquareBadge_Montage_SacrificeSpit",
     "/Game/AbilitySystem/Abilities/Triangle/GA_Triangle_AutoProjectile":
-        ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_FireCrossbow",
+        ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_Fire",
     "/Game/AbilitySystem/Abilities/Triangle/TurretRecall/GA_TurretRecall":
         ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_Recall",
     "/Game/AbilitySystem/Abilities/Triangle/Reload/GA_Reload":
@@ -45,6 +45,12 @@ ABILITY_MONTAGES = {
         ANIM_FOLDER + "/Circle/SK_CircleBadge_Montage_ChargeOrbit",
     "/Game/AbilitySystem/Abilities/Circle/MoiraBeam/GA_MoiraBeam":
         ANIM_FOLDER + "/Circle/SK_CircleBadge_Montage_MoiraBeam",
+    "/Game/AbilitySystem/Abilities/Square/DeployMine/GA_Square_Special_Mine":
+        ANIM_FOLDER + "/Square/SK_SquareBadge_Montage_Deploy",
+    "/Game/AbilitySystem/Abilities/Triangle/Turret/GA_LaunchTurret":
+        ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_Deploy",
+    "/Game/AbilitySystem/Abilities/Circle/HealingZone/GA_DeployHealingZone":
+        ANIM_FOLDER + "/Circle/SK_CircleBadge_Montage_Deploy",
 }
 
 LOG = []

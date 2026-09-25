@@ -16,6 +16,7 @@
 #include "HUD/Interface/GeoChargeGaugeWidgetInterface.h"
 #include "Input/GeoInputComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "NiagaraComponent.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VectorTypes.h"
@@ -63,6 +64,12 @@ void APlayableCharacter::BeginPlay()
 
 	// Not the constructor: a Blueprint-authored AimCursorDistance is only applied to the CDO after it has run.
 	AimCursorComponent->SetRelativeLocation(FVector(AimCursorDistance, 0.f, 0.f));
+}
+
+void APlayableCharacter::EndPlay(EEndPlayReason::Type const EndPlayReason)
+{
+	ClearDeathDebris();
+	Super::EndPlay(EndPlayReason);
 }
 
 void APlayableCharacter::SetChargeGaugeVisible(UWidgetComponent* Component, FTimerHandle& HideHandle,
@@ -249,18 +256,22 @@ void APlayableCharacter::RestartCharacter()
 	GetGeoMovementComponent()->SetMovementMode(MOVE_Walking);
 	SetActorEnableCollision(true);
 	SetDeathVisuals(false);
+	ClearDeathDebris();
 }
 
-void APlayableCharacter::SetDeathVisuals(bool const bDead)
+void APlayableCharacter::SetDeathDebris(UNiagaraComponent* Debris)
 {
-	Super::SetDeathVisuals(bDead);
+	ClearDeathDebris();
+	DeathDebrisComponent = Debris;
+}
 
-	FPlayerClassData const* VisualData = GetClassData(GetPlayerClass());
-	if (!VisualData)
+void APlayableCharacter::ClearDeathDebris()
+{
+	if (DeathDebrisComponent)
 	{
-		return;
+		DeathDebrisComponent->DestroyComponent();
+		DeathDebrisComponent = nullptr;
 	}
-	SetBodyMaterial(bDead ? VisualData->DeathMaterial : VisualData->AliveMaterial);
 }
 
 UAnimMontage* APlayableCharacter::GetDeathMontage() const
@@ -270,17 +281,8 @@ UAnimMontage* APlayableCharacter::GetDeathMontage() const
 	{
 		return nullptr;
 	}
-	return bDiedFromFall ? VisualData->FallMontage : VisualData->DeathMontage;
-}
-
-UAnimMontage* APlayableCharacter::GetReviveMontage() const
-{
-	FPlayerClassData const* VisualData = GetClassData(GetPlayerClass());
-	if (!VisualData)
-	{
-		return nullptr;
-	}
-	return VisualData->ReviveMontage;
+	ensureMsgf(VisualData->DeathMontage, TEXT("GetDeathMontage: No DeathMontage for class on %s"), *GetName());
+	return VisualData->DeathMontage;
 }
 
 FPlayerClassData const* APlayableCharacter::GetClassData(EPlayerClass Class) const

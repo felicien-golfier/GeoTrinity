@@ -25,7 +25,7 @@ void UGeoBeamVFXComponent::CreateNiagaraComponent()
 		// Asset is picked by ApplyBeamState below (BeamSystem vs IndicatorSystem, per BeamState.bIsIndicator).
 		UGameDataSettings const* const GDSettings = GetDefault<UGameDataSettings>();
 		IndicatorSystem = GDSettings->GetLoadedDataAsset(GDSettings->RayIndicatorSystem);
-		NiagaraComponent->SetVariableLinearColor(GeoNiagaraParams::Color, BeamColor);
+		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
 		NiagaraComponent->RegisterComponent();
 		NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
 											FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -69,7 +69,7 @@ void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	// Not COND_InitialOnly: the component is added dynamically (OnGiveAbility), after the owning actor's channel
 	// already sent its initial bunch — InitialOnly properties would then never reach existing clients.
 	DOREPLIFETIME(UGeoBeamVFXComponent, BeamSystem);
-	DOREPLIFETIME(UGeoBeamVFXComponent, BeamColor);
+	DOREPLIFETIME(UGeoBeamVFXComponent, BeamColors);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -81,12 +81,12 @@ void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const Width, f
 	ApplyBeamState();
 }
 
-void UGeoBeamVFXComponent::SetBeamColor(FLinearColor const Color)
+void UGeoBeamVFXComponent::SetBeamColors(TArray<FLinearColor> Colors)
 {
-	BeamColor = Color;
+	BeamColors = MoveTemp(Colors);
 	if (!GeoLib::IsDedicatedServer(this))
 	{
-		OnRep_BeamColor();
+		OnRep_BeamColors();
 	}
 }
 
@@ -96,11 +96,11 @@ void UGeoBeamVFXComponent::OnRep_BeamState() const
 	ApplyBeamState();
 }
 
-void UGeoBeamVFXComponent::OnRep_BeamColor() const
+void UGeoBeamVFXComponent::OnRep_BeamColors() const
 {
 	if (NiagaraComponent)
 	{
-		NiagaraComponent->SetVariableLinearColor(GeoNiagaraParams::Color, BeamColor);
+		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
 	}
 }
 
@@ -126,7 +126,7 @@ void UGeoBeamVFXComponent::ApplyBeamState() const
 		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, BeamState.Lifetime);
 		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamState.Width);
 		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamState.Length);
-		NiagaraComponent->SetVariableLinearColor(GeoNiagaraParams::Color, BeamColor);
+		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
 	}
 	else if (NiagaraComponent->IsActive())
 	{

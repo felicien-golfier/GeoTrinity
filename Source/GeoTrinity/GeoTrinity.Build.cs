@@ -23,7 +23,9 @@ public class GeoTrinity : ModuleRules
 			"DeveloperSettings",
 			"AIModule",
 			"StateTreeModule",
-			"GameplayStateTreeModule"
+			"GameplayStateTreeModule",
+			// UGeoDeathDebrisNotify's public header derives from its Niagara notify.
+			"NiagaraAnimNotifies"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

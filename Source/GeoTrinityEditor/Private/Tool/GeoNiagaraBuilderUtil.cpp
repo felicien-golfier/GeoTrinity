@@ -14,6 +14,7 @@
 #include "NiagaraScript.h"
 #include "NiagaraScriptSourceBase.h"
 #include "NiagaraSystem.h"
+#include "NiagaraTypes.h"
 #include "UObject/UnrealType.h"
 #include "ViewModels/Stack/NiagaraParameterHandle.h"
 #include "ViewModels/Stack/NiagaraStackGraphUtilities.h"
@@ -72,6 +73,22 @@ static FGeoNiagaraStage FindStage(FString const& SystemPath, FName EmitterName, 
 	return Stage;
 }
 
+/** The system's User parameter named ParameterName, with its type. */
+static bool FindUserParameter(UNiagaraSystem& System, FName ParameterName, FNiagaraVariable& OutParameter)
+{
+	for (FNiagaraVariableWithOffset const& Parameter : System.GetExposedParameters().ReadParameterVariables())
+	{
+		if (Parameter.GetName() == ParameterName)
+		{
+			OutParameter = FNiagaraVariable(Parameter.GetType(), Parameter.GetName());
+			return true;
+		}
+	}
+	ensureMsgf(false, TEXT("GeoNiagaraBuilderUtil: no exposed parameter '%s' on '%s'"), *ParameterName.ToString(),
+			   *System.GetPathName());
+	return false;
+}
+
 static void CollectFunctionNodes(UNiagaraScript& Script, ENiagaraScriptUsage Usage,
 								 TArray<UNiagaraNodeFunctionCall*>& OutNodes)
 {
@@ -124,6 +141,39 @@ static UEdGraphPin* FindSwitchPin(UNiagaraNodeFunctionCall& FunctionNode, FName 
 	ensureMsgf(false, TEXT("GeoNiagaraBuilderUtil: function '%s' has no switch pin '%s'"),
 			   *FunctionNode.GetFunctionName(), *SwitchName.ToString());
 	return nullptr;
+}
+
+static bool IsBoolSwitchPin(UEdGraphPin const& Pin)
+{
+	return Pin.PinType.PinSubCategoryObject == FNiagaraTypeDefinition::GetBoolStruct();
+}
+
+/** The pin default that selects Value on a switch: the entry name behind an enum display name, or a bool written the
+ *  way Niagara writes it. Empty, with an ensure, when the pin is neither or Value names none of its entries. */
+static FString ResolveSwitchPinValue(UEdGraphPin const& SwitchPin, FString const& Value)
+{
+	if (IsBoolSwitchPin(SwitchPin))
+	{
+		return LexToString(Value.ToBool());
+	}
+
+	UEnum const* SwitchEnum = Cast<UEnum>(SwitchPin.PinType.PinSubCategoryObject.Get());
+	if (!ensureMsgf(SwitchEnum, TEXT("GeoNiagaraBuilderUtil: switch '%s' is neither an enum nor a bool"),
+					*SwitchPin.PinName.ToString()))
+	{
+		return FString();
+	}
+
+	for (int32 EntryIndex = 0; EntryIndex < SwitchEnum->NumEnums() - 1; ++EntryIndex)
+	{
+		if (SwitchEnum->GetDisplayNameTextByIndex(EntryIndex).ToString() == Value)
+		{
+			return SwitchEnum->GetNameStringByIndex(EntryIndex);
+		}
+	}
+	ensureMsgf(false, TEXT("GeoNiagaraBuilderUtil: switch '%s' has no entry named '%s'"), *SwitchPin.PinName.ToString(),
+			   *Value);
+	return FString();
 }
 
 static FName MakeConstantName(FGeoNiagaraStage const& Stage, ENiagaraScriptUsage Usage, FName FunctionName,
@@ -333,33 +383,22 @@ bool UGeoNiagaraBuilderUtil::SetModuleEnabled(FString SystemPath, FName EmitterN
 }
 
 bool UGeoNiagaraBuilderUtil::SetStaticSwitch(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
-											 FName FunctionName, FName SwitchName, FString EnumEntryDisplayName)
+											 FName FunctionName, FName SwitchName, FString Value)
 {
 	FGeoNiagaraStage const Stage = FindStage(SystemPath, EmitterName, Usage);
 	UNiagaraNodeFunctionCall* FunctionNode =
 		Stage.IsValid() ? FindFunctionNode(*Stage.Script, Usage, FunctionName) : nullptr;
 	UEdGraphPin* SwitchPin = FunctionNode ? FindSwitchPin(*FunctionNode, SwitchName) : nullptr;
-	UEnum const* SwitchEnum = SwitchPin ? Cast<UEnum>(SwitchPin->PinType.PinSubCategoryObject.Get()) : nullptr;
-	if (!ensureMsgf(SwitchEnum, TEXT("GeoNiagaraBuilderUtil: '%s' input '%s' is not an enum switch"),
-					*FunctionName.ToString(), *SwitchName.ToString()))
+	FString const PinValue = SwitchPin ? ResolveSwitchPinValue(*SwitchPin, Value) : FString();
+	if (PinValue.IsEmpty())
 	{
 		return false;
 	}
 
-	for (int32 EntryIndex = 0; EntryIndex < SwitchEnum->NumEnums() - 1; ++EntryIndex)
-	{
-		if (SwitchEnum->GetDisplayNameTextByIndex(EntryIndex).ToString() != EnumEntryDisplayName)
-		{
-			continue;
-		}
-		SwitchPin->DefaultValue = SwitchEnum->GetNameStringByIndex(EntryIndex);
-		FunctionNode->MarkNodeRequiresSynchronization(TEXT("GeoNiagaraBuilderUtil set static switch"), true);
-		Stage.System->MarkPackageDirty();
-		return true;
-	}
-	ensureMsgf(false, TEXT("GeoNiagaraBuilderUtil: switch '%s' has no entry named '%s'"), *SwitchName.ToString(),
-			   *EnumEntryDisplayName);
-	return false;
+	SwitchPin->DefaultValue = PinValue;
+	FunctionNode->MarkNodeRequiresSynchronization(TEXT("GeoNiagaraBuilderUtil set static switch"), true);
+	Stage.System->MarkPackageDirty();
+	return true;
 }
 
 bool UGeoNiagaraBuilderUtil::SetInputValue(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage,
@@ -426,28 +465,72 @@ FName UGeoNiagaraBuilderUtil::SetInputDynamicInput(FString SystemPath, FName Emi
 bool UGeoNiagaraBuilderUtil::SetUserParameter(FString SystemPath, FName ParameterName, FString Value)
 {
 	UNiagaraSystem* System = LoadNiagaraSystem(SystemPath);
-	if (!System)
+	FNiagaraVariable Parameter;
+	if (!System || !FindUserParameter(*System, ParameterName, Parameter)
+		|| !WriteParameterValue(System->GetExposedParameters(), Parameter, Value))
+	{
+		return false;
+	}
+	System->MarkPackageDirty();
+	return true;
+}
+
+bool UGeoNiagaraBuilderUtil::AddUserParameter(FString SystemPath, FName ParameterName, FString TypeName)
+{
+	UNiagaraSystem* System = LoadNiagaraSystem(SystemPath);
+	bool const bIsColor = TypeName == TEXT("LinearColor");
+	if (!System
+		|| !ensureMsgf(bIsColor || TypeName == TEXT("Float"),
+					   TEXT("GeoNiagaraBuilderUtil: '%s' is neither LinearColor nor Float"), *TypeName))
 	{
 		return false;
 	}
 
-	FNiagaraParameterStore& Store = System->GetExposedParameters();
-	for (FNiagaraVariableWithOffset const& Parameter : Store.ReadParameterVariables())
+	FNiagaraTypeDefinition const& Type =
+		bIsColor ? FNiagaraTypeDefinition::GetColorDef() : FNiagaraTypeDefinition::GetFloatDef();
+	System->Modify();
+	System->GetExposedParameters().AddParameter(FNiagaraVariable(Type, ParameterName), true, true);
+	System->MarkPackageDirty();
+	return true;
+}
+
+bool UGeoNiagaraBuilderUtil::BindMaterialParameterToUserParameter(FString SystemPath, FName EmitterName,
+																  FName MaterialParameterName,
+																  FName UserParameterName)
+{
+	FGeoNiagaraStage const Stage = FindStage(SystemPath, EmitterName, ENiagaraScriptUsage::ParticleSpawnScript);
+	FNiagaraVariable UserParameter;
+	if (!Stage.IsValid() || !FindUserParameter(*Stage.System, UserParameterName, UserParameter))
 	{
-		if (Parameter.GetName() != ParameterName)
+		return false;
+	}
+
+	bool bBound = false;
+	for (UNiagaraRendererProperties* const Renderer : Stage.Handle->GetInstance().GetEmitterData()->GetRenderers())
+	{
+		// Declared on each renderer class that takes bindings, not on the base.
+		FStructProperty const* const Property =
+			FindFProperty<FStructProperty>(Renderer->GetClass(), TEXT("MaterialParameters"));
+		if (!Property)
 		{
 			continue;
 		}
-		if (!WriteParameterValue(Store, FNiagaraVariable(Parameter.GetType(), Parameter.GetName()), Value))
-		{
-			return false;
-		}
-		System->MarkPackageDirty();
-		return true;
+
+		Renderer->Modify();
+		TArray<FNiagaraMaterialAttributeBinding>& Bindings =
+			Property->ContainerPtrToValuePtr<FNiagaraRendererMaterialParameters>(Renderer)->AttributeBindings;
+		Bindings.RemoveAll([MaterialParameterName](FNiagaraMaterialAttributeBinding const& Binding)
+						   { return Binding.MaterialParameterName == MaterialParameterName; });
+		FNiagaraMaterialAttributeBinding& Binding = Bindings.AddDefaulted_GetRef();
+		Binding.MaterialParameterName = MaterialParameterName;
+		Binding.NiagaraVariable = UserParameter;
+		Renderer->PostEditChange();
+		bBound = true;
 	}
-	ensureMsgf(false, TEXT("GeoNiagaraBuilderUtil: no exposed parameter '%s' on '%s'"), *ParameterName.ToString(),
-			   *SystemPath);
-	return false;
+	ensureMsgf(bBound, TEXT("GeoNiagaraBuilderUtil: no renderer of '%s' takes material bindings"),
+			   *EmitterName.ToString());
+	Stage.System->MarkPackageDirty();
+	return bBound;
 }
 
 void UGeoNiagaraBuilderUtil::ListStack(FString SystemPath, FName EmitterName, ENiagaraScriptUsage Usage)
@@ -465,7 +548,8 @@ void UGeoNiagaraBuilderUtil::ListStack(FString SystemPath, FName EmitterName, EN
 		UE_LOG(LogTemp, Display, TEXT("%s"), *FunctionNode->GetFunctionName());
 		for (UEdGraphPin const* Pin : FunctionNode->Pins)
 		{
-			if (Pin && Pin->Direction == EGPD_Input && Cast<UEnum>(Pin->PinType.PinSubCategoryObject.Get()))
+			if (Pin && Pin->Direction == EGPD_Input
+				&& (Cast<UEnum>(Pin->PinType.PinSubCategoryObject.Get()) || IsBoolSwitchPin(*Pin)))
 			{
 				UE_LOG(LogTemp, Display, TEXT("    switch %-38s = %s"), *Pin->PinName.ToString(), *Pin->DefaultValue);
 			}

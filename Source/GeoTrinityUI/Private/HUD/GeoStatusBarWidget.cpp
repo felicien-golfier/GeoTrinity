@@ -19,10 +19,10 @@
 #include "Materials/MaterialInterface.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateTypes.h"
+#include "Tool/GeoNiagaraParams.h"
 
 namespace
 {
-	FName const DepletionFillParam(TEXT("Fill"));
 	FLinearColor const GaugeEmptyTint(0.2f, 0.2f, 0.2f, 1.f);
 	// Slate clamps each channel after the tint multiply, so an over-1 tint whites the icon out toward FullColor — the
 	// closest UMG gets to an emissive shine.
@@ -140,7 +140,7 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			if (DepletionSweepMaterial && !bIsGauge)
 			{
 				SweepMID = UMaterialInstanceDynamic::Create(DepletionSweepMaterial, this);
-				SweepMID->SetScalarParameterValue(DepletionFillParam, 0.f);
+				SweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, 0.f);
 				SweepImage->SetBrushFromMaterial(SweepMID);
 			}
 			else
@@ -227,7 +227,7 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 			float const Fill = (Entry.TimeRemaining < 0.f || Entry.Duration <= 0.f)
 									? 0.f
 									: 1.f - FMath::Clamp(Entry.TimeRemaining / Entry.Duration, 0.f, 1.f);
-			DepletionSweepMIDs[Index]->SetScalarParameterValue(DepletionFillParam, Fill);
+			DepletionSweepMIDs[Index]->SetScalarParameterValue(GeoMaterialParams::SweepFill, Fill);
 		}
 	}
 }

@@ -12,6 +12,7 @@
 #include "Curves/CurveFloat.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Net/UnrealNetwork.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -134,7 +135,7 @@ void AGeoBuffPickup::UpdateColor()
 		return;
 	}
 
-	BuffMaterialInstance->SetVectorParameterValue(ColorParameterName,
+	BuffMaterialInstance->SetVectorParameterValue(GeoMaterialParams::BuffPickupColor,
 												  ReloadAbilityCDO->GetColorForIndex(Data.BuffIndex));
 }
 

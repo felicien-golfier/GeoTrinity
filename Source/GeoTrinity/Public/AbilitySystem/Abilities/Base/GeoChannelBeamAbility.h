@@ -81,9 +81,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
 	TObjectPtr<UNiagaraSystem> BeamNiagaraSystem;
 
-	/** Tint pushed to the beam Niagara system's "Color" user parameter. */
+	/** Colour of the beam, and of its outline. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
 	FGeoColorParam BeamColor;
+
+	/** Further colours the beam draws beside BeamColor, one per extra meaning it carries (damage beside heal, say),
+	 * split by its material's colour pattern. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
+	TArray<FGeoColorParam> SecondaryBeamColors;
 
 	bool bIsBeamActive = false;
 };

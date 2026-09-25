@@ -67,8 +67,37 @@ coordinates, so one shape drawn there repeats in every tile.
 | `MF_RandomFromPosition` | Repeatable pseudo-random 0–1 per position, such as one value per cell |
 | `MF_LissajousPoint` | A point swinging around a centre on its own frequency per axis: a slow wandering path |
 | `MF_DurationWipe` | Clock-wipe mask for remaining-life readouts |
+| `MF_WrapIndex` | A whole number wrapped into 0 to Count − 1, negatives included |
+| `MF_PickColor` | One of four colours, by index |
+| `MF_ColorPattern_Zigzag` | Flat-topped zigzag bands, one colour each in turn: every colour gets the same share |
+| `MF_ColorPattern_Overlap` | Two sets of sliding quads, coloured by how many cover a point: even shares only at two colours |
+| `MF_ColorPattern_Stripes` | Straight bands, one colour each in turn: the telegraphs' pattern |
+| `MF_MeaningColors` | Up to four colours, one per meaning, split by the project's colour pattern laid over the world: what effects call |
+| `MF_ColorScale` | How many times brighter a colour is than the one it was scaled from, such as a faded particle colour |
 
-All are built by `AI/Python/Material/make_generic_material_functions.py`.
+All are built by `AI/Python/Material/make_generic_material_functions.py`, except the last seven (and the
+`MF_SlidingQuads` the overlap pattern calls), built by `make_color_pattern_functions.py`.
+
+## Several meanings at once
+
+An effect that carries two meanings — damage and heal, reduction and boost — shows both colours at once, in big
+hard-edged regions rather than a blend. Every such material calls `MF_MeaningColors` (`ColorCount`, `Color0`–`3`
+in, `Color` out), never a pattern directly. The pattern is the same on every effect whatever its shape or scale:
+`MF_MeaningColors` lays it over the world's XY, at the size and speed of `MPC_MeaningColors` (`PatternSize` in world
+cm, `PatternSpeed` in bands per second), the one place to tune it. That makes it the one generic function reading
+world position and a collection. Inside it a `MF_ColorPattern_*` turns the position into a colour index and
+`MF_PickColor` turns that into the colour; which pattern is the `PATTERN` constant of
+`make_color_pattern_functions.py`, then rebuild. Every pattern has the same pins (`Position`, `Scroll`, `ColorCount`
+in, `ColorIndex` out). At `ColorCount` 1 every pattern returns 0 and the effect looks as it did with one colour.
+
+`AGeoEffectZone` writes `Color` plus its `SecondaryColors` into `M_PulseCircle`'s `InsideColor`, `InsideColor2`–`4`
+and `ColorCount`. The beam and the two telegraphs (`M_PulseBeam`, `M_ZoneIndicatorRay`, `M_ZoneIndicator`) take theirs
+from their Niagara system (`AI/VFX.md`).
+
+A telegraph asks for its own pattern: the telegraph materials call `MF_TelegraphColors` instead, straight stripes over
+the world at `MPC_MeaningColors`' `TelegraphStripeWidth` and `TelegraphStripeAngle`, each stripe taking the next
+colour. A telegraph never draws one flat colour: alone, its colour is paired with a shade of itself
+(`SingleColorShade`), so a single-meaning telegraph still shows its stripes.
 
 ## Writing a function
 

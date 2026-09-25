@@ -5,6 +5,7 @@
 #include "AttributeSet.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "Engine/TimerHandle.h"
 
 #include "GeoFXComponent.generated.h"
 
@@ -86,6 +87,13 @@ public:
 	 * moments from its own life cycle. */
 	void PlayBurst(FGeoBurstFXMoment const& Moment) const;
 
+	/** Blinks the owner by toggling its visibility until StopBlinking, twice as fast over the last half second of
+	 * Duration so the end reads as imminent whatever Duration is. Silent on a dedicated server. */
+	void StartBlinking(float Duration);
+
+	/** Stops the blink, leaving the owner as it last toggled — every owner hides itself right after. */
+	void StopBlinking();
+
 protected:
 	/**
 	 * Turns Buff's Moment on or off on the owner: its system attached to the root, its sound looping beside it, either
@@ -138,6 +146,17 @@ private:
 	/** The project's buff catalog, empty while UGameDataSettings::BuffFX names no asset — the same "this game shows no
 	 * buff FX" the empty catalog means. Bind, refresh and clear all walk it, so they all see the same list. */
 	static TArray<FGeoBuffFXEntry> const& GetBuffEntries();
+
+	/** Arms the next blink toggle, at the fast rate once the blink is within its last half second. */
+	void ScheduleBlinkToggle();
+
+	/** Flips the owner's visibility, then arms the next toggle. */
+	void ToggleBlink();
+
+	FTimerHandle BlinkTimerHandle;
+
+	/** World time the running blink reaches the end of its Duration. */
+	float BlinkEndTime = 0.f;
 
 	/** Buff moments currently running on the owner, keyed by the attribute each one shows. */
 	UPROPERTY()

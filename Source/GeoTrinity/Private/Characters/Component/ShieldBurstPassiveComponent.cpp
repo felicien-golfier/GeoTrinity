@@ -6,6 +6,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -59,8 +60,8 @@ void UShieldBurstPassiveComponent::InitializeMaterialInstances()
 		return;
 	}
 
-	CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, GaugeRatio);
-	CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, 0.f);
+	CharacterMaterialInstance->SetScalarParameterValue(GeoMaterialParams::ShieldBurstGauge, GaugeRatio);
+	CharacterMaterialInstance->SetScalarParameterValue(GeoMaterialParams::ShieldBurstFullGauge, 0.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -92,7 +93,7 @@ void UShieldBurstPassiveComponent::OnRep_GaugeRatio()
 	float DeltaTime = GetWorld()->GetTimeSeconds() - StartChargeTime;
 	if (DeltaTime > ChargeTime + DischargeTime)
 	{
-		CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, GaugeRatio);
+		CharacterMaterialInstance->SetScalarParameterValue(GeoMaterialParams::ShieldBurstGauge, GaugeRatio);
 	}
 
 	if (GaugeRatio >= 1.f)
@@ -113,18 +114,19 @@ void UShieldBurstPassiveComponent::Charge()
 
 	if (DeltaTime < ChargeTime)
 	{
-		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, DeltaTime / ChargeTime);
+		CharacterMaterialInstance->SetScalarParameterValue(GeoMaterialParams::ShieldBurstFullGauge,
+														   DeltaTime / ChargeTime);
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UShieldBurstPassiveComponent::Charge);
 	}
 	else if (DeltaTime < ChargeTime + DischargeTime)
 	{
-		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName,
+		CharacterMaterialInstance->SetScalarParameterValue(GeoMaterialParams::ShieldBurstFullGauge,
 														   1 - (DeltaTime - ChargeTime) / DischargeTime);
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UShieldBurstPassiveComponent::Charge);
 	}
 	else
 	{
-		CharacterMaterialInstance->SetScalarParameterValue(GaugeScalarParamName, 0.f);
-		CharacterMaterialInstance->SetScalarParameterValue(ChargeScalarParamName, 0.f);
+		CharacterMaterialInstance->SetScalarParameterValue(GeoMaterialParams::ShieldBurstGauge, 0.f);
+		CharacterMaterialInstance->SetScalarParameterValue(GeoMaterialParams::ShieldBurstFullGauge, 0.f);
 	}
 }

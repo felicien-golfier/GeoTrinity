@@ -9,6 +9,8 @@ Material node wiring goes through `execute_script` using `MaterialEditingLibrary
 - Connecting expressions returns a bool and does nothing on an unknown pin name — always assert on it, or an
   input silently keeps its default (a texture sample with no UVs samples screen space, which still looks
   plausible).
+- A dynamic parameter's outputs take its parameter names only in the material editor; from Python they connect by
+  channel, `R` to `A`.
 - Inputs and outputs are matched by their **shortened** display name, not the name the expression reports: a
   texture sample's UV pin is `UVs` and its texture pin is `Tex`. An empty name is input 0. Naming a node's
   channels does not make those names connectable — address a multi-output node by position.
