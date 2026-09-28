@@ -23,7 +23,7 @@ public:
 	/** Disables actor replication (bReplicates = false) — pooled projectiles are server-managed, non-replicated actors. */
 	AGeoPooledProjectile();
 
-	/** Returns this projectile to the actor pool, disables collision, and kills the bullet VFX particles. */
+	/** Unbinds the hit/overlap and revive delegates and stops movement, as the pool takes this projectile back. */
 	virtual void End() override;
 	/**
 	 * Resets projectile state and re-enables collision after retrieval from the pool, and restarts the bullet VFX from
@@ -32,6 +32,7 @@ public:
 	virtual void Init() override;
 
 protected:
-	/** Overrides the base class to release back to the pool instead of destroying the actor. */
+	/** Overrides the base class to release back to the pool instead of destroying the actor — once its FX have faded
+	 * out, so the next shot never takes over a trail still dying. */
 	virtual void EndProjectileLife() override;
 };

@@ -132,9 +132,10 @@ def build(parts):
     points = []
 
     def tri(va, vb, vc):
-        desc.create_triangle(group, [desc.create_vertex_instance(va),
+        # Wound CCW seen from outside; UE front faces are clockwise, so reverse here.
+        desc.create_triangle(group, [desc.create_vertex_instance(vc),
                                      desc.create_vertex_instance(vb),
-                                     desc.create_vertex_instance(vc)])
+                                     desc.create_vertex_instance(va)])
 
     def extrude(bone, outline, z0, z1):
         bottom, top = [], []

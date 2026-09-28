@@ -10,6 +10,7 @@
 #include "Components/AudioComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
+#include "TimerManager.h"
 #include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -67,9 +68,21 @@ void UGeoProjectileFXComponent::ApplyBulletSystem()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FGeoBurstFXMoment const* UGeoProjectileFXComponent::FindMoment(EProjectileMoment const Type) const
+void UGeoProjectileFXComponent::PlayMoment(EProjectileMoment const Type) const
 {
-	return GetOwner<AGeoProjectile>()->ResolvedParams.FXMap.Find(Type);
+	if (FGeoBurstFXMoment const* const Moment = GetOwner<AGeoProjectile>()->ResolvedParams.FXMap.Find(Type))
+	{
+		PlayBurst(*Moment);
+	}
+
+	for (FGeoBuffFXEntry const& Entry : GetBuffEntries())
+	{
+		FGeoBurstFXMoment const* const BuffMoment = Entry.ProjectileBurstFX.Find(Type);
+		if (BuffMoment && RunningBuffFX.Contains(Entry.Attribute))
+		{
+			PlayBurst(*BuffMoment);
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -95,44 +108,53 @@ void UGeoProjectileFXComponent::StartLife()
 	// A pooled instance can come back holding the previous shot's launch offset; the spawner re-applies its own after
 	// this runs.
 	Flight.VFXComponent->SetRelativeLocation(FVector::ZeroVector);
-	StartSustainedFX(Flight, GetOwner<AGeoProjectile>()->ResolvedParams.LoopingFX);
-
-	if (FGeoBurstFXMoment const* const Start = FindMoment(EProjectileMoment::Start))
-	{
-		PlayBurst(*Start);
-	}
+	AGeoProjectile const* const Projectile = GetOwner<AGeoProjectile>();
+	StartSustainedFX(Flight, Projectile->ResolvedParams.LoopingFX);
+	BindBuffFX(GeoASLib::GetGeoAscFromActor(Projectile->GetSourceOwner()));
+	PlayMoment(EProjectileMoment::Start);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoProjectileFXComponent::PlayEnd(bool const bValidOverlap) const
 {
-	if (FGeoBurstFXMoment const* const NoOverlapEnd = FindMoment(EProjectileMoment::NoOverlapEnd))
+	PlayMoment(EProjectileMoment::NoOverlapEnd);
+	if (bValidOverlap)
 	{
-		PlayBurst(*NoOverlapEnd);
-	}
-
-	FGeoBurstFXMoment const* const ValidOverlapEnd = FindMoment(EProjectileMoment::ValidOverlapEnd);
-	if (bValidOverlap && ValidOverlapEnd)
-	{
-		PlayBurst(*ValidOverlapEnd);
+		PlayMoment(EProjectileMoment::ValidOverlapEnd);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoProjectileFXComponent::StopAll()
+void UGeoProjectileFXComponent::FadeOut(FSimpleDelegate const& OnFadedOut)
 {
 	StopBlinking();
 	ClearBuffFX();
-
-	if (GeoLib::IsDedicatedServer(this))
-	{
-		return;
-	}
-
 	Flight.AudioComponent->Stop();
-	// Hiding the actor and disabling component ticks does not stop a Niagara system (the world manager ticks it), so a
-	// pooled projectile keeps its particles alive and the next reuse renders them for one frame.
+
+	if (!GeoLib::IsDedicatedServer(this) && Flight.VFXComponent->IsActive())
+	{
+		PendingFadeOut = OnFadedOut;
+		// Armed first: a system with nothing left to draw completes inside Deactivate.
+		GetWorld()->GetTimerManager().SetTimer(
+			FadeOutTimerHandle,
+			FTimerDelegate::CreateUObject(this, &ThisClass::FinishFadeOut, Flight.VFXComponent.Get()),
+			MaxLoopFXFadeOutDuration, false);
+		Flight.VFXComponent->OnSystemFinished.AddUniqueDynamic(this, &ThisClass::FinishFadeOut);
+		Flight.VFXComponent->Deactivate();
+	}
+	else
+	{
+		OnFadedOut.ExecuteIfBound();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoProjectileFXComponent::FinishFadeOut(UNiagaraComponent* /*FinishedSystem*/)
+{
+	GetWorld()->GetTimerManager().ClearTimer(FadeOutTimerHandle);
+	Flight.VFXComponent->OnSystemFinished.RemoveDynamic(this, &ThisClass::FinishFadeOut);
 	Flight.VFXComponent->DeactivateImmediate();
+	PendingFadeOut.ExecuteIfBound();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

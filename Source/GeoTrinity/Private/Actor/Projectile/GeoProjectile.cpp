@@ -120,6 +120,7 @@ void AGeoProjectile::BeginPlay()
 	if (GetLocalRole() == ROLE_SimulatedProxy)
 	{
 		ApplyParams(DefaultParams);
+		bVisualOnly = true;
 	}
 
 	if (!Implements<UGeoPoolableInterface>())
@@ -255,7 +256,7 @@ void AGeoProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemCom
 {
 	bEndedOnValidOverlap = true;
 
-	if (GeoLib::IsServer(this))
+	if (!bVisualOnly)
 	{
 		GeoASLib::ApplyEffectFromEffectData(EffectDataArray, OwnerASC, TargetASC, Payload.AbilityLevel, Payload.Seed,
 											Payload.AbilityTag);
@@ -311,21 +312,25 @@ void AGeoProjectile::EndProjectileLife()
 
 	OnProjectileEndLifeDelegate.Broadcast(this);
 
+	SetActorEnableCollision(false);
+	ProjectileMovement->StopMovementImmediately();
+
 	// A simulated proxy must never Destroy() itself: the server still replicates the actor, and any later property
-	// bunch (e.g. a bounce snapshot) re-creates it client-side as a fresh, wrongly-moving ghost. Go dark instead and
-	// let the server's replicated destruction remove the actor. Predicted fakes are client-spawned and therefore
-	// locally ROLE_Authority, so they still destroy themselves here.
+	// bunch (e.g. a bounce snapshot) re-creates it client-side as a fresh, wrongly-moving ghost. It fades out and lets
+	// the server's replicated destruction remove the actor. Predicted fakes are client-spawned and therefore locally
+	// ROLE_Authority, so they destroy themselves once faded out.
 	bool const bPredictedFake = HasAuthority() && !GeoLib::IsServer(GetWorld());
 	if (bPredictedFake)
 	{
-		Destroy();
+		FXComponent->FadeOut(FSimpleDelegate::CreateWeakLambda(this,
+															   [this]()
+															   {
+																   Destroy();
+															   }));
 	}
 	else
 	{
-		SetActorHiddenInGame(true);
-		SetActorEnableCollision(false);
-		ProjectileMovement->StopMovementImmediately();
-		FXComponent->StopAll();
+		FXComponent->FadeOut(FSimpleDelegate());
 		if (HasAuthority())
 		{
 			bEndedOnServer = true;
@@ -547,7 +552,6 @@ void AGeoProjectile::InitProjectileLife()
 	DistanceSpanSqr = FMath::Square(ResolvedParams.DistanceSpan);
 	InitProjectileMovementComponent();
 	FXComponent->StartLife();
-	FXComponent->BindBuffFX(GeoASLib::GetGeoAscFromActor(GetSourceOwner()));
 
 	bIsEnding = false;
 	bEndedOnValidOverlap = false;

@@ -14,7 +14,6 @@ AGeoPooledProjectile::AGeoPooledProjectile()
 
 void AGeoPooledProjectile::End()
 {
-	FXComponent->StopAll();
 	Sphere->OnComponentBeginOverlap.RemoveDynamic(this, &ThisClass::OnSphereOverlap);
 	Sphere->OnComponentHit.RemoveDynamic(this, &ThisClass::OnSphereHit);
 	UnbindFromInstigatorRevive();
@@ -37,9 +36,17 @@ void AGeoPooledProjectile::EndProjectileLife()
 
 	FXComponent->PlayEnd(bEndedOnValidOverlap);
 
-	UGeoActorPoolingSubsystem* Pool = GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
-	checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
-	Pool->ReleaseActor(this);
+	// Collision stays on until the release: the pool tells an active actor by it, and an ending shot ignores what it
+	// touches anyway.
+	ProjectileMovement->StopMovementImmediately();
+	FXComponent->FadeOut(FSimpleDelegate::CreateWeakLambda(this,
+														   [this]()
+														   {
+															   UGeoActorPoolingSubsystem* Pool =
+																   GetWorld()->GetSubsystem<UGeoActorPoolingSubsystem>();
+															   checkf(Pool, TEXT("GeoActorPoolingSubsystem is invalid!"));
+															   Pool->ReleaseActor(this);
+														   }));
 
 	OnProjectileEndLifeDelegate.Broadcast(this);
 }

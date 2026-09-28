@@ -8,6 +8,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
+#include "Settings/GeoGameUserSettings.h"
 #include "Tool/GeoColor.h"
 
 #include "GameDataSettings.generated.h"
@@ -18,6 +19,7 @@ class UUserWidget;
 class UWidgetComponent;
 class UGameplayEffect;
 class USoundBase;
+class USoundClass;
 class UNiagaraSystem;
 class UGeoBuffFXDataAsset;
 class UPlayerClassDataAsset;
@@ -73,6 +75,11 @@ public:
 	/** Default hover sound for UGeoButton, used when a button's own style doesn't set HoveredSlateSound. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TSoftObjectPtr<USoundBase> DefaultButtonHoverSound;
+
+	/** Sound class each volume slider scales. General must parent the others; a sound with no class of its own falls
+	 * back to Project Settings -> Audio -> Default Sound Class, which is the Effects one. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoSound")
+	TMap<EGeoVolumeChannel, TSoftObjectPtr<USoundClass>> VolumeSoundClasses;
 
 	/** Color every FGeoColorParam of the game resolves its slot through; EGeoColor::Override is never looked up here.
 	 * Materials read the same values through the palette texture AGeoGameCamera builds from this map. */

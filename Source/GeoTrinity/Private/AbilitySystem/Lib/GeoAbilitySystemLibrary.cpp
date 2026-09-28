@@ -625,6 +625,7 @@ UGeoAbilitySystemLibrary::StartSpawnProjectile(UWorld* const World, FExternalPro
 
 	Projectile->Payload = Payload;
 	Projectile->EffectDataArray = EffectDataArray;
+	Projectile->bVisualOnly = !GeoLib::IsServer(World);
 	Projectile->PredictionKeyId = PredictionKey.Current;
 	Projectile->ApplyProjectileParams(Params);
 

@@ -119,6 +119,13 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	TArray<TInstancedStruct<struct FEffectData>> EffectDataArray;
 
+	/** Draws the shot and plays none of its gameplay: no effect, no shield, no spawned deployable. EffectDataArray then
+	 * only says what the shot is (which buffs it wears). True on every client, where each projectile is a fake the
+	 * server's copy answers for, and on the server for a UGeoBulletSubsystem drawing, which its bullet answers for.
+	 * Written on every spawn (GeoASLib::StartSpawnProjectile, BeginPlay for a simulated proxy), so a pooled projectile
+	 * never keeps the previous shot's value. */
+	bool bVisualOnly = false;
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent;
 
@@ -146,10 +153,11 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "GeoProjectile|Params")
 	FProjectileParamsBase ResolvedParams;
 
-	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Destroys
-	 * client-predicted fakes at once. The server goes dark and destroys after TimeBeforeDestroyAtEnd, so the end state
-	 * replicates first; simulated proxies only go dark and wait for the server's replicated destruction, so a local
-	 * Destroy() can never race a later replication bunch into a ghost re-spawn. */
+	/** Called when the projectile's life ends (distance exceeded, lifespan expired, or valid hit). Stops the shot where
+	 * it is and fades its FX out (UGeoProjectileFXComponent::FadeOut). Client-predicted fakes destroy themselves once
+	 * faded out. The server destroys after TimeBeforeDestroyAtEnd, so the end state replicates first; simulated proxies
+	 * wait for the server's replicated destruction, so a local Destroy() can never race a later replication bunch into
+	 * a ghost re-spawn — a fade longer than that delay is cut there. */
 	virtual void EndProjectileLife();
 
 	/** Called on a blocking hit (wall or environment): by physics, by AdvanceProjectile's sweep, and by

@@ -32,6 +32,7 @@ see `MCP_EditorUtility.md`.
 | Live Coding builds with the editor open, connecting the MCP bridge | `MCP_LiveCodingAndConnect.md` |
 | Audio editing in Audacity: connection, selection model, generators, arguments that never apply | `Audacity/CLAUDE.md` |
 | Building game sound effects in Audacity: layers, sound grammar, recipes, export to Unreal | `Audacity/GameSoundDesign.md` |
+| How audio models hear and make sound; measuring and picturing an exported sound; user words to fixes | `Audacity/ListeningToSound.md` |
 | Image editing in GIMP: connection, exec console drawing, verifying, export | `Gimp/CLAUDE.md` |
 | Authoring images in GIMP: canvas setup, building blocks, looks, game content, print pieces, export formats | `Gimp/ImageAuthoring.md` |
 | Doc style rules for `.md` files in this folder | `MCP_DocStyle.md` |

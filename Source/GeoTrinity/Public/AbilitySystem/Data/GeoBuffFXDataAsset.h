@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Data/GeoFXMoment.h"
+#include "Actor/Projectile/ExternalProjectileParams.h"
 #include "AttributeSet.h"
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
@@ -37,6 +38,11 @@ struct GEOTRINITY_API FGeoBuffFXEntry
 	 * other attribute it stays unused; that buff shows on the character alone. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGeoSustainedFXMoment ProjectileFX;
+
+	/** Bursts a projectile showing ProjectileFX adds over its own FXMap moments, under the same rule. Start fires only
+	 * for a buff already active at launch; an end moment fires for a buff still active when the shot ends. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TMap<EProjectileMoment, FGeoBurstFXMoment> ProjectileBurstFX;
 };
 
 /**

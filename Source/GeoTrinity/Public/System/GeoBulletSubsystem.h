@@ -60,7 +60,7 @@ struct FGeoBullet
 /**
  * Every bullet a pattern has fired and that is still flying. Bullets are data, not actors: the server judges each one
  * against every hostile at that hostile's own time (FGeoHazardJudge) and the machines that render just draw it, with a
- * projectile actor that carries no effects of its own. They outlive the pattern that fired them, so a boss firing its
+ * visual-only projectile actor. They outlive the pattern that fired them, so a boss firing its
  * next salve never takes back the one before.
  */
 UCLASS()
@@ -106,9 +106,9 @@ private:
 	static float ResolveFlightParam(EOverrideParam Mode, float OverrideValue, float SettingsValue,
 									TCHAR const* ParamName);
 
-	/** Spawns the actor drawing Bullet, with no effects on it: what the bullet hits is the judge's word, not its
-	 * actor's. It still ends itself on whatever it touches on this screen, which is how a bullet disappears on the
-	 * player it just hit. */
+	/** Spawns the actor drawing Bullet, visual only (AGeoProjectile::bVisualOnly): it carries the bullet's effects to
+	 * show what the shot is, but what the bullet hits is the judge's word, not its actor's. It still ends itself on
+	 * whatever it touches on this screen, which is how a bullet disappears on the player it just hit. */
 	void SpawnVisual(FGeoBullet& Bullet, float SpentTime);
 
 	/**

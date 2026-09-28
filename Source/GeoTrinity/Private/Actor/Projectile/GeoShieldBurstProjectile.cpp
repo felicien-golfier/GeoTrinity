@@ -155,7 +155,6 @@ void AGeoShieldBurstProjectile::OnWallBounce(FHitResult const& ImpactResult, FVe
 void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbilitySystemComponent* OwnerASC,
 												   UGeoAbilitySystemComponent* TargetASC)
 {
-	bool const bIsServer = GeoLib::IsServer(GetWorld());
 	if (GeoASLib::IsTeamAttitudeAligned(GetSourceOwner(), OtherActor, TeamAttitudeMask::HostileOrNeutral))
 	{
 		FXComponent->PlaySound(BounceSound);
@@ -171,7 +170,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 		LastOverlapHostileActor = OtherActor;
 		LastOverlapTime = GetWorld()->GetTimeSeconds();
 
-		if (bIsServer)
+		if (GeoLib::IsServer(GetWorld()))
 		{
 			Sphere->SetSphereRadius(Sphere->GetScaledSphereRadius() + SphereRadiusToAdd);
 			ShieldAmount += ShieldAmountToAdd;
@@ -187,7 +186,7 @@ void AGeoShieldBurstProjectile::HandleValidOverlap(AActor* OtherActor, UGeoAbili
 	{
 		OnProjectileConfirmedOverlap(OtherActor);
 
-		if (bIsServer)
+		if (!bVisualOnly)
 		{
 			bEndedOnValidOverlap = true;
 			FShieldEffectData ShieldEffect;

@@ -3,7 +3,6 @@
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void ADeployableSpawnerProjectile::EndProjectileLife()
@@ -15,7 +14,7 @@ void ADeployableSpawnerProjectile::EndProjectileLife()
 // ---------------------------------------------------------------------------------------------------------------------
 void ADeployableSpawnerProjectile::SpawnDeployableActor()
 {
-	if (!GeoLib::IsServer(GetWorld()))
+	if (bVisualOnly)
 	{
 		return;
 	}

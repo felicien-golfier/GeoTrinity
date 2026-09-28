@@ -2,6 +2,7 @@
 
 #include "GameClasses/GeoGameViewportClient.h"
 
+#include "AudioDevice.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
@@ -16,6 +17,10 @@ void UGeoGameViewportClient::Init(FWorldContext& WorldContext, UGameInstance* Ow
 	Super::Init(WorldContext, OwningGameInstance, bCreateNewAudioDevice);
 	SetForceDisableSplitscreen(true);
 	ApplyCouchCoopSetting();
+	if (AudioDevice)
+	{
+		UGeoGameUserSettings::Get()->ApplyVolumes(*AudioDevice);
+	}
 }
 
 void UGeoGameViewportClient::ReceivedFocus(FViewport* InViewport)

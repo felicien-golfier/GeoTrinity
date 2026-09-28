@@ -19,6 +19,9 @@ struct FGeoVFXParams;
 struct FGeoSoundEntry;
 struct FGeoSustainedFXMoment;
 
+/** Longest an ended loop system is left to play its outro before it is cut, for one that never completes on its own. */
+constexpr float MaxLoopFXFadeOutDuration = 3.f;
+
 /** What one sustained moment plays on: the system attached to its owner and the loop playing beside it. */
 USTRUCT()
 struct FGeoRunningSustainedFX
@@ -36,8 +39,10 @@ struct FGeoRunningSustainedFX
 	/** Rolled when the loop starts and kept until it stops, so re-pushing the loop's pitch never jumps it. */
 	float PitchVariation = 1.f;
 
-	/** Destroys both components — a buff's teardown. An owner that lends its own components (a projectile's flight)
-	 * deactivates them instead. */
+	/** Ends both — a buff's teardown. The system is ended rather than cut: it stops emitting, plays whatever outro it
+	 * authors on its owner's execution state, then destroys itself — or is destroyed after MaxLoopFXFadeOutDuration,
+	 * whichever comes first. The sound stops and is destroyed at once. An owner
+	 * that lends its own components (a projectile's flight) ends them without destroying them. */
 	void Stop() const;
 };
 
@@ -138,14 +143,18 @@ protected:
 	 * Null when the entry has nothing to show here. */
 	virtual FGeoSustainedFXMoment const* GetBuffMoment(FGeoBuffFXEntry const& Entry) const;
 
+	/** The project's buff catalog, empty while UGameDataSettings::BuffFX names no asset — the same "this game shows no
+	 * buff FX" the empty catalog means. Bind, refresh and clear all walk it, so they all see the same list. */
+	static TArray<FGeoBuffFXEntry> const& GetBuffEntries();
+
+	/** Buff moments currently running on the owner, keyed by the attribute each one shows. */
+	UPROPERTY()
+	TMap<FGameplayAttribute, FGeoRunningSustainedFX> RunningBuffFX;
+
 private:
 	/** Matches the sustained moments to the attributes currently above their base value on BuffSourceASC. Leaves
 	 * already-correct ones running, so every path that can change the answer just calls it. */
 	void RefreshBuffFX();
-
-	/** The project's buff catalog, empty while UGameDataSettings::BuffFX names no asset — the same "this game shows no
-	 * buff FX" the empty catalog means. Bind, refresh and clear all walk it, so they all see the same list. */
-	static TArray<FGeoBuffFXEntry> const& GetBuffEntries();
 
 	/** Arms the next blink toggle, at the fast rate once the blink is within its last half second. */
 	void ScheduleBlinkToggle();
@@ -157,10 +166,6 @@ private:
 
 	/** World time the running blink reaches the end of its Duration. */
 	float BlinkEndTime = 0.f;
-
-	/** Buff moments currently running on the owner, keyed by the attribute each one shows. */
-	UPROPERTY()
-	TMap<FGameplayAttribute, FGeoRunningSustainedFX> RunningBuffFX;
 
 	/** Whose buffs this owner shows. Weak: a projectile outliving its shooter must not keep that ASC alive. */
 	TWeakObjectPtr<UGeoAbilitySystemComponent> BuffSourceASC;

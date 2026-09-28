@@ -222,8 +222,8 @@ public:
 												TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 												float SpawnServerTime, FPredictionKey PredictionKey = FPredictionKey{});
 
-	/** Begins deferred spawn from Params.ProjectileClass, sets payload/effect data, and applies Params
-	 * (distance/speed/radius/colors) before FinishSpawning. */
+	/** Begins deferred spawn from Params.ProjectileClass, sets payload/effect data, marks it visual only off the server
+	 * (AGeoProjectile::bVisualOnly), and applies Params (distance/speed/radius/colors) before FinishSpawning. */
 	static AGeoProjectile* StartSpawnProjectile(UWorld* World, FExternalProjectileParams const& Params,
 												FTransform const& SpawnTransform, FAbilityPayload const& Payload,
 												TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,

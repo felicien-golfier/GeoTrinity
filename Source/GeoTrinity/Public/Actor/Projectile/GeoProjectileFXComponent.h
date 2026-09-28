@@ -52,18 +52,25 @@ public:
 	 */
 	void ApplyParams();
 
-	/** Starts LoopingFX on the bullet visual and the looping audio, then plays the Start moment. Called on every spawn,
-	 * a pooled reuse included — which is why the visual is restarted here rather than left running: hiding a pooled
-	 * actor does not stop a Niagara system. */
+	/** Starts LoopingFX on the bullet visual and the looping audio, binds the shooter's buffs, then plays the Start
+	 * moment. Called on every spawn, a pooled reuse included — which is why the visual is restarted here rather than
+	 * left running: hiding a pooled actor does not stop a Niagara system. */
 	void StartLife();
 
 	/** Plays the moment the shot ended on. A valid overlap layers ValidOverlapEnd *over* NoOverlapEnd, so a shot that
 	 * connects still gets the plain impact plus whatever the hit adds. */
 	void PlayEnd(bool bValidOverlap) const;
 
-	/** Takes down everything still running: the blink, the attached buff FX, the looping sound, and the bullet
-	 * visual. */
-	void StopAll();
+	/**
+	 * Ends everything the shot still plays, as an end rather than a cut: the blink and the looping sound stop, and every
+	 * looping system — the bullet visual and the buff FX it wears — stops emitting and plays whatever outro it authors
+	 * on its owner's execution state (a trail fading over its own lifetime, a head shrinking away).
+	 *
+	 * @param OnFadedOut  Runs once the bullet visual has finished, which is when the shot can be taken away without
+	 *                    cutting it — at the latest after MaxLoopFXFadeOutDuration, which cuts it. Straight away when
+	 *                    the visual is not running (a dedicated server, a culled system).
+	 */
+	void FadeOut(FSimpleDelegate const& OnFadedOut);
 
 	/**
 	 * Cosmetic only: draws the bullet from WorldLocation instead of the actor, then slides it back on over the first
@@ -92,12 +99,24 @@ protected:
 	virtual FGeoSustainedFXMoment const* GetBuffMoment(FGeoBuffFXEntry const& Entry) const override;
 
 private:
-	/** The moment Type of the owning projectile's resolved FX map, or null when it holds none. */
-	FGeoBurstFXMoment const* FindMoment(EProjectileMoment Type) const;
+	/** Plays moment Type of the owning projectile's resolved FX map, then the same moment of every buff the shot is
+	 * showing (FGeoBuffFXEntry::ProjectileBurstFX). Any of them may hold none. */
+	void PlayMoment(EProjectileMoment Type) const;
 
 	/** Points the bullet visual at LoopingFX's VFX, or back at the Blueprint's own system when this spawn names none —
 	 * a pooled projectile is re-resolved every reuse and must not keep the previous shot's skin. */
 	void ApplyBulletSystem();
+
+	/** Ends FadeOut: cuts whatever the bullet visual still draws, then runs the pending callback. Reached when the
+	 * visual completes, or after MaxLoopFXFadeOutDuration when it has not. */
+	UFUNCTION()
+	void FinishFadeOut(UNiagaraComponent* FinishedSystem);
+
+	/** What FadeOut runs once the bullet visual has finished. */
+	FSimpleDelegate PendingFadeOut;
+
+	/** Forces FinishFadeOut after MaxLoopFXFadeOutDuration. */
+	FTimerHandle FadeOutTimerHandle;
 
 	/** The projectile's bullet visual and its one looping audio component — the reason LoopingFX holds a single sound.
 	 * The visual's User.* params are write-only from here; nothing reads them back. */

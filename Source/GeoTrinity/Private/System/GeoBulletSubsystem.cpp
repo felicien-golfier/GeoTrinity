@@ -172,12 +172,15 @@ void UGeoBulletSubsystem::SpawnVisual(FGeoBullet& Bullet, float const SpentTime)
 	FAbilityPayload VisualPayload = Bullet.Payload;
 	VisualPayload.HitNotified.Reset();
 
-	// Placed at its flight position above; passing the spawn time here would have FinishSpawnProjectile's server-side
-	// AdvanceProjectile sweep it forward by SpentTime a second time.
-	Bullet.Visual = GeoASLib::FullySpawnProjectile(GetWorld(), Bullet.Params, SpawnTransform, VisualPayload,
-												   /*EffectDataArray*/ {}, Bullet.Payload.ServerSpawnTime + SpentTime);
+	Bullet.Visual =
+		GeoASLib::StartSpawnProjectile(GetWorld(), Bullet.Params, SpawnTransform, VisualPayload, Bullet.Effects);
 	if (IsValid(Bullet.Visual))
 	{
+		Bullet.Visual->bVisualOnly = true;
+		// Placed at its flight position above; passing the spawn time here would have FinishSpawnProjectile's
+		// server-side AdvanceProjectile sweep it forward by SpentTime a second time.
+		GeoASLib::FinishSpawnProjectile(GetWorld(), Bullet.Visual, SpawnTransform,
+										Bullet.Payload.ServerSpawnTime + SpentTime, FPredictionKey{});
 		// The bullet is where it flies, so its actor is placed rather than moved.
 		Bullet.Visual->ProjectileMovement->StopMovementImmediately();
 		Bullet.Visual->OnProjectileEndLifeDelegate.AddUniqueDynamic(this, &ThisClass::OnVisualEnded);

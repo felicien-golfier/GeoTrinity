@@ -12,17 +12,33 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/GeoNiagaraParams.h"
 #include "TimerManager.h"
+#include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 static constexpr float BlinkInterval = 0.2f;
-static constexpr float FastBlinkWindow = 0.5f;
+static constexpr float FastBlinkWindow = 0.8f;
 static constexpr float FastBlinkSpeedMultiplier = 2.f;
 
 void FGeoRunningSustainedFX::Stop() const
 {
-	if (VFXComponent)
+	// Only a running system completes, and completing is what destroys an ended one.
+	if (VFXComponent && VFXComponent->IsActive())
+	{
+		// Armed before Deactivate, which destroys a system that has nothing left to draw.
+		UNiagaraComponent* const Ending = VFXComponent;
+		FTimerHandle CutHandle;
+		Ending->GetWorld()->GetTimerManager().SetTimer(CutHandle,
+													   FTimerDelegate::CreateWeakLambda(Ending,
+																						[Ending]()
+																						{
+																							Ending->DestroyComponent();
+																						}),
+													   MaxLoopFXFadeOutDuration, false);
+		Ending->SetAutoDestroy(true);
+		Ending->Deactivate();
+	}
+	else if (VFXComponent)
 	{
 		VFXComponent->DestroyComponent();
 	}

@@ -96,10 +96,11 @@ def build(rays):
     triangles = []
 
     def tri(va, vb, vc):
-        desc.create_triangle(group, [desc.create_vertex_instance(va[0]),
+        # Wound CCW seen from outside; UE front faces are clockwise, so reverse here.
+        desc.create_triangle(group, [desc.create_vertex_instance(vc[0]),
                                      desc.create_vertex_instance(vb[0]),
-                                     desc.create_vertex_instance(vc[0])])
-        triangles.append((va[3], vb[3], vc[3]))
+                                     desc.create_vertex_instance(va[0])])
+        triangles.append((vc[3], vb[3], va[3]))
 
     def ring(layer, radius_of, tip_of):
         """One copy of an outline on `layer` -> [(vertex id, x, y, point index)]."""

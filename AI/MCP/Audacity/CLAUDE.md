@@ -27,7 +27,8 @@ Audio editing through the `audacity` MCP server, which drives a running Audacity
 | Tool argument | What Audacity expects instead |
 |---|---|
 | Generator `duration` (tone, chirp, noise) | No length parameter — the selected region sets it. |
-| Tone `waveform` | Its allowed list blocks Triangle and misspells `Square, no alias`; chirp passes both through. |
+| Tone `waveform` | Its allowed list blocks Triangle and misspells `Square, no alias`; the misspelling makes Audacity generate its default 440 Hz sine at 0.8. Chirp passes both through. |
+| Adjustable fade `fade_type` | Never applies — the last-used direction runs; fade with the plain fade in or fade out. |
 | Distortion `threshold_db` | `Threshold dB`, `Parameter 1`, `Parameter 2` — only the type applies. |
 | Reverb `pre_delay` | `Delay`. |
 | Tremolo, every argument | `WAVE`, `PHASE`, `WET`, `LFO`. |
@@ -44,5 +45,6 @@ Audio editing through the `audacity` MCP server, which drives a running Audacity
 ## Keeping the result
 
 - Every edit changes the open project only — save the project or export audio to keep it.
+- Export writes only the selected tracks over the selected time region; select all first to export the whole sound.
 - The plain save tool is rejected; save with a path, or ask the user to press Ctrl+S in the window.
 - Never mix and render: layers stay on separate named tracks, saved in the project; export alone does the mixing.

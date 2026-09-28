@@ -31,7 +31,9 @@
       "Skill(update-config)",
       "Skill(schedule)",
       "Read(//c/Users/Felou/.claude/debug/**)",
-      "mcp__mcp-unreal__blueprint_query"
+      "mcp__mcp-unreal__blueprint_query",
+      "Bash(uv run:*)",
+      "PowerShell(uv run:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

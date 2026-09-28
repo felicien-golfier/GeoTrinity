@@ -13,6 +13,7 @@ top of each file.
 | `Ability/` | Ability Blueprints, the ability catalog, StateTree | `AI/MCP/MCP_NewEnemyAbility.md`, `MCP_StateTree.md` |
 | `Anim/` | Skeletal animation and montage authoring | `AI/MCP/MCP_Animation.md` |
 | `Asset/` | Generic asset editing, asset generation, saving | `AI/MCP/MCP_Blueprint.md` |
+| `Audio/` | Measuring and picturing exported sounds — run with `uv`, outside the editor | `AI/MCP/Audacity/ListeningToSound.md` |
 | `Level/` | Level content and per-level settings | `AI/MCP/MCP_Settings.md` |
 | `Material/` | Materials, material functions, parameter collections | `AI/MCP/MCP_Material.md` |
 | `Mesh/` | Procedural static meshes and rigging | — |
@@ -54,10 +55,12 @@ or wire them in.
 | `class_badge_triangle_fire_crossbow.py` | Triangle badge heavy shot, alternative: the needle draws back into the arrowhead like a crossbow bolt, the arrowhead flexing like its bow, and launches as a spear; top slot |
 | `class_badge_triangle_reload.py` | Triangle badge reload, heavy: braces with the needle drawn in, heaves the whole badge round a yaw turn, clunks past and rocks back; full-body slot |
 | `class_badge_wiring.py` | Swap the playable characters onto the badges: class data, character mesh, ability montages, materials |
+| `dump_bone_motion.py` | Sample a sequence's bones in parent space to JSON, yaw unwrapped — the motion a sound score is timed from |
 | `hex_boss_abilities.py` | Hex boss sweep beam, tile-carving ray and cone spray |
 | `hex_boss_death.py` | The three rings wander off axis, blow apart and settle |
 | `hex_boss_idle.py` | Rings turning against each other, the outer one breathing |
 | `hex_boss_intro.py` | Three dead pieces find each other, lock together and wake |
+| `hex_boss_intro_sounds.py` | Put every notify of the intro's sound score (`SourceArt/Audio/HexBossIntro/cues.json`) on the intro montage |
 | `hex_boss_launch.py` | Tile bomb and tile turret launches |
 | `star_death.py` | The star spins itself apart, swallows its points, collapses |
 | `star_devastating_wave.py` | Winds into a thin spinning knot, then blows every spike out |
@@ -73,11 +76,27 @@ or wire them in.
 |---|---|
 | `curve_asset_authoring.py` | Write a curve asset from a table of keys |
 | `generate_headshot_ding.py` | Synthesise the headshot ding and import it as a sound wave |
-| `import_sound_waves.py` | Import every WAV in a folder as a sound wave, replacing same-named assets |
+| `import_sound_waves.py` | Import every `SFX_` WAV of each `SourceArt/Audio` folder into its package as `SW_`, replacing same-named assets |
 | `import_textures.py` | Import image files as textures, replacing same-named assets, with the sRGB and compression they are sampled with |
 | `save_dirty_assets.py` | List and save dirty content packages, reporting to a file |
+| `trim_sound_start_silence.py` | Cut the silence before the first sound off every Sound Wave at the root of the SFX folder, reimported in place with its settings |
+| `volume_sound_classes.py` | The volume sound classes (General over Effects, Music, Interface) and their mix; menu sounds onto Interface |
 | `struct_container_edit.py` | Rewrite a struct array or struct map on an asset or a Blueprint |
 | `wheel_zoom_input.py` | Create the zoom input action and bind it to the mouse wheel |
+
+## Audio
+
+These run from a shell with `uv run <script>`, not through the editor; each declares its own dependencies.
+
+| Script | Purpose |
+|---|---|
+| `electric_layers.py` | Synthesise a seamless electric loop — high-voltage hum and corona swelling on top, crackle, rumble, static snaps and fizz — one WAV per layer for Audacity |
+| `hex_intro_score.py` | Score the hex boss intro off its dumped motion: clinks while the pieces shiver, crack and latch click on each landing, a ratchet stem per ring ticking per tooth turned, rattle stems following the shake; writes the stems, `cues.json` and a preview mix |
+| `hex_lock_layers.py` | Synthesise the hex boss intro's lock — the trailer clack: strikes, rattle, gliding knock, room, swell — one WAV per layer for Audacity; a `match_reference.py` model, its fitted variants in `hex_lock_params.json` |
+| `listen.py` | Print a WAV's perceptual measures and render its waveform, spectrogram and spectrum to a PNG |
+| `match_reference.py` | Match a synth to a hit in a reference recording: find hits and repeats, measure one with its backing cancelled, fit a model's parameters, compare |
+| `metal_one_shots.py` | Synthesise the reusable metal one-shots into `SourceArt/Audio/Metal`: crack, latch clicks, clinks, bike-freewheel ratchet ticks, rattle taps |
+| `split_on_silence.py` | Cut a reference montage into one WAV per sound wherever it falls silent |
 
 ## Level
 
@@ -108,6 +127,11 @@ or wire them in.
 | `read_material_text.py` | Export a material as text and read the lines naming given properties, such as a constant-driven input |
 
 ## Mesh
+
+A triangle's front face is its clockwise side, seen from outside. Generators outline counter-clockwise and reverse
+the order in their one triangle helper. A reversed mesh looks right from the top-down camera, which sees its inner
+bottom faces through the culled top, but anything passing through it at mid-height draws on top of it. Check a
+new mesh against the engine cube: the cross product of a top-face triangle's two edges points down.
 
 | Script | Purpose |
 |---|---|
@@ -161,3 +185,4 @@ or wire them in.
 | `local_connect_menu.py` | Build a child panel inside an existing menu widget |
 | `pause_menu_setup.py` | Centered vertical menu of labeled button rows |
 | `second_player_gamepad_toggle.py` | The couch-coop gamepad row on the key-bindings widget |
+| `volume_sliders.py` | The four labelled volume sliders of the sound settings widget |

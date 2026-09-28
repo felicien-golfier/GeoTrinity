@@ -30,6 +30,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 | Arena wall cubes — fixed scale/height, placement, barrier states | `AI/ArenaWalls.md` |
 | Structuring a material — functions, parameters, readable graphs | `AI/Materials.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
+| Creating a sound effect end to end — route, files, synth, import, notify | `AI/SoundCreation.md` |
 | Authoring or tuning an animation | `AI/MCP/MCP_Animation.md` |
 | Any MCP / Python editor automation | `AI/MCP/CLAUDE.md` |
 | Finding an existing automation script | `AI/Python/CLAUDE.md` |
