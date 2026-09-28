@@ -17,7 +17,7 @@ registry before quoting it — a wrong path fails silently in Python, which load
 | Unlit particle material | `/Game/Art/VFX/Generic/Materials/M_Particle_Unlit_Advanced` |
 | Clock-wipe mask function | `/Game/Art/VFX/Generic/Materials/Functions/MF_DurationWipe` |
 | Zone indicator (ring, fill disc growing from the centre, meaning colours) | `/Game/Art/VFX/AOE/M_ZoneIndicator` |
-| Every round zone telegraph (`GC_ZoneIndicator`) | `/Game/Art/VFX/Generic/Niagara/NS_Round_ZoneIndicator` |
+| Every round zone telegraph (`UGameDataSettings::RoundIndicatorSystem`, also spawned by `GC_ZoneIndicator`) | `/Game/Art/VFX/Generic/Niagara/NS_Round_ZoneIndicator` |
 | Marked circle (`GC_Marked`): the zone indicator as it was, one colour and stripes | `/Game/Art/VFX/AOE/M_MarkedCircle` |
 | Zone indicator ray (frame, fill growing from the middle line, meaning colours) | `/Game/Art/VFX/AOE/M_ZoneIndicatorRay` |
 | Pulse circle (outline ring + inward pulsing fill) | `/Game/Art/VFX/AOE/M_PulseCircle` |
@@ -309,9 +309,10 @@ cannot be called.
 `User.ColorCount`, which the sprite renderer binds to the same-named material parameters
 (`AI/Python/Niagara/meaning_color_bindings.py`), so each effect draws through its own dynamic material instance.
 `GeoNiagaraParams::SetMeaningColors` writes them, from an owner's colour plus its secondary colours:
-`UGeoBeamVFXComponent` and `UBeamPattern` on whichever of their two systems their one component is showing, so the
-beam's telegraph announces every meaning the beam carries, and `GeoASLib::SetCueMeaningColors` from a cue Blueprint,
-out of the cue's `FGeoCueParam` colour and `SecondaryColors`. A cue's secondary colours travel in its effect context
+`UGeoBeamVFXComponent` on the live beam, `UBeamPattern` on whichever of its two systems its one component is showing,
+`UGeoIndicatorComponent::SpawnIndicator` on every ray and round telegraph it draws (a channel beam's windup, a zone
+pattern's circle), so a telegraph announces every meaning of what it announces, and `GeoASLib::SetCueMeaningColors`
+from a cue Blueprint, out of the cue's `FGeoCueParam` colour and `SecondaryColors`. A cue's secondary colours travel in its effect context
 (`FGeoGameplayEffectContext`), since the cue's own level field replicates in five bits. The devastating wave keeps its
 own system and one colour.
 

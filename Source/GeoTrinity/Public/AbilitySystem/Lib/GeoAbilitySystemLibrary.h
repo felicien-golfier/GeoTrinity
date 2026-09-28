@@ -379,6 +379,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|GameplayCues")
 	static void SetCueMeaningColors(UNiagaraComponent* Component, FGameplayCueParameters const& Parameters);
 
+	/** A cue's colours, one per meaning — its palette slot, then the secondary ones its FGeoCueParam carried. */
+	static TArray<FLinearColor> GetCueMeaningColors(FGameplayCueParameters const& Parameters);
+
 	/** Returns the status gameplay tag stored in the effect context (invalid tag when none). */
 	UFUNCTION(BlueprintPure, Category = "GeoAbilitySystemLibrary|GameplayEffects")
 	static FGameplayTag GetStatusTag(FGameplayEffectContextHandle const& EffectContextHandle);

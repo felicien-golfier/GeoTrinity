@@ -6,6 +6,7 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/Component/GeoBeamVFXComponent.h"
+#include "Characters/Component/GeoIndicatorComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
@@ -29,15 +30,34 @@ void UGeoChannelBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle const Ha
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	// Telegraphs where the beam will land during the fire-delay windup, at the same dimensions Fire() starts with.
-	if (ACharacter const* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	ACharacter const* const Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	UGeoIndicatorComponent* const IndicatorComponent =
+		IsValid(Character) ? Character->FindComponentByClass<UGeoIndicatorComponent>() : nullptr;
+	// No fire delay: Super already fired, nothing is left to telegraph.
+	if (IndicatorComponent && GetFireDelay() > 0.f)
 	{
-		if (UGeoBeamVFXComponent* BeamVFXComponent = Character->FindComponentByClass<UGeoBeamVFXComponent>())
-		{
-			BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character) * 2.f,
-										   GetDefault<UGameDataSettings>()->GeneralSpellDistance,
-										   /*bIsIndicator=*/true, /*Lifetime=*/GetFireDelay());
-		}
+		FGeoIndicatorState State;
+		State.Shape = EGeoIndicatorShape::Ray;
+		State.bAttachToOwner = true;
+		State.Size = {GetDefault<UGameDataSettings>()->GeneralSpellDistance, GetCurrentBeamHalfWidth(Character) * 2.f};
+		State.Colors = GeoColor::GetMeaningColors(BeamColor, SecondaryBeamColors);
+		State.StartServerTime = StoredPayload.ServerSpawnTime;
+		State.Duration = GetFireDelay();
+		WindupIndicatorHandle = IndicatorComponent->AddIndicator(MoveTemp(State));
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoChannelBeamAbility::RemoveWindupIndicator()
+{
+	AActor const* const Avatar = GetAvatarActorFromActorInfo();
+	if (UGeoIndicatorComponent* const IndicatorComponent =
+			IsValid(Avatar) ? Avatar->FindComponentByClass<UGeoIndicatorComponent>() : nullptr)
+	{
+		IndicatorComponent->RemoveIndicator(WindupIndicatorHandle);
+	}
+
+	WindupIndicatorHandle = INDEX_NONE;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -86,6 +106,7 @@ void UGeoChannelBeamAbility::OnRemoveAbility(FGameplayAbilityActorInfo const* Ac
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoChannelBeamAbility::Fire(FGeoAbilityTargetData const& /*AbilityTargetData*/)
 {
+	RemoveWindupIndicator();
 	bIsBeamActive = true;
 }
 
@@ -96,6 +117,7 @@ void UGeoChannelBeamAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 										bool bWasCancelled)
 {
 	bIsBeamActive = false;
+	RemoveWindupIndicator();
 
 	// The component lives as long as the ability is granted (OnGive/OnRemove) — only switch the VFX off here.
 	if (AActor const* Avatar = GetAvatarActorFromActorInfo())
@@ -140,7 +162,7 @@ void UGeoChannelBeamAbility::Tick(float const DeltaTime)
 	if (UGeoBeamVFXComponent* BeamVFXComponent = Character->FindComponentByClass<UGeoBeamVFXComponent>())
 	{
 		BeamVFXComponent->SetBeamState(true, CurrentBeamHalfWidth * 2.f,
-									   GetDefault<UGameDataSettings>()->GeneralSpellDistance, false, GetBeamDuration());
+									   GetDefault<UGameDataSettings>()->GeneralSpellDistance, GetBeamDuration());
 	}
 	else
 	{

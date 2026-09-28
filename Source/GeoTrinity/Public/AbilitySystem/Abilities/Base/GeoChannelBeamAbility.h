@@ -30,7 +30,8 @@ public:
 	 * may run. */
 	UGeoChannelBeamAbility();
 
-	/** Shows the windup preview (Ray Zone Indicator) at the beam's resting dimensions before calling Super. */
+	/** Calls Super, then telegraphs the beam for the fire delay: a Ray on the avatar's UGeoIndicatorComponent, at the
+	 * beam's resting dimensions. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
@@ -41,10 +42,10 @@ protected:
 	/** Destroys the BeamVFXComponent previously added to the avatar. */
 	virtual void OnRemoveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
-	/** Starts the beam channel. */
+	/** Swaps the windup telegraph for the beam channel. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
-	/** Stops the channel, switches the beam VFX off and stops the ability's montage, whose channel section loops, before
+	/** Stops the channel, drops the windup telegraph if still up, switches the beam VFX off and stops the ability's montage, whose channel section loops, before
 	 * calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
@@ -91,4 +92,11 @@ protected:
 	TArray<FGeoColorParam> SecondaryBeamColors;
 
 	bool bIsBeamActive = false;
+
+private:
+	/** Ends the telegraph ActivateAbility added. */
+	void RemoveWindupIndicator();
+
+	/** This machine's handle on the windup telegraph, from UGeoIndicatorComponent::AddIndicator. */
+	int32 WindupIndicatorHandle = INDEX_NONE;
 };

@@ -81,7 +81,10 @@ phase change.
 | Radio beep | Three near-sine 1.8 kHz beeps of 25, 25 and 50 ms at 48 ms onsets, harmonics 36 dB down; 99 % of the energy in 1–3 kHz, the telephone band that says "radio"; a ~100 ms echo trails. |
 | Flash — camera flash | 1.8 s: a 200 ms swell rising 25 dB into a double strike 30 ms apart, broadband to 16 kHz over a 60–120 Hz boom, a sweep diving 10→1 kHz in 250 ms, then 1.3 s of wide reverb whose centroid falls 3.5 kHz→700 Hz. The model for a death or a mind-blown moment. |
 | Trailer clack (`EpicImpacts_Ref_Full.wav`) | Four clacks over a music bed: a brighter first one that swells in over ~60 ms, then one sample heard twice ~960 ms apart and a copy 3 dB down. Each is a cluster of cracks within 5 ms and a second cluster ~33 ms later, broadband to the codec's 16.5 kHz with nothing of its own below ~150 Hz, over a knock gliding down to ~500 Hz and a room darker as it dies. The lock of a part snapping into place; fitted by `hex_lock_layers.py`. |
-| Bike freewheel (`BikeFreewheel_Ref_Full.wav`) | A spinning wheel coasting down from 51 to 11 ticks a second, each tick equally loud at every speed. A tick is a 2 ms mono snap across 1.2–16 kHz over short hub partials at 1.9, 2.7, 4.5, 8.2, 10.4 and 14.2 kHz decaying in 4–8 ms, with a small knock below 350 Hz. The other pawl adds a faint tick 28 dB down, 28–64 ms after. `SW_Metal_RatchetTick_*` is matched to it. |
+| Bike freewheel (`BikeFreewheel_Ref_Full.wav`) | A spinning wheel coasting down from 51 to 11 ticks a second, each tick equally loud at every speed. A tick is a 2 ms mono snap across 1.2–16 kHz over short hub partials at 1.9, 2.7, 4.5, 8.2, 10.4 and 14.2 kHz decaying in 4–8 ms, with a small knock below 350 Hz. The other pawl adds a faint tick 28 dB down, 28–64 ms after. A small machine's sound: under a heavy part it reads as a toy. |
+| Turret power-down (`TurretDown_Ref.wav`, the game's own) | 5.4 s, stereo in anti-phase: a rumble at 30–250 Hz the loudest band throughout, a dozen inharmonic lines at 1–3.5 kHz 10–20 dB under it gliding down 20–30 % at different rates, a housing peak near 1.8 kHz and air to 10 kHz ~20 dB down; one long wind-down, the lines curving faster as it stops. |
+| Electric car under load (`EVLoad_Ref.wav`) | Accelerating: one family of motor orders at 1×, 2×, 3× and an electromagnetic 4.7×, the first climbing 290→490 Hz over 2.2 s, each doubled by a second line ~6 % above that beats against it; a drive and road rumble at 63–125 Hz the loudest band, the orders 4–8 dB under it, nothing above 4 kHz. At cruise the orders sink and the rumble stays. The model for anything turning. |
+| Mechanical intro (`MechanicalIntro\`, cut into 23 sections, anatomy in its `README.md`) | 71 s: a sub drone at 28–41 Hz loudest throughout, every mechanical layer 5–20 dB under it, the drone dipping before each hard entry. Metal is broadband snaps dead within 17–40 ms with one or two short ring lines, never a body or a bounce; hits come in flurries of 3–6 within ~300 ms; a running machine is a click train of 9–20 a second under steady high lines; an air tool stutters then blasts broadband. The model for the hex boss intro. |
 | Metallic hit | 2.2 s: a 100 ms swell, a broadband strike whose centroid falls 5 kHz→300 Hz over 0.5 s, a sub below 60 Hz held throughout; a dense partial cluster dies within 0.5 s and leaves 1.86 kHz with its 2.0× and 2.7× partials ringing to the end. |
 
 - A cinematic hit is announced by a 100–200 ms swell into the strike.
@@ -91,6 +94,70 @@ phase change.
 - The body sits 15–20 dB under the transient, and every sound peaks near −1 dBFS.
 - An animation sound lands on the animation's own beats — each slam, lock or blast is one hit — with its tail cut
   to the Sound grammar below.
+
+## Weight and scale
+
+- Weight is heard in pitch, not loudness: a lower sound reads as a heavier object, a louder one only as a nearer one.
+- Size scales every resonance of a part down together; the same part twice as big rings an octave lower.
+- Material is heard in how many cycles a resonance lasts: long for its pitch reads as thin metal or glass, short as
+  a thick, damped or clamped mass.
+- A few clear partials ringing long read as a bell or an empty bar; a heavy metal part is many dense modes dying
+  fast over a thud.
+- The thud is a sine at 50–200 Hz sagging a little in pitch as it dies; its clunk modes above 200 Hz carry it on
+  small speakers.
+- A heavy part settles: its strike is followed by one or two softer bounces 10–25 ms later.
+- A big hit is layers that each own one band, their attacks aligned: sub or boom, low-mid punch, mid snap, tail.
+- A hit sounds bigger after a dip in level or a swell into it; slowing it down, lowering it and a darker, longer
+  tail make it bigger still.
+- Saturation and one shared compression over the layers fuse them into one object.
+- A sound set in the background is quieter and duller together — low-passed near 6 kHz, not only turned down.
+- A machine made of small-machine sounds — clinks, bike ticks, bar rings, all above 1 kHz, sparse and short —
+  reads as a toy whatever its timing; the same timing on low, dense parts reads as heavy.
+
+## Heavy machines
+
+A futuristic machine is heard through its parts, each its own layer: motors, gears, clamps, seals, the hull under
+strain and the field holding it. `AI/Python/Audio/heavy_machine.py` builds each one.
+
+| Part | Anatomy |
+|---|---|
+| Motor | An electric motor under load: a drive rumble at 35–170 Hz divided by the part's size, loudest, under one family of orders at 1×, 2×, 3× and 4.7× locked to the speed, the first at 35–100 % of ~480 Hz from rest to full speed, doubled by a second rotor 6 % sharp and 4 dB down; a trace of air. The orders swell up to 3.5 dB while the speed climbs and sink 6 dB while it coasts. Its pitch trails the speed by ~0.4 s of inertia, its level follows within ~30 ms. Unrelated whines each gliding at their own rate read as a turbine spooling, not a part being driven. |
+| Gear tooth | A dull clunk of dense modes at 110–650 Hz dying in tens of milliseconds, a low knock and the barest metal edge; one per tooth turned past. |
+| Strain | Stick-slip friction: pulses 18–60 a second, faster and harder under more strain, each ringing a large plate's low modes at 80–700 Hz. |
+| Holding field | A 50 Hz band-limited sawtooth low-passed near 500 Hz, beating against a copy 0.6 % sharp, as loud as the strain. |
+| Clamp | A ker-chunk, like a car door or two parts clipping together, ~0.3 s: the latch catches in a bright snap, the mass seats ~22 ms later — longer for a larger part — in an unpitched low knock and dense modes dead within ~60 ms, under the full latch; the panel rattles briefly after, and the air pushed ahead swells in just before the seat. A pitched sine sagging under it, or a low body ringing on, reads as a drum. |
+| Seal | Bright air at 1–9 kHz swelling in over 25 ms and dying over a quarter second, ~70 ms after the clamp. |
+| Release | The loudest moment: a sub dropping 70→26 Hz over most of a second, a broadband strike, a huge low hull and air debris, soft-clipped, ~3 s — after a dead-silent freeze. |
+
+- Film designers slow real machines down for scale — a car door slowed 25 % becomes a giant robot's footstep;
+  synthesis does the same by dividing every frequency by the part's size.
+- Motion data drives the parameters directly: the turn speed sets the motor, the shake sets the strain, the
+  squash sets the pressure.
+- A machine spinning up rises in pitch, brightness and level together; one winding down falls in all three.
+
+## Mechanical metal
+
+The mechanical intro reference's parts, measured against its sections; `AI/Python/Audio/mech_kit.py` builds each
+one, and `hex_intro_mech_score.py` scores the hex boss intro with them.
+
+| Part | Anatomy |
+|---|---|
+| Bed | A sub at 26–46 Hz, loudest, with a bass band 55–165 Hz 3–5 dB under it and a faint air tail falling to −60 dB by 8 kHz. |
+| Tick | A ratchet pawl: a low knock at 125 Hz as loud as its 4 kHz edge, the edge dead in ~10 ms above 8 kHz and ~35 ms at 2–4 kHz, short rings near 1.5, 4.7, 8.5 and 13.8 kHz; strong and weak in turn, ~9 a second. |
+| Click | A chain link: a dry snap flat from 1 to 8 kHz, 250–500 Hz 13–19 dB down, dead in ~15 ms, often a second link a few milliseconds on. |
+| Hit | A clatter of 4–7 snaps within ~45 ms, the first hardest, flat 1–8 kHz with 16 kHz 13 dB down, over a 2–8 kHz smear dying in ~200 ms and short rings at 1.25 and 2.1 kHz. |
+| Impact | A landing: a hit over an unpitched low knock 4 dB under it, then 3–5 hits clattering within ~300 ms, each softer. |
+| Gear train | A light tick per tooth with no knock, over a held comb of mid lines — harmonics 5–18 of ~110 Hz — steady lines at 2.9 and 5.4 kHz and a faint hiss, all rising with the speed. |
+| Hum | Held lines at 521, 1230 and 2197 Hz, each beating 2 Hz against a copy, rising a quarter in pitch as the pressure builds. |
+| Engine | An electric engine turning: a rotor buzz of 8 harmonics each 4 dB under the last, from ~42 Hz at rest to 120 Hz flat out, with the hum lines riding on it; once a turn a vane sweeps past in a woof — ~6 dB louder, the high orders swelling most, the pitch bending 1.5 % up then down, a puff of air at 80–900 Hz — 0.8 woofs a second at rest, 4 flat out. Pitch, woof rate and level all follow one speed, so it spins up and winds down. |
+| Air | A stutter ~8 a second, each burst broadband over a harmonic comb on 1.2 kHz; a blast broadband to 16 kHz, darkening as it dies, loose parts clicking after it. |
+| Riser | A sub swelling in, sparkle snaps 1–16 kHz thickening, a whistle at 10 kHz diving to 5.25 kHz and holding, a hard cut. |
+
+- An animation scored this way dips the bed 0.2 s before each hard entry, rises through the build, falls dead
+  silent for the freeze, and brings the bed back with the release.
+- An engine idling under the whole animation, racing to the release and winding down only after it, ties the parts
+  into one machine; it alone holds, flat out, through the freeze.
+- The low knock under every metal event is what makes it heavy; the snap above it is what makes it metal.
 
 ## Loops
 

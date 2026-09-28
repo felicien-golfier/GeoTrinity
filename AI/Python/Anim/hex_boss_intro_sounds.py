@@ -1,8 +1,8 @@
-"""Hex boss intro sounds: every notify of the score AI/Python/Audio/hex_intro_score.py wrote, on the intro montage.
+"""Hex boss intro sounds: every notify of the score AI/Python/Audio/hex_intro_mech_score.py wrote, on the intro montage.
 
-Cracks and latch clicks on the landings, clinks while the pieces shiver, a ratchet per ring and the rattles from
-where they start. Run via mcp-unreal execute_script, after import_sound_waves.py. Re-runnable: clears the montage's
-notify tracks first. Report written to Saved/hex_boss_intro_sounds.txt.
+One-shots on their beats, and each stem from where it starts. Run via mcp-unreal execute_script, after
+import_sound_waves.py. Re-runnable: clears the montage's notify tracks first.
+Report written to Saved/hex_boss_intro_sounds.txt.
 """
 import json
 import traceback

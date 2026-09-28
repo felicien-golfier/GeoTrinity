@@ -189,11 +189,16 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
 	TSoftObjectPtr<UGeoBuffFXDataAsset> BuffFX;
 
-	/** Shared windup telegraph (Ray Zone Indicator) every beam swaps to during its wind-up: UGeoBeamVFXComponent
-	 * (player channel beams) and UBeamPattern (enemy/boss beams). One project-wide asset — no per-ability/per-pattern
-	 * configuration needed. */
+	/** Shared windup telegraph of every beam (Ray Zone Indicator): UGeoIndicatorComponent's Ray shape (player channel
+	 * beams) and UBeamPattern (enemy/boss beams). One project-wide asset — no per-ability/per-pattern configuration
+	 * needed. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
 	TSoftObjectPtr<UNiagaraSystem> RayIndicatorSystem;
+
+	/** Shared telegraph of every circle about to be hit or covered (Round Zone Indicator): UGeoIndicatorComponent's
+	 * Round shape. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
+	TSoftObjectPtr<UNiagaraSystem> RoundIndicatorSystem;
 };
 
 template <typename T>

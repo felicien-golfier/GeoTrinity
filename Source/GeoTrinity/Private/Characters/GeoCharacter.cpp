@@ -6,6 +6,7 @@
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
+#include "Characters/Component/GeoIndicatorComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/GameInstance.h"
@@ -73,6 +74,8 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 
 	DeployableManagerComponent =
 		CreateDefaultSubobject<UGeoDeployableManagerComponent>(TEXT("DeployableManagerComponent"));
+
+	IndicatorComponent = CreateDefaultSubobject<UGeoIndicatorComponent>(TEXT("IndicatorComponent"));
 
 	bUseControllerRotationYaw = true;
 

@@ -33,7 +33,12 @@ def load_mono(path):
     elif data.dtype.kind == "u":
         data = (data - 128) / 128.0
     if data.ndim > 1:
-        data = data.mean(axis=1)
+        mid = data.mean(axis=1)
+        side = (data[:, 0] - data[:, -1]) / 2.0
+        if np.sqrt(np.mean(side ** 2)) > 10.0 * np.sqrt(np.mean(mid ** 2)):
+            print("channels out of phase: measuring left minus right, mono playback would cancel it")
+            mid = side
+        data = mid
     return sample_rate, data.astype(np.float64)
 
 

@@ -27,11 +27,6 @@ struct FBeamVFXState
 	UPROPERTY()
 	float Length = 0.f;
 
-	/** True while showing the windup preview (the component's own IndicatorSystem) instead of the ability's BeamSystem.
-	 * Lets one NiagaraComponent serve both — ApplyBeamState swaps its asset on transition. */
-	UPROPERTY()
-	bool bIsIndicator = false;
-
 	UPROPERTY()
 	float Lifetime = 0.f;
 };
@@ -62,13 +57,10 @@ public:
 	/**
 	 * Activates/deactivates the beam and pushes its dimensions. The server's write replicates to all clients; the
 	 * owning client may also call it for lag-free local visuals (its write only feeds the local NiagaraComponent).
-	 * bIsIndicator swaps the NiagaraComponent onto the component's own IndicatorSystem instead of the ability's
-	 * BeamSystem — used for the windup telegraph shown before Fire(). IndicatorSystem is a class default (same asset
-	 * on every machine already), so only the bool needs to replicate, not a second system pointer. Lifetime
-	 * (only meaningful while bIsIndicator) is pushed to the indicator's Lifetime user param, e.g. the ability's fire
-	 * delay, so the telegraph animation times out exactly when the beam actually fires.
+	 * LifeTime is pushed to the beam's Lifetime user param. The windup telegraph is not this component's: it is a Ray on
+	 * the owner's UGeoIndicatorComponent.
 	 */
-	void SetBeamState(bool bActive, float Width, float Length, bool bIsIndicator = false, float LifeTime = 0.f);
+	void SetBeamState(bool bActive, float Width, float Length, float LifeTime = 0.f);
 	/** Assigns the Niagara system before BeginPlay; call from the owning ability's OnGiveAbility. */
 	void SetNiagaraSystem(TObjectPtr<UNiagaraSystem> const Object) { BeamSystem = Object; };
 	/** Assigns the beam's colours, one per meaning as GeoColor::GetMeaningColors resolves them, pushed to the Niagara
@@ -83,8 +75,7 @@ private:
 	UFUNCTION()
 	void CreateNiagaraComponent();
 
-	/** Pushes BeamState into the local NiagaraComponent (activation + user parameters, swapping the asset when
-	 * bIsIndicator changes). No-op on dedicated server. */
+	/** Pushes BeamState into the local NiagaraComponent (activation + user parameters). No-op on dedicated server. */
 	void ApplyBeamState() const;
 
 	UPROPERTY(ReplicatedUsing = OnRep_BeamState)
@@ -92,12 +83,6 @@ private:
 
 	UPROPERTY(ReplicatedUsing = CreateNiagaraComponent)
 	TObjectPtr<UNiagaraSystem> BeamSystem;
-
-	/** Windup preview asset (Ray Zone Indicator), loaded once from UGameDataSettings::RayIndicatorSystem in
-	 * CreateNiagaraComponent — no per-component configuration needed. Same project-wide asset on every machine
-	 * already, so it needs no replication, unlike BeamSystem. */
-	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraSystem> IndicatorSystem;
 
 	UPROPERTY(ReplicatedUsing = OnRep_BeamColors)
 	TArray<FLinearColor> BeamColors = {FLinearColor::White};

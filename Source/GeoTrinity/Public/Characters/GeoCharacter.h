@@ -14,6 +14,7 @@
 
 
 class UGeoDeployableManagerComponent;
+class UGeoIndicatorComponent;
 enum class ETeam : uint8;
 class UCharacterAttributeSet;
 class UGeoGameplayAbility;
@@ -49,7 +50,7 @@ public:
 	/**
 	 * Substitutes UGeoCharacterMovementComponent via ObjectInitializer and creates default subobjects:
 	 * GeoInputComponent, WidgetAnchorComponent, CharacterWidgetComponent (resolved from GameDataSettings;
-	 * null on dedicated server), GameFeelComponent, and DeployableManagerComponent.
+	 * null on dedicated server), GameFeelComponent, DeployableManagerComponent and IndicatorComponent.
 	 */
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
 	/** Registers replicated character properties (bIsDead, bInvulnerable). */
@@ -257,6 +258,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
 	TObjectPtr<UGeoDeployableManagerComponent> DeployableManagerComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Components")
+	TObjectPtr<UGeoIndicatorComponent> IndicatorComponent;
 
 #if WITH_EDITOR
 private:

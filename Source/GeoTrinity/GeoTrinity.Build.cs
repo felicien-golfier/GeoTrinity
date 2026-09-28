@@ -24,6 +24,8 @@ public class GeoTrinity : ModuleRules
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
+			// UGeoIndicatorComponent's public header holds an FFastArraySerializer.
+			"NetCore",
 			// UGeoDeathDebrisNotify's public header derives from its Niagara notify.
 			"NiagaraAnimNotifies"
 		});

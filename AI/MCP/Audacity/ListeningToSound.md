@@ -92,6 +92,11 @@ spectral change over time. Pitch, loudness, noisiness and length complete the pi
 | Too long, washes out | Late audible end, slow decay | Shorter fade, cut the tail |
 | Buzzy, cheap | Square or sawtooth body, aliasing | Band-limited square, sine layers, low-pass |
 | Wrong pitch or direction | Partial contour | Chirp end points, sliding stretch |
+| A bell, an empty bar, tinny | Few partials ringing long for their pitch | Many dense modes, damped; a thud under them (`GameSoundDesign.md`, Weight and scale) |
+| Not heavy, not epic | Centroid high, nothing below 200 Hz | A sagging low thud, a lower pitch, a dip or swell before the hit |
+| A toy | Every layer above 1 kHz, sparse partials, short | The same timing on low, dense parts (`GameSoundDesign.md`, Heavy machines) |
+| A drum, a tambour | A pitched low partial gliding down, a body ringing past ~150 ms | Unpitched noise knock, modes dead within ~60 ms, a latch click on top |
+| Too present, should be background | Level and highs | Lower and low-pass together |
 
 ## Reference sounds
 
@@ -107,6 +112,8 @@ spectral change over time. Pitch, loudness, noisiness and length complete the pi
   16384-point transform.
 - Stereo is measured as mid against side and the correlation of left and right: a reverberant tail sits near
   0.7, a dry synth layer at 1.0.
+- A file whose channels are in anti-phase folds to near silence in mono; `listen.py` then measures left minus
+  right and says so.
 
 ## Matching a reference hit
 
@@ -128,6 +135,12 @@ A synth matches a reference hit when its band envelopes do: third-octave power e
   unrelated backings.
 - A lone hit is measured as its power above the backing's average just before it; for a hit that swells in, that
   window ends before the swell starts.
+- A hit's rise in dB over its backing depends on that backing; subtracting the backing's power in linear terms
+  gives the hit's own spectrum and decay, comparable across recordings.
+- A section of many events is judged by playing the synth in the same scene — the same rate over its own bed — and
+  comparing both with `uv run AI/Python/Audio/compare_sections.py`: `events` for the anatomy with the backing
+  subtracted, `octaves` for the section's balance, `picture` for spectrograms stacked on one scale.
+- A reference's backing moves under its events below ~250 Hz; only the bands above it judge the events.
 - A lone hit's low bands still hold backing the window missed: `target` takes a frequency below which the synth
   is only kept under the measurement, never pulled up to it.
 - A model is layers of band-split noise, each band under a parametric envelope: few parameters, each one a

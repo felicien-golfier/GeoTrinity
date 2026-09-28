@@ -5,7 +5,6 @@
 #include "Net/UnrealNetwork.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -22,9 +21,7 @@ void UGeoBeamVFXComponent::CreateNiagaraComponent()
 	{
 		NiagaraComponent = NewObject<UNiagaraComponent>(GetOwner());
 		NiagaraComponent->SetAutoActivate(false);
-		// Asset is picked by ApplyBeamState below (BeamSystem vs IndicatorSystem, per BeamState.bIsIndicator).
-		UGameDataSettings const* const GDSettings = GetDefault<UGameDataSettings>();
-		IndicatorSystem = GDSettings->GetLoadedDataAsset(GDSettings->RayIndicatorSystem);
+		NiagaraComponent->SetAsset(BeamSystem);
 		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
 		NiagaraComponent->RegisterComponent();
 		NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
@@ -74,9 +71,9 @@ void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const Width, float const Length,
-										bool const bIsIndicator, float const LifeTime)
+										float const LifeTime)
 {
-	BeamState = {bActive, Width, Length, bIsIndicator, LifeTime};
+	BeamState = {bActive, Width, Length, LifeTime};
 	// Apply locally too: the listen-server host renders but never receives OnRep for its own writes.
 	ApplyBeamState();
 }
@@ -115,9 +112,6 @@ void UGeoBeamVFXComponent::ApplyBeamState() const
 
 	if (BeamState.bActive)
 	{
-		// Reassigning the asset resets the system, which is exactly what a Indicator<->beam handoff needs.
-		GeoNiagaraParams::ApplySwappableAsset(NiagaraComponent, {BeamSystem, IndicatorSystem}, BeamState.bIsIndicator);
-
 		if (!NiagaraComponent->IsActive())
 		{
 			NiagaraComponent->SetActive(true);

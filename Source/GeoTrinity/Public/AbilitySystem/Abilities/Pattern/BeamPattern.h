@@ -106,7 +106,7 @@ protected:
 
 private:
 	/** Windup preview asset (Ray Zone Indicator), loaded once from UGameDataSettings::RayIndicatorSystem in OnCreate —
-	 * no per-pattern configuration needed. Same project-wide asset UGeoBeamVFXComponent uses; one NiagaraComponent
+	 * no per-pattern configuration needed. Same project-wide asset UGeoIndicatorComponent's Ray uses; one NiagaraComponent
 	 * serves both looks, swapped via GeoNiagaraParams::ApplySwappableAsset. Leaving the settings value unset shows
 	 * BeamVfxSystem for the whole windup, as before. */
 	UPROPERTY(Transient)

@@ -1,234 +1,154 @@
 [
  {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_1",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 0.8766,
-  "volume": 0.285,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_1.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_4",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 0.9816,
-  "volume": 0.194,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_4.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_2",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.0902,
-  "volume": 0.352,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_2.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_1",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.122,
-  "volume": 0.433,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_1.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_5",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.1889,
-  "volume": 0.185,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_5.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_3",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.2139,
-  "volume": 0.232,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_3.wav"
- },
- {
-  "track": "Rattle",
-  "sound": "SW_HexIntro_RattleBody",
+  "track": "Bed",
+  "sound": "SW_HexIntro_Bed",
   "package": "/Game/Art/SFX/Enemy/HexBoss",
-  "time": 1.2667,
+  "time": 0.0,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Bed.wav"
+ },
+ {
+  "track": "Hum",
+  "sound": "SW_HexIntro_Engine",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.0,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Engine.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Riser",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 0.2,
   "volume": 0.5,
-  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_RattleBody.wav"
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Riser.wav"
  },
  {
-  "track": "Lock",
-  "sound": "SW_Metal_Crack",
-  "package": "/Game/Art/SFX/Metal",
+  "track": "Shiver",
+  "sound": "SW_HexIntro_Shiver_Outer",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.35,
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Shiver_Outer.wav"
+ },
+ {
+  "track": "Shiver",
+  "sound": "SW_HexIntro_Shiver_Mid",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.35,
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Shiver_Mid.wav"
+ },
+ {
+  "track": "Shiver",
+  "sound": "SW_HexIntro_Shiver_Core",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.35,
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Shiver_Core.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Impact_Low",
+  "package": "/Game/Art/SFX/Mech",
   "time": 1.3333,
-  "volume": 0.7,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Crack.wav"
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Impact_Low.wav"
  },
  {
-  "track": "Lock",
-  "sound": "SW_Metal_LockClick_Low",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.3333,
-  "volume": 0.315,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_LockClick_Low.wav"
- },
- {
-  "track": "Ratchet",
-  "sound": "SW_HexIntro_Ratchet_Outer",
+  "track": "Whir",
+  "sound": "SW_HexIntro_Whir_Outer",
   "package": "/Game/Art/SFX/Enemy/HexBoss",
   "time": 1.3333,
   "volume": 0.35,
-  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Ratchet_Outer.wav"
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Whir_Outer.wav"
  },
  {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_4",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.3415,
-  "volume": 0.258,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_4.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_5",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.3606,
-  "volume": 0.202,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_5.wav"
- },
- {
-  "track": "Rattle",
-  "sound": "SW_HexIntro_RattleRings",
-  "package": "/Game/Art/SFX/Enemy/HexBoss",
-  "time": 1.4333,
-  "volume": 0.2,
-  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_RattleRings.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_3",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.6535,
-  "volume": 0.322,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_3.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_6",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.6812,
-  "volume": 0.241,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_6.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_3",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.8357,
-  "volume": 0.379,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_3.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_5",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 1.8641,
-  "volume": 0.26,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_5.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_5",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 2.0169,
-  "volume": 0.292,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_5.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_4",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 2.0653,
-  "volume": 0.305,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_4.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_5",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 2.1501,
-  "volume": 0.316,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_5.wav"
- },
- {
-  "track": "Lock",
-  "sound": "SW_Metal_Crack",
-  "package": "/Game/Art/SFX/Metal",
+  "track": "Hit",
+  "sound": "SW_Mech_Impact_Mid",
+  "package": "/Game/Art/SFX/Mech",
   "time": 2.2,
-  "volume": 0.85,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Crack.wav"
+  "volume": 0.9,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Impact_Mid.wav"
  },
  {
-  "track": "Lock",
-  "sound": "SW_Metal_LockClick_Mid",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 2.2,
-  "volume": 0.383,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_LockClick_Mid.wav"
- },
- {
-  "track": "Ratchet",
-  "sound": "SW_HexIntro_Ratchet_Mid",
+  "track": "Whir",
+  "sound": "SW_HexIntro_Whir_Mid",
   "package": "/Game/Art/SFX/Enemy/HexBoss",
   "time": 2.2,
   "volume": 0.35,
-  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Ratchet_Mid.wav"
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Whir_Mid.wav"
  },
  {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_5",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 2.398,
-  "volume": 0.354,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_5.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_6",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 2.5457,
-  "volume": 0.401,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_6.wav"
- },
- {
-  "track": "Clink",
-  "sound": "SW_Metal_Clink_5",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 2.6011,
-  "volume": 0.425,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Clink_5.wav"
- },
- {
-  "track": "Lock",
-  "sound": "SW_Metal_Crack",
-  "package": "/Game/Art/SFX/Metal",
+  "track": "Hit",
+  "sound": "SW_Mech_Impact_High",
+  "package": "/Game/Art/SFX/Mech",
   "time": 2.9333,
   "volume": 1.0,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_Crack.wav"
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Impact_High.wav"
  },
  {
-  "track": "Lock",
-  "sound": "SW_Metal_LockClick_High",
-  "package": "/Game/Art/SFX/Metal",
-  "time": 2.9333,
-  "volume": 0.45,
-  "source": "SourceArt/Audio/Metal/SFX_Metal_LockClick_High.wav"
- },
- {
-  "track": "Ratchet",
-  "sound": "SW_HexIntro_Ratchet_Core",
+  "track": "Whir",
+  "sound": "SW_HexIntro_Whir_Core",
   "package": "/Game/Art/SFX/Enemy/HexBoss",
   "time": 2.9333,
   "volume": 0.35,
-  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Ratchet_Core.wav"
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Whir_Core.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Grind",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 3.4667,
+  "volume": 0.5,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Grind.wav"
+ },
+ {
+  "track": "Rattle",
+  "sound": "SW_HexIntro_Rattle",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 3.4667,
+  "volume": 0.75,
+  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Rattle.wav"
+ },
+ {
+  "track": "Air",
+  "sound": "SW_Mech_AirStutter",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 4.1733,
+  "volume": 0.5,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_AirStutter.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Boom",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 4.9667,
+  "volume": 1.0,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Boom.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Impact_Low",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 4.9667,
+  "volume": 1.0,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Impact_Low.wav"
+ },
+ {
+  "track": "Air",
+  "sound": "SW_Mech_AirBlast",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 4.9667,
+  "volume": 0.9,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_AirBlast.wav"
+ },
+ {
+  "track": "Air",
+  "sound": "SW_Mech_ToneTail",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 5.0667,
+  "volume": 0.2,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_ToneTail.wav"
  }
 ]

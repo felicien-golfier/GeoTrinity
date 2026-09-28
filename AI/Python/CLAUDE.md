@@ -76,7 +76,7 @@ or wire them in.
 |---|---|
 | `curve_asset_authoring.py` | Write a curve asset from a table of keys |
 | `generate_headshot_ding.py` | Synthesise the headshot ding and import it as a sound wave |
-| `import_sound_waves.py` | Import every `SFX_` WAV of each `SourceArt/Audio` folder into its package as `SW_`, replacing same-named assets |
+| `import_sound_waves.py` | Import every `SFX_` WAV of each `SourceArt/Audio` folder into its package as `SW_`, replacing same-named assets; deletes unreferenced `SW_` assets whose source is gone |
 | `import_textures.py` | Import image files as textures, replacing same-named assets, with the sRGB and compression they are sampled with |
 | `save_dirty_assets.py` | List and save dirty content packages, reporting to a file |
 | `trim_sound_start_silence.py` | Cut the silence before the first sound off every Sound Wave at the root of the SFX folder, reimported in place with its settings |
@@ -90,12 +90,16 @@ These run from a shell with `uv run <script>`, not through the editor; each decl
 
 | Script | Purpose |
 |---|---|
+| `compare_sections.py` | Judge a synthesised section against a reference section: event anatomy with the backing subtracted, octave balance, stacked spectrograms |
 | `electric_layers.py` | Synthesise a seamless electric loop — high-voltage hum and corona swelling on top, crackle, rumble, static snaps and fizz — one WAV per layer for Audacity |
-| `hex_intro_score.py` | Score the hex boss intro off its dumped motion: clinks while the pieces shiver, crack and latch click on each landing, a ratchet stem per ring ticking per tooth turned, rattle stems following the shake; writes the stems, `cues.json` and a preview mix |
+| `heavy_machine.py` | Heavy futuristic machine building blocks and one-shots — electric motors under load following turn speed, gear teeth, stick-slip strain, holding hum, clamp slam, seal hiss, release blast; every part sized |
+| `hex_intro_score.py` | Score the hex boss intro off its dumped motion as a heavy machine: strain and hum while the pieces shiver, crack, clamp and seal on each landing, a motor and a gear train per ring, the body straining through the gather, the release; writes the one-shots, stems, `cues.json` and a preview mix to the draft, or to `SourceArt` with `ship` |
+| `hex_intro_mech_score.py` | Score the hex boss intro off its dumped motion with the mechanical kit: a sub bed dipping before each landing, an engine racing to the release then winding down (or a gather-only hum), a riser, shiver clicks, a clattering impact per landing, a gear train per ring, rattle and air through the gather, a dead freeze, boom, impact and air blast on the release; writes the kit, stems, `cues.json` and a preview mix per hum version to the draft, or to `SourceArt` with `ship` |
 | `hex_lock_layers.py` | Synthesise the hex boss intro's lock — the trailer clack: strikes, rattle, gliding knock, room, swell — one WAV per layer for Audacity; a `match_reference.py` model, its fitted variants in `hex_lock_params.json` |
 | `listen.py` | Print a WAV's perceptual measures and render its waveform, spectrogram and spectrum to a PNG |
 | `match_reference.py` | Match a synth to a hit in a reference recording: find hits and repeats, measure one with its backing cancelled, fit a model's parameters, compare |
-| `metal_one_shots.py` | Synthesise the reusable metal one-shots into `SourceArt/Audio/Metal`: crack, latch clicks, clinks, bike-freewheel ratchet ticks, rattle taps |
+| `mech_kit.py` | The mechanical kit, synthesised to the mechanical intro reference: ticks, chain clicks, clattering metal hits, sized impacts, riser, grind, air stutter and blast, boom, tone tail, an engine spinning with its speed, and drone, hum, rattle and gear-train loops that follow motion curves; writes each into `SourceArt/Audio/Mech` |
+| `metal_one_shots.py` | Write the reusable metal one-shots into `SourceArt/Audio/Metal`: the trailer clack's cracks |
 | `split_on_silence.py` | Cut a reference montage into one WAV per sound wherever it falls silent |
 
 ## Level

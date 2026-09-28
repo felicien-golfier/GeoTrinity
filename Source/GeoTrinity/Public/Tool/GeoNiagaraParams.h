@@ -38,7 +38,7 @@ namespace GeoNiagaraParams
 	inline FName const BulletTrailColor(TEXT("User.Bullet_TrailColor"));
 	inline FName const TrailLifetimeScale(TEXT("User.Trail_LifetimeScale"));
 
-	/** Beam systems — UGeoBeamVFXComponent, UBeamPattern. */
+	/** Beam systems and the ray telegraph — UGeoBeamVFXComponent, UBeamPattern, UGeoIndicatorComponent. */
 	inline FName const BeamWidth(TEXT("User.Beam_Width"));
 	inline FName const BeamLength(TEXT("User.Beam_Length"));
 
@@ -61,9 +61,8 @@ namespace GeoNiagaraParams
 	inline FName const FadeOutDuration(TEXT("User.FadeOut_Duration"));
 
 	/** A beam's live asset plus its optional windup-preview asset (the shared Ray Zone Indicator niagara), bundled so
-	 * ApplySwappableAsset callers pass one thing instead of two. Plain aggregate, not a UPROPERTY struct — each owner
-	 * (UGeoBeamVFXComponent, UBeamPattern) keeps its own authored fields (different replication needs) and just
-	 * assembles one of these at the call site. */
+	 * ApplySwappableAsset callers pass one thing instead of two. Plain aggregate, not a UPROPERTY struct — UBeamPattern
+	 * keeps its own authored fields and just assembles one of these at the call site. */
 	struct FBeamVfxAssetSet
 	{
 		UNiagaraSystem* BeamSystem = nullptr;
@@ -78,7 +77,7 @@ namespace GeoNiagaraParams
 
 	/** Reassigns Component's asset to Assets.GetDesiredAsset(bWantIndicator) only when it differs — SetAsset resets the
 	 * system, so skipping the no-op case avoids restarting an already-correct beam. No-op if Component or the desired
-	 * asset is null. Shared by UGeoBeamVFXComponent and UBeamPattern's identical preview<->beam asset handoff. */
+	 * asset is null. UBeamPattern's preview<->beam asset handoff. */
 	void ApplySwappableAsset(UNiagaraComponent* Component, FBeamVfxAssetSet const& Assets, bool bWantIndicator);
 } // namespace GeoNiagaraParams
 

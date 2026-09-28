@@ -56,6 +56,10 @@ protected:
 	 */
 	virtual TInstancedStruct<FPatternData> CreatePatternData() const { return {}; }
 
+	/** Returns the location of the caster arena's TargetPointTag point, where the pattern launches from instead. */
+	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
+									  int Seed) const override;
+
 	/**
 	 * Server. Runs at activation, PreLaunchDelay seconds before the pattern launches. Base telegraphs the caster
 	 * itself; override to telegraph what the pattern is about to hit, and to resolve there — from LaunchSeed — whatever
@@ -82,6 +86,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UPattern> PatternToLaunch;
+
+	/** Which AGeoTargetPoint of the caster's own arena the pattern launches from (TargetPoint.*). Unset launches it
+	 * from the caster. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))
+	FGameplayTag TargetPointTag;
 
 	// Telegraph time between the activation and the pattern launch. The ability holds its cooldown for that long too.
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))

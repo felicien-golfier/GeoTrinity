@@ -410,11 +410,14 @@ void UGeoAbilitySystemLibrary::ExecuteGeoCue(UAbilitySystemComponent* ASC, FGeoC
 void UGeoAbilitySystemLibrary::SetCueMeaningColors(UNiagaraComponent* Component,
 												   FGameplayCueParameters const& Parameters)
 {
-	if (!ensureMsgf(Component, TEXT("%hs: no component to colour"), __FUNCTION__))
+	if (ensureMsgf(Component, TEXT("%hs: no component to colour"), __FUNCTION__))
 	{
-		return;
+		GeoNiagaraParams::SetMeaningColors(Component, GetCueMeaningColors(Parameters));
 	}
+}
 
+TArray<FLinearColor> UGeoAbilitySystemLibrary::GetCueMeaningColors(FGameplayCueParameters const& Parameters)
+{
 	FGeoColorParam Color;
 	Color.Color = static_cast<EGeoColor>(Parameters.GameplayEffectLevel);
 	TArray<FGeoColorParam> SecondaryColors;
@@ -427,7 +430,7 @@ void UGeoAbilitySystemLibrary::SetCueMeaningColors(UNiagaraComponent* Component,
 		}
 	}
 
-	GeoNiagaraParams::SetMeaningColors(Component, GeoColor::GetMeaningColors(Color, SecondaryColors));
+	return GeoColor::GetMeaningColors(Color, SecondaryColors);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
