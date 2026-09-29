@@ -127,6 +127,9 @@ protected:
 	/** Returns the current class's death montage — each class brings its own skeleton, so the montage follows it. */
 	virtual UAnimMontage* GetDeathMontage() const override;
 
+	/** Returns the current class's revive montage, following the class's skeleton like the death montage. */
+	virtual UAnimMontage* GetReviveMontage() const override;
+
 	/** Returns Class's authored data, or null with an ensure — a class the map has no entry for is a configuration bug.
 	 *  The single answer to "what is this character's class data?", so every caller fails the same way. */
 	FPlayerClassData const* GetClassData(EPlayerClass Class) const;

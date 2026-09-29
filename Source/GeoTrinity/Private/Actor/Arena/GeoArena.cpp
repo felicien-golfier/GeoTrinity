@@ -12,6 +12,7 @@
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
+#include "Characters/Component/GeoLoopSoundComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/SceneComponent.h"
@@ -68,6 +69,7 @@ void AGeoArena::OnRep_Boss()
 		Boss->Arena = this;
 	}
 	ApplyBossBar();
+	ApplyBossLoopSound();
 }
 
 void AGeoArena::BeginPlay()
@@ -422,6 +424,15 @@ void AGeoArena::ApplyFightVisuals()
 {
 	ApplyBossBar();
 	ApplyBackgroundPulse();
+	ApplyBossLoopSound();
+}
+
+void AGeoArena::ApplyBossLoopSound() const
+{
+	if (IsValid(Boss))
+	{
+		Boss->LoopSoundComponent->SetPlaying(bFighting || Boss->IsDead());
+	}
 }
 
 void AGeoArena::ApplyBackgroundPulse() const

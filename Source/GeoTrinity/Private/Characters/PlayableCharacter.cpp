@@ -6,12 +6,12 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/GeoDeploySatelliteComponent.h"
 #include "Characters/Component/ShieldBurstPassiveComponent.h"
+#include "Characters/PlayerClassDataAsset.h"
 #include "Components/WidgetComponent.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Characters/PlayerClassDataAsset.h"
 #include "HUD/Interface/GeoChargeBeamGaugeWidgetInterface.h"
 #include "HUD/Interface/GeoChargeGaugeWidgetInterface.h"
 #include "Input/GeoInputComponent.h"
@@ -26,7 +26,7 @@ namespace
 {
 	/** How long a gauge lingers after its charge ends, so the final fill is seen before the widget disappears. */
 	constexpr float GaugeHideDelay = 0.15f;
-}
+} // namespace
 
 APlayableCharacter::APlayableCharacter(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -75,8 +75,7 @@ void APlayableCharacter::EndPlay(EEndPlayReason::Type const EndPlayReason)
 void APlayableCharacter::SetChargeGaugeVisible(UWidgetComponent* Component, FTimerHandle& HideHandle,
 											   UGeoGameplayAbility* Ability, bool const bVisible)
 {
-	IGeoChargeGaugeWidgetInterface* Widget =
-		Cast<IGeoChargeGaugeWidgetInterface>(Component->GetUserWidgetObject());
+	IGeoChargeGaugeWidgetInterface* Widget = Cast<IGeoChargeGaugeWidgetInterface>(Component->GetUserWidgetObject());
 	if (!ensureMsgf(Widget, TEXT("%s has no widget or wrong widget class on %s"), *Component->GetName(), *GetName()))
 	{
 		return;
@@ -283,6 +282,22 @@ UAnimMontage* APlayableCharacter::GetDeathMontage() const
 	}
 	ensureMsgf(VisualData->DeathMontage, TEXT("GetDeathMontage: No DeathMontage for class on %s"), *GetName());
 	return VisualData->DeathMontage;
+}
+
+UAnimMontage* APlayableCharacter::GetReviveMontage() const
+{
+	FPlayerClassData const* VisualData = GetClassData(GetPlayerClass());
+	if (!VisualData)
+	{
+		return nullptr;
+	}
+
+	if (!ensureMsgf(VisualData->ReviveMontage, TEXT("GetReviveMontage: No ReviveMontage for class on %s"), *GetName()))
+	{
+		return nullptr;
+	}
+
+	return VisualData->ReviveMontage;
 }
 
 FPlayerClassData const* APlayableCharacter::GetClassData(EPlayerClass Class) const

@@ -215,6 +215,11 @@ private:
 	/** Shows the boss bar for Boss while bFighting, hides it otherwise. Local HUD only; a no-op on a dedicated server. */
 	void ApplyBossBar();
 
+	/** Runs the boss's loop sound while bFighting or while the boss is dead, fades it out otherwise: its death montage
+	 *  plays on past the fight's end, spinning the loop up and cutting it itself. Also called from OnRep_Boss: the boss
+	 *  may resolve on a client after bFighting did. */
+	void ApplyBossLoopSound() const;
+
 	/** Hands PulseMode to the background lattice while this fight runs, and gives the driver its own mode back when it
 	 * ends. Silently does nothing where no driver exists, which is every dedicated server. */
 	void ApplyBackgroundPulse() const;

@@ -297,7 +297,8 @@ def surge(rng):
     hiss, no ringing tail, so it lands whole rather than breaking."""
     length = seconds(1.5)
     sound = np.zeros(length)
-    add(sound, sized(hit(rng), SURGE_SIZE), 0)
+    struck = sized(hit(rng), SURGE_SIZE)
+    add(sound, struck * np.clip((len(struck) - np.arange(len(struck))) / seconds(0.25), 0.0, 1.0), 0)
     add(sound, sized(knock(rng), SURGE_SIZE), 0)
     low, high, level, fall = SURGE_WHUMP
     return sound + decibels(level) * band_noise(length, low, high, rng) * falling(length, fall) * rising(length, 0.03)
@@ -349,8 +350,8 @@ def engine(speed, rng):
     """An electric engine turning at `speed`, 0 to 1: a rotor buzz and the hum lines over it, woofing each time a vane
     sweeps past — louder, brighter, bending in pitch, pushing air; pitch, woof rate and level all follow the speed."""
     length = len(speed)
-    rest, full = ENGINE_WOOF
-    rate = rest + (full - rest) * speed
+    full = ENGINE_WOOF[1]
+    rate = engine_rate(speed)
     turn = np.cumsum(rate) / SAMPLE_RATE % 1.0 - 0.5
     woof = np.exp(-(turn / ENGINE_WOOF_WIDTH) ** 2)
     bend = 1.0 - ENGINE_DOPPLER * turn / ENGINE_WOOF_WIDTH * woof
@@ -364,7 +365,25 @@ def engine(speed, rng):
         sound += decibels(db - 6.0) * (1.0 - ENGINE_WOOF_DEPTH + ENGINE_WOOF_DEPTH * woof) * np.sin(
             hz / (ENGINE_GEAR * full) * phase + rng.uniform(0, 2 * np.pi))
     sound += decibels(ENGINE_WOOF_AIR) * woof ** 2 * band_noise(length, 80, 900, rng)
-    return (ENGINE_FLOOR + (1.0 - ENGINE_FLOOR) * speed) * np.clip(speed / 0.05, 0.0, 1.0) * sound
+    return engine_level(speed) * sound
+
+
+def engine_rate(speed):
+    """Woofs a second at `speed`; every pitch of the engine is a fixed multiple of it."""
+    rest, full = ENGINE_WOOF
+    return rest + (full - rest) * speed
+
+
+def engine_level(speed):
+    """The engine's level at `speed`: its floor at rest, rising to 1 flat out, and silent when stopped."""
+    return (ENGINE_FLOOR + (1.0 - ENGINE_FLOOR) * speed) * np.clip(speed / 0.05, 0.0, 1.0)
+
+
+def engine_loop_speed():
+    """The fight loop's speed and length: the cruise, nudged so the loop holds whole woofs."""
+    rest, full = ENGINE_WOOF
+    length = seconds(ENGINE_LOOP_WOOFS / engine_rate(ENGINE_CRUISE))
+    return (ENGINE_LOOP_WOOFS * SAMPLE_RATE / length - rest) / (full - rest), length
 
 
 def rattle(amount, rng, size=1.0, wrap=False):
@@ -387,7 +406,10 @@ def whir(teeth, drive, size, rng, wrap=False):
     pitch = (0.85 + 0.15 * drive) / size
     lines = [(WHIR_DRIVE_HZ * harmonic, WHIR_COMB_LEVEL - rng.uniform(0, 12)) for harmonic in WHIR_COMB] + WHIR_LINES
     for hz, level in lines:
-        sound += decibels(level) * drive * np.sin(2 * np.pi * np.cumsum(hz * pitch) / SAMPLE_RATE
+        frequency = hz * pitch
+        if wrap:  # whole cycles over the loop, so each line runs into its own start
+            frequency = np.round(frequency * length / SAMPLE_RATE) * SAMPLE_RATE / length
+        sound += decibels(level) * drive * np.sin(2 * np.pi * np.cumsum(frequency) / SAMPLE_RATE
                                                   + rng.uniform(0, 2 * np.pi))
     low, high, level = WHIR_HISS
     return sound + decibels(level) * drive * band_noise(length, low / size, high / size, rng)
@@ -412,10 +434,9 @@ def loops():
     length = seconds(LOOP_SECONDS)
     steady = np.ones(length)
     teeth = [seconds(index / 10.0) for index in range(int(LOOP_SECONDS * 10))]
-    rest, full = ENGINE_WOOF
-    cruise_length = seconds(ENGINE_LOOP_WOOFS / (rest + (full - rest) * ENGINE_CRUISE))
-    closing = (ENGINE_LOOP_WOOFS * SAMPLE_RATE / cruise_length - rest) / (full - rest)  # whole woofs in the loop
-    return {"Engine_Loop": engine(np.full(cruise_length, closing), generator("Engine_Loop")),"Drone_Loop": drone(steady, generator("Drone_Loop")), "Hum_Loop": hum(steady, generator("Hum_Loop")),
+    cruise, cruise_length = engine_loop_speed()
+    return {"Engine_Loop": engine(np.full(cruise_length, cruise), generator("Engine_Loop")),
+            "Drone_Loop": drone(steady, generator("Drone_Loop")), "Hum_Loop": hum(steady, generator("Hum_Loop")),
             "Rattle_Loop": rattle(0.8 * steady, generator("Rattle_Loop"), wrap=True),
             "Whir_Loop": whir(teeth, steady, 1.0, generator("Whir_Loop"), wrap=True)}
 

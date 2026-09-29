@@ -95,6 +95,87 @@ phase change.
 - An animation sound lands on the animation's own beats — each slam, lock or blast is one hit — with its tail cut
   to the Sound grammar below.
 
+## Game SFX, reproduced
+
+Sounds from commercial game packs, each reproduced by a fitted patch in `AI/Python/Audio/Patches/<Pack>/`
+(`ListeningToSound.md`, Reproducing a sound with a patch); the anatomy is the fit's own values. Each pack's
+`README.md` in `Music\SFX\Reference\` holds its source and the rest of its sounds.
+
+| Sound | Anatomy |
+|---|---|
+| UI beep, sine and square | A sine with a square 3.5 dB under it on the same 110 Hz, the square low-passed at 400 Hz, 24 dB per octave: the odd harmonics fade out past the fifth; 2 ms attack, 120 ms held while sinking 2.4 dB, 50 ms release. Reproduced under its own noise floor. |
+| UI zap | One pure sine: 11 kHz diving to 350 Hz in 3.5 ms, then rising exponentially to 16 kHz over 42 ms at an even level, cut in 8 ms. The dive is the click, the rise is the zap. |
+| Jump | A square wave gliding up exponentially 480 → 1400 Hz over 170 ms, falling 23 dB straight in dB, cut hard at 150 ms. |
+| Heavy blaster shot | A broadband crack over 800 Hz for 180 ms; a saw pew diving 1.5 kHz → 360 Hz in 140 ms, dead within 75 ms; a sine boom 180 → 60 Hz in 50 ms, held 0.66 s; a low-mid noise body round 330 Hz ringing 0.7 s; a faint whine at 6.8 kHz 30 dB down. |
+| Heal | Bell voices climbing over 0.7 s — A4, F5, G5, A5 together, then B♭5, F6, C♯6, G♯6 — each partials at 1× falling 60 dB in 3.2 s, 3.1× 12 dB under it in 1.5 s and 5.7× 4 dB under it in 0.8 s, struck in 1.4 ms: the upper partials sparkle and die, the fundamentals hang on as a chord. |
+| Stat up | A sub thump (noise under 175 Hz, 0.3 s); a noise band rising 670 Hz → 2.2 kHz over 0.46 s with a 9 Hz flutter, cut dead at 0.6 s into a 0.9 s room. |
+| Sci-fi bomb impact | A bright swell rising 40 dB over 110 ms into the hit; a rumble under 140 Hz rolling 0.66 s and gone by 2 s, the loudest band; a blast over 2 kHz falling 3 dB per octave, dying 50 dB over 1.2 s; metal rings at 1.9, 2.4, 3, 6 and 8 kHz struck 75 ms after the hit, gone in half a second. |
+| UI click | 40 ms: a triangle chirping 450 → 1800 Hz in 16 ms, low-passed at 1.6 kHz, 40 dB down 29 ms later, over a dull noise tick under 1.5 kHz 8 dB lower. |
+| Chip arpeggio, three notes up | A near-square pulse stepping every 31 ms through the notes and their lower octaves — 285, 134, 343, 166, 696 Hz — landing on 357 Hz and falling 14 dB over 0.35 s, into a 1.2 s room 11 dB down. |
+| Laser pew | A saw diving ~2.5 kHz → 700 → 207 Hz in 0.14 s, its lowpass closing 13 kHz → 1.9 kHz over 0.16 s, held then gone by 0.75 s; a 5 ms crack over 4.8 kHz; a low body under 620 Hz; a 1.1 kHz noise band an octave wide 6 dB down, ringing to 0.6 s. |
+| Force field hum | A buzz on 50 Hz wandering ±5 %, its harmonics low-passed under ~250 Hz, the mids 20–30 dB down, a slow comb sweeping the 250–1000 Hz harmonics about three times a second. |
+| Arcade death (Geometry Dash) | Noise under 190 Hz struck in 8 ms, held 0.3 s while sinking 6 dB, gone 1.4 s later; a narrow noise band at 1.6 kHz 11 dB down dying over 1.2 s; mono. |
+| Enemy tone (Geometry Wars) | 0.5 s on 334 Hz: its 2nd harmonic as loud as the first, the 3rd 18 dB down, the 6th 24 and the 9th 35; a 34 ms attack, sinking 6 dB to a 25 ms cut. |
+| Enemy tone with a dome (Geometry Wars) | Two voices: a triangle falling 338 → 255 Hz over 0.23 s under a 26 Hz tremolo, and a square on 298 Hz 6 dB over it whose resonant lowpass opens 570 Hz → 10.6 kHz by 0.33 s and closes to 5.8 kHz, drawing its harmonics up and back down; all sinking 36 dB over 0.5 s. |
+| Enemy wobble (Geometry Wars) | A saw low-passed at 1.3 kHz swooping 158 → 497 Hz in 0.16 s, back to 248 Hz by 0.54 s and down to 63 Hz, pulsing 41 times a second 10 dB deep, 40 dB down by 0.54 s. |
+| Sword swish | Noise tilted -1.2 dB per octave, jumping to -19 dB in 20 ms, swelling straight in dB to its peak over 190 ms, falling 15 dB in 230 ms and fading over 330 ms more; its lowpass opens 2.7 → 3.3 kHz to the peak and closes to 1.1 kHz after it. |
+| Retro pickup | A square root and a saw fifth 4 dB over it: E5 + B5 for 130 ms, then G5 + D6 for 250 ms, flat, cut in 23 ms, low-passed at 8–11 kHz. |
+| Retro power-up | One saw sweeping 318 → 1594 Hz in 107 ms, four times over, each sweep sagging 3 dB before the next restarts it. |
+
+- An arcade or UI sound is one oscillator whose pitch envelope is the whole gesture: a V for a zap, a rise for a
+  jump or a pickup, a fall for a shot; its waveform is only its colour.
+- A blaster is a stack, each layer one job: the crack is the timing, the pew the identity, the boom the weight, the
+  body the size, a whine the energy.
+- A heal is a chord built by an arpeggio: each bell rings on, so the notes pile up; the strike partials above 3×
+  are what sparkle, and they die first.
+- A buff is noise rising in a band with a flutter, over a thump; its hard stop before a room is what makes it a
+  cast rather than a wind.
+- An explosion swells before it hits, and its low end outlives everything else by a second.
+- A laser's parallel falling curves are one harmonic-rich tone diving, not many voices; the lowpass closing behind
+  the dive is what makes it read as travelling away.
+- A chip arpeggio leaps octaves between its notes every 30 ms; the leaps are the sparkle, the landing note the
+  meaning.
+- A shield holds a low buzz and moves it slowly — a comb or a flutter — rather than sounding a pitch.
+- A reward lands on an open fifth and its octave — C, G, C — held under bright partials: a glide up into it is the
+  anticipation, a thump under its start the weight (Geometry Dash's level complete and achievement).
+- A swish swells for about 190 ms and fades for twice as long, brightest at its peak; a low end as loud as its mids
+  gives a blade its body, and a band around 2 kHz alone sounds like thin air.
+- A retro pickup is two notes a third apart, each an open fifth; a retro power-up is one sweep repeated faster than
+  a beat; a retro bomb is a dive cut dead by noise.
+- Magic is noise with a sparkle: steady inharmonic lines above 5 kHz over a low swell flickering like a fire, wide
+  in stereo where every arcade sound is mono.
+- A menu's confirm is a quick arpeggio of pure notes rising, each quieter, with an echo; its error is a low buzz
+  stuttered; a click is one tone gliding; a hover is a tick of noise.
+
+## Designers' methods
+
+Taken from sound designers explaining their own game sounds.
+
+- An arcade shoot-'em-up's enemies die in tiny melodies, not booms: a flurry of notes starting low, jumping, then
+  falling in an arpeggio, written slow and played about eight times faster; a screen full of them stays clean.
+- The player's constant shot is the shortest and quietest sound of the game — a saw and a plucked note.
+- A sci-fi power-up is three oscillators detuned apart so they never form a chord, one metallic one dropped about
+  2.5 octaves as the machine's rumble, all rising ~18 semitones together over the attack and holding there; unison
+  voices spread in pitch make it a machine rather than a note, and a 4-pole lowpass takes the shine off. Its length
+  is its attack.
+- A laser is a saw chirp 1200 → 50 Hz in 0.2 s doubled a few milliseconds late, so the copies comb as the pitch
+  falls, under a slow deep phaser and a low-passed noise body; played faster it is a pistol, slower a cannon.
+- A whoosh gains weight from layers that each own a band, not from one deeper whoosh.
+- One game's sounds come from one family — the same waveforms, envelopes and space — so the set reads as one world;
+  a sound borrowed from another style stands out as foreign.
+- A sound repeated often gets three to twenty variations, never the same one twice in a row; a machine or a gun
+  stays one sound, since a machine does not vary.
+- A pickup may repeat unchanged, and rising in pitch with each one picked in a row it feels better still.
+- A hit that does nothing — on a shield, on an immune enemy — gets its own weak, bouncing tink, which tells the
+  player and makes the hits that land sound harder by contrast.
+- A sound fits its action: as long as its animation, as heavy as its impact, and on its frame.
+- A family of enemies can grow from one seed sound, each stretched, pitched and crushed its own way: they differ
+  and still belong together.
+- A treatment kept for the effects alone — bit reduction on every effect and never in the music — sets them apart
+  from the music, so they read over it.
+- An object repeated across a room sounds once, however many there are.
+- A reward's cheer matches the world's mood: a dark game's fanfare stays short of happy.
+
 ## Weight and scale
 
 - Weight is heard in pitch, not loudness: a lower sound reads as a heavier object, a louder one only as a nearer one.
@@ -149,14 +230,17 @@ one, and `hex_intro_mech_score.py` scores the hex boss intro with them.
 | Impact | A landing: a hit over an unpitched low knock 4 dB under it, then 3–5 hits clattering within ~300 ms, each softer. |
 | Gear train | A light tick per tooth with no knock, over a held comb of mid lines — harmonics 5–18 of ~110 Hz — steady lines at 2.9 and 5.4 kHz and a faint hiss, all rising with the speed. |
 | Hum | Held lines at 521, 1230 and 2197 Hz, each beating 2 Hz against a copy, rising a quarter in pitch as the pressure builds. |
-| Engine | An electric engine turning: a rotor buzz of 8 harmonics each 4 dB under the last, from ~42 Hz at rest to 120 Hz flat out, with the hum lines riding on it; once a turn a vane sweeps past in a woof — ~6 dB louder, the high orders swelling most, the pitch bending 1.5 % up then down, a puff of air at 80–900 Hz — 0.8 woofs a second at rest, 4 flat out. Pitch, woof rate and level all follow one speed, so it spins up and winds down. |
+| Engine | An electric engine turning: a rotor buzz of 8 harmonics each 4 dB under the last with the hum lines riding on it; once a turn of its big ring a vane sweeps past in a woof — ~6 dB louder, the high orders swelling most, the pitch bending 1.5 % up then down, a puff of air at 80–900 Hz. The rotor turns 30 times per woof, so pitch and woof rate are one speed: 1 woof a second and 30 Hz at rest, 4 and 120 Hz flat out. A loop closes on a whole number of woofs, a multiple of 4 so every hum line closes too. |
 | Air | A stutter ~8 a second, each burst broadband over a harmonic comb on 1.2 kHz; a blast broadband to 16 kHz, darkening as it dies, loose parts clicking after it. |
 | Riser | A sub swelling in, sparkle snaps 1–16 kHz thickening, a whistle at 10 kHz diving to 5.25 kHz and holding, a hard cut. |
 
 - An animation scored this way dips the bed 0.2 s before each hard entry, rises through the build, falls dead
   silent for the freeze, and brings the bed back with the release.
-- An engine idling under the whole animation, racing to the release and winding down only after it, ties the parts
-  into one machine; it alone holds, flat out, through the freeze.
+- An engine idling under the whole animation, racing to the release, held flat out through the freeze and easing
+  back after it to a cruise, ties the parts into one machine; the same engine looping at that cruise is the boss's
+  only sound through the fight.
+- A machine coming alive lands whole: one heavy hit over a deep knock and a push of air. A clattering flurry, air
+  hissing out with loose parts clicking and a ring left hanging read as it breaking.
 - The low knock under every metal event is what makes it heavy; the snap above it is what makes it metal.
 
 ## Loops
@@ -186,7 +270,8 @@ layer count say **how much**.
 
 ## Recipes
 
-Starting points; frequencies follow the classic sfxr presets.
+Starting points; frequencies follow the classic sfxr presets. Where a sound in Game SFX, reproduced covers the same
+role, its measured anatomy and its patch are the better start.
 
 | Sound | Layers |
 |---|---|

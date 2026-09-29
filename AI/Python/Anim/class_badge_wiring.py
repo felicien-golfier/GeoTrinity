@@ -1,6 +1,7 @@
-"""Swap the playable characters onto the class badges: meshes, AnimBlueprints, ability montages, death montages.
+"""Swap the playable characters onto the class badges: meshes, AnimBlueprints, ability montages, death and rez
+montages.
 
-    DA_PlayerClassData           each class's Mesh, AnimClass and DeathMontage
+    DA_PlayerClassData           each class's Mesh, AnimClass, DeathMontage and ReviveMontage
     BP_GeoPlayableCharacter      the mesh component's defaults, which show until a class is applied
     ability Blueprints           each one's AnimMontage
     SKM_<Class>Badge             material slot 0, the class's alive material, for the editor's own previews
@@ -60,7 +61,8 @@ def badge_assets(badge):
     return {"Mesh": unreal.load_asset("{}/SKM_{}Badge".format(MESH_FOLDER, badge)),
             "AnimClass": unreal.load_asset("{0}/{1}/SK_{1}Badge_AnimBlueprint".format(ANIM_FOLDER, badge))
             .generated_class(),
-            "DeathMontage": unreal.load_asset("{0}/{1}/SK_{1}Badge_Montage_Death".format(ANIM_FOLDER, badge))}
+            "DeathMontage": unreal.load_asset("{0}/{1}/SK_{1}Badge_Montage_Death".format(ANIM_FOLDER, badge)),
+            "ReviveMontage": unreal.load_asset("{0}/{1}/SK_{1}Badge_Montage_Rez".format(ANIM_FOLDER, badge))}
 
 
 def literal(asset):
@@ -84,9 +86,10 @@ def wire_class_data():
     unreal.EditorAssetLibrary.save_loaded_asset(data_asset, only_if_is_dirty=False)
 
     for player_class, entry in unreal.load_asset(CLASS_DATA).get_editor_property("ClassData").items():
-        LOG.append("class data {}: mesh {}, anim {}, death {}, alive material {}".format(
+        LOG.append("class data {}: mesh {}, anim {}, death {}, revive {}, alive material {}".format(
             player_class, entry.get_editor_property("mesh").get_name(), entry.get_editor_property("anim_class"),
             entry.get_editor_property("death_montage").get_name(),
+            entry.get_editor_property("revive_montage").get_name(),
             entry.get_editor_property("alive_material").get_name()))
     return table
 

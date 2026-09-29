@@ -188,14 +188,18 @@ protected:
 	UFUNCTION()
 	void OnRep_IsDead(bool bOldValue);
 
-	/** Plays GetDeathMontage() (bDead), or stops it. The montage never blends out on its own, so its last pose holds for
-	 * the whole downed state. Runs on every machine — call it from the death/revive paths, which replicate through
-	 * bIsDead. */
+	/** Plays GetDeathMontage() (bDead) or GetReviveMontage(), each stopping the other through their shared slot group.
+	 * The death montage never blends out on its own, so its last pose holds for the whole downed state; a revive stops
+	 * it outright, so a missing revive montage cannot leave the character in it. Runs on every machine — call it from
+	 * the death/revive paths, which replicate through bIsDead. */
 	void SetDeathVisuals(bool bDead);
 
 	/** Montage played when this character dies. Override where it varies with the character's state (a player's class
 	 * swaps the skeleton the montage is bound to). */
 	virtual UAnimMontage* GetDeathMontage() const { return DeathMontage; }
+
+	/** Montage played when this character revives. None here: only players revive. */
+	virtual UAnimMontage* GetReviveMontage() const { return nullptr; }
 
 
 	// Movement

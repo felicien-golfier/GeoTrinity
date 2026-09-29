@@ -285,17 +285,15 @@ void AGeoCharacter::DeathLogic()
 void AGeoCharacter::SetDeathVisuals(bool const bDead)
 {
 	UAnimInstance* const AnimInstance = GetMesh()->GetAnimInstance();
-	UAnimMontage* const Montage = GetDeathMontage();
+	if (AnimInstance && !bDead)
+	{
+		AnimInstance->Montage_Stop(0.f, GetDeathMontage());
+	}
+
+	UAnimMontage* const Montage = bDead ? GetDeathMontage() : GetReviveMontage();
 	if (AnimInstance && Montage)
 	{
-		if (bDead)
-		{
-			AnimInstance->Montage_Play(Montage);
-		}
-		else
-		{
-			AnimInstance->Montage_Stop(Montage->GetDefaultBlendOutTime(), Montage);
-		}
+		AnimInstance->Montage_Play(Montage);
 	}
 }
 

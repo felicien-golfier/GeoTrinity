@@ -1,7 +1,8 @@
 """Imports every WAV in each source folder as a Sound Wave, SFX_Name.wav becoming SW_Name, replacing assets of that name.
 
-Run via mcp-unreal execute_script. Re-runnable: an existing Sound Wave is reimported in place. A Sound Wave in a
-destination package whose source file is gone is deleted, unless something still references it.
+Run via mcp-unreal execute_script. Re-runnable: an existing Sound Wave is reimported in place; a `_Loop` one is marked
+looping and to play when silent. A Sound Wave in a destination package whose source file is gone is deleted, unless something still
+references it.
 Report written to Saved/import_sound_waves.txt.
 """
 import glob
@@ -16,9 +17,12 @@ FOLDERS = [
     ("SourceArt/Audio/Machine", "/Game/Art/SFX/Machine"),
     ("SourceArt/Audio/Mech", "/Game/Art/SFX/Mech"),
     ("SourceArt/Audio/HexBossIntro", "/Game/Art/SFX/Enemy/HexBoss"),
+    ("SourceArt/Audio/Death", "/Game/Art/SFX/Death"),
+    ("SourceArt/Audio/Ninja", "/Game/Art/SFX/Ninja"),
 ]
 FILE_PREFIX = "SFX_"
 ASSET_PREFIX = "SW_"
+LOOP_SUFFIX = "_Loop"  # a seamless loop, marked looping
 REPORT = unreal.Paths.project_saved_dir() + "import_sound_waves.txt"
 
 
@@ -55,6 +59,13 @@ try:
     for task in tasks:
         path = "{}/{}".format(task.get_editor_property("destination_path"), task.get_editor_property("destination_name"))
         sound = unreal.load_asset(path)
+        # A loop keeps its place through silence: a curve may hold it silent, and a restart would jump it
+        if sound and path.endswith(LOOP_SUFFIX) and (
+                not sound.get_editor_property("looping")
+                or sound.get_editor_property("virtualization_mode") != unreal.VirtualizationMode.PLAY_WHEN_SILENT):
+            sound.set_editor_property("looping", True)
+            sound.set_editor_property("virtualization_mode", unreal.VirtualizationMode.PLAY_WHEN_SILENT)
+            unreal.EditorAssetLibrary.save_asset(path)
         LOG.append("{} -> {} {}".format(os.path.basename(task.get_editor_property("filename")), path,
                                         "{:.3f}s".format(sound.get_editor_property("duration")) if sound
                                         else "NOT IMPORTED"))

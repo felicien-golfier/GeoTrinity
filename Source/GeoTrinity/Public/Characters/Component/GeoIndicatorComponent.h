@@ -86,7 +86,10 @@ struct FGeoIndicatorArray : public FFastArraySerializer
 	UPROPERTY()
 	TArray<FGeoIndicatorItem> Items;
 
-	/** Set in UGeoIndicatorComponent::PostInitProperties — a constructor write is overwritten by the archetype's copy. */
+	/**
+	 * Set in UGeoIndicatorComponent::OnRegister: the template's copy into a spawned instance lands after
+	 * PostInitProperties and would leave it pointing at the template, which has no world.
+	 */
 	UGeoIndicatorComponent* Owner = nullptr;
 };
 
@@ -119,7 +122,7 @@ public:
 	UGeoIndicatorComponent();
 
 	/** Points Indicators back at this component, for its replication callbacks. */
-	virtual void PostInitProperties() override;
+	virtual void OnRegister() override;
 	/** Registers Indicators for replication, skipping the owner. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/** Removes every telegraph still drawn before delegating to Super. */

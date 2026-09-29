@@ -101,19 +101,95 @@ spectral change over time. Pitch, loudness, noisiness and length complete the pi
 ## Reference sounds
 
 - A reference the user points to is the fastest target: measure it with the same script and match its numbers.
-- Fetch a video's audio with `uvx yt-dlp -x --audio-format wav --ffmpeg-location <ffmpeg>`; without a system
-  ffmpeg, the `imageio-ffmpeg` package ships one, found with its `get_ffmpeg_exe()`.
-- References go to `Music\SFX\Reference\`, cut to the passage the user named.
-- A montage of several sounds is cut apart with `uv run AI/Python/Audio/split_on_silence.py <file.wav>`, then
-  each cut is measured on its own; a whole-montage printout averages unrelated sounds into nonsense.
-- A sound-pack video usually names each sound on screen: fetch the video at low resolution and tile one frame
-  every ~0.7 s into a single image with ffmpeg's `fps` and `tile` filters; the label leads its sound slightly.
+- A sound-pack preview video is a library of references: `uv run AI/Python/Audio/fetch_reference.py fetch <id> <Name>`
+  writes its audio at 48 kHz and a 720p video into `Music\SFX\Reference\<Name>\`, cuts it wherever it falls
+  silent and draws a contact sheet of the frame under each cut.
+- Silence is measured against the montage's own floor, so a video playing its sounds over a music bed still cuts.
+- A demo that shows each file's name on screen is labelled by `labels` with a crop around the name: the name's
+  changes split the audio, each span starting on its sound's onset, and OCR reads the name; `name` then cuts the
+  spans from the corrected `labels.txt`.
+- A demo shows a name up to ~0.4 s before playing it; a span shorter than 0.1 s is a name flicked past.
+- A name in a small pixel font needs the 720p video and a crop of that line alone; OCR confuses O/0, U/V and I/1.
+- A montage with no names and no silences — a trailer, a drone pack — is cut by hand from its spectrogram with
+  `"from to Label"` lines.
+- Each cut is measured on its own; a whole-montage printout averages unrelated sounds into nonsense.
+- `dissect.py survey <folder>` measures a whole pack in one line per sound, into the pack's `survey.txt`.
 - The script's 1024-point spectrogram has ~47 Hz bins, too coarse below 200 Hz: pitch a sub with an 8192- or
   16384-point transform.
 - Stereo is measured as mid against side and the correlation of left and right: a reverberant tail sits near
   0.7, a dry synth layer at 1.0.
 - A file whose channels are in anti-phase folds to near silence in mono; `listen.py` then measures left minus
   right and says so.
+
+## Taking a sound apart
+
+`uv run AI/Python/Audio/dissect.py <file.wav>` cuts the sound off any bed around it and prints its anatomy — what a
+patch is written from — with a picture of the partials over the spectrogram, the envelope and the noise per octave.
+
+| Section | Reads |
+|---|---|
+| Envelope | Attack from −20 dB to within 3 dB of the peak, how long it holds there, falls to −20 and −40 dB. |
+| Events | Onsets from the spectral flux: a burst, a stutter, a repeat, with the gaps between them. |
+| Dominant lines | One tone holding the sound, pitched every millisecond on a 5 ms window: zaps, lasers, jumps. |
+| Partials | Lines tracked on a 21 ms window with their pitch at five points, glide ratio and shape, level and fall. |
+| Families | Partials at whole multiples of one: which harmonics and how fast they fall per octave of harmonic number. |
+| Noise | What is left once the partials are masked, per octave: level, peak time, rise, fall. |
+| Modulation, echo, stereo | Tremolo and vibrato rates and depths, a repeating delay, left-right correlation. |
+
+- A tone sweeping faster than about an octave in 20 ms smears across a 21 ms window into what reads as noise: only
+  the dominant lines follow it, and a sound under ~100 ms is read on a 5 ms-window picture before anything is written.
+- The dominant lines stop at 500 Hz: under it a 5 ms window cannot tell a tone from low noise; the partials cover it.
+- A family's fall per octave names the waveform: 6 dB for a saw (every harmonic) or a square (odd only), 12 dB for
+  a triangle, faster for a filtered wave or a soft-clipped sine.
+- A cut from a demo holds the demo's music bed: steady partials and a low noise floor under every sound belong to
+  it, not to the sound.
+
+## Reproducing a sound with a patch
+
+A reproduction is a patch — a short JSON of layers, the sound designer's own controls — whose free values are
+fitted to the reference; a patch that fits is a recipe that can be varied and shipped, since it is synthesis only.
+
+1. Read the reference's anatomy and a fine picture of it, and write the patch in `AI/Python/Audio/Patches/<Pack>/`:
+   one layer per part heard, each free value `{"fit": [value, low, high]}` started where the picture puts it.
+2. `uv run AI/Python/Audio/fit_patch.py fit <patch.json> [renders] [searches]` fits them by CMA-ES and writes them
+   back; each further search starts again round the best so far, which a patch of many layers needs.
+3. Read the printout and `compare.png`, add or reshape the layer the gap points to, fit again.
+4. The user listens to `reference_then_synth.wav` in `Saved/Audio/Reproductions/<patch>/`, or to every
+   reproduction at once in the file `fit_patch.py playlist` writes there.
+
+- The synth, `sfx_patch.py`: oscillators (sine, triangle, and saw, square and pulse band-limited by PolyBLEP), FM
+  pairs, inharmonic partials with their own decays, noise, blips at random times and pitches (chatter, sparkle,
+  glitch), each through a lowpass, a highpass and a resonant bandpass moved frame by frame; step envelopes on
+  pitch, level and filters; drive, echo, a small room, bit and rate reduction. A render takes tens of
+  milliseconds, so a fit of a few thousand renders runs in minutes.
+- A reference is `file.wav@start@end` to fit one span of a cut: one shot out of a run, or a sound off a bed too
+  loud to be told from it.
+- A sound of random parts — chatter, sparkle, crackle — fits on its statistics: its rate, range and level; its
+  distance stays well above a tonal sound's. Chatter the ear follows as a figure, the same in every repeat, is
+  notes written out on a stepped pitch envelope: blips only fit a texture heard as random.
+- A tremolo is compared frame by frame, so out of phase with the reference it only costs the fit, which then turns
+  it off: its phase is fitted with its rate and depth. A wobble in a tone can also be two voices a few hertz apart
+  beating, which the tracker shows as two lines where one is expected.
+- An envelope's steps are durations, like an ADSR, so a fitted time can never fold it back on itself.
+- A value shared by several layers — a pitch, an envelope, a bell's partial ratios — is written once in the patch's
+  `envelopes` and named `"@name"` where it is used.
+- The distance is the mean decibel gap between the two log-mel spectrograms at 256, 1024 and 4096-sample windows,
+  level-matched, plus 6 dB for every octave the brightness contour strays: the contour gives a misplaced pitch or
+  sweep a slope back to its place, where the spectral gap alone gives it none.
+- Nothing counts 50 dB under the reference's loudest cell, nor under the bed measured before its onset: a codec's
+  haze around a pure tone and a demo's music are not the sound.
+- Both sounds start on their onset to half a millisecond; a smoother onset lands earlier than a synth's first
+  sample and costs the fit a whole attack.
+- The synth is cut as far under its peak as the reference's cut reaches, so a swell rising out of the reference's
+  bed starts at the same point on both; a synth whose loudest layer is wrong starts elsewhere, and the gap shows it.
+- The synth against itself on another noise seed is the distance it cannot go under: a noisy sound sits a few dB
+  above it when it fits, a pure tone near zero.
+- A value pinned at its bound means a layer is doing another's job or one is missing; a block of one colour in the
+  difference picture is where.
+- The fit refines a patch; it does not find a pitch trajectory it was not started near — read the line off the
+  picture first.
+- A filter sweep is a resonant band with skirts falling 6 dB per octave; a band with no skirts leaves the rest of
+  the spectrum empty and the fit widens it to compensate.
 
 ## Matching a reference hit
 

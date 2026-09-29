@@ -36,6 +36,8 @@ deleting and searching assets.
 - An instanced subobject property reaches spawned instances only when it holds the default subobject the owning
   C++ class creates under that name; one assigned afterwards stays on the class defaults and every instance gets
   none. Declare the subobject's class in C++ and let script author only its properties.
+- A component a C++ parent creates is edited on the Blueprint by reading it off the CDO as a property and setting
+  its properties there; after the compile, spawned instances carry them (`AI/Python/Asset/boss_fight_loop.py`).
 
 ## Editing a struct container
 

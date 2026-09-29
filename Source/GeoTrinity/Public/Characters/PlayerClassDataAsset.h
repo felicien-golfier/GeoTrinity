@@ -29,10 +29,14 @@ struct FPlayerClassData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UAnimInstance> AnimClass;
 
-	/** Played when the character goes down and stopped on revive; it never blends out on its own, so its last pose (the
-	 *  badge gone, its debris left by a UGeoDeathDebrisNotify) holds for the whole downed state. */
+	/** Played when the character goes down; it never blends out on its own, so its last pose (the badge gone, its debris
+	 *  left by a UGeoDeathDebrisNotify) holds for the whole downed state, until ReviveMontage replaces it. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> DeathMontage = nullptr;
+
+	/** Played when the character revives, in DeathMontage's slot group so it stops it; blends out to the idle. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> ReviveMontage = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UGameplayEffect> DefaultAttributes;

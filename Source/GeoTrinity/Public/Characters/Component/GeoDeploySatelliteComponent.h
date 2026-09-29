@@ -82,7 +82,8 @@ public:
 							   FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	/** Satellites the ring should show: the charges left, plus the one a charging deploy has not launched yet. */
+	/** Satellites the ring should show: the charges left, plus the one a charging deploy has not launched yet. None
+	 * while the owner is dead. */
 	int32 GetDesiredSatelliteCount() const;
 
 	/** Creates one satellite (Niagara or mesh) at the character's centre; the tick flies it out to its slot. */

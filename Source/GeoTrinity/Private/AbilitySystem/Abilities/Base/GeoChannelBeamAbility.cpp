@@ -157,18 +157,16 @@ void UGeoChannelBeamAbility::Tick(float const DeltaTime)
 	}
 
 	float const CurrentBeamHalfWidth = GetCurrentBeamHalfWidth(Character);
-	// Replication only sends on change, so pushing each tick is cheap; the owning client's push is local-only
-	// (lag-free) and the server's write is what replicates to everyone.
-	if (UGeoBeamVFXComponent* BeamVFXComponent = Character->FindComponentByClass<UGeoBeamVFXComponent>())
+	// Server only: its write replicates to everyone, the client's own simulation of the width can drift from it.
+	// Replication only sends on change, so pushing each tick is cheap.
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		BeamVFXComponent->SetBeamState(true, CurrentBeamHalfWidth * 2.f,
-									   GetDefault<UGameDataSettings>()->GeneralSpellDistance, GetBeamDuration());
-	}
-	else
-	{
-		// Legitimate on clients for the first frames (the component arrives via replication); a bug on the server.
-		ensureMsgf(!GeoLib::IsServer(GetWorld()),
-				   TEXT("UGeoChannelBeamAbility: BeamVFXComponent is missing on the server"));
+		UGeoBeamVFXComponent* BeamVFXComponent = Character->FindComponentByClass<UGeoBeamVFXComponent>();
+		if (ensureMsgf(BeamVFXComponent, TEXT("UGeoChannelBeamAbility: BeamVFXComponent is missing on the server")))
+		{
+			BeamVFXComponent->SetBeamState(true, CurrentBeamHalfWidth * 2.f,
+										   GetDefault<UGameDataSettings>()->GeneralSpellDistance, GetBeamDuration());
+		}
 	}
 
 	TickBeam(DeltaTime,

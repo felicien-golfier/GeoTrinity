@@ -50,6 +50,11 @@ public:
 	static void SetMontageSections(UAnimMontage* Montage, TArray<FName> SectionNames, TArray<float> StartTimes,
 								   TArray<FName> NextSectionNames);
 
+	/** Generic: Montage's sections as the three parallel arrays SetMontageSections takes, in the montage's order. */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static void GetMontageSections(UAnimMontage const* Montage, TArray<FName>& OutSectionNames,
+								   TArray<float>& OutStartTimes, TArray<FName>& OutNextSectionNames);
+
 	/** Logs Montage's slot tracks, segments and sections to LogTemp — Python can read neither array. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void InspectMontage(UAnimMontage* Montage);

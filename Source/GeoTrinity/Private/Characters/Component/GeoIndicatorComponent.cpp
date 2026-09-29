@@ -31,9 +31,9 @@ UGeoIndicatorComponent::UGeoIndicatorComponent()
 	SetIsReplicatedByDefault(true);
 }
 
-void UGeoIndicatorComponent::PostInitProperties()
+void UGeoIndicatorComponent::OnRegister()
 {
-	Super::PostInitProperties();
+	Super::OnRegister();
 	Indicators.Owner = this;
 }
 

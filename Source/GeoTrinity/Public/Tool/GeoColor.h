@@ -23,7 +23,6 @@ enum class EGeoColor : uint8
 	LethalDamage,
 	Heal,
 	Shield,
-	BothHealAndDamage,
 	DamageReduction,
 	DamageBoost,
 	HealBoost,
@@ -78,7 +77,7 @@ namespace GeoColor
 	/** Color, then SecondaryColors, resolved: the colours of an effect carrying several meanings, split by its
 	 * material's colour pattern. Ensures there are at most MaxMeaningColorCount and drops the rest. */
 	GEOTRINITY_API TArray<FLinearColor> GetMeaningColors(FGeoColorParam const& Color,
-														  TArray<FGeoColorParam> const& SecondaryColors);
+														 TArray<FGeoColorParam> const& SecondaryColors);
 
 	/**
 	 * Builds ColorPalette into a one-pixel-tall texture, one texel per slot at its own EGeoColor ordinal — the form the

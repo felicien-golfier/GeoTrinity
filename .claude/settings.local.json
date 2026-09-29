@@ -33,7 +33,8 @@
       "Read(//c/Users/Felou/.claude/debug/**)",
       "mcp__mcp-unreal__blueprint_query",
       "Bash(uv run:*)",
-      "PowerShell(uv run:*)"
+      "PowerShell(uv run:*)",
+      "Edit(AI/Python/**)"
     ]
   },
   "enableAllProjectMcpServers": true,

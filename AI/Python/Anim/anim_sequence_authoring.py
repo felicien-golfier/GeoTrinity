@@ -620,6 +620,15 @@ def set_notify(anim, track_name, time, notify_class, properties, clear=True):
     return notify
 
 
+def set_float_curve(anim, name, keys):
+    """Replace `anim`'s float curve `name` with `keys`, [seconds, value] pairs; a montage carries its own curves."""
+    kind = unreal.RawCurveTrackTypes.RCT_FLOAT
+    if unreal.AnimationLibrary.does_curve_exist(anim, name, kind):
+        unreal.AnimationLibrary.remove_curve(anim, name, False)
+    unreal.AnimationLibrary.add_curve(anim, name, kind, False)
+    unreal.AnimationLibrary.add_float_curve_keys(anim, name, [time for time, _ in keys], [value for _, value in keys])
+
+
 def notify_events(anim):
     """Every notify on `anim` -> [(trigger time, the notify object)].
 

@@ -7,6 +7,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
+#include "Characters/Component/GeoLoopSoundComponent.h"
 #include "Engine/World.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameFramework/Character.h"
@@ -28,6 +29,8 @@ AEnemyCharacter::AEnemyCharacter(FObjectInitializer const& ObjectInitializer) :
 	// Adding an attribute set as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
 	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("AttributeSetBase"));
+
+	LoopSoundComponent = CreateDefaultSubobject<UGeoLoopSoundComponent>(TEXT("LoopSoundComponent"));
 
 	SetNetUpdateFrequency(100.f);
 	bAlwaysRelevant = true;

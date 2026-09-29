@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/GeoCharacter.h"
 #include "Components/StaticMeshComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
@@ -96,8 +97,14 @@ bool UGeoDeploySatelliteComponent::LaunchSatellite(FVector& OutLaunchLocation)
 // ---------------------------------------------------------------------------------------------------------------------
 int32 UGeoDeploySatelliteComponent::GetDesiredSatelliteCount() const
 {
+	AGeoCharacter const* Character = Cast<AGeoCharacter>(GetOwner());
+	if (!ensureMsgf(Character, TEXT("%s: the deploy satellite ring must sit on a GeoCharacter."), *GetNameSafe(GetOwner())))
+	{
+		return 0;
+	}
+
 	UGeoAbilitySystemComponent* ASC = GeoASLib::GetGeoAscFromActor(GetOwner());
-	if (!ASC)
+	if (!ASC || Character->IsDead())
 	{
 		return 0;
 	}

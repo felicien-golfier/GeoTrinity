@@ -1,0 +1,50 @@
+[
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Whoosh_Mid",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 0.0,
+  "volume": 0.252,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Whoosh_Mid.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Inhale",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 0.4333,
+  "volume": 0.284,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Inhale.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Gust",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 1.4333,
+  "volume": 0.315,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Gust.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_2",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 1.4333,
+  "volume": 0.379,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_2.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_1",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 1.4667,
+  "volume": 0.252,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_1.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Whoosh_High",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.0667,
+  "volume": 0.189,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Whoosh_High.wav"
+ }
+]

@@ -1,0 +1,42 @@
+[
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_GearThunk_4",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 0.0,
+  "volume": 0.4,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_GearThunk_4.wav"
+ },
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_Slam_Mid",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 0.6,
+  "volume": 0.6,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_Slam_Mid.wav"
+ },
+ {
+  "track": "Mech",
+  "sound": "SW_Mech_Impact_Mid",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 0.7,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Impact_Mid.wav"
+ },
+ {
+  "track": "Mech",
+  "sound": "SW_Mech_AirBlast",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 0.7,
+  "volume": 0.7,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_AirBlast.wav"
+ },
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_Hiss",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 0.9,
+  "volume": 0.35,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_Hiss.wav"
+ }
+]

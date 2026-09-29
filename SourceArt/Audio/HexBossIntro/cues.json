@@ -9,11 +9,8 @@
  },
  {
   "track": "Hum",
-  "sound": "SW_HexIntro_Engine",
-  "package": "/Game/Art/SFX/Enemy/HexBoss",
-  "time": 0.0,
-  "volume": 0.45,
-  "source": "SourceArt/Audio/HexBossIntro/SFX_HexIntro_Engine.wav"
+  "notify": "GeoLoopSoundNotify",
+  "time": 0.0
  },
  {
   "track": "Hit",
@@ -129,26 +126,10 @@
  },
  {
   "track": "Hit",
-  "sound": "SW_Mech_Impact_Low",
+  "sound": "SW_Mech_Surge",
   "package": "/Game/Art/SFX/Mech",
   "time": 4.9667,
   "volume": 1.0,
-  "source": "SourceArt/Audio/Mech/SFX_Mech_Impact_Low.wav"
- },
- {
-  "track": "Air",
-  "sound": "SW_Mech_AirBlast",
-  "package": "/Game/Art/SFX/Mech",
-  "time": 4.9667,
-  "volume": 0.9,
-  "source": "SourceArt/Audio/Mech/SFX_Mech_AirBlast.wav"
- },
- {
-  "track": "Air",
-  "sound": "SW_Mech_ToneTail",
-  "package": "/Game/Art/SFX/Mech",
-  "time": 5.0667,
-  "volume": 0.2,
-  "source": "SourceArt/Audio/Mech/SFX_Mech_ToneTail.wav"
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Surge.wav"
  }
 ]

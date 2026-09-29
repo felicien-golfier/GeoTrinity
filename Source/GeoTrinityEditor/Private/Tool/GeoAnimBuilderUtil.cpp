@@ -99,6 +99,22 @@ void UGeoAnimBuilderUtil::SetMontageSections(UAnimMontage* Montage, TArray<FName
 	FinishMontageEdit(Montage);
 }
 
+void UGeoAnimBuilderUtil::GetMontageSections(UAnimMontage const* Montage, TArray<FName>& OutSectionNames,
+											 TArray<float>& OutStartTimes, TArray<FName>& OutNextSectionNames)
+{
+	if (!ensureMsgf(Montage, TEXT("GetMontageSections needs a Montage")))
+	{
+		return;
+	}
+
+	for (FCompositeSection const& Section : Montage->CompositeSections)
+	{
+		OutSectionNames.Add(Section.SectionName);
+		OutStartTimes.Add(Section.GetTime());
+		OutNextSectionNames.Add(Section.NextSectionName);
+	}
+}
+
 void UGeoAnimBuilderUtil::InspectMontage(UAnimMontage* Montage)
 {
 	if (!ensureMsgf(Montage, TEXT("InspectMontage needs a Montage")))

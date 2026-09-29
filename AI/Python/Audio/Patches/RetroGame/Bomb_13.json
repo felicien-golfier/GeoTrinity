@@ -1,0 +1,15 @@
+{
+ "reference": "RetroGame/cuts/13.wav@0@1.78",
+ "length": 1.8,
+ "envelopes": {
+  "fall": {"fit": [0.375, 0.3, 0.45]}
+ },
+ "layers": [
+  {"name": "Dive", "kind": "tone", "wave": "square", "lowpass": {"fit": [12000, 2000, 20000]},
+   "pitch": [[0, {"fit": [820, 600, 1100]}], ["@fall", {"fit": [180, 120, 260]}]],
+   "level": [[0, -60], [0.003, 0], ["@fall", {"fit": [-6, -15, 0]}], [0.002, -80]]},
+  {"name": "Blast", "kind": "noise", "start": "@fall", "gain": {"fit": [0, -12, 12]},
+   "tilt": {"fit": [-1, -6, 3]}, "lowpass": {"fit": [5000, 1500, 16000]}, "highpass": {"fit": [150, 30, 600]},
+   "level": [[0, -60], [0.002, 0], [{"fit": [1.4, 0.8, 2.0]}, {"fit": [-40, -55, -25]}]]}
+ ]
+}

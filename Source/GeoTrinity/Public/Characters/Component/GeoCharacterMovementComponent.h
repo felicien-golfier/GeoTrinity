@@ -122,6 +122,9 @@ public:
 	 */
 	void RequestDash(FVector const& RequestVelocity, float RequestDuration);
 
+	/** True while a dash runs. */
+	bool IsDashing() const { return DashTimeRemaining > 0.f; }
+
 	/** Starts the requested dash. */
 	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
 	/** Counts the dash down, and clamps the velocity back to walk speed when it ends. */

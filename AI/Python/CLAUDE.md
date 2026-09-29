@@ -13,7 +13,7 @@ top of each file.
 | `Ability/` | Ability Blueprints, the ability catalog, StateTree | `AI/MCP/MCP_NewEnemyAbility.md`, `MCP_StateTree.md` |
 | `Anim/` | Skeletal animation and montage authoring | `AI/MCP/MCP_Animation.md` |
 | `Asset/` | Generic asset editing, asset generation, saving | `AI/MCP/MCP_Blueprint.md` |
-| `Audio/` | Measuring and picturing exported sounds — run with `uv`, outside the editor | `AI/MCP/Audacity/ListeningToSound.md` |
+| `Audio/` | Fetching references, taking sounds apart, synthesising and fitting them — run with `uv`, outside the editor | `AI/MCP/Audacity/ListeningToSound.md` |
 | `Level/` | Level content and per-level settings | `AI/MCP/MCP_Settings.md` |
 | `Material/` | Materials, material functions, parameter collections | `AI/MCP/MCP_Material.md` |
 | `Mesh/` | Procedural static meshes and rigging | — |
@@ -41,12 +41,14 @@ or wire them in.
 | Script | Purpose |
 |---|---|
 | `anim_sequence_authoring.py` | Read a rig, report animated bones, write or offset bone tracks, build montages, turn a bone about a point, measure overlaps between outlines and in 3D |
+| `boss_montage_sounds.py` | Put every notify and fight-loop curve of each boss montage's sound score on it — the hex boss intro's (`SourceArt/Audio/HexBossIntro/cues.json`, `loop.json`), its other montages' (`SourceArt/Audio/HexBossMontages/<montage>/`) and the star boss's (`SourceArt/Audio/StarBoss/<montage>/`); `BOSSES` picks which |
 | `class_badge_anim_blueprints.py` | One AnimBlueprint per class badge: the idle through the top slot moves the whole badge, a bottom-slot clip takes the body over it, plus a full-body slot and an additive slot over all |
 | `class_badge_body_turns.py` | Body-only rolls about the aim in the bottom slot, round the parts: the Circle rolls through the Moira beam, the Triangle rolls once reeling in its turrets; checked in 3D against the parts |
 | `class_badge_circle_charge.py` | Circle badge charge beam: the hourglass whips round the badge, swells shaking in front, flattens wide on release |
 | `class_badge_circle_charge_orbit.py` | Circle badge charge beam, alternative: the hourglass circles the swelling, trembling badge accelerating, then holds in front turned on release while the disc kicks back; top slot |
 | `class_badge_deploy.py` | The three badges throwing their deployable, full-body slot over the auto-fire: the Square's mandibles roll faster and faster then are crushed by the recoil against their pinned backs, the Triangle rears and stakes its turret, the Circle stands its hourglass up and pours it over |
-| `class_badge_death.py` | The three badges swell and vanish, shedding their class debris, and stay gone until revive |
+| `class_badge_death.py` | The three badges swell and vanish, shedding their class debris, and stay gone until the revive pops them back, overshooting and settling; each montage starts its sound on its first frame |
+| `class_badge_rez.py` | The three badges' 3 s rez: grow back spinning to a stop, then show off while the body rolls over — one part orbits level on a rosette, a second sinks and orbits the other way underneath, swinging under the body to the far side; the Circle's hourglass whips round, snaps into reverse and tumbles; orbit radii and depths read off the rig so nothing meets the rolling body |
 | `class_badge_idle.py` | The three badges breathe and, bored, play with their parts: twirling, drumming, looking round, flipping, rolling round the rim |
 | `class_badge_square_fire.py` | Square badge auto-fire: the mandibles take turns thrusting out, flaring and slamming back |
 | `class_badge_square_fire_piston.py` | Square badge auto-fire, alternative: the mandibles cock outward and jab out long, top slot only |
@@ -55,12 +57,12 @@ or wire them in.
 | `class_badge_triangle_fire_crossbow.py` | Triangle badge heavy shot, alternative: the needle draws back into the arrowhead like a crossbow bolt, the arrowhead flexing like its bow, and launches as a spear; top slot |
 | `class_badge_triangle_reload.py` | Triangle badge reload, heavy: braces with the needle drawn in, heaves the whole badge round a yaw turn, clunks past and rocks back; full-body slot |
 | `class_badge_wiring.py` | Swap the playable characters onto the badges: class data, character mesh, ability montages, materials |
-| `dump_bone_motion.py` | Sample a sequence's bones in parent space to JSON, yaw unwrapped — the motion a sound score is timed from |
+| `dump_bone_motion.py` | Sample each hex and star boss montage's bones in parent space to JSON, yaw unwrapped, with the rest pose, its sections and blends — the motion a sound score is timed from; a montage samples as its reference pose, so each of its sequences is sampled across the span it plays |
+| `export_anim_fbx.py` | Export every animation sequence under the class badge folder to FBX in `Saved/ClassBadgeAnimFbx`, one subfolder per class |
 | `hex_boss_abilities.py` | Hex boss sweep beam, tile-carving ray and cone spray |
 | `hex_boss_death.py` | The three rings wander off axis, blow apart and settle |
 | `hex_boss_idle.py` | Rings turning against each other, the outer one breathing |
 | `hex_boss_intro.py` | Three dead pieces find each other, lock together and wake |
-| `hex_boss_intro_sounds.py` | Put every notify of the intro's sound score (`SourceArt/Audio/HexBossIntro/cues.json`) on the intro montage |
 | `hex_boss_launch.py` | Tile bomb and tile turret launches |
 | `star_death.py` | The star spins itself apart, swallows its points, collapses |
 | `star_devastating_wave.py` | Winds into a thin spinning knot, then blows every spike out |
@@ -74,9 +76,10 @@ or wire them in.
 
 | Script | Purpose |
 |---|---|
+| `boss_fight_loop.py` | Put each boss's fight loop layers (its score's `loop.json`) — sound, volume, curves, rest level — on its loop sound component, keeping the drift tuned on it |
 | `curve_asset_authoring.py` | Write a curve asset from a table of keys |
 | `generate_headshot_ding.py` | Synthesise the headshot ding and import it as a sound wave |
-| `import_sound_waves.py` | Import every `SFX_` WAV of each `SourceArt/Audio` folder into its package as `SW_`, replacing same-named assets; deletes unreferenced `SW_` assets whose source is gone |
+| `import_sound_waves.py` | Import every `SFX_` WAV of each `SourceArt/Audio` folder into its package as `SW_`, replacing same-named assets, marking `_Loop` ones looping and to play when silent; deletes unreferenced `SW_` assets whose source is gone |
 | `import_textures.py` | Import image files as textures, replacing same-named assets, with the sRGB and compression they are sampled with |
 | `save_dirty_assets.py` | List and save dirty content packages, reporting to a file |
 | `trim_sound_start_silence.py` | Cut the silence before the first sound off every Sound Wave at the root of the SFX folder, reimported in place with its settings |
@@ -91,16 +94,25 @@ These run from a shell with `uv run <script>`, not through the editor; each decl
 | Script | Purpose |
 |---|---|
 | `compare_sections.py` | Judge a synthesised section against a reference section: event anatomy with the backing subtracted, octave balance, stacked spectrograms |
+| `dissect.py` | Take a sound apart off its bed — envelope, events, dominant lines on a 5 ms window, tracked partials and harmonic families, noise per octave, modulation, echo, stereo — with a picture; `survey` a pack in one line per sound; `sound_span` finds a sound's own span and how far under its peak it reaches, or cuts a render to a given depth |
 | `electric_layers.py` | Synthesise a seamless electric loop — high-voltage hum and corona swelling on top, crackle, rumble, static snaps and fizz — one WAV per layer for Audacity |
+| `fetch_reference.py` | Turn a sound-pack video into references: audio and 720p video, cuts on silence with contact sheets, on-screen names read by OCR into labelled spans, cuts named from `labels.txt` |
+| `fit_patch.py` | Fit a patch's free values to its reference by CMA-ES on a multi-resolution log-mel gap plus a brightness-contour term; compare, picture and reference-then-synth A/B into `Saved/Audio/Reproductions` |
 | `heavy_machine.py` | Heavy futuristic machine building blocks and one-shots — electric motors under load following turn speed, gear teeth, stick-slip strain, holding hum, clamp slam, seal hiss, release blast; every part sized |
 | `hex_intro_score.py` | Score the hex boss intro off its dumped motion as a heavy machine: strain and hum while the pieces shiver, crack, clamp and seal on each landing, a motor and a gear train per ring, the body straining through the gather, the release; writes the one-shots, stems, `cues.json` and a preview mix to the draft, or to `SourceArt` with `ship` |
-| `hex_intro_mech_score.py` | Score the hex boss intro off its dumped motion with the mechanical kit: a sub bed dipping before each landing, an engine racing to the release then winding down (or a gather-only hum), a riser, shiver clicks, a clattering impact per landing, a gear train per ring, rattle and air through the gather, a dead freeze, boom, impact and air blast on the release; writes the kit, stems, `cues.json` and a preview mix per hum version to the draft, or to `SourceArt` with `ship` |
+| `hex_boss_montage_score.py` | Score the hex boss's ability and death montages: kit one-shots on beats anchored to each montage's sections, and curves bending the fight loop — the engine spooling with the wind-up, out while the boss holds still, back on the hit; the whir following the rings' turn, the rattle the shake; the death cutting the loop on its blast; writes each montage's `cues.json` and `curves.json` to the draft, or to `SourceArt` with `ship`, and a preview of each, looped live phase included |
+| `hex_intro_mech_score.py` | Score the hex boss intro off its dumped motion with the mechanical kit: a sub bed dipping before each landing, the engine as the fight loop bent by montage curves (or a stem: engine or gather-only hum), the fight whir and rattle loops, a riser, shiver clicks, a clattering impact per landing, a gear train per ring, rattle and air through the gather, a dead freeze, boom and surge on the release; writes the kit, stems, `cues.json`, `loop.json` and a preview mix per hum version — the loop one as Unreal plays it, measured against the old engine stem — to the draft, or to `SourceArt` with `ship` |
 | `hex_lock_layers.py` | Synthesise the hex boss intro's lock — the trailer clack: strikes, rattle, gliding knock, room, swell — one WAV per layer for Audacity; a `match_reference.py` model, its fitted variants in `hex_lock_params.json` |
 | `listen.py` | Print a WAV's perceptual measures and render its waveform, spectrogram and spectrum to a PNG |
 | `match_reference.py` | Match a synth to a hit in a reference recording: find hits and repeats, measure one with its backing cancelled, fit a model's parameters, compare |
-| `mech_kit.py` | The mechanical kit, synthesised to the mechanical intro reference: ticks, chain clicks, clattering metal hits, sized impacts, riser, grind, air stutter and blast, boom, tone tail, an engine spinning with its speed, and drone, hum, rattle and gear-train loops that follow motion curves; writes each into `SourceArt/Audio/Mech` |
+| `mech_kit.py` | The mechanical kit, synthesised to the mechanical intro reference: ticks, chain clicks, clattering metal hits, sized impacts, riser, grind, air stutter and blast, boom, tone tail, surge, the break (an outro), an engine woofing with its speed, and drone, hum, rattle, gear-train and engine loops; writes each into `SourceArt/Audio/Mech` |
 | `metal_one_shots.py` | Write the reusable metal one-shots into `SourceArt/Audio/Metal`: the trailer clack's cracks |
-| `split_on_silence.py` | Cut a reference montage into one WAV per sound wherever it falls silent |
+| `ninja_kit.py` | The ninja kit, air and cloth with no metal: air cuts and a flurry of them, blade swishes, sized whooshes, cloth snaps, a soft landing, a gust, inhales into a hard cut, a smoke-bomb vanish, and wind, whirl and cloth-flutter loops; writes each into `SourceArt/Audio/Ninja` with a kit preview |
+| `sfx_patch.py` | Render a JSON patch: band-limited oscillators, FM, inharmonic partials, shaped noise, random blips, under step envelopes, drive, echo, room, bit reduction; free values `{"fit": [value, low, high]}`, shared ones `"@name"` |
+| `split_on_silence.py` | Cut a reference montage into one WAV per sound wherever it falls silent against its own floor; `sound_spans` is imported by `fetch_reference.py` |
+| `star_boss_score.py` | Score the star boss with the ninja kit off its dumped motion: its fight loop (wind, whirl, flutter) and every montage's one-shots on beats found in the motion — an air cut per point stabbing out, an inhale into the still frames, a gust on the nova — with curves from the spin and the shake, looping sections tilted to close; writes `loop.json` and each montage's `cues.json` and `curves.json` to the draft, or to `SourceArt` with `ship`, and a preview of each |
+
+`Patches/<Pack>/` holds one patch per reproduced sound, its fitted values written back by `fit_patch.py`.
 
 ## Level
 

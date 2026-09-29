@@ -11,6 +11,7 @@
 
 class AGeoArena;
 class UAnimMontage;
+class UGeoLoopSoundComponent;
 class UStateTree;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossDefeated);
@@ -43,6 +44,11 @@ public:
 	/** Played by AGeoArena::PlayIntro on its arena's first aggro, before the fight starts. None = no intro. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Boss")
 	TObjectPtr<UAnimMontage> IntroMontage;
+
+	/** The sound this enemy keeps running through its fight — a boss's hum. Its arena turns it on and off with the
+	 * fight; montages bend it through their curves. Empty Loops = silent. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GeoCharacter|Boss")
+	TObjectPtr<UGeoLoopSoundComponent> LoopSoundComponent;
 
 	UPROPERTY(BlueprintAssignable, Category = "GeoCharacter|Boss")
 	FOnBossDefeated OnEnemyDefeated;

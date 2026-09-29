@@ -246,7 +246,11 @@ Creating a montage through its factory with the source-animation property set ma
 track and its segment, so a montage playing a single sequence needs no shim. Section names and count are
 readable through the montage's own lookup functions, but the section list and slot-track array are declared
 without edit or Blueprint access and the call keeping a section's cached segment link consistent is C++ only, so
-writing sections needs a shim.
+writing sections needs a shim, and so does reading their start times and links.
+
+Sampling a pose off a montage returns the reference pose at every time, so a montage's motion is sampled off each
+sequence it plays, across the span that sequence covers; a segment played faster than authored shows as its
+sequence's length over that span.
 
 A pattern's wind-up section is stretched to the ability's configured delay, so its authored length sets only the
 proportions inside it. The jump that takes a montage live matches any section whose name contains the fire
@@ -284,6 +288,15 @@ an event's trigger time is read through the library rather than off the event, w
 exposed. A notify on a montage links to the segment beneath it, so the slot track has to be in place first.
 Which animation triggers a given effect is readable from that effect's referencer list, since the notify holding
 it is a subobject of the animation asset.
+
+## Float curves
+
+A montage carries float curves of its own, written through the animation library's curve functions exactly as on
+a sequence; a curve is rewritten by removing and re-adding it (`set_float_curve` in
+`AI/Python/Anim/anim_sequence_authoring.py`). At runtime a montage's curves reach the anim instance weighted by the
+montage's blend, so a value of 0 at both ends hands back whatever the curve drives untouched. The curves follow the
+montage's own position, so a section stretched by its play rate stretches them with it and a looping section replays
+them, which a curve closes on itself by holding the same value at the section's two ends.
 
 ## Script notes
 

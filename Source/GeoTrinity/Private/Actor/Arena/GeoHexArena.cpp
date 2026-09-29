@@ -4,9 +4,9 @@
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
+#include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/InstancedStaticMeshComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -35,7 +35,6 @@ namespace
 AGeoHexArena::AGeoHexArena()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	TileMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("TileMeshComponent"));
 	TileMeshComponent->SetupAttachment(RootComponent);
@@ -78,13 +77,13 @@ void AGeoHexArena::BeginPlay()
 void AGeoHexArena::CommitFight()
 {
 	Super::CommitFight();
-	SetActorTickEnabled(true);
+	bFallCheckEnabled = true;
 }
 
 void AGeoHexArena::EndFight()
 {
 	Super::EndFight();
-	SetActorTickEnabled(false);
+	bFallCheckEnabled = false;
 	ResetAllTiles();
 }
 
@@ -457,32 +456,61 @@ void AGeoHexArena::ApplyTileVisuals()
 void AGeoHexArena::Tick(float const DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	ShakeHighlightedTiles();
 
-	FVector2D const Center(GetActorLocation());
-	for (AActor* Actor : GeoASLib::GetInteractableActors(this, FGenericTeamId::NoTeam, TeamAttitudeMask::All,
-														 /*bMustBeDamageable*/ false, Center, FallCheckRadius))
+	if (bFallCheckEnabled)
 	{
-		if (IsSupported(FVector2D(Actor->GetActorLocation())))
+		FVector2D const Center(GetActorLocation());
+		for (AActor* Actor : GeoASLib::GetInteractableActors(this, FGenericTeamId::NoTeam, TeamAttitudeMask::All,
+															 /*bMustBeDamageable*/ false, Center, FallCheckRadius))
 		{
-			continue;
-		}
+			if (IsSupported(FVector2D(Actor->GetActorLocation())))
+			{
+				continue;
+			}
 
-		if (APlayableCharacter* Player = Cast<APlayableCharacter>(Actor))
-		{
-			if (!Player->IsDead() && !Player->GetCharacterMovement()->HasRootMotionSources())
+			if (APlayableCharacter* Player = Cast<APlayableCharacter>(Actor))
 			{
-				Player->Death();
+				UGeoCharacterMovementComponent const* const Movement = Player->GetGeoMovementComponent();
+				if (!Player->IsDead() && !Movement->IsDashing() && !Movement->HasRootMotionSources())
+				{
+					Player->Death();
+				}
+			}
+			else if (AGeoDeployableBase* Deployable = Cast<AGeoDeployableBase>(Actor))
+			{
+				// IsActive() flips false on the first Expire(), but the actor lingers (collision stays enabled on
+				// authority) through the delayed-destroy window and keeps matching this overlap — without this guard
+				// Expire() (and its cue) would re-fire every tick, looping the expire/recall sound.
+				if (Deployable->IsActive() && !Deployable->SurviveOverTheVoid())
+				{
+					Deployable->Expire();
+				}
 			}
 		}
-		else if (AGeoDeployableBase* Deployable = Cast<AGeoDeployableBase>(Actor))
+	}
+}
+
+void AGeoHexArena::ShakeHighlightedTiles()
+{
+	float const CurrentTime = GetWorld()->GetTimeSeconds();
+	bool bAnyShaking = false;
+	for (int32 Index = 0; Index < AppliedTileStates.Num(); ++Index)
+	{
+		if (AppliedTileStates[Index].bAlive && AppliedTileStates[Index].bHighlighted)
 		{
-			// IsActive() flips false on the first Expire(), but the actor lingers (collision stays enabled on
-			// authority) through the delayed-destroy window and keeps matching this overlap — without this guard
-			// Expire() (and its cue) would re-fire every tick, looping the expire/recall sound.
-			if (Deployable->IsActive() && !Deployable->SurviveOverTheVoid())
-			{
-				Deployable->Expire();
-			}
+			float const RandomPhase = FMath::FRandRange(0.f, 2.f * PI);
+			float const ShakeOffset = FMath::Sin(CurrentTime * ShakeSpeed + RandomPhase) * ShakeAmplitude;
+			FTransform ShakeTransform = GetTileTransform(TileToLocal(TileCoords[Index]));
+			ShakeTransform.AddToTranslation(FVector(ShakeOffset, 0.f, 0.f));
+			TileMeshComponent->UpdateInstanceTransform(Index, ShakeTransform, /*bWorldSpace*/ false,
+													   /*bMarkRenderStateDirty*/ false, /*bTeleport*/ true);
+			bAnyShaking = true;
 		}
+	}
+
+	if (bAnyShaking)
+	{
+		TileMeshComponent->MarkRenderStateDirty();
 	}
 }

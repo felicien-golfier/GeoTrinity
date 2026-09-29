@@ -41,14 +41,15 @@ class GEOTRINITY_API AGeoHexArena : public AGeoArena
 	GENERATED_BODY()
 
 public:
-	/** Creates the TileMeshComponent ISM and disables tick at start — fall checks are gated on the fight lifecycle. */
+	/** Creates the TileMeshComponent ISM. */
 	AGeoHexArena();
 
 	/** Registers the replicated tile state array. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	/** Rebuilds the grid and the ISM instances whenever the actor is edited or moved in the editor. */
 	virtual void OnConstruction(FTransform const& Transform) override;
-	/** Server. Kills every player inside FallCheckRadius standing over a destroyed tile or the surrounding void. */
+	/** Shakes the highlighted tiles; on the server once the fight commits, also kills every player inside
+	 * FallCheckRadius standing over a destroyed tile or the surrounding void. */
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Starts the fall checks: players are on the platform now. */
@@ -151,6 +152,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GeoHexArena", meta = (ClampMin = "0.0"))
 	float FallGraceMargin = 30.f;
 
+	/** Offset amplitude in world units of the shake of highlighted tiles — same shake as AGeoHexBarrier's. */
+	UPROPERTY(EditAnywhere, Category = "GeoHexArena", meta = (ClampMin = "0.0"))
+	float ShakeAmplitude = 4.f;
+
+	/** Oscillation speed in radians/sec of the shake of highlighted tiles. */
+	UPROPERTY(EditAnywhere, Category = "GeoHexArena", meta = (ClampMin = "0.0"))
+	float ShakeSpeed = 30.f;
+
 private:
 	/** Server-only core of both destroy entry points: kills the given instance indices and pushes the visuals (OnReps
 	 * don't fire on authority), so the mutation and its refresh can never drift apart. */
@@ -168,6 +177,9 @@ private:
 	/** Applies TileStates (alive scale + highlight custom data) to the ISM instances, diffing against
 	 * AppliedTileStates. */
 	void ApplyTileVisuals();
+	/** Offsets every alive highlighted tile along X by a random-phase sine. ApplyTileVisuals puts a tile back in place
+	 * when its highlight drops. */
+	void ShakeHighlightedTiles();
 	/** Records Requester's highlighted tile indices (empty = drop it), then refreshes. Server-only core of the
 	 * highlight API. */
 	void SetHighlightedTiles(AActor* Requester, TConstArrayView<int32> Indices);
@@ -192,6 +204,8 @@ private:
 
 	/** Last states applied to the ISM on this machine; lets ApplyTileVisuals touch only changed instances. */
 	TArray<FHexTileState> AppliedTileStates;
+	/** Server: true between CommitFight and EndFight, the only window the fall check runs in. */
+	bool bFallCheckEnabled = false;
 	TArray<FIntPoint> TileCoords;
 	TMap<FIntPoint, int32> CoordToIndex;
 

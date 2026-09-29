@@ -1,0 +1,26 @@
+[
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_Slam_High",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 0.4,
+  "volume": 0.5,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_Slam_High.wav"
+ },
+ {
+  "track": "Mech",
+  "sound": "SW_Mech_AirStutter",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 0.5,
+  "volume": 0.7,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_AirStutter.wav"
+ },
+ {
+  "track": "Metal",
+  "sound": "SW_Metal_CrackBright",
+  "package": "/Game/Art/SFX/Metal",
+  "time": 0.5,
+  "volume": 0.6,
+  "source": "SourceArt/Audio/Metal/SFX_Metal_CrackBright.wav"
+ }
+]
