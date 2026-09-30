@@ -1,0 +1,5 @@
+sound                                           ms   att -20dB       events    dominant line or partial     harmonic family tone  centroid Hz
+00                                            3868 2518.0   478  8 ev /83 ms        line 567>189 Hz 26ms                   -   11%   2473>2269  
+01                                            2828 530.0   100         1 ev         2175>2217 Hz steady                   -    0%   2880>58    
+02                                             150  96.0   nan 2 ev /132 ms                           -                   -    0%     75>52    
+03                                              15   0.0   nan         0 ev                           -                   -    0%    150>42    

@@ -1,0 +1,176 @@
+[
+ {
+  "track": "Loop",
+  "notify": "GeoLoopSoundNotify",
+  "time": 0.0,
+  "properties": {}
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Whoosh_Low",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 0.1667,
+  "volume": 0.5,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Whoosh_Low.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_1",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 1.4,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_1.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_1",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 1.4333,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_1.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_2",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 2.0,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_2.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_2",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 2.0333,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_2.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_3",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 2.5,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_3.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_3",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 2.5333,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_3.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_4",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 2.9,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_4.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_4",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 2.9333,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_4.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_1",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.2333,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_1.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_1",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.2667,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_1.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_2",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.5,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_2.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_2",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.5333,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_2.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_3",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.7333,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_3.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_3",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.7667,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_3.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Cut_4",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.9,
+  "volume": 0.8,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Cut_4.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_4",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 3.9333,
+  "volume": 0.45,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_4.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Inhale_Short",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 4.7667,
+  "volume": 0.7,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Inhale_Short.wav"
+ },
+ {
+  "track": "Loop",
+  "notify": "GeoLoopSoundNotify",
+  "time": 4.8667,
+  "properties": {
+   "play": false
+  }
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Vanish",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 4.8667,
+  "volume": 1.0,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Vanish.wav"
+ },
+ {
+  "track": "Ninja",
+  "sound": "SW_Ninja_Flap_4",
+  "package": "/Game/Art/SFX/Ninja",
+  "time": 4.9667,
+  "volume": 0.6,
+  "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flap_4.wav"
+ }
+]

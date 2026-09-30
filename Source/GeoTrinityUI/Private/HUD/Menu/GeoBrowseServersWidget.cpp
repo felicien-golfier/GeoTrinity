@@ -114,14 +114,24 @@ void UGeoBrowseServersWidget::OnFindSessionsComplete(bool bWasSuccessful)
 
 	SetSearchInProgress(false);
 
+	UGeoGameInstance* const GeoGameInstance = Cast<UGeoGameInstance>(GetGameInstance());
+	FName const SubsystemName = OnlineSubsystem->GetSubsystemName();
 	if (!bWasSuccessful)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UGeoBrowseServersWidget: FindSessions failed"));
+		GeoGameInstance->ShowSessionDebugMessage(
+			FString::Printf(TEXT("Server search failed on the %s online subsystem."), *SubsystemName.ToString()),
+			FColor::Red);
 		return;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("%hs: network version %u, found %d results"), __FUNCTION__,
 		   FNetworkVersion::GetLocalNetworkVersion(), SessionSearch->SearchResults.Num());
+	GeoGameInstance->ShowSessionDebugMessage(
+		FString::Printf(TEXT("Server search on %s: %d servers found. Your build id is %d; servers with another build id "
+							 "are hidden (LogOnlineSession 'Removed incompatible build')."),
+						*SubsystemName.ToString(), SessionSearch->SearchResults.Num(), GetBuildUniqueId()),
+		FColor::Cyan);
 
 	CachedResults = SessionSearch->SearchResults;
 	PopulateServerList();

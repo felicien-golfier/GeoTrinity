@@ -1,0 +1,12 @@
+Intro.json: 7.367s, sections [['Start', 0.0, 'None']], sequences ['SK_HexBoss_Sequence_Intro x1.00 from 0.000s'], blend 0.00/0.15
+SweepBeam.json: 4.033s, sections [['Start', 0.0, 'Fire'], ['Fire', 1.8, 'FireLoop'], ['FireLoop', 2.0667, 'FireLoop'], ['End', 3.2667, 'None']], sequences ['SK_HexBoss_Sequence_SweepBeam x1.00 from 0.000s'], blend 0.25/0.25
+CarvingRay.json: 3.167s, sections [['Start', 0.0, 'Fire'], ['Fire', 1.6, 'FireLoop'], ['FireLoop', 1.8667, 'FireLoop'], ['End', 2.2667, 'None']], sequences ['SK_HexBoss_Sequence_CarvingRay x1.00 from 0.000s'], blend 0.25/0.25
+ConeSpray.json: 3.133s, sections [['Start', 0.0, 'Fire'], ['Fire', 1.6667, 'FireLoop'], ['FireLoop', 1.9333, 'FireLoop'], ['End', 2.4333, 'None']], sequences ['SK_HexBoss_Sequence_ConeSpray x1.00 from 0.000s'], blend 0.25/0.25
+Bomb.json: 1.367s, sections [['Start', 0.0, 'Fire'], ['Fire', 0.7, 'None']], sequences ['SK_HexBoss_Sequence_Bomb x1.00 from 0.000s'], blend 0.25/0.25
+Turret.json: 1.100s, sections [['Start', 0.0, 'Fire'], ['Fire', 0.5, 'None']], sequences ['SK_HexBoss_Sequence_Turret x1.00 from 0.000s'], blend 0.25/0.25
+Death.json: 5.467s, sections [['Death', 0.0, 'None']], sequences ['SK_HexBoss_Sequence_Death x1.00 from 0.000s'], blend 0.08/0.00
+Star/Intro.json: 7.700s, sections [['Start', 0.0, 'None']], sequences ['SK_Star_Sequence_Intro x1.00 from 0.000s'], blend 0.00/0.15
+Star/Attack.json: 3.583s, sections [['Start', 0.0, 'Fire'], ['Fire', 1.4332, 'InternalFireLoop'], ['InternalFireLoop', 1.5167, 'InternalFireLoop'], ['End', 3.05, 'None']], sequences ['SK_Star_Sequence_Start x2.00 from 0.000s', 'SK_Star_Sequence_Loop x1.00 from 1.517s', 'SK_Star_Sequence_End x1.00 from 3.050s'], blend 0.25/0.25
+Star/DevastatingWave.json: 3.400s, sections [['Start', 0.0, 'Fire'], ['Fire', 2.0323, 'Fire'], ['End', 2.7692, 'None']], sequences ['SK_Star_Sequence_DevastatingWave x1.00 from 0.000s'], blend 0.25/0.25
+Star/PikeNova.json: 1.500s, sections [['Fire', 0.0, 'None'], ['Start', 0.0, 'Fire']], sequences ['SK_Star_Sequence_SpikeNova x1.00 from 0.000s'], blend 0.25/0.25
+Star/Death.json: 5.400s, sections [['Death', 0.0, 'None']], sequences ['SK_Star_Sequence_Death x1.00 from 0.000s'], blend 0.08/0.00

@@ -55,7 +55,10 @@ clip moves.
 
 Every clip from the track writer keys every bone with its full local transform, so moving a bone's rest pose
 leaves each clip holding the old one until that bone's keys are shifted by the same offset in every sequence on
-the skeleton. Rebuilding a skinned mesh from a static mesh resets its material slots to the static mesh's.
+the skeleton. Moving the origin itself follows the same rule: the root's keys are conjugated by the move so a root
+turn or scale keeps its pivot on the mesh, its children are shifted by it, and deeper bones keep their keys
+(`AI/Python/Anim/move_badge_origin.py`). Rebuilding a skinned mesh from a static mesh resets its material slots to
+the static mesh's.
 
 A socket's name and bone are read-only from script: add one under its default name, rename it in place, and
 reparent it through its own setter. Nothing from script removes a socket, so a re-run reuses one left under the

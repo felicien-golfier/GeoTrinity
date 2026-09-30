@@ -18,6 +18,19 @@ Tools\Build_Package.bat      # cook + stage + pak + archive — see BuildPackage
 Tools\Build_Server.bat       # GeoTrinityServer — source-engine machines only
 ```
 
+Every Tools script ends on a SUCCEEDED/FAILED line and waits for a key. `CI` (set by GitHub Actions) or
+`GEO_NO_PAUSE=1` skips the wait — set it when running one unattended, or the run never returns. A script that
+calls others (`BuildAndUpload_Itch.bat`) sets it for them, so the chain waits once, at the very end.
+
+`GEO_DRY_RUN=1` makes `Build_Package.bat`, `Push_Itch.bat` and `BuildAndUpload_Itch.bat` print each step that
+builds, touches `Build\` or pushes, prefixed `[dry run]`, instead of running it — use it to check a chain end to
+end. To test a script's real file handling, point `UE` at a sandbox engine whose `RunUAT.bat` only creates
+`Build\Windows`, and run a copy of the scripts outside the repo.
+
+**Never edit a `Tools\*.bat` while it is running.** cmd re-reads a batch file from a byte offset after each
+command, so a file rewritten under a running build resumes mid-line in the new text: stray pauses and a
+`FAILED (exit code 9009)` ("not recognized as a command"). Rerun it; nothing is wrong with the script.
+
 To resolve the engine by hand (the path has spaces — **keep it quoted**):
 
 ```powershell

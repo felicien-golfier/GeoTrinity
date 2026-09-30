@@ -21,8 +21,8 @@ import traceback
 import unreal
 
 LABEL = "GeoVFXPreview"
-REPORT = "%sGeoTrinity_VFXPreview.txt" % unreal.Paths.project_saved_dir()
-CAMERA = "%sGeoTrinity_PreviewCamera.json" % unreal.Paths.project_saved_dir()
+REPORT = "%sGeoTrinity_VFXPreview.txt" % (unreal.Paths.project_dir() + "AI/Output/")
+CAMERA = "%sGeoTrinity_PreviewCamera.json" % (unreal.Paths.project_dir() + "AI/Output/")
 
 out = []
 

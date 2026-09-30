@@ -10,7 +10,7 @@ first notify starts it and the montage's curves bend it to the intro's speed, so
 joined there by the outer ring's tick-tock.
 
 Run outside the editor: uv run AI/Python/Audio/hex_intro_mech_score.py [ship]
-Needs Saved/BoneMotion/Intro.json (AI/Python/Anim/dump_bone_motion.py). Writes the kit's sounds, a
+Needs AI/Audio/BoneMotion/Intro.json (AI/Python/Anim/dump_bone_motion.py). Writes the kit's sounds, a
 stem per continuous sound, the fight whir loop, cues.json — every notify AI/Python/Anim/boss_montage_sounds.py puts
 on the montage — and loop.json — the fight loop's layers and the curves bending them — into DRAFT, or into SourceArt
 with `ship`. The whole intro mixed, once per hum version, always goes to DRAFT, for listening: the Loop version as
@@ -28,8 +28,8 @@ import mech_kit as kit  # noqa: E402
 from hex_intro_score import FPS, WAKE, STILL_BEFORE, GATHER, FREEZE, BLAST, frame_samples, shake, per_sample, cue  # noqa: E402
 
 PROJECT = kit.PROJECT
-MOTION = PROJECT / "Saved" / "BoneMotion" / "Intro.json"
-DRAFT = PROJECT / "Saved" / "Audio" / "HexBossIntro" / "Draft" / "Mech"
+MOTION = PROJECT / "AI" / "Audio" / "BoneMotion" / "Intro.json"
+DRAFT = PROJECT / "AI" / "Audio" / "Drafts" / "HexBossIntro" / "Mech"
 SHIPPED_STEMS = PROJECT / "SourceArt" / "Audio" / "HexBossIntro"
 STEM_PACKAGE = "/Game/Art/SFX/Enemy/HexBoss"
 TAIL_SECONDS = 1.0

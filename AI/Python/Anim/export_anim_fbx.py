@@ -1,6 +1,6 @@
 """Exports every animation sequence under ANIM_FOLDER to FBX with its preview mesh in OUTPUT_FOLDER, one subfolder per class.
 
-Run via mcp-unreal execute_script. Report written to Saved/export_anim_fbx.txt.
+Run via mcp-unreal execute_script. Report written to AI/Output/export_anim_fbx.txt.
 """
 import os
 import traceback
@@ -8,7 +8,7 @@ import traceback
 import unreal
 
 ANIM_FOLDER = "/Game/Characters/Anim/ClassBadge"
-SAVED_DIR = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_saved_dir())
+SAVED_DIR = unreal.Paths.convert_relative_path_to_full((unreal.Paths.project_dir() + "AI/Output/"))
 OUTPUT_FOLDER = SAVED_DIR + "ClassBadgeAnimFbx/"
 REPORT = SAVED_DIR + "export_anim_fbx.txt"
 

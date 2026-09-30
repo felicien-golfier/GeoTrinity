@@ -44,6 +44,22 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Ends on a result line and waits for a key -- an elevated window otherwise closes before the result can
+# be read. Skipped under CI or GEO_NO_PAUSE, or when there is no console to read a key from.
+function Wait-AnyKey {
+    if ($env:CI -or $env:GEO_NO_PAUSE -or [Console]::IsInputRedirected) { return }
+    Write-Host ""
+    Write-Host "Press any key to close..."
+    [void][Console]::ReadKey($true)
+}
+trap {
+    Write-Host ""
+    Write-Host "==== Setup-Runner: FAILED ====" -ForegroundColor Red
+    Write-Host $_ -ForegroundColor Red
+    Wait-AnyKey
+    break
+}
+
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 
 # Both Join-Path and Test-Path throw rather than returning false when the drive itself is missing (a typo'd
@@ -117,3 +133,7 @@ if (-not $services) {
 Write-Host ""
 Write-Host "Done. Verify what CI will now resolve:"
 Write-Host "  .\Tools\Resolve-Engine.ps1 -Verbose      (should report: Engine from `$env:UE)"
+
+Write-Host ""
+Write-Host "==== Setup-Runner: SUCCEEDED ====" -ForegroundColor Green
+Wait-AnyKey

@@ -13,7 +13,7 @@ One sequence per badge feeds both layers of its AnimBlueprint (AI/Python/Anim/cl
 layer taking its own bones from it.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script. Re-runnable: rewrites each sequence in
-place. Report written to Saved/class_badge_idle.txt.
+place. Report written to AI/Output/class_badge_idle.txt.
 """
 import math
 
@@ -24,7 +24,7 @@ APE = unreal.AnimPoseExtensions
 MESH_FOLDER = "/Game/Characters/Meshes/Class"
 ANIM_FOLDER = "/Game/Characters/Anim/ClassBadge"
 GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_idle.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_idle.txt"
 
 ROOT, BODY = "Root", "Bottom"
 FPS = 30

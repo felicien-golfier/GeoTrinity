@@ -33,7 +33,7 @@ MONTAGES = [("{}.json".format(name), HEX + "SK_HexBoss_Montage_" + name, HEX_BON
      [(STAR + "SK_Star_Sequence_SpikeNova", None)]),
     ("Star/Death.json", STAR + "SK_Star_Montage_Death", STAR_BONES, [(STAR + "SK_Star_Sequence_Death", None)])]
 RATE = 120.0  # samples per second; a quarter of a frame at 30 fps
-OUT = unreal.Paths.project_saved_dir() + "BoneMotion/"
+OUT = unreal.Paths.project_dir() + "AI/Audio/BoneMotion/"
 REPORT = OUT + "report.txt"
 
 

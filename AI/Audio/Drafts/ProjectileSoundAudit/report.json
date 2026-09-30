@@ -1,0 +1,30 @@
+{
+ "projectiles": {
+  "/Game/AbilitySystem/Abilities/Square/Passive/BP_Square_Projectile_ShieldBurst": [
+   "/Game/Art/SFX/Bounce"
+  ],
+  "/Game/AbilitySystem/Abilities/Projectile/BP_DeployableSpawnerProjectile": [
+   "/Game/Art/SFX/Touched"
+  ],
+  "/Game/AbilitySystem/Abilities/Projectile/BP_GeoPooledProjectileBasic": [
+   "/Game/Art/SFX/Touched"
+  ],
+  "/Game/AbilitySystem/Abilities/Projectile/BP_GeoProjectileBasic": [
+   "/Game/Art/SFX/Touched"
+  ],
+  "/Game/AbilitySystem/Abilities/Triangle/BP_Triangle_Basic_GeoPooledProjectile": [],
+  "/Game/AbilitySystem/Abilities/Triangle/Turret/BP_TurretProjectile": []
+ },
+ "waves": {
+  "/Game/Art/SFX/Bounce": {
+   "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/Game_Art_SFX_Bounce.wav",
+   "ok": true,
+   "duration": 0.40149998664855957
+  },
+  "/Game/Art/SFX/Touched": {
+   "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/Game_Art_SFX_Touched.wav",
+   "ok": true,
+   "duration": 0.10448979586362839
+  }
+ }
+}

@@ -12,7 +12,8 @@
  * selected: the first navigation input (d-pad/stick) moves focus to GetInitialFocusWidget(), and any mouse
  * move while a menu button is selected returns focus to the panel so the gamepad highlight clears. Gamepad
  * B / BackSpace bubble up from the focused child and trigger HandleBackAction() on the innermost panel that
- * overrides it.
+ * overrides it. Escape bubbles the same way to HandleEscapeAction(), which only root menus override, so it
+ * leaves every nested sub-panel at once.
  */
 UCLASS(Abstract)
 class GEOTRINITYUI_API UGeoMenuPanelWidget : public UUserWidget
@@ -22,7 +23,7 @@ class GEOTRINITYUI_API UGeoMenuPanelWidget : public UUserWidget
 protected:
 	/** Marks the panel focusable so it can hold focus between selections. */
 	virtual void NativeConstruct() override;
-	/** Routes gamepad B / BackSpace to HandleBackAction; on any navigation input while the panel itself is focused, advances focus to GetInitialFocusWidget(). */
+	/** Routes gamepad B / BackSpace to HandleBackAction and Escape to HandleEscapeAction; on any navigation input while the panel itself is focused, advances focus to GetInitialFocusWidget(). */
 	virtual FReply NativeOnKeyDown(FGeometry const& InGeometry, FKeyEvent const& InKeyEvent) override;
 	/** Advances focus to GetInitialFocusWidget() on the first d-pad/stick input while the panel itself is focused. */
 	virtual FReply NativeOnAnalogValueChanged(FGeometry const& InGeometry,
@@ -36,6 +37,12 @@ protected:
 
 	/** Back/cancel input (gamepad B, BackSpace). Return true if consumed; default leaves the key unhandled. */
 	virtual bool HandleBackAction()
+	{
+		return false;
+	}
+
+	/** Escape input. Return true if consumed; default leaves it unhandled so it bubbles up to the root menu. */
+	virtual bool HandleEscapeAction()
 	{
 		return false;
 	}

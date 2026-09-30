@@ -1,0 +1,128 @@
+{
+ "/Game/Art/SFX/Coin_Flip": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/Coin_Flip.wav",
+  "ok": true,
+  "refs": [
+   "/Game/AbilitySystem/GameplayCues/GC_PillarDirectionIndicator",
+   "/Game/AbilitySystem/GameplayCues/GC_TurretRecall_BeamVFX"
+  ]
+ },
+ "/Game/Art/SFX/Lazer": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/Lazer.wav",
+  "ok": true,
+  "refs": [
+   "/Game/AbilitySystem/GameplayCues/GC_PillarDirectionIndicator",
+   "/Game/AbilitySystem/GameplayCues/GC_TurretRecall_BeamVFX"
+  ]
+ },
+ "/Game/Art/SFX/GaussShort": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/GaussShort.wav",
+  "ok": true,
+  "refs": [
+   "/Game/AbilitySystem/Abilities/Triangle/GA_Triangle_AutoProjectile"
+  ]
+ },
+ "/Game/Art/SFX/Touched": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/Touched.wav",
+  "ok": true,
+  "refs": [
+   "/Game/AbilitySystem/Abilities/Triangle/GA_Triangle_AutoProjectile",
+   "/Game/AbilitySystem/Abilities/Projectile/BP_DeployableSpawnerProjectile",
+   "/Game/AbilitySystem/Abilities/Projectile/BP_GeoPooledProjectileBasic",
+   "/Game/AbilitySystem/Abilities/Projectile/BP_GeoProjectileBasic"
+  ]
+ },
+ "/Game/Art/SFX/Bounce": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/Bounce.wav",
+  "ok": true,
+  "refs": [
+   "/Game/AbilitySystem/Abilities/Square/Passive/BP_Square_Projectile_ShieldBurst"
+  ]
+ },
+ "/Game/Art/SFX/Bottle_open_2": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/Bottle_open_2.wav",
+  "ok": true,
+  "refs": [
+   "/Game/Art/SFX/DT_GenericSound",
+   "/Game/AbilitySystem/Abilities/Triangle/Reload/BP_Deployable_BuffPickup"
+  ]
+ },
+ "/Game/Art/SFX/FlaskDrink": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/FlaskDrink.wav",
+  "ok": true,
+  "refs": [
+   "/Game/Art/SFX/DT_GenericSound",
+   "/Game/AbilitySystem/Abilities/Triangle/Reload/BP_Deployable_BuffPickup"
+  ]
+ },
+ "/Game/Art/SFX/Elec/ElectricImpact_01": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/ElectricImpact_01.wav",
+  "ok": true,
+  "refs": [
+   "/Game/Art/VFX/Data/DA_BuffFX"
+  ]
+ },
+ "/Game/Art/SFX/Bank/magicspellssfx1/Electric/Electric_1": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/Electric_1.wav",
+  "ok": true,
+  "refs": [
+   "/Game/Art/SFX/DT_GenericSound"
+  ]
+ },
+ "/Game/Art/SFX/Enemy/movesound": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/movesound.wav",
+  "ok": true,
+  "refs": [
+   "/Game/AbilitySystem/GameplayCues/GC_MoveSound"
+  ]
+ },
+ "/Game/Art/SFX/Bank/magicspellssfx1/Heal/Heal_2": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/Heal_2.wav",
+  "ok": true,
+  "refs": [
+   "/Game/Art/SFX/DT_GenericSound"
+  ]
+ },
+ "/Game/Art/SFX/Bank/menusfx/Misc/GetItem3": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/GetItem3.wav",
+  "ok": true,
+  "refs": [
+   "/Game/Art/SFX/DT_GenericSound"
+  ]
+ },
+ "/Game/Art/SFX/Bank/menusfx/Misc/GetItem5": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/GetItem5.wav",
+  "ok": true,
+  "refs": [
+   "/Game/Art/SFX/DT_GenericSound"
+  ]
+ },
+ "/Game/Art/SFX/Bank/menusfx/Misc/Merge3": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/Merge3.wav",
+  "ok": true,
+  "refs": [
+   "/Game/Art/SFX/DT_GenericSound"
+  ]
+ },
+ "/Game/HUD/Assets/SFX/pluck_001": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/pluck_001.wav",
+  "ok": true,
+  "refs": [
+   "/Game/HUD/Assets/SFX/ButtonHoverSound"
+  ]
+ },
+ "/Game/HUD/Assets/SFX/toggle_001": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/toggle_001.wav",
+  "ok": true,
+  "refs": [
+   "/Game/HUD/Assets/SFX/ButtonClickSound"
+  ]
+ },
+ "/Game/HUD/Assets/SFX/toggle_002": {
+  "file": "C:/GeoTrinity/Saved/ProjectileSoundAudit/all/toggle_002.wav",
+  "ok": true,
+  "refs": [
+   "/Game/HUD/Assets/SFX/ButtonClickSound"
+  ]
+ }
+}

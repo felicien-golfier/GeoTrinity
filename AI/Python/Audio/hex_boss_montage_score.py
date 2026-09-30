@@ -10,7 +10,7 @@ rings turn, the rattle how hard the boss shakes. Every curve starts and ends on 
 death's, whose blast cuts the loop.
 
 Run outside the editor: uv run AI/Python/Audio/hex_boss_montage_score.py [ship]
-Needs Saved/BoneMotion/<montage>.json (AI/Python/Anim/dump_bone_motion.py) and the fight loop's layers
+Needs AI/Audio/BoneMotion/<montage>.json (AI/Python/Anim/dump_bone_motion.py) and the fight loop's layers
 (SourceArt/Audio/HexBossIntro/loop.json, from hex_intro_mech_score.py). Writes each montage's cues.json and
 curves.json — what AI/Python/Anim/boss_montage_sounds.py puts on it — into DRAFT, or into SourceArt with `ship`.
 A preview of each, played between stretches of fight with its live phase looped, always goes to DRAFT.
@@ -29,9 +29,9 @@ import mech_kit as kit  # noqa: E402
 from hex_intro_score import FPS, shake  # noqa: E402
 
 PROJECT = kit.PROJECT
-MOTION = PROJECT / "Saved" / "BoneMotion"
+MOTION = PROJECT / "AI" / "Audio" / "BoneMotion"
 SHIPPED = PROJECT / "SourceArt" / "Audio" / "HexBossMontages"
-DRAFT = PROJECT / "Saved" / "Audio" / "HexBossMontages" / "Draft"
+DRAFT = PROJECT / "AI" / "Audio" / "Drafts" / "HexBossMontages"
 LOOP = intro.SHIPPED_STEMS / "loop.json"
 # The sounds' families: SourceArt folder and package
 FAMILIES = {"Mech": ("SourceArt/Audio/Mech", kit.PACKAGE),

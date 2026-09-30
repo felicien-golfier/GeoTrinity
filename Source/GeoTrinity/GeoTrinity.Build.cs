@@ -44,6 +44,9 @@ public class GeoTrinity : ModuleRules
 			"Sockets"
 		});
 
+		// UGeoGameInstance's server-list self-check queries Steam's lobby list directly.
+		AddEngineThirdPartyPrivateStaticDependencies(Target, "Steamworks");
+
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 

@@ -22,15 +22,15 @@ narrow side is wide, so they turn without the silhouette swelling.
 
 Outlines are authored in the source images' pixel space (341x341, Y down) so the numbers stay checkable
 against the art, then mapped to world: image up -> +X (forward), image right -> +Y. A badge is centred on
-the bounding box of all its parts together, or for one in CENTROID_ORIGIN on its footprint's centroid, where a
-part lifted over another counts once, so it turns about where its weight sits. It is scaled so its longest side is BOX, matching the 100-unit bounds of
-the SKM_Cube/Cone/Cylinder meshes it replaces — so all three keep one hitbox.
+the bounding box of all its parts together, so it turns about the middle of the mesh, and scaled so its longest
+side is BOX, matching the 100-unit bounds of the SKM_Cube/Cone/Cylinder meshes it replaces — so all three keep one
+hitbox.
 
 Caps are ear-clipped: the square and the triangle are concave, so a convex fan would fill their notches.
 A hole is cut by a slit: the outline runs in to the hole and back out along the same edge, so it stays one
 polygon to clip, and an edge walked both ways gets no side wall.
 
-Run via mcp-unreal execute_script. Summary written to Saved/class_badge_gen.json.
+Run via mcp-unreal execute_script. Summary written to AI/Output/class_badge_gen.json.
 """
 import collections
 import json
@@ -45,7 +45,6 @@ TOL = 1e-6  # area below which an ear-clip corner counts as flat
 BOX = 100.0  # longest XY side, matching the meshes these replace
 BODY_HEIGHT = {"SM_CircleBadge": 75.0, "SM_SquareBadge": 85.0, "SM_TriangleBadge": 83.2}  # a WEDGE's at its base
 WEDGE_TIP = 0.0  # share of its base height a WEDGE keeps at the badge's front
-CENTROID_ORIGIN = ("SM_TriangleBadge",)  # centred on its footprint's centroid rather than its box
 
 # --- Circle badge: a big disc bitten out around a small one floating free, in image pixels. ---
 CIRCLE_BIG = (169.5, 200.0, 129.0)  # cx, cy, radius
@@ -201,25 +200,12 @@ def wedge(x, back, front):
     return 1.0 + (WEDGE_TIP - 1.0) * (x - back) / (front - back)
 
 
-def centroid(outline):
-    """An outline's area centroid."""
-    area = signed_area(outline)
-    edges = [(a, b, a[0] * b[1] - b[0] * a[1]) for a, b in zip(outline, outline[1:] + outline[:1])]
-    return (sum((a[0] + b[0]) * c for a, b, c in edges) / (6.0 * area),
-            sum((a[1] + b[1]) * c for a, b, c in edges) / (6.0 * area))
-
-
 def frame(name):
     """The badge's centre in image pixels and its world units per pixel. make_class_badge_materials.py maps by it too."""
     parts = badge_parts()[name]
     xs = [p[0] for part in parts for p in part.outline]
     ys = [p[1] for part in parts for p in part.outline]
     scale = BOX / max(max(xs) - min(xs), max(ys) - min(ys))
-    if name in CENTROID_ORIGIN:
-        weights = [(abs(signed_area(part.outline)), centroid(part.outline)) for part in parts if not part.lift]
-        total = sum(weight for weight, _ in weights)
-        return (sum(weight * c[0] for weight, c in weights) / total,
-                sum(weight * c[1] for weight, c in weights) / total, scale)
     return (min(xs) + max(xs)) * 0.5, (min(ys) + max(ys)) * 0.5, scale
 
 
@@ -401,7 +387,7 @@ def main():
         result["error"] = str(exc)
         result["trace"] = traceback.format_exc()
 
-    with open(unreal.Paths.project_saved_dir() + "class_badge_gen.json", "w") as f:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "class_badge_gen.json", "w") as f:
         json.dump(result, f, indent=2)
 
 

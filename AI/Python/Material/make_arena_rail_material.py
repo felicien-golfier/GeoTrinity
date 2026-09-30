@@ -16,7 +16,7 @@ arena, holding that centre.
 
 Puts each placed wall on the engine's VR frame material, or already on the rail, onto the halo and its arena's
 overlay. The level is left dirty, never saved. Run through execute_script, outside PIE. Report written to
-Saved/arena_rail_material.txt.
+AI/Output/arena_rail_material.txt.
 """
 import unreal
 
@@ -25,7 +25,7 @@ FUNCTION_FOLDER = FOLDER + "/Functions"
 GENERIC = "/Game/Art/VFX/Generic/Materials/Functions"
 DITHER = "/Engine/Functions/Engine_MaterialFunctions02/Utility/DitherTemporalAA"
 CATEGORY = "GeoTrinity|Arena"
-REPORT = unreal.Paths.project_saved_dir() + "arena_rail_material.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "arena_rail_material.txt"
 OLD_WALL_MATERIAL = "/Engine/VREditor/UI/FrameMaterial.FrameMaterial"
 HALF_CUBE = 50.0  # the engine cube spans -50..50 cm on each local axis
 HALF_SQRT2 = 0.7071067811865476

@@ -27,7 +27,7 @@ authored at 30 fps against that rate.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py and AI/Python/Anim/class_badge_square_fire_piston.py, via mcp-unreal
 execute_script. Re-runnable: rewrites both sequences and montages in place. Report written to
-Saved/class_badge_square_sacrifice.txt.
+AI/Output/class_badge_square_sacrifice.txt.
 """
 import unreal
 
@@ -39,7 +39,7 @@ GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
 ANIM_PACKAGE = "/Game/Characters/Anim/ClassBadge/Square"
 AUTO_FIRE_SEQUENCE = ANIM_PACKAGE + "/SK_SquareBadge_Sequence_FirePiston"
 KEYHOLE_SOCKET = "SacrificeHole"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_square_sacrifice.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_square_sacrifice.txt"
 
 BODY, LEFT, RIGHT = "Bottom", "MandibleLeft", "MandibleRight"
 SLOT = "Bottom"

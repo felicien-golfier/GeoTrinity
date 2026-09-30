@@ -18,7 +18,7 @@ and matched back to the generated point they came from.
 Re-runnable: a re-run rebuilds both assets from the spec, which discards any animation authored on the old rig.
 
 Run AFTER AI/Python/Mesh/generate_hex_boss_mesh.py, via mcp-unreal execute_script.
-Report written to Saved/hex_boss_rig.json.
+Report written to AI/Output/hex_boss_rig.json.
 """
 import json
 import math
@@ -107,7 +107,7 @@ def rig_report(skeleton):
 def main():
     result = {}
     try:
-        with open(unreal.Paths.project_saved_dir() + SPEC_FILE) as f:
+        with open((unreal.Paths.project_dir() + "AI/Output/") + SPEC_FILE) as f:
             spec = json.load(f)
 
         static_mesh = unreal.load_asset(STATIC_MESH_PATH)
@@ -132,7 +132,7 @@ def main():
         result["ok"] = False
         result["error"] = str(exc)
         result["trace"] = traceback.format_exc()
-    with open(unreal.Paths.project_saved_dir() + "hex_boss_rig.json", "w") as f:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "hex_boss_rig.json", "w") as f:
         json.dump(result, f, indent=2)
 
 

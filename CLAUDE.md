@@ -10,6 +10,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 ## Big RULES
 - **NEVER run a build — ask the user and wait.** See the Build section above.
 - **NEVER close, kill, or restart the user's Unreal editor — nor launch one — not even to build.** It may hold unsaved work that closing destroys. When a build needs the editor closed, ask the user to close it and wait; never do it yourself.
+- **NEVER write anything into `Saved/`** — the user may wipe it any time. Sound references, drafts and reproductions go to `AI/Audio/` (map in its `CLAUDE.md`); script reports, probes and exports go to `AI/Output/`; throwaway files go to the session scratchpad.
 - ALWAYS read AI/CodingStyle.md before coding. If planing or just answering, don't, but if you write any line of code, read it.
 - When opening a cpp file, read it entirely.
 - ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
@@ -31,6 +32,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 | Structuring a material — functions, parameters, readable graphs | `AI/Materials.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |
 | Creating a sound effect end to end — route, files, synth, import, notify | `AI/SoundCreation.md` |
+| Sound references, drafts, reproductions, bone motion (the agent's sound workspace) | `AI/Audio/CLAUDE.md` |
 | Authoring or tuning an animation | `AI/MCP/MCP_Animation.md` |
 | Any MCP / Python editor automation | `AI/MCP/CLAUDE.md` |
 | Finding an existing automation script | `AI/Python/CLAUDE.md` |

@@ -5,6 +5,7 @@ REM This only works on a machine with a SOURCE engine: launcher (installed) buil
 REM libs for UnrealEditor and UnrealGame only -- there is no UnrealServer to link against, and no
 REM launcher option adds one. Resolve-Engine.ps1 -RequireSourceBuild decides that per-machine, so this
 REM script builds on the source-engine PC and explains itself on a launcher-only PC.
+REM Ends on a result line and waits for a key, unless CI or GEO_NO_PAUSE is set.
 setlocal
 REM Normalize away the trailing "Tools\.." so it does not leak into logs.
 for %%i in ("%~dp0..") do set "REPO=%%~fi"
@@ -17,8 +18,20 @@ if not defined UE (
   REM a quoted ) as a block terminator, so an escaped one there prints the caret literally.
   echo Cannot build the dedicated server on this machine ^(reason above^).
   echo Build it on CI instead: run the "Build GeoTrinity (Custom)" workflow with build_server = true.
-  exit /b 1
+  set "RC=1"
+  goto :finish
 )
 echo Engine: %UE%
 
-"%UE%\Engine\Build\BatchFiles\Build.bat" GeoTrinityServer Win64 Development -Project="%REPO%\GeoTrinity.uproject" -WaitMutex
+call "%UE%\Engine\Build\BatchFiles\Build.bat" GeoTrinityServer Win64 Development -Project="%REPO%\GeoTrinity.uproject" -WaitMutex
+set "RC=%errorlevel%"
+
+:finish
+echo.
+if "%RC%"=="0" (
+  echo ==== %~n0: SUCCEEDED ====
+) else (
+  echo ==== %~n0: FAILED ^(exit code %RC%^) ====
+)
+if not defined CI if not defined GEO_NO_PAUSE pause
+exit /b %RC%

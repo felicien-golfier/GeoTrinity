@@ -66,6 +66,30 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Launched on its own (double-click, "powershell -File" from Explorer), the window closes the moment this
+# ends and takes the answer or the error with it, so it reports and waits for a key. Only then, though:
+# the .bat wrappers capture its stdout, and "$ue = & Resolve-Engine.ps1" callers expect a bare value.
+$scriptLeaf = Split-Path -Leaf $MyInvocation.MyCommand.Path
+function Test-OwnsWindow {
+    if ($env:CI -or $env:GEO_NO_PAUSE) { return $false }
+    if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) { return $false }
+    return ([Environment]::GetCommandLineArgs() -join " ") -like "*$scriptLeaf*"
+}
+function Wait-AnyKey {
+    Write-Host ""
+    Write-Host "Press any key to close..."
+    [void][Console]::ReadKey($true)
+}
+trap {
+    if (Test-OwnsWindow) {
+        Write-Host ""
+        Write-Host "==== Resolve-Engine: FAILED ====" -ForegroundColor Red
+        Write-Host $_ -ForegroundColor Red
+        Wait-AnyKey
+    }
+    break
+}
+
 # Resolved in the body, not as a param default: $PSScriptRoot is empty during param-default evaluation
 # when the script is launched via "powershell -File" (which is how the .bat wrappers call it), and the
 # resulting Join-Path error masks whatever this script was actually trying to report.
@@ -180,3 +204,9 @@ machine with a source engine (the CI runner), or via the "Build GeoTrinity (Cust
 
 Write-Verbose "Engine from $from"
 Write-Output $engine
+
+if (Test-OwnsWindow) {
+    Write-Host ""
+    Write-Host "==== Resolve-Engine: SUCCEEDED -- engine from $from ====" -ForegroundColor Green
+    Wait-AnyKey
+}

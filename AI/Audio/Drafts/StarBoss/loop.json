@@ -1,0 +1,40 @@
+{
+ "layers": [
+  {
+   "sound": "SW_Ninja_Wind_Loop",
+   "package": "/Game/Art/SFX/Ninja",
+   "volume": 0.3,
+   "pitch": 1.0,
+   "pitch_curve": "WindSemitones",
+   "volume_curve": "WindDecibels",
+   "rest_decibels": 0.0,
+   "drift_semitones": 1.5,
+   "drift_period": 5.0,
+   "source": "SourceArt/Audio/Ninja/SFX_Ninja_Wind_Loop.wav"
+  },
+  {
+   "sound": "SW_Ninja_Whirl_Loop",
+   "package": "/Game/Art/SFX/Ninja",
+   "volume": 0.5,
+   "pitch": 1.0,
+   "pitch_curve": "WhirlSemitones",
+   "volume_curve": "WhirlDecibels",
+   "rest_decibels": -80.0,
+   "drift_semitones": 0.0,
+   "drift_period": 6.0,
+   "source": "SourceArt/Audio/Ninja/SFX_Ninja_Whirl_Loop.wav"
+  },
+  {
+   "sound": "SW_Ninja_Flutter_Loop",
+   "package": "/Game/Art/SFX/Ninja",
+   "volume": 0.4,
+   "pitch": 1.0,
+   "pitch_curve": "FlutterSemitones",
+   "volume_curve": "FlutterDecibels",
+   "rest_decibels": -80.0,
+   "drift_semitones": 0.0,
+   "drift_period": 6.0,
+   "source": "SourceArt/Audio/Ninja/SFX_Ninja_Flutter_Loop.wav"
+  }
+ ]
+}

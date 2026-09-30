@@ -23,7 +23,7 @@ def import_curve(package_path, asset_name, rows, csv_path=None):
     if channels not in CURVE_TYPES:
         raise ValueError("no curve class carries {} channels".format(channels))
 
-    csv_path = csv_path or "{}{}.csv".format(unreal.Paths.project_saved_dir(), asset_name)
+    csv_path = csv_path or "{}{}.csv".format((unreal.Paths.project_dir() + "AI/Output/"), asset_name)
     with open(csv_path, "w") as handle:
         for time in sorted(rows):
             handle.write(",".join("%.4f" % value for value in (time,) + tuple(rows[time])) + "\n")

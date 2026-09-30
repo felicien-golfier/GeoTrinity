@@ -253,7 +253,7 @@ def dump():
 
 
 def report_to(name, fn):
-    path = "%sGeoTrinity_%s.txt" % (unreal.Paths.project_saved_dir(), name)
+    path = "%sGeoTrinity_%s.txt" % ((unreal.Paths.project_dir() + "AI/Output/"), name)
     try:
         open(path, "w").write(fn())
     except Exception:

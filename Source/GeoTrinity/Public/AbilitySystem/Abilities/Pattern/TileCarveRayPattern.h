@@ -22,9 +22,10 @@ class GEOTRINITY_API UTileCarveRayPattern : public UBeamPattern
 protected:
 	/** Highlights the tile the beam is about to carve while it fires, then runs the regular beam tick. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
-	/** Destroys the tile the beam locked onto when it fired — never reached by a force-stopped pattern. */
+	/** Drops the tile highlight, then destroys the tile that was highlighted last — the destroy is skipped by a
+	 * force-stopped pattern. */
 	virtual void EndPattern(bool bForceStop = false) override;
-	/** Destroys the furthest arena tile the beam reaches, at the moment it fires. */
+	/** Highlights the furthest arena tile the beam reaches while it fires, and destroys it when the beam ends. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")
 	bool bDestroyLastTileHit = true;
 
@@ -36,4 +37,8 @@ private:
 	 * @param OutTile  Set to the furthest alive tile along the beam whenever an arena is returned.
 	 */
 	AGeoHexArena* FindLastTileHit(float SpentTime, FIntPoint& OutTile) const;
+
+	/** Server: the tile currently highlighted, so the tile that dies is always the one players were shown. Unset
+	 * until the beam first reaches a living tile, reset in EndPattern. */
+	TOptional<FIntPoint> HighlightedTile;
 };

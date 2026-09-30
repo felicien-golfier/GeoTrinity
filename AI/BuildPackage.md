@@ -29,6 +29,30 @@ package needs a source engine**, so package it on CI — run **Build GeoTrinity 
   `GeoTrinity_{branch}_{config}_{timestamp}` (branch from `git rev-parse --abbrev-ref HEAD` with `/`→`-`,
   timestamp `yyyyMMdd_HHmmss`, config `Development` unless specified), move `Windows\`'s contents up into it
   and remove the empty folder.
+- **Every package gets `Engine\Build\InstalledProjectBuild.txt`** (contents `GeoTrinity/GeoTrinity.uproject`),
+  written after archiving by `Build_Package.bat` and CI. Without it, a non-Shipping package writes its `Saved\`
+  (GameUserSettings.ini with the volumes, Enhanced Input key bindings, save slots) inside the build folder, so
+  each new build loses them. With it, the game counts as installed (`FApp::IsInstalled`), as Shipping already
+  does, and saves to `%LOCALAPPDATA%\GeoTrinity\Saved`. The raw RunUAT command does not write it, so add it by
+  hand. Launch with `-NotInstalled` to opt out.
 - Run the listen server: `GeoTrinity.exe` in that folder → MainMenu → Play Local → Host.
 - Packaged client logs to `%LOCALAPPDATA%\GeoTrinity\Saved\Logs`.
 - The cook takes several minutes — run it in the background and report the result.
+
+## Publishing to itch.io
+
+The game lives at https://exyoe.itch.io/geotrinity; the Windows build is the butler channel
+`exyoe/geotrinity:windows`.
+
+| Script | Does |
+|---|---|
+| `Tools\BuildAndUpload_Itch.bat [version]` | `Build_Package.bat`, then `Push_Itch.bat` if the package succeeded |
+| `Tools\Push_Itch.bat [version]` | Pushes the existing `Build\GeoTrinity.zip`, no build |
+
+- butler unpacks the zip and diffs its contents against the last push, uploading only what changed.
+- Build the zip with `tar -a -c -f` (as `Build_Package.bat` does), never Windows PowerShell's `Compress-Archive`
+  or `ZipFile`: both write `\` entry names, which butler reads as a file clashing with its folder and rejects
+  with "Two entries have the same name".
+- butler is installed in `C:\Program Files\Butler` (on the user PATH) and logged in once with `butler login`;
+  on CI, set a `BUTLER_API_KEY` secret instead.
+- Publishing is outward-facing: only push when the user asks for it.

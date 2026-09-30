@@ -77,10 +77,6 @@ class Paths:
     def project_dir():
         return PROJECT
 
-    @staticmethod
-    def project_saved_dir():
-        return PROJECT + "Saved/"
-
 
 assets = {}
 

@@ -23,11 +23,12 @@ a reference is `AI/MCP/Audacity/ListeningToSound.md`; driving Audacity is `AI/MC
 
 | What | Where |
 |---|---|
-| References, cut to the passage the user named | `C:\Users\Felou\Music\SFX\Reference\` |
-| A sound pack's references: full audio, video, `cuts/`, `labels.txt`, `survey.txt`, `README.md` | `C:\Users\Felou\Music\SFX\Reference\<Pack>\` |
+| Everything the agent makes that does not ship — never `Saved/`, which may be wiped | `AI/Audio/` (map in its `CLAUDE.md`) |
+| References, cut to the passage the user named | `AI/Audio/References/` |
+| A sound pack's references: full audio, video, `cuts/`, `labels.txt`, `survey.txt`, `README.md` | `AI/Audio/References/<Pack>/` |
 | Reproduction patches — recipes fitted to a reference, synthesis only | `AI/Python/Audio/Patches/<Pack>/<Sound>.json` |
-| A reproduction's synth, reference-then-synth A/B and picture | `Saved/Audio/Reproductions/<Sound>/` |
-| Drafts for the user to hear, a new name per iteration — `Saved` may be wiped | `Saved/Audio/<Sound>/Draft/` |
+| A reproduction's synth, reference-then-synth A/B and picture | `AI/Audio/Reproductions/<Sound>/` |
+| Drafts for the user to hear, a new name per iteration | `AI/Audio/Drafts/<Sound>/` |
 | Source files that ship — 16-bit PCM, peak −1 dBFS, checked in | `SourceArt/Audio/<Family>/SFX_<Name>.wav` |
 | An animation's score: its stems and `cues.json` | `SourceArt/Audio/<Animation>/` |
 | Sound Wave assets | `/Game/Art/SFX/<Family>/` as `SW_<Name>` |
@@ -166,7 +167,8 @@ tone beat against each other wherever they overlap.
 1. State the target as numbers: length, attack, centroid contour, band balance.
 2. Build or fit, then measure the result — `listen.py`, `match_reference.py compare` against a reference hit, or
    `compare_sections.py` against a reference section.
-3. Put a draft in `Draft/` and tell the user its path; only the user judges timbre.
+3. Put a draft in `Draft/` and play it for the user (`Start-Process <wav>`). For several files, open their folder
+   (`explorer.exe <folder>`) and play the preview. Only the user judges timbre.
 4. Turn their words into a measure and a parameter (`ListeningToSound.md`), and iterate.
 5. Once approved, write the `SFX_` file into `SourceArt/Audio/<Family>/` — from the script, or from Audacity with
    the layers on their own tracks and the `.aup3` saved beside it.

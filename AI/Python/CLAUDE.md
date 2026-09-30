@@ -20,6 +20,7 @@ top of each file.
 | `Niagara/` | Niagara systems and emitter stack editing | `AI/MCP/MCP_Niagara.md`, `AI/VFX.md` |
 | `Runtime/` | Reading and driving a running session or the editor world | `AI/MCP/MCP_PIE.md`, `MCP_Preview.md` |
 | `UI/` | Widget Blueprints and widget trees | `AI/MCP/MCP_UI.md` |
+| `Video/` | Scanning footage and rendering edit lists — run with `uv`, outside the editor | `AI/MCP/Video/CLAUDE.md` |
 
 ## Ability
 
@@ -58,7 +59,8 @@ or wire them in.
 | `class_badge_triangle_reload.py` | Triangle badge reload, heavy: braces with the needle drawn in, heaves the whole badge round a yaw turn, clunks past and rocks back; full-body slot |
 | `class_badge_wiring.py` | Swap the playable characters onto the badges: class data, character mesh, ability montages, materials |
 | `dump_bone_motion.py` | Sample each hex and star boss montage's bones in parent space to JSON, yaw unwrapped, with the rest pose, its sections and blends — the motion a sound score is timed from; a montage samples as its reference pose, so each of its sequences is sampled across the span it plays |
-| `export_anim_fbx.py` | Export every animation sequence under the class badge folder to FBX in `Saved/ClassBadgeAnimFbx`, one subfolder per class |
+| `export_anim_fbx.py` | Export every animation sequence under the class badge folder to FBX in `AI/Output/ClassBadgeAnimFbx`, one subfolder per class |
+| `move_badge_origin.py` | Rebuild one class badge where the generator now frames it, rewriting every clip on its skeleton so the motion stays the same on the mesh, logo mask re-centred |
 | `hex_boss_abilities.py` | Hex boss sweep beam, tile-carving ray and cone spray |
 | `hex_boss_death.py` | The three rings wander off axis, blow apart and settle |
 | `hex_boss_idle.py` | Rings turning against each other, the outer one breathing |
@@ -97,7 +99,7 @@ These run from a shell with `uv run <script>`, not through the editor; each decl
 | `dissect.py` | Take a sound apart off its bed — envelope, events, dominant lines on a 5 ms window, tracked partials and harmonic families, noise per octave, modulation, echo, stereo — with a picture; `survey` a pack in one line per sound; `sound_span` finds a sound's own span and how far under its peak it reaches, or cuts a render to a given depth |
 | `electric_layers.py` | Synthesise a seamless electric loop — high-voltage hum and corona swelling on top, crackle, rumble, static snaps and fizz — one WAV per layer for Audacity |
 | `fetch_reference.py` | Turn a sound-pack video into references: audio and 720p video, cuts on silence with contact sheets, on-screen names read by OCR into labelled spans, cuts named from `labels.txt` |
-| `fit_patch.py` | Fit a patch's free values to its reference by CMA-ES on a multi-resolution log-mel gap plus a brightness-contour term; compare, picture and reference-then-synth A/B into `Saved/Audio/Reproductions` |
+| `fit_patch.py` | Fit a patch's free values to its reference by CMA-ES on a multi-resolution log-mel gap plus a brightness-contour term; compare, picture and reference-then-synth A/B into `AI/Audio/Reproductions` |
 | `heavy_machine.py` | Heavy futuristic machine building blocks and one-shots — electric motors under load following turn speed, gear teeth, stick-slip strain, holding hum, clamp slam, seal hiss, release blast; every part sized |
 | `hex_intro_score.py` | Score the hex boss intro off its dumped motion as a heavy machine: strain and hum while the pieces shiver, crack, clamp and seal on each landing, a motor and a gear train per ring, the body straining through the gather, the release; writes the one-shots, stems, `cues.json` and a preview mix to the draft, or to `SourceArt` with `ship` |
 | `hex_boss_montage_score.py` | Score the hex boss's ability and death montages: kit one-shots on beats anchored to each montage's sections, and curves bending the fight loop — the engine spooling with the wind-up, out while the boss holds still, back on the hit; the whir following the rings' turn, the rattle the shake; the death cutting the loop on its blast; writes each montage's `cues.json` and `curves.json` to the draft, or to `SourceArt` with `ship`, and a preview of each, looped live phase included |
@@ -109,6 +111,7 @@ These run from a shell with `uv run <script>`, not through the editor; each decl
 | `metal_one_shots.py` | Write the reusable metal one-shots into `SourceArt/Audio/Metal`: the trailer clack's cracks |
 | `ninja_kit.py` | The ninja kit, air and cloth with no metal: air cuts and a flurry of them, blade swishes, sized whooshes, cloth snaps, a soft landing, a gust, inhales into a hard cut, a smoke-bomb vanish, and wind, whirl and cloth-flutter loops; writes each into `SourceArt/Audio/Ninja` with a kit preview |
 | `sfx_patch.py` | Render a JSON patch: band-limited oscillators, FM, inharmonic partials, shaped noise, random blips, under step envelopes, drive, echo, room, bit reduction; free values `{"fit": [value, low, high]}`, shared ones `"@name"` |
+| `zap_kit.py` | Small electric hits for a boosted shot's every hit, measured against a spell pack's electric shocks — a hash of discharges clumping in shrinking bursts, lurching noise lows, a tilted sizzle, faint gliding arcs, soft-clipped, no tone anywhere — in two styles (Zap, Crackle) of four variants, with a preview run at auto-fire rate; writes each into `SourceArt/Audio/Elec` with `ship` |
 | `split_on_silence.py` | Cut a reference montage into one WAV per sound wherever it falls silent against its own floor; `sound_spans` is imported by `fetch_reference.py` |
 | `star_boss_score.py` | Score the star boss with the ninja kit off its dumped motion: its fight loop (wind, whirl, flutter) and every montage's one-shots on beats found in the motion — an air cut per point stabbing out, an inhale into the still frames, a gust on the nova — with curves from the spin and the shake, looping sections tilted to close; writes `loop.json` and each montage's `cues.json` and `curves.json` to the draft, or to `SourceArt` with `ship`, and a preview of each |
 
@@ -152,7 +155,7 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 | Script | Purpose |
 |---|---|
 | `generate_bomb_mesh.py` | Round bomb mesh sized to replace the pillar |
-| `generate_class_badge_meshes.py` | The three class logo silhouettes, extruded to a height per class; the Triangle body thins toward its point and is centred on its centroid |
+| `generate_class_badge_meshes.py` | The three class logo silhouettes, extruded to a height per class; each centred on its box; the Triangle body thins toward its point |
 | `generate_hex_boss_mesh.py` | Hex boss body as three concentric hexagons, and the rig it emits |
 | `generate_star_mesh.py` | Star boss body: eight long points with counter-points between, a star-shaped hole through the heart |
 | `rig_hex_boss.py` | Turn that body into a skeletal mesh on a new skeleton |
@@ -199,6 +202,17 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 | `crosshair_cursor.py` | Crosshair software cursor, bound to the cursor slot |
 | `group_widgets.py` | Wrap existing canvas children into one panel without moving them |
 | `local_connect_menu.py` | Build a child panel inside an existing menu widget |
+| `main_menu_layout.py` | Centre the main menu button column and space its buttons evenly |
 | `pause_menu_setup.py` | Centered vertical menu of labeled button rows |
 | `second_player_gamepad_toggle.py` | The couch-coop gamepad row on the key-bindings widget |
 | `volume_sliders.py` | The four labelled volume sliders of the sound settings widget |
+
+## Video
+
+These run from a shell with `uv run <script>`, not through the editor, on the FFmpeg on PATH.
+
+| Script | Purpose |
+|---|---|
+| `video_scan.py` | See a video without watching it: timestamped contact sheets, scene cuts, loudness every 100 ms, a GPU transcript with word timings, and a timeline joining them per window with the loudest ranked; a span zooms in, keeping source times |
+| `video_bar.py` | When an on-screen bar empties and refills over a whole video — a recording player's deaths from their health bar |
+| `video_render.py` | Render an edit list in one FFmpeg pass: cuts from any sources, image and colour cards, source crop, a zoom window following keyed points, one-shot sounds placed on the timeline, framing to any size (fill with focus, fit, blurred fill), speed, text, transitions with per-clip hard cuts, word captions, a ducked music bed, loudness normalisation under a limiter |

@@ -19,7 +19,7 @@ the engine samples sequences at. The End sections run at that same rate. Everyth
 the montage goes in the Top slot, so the body's own layer is left alone.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script. Re-runnable: rewrites the sequence and
-the montage in place. Report written to Saved/class_badge_square_fire.txt.
+the montage in place. Report written to AI/Output/class_badge_square_fire.txt.
 """
 import math
 
@@ -32,7 +32,7 @@ MESH_PATH = "/Game/Characters/Meshes/Class/SKM_SquareBadge"
 ANIM_PACKAGE = "/Game/Characters/Anim/ClassBadge/Square"
 SEQUENCE_NAME = "SK_SquareBadge_Sequence_Fire"
 MONTAGE_NAME = "SK_SquareBadge_Montage_Fire"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_square_fire.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_square_fire.txt"
 
 BODY, LEFT, RIGHT = "Bottom", "MandibleLeft", "MandibleRight"
 OUTWARD = {LEFT: -1.0, RIGHT: 1.0}

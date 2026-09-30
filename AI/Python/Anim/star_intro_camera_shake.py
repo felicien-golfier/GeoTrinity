@@ -233,5 +233,5 @@ except Exception:
     import traceback
     LOG.append(traceback.format_exc())
 
-with open(unreal.Paths.project_saved_dir() + REPORT, "w") as handle:
+with open((unreal.Paths.project_dir() + "AI/Output/") + REPORT, "w") as handle:
     handle.write("\n".join(LOG))

@@ -23,7 +23,7 @@ skinned mesh and matched back to the generated point they came from.
 Re-runnable: a re-run rebuilds the mesh and skeleton in place from the same hierarchy, so the clips survive it.
 
 Run AFTER AI/Python/Mesh/generate_star_mesh.py, via mcp-unreal execute_script.
-Report written to Saved/star_rig.json.
+Report written to AI/Output/star_rig.json.
 """
 import json
 import math
@@ -125,7 +125,7 @@ def bind_vertices(mesh, points, tips):
 def main():
     result = {}
     try:
-        with open(unreal.Paths.project_saved_dir() + SPEC_FILE) as f:
+        with open((unreal.Paths.project_dir() + "AI/Output/") + SPEC_FILE) as f:
             spec = json.load(f)
 
         skeleton = unreal.load_asset(SKELETON_PATH)
@@ -151,7 +151,7 @@ def main():
         result["ok"] = False
         result["error"] = str(exc)
         result["trace"] = traceback.format_exc()
-    with open(unreal.Paths.project_saved_dir() + "star_rig.json", "w") as f:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "star_rig.json", "w") as f:
         json.dump(result, f, indent=2)
 
 

@@ -13,7 +13,12 @@
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "TimerManager.h"
 #include "Tool/Team.h"
+
+THIRD_PARTY_INCLUDES_START
+#include "steam/steam_api.h"
+THIRD_PARTY_INCLUDES_END
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -56,12 +61,17 @@ void UGeoGameInstance::Init()
 	FGenericTeamId::SetAttitudeSolver(&GeoAttitudeSolver);
 
 	GEngine->OnNetworkFailure().AddUObject(this, &UGeoGameInstance::OnNetworkFailure);
+	GEngine->OnTravelFailure().AddUObject(this, &UGeoGameInstance::OnTravelFailure);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // SESSION
 // ---------------------------------------------------------------------------------------------------------------------
 FName const UGeoGameInstance::GameSessionKey(TEXT("GEOGAME"));
+
+// The one on-screen slot every session debug message shares, so each replaces the last.
+static int32 const SessionDebugMessageKey = 0x6E0;
+static float const SessionDebugMessageSeconds = 15.f;
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGameInstance::CreateSession(FOnlineSessionSettings SessionSettings, FString const& MapPackageName)
@@ -72,6 +82,8 @@ void UGeoGameInstance::CreateSession(FOnlineSessionSettings SessionSettings, FSt
 	}
 
 	SessionSettings.Set(GameSessionKey, 1, EOnlineDataAdvertisementType::ViaOnlineService);
+	GetTimerManager().ClearTimer(OwnLobbyCheckTimer);
+	GEngine->RemoveOnScreenDebugMessage(SessionDebugMessageKey);
 	DestroySessionThen(
 		[this, SessionSettings, MapPackageName]()
 		{
@@ -92,11 +104,90 @@ void UGeoGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 	{
 		UE_LOG(LogTemp, Log, TEXT("%hs: session created, opening %s"), __FUNCTION__, *PendingMapURL);
 		UGameplayStatics::OpenLevel(this, FName(*PendingMapURL), true, TEXT("listen"));
+		// Lets Steam index the new lobby before asking for the list.
+		GetTimerManager().SetTimer(OwnLobbyCheckTimer, this, &UGeoGameInstance::CheckOwnLobbyListed, 5.f, false);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("%hs: failed to create session '%s'"), __FUNCTION__, *SessionName.ToString());
+		ReportSessionError(FString::Printf(TEXT("Could not create the server: %s refused to create the session "
+												"(details in the log, LogOnlineSession)."),
+										   *Online::GetSubsystem(GetWorld())->GetSubsystemName().ToString()));
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::CheckOwnLobbyListed()
+{
+	FName const SubsystemName = Online::GetSubsystem(GetWorld())->GetSubsystemName();
+	if (SubsystemName != STEAM_SUBSYSTEM)
+	{
+		ShowSessionDebugMessage(
+			FString::Printf(TEXT("SERVER NOT LISTED: hosted on the %s online subsystem, not Steam. Steam failed to start "
+								 "(Steam not running, or a second game instance on this PC)."),
+							*SubsystemName.ToString()),
+			FColor::Red);
+	}
+	else
+	{
+		ISteamMatchmaking* const Matchmaking = SteamMatchmaking();
+		Matchmaking->AddRequestLobbyListResultCountFilter(100);
+		Matchmaking->AddRequestLobbyListDistanceFilter(k_ELobbyDistanceFilterDefault);
+		// The Steam subsystem suffixes an int32 session key with "_i" in the lobby data.
+		Matchmaking->AddRequestLobbyListNumericalFilter(TCHAR_TO_UTF8(*(GameSessionKey.ToString() + TEXT("_i"))), 1,
+														k_ELobbyComparisonEqual);
+		OwnLobbyListCall = Matchmaking->RequestLobbyList();
+		ShowSessionDebugMessage(TEXT("Checking whether this server is in the server list..."), FColor::Yellow);
+		GetTimerManager().SetTimer(OwnLobbyCheckTimer, this, &UGeoGameInstance::PollOwnLobbyListed, 0.25f, true);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::PollOwnLobbyListed()
+{
+	bool bCallFailed = false;
+	if (SteamUtils()->IsAPICallCompleted(OwnLobbyListCall, &bCallFailed))
+	{
+		GetTimerManager().ClearTimer(OwnLobbyCheckTimer);
+
+		LobbyMatchList_t LobbyList;
+		bool bResultFailed = false;
+		bool const bGotResult = SteamUtils()->GetAPICallResult(OwnLobbyListCall, &LobbyList, sizeof(LobbyList),
+															   LobbyMatchList_t::k_iCallback, &bResultFailed);
+		if (!bGotResult || bCallFailed || bResultFailed)
+		{
+			ShowSessionDebugMessage(TEXT("Server list check failed: Steam did not answer the lobby query."), FColor::Red);
+		}
+		else
+		{
+			CSteamID const LocalSteamId = SteamUser()->GetSteamID();
+			bool bOwnLobbyListed = false;
+			for (int32 LobbyIndex = 0; LobbyIndex < static_cast<int32>(LobbyList.m_nLobbiesMatching); ++LobbyIndex)
+			{
+				CSteamID const LobbyId = SteamMatchmaking()->GetLobbyByIndex(LobbyIndex);
+				bOwnLobbyListed |= SteamMatchmaking()->GetLobbyOwner(LobbyId) == LocalSteamId;
+			}
+
+			FString const Summary = FString::Printf(
+				TEXT("(%u GeoTrinity lobbies listed near you, build id %d: a player only sees servers with the same "
+					 "build id)"),
+				LobbyList.m_nLobbiesMatching, GetBuildUniqueId());
+			ShowSessionDebugMessage(
+				(bOwnLobbyListed ? TEXT("SERVER LISTED: Steam lists your server. ")
+								 : TEXT("SERVER NOT LISTED: Steam's lobby list does not contain your server. "))
+					+ Summary,
+				bOwnLobbyListed ? FColor::Green : FColor::Red);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::ShowSessionDebugMessage(FString const& Message, FColor const Color)
+{
+	GEngine->AddOnScreenDebugMessage(SessionDebugMessageKey, SessionDebugMessageSeconds, Color, Message);
+	GetTimerManager().SetTimer(
+		SessionDebugMessageTimer, []() { GEngine->RemoveOnScreenDebugMessage(SessionDebugMessageKey); },
+		SessionDebugMessageSeconds, false);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -134,17 +225,40 @@ void UGeoGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCo
 	{
 		UE_LOG(LogTemp, Error, TEXT("%hs: failed to join session '%s' (%s)"), __FUNCTION__, *SessionName.ToString(),
 			   LexToString(Result));
+		ReportSessionError(FString::Printf(TEXT("Could not join the server: %s."), LexToString(Result)));
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGameInstance::OnNetworkFailure(UWorld* /*World*/, UNetDriver* NetDriver, ENetworkFailure::Type /*FailureType*/,
-										FString const& /*ErrorString*/)
+void UGeoGameInstance::OnNetworkFailure(UWorld* /*World*/, UNetDriver* NetDriver, ENetworkFailure::Type FailureType,
+										FString const& ErrorString)
 {
+	ReportSessionError(
+		FString::Printf(TEXT("Network failure (%s): %s"), ENetworkFailure::ToString(FailureType), *ErrorString));
 	if (NetDriver && NetDriver->GetNetMode() == NM_Client)
 	{
 		DestroySessionThen([]() {});
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::OnTravelFailure(UWorld* /*World*/, ETravelFailure::Type FailureType, FString const& ErrorString)
+{
+	ReportSessionError(
+		FString::Printf(TEXT("Travel failure (%s): %s"), ETravelFailure::ToString(FailureType), *ErrorString));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::ReportSessionError(FString const& Message)
+{
+	UE_LOG(LogTemp, Error, TEXT("%hs: %s"), __FUNCTION__, *Message);
+	PendingSessionError += PendingSessionError.IsEmpty() ? Message : TEXT("\n") + Message;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FString UGeoGameInstance::TakeSessionError()
+{
+	return MoveTemp(PendingSessionError);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

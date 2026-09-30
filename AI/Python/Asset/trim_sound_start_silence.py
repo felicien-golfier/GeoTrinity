@@ -2,7 +2,7 @@
 
 Run via mcp-unreal execute_script. Re-runnable: a wave already starting within PRE_ROLL_SECONDS is left alone.
 Looping waves are skipped, since cutting their head changes the loop. The reimport keeps the asset's own settings;
-the report flags any that moved anyway. Report written to Saved/trim_sound_start_silence.txt.
+the report flags any that moved anyway. Report written to AI/Output/trim_sound_start_silence.txt.
 """
 import array
 import os
@@ -16,7 +16,7 @@ ONSET_DB_BELOW_PEAK = 40.0
 PRE_ROLL_SECONDS = 0.001
 KEPT_SETTINGS = ["sound_class_object", "attenuation_settings", "concurrency_set", "sound_submix_object", "volume",
                  "pitch", "looping"]
-SAVED_DIR = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_saved_dir())
+SAVED_DIR = unreal.Paths.convert_relative_path_to_full((unreal.Paths.project_dir() + "AI/Output/"))
 WORK_FOLDER = SAVED_DIR + "TrimSoundStartSilence/"
 REPORT = SAVED_DIR + "trim_sound_start_silence.txt"
 

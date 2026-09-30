@@ -1,0 +1,162 @@
+[
+ {
+  "track": "Tremor",
+  "sound": "SW_HexIntro_Tremor_Outer",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.45,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Tremor_Outer.wav"
+ },
+ {
+  "track": "Tremor",
+  "sound": "SW_HexIntro_Tremor_Mid",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.45,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Tremor_Mid.wav"
+ },
+ {
+  "track": "Tremor",
+  "sound": "SW_HexIntro_Tremor_Core",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.45,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Tremor_Core.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Metal_Crack",
+  "package": "/Game/Art/SFX/Metal",
+  "time": 1.3333,
+  "volume": 0.7,
+  "source": "SourceArt/Audio/Metal/SFX_Metal_Crack.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Machine_Slam_Low",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 1.3333,
+  "volume": 0.49,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_Machine_Slam_Low.wav"
+ },
+ {
+  "track": "Servo",
+  "sound": "SW_HexIntro_Servo_Outer",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 1.3333,
+  "volume": 0.15,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Servo_Outer.wav"
+ },
+ {
+  "track": "Gears",
+  "sound": "SW_HexIntro_Gears_Outer",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 1.3333,
+  "volume": 0.2,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Gears_Outer.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Machine_Hiss",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 1.4033,
+  "volume": 0.2,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_Machine_Hiss.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Metal_Crack",
+  "package": "/Game/Art/SFX/Metal",
+  "time": 2.2,
+  "volume": 0.85,
+  "source": "SourceArt/Audio/Metal/SFX_Metal_Crack.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Machine_Slam_Mid",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 2.2,
+  "volume": 0.595,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_Machine_Slam_Mid.wav"
+ },
+ {
+  "track": "Servo",
+  "sound": "SW_HexIntro_Servo_Mid",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 2.2,
+  "volume": 0.15,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Servo_Mid.wav"
+ },
+ {
+  "track": "Gears",
+  "sound": "SW_HexIntro_Gears_Mid",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 2.2,
+  "volume": 0.2,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Gears_Mid.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Machine_Hiss",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 2.27,
+  "volume": 0.2,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_Machine_Hiss.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Metal_Crack",
+  "package": "/Game/Art/SFX/Metal",
+  "time": 2.9333,
+  "volume": 1.0,
+  "source": "SourceArt/Audio/Metal/SFX_Metal_Crack.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Machine_Slam_High",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 2.9333,
+  "volume": 0.7,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_Machine_Slam_High.wav"
+ },
+ {
+  "track": "Servo",
+  "sound": "SW_HexIntro_Servo_Core",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 2.9333,
+  "volume": 0.15,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Servo_Core.wav"
+ },
+ {
+  "track": "Gears",
+  "sound": "SW_HexIntro_Gears_Core",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 2.9333,
+  "volume": 0.2,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Gears_Core.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Machine_Hiss",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 3.0033,
+  "volume": 0.2,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_Machine_Hiss.wav"
+ },
+ {
+  "track": "Strain",
+  "sound": "SW_HexIntro_Strain",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 3.4667,
+  "volume": 0.6,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_HexIntro_Strain.wav"
+ },
+ {
+  "track": "Lock",
+  "sound": "SW_Machine_Blast",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 4.9667,
+  "volume": 1.0,
+  "source": "Saved/Audio/HexBossIntro/Draft/HeavyMachine/SFX_Machine_Blast.wav"
+ }
+]

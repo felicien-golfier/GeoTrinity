@@ -53,22 +53,10 @@ first for connection, the selection model and the tool arguments that never reac
 - Frequent sounds are the shortest and least tonal; rare sounds carry more layers and length.
 - Lengths: UI 30–150 ms, shot 80–250 ms, hit 100–300 ms, pickup 150–400 ms, power-up 300–800 ms, explosion 0.5–1.5 s.
 - A sound heard many times a second ships as three or four variants a semitone or two apart.
-- Electricity is never a tone: it is a dense irregular train of broadband discharges, each a thin vertical stripe
-  from the lows to 16–20 kHz, with a centroid at 7–10 kHz and a near-flat spectrum from 300 Hz to 15 kHz.
-- An electric impact is ~0.5 s of that crackle over a heavy thump below 150 Hz, stopping abruptly, then a low
-  rumble and a thin hum near 1 and 2 kHz decaying over seconds.
-- No exposed generator makes an irregular impulse train; synthesise that layer as a WAV and import it —
-  `AI/Python/Audio/electric_layers.py` writes an electric loop's layers.
-- A discharge is a noise burst decaying over about half a millisecond, not a single-sample spike: at 2–3 thousand
-  per second they overlap into the dense crackle, crest about 15–18 dB; spikes alone read thin and ticky.
-- Static over an electric bed is sparse: short bright snaps a few times a second and an occasional sputtering fizz.
-- The crackle bed sits far under the rest, about 24 dB; at equal level it swamps the snaps.
-- A clean harmonic series whose brightness and pitch swell reads as a brass instrument, not as high voltage; an
-  electric loop stays pitchless.
 
 ## Cinematic references
 
-Measured from a cinematic sound pack, each cut in `Music\SFX\Reference\Cinematic_*.wav`; the numbers are targets
+Measured from a cinematic sound pack, each cut in `AI/Audio/References/Cinematic_*.wav`; the numbers are targets
 for the listening loop. Epic sounds like these belong mostly to cinematics and animations — an intro, a death, a
 phase change.
 
@@ -99,7 +87,7 @@ phase change.
 
 Sounds from commercial game packs, each reproduced by a fitted patch in `AI/Python/Audio/Patches/<Pack>/`
 (`ListeningToSound.md`, Reproducing a sound with a patch); the anatomy is the fit's own values. Each pack's
-`README.md` in `Music\SFX\Reference\` holds its source and the rest of its sounds.
+`README.md` in `AI/Audio/References/` holds its source and the rest of its sounds.
 
 | Sound | Anatomy |
 |---|---|
@@ -194,6 +182,60 @@ Taken from sound designers explaining their own game sounds.
 - A sound set in the background is quieter and duller together — low-passed near 6 kHz, not only turned down.
 - A machine made of small-machine sounds — clinks, bike ticks, bar rings, all above 1 kHz, sparse and short —
   reads as a toy whatever its timing; the same timing on low, dense parts reads as heavy.
+
+## Electricity
+
+Measured from a spell pack's electric one-shots and sci-fi zaps (`AI/Audio/References/ElecBank/`).
+
+- Electricity is irregular everywhere: no layer of it repeats a cycle. Its core is noise, not a tone — a spell
+  pack's electric shocks put 1–2 % of their energy in partials.
+- Its lows are lurching noise, the waveform jumping between levels at uneven 2–10 ms steps, never a hum: a
+  periodic buzz or a sine body under a crack reads as a knock on a table.
+- Its highs are a hash of discharges, 300–1000 a second, clumping into bursts 15–40 ms long at uneven gaps, the
+  level stuttering 16–28 times a second, 4–6 dB deep.
+- Above 2 kHz is as loud as below 300 Hz; a discharge is broadband, so the lows and the hash move together.
+- Arcs whistle through it: narrow lines at 1.5–8 kHz gliding up or down an octave over 30–100 ms, a few per
+  sound, 10–15 dB under the hash — the "zzip" that names it electric.
+- It swells in over 10–50 ms rather than striking: an electric hit is a burst of hash, not a click and a thud.
+- A clean, steady harmonic series whose brightness and pitch swell reads as a brass instrument, not as high voltage.
+- An electric impact is ~0.5 s of crackle over a heavy thump below 150 Hz, stopping abruptly, then a low rumble and
+  a thin hum near 1 and 2 kHz decaying over seconds.
+- A crackle is a dense irregular train of broadband discharges, each a noise burst decaying over about half a
+  millisecond: at 2–3 thousand per second they overlap, crest about 15–18 dB; single-sample spikes read thin.
+- No exposed generator makes an irregular impulse train; synthesise that layer as a WAV and import it —
+  `AI/Python/Audio/electric_layers.py` writes an electric loop's layers, `zap_kit.py` its small hits.
+- Static over an electric bed is sparse: short bright snaps a few times a second and an occasional sputtering fizz.
+- The crackle bed sits far under the rest, about 24 dB; at equal level it swamps the snaps.
+- A small electric hit is ~250 ms of that: hash and lurching lows swelling in within ~5 ms, four to eight clumps
+  shrinking, one or two arcs gliding through, a few sparks after. Shorter than three clumps, it stops reading as
+  electric.
+
+## Satisfying hits
+
+A hit satisfies when it confirms the action on the frame, has weight, and resolves cleanly, every time without
+tiring the ear.
+
+- The transient lands on the frame: full level within 1–3 ms, the loudest instant of the sound. A slow attack
+  reads as late.
+- Weight comes from a short body at 80–200 Hz under the transient, dying within ~60 ms; a hit with only highs
+  reads as a tick, one with a long low tail as mud.
+- The body is made of the sound's own material — noise lows for a noise sound, a low mode for struck metal; a
+  clean sine thump under something else reads as a separate knock on a table.
+- It is front-loaded and decays in one clean shape — loudest first, each part quieter than the last, no later
+  bump louder than its start — and ends settled, not cut.
+- One characteristic element carries its identity (a buzz, a ring, a crunch) and stays audible after the
+  transient; a hit made only of a crack and a thump is generic.
+- Every layer owns its band — sub, body, snap, sizzle — with their attacks aligned, so the stack reads as one
+  object; overlapping layers mask each other into mush.
+- Saturation gives density and loudness at the same peak and lets a small hit read on small speakers; soft
+  clipping the mix fuses the layers. Too much flattens every hit to the same size.
+- A short tonal element — a ping, a zing, a ring an octave or two above the body — reads as confirmation; pure
+  noise confirms less.
+- A hit heard several times a second is short (100–250 ms), sits a little under the shot that caused it, and
+  darker than 5 kHz centroid; brightness and length are what make it tiring.
+- Hits in a row vary — three or four variants, a semitone or two apart, never the same twice running — or the run
+  sounds like a machine gun of one sample.
+- Contrast makes a hit: a dip before it, or a weaker sound for hits that do nothing, makes the real one heavier.
 
 ## Heavy machines
 

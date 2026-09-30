@@ -30,7 +30,7 @@ DURATION = 3.0
 # resolve to the real per-stack damage boost instead of 0.
 MAGNITUDE_DATA_TAG = "Status.Buff.DamageBoost"
 
-REPORT = "C:/GeoTrinity/Saved/triangle_momentum_report.txt"
+REPORT = "C:/GeoTrinity/AI/Output/triangle_momentum_report.txt"
 lines = []
 
 

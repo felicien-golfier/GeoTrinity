@@ -3,7 +3,7 @@
 Run via mcp-unreal execute_script. Re-runnable: an existing Sound Wave is reimported in place; a `_Loop` one is marked
 looping and to play when silent. A Sound Wave in a destination package whose source file is gone is deleted, unless something still
 references it.
-Report written to Saved/import_sound_waves.txt.
+Report written to AI/Output/import_sound_waves.txt.
 """
 import glob
 import os
@@ -23,7 +23,7 @@ FOLDERS = [
 FILE_PREFIX = "SFX_"
 ASSET_PREFIX = "SW_"
 LOOP_SUFFIX = "_Loop"  # a seamless loop, marked looping
-REPORT = unreal.Paths.project_saved_dir() + "import_sound_waves.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "import_sound_waves.txt"
 
 
 def referencers(package):

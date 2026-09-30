@@ -14,7 +14,7 @@ Layout, world XY:
 - Tutorial: a rectangle.
 
 Barrier walls are left in their fight-off state, where BeginPlay puts them. The level is left dirty, never saved.
-Run through execute_script, outside PIE. Report written to Saved/arena_walls.txt.
+Run through execute_script, outside PIE. Report written to AI/Output/arena_walls.txt.
 """
 import math
 import traceback
@@ -28,7 +28,7 @@ HALF_WIDTH = WALL_SCALE_Y * 50.0  # the engine cube spans -50..50 cm
 HALF_FLOOR = 500.0  # Floor_Mesh spans -500..500 cm, pivot centred
 HEX_WALL_APOTHEM = 1950.0  # hex arena centre to the walls' inner face
 HALO = "/Game/Art/VFX/Arena/MI_ArenaRailHalo"
-REPORT = unreal.Paths.project_saved_dir() + "arena_walls.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "arena_walls.txt"
 LOG = []
 
 

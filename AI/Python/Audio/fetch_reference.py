@@ -11,7 +11,7 @@ uv run AI/Python/Audio/fetch_reference.py cut <Name> [--silence dB] [--gap s] [-
 uv run AI/Python/Audio/fetch_reference.py frames <Name> <every s> [--crop x y w h]   a montage with no silences
 uv run AI/Python/Audio/fetch_reference.py labels <Name> --crop x y w h   OCR the name shown over each sound
 uv run AI/Python/Audio/fetch_reference.py name <Name> <labels.txt>
-Writes into Music/SFX/Reference/<Name>/: <Name>_Ref_Full.wav at 48 kHz, video.<ext>, cuts/NN.wav, cuts.json and
+Writes into AI/Audio/References/<Name>/: <Name>_Ref_Full.wav at 48 kHz, video.<ext>, cuts/NN.wav, cuts.json and
 sheet_NN.png. --crop keeps a share of each frame (left, top, width, height, 0 to 1), to read small text. A video
 id starting with "-" is given as its full URL.
 A labels line "NN Label" renames cut NN to NN_Label.wav; "from to Label" (seconds) cuts that span of the full audio.
@@ -33,7 +33,7 @@ import numpy as np
 import yt_dlp
 from scipy.io import wavfile
 
-REFERENCES = pathlib.Path.home() / "Music" / "SFX" / "Reference"
+REFERENCES = pathlib.Path(__file__).resolve().parents[2] / "Audio" / "References"
 SAMPLE_RATE = 48000
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 FRAME_INTO_SOUND = (0.3, 0.5)  # a sound's frame: this share into it, at most this many seconds

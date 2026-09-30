@@ -8,7 +8,7 @@ import traceback
 
 import unreal
 
-REPORT = unreal.Paths.project_saved_dir() + "GeoTrinity_LayerComparison.json"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "GeoTrinity_LayerComparison.json"
 
 toolkit_path = unreal.Paths.project_dir() + "AI/Python/Material/material_graph_authoring.py"
 toolkit = {}

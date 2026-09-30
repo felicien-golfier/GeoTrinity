@@ -12,7 +12,7 @@ nothing. The montages play in DefaultSlot, which the badge AnimBlueprints put ov
 whole badge whatever its top and bottom layers are doing, and a revive playing in the same slot group stops the death.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script. Re-runnable: rewrites every sequence and
-montage in place. Report written to Saved/class_badge_death.txt.
+montage in place. Report written to AI/Output/class_badge_death.txt.
 """
 import unreal
 
@@ -20,7 +20,7 @@ LIBRARY = unreal.AnimationLibrary
 
 MESH_FOLDER = "/Game/Characters/Meshes/Class"
 ANIM_FOLDER = "/Game/Characters/Anim/ClassBadge"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_death.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_death.txt"
 
 ROOT = "Root"
 SLOT = "DefaultSlot"

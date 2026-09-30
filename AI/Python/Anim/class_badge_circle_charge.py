@@ -19,7 +19,7 @@ at that same rate. Everything is keyed on the Top branch and the montage goes in
 layer is left alone. The tumble is about the hourglass's own X axis, which shows its pinched waist edge-on.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script. Re-runnable: rewrites the sequence and
-the montage in place. Report written to Saved/class_badge_circle_charge.txt.
+the montage in place. Report written to AI/Output/class_badge_circle_charge.txt.
 """
 import math
 
@@ -33,7 +33,7 @@ GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
 ANIM_PACKAGE = "/Game/Characters/Anim/ClassBadge/Circle"
 SEQUENCE_NAME = "SK_CircleBadge_Sequence_Charge"
 MONTAGE_NAME = "SK_CircleBadge_Montage_Charge"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_circle_charge.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_circle_charge.txt"
 
 TOP, PART = "Top", "Hourglass"
 SLOT = "Top"

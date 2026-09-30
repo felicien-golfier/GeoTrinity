@@ -1,0 +1,135 @@
+[
+ {
+  "track": "Bed",
+  "sound": "SW_HexIntro_Bed",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.0,
+  "volume": 0.8,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_HexIntro_Bed.wav"
+ },
+ {
+  "track": "Hum",
+  "notify": "GeoStartLoopSoundNotify",
+  "time": 0.0
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Riser",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 0.2,
+  "volume": 0.5,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_Mech_Riser.wav"
+ },
+ {
+  "track": "Shiver",
+  "sound": "SW_HexIntro_Shiver_Outer",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.35,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_HexIntro_Shiver_Outer.wav"
+ },
+ {
+  "track": "Shiver",
+  "sound": "SW_HexIntro_Shiver_Mid",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.35,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_HexIntro_Shiver_Mid.wav"
+ },
+ {
+  "track": "Shiver",
+  "sound": "SW_HexIntro_Shiver_Core",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 0.2,
+  "volume": 0.35,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_HexIntro_Shiver_Core.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Impact_Low",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 1.3333,
+  "volume": 0.8,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_Mech_Impact_Low.wav"
+ },
+ {
+  "track": "Whir",
+  "sound": "SW_HexIntro_Whir_Outer",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 1.3333,
+  "volume": 0.35,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_HexIntro_Whir_Outer.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Impact_Mid",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 2.2,
+  "volume": 0.9,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_Mech_Impact_Mid.wav"
+ },
+ {
+  "track": "Whir",
+  "sound": "SW_HexIntro_Whir_Mid",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 2.2,
+  "volume": 0.35,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_HexIntro_Whir_Mid.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Impact_High",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 2.9333,
+  "volume": 1.0,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_Mech_Impact_High.wav"
+ },
+ {
+  "track": "Whir",
+  "sound": "SW_HexIntro_Whir_Core",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 2.9333,
+  "volume": 0.35,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_HexIntro_Whir_Core.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Grind",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 3.4667,
+  "volume": 0.5,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_Mech_Grind.wav"
+ },
+ {
+  "track": "Rattle",
+  "sound": "SW_HexIntro_Rattle",
+  "package": "/Game/Art/SFX/Enemy/HexBoss",
+  "time": 3.4667,
+  "volume": 0.75,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_HexIntro_Rattle.wav"
+ },
+ {
+  "track": "Air",
+  "sound": "SW_Mech_AirStutter",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 4.1733,
+  "volume": 0.5,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_Mech_AirStutter.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Boom",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 4.9667,
+  "volume": 1.0,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_Mech_Boom.wav"
+ },
+ {
+  "track": "Hit",
+  "sound": "SW_Mech_Surge",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 4.9667,
+  "volume": 1.0,
+  "source": "Saved/Audio/HexBossIntro/Draft/Mech/SFX_Mech_Surge.wav"
+ }
+]

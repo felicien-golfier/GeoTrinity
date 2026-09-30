@@ -4,7 +4,7 @@
 # ///
 """
 The mechanical kit: metal snaps, hits, air and machine loops synthesised to the anatomy of the mechanical intro
-reference (Music/SFX/Reference/MechanicalIntro/README.md), each sound on its own.
+reference (AI/Audio/References/MechanicalIntro/README.md), each sound on its own.
 
 Run outside the editor: uv run AI/Python/Audio/mech_kit.py [ship]
 Writes every one-shot and loop as SFX_Mech_<Name>.wav into DRAFT, or into SourceArt/Audio/Mech with `ship`.
@@ -20,7 +20,7 @@ from scipy.io import wavfile
 from scipy.signal import fftconvolve, resample_poly
 
 PROJECT = pathlib.Path(__file__).resolve().parents[3]
-DRAFT = PROJECT / "Saved" / "Audio" / "Mech" / "Draft"
+DRAFT = PROJECT / "AI" / "Audio" / "Drafts" / "Mech"
 SHIPPED = PROJECT / "SourceArt" / "Audio" / "Mech"
 PACKAGE = "/Game/Art/SFX/Mech"
 SAMPLE_RATE = 48000

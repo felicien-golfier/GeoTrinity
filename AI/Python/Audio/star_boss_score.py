@@ -13,7 +13,7 @@ nova, a gust as every point blows out. Every curve starts and ends on the fight'
 whose vanishing cuts the loop.
 
 Run outside the editor: uv run AI/Python/Audio/star_boss_score.py [ship]
-Needs Saved/BoneMotion/Star/<montage>.json (AI/Python/Anim/dump_bone_motion.py) and the ninja kit
+Needs AI/Audio/BoneMotion/Star/<montage>.json (AI/Python/Anim/dump_bone_motion.py) and the ninja kit
 (ninja_kit.py ship). Writes loop.json — the layers AI/Python/Asset/boss_fight_loop.py puts on the boss — and each
 montage's cues.json and curves.json — what AI/Python/Anim/boss_montage_sounds.py puts on it — into DRAFT, or into
 SourceArt with `ship`. A preview of each, played between stretches of fight, always goes to DRAFT.
@@ -34,9 +34,9 @@ import ninja_kit as ninja  # noqa: E402
 from hex_intro_score import FPS, shake  # noqa: E402
 
 PROJECT = kit.PROJECT
-MOTION = PROJECT / "Saved" / "BoneMotion" / "Star"
+MOTION = PROJECT / "AI" / "Audio" / "BoneMotion" / "Star"
 SHIPPED = PROJECT / "SourceArt" / "Audio" / "StarBoss"
-DRAFT = PROJECT / "Saved" / "Audio" / "StarBoss" / "Draft"
+DRAFT = PROJECT / "AI" / "Audio" / "Drafts" / "StarBoss"
 SILENT = intro.SILENT
 BODY = "Root"
 TIP_PREFIX = "apexe_outside_"

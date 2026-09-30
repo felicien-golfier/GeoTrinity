@@ -17,7 +17,7 @@ Each ability plays Start stretched to its FireDelay and keeps that play rate for
 Moira beam's 0.5 s and 3 frames against the recall's 0.1 s both run at 1x.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/class_badge_wiring.py.
-Re-runnable: rewrites the sequences and montages in place. Report written to Saved/class_badge_body_turns.txt.
+Re-runnable: rewrites the sequences and montages in place. Report written to AI/Output/class_badge_body_turns.txt.
 """
 import unreal
 
@@ -26,7 +26,7 @@ APE = unreal.AnimPoseExtensions
 MESH_FOLDER = "/Game/Characters/Meshes/Class"
 ANIM_FOLDER = "/Game/Characters/Anim/ClassBadge"
 GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_body_turns.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_body_turns.txt"
 
 BODY = "Bottom"
 SLOT = "Bottom"

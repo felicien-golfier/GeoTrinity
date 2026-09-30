@@ -23,7 +23,7 @@ Geometry lives here alone: this also emits, for every vertex, which copy it is o
 long point, which is all AI/Python/Mesh/rig_star.py needs to weight it, and every triangle as three indices into
 those vertices, for checking what a pose leaves facing the camera.
 
-Run via mcp-unreal execute_script. Summary written to Saved/star_gen.json, spec to Saved/star_parts.json.
+Run via mcp-unreal execute_script. Summary written to AI/Output/star_gen.json, spec to AI/Output/star_parts.json.
 """
 import json
 import math
@@ -169,7 +169,7 @@ def main():
     try:
         rays = outlines()
         asset, points, triangles = build(rays)
-        with open(unreal.Paths.project_saved_dir() + SPEC_FILE, "w") as f:
+        with open((unreal.Paths.project_dir() + "AI/Output/") + SPEC_FILE, "w") as f:
             json.dump({"layers": LAYERS, "points": points, "triangles": triangles}, f)
 
         result["ok"] = True
@@ -185,7 +185,7 @@ def main():
         result["ok"] = False
         result["error"] = str(exc)
         result["trace"] = traceback.format_exc()
-    with open(unreal.Paths.project_saved_dir() + "star_gen.json", "w") as f:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "star_gen.json", "w") as f:
         json.dump(result, f, indent=2)
 
 

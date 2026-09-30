@@ -86,3 +86,15 @@ __pycache__/
 docs/index.bleve/
 # Claude Code scheduled-tasks lock (transient, session-specific)
 .claude/scheduled_tasks.lock
+# Agent workspace (never Saved/): script reports, and the sound references and drafts' media
+AI/Output/*
+!AI/Output/README.md
+AI/Audio/**/*.wav
+AI/Audio/**/*.mp3
+AI/Audio/**/*.ogg
+AI/Audio/**/*.flac
+AI/Audio/**/*.mp4
+AI/Audio/**/*.webm
+AI/Audio/**/*.mkv
+AI/Audio/**/*.png
+AI/Audio/**/*.aup3*

@@ -9,9 +9,9 @@ time and frequency the synth is off, a picture, and an A/B WAV to hear the refer
 uv run AI/Python/Audio/fit_patch.py fit <patch.json> [renders] [searches]
 uv run AI/Python/Audio/fit_patch.py compare <patch.json>
 uv run AI/Python/Audio/fit_patch.py playlist      every reproduction's A/B in one file, to hear them all at once
-The reference is the patch's "reference", a WAV under Music/SFX/Reference. fit writes the fitted values back into
+The reference is the patch's "reference", a WAV under AI/Audio/References. fit writes the fitted values back into
 the patch, each staying free between its bounds. Both write the synth, the A/B and the picture into
-Saved/Audio/Reproductions/<patch name>/.
+AI/Audio/Reproductions/<patch name>/.
 The distance is the mean decibel gap between the two log-mel spectrograms at three window sizes, level-matched and
 aligned on their onsets. Under a floor per band nothing counts: FLOOR_DB under the reference's loudest cell, raised
 to the bed a video plays under its sounds where the cut holds some of it before the onset. The synth against itself
@@ -32,8 +32,8 @@ import numpy as np
 from scipy.signal import stft
 
 HERE = pathlib.Path(__file__).parent
-REFERENCES = pathlib.Path.home() / "Music" / "SFX" / "Reference"
-OUT = HERE.parents[2] / "Saved" / "Audio" / "Reproductions"
+REFERENCES = HERE.parents[1] / "Audio" / "References"
+OUT = HERE.parents[1] / "Audio" / "Reproductions"
 RESOLUTIONS = [256, 1024, 4096]
 MEL_BANDS = 64
 HIGHEST_HZ = 16000.0        # a video's codec ceiling

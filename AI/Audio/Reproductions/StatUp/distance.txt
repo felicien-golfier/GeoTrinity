@@ -1,0 +1,1 @@
+distance 5.76 dB, against itself on another seed 3.90 dB

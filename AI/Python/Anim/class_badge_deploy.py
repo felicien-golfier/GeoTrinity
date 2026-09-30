@@ -24,7 +24,7 @@ ability system then leaves auto-fire's own montage unplayed until this one is do
 sockets must stay put, and nothing kicks the whole badge back, which the character's game feel already does.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/class_badge_wiring.py.
-Re-runnable: rewrites the sequences and montages in place. Report written to Saved/class_badge_deploy.txt.
+Re-runnable: rewrites the sequences and montages in place. Report written to AI/Output/class_badge_deploy.txt.
 """
 import math
 
@@ -35,7 +35,7 @@ APE = unreal.AnimPoseExtensions
 MESH_FOLDER = "/Game/Characters/Meshes/Class"
 ANIM_FOLDER = "/Game/Characters/Anim/ClassBadge"
 GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_deploy.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_deploy.txt"
 
 ROOT, BODY, TOP = "Root", "Bottom", "Top"
 SLOT = "DefaultSlot"

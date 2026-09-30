@@ -8,7 +8,7 @@ vertex interpolator, exact on the flat caps. The shield-burst gauge glow of MAT_
 
 Points DA_PlayerClassData's AliveMaterial and each SKM_<Class>Badge slot 0 at the class's instance. An existing
 instance keeps its tuned values; only its texture and mask frame are set again. Run through execute_script, outside
-PIE. Report written to Saved/class_badge_materials.txt.
+PIE. Report written to AI/Output/class_badge_materials.txt.
 """
 import unreal
 
@@ -16,7 +16,7 @@ FOLDER = "/Game/Characters/Meshes/Class/Materials"
 MESH_FOLDER = "/Game/Characters/Meshes/Class"
 CLASS_DATA = "/Game/Characters/Playable/DA_PlayerClassData"
 MASK_FOLDER = unreal.Paths.project_dir() + "GamePictures/"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_materials.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_materials.txt"
 CAP_FACE_MIN_NORMAL_Z = 0.5  # the needle's sloped faces count as caps
 
 # Badge -> (class, mask file, colour, line colour). Colours are those of the class's previous alive material.

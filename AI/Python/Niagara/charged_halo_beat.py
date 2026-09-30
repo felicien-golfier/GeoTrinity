@@ -458,7 +458,7 @@ def main(system=TARGET):
 
 
 if __name__ == "__main__":
-    report = "%sGeoTrinity_ChargedHaloBeat.txt" % unreal.Paths.project_saved_dir()
+    report = "%sGeoTrinity_ChargedHaloBeat.txt" % (unreal.Paths.project_dir() + "AI/Output/")
     try:
         open(report, "w").write(main())
     except Exception:

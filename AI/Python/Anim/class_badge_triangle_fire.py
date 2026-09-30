@@ -35,7 +35,7 @@ A beat is authored at 30 fps and sped up to the ability's delay by the play rate
 montage goes in the Top slot.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/class_badge_wiring.py.
-Re-runnable: rewrites the sequences and montages in place. Report written to Saved/class_badge_triangle_fire.txt.
+Re-runnable: rewrites the sequences and montages in place. Report written to AI/Output/class_badge_triangle_fire.txt.
 """
 import math
 
@@ -47,7 +47,7 @@ SKELETON_PATH = "/Game/Characters/Meshes/Class/SK_TriangleBadge"
 MESH_PATH = "/Game/Characters/Meshes/Class/SKM_TriangleBadge"
 GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
 ANIM_PACKAGE = "/Game/Characters/Anim/ClassBadge/Triangle"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_triangle_fire.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_triangle_fire.txt"
 
 BODY, TOP, PLUG, NEEDLE = "Bottom", "Top", "Plug", "Needle"
 SLOT = "Top"

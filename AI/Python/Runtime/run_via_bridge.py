@@ -3,7 +3,7 @@
 Host-side: run with the engine's bundled Python, not inside the editor.
     python.exe AI/Python/Runtime/run_via_bridge.py <script.py> [port]
 The script runs as __main__ in the open editor. The route reports success even when the script raises, so the
-source is wrapped in a handler that writes OK or the traceback to Saved/bridge_run_result.txt, printed here after.
+source is wrapped in a handler that writes OK or the traceback to AI/Output/bridge_run_result.txt, printed here after.
 """
 import json
 import os
@@ -11,7 +11,7 @@ import sys
 import urllib.request
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-RESULT = os.path.join(PROJECT_DIR, "Saved", "bridge_run_result.txt").replace("\\", "/")
+RESULT = os.path.join(PROJECT_DIR, "AI", "Output", "bridge_run_result.txt").replace("\\", "/")
 
 
 def run(script_path, port=8090, timeout=600):

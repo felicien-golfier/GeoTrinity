@@ -13,7 +13,7 @@ go round with the arrowhead instead of being swept through. The root and the fir
 montage goes in the full-body slot, over the auto-fire and any body turn: the badge is spinning as a whole.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/class_badge_wiring.py.
-Re-runnable: rewrites the sequence and the montage in place. Report written to Saved/class_badge_triangle_reload.txt.
+Re-runnable: rewrites the sequence and the montage in place. Report written to AI/Output/class_badge_triangle_reload.txt.
 """
 import math
 
@@ -27,7 +27,7 @@ GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
 ANIM_PACKAGE = "/Game/Characters/Anim/ClassBadge/Triangle"
 SEQUENCE_NAME = "SK_TriangleBadge_Sequence_Reload"
 MONTAGE_NAME = "SK_TriangleBadge_Montage_Reload"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_triangle_reload.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_triangle_reload.txt"
 
 BODY, TOP, PLUG = "Bottom", "Top", "Plug"
 SLOT = "DefaultSlot"

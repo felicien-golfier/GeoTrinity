@@ -34,6 +34,8 @@ protected:
 	virtual UWidget* GetInitialFocusWidget() const override;
 	/** Calls HandleResume (closes the pause menu) and consumes the back input. */
 	virtual bool HandleBackAction() override;
+	/** Closes the pause menu from any sub-panel depth and consumes the Escape input. */
+	virtual bool HandleEscapeAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> ResumeButton;

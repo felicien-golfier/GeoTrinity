@@ -1,5 +1,5 @@
 # GC_DeployTarget: the AGeoDeployTargetCue Blueprint marking where a charging deploy ability lands.
-# Needs the build carrying AGeoDeployTargetCue and the GameplayCue.Ability.Deployable.Target tag. Report: Saved/claude/deploy_target_cue.txt
+# Needs the build carrying AGeoDeployTargetCue and the GameplayCue.Ability.Deployable.Target tag. Report: AI/Output/deploy_target_cue.txt
 import traceback
 
 import unreal
@@ -12,7 +12,7 @@ MESH = "/Engine/BasicShapes/Plane"
 MATERIAL = "/Game/Art/VFX/Generic/Materials/MatInstances/MI_GeoShape_RingDash4"
 MARKER_SCALE = 0.8  # the plane is 100 cm across
 SPIN_DEGREES_PER_SECOND = 90.0
-REPORT_PATH = unreal.Paths.project_saved_dir() + "claude/deploy_target_cue.txt"
+REPORT_PATH = (unreal.Paths.project_dir() + "AI/Output/") + "deploy_target_cue.txt"
 
 REPORT = []
 

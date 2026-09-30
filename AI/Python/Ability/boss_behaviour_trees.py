@@ -22,7 +22,7 @@ import traceback
 
 import unreal
 
-REPORT_PATH = "C:/GeoTrinity/Saved/boss_behaviour_trees_report.txt"
+REPORT_PATH = "C:/GeoTrinity/AI/Output/boss_behaviour_trees_report.txt"
 
 BASE = "/Game/AI/ST_EnemyBehaviour"
 STAR = "/Game/AI/ST_StarBossBehaviour"

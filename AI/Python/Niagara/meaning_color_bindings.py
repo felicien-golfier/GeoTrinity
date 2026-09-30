@@ -4,7 +4,7 @@ bound to the Color, Color2-4 and ColorCount parameters of M_PulseBeam, M_ZoneInd
 ColorCount, which UGeoBeamVFXComponent, UBeamPattern and GeoASLib::SetCueMeaningColors write. Re-runnable: an existing
 parameter or binding is kept or replaced.
 
-Run through MCP execute_script; the report goes to Saved/meaning_color_bindings.txt."""
+Run through MCP execute_script; the report goes to AI/Output/meaning_color_bindings.txt."""
 import traceback
 
 import unreal
@@ -24,7 +24,7 @@ BINDINGS = [
     # 1 by default: the colour pattern cycles through ColorCount colours, and none is a division by zero.
     ("User.ColorCount", "Float", "1", "ColorCount"),
 ]
-REPORT = unreal.Paths.project_saved_dir() + "meaning_color_bindings.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "meaning_color_bindings.txt"
 
 out = []
 try:

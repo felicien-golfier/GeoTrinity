@@ -50,6 +50,13 @@ bool UGeoPauseMenuWidget::HandleBackAction()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+bool UGeoPauseMenuWidget::HandleEscapeAction()
+{
+	HandleResume();
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoPauseMenuWidget::HandleResume()
 {
 	if (AGeoPlayerController* PlayerController = Cast<AGeoPlayerController>(GetOwningPlayer()))

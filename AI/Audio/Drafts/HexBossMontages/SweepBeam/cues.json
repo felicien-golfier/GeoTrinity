@@ -1,0 +1,58 @@
+[
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_GearThunk_1",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 0.0,
+  "volume": 0.5,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_GearThunk_1.wav"
+ },
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_Slam_Mid",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 1.6333,
+  "volume": 0.7,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_Slam_Mid.wav"
+ },
+ {
+  "track": "Metal",
+  "sound": "SW_Metal_Crack",
+  "package": "/Game/Art/SFX/Metal",
+  "time": 1.6333,
+  "volume": 0.9,
+  "source": "SourceArt/Audio/Metal/SFX_Metal_Crack.wav"
+ },
+ {
+  "track": "Mech",
+  "sound": "SW_Mech_Surge",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 1.8,
+  "volume": 1.0,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Surge.wav"
+ },
+ {
+  "track": "Mech",
+  "sound": "SW_Mech_AirBlast",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 1.8,
+  "volume": 0.6,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_AirBlast.wav"
+ },
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_Hiss",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 3.2667,
+  "volume": 0.5,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_Hiss.wav"
+ },
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_GearThunk_2",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 3.5333,
+  "volume": 0.4,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_GearThunk_2.wav"
+ }
+]

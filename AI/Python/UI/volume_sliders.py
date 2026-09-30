@@ -62,4 +62,4 @@ unreal.EditorAssetLibrary.save_asset(WBP_PATH, only_if_is_dirty=False)
 
 report = ["%d %s (%s)" % (i, child.get_name(), child.get_class().get_name())
           for i, child in enumerate(util.find_widget(wbp, "Root").get_all_children())]
-open(unreal.Paths.project_saved_dir() + "volume_sliders.txt", "w").write("\n".join(report))
+open((unreal.Paths.project_dir() + "AI/Output/") + "volume_sliders.txt", "w").write("\n".join(report))

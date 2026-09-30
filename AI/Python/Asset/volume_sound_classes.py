@@ -1,7 +1,7 @@
 # Builds the sound classes the volume settings drive: SC_General parents SC_Effects, SC_Music and SC_Interface.
 # Also creates Mix_Volume (the base sound mix UGeoGameUserSettings overrides) and puts every menu sound on SC_Interface.
 # Every other sound keeps no class and falls back to SC_Effects, the project's Default Sound Class.
-# Re-run safe: existing assets are reused in place. Reports to Saved/volume_sound_classes.txt.
+# Re-run safe: existing assets are reused in place. Reports to AI/Output/volume_sound_classes.txt.
 import unreal
 
 FOLDER = "/Game/Art/SFX/Mix"
@@ -48,4 +48,4 @@ for data in unreal.AssetRegistryHelpers.get_asset_registry().get_assets_by_path(
         if sound_class:
             report.append("%s -> %s" % (data.package_name, sound_class.get_name()))
 
-open(unreal.Paths.project_saved_dir() + "volume_sound_classes.txt", "w").write("\n".join(report))
+open((unreal.Paths.project_dir() + "AI/Output/") + "volume_sound_classes.txt", "w").write("\n".join(report))

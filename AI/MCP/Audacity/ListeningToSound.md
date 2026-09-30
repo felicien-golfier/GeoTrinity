@@ -102,7 +102,7 @@ spectral change over time. Pitch, loudness, noisiness and length complete the pi
 
 - A reference the user points to is the fastest target: measure it with the same script and match its numbers.
 - A sound-pack preview video is a library of references: `uv run AI/Python/Audio/fetch_reference.py fetch <id> <Name>`
-  writes its audio at 48 kHz and a 720p video into `Music\SFX\Reference\<Name>\`, cuts it wherever it falls
+  writes its audio at 48 kHz and a 720p video into `AI/Audio/References/<Name>/`, cuts it wherever it falls
   silent and draws a contact sheet of the frame under each cut.
 - Silence is measured against the montage's own floor, so a video playing its sounds over a music bed still cuts.
 - A demo that shows each file's name on screen is labelled by `labels` with a crop around the name: the name's
@@ -154,7 +154,7 @@ fitted to the reference; a patch that fits is a recipe that can be varied and sh
 2. `uv run AI/Python/Audio/fit_patch.py fit <patch.json> [renders] [searches]` fits them by CMA-ES and writes them
    back; each further search starts again round the best so far, which a patch of many layers needs.
 3. Read the printout and `compare.png`, add or reshape the layer the gap points to, fit again.
-4. The user listens to `reference_then_synth.wav` in `Saved/Audio/Reproductions/<patch>/`, or to every
+4. The user listens to `reference_then_synth.wav` in `AI/Audio/Reproductions/<patch>/`, or to every
    reproduction at once in the file `fit_patch.py playlist` writes there.
 
 - The synth, `sfx_patch.py`: oscillators (sine, triangle, and saw, square and pulse band-limited by PolyBLEP), FM

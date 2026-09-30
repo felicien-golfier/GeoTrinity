@@ -12,7 +12,7 @@ direction. Winding is resolved from the outline's Newell normal, so outlines may
 be listed in either order. Members overlap where they meet — buried faces are
 interior and never visible, which avoids any CSG.
 
-Run via mcp-unreal execute_script. Summary written to Saved/bomb_gen.json.
+Run via mcp-unreal execute_script. Summary written to AI/Output/bomb_gen.json.
 """
 import unreal, json, math
 
@@ -153,7 +153,7 @@ def main():
         result["ok"] = False
         result["error"] = str(exc)
         result["trace"] = traceback.format_exc()
-    with open(unreal.Paths.project_saved_dir() + "bomb_gen.json", "w") as f:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "bomb_gen.json", "w") as f:
         json.dump(result, f, indent=2)
 
 

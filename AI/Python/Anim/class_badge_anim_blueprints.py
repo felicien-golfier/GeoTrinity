@@ -14,7 +14,7 @@ up where it would have been.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py and AI/Python/Anim/class_badge_idle.py, via mcp-unreal
 execute_script. Needs the editor shim's BuildLayeredAnimGraph. Re-runnable: the graph is rebuilt in place. Report
-written to Saved/class_badge_anim_bp.json.
+written to AI/Output/class_badge_anim_bp.json.
 """
 import json
 
@@ -78,7 +78,7 @@ def main():
         result["ok"] = False
         result["error"] = str(exc)
         result["trace"] = traceback.format_exc()
-    with open(unreal.Paths.project_saved_dir() + "class_badge_anim_bp.json", "w") as f:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "class_badge_anim_bp.json", "w") as f:
         json.dump(result, f, indent=2)
 
 

@@ -1,0 +1,15 @@
+sound                                           ms   att -20dB       events    dominant line or partial     harmonic family tone  centroid Hz
+00                                            1247  18.0   574 27 ev /37 ms         line 236>213 Hz 6ms                   -    2%    790>2978  
+01                                              80  50.0   nan         1 ev            7566>7179 Hz exp                   -    0%    928>646   
+02                                            1452  12.0   594  9 ev /85 ms         line 189>165 Hz 6ms                   -    1%    790>1087  
+03                                            1108 132.0   478 12 ev /98 ms        line 189>142 Hz 12ms                   -   42%    997>384   
+04                                            1392 344.0   376 15 ev /60 ms        line 189>189 Hz 10ms                   -   50%    970>426   
+05                                            1923 262.0   964 5 ev /296 ms     line 1677>1677 Hz 451ms                   -   69%   1196>1494  
+06                                              35   0.0   nan         1 ev      line 1677>1654 Hz 34ms                   -   80%   1490>1421  
+07                                            1731  34.0  1478 3 ev /738 ms     line 1654>1677 Hz 609ms                   -   73%   1465>1548  
+08                                              60   6.0   nan         1 ev      line 1606>1630 Hz 59ms                   -   87%   1472>1470  
+09                                              15   0.0   nan         1 ev      line 1630>1654 Hz 14ms                   -    0%   1559>1559  
+10                                            2248 366.0   558  6 ev /80 ms      line 1701>1252 Hz 99ms                   -   44%   1850>1778  
+11                                              40   6.0   nan         1 ev      line 1654>1346 Hz 14ms                   -   76%   1498>1545  
+12                                             120  10.0   nan  3 ev /51 ms     line 1465>1299 Hz 104ms                   -   75%   1572>1474  
+13                                              25   8.0   nan         1 ev      line 1370>1323 Hz 19ms                   -   41%   1532>1514  

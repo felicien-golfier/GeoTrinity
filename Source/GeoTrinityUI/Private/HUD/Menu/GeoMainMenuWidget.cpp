@@ -8,8 +8,16 @@
 #include "HUD/Menu/GeoLeaderboardWidget.h"
 #include "HUD/Menu/GeoLocalConnectWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
+#include "Engine/GameViewportClient.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "OnlineSubsystem.h"
+#include "Styling/CoreStyle.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/Text/STextBlock.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 FString UGeoMainMenuWidget::GetLocalPlayerName() const
@@ -53,9 +61,80 @@ void UGeoMainMenuWidget::NativeConstruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoMainMenuWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	UGeoGameInstance* GameInstance = Cast<UGeoGameInstance>(GetGameInstance());
+	if (GameInstance && !ErrorPopup.IsValid())
+	{
+		FString const SessionError = GameInstance->TakeSessionError();
+		if (!SessionError.IsEmpty())
+		{
+			ShowErrorPopup(SessionError);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMainMenuWidget::ShowErrorPopup(FString const& Message)
+{
+	TSharedRef<SButton> const OkButton =
+		SNew(SButton)
+			.HAlign(HAlign_Center)
+			.ContentPadding(FMargin(32.f, 8.f))
+			.OnClicked_UObject(this, &UGeoMainMenuWidget::HandleErrorPopupClosed)
+				[SNew(STextBlock).Text(INVTEXT("OK")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))];
+
+	ErrorPopup =
+		SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.7f))
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+				[SNew(SBox)
+					 .MaxDesiredWidth(800.f)
+						 [SNew(SBorder)
+							  .BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							  .BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.08f, 1.f))
+							  .Padding(24.f)
+								  [SNew(SVerticalBox)
+								   + SVerticalBox::Slot().AutoHeight()
+										 [SNew(STextBlock)
+											  .Text(INVTEXT("Connection error"))
+											  .Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
+											  .ColorAndOpacity(FLinearColor(1.f, 0.3f, 0.3f, 1.f))]
+								   + SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f)
+										 [SNew(STextBlock)
+											  .Text(FText::FromString(Message))
+											  .Font(FCoreStyle::GetDefaultFontStyle("Regular", 16))
+											  .AutoWrapText(true)]
+								   + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[OkButton]]]];
+
+	GetGameInstance()->GetGameViewportClient()->AddViewportWidgetContent(ErrorPopup.ToSharedRef(), 100);
+	FSlateApplication::Get().SetAllUserFocus(OkButton, EFocusCause::SetDirectly);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FReply UGeoMainMenuWidget::HandleErrorPopupClosed()
+{
+	GetGameInstance()->GetGameViewportClient()->RemoveViewportWidgetContent(ErrorPopup.ToSharedRef());
+	ErrorPopup.Reset();
+	SetFocus();
+	return FReply::Handled();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 UWidget* UGeoMainMenuWidget::GetInitialFocusWidget() const
 {
 	return CreateServerButton;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoMainMenuWidget::HandleEscapeAction()
+{
+	HandleSubPanelClosed();
+	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

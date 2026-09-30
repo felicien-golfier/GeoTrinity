@@ -1,0 +1,38 @@
+sound                                           ms   att -20dB       events    dominant line or partial     harmonic family tone  centroid Hz
+000_Long_Average_High_026_Stereo_RoF240       1918 710.0   692 30 ev /48 ms        line 614>213 Hz 11ms                   -    0%   1872>502   
+001_Long_Average_HighMid_011_RoF480           2904 1700.0   536         1 ev         line 142>354 Hz 6ms                   -    0%    440>247   
+002_Long_Average_Precharge_HighMid_001_Stere  2675 2068.0   nan         1 ev        line 732>520 Hz 14ms                   -    1%   1512>957   
+003_Long_Average_Precharge_Mid_021_Stereo_Ro  2807 782.0  1858         1 ev        line 543>591 Hz 39ms                   -    7%    742>1541  
+004_Long_Loud_Mid_018_RoF240                  3008 1630.0   444 3 ev /1045 ms         line 236>165 Hz 6ms                   -    0%    518>362   
+005_Long_Loud_Mid_025_RoF240                  3640 1902.0  1314 6 ev /765 ms         line 236>213 Hz 9ms                   -    1%    539>331   
+006_Long_Loud_Precharge_Mid_009_Stereo_RoF24  4380 1250.0   656 10 ev /310 ms         line 189>165 Hz 4ms                   -    1%    944>761   
+007_Long_Muffled_Low_017_RoF60                2825   8.0   528 5 ev /450 ms             91>72 Hz linear                   -    1%    277>72    
+008_Long_Quiet_LowMid_003_RoF960              3048 1002.0   nan 5 ev /625 ms        line 142>307 Hz 10ms                   -    2%    437>237   
+009_Long_Quiet_Mid_004_RoF120                 3445 3442.0   nan 8 ev /492 ms        line 213>283 Hz 19ms                   -    0%    405>498   
+010_Long_VeryLoud_Mid_006_RoF120              9330 2994.0  1078 18 ev /297 ms         line 213>189 Hz 5ms                   -    1%    192>205   
+011_Long_VeryLoud_Mid_010_RoF480              3785 2242.0  1476 3 ev /1740 ms        line 402>260 Hz 12ms                   -    7%    836>487   
+012_Medium_Average_High_007_Stereo_RoF240      232   8.0   182  5 ev /40 ms                           -                   -    0%    140>106   
+013_Medium_Average_HighMid_015_RoF240         2510 1694.0   nan 11 ev /150 ms        line 142>402 Hz 12ms                   -    2%    437>240   
+014_Medium_Loud_HighMid_005_RoF120            3675 816.0   548 4 ev /1235 ms        line 472>756 Hz 10ms                   -    1%    554>652   
+015_Medium_Loud_LowMid_020_RoF240             3725 814.0  1088 3 ev /1650 ms         line 189>213 Hz 9ms                   -    0%    299>262   
+016_Medium_Muffled_Low_002_RoF960             7934 3088.0   626 3 ev /314 ms        line 236>118 Hz 17ms                   -    1%    135>266   
+017_Medium_Quiet_HighMid_047_RoF120           5224 868.0   914 17 ev /256 ms        line 142>189 Hz 11ms                   -    3%    340>1676  
+018_Medium_VeryLoud_HighMid_015_RoF240        3767 2104.0   506 3 ev /1068 ms         line 165>213 Hz 5ms                   -    6%   1066>834   
+019_Medium_VeryLoud_Mid_018_RoF960            3985 458.0   528 44 ev /55 ms         line 189>189 Hz 4ms                   -    1%   1062>866   
+020_VeryLong_VeryLoud_Mid_001_RoF240          5535 1156.0  1232 4 ev /1985 ms         4376>4231 Hz linear                   -    0%    619>218   
+021_Short_Average_High_026_RoF480             1300 410.0   626         1 ev         line 283>307 Hz 8ms                   -    0%    437>363   
+022_Short_Average_Mid_001_RoF480              2145   6.0  1334 33 ev /65 ms        line 165>402 Hz 24ms                   -    0%    376>413   
+023_Short_Loud_HighMid_002_RoF960             3740 214.0   636 6 ev /385 ms        line 142>307 Hz 10ms                   -    0%    265>254   
+024_Short_Loud_Mid_001_RoF60                  2476 204.0   672 5 ev /500 ms        line 189>472 Hz 18ms                   -    0%    472>845   
+025_Short_Quiet_High_006_RoF240               1555  22.0  1436 11 ev /124 ms         line 165>189 Hz 5ms                   -    0%   1474>2100  
+026_Short_Quiet_Low_001_RoF120                2110 496.0   nan 8 ev /240 ms         line 378>118 Hz 9ms                   -    0%    213>506   
+027_Short_VeryLoud_High_005_RoF120            2233 144.0   100 3 ev /256 ms        line 142>213 Hz 11ms                   -    0%   2836>2149  
+028_Short_VeryLoud_HighMid_003_RoF960         3734 868.0   294  5 ev /71 ms        line 236>213 Hz 11ms                   -    1%    926>274   
+029_VeryLong_Average_HighMid_003_RoF120       3480 3118.0   nan 2 ev /3370 ms         line 236>307 Hz 7ms                   -    0%   1862>1364  
+030_VeryLong_Average_Mid_002_RoF480           5030 3274.0   542 6 ev /728 ms         line 165>307 Hz 5ms                   -    5%   1075>641   
+031_VeryLong_Loud_Mid_007_RoF960             14275 5944.0   460 9 ev /1599 ms         line 189>236 Hz 7ms                   -    0%    691>564   
+032_VeryLong_Muffled_Low_002_RoF60            7815  34.0   496 11 ev /445 ms        line 213>189 Hz 13ms                   -    0%     87>153   
+033_VeryLong_VeryLoud_HighMid_001_RoF60       1145 538.0   414 2 ev /902 ms       line 6236>6283 Hz 5ms                   -    5%   2266>64    
+034_Long_Loud_HighMid_007_RoF120              5665 3664.0   358 16 ev /278 ms        line 189>189 Hz 13ms                   -    0%    211>188   
+035_Long_Loud_HighMid_019_RoF60               1805 1416.0   nan 3 ev /558 ms         line 236>189 Hz 9ms                   -    1%   1127>159   
+036_Medium_Loud_HighMid_026_RoF960            9699 2214.0   420 40 ev /130 ms        line 189>165 Hz 11ms                   -    0%    304>306   

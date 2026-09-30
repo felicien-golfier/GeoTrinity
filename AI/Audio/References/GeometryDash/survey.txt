@@ -1,0 +1,19 @@
+sound                                           ms   att -20dB       events    dominant line or partial     harmonic family tone  centroid Hz
+00_Achievement_Unlock                         1169 194.0   398 2 ev /980 ms       line 756>803 Hz 428ms   524 Hz all -5/oct   97%   1190>806   
+01_Diamonds                                    727 224.0   216  7 ev /79 ms    line 13370>13252 Hz 17ms  1484 Hz all --4/oct   24%   3081>4952  
+02_Chest_Fall                                  204  30.0    54 2 ev /175 ms              849>850 Hz exp                   -    0%     86>29    
+03_Chest_Unlock                                374  32.0    18 4 ev /155 ms       line 1465>1087 Hz 7ms                   -    3%   3515>3065  
+04_Shards                                     1001 138.0   688         1 ev     line 1583>1559 Hz 476ms                   -   79%   1256>1554  
+05_Shards_Tail                                 148   2.0    46  2 ev /62 ms         2329>2326 Hz steady                   -    4%   2787>2559  
+06_Orbs                                        476  50.0   214 4 ev /132 ms    line 13181>13346 Hz 18ms                   -   26%   4807>12750 
+07_Diamonds_2                                  810 162.0   358 13 ev /40 ms    line 13276>13276 Hz 17ms  1491 Hz all -0/oct   34%   7268>3114  
+08_Icon                                       1107  82.0   656         1 ev      line 1323>1394 Hz 24ms   394 Hz all -2/oct   59%   1016>892   
+09_Demon_Key                                  1240  86.0   878 10 ev /122 ms     line 1795>1772 Hz 342ms  883 Hz all --10/oct   77%   1462>1108  
+10_Demon_Key_Tail                               15   6.0   nan         0 ev                           -                   -    0%   1123>919   
+11_Level_Complete                             2903 294.0   260 16 ev /75 ms         1574>1523 Hz linear                   -   31%    213>1512  
+12_Level_Play                                  841  78.0   356 18 ev /37 ms       line 921>921 Hz 115ms                   -   94%    979>946   
+13_Level_Quit                                  751  18.0   480 2 ev /332 ms              434>418 Hz exp  442 Hz all -16/oct   99%    448>446   
+14_Coin                                        895  56.0   490  5 ev /74 ms             87>70 Hz linear                   -   44%    772>834   
+15_Coin_Tail                                    65  14.0   nan  2 ev /55 ms        line 803>803 Hz 21ms                   -   48%    913>811   
+16_Death                                      1437 118.0   418 36 ev /40 ms                83>83 Hz exp                   -    1%    297>136   
+17_Special_Death                               857 112.0   554         1 ev      line 7228>7063 Hz 12ms                   -   30%   6832>4926  

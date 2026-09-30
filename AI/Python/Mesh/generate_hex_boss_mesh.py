@@ -15,8 +15,8 @@ needs to know nothing about hexagons.
 
 Player capsule is 50cm, so an outer radius of 400 makes the boss ~8x a player across.
 
-Run via mcp-unreal execute_script. Summary written to Saved/hex_boss_gen.json, rig to
-Saved/hex_boss_parts.json.
+Run via mcp-unreal execute_script. Summary written to AI/Output/hex_boss_gen.json, rig to
+AI/Output/hex_boss_parts.json.
 """
 import collections
 import json
@@ -183,7 +183,7 @@ def main():
     try:
         asset, points = build(build_parts())
         bones = bone_table()
-        with open(unreal.Paths.project_saved_dir() + SPEC_FILE, "w") as f:
+        with open((unreal.Paths.project_dir() + "AI/Output/") + SPEC_FILE, "w") as f:
             json.dump({"bones": bones, "points": points}, f)
 
         result["ok"] = True
@@ -198,7 +198,7 @@ def main():
         result["ok"] = False
         result["error"] = str(exc)
         result["trace"] = traceback.format_exc()
-    with open(unreal.Paths.project_saved_dir() + "hex_boss_gen.json", "w") as f:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "hex_boss_gen.json", "w") as f:
         json.dump(result, f, indent=2)
 
 

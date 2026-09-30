@@ -35,6 +35,10 @@ see `MCP_EditorUtility.md`.
 | How audio models hear and make sound; measuring and picturing an exported sound; user words to fixes | `Audacity/ListeningToSound.md` |
 | Image editing in GIMP: connection, exec console drawing, verifying, export | `Gimp/CLAUDE.md` |
 | Authoring images in GIMP: canvas setup, building blocks, looks, game content, print pieces, export formats | `Gimp/ImageAuthoring.md` |
+| Video editing on FFmpeg: setup, how the model sees footage, Windows rules, which MCP tools to trust | `Video/CLAUDE.md` |
+| Turning a prompt into a video: finding moments, shorts, long cuts, montages, content from scratch | `Video/VideoEditing.md` |
+| DaVinci Resolve: setup, starting the bridge, addressing conventions, working rules, Resolve or FFmpeg | `Resolve/CLAUDE.md` |
+| Resolve tool map by area, Studio-only tools, local AI tools, end-to-end workflows | `Resolve/ResolveTools.md` |
 | Doc style rules for `.md` files in this folder | `MCP_DocStyle.md` |
 
 ## Python scripts

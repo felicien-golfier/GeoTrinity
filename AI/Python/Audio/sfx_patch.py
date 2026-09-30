@@ -9,7 +9,7 @@ reproducing references sit in Patches/, and fit_patch.py fits a patch's free val
 
 uv run AI/Python/Audio/sfx_patch.py <patch.json> <out.wav> [seed]
 
-A patch: {"reference": its WAV under Music/SFX/Reference, "length": s, "layers": [layer, ...],
+A patch: {"reference": its WAV under AI/Audio/References, "length": s, "layers": [layer, ...],
           "envelopes": {name: envelope}, "drive": dB, "echo": [s, feedback dB, mix dB],
           "room": [s to fall 60 dB, mix dB, brightness Hz], "bits": n, "hold": Hz}
           Any value written "@name" is the envelope of that name, shared by the layers using it.

@@ -103,4 +103,4 @@ def example_probe_a_distribution_switch():
         system, "UpwardMeshBurst", unreal.NiagaraScriptUsage.PARTICLE_SPAWN_SCRIPT,
         "ShapeLocation", "Ring / Disc Distribution Mode",
         ("Direct", "Uniform", "Random", "Direct Set", "Unset"))
-    open("%sNiagaraSwitchEntries.txt" % unreal.Paths.project_saved_dir(), "w").write("\n".join(accepted))
+    open("%sNiagaraSwitchEntries.txt" % (unreal.Paths.project_dir() + "AI/Output/"), "w").write("\n".join(accepted))

@@ -21,7 +21,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import mech_kit as kit  # noqa: E402
 
 PROJECT = kit.PROJECT
-DRAFT = PROJECT / "Saved" / "Audio" / "Ninja" / "Draft"
+DRAFT = PROJECT / "AI" / "Audio" / "Drafts" / "Ninja"
 SHIPPED = PROJECT / "SourceArt" / "Audio" / "Ninja"
 PACKAGE = "/Game/Art/SFX/Ninja"
 SAMPLE_RATE = kit.SAMPLE_RATE

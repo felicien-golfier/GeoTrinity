@@ -54,6 +54,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoOnline")
 	void QuitGame();
 
+	/**
+	 * Takes, and clears, the reason the last create, join or connection failed, for the menu's error popup. Empty when
+	 * nothing failed since the last take. Held rather than broadcast: a failed connection lands on a freshly loaded
+	 * main menu, which does not exist yet when the failure is reported.
+	 */
+	FString TakeSessionError();
+
+	/**
+	 * Debug: shows Message on screen for 15 real seconds, replacing the previous session message. Removed by a game
+	 * instance timer rather than the message's own duration, which only counts down with the world's frame time and
+	 * left results standing on the menu, where a stale "listed" read as the answer for the next server created.
+	 */
+	void ShowSessionDebugMessage(FString const& Message, FColor Color);
+
 	/** Map to return to when leaving a session via LeaveSessionAndReturnToMenu. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoOnline")
 	TSoftObjectPtr<UWorld> MainMenuMap;
@@ -75,8 +89,26 @@ private:
 	 * session behind: still a member of the host's lobby, it would keep a dead lobby listed. */
 	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType,
 						  FString const& ErrorString);
+	void OnTravelFailure(UWorld* World, ETravelFailure::Type FailureType, FString const& ErrorString);
+
+	/** Queues Message for the menu's error popup (see TakeSessionError), after any message not yet taken. */
+	void ReportSessionError(FString const& Message);
+
+	/**
+	 * Debug, on the host right after its session is created: shows on screen whether the server browser would list
+	 * it. The browser can't answer that for its own host — the Steam subsystem drops every lobby the searcher is in
+	 * from its results — so this sends Steam the browser's lobby query itself and PollOwnLobbyListed looks for this
+	 * host's lobby among the matches.
+	 */
+	void CheckOwnLobbyListed();
+	void PollOwnLobbyListed();
 
 	FString PendingMapURL;
+	FString PendingSessionError;
+	FTimerHandle OwnLobbyCheckTimer;
+	FTimerHandle SessionDebugMessageTimer;
+	/** Steam's SteamAPICall_t for the lobby list CheckOwnLobbyListed requested. */
+	uint64 OwnLobbyListCall = 0;
 	FDelegateHandle CreateSessionDelegateHandle;
 	FDelegateHandle JoinSessionDelegateHandle;
 	FDelegateHandle DestroySessionDelegateHandle;

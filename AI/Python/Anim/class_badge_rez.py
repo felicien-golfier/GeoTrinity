@@ -24,7 +24,7 @@ the badge's mid-plane. The montage plays in DefaultSlot, over both layers of the
 revive sound on frame 0.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script. Re-runnable: rewrites every sequence and
-montage in place. Report written to Saved/class_badge_rez.txt.
+montage in place. Report written to AI/Output/class_badge_rez.txt.
 """
 import math
 
@@ -35,7 +35,7 @@ APE = unreal.AnimPoseExtensions
 MESH_FOLDER = "/Game/Characters/Meshes/Class"
 ANIM_FOLDER = "/Game/Characters/Anim/ClassBadge"
 GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_rez.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_rez.txt"
 
 ROOT, BODY, TOP = "Root", "Bottom", "Top"
 SLOT = "DefaultSlot"

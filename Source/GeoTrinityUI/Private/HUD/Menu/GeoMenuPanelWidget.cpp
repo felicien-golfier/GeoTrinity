@@ -23,6 +23,11 @@ FReply UGeoMenuPanelWidget::NativeOnKeyDown(FGeometry const& InGeometry, FKeyEve
 		return FReply::Handled();
 	}
 
+	if (InKeyEvent.GetKey() == EKeys::Escape && HandleEscapeAction())
+	{
+		return FReply::Handled();
+	}
+
 	if (FSlateApplication::Get().GetNavigationDirectionFromKey(InKeyEvent) != EUINavigation::Invalid)
 	{
 		FReply const Reply = FocusInitialWidgetForNavigation();

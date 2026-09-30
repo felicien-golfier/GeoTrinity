@@ -7,9 +7,6 @@ Every badge splits into a body and the parts floating free around it, and the ri
     └── Top           a pivot on the badge's centre, carrying no vertex — the top layer
         └── <part>    one bone per floating part, at that part's own centre
 
-Bottom and Top stand on the centre of the badge's box, which is the origin unless the generator centres the badge on
-its centroid (the Triangle), so a clip authored about the box centre keeps playing about it.
-
 Each vertex is painted wholly to one bone, so a layered blend filtered on the Top branch plays a top clip on the
 parts while a bottom clip keeps the body, and neither reaches the other. A part bone sits on its part's own centre so
 a turn or a scale works in place; turning Top swings every part round the badge's centre instead.
@@ -25,7 +22,7 @@ bone stands at its own height.
 Re-runnable: a re-run rebuilds both assets from the badges, which discards any animation authored on the old rig.
 
 Run AFTER AI/Python/Mesh/generate_class_badge_meshes.py, via mcp-unreal execute_script.
-Report written to Saved/class_badge_rig.json.
+Report written to AI/Output/class_badge_rig.json.
 """
 import json
 import math
@@ -87,20 +84,14 @@ def distance_to_outline(point, outline):
     return 0.0 if inside else nearest
 
 
-def box_centre(outlines):
-    """The centre of the whole badge's box, where Bottom and Top stand."""
-    return centre([point for outline in outlines for point in outline])
-
-
 def bone_table(part_names, parts):
     """The rig as (bone, parent, location in parent space), parents before children, the root first."""
-    box_x, box_y = box_centre([part.outline for part in parts])
     bones = [(ROOT, "None", (0.0, 0.0, 0.0)),
-             (BOTTOM, ROOT, (box_x, box_y, -LAYER_LIFT)),
-             (TOP, ROOT, (box_x, box_y, LAYER_LIFT))]
+             (BOTTOM, ROOT, (0.0, 0.0, -LAYER_LIFT)),
+             (TOP, ROOT, (0.0, 0.0, LAYER_LIFT))]
     for name, part in zip(part_names, parts[1:]):
         x, y = centre(part.outline)
-        bones.append((name, TOP, (x - box_x, y - box_y, part.lift - LAYER_LIFT)))
+        bones.append((name, TOP, (x, y, part.lift - LAYER_LIFT)))
     return bones
 
 
@@ -228,9 +219,8 @@ def rig_badge(generator, badge, setup):
     sockets = place_sockets(mesh, setup["sockets"])
     if "keyhole_socket" in setup:
         hole_x, hole_y = keyhole_centre(generator)
-        box_x, box_y = box_centre(outlines)
         sockets[setup["keyhole_socket"]] = write_socket(mesh, setup["keyhole_socket"], BOTTOM,
-                                                        unreal.Vector(hole_x - box_x, hole_y - box_y, LAYER_LIFT))
+                                                        unreal.Vector(hole_x, hole_y, LAYER_LIFT))
     unreal.EditorAssetLibrary.save_loaded_asset(mesh)
     unreal.EditorAssetLibrary.save_loaded_asset(skeleton)
 
@@ -256,8 +246,9 @@ def main():
         result["ok"] = False
         result["error"] = str(exc)
         result["trace"] = traceback.format_exc()
-    with open(unreal.Paths.project_saved_dir() + "class_badge_rig.json", "w") as f:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "class_badge_rig.json", "w") as f:
         json.dump(result, f, indent=2)
 
 
-main()
+if __name__ == "__main__":
+    main()

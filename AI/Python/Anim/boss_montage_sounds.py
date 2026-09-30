@@ -6,7 +6,7 @@ AI/Python/Audio/hex_boss_montage_score.py, and the star boss's AI/Python/Audio/s
 beats, each stem from where it starts, the loop sound notifies where a score puts them, and every curve of the score.
 Run via mcp-unreal execute_script, after import_sound_waves.py. Set BOSSES to the bosses to (re)write. Re-runnable:
 clears each montage's notify tracks and rewrites each curve first.
-Report written to Saved/boss_montage_sounds.txt.
+Report written to AI/Output/boss_montage_sounds.txt.
 """
 import json
 import traceback
@@ -28,7 +28,7 @@ SCORES = {
                                    ("SK_Star_PikeNova_Montage", "PikeNova"), ("SK_Star_Montage_Death", "Death")]]}
 BOSSES = ["Hex", "Star"]
 TRIMS = {"Hex": -4.0, "Star": 0.0}  # dB every one-shot of a boss's montages is trimmed by in game
-REPORT = unreal.Paths.project_saved_dir() + "boss_montage_sounds.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "boss_montage_sounds.txt"
 
 
 def put_score(montage, cues, curves, trim, toolkit):

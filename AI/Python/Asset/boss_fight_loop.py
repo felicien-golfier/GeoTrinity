@@ -5,7 +5,7 @@ AI/Python/Audio/hex_intro_mech_score.py, the star boss's from AI/Python/Audio/st
 ear on the boss, so a layer already there keeps its own; a new one takes the score's, or the component's default. A
 boss is never the local player's avatar, so every layer plays at its full volume on other machines too. Run via
 mcp-unreal execute_script, after import_sound_waves.py. Re-runnable: replaces each boss's whole Loops array.
-Report written to Saved/boss_fight_loop.txt.
+Report written to AI/Output/boss_fight_loop.txt.
 """
 import json
 import traceback
@@ -16,7 +16,7 @@ AUDIO = unreal.Paths.project_dir() + "SourceArt/Audio/"
 # (boss Blueprint, its score's loop.json under AUDIO, dB every layer's volume is trimmed by in game)
 BOSSES = [("/Game/Characters/Enemies/HEX/BP_HexBoss", "HexBossIntro/loop.json", -4.0),
           ("/Game/Characters/Enemies/Star/BP_StarBoss", "StarBoss/loop.json", 0.0)]
-REPORT = unreal.Paths.project_saved_dir() + "boss_fight_loop.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "boss_fight_loop.txt"
 
 
 def put_loops(blueprint_path, layers, trim):

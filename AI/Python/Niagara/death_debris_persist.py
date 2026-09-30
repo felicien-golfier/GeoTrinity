@@ -5,7 +5,7 @@ last of its lifetime — are switched off, so the chunks settle and stay. The em
 lets living particles finish, so the burst ending kills nothing. The character destroys the system on revive.
 
 Needs the bool switch support in GeoNiagaraBuilderUtil.SetStaticSwitch. Run through mcp-unreal execute_script or
-AI/Python/Runtime/run_via_bridge.py. Re-runnable. Report written to Saved/death_debris_persist.txt.
+AI/Python/Runtime/run_via_bridge.py. Re-runnable. Report written to AI/Output/death_debris_persist.txt.
 """
 import unreal
 
@@ -18,7 +18,7 @@ EMITTER = "UpwardMeshBurst"
 UPDATE = unreal.NiagaraScriptUsage.PARTICLE_UPDATE_SCRIPT
 KILL_BY_AGE = "Kill Particles When Lifetime Has Elapsed"
 ENDING_MODULES = ["ScaleColor", "ScaleMeshSize"]
-REPORT = unreal.Paths.project_saved_dir() + "death_debris_persist.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "death_debris_persist.txt"
 
 LOG = []
 builder = unreal.GeoNiagaraBuilderUtil.get_default_object()

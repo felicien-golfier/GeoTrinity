@@ -13,6 +13,7 @@ void UTileCarveRayPattern::TickPattern(float const ServerTime, float const Spent
 		if (AGeoHexArena* const Arena = FindLastTileHit(SpentTime, LastTile))
 		{
 			Arena->HighlightTile(StoredPayload.SourceAvatar, LastTile);
+			HighlightedTile = LastTile;
 		}
 	}
 
@@ -23,14 +24,18 @@ void UTileCarveRayPattern::EndPattern(bool bForceStop)
 {
 	Super::EndPattern(bForceStop);
 
-	if (!bForceStop && bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
+	if (bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
 	{
-		// Yaw at SpentTime 0: the tile that dies is the one the beam locked onto when it went live.
-		FIntPoint LastTile;
-		if (AGeoHexArena* const Arena = FindLastTileHit(0.f, LastTile))
+		if (AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.SourceAvatar))
 		{
-			Arena->DestroyTiles({LastTile});
+			Arena->ClearHighlight(StoredPayload.SourceAvatar);
+			if (!bForceStop && HighlightedTile.IsSet())
+			{
+				Arena->DestroyTiles({HighlightedTile.GetValue()});
+			}
 		}
+
+		HighlightedTile.Reset();
 	}
 }
 

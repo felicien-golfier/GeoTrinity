@@ -33,8 +33,12 @@ public:
 protected:
 	/** Wires each main-menu button to its handler and registers sub-panel close delegates. */
 	virtual void NativeConstruct() override;
+	/** Shows the error popup for any create/join/connection failure the game instance holds (TakeSessionError). */
+	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 	/** Returns CreateServerButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Closes any open sub-panel back to the top-level buttons and consumes the Escape input. */
+	virtual bool HandleEscapeAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> CreateServerButton;
@@ -84,4 +88,11 @@ private:
 
 	void OpenSubPanel(UGeoMenuPanelWidget* SubPanel);
 	void SetButtonsVisible(bool bVisible);
+
+	/** Pure Slate modal over the whole viewport, so it needs nothing from the menu's BP layout; its OK button takes
+	 * every user's focus so a gamepad can dismiss it. */
+	void ShowErrorPopup(FString const& Message);
+	FReply HandleErrorPopupClosed();
+
+	TSharedPtr<SWidget> ErrorPopup;
 };

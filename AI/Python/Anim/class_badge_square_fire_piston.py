@@ -14,7 +14,7 @@ one; a mandible rammed back lands flush on the block at rest, which the sacrific
 authored at 30 fps and sped up to the ability's delay by the play rate; the End sections run at that same rate.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script. Re-runnable: rewrites the sequence and
-the montage in place. Report written to Saved/class_badge_square_fire_piston.txt.
+the montage in place. Report written to AI/Output/class_badge_square_fire_piston.txt.
 """
 import unreal
 
@@ -26,7 +26,7 @@ GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
 ANIM_PACKAGE = "/Game/Characters/Anim/ClassBadge/Square"
 SEQUENCE_NAME = "SK_SquareBadge_Sequence_FirePiston"
 MONTAGE_NAME = "SK_SquareBadge_Montage_FirePiston"
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_square_fire_piston.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_square_fire_piston.txt"
 
 BODY, LEFT, RIGHT = "Bottom", "MandibleLeft", "MandibleRight"
 OUTWARD = {LEFT: -1.0, RIGHT: 1.0}

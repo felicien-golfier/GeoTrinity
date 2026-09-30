@@ -1,0 +1,12 @@
+0.3 7.8 Field_Hum_Rising
+7.9 12.8 Field_Noise_Bed
+12.9 17.8 Field_PowerOn_Sweep_Down
+17.9 22.9 Field_Pulse_Comb
+22.95 26.8 Field_Low_Hum
+26.85 31.4 Field_Buzz
+31.45 36.0 Field_Bright_Barrier
+36.0 40.7 Field_Crackle_Low
+40.75 46.0 Field_Pulsing
+46.05 51.0 Field_Tonal_Chord
+51.05 56.0 Field_Dense_Tonal
+56.05 59.9 Field_PowerUp_Sweep_Up

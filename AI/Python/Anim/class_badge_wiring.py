@@ -11,7 +11,7 @@ The data asset's class is not exposed to Python, but its map is reachable under 
 through exported text, since EditDefaultsOnly fields refuse the setter even on a copy.
 
 Run AFTER every AI/Python/Anim/class_badge_*.py clip script, via mcp-unreal execute_script. Re-runnable.
-Report written to Saved/class_badge_wiring.txt.
+Report written to AI/Output/class_badge_wiring.txt.
 """
 import unreal
 
@@ -20,7 +20,7 @@ ANIM_FOLDER = "/Game/Characters/Anim/ClassBadge"
 CLASS_DATA = "/Game/Characters/Playable/DA_PlayerClassData"
 CHARACTER_BP = "/Game/Characters/Playable/BP_GeoPlayableCharacter"
 DEFAULT_BADGE = "Square"  # the class the character Blueprint shows before one is applied
-REPORT = unreal.Paths.project_saved_dir() + "class_badge_wiring.txt"
+REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_wiring.txt"
 
 BADGES = {
     "Square": unreal.PlayerClass.SQUARE,

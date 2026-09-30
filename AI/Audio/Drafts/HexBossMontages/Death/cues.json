@@ -1,0 +1,72 @@
+[
+ {
+  "track": "Loop",
+  "notify": "GeoLoopSoundNotify",
+  "time": 0.0,
+  "properties": {}
+ },
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_GearThunk_1",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 0.1667,
+  "volume": 0.6,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_GearThunk_1.wav"
+ },
+ {
+  "track": "Mech",
+  "sound": "SW_Mech_Grind",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 1.4,
+  "volume": 0.6,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Grind.wav"
+ },
+ {
+  "track": "Mech",
+  "sound": "SW_Mech_Riser",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 2.4667,
+  "volume": 0.6,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Riser.wav"
+ },
+ {
+  "track": "Loop",
+  "notify": "GeoLoopSoundNotify",
+  "time": 3.4667,
+  "properties": {
+   "play": false
+  }
+ },
+ {
+  "track": "Mech",
+  "sound": "SW_Mech_Break",
+  "package": "/Game/Art/SFX/Mech",
+  "time": 3.4667,
+  "volume": 1.0,
+  "source": "SourceArt/Audio/Mech/SFX_Mech_Break.wav"
+ },
+ {
+  "track": "Machine",
+  "sound": "SW_Machine_Blast",
+  "package": "/Game/Art/SFX/Machine",
+  "time": 3.4667,
+  "volume": 0.6,
+  "source": "SourceArt/Audio/Machine/SFX_Machine_Blast.wav"
+ },
+ {
+  "track": "Metal",
+  "sound": "SW_Metal_Crack",
+  "package": "/Game/Art/SFX/Metal",
+  "time": 3.5333,
+  "volume": 0.5,
+  "source": "SourceArt/Audio/Metal/SFX_Metal_Crack.wav"
+ },
+ {
+  "track": "Metal",
+  "sound": "SW_Metal_CrackBright",
+  "package": "/Game/Art/SFX/Metal",
+  "time": 3.6,
+  "volume": 0.4,
+  "source": "SourceArt/Audio/Metal/SFX_Metal_CrackBright.wav"
+ }
+]

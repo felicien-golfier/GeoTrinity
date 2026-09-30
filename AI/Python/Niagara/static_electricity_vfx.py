@@ -262,5 +262,5 @@ def main():
 
 
 if __name__ == "__main__":
-    report = "%sGeoTrinity_StaticElectricity.txt" % unreal.Paths.project_saved_dir()
+    report = "%sGeoTrinity_StaticElectricity.txt" % (unreal.Paths.project_dir() + "AI/Output/")
     open(report, "w").write(main())

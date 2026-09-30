@@ -2,7 +2,7 @@
 
 A material input fed by a constant instead of a node has no Python property; its value sits in the text export.
 Only the material asset itself is exported: exporting its editor-only-data subobject kills the editor.
-Run via execute_script. Report written to Saved/read_material_text.txt.
+Run via execute_script. Report written to AI/Output/read_material_text.txt.
 """
 import unreal
 
@@ -21,7 +21,7 @@ def export_text(material_path, file_path):
 
 def read_properties(material_path, names):
     """The exported lines of material_path that start with one of names, e.g. EmissiveColor=(UseConstant=True,...)."""
-    file_path = unreal.Paths.project_saved_dir() + "material_export.t3d"
+    file_path = (unreal.Paths.project_dir() + "AI/Output/") + "material_export.t3d"
     export_text(material_path, file_path)
     with open(file_path) as handle:
         return [line.strip() for line in handle if line.strip().startswith(tuple(f"{name}=" for name in names))]
@@ -29,5 +29,5 @@ def read_properties(material_path, names):
 
 if __name__ == "__main__":
     lines = read_properties("/Game/Characters/Meshes/Cone/MAT_Cone_Alive", ("BaseColor", "EmissiveColor"))
-    with open(unreal.Paths.project_saved_dir() + "read_material_text.txt", "w") as report:
+    with open((unreal.Paths.project_dir() + "AI/Output/") + "read_material_text.txt", "w") as report:
         report.write("\n".join(lines))
