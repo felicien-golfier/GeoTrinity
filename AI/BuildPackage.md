@@ -48,7 +48,7 @@ only runs the package.
 ### One-time setup (Windows build machine)
 1. **Linux target files for the engine.** A launcher install ships none by default: no
    `Engine\Intermediate\Build\Linux`, no Linux Steamworks libs. In the Epic Games Launcher, open
-   Unreal Engine → Library → 5.7 → ▾ → Options → Target Platforms, tick **Linux** and apply.
+   Unreal Engine → Library → 5.8 → ▾ → Options → Target Platforms, tick **Linux** and apply.
 2. **Cross-compile toolchain.** Install **`v26_clang-20.1.8-rockylinux8`** (clang 20.1.8) from
    `https://cdn.unrealengine.com/CrossToolchain_Linux/v26_clang-20.1.8-rockylinux8.exe`. The installer sets
    `LINUX_MULTIARCH_ROOT`. Check it in a **new** terminal with `echo %LINUX_MULTIARCH_ROOT%`. Restart the editor
@@ -90,7 +90,7 @@ It refuses to start when `LINUX_MULTIARCH_ROOT` is unset. The Windows package (`
 ### Not covered yet
 - **Linux dedicated server** — needs a source engine, like the Win64 server. Do it on CI.
 - **itch.io Linux channel** — `Push_Itch.bat` only pushes `exyoe/geotrinity:windows`.
-- **Mac** — cannot be built from Windows at all. It needs a Mac with the Xcode version that 5.7 requires, plus an
+- **Mac** — cannot be built from Windows at all. It needs a Mac with the Xcode version that 5.8 requires, plus an
   Apple Developer account to sign and notarize the build.
 
 ## Publishing to itch.io

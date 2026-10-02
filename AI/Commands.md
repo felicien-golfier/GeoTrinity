@@ -1,11 +1,11 @@
 # Development Environment & Commands
 
 ## Environment
-- **IDE**: JetBrains Rider. **Platform**: Windows. **Engine**: Unreal Engine 5.7.
+- **IDE**: JetBrains Rider. **Platform**: Windows. **Engine**: Unreal Engine 5.8.
 - **Editor target/config**: `GeoTrinityEditor` `DebugGame` — what Rider launches and what to build. Never the
   plain `GeoTrinity` target or `Development` editor when the goal is the editor.
-- **Never hardcode an engine path** — this PC has the launcher install at `C:\Program Files\Epic Games\UE_5.7`,
-  the CI box a source build at `H:\Epic\UE_5.7`. Both resolve from the `.uproject`'s `"EngineAssociation": "5.7"`.
+- **Never hardcode an engine path** — this PC has the 5.8 install at `C:\Program Files\Epic Games\UE_5.8`,
+  the CI box a source build at `H:\Epic\UE_5.8`. Both resolve from the `.uproject`'s `"EngineAssociation": "5.8"`.
 - Every new `.h`/`.cpp` starts with `// Copyright 2024 GeoTrinity. All Rights Reserved.`
 
 ## Build commands
@@ -46,7 +46,7 @@ needs registering by hand — but the two kinds register differently:
 
 | Kind | Where | Keyed by |
 |---|---|---|
-| Launcher install | `HKLM\SOFTWARE\EpicGames\Unreal Engine\<ver>` (**no** space in `EpicGames`) | version — `"5.7"` matches directly |
+| Launcher install | `HKLM\SOFTWARE\EpicGames\Unreal Engine\<ver>` (**no** space in `EpicGames`) | version — `"5.8"` matches directly |
 | Source build | `HKCU\SOFTWARE\Epic Games\Unreal Engine\Builds` (**space** in `Epic Games`) | a random GUID, unique per machine |
 
 A shared `.uproject` can never name a source build's GUID, so the resolver identifies one by matching
@@ -55,8 +55,10 @@ A shared `.uproject` can never name a source build's GUID, so the resolver ident
 exists (the registry keeps advertising deleted engines). Source builds win over launcher installs, unlike
 Unreal's own resolution; pass `-Override` to force the other one.
 
-> **Never add a registry alias named `5.7` pointing at a source build.** `EnumerateEngineInstallations` dedupes
+> **Never add a registry alias named `5.8` pointing at a source build.** `EnumerateEngineInstallations` dedupes
 > by directory and `RegDeleteValue`s every duplicate, so of two names for one engine the second is deleted.
+> This PC's `UE_5.8` was installed outside the launcher, so Unreal registered it in HKCU under a GUID; that value
+> was renamed to `5.8` (a rename, not a second name), so Unreal and Rider resolve `"5.8"` too, not only the scripts.
 
 The **CI runner** is the one machine needing setup: its service runs as SYSTEM and cannot read the desktop
 user's `HKCU`. Run `Tools\Setup-Runner.ps1` there once, elevated — see [`CI-RUNNER.md`](../CI-RUNNER.md).
@@ -76,7 +78,7 @@ right-click entry runs:
 
 ## Launch editor
 ```bash
-"C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Win64-DebugGame.exe" "C:\GeoTrinity\GeoTrinity.uproject" -RemoteControlAllow
+"C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Win64-DebugGame.exe" "C:\GeoTrinity\GeoTrinity.uproject" -RemoteControlAllow
 ```
 
 ## Packaging

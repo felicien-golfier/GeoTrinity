@@ -1,13 +1,21 @@
 {
-  "mcpServers": {
-    "mcp-unreal": {
-      "command": "C:\\Users\\Felou\\go\\bin\\mcp-unreal.exe",
-      "env": {
-        "MCP_UNREAL_PROJECT": "C:\\GeoTrinity",
-        "UE_EDITOR_PATH": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe",
-        "RC_API_PORT": "30010",
-        "PLUGIN_PORT": "8090"
-      }
-    }
-  }
+	"mcpServers":
+	{
+		"mcp-unreal":
+		{
+			"command": "C:\\Users\\Felou\\go\\bin\\mcp-unreal.exe",
+			"env":
+			{
+				"MCP_UNREAL_PROJECT": "C:\\GeoTrinity",
+				"UE_EDITOR_PATH": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe",
+				"RC_API_PORT": "30010",
+				"PLUGIN_PORT": "8090"
+			}
+		},
+		"unreal-mcp":
+		{
+			"type": "http",
+			"url": "http://127.0.0.1:8000/mcp"
+		}
+	}
 }

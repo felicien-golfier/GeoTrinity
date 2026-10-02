@@ -30,6 +30,7 @@ see `MCP_EditorUtility.md`.
 | Reading the running game in PIE | `MCP_PIE.md` |
 | Judging a visual change in the editor world, without PIE | `MCP_Preview.md` |
 | Live Coding builds with the editor open, connecting the MCP bridge | `MCP_LiveCodingAndConnect.md` |
+| UE 5.8 built-in Unreal MCP: enabling, starting, connecting, toolsets, which server to use | `MCP_UnrealBuiltin.md` |
 | Audio editing in Audacity: connection, selection model, generators, arguments that never apply | `Audacity/CLAUDE.md` |
 | Building game sound effects in Audacity: layers, sound grammar, recipes, export to Unreal | `Audacity/GameSoundDesign.md` |
 | How audio models hear and make sound; measuring and picturing an exported sound; user words to fixes | `Audacity/ListeningToSound.md` |

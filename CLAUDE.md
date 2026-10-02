@@ -5,10 +5,11 @@ GeoTrinity — multiplayer 2D boss fight bullet-hell, Unreal Engine 5.7, GAS. Pl
 
 ## Build
 **NEVER run a build yourself — not even to check that code compiles, and not even when the editor is closed.** The user builds; ask them and wait for the result. This covers `Tools\*.bat`, `Build.bat`, `RunUAT.bat`, and any compile invoked from a shell. Hand over unverified code and say so — do not "just check" it.
+**Only exception: the user explicitly asks you to build in that message** ("build and fix errors"). Then run the matching `Tools\*.bat` with `GEO_NO_PAUSE=1`, only with no editor running, and the permission lasts for that task only.
 Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (distributable package). Read them to know what the user runs — not to run it yourself. Use MCP live compile only when actively working on Blueprints or code that directly touches MCP/Blueprint state.
 
 ## Big RULES
-- **NEVER run a build — ask the user and wait.** See the Build section above.
+- **NEVER run a build — ask the user and wait**, unless the user explicitly asks you to build. See the Build section above.
 - **NEVER close, kill, or restart the user's Unreal editor — nor launch one — not even to build.** It may hold unsaved work that closing destroys. When a build needs the editor closed, ask the user to close it and wait; never do it yourself.
 - **NEVER write anything into `Saved/`** — the user may wipe it any time. Sound references, drafts and reproductions go to `AI/Audio/` (map in its `CLAUDE.md`); script reports, probes and exports go to `AI/Output/`; throwaway files go to the session scratchpad.
 - ALWAYS read AI/CodingStyle.md before coding. If planing or just answering, don't, but if you write any line of code, read it.

@@ -17,8 +17,8 @@ height at its base, thinning toward the point to WEDGE_TIP of it at the apex, so
 it rolls.
 Three kinds turn in place rather than read as a flat sliver: plug and needle are DIAMONDs, a waist ring with
 an apex above and below; each mandible is a BAR; and the circle's small disc is an HOURGLASS, pinched at
-mid height so that turning it shows something a cylinder never would. All three are PART_DEPTH as deep as their
-own narrow side is wide.
+mid height so that turning it shows something a cylinder never would. Plug, needle and mandibles are PART_DEPTH
+as deep as their own narrow side is wide; the hourglass is CIRCLE_DEPTH as deep, so its waist reads.
 
 Outlines are authored in the source images' pixel space (341x341, Y down) so the numbers stay checkable
 against the art, then mapped to world: image up -> +X (forward), image right -> +Y. A badge is centred on
@@ -52,6 +52,7 @@ CIRCLE_BIG = (169.5, 200.0, 129.0)  # cx, cy, radius
 CIRCLE_SMALL = (169.5, 75.0, 47.5)
 CIRCLE_GAP = 13.5  # the black ring the art draws between the two; the bite is the small disc plus this
 CIRCLE_WAIST = 0.55  # how far the small disc is pinched in at mid height
+CIRCLE_DEPTH = 1.0  # the small disc's depth against its width: twice PART_DEPTH
 CIRCLE_BIG_SEGS = 20
 CIRCLE_BITE_SEGS = 10
 CIRCLE_SMALL_SEGS = 16
@@ -334,7 +335,8 @@ def build(name, parts):
             diamond(part.outline, part.lift)
         else:
             # A body takes the badge's full depth; a part that has to turn is PART_DEPTH as deep as it is narrow.
-            half = body_half if part.kind in (PRISM, WEDGE) else narrow_side(part.outline)[0] * PART_DEPTH
+            depth = CIRCLE_DEPTH if part.kind == HOURGLASS else PART_DEPTH
+            half = body_half if part.kind in (PRISM, WEDGE) else narrow_side(part.outline)[0] * depth
             waist = CIRCLE_WAIST if part.kind == HOURGLASS else 1.0
             height = (lambda x: wedge(x, back, front)) if part.kind == WEDGE else (lambda x: 1.0)
             extrude(part.outline, ((-half, 1.0), (0.0, waist), (half, 1.0)), height)

@@ -15,7 +15,7 @@ Work together in co-op to defeat challenging bosses by splitting and coordinatin
 
 ## Technical Stack
 
-- **Engine**: Unreal Engine 5.7
+- **Engine**: Unreal Engine 5.8
 - **Language**: C++
 - **IDE**: JetBrains Rider
 - **Core Systems**: Gameplay Ability System (GAS)
@@ -37,8 +37,8 @@ Work together in co-op to defeat challenging bosses by splitting and coordinatin
 
 Generate project files and build through JetBrains Rider or the command line:
 
-Requires Unreal Engine 5.7 — either the launcher build or a source build. The `.uproject` binds to it via
-`"EngineAssociation": "5.7"`, and the build scripts resolve that per-machine, so no path needs editing.
+Requires Unreal Engine 5.8 — either the launcher build or a source build. The `.uproject` binds to it via
+`"EngineAssociation": "5.8"`, and the build scripts resolve that per-machine, so no path needs editing.
 
 ```bash
 # Build (engine resolved automatically; works from any clone location)

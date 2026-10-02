@@ -21,7 +21,6 @@
 #include "EngineUtils.h"
 #include "GameplayEffectTypes.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "InstancedStruct.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "Settings/GameDataSettings.h"

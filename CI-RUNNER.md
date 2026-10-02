@@ -141,7 +141,7 @@ registered. It auto-detects that engine, copies the answer into a machine-wide `
 *can* read (the resolver honours it as an override), and restarts the runner service so it picks it up:
 
 ```powershell
-.\Tools\Setup-Runner.ps1                              # or -EngineRoot "H:\Epic\UE_5.7" to pin one
+.\Tools\Setup-Runner.ps1                              # or -EngineRoot "H:\Epic\UE_5.8" to pin one
 .\Tools\Setup-Runner.ps1 -WhatIf                      # preview, changes nothing
 ```
 

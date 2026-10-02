@@ -19,7 +19,7 @@
     Only runner machines need this. A normal dev PC resolves its engine automatically.
 
 .PARAMETER EngineRoot
-    Source engine to pin, e.g. H:\Epic\UE_5.7. Omit to auto-detect the engine registered for the current
+    Source engine to pin, e.g. H:\Epic\UE_5.8. Omit to auto-detect the engine registered for the current
     user (run it from the desktop session where the source build was registered).
 
 .PARAMETER SkipServiceRestart
@@ -31,7 +31,7 @@
     .\Tools\Setup-Runner.ps1
 
 .EXAMPLE
-    .\Tools\Setup-Runner.ps1 -EngineRoot "H:\Epic\UE_5.7"
+    .\Tools\Setup-Runner.ps1 -EngineRoot "H:\Epic\UE_5.8"
 
 .EXAMPLE
     .\Tools\Setup-Runner.ps1 -WhatIf     # show what it would do, change nothing
