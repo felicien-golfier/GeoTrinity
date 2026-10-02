@@ -60,7 +60,7 @@ or wire them in.
 | `class_badge_wiring.py` | Swap the playable characters onto the badges: class data, character mesh, ability montages, materials |
 | `dump_bone_motion.py` | Sample each hex and star boss montage's bones in parent space to JSON, yaw unwrapped, with the rest pose, its sections and blends — the motion a sound score is timed from; a montage samples as its reference pose, so each of its sequences is sampled across the span it plays |
 | `export_anim_fbx.py` | Export every animation sequence under the class badge folder to FBX in `AI/Output/ClassBadgeAnimFbx`, one subfolder per class |
-| `move_badge_origin.py` | Rebuild one class badge where the generator now frames it, rewriting every clip on its skeleton so the motion stays the same on the mesh, logo mask re-centred |
+| `rerig_class_badges.py` | Re-rig the three class badges from `rig_class_badges.py`, rewriting every clip on their skeletons to play exactly as before on the new rest pose; reports which bones still translate per clip |
 | `hex_boss_abilities.py` | Hex boss sweep beam, tile-carving ray and cone spray |
 | `hex_boss_death.py` | The three rings wander off axis, blow apart and settle |
 | `hex_boss_idle.py` | Rings turning against each other, the outer one breathing |
@@ -215,4 +215,6 @@ These run from a shell with `uv run <script>`, not through the editor, on the FF
 |---|---|
 | `video_scan.py` | See a video without watching it: timestamped contact sheets, scene cuts, loudness every 100 ms, a GPU transcript with word timings, and a timeline joining them per window with the loudest ranked; a span zooms in, keeping source times |
 | `video_bar.py` | When an on-screen bar empties and refills over a whole video — a recording player's deaths from their health bar |
+| `edit_to_fcpxml.py` | Turn an edit list into an FCPXML timeline and a captions SRT that DaVinci Resolve imports with every part editable — cuts, follow zoom as keyframes, titles, sounds, cards |
+| `locate_frame.py` | Find where a reframed frame sits in its source frame — the crop centre a zoom actually produced, to check against the one intended |
 | `video_render.py` | Render an edit list in one FFmpeg pass: cuts from any sources, image and colour cards, source crop, a zoom window following keyed points, one-shot sounds placed on the timeline, framing to any size (fill with focus, fit, blurred fill), speed, text, transitions with per-clip hard cuts, word captions, a ducked music bed, loudness normalisation under a limiter |

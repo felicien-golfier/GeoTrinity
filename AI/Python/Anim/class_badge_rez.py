@@ -192,10 +192,7 @@ def key(badge, geometry, frame, bone, rest_local):
         scale = unreal.Vector(scale.x * size, scale.y * size, scale.z)
         rotation = unreal.Rotator(yaw=spin_yaw(frame)).quaternion()
     elif bone == BODY:
-        # The body bone sits below the badge's mid-plane, which is what the roll turns about.
-        translation, rotation = toolkit["turn_about"](
-            translation, unreal.Rotator(roll=360.0 * setup["roll"] * orbit_phase(frame)),
-            unreal.Vector(0.0, 0.0, -translation.z))
+        rotation = unreal.Rotator(roll=360.0 * setup["roll"] * orbit_phase(frame)).quaternion()
     elif bone in setup["parts"]:
         rest = (translation.x, translation.y, translation.z)
         x, y, z, yaw, pitch = part_pose(setup["parts"][bone], centre, radii[bone], depths[bone], rest, frame)

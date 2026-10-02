@@ -96,14 +96,12 @@ def body_pose(keys, frame):
     return keys[-1][1]
 
 
-def key(toolkit, clip, frame, bone, rest_local):
+def key(clip, frame, bone, rest_local):
     translation, rotation, scale = rest_local.translation, rest_local.rotation, rest_local.scale3d
     if bone == BODY:
         forward, scale_x, scale_y, roll = body_pose(clip["keys"], frame)
-        # The body bone sits below the badge's mid-plane, which is what the roll turns about.
-        translation, rotation = toolkit["turn_about"](
-            unreal.Vector(translation.x + forward, translation.y, translation.z), unreal.Rotator(roll=roll),
-            unreal.Vector(0.0, 0.0, -translation.z))
+        translation = unreal.Vector(translation.x + forward, translation.y, translation.z)
+        rotation = unreal.Rotator(roll=roll).quaternion()
         scale = unreal.Vector(scale.x * scale_x, scale.y * scale_y, scale.z)
     return translation, rotation, scale
 
@@ -132,7 +130,7 @@ def build(toolkit, name, clip):
                                               unreal.AnimSequence, factory)
     frames = clip["keys"][-1][0]
     toolkit["write_bone_tracks"](sequence, skeleton, FPS, frames,
-                                 lambda frame, bone, rest_local: key(toolkit, clip, frame, bone, rest_local),
+                                 lambda frame, bone, rest_local: key(clip, frame, bone, rest_local),
                                  "Build {} badge {}".format(badge, name))
 
     montage_name = "SK_{}Badge_Montage_{}".format(badge, name)

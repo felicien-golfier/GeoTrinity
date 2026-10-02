@@ -2,14 +2,15 @@
 
 Every badge splits into a body and the parts floating free around it, and the rig splits the same way:
 
-    Root              on the badge's origin, the character's pivot
-    ├── Bottom        the body — the bottom layer
-    └── Top           a pivot on the badge's centre, carrying no vertex — the top layer
+    Root              on the badge's centre, the character's pivot
+    ├── Bottom        the body, on that same centre — the bottom layer
+    └── Top           a pivot on that same centre, carrying no vertex — the top layer
         └── <part>    one bone per floating part, at that part's own centre
 
 Each vertex is painted wholly to one bone, so a layered blend filtered on the Top branch plays a top clip on the
-parts while a bottom clip keeps the body, and neither reaches the other. A part bone sits on its part's own centre so
-a turn or a scale works in place; turning Top swings every part round the badge's centre instead.
+parts while a bottom clip keeps the body, and neither reaches the other. Every bone sits on the centre of what it
+carries, so a turn or a scale on any of them is that key alone, with no translation to hold it in place; turning Top
+swings every part round the badge's centre.
 
 The fire sockets the abilities read, anim_socket_<n>, hang off the root a fixed FIRE_SOCKET_REACH ahead, so a shot
 leaves the same point whatever the clip does to the part that seems to fire it.
@@ -34,7 +35,6 @@ APE = unreal.AnimPoseExtensions
 FOLDER = "/Game/Characters/Meshes/Class"
 GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
 ROOT, BOTTOM, TOP = "Root", "Bottom", "Top"
-LAYER_LIFT = 20.0  # Bottom and Top sit this far below and above the root, so the three stay pickable
 SNAP_TOLERANCE = 1.0  # a vertex further than this from every outline is not geometry the badge describes
 DEFAULT_SOCKET_NAME = "Socket"  # what a socket constructed from script is called
 FIRE_SOCKET_REACH = 50.0  # how far ahead of the origin every fire socket sits
@@ -87,11 +87,11 @@ def distance_to_outline(point, outline):
 def bone_table(part_names, parts):
     """The rig as (bone, parent, location in parent space), parents before children, the root first."""
     bones = [(ROOT, "None", (0.0, 0.0, 0.0)),
-             (BOTTOM, ROOT, (0.0, 0.0, -LAYER_LIFT)),
-             (TOP, ROOT, (0.0, 0.0, LAYER_LIFT))]
+             (BOTTOM, ROOT, (0.0, 0.0, 0.0)),
+             (TOP, ROOT, (0.0, 0.0, 0.0))]
     for name, part in zip(part_names, parts[1:]):
         x, y = centre(part.outline)
-        bones.append((name, TOP, (x, y, part.lift - LAYER_LIFT)))
+        bones.append((name, TOP, (x, y, part.lift)))
     return bones
 
 
@@ -220,7 +220,7 @@ def rig_badge(generator, badge, setup):
     if "keyhole_socket" in setup:
         hole_x, hole_y = keyhole_centre(generator)
         sockets[setup["keyhole_socket"]] = write_socket(mesh, setup["keyhole_socket"], BOTTOM,
-                                                        unreal.Vector(hole_x, hole_y, LAYER_LIFT))
+                                                        unreal.Vector(hole_x, hole_y, 0.0))
     unreal.EditorAssetLibrary.save_loaded_asset(mesh)
     unreal.EditorAssetLibrary.save_loaded_asset(skeleton)
 

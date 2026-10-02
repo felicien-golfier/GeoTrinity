@@ -169,17 +169,14 @@ def body_forward(scale_x, keyhole, front):
     return (1.0 - scale_x) * (keyhole if scale_x < 1.0 else front)
 
 
-def key(toolkit, clip, keyhole, front, frame, bone, rest_local):
+def key(clip, keyhole, front, frame, bone, rest_local):
     translation, scale = rest_local.translation, rest_local.scale3d
     scale_x, scale_y, thrown, tremble, roll = body_state(clip, frame)
     if bone != BODY:
         return translation, rest_local.rotation, scale
-    # The body bone sits below the badge's mid-plane, which is what the roll turns about.
-    moved, rotation = toolkit["turn_about"](
-        unreal.Vector(translation.x + body_forward(scale_x, keyhole, front) + thrown, translation.y + tremble,
-                      translation.z),
-        unreal.Rotator(roll=roll), unreal.Vector(0.0, 0.0, -translation.z))
-    return moved, rotation, unreal.Vector(scale.x * scale_x, scale.y * scale_y, scale.z)
+    moved = unreal.Vector(translation.x + body_forward(scale_x, keyhole, front) + thrown, translation.y + tremble,
+                          translation.z)
+    return moved, unreal.Rotator(roll=roll).quaternion(), unreal.Vector(scale.x * scale_x, scale.y * scale_y, scale.z)
 
 
 def build(toolkit, name, clip, keyhole, front):
@@ -190,7 +187,7 @@ def build(toolkit, name, clip, keyhole, front):
     # Rewritten in place, which would keep an additive type the asset was given.
     sequence.set_editor_property("additive_anim_type", unreal.AdditiveAnimationType.AAT_NONE)
     toolkit["write_bone_tracks"](sequence, SKELETON_PATH, FPS, clip["frames"],
-                                 lambda frame, bone, rest_local: key(toolkit, clip, keyhole, front, frame, bone,
+                                 lambda frame, bone, rest_local: key(clip, keyhole, front, frame, bone,
                                                                      rest_local),
                                  "Build square badge " + name)
 

@@ -21,13 +21,13 @@ in this folder for the tool map by area and the end-to-end workflows.
 
 ## Current state on this machine
 
-- Resolve 21.1 Free lists no `.py` file under Workspace → Scripts, whatever Python is installed (its built-in one,
-  python.org 3.12 on PATH); a `.lua` file is listed. The bridge cannot start, so every Resolve tool returns the
-  connection error.
-- The local AI tools (transcription, stem separation, background removal) work without Resolve.
+- Resolve Free 21.0.4 is installed: the last Free version that runs `.py` scripts. From 21.1, Free lists no `.py`
+  file under Workspace → Scripts and its Lua has no file, process or module access, so the bridge cannot run there.
+- Updating Resolve past 21.0.x breaks the bridge on Free; its update prompt is declined.
+- Installers of any past version: Blackmagic's download catalog (`/api/support/us/downloads.json`) lists each
+  release with its per-platform download id.
 - With Resolve Studio, external scripting set to Local (Preferences → System → General) lets the bridge run outside
   Resolve under `ResolvePython.exe`, which reaches Resolve through its scripting module; no menu is needed.
-- This doc describes the tools as the source defines them, ready for either path.
 
 ## Connection
 
@@ -87,6 +87,10 @@ in this folder for the tool map by area and the end-to-end workflows.
 ## The model cannot watch the timeline
 
 - To see a frame: move the playhead, export the current frame as PNG into the scratchpad, and read the image.
+- After a timeline import the viewer still shows the previous timeline and the frame export fails: switch to the
+  imported timeline by index first.
+- The tools read no clip transform; check framing by locating the exported frame in its source frame
+  (`AI/Python/Video/locate_frame.py`) and comparing the centre found with the one intended.
 - The thumbnail tool returns base64 RGB and works only on the Color page; the frame export is lighter and works on
   any page.
 - To judge a render, scan the output file with `AI/Python/Video/video_scan.py` as in `../Video/CLAUDE.md`.

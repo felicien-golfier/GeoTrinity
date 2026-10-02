@@ -159,5 +159,19 @@ other clips; grab a still of each on the Color page and export them to look at.
 **Deliver.** List formats, then codecs for the chosen format; set format and codec; set target folder, name and
 range; add a job; start it; poll its status; scan the file; report its path.
 
+**Bring an FFmpeg edit into Resolve, every part editable.** Set the project to the edit's size and frame rate
+before any timeline exists; run `AI/Python/Video/edit_to_fcpxml.py` on the edit list (rendered once, for its
+captions); import the FCPXML as a timeline, switch to it, import the `_captions.srt` into the pool and append it to
+a new subtitle track; export frames and compare them with the render; save the project.
+- Cuts land on V1 with their follow zoom as a fixed scale plus position keyframes; texts become Text titles above
+  their clip, overlapping ones on their own track; sounds land on whichever audio track is free at their time.
+- Resolve reads a clip's position x in percent of the frame height and y in percent of the fitted source's height;
+  a title's both in percent of the frame height.
+- Imported title text is sized against a 1080-high frame, keeps its font family and colour, and loses its bold face
+  and outline.
+- A muted clip comes in as picture only; source audio with any volume change scatters over the sound tracks.
+- An SRT named like a timeline is shadowed by it in the name lookup; name it apart.
+- Each import adds a timeline and leaves the old one in place.
+
 **Hand off to another editor.** Export the timeline as FCPXML, EDL, AAF or OTIO into the `.edit/` folder; the
 media stays where it is, so relink paths travel with the file.

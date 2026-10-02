@@ -14,7 +14,7 @@ The `Tools\*.bat` wrappers resolve the engine per machine, so one command works 
 ```bash
 Tools\Build_Editor.bat       # GeoTrinityEditor Win64 DebugGame — the normal editor workflow
 Tools\Build_Standalone.bat   # GeoTrinity Win64 Development — client + listen-server host
-Tools\Build_Package.bat      # cook + stage + pak + archive — see BuildPackage.md
+Tools\Build_Package.bat      # cook + stage + pak + archive (add "Linux" for the Linux client) — see BuildPackage.md
 Tools\Build_Server.bat       # GeoTrinityServer — source-engine machines only
 ```
 

@@ -17,8 +17,8 @@ height at its base, thinning toward the point to WEDGE_TIP of it at the apex, so
 it rolls.
 Three kinds turn in place rather than read as a flat sliver: plug and needle are DIAMONDs, a waist ring with
 an apex above and below; each mandible is a BAR; and the circle's small disc is an HOURGLASS, pinched at
-mid height so that turning it shows something a cylinder never would. All three are as deep as their own
-narrow side is wide, so they turn without the silhouette swelling.
+mid height so that turning it shows something a cylinder never would. All three are PART_DEPTH as deep as their
+own narrow side is wide.
 
 Outlines are authored in the source images' pixel space (341x341, Y down) so the numbers stay checkable
 against the art, then mapped to world: image up -> +X (forward), image right -> +Y. A badge is centred on
@@ -43,7 +43,8 @@ SLOT_NAME = "Color"
 
 TOL = 1e-6  # area below which an ear-clip corner counts as flat
 BOX = 100.0  # longest XY side, matching the meshes these replace
-BODY_HEIGHT = {"SM_CircleBadge": 75.0, "SM_SquareBadge": 85.0, "SM_TriangleBadge": 83.2}  # a WEDGE's at its base
+BODY_HEIGHT = {"SM_CircleBadge": 37.5, "SM_SquareBadge": 42.5, "SM_TriangleBadge": 41.6}  # a WEDGE's at its base
+PART_DEPTH = 0.5  # a turning part's depth against its narrow side's width
 WEDGE_TIP = 0.0  # share of its base height a WEDGE keeps at the badge's front
 
 # --- Circle badge: a big disc bitten out around a small one floating free, in image pixels. ---
@@ -84,7 +85,7 @@ NEEDLE_CX = 168.0      # on the body's axis, not the art's 170.5, since the body
 NEEDLE_CY = 120.0      # waist
 NEEDLE_HALF = 20.0     # half-width at the waist; leaves the hole a rim 9 px wide, 3 world units
 NEEDLE_GAP = 12.5      # black between plug and body; 4.2 world units, as on the other two
-NEEDLE_LIFT = 34.0     # world units the needle's waist stands over the plug's: clear of the body even rolled over
+NEEDLE_LIFT = 17.0    # world units the needle's waist stands over the plug's: clear of the body even rolled over
 
 PRISM, WEDGE, DIAMOND, BAR, HOURGLASS = "prism", "wedge", "diamond", "bar", "hourglass"
 Part = collections.namedtuple("Part", "outline kind lift", defaults=(0.0,))  # lift: world units up
@@ -285,12 +286,11 @@ def build(name, parts):
     def diamond(outline, lift):
         """The outline as a waist ring at z=`lift` with an apex above and below — 6 vertices, 8 triangles.
 
-        The apexes stand as far off the ring as the outline is wide across its narrow axis, so that
-        section is a square diamond.
+        The apexes stand PART_DEPTH as far off the ring as the outline is wide across its narrow axis.
         """
         half, (cx, cy) = narrow_side(outline)
         ring = [vert(x, y, lift) for x, y in outline]
-        top, bottom = vert(cx, cy, lift + half), vert(cx, cy, lift - half)
+        top, bottom = vert(cx, cy, lift + half * PART_DEPTH), vert(cx, cy, lift - half * PART_DEPTH)
         for i in range(len(ring)):
             n = (i + 1) % len(ring)
             tri(ring[i], ring[n], top)
@@ -333,8 +333,8 @@ def build(name, parts):
         if part.kind == DIAMOND:
             diamond(part.outline, part.lift)
         else:
-            # A body takes the badge's full depth; a part that has to turn is as deep as it is narrow.
-            half = body_half if part.kind in (PRISM, WEDGE) else narrow_side(part.outline)[0]
+            # A body takes the badge's full depth; a part that has to turn is PART_DEPTH as deep as it is narrow.
+            half = body_half if part.kind in (PRISM, WEDGE) else narrow_side(part.outline)[0] * PART_DEPTH
             waist = CIRCLE_WAIST if part.kind == HOURGLASS else 1.0
             height = (lambda x: wedge(x, back, front)) if part.kind == WEDGE else (lambda x: 1.0)
             extrude(part.outline, ((-half, 1.0), (0.0, waist), (half, 1.0)), height)
