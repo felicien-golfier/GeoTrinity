@@ -1,10 +1,7 @@
-"""Triangle badge auto-fire, three heavy cuts of one shot. The badge carries two diamonds: the plug, just filling the hole
+"""Triangle badge auto-fire, two heavy cuts of one shot. The badge carries two diamonds: the plug, just filling the hole
 through the arrowhead, and the needle, its twin, standing above it clear of the body. From above they read as one until
 the needle moves; the needle may shrink, and the plug may be released from its hole once lifted above the body.
 
-    Fire            the plug shudders back into its hole until it knocks against the rim while the needle over it
-                    shrinks and spins up; both stop dead, then the plug rams the front rim — the shot — as the needle
-                    punches out ahead at full size; the kick jams the plug there and holds the needle out
     FireRatchet     the plug is cranked back in three clicks, the needle turning a sixth and shrinking a step on each,
                     the badge jolting on every one; on the shot the needle is flung out and snaps back, and the kick
                     twists the badge
@@ -74,21 +71,12 @@ REST = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
 # Per clip:
 #   kick      (backward offset, yaw) of the whole badge from the impact on, held on its last entry, then sprung home
 #   plug      the plug's slide on the same frames, as a share of CONTACT: 1 is pressed on the front rim
-#   windup    "shudder", "ratchet" or "formation"
+#   windup    "ratchet" or "formation"
 #   roll      degrees the plug rolls per wind-up
 #   knock     units the plug springs off the back rim between knocks, and the badge's jolt on each
 #   needle    reach: units it is thrown ahead of the plug on the shot, out: its share of that on the kick's frames,
-#             spin: degrees it turns per wind-up, small: the scale it winds down to, steps: its scale after each click
+#             spin: degrees it turns per wind-up, steps: its scale after each click
 CLIPS = {
-    "Fire": {
-        "kick": [(0.0, 0.0), (-5.0, 0.0), (-7.7, 0.0), (-7.0, 0.0), (-7.0, 0.0)],
-        "plug": [1.0, 1.0, 1.0, 1.0, 1.0],
-        "windup": "shudder",
-        "roll": {"Start": 180.0, "Fire1": 90.0},
-        "knock": (0.7, -0.6),
-        "needle": {"reach": 18.0, "out": [1.0, 1.0, 1.0, 1.0, 1.0], "spin": {"Start": 360.0, "Fire1": 180.0},
-                   "small": 0.55},
-    },
     "FireRatchet": {
         "kick": [(0.0, 0.0), (-4.0, 3.0), (-6.0, 4.8), (-5.4, 4.3), (-5.4, 4.3)],
         "plug": [1.0, 0.45, 0.1, 0.0, 0.0],
@@ -178,21 +166,6 @@ def shake(slide, amount, frame):
     return alternate(frame) * amount * SHAKE * GEOMETRY["side_room"] * (GEOMETRY["contact"] - abs(slide))
 
 
-def shudder(local, first, slide_from, frame, spins):
-    """The plug slides back onto the back rim, shaking harder as it goes, and knocks against it once there.
-
-    `spins` is the fraction of the turn done per wind-up frame. -> (slide, sideways, fraction of the turn done, jolt).
-    """
-    alpha = clamp((local - first) / float(WOUND - first))
-    arrive = 0.7
-    spin = spins[local - first]
-    if alpha >= arrive:
-        slide, jolt = back_rim_knock(local)
-        return slide, 0.0, spin, jolt
-    slide = slide_from + (-GEOMETRY["contact"] - slide_from) * (alpha / arrive) ** 2
-    return slide, shake(slide, alpha / arrive, frame), spin, 0.0
-
-
 def ratchet(local, clicks, slide_from, frame):
     """The plug cranked back a third of the way per click, a tooth of the turn with it; trembling between clicks,
     knocking once home. -> (slide, sideways, fraction of the turn done, jolt)."""
@@ -207,7 +180,7 @@ def ratchet(local, clicks, slide_from, frame):
 
 
 def wound_state(section, local, frame):
-    """Fire and FireRatchet -> (backward kick, badge yaw, plug pose, needle pose)."""
+    """FireRatchet -> (backward kick, badge yaw, plug pose, needle pose)."""
     contact = GEOMETRY["contact"]
     needle = CLIP["needle"]
     rolls, spins = CLIP["roll"], needle["spin"]
@@ -216,7 +189,7 @@ def wound_state(section, local, frame):
     kicked = section != "Start"
     held = len(CLIP["plug"])
     back, yaw = kick(local) if kicked else (0.0, 0.0)
-    small = needle.get("small") or needle["steps"][-1]
+    small = needle["steps"][-1]
     impact = ((contact, 0.0, 0.0, 0.0, roll_before + rolls.get(section, 0.0), 1.0),
               (contact + needle["reach"], 0.0, 0.0, yaw_before + spins.get(section, 0.0), 0.0, 1.0))
 
@@ -241,14 +214,9 @@ def wound_state(section, local, frame):
     if local > WOUND:
         return back, yaw, still_plug, still_needle
 
-    first = held - 1 if kicked else 0
     returning = out_from * max(0.0, settle(local - held + 1)) if kicked else 0.0
-    if CLIP["windup"] == "shudder":
-        slide, sideways, spun, jolt = shudder(local, first, slide_from, frame, SPIN[section])
-        scale = 1.0 + (small - 1.0) * smoothstep((local - first) / float(WOUND - first))
-    else:
-        slide, sideways, spun, jolt = ratchet(local, CLIP["clicks"][section], slide_from, frame)
-        scale = needle["steps"][int(round(spun * (len(needle["steps"]) - 1)))]
+    slide, sideways, spun, jolt = ratchet(local, CLIP["clicks"][section], slide_from, frame)
+    scale = needle["steps"][int(round(spun * (len(needle["steps"]) - 1)))]
     return (back + jolt, yaw, (slide, sideways, 0.0, 0.0, roll_before + rolls[section] * spun, 1.0),
             (slide + returning, 0.0, 0.0, yaw_before + spins[section] * spun, 0.0, scale))
 
@@ -473,13 +441,6 @@ def measure(reference):
     }
 
 
-def spins(toolkit):
-    """Per section, the fraction of its turn done on each frame of its wind-up, accelerating into the stillness."""
-    firsts = {"Start": 0, "Fire1": len(CLIP.get("plug", CLIP["kick"])) - 1}
-    return {section: toolkit["normalised_spin"](lambda frame: frame * frame, WOUND - first)
-            for section, first in firsts.items()}
-
-
 try:
     toolkit_path = unreal.Paths.project_dir() + "AI/Python/Anim/anim_sequence_authoring.py"
     toolkit = {}
@@ -491,7 +452,6 @@ try:
     LOG.append("contact %.2f units, %.3f across per unit of slide; diamonds %.2f x %.2f half, needle %.0f up" % (
         GEOMETRY["contact"], GEOMETRY["side_room"], GEOMETRY["half_length"], GEOMETRY["half_width"], GEOMETRY["lift"]))
     for CLIP_NAME, CLIP in CLIPS.items():
-        SPIN = spins(toolkit)
         built_sequence, built_montage = build(toolkit, CLIP_NAME)
         report(toolkit, built_sequence, built_montage, rig_groups, rest_pose)
 except Exception:

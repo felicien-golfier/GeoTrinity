@@ -1,10 +1,8 @@
-"""Death and revive montages for the three class badges. The death is on the beat of the old shapes' own: the badge
-swells a fifth over eight frames on a smoothstep, sheds its class's debris mid-swell, and is gone on the ninth. The
-montage never blends out on its own, so the badge stays gone until the revive replaces it; the debris comes from a
-GeoDeathDebrisNotify, which hands it to the character so the revive clears it too. The revive is the death mirrored:
-the badge pops back from nothing a fifth too large, swings short of its size and settles, then blends out to the
-idle. It blends in at once, so the pop is not smeared into the death's empty pose. Each starts its sound on its first
-frame, on a track of its own.
+"""Death montages for the three class badges. The death is on the beat of the old shapes' own: the badge swells a
+fifth over eight frames on a smoothstep, sheds its class's debris mid-swell, and is gone on the ninth. The montage
+never blends out on its own, so the badge stays gone until the revive (class_badge_rez.py) replaces it; the debris
+comes from a GeoDeathDebrisNotify, which hands it to the character so the revive clears it too. It starts its sound on
+its first frame, on a track of its own.
 
 The scale is written on the root, which sits on the actor origin, so the whole badge — body and parts alike —
 shrinks onto the point it turns about. Only X and Y move: under the top-down orthographic camera Z is spent for
@@ -38,12 +36,6 @@ DEBRIS_FRAME = 4     # mid-swell, so the chunks lead the collapse rather than tr
 DEATH_SOUND = "/Game/Art/SFX/Death/SW_Death_Collapse"  # Earthquake_3 with its head cut, so the rumble peaks on the pop
 DEATH_SOUND_VOLUME = 1.0
 
-REVIVE_FRAMES = 12
-# (frame, scale) keys, smoothstepped between: the pop, the swing short, the settle
-REVIVE_KEYS = [(0, 0.0), (2, SWELL), (5, 0.94), (8, 1.02), (10, 1.0)]
-REVIVE_SOUND = "/Game/Art/SFX/Bank/magicspellssfx1/Heal/Heal_9"
-REVIVE_SOUND_VOLUME = 1.0
-
 DEBRIS = {
     "Square": "/Game/Art/VFX/Assets/NS_DeathDebris",
     "Triangle": "/Game/Art/VFX/Assets/NS_DeathDebrisTriangle",
@@ -62,14 +54,6 @@ def death_scale_at(frame):
     if frame > SWELL_FRAMES:
         return 0.0
     return 1.0 + (SWELL - 1.0) * smoothstep(frame / float(SWELL_FRAMES))
-
-
-def revive_scale_at(frame):
-    """The badge's XY scale on `frame` of its revive, through REVIVE_KEYS, then held at rest."""
-    for (start, low), (end, high) in zip(REVIVE_KEYS, REVIVE_KEYS[1:]):
-        if frame <= end:
-            return low + (high - low) * smoothstep((frame - start) / float(end - start))
-    return REVIVE_KEYS[-1][1]
 
 
 def root_scaler(scale_at):
@@ -129,21 +113,12 @@ def build_death(toolkit, badge):
     report(toolkit, montage, sequence, DEATH_FRAMES)
 
 
-def build_revive(toolkit, badge):
-    montage, sequence = build(toolkit, badge, "Revive", REVIVE_FRAMES, revive_scale_at, 0.0, True, REVIVE_SOUND,
-                              REVIVE_SOUND_VOLUME)
-    save(montage)
-    save(sequence)
-    report(toolkit, montage, sequence, REVIVE_FRAMES)
-
-
 try:
     toolkit_path = unreal.Paths.project_dir() + "AI/Python/Anim/anim_sequence_authoring.py"
     toolkit = {}
     exec(compile(open(toolkit_path).read(), toolkit_path, "exec"), toolkit)
     for badge in DEBRIS:
         build_death(toolkit, badge)
-        build_revive(toolkit, badge)
 except Exception:
     import traceback
     LOG.append(traceback.format_exc())

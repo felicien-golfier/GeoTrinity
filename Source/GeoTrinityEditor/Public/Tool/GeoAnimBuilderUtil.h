@@ -33,13 +33,14 @@ class GEOTRINITYEDITOR_API UGeoAnimBuilderUtil : public UEditorUtilityObject
 
 public:
 	/**
-	 * Generic: replaces Montage's slot tracks with a single SlotName track holding one segment that plays the whole
-	 * of Sequence, and resizes the montage to the sequence length. Existing sections are cleared, since their cached
-	 * links point into the old track — call SetMontageSections afterwards. Saves the asset.
+	 * Generic: replaces Montage's slot tracks with a single SlotName track holding one segment that plays Sequence
+	 * from its start for PlayLength seconds, or the whole of it at 0, and resizes the montage to that. Existing
+	 * sections are cleared, since their cached links point into the old track — call SetMontageSections afterwards.
+	 * Saves the asset.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void SetMontageSlotSegment(UAnimMontage* Montage, UAnimSequence* Sequence,
-									  FName SlotName = TEXT("DefaultSlot"));
+									  FName SlotName = TEXT("DefaultSlot"), float PlayLength = 0.f);
 
 	/**
 	 * Generic: rebuilds Montage's sections from three parallel arrays, each entry linked at its StartTimes value so
@@ -92,14 +93,15 @@ public:
 	/**
 	 * Generic: rebuilds AnimBlueprint's AnimGraph as two animation layers split at LayerBone, with an additive on top:
 	 *
-	 *   Idle -> Slot LayerSlotName -> cached -> Slot BaseSlotName -> Layered blend, base pose -> Slot FullBodySlotName
-	 *                                 cached -------------------------> Layered blend, branch LayerBone at depth 0
+	 *   Idle -> Slot BaseSlotName -> base cache -> Slot LayerSlotName -> layer cache
+	 *   Layered blend: base cache, layer cache on branch LayerBone at depth 0
+	 *   Two-way blend: layer cache -> layered blend by BaseSlotName's montage weight -> Slot FullBodySlotName
 	 *   Additive identity -> Slot AdditiveSlotName, applied as an additive onto the full-body slot -> Output
 	 *
-	 * A montage in LayerSlotName moves the whole rig, but everything outside LayerBone's branch gives way to a montage
-	 * in BaseSlotName, which moves only that. So a layer montage may move the base while nothing plays over it there,
-	 * and both play at once otherwise. A montage in FullBodySlotName moves the whole rig over both; an additive montage
-	 * in AdditiveSlotName adds onto whatever the others play. Each slot is registered on the target skeleton in a slot
+	 * A montage in either slot moves the whole rig over the idle. Where both play, LayerBone's branch follows the
+	 * layer montage and everything outside it the base montage — a channel holds the body while what fires over it
+	 * takes the parts. A montage in FullBodySlotName moves the whole rig over both; an additive montage in
+	 * AdditiveSlotName adds onto whatever the others play. Each slot is registered on the target skeleton in a slot
 	 * group named after it, since playing a montage stops every other montage of its group. A null idle plays the
 	 * reference pose.
 	 *

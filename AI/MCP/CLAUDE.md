@@ -1,9 +1,11 @@
 # MCP / Python Editor Automation
 
-All editor automation goes through `mcp-unreal` `execute_script` (Python), or a C++ `UEditorUtilityObject` shim
-for what Python cannot reach. Blueprint CDO properties, asset creation and tag reading go straight through
-Python; a protected C++ property, a template API or an editor subsystem with no Python binding needs the shim —
-see `MCP_EditorUtility.md`.
+Editor automation runs on two servers. The UE 5.8 built-in server (`unreal-mcp`) is the default for every read and
+for every write a toolset tool covers (Blueprint graphs, material graphs and instances, reflected properties, tables,
+tags); `mcp-unreal` `execute_script` runs Python — the scripts in `AI/Python/` and whatever no tool reaches — plus
+C++ `UEditorUtilityObject` shims for what Python cannot reach. `MCP_UnrealBuiltin.md` → "Which server" decides
+each case. Through Python, Blueprint CDO writes and asset creation go straight through; a protected C++ property,
+a template API or an editor subsystem with no Python binding needs the shim — see `MCP_EditorUtility.md`.
 
 ## Prerequisites
 - The Unreal Editor must be open **before** starting Claude Code — MCP tools register at session start.

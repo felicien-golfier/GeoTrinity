@@ -282,6 +282,17 @@ rotations included as the same quaternion rather than a symmetric one; a jump be
 interpolates, so a pose it lands on only has to look the same. A section every shot replays wants no blend-in,
 since each replay would smear one beat into the next.
 
+## Clips that outlive their script
+
+A clip retouched by hand, or carried across a rig change, no longer comes out of the script that made it, and
+re-running that script would undo it. Freeze such a clip's keys and its montage's layout into
+`SourceArt/Anim/Baked` with `AI/Python/Anim/bake_clips.py`; the toolkit's track writer and montage builder take a
+baked file over the script's own procedure, so every script keeps the clip as it is, and deleting the file hands
+it back. Before re-running clip scripts, run them into a sandbox and compare with the live clips through
+`AI/Python/Anim/verify_badge_scripts.py`. A clip reimported from another package is padded to that scene's
+timeline while its montage keeps playing the range it did, so how much of its sequence a montage plays is part of
+its layout.
+
 ## Notifies
 
 A sequence's notify array is not readable as a property, but the animation library reads and writes both the

@@ -110,11 +110,13 @@ void UGeoBeamVFXComponent::ApplyBeamState() const
 		return;
 	}
 
+	// Not IsActive(): a deactivated system stays "active" until its last particles die, which would skip the restart.
+	bool const bIsRunning = NiagaraComponent->GetRequestedExecutionState() == ENiagaraExecutionState::Active;
 	if (BeamState.bActive)
 	{
-		if (!NiagaraComponent->IsActive())
+		if (!bIsRunning)
 		{
-			NiagaraComponent->SetActive(true);
+			NiagaraComponent->Activate(true);
 		}
 
 		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, BeamState.Lifetime);
@@ -122,8 +124,8 @@ void UGeoBeamVFXComponent::ApplyBeamState() const
 		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamState.Length);
 		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
 	}
-	else if (NiagaraComponent->IsActive())
+	else if (bIsRunning)
 	{
-		NiagaraComponent->SetActive(false, true);
+		NiagaraComponent->Deactivate();
 	}
 }

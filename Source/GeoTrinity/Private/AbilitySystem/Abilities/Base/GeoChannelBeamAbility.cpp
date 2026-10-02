@@ -108,6 +108,20 @@ void UGeoChannelBeamAbility::Fire(FGeoAbilityTargetData const& /*AbilityTargetDa
 {
 	RemoveWindupIndicator();
 	bIsBeamActive = true;
+	// Every machine starts the beam now; only the server keeps it updated, its replication can land much later.
+	PushBeamState(Cast<ACharacter>(GetAvatarActorFromActorInfo()));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoChannelBeamAbility::PushBeamState(ACharacter const* const Character) const
+{
+	UGeoBeamVFXComponent* BeamVFXComponent =
+		IsValid(Character) ? Character->FindComponentByClass<UGeoBeamVFXComponent>() : nullptr;
+	if (ensureMsgf(BeamVFXComponent, TEXT("UGeoChannelBeamAbility: BeamVFXComponent is missing on the avatar")))
+	{
+		BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character) * 2.f,
+									   GetDefault<UGameDataSettings>()->GeneralSpellDistance, GetBeamDuration());
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -161,12 +175,7 @@ void UGeoChannelBeamAbility::Tick(float const DeltaTime)
 	// Replication only sends on change, so pushing each tick is cheap.
 	if (GeoLib::IsServer(GetWorld()))
 	{
-		UGeoBeamVFXComponent* BeamVFXComponent = Character->FindComponentByClass<UGeoBeamVFXComponent>();
-		if (ensureMsgf(BeamVFXComponent, TEXT("UGeoChannelBeamAbility: BeamVFXComponent is missing on the server")))
-		{
-			BeamVFXComponent->SetBeamState(true, CurrentBeamHalfWidth * 2.f,
-										   GetDefault<UGameDataSettings>()->GeneralSpellDistance, GetBeamDuration());
-		}
+		PushBeamState(Character);
 	}
 
 	TickBeam(DeltaTime,

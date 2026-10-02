@@ -38,6 +38,8 @@
 *.xcodeproj
 *.xcworkspace
 *.sln
+*.slnx
+*.DotSettings.user
 *.suo
 *.opensdf
 *.sdf
@@ -98,3 +100,4 @@ AI/Audio/**/*.webm
 AI/Audio/**/*.mkv
 AI/Audio/**/*.png
 AI/Audio/**/*.aup3*
+Content/Developers/AIScratch/

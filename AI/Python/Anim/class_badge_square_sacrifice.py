@@ -39,6 +39,8 @@ GENERATOR = "AI/Python/Mesh/generate_class_badge_meshes.py"
 ANIM_PACKAGE = "/Game/Characters/Anim/ClassBadge/Square"
 AUTO_FIRE_SEQUENCE = ANIM_PACKAGE + "/SK_SquareBadge_Sequence_FirePiston"
 KEYHOLE_SOCKET = "SacrificeHole"
+KEYHOLE_EFFECT = "/Game/Art/VFX/Assets/NS_Square_SacrificeHole"
+KEYHOLE_EFFECT_SCALE = unreal.Vector(2.0, 2.0, 1.0)
 REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_square_sacrifice.txt"
 
 BODY, LEFT, RIGHT = "Bottom", "MandibleLeft", "MandibleRight"
@@ -117,6 +119,8 @@ CLIPS = {
         "roll": [(0, (0.0,), smooth), (6, (-15.0,), smooth), (START, (0.0,), smooth)]
                 + [key for index in range(PULLS) for key in wind(START + index * PULL, index * 360.0 / PULLS)],
         "blend": (0.1, 0.2),
+        # The keyhole filling while the channel feeds it: (start, duration) in seconds on the montage, set by hand.
+        "effect": (0.39990001916885376, 2.193838119506836),
     },
     "SacrificeSpit": {
         "sections": [("Start", 0, "End"), ("End", START, "None")],
@@ -199,6 +203,11 @@ def build(toolkit, name, clip, keyhole, front):
         blend = montage.get_editor_property(blend_name)
         blend.set_editor_property("blend_time", seconds)
         montage.set_editor_property(blend_name, blend)
+    if "effect" in clip:
+        start, duration = clip["effect"]
+        toolkit["set_notify"](montage, "1", start, unreal.AnimNotifyState_TimedNiagaraEffect,
+                              {"template": unreal.load_asset(KEYHOLE_EFFECT), "socket_name": KEYHOLE_SOCKET,
+                               "scale": KEYHOLE_EFFECT_SCALE}, duration=duration)
     unreal.EditorAssetLibrary.save_asset("{}/{}".format(ANIM_PACKAGE, montage_name))
     return sequence, montage
 

@@ -85,13 +85,53 @@ The programmatic toolset in `EditorToolset` chains many tool calls in one round 
 
 ## Which server
 
-| Need | Server |
+Both servers talk to the same open editor, so choose per task, not per session. **The built-in server is the default
+for reads and for typed writes; `mcp-unreal` is the Python server** — it is for work that needs the editor's full
+Python API or an existing script in `AI/Python/`.
+
+**Reads go to the built-in server.** A typed read returns structured JSON in one call, raises real errors, and needs
+no script, no result file and no traceback handler. Use it to inspect before any change and to verify after one.
+
+| To read | Toolset → tools |
 |---|---|
-| Arbitrary `unreal` Python, any script in `AI/Python/`, C++ editor-utility shims | `mcp-unreal` `execute_script` |
-| Typed inspect/edit of assets, Blueprints, materials, data tables, tags | built-in |
-| Live GAS state of an actor in PIE | built-in (`GASToolsets`) |
-| Start/stop PIE, capture viewport or an asset thumbnail, read the output log | built-in (`EditorToolset`) |
-| Running automation tests | built-in (`AutomationTestToolset`) |
+| Material graph: nodes, what feeds each node and each material output, parameter groups, materials using a function | Material → `get_expressions`, `get_expression_inputs`, `get_property_input`, `get_expression_input_names`/`_output_names`, `list_parameter_groups`, `get_referencing_materials` |
+| Material instance parameters and overrides | MaterialInstance → `list_parameters`, `get_*_parameter` |
+| Blueprint graphs, nodes, pins, variables, functions, events, class defaults, parent | Blueprint → `list_graphs`, `get_graph`, `read_graph_dsl`, `find_nodes`, `get_node_infos`, `get_pin_value`, `list_variables`, `list_functions`, `list_events`, `get_default_object`, `get_parent` |
+| Any object's properties and class | Object → `list_properties`, `get_properties`, `get_class`, `search_subclasses` |
+| Finding assets, referencers, dependencies, asset tags | Asset → `find_assets`, `get_referencers`, `get_dependencies`, `get_asset_tags`, `get_asset_class` |
+| Data tables, curve tables, meshes, textures, actors in the level | the matching EditorToolset toolset |
+| Gameplay tags; StateTree structure; Niagara systems | GameplayTags, StateTree, Niagara toolsets |
+| Live GAS state of an actor in PIE | GAS → attributes, active effects, granted abilities, active tags |
+| Output log; viewport, asset or editor-window picture | Logs and EditorApp toolsets |
+
+**Writes a toolset covers go to the built-in server too:**
+- Blueprint graphs — create, delete and wire nodes, set pin values, add variables, functions and events, or write a
+  whole graph from the graph DSL (`get_graph_dsl_docs` first), which compiles the Blueprint after writing.
+- Material graphs — add, wire and delete expressions, connect material outputs, lay out and recompile; a bad pin
+  name raises instead of silently leaving the input at its default.
+- Material instances — parent and every parameter type.
+- Object properties through reflection, class defaults and instanced subobjects included (`set_properties` with a JSON
+  value; a subobject takes its class path).
+- Data tables, curve tables, string tables, gameplay tags, actors, asset create/duplicate/move/save.
+- PIE start and stop; discovering and running automation tests.
+
+**`mcp-unreal` keeps:**
+- every pipeline that already exists as a script in `AI/Python/` — rerunning a proven script beats rebuilding it as
+  tool calls;
+- anything no tool reaches: animation authoring, mesh building, sound import, Niagara stack internals, editor
+  subsystems with only a Python binding;
+- C++ editor-utility shims (`MCP_EditorUtility.md`);
+- a long rebuild that would be dozens of round trips — one script on the game thread instead;
+- the bridge's HTTP fallback when a client is down (`MCP_LiveCodingAndConnect.md`).
+
+**Rules**
+- One asset's multi-step edit stays on one server from start to finish.
+- A built-in tool that errors or lacks an argument moves that step to `mcp-unreal`; never write around the gap with
+  `execute_tool_script`, which cannot reach the `unreal` module.
+- `execute_tool_script` is not one undo transaction: a script that fails midway leaves its earlier calls applied.
+- Run tool calls one at a time — they all queue on the game thread.
+- Save before a bulk change and after it; dirtied assets save the same way on either server (`CLAUDE.md` → Prerequisites).
+- The live-coding compile tool and skill creation run only on the user's explicit request.
 
 ## Extending with project toolsets
 

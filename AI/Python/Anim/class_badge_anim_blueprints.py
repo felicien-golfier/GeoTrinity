@@ -1,16 +1,16 @@
 """One AnimBlueprint per class badge, its graph split into the two layers the badge rig paints apart.
 
-    Top slot     -> the whole badge          except what a bottom clip holds
-    Bottom slot  -> body (Root, Bottom)      over the top slot there
+    Bottom slot  -> the whole badge          a channel: its body, and its parts while nothing fires over it
+    Top slot     -> the whole badge          except the body while a bottom clip plays
     DefaultSlot  -> everything, over both     death and anything else that takes the whole badge
     Additive     -> added onto all of that    an additive clip, which moves the badge on top of whatever else plays
 
-So a top clip, the auto-fire, moves the parts and may move the body too, which shows while no bottom clip plays; a
-bottom clip takes the body over and leaves the parts to the top clip, both playing at once. An additive clip plays
-over a full-body one. Each slot sits in a slot group of its own, so starting one never stops the other.
+So a clip in either slot plays whole over the idle; with both playing, the bottom clip holds the body (Root, Bottom)
+and the top clip, the auto-fire, takes the parts. An additive clip plays over a full-body one. Each slot sits in a
+slot group of its own, so starting one never stops the other.
 
-The badge idle feeds the top slot, and so every layer. That slot keeps ticking it under a montage, so the idle picks
-up where it would have been.
+The badge idle feeds the bottom slot, and so every layer. Both slots keep ticking it under a montage, so the idle
+picks up where it would have been.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py and AI/Python/Anim/class_badge_idle.py, via mcp-unreal
 execute_script. Needs the editor shim's BuildLayeredAnimGraph. Re-runnable: the graph is rebuilt in place. Report
@@ -60,14 +60,6 @@ def main():
                 raise RuntimeError("BuildLayeredAnimGraph failed for {} — see the editor log".format(badge))
 
             nodes = blueprint.get_nodes_of_class(unreal.AnimGraphNode_Slot, True)
-            for graph_node in nodes:
-                slot = graph_node.get_editor_property("node")
-                if str(slot.get_editor_property("slot_name")) == TOP_SLOT:
-                    slot.set_editor_property("always_update_source_pose", True)
-                    graph_node.set_editor_property("node", slot)
-
-            unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
-            unreal.EditorAssetLibrary.save_loaded_asset(blueprint)
             result[badge] = {"anim_blueprint": blueprint.get_path_name(),
                              "slots": {str(node.get_editor_property("node").get_editor_property("slot_name")):
                                        node.get_editor_property("node").get_editor_property("always_update_source_pose")

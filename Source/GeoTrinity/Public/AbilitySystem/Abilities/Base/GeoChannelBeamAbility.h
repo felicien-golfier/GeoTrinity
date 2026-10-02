@@ -42,7 +42,8 @@ protected:
 	/** Destroys the BeamVFXComponent previously added to the avatar. */
 	virtual void OnRemoveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override;
 
-	/** Swaps the windup telegraph for the beam channel. */
+	/** Swaps the windup telegraph for the beam channel and starts the beam VFX locally, so it does not wait on the
+	 * server's replication. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	/** Stops the channel, drops the windup telegraph if still up, switches the beam VFX off and stops the ability's montage, whose channel section loops, before
@@ -94,6 +95,9 @@ protected:
 	bool bIsBeamActive = false;
 
 private:
+	/** Switches the avatar's beam VFX on at the beam's current dimensions. */
+	void PushBeamState(ACharacter const* Character) const;
+
 	/** Ends the telegraph ActivateAbility added. */
 	void RemoveWindupIndicator();
 

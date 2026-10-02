@@ -103,7 +103,7 @@ Source/GeoTrinity/
 │   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem, GeoSessionSubsystem
 │   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoColor (EGeoColor + FGeoColorParam)
 │   ├── World/                 # GeoGameCamera, GeoWorldSettings
-│   ├── Animation/             # FireAnimNotify
+│   ├── Animation/             # GeoCameraShakeNotify, GeoDeathDebrisNotify, GeoLoopSoundNotify
 │   └── GameClasses/           # GeoGameMode, GeoGameState, GeoGameInstance, GeoPlayerController, GeoPlayerState
 └── (sibling modules)
 Source/GeoTrinityUI/           # Runtime UI module (Type=Runtime) — all HUD/widgets/menus. Depends on GeoTrinity; gameplay

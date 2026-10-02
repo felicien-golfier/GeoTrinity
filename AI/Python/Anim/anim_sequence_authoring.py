@@ -6,14 +6,21 @@ report which bones actually deform the mesh, recover the mesh's radial layout, a
 vertices to them, write bone tracks from a caller-supplied per-frame sampler, and build the montage that
 plays the result.
 
+A clip baked by bake_clips.py — one retouched by hand, or built on a rig since changed — is written from its baked
+keys and layout whatever its script samples, so re-running that script keeps it as it is. Deleting its baked file
+hands it back to the script.
+
 Adjust the example call at the bottom for the asset you are working on.
 """
+import json
 import math
+import os
 import random
 
 import unreal
 
 APE = unreal.AnimPoseExtensions
+BAKED_FOLDER = unreal.Paths.project_dir() + "SourceArt/Anim/Baked/"
 
 
 def get_or_create_asset(package_path, asset_name, asset_class, factory):
@@ -528,8 +535,12 @@ def write_bone_tracks(sequence, skeleton_path, fps, frames, sampler, bracket="Au
 
     sampler(frame, bone, rest_local_transform) -> (translation, rotation_quat, scale) for that frame.
     Returns the sequence. Verify the result with report_moving_bones, not the track list, and verify that it plays
-    with playable_key_count.
+    with playable_key_count. A sequence baked by bake_clips.py takes its baked keys, frame rate and length instead.
     """
+    keys = baked(sequence.get_name())
+    if keys:
+        fps, frames = keys["fps"], keys["frames"]
+        sampler = lambda frame, bone, rest_local: _baked_key(keys["bones"][bone][frame])
     rest = {name: local for name, (local, _) in reference_pose_table(skeleton_path).items()}
 
     controller = sequence.get_editor_property("controller")
@@ -584,15 +595,21 @@ def build_montage(sequence, package_path, asset_name, section_names, section_sta
     """Create or load a montage playing the whole of `sequence` and give it its sections.
 
     The factory builds the slot track and its segment itself when handed a source animation. Sections have
-    no scripting path, so they are written only where the C++ editor shim is compiled.
+    no scripting path, so they are written only where the C++ editor shim is compiled. A montage baked by
+    bake_clips.py takes its baked slot, sections and played length instead.
     """
     factory = unreal.AnimMontageFactory()
     factory.set_editor_property("target_skeleton", sequence.get_skeleton())
     factory.set_editor_property("source_animation", sequence)
     montage = get_or_create_asset(package_path, asset_name, unreal.AnimMontage, factory)
+    layout = baked(asset_name)
+    play_length = 0.0  # the whole sequence
+    if layout:
+        slot_name, play_length = layout["slot"], layout["play_length"]
+        section_names, section_starts, section_next = [list(column) for column in zip(*layout["sections"])]
     if hasattr(unreal, "GeoAnimBuilderUtil"):
         util = unreal.get_default_object(unreal.GeoAnimBuilderUtil)
-        util.set_montage_slot_segment(montage, sequence, slot_name)
+        util.set_montage_slot_segment(montage, sequence, slot_name, play_length)
         util.set_montage_sections(montage, [unreal.Name(n) for n in section_names], section_starts,
                                   [unreal.Name(n) for n in section_next])
     unreal.EditorAssetLibrary.save_asset("{}/{}".format(package_path, asset_name))
@@ -604,8 +621,9 @@ def montage_sections(montage):
     return [str(montage.get_section_name(i)) for i in range(montage.get_num_sections())]
 
 
-def set_notify(anim, track_name, time, notify_class, properties, clear=True):
-    """Put one notify of `notify_class` on `anim` at `time` and return it, `properties` set on the notify itself.
+def set_notify(anim, track_name, time, notify_class, properties, clear=True, duration=None):
+    """Put one notify of `notify_class` on `anim` at `time` and return it, `properties` set on the notify itself; with
+    a `duration`, a notify state of that class lasting that long.
 
     A sequence's notify array is not readable as a property, so both halves of this go through the animation
     library. Clearing every track first drops the notifies on them, which is what lets a re-run replace rather
@@ -614,7 +632,11 @@ def set_notify(anim, track_name, time, notify_class, properties, clear=True):
     if clear:
         unreal.AnimationLibrary.remove_all_animation_notify_tracks(anim)
     unreal.AnimationLibrary.add_animation_notify_track(anim, track_name)
-    notify = unreal.AnimationLibrary.add_animation_notify_event(anim, track_name, time, notify_class)
+    if duration is None:
+        notify = unreal.AnimationLibrary.add_animation_notify_event(anim, track_name, time, notify_class)
+    else:
+        notify = unreal.AnimationLibrary.add_animation_notify_state_event(anim, track_name, time, duration,
+                                                                          notify_class)
     for name, value in properties.items():
         notify.set_editor_property(name, value)
     return notify
@@ -637,6 +659,20 @@ def notify_events(anim):
     return [(unreal.AnimationLibrary.get_anim_notify_event_trigger_time(event),
              event.get_editor_property("notify"))
             for event in unreal.AnimationLibrary.get_animation_notify_events(anim)]
+
+
+def baked(asset_name):
+    """What bake_clips.py froze of `asset_name` — a sequence's keys or a montage's layout — or None."""
+    path = BAKED_FOLDER + asset_name + ".json"
+    if not os.path.exists(path):
+        return None
+    with open(path) as handle:
+        return json.load(handle)
+
+
+def _baked_key(values):
+    """One baked key, [tx, ty, tz, qx, qy, qz, qw, sx, sy, sz] -> (translation, rotation, scale)."""
+    return unreal.Vector(*values[0:3]), unreal.Quat(*values[3:7]), unreal.Vector(*values[7:10])
 
 
 def _snapshot(transform):

@@ -9,8 +9,10 @@
 #include "AnimGraphNode_SaveCachedPose.h"
 #include "AnimGraphNode_SequencePlayer.h"
 #include "AnimGraphNode_Slot.h"
+#include "AnimGraphNode_TwoWayBlend.h"
 #include "AnimGraphNode_UseCachedPose.h"
 #include "Animation/AnimBlueprint.h"
+#include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/Skeleton.h"
@@ -18,6 +20,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "FileHelpers.h"
+#include "K2Node_CallFunction.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "MeshDescription.h"
@@ -35,7 +38,8 @@ namespace
 	}
 }
 
-void UGeoAnimBuilderUtil::SetMontageSlotSegment(UAnimMontage* Montage, UAnimSequence* Sequence, FName SlotName)
+void UGeoAnimBuilderUtil::SetMontageSlotSegment(UAnimMontage* Montage, UAnimSequence* Sequence, FName SlotName,
+												 float PlayLength)
 {
 	if (!ensureMsgf(Montage && Sequence, TEXT("SetMontageSlotSegment needs both a Montage and a Sequence")))
 	{
@@ -47,11 +51,21 @@ void UGeoAnimBuilderUtil::SetMontageSlotSegment(UAnimMontage* Montage, UAnimSequ
 	{
 		return;
 	}
+	if (!ensureMsgf(PlayLength <= Sequence->GetPlayLength(),
+					TEXT("Montage %s cannot play %.3f s of Sequence %s, which lasts %.3f s"), *Montage->GetName(),
+					PlayLength, *Sequence->GetName(), Sequence->GetPlayLength()))
+	{
+		return;
+	}
 
 	Montage->Modify();
 
 	FAnimSegment Segment;
 	Segment.SetAnimReference(Sequence, true);
+	if (PlayLength > 0.f)
+	{
+		Segment.AnimEndTime = PlayLength;
+	}
 
 	FSlotAnimationTrack Track;
 	Track.SlotName = SlotName;
@@ -60,7 +74,7 @@ void UGeoAnimBuilderUtil::SetMontageSlotSegment(UAnimMontage* Montage, UAnimSequ
 	Montage->SlotAnimTracks.Empty(1);
 	Montage->SlotAnimTracks.Add(Track);
 	Montage->CompositeSections.Empty();
-	Montage->SetCompositeLength(Sequence->GetPlayLength());
+	Montage->SetCompositeLength(Segment.AnimEndTime);
 
 	FinishMontageEdit(Montage);
 }
@@ -305,25 +319,32 @@ bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, F
 						  *To->GetName());
 	};
 
-	// The layer slot's pose is cached so it can both feed the base slot, which a base montage overrides, and the
-	// layer branch, which it never does.
-	FGraphNodeCreator<UAnimGraphNode_SaveCachedPose> SaveCreator(*AnimGraph);
-	UAnimGraphNode_SaveCachedPose* LayerCache = SaveCreator.CreateNode(false);
-	LayerCache->CacheName = LayerSlotName.ToString() + TEXT("Layer");
-	LayerCache->NodePosX = OutputX - 3 * ColumnWidth;
-	LayerCache->NodePosY = OutputY + 3 * RowHeight;
-	SaveCreator.Finalize();
+	auto AddCache = [AnimGraph](FName SlotName, int32 X, int32 Y)
+	{
+		FGraphNodeCreator<UAnimGraphNode_SaveCachedPose> Creator(*AnimGraph);
+		UAnimGraphNode_SaveCachedPose* Cache = Creator.CreateNode(false);
+		Cache->CacheName = SlotName.ToString() + TEXT("Layer");
+		Cache->NodePosX = X;
+		Cache->NodePosY = Y;
+		Creator.Finalize();
+		return Cache;
+	};
 
-	auto UseLayerCache = [AnimGraph, LayerCache](int32 X, int32 Y)
+	auto UseCache = [AnimGraph](UAnimGraphNode_SaveCachedPose* Cache, int32 X, int32 Y)
 	{
 		FGraphNodeCreator<UAnimGraphNode_UseCachedPose> Creator(*AnimGraph);
 		UAnimGraphNode_UseCachedPose* Use = Creator.CreateNode(false);
-		Use->SaveCachedPoseNode = LayerCache;
+		Use->SaveCachedPoseNode = Cache;
 		Use->NodePosX = X;
 		Use->NodePosY = Y;
 		Creator.Finalize();
 		return Use;
 	};
+
+	UAnimGraphNode_SaveCachedPose* BaseCache =
+		AddCache(BaseSlotName, OutputX - 5 * ColumnWidth, OutputY + 4 * RowHeight);
+	UAnimGraphNode_SaveCachedPose* LayerCache =
+		AddCache(LayerSlotName, OutputX - 5 * ColumnWidth, OutputY + 5 * RowHeight);
 
 	FGraphNodeCreator<UAnimGraphNode_LayeredBoneBlend> BlendCreator(*AnimGraph);
 	UAnimGraphNode_LayeredBoneBlend* Blend = BlendCreator.CreateNode(false);
@@ -331,9 +352,23 @@ bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, F
 	LayerBranch.BoneName = LayerBone;
 	LayerBranch.BlendDepth = 0;
 	Blend->Node.LayerSetup[0].BranchFilters.Add(LayerBranch);
-	Blend->NodePosX = OutputX - 3 * ColumnWidth;
-	Blend->NodePosY = OutputY;
+	Blend->NodePosX = OutputX - 4 * ColumnWidth;
+	Blend->NodePosY = OutputY + RowHeight;
 	BlendCreator.Finalize();
+
+	FGraphNodeCreator<UAnimGraphNode_TwoWayBlend> BaseWeightBlendCreator(*AnimGraph);
+	UAnimGraphNode_TwoWayBlend* BaseWeightBlend = BaseWeightBlendCreator.CreateNode(false);
+	BaseWeightBlend->NodePosX = OutputX - 3 * ColumnWidth;
+	BaseWeightBlend->NodePosY = OutputY;
+	BaseWeightBlendCreator.Finalize();
+
+	FGraphNodeCreator<UK2Node_CallFunction> BaseWeightCreator(*AnimGraph);
+	UK2Node_CallFunction* BaseWeight = BaseWeightCreator.CreateNode(false);
+	BaseWeight->SetFromFunction(UAnimInstance::StaticClass()->FindFunctionByName(
+		GET_FUNCTION_NAME_CHECKED(UAnimInstance, Blueprint_GetSlotMontageLocalWeight)));
+	BaseWeight->NodePosX = OutputX - 4 * ColumnWidth;
+	BaseWeight->NodePosY = OutputY - RowHeight;
+	BaseWeightCreator.Finalize();
 
 	FGraphNodeCreator<UAnimGraphNode_ApplyAdditive> ApplyCreator(*AnimGraph);
 	UAnimGraphNode_ApplyAdditive* ApplyAdditive = ApplyCreator.CreateNode(false);
@@ -350,10 +385,17 @@ bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, F
 
 	UAnimGraphNode_Slot* FullBodySlot = AddSlot(FullBodySlotName, OutputX - 2 * ColumnWidth, OutputY);
 	UAnimGraphNode_Slot* AdditiveSlot = AddSlot(AdditiveSlotName, OutputX - 2 * ColumnWidth, OutputY + 2 * RowHeight);
-	UAnimGraphNode_Slot* BaseSlot = AddSlot(BaseSlotName, OutputX - 4 * ColumnWidth, OutputY);
-	UAnimGraphNode_Slot* LayerSlot = AddSlot(LayerSlotName, OutputX - 4 * ColumnWidth, OutputY + 3 * RowHeight);
-	UAnimGraphNode_UseCachedPose* BaseSource = UseLayerCache(OutputX - 5 * ColumnWidth, OutputY);
-	UAnimGraphNode_UseCachedPose* LayerBranchSource = UseLayerCache(OutputX - 4 * ColumnWidth, OutputY + RowHeight);
+	UAnimGraphNode_Slot* BaseSlot = AddSlot(BaseSlotName, OutputX - 6 * ColumnWidth, OutputY + 4 * RowHeight);
+	UAnimGraphNode_Slot* LayerSlot = AddSlot(LayerSlotName, OutputX - 6 * ColumnWidth, OutputY + 5 * RowHeight);
+	// The idle keeps ticking under a montage, and the base slot's weight is read off its own last update.
+	BaseSlot->Node.bAlwaysUpdateSourcePose = true;
+	LayerSlot->Node.bAlwaysUpdateSourcePose = true;
+	UAnimGraphNode_UseCachedPose* LayerSource =
+		UseCache(BaseCache, OutputX - 7 * ColumnWidth, OutputY + 5 * RowHeight);
+	UAnimGraphNode_UseCachedPose* BlendBase = UseCache(BaseCache, OutputX - 5 * ColumnWidth, OutputY + RowHeight);
+	UAnimGraphNode_UseCachedPose* BlendBranch =
+		UseCache(LayerCache, OutputX - 5 * ColumnWidth, OutputY + 2 * RowHeight);
+	UAnimGraphNode_UseCachedPose* Unweighted = UseCache(LayerCache, OutputX - 4 * ColumnWidth, OutputY);
 
 	// An unlinked slot source plays the reference pose, while a player left without a sequence fails the compile.
 	bool bLinked = true;
@@ -362,17 +404,29 @@ bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, F
 		FGraphNodeCreator<UAnimGraphNode_SequencePlayer> PlayerCreator(*AnimGraph);
 		UAnimGraphNode_SequencePlayer* Player = PlayerCreator.CreateNode(false);
 		Player->SetAnimationAsset(Idle);
-		Player->NodePosX = OutputX - 5 * ColumnWidth;
-		Player->NodePosY = OutputY + 3 * RowHeight;
+		Player->NodePosX = OutputX - 7 * ColumnWidth;
+		Player->NodePosY = OutputY + 4 * RowHeight;
 		PlayerCreator.Finalize();
-		bLinked = Connect(Player, LayerSlot, TEXT("Source"));
+		bLinked = Connect(Player, BaseSlot, TEXT("Source"));
 	}
 
-	bLinked = bLinked && Connect(LayerSlot, LayerCache, TEXT("Pose")) && Connect(BaseSource, BaseSlot, TEXT("Source"))
-		&& Connect(BaseSlot, Blend, TEXT("BasePose")) && Connect(LayerBranchSource, Blend, TEXT("BlendPoses_0"))
-		&& Connect(Blend, FullBodySlot, TEXT("Source")) && Connect(FullBodySlot, ApplyAdditive, TEXT("Base"))
-		&& Connect(Identity, AdditiveSlot, TEXT("Source")) && Connect(AdditiveSlot, ApplyAdditive, TEXT("Additive"))
-		&& Connect(ApplyAdditive, Output, TEXT("Result"));
+	UEdGraphPin* const SlotNamePin = BaseWeight->FindPin(TEXT("SlotNodeName"), EGPD_Input);
+	UEdGraphPin* const WeightPin = BaseWeight->GetReturnValuePin();
+	UEdGraphPin* const AlphaPin = BaseWeightBlend->FindPin(TEXT("Alpha"), EGPD_Input);
+	bLinked = bLinked
+		&& ensureMsgf(SlotNamePin && WeightPin && AlphaPin && Schema->TryCreateConnection(WeightPin, AlphaPin),
+					  TEXT("Could not drive the base weight blend from the %s slot weight"), *BaseSlotName.ToString());
+	if (bLinked)
+	{
+		Schema->TrySetDefaultValue(*SlotNamePin, BaseSlotName.ToString());
+	}
+
+	bLinked = bLinked && Connect(BaseSlot, BaseCache, TEXT("Pose")) && Connect(LayerSource, LayerSlot, TEXT("Source"))
+		&& Connect(LayerSlot, LayerCache, TEXT("Pose")) && Connect(BlendBase, Blend, TEXT("BasePose"))
+		&& Connect(BlendBranch, Blend, TEXT("BlendPoses_0")) && Connect(Unweighted, BaseWeightBlend, TEXT("A"))
+		&& Connect(Blend, BaseWeightBlend, TEXT("B")) && Connect(BaseWeightBlend, FullBodySlot, TEXT("Source"))
+		&& Connect(FullBodySlot, ApplyAdditive, TEXT("Base")) && Connect(Identity, AdditiveSlot, TEXT("Source"))
+		&& Connect(AdditiveSlot, ApplyAdditive, TEXT("Additive")) && Connect(ApplyAdditive, Output, TEXT("Result"));
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(AnimBlueprint);
 	FKismetEditorUtilities::CompileBlueprint(AnimBlueprint);

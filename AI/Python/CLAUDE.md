@@ -42,24 +42,26 @@ or wire them in.
 | Script | Purpose |
 |---|---|
 | `anim_sequence_authoring.py` | Read a rig, report animated bones, write or offset bone tracks, build montages, turn a bone about a point, measure overlaps between outlines and in 3D |
+| `bake_clips.py` | Freeze clips no script can rebuild — Guillaume's Circle clips, those built before the badge depth was halved — into `SourceArt/Anim/Baked`, keys and montage layout, so their scripts write them back unchanged |
 | `boss_montage_sounds.py` | Put every notify and fight-loop curve of each boss montage's sound score on it — the hex boss intro's (`SourceArt/Audio/HexBossIntro/cues.json`, `loop.json`), its other montages' (`SourceArt/Audio/HexBossMontages/<montage>/`) and the star boss's (`SourceArt/Audio/StarBoss/<montage>/`); `BOSSES` picks which |
-| `class_badge_anim_blueprints.py` | One AnimBlueprint per class badge: the idle through the top slot moves the whole badge, a bottom-slot clip takes the body over it, plus a full-body slot and an additive slot over all |
+| `class_badge_anim_blueprints.py` | One AnimBlueprint per class badge: a top- or bottom-slot clip plays the whole badge over the idle, and with both playing the bottom one holds the body and the top one the parts; plus a full-body slot and an additive slot over all |
 | `class_badge_body_turns.py` | Body-only rolls about the aim in the bottom slot, round the parts: the Circle rolls through the Moira beam, the Triangle rolls once reeling in its turrets; checked in 3D against the parts |
 | `class_badge_circle_charge.py` | Circle badge charge beam: the hourglass whips round the badge, swells shaking in front, flattens wide on release |
 | `class_badge_circle_charge_orbit.py` | Circle badge charge beam, alternative: the hourglass circles the swelling, trembling badge accelerating, then holds in front turned on release while the disc kicks back; top slot |
 | `class_badge_deploy.py` | The three badges throwing their deployable, full-body slot over the auto-fire: the Square's mandibles roll faster and faster then are crushed by the recoil against their pinned backs, the Triangle rears and stakes its turret, the Circle stands its hourglass up and pours it over |
-| `class_badge_death.py` | The three badges swell and vanish, shedding their class debris, and stay gone until the revive pops them back, overshooting and settling; each montage starts its sound on its first frame |
+| `class_badge_death.py` | The three badges swell and vanish, shedding their class debris, and stay gone until the rez brings them back; each montage starts its sound on its first frame |
 | `class_badge_rez.py` | The three badges' 3 s rez: grow back spinning to a stop, then show off while the body rolls over — one part orbits level on a rosette, a second sinks and orbits the other way underneath, swinging under the body to the far side; the Circle's hourglass whips round, snaps into reverse and tumbles; orbit radii and depths read off the rig so nothing meets the rolling body |
 | `class_badge_idle.py` | The three badges breathe and, bored, play with their parts: twirling, drumming, looking round, flipping, rolling round the rim |
 | `class_badge_square_fire.py` | Square badge auto-fire: the mandibles take turns thrusting out, flaring and slamming back |
 | `class_badge_square_fire_piston.py` | Square badge auto-fire, alternative: the mandibles cock outward and jab out long, top slot only |
 | `class_badge_square_sacrifice.py` | Square badge Martyr Beam and Martyr's Wrath, bottom slot on the block only: pumps the channel into its keyhole winding itself over about the aim, is slammed back and rolled over by the ray; checked against the auto-fire |
-| `class_badge_triangle_fire.py` | Triangle badge heavy shot: the needle drives out turning, stops dead, is flattened by the recoil |
+| `class_badge_triangle_fire.py` | Triangle badge heavy shot, two cuts: FireRatchet cranks the plug back in three clicks and flings the needle out (the auto-fire), FireFormation spreads plug and needle into a wider arrowhead (the turret launch) |
 | `class_badge_triangle_fire_crossbow.py` | Triangle badge heavy shot, alternative: the needle draws back into the arrowhead like a crossbow bolt, the arrowhead flexing like its bow, and launches as a spear; top slot |
 | `class_badge_triangle_reload.py` | Triangle badge reload, heavy: braces with the needle drawn in, heaves the whole badge round a yaw turn, clunks past and rocks back; full-body slot |
 | `class_badge_wiring.py` | Swap the playable characters onto the badges: class data, character mesh, ability montages, materials |
 | `dump_bone_motion.py` | Sample each hex and star boss montage's bones in parent space to JSON, yaw unwrapped, with the rest pose, its sections and blends — the motion a sound score is timed from; a montage samples as its reference pose, so each of its sequences is sampled across the span it plays |
 | `export_anim_fbx.py` | Export every animation sequence under the class badge folder to FBX in `AI/Output/ClassBadgeAnimFbx`, one subfolder per class |
+| `verify_badge_scripts.py` | Run every class badge clip script into a fresh sandbox and compare each clip and montage with the live one, frame by frame — run before re-running any of them |
 | `rerig_class_badges.py` | Re-rig the three class badges from `rig_class_badges.py`, rewriting every clip on their skeletons to play exactly as before on the new rest pose; reports which bones still translate per clip |
 | `hex_boss_abilities.py` | Hex boss sweep beam, tile-carving ray and cone spray |
 | `hex_boss_death.py` | The three rings wander off axis, blow apart and settle |
@@ -201,6 +203,9 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 | `charge_beam_gauge.py` | Create a widget Blueprint, build its tree, wire it to a component |
 | `crosshair_cursor.py` | Crosshair software cursor, bound to the cursor slot |
 | `group_widgets.py` | Wrap existing canvas children into one panel without moving them |
+| `leaderboard_menu.py` | Leaderboard widget on the shared list frame, its main-menu entry and the fight timer beside the boss bar — runs after `list_panel.py` |
+| `list_panel.py` | The frame every full-screen list wears, with the server browser re-rooted onto it — runs after `list_row.py` |
+| `list_row.py` | The row every list is built from (RowButton + ColumnsBox), shared by the server browser and the leaderboard |
 | `local_connect_menu.py` | Build a child panel inside an existing menu widget |
 | `main_menu_layout.py` | Centre the main menu button column and space its buttons evenly |
 | `pause_menu_setup.py` | Centered vertical menu of labeled button rows |

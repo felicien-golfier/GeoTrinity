@@ -1,6 +1,8 @@
 # MCP Material Creation
 
-Material node wiring goes through `execute_script` using `MaterialEditingLibrary`.
+Reading and wiring a material graph or instance goes through the built-in server's material tools by default
+(`MCP_UnrealBuiltin.md` → "Which server"); the constraints below apply to both, since those tools wrap the same
+editing library. A rebuild that already exists as a script in `AI/Python/Material/` runs through `execute_script`.
 
 ## Constraints
 
