@@ -26,9 +26,11 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 | Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
 | Build commands, dev environment, copyright | `AI/Commands.md` |
 | Packaging a distributable build of the game | `AI/BuildPackage.md` |
+| Automated tests: layers, running headless, reading reports | `AI/Testing.md` |
 | Networking, data structures, effect system | `AI/Architecture.md` |
 | Writing ability descriptions ({Token} syntax) | `AI/AbilityDescriptions.md` |
 | How the game must look — shape/colour/motion rules | `AI/ArtDirection.md` |
+| UI rules — generic reusable styles, Blueprint-tweakable values | `AI/UI.md` |
 | Arena wall cubes — fixed scale/height, placement, barrier states | `AI/ArenaWalls.md` |
 | Structuring a material — functions, parameters, readable graphs | `AI/Materials.md` |
 | VFX / Niagara via MCP | `AI/VFX.md` |

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
+#include "Gem/GeoGemTypes.h"
 #include "System/GeoLeaderboardSave.h"
 #include "World/GeoBackgroundPulseComponent.h"
 
@@ -148,6 +149,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	float LootMaxRadius = 1500.f;
 
+	/** What this arena's enemy is: picks the gem catalog's drop table and class XP per health bar. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot")
+	EGeoBossType BossType = EGeoBossType::Boss;
+
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_Boss)
 	TObjectPtr<AEnemyCharacter> Boss;
@@ -195,7 +200,11 @@ private:
 	 *  so what stays on screen is what was saved. Multicast, not a server-side write, so a player who fought on
 	 *  someone else's server keeps the run too; the server runs it as well, for the host's copy. */
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastRecordAttempt(FGeoLeaderboardEntry const& Entry);
+	void MulticastRecordAttempt(FGeoAttemptEntry const& Entry);
+
+	/** Server. Gives every player class XP for the boss health Entry took, kill or not, and on a kill gems rolled
+	 *  from BossType's table. Called by RecordAttempt. */
+	void GrantGemRewards(FGeoAttemptEntry const& Entry) const;
 
 	/** True once this arena's boss has been beaten. Blocks the EndFight respawn until RespawnBoss clears it, so a
 	 *  victory doesn't drop a fresh boss on the players looting the corpse. Server-only state. */

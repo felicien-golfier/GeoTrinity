@@ -82,6 +82,7 @@ or wire them in.
 |---|---|
 | `boss_fight_loop.py` | Put each boss's fight loop layers (its score's `loop.json`) — sound, volume, curves, rest level — on its loop sound component, keeping the drift tuned on it |
 | `curve_asset_authoring.py` | Write a curve asset from a table of keys |
+| `gem_catalog.py` | Write every gem type and the drop tables per source (Boss, MiniBoss) into `DA_GemCatalog`; runs headless with `-run=pythonscript` |
 | `generate_headshot_ding.py` | Synthesise the headshot ding and import it as a sound wave |
 | `import_sound_waves.py` | Import every `SFX_` WAV of each `SourceArt/Audio` folder into its package as `SW_`, replacing same-named assets, marking `_Loop` ones looping and to play when silent; deletes unreferenced `SW_` assets whose source is gone |
 | `import_textures.py` | Import image files as textures, replacing same-named assets, with the sRGB and compression they are sampled with |

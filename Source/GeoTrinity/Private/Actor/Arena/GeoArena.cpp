@@ -26,6 +26,8 @@
 #include "GameFramework/GameMode.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
+#include "Gem/GeoGemCatalog.h"
+#include "Gem/GeoGemComponent.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Materials/MaterialInterface.h"
 #include "Net/UnrealNetwork.h"
@@ -299,7 +301,7 @@ void AGeoArena::RecordAttempt()
 {
 	AGeoGameState const* const GameState = GetWorld()->GetGameStateChecked<AGeoGameState>();
 
-	FGeoLeaderboardEntry Entry;
+	FGeoAttemptEntry Entry;
 	Entry.AttemptId = FGuid::NewGuid();
 	Entry.ArenaTag = ArenaTag;
 	// SetDifficulty refuses mid-match, so this is still the tuning the boss was fought at.
@@ -348,9 +350,35 @@ void AGeoArena::RecordAttempt()
 	}
 
 	MulticastRecordAttempt(Entry);
+	GrantGemRewards(Entry);
 }
 
-void AGeoArena::MulticastRecordAttempt_Implementation(FGeoLeaderboardEntry const& Entry)
+void AGeoArena::GrantGemRewards(FGeoAttemptEntry const& Entry) const
+{
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (!Catalog)
+	{
+		return;
+	}
+
+	FRandomStream Stream(FMath::Rand());
+	for (APlayerState const* PlayerState : GetWorld()->GetGameStateChecked<AGeoGameState>()->PlayerArray)
+	{
+		if (AGeoPlayerState const* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState))
+		{
+			FGeoGemReward Reward;
+			Reward.PlayerClass = GeoPlayerState->GetPlayerClass();
+			Reward.Xp = Catalog->GetXp(BossType, 1.f - Entry.BossHealthRatio, Entry.Difficulty);
+			if (bBossDefeated)
+			{
+				Reward.Gems = Catalog->RollLoot(BossType, Entry.Difficulty, Stream);
+			}
+			GeoPlayerState->GetGemComponent()->GrantReward(Reward);
+		}
+	}
+}
+
+void AGeoArena::MulticastRecordAttempt_Implementation(FGeoAttemptEntry const& Entry)
 {
 	LastFightDuration = Entry.DurationSeconds;
 	UGeoLeaderboardSave::Record(Entry);

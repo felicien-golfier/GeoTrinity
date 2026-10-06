@@ -18,6 +18,7 @@ class AGeoProjectile;
 class APawn;
 class APlayerController;
 class UCameraShakeBase;
+class USaveGame;
 struct FAbilityPayload;
 struct FEffectData;
 struct FGeoPose;
@@ -165,6 +166,20 @@ public:
 	/** Resolves an owner (as returned by StateTree's Context.GetOwner(), an AIController or a Pawn depending on
 	 * schema) down to the controlled Pawn. Returns Owner itself already cast to APawn if it isn't a controller. */
 	static APawn* ResolveOwnerPawn(UObject* Owner);
+
+	/**
+	 * Reads the USaveGame file FileName from the user's AppData rather than a save slot: a slot lands under the
+	 * project's Saved folder, which every packaged build brings its own fresh copy of. Hands back a fresh SaveClass
+	 * object when there is no file yet or it cannot be read. Never null.
+	 */
+	static USaveGame* LoadUserSaveFile(FString const& FileName, TSubclassOf<USaveGame> SaveClass);
+
+	/** Writes SaveGame to the AppData file FileName that LoadUserSaveFile reads. */
+	static void WriteUserSaveFile(USaveGame* SaveGame, FString const& FileName);
+
+private:
+	/** <AppData>/Local/<Project>/FileName — the one place a user save file's location is written down. */
+	static FString GetUserSaveFilePath(FString const& FileName);
 };
 
 using GeoLib = UGeoGameplayLibrary;

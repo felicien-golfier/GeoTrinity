@@ -11,6 +11,7 @@
 #include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
+#include "Gem/GeoGemComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Interface/GeoChargeBeamGaugeWidgetInterface.h"
 #include "HUD/Interface/GeoChargeGaugeWidgetInterface.h"
@@ -441,16 +442,28 @@ void APlayableCharacter::GiveLife()
 		return;
 	}
 
+	ResetAttributes();
+	AbilitySystemComponent->ReactivatePassiveAbilities();
+}
+
+void APlayableCharacter::ResetAttributes()
+{
 	FPlayerClassData const* PlayerClassData = GetClassData(GetPlayerClass());
 	if (!PlayerClassData
-		|| !ensureMsgf(PlayerClassData->DefaultAttributes, TEXT("GiveLife: No DefaultAttributes for class on %s"),
-					   *GetName()))
+		|| !ensureMsgf(PlayerClassData->DefaultAttributes, TEXT("%hs: No DefaultAttributes for class on %s"),
+					   __FUNCTION__, *GetName()))
 	{
 		return;
 	}
 
 	AbilitySystemComponent->ApplyEffectToSelf(PlayerClassData->DefaultAttributes);
-	AbilitySystemComponent->ReactivatePassiveAbilities();
+	GetPlayerState<AGeoPlayerState>()->GetGemComponent()->ApplyGems();
+	AbilitySystemComponent->SetNumericAttributeBase(
+		UGeoAttributeSetBase::GetHealthAttribute(),
+		AbilitySystemComponent->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute()));
+	AbilitySystemComponent->SetNumericAttributeBase(
+		UCharacterAttributeSet::GetAmmoAttribute(),
+		AbilitySystemComponent->GetNumericAttribute(UCharacterAttributeSet::GetMaxAmmoAttribute()));
 }
 
 void APlayableCharacter::ApplyClassData(EPlayerClass NewClass)

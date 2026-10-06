@@ -71,10 +71,17 @@ public:
 	void ApplyClassData(EPlayerClass NewClass);
 
 	/**
-	 * Server-only. Brings the character to the alive state: re-applies the current class's DefaultAttributes
-	 * (full HP/attributes) and starts passive abilities. Called at the end of ChangeClass and ReviveLogic.
+	 * Server-only. Brings the character to the alive state: resets every attribute (ResetAttributes) and starts passive
+	 * abilities. Called at the end of ChangeClass and ReviveLogic.
 	 */
 	void GiveLife();
+
+	/**
+	 * Server-only. Sets every attribute to its fresh value: the current class's DefaultAttributes, its gem loadout's stats
+	 * on top, then Health and Ammo full at their new maximum. Called by GiveLife, and by UGeoGemComponent on a loadout
+	 * change outside a fight.
+	 */
+	void ResetAttributes();
 
 	/**
 	 * Makes the deploy charge gauge widget visible and binds it to Ability's charge progress.

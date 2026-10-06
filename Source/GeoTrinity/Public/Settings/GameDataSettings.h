@@ -23,6 +23,7 @@ class USoundClass;
 class UNiagaraSystem;
 class UGeoBuffFXDataAsset;
 class UPlayerClassDataAsset;
+class UGeoGemCatalog;
 
 /**
  * Project Settings panel (Game Data Settings) that holds soft references to all global data assets
@@ -49,6 +50,10 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGeneral", AdvancedDisplay)
 	TSoftObjectPtr<UPlayerClassDataAsset> PlayerClassData;
+
+	/** Every gem type and the Forge's prices. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	TSoftObjectPtr<UGeoGemCatalog> GemCatalog;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TSoftClassPtr<UUserWidget> DefaultDeployableHealthBarWidgetClass;

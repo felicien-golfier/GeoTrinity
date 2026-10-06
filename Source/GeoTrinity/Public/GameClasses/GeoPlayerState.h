@@ -15,6 +15,7 @@ class APlayableCharacter;
 
 class UCharacterAttributeSet;
 class UGeoAbilitySystemComponent;
+class UGeoGemComponent;
 
 /**
  * Per-player combat figures pushed from UGeoCombatStatsSubsystem for HUD display. Replicated as one property
@@ -75,7 +76,7 @@ public:
 	/** Registers PlayerClass and the combat stat block for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	/** Binds PawnSetDelegate and calls InitOverlay once the owning controller is available on this machine. */
+	/** Sends this local player's gem loadouts to the server. */
 	virtual void ClientInitialize(AController* Controller) override;
 	/** Creates the HUD overlay widget on the owning client. Called from ClientInitialize once the controller is valid. */
 	void InitOverlay();
@@ -94,6 +95,7 @@ public:
 	UCharacterAttributeSet* GetCharacterAttributeSet() const { return CharacterAttributeSet; }
 	/** Returns the GeoTrinity-specific ASC owned by this player state. */
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponent() const { return AbilitySystemComponent; }
+	UGeoGemComponent* GetGemComponent() const { return GemComponent; }
 
 	/** Returns the player's current playable class. */
 	EPlayerClass GetPlayerClass() const { return PlayerClass; }
@@ -128,6 +130,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UCharacterAttributeSet> CharacterAttributeSet;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UGeoGemComponent> GemComponent;
 
 	/** Team the player belongs to. Owned here (not delegated to the pawn) so attitude queries resolve even when the
 	 *  pawn link is momentarily absent (respawn, possession order on the server). */

@@ -49,7 +49,7 @@ struct FGeoLeaderboardPlayer
 /** One finished attempt at a boss: the difficulty it was fought at, how long it lasted, how much of the boss was left,
  *  and who was in it. */
 USTRUCT()
-struct FGeoLeaderboardEntry
+struct FGeoAttemptEntry
 {
 	GENERATED_BODY()
 
@@ -79,13 +79,11 @@ struct FGeoLeaderboardEntry
 	TArray<FGeoLeaderboardPlayer> Players;
 
 	/** Ranks attempts: least boss health left first (a kill leads), ties broken by the faster attempt. */
-	bool operator<(FGeoLeaderboardEntry const& Other) const;
+	bool operator<(FGeoAttemptEntry const& Other) const;
 };
 
 /**
- * The local leaderboard, kept in the user's AppData rather than in a save slot: a slot lands under the project's
- * Saved folder, which every packaged build brings its own fresh copy of, so the runs would be gone with each new
- * build. The file holds standard USaveGame bytes, only written and read by hand.
+ * The local leaderboard, kept in the user's AppData (see GeoLib::LoadUserSaveFile) so the runs survive each new build.
  * Every machine that took part in a fight records the same attempt into its own copy — the server builds it and
  * multicasts it, so a player who joined someone else's server still keeps their run (see AGeoArena::RecordAttempt).
  * PIE is the one place those machines share a file, so an attempt is recorded once there rather than once per
@@ -101,13 +99,12 @@ public:
 	static UGeoLeaderboardSave* Load();
 
 	/** Adds Entry in ranking order and writes the leaderboard back to disk, unless it is already recorded. */
-	static void Record(FGeoLeaderboardEntry const& Entry);
+	static void Record(FGeoAttemptEntry const& Entry);
 
 	/** Every attempt recorded on this machine, best first. */
 	UPROPERTY()
-	TArray<FGeoLeaderboardEntry> Entries;
+	TArray<FGeoAttemptEntry> Entries;
 
 private:
-	/** <AppData>/Local/<Project>/GeoLeaderboard.sav — the one place the file's location is written down. */
-	static FString FilePath();
+	static constexpr TCHAR const* FileName = TEXT("GeoLeaderboard.sav");
 };

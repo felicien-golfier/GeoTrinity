@@ -12,8 +12,14 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/SaveGame.h"
 #include "GameplayTagContainer.h"
+#include "GeoTrinity/GeoTrinity.h"
+#include "HAL/PlatformProcess.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/App.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/GeoColor.h"
 #include "VisualLogger/VisualLogger.h"
@@ -277,4 +283,35 @@ APawn* UGeoGameplayLibrary::ResolveOwnerPawn(UObject* Owner)
 	}
 	
 	return Cast<APawn>(Owner);
+}
+
+USaveGame* UGeoGameplayLibrary::LoadUserSaveFile(FString const& FileName, TSubclassOf<USaveGame> SaveClass)
+{
+	FString const Path = GetUserSaveFilePath(FileName);
+	TArray<uint8> SaveData;
+	// No file yet is the normal first run, not a failure.
+	if (FFileHelper::LoadFileToArray(SaveData, *Path))
+	{
+		USaveGame* Saved = UGameplayStatics::LoadGameFromMemory(SaveData);
+		if (IsValid(Saved) && Saved->IsA(SaveClass))
+		{
+			return Saved;
+		}
+		UE_LOG(LogGeoTrinity, Warning, TEXT("%hs: %s could not be read — starting a fresh one"), __FUNCTION__, *Path);
+	}
+	return UGameplayStatics::CreateSaveGameObject(SaveClass);
+}
+
+void UGeoGameplayLibrary::WriteUserSaveFile(USaveGame* SaveGame, FString const& FileName)
+{
+	FString const Path = GetUserSaveFilePath(FileName);
+	TArray<uint8> SaveData;
+	bool const bWritten =
+		UGameplayStatics::SaveGameToMemory(SaveGame, SaveData) && FFileHelper::SaveArrayToFile(SaveData, *Path);
+	ensureMsgf(bWritten, TEXT("%hs: failed to write %s"), __FUNCTION__, *Path);
+}
+
+FString UGeoGameplayLibrary::GetUserSaveFilePath(FString const& FileName)
+{
+	return FPaths::Combine(FPlatformProcess::UserSettingsDir(), FApp::GetProjectName(), FileName);
 }

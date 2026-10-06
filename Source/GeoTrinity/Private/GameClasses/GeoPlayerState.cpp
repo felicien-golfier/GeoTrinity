@@ -3,8 +3,11 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/PlayableCharacter.h"
+#include "Engine/LocalPlayer.h"
 #include "GameClasses/GeoPlayerController.h"
 #include "GameFramework/HUD.h"
+#include "Gem/GeoGemComponent.h"
+#include "Gem/GeoGemSubsystem.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Net/UnrealNetwork.h"
 
@@ -15,6 +18,7 @@ AGeoPlayerState::AGeoPlayerState()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	CharacterAttributeSet = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("CharacterAttributeSet"));
+	GemComponent = CreateDefaultSubobject<UGeoGemComponent>(TEXT("GemComponent"));
 
 	SetNetUpdateFrequency(100.0f);
 }
@@ -48,6 +52,12 @@ void AGeoPlayerState::BeginPlay()
 void AGeoPlayerState::ClientInitialize(class AController* Controller)
 {
 	Super::ClientInitialize(Controller);
+
+	APlayerController const* PlayerController = Cast<APlayerController>(Controller);
+	if (ULocalPlayer const* LocalPlayer = PlayerController ? PlayerController->GetLocalPlayer() : nullptr)
+	{
+		GemComponent->SendLoadoutsToServer(*LocalPlayer->GetSubsystem<UGeoGemSubsystem>()->GetProfile());
+	}
 }
 
 void AGeoPlayerState::OnPlayerPawnSet(APlayerState*, APawn* NewPawn, APawn*)
