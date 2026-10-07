@@ -12,6 +12,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameClasses/GeoGameViewportClient.h"
 #include "HUD/Menu/GeoMenuButton.h"
+#include "HUD/Style/GeoFrame.h"
+#include "HUD/Style/GeoUITheme.h"
 #include "Settings/GeoGameUserSettings.h"
 #include "UserSettings/EnhancedInputUserSettings.h"
 
@@ -37,9 +39,7 @@ void UGeoKeyBindingSelector::InitBinding(FName InMappingName, EPlayerMappableKey
 	bGamepad = bInGamepad;
 
 	KeyText = NewObject<UTextBlock>(this);
-	FSlateFontInfo KeyFont = KeyText->GetFont();
-	KeyFont.Size = 14;
-	KeyText->SetFont(KeyFont);
+	UGeoUITheme::ApplyTextStyle(KeyText, EGeoTextRole::Mono);
 	KeyText->SetJustification(ETextJustify::Center);
 	KeyText->SetTextOverflowPolicy(ETextOverflowPolicy::Ellipsis);
 	AddChild(KeyText);
@@ -267,6 +267,7 @@ void UGeoKeyBindingsWidget::BuildKeyBindingsList()
 			FPlayerKeyMapping const* Keyboard = Row.Keyboard.IsValidIndex(Line) ? Row.Keyboard[Line] : nullptr;
 
 			UTextBlock* Label = NewObject<UTextBlock>(WidgetTree);
+			UGeoUITheme::ApplyTextStyle(Label, EGeoTextRole::Body);
 			Label->SetText(Row.Keyboard.Num() > 1
 							   ? FText::Format(NSLOCTEXT("GeoSettings", "BindingRowFormat", "{0} ({1})"),
 											   Row.DisplayName, Keyboard->GetDefaultKey().GetDisplayName(false))
@@ -312,7 +313,16 @@ UGeoKeyBindingSelector* UGeoKeyBindingsWidget::AddBindingCell(UHorizontalBox* Ro
 			Selector->SetStyle(StyleSource->GetStyle());
 		}
 		Selectors.Add(Selector);
-		Cell = Selector;
+
+		// The cell wears the theme's field frame, lit while the selector is hovered or holds focus.
+		UGeoFrame* Frame = NewObject<UGeoFrame>(WidgetTree);
+		if (UGeoUITheme const* Theme = UGeoUITheme::Get())
+		{
+			Frame->SetFrameStyle(Theme->FieldFrameStyle);
+		}
+		Frame->SetActivateOnHoverAndFocus(true);
+		Frame->SetContent(Selector);
+		Cell = Frame;
 	}
 	else
 	{

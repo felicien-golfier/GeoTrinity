@@ -204,13 +204,18 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 | `charge_beam_gauge.py` | Create a widget Blueprint, build its tree, wire it to a component |
 | `crosshair_cursor.py` | Crosshair software cursor, bound to the cursor slot |
 | `group_widgets.py` | Wrap existing canvas children into one panel without moving them |
+| `import_fonts.py` | Import the menu fonts from `SourceArt/Fonts` as Font Face + Font pairs (answer the import prompt Yes) |
 | `leaderboard_menu.py` | Leaderboard widget on the shared list frame, its main-menu entry and the fight timer beside the boss bar — runs after `list_panel.py` |
 | `list_panel.py` | The frame every full-screen list wears, with the server browser re-rooted onto it — runs after `list_row.py` |
 | `list_row.py` | The row every list is built from (RowButton + ColumnsBox), shared by the server browser and the leaderboard |
 | `local_connect_menu.py` | Build a child panel inside an existing menu widget |
 | `main_menu_layout.py` | Centre the main menu button column and space its buttons evenly |
 | `pause_menu_setup.py` | Centered vertical menu of labeled button rows |
+| `rail_main_menu.py` | Main menu in the Rail look: screen rail, turning hex shell, title over the class shapes, button column, player, hints |
+| `rail_style.py` | Shared widgets on frames (button, list row, list panel) plus the toolkit the other Rail scripts import: swap a widget for its themed class keeping name, slot and values, wrap it in a frame, reload a Blueprint whose graph read a swapped widget |
+| `rail_sub_panels.py` | Every sub-panel in the Rail look: themed texts and inputs, field and panel frames, pause scrim and title |
 | `second_player_gamepad_toggle.py` | The couch-coop gamepad row on the key-bindings widget |
+| `ui_theme.py` | `DA_UITheme` and the frame style assets, seeded only when created (or with `RESEED`), named in Project Settings |
 | `volume_sliders.py` | The four labelled volume sliders of the sound settings widget |
 
 ## Video

@@ -18,7 +18,8 @@ class UGeoMenuButton;
  * Blueprint subclasses configure appearance through the button UPROPERTYs.
  * Required in the BP hierarchy: UGeoMenuButton widgets named "CreateServerButton", "JoinServerButton",
  * "PlayLocalButton", "LeaderboardButton", "QuitButton", and panel widgets "CreateServerWidget", "BrowseServerWidget",
- * "LocalConnectWidget", "LeaderboardWidget" (panels set Collapsed by default in the BP layout).
+ * "LocalConnectWidget", "LeaderboardWidget" (panels set Collapsed by default in the BP layout). Optional: "MenuDecor",
+ * whatever dresses the top level (title, ornaments), which gives way to a sub-panel along with the buttons.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoMainMenuWidget : public UGeoMenuPanelWidget
@@ -66,6 +67,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoLeaderboardWidget> LeaderboardWidget;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UWidget> MenuDecor;
 
 private:
 	UFUNCTION()

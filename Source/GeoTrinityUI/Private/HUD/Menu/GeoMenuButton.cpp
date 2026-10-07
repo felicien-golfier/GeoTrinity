@@ -4,7 +4,7 @@
 
 #include "Components/TextBlock.h"
 #include "HUD/Menu/GeoButton.h"
-#include "Styling/SlateTypes.h"
+#include "HUD/Style/GeoFrame.h"
 
 void UGeoMenuButton::NativePreConstruct()
 {
@@ -37,17 +37,12 @@ void UGeoMenuButton::ApplyStyle()
 	if (ButtonText)
 	{
 		ButtonText->SetText(Label);
-		ButtonText->SetFont(Font);
-		ButtonText->SetColorAndOpacity(TextColor);
+		UGeoUITheme::ApplyTextStyle(ButtonText, TextRole);
 	}
 
-	if (ButtonWidget)
+	if (Frame && FrameStyle)
 	{
-		FButtonStyle Style = ButtonWidget->GetStyle();
-		Style.Normal = NormalBrush;
-		Style.Hovered = HoveredBrush;
-		Style.Pressed = PressedBrush;
-		ButtonWidget->SetStyle(Style);
+		Frame->SetFrameStyle(FrameStyle);
 	}
 }
 

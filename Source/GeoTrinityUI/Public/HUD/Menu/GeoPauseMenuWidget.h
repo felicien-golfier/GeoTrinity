@@ -18,7 +18,8 @@ class UGeoSettingsWidget;
  * Required in the BP hierarchy: UGeoMenuButton "ResumeButton", "AbilitiesButton", "SettingsButton",
  * "LeaderboardButton", "ReturnToMainMenuButton", "QuitButton", plus a UGeoAbilityDescriptionsWidget
  * "AbilitiesWidget", a UGeoSettingsWidget "SettingsWidget" and a UGeoLeaderboardWidget "LeaderboardWidget" panel
- * (all Collapsed by default).
+ * (all Collapsed by default). Optional: "MenuDecor", whatever dresses the top level (title, class card), which gives
+ * way to a sub-panel along with the buttons.
  * The leaderboard is the same panel class the main menu opens, and it reads the save on every construct, so a run
  * finished this session shows up without leaving the level.
  */
@@ -63,6 +64,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoLeaderboardWidget> LeaderboardWidget;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UWidget> MenuDecor;
 
 private:
 	UFUNCTION()

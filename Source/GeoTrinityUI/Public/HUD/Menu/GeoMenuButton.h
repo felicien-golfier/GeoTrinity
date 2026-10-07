@@ -3,22 +3,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Fonts/SlateFontInfo.h"
 #include "HUD/Menu/GeoMenuPanelWidget.h"
-#include "Styling/SlateBrush.h"
-#include "Styling/SlateColor.h"
+#include "HUD/Style/GeoUITheme.h"
 
 #include "GeoMenuButton.generated.h"
 
 class UGeoButton;
+class UGeoFrame;
+class UGeoFrameStyle;
 class UTextBlock;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoButtonClickedSignature);
 
 /**
- * Reusable styled button widget. Blueprint subclasses configure appearance via EditAnywhere properties;
- * all click logic is wired through the BlueprintAssignable OnClicked delegate in C++.
- * Required in the BP hierarchy: a UGeoButton named "ButtonWidget". Optional: a UTextBlock named "ButtonText".
+ * Reusable button widget. Its look is themed, never authored per button: the label wears TextRole from the UI theme
+ * and the optional "Frame" wears its frame style (FrameStyle overrides it for one button), so every button changes
+ * together. All click logic is wired through the BlueprintAssignable OnClicked delegate in C++.
+ * Required in the BP hierarchy: a UGeoButton named "ButtonWidget". Optional: a UTextBlock named "ButtonText" and a
+ * UGeoFrame named "Frame" around the button, which goes active on hover and gamepad focus.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoMenuButton : public UGeoMenuPanelWidget
@@ -33,19 +35,11 @@ public:
 	FText Label;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
-	FSlateFontInfo Font;
+	EGeoTextRole TextRole = EGeoTextRole::Button;
 
+	/** Frame style for this button only; empty keeps the one the Frame widget wears. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
-	FSlateColor TextColor;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
-	FSlateBrush NormalBrush;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
-	FSlateBrush HoveredBrush;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
-	FSlateBrush PressedBrush;
+	TObjectPtr<UGeoFrameStyle> FrameStyle;
 
 	/** Returns the inner UGeoButton that receives forwarded focus and fires the click delegate. */
 	UGeoButton* GetButtonWidget() const
@@ -68,6 +62,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> ButtonText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoFrame> Frame;
 
 private:
 	void ApplyStyle();

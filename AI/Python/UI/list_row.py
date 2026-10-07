@@ -34,7 +34,7 @@ def read_widget_property(wbp, widget_name, prop_name):
 
 
 def migrate_list_row(old_path, new_path, row_class_path, text_widget_name):
-    """Rebuild the row and carry its authored button style and font over to the rebuilt widgets."""
+    """Rebuild the row and carry its authored button style over to the rebuilt widget; column text wears the theme."""
     if unreal.EditorAssetLibrary.does_asset_exist(old_path):
         unreal.EditorAssetLibrary.rename_asset(old_path, new_path)
 
@@ -42,8 +42,6 @@ def migrate_list_row(old_path, new_path, row_class_path, text_widget_name):
 
     # Read the skin off the authored widgets before the rebuild discards them.
     button_style = read_widget_property(row, 'RowButton', 'widget_style')
-    column_font = read_widget_property(row, text_widget_name, 'font')
-    column_color = read_widget_property(row, text_widget_name, 'color_and_opacity')
 
     unreal.BlueprintEditorLibrary.reparent_blueprint(row, unreal.load_class(None, row_class_path))
     unreal.GeoHudWidgetBuilderUtil.get_default_object().build_list_row_widget(row)
@@ -52,10 +50,6 @@ def migrate_list_row(old_path, new_path, row_class_path, text_widget_name):
         unreal.GeoWidgetBuilderUtil.get_default_object().find_widget(row, 'RowButton').set_editor_property(
             'widget_style', button_style)
         unreal.GeoWidgetBuilderUtil.get_default_object().commit_tree(row)
-    if column_font:
-        set_cdo_property(row, 'ColumnFont', column_font)
-    if column_color:
-        set_cdo_property(row, 'ColumnColor', column_color)
     take_class_defaults(row, row_class_path, ['NormalColor', 'AlternateColor', 'HeaderColor', 'SelectedColor'])
 
     inspect_widget_tree(row)

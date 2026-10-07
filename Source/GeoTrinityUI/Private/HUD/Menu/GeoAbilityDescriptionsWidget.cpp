@@ -24,7 +24,7 @@
 #include "Engine/DataTable.h"
 #include "EnhancedInputSubsystems.h"
 #include "HUD/Menu/GeoMenuButton.h"
-#include "Styling/CoreStyle.h"
+#include "HUD/Style/GeoUITheme.h"
 
 namespace
 {
@@ -80,8 +80,12 @@ void UGeoAbilityDescriptionsWidget::BuildAbilityList()
 	UDataTable* StyleSet = NewObject<UDataTable>(this);
 	StyleSet->RowStruct = FRichTextStyleRow::StaticStruct();
 	FRichTextStyleRow DefaultRow;
-	DefaultRow.TextStyle.SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 14));
-	DefaultRow.TextStyle.SetColorAndOpacity(FSlateColor(FLinearColor::White));
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	if (FGeoTextStyle const* BodyStyle = Theme ? Theme->FindTextStyle(EGeoTextRole::Body) : nullptr)
+	{
+		DefaultRow.TextStyle.SetFont(BodyStyle->Font);
+		DefaultRow.TextStyle.SetColorAndOpacity(BodyStyle->Color);
+	}
 	StyleSet->AddRow(FName(TEXT("Default")), DefaultRow);
 	FRichTextStyleRow ValueRow = DefaultRow;
 	ValueRow.TextStyle.SetColorAndOpacity(FSlateColor(ValueColor));
@@ -136,18 +140,14 @@ void UGeoAbilityDescriptionsWidget::BuildAbilityList()
 		UHorizontalBox* NameRow = NewObject<UHorizontalBox>(WidgetTree);
 
 		UTextBlock* NameText = NewObject<UTextBlock>(WidgetTree);
-		FSlateFontInfo NameFont = NameText->GetFont();
-		NameFont.Size = 22;
-		NameText->SetFont(NameFont);
+		UGeoUITheme::ApplyTextStyle(NameText, EGeoTextRole::Button);
 		NameText->SetText(FText::FromString(Info.AbilityDisplayName));
 		NameRow->AddChildToHorizontalBox(NameText);
 
 		auto const AddNameAnnotation = [&](FString const& Annotation, FLinearColor const& Color)
 		{
 			UTextBlock* AnnotationText = NewObject<UTextBlock>(WidgetTree);
-			FSlateFontInfo AnnotationFont = AnnotationText->GetFont();
-			AnnotationFont.Size = 16;
-			AnnotationText->SetFont(AnnotationFont);
+			UGeoUITheme::ApplyTextStyle(AnnotationText, EGeoTextRole::Label);
 			AnnotationText->SetColorAndOpacity(FSlateColor(Color));
 			AnnotationText->SetText(FText::FromString(Annotation));
 			UHorizontalBoxSlot* AnnotationSlot = NameRow->AddChildToHorizontalBox(AnnotationText);

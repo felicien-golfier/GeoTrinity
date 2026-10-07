@@ -139,4 +139,8 @@ void UGeoPauseMenuWidget::SetButtonsVisible(bool bVisible)
 	LeaderboardButton->SetVisibility(NewVisibility);
 	ReturnToMainMenuButton->SetVisibility(NewVisibility);
 	QuitButton->SetVisibility(NewVisibility);
+	if (MenuDecor)
+	{
+		MenuDecor->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 }

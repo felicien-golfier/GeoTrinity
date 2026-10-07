@@ -201,4 +201,8 @@ void UGeoMainMenuWidget::SetButtonsVisible(bool bVisible)
 	PlayLocalButton->SetVisibility(NewVisibility);
 	LeaderboardButton->SetVisibility(NewVisibility);
 	QuitButton->SetVisibility(NewVisibility);
+	if (MenuDecor)
+	{
+		MenuDecor->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 }

@@ -18,6 +18,7 @@ public class GeoTrinityUI : ModuleRules
 			"SlateCore",
 			"Slate",
 			"UMG",
+			"DeveloperSettings",
 			"GameplayAbilities",
 			"GameplayTags",
 			"GeoTrinity"

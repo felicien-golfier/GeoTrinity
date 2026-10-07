@@ -61,7 +61,7 @@ void UGeoLeaderboardWidget::BuildTabs()
 	TabRows.Empty();
 
 	// Entries are ranked, not grouped, so the first attempt at a boss is what puts its tab in the strip.
-	for (FGeoLeaderboardEntry const& Entry : Leaderboard->Entries)
+	for (FGeoAttemptEntry const& Entry : Leaderboard->Entries)
 	{
 		if (TabRows.Contains(Entry.ArenaTag))
 		{
@@ -136,7 +136,7 @@ void UGeoLeaderboardWidget::PopulateEntries()
 	Header->SetTint(EGeoListRowTint::Header);
 	ListFrame->RowsBox->AddChild(Header);
 
-	auto const IsShown = [this](FGeoLeaderboardEntry const& Entry)
+	auto const IsShown = [this](FGeoAttemptEntry const& Entry)
 	{
 		return Entry.ArenaTag == SelectedArena && Entry.Difficulty == SelectedDifficulty;
 	};
@@ -158,7 +158,7 @@ void UGeoLeaderboardWidget::PopulateEntries()
 	int32 Rank = 0;
 	for (int32 EntryIndex = 0; EntryIndex < Leaderboard->Entries.Num(); ++EntryIndex)
 	{
-		FGeoLeaderboardEntry const& Entry = Leaderboard->Entries[EntryIndex];
+		FGeoAttemptEntry const& Entry = Leaderboard->Entries[EntryIndex];
 		if (!IsShown(Entry))
 		{
 			continue;
@@ -208,7 +208,7 @@ void UGeoLeaderboardWidget::ToggleEntry(int32 const EntryIndex)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoLeaderboardWidget::AddStatRows(FGeoLeaderboardEntry const& Entry)
+void UGeoLeaderboardWidget::AddStatRows(FGeoAttemptEntry const& Entry)
 {
 	float DamageMax = 0.f;
 	float HealingMax = 0.f;

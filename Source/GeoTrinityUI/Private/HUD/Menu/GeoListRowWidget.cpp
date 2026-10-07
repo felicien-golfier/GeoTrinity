@@ -8,13 +8,11 @@
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/TextBlock.h"
 #include "HUD/Menu/GeoButton.h"
-#include "Styling/CoreStyle.h"
+#include "HUD/Style/GeoFrame.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UGeoListRowWidget::UGeoListRowWidget(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
-	ColumnFont = FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 18.f);
-	ColumnColor = FSlateColor(FLinearColor::White);
 	ColumnPadding = FMargin(6.f, 3.f);
 	// Overlays on the panel the list sits on rather than colours of their own, so a row reads against whatever skin
 	// the frame wears.
@@ -67,8 +65,7 @@ UTextBlock* UGeoListRowWidget::MakeColumnText(FText const& Text)
 {
 	UTextBlock* const Column = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 	Column->SetText(Text);
-	Column->SetFont(ColumnFont);
-	Column->SetColorAndOpacity(ColumnColor);
+	UGeoUITheme::ApplyTextStyle(Column, Tint == EGeoListRowTint::Header ? HeaderTextRole : ColumnTextRole);
 	return Column;
 }
 
@@ -76,11 +73,16 @@ UTextBlock* UGeoListRowWidget::MakeColumnText(FText const& Text)
 void UGeoListRowWidget::SetSelectable(bool const bSelectable)
 {
 	RowButton->SetVisibility(bSelectable ? ESlateVisibility::Visible : ESlateVisibility::HitTestInvisible);
+	if (RowFrame)
+	{
+		RowFrame->SetActivateOnHoverAndFocus(bSelectable);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoListRowWidget::SetTint(EGeoListRowTint const Tint)
+void UGeoListRowWidget::SetTint(EGeoListRowTint const InTint)
 {
+	Tint = InTint;
 	FButtonStyle Style = RowButton->GetStyle();
 	switch (Tint)
 	{
@@ -98,6 +100,11 @@ void UGeoListRowWidget::SetTint(EGeoListRowTint const Tint)
 		break;
 	}
 	RowButton->SetStyle(Style);
+
+	if (RowFrame)
+	{
+		RowFrame->SetActive(Tint == EGeoListRowTint::Selected);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

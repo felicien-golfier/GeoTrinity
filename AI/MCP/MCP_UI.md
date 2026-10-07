@@ -113,6 +113,14 @@ have to move together, since a tint alone reads differently against a different 
 `InspectWidgetBlueprint` on the shim CDO logs the full tree — types, names, slot layout, per-widget properties —
 which is how to verify fill type, offsets and colours before debugging in PIE.
 
+## Swapping a widget's class
+
+To give an existing widget a subclass (a themed input, a themed text), construct the new widget under the same name,
+attach it at the old one's index and carry over its slot layout, authored values and children; BindWidgets and graph
+nodes keep resolving it by name. Graph nodes reading it keep the old pin type until the package is reloaded, so save,
+reload the package and recompile after the swap. See `AI/Python/UI/rail_style.py` (`swap_widget_class`,
+`reload_blueprint`).
+
 ## Layout notes
 
 - **Fixed-position canvas slot**: pin a child to an absolute pixel offset with a top-left-only anchor and pixel
@@ -134,6 +142,12 @@ which is how to verify fill type, offsets and colours before debugging in PIE.
   offsets exact. Re-parent in the intended draw order, since child order is z-order. See
   `AI/Python/UI/group_widgets.py`.
 - An `OverlaySlot`'s alignment properties in Python are `horizontal_alignment` and `vertical_alignment`.
+- A SizeBox override (width, min width) only takes effect through its setter, which also raises the override flag.
+- A brush's image size is a deprecation-wrapper struct in Python: build it empty and set `x` and `y`.
+- A class that is not Blueprint-exposed (a developer settings class) is reached with a class load by path, then its
+  default object.
+- An input style seeded for a theme starts from the engine widget's default object style, so the parts the theme
+  does not set (arrow images, sounds, scroll bars) keep the engine look.
 
 ## Driving a child widget from C++
 

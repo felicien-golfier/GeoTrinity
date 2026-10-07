@@ -14,7 +14,7 @@ class UGeoLeaderboardSave;
 class UGeoListRowWidget;
 class UHorizontalBox;
 class UTexture2D;
-struct FGeoLeaderboardEntry;
+struct FGeoAttemptEntry;
 struct FGeoLeaderboardPlayer;
 
 /**
@@ -68,7 +68,7 @@ private:
 	void ToggleEntry(int32 EntryIndex);
 
 	/** Appends the unfolded attempt's stat table: a line naming the columns, then one line per player. */
-	void AddStatRows(FGeoLeaderboardEntry const& Entry);
+	void AddStatRows(FGeoAttemptEntry const& Entry);
 
 	/** Appends one figure to a stat row. ColumnMax draws a bar under it reading as the figure's share of the best in
 	 * its column; 0 is a figure nothing compares it to, which is the number on its own. */
