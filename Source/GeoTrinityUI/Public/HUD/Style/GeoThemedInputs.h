@@ -23,6 +23,7 @@ class GEOTRINITYUI_API UGeoEditableTextBox : public UEditableTextBox
 	GENERATED_BODY()
 
 public:
+	/** Applies the theme's EditableTextBoxStyle. */
 	virtual void SynchronizeProperties() override;
 #if WITH_EDITOR
 	virtual FText const GetPaletteCategory() override;
@@ -36,6 +37,7 @@ class GEOTRINITYUI_API UGeoComboBoxString : public UComboBoxString
 	GENERATED_BODY()
 
 public:
+	/** Applies the theme's ComboBoxStyle and ComboBoxItemStyle. */
 	virtual void SynchronizeProperties() override;
 #if WITH_EDITOR
 	virtual FText const GetPaletteCategory() override;
@@ -56,6 +58,7 @@ class GEOTRINITYUI_API UGeoCheckBox : public UCheckBox
 	GENERATED_BODY()
 
 public:
+	/** Applies the theme's CheckBoxStyle. */
 	virtual void SynchronizeProperties() override;
 #if WITH_EDITOR
 	virtual FText const GetPaletteCategory() override;
@@ -69,6 +72,7 @@ class GEOTRINITYUI_API UGeoSlider : public USlider
 	GENERATED_BODY()
 
 public:
+	/** Applies the theme's SliderStyle. */
 	virtual void SynchronizeProperties() override;
 #if WITH_EDITOR
 	virtual FText const GetPaletteCategory() override;
@@ -82,6 +86,7 @@ class GEOTRINITYUI_API UGeoProgressBar : public UProgressBar
 	GENERATED_BODY()
 
 public:
+	/** Applies the theme's ProgressBarStyle. */
 	virtual void SynchronizeProperties() override;
 #if WITH_EDITOR
 	virtual FText const GetPaletteCategory() override;
@@ -95,6 +100,7 @@ class GEOTRINITYUI_API UGeoScrollBox : public UScrollBox
 	GENERATED_BODY()
 
 public:
+	/** Applies the theme's ScrollBarStyle. */
 	virtual void SynchronizeProperties() override;
 #if WITH_EDITOR
 	virtual FText const GetPaletteCategory() override;

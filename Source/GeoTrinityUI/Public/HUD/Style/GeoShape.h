@@ -21,7 +21,9 @@ class GEOTRINITYUI_API UGeoShape : public UWidget
 	GENERATED_BODY()
 
 public:
+	/** Pushes Sides, Size, Rotation, SpinSpeed, Color and OutlineStyle to the underlying SGeoShape. */
 	virtual void SynchronizeProperties() override;
+	/** Releases the SGeoShape Slate widget. */
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 #if WITH_EDITOR
