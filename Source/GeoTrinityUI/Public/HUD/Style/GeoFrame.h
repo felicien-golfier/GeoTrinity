@@ -39,8 +39,10 @@ public:
 	/** Multiplies the style's glow colours, so one style glows in each class's colour. */
 	UFUNCTION(BlueprintCallable, Category = "GeoFrame")
 	void SetGlowTint(FLinearColor const& InGlowTint);
-
+	
+	/** Pushes FrameStyle, bActive and bActivateOnHoverAndFocus to the underlying SGeoFrame. */
 	virtual void SynchronizeProperties() override;
+	/** Releases the SGeoFrame Slate widget. */
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 #if WITH_EDITOR

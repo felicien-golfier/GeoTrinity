@@ -47,7 +47,9 @@ public:
 	/** Writes this profile back to LocalPlayerIndex's file. */
 	void Save(int32 LocalPlayerIndex);
 
+	/** Total shards available to spend in the Forge. */
 	int32 GetShards() const { return Shards; }
+	/** Total copies of GemId this player owns, across loadouts and unslotted inventory. */
 	int32 GetOwnedCount(FName GemId) const { return OwnedGems.FindRef(GemId); }
 
 	/** Copies of GemId PlayerClass can still equip: owned - those its own loadout already slots. */
@@ -56,6 +58,7 @@ public:
 	/** Copies of GemId the Forge may break down: owned - the most any one loadout slots. */
 	int32 GetBreakableCount(FName GemId) const;
 
+	/** Current level of PlayerClass, from 1 up to GeoGem::MaxClassLevel. */
 	int32 GetClassLevel(EPlayerClass PlayerClass) const;
 
 	/** XP PlayerClass earned since its current level. */

@@ -23,6 +23,7 @@ public:
 	/** Loads this local player's profile. */
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
+	/** This local player's gem profile for the session; never null after Initialize. */
 	UGeoGemProfileSave* GetProfile() const { return Profile; }
 
 	/** Saves the profile and sends its loadouts to the server, when this player is connected to one. */

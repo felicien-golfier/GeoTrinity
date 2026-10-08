@@ -25,7 +25,9 @@ public:
 	/** Becomes the solid class shape of ClassStyle, in its colour. */
 	void SetClassShape(FGeoClassStyle const& ClassStyle);
 
+	/** Pushes Sides, Size, Rotation, SpinSpeed, Color and OutlineStyle to the underlying SGeoShape. */
 	virtual void SynchronizeProperties() override;
+	/** Releases the SGeoShape Slate widget. */
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 #if WITH_EDITOR

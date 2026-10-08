@@ -95,6 +95,7 @@ public:
 	UCharacterAttributeSet* GetCharacterAttributeSet() const { return CharacterAttributeSet; }
 	/** Returns the GeoTrinity-specific ASC owned by this player state. */
 	UGeoAbilitySystemComponent* GetGeoAbilitySystemComponent() const { return AbilitySystemComponent; }
+	/** Returns the gem component that holds this player's loadouts on the server. */
 	UGeoGemComponent* GetGemComponent() const { return GemComponent; }
 
 	/** Returns the player's current playable class. */
