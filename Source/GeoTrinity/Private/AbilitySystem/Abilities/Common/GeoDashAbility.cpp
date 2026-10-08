@@ -2,6 +2,8 @@
 
 #include "AbilitySystem/Abilities/Common/GeoDashAbility.h"
 
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
+#include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
 
@@ -26,7 +28,9 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	}
 
 	FVector const DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
-	MovementComponent->RequestDash(DashDirection * DashDistance / DashDuration, DashDuration);
+	float const GemDashDistance = DashDistance
+		* ActorInfo->AbilitySystemComponent->GetNumericAttribute(UGeoGemAttributeSet::GetDashDistanceMultiplierAttribute());
+	MovementComponent->RequestDash(DashDirection * GemDashDistance / DashDuration, DashDuration);
 	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
 }
 

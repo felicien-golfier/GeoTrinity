@@ -4,19 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "HUD/Menu/GeoGemPageWidget.h"
+#include "Tool/GeoColor.h"
+#include "Types/SlateEnums.h"
 
 #include "GeoGemForgeWidget.generated.h"
 
+class UEditableTextBox;
 class UGeoMenuButton;
 class UHorizontalBox;
 class UVerticalBox;
 
 /**
- * The Forge page of the Gems menu: gems into shards and shards into gems. Left, one click breaks down every free copy of
- * a tier, or of every Chip, Cut and Prism at once, with each tier's shard rates under them. Middle, the gem types of the
- * chosen tier with their owned and free counts. Right, the picked type broken down or crafted by a quantity set with
- * -, + and MAX. Free here is what no loadout needs (UGeoGemProfileSave::GetBreakableCount): slotted copies are never
- * broken down. MessageText says what the last action gave.
+ * The Forge page of the Gems menu: gems into shards and shards into gems. Left, the tiers: clicking one selects or
+ * deselects it, BREAK DOWN SELECTED breaks down every free copy of the selected tiers, and a framed line under it shows
+ * the gems that destroys and the shards it gives, with each tier's shard rates under them. Middle, the gem types of the chosen tier with their owned and free counts. Right, the picked type
+ * broken down or crafted by a quantity typed in its field or set with -, + and MAX. Free here is what no loadout needs
+ * (UGeoGemProfileSave::GetBreakableCount): slotted copies are never broken down. MessageText says what the last action
+ * gave.
  * Required in the BP hierarchy: UVerticalBox "GemListBox". Every other part is optional.
  */
 UCLASS()
@@ -31,16 +35,21 @@ protected:
 	/** Wires the buttons. */
 	virtual void NativeConstruct() override;
 
-	/** Filled with one break-down row per tier. */
+	/** Filled with one selectable break-down row per tier. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UVerticalBox> TierBreakBox;
 
+	/** BREAK DOWN SELECTED: breaks down every free copy of the selected tiers. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> BreakAllButton;
 
-	/** What BREAK DOWN ALL FREE would give. */
+	/** How many gems BreakAllButton destroys, in BreakCountColor. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> BreakAllText;
+	TObjectPtr<UTextBlock> BreakCountText;
+
+	/** How many shards BreakAllButton gives, in BreakShardsColor. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> BreakShardsText;
 
 	/** Filled with each tier's break-down and craft rates. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
@@ -69,8 +78,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> PickedCountsText;
 
+	/** The break-down quantity, typed or set by the buttons around it. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> BreakQuantityText;
+	TObjectPtr<UEditableTextBox> BreakQuantityBox;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> BreakLessButton;
@@ -84,8 +94,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> BreakButton;
 
+	/** The craft quantity, typed or set by the buttons around it. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> CraftQuantityText;
+	TObjectPtr<UEditableTextBox> CraftQuantityBox;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> CraftLessButton;
@@ -120,12 +131,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText NoneFreeText = INVTEXT("NONE FREE");
 
-	/** {0} free Chips, Cuts and Prisms, {1} the shards they give. */
+	/** {0} free copies of the selected tiers. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText BreakAllFormat = INVTEXT("CHIPS, CUTS & PRISMS \u00B7 {0} GEMS \u00B7 +{1} SHARDS");
+	FText BreakCountFormat = INVTEXT("\u2212{0} GEMS");
 
+	/** {0} the shards breaking the selected tiers down gives. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText NothingFreeText = INVTEXT("NOTHING FREE TO BREAK DOWN");
+	FText BreakShardsFormat = INVTEXT("+{0} SHARDS");
+
+	/** The gems about to be destroyed. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Break")
+	FGeoColorParam BreakCountColor{FLinearColor(1.f, .2f, .25f)};
+
+	/** The shards about to be gained. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Break")
+	FGeoColorParam BreakShardsColor{FLinearColor(.75f, .6f, 1.f)};
+
+	/** Alpha of the summary while nothing is selected. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Break", meta = (ClampMin = "0", ClampMax = "1"))
+	float BreakIdleAlpha = .35f;
 
 	/** The rate table's header: tier, break down, craft. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -178,6 +202,7 @@ protected:
 	FText AllGemsName = INVTEXT("GEMS");
 
 private:
+	/** Breaks down every free copy of the selected tiers. */
 	UFUNCTION()
 	void HandleBreakAll();
 
@@ -189,6 +214,9 @@ private:
 
 	UFUNCTION()
 	void HandleBreakMax();
+
+	UFUNCTION()
+	void HandleBreakQuantityCommitted(FText const& Text, ETextCommit::Type CommitMethod);
 
 	UFUNCTION()
 	void HandleBreak();
@@ -203,6 +231,9 @@ private:
 	void HandleCraftMax();
 
 	UFUNCTION()
+	void HandleCraftQuantityCommitted(FText const& Text, ETextCommit::Type CommitMethod);
+
+	UFUNCTION()
 	void HandleCraft();
 
 	void ShowTierBreaks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
@@ -210,8 +241,8 @@ private:
 	void ShowGems(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	void ShowPicked(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 
-	/** Breaks every breakable copy of Tiers down, saying what it gave as Name. */
-	void BreakTiers(TArray<EGeoGemTier> const& Tiers, FText const& Name);
+	/** Whether Tier is selected for BreakAllButton and has a free copy to break down. */
+	bool IsBreakSelected(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog, EGeoGemTier Tier) const;
 
 	/** Copies of every gem of Tier the Forge may break down. */
 	int32 GetBreakableCount(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog, EGeoGemTier Tier) const;
@@ -221,6 +252,9 @@ private:
 
 	/** Shown in the middle list. */
 	EGeoGemTier ShownTier = EGeoGemTier::Chip;
+
+	/** The tiers BreakAllButton breaks down, picked on the left. */
+	TSet<EGeoGemTier> BreakTiers;
 
 	/** Defaults to the shown tier's first gem. */
 	FName PickedGem;

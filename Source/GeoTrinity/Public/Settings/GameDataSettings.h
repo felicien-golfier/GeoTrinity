@@ -138,6 +138,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Projectile")
 	float MaxDeployDistance = 1500.f;
 
+	/** Deployable health multiplier the Leverage Core gives at MinDeployDistance and at MaxDeployDistance. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Gem")
+	FFloatInterval LeverageHealthMultiplier = FFloatInterval(0.7f, 1.3f);
+
 	/** Maximum one-way latency the server compensates: how far it fast-forwards a projectile to the client's reported
 	 * spawn time, and how far behind now a remote player may still be judged by time-driven hazards
 	 * (UGeoCharacterMovementComponent::GetPerceivedServerTime). */

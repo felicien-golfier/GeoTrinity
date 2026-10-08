@@ -6,7 +6,7 @@ motion live in the style assets and DA_UITheme (built by ui_theme.py, which must
 - WBP_ListRow: RowFrame (row style) > RowButton > ColumnsBox.
 - WBP_ListPanel: a panel frame behind its header and rows, the old background images dropped.
 Usage: run via MCP execute_script. Rebuilds whole widgets, so it refuses an existing asset (asset_guard.legacy_rebuild)
-until converted to asset_guard.write.
+until converted to asset_guard.write; clickable_frames(), which runs first, is converted and safe on existing assets.
 """
 import importlib
 import os
@@ -28,8 +28,14 @@ BUTTON_PATH = "/Game/HUD/WBP_GeoButton"
 ROW_PATH = "/Game/HUD/WBP_ListRow"
 LIST_PANEL_PATH = "/Game/HUD/WBP_ListPanel"
 
-BUTTON_PADDING = unreal.Margin(32, 12, 32, 12)
-ROW_PADDING = unreal.Margin(10, 4, 10, 4)
+# A frame holds its button with no padding, so the whole outline it draws is clickable: the room round a label or a
+# row's columns lives inside the button. A frame padding would be outline the button does not cover, and a button
+# squeezed below its frame's padding (a narrow - or +) would have nothing left to click.
+NO_PADDING = unreal.Margin(0, 0, 0, 0)
+BUTTON_PADDING = unreal.Margin(36, 14, 36, 14)
+ROW_PADDING = unreal.Margin(14, 6, 14, 6)
+# What the frames held before, over the button slot's own 4, 2.
+EARLIER_FRAME_PADDING = {BUTTON_PATH: unreal.Margin(32, 12, 32, 12), ROW_PATH: unreal.Margin(10, 4, 10, 4)}
 PANEL_PADDING = unreal.Margin(28, 24, 28, 24)
 FOOTER_GAP = 16
 ROW_TINTS = {
@@ -219,7 +225,7 @@ def fill_slot(slot):
 def style_menu_button():
     """Frame > ButtonWidget > ButtonText. The label's font comes from the button's TextRole in the theme."""
     wbp = asset_guard.legacy_rebuild(BUTTON_PATH)
-    make_frame_root(wbp, "Frame", "DA_Frame_Button", BUTTON_PADDING, True)
+    make_frame_root(wbp, "Frame", "DA_Frame_Button", NO_PADDING, True)
 
     button, slot = construct_into(wbp, unreal.GeoButton, "ButtonWidget", "Frame")
     fill_slot(slot)
@@ -230,13 +236,14 @@ def style_menu_button():
     text.set_editor_property("justification", unreal.TextJustify.CENTER)
     text_slot.set_editor_property("horizontal_alignment", unreal.HorizontalAlignment.H_ALIGN_CENTER)
     text_slot.set_editor_property("vertical_alignment", unreal.VerticalAlignment.V_ALIGN_CENTER)
+    text_slot.set_editor_property("padding", BUTTON_PADDING)
     UTIL.commit_tree(wbp)
 
 
 def style_list_row():
     """RowFrame > RowButton > ColumnsBox. The row's code tints the button's normal brush per row role."""
     wbp = asset_guard.legacy_rebuild(ROW_PATH)
-    make_frame_root(wbp, "RowFrame", "DA_Frame_Row", ROW_PADDING, True)
+    make_frame_root(wbp, "RowFrame", "DA_Frame_Row", NO_PADDING, True)
 
     button, slot = construct_into(wbp, unreal.GeoButton, "RowButton", "RowFrame")
     fill_slot(slot)
@@ -244,6 +251,7 @@ def style_list_row():
 
     _, columns_slot = construct_into(wbp, unreal.HorizontalBox, "ColumnsBox", "RowButton")
     fill_slot(columns_slot)
+    columns_slot.set_editor_property("padding", ROW_PADDING)
     UTIL.commit_tree(wbp)
     seed_row_tints(wbp)
 
@@ -289,7 +297,21 @@ def place_footer_under_rows(wbp):
     rows_slot.set_editor_property("size", unreal.SlateChildSize(1.0, unreal.SlateSizeRule.FILL))
 
 
+def clickable_frames():
+    """On a button and a list row built while their frame held the padding: the padding moves into the button, so the
+    whole outline is clickable. Goes through asset_guard, so a frame padding changed by hand is kept and reported."""
+    for path, frame_name, content_name, padding in [(BUTTON_PATH, "Frame", "ButtonText", BUTTON_PADDING),
+                                                    (ROW_PATH, "RowFrame", "ColumnsBox", ROW_PADDING)]:
+        wbp = unreal.load_asset(path)
+        if asset_guard.write(path, UTIL.find_widget(wbp, frame_name), "padding", NO_PADDING,
+                             earlier=(EARLIER_FRAME_PADDING[path],)):
+            asset_guard.write(path, UTIL.find_widget(wbp, content_name).get_editor_property("slot"), "padding",
+                              padding)
+        UTIL.commit_tree(wbp)
+
+
 if __name__ == "__main__":
+    clickable_frames()
     style_menu_button()
     style_list_row()
     style_list_panel()

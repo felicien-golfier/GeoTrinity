@@ -4,6 +4,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Data/GeoCueParam.h"
@@ -122,6 +123,13 @@ bool UGeoAbilitySystemLibrary::ShouldSuppressGameplayCue(FGeoGameplayEffectConte
 		return false;
 	}
 	return !GameFeelComponent->IsCueAvailable(bIsHeal);
+}
+
+float UGeoAbilitySystemLibrary::RollCritMultiplier(UAbilitySystemComponent const* SourceASC)
+{
+	bool const bCrits = IsValid(SourceASC) && SourceASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical)
+		&& FMath::FRand() < SourceASC->GetNumericAttribute(UGeoGemAttributeSet::GetCritChanceAttribute());
+	return bCrits ? SourceASC->GetNumericAttribute(UGeoGemAttributeSet::GetCritDamageAttribute()) : 1.f;
 }
 
 void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,

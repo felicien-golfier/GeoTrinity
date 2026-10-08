@@ -72,6 +72,10 @@ struct GEOTRINITY_API FGeoGameplayTags
 	// Ability spells needed in code
 	FGameplayTag Ability_Spell_ShieldBurst;
 
+	// Rules a slotted Core turns on, granted by UGeoGemStatsEffect
+	FGameplayTag Gem_Core_Critical;
+	FGameplayTag Gem_Core_Leverage;
+
 	// AI
 	FGameplayTag AI_Boss_AggroEvent;
 	/** Tags the linked-asset state an enemy's StateTree runs its BehaviourStateTree in. */

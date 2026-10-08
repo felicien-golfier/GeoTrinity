@@ -54,7 +54,8 @@ void UExecCalc_Heal::Execute_Implementation(FGameplayEffectCustomExecutionParame
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(ReceivedHealBoostCaptureDef, EvaluationParams,
 															   ReceivedHealBoost);
 
-	HealAmount *= AppliedHealBoost * ReceivedHealBoost;
+	HealAmount *= AppliedHealBoost * ReceivedHealBoost
+		* GeoASLib::RollCritMultiplier(ExecutionParams.GetSourceAbilitySystemComponent());
 
 	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingHealAttribute(),
 													   EGameplayModOp::Additive, HealAmount};

@@ -236,6 +236,20 @@ void AGeoDeployableBase::EnableActorCollision()
 	SetActorEnableCollision(true);
 }
 
+void AGeoDeployableBase::ApplyHealthMultiplier()
+{
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+		float const Multiplier = GetData()->Params.HealthMultiplier;
+		for (FGameplayAttribute const& Attribute :
+			 {UGeoAttributeSetBase::GetMaxHealthAttribute(), UGeoAttributeSetBase::GetHealthAttribute()})
+		{
+			ASC->SetNumericAttributeBase(Attribute, ASC->GetNumericAttributeBase(Attribute) * Multiplier);
+		}
+	}
+}
+
 // -----------------------------------------------------------------------------------------------------------------------------------------
 
 void AGeoDeployableBase::ApplyOutlineStencil() const
@@ -313,6 +327,7 @@ void AGeoDeployableBase::BeginPlay()
 	}
 
 	InitDrain();
+	ApplyHealthMultiplier();
 
 	if (!CanBeDamaged() && CombattantWidgetComponent)
 	{

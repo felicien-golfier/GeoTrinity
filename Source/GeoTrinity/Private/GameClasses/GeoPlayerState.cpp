@@ -1,6 +1,7 @@
 ﻿#include "GameClasses/GeoPlayerState.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Engine/LocalPlayer.h"
@@ -18,6 +19,7 @@ AGeoPlayerState::AGeoPlayerState()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	CharacterAttributeSet = CreateDefaultSubobject<UCharacterAttributeSet>(TEXT("CharacterAttributeSet"));
+	GemAttributeSet = CreateDefaultSubobject<UGeoGemAttributeSet>(TEXT("GemAttributeSet"));
 	GemComponent = CreateDefaultSubobject<UGeoGemComponent>(TEXT("GemComponent"));
 
 	SetNetUpdateFrequency(100.0f);

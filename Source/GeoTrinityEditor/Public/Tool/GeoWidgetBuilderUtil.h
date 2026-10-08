@@ -203,12 +203,16 @@ public:
 	static UOverlaySlot* AddFillChildToOverlay(UOverlay* Overlay, UWidget* Child);
 
 	/**
-	 * Spaces the UGeoMenuButtons of every vertical and horizontal box in Tree by the theme's MenuButtonGap: each button
-	 * after the first of its box gets the gap on its leading side and none on the trailing side of the one before. The
-	 * first button's leading side and the last one's trailing side keep their padding, so the stack still sits where it
-	 * was placed.
+	 * Spaces neighbouring menu controls (IsMenuControl) of every vertical and horizontal box in Tree by the theme's
+	 * MenuButtonGap: of two controls side by side, the second gets the gap on its leading side and the first none on its
+	 * trailing side. Whatever padding a script gave them there is overwritten, so a row of buttons and the button under
+	 * it always sit as far apart as two buttons. The outer sides of a run keep their padding.
 	 */
 	static void SpaceMenuButtons(UWidgetTree* Tree);
+
+	/** Whether Widget is spaced as a menu control: a UGeoMenuButton or a text field, either wrapped alone in a content
+	 * widget (a SizeBox fixing its width), or a box holding nothing but such controls (a row of buttons). */
+	static bool IsMenuControl(UWidget const* Widget);
 
 	/** Sets the leading (top or left) or trailing (bottom or right) padding of a vertical or horizontal box slot. */
 	static void SetStackPadding(UPanelSlot* Slot, bool bLeading, float Padding);

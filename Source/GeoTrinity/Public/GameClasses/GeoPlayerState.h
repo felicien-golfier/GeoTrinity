@@ -14,6 +14,7 @@ class APlayableCharacter;
 #include "GeoPlayerState.generated.h"
 
 class UCharacterAttributeSet;
+class UGeoGemAttributeSet;
 class UGeoAbilitySystemComponent;
 class UGeoGemComponent;
 
@@ -131,6 +132,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UCharacterAttributeSet> CharacterAttributeSet;
+
+	UPROPERTY()
+	TObjectPtr<UGeoGemAttributeSet> GemAttributeSet;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGeoGemComponent> GemComponent;

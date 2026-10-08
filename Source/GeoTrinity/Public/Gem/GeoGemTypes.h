@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AttributeSet.h"
+#include "GameplayTagContainer.h"
 #include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
 #include "Tool/GeoColor.h"
@@ -56,6 +57,10 @@ struct FGeoGemInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	EGeoGemOperation Operation = EGeoGemOperation::Add;
+
+	/** Tag the player holds while the gem is slotted, which the code of a Core's rule checks; empty on a stat gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	FGameplayTag GrantedTag;
 
 	/** What one slotted copy adds, as a fraction: 0.002 is +0.2%. Slotted copies sum. Also what the menus show for a
 	 * gem whose effect is not a stat yet; 0 on a Core, whose Effect is its rule. */

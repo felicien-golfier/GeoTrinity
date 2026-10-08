@@ -3,6 +3,7 @@
 #include "HUD/Menu/GeoGemForgeWidget.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Components/EditableTextBox.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/TextBlock.h"
@@ -35,6 +36,10 @@ void UGeoGemForgeWidget::NativeConstruct()
 	{
 		BreakMaxButton->OnClicked.AddUniqueDynamic(this, &UGeoGemForgeWidget::HandleBreakMax);
 	}
+	if (BreakQuantityBox)
+	{
+		BreakQuantityBox->OnTextCommitted.AddUniqueDynamic(this, &UGeoGemForgeWidget::HandleBreakQuantityCommitted);
+	}
 	if (BreakButton)
 	{
 		BreakButton->OnClicked.AddUniqueDynamic(this, &UGeoGemForgeWidget::HandleBreak);
@@ -50,6 +55,10 @@ void UGeoGemForgeWidget::NativeConstruct()
 	if (CraftMaxButton)
 	{
 		CraftMaxButton->OnClicked.AddUniqueDynamic(this, &UGeoGemForgeWidget::HandleCraftMax);
+	}
+	if (CraftQuantityBox)
+	{
+		CraftQuantityBox->OnTextCommitted.AddUniqueDynamic(this, &UGeoGemForgeWidget::HandleCraftQuantityCommitted);
 	}
 	if (CraftButton)
 	{
@@ -113,17 +122,22 @@ void UGeoGemForgeWidget::ShowTierBreaks(UGeoGemProfileSave const& Profile, UGeoG
 		}
 		int32 const Breakable = GetBreakableCount(Profile, Catalog, Tier);
 		int32 const Shards = Breakable * Catalog.GetBreakDownShards(Tier);
-		if (Tier != EGeoGemTier::Core)
+		bool const bSelected = IsBreakSelected(Profile, Catalog, Tier);
+		if (bSelected)
 		{
 			AllCount += Breakable;
 			AllShards += Shards;
 		}
 
 		UGeoListRowWidget* Row =
-			TierBreakBox ? MakeRow(EGeoListRowTint::Normal,
+			TierBreakBox ? MakeRow(bSelected ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
 								   Breakable > 0 ? TFunction<void()>([this, Tier]
 																	 {
-																		 BreakTiers({Tier}, GetTierName(Tier, true));
+																		 if (BreakTiers.Remove(Tier) == 0)
+																		 {
+																			 BreakTiers.Add(Tier);
+																		 }
+																		 Refresh();
 																	 })
 												 : TFunction<void()>())
 						 : nullptr;
@@ -146,13 +160,21 @@ void UGeoGemForgeWidget::ShowTierBreaks(UGeoGemProfileSave const& Profile, UGeoG
 		}
 	}
 
+	bool const bAnySelected = AllCount > 0;
+	float const SummaryAlpha = bAnySelected ? 1.f : BreakIdleAlpha;
 	if (BreakAllButton)
 	{
-		BreakAllButton->SetIsEnabled(AllCount > 0);
+		BreakAllButton->SetIsEnabled(bAnySelected);
 	}
-	if (BreakAllText)
+	if (BreakCountText)
 	{
-		BreakAllText->SetText(AllCount > 0 ? FText::Format(BreakAllFormat, AllCount, AllShards) : NothingFreeText);
+		BreakCountText->SetText(FText::Format(BreakCountFormat, AllCount));
+		BreakCountText->SetColorAndOpacity(FSlateColor(BreakCountColor.GetColor(SummaryAlpha)));
+	}
+	if (BreakShardsText)
+	{
+		BreakShardsText->SetText(FText::Format(BreakShardsFormat, AllShards));
+		BreakShardsText->SetColorAndOpacity(FSlateColor(BreakShardsColor.GetColor(SummaryAlpha)));
 	}
 }
 
@@ -283,9 +305,9 @@ void UGeoGemForgeWidget::ShowPicked(UGeoGemProfileSave const& Profile, UGeoGemCa
 	}
 
 	BreakQuantity = FMath::Clamp(BreakQuantity, 1, FMath::Max(Breakable, 1));
-	if (BreakQuantityText)
+	if (BreakQuantityBox)
 	{
-		BreakQuantityText->SetText(FText::AsNumber(Breakable > 0 ? BreakQuantity : 0));
+		BreakQuantityBox->SetText(FText::FromString(FString::FromInt(Breakable > 0 ? BreakQuantity : 0)));
 	}
 	if (BreakButton)
 	{
@@ -295,11 +317,12 @@ void UGeoGemForgeWidget::ShowPicked(UGeoGemProfileSave const& Profile, UGeoGemCa
 											: NoFreeCopyText);
 	}
 
+	CraftQuantity = FMath::Max(CraftQuantity, 1);
 	int32 const Cost = CraftQuantity * Catalog.GetCraftCost(*Tier);
 	bool const bCanCraft = Cost <= Profile.GetShards();
-	if (CraftQuantityText)
+	if (CraftQuantityBox)
 	{
-		CraftQuantityText->SetText(FText::AsNumber(CraftQuantity));
+		CraftQuantityBox->SetText(FText::FromString(FString::FromInt(CraftQuantity)));
 	}
 	if (CraftButton)
 	{
@@ -310,27 +333,10 @@ void UGeoGemForgeWidget::ShowPicked(UGeoGemProfileSave const& Profile, UGeoGemCa
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGemForgeWidget::BreakTiers(TArray<EGeoGemTier> const& Tiers, FText const& Name)
+bool UGeoGemForgeWidget::IsBreakSelected(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog,
+										 EGeoGemTier const Tier) const
 {
-	UGeoGemProfileSave* Profile = GetProfile();
-	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
-	if (!Profile || !Catalog)
-	{
-		return;
-	}
-
-	int32 Count = 0;
-	int32 Shards = 0;
-	for (EGeoGemTier const Tier : Tiers)
-	{
-		Count += GetBreakableCount(*Profile, *Catalog, Tier);
-		Shards += Profile->BreakDownTier(*Catalog, Tier);
-	}
-	if (MessageText && Shards > 0)
-	{
-		MessageText->SetText(FText::Format(BrokenFormat, Shards, Count, Name));
-	}
-	CommitChanges();
+	return BreakTiers.Contains(Tier) && GetBreakableCount(Profile, Catalog, Tier) > 0;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -346,7 +352,32 @@ int32 UGeoGemForgeWidget::GetMaxCraftQuantity() const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemForgeWidget::HandleBreakAll()
 {
-	BreakTiers({EGeoGemTier::Chip, EGeoGemTier::Cut, EGeoGemTier::Prism}, AllGemsName);
+	UGeoGemProfileSave* Profile = GetProfile();
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (!Profile || !Catalog)
+	{
+		return;
+	}
+
+	TArray<EGeoGemTier> const Tiers = GetTiers().FilterByPredicate(
+		[this, Profile, Catalog](EGeoGemTier const Tier)
+		{
+			return IsBreakSelected(*Profile, *Catalog, Tier);
+		});
+	int32 Count = 0;
+	int32 Shards = 0;
+	for (EGeoGemTier const Tier : Tiers)
+	{
+		Count += GetBreakableCount(*Profile, *Catalog, Tier);
+		Shards += Profile->BreakDownTier(*Catalog, Tier);
+	}
+	if (MessageText && Shards > 0)
+	{
+		MessageText->SetText(
+			FText::Format(BrokenFormat, Shards, Count, Tiers.Num() == 1 ? GetTierName(Tiers[0], true) : AllGemsName));
+	}
+	BreakTiers.Empty();
+	CommitChanges();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -372,6 +403,13 @@ void UGeoGemForgeWidget::HandleBreakMax()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemForgeWidget::HandleBreakQuantityCommitted(FText const& Text, ETextCommit::Type /*CommitMethod*/)
+{
+	BreakQuantity = FCString::Atoi(*Text.ToString());
+	Refresh();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemForgeWidget::HandleBreak()
 {
 	UGeoGemProfileSave* Profile = GetProfile();
@@ -392,7 +430,7 @@ void UGeoGemForgeWidget::HandleBreak()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemForgeWidget::HandleCraftLess()
 {
-	CraftQuantity = FMath::Max(1, CraftQuantity - 1);
+	--CraftQuantity;
 	Refresh();
 }
 
@@ -407,6 +445,13 @@ void UGeoGemForgeWidget::HandleCraftMore()
 void UGeoGemForgeWidget::HandleCraftMax()
 {
 	CraftQuantity = GetMaxCraftQuantity();
+	Refresh();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemForgeWidget::HandleCraftQuantityCommitted(FText const& Text, ETextCommit::Type /*CommitMethod*/)
+{
+	CraftQuantity = FCString::Atoi(*Text.ToString());
 	Refresh();
 }
 

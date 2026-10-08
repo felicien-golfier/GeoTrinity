@@ -69,6 +69,7 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageReductionCaptureDef, EvaluationParams,
 															   DamageReduction);
 	Damage *= 1.f - FMath::Clamp(DamageReduction, 0.f, 1.f);
+	Damage *= GeoASLib::RollCritMultiplier(SourceASC);
 
 	/*** OUTPUT ***/
 	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingDamageAttribute(),

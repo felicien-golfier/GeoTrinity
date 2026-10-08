@@ -71,6 +71,10 @@ struct FDeployableDataParams
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
 	int32 Attitude = TeamAttitudeMask::All;
+
+	/** Scales the health the deployable's DefaultAttributes give it. Set by the deployer's gems, never by hand. */
+	UPROPERTY()
+	float HealthMultiplier = 1.f;
 };
 
 /** Runtime init data passed from the spawner projectile to the deployable actor before BeginPlay. */
@@ -126,7 +130,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	/** Resolves and attaches the CombattantWidgetComponent before components initialize. */
 	virtual void PreInitializeComponents() override;
-	/** Registers with the instigator's DeployableManagerComponent and calls InitDrain. */
+	/** Registers with the instigator's DeployableManagerComponent, calls InitDrain, then ApplyHealthMultiplier. */
 	virtual void BeginPlay() override;
 
 	/** True if registering a new deployable of this class beyond the limit should expire the oldest instead of being
@@ -381,6 +385,10 @@ private:
 	void ApplyOutlineStencil() const;
 
 	void EnableActorCollision();
+
+	/** Server. Scales MaxHealth and Health by Params.HealthMultiplier. Runs after InitDrain, so the drain keeps the
+	 *  rate of the unscaled health and a tougher deployable lives longer. */
+	void ApplyHealthMultiplier();
 
 	/** Server. Judges Explosion, an instant hazard over Params.Size, then runs again next tick until it is over. A timer
 	 * rather than Tick, which Expire turns off; the actor outlives the window because TimeBeforeDestroyAtExpire is

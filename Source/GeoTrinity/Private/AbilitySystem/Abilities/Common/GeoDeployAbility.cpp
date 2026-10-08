@@ -2,8 +2,10 @@
 
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
@@ -157,6 +159,33 @@ float UGeoDeployAbility::GetChargedDeployDistance() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+FDeployableDataParams UGeoDeployAbility::GetGemParams(float const DeployDistance) const
+{
+	UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (!ensureMsgf(ASC->HasAttributeSetForAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute()),
+					TEXT("%hs: %s deploys from an ASC without gem attributes"), __FUNCTION__, *GetName()))
+	{
+		return Params;
+	}
+
+	FDeployableDataParams GemParams = Params;
+	GemParams.BlinkDuration *= ASC->GetNumericAttribute(UGeoGemAttributeSet::GetDeployableBlinkMultiplierAttribute());
+	GemParams.LifeDrainMaxDuration /=
+		ASC->GetNumericAttribute(UGeoGemAttributeSet::GetDeployableDrainMultiplierAttribute());
+	GemParams.HealthMultiplier =
+		ASC->GetNumericAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute());
+	if (ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Leverage))
+	{
+		UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
+		float const DistanceRatio = FMath::GetRangePct(GameDataSettings->MinDeployDistance,
+													   GameDataSettings->MaxDeployDistance, DeployDistance);
+		GemParams.HealthMultiplier *= GameDataSettings->LeverageHealthMultiplier.Interpolate(
+			FMath::Clamp(DistanceRatio, 0.f, 1.f));
+	}
+	return GemParams;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 FVector UGeoDeployAbility::GetPendingDeployLocation() const
 {
 	// Mirrors SpawnProjectile: an explicit DistanceSpan override replaces the charge-derived distance.
@@ -227,7 +256,7 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 
 	ADeployableSpawnerProjectile* DeployableSpawnerProjectile = Cast<ADeployableSpawnerProjectile>(Projectile);
 	checkf(DeployableSpawnerProjectile, TEXT("SpawnerProjectile  must be a ADeployableSpawnerProjectile"));
-	DeployableSpawnerProjectile->Params = Params;
+	DeployableSpawnerProjectile->Params = GetGemParams(SpawnParams.DistanceSpan);
 	DeployableSpawnerProjectile->DeployableActorClass = DeployableActorClass;
 
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);

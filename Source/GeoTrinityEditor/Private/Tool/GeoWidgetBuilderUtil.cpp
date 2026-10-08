@@ -2,11 +2,14 @@
 
 #include "Tool/GeoWidgetBuilderUtil.h"
 
+#include "Algo/AllOf.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/ContentWidget.h"
+#include "Components/EditableTextBox.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
@@ -609,18 +612,32 @@ void UGeoWidgetBuilderUtil::SpaceMenuButtons(UWidgetTree* Tree)
 		UPanelWidget const* Box = Cast<UPanelWidget>(Widget);
 		if (Box && (Box->IsA<UVerticalBox>() || Box->IsA<UHorizontalBox>()))
 		{
-			TArray<UPanelSlot*> ButtonSlots = Box->GetSlots().FilterByPredicate(
-				[](UPanelSlot const* Slot)
-				{
-					return Slot && Cast<UGeoMenuButton>(Slot->Content);
-				});
-			for (int32 Index = 1; Index < ButtonSlots.Num(); ++Index)
+			TArray<UPanelSlot*> const& Slots = Box->GetSlots();
+			for (int32 Index = 1; Index < Slots.Num(); ++Index)
 			{
-				SetStackPadding(ButtonSlots[Index - 1], false, 0.f);
-				SetStackPadding(ButtonSlots[Index], true, Theme->MenuButtonGap);
+				if (IsMenuControl(Slots[Index - 1]->Content) && IsMenuControl(Slots[Index]->Content))
+				{
+					SetStackPadding(Slots[Index - 1], false, 0.f);
+					SetStackPadding(Slots[Index], true, Theme->MenuButtonGap);
+				}
 			}
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoWidgetBuilderUtil::IsMenuControl(UWidget const* Widget)
+{
+	UContentWidget const* Wrapper = Cast<UContentWidget>(Widget);
+	UPanelWidget const* Box = Cast<UPanelWidget>(Widget);
+	bool const bControlRow = Box && (Box->IsA<UVerticalBox>() || Box->IsA<UHorizontalBox>())
+		&& Box->GetChildrenCount() > 0 && Algo::AllOf(Box->GetAllChildren(), [](UWidget const* Child)
+													   {
+														   return IsMenuControl(Child);
+													   });
+	return Widget
+		&& (Widget->IsA<UGeoMenuButton>() || Widget->IsA<UEditableTextBox>()
+			|| (Wrapper && IsMenuControl(Wrapper->GetContent())) || bControlRow);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

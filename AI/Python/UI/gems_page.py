@@ -3,8 +3,9 @@ The Gems menu in the Rail look, opened from the character sheet's GEMS (design: 
 - WBP_GemLoadout (UGeoGemLoadoutWidget): class tabs and level row; the socket board (Board, a 640 x 534 canvas the
   widget fills with the clusters); the stacks under their tier filter, scrolling in StackScroll; the selection (glyph,
   tier, name, effect, counts, EQUIP / FILL / UNEQUIP, note) or the hint; the total bonus, scrolling in TotalsScroll.
-- WBP_GemForge (UGeoGemForgeWidget): break down per tier, BREAK DOWN ALL FREE and the rate table; the gem types of a
-  tier, scrolling in GemScroll; the picked type broken down or crafted by quantity.
+- WBP_GemForge (UGeoGemForgeWidget): the tiers to select, BREAK DOWN FREE SELECTED and the rate table; the gem types
+  of a tier, scrolling in GemScroll; the picked type broken down or crafted by a quantity typed in its field or set by
+  -, + and MAX.
 - WBP_Gems (UGeoGemsWidget): title, page tabs and shards over a PageSwitcher holding both pages, BACK under them.
 - WBP_PauseMenu: GemsWidget beside CharacterWidget, collapsed.
 Every list, tab and row the widgets build at runtime is a WBP_ListRow (RowClass).
@@ -23,8 +24,10 @@ UI_SCRIPTS = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Path
 if UI_SCRIPTS not in sys.path:
     sys.path.insert(0, UI_SCRIPTS)
 import character_sheet
+import rail_style
 
 character_sheet = importlib.reload(character_sheet)
+rail_style = importlib.reload(rail_style)
 wings_hud = character_sheet.wings_hud
 asset_guard = wings_hud.asset_guard
 add, write_slot, text = wings_hud.add, wings_hud.write_slot, wings_hud.text
@@ -40,9 +43,10 @@ GEMS_PATH = f"{MENU_DIR}/WBP_Gems"
 ROW_CLASS = "/Game/HUD/WBP_ListRow.WBP_ListRow_C"
 CENTER = unreal.VerticalAlignment.V_ALIGN_CENTER
 FILL = unreal.SlateChildSize(1.0, unreal.SlateSizeRule.FILL)
-H_CENTER = unreal.HorizontalAlignment.H_ALIGN_CENTER
-# The forge's left column: the tier rows with their counts, and the BREAK DOWN ALL FREE summary.
+# The forge's left column: the tier rows with their counts, and the break-down summary.
 LEFT_WIDTH = 540.0
+BREAK_SELECTED = "BREAK DOWN SELECTED"
+FIELD_WIDTH = 72.0
 
 
 def sized(wbp, path, name, parent, width=None, height=None):
@@ -59,21 +63,73 @@ def padded(path, slot, padding, **extra):
     write_slot(path, slot, dict(padding=padding, **extra))
 
 
+def break_summary(wbp, path):
+    """The framed line under BREAK DOWN SELECTED, in the button's text size: the gems it destroys on the left, the
+    shards it gives on the right, each in its colour. It replaces the small line a forge built before it had there."""
+    if UTIL.find_widget(wbp, "BreakAllText") and not any(".BreakAllText" in line for line in asset_guard.hand_edits(path)):
+        UTIL.remove_widget(wbp, "BreakAllText")
+    if not UTIL.find_widget(wbp, "BreakSummary"):
+        UTIL.construct_widget_in_tree(wbp, unreal.GeoFrame, "BreakSummary", True)
+        after = UTIL.find_widget(wbp, "LeftBox").get_child_index(UTIL.find_widget(wbp, "BreakAllButton")) + 1
+        UTIL.attach_widget(wbp, "LeftBox", "BreakSummary", after)
+    summary = UTIL.find_widget(wbp, "BreakSummary")
+    for key, value in dict(frame_style=frame("DA_Frame_Panel"), padding=unreal.Margin(18, 10, 18, 10)).items():
+        asset_guard.write(path, summary, key, value)
+    padded(path, summary.get_editor_property("slot"), unreal.Margin(0, 8, 0, 0))
+    add(wbp, path, unreal.HorizontalBox, "BreakSummaryRow", "BreakSummary")
+    _, count_slot = add(wbp, path, unreal.GeoText, "BreakCountText", "BreakSummaryRow", text(ROLE.BUTTON, "-0 GEMS"))
+    write_slot(path, count_slot, {"size": FILL, "vertical_alignment": CENTER})
+    _, shards_slot = add(wbp, path, unreal.GeoText, "BreakShardsText", "BreakSummaryRow", text(ROLE.BUTTON, "+0 SHARDS"))
+    write_slot(path, shards_slot, {"vertical_alignment": CENTER})
+
+
+def quantity_cell(wbp, path, row, name, caption, width):
+    """A menu button showing caption, or with no caption the quantity field in its field frame, in a SizeBox width
+    wide."""
+    box_slot = sized(wbp, path, f"{name}Width", row, width=width)
+    write_slot(path, box_slot, {"vertical_alignment": CENTER})
+    if caption is None:
+        if not UTIL.find_widget(wbp, f"{name}Frame"):
+            UTIL.construct_widget_in_tree(wbp, unreal.GeoFrame, f"{name}Frame", True)
+            if not UTIL.find_widget(wbp, name):
+                UTIL.construct_widget_in_tree(wbp, unreal.GeoEditableTextBox, name, True)
+            rail_style.fill_slot(UTIL.attach_widget(wbp, f"{name}Frame", name))
+            UTIL.attach_widget(wbp, f"{name}Width", f"{name}Frame")
+        for key, value in dict(frame_style=frame("DA_Frame_Field"), padding=rail_style.NO_PADDING,
+                               activate_on_hover_and_focus=True).items():
+            asset_guard.write(path, UTIL.find_widget(wbp, f"{name}Frame"), key, value)
+        write_slot(path, UTIL.find_widget(wbp, f"{name}Frame").get_editor_property("slot"),
+                   {"vertical_alignment": CENTER})
+        for key, value in dict(text=unreal.Text("1"), justification=unreal.TextJustify.CENTER,
+                               select_all_text_when_focused=True).items():
+            asset_guard.write(path, UTIL.find_widget(wbp, name), key, value)
+    else:
+        button(wbp, path, name, f"{name}Width", caption)
+
+
 def quantity_row(wbp, path, prefix):
-    """-, the quantity, +, MAX, each a small menu button."""
+    """-, the quantity field, +, MAX; commit_tree spaces them, and the row from the button under it, by the gap."""
     row = f"{prefix}QuantityRow"
     _, row_slot = add(wbp, path, unreal.HorizontalBox, row, "RightBox")
-    padded(path, row_slot, unreal.Margin(0, 10, 0, 10))
-    for name, caption, width in [(f"{prefix}LessButton", "-", 64.0), (f"{prefix}QuantityText", None, 64.0),
+    padded(path, row_slot, unreal.Margin(0, 10, 0, 0))
+    for name, caption, width in [(f"{prefix}LessButton", "-", 64.0), (f"{prefix}QuantityBox", None, FIELD_WIDTH),
                                  (f"{prefix}MoreButton", "+", 64.0), (f"{prefix}MaxButton", "MAX", 110.0)]:
-        box_slot = sized(wbp, path, f"{name}Width", row, width=width)
-        write_slot(path, box_slot, {"vertical_alignment": CENTER})
-        if caption is None:
-            _, text_slot = add(wbp, path, unreal.GeoText, name, f"{name}Width",
-                               text(ROLE.MONO, "1", justification=unreal.TextJustify.CENTER))
-            write_slot(path, text_slot, {"vertical_alignment": CENTER})
-        else:
-            button(wbp, path, name, f"{name}Width", caption)
+        quantity_cell(wbp, path, row, name, caption, width)
+
+
+def quantity_fields(wbp, path):
+    """On a forge built before the quantities could be typed: each quantity text becomes the field in its place."""
+    hand_edits = asset_guard.hand_edits(path)
+    for prefix in ("Break", "Craft"):
+        old, name, row = f"{prefix}QuantityText", f"{prefix}QuantityBox", f"{prefix}QuantityRow"
+        if UTIL.find_widget(wbp, old) and not any(f".{old}" in line for line in hand_edits):
+            index = UTIL.find_widget(wbp, row).get_child_index(UTIL.find_widget(wbp, f"{old}Width"))
+            UTIL.remove_widget(wbp, old)
+            UTIL.remove_widget(wbp, f"{old}Width")
+            sized(wbp, path, f"{name}Width", row, width=FIELD_WIDTH)
+            UTIL.attach_widget(wbp, row, f"{name}Width", index)
+        quantity_cell(wbp, path, row, name, None, FIELD_WIDTH)
+        padded(path, UTIL.find_widget(wbp, row).get_editor_property("slot"), unreal.Margin(0, 10, 0, 0))
 
 
 def build_loadout():
@@ -156,15 +212,13 @@ def build_forge():
     if wbp:
         UTIL.set_root_panel(wbp, unreal.HorizontalBox, "ForgeBody")
 
-        # One click per tier, or for every free gem.
+        # The tiers to select, what breaking them down destroys and gives, and the button that does it.
         sized(wbp, path, "LeftSize", "ForgeBody", width=LEFT_WIDTH)
         add(wbp, path, unreal.VerticalBox, "LeftBox", "LeftSize")
         label(wbp, path, "BreakDownLabel", "LeftBox", "BREAK DOWN · SLOTTED GEMS ARE KEPT")
         _, tiers_slot = add(wbp, path, unreal.VerticalBox, "TierBreakBox", "LeftBox")
         padded(path, tiers_slot, unreal.Margin(0, 12, 0, 4))
-        button(wbp, path, "BreakAllButton", "LeftBox", "BREAK DOWN ALL FREE")
-        all_text_slot = label(wbp, path, "BreakAllText", "LeftBox", "NOTHING FREE", unreal.Margin(0, 6, 0, 0))
-        write_slot(path, all_text_slot, {"horizontal_alignment": H_CENTER})
+        button(wbp, path, "BreakAllButton", "LeftBox", BREAK_SELECTED)
         spacer(wbp, path, "LeftSpacer", "LeftBox")
         _, rate_slot = add(wbp, path, unreal.VerticalBox, "RateBox", "LeftBox")
         padded(path, rate_slot, unreal.Margin(0, 12, 0, 0))
@@ -207,7 +261,9 @@ def build_forge():
     wbp = unreal.load_asset(path)
     # The tier rows' counts and the BREAK DOWN ALL FREE summary first ran out of a 430 wide column.
     asset_guard.write(path, UTIL.find_widget(wbp, "LeftSize"), "width_override", LEFT_WIDTH, earlier=(430.0, 500.0))
-    asset_guard.write(path, UTIL.find_widget(wbp, "BreakAllText"), "auto_wrap_text", True)
+    break_summary(wbp, path)
+    asset_guard.write(path, UTIL.find_widget(wbp, "BreakAllButton"), "label", unreal.Text(BREAK_SELECTED))
+    quantity_fields(wbp, path)
     wings_hud.scrolled(wbp, path, "GemListBox", "GemScroll")
     wings_hud.finish(wbp)
     return wbp

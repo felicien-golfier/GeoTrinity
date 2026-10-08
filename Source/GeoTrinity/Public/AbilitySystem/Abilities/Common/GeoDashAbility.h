@@ -29,7 +29,7 @@ protected:
 	 * the activating client and carried in the payload, so client and server dash along the exact same yaw. */
 	virtual float GetFireYaw(AActor const* Instigator, int Seed) const override;
 
-	/** Dash distance in units */
+	/** Dash distance in units, before the player's gems scale it */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDash")
 	float DashDistance = 500.f;
 

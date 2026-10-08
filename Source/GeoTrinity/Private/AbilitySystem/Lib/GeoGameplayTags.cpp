@@ -96,6 +96,12 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	// ABILITY SPELLS NEEDED IN CODE //
 	AddAbilitySpellTag(GameplayTags.Ability_Spell_ShieldBurst, "ShieldBurst", "Ability spell for shield burst");
 
+	// GEM CORES //
+	CreateAndAssignGameplayTag(GameplayTags.Gem_Core_Critical, "Gem.Core.Critical",
+							   "Critical Core slotted: hits and heals may crit.");
+	CreateAndAssignGameplayTag(GameplayTags.Gem_Core_Leverage, "Gem.Core.Leverage",
+							   "Leverage Core slotted: deployable health scales with the deploy distance.");
+
 	// TARGET POINTS //
 	AddTargetPointTag(GameplayTags.TargetPoint_BossSpawn, "BossSpawn", "Where the arena spawns its boss.");
 	AddTargetPointTag(GameplayTags.TargetPoint_AddSpawn, "AddSpawn", "Where the arena spawns its adds.");

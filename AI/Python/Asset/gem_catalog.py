@@ -12,7 +12,7 @@ ASSET_DIR = "/Game/AbilitySystem/Data"
 ASSET_NAME = "DA_GemCatalog"
 REPORT = r"C:\GeoTrinity\AI\Output\gem_catalog.txt"
 
-# (Id, tier, display name, CharacterAttributeSet attribute or None, Add|Percent, magnitude per gem, effect, colour)
+# (Id, tier, display name, attribute or None, Add|Percent, magnitude per gem, effect, colour)
 # A gem with no attribute can be owned and slotted but does nothing yet; its magnitude is only what the menus show. The
 # effect is the stat the menus name before the magnitude, or a Core's whole rule (a Core has no magnitude). The colour
 # is the EGeoColor of the gem's stat family. The tier is the list it is filed under.
@@ -22,18 +22,18 @@ GEMS = [
     ("Vigor", "Chip", "Vigor", "MaxHealth", "Percent", 0.01, "Max health", "Heal"),
     ("Mend", "Chip", "Mend", "AppliedHealBoost", "Add", 0.00667, "Healing done", "HealBoost"),
     ("Swift", "Chip", "Swift", "MovementSpeedMultiplier", "Add", 0.00667, "Move speed", "MoveSpeed"),
-    ("Precision", "Chip", "Precision", None, "Add", 0.01, "Crit chance", "AllyDamage"),
+    ("Precision", "Chip", "Precision", "CritChance", "Add", 0.01, "Crit chance", "AllyDamage"),
     ("Magazine", "Cut", "Magazine", "MaxAmmo", "Percent", 0.012, "Max ammo", "AllyDamage"),
     ("Recovery", "Cut", "Recovery", "ReceivedHealBoost", "Add", 0.007, "Healing received", "HealBoost"),
     ("Reflex", "Cut", "Reflex", None, "Add", -0.008, "Dash cooldown", "MoveSpeed"),
     ("Reload", "Cut", "Reload", None, "Add", 0.01, "Reload speed", "AllyDamage"),
-    ("Stride", "Cut", "Stride", None, "Add", 0.01, "Dash distance", "MoveSpeed"),
+    ("Stride", "Cut", "Stride", "DashDistanceMultiplier", "Add", 0.01, "Dash distance", "MoveSpeed"),
     ("WindUp", "Cut", "Wind-up", None, "Add", -0.006, "Ability wind-up time", "Neutral"),
-    ("Flicker", "Cut", "Flicker", None, "Add", 0.03, "Deployable blinking time", "DeployableNotBlocking"),
-    ("Edge", "Cut", "Edge", None, "Add", 0.02, "Crit damage", "DamageBoost"),
+    ("Flicker", "Cut", "Flicker", "DeployableBlinkMultiplier", "Add", 0.03, "Deployable blinking time", "DeployableNotBlocking"),
+    ("Edge", "Cut", "Edge", "CritDamage", "Add", 0.02, "Crit damage", "DamageBoost"),
     ("Focus", "Prism", "Focus", None, "Add", -0.02, "Alternate Special cooldown", "Neutral"),
-    ("Anchor", "Prism", "Anchor", None, "Add", 0.03, "Deployable health", "DeployableBlockingEnemies"),
-    ("Linger", "Prism", "Linger", None, "Add", -0.03, "Deployable self drain", "DeployableNotBlocking"),
+    ("Anchor", "Prism", "Anchor", "DeployableHealthMultiplier", "Add", 0.03, "Deployable health", "DeployableBlockingEnemies"),
+    ("Linger", "Prism", "Linger", "DeployableDrainMultiplier", "Add", -0.03, "Deployable self drain", "DeployableNotBlocking"),
     ("Reach", "Prism", "Reach", None, "Add", 0.02, "Spell distance", "Neutral"),
     ("Surplus", "Core", "Surplus", None, "Add", 0.0,
      "+1 deployable charge: Wall, Healing zone or Turret", "DeployableNotBlocking"),
@@ -68,12 +68,23 @@ XP_PER_HEALTH_BAR = {"Boss": 400.0, "MiniBoss": 400.0}
 BOSS_TYPES = {"Boss": "BOSS", "MiniBoss": "MINI_BOSS"}
 TIERS = {"Chip": "CHIP", "Cut": "CUT", "Prism": "PRISM", "Core": "CORE"}
 
-# Attributes declared on the base set keep it as their owner.
-BASE_SET_ATTRIBUTES = {"MaxHealth"}
+# Tag each rule gem grants while slotted, which the code of its rule checks.
+GRANTED_TAGS = {"Critical": "Gem.Core.Critical", "Leverage": "Gem.Core.Leverage"}
+
+# Attribute set owning each attribute that is not on CharacterAttributeSet.
+ATTRIBUTE_OWNERS = {
+    "MaxHealth": "GeoAttributeSetBase",
+    "CritChance": "GeoGemAttributeSet",
+    "CritDamage": "GeoGemAttributeSet",
+    "DashDistanceMultiplier": "GeoGemAttributeSet",
+    "DeployableBlinkMultiplier": "GeoGemAttributeSet",
+    "DeployableHealthMultiplier": "GeoGemAttributeSet",
+    "DeployableDrainMultiplier": "GeoGemAttributeSet",
+}
 
 
 def attribute_literal(name):
-    owner = "GeoAttributeSetBase" if name in BASE_SET_ATTRIBUTES else "CharacterAttributeSet"
+    owner = ATTRIBUTE_OWNERS.get(name, "CharacterAttributeSet")
     return '(AttributeName="{0}",Attribute=/Script/GeoTrinity.{1}:{0},AttributeOwner="/Script/CoreUObject.Class\'/Script/GeoTrinity.{1}\'")'.format(name, owner)
 
 
@@ -84,6 +95,8 @@ def gem_info(gem_id, display_name, attribute, operation, magnitude, effect, colo
         gem_id, display_name, operation, magnitude, effect, color)
     if attribute:
         text += ",Attribute=" + attribute_literal(attribute)
+    if gem_id in GRANTED_TAGS:
+        text += ',GrantedTag=(TagName="{}")'.format(GRANTED_TAGS[gem_id])
     info.import_text(text + ")")
     return info
 

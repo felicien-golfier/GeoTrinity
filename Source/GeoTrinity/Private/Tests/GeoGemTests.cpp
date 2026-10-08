@@ -1,6 +1,9 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Algo/Count.h"
 #include "Engine/Engine.h"
@@ -37,8 +40,11 @@ static UGeoGemCatalog* MakeTestCatalog()
 	};
 	Catalog->GemsByTier[EGeoGemTier::Cut].Gems = {
 		MakeGem("Magazine", UCharacterAttributeSet::GetMaxAmmoAttribute(), EGeoGemOperation::Percent, 0.012f)};
-	Catalog->GemsByTier[EGeoGemTier::Prism].Gems = {MakeGem("Anchor")};
-	Catalog->GemsByTier[EGeoGemTier::Core].Gems = {MakeGem("Surplus"), MakeGem("SecondWind")};
+	Catalog->GemsByTier[EGeoGemTier::Prism].Gems = {
+		MakeGem("Anchor", UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute(), EGeoGemOperation::Add, 0.03f)};
+	FGeoGemInfo Critical = MakeGem("Critical");
+	Critical.GrantedTag = FGeoGameplayTags::Get().Gem_Core_Critical;
+	Catalog->GemsByTier[EGeoGemTier::Core].Gems = {MakeGem("Surplus"), Critical};
 
 	FGeoGemDropTable& BossDrops = Catalog->DropTables.Add(EGeoBossType::Boss);
 	BossDrops.MinCount = 38;
@@ -250,6 +256,15 @@ bool FGeoGemCatalogAssetTest::RunTest(FString const& /*Parameters*/)
 	TestTrue(TEXT("Mini-bosses drop Cuts"), DropChance(EGeoBossType::MiniBoss, EGeoGemTier::Cut) > 0.f);
 	TestEqual(TEXT("Mini-bosses never drop Prisms"), DropChance(EGeoBossType::MiniBoss, EGeoGemTier::Prism), 0.f);
 	TestEqual(TEXT("Mini-bosses never drop Cores"), DropChance(EGeoBossType::MiniBoss, EGeoGemTier::Core), 0.f);
+
+	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	for (TPair<FName, FGameplayTag> const& Core :
+		 TArray<TPair<FName, FGameplayTag>>{{"Critical", Tags.Gem_Core_Critical}, {"Leverage", Tags.Gem_Core_Leverage}})
+	{
+		FGeoGemInfo const* Gem = Catalog->Find(Core.Key);
+		TestTrue(FString::Printf(TEXT("%s grants the tag its rule checks"), *Core.Key.ToString()),
+				 Gem && Gem->GrantedTag == Core.Value);
+	}
 	return true;
 }
 
@@ -383,6 +398,7 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 	UAbilitySystemComponent* ASC = NewObject<UAbilitySystemComponent>(Character);
 	ASC->RegisterComponent();
 	ASC->AddAttributeSetSubobject(NewObject<UCharacterAttributeSet>(Character));
+	ASC->AddAttributeSetSubobject(NewObject<UGeoGemAttributeSet>(Character));
 	ASC->InitAbilityActorInfo(Character, Character);
 
 	ASC->SetNumericAttributeBase(UCharacterAttributeSet::GetMaxHealthAttribute(), 100.f);
@@ -410,7 +426,11 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 	{
 		Loadout.Sockets[i] = "Magazine";
 	}
-	Loadout.Sockets[45] = "Surplus";
+	for (int32 i = 45; i < 54; ++i)
+	{
+		Loadout.Sockets[i] = "Anchor";
+	}
+	Loadout.Sockets[54] = "Surplus";
 
 	FActiveGameplayEffectHandle Handle =
 		ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
@@ -425,6 +445,25 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 			  0.f);
 	TestEqual(TEXT("No Swift: speed untouched"), Value(UCharacterAttributeSet::GetMovementSpeedMultiplierAttribute()),
 			  1.f);
+	TestEqual(TEXT("9 Anchor: deployable health +27%"),
+			  Value(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute()), 1.27f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("No Precision: base crit chance"), Value(UGeoGemAttributeSet::GetCritChanceAttribute()), 0.1f,
+			  KINDA_SMALL_NUMBER);
+	TestFalse(TEXT("No Critical Core: no crit tag"),
+			  ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical));
+
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetCritChanceAttribute(), 1.f);
+	TestEqual(TEXT("Without Critical, a sure crit chance never crits"), GeoASLib::RollCritMultiplier(ASC), 1.f);
+	ASC->RemoveActiveGameplayEffect(Handle);
+	Loadout.Sockets[54] = "Critical";
+	Handle = ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
+	TestTrue(TEXT("Critical slotted: crit tag held"),
+			 ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical));
+	TestEqual(TEXT("Critical and a sure crit chance: every hit deals 150%"), GeoASLib::RollCritMultiplier(ASC), 1.5f,
+			  KINDA_SMALL_NUMBER);
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetCritChanceAttribute(), 0.f);
+	TestEqual(TEXT("Critical and no crit chance: no crit"), GeoASLib::RollCritMultiplier(ASC), 1.f);
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetCritChanceAttribute(), 0.1f);
 
 	ASC->RemoveActiveGameplayEffect(Handle);
 	for (int32 i = 0; i < 30; ++i)
@@ -440,6 +479,8 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 			  0.06f, KINDA_SMALL_NUMBER);
 
 	ASC->RemoveActiveGameplayEffect(Handle);
+	TestFalse(TEXT("Removing the effect takes the Core's tag"),
+			  ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical));
 	TestEqual(TEXT("Removing the effect clears every gem stat"),
 			  Value(UCharacterAttributeSet::GetDamageReductionAttribute()), 0.f, KINDA_SMALL_NUMBER);
 	TestEqual(TEXT("Removing the effect restores max ammo"), Value(UCharacterAttributeSet::GetMaxAmmoAttribute()), 30.f,

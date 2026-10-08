@@ -133,6 +133,12 @@ public:
 										  bool bIsHeal);
 
 	/**
+	 * What a hit or a heal from SourceASC is multiplied by: its CritDamage when it holds the Critical Core and wins a
+	 * CritChance roll, else 1. Server only, like the ExecCalcs that ask it, so the roll needs no shared seed.
+	 */
+	static float RollCritMultiplier(UAbilitySystemComponent const* SourceASC);
+
+	/**
 	 * Returns the class default object for the ability registered under AbilityTag, cast to T.
 	 * O(1) via UAbilityInfo's cached tag->class map. Logs a warning and returns nullptr if no matching ability is found
 	 * or the CDO cannot be cast to T. Callers that know a tag may legitimately be invalid should guard before calling

@@ -3,6 +3,7 @@
 #include "Gem/GeoGemStatsEffect.h"
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystemComponent.h"
 #include "Gem/GeoGemCatalog.h"
 
@@ -10,7 +11,7 @@ UGeoGemStatsEffect::UGeoGemStatsEffect()
 {
 	DurationPolicy = EGameplayEffectDurationType::Infinite;
 
-	FGameplayAttribute const GemAttributes[] = {
+	TArray<FGameplayAttribute> GemAttributes = {
 		UCharacterAttributeSet::GetMaxHealthAttribute(),
 		UCharacterAttributeSet::GetMaxAmmoAttribute(),
 		UCharacterAttributeSet::GetDamageMultiplierAttribute(),
@@ -19,6 +20,7 @@ UGeoGemStatsEffect::UGeoGemStatsEffect()
 		UCharacterAttributeSet::GetReceivedHealBoostAttribute(),
 		UCharacterAttributeSet::GetMovementSpeedMultiplierAttribute(),
 	};
+	UAttributeSet::GetAttributesFromSetClass(UGeoGemAttributeSet::StaticClass(), GemAttributes);
 	for (FGameplayAttribute const& Attribute : GemAttributes)
 	{
 		for (EGeoGemOperation const Operation : {EGeoGemOperation::Add, EGeoGemOperation::Percent})
@@ -41,9 +43,15 @@ FGameplayEffectSpecHandle UGeoGemStatsEffect::MakeSpec(UAbilitySystemComponent c
 	UGeoGemStatsEffect const* Effect = GetDefault<UGeoGemStatsEffect>();
 
 	TMap<FName, float> SummedMagnitudes;
+	FGameplayTagContainer GrantedTags;
 	for (FName const GemId : Loadout.Sockets)
 	{
 		FGeoGemInfo const* Gem = Catalog.Find(GemId);
+		if (Gem && Gem->GrantedTag.IsValid())
+		{
+			GrantedTags.AddTag(Gem->GrantedTag);
+		}
+
 		if (Gem && Gem->Attribute.IsValid())
 		{
 			ensureMsgf(Supports(*Gem), TEXT("%hs: gem %s raises %s, which UGeoGemStatsEffect does not list"),
@@ -59,6 +67,7 @@ FGameplayEffectSpecHandle UGeoGemStatsEffect::MakeSpec(UAbilitySystemComponent c
 		float const Neutral = Modifier.ModifierOp == EGameplayModOp::MultiplyAdditive ? 1.f : 0.f;
 		SpecHandle.Data->SetSetByCallerMagnitude(SetByCallerName, Neutral + SummedMagnitudes.FindRef(SetByCallerName));
 	}
+	SpecHandle.Data->DynamicGrantedTags = GrantedTags;
 	return SpecHandle;
 }
 
