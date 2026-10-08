@@ -12,36 +12,46 @@ ASSET_DIR = "/Game/AbilitySystem/Data"
 ASSET_NAME = "DA_GemCatalog"
 REPORT = r"C:\GeoTrinity\AI\Output\gem_catalog.txt"
 
-# (Id, tier, display name, CharacterAttributeSet attribute or None, Add|Percent, magnitude per gem)
-# A gem with no attribute can be owned and slotted but does nothing yet. The tier is the list it is filed under.
+# (Id, tier, display name, CharacterAttributeSet attribute or None, Add|Percent, magnitude per gem, effect, colour)
+# A gem with no attribute can be owned and slotted but does nothing yet; its magnitude is only what the menus show. The
+# effect is the stat the menus name before the magnitude, or a Core's whole rule (a Core has no magnitude). The colour
+# is the EGeoColor of the gem's stat family. The tier is the list it is filed under.
 GEMS = [
-    ("Power", "Chip", "Power", "DamageMultiplier", "Add", 0.00667),
-    ("Guard", "Chip", "Guard", "DamageReduction", "Add", 0.00667),
-    ("Vigor", "Chip", "Vigor", "MaxHealth", "Percent", 0.01),
-    ("Mend", "Chip", "Mend", "AppliedHealBoost", "Add", 0.00667),
-    ("Swift", "Chip", "Swift", "MovementSpeedMultiplier", "Add", 0.00667),
-    ("Precision", "Chip", "Precision", None, "Add", 0.0),
-    ("Magazine", "Cut", "Magazine", "MaxAmmo", "Percent", 0.012),
-    ("Recovery", "Cut", "Recovery", "ReceivedHealBoost", "Add", 0.007),
-    ("Reflex", "Cut", "Reflex", None, "Add", 0.0),
-    ("Reload", "Cut", "Reload", None, "Add", 0.0),
-    ("Stride", "Cut", "Stride", None, "Add", 0.0),
-    ("WindUp", "Cut", "Wind-up", None, "Add", 0.0),
-    ("Flicker", "Cut", "Flicker", None, "Add", 0.0),
-    ("Edge", "Cut", "Edge", None, "Add", 0.0),
-    ("Focus", "Prism", "Focus", None, "Add", 0.0),
-    ("Anchor", "Prism", "Anchor", None, "Add", 0.0),
-    ("Linger", "Prism", "Linger", None, "Add", 0.0),
-    ("Reach", "Prism", "Reach", None, "Add", 0.0),
-    ("Surplus", "Core", "Surplus", None, "Add", 0.0),
-    ("Overclock", "Core", "Overclock", None, "Add", 0.0),
-    ("Relay", "Core", "Relay", None, "Add", 0.0),
-    ("Split", "Core", "Split", None, "Add", 0.0),
-    ("Critical", "Core", "Critical", None, "Add", 0.0),
-    ("Bond", "Core", "Bond", None, "Add", 0.0),
-    ("Wake", "Core", "Wake", None, "Add", 0.0),
-    ("Kinship", "Core", "Kinship", None, "Add", 0.0),
-    ("Leverage", "Core", "Leverage", None, "Add", 0.0),
+    ("Power", "Chip", "Power", "DamageMultiplier", "Add", 0.00667, "Damage", "DamageBoost"),
+    ("Guard", "Chip", "Guard", "DamageReduction", "Add", 0.00667, "Damage reduction", "DamageReduction"),
+    ("Vigor", "Chip", "Vigor", "MaxHealth", "Percent", 0.01, "Max health", "Heal"),
+    ("Mend", "Chip", "Mend", "AppliedHealBoost", "Add", 0.00667, "Healing done", "HealBoost"),
+    ("Swift", "Chip", "Swift", "MovementSpeedMultiplier", "Add", 0.00667, "Move speed", "MoveSpeed"),
+    ("Precision", "Chip", "Precision", None, "Add", 0.01, "Crit chance", "AllyDamage"),
+    ("Magazine", "Cut", "Magazine", "MaxAmmo", "Percent", 0.012, "Max ammo", "AllyDamage"),
+    ("Recovery", "Cut", "Recovery", "ReceivedHealBoost", "Add", 0.007, "Healing received", "HealBoost"),
+    ("Reflex", "Cut", "Reflex", None, "Add", -0.008, "Dash cooldown", "MoveSpeed"),
+    ("Reload", "Cut", "Reload", None, "Add", 0.01, "Reload speed", "AllyDamage"),
+    ("Stride", "Cut", "Stride", None, "Add", 0.01, "Dash distance", "MoveSpeed"),
+    ("WindUp", "Cut", "Wind-up", None, "Add", -0.006, "Ability wind-up time", "Neutral"),
+    ("Flicker", "Cut", "Flicker", None, "Add", 0.03, "Deployable blinking time", "DeployableNotBlocking"),
+    ("Edge", "Cut", "Edge", None, "Add", 0.02, "Crit damage", "DamageBoost"),
+    ("Focus", "Prism", "Focus", None, "Add", -0.02, "Alternate Special cooldown", "Neutral"),
+    ("Anchor", "Prism", "Anchor", None, "Add", 0.03, "Deployable health", "DeployableBlockingEnemies"),
+    ("Linger", "Prism", "Linger", None, "Add", -0.03, "Deployable self drain", "DeployableNotBlocking"),
+    ("Reach", "Prism", "Reach", None, "Add", 0.02, "Spell distance", "Neutral"),
+    ("Surplus", "Core", "Surplus", None, "Add", 0.0,
+     "+1 deployable charge: Wall, Healing zone or Turret", "DeployableNotBlocking"),
+    ("Overclock", "Core", "Overclock", None, "Add", 0.0, "Deployable recharge -15%", "DeployableNotBlocking"),
+    ("Relay", "Core", "Relay", None, "Add", 0.0,
+     "Dash snaps to your nearest deployable within 30 degrees of the dash; no direction moves you toward the nearest one",
+     "MoveSpeed"),
+    ("Split", "Core", "Split", None, "Add", 0.0,
+     "Deploy has a 25% chance to place a half-health copy next to it", "DeployableNotBlocking"),
+    ("Critical", "Core", "Critical", None, "Add", 0.0, "Unlocks crits: 10% chance for 150% damage", "DamageBoost"),
+    ("Bond", "Core", "Bond", None, "Add", 0.0, "Link to allies: you absorb 15% of the damage they take",
+     "DamageReduction"),
+    ("Wake", "Core", "Wake", None, "Add", 0.0, "Dash spawns your deployable at the start point (max 1 per 8 s)",
+     "MoveSpeed"),
+    ("Kinship", "Core", "Kinship", None, "Add", 0.0,
+     "When your deployable dies, it spawns one of your ally's (max 1 per 5 s)", "DeployableNotBlocking"),
+    ("Leverage", "Core", "Leverage", None, "Add", 0.0,
+     "Deployable health x0.7 close up to x1.3 at max deploy distance", "DeployableBlockingEnemies"),
 ]
 
 # Per boss type at Original: (min gems, max gems, {tier: chance of each gem}). Each gem rolls from the highest tier
@@ -67,10 +77,11 @@ def attribute_literal(name):
     return '(AttributeName="{0}",Attribute=/Script/GeoTrinity.{1}:{0},AttributeOwner="/Script/CoreUObject.Class\'/Script/GeoTrinity.{1}\'")'.format(name, owner)
 
 
-def gem_info(gem_id, display_name, attribute, operation, magnitude):
+def gem_info(gem_id, display_name, attribute, operation, magnitude, effect, color):
     info = unreal.GeoGemInfo()
-    text = '(Id="{}",DisplayName=NSLOCTEXT("GeoGem","{}","{}"),Operation={},MagnitudePerGem={}'.format(
-        gem_id, gem_id, display_name, operation, magnitude)
+    text = ('(Id="{0}",DisplayName=NSLOCTEXT("GeoGem","{0}","{1}"),Operation={2},MagnitudePerGem={3},'
+            'Effect=NSLOCTEXT("GeoGem","{0}_Effect","{4}"),Color=(Color={5})').format(
+        gem_id, display_name, operation, magnitude, effect, color)
     if attribute:
         text += ",Attribute=" + attribute_literal(attribute)
     info.import_text(text + ")")

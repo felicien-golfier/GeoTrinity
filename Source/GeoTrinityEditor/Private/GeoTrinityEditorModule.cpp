@@ -7,8 +7,12 @@
 #include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Detail/ExternalProjectileParamsCustomization.h"
 #include "Detail/GeoCurveSourceCustomization.h"
+#include "Detail/GeoIconCustomization.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
+#include "Thumbnail/GeoIconThumbnailRenderer.h"
+#include "ThumbnailRendering/ThumbnailManager.h"
+#include "Tool/GeoIcon.h"
 
 IMPLEMENT_MODULE(FGeoTrinityEditorModule, GeoTrinityEditor)
 
@@ -27,11 +31,21 @@ void FGeoTrinityEditorModule::StartupModule()
 	PropertyEditor.RegisterCustomPropertyTypeLayout(
 		FGeoBurstVFXParams::StaticStruct()->GetFName(),
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoCurveSourceCustomization::MakeInstance));
+	PropertyEditor.RegisterCustomClassLayout(
+		UGeoIcon::StaticClass()->GetFName(),
+		FOnGetDetailCustomizationInstance::CreateStatic(&FGeoIconCustomization::MakeInstance));
 	PropertyEditor.NotifyCustomizationModuleChanged();
+
+	UThumbnailManager::Get().RegisterCustomRenderer(UGeoIcon::StaticClass(), UGeoIconThumbnailRenderer::StaticClass());
 }
 
 void FGeoTrinityEditorModule::ShutdownModule()
 {
+	if (UObjectInitialized())
+	{
+		UThumbnailManager::Get().UnregisterCustomRenderer(UGeoIcon::StaticClass());
+	}
+
 	if (!FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
 		return;
@@ -42,5 +56,6 @@ void FGeoTrinityEditorModule::ShutdownModule()
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoSoundEntry::StaticStruct()->GetFName());
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoVFXParams::StaticStruct()->GetFName());
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoBurstVFXParams::StaticStruct()->GetFName());
+	PropertyEditor.UnregisterCustomClassLayout(UGeoIcon::StaticClass()->GetFName());
 	PropertyEditor.NotifyCustomizationModuleChanged();
 }

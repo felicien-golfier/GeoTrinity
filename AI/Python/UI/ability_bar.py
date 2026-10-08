@@ -1,6 +1,9 @@
 """
 Ability bar HUD asset pipeline. Run via MCP execute_script (editor running, ability-bar build registered).
 
+Rebuilds whole widgets, so it refuses an existing asset (asset_guard.legacy_rebuild) until converted to
+asset_guard.write.
+
 Builds, in order:
   1. M_CooldownSweep  — UI material, radial sweep masked by a "Fill" scalar (0=ready, 1=full cooldown).
   2. WBP_AbilitySlot  — slot widget tree via the GeoHudWidgetBuilderUtil.BuildAbilitySlotWidget shim.
@@ -11,6 +14,11 @@ Wiring of the bar into the player overlay + HUD BP InitAbilityBar/RefreshAbility
 """
 import unreal
 import math
+import os
+import sys
+
+sys.path.insert(0, os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "AI", "Python", "UI"))
+import asset_guard
 
 ASSET_FOLDER = "/Game/HUD/AbilityBar"
 MATERIAL_NAME = "M_CooldownSweep"
@@ -20,10 +28,11 @@ SLOT_SQUARE_SIZE = 64.0
 
 
 def create_asset(name, folder, asset_class, factory):
+    """The asset to build: created here, or refused when it exists (this script rebuilds whole widgets)."""
     full_path = f"{folder}/{name}"
-    existing = unreal.load_asset(full_path)
-    if existing:
-        return existing
+    if unreal.EditorAssetLibrary.does_asset_exist(full_path):
+        return asset_guard.legacy_rebuild(full_path)
+    asset_guard.created(full_path)
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
     asset = asset_tools.create_asset(name, folder, asset_class, factory)
     unreal.EditorAssetLibrary.save_loaded_asset(asset)
@@ -127,13 +136,13 @@ def build_bar_widget():
 
 def _slot_factory():
     f = unreal.WidgetBlueprintFactory()
-    f.set_editor_property("parent_class", unreal.load_class(None, "/Script/GeoTrinity.GeoAbilitySlotWidget"))
+    f.set_editor_property("parent_class", unreal.load_class(None, "/Script/GeoTrinityUI.GeoAbilitySlotWidget"))
     return f
 
 
 def _bar_factory():
     f = unreal.WidgetBlueprintFactory()
-    f.set_editor_property("parent_class", unreal.load_class(None, "/Script/GeoTrinity.GeoAbilityBarWidget"))
+    f.set_editor_property("parent_class", unreal.load_class(None, "/Script/GeoTrinityUI.GeoAbilityBarWidget"))
     return f
 
 

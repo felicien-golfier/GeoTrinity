@@ -8,6 +8,8 @@
 #include "GeoPauseMenuWidget.generated.h"
 
 class UGeoAbilityDescriptionsWidget;
+class UGeoCharacterSheetWidget;
+class UGeoGemsWidget;
 class UGeoLeaderboardWidget;
 class UGeoMenuButton;
 class UGeoSettingsWidget;
@@ -19,7 +21,9 @@ class UGeoSettingsWidget;
  * "LeaderboardButton", "ReturnToMainMenuButton", "QuitButton", plus a UGeoAbilityDescriptionsWidget
  * "AbilitiesWidget", a UGeoSettingsWidget "SettingsWidget" and a UGeoLeaderboardWidget "LeaderboardWidget" panel
  * (all Collapsed by default). Optional: "MenuDecor", whatever dresses the top level (title, class card), which gives
- * way to a sub-panel along with the buttons.
+ * way to a sub-panel along with the buttons; "CharacterButton" with its UGeoCharacterSheetWidget "CharacterWidget", whose
+ * ABILITY DETAILS opens AbilitiesWidget in its place, closing back to it; with it, a UGeoGemsWidget "GemsWidget" its
+ * GEMS opens in its place, closing back to it too.
  * The leaderboard is the same panel class the main menu opens, and it reads the save on every construct, so a run
  * finished this session shows up without leaving the level.
  */
@@ -68,12 +72,31 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UWidget> MenuDecor;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoMenuButton> CharacterButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoCharacterSheetWidget> CharacterWidget;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoGemsWidget> GemsWidget;
+
 private:
 	UFUNCTION()
 	void HandleResume();
 
 	UFUNCTION()
 	void HandleAbilities();
+
+	UFUNCTION()
+	void HandleCharacter();
+
+	/** ABILITY DETAILS on the character sheet: the abilities page, closing back to the sheet. */
+	UFUNCTION()
+	void HandleSheetAbilities();
+
+	UFUNCTION()
+	void HandleGems();
 
 	UFUNCTION()
 	void HandleSettings();
@@ -87,9 +110,17 @@ private:
 	UFUNCTION()
 	void HandleQuit();
 
+	/** Back to the character sheet, refreshed, when the closed panel was opened from it; else to the top-level buttons. */
 	UFUNCTION()
 	void HandleSubPanelClosed();
 
 	void OpenSubPanel(UGeoMenuPanelWidget* SubPanel);
+	/** Opens SubPanel in the character sheet's place, so it closes back to the sheet. */
+	void OpenFromSheet(UGeoMenuPanelWidget* SubPanel);
+	/** Collapses every sub-panel. */
+	void CollapseSubPanels();
 	void SetButtonsVisible(bool bVisible);
+
+	/** The open sub-panel was opened from the character sheet. */
+	bool bOpenedFromSheet = false;
 };

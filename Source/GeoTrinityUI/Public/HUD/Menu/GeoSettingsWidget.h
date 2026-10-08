@@ -7,6 +7,7 @@
 
 #include "GeoSettingsWidget.generated.h"
 
+class UGeoInterfaceSettingsWidget;
 class UGeoKeyBindingsWidget;
 class UGeoMenuButton;
 class UGeoSoundSettingsWidget;
@@ -14,10 +15,11 @@ class UGeoSoundSettingsWidget;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoSettingsClosedSignature);
 
 /**
- * Settings chooser layer: opens the Sound or Key Bindings sub-panel, each a separate window shown while the
- * chooser buttons hide. Communicates back to the parent menu exclusively via the OnClosed delegate.
- * Required in the BP hierarchy: UGeoMenuButton "SoundButton", "KeyBindingsButton", "BackButton", plus a
- * UGeoSoundSettingsWidget "SoundWidget" and a UGeoKeyBindingsWidget "KeyBindingsWidget" (Collapsed by default).
+ * Settings chooser layer: opens the Sound, Key Bindings or Interface sub-panel, each a separate window shown while
+ * the chooser buttons hide. Communicates back to the parent menu exclusively via the OnClosed delegate.
+ * Required in the BP hierarchy: UGeoMenuButton "SoundButton", "KeyBindingsButton", "InterfaceButton", "BackButton",
+ * plus a UGeoSoundSettingsWidget "SoundWidget", a UGeoKeyBindingsWidget "KeyBindingsWidget" and a
+ * UGeoInterfaceSettingsWidget "InterfaceWidget" (Collapsed by default).
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoSettingsWidget : public UGeoMenuPanelWidget
@@ -29,7 +31,7 @@ public:
 	FGeoSettingsClosedSignature OnClosed;
 
 protected:
-	/** Wires SoundButton, KeyBindingsButton, BackButton handlers, and sub-panel close delegates. */
+	/** Wires the chooser buttons and the sub-panel close delegates. */
 	virtual void NativeConstruct() override;
 	/** Returns SoundButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
@@ -43,6 +45,9 @@ protected:
 	TObjectPtr<UGeoMenuButton> KeyBindingsButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UGeoMenuButton> InterfaceButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> BackButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
@@ -51,12 +56,18 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoKeyBindingsWidget> KeyBindingsWidget;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UGeoInterfaceSettingsWidget> InterfaceWidget;
+
 private:
 	UFUNCTION()
 	void HandleSound();
 
 	UFUNCTION()
 	void HandleKeyBindings();
+
+	UFUNCTION()
+	void HandleInterface();
 
 	UFUNCTION()
 	void HandleBack();

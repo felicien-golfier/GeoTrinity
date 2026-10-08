@@ -5,9 +5,21 @@ motion live in the style assets and DA_UITheme (built by ui_theme.py, which must
 - WBP_GeoButton: Frame (button style, active on hover/focus) > ButtonWidget > ButtonText.
 - WBP_ListRow: RowFrame (row style) > RowButton > ColumnsBox.
 - WBP_ListPanel: a panel frame behind its header and rows, the old background images dropped.
-Usage: run via MCP execute_script. Re-run-safe: the button and the row are rebuilt from scratch each run.
+Usage: run via MCP execute_script. Rebuilds whole widgets, so it refuses an existing asset (asset_guard.legacy_rebuild)
+until converted to asset_guard.write.
 """
+import importlib
+import os
+import sys
+
 import unreal
+
+_UI_SCRIPTS = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "AI", "Python", "UI")
+if _UI_SCRIPTS not in sys.path:
+    sys.path.insert(0, _UI_SCRIPTS)
+import asset_guard
+
+asset_guard = importlib.reload(asset_guard)
 
 UTIL = unreal.GeoWidgetBuilderUtil.get_default_object()
 STYLE_DIR = "/Game/HUD/Style"
@@ -19,6 +31,7 @@ LIST_PANEL_PATH = "/Game/HUD/WBP_ListPanel"
 BUTTON_PADDING = unreal.Margin(32, 12, 32, 12)
 ROW_PADDING = unreal.Margin(10, 4, 10, 4)
 PANEL_PADDING = unreal.Margin(28, 24, 28, 24)
+FOOTER_GAP = 16
 ROW_TINTS = {
     "normal_color": unreal.LinearColor(1, 1, 1, 0),
     "alternate_color": unreal.LinearColor(1, 1, 1, .025),
@@ -205,7 +218,7 @@ def fill_slot(slot):
 
 def style_menu_button():
     """Frame > ButtonWidget > ButtonText. The label's font comes from the button's TextRole in the theme."""
-    wbp = unreal.load_asset(BUTTON_PATH)
+    wbp = asset_guard.legacy_rebuild(BUTTON_PATH)
     make_frame_root(wbp, "Frame", "DA_Frame_Button", BUTTON_PADDING, True)
 
     button, slot = construct_into(wbp, unreal.GeoButton, "ButtonWidget", "Frame")
@@ -222,7 +235,7 @@ def style_menu_button():
 
 def style_list_row():
     """RowFrame > RowButton > ColumnsBox. The row's code tints the button's normal brush per row role."""
-    wbp = unreal.load_asset(ROW_PATH)
+    wbp = asset_guard.legacy_rebuild(ROW_PATH)
     make_frame_root(wbp, "RowFrame", "DA_Frame_Row", ROW_PADDING, True)
 
     button, slot = construct_into(wbp, unreal.GeoButton, "RowButton", "RowFrame")
@@ -249,7 +262,7 @@ def seed_row_tints(wbp):
 
 def style_list_panel():
     """The panel frame fills the panel behind the header strip and the rows; the backgrounds they wore are dropped."""
-    wbp = unreal.load_asset(LIST_PANEL_PATH)
+    wbp = asset_guard.legacy_rebuild(LIST_PANEL_PATH)
     for image in ["HeaderBackground", "ContentBackground"]:
         if UTIL.find_widget(wbp, image):
             UTIL.remove_widget(wbp, image)
@@ -262,7 +275,18 @@ def style_list_panel():
     frame_box_slot = UTIL.find_widget(wbp, "FrameBox").get_editor_property("slot")
     frame_box_slot.set_editor_property("padding", PANEL_PADDING)
     theme_widget(wbp, "RowsBox")
+    place_footer_under_rows(wbp)
     UTIL.commit_tree(wbp)
+
+
+def place_footer_under_rows(wbp):
+    """The footer (the back button) gets its own line under the rows, so it never covers the last one. Re-run-safe."""
+    footer_slot = UTIL.attach_widget(wbp, "FrameBox", "FooterSlot")
+    footer_slot.set_editor_property("horizontal_alignment", unreal.HorizontalAlignment.H_ALIGN_RIGHT)
+    footer_slot.set_editor_property("padding", unreal.Margin(0, FOOTER_GAP, 0, 0))
+    footer_slot.set_editor_property("size", unreal.SlateChildSize(1.0, unreal.SlateSizeRule.AUTOMATIC))
+    rows_slot = UTIL.find_widget(wbp, "ContentArea").get_editor_property("slot")
+    rows_slot.set_editor_property("size", unreal.SlateChildSize(1.0, unreal.SlateSizeRule.FILL))
 
 
 if __name__ == "__main__":

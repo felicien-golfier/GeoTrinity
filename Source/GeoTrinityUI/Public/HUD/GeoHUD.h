@@ -10,9 +10,7 @@
 
 #include "GeoHUD.generated.h"
 
-class SWidget;
-class AGeoArena;
-class UTexture2D;
+class UGeoIcon;
 class UInputAction;
 class UGeoUserWidget;
 class UGeoAttributeSetBase;
@@ -53,7 +51,7 @@ struct FGeoAbilityBarEntry
 	TObjectPtr<UInputAction const> InputAction = nullptr;
 
 	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<UTexture2D const> Icon = nullptr;
+	TObjectPtr<UGeoIcon const> Icon = nullptr;
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsDeployable = false;
@@ -67,9 +65,9 @@ struct FGeoActiveEffectIcon
 {
 	GENERATED_BODY()
 
-	/** UTexture2D or UMaterialInterface, as configured on the applying effect data or status. */
+	/** As configured on the applying effect data. */
 	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<UObject> Icon;
+	TObjectPtr<UGeoIcon> Icon;
 
 	UPROPERTY(BlueprintReadOnly)
 	int32 Count = 0;
@@ -82,19 +80,14 @@ struct FGeoActiveEffectIcon
 	UPROPERTY(BlueprintReadOnly)
 	float Duration = 0.f;
 
-	/** Gauge fill (0–1) for synthetic gauge entries (Circle's sweet-spot charge); -1 for regular effect entries, whose
-	 * sweep depletes with TimeRemaining instead. */
-	UPROPERTY(BlueprintReadOnly)
-	float FillRatio = -1.f;
-
-	/** Icon tint applied once FillRatio reaches 1. */
-	UPROPERTY(BlueprintReadOnly)
-	FLinearColor FullColor = FLinearColor::White;
-
 	/** Boost these effects contribute on their own, as a fraction (0.5 is shown as "+50%"); summed over the group, so
 	 * it counts their stacks but no other source of the same stat. Zero when they boost no stat. */
 	UPROPERTY(BlueprintReadOnly)
 	float BoostBonus = 0.f;
+
+	/** Set when any of these effects came from an actor hostile to the player. */
+	UPROPERTY(BlueprintReadOnly)
+	bool bDebuff = false;
 };
 
 
@@ -216,30 +209,7 @@ public:
 	void SpawnDamageNumber(float Amount, EGeoDamageNumberType Type, FVector WorldLocation);
 
 
-protected:
-#if !UE_BUILD_SHIPPING
-	/** Rebuilds the debug combat-stats panel when the active player list changes. */
-	virtual void DrawHUD() override;
-	/** Removes the combat-stats panel from the viewport before calling Super. */
-	virtual void EndPlay(EEndPlayReason::Type const EndPlayReason) override;
-#endif
-
-
 private:
-#if !UE_BUILD_SHIPPING
-	/** Creates, rebuilds, or removes the combat-stats panel so it mirrors the cvar and the current player list. */
-	void UpdateCombatStatsPanel();
-	/** Removes the Slate combat-stats panel from the viewport and resets panel state. */
-	void RemoveCombatStatsPanel();
-
-	/** Debug per-player DPS/HPS table, top-right of the viewport. Plain Slate: no widget Blueprint asset needed. */
-	TSharedPtr<SWidget> CombatStatsPanel;
-	TArray<TWeakObjectPtr<APlayerState>> CombatStatsRoster;
-	/** Arena the panel's fight timer reads. Taken when a boss bar goes up and never given back, which is the whole
-	 *  point of the copy: the boss bar carrying the same timer is destroyed the moment the fight ends. */
-	TWeakObjectPtr<AGeoArena> CombatStatsArena;
-#endif
-
 	/**
 	 * Finds the granted spec whose ability carries AbilityTag. The one place the CDO → primary-instance promotion is
 	 * written: OutAbility is the live instance when there is one, else the CDO.

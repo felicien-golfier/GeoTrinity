@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="Heal" fill="none" stroke="#F4EEFF" stroke-width="2">
+  <circle cx="5" cy="39" r="2" fill="#F4EEFF" stroke="none"/>
+  <path d="M5 39 Q7 22 18.5 20" stroke-dasharray="3 3" stroke-opacity=".6"/>
+  <circle cx="29" cy="17" r="11"/>
+  <circle cx="29" cy="17" r="5" stroke-opacity=".5"/>
+  <circle cx="29" cy="17" r="1.6" fill="#F4EEFF" stroke="none"/>
+</svg>

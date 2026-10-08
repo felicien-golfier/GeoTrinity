@@ -7,17 +7,6 @@
 #include "GameFramework/GameMode.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-#if !UE_BUILD_SHIPPING
-static TAutoConsoleVariable<bool>
-	CVarShowCombatStats(TEXT("Geo.ShowCombatStats"), true,
-						TEXT("When true, shows per-player DPS / HPS / damage received on screen"));
-
-bool UGeoCombatStatsSubsystem::IsDebugDisplayEnabled()
-{
-	return CVarShowCombatStats.GetValueOnGameThread();
-}
-#endif
-
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -32,6 +21,23 @@ void UGeoCombatStatsSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoCombatStatsSubsystem::Tick(float const DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		ComputePlayerStats(GetWorld()->GetTimeSeconds());
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+TStatId UGeoCombatStatsSubsystem::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UGeoCombatStatsSubsystem, STATGROUP_Tickables);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::OnMatchStateChanged(FName MatchState, FName PreviousMatchState)
 {
 	if (MatchState == MatchState::InProgress)
@@ -41,8 +47,7 @@ void UGeoCombatStatsSubsystem::OnMatchStateChanged(FName MatchState, FName Previ
 	else if (PreviousMatchState == MatchState::InProgress)
 	{
 		// Fight over: push one last time, then drop all per-player stats. Player states keep those values, which is
-		// what the HUD goes on showing and what the leaderboard records — and nothing has pushed them since the
-		// fight's last events unless the debug display was on to tick it.
+		// what the HUD goes on showing and what the leaderboard records.
 		ComputePlayerStats(GetWorld()->GetTimeSeconds());
 		StatsPerActor.Empty();
 	}
@@ -59,7 +64,7 @@ void UGeoCombatStatsSubsystem::ResetStats()
 		{
 			if (AGeoPlayerState* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState))
 			{
-				GeoPlayerState->SetDebugCombatStats({});
+				GeoPlayerState->SetCombatStats({});
 			}
 		}
 	}
@@ -175,8 +180,8 @@ void UGeoCombatStatsSubsystem::PushPlayerStats(float CurrentTime)
 
 		FActorCombatStats const& Stats = It.Value();
 		FGeoCombatDisplayStats Display;
-		Display.DebugDPS = Stats.Damage.Smoothed;
-		Display.DebugHPS = Stats.Healing.Smoothed;
+		Display.LiveDPS = Stats.Damage.Smoothed;
+		Display.LiveHPS = Stats.Healing.Smoothed;
 		Display.MaxBurstDamage = Stats.Damage.Burst.Max;
 		Display.MaxBurstHealing = Stats.Healing.Burst.Max;
 		Display.FightDPS = Stats.Damage.Total / CombatDuration;
@@ -184,6 +189,6 @@ void UGeoCombatStatsSubsystem::PushPlayerStats(float CurrentTime)
 		Display.TotalDamageDealt = Stats.Damage.Total;
 		Display.TotalHealingDealt = Stats.Healing.Total;
 		Display.TotalDamageReceived = Stats.TotalDamageReceived;
-		GeoPlayerState->SetDebugCombatStats(Display);
+		GeoPlayerState->SetCombatStats(Display);
 	}
 }

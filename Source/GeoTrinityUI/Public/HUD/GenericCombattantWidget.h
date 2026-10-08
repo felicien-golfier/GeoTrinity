@@ -8,6 +8,7 @@
 
 #include "GenericCombattantWidget.generated.h"
 
+class UGeoMeter;
 class UProgressBar;
 class UTextBlock;
 
@@ -58,6 +59,14 @@ protected:
 	/** Current health value (no max), centered over the bar. Optional — bars without it just skip the number. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> CurrentHealthText;
+
+	/** Health as a fill with the shield as its overhang, in place of HealthBar and ShieldBar. Optional. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoMeter> HealthMeter;
+
+	/** Health as a whole percentage ("62%"). Optional. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> HealthPercentText;
 
 private:
 	/** Binds every attribute the bar shows to RefreshStats, with weak lambdas that need no matching removal. */

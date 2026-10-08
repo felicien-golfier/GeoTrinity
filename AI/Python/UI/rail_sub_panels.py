@@ -2,7 +2,8 @@
 Dress every menu sub-panel in the Rail look: texts become UGeoText in their role, inputs their themed class wrapped in a
 field frame, background images a panel frame. Places the main menu's sub-panels and gives the pause menu its title and
 scrim. Look values live in DA_UITheme and the /Game/HUD/Style frame styles; this only sets structure.
-Usage: run via MCP execute_script, after ui_theme.py, rail_style.py and rail_main_menu.py. Re-run-safe.
+Usage: run via MCP execute_script, after ui_theme.py, rail_style.py and rail_main_menu.py. Rebuilds whole widgets, so it
+refuses an existing asset (asset_guard.legacy_rebuild) until converted to asset_guard.write.
 """
 import unreal
 
@@ -51,13 +52,13 @@ def finish(wbp):
 
 
 def dress_leaderboard():
-    wbp = unreal.load_asset("/Game/HUD/MainMenu/WBP_Leaderboard")
+    wbp = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/MainMenu/WBP_Leaderboard")
     theme_texts(wbp, {"TitleText": ROLE.HEADING})
     finish(wbp)
 
 
 def dress_browse_servers():
-    wbp = unreal.load_asset("/Game/HUD/MainMenu/WBP_BrowseServers")
+    wbp = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/MainMenu/WBP_BrowseServers")
     theme_texts(wbp, {"TextBlock": ROLE.LABEL, "TextBlock_162": ROLE.LABEL})
     theme_fields(wbp, ["SearchInput", "LanguageComboBox"])
     RAIL["theme_widget"](wbp, "SearchProgressBar")
@@ -73,7 +74,7 @@ def dress_browse_servers():
 
 
 def dress_create_server():
-    wbp = unreal.load_asset("/Game/HUD/MainMenu/WBP_CreateServerWidget")
+    wbp = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/MainMenu/WBP_CreateServerWidget")
     replace_background(wbp, "Image_MenuBackground", "PanelFrame")
     theme_texts(wbp, {"Text_Title": ROLE.HEADING, "Text_ServerNameTitle": ROLE.LABEL, "Text_MapTitle": ROLE.LABEL,
                       "Text_SlotsTitle": ROLE.LABEL, "Text_LanguageTitle": ROLE.LABEL,
@@ -87,7 +88,7 @@ def dress_create_server():
 
 
 def dress_local_connect():
-    wbp = unreal.load_asset("/Game/HUD/MainMenu/WBP_LocalConnect")
+    wbp = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/MainMenu/WBP_LocalConnect")
     if not UTIL.find_widget(wbp, "PanelFrame"):
         RAIL["add_backdrop_frame"](wbp, "Root", "PanelFrame", "DA_Frame_Panel")
     if not UTIL.find_widget(wbp, "MenuWidth"):
@@ -108,7 +109,7 @@ def dress_local_connect():
 
 def dress_pause_menu():
     """Panel frame for the plate, a scrim dimming the fight behind, and a PAUSED title as the menu's decor."""
-    wbp = unreal.load_asset("/Game/HUD/InGameMenu/WBP_PauseMenu")
+    wbp = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/InGameMenu/WBP_PauseMenu")
     replace_background(wbp, "Image_Background", "PanelFrame")
     if not UTIL.find_widget(wbp, "Scrim"):
         RAIL["add_backdrop_frame"](wbp, "MenuOverlayRoot", "Scrim", "DA_Frame_Scrim")
@@ -126,20 +127,20 @@ def dress_pause_menu():
 
 
 def dress_settings():
-    sound = unreal.load_asset("/Game/HUD/InGameMenu/WBP_SoundSettings")
+    sound = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/InGameMenu/WBP_SoundSettings")
     theme_texts(sound, {"SoundLabel": ROLE.HEADING, "GeneralVolumeLabel": ROLE.BODY, "EffectsVolumeLabel": ROLE.BODY,
                         "MusicVolumeLabel": ROLE.BODY, "InterfaceVolumeLabel": ROLE.BODY})
     for slider in ["GeneralVolumeSlider", "EffectsVolumeSlider", "MusicVolumeSlider", "InterfaceVolumeSlider"]:
         RAIL["theme_widget"](sound, slider)
     finish(sound)
 
-    keys = unreal.load_asset("/Game/HUD/InGameMenu/WBP_KeyBindings")
+    keys = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/InGameMenu/WBP_KeyBindings")
     theme_texts(keys, {"KeyBindingsLabel": ROLE.HEADING, "SecondPlayerGamepadLabel": ROLE.BODY})
     RAIL["theme_widget"](keys, "SecondPlayerGamepadCheckBox")
     RAIL["theme_widget"](keys, "KeyBindingsList")
     finish(keys)
 
-    abilities = unreal.load_asset("/Game/HUD/InGameMenu/WBP_AbilityDescriptions")
+    abilities = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/InGameMenu/WBP_AbilityDescriptions")
     replace_background(abilities, "BackgroundImage", "PanelFrame")
     RAIL["theme_widget"](abilities, "AbilityList")
     finish(abilities)
@@ -147,7 +148,7 @@ def dress_settings():
 
 def place_main_menu_panels():
     """List panels fill the screen inside a margin; the player box belongs to the top level."""
-    wbp = unreal.load_asset("/Game/HUD/MainMenu/WBP_MainMenuWidget")
+    wbp = RAIL["asset_guard"].legacy_rebuild("/Game/HUD/MainMenu/WBP_MainMenuWidget")
     for name in ["BrowseServerWidget", "LeaderboardWidget"]:
         slot = UTIL.find_widget(wbp, name).get_editor_property("slot")
         slot.set_anchors(unreal.Anchors(minimum=unreal.Vector2D(0, 0), maximum=unreal.Vector2D(1, 1)))

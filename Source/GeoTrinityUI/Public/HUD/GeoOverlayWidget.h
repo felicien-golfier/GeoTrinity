@@ -8,7 +8,9 @@
 
 #include "GeoOverlayWidget.generated.h"
 
+class AGeoPlayerState;
 class UGeoAbilityBarWidget;
+class UGeoPlayerCardWidget;
 class UGeoStatusBarWidget;
 class AGeoHUD;
 
@@ -30,8 +32,9 @@ public:
 	/** Rebuilds the ability bar from the HUD's current ability set. Called by AGeoHUD::BuildAbilityBar. */
 	void BuildAbilityBar(AGeoHUD* GeoHUD, APlayableCharacter* PlayableCharacter);
 
-	/** Gives the status bar the HUD reference it polls for active effect icons. Called by AGeoHUD::InitOverlay. */
-	void InitStatusBar(AGeoHUD* GeoHUD);
+	/** Gives the status bar the HUD reference it polls for active effect icons, and shows PlayerState on the player
+	 * card. Called by AGeoHUD::InitOverlay. */
+	void InitPanels(AGeoHUD* GeoHUD, AGeoPlayerState* PlayerState);
 
 protected:
 	/** Lays the overlay out for its own player, and re-runs whenever a local player joins or leaves. */
@@ -47,6 +50,10 @@ protected:
 	/** Active-effect icon row, bound from WBP_MainOverlay above the ability bar. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoStatusBarWidget> StatusBar;
+
+	/** The owning player's wing, bottom-left. Optional. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoPlayerCardWidget> PlayerCard;
 
 private:
 	/**

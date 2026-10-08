@@ -3,31 +3,20 @@
 #include "HUD/GeoStatusBarWidget.h"
 
 #include "Blueprint/WidgetTree.h"
-#include "Brushes/SlateNoResource.h"
-#include "Components/CanvasPanel.h"
-#include "Components/CanvasPanelSlot.h"
-#include "Components/HorizontalBox.h"
-#include "Components/HorizontalBoxSlot.h"
-#include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
-#include "Components/ProgressBar.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
-#include "Engine/Texture2D.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "HUD/GeoHUD.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Materials/MaterialInterface.h"
-#include "Styling/CoreStyle.h"
-#include "Styling/SlateTypes.h"
-#include "Tool/GeoNiagaraParams.h"
-
-namespace
-{
-	FLinearColor const GaugeEmptyTint(0.2f, 0.2f, 0.2f, 1.f);
-	// Slate clamps each channel after the tint multiply, so an over-1 tint whites the icon out toward FullColor — the
-	// closest UMG gets to an emissive shine.
-	float constexpr GaugeFullEmissiveBoost = 10.f;
-}
+#include "HUD/Style/GeoFrame.h"
+#include "HUD/Style/GeoIconImage.h"
+#include "HUD/Style/GeoMeter.h"
+#include "HUD/Style/GeoUITheme.h"
+#include "Tool/GeoIcon.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoStatusBarWidget::InitStatusBar(AGeoHUD* GeoHUD)
@@ -42,22 +31,91 @@ bool UGeoStatusBarWidget::Initialize()
 
 	if (WidgetTree && !StatusBox)
 	{
-		UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("Canvas"));
-		WidgetTree->RootWidget = Canvas;
-
-		// Wrapper fills the whole bar; the box inside is centered and only as wide as its icons.
-		UOverlay* Wrapper = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
-		UCanvasPanelSlot* CanvasSlot = Canvas->AddChildToCanvas(Wrapper);
-		CanvasSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
-		CanvasSlot->SetOffsets(FMargin(0.f));
-
-		StatusBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("StatusBox"));
-		UOverlaySlot* BoxSlot = Wrapper->AddChildToOverlay(StatusBox);
-		BoxSlot->SetHorizontalAlignment(HAlign_Center);
-		BoxSlot->SetVerticalAlignment(VAlign_Center);
+		StatusBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("StatusBox"));
+		WidgetTree->RootWidget = StatusBox;
 	}
 
 	return bResult;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UTextBlock* UGeoStatusBarWidget::MakeText() const
+{
+	UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	UGeoUITheme::ApplyTextStyle(Text, EGeoTextRole::Mono);
+	FSlateFontInfo Font = Text->GetFont();
+	Font.Size = TextSize;
+	Text->SetFont(Font);
+	return Text;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoStatusBarWidget::AddTile(FGeoActiveEffectIcon const& Entry)
+{
+	FGeoStatusTile& Tile = Tiles.AddDefaulted_GetRef();
+	Tile.Icon = Entry.Icon;
+	Tile.bDebuff = Entry.bDebuff;
+
+	UOverlay* Content = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
+
+	UVerticalBox* Center = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+	UOverlaySlot* CenterSlot = Content->AddChildToOverlay(Center);
+	CenterSlot->SetHorizontalAlignment(HAlign_Center);
+	CenterSlot->SetVerticalAlignment(VAlign_Center);
+
+	UGeoIconImage* IconImage = WidgetTree->ConstructWidget<UGeoIconImage>(UGeoIconImage::StaticClass());
+	IconImage->SetIcon(Entry.Icon);
+	IconImage->SetSize(IconSize);
+	Center->AddChildToVerticalBox(IconImage)->SetHorizontalAlignment(HAlign_Center);
+
+	Tile.ValueText = MakeText();
+	Tile.ValueText->SetColorAndOpacity(Entry.Icon->Color.GetColor());
+	Center->AddChildToVerticalBox(Tile.ValueText)->SetHorizontalAlignment(HAlign_Center);
+
+	Tile.CountText = MakeText();
+	UOverlaySlot* CountSlot = Content->AddChildToOverlay(Tile.CountText);
+	CountSlot->SetHorizontalAlignment(HAlign_Right);
+	CountSlot->SetVerticalAlignment(VAlign_Top);
+	CountSlot->SetPadding(CountPadding);
+
+	Tile.TimeMeter = WidgetTree->ConstructWidget<UGeoMeter>(UGeoMeter::StaticClass());
+	Tile.TimeMeter->SetMeterStyle(TimeMeterStyle);
+	Tile.TimeMeter->SetFillTint(Entry.bDebuff ? DebuffColor : FLinearColor::White);
+	UOverlaySlot* MeterSlot = Content->AddChildToOverlay(Tile.TimeMeter);
+	MeterSlot->SetHorizontalAlignment(HAlign_Fill);
+	MeterSlot->SetVerticalAlignment(VAlign_Bottom);
+
+	UGeoFrame* Frame = WidgetTree->ConstructWidget<UGeoFrame>(UGeoFrame::StaticClass());
+	Frame->SetFrameStyle(Entry.bDebuff ? DebuffTileStyle : TileStyle);
+	Frame->SetPadding(FMargin(0.f));
+	Frame->SetContent(Content);
+
+	USizeBox* TileBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+	TileBox->SetWidthOverride(TileSize);
+	TileBox->SetHeightOverride(TileSize);
+	TileBox->SetContent(Frame);
+
+	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+	Column->AddChildToVerticalBox(TileBox);
+
+	Tile.TimeText = MakeText();
+	if (Entry.bDebuff)
+	{
+		Tile.TimeText->SetColorAndOpacity(DebuffColor);
+	}
+	UVerticalBoxSlot* TimeSlot = Column->AddChildToVerticalBox(Tile.TimeText);
+	TimeSlot->SetHorizontalAlignment(HAlign_Center);
+	TimeSlot->SetPadding(FMargin(0.f, TimeGap, 0.f, 0.f));
+
+	if ((Tiles.Num() - 1) % TilesPerRow == 0)
+	{
+		UPanelSlot* const RowSlot =
+			StatusBox->InsertChildAt(0, WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass()));
+		CastChecked<UVerticalBoxSlot>(RowSlot)->SetPadding(FMargin(0.f, TileGap, 0.f, 0.f));
+	}
+	CastChecked<UHorizontalBox>(StatusBox->GetChildAt(0))
+		->AddChildToHorizontalBox(Column)
+		->SetPadding(FMargin(0.f, 0.f, TileGap, 0.f));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -72,162 +130,44 @@ void UGeoStatusBarWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaT
 
 	TArray<FGeoActiveEffectIcon> const Entries = HUD->GetActiveEffectIcons();
 
-	TArray<UObject*> Icons;
-	for (FGeoActiveEffectIcon const& Entry : Entries)
+	bool bSetChanged = Entries.Num() != Tiles.Num();
+	for (int32 Index = 0; Index < Entries.Num() && !bSetChanged; ++Index)
 	{
-		Icons.Add(Entry.Icon);
+		bSetChanged = Entries[Index].Icon != Tiles[Index].Icon || Entries[Index].bDebuff != Tiles[Index].bDebuff;
 	}
 
-	if (Icons != DisplayedIcons)
+	if (bSetChanged)
 	{
-		DisplayedIcons = Icons;
 		StatusBox->ClearChildren();
-		IconImages.Reset();
-		CountTexts.Reset();
-		TimerTexts.Reset();
-		BoostTexts.Reset();
-		DepletionSweeps.Reset();
-		DepletionSweepMIDs.Reset();
-		GaugeBars.Reset();
-		AppliedIconSize = 0.f;
-
+		Tiles.Reset();
 		for (FGeoActiveEffectIcon const& Entry : Entries)
 		{
-			UOverlay* EntryOverlay = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
-
-			UImage* IconImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-			if (UTexture2D* Texture = Cast<UTexture2D>(Entry.Icon))
-			{
-				IconImage->SetBrushFromTexture(Texture);
-			}
-			else if (UMaterialInterface* Material = Cast<UMaterialInterface>(Entry.Icon))
-			{
-				IconImage->SetBrushFromMaterial(Material);
-			}
-			// Round icon: half-height rounding turns the square brush into a circle.
-			FSlateBrush RoundBrush = IconImage->GetBrush();
-			RoundBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-			RoundBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::HalfHeightRadius;
-			IconImage->SetBrush(RoundBrush);
-			EntryOverlay->AddChildToOverlay(IconImage);
-			IconImages.Add(IconImage);
-
-			bool const bIsGauge = Entry.FillRatio >= 0.f;
-
-			// Gauge entries: the dimmed icon is the empty background, revealed bottom-to-top by a masked progress
-			// bar whose fill brush is the icon itself.
-			UProgressBar* GaugeBar = nullptr;
-			if (bIsGauge)
-			{
-				IconImage->SetColorAndOpacity(GaugeEmptyTint);
-
-				GaugeBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass());
-				FProgressBarStyle BarStyle;
-				BarStyle.SetBackgroundImage(FSlateNoResource());
-				BarStyle.SetFillImage(RoundBrush);
-				BarStyle.SetMarqueeImage(FSlateNoResource());
-				GaugeBar->SetWidgetStyle(BarStyle);
-				GaugeBar->SetBarFillType(EProgressBarFillType::BottomToTop);
-				GaugeBar->SetBarFillStyle(EProgressBarFillStyle::Mask);
-				UOverlaySlot* BarSlot = EntryOverlay->AddChildToOverlay(GaugeBar);
-				BarSlot->SetHorizontalAlignment(HAlign_Fill);
-				BarSlot->SetVerticalAlignment(VAlign_Fill);
-			}
-			GaugeBars.Add(GaugeBar);
-
-			UImage* SweepImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-			UMaterialInstanceDynamic* SweepMID = nullptr;
-			if (DepletionSweepMaterial && !bIsGauge)
-			{
-				SweepMID = UMaterialInstanceDynamic::Create(DepletionSweepMaterial, this);
-				SweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, 0.f);
-				SweepImage->SetBrushFromMaterial(SweepMID);
-			}
-			else
-			{
-				SweepImage->SetVisibility(ESlateVisibility::Collapsed);
-			}
-			EntryOverlay->AddChildToOverlay(SweepImage);
-			DepletionSweeps.Add(SweepImage);
-			DepletionSweepMIDs.Add(SweepMID);
-
-			UTextBlock* TimerText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-			TimerText->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 14));
-			UOverlaySlot* TimerSlot = EntryOverlay->AddChildToOverlay(TimerText);
-			TimerSlot->SetHorizontalAlignment(HAlign_Center);
-			TimerSlot->SetVerticalAlignment(VAlign_Center);
-			TimerTexts.Add(TimerText);
-
-			UTextBlock* CountText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-			CountText->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 10));
-			UOverlaySlot* CountSlot = EntryOverlay->AddChildToOverlay(CountText);
-			CountSlot->SetHorizontalAlignment(HAlign_Right);
-			CountSlot->SetVerticalAlignment(VAlign_Bottom);
-			CountTexts.Add(CountText);
-
-			UTextBlock* BoostText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-			BoostText->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 12));
-			UOverlaySlot* BoostSlot = EntryOverlay->AddChildToOverlay(BoostText);
-			BoostSlot->SetHorizontalAlignment(HAlign_Center);
-			BoostSlot->SetVerticalAlignment(VAlign_Top);
-			BoostTexts.Add(BoostText);
-
-			StatusBox->AddChildToHorizontalBox(EntryOverlay)->SetPadding(FMargin(2.f, 0.f));
-		}
-	}
-
-	float const IconSize = MyGeometry.GetLocalSize().Y;
-	if (!FMath::IsNearlyEqual(IconSize, AppliedIconSize))
-	{
-		AppliedIconSize = IconSize;
-		for (int32 Index = 0; Index < IconImages.Num(); ++Index)
-		{
-			IconImages[Index]->SetDesiredSizeOverride(FVector2D(IconSize));
-			DepletionSweeps[Index]->SetDesiredSizeOverride(FVector2D(IconSize));
+			AddTile(Entry);
 		}
 	}
 
 	for (int32 Index = 0; Index < Entries.Num(); ++Index)
 	{
 		FGeoActiveEffectIcon const& Entry = Entries[Index];
+		FGeoStatusTile const& Tile = Tiles[Index];
 
-		TimerTexts[Index]->SetVisibility(Entry.TimeRemaining < 0.f ? ESlateVisibility::Hidden
-																   : ESlateVisibility::HitTestInvisible);
-		if (Entry.TimeRemaining >= 0.f)
-		{
-			TimerTexts[Index]->SetText(FText::FromString(FString::Printf(TEXT("%.1f"), Entry.TimeRemaining)));
-		}
+		FText const SecondsLeft =
+			FText::FromString(FString::Printf(TEXT("%.0fs"), FMath::CeilToFloat(Entry.TimeRemaining)));
+		Tile.TimeText->SetText(Entry.TimeRemaining < 0.f ? InfiniteTimeText : SecondsLeft);
 
-		CountTexts[Index]->SetVisibility(Entry.Count > 1 ? ESlateVisibility::HitTestInvisible
-														 : ESlateVisibility::Hidden);
-		if (Entry.Count > 1)
-		{
-			CountTexts[Index]->SetText(FText::AsNumber(Entry.Count));
-		}
+		Tile.CountText->SetVisibility(Entry.Count > 1 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+		Tile.CountText->SetText(FText::Format(CountFormat, Entry.Count));
 
 		float const BoostPercent = FMath::RoundToFloat(Entry.BoostBonus * 100.f);
-		BoostTexts[Index]->SetVisibility(BoostPercent == 0.f ? ESlateVisibility::Hidden
-															 : ESlateVisibility::HitTestInvisible);
-		if (BoostPercent != 0.f)
-		{
-			BoostTexts[Index]->SetText(FText::FromString(FString::Printf(TEXT("%+.0f%%"), BoostPercent)));
-		}
+		Tile.ValueText->SetVisibility(BoostPercent == 0.f ? ESlateVisibility::Collapsed
+														  : ESlateVisibility::HitTestInvisible);
+		Tile.ValueText->SetText(FText::FromString(FString::Printf(TEXT("%+.0f%%"), BoostPercent)));
 
-		// Gauge entries fill bottom-to-top with FillRatio in the icon's own colors and shine emissive FullColor once
-		// full; regular effect entries deplete with TimeRemaining.
-		if (GaugeBars[Index])
+		bool const bTimed = Entry.TimeRemaining >= 0.f && Entry.Duration > 0.f;
+		Tile.TimeMeter->SetVisibility(bTimed ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+		if (bTimed)
 		{
-			GaugeBars[Index]->SetPercent(FMath::Clamp(Entry.FillRatio, 0.f, 1.f));
-			GaugeBars[Index]->SetFillColorAndOpacity(
-				Entry.FillRatio >= 1.f ? (Entry.FullColor * GaugeFullEmissiveBoost).CopyWithNewOpacity(1.f)
-									   : FLinearColor::White);
-		}
-		else if (DepletionSweepMIDs[Index])
-		{
-			float const Fill = (Entry.TimeRemaining < 0.f || Entry.Duration <= 0.f)
-									? 0.f
-									: 1.f - FMath::Clamp(Entry.TimeRemaining / Entry.Duration, 0.f, 1.f);
-			DepletionSweepMIDs[Index]->SetScalarParameterValue(GeoMaterialParams::SweepFill, Fill);
+			Tile.TimeMeter->SetFill(FMath::Clamp(Entry.TimeRemaining / Entry.Duration, 0.f, 1.f));
 		}
 	}
 }

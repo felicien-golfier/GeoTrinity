@@ -1,7 +1,7 @@
 """
 Create the menu theme: DA_UITheme (UGeoUITheme) and one UGeoFrameStyle per kind of frame, in /Game/HUD/Style, and name
-the theme in Project Settings > Geo UI. Values are seeded only when an asset is created, so re-running never resets
-what was tuned in the editor; pass reseed=True to rewrite every seeded value.
+the theme in Project Settings > Geo UI. Every value goes through asset_guard.write, so re-running updates what still
+holds a script's value and keeps what was tuned by hand (listed in the log). The input styles are seeded on creation.
 Look: flat geometry on near-black, a near-white line with a violet glow, small squares travelling the outlines.
 Usage: run via MCP execute_script, after import_fonts.py.
 """
@@ -47,9 +47,15 @@ def font(face, size, spacing=0):
     return info
 
 
-def text_style(face, size, color, spacing=0, upper=False):
+def text_style(face, size, color, spacing=0, upper=False, outline=None, outline_size=0):
     style = unreal.GeoTextStyle()
-    style.set_editor_property("font", font(face, size, spacing))
+    info = font(face, size, spacing)
+    if outline is not None:
+        settings = info.get_editor_property("outline_settings")
+        settings.set_editor_property("outline_size", outline_size)
+        settings.set_editor_property("outline_color", outline)
+        info.set_editor_property("outline_settings", settings)
+    style.set_editor_property("font", info)
     style.set_editor_property("color", unreal.SlateColor(specified_color=color))
     style.set_editor_property("transform",
                               unreal.TextTransformPolicy.TO_UPPER if upper else unreal.TextTransformPolicy.NONE)
@@ -133,15 +139,92 @@ FRAME_STYLES = {
         glow_color=srgb("000000", 0.0), active_glow_color=srgb("000000", 0.0), glow_thickness=0.0,
         fill_color=srgb("04040A", .72), active_fill_color=srgb("04040A", .72),
         runner_count=0, active_runner_count=0),
-    # The whole screen behind a menu: night background, faint grid, the arena-sized rail with four runners.
+    # The night background with its faint grid, filling the screen behind the menu and every sub-panel; no line.
+    "DA_Frame_Backdrop": dict(
+        line_color=srgb("000000", 0.0), active_line_color=srgb("000000", 0.0), line_thickness=0.0, corner_cut=0.0,
+        glow_color=srgb("000000", 0.0), active_glow_color=srgb("000000", 0.0), glow_thickness=0.0,
+        fill_color=srgb("04040A", 1.0), active_fill_color=srgb("04040A", 1.0),
+        grid_spacing=48.0, grid_color=srgb("FFFFFF", .025),
+        runner_count=0, active_runner_count=0),
+    # The arena-sized rail framing the top-level menu: night background, faint grid, the arena-sized rail with four runners.
     "DA_Frame_Screen": dict(
         line_color=srgb("B37CFF", .55), active_line_color=srgb("B37CFF", .55), line_thickness=2.0, corner_cut=28.0,
         glow_color=srgb("B37CFF", .3), active_glow_color=srgb("B37CFF", .3), glow_thickness=20.0,
-        fill_color=srgb("04040A", 1.0), active_fill_color=srgb("04040A", 1.0),
-        grid_spacing=48.0, grid_color=srgb("FFFFFF", .025),
+        fill_color=srgb("04040A", 0.0), active_fill_color=srgb("04040A", 0.0),
         runner_count=4, active_runner_count=4, runner_size=8.0, runner_speed=55.0, active_runner_speed=55.0,
         runner_roll=1.0, alternate_hollow_runners=True, runner_color=P["line"], hollow_runner_thickness=1.5),
+    # Ability cards: a faint violet line on a dark well, brightening with two runners while hovered.
+    "DA_Frame_Card": dict(
+        line_color=srgb("B37CFF", .32), active_line_color=srgb("B37CFF", .8), line_thickness=1.0, corner_cut=10.0,
+        glow_color=srgb("B37CFF", 0.0), active_glow_color=srgb("B37CFF", .2), glow_thickness=8.0,
+        fill_color=srgb("04040A", .55), active_fill_color=srgb("B37CFF", .07),
+        runner_count=0, active_runner_count=2, runner_size=5.0, runner_speed=0.0, active_runner_speed=120.0,
+        runner_roll=1.0, alternate_hollow_runners=True, runner_color=P["line"], hollow_runner_thickness=1.2,
+        activation_seconds=.12),
+    # An ability's icon tile: white line in a glow the code tints with the class colour (white glow * class colour).
+    "DA_Frame_IconTile": dict(
+        line_color=srgb("FFFFFF"), active_line_color=srgb("FFFFFF"), line_thickness=2.0, corner_cut=0.0,
+        glow_color=srgb("FFFFFF", .55), active_glow_color=srgb("FFFFFF", .55), glow_thickness=14.0,
+        fill_color=srgb("08060F", .9), active_fill_color=srgb("08060F", .9),
+        runner_count=0, active_runner_count=0),
+    # A key cap: a thin lilac box around the key name.
+    "DA_Frame_KeyCap": dict(
+        line_color=srgb("A895D0"), active_line_color=srgb("A895D0"), line_thickness=1.0, corner_cut=0.0,
+        glow_color=srgb("000000", 0.0), active_glow_color=srgb("000000", 0.0), glow_thickness=0.0,
+        fill_color=srgb("08060F", .88), active_fill_color=srgb("08060F", .88),
+        runner_count=0, active_runner_count=0),
+    # HUD wings (the player card, the boss rail): a bright line in a violet glow on a dark plate.
+    "DA_Frame_Wing": dict(
+        line_color=P["line"], active_line_color=P["line"], line_thickness=2.0, corner_cut=0.0,
+        glow_color=srgb("B37CFF", .45), active_glow_color=srgb("B37CFF", .45), glow_thickness=20.0,
+        fill_color=srgb("080612", .9), active_fill_color=srgb("080612", .9),
+        runner_count=1, active_runner_count=1, runner_size=10.0, runner_speed=60.0, active_runner_speed=60.0,
+        runner_roll=1.0, alternate_hollow_runners=True, runner_color=P["text"], hollow_runner_thickness=2.0),
+    # Smaller HUD panels (the stats): a softer lilac line, a faint glow, no runner.
+    "DA_Frame_HudPanel": dict(
+        line_color=srgb("D9CCF5"), active_line_color=srgb("D9CCF5"), line_thickness=2.0, corner_cut=0.0,
+        glow_color=srgb("B37CFF", .3), active_glow_color=srgb("B37CFF", .3), glow_thickness=14.0,
+        fill_color=srgb("080612", .9), active_fill_color=srgb("080612", .9),
+        runner_count=0, active_runner_count=0),
+    # An ability slot: grey while cooling down; ready (active) it goes white in a glow the code tints with the class.
+    "DA_Frame_AbilitySlot": dict(
+        line_color=srgb("8C7BB0"), active_line_color=srgb("FFFFFF"), line_thickness=2.0, corner_cut=0.0,
+        glow_color=srgb("FFFFFF", 0.0), active_glow_color=srgb("FFFFFF", .6), glow_thickness=18.0,
+        fill_color=srgb("080612", .9), active_fill_color=srgb("080612", .9),
+        runner_count=0, active_runner_count=0, activation_seconds=.12),
+    # A status tile: lilac line, no glow.
+    "DA_Frame_StatusTile": dict(
+        line_color=srgb("D9CCF5"), active_line_color=srgb("D9CCF5"), line_thickness=2.0, corner_cut=0.0,
+        glow_color=srgb("000000", 0.0), active_glow_color=srgb("000000", 0.0), glow_thickness=0.0,
+        fill_color=srgb("080612", .9), active_fill_color=srgb("080612", .9),
+        runner_count=0, active_runner_count=0),
+    # A debuff's status tile: red line in a red glow.
+    "DA_Frame_StatusDebuff": dict(
+        line_color=srgb("FF5A6E"), active_line_color=srgb("FF5A6E"), line_thickness=2.0, corner_cut=0.0,
+        glow_color=srgb("FF5A6E", .5), active_glow_color=srgb("FF5A6E", .5), glow_thickness=10.0,
+        fill_color=srgb("080612", .9), active_fill_color=srgb("080612", .9),
+        runner_count=0, active_runner_count=0),
 }
+
+# How each player class shows in the UI: name, role, shape (sides, turn) and colour.
+CLASS_STYLES = {
+    "TRIANGLE": ("TRIANGLE", "DPS", 3, 0.0, srgb("FFE759")),
+    "CIRCLE": ("CIRCLE", "HEAL", 0, 0.0, srgb("7CF3AA")),
+    "SQUARE": ("SQUARE", "TANK", 4, 45.0, srgb("7CBCFF")),
+}
+
+
+def class_styles():
+    styles = {}
+    for player_class, (name, role, sides, rotation, color) in CLASS_STYLES.items():
+        style = unreal.GeoClassStyle()
+        style.set_editor_property("name", unreal.Text(name))
+        style.set_editor_property("role", unreal.Text(role))
+        style.set_editor_property("sides", sides)
+        style.set_editor_property("rotation", rotation)
+        style.set_editor_property("color", color)
+        styles[getattr(unreal.PlayerClass, player_class)] = style
+    return styles
 
 
 def theme_values():
@@ -152,6 +235,9 @@ def theme_values():
         unreal.GeoTextRole.LABEL: text_style("IBMPlexMono-Medium", 12, P["dim"], 150, upper=True),
         unreal.GeoTextRole.MONO: text_style("IBMPlexMono-Regular", 16, P["body"]),
         unreal.GeoTextRole.BUTTON: text_style("ChakraPetch-SemiBold", 20, P["text"], 200, upper=True),
+        # Over a bar: light text in a dark outline reads on a full fill and on an empty, see-through track alike.
+        unreal.GeoTextRole.OVERLAY: text_style("ChakraPetch-Bold", 24, P["text"], 80, outline=P["night"],
+                                               outline_size=3),
     }
     return text_styles
 
@@ -271,27 +357,42 @@ def name_theme_in_project_settings(theme):
         handle.write(text)
 
 
-def build_theme(reseed=False):
+def build_theme():
+    import importlib
+    import sys
+    folder = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "AI", "Python", "UI")
+    if folder not in sys.path:
+        sys.path.insert(0, folder)
+    import asset_guard
+    asset_guard = importlib.reload(asset_guard)
+
     frames = {}
     for name, values in FRAME_STYLES.items():
-        style, created = create_or_load(f"{STYLE_DIR}/{name}", unreal.GeoFrameStyle)
-        if created or reseed:
-            for key, value in values.items():
-                style.set_editor_property(key, value)
-            unreal.EditorAssetLibrary.save_loaded_asset(style)
+        path = f"{STYLE_DIR}/{name}"
+        style, created = create_or_load(path, unreal.GeoFrameStyle)
+        if created:
+            asset_guard.created(path)
+        for key, value in values.items():
+            asset_guard.write(path, style, key, value)
+        unreal.EditorAssetLibrary.save_loaded_asset(style)
         frames[name] = style
 
     theme, created = create_or_load(THEME_PATH, unreal.GeoUITheme)
-    if created or reseed:
-        theme.set_editor_property("text_styles", theme_values())
-        theme.set_editor_property("default_frame_style", frames["DA_Frame_Panel"])
-        theme.set_editor_property("field_frame_style", frames["DA_Frame_Field"])
+    if created:
+        asset_guard.created(THEME_PATH)
         seed_inputs(theme)
-        unreal.EditorAssetLibrary.save_loaded_asset(theme)
+    asset_guard.write(THEME_PATH, theme, "text_styles", theme_values())
+    asset_guard.write(THEME_PATH, theme, "class_styles", class_styles())
+    asset_guard.write(THEME_PATH, theme, "default_frame_style", frames["DA_Frame_Panel"])
+    asset_guard.write(THEME_PATH, theme, "field_frame_style", frames["DA_Frame_Field"])
+    unreal.EditorAssetLibrary.save_loaded_asset(theme)
 
     name_theme_in_project_settings(theme)
+    kept = asset_guard.report()
+    if kept:
+        unreal.log_warning("ui_theme.py kept hand-tuned values: " + "; ".join(kept))
     return theme
 
 
 if __name__ == "__main__":
-    build_theme(reseed=globals().get("RESEED", False))
+    build_theme()

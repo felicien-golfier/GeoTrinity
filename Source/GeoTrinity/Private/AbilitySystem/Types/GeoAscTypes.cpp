@@ -2,6 +2,8 @@
 
 #include "AbilitySystem/Types/GeoAscTypes.h"
 
+#include "Tool/GeoIcon.h"
+
 namespace
 {
 	/**

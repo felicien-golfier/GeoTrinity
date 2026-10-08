@@ -5,6 +5,7 @@
 #include "AttributeSet.h"
 #include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
+#include "Tool/GeoColor.h"
 
 #include "GeoGemTypes.generated.h"
 
@@ -41,6 +42,14 @@ struct FGeoGemInfo
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	FText DisplayName;
 
+	/** What the gem does, as the menus say it: the stat it changes ("Dash cooldown"), or a Core's whole rule. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	FText Effect;
+
+	/** Its stat family, which the menus draw it in. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	FGeoColorParam Color;
+
 	/** Stat the gem raises; left empty by a gem whose effect is not a stat. Must be one UGeoGemStatsEffect lists. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	FGameplayAttribute Attribute;
@@ -48,9 +57,16 @@ struct FGeoGemInfo
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	EGeoGemOperation Operation = EGeoGemOperation::Add;
 
-	/** What one slotted copy adds, as a fraction: 0.002 is +0.2%. Slotted copies sum. */
+	/** What one slotted copy adds, as a fraction: 0.002 is +0.2%. Slotted copies sum. Also what the menus show for a
+	 * gem whose effect is not a stat yet; 0 on a Core, whose Effect is its rule. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	float MagnitudePerGem = 0.f;
+
+	/** What Count slotted copies add as the menus show it, "+0.67%"; empty for a gem with no magnitude (a Core). */
+	GEOTRINITY_API FText GetMagnitudeText(int32 Count = 1) const;
+
+	/** The effect of Count slotted copies as the menus show it: "Damage +0.67%", or a Core's rule alone. */
+	GEOTRINITY_API FText GetEffectText(int32 Count = 1) const;
 };
 
 /** The gem types of one tier. */

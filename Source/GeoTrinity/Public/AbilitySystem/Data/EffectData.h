@@ -18,6 +18,7 @@ struct FGameplayEffectContextHandle;
 struct FGeoGameplayEffectContext;
 class UGeoAbilitySystemComponent;
 class UGameplayEffect;
+class UGeoIcon;
 
 /**
  * Data asset that holds a reusable array of FEffectData entries.
@@ -197,12 +198,11 @@ struct GEOTRINITY_API FGameplayEffectData : public FEffectData
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "!bInfiniteDuration", EditConditionHides))
 	FScalableFloat Duration;
 
-	/** When set, the HUD status bar shows this icon (texture or material) on the target while the effect is active.
+	/** When set, the HUD status bar shows this icon on the target while the effect is active.
 	 * Carried to the client through FGeoGameplayEffectContext::Icon on this effect's spec only (the shared apply
 	 * context is not touched). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly,
-			  meta = (AllowedClasses = "/Script/Engine.Texture2D,/Script/Engine.MaterialInterface"))
-	TObjectPtr<UObject> Icon;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UGeoIcon> Icon;
 
 	/** When true, an existing active instance of GameplayEffect from the same source on the target is removed before
 	 * applying the new spec, so reapplication refreshes duration and magnitude instead of stacking. GE stacking

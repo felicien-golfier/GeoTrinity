@@ -32,6 +32,7 @@
       3. HKCU Builds, exact name match         covers a GUID-style association.
       4. HKCU Builds, version match            source builds (the normal CI-runner case).
       5. HKLM installs, exact name match       launcher installs (the normal dev-PC case).
+      6. LauncherInstalled.dat, UE_<version>   launcher install never opened, so not in the registry yet.
 
     Source builds are preferred over launcher installs, which differs from Unreal's own resolution (it
     would take the launcher for a "5.7" association). Deliberate: a machine with both went to the trouble
@@ -174,6 +175,21 @@ if (-not $engine) {
             if (Test-EngineRoot $dir) {
                 $engine = $dir
                 $from = "HKLM launcher installs, version '$assoc'"
+            }
+        }
+    }
+
+    # 6. Launcher manifest: an install the editor never opened is not in the registry yet, but the launcher
+    #    lists it in LauncherInstalled.dat.
+    if (-not $engine) {
+        $manifest = Join-Path $env:ProgramData "Epic\UnrealEngineLauncher\LauncherInstalled.dat"
+        if (Test-Path $manifest) {
+            $dir = (Get-Content -Raw -Path $manifest | ConvertFrom-Json).InstallationList |
+                   Where-Object { $_.AppName -eq "UE_$assoc" -and (Test-EngineRoot $_.InstallLocation) } |
+                   Select-Object -First 1 -ExpandProperty InstallLocation
+            if ($dir) {
+                $engine = $dir
+                $from = "launcher manifest, UE_$assoc"
             }
         }
     }

@@ -2,6 +2,23 @@
 
 #include "Gem/GeoGemTypes.h"
 
+FText FGeoGemInfo::GetMagnitudeText(int32 const Count) const
+{
+	if (MagnitudePerGem == 0.f)
+	{
+		return FText::GetEmpty();
+	}
+
+	FNumberFormattingOptions Options;
+	Options.SetAlwaysSign(true).SetMaximumFractionalDigits(2);
+	return FText::Format(INVTEXT("{0}%"), FText::AsNumber(MagnitudePerGem * Count * 100.f, &Options));
+}
+
+FText FGeoGemInfo::GetEffectText(int32 const Count) const
+{
+	return MagnitudePerGem == 0.f ? Effect : FText::Format(INVTEXT("{0} {1}"), Effect, GetMagnitudeText(Count));
+}
+
 TArray<FGeoGemSocket> const& GeoGem::GetSockets()
 {
 	static TArray<FGeoGemSocket> const Sockets = []

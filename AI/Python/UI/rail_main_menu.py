@@ -3,7 +3,8 @@ Lay the main menu out in the Rail look: the screen framed by the arena-sized rai
 the title over the three class shapes, the button column on the left, the player top right, key hints bottom left.
 Every look comes from generic widgets (UGeoFrame, UGeoShape, UGeoText) and the style assets; this only places them.
 Everything but the button column and the player sits in "MenuDecor", which the menu hides while a sub-panel is open.
-Usage: run via MCP execute_script, after ui_theme.py and rail_style.py. Re-run-safe: every added widget is rebuilt.
+Usage: run via MCP execute_script, after ui_theme.py and rail_style.py. Rebuilds whole widgets, so it refuses an existing asset
+(asset_guard.legacy_rebuild) until converted to asset_guard.write.
 """
 import unreal
 
@@ -80,19 +81,24 @@ def text(widget, role, label):
     widget.set_editor_property("text", unreal.Text(label))
 
 
-def build_screen_frame(wbp):
-    """The arena-sized rail framing the whole screen, behind the top level and every sub-panel alike."""
-    frame, _ = add(wbp, unreal.GeoFrame, "ScreenFrame", CANVAS, 0)
-    frame.set_editor_property("frame_style", unreal.load_asset(f"{STYLE_DIR}/DA_Frame_Screen"))
-    frame.set_editor_property("visibility", unreal.SlateVisibility.HIT_TEST_INVISIBLE)
-    canvas_place(frame, (0, 0), (1, 1), (0, 0), (SCREEN_MARGIN,) * 4)
+def build_backdrop(wbp):
+    """The night background and its grid, behind the top level and every sub-panel alike."""
+    backdrop, _ = add(wbp, unreal.GeoFrame, "ScreenBackdrop", CANVAS, 0)
+    backdrop.set_editor_property("frame_style", unreal.load_asset(f"{STYLE_DIR}/DA_Frame_Backdrop"))
+    backdrop.set_editor_property("visibility", unreal.SlateVisibility.HIT_TEST_INVISIBLE)
+    canvas_place(backdrop, (0, 0), (1, 1), (0, 0), (0, 0, 0, 0))
 
 
 def build_decor(wbp):
-    """MenuDecor: a full-screen canvas over the screen frame holding the hex shell, the title and the hints."""
+    """MenuDecor: a full-screen canvas holding the arena-sized rail, the hex shell, the title and the hints. It gives
+    way to a sub-panel, so a panel's own frame is never drawn inside the rail."""
     decor, slot = add(wbp, unreal.CanvasPanel, "MenuDecor", CANVAS, 1)
     decor.set_editor_property("visibility", unreal.SlateVisibility.HIT_TEST_INVISIBLE)
     canvas_place(decor, (0, 0), (1, 1), (0, 0), (0, 0, 0, 0))
+
+    frame, _ = add(wbp, unreal.GeoFrame, "ScreenFrame", "MenuDecor")
+    frame.set_editor_property("frame_style", unreal.load_asset(f"{STYLE_DIR}/DA_Frame_Screen"))
+    canvas_place(frame, (0, 0), (1, 1), (0, 0), (SCREEN_MARGIN,) * 4)
 
 
     hex_shell, _ = add(wbp, unreal.Overlay, "HexShell", "MenuDecor")
@@ -156,13 +162,13 @@ def place_player(wbp):
 
 
 def build_main_menu():
-    wbp = unreal.load_asset(MAIN_MENU_PATH)
+    wbp = RAIL_STYLE["asset_guard"].legacy_rebuild(MAIN_MENU_PATH)
     if UTIL.find_widget(wbp, "PlayerBox") and UTIL.find_widget(wbp, "PlayerBox").get_parent().get_name() == "MenuDecor":
         UTIL.attach_widget(wbp, CANVAS, "PlayerBox")
-    for name in ["MenuDecor", "ScreenFrame"]:
+    for name in ["MenuDecor", "ScreenFrame", "ScreenBackdrop"]:
         if UTIL.find_widget(wbp, name):
             UTIL.remove_widget(wbp, name)
-    build_screen_frame(wbp)
+    build_backdrop(wbp)
     build_decor(wbp)
     place_buttons(wbp)
     place_player(wbp)

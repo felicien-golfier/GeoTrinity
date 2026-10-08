@@ -36,6 +36,10 @@ public:
 	/** Turns hover and focus activation on or off, for a row that is only read rather than clicked. */
 	void SetActivateOnHoverAndFocus(bool bInActivate);
 
+	/** Multiplies the style's glow colours, so one style glows in each class's colour. */
+	UFUNCTION(BlueprintCallable, Category = "GeoFrame")
+	void SetGlowTint(FLinearColor const& InGlowTint);
+
 	virtual void SynchronizeProperties() override;
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
@@ -58,6 +62,10 @@ protected:
 	/** Active whatever the hover and focus. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoFrame")
 	bool bActive = false;
+
+	/** Multiplies the style's glow colours; white keeps the style's own. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoFrame")
+	FLinearColor GlowTint = FLinearColor::White;
 
 private:
 	TSharedPtr<SGeoFrame> MyFrame;

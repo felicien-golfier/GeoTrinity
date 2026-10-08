@@ -28,11 +28,12 @@ public:
 protected:
 	/** Sets the camera view target, input mode, and activates the gameplay mapping context; seeds key bindings for the active keyboard layout on the first run. */
 	virtual void ReceivedPlayer() override;
-	/** Binds ToggleMenuAction to HandleToggleMenu via the Enhanced Input component. */
+	/** Binds ToggleMenuAction to HandleToggleMenu and ToggleStatsDetailAction to OnToggleStatsDetail via the Enhanced
+	 * Input component. */
 	virtual void SetupInputComponent() override;
 
 #if !UE_BUILD_SHIPPING
-	/** Shows the on-screen ping readout when Geo.ShowPing is set; ticks UGeoCombatStatsSubsystem when Geo.ShowCombatStats is enabled. */
+	/** Shows the on-screen ping readout when Geo.ShowPing is set. */
 	virtual void Tick(float DeltaTime) override;
 #endif
 
@@ -56,6 +57,9 @@ public:
 	/** Returns true while the pause menu is on screen (gameplay input suspended). */
 	bool IsPauseMenuOpen() const;
 
+	/** ToggleStatsDetailAction was pressed: the HUD's stat counter switches between its short and its full table. */
+	FSimpleMulticastDelegate OnToggleStatsDetail;
+
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
 	TSoftObjectPtr<UInputMappingContext> InputMapping;
 
@@ -66,9 +70,17 @@ public:
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
 	TSoftObjectPtr<UInputAction> ToggleMenuAction;
 
+	/** Broadcasts OnToggleStatsDetail; optional. */
+	UPROPERTY(EditAnywhere, Category = "GeoInput")
+	TSoftObjectPtr<UInputAction> ToggleStatsDetailAction;
+
 	// Engine base so gameplay never names the UI type; concrete UGeoPauseMenuWidget set in Blueprint.
 	UPROPERTY(EditAnywhere, Category = "GeoUI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
+
+	/** Viewport layer of the pause menu: above every HUD layer (damage numbers 5, boss bar 10), so nothing draws over it. */
+	UPROPERTY(EditAnywhere, Category = "GeoUI", meta = (ClampMin = "0"))
+	int32 PauseMenuZOrder = 100;
 
 private:
 	UPROPERTY()

@@ -93,7 +93,10 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void RemoveWidget(UWidgetBlueprint* WidgetBlueprint, FName Name);
 
-	/** Compiles and saves the widget blueprint. Call once after a batch of Construct/Attach/Remove + Python slot edits. */
+	/**
+	 * Compiles and saves the widget blueprint. Call once after a batch of Construct/Attach/Remove + Python slot edits.
+	 * First lays out every stack of menu buttons (see SpaceMenuButtons), so no builder can leave one uneven.
+	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void CommitTree(UWidgetBlueprint* WidgetBlueprint);
 
@@ -105,6 +108,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static UWidget* FindWidget(UWidgetBlueprint* WidgetBlueprint, FName Name);
+
+	/**
+	 * Where the last frame painted a live widget, in desktop pixels (min = top left, max = bottom right); empty for one
+	 * never painted. Script cannot read an FGeometry itself: none of its members are reflected.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "GeoTrinity|Editor")
+	static FBox2D GetPaintedRect(UWidget* Widget);
 
 	/**
 	 * Puts the existing widget ContentName into the named slot SlotName of the UserWidget HostName — the one tree
@@ -191,6 +201,17 @@ public:
 
 	/** Adds Child to Overlay as a fill/fill slot (covers the whole overlay rect). Returns its slot (null on failure). */
 	static UOverlaySlot* AddFillChildToOverlay(UOverlay* Overlay, UWidget* Child);
+
+	/**
+	 * Spaces the UGeoMenuButtons of every vertical and horizontal box in Tree by the theme's MenuButtonGap: each button
+	 * after the first of its box gets the gap on its leading side and none on the trailing side of the one before. The
+	 * first button's leading side and the last one's trailing side keep their padding, so the stack still sits where it
+	 * was placed.
+	 */
+	static void SpaceMenuButtons(UWidgetTree* Tree);
+
+	/** Sets the leading (top or left) or trailing (bottom or right) padding of a vertical or horizontal box slot. */
+	static void SetStackPadding(UPanelSlot* Slot, bool bLeading, float Padding);
 
 private:
 	static void LogWidget(UWidget* Widget, int32 Depth);

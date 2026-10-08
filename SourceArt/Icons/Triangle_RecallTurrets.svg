@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="AllyDamage" fill="none" stroke="#F4EEFF" stroke-width="2">
+  <polygon points="32,4 41,20 23,20"/>
+  <line x1="27" y1="24" x2="10" y2="35" stroke-dasharray="3 3" stroke-opacity=".6"/>
+  <polygon points="4,39 9,29 14,37" fill="#F4EEFF"/>
+</svg>

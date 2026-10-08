@@ -22,10 +22,12 @@ enum class EGeoVolumeChannel : uint8
 };
 ENUM_RANGE_BY_FIRST_AND_LAST(EGeoVolumeChannel, EGeoVolumeChannel::General, EGeoVolumeChannel::Interface);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FGeoShowCombatStatsChangedSignature, bool /*bShow*/);
+
 /**
  * Player-facing settings saved to GameUserSettings.ini: the couch-coop device choice (whether the first gamepad
- * drives a second local player, or shares player 1 with the keyboard and mouse, see UGeoGameViewportClient) and the
- * volume of each EGeoVolumeChannel.
+ * drives a second local player, or shares player 1 with the keyboard and mouse, see UGeoGameViewportClient), the
+ * volume of each EGeoVolumeChannel and what the HUD shows.
  */
 UCLASS()
 class GEOTRINITY_API UGeoGameUserSettings : public UGameUserSettings
@@ -54,6 +56,15 @@ public:
 	 */
 	void ApplyVolumes(FAudioDevice& AudioDevice) const;
 
+	/** Returns true when the HUD shows the combat stats panel. */
+	bool ShowCombatStats() const { return bShowCombatStats; }
+
+	/** Sets the value, persists it and broadcasts OnShowCombatStatsChanged. */
+	void SetShowCombatStats(bool bShow);
+
+	/** Fires after SetShowCombatStats, with the new value. */
+	FGeoShowCombatStatsChangedSignature OnShowCombatStatsChanged;
+
 private:
 	UPROPERTY(Config)
 	bool bUseFirstGamepadForSecondPlayer = false;
@@ -64,4 +75,7 @@ private:
 											  {EGeoVolumeChannel::Effects, 1.f},
 											  {EGeoVolumeChannel::Music, 1.f},
 											  {EGeoVolumeChannel::Interface, 1.f}};
+
+	UPROPERTY(Config)
+	bool bShowCombatStats = true;
 };

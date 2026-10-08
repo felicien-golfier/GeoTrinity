@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="MoveSpeed">
+  <g fill="none" stroke="#FFFFFF" stroke-width="4">
+  <polyline points="6,6 20,22 6,38" stroke-opacity=".5"/>
+  <polyline points="22,6 36,22 22,38"/>
+  </g>
+</svg>

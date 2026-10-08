@@ -39,3 +39,12 @@ FGeoTextStyle const* UGeoUITheme::FindTextStyle(EGeoTextRole const Role) const
 			   *UEnum::GetValueAsString(Role));
 	return Style;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+FGeoClassStyle const* UGeoUITheme::FindClassStyle(EPlayerClass const PlayerClass) const
+{
+	FGeoClassStyle const* Style = ClassStyles.Find(PlayerClass);
+	ensureMsgf(Style, TEXT("%hs: %s defines no %s class style"), __FUNCTION__, *GetName(),
+			   *UEnum::GetValueAsString(PlayerClass));
+	return Style;
+}

@@ -67,6 +67,15 @@ bool UGeoRecallTurretAbility::CanActivateAbility(FGameplayAbilitySpecHandle cons
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+bool UGeoRecallTurretAbility::IsBlinkRecallReady(UAbilitySystemComponent const& ASC) const
+{
+	FGameplayAbilityActorInfo const* ActorInfo = ASC.AbilityActorInfo.Get();
+	return ActorInfo && GetCooldownTimeRemaining(ActorInfo) <= 0.f
+		&& GetActiveTurrets(ActorInfo->AvatarActor.Get())
+			   .ContainsByPredicate([](AGeoTurret const* Turret) { return Turret->IsBlinking(); });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 TArray<AGeoTurret*> UGeoRecallTurretAbility::GetActiveTurrets(AActor const* Avatar) const
 {
 	TArray<AGeoTurret*> Turrets;

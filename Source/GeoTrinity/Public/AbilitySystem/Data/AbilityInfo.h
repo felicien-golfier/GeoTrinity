@@ -11,7 +11,15 @@
 
 
 class UGameplayAbility;
+class UGeoIcon;
 class UInputAction;
+
+/** One cell of an ability's stat grid: what is measured and its resolved value. */
+struct FGeoAbilityStat
+{
+	FString Label;
+	FString Value;
+};
 
 /** Base ability descriptor shared by both player-facing and generic (non-player) abilities. */
 USTRUCT(BlueprintType)
@@ -44,8 +52,13 @@ struct FGameplayAbilityInfo
 	 * remaining ammo). A {Token:%} / {Token:+%} suffix formats the scalar as a percentage / bonus percentage;
 	 * suffixes combine in any order. With bRichTextValues, every resolved value is wrapped in a <Value>...</>
 	 * rich-text style tag so the UI can color it. Unresolved tokens are kept as-is and logged.
+	 * Stat lines ("| LABEL | value") are left out: they are GetResolvedStats'.
 	 */
 	GEOTRINITY_API FString GetResolvedDescription(int32 AbilityLevel, bool bRichTextValues) const;
+
+	/** The description's stat lines, "| LABEL | value" each, in order; each value's tokens resolved as in
+	 * GetResolvedDescription. Empty when the description has none. */
+	GEOTRINITY_API TArray<FGeoAbilityStat> GetResolvedStats(int32 AbilityLevel, bool bRichTextValues) const;
 };
 
 /** Extends FGameplayAbilityInfo with player-specific data: input binding, class filter, and cosmetic icon. */
@@ -69,7 +82,7 @@ struct FPlayersGameplayAbilityInfo : public FGameplayAbilityInfo
 	bool bGiveAtStartup = true;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCosmetic")
-	TObjectPtr<UTexture2D const> AbilityIcon{nullptr};
+	TObjectPtr<UGeoIcon const> AbilityIcon{nullptr};
 
 	/** When true, the ability bar slot shows a remaining-deployable count badge (Wall/Turret abilities). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCosmetic")

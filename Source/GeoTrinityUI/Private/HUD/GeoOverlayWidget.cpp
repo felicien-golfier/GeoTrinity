@@ -8,6 +8,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "HUD/GeoAbilityBarWidget.h"
+#include "HUD/GeoPlayerCardWidget.h"
 #include "HUD/GeoStatusBarWidget.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -22,14 +23,18 @@ void UGeoOverlayWidget::BuildAbilityBar(AGeoHUD* GeoHUD, APlayableCharacter* Pla
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoOverlayWidget::InitStatusBar(AGeoHUD* GeoHUD)
+void UGeoOverlayWidget::InitPanels(AGeoHUD* GeoHUD, AGeoPlayerState* PlayerState)
 {
-	if (!ensureMsgf(StatusBar, TEXT("UGeoOverlayWidget::InitStatusBar — StatusBar is not bound on %s"), *GetName()))
+	if (!ensureMsgf(StatusBar, TEXT("UGeoOverlayWidget::InitPanels — StatusBar is not bound on %s"), *GetName()))
 	{
 		return;
 	}
 
 	StatusBar->InitStatusBar(GeoHUD);
+	if (PlayerCard)
+	{
+		PlayerCard->InitForPlayer(PlayerState);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

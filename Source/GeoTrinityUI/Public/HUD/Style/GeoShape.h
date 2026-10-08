@@ -9,6 +9,7 @@
 
 class SGeoShape;
 class UGeoFrameStyle;
+struct FGeoClassStyle;
 
 /**
  * A flat regular polygon or circle, hollow or solid, optionally turning: the class shapes, the hex shells of the main
@@ -21,6 +22,9 @@ class GEOTRINITYUI_API UGeoShape : public UWidget
 	GENERATED_BODY()
 
 public:
+	/** Becomes the solid class shape of ClassStyle, in its colour. */
+	void SetClassShape(FGeoClassStyle const& ClassStyle);
+
 	virtual void SynchronizeProperties() override;
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 

@@ -57,20 +57,24 @@ struct FActorCombatStats
 
 /**
  * World subsystem that tracks per-player damage and healing and computes DPS / HPS (exponentially
- * smoothed current rate, biggest burst, and whole-combat average) for the debug display and for the totals
+ * smoothed current rate, biggest burst, and whole-combat average) for the HUD stats panel and for the totals
  * the leaderboard records of a finished attempt. State is a fixed handful of floats per player — no per-event
  * storage. Stats reset when a fight starts (match InProgress);
  * when it ends they are dropped and the last pushed values stay displayed on the player states.
- * Server-only; not replicated.
+ * Server-only; not replicated. Ticks itself, once per frame, to push the stats.
  */
 UCLASS()
-class GEOTRINITY_API UGeoCombatStatsSubsystem : public UWorldSubsystem
+class GEOTRINITY_API UGeoCombatStatsSubsystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
 	/** Server-only: subscribes to match state changes so stats reset when a fight starts and are freed when it ends. */
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+	/** Server-only: calls ComputePlayerStats, so every player's stats are pushed once per frame. */
+	virtual void Tick(float DeltaTime) override;
+	/** Required by UTickableWorldSubsystem; identifies this subsystem in Unreal's profiler stats. */
+	virtual TStatId GetStatId() const override;
 
 	/** Records an amount of damage dealt by Source and refreshes the displayed stats. Opens a new session when none is
 	 *  running: out of a match, combat starts when a player hits something, e.g. a training dummy. */
@@ -83,18 +87,13 @@ public:
 	void ReportHealingDealt(AGeoPlayerState* Source, float Amount);
 	/**
 	 * Decays the smoothed rates to CurrentTime and pushes updated stats to each player state.
-	 * Ticked every frame; no-op while no combat session is running (StatsPerActor empty, e.g. right
+	 * Called by Tick every frame; no-op while no combat session is running (StatsPerActor empty, e.g. right
 	 * after a fight ends), which keeps the last fight's values frozen on the display.
 	 * Also called as a fight ends — from here before the stats are dropped, and from AGeoArena::RecordAttempt
 	 * before it reads them — so the values frozen on the player states are that fight's final tally whichever of
 	 * the two match-state handlers runs first, and whether or not anything was ticking it.
 	 */
 	void ComputePlayerStats(float CurrentTime);
-
-#if !UE_BUILD_SHIPPING
-	/** Returns true when the in-game combat stats debug overlay should be rendered. */
-	static bool IsDebugDisplayEnabled();
-#endif
 
 private:
 	/**

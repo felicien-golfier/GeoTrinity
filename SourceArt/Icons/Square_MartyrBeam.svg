@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="DamageReduction" fill="none" stroke="#F4EEFF" stroke-width="2">
+  <rect x="2" y="17" width="10" height="10" fill="#F4EEFF"/>
+  <line x1="14" y1="16" x2="42" y2="9"/>
+  <line x1="14" y1="28" x2="42" y2="35"/>
+  <circle cx="34" cy="22" r="4"/>
+  <polyline points="25,17 20,22 25,27" stroke-opacity=".6"/>
+</svg>

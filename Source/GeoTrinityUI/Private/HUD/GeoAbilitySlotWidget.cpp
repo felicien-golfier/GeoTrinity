@@ -4,11 +4,13 @@
 
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "EnhancedInputSubsystems.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Tool/GeoNiagaraParams.h"
+#include "GameClasses/GeoPlayerState.h"
+#include "HUD/Style/GeoFrame.h"
+#include "HUD/Style/GeoIconImage.h"
+#include "HUD/Style/GeoMeter.h"
+#include "HUD/Style/GeoUITheme.h"
 
 namespace
 {
@@ -31,13 +33,16 @@ void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntrie
 	DisplayedIndex = 0;
 	HUD = InHUD;
 
-	if (CooldownSweep && CooldownSweepMaterial)
+	AGeoPlayerState const* PlayerState = GetOwningPlayerState<AGeoPlayerState>();
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	FGeoClassStyle const* ClassStyle =
+		PlayerState && Theme ? Theme->FindClassStyle(PlayerState->GetPlayerClass()) : nullptr;
+	if (SlotFrame && ClassStyle)
 	{
-		CooldownSweepMID = UMaterialInstanceDynamic::Create(CooldownSweepMaterial, this);
-		CooldownSweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, 0.f);
-		CooldownSweep->SetBrushFromMaterial(CooldownSweepMID);
+		SlotFrame->SetGlowTint(ClassStyle->Color);
 	}
 
+	SetCooldownFill(0.f);
 	SetCountdownVisible(false);
 	ApplyDisplayedEntry();
 	RefreshKeyLabel();
@@ -70,9 +75,9 @@ void UGeoAbilitySlotWidget::SelectDisplayedEntry()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySlotWidget::ApplyDisplayedEntry()
 {
-	if (Icon && DisplayedEntry().Icon)
+	if (Icon)
 	{
-		Icon->SetBrushFromTexture(const_cast<UTexture2D*>(DisplayedEntry().Icon.Get()));
+		Icon->SetIcon(DisplayedEntry().Icon);
 	}
 	if (CountText)
 	{
@@ -89,6 +94,19 @@ void UGeoAbilitySlotWidget::SetCountdownVisible(bool const bVisible)
 	if (CountdownText && CountdownText->GetVisibility() != Target)
 	{
 		CountdownText->SetVisibility(Target);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::SetCooldownFill(float const Fill)
+{
+	if (CooldownMeter)
+	{
+		CooldownMeter->SetFill(Fill);
+	}
+	if (SlotFrame)
+	{
+		SlotFrame->SetActive(Fill <= 0.f);
 	}
 }
 
@@ -168,10 +186,7 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 	// takes over depleting it once the ability ends; an active ability with no cooldown stays grayed until it ends.
 	if (Remaining <= 0.f && HUD->IsAbilityActive(AbilityTag) && !IsAutomaticFireAbility(AbilityTag))
 	{
-		if (CooldownSweepMID)
-		{
-			CooldownSweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, 1.f);
-		}
+		SetCooldownFill(1.f);
 		SetCountdownVisible(false);
 		return;
 	}
@@ -179,21 +194,15 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 	// Ability is ready: clear the countdown text and the sweep fill. Both are normalized independently — the sweep
 	// can be left pinned full by the active branch above (which hides the countdown without filling it), so gating the
 	// sweep clear on the countdown's visibility would strand the fill at 1.0 until another ability drove a real
-	// cooldown. The SetScalarParameterValue is a no-op when the value is unchanged, so idle slots stay cheap.
+	// cooldown. Setting an unchanged fill is a no-op, so idle slots stay cheap.
 	if (Remaining <= 0.f)
 	{
 		SetCountdownVisible(false);
-		if (CooldownSweepMID)
-		{
-			CooldownSweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, 0.f);
-		}
+		SetCooldownFill(0.f);
 		return;
 	}
 
-	if (CooldownSweepMID && Duration > 0.f)
-	{
-		CooldownSweepMID->SetScalarParameterValue(GeoMaterialParams::SweepFill, Remaining / Duration);
-	}
+	SetCooldownFill(Duration > 0.f ? Remaining / Duration : 1.f);
 
 	SetCountdownVisible(true);
 	if (CountdownText)

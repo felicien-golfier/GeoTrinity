@@ -32,6 +32,11 @@ class GEOTRINITY_API UGeoRecallTurretAbility : public UGeoGameplayAbility
 		bool bWasBlinking;
 	};
 
+public:
+	/** Returns whether a recall now would pull back a blinking turret for the bonus: one of ASC's turrets is blinking
+	 * and the recall is off cooldown. Read by the HUD's class frame. */
+	bool IsBlinkRecallReady(UAbilitySystemComponent const& ASC) const;
+
 protected:
 	/**
 	 * Returns the ASCs of interactable agents lying on the turret-to-player line (LineHalfWidth wide).

@@ -26,7 +26,7 @@ top of each file.
 
 | Script | Purpose |
 |---|---|
-| `ability_info_icons.py` | Normalise the catalog's player entries — deploy-count flag, icon fallback |
+| `ability_info_icons.py` | Normalise the catalog's player entries — deploy-count flag |
 | `ability_tags.py` | Read or re-set the asset tag container on an ability Blueprint |
 | `boss_behaviour_trees.py` | Split the boss StateTrees into the shared base and one behaviour tree per boss |
 | `deploy_target_cue.py` | The deploy landing marker cue — ring plane on an `AGeoDeployTargetCue` Blueprint |
@@ -193,6 +193,7 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 | `couch_coop_debug.py` | Dump couch-coop input ownership from a running session |
 | `pie_drive_menu_ui.py` | Drive live menu widgets without simulating input |
 | `pie_inject_input.py` | Inject input actions into a session and measure the gameplay result |
+| `pie_layout_audit.py` | List the UI faults on screen in a session: texts drawn over each other, widgets spilling out of their area — run after opening each page |
 | `run_via_bridge.py` | Host-side: run an editor script file over the bridge's HTTP route and print OK or its traceback |
 | `vfx_editor_preview.py` | Set up the editor world for the level viewport to judge — preview systems, collection values, the camera |
 
@@ -200,10 +201,16 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 
 | Script | Purpose |
 |---|---|
-| `ability_bar.py` | Ability bar pipeline — cooldown sweep material, slot widget, bar widget |
+| `ability_bar.py` | Ability bar pipeline — cooldown sweep material, slot widget, bar widget (legacy: refuses existing assets) |
+| `ability_detail.py` | The drawer a picked ability card slides in from the right (`WBP_AbilityDetail`: header, clip placeholder, description, stat grid, previous/next) and its scrim on the abilities page |
+| `ability_page.py` | Abilities page in the Rail look: rich-text style tables, `WBP_AbilityCard`, the page's header and card grid (creating the tables shows a missing-fields message: press OK) |
+| `asset_guard.py` | The never-overwrite-a-hand-edit rule: `write` sets a value only while it still holds what a script last wrote (`asset_values.json`), `earlier=` names values older scripts wrote before the ledger, `report` lists values kept by hand, `legacy_rebuild` refuses existing assets to whole-widget rebuilders |
+| `character_sheet.py` | Character sheet: level and XP meters, `WBP_AbilityRow`, `WBP_CharacterSheet`, its button and panel in the pause menu |
 | `charge_beam_gauge.py` | Create a widget Blueprint, build its tree, wire it to a component |
 | `crosshair_cursor.py` | Crosshair software cursor, bound to the cursor slot |
 | `group_widgets.py` | Wrap existing canvas children into one panel without moving them |
+| `interface_settings.py` | Interface settings panel (`WBP_InterfaceSettings`, the Show combat stats checkbox), its button and panel in `WBP_Settings` |
+| `import_icons.py` | Vector icons (`DA_Icon_*`) from the SVGs in `SourceArt/Icons`, set on every ability, the sweet-spot gauge and the effects in `EFFECT_ICONS`; the slot's Icon becomes a `GeoIconImage` |
 | `import_fonts.py` | Import the menu fonts from `SourceArt/Fonts` as Font Face + Font pairs (answer the import prompt Yes) |
 | `leaderboard_menu.py` | Leaderboard widget on the shared list frame, its main-menu entry and the fight timer beside the boss bar — runs after `list_panel.py` |
 | `list_panel.py` | The frame every full-screen list wears, with the server browser re-rooted onto it — runs after `list_row.py` |
@@ -215,8 +222,10 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 | `rail_style.py` | Shared widgets on frames (button, list row, list panel) plus the toolkit the other Rail scripts import: swap a widget for its themed class keeping name, slot and values, wrap it in a frame, reload a Blueprint whose graph read a swapped widget |
 | `rail_sub_panels.py` | Every sub-panel in the Rail look: themed texts and inputs, field and panel frames, pause scrim and title |
 | `second_player_gamepad_toggle.py` | The couch-coop gamepad row on the key-bindings widget |
-| `ui_theme.py` | `DA_UITheme` and the frame style assets, seeded only when created (or with `RESEED`), named in Project Settings |
+| `space_menu_buttons.py` | Re-commit every HUD widget whose menu buttons sit unevenly, so `commit_tree` spaces them by the theme's `MenuButtonGap` |
+| `ui_theme.py` | `DA_UITheme` and every frame style asset, written through `asset_guard`, named in Project Settings |
 | `volume_sliders.py` | The four labelled volume sliders of the sound settings widget |
+| `wings_hud.py` | In-game HUD in the Wings look: meter styles, player wing (name shrinks to fit), team list, stats panel (every combat stat), boss rail, framed ability slots and status tiles, placed in `WBP_MainOverlay` |
 
 ## Video
 

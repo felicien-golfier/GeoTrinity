@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="AllyDamage" fill="none" stroke="#F4EEFF" stroke-width="2">
+  <circle cx="5" cy="39" r="2" fill="#F4EEFF" stroke="none"/>
+  <path d="M5 39 Q8 22 22 26" stroke-dasharray="3 3" stroke-opacity=".6"/>
+  <polygon points="33,8 42,26 24,26"/>
+  <line x1="33" y1="16" x2="33" y2="4"/>
+</svg>

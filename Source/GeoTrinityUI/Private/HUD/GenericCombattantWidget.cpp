@@ -9,6 +9,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/GeoHUD.h"
 #include "HUD/HudFunctionLibrary.h"
+#include "HUD/Style/GeoMeter.h"
 
 // Tint the whole bar drops to once its owner has no life left.
 static FLinearColor const DeadTint{0.35f, 0.35f, 0.35f, 1.f};
@@ -89,22 +90,38 @@ void UGenericCombattantWidget::RefreshShield()
 	}
 	float const MaxHealth = OwnerASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
 	float const Shield = OwnerASC->GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute());
-	UpdateShieldRatio(MaxHealth > 0.f ? Shield / MaxHealth : 0.f);
+	float const ShieldRatio = MaxHealth > 0.f ? Shield / MaxHealth : 0.f;
+	UpdateShieldRatio(ShieldRatio);
+	if (HealthMeter)
+	{
+		HealthMeter->SetOverhang(ShieldRatio);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGenericCombattantWidget::RefreshStats()
 {
+	float HealthRatio = 1.f;
 	if (OwnerASC.IsValid())
 	{
-		UpdateHealthRatio(UHudFunctionLibrary::GetHealthRatio(OwnerASC.Get()));
+		HealthRatio = UHudFunctionLibrary::GetHealthRatio(OwnerASC.Get());
 	}
 	else
 	{
 		UE_LOG(LogGeoTrinity, Warning,
 			   TEXT("Showing UI stats with default values, probably not ideal. Please fix missing OwnerASC in %s"),
 			   *GetName());
-		UpdateHealthRatio(1.f);
+	}
+	// The meter and percent live outside UpdateHealthRatio, which a Blueprint may override without calling its parent.
+	UpdateHealthRatio(HealthRatio);
+	if (HealthMeter)
+	{
+		HealthMeter->SetFill(HealthRatio);
+	}
+	if (HealthPercentText)
+	{
+		HealthPercentText->SetText(
+			FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(HealthRatio * 100.f))));
 	}
 	RefreshShield();
 	UpdateHealthBarVisibility();

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="HealBoost">
+  <circle cx="22" cy="22" r="12" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+  <circle cx="22" cy="22" r="5" fill="#FFFFFF"/>
+  <polygon points="22,1 17,8 27,8" fill="#FFFFFF"/>
+  <polygon points="22,43 17,36 27,36" fill="#FFFFFF"/>
+  <polygon points="1,22 8,17 8,27" fill="#FFFFFF"/>
+  <polygon points="43,22 36,17 36,27" fill="#FFFFFF"/>
+</svg>

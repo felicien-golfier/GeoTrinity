@@ -430,6 +430,9 @@ public:
 	 * at 0, while a count (health, ammo) has no percentage to show.
 	 */
 	static float GetEffectBoostBonus(UAbilitySystemComponent const& ASC, FGameplayEffectSpec const& Spec);
+
+	/** Whether Spec was applied by an actor hostile to ASC's avatar: a debuff, as the status bar marks it. */
+	static bool IsEffectFromHostile(UAbilitySystemComponent const& ASC, FGameplayEffectSpec const& Spec);
 };
 
 using GeoASLib = UGeoAbilitySystemLibrary;

@@ -4,17 +4,14 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
-#include "Tool/GeoColor.h"
 
 #include "GeoSweetSpotChargePassiveAbility.generated.h"
-
-class UTexture2D;
 
 /**
  * Passive ability for the Circle player.
  * Listens to OnHealProvided on the owner's ASC (server): every heal provided accumulates into the HealCharge attribute
- * (capped at HealRequiredForFullCharge) while the HUD status-bar gauge fills bottom-to-top. Once the cap is reached
- * the gauge is full (shining GaugeFullColor) and the next charge-beam sweet-spot release adds
+ * (capped at HealRequiredForFullCharge) while the HUD's class ring around the player's shape fills. Once the cap is
+ * reached the gauge is full and the next charge-beam sweet-spot release adds
  * GetHealsToDamageMultiplier to its damage multiplier: a boost lerped from EdgeDamageMultiplierBoost to
  * CenterDamageMultiplierBoost by how close the release lands to the sweet-spot center. The release then consumes the
  * gauge (UGeoChargeBeamAbility::DealDamage → ConsumeGauge).
@@ -38,11 +35,6 @@ public:
 
 	/** Zeroes HealCharge, so the gauge starts charging from empty again. Server only. */
 	void ConsumeGauge(UAbilitySystemComponent& ASC) const;
-
-	/** Returns the HUD status-bar icon texture for this passive's gauge. */
-	UTexture2D* GetGaugeIcon() const { return GaugeIcon; }
-	/** Returns the color the status-bar icon shines when the gauge is full. */
-	FLinearColor GetGaugeFullColor() const { return GaugeFullColor.GetColor(1.f); }
 
 private:
 	/** Binds OnHealProvidedCallback to the owner ASC's OnHealProvided delegate to begin accumulating gauge charge. */
@@ -70,11 +62,4 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.0"))
 	float CenterDamageMultiplierBoost = 15.f;
-
-	// Icon shown in the HUD status bar; fills with the gauge in its own colors and shines GaugeFullColor when full.
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UTexture2D> GaugeIcon;
-
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility")
-	FGeoColorParam GaugeFullColor{FLinearColor(1.f, 0.85f, 0.2f)};
 };

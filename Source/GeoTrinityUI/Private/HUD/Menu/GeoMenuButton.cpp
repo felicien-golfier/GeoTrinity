@@ -32,6 +32,12 @@ UWidget* UGeoMenuButton::GetInitialFocusWidget() const
 	return ButtonWidget;
 }
 
+void UGeoMenuButton::SetLabel(FText const& InLabel)
+{
+	Label = InLabel;
+	ApplyStyle();
+}
+
 void UGeoMenuButton::ApplyStyle()
 {
 	if (ButtonText)

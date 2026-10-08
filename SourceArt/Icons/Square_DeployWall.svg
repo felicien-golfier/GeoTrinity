@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="DeployableBlockingEnemies" fill="none" stroke="#F4EEFF" stroke-width="2">
+  <circle cx="5" cy="39" r="2" fill="#F4EEFF" stroke="none"/>
+  <path d="M5 39 Q7 26 18 22" stroke-dasharray="3 3" stroke-opacity=".6"/>
+  <rect x="12" y="8" width="9" height="9"/>
+  <rect x="23" y="8" width="9" height="9" fill="#F4EEFF"/>
+  <rect x="34" y="8" width="8" height="9"/>
+</svg>

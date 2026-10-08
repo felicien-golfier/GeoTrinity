@@ -20,6 +20,7 @@
 #include "Curves/CurveFloat.h"
 #include "EngineUtils.h"
 #include "GameplayEffectTypes.h"
+#include "GenericTeamAgentInterface.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
@@ -833,4 +834,11 @@ float UGeoAbilitySystemLibrary::GetEffectBoostBonus(UAbilitySystemComponent cons
 	}
 
 	return Bonus;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoAbilitySystemLibrary::IsEffectFromHostile(UAbilitySystemComponent const& ASC, FGameplayEffectSpec const& Spec)
+{
+	AActor const* Instigator = Spec.GetContext().GetInstigator();
+	return Instigator && FGenericTeamId::GetAttitude(ASC.GetAvatarActor(), Instigator) == ETeamAttitude::Hostile;
 }

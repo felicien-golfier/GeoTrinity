@@ -7,6 +7,8 @@
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
@@ -19,6 +21,8 @@
 #include "Components/Widget.h"
 #include "FileHelpers.h"
 #include "Animation/WidgetAnimation.h"
+#include "HUD/Menu/GeoMenuButton.h"
+#include "HUD/Style/GeoUITheme.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Materials/MaterialInterface.h"
 #include "WidgetBlueprint.h"
@@ -311,6 +315,8 @@ void UGeoWidgetBuilderUtil::CommitTree(UWidgetBlueprint* WidgetBlueprint)
 				It.RemoveCurrent();
 			}
 		}
+
+		SpaceMenuButtons(Tree);
 	}
 
 	FinishBuild(WidgetBlueprint);
@@ -327,6 +333,20 @@ UWidget* UGeoWidgetBuilderUtil::FindWidget(UWidgetBlueprint* WidgetBlueprint, FN
 	}
 
 	return FindTreeWidget(Tree, Name);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FBox2D UGeoWidgetBuilderUtil::GetPaintedRect(UWidget* Widget)
+{
+	if (!ensureMsgf(Widget, TEXT("%hs — Widget is null"), __FUNCTION__))
+	{
+		return FBox2D(ForceInit);
+	}
+
+	FGeometry const Geometry = Widget->GetPaintSpaceGeometry();
+	FVector2D const TopLeft = Geometry.LocalToAbsolute(FVector2D::ZeroVector);
+	FVector2D const Size = Geometry.GetAbsoluteSize();
+	return FBox2D(TopLeft, TopLeft + Size);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -571,6 +591,53 @@ UOverlaySlot* UGeoWidgetBuilderUtil::AddFillChildToOverlay(UOverlay* Overlay, UW
 		Slot->SetVerticalAlignment(VAlign_Fill);
 	}
 	return Slot;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SpaceMenuButtons(UWidgetTree* Tree)
+{
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	if (!Theme)
+	{
+		return;
+	}
+
+	TArray<UWidget*> AllWidgets;
+	Tree->GetAllWidgets(AllWidgets);
+	for (UWidget* Widget : AllWidgets)
+	{
+		UPanelWidget const* Box = Cast<UPanelWidget>(Widget);
+		if (Box && (Box->IsA<UVerticalBox>() || Box->IsA<UHorizontalBox>()))
+		{
+			TArray<UPanelSlot*> ButtonSlots = Box->GetSlots().FilterByPredicate(
+				[](UPanelSlot const* Slot)
+				{
+					return Slot && Cast<UGeoMenuButton>(Slot->Content);
+				});
+			for (int32 Index = 1; Index < ButtonSlots.Num(); ++Index)
+			{
+				SetStackPadding(ButtonSlots[Index - 1], false, 0.f);
+				SetStackPadding(ButtonSlots[Index], true, Theme->MenuButtonGap);
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoWidgetBuilderUtil::SetStackPadding(UPanelSlot* Slot, bool const bLeading, float const Padding)
+{
+	if (UVerticalBoxSlot* VerticalSlot = Cast<UVerticalBoxSlot>(Slot))
+	{
+		FMargin Margin = VerticalSlot->GetPadding();
+		(bLeading ? Margin.Top : Margin.Bottom) = Padding;
+		VerticalSlot->SetPadding(Margin);
+	}
+	else if (UHorizontalBoxSlot* HorizontalSlot = Cast<UHorizontalBoxSlot>(Slot))
+	{
+		FMargin Margin = HorizontalSlot->GetPadding();
+		(bLeading ? Margin.Left : Margin.Right) = Padding;
+		HorizontalSlot->SetPadding(Margin);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

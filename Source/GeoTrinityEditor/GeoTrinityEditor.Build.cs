@@ -28,6 +28,7 @@ public class GeoTrinityEditor : ModuleRules
 			"UMG",
 			"UMGEditor",
 			"PropertyEditor",
+			"RenderCore",
 			"AIModule",
 			"MeshDescription",
 			"SkeletalMeshUtilitiesCommon",

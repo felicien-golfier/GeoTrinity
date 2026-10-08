@@ -41,6 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoButton|Appearance")
 	TObjectPtr<UGeoFrameStyle> FrameStyle;
 
+	/** Sets Label and shows it. */
+	void SetLabel(FText const& InLabel);
+
 	/** Returns the inner UGeoButton that receives forwarded focus and fires the click delegate. */
 	UGeoButton* GetButtonWidget() const
 	{

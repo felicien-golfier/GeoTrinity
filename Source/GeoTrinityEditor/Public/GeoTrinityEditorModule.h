@@ -13,7 +13,7 @@
 class FGeoTrinityEditorModule : public IModuleInterface
 {
 public:
-	/** Registers the project's property type customizations. */
+	/** Registers the project's details customizations and the icon thumbnail renderer. */
 	virtual void StartupModule() override;
 	/** Unregisters them again. */
 	virtual void ShutdownModule() override;

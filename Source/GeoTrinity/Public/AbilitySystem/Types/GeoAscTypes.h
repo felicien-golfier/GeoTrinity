@@ -8,6 +8,7 @@
 #include "GeoAscTypes.generated.h"
 
 class UGameplayEffect;
+class UGeoIcon;
 
 /**
  * Extended gameplay effect context that carries GeoTrinity-specific per-hit data: the applied StatusTag, the replicated
@@ -37,9 +38,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool DoNotRedirectSacrifice() const { return bDoNotRedirectSacrifice; }
 	/** Returns the duration a per-second magnitude is scaled by; 0 means the current frame's delta. */
 	float GetPerSecondDuration() const { return PerSecondDuration; }
-	/** Icon (UTexture2D or UMaterialInterface) shown in the HUD status bar while the applied effect is active;
-	 * null when the effect has no icon. */
-	UObject* GetIcon() const { return Icon; }
+	/** Icon shown in the HUD status bar while the applied effect is active; null when the effect has no icon. */
+	UGeoIcon* GetIcon() const { return Icon; }
 	/** Returns the palette slots a gameplay cue draws beside its own colour (FGeoCueParam::SecondaryColors). */
 	TArray<EGeoColor> const& GetSecondaryColors() const { return SecondaryColors; }
 
@@ -61,9 +61,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetDoNotRedirectSacrifice(bool value) { bDoNotRedirectSacrifice = value; }
 	/** Sets the duration a per-second magnitude is scaled by, for an applier that does not run once per frame. */
 	void SetPerSecondDuration(float value) { PerSecondDuration = value; }
-	/** Sets the icon (UTexture2D or UMaterialInterface) the HUD status bar displays while the applied effect is
-	 * active. */
-	void SetIcon(UObject* value) { Icon = value; }
+	/** Sets the icon the HUD status bar displays while the applied effect is active. */
+	void SetIcon(UGeoIcon* value) { Icon = value; }
 	/** Sets the palette slots a gameplay cue draws beside its own colour; replicated with the cue. */
 	void SetSecondaryColors(TArray<EGeoColor> Value) { SecondaryColors = MoveTemp(Value); }
 
@@ -83,7 +82,7 @@ protected:
 	UPROPERTY()
 	FGameplayTag StatusTag{};
 	UPROPERTY()
-	TObjectPtr<UObject> Icon{nullptr};
+	TObjectPtr<UGeoIcon> Icon{nullptr};
 	UPROPERTY()
 	TArray<EGeoColor> SecondaryColors;
 

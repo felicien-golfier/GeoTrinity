@@ -47,6 +47,12 @@ public:
 		bActivateOnHoverAndFocus = bInActivate;
 	}
 
+	void SetGlowTint(FLinearColor const& InGlowTint)
+	{
+		GlowTint = InGlowTint;
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
 	virtual int32 OnPaint(FPaintArgs const& Args, FGeometry const& AllottedGeometry, FSlateRect const& MyCullingRect,
 						  FSlateWindowElementList& OutDrawElements, int32 LayerId, FWidgetStyle const& InWidgetStyle,
 						  bool bParentEnabled) const override
@@ -67,7 +73,7 @@ public:
 				PaintGrid(Style->GridSpacing, GridColor, AllottedGeometry, OutDrawElements, LayerId + GridLayer);
 			}
 			FGeoShapePainter::PaintStyledLine(*Style, State, Opacity, Outline, AllottedGeometry, OutDrawElements,
-											  LayerId + LineLayer);
+											  LayerId + LineLayer, GlowTint);
 		}
 		return SBorder::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId + ContentLayer,
 								InWidgetStyle, bParentEnabled);
@@ -110,6 +116,7 @@ private:
 	TWeakObjectPtr<UGeoFrameStyle const> FrameStyle;
 	bool bForcedActive = false;
 	bool bActivateOnHoverAndFocus = false;
+	FLinearColor GlowTint = FLinearColor::White;
 	FGeoOutlineState State;
 };
 
@@ -147,6 +154,16 @@ void UGeoFrame::SetActivateOnHoverAndFocus(bool const bInActivate)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoFrame::SetGlowTint(FLinearColor const& InGlowTint)
+{
+	GlowTint = InGlowTint;
+	if (MyFrame)
+	{
+		MyFrame->SetGlowTint(GlowTint);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoFrame::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
@@ -163,6 +180,7 @@ void UGeoFrame::SynchronizeProperties()
 		MyFrame->SetFrameStyle(Style);
 		MyFrame->SetForcedActive(bActive);
 		MyFrame->SetActivateOnHoverAndFocus(bActivateOnHoverAndFocus);
+		MyFrame->SetGlowTint(GlowTint);
 	}
 }
 

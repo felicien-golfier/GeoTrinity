@@ -5,6 +5,8 @@
 #include "GameClasses/GeoGameInstance.h"
 #include "GameClasses/GeoPlayerController.h"
 #include "HUD/Menu/GeoAbilityDescriptionsWidget.h"
+#include "HUD/Menu/GeoCharacterSheetWidget.h"
+#include "HUD/Menu/GeoGemsWidget.h"
 #include "HUD/Menu/GeoLeaderboardWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
 #include "HUD/Menu/GeoSettingsWidget.h"
@@ -27,12 +29,22 @@ void UGeoPauseMenuWidget::NativeConstruct()
 	AbilitiesWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
 	SettingsWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
 	LeaderboardWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
+	if (CharacterButton && CharacterWidget)
+	{
+		CharacterButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleCharacter);
+		CharacterWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
+		CharacterWidget->OnOpenAbilityDetails.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSheetAbilities);
+	}
+	if (CharacterWidget && GemsWidget)
+	{
+		CharacterWidget->OnOpenGems.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleGems);
+		GemsWidget->OnClosed.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSubPanelClosed);
+	}
 
 	// Reset to the top-level buttons: the menu can close from anywhere (e.g. ESC while a sub-panel is open), and
 	// this instance is reused on the next open.
-	AbilitiesWidget->SetVisibility(ESlateVisibility::Collapsed);
-	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
-	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
+	bOpenedFromSheet = false;
+	CollapseSubPanels();
 	SetButtonsVisible(true);
 }
 
@@ -69,6 +81,25 @@ void UGeoPauseMenuWidget::HandleResume()
 void UGeoPauseMenuWidget::HandleAbilities()
 {
 	OpenSubPanel(AbilitiesWidget);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::HandleSheetAbilities()
+{
+	OpenFromSheet(AbilitiesWidget);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::HandleCharacter()
+{
+	OpenSubPanel(CharacterWidget);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::HandleGems()
+{
+	GemsWidget->Refresh();
+	OpenFromSheet(GemsWidget);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -114,11 +145,18 @@ void UGeoPauseMenuWidget::HandleQuit()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoPauseMenuWidget::HandleSubPanelClosed()
 {
-	AbilitiesWidget->SetVisibility(ESlateVisibility::Collapsed);
-	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
-	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
-	SetButtonsVisible(true);
-	ResumeButton->SetFocus();
+	CollapseSubPanels();
+	if (bOpenedFromSheet)
+	{
+		bOpenedFromSheet = false;
+		CharacterWidget->Refresh();
+		OpenSubPanel(CharacterWidget);
+	}
+	else
+	{
+		SetButtonsVisible(true);
+		ResumeButton->SetFocus();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -130,6 +168,30 @@ void UGeoPauseMenuWidget::OpenSubPanel(UGeoMenuPanelWidget* SubPanel)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::OpenFromSheet(UGeoMenuPanelWidget* SubPanel)
+{
+	bOpenedFromSheet = true;
+	CollapseSubPanels();
+	OpenSubPanel(SubPanel);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::CollapseSubPanels()
+{
+	AbilitiesWidget->SetVisibility(ESlateVisibility::Collapsed);
+	SettingsWidget->SetVisibility(ESlateVisibility::Collapsed);
+	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
+	if (CharacterWidget)
+	{
+		CharacterWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (GemsWidget)
+	{
+		GemsWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoPauseMenuWidget::SetButtonsVisible(bool bVisible)
 {
 	ESlateVisibility const NewVisibility = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
@@ -137,6 +199,10 @@ void UGeoPauseMenuWidget::SetButtonsVisible(bool bVisible)
 	AbilitiesButton->SetVisibility(NewVisibility);
 	SettingsButton->SetVisibility(NewVisibility);
 	LeaderboardButton->SetVisibility(NewVisibility);
+	if (CharacterButton)
+	{
+		CharacterButton->SetVisibility(NewVisibility);
+	}
 	ReturnToMainMenuButton->SetVisibility(NewVisibility);
 	QuitButton->SetVisibility(NewVisibility);
 	if (MenuDecor)

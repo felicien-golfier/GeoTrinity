@@ -2,13 +2,17 @@
 # One [Ability.Spell.X] section per ability, keyed by the AbilityTag from the ability's AssetTags.
 # The section body replaces the Description field of the matching AbilityInfo entry; entries absent
 # here fall back to the asset's Description. {Token} syntax: see AI/AbilityDescriptions.md.
+# Lines starting with | are stats for the ability's detail panel: | LABEL | {Token}.
 # Lines starting with # are comments. The file is re-read on every menu open — edits show live.
 
 [Ability.Spell.Dash]
 Dash {DashDistance} units in your movement direction over {DashDuration}s.
+| DISTANCE | {DashDistance}
+| DURATION | {DashDuration}s
 
 [Ability.Spell.SimpleProjectile]
 Hold to fire projectiles, each dealing {Damage} damage.
+| DAMAGE | {Damage}
 
 [Ability.Spell.Reload]
 Restores your ammo and drops a buff pickup nearby, chosen by your remaining ammo (random only if you were out of ammo). The emptier your magazine, the stronger the buff:
@@ -16,6 +20,8 @@ Restores your ammo and drops a buff pickup nearby, chosen by your remaining ammo
 
 [Ability.Spell.TurretLaunch]
 Hold to aim, release to deploy a turret between {MinDeployDistance} and {MaxDeployDistance} units away. The turret fires at enemies and slowly drains its own life.
+| MIN RANGE | {MinDeployDistance}
+| MAX RANGE | {MaxDeployDistance}
 
 [Ability.Spell.RecallTurret]
 Recalls all your deployed turrets. Each returning turret damages every enemy on its path back to you:
@@ -24,39 +30,71 @@ Blinking turrets (about to expire) deal {BlinkBonusEffect}.
 
 [Ability.Spell.Momentum]
 Every hit you land, your turret included, stacks a {EffectValue:%} damage boost on you. Each stack falls off {EffectDuration}s after the hit that granted it.
+| PER STACK | +{EffectValue:%}
+| STACK TIME | {EffectDuration}s
 
 [Ability.Spell.BasicBeam]
 Hold to charge, release to fire a beam dealing {Damage} damage, scaled to {MinDamageMultiplier:%} (no charge) up to {MaxDamageMultiplier:%} (full charge). Release in the sweet spot for {SweetSpotDamageMultiplier:%} instead. Reload fires the charged beam too, to catch the sweet spot on a press rather than a release.
+| DAMAGE | {Damage}
+| NO CHARGE | {MinDamageMultiplier:%}
+| FULL CHARGE | {MaxDamageMultiplier:%}
+| SWEET SPOT | {SweetSpotDamageMultiplier:%}
 
 [Ability.Spell.MoiraBeam]
-Channels a beam for {InitialDuration}s that deals {DamagePerSecond}/sec damage to enemies and heals allies for {HealPerSecond}/sec, while boosting your movement speed by {SpeedBuffEffect:%}. Absorbing your Healing Zones on the beam path extends it by {DurationPerAbsorbedZone}s, widens it, and boosts its damage and healing by {DamageAndHealBoostPerAbsorbedZone:%} per zone and {BoostPerFinishedZone:%} bonus per finished absorbed zone, up to {DamageAndHealBoostPerAbsorbedZone*MaximumZoneAbsorbed:%} boost;
+Channels a beam for {InitialDuration}s that deals {DamagePerSecond}/sec damage to enemies and heals allies for {HealPerSecond}/sec, while boosting your movement speed by {SpeedBuffEffect:%}. Absorbing your Healing Zones on the beam path extends it by {DurationPerAbsorbedZone}s, widens it, and boosts its damage and healing by {DamageAndHealBoostPerAbsorbedZone:%} per zone and {BoostPerFinishedZone:%} bonus per finished absorbed zone, up to {DamageAndHealBoostPerAbsorbedZone*MaximumZoneAbsorbed:%} boost.
+| DURATION | {InitialDuration}s
+| DAMAGE | {DamagePerSecond}/s
+| HEAL | {HealPerSecond}/s
+| SPEED | +{SpeedBuffEffect:%}
+| PER ZONE | +{DurationPerAbsorbedZone}s
+| PER ZONE | +{DamageAndHealBoostPerAbsorbedZone:%}
+| FINISHED ZONE | +{BoostPerFinishedZone:%}
+| MAX BOOST | {DamageAndHealBoostPerAbsorbedZone*MaximumZoneAbsorbed:%}
 
 [Ability.Spell.HealingZone]
 Hold to aim, release to deploy a healing zone between {MinDeployDistance} and {MaxDeployDistance} units away. Allies inside are healed over time until the zone's life runs out.
+| MIN RANGE | {MinDeployDistance}
+| MAX RANGE | {MaxDeployDistance}
 
 [Ability.Spell.HealingAura]
 Allies touching you are healed for {HealPerSecond}/sec.
+| HEAL | {HealPerSecond}/s
 
 [Ability.Spell.HealsYouWhatYouHeal]
 You heal yourself for {SelfHealPercent:%} of every heal you provide to allies.
+| SELF HEAL | {SelfHealPercent:%}
 
 [Ability.Spell.SweetSpotCharge]
 Healing you provide charges the gauge, full at {HealRequiredForFullCharge} healing done. Once full, your next sweet-spot beam release deals {EdgeDamageMultiplierBoost:%} extra damage at the sweet spot's edge, up to {CenterDamageMultiplierBoost:%} at its dead center — emptying the gauge.
+| FULL AT | {HealRequiredForFullCharge}
+| EDGE | +{EdgeDamageMultiplierBoost:%}
+| CENTER | +{CenterDamageMultiplierBoost:%}
 
 [Ability.Spell.ShieldBurst]
 Every point of damage you deal fills a gauge. At {GaugeFillThreshold} damage dealt, fire a slow shield projectile forward. It bounces off enemies, each bounce adding {EnemyBounceAdditiveMultiplier:%} of its base shield (and size), then ends by granting {ShieldAmount} shield to the first ally it touches. Passes through your own walls; bouncing off walls or terrain does not grow it.
+| GAUGE | {GaugeFillThreshold}
+| PER BOUNCE | +{EnemyBounceAdditiveMultiplier:%}
+| SHIELD | {ShieldAmount}
 
 [Ability.Spell.Mine]
 Hold to aim, release to deploy a wall between {MinDeployDistance} and {MaxDeployDistance} units away. The wall blocks projectiles and slowly drains its own life.
+| MIN RANGE | {MinDeployDistance}
+| MAX RANGE | {MaxDeployDistance}
 
 [Ability.Spell.DetonateMine]
 Fires a ray that consumes your walls on its path — each consumed wall powers the ray with {WallBoostMultiplier:%} of its base output. The ray deals {BaseDamage} damage to enemies and grants {BaseShield} shield to allies it crosses.
+| DAMAGE | {BaseDamage}
+| SHIELD | {BaseShield}
+| PER WALL | {WallBoostMultiplier:%}
 
 [Ability.Spell.SacrificeBeam]
 Channels a beam that protects allies inside it: protected allies take no damage — instead damages are split evenly between you and your spawned walls. Every damage is stored for the Martyr's Wrath. Channel ends after {MaxChannelDuration}s, arming the Martyr's Wrath automatically.
+| MAX CHANNEL | {MaxChannelDuration}s
 
 [Ability.Spell.SacrificeDetonate]
 Unleashes the stored Martyr Beam's damages as a ray, dealing {BaseDamage} damage plus {SacrificeValueMultiplier:%} of absorbed damage to every enemy on its path. Pressing during the Martyr Beam unleash the beam immediately.
+| DAMAGE | {BaseDamage}
+| OF ABSORBED | {SacrificeValueMultiplier:%}
 
 [Ability.Spell.SpiralHellfire]
 Launch a projectile spiral spree

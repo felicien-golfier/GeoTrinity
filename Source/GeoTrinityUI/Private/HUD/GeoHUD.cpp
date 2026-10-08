@@ -3,7 +3,6 @@
 #include "HUD/GeoHUD.h"
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
-#include "AbilitySystem/Abilities/Circle/GeoSweetSpotChargePassiveAbility.h"
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
@@ -13,20 +12,15 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemInterface.h"
-#include "Actor/Arena/GeoArena.h"
 #include "Algo/StableSort.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
-#include "Characters/PlayerClassTypes.h"
-#include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
-#include "Engine/Texture2D.h"
 #include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerController.h"
 #include "GameClasses/GeoPlayerState.h"
-#include "GameFramework/GameStateBase.h"
 #include "GameplayEffectExtension.h"
 #include "HUD/GenericCombattantWidget.h"
 #include "HUD/GeoDamageNumberWidget.h"
@@ -34,15 +28,8 @@
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "HUD/Interface/GeoDamageNumberHost.h"
-#include "Styling/CoreStyle.h"
-#include "Styling/SlateTypes.h"
-#include "System/GeoCombatStatsSubsystem.h"
+#include "Tool/GeoIcon.h"
 #include "Tool/UGeoGameplayLibrary.h"
-#include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/Layout/SConstraintCanvas.h"
-#include "Widgets/SBoxPanel.h"
-#include "Widgets/Text/STextBlock.h"
 
 namespace
 {
@@ -106,7 +93,7 @@ void AGeoHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySyste
 
 		if (UGeoOverlayWidget* Overlay = Cast<UGeoOverlayWidget>(OverlayWidget))
 		{
-			Overlay->InitStatusBar(this);
+			Overlay->InitPanels(this, Cast<AGeoPlayerState>(PS));
 		}
 	}
 }
@@ -153,6 +140,7 @@ TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
 		// each, and the badge means the same thing in both cases.
 		Entry->Count += ActiveEffect->Spec.GetStackCount();
 		Entry->BoostBonus += GeoASLib::GetEffectBoostBonus(*ASC, ActiveEffect->Spec);
+		Entry->bDebuff |= GeoASLib::IsEffectFromHostile(*ASC, ActiveEffect->Spec);
 		float const TimeRemaining = ActiveEffect->GetTimeRemaining(WorldTime);
 		if (TimeRemaining < 0.f || Entry->TimeRemaining < 0.f)
 		{
@@ -163,18 +151,6 @@ TArray<FGeoActiveEffectIcon> AGeoHUD::GetActiveEffectIcons() const
 			Entry->TimeRemaining = TimeRemaining;
 			Entry->Duration = ActiveEffect->GetDuration();
 		}
-	}
-
-	UGeoSweetSpotChargePassiveAbility const* SweetSpotPassive =
-		GeoASLib::GetGrantedAbility<UGeoSweetSpotChargePassiveAbility>(*ASC);
-	if (SweetSpotPassive && SweetSpotPassive->GetGaugeIcon())
-	{
-		FGeoActiveEffectIcon& Entry = Entries.AddDefaulted_GetRef();
-		Entry.Icon = SweetSpotPassive->GetGaugeIcon();
-		Entry.Count = 1;
-		Entry.TimeRemaining = -1.f;
-		Entry.FillRatio = SweetSpotPassive->GetGaugeRatio(*ASC);
-		Entry.FullColor = SweetSpotPassive->GetGaugeFullColor();
 	}
 
 	return Entries;
@@ -274,10 +250,6 @@ void AGeoHUD::ShowBossHealthBar(AEnemyCharacter* Boss)
 	{
 		return;
 	}
-
-#if !UE_BUILD_SHIPPING
-	CombatStatsArena = AGeoArena::GetArenaOfBoss(Boss);
-#endif
 
 	// Hide existing boss bar if showing a different boss
 	HideBossHealthBar();
@@ -543,203 +515,3 @@ void AGeoHUD::SpawnDamageNumber(float Amount, EGeoDamageNumberType Type, FVector
 
 	Widget->Activate(Amount, Type, WorldLocation);
 }
-
-#if !UE_BUILD_SHIPPING
-namespace
-{
-	struct FPlayerClassStyle
-	{
-		TCHAR const* Label;
-		FLinearColor Color;
-	};
-
-	FPlayerClassStyle GetPlayerClassStyle(EPlayerClass const PlayerClass)
-	{
-		switch (PlayerClass)
-		{
-		case EPlayerClass::Triangle:
-			return {TEXT("Tri"), FLinearColor(1.f, 0.35f, 0.35f, 1.f)};
-		case EPlayerClass::Circle:
-			return {TEXT("Cir"), FLinearColor(0.35f, 1.f, 0.35f, 1.f)};
-		case EPlayerClass::Square:
-			return {TEXT("Sqr"), FLinearColor(0.45f, 0.65f, 1.f, 1.f)};
-		default:
-			return {TEXT("?"), FLinearColor::White};
-		}
-	}
-} // namespace
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::DrawHUD()
-{
-	Super::DrawHUD();
-
-	UpdateCombatStatsPanel();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::EndPlay(EEndPlayReason::Type const EndPlayReason)
-{
-	RemoveCombatStatsPanel();
-	Super::EndPlay(EndPlayReason);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::UpdateCombatStatsPanel()
-{
-	AGameStateBase const* GameState = GetWorld()->GetGameState();
-	UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
-	bool const bShow =
-		UGeoCombatStatsSubsystem::IsDebugDisplayEnabled() && Viewport && GameState && !GameState->PlayerArray.IsEmpty();
-	if (!bShow)
-	{
-		RemoveCombatStatsPanel();
-		return;
-	}
-
-	// Cell texts and colors poll their player state through Slate attributes, so the tree only needs rebuilding when
-	// the player roster changes (not merely its count — a leave+join in the same count would otherwise go unnoticed).
-	bool const bRosterChanged = CombatStatsRoster.Num() != GameState->PlayerArray.Num()
-		|| [&]
-		{
-			for (int32 Index = 0; Index < CombatStatsRoster.Num(); ++Index)
-			{
-				if (CombatStatsRoster[Index].Get() != GameState->PlayerArray[Index])
-				{
-					return true;
-				}
-			}
-			return false;
-		}();
-	if (CombatStatsPanel && !bRosterChanged)
-	{
-		return;
-	}
-	RemoveCombatStatsPanel();
-
-	FSlateFontInfo const StatsFont = FCoreStyle::GetDefaultFontStyle("Regular", 12);
-	constexpr float NameColumnWidth = 170.f;
-	constexpr float StatColumnWidth = 48.f;
-
-	auto MakeCell = [&StatsFont](float const Width, TAttribute<FText> Text, TAttribute<FSlateColor> Color)
-	{
-		return SNew(SBox).WidthOverride(Width)[SNew(STextBlock)
-												   .Text(MoveTemp(Text))
-												   .ColorAndOpacity(MoveTemp(Color))
-												   .Font(StatsFont)
-												   .OverflowPolicy(ETextOverflowPolicy::Ellipsis)];
-	};
-
-	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
-
-	FSlateColor const HeaderColor = FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
-
-	TWeakObjectPtr<AGeoHUD> const WeakHud = this;
-	TAttribute<FText> FightTimeText = TAttribute<FText>::CreateLambda(
-		[WeakHud]() -> FText
-		{
-			AGeoArena const* const FightArena = WeakHud.IsValid() ? WeakHud->CombatStatsArena.Get() : nullptr;
-			if (!FightArena)
-			{
-				return FText::GetEmpty();
-			}
-			return FText::FromString(
-				TEXT("Fight  ") + UHudFunctionLibrary::FormatDuration(FightArena->GetFightElapsedSeconds()).ToString());
-		});
-	Rows->AddSlot().AutoHeight()[MakeCell(NameColumnWidth, MoveTemp(FightTimeText), HeaderColor)];
-
-	TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox);
-	HeaderRow->AddSlot().AutoWidth()[MakeCell(NameColumnWidth, FText::FromString(TEXT("Player")), HeaderColor)];
-	for (TCHAR const* Label : {TEXT("DPS"), TEXT("MAX"), TEXT("Avg"), TEXT("Tot"), TEXT("HPS"), TEXT("MAX"),
-							   TEXT("Avg"), TEXT("Tot"), TEXT("Rcv")})
-	{
-		HeaderRow->AddSlot().AutoWidth()[MakeCell(StatColumnWidth, FText::FromString(Label), HeaderColor)];
-	}
-	Rows->AddSlot().AutoHeight()[HeaderRow];
-
-	for (APlayerState* PlayerState : GameState->PlayerArray)
-	{
-		AGeoPlayerState const* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState);
-		if (!GeoPlayerState)
-		{
-			continue;
-		}
-
-		TWeakObjectPtr<AGeoPlayerState const> WeakPlayerState = GeoPlayerState;
-		TAttribute<FSlateColor> const RowColor = TAttribute<FSlateColor>::CreateLambda(
-			[WeakPlayerState]() -> FSlateColor
-			{
-				return WeakPlayerState.IsValid() ? GetPlayerClassStyle(WeakPlayerState->GetPlayerClass()).Color
-												 : FLinearColor::White;
-			});
-		TAttribute<FText> NameText = TAttribute<FText>::CreateLambda(
-			[WeakPlayerState]
-			{
-				if (!WeakPlayerState.IsValid())
-				{
-					return FText::GetEmpty();
-				}
-				return FText::FromString(FString::Printf(TEXT("[%s] %s"),
-														 GetPlayerClassStyle(WeakPlayerState->GetPlayerClass()).Label,
-														 *WeakPlayerState->GetPlayerName()));
-			});
-
-		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox);
-		Row->AddSlot().AutoWidth()[MakeCell(NameColumnWidth, MoveTemp(NameText), RowColor)];
-
-		using FStatGetter = float (AGeoPlayerState::*)() const;
-		for (FStatGetter const Getter :
-			 {&AGeoPlayerState::GetDebugDPS, &AGeoPlayerState::GetMaxBurstDamage, &AGeoPlayerState::GetFightDPS,
-			  &AGeoPlayerState::GetTotalDamageDealt, &AGeoPlayerState::GetDebugHPS,
-			  &AGeoPlayerState::GetMaxBurstHealing,
-			  &AGeoPlayerState::GetFightHPS, &AGeoPlayerState::GetTotalHealingDealt,
-			  &AGeoPlayerState::GetTotalDamageReceived})
-		{
-			TAttribute<FText> StatText = TAttribute<FText>::CreateLambda(
-				[WeakPlayerState, Getter]
-				{
-					return WeakPlayerState.IsValid()
-							   ? UHudFunctionLibrary::FormatCompactNumber((WeakPlayerState.Get()->*Getter)())
-							   : FText::GetEmpty();
-				});
-			Row->AddSlot().AutoWidth()[MakeCell(StatColumnWidth, MoveTemp(StatText), RowColor)];
-		}
-		Rows->AddSlot().AutoHeight()[Row];
-	}
-	CombatStatsRoster.Reset(GameState->PlayerArray.Num());
-	for (APlayerState* PlayerState : GameState->PlayerArray)
-	{
-		CombatStatsRoster.Add(PlayerState);
-	}
-
-	// Anchored top-right, below the boss health bar which hugs the top edge of the screen.
-	TSharedRef<SConstraintCanvas> Panel = SNew(SConstraintCanvas)
-		+ SConstraintCanvas::Slot()
-			  .Anchors(FAnchors(1.f, 0.08f))
-			  .Alignment(FVector2D(1.f, 0.f))
-			  .Offset(FMargin(-12.f, 0.f, 0.f, 0.f))
-			  .AutoSize(true)[SNew(SBorder)
-								  .BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								  .BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.65f))
-								  .Padding(FMargin(6.f, 4.f))[Rows]];
-
-	Viewport->AddViewportWidgetContent(Panel);
-	CombatStatsPanel = Panel;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::RemoveCombatStatsPanel()
-{
-	if (!CombatStatsPanel)
-	{
-		return;
-	}
-
-	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
-	{
-		Viewport->RemoveViewportWidgetContent(CombatStatsPanel.ToSharedRef());
-	}
-	CombatStatsPanel.Reset();
-	CombatStatsRoster.Reset();
-}
-#endif

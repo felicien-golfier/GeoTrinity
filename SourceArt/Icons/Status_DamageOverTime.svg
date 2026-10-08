@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="Damage">
+  <polygon points="37,17.5 41.5,25.5 32.5,25.5" fill="#FFFFFF"/>
+  <polygon points="29.5,30.5 34,38.5 25,38.5" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+  <polygon points="14.5,30.5 19,38.5 10,38.5" fill="#FFFFFF"/>
+  <polygon points="7,17.5 11.5,25.5 2.5,25.5" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+  <polygon points="14.5,4.5 19,12.5 10,12.5" fill="#FFFFFF"/>
+  <polygon points="29.5,4.5 34,12.5 25,12.5" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+  <polygon points="22,15 29,28 15,28" fill="#FFFFFF"/>
+</svg>

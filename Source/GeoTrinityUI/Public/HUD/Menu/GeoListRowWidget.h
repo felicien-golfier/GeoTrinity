@@ -70,6 +70,9 @@ public:
 	 */
 	void SetTint(EGeoListRowTint InTint);
 
+	/** Gives the row's button the user's focus, as a list rebuilt under the gamepad does for the row it stood on. */
+	void FocusRow();
+
 protected:
 	/** Wires RowButton and makes the columns span the row. */
 	virtual void NativeConstruct() override;

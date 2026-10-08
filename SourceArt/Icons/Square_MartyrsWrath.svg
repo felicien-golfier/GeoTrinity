@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="AllyDamage" fill="none" stroke="#F4EEFF" stroke-width="2">
+  <rect x="2" y="16" width="12" height="12" fill="#F4EEFF"/>
+  <line x1="16" y1="22" x2="36" y2="22" stroke-width="5"/>
+  <polyline points="35,11 42,22 35,33"/>
+  <line x1="22" y1="12" x2="22" y2="16" stroke-opacity=".5"/>
+  <line x1="28" y1="12" x2="28" y2="16" stroke-opacity=".5"/>
+  <line x1="22" y1="28" x2="22" y2="32" stroke-opacity=".5"/>
+  <line x1="28" y1="28" x2="28" y2="32" stroke-opacity=".5"/>
+</svg>

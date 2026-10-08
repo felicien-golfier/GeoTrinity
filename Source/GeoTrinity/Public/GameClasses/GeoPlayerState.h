@@ -28,10 +28,10 @@ struct FGeoCombatDisplayStats
 
 	/** Exponentially smoothed damage-per-second. */
 	UPROPERTY()
-	float DebugDPS = 0.f;
+	float LiveDPS = 0.f;
 	/** Exponentially smoothed healing-per-second. */
 	UPROPERTY()
-	float DebugHPS = 0.f;
+	float LiveHPS = 0.f;
 	/** Biggest damage total dealt within one burst window this combat. */
 	UPROPERTY()
 	float MaxBurstDamage = 0.f;
@@ -103,9 +103,9 @@ public:
 	void SetPlayerClass(EPlayerClass NewClass) { PlayerClass = NewClass; }
 
 	/** Returns the current exponentially smoothed damage-per-second rate; decays between events so it reads as a live rate, not a peak. */
-	float GetDebugDPS() const { return CombatStats.DebugDPS; }
+	float GetLiveDPS() const { return CombatStats.LiveDPS; }
 	/** Returns the current exponentially smoothed healing-per-second rate; decays between events so it reads as a live rate, not a peak. */
-	float GetDebugHPS() const { return CombatStats.DebugHPS; }
+	float GetLiveHPS() const { return CombatStats.LiveHPS; }
 	/** Returns the biggest damage total accumulated inside a single burst window this combat (largest single-spell landing, not a rate). */
 	float GetMaxBurstDamage() const { return CombatStats.MaxBurstDamage; }
 	/** Returns the biggest healing total accumulated inside a single burst window this combat (largest single-spell landing, not a rate). */
@@ -122,7 +122,7 @@ public:
 	float GetTotalDamageReceived() const { return CombatStats.TotalDamageReceived; }
 
 	/** Replaces every displayed combat stat in one write. Called by UGeoCombatStatsSubsystem on the server. */
-	void SetDebugCombatStats(FGeoCombatDisplayStats const& NewStats) { CombatStats = NewStats; }
+	void SetCombatStats(FGeoCombatDisplayStats const& NewStats) { CombatStats = NewStats; }
 
 protected:
 	UPROPERTY(VisibleAnywhere)

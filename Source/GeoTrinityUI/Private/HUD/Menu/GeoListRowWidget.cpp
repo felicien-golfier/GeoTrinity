@@ -108,6 +108,12 @@ void UGeoListRowWidget::SetTint(EGeoListRowTint const InTint)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoListRowWidget::FocusRow()
+{
+	RowButton->SetFocus();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoListRowWidget::HandleClicked()
 {
 	OnClicked.Broadcast();

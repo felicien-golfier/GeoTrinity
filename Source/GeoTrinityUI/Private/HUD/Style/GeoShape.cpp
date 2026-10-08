@@ -4,6 +4,7 @@
 
 #include "HUD/Style/GeoFrameStyle.h"
 #include "HUD/Style/GeoShapePainter.h"
+#include "HUD/Style/GeoUITheme.h"
 #include "Widgets/SLeafWidget.h"
 
 /** Leaf widget drawing one regular polygon, turning it on an active timer while it has a spin speed. */
@@ -100,6 +101,16 @@ private:
 	/** Runner travel of OutlineStyle; a shape is never active. */
 	FGeoOutlineState State;
 };
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoShape::SetClassShape(FGeoClassStyle const& ClassStyle)
+{
+	Sides = ClassStyle.Sides;
+	Rotation = ClassStyle.Rotation;
+	Color = ClassStyle.Color;
+	bFilled = true;
+	SynchronizeProperties();
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoShape::SynchronizeProperties()

@@ -8,6 +8,7 @@
 #include "Rendering/DrawElements.h"
 #include "Rendering/SlateRenderer.h"
 #include "Styling/CoreStyle.h"
+#include "Tool/GeoIcon.h"
 
 static int32 const CircleSegments = 48;
 // A glow is this many nested strokes, each thinner and sharing the glow's alpha, so it fades away from the line.
@@ -26,6 +27,12 @@ TArray<FVector2f> FGeoShapePainter::MakePolygon(FVector2f const Center, float co
 		Points.Add(Center + Radius * FVector2f(FMath::Sin(Angle), -FMath::Cos(Angle)));
 	}
 	return Points;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FVector2f> FGeoShapePainter::MakeRectangle(FVector2f const Min, FVector2f const Max)
+{
+	return {Min, {Max.X, Min.Y}, Max, {Min.X, Max.Y}};
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -81,6 +88,26 @@ FVector2f FGeoShapePainter::GetPointAlongOutline(TArray<FVector2f> const& Points
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+TArray<FVector2f> FGeoShapePainter::GetOutlinePart(TArray<FVector2f> const& Points, float const Length)
+{
+	TArray<FVector2f> Part;
+	float Remaining = Length;
+	for (int32 Index = 0; Index < Points.Num() && Remaining > 0.f; ++Index)
+	{
+		FVector2f const Start = Points[Index];
+		FVector2f const End = Points[(Index + 1) % Points.Num()];
+		float const SegmentLength = FVector2f::Distance(Start, End);
+		Part.Add(Start);
+		if (Remaining <= SegmentLength && SegmentLength > 0.f)
+		{
+			Part.Add(FMath::Lerp(Start, End, Remaining / SegmentLength));
+		}
+		Remaining -= SegmentLength;
+	}
+	return Part;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void FGeoShapePainter::DrawFilled(FSlateWindowElementList& OutDrawElements, int32 const LayerId,
 								  FGeometry const& Geometry, TArray<FVector2f> const& Points, FLinearColor const& Color)
 {
@@ -89,8 +116,6 @@ void FGeoShapePainter::DrawFilled(FSlateWindowElementList& OutDrawElements, int3
 		return;
 	}
 
-	FSlateResourceHandle const WhiteTexture =
-		FSlateApplication::Get().GetRenderer()->GetResourceHandle(*FCoreStyle::Get().GetBrush("WhiteBrush"));
 	FSlateRenderTransform const& RenderTransform = Geometry.GetAccumulatedRenderTransform();
 	FColor const VertexColor = Color.ToFColor(true);
 
@@ -108,7 +133,7 @@ void FGeoShapePainter::DrawFilled(FSlateWindowElementList& OutDrawElements, int3
 	{
 		Indices.Append({0, static_cast<SlateIndex>(Corner), static_cast<SlateIndex>(Corner + 1)});
 	}
-	FSlateDrawElement::MakeCustomVerts(OutDrawElements, LayerId, WhiteTexture, Vertices, Indices, nullptr, 0, 0);
+	FSlateDrawElement::MakeCustomVerts(OutDrawElements, LayerId, GetWhiteTexture(), Vertices, Indices, nullptr, 0, 0);
 
 	// The fan's edge is aliased; a hairline of the same colour over it smooths it.
 	DrawOutline(OutDrawElements, LayerId, Geometry, Points, Color, 1.f);
@@ -117,17 +142,73 @@ void FGeoShapePainter::DrawFilled(FSlateWindowElementList& OutDrawElements, int3
 // ---------------------------------------------------------------------------------------------------------------------
 void FGeoShapePainter::DrawOutline(FSlateWindowElementList& OutDrawElements, int32 const LayerId,
 								   FGeometry const& Geometry, TArray<FVector2f> const& Points,
-								   FLinearColor const& Color, float const Thickness)
+								   FLinearColor const& Color, float const Thickness, bool const bClosed)
 {
 	if (Points.Num() < 2 || Color.A <= 0.f || Thickness <= 0.f)
 	{
 		return;
 	}
 
-	TArray<FVector2f> Closed = Points;
-	Closed.Add(Points[0]);
-	FSlateDrawElement::MakeLines(OutDrawElements, LayerId, Geometry.ToPaintGeometry(), MoveTemp(Closed),
-								 ESlateDrawEffect::None, Color, true, Thickness);
+	// A closed band of triangles rather than an antialiased polyline, whose open ends would fade into a hole where they
+	// meet. Across the band four rings: clear, solid, solid, clear; the clear rings sit one pixel out and feather it.
+	float const Pixel = 1.f / FMath::Max(Geometry.Scale, UE_KINDA_SMALL_NUMBER);
+	float const CoreHalf = .5f * FMath::Max(Thickness - Pixel, 0.f);
+	float const RingOffsets[] = {-CoreHalf - Pixel, -CoreHalf, CoreHalf, CoreHalf + Pixel};
+	int32 const RingCount = UE_ARRAY_COUNT(RingOffsets);
+
+	FLinearColor Solid = Color;
+	Solid.A *= FMath::Min(Thickness / Pixel, 1.f);
+	FColor const SolidColor = Solid.ToFColor(true);
+	FColor ClearColor = SolidColor;
+	ClearColor.A = 0;
+
+	FSlateRenderTransform const& RenderTransform = Geometry.GetAccumulatedRenderTransform();
+	int32 const Corners = Points.Num();
+	TArray<FSlateVertex> Vertices;
+	Vertices.Reserve(Corners * RingCount);
+	for (int32 Corner = 0; Corner < Corners; ++Corner)
+	{
+		// An open line's ends have one edge each, which then stands in for the missing one.
+		bool const bOpenStart = !bClosed && Corner == 0;
+		bool const bOpenEnd = !bClosed && Corner == Corners - 1;
+		FVector2f const Next = bOpenEnd ? 2.f * Points[Corner] - Points[Corner - 1] : Points[(Corner + 1) % Corners];
+		FVector2f const Previous =
+			bOpenStart ? 2.f * Points[Corner] - Next : Points[(Corner + Corners - 1) % Corners];
+		FVector2f const InNormal = (Points[Corner] - Previous).GetSafeNormal().GetRotated(90.f);
+		FVector2f const OutNormal = (Next - Points[Corner]).GetSafeNormal().GetRotated(90.f);
+		FVector2f const MiterDirection = (InNormal + OutNormal).GetSafeNormal();
+		FVector2f const Miter =
+			MiterDirection / FMath::Max(FVector2f::DotProduct(MiterDirection, OutNormal), .25f);
+		for (int32 Ring = 0; Ring < RingCount; ++Ring)
+		{
+			bool const bEdgeRing = Ring == 0 || Ring == RingCount - 1;
+			Vertices.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(
+				RenderTransform, Points[Corner] + RingOffsets[Ring] * Miter, FVector2f::ZeroVector,
+				bEdgeRing ? ClearColor : SolidColor));
+		}
+	}
+
+	TArray<SlateIndex> Indices;
+	int32 const Segments = bClosed ? Corners : Corners - 1;
+	Indices.Reserve(Segments * (RingCount - 1) * 6);
+	for (int32 Corner = 0; Corner < Segments; ++Corner)
+	{
+		int32 const Start = Corner * RingCount;
+		int32 const End = (Corner + 1) % Corners * RingCount;
+		for (int32 Ring = 0; Ring + 1 < RingCount; ++Ring)
+		{
+			Indices.Append({static_cast<SlateIndex>(Start + Ring), static_cast<SlateIndex>(Start + Ring + 1),
+							static_cast<SlateIndex>(End + Ring), static_cast<SlateIndex>(Start + Ring + 1),
+							static_cast<SlateIndex>(End + Ring + 1), static_cast<SlateIndex>(End + Ring)});
+		}
+	}
+	FSlateDrawElement::MakeCustomVerts(OutDrawElements, LayerId, GetWhiteTexture(), Vertices, Indices, nullptr, 0, 0);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FSlateResourceHandle FGeoShapePainter::GetWhiteTexture()
+{
+	return FSlateApplication::Get().GetRenderer()->GetResourceHandle(*FCoreStyle::Get().GetBrush("WhiteBrush"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -156,7 +237,8 @@ void FGeoShapePainter::PaintStyledFill(UGeoFrameStyle const& Style, FGeoOutlineS
 // ---------------------------------------------------------------------------------------------------------------------
 void FGeoShapePainter::PaintStyledLine(UGeoFrameStyle const& Style, FGeoOutlineState const& State, float const Opacity,
 									   TArray<FVector2f> const& Outline, FGeometry const& Geometry,
-									   FSlateWindowElementList& OutDrawElements, int32 const LayerId)
+									   FSlateWindowElementList& OutDrawElements, int32 const LayerId,
+									   FLinearColor const& GlowTint)
 {
 	auto const Blend = [&State, Opacity](FLinearColor const& Idle, FLinearColor const& Active)
 	{
@@ -164,7 +246,7 @@ void FGeoShapePainter::PaintStyledLine(UGeoFrameStyle const& Style, FGeoOutlineS
 		Color.A *= Opacity;
 		return Color;
 	};
-	DrawGlow(OutDrawElements, LayerId, Geometry, Outline, Blend(Style.GlowColor, Style.ActiveGlowColor),
+	DrawGlow(OutDrawElements, LayerId, Geometry, Outline, Blend(Style.GlowColor, Style.ActiveGlowColor) * GlowTint,
 			 Style.GlowThickness);
 	DrawOutline(OutDrawElements, LayerId + 1, Geometry, Outline, Blend(Style.LineColor, Style.ActiveLineColor),
 				Style.LineThickness);
@@ -213,4 +295,105 @@ void FGeoShapePainter::AdvanceStyledState(UGeoFrameStyle const& Style, bool cons
 			? FMath::FInterpConstantTo(InOutState.Activation, Target, DeltaTime, 1.f / Style.ActivationSeconds)
 			: Target;
 	InOutState.Travel += DeltaTime * FMath::Lerp(Style.RunnerSpeed, Style.ActiveRunnerSpeed, InOutState.Activation);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void FGeoShapePainter::DrawIcon(FSlateWindowElementList& OutDrawElements, int32 const LayerId,
+								FGeometry const& Geometry, UGeoIcon const& Icon, FSlateRect const& Box,
+								FLinearColor const& Tint)
+{
+	FVector2f const BoxSize(Box.GetSize());
+	float const Scale = FMath::Min(BoxSize.X, BoxSize.Y) / Icon.ViewSize;
+	FVector2f const Origin = FVector2f(Box.GetTopLeft()) + .5f * (BoxSize - FVector2f(Scale * Icon.ViewSize));
+	TArray<FLinearColor> const Colors = GeoColor::GetMeaningColors(Icon.Color, Icon.SecondaryColors);
+
+	for (FGeoIconStroke const& Stroke : Icon.Strokes)
+	{
+		if (!ensureMsgf(Colors.IsValidIndex(Stroke.ColorIndex), TEXT("%hs: %s has a stroke in colour %d of %d"),
+						__FUNCTION__, *Icon.GetName(), Stroke.ColorIndex, Colors.Num()))
+		{
+			continue;
+		}
+
+		TArray<FVector2f> Points;
+		Points.Reserve(Stroke.Points.Num());
+		for (FVector2D const& Point : Stroke.Points)
+		{
+			Points.Add(Origin + Scale * FVector2f(Point));
+		}
+
+		FLinearColor Color = Colors[Stroke.ColorIndex] * Tint;
+		Color.A *= Stroke.Opacity;
+		if (Stroke.bFilled)
+		{
+			DrawFilled(OutDrawElements, LayerId, Geometry, Points, Color);
+		}
+
+		float const Thickness = Scale * Stroke.LineThickness;
+		if (Stroke.DashLength <= 0.f)
+		{
+			DrawOutline(OutDrawElements, LayerId, Geometry, Points, Color, Thickness, Stroke.bClosed);
+		}
+		else
+		{
+			if (Stroke.bClosed && !Points.IsEmpty())
+			{
+				Points.Add(Points[0]);
+			}
+			for (TArray<FVector2f> const& Dash :
+				 SplitIntoDashes(Points, Scale * Stroke.DashLength, Scale * Stroke.DashGap))
+			{
+				DrawOutline(OutDrawElements, LayerId, Geometry, Dash, Color, Thickness, false);
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<TArray<FVector2f>> FGeoShapePainter::SplitIntoDashes(TArray<FVector2f> const& Points, float const DashLength,
+															  float const GapLength)
+{
+	TArray<TArray<FVector2f>> Dashes;
+	TArray<FVector2f> Dash;
+	bool bInDash = true;
+	float Left = DashLength;
+	for (int32 Index = 0; Index + 1 < Points.Num(); ++Index)
+	{
+		FVector2f Start = Points[Index];
+		FVector2f const End = Points[Index + 1];
+		if (bInDash && Dash.IsEmpty())
+		{
+			Dash.Add(Start);
+		}
+
+		float SegmentLeft = FVector2f::Distance(Start, End);
+		while (SegmentLeft > Left)
+		{
+			Start = FMath::Lerp(Start, End, Left / SegmentLeft);
+			SegmentLeft -= Left;
+			if (bInDash)
+			{
+				Dash.Add(Start);
+				Dashes.Add(MoveTemp(Dash));
+				Dash.Reset();
+			}
+			else
+			{
+				Dash.Add(Start);
+			}
+			bInDash = !bInDash;
+			Left = bInDash ? DashLength : GapLength;
+		}
+		Left -= SegmentLeft;
+		if (bInDash)
+		{
+			Dash.Add(End);
+		}
+	}
+
+	if (Dash.Num() > 1)
+	{
+		Dashes.Add(MoveTemp(Dash));
+	}
+	return Dashes;
 }

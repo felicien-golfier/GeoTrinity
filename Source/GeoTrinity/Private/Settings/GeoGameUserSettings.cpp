@@ -28,6 +28,13 @@ void UGeoGameUserSettings::SetVolume(EGeoVolumeChannel const Channel, float cons
 	SaveSettings();
 }
 
+void UGeoGameUserSettings::SetShowCombatStats(bool const bShow)
+{
+	bShowCombatStats = bShow;
+	SaveSettings();
+	OnShowCombatStatsChanged.Broadcast(bShow);
+}
+
 void UGeoGameUserSettings::ApplyVolumes(FAudioDevice& AudioDevice) const
 {
 	TSoftObjectPtr<USoundMix> const BaseSoundMix(GetDefault<UAudioSettings>()->DefaultBaseSoundMix);

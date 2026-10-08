@@ -34,7 +34,8 @@
       "mcp__mcp-unreal__blueprint_query",
       "Bash(uv run:*)",
       "PowerShell(uv run:*)",
-      "Edit(AI/Python/**)"
+      "Edit(AI/Python/**)",
+      "Bash(*Tools\\\\*.bat*)"
     ]
   },
   "enableAllProjectMcpServers": true,

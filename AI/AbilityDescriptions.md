@@ -25,7 +25,7 @@ Cooldown is shown next to the ability's name in the UI — don't append it to th
 | `{Damage}` / `{Heal}` / `{Shield}` | Sum of all `FDamageEffectData` / `FHealEffectData` / `FShieldEffectData` amounts |
 | `{Effects}` | Auto-generated list, one line per effect entry (see below) |
 | `{EffectValue}` / `{EffectDuration}` | Magnitude and duration of the first `FGameplayEffectData` entry, as two independent scalars — word them yourself (`{EffectValue:%} boost for {EffectDuration}s`) rather than taking the bundled `{Effects}` line |
-| `{PropertyName}` | Any numeric or `FScalableFloat` UPROPERTY on the ability class, by exact C++ name (`{DashDistance}`) |
+| `{PropertyName}` | Any numeric or `FScalableFloat` UPROPERTY on the ability class, by exact C++ name (`{DashDistance}`); a name the ability lacks is read from `UGameDataSettings` (`{MinDeployDistance}`) |
 | `{EffectProperty}` | A single `TInstancedStruct<FEffectData>` UPROPERTY holding an `FGameplayEffectData` — its `Magnitude` |
 | `{ArrayName}` | Any `TArray<TInstancedStruct<FEffectData>>` UPROPERTY — expands like `{Effects}` over that array |
 | `{A*B}` | Product of two numeric/`FScalableFloat` properties, for a derived cap like per-unit × max-count. Honors suffixes |
@@ -44,6 +44,13 @@ Pick the percent form by the sentence: **"X% of"** → `:%` (a value that *is* a
 `:+%` (a multiplier phrased as a bonus). Ranges percent-format both ends. Scalar tokens are the numeric /
 `FScalableFloat` properties plus `{Damage}`/`{Heal}`/`{Shield}`/`{Cooldown}`/`{FireDelay}`; `{Effects}` and
 array tokens ignore `:%`/`:+%` but honor `:range`.
+
+## Stat lines
+
+A line starting with `|` is a stat of the ability's detail panel (the drawer opened by clicking a card on the
+abilities page), never part of the description: `| LABEL | value`, the value written with the same tokens and
+suffixes (`| SPEED | +{SpeedBuffEffect:%}`). One per number a player compares; keep labels to one or two words in
+capitals. Read by `FGameplayAbilityInfo::GetResolvedStats()`.
 
 ## `{Effects}`
 

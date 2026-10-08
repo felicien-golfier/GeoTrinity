@@ -6,6 +6,7 @@
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Settings/GameDataSettings.h"
+#include "Tool/GeoIcon.h"
 
 FString MarkUpValue(FString const& Value, FDescriptionFormat const& Format)
 {

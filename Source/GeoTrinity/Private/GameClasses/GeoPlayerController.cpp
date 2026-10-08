@@ -13,7 +13,6 @@
 #include "GameFramework/PlayerState.h"
 #include "InputAction.h"
 #include "Kismet/GameplayStatics.h"
-#include "System/GeoCombatStatsSubsystem.h"
 #include "TimerManager.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "UserSettings/EnhancedInputUserSettings.h"
@@ -237,6 +236,17 @@ void AGeoPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
+	// Every local player has their own stat counter, so this binds before the player-1 check below.
+	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent);
+	if (EnhancedInput && !ToggleStatsDetailAction.IsNull())
+	{
+		EnhancedInput->BindActionInstanceLambda(ToggleStatsDetailAction.LoadSynchronous(), ETriggerEvent::Started,
+												[this](FInputActionInstance const& /*Instance*/)
+												{
+													OnToggleStatsDetail.Broadcast();
+												});
+	}
+
 	// The pause menu is one shared window over one shared view: only player 1 opens it, whatever device they hold.
 	ULocalPlayer const* LocalPlayer = GetLocalPlayer();
 	if (!LocalPlayer || LocalPlayer->GetLocalPlayerIndex() != 0)
@@ -244,7 +254,6 @@ void AGeoPlayerController::SetupInputComponent()
 		return;
 	}
 
-	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent);
 	if (!ensureMsgf(EnhancedInput && !ToggleMenuAction.IsNull(),
 					TEXT("AGeoPlayerController: ToggleMenuAction is not set")))
 	{
@@ -279,7 +288,7 @@ void AGeoPlayerController::TogglePauseMenu()
 	{
 		PauseMenuWidget = CreateWidget<UUserWidget>(this, PauseMenuWidgetClass);
 	}
-	PauseMenuWidget->AddToViewport();
+	PauseMenuWidget->AddToViewport(PauseMenuZOrder);
 	SetMenuInputMappingActive(true);
 	FlushPressedKeys();
 	SetInputMode(FInputModeGameAndUI()
@@ -313,14 +322,6 @@ void AGeoPlayerController::Tick(float DeltaTime)
 	{
 		float const Ping = PlayerState->GetPingInMilliseconds();
 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Green, FString::Printf(TEXT("Ping: %.0f ms"), Ping));
-	}
-
-	if (GeoLib::IsServer(this) && UGeoCombatStatsSubsystem::IsDebugDisplayEnabled())
-	{
-		if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
-		{
-			CombatStats->ComputePlayerStats(GetWorld()->GetTimeSeconds());
-		}
 	}
 }
 #endif

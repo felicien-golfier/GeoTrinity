@@ -13,6 +13,7 @@
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Settings/GameDataSettings.h"
 
 /** Returns the CDO's first asset tag under Root, ensuring when the Blueprint's Tag category is missing it.
  *  Called at asset load / property change, not at runtime — synchronous CDO access is intentional. */
@@ -60,14 +61,21 @@ static FString BuildEffectsSummary(TArray<TInstancedStruct<FEffectData>> const& 
 }
 
 /** Resolves a numeric or FScalableFloat property to its scalar value at the given level; false if not such a property.
- */
+ *  A name the ability lacks is looked up on UGameDataSettings, where project-wide values (deploy distances) live. */
 static bool ResolvePropertyScalar(FString const& PropertyName, UGeoGameplayAbility const& AbilityCDO, int32 Level,
 								  float& OutValue)
 {
+	UObject const* Owner = &AbilityCDO;
 	FProperty const* Property = AbilityCDO.GetClass()->FindPropertyByName(*PropertyName);
+	if (!Property)
+	{
+		Owner = GetDefault<UGameDataSettings>();
+		Property = UGameDataSettings::StaticClass()->FindPropertyByName(*PropertyName);
+	}
+
 	if (FNumericProperty const* Numeric = CastField<FNumericProperty>(Property))
 	{
-		void const* ValuePtr = Numeric->ContainerPtrToValuePtr<void>(&AbilityCDO);
+		void const* ValuePtr = Numeric->ContainerPtrToValuePtr<void>(Owner);
 		OutValue = Numeric->IsFloatingPoint() ? Numeric->GetFloatingPointPropertyValue(ValuePtr)
 											  : Numeric->GetSignedIntPropertyValue(ValuePtr);
 		return true;
@@ -75,7 +83,7 @@ static bool ResolvePropertyScalar(FString const& PropertyName, UGeoGameplayAbili
 	if (FStructProperty const* Struct = CastField<FStructProperty>(Property);
 		Struct && Struct->Struct == TBaseStructure<FScalableFloat>::Get())
 	{
-		OutValue = Struct->ContainerPtrToValuePtr<FScalableFloat>(&AbilityCDO)->GetValueAtLevel(Level);
+		OutValue = Struct->ContainerPtrToValuePtr<FScalableFloat>(Owner)->GetValueAtLevel(Level);
 		return true;
 	}
 	return false;
@@ -320,14 +328,13 @@ static void WriteDescriptionToFile(FGameplayTag const& AbilityTag, FString const
 }
 #endif
 
-// ---------------------------------------------------------------------------------------------------------------------
-FString FGameplayAbilityInfo::GetResolvedDescription(int32 AbilityLevel, bool bRichTextValues) const
+/** Text with every {Token} replaced by its live value on Info's ability (see GetResolvedDescription); unchanged when
+ *  Info names no Geo ability. */
+static FString ResolveTokens(FString const& Text, FGameplayAbilityInfo const& Info, int32 AbilityLevel,
+							 bool bRichTextValues)
 {
-	FString const FileDescription = LoadDescriptionFromFile(AbilityTag);
-	FString const& Text = FileDescription.IsEmpty() ? Description : FileDescription;
-
 	UGeoGameplayAbility const* AbilityCDO =
-		AbilityClass ? Cast<UGeoGameplayAbility>(AbilityClass->GetDefaultObject()) : nullptr;
+		Info.AbilityClass ? Cast<UGeoGameplayAbility>(Info.AbilityClass->GetDefaultObject()) : nullptr;
 	if (!AbilityCDO)
 	{
 		return Text;
@@ -392,12 +399,57 @@ FString FGameplayAbilityInfo::GetResolvedDescription(int32 AbilityLevel, bool bR
 		else
 		{
 			UE_LOG(LogGeoASC, Warning, TEXT("Ability %s description token {%s} could not be resolved"),
-				   *AbilityDisplayName, *Token);
+				   *Info.AbilityDisplayName, *Token);
 			Resolved += Text.Mid(OpenBrace, CloseBrace - OpenBrace + 1);
 		}
 		Index = CloseBrace + 1;
 	}
 	return Resolved;
+}
+
+/** The lines of Info's description source (its file section, else its Description): stat lines ("| LABEL | value")
+ *  into OutStatLines, the others into OutBodyLines. */
+static void SplitDescriptionLines(FGameplayAbilityInfo const& Info, TArray<FString>& OutBodyLines,
+								  TArray<FString>& OutStatLines)
+{
+	FString const FileDescription = LoadDescriptionFromFile(Info.AbilityTag);
+	TArray<FString> Lines;
+	(FileDescription.IsEmpty() ? Info.Description : FileDescription).ParseIntoArrayLines(Lines, false);
+	for (FString& Line : Lines)
+	{
+		(Line.StartsWith(TEXT("|")) ? OutStatLines : OutBodyLines).Add(MoveTemp(Line));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FString FGameplayAbilityInfo::GetResolvedDescription(int32 AbilityLevel, bool bRichTextValues) const
+{
+	TArray<FString> BodyLines;
+	TArray<FString> StatLines;
+	SplitDescriptionLines(*this, BodyLines, StatLines);
+	return ResolveTokens(FString::Join(BodyLines, TEXT("\n")).TrimEnd(), *this, AbilityLevel, bRichTextValues);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FGeoAbilityStat> FGameplayAbilityInfo::GetResolvedStats(int32 AbilityLevel, bool bRichTextValues) const
+{
+	TArray<FString> BodyLines;
+	TArray<FString> StatLines;
+	SplitDescriptionLines(*this, BodyLines, StatLines);
+
+	TArray<FGeoAbilityStat> Stats;
+	for (FString const& Line : StatLines)
+	{
+		TArray<FString> Cells;
+		Line.ParseIntoArray(Cells, TEXT("|"));
+		if (ensureMsgf(Cells.Num() == 2, TEXT("Ability %s stat line '%s' is not '| LABEL | value'"), *AbilityDisplayName,
+					   *Line))
+		{
+			Stats.Add({Cells[0].TrimStartAndEnd(),
+					   ResolveTokens(Cells[1].TrimStartAndEnd(), *this, AbilityLevel, bRichTextValues)});
+		}
+	}
+	return Stats;
 }
 
 static void PopulateTagsForPlayerAbilitiesArray(TArray<FPlayersGameplayAbilityInfo>& Infos)

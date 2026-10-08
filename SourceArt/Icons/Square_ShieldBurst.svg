@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="Shield" fill="none" stroke="#F4EEFF" stroke-width="2">
+  <polyline points="3,40 12,10 23,30" stroke-dasharray="3 3" stroke-opacity=".6"/>
+  <polygon points="42,22 37.5,29.8 28.5,29.8 24,22 28.5,14.2 37.5,14.2"/>
+  <polygon points="37,22 34.5,26.3 29.5,26.3 27,22 29.5,17.7 34.5,17.7" fill="#F4EEFF"/>
+</svg>

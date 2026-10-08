@@ -74,10 +74,14 @@ public:
 	int32 AddClassXp(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 Xp);
 
 	/**
-	 * Slots a free copy of GemId into PlayerClass's socket SocketIndex, returning whatever it held to free.
-	 * Refused (false) when the socket is still locked at the class level, is of another tier, no copy is free, or
-	 * GemId is a Core this loadout already holds.
+	 * Whether Equip would take GemId into PlayerClass's socket SocketIndex: not when the socket is still locked at the
+	 * class level, is of another tier or already holds GemId, no copy is free, or GemId is a Core this loadout already
+	 * holds.
 	 */
+	bool CanEquip(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 SocketIndex, FName GemId) const;
+
+	/** Slots a free copy of GemId into PlayerClass's socket SocketIndex, returning whatever it held to free. Refused
+	 * (false) when CanEquip is not. */
 	bool Equip(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 SocketIndex, FName GemId);
 
 	/** Empties PlayerClass's socket SocketIndex; the copy goes back to free. */
