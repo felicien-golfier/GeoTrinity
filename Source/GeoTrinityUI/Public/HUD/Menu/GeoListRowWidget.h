@@ -70,6 +70,9 @@ public:
 	 */
 	void SetTint(EGeoListRowTint InTint);
 
+	/** Draws RowFrame's line and glow in Color, for a row that stands for something with its own colour. */
+	void SetFrameTint(FLinearColor const& Color);
+
 	/** Gives the row's button the user's focus, as a list rebuilt under the gamepad does for the row it stood on. */
 	void FocusRow();
 

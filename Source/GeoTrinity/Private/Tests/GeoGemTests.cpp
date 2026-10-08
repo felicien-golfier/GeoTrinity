@@ -170,6 +170,49 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemBuildsTest, "GeoTrinity.Gems.Builds", GeoGemTestFlags)
+
+bool FGeoGemBuildsTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	UGeoGemProfileSave* Profile = NewObject<UGeoGemProfileSave>();
+	int32 const LevelOneChip = FindSocket(EGeoGemTier::Chip, 1);
+	auto const CountPlayed = [Profile](FName const GemId)
+	{
+		return static_cast<int32>(Algo::Count(Profile->GetLoadout(EPlayerClass::Triangle).Sockets, GemId));
+	};
+
+	Profile->AddGems("Power", 3);
+	Profile->Equip(Catalog, EPlayerClass::Triangle, LevelOneChip, "Power");
+	TestTrue(TEXT("A build is added"), Profile->AddBuild(EPlayerClass::Triangle));
+	TestEqual(TEXT("The new build is played"), Profile->GetActiveBuild(EPlayerClass::Triangle), 1);
+	TestEqual(TEXT("The new build starts empty"), CountPlayed(NAME_None), GeoGem::GetSockets().Num());
+	TestEqual(TEXT("Every copy is free in the new build"), Profile->GetFreeCount("Power", EPlayerClass::Triangle), 3);
+
+	Profile->Equip(Catalog, EPlayerClass::Triangle, LevelOneChip, "Power");
+	TestEqual(TEXT("Builds share copies: breaking down keeps the most one build slots"),
+			  Profile->GetBreakableCount("Power"), 2);
+
+	Profile->RenameActiveBuild(EPlayerClass::Triangle, TEXT("  A very long build name  "));
+	TestEqual(TEXT("A name is trimmed and cut"), Profile->GetBuilds(EPlayerClass::Triangle)[1].Name,
+			  FString(TEXT("A very long bu")));
+
+	Profile->RemoveActiveBuild(EPlayerClass::Triangle);
+	TestEqual(TEXT("Removing a build plays the one before"), Profile->GetActiveBuild(EPlayerClass::Triangle), 0);
+	TestEqual(TEXT("The first build kept its gem"), CountPlayed("Power"), 1);
+	Profile->RemoveActiveBuild(EPlayerClass::Triangle);
+	TestEqual(TEXT("The last build stays"), Profile->GetBuilds(EPlayerClass::Triangle).Num(), 1);
+
+	for (int32 BuildIndex = 1; BuildIndex < GeoGem::MaxBuilds; ++BuildIndex)
+	{
+		Profile->AddBuild(EPlayerClass::Triangle);
+	}
+
+	TestFalse(TEXT("No build past the max"), Profile->AddBuild(EPlayerClass::Triangle));
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemForgeTest, "GeoTrinity.Gems.Forge", GeoGemTestFlags)
 
 bool FGeoGemForgeTest::RunTest(FString const& /*Parameters*/)

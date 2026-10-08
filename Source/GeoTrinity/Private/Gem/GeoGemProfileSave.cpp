@@ -8,8 +8,16 @@
 
 UGeoGemProfileSave* UGeoGemProfileSave::Load(int32 const LocalPlayerIndex)
 {
-	return CastChecked<UGeoGemProfileSave>(
-		GeoLib::LoadUserSaveFile(GetFileName(LocalPlayerIndex), StaticClass()));
+	UGeoGemProfileSave* Profile =
+		CastChecked<UGeoGemProfileSave>(GeoLib::LoadUserSaveFile(GetFileName(LocalPlayerIndex), StaticClass()));
+	TArray<EPlayerClass> PlayerClasses;
+	Profile->Classes.GetKeys(PlayerClasses);
+	for (EPlayerClass const PlayerClass : PlayerClasses)
+	{
+		Profile->FindOrAddClass(PlayerClass);
+	}
+
+	return Profile;
 }
 
 void UGeoGemProfileSave::Save(int32 const LocalPlayerIndex)
@@ -19,7 +27,7 @@ void UGeoGemProfileSave::Save(int32 const LocalPlayerIndex)
 
 int32 UGeoGemProfileSave::GetFreeCount(FName const GemId, EPlayerClass const PlayerClass) const
 {
-	return GetOwnedCount(GemId) - GetSlottedCount(GemId, PlayerClass);
+	return GetOwnedCount(GemId) - static_cast<int32>(Algo::Count(GetLoadout(PlayerClass).Sockets, GemId));
 }
 
 int32 UGeoGemProfileSave::GetBreakableCount(FName const GemId) const
@@ -27,7 +35,10 @@ int32 UGeoGemProfileSave::GetBreakableCount(FName const GemId) const
 	int32 MostSlotted = 0;
 	for (TPair<EPlayerClass, FGeoGemClassProgress> const& Class : Classes)
 	{
-		MostSlotted = FMath::Max(MostSlotted, GetSlottedCount(GemId, Class.Key));
+		for (FGeoGemBuild const& Build : Class.Value.Builds)
+		{
+			MostSlotted = FMath::Max(MostSlotted, static_cast<int32>(Algo::Count(Build.Loadout.Sockets, GemId)));
+		}
 	}
 
 	return GetOwnedCount(GemId) - MostSlotted;
@@ -50,11 +61,61 @@ FGeoGemLoadout UGeoGemProfileSave::GetLoadout(EPlayerClass const PlayerClass) co
 	FGeoGemLoadout Loadout;
 	if (FGeoGemClassProgress const* Progress = Classes.Find(PlayerClass))
 	{
-		Loadout = Progress->Loadout;
+		Loadout = Progress->Builds[Progress->ActiveBuild].Loadout;
 	}
 
 	Loadout.Sockets.SetNum(GeoGem::GetSockets().Num());
 	return Loadout;
+}
+
+TArray<FGeoGemBuild> UGeoGemProfileSave::GetBuilds(EPlayerClass const PlayerClass) const
+{
+	FGeoGemClassProgress const* Progress = Classes.Find(PlayerClass);
+	return Progress ? Progress->Builds : TArray<FGeoGemBuild>{FGeoGemBuild()};
+}
+
+int32 UGeoGemProfileSave::GetActiveBuild(EPlayerClass const PlayerClass) const
+{
+	FGeoGemClassProgress const* Progress = Classes.Find(PlayerClass);
+	return Progress ? Progress->ActiveBuild : 0;
+}
+
+void UGeoGemProfileSave::SetActiveBuild(EPlayerClass const PlayerClass, int32 const BuildIndex)
+{
+	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);
+	if (ensureMsgf(Progress.Builds.IsValidIndex(BuildIndex), TEXT("%hs: no build %d"), __FUNCTION__, BuildIndex))
+	{
+		Progress.ActiveBuild = BuildIndex;
+	}
+}
+
+bool UGeoGemProfileSave::AddBuild(EPlayerClass const PlayerClass)
+{
+	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);
+	bool const bCanAdd = Progress.Builds.Num() < GeoGem::MaxBuilds;
+	if (bCanAdd)
+	{
+		Progress.Builds.AddDefaulted_GetRef().Loadout.Sockets.SetNum(GeoGem::GetSockets().Num());
+		Progress.ActiveBuild = Progress.Builds.Num() - 1;
+	}
+
+	return bCanAdd;
+}
+
+void UGeoGemProfileSave::RemoveActiveBuild(EPlayerClass const PlayerClass)
+{
+	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);
+	if (Progress.Builds.Num() > 1)
+	{
+		Progress.Builds.RemoveAt(Progress.ActiveBuild);
+		Progress.ActiveBuild = FMath::Max(0, Progress.ActiveBuild - 1);
+	}
+}
+
+void UGeoGemProfileSave::RenameActiveBuild(EPlayerClass const PlayerClass, FString const& Name)
+{
+	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);
+	Progress.Builds[Progress.ActiveBuild].Name = Name.TrimStartAndEnd().Left(GeoGem::MaxBuildNameLength);
 }
 
 void UGeoGemProfileSave::AddGems(FName const GemId, int32 const Count)
@@ -114,7 +175,7 @@ bool UGeoGemProfileSave::Equip(UGeoGemCatalog const& Catalog, EPlayerClass const
 	bool const bCanEquip = CanEquip(Catalog, PlayerClass, SocketIndex, GemId);
 	if (bCanEquip)
 	{
-		FindOrAddClass(PlayerClass).Loadout.Sockets[SocketIndex] = GemId;
+		GetActiveSockets(PlayerClass)[SocketIndex] = GemId;
 	}
 
 	return bCanEquip;
@@ -122,7 +183,7 @@ bool UGeoGemProfileSave::Equip(UGeoGemCatalog const& Catalog, EPlayerClass const
 
 void UGeoGemProfileSave::Unequip(EPlayerClass const PlayerClass, int32 const SocketIndex)
 {
-	TArray<FName>& Sockets = FindOrAddClass(PlayerClass).Loadout.Sockets;
+	TArray<FName>& Sockets = GetActiveSockets(PlayerClass);
 	if (ensureMsgf(Sockets.IsValidIndex(SocketIndex), TEXT("%hs: no socket %d"), __FUNCTION__, SocketIndex))
 	{
 		Sockets[SocketIndex] = NAME_None;
@@ -133,7 +194,7 @@ int32 UGeoGemProfileSave::FillEmptySockets(UGeoGemCatalog const& Catalog, EPlaye
 										   FName const GemId)
 {
 	int32 Filled = 0;
-	TArray<FName> const& Sockets = FindOrAddClass(PlayerClass).Loadout.Sockets;
+	TArray<FName> const& Sockets = GetActiveSockets(PlayerClass);
 	for (int32 SocketIndex = 0; SocketIndex < Sockets.Num(); ++SocketIndex)
 	{
 		if (Sockets[SocketIndex].IsNone() && Equip(Catalog, PlayerClass, SocketIndex, GemId))
@@ -210,12 +271,21 @@ FString UGeoGemProfileSave::GetFileName(int32 const LocalPlayerIndex)
 FGeoGemClassProgress& UGeoGemProfileSave::FindOrAddClass(EPlayerClass const PlayerClass)
 {
 	FGeoGemClassProgress& Progress = Classes.FindOrAdd(PlayerClass);
-	Progress.Loadout.Sockets.SetNum(GeoGem::GetSockets().Num());
+	if (Progress.Builds.IsEmpty())
+	{
+		Progress.Builds.Add({FString(), MoveTemp(Progress.Loadout)});
+	}
+
+	for (FGeoGemBuild& Build : Progress.Builds)
+	{
+		Build.Loadout.Sockets.SetNum(GeoGem::GetSockets().Num());
+	}
+
 	return Progress;
 }
 
-int32 UGeoGemProfileSave::GetSlottedCount(FName const GemId, EPlayerClass const PlayerClass) const
+TArray<FName>& UGeoGemProfileSave::GetActiveSockets(EPlayerClass const PlayerClass)
 {
-	FGeoGemClassProgress const* Progress = Classes.Find(PlayerClass);
-	return Progress ? static_cast<int32>(Algo::Count(Progress->Loadout.Sockets, GemId)) : 0;
+	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);
+	return Progress.Builds[Progress.ActiveBuild].Loadout.Sockets;
 }

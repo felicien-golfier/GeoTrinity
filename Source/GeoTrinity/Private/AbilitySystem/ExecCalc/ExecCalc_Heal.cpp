@@ -31,9 +31,12 @@ void UExecCalc_Heal::Execute_Implementation(FGameplayEffectCustomExecutionParame
 
 	float HealAmount = EffectSpec.GetSetByCallerMagnitude(Tags.Gameplay_Heal, false, 0.f);
 
-	HealAmount *= GeoASLib::GetStatValue(SourceASC, UCharacterAttributeSet::GetAppliedHealBoostAttribute(), 1.f)
-		* GeoASLib::GetStatValue(TargetASC, UCharacterAttributeSet::GetReceivedHealBoostAttribute(), 1.f)
-		* GeoASLib::RollCritMultiplier(SourceASC);
+	if (!GeoContext || !GeoContext->ShouldSkipStatModifiers())
+	{
+		HealAmount *= GeoASLib::GetStatValue(SourceASC, UCharacterAttributeSet::GetAppliedHealBoostAttribute(), 1.f)
+			* GeoASLib::GetStatValue(TargetASC, UCharacterAttributeSet::GetReceivedHealBoostAttribute(), 1.f)
+			* GeoASLib::RollCritMultiplier(SourceASC);
+	}
 
 	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingHealAttribute(),
 													   EGameplayModOp::Additive, HealAmount};

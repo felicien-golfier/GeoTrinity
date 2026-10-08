@@ -9,6 +9,7 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/UniformGridPanel.h"
 #include "Components/VerticalBox.h"
@@ -19,9 +20,11 @@
 #include "Gem/GeoGemProfileSave.h"
 #include "HUD/Menu/GeoGemSocketButton.h"
 #include "HUD/Menu/GeoMenuButton.h"
+#include "HUD/Style/GeoFrame.h"
 #include "HUD/Style/GeoGemGlyph.h"
 #include "HUD/Style/GeoMeter.h"
 #include "HUD/Style/GeoShape.h"
+#include "HUD/Style/GeoThemedInputs.h"
 #include "HUD/Style/GeoUITheme.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -95,6 +98,8 @@ void UGeoGemLoadoutWidget::Refresh()
 		BuildBoard();
 	}
 	ShowClassTabs(*Profile);
+	ShowInPlay(*Profile);
+	ShowBuildTabs(*Profile);
 	ShowLevel(*Profile);
 	ShowSockets(*Profile, *Catalog);
 	ShowFilters(*Profile, *Catalog);
@@ -208,6 +213,7 @@ void UGeoGemLoadoutWidget::ShowClassTabs(UGeoGemProfileSave const& Profile)
 											 ShownClass = PlayerClass;
 											 PickedGem = NAME_None;
 											 PickedSocket = INDEX_NONE;
+											 bRenamingBuild = false;
 											 Refresh();
 										 });
 		if (Tab)
@@ -221,6 +227,184 @@ void UGeoGemLoadoutWidget::ShowClassTabs(UGeoGemProfileSave const& Profile)
 				MakeText(EGeoTextRole::Mono, FText::Format(ClassLevelFormat, Profile.GetClassLevel(PlayerClass))), 0.f);
 			ClassTabBox->AddChildToHorizontalBox(Tab)->SetPadding(FMargin(0.f, 0.f, ClassTabGap, 0.f));
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowInPlay(UGeoGemProfileSave const& Profile)
+{
+	TArray<FGeoGemBuild> const Builds = Profile.GetBuilds(ShownClass);
+	int32 const ActiveBuild = Profile.GetActiveBuild(ShownClass);
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	FGeoClassStyle const* ClassStyle = Theme ? Theme->FindClassStyle(ShownClass) : nullptr;
+	if (InPlayShape && ClassStyle)
+	{
+		InPlayShape->SetClassShape(*ClassStyle);
+	}
+	if (InPlayText)
+	{
+		InPlayText->SetText(FText::Format(InPlayFormat, GetBuildName(Builds[ActiveBuild], ActiveBuild)));
+	}
+	if (BuildCountText)
+	{
+		BuildCountText->SetText(FText::Format(BuildCountFormat, Builds.Num(), GeoGem::MaxBuilds));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowBuildTabs(UGeoGemProfileSave const& Profile)
+{
+	if (!BuildTabBox)
+	{
+		return;
+	}
+
+	TArray<FGeoGemBuild> const Builds = Profile.GetBuilds(ShownClass);
+	int32 const ActiveBuild = Profile.GetActiveBuild(ShownClass);
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	FGeoClassStyle const* ClassStyle = Theme ? Theme->FindClassStyle(ShownClass) : nullptr;
+	BuildTabBox->ClearChildren();
+	auto AddTab = [this](UWidget* Tab)
+	{
+		if (Tab)
+		{
+			UHorizontalBoxSlot* const TabSlot = BuildTabBox->AddChildToHorizontalBox(Tab);
+			TabSlot->SetPadding(FMargin(0.f, 0.f, BuildTabGap, 0.f));
+			TabSlot->SetVerticalAlignment(VAlign_Center);
+		}
+	};
+	auto AddTool = [this, &AddTab](FText const& Text, TFunction<void()> Picked)
+	{
+		UGeoListRowWidget* Tool = MakeRow(EGeoListRowTint::Normal, MoveTemp(Picked));
+		if (Tool)
+		{
+			Tool->AddTextColumn(Text, 0.f);
+		}
+
+		AddTab(Tool);
+	};
+
+	for (int32 BuildIndex = 0; BuildIndex < Builds.Num(); ++BuildIndex)
+	{
+		bool const bInPlay = BuildIndex == ActiveBuild;
+		if (bInPlay && bRenamingBuild)
+		{
+			UGeoEditableTextBox* NameField =
+				WidgetTree->ConstructWidget<UGeoEditableTextBox>(UGeoEditableTextBox::StaticClass());
+			NameField->SetText(FText::FromString(Builds[BuildIndex].Name));
+			NameField->SetHintText(FText::Format(BuildNameFormat, BuildIndex + 1));
+			NameField->SetSelectAllTextWhenFocused(true);
+			NameField->OnTextCommitted.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleBuildNameCommitted);
+			UGeoFrame* FieldFrame = WidgetTree->ConstructWidget<UGeoFrame>(UGeoFrame::StaticClass());
+			FieldFrame->SetFrameStyle(Theme ? Theme->FieldFrameStyle : nullptr);
+			FieldFrame->SetActivateOnHoverAndFocus(true);
+			FieldFrame->SetContent(NameField);
+			USizeBox* FieldSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+			FieldSize->SetWidthOverride(BuildNameFieldWidth);
+			FieldSize->SetContent(FieldFrame);
+			AddTab(FieldSize);
+			NameField->SetKeyboardFocus();
+		}
+		else
+		{
+			TFunction<void()> Play = [this, BuildIndex]
+			{
+				ChangeBuilds(
+					[this, BuildIndex](UGeoGemProfileSave& ChangedProfile)
+					{
+						ChangedProfile.SetActiveBuild(ShownClass, BuildIndex);
+					});
+			};
+			UGeoListRowWidget* Tab = MakeRow(bInPlay ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
+											 bInPlay ? TFunction<void()>() : MoveTemp(Play));
+			if (Tab && bInPlay && ClassStyle)
+			{
+				Tab->SetFrameTint(ClassStyle->Color);
+				UGeoShape* Shape = WidgetTree->ConstructWidget<UGeoShape>(UGeoShape::StaticClass());
+				Shape->Size = BuildTabShapeSize;
+				Shape->SetClassShape(*ClassStyle);
+				Tab->AddColumn(Shape, 0.f);
+			}
+			if (Tab)
+			{
+				Tab->AddTextColumn(GetBuildName(Builds[BuildIndex], BuildIndex), 0.f);
+			}
+
+			AddTab(Tab);
+		}
+
+		if (bInPlay && !bRenamingBuild)
+		{
+			AddTool(RenameBuildText,
+					[this]
+					{
+						bRenamingBuild = true;
+						Refresh();
+					});
+		}
+		if (bInPlay && !bRenamingBuild && Builds.Num() > 1)
+		{
+			AddTool(RemoveBuildText,
+					[this]
+					{
+						ChangeBuilds(
+							[this](UGeoGemProfileSave& ChangedProfile)
+							{
+								ChangedProfile.RemoveActiveBuild(ShownClass);
+							});
+					});
+		}
+	}
+
+	if (Builds.Num() < GeoGem::MaxBuilds)
+	{
+		AddTool(AddBuildText,
+				[this]
+				{
+					ChangeBuilds(
+						[this](UGeoGemProfileSave& ChangedProfile)
+						{
+							ChangedProfile.AddBuild(ShownClass);
+						});
+				});
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FText UGeoGemLoadoutWidget::GetBuildName(FGeoGemBuild const& Build, int32 const BuildIndex) const
+{
+	return Build.Name.IsEmpty() ? FText::Format(BuildNameFormat, BuildIndex + 1)
+								: FText::FromString(Build.Name.ToUpper());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ChangeBuilds(TFunctionRef<void(UGeoGemProfileSave&)> Change)
+{
+	if (UGeoGemProfileSave* Profile = GetProfile())
+	{
+		Change(*Profile);
+		PickedGem = NAME_None;
+		PickedSocket = INDEX_NONE;
+		bRenamingBuild = false;
+		CommitChanges();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleBuildNameCommitted(FText const& Text, ETextCommit::Type const CommitMethod)
+{
+	if (bRenamingBuild && CommitMethod == ETextCommit::OnCleared)
+	{
+		bRenamingBuild = false;
+		Refresh();
+	}
+	else if (bRenamingBuild)
+	{
+		ChangeBuilds(
+			[this, &Text](UGeoGemProfileSave& ChangedProfile)
+			{
+				ChangedProfile.RenameActiveBuild(ShownClass, Text.ToString());
+			});
 	}
 }
 

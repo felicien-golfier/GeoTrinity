@@ -12,9 +12,11 @@ class UCanvasPanel;
 class UGeoGemSocketButton;
 class UGeoMenuButton;
 class UGeoMeter;
+class UGeoShape;
 class UHorizontalBox;
 class UUniformGridPanel;
 class UVerticalBox;
+struct FGeoGemBuild;
 
 /** One ring of a cluster on the socket board: the sockets of one tier around the cluster's centre. */
 USTRUCT(BlueprintType)
@@ -57,10 +59,12 @@ struct FGeoGemCluster
 
 /**
  * The Loadout page of the Gems menu: one class's sockets and the gem stacks to fill them. Class tabs with each class's
- * level; the class's level, its pips and what the next level opens; the socket board, three clusters each a Core ringed
- * by its Prisms, Cuts and Chips, a locked socket showing the level that opens it; the stacks with their owned and free
- * counts under a tier filter; the selection, a stack (EQUIP into the first socket it fits, FILL every empty one) or a
- * socket (UNEQUIP); and the class's total bonus.
+ * level; the class's builds, each a whole saved loadout: picking a build's tab plays it, so the page always edits the
+ * build the class fights with, its tab framed in the class's colour with RENAME and remove beside it, then a tab adding
+ * an empty build; the class's level, its pips and what the next level opens; the socket board, three clusters each a
+ * Core ringed by its Prisms, Cuts and Chips, a locked socket showing the level that opens it; the stacks with their
+ * owned and free counts under a tier filter; the selection, a stack (EQUIP into the first socket it fits, FILL every
+ * empty one) or a socket (UNEQUIP); and the build's total bonus.
  * Picking a stack then a socket it fits, or a socket then a stack, equips it there; the sockets the picked stack fits
  * glow, and the stack stays picked, so a click per socket fills several while copies are free. A click on neither a
  * socket, the stacks nor the detail drops the pick. The board is built once and updated in place, so the socket under
@@ -84,6 +88,22 @@ protected:
 	/** Filled with one tab per class. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UHorizontalBox> ClassTabBox;
+
+	/** Filled with one tab per build of the shown class, the RENAME and remove tools of the one it plays, and +. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UHorizontalBox> BuildTabBox;
+
+	/** The shown class's shape, beside InPlayText. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoShape> InPlayShape;
+
+	/** The build the shown class fights with. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> InPlayText;
+
+	/** The shown class's builds out of the most it may keep. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> BuildCountText;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> LevelText;
@@ -195,6 +215,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "0", ClampMax = "64"))
 	float ClassTabGap = 10.f;
 
+	/** Size of the class shape on the tab of the build in play. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Builds", meta = (ClampMin = "4", ClampMax = "64"))
+	float BuildTabShapeSize = 12.f;
+
+	/** Space between two build tabs. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Builds", meta = (ClampMin = "0", ClampMax = "64"))
+	float BuildTabGap = 8.f;
+
+	/** Width of the field renaming the build in play. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Builds", meta = (ClampMin = "40", ClampMax = "600"))
+	float BuildNameFieldWidth = 180.f;
+
 	/** Space between two tier filters. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "0", ClampMax = "64"))
 	float FilterGap = 6.f;
@@ -210,6 +242,27 @@ protected:
 	/** {0} is the class's level, on its tab. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText ClassLevelFormat = INVTEXT("LV {0}");
+
+	/** {0} is the build's place in the list, for a build the player never named. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText BuildNameFormat = INVTEXT("BUILD #{0}");
+
+	/** {0} is the name of the build the class plays. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText InPlayFormat = INVTEXT("IN PLAY \u00B7 {0}");
+
+	/** {0} is the class's builds, {1} the most it may keep. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText BuildCountFormat = INVTEXT("{0} / {1}");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText RenameBuildText = INVTEXT("RENAME");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText RemoveBuildText = INVTEXT("\u00D7");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText AddBuildText = INVTEXT("+");
 
 	/** {0} is the copies owned, on a stack. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -280,7 +333,7 @@ protected:
 	FText HintEmptySocket = INVTEXT("Empty {0} socket. Pick any {0} stack to fill it.");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText NoteCoreOnce = INVTEXT("Each Core fits once per loadout.");
+	FText NoteCoreOnce = INVTEXT("Each Core fits once per build.");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText NoteNoFreeCopy = INVTEXT("No free copy. Craft more in the Forge.");
@@ -303,12 +356,24 @@ private:
 	UFUNCTION()
 	void HandleUnequip();
 
+	/** Names the build in play, unless Escape left the field. */
+	UFUNCTION()
+	void HandleBuildNameCommitted(FText const& Text, ETextCommit::Type CommitMethod);
+
 	/** Shows or collapses an optional part. */
 	static void SetShown(UWidget* Widget, bool bShown);
 
 	/** Builds the cluster discs, ring guides and labels, and one socket button per socket, once. */
 	void BuildBoard();
 	void ShowClassTabs(UGeoGemProfileSave const& Profile);
+	/** The build the shown class plays and how many it keeps. */
+	void ShowInPlay(UGeoGemProfileSave const& Profile);
+	/** The build tabs, the field renaming the build in play standing in place of its tab. */
+	void ShowBuildTabs(UGeoGemProfileSave const& Profile);
+	/** Build's name as the tabs show it: what the player named it, else BuildNameFormat of its place. */
+	FText GetBuildName(FGeoGemBuild const& Build, int32 BuildIndex) const;
+	/** Applies Change to the profile, drops the pick and any rename, then commits. */
+	void ChangeBuilds(TFunctionRef<void(UGeoGemProfileSave&)> Change);
 	void ShowLevel(UGeoGemProfileSave const& Profile);
 	void ShowSockets(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	void ShowFilters(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
@@ -338,6 +403,9 @@ private:
 
 	/** The picked socket; INDEX_NONE while a stack or nothing is picked. */
 	int32 PickedSocket = INDEX_NONE;
+
+	/** Whether the build in play shows its name field rather than its tab. */
+	bool bRenamingBuild = false;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UGeoGemSocketButton>> SocketButtons;

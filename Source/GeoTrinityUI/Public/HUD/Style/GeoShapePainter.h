@@ -66,11 +66,12 @@ struct GEOTRINITYUI_API FGeoShapePainter
 								FSlateWindowElementList& OutDrawElements, int32 LayerId);
 
 	/** The glow, line and runners of Style along Outline, on LayerId to LayerId + 2. Opacity multiplies every alpha,
-	 * GlowTint the glow's colour. */
+	 * GlowTint the glow's colour, LineTint the line's and the runners'. */
 	static void PaintStyledLine(UGeoFrameStyle const& Style, FGeoOutlineState const& State, float Opacity,
 								TArray<FVector2f> const& Outline, FGeometry const& Geometry,
 								FSlateWindowElementList& OutDrawElements, int32 LayerId,
-								FLinearColor const& GlowTint = FLinearColor::White);
+								FLinearColor const& GlowTint = FLinearColor::White,
+								FLinearColor const& LineTint = FLinearColor::White);
 
 	/** State eased one step of DeltaTime towards bActive, its runners moved on at the speed Style gives that state. */
 	static void AdvanceStyledState(UGeoFrameStyle const& Style, bool bActive, float DeltaTime,

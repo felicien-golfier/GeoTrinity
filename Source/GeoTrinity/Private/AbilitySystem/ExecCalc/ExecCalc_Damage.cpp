@@ -44,7 +44,7 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 		}
 	}
 
-	if (!GeoContext || !GeoContext->IsFixedAmount())
+	if (!GeoContext || !GeoContext->ShouldSkipStatModifiers())
 	{
 		float const DamageReduction =
 			GeoASLib::GetStatValue(TargetASC, UCharacterAttributeSet::GetDamageReductionAttribute(), 0.f);

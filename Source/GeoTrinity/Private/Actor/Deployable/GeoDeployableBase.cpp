@@ -195,7 +195,7 @@ void AGeoDeployableBase::InitDrain()
 	DrainEffectData.bSuppressGameplayCue = bSuppressDrainDamageVisuals;
 	DrainEffectData.bSuppressCombatStats = true;
 	DrainEffectData.bDoNotRedirectSacrifice = !bCanSacrificeDrain;
-	DrainEffectData.bFixedAmount = true;
+	DrainEffectData.bSkipStatModifiers = true;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

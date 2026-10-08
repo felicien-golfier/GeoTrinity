@@ -43,7 +43,7 @@ void AGeoHealingZone::HealAlly(AActor* Ally, UGeoAbilitySystemComponent* SourceA
 	HealingCostData.bSuppressGameplayCue = true;
 	HealingCostData.bSuppressCombatStats = true;
 	HealingCostData.bDoNotRedirectSacrifice = true;
-	HealingCostData.bFixedAmount = true;
+	HealingCostData.bSkipStatModifiers = true;
 	GeoASLib::ApplySingleEffectData(HealingCostData, SourceASC, GetAbilitySystemComponent(), Data.Level, Data.Seed,
 									Data.AbilityTag, TimeInside);
 }

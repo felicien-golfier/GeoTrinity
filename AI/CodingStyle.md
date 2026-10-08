@@ -26,6 +26,11 @@ an existing function, an existing member — and use it.
 - `const` by default. Prefer a non-const parameter over a const ref plus a local copy.
 - Forward declare in headers rather than including (`enum class EMyEnum : uint8;`).
 - No abbreviations in names, except `ASC`. Same style and naming throughout.
+- **A name states exactly what the code does** — every variable, flag, function and member. A name that promises
+  more or less than the code does is a bug: `bFixedAmount` was wrong when the amount still moved with
+  `SingleUseDamageMultiplier`. Rather than listing every member, name the category and define it once in the
+  declaration's doc comment: `bSkipStatModifiers`, whose comment says exactly which multipliers count as stat
+  modifiers and which do not. When the code changes, fix the name or the category's definition in the same change.
 - Every `UPROPERTY`/`UFUNCTION` `Category` starts with `Geo` (`"GeoCamera|Zoom"`), so project params are
   recognizable among engine ones.
 - Name unused parameters in the `.h`; comment them out (`/*Name*/`) in the `.cpp`.

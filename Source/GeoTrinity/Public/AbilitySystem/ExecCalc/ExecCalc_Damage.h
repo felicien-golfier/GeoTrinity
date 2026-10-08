@@ -12,7 +12,7 @@
  * Execution calculation that applies IncomingDamage to the target.
  * Reads DamageMultiplier (source) and DamageReduction (target) live from each side's stat ASC (GeoASLib::GetStatAsc),
  * so a deployable fights with its deployer's stats, and reads SingleUseDamageMultiplier from FGeoGameplayEffectContext
- * to support per-shot damage scaling. A bFixedAmount context skips the stats and the crit.
+ * to support per-shot damage scaling. A context with bSkipStatModifiers skips the two stats and the crit roll.
  */
 UCLASS()
 class GEOTRINITY_API UExecCalc_Damage : public UGameplayEffectExecutionCalculation

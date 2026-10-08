@@ -18,7 +18,8 @@ class GEOTRINITY_API UExecCalc_Heal : public UGameplayEffectExecutionCalculation
 {
 	GENERATED_BODY()
 public:
-	/** Scales IncomingHeal by both sides' heal boosts and the source's crit roll. */
+	/** Scales IncomingHeal by both sides' heal boosts and the source's crit roll, unless the context skips stat
+	 * modifiers. */
 	virtual void Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
 										FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
 };

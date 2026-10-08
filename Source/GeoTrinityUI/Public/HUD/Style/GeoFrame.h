@@ -39,8 +39,12 @@ public:
 	/** Multiplies the style's glow colours, so one style glows in each class's colour. */
 	UFUNCTION(BlueprintCallable, Category = "GeoFrame")
 	void SetGlowTint(FLinearColor const& InGlowTint);
+
+	/** Multiplies the style's line and runner colours, so one style draws its outline in each class's colour. */
+	UFUNCTION(BlueprintCallable, Category = "GeoFrame")
+	void SetLineTint(FLinearColor const& InLineTint);
 	
-	/** Pushes FrameStyle, bActive and bActivateOnHoverAndFocus to the underlying SGeoFrame. */
+	/** Pushes FrameStyle, bActive, bActivateOnHoverAndFocus and the tints to the underlying SGeoFrame. */
 	virtual void SynchronizeProperties() override;
 	/** Releases the SGeoFrame Slate widget. */
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
@@ -68,6 +72,10 @@ protected:
 	/** Multiplies the style's glow colours; white keeps the style's own. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoFrame")
 	FLinearColor GlowTint = FLinearColor::White;
+
+	/** Multiplies the style's line and runner colours; white keeps the style's own. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoFrame")
+	FLinearColor LineTint = FLinearColor::White;
 
 private:
 	TSharedPtr<SGeoFrame> MyFrame;

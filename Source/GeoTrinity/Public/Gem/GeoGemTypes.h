@@ -172,6 +172,12 @@ namespace GeoGem
 {
 	constexpr int32 MaxClassLevel = 20;
 
+	/** Builds one class keeps at most. */
+	constexpr int32 MaxBuilds = 10;
+
+	/** Characters a build's name keeps at most. */
+	constexpr int32 MaxBuildNameLength = 14;
+
 	/**
 	 * Every socket of a class's board: three clusters, each opened over seven class levels in the same seven steps
 	 * (cluster I at levels 1-7, II at 8-14, III at 15-20, its last two steps both at 20), the Core always in the last

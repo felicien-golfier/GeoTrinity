@@ -156,6 +156,10 @@ void FMagnitudeEffectData::UpdateContextHandle(FGeoGameplayEffectContext* Effect
 	{
 		EffectContext->SetSuppressCombatStats(true);
 	}
+	if (bSkipStatModifiers)
+	{
+		EffectContext->SetSkipStatModifiers(true);
+	}
 }
 
 FActiveGameplayEffectHandle FMagnitudeEffectData::ApplyEffect(FGameplayEffectContextHandle const& ContextHandle,
@@ -217,10 +221,6 @@ void FDamageEffectData::UpdateContextHandle(FGeoGameplayEffectContext* EffectCon
 	if (bDoNotRedirectSacrifice)
 	{
 		EffectContext->SetDoNotRedirectSacrifice(true);
-	}
-	if (bFixedAmount)
-	{
-		EffectContext->SetFixedAmount(true);
 	}
 
 	// Basic-ability identity comes from the firing ability's own tags, not a per-effect flag. Many effect sources

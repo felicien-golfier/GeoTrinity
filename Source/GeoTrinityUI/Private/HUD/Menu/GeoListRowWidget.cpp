@@ -108,6 +108,16 @@ void UGeoListRowWidget::SetTint(EGeoListRowTint const InTint)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoListRowWidget::SetFrameTint(FLinearColor const& Color)
+{
+	if (RowFrame)
+	{
+		RowFrame->SetGlowTint(Color);
+		RowFrame->SetLineTint(Color);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoListRowWidget::FocusRow()
 {
 	RowButton->SetFocus();

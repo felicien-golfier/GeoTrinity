@@ -238,7 +238,7 @@ void FGeoShapePainter::PaintStyledFill(UGeoFrameStyle const& Style, FGeoOutlineS
 void FGeoShapePainter::PaintStyledLine(UGeoFrameStyle const& Style, FGeoOutlineState const& State, float const Opacity,
 									   TArray<FVector2f> const& Outline, FGeometry const& Geometry,
 									   FSlateWindowElementList& OutDrawElements, int32 const LayerId,
-									   FLinearColor const& GlowTint)
+									   FLinearColor const& GlowTint, FLinearColor const& LineTint)
 {
 	auto const Blend = [&State, Opacity](FLinearColor const& Idle, FLinearColor const& Active)
 	{
@@ -248,7 +248,7 @@ void FGeoShapePainter::PaintStyledLine(UGeoFrameStyle const& Style, FGeoOutlineS
 	};
 	DrawGlow(OutDrawElements, LayerId, Geometry, Outline, Blend(Style.GlowColor, Style.ActiveGlowColor) * GlowTint,
 			 Style.GlowThickness);
-	DrawOutline(OutDrawElements, LayerId + 1, Geometry, Outline, Blend(Style.LineColor, Style.ActiveLineColor),
+	DrawOutline(OutDrawElements, LayerId + 1, Geometry, Outline, Blend(Style.LineColor, Style.ActiveLineColor) * LineTint,
 				Style.LineThickness);
 
 	// Runner slots are shared by the idle and the active set; a slot fades in or out as the frame eases between them.
@@ -271,7 +271,7 @@ void FGeoShapePainter::PaintStyledLine(UGeoFrameStyle const& Style, FGeoOutlineS
 			FVector2f const Position = GetPointAlongOutline(Outline, static_cast<float>(FMath::Fmod(Distance, Length)));
 			TArray<FVector2f> const Square = MakePolygon(Position, Style.RunnerSize * UE_INV_SQRT_2, 4, 45.f + Roll);
 
-			FLinearColor Color = Style.RunnerColor;
+			FLinearColor Color = Style.RunnerColor * LineTint;
 			Color.A *= Shown * Opacity;
 			if (Style.bAlternateHollowRunners && Runner % 2 == 1)
 			{

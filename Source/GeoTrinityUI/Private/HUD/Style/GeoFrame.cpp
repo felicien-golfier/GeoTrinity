@@ -53,6 +53,12 @@ public:
 		Invalidate(EInvalidateWidgetReason::Paint);
 	}
 
+	void SetLineTint(FLinearColor const& InLineTint)
+	{
+		LineTint = InLineTint;
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
 	virtual int32 OnPaint(FPaintArgs const& Args, FGeometry const& AllottedGeometry, FSlateRect const& MyCullingRect,
 						  FSlateWindowElementList& OutDrawElements, int32 LayerId, FWidgetStyle const& InWidgetStyle,
 						  bool bParentEnabled) const override
@@ -73,7 +79,7 @@ public:
 				PaintGrid(Style->GridSpacing, GridColor, AllottedGeometry, OutDrawElements, LayerId + GridLayer);
 			}
 			FGeoShapePainter::PaintStyledLine(*Style, State, Opacity, Outline, AllottedGeometry, OutDrawElements,
-											  LayerId + LineLayer, GlowTint);
+											  LayerId + LineLayer, GlowTint, LineTint);
 		}
 		return SBorder::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId + ContentLayer,
 								InWidgetStyle, bParentEnabled);
@@ -117,6 +123,7 @@ private:
 	bool bForcedActive = false;
 	bool bActivateOnHoverAndFocus = false;
 	FLinearColor GlowTint = FLinearColor::White;
+	FLinearColor LineTint = FLinearColor::White;
 	FGeoOutlineState State;
 };
 
@@ -164,6 +171,16 @@ void UGeoFrame::SetGlowTint(FLinearColor const& InGlowTint)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoFrame::SetLineTint(FLinearColor const& InLineTint)
+{
+	LineTint = InLineTint;
+	if (MyFrame)
+	{
+		MyFrame->SetLineTint(LineTint);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoFrame::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
@@ -181,6 +198,7 @@ void UGeoFrame::SynchronizeProperties()
 		MyFrame->SetForcedActive(bActive);
 		MyFrame->SetActivateOnHoverAndFocus(bActivateOnHoverAndFocus);
 		MyFrame->SetGlowTint(GlowTint);
+		MyFrame->SetLineTint(LineTint);
 	}
 }
 

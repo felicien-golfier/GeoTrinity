@@ -1,6 +1,7 @@
 """
 The Gems menu in the Rail look, opened from the character sheet's GEMS (design: the GeoTrinity Gems canvas).
-- WBP_GemLoadout (UGeoGemLoadoutWidget): class tabs and level row; the socket board (Board, a 640 x 534 canvas the
+- WBP_GemLoadout (UGeoGemLoadoutWidget): class tabs and level row; the build strip (BuildRow: the build tabs, then
+  the build in play and the build count on the right); the socket board (Board, a 640 x 534 canvas the
   widget fills with the clusters); the stacks under their tier filter, scrolling in StackScroll; the selection (glyph,
   tier, name, effect, counts, EQUIP / FILL / UNEQUIP, note) or the hint; the total bonus, scrolling in TotalsScroll.
 - WBP_GemForge (UGeoGemForgeWidget): the tiers to select, BREAK DOWN FREE SELECTED and the rate table; the gem types
@@ -132,6 +133,24 @@ def quantity_fields(wbp, path):
         padded(path, UTIL.find_widget(wbp, row).get_editor_property("slot"), unreal.Margin(0, 10, 0, 0))
 
 
+def build_row(wbp, path):
+    """The build strip under the class row: BuildTabBox, which the widget fills with the tabs, then the class shape,
+    the build in play and the build count on the right."""
+    if not UTIL.find_widget(wbp, "BuildRow"):
+        UTIL.construct_widget_in_tree(wbp, unreal.HorizontalBox, "BuildRow", True)
+        after = UTIL.find_widget(wbp, "LoadoutBody").get_child_index(UTIL.find_widget(wbp, "ClassRow")) + 1
+        UTIL.attach_widget(wbp, "LoadoutBody", "BuildRow", after)
+    padded(path, UTIL.find_widget(wbp, "BuildRow").get_editor_property("slot"), unreal.Margin(0, 0, 0, 14))
+    _, tabs_slot = add(wbp, path, unreal.HorizontalBox, "BuildTabBox", "BuildRow")
+    write_slot(path, tabs_slot, {"vertical_alignment": CENTER})
+    spacer(wbp, path, "BuildSpacer", "BuildRow")
+    _, shape_slot = add(wbp, path, unreal.GeoShape, "InPlayShape", "BuildRow", {"size": 10.0, "filled": True})
+    padded(path, shape_slot, unreal.Margin(0, 0, 8, 0), vertical_alignment=CENTER)
+    write_slot(path, label(wbp, path, "InPlayText", "BuildRow", "IN PLAY"), {"vertical_alignment": CENTER})
+    count_slot = label(wbp, path, "BuildCountText", "BuildRow", "1 / 10", unreal.Margin(16, 0, 0, 0))
+    write_slot(path, count_slot, {"vertical_alignment": CENTER})
+
+
 def build_loadout():
     path = LOADOUT_PATH
     wbp = wings_hud.create_widget(path, "GeoGemLoadoutWidget")
@@ -200,6 +219,7 @@ def build_loadout():
         wings_hud.finish(wbp)
     wbp = unreal.load_asset(path)
     asset_guard.write(path, UTIL.find_widget(wbp, "TotalsTitleText"), "auto_wrap_text", True)
+    build_row(wbp, path)
     wings_hud.scrolled(wbp, path, "StackGrid", "StackScroll")
     wings_hud.scrolled(wbp, path, "TotalsBox", "TotalsScroll")
     wings_hud.finish(wbp)

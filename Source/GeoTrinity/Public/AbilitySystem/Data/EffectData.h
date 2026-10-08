@@ -227,7 +227,8 @@ struct GEOTRINITY_API FMagnitudeEffectData : public FEffectData
 	/** SetByCaller tag Amount is assigned to, and the label the tooltip line uses. */
 	virtual FGameplayTag GetMagnitudeTag() const { return FGameplayTag(); }
 
-	/** Propagates bSuppressGameplayCue, bLimitGameplayCue and bSuppressCombatStats onto the context. */
+	/** Propagates bSuppressGameplayCue, bLimitGameplayCue, bSuppressCombatStats and bSkipStatModifiers onto the
+	 * context. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
 	/** Applies GetEffectClass() with Amount (per second: times the context's delta) under GetMagnitudeTag(). */
@@ -260,6 +261,13 @@ struct GEOTRINITY_API FMagnitudeEffectData : public FEffectData
 	 * self-inflicted drains. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bSuppressCombatStats{false};
+
+	/** When true, the ExecCalc skips every stat modifier: the attribute-driven multipliers read from the source's and
+	 * target's stat ASCs (DamageMultiplier, DamageReduction, AppliedHealBoost, ReceivedHealBoost) and the crit roll.
+	 * Call-site multipliers such as SingleUseDamageMultiplier still apply. Use for a deployable paying its own life
+	 * (drains, costs), which no stat may speed up or slow down. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bSkipStatModifiers{false};
 };
 
 /** Applies a flat damage amount. Amount is evaluated at the given ability level. */
@@ -273,19 +281,14 @@ struct FDamageEffectData : public FMagnitudeEffectData
 	/** Returns the SetByCaller tag the damage magnitude is assigned to. */
 	virtual FGameplayTag GetMagnitudeTag() const override;
 
-	/** Adds bDoNotRedirectSacrifice and bFixedAmount, and flags the context as bIsFromBasicAbility when the source
-	 * ability carries the Ability.Type.Basic asset tag. */
+	/** Adds bDoNotRedirectSacrifice, and flags the context as bIsFromBasicAbility when the source ability carries the
+	 * Ability.Type.Basic asset tag. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
 
 	/** When true, this damage is never captured by a sacrificed receiver (redirected shares, drains, ...). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bDoNotRedirectSacrifice{false};
-
-	/** When true, the amount lands as is: no damage multiplier, damage reduction or crit. Use for a deployable paying
-	 * its own life (drains, costs), which no stat may speed up or slow down. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bFixedAmount{false};
 };
 
 /** Applies a flat heal amount. Sets bSuppressHealProvided on the context when configured. */
