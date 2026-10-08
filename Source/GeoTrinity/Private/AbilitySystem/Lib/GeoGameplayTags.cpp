@@ -52,9 +52,8 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 
 	// INPUT //
 	AddInputTag(GameplayTags.InputTag_Basic, "Basic", "Input tag for left mouse button-linked spell");
-	AddInputTag(GameplayTags.InputTag_Special, "Special", "Input tag for right mouse button-linked spell");
-	AddInputTag(GameplayTags.InputTag_SpecialAlternative, "SpecialAlternative",
-				"Input tag for alternative special ability");
+	AddInputTag(GameplayTags.InputTag_Deployable, "Deployable", "Input tag for right mouse button-linked spell");
+	AddInputTag(GameplayTags.InputTag_Special, "Special", "Input tag for special ability");
 	AddInputTag(GameplayTags.InputTag_Reload, "Reload", "Input tag for reload action");
 	AddInputTag(GameplayTags.InputTag_Dash, "Dash", "Input tag for dash ability");
 
@@ -66,9 +65,8 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 	CreateAndAssignGameplayTag(GameplayTags.Ability_Type, FName(RootTagNames::AbilityTypeTag),
 							   "Root tag for ability types");
 	AddAbilityTypeTag(GameplayTags.Ability_Type_Basic, "Basic", "Tag associated with basic spells");
+	AddAbilityTypeTag(GameplayTags.Ability_Type_Deployable, "Deployable", "Tag associated with deployable spells");
 	AddAbilityTypeTag(GameplayTags.Ability_Type_Special, "Special", "Tag associated with special spells");
-	AddAbilityTypeTag(GameplayTags.Ability_Type_SpecialAlternative, "SpecialAlternative",
-					  "Tag associated with Special Alternate spells");
 	AddAbilityTypeTag(GameplayTags.Ability_Type_Dash, "Dash", "Tag associated with Dash spells");
 	AddAbilityTypeTag(GameplayTags.Ability_Type_Reload, "Reload", "Tag associated with Reloading spells");
 	AddAbilityTypeTag(GameplayTags.Ability_Type_Passive, "Passive", "Tag associated with Passive spells");

@@ -31,6 +31,6 @@ def set_ability_tags(ability_path, tag_names):
 
 # --- Example call (adjust path and tags) ---
 set_ability_tags(
-    "/Game/AbilitySystem/Abilities/Square/DeployMine/GA_Square_Special_Mine",
-    ["Ability.Spell.Mine", "Ability.Type.Special"],
+    "/Game/AbilitySystem/Abilities/Square/DeployMine/GA_Square_Deployable_Mine",
+    ["Ability.Spell.Mine", "Ability.Type.Deployable"],
 )

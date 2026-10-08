@@ -22,7 +22,7 @@ Forward ray (like `GeoChargeBeamAbility`), length `GeneralSpellDistance`, width 
 - `FireGameplayCueTag`: `RawMagnitude` = consumed wall count (scales Niagara beam)
 
 ## `GeoSacrificeBeamAbility.h` + `GeoSacrificeDetonateAbility.h` — sacrifice pair (one button, two abilities)
-Same InputTag (`InputTag.SpecialAlternative`); both `bActivateOnFreshPressOnly` so Held input can't chain-activate one after the other. Accumulated value lives in replicated `UCharacterAttributeSet::SacrificeValue` (not on either ability) so both abilities and the HUD read the same state.
+Same InputTag (`InputTag.Special`); both `bActivateOnFreshPressOnly` so Held input can't chain-activate one after the other. Accumulated value lives in replicated `UCharacterAttributeSet::SacrificeValue` (not on either ability) so both abilities and the HUD read the same state.
 
 **`GeoSacrificeBeamAbility` (channel)** — extends `UGeoChannelBeamAbility`. `Fire()` applies `DetonateReadyEffect` (infinite GE granting `Status.Square.DetonateReady`), then channels: allies/neutrals in the beam get `SacrificeMarkEffect` (infinite GE granting `Status.Sacrificed` + cue); leaving removes it. `ActivationBlockedTags = Status.Square.DetonateReady` (BP) — can't restart until detonation consumes the tag. Ends at `MaxChannelDuration` (detonation stays armed) or on detonate cancel. Owns the pair's cooldown.
 

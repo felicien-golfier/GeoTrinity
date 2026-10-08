@@ -11,7 +11,7 @@ Steps required every time a new enemy `GA_` Blueprint ability is created.
 ## Constraints
 
 - Every `GA_` CDO carries two asset tags in `AbilityTags`: one under `Ability.Spell.*` and one under
-  `Ability.Type.*` (`Special`, `SpecialAlternative`, `Basic`, `Dash`, `Reload`, `Passive`), the type matching
+  `Ability.Type.*` (`Deployable`, `Special`, `Basic`, `Dash`, `Reload`, `Passive`), the type matching
   the input slot it binds to. Missing either trips an ensure when the ability catalog is populated.
 - Reparenting an existing ability Blueprint to a different C++ base **clears `AbilityTags`** — re-set both and
   save. Read or re-set them on an existing ability with `AI/Python/Ability/ability_tags.py`.

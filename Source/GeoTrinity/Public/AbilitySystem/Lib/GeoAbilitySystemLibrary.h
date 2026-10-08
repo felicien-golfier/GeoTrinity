@@ -133,10 +133,22 @@ public:
 										  bool bIsHeal);
 
 	/**
-	 * What a hit or a heal from SourceASC is multiplied by: its CritDamage when it holds the Critical Core and wins a
-	 * CritChance roll, else 1. Server only, like the ExecCalcs that ask it, so the roll needs no shared seed.
+	 * What a hit or a heal from SourceASC is multiplied by: its stat ASC's CritDamage when that ASC holds the Critical
+	 * Core and wins a CritChance roll, else 1. Server only, like the ExecCalcs that ask it, so the roll needs no shared
+	 * seed.
 	 */
 	static float RollCritMultiplier(UAbilitySystemComponent const* SourceASC);
+
+	/**
+	 * The ASC whose stats (multipliers, reductions, gems) ASC fights with: its owner actor's. A deployable only owns its
+	 * health and shield, so this is its deployer's ASC, read live; a character's is its own ASC. Null when the owner
+	 * actor is gone or has no ASC.
+	 */
+	static UAbilitySystemComponent const* GetStatAsc(UAbilitySystemComponent const* ASC);
+
+	/** Attribute's current value on ASC's stat ASC (see GetStatAsc), or DefaultValue when that ASC lacks it. */
+	static float GetStatValue(UAbilitySystemComponent const* ASC, FGameplayAttribute const& Attribute,
+							  float DefaultValue);
 
 	/**
 	 * Returns the class default object for the ability registered under AbilityTag, cast to T.

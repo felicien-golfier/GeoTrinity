@@ -132,6 +132,7 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 				DrainEffectData.bSuppressGameplayCue = true;
 				DrainEffectData.bSuppressCombatStats = true;
 				DrainEffectData.bDoNotRedirectSacrifice = true;
+				DrainEffectData.bFixedAmount = true;
 				GeoASLib::ApplySingleEffectData(DrainEffectData, SourceASC, ZoneASC, GetAbilityLevel(),
 												StoredPayload.Seed, StoredPayload.AbilityTag);
 			}

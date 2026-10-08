@@ -182,7 +182,7 @@ public:
 	float HitFlashDuration = 0.9f;
 
 	/** Played on the deploying client when a deploy ability's charge pool refills a stack — shared by every deploy
-	 * ability (GA_DeployHealingZone, GA_Square_Special_Mine, GA_LaunchTurret) instead of a per-ability property. */
+	 * ability (GA_DeployHealingZone, GA_Square_Deployable_Mine, GA_LaunchTurret) instead of a per-ability property. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|GameplayCue")
 	FGeoCueParam RefillDeployableCue;
 

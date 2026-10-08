@@ -28,7 +28,7 @@ namespace
 
 	// Row order of the key-bindings list; unknown mappings land after these, sorted by display name.
 	FName const MappingOrder[] = {"MoveForward", "MoveBackward", "MoveLeft", "MoveRight", "Dash",
-								  "SpellBasic", "SpellSpecial", "SpellSpecialAlt", "Reload", "ToggleMenu"};
+								  "SpellBasic", "SpellDeployable", "SpellSpecial", "Reload", "ToggleMenu"};
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

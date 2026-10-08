@@ -68,7 +68,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> NameText;
 
-	/** The key bound to the ability, or PassiveLabel. */
+	/** The ability's slot name, one of the labels below. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> KeyText;
 
@@ -91,6 +91,21 @@ protected:
 	FText PassiveLabel = INVTEXT("PASSIVE");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
+	FText BasicLabel = INVTEXT("BASIC ATTACK");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
+	FText DeployableLabel = INVTEXT("DEPLOYABLE");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
+	FText SpecialLabel = INVTEXT("SPECIAL");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
+	FText ReloadLabel = INVTEXT("RELOAD");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
+	FText DashLabel = INVTEXT("DASH");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
 	FText CooldownLabel = INVTEXT("COOLDOWN");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
@@ -106,6 +121,6 @@ protected:
 	FLinearColor Color = FLinearColor::White;
 
 private:
-	/** Name of the first key mapped to Info's input action; empty when unbound. */
-	FText GetKeyName(FPlayersGameplayAbilityInfo const& Info) const;
+	/** The label of Info's slot, from its ability type tag. */
+	FText GetSlotLabel(FPlayersGameplayAbilityInfo const& Info) const;
 };

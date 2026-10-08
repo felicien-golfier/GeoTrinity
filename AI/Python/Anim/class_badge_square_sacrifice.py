@@ -2,12 +2,12 @@
 round as it does, then fires it all back out and is slammed back and rolled over by the shot. Clips in the bottom
 slot, so they play beside the auto-fire's montage in the top one and the mandibles are left to it.
 
-    SK_SquareBadge_Montage_Sacrifice       GA_Square_SpecAlt_SacrificeBeam (Martyr Beam)
+    SK_SquareBadge_Montage_Sacrifice       GA_Square_Special_SacrificeBeam (Martyr Beam)
         Start     drawn out along the aim, then kicked back and rolled a little the wrong way as the beam leaves
         Channel   a pump: drawn into the keyhole accelerating and straining, a hard swallow, opened back up; three
                   pulls, rolling over about the aim all the while, one whole roll a loop: creeping on while drawn
                   in, lurching on at each swallow; looping until the channel stops it
-    SK_SquareBadge_Montage_SacrificeSpit   GA_Square_SpecAlt_SacrificeDetonate (Martyr's Wrath)
+    SK_SquareBadge_Montage_SacrificeSpit   GA_Square_Special_SacrificeDetonate (Martyr's Wrath)
         Start     drawn into the keyhole, straining, rolled the wrong way, held dead still into the shot
         End       slammed back and squashed flat by the ray, thrown into one whole roll over about the aim that slows
                   through the blast, pinned there, hauled slowly home

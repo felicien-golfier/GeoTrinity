@@ -36,8 +36,8 @@ struct GEOTRINITY_API FGeoGameplayTags
 
 	// Input
 	FGameplayTag InputTag_Basic;
+	FGameplayTag InputTag_Deployable;
 	FGameplayTag InputTag_Special;
-	FGameplayTag InputTag_SpecialAlternative;
 	FGameplayTag InputTag_Reload;
 	FGameplayTag InputTag_Dash;
 
@@ -47,8 +47,8 @@ struct GEOTRINITY_API FGeoGameplayTags
 	// Ability types
 	FGameplayTag Ability_Type;
 	FGameplayTag Ability_Type_Basic;
+	FGameplayTag Ability_Type_Deployable;
 	FGameplayTag Ability_Type_Special;
-	FGameplayTag Ability_Type_SpecialAlternative;
 	FGameplayTag Ability_Type_Dash;
 	FGameplayTag Ability_Type_Reload;
 	FGameplayTag Ability_Type_Passive;

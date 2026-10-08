@@ -12,18 +12,6 @@
 #include "AbilitySystemComponent.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-UExecCalc_Damage::UExecCalc_Damage()
-{
-	DamageMultiplierCaptureDef = FGameplayEffectAttributeCaptureDefinition(
-		UCharacterAttributeSet::GetDamageMultiplierAttribute(), EGameplayEffectAttributeCaptureSource::Source, true);
-	RelevantAttributesToCapture.Add(DamageMultiplierCaptureDef);
-
-	DamageReductionCaptureDef = FGameplayEffectAttributeCaptureDefinition(
-		UCharacterAttributeSet::GetDamageReductionAttribute(), EGameplayEffectAttributeCaptureSource::Target, true);
-	RelevantAttributesToCapture.Add(DamageReductionCaptureDef);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
 											  FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const
 {
@@ -56,20 +44,13 @@ void UExecCalc_Damage::Execute_Implementation(FGameplayEffectCustomExecutionPara
 		}
 	}
 
-	FAggregatorEvaluateParameters EvaluationParams;
-	EvaluationParams.SourceTags = EffectSpec.CapturedSourceTags.GetAggregatedTags();
-	EvaluationParams.TargetTags = EffectSpec.CapturedTargetTags.GetAggregatedTags();
-
-	float DamageMultiplier = 1.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageMultiplierCaptureDef, EvaluationParams,
-															   DamageMultiplier);
-	Damage *= DamageMultiplier;
-
-	float DamageReduction = 0.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageReductionCaptureDef, EvaluationParams,
-															   DamageReduction);
-	Damage *= 1.f - FMath::Clamp(DamageReduction, 0.f, 1.f);
-	Damage *= GeoASLib::RollCritMultiplier(SourceASC);
+	if (!GeoContext || !GeoContext->IsFixedAmount())
+	{
+		float const DamageReduction =
+			GeoASLib::GetStatValue(TargetASC, UCharacterAttributeSet::GetDamageReductionAttribute(), 0.f);
+		Damage *= GeoASLib::GetStatValue(SourceASC, UCharacterAttributeSet::GetDamageMultiplierAttribute(), 1.f)
+			* (1.f - FMath::Clamp(DamageReduction, 0.f, 1.f)) * GeoASLib::RollCritMultiplier(SourceASC);
+	}
 
 	/*** OUTPUT ***/
 	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingDamageAttribute(),

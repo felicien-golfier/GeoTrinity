@@ -32,9 +32,9 @@ BADGES = {
 ABILITY_MONTAGES = {
     "/Game/AbilitySystem/Abilities/Square/GA_Square_AutoProjectile":
         ANIM_FOLDER + "/Square/SK_SquareBadge_Montage_FirePiston",
-    "/Game/AbilitySystem/Abilities/Square/SacrificeBeam/GA_Square_SpecAlt_SacrificeBeam":
+    "/Game/AbilitySystem/Abilities/Square/SacrificeBeam/GA_Square_Special_SacrificeBeam":
         ANIM_FOLDER + "/Square/SK_SquareBadge_Montage_Sacrifice",
-    "/Game/AbilitySystem/Abilities/Square/SacrificeBeam/GA_Square_SpecAlt_SacrificeDetonate":
+    "/Game/AbilitySystem/Abilities/Square/SacrificeBeam/GA_Square_Special_SacrificeDetonate":
         ANIM_FOLDER + "/Square/SK_SquareBadge_Montage_SacrificeSpit",
     "/Game/AbilitySystem/Abilities/Triangle/GA_Triangle_AutoProjectile":
         ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_FireRatchet",
@@ -46,7 +46,7 @@ ABILITY_MONTAGES = {
         ANIM_FOLDER + "/Circle/SK_CircleBadge_Montage_ChargeOrbit",
     "/Game/AbilitySystem/Abilities/Circle/MoiraBeam/GA_MoiraBeam":
         ANIM_FOLDER + "/Circle/SK_CircleBadge_Montage_MoiraBeam",
-    "/Game/AbilitySystem/Abilities/Square/DeployMine/GA_Square_Special_Mine":
+    "/Game/AbilitySystem/Abilities/Square/DeployMine/GA_Square_Deployable_Mine":
         ANIM_FOLDER + "/Square/SK_SquareBadge_Montage_Deploy",
     "/Game/AbilitySystem/Abilities/Triangle/Turret/GA_LaunchTurret":
         ANIM_FOLDER + "/Triangle/SK_TriangleBadge_Montage_FireFormation",

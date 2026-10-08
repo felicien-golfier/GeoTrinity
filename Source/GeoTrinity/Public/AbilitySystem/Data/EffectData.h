@@ -273,14 +273,19 @@ struct FDamageEffectData : public FMagnitudeEffectData
 	/** Returns the SetByCaller tag the damage magnitude is assigned to. */
 	virtual FGameplayTag GetMagnitudeTag() const override;
 
-	/** Adds bDoNotRedirectSacrifice, and flags the context as bIsFromBasicAbility when the source ability carries the
-	 * Ability.Type.Basic asset tag. */
+	/** Adds bDoNotRedirectSacrifice and bFixedAmount, and flags the context as bIsFromBasicAbility when the source
+	 * ability carries the Ability.Type.Basic asset tag. */
 	virtual void UpdateContextHandle(FGeoGameplayEffectContext* EffectContext, int32 AbilityLevel,
 									 FGameplayTag AbilityTag) const override;
 
 	/** When true, this damage is never captured by a sacrificed receiver (redirected shares, drains, ...). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bDoNotRedirectSacrifice{false};
+
+	/** When true, the amount lands as is: no damage multiplier, damage reduction or crit. Use for a deployable paying
+	 * its own life (drains, costs), which no stat may speed up or slow down. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bFixedAmount{false};
 };
 
 /** Applies a flat heal amount. Sets bSuppressHealProvided on the context when configured. */

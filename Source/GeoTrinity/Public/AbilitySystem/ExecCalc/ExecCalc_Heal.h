@@ -10,22 +10,15 @@
 
 /**
  * Execution calculation that applies IncomingHeal to the target.
- * Captures AppliedHealBoost from the source and ReceivedHealBoost from the target, and broadcasts
- * OnHealProvided on the source ASC unless bSuppressHealProvided is set on the effect context.
+ * Reads AppliedHealBoost (source) and ReceivedHealBoost (target) live from each side's stat ASC
+ * (GeoASLib::GetStatAsc), so a deployable heals and is healed with its deployer's stats.
  */
 UCLASS()
 class GEOTRINITY_API UExecCalc_Heal : public UGameplayEffectExecutionCalculation
 {
 	GENERATED_BODY()
 public:
-	/** Registers AppliedHealBoost (source) and ReceivedHealBoost (target) attribute capture definitions. */
-	UExecCalc_Heal();
-
-	/** Captures heal boosts from source and target, scales IncomingHeal accordingly, and broadcasts OnHealProvided on the source ASC. */
+	/** Scales IncomingHeal by both sides' heal boosts and the source's crit roll. */
 	virtual void Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
 										FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
-
-private:
-	FGameplayEffectAttributeCaptureDefinition AppliedHealBoostCaptureDef;
-	FGameplayEffectAttributeCaptureDefinition ReceivedHealBoostCaptureDef;
 };

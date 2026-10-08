@@ -31,7 +31,7 @@ GEMS = [
     ("WindUp", "Cut", "Wind-up", None, "Add", -0.006, "Ability wind-up time", "Neutral"),
     ("Flicker", "Cut", "Flicker", "DeployableBlinkMultiplier", "Add", 0.03, "Deployable blinking time", "DeployableNotBlocking"),
     ("Edge", "Cut", "Edge", "CritDamage", "Add", 0.02, "Crit damage", "DamageBoost"),
-    ("Focus", "Prism", "Focus", None, "Add", -0.02, "Alternate Special cooldown", "Neutral"),
+    ("Focus", "Prism", "Focus", None, "Add", -0.02, "Special cooldown", "Neutral"),
     ("Anchor", "Prism", "Anchor", "DeployableHealthMultiplier", "Add", 0.03, "Deployable health", "DeployableBlockingEnemies"),
     ("Linger", "Prism", "Linger", "DeployableDrainMultiplier", "Add", -0.03, "Deployable self drain", "DeployableNotBlocking"),
     ("Reach", "Prism", "Reach", None, "Add", 0.02, "Spell distance", "Neutral"),

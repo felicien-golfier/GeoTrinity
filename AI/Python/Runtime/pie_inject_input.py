@@ -101,7 +101,7 @@ run_input_probe(
         {'name': 'move',    'action': load_input_action('MoveAction'),            'vec': (0.0, 1.0, 0.0), 'hold': 30, 'settle': 5},
         {'name': 'basic',   'action': load_input_action('IA_LaunchSpell_Basic'),  'vec': (1.0, 0.0, 0.0), 'hold': 45, 'settle': 20},
         {'name': 'dash',    'action': load_input_action('IA_Dash'),               'vec': (1.0, 0.0, 0.0), 'hold': 3,  'settle': 30},
-        {'name': 'special', 'action': load_input_action('IA_LaunchSpell_Special'),'vec': (1.0, 0.0, 0.0), 'hold': 45, 'settle': 20},
+        {'name': 'deployable', 'action': load_input_action('IA_LaunchSpell_Deployable'),'vec': (1.0, 0.0, 0.0), 'hold': 45, 'settle': 20},
     ],
     watched_actor_class_path='/Script/GeoTrinity.GeoProjectile',
     marker='INPUTPROBE',

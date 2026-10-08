@@ -38,9 +38,9 @@ ABILITY_ICONS = {
     "GA_HealsYouWhatYouHeal": "Circle_BackHeals",
     "GA_SweetSpotCharge": "Circle_SweetSpotCharge",
     "GA_Square_AutoProjectile": "Square_AutoFire",
-    "GA_Square_Special_Mine": "Square_DeployWall",
-    "GA_Square_SpecAlt_SacrificeBeam": "Square_MartyrBeam",
-    "GA_Square_SpecAlt_SacrificeDetonate": "Square_MartyrsWrath",
+    "GA_Square_Deployable_Mine": "Square_DeployWall",
+    "GA_Square_Special_SacrificeBeam": "Square_MartyrBeam",
+    "GA_Square_Special_SacrificeDetonate": "Square_MartyrsWrath",
     "GA_Square_Passive_ShieldBurst": "Square_ShieldBurst",
     "GA_DashAbility": "Dash",
 }

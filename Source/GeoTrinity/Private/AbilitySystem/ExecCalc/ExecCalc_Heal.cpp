@@ -10,29 +10,18 @@
 #include "AbilitySystemComponent.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
-UExecCalc_Heal::UExecCalc_Heal()
-{
-	AppliedHealBoostCaptureDef = FGameplayEffectAttributeCaptureDefinition(
-		UCharacterAttributeSet::GetAppliedHealBoostAttribute(), EGameplayEffectAttributeCaptureSource::Source, true);
-	RelevantAttributesToCapture.Add(AppliedHealBoostCaptureDef);
-
-	ReceivedHealBoostCaptureDef = FGameplayEffectAttributeCaptureDefinition(
-		UCharacterAttributeSet::GetReceivedHealBoostAttribute(), EGameplayEffectAttributeCaptureSource::Target, false);
-	RelevantAttributesToCapture.Add(ReceivedHealBoostCaptureDef);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UExecCalc_Heal::Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
 											FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const
 {
 	FGameplayEffectSpec const& EffectSpec = ExecutionParams.GetOwningSpec();
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	UAbilitySystemComponent const* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
+	UAbilitySystemComponent const* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
 
 	FGeoGameplayEffectContext const* GeoContext =
 		static_cast<FGeoGameplayEffectContext const*>(EffectSpec.GetContext().Get());
 	if (GeoContext)
 	{
-		UAbilitySystemComponent const* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
 		AActor* TargetAvatar = TargetASC ? TargetASC->GetAvatarActor() : nullptr;
 		if (GeoASLib::ShouldSuppressGameplayCue(*GeoContext, TargetAvatar, /*bIsHeal*/ true))
 		{
@@ -42,20 +31,9 @@ void UExecCalc_Heal::Execute_Implementation(FGameplayEffectCustomExecutionParame
 
 	float HealAmount = EffectSpec.GetSetByCallerMagnitude(Tags.Gameplay_Heal, false, 0.f);
 
-	FAggregatorEvaluateParameters EvaluationParams;
-	EvaluationParams.SourceTags = EffectSpec.CapturedSourceTags.GetAggregatedTags();
-	EvaluationParams.TargetTags = EffectSpec.CapturedTargetTags.GetAggregatedTags();
-
-	float AppliedHealBoost = 1.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(AppliedHealBoostCaptureDef, EvaluationParams,
-															   AppliedHealBoost);
-
-	float ReceivedHealBoost = 1.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(ReceivedHealBoostCaptureDef, EvaluationParams,
-															   ReceivedHealBoost);
-
-	HealAmount *= AppliedHealBoost * ReceivedHealBoost
-		* GeoASLib::RollCritMultiplier(ExecutionParams.GetSourceAbilitySystemComponent());
+	HealAmount *= GeoASLib::GetStatValue(SourceASC, UCharacterAttributeSet::GetAppliedHealBoostAttribute(), 1.f)
+		* GeoASLib::GetStatValue(TargetASC, UCharacterAttributeSet::GetReceivedHealBoostAttribute(), 1.f)
+		* GeoASLib::RollCritMultiplier(SourceASC);
 
 	FGameplayModifierEvaluatedData const evaluatedData{UGeoAttributeSetBase::GetIncomingHealAttribute(),
 													   EGameplayModOp::Additive, HealAmount};

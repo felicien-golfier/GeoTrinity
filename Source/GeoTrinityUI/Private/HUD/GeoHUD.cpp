@@ -38,8 +38,8 @@ namespace
 	int32 GetInputTagBarOrder(FGameplayTag const& InputTag)
 	{
 		FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-		TArray<FGameplayTag> const BarOrder = {Tags.InputTag_Basic, Tags.InputTag_Special,
-											   Tags.InputTag_SpecialAlternative, Tags.InputTag_Reload,
+		TArray<FGameplayTag> const BarOrder = {Tags.InputTag_Basic, Tags.InputTag_Deployable,
+											   Tags.InputTag_Special, Tags.InputTag_Reload,
 											   Tags.InputTag_Dash};
 
 		int32 const Order = BarOrder.IndexOfByKey(InputTag);

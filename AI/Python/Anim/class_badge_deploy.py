@@ -1,6 +1,6 @@
 """Class badge deploys, one clip per badge, all on one beat: winding up to throw the deployable, the throw, the recoil.
 
-    Square    SK_SquareBadge_Montage_Deploy     GA_Square_Special_Mine
+    Square    SK_SquareBadge_Montage_Deploy     GA_Square_Deployable_Mine
               the mandibles move forward and roll about the aim faster and faster, stretching along X and vibrating
               harder; the throw stops them dead and crushes them and the block along X against their own backs
     Triangle  SK_TriangleBadge_Montage_Deploy   GA_LaunchTurret

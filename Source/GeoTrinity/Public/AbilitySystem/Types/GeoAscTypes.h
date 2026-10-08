@@ -36,6 +36,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	bool IsFromBasicAbility() const { return bIsFromBasicAbility; }
 	/** Returns true when this damage must never be captured by a sacrificed target (redirected shares, drains, ...). */
 	bool DoNotRedirectSacrifice() const { return bDoNotRedirectSacrifice; }
+	/** Returns true when ExecCalc_Damage lands the amount as is: no source/target stats, no crit. */
+	bool IsFixedAmount() const { return bFixedAmount; }
 	/** Returns the duration a per-second magnitude is scaled by; 0 means the current frame's delta. */
 	float GetPerSecondDuration() const { return PerSecondDuration; }
 	/** Icon shown in the HUD status bar while the applied effect is active; null when the effect has no icon. */
@@ -59,6 +61,8 @@ struct FGeoGameplayEffectContext : public FGameplayEffectContext
 	void SetIsFromBasicAbility(bool value) { bIsFromBasicAbility = value; }
 	/** When true, PostGameplayEffectExecute never captures this damage for sacrifice redirection. */
 	void SetDoNotRedirectSacrifice(bool value) { bDoNotRedirectSacrifice = value; }
+	/** When true, ExecCalc_Damage skips the source/target stats and the crit roll. */
+	void SetFixedAmount(bool value) { bFixedAmount = value; }
 	/** Sets the duration a per-second magnitude is scaled by, for an applier that does not run once per frame. */
 	void SetPerSecondDuration(float value) { PerSecondDuration = value; }
 	/** Sets the icon the HUD status bar displays while the applied effect is active. */
@@ -96,6 +100,7 @@ protected:
 	bool bSuppressCombatStats{false};
 	bool bIsFromBasicAbility{false};
 	bool bDoNotRedirectSacrifice{false};
+	bool bFixedAmount{false};
 };
 
 // ---------------------------------------------------------------------------------------------------------------------

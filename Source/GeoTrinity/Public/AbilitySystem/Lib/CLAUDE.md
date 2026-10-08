@@ -32,6 +32,6 @@
 **Ability CDO:** `GetAbilityCDO<T>(ASC, Tag)`, `GetGrantedAbility<T>(ASC)` (first granted T, e.g. resolving a class passive).
 
 ## `GeoGameplayTags.h` — native gameplay tag declarations
-Key namespaces: `InputTag.*` (Basic/Special/SpecialAlternative/Reload/Dash), `Ability.*` (mirrors InputTag + Passive), `PlayerClass.*` (Triangle/Circle/Square), `Status.Buff.*` (DamageBoost/DamageReduction/HealBoost/Speed/Shield), `Ability.Spell.ShieldBurst`.
+Key namespaces: `InputTag.*` (Basic/Deployable/Special/Reload/Dash), `Ability.*` (mirrors InputTag + Passive), `PlayerClass.*` (Triangle/Circle/Square), `Status.Buff.*` (DamageBoost/DamageReduction/HealBoost/Speed/Shield), `Ability.Spell.ShieldBurst`.
 
 All declared `FNativeGameplayTag` — use these constants, never string literals.

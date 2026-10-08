@@ -127,9 +127,23 @@ bool UGeoAbilitySystemLibrary::ShouldSuppressGameplayCue(FGeoGameplayEffectConte
 
 float UGeoAbilitySystemLibrary::RollCritMultiplier(UAbilitySystemComponent const* SourceASC)
 {
-	bool const bCrits = IsValid(SourceASC) && SourceASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical)
-		&& FMath::FRand() < SourceASC->GetNumericAttribute(UGeoGemAttributeSet::GetCritChanceAttribute());
-	return bCrits ? SourceASC->GetNumericAttribute(UGeoGemAttributeSet::GetCritDamageAttribute()) : 1.f;
+	UAbilitySystemComponent const* const StatASC = GetStatAsc(SourceASC);
+	bool const bCrits = IsValid(StatASC) && StatASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical)
+		&& FMath::FRand() < StatASC->GetNumericAttribute(UGeoGemAttributeSet::GetCritChanceAttribute());
+	return bCrits ? StatASC->GetNumericAttribute(UGeoGemAttributeSet::GetCritDamageAttribute()) : 1.f;
+}
+
+UAbilitySystemComponent const* UGeoAbilitySystemLibrary::GetStatAsc(UAbilitySystemComponent const* ASC)
+{
+	return IsValid(ASC) ? UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(ASC->GetOwnerActor()) : nullptr;
+}
+
+float UGeoAbilitySystemLibrary::GetStatValue(UAbilitySystemComponent const* ASC, FGameplayAttribute const& Attribute,
+											 float const DefaultValue)
+{
+	UAbilitySystemComponent const* const StatASC = GetStatAsc(ASC);
+	return IsValid(StatASC) && StatASC->HasAttributeSetForAttribute(Attribute) ? StatASC->GetNumericAttribute(Attribute)
+																			   : DefaultValue;
 }
 
 void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,

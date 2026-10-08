@@ -19,7 +19,6 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Characters/PlayableCharacter.h"
-#include "EnhancedInputSubsystems.h"
 #include "Framework/Application/SlateApplication.h"
 #include "HUD/Style/GeoFrame.h"
 #include "HUD/Style/GeoIconImage.h"
@@ -44,7 +43,7 @@ void UGeoAbilityCardWidget::SetAbility(FPlayersGameplayAbilityInfo const& Info, 
 	}
 	NameText->SetText(FText::FromString(Info.AbilityDisplayName));
 
-	KeyText->SetText(bPassive ? PassiveLabel : GetKeyName(Info));
+	KeyText->SetText(GetSlotLabel(Info));
 	if (bPassive)
 	{
 		KeyText->SetColorAndOpacity(FSlateColor(PassiveColor));
@@ -156,17 +155,38 @@ FReply UGeoAbilityCardWidget::NativeOnKeyDown(FGeometry const& InGeometry, FKeyE
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FText UGeoAbilityCardWidget::GetKeyName(FPlayersGameplayAbilityInfo const& Info) const
+FText UGeoAbilityCardWidget::GetSlotLabel(FPlayersGameplayAbilityInfo const& Info) const
 {
-	UEnhancedInputLocalPlayerSubsystem const* InputSubsystem =
-		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetOwningLocalPlayer());
-	if (!Info.InputAction || !InputSubsystem)
+	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	FGameplayTag const& Type = Info.TypeOfAbilityTag;
+	FText const* Label = nullptr;
+	if (Type == Tags.Ability_Type_Passive)
 	{
-		return FText::GetEmpty();
+		Label = &PassiveLabel;
+	}
+	else if (Type == Tags.Ability_Type_Basic)
+	{
+		Label = &BasicLabel;
+	}
+	else if (Type == Tags.Ability_Type_Deployable)
+	{
+		Label = &DeployableLabel;
+	}
+	else if (Type == Tags.Ability_Type_Special)
+	{
+		Label = &SpecialLabel;
+	}
+	else if (Type == Tags.Ability_Type_Reload)
+	{
+		Label = &ReloadLabel;
+	}
+	else if (Type == Tags.Ability_Type_Dash)
+	{
+		Label = &DashLabel;
 	}
 
-	TArray<FKey> const Keys = InputSubsystem->QueryKeysMappedToAction(Info.InputAction);
-	return Keys.Num() > 0 ? Keys[0].GetDisplayName(false) : FText::GetEmpty();
+	ensureMsgf(Label, TEXT("%hs: %s has no slot label"), __FUNCTION__, *Type.ToString());
+	return Label ? *Label : FText::GetEmpty();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
