@@ -3,6 +3,7 @@
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
@@ -29,13 +30,9 @@ UGeoDeployAbility::UGeoDeployAbility()
 // ---------------------------------------------------------------------------------------------------------------------
 int32 UGeoDeployAbility::GetMaxStacks() const
 {
-	UGameplayEffect const* CooldownGE = GetCooldownGameplayEffect();
-	if (!ensureMsgf(CooldownGE, TEXT("GeoDeployAbility '%s': no cooldown GE; the charge pool is its StackLimitCount."),
-					*GetName()))
-	{
-		return 0;
-	}
-	return CooldownGE->GetStackLimitCount();
+	UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
+	bool const bHasSurplus = ASC && ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Surplus);
+	return MaxCharges + (bHasSurplus ? GetDefault<UGameDataSettings>()->SurplusBonusCharges : 0);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -47,7 +44,13 @@ int32 UGeoDeployAbility::GetCurrentStacks() const
 	{
 		return 0;
 	}
-	return GetMaxStacks() - ASC->GetGameplayEffectCount(CooldownGE->GetClass(), nullptr);
+
+	int32 const StackLimit = CooldownGE->GetStackLimitCount();
+	ensureMsgf(StackLimit <= 0 || StackLimit >= GetMaxStacks(),
+			   TEXT("%hs: %s's Cooldown GE caps its stacks at %d, below its %d charges; set its StackLimitCount to 0"),
+			   __FUNCTION__, *GetName(), StackLimit, GetMaxStacks());
+	// A pool a removed Surplus shrank may still hold more spent charges than it has.
+	return FMath::Max(GetMaxStacks() - ASC->GetGameplayEffectCount(CooldownGE->GetClass(), nullptr), 0);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -192,10 +195,11 @@ FVector UGeoDeployAbility::GetPendingDeployLocation() const
 	float const DeployDistance = ProjectileParams.OverrideDistanceSpan == EOverrideParam::OverrideValue
 		? ProjectileParams.DistanceSpan
 		: GetChargedDeployDistance();
-	FVector const Origin =
-		GetFireOrigin(StoredPayload.SourceAvatar, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	FVector const Origin = GetFireOrigin(StoredPayload.SourceAvatar, ASC, StoredPayload.Seed);
 	float const Yaw = GetFireYaw(StoredPayload.SourceAvatar, StoredPayload.Seed);
-	return Origin + FRotator(0.f, Yaw, 0.f).Vector() * DeployDistance;
+	return Origin + FRotator(0.f, Yaw, 0.f).Vector() * DeployDistance
+		* GeoASLib::GetStatValue(ASC, UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(), 1.f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -264,8 +268,8 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 	FGeoCueParam const& TargetCue = GameDataSettings->DeployTargetCue;
 	if (TargetCue.IsValid() && GeoLib::IsLocalPlayerAvatar(StoredPayload.SourceAvatar))
 	{
-		FVector const LandingLocation =
-			SpawnTransform.GetLocation() + SpawnTransform.GetRotation().Vector() * SpawnParams.DistanceSpan;
+		FVector const LandingLocation = SpawnTransform.GetLocation()
+			+ SpawnTransform.GetRotation().Vector() * Projectile->ResolvedParams.DistanceSpan;
 		UGameplayCueManager::AddGameplayCue_NonReplicated(Projectile, TargetCue.CueTag,
 														  TargetCue.MakeCueParams(StoredPayload, LandingLocation));
 	}

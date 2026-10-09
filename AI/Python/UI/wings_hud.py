@@ -135,6 +135,17 @@ def scrolled(wbp, path, content, scroll):
     write_slot(path, UTIL.find_widget(wbp, scroll).get_editor_property("slot"), {"size": FILL})
 
 
+def remove_unless_edited(wbp, path, names):
+    """Removes the widgets names, all of them or none: none while one holds a value changed by hand. Returns those hand
+    edits."""
+    edited = [line for line in asset_guard.hand_edits(path) if any(f".{name}:" in line for name in names)]
+    if not edited:
+        for name in names:
+            if UTIL.find_widget(wbp, name):
+                UTIL.remove_widget(wbp, name)
+    return edited
+
+
 # --- New widgets ------------------------------------------------------------------------------------------------------
 RETIRED_WING_WIDGETS = ("NameText", "RoleText", "NameRow", "NameScale", "CurrentHealthText", "TitleRow",
                         "MaxHealthText", "ShieldText", "GaugeText", "DetailRow")
@@ -268,18 +279,17 @@ def build_stats_panel():
     return wbp
 
 
-def add_stats_toggle_input():
-    """IA_ToggleStatsDetail, rebindable as ToggleStats, on STATS_TOGGLE_KEYS in the gameplay mapping, and named on
-    BP_GeoPlayerController, whose OnToggleStatsDetail switches the counter's table."""
-    action = unreal.load_asset(STATS_TOGGLE_ACTION) if unreal.EditorAssetLibrary.does_asset_exist(
-        STATS_TOGGLE_ACTION) else None
+def add_input(action_path, mappable_name, display_name, keys, controller_values):
+    """The input action at action_path (made when missing, rebindable as mappable_name), on keys in the gameplay
+    mapping, and controller_values ({property: value}, the action being "action") written on BP_GeoPlayerController."""
+    action = unreal.load_asset(action_path) if unreal.EditorAssetLibrary.does_asset_exist(action_path) else None
     if not action:
-        folder, name = STATS_TOGGLE_ACTION.rsplit("/", 1)
+        folder, name = action_path.rsplit("/", 1)
         action = unreal.AssetToolsHelpers.get_asset_tools().create_asset(name, folder, unreal.InputAction,
                                                                          unreal.InputAction_Factory())
         settings = unreal.new_object(unreal.PlayerMappableKeySettings, action)
-        settings.set_editor_property("name", "ToggleStats")
-        settings.set_editor_property("display_name", unreal.Text("Stats detail"))
+        settings.set_editor_property("name", mappable_name)
+        settings.set_editor_property("display_name", unreal.Text(display_name))
         action.set_editor_property("player_mappable_key_settings", settings)
         unreal.EditorAssetLibrary.save_loaded_asset(action)
 
@@ -287,7 +297,7 @@ def add_stats_toggle_input():
     mapped = [m.get_editor_property("key").export_text() for m in
               mapping.get_editor_property("default_key_mappings").get_editor_property("mappings")
               if m.get_editor_property("action") == action]
-    for key_name in STATS_TOGGLE_KEYS:
+    for key_name in keys:
         if not any(key_name in key for key in mapped):
             key = unreal.Key()
             key.import_text(key_name)
@@ -296,10 +306,18 @@ def add_stats_toggle_input():
     unreal.EditorAssetLibrary.save_loaded_asset(mapping, only_if_is_dirty=False)
 
     controller = unreal.load_asset(PLAYER_CONTROLLER_PATH)
-    asset_guard.write(PLAYER_CONTROLLER_PATH, unreal.get_default_object(controller.generated_class()),
-                      "toggle_stats_detail_action", action)
+    defaults = unreal.get_default_object(controller.generated_class())
+    for key, value in controller_values.items():
+        asset_guard.write(PLAYER_CONTROLLER_PATH, defaults, key, action if value == "action" else value)
     unreal.BlueprintEditorLibrary.compile_blueprint(controller)
     unreal.EditorAssetLibrary.save_loaded_asset(controller, only_if_is_dirty=False)
+
+
+def add_stats_toggle_input():
+    """IA_ToggleStatsDetail, rebindable as ToggleStats, on STATS_TOGGLE_KEYS, named on BP_GeoPlayerController, whose
+    OnToggleStatsDetail switches the counter's table."""
+    add_input(STATS_TOGGLE_ACTION, "ToggleStats", "Stats detail", STATS_TOGGLE_KEYS,
+              {"toggle_stats_detail_action": "action"})
 
 
 # --- Existing widgets -------------------------------------------------------------------------------------------------

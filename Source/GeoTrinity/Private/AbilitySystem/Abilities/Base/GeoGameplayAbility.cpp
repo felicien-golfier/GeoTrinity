@@ -164,6 +164,28 @@ float UGeoGameplayAbility::GetCooldown(int32 AbilityLevel) const
 	return Cooldown;
 }
 
+void UGeoGameplayAbility::ApplyCooldown(FGameplayAbilitySpecHandle const Handle,
+										FGameplayAbilityActorInfo const* ActorInfo,
+										FGameplayAbilityActivationInfo const ActivationInfo) const
+{
+	UGameplayEffect const* CooldownEffect = GetCooldownGameplayEffect();
+	if (!CooldownEffect || !HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
+	{
+		return;
+	}
+
+	FGameplayEffectSpecHandle const SpecHandle = MakeOutgoingGameplayEffectSpec(
+		Handle, ActorInfo, ActivationInfo, CooldownEffect->GetClass(), GetAbilityLevel(Handle, ActorInfo));
+	if (SpecHandle.Data->GetDuration() > 0.f)
+	{
+		float const GemMultiplier =
+			GeoASLib::GetGemCooldownMultiplier(ActorInfo->AbilitySystemComponent.Get(), GetAssetTags());
+		SpecHandle.Data->SetDuration(SpecHandle.Data->GetDuration() * GemMultiplier, true);
+	}
+
+	ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
+}
+
 void UGeoGameplayAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 									 FGameplayAbilityActorInfo const* ActorInfo,
 									 FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
@@ -219,9 +241,19 @@ void UGeoGameplayAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 	}
 }
 
-float UGeoGameplayAbility::GetFireDelay() const
+float UGeoGameplayAbility::GetBaseFireDelay() const
 {
 	return bUseGeneralChargeTimeForFireDelay ? GetDefault<UGameDataSettings>()->GeneralChargeTime : FireDelay;
+}
+
+float UGeoGameplayAbility::GetFireDelay(UAbilitySystemComponent const* ASC) const
+{
+	return GetBaseFireDelay() * GeoASLib::GetGemFireDelayMultiplier(ASC, GetAssetTags());
+}
+
+float UGeoGameplayAbility::GetFireDelay() const
+{
+	return IsInstantiated() ? GetFireDelay(GetAbilitySystemComponentFromActorInfo()) : GetBaseFireDelay();
 }
 
 void UGeoGameplayAbility::ScheduleFireTrigger(FGameplayAbilityActivationInfo const& ActivationInfo,

@@ -1,9 +1,8 @@
 """
-The Interface settings panel: WBP_InterfaceSettings (UGeoInterfaceSettingsWidget) with its Show combat stats checkbox,
-and its INTERFACE button and panel in WBP_Settings, beside Sound and Key Bindings.
-- WBP_InterfaceSettings: built once, in a panel frame; its BackButton is the menu button class WBP_Settings uses.
-- WBP_Settings: InterfaceButton after KeyBindingsButton and InterfaceWidget beside SoundWidget, each laid out like its
-  sibling; added only when absent.
+The Interface settings page: WBP_InterfaceSettings (UGeoInterfaceSettingsWidget) with its Show combat stats checkbox,
+and its INTERFACE button in WBP_Settings, beside Sound and Key Bindings.
+- WBP_InterfaceSettings: built once; menu_pages.py puts it in its page frame and in the pause menu.
+- WBP_Settings: InterfaceButton after KeyBindingsButton, laid out like it; added only when absent.
 
 Never overwrites a hand edit: every value goes through asset_guard.write (kept values are listed in
 AI/Output/interface_settings.txt).
@@ -63,15 +62,11 @@ def add_after(wbp, path, widget_class, name, sibling_name):
     return widget
 
 
-def build_panel(button_class, back_label):
+def build_panel():
     path = PANEL_PATH
     wbp = wings_hud.create_widget(path, "GeoInterfaceSettingsWidget")
     if wbp:
-        UTIL.set_root_panel(wbp, unreal.GeoFrame, "PanelFrame")
-        for key, value in dict(frame_style=wings_hud.frame("DA_Frame_Panel"),
-                               padding=unreal.Margin(40, 32, 40, 32)).items():
-            asset_guard.write(path, UTIL.find_widget(wbp, "PanelFrame"), key, value)
-        add(wbp, path, unreal.VerticalBox, "Root", "PanelFrame")
+        UTIL.set_root_panel(wbp, unreal.VerticalBox, "Root")
         _, title_slot = add(wbp, path, unreal.GeoText, "InterfaceLabel", "Root", text(ROLE.HEADING, "Interface"))
         write_slot(path, title_slot, {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_CENTER,
                                       "padding": unreal.Margin(0, 0, 0, 24)})
@@ -84,9 +79,6 @@ def build_panel(button_class, back_label):
         _, check_slot = add(wbp, path, unreal.GeoCheckBox, "CombatStatsCheckBox", "CombatStatsRow",
                             {"checked_state": unreal.CheckBoxState.CHECKED})
         write_slot(path, check_slot, {"vertical_alignment": CENTER})
-        _, back_slot = add(wbp, path, button_class, "BackButton", "Root", {"label": back_label})
-        write_slot(path, back_slot, {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_FILL,
-                                     "padding": unreal.Margin(0, 24, 0, 0)})
         wings_hud.finish(wbp)
     return unreal.load_asset(path)
 
@@ -95,15 +87,12 @@ def run():
     settings = unreal.load_asset(SETTINGS_PATH)
     key_bindings_button = UTIL.find_widget(settings, "KeyBindingsButton")
     button_class = key_bindings_button.get_class()
-    back_label = UTIL.find_widget(settings, "BackButton").get_editor_property("label")
     upper = str(key_bindings_button.get_editor_property("label")).isupper()
-    panel = build_panel(button_class, back_label)
+    build_panel()
 
     button = add_after(settings, SETTINGS_PATH, button_class, "InterfaceButton", "KeyBindingsButton")
     asset_guard.write(SETTINGS_PATH, button, "label", unreal.Text("INTERFACE" if upper else "Interface"))
     asset_guard.write(SETTINGS_PATH, button, "frame_style", key_bindings_button.get_editor_property("frame_style"))
-    widget = add_after(settings, SETTINGS_PATH, panel.generated_class(), "InterfaceWidget", "SoundWidget")
-    asset_guard.write(SETTINGS_PATH, widget, "visibility", unreal.SlateVisibility.COLLAPSED)
     wings_hud.finish(settings)
 
     kept = asset_guard.report()

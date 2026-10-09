@@ -89,6 +89,11 @@ false at runtime?* If no, it must be flagged. Never use `condition ? A : B` as a
 `if (!ensureMsgf(x, TEXT("...")))  { return; }` where execution must stop; `ensureMsgf(x, TEXT("..."))` alone
 otherwise.
 
+**An ensure on something the code needs afterwards must return** (or take the guarded branch): if the lines after it
+dereference `x` or give a wrong result without it, use the `if (!ensureMsgf(...))` form. A bare `ensureMsgf` is only for
+a value whose absence merely degrades the result (an unset icon draws nothing, nothing crashes). If unsure which, ask
+what the next line does with `x` when it is null.
+
 ## Bindings
 Gate condition-based bindings at the binding site, not inside the callback — guard server-only or
 local-player-only bindings before `AddDynamic`.
@@ -101,6 +106,11 @@ local-player-only bindings before `AddDynamic`.
   `OnFireTargetDataReceived`. A subclass needing only server logic overrides `OnFireTargetDataReceived`.
 - RNG seeds from `StoredPayload.Seed` (`FRandomStream Stream(StoredPayload.Seed)`) — never `FMath::Rand*`, so
   client and server derive identical values.
+- **Base logic reads the default attribute, never the live one.** Anything an ability scales from a target's stat (a
+  percentage of its max health, a drain rate, a ratio) takes the unpumped value from
+  `UGeoAbilitySystemComponent::GetDefaultAttributeValue`, so gems and multipliers (`HealthMultiplier` on deployables)
+  stay a separate layer and a pumped target never changes the ability's own rules. Read the live attribute only for
+  the target's current state: is it full, how much can it actually lose, what is left to drain.
 - New projectiles extend `AGeoPooledProjectile`, not `AGeoProjectile`, unless stated otherwise.
 - VFX go through Gameplay Cues — never a multicast RPC or multicast delegate. Clients have the local context.
 

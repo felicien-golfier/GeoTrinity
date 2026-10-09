@@ -7,7 +7,6 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -50,9 +49,9 @@ void UGeoSacrificeDetonateAbility::OnFireTargetDataReceived(FGameplayAbilityTarg
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoSacrificeDetonateAbility::Detonate(FGeoAbilityTargetData const& AbilityTargetData)
 {
-	float const MaxRange = GetDefault<UGameDataSettings>()->GeneralSpellDistance;
-	FVector2D const ForwardVector = FVector2D(FRotator(0, AbilityTargetData.Yaw, 0).Vector());
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
+	float const MaxRange = GeoASLib::GetSpellDistance(SourceASC);
+	FVector2D const ForwardVector = FVector2D(FRotator(0, AbilityTargetData.Yaw, 0).Vector());
 	float const SacrificeValue = SourceASC->GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute());
 
 	if (GeoLib::IsServer(GetWorld()))

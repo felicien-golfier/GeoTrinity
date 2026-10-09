@@ -2,6 +2,7 @@
 
 #include "Actor/Projectile/GeoProjectile.h"
 
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h" //Necessary for array transfer.
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -509,9 +510,12 @@ void AGeoProjectile::ApplyProjectileParams(FExternalProjectileParams const& Para
 	// DefaultParams, same as KeepBlueprintDefaultValue, so only an explicit OverrideValue changes it. The
 	// KeepBlueprintDefaultValue speed is the movement component's own InitialSpeed, not a DefaultParams value.
 	FProjectileParamsBase Resolved;
-	Resolved.DistanceSpan = ResolveOverrideParam(
-		Params.OverrideDistanceSpan, Params.DistanceSpan,
-		bPlayerInstigator ? Settings->GeneralSpellDistance : Settings->EnemySpellDistance, DefaultParams.DistanceSpan);
+	Resolved.DistanceSpan = ResolveOverrideParam(Params.OverrideDistanceSpan, Params.DistanceSpan,
+												 bPlayerInstigator ? Settings->GeneralSpellDistance
+																   : Settings->EnemySpellDistance,
+												 DefaultParams.DistanceSpan)
+		* GeoASLib::GetStatValue(GeoASLib::GetGeoAscFromActor(GetSourceAvatar()),
+								 UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(), 1.f);
 	Resolved.ProjectileSpeed = ResolveOverrideParam(Params.OverrideSpeed, Params.ProjectileSpeed,
 													Settings->GeneralSpellSpeed, ProjectileMovement->InitialSpeed);
 	Resolved.Radius = ResolveOverrideParam(Params.OverrideRadius, Params.Radius, Settings->GeneralProjectileRadius,

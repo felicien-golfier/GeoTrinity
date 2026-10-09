@@ -151,7 +151,7 @@ void UGeoAbilitySystemComponent::OnRemoteFireTagChanged(FGameplayTag const Remot
 	}
 
 	// Mirrors ScheduleFireTrigger: the shot lands one fire delay after activation, or right away when there is none.
-	float const FireDelay = RemoteFire.AbilityCDO->GetFireDelay();
+	float const FireDelay = RemoteFire.AbilityCDO->GetFireDelay(this);
 	if (FireDelay <= 0.f)
 	{
 		RemoteFireShot(RemoteFireTag);
@@ -406,6 +406,25 @@ void UGeoAbilitySystemComponent::InitializeDefaultAttributes()
 	}
 
 	ApplyEffectToSelf(DefaultAttributes);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float UGeoAbilitySystemComponent::GetDefaultAttributeValue(FGameplayAttribute const& Attribute) const
+{
+	if (ensureMsgf(IsValid(DefaultAttributes), TEXT("%hs: Missing DefaultAttributes for %s"), __FUNCTION__, *GetName()))
+	{
+		for (FGameplayModifierInfo const& Modifier : GetDefault<UGameplayEffect>(DefaultAttributes)->Modifiers)
+		{
+			float Value = 0.f;
+			if (Modifier.Attribute == Attribute
+				&& Modifier.ModifierMagnitude.GetStaticMagnitudeIfPossible(CombatLevel, Value))
+			{
+				return Value;
+			}
+		}
+	}
+
+	return 0.f;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

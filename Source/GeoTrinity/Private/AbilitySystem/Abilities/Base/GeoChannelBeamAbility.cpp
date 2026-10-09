@@ -10,7 +10,6 @@
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -39,7 +38,8 @@ void UGeoChannelBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle const Ha
 		FGeoIndicatorState State;
 		State.Shape = EGeoIndicatorShape::Ray;
 		State.bAttachToOwner = true;
-		State.Size = {GetDefault<UGameDataSettings>()->GeneralSpellDistance, GetCurrentBeamHalfWidth(Character) * 2.f};
+		State.Size = {GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()),
+					  GetCurrentBeamHalfWidth(Character) * 2.f};
 		State.Colors = GeoColor::GetMeaningColors(BeamColor, SecondaryBeamColors);
 		State.StartServerTime = StoredPayload.ServerSpawnTime;
 		State.Duration = GetFireDelay();
@@ -120,7 +120,8 @@ void UGeoChannelBeamAbility::PushBeamState(ACharacter const* const Character) co
 	if (ensureMsgf(BeamVFXComponent, TEXT("UGeoChannelBeamAbility: BeamVFXComponent is missing on the avatar")))
 	{
 		BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character) * 2.f,
-									   GetDefault<UGameDataSettings>()->GeneralSpellDistance, GetBeamDuration());
+									   GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()),
+									   GetBeamDuration());
 	}
 }
 
@@ -182,7 +183,7 @@ void UGeoChannelBeamAbility::Tick(float const DeltaTime)
 			 GeoASLib::GetInteractableActorsInLine(
 				 Character, GeoASLib::GetTeamId(Character), GetScanAttitudeMask(), false,
 				 FVector2D(Character->GetActorLocation()), FVector2D(Character->GetActorForwardVector()),
-				 GetDefault<UGameDataSettings>()->GeneralSpellDistance, CurrentBeamHalfWidth));
+				 GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()), CurrentBeamHalfWidth));
 }
 
 #ifdef WITH_EDITOR
@@ -200,7 +201,7 @@ void UGeoChannelBeamAbility::DrawBeamDebugLines(float const DeltaTime) const
 	float const CurrentBeamRadius = GetCurrentBeamHalfWidth(Character);
 
 	FVector const Right = FVector::CrossProduct(FVector::UpVector, Forward);
-	FVector const BeamEnd = Origin + Forward * GetDefault<UGameDataSettings>()->GeneralSpellDistance;
+	FVector const BeamEnd = Origin + Forward * GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo());
 	DrawDebugLine(GetWorld(), Origin + Right * CurrentBeamRadius, BeamEnd + Right * CurrentBeamRadius, FColor::Cyan,
 				  false, DeltaTime);
 	DrawDebugLine(GetWorld(), Origin - Right * CurrentBeamRadius, BeamEnd - Right * CurrentBeamRadius, FColor::Cyan,

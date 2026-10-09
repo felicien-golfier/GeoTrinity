@@ -43,8 +43,13 @@ protected:
 	/** Saves and sends the profile, then refreshes the page and broadcasts OnProfileChanged. */
 	void CommitChanges();
 
-	/** A row of RowClass in Tint, OnClicked calling Picked; a null Picked makes a row that only reads. */
-	UGeoListRowWidget* MakeRow(EGeoListRowTint Tint, TFunction<void()> Picked);
+	/** Saves and sends the profile alone, for a change only the part of the page that made it shows. */
+	void CommitProfile();
+
+	/** A row of Class in Tint, OnClicked calling Picked; a null Picked makes a row that only reads. A null Class is the
+	 * page's RowClass. */
+	UGeoListRowWidget* MakeRow(EGeoListRowTint Tint, TFunction<void()> Picked,
+							   TSubclassOf<UGeoListRowWidget> Class = nullptr);
 
 	/** A text the page builds, in Role. */
 	UTextBlock* MakeText(EGeoTextRole Role, FText const& Text) const;
@@ -58,6 +63,10 @@ protected:
 	/** The gem rows, tabs and lines of the page: WBP_ListRow. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	TSubclassOf<UGeoListRowWidget> RowClass;
+
+	/** The tabs of a tier strip, filtering a list: WBP_TabUnderline. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	TSubclassOf<UGeoListRowWidget> TabRowClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	TMap<EGeoGemTier, FText> TierNames = {{EGeoGemTier::Chip, INVTEXT("CHIP")},

@@ -15,6 +15,7 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerController.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GameFramework/GameStateBase.h"
@@ -29,8 +30,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
 UGeoStatsPanelWidget::UGeoStatsPanelWidget(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
-	ShortColumns = {EGeoStatColumn::DamageNow, EGeoStatColumn::DamageAverage, EGeoStatColumn::HealingNow,
-					EGeoStatColumn::HealingAverage, EGeoStatColumn::DamageTaken};
+	ShortColumns = {EGeoStatColumn::DamageNow,	EGeoStatColumn::DamageAverage,	EGeoStatColumn::DamageTotal,
+					EGeoStatColumn::HealingNow, EGeoStatColumn::HealingAverage, EGeoStatColumn::HealingTotal,
+					EGeoStatColumn::DamageTaken};
 	FullColumns = {EGeoStatColumn::DamageNow,	   EGeoStatColumn::DamageAverage,	EGeoStatColumn::DamagePeak,
 				   EGeoStatColumn::DamageTotal,	   EGeoStatColumn::HealingNow,		EGeoStatColumn::HealingAverage,
 				   EGeoStatColumn::HealingPeak,	   EGeoStatColumn::HealingTotal,	EGeoStatColumn::DamageTaken,
@@ -160,14 +162,14 @@ void UGeoStatsPanelWidget::NativeTick(FGeometry const& MyGeometry, float const I
 		BuildTable(Players);
 	}
 
-	if (AGeoArena* FightingArena = AGeoArena::GetFightingArena(this))
+	AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
+	if (FightTimeText && GameState)
 	{
-		Arena = FightingArena;
+		AGeoArena const* FightingArena = AGeoArena::GetFightingArena(this);
+		float const Seconds = FightingArena ? FightingArena->GetFightElapsedSeconds() : GameState->GetCombatSeconds();
+		FightTimeText->SetText(UHudFunctionLibrary::FormatDuration(Seconds));
 	}
-	if (AGeoArena const* FoughtArena = Arena.Get(); FoughtArena && FightTimeText)
-	{
-		FightTimeText->SetText(UHudFunctionLibrary::FormatDuration(FoughtArena->GetFightElapsedSeconds()));
-	}
+
 	for (FGeoStatsRow const& Row : Rows)
 	{
 		WriteRow(Row, GetShownColumns());

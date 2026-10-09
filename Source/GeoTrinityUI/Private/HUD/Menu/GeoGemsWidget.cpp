@@ -12,13 +12,13 @@
 #include "HUD/Menu/GeoGemForgeWidget.h"
 #include "HUD/Menu/GeoGemLoadoutWidget.h"
 #include "HUD/Menu/GeoListRowWidget.h"
-#include "HUD/Menu/GeoMenuButton.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemsWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
+	LoadoutPage->SetClassTabBox(ClassTabBox);
 	LoadoutPage->OnProfileChanged.AddWeakLambda(this,
 												[this]
 												{
@@ -36,8 +36,7 @@ void UGeoGemsWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoGemsWidget::HandleBack);
-	ShowPageTabs();
+	ShowHeaderTabs();
 	ShowShards();
 }
 
@@ -50,48 +49,40 @@ void UGeoGemsWidget::Refresh()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-UWidget* UGeoGemsWidget::GetInitialFocusWidget() const
+void UGeoGemsWidget::OnPageShown()
 {
-	return BackButton;
+	Refresh();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool UGeoGemsWidget::HandleBackAction()
+void UGeoGemsWidget::ShowHeaderTabs()
 {
-	HandleBack();
-	return true;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoGemsWidget::HandleBack()
-{
-	OnClosed.Broadcast();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoGemsWidget::ShowPageTabs()
-{
-	if (!PageTabBox || !ensureMsgf(RowClass, TEXT("%hs: no RowClass on %s"), __FUNCTION__, *GetName()))
+	ensureMsgf(RowClass, TEXT("%hs: no RowClass on %s"), __FUNCTION__, *GetName());
+	if (ClassTabBox)
 	{
-		return;
+		ClassTabBox->SetVisibility(PageSwitcher->GetActiveWidget() == LoadoutPage
+									   ? ESlateVisibility::SelfHitTestInvisible
+									   : ESlateVisibility::Collapsed);
 	}
-
-	PageTabBox->ClearChildren();
-	for (int32 PageIndex = 0; PageIndex < PageNames.Num() && PageIndex < PageSwitcher->GetNumWidgets(); ++PageIndex)
+	if (PageTabBox && RowClass)
 	{
-		UGeoListRowWidget* Tab = CreateWidget<UGeoListRowWidget>(this, RowClass);
-		Tab->SetTint(PageIndex == PageSwitcher->GetActiveWidgetIndex() ? EGeoListRowTint::Selected
-																	   : EGeoListRowTint::Normal);
-		Tab->SetSelectable(true);
-		Tab->AddTextColumn(PageNames[PageIndex], 0.f);
-		Tab->OnClicked.AddWeakLambda(this,
-									 [this, PageIndex]
-									 {
-										 PageSwitcher->SetActiveWidgetIndex(PageIndex);
-										 Refresh();
-										 ShowPageTabs();
-									 });
-		PageTabBox->AddChildToHorizontalBox(Tab)->SetPadding(FMargin(0.f, 0.f, PageTabGap, 0.f));
+		PageTabBox->ClearChildren();
+		for (int32 PageIndex = 0; PageIndex < PageNames.Num() && PageIndex < PageSwitcher->GetNumWidgets(); ++PageIndex)
+		{
+			UGeoListRowWidget* Tab = CreateWidget<UGeoListRowWidget>(this, RowClass);
+			Tab->SetTint(PageIndex == PageSwitcher->GetActiveWidgetIndex() ? EGeoListRowTint::Selected
+																		   : EGeoListRowTint::Normal);
+			Tab->SetSelectable(true);
+			Tab->AddTextColumn(PageNames[PageIndex], 0.f);
+			Tab->OnClicked.AddWeakLambda(this,
+										 [this, PageIndex]
+										 {
+											 PageSwitcher->SetActiveWidgetIndex(PageIndex);
+											 Refresh();
+											 ShowHeaderTabs();
+										 });
+			PageTabBox->AddChildToHorizontalBox(Tab)->SetPadding(FMargin(0.f, 0.f, PageTabGap, 0.f));
+		}
 	}
 }
 

@@ -2,7 +2,11 @@
 
 #include "HUD/Menu/GeoCharacterSheetWidget.h"
 
+#include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Blueprint/WidgetTree.h"
 #include "Characters/PlayableCharacter.h"
@@ -13,18 +17,26 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
+#include "GameClasses/GeoPlayerController.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemProfileSave.h"
+#include "Gem/GeoGemStatsEffect.h"
 #include "Gem/GeoGemSubsystem.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "HUD/Menu/GeoAbilityCardWidget.h"
+#include "HUD/Menu/GeoAbilityDetailWidget.h"
+#include "HUD/Menu/GeoGemsWidget.h"
 #include "HUD/Menu/GeoMenuButton.h"
+#include "HUD/Menu/GeoMenuRootWidget.h"
+#include "HUD/Menu/GeoTableWidget.h"
 #include "HUD/Style/GeoGemGlyph.h"
 #include "HUD/Style/GeoMeter.h"
 #include "HUD/Style/GeoShape.h"
 #include "HUD/Style/GeoUITheme.h"
+#include "TimerManager.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UGeoCharacterSheetWidget::UGeoCharacterSheetWidget(FObjectInitializer const& ObjectInitializer) :
@@ -33,14 +45,34 @@ UGeoCharacterSheetWidget::UGeoCharacterSheetWidget(FObjectInitializer const& Obj
 	Stats = {
 		{INVTEXT("Max health"), UCharacterAttributeSet::GetMaxHealthAttribute(), EGeoStatFormat::Number},
 		{INVTEXT("Shield"), UCharacterAttributeSet::GetShieldAttribute(), EGeoStatFormat::Number},
-		{INVTEXT("Damage"), UCharacterAttributeSet::GetDamageMultiplierAttribute(), EGeoStatFormat::Multiplier},
 		{INVTEXT("Damage reduction"), UCharacterAttributeSet::GetDamageReductionAttribute(), EGeoStatFormat::Percent},
-		{INVTEXT("Healing done"), UCharacterAttributeSet::GetAppliedHealBoostAttribute(), EGeoStatFormat::Multiplier},
 		{INVTEXT("Healing received"), UCharacterAttributeSet::GetReceivedHealBoostAttribute(),
+		 EGeoStatFormat::Multiplier},
+		{INVTEXT("Damage"), UCharacterAttributeSet::GetDamageMultiplierAttribute(), EGeoStatFormat::Multiplier},
+		{INVTEXT("Healing done"), UCharacterAttributeSet::GetAppliedHealBoostAttribute(), EGeoStatFormat::Multiplier},
+		{INVTEXT("Crit chance"), UGeoGemAttributeSet::GetCritChanceAttribute(), EGeoStatFormat::Percent},
+		{INVTEXT("Crit damage"), UGeoGemAttributeSet::GetCritDamageAttribute(), EGeoStatFormat::Multiplier},
+		{INVTEXT("Wind-up"), UGeoGemAttributeSet::GetWindUpMultiplierAttribute(), EGeoStatFormat::Multiplier},
+		{INVTEXT("Reload speed"), UGeoGemAttributeSet::GetReloadSpeedMultiplierAttribute(), EGeoStatFormat::Multiplier},
+		{INVTEXT("Max ammo"), UCharacterAttributeSet::GetMaxAmmoAttribute(), EGeoStatFormat::Number},
+		{INVTEXT("Spell distance"), UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(),
 		 EGeoStatFormat::Multiplier},
 		{INVTEXT("Move speed"), UCharacterAttributeSet::GetMovementSpeedMultiplierAttribute(),
 		 EGeoStatFormat::Multiplier},
-		{INVTEXT("Max ammo"), UCharacterAttributeSet::GetMaxAmmoAttribute(), EGeoStatFormat::Number},
+		{INVTEXT("Dash distance"), UGeoGemAttributeSet::GetDashDistanceMultiplierAttribute(),
+		 EGeoStatFormat::Multiplier},
+		{INVTEXT("Dash cooldown"), UGeoGemAttributeSet::GetDashCooldownMultiplierAttribute(),
+		 EGeoStatFormat::Multiplier},
+		{INVTEXT("Special cooldown"), UGeoGemAttributeSet::GetSpecialCooldownMultiplierAttribute(),
+		 EGeoStatFormat::Multiplier},
+		{INVTEXT("Deploy cooldown"), UGeoGemAttributeSet::GetDeployableCooldownMultiplierAttribute(),
+		 EGeoStatFormat::Multiplier},
+		{INVTEXT("Deploy health"), UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute(),
+		 EGeoStatFormat::Multiplier},
+		{INVTEXT("Deploy drain"), UGeoGemAttributeSet::GetDeployableDrainMultiplierAttribute(),
+		 EGeoStatFormat::Multiplier},
+		{INVTEXT("Deploy blink"), UGeoGemAttributeSet::GetDeployableBlinkMultiplierAttribute(),
+		 EGeoStatFormat::Multiplier},
 	};
 }
 
@@ -49,16 +81,46 @@ void UGeoCharacterSheetWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	AbilityDetailsButton->OnClicked.AddUniqueDynamic(this, &UGeoCharacterSheetWidget::HandleAbilityDetails);
 	if (GemLoadoutButton)
 	{
 		GemLoadoutButton->OnClicked.AddUniqueDynamic(this, &UGeoCharacterSheetWidget::HandleGems);
 	}
-	Refresh();
+
+	GetWorld()->GetTimerManager().SetTimer(FightRefreshTimer, this, &UGeoCharacterSheetWidget::ShowFight,
+										   FightRefreshInterval, true);
+
+	if (UAbilitySystemComponent* ASC = GeoASLib::GetGeoAscFromActor(GetOwningPlayerState()))
+	{
+		for (FGeoSheetStat const& Stat : Stats)
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(Stat.Attribute)
+				.AddUObject(this, &UGeoCharacterSheetWidget::HandleStatChanged);
+		}
+	}
+
+	if (!IsInMenu())
+	{
+		OnPageShown();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoCharacterSheetWidget::Refresh()
+void UGeoCharacterSheetWidget::NativeDestruct()
+{
+	if (UAbilitySystemComponent* ASC = GeoASLib::GetGeoAscFromActor(GetOwningPlayerState()))
+	{
+		for (FGeoSheetStat const& Stat : Stats)
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(Stat.Attribute).RemoveAll(this);
+		}
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(FightRefreshTimer);
+	Super::NativeDestruct();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoCharacterSheetWidget::OnPageShown()
 {
 	AGeoPlayerState const* PlayerState = GetOwningPlayerState<AGeoPlayerState>();
 	APlayableCharacter const* PlayableCharacter = Cast<APlayableCharacter>(GetOwningPlayerPawn());
@@ -68,10 +130,11 @@ void UGeoCharacterSheetWidget::Refresh()
 	{
 		EPlayerClass const PlayerClass = PlayerState->GetPlayerClass();
 		ShowIdentity(PlayerClass, Profile);
-		ShowStats(PlayerClass, Profile);
+		ShowStats();
 		ShowFight();
 		ShowAbilities(*PlayableCharacter);
 		ShowGems(PlayerClass, Profile);
+		CloseDetail();
 	}
 	else
 	{
@@ -82,32 +145,92 @@ void UGeoCharacterSheetWidget::Refresh()
 // ---------------------------------------------------------------------------------------------------------------------
 UWidget* UGeoCharacterSheetWidget::GetInitialFocusWidget() const
 {
-	return AbilityDetailsButton;
+	return AbilityBox && AbilityBox->HasAnyChildren() ? AbilityBox->GetChildAt(0) : Super::GetInitialFocusWidget();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 bool UGeoCharacterSheetWidget::HandleBackAction()
 {
-	HandleBack();
+	if (!SelectedRow)
+	{
+		return Super::HandleBackAction();
+	}
+
+	CloseDetail();
 	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoCharacterSheetWidget::HandleBack()
+FReply UGeoCharacterSheetWidget::NativeOnMouseButtonDown(FGeometry const& InGeometry, FPointerEvent const& InMouseEvent)
 {
-	OnClosed.Broadcast();
+	if (SelectedRow)
+	{
+		CloseDetail();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoCharacterSheetWidget::HandleAbilityDetails()
+void UGeoCharacterSheetWidget::HandleAbilitySelected(UGeoAbilityCardWidget* Row)
 {
-	OnOpenAbilityDetails.Broadcast();
+	if (!ensureMsgf(DetailWidget, TEXT("%hs: no DetailWidget on %s"), __FUNCTION__, *GetName()))
+	{
+		return;
+	}
+
+	if (SelectedRow)
+	{
+		SelectedRow->SetSelected(false);
+	}
+
+	SelectedRow = Row;
+	Row->SetSelected(true);
+	DetailWidget->CopyAbility(*Row);
+	DetailWidget->Open();
+	if (DetailScrim)
+	{
+		DetailScrim->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoCharacterSheetWidget::CloseDetail()
+{
+	if (SelectedRow)
+	{
+		SelectedRow->SetSelected(false);
+	}
+
+	SelectedRow = nullptr;
+	if (DetailWidget)
+	{
+		DetailWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (DetailScrim)
+	{
+		DetailScrim->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCharacterSheetWidget::HandleGems()
 {
-	OnOpenGems.Broadcast();
+	AGeoPlayerController* Controller = Cast<AGeoPlayerController>(GetOwningPlayer());
+	if (IsInMenu())
+	{
+		OpenPage(UGeoGemsWidget::StaticClass());
+	}
+	else if (ensureMsgf(Controller, TEXT("%hs: %s is not owned by an AGeoPlayerController"), __FUNCTION__, *GetName()))
+	{
+		Controller->OpenPauseMenu();
+		UGeoMenuRootWidget* PauseMenu = Cast<UGeoMenuRootWidget>(Controller->GetPauseMenuWidget());
+		if (ensureMsgf(PauseMenu, TEXT("%hs: the pause menu is not a UGeoMenuRootWidget"), __FUNCTION__))
+		{
+			PauseMenu->OpenPage(UGeoGemsWidget::StaticClass());
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -212,21 +335,28 @@ void UGeoCharacterSheetWidget::ShowLevel(EPlayerClass const PlayerClass, UGeoGem
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoCharacterSheetWidget::ShowStats(EPlayerClass const PlayerClass, UGeoGemProfileSave const* Profile)
+void UGeoCharacterSheetWidget::ShowStats()
 {
-	AGeoPlayerState const* PlayerState = GetOwningPlayerState<AGeoPlayerState>();
-	UAbilitySystemComponent const* ASC = PlayerState ? PlayerState->GetAbilitySystemComponent() : nullptr;
-	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
-	if (!StatBox || !ASC)
+	UAbilitySystemComponent* ASC = GeoASLib::GetGeoAscFromActor(GetOwningPlayerState());
+	if (!StatTable || !ASC)
 	{
 		return;
 	}
 
-	TArray<FName> const Slotted = Profile ? Profile->GetLoadout(PlayerClass).Sockets : TArray<FName>();
-	StatBox->ClearChildren();
+	FGameplayEffectQuery BuffQuery;
+	BuffQuery.CustomMatchDelegate.BindLambda(
+		[](FActiveGameplayEffect const& Effect)
+		{
+			return !Effect.Spec.Def->IsA<UGeoGemStatsEffect>();
+		});
+	TArray<FActiveGameplayEffectHandle> const BuffHandles = ASC->GetActiveEffects(BuffQuery);
+
+	StatTable->ClearLines();
 	for (FGeoSheetStat const& Stat : Stats)
 	{
 		float const Value = ASC->GetNumericAttribute(Stat.Attribute);
+		float const WithGems = ASC->GetFilteredAttributeValue(Stat.Attribute, FGameplayTagRequirements(),
+															  FGameplayTagContainer(), BuffHandles);
 		FString ValueString;
 		switch (Stat.Format)
 		{
@@ -234,57 +364,87 @@ void UGeoCharacterSheetWidget::ShowStats(EPlayerClass const PlayerClass, UGeoGem
 			ValueString = FString::FromInt(FMath::RoundToInt(Value));
 			break;
 		case EGeoStatFormat::Multiplier:
-			ValueString = FString::Printf(TEXT("\u00D7%.2f"), Value);
+			ValueString = FString::Printf(TEXT("×%.2f"), Value);
 			break;
 		case EGeoStatFormat::Percent:
 			ValueString = FString::Printf(TEXT("%.0f%%"), Value * 100.f);
 			break;
 		}
 
-		float GemBonus = 0.f;
-		for (FName const GemId : Slotted)
-		{
-			FGeoGemInfo const* Gem = Catalog && !GemId.IsNone() ? Catalog->Find(GemId) : nullptr;
-			GemBonus += Gem && Gem->Attribute == Stat.Attribute ? Gem->MagnitudePerGem : 0.f;
-		}
-		FNumberFormattingOptions BonusOptions;
-		BonusOptions.SetAlwaysSign(true).SetMaximumFractionalDigits(2);
-		FText const BonusText = GemBonus != 0.f
-			? FText::Format(BonusFormat, FText::AsNumber(GemBonus * 100.f, &BonusOptions))
-			: NoBonusText;
-
-		UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
-		Row->AddChildToHorizontalBox(MakeText(EGeoTextRole::Body, Stat.Label))
-			->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		Row->AddChildToHorizontalBox(MakeText(EGeoTextRole::Mono, FText::FromString(ValueString)));
-		UTextBlock* Bonus = MakeText(EGeoTextRole::Mono, BonusText);
-		Bonus->SetColorAndOpacity(GemBonus != 0.f ? GemBonusColor : NoBonusColor);
-		Bonus->SetMinDesiredWidth(BonusColumnWidth);
-		Bonus->SetJustification(ETextJustify::Right);
-		Row->AddChildToHorizontalBox(Bonus)->SetPadding(FMargin(ItemGap, 0.f, 0.f, 0.f));
-		StatBox->AddChildToVerticalBox(Row)->SetPadding(FMargin(0.f, 0.f, 0.f, LineGap));
+		StatTable->AddLine({StatTable->MakeCellText(Stat.Label), StatTable->MakeCellText(FText::FromString(ValueString)),
+							MakeBonusCell(Stat.Format, WithGems - ASC->GetNumericAttributeBase(Stat.Attribute),
+										  GemBonusColor),
+							MakeBonusCell(Stat.Format, Value - WithGems, BuffBonusColor)});
 	}
+
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
+	{
+		if (UGeoDeployAbility const* Deploy = Cast<UGeoDeployAbility>(Spec.GetPrimaryInstance()))
+		{
+			StatTable->AddLine(
+				{StatTable->MakeCellText(DeployStacksLabel), StatTable->MakeCellText(FText::AsNumber(Deploy->GetMaxStacks())),
+				 MakeBonusCell(EGeoStatFormat::Number, Deploy->GetMaxStacks() - Deploy->GetBaseMaxStacks(), GemBonusColor),
+				 MakeBonusCell(EGeoStatFormat::Number, 0.f, BuffBonusColor)});
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoCharacterSheetWidget::HandleStatChanged(FOnAttributeChangeData const& /*Data*/)
+{
+	ShowStats();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UTextBlock* UGeoCharacterSheetWidget::MakeBonusCell(EGeoStatFormat const Format, float const Bonus,
+													FLinearColor const& Color) const
+{
+	UTextBlock* Cell = StatTable->MakeCellText(NoBonusText);
+	Cell->SetColorAndOpacity(NoBonusColor);
+	FNumberFormattingOptions Options;
+	Options.SetAlwaysSign(true).SetMaximumFractionalDigits(2);
+	if (!FMath::IsNearlyZero(Bonus) && Format == EGeoStatFormat::Number)
+	{
+		Cell->SetText(FText::AsNumber(FMath::RoundToInt(Bonus), &Options));
+		Cell->SetColorAndOpacity(Color);
+	}
+	else if (!FMath::IsNearlyZero(Bonus))
+	{
+		Cell->SetText(FText::Format(BonusFormat, FText::AsNumber(Bonus * 100.f, &Options)));
+		Cell->SetColorAndOpacity(Color);
+	}
+
+	return Cell;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCharacterSheetWidget::ShowFight()
 {
 	AGeoPlayerState const* PlayerState = GetOwningPlayerState<AGeoPlayerState>();
-	if (!PlayerState)
+	if (!PlayerState || !FightTable)
 	{
 		return;
 	}
 
-	TPair<UTextBlock*, float> const FightValues[] = {{FightDpsText.Get(), PlayerState->GetFightDPS()},
-													 {FightHpsText.Get(), PlayerState->GetFightHPS()},
-													 {FightTakenText.Get(), PlayerState->GetTotalDamageReceived()}};
-	for (TPair<UTextBlock*, float> const& FightValue : FightValues)
+	auto Figure = [this](float const Value) -> UWidget*
 	{
-		if (FightValue.Key)
-		{
-			FightValue.Key->SetText(UHudFunctionLibrary::FormatCompactNumber(FightValue.Value));
-		}
-	}
+		return FightTable->MakeCellText(UHudFunctionLibrary::FormatCompactNumber(Value));
+	};
+	auto NoFigure = [this]() -> UWidget*
+	{
+		UTextBlock* Cell = FightTable->MakeCellText(NoBonusText);
+		Cell->SetColorAndOpacity(NoBonusColor);
+		return Cell;
+	};
+	FightTable->ClearLines();
+	FightTable->AddLine({FightTable->MakeCellText(FightDamageLabel), Figure(PlayerState->GetLiveDPS()),
+						 Figure(PlayerState->GetFightDPS()), Figure(PlayerState->GetMaxBurstDamage()),
+						 Figure(PlayerState->GetTotalDamageDealt())});
+	FightTable->AddLine({FightTable->MakeCellText(FightHealingLabel), Figure(PlayerState->GetLiveHPS()),
+						 Figure(PlayerState->GetFightHPS()), Figure(PlayerState->GetMaxBurstHealing()),
+						 Figure(PlayerState->GetTotalHealingDealt())});
+	FightTable->AddLine({FightTable->MakeCellText(FightTakenLabel), NoFigure(), NoFigure(), NoFigure(),
+						 Figure(PlayerState->GetTotalDamageReceived())});
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -298,6 +458,8 @@ void UGeoCharacterSheetWidget::ShowAbilities(APlayableCharacter const& PlayableC
 	AbilityBox->ClearChildren();
 	for (UGeoAbilityCardWidget* Row : UGeoAbilityCardWidget::CreateClassCards(*this, AbilityRowClass, PlayableCharacter))
 	{
+		Row->SetIsFocusable(true);
+		Row->OnSelected.AddUniqueDynamic(this, &UGeoCharacterSheetWidget::HandleAbilitySelected);
 		AbilityBox->AddChildToVerticalBox(Row)->SetPadding(FMargin(0.f, 0.f, 0.f, AbilityGap));
 	}
 }
@@ -357,8 +519,10 @@ void UGeoCharacterSheetWidget::ShowGems(EPlayerClass const PlayerClass, UGeoGemP
 		}
 		if (Gem && Tier && *Tier == EGeoGemTier::Core && CoreEffectBox)
 		{
-			CoreEffectBox->AddChildToVerticalBox(MakeText(EGeoTextRole::Body, Gem->DisplayName))
-				->SetPadding(FMargin(0.f, 0.f, 0.f, LineGap));
+			CoreEffectBox->AddChildToVerticalBox(MakeText(EGeoTextRole::Button, Gem->DisplayName));
+			UTextBlock* Rule = MakeText(EGeoTextRole::Body, Gem->Effect);
+			Rule->SetAutoWrapText(true);
+			CoreEffectBox->AddChildToVerticalBox(Rule)->SetPadding(FMargin(0.f, LabelGap / 2.f, 0.f, LineGap));
 		}
 	}
 

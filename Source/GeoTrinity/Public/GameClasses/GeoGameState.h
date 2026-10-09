@@ -31,7 +31,7 @@ class GEOTRINITY_API AGeoGameState : public AGameState
 	GENERATED_BODY()
 
 public:
-	/** Registers Difficulty, so a floor pad lights up for the live tuning on every machine. */
+	/** Registers Difficulty, so a floor pad lights up for the live tuning on every machine, and CombatSeconds. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Server. Snapshots the players alive as the fight begins into FightPlayers, the set a wipe is measured against. */
@@ -45,6 +45,12 @@ public:
 	void SetDifficulty(EGeoDifficulty NewDifficulty);
 	/** The tuning every boss runs. Its bit value is the level AEnemyCharacter::InitGAS stamps on the boss ASC. */
 	EGeoDifficulty GetDifficulty() const { return Difficulty; }
+
+	/** Server. Written by UGeoCombatStatsSubsystem as it pushes the players' stats. */
+	void SetCombatSeconds(float Seconds) { CombatSeconds = Seconds; }
+	/** Seconds the current combat-stats session has run: the time its fight averages are measured over, frozen with
+	 *  them once a fight ends. */
+	float GetCombatSeconds() const { return CombatSeconds; }
 
 	/** Server. Revives every player pawn currently in the world (no-op on a living one, so overlapping calls are free). */
 	void RevivePlayers() const;
@@ -106,6 +112,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_Difficulty();
+
+	UPROPERTY(Replicated)
+	float CombatSeconds = 0.f;
 
 	/** Arena.* tag a respawn returns to, through the TargetPoint.Entrance points carrying it. Editable as the arena a
 	 *  session opens on — the hub, since the players start there before touching any volume; from there it is

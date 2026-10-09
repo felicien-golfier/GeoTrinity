@@ -49,15 +49,6 @@ void UGeoMainMenuWidget::NativeConstruct()
 	PlayLocalButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandlePlayLocal);
 	LeaderboardButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleLeaderboard);
 	QuitButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleQuit);
-	CreateServerWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
-	BrowseServerWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
-	LocalConnectWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
-	LeaderboardWidget->OnClosed.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleSubPanelClosed);
-
-	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
-	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
-	LocalConnectWidget->SetVisibility(ESlateVisibility::Collapsed);
-	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -131,35 +122,27 @@ UWidget* UGeoMainMenuWidget::GetInitialFocusWidget() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool UGeoMainMenuWidget::HandleEscapeAction()
-{
-	HandleSubPanelClosed();
-	return true;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleCreateServer()
 {
-	OpenSubPanel(CreateServerWidget);
+	OpenPage(UGeoCreateServerWidget::StaticClass());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleJoinServer()
 {
-	OpenSubPanel(BrowseServerWidget);
-	BrowseServerWidget->FindSessions();
+	OpenPage(UGeoBrowseServersWidget::StaticClass());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandlePlayLocal()
 {
-	OpenSubPanel(LocalConnectWidget);
+	OpenPage(UGeoLocalConnectWidget::StaticClass());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMainMenuWidget::HandleLeaderboard()
 {
-	OpenSubPanel(LeaderboardWidget);
+	OpenPage(UGeoLeaderboardWidget::StaticClass());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -171,38 +154,4 @@ void UGeoMainMenuWidget::HandleQuit()
 		return;
 	}
 	GameInstance->QuitGame();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoMainMenuWidget::HandleSubPanelClosed()
-{
-	CreateServerWidget->SetVisibility(ESlateVisibility::Collapsed);
-	BrowseServerWidget->SetVisibility(ESlateVisibility::Collapsed);
-	LocalConnectWidget->SetVisibility(ESlateVisibility::Collapsed);
-	LeaderboardWidget->SetVisibility(ESlateVisibility::Collapsed);
-	SetButtonsVisible(true);
-	CreateServerButton->SetFocus();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoMainMenuWidget::OpenSubPanel(UGeoMenuPanelWidget* SubPanel)
-{
-	SetButtonsVisible(false);
-	SubPanel->SetVisibility(ESlateVisibility::Visible);
-	SubPanel->SetFocus();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoMainMenuWidget::SetButtonsVisible(bool bVisible)
-{
-	const ESlateVisibility NewVisibility = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
-	CreateServerButton->SetVisibility(NewVisibility);
-	JoinServerButton->SetVisibility(NewVisibility);
-	PlayLocalButton->SetVisibility(NewVisibility);
-	LeaderboardButton->SetVisibility(NewVisibility);
-	QuitButton->SetVisibility(NewVisibility);
-	if (MenuDecor)
-	{
-		MenuDecor->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	}
 }

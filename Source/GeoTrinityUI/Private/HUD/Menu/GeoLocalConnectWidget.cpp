@@ -15,7 +15,6 @@ void UGeoLocalConnectWidget::NativeConstruct()
 
 	HostButton->OnClicked.AddUniqueDynamic(this, &UGeoLocalConnectWidget::HandleHost);
 	JoinButton->OnClicked.AddUniqueDynamic(this, &UGeoLocalConnectWidget::HandleJoin);
-	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoLocalConnectWidget::HandleBack);
 
 	UGeoSessionSubsystem const* Session = GetGameInstance()->GetSubsystem<UGeoSessionSubsystem>();
 	if (ensureMsgf(Session, TEXT("%hs: GeoSessionSubsystem missing"), __FUNCTION__))
@@ -28,13 +27,6 @@ void UGeoLocalConnectWidget::NativeConstruct()
 UWidget* UGeoLocalConnectWidget::GetInitialFocusWidget() const
 {
 	return HostButton;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool UGeoLocalConnectWidget::HandleBackAction()
-{
-	HandleBack();
-	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -58,10 +50,4 @@ void UGeoLocalConnectWidget::HandleJoin()
 		return;
 	}
 	Session->JoinByAddress(IPInput->GetText().ToString());
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoLocalConnectWidget::HandleBack()
-{
-	OnClosed.Broadcast();
 }

@@ -19,31 +19,11 @@ void UGeoSoundSettingsWidget::NativeConstruct()
 	MusicVolumeSlider->SetValue(Settings->GetVolume(EGeoVolumeChannel::Music));
 	InterfaceVolumeSlider->SetValue(Settings->GetVolume(EGeoVolumeChannel::Interface));
 
-	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoSoundSettingsWidget::HandleBack);
 	GeneralVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UGeoSoundSettingsWidget::HandleGeneralVolumeChanged);
 	EffectsVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UGeoSoundSettingsWidget::HandleEffectsVolumeChanged);
 	MusicVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UGeoSoundSettingsWidget::HandleMusicVolumeChanged);
 	InterfaceVolumeSlider->OnValueChanged.AddUniqueDynamic(this,
 															&UGeoSoundSettingsWidget::HandleInterfaceVolumeChanged);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-UWidget* UGeoSoundSettingsWidget::GetInitialFocusWidget() const
-{
-	return BackButton;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool UGeoSoundSettingsWidget::HandleBackAction()
-{
-	HandleBack();
-	return true;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoSoundSettingsWidget::HandleBack()
-{
-	OnClosed.Broadcast();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

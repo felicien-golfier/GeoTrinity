@@ -62,17 +62,21 @@ def white_box_brush():
     return brush
 
 
-def clear_button_style(button, normal=None):
-    """A button that draws nothing itself: the frame around it is its look. Normal keeps a brush when given, for a row
-    whose code tints it."""
-    style = button.get_editor_property("widget_style").copy()
+def cleared_style(style, normal=None):
+    """Style drawing nothing in any state, no padding: the frame around its button is the look. Normal keeps a brush
+    when given, for a row whose code tints it."""
     for state in ["normal", "hovered", "pressed", "disabled"]:
         style.set_editor_property(state, no_draw_brush())
     if normal:
         style.set_editor_property("normal", normal)
     for padding in ["normal_padding", "pressed_padding"]:
         style.set_editor_property(padding, unreal.Margin(0, 0, 0, 0))
-    button.set_editor_property("widget_style", style)
+    return style
+
+
+def clear_button_style(button, normal=None):
+    """A button that draws nothing itself: the frame around it is its look."""
+    button.set_editor_property("widget_style", cleared_style(button.get_editor_property("widget_style").copy(), normal))
 
 
 # Properties carried over when a widget is swapped for its themed class, read with try so each type keeps its own.

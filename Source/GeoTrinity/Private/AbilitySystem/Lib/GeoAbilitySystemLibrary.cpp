@@ -146,6 +146,40 @@ float UGeoAbilitySystemLibrary::GetStatValue(UAbilitySystemComponent const* ASC,
 																			   : DefaultValue;
 }
 
+float UGeoAbilitySystemLibrary::GetGemCooldownMultiplier(UAbilitySystemComponent const* ASC,
+														 FGameplayTagContainer const& AbilityTags)
+{
+	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	TPair<FGameplayTag, FGameplayAttribute> const CooldownAttributes[] = {
+		{Tags.Ability_Type_Dash, UGeoGemAttributeSet::GetDashCooldownMultiplierAttribute()},
+		{Tags.Ability_Type_Special, UGeoGemAttributeSet::GetSpecialCooldownMultiplierAttribute()},
+		{Tags.Ability_Type_Deployable, UGeoGemAttributeSet::GetDeployableCooldownMultiplierAttribute()},
+	};
+	for (TPair<FGameplayTag, FGameplayAttribute> const& CooldownAttribute : CooldownAttributes)
+	{
+		if (AbilityTags.HasTagExact(CooldownAttribute.Key))
+		{
+			return GetStatValue(ASC, CooldownAttribute.Value, 1.f);
+		}
+	}
+
+	return 1.f;
+}
+
+float UGeoAbilitySystemLibrary::GetGemFireDelayMultiplier(UAbilitySystemComponent const* ASC,
+														  FGameplayTagContainer const& AbilityTags)
+{
+	return AbilityTags.HasTagExact(FGeoGameplayTags::Get().Ability_Type_Reload)
+		? 1.f / GetStatValue(ASC, UGeoGemAttributeSet::GetReloadSpeedMultiplierAttribute(), 1.f)
+		: GetStatValue(ASC, UGeoGemAttributeSet::GetWindUpMultiplierAttribute(), 1.f);
+}
+
+float UGeoAbilitySystemLibrary::GetSpellDistance(UAbilitySystemComponent const* ASC)
+{
+	return GetDefault<UGameDataSettings>()->GeneralSpellDistance
+		* GetStatValue(ASC, UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(), 1.f);
+}
+
 void UGeoAbilitySystemLibrary::FillEffectContext(UAbilitySystemComponent* SourceASC, UAbilitySystemComponent* TargetASC,
 												 FGameplayEffectContextHandle ContextHandle)
 {

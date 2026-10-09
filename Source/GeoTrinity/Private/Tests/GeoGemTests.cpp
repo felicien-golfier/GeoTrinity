@@ -12,6 +12,7 @@
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemStatsEffect.h"
 #include "Misc/AutomationTest.h"
+#include "Settings/GameDataSettings.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -528,6 +529,34 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 			  Value(UCharacterAttributeSet::GetDamageReductionAttribute()), 0.f, KINDA_SMALL_NUMBER);
 	TestEqual(TEXT("Removing the effect restores max ammo"), Value(UCharacterAttributeSet::GetMaxAmmoAttribute()), 30.f,
 			  KINDA_SMALL_NUMBER);
+
+	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetDashCooldownMultiplierAttribute(), 0.8f);
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetDeployableCooldownMultiplierAttribute(), 0.85f);
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetWindUpMultiplierAttribute(), 0.9f);
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetReloadSpeedMultiplierAttribute(), 1.25f);
+	FGameplayTagContainer const DashTags(Tags.Ability_Type_Dash);
+	FGameplayTagContainer const DeployableTags(Tags.Ability_Type_Deployable);
+	FGameplayTagContainer const BasicTags(Tags.Ability_Type_Basic);
+	FGameplayTagContainer ReloadTags(Tags.Ability_Type_Basic);
+	ReloadTags.AddTag(Tags.Ability_Type_Reload);
+	TestEqual(TEXT("Dash cooldown reads the dash multiplier"), GeoASLib::GetGemCooldownMultiplier(ASC, DashTags), 0.8f,
+			  KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Deploy recharge reads the deployable multiplier"),
+			  GeoASLib::GetGemCooldownMultiplier(ASC, DeployableTags), 0.85f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("A basic ability's cooldown is untouched"), GeoASLib::GetGemCooldownMultiplier(ASC, BasicTags), 1.f);
+	TestEqual(TEXT("Wind-up scales a basic ability's fire delay"), GeoASLib::GetGemFireDelayMultiplier(ASC, BasicTags),
+			  0.9f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Reload speed +25% makes the reload 80% as long"),
+			  GeoASLib::GetGemFireDelayMultiplier(ASC, ReloadTags), 0.8f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("No ASC: fire delay untouched"), GeoASLib::GetGemFireDelayMultiplier(nullptr, BasicTags), 1.f);
+
+	float const GeneralSpellDistance = GetDefault<UGameDataSettings>()->GeneralSpellDistance;
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(), 1.1f);
+	TestEqual(TEXT("Reach +10% lengthens beams by 10%"), GeoASLib::GetSpellDistance(ASC), GeneralSpellDistance * 1.1f,
+			  KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("No ASC: beams keep the general spell distance"), GeoASLib::GetSpellDistance(nullptr),
+			  GeneralSpellDistance);
 
 	GEngine->DestroyWorldContext(World);
 	World->DestroyWorld(false);

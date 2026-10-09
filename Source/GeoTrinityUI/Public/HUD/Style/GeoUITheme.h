@@ -30,7 +30,9 @@ enum class EGeoTextRole : uint8
 	Mono,
 	Button,
 	/** Drawn over graphics such as a bar: its font's outline keeps it legible over a full or an empty fill. */
-	Overlay
+	Overlay,
+	/** A cell of a dense table, such as the gem totals: smaller than Body, so long names fit their column. */
+	Table
 };
 
 /** The look of one text role. */
@@ -212,8 +214,22 @@ public:
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
 	FScrollBarStyle ScrollBarStyle;
 
+	/** A small icon button set on something else, a tab's rename and remove: its foreground tints a UGeoIconImage
+	 * following it, dim at rest and lit on hover. */
+	UPROPERTY(EditAnywhere, Category = "GeoInput")
+	FButtonStyle IconButtonStyle;
+
+	/** An icon button whose icon draws its own outline, the dashed add tab: only its background answers hover. */
+	UPROPERTY(EditAnywhere, Category = "GeoInput")
+	FButtonStyle OutlinedIconButtonStyle;
+
 	/** Space between neighbouring menu buttons of one column or row; the widget builders lay every button stack out
 	 * with it. */
 	UPROPERTY(EditAnywhere, Category = "GeoLayout", meta = (ClampMin = "0", ClampMax = "64"))
 	float MenuButtonGap = 10.f;
+
+	/** Space between the screen's edges and the window every menu page wears (UGeoMenuFrameWidget), whatever the page
+	 * holds. */
+	UPROPERTY(EditAnywhere, Category = "GeoLayout")
+	FMargin MenuFrameMargin = FMargin(64.f, 48.f);
 };

@@ -58,8 +58,9 @@ void UGeoCombatStatsSubsystem::ResetStats()
 {
 	// Zero every player's displayed stats, not just tracked ones: a new session must wipe the frozen
 	// values of the previous fight for everyone.
-	if (AGameState const* GameState = GetWorld()->GetGameState<AGameState>())
+	if (AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>())
 	{
+		GameState->SetCombatSeconds(0.f);
 		for (APlayerState* PlayerState : GameState->PlayerArray)
 		{
 			if (AGeoPlayerState* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState))
@@ -167,8 +168,15 @@ void UGeoCombatStatsSubsystem::DecayRates(float CurrentTime)
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::PushPlayerStats(float CurrentTime)
 {
+	float const CombatSeconds = CurrentTime - CombatStartTime;
+	if (AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
+		ensureMsgf(GameState, TEXT("Combat stats pushed with no AGeoGameState to hold the combat time")))
+	{
+		GameState->SetCombatSeconds(CombatSeconds);
+	}
+
 	// Clamped to one second so the first hits of a combat don't read as an absurd average.
-	float const CombatDuration = FMath::Max(CurrentTime - CombatStartTime, 1.f);
+	float const CombatDuration = FMath::Max(CombatSeconds, 1.f);
 	for (auto It = StatsPerActor.CreateIterator(); It; ++It)
 	{
 		AGeoPlayerState* GeoPlayerState = It.Key().Get();

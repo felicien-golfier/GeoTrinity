@@ -16,6 +16,10 @@ class GEOTRINITYUI_API UGeoButton : public UButton
 {
 	GENERATED_BODY()
 
+public:
+	/** Fires on a double click in place of its second click, while bound. */
+	FSimpleDelegate OnDoubleClicked;
+
 protected:
 	/** Builds an SGeoButton (focus → hover mapping) in place of the default SButton. */
 	virtual TSharedRef<SWidget> RebuildWidget() override;

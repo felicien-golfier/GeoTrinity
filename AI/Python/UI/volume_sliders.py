@@ -1,4 +1,4 @@
-# Builds the four labelled volume rows of WBP_SoundSettings, between the title and BackButton.
+# Builds the four labelled volume rows of WBP_SoundSettings, under the title.
 # Slider names must stay as below — UGeoSoundSettingsWidget BindWidget's them.
 # Re-run safe: the tree primitives remove any existing widget of the same name first.
 import unreal

@@ -338,7 +338,8 @@ void FGeoShapePainter::DrawIcon(FSlateWindowElementList& OutDrawElements, int32 
 		{
 			if (Stroke.bClosed && !Points.IsEmpty())
 			{
-				Points.Add(Points[0]);
+				FVector2f const First = Points[0];
+				Points.Add(First);
 			}
 			for (TArray<FVector2f> const& Dash :
 				 SplitIntoDashes(Points, Scale * Stroke.DashLength, Scale * Stroke.DashGap))

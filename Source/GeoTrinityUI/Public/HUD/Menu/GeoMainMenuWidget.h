@@ -3,26 +3,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "HUD/Menu/GeoMenuPanelWidget.h"
+#include "HUD/Menu/GeoMenuRootWidget.h"
 
 #include "GeoMainMenuWidget.generated.h"
 
-class UGeoCreateServerWidget;
-class UGeoBrowseServersWidget;
-class UGeoLeaderboardWidget;
-class UGeoLocalConnectWidget;
 class UGeoMenuButton;
 
 /**
  * Main lobby menu widget. Composes the UGeoMenuButton instances and handles all action logic in C++.
  * Blueprint subclasses configure appearance through the button UPROPERTYs.
  * Required in the BP hierarchy: UGeoMenuButton widgets named "CreateServerButton", "JoinServerButton",
- * "PlayLocalButton", "LeaderboardButton", "QuitButton", and panel widgets "CreateServerWidget", "BrowseServerWidget",
- * "LocalConnectWidget", "LeaderboardWidget" (panels set Collapsed by default in the BP layout). Optional: "MenuDecor",
- * whatever dresses the top level (title, ornaments), which gives way to a sub-panel along with the buttons.
+ * "PlayLocalButton", "LeaderboardButton", "QuitButton", and as pages a UGeoCreateServerWidget, a
+ * UGeoBrowseServersWidget, a UGeoLocalConnectWidget and a UGeoLeaderboardWidget.
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoMainMenuWidget : public UGeoMenuPanelWidget
+class GEOTRINITYUI_API UGeoMainMenuWidget : public UGeoMenuRootWidget
 {
 	GENERATED_BODY()
 
@@ -32,14 +27,12 @@ public:
 	FString GetLocalPlayerName() const;
 
 protected:
-	/** Wires each main-menu button to its handler and registers sub-panel close delegates. */
+	/** Wires each main-menu button to its handler. */
 	virtual void NativeConstruct() override;
 	/** Shows the error popup for any create/join/connection failure the game instance holds (TakeSessionError). */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 	/** Returns CreateServerButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
-	/** Closes any open sub-panel back to the top-level buttons and consumes the Escape input. */
-	virtual bool HandleEscapeAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> CreateServerButton;
@@ -56,21 +49,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> QuitButton;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UGeoCreateServerWidget> CreateServerWidget;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UGeoBrowseServersWidget> BrowseServerWidget;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UGeoLocalConnectWidget> LocalConnectWidget;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UGeoLeaderboardWidget> LeaderboardWidget;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UWidget> MenuDecor;
-
 private:
 	UFUNCTION()
 	void HandleCreateServer();
@@ -86,12 +64,6 @@ private:
 
 	UFUNCTION()
 	void HandleQuit();
-
-	UFUNCTION()
-	void HandleSubPanelClosed();
-
-	void OpenSubPanel(UGeoMenuPanelWidget* SubPanel);
-	void SetButtonsVisible(bool bVisible);
 
 	/** Pure Slate modal over the whole viewport, so it needs nothing from the menu's BP layout; its OK button takes
 	 * every user's focus so a gamepad can dismiss it. */

@@ -7,7 +7,6 @@
 
 #include "GeoStatsPanelWidget.generated.h"
 
-class AGeoArena;
 class AGeoPlayerState;
 class UGeoIcon;
 class UGridPanel;
@@ -59,7 +58,9 @@ struct FGeoStatsRow
 /**
  * The stat counter: every player's combat figures as one bare table over the arena, the owning player first and bright,
  * the others dimmed. Short, it shows the fight's time and, per player, damage and healing per second now and over the
- * fight (ø) and the damage taken; full, it adds each one's peak and total and the player's modifiers. The key bound to
+ * fight (ø), their totals and the damage taken; full, it adds each one's peak and the player's modifiers. The time is
+ * the live arena's clock while a fight runs, the one the boss bar shows, and AGeoGameState::GetCombatSeconds
+ * otherwise, which keeps a finished fight's final time and runs for a session at a training dummy. The key bound to
  * AGeoPlayerController::ToggleStatsDetailAction switches between the two, and the hint under the table names it. Built
  * in C++ into StatsGrid: rebuilt when the players or the detail change, its figures written in place every tick.
  * Shown while the player's Show Combat Stats setting is on.
@@ -218,7 +219,4 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UTextBlock> FightTimeText;
-
-	/** The arena last fought, kept once its fight ends so the fight time holds the final time. */
-	TWeakObjectPtr<AGeoArena> Arena;
 };

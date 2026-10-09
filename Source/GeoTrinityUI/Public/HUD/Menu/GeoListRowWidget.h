@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
 #include "HUD/Style/GeoUITheme.h"
+#include "Types/SlateEnums.h"
 
 #include "GeoListRowWidget.generated.h"
 
@@ -51,6 +52,10 @@ public:
 	/** Fires on click, for a row the list made selectable. */
 	FGeoListRowClickedSignature OnClicked;
 
+	/** Fires on a double click in place of its second click, for a row the list made selectable. Unbound, a double
+	 * click is two clicks. */
+	FGeoListRowClickedSignature OnDoubleClicked;
+
 	/** Appends a column holding Content. Weight 0 sizes it to its content, otherwise it is its share of the row. */
 	void AddColumn(UWidget* Content, float Weight);
 
@@ -72,6 +77,9 @@ public:
 
 	/** Draws RowFrame's line and glow in Color, for a row that stands for something with its own colour. */
 	void SetFrameTint(FLinearColor const& Color);
+
+	/** When a click fires: on release by default, on press for a row that a press elsewhere may rebuild under it. */
+	void SetClickMethod(EButtonClickMethod::Type ClickMethod);
 
 	/** Gives the row's button the user's focus, as a list rebuilt under the gamepad does for the row it stood on. */
 	void FocusRow();
@@ -114,6 +122,8 @@ protected:
 private:
 	UFUNCTION()
 	void HandleClicked();
+
+	void HandleDoubleClicked();
 
 	EGeoListRowTint Tint = EGeoListRowTint::Normal;
 };

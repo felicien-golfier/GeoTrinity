@@ -75,6 +75,7 @@ struct GEOTRINITY_API FGeoGameplayTags
 	// Rules a slotted Core turns on, granted by UGeoGemStatsEffect
 	FGameplayTag Gem_Core_Critical;
 	FGameplayTag Gem_Core_Leverage;
+	FGameplayTag Gem_Core_Surplus;
 
 	// AI
 	FGameplayTag AI_Boss_AggroEvent;

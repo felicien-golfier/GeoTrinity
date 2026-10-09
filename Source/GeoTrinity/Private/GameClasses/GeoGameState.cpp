@@ -14,6 +14,7 @@ void AGeoGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoGameState, Difficulty);
+	DOREPLIFETIME(AGeoGameState, CombatSeconds);
 }
 
 void AGeoGameState::SetDifficulty(EGeoDifficulty NewDifficulty)

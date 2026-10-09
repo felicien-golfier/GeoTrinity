@@ -25,6 +25,13 @@ public:
 		Invalidate(EInvalidateWidgetReason::Layout);
 	}
 
+	/** Also multiplies the icon by the foreground colour of the widget holding it, a button's for its hover state. */
+	void SetTintWithForeground(bool const bInTintWithForeground)
+	{
+		bTintWithForeground = bInTintWithForeground;
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
 	virtual FVector2D ComputeDesiredSize(float /*LayoutScaleMultiplier*/) const override
 	{
 		return FVector2D(Size, Size);
@@ -36,9 +43,11 @@ public:
 	{
 		if (UGeoIcon const* IconToDraw = Icon.Get())
 		{
+			FLinearColor const Foreground =
+				bTintWithForeground ? InWidgetStyle.GetForegroundColor() : FLinearColor::White;
 			FGeoShapePainter::DrawIcon(OutDrawElements, LayerId, AllottedGeometry, *IconToDraw,
 									   FSlateRect(FVector2f::ZeroVector, AllottedGeometry.GetLocalSize()),
-									   Tint * InWidgetStyle.GetColorAndOpacityTint());
+									   Tint * Foreground * InWidgetStyle.GetColorAndOpacityTint());
 		}
 		return LayerId;
 	}
@@ -47,4 +56,5 @@ private:
 	TWeakObjectPtr<UGeoIcon const> Icon;
 	float Size = 44.f;
 	FLinearColor Tint = FLinearColor::White;
+	bool bTintWithForeground = false;
 };

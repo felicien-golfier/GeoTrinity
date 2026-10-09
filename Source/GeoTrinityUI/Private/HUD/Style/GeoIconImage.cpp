@@ -26,6 +26,13 @@ void UGeoIconImage::SetTint(FLinearColor const& InTint)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoIconImage::SetTintWithForeground(bool const bInTintWithForeground)
+{
+	bTintWithForeground = bInTintWithForeground;
+	SynchronizeProperties();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoIconImage::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
@@ -33,6 +40,7 @@ void UGeoIconImage::SynchronizeProperties()
 	if (MyIcon)
 	{
 		MyIcon->SetIcon(Icon, Size, Tint);
+		MyIcon->SetTintWithForeground(bTintWithForeground);
 	}
 }
 

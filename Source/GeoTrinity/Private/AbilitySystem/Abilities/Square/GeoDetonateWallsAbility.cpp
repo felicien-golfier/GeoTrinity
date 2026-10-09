@@ -6,7 +6,6 @@
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Wall/GeoWall.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -44,7 +43,7 @@ void UGeoDetonateWallsAbility::OnFireTargetDataReceived(FGameplayAbilityTargetDa
 void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTargetData) const
 {
 	AActor* const Avatar = GetAvatarActorFromActorInfo();
-	float const MaxRange = GetDefault<UGameDataSettings>()->GeneralSpellDistance;
+	float const MaxRange = GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo());
 	FVector2D const ForwardVector = FVector2D(FRotator(0, AbilityTargetData.Yaw, 0).Vector());
 
 	TArray<AActor*> const ActorsInLine =

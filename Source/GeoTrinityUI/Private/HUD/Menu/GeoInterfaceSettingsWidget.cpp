@@ -13,7 +13,6 @@ void UGeoInterfaceSettingsWidget::NativeConstruct()
 
 	CombatStatsCheckBox->SetIsChecked(UGeoGameUserSettings::Get()->ShowCombatStats());
 
-	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoInterfaceSettingsWidget::HandleBack);
 	CombatStatsCheckBox->OnCheckStateChanged.AddUniqueDynamic(this,
 															  &UGeoInterfaceSettingsWidget::HandleCombatStatsChanged);
 }
@@ -22,19 +21,6 @@ void UGeoInterfaceSettingsWidget::NativeConstruct()
 UWidget* UGeoInterfaceSettingsWidget::GetInitialFocusWidget() const
 {
 	return CombatStatsCheckBox;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool UGeoInterfaceSettingsWidget::HandleBackAction()
-{
-	HandleBack();
-	return true;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoInterfaceSettingsWidget::HandleBack()
-{
-	OnClosed.Broadcast();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -5,24 +5,25 @@
 #include "AttributeSet.h"
 #include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
-#include "HUD/Menu/GeoMenuPanelWidget.h"
+#include "HUD/Menu/GeoMenuPageWidget.h"
 
 #include "GeoCharacterSheetWidget.generated.h"
 
 class APlayableCharacter;
 enum class EGeoTextRole : uint8;
 class UGeoAbilityCardWidget;
+class UGeoAbilityDetailWidget;
 class UGeoGemCatalog;
 class UGeoGemProfileSave;
 class UGeoMenuButton;
 class UGeoMeter;
 class UGeoShape;
+class UGeoTableWidget;
 class UHorizontalBox;
 class UPanelWidget;
 class UTextBlock;
 class UVerticalBox;
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoCharacterSheetSignature);
+struct FOnAttributeChangeData;
 
 /** How a stat's value reads on the character sheet. */
 UENUM(BlueprintType)
@@ -54,14 +55,17 @@ struct FGeoSheetStat
 
 /**
  * The local player's class at a glance, rebuilt on each open: its shape, name, role and level with the XP to the next,
- * the other classes' levels, every stat with what the slotted gems add to it, this fight's numbers, the class's
- * abilities (AbilityRowClass, the ability card in a compact layout), the slotted gems with their Core effects, and the
- * gems and shards owned. Opened from the pause menu; ABILITY DETAILS asks it for the abilities page, GEMS for the Gems
- * menu.
- * Required in the BP hierarchy: UGeoMenuButton "AbilityDetailsButton". Every other part is optional.
+ * the other classes' levels, every stat live with what the slotted gems and the buffs now on the player add to it, this
+ * fight's damage, healing and damage taken (now, average, peak, total, refreshed while shown), the class's abilities
+ * (AbilityRowClass, the ability card in a compact layout, its description cut short), the slotted gems with their Core
+ * effects and rules, and the gems and shards owned. Opened from the pause menu, or held open with Tab outside any
+ * menu; GEMS opens the Gems page, opening the pause menu first from the Tab sheet.
+ * Picking an ability opens its whole description and stats in DetailWidget, the drawer sliding in from the right over
+ * DetailScrim; a click outside the drawer, or the back input, closes it.
+ * Every part is optional.
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoCharacterSheetWidget : public UGeoMenuPanelWidget
+class GEOTRINITYUI_API UGeoCharacterSheetWidget : public UGeoMenuPageWidget
 {
 	GENERATED_BODY()
 
@@ -69,28 +73,28 @@ public:
 	/** Lists the stats every class has, in the order the sheet shows them. */
 	UGeoCharacterSheetWidget(FObjectInitializer const& ObjectInitializer);
 
-	/** Fills the sheet from the class, the profile and the fight as they are now. */
-	void Refresh();
-
-	UPROPERTY(BlueprintAssignable, Category = "GeoMenu")
-	FGeoCharacterSheetSignature OnClosed;
-
-	/** ABILITY DETAILS was pressed. */
-	UPROPERTY(BlueprintAssignable, Category = "GeoMenu")
-	FGeoCharacterSheetSignature OnOpenAbilityDetails;
-
-	/** GEMS was pressed. */
-	UPROPERTY(BlueprintAssignable, Category = "GeoMenu")
-	FGeoCharacterSheetSignature OnOpenGems;
+	/** Fills the sheet from the class, the profile and the fight as they are now, on each show: a page it opened may
+	 * have changed the gems. */
+	virtual void OnPageShown() override;
 
 protected:
-	/** Wires the buttons and fills the sheet. */
+	/** Wires GEMS, follows the stats and refreshes this fight's numbers every FightRefreshInterval; a sheet outside any
+	 * menu (the one held open with Tab) fills itself here, as no menu will show it. */
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+	/** The first ability. */
 	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Closes the open details, else goes back. */
 	virtual bool HandleBackAction() override;
+	/** Closes the open details: only a click outside the drawer reaches here while it is open. */
+	virtual FReply NativeOnMouseButtonDown(FGeometry const& InGeometry, FPointerEvent const& InMouseEvent) override;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UGeoMenuButton> AbilityDetailsButton;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoAbilityDetailWidget> DetailWidget;
+
+	/** Dims the sheet while the details are open, and takes the click that closes them. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UWidget> DetailScrim;
 
 	/** Opens the Gems menu. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
@@ -127,18 +131,15 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UHorizontalBox> OtherClassesBox;
 
-	/** Filled with one line per Stats entry: label, value, gem bonus. */
+	/** Filled with one line per Stats entry: its label, its live value, what the slotted gems add and what the buffs now
+	 * on the player add; then the deploy ability's charges, what the gems add to them. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UVerticalBox> StatBox;
+	TObjectPtr<UGeoTableWidget> StatTable;
 
+	/** Filled with this fight's damage, healing and damage taken: per second now and on average, the peak and the
+	 * total. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> FightDpsText;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> FightHpsText;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> FightTakenText;
+	TObjectPtr<UGeoTableWidget> FightTable;
 
 	/** Filled with one AbilityRowClass per ability. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
@@ -152,7 +153,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UPanelWidget> GemBox;
 
-	/** Filled with the name of each slotted Core. */
+	/** Filled with the name of each slotted Core, its rule under it. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UVerticalBox> CoreEffectBox;
 
@@ -175,7 +176,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
 	FLinearColor GemBonusColor = FLinearColor(1.f, .58f, .03f, 1.f);
 
-	/** The dash standing in for no gem bonus. */
+	/** What the buffs add to a stat. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
+	FLinearColor BuffBonusColor = FLinearColor(.36f, .78f, 1.f, 1.f);
+
+	/** The dash standing in for no bonus. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
 	FLinearColor NoBonusColor = FLinearColor(.11f, .08f, .2f, 1.f);
 
@@ -183,11 +188,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet", meta = (ClampMin = "4", ClampMax = "64"))
 	float OtherClassShapeSize = 16.f;
 
-	/** Width the gem bonus column keeps, so the values line up whatever the bonus. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet", meta = (ClampMin = "0", ClampMax = "256"))
-	float BonusColumnWidth = 74.f;
-
-	/** Space between the items of a row: after an other class's level, before a gem bonus, after a gem chip. */
+	/** Space between the items of a row: after an other class's level, after a gem chip. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet", meta = (ClampMin = "0", ClampMax = "64"))
 	float ItemGap = 14.f;
 
@@ -195,7 +196,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet", meta = (ClampMin = "0", ClampMax = "64"))
 	float LabelGap = 8.f;
 
-	/** Space under each stat line, gem chip and Core name. */
+	/** Space under each gem chip and Core name. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet", meta = (ClampMin = "0", ClampMax = "64"))
 	float LineGap = 8.f;
 
@@ -215,11 +216,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
 	FText OtherClassLevelFormat = INVTEXT("LV {0}");
 
-	/** {0} is the gem bonus on a stat, a signed percentage. */
+	/** {0} is a bonus on a multiplier or a share, in signed percentage points. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
 	FText BonusFormat = INVTEXT("{0}%");
 
-	/** Stands in for no gem bonus on a stat. */
+	/** Stands in for no bonus on a stat. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
 	FText NoBonusText = INVTEXT("\u2014");
 
@@ -250,16 +251,32 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
 	FText OwnedFormat = INVTEXT("CHIPS {0}  \u00B7  CUTS {1}  \u00B7  PRISMS {2}  \u00B7  CORES {3}");
 
+	/** Seconds between two refreshes of this fight's numbers while the sheet is shown. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet", meta = (ClampMin = "0.05", ClampMax = "5"))
+	float FightRefreshInterval = .5f;
+
+	/** The stat line of the deploy ability's charges. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
+	FText DeployStacksLabel = INVTEXT("Deploy stacks");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
+	FText FightDamageLabel = INVTEXT("Damage");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
+	FText FightHealingLabel = INVTEXT("Healing");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
+	FText FightTakenLabel = INVTEXT("Taken");
+
 	/** Font size of the texts the sheet builds itself. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet", meta = (ClampMin = "6", ClampMax = "64"))
 	int32 RowTextSize = 15;
 
 private:
 	UFUNCTION()
-	void HandleBack();
+	void HandleAbilitySelected(UGeoAbilityCardWidget* Row);
 
-	UFUNCTION()
-	void HandleAbilityDetails();
+	void CloseDetail();
 
 	UFUNCTION()
 	void HandleGems();
@@ -267,11 +284,22 @@ private:
 	void ShowIdentity(EPlayerClass PlayerClass, UGeoGemProfileSave const* Profile);
 	/** Level, XP, what the next level opens and the other classes' levels. */
 	void ShowLevel(EPlayerClass PlayerClass, UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
-	void ShowStats(EPlayerClass PlayerClass, UGeoGemProfileSave const* Profile);
+	/** Each stat's live value, split into its base, what the gem effect adds and what every other active effect adds;
+	 * then the deploy ability's charges. */
+	void ShowStats();
+	void HandleStatChanged(FOnAttributeChangeData const& Data);
+	/** A StatTable cell reading Bonus as Format does, signed and in Color, or NoBonusText when there is none. */
+	UTextBlock* MakeBonusCell(EGeoStatFormat Format, float Bonus, FLinearColor const& Color) const;
 	void ShowFight();
 	void ShowAbilities(APlayableCharacter const& PlayableCharacter);
 	void ShowGems(EPlayerClass PlayerClass, UGeoGemProfileSave const* Profile);
 
 	/** A text the sheet builds, in Role at RowTextSize. */
 	UTextBlock* MakeText(EGeoTextRole Role, FText const& Text) const;
+
+	FTimerHandle FightRefreshTimer;
+
+	/** The ability whose details are open; null when closed. */
+	UPROPERTY(Transient)
+	TObjectPtr<UGeoAbilityCardWidget> SelectedRow;
 };

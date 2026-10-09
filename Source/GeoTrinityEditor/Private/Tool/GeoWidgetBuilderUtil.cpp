@@ -267,6 +267,25 @@ void UGeoWidgetBuilderUtil::RemoveWidget(UWidgetBlueprint* WidgetBlueprint, FNam
 	Tree->Modify();
 	WidgetBlueprint->Modify();
 	Widget->RemoveFromParent();
+	// A named slot's content has no parent panel: the UserWidget hosting it keeps it until the slot is emptied.
+	TArray<UWidget*> AllWidgets;
+	Tree->GetAllWidgets(AllWidgets);
+	for (UWidget* Candidate : AllWidgets)
+	{
+		if (UUserWidget* Host = Cast<UUserWidget>(Candidate))
+		{
+			TArray<FName> SlotNames;
+			Host->GetSlotNames(SlotNames);
+			for (FName const SlotName : SlotNames)
+			{
+				if (Host->GetContentForSlot(SlotName) == Widget)
+				{
+					Host->SetContentForSlot(SlotName, nullptr);
+				}
+			}
+		}
+	}
+
 	// Detaching is not enough: the widget stays outer-owned by the tree, and the compiler's source-widget enumeration
 	// still sees it while CommitTree's root-walk reconciliation does not — that mismatch trips the compiler's GUID
 	// ensures ("added but did not get a GUID", then "deleted but still has a GUID" after reload). Renaming it out of
@@ -405,14 +424,20 @@ void UGeoWidgetBuilderUtil::SetRootWidget(UWidgetBlueprint* WidgetBlueprint, FNa
 
 	// Whatever the old root still held is dropped for good: detaching is not enough, as the tree stays their Outer and
 	// the compiler then sees widgets its root walk does not, tripping its GUID ensures. Anything moved out of that
-	// subtree first — into a named slot, say — is no longer reachable from it and survives untouched.
+	// subtree first — into a named slot, say — is no longer reachable from it and survives untouched, and so does the
+	// old root itself once it sits in a named slot of the new one.
 	if (Tree->RootWidget && Tree->RootWidget != Widget)
 	{
+		TArray<UWidget*> Kept{Widget};
+		UWidgetTree::GetChildWidgets(Widget, Kept);
 		TArray<UWidget*> Discarded{Tree->RootWidget};
 		UWidgetTree::GetChildWidgets(Tree->RootWidget, Discarded);
 		for (UWidget* Orphan : Discarded)
 		{
-			Orphan->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional);
+			if (!Kept.Contains(Orphan))
+			{
+				Orphan->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional);
+			}
 		}
 	}
 

@@ -27,6 +27,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoIcon")
 	void SetTint(FLinearColor const& InTint);
 
+	UFUNCTION(BlueprintCallable, Category = "GeoIcon")
+	void SetTintWithForeground(bool bInTintWithForeground);
+
 	virtual void SynchronizeProperties() override;
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
@@ -46,6 +49,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoIcon")
 	FLinearColor Tint = FLinearColor::White;
+
+	/** Also multiplies the icon by the foreground colour of the button holding it, so it follows its hover state. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoIcon")
+	bool bTintWithForeground = false;
 
 private:
 	TSharedPtr<SGeoIconImage> MyIcon;

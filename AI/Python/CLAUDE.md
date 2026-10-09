@@ -14,6 +14,7 @@ top of each file.
 | `Anim/` | Skeletal animation and montage authoring | `AI/MCP/MCP_Animation.md` |
 | `Asset/` | Generic asset editing, asset generation, saving | `AI/MCP/MCP_Blueprint.md` |
 | `Audio/` | Fetching references, taking sounds apart, synthesising and fitting them — run with `uv`, outside the editor | `AI/MCP/Audacity/ListeningToSound.md` |
+| `Data/` | Game data files outside the editor, synced with the design docs — plain Python | `.claude/skills/gem-csv-to-doc`, `gem-doc-to-csv` |
 | `Level/` | Level content and per-level settings | `AI/MCP/MCP_Settings.md` |
 | `Material/` | Materials, material functions, parameter collections | `AI/MCP/MCP_Material.md` |
 | `Mesh/` | Procedural static meshes and rigging | — |
@@ -82,7 +83,7 @@ or wire them in.
 |---|---|
 | `boss_fight_loop.py` | Put each boss's fight loop layers (its score's `loop.json`) — sound, volume, curves, rest level — on its loop sound component, keeping the drift tuned on it |
 | `curve_asset_authoring.py` | Write a curve asset from a table of keys |
-| `gem_catalog.py` | Write every gem type and the drop tables per source (Boss, MiniBoss) into `DA_GemCatalog`; runs headless with `-run=pythonscript` |
+| `gem_catalog.py` | Write the drop tables and class XP per source (Boss, MiniBoss) into `DA_GemCatalog` and import the gems from `Data/gems.csv`; runs headless with `-run=pythonscript` |
 | `generate_headshot_ding.py` | Synthesise the headshot ding and import it as a sound wave |
 | `import_sound_waves.py` | Import every `SFX_` WAV of each `SourceArt/Audio` folder into its package as `SW_`, replacing same-named assets, marking `_Loop` ones looping and to play when silent; deletes unreferenced `SW_` assets whose source is gone |
 | `import_textures.py` | Import image files as textures, replacing same-named assets, with the sRGB and compression they are sampled with |
@@ -119,6 +120,12 @@ These run from a shell with `uv run <script>`, not through the editor; each decl
 | `star_boss_score.py` | Score the star boss with the ninja kit off its dumped motion: its fight loop (wind, whirl, flutter) and every montage's one-shots on beats found in the motion — an air cut per point stabbing out, an inhale into the still frames, a gust on the nova — with curves from the spin and the shake, looping sections tilted to close; writes `loop.json` and each montage's `cues.json` and `curves.json` to the draft, or to `SourceArt` with `ship`, and a preview of each |
 
 `Patches/<Pack>/` holds one patch per reproduced sound, its fitted values written back by `fit_patch.py`.
+
+## Data
+
+| Script | Purpose |
+|---|---|
+| `gem_doc_sync.py` | Turn `Data/gems.csv` into the Gem System doc's catalog table and back, diff the two, and keep the sync stamp `Data/gems.sync.json` that tells which side changed since the last sync |
 
 ## Level
 
@@ -209,7 +216,7 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 | `charge_beam_gauge.py` | Create a widget Blueprint, build its tree, wire it to a component |
 | `crosshair_cursor.py` | Crosshair software cursor, bound to the cursor slot |
 | `group_widgets.py` | Wrap existing canvas children into one panel without moving them |
-| `interface_settings.py` | Interface settings panel (`WBP_InterfaceSettings`, the Show combat stats checkbox), its button and panel in `WBP_Settings` |
+| `interface_settings.py` | Interface settings page (`WBP_InterfaceSettings`, the Show combat stats checkbox) and its button in `WBP_Settings` |
 | `import_icons.py` | Vector icons (`DA_Icon_*`) from the SVGs in `SourceArt/Icons`, set on every ability, the sweet-spot gauge and the effects in `EFFECT_ICONS`; the slot's Icon becomes a `GeoIconImage` |
 | `import_fonts.py` | Import the menu fonts from `SourceArt/Fonts` as Font Face + Font pairs (answer the import prompt Yes) |
 | `leaderboard_menu.py` | Leaderboard widget on the shared list frame, its main-menu entry and the fight timer beside the boss bar — runs after `list_panel.py` |
@@ -217,6 +224,7 @@ new mesh against the engine cube: the cross product of a top-face triangle's two
 | `list_row.py` | The row every list is built from (RowButton + ColumnsBox), shared by the server browser and the leaderboard |
 | `local_connect_menu.py` | Build a child panel inside an existing menu widget |
 | `main_menu_layout.py` | Centre the main menu button column and space its buttons evenly |
+| `menu_pages.py` | The window every menu page wears (`WBP_MenuFrame`, `WBP_MenuPageFrame`: BACK, close cross), every page put in it, and the main and pause menus' `TopLevel` with their pages filling the screen |
 | `pause_menu_setup.py` | Centered vertical menu of labeled button rows |
 | `rail_main_menu.py` | Main menu in the Rail look: screen rail, turning hex shell, title over the class shapes, button column, player, hints |
 | `rail_style.py` | Shared widgets on frames (button, list row, list panel) plus the toolkit the other Rail scripts import: swap a widget for its themed class keeping name, slot and values, wrap it in a frame, reload a Blueprint whose graph read a swapped widget |

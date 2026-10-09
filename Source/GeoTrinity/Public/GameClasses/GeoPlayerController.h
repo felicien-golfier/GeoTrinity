@@ -31,6 +31,10 @@ protected:
 	/** Binds ToggleMenuAction to HandleToggleMenu and ToggleStatsDetailAction to OnToggleStatsDetail via the Enhanced
 	 * Input component. */
 	virtual void SetupInputComponent() override;
+	/** Flushes as the engine does, except while the character sheet is held open: a click on it takes the focus from
+	 * the viewport, and a flush would read as Tab released and close it under the click. DefaultInput.ini turns the
+	 * project-wide flush off so this decides alone. */
+	virtual bool ShouldFlushKeysWhenViewportFocusChanges() const override;
 
 #if !UE_BUILD_SHIPPING
 	/** Shows the on-screen ping readout when Geo.ShowPing is set. */
@@ -50,6 +54,15 @@ public:
 
 	/** Opens the pause menu if closed, or closes it (resumes) if already open. */
 	void TogglePauseMenu();
+
+	/** Opens the pause menu, in place of the character sheet held open, and gives it the input. */
+	void OpenPauseMenu();
+
+	/** The pause menu, created on its first open; null before. */
+	UUserWidget* GetPauseMenuWidget() const
+	{
+		return PauseMenuWidget;
+	}
 
 	/** Closes the pause menu and restores game input mode. Called by the widget's Resume button. */
 	void ClosePauseMenu();
@@ -74,6 +87,18 @@ public:
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
 	TSoftObjectPtr<UInputAction> ToggleStatsDetailAction;
 
+	/** Shows CharacterSheetWidget while held (Tab), the mouse free to click it, and removes it on release; optional. */
+	UPROPERTY(EditAnywhere, Category = "GeoInput")
+	TSoftObjectPtr<UInputAction> ShowCharacterSheetAction;
+
+	/** Engine base so gameplay never names the UI type; concrete UGeoCharacterSheetWidget set in Blueprint. */
+	UPROPERTY(EditAnywhere, Category = "GeoUI")
+	TSubclassOf<UUserWidget> CharacterSheetWidgetClass;
+
+	/** Viewport layer of the held character sheet: above the HUD, below the pause menu. */
+	UPROPERTY(EditAnywhere, Category = "GeoUI", meta = (ClampMin = "0"))
+	int32 CharacterSheetZOrder = 50;
+
 	// Engine base so gameplay never names the UI type; concrete UGeoPauseMenuWidget set in Blueprint.
 	UPROPERTY(EditAnywhere, Category = "GeoUI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
@@ -86,7 +111,12 @@ private:
 	UPROPERTY()
 	TObjectPtr<UUserWidget> PauseMenuWidget;
 
+	UPROPERTY()
+	TObjectPtr<UUserWidget> CharacterSheetWidget;
+
 	void HandleToggleMenu(FInputActionInstance const& Instance);
+	void ShowCharacterSheet();
+	void HideCharacterSheet();
 	void SetMenuInputMappingActive(bool bMenuActive);
 	/** Puts input back in gameplay mode, keeping the non-obvious mouse-capture setting the game needs. */
 	void SetGameplayInputMode();

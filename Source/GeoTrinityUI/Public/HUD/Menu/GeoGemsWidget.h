@@ -3,49 +3,48 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "HUD/Menu/GeoMenuPanelWidget.h"
+#include "HUD/Menu/GeoMenuPageWidget.h"
 
 #include "GeoGemsWidget.generated.h"
 
 class UGeoGemForgeWidget;
 class UGeoGemLoadoutWidget;
 class UGeoListRowWidget;
-class UGeoMenuButton;
 class UHorizontalBox;
 class UTextBlock;
 class UWidgetSwitcher;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoGemsClosedSignature);
-
 /**
- * The Gems menu: the LOADOUT and FORGE pages under one header holding their tabs and the shards owned. Opened from the
- * character sheet; BACK, or the back input, closes it.
+ * The Gems menu: the LOADOUT and FORGE pages under one header holding their tabs, the Loadout's class tabs while it is
+ * the page shown, and the shards owned. Opened from the character sheet.
  * Required in the BP hierarchy: UWidgetSwitcher "PageSwitcher" holding UGeoGemLoadoutWidget "LoadoutPage" then
- * UGeoGemForgeWidget "ForgePage", and UGeoMenuButton "BackButton". Optional: UHorizontalBox "PageTabBox", UTextBlock
+ * UGeoGemForgeWidget "ForgePage". Optional: UHorizontalBox "PageTabBox", UHorizontalBox "ClassTabBox", UTextBlock
  * "ShardsText".
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoGemsWidget : public UGeoMenuPanelWidget
+class GEOTRINITYUI_API UGeoGemsWidget : public UGeoMenuPageWidget
 {
 	GENERATED_BODY()
 
 public:
-	/** Shows both pages and the shards as the profile is now, as each open of the menu does. */
+	/** Shows both pages and the shards as the profile is now. */
 	void Refresh();
 
-	UPROPERTY(BlueprintAssignable, Category = "GeoMenu")
-	FGeoGemsClosedSignature OnClosed;
+	/** Refreshes: the profile may have changed since the menu was last open. */
+	virtual void OnPageShown() override;
 
 protected:
 	/** Follows the pages' changes to the profile with the shard count, once for the widget's life. */
 	virtual void NativeOnInitialized() override;
-	/** Wires BACK and shows the page tabs. */
+	/** Shows the header's tabs. */
 	virtual void NativeConstruct() override;
-	virtual UWidget* GetInitialFocusWidget() const override;
-	virtual bool HandleBackAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UHorizontalBox> PageTabBox;
+
+	/** Lent to LoadoutPage for its class tabs; collapsed while another page is shown. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UHorizontalBox> ClassTabBox;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> ShardsText;
@@ -58,9 +57,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoGemForgeWidget> ForgePage;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UGeoMenuButton> BackButton;
 
 	/** The page tabs: WBP_ListRow. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
@@ -75,9 +71,7 @@ protected:
 	float PageTabGap = 10.f;
 
 private:
-	UFUNCTION()
-	void HandleBack();
-
-	void ShowPageTabs();
+	/** The page tabs, and the class tabs shown while the Loadout is. */
+	void ShowHeaderTabs();
 	void ShowShards();
 };

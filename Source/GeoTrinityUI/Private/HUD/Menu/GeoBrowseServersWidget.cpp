@@ -64,6 +64,12 @@ UWidget* UGeoBrowseServersWidget::GetInitialFocusWidget() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoBrowseServersWidget::OnPageShown()
+{
+	FindSessions();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoBrowseServersWidget::FindSessions()
 {
 	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());

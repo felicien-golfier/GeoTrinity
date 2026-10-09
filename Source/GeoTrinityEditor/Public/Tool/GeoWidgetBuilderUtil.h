@@ -89,7 +89,8 @@ public:
 	static UPanelSlot* AttachWidget(UWidgetBlueprint* WidgetBlueprint, FName ParentName, FName ChildName,
 									int32 Index = -1);
 
-	/** Removes the widget Name from the tree (detaches from its parent). Does NOT save — call CommitTree after. */
+	/** Removes the widget Name from the tree (detaches it from its parent panel, or empties the named slot holding it).
+	 * Does NOT save — call CommitTree after. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void RemoveWidget(UWidgetBlueprint* WidgetBlueprint, FName Name);
 
@@ -130,7 +131,8 @@ public:
 	/**
 	 * Makes the EXISTING widget Name the tree's root, keeping its name, GUID and graph bindings — the counterpart of
 	 * SetRootPanel for a widget already built. The previous root and everything still hanging off it are dropped from
-	 * the tree; move out first (into a named slot, say) whatever must survive. Does NOT save — call CommitTree after.
+	 * the tree; move out first (into a named slot, say) whatever must survive — the previous root itself survives once
+	 * put in a named slot of the new one. Does NOT save — call CommitTree after.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void SetRootWidget(UWidgetBlueprint* WidgetBlueprint, FName Name);

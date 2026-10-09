@@ -161,6 +161,12 @@ FRAME_STYLES = {
         runner_count=0, active_runner_count=2, runner_size=5.0, runner_speed=0.0, active_runner_speed=120.0,
         runner_roll=1.0, alternate_hollow_runners=True, runner_color=P["line"], hollow_runner_thickness=1.2,
         activation_seconds=.12),
+    # A group inside a window (the cluster holding a compact page): a faint violet line round no plate, no runner.
+    "DA_Frame_Section": dict(
+        line_color=srgb("B37CFF", .35), active_line_color=srgb("B37CFF", .35), line_thickness=1.0, corner_cut=10.0,
+        glow_color=srgb("B37CFF", 0.0), active_glow_color=srgb("B37CFF", 0.0), glow_thickness=0.0,
+        fill_color=srgb("04040A", .35), active_fill_color=srgb("04040A", .35),
+        runner_count=0, active_runner_count=0),
     # An ability's icon tile: white line in a glow the code tints with the class colour (white glow * class colour).
     "DA_Frame_IconTile": dict(
         line_color=srgb("FFFFFF"), active_line_color=srgb("FFFFFF"), line_thickness=2.0, corner_cut=0.0,
@@ -173,6 +179,24 @@ FRAME_STYLES = {
         glow_color=srgb("000000", 0.0), active_glow_color=srgb("000000", 0.0), glow_thickness=0.0,
         fill_color=srgb("08060F", .88), active_fill_color=srgb("08060F", .88),
         runner_count=0, active_runner_count=0),
+    # A divider between parts of a page: a frame one pixel thin, filled with a faint violet; no line.
+    "DA_Frame_Divider": dict(
+        line_color=srgb("000000", 0.0), active_line_color=srgb("000000", 0.0), line_thickness=0.0, corner_cut=0.0,
+        glow_color=srgb("000000", 0.0), active_glow_color=srgb("000000", 0.0), glow_thickness=0.0,
+        fill_color=srgb("B37CFF", .3), active_fill_color=srgb("B37CFF", .3),
+        runner_count=0, active_runner_count=0),
+    # A cell of a table (the gem totals): a faint violet line round a dark well.
+    "DA_Frame_Cell": dict(
+        line_color=srgb("B37CFF", .24), active_line_color=srgb("B37CFF", .24), line_thickness=1.0, corner_cut=0.0,
+        glow_color=srgb("000000", 0.0), active_glow_color=srgb("000000", 0.0), glow_thickness=0.0,
+        fill_color=srgb("000000", .35), active_fill_color=srgb("000000", .35),
+        runner_count=0, active_runner_count=0),
+    # The bar under an underline tab: nothing at rest, white with a violet glow on the tab picked.
+    "DA_Frame_Underline": dict(
+        line_color=srgb("FFFFFF", 0.0), active_line_color=srgb("FFFFFF", 0.0), line_thickness=0.0, corner_cut=0.0,
+        glow_color=srgb("B37CFF", 0.0), active_glow_color=srgb("B37CFF", .6), glow_thickness=8.0,
+        fill_color=srgb("FFFFFF", 0.0), active_fill_color=srgb("FFFFFF"),
+        runner_count=0, active_runner_count=0, activation_seconds=.1),
     # HUD wings (the player card, the boss rail): a bright line in a violet glow on a dark plate.
     "DA_Frame_Wing": dict(
         line_color=P["line"], active_line_color=P["line"], line_thickness=2.0, corner_cut=0.0,
@@ -238,6 +262,8 @@ def theme_values():
         # Over a bar: light text in a dark outline reads on a full fill and on an empty, see-through track alike.
         unreal.GeoTextRole.OVERLAY: text_style("ChakraPetch-Bold", 24, P["text"], 80, outline=P["night"],
                                                outline_size=3),
+        # A dense table's cells (the gem totals), at the design's 14.
+        unreal.GeoTextRole.TABLE: text_style("ChakraPetch-Regular", 14, P["body"]),
     }
     return text_styles
 
@@ -329,6 +355,21 @@ def seed_inputs(theme):
     theme.set_editor_property("progress_bar_style", progress)
 
 
+def icon_button_style(hover_fill, foreground, hovered_foreground):
+    """A flat button around an icon (UGeoIconImage): no fill at rest, hover_fill under the pointer, and the foreground
+    colours an icon following them is tinted with."""
+    style = engine_style(unreal.Button, "widget_style")
+    style.set_editor_property("normal", brush())
+    for name in ["hovered", "pressed"]:
+        style.set_editor_property(name, brush(hover_fill))
+    style.set_editor_property("normal_foreground", unreal.SlateColor(specified_color=foreground))
+    for name in ["hovered_foreground", "pressed_foreground"]:
+        style.set_editor_property(name, unreal.SlateColor(specified_color=hovered_foreground))
+    for name in ["normal_padding", "pressed_padding"]:
+        style.set_editor_property(name, unreal.Margin(0, 0, 0, 0))
+    return style
+
+
 def create_or_load(path, asset_class):
     """The asset at path, created when missing. Second value: whether it was just created."""
     if unreal.EditorAssetLibrary.does_asset_exist(path):
@@ -385,6 +426,11 @@ def build_theme():
     asset_guard.write(THEME_PATH, theme, "class_styles", class_styles())
     asset_guard.write(THEME_PATH, theme, "default_frame_style", frames["DA_Frame_Panel"])
     asset_guard.write(THEME_PATH, theme, "field_frame_style", frames["DA_Frame_Field"])
+    # The Gems design's two icon buttons: the tab tools (.ic) light up on hover, the dashed add tab (.rail) only fills.
+    asset_guard.write(THEME_PATH, theme, "icon_button_style",
+                      icon_button_style(srgb("B37CFF", .2), srgb("B9A6E0"), srgb("FFFFFF")))
+    asset_guard.write(THEME_PATH, theme, "outlined_icon_button_style",
+                      icon_button_style(srgb("B37CFF", .12), srgb("FFFFFF"), srgb("FFFFFF")))
     unreal.EditorAssetLibrary.save_loaded_asset(theme)
 
     name_theme_in_project_settings(theme)

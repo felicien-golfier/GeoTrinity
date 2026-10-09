@@ -9,7 +9,6 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/PlayableCharacter.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -140,7 +139,7 @@ void UGeoChargeBeamAbility::FireGameplayCue(FGeoAbilityTargetData const& Ability
 	if (FireCue.IsValid())
 	{
 		FVector2D ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
-		ForwardVector *= GetDefault<UGameDataSettings>()->GeneralSpellDistance;
+		ForwardVector *= GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo());
 
 		float const ChargeRatio = GetStoredChargeRatio();
 
@@ -177,7 +176,7 @@ void UGeoChargeBeamAbility::DealDamage() const
 		return;
 	}
 
-	float const MaxRange = GetDefault<UGameDataSettings>()->GeneralSpellDistance;
+	float const MaxRange = GeoASLib::GetSpellDistance(SourceASC);
 	FVector2D const ForwardVector = FVector2D(FRotator(0, StoredPayload.Yaw, 0).Vector());
 
 	AActor const* const Avatar = GetAvatarActorFromActorInfo();

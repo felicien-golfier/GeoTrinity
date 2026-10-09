@@ -9,6 +9,7 @@ Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (d
 
 ## Big RULES
 - Only build when the user asks for it in the discussion.
+- Never take control of the mouse or the window focus (launching the editor to click around, PIE with real clicks, screen grabs that need focus) unless the user explicitly asked you to test it yourself; otherwise ask first. By default run every test that needs neither: automated tests (like `GeoGemTests.cpp`), headless runs, bridge scripts.
 - Only launch, quit or close dialogs of an editor when the user asks for it in the discussion — and only your own (`-RemoteControlAllow`), never the user's.
 - **NEVER write anything into `Saved/`** — the user may wipe it any time. Sound references, drafts and reproductions go to `AI/Audio/` (map in its `CLAUDE.md`); script reports, probes and exports go to `AI/Output/`; throwaway files go to the session scratchpad.
 - ALWAYS read AI/CodingStyle.md before coding. If planing or just answering, don't, but if you write any line of code, read it.

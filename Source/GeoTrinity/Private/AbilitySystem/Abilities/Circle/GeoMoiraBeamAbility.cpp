@@ -113,7 +113,13 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 		{
 			AGeoHealingZone* Zone = CastChecked<AGeoHealingZone>(Target);
 			UAbilitySystemComponent* ZoneASC = Zone->GetAbilitySystemComponent();
-			float const MaxHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
+			float const MaxHealth = TargetASC->GetDefaultAttributeValue(UGeoAttributeSetBase::GetMaxHealthAttribute());
+			if (!ensureMsgf(MaxHealth > 0.f, TEXT("%hs: %s has no static default MaxHealth"), __FUNCTION__,
+							*Zone->GetName()))
+			{
+				continue;
+			}
+
 			float const BeamZoneDrainPerTick = (BeamZoneDrainPercentagePerSecond / 100.f) * DeltaTime * MaxHealth;
 			float const CurrentHealth = ZoneASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
 			float const ActualDrain = FMath::Min(BeamZoneDrainPerTick, CurrentHealth);

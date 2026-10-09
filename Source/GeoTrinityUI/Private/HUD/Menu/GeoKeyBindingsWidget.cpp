@@ -107,7 +107,6 @@ void UGeoKeyBindingsWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoKeyBindingsWidget::HandleBack);
 
 	if (SecondPlayerGamepadCheckBox)
 	{
@@ -149,25 +148,6 @@ FReply UGeoKeyBindingsWidget::NativeOnPreviewMouseButtonDown(FGeometry const& In
 		return FReply::Handled();
 	}
 	return Super::NativeOnPreviewMouseButtonDown(InGeometry, InMouseEvent);
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-UWidget* UGeoKeyBindingsWidget::GetInitialFocusWidget() const
-{
-	return BackButton;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool UGeoKeyBindingsWidget::HandleBackAction()
-{
-	HandleBack();
-	return true;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoKeyBindingsWidget::HandleBack()
-{
-	OnClosed.Broadcast();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -308,9 +288,9 @@ UGeoKeyBindingSelector* UGeoKeyBindingsWidget::AddBindingCell(UHorizontalBox* Ro
 	{
 		Selector = NewObject<UGeoKeyBindingSelector>(WidgetTree);
 		Selector->InitBinding(MappingName, Mapping->GetSlot(), bGamepad);
-		if (UGeoButton* StyleSource = BackButton->GetButtonWidget())
+		if (UGeoMenuButton const* StyleSource = GetBackButton())
 		{
-			Selector->SetStyle(StyleSource->GetStyle());
+			Selector->SetStyle(StyleSource->GetButtonWidget()->GetStyle());
 		}
 		Selectors.Add(Selector);
 

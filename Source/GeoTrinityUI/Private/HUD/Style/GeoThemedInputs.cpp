@@ -7,9 +7,25 @@ void UGeoEditableTextBox::SynchronizeProperties()
 {
 	if (UGeoUITheme const* Theme = UGeoUITheme::Get())
 	{
-		SetWidgetStyle(Theme->EditableTextBoxStyle);
+		FEditableTextBoxStyle Style = Theme->EditableTextBoxStyle;
+		if (bOverridePadding)
+		{
+			Style.SetPadding(PaddingOverride);
+		}
+		SetWidgetStyle(Style);
 	}
 	Super::SynchronizeProperties();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoEditableTextBox::SetPaddingOverride(FMargin const& InPadding)
+{
+	bOverridePadding = true;
+	PaddingOverride = InPadding;
+	if (MyEditableTextBlock)
+	{
+		SynchronizeProperties();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

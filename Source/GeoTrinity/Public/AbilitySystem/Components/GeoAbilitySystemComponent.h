@@ -90,6 +90,10 @@ public:
 	/** Applies the DefaultAttributes gameplay effect to initialize base attribute values. */
 	void InitializeDefaultAttributes();
 
+	/** Value the DefaultAttributes effect gives Attribute at CombatLevel, before any gem or other modifier. 0 when the
+	 * effect has no static modifier on it. */
+	float GetDefaultAttributeValue(FGameplayAttribute const& Attribute) const;
+
 	/**
 	 * Sets the level everything this component grants or applies is stamped with. A boss's is the EGeoDifficulty bit
 	 * of its arena, so one write levels its whole kit. Call it before GiveStartupAbilities and

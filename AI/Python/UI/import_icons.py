@@ -52,6 +52,12 @@ EFFECT_ICONS = {
     "GE_MoiraBeam_InfinitSpeedBoost": "Status_Speed",
 }
 ABILITY_FOLDER = "/Game/AbilitySystem/Abilities"
+GEM_LOADOUT_PATH = "/Game/HUD/InGameMenu/WBP_GemLoadout"
+BUILD_TAB_ICONS = {
+    "rename_build_icon": "Menu_Rename",
+    "remove_build_icon": "Menu_Remove",
+    "add_build_icon": "Menu_AddTab",
+}
 ABILITY_SLOT_PATH = "/Game/HUD/AbilityBar/WBP_AbilitySlot"
 
 
@@ -388,6 +394,22 @@ def assign_effect_icons(icons):
     return report
 
 
+def assign_build_tab_icons(icons):
+    """The gem loadout page's rename, remove and add build tab icons, while still empty — an icon set by hand stays."""
+    import unreal
+    blueprint = unreal.load_asset(GEM_LOADOUT_PATH)
+    cdo = unreal.get_default_object(blueprint.generated_class())
+    report = []
+    for property_name, icon_name in BUILD_TAB_ICONS.items():
+        if not cdo.get_editor_property(property_name) and icons.get(icon_name):
+            cdo.set_editor_property(property_name, icons[icon_name])
+            report.append(f"{property_name} -> {icon_name}")
+    if report:
+        unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
+        unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
+    return report
+
+
 def use_icon_widget_in_ability_slot():
     """The slot's Icon was an Image showing a texture; it draws the ability's UGeoIcon now."""
     import unreal
@@ -413,6 +435,7 @@ def run():
     report = [f"{len(icons)} icons built"]
     report += assign_ability_icons(icons)
     report += ["effects: " + ", ".join(assign_effect_icons(icons))]
+    report += ["build tabs: " + ", ".join(assign_build_tab_icons(icons))]
     report += ["kept by hand: " + line for line in asset_guard.report()]
     output = os.path.join(unreal.Paths.project_dir(), "AI", "Output", "import_icons.txt")
     open(output, "w").write("\n".join(report))

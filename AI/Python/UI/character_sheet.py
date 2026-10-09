@@ -1,15 +1,23 @@
 """
 The character sheet in the Rail look, opened from the pause menu.
 - DA_Meter_LevelPips / DA_Meter_Xp: the level pips and the XP bar under the class name.
-- WBP_AbilityRow (UGeoAbilityCardWidget): an ability in one compact row — icon tile, name, key cap, description.
+- WBP_AbilityRow (UGeoAbilityCardWidget): an ability in one compact row, a button in the menu buttons' frame (CardFrame)
+  — icon tile, name, key cap, its description cut to DESCRIPTION_MAX_HEIGHT (two lines) with an ellipsis, then the
+  CLICK TO SEE DETAIL hint; no Reload buff lines.
 - WBP_CharacterSheet (UGeoCharacterSheetWidget): header (class shape, name, role and player, level, pips, XP, the
-  other classes), three columns (stats and this fight / abilities, scrolling in AbilityScroll / gems slotted, core
-  effects, owned), footer (GEMS, ABILITY DETAILS).
-- WBP_PauseMenu: CharacterButton under AbilitiesButton and CharacterWidget beside AbilitiesWidget.
+  other classes), three columns (the stats in StatTable, a WBP_Table: STAT, VALUE, GEMS, BUFFS, filling the column /
+  abilities, scrolling in AbilityScroll / this fight in FightTable: NOW, AVG, PEAK, TOTAL, then gems slotted, core
+  effects, owned), footer (GEMS under the gems); over it all, in SheetOverlay, the ability drawer (DetailWidget,
+  WBP_AbilityDetail from ability_detail.py) and its DetailScrim, both collapsed.
+- IA_ShowCharacterSheet, rebindable as ShowCharacterSheet, on Tab and the gamepad's View button: BP_GeoPlayerController
+  shows its own WBP_CharacterSheet while it is held, without BACK, the cross or GEMS.
+- WBP_PauseMenu: CharacterButton under ResumeButton and CharacterWidget beside SettingsWidget; the abilities page
+  (AbilitiesButton, AbilitiesWidget) removed.
 
 Never overwrites a hand edit: the widgets are built only when created, the pause menu only gains what it lacks, and
 every value goes through asset_guard.write (kept values are listed in AI/Output/character_sheet.txt).
-Usage: run via MCP execute_script, after ui_theme.py and ability_page.py.
+Usage: run via MCP execute_script, after ui_theme.py, ability_page.py and ability_detail.py; builds WBP_Table
+(table.py) first.
 """
 import importlib
 import os
@@ -20,9 +28,10 @@ import unreal
 UI_SCRIPTS = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "AI", "Python", "UI")
 if UI_SCRIPTS not in sys.path:
     sys.path.insert(0, UI_SCRIPTS)
-import wings_hud
+import table
 
-wings_hud = importlib.reload(wings_hud)
+table = importlib.reload(table)
+wings_hud = table.wings_hud
 asset_guard = wings_hud.asset_guard
 add, write_slot, text = wings_hud.add, wings_hud.write_slot, wings_hud.text
 frame, meter = wings_hud.frame, wings_hud.meter
@@ -36,8 +45,26 @@ SHEET_PATH = f"{MENU_DIR}/WBP_CharacterSheet"
 PAUSE_PATH = f"{MENU_DIR}/WBP_PauseMenu"
 BUTTON_CLASS = "/Game/HUD/WBP_GeoButton.WBP_GeoButton_C"
 CENTER = unreal.VerticalAlignment.V_ALIGN_CENTER
+DETAIL_PATH = f"{MENU_DIR}/WBP_AbilityDetail"
+# Two whole lines of the description's 18-point font: a line partly past it is dropped whole, ellipsis on the one above.
+DESCRIPTION_MAX_HEIGHT = 72.0
+EARLIER_DESCRIPTION_MAX_HEIGHT = [64.0]
+# The row is a button: the menu buttons' frame round it, its padding the room inside the line.
+ROW_FRAME_PADDING = unreal.Margin(14, 12, 18, 12)
 FILL = unreal.SlateChildSize(1.0, unreal.SlateSizeRule.FILL)
 RIGHT = unreal.HorizontalAlignment.H_ALIGN_RIGHT
+STATS_WIDTH = 400.0
+SHEET_ACTION = "/Game/Input/InputActions/IA_ShowCharacterSheet"
+SHEET_KEYS = ("Tab", "Gamepad_Special_Left")
+# The stats table: the stat, its live value, what the gems add, what the buffs add; this fight's figures.
+STAT_COLUMNS = [table.column("STAT", alignment=table.FILL_ALIGN), table.column("VALUE", 72.0),
+                table.column("GEMS", 72.0), table.column("BUFFS", 72.0)]
+FIGHT_COLUMNS = [table.column("THIS FIGHT", alignment=table.FILL_ALIGN), table.column("NOW", 64.0),
+                 table.column("AVG", 64.0), table.column("PEAK", 64.0), table.column("TOTAL", 64.0)]
+# The figures this fight showed one per line before FightTable.
+OLD_FIGHT_ROWS = [f"{name}{part}" for name in ("FightDpsText", "FightHpsText", "FightTakenText")
+                  for part in ("Row", "Label", "")]
+GEMS_WIDTH = 380.0
 
 METER_STYLES = {
     # One pip per class level, lit in the class colour; the ticks are the gaps between pips.
@@ -115,19 +142,95 @@ def column(wbp, path, name, parent, width):
     add(wbp, path, unreal.VerticalBox, name, box)
 
 
-def value_row(wbp, path, parent, label_text, value_name):
-    row = f"{value_name}Row"
-    _, row_slot = add(wbp, path, unreal.HorizontalBox, row, parent)
-    write_slot(path, row_slot, {"padding": unreal.Margin(0, 8, 0, 0)})
-    _, label_slot = add(wbp, path, unreal.GeoText, f"{value_name}Label", row, text(ROLE.BODY, label_text))
-    write_slot(path, label_slot, {"size": FILL})
-    add(wbp, path, unreal.GeoText, value_name, row, text(ROLE.MONO, "0"))
-
-
 def button(wbp, path, name, parent, caption):
     """A menu button; commit_tree spaces neighbouring buttons by the theme's gap."""
     _, slot = add(wbp, path, unreal.load_class(None, BUTTON_CLASS), name, parent, {"label": unreal.Text(caption)})
     write_slot(path, slot, {"vertical_alignment": CENTER})
+
+
+def build_footer(wbp, path):
+    """GEMS under the gems column, nothing under the stats or the abilities."""
+    _, footer_slot = add(wbp, path, unreal.HorizontalBox, "Footer", "SheetBody")
+    write_slot(path, footer_slot, {"padding": unreal.Margin(0, 16, 0, 0)})
+    add(wbp, path, unreal.SizeBox, "BackCellWidth", "Footer", {"override_width_override": True,
+                                                              "width_override": STATS_WIDTH})
+    spacer(wbp, path, "AbilityCell", "Footer")
+    column_cell(wbp, path, "GemsCell", "GemLoadoutButton", "GEMS", GEMS_WIDTH)
+
+
+def column_cell(wbp, path, name, button_name, caption, width):
+    """A footer cell as wide as the column above it, holding its button at the left edge."""
+    add(wbp, path, unreal.SizeBox, f"{name}Width", "Footer", {"override_width_override": True, "width_override": width})
+    add(wbp, path, unreal.HorizontalBox, name, f"{name}Width")
+    button(wbp, path, button_name, name, caption)
+
+
+def migrate_footer(wbp, path):
+    """Rebuilds the footer of a sheet built before its buttons sat under their columns, and drops ABILITY DETAILS: an
+    ability opens its own details now. Returns the hand edits that kept a widget from going."""
+    if not UTIL.find_widget(wbp, "GemsCell"):
+        for name in ("HintText", "FooterSpacer", "GemLoadoutButton", "AbilityDetailsButton", "Footer"):
+            UTIL.remove_widget(wbp, name)
+        build_footer(wbp, path)
+    kept = []
+    if isinstance(UTIL.find_widget(wbp, "AbilityCell"), unreal.HorizontalBox):
+        kept = wings_hud.remove_unless_edited(wbp, path, ["AbilityCell", "AbilityDetailsButton"])
+        if not kept:
+            spacer(wbp, path, "AbilityCell", "Footer")
+            UTIL.attach_widget(wbp, "Footer", "AbilityCell", 1)
+            write_slot(path, UTIL.find_widget(wbp, "AbilityCell").get_editor_property("slot"), {"size": FILL})
+    wings_hud.finish(wbp)
+    return kept
+
+
+def row_summary(row):
+    """The row is a button like the menu's (CardFrame in DA_Frame_Button round it, lit on hover and focus, and while its
+    details are open), showing the start of the description, two lines cut with an ellipsis, and the hint that a click
+    opens the rest; the Reload's buff lines are the drawer's alone."""
+    path = ROW_PATH
+    if not UTIL.find_widget(row, "CardFrame"):
+        UTIL.construct_widget_in_tree(row, unreal.GeoFrame, "CardFrame", True)
+        UTIL.attach_widget(row, "CardFrame", "Row")
+        UTIL.set_root_widget(row, "CardFrame")
+    for key, value in dict(frame_style=frame("DA_Frame_Button"), activate_on_hover_and_focus=True,
+                           padding=ROW_FRAME_PADDING).items():
+        asset_guard.write(path, UTIL.find_widget(row, "CardFrame"), key, value)
+    if not UTIL.find_widget(row, "DescriptionClip"):
+        description = UTIL.find_widget(row, "DescriptionText")
+        column = description.get_parent()
+        UTIL.construct_widget_in_tree(row, unreal.SizeBox, "DescriptionClip", True)
+        UTIL.attach_widget(row, column.get_name(), "DescriptionClip", column.get_child_index(description))
+        UTIL.attach_widget(row, "DescriptionClip", "DescriptionText")
+    clip = UTIL.find_widget(row, "DescriptionClip")
+    for key, value in dict(override_max_desired_height=True,
+                           clipping=unreal.WidgetClipping.CLIP_TO_BOUNDS).items():
+        asset_guard.write(path, clip, key, value)
+    asset_guard.write(path, clip, "max_desired_height", DESCRIPTION_MAX_HEIGHT, earlier=EARLIER_DESCRIPTION_MAX_HEIGHT)
+    write_slot(path, clip.get_editor_property("slot"), {"padding": unreal.Margin(0, 4, 0, 0)})
+    asset_guard.write(path, UTIL.find_widget(row, "DescriptionText"), "text_overflow_policy",
+                      unreal.TextOverflowPolicy.MULTILINE_ELLIPSIS)
+    asset_guard.write(path, UTIL.find_widget(row, "BuffBox"), "visibility", unreal.SlateVisibility.COLLAPSED)
+    label(row, path, "DetailHintText", "TextColumn", "CLICK TO SEE DETAIL", unreal.Margin(0, 6, 0, 0))
+    wings_hud.finish(row)
+
+
+def sheet_drawer(wbp, path, detail):
+    """The ability drawer over the whole sheet: SheetOverlay takes the page frame's PageSlot, holding SheetBody, then
+    DetailScrim (filling) and DetailWidget (right edge, full height), both collapsed until an ability is picked."""
+    if not UTIL.find_widget(wbp, "SheetOverlay"):
+        UTIL.construct_widget_in_tree(wbp, unreal.Overlay, "SheetOverlay", True)
+        UTIL.set_named_slot_content(wbp, "PageFrame", "PageSlot", "SheetOverlay")
+        UTIL.attach_widget(wbp, "SheetOverlay", "SheetBody")
+    fill = {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_FILL,
+            "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_FILL}
+    write_slot(path, UTIL.find_widget(wbp, "SheetBody").get_editor_property("slot"), fill)
+    _, scrim_slot = add(wbp, path, unreal.GeoFrame, "DetailScrim", "SheetOverlay",
+                        {"frame_style": frame("DA_Frame_Scrim"), "visibility": unreal.SlateVisibility.COLLAPSED})
+    write_slot(path, scrim_slot, fill)
+    _, detail_slot = add(wbp, path, detail.generated_class(), "DetailWidget", "SheetOverlay",
+                         {"visibility": unreal.SlateVisibility.COLLAPSED})
+    write_slot(path, detail_slot, {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_RIGHT,
+                                   "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_FILL})
 
 
 def build_sheet(row):
@@ -172,15 +275,10 @@ def build_sheet(row):
         # Three columns: stats, abilities, gems.
         _, columns_slot = add(wbp, path, unreal.HorizontalBox, "Columns", "SheetBody")
         write_slot(path, columns_slot, {"size": FILL})
-        column(wbp, path, "StatsColumn", "Columns", 400.0)
+        column(wbp, path, "StatsColumn", "Columns", STATS_WIDTH)
         label(wbp, path, "StatsLabel", "StatsColumn", "STATS")
-        _, stat_box_slot = add(wbp, path, unreal.VerticalBox, "StatBox", "StatsColumn")
-        write_slot(path, stat_box_slot, {"padding": unreal.Margin(0, 12, 0, 0)})
-        spacer(wbp, path, "StatsSpacer", "StatsColumn")
-        label(wbp, path, "FightLabel", "StatsColumn", "THIS FIGHT", unreal.Margin(0, 14, 0, 0))
-        value_row(wbp, path, "StatsColumn", "Damage / s", "FightDpsText")
-        value_row(wbp, path, "StatsColumn", "Healing / s", "FightHpsText")
-        value_row(wbp, path, "StatsColumn", "Damage taken", "FightTakenText")
+        table.place(wbp, path, "StatTable", "StatsColumn", STAT_COLUMNS)
+        table.place(wbp, path, "FightTable", "StatsColumn", FIGHT_COLUMNS)
 
         _, ability_column_slot = add(wbp, path, unreal.VerticalBox, "AbilityColumn", "Columns")
         write_slot(path, ability_column_slot, {"size": FILL, "padding": unreal.Margin(40, 0, 40, 0)})
@@ -188,7 +286,7 @@ def build_sheet(row):
         _, ability_box_slot = add(wbp, path, unreal.VerticalBox, "AbilityBox", "AbilityColumn")
         write_slot(path, ability_box_slot, {"padding": unreal.Margin(0, 18, 0, 0)})
 
-        column(wbp, path, "GemsColumn", "Columns", 380.0)
+        column(wbp, path, "GemsColumn", "Columns", GEMS_WIDTH)
         add(wbp, path, unreal.HorizontalBox, "SlottedRow", "GemsColumn")
         slotted_label = label(wbp, path, "SlottedLabel", "SlottedRow", "GEMS SLOTTED")
         write_slot(path, slotted_label, {"size": FILL})
@@ -206,58 +304,65 @@ def build_sheet(row):
         add(wbp, path, unreal.GeoText, "ShardsText", "OwnedRow", text(ROLE.MONO, "0"))
         label(wbp, path, "OwnedText", "GemsColumn", "CHIPS 0", unreal.Margin(0, 12, 0, 0))
 
-        # Footer: where to go next.
-        _, footer_slot = add(wbp, path, unreal.HorizontalBox, "Footer", "SheetBody")
-        write_slot(path, footer_slot, {"padding": unreal.Margin(0, 16, 0, 0)})
-        button(wbp, path, "GemLoadoutButton", "Footer", "GEMS")
-        button(wbp, path, "AbilityDetailsButton", "Footer", "ABILITY DETAILS")
-        spacer(wbp, path, "FooterSpacer", "Footer")
-        hint_slot = label(wbp, path, "HintText", "Footer", "ESC  BACK")
-        write_slot(path, hint_slot, {"vertical_alignment": CENTER})
+        build_footer(wbp, path)
         wings_hud.finish(wbp)
         asset_guard.write(path, unreal.get_default_object(wbp.generated_class()), "ability_row_class",
                           row.generated_class())
         wings_hud.finish(wbp)
     wbp = unreal.load_asset(path)
+    kept = migrate_footer(wbp, path)
+    stat_slot, stat_kept = table.place(wbp, path, "StatTable", "StatsColumn", STAT_COLUMNS, ["StatBox"])
+    write_slot(path, stat_slot, {"padding": unreal.Margin(0, 12, 0, 0), "size": FILL})
+    # The stats table fills the column now, its own header naming this fight's table under it.
+    kept += stat_kept + wings_hud.remove_unless_edited(wbp, path, ["StatsSpacer", "FightLabel"])
+    _, fight_kept = table.place(wbp, path, "FightTable", "StatsColumn", FIGHT_COLUMNS, OLD_FIGHT_ROWS)
+    kept += fight_kept
+    # This fight heads the gems column, leaving the stats column to the stats.
+    fight = UTIL.find_widget(wbp, "FightTable")
+    if fight.get_parent().get_name() != "GemsColumn":
+        UTIL.attach_widget(wbp, "GemsColumn", "FightTable", 0)
+    write_slot(path, UTIL.find_widget(wbp, "FightTable").get_editor_property("slot"),
+               {"padding": unreal.Margin(0, 0, 0, 22)})
     asset_guard.write(path, UTIL.find_widget(wbp, "GemLoadoutButton"), "label", unreal.Text("GEMS"))
     asset_guard.write(path, UTIL.find_widget(wbp, "OwnedText"), "auto_wrap_text", True)
     wings_hud.scrolled(wbp, path, "AbilityBox", "AbilityScroll")
+    if UTIL.find_widget(wbp, "PageFrame"):
+        sheet_drawer(wbp, path, unreal.load_asset(DETAIL_PATH))
     wings_hud.finish(wbp)
-    return wbp
+    return wbp, kept
 
 
 def add_to_pause_menu(sheet):
     path = PAUSE_PATH
     wbp = unreal.load_asset(path)
     if not UTIL.find_widget(wbp, "CharacterButton"):
-        abilities_button = UTIL.find_widget(wbp, "AbilitiesButton")
-        parent = abilities_button.get_parent()
+        resume_button = UTIL.find_widget(wbp, "ResumeButton")
+        parent = resume_button.get_parent()
         UTIL.construct_widget_in_tree(wbp, unreal.load_class(None, BUTTON_CLASS), "CharacterButton", True)
-        UTIL.attach_widget(wbp, parent.get_name(), "CharacterButton", parent.get_child_index(abilities_button) + 1)
+        UTIL.attach_widget(wbp, parent.get_name(), "CharacterButton", parent.get_child_index(resume_button) + 1)
+    # An ability's details open on the sheet itself: the abilities page is gone.
+    kept = wings_hud.remove_unless_edited(wbp, path, ["AbilitiesButton", "AbilitiesWidget"])
     asset_guard.write(path, UTIL.find_widget(wbp, "CharacterButton"), "label", unreal.Text("CHARACTER"))
 
     if not UTIL.find_widget(wbp, "CharacterWidget"):
-        abilities = UTIL.find_widget(wbp, "AbilitiesWidget")
+        settings = UTIL.find_widget(wbp, "SettingsWidget")
         UTIL.construct_widget_in_tree(wbp, sheet.generated_class(), "CharacterWidget", True)
-        UTIL.attach_widget(wbp, abilities.get_parent().get_name(), "CharacterWidget")
-    # Same place as the abilities page: its anchors on a canvas, its alignment and padding anywhere else.
-    character_slot = UTIL.find_widget(wbp, "CharacterWidget").get_editor_property("slot")
-    abilities_slot = UTIL.find_widget(wbp, "AbilitiesWidget").get_editor_property("slot")
-    if isinstance(abilities_slot, unreal.CanvasPanelSlot):
-        copied = ("layout_data", "z_order")
-    else:
-        copied = ("horizontal_alignment", "vertical_alignment", "padding")
-    for prop in copied:
-        asset_guard.write(path, character_slot, prop, abilities_slot.get_editor_property(prop))
+        UTIL.attach_widget(wbp, settings.get_parent().get_name(), "CharacterWidget")
     asset_guard.write(path, UTIL.find_widget(wbp, "CharacterWidget"), "visibility", unreal.SlateVisibility.COLLAPSED)
     wings_hud.finish(wbp)
+    return kept
 
 
 def run():
+    table.build_table()
     build_meter_styles()
-    sheet = build_sheet(build_ability_row())
-    add_to_pause_menu(sheet)
-    kept = asset_guard.report()
+    row = build_ability_row()
+    row_summary(row)
+    sheet, sheet_kept = build_sheet(row)
+    pause_kept = add_to_pause_menu(sheet)
+    wings_hud.add_input(SHEET_ACTION, "ShowCharacterSheet", "Character sheet", SHEET_KEYS,
+                        {"show_character_sheet_action": "action", "character_sheet_widget_class": sheet.generated_class()})
+    kept = asset_guard.report() + [f"not removed, edited by hand: {line}" for line in sheet_kept + pause_kept]
     output = os.path.join(unreal.Paths.project_dir(), "AI", "Output", "character_sheet.txt")
     open(output, "w", encoding="utf-8").write("\n".join(["OK"] + ["kept by hand: " + line for line in kept]))
 

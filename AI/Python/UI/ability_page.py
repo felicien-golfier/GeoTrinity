@@ -1,14 +1,11 @@
 """
-The abilities page in the Rail look: a header (title, the class shape, name and role, a hint, BACK) over a grid of
-ability cards.
-- DT_AbilityText / DT_AbilityMeta: rich-text styles of a card's description and of its cooldown line (Default + Value
-  rows), created once from the theme's Body and Label fonts; tune them on the tables.
-- WBP_AbilityCard (UGeoAbilityCardWidget): CardFrame > icon tile, name, key cap and timing, description, Reload buff
-  lines, and the "see it in action" corner, a WIP zone for the coming spell clips.
-- WBP_AbilityDescriptions: the header and CardGrid (inside the existing AbilityList scroll box); CardClass set.
+The rich-text styles of every ability text (the character sheet's ability rows, the ability drawer), and the widget
+helpers the other UI scripts share.
+- DT_AbilityText / DT_AbilityMeta: rich-text styles of an ability's description and of its cooldown line (Default +
+  Value rows), created once from the theme's Body and Label fonts; tune them on the tables.
 
-Never overwrites a hand edit: the card and the tables are built only when created, widgets are added only when absent,
-and every value goes through asset_guard.write (kept values are listed in AI/Output/ability_page.txt).
+Never overwrites a hand edit: the tables are built only when created, and every value goes through asset_guard.write
+(kept values are listed in AI/Output/ability_page.txt).
 Usage: run via MCP execute_script, after ui_theme.py and import_icons.py.
 """
 import importlib
@@ -30,18 +27,12 @@ ROLE = unreal.GeoTextRole
 STYLE_DIR = "/Game/HUD/Style"
 FONT_DIR = "/Game/HUD/Assets/Fonts"
 MENU_DIR = "/Game/HUD/InGameMenu"
-CARD_PATH = f"{MENU_DIR}/WBP_AbilityCard"
-PAGE_PATH = f"{MENU_DIR}/WBP_AbilityDescriptions"
 TEXT_TABLE_PATH = f"{STYLE_DIR}/DT_AbilityText"
 META_TABLE_PATH = f"{STYLE_DIR}/DT_AbilityMeta"
 
 VALUE_COLOR = "FFC840"
-CARD_PADDING = unreal.Margin(20, 18, 20, 18)
 ICON_TILE_PADDING = unreal.Margin(12, 12, 12, 12)
-ICON_SIZE = 36.0
 KEY_PADDING = unreal.Margin(8, 1, 8, 1)
-GRID_GAP = unreal.Margin(10, 10, 10, 10)
-CLASS_SHAPE_SIZE = 26.0
 
 
 def srgb(hex_code, alpha=1.0):
@@ -88,7 +79,7 @@ def build_style_table(path, role):
     return table
 
 
-# --- Card -------------------------------------------------------------------------------------------------------------
+# --- Widget helpers ---------------------------------------------------------------------------------------------------
 def add(wbp, path, widget_class, name, parent, values=None):
     """Constructs `name` under parent when the tree has no widget of that name, then writes values through the guard.
     Returns the widget and its slot."""
@@ -111,111 +102,9 @@ def frame_values(style_name, padding, hover=False):
             "activate_on_hover_and_focus": hover}
 
 
-def build_card(text_table, meta_table):
-    if unreal.EditorAssetLibrary.does_asset_exist(CARD_PATH):
-        return unreal.load_asset(CARD_PATH)
-    asset_guard.created(CARD_PATH)
-    factory = unreal.WidgetBlueprintFactory()
-    factory.set_editor_property("parent_class", unreal.load_class(None, "/Script/GeoTrinityUI.GeoAbilityCardWidget"))
-    folder, name = CARD_PATH.rsplit("/", 1)
-    wbp = unreal.AssetToolsHelpers.get_asset_tools().create_asset(name, folder, unreal.WidgetBlueprint, factory)
-    P = CARD_PATH
-    fill = unreal.HorizontalAlignment.H_ALIGN_FILL
-
-    UTIL.set_root_panel(wbp, unreal.GeoFrame, "CardFrame")
-    for key, value in frame_values("DA_Frame_Card", CARD_PADDING, hover=True).items():
-        asset_guard.write(P, UTIL.find_widget(wbp, "CardFrame"), key, value)
-    add(wbp, P, unreal.VerticalBox, "CardBody", "CardFrame")
-
-    add(wbp, P, unreal.HorizontalBox, "TopRow", "CardBody")
-    _, tile_slot = add(wbp, P, unreal.GeoFrame, "IconFrame", "TopRow", frame_values("DA_Frame_IconTile", ICON_TILE_PADDING))
-    write_slot(P, tile_slot, {"vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-    add(wbp, P, unreal.GeoIconImage, "Icon", "IconFrame", {"size": ICON_SIZE})
-    _, name_column_slot = add(wbp, P, unreal.VerticalBox, "NameColumn", "TopRow")
-    write_slot(P, name_column_slot, {"padding": unreal.Margin(16, 0, 0, 0),
-                                     "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-    add(wbp, P, unreal.GeoText, "NameText", "NameColumn", {"role": ROLE.BUTTON, "text": unreal.Text("ABILITY")})
-    _, meta_slot = add(wbp, P, unreal.HorizontalBox, "MetaRow", "NameColumn")
-    write_slot(P, meta_slot, {"padding": unreal.Margin(0, 6, 0, 0)})
-    _, key_slot = add(wbp, P, unreal.GeoFrame, "KeyFrame", "MetaRow", frame_values("DA_Frame_KeyCap", KEY_PADDING))
-    write_slot(P, key_slot, {"vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-    add(wbp, P, unreal.GeoText, "KeyText", "KeyFrame", {"role": ROLE.LABEL, "text": unreal.Text("KEY")})
-    _, timing_slot = add(wbp, P, unreal.RichTextBlock, "TimingText", "MetaRow",
-                         {"text_style_set": meta_table, "text": unreal.Text("COOLDOWN <Value>0s</>")})
-    write_slot(P, timing_slot, {"padding": unreal.Margin(12, 0, 0, 0),
-                                "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-
-    _, description_slot = add(wbp, P, unreal.RichTextBlock, "DescriptionText", "CardBody",
-                              {"text_style_set": text_table, "auto_wrap_text": True,
-                               "text": unreal.Text("Description with <Value>values</>.")})
-    write_slot(P, description_slot, {"padding": unreal.Margin(0, 14, 0, 0)})
-    add(wbp, P, unreal.VerticalBox, "BuffBox", "CardBody")
-
-    # The spell clip will live here; until then the corner only says it is coming.
-    _, spacer_slot = add(wbp, P, unreal.Spacer, "ClipSpacer", "CardBody")
-    write_slot(P, spacer_slot, {"size": unreal.SlateChildSize(1.0, unreal.SlateSizeRule.FILL)})
-    _, wip_slot = add(wbp, P, unreal.GeoText, "ClipWipText", "CardBody",
-                      {"role": ROLE.LABEL, "text": unreal.Text("SEE IT IN ACTION  ·  WIP"), "render_opacity": .55})
-    write_slot(P, wip_slot, {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_RIGHT,
-                             "padding": unreal.Margin(0, 14, 0, 0)})
-
-    UTIL.commit_tree(wbp)
-    unreal.BlueprintEditorLibrary.compile_blueprint(wbp)
-    unreal.EditorAssetLibrary.save_loaded_asset(wbp)
-    return wbp
-
-
-# --- Page -------------------------------------------------------------------------------------------------------------
-def build_page(card):
-    wbp = unreal.load_asset(PAGE_PATH)
-    P = PAGE_PATH
-
-    header = UTIL.find_widget(wbp, "Header")
-    if not header:
-        UTIL.construct_widget_in_tree(wbp, unreal.HorizontalBox, "Header", True)
-        UTIL.attach_widget(wbp, "LayoutBox", "Header", 0)
-    write_slot(P, UTIL.find_widget(wbp, "Header").get_editor_property("slot"), {"padding": unreal.Margin(0, 0, 0, 24)})
-    _, title_slot = add(wbp, P, unreal.GeoText, "TitleText", "Header",
-                        {"role": ROLE.HEADING, "text": unreal.Text("ABILITIES")})
-    write_slot(P, title_slot, {"vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-    _, shape_slot = add(wbp, P, unreal.GeoShape, "ClassShape", "Header",
-                        {"size": CLASS_SHAPE_SIZE, "filled": True})
-    write_slot(P, shape_slot, {"padding": unreal.Margin(32, 0, 12, 0),
-                               "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-    _, class_slot = add(wbp, P, unreal.GeoText, "ClassNameText", "Header",
-                        {"role": ROLE.BUTTON, "text": unreal.Text("CLASS")})
-    write_slot(P, class_slot, {"vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-    _, role_slot = add(wbp, P, unreal.GeoText, "ClassRoleText", "Header",
-                       {"role": ROLE.LABEL, "text": unreal.Text("ROLE")})
-    write_slot(P, role_slot, {"padding": unreal.Margin(12, 0, 0, 0),
-                              "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-    _, hint_slot = add(wbp, P, unreal.GeoText, "HintText", "Header",
-                       {"role": ROLE.LABEL, "text": unreal.Text("SPELL CLIPS COMING SOON"), "justification":
-                        unreal.TextJustify.RIGHT})
-    write_slot(P, hint_slot, {"size": unreal.SlateChildSize(1.0, unreal.SlateSizeRule.FILL),
-                              "padding": unreal.Margin(24, 0, 24, 0),
-                              "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-    back = UTIL.find_widget(wbp, "BackButton")
-    if back.get_parent().get_name() != "Header":
-        UTIL.attach_widget(wbp, "Header", "BackButton")
-    write_slot(P, back.get_editor_property("slot"), {"vertical_alignment": unreal.VerticalAlignment.V_ALIGN_CENTER})
-
-    _, grid_slot = add(wbp, P, unreal.UniformGridPanel, "CardGrid", "AbilityList", {"slot_padding": GRID_GAP})
-    write_slot(P, grid_slot, {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_FILL})
-
-    UTIL.commit_tree(wbp)
-    unreal.BlueprintEditorLibrary.compile_blueprint(wbp)
-    page = unreal.get_default_object(wbp.generated_class())
-    asset_guard.write(P, page, "card_class", card.generated_class())
-    unreal.BlueprintEditorLibrary.compile_blueprint(wbp)
-    unreal.EditorAssetLibrary.save_loaded_asset(wbp)
-
-
 def run():
-    text_table = build_style_table(TEXT_TABLE_PATH, ROLE.BODY)
-    meta_table = build_style_table(META_TABLE_PATH, ROLE.LABEL)
-    card = build_card(text_table, meta_table)
-    build_page(card)
+    build_style_table(TEXT_TABLE_PATH, ROLE.BODY)
+    build_style_table(META_TABLE_PATH, ROLE.LABEL)
     kept = asset_guard.report()
     output = os.path.join(unreal.Paths.project_dir(), "AI", "Output", "ability_page.txt")
     open(output, "w").write("\n".join(["OK"] + ["kept by hand: " + line for line in kept]))

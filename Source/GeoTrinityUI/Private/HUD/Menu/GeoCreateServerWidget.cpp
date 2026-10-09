@@ -20,20 +20,12 @@ void UGeoCreateServerWidget::NativeConstruct()
 	ServerNameInput->SetHintText(FText::FromString(DefaultServerName));
 
 	CreateButton->OnClicked.AddUniqueDynamic(this, &UGeoCreateServerWidget::HandleCreate);
-	BackButton->OnClicked.AddUniqueDynamic(this, &UGeoCreateServerWidget::HandleBack);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 UWidget* UGeoCreateServerWidget::GetInitialFocusWidget() const
 {
 	return CreateButton;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool UGeoCreateServerWidget::HandleBackAction()
-{
-	HandleBack();
-	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -112,10 +104,4 @@ void UGeoCreateServerWidget::HandleCreate()
 	SessionSettings.Set(FName("MAP"), MapComboBox->GetSelectedOption(), EOnlineDataAdvertisementType::ViaOnlineService);
 
 	GeoGameInstance->CreateSession(SessionSettings, FSoftObjectPath(MapURLs[MapIndex]).GetLongPackageName());
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-void UGeoCreateServerWidget::HandleBack()
-{
-	OnClosed.Broadcast();
 }

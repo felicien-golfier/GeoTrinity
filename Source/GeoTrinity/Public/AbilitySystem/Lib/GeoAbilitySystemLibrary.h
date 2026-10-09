@@ -150,6 +150,17 @@ public:
 	static float GetStatValue(UAbilitySystemComponent const* ASC, FGameplayAttribute const& Attribute,
 							  float DefaultValue);
 
+	/** What ASC's gems scale the cooldown of an ability carrying AbilityTags by: the cooldown multiplier of its
+	 * Ability.Type (Dash, Special or Deployable), 1 for any other type or an ASC without gems. */
+	static float GetGemCooldownMultiplier(UAbilitySystemComponent const* ASC, FGameplayTagContainer const& AbilityTags);
+
+	/** What ASC's gems scale the FireDelay of an ability carrying AbilityTags by: one over ReloadSpeedMultiplier for
+	 * the Ability.Type.Reload ability, WindUpMultiplier for any other, 1 for an ASC without gems. */
+	static float GetGemFireDelayMultiplier(UAbilitySystemComponent const* ASC, FGameplayTagContainer const& AbilityTags);
+
+	/** How far a beam or ray cast by ASC reaches: GeneralSpellDistance scaled by ASC's SpellDistanceMultiplier. */
+	static float GetSpellDistance(UAbilitySystemComponent const* ASC);
+
 	/**
 	 * Returns the class default object for the ability registered under AbilityTag, cast to T.
 	 * O(1) via UAbilityInfo's cached tag->class map. Logs a warning and returns nullptr if no matching ability is found

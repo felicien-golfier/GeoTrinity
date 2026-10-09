@@ -12,6 +12,7 @@
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "HUD/Menu/GeoMenuButton.h"
+#include "HUD/Menu/GeoTableWidget.h"
 #include "HUD/Style/GeoGemGlyph.h"
 #include "HUD/Style/GeoUITheme.h"
 
@@ -181,29 +182,18 @@ void UGeoGemForgeWidget::ShowTierBreaks(UGeoGemProfileSave const& Profile, UGeoG
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemForgeWidget::ShowRates(UGeoGemCatalog const& Catalog)
 {
-	if (!RateBox)
+	if (!RateTable)
 	{
 		return;
 	}
 
-	RateBox->ClearChildren();
-	auto AddRateLine = [this](EGeoTextRole const Role, TArray<FText> const& Cells)
-	{
-		UHorizontalBox* Line = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
-		for (int32 Index = 0; Index < Cells.Num(); ++Index)
-		{
-			UTextBlock* Cell = MakeText(Role, Cells[Index]);
-			Cell->SetJustification(Index == 0 ? ETextJustify::Left : ETextJustify::Right);
-			Line->AddChildToHorizontalBox(Cell)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		}
-		RateBox->AddChildToVerticalBox(Line)->SetPadding(FMargin(0.f, 0.f, 0.f, 6.f));
-	};
-	AddRateLine(EGeoTextRole::Label, RateHeaders);
+	RateTable->ClearLines();
 	for (EGeoGemTier const Tier : GetTiers())
 	{
-		AddRateLine(EGeoTextRole::Mono,
-					{GetTierName(Tier, false), FText::Format(RateBreakFormat, Catalog.GetBreakDownShards(Tier)),
-					 FText::AsNumber(Catalog.GetCraftCost(Tier))});
+		RateTable->AddLine(
+			{RateTable->MakeCellText(GetTierName(Tier, false)),
+			 RateTable->MakeCellText(FText::Format(RateBreakFormat, Catalog.GetBreakDownShards(Tier))),
+			 RateTable->MakeCellText(FText::AsNumber(Catalog.GetCraftCost(Tier)))});
 	}
 }
 
@@ -215,18 +205,19 @@ void UGeoGemForgeWidget::ShowGems(UGeoGemProfileSave const& Profile, UGeoGemCata
 		TierTabBox->ClearChildren();
 		for (EGeoGemTier const Tier : GetTiers())
 		{
-			UGeoListRowWidget* Tab = MakeRow(Tier == ShownTier ? EGeoListRowTint::Selected : EGeoListRowTint::Header,
+			UGeoListRowWidget* Tab = MakeRow(Tier == ShownTier ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
 											 [this, Tier]
 											 {
 												 ShownTier = Tier;
 												 BreakQuantity = 1;
 												 CraftQuantity = 1;
 												 Refresh();
-											 });
+											 },
+											 TabRowClass);
 			if (Tab)
 			{
 				Tab->AddTextColumn(GetTierName(Tier, true), 0.f);
-				TierTabBox->AddChildToHorizontalBox(Tab)->SetPadding(FMargin(0.f, 0.f, 6.f, 0.f));
+				TierTabBox->AddChildToHorizontalBox(Tab)->SetPadding(FMargin(0.f, 0.f, TierTabGap, 0.f));
 			}
 		}
 	}

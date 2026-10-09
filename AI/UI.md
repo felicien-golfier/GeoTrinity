@@ -3,6 +3,12 @@
 Rules for every menu and HUD widget. Widget Blueprint automation lives in `AI/MCP/MCP_UI.md`; the class map is
 `Source/GeoTrinityUI/Public/HUD/CLAUDE.md`.
 
+## The design is the reference
+Every page is drawn first on the GeoTrinity UI design canvas, https://claude.ai/artifact/UrHCWS7YbX3PbbrLX85h1q
+(Direction A "Rail"; read it with the Artifact tool, never a web fetch). The game copies it: its layout, controls and
+behaviour (where a button sits, what a click or a double click does) are never invented or simplified. Read the
+page's file in the canvas before building or changing it, and say so when something cannot match it.
+
 ## A style is a reusable type, never a one-off
 Every new look is a generic C++ widget or style asset that any widget can pick up, the way `UGeoButton` fills its
 sounds from `GameDataSettings` and every frame reads its `UGeoFrameStyle`. Never style one widget by hand in
@@ -31,6 +37,41 @@ the run created, when it already equals the script's value, or when it equals a 
 the ledger existed (`earlier=`). A script that still rebuilds whole widgets
 (`asset_guard.legacy_rebuild`) refuses an existing asset until converted.
 
+## Shared parts are common elements — MANDATORY
+- **Reuse is mandatory.** Before building any part of a page, look for an existing common element (a frame layer, a
+  button, a list frame, a row, a style) that does it, and use it. Never rebuild what one already does.
+- **Making a common element is mandatory.** When a part is used by more than one page — or a page you build has a part
+  another page already has — that part becomes one common element (a C++ widget plus its one Blueprint asset), and
+  every page using it is switched to it. Two pages that are similar for a part never each carry their own copy.
+- A common element that only some pages need in full is split into layers, each usable on its own (the bare window,
+  then the window with Back and Close), so a page picks the layer it needs instead of copying one.
+
+## Every table is WBP_Table
+Any array of values (the Loadout's total bonus, the Forge's rates, the character sheet's stats) is a `WBP_Table`
+(`UGeoTableWidget`): a header naming the columns, then lines of cells framed in `DA_Frame_Cell`, scrolling under the
+header. The skin (cell frame, height, padding, gap) is tuned once on `WBP_Table` and re-skins every table.
+
+- A page sets only its instance's `Columns` (caption; width, or 0 to fill what the others leave; alignment) and adds the
+  lines at runtime (`ClearLines`, `AddLine`, `MakeCellText`). A line's last cell spans the columns left after it.
+- Never lay a table out by hand in boxes, never give a page its own cell style or column sizes.
+  `AI/Python/UI/table.py` builds `WBP_Table` and puts it on a page (`table.place`), replacing the widgets it supersedes.
+
+## Every page wears the same window
+A menu (`UGeoMenuRootWidget`: the main menu, the pause menu) shows its top level or one page at a time. A page is a
+`UGeoMenuPageWidget` and a direct child of its menu's tree, never nested in another page.
+
+- **Back retraces the path.** A page opens another by class (`OpenPage`) and never knows who opened it; the menu keeps
+  the path taken, so Back returns to the page it came from, whichever that was. The cross leaves every page at once.
+- **One window, one size.** A page's root is `WBP_MenuPageFrame` (layer 2: the window, BACK in its bottom-left
+  corner and the close cross in its top-right one, both over the frame's padding so the page keeps its whole area),
+  its content in `PageSlot`. A page that must not offer Back and Close wears `WBP_MenuFrame`
+  (layer 1: the bare window) instead. A page shown on its own, outside any menu (the character sheet held open with
+  Tab), keeps its page frame and hides BACK and the cross itself, so both uses stay one asset. The window is the screen inset by the theme's `MenuFrameMargin`, never sized by
+  the content. A menu's top level wears the same `WBP_MenuFrame`, so the frame never changes when a page opens.
+- **A compact page sits in a cluster.** A short form (Create Server, Play Local, the settings pages) goes in
+  `WBP_MenuCluster`, a section of the window at one width centred in it, never floating loose in the big window.
+- A page never draws its own BACK, close button or panel background. `AI/Python/UI/menu_pages.py` converts a page.
+
 ## Layout comes with the tools, never per widget
 A layout rule lives in the builder tooling, so no script and no widget can forget it.
 
@@ -46,6 +87,8 @@ The user never reports an obvious bug. After every UI change, before calling it 
 fresh PIE, click every button on it with real mouse input (`win.ps1 slowclick`-style Win32 clicks, not handler
 calls), screenshot it, and run `AI/Python/Runtime/pie_layout_audit.py` on it — it lists texts drawn over each other
 and widgets spilling out of their area. Fix and repeat until the audit says OK and every click did its job.
+Real clicks take the user's mouse and focus: do them only when the user asked you to test it yourself, otherwise ask
+first (root `CLAUDE.md` rule) and meanwhile run every check that needs neither.
 
 ## A restyle never changes behaviour, and is proven not to
 A new look is only done once every interactive element of the restyled widget has been used in a fresh PIE and
@@ -86,7 +129,7 @@ new SVG and a re-run of `import_icons.py`.
 
 The scripts in `AI/Python/UI/` build the look in this order: `import_fonts.py`, `ui_theme.py`, `rail_style.py`,
 `rail_main_menu.py`, `rail_sub_panels.py`, `import_icons.py`, `ability_page.py`, `ability_detail.py`, `wings_hud.py`,
-`character_sheet.py`, `gems_page.py`, `interface_settings.py`, then `space_menu_buttons.py`. `rail_style.py`,
+`character_sheet.py` (which builds `WBP_Table` with `table.py` first), `gems_page.py`, `interface_settings.py`, `menu_pages.py`, then `space_menu_buttons.py`. `rail_style.py`,
 `rail_main_menu.py` and `rail_sub_panels.py` still rebuild whole widgets, so they stop at the first asset that already exists
 (`asset_guard.legacy_rebuild`). On the current project, skip them and run the rest.
 

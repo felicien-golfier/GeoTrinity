@@ -10,8 +10,8 @@
 class UScrollBox;
 
 /**
- * The frame every full-screen list wears: the header strip the panel drops its own controls into, the framed area
- * its rows scroll in, and the bottom-right corner its back button sits in. One asset (WBP_ListPanel) carries that
+ * The list every full-screen list page holds inside its page frame: the header strip the page drops its own controls
+ * into, the area its rows scroll in, and a footer strip. One asset (WBP_ListPanel) carries that
  * look and every list panel instantiates it, so editing it re-skins the server browser and the leaderboard at once
  * — the same deal WBP_ListRow strikes for the rows inside.
  * HeaderSlot and FooterSlot are filled by the panel owning the frame and never touched from here, so they stay BP

@@ -1,16 +1,14 @@
 """
-The ability drawer of the abilities page, after the Rail design's A-AbilityDetail board: picking a card slides it in
-from the right over a scrim.
+The ability drawer, after the Rail design's A-AbilityDetail board: picking an ability on the character sheet slides it
+in from the right over a scrim (character_sheet.py puts both on the sheet).
 - WBP_AbilityDetail (UGeoAbilityDetailWidget), in /Game/HUD/InGameMenu, built once: DrawerWidth > DrawerFrame > icon
   tile, name, key cap and timing; the spell clip's place (WIP); then, scrolling, the description, Reload buff lines and
   StatGrid. StatFrameStyle set. An existing drawer loses the CLOSE / PREVIOUS / NEXT buttons of its first version
   (a click outside closes it now) and takes the current DRAWER_WIDTH.
-- WBP_AbilityDescriptions: DetailScrim (filling, collapsed; takes the closing click) and DetailWidget (right edge, full
-  height, collapsed) over the page; widgets added only when absent.
 
 Never overwrites a hand edit: every value goes through asset_guard.write (kept values are listed in
 AI/Output/ability_detail.txt).
-Usage: run via MCP execute_script, after the build that adds UGeoAbilityDetailWidget and after ability_page.py.
+Usage: run via MCP execute_script, after ability_page.py and before character_sheet.py.
 """
 import importlib
 import os
@@ -113,24 +111,8 @@ def update_detail(wbp):
     wings_hud.finish(wbp)
 
 
-def add_to_page(detail):
-    path = ability_page.PAGE_PATH
-    wbp = unreal.load_asset(path)
-    root = "DescriptionsRoot"
-    _, scrim_slot = add(wbp, path, unreal.GeoFrame, "DetailScrim", root,
-                        {"frame_style": unreal.load_asset(f"{ability_page.STYLE_DIR}/DA_Frame_Scrim"),
-                         "visibility": unreal.SlateVisibility.COLLAPSED})
-    write_slot(path, scrim_slot, {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_FILL,
-                                  "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_FILL})
-    _, detail_slot = add(wbp, path, detail.generated_class(), "DetailWidget", root,
-                         {"visibility": unreal.SlateVisibility.COLLAPSED})
-    write_slot(path, detail_slot, {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_RIGHT,
-                                   "vertical_alignment": unreal.VerticalAlignment.V_ALIGN_FILL})
-    wings_hud.finish(wbp)
-
-
 def run():
-    add_to_page(build_detail())
+    build_detail()
     kept = asset_guard.report()
     output = os.path.join(unreal.Paths.project_dir(), "AI", "Output", "ability_detail.txt")
     open(output, "w", encoding="utf-8").write("\n".join(["OK"] + ["kept by hand: " + line for line in kept]))

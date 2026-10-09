@@ -3,42 +3,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "HUD/Menu/GeoMenuPanelWidget.h"
+#include "HUD/Menu/GeoMenuPageWidget.h"
 
 #include "GeoSoundSettingsWidget.generated.h"
 
-class UGeoMenuButton;
 class USlider;
 enum class EGeoVolumeChannel : uint8;
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoSoundSettingsClosedSignature);
 
 /**
  * Sound settings panel: one slider per EGeoVolumeChannel, each read from and written straight to
  * UGeoGameUserSettings, which applies and saves it at once.
- * Communicates back to the parent menu exclusively via the OnClosed delegate.
- * Required in the BP hierarchy: UGeoMenuButton "BackButton", USlider "GeneralVolumeSlider", "EffectsVolumeSlider",
+ * Required in the BP hierarchy: USlider "GeneralVolumeSlider", "EffectsVolumeSlider",
  * "MusicVolumeSlider", "InterfaceVolumeSlider".
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoSoundSettingsWidget : public UGeoMenuPanelWidget
+class GEOTRINITYUI_API UGeoSoundSettingsWidget : public UGeoMenuPageWidget
 {
 	GENERATED_BODY()
 
-public:
-	UPROPERTY(BlueprintAssignable, Category = "GeoMenu")
-	FGeoSoundSettingsClosedSignature OnClosed;
-
 protected:
-	/** Wires BackButton and the volume sliders, and sets each slider to its saved volume. */
+	/** Wires the volume sliders and sets each slider to its saved volume. */
 	virtual void NativeConstruct() override;
-	/** Returns BackButton. */
-	virtual UWidget* GetInitialFocusWidget() const override;
-	/** Fires OnClosed and consumes the back input. */
-	virtual bool HandleBackAction() override;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UGeoMenuButton> BackButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<USlider> GeneralVolumeSlider;
@@ -53,9 +38,6 @@ protected:
 	TObjectPtr<USlider> InterfaceVolumeSlider;
 
 private:
-	UFUNCTION()
-	void HandleBack();
-
 	UFUNCTION()
 	void HandleGeneralVolumeChanged(float Value);
 

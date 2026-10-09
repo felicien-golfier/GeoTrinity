@@ -28,6 +28,7 @@ void UGeoListRowWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	RowButton->OnClicked.AddUniqueDynamic(this, &UGeoListRowWidget::HandleClicked);
+	RowButton->OnDoubleClicked.BindUObject(this, &UGeoListRowWidget::HandleDoubleClicked);
 
 	// A button centers its content; the columns are the row, so they span it whatever the style was authored with.
 	if (UButtonSlot* const ContentSlot = Cast<UButtonSlot>(ColumnsBox->Slot))
@@ -118,6 +119,12 @@ void UGeoListRowWidget::SetFrameTint(FLinearColor const& Color)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoListRowWidget::SetClickMethod(EButtonClickMethod::Type const ClickMethod)
+{
+	RowButton->SetClickMethod(ClickMethod);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoListRowWidget::FocusRow()
 {
 	RowButton->SetFocus();
@@ -127,4 +134,17 @@ void UGeoListRowWidget::FocusRow()
 void UGeoListRowWidget::HandleClicked()
 {
 	OnClicked.Broadcast();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoListRowWidget::HandleDoubleClicked()
+{
+	if (OnDoubleClicked.IsBound())
+	{
+		OnDoubleClicked.Broadcast();
+	}
+	else
+	{
+		OnClicked.Broadcast();
+	}
 }

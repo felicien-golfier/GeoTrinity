@@ -33,6 +33,20 @@ public:
 		// Empty attribute returns hover ownership to the regular mouse enter/leave handling.
 		SetHover(TAttribute<bool>());
 	}
+
+	virtual FReply OnMouseButtonDoubleClick(FGeometry const& MyGeometry, FPointerEvent const& MouseEvent) override
+	{
+		UGeoButton const* Button = Owner.Get();
+		bool const bDoubleClicked = Button && Button->OnDoubleClicked.IsBound()
+								 && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton;
+		if (bDoubleClicked)
+		{
+			Button->OnDoubleClicked.Execute();
+		}
+		return bDoubleClicked ? FReply::Handled() : SButton::OnMouseButtonDoubleClick(MyGeometry, MouseEvent);
+	}
+
+	TWeakObjectPtr<UGeoButton const> Owner;
 };
 
 TSharedRef<SWidget> UGeoButton::RebuildWidget()
@@ -74,6 +88,7 @@ TSharedRef<SWidget> UGeoButton::RebuildWidget()
 				   .PressMethod(GetPressMethod())
 				   .IsFocusable(GetIsFocusable())
 				   .AllowDragDrop(bAllowDragDrop);
+	StaticCastSharedPtr<SGeoButton>(MyButton)->Owner = this;
 
 	if (GetChildrenCount() > 0)
 	{

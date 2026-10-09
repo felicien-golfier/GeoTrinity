@@ -2,6 +2,8 @@
 
 #include "System/GeoBulletSubsystem.h"
 
+#include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
@@ -30,9 +32,12 @@ void UGeoBulletSubsystem::FireBullet(FAbilityPayload const& Payload, FExternalPr
 
 	float const Speed =
 		ResolveFlightParam(Params.OverrideSpeed, Params.ProjectileSpeed, Settings->GeneralSpellSpeed, TEXT("speed"));
-	float const DistanceSpan = ResolveFlightParam(
-		Params.OverrideDistanceSpan, Params.DistanceSpan,
-		bPlayerInstigator ? Settings->GeneralSpellDistance : Settings->EnemySpellDistance, TEXT("distance span"));
+	float const DistanceSpan = ResolveFlightParam(Params.OverrideDistanceSpan, Params.DistanceSpan,
+												  bPlayerInstigator ? Settings->GeneralSpellDistance
+																	: Settings->EnemySpellDistance,
+												  TEXT("distance span"))
+		* GeoASLib::GetStatValue(GeoASLib::GetGeoAscFromActor(Payload.SourceAvatar),
+								 UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(), 1.f);
 
 	if (ensureMsgf(Speed > 0.f, TEXT("%hs: %s fired a bullet that does not move"), __FUNCTION__,
 				   *GetNameSafe(Payload.SourceAvatar)))

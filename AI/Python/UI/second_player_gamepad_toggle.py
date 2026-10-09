@@ -10,7 +10,7 @@ CHECKBOX_NAME = "SecondPlayerGamepadCheckBox"
 LABEL_TEXT = "Use first gamepad for second player"
 # Widgets from the superseded "Use keyboard for Player 1" version of this row.
 LEGACY_NAMES = ["KeyboardPlayerRow", "KeyboardPlayerLabel", "KeyboardPlayerCheckBox"]
-# Between KeyBindingsList and BackButton, so Back stays the last row.
+# Right after KeyBindingsList.
 ROW_INDEX = 2
 
 util = unreal.GeoWidgetBuilderUtil

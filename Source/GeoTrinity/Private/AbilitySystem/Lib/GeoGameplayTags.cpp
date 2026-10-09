@@ -99,6 +99,8 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 							   "Critical Core slotted: hits and heals may crit.");
 	CreateAndAssignGameplayTag(GameplayTags.Gem_Core_Leverage, "Gem.Core.Leverage",
 							   "Leverage Core slotted: deployable health scales with the deploy distance.");
+	CreateAndAssignGameplayTag(GameplayTags.Gem_Core_Surplus, "Gem.Core.Surplus",
+							   "Surplus Core slotted: every deploy ability holds more charges.");
 
 	// TARGET POINTS //
 	AddTargetPointTag(GameplayTags.TargetPoint_BossSpawn, "BossSpawn", "Where the arena spawns its boss.");

@@ -4,19 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "HUD/Menu/GeoButton.h"
-#include "HUD/Menu/GeoMenuPanelWidget.h"
+#include "HUD/Menu/GeoMenuPageWidget.h"
 
 #include "GeoKeyBindingsWidget.generated.h"
 
 class UCheckBox;
-class UGeoMenuButton;
 class UHorizontalBox;
 class UScrollBox;
 class UTextBlock;
 enum class EPlayerMappableKeySlot : uint8;
 struct FPlayerKeyMapping;
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoKeyBindingsClosedSignature);
 
 /**
  * Key selector button for one player-mappable binding (one mapping name + slot, keyboard or gamepad). A UGeoButton
@@ -65,30 +62,21 @@ private:
  * row per player-mappable mapping with a keyboard and a gamepad UGeoKeyBindingSelector. Rows follow a fixed order:
  * movement first (forward, backward, left, right, dash), then attacks (basic, special, special alternatif),
  * reload and menu last. While a selector is listening, the panel captures the next key or mouse button in the
- * preview (tunnel) phase and commits it (Escape cancels). Communicates back to the parent menu exclusively via
- * the OnClosed delegate. Required in the BP hierarchy: UGeoMenuButton "BackButton", UScrollBox "KeyBindingsList".
+ * preview (tunnel) phase and commits it (Escape cancels). Each selector wears the page's Back button style.
+ * Required in the BP hierarchy: UScrollBox "KeyBindingsList".
  * Optionally a UCheckBox "SecondPlayerGamepadCheckBox" ("Use first gamepad for second player"), which exposes the
  * couch-coop device choice: unchecked, gamepad and mouse both drive player 1.
  */
 UCLASS()
-class GEOTRINITYUI_API UGeoKeyBindingsWidget : public UGeoMenuPanelWidget
+class GEOTRINITYUI_API UGeoKeyBindingsWidget : public UGeoMenuPageWidget
 {
 	GENERATED_BODY()
-
-public:
-	UPROPERTY(BlueprintAssignable, Category = "GeoMenu")
-	FGeoKeyBindingsClosedSignature OnClosed;
 
 protected:
 	virtual void NativeConstruct() override;
 	virtual FReply NativeOnPreviewKeyDown(FGeometry const& InGeometry, FKeyEvent const& InKeyEvent) override;
 	virtual FReply NativeOnPreviewMouseButtonDown(FGeometry const& InGeometry,
 												  FPointerEvent const& InMouseEvent) override;
-	virtual UWidget* GetInitialFocusWidget() const override;
-	virtual bool HandleBackAction() override;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UGeoMenuButton> BackButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UScrollBox> KeyBindingsList;
@@ -97,9 +85,6 @@ protected:
 	TObjectPtr<UCheckBox> SecondPlayerGamepadCheckBox;
 
 private:
-	UFUNCTION()
-	void HandleBack();
-
 	/** Stores the choice and has the viewport client re-point the gamepads at their new owners immediately. */
 	UFUNCTION()
 	void HandleSecondPlayerGamepadChanged(bool bIsChecked);

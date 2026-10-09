@@ -11,6 +11,7 @@
 
 class UEditableTextBox;
 class UGeoMenuButton;
+class UGeoTableWidget;
 class UHorizontalBox;
 class UVerticalBox;
 
@@ -51,9 +52,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> BreakShardsText;
 
-	/** Filled with each tier's break-down and craft rates. */
+	/** Filled with each tier's break-down and craft rates, its columns tier, break down, craft. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UVerticalBox> RateBox;
+	TObjectPtr<UGeoTableWidget> RateTable;
 
 	/** Filled with one tab per tier. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
@@ -120,6 +121,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "8", ClampMax = "128"))
 	float GemGlyphSize = 40.f;
 
+	/** Space between two tier tabs. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "0", ClampMax = "64"))
+	float TierTabGap = 22.f;
+
 	/** {0} owned, {1} slotted. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText TierSubFormat = INVTEXT("{0} OWNED \u00B7 {1} SLOTTED");
@@ -150,10 +155,6 @@ protected:
 	/** Alpha of the summary while nothing is selected. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Break", meta = (ClampMin = "0", ClampMax = "1"))
 	float BreakIdleAlpha = .35f;
-
-	/** The rate table's header: tier, break down, craft. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	TArray<FText> RateHeaders = {INVTEXT("TIER"), INVTEXT("BREAK DOWN"), INVTEXT("CRAFT")};
 
 	/** {0} the copies owned, on a gem row. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")

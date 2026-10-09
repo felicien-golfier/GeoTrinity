@@ -95,6 +95,10 @@ public:
 	 */
 	float GetCooldown(int32 AbilityLevel) const;
 
+	/** Applies the Cooldown GE with its duration scaled by the owner's gems (GeoASLib::GetGemCooldownMultiplier). */
+	virtual void ApplyCooldown(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
+							   FGameplayAbilityActivationInfo ActivationInfo) const override;
+
 	/** Cancels the pending fire timer and hides the charge gauge (ChargeForFireDelay mode) before calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo const ActivationInfo, bool bReplicateEndAbility,
@@ -124,8 +128,11 @@ public:
 	 * fire on a button press instead of on a key-up. Invalid by default — abilities opt in by overriding.
 	 */
 	virtual FGameplayTag GetAlternateReleaseInputTag() const { return FGameplayTag{}; }
-	/** Returns the effective fire delay: reads GeneralChargeTime from GameDataSettings when
-	 * bUseGeneralChargeTimeForFireDelay is set, otherwise uses the per-ability FireDelay. */
+	/** Returns the fire delay as the gems of ASC scale it (GeoASLib::GetGemFireDelayMultiplier). CDO-safe, for a
+	 * machine replaying an ally's shots. */
+	float GetFireDelay(UAbilitySystemComponent const* ASC) const;
+	/** Returns the fire delay as the owner's gems scale it; on the CDO, which has no owner, the fire delay before
+	 * gems. */
 	UFUNCTION(BlueprintCallable)
 	float GetFireDelay() const;
 
@@ -315,4 +322,8 @@ private:
 	TArray<TInstancedStruct<FEffectData>> EffectDataInstances;
 	// Server-only. Keeps the add/remove of RemoteFireTag balanced when EndAbility runs more than once.
 	bool bRemoteFireTagApplied = false;
+
+	/** Returns the fire delay before gems: GeneralChargeTime from GameDataSettings when
+	 * bUseGeneralChargeTimeForFireDelay is set, otherwise the per-ability FireDelay. */
+	float GetBaseFireDelay() const;
 };

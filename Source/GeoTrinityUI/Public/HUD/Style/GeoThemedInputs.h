@@ -23,11 +23,22 @@ class GEOTRINITYUI_API UGeoEditableTextBox : public UEditableTextBox
 	GENERATED_BODY()
 
 public:
-	/** Applies the theme's EditableTextBoxStyle. */
+	/** Applies the theme's EditableTextBoxStyle, with this field's own padding when it overrides it. */
 	virtual void SynchronizeProperties() override;
 #if WITH_EDITOR
 	virtual FText const GetPaletteCategory() override;
 #endif
+
+	/** Gives this field its own padding, for one sitting inside something smaller than a form row. */
+	void SetPaddingOverride(FMargin const& InPadding);
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoInput", meta = (InlineEditConditionToggle))
+	bool bOverridePadding = false;
+
+	/** Space between the field's edge and its text, in place of the theme's. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoInput", meta = (EditCondition = "bOverridePadding"))
+	FMargin PaddingOverride;
 };
 
 /** ComboBoxString wearing the theme's ComboBoxStyle and ComboBoxItemStyle, its text in TextRole. */

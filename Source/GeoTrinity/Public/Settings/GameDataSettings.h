@@ -142,6 +142,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Gem")
 	FFloatInterval LeverageHealthMultiplier = FFloatInterval(0.7f, 1.3f);
 
+	/** Deploy charges the Surplus Core adds to each deploy ability's pool. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay|Gem", meta = (ClampMin = "0"))
+	int32 SurplusBonusCharges = 1;
+
 	/** Maximum one-way latency the server compensates: how far it fast-forwards a projectile to the client's reported
 	 * spawn time, and how far behind now a remote player may still be judged by time-driven hazards
 	 * (UGeoCharacterMovementComponent::GetPerceivedServerTime). */

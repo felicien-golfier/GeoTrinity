@@ -28,23 +28,31 @@ UGeoGemProfileSave* UGeoGemPageWidget::GetProfile() const
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemPageWidget::CommitChanges()
 {
-	if (UGeoGemSubsystem* GemSubsystem = ULocalPlayer::GetSubsystem<UGeoGemSubsystem>(GetOwningLocalPlayer()))
-	{
-		GemSubsystem->CommitChanges();
-	}
+	CommitProfile();
 	Refresh();
 	OnProfileChanged.Broadcast();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-UGeoListRowWidget* UGeoGemPageWidget::MakeRow(EGeoListRowTint const Tint, TFunction<void()> Picked)
+void UGeoGemPageWidget::CommitProfile()
 {
-	if (!ensureMsgf(RowClass, TEXT("%hs: no RowClass on %s"), __FUNCTION__, *GetName()))
+	if (UGeoGemSubsystem* GemSubsystem = ULocalPlayer::GetSubsystem<UGeoGemSubsystem>(GetOwningLocalPlayer()))
+	{
+		GemSubsystem->CommitChanges();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UGeoListRowWidget* UGeoGemPageWidget::MakeRow(EGeoListRowTint const Tint, TFunction<void()> Picked,
+											   TSubclassOf<UGeoListRowWidget> Class)
+{
+	Class = Class ? Class : RowClass;
+	if (!ensureMsgf(Class, TEXT("%hs: no row class on %s"), __FUNCTION__, *GetName()))
 	{
 		return nullptr;
 	}
 
-	UGeoListRowWidget* Row = CreateWidget<UGeoListRowWidget>(this, RowClass);
+	UGeoListRowWidget* Row = CreateWidget<UGeoListRowWidget>(this, Class);
 	Row->SetTint(Tint);
 	Row->SetSelectable(Picked != nullptr);
 	if (Picked)

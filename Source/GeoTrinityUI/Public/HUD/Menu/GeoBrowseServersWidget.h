@@ -18,7 +18,7 @@ class UProgressBar;
 /**
  * Browse-servers panel. Finds and lists online sessions; allows filtering by name (client-side)
  * and language (server-side query). Wears the shared list frame and lists into it, so it and the leaderboard are the
- * same list — see UGeoListPanelWidget for the frame, the row class and the OnClosed delegate it closes through.
+ * same list — see UGeoListPanelWidget for the frame and the row class.
  * Blueprint subclasses build the header controls and configure data through EditAnywhere properties.
  * Required in the BP hierarchy, on top of the base's: UEditableTextBox "SearchInput", UComboBoxString
  * "LanguageComboBox", UProgressBar "SearchProgressBar", UGeoMenuButton "RefreshButton".
@@ -32,8 +32,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoServer")
 	TArray<FString> LanguageOptions;
 
-	/** Clears the list and searches Steam for GeoTrinity lobbies. Run on every open of the panel, not on construct: the
-	 * panel is built with the main menu, long before anyone may have hosted. Ignored while a search is in flight. */
+	/** Searches again: the panel is built with the main menu, long before anyone may have hosted. */
+	virtual void OnPageShown() override;
+
+	/** Clears the list and searches Steam for GeoTrinity lobbies. Ignored while a search is in flight. */
 	UFUNCTION()
 	void FindSessions();
 

@@ -247,6 +247,14 @@ void AGeoPlayerController::SetupInputComponent()
 												});
 	}
 
+	if (EnhancedInput && !ShowCharacterSheetAction.IsNull())
+	{
+		UInputAction const* ShowAction = ShowCharacterSheetAction.LoadSynchronous();
+		EnhancedInput->BindAction(ShowAction, ETriggerEvent::Started, this, &AGeoPlayerController::ShowCharacterSheet);
+		EnhancedInput->BindAction(ShowAction, ETriggerEvent::Completed, this,
+								  &AGeoPlayerController::HideCharacterSheet);
+	}
+
 	// The pause menu is one shared window over one shared view: only player 1 opens it, whatever device they hold.
 	ULocalPlayer const* LocalPlayer = GetLocalPlayer();
 	if (!LocalPlayer || LocalPlayer->GetLocalPlayerIndex() != 0)
@@ -268,6 +276,38 @@ void AGeoPlayerController::HandleToggleMenu(FInputActionInstance const& /*Instan
 	TogglePauseMenu();
 }
 
+void AGeoPlayerController::ShowCharacterSheet()
+{
+	if (!ensureMsgf(CharacterSheetWidgetClass, TEXT("AGeoPlayerController: CharacterSheetWidgetClass is not set")))
+	{
+		return;
+	}
+	if (!CharacterSheetWidget)
+	{
+		CharacterSheetWidget = CreateWidget<UUserWidget>(this, CharacterSheetWidgetClass);
+	}
+	if (!IsPauseMenuOpen())
+	{
+		CharacterSheetWidget->AddToViewport(CharacterSheetZOrder);
+		SetInputMode(FInputModeGameAndUI().SetHideCursorDuringCapture(false));
+	}
+}
+
+void AGeoPlayerController::HideCharacterSheet()
+{
+	if (CharacterSheetWidget && CharacterSheetWidget->IsInViewport())
+	{
+		CharacterSheetWidget->RemoveFromParent();
+		SetGameplayInputMode();
+	}
+}
+
+bool AGeoPlayerController::ShouldFlushKeysWhenViewportFocusChanges() const
+{
+	return Super::ShouldFlushKeysWhenViewportFocusChanges()
+		&& !(CharacterSheetWidget && CharacterSheetWidget->IsInViewport());
+}
+
 bool AGeoPlayerController::IsPauseMenuOpen() const
 {
 	return PauseMenuWidget && PauseMenuWidget->IsInViewport();
@@ -278,12 +318,21 @@ void AGeoPlayerController::TogglePauseMenu()
 	if (IsPauseMenuOpen())
 	{
 		ClosePauseMenu();
-		return;
 	}
+	else
+	{
+		OpenPauseMenu();
+	}
+}
+
+void AGeoPlayerController::OpenPauseMenu()
+{
 	if (!ensureMsgf(PauseMenuWidgetClass, TEXT("AGeoPlayerController: PauseMenuWidgetClass is not set")))
 	{
 		return;
 	}
+
+	HideCharacterSheet();
 	if (!PauseMenuWidget)
 	{
 		PauseMenuWidget = CreateWidget<UUserWidget>(this, PauseMenuWidgetClass);

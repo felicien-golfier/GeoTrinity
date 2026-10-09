@@ -16,7 +16,8 @@
  * Deployment is gated by a charge/stack system rather than the live-deployable count: each activation spends one
  * charge and activation is blocked only at zero charges. The charge pool is the stack count of the ability's Cooldown
  * GE — spending applies one stack, and the GE's own RemoveSingleStackAndRefreshDuration expiry hands one back per
- * duration, so a single timer refills the pool sequentially. The pool size is the GE's StackLimitCount.
+ * duration, so a single timer refills the pool sequentially. The pool size is MaxCharges, plus SurplusBonusCharges
+ * with the Surplus Core; the GE's own StackLimitCount must stay unlimited (0) or above it.
  */
 UCLASS()
 class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
@@ -34,9 +35,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	int32 GetCurrentStacks() const;
 
-	/** Maximum number of charges this ability can hold — the Cooldown GE's StackLimitCount. */
+	/** Maximum number of charges this ability can hold: MaxCharges, plus SurplusBonusCharges with the Surplus Core. */
 	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	int32 GetMaxStacks() const;
+
+	/** The charges the pool holds without gems: MaxCharges. */
+	int32 GetBaseMaxStacks() const
+	{
+		return MaxCharges;
+	}
 
 	/** World location the deployable would land at if the input were released now. Polled every tick by
 	 * AGeoDeployTargetCue, which receives this ability instance as its SourceObject. */
@@ -80,11 +87,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
 	TSubclassOf<AGeoDeployableBase> DeployableActorClass;
 
+	/** Charges the pool holds without gems. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Deploy", meta = (ClampMin = "1"))
+	int32 MaxCharges = 3;
+
 private:
 	/** Plays the charge-refilled sound when the Cooldown GE's stack count drops a charge back into the pool. */
 	void OnCooldownTagChanged(FGameplayTag CooldownTag, int32 NewCount);
 
-	/** Deploy distance for the current charge ratio, lerped between the project-wide Min/MaxDeployDistance. */
+	/** Deploy distance for the current charge ratio, lerped between the project-wide Min/MaxDeployDistance, before
+	 *  the Reach gems' SpellDistanceMultiplier, which the spawner projectile applies to its flight like any shot's. */
 	float GetChargedDeployDistance() const;
 
 	/** Params as the deployer's gems change them: blink time, drain, and health, which Leverage also scales with
