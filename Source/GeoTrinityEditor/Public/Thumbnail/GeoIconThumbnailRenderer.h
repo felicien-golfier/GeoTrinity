@@ -14,6 +14,7 @@ class UGeoIconThumbnailRenderer : public UDefaultSizedThumbnailRenderer
 	GENERATED_BODY()
 
 public:
+	/** Returns true when Object is a UGeoIcon; restricts this renderer to that asset type. */
 	virtual bool CanVisualizeAsset(UObject* Object) override;
 	/** Draws the backdrop on the canvas, then the icon's Slate paint into the same render target. */
 	virtual void Draw(UObject* Object, int32 X, int32 Y, uint32 Width, uint32 Height, FRenderTarget* RenderTarget,

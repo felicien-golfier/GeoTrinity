@@ -21,6 +21,7 @@ public:
 	/** Sets every attribute to its no-gem value. */
 	UGeoGemAttributeSet();
 
+	/** Registers all gem stat attributes for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Chance of a hit or a heal to crit, once the Critical Core unlocks crits. */

@@ -19,6 +19,8 @@ class GEOTRINITY_API UExecCalc_Damage : public UGameplayEffectExecutionCalculati
 {
 	GENERATED_BODY()
 public:
+	/** Scales IncomingDamage by both sides' multipliers, the context's SingleUseDamageMultiplier, and the source's crit
+	 * roll, unless the context skips stat modifiers. */
 	virtual void Execute_Implementation(FGameplayEffectCustomExecutionParameters const& ExecutionParams,
 										FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
 };
