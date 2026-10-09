@@ -377,6 +377,7 @@ private:
 	/** Drives Movement from From to To with a short root-motion source, and schedules its removal. */
 	void ApplyPushRootMotion(UCharacterMovementComponent* Movement, FVector const& From, FVector const& To);
 
+	/** Blink-timer callback: ends the deployable's lifetime via Recall when bAutoRecallAtEndLife is set, or Expire otherwise. */
 	UFUNCTION()
 	void TryRecallOrExpire();
 

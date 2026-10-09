@@ -28,6 +28,7 @@ public:
 	void InitializeWithAbilitySystemComponent(UAbilitySystemComponent* ASC);
 
 protected:
+	/** Updates the HealthBar fill and CurrentHealthText to reflect NewHealthRatio (Health / MaxHealth). */
 	UFUNCTION(BlueprintNativeEvent)
 	void UpdateHealthRatio(float NewHealthRatio);
 	virtual void UpdateHealthRatio_Implementation(float NewHealthRatio);
@@ -37,6 +38,7 @@ protected:
 	void UpdateShieldRatio(float NewShieldRatio);
 	virtual void UpdateShieldRatio_Implementation(float NewShieldRatio);
 
+	/** Shows or hides the health bar based on whether the owner's MaxHealth has been initialized. */
 	UFUNCTION(BlueprintNativeEvent)
 	void UpdateHealthBarVisibility();
 	virtual void UpdateHealthBarVisibility_Implementation();

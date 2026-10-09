@@ -351,6 +351,7 @@ struct FLethalEffectData : public FEffectData
 {
 	GENERATED_BODY()
 
+	/** Returns a tooltip line indicating an instant-kill hit ("Instant Kill"). */
 	virtual FString GetDescriptionLine(FDescriptionFormat const& Format) const override;
 
 	/** Applies GameDataSettings::LethalEffect to the target, setting its health to zero. */

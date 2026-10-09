@@ -78,6 +78,7 @@ public:
 protected:
 	/** Shows or hides the panel from the setting, and follows its changes and the detail key. */
 	virtual void NativeConstruct() override;
+	/** Unregisters the detail-key and settings delegates so NativeConstruct can re-register cleanly on a reused instance. */
 	virtual void NativeDestruct() override;
 	/** Rebuilds the table when the players changed, then writes every figure. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
