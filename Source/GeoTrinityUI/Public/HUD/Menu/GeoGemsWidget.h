@@ -42,6 +42,7 @@ protected:
 	/** Wires BACK and shows the page tabs. */
 	virtual void NativeConstruct() override;
 	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Fires OnClosed and consumes the back input. */
 	virtual bool HandleBackAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))

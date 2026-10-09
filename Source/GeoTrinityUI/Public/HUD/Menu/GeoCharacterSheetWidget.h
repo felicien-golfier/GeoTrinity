@@ -87,6 +87,7 @@ protected:
 	/** Wires the buttons and fills the sheet. */
 	virtual void NativeConstruct() override;
 	virtual UWidget* GetInitialFocusWidget() const override;
+	/** Fires OnClosed and consumes the back input. */
 	virtual bool HandleBackAction() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

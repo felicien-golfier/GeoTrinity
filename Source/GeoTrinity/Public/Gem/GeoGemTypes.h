@@ -83,6 +83,7 @@ struct FGeoGemList
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	TArray<FGeoGemInfo> Gems;
 
+	/** Returns the gem whose Id matches GemId, or null if no gem in this list carries that id. */
 	FGeoGemInfo const* Find(FName GemId) const
 	{
 		return Gems.FindByPredicate(

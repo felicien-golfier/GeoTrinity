@@ -12,6 +12,7 @@ public:
 	/** Returns a new instance of this customization; required by FPropertyEditorModule::RegisterCustomClassLayout. */
 	static TSharedRef<IDetailCustomization> MakeInstance();
 
+	/** Adds a live Preview row to the top of the Details panel, drawing the icon as the game renders it. */
 	virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override;
 
 private:

@@ -32,6 +32,7 @@ class GEOTRINITYUI_API UGeoGemGlyph : public UWidget
 	GENERATED_BODY()
 
 public:
+	/** Shows the glyph as a gem of InTier in InColor (its stat colour). */
 	void SetGem(EGeoGemTier InTier, FLinearColor const& InColor);
 
 	/** An open socket, or a locked one showing InUnlockLevel. */
