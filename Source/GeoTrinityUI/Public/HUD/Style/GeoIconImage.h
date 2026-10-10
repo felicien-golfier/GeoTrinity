@@ -17,6 +17,7 @@ class GEOTRINITYUI_API UGeoIconImage : public UWidget
 	GENERATED_BODY()
 
 public:
+	/** Switches to InIcon; null draws nothing. */
 	UFUNCTION(BlueprintCallable, Category = "GeoIcon")
 	void SetIcon(UGeoIcon const* InIcon);
 
@@ -27,10 +28,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoIcon")
 	void SetTint(FLinearColor const& InTint);
 
+	/** When on, also multiplies the icon by the foreground colour of the button holding it, so it follows the button's hover state. */
 	UFUNCTION(BlueprintCallable, Category = "GeoIcon")
 	void SetTintWithForeground(bool bInTintWithForeground);
 
+	/** Pushes Icon, Size, Tint and bTintWithForeground to the underlying SGeoIconImage. */
 	virtual void SynchronizeProperties() override;
+	/** Releases the SGeoIconImage Slate widget. */
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 #if WITH_EDITOR

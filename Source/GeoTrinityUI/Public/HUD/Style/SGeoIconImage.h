@@ -17,6 +17,7 @@ public:
 
 	void Construct(FArguments const& /*InArgs*/) {}
 
+	/** Switches to InIcon redrawn at InSize, tinted by InTint; null draws nothing. */
 	void SetIcon(UGeoIcon const* InIcon, float const InSize, FLinearColor const& InTint)
 	{
 		Icon = InIcon;

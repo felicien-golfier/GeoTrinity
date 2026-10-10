@@ -44,6 +44,7 @@ class GEOTRINITYUI_API UGeoTableWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	/** Removes all data lines, leaving only the header row. */
 	void ClearLines();
 
 	/** Appends a line of Cells, one per column in order; the last cell also spans the columns left after it. */
