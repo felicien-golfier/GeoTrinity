@@ -1,28 +1,28 @@
-Tier,Id,Name,Attribute,Operation,MagnitudePerGem,Effect,Color,GrantedTag
-Chip,Power,Power,DamageMultiplier,Add,0.00667,Damage,DamageBoost,
-Chip,Guard,Guard,DamageReduction,Add,0.00667,Damage reduction,DamageReduction,
-Chip,Vigor,Vigor,MaxHealth,Percent,0.01,Max health,Heal,
-Chip,Mend,Mend,AppliedHealBoost,Add,0.00667,Healing done,HealBoost,
-Chip,Swift,Swift,MovementSpeedMultiplier,Add,0.00667,Move speed,MoveSpeed,
-Chip,Precision,Precision,CritChance,Add,0.01,Crit chance,AllyDamage,
-Cut,Magazine,Magazine,MaxAmmo,Percent,0.012,Max ammo,AllyDamage,
-Cut,Recovery,Recovery,ReceivedHealBoost,Add,0.007,Healing received,HealBoost,
-Cut,Reflex,Reflex,DashCooldownMultiplier,Add,-0.008,Dash cooldown,MoveSpeed,
-Cut,Reload,Reload,ReloadSpeedMultiplier,Add,0.01,Reload speed,AllyDamage,
-Cut,Stride,Stride,DashDistanceMultiplier,Add,0.01,Dash distance,MoveSpeed,
-Cut,WindUp,Wind-up,WindUpMultiplier,Add,-0.006,Ability wind-up time,Neutral,
-Cut,Flicker,Flicker,DeployableBlinkMultiplier,Add,0.03,Deployable blinking time,DeployableNotBlocking,
-Cut,Edge,Edge,CritDamage,Add,0.02,Crit damage,DamageBoost,
-Prism,Focus,Focus,SpecialCooldownMultiplier,Add,-0.02,Special cooldown,Neutral,
-Prism,Anchor,Anchor,DeployableHealthMultiplier,Add,0.03,Deployable health,DeployableBlockingEnemies,
-Prism,Linger,Linger,DeployableDrainMultiplier,Add,-0.03,Deployable self drain,DeployableNotBlocking,
-Prism,Reach,Reach,SpellDistanceMultiplier,Add,0.02,Spell distance,Neutral,
-Core,Surplus,Surplus,,Add,0,"+1 deployable charge: Wall, Healing zone or Turret",DeployableNotBlocking,Gem.Core.Surplus
-Core,Overclock,Overclock,DeployableCooldownMultiplier,Add,-0.15,Deployable recharge,DeployableNotBlocking,
-Core,Relay,Relay,,Add,0,Dash snaps to your nearest deployable within 30 degrees of the dash; no direction moves you toward the nearest one,MoveSpeed,
-Core,Split,Split,,Add,0,Deploy has a 25% chance to place a half-health copy next to it,DeployableNotBlocking,
-Core,Critical,Critical,,Add,0,Unlocks crits: 10% chance for 150% damage,DamageBoost,Gem.Core.Critical
-Core,Bond,Bond,,Add,0,Link to allies: you absorb 15% of the damage they take,DamageReduction,
-Core,Wake,Wake,,Add,0,Dash spawns your deployable at the start point (max 1 per 8 s),MoveSpeed,
-Core,Kinship,Kinship,,Add,0,"When your deployable dies, it spawns one of your ally's (max 1 per 5 s)",DeployableNotBlocking,
-Core,Leverage,Leverage,,Add,0,Deployable health x0.7 close up to x1.3 at max deploy distance,DeployableBlockingEnemies,Gem.Core.Leverage
+Tier,Id,Name,Attribute,Operation,MagnitudePerGem,Effect,Color,GrantedTag,GrantedAbility
+Chip,Power,Power,DamageMultiplier,Add,0.00667,Damage,DamageBoost,,
+Chip,Guard,Guard,DamageReduction,Add,0.00667,Damage reduction,DamageReduction,,
+Chip,Vigor,Vigor,MaxHealth,Percent,0.01,Max health,Heal,,
+Chip,Mend,Mend,AppliedHealBoost,Add,0.00667,Healing done,HealBoost,,
+Chip,Swift,Swift,MovementSpeedMultiplier,Add,0.00667,Move speed,MoveSpeed,,
+Chip,Precision,Precision,CritChance,Add,0.00667,Crit chance,AllyDamage,,
+Cut,Magazine,Magazine,MaxAmmo,Percent,0.012,Max ammo,AllyDamage,,
+Cut,Recovery,Recovery,ReceivedHealBoost,Add,0.007,Healing received,HealBoost,,
+Cut,Reflex,Reflex,DashCooldownMultiplier,Add,-0.02,Dash cooldown,MoveSpeed,,
+Cut,Reload,Reload,ReloadSpeedMultiplier,Add,0.0333333,Reload speed,AllyDamage,,
+Cut,Stride,Stride,DashDistanceMultiplier,Add,0.0666667,Dash distance,MoveSpeed,,
+Cut,WindUp,Wind-up,WindUpMultiplier,Add,-0.006,Ability wind-up time,Neutral,,
+Cut,Flicker,Flicker,DeployableBlinkMultiplier,Add,0.03,Deployable blinking time,DeployableNotBlocking,,
+Cut,Edge,Edge,CritDamage,Add,0.02,Crit damage,DamageBoost,,
+Prism,Focus,Focus,SpecialCooldownMultiplier,Add,-0.02,Special cooldown,Neutral,,
+Prism,Anchor,Anchor,DeployableHealthMultiplier,Add,0.03,Deployable health,DeployableBlockingEnemies,,
+Prism,Linger,Linger,DeployableDrainMultiplier,Add,-0.03,Deployable self drain,DeployableNotBlocking,,
+Prism,Reach,Reach,SpellDistanceMultiplier,Add,0.0311111,Spell distance,Neutral,,
+Core,Surplus,Surplus,,Flat,1,deployable charge,DeployableNotBlocking,Gem.Core.Surplus,
+Core,Overclock,Overclock,DeployableCooldownMultiplier,Add,-0.15,Deployable recharge,DeployableNotBlocking,,
+Core,Relay,Relay,,Add,0,Dash snaps to your nearest deployable within 30 degrees of the dash; no direction moves you toward the nearest one,MoveSpeed,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Relay.GA_Core_Relay_C
+Core,Split,Split,,Add,0,Deploy places a half-health copy next to it (max 1 per 10 s),DeployableNotBlocking,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Split.GA_Core_Split_C
+Core,Critical,Critical,,Add,0,Unlocks crits: 10% chance for 150% damage,DamageBoost,Gem.Core.Critical,
+Core,Bond,Bond,,Add,0,Link to allies: you absorb 15% of the damage they take,DamageReduction,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Bond.GA_Core_Bond_C
+Core,Wake,Wake,,Add,0,Dash spawns your deployable at the start point (max 1 per 8 s),MoveSpeed,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Wake.GA_Core_Wake_C
+Core,Kinship,Kinship,,Add,0,"When your deployable dies, it spawns one of your ally's (max 1 per 5 s)",DeployableNotBlocking,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Kinship.GA_Core_Kinship_C
+Core,Leverage,Leverage,,Add,0,Deployable health x0.7 close up to x1.3 at max deploy distance,DeployableBlockingEnemies,Gem.Core.Leverage,

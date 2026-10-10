@@ -1,6 +1,8 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
+#include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
@@ -308,6 +310,22 @@ bool FGeoGemCatalogAssetTest::RunTest(FString const& /*Parameters*/)
 		FGeoGemInfo const* Gem = Catalog->Find(Core.Key);
 		TestTrue(FString::Printf(TEXT("%s grants the tag its rule checks"), *Core.Key.ToString()),
 				 Gem && Gem->GrantedTag == Core.Value);
+	}
+
+	UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo();
+	for (FName const CoreId : {"Relay", "Bond", "Wake", "Split", "Kinship"})
+	{
+		FGeoGemInfo const* Gem = Catalog->Find(CoreId);
+		TestTrue(FString::Printf(TEXT("%s gives a Core passive"), *CoreId.ToString()),
+				 Gem && Gem->GrantedAbility);
+		TestTrue(FString::Printf(TEXT("%s's passive is in the ability catalog, for the abilities page"),
+								 *CoreId.ToString()),
+				 Gem && AbilityInfo
+					 && AbilityInfo->GetAllPlayersAbilityInfos().ContainsByPredicate(
+						 [Gem](FPlayersGameplayAbilityInfo const& Info)
+						 {
+							 return Info.AbilityClass == Gem->GrantedAbility && !Info.bGiveAtStartup;
+						 }));
 	}
 	return true;
 }

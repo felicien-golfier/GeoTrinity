@@ -42,7 +42,7 @@ public:
 private:
 	/** First line of the CSV, naming its columns. */
 	static constexpr TCHAR const* CsvHeader =
-		TEXT("Tier,Id,Name,Attribute,Operation,MagnitudePerGem,Effect,Color,GrantedTag");
+		TEXT("Tier,Id,Name,Attribute,Operation,MagnitudePerGem,Effect,Color,GrantedTag,GrantedAbility");
 
 	static FString GetCsvPath();
 

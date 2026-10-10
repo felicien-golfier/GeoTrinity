@@ -6,9 +6,11 @@ description: Push the game's gem values (Data/gems.csv, plus the catalog's loot,
 # Gem values: game → doc
 
 The doc is https://claude.ai/artifact/SQYwGjtE7bspcCA5KKV67K (Claude Docs id `cdbe4119-4ccb-4017-a52c-70d469714c62`).
-Its "Gem catalog" table mirrors `Data/gems.csv` column for column. `AI/Python/Data/gem_doc_sync.py` converts between
-the two and keeps `Data/gems.sync.json`, the stamp of the last sync: the CSV's hash and the doc table's hash `h`.
-The opposite direction is the `gem-doc-to-csv` skill.
+Its "Gem catalog" table is a 5-column view of `Data/gems.csv`: `Tier`, `Gem`, `Effect per gem`, `Max per class`,
+`Attribute or system`. `AI/Python/Data/gem_doc_sync.py` keeps `Data/gems.sync.json`, the stamp of the last sync: the
+CSV's hash and the doc table's hash `h`. Its `doc-table` and `diff` still expect an older 10-column layout, so use
+`status` and `stamp` only and compare rows by hand, on `Gem` = CSV `Name`.
+The opposite direction is the `gem-doc-to-csv` skill, which also holds the per-gem / max-per-class rules.
 
 **Never overwrite a side edited since the last sync.** Whenever the doc table changed since the stamp, or there is
 no stamp, show the user every difference and ask with AskUserQuestion. Never pick a winner yourself. Ask too about
@@ -26,7 +28,7 @@ anything else unclear.
        `gem_doc_sync.py diff <scratchpad>/doc_table.md`.
      - Ask the user what to do: keep the doc's edits (run `gem-doc-to-csv` first), overwrite them with the CSV, or
        choose gem by gem.
-     - A table whose header is not the script's `DOC_COLUMNS` is in an older layout: compare it with the CSV by hand.
+     - Compare the table with the CSV by hand (the script's layout is older than the doc's).
 3. **Gather the game's values.**
    - Gems: `Data/gems.csv`.
    - Forge craft and break-down costs, loot and XP difficulty scales, XP per level: `UGeoGemCatalog` defaults in
@@ -37,8 +39,9 @@ anything else unclear.
    - Base crit chance: `UGeoGemAttributeSet`'s constructor. Crit damage: `GeoAbilitySystemLibrary.cpp`.
    - A value someone hand-edited in `DA_GemCatalog`, other than a gem, is invisible from code. When the user says the
      asset differs, read it through the editor bridge.
-4. **Replace the catalog table** with the output of `gem_doc_sync.py doc-table`. Use one `replace` of the table block
-   with `"as":"markdown"`, guarded with `ifHash` = the table's `h` and `ifRev` = the read's `rev`.
+4. **Update the catalog table cell by cell.** Per gem from `MagnitudePerGem`; max per class = per gem × sockets
+   (Chip 30, Cut 15, Prism 9, Core 1); the number inside "Effect per gem" rewritten to match; an empty cell filled
+   from the CSV. One `replace` per cell, a `find` target `within` it with `"as":"text"`; never replace the table.
 5. **Update every value that depends on those numbers**, in place, changing only what differs:
    - The gem count sentence under "Gem catalog" (per-tier counts).
    - The sockets table and the class-level sentences, from `GetSockets()`.
@@ -64,9 +67,13 @@ anything else unclear.
      - loot roll and XP: `GeoGemCatalog.cpp`;
      - equip, break-down and craft rules: `GeoGemProfileSave.cpp`;
      - stat application: `GeoGemStatsEffect.cpp`;
-     - Cores: find each `GrantedTag` (`Gem.Core.*`) in the code.
+     - tag Cores: find each `GrantedTag` (`Gem.Core.*`) in the code;
+     - passive Cores: the `GrantedAbility` Blueprint's C++ parent in
+       `Source/GeoTrinity/*/AbilitySystem/Abilities/Gem/` holds the rule. Its tunables (angle, share, cooldown) are
+       the `GA_Core_*` Blueprint's values, the C++ defaults unless someone edited the Blueprint.
    - Rewrite only the sentences the code now contradicts.
-   - A Core whose tag no code checks is not built yet. Its doc text is design: leave it.
+   - A Core with neither a checked tag nor a `GrantedAbility` is not built yet. Its doc text is design: leave it.
+   - The doc table has no column for `GrantedTag` or `GrantedAbility`. Never add one.
    - A design limit the code does not enforce (such as the Precision cap) is not a contradiction. Mention it to the
      user instead.
 7. **Stamp.** Re-read the outline for the table's new `h`, then run

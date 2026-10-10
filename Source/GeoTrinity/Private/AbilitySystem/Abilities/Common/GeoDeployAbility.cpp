@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
@@ -14,6 +15,7 @@
 #include "Characters/Component/GeoDeploySatelliteComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "GameplayCueManager.h"
+#include "Gem/GeoGemCatalog.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -32,7 +34,7 @@ int32 UGeoDeployAbility::GetMaxStacks() const
 {
 	UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
 	bool const bHasSurplus = ASC && ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Surplus);
-	return MaxCharges + (bHasSurplus ? GetDefault<UGameDataSettings>()->SurplusBonusCharges : 0);
+	return MaxCharges + (bHasSurplus ? FMath::RoundToInt(GeoASLib::GetGemMagnitude("Surplus")) : 0);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -162,30 +164,67 @@ float UGeoDeployAbility::GetChargedDeployDistance() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+FDeployableDataParams UGeoDeployAbility::ApplyGemsToParams(UAbilitySystemComponent const& ASC,
+														   FDeployableDataParams const& BaseParams)
+{
+	FDeployableDataParams GemParams = BaseParams;
+	if (ensureMsgf(ASC.HasAttributeSetForAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute()),
+				   TEXT("%hs: %s deploys from an ASC without gem attributes"), __FUNCTION__, *ASC.GetName()))
+	{
+		GemParams.BlinkDuration *=
+			ASC.GetNumericAttribute(UGeoGemAttributeSet::GetDeployableBlinkMultiplierAttribute());
+		GemParams.LifeDrainMaxDuration /=
+			ASC.GetNumericAttribute(UGeoGemAttributeSet::GetDeployableDrainMultiplierAttribute());
+		GemParams.HealthMultiplier =
+			ASC.GetNumericAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute());
+	}
+
+	return GemParams;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 FDeployableDataParams UGeoDeployAbility::GetGemParams(float const DeployDistance) const
 {
 	UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
-	if (!ensureMsgf(ASC->HasAttributeSetForAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute()),
-					TEXT("%hs: %s deploys from an ASC without gem attributes"), __FUNCTION__, *GetName()))
-	{
-		return Params;
-	}
-
-	FDeployableDataParams GemParams = Params;
-	GemParams.BlinkDuration *= ASC->GetNumericAttribute(UGeoGemAttributeSet::GetDeployableBlinkMultiplierAttribute());
-	GemParams.LifeDrainMaxDuration /=
-		ASC->GetNumericAttribute(UGeoGemAttributeSet::GetDeployableDrainMultiplierAttribute());
-	GemParams.HealthMultiplier =
-		ASC->GetNumericAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute());
+	FDeployableDataParams GemParams = ApplyGemsToParams(*ASC, Params);
 	if (ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Leverage))
 	{
 		UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
 		float const DistanceRatio = FMath::GetRangePct(GameDataSettings->MinDeployDistance,
 													   GameDataSettings->MaxDeployDistance, DeployDistance);
-		GemParams.HealthMultiplier *= GameDataSettings->LeverageHealthMultiplier.Interpolate(
-			FMath::Clamp(DistanceRatio, 0.f, 1.f));
+		GemParams.HealthMultiplier *=
+			GameDataSettings->LeverageHealthMultiplier.Interpolate(FMath::Clamp(DistanceRatio, 0.f, 1.f));
 	}
 	return GemParams;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+AGeoDeployableBase* UGeoDeployAbility::SpawnDeployableAt(UAbilitySystemComponent& DeployerASC, FVector const& Location,
+														 float const HealthFraction)
+{
+	UGeoDeployAbility const* DeployAbility = GeoASLib::GetGrantedAbility<UGeoDeployAbility>(DeployerASC);
+	FGameplayAbilitySpec const* Spec =
+		DeployAbility ? DeployerASC.FindAbilitySpecFromClass(DeployAbility->GetClass()) : nullptr;
+
+	AGeoDeployableBase* Deployable = nullptr;
+	if (ensureMsgf(Spec, TEXT("%hs: %s holds no deploy ability"), __FUNCTION__,
+				   *DeployerASC.GetOwnerActor()->GetName()))
+	{
+		FAbilityPayload Payload;
+		Payload.SourceOwner = DeployerASC.GetOwnerActor();
+		Payload.SourceAvatar = DeployerASC.GetAvatarActor();
+		Payload.AbilityLevel = Spec->Level;
+		Payload.AbilityTag = GeoASLib::GetAbilityTagFromSpec(*Spec);
+		Payload.Seed = FMath::Rand32();
+
+		FDeployableDataParams SpawnParams = ApplyGemsToParams(DeployerASC, DeployAbility->Params);
+		SpawnParams.HealthMultiplier *= HealthFraction;
+		Deployable =
+			GeoASLib::FullySpawnDeployable(DeployAbility->DeployableActorClass, Payload,
+										   DeployAbility->GetEffectDataArray(), SpawnParams, FTransform(Location));
+	}
+
+	return Deployable;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -198,7 +237,8 @@ FVector UGeoDeployAbility::GetPendingDeployLocation() const
 	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 	FVector const Origin = GetFireOrigin(StoredPayload.SourceAvatar, ASC, StoredPayload.Seed);
 	float const Yaw = GetFireYaw(StoredPayload.SourceAvatar, StoredPayload.Seed);
-	return Origin + FRotator(0.f, Yaw, 0.f).Vector() * DeployDistance
+	return Origin
+		+ FRotator(0.f, Yaw, 0.f).Vector() * DeployDistance
 		* GeoASLib::GetStatValue(ASC, UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(), 1.f);
 }
 

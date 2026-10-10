@@ -140,9 +140,9 @@ public:
 	static float RollCritMultiplier(UAbilitySystemComponent const* SourceASC);
 
 	/**
-	 * The ASC whose stats (multipliers, reductions, gems) ASC fights with: its owner actor's. A deployable only owns its
-	 * health and shield, so this is its deployer's ASC, read live; a character's is its own ASC. Null when the owner
-	 * actor is gone or has no ASC.
+	 * The ASC whose stats (multipliers, reductions, gems) ASC fights with: its owner actor's. A deployable only owns
+	 * its health and shield, so this is its deployer's ASC, read live; a character's is its own ASC. Null when the
+	 * owner actor is gone or has no ASC.
 	 */
 	static UAbilitySystemComponent const* GetStatAsc(UAbilitySystemComponent const* ASC);
 
@@ -156,7 +156,11 @@ public:
 
 	/** What ASC's gems scale the FireDelay of an ability carrying AbilityTags by: one over ReloadSpeedMultiplier for
 	 * the Ability.Type.Reload ability, WindUpMultiplier for any other, 1 for an ASC without gems. */
-	static float GetGemFireDelayMultiplier(UAbilitySystemComponent const* ASC, FGameplayTagContainer const& AbilityTags);
+	static float GetGemFireDelayMultiplier(UAbilitySystemComponent const* ASC,
+										   FGameplayTagContainer const& AbilityTags);
+
+	/** The catalog's MagnitudePerGem of the gem GemId, for a Core whose rule reads its own number (Surplus). */
+	static float GetGemMagnitude(FName GemId);
 
 	/** How far a beam or ray cast by ASC reaches: GeneralSpellDistance scaled by ASC's SpellDistanceMultiplier. */
 	static float GetSpellDistance(UAbilitySystemComponent const* ASC);

@@ -3,7 +3,7 @@
 #include "AbilitySystem/Abilities/Common/GeoDashAbility.h"
 
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
-#include "AbilitySystemComponent.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
 
@@ -20,17 +20,23 @@ void UGeoDashAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 
 	UGeoCharacterMovementComponent* MovementComponent =
 		Cast<UGeoCharacterMovementComponent>(ActorInfo->MovementComponent.Get());
-	if (!ensureMsgf(IsValid(MovementComponent), TEXT("%hs: avatar has no UGeoCharacterMovementComponent"),
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	if (!ensureMsgf(IsValid(MovementComponent) && ASC,
+					TEXT("%hs: avatar has no UGeoCharacterMovementComponent or no UGeoAbilitySystemComponent"),
 					__FUNCTION__))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
 
-	FVector const DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
-	float const GemDashDistance = DashDistance
-		* ActorInfo->AbilitySystemComponent->GetNumericAttribute(UGeoGemAttributeSet::GetDashDistanceMultiplierAttribute());
+	FVector const DashStart = ActorInfo->AvatarActor->GetActorLocation();
+	FVector DashDirection = FRotator(0.f, StoredPayload.Yaw, 0.f).Vector();
+	float GemDashDistance =
+		DashDistance * ASC->GetNumericAttribute(UGeoGemAttributeSet::GetDashDistanceMultiplierAttribute());
+	bool const bHasDirection = ActorInfo->AvatarActor->GetVelocity().SizeSquared() >= SMALL_NUMBER;
+	ASC->OnDashAiming.Broadcast(DashStart, bHasDirection, DashDirection, GemDashDistance);
 	MovementComponent->RequestDash(DashDirection * GemDashDistance / DashDuration, DashDuration);
+	ASC->OnDashStarted.Broadcast(DashStart);
 	EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
 }
 

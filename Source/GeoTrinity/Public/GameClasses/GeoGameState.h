@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
+#include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
 #include "Tool/GeoDifficulty.h"
 
@@ -11,11 +12,15 @@
 
 class AEnemyCharacter;
 class APlayableCharacter;
+class UAbilitySystemComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, AEnemyCharacter*, Enemy);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMatchStateChanged, FName, MatchState, FName, PreviousMatchState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWipe, float, DeathTime);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDifficultyChanged);
+DECLARE_MULTICAST_DELEGATE_FourParams(FOnIncomingDamage, UAbilitySystemComponent& /*VictimASC*/,
+									  FGameplayEffectContextHandle const& /*DamageContext*/, float /*Damage*/,
+									  float& /*SparedDamage*/);
 
 /**
  * Replicated game state for GeoTrinity. It runs the match lifecycle (MatchState: WaitingToStart until a boss is
@@ -97,6 +102,11 @@ public:
 
 	/** Server. Broadcast the moment every fight player is down — DeathTime seconds before the group respawns. */
 	FOnWipe OnWipe;
+
+	/** Server. A hit is about to take Damage off VictimASC's shield and health, once a sacrifice did not redirect it. A
+	 *  listener that takes part of it on itself adds that part to SparedDamage; the victim is spared that much, never
+	 *  more than Damage. */
+	FOnIncomingDamage OnIncomingDamage;
 
 	/** Broadcast on every machine when the difficulty changes. AGeoArena respawns its boss off it, the pads repaint. */
 	FOnDifficultyChanged OnDifficultyChanged;

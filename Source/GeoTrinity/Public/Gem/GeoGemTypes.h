@@ -10,6 +10,8 @@
 
 #include "GeoGemTypes.generated.h"
 
+class UGeoCorePassiveAbility;
+
 /** A gem's whole identity: it only fits a socket of its own tier. */
 UENUM(BlueprintType)
 enum class EGeoGemTier : uint8
@@ -27,7 +29,9 @@ enum class EGeoGemOperation : uint8
 	/** Added to the attribute's base, for attributes that start at 0 (DamageReduction) or are already a multiplier. */
 	Add,
 	/** Scales the attribute by 1 + the summed magnitude, for flat values (MaxHealth, MaxAmmo). */
-	Percent
+	Percent,
+	/** Lands like Add, but the magnitude is a count, not a fraction: the menus show 1 as +1, not +100% (Surplus). */
+	Flat
 };
 
 /** One gem type, as listed in UGeoGemCatalog under its tier. */
@@ -62,12 +66,17 @@ struct FGeoGemInfo
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	FGameplayTag GrantedTag;
 
-	/** What one slotted copy adds, as a fraction: 0.002 is +0.2%. Slotted copies sum. Also what the menus show for a
-	 * gem whose effect is not a stat yet; 0 on a Core, whose Effect is its rule. */
+	/** Passive ability given to the player while the gem is slotted, which carries the Core's rule and its tunables; the
+	 *  abilities page lists it from the catalog's AbilityInfo. Empty on a stat gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	TSubclassOf<UGeoCorePassiveAbility> GrantedAbility;
+
+	/** What one slotted copy adds, as a fraction: 0.002 is +0.2%; a count under the Flat operation. Slotted copies sum.
+	 * Also what the menus show for a gem whose effect is not a stat; 0 on a Core whose Effect is its whole rule. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	float MagnitudePerGem = 0.f;
 
-	/** What Count slotted copies add as the menus show it, "+0.67%"; empty for a gem with no magnitude (a Core). */
+	/** What Count slotted copies add as the menus show it, "+0.67%", or "+1" under Flat; empty for a gem with no magnitude (a Core). */
 	GEOTRINITY_API FText GetMagnitudeText(int32 Count = 1) const;
 
 	/** The effect of Count slotted copies as the menus show it: "Damage +0.67%", or a Core's rule alone. */

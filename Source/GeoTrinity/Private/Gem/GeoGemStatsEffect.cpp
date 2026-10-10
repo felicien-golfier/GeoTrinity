@@ -84,6 +84,6 @@ bool UGeoGemStatsEffect::Supports(FGeoGemInfo const& Gem)
 
 FName UGeoGemStatsEffect::GetSetByCallerName(FGameplayAttribute const& Attribute, EGeoGemOperation const Operation)
 {
-	TCHAR const* OperationName = Operation == EGeoGemOperation::Add ? TEXT("Add") : TEXT("Percent");
+	TCHAR const* OperationName = Operation == EGeoGemOperation::Percent ? TEXT("Percent") : TEXT("Add");
 	return *FString::Printf(TEXT("Gem.%s.%s"), *Attribute.GetName(), OperationName);
 }

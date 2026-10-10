@@ -11,6 +11,7 @@
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/GeoCharacter.h"
+#include "GameClasses/GeoGameState.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
@@ -86,6 +87,14 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 																DamageToApply))
 		{
 			return;
+		}
+
+		if (AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>())
+		{
+			float SparedDamage = 0.f;
+			GameState->OnIncomingDamage.Broadcast(Data.Target, Data.EffectSpec.GetEffectContext(), DamageToApply,
+												  SparedDamage);
+			DamageToApply -= FMath::Min(SparedDamage, DamageToApply);
 		}
 
 		float const ShieldAbsorbed = FMath::Min(GetShield(), DamageToApply);

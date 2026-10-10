@@ -16,8 +16,8 @@
  * Deployment is gated by a charge/stack system rather than the live-deployable count: each activation spends one
  * charge and activation is blocked only at zero charges. The charge pool is the stack count of the ability's Cooldown
  * GE — spending applies one stack, and the GE's own RemoveSingleStackAndRefreshDuration expiry hands one back per
- * duration, so a single timer refills the pool sequentially. The pool size is MaxCharges, plus SurplusBonusCharges
- * with the Surplus Core; the GE's own StackLimitCount must stay unlimited (0) or above it.
+ * duration, so a single timer refills the pool sequentially. The pool size is MaxCharges, plus the Surplus
+ * Core's magnitude while it is slotted; the GE's own StackLimitCount must stay unlimited (0) or above it.
  */
 UCLASS()
 class GEOTRINITY_API UGeoDeployAbility : public UGeoProjectileAbility
@@ -35,7 +35,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	int32 GetCurrentStacks() const;
 
-	/** Maximum number of charges this ability can hold: MaxCharges, plus SurplusBonusCharges with the Surplus Core. */
+	/** Maximum number of charges this ability can hold: MaxCharges, plus the Surplus Core's magnitude with it slotted. */
 	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	int32 GetMaxStacks() const;
 
@@ -49,6 +49,14 @@ public:
 	 * AGeoDeployTargetCue, which receives this ability instance as its SourceObject. */
 	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	FVector GetPendingDeployLocation() const;
+
+	/**
+	 * Server: spawns the deployable of the deploy ability DeployerASC holds at Location, owned by DeployerASC's owner,
+	 * with the deployer's gems on it, without Leverage, which needs a throw. Spends no charge and passes no spawner
+	 * projectile. HealthFraction scales its health on top. Null when DeployerASC holds no deploy ability.
+	 */
+	static AGeoDeployableBase* SpawnDeployableAt(UAbilitySystemComponent& DeployerASC, FVector const& Location,
+												 float HealthFraction = 1.f);
 
 protected:
 	/** Binds the cooldown-tag event that plays the charge-refilled sound. */
@@ -99,8 +107,11 @@ private:
 	 *  the Reach gems' SpellDistanceMultiplier, which the spawner projectile applies to its flight like any shot's. */
 	float GetChargedDeployDistance() const;
 
-	/** Params as the deployer's gems change them: blink time, drain, and health, which Leverage also scales with
-	 *  DeployDistance. */
+	/** BaseParams as ASC's gems change them: blink time, drain and health. */
+	static FDeployableDataParams ApplyGemsToParams(UAbilitySystemComponent const& ASC,
+												   FDeployableDataParams const& BaseParams);
+
+	/** Params as the deployer's gems change them, and Leverage with DeployDistance. */
 	FDeployableDataParams GetGemParams(float DeployDistance) const;
 
 	/** Spawns the deployable spawner projectile and, on the deployer's machine, the DeployTargetCue that marks its

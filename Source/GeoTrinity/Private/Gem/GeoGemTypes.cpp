@@ -11,6 +11,11 @@ FText FGeoGemInfo::GetMagnitudeText(int32 const Count) const
 
 	FNumberFormattingOptions Options;
 	Options.SetAlwaysSign(true).SetMaximumFractionalDigits(2);
+	if (Operation == EGeoGemOperation::Flat)
+	{
+		return FText::AsNumber(MagnitudePerGem * Count, &Options);
+	}
+
 	return FText::Format(INVTEXT("{0}%"), FText::AsNumber(MagnitudePerGem * Count * 100.f, &Options));
 }
 

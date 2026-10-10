@@ -223,6 +223,7 @@ TArray<UGeoAbilityCardWidget*> UGeoAbilityCardWidget::CreateClassCards(UUserWidg
 		}
 
 		int32 AbilityLevel = 1;
+		bool bGranted = false;
 		if (ASC)
 		{
 			for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
@@ -230,14 +231,18 @@ TArray<UGeoAbilityCardWidget*> UGeoAbilityCardWidget::CreateClassCards(UUserWidg
 				if (GeoASLib::GetAbilityTagFromSpec(Spec) == Info.AbilityTag)
 				{
 					AbilityLevel = Spec.Level;
+					bGranted = true;
 					break;
 				}
 			}
 		}
 
-		UGeoAbilityCardWidget* Card = CreateWidget<UGeoAbilityCardWidget>(&Owner, CardClass);
-		Card->SetAbility(Info, AbilityLevel, ClassColor);
-		Cards.Add(Card);
+		if (Info.bGiveAtStartup || bGranted)
+		{
+			UGeoAbilityCardWidget* Card = CreateWidget<UGeoAbilityCardWidget>(&Owner, CardClass);
+			Card->SetAbility(Info, AbilityLevel, ClassColor);
+			Cards.Add(Card);
+		}
 	}
 	return Cards;
 }

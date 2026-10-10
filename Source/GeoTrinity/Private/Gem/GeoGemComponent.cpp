@@ -2,6 +2,7 @@
 
 #include "Gem/GeoGemComponent.h"
 
+#include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Engine/LocalPlayer.h"
@@ -55,6 +56,23 @@ void UGeoGemComponent::ApplyGems()
 	FGameplayEffectSpecHandle const SpecHandle =
 		UGeoGemStatsEffect::MakeSpec(*ASC, *Catalog, Loadouts.FindRef(PlayerState->GetPlayerClass()));
 	StatsEffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+
+	for (FGameplayAbilitySpecHandle const& Handle : GrantedAbilityHandles)
+	{
+		ASC->ClearAbility(Handle);
+	}
+	GrantedAbilityHandles.Reset();
+
+	for (FName const GemId : Loadouts.FindRef(PlayerState->GetPlayerClass()).Sockets)
+	{
+		FGeoGemInfo const* Gem = Catalog->Find(GemId);
+		if (Gem && Gem->GrantedAbility)
+		{
+			FGameplayAbilitySpecHandle const Handle = ASC->GiveAbility(FGameplayAbilitySpec(Gem->GrantedAbility, 1));
+			ASC->TryActivateAbility(Handle);
+			GrantedAbilityHandles.Add(Handle);
+		}
+	}
 }
 
 void UGeoGemComponent::GrantReward(FGeoGemReward const& Reward)

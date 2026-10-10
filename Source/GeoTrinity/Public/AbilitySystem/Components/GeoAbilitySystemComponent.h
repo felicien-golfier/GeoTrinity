@@ -15,6 +15,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageDealt, float, DamageAmount
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAbilityHit, FGameplayTag, AbilityTag, AActor*, Instigator, AActor*,
 											   HitActor);
 
+class AGeoDeployableBase;
+
+DECLARE_MULTICAST_DELEGATE_FourParams(FOnDashAiming, FVector const& /*Start*/, bool /*bHasDirection*/,
+									  FVector& /*Direction*/, float& /*Distance*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnDashStarted, FVector const& /*Start*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnDeployableEvent, AGeoDeployableBase& /*Deployable*/);
+
 class UGeoGameplayAbility;
 struct FGeoGameplayEffectContext;
 
@@ -164,6 +171,20 @@ public:
 	 */
 	UPROPERTY(BlueprintAssignable)
 	FOnAbilityHit OnAbilityHit;
+
+	/** Fires as a dash from Start is aimed, before it starts, on the server and the predicting client: a listener may
+	 *  turn Direction (unit, flat) and change Distance. bHasDirection is false for a dash from standing still. */
+	FOnDashAiming OnDashAiming;
+
+	/** Fires once a dash from Start is under way, on the server and the predicting client. */
+	FOnDashStarted OnDashStarted;
+
+	/** Server: a deployable this ASC's owner threw just landed. A deployable spawned any other way never fires it. */
+	FOnDeployableEvent OnDeployableLanded;
+
+	/** Server: a deployable of this ASC's owner that a hit destroyed, not its life drain, reaches the end of its blink. A
+	 *  recall never fires it. */
+	FOnDeployableEvent OnDeployableDestroyedByDamage;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;

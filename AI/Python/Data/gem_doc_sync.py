@@ -19,7 +19,10 @@ CSV_PATH = r"C:\GeoTrinity\Data\gems.csv"
 STAMP_PATH = r"C:\GeoTrinity\Data\gems.sync.json"
 DOC_URL = "https://claude.ai/artifact/SQYwGjtE7bspcCA5KKV67K"
 
-CSV_COLUMNS = ["Tier", "Id", "Name", "Attribute", "Operation", "MagnitudePerGem", "Effect", "Color", "GrantedTag"]
+CSV_COLUMNS = ["Tier", "Id", "Name", "Attribute", "Operation", "MagnitudePerGem", "Effect", "Color", "GrantedTag",
+               "GrantedAbility"]
+# The CSV columns the doc holds. GrantedAbility (the Core passive's class) is the editor's alone: a doc import keeps it.
+DOC_SYNCED_COLUMNS = CSV_COLUMNS[:-1]
 DOC_COLUMNS = ["Tier", "Id", "Gem", "Effect", "Per gem", "Max per class", "Attribute", "Op", "Colour", "Tag"]
 # Sockets of each tier a class has at level 20, from GeoGem::GetSockets(); a Core counts once, every Core being unique.
 SOCKETS_PER_CLASS = {"Chip": 30, "Cut": 15, "Prism": 9, "Core": 1}
@@ -56,6 +59,21 @@ def parse_percent(text):
     return float(text.replace(MINUS, "-").replace("%", "").replace("+", "")) / 100
 
 
+def format_per_gem(magnitude, operation, decimals=4):
+    """The magnitude as the menus show it: a Flat gem's is a count ("+1"), any other's a percentage."""
+    if operation != "Flat" or magnitude == 0:
+        return format_percent(magnitude, decimals)
+    text = "{:g}".format(abs(magnitude))
+    return ("+" if magnitude > 0 else MINUS) + text
+
+
+def parse_per_gem(text, operation):
+    if operation != "Flat":
+        return parse_percent(text)
+    text = text.strip()
+    return 0.0 if text in ("", EMPTY) else float(text.replace(MINUS, "-").replace("+", ""))
+
+
 def format_magnitude(fraction):
     """The magnitude as the editor's CSV export writes it (C's %g), so a doc-made CSV never gets rewritten."""
     return "{:g}".format(float("{:.6g}".format(fraction)))
@@ -65,7 +83,7 @@ def max_per_class(row):
     magnitude = float(row["MagnitudePerGem"])
     if magnitude == 0:
         return "Rule change" if row["Tier"] == "Core" else EMPTY
-    return format_percent(magnitude * SOCKETS_PER_CLASS[row["Tier"]], 1)
+    return format_per_gem(magnitude * SOCKETS_PER_CLASS[row["Tier"]], row["Operation"], 1)
 
 
 def doc_cell(value):
@@ -75,8 +93,9 @@ def doc_cell(value):
 def doc_table():
     lines = ["| " + " | ".join(DOC_COLUMNS) + " |", "|" + " --- |" * len(DOC_COLUMNS)]
     for row in csv_rows():
-        cells = [row["Tier"], row["Id"], row["Name"], row["Effect"], format_percent(float(row["MagnitudePerGem"])),
-                 max_per_class(row), row["Attribute"], row["Operation"], row["Color"], row["GrantedTag"]]
+        cells = [row["Tier"], row["Id"], row["Name"], row["Effect"],
+                 format_per_gem(float(row["MagnitudePerGem"]), row["Operation"]), max_per_class(row),
+                 row["Attribute"], row["Operation"], row["Color"], row["GrantedTag"]]
         lines.append("| " + " | ".join(doc_cell(cell) for cell in cells) + " |")
     return "\n".join(lines)
 
@@ -101,9 +120,9 @@ def parse_doc_table(path):
             errors.append("row {} ({}): no tier named '{}'".format(number, doc["Id"], doc["Tier"]))
             continue
         try:
-            magnitude = parse_percent(doc["Per gem"])
+            magnitude = parse_per_gem(doc["Per gem"], doc["Op"])
         except ValueError:
-            errors.append("row {} ({}): '{}' is not a percentage".format(number, doc["Id"], doc["Per gem"]))
+            errors.append("row {} ({}): '{}' is not a number".format(number, doc["Id"], doc["Per gem"]))
             continue
         rows.append({"Tier": tier, "Id": doc["Id"], "Name": doc["Gem"], "Attribute": doc["Attribute"],
                      "Operation": doc["Op"], "MagnitudePerGem": format_magnitude(magnitude), "Effect": doc["Effect"],
@@ -123,7 +142,7 @@ def diff(path):
         elif gem_id not in game:
             lines.append("{}: only in the doc".format(gem_id))
         else:
-            for column in CSV_COLUMNS:
+            for column in DOC_SYNCED_COLUMNS:
                 if doc[gem_id][column] != game[gem_id][column]:
                     lines.append("{} {}: CSV '{}' / doc '{}'".format(gem_id, column, game[gem_id][column],
                                                                      doc[gem_id][column]))
@@ -134,6 +153,9 @@ def diff(path):
 
 def to_csv(path):
     rows = parse_doc_table(path)
+    granted_abilities = {row["Id"]: row["GrantedAbility"] for row in csv_rows()}
+    for row in rows:
+        row["GrantedAbility"] = granted_abilities.get(row["Id"], "")
     out = io.StringIO()
     writer = csv.DictWriter(out, fieldnames=CSV_COLUMNS, lineterminator="\n")
     writer.writeheader()

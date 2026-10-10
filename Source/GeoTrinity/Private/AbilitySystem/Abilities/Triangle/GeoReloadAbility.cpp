@@ -61,12 +61,12 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		return;
 	}
 
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
 
 	float const CurrentAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetAmmoAttribute());
-	float const MaxAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetMaxAmmoAttribute());
-	float const MissingAmmo = MaxAmmo - CurrentAmmo;
-	float const PowerScale = MaxAmmo > 0.f ? MissingAmmo / MaxAmmo : 0.f;
+	float const DefaultMaxAmmo = ASC->GetDefaultAttributeValue(UCharacterAttributeSet::GetMaxAmmoAttribute());
+	float const CurrentMaxAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetMaxAmmoAttribute());
+	float const PowerScale = CurrentMaxAmmo > 0.f ? (CurrentMaxAmmo - CurrentAmmo) / DefaultMaxAmmo : 0.f;
 
 	ensureMsgf(AmmoRestoreEffect, TEXT("GeoTriangleReloadAbility: AmmoRestoreEffect is not set!"));
 	if (AmmoRestoreEffect)

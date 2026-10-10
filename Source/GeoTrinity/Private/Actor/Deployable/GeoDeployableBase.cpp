@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
@@ -213,8 +214,10 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 	if (bUseRegularDrain && DrainMagnitudePerSecond > 0.f && bActive && !IsBlinking() && GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+		bApplyingDrain = true;
 		UGeoAbilitySystemLibrary::ApplySingleEffectData(DrainEffectData, ASC, ASC, GetData()->Level, GetData()->Seed,
 														GetData()->AbilityTag);
+		bApplyingDrain = false;
 	}
 }
 
@@ -526,6 +529,7 @@ void AGeoDeployableBase::OnHealthChanged_Implementation(float NewValue)
 {
 	if (NewValue <= 0.f && bActive && !IsBlinking())
 	{
+		bDestroyedByDamage = !bApplyingDrain;
 		if (GetData()->Params.BlinkDuration)
 		{
 			StartBlinking();
@@ -571,6 +575,12 @@ void AGeoDeployableBase::TryRecallOrExpire()
 {
 	if (bActive)
 	{
+		UGeoAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
+		if (bDestroyedByDamage && OwnerASC && GeoLib::IsServer(GetWorld()))
+		{
+			OwnerASC->OnDeployableDestroyedByDamage.Broadcast(*this);
+		}
+
 		if (bAutoRecallAtEndLife)
 		{
 			Recall();

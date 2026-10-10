@@ -144,3 +144,25 @@ Tutorial zone demonstration.
 [Ability.Spell.TutorialLethal]
 Tutorial zone demonstration.
 
+[Ability.Spell.Bond]
+You absorb {SharedDamageFraction:%} of the damage every other living ally takes, with your own damage reduction applied. You can die from it. A shared hit is never shared again.
+| SHARE | {SharedDamageFraction:%}
+
+[Ability.Spell.Relay]
+Your dash snaps toward your nearest deployable within {SnapHalfAngle} degrees of the dash direction, and stops at it, or at {MaxRangeMultiplier} times the dash range if it is further. Dashing with no direction heads for your nearest deployable.
+| ANGLE | {SnapHalfAngle}
+| RANGE | x{MaxRangeMultiplier}
+
+[Ability.Spell.Wake]
+Your dash leaves your deployable where it started, at most once every {CooldownSeconds} seconds. It spends no charge.
+| COOLDOWN | {CooldownSeconds}s
+
+[Ability.Spell.Split]
+A deployable you throw places a copy of itself next to it, with {CopyHealthFraction:%} of its health, at most once every {CooldownSeconds} seconds. A copy never splits again.
+| COOLDOWN | {CooldownSeconds}s
+| COPY HEALTH | {CopyHealthFraction:%}
+
+[Ability.Spell.Kinship]
+When one of your deployables is destroyed, a random ally deploys their own where it stood, at most once every {CooldownSeconds} seconds. It uses their gems and spends no charge.
+| COOLDOWN | {CooldownSeconds}s
+

@@ -21,6 +21,7 @@
 #include "Curves/CurveFloat.h"
 #include "EngineUtils.h"
 #include "GameplayEffectTypes.h"
+#include "Gem/GeoGemCatalog.h"
 #include "GenericTeamAgentInterface.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
@@ -172,6 +173,18 @@ float UGeoAbilitySystemLibrary::GetGemFireDelayMultiplier(UAbilitySystemComponen
 	return AbilityTags.HasTagExact(FGeoGameplayTags::Get().Ability_Type_Reload)
 		? 1.f / GetStatValue(ASC, UGeoGemAttributeSet::GetReloadSpeedMultiplierAttribute(), 1.f)
 		: GetStatValue(ASC, UGeoGemAttributeSet::GetWindUpMultiplierAttribute(), 1.f);
+}
+
+float UGeoAbilitySystemLibrary::GetGemMagnitude(FName const GemId)
+{
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	FGeoGemInfo const* GemInfo = Catalog ? Catalog->Find(GemId) : nullptr;
+	if (!ensureMsgf(GemInfo, TEXT("%hs: the gem catalog has no gem %s"), __FUNCTION__, *GemId.ToString()))
+	{
+		return 0.f;
+	}
+
+	return GemInfo->MagnitudePerGem;
 }
 
 float UGeoAbilitySystemLibrary::GetSpellDistance(UAbilitySystemComponent const* ASC)

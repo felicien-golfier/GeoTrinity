@@ -2,7 +2,9 @@
 
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/Deployable/GeoDeployableBase.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void ADeployableSpawnerProjectile::EndProjectileLife()
@@ -19,5 +21,11 @@ void ADeployableSpawnerProjectile::SpawnDeployableActor()
 		return;
 	}
 
-	GeoASLib::FullySpawnDeployable(DeployableActorClass, Payload, EffectDataArray, Params, GetActorTransform());
+	AGeoDeployableBase* Deployable =
+		GeoASLib::FullySpawnDeployable(DeployableActorClass, Payload, EffectDataArray, Params, GetActorTransform());
+	UGeoAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(Payload.SourceOwner);
+	if (ensureMsgf(IsValid(Deployable), TEXT("%hs: invalid Deployable"), __FUNCTION__) && OwnerASC)
+	{
+		OwnerASC->OnDeployableLanded.Broadcast(*Deployable);
+	}
 }

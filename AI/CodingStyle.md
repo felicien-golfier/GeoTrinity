@@ -111,6 +111,13 @@ local-player-only bindings before `AddDynamic`.
   `UGeoAbilitySystemComponent::GetDefaultAttributeValue`, so gems and multipliers (`HealthMultiplier` on deployables)
   stay a separate layer and a pumped target never changes the ability's own rules. Read the live attribute only for
   the target's current state: is it full, how much can it actually lose, what is left to drain.
+- **An ability reacts to an event through a delegate, never through a call planted in someone else's code.** The code
+  where the event happens broadcasts a delegate (on the ASC, or another hub its listeners can reach) and never names
+  the abilities that react; a passive binds in its activation and unbinds when it ends. An ability that needs
+  information from another queries it; it never inserts its own logic into the other's code. The one exception is
+  abilities built as one mechanic, such as the Martyr's Wrath mark and its beam.
+- **A gem's values live on the gem, never in `UGameDataSettings`.** One number is its `MagnitudePerGem` in the catalog
+  (`Data/gems.csv`); a Core's other tunables sit on its passive ability (`FGeoGemInfo::GrantedAbility`).
 - New projectiles extend `AGeoPooledProjectile`, not `AGeoProjectile`, unless stated otherwise.
 - VFX go through Gameplay Cues — never a multicast RPC or multicast delegate. Clients have the local context.
 

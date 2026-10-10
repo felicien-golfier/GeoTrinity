@@ -333,6 +333,11 @@ protected:
 
 	float TimeBeforeDestroyAtExpire = 3.f;
 
+	/** True while Tick applies the life drain, so a health drop to zero then is told from a hit's. */
+	bool bApplyingDrain = false;
+	/** True once a hit, not the life drain, took the health to zero. */
+	bool bDestroyedByDamage = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag", AllowPrivateAccess = true))
 	int32 ExplodeAttitude = TeamAttitudeMask::HostileOrNeutral;

@@ -10,6 +10,7 @@
 #include "Framework/Notifications/NotificationManager.h"
 #include "GameClasses/GeoPlayerState.h"
 #include "Gem/GeoGemCatalog.h"
+#include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
 #include "Gem/GeoGemComponent.h"
 #include "Gem/GeoGemStatsEffect.h"
 #include "IDirectoryWatcher.h"
@@ -136,7 +137,8 @@ FString UGeoGemCsvSync::ToCsv(UGeoGemCatalog const& Catalog)
 				FString::Printf(TEXT("%g"), Gem.MagnitudePerGem),
 				Gem.Effect.ToString(),
 				StaticEnum<EGeoColor>()->GetNameStringByValue(static_cast<int64>(Gem.Color.Color)),
-				Gem.GrantedTag.IsValid() ? Gem.GrantedTag.ToString() : FString()};
+				Gem.GrantedTag.IsValid() ? Gem.GrantedTag.ToString() : FString(),
+				Gem.GrantedAbility ? Gem.GrantedAbility->GetPathName() : FString()};
 			Csv += FString::JoinBy(Cells, TEXT(","), &UGeoGemCsvSync::ToCsvCell) + TEXT("\n");
 		}
 	}
@@ -186,6 +188,7 @@ TOptional<TMap<EGeoGemTier, FGeoGemList>> UGeoGemCsvSync::ParseCsv(FString const
 			Gem.Attribute = FindAttribute(Cells[3]);
 			Gem.Effect = FText::ChangeKey(TEXT("GeoGem"), Cells[1] + TEXT("_Effect"), FText::FromString(Cells[6]));
 			Gem.GrantedTag = FGameplayTag::RequestGameplayTag(FName(Cells[8]), false);
+			Gem.GrantedAbility = Cells[9].IsEmpty() ? nullptr : LoadClass<UGeoCorePassiveAbility>(nullptr, *Cells[9]);
 			bool const bMagnitudeParsed = FDefaultValueHelper::ParseFloat(Cells[5], Gem.MagnitudePerGem);
 
 			TArray<FString> RowErrors;
@@ -222,6 +225,11 @@ TOptional<TMap<EGeoGemTier, FGeoGemList>> UGeoGemCsvSync::ParseCsv(FString const
 			if (!Cells[8].IsEmpty() && !Gem.GrantedTag.IsValid())
 			{
 				RowErrors.Add(FString::Printf(TEXT("no gameplay tag is named \"%s\""), *Cells[8]));
+			}
+
+			if (!Cells[9].IsEmpty() && !Gem.GrantedAbility)
+			{
+				RowErrors.Add(FString::Printf(TEXT("no Core passive ability class is named \"%s\""), *Cells[9]));
 			}
 
 			if (RowErrors.IsEmpty())

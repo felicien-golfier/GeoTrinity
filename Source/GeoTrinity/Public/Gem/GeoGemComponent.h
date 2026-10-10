@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ActiveGameplayEffectHandle.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "Characters/PlayerClassTypes.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
@@ -29,8 +30,8 @@ public:
 	/** Owning client: sends every class's loadout in Profile to the server. */
 	void SendLoadoutsToServer(UGeoGemProfileSave const& Profile);
 
-	/** Server: replaces the gem stats on the owner's ASC with those of the current class's loadout. Called by
-	 *  APlayableCharacter::ResetAttributes, which refills Health and Ammo after it. */
+	/** Server: replaces the gem stats and the gem passive abilities on the owner's ASC with those of the current class's
+	 *  loadout. Called by APlayableCharacter::ResetAttributes, which refills Health and Ammo after it. */
 	void ApplyGems();
 
 	/** Server: hands Reward to the owning client, whose profile keeps the gems and the class XP. */
@@ -50,4 +51,7 @@ private:
 	TMap<EPlayerClass, FGeoGemLoadout> Loadouts;
 
 	FActiveGameplayEffectHandle StatsEffectHandle;
+
+	/** The passive abilities ApplyGems gave, to take back before it gives the loadout's. */
+	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
 };
