@@ -30,6 +30,7 @@ class GEOTRINITYUI_API UGeoGemForgeWidget : public UGeoGemPageWidget
 	GENERATED_BODY()
 
 public:
+	/** Refreshes the Forge page from the current gem profile: tier break-down summary, gem list and picked gem detail. */
 	virtual void Refresh() override;
 
 protected:

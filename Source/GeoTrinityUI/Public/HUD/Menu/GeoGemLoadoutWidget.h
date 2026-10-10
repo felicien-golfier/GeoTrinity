@@ -84,6 +84,7 @@ class GEOTRINITYUI_API UGeoGemLoadoutWidget : public UGeoGemPageWidget
 	GENERATED_BODY()
 
 public:
+	/** Refreshes the Loadout page from the current gem profile: socket states, stack counts, selection detail and totals. */
 	virtual void Refresh() override;
 
 	/** The box the class tabs are built in, which lives outside the page, in the Gems menu's header. */

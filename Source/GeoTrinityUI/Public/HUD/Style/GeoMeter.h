@@ -21,15 +21,19 @@ class GEOTRINITYUI_API UGeoMeter : public UWidget
 	GENERATED_BODY()
 
 public:
+	/** Sets the fill ratio, where 0 is empty and 1 is full. */
 	UFUNCTION(BlueprintCallable, Category = "GeoMeter")
 	void SetFill(float InFill);
 
+	/** Sets the overhang ratio drawn behind the fill — the shield over max health. Range: [0, 1]. */
 	UFUNCTION(BlueprintCallable, Category = "GeoMeter")
 	void SetOverhang(float InOverhang);
 
+	/** Multiplies the style's fill and outline glow colours, so one style fills in each class's colour. */
 	UFUNCTION(BlueprintCallable, Category = "GeoMeter")
 	void SetFillTint(FLinearColor const& InFillTint);
 
+	/** Switches to InMeterStyle; null falls back to no style. */
 	UFUNCTION(BlueprintCallable, Category = "GeoMeter")
 	void SetMeterStyle(UGeoMeterStyle* InMeterStyle);
 
@@ -37,10 +41,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoMeter")
 	void SetRingShape(int32 InSides, float InRotation);
 
+	/** Activates the ready look: the ring pulses and its orbiters travel around it, as the style's Ready values say. */
 	UFUNCTION(BlueprintCallable, Category = "GeoMeter")
 	void SetReady(bool bInReady);
 
+	/** Pushes MeterStyle, Fill, Overhang, FillTint, RingSides, RingRotation and bReady to the underlying SGeoMeter. */
 	virtual void SynchronizeProperties() override;
+	/** Releases the SGeoMeter Slate widget. */
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 #if WITH_EDITOR

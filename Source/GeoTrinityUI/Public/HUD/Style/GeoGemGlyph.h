@@ -38,11 +38,14 @@ public:
 	/** An open socket, or a locked one showing InUnlockLevel. */
 	void SetSocket(EGeoGemTier InTier, bool bLocked, int32 InUnlockLevel);
 
+	/** Turns the highlight on or off: highlights the selected socket and sockets the selected gem can fill. */
 	void SetHighlighted(bool bInHighlighted);
 
 	void SetSize(float InSize);
 
+	/** Pushes Tier, State, Color, UnlockLevel, bHighlighted and Size to the underlying SGeoGemGlyph. */
 	virtual void SynchronizeProperties() override;
+	/** Releases the SGeoGemGlyph Slate widget. */
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 #if WITH_EDITOR

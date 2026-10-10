@@ -28,6 +28,7 @@ class UGeoGemCsvSync : public UEditorSubsystem
 public:
 	/** Watches the catalog's saves and edits and the CSV's folder, then imports the CSV, or writes it when missing. */
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	/** Unregisters all delegate handles and stops watching the catalog asset and CSV folder. */
 	virtual void Deinitialize() override;
 
 	/**

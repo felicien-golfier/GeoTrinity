@@ -155,7 +155,7 @@ public:
 	/** Returns health ratio (0..1). Returns 1 if no duration limit. */
 	UFUNCTION(BlueprintPure)
 	virtual float GetDrainDurationRatio() const;
-	/** Starts the pre-expiry blink timer for the given duration in seconds. */
+	/** Starts the pre-expiry blink timer; the blink duration comes from the deployable's Params.BlinkDuration. */
 	virtual void StartBlinking();
 
 	/**
