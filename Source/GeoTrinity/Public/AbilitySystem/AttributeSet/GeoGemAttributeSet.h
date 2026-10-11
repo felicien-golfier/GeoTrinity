@@ -34,6 +34,7 @@ public:
 	FGameplayAttributeData CritDamage;
 	ATTRIBUTE_ACCESSORS(UGeoGemAttributeSet, CritDamage)
 
+	/** Scales how far the player's dash travels. */
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem", ReplicatedUsing = OnRep_DashDistanceMultiplier)
 	FGameplayAttributeData DashDistanceMultiplier;
 	ATTRIBUTE_ACCESSORS(UGeoGemAttributeSet, DashDistanceMultiplier)
@@ -43,6 +44,7 @@ public:
 	FGameplayAttributeData DeployableBlinkMultiplier;
 	ATTRIBUTE_ACCESSORS(UGeoGemAttributeSet, DeployableBlinkMultiplier)
 
+	/** Scales the health of the player's deployables on deploy. */
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem", ReplicatedUsing = OnRep_DeployableHealthMultiplier)
 	FGameplayAttributeData DeployableHealthMultiplier;
 	ATTRIBUTE_ACCESSORS(UGeoGemAttributeSet, DeployableHealthMultiplier)
