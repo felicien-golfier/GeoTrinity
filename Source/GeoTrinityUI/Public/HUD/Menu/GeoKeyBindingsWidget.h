@@ -73,8 +73,11 @@ class GEOTRINITYUI_API UGeoKeyBindingsWidget : public UGeoMenuPageWidget
 	GENERATED_BODY()
 
 protected:
+	/** Builds the key bindings list from the active Enhanced Input profile and wires SecondPlayerGamepadCheckBox. */
 	virtual void NativeConstruct() override;
+	/** While a selector is listening, feeds the pressed key to it (Escape cancels) and consumes the event. */
 	virtual FReply NativeOnPreviewKeyDown(FGeometry const& InGeometry, FKeyEvent const& InKeyEvent) override;
+	/** While a selector is listening, feeds the pressed mouse button to it and consumes the event. */
 	virtual FReply NativeOnPreviewMouseButtonDown(FGeometry const& InGeometry,
 												  FPointerEvent const& InMouseEvent) override;
 
