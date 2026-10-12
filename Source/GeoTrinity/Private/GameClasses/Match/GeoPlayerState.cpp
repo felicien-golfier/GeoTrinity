@@ -55,7 +55,7 @@ void AGeoPlayerState::BeginPlay()
 	{
 		APlayerController const* PlayerController = GetPlayerController();
 		ULocalPlayer const* LocalPlayer = PlayerController ? PlayerController->GetLocalPlayer() : nullptr;
-		if (ensureMsgf(IsValid(LocalPlayer) && IsValid(PlayerController), TEXT("No local player or player controller")))
+		if (IsValid(LocalPlayer) && IsValid(PlayerController))
 		{
 			UGeoGemProfileSave const* Profile = LocalPlayer->GetSubsystem<UGeoGemSubsystem>()->GetProfile();
 
