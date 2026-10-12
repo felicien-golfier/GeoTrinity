@@ -25,6 +25,11 @@ import math
 
 import unreal
 
+_TOOLKIT_PATH = unreal.Paths.project_dir() + "AI/Python/Anim/anim_sequence_authoring.py"
+_TOOLKIT = {}
+exec(compile(open(_TOOLKIT_PATH, encoding="utf-8").read(), _TOOLKIT_PATH, "exec"), _TOOLKIT)
+write_bone_keys = _TOOLKIT["write_bone_keys"]
+
 APE = unreal.AnimPoseExtensions
 
 SKELETON_PATH = "/Game/Characters/Meshes/Star/SK_Star"
@@ -196,8 +201,7 @@ def build_sequence(rest, axes):
             scales.append(scale)
         # Unconditional and result ignored: the adder reports failure for an existing track, and the key setter
         # reports success whether or not a track is there.
-        controller.add_bone_curve(bone)
-        controller.set_bone_track_keys(bone, positions, rotations, scales)
+        write_bone_keys(sequence, bone, positions, rotations, scales)
     controller.close_bracket()
     # The keys above are the raw model; this builds the data that actually plays back from them.
     unreal.AnimationLibrary.finalize_bone_animation(sequence)

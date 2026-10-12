@@ -22,7 +22,8 @@ class GEOTRINITY_API UGeoSacrificeDetonateAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
-	/** Sets bActivateOnFreshPressOnly so a held button never chain-activates the detonation while the sacrifice channel is still active on the same input. */
+	/** Sets bActivateOnFreshPressOnly so a held button never chain-activates the detonation while the sacrifice channel
+	 * is still active on the same input. */
 	UGeoSacrificeDetonateAbility();
 
 	/** Ready while armed (Status.Square.DetonateReady on ASC), whatever the sacrificed value. */
@@ -39,6 +40,8 @@ protected:
 	virtual void OnFireTargetDataReceived(FGameplayAbilityTargetDataHandle const& DataHandle,
 										  FGameplayTag ApplicationTag) override;
 
+	virtual void OnOwnerDeath() override;
+
 private:
 	/** Damages enemies on the ray and consumes the armed sacrifice (server); fires the cue (local). */
 	void Detonate(FGeoAbilityTargetData const& AbilityTargetData);
@@ -51,7 +54,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	FScalableFloat BaseDamage;
 
-	/** Fraction of consumed SacrificeValue added to the ray's total damage (total = BaseDamage + SacrificeValue × this). */
+	/** Fraction of consumed SacrificeValue added to the ray's total damage (total = BaseDamage + SacrificeValue ×
+	 * this). */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	float SacrificeValueMultiplier = .7f;
 

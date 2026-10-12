@@ -15,6 +15,7 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 - Kill → `FGeoGemReward` (class XP for the class played + gems rolled from the drop table, difficulty-scaled) → profile → `CommitChanges()`.
 - `CommitChanges()` → disk + `UGeoGemComponent::ServerSetLoadout` → server applies `UGeoGemStatsEffect` spec + Core passive abilities on the ASC (`APlayableCharacter::ResetAttributes`).
 - Server trusts the client loadout; owned counts are never sent.
+- Death never removes gems: the stats GE stays on the ASC (`GetSurvivingEffectHandles()` = the stats handle; any future gem-granted effect handle is appended there) and Core passives stay active. Revive and class change re-run `ApplyGems`, which replaces both.
 - `FGeoGemLoadout::Level` rides with each sent loadout (filled by `GetLoadout`); the server reads it with `UGeoGemComponent::GetClassLevel` (leaderboard stamps it on each player).
 
 ## Invariants

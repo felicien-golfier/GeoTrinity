@@ -28,6 +28,11 @@ import math
 
 import unreal
 
+_TOOLKIT_PATH = unreal.Paths.project_dir() + "AI/Python/Anim/anim_sequence_authoring.py"
+_TOOLKIT = {}
+exec(compile(open(_TOOLKIT_PATH, encoding="utf-8").read(), _TOOLKIT_PATH, "exec"), _TOOLKIT)
+write_bone_keys = _TOOLKIT["write_bone_keys"]
+
 APE = unreal.AnimPoseExtensions
 MATH = unreal.MathLibrary
 
@@ -332,8 +337,7 @@ def build_sequence(clip, rest, layout):
             positions.append(unreal.Vector(*translation))
             rotations.append(unreal.Rotator(yaw=yaw).quaternion())
             scales.append(unreal.Vector(*scale))
-        controller.add_bone_curve(bone)  # result ignored: it reports failure for a track that already exists
-        controller.set_bone_track_keys(bone, positions, rotations, scales)
+        write_bone_keys(sequence, bone, positions, rotations, scales)
     controller.close_bracket()
     unreal.AnimationLibrary.finalize_bone_animation(sequence)  # keys land in the raw model; this builds playback
     unreal.EditorAssetLibrary.save_asset("{}/{}".format(ANIM_PACKAGE, name))

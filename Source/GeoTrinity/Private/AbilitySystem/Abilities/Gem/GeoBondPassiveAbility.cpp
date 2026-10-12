@@ -16,7 +16,7 @@ void UGeoBondPassiveAbility::BindEvent(UGeoAbilitySystemComponent& /*HolderASC*/
 	AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
 	if (GeoLib::IsServer(GetWorld()) && ensureMsgf(GameState, TEXT("%hs: no AGeoGameState"), __FUNCTION__))
 	{
-		GameState->OnIncomingDamage.AddUObject(this, &ThisClass::ShareIncomingDamage);
+		GameState->OnIncomingDamageShare.AddUObject(this, &ThisClass::ShareIncomingDamage);
 	}
 }
 
@@ -25,7 +25,7 @@ void UGeoBondPassiveAbility::UnbindEvent(UGeoAbilitySystemComponent& /*HolderASC
 {
 	if (AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>())
 	{
-		GameState->OnIncomingDamage.RemoveAll(this);
+		GameState->OnIncomingDamageShare.RemoveAll(this);
 	}
 }
 
@@ -38,7 +38,9 @@ void UGeoBondPassiveAbility::ShareIncomingDamage(UAbilitySystemComponent& Victim
 		static_cast<FGeoGameplayEffectContext const*>(DamageContext.Get());
 	APlayableCharacter const* Victim = Cast<APlayableCharacter>(VictimASC.GetAvatarActor());
 	UGeoAbilitySystemComponent* HolderASC = GetGeoAbilitySystemComponentFromActorInfo();
-	if (Victim && &VictimASC != HolderASC && !Victim->IsDead() && !Victim->IsInvulnerable()
+	APlayableCharacter const* Holder = Cast<APlayableCharacter>(GetAvatarActorFromActorInfo());
+	if (Victim && Holder && !Holder->IsDead() && &VictimASC != HolderASC && !Victim->IsDead()
+		&& !Victim->IsInvulnerable()
 		&& !(GeoDamageContext && GeoDamageContext->DoNotRedirectSacrifice()))
 	{
 		bool const bVictimReduced = !(GeoDamageContext && GeoDamageContext->ShouldSkipStatModifiers());

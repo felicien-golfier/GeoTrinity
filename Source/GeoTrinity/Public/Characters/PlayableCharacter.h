@@ -83,6 +83,10 @@ public:
 	 */
 	void ResetAttributes();
 
+	/** The DefaultAttributes effect of the current class (FPlayerClassData), or null with an ensure when the class has
+	 * none. The single answer to "which effect gives this player its base stats?". */
+	TSubclassOf<UGameplayEffect> GetClassDefaultAttributes() const;
+
 	/**
 	 * Makes the deploy charge gauge widget visible and binds it to Ability's charge progress.
 	 *

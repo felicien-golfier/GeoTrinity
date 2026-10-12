@@ -70,8 +70,10 @@ struct FGeoGemCluster
  * tab), then a dashed tab adding an empty build; the socket board, three clusters each a Core ringed by its Prisms, Cuts
  * and Chips, linked by dashed lines, a locked socket showing the level that opens it, the class's level, its pips and
  * what the next level opens in its corner; the stacks with their owned and free counts under a tier filter; the
- * selection, a stack (EQUIP into the first socket it fits, FILL every socket it fits, replacing what is slotted) or a socket (UNEQUIP); and the build's
+ * selection, a stack (EQUIP into the first socket it fits, REPLACE ALL: every socket it fits, replacing what is slotted) or a socket (UNEQUIP); and the build's
  * total bonus, a table of stat, bonus and copies.
+ * The detail follows the cursor: over a stack or a filled socket it describes that gem without a click, and falls
+ * back to the pick when the cursor leaves. Picking a socket also opens its tier's stacks.
  * Picking a stack then a socket it fits, or a socket then a stack, equips it there; the sockets the picked stack fits
  * glow, and the stack stays picked, so a click per socket fills several while copies are free. A click on neither a
  * socket, the stacks nor the detail drops the pick. The board is built once and updated in place, so the socket under
@@ -367,9 +369,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText SocketCountsFormat = INVTEXT("OWNED {0} \u00B7 FREE {1}");
 
-	/** {0} is the sockets FILL would fill, replacing the gems already slotted there. */
+	/** FILL's label; it replaces the gems already slotted in the sockets it fills. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText FillFormat = INVTEXT("FILL ALL \u00D7{0} (REPLACES)");
+	FText FillText = INVTEXT("REPLACE ALL");
+
+	/** Text role of FILL's label, smaller than the other buttons' so it fits its button. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	EGeoTextRole FillTextRole = EGeoTextRole::Table;
 
 	/** {0} is the sockets filled, {1} the sockets open. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -458,14 +464,20 @@ private:
 	void ShowSockets(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	void ShowFilters(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	void ShowStacks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
-	/** The picked stack or filled socket, else the hint for what is picked. */
+	/** The stack or filled socket under the cursor, else the picked stack or filled socket, else the hint for what is
+	 * picked. */
 	void ShowDetail(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
+	/** bFromSocket words the tier and counts for a socket's gem. bPreview is a gem hovered that is not the picked one:
+	 * its description only, the buttons and the note belonging to what is picked. */
 	void ShowGemDetail(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog, FGeoGemInfo const& Gem,
-					   EGeoGemTier Tier, bool bSocketPicked);
+					   EGeoGemTier Tier, bool bFromSocket, bool bPreview);
 	void ShowTotals(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 
 	void PickSocket(int32 SocketIndex);
 	void PickStack(FName GemId);
+
+	/** Sets what the cursor is over, a stack (GemId) or a socket (SocketIndex), and shows its detail. */
+	void Hover(FName GemId, int32 SocketIndex);
 
 	/** The open sockets (empty or not) the picked stack's gem may go into now, for the board's glow, EQUIP and FILL. */
 	TArray<int32> GetTargetSockets(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog) const;
@@ -483,6 +495,12 @@ private:
 
 	/** The picked socket; INDEX_NONE while a stack or nothing is picked. */
 	int32 PickedSocket = INDEX_NONE;
+
+	/** The stack under the cursor; NAME_None when none. */
+	FName HoveredGem;
+
+	/** The socket under the cursor; INDEX_NONE when none. */
+	int32 HoveredSocket = INDEX_NONE;
 
 	/** Whether the build in play shows its name field rather than its name. */
 	bool bRenamingBuild = false;

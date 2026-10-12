@@ -4,7 +4,6 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 
 #include "Abilities/GameplayAbility.h"
-#include "AbilitySystem/Abilities/Square/GeoSacrificeBeamAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -81,53 +80,58 @@ void UGeoAttributeSetBase::PostGameplayEffectExecute(FGameplayEffectModCallbackD
 		{
 			return;
 		}
-		// Sacrificed victims take nothing (neither shield nor health) — the full amount is redirected
-		// to the sacrificing Square and its walls.
-		if (UGeoSacrificeBeamAbility::TryRedirectIncomingDamage(Data.Target, Data.EffectSpec.GetEffectContext(),
-																DamageToApply))
-		{
-			return;
-		}
 
-		if (AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>())
+		FGameplayEffectContextHandle const DamageContext = Data.EffectSpec.GetEffectContext();
+		AGeoGameState const* GameState = GetWorld()->GetGameState<AGeoGameState>();
+		if (GameState)
 		{
 			float SparedDamage = 0.f;
-			GameState->OnIncomingDamage.Broadcast(Data.Target, Data.EffectSpec.GetEffectContext(), DamageToApply,
-												  SparedDamage);
+			GameState->OnIncomingDamage.Broadcast(Data.Target, DamageContext, DamageToApply, SparedDamage);
 			DamageToApply -= FMath::Min(SparedDamage, DamageToApply);
 		}
 
-		float const ShieldAbsorbed = FMath::Min(GetShield(), DamageToApply);
-		SetShield(GetShield() - ShieldAbsorbed);
-		DamageToApply -= ShieldAbsorbed;
-
-		SetHealth(FMath::Clamp(GetHealth() - DamageToApply, 0.f, GetMaxHealth()));
-
-		UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(
-			Data.EffectSpec.GetEffectContext().GetOriginalInstigatorAbilitySystemComponent());
-		if (IsValid(SourceASC))
+		// A hit taken over whole by stage 1 touches neither shield, health nor stats.
+		if (DamageToApply > 0.f)
 		{
-			FGameplayTag AbilityTag;
-			if (FGameplayEffectContext const* Context = Data.EffectSpec.GetEffectContext().Get())
+			if (GameState)
 			{
-				if (UGameplayAbility const* Ability = Context->GetAbilityInstance_NotReplicated())
-				{
-					AbilityTag = GeoASLib::GetAbilityTagFromAbility(*Ability);
-				}
+				float SparedDamage = 0.f;
+				GameState->OnIncomingDamageShare.Broadcast(Data.Target, DamageContext, DamageToApply, SparedDamage);
+				DamageToApply -= FMath::Min(SparedDamage, DamageToApply);
 			}
-			SourceASC->OnDamageDealt.Broadcast(DamageToApply, AbilityTag);
-		}
 
-		FGeoGameplayEffectContext const* GeoContext =
-			static_cast<FGeoGameplayEffectContext const*>(Data.EffectSpec.GetEffectContext().Get());
-		if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>();
-			CombatStats && (!GeoContext || !GeoContext->IsSuppressCombatStats()))
-		{
-			AGeoPlayerState* TargetPlayerState = Cast<AGeoPlayerState>(GetOwningActor());
-			AGeoPlayerState* SourcePlayerState =
-				Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext().GetInstigator());
-			CombatStats->ReportDamageDealt(SourcePlayerState, DamageToApply);
-			CombatStats->ReportDamageReceived(TargetPlayerState, DamageToApply);
+			float const ShieldAbsorbed = FMath::Min(GetShield(), DamageToApply);
+			SetShield(GetShield() - ShieldAbsorbed);
+			DamageToApply -= ShieldAbsorbed;
+
+			SetHealth(FMath::Clamp(GetHealth() - DamageToApply, 0.f, GetMaxHealth()));
+
+			UGeoAbilitySystemComponent* SourceASC = Cast<UGeoAbilitySystemComponent>(
+				Data.EffectSpec.GetEffectContext().GetOriginalInstigatorAbilitySystemComponent());
+			if (IsValid(SourceASC))
+			{
+				FGameplayTag AbilityTag;
+				if (FGameplayEffectContext const* Context = Data.EffectSpec.GetEffectContext().Get())
+				{
+					if (UGameplayAbility const* Ability = Context->GetAbilityInstance_NotReplicated())
+					{
+						AbilityTag = GeoASLib::GetAbilityTagFromAbility(*Ability);
+					}
+				}
+				SourceASC->OnDamageDealt.Broadcast(DamageToApply, AbilityTag);
+			}
+
+			FGeoGameplayEffectContext const* GeoContext =
+				static_cast<FGeoGameplayEffectContext const*>(Data.EffectSpec.GetEffectContext().Get());
+			if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>();
+				CombatStats && (!GeoContext || !GeoContext->IsSuppressCombatStats()))
+			{
+				AGeoPlayerState* TargetPlayerState = Cast<AGeoPlayerState>(GetOwningActor());
+				AGeoPlayerState* SourcePlayerState =
+					Cast<AGeoPlayerState>(Data.EffectSpec.GetEffectContext().GetInstigator());
+				CombatStats->ReportDamageDealt(SourcePlayerState, DamageToApply);
+				CombatStats->ReportDamageReceived(TargetPlayerState, DamageToApply);
+			}
 		}
 	}
 	else if (Data.EvaluatedData.Attribute == GetIncomingHealAttribute())

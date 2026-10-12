@@ -8,9 +8,11 @@
 #include "GameClasses/Player/GeoPlayerController.h"
 #include "GameFramework/HUD.h"
 #include "Gem/GeoGemComponent.h"
+#include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemSubsystem.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Net/UnrealNetwork.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoPlayerState::AGeoPlayerState()
 {
@@ -48,6 +50,21 @@ void AGeoPlayerState::BeginPlay()
 	if (APawn* CurrentPawn = GetPawn())
 	{
 		OnPlayerPawnSet(this, CurrentPawn, nullptr);
+	}
+	if (GetWorld()->IsNetMode(NM_ListenServer))
+	{
+		APlayerController const* PlayerController = GetPlayerController();
+		ULocalPlayer const* LocalPlayer = PlayerController ? PlayerController->GetLocalPlayer() : nullptr;
+		if (ensureMsgf(IsValid(LocalPlayer) && IsValid(PlayerController), TEXT("No local player or player controller")))
+		{
+			UGeoGemProfileSave const* Profile = LocalPlayer->GetSubsystem<UGeoGemSubsystem>()->GetProfile();
+
+			for (uint8 i = static_cast<uint8>(EPlayerClass::None) + 1; i < static_cast<uint8>(EPlayerClass::All); i++)
+			{
+				EPlayerClass const PlayerClassIt = static_cast<EPlayerClass>(i);
+				GemComponent->UpdateLoadoutAndResetAttributes(PlayerClassIt, Profile->GetLoadout(PlayerClassIt));
+			}
+		}
 	}
 }
 

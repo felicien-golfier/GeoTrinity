@@ -11,58 +11,13 @@
 #include "Actor/Deployable/Wall/GeoWall.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/GeoCharacter.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 UGeoSacrificeBeamAbility::UGeoSacrificeBeamAbility()
 {
 	// Shares its input with the detonate ability: a held button must never chain-activate across the pair.
 	bActivateOnFreshPressOnly = true;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-bool UGeoSacrificeBeamAbility::TryRedirectIncomingDamage(UAbilitySystemComponent& VictimASC,
-														 FGameplayEffectContextHandle const& DamageContext,
-														 float const Damage)
-{
-	FGeoGameplayEffectContext const* GeoDamageContext =
-		static_cast<FGeoGameplayEffectContext const*>(DamageContext.Get());
-	if ((GeoDamageContext && GeoDamageContext->DoNotRedirectSacrifice())
-		|| !VictimASC.HasMatchingGameplayTag(FGeoGameplayTags::Get().Status_Sacrificed))
-	{
-		return false;
-	}
-
-	// The mark GE's context identifies the Square that applied it — the mark itself is the registry.
-	TArray<FActiveGameplayEffectHandle> const MarkHandles =
-		VictimASC.GetActiveEffects(FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(
-			FGameplayTagContainer(FGeoGameplayTags::Get().Status_Sacrificed)));
-	FActiveGameplayEffect const* MarkEffect =
-		MarkHandles.Num() > 0 ? VictimASC.GetActiveGameplayEffect(MarkHandles[0]) : nullptr;
-	UAbilitySystemComponent* SquareASC =
-		MarkEffect ? MarkEffect->Spec.GetContext().GetOriginalInstigatorAbilitySystemComponent() : nullptr;
-	if (!ensureMsgf(IsValid(SquareASC),
-					TEXT("UGeoSacrificeBeamAbility: victim %s has Status.Sacrificed but no mark GE with a valid "
-						 "instigator ASC"),
-					*VictimASC.GetOwnerActor()->GetName()))
-	{
-		return false;
-	}
-
-	AGeoCharacter const* SquareCharacter = Cast<AGeoCharacter>(SquareASC->GetAvatarActor());
-	if (!IsValid(SquareCharacter) || SquareCharacter->IsDead())
-	{
-		return false;
-	}
-
-	// The victim is saved from the hit, never from more than it was worth: only what it would actually have lost
-	// (shield absorbs before health) is redirected, the overkill evaporates.
-	float const RedirectedDamage =
-		FMath::Min(Damage,
-				   VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute())
-					   + VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute()));
-	RedirectCapturedDamage(RedirectedDamage, DamageContext.GetOriginalInstigatorAbilitySystemComponent(), *SquareASC,
-						   static_cast<int32>(MarkEffect->Spec.GetLevel()));
-	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -83,6 +38,11 @@ void UGeoSacrificeBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetDa
 		UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
 		GeoASLib::ApplySingleEffectData(DetonateReadyEffect, SourceASC, SourceASC, GetAbilityLevel(),
 										StoredPayload.Seed, StoredPayload.AbilityTag);
+		if (AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>();
+			ensureMsgf(GameState, TEXT("%hs: no AGeoGameState"), __FUNCTION__))
+		{
+			GameState->OnIncomingDamage.AddUObject(this, &ThisClass::RedirectIncomingDamage);
+		}
 	}
 	Super::Fire(AbilityTargetData);
 }
@@ -95,6 +55,10 @@ void UGeoSacrificeBeamAbility::EndAbility(FGameplayAbilitySpecHandle const Handl
 {
 	if (GeoLib::IsServer(GetWorld()))
 	{
+		if (AGeoGameState* GameState = GetWorld()->GetGameState<AGeoGameState>())
+		{
+			GameState->OnIncomingDamage.RemoveAll(this);
+		}
 		RemoveAllSacrificeMarks();
 	}
 
@@ -171,9 +135,32 @@ float UGeoSacrificeBeamAbility::GetBeamDuration() const
 	return MaxChannelDuration;
 }
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage, UAbilitySystemComponent* SourceAsc,
-													  UAbilitySystemComponent& SquareASC, int32 const AbilityLevel)
+void UGeoSacrificeBeamAbility::RedirectIncomingDamage(UAbilitySystemComponent& VictimASC,
+													  FGameplayEffectContextHandle const& DamageContext,
+													  float const Damage, float& SparedDamage)
 {
+	FGeoGameplayEffectContext const* GeoDamageContext =
+		static_cast<FGeoGameplayEffectContext const*>(DamageContext.Get());
+	AGeoCharacter const* SquareCharacter = Cast<AGeoCharacter>(GetAvatarActorFromActorInfo());
+	float const Redirectable = Damage - SparedDamage;
+	if (Redirectable > 0.f && !(GeoDamageContext && GeoDamageContext->DoNotRedirectSacrifice())
+		&& VictimASC.HasMatchingGameplayTag(FGeoGameplayTags::Get().Status_Sacrificed)
+		&& SacrificedActors.Contains(VictimASC.GetAvatarActor()) && IsValid(SquareCharacter)
+		&& !SquareCharacter->IsDead())
+	{
+		float const VictimLoss = VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute())
+			+ VictimASC.GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute());
+		RedirectCapturedDamage(FMath::Min(Redirectable, VictimLoss),
+							   DamageContext.GetOriginalInstigatorAbilitySystemComponent());
+		SparedDamage = Damage;
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoSacrificeBeamAbility::RedirectCapturedDamage(float const Damage, UAbilitySystemComponent* SourceAsc)
+{
+	UGeoAbilitySystemComponent& SquareASC = *GetGeoAbilitySystemComponentFromActorInfo();
+	int32 const AbilityLevel = GetAbilityLevel();
 	SquareASC.SetNumericAttributeBase(
 		UCharacterAttributeSet::GetSacrificeValueAttribute(),
 		SquareASC.GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute()) + Damage);

@@ -23,6 +23,10 @@ public:
 	 *  server's instance after a revive. */
 	UGeoCorePassiveAbility();
 
+	/** Stays active and bound: a Core's rule outlives its holder (deployables, zones), and the gem stats behind it
+	 *  survive death too. A rule that needs a living holder checks IsDead() in its handler. */
+	virtual void OnOwnerDeath() override {}
+
 protected:
 	/** Binds the rule through BindEvent. */
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,

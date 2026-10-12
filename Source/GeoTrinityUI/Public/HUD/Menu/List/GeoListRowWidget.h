@@ -15,6 +15,7 @@ class UHorizontalBox;
 class UTextBlock;
 
 DECLARE_MULTICAST_DELEGATE(FGeoListRowClickedSignature);
+DECLARE_MULTICAST_DELEGATE_OneParam(FGeoListRowHoverChangedSignature, bool /*bHovered*/);
 
 /** Which of the row's background colours it wears. */
 UENUM()
@@ -55,6 +56,9 @@ public:
 	/** Fires on a double click in place of its second click, for a row the list made selectable. Unbound, a double
 	 * click is two clicks. */
 	FGeoListRowClickedSignature OnDoubleClicked;
+
+	/** Fires when the cursor or the gamepad focus enters (true) or leaves (false) the row. */
+	FGeoListRowHoverChangedSignature OnHoverChanged;
 
 	/** Appends a column holding Content. Weight 0 sizes it to its content, otherwise it is its share of the row. */
 	void AddColumn(UWidget* Content, float Weight);
@@ -124,6 +128,12 @@ private:
 	void HandleClicked();
 
 	void HandleDoubleClicked();
+
+	UFUNCTION()
+	void HandleHovered();
+
+	UFUNCTION()
+	void HandleUnhovered();
 
 	EGeoListRowTint Tint = EGeoListRowTint::Normal;
 };

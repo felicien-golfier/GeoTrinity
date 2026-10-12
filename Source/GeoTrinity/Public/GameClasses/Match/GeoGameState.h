@@ -103,10 +103,14 @@ public:
 	/** Server. Broadcast the moment every fight player is down — DeathTime seconds before the group respawns. */
 	FOnWipe OnWipe;
 
-	/** Server. A hit is about to take Damage off VictimASC's shield and health, once a sacrifice did not redirect it. A
-	 *  listener that takes part of it on itself adds that part to SparedDamage; the victim is spared that much, never
-	 *  more than Damage. */
+	/** Server. Stage 1 of a hit about to take Damage off VictimASC's shield and health: a listener takes the hit over
+	 *  (the Martyr redirect). It adds the part it takes onto itself to SparedDamage, never more than Damage - SparedDamage;
+	 *  the victim is spared that much. A hit taken over whole ends here, stage 2 never sees it. */
 	FOnIncomingDamage OnIncomingDamage;
+
+	/** Server. Stage 2, with what stage 1 left as Damage: a listener takes a part of it on itself (Bond), same
+	 *  SparedDamage contract. Its own delegate because listeners of one multicast have no order. */
+	FOnIncomingDamage OnIncomingDamageShare;
 
 	/** Broadcast on every machine when the difficulty changes. AGeoArena respawns its boss off it, the pads repaint. */
 	FOnDifficultyChanged OnDifficultyChanged;

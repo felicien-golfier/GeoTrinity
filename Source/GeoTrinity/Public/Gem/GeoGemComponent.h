@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "ActiveGameplayEffectHandle.h"
 #include "Abilities/GameplayAbilityTypes.h"
+#include "ActiveGameplayEffectHandle.h"
 #include "Characters/PlayerClassTypes.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
@@ -29,10 +29,15 @@ public:
 
 	/** Owning client: sends every class's loadout in Profile to the server. */
 	void SendLoadoutsToServer(UGeoGemProfileSave const& Profile);
+	void UpdateLoadoutAndResetAttributes(EPlayerClass PlayerClass, FGeoGemLoadout const& Loadout);
 
-	/** Server: replaces the gem stats and the gem passive abilities on the owner's ASC with those of the current class's
-	 *  loadout. Called by APlayableCharacter::ResetAttributes, which refills Health and Ammo after it. */
+	/** Server: replaces the gem stats and the gem passive abilities on the owner's ASC with those of the current
+	 * class's loadout. Called by APlayableCharacter::ResetAttributes, which refills Health and Ammo after it. */
 	void ApplyGems();
+
+	/** Server: the effects of the gems on the owner's ASC that death must not remove (the stats GE). Empty on a client.
+	 *  A gem-granted effect appends its handle here. */
+	TArray<FActiveGameplayEffectHandle> GetSurvivingEffectHandles() const;
 
 	/** Server: the level the owning client last sent for PlayerClass; 1 until it has sent one. */
 	int32 GetClassLevel(EPlayerClass const PlayerClass) const { return Loadouts.FindRef(PlayerClass).Level; }

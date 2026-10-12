@@ -91,14 +91,24 @@ public:
 	 */
 	void ResetCooldowns();
 
+	/**
+	 * Death teardown, run on every machine: every live ability instance gets OnOwnerDeath(), cooldowns are reset
+	 * (ResetCooldowns), and on the server every active gameplay effect is removed except KeptEffects.
+	 *
+	 * @param KeptEffects  Handles that survive the purge (UGeoGemComponent::GetSurvivingEffectHandles). Empty on a client,
+	 *                     where the server's removal replicates down.
+	 */
+	void HandleOwnerDeath(TArray<FActiveGameplayEffectHandle> const& KeptEffects);
+
 	/** Applies a gameplay effect to this component's owner at CombatLevel. */
 	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass);
 
 	/** Applies the DefaultAttributes gameplay effect to initialize base attribute values. */
 	void InitializeDefaultAttributes();
 
-	/** Value the DefaultAttributes effect gives Attribute at CombatLevel, before any gem or other modifier. 0 when the
-	 * effect has no static modifier on it. */
+	/** Value the DefaultAttributes effect gives Attribute at CombatLevel, before any gem or other modifier. For a player
+	 * the effect is its class's (APlayableCharacter::GetClassDefaultAttributes), otherwise this component's own. 0 when
+	 * the effect has no static modifier on it. */
 	float GetDefaultAttributeValue(FGameplayAttribute const& Attribute) const;
 
 	/**

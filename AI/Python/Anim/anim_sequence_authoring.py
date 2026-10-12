@@ -21,6 +21,9 @@ import unreal
 
 APE = unreal.AnimPoseExtensions
 BAKED_FOLDER = unreal.Paths.project_dir() + "SourceArt/Anim/Baked/"
+# A key is dropped when the line between its neighbours stays this close to it (units, degrees, scale), and a
+# channel that never leaves this band is a constant.
+KEY_TOLERANCE = {"translation": 0.005, "rotation": 0.02, "scale": 0.0002}
 
 
 def get_or_create_asset(package_path, asset_name, asset_class, factory):
@@ -530,6 +533,110 @@ def bind_vertices(skeletal_mesh_path, assignments):
     unreal.EditorAssetLibrary.save_asset(skeletal_mesh_path)
 
 
+def reduce_channel(values, tolerance):
+    """Frames a channel keeps -> [frame], none for a channel that never leaves `tolerance` of its first value.
+
+    Ramer-Douglas-Peucker on one channel: the first and last frame stay, then the frame furthest from the line
+    between its kept neighbours, until no frame sits further than `tolerance` from that line.
+    """
+    last = len(values) - 1
+    if max(values) - min(values) <= tolerance:
+        return []
+    keep, pending = {0, last}, [(0, last)]
+    while pending:
+        first, end = pending.pop()
+        miss, worst = 0.0, None
+        for frame in range(first + 1, end):
+            line = values[first] + (values[end] - values[first]) * (frame - first) / float(end - first)
+            if abs(values[frame] - line) > miss:
+                miss, worst = abs(values[frame] - line), frame
+        if miss > tolerance:
+            keep.add(worst)
+            pending += [(first, worst), (worst, end)]
+    return sorted(keep)
+
+
+def unwrapped(angles):
+    """Degrees per frame with every jump of more than half a turn undone, so a spin is one run of keys."""
+    result = [angles[0]]
+    for angle in angles[1:]:
+        result.append(angle + 360.0 * round((result[-1] - angle) / 360.0))
+    return result
+
+
+def bone_channels(positions, rotations, scales):
+    """A bone's per-frame transforms as its 9 channels -> [[value per frame]]: translation XYZ, rotation roll /
+    pitch / yaw in degrees kept continuous across frames, scale XYZ. Same order as the shim's channel index."""
+    turns = [rotation.rotator() for rotation in rotations]
+    return ([[p.x for p in positions], [p.y for p in positions], [p.z for p in positions]]
+            + [unwrapped([t.roll for t in turns]), unwrapped([t.pitch for t in turns]),
+               unwrapped([t.yaw for t in turns])]
+            + [[s.x for s in scales], [s.y for s in scales], [s.z for s in scales]])
+
+
+_KEY_PLANS = {}  # sequence path -> {"bones": bones written this pass, "taken": {key count: frames}}
+
+
+def padded_frames(frames, total_keys, taken):
+    """`frames` plus keys the line already passes through, until no other channel of the sequence holds this many
+    keys at other frames; a channel keyed on every frame (total_keys) is always safe.
+
+    The model evaluates a sequence's non-dense channels through one evaluation cache keyed by key count alone, so
+    two channels of equal count but different frames read each other's key indices.
+    """
+    frames = list(frames)
+    while len(frames) < total_keys and taken.get(len(frames), tuple(frames)) != tuple(frames):
+        width, start = max((after - before, before) for before, after in zip(frames, frames[1:]))
+        frames.append(start + width // 2)
+        frames.sort()
+    return frames
+
+
+def key_plan(sequence, bone):
+    """The key counts already claimed in `sequence` by this pass of writes; a bone written twice starts a new pass."""
+    plan = _KEY_PLANS.setdefault(sequence.get_path_name(), {"bones": set(), "taken": {}})
+    if bone in plan["bones"]:
+        plan["bones"].clear()
+        plan["taken"].clear()
+    plan["bones"].add(bone)
+    return plan["taken"]
+
+
+def claim_key_counts(sequence, skip_bones):
+    """Start a write pass holding the key counts of every bone of `sequence` but `skip_bones`, which a partial
+    rewrite leaves as they are."""
+    util = unreal.get_default_object(unreal.GeoAnimBuilderUtil)
+    taken = {}
+    for bone in APE.get_bone_names(APE.get_reference_pose(sequence.get_skeleton())):
+        for channel in range(9) if str(bone) not in skip_bones else ():
+            frames, _, _ = util.get_bone_channel_keys(sequence, str(bone), channel)
+            if len(frames):
+                taken.setdefault(len(frames), tuple(frames))
+    _KEY_PLANS[sequence.get_path_name()] = {"bones": set(), "taken": taken}
+
+
+def write_bone_keys(sequence, bone, positions, rotations, scales):
+    """Write one bone's per-frame transforms as sparse keys: a constant for a channel that never moves, keys only
+    where one bends.
+
+    Call inside the controller's bracket. The whole-frame write comes first, since it is what creates the bone's
+    rig control; the shim then replaces each channel with its reduced keys.
+    """
+    controller = sequence.get_editor_property("controller")
+    # Unconditional and result ignored: the adder reports failure for an existing track, and the key setter
+    # reports success whether or not a track is there.
+    controller.add_bone_curve(bone)
+    controller.set_bone_track_keys(bone, positions, rotations, scales)
+    util = unreal.get_default_object(unreal.GeoAnimBuilderUtil)
+    taken = key_plan(sequence, bone)
+    for index, values in enumerate(bone_channels(positions, rotations, scales)):
+        frames = reduce_channel(values, KEY_TOLERANCE[("translation", "rotation", "scale")[index // 3]])
+        if frames:
+            frames = padded_frames(frames, len(values), taken)
+            taken.setdefault(len(frames), tuple(frames))
+        util.set_bone_channel_keys(sequence, bone, index, frames, [values[frame] for frame in frames], values[0])
+
+
 def write_bone_tracks(sequence, skeleton_path, fps, frames, sampler, bracket="Author animation"):
     """Write bone tracks into `sequence` from `sampler`.
 
@@ -554,10 +661,7 @@ def write_bone_tracks(sequence, skeleton_path, fps, frames, sampler, bracket="Au
             positions.append(translation)
             rotations.append(rotation)
             scales.append(scale)
-        # Unconditional and result ignored: the adder reports failure for an existing track, and the
-        # key setter reports success whether or not a track is there.
-        controller.add_bone_curve(bone)
-        controller.set_bone_track_keys(bone, positions, rotations, scales)
+        write_bone_keys(sequence, bone, positions, rotations, scales)
     controller.close_bracket()
     # The keys above are the raw model; this builds the data that actually plays back from them.
     unreal.AnimationLibrary.finalize_bone_animation(sequence)
@@ -571,10 +675,11 @@ def offset_bone_tracks(sequence, bones, offset, bracket="Offset bone tracks"):
     frames = library.get_num_frames(sequence)
     controller = sequence.get_editor_property("controller")
     controller.open_bracket(bracket)
+    claim_key_counts(sequence, set(bones))
     for bone in bones:
         poses = [library.get_bone_pose_for_frame(sequence, bone, frame, False) for frame in range(frames + 1)]
-        controller.set_bone_track_keys(bone, [pose.translation + offset for pose in poses],
-                                       [pose.rotation for pose in poses], [pose.scale3d for pose in poses])
+        write_bone_keys(sequence, bone, [pose.translation + offset for pose in poses],
+                        [pose.rotation for pose in poses], [pose.scale3d for pose in poses])
     controller.close_bracket()
     library.finalize_bone_animation(sequence)
     unreal.EditorAssetLibrary.save_asset(sequence.get_path_name().split(".")[0])

@@ -20,6 +20,13 @@
 - `OnFireTargetDataReceived` is server-only by design; `Fire()` always sends the RPC.
 - `GetFireOrigin2D` / `GetFireYaw` are the override points for aim.
 
+### Owner death (`OnOwnerDeath`)
+- `OnOwnerDeath()` virtual, called on every active instance by `UGeoAbilitySystemComponent::HandleOwnerDeath` when the owner dies; runs on every machine, like `DeathLogic`.
+- Default: end cancelled (`CancelAbility`), so anything with a live effect (beam, channel, charge, montage) stops.
+- Override to stay active (no-op) or to reset state and stay; the ability owns the rule, the death path never names a class.
+- Staying active does not lift the `IsDead()` refusal in `CanActivateAbility`: a dead owner can never start one.
+- Every passive that reads positions, contacts or the owner's health pool must answer for the dead owner itself (override, or `IsDead()` check in its handler).
+
 ### HUD readiness (`IsReady`, `GetClassGauge`, `GetGaugeLabel`)
 - `IsReady(ASC) const`: true = slot frame lit. One rule per ability; the UI never names an ability class.
 - `GetClassGauge(ASC, OutFill, bOutReady) const`: false = no class gauge (default). True on the one ability per class that feeds the player card's class ring and its own slot / passive tile gauge (same fill on both).

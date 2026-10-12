@@ -8,7 +8,10 @@
 
 ## Base
 - `PreAttributeChange` clamps `Shield` to `[0, MaxHealth]`.
-- `PostGameplayEffectExecute`: sacrifice redirect, shield absorption, clamp health, report to `UGeoCombatStatsSubsystem`, end actor at 0.
+- `PostGameplayEffectExecute` on `IncomingDamage`, in this order: `AGeoGameState::OnIncomingDamage` (stage 1: a listener takes the hit over, the Martyr redirect; the hit ends when all of it is taken) → `OnIncomingDamageShare` (stage 2: a listener takes a part, Bond) → shield absorption → clamp health → report to `UGeoCombatStatsSubsystem`, end actor at 0.
+- Both stages are one signature: `(VictimASC, Context, Damage reaching the stage, float& Spared)`; a listener adds the part it takes onto itself to `Spared`; the hub clamps `Spared` to `Damage`.
+- Two stages, not one: listeners of one multicast have no order, and Bond must see only what the redirect left (a sacrificed victim's hit is whole the Square's).
+- The attribute set names no ability: a passive that reacts to a hit binds a stage.
 - Meta attributes: transient, written by ExecCalc, zeroed after `PostGameplayEffectExecute`, read nowhere else.
 
 ## Character attributes

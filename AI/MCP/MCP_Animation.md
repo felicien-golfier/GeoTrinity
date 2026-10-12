@@ -53,9 +53,9 @@ A shot reads its fire socket at the instant it fires, before any jump to the sec
 socket on a part a clip carries round the shape fires from wherever that part is; hang such a socket on a bone no
 clip moves.
 
-Every clip from the track writer keys every bone with its full local transform, so moving a bone's rest pose
-leaves each clip holding the old one until that bone's keys are shifted by the same offset in every sequence on
-the skeleton. On a rig whose bones rest unturned and unscaled, a bone's rest moved by an offset keeps every clip
+Every clip from the track writer holds every bone, so moving a bone's rest pose leaves each clip holding the old
+one until that bone's keys are shifted by the same offset in every sequence on the skeleton; the shift is made
+on the sampled per-frame values and written back through the sparse writer, never key by key. On a rig whose bones rest unturned and unscaled, a bone's rest moved by an offset keeps every clip
 playing as before when its keys are multiplied by that offset on its own side and its children's keys take it back
 on theirs (`AI/Python/Anim/rerig_class_badges.py`). A bone resting off the centre of what it carries needs a
 translation key beside every turn to hold that part in place, so rest each bone on its part's centre. Rebuilding a skinned mesh from a static mesh resets its material slots to
@@ -90,6 +90,28 @@ frames per beat or the beats fall between samples.
 Add a bone's track before setting its keys, unconditionally and ignoring the result — the adder reports failure
 for an existing track, and the key setter reports success whether or not a track is there. Supply position,
 rotation and scale arrays of equal length.
+
+A bone's track is nine independent channels — translation, rotation as Euler degrees and scale, three axes
+each — and every channel owns its keys, lerped linearly between them. The writer keeps from the per-frame values
+only what a hand edit needs to see: a channel that never moves is a constant with no key, a channel that moves
+is keyed only on the frames where its line bends within a tolerance (a hold is two keys, a straight run is its
+two ends, a vibration keeps every frame), and the first and last frame of a moving channel are always keyed so a
+loop closes and a section edge holds. A curved motion (ease, overshoot) keeps the keys the tolerance asks for,
+so tightening the tolerance adds keys and loosening it turns the clip into plain lerps. Rotation is keyed as a
+continuous Euler angle, unwrapped across frames: lerping wrapped Euler values turns the long way, and a spin of
+several turns stays one run rather than a saw-tooth. Only linear keys are written; a hand edit that sets another
+interpolation is kept until the clip is rewritten, which resamples it to linear keys. The per-channel write is a
+C++ shim (`Source/GeoTrinityEditor/Public/Tool/GeoAnimBuilderUtil.h`), since the controller's bone-track setter
+takes whole-frame arrays only.
+
+A sequence's sparse channels share one evaluation cache that tells them apart by key count alone, so two channels
+of the same count on different frames read each other's key indices and land on a wrong pose on a few frames.
+Within one sequence, channels of one count therefore sit on the same frames: a channel that collides gains keys
+the line already passes through until its count is free, and a channel keyed on every frame is read by index and
+stays safe. Constants hold no key and never collide.
+
+A clip rewritten from what it plays now, with nothing regenerated, keeps retouched, baked and reimported clips
+as they are (`AI/Python/Anim/sparse_rekey_clips.py`).
 
 What plays back is resampled at the sequence's target frame rate, which comes from the project default and is
 read-only from script, so author at that rate; a clip that has to play faster than its frames allow is authored
@@ -285,8 +307,9 @@ since each replay would smear one beat into the next.
 ## Clips that outlive their script
 
 A clip retouched by hand, or carried across a rig change, no longer comes out of the script that made it, and
-re-running that script would undo it. Freeze such a clip's keys and its montage's layout into
-`SourceArt/Anim/Baked` with `AI/Python/Anim/bake_clips.py`; the toolkit's track writer and montage builder take a
+re-running that script would undo it. Freeze such a clip's sampled keys and its montage's layout into
+`SourceArt/Anim/Baked` with `AI/Python/Anim/bake_clips.py` (the file holds every frame; the writer reduces it to
+sparse keys again on every write); the toolkit's track writer and montage builder take a
 baked file over the script's own procedure, so every script keeps the clip as it is, and deleting the file hands
 it back. Before re-running clip scripts, run them into a sandbox and compare with the live clips through
 `AI/Python/Anim/verify_badge_scripts.py`. A clip reimported from another package is padded to that scene's

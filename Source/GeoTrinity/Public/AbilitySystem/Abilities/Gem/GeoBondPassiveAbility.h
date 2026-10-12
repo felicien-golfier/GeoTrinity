@@ -10,8 +10,8 @@
 
 /**
  * Passive of the Bond Core: the holder absorbs SharedDamageFraction of the damage each other living player takes.
- * Like the Martyr's Wrath mark, the share is taken from the hit before shield and health (AGeoGameState::
- * OnIncomingDamage), and what the holder takes carries bDoNotRedirectSacrifice, so a share is never shared or redirected
+ * Like the Martyr's Wrath mark, the share is taken from the hit before shield and health, after the mark has taken
+ * its part (AGeoGameState::OnIncomingDamageShare), and what the holder takes carries bDoNotRedirectSacrifice, so a share is never shared or redirected
  * again: two holders hurt each other once.
  */
 UCLASS()
@@ -20,7 +20,7 @@ class GEOTRINITY_API UGeoBondPassiveAbility : public UGeoCorePassiveAbility
 	GENERATED_BODY()
 
 protected:
-	/** Server: listens to AGeoGameState::OnIncomingDamage. */
+	/** Server: listens to AGeoGameState::OnIncomingDamageShare. */
 	virtual void BindEvent(UGeoAbilitySystemComponent& HolderASC) override;
 	virtual void UnbindEvent(UGeoAbilitySystemComponent& HolderASC) override;
 

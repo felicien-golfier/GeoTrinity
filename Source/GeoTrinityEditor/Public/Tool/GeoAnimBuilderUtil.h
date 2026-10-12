@@ -7,6 +7,8 @@
 
 #include "GeoAnimBuilderUtil.generated.h"
 
+struct FMovieSceneFloatChannel;
+class UMovieSceneControlRigParameterSection;
 class UAnimBlueprint;
 class UAnimMontage;
 class UAnimSequence;
@@ -112,4 +114,35 @@ public:
 	static bool BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, FName LayerBone, FName BaseSlotName,
 									  FName LayerSlotName, FName FullBodySlotName, FName AdditiveSlotName,
 									  UAnimSequence* Idle);
+
+	/**
+	 * Generic: replaces one channel of BoneName's track with linear keys. Channel is 0-2 translation X/Y/Z, 3-5
+	 * rotation Euler roll/pitch/yaw in degrees, 6-8 scale X/Y/Z. Frames are whole frame numbers in increasing order,
+	 * one per Values entry; with no Frames the channel becomes the constant ConstantValue and holds no key.
+	 *
+	 * The controller's bone-track setter writes a key per frame on every channel that moves, so sparse keys can
+	 * only go through here. Finalize the sequence afterwards. Returns false when the sequence has no such bone track.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool SetBoneChannelKeys(UAnimSequence* Sequence, FName BoneName, int32 Channel, TArray<int32> Frames,
+								   TArray<float> Values, float ConstantValue);
+
+	/**
+	 * Generic: the keys SetBoneChannelKeys takes, read back from BoneName's channel. A channel without keys returns
+	 * no frames and its constant in OutConstantValue. Returns false when the sequence has no such bone track.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool GetBoneChannelKeys(UAnimSequence const* Sequence, FName BoneName, int32 Channel,
+								   TArray<int32>& OutFrames, TArray<float>& OutValues, float& OutConstantValue);
+
+	/** Generic: the bones Sequence holds a track for, in the order the sequence stores them. */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static TArray<FName> GetBoneTrackNames(UAnimSequence const* Sequence);
+
+private:
+	/** The sequence's FK control-rig section, or null. */
+	static UMovieSceneControlRigParameterSection* FindFKSection(UAnimSequence const* Sequence);
+
+	/** BoneName's float channel in the sequence's FK control-rig section, or null; see SetBoneChannelKeys. */
+	static FMovieSceneFloatChannel* FindBoneChannel(UAnimSequence const* Sequence, FName BoneName, int32 Channel);
 };

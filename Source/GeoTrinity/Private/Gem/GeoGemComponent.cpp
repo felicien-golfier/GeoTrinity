@@ -28,7 +28,7 @@ void UGeoGemComponent::SendLoadoutsToServer(UGeoGemProfileSave const& Profile)
 	}
 }
 
-void UGeoGemComponent::ServerSetLoadout_Implementation(EPlayerClass const PlayerClass, FGeoGemLoadout const& Loadout)
+void UGeoGemComponent::UpdateLoadoutAndResetAttributes(EPlayerClass const PlayerClass, FGeoGemLoadout const& Loadout)
 {
 	Loadouts.Add(PlayerClass, Loadout);
 
@@ -40,6 +40,10 @@ void UGeoGemComponent::ServerSetLoadout_Implementation(EPlayerClass const Player
 	{
 		Character->ResetAttributes();
 	}
+}
+void UGeoGemComponent::ServerSetLoadout_Implementation(EPlayerClass const PlayerClass, FGeoGemLoadout const& Loadout)
+{
+	UpdateLoadoutAndResetAttributes(PlayerClass, Loadout);
 }
 
 void UGeoGemComponent::ApplyGems()
@@ -73,6 +77,17 @@ void UGeoGemComponent::ApplyGems()
 			GrantedAbilityHandles.Add(Handle);
 		}
 	}
+}
+
+TArray<FActiveGameplayEffectHandle> UGeoGemComponent::GetSurvivingEffectHandles() const
+{
+	TArray<FActiveGameplayEffectHandle> Handles;
+	if (StatsEffectHandle.IsValid())
+	{
+		Handles.Add(StatsEffectHandle);
+	}
+
+	return Handles;
 }
 
 void UGeoGemComponent::GrantReward(FGeoGemReward const& Reward)

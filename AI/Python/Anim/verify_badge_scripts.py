@@ -1,4 +1,5 @@
-"""Check that the class badge clip scripts still write exactly what the live clips hold, before any of them is re-run.
+"""Check that the badge and boss clip scripts still write exactly what the live clips hold, before any of them is
+re-run.
 
 Each script runs with its asset folder swapped for a fresh sandbox, so nothing live is touched; every sandbox asset is
 then compared with its live namesake — sequences bone by bone on every frame of the built data, montages by slot,
@@ -6,8 +7,8 @@ sections, played length, blends and notifies. A live clip retouched by hand show
 it: bake it with bake_clips.py. Each run builds into a sandbox of its own, since a loaded asset cannot be deleted
 and recreated in one editor session; delete Content/Developers/AIScratch with the editor closed.
 
-Run via mcp-unreal execute_script. SCRIPTS picks what runs, in order: a script reading a sibling's clip runs after
-it. Report written to AI/Output/verify_badge_scripts.txt.
+Run via mcp-unreal execute_script or the headless pythonscript commandlet. TARGETS picks what runs, in order: a
+script reading a sibling's clip runs after it. Report written to AI/Output/verify_badge_scripts.txt.
 """
 import math
 import time
@@ -15,15 +16,21 @@ import traceback
 
 import unreal
 
-LIVE = "/Game/Characters/Anim/ClassBadge"
-SANDBOX = "/Game/Developers/AIScratch/ClassBadge_{}".format(time.strftime("%Y%m%d_%H%M%S"))
+STAMP = time.strftime("%Y%m%d_%H%M%S")
 ANIM_SCRIPTS = unreal.Paths.project_dir() + "AI/Python/Anim/"
 REPORT = unreal.Paths.project_dir() + "AI/Output/verify_badge_scripts.txt"
 
-SCRIPTS = ["class_badge_idle.py", "class_badge_body_turns.py", "class_badge_circle_charge_orbit.py",
-           "class_badge_death.py", "class_badge_deploy.py", "class_badge_rez.py",
-           "class_badge_square_fire_piston.py", "class_badge_square_sacrifice.py", "class_badge_triangle_fire.py",
-           "class_badge_triangle_reload.py"]
+# (live folder, scripts in the order they run: a script reading a sibling's clip runs after it)
+TARGETS = [
+    ("/Game/Characters/Anim/ClassBadge",
+     ["class_badge_idle.py", "class_badge_body_turns.py", "class_badge_circle_charge_orbit.py",
+      "class_badge_death.py", "class_badge_deploy.py", "class_badge_rez.py", "class_badge_square_fire_piston.py",
+      "class_badge_square_sacrifice.py", "class_badge_triangle_fire.py", "class_badge_triangle_reload.py"]),
+    ("/Game/Characters/Anim/HexBoss",
+     ["hex_boss_intro.py", "hex_boss_idle.py", "hex_boss_death.py", "hex_boss_abilities.py", "hex_boss_launch.py"]),
+    ("/Game/Characters/Anim/Star",
+     ["star_intro.py", "star_idle_breath.py", "star_death.py", "star_devastating_wave.py", "star_spike_nova.py"]),
+]
 # Below these a difference is float noise from the build.
 TRANSLATION_TOLERANCE = 0.01
 ROTATION_TOLERANCE = 0.05  # degrees
@@ -33,9 +40,9 @@ LOG = []
 LIBRARY = unreal.AnimationLibrary
 
 
-def run_in_sandbox(script):
+def run_in_sandbox(script, live, sandbox):
     path = ANIM_SCRIPTS + script
-    source = open(path, encoding="utf-8").read().replace(LIVE, SANDBOX)
+    source = open(path, encoding="utf-8").read().replace(live, sandbox)
     exec(compile(source, path, "exec"), {"__name__": "__main__"})
 
 
@@ -118,15 +125,15 @@ def compare_montage(live, sandbox):
             for key in live_layout if live_layout[key] != sandbox_layout[key]]
 
 
-def compare_all():
+def compare_all(live_root, sandbox_root):
     registry = unreal.EditorAssetLibrary
-    sandbox_paths = sorted(path.split(".")[0] for path in registry.list_assets(SANDBOX, True, False))
+    sandbox_paths = sorted(path.split(".")[0] for path in registry.list_assets(sandbox_root, True, False))
     compared = set()
     for sandbox_path in sandbox_paths:
-        live_path = sandbox_path.replace(SANDBOX, LIVE)
+        live_path = sandbox_path.replace(sandbox_root, live_root)
         sandbox = unreal.load_asset(sandbox_path)
         live = unreal.load_asset(live_path)
-        name = live_path.replace(LIVE + "/", "")
+        name = live_path.replace(live_root + "/", "")
         if isinstance(sandbox, unreal.AnimSequence) or isinstance(sandbox, unreal.AnimMontage):
             compared.add(live_path)
             if live is None:
@@ -135,25 +142,27 @@ def compare_all():
             lines = (compare_sequence if isinstance(sandbox, unreal.AnimSequence) else compare_montage)(live, sandbox)
             LOG.append("{}: {}".format(name, "MATCHES" if not lines else "DIFFERS"))
             LOG.extend("    " + line for line in lines)
-    for live_path in sorted(path.split(".")[0] for path in registry.list_assets(LIVE, True, False)):
+    for live_path in sorted(path.split(".")[0] for path in registry.list_assets(live_root, True, False)):
         asset = unreal.load_asset(live_path)
         if (isinstance(asset, unreal.AnimSequence) or isinstance(asset, unreal.AnimMontage)) \
                 and live_path not in compared:
-            LOG.append("{}: live clip no script writes".format(live_path.replace(LIVE + "/", "")))
+            LOG.append("{}: live clip no script writes".format(live_path.replace(live_root + "/", "")))
 
 
-LOG.append("sandbox " + SANDBOX)
-for script_name in SCRIPTS:
+for live_folder, scripts in TARGETS:
+    sandbox_folder = "/Game/Developers/AIScratch/{}_{}".format(live_folder.split("/")[-1], STAMP)
+    LOG.append("sandbox " + sandbox_folder)
+    for script_name in scripts:
+        try:
+            run_in_sandbox(script_name, live_folder, sandbox_folder)
+            LOG.append("ran {}".format(script_name))
+        except Exception:
+            LOG.append("FAILED {}: {}".format(script_name, traceback.format_exc()))
+
     try:
-        run_in_sandbox(script_name)
-        LOG.append("ran {}".format(script_name))
+        compare_all(live_folder, sandbox_folder)
     except Exception:
-        LOG.append("FAILED {}\n{}".format(script_name, traceback.format_exc()))
-
-try:
-    compare_all()
-except Exception:
-    LOG.append(traceback.format_exc())
+        LOG.append(traceback.format_exc())
 
 with open(REPORT, "w") as handle:
     handle.write("\n".join(LOG))

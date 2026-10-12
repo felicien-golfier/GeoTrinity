@@ -15,7 +15,8 @@ class UGeoMenuButton;
  * CloseButton, a cross, on its top-right corner — the same two buttons in the same place on every page. One asset
  * (WBP_MenuPageFrame) carries it; the page wearing it fills its NamedSlot "PageSlot" and wires both buttons
  * (UGeoMenuPageWidget).
- * Required in the BP hierarchy: UGeoMenuButton "BackButton", UGeoButton "CloseButton" (holding the cross icon).
+ * Required in the BP hierarchy: UGeoMenuButton "BackButton", UGeoButton "CloseButton" (holding the cross icon) and
+ * "CloseBox", the widget holding CloseButton and its frame.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoMenuPageFrameWidget : public UUserWidget
@@ -35,7 +36,7 @@ public:
 		return CloseButton;
 	}
 
-	/** Hides BACK and the cross with everything framing them, each up to the corner holding it. */
+	/** Collapses BackButton and CloseBox. */
 	void HideButtons();
 
 protected:
@@ -44,4 +45,8 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoButton> CloseButton;
+
+	/** The cross's corner: CloseButton with the frame drawn around it. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UWidget> CloseBox;
 };

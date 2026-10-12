@@ -14,6 +14,7 @@
 - Death: `APlayableCharacter::DeathLogic()` → `NotifyPlayerDied` (disconnect via `GeoGameMode::Logout` → `Death()`).
   - Out of fight: revive on the spot.
   - In fight: down until `AreFightPlayersDead()`; then `OnWipe(DeathTime)`, `RespawnTimer` (lets fall-death teleport land first) → `RespawnGroup()`.
+- `OnIncomingDamage` / `OnIncomingDamageShare` (server): the two stages a hit passes before shield and health, broadcast by `UGeoAttributeSetBase` (`AttributeSet/CLAUDE.md`); here so a listener binds once for every victim.
 - `RespawnGroup()`: teleport to `TargetPoint.Entrance` for `CheckpointTag`, revive all, `RequestWaitingToStart()`.
 - `CheckpointTag` / `SetCheckpointTag()`: set by the fighting arena in `StartFight()`; never replicates.
 - `RequestWaitingToStart()` is the only way to stand a match down; never leave `WaitingPostMatch`.

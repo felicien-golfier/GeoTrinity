@@ -54,6 +54,7 @@ void UGeoGemLoadoutWidget::NativeConstruct()
 	if (FillButton)
 	{
 		FillButton->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleFill);
+		FillButton->TextRole = FillTextRole;
 	}
 	if (UnequipButton)
 	{
@@ -203,6 +204,11 @@ void UGeoGemLoadoutWidget::BuildBoard()
 				WidgetTree->ConstructWidget<UGeoGemSocketButton>(UGeoGemSocketButton::StaticClass());
 			Socket->InitSocket(Index, Glyph);
 			Socket->OnPicked.BindUObject(this, &UGeoGemLoadoutWidget::PickSocket);
+			Socket->OnHoverChanged.BindWeakLambda(this,
+												  [this](int32 const SocketIndex, bool const bHovered)
+												  {
+													  Hover(NAME_None, bHovered ? SocketIndex : INDEX_NONE);
+												  });
 			AddToBoard(Socket, Cluster.Center + Ring.Radius * FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)),
 					   FVector2D(Ring.SocketSize));
 			SocketButtons.Add(Socket);
@@ -672,6 +678,7 @@ void UGeoGemLoadoutWidget::ShowStacks(UGeoGemProfileSave const& Profile, UGeoGem
 	bool const bHadFocus = StackGrid->HasFocusedDescendants();
 	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
 	UGeoListRowWidget* PickedRow = nullptr;
+	HoveredGem = NAME_None;
 	StackGrid->ClearChildren();
 
 	int32 StackIndex = 0;
@@ -692,6 +699,11 @@ void UGeoGemLoadoutWidget::ShowStacks(UGeoGemProfileSave const& Profile, UGeoGem
 											   : nullptr;
 			if (Row)
 			{
+				Row->OnHoverChanged.AddWeakLambda(this,
+												  [this, GemId](bool const bHovered)
+												  {
+													  Hover(bHovered ? GemId : NAME_None, INDEX_NONE);
+												  });
 				Row->AddColumn(MakeGemGlyph(Catalog, GemId, StackGlyphSize), 0.f);
 				UVerticalBox* Names = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 				Names->AddChildToVerticalBox(MakeText(EGeoTextRole::Body, Gem.DisplayName.ToUpper()));
@@ -729,7 +741,11 @@ void UGeoGemLoadoutWidget::ShowDetail(UGeoGemProfileSave const& Profile, UGeoGem
 	TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
 	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
 	bool const bSocketPicked = Sockets.IsValidIndex(PickedSocket);
-	FName const ShownGem = bSocketPicked ? Slotted[PickedSocket] : PickedGem;
+	bool const bSocketHovered = Sockets.IsValidIndex(HoveredSocket) && !Slotted[HoveredSocket].IsNone();
+	bool const bStackHovered = !HoveredGem.IsNone();
+	bool const bPreview = bSocketHovered ? HoveredSocket != PickedSocket : bStackHovered && HoveredGem != PickedGem;
+	FName const PickedShown = bSocketPicked ? Slotted[PickedSocket] : PickedGem;
+	FName const ShownGem = bSocketHovered ? Slotted[HoveredSocket] : bStackHovered ? HoveredGem : PickedShown;
 	FGeoGemInfo const* Gem = Catalog.Find(ShownGem);
 	TOptional<EGeoGemTier> const Tier = Catalog.FindTier(ShownGem);
 
@@ -737,7 +753,7 @@ void UGeoGemLoadoutWidget::ShowDetail(UGeoGemProfileSave const& Profile, UGeoGem
 	SetShown(HintText, !Gem || !Tier);
 	if (Gem && Tier)
 	{
-		ShowGemDetail(Profile, Catalog, *Gem, *Tier, bSocketPicked);
+		ShowGemDetail(Profile, Catalog, *Gem, *Tier, bSocketHovered || (!bStackHovered && bSocketPicked), bPreview);
 	}
 	else if (HintText)
 	{
@@ -759,7 +775,8 @@ void UGeoGemLoadoutWidget::ShowDetail(UGeoGemProfileSave const& Profile, UGeoGem
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog,
-										 FGeoGemInfo const& Gem, EGeoGemTier const Tier, bool const bSocketPicked)
+										 FGeoGemInfo const& Gem, EGeoGemTier const Tier, bool const bFromSocket,
+										 bool const bPreview)
 {
 	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
 	int32 const Owned = Profile.GetOwnedCount(Gem.Id);
@@ -772,7 +789,7 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 	{
 		int32 const TierNumber = GetTiers().IndexOfByKey(Tier) + 1;
 		DetailTierText->SetText(
-			FText::Format(bSocketPicked ? SocketTierFormat : TierFormat, TierNumber, GetTierName(Tier, false)));
+			FText::Format(bFromSocket ? SocketTierFormat : TierFormat, TierNumber, GetTierName(Tier, false)));
 	}
 	if (DetailNameText)
 	{
@@ -785,14 +802,14 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 	if (DetailCountsText)
 	{
 		int32 const InBuild = static_cast<int32>(Algo::Count(Slotted, Gem.Id));
-		DetailCountsText->SetText(bSocketPicked ? FText::Format(SocketCountsFormat, Owned, Free)
-												: FText::Format(CountsFormat, Owned, InBuild, Free));
+		DetailCountsText->SetText(bFromSocket ? FText::Format(SocketCountsFormat, Owned, Free)
+											  : FText::Format(CountsFormat, Owned, InBuild, Free));
 	}
 
-	int32 const FillCount = bSocketPicked ? 0 : GetFillCount(Profile, Catalog);
-	SetShown(EquipButton, !bSocketPicked);
-	SetShown(FillButton, !bSocketPicked);
-	SetShown(UnequipButton, bSocketPicked);
+	int32 const FillCount = bFromSocket || bPreview ? 0 : GetFillCount(Profile, Catalog);
+	SetShown(EquipButton, !bFromSocket && !bPreview);
+	SetShown(FillButton, !bFromSocket && !bPreview);
+	SetShown(UnequipButton, bFromSocket && !bPreview);
 	bool const bEmptyTarget = Algo::AnyOf(GetTargetSockets(Profile, Catalog),
 										  [&Slotted](int32 const Index)
 										  {
@@ -804,13 +821,13 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 	}
 	if (FillButton)
 	{
-		FillButton->SetLabel(FText::Format(FillFormat, FillCount));
+		FillButton->SetLabel(FillText);
 		FillButton->SetIsEnabled(FillCount > 0);
 	}
 	if (DetailNoteText)
 	{
 		bool const bCoreHeld = Tier == EGeoGemTier::Core && Slotted.Contains(Gem.Id);
-		DetailNoteText->SetText(bSocketPicked || FillCount > 0 ? FText::GetEmpty()
+		DetailNoteText->SetText(bFromSocket || bPreview || FillCount > 0 ? FText::GetEmpty()
 								: bCoreHeld					   ? NoteCoreOnce
 								: Free <= 0					   ? NoteNoFreeCopy
 															   : FText::Format(NoteNoSocket, GetTierName(Tier, false).ToLower()));
@@ -897,7 +914,21 @@ void UGeoGemLoadoutWidget::PickSocket(int32 const SocketIndex)
 	{
 		PickedGem = NAME_None;
 		PickedSocket = SocketIndex;
+		TierFilter = GeoGem::GetSockets()[SocketIndex].Tier;
 		Refresh();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::Hover(FName const GemId, int32 const SocketIndex)
+{
+	HoveredGem = GemId;
+	HoveredSocket = SocketIndex;
+	UGeoGemProfileSave const* Profile = GetProfile();
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (Profile && Catalog)
+	{
+		ShowDetail(*Profile, *Catalog);
 	}
 }
 

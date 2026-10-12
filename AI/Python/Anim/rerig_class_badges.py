@@ -72,14 +72,15 @@ def carried(translation, rotation, scale, offset):
 
 
 def rewrite(sequence, keys, parents, moves):
+    write_bone_keys = load_script("AI/Python/Anim/anim_sequence_authoring.py", "toolkit")["write_bone_keys"]
     controller = sequence.get_editor_property("controller")
     controller.open_bracket("Re-rig badge")
     for bone in keys[0]:
         parent_move = moves.get(parents[bone], unreal.Vector(0.0, 0.0, 0.0))
         frames = [(carried(*frame[bone], moves[bone]) - parent_move, frame[bone][1], frame[bone][2])
                   for frame in keys]
-        controller.set_bone_track_keys(bone, [key[0] for key in frames], [key[1] for key in frames],
-                                       [key[2] for key in frames])
+        write_bone_keys(sequence, bone, [key[0] for key in frames], [key[1] for key in frames],
+                        [key[2] for key in frames])
     controller.close_bracket()
     unreal.AnimationLibrary.finalize_bone_animation(sequence)
     unreal.EditorAssetLibrary.save_loaded_asset(sequence)

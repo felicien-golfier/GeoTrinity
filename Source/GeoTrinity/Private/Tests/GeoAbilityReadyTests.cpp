@@ -2,11 +2,13 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -98,6 +100,49 @@ bool FGeoAbilityReadyTest::RunTest(FString const& /*Parameters*/)
 
 	TestFalse(TEXT("Bond feeds no class gauge"), Bond->GetClassGauge(*ASC, Fill, bGaugeReady));
 	TestFalse(TEXT("Bond writes no label"), Bond->GetGaugeLabel(*ASC, Label));
+
+	GEngine->DestroyWorldContext(World);
+	World->DestroyWorld(false);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoAbilityOwnerDeathTest, "GeoTrinity.Abilities.OwnerDeath",
+								 GeoAbilityReadyTestFlags)
+
+bool FGeoAbilityOwnerDeathTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGameplayAbility const* Bond = LoadAbilityCDO(TEXT("Gem/GA_Core_Bond"));
+	UGeoGameplayAbility const* HealReturn = LoadAbilityCDO(TEXT("Circle/Passive/GA_HealsYouWhatYouHeal"));
+	if (!TestTrue(TEXT("Every ability Blueprint loads"), Bond && HealReturn))
+	{
+		return false;
+	}
+
+	// A listen-server world: the passives bind their events on the server only.
+	UWorld* World = UWorld::CreateWorld(EWorldType::PIE, false);
+	World->SetPlayInEditorInitialNetMode(NM_ListenServer);
+	FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::PIE);
+	WorldContext.SetCurrentWorld(World);
+	World->SetGameState(World->SpawnActor<AGeoGameState>());
+
+	AActor* Character = World->SpawnActor<AActor>();
+	UGeoAbilitySystemComponent* ASC = NewObject<UGeoAbilitySystemComponent>(Character);
+	ASC->RegisterComponent();
+	ASC->AddAttributeSetSubobject(NewObject<UCharacterAttributeSet>(Character));
+	ASC->InitAbilityActorInfo(Character, Character);
+
+	FGameplayAbilitySpecHandle const BondHandle = ASC->GiveAbility(FGameplayAbilitySpec(Bond->GetClass(), 1));
+	FGameplayAbilitySpecHandle const HealReturnHandle = ASC->GiveAbility(FGameplayAbilitySpec(HealReturn->GetClass(), 1));
+	bool const bBondActive = ASC->TryActivateAbility(BondHandle);
+	bool const bHealReturnActive = ASC->TryActivateAbility(HealReturnHandle);
+	if (TestTrue(TEXT("Both passives activate"), bBondActive && bHealReturnActive))
+	{
+		ASC->HandleOwnerDeath({});
+
+		TestTrue(TEXT("A Core passive stays active through death"), ASC->FindAbilitySpecFromHandle(BondHandle)->IsActive());
+		TestFalse(TEXT("Any other ability ends at death"), ASC->FindAbilitySpecFromHandle(HealReturnHandle)->IsActive());
+	}
 
 	GEngine->DestroyWorldContext(World);
 	World->DestroyWorld(false);

@@ -30,18 +30,11 @@ public:
 	/** Configures the sacrifice channel ability's GAS instancing, net execution, and commit behaviour. */
 	UGeoSacrificeBeamAbility();
 
-	/**
-	 * Server: captures damage about to be applied to a sacrificed victim.
-	 * Returns true when the damage was fully redirected (the victim must then take none of it).
-	 * Called from UGeoAttributeSetBase::PostGameplayEffectExecute before shield absorption.
-	 */
-	static bool TryRedirectIncomingDamage(UAbilitySystemComponent& VictimASC,
-										  FGameplayEffectContextHandle const& DamageContext, float Damage);
-
 protected:
-	/** Arms the detonation (DetonateReadyEffect, server) and starts the channel. */
+	/** Arms the detonation (DetonateReadyEffect) and binds the redirect to AGeoGameState::OnIncomingDamage (server), then
+	 * starts the channel. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
-	/** Removes all sacrifice marks (server) before calling Super. */
+	/** Unbinds the redirect and removes all sacrifice marks (server) before calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
@@ -61,13 +54,20 @@ protected:
 
 private:
 	/**
-	 * Server: adds the captured damage to the Square's SacrificeValue and splits it across its alive walls + the
-	 * Square. Static on purpose: everything is derived from the mark GE (SquareASC, AbilityLevel), so redirection
-	 * never needs a live channel instance. SourceAsc is the original damage dealer, kept as the source of the
-	 * redirect shares so the Square's own damage stats never scale them.
+	 * Server, AGeoGameState::OnIncomingDamage listener. Takes over what is left of the hit (Damage - SparedDamage) when
+	 * VictimASC is one of this channel's SacrificedActors still carrying Status.Sacrificed, the hit does not carry
+	 * bDoNotRedirectSacrifice and the Square lives: the victim loses nothing, RedirectCapturedDamage gets what it would
+	 * actually have lost (overkill dropped), and SparedDamage becomes Damage.
 	 */
-	static void RedirectCapturedDamage(float Damage, UAbilitySystemComponent* SourceAsc,
-									   UAbilitySystemComponent& SquareASC, int32 AbilityLevel);
+	void RedirectIncomingDamage(UAbilitySystemComponent& VictimASC, FGameplayEffectContextHandle const& DamageContext,
+								float Damage, float& SparedDamage);
+
+	/**
+	 * Server: adds Damage to the Square's SacrificeValue and splits it across its alive walls + the Square. SourceAsc is
+	 * the original damage dealer, kept as the source of the redirect shares so the Square's own damage stats never scale
+	 * them.
+	 */
+	void RedirectCapturedDamage(float Damage, UAbilitySystemComponent* SourceAsc);
 	/** Server: removes the sacrifice mark GE from every tracked victim. */
 	void RemoveAllSacrificeMarks();
 

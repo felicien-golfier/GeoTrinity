@@ -24,7 +24,7 @@ bool UGeoSacrificeDetonateAbility::IsReady(UAbilitySystemComponent const& ASC) c
 
 // ---------------------------------------------------------------------------------------------------------------------
 bool UGeoSacrificeDetonateAbility::GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill,
-												  bool& bOutReady) const
+												 bool& bOutReady) const
 {
 	float const Sacrificed = ASC.GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute());
 	OutFill = FMath::Clamp(Sacrificed / SacrificeForFullGauge, 0.f, 1.f);
@@ -69,6 +69,18 @@ void UGeoSacrificeDetonateAbility::OnFireTargetDataReceived(FGameplayAbilityTarg
 
 	Detonate(*AbilityTargetData);
 	EndAbility(true, false);
+}
+void UGeoSacrificeDetonateAbility::OnOwnerDeath()
+{
+	Super::OnOwnerDeath();
+	// Death disarms the sacrifice detonation (the DetonateReady GE just went away with the purge above).
+	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+	ensureMsgf(ASC, TEXT("UGeoSacrificeDetonateAbility: no ASC on OwnerDeath"));
+	{
+		ASC->RemoveActiveEffectsWithGrantedTags(
+			FGameplayTagContainer(FGeoGameplayTags::Get().Status_Square_DetonateReady));
+		ASC->SetNumericAttributeBase(UCharacterAttributeSet::GetSacrificeValueAttribute(), 0.f);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

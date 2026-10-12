@@ -12,6 +12,7 @@
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/GeoCharacter.h"
+#include "Characters/PlayableCharacter.h"
 #include "Characters/PlayerClassTypes.h"
 #include "GameplayEffect.h"
 #include "GeoTrinity/GeoTrinity.h"
@@ -411,9 +412,16 @@ void UGeoAbilitySystemComponent::InitializeDefaultAttributes()
 // ---------------------------------------------------------------------------------------------------------------------
 float UGeoAbilitySystemComponent::GetDefaultAttributeValue(FGameplayAttribute const& Attribute) const
 {
-	if (ensureMsgf(IsValid(DefaultAttributes), TEXT("%hs: Missing DefaultAttributes for %s"), __FUNCTION__, *GetName()))
+	// A player's base stats come from its class, not from the ASC (which lives on the PlayerState).
+	TSubclassOf<UGameplayEffect> Effect = DefaultAttributes;
+	if (APlayableCharacter const* Player = Cast<APlayableCharacter>(GetAvatarActor()))
 	{
-		for (FGameplayModifierInfo const& Modifier : GetDefault<UGameplayEffect>(DefaultAttributes)->Modifiers)
+		Effect = Player->GetClassDefaultAttributes();
+	}
+
+	if (ensureMsgf(IsValid(Effect), TEXT("%hs: Missing DefaultAttributes for %s"), __FUNCTION__, *GetName()))
+	{
+		for (FGameplayModifierInfo const& Modifier : GetDefault<UGameplayEffect>(Effect)->Modifiers)
 		{
 			float Value = 0.f;
 			if (Modifier.Attribute == Attribute
@@ -582,6 +590,37 @@ void UGeoAbilitySystemComponent::ReactivatePassiveAbilities()
 		if (AbilityCDO && AbilityCDO->IsPassive() && !AbilitySpec.IsActive())
 		{
 			TryActivateAbility(AbilitySpec.Handle, false);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::HandleOwnerDeath(TArray<FActiveGameplayEffectHandle> const& KeptEffects)
+{
+	{
+		FScopedAbilityListLock ActiveScopeLock(*this);
+		for (FGameplayAbilitySpec const& AbilitySpec : GetActivatableAbilities())
+		{
+			for (UGameplayAbility* Instance : AbilitySpec.GetAbilityInstances())
+			{
+				if (UGeoGameplayAbility* GeoAbility = Cast<UGeoGameplayAbility>(Instance))
+				{
+					GeoAbility->OnOwnerDeath();
+				}
+			}
+		}
+	}
+
+	ResetCooldowns();
+
+	if (GeoLib::IsServer(this))
+	{
+		for (FActiveGameplayEffectHandle const& Handle : GetActiveEffects(FGameplayEffectQuery()))
+		{
+			if (!KeptEffects.Contains(Handle))
+			{
+				RemoveActiveGameplayEffect(Handle);
+			}
 		}
 	}
 }

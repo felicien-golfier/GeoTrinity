@@ -10,6 +10,7 @@
 class UGeoGemGlyph;
 
 DECLARE_DELEGATE_OneParam(FGeoGemSocketPickedSignature, int32 /*SocketIndex*/);
+DECLARE_DELEGATE_TwoParams(FGeoGemSocketHoverChangedSignature, int32 /*SocketIndex*/, bool /*bHovered*/);
 
 /**
  * One socket of the gem board: a bare button whose whole look is its UGeoGemGlyph, grown under the cursor or the
@@ -28,6 +29,9 @@ public:
 	UGeoGemGlyph* GetGlyph() const { return Glyph; }
 
 	FGeoGemSocketPickedSignature OnPicked;
+
+	/** The cursor or the gamepad focus entering (true) or leaving (false) the socket. */
+	FGeoGemSocketHoverChangedSignature OnHoverChanged;
 
 	/** Scale of the glyph under the cursor or the gamepad focus. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "1", ClampMax = "2"))

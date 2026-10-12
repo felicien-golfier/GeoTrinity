@@ -24,26 +24,29 @@ void UGeoReloadAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo
 		return;
 	}
 
-	FGameplayAbilitySpecHandle const SpecHandle = Spec.Handle;
-	ASC->GetGameplayAttributeValueChangeDelegate(UCharacterAttributeSet::GetAmmoAttribute())
-		.AddWeakLambda(this,
-					   [this, ASC, SpecHandle](FOnAttributeChangeData const& Data)
-					   {
-						   if (Data.NewValue > 0.f || !ASC->AbilityActorInfo->IsLocallyControlledPlayer())
+	if (ASC->AbilityActorInfo->IsLocallyControlledPlayer())
+	{
+		FGameplayAbilitySpecHandle const SpecHandle = Spec.Handle;
+		ASC->GetGameplayAttributeValueChangeDelegate(UCharacterAttributeSet::GetAmmoAttribute())
+			.AddWeakLambda(this,
+						   [this, ASC, SpecHandle](FOnAttributeChangeData const& Data)
 						   {
-							   return;
-						   }
-						   CastChecked<UGeoAbilitySystemComponent>(ASC)->TryActivateAbilityWithTargetData(
-							   SpecHandle, GetAbilityTag());
-					   });
+							   if (FMath::RoundToInt(Data.NewValue) > 0.f)
+							   {
+								   return;
+							   }
+							   CastChecked<UGeoAbilitySystemComponent>(ASC)->TryActivateAbilityWithTargetData(
+								   SpecHandle, GetAbilityTag());
+						   });
+	}
 }
 
 bool UGeoReloadAbility::CheckCost(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,
 								  FGameplayTagContainer* OptionalRelevantTags) const
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	float const CurrentAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetAmmoAttribute());
-	float const MaxAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetMaxAmmoAttribute());
+	int const CurrentAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetAmmoAttribute());
+	int const MaxAmmo = ASC->GetNumericAttribute(UCharacterAttributeSet::GetMaxAmmoAttribute());
 	if (CurrentAmmo == MaxAmmo)
 	{
 		return false;

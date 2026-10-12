@@ -4,12 +4,15 @@
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Algo/Count.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "GameplayEffect.h"
+#include "GameplayEffectComponents/TargetTagsGameplayEffectComponent.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemStatsEffect.h"
@@ -588,6 +591,69 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 			  KINDA_SMALL_NUMBER);
 	TestEqual(TEXT("No ASC: beams keep the general spell distance"), GeoASLib::GetSpellDistance(nullptr),
 			  GeneralSpellDistance);
+
+	GEngine->DestroyWorldContext(World);
+	World->DestroyWorld(false);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemStatsSurviveDeathTest, "GeoTrinity.Gems.StatsSurviveDeath", GeoGemTestFlags)
+
+bool FGeoGemStatsSurviveDeathTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+
+	// A listen-server world: the death purge is server-only.
+	UWorld* World = UWorld::CreateWorld(EWorldType::PIE, false);
+	World->SetPlayInEditorInitialNetMode(NM_ListenServer);
+	FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::PIE);
+	WorldContext.SetCurrentWorld(World);
+
+	AActor* Character = World->SpawnActor<AActor>();
+	UGeoAbilitySystemComponent* ASC = NewObject<UGeoAbilitySystemComponent>(Character);
+	ASC->RegisterComponent();
+	ASC->AddAttributeSetSubobject(NewObject<UCharacterAttributeSet>(Character));
+	ASC->AddAttributeSetSubobject(NewObject<UGeoGemAttributeSet>(Character));
+	ASC->InitAbilityActorInfo(Character, Character);
+	ASC->SetNumericAttributeBase(UCharacterAttributeSet::GetDamageMultiplierAttribute(), 1.f);
+	ASC->SetNumericAttributeBase(UCharacterAttributeSet::GetDamageReductionAttribute(), 0.f);
+
+	FGeoGemLoadout Loadout;
+	Loadout.Sockets.Init(NAME_None, GeoGem::GetSockets().Num());
+	for (int32 i = 0; i < 20; ++i)
+	{
+		Loadout.Sockets[i] = "Power";
+	}
+	FActiveGameplayEffectHandle const StatsHandle =
+		ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
+
+	UGameplayEffect* OtherEffect = NewObject<UGameplayEffect>(GetTransientPackage());
+	OtherEffect->DurationPolicy = EGameplayEffectDurationType::Infinite;
+	FGameplayModifierInfo& Modifier = OtherEffect->Modifiers.AddDefaulted_GetRef();
+	Modifier.Attribute = UCharacterAttributeSet::GetDamageReductionAttribute();
+	Modifier.ModifierOp = EGameplayModOp::Additive;
+	Modifier.ModifierMagnitude = FGameplayEffectModifierMagnitude(FScalableFloat(0.5f));
+	FActiveGameplayEffectHandle const OtherHandle =
+		ASC->ApplyGameplayEffectToSelf(OtherEffect, 1.f, ASC->MakeEffectContext());
+
+	UGameplayEffect* CooldownEffect = NewObject<UGameplayEffect>(GetTransientPackage());
+	CooldownEffect->DurationPolicy = EGameplayEffectDurationType::Infinite;
+	FInheritedTagContainer CooldownTags;
+	CooldownTags.AddTag(FGeoGameplayTags::Get().Ability_Cooldown);
+	CooldownEffect->FindOrAddComponent<UTargetTagsGameplayEffectComponent>().SetAndApplyTargetTagChanges(CooldownTags);
+	ASC->ApplyGameplayEffectToSelf(CooldownEffect, 1.f, ASC->MakeEffectContext());
+	TestTrue(TEXT("Cooldown tag held before death"), ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Ability_Cooldown));
+
+	ASC->HandleOwnerDeath({StatsHandle});
+
+	TestTrue(TEXT("Gem stats effect survives death"), ASC->GetActiveGameplayEffect(StatsHandle) != nullptr);
+	TestEqual(TEXT("Gem stats still modify the attribute"), ASC->GetNumericAttribute(UCharacterAttributeSet::GetDamageMultiplierAttribute()),
+			  1.04f, KINDA_SMALL_NUMBER);
+	TestTrue(TEXT("An unrelated effect is purged"), ASC->GetActiveGameplayEffect(OtherHandle) == nullptr);
+	TestEqual(TEXT("Its modifier is gone"), ASC->GetNumericAttribute(UCharacterAttributeSet::GetDamageReductionAttribute()),
+			  0.f, KINDA_SMALL_NUMBER);
+	TestFalse(TEXT("The cooldown is cleared"), ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Ability_Cooldown));
 
 	GEngine->DestroyWorldContext(World);
 	World->DestroyWorld(false);

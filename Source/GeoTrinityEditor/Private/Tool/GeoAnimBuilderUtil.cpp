@@ -16,6 +16,7 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/Skeleton.h"
+#include "Channels/MovieSceneFloatChannel.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
@@ -26,6 +27,13 @@
 #include "MeshDescription.h"
 #include "ReferenceSkeleton.h"
 #include "Rendering/SkeletalMeshModel.h"
+#include "Rigs/FKControlRig.h"
+#include "Rigs/RigHierarchy.h"
+#include "Sections/MovieSceneParameterSection.h"
+#include "Sequencer/MovieSceneControlRigParameterSection.h"
+#include "Sequencer/MovieSceneControlRigParameterTrack.h"
+#include "MovieScene.h"
+#include "MovieSceneSequence.h"
 #include "StaticToSkeletalMeshConverter.h"
 
 namespace
@@ -432,4 +440,131 @@ bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, F
 	FKismetEditorUtilities::CompileBlueprint(AnimBlueprint);
 	UEditorLoadingAndSavingUtils::SavePackages({AnimBlueprint->GetPackage(), Skeleton->GetPackage()}, false);
 	return bLinked && AnimBlueprint->Status != BS_Error;
+}
+
+UMovieSceneControlRigParameterSection* UGeoAnimBuilderUtil::FindFKSection(UAnimSequence const* Sequence)
+{
+	UMovieSceneSequence const* DataModel =
+		Sequence ? Cast<UMovieSceneSequence>(Sequence->GetDataModelInterface().GetObject()) : nullptr;
+	UMovieScene const* MovieScene = DataModel ? DataModel->GetMovieScene() : nullptr;
+	if (ensureMsgf(MovieScene, TEXT("FindFKSection needs a sequence with a sequencer-backed data model")))
+	{
+		for (UMovieSceneTrack* Track : MovieScene->GetTracks())
+		{
+			UMovieSceneControlRigParameterTrack const* ControlRigTrack =
+				Cast<UMovieSceneControlRigParameterTrack>(Track);
+			if (ControlRigTrack)
+			{
+				for (UMovieSceneSection* TrackSection : ControlRigTrack->GetAllSections())
+				{
+					UMovieSceneControlRigParameterSection* Section =
+						Cast<UMovieSceneControlRigParameterSection>(TrackSection);
+					if (Section)
+					{
+						return Section;
+					}
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
+FMovieSceneFloatChannel* UGeoAnimBuilderUtil::FindBoneChannel(UAnimSequence const* Sequence, FName BoneName,
+															  int32 Channel)
+{
+	if (!ensureMsgf(Channel >= 0 && Channel < 9, TEXT("FindBoneChannel needs a channel in 0-8 (got %d)"), Channel))
+	{
+		return nullptr;
+	}
+
+	UMovieSceneControlRigParameterSection* Section = FindFKSection(Sequence);
+	if (Section)
+	{
+		FRigElementKey const BoneKey(URigHierarchy::GetSanitizedName(BoneName), ERigElementType::Bone);
+		FName const ControlName = UFKControlRig::GetControlName(BoneKey.Name, ERigElementType::Bone);
+		for (FTransformParameterNameAndCurves& Parameter : Section->GetTransformParameterNamesAndCurves())
+		{
+			if (Parameter.ParameterName == ControlName)
+			{
+				FMovieSceneFloatChannel* Channels[9] = {
+					&Parameter.Translation[0], &Parameter.Translation[1], &Parameter.Translation[2],
+					&Parameter.Rotation[0],	   &Parameter.Rotation[1],	  &Parameter.Rotation[2],
+					&Parameter.Scale[0],	   &Parameter.Scale[1],		  &Parameter.Scale[2]};
+				return Channels[Channel];
+			}
+		}
+	}
+	return nullptr;
+}
+
+TArray<FName> UGeoAnimBuilderUtil::GetBoneTrackNames(UAnimSequence const* Sequence)
+{
+	TArray<FName> BoneNames;
+	UMovieSceneControlRigParameterSection* Section = FindFKSection(Sequence);
+	if (Section)
+	{
+		for (FTransformParameterNameAndCurves const& Parameter : Section->GetTransformParameterNamesAndCurves())
+		{
+			BoneNames.Add(UFKControlRig::GetControlTargetName(Parameter.ParameterName, ERigElementType::Bone));
+		}
+	}
+	return BoneNames;
+}
+
+bool UGeoAnimBuilderUtil::SetBoneChannelKeys(UAnimSequence* Sequence, FName BoneName, int32 Channel,
+											 TArray<int32> Frames, TArray<float> Values, float ConstantValue)
+{
+	if (!ensureMsgf(Frames.Num() == Values.Num(), TEXT("SetBoneChannelKeys needs one value per frame (got %d/%d)"),
+					Frames.Num(), Values.Num()))
+	{
+		return false;
+	}
+
+	FMovieSceneFloatChannel* BoneChannel = FindBoneChannel(Sequence, BoneName, Channel);
+	if (BoneChannel)
+	{
+		BoneChannel->Reset();
+		if (Frames.IsEmpty())
+		{
+			BoneChannel->SetDefault(ConstantValue);
+		}
+
+		TArray<FFrameNumber> Times;
+		TArray<FMovieSceneFloatValue> Keys;
+		for (int32 Index = 0; Index < Frames.Num(); ++Index)
+		{
+			FMovieSceneFloatValue Key(Values[Index]);
+			Key.InterpMode = RCIM_Linear;
+			Times.Add(FFrameNumber(Frames[Index]));
+			Keys.Add(Key);
+		}
+		BoneChannel->Set(MoveTemp(Times), MoveTemp(Keys));
+		BoneChannel->PostEditChange();
+
+		Sequence->Modify();
+		Sequence->MarkPackageDirty();
+		Cast<UMovieSceneSequence>(Sequence->GetDataModelInterface().GetObject())->GetMovieScene()->MarkAsChanged();
+	}
+	return BoneChannel != nullptr;
+}
+
+bool UGeoAnimBuilderUtil::GetBoneChannelKeys(UAnimSequence const* Sequence, FName BoneName, int32 Channel,
+											 TArray<int32>& OutFrames, TArray<float>& OutValues,
+											 float& OutConstantValue)
+{
+	FMovieSceneFloatChannel const* BoneChannel = FindBoneChannel(Sequence, BoneName, Channel);
+	if (BoneChannel)
+	{
+		for (FFrameNumber const Frame : BoneChannel->GetTimes())
+		{
+			OutFrames.Add(Frame.Value);
+		}
+		for (FMovieSceneFloatValue const& Key : BoneChannel->GetValues())
+		{
+			OutValues.Add(Key.Value);
+		}
+		OutConstantValue = BoneChannel->GetDefault().Get(0.f);
+	}
+	return BoneChannel != nullptr;
 }

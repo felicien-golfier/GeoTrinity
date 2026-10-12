@@ -201,15 +201,20 @@ void APlayableCharacter::ResetAbilitiesAndEffects()
 
 void APlayableCharacter::DeathLogic()
 {
-	ResetAbilitiesAndEffects();
+	AGeoPlayerState const* GeoPlayerState = GetPlayerState<AGeoPlayerState>();
+	if (IsValid(AbilitySystemComponent)
+		&& ensureMsgf(GeoPlayerState, TEXT("%hs: no player state on %s"), __FUNCTION__, *GetName()))
+	{
+		AbilitySystemComponent->HandleOwnerDeath(GeoPlayerState->GetGemComponent()->GetSurvivingEffectHandles());
+	}
+
 	if (IsValid(AbilitySystemComponent) && GeoLib::IsServer(this))
 	{
 		// A death that never went through the health path (an arena fall) still leaves health and shield behind.
 		AbilitySystemComponent->SetNumericAttributeBase(UGeoAttributeSetBase::GetHealthAttribute(), 0.f);
 		AbilitySystemComponent->SetNumericAttributeBase(UGeoAttributeSetBase::GetShieldAttribute(), 0.f);
-		// Death disarms the sacrifice detonation (the DetonateReady GE just went away with the purge above).
-		AbilitySystemComponent->SetNumericAttributeBase(UCharacterAttributeSet::GetSacrificeValueAttribute(), 0.f);
 	}
+
 	StopCharacter();
 	SetCanBeDamaged(false);
 
@@ -446,17 +451,28 @@ void APlayableCharacter::GiveLife()
 	AbilitySystemComponent->ReactivatePassiveAbilities();
 }
 
-void APlayableCharacter::ResetAttributes()
+TSubclassOf<UGameplayEffect> APlayableCharacter::GetClassDefaultAttributes() const
 {
 	FPlayerClassData const* PlayerClassData = GetClassData(GetPlayerClass());
 	if (!PlayerClassData
 		|| !ensureMsgf(PlayerClassData->DefaultAttributes, TEXT("%hs: No DefaultAttributes for class on %s"),
 					   __FUNCTION__, *GetName()))
 	{
+		return nullptr;
+	}
+
+	return PlayerClassData->DefaultAttributes;
+}
+
+void APlayableCharacter::ResetAttributes()
+{
+	TSubclassOf<UGameplayEffect> const DefaultAttributes = GetClassDefaultAttributes();
+	if (!DefaultAttributes)
+	{
 		return;
 	}
 
-	AbilitySystemComponent->ApplyEffectToSelf(PlayerClassData->DefaultAttributes);
+	AbilitySystemComponent->ApplyEffectToSelf(DefaultAttributes);
 	GetPlayerState<AGeoPlayerState>()->GetGemComponent()->ApplyGems();
 	AbilitySystemComponent->SetNumericAttributeBase(
 		UGeoAttributeSetBase::GetHealthAttribute(),

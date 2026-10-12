@@ -223,6 +223,14 @@ void UGeoGameplayAbility::EndAbility(bool bReplicateEndAbility, bool bWasCancell
 			   bWasCancelled);
 }
 
+void UGeoGameplayAbility::OnOwnerDeath()
+{
+	if (IsActive())
+	{
+		CancelAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true);
+	}
+}
+
 void UGeoGameplayAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 										FGameplayAbilityActorInfo const* ActorInfo,
 										FGameplayAbilityActivationInfo const ActivationInfo)

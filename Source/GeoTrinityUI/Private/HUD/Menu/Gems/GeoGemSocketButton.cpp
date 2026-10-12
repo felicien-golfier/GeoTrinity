@@ -43,10 +43,12 @@ void UGeoGemSocketButton::HandleClicked()
 void UGeoGemSocketButton::HandleHovered()
 {
 	Glyph->SetRenderScale(FVector2D(HoverScale));
+	OnHoverChanged.ExecuteIfBound(SocketIndex, true);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemSocketButton::HandleUnhovered()
 {
 	Glyph->SetRenderScale(FVector2D(1.f));
+	OnHoverChanged.ExecuteIfBound(SocketIndex, false);
 }

@@ -112,6 +112,13 @@ public:
 	void EndAbility(bool bReplicateEndAbility = true, bool bWasCancelled = false);
 
 	/**
+	 * Called on every machine on each live instance when the owner dies (UGeoAbilitySystemComponent::HandleOwnerDeath).
+	 * Default: ends this instance cancelled, a no-op when it is not active. Override to stay active, or to reset state
+	 * and stay.
+	 */
+	virtual void OnOwnerDeath();
+
+	/**
 	 * Returns the normalized charge progress (0–1) based on time held since activation.
 	 * Only meaningful when FireMode == EFireMode::ChargeForFireDelay.
 	 */
