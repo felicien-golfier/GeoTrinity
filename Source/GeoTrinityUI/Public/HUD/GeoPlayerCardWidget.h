@@ -28,6 +28,7 @@ public:
 	/** Shows InPlayerState's player and binds to their ability system. */
 	void InitForPlayer(AGeoPlayerState* InPlayerState);
 
+	/** Returns the player state this card is currently showing. */
 	AGeoPlayerState* GetPlayerState() const { return PlayerState.Get(); }
 
 protected:

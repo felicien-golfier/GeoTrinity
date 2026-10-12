@@ -23,11 +23,13 @@ class GEOTRINITYUI_API UGeoMenuPageFrameWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	/** Returns the Back button at the frame's bottom-left corner. */
 	UGeoMenuButton* GetBackButton() const
 	{
 		return BackButton;
 	}
 
+	/** Returns the Close cross button at the frame's top-right corner. */
 	UGeoButton* GetCloseButton() const
 	{
 		return CloseButton;

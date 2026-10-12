@@ -41,6 +41,7 @@ public:
 	/** Turns the highlight on or off: highlights the selected socket and sockets the selected gem can fill. */
 	void SetHighlighted(bool bInHighlighted);
 
+	/** Sets the width and height asked of the layout; the glyph fits whatever box it is given. */
 	void SetSize(float InSize);
 
 	/** Pushes Tier, State, Color, UnlockLevel, bHighlighted and Size to the underlying SGeoGemGlyph. */
