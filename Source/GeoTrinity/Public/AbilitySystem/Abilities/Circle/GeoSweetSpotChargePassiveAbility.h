@@ -29,6 +29,13 @@ public:
 	/** Returns the gauge fill (0–1): recorded HealCharge over HealRequiredForFullCharge, clamped. */
 	float GetGaugeRatio(UAbilitySystemComponent const& ASC) const;
 
+	/** Ready once the gauge is full. */
+	virtual bool IsReady(UAbilitySystemComponent const& ASC) const override;
+	/** The Circle's class gauge: the gauge ratio, ready once full. */
+	virtual bool GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill, bool& bOutReady) const override;
+	/** The gauge ratio as a whole percentage ("42%"), always written. */
+	virtual bool GetGaugeLabel(UAbilitySystemComponent const& ASC, FText& OutLabel) const override;
+
 	/** Returns the damage-multiplier boost a full-gauge sweet-spot release adds: lerped from EdgeDamageMultiplierBoost
 	 * to CenterDamageMultiplierBoost by SweetSpotPrecision (0 = window edge, 1 = dead center). */
 	float GetHealsToDamageMultiplier(float SweetSpotPrecision) const;

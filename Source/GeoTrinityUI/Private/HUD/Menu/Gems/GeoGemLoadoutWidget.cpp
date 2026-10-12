@@ -588,16 +588,10 @@ TArray<int32> UGeoGemLoadoutWidget::GetTargetSockets(UGeoGemProfileSave const& P
 // ---------------------------------------------------------------------------------------------------------------------
 int32 UGeoGemLoadoutWidget::GetFillCount(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog) const
 {
-	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
-	int32 const EmptyTargets = Algo::CountIf(GetTargetSockets(Profile, Catalog),
-											 [&Slotted](int32 const Index)
-											 {
-												 return Slotted[Index].IsNone();
-											 });
 	int32 const MostCopies = Catalog.FindTier(PickedGem) == EGeoGemTier::Core
 							   ? 1
 							   : Profile.GetFreeCount(PickedGem, ShownClass);
-	return FMath::Min(EmptyTargets, MostCopies);
+	return FMath::Min(GetTargetSockets(Profile, Catalog).Num(), MostCopies);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -799,14 +793,19 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 	SetShown(EquipButton, !bSocketPicked);
 	SetShown(FillButton, !bSocketPicked);
 	SetShown(UnequipButton, bSocketPicked);
+	bool const bEmptyTarget = Algo::AnyOf(GetTargetSockets(Profile, Catalog),
+										  [&Slotted](int32 const Index)
+										  {
+											  return Slotted[Index].IsNone();
+										  });
 	if (EquipButton)
 	{
-		EquipButton->SetIsEnabled(FillCount > 0);
+		EquipButton->SetIsEnabled(FillCount > 0 && bEmptyTarget);
 	}
 	if (FillButton)
 	{
 		FillButton->SetLabel(FText::Format(FillFormat, FillCount));
-		FillButton->SetIsEnabled(FillCount > 1);
+		FillButton->SetIsEnabled(FillCount > 0);
 	}
 	if (DetailNoteText)
 	{
@@ -949,7 +948,7 @@ void UGeoGemLoadoutWidget::HandleFill()
 {
 	UGeoGemProfileSave* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
-	if (Profile && Catalog && Profile->FillEmptySockets(*Catalog, ShownClass, PickedGem) > 0)
+	if (Profile && Catalog && Profile->FillSockets(*Catalog, ShownClass, PickedGem) > 0)
 	{
 		CommitChanges();
 	}

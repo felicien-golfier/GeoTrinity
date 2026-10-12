@@ -126,11 +126,11 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 	TestFalse(TEXT("Unknown gem"), Profile->Equip(Catalog, EPlayerClass::Triangle, LevelOneChip, "Nothing"));
 
 	TestEqual(TEXT("Fill at level 1 takes both open Chip sockets"),
-			  Profile->FillEmptySockets(Catalog, EPlayerClass::Triangle, "Power"), 2);
+			  Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Power"), 2);
 	TestEqual(TEXT("Slotted copies are taken from the class's free count"),
 			  Profile->GetFreeCount("Power", EPlayerClass::Triangle), 1);
 	TestEqual(TEXT("Another class slots the same copies"),
-			  Profile->FillEmptySockets(Catalog, EPlayerClass::Circle, "Power"), 2);
+			  Profile->FillSockets(Catalog, EPlayerClass::Circle, "Power"), 2);
 	TestEqual(TEXT("Its free count is its own"), Profile->GetFreeCount("Power", EPlayerClass::Circle), 1);
 	TestEqual(TEXT("A copy slotted in two classes is reserved once"), Profile->GetBreakableCount("Power"), 1);
 	TestEqual(TEXT("Owned counts every copy"), Profile->GetOwnedCount("Power"), 3);
@@ -149,11 +149,24 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 	TestFalse(TEXT("Chip in a Core socket"),
 			  Profile->Equip(Catalog, EPlayerClass::Triangle, FindSocket(EGeoGemTier::Core, 7), "Power"));
 	TestEqual(TEXT("At level 20 the remaining copies fill"),
-			  Profile->FillEmptySockets(Catalog, EPlayerClass::Triangle, "Power"), 2);
+			  Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Power"), 2);
+
+	Profile->SetClassLevel(EPlayerClass::Triangle, 1);
+	TestEqual(TEXT("Lowering the level empties the sockets locked again"),
+			  static_cast<int32>(Algo::CountIf(Profile->GetLoadout(EPlayerClass::Triangle).Sockets,
+											   [](FName const GemId)
+											   {
+												   return !GemId.IsNone();
+											   })),
+			  2);
+	TestEqual(TEXT("Fill replaces slotted gems while copies are free"),
+			  Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Guard"), 1);
+	Profile->SetClassLevel(EPlayerClass::Triangle, GeoGem::MaxClassLevel);
+	Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Power");
 
 	Profile->AddGems("Surplus", 2);
 	TestEqual(TEXT("A Core fills one socket at most"),
-			  Profile->FillEmptySockets(Catalog, EPlayerClass::Triangle, "Surplus"), 1);
+			  Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Surplus"), 1);
 	TestFalse(TEXT("A loadout holds each Core once"),
 			  Profile->Equip(Catalog, EPlayerClass::Triangle, FindSocket(EGeoGemTier::Core, 14), "Surplus"));
 	TestFalse(TEXT("A Core socket stays locked until its cluster's last level"),
@@ -224,10 +237,10 @@ bool FGeoGemForgeTest::RunTest(FString const& /*Parameters*/)
 	UGeoGemProfileSave* Profile = NewObject<UGeoGemProfileSave>();
 
 	Profile->AddGems("Power", 4);
-	Profile->FillEmptySockets(Catalog, EPlayerClass::Triangle, "Power");
+	Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Power");
 	TestEqual(TEXT("Breaking down never touches slotted copies"), Profile->BreakDown(Catalog, "Power", 10), 2);
 	TestEqual(TEXT("Slotted copies stay owned"), Profile->GetOwnedCount("Power"), 2);
-	Profile->FillEmptySockets(Catalog, EPlayerClass::Circle, "Power");
+	Profile->FillSockets(Catalog, EPlayerClass::Circle, "Power");
 	TestEqual(TEXT("Copies slotted in two classes are never broken down"), Profile->BreakDown(Catalog, "Power", 10), 0);
 	TestEqual(TEXT("Shards from two Chips"), Profile->GetShards(), 2);
 

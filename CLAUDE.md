@@ -9,10 +9,11 @@ Applies to every session, every agent (interactive, daily, nightly, cloud). Defa
 1. **Why** — the user states the goal. No file written.
 2. **How** — discuss the approach, or the user dictates it. No file written.
 3. **Write it down** — the `CLAUDE.md` of every code folder and `AI/Python` folder touched, written as if the feature exists (map, intent, invariants). Then ONE temporary `AI/Pending/<Feature>.md`: its `Goal:` line is the Why, then everything left to do (template: `AI/Pending/README.md`). Stop; the user reviews the docs.
-   When the behaviour can be automated, the Pending file lists the test files to write (lightest layer, `AI/Testing.md`) and the run command.
+   Grouping: a new feature is also a chance to regroup. Look for existing code of the same kind and fold it, with the new code, into a shared folder (own `CLAUDE.md`, ≥ 3 files rule below); list the moves in the Pending file.
+   Tests: the Pending file lists them per `AI/CodingStyle.md` ("Tests").
    Sort every piece of info with one test: *still true and useful to a future task once this feature ships?* Yes (a lasting design rule, layout or behaviour choice) → the `CLAUDE.md` of the leaf folder that owns it. No (one-off steps, sources to fetch from, assets to import, values to copy) → the Pending file only, gone when it is deleted.
 4. **What** — only on the user's go, with the context cleared or not: implement what the docs say (code, scripts, Pending items an editor script can do). Tick the Pending file, delete it when empty, and fix any CLAUDE.md that drifted from what was built.
-   Tests: when possible, write test files next to the code in the same step (`AI/Testing.md`), and run them headless once built. A feature is not done without its tests unless they cannot be automated (say why).
+   Tests: written and run per `AI/CodingStyle.md` ("Tests").
    Verification: no editor testing by default (PIE, live editor, MCP in-editor checks) — only when the user asks. Big tasks (full feature, tricky refactor, …) must at least be built, overriding "Build only when the user asks"; then run their tests.
 
 Gate rules:
@@ -52,11 +53,12 @@ Gate rules:
 | How the agent must behave | this file ("Rules"), `AI/CLAUDE.md` ("Working rules") |
 
 ## Writing CLAUDE.md
-- Written in workflow step 3; the daily agent only does JavaDoc comments (`AI/Tasks/`).
+- Written in workflow step 3; the daily agent only does JavaDoc comments (`AI/Tasks/`) and never rewrites a `CLAUDE.md` to follow the code — only fixes a mistake or fills a missing part.
 - A map, not documentation: purpose line, file → one-line role table, then only what code and comments do not say — intent, why, invariants, ordering, cross-class links.
 - Fragments, not sentences. The good way of doing; never "don't do X" history (a real pitfall goes to `TroobleshootingLogs.md`).
 - Pin-point down to the leaf folder; leaf = where the code's architecture is explained (the way we go, what we expect).
 - ≥ 3 files of one kind → own subfolder with its own `CLAUDE.md`. Keep each doc small enough to load whole.
+- Each fact in one place only; any other section that needs it points to it (as step 3 "Grouping" points to the ≥ 3 files rule above).
 
 ## Where things are
 | Need | File |

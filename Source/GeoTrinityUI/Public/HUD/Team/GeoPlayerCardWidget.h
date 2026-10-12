@@ -58,7 +58,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMeter> GaugeRing;
 
-	/** The class gauge as a percentage; collapsed for a class without one. */
+	/** The class gauge's number (its ability's GetGaugeLabel), as GaugeFormat writes it; collapsed without a gauge or a
+	 * number. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> GaugeText;
 
@@ -70,26 +71,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPlayerCard")
 	FText ShieldFormat = INVTEXT("\u00B7  SHIELD {0}");
 
-	/** {0} is the gauge's whole percentage. */
+	/** {0} is the gauge label, unit included: the same number as the ability's slot tile. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPlayerCard")
-	FText GaugeFormat = INVTEXT("\u00B7  CHARGE {0}%");
-
-	/** Sacrificed damage that fills the Square's gauge and readies it. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPlayerCard", meta = (ClampMin = "1"))
-	float SacrificeForFullGauge = 200.f;
+	FText GaugeFormat = INVTEXT("\u00B7  {0}");
 
 private:
 	/** Shape, colours and role of PlayerClass, from the theme. */
 	void ShowClass(EPlayerClass PlayerClass);
-	/** Fills the gauge frame and text, or collapses them when the class has no gauge. */
+	/** Fills the gauge frame and writes its number, collapsing the text without a number and both without a gauge. */
 	void RefreshGauge();
 
-	/**
-	 * The class gauge of the shown player: the Circle's sweet-spot charge, the Square's armed sacrifice over
-	 * SacrificeForFullGauge, ready once full; the Triangle's has no fill and is ready (and full) while a blinking turret
-	 * can be recalled. False for a class without one.
-	 */
-	bool GetClassGauge(float& OutFill, bool& bOutReady) const;
+	/** The class gauge of the shown player: the first granted ability whose GetClassGauge answers, with that ability's
+	 * GetGaugeLabel in OutLabel (empty when it writes none). False for a class without one. */
+	bool GetClassGauge(float& OutFill, bool& bOutReady, FText& OutLabel) const;
 
 	TWeakObjectPtr<AGeoPlayerState> PlayerState;
 

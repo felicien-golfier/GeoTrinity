@@ -12,7 +12,7 @@ class UGeoMeterStyle;
 
 /**
  * A ratio drawn in a UGeoMeterStyle: a health bar with its shield overhang, a class gauge frame, a cooldown sweep, a
- * status timer. A ring can take a polygon's shape and, while ready, pulses with small copies of that shape riding round
+ * status timer, a slot's rising value gauge. A ring can take a polygon's shape and, while ready, pulses with small copies of that shape riding round
  * it. Draws with Slate primitives: no texture, no material.
  */
 UCLASS()

@@ -22,8 +22,6 @@ void UTileCarveRayPattern::TickPattern(float const ServerTime, float const Spent
 
 void UTileCarveRayPattern::EndPattern(bool bForceStop)
 {
-	Super::EndPattern(bForceStop);
-
 	if (bDestroyLastTileHit && GeoLib::IsServer(GetWorld()))
 	{
 		if (AGeoHexArena* const Arena = AGeoHexArena::GetArenaOfBoss(StoredPayload.SourceAvatar))
@@ -37,6 +35,8 @@ void UTileCarveRayPattern::EndPattern(bool bForceStop)
 
 		HighlightedTile.Reset();
 	}
+
+	Super::EndPattern(bForceStop);
 }
 
 AGeoHexArena* UTileCarveRayPattern::FindLastTileHit(float const SpentTime, FIntPoint& OutTile) const

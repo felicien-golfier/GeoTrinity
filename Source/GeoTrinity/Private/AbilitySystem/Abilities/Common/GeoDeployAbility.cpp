@@ -30,29 +30,34 @@ UGeoDeployAbility::UGeoDeployAbility()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-int32 UGeoDeployAbility::GetMaxStacks() const
+int32 UGeoDeployAbility::GetMaxStacks(UAbilitySystemComponent const& ASC) const
 {
-	UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
-	bool const bHasSurplus = ASC && ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Surplus);
+	bool const bHasSurplus = ASC.HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Surplus);
 	return MaxCharges + (bHasSurplus ? FMath::RoundToInt(GeoASLib::GetGemMagnitude("Surplus")) : 0);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-int32 UGeoDeployAbility::GetCurrentStacks() const
+int32 UGeoDeployAbility::GetCurrentStacks(UAbilitySystemComponent const& ASC) const
 {
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	UGameplayEffect const* CooldownGE = GetCooldownGameplayEffect();
-	if (!ASC || !CooldownGE)
+	if (!CooldownGE)
 	{
 		return 0;
 	}
 
+	int32 const MaxStacks = GetMaxStacks(ASC);
 	int32 const StackLimit = CooldownGE->GetStackLimitCount();
-	ensureMsgf(StackLimit <= 0 || StackLimit >= GetMaxStacks(),
+	ensureMsgf(StackLimit <= 0 || StackLimit >= MaxStacks,
 			   TEXT("%hs: %s's Cooldown GE caps its stacks at %d, below its %d charges; set its StackLimitCount to 0"),
-			   __FUNCTION__, *GetName(), StackLimit, GetMaxStacks());
+			   __FUNCTION__, *GetName(), StackLimit, MaxStacks);
 	// A pool a removed Surplus shrank may still hold more spent charges than it has.
-	return FMath::Max(GetMaxStacks() - ASC->GetGameplayEffectCount(CooldownGE->GetClass(), nullptr), 0);
+	return FMath::Max(MaxStacks - ASC.GetGameplayEffectCount(CooldownGE->GetClass(), nullptr), 0);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoDeployAbility::IsReady(UAbilitySystemComponent const& ASC) const
+{
+	return GetCurrentStacks(ASC) > 0;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -60,7 +65,7 @@ void UGeoDeployAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo
 {
 	Super::OnGiveAbility(ActorInfo, Spec);
 
-	LastKnownStacks = GetMaxStacks();
+	LastKnownStacks = GetMaxStacks(*ActorInfo->AbilitySystemComponent);
 
 	FGameplayTagContainer const* CooldownTags = GetCooldownTags();
 	ensureMsgf(CooldownTags && !CooldownTags->IsEmpty(),
@@ -114,7 +119,8 @@ bool UGeoDeployAbility::CanActivateAbility(FGameplayAbilitySpecHandle const Hand
 										   FGameplayTagContainer const* TargetTags,
 										   FGameplayTagContainer* OptionalRelevantTags) const
 {
-	return GetCurrentStacks() > 0
+	return ActorInfo && ActorInfo->AbilitySystemComponent.IsValid()
+		&& GetCurrentStacks(*ActorInfo->AbilitySystemComponent) > 0
 		&& Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
 }
 
@@ -131,7 +137,7 @@ void UGeoDeployAbility::OnCooldownTagChanged(FGameplayTag const /*CooldownTag*/,
 {
 	// NewCount tracks the tag's presence, not the pool: AnyCountChange also fires from Notify_StackCountChange, where
 	// the count is unchanged. Re-read the pool to tell a refill from a spend.
-	int32 const NewStacks = GetCurrentStacks();
+	int32 const NewStacks = GetCurrentStacks(*GetAbilitySystemComponentFromActorInfo());
 	bool const bRefilled = NewStacks > LastKnownStacks;
 	LastKnownStacks = NewStacks;
 

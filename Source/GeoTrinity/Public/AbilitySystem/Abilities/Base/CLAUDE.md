@@ -20,6 +20,15 @@
 - `OnFireTargetDataReceived` is server-only by design; `Fire()` always sends the RPC.
 - `GetFireOrigin2D` / `GetFireYaw` are the override points for aim.
 
+### HUD readiness (`IsReady`, `GetClassGauge`, `GetGaugeLabel`)
+- `IsReady(ASC) const`: true = slot frame lit. One rule per ability; the UI never names an ability class.
+- `GetClassGauge(ASC, OutFill, bOutReady) const`: false = no class gauge (default). True on the one ability per class that feeds the player card's class ring and its own slot / passive tile gauge (same fill on both).
+- `GetGaugeLabel(ASC, OutLabel) const`: the number written in the middle of that slot gauge and as the player card's gauge text; false = no number on either (default). A two-state gauge (fill 0 or 1) never writes its fill: it writes a count when ready, or nothing. Never "0 / X".
+- Both called on the CDO on clients (passives are server-only instances): read only the given ASC and its avatar — attributes, GE tags and stacks, replicated components. Never instance members, never new replication.
+- `IsReady` default: passive without `CooldownGameplayEffectClass` → false (nothing to show); otherwise → none of `GetCooldownTags()` on the ASC. Covers actives and cooldown passives.
+- Overrides: deploy charges, sweet-spot, shield burst, sacrifice detonate (`Common/`, `Circle/`, `Square/` CLAUDE.md). Gauge and label overrides: sweet-spot, sacrifice detonate, recall turret.
+- Gauge fill and readiness are separate answers: fill shows progress, `bOutReady` follows the ability's own ready rule (sacrifice: armed at any fill).
+
 ## GeoChannelBeamAbility
 - Server creates/destroys the replicated `UGeoBeamVFXComponent` in `OnGiveAbility` / `OnRemoveAbility`.
 - Windup preview shows the shared Ray Zone Indicator sized to `GetFireDelay()`.

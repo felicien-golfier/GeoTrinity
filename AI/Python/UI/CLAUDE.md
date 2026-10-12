@@ -38,5 +38,6 @@ Widget Blueprints and trees. Docs: `AI/UI.md`, `AI/MCP/MCP_UI.md`. Every write g
 | `group_widgets.py` | Wrap canvas children into one panel without moving them |
 | `crosshair_cursor.py` | Crosshair software cursor |
 | `passive_bar.py` | `WBP_PassiveSlot` (copy of the ability slot, no key / count) and `PassiveBox` + `PassiveSlotWidgetClass` on `WBP_AbilityBar`; headless |
+| `slot_gauge.py` | `GaugeMeter` (`DA_Meter_SlotGauge`) + `GaugeText` in `WBP_AbilitySlot` and `WBP_PassiveSlot`, between `Icon` and `CooldownMeter`; headless, after `wings_hud.py` / `passive_bar.py` |
 | `import_icons.py` | `DA_Icon_*` from `SourceArt/Icons`, set on abilities and effects |
 | `import_fonts.py` | Menu fonts as Font Face + Font (answer Yes) |

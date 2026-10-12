@@ -140,6 +140,32 @@ public:
 	bool IsPassive() const;
 
 	/**
+	 * Whether the HUD lights this ability's slot frame: it has something ready to use. Default: a passive without a
+	 * Cooldown GE never (nothing to show); anything else while none of its cooldown tags is on ASC.
+	 * Called on the CDO on clients (passives live on the server only): reads ASC and its avatar, never instance state.
+	 */
+	virtual bool IsReady(UAbilitySystemComponent const& ASC) const;
+
+	/**
+	 * The player card's class gauge, answered by the one ability per class that feeds it. Fill and readiness are
+	 * separate answers: bOutReady follows the ability's own ready rule, not a full fill. Same CDO constraints as IsReady.
+	 *
+	 * @param OutFill    Gauge fill, 0–1.
+	 * @param bOutReady  The gauge pulses.
+	 * @return           False (outs zeroed) when this ability feeds no class gauge — the default.
+	 */
+	virtual bool GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill, bool& bOutReady) const;
+
+	/**
+	 * The number written in the middle of this ability's slot gauge and as the player card's gauge text. A two-state
+	 * gauge never writes its fill: a count when ready, or nothing. Same CDO constraints as IsReady.
+	 *
+	 * @param OutLabel  The number, unit included ("42%"); emptied when there is none.
+	 * @return          False when there is no number to write — the default.
+	 */
+	virtual bool GetGaugeLabel(UAbilitySystemComponent const& ASC, FText& OutLabel) const;
+
+	/**
 	 * Returns the 2D world-space origin for the projectile spawn, sampled at fire time.
 	 * Default reads "anim_socket_<FireSectionIndex>" from the character mesh; falls back to actor location.
 	 * Override to change the spawn point (different socket, fixed offset, etc.).

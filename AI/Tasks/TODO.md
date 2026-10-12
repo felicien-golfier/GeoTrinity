@@ -5,14 +5,15 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 ## Rules
 - **Project workflow gate (root `CLAUDE.md`, "Workflow")** applies to you. The JavaDoc task below is exempt; any other change (code, scripts, assets) needs the folders' `CLAUDE.md` + `AI/Pending/<Feature>.md` written and reviewed first — write them, commit, stop.
-- Read root `CLAUDE.md` "Writing CLAUDE.md" before touching any CLAUDE.md.
+- Never touch a `.cpp` file: the daily agent edits headers' comments only.
+- Code follows the `CLAUDE.md` files, never the reverse: do not edit a `CLAUDE.md` to match the code. Edit one only to fix a mistake or fill a missing part (then read root `CLAUDE.md` "Writing CLAUDE.md" first). Code that contradicts its `CLAUDE.md` is fixed in the code, or reported.
 
 ## Tasks
 
 - [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below. <!-- last run: 2026-10-10 -->
 
   **Scope**
-  - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open and process `.h` and `.cpp` files from that list — do not scan the whole codebase. (Do NOT use `git diff --name-only HEAD` — that only reports uncommitted working-tree changes, which are empty in the cloud checkout, so the day's committed work would be missed.)
+  - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open and process `.h` files from that list; never touch a `.cpp` file — do not scan the whole codebase. (Do NOT use `git diff --name-only HEAD` — that only reports uncommitted working-tree changes, which are empty in the cloud checkout, so the day's committed work would be missed.)
   - Within those files: add comments to public functions that have none, fix comments that are malformed or contradict the current implementation, and update any comment whose intent changed today.
   - Do not touch headers that are already correct.
   - Only comment where the method is publicly declared — not in the implementation.

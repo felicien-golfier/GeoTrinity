@@ -37,6 +37,12 @@ public:
 	 * and the recall is off cooldown. Read by the HUD's class frame. */
 	bool IsBlinkRecallReady(UAbilitySystemComponent const& ASC) const;
 
+	/** The Triangle's class gauge: no fill, full and ready while IsBlinkRecallReady. */
+	virtual bool GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill, bool& bOutReady) const override;
+	/** While IsBlinkRecallReady, the count of blinking turrets; otherwise nothing (a two-state gauge never writes its
+	 * fill). */
+	virtual bool GetGaugeLabel(UAbilitySystemComponent const& ASC, FText& OutLabel) const override;
+
 protected:
 	/**
 	 * Returns the ASCs of interactable agents lying on the turret-to-player line (LineHalfWidth wide).

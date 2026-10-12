@@ -29,8 +29,8 @@ class GEOTRINITYUI_API UGeoAbilitySlotWidget : public UGeoUserWidget
 	GENERATED_BODY()
 
 public:
-	/** Stores the entries (all sharing one input) and HUD, applies the first entry, and tints the frame's glow in the
-	 * owning player's class colour. */
+	/** Stores the entries (all sharing one input) and HUD, applies the first entry, and tints the frame's glow and the
+	 * value gauge in the owning player's class colour. */
 	void InitSlot(TArray<FGeoAbilityBarEntry> const& InEntries, AGeoHUD* InHUD);
 
 	/** Re-queries this slot's deploy count, refreshes the badge, and returns the current charge count. */
@@ -41,20 +41,31 @@ public:
 	void RefreshKeyLabel();
 
 protected:
-	/** Drives the cooldown sweep, the countdown text and the frame's ready look each frame. */
+	/** Drives the cooldown sweep, the countdown text, the value gauge and the frame's ready look each frame. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 
 	/** Ability icon. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoIconImage> Icon;
 
-	/** Frame around the slot: active (lit, glowing in the class colour) while the ability is ready. Optional. */
+	/** Frame around the slot: active (lit, glowing in the class colour) while the ability has something ready to use
+	 * (its IsReady) and no sweep covers it. Optional. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoFrame> SlotFrame;
 
 	/** Sweep over the icon covering the part of the cooldown still to run. Optional. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMeter> CooldownMeter;
+
+	/** The displayed ability's class gauge rising over the icon in the class colour (AGeoHUD::GetAbilityGauge);
+	 * collapsed when it feeds none. Optional. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoMeter> GaugeMeter;
+
+	/** The class gauge's number, centered over the icon; hidden while the countdown runs, collapsed without a gauge.
+	 * Optional. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> GaugeText;
 
 	/** Cooldown seconds remaining, centered over the icon. Hidden when the ability is ready. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
@@ -76,8 +87,12 @@ private:
 	void ApplyDisplayedEntry();
 	/** Shows or hides the countdown text, skipping the call when it is already in that state. */
 	void SetCountdownVisible(bool bVisible);
-	/** Covers Fill of the slot with the cooldown sweep, and lights the frame when nothing is left to wait for. */
+	/** Covers Fill of the slot with the cooldown sweep, and lights the frame when the sweep is empty and the displayed
+	 * ability is ready (AGeoHUD::IsAbilityReady). */
 	void SetCooldownFill(float Fill);
+	/** Fills GaugeMeter and writes GaugeText from the displayed ability's class gauge, or collapses both when it feeds
+	 * none. GaugeText is hidden while bCountdownVisible: a running countdown wins the centre. */
+	void RefreshGauge(bool bCountdownVisible);
 	FGeoAbilityBarEntry const& DisplayedEntry() const { return Entries[DisplayedIndex]; }
 
 	/** Abilities sharing this slot's input; Entries[DisplayedIndex] drives every visual. UPROPERTY so the GC keeps the

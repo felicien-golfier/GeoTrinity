@@ -382,8 +382,8 @@ void UGeoCharacterSheetWidget::ShowStats()
 		if (UGeoDeployAbility const* Deploy = Cast<UGeoDeployAbility>(Spec.GetPrimaryInstance()))
 		{
 			StatTable->AddLine(
-				{StatTable->MakeCellText(DeployStacksLabel), StatTable->MakeCellText(FText::AsNumber(Deploy->GetMaxStacks())),
-				 MakeBonusCell(EGeoStatFormat::Number, Deploy->GetMaxStacks() - Deploy->GetBaseMaxStacks(), GemBonusColor),
+				{StatTable->MakeCellText(DeployStacksLabel), StatTable->MakeCellText(FText::AsNumber(Deploy->GetMaxStacks(*ASC))),
+				 MakeBonusCell(EGeoStatFormat::Number, Deploy->GetMaxStacks(*ASC) - Deploy->GetBaseMaxStacks(), GemBonusColor),
 				 MakeBonusCell(EGeoStatFormat::Number, 0.f, BuffBonusColor)});
 		}
 	}

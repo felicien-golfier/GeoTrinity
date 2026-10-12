@@ -575,6 +575,26 @@ bool UGeoGameplayAbility::IsPassive() const
 	return GetAssetTags().HasTag(FGeoGameplayTags::Get().Ability_Type_Passive);
 }
 
+bool UGeoGameplayAbility::IsReady(UAbilitySystemComponent const& ASC) const
+{
+	FGameplayTagContainer const* CooldownTags = GetCooldownTags();
+	bool const bHasSomethingToShow = !IsPassive() || GetCooldownGameplayEffect();
+	return bHasSomethingToShow && !(CooldownTags && ASC.HasAnyMatchingGameplayTags(*CooldownTags));
+}
+
+bool UGeoGameplayAbility::GetClassGauge(UAbilitySystemComponent const& /*ASC*/, float& OutFill, bool& bOutReady) const
+{
+	OutFill = 0.f;
+	bOutReady = false;
+	return false;
+}
+
+bool UGeoGameplayAbility::GetGaugeLabel(UAbilitySystemComponent const& /*ASC*/, FText& OutLabel) const
+{
+	OutLabel = FText::GetEmpty();
+	return false;
+}
+
 int UGeoGameplayAbility::GetNewSeed() const
 {
 	return FMath::Rand32();

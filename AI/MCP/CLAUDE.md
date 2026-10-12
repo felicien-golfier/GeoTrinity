@@ -1,6 +1,6 @@
 # MCP / Python editor automation
 
-Two servers: UE 5.8 built-in `unreal-mcp` (default for reads and every toolset-covered write: Blueprint graphs, material graphs, properties, tables, tags) and `mcp-unreal` `execute_script` (Python in `AI/Python/`, plus C++ `UEditorUtilityObject` shims for what Python cannot reach). Which one: `MCP_UnrealBuiltin.md` → "Which server".
+Two servers: UE 5.8 built-in `mcp-epic` (default for reads and every toolset-covered write: Blueprint graphs, material graphs, properties, tables, tags) and `mcp-unreal` `execute_script` (Python in `AI/Python/`, plus C++ `UEditorUtilityObject` shims for what Python cannot reach). Which one: `MCP_UnrealBuiltin.md` → "Which server".
 
 ## Prerequisites
 - Editor open before Claude Code starts (tools register at session start).

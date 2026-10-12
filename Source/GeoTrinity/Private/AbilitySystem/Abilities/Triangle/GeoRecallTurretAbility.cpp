@@ -5,6 +5,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Turret/GeoTurret.h"
+#include "Algo/Count.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -73,6 +74,25 @@ bool UGeoRecallTurretAbility::IsBlinkRecallReady(UAbilitySystemComponent const& 
 	return ActorInfo && GetCooldownTimeRemaining(ActorInfo) <= 0.f
 		&& GetActiveTurrets(ActorInfo->AvatarActor.Get())
 			   .ContainsByPredicate([](AGeoTurret const* Turret) { return Turret->IsBlinking(); });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoRecallTurretAbility::GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill, bool& bOutReady) const
+{
+	bOutReady = IsBlinkRecallReady(ASC);
+	OutFill = bOutReady ? 1.f : 0.f;
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoRecallTurretAbility::GetGaugeLabel(UAbilitySystemComponent const& ASC, FText& OutLabel) const
+{
+	int32 const BlinkingTurrets = IsBlinkRecallReady(ASC)
+		? static_cast<int32>(Algo::CountIf(GetActiveTurrets(ASC.AbilityActorInfo->AvatarActor.Get()),
+										   [](AGeoTurret const* Turret) { return Turret->IsBlinking(); }))
+		: 0;
+	OutLabel = BlinkingTurrets > 0 ? FText::AsNumber(BlinkingTurrets) : FText::GetEmpty();
+	return BlinkingTurrets > 0;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

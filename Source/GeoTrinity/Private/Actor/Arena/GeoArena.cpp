@@ -307,6 +307,7 @@ void AGeoArena::RecordAttempt()
 	// SetDifficulty refuses mid-match, so this is still the tuning the boss was fought at.
 	Entry.Difficulty = GameState->GetDifficulty();
 	Entry.DurationSeconds = GetFightElapsedSeconds();
+	Entry.Date = FDateTime::UtcNow();
 
 	// A defeated boss has already destroyed itself, so a win is the flag saying so, never an attribute read.
 	Entry.BossHealthRatio = 0.f;
@@ -342,6 +343,7 @@ void AGeoArena::RecordAttempt()
 		FGeoLeaderboardPlayer& Player = Entry.Players.AddDefaulted_GetRef();
 		Player.PlayerName = GeoPlayerState->GetPlayerName();
 		Player.PlayerClass = GeoPlayerState->GetPlayerClass();
+		Player.Level = GeoPlayerState->GetGemComponent()->GetClassLevel(Player.PlayerClass);
 		Player.DamageDealt = GeoPlayerState->GetTotalDamageDealt();
 		Player.HealingDealt = GeoPlayerState->GetTotalHealingDealt();
 		Player.DamageTaken = GeoPlayerState->GetTotalDamageReceived();

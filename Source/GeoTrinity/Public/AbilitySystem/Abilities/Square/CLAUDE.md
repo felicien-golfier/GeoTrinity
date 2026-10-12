@@ -13,6 +13,7 @@ Square (Tank) kit. Wall deploy = shared `UGeoDeployAbility` with `DeployableActo
 - Binds `OnDamageDealt`; `Charge()` at full, after `ChargeTime` spawns `AGeoShieldBurstProjectile` toward the nearest ally.
 - Each enemy bounce adds `EnemyBounceAdditiveMultiplier × base` (linear) to shield and radius.
 - Visual gauge through `UShieldBurstPassiveComponent`; in-flight bursts end on Square revive.
+- `IsReady` = avatar's `UShieldBurstPassiveComponent` `GaugeRatio >= 1` (replicated); no component → false. No class gauge (Detonate owns Square's ring).
 
 ## Detonate walls
 - Pass 1 counts + recalls own `AGeoWall`s on the ray (no explosion), multiplier = `WallBoostMultiplier × count`.
@@ -26,4 +27,6 @@ Square (Tank) kit. Wall deploy = shared `UGeoDeployAbility` with `DeployableActo
 - Redirect: `UGeoAttributeSetBase::PostGameplayEffectExecute` → `TryRedirectIncomingDamage` before shield; victim takes 0, `SacrificeValue` grows, share split across alive walls + Square (Square last), applied with `bDoNotRedirectSacrifice`, original attacker kept as source.
 - Detonate: plain `UGeoGameplayAbility`; BP `ActivationRequiredTags = Status.Square.DetonateReady`, `CancelAbilitiesWithTag = Ability.Spell.SacrificeBeam`, no cooldown; server ray via `GetInteractableActorsInLine(Hostile)`, then resets attribute and removes ready tag.
 - Death: `APlayableCharacter::DeathLogic` purges GEs and zeroes `SacrificeValue`.
+- Readiness = armed, never the value: Detonate's `IsReady` = `Status.Square.DetonateReady` on the ASC. `GetClassGauge` fill = `SacrificeValue / SacrificeForFullGauge` (property on Detonate, fill only), ready = armed. 100 of 200 sacrificed + armed → ring half full and pulsing, slot frame lit.
+- `GetGaugeLabel` = `SacrificeValue` rounded (damage absorbed so far), only while > 0; nothing at 0.
 - Ability bar shows the pair as one slot (slots hold every ability sharing an InputTag).

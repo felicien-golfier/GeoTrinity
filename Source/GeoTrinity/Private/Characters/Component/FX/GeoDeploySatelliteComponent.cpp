@@ -111,11 +111,10 @@ int32 UGeoDeploySatelliteComponent::GetDesiredSatelliteCount() const
 
 	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
 	{
-		// Spec.Ability is the CDO and holds no stack state; only the per-actor instance can answer.
-		if (UGeoDeployAbility const* DeployAbility = Cast<UGeoDeployAbility>(Spec.GetPrimaryInstance()))
+		if (UGeoDeployAbility const* DeployAbility = Cast<UGeoDeployAbility>(Spec.Ability))
 		{
 			// The charge is spent on the press, but its satellite only leaves the ring once the shot launches it.
-			return DeployAbility->GetCurrentStacks() + (Spec.IsActive() ? 1 : 0);
+			return DeployAbility->GetCurrentStacks(*ASC) + (Spec.IsActive() ? 1 : 0);
 		}
 	}
 

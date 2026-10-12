@@ -7,11 +7,13 @@
 
 #include "GeoMainMenuWidget.generated.h"
 
+class UAudioComponent;
 class UGeoMenuButton;
+class USoundBase;
 
 /**
  * Main lobby menu widget. Composes the UGeoMenuButton instances and handles all action logic in C++.
- * Blueprint subclasses configure appearance through the button UPROPERTYs.
+ * Blueprint subclasses configure appearance through the button UPROPERTYs and set MusicLoop.
  * Required in the BP hierarchy: UGeoMenuButton widgets named "CreateServerButton", "JoinServerButton",
  * "PlayLocalButton", "LeaderboardButton", "QuitButton", and as pages a UGeoCreateServerWidget, a
  * UGeoBrowseServersWidget, a UGeoLocalConnectWidget and a UGeoLeaderboardWidget.
@@ -27,12 +29,18 @@ public:
 	FString GetLocalPlayerName() const;
 
 protected:
-	/** Wires each main-menu button to its handler. */
+	/** Wires each main-menu button to its handler and fades in MusicLoop. */
 	virtual void NativeConstruct() override;
+	/** Fades the music out and releases it. */
+	virtual void NativeDestruct() override;
 	/** Shows the error popup for any create/join/connection failure the game instance holds (TakeSessionError). */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
 	/** Returns CreateServerButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
+
+	/** Looping menu music, played 2D for as long as the menu exists. Its Sound Class sets which volume slider drives it. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoMenu|Music")
+	TObjectPtr<USoundBase> MusicLoop;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> CreateServerButton;
@@ -71,4 +79,7 @@ private:
 	FReply HandleErrorPopupClosed();
 
 	TSharedPtr<SWidget> ErrorPopup;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> MusicComponent;
 };

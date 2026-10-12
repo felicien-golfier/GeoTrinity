@@ -25,3 +25,6 @@ Circle (Healer) kit.
 - Resolve with `GeoASLib::GetGrantedAbility<UGeoSweetSpotChargePassiveAbility>(ASC)`.
 - `ConsumeGauge` zeroes `HealCharge` (also on `EndAbility`).
 - HUD shows it as a synthetic status entry via `AGeoHUD::GetActiveEffectIcons`.
+- `IsReady` = `GetGaugeRatio >= 1`; `GetClassGauge` = Circle's class ring (fill = ratio, ready when full). Reads the replicated `HealCharge`.
+- `GetGaugeLabel` = the ratio as a whole percentage ("42%"), shown on both the slot and the player card.
+- `GeoHealReturnPassiveAbility`, `GeoHealingAuraAbility`: no cooldown, no override → passive tile never lit.

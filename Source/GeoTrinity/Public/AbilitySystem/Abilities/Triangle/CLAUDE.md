@@ -16,3 +16,5 @@ Triangle (DPS) kit. Basic attack = `UGeoAutomaticProjectileAbility` with ammo co
 ## Recall turret
 - `UGeoDeployableManagerComponent::RecallAll()`; `BlinkBonusEffect` for turrets already blinking.
 - `OverlapAttitude` (default `HostileOrNeutral`) picks affected team; `FindTargets` uses `GetInteractableActorsInLine` with `LineHalfWidth`.
+- Class gauge: `GetClassGauge` = `IsBlinkRecallReady` (no fill: 1 when ready, else 0). Slot frame keeps the default `IsReady` (cooldown).
+- `GetGaugeLabel`: two-state gauge → no fill number. When blink-ready, the count of blinking turrets (`GetActiveTurrets` filtered on `IsBlinking`); otherwise nothing.

@@ -22,8 +22,9 @@ class GEOTRINITY_API UTileCarveRayPattern : public UBeamPattern
 protected:
 	/** Highlights the tile the beam is about to carve while it fires, then runs the regular beam tick. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
-	/** Drops the tile highlight, then destroys the tile that was highlighted last — the destroy is skipped by a
-	 * force-stopped pattern. */
+	/** Drops the tile highlight and destroys the tile that was highlighted last — skipped by a force-stopped pattern —
+	 * before the base reports the end: that report ends the ability, which force-stops this pattern at once and
+	 * would reset the highlighted tile. */
 	virtual void EndPattern(bool bForceStop = false) override;
 	/** Highlights the furthest arena tile the beam reaches while it fires, and destroys it when the beam ends. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")

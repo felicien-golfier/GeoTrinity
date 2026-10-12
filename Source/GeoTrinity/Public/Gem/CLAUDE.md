@@ -15,8 +15,10 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 - Kill → `FGeoGemReward` (class XP for the class played + gems rolled from the drop table, difficulty-scaled) → profile → `CommitChanges()`.
 - `CommitChanges()` → disk + `UGeoGemComponent::ServerSetLoadout` → server applies `UGeoGemStatsEffect` spec + Core passive abilities on the ASC (`APlayableCharacter::ResetAttributes`).
 - Server trusts the client loadout; owned counts are never sent.
+- `FGeoGemLoadout::Level` rides with each sent loadout (filled by `GetLoadout`); the server reads it with `UGeoGemComponent::GetClassLevel` (leaderboard stamps it on each player).
 
 ## Invariants
+- Lowering a class level empties every locked-again socket of all its builds (`SetClassLevel`); fill (`FillSockets`) replaces slotted gems.
 - Gem tier fits only a socket of its own tier; a Core's rule is its `GrantedAbility` (`Abilities/Gem/CLAUDE.md`).
 - Socket order = loadout index order = save format: append, never reorder. Three clusters of seven steps over levels 1-20, the Core in the last step.
 - `FGeoGemInfo::Id` is the key in saves and loadouts; renaming orphans every owned copy.

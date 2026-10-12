@@ -27,6 +27,8 @@ AGeoHUD (owns OverlayWidget)
 - `BindToPawn`, `BuildAbilityBar` (also from `OnRep_PlayerClass`), `ShowBossHealthBar` (local player 0 only).
 - `RegisterASCForDamageNumbers`: Health / Shield deltas spawn numbers from `DamageNumberPool`.
 - `GetActiveEffectIcons()`: status-bar data incl. the synthetic sweet-spot gauge entry.
+- `IsAbilityReady(Tag)`: spec's ability (instance or CDO) → `IsReady(HUD ASC)`; drives slot frames.
+- `GetAbilityGauge(Tag, Fill, bReady, Label)`: same spec lookup → `GetClassGauge` + `GetGaugeLabel`; false when the ability has no class gauge. Drives the slot value gauge.
 - Non-shipping combat-stats panel (pure Slate, `Geo.ShowCombatStats`), rebuilt on roster change.
 
 ## Overlay layout

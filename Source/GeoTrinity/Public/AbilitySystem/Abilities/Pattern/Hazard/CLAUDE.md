@@ -21,6 +21,7 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 
 ## TileCarveRay
 - `SweepAngle = 0` + `bDestroyLastTileHit`; direction locks at activation so the tank chooses the rim tile.
+- The tile is destroyed in `EndPattern` before the base broadcasts `OnPatternEnd`: that ends the ability, which force-stops the pattern re-entrantly.
 
 ## DevastatingWave
 - Radius grows at `ExpansionSpeed` to `MaxRadius`; hit band `[R - AnnulusWidth, R]`, swept `FrontOffsets`.

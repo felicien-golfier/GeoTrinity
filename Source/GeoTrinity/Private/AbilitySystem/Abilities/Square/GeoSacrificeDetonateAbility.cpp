@@ -17,6 +17,31 @@ UGeoSacrificeDetonateAbility::UGeoSacrificeDetonateAbility()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+bool UGeoSacrificeDetonateAbility::IsReady(UAbilitySystemComponent const& ASC) const
+{
+	return ASC.HasMatchingGameplayTag(FGeoGameplayTags::Get().Status_Square_DetonateReady);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoSacrificeDetonateAbility::GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill,
+												  bool& bOutReady) const
+{
+	float const Sacrificed = ASC.GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute());
+	OutFill = FMath::Clamp(Sacrificed / SacrificeForFullGauge, 0.f, 1.f);
+	bOutReady = IsReady(ASC);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoSacrificeDetonateAbility::GetGaugeLabel(UAbilitySystemComponent const& ASC, FText& OutLabel) const
+{
+	int32 const Sacrificed =
+		FMath::RoundToInt(ASC.GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute()));
+	OutLabel = Sacrificed > 0 ? FText::AsNumber(Sacrificed) : FText::GetEmpty();
+	return Sacrificed > 0;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoSacrificeDetonateAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	Super::Fire(AbilityTargetData);

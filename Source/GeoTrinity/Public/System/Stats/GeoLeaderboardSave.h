@@ -25,6 +25,10 @@ struct FGeoLeaderboardPlayer
 	UPROPERTY()
 	EPlayerClass PlayerClass = EPlayerClass::None;
 
+	/** Level of the class they played when the fight ended; an attempt saved before levels were recorded reads as 0. */
+	UPROPERTY()
+	int32 Level = 0;
+
 	/** Damage this player dealt over the whole attempt. */
 	UPROPERTY()
 	float DamageDealt = 0.f;
@@ -74,6 +78,11 @@ struct FGeoAttemptEntry
 	/** Boss health left when the fight ended, as a fraction: 0 is a kill, 1 a boss never touched. */
 	UPROPERTY()
 	float BossHealthRatio = 1.f;
+
+	/** UTC moment the fight ended, stamped by the server. An attempt saved before dates were recorded reads as the
+	 *  default FDateTime (zero ticks). */
+	UPROPERTY()
+	FDateTime Date;
 
 	UPROPERTY()
 	TArray<FGeoLeaderboardPlayer> Players;

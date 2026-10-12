@@ -15,5 +15,6 @@ Core-gem passives. A Core gem (`FGeoGemInfo::GrantedAbility`) grants one of thes
 - Cooldown = the ability's own Cooldown GE (`CooldownGameplayEffectClass` = `GE_CD_Core_<Core>`, tag `Ability.Cooldown.<Core>`): `TryTrigger` tests it (`CheckCooldown`) and applies it on fire (`ApplyCooldown`), so it replicates and the owning client's HUD sweeps it through `AGeoHUD::GetAbilityCooldown` (`HUD/AbilityBar/CLAUDE.md`). Seconds live on the GE, built by `gem_core_passives.py`.
 - Icons: `SourceArt/Icons/Core_<Gem>.svg` (one per Core gem, ability or stat-only), drawn after the design canvas board `A-CoreIcons`, in the gem's `Color`; `import_icons.py` fills each ability Core's `AbilityIcon`, which the passive tile and the abilities page draw.
 - Event-raising code never names a Core; the passive binds to the event.
+- Passive tile frame: default `IsReady` (`Base/CLAUDE.md`). Cooldown Cores (Wake, Split, Kinship) lit when off cooldown; Bond, Relay and any Core without a Cooldown GE never lit.
 - Bond share is taken before shield/health (`AGeoGameState::OnIncomingDamage`) with `bDoNotRedirectSacrifice`.
 - Kinship counts only hit-to-zero after blink, not drain or recall; ally owns the copy, spends no charge.

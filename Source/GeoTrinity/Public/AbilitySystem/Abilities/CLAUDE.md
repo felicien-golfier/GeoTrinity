@@ -25,6 +25,7 @@ ActivateAbility(TriggerEventData)   payload set; server has it, no RPC
 ## Passives
 - Tag `Ability.Type.Passive`; server-owned, `NetSecurityPolicy = ServerOnly`.
 - Activated by `ReactivatePassiveAbilities()` on `GiveLife()`.
+- HUD frame lit only when the passive has something armed: `IsReady` (`Base/CLAUDE.md`, "HUD readiness"). No cooldown and no override → never lit.
 
 ## Effects on abilities
 - `EffectDataAssets` = shared `UEffectDataAsset`s; `EffectDataInstances` = inline.

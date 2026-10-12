@@ -65,6 +65,7 @@ FGeoGemLoadout UGeoGemProfileSave::GetLoadout(EPlayerClass const PlayerClass) co
 	}
 
 	Loadout.Sockets.SetNum(GeoGem::GetSockets().Num());
+	Loadout.Level = GetClassLevel(PlayerClass);
 	return Loadout;
 }
 
@@ -128,6 +129,18 @@ void UGeoGemProfileSave::SetClassLevel(EPlayerClass const PlayerClass, int32 con
 	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);
 	Progress.Level = FMath::Clamp(Level, 1, GeoGem::MaxClassLevel);
 	Progress.Xp = 0;
+
+	TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+	for (FGeoGemBuild& Build : Progress.Builds)
+	{
+		for (int32 SocketIndex = 0; SocketIndex < Sockets.Num(); ++SocketIndex)
+		{
+			if (Sockets[SocketIndex].UnlockLevel > Progress.Level)
+			{
+				Build.Loadout.Sockets[SocketIndex] = NAME_None;
+			}
+		}
+	}
 }
 
 int32 UGeoGemProfileSave::AddClassXp(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, int32 const Xp)
@@ -190,14 +203,13 @@ void UGeoGemProfileSave::Unequip(EPlayerClass const PlayerClass, int32 const Soc
 	}
 }
 
-int32 UGeoGemProfileSave::FillEmptySockets(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass,
-										   FName const GemId)
+int32 UGeoGemProfileSave::FillSockets(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, FName const GemId)
 {
 	int32 Filled = 0;
-	TArray<FName> const& Sockets = GetActiveSockets(PlayerClass);
-	for (int32 SocketIndex = 0; SocketIndex < Sockets.Num(); ++SocketIndex)
+	int32 const SocketCount = GetActiveSockets(PlayerClass).Num();
+	for (int32 SocketIndex = 0; SocketIndex < SocketCount; ++SocketIndex)
 	{
-		if (Sockets[SocketIndex].IsNone() && Equip(Catalog, PlayerClass, SocketIndex, GemId))
+		if (Equip(Catalog, PlayerClass, SocketIndex, GemId))
 		{
 			++Filled;
 		}

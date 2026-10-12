@@ -7,6 +7,13 @@ Networking, data structures and the effect system. Class inventories and folder 
 
 ASC lives on `AGeoPlayerState` for players (full replication) and on the character for enemies (minimal).
 
+### Replicate as little as possible
+Every new value a client needs, in this order; stop at the first that fits:
+1. **Found on the client** — already replicated state, the CDO, data assets, settings, the ASC's own replication (tags, GEs, montages, cooldowns). Read it.
+2. **Rebuilt on the client** — easily derived locally (from replicated inputs, timers, deterministic seed) and not gameplay-critical (UI, cosmetics, previews). Compute it on each machine.
+3. **Replicated property** — `UPROPERTY(Replicated)` / `ReplicatedUsing`, with the tightest condition (`COND_InitialOnly`, `COND_OwnerOnly`, `COND_SkipOwner`, …). Late joiners get it, no extra call.
+4. **RPC / multicast** — last resort, only for a one-shot event no property can carry; say why in a comment.
+
 ### Player abilities — custom client prediction, not GAS prediction
 
 1. **`ActivateAbility(TriggerEventData)`** — `StoredPayload` (`Origin`, `Yaw`, `ServerSpawnTime`, `Seed`) is

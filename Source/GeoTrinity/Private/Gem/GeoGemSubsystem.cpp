@@ -102,7 +102,7 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsSetLevelCommand(
 
 static FAutoConsoleCommandWithWorldAndArgs GGemsFillCommand(
 	TEXT("Geo.Gems.Fill"),
-	TEXT("Geo.Gems.Fill <Triangle|Circle|Square> <GemId> — fills a class's empty sockets of the gem's tier"),
+	TEXT("Geo.Gems.Fill <Triangle|Circle|Square> <GemId> — fills every socket of the gem's tier a class has open, replacing slotted gems"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
 		[](TArray<FString> const& Args, UWorld* World)
 		{
@@ -111,7 +111,7 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsFillCommand(
 			if (Gems && Catalog && Args.Num() == 2)
 			{
 				int32 const Filled =
-					Gems->GetProfile()->FillEmptySockets(*Catalog, ParsePlayerClass(Args[0]), FName(Args[1]));
+					Gems->GetProfile()->FillSockets(*Catalog, ParsePlayerClass(Args[0]), FName(Args[1]));
 				UE_LOG(LogGeoTrinity, Display, TEXT("Geo.Gems.Fill: %d socket(s) filled"), Filled);
 				Gems->CommitChanges();
 			}

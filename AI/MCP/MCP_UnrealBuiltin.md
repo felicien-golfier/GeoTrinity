@@ -46,15 +46,15 @@ no `Origin` header or a localhost one.
 
 ## Connecting Claude Code
 
-The entry in `.mcp.json` is an HTTP server, named `unreal-mcp`, next to the existing `mcp-unreal` entry:
+The entry in `.mcp.json` is an HTTP server, named `mcp-epic`, next to the existing `mcp-unreal` entry:
 
 ```json
-"unreal-mcp": { "type": "http", "url": "http://127.0.0.1:8000/mcp" }
+"mcp-epic": { "type": "http", "url": "http://127.0.0.1:8000/mcp" }
 ```
 
 Console `ModelContextProtocol.GenerateClientConfig ClaudeCode` writes that entry into the project's `.mcp.json`, keeping
 every other entry. The editor must be serving before the Claude Code session starts, or the server registers as failed;
-`/mcp` reconnects it. Its tools then appear as `mcp__unreal-mcp__<tool>`.
+`/mcp` reconnects it. Its tools then appear as `mcp__mcp-epic__<tool>`.
 
 ## Calling tools
 

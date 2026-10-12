@@ -34,7 +34,7 @@ SWELL_FRAMES = 8     # frames of swell before the badge goes
 SWELL = 1.2
 DEBRIS_FRAME = 4     # mid-swell, so the chunks lead the collapse rather than trail it
 DEATH_SOUND = "/Game/Art/SFX/Death/SW_Death_Collapse"  # Earthquake_3 with its head cut, so the rumble peaks on the pop
-DEATH_SOUND_VOLUME = 1.0
+DEATH_SOUND_VOLUME = 0.35  # the rumble is a 3.5 s -1 dBFS file, far louder than the 0.3-0.6 one-shots around it
 
 DEBRIS = {
     "Square": "/Game/Art/VFX/Assets/NS_DeathDebris",

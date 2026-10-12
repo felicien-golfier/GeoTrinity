@@ -41,6 +41,10 @@ void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntrie
 	{
 		SlotFrame->SetGlowTint(ClassStyle->Color);
 	}
+	if (GaugeMeter && ClassStyle)
+	{
+		GaugeMeter->SetFillTint(ClassStyle->Color);
+	}
 
 	SetCooldownFill(0.f);
 	SetCountdownVisible(false);
@@ -106,7 +110,30 @@ void UGeoAbilitySlotWidget::SetCooldownFill(float const Fill)
 	}
 	if (SlotFrame)
 	{
-		SlotFrame->SetActive(Fill <= 0.f);
+		SlotFrame->SetActive(Fill <= 0.f && HUD && HUD->IsAbilityReady(DisplayedEntry().AbilityTag));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::RefreshGauge(bool const bCountdownVisible)
+{
+	float Fill = 0.f;
+	bool bReady = false;
+	FText Label;
+	bool const bHasGauge = HUD->GetAbilityGauge(DisplayedEntry().AbilityTag, Fill, bReady, Label);
+
+	if (GaugeMeter)
+	{
+		GaugeMeter->SetVisibility(bHasGauge ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		GaugeMeter->SetFill(Fill);
+	}
+	if (GaugeText)
+	{
+		ESlateVisibility const TextVisibility = !bHasGauge ? ESlateVisibility::Collapsed
+			: bCountdownVisible                           ? ESlateVisibility::Hidden
+														  : ESlateVisibility::HitTestInvisible;
+		GaugeText->SetVisibility(TextVisibility);
+		GaugeText->SetText(Label);
 	}
 }
 
@@ -181,6 +208,8 @@ void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDelt
 	{
 		Remaining = 0.f;
 	}
+
+	RefreshGauge(Remaining > 0.f);
 
 	// While the ability is active, keep the sweep fully filled so the slot reads as "in use". The cooldown (if any)
 	// takes over depleting it once the ability ends; an active ability with no cooldown stays grayed until it ends.

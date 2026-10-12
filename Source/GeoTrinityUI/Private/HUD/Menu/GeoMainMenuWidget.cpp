@@ -10,7 +10,9 @@
 #include "HUD/Menu/Frame/GeoMenuButton.h"
 #include "Engine/GameViewportClient.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Components/AudioComponent.h"
 #include "Interfaces/OnlineIdentityInterface.h"
+#include "Kismet/GameplayStatics.h"
 #include "OnlineSubsystem.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Input/SButton.h"
@@ -49,6 +51,24 @@ void UGeoMainMenuWidget::NativeConstruct()
 	PlayLocalButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandlePlayLocal);
 	LeaderboardButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleLeaderboard);
 	QuitButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleQuit);
+
+	if (ensureMsgf(MusicLoop, TEXT("UGeoMainMenuWidget::NativeConstruct: MusicLoop is not set")))
+	{
+		MusicComponent = UGameplayStatics::CreateSound2D(this, MusicLoop, 1.f, 1.f, 0.f, nullptr, false, false);
+		MusicComponent->FadeIn(1.f, 1.f);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMainMenuWidget::NativeDestruct()
+{
+	if (MusicComponent)
+	{
+		MusicComponent->FadeOut(0.5f, 0.f);
+		MusicComponent = nullptr;
+	}
+
+	Super::NativeDestruct();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

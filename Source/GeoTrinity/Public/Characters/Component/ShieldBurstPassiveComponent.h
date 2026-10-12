@@ -28,6 +28,8 @@ public:
 
 	/** Called server-side by the ability whenever the gauge value changes. */
 	void SetGaugeRatio(float NewRatio);
+	/** Replicated gauge fill, 0–1. */
+	float GetGaugeRatio() const { return GaugeRatio; }
 
 protected:
 	/** Fires on all clients whenever GaugeRatio changes. Override in Blueprint to update visuals. */

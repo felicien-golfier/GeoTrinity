@@ -21,9 +21,10 @@ Shared by every player class.
 
 ### Charges
 - Charge pool = stack count of the Cooldown GE; no ability-side counter.
-- `GetCurrentStacks() = StackLimitCount - GetGameplayEffectCount(CooldownGE)` (derived, same on client and server).
+- `GetCurrentStacks(ASC) = GetMaxStacks(ASC) - GetGameplayEffectCount(CooldownGE)` (derived, same on client and server; reads only the given ASC, so the CDO answers too).
 - `CommitBehaviour = DoNotAutoCommit`; one stack applied after `Super::ActivateAbility` succeeds (guard `IsActive()`).
 - `CanActivateAbility` gates on stacks > 0; `CheckCooldown()` always true.
+- `IsReady` override: stacks > 0 (the cooldown GE runs while charges remain, so the default rule would unlight the slot).
 - Refill = the GE's own expiry: `NeverRefresh` + `RemoveSingleStackAndRefreshDuration`.
 - `GE_CD_Deployable` (`Content/AbilitySystem/GameplayEffects/Cooldown/`): `AggregateByTarget`, limit 3; shared by healing zone, mine, turret only. A different pool size/refill = its own GE.
 - Charge-refilled sound: cooldown tag `AnyCountChange` → `OnStackCountChange`; local cue `GenericGameplayCueSoundTag` with `Event.Sound.DeployableAvailable`.

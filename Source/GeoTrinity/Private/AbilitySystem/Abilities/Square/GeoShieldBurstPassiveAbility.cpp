@@ -89,6 +89,15 @@ void UGeoShieldBurstPassiveAbility::EndAbility(FGameplayAbilitySpecHandle Handle
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+bool UGeoShieldBurstPassiveAbility::IsReady(UAbilitySystemComponent const& ASC) const
+{
+	AActor const* Avatar = ASC.GetAvatarActor();
+	UShieldBurstPassiveComponent const* GaugeComponent =
+		Avatar ? Avatar->FindComponentByClass<UShieldBurstPassiveComponent>() : nullptr;
+	return GaugeComponent && GaugeComponent->GetGaugeRatio() >= 1.f;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoShieldBurstPassiveAbility::OnDamageDealtCallback(float DamageAmount, FGameplayTag AbilityTag)
 {
 	if (ChargeTimerHandle.IsValid())

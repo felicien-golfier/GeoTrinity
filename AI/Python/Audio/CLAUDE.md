@@ -22,6 +22,7 @@ Run from a shell with `uv run <script>`, outside the editor; each declares its d
 | `metal_one_shots.py` | Reusable metal one-shots (`Metal`) |
 | `ninja_kit.py` | Air and cloth, no metal (`Ninja`) |
 | `zap_kit.py` | Small electric hits for boosted shots (`Elec`) |
+| `menu_music_loop.py` | Seamless music loop cut from an mp3 on whole bars, crossfade baked in (`MenuMusic`) |
 | `electric_layers.py` | Seamless electric loop, one WAV per layer |
 | `hex_lock_layers.py` | Hex boss intro lock clack layers (`hex_lock_params.json`) |
 

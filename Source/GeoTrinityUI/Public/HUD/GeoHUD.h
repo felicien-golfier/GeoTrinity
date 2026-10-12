@@ -195,6 +195,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoAbilityBar")
 	void GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurrent, int32& OutMax) const;
 
+	/** Returns true when the granted ability with AbilityTag has something ready to use (its IsReady): lights the slot
+	 * frame. False when no such ability is granted. */
+	UFUNCTION(BlueprintPure, Category = "GeoAbilityBar")
+	bool IsAbilityReady(FGameplayTag AbilityTag) const;
+
+	/**
+	 * The class gauge the granted ability with AbilityTag feeds (its GetClassGauge), with its number (GetGaugeLabel):
+	 * drives the slot's value gauge.
+	 *
+	 * @param OutLabel  Empty when the ability writes no number.
+	 * @return          False when no such ability is granted or it feeds no class gauge.
+	 */
+	UFUNCTION(BlueprintPure, Category = "GeoAbilityBar")
+	bool GetAbilityGauge(FGameplayTag AbilityTag, float& OutFill, bool& bOutReady, FText& OutLabel) const;
+
 	/**
 	 * (Re)builds the overlay's ability-bar slots from GetAbilityBarEntries. Called from BindToPawn once the pawn exists
 	 * and from AGeoPlayerState::OnRep_PlayerClass after a class change re-grants abilities.

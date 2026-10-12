@@ -70,7 +70,7 @@ struct FGeoGemCluster
  * tab), then a dashed tab adding an empty build; the socket board, three clusters each a Core ringed by its Prisms, Cuts
  * and Chips, linked by dashed lines, a locked socket showing the level that opens it, the class's level, its pips and
  * what the next level opens in its corner; the stacks with their owned and free counts under a tier filter; the
- * selection, a stack (EQUIP into the first socket it fits, FILL every empty one) or a socket (UNEQUIP); and the build's
+ * selection, a stack (EQUIP into the first socket it fits, FILL every socket it fits, replacing what is slotted) or a socket (UNEQUIP); and the build's
  * total bonus, a table of stat, bonus and copies.
  * Picking a stack then a socket it fits, or a socket then a stack, equips it there; the sockets the picked stack fits
  * glow, and the stack stays picked, so a click per socket fills several while copies are free. A click on neither a
@@ -367,9 +367,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText SocketCountsFormat = INVTEXT("OWNED {0} \u00B7 FREE {1}");
 
-	/** {0} is the sockets FILL would fill. */
+	/** {0} is the sockets FILL would fill, replacing the gems already slotted there. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText FillFormat = INVTEXT("FILL \u00D7{0}");
+	FText FillFormat = INVTEXT("FILL ALL \u00D7{0} (REPLACES)");
 
 	/** {0} is the sockets filled, {1} the sockets open. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -396,7 +396,7 @@ protected:
 
 	/** {0} is the gem's tier. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText NoteNoSocket = INVTEXT("No empty {0} socket open.");
+	FText NoteNoSocket = INVTEXT("No open {0} socket left to fill.");
 
 	/** Shown as a Core's value in the totals. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -467,7 +467,7 @@ private:
 	void PickSocket(int32 SocketIndex);
 	void PickStack(FName GemId);
 
-	/** The open sockets the picked stack's gem may go into now, for the board's glow, EQUIP and FILL. */
+	/** The open sockets (empty or not) the picked stack's gem may go into now, for the board's glow, EQUIP and FILL. */
 	TArray<int32> GetTargetSockets(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog) const;
 
 	/** Copies of the picked stack FILL would slot: one per target socket while copies are free, a Core once. */

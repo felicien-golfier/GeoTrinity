@@ -1,7 +1,7 @@
 """
 The in-game HUD in the Wings look: the player's wing bottom-left, the team list on the left, the stats top-right, the
 boss rail across the top, framed ability slots with a cooldown sweep and framed status tiles.
-- DA_Meter_*: the meter styles (player, team and boss health, class ring, cooldown sweep, status time).
+- DA_Meter_*: the meter styles (player, team and boss health, class ring, cooldown sweep, slot gauge, status time).
 - WBP_PlayerWing / WBP_TeamRow (UGeoPlayerCardWidget), WBP_TeamList, WBP_StatsPanel, in /Game/HUD/Wings: built once;
   the wing is minimal (class shape in its gauge ring, health meter with the health over the max on it, no frame:
   an older wing is stripped to that). WBP_StatsPanel is the stat counter: a bare grid the widget fills with every
@@ -74,6 +74,9 @@ METER_STYLES = {
         fill_color=srgb("FFFFFF")),
     # The dark sweep over an ability cooling down.
     "DA_Meter_Cooldown": dict(shape=SHAPE.SWEEP, size=unreal.Vector2D(84, 84), fill_color=srgb("04040A", .8)),
+    # The class gauge rising over a slot's icon: white, tinted by the class colour.
+    "DA_Meter_SlotGauge": dict(
+        shape=SHAPE.RISE, size=unreal.Vector2D(84, 84), track_color=srgb("000000", 0.0), fill_color=srgb("FFFFFF", .35)),
     # The time left along a status tile's bottom edge.
     "DA_Meter_StatusTime": dict(
         shape=SHAPE.BAR, size=unreal.Vector2D(56, 3), track_color=srgb("000000", 0.0),

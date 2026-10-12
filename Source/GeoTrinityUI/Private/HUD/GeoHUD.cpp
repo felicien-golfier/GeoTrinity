@@ -41,12 +41,7 @@ namespace
 		TArray<FGameplayTag> const BarOrder = {Tags.InputTag_Basic, Tags.InputTag_Deployable,
 											   Tags.InputTag_Special, Tags.InputTag_Reload,
 											   Tags.InputTag_Dash};
-		I don;t see the difference between Always and When ready, as it's not always with highlighter frame on actives
-		  abilities cuz they are sometimes in cooldown. I'd like not to add more netcode actually. It feels that we should
-		  have only a really small dev, like the actual active don;t change, the actual passive not triggerable just not
-		  highlighted and the passive with cooldown are doin like active and passive that require an arm charge up with a
-		  value instead of a time. And the one that would require no time nor value will just set highlight when ready.
-		  But it feels like it should be only one
+
 		int32 const Order = BarOrder.IndexOfByKey(InputTag);
 		ensureMsgf(Order != INDEX_NONE, TEXT("GetInputTagBarOrder: %s has no ability-bar position"),
 				   *InputTag.ToString());
@@ -439,9 +434,40 @@ void AGeoHUD::GetDeployCountForAbility(FGameplayTag AbilityTag, int32& OutCurren
 	FindSpecForTag(AbilityTag, Ability);
 	if (UGeoDeployAbility const* DeployAbility = Cast<UGeoDeployAbility>(Ability))
 	{
-		OutCurrent = DeployAbility->GetCurrentStacks();
-		OutMax = DeployAbility->GetMaxStacks();
+		UAbilitySystemComponent const& ASC = *HudPlayerParams.AbilitySystemComponent;
+		OutCurrent = DeployAbility->GetCurrentStacks(ASC);
+		OutMax = DeployAbility->GetMaxStacks(ASC);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool AGeoHUD::IsAbilityReady(FGameplayTag const AbilityTag) const
+{
+	UGeoGameplayAbility const* Ability = nullptr;
+	return FindSpecForTag(AbilityTag, Ability) && Ability->IsReady(*HudPlayerParams.AbilitySystemComponent);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool AGeoHUD::GetAbilityGauge(FGameplayTag const AbilityTag, float& OutFill, bool& bOutReady, FText& OutLabel) const
+{
+	OutFill = 0.f;
+	bOutReady = false;
+	OutLabel = FText::GetEmpty();
+
+	UGeoGameplayAbility const* Ability = nullptr;
+	if (!FindSpecForTag(AbilityTag, Ability))
+	{
+		return false;
+	}
+
+	UAbilitySystemComponent const& ASC = *HudPlayerParams.AbilitySystemComponent;
+	bool const bHasGauge = Ability->GetClassGauge(ASC, OutFill, bOutReady);
+	if (bHasGauge)
+	{
+		Ability->GetGaugeLabel(ASC, OutLabel);
+	}
+
+	return bHasGauge;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

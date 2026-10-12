@@ -120,6 +120,19 @@ local-player-only bindings before `AddDynamic`.
   (`Data/gems.csv`); a Core's other tunables sit on its passive ability (`FGeoGemInfo::GrantedAbility`).
 - New projectiles extend `AGeoPooledProjectile`, not `AGeoProjectile`, unless stated otherwise.
 - VFX go through Gameplay Cues — never a multicast RPC or multicast delegate. Clients have the local context.
+- New network traffic is a last resort: find or rebuild the value on the client first, then a replicated property,
+  RPC / multicast last (`AI/Architecture.md`, "Replicate as little as possible").
+
+## Tests
+- A behaviour that can be automated gets a test file in the same step as the code, in the lightest layer that proves
+  it (`AI/Testing.md`), next to the code it covers; the Pending file lists the files and the run command.
+- Run them headless (`Tools\Run_Tests.bat [filter]`) once built. A feature is not done without its tests unless they
+  cannot be automated; say why.
+- Never `Sleep()`; wait on an observable condition. Layers, paths and flags: `AI/Testing.md`.
+
+## Grouping
+- A new feature starts by looking for existing code of the same kind. Group it with the new code under one folder
+  (own `CLAUDE.md` once ≥ 3 files) and move the stragglers in the same change; never leave a family scattered.
 
 ## Debugging
 **No workarounds.** Find the root cause before proposing anything.

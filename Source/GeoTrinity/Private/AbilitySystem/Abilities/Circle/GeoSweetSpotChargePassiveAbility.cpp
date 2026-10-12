@@ -20,6 +20,28 @@ float UGeoSweetSpotChargePassiveAbility::GetGaugeRatio(UAbilitySystemComponent c
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+bool UGeoSweetSpotChargePassiveAbility::IsReady(UAbilitySystemComponent const& ASC) const
+{
+	return GetGaugeRatio(ASC) >= 1.f;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoSweetSpotChargePassiveAbility::GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill,
+													   bool& bOutReady) const
+{
+	OutFill = GetGaugeRatio(ASC);
+	bOutReady = IsReady(ASC);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoSweetSpotChargePassiveAbility::GetGaugeLabel(UAbilitySystemComponent const& ASC, FText& OutLabel) const
+{
+	OutLabel = FText::Format(INVTEXT("{0}%"), FText::AsNumber(FMath::RoundToInt(GetGaugeRatio(ASC) * 100.f)));
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 float UGeoSweetSpotChargePassiveAbility::GetHealsToDamageMultiplier(float const SweetSpotPrecision) const
 {
 	return FMath::Lerp(EdgeDamageMultiplierBoost, CenterDamageMultiplierBoost, SweetSpotPrecision);

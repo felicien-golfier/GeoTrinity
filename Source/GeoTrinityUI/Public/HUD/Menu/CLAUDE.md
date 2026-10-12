@@ -4,7 +4,7 @@ Menu system: a root shows pages; pages wear frames; lists share one frame and ro
 
 | Folder / file | Holds |
 |---|---|
-| `GeoMainMenuWidget.h` | Lobby menu (`GeoMenuRootWidget`): buttons for create / join / play local / leaderboard / quit |
+| `GeoMainMenuWidget.h` | Lobby menu (`GeoMenuRootWidget`): buttons for create / join / play local / leaderboard / quit; plays the menu music loop |
 | `GeoPauseMenuWidget.h` | In-game pause menu, owned by `AGeoPlayerController`; closing from any page resumes; Quit uses `RequestEndPlayMap()` in PIE |
 | `Frame/` | Menu skeleton: root, page, frame layers, panel base, buttons |
 | `Server/` | Create / browse / local-connect pages |
@@ -18,3 +18,9 @@ Menu system: a root shows pages; pages wear frames; lists share one frame and ro
 - Pages open other pages by class (`OpenPage`); a page never knows who opened it.
 - Gamepad: panels hold focus; first d-pad input focuses `GetInitialFocusWidget()`; B / Backspace bubbles to the innermost panel's `HandleBackAction()`.
 - Required BP widget names are in each header's class comment.
+
+## Menu music
+- `UGeoMainMenuWidget::MusicLoop` (`USoundBase`, set in the BP defaults): `SW_MenuInspiration_Loop`, shipped from `SourceArt/Audio/MenuMusic/`.
+- Played 2D through one `UAudioComponent` created in `NativeConstruct`, faded in, never restarted by page changes (the root lives as long as the menu); faded out and released in `NativeDestruct`, so joining or leaving to a level ends it.
+- Pause menu has none: music is the lobby's only.
+- Routed by the Sound Wave's `SC_Music` class, so the Settings → Sound "Music" slider drives it.

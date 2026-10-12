@@ -25,6 +25,13 @@ public:
 	/** Sets bActivateOnFreshPressOnly so a held button never chain-activates the detonation while the sacrifice channel is still active on the same input. */
 	UGeoSacrificeDetonateAbility();
 
+	/** Ready while armed (Status.Square.DetonateReady on ASC), whatever the sacrificed value. */
+	virtual bool IsReady(UAbilitySystemComponent const& ASC) const override;
+	/** The Square's class gauge: SacrificeValue over SacrificeForFullGauge, ready while armed (IsReady) at any fill. */
+	virtual bool GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill, bool& bOutReady) const override;
+	/** SacrificeValue rounded — the damage absorbed so far — while above 0; nothing at 0. */
+	virtual bool GetGaugeLabel(UAbilitySystemComponent const& ASC, FText& OutLabel) const override;
+
 protected:
 	/** Local machine: fires the ray cue (damage inside is server-gated) and ends. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
@@ -47,6 +54,10 @@ private:
 	/** Fraction of consumed SacrificeValue added to the ray's total damage (total = BaseDamage + SacrificeValue × this). */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	float SacrificeValueMultiplier = .7f;
+
+	/** Sacrificed damage that fills the Square's class gauge. Fill only: readiness is the armed state. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|HUD", meta = (ClampMin = "1", AllowPrivateAccess = true))
+	float SacrificeForFullGauge = 200.f;
 
 	/** Local cue fired on detonation (endpoint in Location, aim direction in Normal, value in RawMagnitude). */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))

@@ -31,13 +31,15 @@ public:
 	/** Returns the deployable class this ability spawns. Used by the HUD to resolve the matching deployable-manager slot. */
 	TSubclassOf<AGeoDeployableBase> GetDeployableActorClass() const { return DeployableActorClass; }
 
-	/** Number of charges currently available to spend: the pool size minus the Cooldown GE's replicated stack count. */
-	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
-	int32 GetCurrentStacks() const;
+	/** Number of charges ASC currently has to spend: the pool size minus the Cooldown GE's replicated stack count.
+	 * CDO-safe. */
+	int32 GetCurrentStacks(UAbilitySystemComponent const& ASC) const;
 
-	/** Maximum number of charges this ability can hold: MaxCharges, plus the Surplus Core's magnitude with it slotted. */
-	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
-	int32 GetMaxStacks() const;
+	/** Maximum number of charges ASC can hold: MaxCharges, plus the Surplus Core's magnitude with it slotted. CDO-safe. */
+	int32 GetMaxStacks(UAbilitySystemComponent const& ASC) const;
+
+	/** Ready while a charge is left: the Cooldown GE runs as soon as one is spent, so the default rule would not do. */
+	virtual bool IsReady(UAbilitySystemComponent const& ASC) const override;
 
 	/** The charges the pool holds without gems: MaxCharges. */
 	int32 GetBaseMaxStacks() const

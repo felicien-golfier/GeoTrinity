@@ -25,6 +25,7 @@
 static float const RankColumnWeight = 1.f;
 static float const BossLeftColumnWeight = 2.f;
 static float const TimeColumnWeight = 2.f;
+static float const DateColumnWeight = 2.f;
 
 // A row always shows this many player columns, empty where the team was short, so they line up down the list.
 static int32 const PlayersPerRow = 3;
@@ -149,6 +150,7 @@ void UGeoLeaderboardWidget::PopulateEntries()
 	Header->AddTextColumn(FText::FromString(TEXT("#")), RankColumnWeight);
 	Header->AddTextColumn(FText::FromString(TEXT("Boss left")), BossLeftColumnWeight);
 	Header->AddTextColumn(FText::FromString(TEXT("Time")), TimeColumnWeight);
+	Header->AddTextColumn(FText::FromString(TEXT("Date")), DateColumnWeight);
 	Header->AddTextColumn(FText::FromString(TEXT("Players")), PlayerColumnWeight);
 	for (int32 Column = 1; Column < PlayersPerRow; ++Column)
 	{
@@ -183,6 +185,9 @@ void UGeoLeaderboardWidget::PopulateEntries()
 		Row->AddTextColumn(FText::AsNumber(Rank), RankColumnWeight);
 		Row->AddTextColumn(FText::FromString(BossLeft), BossLeftColumnWeight);
 		Row->AddTextColumn(UHudFunctionLibrary::FormatDuration(Entry.DurationSeconds), TimeColumnWeight);
+		bool const bHasDate = Entry.Date != FDateTime();
+		Row->AddTextColumn(bHasDate ? FText::FromString(Entry.Date.ToString(TEXT("%Y-%m-%d"))) : FText::GetEmpty(),
+						   DateColumnWeight);
 		for (FGeoLeaderboardPlayer const& Player : Entry.Players)
 		{
 			AddPlayerColumn(Row, Player);
@@ -321,6 +326,11 @@ void UGeoLeaderboardWidget::AddPlayerColumn(UGeoListRowWidget* Row, FGeoLeaderbo
 		Name = Name.Left(PlayerNameMaxChars - 3) + TEXT("...");
 	}
 	Column->AddChildToHorizontalBox(Row->MakeColumnText(FText::FromString(Name)))->SetPadding(FMargin(4.f, 0.f));
+
+	if (Player.Level > 0)
+	{
+		Column->AddChildToHorizontalBox(Row->MakeColumnText(FText::FromString(FString::Printf(TEXT("Lv %d"), Player.Level))));
+	}
 
 	Row->AddColumn(Column, PlayerColumnWeight);
 }

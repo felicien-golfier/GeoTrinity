@@ -111,7 +111,10 @@ public:
 	/** Adds Count copies of GemId to its stack: loot, or a cheat. */
 	void AddGems(FName GemId, int32 Count);
 
-	/** Sets PlayerClass's level, clamped to [1, GeoGem::MaxClassLevel], with no XP towards the next. */
+	/**
+	 * Sets PlayerClass's level, clamped to [1, GeoGem::MaxClassLevel], with no XP towards the next. Lowering it empties
+	 * every socket of every build that is locked again at the new level; the copies go back to free.
+	 */
 	void SetClassLevel(EPlayerClass PlayerClass, int32 Level);
 
 	/** Adds Xp to PlayerClass, leveling it up every Catalog.XpPerLevel up to the max level. Returns the levels gained. */
@@ -131,8 +134,11 @@ public:
 	/** Empties PlayerClass's socket SocketIndex; the copy goes back to free. */
 	void Unequip(EPlayerClass PlayerClass, int32 SocketIndex);
 
-	/** Equips GemId into every empty socket of PlayerClass it may go in, while free copies last. Returns how many. */
-	int32 FillEmptySockets(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, FName GemId);
+	/**
+	 * Equips GemId into every socket of PlayerClass it may go in, empty or not (a slotted gem is replaced), while free
+	 * copies last. Returns how many.
+	 */
+	int32 FillSockets(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, FName GemId);
 
 	/** Breaks up to Quantity breakable copies of GemId down into shards. Returns the shards gained. */
 	int32 BreakDown(UGeoGemCatalog const& Catalog, FName GemId, int32 Quantity);

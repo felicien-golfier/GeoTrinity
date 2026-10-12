@@ -12,7 +12,7 @@
 				"PLUGIN_PORT": "8090"
 			}
 		},
-		"unreal-mcp":
+		"mcp-epic":
 		{
 			"type": "http",
 			"url": "http://127.0.0.1:8000/mcp"

@@ -16,13 +16,15 @@ enum class EGeoMeterShape : uint8
 	/** A ring — or the frame of a polygon the meter is given — filling clockwise from its first corner. */
 	Ring,
 	/** A pie over the whole box covering the last Fill of a turn: a cooldown sweep. */
-	Sweep
+	Sweep,
+	/** The whole box filling bottom to top over its track: a value. */
+	Rise
 };
 
 /**
  * The look of a UGeoMeter: a track, a fill, an overhang (the shield, drawn behind the fill and around it), tick marks
  * and an outline. One asset per kind of meter (player health, team health, boss health, class ring, cooldown, status
- * time); every meter wearing it changes with it.
+ * time, slot gauge); every meter wearing it changes with it.
  */
 UCLASS(BlueprintType)
 class GEOTRINITYUI_API UGeoMeterStyle : public UDataAsset

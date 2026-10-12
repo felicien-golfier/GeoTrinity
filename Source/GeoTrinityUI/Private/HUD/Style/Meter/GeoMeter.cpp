@@ -65,6 +65,9 @@ public:
 		case EGeoMeterShape::Sweep:
 			PaintSweep(*MeterStyle, Opacity, AllottedGeometry, OutDrawElements, LayerId);
 			return LayerId;
+		case EGeoMeterShape::Rise:
+			PaintRise(*MeterStyle, Opacity, AllottedGeometry, OutDrawElements, LayerId);
+			return LayerId + 1;
 		}
 		return LayerId;
 	}
@@ -207,6 +210,22 @@ private:
 		}
 		FGeoShapePainter::DrawFilled(OutDrawElements, LayerId, Geometry, Pie,
 									 Faded(MeterStyle.FillColor * FillTint, Opacity));
+	}
+
+	void PaintRise(UGeoMeterStyle const& MeterStyle, float const Opacity, FGeometry const& Geometry,
+				   FSlateWindowElementList& OutDrawElements, int32 const LayerId) const
+	{
+		FVector2f const Size = Geometry.GetLocalSize();
+		FGeoShapePainter::DrawFilled(OutDrawElements, LayerId, Geometry,
+									 FGeoShapePainter::MakeRectangle(FVector2f::ZeroVector, Size),
+									 Faded(MeterStyle.TrackColor, Opacity));
+		if (Fill > 0.f)
+		{
+			FGeoShapePainter::DrawFilled(
+				OutDrawElements, LayerId + 1, Geometry,
+				FGeoShapePainter::MakeRectangle(FVector2f(0.f, (1.f - Fill) * Size.Y), Size),
+				Faded(MeterStyle.FillColor * FillTint, Opacity));
+		}
 	}
 
 	TWeakObjectPtr<UGeoMeterStyle const> Style;

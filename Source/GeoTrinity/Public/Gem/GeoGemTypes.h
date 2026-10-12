@@ -176,6 +176,11 @@ struct FGeoGemLoadout
 
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
 	TArray<FName> Sockets;
+
+	/** The class level when UGeoGemProfileSave::GetLoadout read this, so the server learns it with the loadout. Never
+	 *  read back from a saved build. */
+	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
+	int32 Level = 1;
 };
 
 namespace GeoGem

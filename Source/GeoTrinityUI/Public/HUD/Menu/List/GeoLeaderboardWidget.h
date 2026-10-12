@@ -23,7 +23,7 @@ struct FGeoLeaderboardPlayer;
  * Original — and, inside a boss and a difficulty, those attempts best first. Least health left leads, so a kill tops
  * the list and a boss never touched sits at the bottom, ties broken by the faster attempt; attempts at different
  * difficulties are never ranked against each other. One row per attempt: rank, how much of the boss was left (KILLED
- * when none was), how long it took, and a column per player — the shape of the class they played, then their name —
+ * when none was), how long it took, the date it ended, and a column per player — the shape of the class they played, their name, then the level of that class (blank for attempts saved before levels were recorded) —
  * sized so a full team of three fits the row side by side.
  * Clicking an attempt unfolds what each of its players did with their class — damage, healing and damage taken, each
  * with a bar reading as its share of the best in the column, plus the rates and the biggest single hit and heal —
@@ -74,7 +74,8 @@ private:
 	 * its column; 0 is a figure nothing compares it to, which is the number on its own. */
 	void AddStatColumn(UGeoListRowWidget* Row, float Value, float ColumnMax, FLinearColor BarColor);
 
-	/** Appends one player to Row: the shape of their class, then their name shortened to what the column holds. */
+	/** Appends one player to Row: the shape of their class, their name shortened to what the column holds, then
+	 * their class level when the attempt recorded one. */
 	void AddPlayerColumn(UGeoListRowWidget* Row, FGeoLeaderboardPlayer const& Player);
 
 	/** Rasterizes ClassIcons, one marker per playable class, before any row asks for one. */

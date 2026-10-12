@@ -72,10 +72,13 @@ def main():
         if d < 0:                      # window reset mid-turn: only what was spent since the reset is known
             d = now
         st["deltas"].append(d)
-        parts.append(f"{d:+.1f}%, session {sum(st['deltas']):.1f}%")
+        parts.append(f"{d:+.1f}%" + (f", session {sum(st['deltas']):.1f}%" if len(st["deltas"]) > 1 else ""))
         st["start_pct"] = now
         save(sid, st)
-    parts.append(f"tokens turn {fmt(tin)}+{fmt(tc)}c/{fmt(tout)} {tn} calls, session {fmt(sin)}+{fmt(sc)}c/{fmt(sout)} {sn} calls")
+    line = f"tokens turn {fmt(tin)}+{fmt(tc)}c/{fmt(tout)} {tn} calls"
+    if sn > tn:                        # session total only differs from the turn once a second prompt exists
+        line += f", session {fmt(sin)}+{fmt(sc)}c/{fmt(sout)} {sn} calls"
+    parts.append(line)
     print(json.dumps({"systemMessage": " · ".join(parts)}))
 
 if __name__ == "__main__":

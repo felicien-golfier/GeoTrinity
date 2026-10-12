@@ -66,6 +66,9 @@ class GEOTRINITY_API UGeoShieldBurstPassiveAbility : public UGeoGameplayAbility
 	TObjectPtr<UShieldBurstPassiveComponent> PassiveComponent;
 
 public:
+	/** Ready once the avatar's replicated gauge is full; false while no gauge component is on it. */
+	virtual bool IsReady(UAbilitySystemComponent const& ASC) const override;
+
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|ShieldBurst")
 	float ChargeTime = 1.f; // Needs to be accessible from the passive comp via CDO
 };

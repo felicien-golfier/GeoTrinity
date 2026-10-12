@@ -34,6 +34,9 @@ public:
 	 *  loadout. Called by APlayableCharacter::ResetAttributes, which refills Health and Ammo after it. */
 	void ApplyGems();
 
+	/** Server: the level the owning client last sent for PlayerClass; 1 until it has sent one. */
+	int32 GetClassLevel(EPlayerClass const PlayerClass) const { return Loadouts.FindRef(PlayerClass).Level; }
+
 	/** Server: hands Reward to the owning client, whose profile keeps the gems and the class XP. */
 	void GrantReward(FGeoGemReward const& Reward);
 

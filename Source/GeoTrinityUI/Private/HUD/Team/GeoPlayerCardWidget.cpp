@@ -2,12 +2,9 @@
 
 #include "HUD/Team/GeoPlayerCardWidget.h"
 
-#include "AbilitySystem/Abilities/Circle/GeoSweetSpotChargePassiveAbility.h"
-#include "AbilitySystem/Abilities/Square/GeoSacrificeDetonateAbility.h"
-#include "AbilitySystem/Abilities/Triangle/GeoRecallTurretAbility.h"
-#include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "AbilitySystemComponent.h"
 #include "Components/TextBlock.h"
 #include "GameClasses/Match/GeoPlayerState.h"
 #include "HUD/Style/Meter/GeoMeter.h"
@@ -98,52 +95,43 @@ void UGeoPlayerCardWidget::RefreshGauge()
 {
 	float Fill = 0.f;
 	bool bReady = false;
-	ESlateVisibility const GaugeVisibility =
-		GetClassGauge(Fill, bReady) ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed;
+	FText Label;
+	bool const bHasGauge = GetClassGauge(Fill, bReady, Label);
 
 	if (GaugeRing)
 	{
-		GaugeRing->SetVisibility(GaugeVisibility);
+		GaugeRing->SetVisibility(bHasGauge ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 		GaugeRing->SetFill(Fill);
 		GaugeRing->SetReady(bReady);
 	}
 	if (GaugeText)
 	{
-		GaugeText->SetVisibility(GaugeVisibility);
-		GaugeText->SetText(FText::Format(GaugeFormat, FText::AsNumber(FMath::RoundToInt(Fill * 100.f))));
+		GaugeText->SetVisibility(Label.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		GaugeText->SetText(FText::Format(GaugeFormat, Label));
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-bool UGeoPlayerCardWidget::GetClassGauge(float& OutFill, bool& bOutReady) const
+bool UGeoPlayerCardWidget::GetClassGauge(float& OutFill, bool& bOutReady, FText& OutLabel) const
 {
 	OutFill = 0.f;
 	bOutReady = false;
+	OutLabel = FText::GetEmpty();
 	UAbilitySystemComponent const* ASC = OwnerASC.Get();
 	if (!ASC)
 	{
 		return false;
 	}
 
-	UGeoSweetSpotChargePassiveAbility const* SweetSpot =
-		GeoASLib::GetGrantedAbility<UGeoSweetSpotChargePassiveAbility>(*ASC);
-	UGeoSacrificeDetonateAbility const* Detonate = GeoASLib::GetGrantedAbility<UGeoSacrificeDetonateAbility>(*ASC);
-	UGeoRecallTurretAbility const* Recall = GeoASLib::GetGrantedAbility<UGeoRecallTurretAbility>(*ASC);
-	if (SweetSpot)
+	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
 	{
-		OutFill = SweetSpot->GetGaugeRatio(*ASC);
-		bOutReady = OutFill >= 1.f;
+		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
+		if (Ability && Ability->GetClassGauge(*ASC, OutFill, bOutReady))
+		{
+			Ability->GetGaugeLabel(*ASC, OutLabel);
+			return true;
+		}
 	}
-	else if (Detonate)
-	{
-		float const Sacrificed = ASC->GetNumericAttribute(UCharacterAttributeSet::GetSacrificeValueAttribute());
-		OutFill = FMath::Clamp(Sacrificed / SacrificeForFullGauge, 0.f, 1.f);
-		bOutReady = OutFill >= 1.f;
-	}
-	else if (Recall)
-	{
-		bOutReady = Recall->IsBlinkRecallReady(*ASC);
-		OutFill = bOutReady ? 1.f : 0.f;
-	}
-	return SweetSpot || Detonate || Recall;
+
+	return false;
 }
