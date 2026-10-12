@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" data-geo-color="DeployableNotBlocking" fill="none" stroke="#F4EEFF" stroke-width="2">
+  <rect x="3" y="13" width="17" height="17" fill="#F4EEFF"/>
+  <line x1="22" y1="21" x2="27" y2="24" stroke-dasharray="3 3" stroke-opacity=".6"/>
+  <rect x="28" y="16" width="13" height="13"/>
+  <rect x="28" y="22.5" width="13" height="6.5" fill="#F4EEFF"/>
+</svg>

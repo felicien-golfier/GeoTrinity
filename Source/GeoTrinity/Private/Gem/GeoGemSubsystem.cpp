@@ -4,7 +4,7 @@
 
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
-#include "GameClasses/GeoPlayerState.h"
+#include "GameClasses/Match/GeoPlayerState.h"
 #include "GameFramework/PlayerController.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemComponent.h"

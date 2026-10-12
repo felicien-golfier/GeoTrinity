@@ -2,7 +2,7 @@
 
 #include "Animation/GeoLoopSoundNotify.h"
 
-#include "Characters/Component/GeoLoopSoundComponent.h"
+#include "Characters/Component/FX/GeoLoopSoundComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Actor.h"
 

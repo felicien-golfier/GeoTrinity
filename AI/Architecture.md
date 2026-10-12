@@ -64,3 +64,12 @@ Pooled actors implement `IGeoPoolableInterface` (`Init()` / `End()`).
 
 Filter by `EPlayerClass` when activating from an input tag. Never write a separate ability class per player
 class — use the `PlayerClass` field on `FGameplayAbilityInfo`.
+
+## Cues are cosmetic only
+
+A replicated cue execute is an unreliable multicast: dropped under loss, never reaches late joiners, two per ASC per frame. Use it only for flourishes whose loss costs nothing.
+
+- A telegraph a player must see goes through reliable state: replicated actor / component state (`UGeoBeamVFXComponent`), or local spawning inside something that already reaches every client (a pattern started by the reliable `PatternStartMulticast`).
+- Player-started telegraph others must see: `UGeoIndicatorComponent::AddIndicator` on server and owning client. Pattern or replicated actor: `UGeoIndicatorComponent::SpawnIndicator` locally.
+- A cue executed *locally* from reliable state (deployable moments) is fine.
+- Cue executed from `OnFireTargetDataReceived` carries the scoped prediction key: the owning client skips it (`TroobleshootingLogs.md`).

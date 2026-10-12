@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Data/GeoCueParam.h"
+#include "AbilitySystem/Data/FX/GeoCueParam.h"
 #include "CoreMinimal.h"
 #include "Tasks/StateTreeMoveToTask.h"
 

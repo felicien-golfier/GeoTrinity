@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Abilities/Boss/GeoPeriodicPatternAbility.h"
 
-#include "AbilitySystem/Abilities/Pattern/ProjectilePattern.h"
+#include "AbilitySystem/Abilities/Pattern/Projectile/ProjectilePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/PlayableCharacter.h"

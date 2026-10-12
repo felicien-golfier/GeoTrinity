@@ -18,17 +18,17 @@
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Engine/LocalPlayer.h"
-#include "GameClasses/GeoGameState.h"
-#include "GameClasses/GeoPlayerController.h"
-#include "GameClasses/GeoPlayerState.h"
+#include "GameClasses/Match/GeoGameState.h"
+#include "GameClasses/Player/GeoPlayerController.h"
+#include "GameClasses/Match/GeoPlayerState.h"
 #include "GameplayEffectExtension.h"
-#include "HUD/GenericCombattantWidget.h"
-#include "HUD/GeoDamageNumberWidget.h"
+#include "HUD/Combatant/GenericCombattantWidget.h"
+#include "HUD/Combatant/GeoDamageNumberWidget.h"
 #include "HUD/GeoOverlayWidget.h"
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "HUD/Interface/GeoDamageNumberHost.h"
-#include "Tool/GeoIcon.h"
+#include "Tool/Visual/GeoIcon.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 namespace
@@ -41,7 +41,12 @@ namespace
 		TArray<FGameplayTag> const BarOrder = {Tags.InputTag_Basic, Tags.InputTag_Deployable,
 											   Tags.InputTag_Special, Tags.InputTag_Reload,
 											   Tags.InputTag_Dash};
-
+		I don;t see the difference between Always and When ready, as it's not always with highlighter frame on actives
+		  abilities cuz they are sometimes in cooldown. I'd like not to add more netcode actually. It feels that we should
+		  have only a really small dev, like the actual active don;t change, the actual passive not triggerable just not
+		  highlighted and the passive with cooldown are doin like active and passive that require an arm charge up with a
+		  value instead of a time. And the one that would require no time nor value will just set highlight when ready.
+		  But it feels like it should be only one
 		int32 const Order = BarOrder.IndexOfByKey(InputTag);
 		ensureMsgf(Order != INDEX_NONE, TEXT("GetInputTagBarOrder: %s has no ability-bar position"),
 				   *InputTag.ToString());
@@ -293,6 +298,18 @@ void AGeoHUD::HideBossHealthBar()
 // ---------------------------------------------------------------------------------------------------------------------
 TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries(APlayableCharacter* PlayableCharacter) const
 {
+	return GatherBarEntries(PlayableCharacter, false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FGeoAbilityBarEntry> AGeoHUD::GetPassiveBarEntries(APlayableCharacter* PlayableCharacter) const
+{
+	return GatherBarEntries(PlayableCharacter, true);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<FGeoAbilityBarEntry> AGeoHUD::GatherBarEntries(APlayableCharacter* PlayableCharacter, bool const bPassive) const
+{
 	TArray<FGeoAbilityBarEntry> Entries;
 
 	UGeoAbilitySystemComponent* ASC = HudPlayerParams.GetGeoAbilitySystemComponent();
@@ -309,7 +326,7 @@ TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries(APlayableCharacter* Pl
 	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
 	{
 		UGeoGameplayAbility const* Ability = Cast<UGeoGameplayAbility>(Spec.Ability);
-		if (!Ability || Ability->IsPassive())
+		if (!Ability || Ability->IsPassive() != bPassive)
 		{
 			continue;
 		}
@@ -331,14 +348,19 @@ TArray<FGeoAbilityBarEntry> AGeoHUD::GetAbilityBarEntries(APlayableCharacter* Pl
 		Entry.InputAction = Info->InputAction;
 		Entry.Icon = Info->AbilityIcon;
 		Entry.bIsDeployable = Info->bShowDeployCount;
+		Entry.bIsPassive = bPassive;
 	}
 
-	// Stable so abilities sharing one input (the slot's channel/detonate swap) keep the order the slot expects.
-	Algo::StableSortBy(Entries,
-					   [](FGeoAbilityBarEntry const& Entry)
-					   {
-						   return GetInputTagBarOrder(Entry.InputTag);
-					   });
+	// Passives carry no bar input: they keep the granted order.
+	if (!bPassive)
+	{
+		// Stable so abilities sharing one input (the slot's channel/detonate swap) keep the order the slot expects.
+		Algo::StableSortBy(Entries,
+						   [](FGeoAbilityBarEntry const& Entry)
+						   {
+							   return GetInputTagBarOrder(Entry.InputTag);
+						   });
+	}
 
 	return Entries;
 }

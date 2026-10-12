@@ -6,7 +6,7 @@
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "GameClasses/GeoGameState.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/Pawn.h"
 #include "Tool/UGeoGameplayLibrary.h"
 

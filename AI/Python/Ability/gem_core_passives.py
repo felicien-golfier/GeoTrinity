@@ -6,9 +6,12 @@ Ability.Type.Passive + Ability.Spell.<Core>. The AbilityInfo entry is Shared wit
 page lists it only while the gem is slotted, and UGeoGemComponent::ApplyGems gives it (FGeoGemInfo::GrantedAbility,
 the GrantedAbility column of Data/gems.csv).
 
+A Core with a cooldown (COOLDOWNS) also gets its GE_CD_Core_<gem> duration effect, set as the Blueprint's
+CooldownGameplayEffectClass: the cooldown replicates and the HUD's passive tile sweeps it.
+
 Re-runnable: each Core's Blueprint is reused when it exists; its asset tags, the AbilityInfo entry and the CSV cell are set again. Add a Core to CORES once its
 C++ class and Ability_Spell_<Core> tag are compiled. Headless:
-UnrealEditor-Cmd.exe GeoTrinity.uproject -run=pythonscript -script=<this file> -unattended -nullrhi -NoP4
+UnrealEditor-Win64-DebugGame-Cmd.exe GeoTrinity.uproject -run=pythonscript -script=<this file> -unattended -nullrhi -NoP4
 The report lands in REPORT.
 """
 import csv
@@ -29,6 +32,11 @@ CORES = [
     ("Kinship", "GeoKinshipPassiveAbility", "Kinship"),
 ]
 
+# Cooldown seconds of the Cores whose rule fires on an event; each gets its own GE_CD_Core_<gem> (Bond and Relay have none)
+COOLDOWNS = {"Wake": 8.0, "Split": 10.0, "Kinship": 5.0}
+GE_FOLDER = "/Game/AbilitySystem/GameplayEffects/Cooldown"
+GE_TEMPLATE = GE_FOLDER + "/GE_CD_Special"
+
 lines = []
 
 
@@ -36,6 +44,35 @@ def tag_container(names):
     container = unreal.GameplayTagContainer()
     container.import_text("(GameplayTags=(%s))" % ",".join('(TagName="%s")' % n for n in names))
     return container
+
+
+def create_cooldown_effect(gem_id, seconds):
+    """GE_CD_Core_<gem>: a copy of GE_CD_Special with this Core's duration and its own Ability.Cooldown.<gem> tag, so the
+    passive's cooldown replicates and the HUD tile sweeps it. Returns the generated class."""
+    name = "GE_CD_Core_" + gem_id
+    path = GE_FOLDER + "/" + name
+    if not unreal.EditorAssetLibrary.does_asset_exist(path):
+        unreal.EditorAssetLibrary.duplicate_asset(GE_TEMPLATE, path)
+    blueprint = unreal.load_asset(path)
+    cdo = unreal.get_default_object(blueprint.generated_class())
+
+    magnitude = cdo.get_editor_property("DurationMagnitude")
+    magnitude.import_text("(MagnitudeCalculationType=ScalableFloat,ScalableFloatMagnitude=(Value=%f))" % seconds)
+    cdo.set_editor_property("DurationMagnitude", magnitude)
+
+    # The component's type is not exported to Python: found by class name, written through reflection.
+    tag_components = [c for c in cdo.get_editor_property("GEComponents")
+                      if c.get_class().get_name() == "TargetTagsGameplayEffectComponent"]
+    for component in tag_components:
+        owned = component.get_editor_property("InheritableGrantedTagsContainer")
+        owned.import_text('(Added=(GameplayTags=((TagName="Ability.Cooldown.%s"))))' % gem_id)
+        component.set_editor_property("InheritableGrantedTagsContainer", owned)
+
+    unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
+    unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
+    lines.append("cooldown %s %ss tags %s" % (path, seconds, [
+        c.get_editor_property("InheritableGrantedTagsContainer").export_text() for c in tag_components]))
+    return unreal.load_class(None, "%s.%s_C" % (path, name))
 
 
 def create_blueprint(gem_id, cpp_class):
@@ -49,6 +86,8 @@ def create_blueprint(gem_id, cpp_class):
         blueprint = unreal.AssetToolsHelpers.get_asset_tools().create_asset(name, FOLDER, unreal.Blueprint, factory)
     cdo = unreal.get_default_object(blueprint.generated_class())
     cdo.set_editor_property("AbilityTags", tag_container(["Ability.Spell." + gem_id, "Ability.Type.Passive"]))
+    if gem_id in COOLDOWNS:
+        cdo.set_editor_property("CooldownGameplayEffectClass", create_cooldown_effect(gem_id, COOLDOWNS[gem_id]))
     unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
     unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
     lines.append("blueprint %s tags %s" % (path, cdo.get_editor_property("AbilityTags").export_text()))

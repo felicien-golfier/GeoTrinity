@@ -8,7 +8,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "Characters/PlayableCharacter.h"
-#include "GameClasses/GeoGameState.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void UGeoBondPassiveAbility::BindEvent(UGeoAbilitySystemComponent& /*HolderASC*/)

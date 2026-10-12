@@ -4,7 +4,7 @@
 
 #include "Components/TextRenderComponent.h"
 #include "Engine/World.h"
-#include "GameClasses/GeoGameState.h"
+#include "GameClasses/Match/GeoGameState.h"
 
 void AGeoDifficultyButton::OnConstruction(FTransform const& Transform)
 {

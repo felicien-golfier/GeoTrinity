@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Types/GeoAscTypes.h"
 
-#include "Tool/GeoIcon.h"
+#include "Tool/Visual/GeoIcon.h"
 
 namespace
 {

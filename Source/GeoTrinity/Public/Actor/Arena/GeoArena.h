@@ -6,8 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 #include "Gem/GeoGemTypes.h"
-#include "System/GeoLeaderboardSave.h"
-#include "World/GeoBackgroundPulseComponent.h"
+#include "System/Stats/GeoLeaderboardSave.h"
+#include "World/Backdrop/GeoBackgroundPulseComponent.h"
 
 #include "GeoArena.generated.h"
 

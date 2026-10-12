@@ -54,3 +54,15 @@ Verify the effect from world state (pawn location delta, actor counts) and from 
 verbosity the log console command can raise to make every activation and cooldown rejection readable. The pawn
 comes from the controller's controlled-pawn getter; the plain pawn getter is not exposed. See
 `AI/Python/Runtime/pie_inject_input.py`.
+
+## Measuring cost
+
+- Frame cost: `csvprofile start` / `stop` through the console-command tool on the PIE world. The CSV has per-frame GameThread / RenderThread / GPU and `Exclusive/*` breakdowns that stay valid while the editor is background-throttled. Its header grows mid-file: use the longest `EVENTS` row as the header and pad shorter rows.
+- A Slate post-tick delta is clamped (a flat 125 ms when throttled) and `set` on `EditorPerformanceSettings` is refused in the editor: neither measures frame time.
+- User widgets live under `/Engine/Transient` (GameInstance outer), not under `UEDPIE` paths: filter by class.
+- A widget positioned off-screen is culled from paint and never ticks: a lifetime driven by its own tick freezes (the damage-number pool leak). Return it by world timer.
+- Never bulk `remove_from_parent` tens of thousands of viewport widgets from a script (66k froze the game thread 120 s): cap the batch or warn first.
+
+## Server RPCs from editor Python
+
+Editor Python runs under `FEditorScriptExecutionGuard`, where every function's callspace is Local: a Server RPC fired from a script (or a console command run through Python) executes on the PIE client, not the server ("RemoveActiveGameplayEffect called without Authority"). To test server state in a Play-as-Client PIE, change the local save from Python, then restart PIE so login (`AGeoPlayerState::ClientInitialize`) sends it outside the guard. Input injected through Enhanced Input is processed next frame, outside the guard, so ability activations reach the server.

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Data/GeoSoundRow.h"
+#include "AbilitySystem/Data/FX/GeoSoundRow.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "CoreMinimal.h"
 #include "ScalableFloat.h"

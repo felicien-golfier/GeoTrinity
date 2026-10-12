@@ -3,6 +3,10 @@
 Tasks marked `[x]` without a recurrence tag are permanently done.
 Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent.
 
+## Rules
+- **Project workflow gate (root `CLAUDE.md`, "Workflow")** applies to you. The JavaDoc task below is exempt; any other change (code, scripts, assets) needs the folders' `CLAUDE.md` + `AI/Pending/<Feature>.md` written and reviewed first — write them, commit, stop.
+- Read root `CLAUDE.md` "Writing CLAUDE.md" before touching any CLAUDE.md.
+
 ## Tasks
 
 - [ ] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below. <!-- last run: 2026-10-10 -->

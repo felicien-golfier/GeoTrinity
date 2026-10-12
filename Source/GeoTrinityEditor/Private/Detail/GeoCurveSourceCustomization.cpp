@@ -2,8 +2,8 @@
 
 #include "Detail/GeoCurveSourceCustomization.h"
 
-#include "AbilitySystem/Data/GeoFXMoment.h"
-#include "AbilitySystem/Data/GeoSoundRow.h"
+#include "AbilitySystem/Data/FX/GeoFXMoment.h"
+#include "AbilitySystem/Data/FX/GeoSoundRow.h"
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
 #include "IDetailPropertyRow.h"

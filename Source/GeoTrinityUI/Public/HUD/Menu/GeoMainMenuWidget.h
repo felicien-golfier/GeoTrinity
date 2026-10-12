@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "HUD/Menu/GeoMenuRootWidget.h"
+#include "HUD/Menu/Frame/GeoMenuRootWidget.h"
 
 #include "GeoMainMenuWidget.generated.h"
 

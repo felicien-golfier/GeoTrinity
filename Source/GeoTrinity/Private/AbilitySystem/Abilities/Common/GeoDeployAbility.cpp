@@ -12,7 +12,7 @@
 #include "Actor/Projectile/DeployableSpawner/DeployableSpawnerProjectile.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Actor/Projectile/GeoProjectileFXComponent.h"
-#include "Characters/Component/GeoDeploySatelliteComponent.h"
+#include "Characters/Component/FX/GeoDeploySatelliteComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "GameplayCueManager.h"
 #include "Gem/GeoGemCatalog.h"

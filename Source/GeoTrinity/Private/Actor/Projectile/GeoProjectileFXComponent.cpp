@@ -4,14 +4,14 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystem/Data/GeoBuffFXDataAsset.h"
+#include "AbilitySystem/Data/FX/GeoBuffFXDataAsset.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Components/AudioComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 #include "TimerManager.h"
-#include "Tool/GeoNiagaraParams.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // Rate the visual slides back onto the actor at (SetVisualLaunchLocation): ~1% of the offset is left after 0.2s, short

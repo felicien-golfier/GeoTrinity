@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "AbilitySystem/Data/GeoFXMoment.h"
+#include "AbilitySystem/Data/FX/GeoFXMoment.h"
 #include "CoreMinimal.h"
 #include "Templates/SubclassOf.h"
-#include "Tool/GeoColor.h"
+#include "Tool/Visual/GeoColor.h"
 #include "Tool/Team.h"
 
 #include "ExternalProjectileParams.generated.h"

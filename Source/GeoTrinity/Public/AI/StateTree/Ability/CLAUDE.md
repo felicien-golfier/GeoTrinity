@@ -1,10 +1,6 @@
 # AI/StateTree/Ability
 
-StateTree tasks that activate gameplay abilities on the enemy.
+`STTask_FireAbility` — activates an ability by `AbilityTag` on the enemy ASC, finishes when the ability ends.
 
-## Files
-### `STTask_FireAbility`
-Activates an ability by `GameplayTag` on the enemy's ASC.
-- `FInstanceDataType`: `AbilityTag` (input), `AbilityEndedDelegateHandle` (cleanup)
-- `EnterState` — finds ASC, activates ability, binds to ability-ended delegate for async completion
-- `ExitState` — unbinds delegate
+- Instance data: `AbilityTag` (input), `AbilityEndedDelegateHandle`.
+- `EnterState` activates (no event data → server-driven path) and binds the ended delegate; `ExitState` unbinds.

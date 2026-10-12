@@ -5,7 +5,7 @@
 #include "Characters/PlayableCharacter.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/ChildConnection.h"
-#include "GameClasses/GeoGameState.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"

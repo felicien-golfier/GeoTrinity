@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Characters/Component/GeoFXComponent.h"
+#include "Characters/Component/FX/GeoFXComponent.h"
 #include "CoreMinimal.h"
 
 #include "GeoDeployableFXComponent.generated.h"

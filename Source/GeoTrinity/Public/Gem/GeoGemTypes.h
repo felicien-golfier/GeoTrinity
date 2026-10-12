@@ -6,7 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
-#include "Tool/GeoColor.h"
+#include "Tool/Visual/GeoColor.h"
 
 #include "GeoGemTypes.generated.h"
 

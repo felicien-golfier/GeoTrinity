@@ -322,3 +322,8 @@ missing while it is still scanning — creating over it then fails and hands bac
 
 A class may be exposed under a script name differing from its C++ name; search the module's attribute list for
 the concept before concluding it is unreachable.
+
+## Ability clip recoil
+- `UGeoGameFeelComponent` already kicks the whole badge on every shot: a clip never adds a whole-badge or root / layer translation recoil.
+- A clip's recoil works on the parts: crush along X with a translation that keeps the part's back face where it rests (Y bulges a little), or step back in ratchet clicks. The body may follow a little the same way.
+- A wind-up reads as vibration plus a roll that accelerates right up to the release and stops dead on it. Model: `AI/Python/Anim/class_badge_deploy.py` `square_key`.

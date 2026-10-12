@@ -11,7 +11,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/GeoNetcodeDebug.h"
+#include "Tool/Net/GeoNetcodeDebug.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 

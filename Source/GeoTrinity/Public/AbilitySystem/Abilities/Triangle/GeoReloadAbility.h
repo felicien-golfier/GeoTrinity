@@ -4,7 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
-#include "Tool/GeoColor.h"
+#include "Tool/Visual/GeoColor.h"
 
 #include "GeoReloadAbility.generated.h"
 

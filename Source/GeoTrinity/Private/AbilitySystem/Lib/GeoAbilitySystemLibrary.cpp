@@ -7,7 +7,7 @@
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystem/Data/GeoCueParam.h"
+#include "AbilitySystem/Data/FX/GeoCueParam.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
@@ -27,9 +27,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "Settings/GameDataSettings.h"
-#include "System/GeoActorPoolingSubsystem.h"
-#include "System/GeoPoolableInterface.h"
-#include "Tool/GeoNiagaraParams.h"
+#include "System/Pooling/GeoActorPoolingSubsystem.h"
+#include "System/Pooling/GeoPoolableInterface.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------

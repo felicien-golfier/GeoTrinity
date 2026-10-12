@@ -2,7 +2,7 @@
 MF_MeaningColors, dimmed where the zone's life is spent. Rebuilt in place, so every instance and mesh keeps it.
 
 Run make_color_pattern_functions.py first. The parameter names C++ writes are declared in GeoMaterialParams
-(Source/GeoTrinity/Public/Tool/GeoNiagaraParams.h): renaming one here means renaming it there."""
+(Source/GeoTrinity/Public/Tool/Visual/GeoNiagaraParams.h): renaming one here means renaming it there."""
 import unreal
 
 FOLDER = "/Game/Art/VFX/AOE"

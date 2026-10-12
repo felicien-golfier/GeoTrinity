@@ -94,3 +94,8 @@ Colour comes from the palette slot the effect means; shape, placement and rotati
 4. **The last frame.** If it dissolves into a smudge, the fade is wrong.
 5. **From a stranger's chair.** If the answer to "what does this mean" is "something is glowing", the colour or
    the shape is not doing its job.
+
+## Player characters
+- A character is its shape in one solid colour: Square (Tank) blue, Triangle (DPS) yellow, Circle (Heal) green. A halo may surround it; no rim, no inner core, no symbol inside. Extra meaning (stored damage, buffs) sits outside the shape.
+- These class colours are separate from the `EGeoColor` effect palette.
+- Camera is orthographic: a position mismatch is never parallax or height; look for the gameplay or network cause (origin, direction, distance, flight, replication).

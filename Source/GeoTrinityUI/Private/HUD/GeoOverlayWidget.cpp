@@ -7,9 +7,9 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
-#include "HUD/GeoAbilityBarWidget.h"
-#include "HUD/GeoPlayerCardWidget.h"
-#include "HUD/GeoStatusBarWidget.h"
+#include "HUD/AbilityBar/GeoAbilityBarWidget.h"
+#include "HUD/Team/GeoPlayerCardWidget.h"
+#include "HUD/AbilityBar/GeoStatusBarWidget.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoOverlayWidget::BuildAbilityBar(AGeoHUD* GeoHUD, APlayableCharacter* PlayableCharacter)

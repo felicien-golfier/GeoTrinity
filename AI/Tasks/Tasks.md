@@ -5,6 +5,7 @@ Clear this file and replace its tasks whenever a new batch of overnight work is 
 
 ---
 ## Generic Rules
+- **Project workflow gate (root `CLAUDE.md`, "Workflow")** — applies to you. Any task beyond comments / JavaDoc / docs: write the folders' `CLAUDE.md` + `AI/Pending/<Feature>.md` first, commit, and stop; do not implement from an unreviewed plan unless the task text explicitly says "skip the docs".
 - Never delete any task from the file.
 - **Pull first** — always run `git pull` before touching any task.
 - **One task at a time** — execute unchecked `[ ]` tasks in order, one by one. Do not start the next task until the current one is fully complete (not just partially addressed).

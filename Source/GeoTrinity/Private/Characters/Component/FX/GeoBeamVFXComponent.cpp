@@ -1,0 +1,131 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#include "Characters/Component/FX/GeoBeamVFXComponent.h"
+
+#include "Net/UnrealNetwork.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
+#include "Tool/UGeoGameplayLibrary.h"
+
+// ---------------------------------------------------------------------------------------------------------------------
+UGeoBeamVFXComponent::UGeoBeamVFXComponent()
+{
+	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
+}
+
+void UGeoBeamVFXComponent::CreateNiagaraComponent()
+{
+	if (!IsValid(NiagaraComponent) && BeamSystem)
+	{
+		NiagaraComponent = NewObject<UNiagaraComponent>(GetOwner());
+		NiagaraComponent->SetAutoActivate(false);
+		NiagaraComponent->SetAsset(BeamSystem);
+		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
+		NiagaraComponent->RegisterComponent();
+		NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
+											FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		// BeamState may already hold live values: on clients its RepNotify can fire before this one (declaration
+		// order), and the component can arrive via replication after the ability fired.
+		ApplyBeamState();
+	}
+}
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoBeamVFXComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// VFX is cosmetic: spawn on every rendering machine including the listen-server host; only the dedicated
+	// server (no viewport) skips it.
+	if (GeoLib::IsDedicatedServer(GetWorld()))
+	{
+		return;
+	}
+
+	CreateNiagaraComponent();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoBeamVFXComponent::EndPlay(EEndPlayReason::Type const EndPlayReason)
+{
+	if (NiagaraComponent)
+	{
+		NiagaraComponent->DestroyComponent();
+		NiagaraComponent = nullptr;
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UGeoBeamVFXComponent, BeamState);
+	// Not COND_InitialOnly: the component is added dynamically (OnGiveAbility), after the owning actor's channel
+	// already sent its initial bunch — InitialOnly properties would then never reach existing clients.
+	DOREPLIFETIME(UGeoBeamVFXComponent, BeamSystem);
+	DOREPLIFETIME(UGeoBeamVFXComponent, BeamColors);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const Width, float const Length,
+										float const LifeTime)
+{
+	BeamState = {bActive, Width, Length, LifeTime};
+	// Apply locally too: the listen-server host renders but never receives OnRep for its own writes.
+	ApplyBeamState();
+}
+
+void UGeoBeamVFXComponent::SetBeamColors(TArray<FLinearColor> Colors)
+{
+	BeamColors = MoveTemp(Colors);
+	if (!GeoLib::IsDedicatedServer(this))
+	{
+		OnRep_BeamColors();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoBeamVFXComponent::OnRep_BeamState() const
+{
+	ApplyBeamState();
+}
+
+void UGeoBeamVFXComponent::OnRep_BeamColors() const
+{
+	if (NiagaraComponent)
+	{
+		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoBeamVFXComponent::ApplyBeamState() const
+{
+	// Null on the dedicated server (never spawned) — nothing to drive there.
+	if (!NiagaraComponent)
+	{
+		return;
+	}
+
+	// Not IsActive(): a deactivated system stays "active" until its last particles die, which would skip the restart.
+	bool const bIsRunning = NiagaraComponent->GetRequestedExecutionState() == ENiagaraExecutionState::Active;
+	if (BeamState.bActive)
+	{
+		if (!bIsRunning)
+		{
+			NiagaraComponent->Activate(true);
+		}
+
+		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, BeamState.Lifetime);
+		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamState.Width);
+		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamState.Length);
+		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
+	}
+	else if (bIsRunning)
+	{
+		NiagaraComponent->Deactivate();
+	}
+}

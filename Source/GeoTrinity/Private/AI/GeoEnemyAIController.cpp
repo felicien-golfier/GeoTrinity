@@ -11,8 +11,8 @@
 #include "Characters/PlayableCharacter.h"
 #include "Components/StateTreeAIComponent.h"
 #include "EngineUtils.h"
-#include "GameClasses/GeoGameMode.h"
-#include "GameClasses/GeoGameState.h"
+#include "GameClasses/Match/GeoGameMode.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "StateTreeReference.h"
 #include "Tool/UGeoGameplayLibrary.h"
 

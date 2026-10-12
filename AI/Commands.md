@@ -76,6 +76,11 @@ right-click entry runs:
 "C:\Program Files (x86)\Epic Games\Launcher\Engine\Binaries\Win64\UnrealVersionSelector.exe" /projectfiles "C:\GeoTrinity\GeoTrinity.uproject"
 ```
 
+## Headless commandlets
+- Run `UnrealEditor-Win64-DebugGame-Cmd.exe GeoTrinity.uproject -run=pythonscript -script=<file> -unattended -nullrhi -NoP4`, matching the `DebugGame` editor build. The plain `UnrealEditor-Cmd.exe` loads the Development `UnrealEditor-GeoTrinity*.dll`, which a DebugGame build never refreshes.
+- Pass `"-script=$path"` quoted from PowerShell; an unquoted variable reaches Python as source text.
+- `UE_LOG(LogTemp, Log)` output (e.g. `InspectWidgetBlueprint`) is not printed: a probe writes its findings to a file.
+
 ## Launch editor
 ```bash
 "C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Win64-DebugGame.exe" "C:\GeoTrinity\GeoTrinity.uproject" -RemoteControlAllow
@@ -83,3 +88,7 @@ right-click entry runs:
 
 ## Packaging
 See [`BuildPackage.md`](BuildPackage.md).
+
+## Compile check beside an open editor
+- The editor Rider launches is DebugGame (`UnrealEditor-GeoTrinity-Win64-DebugGame.dll`); a Development editor build writes `UnrealEditor-GeoTrinity.dll`, so it builds alongside the open editor (~1 min incremental) without touching it.
+- It still regenerates the shared UHT headers: never Live Code a reflection change into the open editor afterwards.

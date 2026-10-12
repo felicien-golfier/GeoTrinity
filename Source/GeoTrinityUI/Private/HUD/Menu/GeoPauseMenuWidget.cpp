@@ -3,11 +3,11 @@
 #include "HUD/Menu/GeoPauseMenuWidget.h"
 
 #include "GameClasses/GeoGameInstance.h"
-#include "GameClasses/GeoPlayerController.h"
-#include "HUD/Menu/GeoCharacterSheetWidget.h"
-#include "HUD/Menu/GeoLeaderboardWidget.h"
-#include "HUD/Menu/GeoMenuButton.h"
-#include "HUD/Menu/GeoSettingsWidget.h"
+#include "GameClasses/Player/GeoPlayerController.h"
+#include "HUD/Menu/Character/GeoCharacterSheetWidget.h"
+#include "HUD/Menu/List/GeoLeaderboardWidget.h"
+#include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/Settings/GeoSettingsWidget.h"
 
 #if WITH_EDITOR
 #include "Editor.h"

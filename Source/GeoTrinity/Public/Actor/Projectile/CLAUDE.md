@@ -1,44 +1,43 @@
 # Actor/Projectile
 
-All projectile classes. **Default base for any new projectile: `AGeoPooledProjectile`** — never `AGeoProjectile` directly unless explicitly non-pooled.
+Default base for any new projectile: `AGeoPooledProjectile`.
 
-## `ExternalProjectileParams.h` — the one projectile param set
-`FProjectileParamsBase` holds **every** projectile value: `DistanceSpan`, `ProjectileSpeed`, `Radius`, head/trail color, `TrailLifetimeScale`, `SoundMap`, `OverlapAttitude`, `bCanOverlapInstigator` + `LifeTimeThresholdBeforeOverlapSelf`. The projectile owns none of them as loose fields — it holds two of these structs (`DefaultParams` / `ResolvedParams`). `EProjectileSoundType` lives here too (the struct needs it as the `SoundMap` key).
-`FExternalProjectileParams` derives from it and adds only `ProjectileClass` + one `EOverrideParam` toggle per value. Adding a param = one field with `meta = (OverrideToggle = "Override<X>")` in the base, one toggle in the derived struct, one resolve line in `ApplyProjectileParams`.
-Head/trail color are `FGeoColorParam` (see `Source/GeoTrinity/Public/Tool/CLAUDE.md`), so a spawn site picks a palette slot and the raw color only shows on `EGeoColor::Override`. The two mechanisms stack: the `EOverrideParam` toggle decides *whether* the site replaces the projectile's own color param, the slot decides *what* that param means.
-`EOverrideParam` = `UseGameDataSettings` / `KeepBlueprintDefaultValue` / `OverrideValue`. Only distance/speed/radius have a settings value (`GameDataSettings::GeneralSpellDistance`/`GeneralSpellSpeed`/`GeneralProjectileRadius`) and default to `UseGameDataSettings`; everything else defaults to `KeepBlueprintDefaultValue` and resolves `UseGameDataSettings` to the Blueprint default too. Speed's Blueprint default is the movement component's `InitialSpeed`, not `DefaultParams.ProjectileSpeed` (which only serves as an override value) — `SpiralPattern` reads that CDO value to place its projectiles.
-Every spawn site holds one `FExternalProjectileParams` member (no loose class + `bOverride*` fields), and `GeoASLib::StartSpawnProjectile`/`FullySpawnProjectile` take **only** the struct (no raw class overload). `SpiralPattern`, which requests from the pool directly, calls `Projectile->ApplyProjectileParams(Params)` itself — always **before** `Init()`, since `InitProjectileLife` squares `ResolvedParams.DistanceSpan`.
+| File | Role |
+|---|---|
+| `ExternalProjectileParams.h` | `FProjectileParamsBase` (every projectile value) + `FExternalProjectileParams` (class + override toggles) |
+| `GeoProjectile.h` | Base: lifecycle, hits, replication, params, sounds |
+| `GeoPooledProjectile.h` | `IGeoPoolableInterface`: `Init()` / `End()`, releases to pool instead of destroying |
+| `GeoShieldBurstProjectile.h` | Square passive: bounces off enemies, shields allies |
+| `GeoProjectileFXComponent.h` | Per-moment projectile FX |
+| `DeployableSpawner/DeployableSpawnerProjectile.h` | Spawns a deployable on ground impact (`InitDeployable` hook before `FinishSpawning`) |
 
-**Hiding non-overridden values** is `FExternalProjectileParamsCustomization` (in `GeoTrinityEditor`, see `Source/GeoTrinityEditor/Public/Detail/CLAUDE.md`), driven by the `OverrideToggle` metadata. It cannot be a plain `EditCondition`: the engine resolves an EditCondition operand only against the struct that *declares* the property (`FProperty::GetOwnerStruct`), so an inherited value never sees a toggle added by the derived struct — and an EditCondition naming a member function is dead too (the lookup is `FindUField<UFunction>` on that same struct, and UHT does not even accept `UFUNCTION` inside a `USTRUCT`). An unresolved EditCondition evaluates to **true**, so the property just stays visible; the only trace is one `LogEditCondition: Error` line.
+## Params
+- `FProjectileParamsBase`: `DistanceSpan`, `ProjectileSpeed`, `Radius`, head/trail colour (`FGeoColorParam`), `TrailLifetimeScale`, `SoundMap`, `OverlapAttitude`, `bCanOverlapInstigator`, `LifeTimeThresholdBeforeOverlapSelf`.
+- `FExternalProjectileParams` adds `ProjectileClass` + one `EOverrideParam` per value: `UseGameDataSettings` | `KeepBlueprintDefaultValue` | `OverrideValue`.
+- New param = field with `meta = (OverrideToggle = "Override<X>")` in base + toggle in derived + one line in `ApplyProjectileParams`.
+- Settings values only for distance / speed / radius (`GeneralSpellDistance` / `GeneralSpellSpeed` / `GeneralProjectileRadius`); others default to Blueprint value.
+- Spawn sites hold one `FExternalProjectileParams` member; `GeoASLib::StartSpawnProjectile` / `FullySpawnProjectile` take only the struct.
+- Callers that pool-request directly call `ApplyProjectileParams` before `Init()`.
+- Detail panel hiding: `FExternalProjectileParamsCustomization` (`GeoTrinityEditor/Detail`).
 
-## `GeoProjectile.h` — base
-Poolable, effect-applying projectile.
+## GeoProjectile
+- Lifecycle: `InitProjectileLife()` (pool `Init()` on both machines; `BeginPlay` on clients for non-pooled) → `AdvanceProjectile(TimeDelta)` → `EndProjectileLife()`.
+- `bIsEnding` guards double end; every `EndProjectileLife` override sets it.
+- Hits: `OnSphereOverlap` → `IsValidOverlap()` (restrict) → `HandleValidOverlap()` (default applies `EffectDataArray`); `OnProjectileHit` BP event on all clients.
+- Binds instigator `OnRevived` and ends on revive; unbind in both end paths.
+- Net: `IsNetRelevantFor` false for owning client (predicted copy); `PredictionKeyId` pairs server and client.
+- Fields: `EffectDataArray`, `Payload`, `ReplicatedSpeed` (0 = movement component `InitialSpeed`), `LifeSpanInSec = 30`, `ImpactEffect`.
+- Params: `DefaultParams` (Class Defaults, never written at runtime) and `ResolvedParams` (transient). Read `ResolvedParams` for behaviour.
+  - `ApplyParams(FProjectileParamsBase)` is the single write path: stores, resizes `Sphere`, pushes Niagara user params via `GeoNiagaraParams`.
+  - `ApplyProjectileParams(FExternalProjectileParams)` resolves toggles then `ApplyParams`; `OverrideSpeed` also touches movement + `ReplicatedSpeed`.
+  - Simulated proxies apply `DefaultParams` in `BeginPlay`; anything replicated to fix a param client-side re-applies in `InitProjectileLife`.
+- `BulletVFX` is a native Niagara subobject (asset set in constructor), write-only from C++; editor preview via `PostEditChangeProperty` → `PreviewParams()` (forwards to archetype instances).
+- Sounds: `ResolvedParams.SoundMap` (`Start` / `Looping` / `NoOverlapEnd` / `ValidOverlapEnd`); `PlayImpactFx` picks by how it ended.
 
-**Lifecycle:** `InitProjectileLife()` binds hit/overlap, starts lifespan timer, applies movement (called by pool `Init()` on both machines; also from `BeginPlay` on clients for non-pooled replicated projectiles) → `AdvanceProjectile(TimeDelta)` fast-forwards position to compensate spawn lag → `EndProjectileLife()` (distance span / lifespan / hit) destroys by default.
-`bIsEnding` is the sole double-end guard — every caller (`Tick`, `LifeSpanExpired`, `OnSphereHit`, `IsValidOverlap`, `OnInstigatorRevived`) tests it, and **every `EndProjectileLife` override must set it**, including the ones that don't chain to `Super`. A projectile that overlaps two targets in one frame gets two `OnSphereOverlap` calls; without the flag the pooled override releases the same actor to the pool twice, the pool hands it to two spawns at once, and it visibly teleports/recolours mid-flight and detonates where nothing is flying.
+## Pooled
+- `End()` → `BulletVFX->DeactivateImmediate()`; `Init()` re-`Activate(true)` after `ApplyProjectileParams`.
 
-**Hit handling:** `OnSphereOverlap()` (private) → `IsValidOverlap()` (override to restrict targeting) → `HandleValidOverlap()` (override for custom hit logic; default applies `EffectDataArray`). `OnProjectileHit()` is `BlueprintNativeEvent`, fired on all clients.
-
-**Instigator revive:** binds to instigator's `OnRevived` (if a GeoCharacter) and ends the projectile on revive; unbound via `UnbindFromInstigatorRevive` from both `EndProjectileLife` and pool `End()` so a reused projectile never keeps a stale binding.
-
-**Network:** `IsNetRelevantFor()` returns false for the owning client (they keep their predicted copy); `PredictionKeyId` matches server projectile to client's predicted one.
-
-**Key fields:** `EffectDataArray`, `Payload` (`FAbilityPayload`), `ReplicatedSpeed` (0 = keep movement component's own `InitialSpeed`, else replicated resolved speed set by `OverrideSpeed`), `LifeSpanInSec = 30` safeguard, `ImpactEffect` (cosmetic Niagara). Everything else tunable lives in the two `FProjectileParamsBase` members below. The projectile has **no** own use-general-settings toggle — the spawn site's `FExternalProjectileParams` `EOverrideParam` is the single mechanism (settings / Blueprint default / override).
-
-**`BulletVFX` + params:** `BulletVFX` is a **native** `UNiagaraComponent` subobject; its system asset (`NS_GeoTrinity_Projectile01`) is set in the C++ constructor (BP may override the asset field — but **not** its Niagara User Params: those never populate on an inherited component, which is why radius/colors are C++-driven, not asset-driven). The component is **write-only** from C++ — nothing reads its user params back. The per-Blueprint default values live in `FProjectileParamsBase DefaultParams` (edited in Class Defaults; `Radius` is gameplay — it sizes the collider). **`DefaultParams` is never written at runtime** — that pristine copy is what `KeepBlueprintDefaultValue` resolves against, so a pooled projectile re-resolves cleanly on every reuse. The values actually in force are `ResolvedParams` (transient), seeded from `DefaultParams` in `PostInitProperties` (so a projectile spawned outside `GeoASLib` still runs on its Blueprint values) — **read `ResolvedParams`, never `DefaultParams`, for runtime behaviour** (`IsValidOverlap` reads its `OverlapAttitude`/self-overlap rule, the sound calls read its `SoundMap`, `InitProjectileLife` squares its `DistanceSpan`). `ApplyParams(FProjectileParamsBase)` is the single write path: it stores `ResolvedParams`, resizes the `Sphere` collider and pushes the four bullet user params from `GeoNiagaraParams` (see `Source/GeoTrinity/Public/Tool/CLAUDE.md` — param names are never spelled at a call site). `ApplyProjectileParams(FExternalProjectileParams)` resolves every value via its `EOverrideParam` (settings / `DefaultParams` / explicit override) into one `FProjectileParamsBase` and calls `ApplyParams` (then `OverrideSpeed`, which alone also touches the movement component + `ReplicatedSpeed`). Simulated proxies never run `ApplyProjectileParams` — they apply `DefaultParams` in `BeginPlay`, so a *spawn-site override* of a param is server-side only (long-standing for radius/colors; now also true for sound map / overlap attitude). That `BeginPlay` apply runs **after** the initial replication and its RepNotifies, so anything a subclass replicates to fix a param client-side must be re-applied in `InitProjectileLife` (called just below it), not from the OnRep alone — see `AGeoShieldBurstProjectile`. Editor-only preview is driven by `PostEditChangeProperty` (on a `DefaultParams` edit) → `PreviewParams()` (`ApplyParams` + `ReinitializeSystem()`), so tweaking `DefaultParams` shows up in an editor viewport without PIE. It is **not** a `CallInEditor` button: `FObjectDetails::AddCallInEditorMethods` strips every `RF_ArchetypeObject` from its execution list, so a button clicked in Class Defaults (where the target is the CDO) silently calls nothing at all. Same reason the preview can't run on `this` when the edit lands on the CDO — that `BulletVFX` is an unregistered template nothing renders — so it forwards to `GetArchetypeInstances()` (BP preview actor, placed actors), which the property editor has already propagated the new value to. Any future `CallInEditor` button on a class edited through Class Defaults hits the same trap. `AGeoShieldBurstProjectile` drives `BulletVFX` directly for its per-bounce radius (always valid now that it's a native subobject).
-
-**Sounds:** `ResolvedParams.SoundMap` maps `Start`/`Looping`/`NoOverlapEnd`/`ValidOverlapEnd` to `FGeoSoundEntry`. Audience gating/volume/pitch logic lives in `UGeoSoundRowLibrary`. `PlayImpactFx` (called from `EndProjectileLife` on authority, or `Destroyed()` as non-authority fallback gated on `bIsEnding`) picks `ValidOverlapEnd` vs `NoOverlapEnd` based on how the projectile ended.
-
-## `GeoPooledProjectile.h`
-Implements `IGeoPoolableInterface`: `Init()`/`End()` reset/release via `UGeoActorPoolingSubsystem`; `EndProjectileLife()` releases to pool instead of destroying.
-`End()` calls `BulletVFX->DeactivateImmediate()` and `Init()` re-`Activate(true)`s it: hiding the actor + disabling component ticks does **not** stop a Niagara system (non-solo systems are ticked by `FNiagaraWorldManager`, and `UNiagaraComponent::TickComponent` disables its own tick), so without this a pooled projectile keeps its old particles alive and renders them for one frame on reuse — with the previous instance's radius/colors. The activate must stay **after** `ApplyProjectileParams` (it is: every path applies params, then `Init`), so the restarted system spawns with this instance's values. Pre-spawned instances that never went through `End()` still simulate their bullet VFX while idle in the pool (visually harmless, `Init` resets them).
-
-## `GeoShieldBurstProjectile.h` — Square passive
-Bounces off enemies, grants shield on ally contact.
-- `ShieldAmount` scales with level and multiplies per bounce; `BounceSnapshot` (replicated: location, velocity, radius) teleports clients to post-bounce state. It is **seeded at spawn** in `InitProjectileLife` (server) and re-applied there on clients — the radius is a spawn-site override the base class never replicates, and the proxy's `DefaultParams` apply in `BeginPlay` lands after `OnRep_BounceSnapshot`, so without both halves the burst renders at its Blueprint size on every client until the first bounce.
-- `IsValidOverlap()` — passes through `AGeoWall` (no bounce); suppresses same hostile within 0.5s (glancing-overlap guard).
-- `OnWallBounce()` bound on all machines; server records `BounceSnapshot` (bounces are silent — no sound).
-- `GetPitch()` multiplies `Super` by `BounceSoundSizePitchCurve` evaluated at current sphere radius, so bigger bursts pitch differently.
-
-## `DeployableSpawner/DeployableSpawnerProjectile.h`
-Spawns a deployable on impact. `IsValidOverlap()` — only ground/static geometry triggers. `EndProjectileLife()` calls `SpawnDeployableActor` then destroys. `InitDeployable(Deployable)` is the subclass override point for class-specific `FDeployableData` fields before `FinishSpawning`.
+## Shield burst
+- `ShieldAmount` scales with level and per bounce; replicated `BounceSnapshot` (location, velocity, radius), seeded at spawn in `InitProjectileLife` and re-applied on clients.
+- `IsValidOverlap`: passes through `AGeoWall`; same hostile suppressed 0.5 s.
+- `GetPitch()` × `BounceSoundSizePitchCurve(radius)`.

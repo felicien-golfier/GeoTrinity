@@ -6,7 +6,7 @@
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
-#include "Characters/Component/GeoIndicatorComponent.h"
+#include "Characters/Component/FX/GeoIndicatorComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/GameInstance.h"

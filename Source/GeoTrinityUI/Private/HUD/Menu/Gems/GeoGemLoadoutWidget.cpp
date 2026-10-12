@@ -1,0 +1,967 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#include "HUD/Menu/Gems/GeoGemLoadoutWidget.h"
+
+#include "Algo/AnyOf.h"
+#include "Algo/Count.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/ButtonSlot.h"
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
+#include "Components/SizeBox.h"
+#include "Components/Spacer.h"
+#include "Components/TextBlock.h"
+#include "Components/UniformGridPanel.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
+#include "GameClasses/Match/GeoPlayerState.h"
+#include "GeoTrinity/GeoTrinity.h"
+#include "Gem/GeoGemCatalog.h"
+#include "Gem/GeoGemProfileSave.h"
+#include "HUD/Menu/Frame/GeoButton.h"
+#include "HUD/Menu/Gems/GeoGemSocketButton.h"
+#include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/List/GeoTableWidget.h"
+#include "HUD/Style/Frame/GeoFrame.h"
+#include "HUD/Style/Glyph/GeoGemGlyph.h"
+#include "HUD/Style/Glyph/GeoIconImage.h"
+#include "HUD/Style/Meter/GeoMeter.h"
+#include "HUD/Style/Glyph/GeoShape.h"
+#include "HUD/Style/GeoThemedInputs.h"
+#include "HUD/Style/GeoUITheme.h"
+#include "Tool/Visual/GeoIcon.h"
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::SetShown(UWidget* Widget, bool const bShown)
+{
+	if (Widget)
+	{
+		Widget->SetVisibility(bShown ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (EquipButton)
+	{
+		EquipButton->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleEquip);
+	}
+	if (FillButton)
+	{
+		FillButton->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleFill);
+	}
+	if (UnequipButton)
+	{
+		UnequipButton->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleUnequip);
+	}
+	SetVisibility(ESlateVisibility::Visible);
+	Refresh();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FReply UGeoGemLoadoutWidget::NativeOnMouseButtonDown(FGeometry const& InGeometry, FPointerEvent const& InMouseEvent)
+{
+	FVector2D const Click = InMouseEvent.GetScreenSpacePosition();
+	bool const bOnPickingPart = Algo::AnyOf(TArray<UWidget const*>{StackGrid, DetailBox},
+											[&Click](UWidget const* Part)
+											{
+												return Part && Part->IsVisible()
+													&& Part->GetCachedGeometry().IsUnderLocation(Click);
+											});
+	bool const bDrop = !bOnPickingPart && (!PickedGem.IsNone() || PickedSocket != INDEX_NONE);
+	if (bDrop)
+	{
+		PickedGem = NAME_None;
+		PickedSocket = INDEX_NONE;
+		Refresh();
+	}
+	if (bRenamingBuild)
+	{
+		EndRename();
+	}
+
+	return bDrop ? FReply::Handled() : Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::Refresh()
+{
+	UGeoGemProfileSave const* Profile = GetProfile();
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (!Profile || !Catalog)
+	{
+		UE_LOG(LogGeoTrinity, Log, TEXT("UGeoGemLoadoutWidget: no gem profile or catalog yet, loadout left empty"));
+		return;
+	}
+
+	AGeoPlayerState const* PlayerState = GetOwningPlayerState<AGeoPlayerState>();
+	if (ShownClass == EPlayerClass::None && PlayerState)
+	{
+		ShownClass = PlayerState->GetPlayerClass();
+	}
+	if (SocketButtons.IsEmpty())
+	{
+		BuildBoard();
+	}
+	ShowClassTabs(*Profile);
+	ShowInPlay(*Profile);
+	ShowBuildTabs(*Profile);
+	ShowLevel(*Profile);
+	ShowSockets(*Profile, *Catalog);
+	ShowFilters(*Profile, *Catalog);
+	ShowStacks(*Profile, *Catalog);
+	ShowDetail(*Profile, *Catalog);
+	ShowTotals(*Profile, *Catalog);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::BuildBoard()
+{
+	TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+	if (!ensureMsgf(Clusters.Num() > 0 && Sockets.Num() % Clusters.Num() == 0,
+					TEXT("%hs: %d sockets do not share out between %d clusters on %s"), __FUNCTION__, Sockets.Num(),
+					Clusters.Num(), *GetName()))
+	{
+		return;
+	}
+
+	int32 const SocketsPerCluster = Sockets.Num() / Clusters.Num();
+	TMap<EGeoGemTier, int32> RingSocketCounts;
+	float OuterRadius = 0.f;
+	for (int32 Index = 0; Index < SocketsPerCluster; ++Index)
+	{
+		++RingSocketCounts.FindOrAdd(Sockets[Index].Tier);
+		OuterRadius = FMath::Max(OuterRadius, Rings.FindRef(Sockets[Index].Tier).Radius);
+	}
+
+	auto AddToBoard = [this](UWidget* Widget, FVector2D const& Position, FVector2D const& Size)
+	{
+		UCanvasPanelSlot* const BoardSlot = Board->AddChildToCanvas(Widget);
+		BoardSlot->SetAutoSize(false);
+		BoardSlot->SetSize(Size);
+		BoardSlot->SetPosition(Position - .5f * Size);
+	};
+	auto AddCircle = [this, &AddToBoard](FVector2D const& Center, float const Radius, bool const bFilled,
+										 FLinearColor const& Color)
+	{
+		UGeoShape* Circle = WidgetTree->ConstructWidget<UGeoShape>(UGeoShape::StaticClass());
+		Circle->Sides = 0;
+		Circle->Size = 2.f * Radius;
+		Circle->bFilled = bFilled;
+		Circle->LineThickness = RingThickness;
+		Circle->Color = Color;
+		AddToBoard(Circle, Center, FVector2D(2.f * Radius));
+	};
+
+	Board->ClearChildren();
+	SocketButtons.Reset();
+	float LinksExtent = 0.f;
+	for (FGeoGemCluster const& Cluster : Clusters)
+	{
+		LinksExtent = FMath::Max(LinksExtent, Cluster.Center.GetMax());
+	}
+
+	AddToBoard(MakeClusterLinks(LinksExtent), FVector2D(.5f * LinksExtent), FVector2D(LinksExtent));
+	for (int32 ClusterIndex = 0; ClusterIndex < Clusters.Num(); ++ClusterIndex)
+	{
+		FGeoGemCluster const& Cluster = Clusters[ClusterIndex];
+		AddCircle(Cluster.Center, OuterRadius + ClusterDiscMargin, true, ClusterDiscColor);
+		for (TPair<EGeoGemTier, FGeoGemRing> const& Ring : Rings)
+		{
+			if (Ring.Value.Radius > 0.f)
+			{
+				AddCircle(Cluster.Center, Ring.Value.Radius, false, RingColor);
+			}
+		}
+
+		UTextBlock* Label = MakeText(
+			EGeoTextRole::Label,
+			FText::Format(ClusterFormat, Cluster.Name, Sockets[ClusterIndex * SocketsPerCluster].UnlockLevel));
+		UCanvasPanelSlot* const LabelSlot = Board->AddChildToCanvas(Label);
+		LabelSlot->SetAutoSize(true);
+		LabelSlot->SetPosition(Cluster.LabelPosition);
+		LabelSlot->SetAlignment(Cluster.LabelAlignment);
+
+		TMap<EGeoGemTier, int32> PlacedOnRing;
+		for (int32 Index = ClusterIndex * SocketsPerCluster; Index < (ClusterIndex + 1) * SocketsPerCluster; ++Index)
+		{
+			EGeoGemTier const Tier = Sockets[Index].Tier;
+			FGeoGemRing const Ring = Rings.FindRef(Tier);
+			int32& Placed = PlacedOnRing.FindOrAdd(Tier);
+			float const Angle =
+				FMath::DegreesToRadians(Ring.StartAngle + Placed * 360.f / RingSocketCounts.FindRef(Tier));
+			++Placed;
+
+			UGeoGemGlyph* Glyph = WidgetTree->ConstructWidget<UGeoGemGlyph>(UGeoGemGlyph::StaticClass());
+			Glyph->SetSize(Ring.SocketSize);
+			UGeoGemSocketButton* Socket =
+				WidgetTree->ConstructWidget<UGeoGemSocketButton>(UGeoGemSocketButton::StaticClass());
+			Socket->InitSocket(Index, Glyph);
+			Socket->OnPicked.BindUObject(this, &UGeoGemLoadoutWidget::PickSocket);
+			AddToBoard(Socket, Cluster.Center + Ring.Radius * FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)),
+					   FVector2D(Ring.SocketSize));
+			SocketButtons.Add(Socket);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UGeoIconImage* UGeoGemLoadoutWidget::MakeClusterLinks(float const Extent)
+{
+	UGeoIcon* Links = NewObject<UGeoIcon>(this);
+	Links->Color = FGeoColorParam(ClusterLinkColor);
+	Links->ViewSize = Extent;
+	FGeoIconStroke& Link = Links->Strokes.AddDefaulted_GetRef();
+	for (FGeoGemCluster const& Cluster : Clusters)
+	{
+		Link.Points.Add(Cluster.Center);
+	}
+
+	Link.bClosed = true;
+	Link.LineThickness = ClusterLinkThickness;
+	Link.DashLength = ClusterLinkDash;
+	Link.DashGap = ClusterLinkGap;
+	UGeoIconImage* Image = WidgetTree->ConstructWidget<UGeoIconImage>(UGeoIconImage::StaticClass());
+	Image->SetIcon(Links);
+	Image->SetSize(Extent);
+	return Image;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowClassTabs(UGeoGemProfileSave const& Profile)
+{
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	if (!ClassTabBox || !Theme)
+	{
+		return;
+	}
+
+	ClassTabBox->ClearChildren();
+	for (EPlayerClass const PlayerClass : ClassTabOrder)
+	{
+		FGeoClassStyle const* ClassStyle = Theme->FindClassStyle(PlayerClass);
+		UGeoListRowWidget* Tab = ClassStyle ? MakeRow(PlayerClass == ShownClass ? EGeoListRowTint::Selected
+																			 : EGeoListRowTint::Normal,
+													  [this, PlayerClass]
+													  {
+														  ShownClass = PlayerClass;
+														  PickedGem = NAME_None;
+														  PickedSocket = INDEX_NONE;
+														  bRenamingBuild = false;
+														  Refresh();
+													  })
+											: nullptr;
+		if (Tab)
+		{
+			UGeoShape* Shape = WidgetTree->ConstructWidget<UGeoShape>(UGeoShape::StaticClass());
+			Shape->Size = ClassTabShapeSize;
+			Shape->SetClassShape(*ClassStyle);
+			Tab->AddColumn(Shape, 0.f);
+			Tab->AddTextColumn(ClassStyle->Name, 0.f);
+			Tab->AddColumn(
+				MakeText(EGeoTextRole::Mono, FText::Format(ClassLevelFormat, Profile.GetClassLevel(PlayerClass))), 0.f);
+			ClassTabBox->AddChildToHorizontalBox(Tab)->SetPadding(FMargin(0.f, 0.f, ClassTabGap, 0.f));
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowInPlay(UGeoGemProfileSave const& Profile)
+{
+	TArray<FGeoGemBuild> const Builds = Profile.GetBuilds(ShownClass);
+	int32 const ActiveBuild = Profile.GetActiveBuild(ShownClass);
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	FGeoClassStyle const* ClassStyle = Theme ? Theme->FindClassStyle(ShownClass) : nullptr;
+	if (InPlayShape && ClassStyle)
+	{
+		InPlayShape->Color = ClassStyle->Color;
+		InPlayShape->SynchronizeProperties();
+	}
+	if (InPlayText)
+	{
+		InPlayText->SetText(GetBuildName(Builds[ActiveBuild], ActiveBuild));
+	}
+	if (BuildCountText)
+	{
+		BuildCountText->SetText(FText::Format(BuildCountFormat, Builds.Num(), GeoGem::MaxBuilds));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowBuildTabs(UGeoGemProfileSave const& Profile)
+{
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	if (!BuildTabBox || !Theme)
+	{
+		return;
+	}
+
+	TArray<FGeoGemBuild> const Builds = Profile.GetBuilds(ShownClass);
+	int32 const ActiveBuild = Profile.GetActiveBuild(ShownClass);
+	FGeoClassStyle const* ClassStyle = Theme->FindClassStyle(ShownClass);
+	BuildTabBox->ClearChildren();
+	BuildNameField = nullptr;
+	auto AddTab = [this](UWidget* Tab)
+	{
+		UHorizontalBoxSlot* const TabSlot = BuildTabBox->AddChildToHorizontalBox(Tab);
+		TabSlot->SetPadding(FMargin(0.f, 0.f, BuildTabGap, 0.f));
+		TabSlot->SetVerticalAlignment(VAlign_Center);
+	};
+	auto AddTool = [this](UGeoListRowWidget* Tab, UWidget* Tool)
+	{
+		USizeBox* ToolSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		ToolSize->SetWidthOverride(BuildToolSize.X);
+		ToolSize->SetHeightOverride(BuildToolSize.Y);
+		ToolSize->SetContent(Tool);
+		Tab->AddColumn(ToolSize, 0.f);
+	};
+
+	for (int32 BuildIndex = 0; BuildIndex < Builds.Num(); ++BuildIndex)
+	{
+		bool const bInPlay = BuildIndex == ActiveBuild;
+		TFunction<void()> Play = [this, BuildIndex]
+		{
+			ChangeBuilds(
+				[this, BuildIndex](UGeoGemProfileSave& ChangedProfile)
+				{
+					ChangedProfile.SetActiveBuild(ShownClass, BuildIndex);
+				});
+		};
+		UGeoListRowWidget* Tab = MakeRow(bInPlay ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
+										 bInPlay ? TFunction<void()>([] {}) : MoveTemp(Play));
+		if (Tab)
+		{
+			Tab->SetClickMethod(EButtonClickMethod::MouseDown);
+		}
+		if (Tab && bInPlay)
+		{
+			Tab->OnDoubleClicked.AddWeakLambda(this,
+											   [this]
+											   {
+												   StartRename();
+											   });
+		}
+		if (Tab && bInPlay && ClassStyle)
+		{
+			Tab->SetFrameTint(ClassStyle->Color);
+			UGeoShape* Shape = WidgetTree->ConstructWidget<UGeoShape>(UGeoShape::StaticClass());
+			Shape->Size = BuildTabShapeSize;
+			Shape->SetClassShape(*ClassStyle);
+			Tab->AddColumn(Shape, 0.f);
+		}
+		if (Tab && bInPlay && bRenamingBuild)
+		{
+			BuildNameField = WidgetTree->ConstructWidget<UGeoEditableTextBox>(UGeoEditableTextBox::StaticClass());
+			BuildNameField->SetPaddingOverride(BuildNameFieldPadding);
+			BuildNameField->SetText(FText::FromString(Builds[BuildIndex].Name.ToUpper()));
+			BuildNameField->SetHintText(FText::Format(BuildNameFormat, BuildIndex + 1));
+			BuildNameField->OnTextChanged.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleBuildNameChanged);
+			BuildNameField->OnTextCommitted.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleBuildNameCommitted);
+			UGeoFrame* FieldFrame = WidgetTree->ConstructWidget<UGeoFrame>(UGeoFrame::StaticClass());
+			FieldFrame->SetFrameStyle(Theme->FieldFrameStyle);
+			FieldFrame->SetActivateOnHoverAndFocus(true);
+			FieldFrame->SetContent(BuildNameField);
+			USizeBox* FieldSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+			FieldSize->SetWidthOverride(BuildNameFieldWidth);
+			FieldSize->SetContent(FieldFrame);
+			Tab->AddColumn(FieldSize, 0.f);
+		}
+		else if (Tab && bInPlay)
+		{
+			Tab->AddTextColumn(GetBuildName(Builds[BuildIndex], BuildIndex), 0.f);
+		}
+		else if (Tab)
+		{
+			UTextBlock* Name = Tab->MakeColumnText(GetBuildName(Builds[BuildIndex], BuildIndex));
+			Name->SetTextOverflowPolicy(ETextOverflowPolicy::Ellipsis);
+			USizeBox* NameSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+			NameSize->SetMaxDesiredWidth(BuildTabNameMaxWidth);
+			NameSize->SetContent(Name);
+			Tab->AddColumn(NameSize, 0.f);
+		}
+		if (Tab && bInPlay && !bRenamingBuild)
+		{
+			UGeoButton* Rename = MakeIconButton(RenameBuildIcon, RenameBuildIconSize, Theme->IconButtonStyle, true);
+			Rename->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleRenameBuild);
+			AddTool(Tab, Rename);
+		}
+		if (Tab && bInPlay && Builds.Num() > 1)
+		{
+			UGeoButton* Remove = MakeIconButton(RemoveBuildIcon, RemoveBuildIconSize, Theme->IconButtonStyle, true);
+			Remove->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleRemoveBuild);
+			AddTool(Tab, Remove);
+		}
+		if (Tab)
+		{
+			AddTab(Tab);
+		}
+	}
+
+	if (Builds.Num() < GeoGem::MaxBuilds)
+	{
+		UGeoButton* Add = MakeIconButton(AddBuildIcon, AddBuildIconSize, Theme->OutlinedIconButtonStyle, false);
+		Add->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleAddBuild);
+		AddTab(Add);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UGeoButton* UGeoGemLoadoutWidget::MakeIconButton(UGeoIcon const* Icon, float const IconSize, FButtonStyle const& Style,
+												  bool const bTintWithForeground)
+{
+	ensureMsgf(Icon, TEXT("%hs: an icon of the build tabs is not set on %s"), __FUNCTION__, *GetName());
+	UGeoIconImage* Image = WidgetTree->ConstructWidget<UGeoIconImage>(UGeoIconImage::StaticClass());
+	Image->SetIcon(Icon);
+	Image->SetSize(IconSize);
+	Image->SetTintWithForeground(bTintWithForeground);
+	UGeoButton* Button = WidgetTree->ConstructWidget<UGeoButton>(UGeoButton::StaticClass());
+	Button->SetStyle(Style);
+	Button->SetClickMethod(EButtonClickMethod::MouseDown);
+	UButtonSlot* const ImageSlot = Cast<UButtonSlot>(Button->SetContent(Image));
+	ImageSlot->SetPadding(FMargin(0.f));
+	ImageSlot->SetHorizontalAlignment(HAlign_Center);
+	ImageSlot->SetVerticalAlignment(VAlign_Center);
+	return Button;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FText UGeoGemLoadoutWidget::GetBuildName(FGeoGemBuild const& Build, int32 const BuildIndex) const
+{
+	return Build.Name.IsEmpty() ? FText::Format(BuildNameFormat, BuildIndex + 1)
+								: FText::FromString(Build.Name.ToUpper());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ChangeBuilds(TFunctionRef<void(UGeoGemProfileSave&)> Change)
+{
+	if (UGeoGemProfileSave* Profile = GetProfile())
+	{
+		Change(*Profile);
+		PickedGem = NAME_None;
+		PickedSocket = INDEX_NONE;
+		bRenamingBuild = false;
+		CommitChanges();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::StartRename()
+{
+	UGeoGemProfileSave const* Profile = GetProfile();
+	bRenamingBuild = true;
+	if (Profile)
+	{
+		ShowBuildTabs(*Profile);
+	}
+	if (BuildNameField)
+	{
+		BuildNameField->SetKeyboardFocus();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::EndRename()
+{
+	UGeoGemProfileSave const* Profile = GetProfile();
+	bRenamingBuild = false;
+	if (Profile)
+	{
+		CommitProfile();
+		ShowBuildTabs(*Profile);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleRenameBuild()
+{
+	StartRename();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleRemoveBuild()
+{
+	ChangeBuilds(
+		[this](UGeoGemProfileSave& ChangedProfile)
+		{
+			ChangedProfile.RemoveActiveBuild(ShownClass);
+		});
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleAddBuild()
+{
+	ChangeBuilds(
+		[this](UGeoGemProfileSave& ChangedProfile)
+		{
+			ChangedProfile.AddBuild(ShownClass);
+		});
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleBuildNameChanged(FText const& Text)
+{
+	FString const Typed = Text.ToString();
+	FString const Name = Typed.ToUpper().Left(GeoGem::MaxBuildNameLength);
+	UGeoGemProfileSave* Profile = GetProfile();
+	if (BuildNameField && Name != Typed)
+	{
+		BuildNameField->SetText(FText::FromString(Name));
+	}
+	if (Profile)
+	{
+		Profile->RenameActiveBuild(ShownClass, Name);
+		ShowInPlay(*Profile);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleBuildNameCommitted(FText const& /*Text*/, ETextCommit::Type /*CommitMethod*/)
+{
+	if (bRenamingBuild)
+	{
+		EndRename();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowLevel(UGeoGemProfileSave const& Profile)
+{
+	int32 const Level = Profile.GetClassLevel(ShownClass);
+	if (LevelText)
+	{
+		LevelText->SetText(FText::AsNumber(Level));
+	}
+	if (LevelMaxText)
+	{
+		LevelMaxText->SetText(FText::Format(LevelMaxFormat, GeoGem::MaxClassLevel));
+	}
+
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	FGeoClassStyle const* ClassStyle = Theme ? Theme->FindClassStyle(ShownClass) : nullptr;
+	if (LevelPips)
+	{
+		LevelPips->SetFill(static_cast<float>(Level) / GeoGem::MaxClassLevel);
+		if (ClassStyle)
+		{
+			LevelPips->SetFillTint(ClassStyle->Color);
+		}
+	}
+
+	if (NextText)
+	{
+		TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+		int32 NextLevel = GeoGem::MaxClassLevel + 1;
+		for (FGeoGemSocket const& Socket : Sockets)
+		{
+			NextLevel = Socket.UnlockLevel > Level ? FMath::Min(NextLevel, Socket.UnlockLevel) : NextLevel;
+		}
+		int32 const NextSockets = Algo::CountIf(Sockets,
+												[NextLevel](FGeoGemSocket const& Socket)
+												{
+													return Socket.UnlockLevel == NextLevel;
+												});
+		NextText->SetText(NextSockets > 0 ? FText::Format(NextFormat, NextLevel, NextSockets)
+										  : FText::Format(AllOpenFormat, Sockets.Num()));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+TArray<int32> UGeoGemLoadoutWidget::GetTargetSockets(UGeoGemProfileSave const& Profile,
+													  UGeoGemCatalog const& Catalog) const
+{
+	TArray<int32> Targets;
+	for (int32 Index = 0; !PickedGem.IsNone() && Index < GeoGem::GetSockets().Num(); ++Index)
+	{
+		if (Profile.CanEquip(Catalog, ShownClass, Index, PickedGem))
+		{
+			Targets.Add(Index);
+		}
+	}
+	return Targets;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+int32 UGeoGemLoadoutWidget::GetFillCount(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog) const
+{
+	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
+	int32 const EmptyTargets = Algo::CountIf(GetTargetSockets(Profile, Catalog),
+											 [&Slotted](int32 const Index)
+											 {
+												 return Slotted[Index].IsNone();
+											 });
+	int32 const MostCopies = Catalog.FindTier(PickedGem) == EGeoGemTier::Core
+							   ? 1
+							   : Profile.GetFreeCount(PickedGem, ShownClass);
+	return FMath::Min(EmptyTargets, MostCopies);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowSockets(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
+{
+	TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
+	TArray<int32> const Targets = GetTargetSockets(Profile, Catalog);
+	int32 const Level = Profile.GetClassLevel(ShownClass);
+	for (int32 Index = 0; Index < SocketButtons.Num(); ++Index)
+	{
+		UGeoGemGlyph* Glyph = SocketButtons[Index]->GetGlyph();
+		FGeoGemInfo const* Gem = Catalog.Find(Slotted[Index]);
+		TOptional<EGeoGemTier> const GemTier = Catalog.FindTier(Slotted[Index]);
+		if (Gem && GemTier)
+		{
+			Glyph->SetGem(*GemTier, Gem->Color.GetColor(1.f));
+		}
+		else
+		{
+			Glyph->SetSocket(Sockets[Index].Tier, Sockets[Index].UnlockLevel > Level, Sockets[Index].UnlockLevel);
+		}
+		Glyph->SetHighlighted(Index == PickedSocket || Targets.Contains(Index));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowFilters(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
+{
+	if (!TierFilterBox)
+	{
+		return;
+	}
+
+	TMap<EGeoGemTier, int32> OwnedPerTier;
+	int32 OwnedTotal = 0;
+	for (EGeoGemTier const Tier : GetTiers())
+	{
+		FGeoGemList const* List = Catalog.GemsByTier.Find(Tier);
+		for (FGeoGemInfo const& Gem : List ? List->Gems : TArray<FGeoGemInfo>())
+		{
+			OwnedPerTier.FindOrAdd(Tier) += Profile.GetOwnedCount(Gem.Id);
+			OwnedTotal += Profile.GetOwnedCount(Gem.Id);
+		}
+	}
+
+	TierFilterBox->ClearChildren();
+	auto AddFilter = [this](TOptional<EGeoGemTier> const Filter, FText const& Name, int32 const Owned)
+	{
+		UGeoListRowWidget* Tab = MakeRow(Filter == TierFilter ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
+										 [this, Filter]
+										 {
+											 TierFilter = Filter;
+											 Refresh();
+										 },
+										 TabRowClass);
+		if (Tab && TierFilterBox->HasAnyChildren())
+		{
+			TierFilterBox->AddChildToHorizontalBox(WidgetTree->ConstructWidget<USpacer>(USpacer::StaticClass()))
+				->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		}
+		if (Tab)
+		{
+			Tab->AddTextColumn(FText::Format(FilterFormat, Name, Owned), 0.f);
+			TierFilterBox->AddChildToHorizontalBox(Tab);
+		}
+	};
+	AddFilter(TOptional<EGeoGemTier>(), AllFilterText, OwnedTotal);
+	for (EGeoGemTier const Tier : GetTiers())
+	{
+		AddFilter(Tier, GetTierName(Tier, true), OwnedPerTier.FindRef(Tier));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowStacks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
+{
+	bool const bHadFocus = StackGrid->HasFocusedDescendants();
+	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
+	UGeoListRowWidget* PickedRow = nullptr;
+	StackGrid->ClearChildren();
+
+	int32 StackIndex = 0;
+	for (int32 TierIndex = GetTiers().Num() - 1; TierIndex >= 0; --TierIndex)
+	{
+		EGeoGemTier const Tier = GetTiers()[TierIndex];
+		FGeoGemList const* List = Catalog.GemsByTier.Find(Tier);
+		for (FGeoGemInfo const& Gem : TierFilter.Get(Tier) == Tier && List ? List->Gems : TArray<FGeoGemInfo>())
+		{
+			int32 const Owned = Profile.GetOwnedCount(Gem.Id);
+			FName const GemId = Gem.Id;
+			UGeoListRowWidget* Row = Owned > 0 ? MakeRow(GemId == PickedGem ? EGeoListRowTint::Selected
+																			: EGeoListRowTint::Normal,
+														 [this, GemId]
+														 {
+															 PickStack(GemId);
+														 })
+											   : nullptr;
+			if (Row)
+			{
+				Row->AddColumn(MakeGemGlyph(Catalog, GemId, StackGlyphSize), 0.f);
+				UVerticalBox* Names = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+				Names->AddChildToVerticalBox(MakeText(EGeoTextRole::Body, Gem.DisplayName.ToUpper()));
+				Names->AddChildToVerticalBox(MakeText(
+					EGeoTextRole::Label,
+					FText::Format(StackSubFormat, GetTierName(Tier, false), Profile.GetFreeCount(GemId, ShownClass))));
+				Row->AddColumn(Names, 1.f);
+				Row->AddColumn(MakeText(EGeoTextRole::Mono, FText::Format(CountFormat, Owned)), 0.f);
+				if (Slotted.Contains(GemId))
+				{
+					UGeoShape* Mark = WidgetTree->ConstructWidget<UGeoShape>(UGeoShape::StaticClass());
+					Mark->Sides = 4;
+					Mark->Rotation = 45.f;
+					Mark->Size = InBuildMarkSize;
+					Mark->bFilled = true;
+					Mark->Color = InBuildMarkColor;
+					Row->AddColumn(Mark, 0.f);
+				}
+				StackGrid->AddChildToUniformGrid(Row, StackIndex / StackColumns, StackIndex % StackColumns);
+				PickedRow = GemId == PickedGem ? Row : PickedRow;
+				++StackIndex;
+			}
+		}
+	}
+
+	if (bHadFocus && PickedRow)
+	{
+		PickedRow->FocusRow();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowDetail(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
+{
+	TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
+	bool const bSocketPicked = Sockets.IsValidIndex(PickedSocket);
+	FName const ShownGem = bSocketPicked ? Slotted[PickedSocket] : PickedGem;
+	FGeoGemInfo const* Gem = Catalog.Find(ShownGem);
+	TOptional<EGeoGemTier> const Tier = Catalog.FindTier(ShownGem);
+
+	SetShown(DetailBox, Gem && Tier);
+	SetShown(HintText, !Gem || !Tier);
+	if (Gem && Tier)
+	{
+		ShowGemDetail(Profile, Catalog, *Gem, *Tier, bSocketPicked);
+	}
+	else if (HintText)
+	{
+		UGeoUITheme const* Theme = UGeoUITheme::Get();
+		FGeoClassStyle const* ClassStyle = Theme ? Theme->FindClassStyle(ShownClass) : nullptr;
+		FText Hint = HintNothingPicked;
+		if (bSocketPicked)
+		{
+			FGeoGemSocket const& Socket = Sockets[PickedSocket];
+			FText const TierName = GetTierName(Socket.Tier, false).ToLower();
+			Hint = Socket.UnlockLevel > Profile.GetClassLevel(ShownClass)
+					 ? FText::Format(HintLockedSocket, TierName,
+									 ClassStyle ? ClassStyle->Name.ToLower() : FText::GetEmpty(), Socket.UnlockLevel)
+					 : FText::Format(HintEmptySocket, TierName);
+		}
+		HintText->SetText(Hint);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog,
+										 FGeoGemInfo const& Gem, EGeoGemTier const Tier, bool const bSocketPicked)
+{
+	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
+	int32 const Owned = Profile.GetOwnedCount(Gem.Id);
+	int32 const Free = Profile.GetFreeCount(Gem.Id, ShownClass);
+	if (DetailGlyph)
+	{
+		DetailGlyph->SetGem(Tier, Gem.Color.GetColor(1.f));
+	}
+	if (DetailTierText)
+	{
+		int32 const TierNumber = GetTiers().IndexOfByKey(Tier) + 1;
+		DetailTierText->SetText(
+			FText::Format(bSocketPicked ? SocketTierFormat : TierFormat, TierNumber, GetTierName(Tier, false)));
+	}
+	if (DetailNameText)
+	{
+		DetailNameText->SetText(Gem.DisplayName.ToUpper());
+	}
+	if (DetailEffectText)
+	{
+		DetailEffectText->SetText(Gem.GetEffectText());
+	}
+	if (DetailCountsText)
+	{
+		int32 const InBuild = static_cast<int32>(Algo::Count(Slotted, Gem.Id));
+		DetailCountsText->SetText(bSocketPicked ? FText::Format(SocketCountsFormat, Owned, Free)
+												: FText::Format(CountsFormat, Owned, InBuild, Free));
+	}
+
+	int32 const FillCount = bSocketPicked ? 0 : GetFillCount(Profile, Catalog);
+	SetShown(EquipButton, !bSocketPicked);
+	SetShown(FillButton, !bSocketPicked);
+	SetShown(UnequipButton, bSocketPicked);
+	if (EquipButton)
+	{
+		EquipButton->SetIsEnabled(FillCount > 0);
+	}
+	if (FillButton)
+	{
+		FillButton->SetLabel(FText::Format(FillFormat, FillCount));
+		FillButton->SetIsEnabled(FillCount > 1);
+	}
+	if (DetailNoteText)
+	{
+		bool const bCoreHeld = Tier == EGeoGemTier::Core && Slotted.Contains(Gem.Id);
+		DetailNoteText->SetText(bSocketPicked || FillCount > 0 ? FText::GetEmpty()
+								: bCoreHeld					   ? NoteCoreOnce
+								: Free <= 0					   ? NoteNoFreeCopy
+															   : FText::Format(NoteNoSocket, GetTierName(Tier, false).ToLower()));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowTotals(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
+{
+	TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+	TArray<FName> const Slotted = Profile.GetLoadout(ShownClass).Sockets;
+	int32 const Level = Profile.GetClassLevel(ShownClass);
+	if (TotalsFilledText)
+	{
+		int32 const Filled = Algo::CountIf(Slotted,
+										   [](FName const GemId)
+										   {
+											   return !GemId.IsNone();
+										   });
+		int32 const Open = Algo::CountIf(Sockets,
+										 [Level](FGeoGemSocket const& Socket)
+										 {
+											 return Socket.UnlockLevel <= Level;
+										 });
+		TotalsFilledText->SetText(FText::Format(FilledFormat, Filled, Open));
+	}
+	if (TotalsTable)
+	{
+		TotalsTable->ClearLines();
+	}
+
+	for (EGeoGemTier const Tier : GetTiers())
+	{
+		FGeoGemList const* List = Catalog.GemsByTier.Find(Tier);
+		for (FGeoGemInfo const& Gem : List ? List->Gems : TArray<FGeoGemInfo>())
+		{
+			int32 const Count = static_cast<int32>(Algo::Count(Slotted, Gem.Id));
+			if (Count > 0 && TotalsTable)
+			{
+				bool const bStat = Gem.MagnitudePerGem != 0.f;
+				UGeoShape* Dot = WidgetTree->ConstructWidget<UGeoShape>(UGeoShape::StaticClass());
+				Dot->Sides = 4;
+				Dot->Rotation = 45.f;
+				Dot->Size = TotalsDotSize;
+				Dot->bFilled = true;
+				Dot->Color = Gem.Color.GetColor(1.f);
+				UHorizontalBox* Label = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+				Label->AddChildToHorizontalBox(Dot)->SetVerticalAlignment(VAlign_Center);
+				UHorizontalBoxSlot* const NameSlot =
+					Label->AddChildToHorizontalBox(TotalsTable->MakeCellText(bStat ? Gem.Effect : Gem.DisplayName));
+				NameSlot->SetPadding(FMargin(TotalsDotGap, 0.f, 0.f, 0.f));
+				NameSlot->SetVerticalAlignment(VAlign_Center);
+				NameSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+
+				TArray<UWidget*> Cells = {Label};
+				if (bStat)
+				{
+					Cells.Add(TotalsTable->MakeCellText(Gem.GetMagnitudeText(Count)));
+					Cells.Add(TotalsTable->MakeCellText(FText::Format(CountFormat, Count)));
+				}
+				else
+				{
+					Cells.Add(TotalsTable->MakeCellText(CoreTotalText));
+				}
+
+				TotalsTable->AddLine(Cells);
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::PickSocket(int32 const SocketIndex)
+{
+	UGeoGemProfileSave* Profile = GetProfile();
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	bool const bEquip = Profile && Catalog && !PickedGem.IsNone()
+					 && Profile->Equip(*Catalog, ShownClass, SocketIndex, PickedGem);
+	if (bEquip)
+	{
+		CommitChanges();
+	}
+	else
+	{
+		PickedGem = NAME_None;
+		PickedSocket = SocketIndex;
+		Refresh();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::PickStack(FName const GemId)
+{
+	UGeoGemProfileSave* Profile = GetProfile();
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	bool const bEquip = Profile && Catalog && PickedSocket != INDEX_NONE
+					 && Profile->Equip(*Catalog, ShownClass, PickedSocket, GemId);
+	if (bEquip)
+	{
+		CommitChanges();
+	}
+	else
+	{
+		PickedGem = GemId;
+		PickedSocket = INDEX_NONE;
+		Refresh();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleEquip()
+{
+	UGeoGemProfileSave* Profile = GetProfile();
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (!Profile || !Catalog)
+	{
+		return;
+	}
+
+	TArray<FName> const Slotted = Profile->GetLoadout(ShownClass).Sockets;
+	TArray<int32> const Targets = GetTargetSockets(*Profile, *Catalog);
+	int32 const* EmptyTarget = Targets.FindByPredicate(
+		[&Slotted](int32 const Index)
+		{
+			return Slotted[Index].IsNone();
+		});
+	if (EmptyTarget && Profile->Equip(*Catalog, ShownClass, *EmptyTarget, PickedGem))
+	{
+		CommitChanges();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleFill()
+{
+	UGeoGemProfileSave* Profile = GetProfile();
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (Profile && Catalog && Profile->FillEmptySockets(*Catalog, ShownClass, PickedGem) > 0)
+	{
+		CommitChanges();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::HandleUnequip()
+{
+	UGeoGemProfileSave* Profile = GetProfile();
+	if (Profile && GeoGem::GetSockets().IsValidIndex(PickedSocket))
+	{
+		Profile->Unequip(ShownClass, PickedSocket);
+		CommitChanges();
+	}
+}

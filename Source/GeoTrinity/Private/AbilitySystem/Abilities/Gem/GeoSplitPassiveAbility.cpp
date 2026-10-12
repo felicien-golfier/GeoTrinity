@@ -8,12 +8,6 @@
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-UGeoSplitPassiveAbility::UGeoSplitPassiveAbility()
-{
-	CooldownSeconds = 10.f;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UGeoSplitPassiveAbility::BindEvent(UGeoAbilitySystemComponent& HolderASC)
 {
 	if (GeoLib::IsServer(GetWorld()))

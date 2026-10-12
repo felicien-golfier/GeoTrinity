@@ -3,10 +3,10 @@
 #pragma once
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystem/Data/GeoCueParam.h"
+#include "AbilitySystem/Data/FX/GeoCueParam.h"
 #include "GameplayTagContainer.h"
 #include "StructUtils/InstancedStruct.h"
-#include "Tool/GeoHazardJudge.h"
+#include "Tool/Net/GeoHazardJudge.h"
 #include "Tool/Team.h"
 
 #include "Pattern.generated.h"

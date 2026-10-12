@@ -6,7 +6,7 @@
 #include "AbilitySystemInterface.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "CoreMinimal.h"
-#include "GameClasses/GeoPlayerController.h"
+#include "GameClasses/Player/GeoPlayerController.h"
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
 

@@ -55,6 +55,10 @@ struct FGeoAbilityBarEntry
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsDeployable = false;
+
+	/** A passive: always active, so its slot never pins the in-use sweep and shows only its cooldown. */
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsPassive = false;
 };
 
 
@@ -168,6 +172,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoAbilityBar")
 	TArray<FGeoAbilityBarEntry> GetAbilityBarEntries(APlayableCharacter* PlayableCharacter) const;
 
+	/** Returns one entry per granted passive (class and Core) that has an AbilityInfo entry, in grant order. Used by
+	 * the ability bar widget to build its passive tiles. */
+	UFUNCTION(BlueprintCallable, Category = "GeoAbilityBar")
+	TArray<FGeoAbilityBarEntry> GetPassiveBarEntries(APlayableCharacter* PlayableCharacter) const;
+
 	/** Outputs the remaining cooldown and full cooldown duration (seconds) for the granted ability with AbilityTag. */
 	UFUNCTION(BlueprintPure, Category = "GeoAbilityBar")
 	void GetAbilityCooldown(FGameplayTag AbilityTag, float& OutRemaining, float& OutDuration) const;
@@ -210,6 +219,9 @@ public:
 
 
 private:
+	/** Entries of the granted passive (bPassive) or non-passive abilities, matched to the class's AbilityInfo. */
+	TArray<FGeoAbilityBarEntry> GatherBarEntries(APlayableCharacter* PlayableCharacter, bool bPassive) const;
+
 	/**
 	 * Finds the granted spec whose ability carries AbilityTag. The one place the CDO → primary-instance promotion is
 	 * written: OutAbility is the live instance when there is one, else the CDO.

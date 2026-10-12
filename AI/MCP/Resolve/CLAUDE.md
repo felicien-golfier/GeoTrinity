@@ -1,104 +1,40 @@
 # MCP DaVinci Resolve
 
-Driving DaVinci Resolve (timelines, media pool, grading, Fusion comps, renders) from the model. Read `ResolveTools.md`
-in this folder for the tool map by area and the end-to-end workflows.
+Timelines, media pool, grading, Fusion, renders from the model. Tool map and workflows: `ResolveTools.md`.
 
 ## Setup
+| Part | Role |
+|---|---|
+| `davinci-resolve` MCP server (`~/davinci-resolve-mcp`, own `.venv`) | Tools, each one HTTP call to the bridge or a local AI job |
+| CursorBridge (`…\Fusion\Scripts\Utility\CursorBridge.py`) | HTTP server `127.0.0.1:9876` inside Resolve |
+| Local AI (faster-whisper, Demucs, rembg) | Transcription, stems, background removal, CPU |
 
-| Part | Where | Role |
-|---|---|---|
-| `davinci-resolve` MCP server | `~/davinci-resolve-mcp/src/resolve_mcp_bridge.py`, run by its `.venv` Python from the user MCP config | 162 tools; each one is a single HTTP call to the bridge, or a local AI job |
-| CursorBridge | `%APPDATA%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility\CursorBridge.py` | HTTP server on `127.0.0.1:9876` running inside Resolve, calling Resolve's own scripting API |
-| Local AI | same `.venv`: faster-whisper, Demucs, rembg | Transcription, stem separation, background removal, on the CPU |
-| FFmpeg | on PATH (WinGet) | Frame extraction for video background removal |
+- `mcp` package < 2; venv has no pip (`uv pip install --python .venv/Scripts/python.exe`).
+- Installed bridge file must match the repo's; re-copy and re-run after pulling.
+- Machine: Resolve Free 21.0.4, the last Free that runs `.py`; do not update past 21.0.x. Studio + external scripting Local runs the bridge outside Resolve.
 
-- The server needs the `mcp` package below 2 (`requirements.txt` pins it); 2.x renamed the server class, and the
-  server then dies on import, which the client reports as a closed connection.
-- The venv is uv-made and has no pip: install into it with `uv pip install --python .venv/Scripts/python.exe`.
-- The bridge file installed in Resolve must match the one in the repo; after pulling the repo, copy it again and
-  re-run it in Resolve.
-- Resolve 21 bundles its own Python (`ResolvePython/`, 3.14); no system Python is needed for the bridge.
+## Connect
+- The user starts the bridge each session (Workspace > Scripts > CursorBridge; console says `Bridge is running`). First call = status tool; a connection error means ask, never loop.
+- MCP client down → call the endpoints on `127.0.0.1:9876` directly (GET reads, POST JSON writes, camelCase keys; routes at the bottom of the bridge file).
+- One request at a time; reads 10 s, writes 15 s; a timeout may still complete: read back before resending. Exceptions return HTTP 500 with the traceback.
 
-## Current state on this machine
+## Addressing
+- Current project and timeline: read timeline info first; switch timeline (1-based) before editing another.
+- Tracks 1-based, clips 0-based per track, recomputed every call: re-list after insert / delete / ripple.
+- Clip start / end = absolute record frames incl. start timecode offset (01:00:00:00 @ 24 fps = 86400). Timeline markers relative to timeline start, clip markers to clip start. Insert takes an absolute record frame. Playhead takes a timecode string in the timeline's timecode.
+- Pool clips found by name, first match wins: unique names. Read tools put params unencoded in the URL (spaces, `&`, `#`, `+` fail); writes take any name.
+- Pool listing shows the current folder only; folder-tree tool shows all.
+- Writes return Resolve's bare boolean: read state back. Clip zoom `1.0` = 100 %, opacity 0–100. Studio-only features return false on Free.
 
-- Resolve Free 21.0.4 is installed: the last Free version that runs `.py` scripts. From 21.1, Free lists no `.py`
-  file under Workspace → Scripts and its Lua has no file, process or module access, so the bridge cannot run there.
-- Updating Resolve past 21.0.x breaks the bridge on Free; its update prompt is declined.
-- Installers of any past version: Blackmagic's download catalog (`/api/support/us/downloads.json`) lists each
-  release with its per-platform download id.
-- With Resolve Studio, external scripting set to Local (Preferences → System → General) lets the bridge run outside
-  Resolve under `ResolvePython.exe`, which reaches Resolve through its scripting module; no menu is needed.
+## Rules
+- Confirm destructive calls first (delete project / clips / tracks / jobs / stills / versions, reset grades, switch database, relink).
+- Duplicate the timeline before a large edit; save explicitly at the end.
+- Outputs go to the video's `<name>.edit/` or the scratchpad; always pass an output path to local AI tools.
 
-## Connection
-
-- The user starts the bridge by hand each Resolve session: open a project, then Workspace → Scripts → CursorBridge;
-  the Console (F6) prints `Bridge is running`. The model cannot start it.
-- The first call of a session is the status tool; a connection error means the bridge is not running — ask the user
-  to start it, never retry in a loop.
-- Re-running the bridge replaces the previous instance on the same port.
-- A failed MCP client never means Resolve is unreachable: every tool maps to one endpoint on `127.0.0.1:9876`
-  (GET for reads, POST with a JSON body for writes), listed in the route tables at the bottom of the bridge file.
-  Body keys are camelCase (`trackType`, `clipIndex`); the tool's own function shows its endpoint and body.
-- The bridge refuses requests carrying an `Origin` header or a host other than `127.0.0.1:9876`/`localhost:9876`.
-- The bridge serves one request at a time; a slow Resolve call holds every other call.
-- The server gives reads 10 s and writes 15 s; a call that times out may still complete in Resolve, so read the
-  state back before sending it again.
-- A bridge-side exception comes back as HTTP 500 with the Python traceback as the error text.
-
-## Addressing conventions
-
-- Everything acts on the current project and its current timeline: read the timeline info first, and switch
-  timeline (1-based index) before editing another one.
-- Tracks are 1-based; clips are 0-based in the order Resolve lists them on that track.
-- Clip indices are recomputed on every call: after an insert, delete or ripple, list the track again before the next
-  index-based call.
-- Timeline clip start and end are absolute record frames, including the timeline's start timecode offset (a
-  timeline starting at `01:00:00:00` at 24 fps starts at frame 86400).
-- Timeline markers take a frame relative to the timeline start; clip markers take a frame relative to the clip start.
-- Inserting a clip takes an absolute record frame: timeline start frame plus the offset. The tool always sends a
-  record frame (default 0), so pass it explicitly.
-- The playhead takes a timecode string in the timeline's own timecode (`01:00:05:00`, not `00:00:05:00`, on a
-  timeline starting at one hour).
-- Media pool clips are found by name through the whole pool, first match wins: give every imported clip a unique
-  name, or the wrong clip is edited.
-- Read tools send their parameters unencoded in the URL: a clip name with a space, `&`, `#` or `+` fails on the
-  metadata and clip-info reads; the write tools send JSON and take any name.
-- The media pool listing shows only the current folder; the folder-tree tool shows all of it.
-
-## Results
-
-- Every write returns Resolve's own boolean: `success: false` carries no reason. Read the state back after every
-  write that matters.
-- A multi-property clip write returns a per-key result map; `success` is false as soon as one key failed.
-- Clip transform zoom is a scale factor where `1.0` is 100 %; opacity runs 0–100.
-- Studio-only features return `success: false` on Free, never an explanation.
-
-## Working rules
-
-- Confirm with the user before any destructive call: deleting a project, clips from the pool or timeline, a track,
-  render jobs, stills, color versions or groups; resetting grades; switching database; unlinking or relinking media.
-- Duplicate the timeline before a large edit; the scripting API has no undo of its own.
-- Save the project explicitly at the end of a session of edits.
-- Everything the tools write (renders, frames, stills, exports, AI outputs) goes to the video's `<name>.edit/`
-  folder beside it or to the session scratchpad — never the project tree, never `Saved/`.
-- The local AI tools default their output next to the source file (`davinci-mcp-output/`); always pass an output
-  path or folder.
-
-## The model cannot watch the timeline
-
-- To see a frame: move the playhead, export the current frame as PNG into the scratchpad, and read the image.
-- After a timeline import the viewer still shows the previous timeline and the frame export fails: switch to the
-  imported timeline by index first.
-- The tools read no clip transform; check framing by locating the exported frame in its source frame
-  (`AI/Python/Video/locate_frame.py`) and comparing the centre found with the one intended.
-- The thumbnail tool returns base64 RGB and works only on the Color page; the frame export is lighter and works on
-  any page.
-- To judge a render, scan the output file with `AI/Python/Video/video_scan.py` as in `../Video/CLAUDE.md`.
+## Seeing
+- Move playhead, export current frame PNG to the scratchpad, read it. After a timeline import, switch to it by index first.
+- No clip transform read: check framing with `AI/Python/Video/locate_frame.py`. Judge a render with `video_scan.py`.
 
 ## Resolve or FFmpeg
-
-- Resolve when the user wants a project they will keep editing by hand, a grade, a Fusion comp, or an interchange
-  file (FCPXML, EDL, AAF, OTIO).
-- The FFmpeg pipeline (`../Video/`) for a finished render straight from a prompt: it cuts, captions, fades and
-  transitions, which the Resolve API cannot.
-- Both meet through files: an FFmpeg render imports into the pool, a Resolve render is scanned like any video.
+- Resolve: a project to keep editing by hand, grading, Fusion, interchange (FCPXML, EDL, AAF, OTIO).
+- FFmpeg (`../Video/`): finished render straight from a prompt (cuts, captions, fades, transitions). They meet through files.

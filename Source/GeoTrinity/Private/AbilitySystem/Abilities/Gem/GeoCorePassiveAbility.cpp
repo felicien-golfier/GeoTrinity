@@ -44,11 +44,14 @@ void UGeoCorePassiveAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 // ---------------------------------------------------------------------------------------------------------------------
 bool UGeoCorePassiveAbility::TryTrigger()
 {
-	float const Now = GetWorld()->GetTimeSeconds();
-	bool const bTriggered = Now - LastTriggerTime >= CooldownSeconds && FMath::FRand() < TriggerChance;
+	ensureMsgf(GetCooldownGameplayEffect(), TEXT("%hs: %s has no Cooldown GE"), __FUNCTION__, *GetName());
+
+	FGameplayAbilitySpecHandle const Handle = GetCurrentAbilitySpecHandle();
+	FGameplayAbilityActorInfo const* ActorInfo = GetCurrentActorInfo();
+	bool const bTriggered = CheckCooldown(Handle, ActorInfo) && FMath::FRand() < TriggerChance;
 	if (bTriggered)
 	{
-		LastTriggerTime = Now;
+		ApplyCooldown(Handle, ActorInfo, GetCurrentActivationInfo());
 	}
 
 	return bTriggered;

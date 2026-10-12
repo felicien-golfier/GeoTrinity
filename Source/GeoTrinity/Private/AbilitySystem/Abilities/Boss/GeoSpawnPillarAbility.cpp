@@ -2,7 +2,7 @@
 
 #include "AbilitySystem/Abilities/Boss/GeoSpawnPillarAbility.h"
 
-#include "AbilitySystem/Abilities/Pattern/SpawnPillarPattern.h"
+#include "AbilitySystem/Abilities/Pattern/Hazard/SpawnPillarPattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"

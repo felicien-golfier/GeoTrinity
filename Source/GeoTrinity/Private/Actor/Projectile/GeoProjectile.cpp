@@ -20,7 +20,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
-#include "System/GeoPoolableInterface.h"
+#include "System/Pooling/GeoPoolableInterface.h"
 #include "TimerManager.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "UObject/ConstructorHelpers.h"

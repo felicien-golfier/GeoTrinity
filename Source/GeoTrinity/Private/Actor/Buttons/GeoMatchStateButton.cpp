@@ -4,7 +4,7 @@
 
 #include "Actor/Arena/GeoArena.h"
 #include "Engine/World.h"
-#include "GameClasses/GeoGameMode.h"
+#include "GameClasses/Match/GeoGameMode.h"
 
 void AGeoMatchStateButton::Press()
 {

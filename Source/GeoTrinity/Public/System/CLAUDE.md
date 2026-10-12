@@ -1,26 +1,15 @@
 # System
 
-World subsystems and pooling interface.
+World / game-instance subsystems and pooling.
 
-### `GeoActorPoolingSubsystem.h`
-World subsystem for actor reuse: `RequestActor<T>`, `ReleaseActor`, `PreSpawn<T>`, `Get(World)` singleton access. Internally `TMap<UClass*, TArray<TWeakObjectPtr<AActor>>> Pool`.
-`ReleaseActor` ensures the actor isn't already pooled and bails if it is: a duplicate entry means two `RequestActor` calls pop the *same* actor, and the caller's own end-of-life guard (`AGeoProjectile::bIsEnding`) is what normally makes that impossible.
-Invariant: the `Pool` array holds **only** idle actors. `SpawnActor` never inserts — `PreSpawn` inserts what it spawns, and `RequestActor`'s empty-pool path hands the fresh actor straight to the caller. This also keeps the `Pool.FindOrAdd` reference held across a spawn from being invalidated by a rehash.
-`Pool` is deliberately not a `UPROPERTY` (nested `TArray` in a `TMap` isn't reflectable): pooled actors are kept alive by `ULevel::Actors`, not by this map, so entries only go stale if something `Destroy()`s a pooled actor.
+| Folder / file | Holds |
+|---|---|
+| `Pooling/` | `GeoActorPoolingSubsystem`, `GeoPoolableInterface` |
+| `Stats/` | `GeoCombatStatsSubsystem`, `GeoLeaderboardSave` |
+| `GeoBulletSubsystem.h` | Maths-only pattern bullets: straight flight from payload start, same place on every machine at the same server time, server judges hits |
+| `GeoSessionSubsystem.h` | GameInstance subsystem: direct-IP no-Steam host/join |
 
-### `GeoPoolableInterface.h`
-Interface for poolable actors: `Init()` on acquisition, `End()` on return.
-
-### `GeoCombatStatsSubsystem.h`
-World subsystem tracking DPS/HPS/damage-received per player with **fixed-size state, no per-event storage**. Current rates are exponentially smoothed (`SmoothingWindowSeconds=3s` time constant); plus whole-combat averages (`FightDPS`/`FightHPS` = totals / time since `CombatStartTime`). The two `MAX` columns (`FBurstTracker DamageBurst`/`HealingBurst`) are **not** peak rates: they hold the biggest total accumulated inside one `FBurstTracker::WindowSeconds=0.5s` **tumbling** window, i.e. "biggest single spell", since one spell lands as many effect executions across several frames. Tumbling, not sliding: the window opens on the first event after it expires, which bounds the accumulation so sustained fire can't pile into one value.
-- `OnWorldBeginPlay` (server-only): subscribes to `GeoGameState::OnMatchStateChanged`. Entering `InProgress` calls `ResetStats()`; leaving it does `StatsPerActor.Empty()` **without** pushing zeros, so player states keep displaying final fight values.
-- `Report*` methods decay rates to now, fold event in, push stats; the first event outside a match opens a **new session** (zeroing previous fight's frozen values).
-- `ComputePlayerStats` ticked every frame from `AGeoPlayerController::Tick` (non-shipping, `Geo.ShowCombatStats`); no-ops while `StatsPerActor` is empty (right after a fight ends) — that's what freezes final values.
-- Reports come from `UGeoAttributeSetBase::PostGameplayEffectExecute()`.
-
-### `GeoSessionSubsystem.h`
-**GameInstance** subsystem (survives level travel) — direct-IP **no-Steam** connect/host seam; Steam sessions stay in `UGeoGameInstance` and are never touched here.
-- `HostListen(MapPackagePath)` — `ServerTravel`s to `<Map>?listen`; host is authority and plays, no separate process.
-- `JoinByAddress(Address)` — `ClientTravel` to host IP (default port 7777).
-- `GetLocalIPv4()` — best-effort local IP for host to display; `"127.0.0.1"` on failure.
-- Net driver: `DefaultEngine.ini` falls back to `IpNetDriver` when not using SteamSockets. **Host and joiner must be in the same mode** (both Steam or both no-Steam) — mixed connections fail.
+## Session
+- `HostListen(MapPackagePath)` = `ServerTravel` to `<Map>?listen`; `JoinByAddress(Address)` = `ClientTravel` (port 7777); `GetLocalIPv4()` for display.
+- Steam sessions stay in `UGeoGameInstance`; host and joiner must be in the same mode (both Steam or both not).
+- Non-Steam net driver: `DefaultEngine.ini` falls back to `IpNetDriver`.

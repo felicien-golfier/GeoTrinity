@@ -7,9 +7,9 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
-#include "Characters/Component/GeoLoopSoundComponent.h"
+#include "Characters/Component/FX/GeoLoopSoundComponent.h"
 #include "Engine/World.h"
-#include "GameClasses/GeoGameState.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/Character.h"
 #include "Tool/UGeoGameplayLibrary.h"
 

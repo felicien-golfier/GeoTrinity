@@ -21,7 +21,7 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/GeoColor.h"
+#include "Tool/Visual/GeoColor.h"
 #include "VisualLogger/VisualLogger.h"
 
 

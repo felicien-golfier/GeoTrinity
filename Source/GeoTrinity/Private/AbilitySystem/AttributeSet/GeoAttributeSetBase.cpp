@@ -11,11 +11,11 @@
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/GeoCharacter.h"
-#include "GameClasses/GeoGameState.h"
-#include "GameClasses/GeoPlayerState.h"
+#include "GameClasses/Match/GeoGameState.h"
+#include "GameClasses/Match/GeoPlayerState.h"
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
-#include "System/GeoCombatStatsSubsystem.h"
+#include "System/Stats/GeoCombatStatsSubsystem.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

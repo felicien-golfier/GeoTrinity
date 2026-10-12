@@ -9,12 +9,6 @@
 #include "Characters/PlayableCharacter.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-UGeoKinshipPassiveAbility::UGeoKinshipPassiveAbility()
-{
-	CooldownSeconds = 5.f;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UGeoKinshipPassiveAbility::BindEvent(UGeoAbilitySystemComponent& HolderASC)
 {
 	if (GeoLib::IsServer(GetWorld()))

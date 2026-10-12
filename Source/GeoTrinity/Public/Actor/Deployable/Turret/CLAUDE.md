@@ -1,15 +1,8 @@
 # Actor/Deployable/Turret
 
-Triangle's deployable auto-firing turret.
+`GeoTurret.h` — Triangle auto-firing turret; deployed by `GeoDeployAbility`, recalled by `GeoRecallTurretAbility`.
 
-## Files
-| File | Role |
-|---|---|
-| `GeoTurret.h/.cpp` | Auto-targeting turret — fires at nearest hostile on a timer |
-
-## Key Points
-- `FindBestTarget()` prefers the owner's `LastBasicAbilityTarget` (set by ExecCalc_Damage via `bIsFromBasicAbility`) so the turret chases the same enemy the Triangle player is attacking; falls back to nearest hostile in range.
-- `CurrentTarget` — replicated, updated each Tick; clients orient the mesh toward it.
-- `TryFire()` — server-only, scheduled by `ScheduleFire()`; spawns `ProjectileParams` (`FGeoProjectileParams`, class + overrides). Constructor defaults force distance/speed overrides (2000 / 4000) as before the struct move.
-- `Expire()` override clears the fire timer before `Super::Expire()`.
-- Deployed via `GeoDeployAbility` → `ADeployableSpawnerProjectile`; recalled by `GeoRecallTurretAbility`.
+- `FindBestTarget()`: owner's `LastBasicAbilityTarget` first, else nearest hostile in range.
+- `CurrentTarget` replicated; clients orient the mesh.
+- `TryFire()` server-only via `ScheduleFire()`; spawns `ProjectileParams` (`FExternalProjectileParams`).
+- `Expire()` clears the fire timer before `Super`.

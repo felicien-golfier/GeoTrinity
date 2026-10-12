@@ -192,3 +192,12 @@ tone beat against each other wherever they overlap.
 - Synthesis only: a reference is a target to measure, never material — no cut, filtered or resynthesised piece of
   it ships.
 - Never mix and render: layers stay separate until export.
+
+## Sound spirit per boss
+Each boss has its own spirit; ask before reusing one boss's kit on another.
+- **Hex boss — heavy futuristic machine**: broadband snaps and short rings over an unpitched low knock and a sub bed. Never a pitched body ringing or gliding (reads as a drum that "bounces"), never sparse small parts above 1 kHz alone (reads as a toy: bells, clinks, bike ticks). Build from `mech_kit.py`, judge against the mechanical intro sections with `compare_sections.py` (`GameSoundDesign.md`, "Mechanical metal").
+- **Star boss — wind and spikes as a ninja**: air cuts, blade swishes, cloth snaps, soft landings, gusts, a smoke-bomb vanish; no metal of any kind (no rings, clanks, machine kit). Fight bed is a plant: foliage swaying, leaf ticks over a leafy hiss. Build from `ninja_kit.py`.
+
+## Delivering
+- Last step of any audio draft or iteration: play it (`Start-Process <wav>`), or open the folder when there are several (`explorer.exe <folder>`) and play the preview.
+- Shipped sources: `SourceArt/Audio/<Family>/`, one file per sound so each is reusable; reuse the "Reusable sounds" table before synthesising and add every new reusable sound to it. Drafts: `AI/Audio/Drafts/`. Never `Saved/`.

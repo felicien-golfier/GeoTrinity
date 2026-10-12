@@ -6,12 +6,6 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-UGeoWakePassiveAbility::UGeoWakePassiveAbility()
-{
-	CooldownSeconds = 8.f;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 void UGeoWakePassiveAbility::BindEvent(UGeoAbilitySystemComponent& HolderASC)
 {
 	if (GeoLib::IsServer(GetWorld()))

@@ -5,11 +5,11 @@
 #include "CanvasItem.h"
 #include "CanvasTypes.h"
 #include "GlobalRenderResources.h"
-#include "HUD/Style/SGeoIconImage.h"
+#include "HUD/Style/Glyph/SGeoIconImage.h"
 #include "Input/HittestGrid.h"
 #include "RenderDeferredCleanup.h"
 #include "Slate/WidgetRenderer.h"
-#include "Tool/GeoIcon.h"
+#include "Tool/Visual/GeoIcon.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SVirtualWindow.h"
 

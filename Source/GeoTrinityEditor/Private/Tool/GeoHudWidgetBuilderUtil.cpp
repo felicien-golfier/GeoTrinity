@@ -22,9 +22,9 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
-#include "HUD/Menu/GeoButton.h"
-#include "HUD/Menu/GeoListFrameWidget.h"
-#include "HUD/Menu/GeoMenuButton.h"
+#include "HUD/Menu/Frame/GeoButton.h"
+#include "HUD/Menu/List/GeoListFrameWidget.h"
+#include "HUD/Menu/Frame/GeoMenuButton.h"
 #include "Tool/GeoWidgetBuilderUtil.h"
 #include "WidgetBlueprint.h"
 

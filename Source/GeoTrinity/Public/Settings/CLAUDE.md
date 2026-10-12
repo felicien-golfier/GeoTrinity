@@ -1,14 +1,11 @@
 # Settings
 
-Project- and player-configurable settings objects.
-
-## Files
 | File | Role |
 |---|---|
-| `GameDataSettings.h` | `UDeveloperSettings` — Project Settings panel holding global data assets, GE classes, the color palette and tuning values. Read with `GetDefault<UGameDataSettings>()`; durable values live in `Config/DefaultGame.ini` |
-| `GeoGameUserSettings.h` | `UGameUserSettings` — player-facing, saved to `GameUserSettings.ini`. Currently only the couch-coop gamepad choice |
+| `GameDataSettings.h` | `UDeveloperSettings`: global data assets, GE classes, colour palette, tuning. `GetDefault<UGameDataSettings>()`; durable values in `Config/DefaultGame.ini` |
+| `GeoGameUserSettings.h` | Player settings in `GameUserSettings.ini`: couch-coop gamepad choice, volumes, HUD options |
 
-## `GeoGameUserSettings`
-Registered via `GameUserSettingsClassName` in `Config/DefaultEngine.ini`; `Get()` `checkf`s on that wiring being present.
-
-`bUseFirstGamepadForSecondPlayer` (default **false**) is a purely local device choice — nothing replicates. It only moves where the gamepads *start*: off, the first gamepad shares player 1 with the keyboard and mouse (whichever moved last taking the aim) and the second gamepad presses Start to join as player 2; on, everyone starts one player further along. It is not polled — `UGeoGameViewportClient::ApplyCouchCoopSetting` turns it into platform-user assignments and must be called after every write; `UGeoKeyBindingsWidget` owns the checkbox and does exactly that.
+- `GeoGameUserSettings` registered by `GameUserSettingsClassName` in `Config/DefaultEngine.ini`; `Get()` `checkf`s it.
+- `bUseFirstGamepadForSecondPlayer` is local only; applying it = `UGeoGameViewportClient::ApplyCouchCoopSetting()` after every write (done by `UGeoKeyBindingsWidget`).
+- Palette: `ColorPalette` is a single `ColorPalette=((Key,(R=..)),…)` line in `[/Script/GeoTrinity.GameDataSettings]`.
+- Global data assets come from `GetLoadedDataAsset()`, which `AddToRoot()`s them: `RF_Standalone` protects only in the editor, a package collects every asset nothing hard-references. Never `LoadSynchronous()` a global asset around that helper; never cache a `UObject*` past a frame outside a `UPROPERTY` (holder = file-scope `USTRUCT`; `TObjectPtr` alone keeps nothing alive). Detail: `TroobleshootingLogs.md`.

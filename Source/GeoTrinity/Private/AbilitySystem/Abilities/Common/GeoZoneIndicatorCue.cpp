@@ -3,7 +3,7 @@
 #include "AbilitySystem/Abilities/Common/GeoZoneIndicatorCue.h"
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Characters/Component/GeoIndicatorComponent.h"
+#include "Characters/Component/FX/GeoIndicatorComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 bool UGeoZoneIndicatorCue::OnExecute_Implementation(AActor* MyTarget, FGameplayCueParameters const& Parameters) const

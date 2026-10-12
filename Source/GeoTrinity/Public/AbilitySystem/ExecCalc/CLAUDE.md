@@ -1,15 +1,14 @@
 # AbilitySystem/ExecCalc
 
-Execution calculations — the math layer between GE application and attribute modification.
+Math between GE application and attribute change; result goes to the `Incoming*` meta attributes.
 
-## `ExecCalc_Damage.h`
-Captures `DamageMultiplier` (source), `DamageReduction` (target), `SingleUseDamageMultiplier` (from `FGeoGameplayEffectContext`, set by `FSingleUseDamageMultiplierEffectData`). Applies to `IncomingDamage` meta-attribute.
+| File | Formula / role |
+|---|---|
+| `ExecCalc_Damage.h` | `Base × DamageMultiplier × SingleUseDamageMultiplier × (1 - DamageReduction)` |
+| `ExecCalc_Heal.h` | `Base × AppliedHealBoost × ReceivedHealBoost` |
 
-`Final = BaseDamage × DamageMultiplier × SingleUseDamageMultiplier × (1 - DamageReduction)`.
-
-Broadcasts `OnDamageDealt` on source ASC. Cue suppressed when `bSuppressGameplayCue`, or rate-limited when `bLimitGameplayCue` and target's `UGeoGameFeelComponent::IsDamageCueAvailable()` says not elapsed.
-
-## `ExecCalc_Heal.h`
-Captures `AppliedHealBoost` (source), `ReceivedHealBoost` (target). Applies to `IncomingHeal` meta-attribute.
-
-Broadcasts `OnHealProvided(Amount)` unless `bSuppressHealProvided` (used by `GeoHealReturnPassiveAbility` to avoid infinite heal loops). Cue gating same pattern as damage, via `IsHealCueAvailable()`.
+- Damage: source captures `DamageMultiplier`, target `DamageReduction`, `SingleUseDamageMultiplier` from `FGeoGameplayEffectContext`.
+- Heal: capture the boost from **Target** when the source is a non-character (deployable, pickup).
+- Both broadcast `OnDamageDealt` / `OnHealProvided` on the source ASC (heal skipped on `bSuppressHealProvided`).
+- Cue: suppressed by `bSuppressGameplayCue`, rate-limited by `bLimitGameplayCue` via `UGeoGameFeelComponent::IsDamageCueAvailable()` / `IsHealCueAvailable()`.
+- `bIsFromBasicAbility` → `SetLastBasicAbilityTarget` on the source ASC.

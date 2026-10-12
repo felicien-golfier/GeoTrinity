@@ -8,7 +8,7 @@
 #include "FileHelpers.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Notifications/NotificationManager.h"
-#include "GameClasses/GeoPlayerState.h"
+#include "GameClasses/Match/GeoPlayerState.h"
 #include "Gem/GeoGemCatalog.h"
 #include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
 #include "Gem/GeoGemComponent.h"

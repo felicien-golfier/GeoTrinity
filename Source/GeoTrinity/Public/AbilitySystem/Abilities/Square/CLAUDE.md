@@ -1,33 +1,29 @@
 # Abilities/Square
 
-Square (Tank) class abilities.
+Square (Tank) kit. Wall deploy = shared `UGeoDeployAbility` with `DeployableActorClass = BP_Wall`, no Square subclass.
 
----
+| File | Role |
+|---|---|
+| `GeoShieldBurstPassiveAbility.h` | Auto-attack damage fills a gauge; at 100% sends a bouncing shield burst to allies |
+| `GeoDetonateWallsAbility.h` | Forward ray recalling own walls, boosting damage/shield by wall count |
+| `GeoSacrificeBeamAbility.h` | Channel beam marking allies as sacrificed |
+| `GeoSacrificeDetonateAbility.h` | Detonation ray dealing `BaseDamage + SacrificeValue` |
 
-## Wall deployer — uses `GeoDeployAbility` directly (no Square-specific subclass)
-Shared `UGeoDeployAbility` (`Common/`) configured in BP with `DeployableActorClass = BP_Wall`. Normal flat GAS cost/cooldown, no HP sacrifice. Spawned via `ADeployableSpawnerProjectile` → `AGeoWall`.
+## Shield burst
+- Binds `OnDamageDealt`; `Charge()` at full, after `ChargeTime` spawns `AGeoShieldBurstProjectile` toward the nearest ally.
+- Each enemy bounce adds `EnemyBounceAdditiveMultiplier × base` (linear) to shield and radius.
+- Visual gauge through `UShieldBurstPassiveComponent`; in-flight bursts end on Square revive.
 
-## `GeoShieldBurstPassiveAbility.h` — passive burst shield
-Auto-attack damage fills a gauge; at 100% a shield burst is sent to nearby allies.
-- `GaugeFillThreshold`, `ShieldAmount` (`FScalableFloat`, level-scaled), `EnemyBounceAdditiveMultiplier` (additive per-bounce growth: adds this fraction of base shield+radius each bounce, linear not compounding), `ChargeTime = 1s`
-- Uses `UShieldBurstPassiveComponent` for the replicated `GaugeRatio` material visual
-- Flow: binds `OnDamageDealt` → gauge increments → at 100% `Charge()` → after `ChargeTime`, spawns `AGeoShieldBurstProjectile` toward nearest ally → bounces off enemies (each bounce adds `EnemyBounceAdditiveMultiplier` × base to `ShieldAmount` + radius), shields first ally hit
-- In-flight bursts end on Square revive (`AGeoProjectile` binds to instigator's `OnRevived`)
+## Detonate walls
+- Pass 1 counts + recalls own `AGeoWall`s on the ray (no explosion), multiplier = `WallBoostMultiplier × count`.
+- Pass 2: `BaseDamage × mult` to enemies, `BaseShield × mult` to allies (inline effect data).
+- One `FireRay()` from `Fire` and `OnFireTargetDataReceived`: walls counted everywhere, recall/apply server-only, cue local-only (`RawMagnitude` = wall count).
 
-## `GeoDetonateWallsAbility.h` — boosting ray
-Forward ray (like `GeoChargeBeamAbility`), length `GeneralSpellDistance`, width `LineHalfWidth`.
-- Pass 1: counts + recalls the player's own `AGeoWall`s on the ray (consumed, no explosion). Multiplier = `WallBoostMultiplier * WallCount` (no walls → ×0)
-- Pass 2: same ray, `BaseDamage * Multiplier` to enemies, `BaseShield * Multiplier` shield to allies (inline `FDamageEffectData`/`FShieldEffectData`)
-- Single `FireRay()` called from `Fire` (host/client) and `OnFireTargetDataReceived` (server): counts walls everywhere (client needs it for cue scale), but recalls/applies only server-side, cue only on the locally-controlled client
-- `FireGameplayCueTag`: `RawMagnitude` = consumed wall count (scales Niagara beam)
-
-## `GeoSacrificeBeamAbility.h` + `GeoSacrificeDetonateAbility.h` — sacrifice pair (one button, two abilities)
-Same InputTag (`InputTag.Special`); both `bActivateOnFreshPressOnly` so Held input can't chain-activate one after the other. Accumulated value lives in replicated `UCharacterAttributeSet::SacrificeValue` (not on either ability) so both abilities and the HUD read the same state.
-
-**`GeoSacrificeBeamAbility` (channel)** — extends `UGeoChannelBeamAbility`. `Fire()` applies `DetonateReadyEffect` (infinite GE granting `Status.Square.DetonateReady`), then channels: allies/neutrals in the beam get `SacrificeMarkEffect` (infinite GE granting `Status.Sacrificed` + cue); leaving removes it. `ActivationBlockedTags = Status.Square.DetonateReady` (BP) — can't restart until detonation consumes the tag. Ends at `MaxChannelDuration` (detonation stays armed) or on detonate cancel. Owns the pair's cooldown.
-
-**Damage redirection** — `UGeoAttributeSetBase::PostGameplayEffectExecute` calls static `TryRedirectIncomingDamage` before shield absorption: if victim carries `Status.Sacrificed` (and not `bDoNotRedirectSacrifice`), victim takes zero damage. Instance-free (mark GE identifies the Square + level): `RedirectCapturedDamage` adds to `SacrificeValue`, splits equally across alive `AGeoWall`s + the Square (recomputed per event, Square damaged last), applied as normal damage with `bDoNotRedirectSacrifice=true`. Redirect shares keep the original attacker's ASC as source (fallback: Square's) so stats credit correctly. Walls can themselves be sacrificed; deployable life drain sets `bDoNotRedirectSacrifice` so it's never captured.
-
-**`GeoSacrificeDetonateAbility` (detonation)** — plain `UGeoGameplayAbility`, DetonateWalls fire pattern. BP: `ActivationRequiredTags = Status.Square.DetonateReady`, `CancelAbilitiesWithTag = Ability.Spell.SacrificeBeam` (press during channel cancels + detonates), no cooldown. Server: ray via `GetInteractableActorsInLine(Hostile)`, each enemy takes `BaseDamage + SacrificeValue`, then resets the attribute and removes DetonateReady. Local: `FireGameplayCueTag` with `RawMagnitude = SacrificeValue`. Death disarms: `APlayableCharacter::DeathLogic` purges GEs and zeroes `SacrificeValue`.
-
-Ability bar shows the pair as one slot that swaps icons (`GeoAbilitySlotWidget` — slots hold every ability sharing an InputTag, display last active/activatable entry).
+## Sacrifice pair (one input, two abilities)
+- Same `InputTag.Special`; both `bActivateOnFreshPressOnly`.
+- Value lives in replicated `UCharacterAttributeSet::SacrificeValue` (shared by both abilities and HUD).
+- Beam: `Fire()` applies `DetonateReadyEffect`; beam marks allies/neutrals with `SacrificeMarkEffect` (`Status.Sacrificed`); `ActivationBlockedTags = Status.Square.DetonateReady`; owns the cooldown.
+- Redirect: `UGeoAttributeSetBase::PostGameplayEffectExecute` → `TryRedirectIncomingDamage` before shield; victim takes 0, `SacrificeValue` grows, share split across alive walls + Square (Square last), applied with `bDoNotRedirectSacrifice`, original attacker kept as source.
+- Detonate: plain `UGeoGameplayAbility`; BP `ActivationRequiredTags = Status.Square.DetonateReady`, `CancelAbilitiesWithTag = Ability.Spell.SacrificeBeam`, no cooldown; server ray via `GetInteractableActorsInLine(Hostile)`, then resets attribute and removes ready tag.
+- Death: `APlayableCharacter::DeathLogic` purges GEs and zeroes `SacrificeValue`.
+- Ability bar shows the pair as one slot (slots hold every ability sharing an InputTag).

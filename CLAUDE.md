@@ -1,123 +1,78 @@
 # CLAUDE.md
 
 ## Project
-GeoTrinity — multiplayer 2D boss fight bullet-hell, Unreal Engine 5.7, GAS. Players are geometric shapes (Tank=Square, Heal=Circle, DPS=Triangle). Camera: orthographic.
+GeoTrinity — multiplayer 2D boss-fight bullet-hell, Unreal Engine 5.7, GAS. Players are shapes (Tank=Square, Heal=Circle, DPS=Triangle). Orthographic camera.
 
-## Build
-Only build when the user asks for it in the discussion; then run the matching `Tools\*.bat` with `GEO_NO_PAUSE=1`, with no editor running. Otherwise hand over unverified code and say so.
-Build commands live in `AI/Commands.md` (editor/dev) and `AI/BuildPackage.md` (distributable package). Read them to know what the user runs — not to run it yourself. Use MCP live compile only when actively working on Blueprints or code that directly touches MCP/Blueprint state.
+## Workflow (every feature) — MANDATORY GATE
+Applies to every session, every agent (interactive, daily, nightly, cloud). Default is the gate. Waiver, for that request only: the user directly asks for the code ("code the UI of this artifact", "just code it", "skip the docs", "quick fix") → do it straight away, no discussion, no docs, no Pending file. A goal or idea with no ask to code is not a waiver.
 
-## Big RULES
-- Only build when the user asks for it in the discussion.
-- Never take control of the mouse or the window focus (launching the editor to click around, PIE with real clicks, screen grabs that need focus) unless the user explicitly asked you to test it yourself; otherwise ask first. By default run every test that needs neither: automated tests (like `GeoGemTests.cpp`), headless runs, bridge scripts.
-- Only launch, quit or close dialogs of an editor when the user asks for it in the discussion — and only your own (`-RemoteControlAllow`), never the user's.
-- **NEVER write anything into `Saved/`** — the user may wipe it any time. Sound references, drafts and reproductions go to `AI/Audio/` (map in its `CLAUDE.md`); script reports, probes and exports go to `AI/Output/`; throwaway files go to the session scratchpad.
-- ALWAYS read AI/CodingStyle.md before coding. If planing or just answering, don't, but if you write any line of code, read it.
-- When opening a cpp file, read it entirely.
-- ALWAYS open the public folder to the cpp file you are reading to have CLAUDE.md with the class explainations.
-- Do NOT update subfolder CLAUDE.md docs yourself during a normal session — that's the daily agent's job, not an interactive-session task. Keep each CLAUDE.md an architectural map, not documentation: one line of folder purpose, a list of key classes with a one-line purpose each, and only non-trivial points code/comments don't already say (ordering constraints, replication gotchas, pooling, invariants, cross-class relationships). No restating obvious getters/setters, no prose for a new class.
-- Don't spawn Explore agents to discover files before reading CLAUDE.md files — they already map every subsystem to its paths. Read the relevant CLAUDE.md (root + subfolder), then Read/Grep/Glob those files directly. Only spawn Explore for genuinely undocumented or ambiguous areas.
-- ALWAYS read `AI/MCP/CLAUDE.md` before any MCP / Python editor automation task — it maps every topic to the right file.
+1. **Why** — the user states the goal. No file written.
+2. **How** — discuss the approach, or the user dictates it. No file written.
+3. **Write it down** — the `CLAUDE.md` of every code folder and `AI/Python` folder touched, written as if the feature exists (map, intent, invariants). Then ONE temporary `AI/Pending/<Feature>.md`: its `Goal:` line is the Why, then everything left to do (template: `AI/Pending/README.md`). Stop; the user reviews the docs.
+   When the behaviour can be automated, the Pending file lists the test files to write (lightest layer, `AI/Testing.md`) and the run command.
+   Sort every piece of info with one test: *still true and useful to a future task once this feature ships?* Yes (a lasting design rule, layout or behaviour choice) → the `CLAUDE.md` of the leaf folder that owns it. No (one-off steps, sources to fetch from, assets to import, values to copy) → the Pending file only, gone when it is deleted.
+4. **What** — only on the user's go, with the context cleared or not: implement what the docs say (code, scripts, Pending items an editor script can do). Tick the Pending file, delete it when empty, and fix any CLAUDE.md that drifted from what was built.
+   Tests: when possible, write test files next to the code in the same step (`AI/Testing.md`), and run them headless once built. A feature is not done without its tests unless they cannot be automated (say why).
+   Verification: no editor testing by default (PIE, live editor, MCP in-editor checks) — only when the user asks. Big tasks (full feature, tricky refactor, …) must at least be built, overriding "Build only when the user asks"; then run their tests.
 
-## Key References
-| Context | File |
+Gate rules:
+- No code, script or asset change for a feature until step 3 is on disk (docs + Pending file), unless waived.
+- Step 4 from a cleared context: work from the docs and the Pending file. Not cleared: first output line is `Context not cleared — using docs + discussion.`, then use both. Either way, a design change goes back into the docs.
+- Exempt without waiver: typo / comment-only edits, build or test runs, answering questions, the daily JavaDoc task, reverting.
+- Autonomous agents with no user to discuss with: write step 3 only, commit it, and stop; implementation waits for the user.
+
+## Rules
+- Build only when the user asks, except big tasks (full feature, tricky refactor, …) which must at least be built (workflow step 4); then the matching `Tools\*.bat` with `GEO_NO_PAUSE=1`, editor closed. Commands: `AI/Commands.md` (editor/dev), `AI/BuildPackage.md` (package). Small changes: hand over unbuilt code and say so. MCP live compile only for Blueprint-touching work.
+- Never test in the editor (PIE, live editor, in-editor MCP checks) unless the user asks; automated tests (headless) are the default check.
+- Never take mouse or window focus (clicking in the editor, PIE with real clicks, focus-dependent screen grabs) unless the user asked to test it yourself. Default tests: automated (`GeoGemTests.cpp`), headless, bridge scripts (`AI/Testing.md`).
+- Launch / quit / dismiss dialogs of an editor only on request, and only your own (`-RemoteControlAllow`).
+- Never write into `Saved/`. Sound work → `AI/Audio/`; reports, probes, exports → `AI/Output/`; throwaway → session scratchpad.
+- Before writing any code: read `AI/CodingStyle.md`. Planning or answering: don't.
+- Opening a `.cpp`: read it entirely, and the `CLAUDE.md` of its Public folder.
+- Navigate by docs: this file → module `Public/CLAUDE.md` → folder `CLAUDE.md`; then Read / Grep those files. Explore agents only for undocumented areas.
+- Before MCP / Python editor automation: `AI/MCP/CLAUDE.md`.
+- Pitfalls and incident post-mortems: `TroobleshootingLogs.md` (root), not in CLAUDE.md.
+- **No memory files, ever.** Never create or update anything under `~/.claude/projects/*/memory/`. A fact worth keeping goes in the file from "Where a fact goes" below, in the same session. A rule the user states ("always…", "never…") is written there, not remembered.
+- Camera is orthographic: a position mismatch is never parallax or height; find the gameplay or network cause.
+
+## Where a fact goes
+| Kind of fact | File |
 |---|---|
-| Any project's cpp file | CLAUDE.md at the .h root, in the public folder |
-| Code style, GAS conventions, error handling | `AI/CodingStyle.md` |
-| Build commands, dev environment, copyright | `AI/Commands.md` |
-| Packaging a distributable build of the game | `AI/BuildPackage.md` |
-| Automated tests: layers, running headless, reading reports | `AI/Testing.md` |
-| Networking, data structures, effect system | `AI/Architecture.md` |
-| Writing ability descriptions ({Token} syntax) | `AI/AbilityDescriptions.md` |
-| How the game must look — shape/colour/motion rules | `AI/ArtDirection.md` |
-| UI rules — generic reusable styles, Blueprint-tweakable values | `AI/UI.md` |
-| Arena wall cubes — fixed scale/height, placement, barrier states | `AI/ArenaWalls.md` |
-| Structuring a material — functions, parameters, readable graphs | `AI/Materials.md` |
-| VFX / Niagara via MCP | `AI/VFX.md` |
-| Creating a sound effect end to end — route, files, synth, import, notify | `AI/SoundCreation.md` |
-| Sound references, drafts, reproductions, bone motion (the agent's sound workspace) | `AI/Audio/CLAUDE.md` |
-| Authoring or tuning an animation | `AI/MCP/MCP_Animation.md` |
-| Any MCP / Python editor automation | `AI/MCP/CLAUDE.md` |
-| Finding an existing automation script | `AI/Python/CLAUDE.md` |
-| AbilitySystem code | `Source/GeoTrinity/Public/AbilitySystem/CLAUDE.md` |
-| Abilities (all classes) | `Source/GeoTrinity/Public/AbilitySystem/Abilities/CLAUDE.md` |
-| Characters & components | `Source/GeoTrinity/Public/Characters/CLAUDE.md` |
-| Actors (projectiles, deployables, turret) | `Source/GeoTrinity/Public/Actor/CLAUDE.md` |
-| AI & StateTree | `Source/GeoTrinity/Public/AI/CLAUDE.md` |
-| HUD & widgets (UI module) | `Source/GeoTrinityUI/Public/HUD/CLAUDE.md` |
-| Gameplay↔UI interfaces (in gameplay module) | `Source/GeoTrinity/Public/HUD/Interface/` |
-| Subsystems & pooling | `Source/GeoTrinity/Public/System/CLAUDE.md` |
-| Editor automation utils (StateTree/Widget builders) | `Source/GeoTrinityEditor/Public/Tool/CLAUDE.md` |
-| Details-panel customizations | `Source/GeoTrinityEditor/Public/Detail/CLAUDE.md` |
+| How a class / folder works, invariant, ordering, replication rule | the leaf folder's `CLAUDE.md` |
+| Cross-cutting design (networking, data structures, effects, cue transport) | `AI/Architecture.md` |
+| Code style, reuse rules, module / API-macro rules | `AI/CodingStyle.md` |
+| Build, compile check, editor config | `AI/Commands.md`, `AI/BuildPackage.md` |
+| What broke and why (post-mortem), silent-loss traps | `TroobleshootingLogs.md` |
+| Editor / Python / MCP technique or hazard | `AI/MCP/<topic>.md` (`AI/MCP/CLAUDE.md` → "Hazards") |
+| Look of shapes, colours, motion, VFX, materials | `AI/ArtDirection.md`, `AI/VFX.md`, `AI/Materials.md` |
+| UI rules, hand-edit protection | `AI/UI.md` |
+| Sound: spirit per boss, kits, delivery, reference campaign | `AI/SoundCreation.md`, `AI/Audio/CLAUDE.md`, `AI/MCP/Audacity/` |
+| Test and verification method | `AI/Testing.md` |
+| Anything only this feature's implementation needs (one-off steps, sources, assets to fetch, editor / Blueprint work) | `AI/Pending/<Feature>.md` |
+| How the agent must behave | this file ("Rules"), `AI/CLAUDE.md` ("Working rules") |
 
-## Source Structure (Every public folder has it's CLAUDE.md to explore)
+## Writing CLAUDE.md
+- Written in workflow step 3; the daily agent only does JavaDoc comments (`AI/Tasks/`).
+- A map, not documentation: purpose line, file → one-line role table, then only what code and comments do not say — intent, why, invariants, ordering, cross-class links.
+- Fragments, not sentences. The good way of doing; never "don't do X" history (a real pitfall goes to `TroobleshootingLogs.md`).
+- Pin-point down to the leaf folder; leaf = where the code's architecture is explained (the way we go, what we expect).
+- ≥ 3 files of one kind → own subfolder with its own `CLAUDE.md`. Keep each doc small enough to load whole.
+
+## Where things are
+| Need | File |
+|---|---|
+| Gameplay module map (`Source/GeoTrinity/Public`) | `Source/GeoTrinity/Public/CLAUDE.md` |
+| UI module (`GeoTrinityUI`) | `Source/GeoTrinityUI/Public/CLAUDE.md` |
+| Editor module (`GeoTrinityEditor`) | `Source/GeoTrinityEditor/Public/CLAUDE.md` |
+| Gameplay↔UI seam | `Source/GeoTrinity/Public/HUD/Interface/CLAUDE.md` |
+| Everything under `AI/` (topic docs, MCP, scripts, audio) | `AI/CLAUDE.md` |
+| Pending editor work of a feature | `AI/Pending/` |
+| Past issues and fixes | `TroobleshootingLogs.md` |
+
+## Modules
 ```
-Source/GeoTrinity/
-├── Public/ & Private/
-│   ├── AbilitySystem/
-│   │   ├── Abilities/
-│   │   │   ├── Base/          # GeoGameplayAbility, PatternAbility, AbilityPayload
-│   │   │   ├── Damaging/      # GeoProjectileAbility, GeoAutomaticFireAbility, GeoAutomaticProjectileAbility
-│   │   │   ├── Boss/          # GeoPeriodicFireAbility, GeoDevastatingWaveAbility, GeoSpawnPillarAbility,
-│   │   │   │                  #   GeoSweepBeamAbility, GeoTileBombAbility, GeoSpawnOnTileAbility (hex boss)
-│   │   │   ├── Pattern/       # Pattern, SpiralPattern, SpawnPillarPattern, DevastatingWavePattern,
-│   │   │   │                  #   BeamPattern, ConeSprayPattern (hex boss)
-│   │   │   ├── Circle/        # GeoHealingAuraAbility, GeoMoiraBeamAbility, GeoChargeBeamAbility, GeoHealReturnPassiveAbility, GeoSweetSpotChargePassiveAbility
-│   │   │   ├── Square/        # GeoShieldBurstPassiveAbility, GeoDetonateWallsAbility (wall uses shared GeoDeployAbility)
-│   │   │   ├── Triangle/      # GeoReloadAbility, GeoRecallTurretAbility
-│   │   │   └── Common/        # GeoDashAbility, GeoDeployAbility
-│   │   ├── AttributeSet/      # GeoAttributeSetBase, CharacterAttributeSet
-│   │   ├── Components/        # GeoAbilitySystemComponent
-│   │   ├── Data/              # AbilityInfo, EffectData, GeoAbilityTargetTypes, StatusInfo
-│   │   ├── ExecCalc/          # ExecCalc_Damage, ExecCalc_Heal
-│   │   ├── Globals/           # GeoAbilitySystemGlobals
-│   │   ├── Lib/               # GeoAbilitySystemLibrary, GeoGameplayTags
-│   │   └── Types/             # GeoAscTypes (FGeoGameplayEffectContext)
-│   ├── Actor/
-│   │   ├── Projectile/        # GeoProjectile, GeoPooledProjectile, GeoShieldBurstProjectile, DeployableSpawnerProjectile
-│   │   ├── Deployable/        # GeoDeployableBase, GeoWall, GeoHealingZone, GeoBuffPickup, GeoPillar, GeoMine, GeoBombZone
-│   │   ├── Turret/            # GeoTurret
-│   │   ├── GeoClassChangeTrigger.h
-│   │   ├── GeoEffectZone.h
-│   │   ├── GeoArena.h         # One boss encounter: its boss, its tags, its barrier. Base for every arena
-│   │   ├── GeoHexArena.h      # AGeoArena on destructible hex tiles (fall check gated on fight commit)
-│   │   ├── GeoDummyArena.h    # AGeoArena whose enemy never starts a match (training dummy)
-│   │   └── GeoInteractableActor.h
-│   ├── Characters/
-│   │   ├── Component/         # GeoCharacterMovementComponent, GeoDeployableManagerComponent, GeoGameFeelComponent, ShieldBurstPassiveComponent, GeoBeamVFXComponent
-│   │   ├── GeoCharacter.h
-│   │   ├── PlayableCharacter.h
-│   │   ├── EnemyCharacter.h
-│   │   └── PlayerClassTypes.h # EPlayerClass enum
-│   ├── AI/
-│   │   ├── StateTree/
-│   │   │   ├── Ability/       # STTask_FireAbility
-│   │   │   ├── Blackboard/    # STTask_UpdateBlackboard
-│   │   │   ├── Movement/      # STTask_MoveTo, GeoAITask_MoveTo, STTask_SelectNextFiringPoint, STTask_ChaseTarget
-│   │   │   ├── Property/      # STPropertyFunction_GetHealthRatio, STPropertyFunction_GetBlackboard
-│   │   │   └── Utility/       # STTask_SendEventAfterNCycles
-│   │   ├── GeoAIBlackboardComponent.h
-│   │   └── GeoEnemyAIController.h
-│   ├── HUD/Interface/        # Gameplay↔UI seam (UINTERFACEs implemented by GeoTrinityUI widgets):
-│   │                         #   GeoHUDInterface, GeoCombattantWidgetHost, GeoDeployGaugeWidgetInterface, GeoChargeBeamGaugeWidgetInterface, GeoDamageNumberHost
-│   ├── Input/                 # GeoInputComponent
-│   ├── Settings/              # GameDataSettings
-│   ├── System/                # GeoActorPoolingSubsystem, GeoPoolableInterface, GeoCombatStatsSubsystem, GeoSessionSubsystem
-│   ├── Tool/                  # UGeoGameplayLibrary, GeoAssetManager, Team, GeoColor (EGeoColor + FGeoColorParam)
-│   ├── World/                 # GeoGameCamera, GeoWorldSettings
-│   ├── Animation/             # GeoCameraShakeNotify, GeoDeathDebrisNotify, GeoLoopSoundNotify
-│   └── GameClasses/           # GeoGameMode, GeoGameState, GeoGameInstance, GeoPlayerController, GeoPlayerState
-└── (sibling modules)
-Source/GeoTrinityUI/           # Runtime UI module (Type=Runtime) — all HUD/widgets/menus. Depends on GeoTrinity; gameplay
-│                             # never depends on it (interface seam in GeoTrinity/Public/HUD/Interface). Excluded from the
-│                             # dedicated-server target so the server package ships no Slate/UMG.
-└── Public/ & Private/
-    └── HUD/                  # Component/ (GeoCombattantWidgetComp), Menu/ (GeoMainMenuWidget, GeoBrowseServersWidget,
-                              # GeoLocalConnectWidget, GeoCreateServerWidget, GeoServerRowWidget, GeoMenuButton), GeoHUD,
-                              # GeoOverlayWidget, GeoAbilityBarWidget, GeoAbilitySlotWidget, GeoUserWidget,
-                              # GenericCombattantWidget, GeoDamageNumberWidget, GeoDeployChargeGaugeWidget, GeoChargeBeamGaugeWidget, HudFunctionLibrary
-Source/GeoTrinityEditor/       # Editor-only module (Type=Editor) — UEditorUtilityObject automation utils kept out of packaged builds
-└── Public/ & Private/
-    ├── Tool/                  # GeoStateTreeBuilderUtil, GeoWidgetBuilderUtil, GeoHudWidgetBuilderUtil
-    └── Detail/                # Details-panel customizations (ExternalProjectileParamsCustomization)
+Source/GeoTrinity/        gameplay: AbilitySystem, Actor, AI, Characters, GameClasses, Gem, Input, Settings, System, Tool, World
+Source/GeoTrinityUI/      runtime UI: HUD, Menu, Style. Depends on GeoTrinity, never the reverse; excluded from the server target
+Source/GeoTrinityEditor/  editor only: builders, Details customizations, CSV sync, thumbnails
 ```
+Headers in `Public/`, sources mirrored in `Private/`.

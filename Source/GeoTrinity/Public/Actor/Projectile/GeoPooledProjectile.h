@@ -4,7 +4,7 @@
 
 #include "Actor/Projectile/GeoProjectile.h"
 #include "CoreMinimal.h"
-#include "System/GeoPoolableInterface.h"
+#include "System/Pooling/GeoPoolableInterface.h"
 
 #include "GeoPooledProjectile.generated.h"
 

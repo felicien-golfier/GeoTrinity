@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GameplayEffectTypes.h"
-#include "Tool/GeoColor.h"
+#include "Tool/Visual/GeoColor.h"
 
 #include "GeoAscTypes.generated.h"
 

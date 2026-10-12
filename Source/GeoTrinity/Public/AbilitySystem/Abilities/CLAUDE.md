@@ -1,34 +1,31 @@
 # Abilities
 
-All gameplay ability classes. Base for everything: `UGeoGameplayAbility` (`Base/GeoGameplayAbility.h`). Never use `UGameplayAbility` directly — bypasses StoredPayload, fire flow, CommitAbility, and cost infrastructure.
+Root of every ability. Parent class always `UGeoGameplayAbility` (`Base/`), never `UGameplayAbility`.
 
-## Subfolders
-| Folder | Contents |
+| Folder | Holds |
 |---|---|
-| `Base/` | `GeoGameplayAbility`, `PatternAbility`, `AbilityPayload` — see `Base/CLAUDE.md` |
-| `Damaging/` | `GeoProjectileAbility`, `GeoAutomaticFireAbility`, `GeoAutomaticProjectileAbility` |
-| `Boss/` | `GeoPeriodicFireAbility`, `GeoDevastatingWaveAbility`, `GeoSpawnPillarAbility`, `GeoSweepBeamAbility`, `GeoTileBombAbility`, `GeoSpawnOnTileAbility` — boss abilities |
-| `Pattern/` | `Pattern`, `SpiralPattern`, `SpawnPillarPattern`, `DevastatingWavePattern`, `BeamPattern`, `ConeSprayPattern` — deterministic enemy bullet patterns |
-| `Circle/` | `GeoHealingAuraAbility`, `GeoMoiraBeamAbility`, `GeoChargeBeamAbility`, `GeoHealReturnPassiveAbility`, `GeoSweetSpotChargePassiveAbility` |
-| `Square/` | `GeoShieldBurstPassiveAbility`, `GeoDetonateWallsAbility` (wall deploy uses shared `GeoDeployAbility`) |
-| `Triangle/` | `GeoReloadAbility`, `GeoRecallTurretAbility` |
-| `Common/` | `GeoDashAbility`, `GeoDeployAbility` — shared across all classes |
+| `Base/` | `GeoGameplayAbility`, `GeoChannelBeamAbility`, `PatternAbility`, `AbilityPayload` |
+| `Damaging/` | Projectile / auto-fire bases |
+| `Common/` | Shared by all classes: dash, deploy, triggered effect, deploy cues |
+| `Circle/` `Square/` `Triangle/` | Per-class kits (Healer / Tank / DPS) |
+| `Gem/` | Core-gem passives |
+| `Boss/` | Server-only boss abilities |
+| `Pattern/` | Enemy bullet/hazard pattern objects (`Projectile/`, `Hazard/`) |
 
-## Fire Flow (all abilities)
+## Fire flow
 ```
-ActivateAbility(TriggerEventData)  ← Origin/Yaw/ServerSpawnTime/Seed set from TriggerEventData; server already has this, no RPC yet
-  CommitAbility()                  ← cost + cooldown, once at activation
-  ScheduleFireTrigger()            ← waits FireDelay (or ChargeForFireDelay mode)
-    Fire()                         ← client: spawns predicted projectile
-      [optional] SendFireDataToServer()
-        OnFireTargetDataReceived() ← server-only: spawns authoritative projectile, updated values (e.g. current aim yaw)
+ActivateAbility(TriggerEventData)   payload set; server has it, no RPC
+  CommitAbility()                   cost + cooldown, once
+  ScheduleFireTrigger()             FireDelay or charge release
+    Fire()                          client: predicted spawn
+      [SendFireDataToServer()]      only when a value changes during FireDelay
+        OnFireTargetDataReceived()  server: authoritative spawn
 ```
-`SendFireDataToServer`/`OnFireTargetDataReceived` are optional — only needed when a value changes during `FireDelay` (e.g. aim direction).
 
-## Passive abilities
-Passives (`Ability.Type.Passive` tag) are server-owned: activated by `ReactivatePassiveAbilities()` (GiveLife), `NetSecurityPolicy = ServerOnly` in C++ constructor. Without it, a client-side `CancelAllAbilities()` on revive can kill the server's freshly reactivated instance.
+## Passives
+- Tag `Ability.Type.Passive`; server-owned, `NetSecurityPolicy = ServerOnly`.
+- Activated by `ReactivatePassiveAbilities()` on `GiveLife()`.
 
-## Effect Data on Abilities
-- `TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets` — shared/reused effects
-- `TArray<TInstancedStruct<FEffectData>> EffectDataInstances` — ability-specific inline effects
-- `GetEffectDataArray()` merges both for `ApplyEffectFromEffectData()`
+## Effects on abilities
+- `EffectDataAssets` = shared `UEffectDataAsset`s; `EffectDataInstances` = inline.
+- `GetEffectDataArray()` merges both → `ApplyEffectFromEffectData()`.

@@ -2,8 +2,8 @@
 
 #include "GeoTrinityEditorModule.h"
 
-#include "AbilitySystem/Data/GeoFXMoment.h"
-#include "AbilitySystem/Data/GeoSoundRow.h"
+#include "AbilitySystem/Data/FX/GeoFXMoment.h"
+#include "AbilitySystem/Data/FX/GeoSoundRow.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Detail/ExternalProjectileParamsCustomization.h"
 #include "Detail/GeoCurveSourceCustomization.h"
@@ -12,7 +12,7 @@
 #include "PropertyEditorModule.h"
 #include "Thumbnail/GeoIconThumbnailRenderer.h"
 #include "ThumbnailRendering/ThumbnailManager.h"
-#include "Tool/GeoIcon.h"
+#include "Tool/Visual/GeoIcon.h"
 
 IMPLEMENT_MODULE(FGeoTrinityEditorModule, GeoTrinityEditor)
 

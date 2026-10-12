@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Data/GeoCueParam.h"
+#include "AbilitySystem/Data/FX/GeoCueParam.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "CoreMinimal.h"
 #include "GameplayEffectTypes.h"

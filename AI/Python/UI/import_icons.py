@@ -43,6 +43,12 @@ ABILITY_ICONS = {
     "GA_Square_Special_SacrificeDetonate": "Square_MartyrsWrath",
     "GA_Square_Passive_ShieldBurst": "Square_ShieldBurst",
     "GA_DashAbility": "Dash",
+    # Core gem passives (Surplus, Overclock, Critical and Leverage grant no ability: their SVGs only feed the design)
+    "GA_Core_Bond": "Core_Bond",
+    "GA_Core_Relay": "Core_Relay",
+    "GA_Core_Wake": "Core_Wake",
+    "GA_Core_Split": "Core_Split",
+    "GA_Core_Kinship": "Core_Kinship",
 }
 # GameplayEffect class asset name -> status icon name; every effect data applying one of them shows it.
 EFFECT_ICONS = {

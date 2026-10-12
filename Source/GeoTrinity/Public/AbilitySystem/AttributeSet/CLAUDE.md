@@ -1,27 +1,28 @@
 # AbilitySystem/AttributeSet
 
-## `GeoAttributeSetBase.h` — shared attributes (all characters)
+| File | Role |
+|---|---|
+| `GeoAttributeSetBase.h` | All characters: `Health`, `MaxHealth`, `Shield`, meta `IncomingDamage` / `IncomingHeal` |
+| `CharacterAttributeSet.h` | Players only (on `AGeoPlayerState` beside the ASC) |
+| `GeoGemAttributeSet.h` | Stats only gems change; each starts at its no-gem value (multipliers at 1) |
 
-Attributes: `Health`, `MaxHealth`, `Shield`, `IncomingDamage` (meta), `IncomingHeal` (meta)
+## Base
+- `PreAttributeChange` clamps `Shield` to `[0, MaxHealth]`.
+- `PostGameplayEffectExecute`: sacrifice redirect, shield absorption, clamp health, report to `UGeoCombatStatsSubsystem`, end actor at 0.
+- Meta attributes: transient, written by ExecCalc, zeroed after `PostGameplayEffectExecute`, read nowhere else.
 
-- `PreAttributeChange()` clamps `Shield` to `[0, MaxHealth]` before any modification lands.
-- `PostGameplayEffectExecute()`: clamps `Health` to `[0, MaxHealth]`, reports damage/heal to `UGeoCombatStatsSubsystem`,
-  ends the actor at 0 health.
-- `GetHealthRatio()` — `Health/MaxHealth`, 0 when `MaxHealth = 0`.
-- Meta-attributes (`IncomingDamage`, `IncomingHeal`) are transient — accumulate ExecCalc result, reset to 0 after
-  `PostGameplayEffectExecute`. Never read outside it.
+## Character attributes
+| Attribute | Purpose |
+|---|---|
+| `Ammo` / `MaxAmmo` | Triangle basic attack cost |
+| `AppliedHealBoost` / `ReceivedHealBoost` | `ExecCalc_Heal` source / target multipliers |
+| `DamageMultiplier` / `DamageReduction` | `ExecCalc_Damage` source / target |
+| `MovementSpeedMultiplier` | `UGeoCharacterMovementComponent::ApplySpeedMultiplier()` |
+| `SacrificeValue` | Captured sacrifice damage; replicated, zeroed on death |
+| `HealCharge` | Circle sweet-spot gauge; replicated |
 
-## `CharacterAttributeSet.h` — player-only attributes
+## Gems
+- A new gem stat = one attribute here + its catalog row; `UGeoGemStatsEffect` lists every attribute of this set.
 
-Lives on `AGeoPlayerState` alongside the ASC.
-
-| Attribute                 | Purpose                                                                                                                                 |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `Ammo` / `MaxAmmo`        | Triangle's ammo; basic attack costs 1/shot                                                                                              |
-| `AppliedHealBoost`        | `ExecCalc_Heal` source multiplier (healer's outgoing boost)                                                                             |
-| `ReceivedHealBoost`       | `ExecCalc_Heal` target multiplier (recipient's incoming boost)                                                                          |
-| `DamageMultiplier`        | `ExecCalc_Damage` source multiplier                                                                                                     |
-| `DamageReduction`         | `ExecCalc_Damage` target reduction                                                                                                      |
-| `MovementSpeedMultiplier` | Read by `UGeoCharacterMovementComponent::ApplySpeedMultiplier()`                                                                        |
-| `SacrificeValue`          | Damage captured by Square's sacrifice channel, consumed on detonation. Replicated for HUD; zeroed on death                              |
-| `HealCharge`              | Heal accrued for Circle's `GeoSweetSpotChargePassiveAbility` gauge; full gauge boosts next sweet-spot release. Replicated for HUD gauge |
+## Death
+- Attribute delegates fire synchronously: a lethal `SetHealth` runs `OnHealthChanged` → match teardown before the rest of `PostGameplayEffectExecute` (direct-Health GEs even before it is called). End a match / fight from a death callback with `SetTimerForNextTick` (`AGeoArena::OnBossDefeated`); code after `SetHealth` may run after teardown.

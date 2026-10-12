@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Characters/Component/GeoDeploySatelliteComponent.h"
+#include "Characters/Component/FX/GeoDeploySatelliteComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "PlayerClassTypes.h"

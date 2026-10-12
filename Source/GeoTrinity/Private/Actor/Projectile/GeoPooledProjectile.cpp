@@ -5,7 +5,7 @@
 #include "Actor/Projectile/GeoProjectileFXComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "System/GeoActorPoolingSubsystem.h"
+#include "System/Pooling/GeoActorPoolingSubsystem.h"
 
 AGeoPooledProjectile::AGeoPooledProjectile()
 {

@@ -24,7 +24,7 @@
 #include "Components/Widget.h"
 #include "FileHelpers.h"
 #include "Animation/WidgetAnimation.h"
-#include "HUD/Menu/GeoMenuButton.h"
+#include "HUD/Menu/Frame/GeoMenuButton.h"
 #include "HUD/Style/GeoUITheme.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Materials/MaterialInterface.h"

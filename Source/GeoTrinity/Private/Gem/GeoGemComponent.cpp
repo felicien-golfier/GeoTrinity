@@ -6,7 +6,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Engine/LocalPlayer.h"
-#include "GameClasses/GeoPlayerState.h"
+#include "GameClasses/Match/GeoPlayerState.h"
 #include "GameFramework/GameState.h"
 #include "GameFramework/PlayerController.h"
 #include "Gem/GeoGemCatalog.h"

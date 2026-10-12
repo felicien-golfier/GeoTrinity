@@ -38,18 +38,11 @@ protected:
 	/** Undoes BindEvent. */
 	virtual void UnbindEvent(UGeoAbilitySystemComponent& HolderASC) PURE_VIRTUAL(UGeoCorePassiveAbility::UnbindEvent, );
 
-	/** Server, for a rule that fires on an event (Wake, Split, Kinship): true, and starts the cooldown, when the last true
-	 *  was at least CooldownSeconds ago and the TriggerChance roll passes. */
+	/** Server, for a rule that fires on an event (Wake, Split, Kinship): true, and applies the Cooldown GE (replicated, so
+	 *  the owning client's HUD sweeps it), when that GE is not running and the TriggerChance roll passes. */
 	bool TryTrigger();
-
-	/** Seconds after the rule fires before it can fire again; 0 for a rule with no cooldown. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Core", meta = (ClampMin = "0"))
-	float CooldownSeconds = 0.f;
 
 	/** Chance the rule fires each time its event happens off cooldown; 1 always fires. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Core", meta = (ClampMin = "0", ClampMax = "1"))
 	float TriggerChance = 1.f;
-
-private:
-	float LastTriggerTime = TNumericLimits<float>::Lowest();
 };

@@ -1,0 +1,213 @@
+// Copyright 2024 GeoTrinity. All Rights Reserved.
+
+#include "HUD/AbilityBar/GeoAbilitySlotWidget.h"
+
+#include "AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Components/TextBlock.h"
+#include "EnhancedInputSubsystems.h"
+#include "GameClasses/Match/GeoPlayerState.h"
+#include "HUD/Style/Frame/GeoFrame.h"
+#include "HUD/Style/Glyph/GeoIconImage.h"
+#include "HUD/Style/Meter/GeoMeter.h"
+#include "HUD/Style/GeoUITheme.h"
+
+namespace
+{
+	bool IsAutomaticFireAbility(FGameplayTag const& AbilityTag)
+	{
+		UGeoGameplayAbility const* const AbilityCDO = GeoASLib::GetAbilityCDO(AbilityTag);
+		return AbilityCDO && AbilityCDO->GetClass()->IsChildOf(UGeoAutomaticFireAbility::StaticClass());
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntries, AGeoHUD* InHUD)
+{
+	if (!ensureMsgf(InEntries.Num() > 0, TEXT("UGeoAbilitySlotWidget::InitSlot — no entries")))
+	{
+		return;
+	}
+
+	Entries = InEntries;
+	DisplayedIndex = 0;
+	HUD = InHUD;
+
+	AGeoPlayerState const* PlayerState = GetOwningPlayerState<AGeoPlayerState>();
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	FGeoClassStyle const* ClassStyle =
+		PlayerState && Theme ? Theme->FindClassStyle(PlayerState->GetPlayerClass()) : nullptr;
+	if (SlotFrame && ClassStyle)
+	{
+		SlotFrame->SetGlowTint(ClassStyle->Color);
+	}
+
+	SetCooldownFill(0.f);
+	SetCountdownVisible(false);
+	ApplyDisplayedEntry();
+	RefreshKeyLabel();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::SelectDisplayedEntry()
+{
+	// Last active-or-activatable entry wins so the armed follow-up (e.g. sacrifice detonate, gated by its
+	// ActivationRequiredTags) overrides the base ability; the first entry is the resting look.
+	int32 NewIndex = 0;
+	for (int32 Index = Entries.Num() - 1; Index > 0; --Index)
+	{
+		FGameplayTag const& Tag = Entries[Index].AbilityTag;
+		if (HUD->IsAbilityActive(Tag) || HUD->CanActivateAbility(Tag))
+		{
+			NewIndex = Index;
+			break;
+		}
+	}
+
+	if (NewIndex == DisplayedIndex)
+	{
+		return;
+	}
+	DisplayedIndex = NewIndex;
+	ApplyDisplayedEntry();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::ApplyDisplayedEntry()
+{
+	if (Icon)
+	{
+		Icon->SetIcon(DisplayedEntry().Icon);
+	}
+	if (CountText)
+	{
+		CountText->SetVisibility(DisplayedEntry().bIsDeployable ? ESlateVisibility::HitTestInvisible
+																: ESlateVisibility::Collapsed);
+	}
+	RefreshDeployCount();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::SetCountdownVisible(bool const bVisible)
+{
+	ESlateVisibility const Target = bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden;
+	if (CountdownText && CountdownText->GetVisibility() != Target)
+	{
+		CountdownText->SetVisibility(Target);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::SetCooldownFill(float const Fill)
+{
+	if (CooldownMeter)
+	{
+		CooldownMeter->SetFill(Fill);
+	}
+	if (SlotFrame)
+	{
+		SlotFrame->SetActive(Fill <= 0.f);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::RefreshKeyLabel()
+{
+	if (!KeyText || !DisplayedEntry().InputAction)
+	{
+		return;
+	}
+
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetOwningLocalPlayer());
+	if (!InputSubsystem)
+	{
+		return;
+	}
+
+	TArray<FKey> const Keys = InputSubsystem->QueryKeysMappedToAction(DisplayedEntry().InputAction);
+	FKey const Key = Keys.Num() > 0 ? Keys[0] : FKey();
+
+	// Re-queried every tick; only touch the text when the binding actually changed so idle slots stay cheap.
+	if (Key == CachedKey)
+	{
+		return;
+	}
+	CachedKey = Key;
+	KeyText->SetText(Key.IsValid() ? Key.GetDisplayName(false) : FText::GetEmpty());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+int32 UGeoAbilitySlotWidget::RefreshDeployCount()
+{
+	if (!DisplayedEntry().bIsDeployable || !HUD)
+	{
+		return 0;
+	}
+
+	int32 Current = 0;
+	int32 Max = 0;
+	HUD->GetDeployCountForAbility(DisplayedEntry().AbilityTag, Current, Max);
+	if (CountText)
+	{
+		CountText->SetText(FText::AsNumber(Current));
+	}
+	return Current;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySlotWidget::NativeTick(FGeometry const& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (!HUD || Entries.Num() == 0)
+	{
+		return;
+	}
+
+	SelectDisplayedEntry();
+	RefreshKeyLabel();
+
+	FGameplayTag const& AbilityTag = DisplayedEntry().AbilityTag;
+	float Remaining = 0.f;
+	float Duration = 0.f;
+	HUD->GetAbilityCooldown(AbilityTag, Remaining, Duration);
+
+	// A deploy ability's charges change on the refill timer, not on the manager's live-deployable event, so the badge
+	// is refreshed here every tick rather than only on the OnPlayerDeployCountChanged ping. The same charge count also
+	// gates the gray-out: the refill cooldown must only gray the slot at zero charges — while a charge is available the
+	// slot reads as ready.
+	if (RefreshDeployCount() > 0)
+	{
+		Remaining = 0.f;
+	}
+
+	// While the ability is active, keep the sweep fully filled so the slot reads as "in use". The cooldown (if any)
+	// takes over depleting it once the ability ends; an active ability with no cooldown stays grayed until it ends.
+	if (Remaining <= 0.f && !DisplayedEntry().bIsPassive && HUD->IsAbilityActive(AbilityTag)
+		&& !IsAutomaticFireAbility(AbilityTag))
+	{
+		SetCooldownFill(1.f);
+		SetCountdownVisible(false);
+		return;
+	}
+
+	// Ability is ready: clear the countdown text and the sweep fill. Both are normalized independently — the sweep
+	// can be left pinned full by the active branch above (which hides the countdown without filling it), so gating the
+	// sweep clear on the countdown's visibility would strand the fill at 1.0 until another ability drove a real
+	// cooldown. Setting an unchanged fill is a no-op, so idle slots stay cheap.
+	if (Remaining <= 0.f)
+	{
+		SetCountdownVisible(false);
+		SetCooldownFill(0.f);
+		return;
+	}
+
+	SetCooldownFill(Duration > 0.f ? Remaining / Duration : 1.f);
+
+	SetCountdownVisible(true);
+	if (CountdownText)
+	{
+		CountdownText->SetText(FText::FromString(FString::Printf(TEXT("%.1f"), Remaining)));
+	}
+}

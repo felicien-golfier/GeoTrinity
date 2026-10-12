@@ -1,37 +1,20 @@
 # Tool
 
-General-purpose utilities and helpers.
+| Folder / file | Holds |
+|---|---|
+| `UGeoGameplayLibrary.h` | `GeoLib` Blueprint-callable helpers |
+| `GeoAssetManager.h` | Custom asset manager (configured in `DefaultEngine.ini`) |
+| `Team.h` | `ETeam` for `IGenericTeamAgentInterface` |
+| `GeoDifficulty.h` | Run difficulty enum |
+| `Visual/` | `GeoColor`, `GeoIcon`, `GeoNiagaraParams` |
+| `Net/` | `GeoHazardJudge`, `GeoNetcodeDebug` |
 
-## `UGeoGameplayLibrary.h` (alias: `GeoLib`)
-Blueprint-callable static helpers:
-- `IsServer(...)` — true on dedicated **and** listen server. Always use this over `HasAuthority()`/`IsNetMode(NM_DedicatedServer)`.
-- `IsDedicatedServer(...)` — true only with no viewport. Use to gate cosmetic-only work (montages, local Gameplay Cues, VFX) — `!IsServer()` wrongly skips the listen-server host, which is a rendering player.
-- `IsLocalPlayerAvatar(APawn*/AActor*)` — true only for the viewing human's own avatar. On a listen server the host's AI pawns are also "locally controlled", so use this instead of `IsLocallyControlled()` for "my own pawn" cosmetics. In couch coop it is true for **every** local player, which is what cosmetics want.
-- `IsKeyboardMousePlayer(APlayerController*)` — local player 0, who always owns the keyboard and mouse (couch coop only ever *adds* a gamepad player, never takes the keyboard away). There is one mouse, so gate anything reading it (aim, cursor, keyboard-layout rebinds) on this, never on `IsLocalPlayerAvatar` — otherwise a mouse nudge steals both couch players' aim. Every other local player is gamepad-only.
-- `GetServerTime(...)` — network-approximated server time; **never** for local client timing (charge duration, UI) — use `GetWorld()->GetTimeSeconds()`.
-- `TriggerCameraShake(...)` — local player only.
-- `GetTargetPoints(WorldContext, PurposeTag, ArenaTag)` — `AGeoTargetPoint`s carrying both tags.
-- `GetAlivePlayers(WorldContext)` — every `APlayableCharacter` with a valid pawn and `!IsDead()`, found by iterating player controllers (same idiom as `AGeoGameState::HandleMatchHasStarted`).
-- `TeleportPlayersToTargetPoints(..., ExemptZoneName=NAME_None)` — round-robin teleport; no exempt zone means everyone moves (group respawn); pass a zone to skip pawns already standing inside it (arena fight-commit).
-- `GetColorForObject(Object)` — deterministic debug color.
-- `ArbitraryCharacterZ = 50.0f` — character spawn Z offset.
-
-## `GeoColor.h` — the one color param
-`EGeoColor` names the game's semantic color slots (`Damage`, `AllyDamage`, `LethalDamage`, `Heal`, `Shield`, `BothHealAndDamage`, `DamageReduction`, `DamageBoost`, `HealBoost`, `MoveSpeed`) plus `Override`. Slots name *what the effect does*, never *when* — there is no direct/over-time split, since a player reads the same meaning off a one-shot hit and a per-second drain. Damage is the one meaning that also splits on *who deals it*: `Damage` is incoming (enemy-owned, the thing to dodge) and `AllyDamage` is what the players put out, so a bullet's side is readable before it is close enough to matter. Nothing else splits that way — a heal is a heal whoever cast it. Both sides share one projectile class (`BP_GeoPooledProjectileBasic`), so the split is authored **at the spawn site**: the ally abilities set `ProjectileParams` head/trail to `AllyDamage` with their `EOverrideParam` toggles on `OverrideValue`, and everyone else falls through to the Blueprint's `Damage` default. That works only because pooled projectiles are `bReplicates = false` — every machine spawns its own and runs `ApplyProjectileParams` itself, so there is no simulated proxy to miss the override. On a *replicated* projectile (`BP_DeployableSpawnerProjectile`, `AGeoShieldBurstProjectile`) the same trick would be authority-only, since `AGeoProjectile::BeginPlay` applies `DefaultParams` on proxies — those must carry their color on the Blueprint. There is likewise **no telegraph slot**: a wind-up indicator zone always renders in the color of the effect it announces (`UDevastatingWavePattern` telegraphs in `AOEColor`, `UBeamPattern`'s wind-up keeps `BeamColor`), so a danger zone can never lie about what is about to land there. Enum properties serialize **by name** (`FEnumProperty::SerializeItem` → `TryLoadEnumValueByName`), so new slots may be inserted anywhere without shifting values already saved in assets. `FGeoColorParam` is what every authored color property is typed as: the slot + an `OverrideColor` shown **only** while the slot is `Override` (plain `EditCondition`/`EditConditionHides` — both properties are declared in the same struct, so no details customization is needed, unlike `FExternalProjectileParams`). Read it with `GetColor()`, never `OverrideColor`.
-Slots resolve through `UGameDataSettings::ColorPalette` (`TMap<EGeoColor, FLinearColor>`, Project Settings → Game Data Settings → Colors); a slot missing from the palette `ensureMsgf`s and falls back to white. The durable palette lives in `Config/DefaultGame.ini` under `[/Script/GeoTrinity.GameDataSettings]` as **one** `ColorPalette=((Key,(R=..)),(Key,(R=..)))` line — config *maps* take the single-line generic `ImportText` path in `UObject::LoadConfig`; only arrays and sets are read as repeated `+Prop=` lines. Default-constructed is `Override` + white, so a new param keeps whatever explicit color it is given until a designer picks a slot.
-Materials read the palette as a **texture**, not as parameters: `GeoColor::CreatePaletteTexture` bakes `ColorPalette` into a 1 x `SlotCount` transient texture, one texel per ordinal, and `AGeoGameCamera::ApplyOutlineMaterial` sets it on a MID of its `OutlineMaterial` alongside `PaletteSize`. A material can index a texture but not a name, so this is what makes the outline enum-agnostic — **adding an `EGeoColor` slot needs no material or asset work at all**, the texture just gets one more texel. `Override` must stay the last enum value: `SlotCount` is its ordinal, and every earlier one is a live stencil index. Nothing is authored anywhere, so both a retint and a new slot are a `ColorPalette` edit and nothing else; the flip side is that the palette only exists from `BeginPlay`, so the outline shows its default texture in the editor viewport.
-Current users: projectile head/trail (`FProjectileParamsBase`), `UGeoChannelBeamAbility::BeamColor`, `UBeamPattern::BeamColor`, `UDevastatingWavePattern::AOEColor`, `UGeoSweetSpotChargePassiveAbility::GaugeFullColor`, `UGeoReloadAbility::BuffColors`. Runtime/replicated colors (`UGeoBeamVFXComponent::BeamColor`, HUD entries) stay `FLinearColor` — they hold an already-resolved value.
-
-## `GeoNiagaraParams.h` — the one place Niagara user param names are spelled
-Namespace `GeoNiagaraParams`, one `inline FName const` per `User.*` parameter the C++ side writes (bullet radius/colors/trail, beam width/length/color, wave AOE radius/grow/color/annulus/fade). **Never type a param name at a call site** — add it here and reference it, so a rename is one edit and a typo can't hide (nothing validates these names: a wrong one silently leaves the system on its authored default). `FName` and not `constexpr` because `FName` has no constexpr constructor and every setter takes one. Names are stored fully qualified (`User.X`); the short form also works at runtime — `FNiagaraUserRedirectionParameterStore` redirects it — but the qualified form matches what the Niagara editor shows. Material / MPC parameter names stay local to their owner (e.g. `PillarRadiusParam` in `DevastatingWavePattern.cpp`), still as named constants, never literals.
-
-Also holds the shared preview<->beam asset-swap logic used by `UGeoBeamVFXComponent` and `UBeamPattern` (both drive a single `UNiagaraComponent` that telegraphs a windup with one asset, then swaps to the live-beam asset): `FBeamVfxAssetSet` (plain aggregate — `BeamSystem`/`PreviewSystem` pointers, `GetDesiredAsset(bWantPreview)`) plus `ApplySwappableAsset(Component, Assets, bWantPreview)`, which reassigns `Component`'s asset only when it actually differs (reassigning resets the system — desired on a real transition, wasted on a same-asset call). `FBeamVfxAssetSet` is not a `UPROPERTY` struct: each owner keeps its own authored fields (`UGeoBeamVFXComponent`'s `BeamSystem` replicates, its `IndicatorSystem` is a non-replicated class default; `UBeamPattern`'s two fields are both plain class defaults) and just assembles one at the call site to pass to the helper.
-
-## `GeoAssetManager.h`
-Custom asset manager subclass, configured in `DefaultEngine.ini`.
-
-## `Team.h`
-Team definitions and `ETeam` enum used by `IGenericTeamAgentInterface`.
-
-## Editor automation utilities (moved)
-`GeoStateTreeBuilderUtil`, `GeoWidgetBuilderUtil`, `GeoHudWidgetBuilderUtil` now live in the editor-only **`GeoTrinityEditor`** module so the project can package. See `Source/GeoTrinityEditor/Public/Tool/CLAUDE.md`.
+## GeoLib
+- `IsServer(...)`: dedicated and listen; use over `HasAuthority()`.
+- `IsDedicatedServer(...)`: gate cosmetic-only work (listen host renders).
+- `IsLocalPlayerAvatar(Pawn|Actor)`: the viewing human's own avatar; true for every couch-coop local player.
+- `IsKeyboardMousePlayer(PC)`: local player 0; gate anything reading the mouse.
+- `GetServerTime(...)`: network-approximated; never for local client timing (use `GetWorld()->GetTimeSeconds()`).
+- `GetPerceivedServerTime(Actor)`: target's own time for lag compensation (remote player = last processed move stamp, clamped to `MaxLatencyCompensation`).
+- `GetTargetPoints(World, PurposeTag, ArenaTag)`, `GetAlivePlayers(World)`, `TeleportPlayersToTargetPoints(..., ExemptZoneName)`, `TriggerCameraShake` (local), `GetColorForObject`, `ArbitraryCharacterZ = 50`.
+- Editor builders (StateTree/Widget) live in `GeoTrinityEditor`.

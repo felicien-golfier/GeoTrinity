@@ -1,37 +1,21 @@
 # AbilitySystem/Lib
 
-## `GeoAbilitySystemLibrary.h` — static helpers for GAS
+| File | Role |
+|---|---|
+| `GeoAbilitySystemLibrary.h` | Static GAS helpers (`GeoASLib`) |
+| `GeoGameplayTags.h` | Native tag constants |
 
-**Effect application** (always use this):
-- `ApplyEffectFromEffectData(EffectDataArray, SourceASC, TargetASC, Level, Seed, AbilityTag)` — two-pass: all `UpdateContextHandle` then all `ApplyEffect`. Fresh context per call = `SingleUseDamageMultiplier` auto-resets.
+## GeoASLib
+- **Effects**: `ApplyEffectFromEffectData(Array, SourceASC, TargetASC, Level, Seed, AbilityTag)` — two passes (all `UpdateContextHandle`, then all `ApplyEffect`); fresh context per call.
+- **Deployables**: `StartSpawnDeployable` (call `InitInteractable` before finish), `FillDeployableData`, `FinishSpawnDeployable`, `FullySpawnDeployable`.
+- **Projectiles** (pool-aware): `FullySpawnProjectile`, `StartSpawnProjectile` / `FinishSpawnProjectile`; both take only `FExternalProjectileParams` (applied via `ApplyProjectileParams`); `AdvanceProjectile(Elapsed)` compensates lag.
+- **Targeting**: `GetTargetDirections(Payload, Mode)`.
+- **Agents**: `GetInteractableActors(World, SourceTeam, AttitudeBitmask, …)`, `GetInteractableActorsInLine(…)` (2D beam segment), `IsTeamAttitudeAligned`.
+- `ETargetOverlapMode` (default `Automatic`): `Enemy` source → `CenterOnly`, others → `IncludeRadius`; line half-width always kept.
+- **Cues**: `ExecuteLocalGameplayCue(ASC, Tag, Params)` — this machine only, for cosmetics from logic already running everywhere.
+- **Context**: `GetStatusTag` / `SetStatusTag`; scoped fields via `FEffectData::UpdateContextHandle`.
+- **Abilities**: `GetAbilityCDO<T>(ASC, Tag)`, `GetGrantedAbility<T>(ASC)`.
 
-**Deployable spawning:**
-- `StartSpawnDeployable(...)` — deferred spawn; call `InitInteractable` before `FinishSpawnDeployable`
-- `FillDeployableData(...)` — populates `FDeployableData` without calling `InitInteractable` (for pre-edits like `BuffIndex`)
-- `FinishSpawnDeployable(Deployable, Transform)` — `FinishSpawning`, triggers `BeginPlay`
-
-**Projectile spawning** (pool-aware):
-- `FullySpawnProjectile(...)` — request from pool, init, advance position
-- `StartSpawnProjectile()`/`FinishSpawnProjectile()` — split spawn for deferred init. `StartSpawnProjectile`/`FullySpawnProjectile` take **only** `FGeoProjectileParams` (class + overrides) and apply it via `ApplyProjectileParams` — there is no raw `TSubclassOf` overload, so every spawn carries its params. `SpiralPattern` (requests from the pool directly, not through these) calls `Projectile->ApplyProjectileParams` itself
-- `AdvanceProjectile(ElapsedSinceServerSpawnTime)` compensates for replication lag
-
-**Targeting:**
-- `GetTargetDirections(Payload, TargetMode)` — Forward/AllPlayers modes
-
-**Team utilities — prefer over `SphereOverlapActors`/`OverlapMultiByChannel`:**
-- `GetInteractableActors(World, SourceTeam, AttitudeBitmask, ...)` — agents matching `ETeamAttitudeBitflag`, with typed/distance/damageable/predicate overloads
-- `GetInteractableActorsInLine(...)` — actors overlapping a 2D beam segment; used by beam abilities
-- `IsTeamAttitudeAligned(Agent1, Agent2)`
-- `ETargetOverlapMode` (trailing param on the distance/line overloads, default `Automatic`): whether a target's own `SimpleCollisionRadius` counts. Resolved **from the source team** (`ShouldIncludeTargetRadius`), not per-target attitude — `Enemy` source → `CenterOnly` (players hug the edge of harmful zones/beams), any other source (Player/Neutral/teamless) → `IncludeRadius`. Line half-width is always kept; the mode only gates the *target's* body radius.
-
-**GameplayCues:**
-- `ExecuteLocalGameplayCue(ASC, CueTag, CueParams)` — this-machine-only (`InvokeGameplayCueEvent(Executed)`); use for cosmetics from logic already running on every relevant machine — `ExecuteGameplayCue` would double-play on clients via listen-server multicast
-
-**Context helpers:** `GetStatusTag`/`SetStatusTag` — only BP-exposed `FGeoGameplayEffectContext` accessors; scoped fields set via `FEffectData::UpdateContextHandle`, not BP.
-
-**Ability CDO:** `GetAbilityCDO<T>(ASC, Tag)`, `GetGrantedAbility<T>(ASC)` (first granted T, e.g. resolving a class passive).
-
-## `GeoGameplayTags.h` — native gameplay tag declarations
-Key namespaces: `InputTag.*` (Basic/Deployable/Special/Reload/Dash), `Ability.*` (mirrors InputTag + Passive), `PlayerClass.*` (Triangle/Circle/Square), `Status.Buff.*` (DamageBoost/DamageReduction/HealBoost/Speed/Shield), `Ability.Spell.ShieldBurst`.
-
-All declared `FNativeGameplayTag` — use these constants, never string literals.
+## GeoGameplayTags
+- Namespaces: `InputTag.*` (Basic/Deployable/Special/Reload/Dash), `Ability.*`, `PlayerClass.*`, `Status.*`, `TargetPoint.*`, `Arena.*`, `AI.*`.
+- Tags added to `Config/Tags/GeoGameplayTags.ini` need an editor restart to resolve in Python.

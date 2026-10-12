@@ -2,7 +2,7 @@
 
 #include "Actor/Arena/GeoArenaBarrier.h"
 
-#include "GameClasses/GeoGameState.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "Net/UnrealNetwork.h"
 
 AGeoArenaBarrier::AGeoArenaBarrier()

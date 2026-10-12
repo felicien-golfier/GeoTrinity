@@ -11,16 +11,13 @@ class AGeoDeployableBase;
 
 /**
  * Passive of the Split Core: a deployable that lands from a throw places a copy of itself, with a fraction of its
- * health, at a random spot around it, at most once per CooldownSeconds. Only a throw can split, so a copy never splits
+ * health, at a random spot around it, at most once per its Cooldown GE. Only a throw can split, so a copy never splits
  * again.
  */
 UCLASS()
 class GEOTRINITY_API UGeoSplitPassiveAbility : public UGeoCorePassiveAbility
 {
 	GENERATED_BODY()
-
-public:
-	UGeoSplitPassiveAbility();
 
 protected:
 	/** Server: listens to the holder's OnDeployableLanded. */

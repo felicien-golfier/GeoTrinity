@@ -46,7 +46,7 @@ The value is the fraction **spent**, never remaining: custom primitive data nobo
 exactly that case — a `GeoEffectZone`, not a deployable, so nothing writes its slot.
 
 Claiming a new slot means picking an unused index and declaring it in `GeoMaterialParams`
-(`Source/GeoTrinity/Public/Tool/GeoNiagaraParams.h`), beside every other slot and every material and collection
+(`Source/GeoTrinity/Public/Tool/Visual/GeoNiagaraParams.h`), beside every other slot and every material and collection
 parameter name C++ writes; the material addresses the slot by index, so nothing warns when two features collide on
 one.
 
@@ -295,7 +295,7 @@ audible beat.
 ## Niagara Parameter Store
 
 Every `User.*` name the game code writes is declared once in
-`Source/GeoTrinity/Public/Tool/GeoNiagaraParams.h` — never spell one at a call site. Adding or renaming a user
+`Source/GeoTrinity/Public/Tool/Visual/GeoNiagaraParams.h` — never spell one at a call site. Adding or renaming a user
 parameter on a system means changing it there too, and nothing else will tell you: an unmatched name is silently
 ignored and the system keeps its authored default.
 
@@ -326,3 +326,11 @@ lerps from the spawn position to a user parameter, and the ribbon renderer trace
 drive it from two user parameters: set `Position Mode` to direct-set, link `Position` to the start parameter and
 `LerpPosition`'s far end to the end parameter. Dump the stage first for exact names; the two links and the
 switch all go through the builder utility rather than a route — see `AI/MCP/MCP_Niagara.md`.
+
+## Layers that render nothing
+Check these before suspecting the material, renderer or bounds. Read per-particle values with `fx.Niagara.Debug.Hud ShowParticleVariables=1 ShowParticlesVariablesWithSystem=1 MaxParticlesToDisplay=4 ParticleVariables=Position,SpriteSize,Color`.
+
+- **Mesh-sampled placement**: `SkeletalMeshLocation` needs `Allow CPUAccess` on the skeletal mesh's LOD 0 (`FSkeletalMeshLODInfo::bAllowCPUAccess`, mesh editor Asset Details only, not reachable from Python). Without it the DI logs "trying to use triangle sampling function ... no CPU access" and every particle collapses onto the emitter position, where an opaque character hides it: reads as "spawns nothing". Set it on every mesh an aura samples (`SKM_Cone` has it; `SKM_Cube`, `SKM_Cylinder`, `SKM_Star`, `SKM_HexBoss` did not at 2026-08-31).
+- **`SimpleSpriteBurst` template**: its `ScaleColor` module in Particle Update holds alpha at ~0 at every age; RGB stays as written, so the Details panel looks right. Disable it on every layer built from the template (`AI/Python/Niagara/empowerment_vfx.py`, `TEMPLATE_FADE`); particles then pop out instead of fading (a real ramp needs a curve input the shim cannot reach).
+- **Ribbon clump**: a ribbon whose particles share one position draws nothing (HUD still counts live particles). `Position Offset` on `LocationBasedRibbon` is ignored by its `Position Mode`; `RotateAroundPoint` turns every particle by the same angle. A strand spreads only if its owner moves (trail) or it is a **beam** (`BeamEmitterSetup` + `UpdateBeam`) with endpoints driven by cos/sin of time in the *emitter update* script: `NS_OrbitArc`, `NS_ChargedHalo`, `NS_VitalHalo`.
+- **Debug a dead layer**: spawn a known-good system beside it as a control, then check spread before anything else.

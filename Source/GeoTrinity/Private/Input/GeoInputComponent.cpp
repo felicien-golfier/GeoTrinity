@@ -9,7 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "VisualLogger/VisualLogger.h"
-#include "World/GeoGameCamera.h"
+#include "World/Camera/GeoGameCamera.h"
 
 UGeoInputComponent::UGeoInputComponent()
 {

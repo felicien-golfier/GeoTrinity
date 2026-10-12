@@ -6,7 +6,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
-#include "Tool/GeoNiagaraParams.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // ---------------------------------------------------------------------------------------------------------------------

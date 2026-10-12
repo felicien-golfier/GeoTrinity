@@ -1,50 +1,37 @@
 # MCP Audacity
 
-Audio editing through the `audacity` MCP server, which drives a running Audacity over its scripting pipe.
+Audio editing through the `audacity` MCP server, driving a running Audacity over mod-script-pipe.
 
-## Connecting
-
-- The server reaches Audacity through the mod-script-pipe module, so Audacity must be running with it enabled.
-- Enable it in Edit > Preferences > Modules, then restart Audacity — the module only loads at startup.
-- In `%APPDATA%\audacity\audacity.cfg` the module entry reads `1` when enabled; `4` means detected, never enabled.
-- Change the setting through Preferences, not the cfg — a running Audacity rewrites the cfg on exit.
-- Audacity may hold unsaved work: ask the user to restart it rather than doing it yourself.
-- The pipe is opened per call, so Audacity can start or restart mid-session without reconnecting the MCP client.
-- An unreachable pipe errors with `PIPE_NOT_FOUND`; reading the project's track info confirms the connection.
+## Connect
+- Module enabled in Edit > Preferences > Modules, then Audacity restarted (`audacity.cfg` module entry `1`).
+- Pipe opened per call: Audacity may start / restart mid-session. `PIPE_NOT_FOUND` = unreachable; project info confirms.
+- Unsaved work may be open: ask the user to restart it.
 
 ## Command model
+- A tool runs one scripting command on the focused project's selection (tracks + time region), not the newest window: read track names before every edit.
+- Results never describe the change: read tracks / clips back.
+- Project info with the `Commands` type lists real parameter names.
 
-- Each tool runs one Audacity scripting command against the current selection: selected tracks and a time region.
-- Commands go to the focused project window, not the newest one: a new project or a click by the user in another
-  window moves the target. Read the track names before every edit and stop if they are not the expected project's.
-- A rejected command reports only a generic failure, never a reason — check the selection first.
-- A success result does not describe the change; read tracks or clips back from project info to verify it.
-- An argument whose name Audacity does not know is dropped without error, and the effect keeps its last-used value.
-- Project info with the `Commands` type lists every command's real parameter names — the reference for any doubt.
-
-## Arguments that never reach Audacity
-
-| Tool argument | What Audacity expects instead |
+## Arguments that do not reach Audacity
+| Tool argument | Use instead |
 |---|---|
-| Generator `duration` (tone, chirp, noise) | No length parameter — the selected region sets it. |
-| Tone `waveform` | Its allowed list blocks Triangle and misspells `Square, no alias`; the misspelling makes Audacity generate its default 440 Hz sine at 0.8. Chirp passes both through. |
-| Adjustable fade `fade_type` | Never applies — the last-used direction runs; fade with the plain fade in or fade out. |
-| Distortion `threshold_db` | `Threshold dB`, `Parameter 1`, `Parameter 2` — only the type applies. |
-| Reverb `pre_delay` | `Delay`. |
-| Tremolo, every argument | `WAVE`, `PHASE`, `WET`, `LFO`. |
-| Compressor, every argument | `thresholdDb`, `compressionRatio`, `attackMs`, `releaseMs`, `makeupGainDb`. |
-| Limiter, every argument | `thresholdDb`, `makeupTargetDb`, `kneeWidthDb`, `lookaheadMs`, `releaseMs`. |
-| Track properties `track`, `gain`, `pan`, `mute`, `solo`; track mute | The index never applies — the name lands on the selected track, so select it first; the rest belong to the unexposed track-audio command. |
+| Generator `duration` | Selected region sets the length |
+| Tone `waveform` | Triangle is blocked and Square is misspelled (yields default 440 Hz sine); use Chirp, which passes both |
+| Adjustable fade `fade_type` | Plain fade in / out |
+| Distortion `threshold_db` | Only the type applies |
+| Reverb `pre_delay` | `Delay` |
+| Tremolo / Compressor / Limiter args | Audacity's own names (`WAVE`, `PHASE`, `WET`, `LFO`; `thresholdDb`, `compressionRatio`, `attackMs`, `releaseMs`, `makeupGainDb`; `makeupTargetDb`, `kneeWidthDb`, `lookaheadMs`) |
+| Track properties `track` / `gain` / `pan` / `mute` / `solo` | Name lands on the selected track: select first |
 
-## Generating audio
+## Generate and keep
+- Generators write into the selected region of the selected tracks; a new track starts selected.
+- Save with a path (plain save is rejected) before exporting; export writes selected tracks over the selected region.
+- Every layer on its own named track; never mix and render; export alone mixes.
 
-- Generators write into the selected time region of the selected tracks, so both must exist first.
-- A newly added track starts selected; select a time region on it, then generate.
-- The selected region sets the generated length; the duration argument does not create a selection.
-
-## Keeping the result
-
-- Every edit changes the open project only — save the project or export audio to keep it.
-- Export writes only the selected tracks over the selected time region; select all first to export the whole sound.
-- The plain save tool is rejected; save with a path, or ask the user to press Ctrl+S in the window.
-- Never mix and render: layers stay on separate named tracks, saved in the project; export alone does the mixing.
+## Traps
+- The focused project is the target: opening a new project does not reliably retarget and the user clicking another window moves it mid-work. Read track names before each generate / effect chain; if they belong to another project, stop and ask for the right window.
+- `track_resample` opens a modal "New sample rate" dialog and freezes the server after its 30 s timeout until `/mcp` reconnects: never call it.
+- New tracks come in at the default rate (48 kHz) even in a 44.1 kHz project; pasting 44.1 kHz audio silently resamples and snaps clips to the 48 kHz grid. Paste into tracks that already match the source rate.
+- `select_region` rejects start == end: place a paste cursor with `cursor_set_position`.
+- The server holds the pipe for its whole life: no second client can connect.
+- Save the `.aup3` before every `.wav` export; play the result through the transport so the user hears it before the next sound.

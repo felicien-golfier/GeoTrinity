@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
-#include "AbilitySystem/Data/GeoCueParam.h"
+#include "AbilitySystem/Data/FX/GeoCueParam.h"
 #include "Camera/CameraShakeBase.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"

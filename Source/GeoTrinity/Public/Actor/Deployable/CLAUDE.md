@@ -1,40 +1,44 @@
 # Actor/Deployable
 
-All deployable actors. **Base class: `AGeoDeployableBase`** — extend this for new deployables.
+Every deployable. Extend `AGeoDeployableBase` for a new one.
 
-## `GeoDeployableBase.h` — abstract base
-Drain GE, blink-before-expiry, recall, explode, Blueprint hooks.
+| Folder / file | Holds |
+|---|---|
+| `GeoDeployableBase.h` | Abstract base: drain, blink, recall, explode |
+| `GeoDeployableFXComponent.h` | Per-moment FX of a deployable |
+| `Wall/` | Square wall, draining health, consumed by Detonate |
+| `Turret/` | Triangle auto-firing turret |
+| `HealingZone/` | Circle area heal |
+| `BuffPickup/` | Reload buff pickup |
+| `Pillar/` | Boss pillar blocking the devastating wave |
+| `Mine/` | Hex-boss mine, fuse + burst |
+| `BombZone/` | Hex-boss tile bomb |
+| `Zones/` | `GeoEffectZone`: editor-placed capsule applying `EffectDataArray`; owns its ASC; heal/damage re-applied per tick (per-second magnitude), other types once on entry/exit |
 
-**Lifecycle:** spawned server-side by `ADeployableSpawnerProjectile::EndProjectileLife()` → `InitDrain()` computes drain rate → `Tick()` applies drain (server) → health/duration zero triggers blink timer → `Expire()` (hide, fire event, delayed destroy).
+## Lifecycle
+- Spawned server-side by `ADeployableSpawnerProjectile::EndProjectileLife()` → `InitDrain()` → server `Tick()` drains → zero health/duration starts blink → `Expire()` (hide, event, delayed destroy).
+- `Recall(Value)` is the only end-of-life path: `RecallEffect(Value)` then `Expire()`; non-server also fires the recall cue locally.
+- On hex arenas the fall-check recalls/expires anything over a dead tile; subclasses with recall side effects must account for it.
 
-**`Recall(Value)` is the only valid end-of-life path** — never call `Expire()`/`Destroy()` directly. Calls `RecallEffect(Value)` then `Expire()`; on non-server also fires the recall cue locally (safety path).
+## Override points
+- `RecallEffect(Value)`: server end-of-life behaviour (default none).
+- `ExplodeEffect(...)`: default applies `EffectDataArray` within `Params.Size`, lag-compensated through `JudgeExplosion` (`FGeoLagCompensatedEvent`, driven by `SetTimerForNextTick`); `TimeBeforeDestroyAtExpire` must outlive 2 × `MaxLatencyCompensation`.
+- `Explode(Value)`: server sphere overlap, `ExplodeAttitude` (default Hostile), `ExplodeOverlapMode` (Automatic = centre-only for Enemy casters).
 
-**Override points:**
-- `RecallEffect(Value)` — server-side "what happens at end of life" (default no-op).
-- `ExplodeEffect(...)` — default applies `EffectDataArray` to targets within `Params.Size`, lag-compensated: `JudgeExplosion` re-runs via `SetTimerForNextTick` (tick is off after `Expire`) and hits each player where it stood when replication showed it the blast (`FGeoLagCompensatedEvent`, see the rule in `AbilitySystem/Abilities/Pattern/CLAUDE.md`). Relies on `TimeBeforeDestroyAtExpire` outliving the 2 × `MaxLatencyCompensation` window.
-- `Explode(Value)` — server-only sphere overlap at `Params.Size`, filtered by `ExplodeAttitude` bitmask (default Hostile); call from inside `RecallEffect()` for an on-death explosion. `ExplodeOverlapMode` (`ETargetOverlapMode`, BP knob, default `Automatic`) sets whether targets' radius counts — `Automatic` is center-only for an `Enemy`-team caster (boss bomb) so players hug the edge.
+## Data and fields
+- `FDeployableData : FInteractableActorData`: `EffectDataArray`, `Params` (`BlinkDuration`, `LifeDrainMaxDuration`, `Size`, `Value`), `PredictionKey`, `AbilityTag`.
+- Replicated `*Data` is `COND_InitialOnly` on every concrete deployable.
+- `bUseRegularDrain` / `DrainMagnitudePerSecond`; `bAutoRecallAtEndLife`; `bPushActorsOnSpawn` (fight-spawned only; redirects to `FightCenter`).
+- `bUnlimitedDeploy` (default true, class CDO, exempt from slot limit); `bDestroyOldestWhenLimitReached`.
+- `bShowDamageNumbers` (implements `IGeoDamageNumberHost`; false = HUD never registers it).
+- `bSuppressDrainDamageVisuals`: drain cue only.
 
-**`FInteractableActorData`:** `Owner` = ASC/team-check source; `Instigator` = origin avatar for cue params/direction (may differ, e.g. boss minions).
+## FX
+- Never multicast recall/expiry cues: clients fire locally from `OnRep_Active`.
+- Sounds: per-BP `SoundMap` (`EDeployableSoundType`: Spawn / Blinking / Recall / Explode / Expire) of `FGeoSoundEntry`, played by `PlaySoundOneShot` next to that moment's `ExecuteCue`; cue tags are VFX only.
+- `CombattantWidgetComponent` auto-created from `GameDataSettings::CombattantWidgetComponentClass` on `WidgetAnchorComponent`; null on dedicated server; per-BP `HealthBarDrawSize` / `Location` / `WidgetClassOverride`.
 
-**VFX/cue rule — never multicast for recall/expiry:** clients fire the cue locally from `OnRep_Active` (bActive→false); server doesn't need to (OnRep doesn't run on the setter). One cue per client, no multicast.
-
-**Sounds — `SoundMap`, not cue tags:** per-BP `TMap<EDeployableSoundType, FGeoSoundEntry>` (`Spawn`/`Blinking`/`Recall`/`Explode`/`Expire`), played by `PlaySoundOneShot` through `UGeoSoundRowLibrary` (audience gating, instigator-relative volume, attribute-driven pitch — see `AbilitySystem/Data/CLAUDE.md`) right next to that moment's `ExecuteCue`, so it lands once per machine off the same paths as the cue (server at the call site, clients via `OnRep_Active`/`OnRep_Blinking`). Class-default data, so it needs no replication. Sound and cue are independent: a moment with **no** cue tag still plays its entry, and the cue tags are now VFX only — the old per-moment `*SoundTag` → `DT_GenericSound` fields are gone. A recall-with-explode fires `Explode` + `Recall` + `Expire` in that order, so only fill the entries that moment actually needs.
-
-**Spawn-push (`bPushActorsOnSpawn`):** server-only, disables capsule collision, root-motion-pushes overlapping characters outward, re-enables collision after 0.3s. A blocked push redirects toward the fighting arena's `FightCenter` — only fight-spawned deployables (boss pillar) use this flag, so a push with no active fight is a config bug.
-
-**Key fields:** `bUseRegularDrain`/`DrainMagnitudePerSecond`; `bAutoRecallAtEndLife` (Recall vs Expire at blink end); `bSuppressDrainDamageVisuals` (drain *cue* only — floating numbers are separate, see `bShowDamageNumbers`); `bShowDamageNumbers` (implements `IGeoDamageNumberHost`; false ⇒ HUD skips floating-number registration for this deployable entirely, incoming damage included — the only network-correct way to hide drain numbers, since `bSuppressDrainDamageVisuals`/`bSuppressGameplayCue` are server-side/non-replicated and never reach the client's number spawner); `bDestroyOldestWhenLimitReached` (oldest same-class deployable expired by `RegisterDeployable` when slot full — `CanDeploy` always true in this mode); `bUnlimitedDeploy` (default **true** — class is exempt from `GeoDeployableManagerComponent`'s slot/count limit entirely, checked via CDO so every machine agrees without replication; `AGeoBuffPickup` overrides to false so the reload buff shower can evict its oldest pickup via `bDestroyOldestWhenLimitReached`); `ExplodeAttitude`.
-
-**`CombattantWidgetComponent`** — world-space health bar, auto-created in the base constructor from `GameDataSettings::CombattantWidgetComponentClass` (soft class — gameplay never names the UI type), attached to `WidgetAnchorComponent`. Null on dedicated server. Bound to owner's ASC in `BeginPlay`. Per-BP tuning (`HealthBarDrawSize`/`Location`/`WidgetClassOverride`) is `EditDefaultsOnly` since the runtime-resolved component can't expose its own Details.
-
-**`FDeployableData`** (extends `FInteractableActorData`): `EffectDataArray`, `Params` (`FDeployableDataParams`: BlinkDuration, LifeDrainMaxDuration, Size, Value), `PredictionKey`, `AbilityTag` (forwarded to every effect application — lets e.g. turret retargeting detect the originating ability).
-
-## Subfolders
-- `Wall/` — draining-health wall, no block/trigger, consumed by Detonate.
-- `HealingZone/` — static HoT zone.
-- `BuffPickup/` — launched pickup, applies random buff on collect.
-- `Turret/` — auto-targets and fires on a timer.
-- `Pillar/` — blocks the boss's devastating wave; explodes via `Recall()` at zero health.
-- `Mine/` — hex-boss mine: drain-driven fuse, radial burst, defused if its tile dies.
-- `BombZone/` — hex-boss tile bomb: rides its carrier through the drain, plants + carves tiles at the blink.
-
-**On the hex arena, every deployable falls with its tile** — `AGeoHexArena`'s fall-check tick `Recall()`s anything over a destroyed tile, player-placed included. Subclasses with recall side effects (e.g. `AGeoMine`) must account for this path.
+## ASC replication
+- `AGeoInteractableActor`'s ASC is `Minimal` but a deployable is net-owned by its deployer: that client receives neither replicated cue `WhileActive` nor tags for its own deployables (works on the listen server and on other players' deployables).
+- Read deployable state through replicated members, not tags. Cue visuals spawn from both `OnActive` and `WhileActive` behind an idempotent guard. Target fix: `Mixed` on that ASC. Detail: `TroobleshootingLogs.md`.
+- Every concrete subclass overrides `GetData()` returning a non-null pointer to its own data `UPROPERTY` struct (`FTurretData`, `FBuffPickupData`, …): `Tick`, `GetDurationPercent`, `InitInteractableData` dereference it unchecked. Audit every subclass when touching the pattern. Spawn with `SpawnActorDeferred` + `FinishSpawning`.

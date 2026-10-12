@@ -57,3 +57,15 @@ it with a console command filtered to a system name prefix, and disable it when 
 | Place a row of systems, optionally on meshes, focus one, step them, show particle counts | `AI/Python/Runtime/vfx_editor_preview.py` |
 | Remember and restore the camera, write collection values, keep rendering while unfocused | `AI/Python/Runtime/vfx_editor_preview.py` |
 | Compare candidate layers of a material's stack by instruction count | `AI/Python/Material/compare_material_layers.py` |
+
+## Driving the editor window
+
+Only when the user asked for a test done by hand (root `CLAUDE.md`: no mouse or focus otherwise).
+
+- Window grab: enumerate top-level windows, match the editor by title (asset editors dock as tabs, so the main window title), `CopyFromScreen` its rect. Slate is captured too (Niagara stack, tooltips, Details, debug HUD); the viewport-capture tool times out with the UI flag outside a game viewport.
+- Level viewport only: the viewport-capture tool without the UI flag is cheaper, but the editor stops rendering unfocused, so every frame is stale. `Slate.bAllowThrottling 0` over the bridge plus `bThrottleCPUWhenNotForeground` on `/Script/UnrealEd.Default__EditorPerformanceSettings` (reachable only by that path) makes it live; restore both afterwards. Particles simulate either way.
+- Input: `SetCursorPos` + `mouse_event` + `SendKeys` for what Python cannot reach (a mesh LOD's Allow CPUAccess). Every helper calls `SetProcessDpiAwarenessContext(-4)` first or clicks land off on a secondary monitor.
+- Foreground refused: `PostMessage` `WM_MOUSEMOVE` / `WM_LBUTTONDOWN` / `WM_LBUTTONUP` with client coordinates straight to the dialog's HWND.
+- A modal dialog blocks the game thread: script calls time out until it is dismissed.
+- Two editors on one project: each holds a loader handle on every package it loaded; the other cannot save them until the first unloads (`EditorLoadingAndSavingUtils.unload_packages`).
+- Helpers live in the session scratchpad.

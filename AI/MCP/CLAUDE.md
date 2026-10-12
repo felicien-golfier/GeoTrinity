@@ -1,73 +1,53 @@
-# MCP / Python Editor Automation
+# MCP / Python editor automation
 
-Editor automation runs on two servers. The UE 5.8 built-in server (`unreal-mcp`) is the default for every read and
-for every write a toolset tool covers (Blueprint graphs, material graphs and instances, reflected properties, tables,
-tags); `mcp-unreal` `execute_script` runs Python — the scripts in `AI/Python/` and whatever no tool reaches — plus
-C++ `UEditorUtilityObject` shims for what Python cannot reach. `MCP_UnrealBuiltin.md` → "Which server" decides
-each case. Through Python, Blueprint CDO writes and asset creation go straight through; a protected C++ property,
-a template API or an editor subsystem with no Python binding needs the shim — see `MCP_EditorUtility.md`.
+Two servers: UE 5.8 built-in `unreal-mcp` (default for reads and every toolset-covered write: Blueprint graphs, material graphs, properties, tables, tags) and `mcp-unreal` `execute_script` (Python in `AI/Python/`, plus C++ `UEditorUtilityObject` shims for what Python cannot reach). Which one: `MCP_UnrealBuiltin.md` → "Which server".
 
 ## Prerequisites
-- The Unreal Editor must be open **before** starting Claude Code — MCP tools register at session start.
-- A failed `mcp-unreal` client never means the editor is unreachable — drive the bridge over HTTP on the `.mcp.json` port (`MCP_LiveCodingAndConnect.md`).
-- Tags added to `Config/Tags/GeoGameplayTags.ini` need an **editor restart** to resolve in Python.
-- A new `UFUNCTION`, new type or header change needs a full build with the editor closed; implementation-only
-  `.cpp` changes use Live Coding — see `MCP_LiveCodingAndConnect.md`.
-- Asset-mutating MCP tools change assets in memory only. Save dirty packages after, repeating until none
-  remain (`AI/Python/Asset/save_dirty_assets.py`); that pass also writes packages the editor itself dirtied, so save
-  by path when only the script's own assets should move.
+- Editor open before Claude Code starts (tools register at session start).
+- MCP client down → POST scripts to the bridge on the `.mcp.json` port (`MCP_LiveCodingAndConnect.md`).
+- New tags in `Config/Tags/GeoGameplayTags.ini` → editor restart.
+- New `UFUNCTION` / type / header change → full build, editor closed. Implementation-only `.cpp` → Live Coding.
+- MCP asset writes are in memory: save dirty packages after (`AI/Python/Asset/save_dirty_assets.py`), repeat until none remain; save by path when only the script's assets should move.
 
-## Reference files
+## Script rules
+- Multi-step or reusable work = `.py` in `AI/Python/<Topic>/`, referenced by path; run by compiling the file's own source.
+- A script with results writes them to a file the caller reads.
+- Re-runnable: free the target path first (rename aside; close its editor window; else rewrite in place).
+- Compile a Blueprint before saving class-default writes (`MCP_Blueprint.md`).
+- Comments: only what code cannot say (constraint, ordering, bound); docstrings one line.
+
+## Topic docs
 | Topic | File |
 |---|---|
-| Blueprint asset creation, CDO properties, instanced subobjects, curve assets, GameplayTag, components | `MCP_Blueprint.md` |
-| Material creation, node wiring, material layers, dry-running a build script, hard-edge fill patterns | `MCP_Material.md` |
-| Niagara emitter stack editing (modules, static switches, input values, dynamic inputs) | `MCP_Niagara.md` |
-| StateTree editing | `MCP_StateTree.md` |
-| Reading/authoring skeletal animation, montage structure, rig editing | `MCP_Animation.md` |
+| Blueprint assets, CDO, instanced subobjects, curves, tags, components | `MCP_Blueprint.md` |
+| Materials: creation, wiring, layers, dry-run | `MCP_Material.md` |
+| Niagara emitter stack | `MCP_Niagara.md` |
+| StateTree | `MCP_StateTree.md` |
+| Skeletal animation, montages, rigs | `MCP_Animation.md` |
 | C++ editor utility pattern | `MCP_EditorUtility.md` |
-| New enemy ability end-to-end (tag → BP → AbilityInfo → ASC → StateTree) | `MCP_NewEnemyAbility.md` |
-| Widget Blueprint creation, widget tree shim, WidgetComponent setup | `MCP_UI.md` |
-| Config-backed project settings and per-level settings (World Settings, GameMode override) | `MCP_Settings.md` |
+| New enemy ability end to end | `MCP_NewEnemyAbility.md` |
+| Widget Blueprints, widget tree shim | `MCP_UI.md` |
+| Project / per-level settings | `MCP_Settings.md` |
 | Reading the running game in PIE | `MCP_PIE.md` |
-| Judging a visual change in the editor world, without PIE | `MCP_Preview.md` |
-| Live Coding builds with the editor open, connecting the MCP bridge | `MCP_LiveCodingAndConnect.md` |
-| UE 5.8 built-in Unreal MCP: enabling, starting, connecting, toolsets, which server to use | `MCP_UnrealBuiltin.md` |
-| Audio editing in Audacity: connection, selection model, generators, arguments that never apply | `Audacity/CLAUDE.md` |
-| Building game sound effects in Audacity: layers, sound grammar, recipes, export to Unreal | `Audacity/GameSoundDesign.md` |
-| How audio models hear and make sound; measuring and picturing an exported sound; user words to fixes | `Audacity/ListeningToSound.md` |
-| Image editing in GIMP: connection, exec console drawing, verifying, export | `Gimp/CLAUDE.md` |
-| Authoring images in GIMP: canvas setup, building blocks, looks, game content, print pieces, export formats | `Gimp/ImageAuthoring.md` |
-| Video editing on FFmpeg: setup, how the model sees footage, Windows rules, which MCP tools to trust | `Video/CLAUDE.md` |
-| Turning a prompt into a video: finding moments, shorts, long cuts, montages, content from scratch | `Video/VideoEditing.md` |
-| DaVinci Resolve: setup, starting the bridge, addressing conventions, working rules, Resolve or FFmpeg | `Resolve/CLAUDE.md` |
-| Resolve tool map by area, Studio-only tools, local AI tools, end-to-end workflows | `Resolve/ResolveTools.md` |
-| Doc style rules for `.md` files in this folder | `MCP_DocStyle.md` |
+| Judging a visual change without PIE | `MCP_Preview.md` |
+| Live Coding, connecting the bridge | `MCP_LiveCodingAndConnect.md` |
+| UE built-in MCP: enable, connect, toolsets | `MCP_UnrealBuiltin.md` |
+| Audacity | `Audacity/CLAUDE.md`, `GameSoundDesign.md`, `ListeningToSound.md` |
+| GIMP | `Gimp/CLAUDE.md`, `ImageAuthoring.md` |
+| FFmpeg video | `Video/CLAUDE.md`, `VideoEditing.md` |
+| DaVinci Resolve | `Resolve/CLAUDE.md`, `ResolveTools.md` |
+| Doc style for this folder | `MCP_DocStyle.md` (read before editing docs here) |
 
-## Python scripts
-Multi-step or reusable operations go in `AI/Python/` as `.py` — reference by path, never paste inline. Run one
-by compiling and executing the file's own source in the editor rather than resending its text. Scripts sit in a
-topic subfolder, each one indexed with a one-line purpose in `AI/Python/CLAUDE.md`; read that before writing a
-new one, and put the new one in the folder matching what it touches.
+Motion rules in `MCP_Animation.md` before authoring an animation. Script index: `AI/Python/CLAUDE.md`.
 
-- Nothing a script prints comes back through the tool, and a script that raises still reports success — its
-  traceback goes to the editor log's Python category. A script with results to report writes them to a file the
-  caller reads.
-- A script that writes its assets before it reports leaves them written when the report raises, so a failed
-  report is not a failed build, and the traceback in the report file is the only sign of one.
-- A long script holds the editor's game thread, so every call times out until it returns — wait on the file it
-  writes rather than sending it again.
-- Every script is re-runnable, which means freeing the target path first: creating an asset over a name already
-  in use breaks in the editor rather than overwriting. A path the editor still holds refuses deletion, so free
-  it by renaming it aside; an asset whose own editor window is open refuses both, and only closing that window
-  frees it. That window closes from a script; the running editor itself never does. An asset whose path cannot
-  be freed at all is still rewritable in place — strip what it holds and add the new contents — which needs no
-  free path and keeps every reference to it intact.
-- A script that writes a Blueprint's class defaults compiles that Blueprint before saving it, or no instance ever
-  sees the write — `MCP_Blueprint.md`.
-- Comment only what the code cannot say: a constraint, an ordering, a bound. A few words, never prose, never
-  rationale. Docstrings are one line; a second only where a caller would otherwise get it wrong.
-
-## Before editing
-Read `MCP_DocStyle.md` before editing docs here, and the motion rules in `MCP_Animation.md` before authoring an
-animation.
+## Hazards (silent or fatal)
+- **Frozen editor**: the user's editor runs under Rider's debugger, so a failed `check` / `ensure` freezes it on a breakpoint (0% CPU, Not Responding, MCP calls time out, log stops at "Script Stack (0 frames)") rather than crashing; `CrashReportClientEditor` running proves nothing. Read Rider's window title and stack; never resume, stop or detach the debugger for the user, report the stopped line.
+- **Structs write through**: `get_editor_property("struct")` is bound to its object; every member `set_editor_property` writes and notifies, so a multi-member edit exposes inconsistent states the engine `check()`s on (material layers: `Blends.Num() == Layers.Num() - 1`). `.copy()`, edit, assign once.
+- **GameplayTag repr**: a tag (or a struct holding one) prints `{}` set or not; read with `export_text()` and cross-check `git show HEAD:<asset>` before dropping a property.
+- **T3D export**: export the Material itself to read constant inputs; never a subobject (`EditorOnlyData`) — fatal.
+- **Static mesh rebuild**: call `get_num_vertices(0)` before `build_from_static_mesh_descriptions` on a loaded mesh (waits out the async compile; otherwise Fatal "FRenderResource deleted without being released").
+- **Registry after save**: a re-saved asset still lists its old references until `scan_files_synchronous([file], True)`; rescan between save and a delete-if-unreferenced check.
+- **Blueprint node deletion**: `delete_node` over the bridge is blocked by the permission classifier; dump the graph, write the C++, hand the user the exact nodes to delete.
+- **Server RPCs run locally** from editor Python: `MCP_PIE.md`.
+- **Hand edits**: scripts never overwrite what the user changed by hand (`AI/UI.md`, `asset_guard`).
+- **MCP client down**: probe the bridge port before reporting automation unavailable (`MCP_LiveCodingAndConnect.md`).

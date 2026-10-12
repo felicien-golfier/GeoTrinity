@@ -5,8 +5,8 @@
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
-#include "HUD/Style/SGeoIconImage.h"
-#include "Tool/GeoIcon.h"
+#include "HUD/Style/Glyph/SGeoIconImage.h"
+#include "Tool/Visual/GeoIcon.h"
 #include "Widgets/Layout/SBox.h"
 
 // ---------------------------------------------------------------------------------------------------------------------

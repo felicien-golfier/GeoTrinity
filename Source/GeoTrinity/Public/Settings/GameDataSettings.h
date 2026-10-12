@@ -3,13 +3,13 @@
 #pragma once
 
 #include "AbilitySystem/Data/AbilityInfo.h"
-#include "AbilitySystem/Data/GeoCueParam.h"
+#include "AbilitySystem/Data/FX/GeoCueParam.h"
 #include "AttributeSet.h"
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
 #include "Settings/GeoGameUserSettings.h"
-#include "Tool/GeoColor.h"
+#include "Tool/Visual/GeoColor.h"
 
 #include "GameDataSettings.generated.h"
 

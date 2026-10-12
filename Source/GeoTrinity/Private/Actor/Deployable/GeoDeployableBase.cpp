@@ -23,7 +23,7 @@
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/GeoNiagaraParams.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

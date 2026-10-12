@@ -123,3 +123,17 @@ local-player-only bindings before `AddDynamic`.
 
 ## Debugging
 **No workarounds.** Find the root cause before proposing anything.
+
+## Reuse the sibling's solution
+- Before adding state or machinery to an ability, read how its siblings solve the same problem and lift that code. Client-timed firing: `UGeoAutomaticFireAbility` (client timer drives shots, one server float `NextAllowedShotTime` paces them, `GetCooldownTimeRemainingAndDuration` feeds the HUD).
+- State surviving activations: make the ability InstancedPerActor and keep a member; no struct or map on the ASC.
+- Generalise into `UGeoGameplayAbility` only when a second ability needs it, by moving the existing code, never a parallel version.
+
+## Modules
+- Cross-module symbols carry the module API macro (`GEOTRINITY_API DECLARE_LOG_CATEGORY_EXTERN(...)`). The Game target links monolithically and hides a missing export; the Editor target links each module as its own DLL and fails with `LNK2001`.
+- Validate a multi-module change with the **Editor** target, not only Game.
+
+## Engine habits
+- A `BlueprintNativeEvent` needs the `UFUNCTION` declaration and `virtual Foo_Implementation()` in the header; the `.cpp` defines `Foo_Implementation` (model: `OnBlinkStarted` in `GeoDeployableBase.h`).
+- Fix the root cause of a gravity / friction / movement problem; never suppress it with `SetMovementMode(MOVE_Flying)` or similar.
+- Read the engine header before using an engine API, never assume names (`Engine\Plugins\Runtime\<Plugin>\Source\<Module>\Public\`); model a new StateTree task on `FStateTreeDelayTask` / `FStateTreeMoveToTask`.

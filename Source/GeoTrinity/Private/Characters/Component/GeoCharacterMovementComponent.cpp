@@ -2,7 +2,7 @@
 
 #include "Characters/GeoCharacter.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/GeoNetcodeDebug.h"
+#include "Tool/Net/GeoNetcodeDebug.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void FGeoSavedMove_Character::Clear()

@@ -136,3 +136,14 @@ compiled result stays stale.
 |---|---|
 | Duplicate a system, add a module with switches, set its inputs, nest dynamic inputs, dump a stage, probe a switch's accepted entries | `AI/Python/Niagara/niagara_stack_edit.py` |
 | Decode a rapid-iteration store fetched from the Remote Control property API | `AI/Python/Niagara/decode_niagara_parameters.py` |
+
+## Failure modes
+
+- A wrong name (missing input, missing function, component-count mismatch, non-matching static switch entry) is an `ensure`: returns false, the script carries on; under a debugger each halts the game thread, once per call site per session.
+- Feeding an input that is already fed is a `checkf` and takes the editor down. A link or a nested dynamic input may be written once per input, ever; plain values are idempotent. A re-runnable script splits its passes: build links, retune values only (`AI/Python/Niagara/charged_halo_beat.py`: `main()` links, `retune()` never does).
+- Static switch defaults store the enum entry name (`NewEnumerator1`), not its display name: resolve display names through the enum's display-name lookup.
+- Dump the stack (`ListStack`) before any mutation: it prints switches with values and value inputs with types.
+- Dynamic inputs whose graph drives the input itself cannot be written: `Cosine` / `Sine` `Normalized Angle` (period is the only rate control; a phase offset is nested into the cosine's `Bias`), `Waveform` `Global Phase`.
+- `Waveform` is the one dynamic input that carries a per-particle travelling wave: link its `[1] Input Position` to a particle attribute. The level it swings round is `[1] Bias`; `[1] Amplitude Min/Max` is the range the amplitude is drawn from (a wide pair rolls a height per read). Open `Global Clamp Min/Max` (narrow default clips the swing) and set `Global Amplitude Scale` explicitly.
+- `BeamEmitterSetup` adds `Beam Start` into `Beam End`: the end is a displacement, not a place.
+- Template `SimpleSpriteBurst`'s `ScaleColor` zeroes alpha (`AI/VFX.md`, "Layers that render nothing").

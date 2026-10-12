@@ -1,19 +1,20 @@
 # AbilitySystem
 
-All GAS infrastructure: abilities, attributes, execution calculations, effect data, library, tags, custom context.
+All GAS: abilities, attributes, effect data, exec calcs, library, tags, effect context.
 
-## Subfolders
-| Folder | What's inside |
+| Folder | Holds |
 |---|---|
-| `Abilities/` | All gameplay ability classes — see `Abilities/CLAUDE.md` |
-| `AttributeSet/` | `GeoAttributeSetBase` (all chars), `CharacterAttributeSet` (players) |
-| `Components/` | `UGeoAbilitySystemComponent` — custom ASC |
-| `Data/` | `AbilityInfo` catalog, `EffectData` polymorphic effects, `GeoAbilityTargetTypes`, `StatusInfo` |
-| `ExecCalc/` | Damage and heal execution calculations |
-| `Globals/` | `GeoAbilitySystemGlobals` — allocates custom effect context |
-| `Lib/` | `GeoAbilitySystemLibrary` (helpers), `GeoGameplayTags` (native tags) |
-| `Types/` | `GeoAscTypes` — `FGeoGameplayEffectContext` |
+| `Abilities/` | Every gameplay ability + enemy patterns → `Abilities/CLAUDE.md` |
+| `AttributeSet/` | Base / player / gem attribute sets |
+| `Components/` | `UGeoAbilitySystemComponent` |
+| `Data/` | `AbilityInfo` catalog, `EffectData`, target-data RPC struct; `FX/` = cue/sound/VFX param structs |
+| `ExecCalc/` | Damage and heal math |
+| `Globals/` | `GeoAbilitySystemGlobals` — allocates `FGeoGameplayEffectContext`, fills cue params |
+| `Lib/` | `GeoAbilitySystemLibrary` helpers, `GeoGameplayTags` native tags |
+| `Types/` | `FGeoGameplayEffectContext` |
 
-## Key Rules
-- Always apply effects via `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()` — never apply GEs directly. Two-pass: all `UpdateContextHandle()` first, then all `ApplyEffect()`.
-- Never use `SphereOverlapActors`/`OverlapMultiByChannel` to find game agents — use `GeoASLib::GetInteractableActors(...)` (iterates ~20 relevant actors, skips the physics scene).
+## Rules
+- Apply effects only through `UGeoAbilitySystemLibrary::ApplyEffectFromEffectData()`.
+- Find agents with `GeoASLib::GetInteractableActors*`; never physics overlaps.
+- Tags: `FNativeGameplayTag` constants from `GeoGameplayTags`, never string literals.
+- Gems: `Abilities/Gem/`, `AttributeSet/GeoGemAttributeSet`, `Gem/` module folder.

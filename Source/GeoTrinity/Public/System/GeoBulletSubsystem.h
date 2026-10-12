@@ -8,7 +8,7 @@
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "Tool/GeoHazardJudge.h"
+#include "Tool/Net/GeoHazardJudge.h"
 
 #include "GeoBulletSubsystem.generated.h"
 
