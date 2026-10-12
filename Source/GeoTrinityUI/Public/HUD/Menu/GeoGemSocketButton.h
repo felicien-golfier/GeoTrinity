@@ -24,6 +24,7 @@ public:
 	/** Strips the button's own brushes and wraps it around InGlyph, socket InSocketIndex of GeoGem::GetSockets(). */
 	void InitSocket(int32 InSocketIndex, UGeoGemGlyph* InGlyph);
 
+	/** Returns the glyph widget this socket button wraps. */
 	UGeoGemGlyph* GetGlyph() const { return Glyph; }
 
 	FGeoGemSocketPickedSignature OnPicked;
