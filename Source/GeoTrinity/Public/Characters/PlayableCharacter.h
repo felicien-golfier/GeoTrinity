@@ -109,12 +109,16 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	// GAS //
+	/** Binds the ASC from PlayerState and grants the starting class's abilities. */
 	virtual void InitGAS() override;
 	// END GAS //
 
+	/** Notifies the GameState that this player is down, then calls StopCharacter. */
 	virtual void DeathLogic() override;
+	/** Resets abilities and effects, re-applies class data, and calls GiveLife then RestartCharacter. */
 	virtual void ReviveLogic() override;
 
+	/** Triggers the death sequence when health reaches zero. */
 	UFUNCTION()
 	void OnHealthChanged(float NewValue);
 

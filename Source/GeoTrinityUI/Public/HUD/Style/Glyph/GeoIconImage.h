@@ -21,6 +21,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoIcon")
 	void SetIcon(UGeoIcon const* InIcon);
 
+	/** Sets the width and height asked of the layout; the icon fits whatever box it is given. */
 	UFUNCTION(BlueprintCallable, Category = "GeoIcon")
 	void SetSize(float InSize);
 
