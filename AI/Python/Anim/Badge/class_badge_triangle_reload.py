@@ -12,7 +12,7 @@ The turn is a yaw of the top and bottom layers together, which share their place
 go round with the arrowhead instead of being swept through. The root and the fire sockets on it stay put. The
 montage goes in the full-body slot, over the auto-fire and any body turn: the badge is spinning as a whole.
 
-Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/class_badge_wiring.py.
+Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/Badge/class_badge_wiring.py.
 Re-runnable: rewrites the sequence and the montage in place. Report written to AI/Output/class_badge_triangle_reload.txt.
 """
 import math

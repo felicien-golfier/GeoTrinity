@@ -6,7 +6,7 @@ The one table every page uses (UGeoTableWidget): WBP_Table carries the look, a p
 
 Never overwrites a hand edit: WBP_Table is built only when created, a replaced widget goes only when it carries no
 hand edit, and every value goes through asset_guard.write.
-Usage: imported by character_sheet.py and gems_page.py, which build WBP_Table before their pages; after ui_theme.py.
+Usage: imported by character_sheet.py and Gem/gems_page.py, which build WBP_Table before their pages; after ui_theme.py.
 """
 import importlib
 import os

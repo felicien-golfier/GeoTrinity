@@ -11,8 +11,17 @@
 
 
 class UGameplayAbility;
+class UGeoGameplayAbility;
 class UGeoIcon;
 class UInputAction;
+
+namespace GeoDescription
+{
+/** Text with every {Token} replaced by its live value on AbilityCDO, or on UGameDataSettings for a name the ability
+ * lacks (token syntax: AI/AbilityDescriptions.md). Shared by ability descriptions and gem effect texts. */
+GEOTRINITY_API FString ResolveTokens(FString const& Text, UGeoGameplayAbility const& AbilityCDO, int32 AbilityLevel,
+									 bool bRichTextValues);
+} // namespace GeoDescription
 
 /** One cell of an ability's stat grid: what is measured and its resolved value. */
 struct FGeoAbilityStat

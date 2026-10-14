@@ -32,5 +32,5 @@ private:
 	/** Health the ally's deployable starts with, as a share of its max health. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Kinship",
 			  meta = (ClampMin = "0.01", ClampMax = "1"))
-	float StartHealthRatio = 1.f;
+	float StartHealthRatio = 0.5f;
 };

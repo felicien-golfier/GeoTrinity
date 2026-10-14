@@ -25,7 +25,7 @@ ahead. Every roll is a whole one.
 Each ability plays Start stretched to its FireDelay and keeps that play rate for what follows, so everything is
 authored at 30 fps against that rate.
 
-Run AFTER AI/Python/Mesh/rig_class_badges.py and AI/Python/Anim/class_badge_square_fire_piston.py, via mcp-unreal
+Run AFTER AI/Python/Mesh/rig_class_badges.py and AI/Python/Anim/Badge/class_badge_square_fire_piston.py, via mcp-unreal
 execute_script. Re-runnable: rewrites both sequences and montages in place. Report written to
 AI/Output/class_badge_square_sacrifice.txt.
 """

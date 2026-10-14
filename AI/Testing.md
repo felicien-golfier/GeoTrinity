@@ -2,7 +2,7 @@
 
 Research notes (2026-10-06) on writing and running Unreal automation tests for GeoTrinity, so an agent can write
 a test, run it, read the failures and fix them in a loop. **Status:** option A (headless runner) is set up:
-`Tools\Run_Tests.bat`. Tests so far: `Source/GeoTrinity/Private/Tests/GeoGemTests.cpp`, `GeoAbilityReadyTests.cpp`, `GeoIncomingDamageTests.cpp` (same folder).
+`Tools\Run_Tests.bat`. Tests so far: `Source/GeoTrinity/Private/Tests/GeoGemTests.cpp`, `GeoAbilityReadyTests.cpp`, `GeoIncomingDamageTests.cpp`, `GeoTestDeployable.h` (same folder).
 
 ## Test layers
 
@@ -76,6 +76,30 @@ Also check that the expected tests **actually ran**: an empty filter match "succ
 - Reports and the log go to `AI/Output/Tests` (via `-ReportExportPath` and `-abslog`).
 - The engine still writes its own files into `Saved/`. That cannot be avoided, and nothing there may be read or
   relied on.
+
+## Spawning a deployable in a test
+
+Any test that needs a deployable spawns a real one, through the production funnel, never a hand-built stand-in.
+Model: `GeoTrinity.Deployable.StartHealth` in `GeoGemTests.cpp`.
+
+- **Class**: `AGeoTestDeployable` (`Private/Tests/GeoTestDeployable.h`), a concrete transient `AGeoDeployableBase`.
+  `AGeoDeployableBase` is `Abstract` and gets its health from a Blueprint's `DefaultAttributes`, so the fake carries
+  its own (`UGeoTestDeployableAttributes`: 100 MaxHealth / Health) and stores its own `FDeployableData`.
+  Need another behaviour (a drain, an explosion, a pickup)? Add a test subclass or extend this header; never skip the funnel.
+- **World**: `UWorld::CreateWorld(EWorldType::PIE, false)`, `SetPlayInEditorInitialNetMode(NM_ListenServer)`, a world
+  context, `World->InitializeActorsForPlay(FURL())` + `World->GetWorldSettings()->NotifyBeginPlay()` (`World->BeginPlay()` does nothing without a GameMode) (without them no actor gets `BeginPlay`, so no default attributes), then `GEngine->DestroyWorldContext(World)` / `World->DestroyWorld(false)` at the end. Server-only code
+  (`GeoLib::IsServer`) needs the listen-server mode.
+- **Deployer**: `World->SpawnActor<AGeoTestDeployer>()` (same header): a pawn owning an ASC, as owner and avatar. `StartSpawnDeployable` needs an owner and an `APawn` instigator, and spawn cues resolve the instigator's avatar through its ASC. Grant its ASC the abilities the test goes through.
+- **Spawn**: fill an `FDeployableData` (`Owner`, `Instigator`, `Params.*`) and call
+  `GeoASLib::FullySpawnDeployable(AGeoTestDeployable::StaticClass(), Data, FTransform::Identity)`. Read attributes
+  with `GetAbilitySystemComponent()->GetNumericAttribute(...)`.
+- **Ability path**: grant the deployer `UGeoTestDeployAbility` (same header; deploys `AGeoTestDeployable`, brings its own
+  charge-pool cooldown effect) with `ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestDeployAbility::StaticClass(), 1))`,
+  then `GeoASLib::SpawnDeployableFromAbility(*ASC, Location, StartHealthRatio)`. Model:
+  `GeoTrinity.Deployable.StartHealthFromAbility`. A test needing another ability or deployable adds a test subclass
+  to that header (set native-tag-dependent data when the ability is granted, never in a constructor: native tags
+  do not exist yet then).
+- A new test class needs a full editor restart to register (see Conventions).
 
 ## Agent loop
 

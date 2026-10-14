@@ -12,7 +12,7 @@ slot group of its own, so starting one never stops the other.
 The badge idle feeds the bottom slot, and so every layer. Both slots keep ticking it under a montage, so the idle
 picks up where it would have been.
 
-Run AFTER AI/Python/Mesh/rig_class_badges.py and AI/Python/Anim/class_badge_idle.py, via mcp-unreal
+Run AFTER AI/Python/Mesh/rig_class_badges.py and AI/Python/Anim/Badge/class_badge_idle.py, via mcp-unreal
 execute_script. Needs the editor shim's BuildLayeredAnimGraph. Re-runnable: the graph is rebuilt in place. Report
 written to AI/Output/class_badge_anim_bp.json.
 """

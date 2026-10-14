@@ -7,9 +7,10 @@
 #include "AbilitySystemComponent.h"
 #include "Components/TextBlock.h"
 #include "GameClasses/Match/GeoPlayerState.h"
-#include "HUD/Style/Meter/GeoMeter.h"
-#include "HUD/Style/Glyph/GeoShape.h"
 #include "HUD/Style/GeoUITheme.h"
+#include "HUD/Style/Glyph/GeoShape.h"
+#include "HUD/Style/Meter/GeoMeter.h"
+#include "HUD/Team/GeoXpStripWidget.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoPlayerCardWidget::InitForPlayer(AGeoPlayerState* InPlayerState)
@@ -25,6 +26,10 @@ void UGeoPlayerCardWidget::InitForPlayer(AGeoPlayerState* InPlayerState)
 		NameText->SetText(FText::FromString(InPlayerState->GetPlayerName()));
 	}
 	InitializeWithAbilitySystemComponent(InPlayerState->GetAbilitySystemComponent());
+	if (XpStrip)
+	{
+		XpStrip->InitForPlayer(InPlayerState);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -57,7 +62,8 @@ void UGeoPlayerCardWidget::RefreshStats()
 
 	if (ShieldText && OwnerASC.IsValid())
 	{
-		int32 const Shield = FMath::RoundToInt(OwnerASC->GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute()));
+		int32 const Shield =
+			FMath::RoundToInt(OwnerASC->GetNumericAttribute(UGeoAttributeSetBase::GetShieldAttribute()));
 		ShieldText->SetVisibility(Shield > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 		ShieldText->SetText(FText::Format(ShieldFormat, FText::AsNumber(Shield)));
 	}
@@ -69,6 +75,10 @@ void UGeoPlayerCardWidget::ShowClass(EPlayerClass const PlayerClass)
 	UGeoUITheme const* Theme = UGeoUITheme::Get();
 	FGeoClassStyle const* ClassStyle = Theme ? Theme->FindClassStyle(PlayerClass) : nullptr;
 	ShownClass = PlayerClass;
+	if (XpStrip)
+	{
+		XpStrip->Refresh();
+	}
 	if (ClassStyle && ClassShape)
 	{
 		ClassShape->SetClassShape(*ClassStyle);

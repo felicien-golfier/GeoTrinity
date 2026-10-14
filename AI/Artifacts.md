@@ -1,0 +1,13 @@
+# Artifacts
+
+Claude.ai artifacts the user means by "the artifact", "the doc", "history". Read them with the `Artifact` tool (`action: "read"`) or the Claude Docs tools, never WebFetch.
+
+| Name | Link | Role |
+|---|---|---|
+| Gems UI | https://claude.ai/artifact/UrHCWS7YbX3PbbrLX85h1q#page-dcb81aee8d83 | Gem UI design artifact; "the UI artifact" |
+| Gems doc | https://claude.ai/artifact/SQYwGjtE7bspcCA5KKV67K#7a523923-3535.m5j08tmcn2j.13694 | "GeoTrinity — Gem System" doc; synced with `Data/gems.csv` via `gem-csv-to-doc` / `gem-doc-to-csv` |
+| History | https://claude.ai/artifact/JyVvjNov9R4MQPkXfpQMrt | Archive of retired content |
+
+## History
+- "Move that to history", "to old", "archive it" (or similar) → append the content to the History artifact, then remove it from its source.
+- Append only; keep the source name and date on each entry.

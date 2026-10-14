@@ -78,7 +78,7 @@ material scripts build their graphs through the toolkit `AI/Python/Material/mate
 - The material reads the stack through its material-attributes input, with use-material-attributes on.
 - An instance's own stack has no Python surface. An editor-utility shim puts a layer in one of its slots, unlinked
   from the parent's so it stays while every other layer keeps following the parent (`MCP_EditorUtility.md`,
-  `AI/Python/Material/make_background_look_instances.py`). Swapping a layer in the base's stack previews it on every
+  `AI/Python/Material/Background/make_background_look_instances.py`). Swapping a layer in the base's stack previews it on every
   instance that keeps the base's stack.
 - The toolkit builds a whole stack in one assignment and swaps one layer of an existing one;
   `AI/Python/Material/compare_material_layers.py` compiles candidate layers in one slot and reports each one's

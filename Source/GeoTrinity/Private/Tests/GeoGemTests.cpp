@@ -1,16 +1,20 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
-#include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Algo/Count.h"
+#include "Curves/CurveFloat.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/WorldSettings.h"
 #include "GameplayEffect.h"
 #include "GameplayEffectComponents/TargetTagsGameplayEffectComponent.h"
 #include "Gem/GeoGemCatalog.h"
@@ -18,6 +22,7 @@
 #include "Gem/GeoGemStatsEffect.h"
 #include "Misc/AutomationTest.h"
 #include "Settings/GameDataSettings.h"
+#include "Tests/GeoTestDeployable.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -35,7 +40,8 @@ static FGeoGemInfo MakeGem(FName Id, FGameplayAttribute Attribute = FGameplayAtt
 	return Gem;
 }
 
-/** Three Chips, a Cut, a Prism and two Cores, with the doc's drop tables, free of any asset. */
+/** Three Chips, a Cut, a Prism and two Cores, with the doc's drop tables and 1000 XP per echo level, free of any
+ *  asset. */
 static UGeoGemCatalog* MakeTestCatalog()
 {
 	UGeoGemCatalog* Catalog = NewObject<UGeoGemCatalog>();
@@ -60,6 +66,10 @@ static UGeoGemCatalog* MakeTestCatalog()
 	MiniBossDrops.MinCount = 38;
 	MiniBossDrops.MaxCount = 50;
 	MiniBossDrops.TierChances = {{EGeoGemTier::Cut, 0.16f}};
+
+	UCurveFloat* EchoXpCurve = NewObject<UCurveFloat>(Catalog);
+	EchoXpCurve->FloatCurve.AddKey(2.f, 1000.f);
+	Catalog->EchoXpCurve = EchoXpCurve;
 	return Catalog;
 }
 
@@ -82,18 +92,18 @@ bool FGeoGemSocketLayoutTest::RunTest(FString const& /*Parameters*/)
 	auto CountTier = [&Sockets](EGeoGemTier Tier)
 	{
 		return static_cast<int32>(Algo::CountIf(Sockets,
-							 [Tier](FGeoGemSocket const& Socket)
-							 {
-								 return Socket.Tier == Tier;
-							 }));
+												[Tier](FGeoGemSocket const& Socket)
+												{
+													return Socket.Tier == Tier;
+												}));
 	};
 	auto CountOpenAt = [&Sockets](int32 Level)
 	{
 		return static_cast<int32>(Algo::CountIf(Sockets,
-							 [Level](FGeoGemSocket const& Socket)
-							 {
-								 return Socket.UnlockLevel <= Level;
-							 }));
+												[Level](FGeoGemSocket const& Socket)
+												{
+													return Socket.UnlockLevel <= Level;
+												}));
 	};
 
 	TestEqual(TEXT("Sockets per class"), Sockets.Num(), 57);
@@ -106,8 +116,9 @@ bool FGeoGemSocketLayoutTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Open at level 14: two clusters"), CountOpenAt(14), 38);
 	TestEqual(TEXT("Open at level 19"), CountOpenAt(19), 51);
 	TestEqual(TEXT("Open at level 20: everything"), CountOpenAt(20), 57);
-	TestTrue(TEXT("Each cluster's Core opens last"), FindSocket(EGeoGemTier::Core, 7) != INDEX_NONE
-		&& FindSocket(EGeoGemTier::Core, 14) != INDEX_NONE && FindSocket(EGeoGemTier::Core, 20) != INDEX_NONE);
+	TestTrue(TEXT("Each cluster's Core opens last"),
+			 FindSocket(EGeoGemTier::Core, 7) != INDEX_NONE && FindSocket(EGeoGemTier::Core, 14) != INDEX_NONE
+				 && FindSocket(EGeoGemTier::Core, 20) != INDEX_NONE);
 	return true;
 }
 
@@ -132,8 +143,8 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 			  Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Power"), 2);
 	TestEqual(TEXT("Slotted copies are taken from the class's free count"),
 			  Profile->GetFreeCount("Power", EPlayerClass::Triangle), 1);
-	TestEqual(TEXT("Another class slots the same copies"),
-			  Profile->FillSockets(Catalog, EPlayerClass::Circle, "Power"), 2);
+	TestEqual(TEXT("Another class slots the same copies"), Profile->FillSockets(Catalog, EPlayerClass::Circle, "Power"),
+			  2);
 	TestEqual(TEXT("Its free count is its own"), Profile->GetFreeCount("Power", EPlayerClass::Circle), 1);
 	TestEqual(TEXT("A copy slotted in two classes is reserved once"), Profile->GetBreakableCount("Power"), 1);
 	TestEqual(TEXT("Owned counts every copy"), Profile->GetOwnedCount("Power"), 3);
@@ -168,8 +179,8 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 	Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Power");
 
 	Profile->AddGems("Surplus", 2);
-	TestEqual(TEXT("A Core fills one socket at most"),
-			  Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Surplus"), 1);
+	TestEqual(TEXT("A Core fills one socket at most"), Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Surplus"),
+			  1);
 	TestFalse(TEXT("A loadout holds each Core once"),
 			  Profile->Equip(Catalog, EPlayerClass::Triangle, FindSocket(EGeoGemTier::Core, 14), "Surplus"));
 	TestFalse(TEXT("A Core socket stays locked until its cluster's last level"),
@@ -250,8 +261,8 @@ bool FGeoGemForgeTest::RunTest(FString const& /*Parameters*/)
 	Profile->AddGems("Guard", 10);
 	Profile->AddGems("Vigor", 3);
 	Profile->AddGems("Magazine", 2);
-	TestEqual(TEXT("Breaking a tier down takes every free gem of it"), Profile->BreakDownTier(Catalog, EGeoGemTier::Chip),
-			  13);
+	TestEqual(TEXT("Breaking a tier down takes every free gem of it"),
+			  Profile->BreakDownTier(Catalog, EGeoGemTier::Chip), 13);
 	TestEqual(TEXT("Other tiers untouched"), Profile->GetOwnedCount("Magazine"), 2);
 	TestEqual(TEXT("Broken stacks are gone"), Profile->GetOwnedCount("Guard"), 0);
 	TestEqual(TEXT("A Cut gives 5 shards"), Profile->BreakDown(Catalog, "Magazine", 1), 5);
@@ -284,6 +295,8 @@ bool FGeoGemCatalogAssetTest::RunTest(FString const& /*Parameters*/)
 			bool bDuplicate = false;
 			Ids.Add(Gem.Id, &bDuplicate);
 			TestFalse(FString::Printf(TEXT("%s: unique id"), *Gem.Id.ToString()), bDuplicate || Gem.Id.IsNone());
+			TestFalse(FString::Printf(TEXT("%s: every {Token} of its effect text resolves"), *Gem.Id.ToString()),
+					  Gem.GetEffectText().ToString().Contains(TEXT("{")));
 			TestTrue(FString::Printf(TEXT("%s: stat listed by UGeoGemStatsEffect"), *Gem.Id.ToString()),
 					 UGeoGemStatsEffect::Supports(Gem));
 		}
@@ -332,16 +345,15 @@ bool FGeoGemCatalogAssetTest::RunTest(FString const& /*Parameters*/)
 	for (FName const CoreId : {"Relay", "Bond", "Wake", "Split", "Kinship"})
 	{
 		FGeoGemInfo const* Gem = Catalog->Find(CoreId);
-		TestTrue(FString::Printf(TEXT("%s gives a Core passive"), *CoreId.ToString()),
-				 Gem && Gem->GrantedAbility);
-		TestTrue(FString::Printf(TEXT("%s's passive is in the ability catalog, for the abilities page"),
-								 *CoreId.ToString()),
-				 Gem && AbilityInfo
-					 && AbilityInfo->GetAllPlayersAbilityInfos().ContainsByPredicate(
-						 [Gem](FPlayersGameplayAbilityInfo const& Info)
-						 {
-							 return Info.AbilityClass == Gem->GrantedAbility && !Info.bGiveAtStartup;
-						 }));
+		TestTrue(FString::Printf(TEXT("%s gives a Core passive"), *CoreId.ToString()), Gem && Gem->GrantedAbility);
+		TestTrue(
+			FString::Printf(TEXT("%s's passive is in the ability catalog, for the abilities page"), *CoreId.ToString()),
+			Gem && AbilityInfo
+				&& AbilityInfo->GetAllPlayersAbilityInfos().ContainsByPredicate(
+					[Gem](FPlayersGameplayAbilityInfo const& Info)
+					{
+						return Info.AbilityClass == Gem->GrantedAbility && !Info.bGiveAtStartup;
+					}));
 	}
 	return true;
 }
@@ -375,6 +387,13 @@ bool FGeoGemClassXpTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Level 4 with 500 XP"), Profile->GetClassXp(EPlayerClass::Triangle), 500);
 	TestEqual(TEXT("Other classes level on their own"), Profile->GetClassLevel(EPlayerClass::Circle), 1);
 
+	int32 XpTaken = 0;
+	int32 XpNeeded = 0;
+	TestEqual(TEXT("Bar: 500 of 1000 into level 4"),
+			  Profile->GetXpProgress(Catalog, EPlayerClass::Triangle, XpTaken, XpNeeded), 0.5f);
+	TestEqual(TEXT("Bar numbers below the max"), XpTaken, 500);
+	TestEqual(TEXT("Bar needs one level of XP"), XpNeeded, Catalog.XpPerLevel);
+
 	Profile->AddClassXp(Catalog, EPlayerClass::Triangle, 1000000);
 	TestEqual(TEXT("Level stops at the max"), Profile->GetClassLevel(EPlayerClass::Triangle), GeoGem::MaxClassLevel);
 	TestEqual(TEXT("No XP kept at the max"), Profile->GetClassXp(EPlayerClass::Triangle), 0);
@@ -384,6 +403,172 @@ bool FGeoGemClassXpTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Linear: one XP short of the max is level 19"), Profile->GetClassLevel(EPlayerClass::Square), 19);
 	TestEqual(TEXT("47.5 Original health bars to level 20, about 10 hours at five kills an hour"),
 			  static_cast<float>(XpToMax) / Catalog.XpPerHealthBar.FindRef(EGeoBossType::Boss), 47.5f);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemEchoTest, "GeoTrinity.Gems.Echo", GeoGemTestFlags)
+
+bool FGeoGemEchoTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	UGeoGemProfileSave* Profile = NewObject<UGeoGemProfileSave>();
+	EPlayerClass const PlayerClass = EPlayerClass::Triangle;
+	Profile->AddGems("Power", 2);
+	Profile->AddGems("Guard", 1);
+	Profile->AddGems("Surplus", 1);
+
+	TestEqual(TEXT("Echo level starts at 0"), Profile->GetEchoLevel(), 0);
+	TestFalse(TEXT("Echo locked while no class reached 20"), Profile->CanEcho(Catalog, PlayerClass, "Power"));
+	Profile->SetClassLevel(PlayerClass, GeoGem::EchoUnlockLevel);
+	TestEqual(TEXT("The first class at 20 takes the echo to 1"), Profile->GetEchoLevel(), 1);
+	TestTrue(TEXT("Echo open at level 20"), Profile->CanEcho(Catalog, PlayerClass, "Power"));
+	TestTrue(TEXT("Echo open on a class at level 1"), Profile->CanEcho(Catalog, EPlayerClass::Circle, "Power"));
+	Profile->SetClassLevel(EPlayerClass::Circle, GeoGem::EchoUnlockLevel);
+	TestEqual(TEXT("A second class at 20 keeps it"), Profile->GetEchoLevel(), 1);
+	Profile->SetClassLevel(EPlayerClass::Circle, 1);
+	TestFalse(TEXT("A Core is refused"), Profile->CanEcho(Catalog, PlayerClass, "Surplus"));
+	TestFalse(TEXT("A gem with no copy is refused"), Profile->CanEcho(Catalog, PlayerClass, "Vigor"));
+	TestFalse(TEXT("An unknown gem is refused"), Profile->CanEcho(Catalog, PlayerClass, "Nothing"));
+
+	TestEqual(TEXT("Both copies slotted"), Profile->FillSockets(Catalog, PlayerClass, "Power"), 2);
+	TestTrue(TEXT("Echoing a slotted type"), Profile->SetEcho(Catalog, PlayerClass, "Power"));
+	TestEqual(TEXT("The echoed gem"), Profile->GetEcho(PlayerClass), FName("Power"));
+	TestEqual(TEXT("Echoing empties the build's sockets of that type"),
+			  static_cast<int32>(Algo::Count(Profile->GetLoadout(PlayerClass).Sockets, FName("Power"))), 0);
+	TestEqual(TEXT("The echo takes one copy"), Profile->GetFreeCount("Power", PlayerClass), 1);
+	TestEqual(TEXT("The echo reserves a copy from the Forge"), Profile->GetBreakableCount("Power"), 1);
+	TestFalse(TEXT("An echoed type fits no socket"),
+			  Profile->Equip(Catalog, PlayerClass, FindSocket(EGeoGemTier::Chip, 1), "Power"));
+	TestEqual(TEXT("Fill skips an echoed type"), Profile->FillSockets(Catalog, PlayerClass, "Power"), 0);
+	TestFalse(TEXT("Echoing the echoed gem again"), Profile->SetEcho(Catalog, PlayerClass, "Power"));
+
+	TestTrue(TEXT("Another gem replaces the echo"), Profile->SetEcho(Catalog, PlayerClass, "Guard"));
+	TestEqual(TEXT("The replaced gem is free again"), Profile->GetFreeCount("Power", PlayerClass), 2);
+	Profile->ClearEcho(PlayerClass);
+	TestTrue(TEXT("Cleared echo"), Profile->GetEcho(PlayerClass).IsNone());
+	TestEqual(TEXT("Cleared echo gives its copy back"), Profile->GetFreeCount("Guard", PlayerClass), 1);
+
+	Profile->SetEcho(Catalog, PlayerClass, "Power");
+	TestEqual(TEXT("A class under 20 keeps its XP"), Profile->AddClassXp(Catalog, EPlayerClass::Circle, 10), 0);
+	TestEqual(TEXT("Its XP goes to the class"), Profile->GetClassXp(EPlayerClass::Circle), 10);
+	TestEqual(TEXT("Not to the echo"), Profile->GetEchoXp(), 0);
+	TestEqual(TEXT("Max class level: XP raises the echo level"), Profile->AddClassXp(Catalog, PlayerClass, 3500), 0);
+	TestEqual(TEXT("Echo level 4"), Profile->GetEchoLevel(), 4);
+	TestEqual(TEXT("Echo XP towards the next"), Profile->GetEchoXp(), 500);
+	int32 XpTaken = 0;
+	int32 XpNeeded = 0;
+	float const Fill = Profile->GetXpProgress(Catalog, PlayerClass, XpTaken, XpNeeded);
+	TestEqual(TEXT("The bar carries on with the echo XP"), XpTaken, 500);
+	TestEqual(TEXT("The bar needs the next echo level"), XpNeeded, Catalog.GetEchoXpForLevel(5));
+	TestEqual(TEXT("Bar fill is echo XP over its cost"), Fill, 500.f / XpNeeded, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("The class level stays"), Profile->GetClassLevel(PlayerClass), GeoGem::MaxClassLevel);
+	TestEqual(TEXT("The loadout carries the echo"), Profile->GetLoadout(PlayerClass).Echo, FName("Power"));
+	TestEqual(TEXT("The loadout carries the echo level"), Profile->GetLoadout(PlayerClass).EchoLevel, 4);
+	TestEqual(TEXT("A class under 20 sees the shared level"), Profile->GetLoadout(EPlayerClass::Circle).EchoLevel, 4);
+
+	Profile->SetClassLevel(PlayerClass, GeoGem::EchoUnlockLevel - 1);
+	TestTrue(TEXT("No class at 20 empties the echo"), Profile->GetEcho(PlayerClass).IsNone());
+	TestEqual(TEXT("No class at 20 resets the echo level"), Profile->GetEchoLevel(), 0);
+	TestEqual(TEXT("And its XP"), Profile->GetEchoXp(), 0);
+	TestFalse(TEXT("Echo locked again"), Profile->CanEcho(Catalog, PlayerClass, "Power"));
+
+	Profile->SetClassLevel(PlayerClass, GeoGem::EchoUnlockLevel);
+	Profile->AddClassXp(Catalog, PlayerClass, 1000000);
+	TestEqual(TEXT("Echo level stops at the max"), Profile->GetEchoLevel(), Catalog.EchoMaxLevel);
+	int32 const KeptXp = Profile->GetEchoXp();
+	Profile->AddClassXp(Catalog, PlayerClass, 123);
+	TestEqual(TEXT("Every echo XP point is kept"), Profile->GetEchoXp(), KeptXp + 123);
+
+	Profile->SetClassLevel(PlayerClass, 1);
+	Profile->SetEchoLevel(Catalog, 5);
+	TestEqual(TEXT("An echo level needs a class at 20"), Profile->GetClassLevel(EPlayerClass::Triangle),
+			  GeoGem::EchoUnlockLevel);
+	TestEqual(TEXT("The echo level is set"), Profile->GetEchoLevel(), 5);
+
+	Profile->SetEchoLevel(Catalog, 1000);
+	TestEqual(TEXT("Echo level clamps to the max"), Profile->GetEchoLevel(), Catalog.EchoMaxLevel);
+	Profile->SetEchoLevel(Catalog, -5);
+	TestEqual(TEXT("Echo level clamps to 0"), Profile->GetEchoLevel(), 0);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemEchoStatsTest, "GeoTrinity.Gems.EchoStats", GeoGemTestFlags)
+
+bool FGeoGemEchoStatsTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	TestEqual(TEXT("Level 0: no echo share"), Catalog.GetEchoShare(EGeoGemTier::Chip, 0), 0.f);
+	TestEqual(TEXT("Level 1: Chip 1%"), Catalog.GetEchoShare(EGeoGemTier::Chip, 1), 0.01f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Level 1: no Cut"), Catalog.GetEchoShare(EGeoGemTier::Cut, 1), 0.f);
+	TestEqual(TEXT("Level 1: no Prism"), Catalog.GetEchoShare(EGeoGemTier::Prism, 1), 0.f);
+	TestEqual(TEXT("Level 2 adds Cut"), Catalog.GetEchoShare(EGeoGemTier::Cut, 2), 0.01f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Level 3 adds Prism"), Catalog.GetEchoShare(EGeoGemTier::Prism, 3), 0.01f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Level 4: Chip 2%"), Catalog.GetEchoShare(EGeoGemTier::Chip, 4), 0.02f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Level 100: Chip 34%"), Catalog.GetEchoShare(EGeoGemTier::Chip, 100), 0.34f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Level 100: Cut 33%"), Catalog.GetEchoShare(EGeoGemTier::Cut, 100), 0.33f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Level 100: Prism 33%"), Catalog.GetEchoShare(EGeoGemTier::Prism, 100), 0.33f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("A Core has no share"), Catalog.GetEchoShare(EGeoGemTier::Core, 100), 0.f);
+	TestEqual(TEXT("Echo XP from the curve"), Catalog.GetEchoXpForLevel(2), 1000);
+	TestEqual(TEXT("Level 1: a Chip echo is worth 30 sockets x 1%"), Catalog.GetEchoCopies(EGeoGemTier::Chip, 1), 0.3f,
+			  KINDA_SMALL_NUMBER);
+	FGeoGemInfo const& Magazine = *Catalog.Find("Magazine");
+	TestFalse(TEXT("A zero echo share still shows its value"),
+			  Magazine.GetMagnitudeText(Catalog.GetEchoCopies(EGeoGemTier::Cut, 1)).IsEmpty());
+
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+	FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::Game);
+	WorldContext.SetCurrentWorld(World);
+
+	AActor* Character = World->SpawnActor<AActor>();
+	UAbilitySystemComponent* ASC = NewObject<UAbilitySystemComponent>(Character);
+	ASC->RegisterComponent();
+	ASC->AddAttributeSetSubobject(NewObject<UCharacterAttributeSet>(Character));
+	ASC->AddAttributeSetSubobject(NewObject<UGeoGemAttributeSet>(Character));
+	ASC->InitAbilityActorInfo(Character, Character);
+	ASC->SetNumericAttributeBase(UCharacterAttributeSet::GetMaxAmmoAttribute(), 30.f);
+	ASC->SetNumericAttributeBase(UCharacterAttributeSet::GetDamageMultiplierAttribute(), 1.f);
+
+	FGeoGemLoadout Loadout;
+	Loadout.Sockets.Init(NAME_None, GeoGem::GetSockets().Num());
+	auto Apply = [&](FName const Echo, int32 const EchoLevel)
+	{
+		Loadout.Echo = Echo;
+		Loadout.EchoLevel = EchoLevel;
+		return ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
+	};
+
+	FActiveGameplayEffectHandle Handle = Apply("Power", 1);
+	TestEqual(TEXT("Echoed Chip: 30 sockets x 0.2% x 1%"),
+			  ASC->GetNumericAttribute(UCharacterAttributeSet::GetDamageMultiplierAttribute()), 1.0006f,
+			  KINDA_SMALL_NUMBER);
+	ASC->RemoveActiveGameplayEffect(Handle);
+
+	Handle = Apply("Power", 100);
+	TestEqual(TEXT("Echoed Chip at level 100: 34% of 6%"),
+			  ASC->GetNumericAttribute(UCharacterAttributeSet::GetDamageMultiplierAttribute()), 1.0204f,
+			  KINDA_SMALL_NUMBER);
+	ASC->RemoveActiveGameplayEffect(Handle);
+
+	Handle = Apply("Magazine", 1);
+	TestEqual(TEXT("Echoed Cut at level 1: no share yet"),
+			  ASC->GetNumericAttribute(UCharacterAttributeSet::GetMaxAmmoAttribute()), 30.f, KINDA_SMALL_NUMBER);
+	ASC->RemoveActiveGameplayEffect(Handle);
+
+	Handle = Apply("Magazine", 2);
+	TestEqual(TEXT("Echoed Cut at level 2: 15 sockets x 1.2% x 1%"),
+			  ASC->GetNumericAttribute(UCharacterAttributeSet::GetMaxAmmoAttribute()), 30.054f, KINDA_SMALL_NUMBER);
+	ASC->RemoveActiveGameplayEffect(Handle);
+
+	Handle = Apply("Anchor", 3);
+	TestEqual(TEXT("Echoed Prism at level 3: 9 sockets x 3% x 1%"),
+			  ASC->GetNumericAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute()), 1.0027f,
+			  KINDA_SMALL_NUMBER);
+	ASC->RemoveActiveGameplayEffect(Handle);
+
+	GEngine->DestroyWorldContext(World);
+	World->DestroyWorld(false);
 	return true;
 }
 
@@ -453,7 +638,8 @@ bool FGeoGemLootTest::RunTest(FString const& /*Parameters*/)
 		bMiniBossInRange &= CountAll(MiniBoss) >= 38 && CountAll(MiniBoss) <= 50
 			&& !MiniBoss.Contains(EGeoGemTier::Prism) && !MiniBoss.Contains(EGeoGemTier::Core);
 
-		int32 const SafeCount = CountAll(CountTiers(Catalog.RollLoot(EGeoBossType::Boss, EGeoDifficulty::Safe, Stream)));
+		int32 const SafeCount =
+			CountAll(CountTiers(Catalog.RollLoot(EGeoBossType::Boss, EGeoDifficulty::Safe, Stream)));
 		bSafeInRange &= SafeCount >= 19 && SafeCount <= 25;
 	}
 	TestTrue(TEXT("Mini-boss kill: 38-50 gems, no Prism, no Core"), bMiniBossInRange);
@@ -519,8 +705,8 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 			  KINDA_SMALL_NUMBER);
 	TestEqual(TEXT("15 Magazine: max ammo +18%"), Value(UCharacterAttributeSet::GetMaxAmmoAttribute()), 35.4f,
 			  KINDA_SMALL_NUMBER);
-	TestEqual(TEXT("No Guard: damage reduction untouched"), Value(UCharacterAttributeSet::GetDamageReductionAttribute()),
-			  0.f);
+	TestEqual(TEXT("No Guard: damage reduction untouched"),
+			  Value(UCharacterAttributeSet::GetDamageReductionAttribute()), 0.f);
 	TestEqual(TEXT("No Swift: speed untouched"), Value(UCharacterAttributeSet::GetMovementSpeedMultiplierAttribute()),
 			  1.f);
 	TestEqual(TEXT("9 Anchor: deployable health +27%"),
@@ -643,20 +829,108 @@ bool FGeoGemStatsSurviveDeathTest::RunTest(FString const& /*Parameters*/)
 	CooldownTags.AddTag(FGeoGameplayTags::Get().Ability_Cooldown);
 	CooldownEffect->FindOrAddComponent<UTargetTagsGameplayEffectComponent>().SetAndApplyTargetTagChanges(CooldownTags);
 	ASC->ApplyGameplayEffectToSelf(CooldownEffect, 1.f, ASC->MakeEffectContext());
-	TestTrue(TEXT("Cooldown tag held before death"), ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Ability_Cooldown));
+	TestTrue(TEXT("Cooldown tag held before death"),
+			 ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Ability_Cooldown));
 
 	ASC->HandleOwnerDeath({StatsHandle});
 
 	TestTrue(TEXT("Gem stats effect survives death"), ASC->GetActiveGameplayEffect(StatsHandle) != nullptr);
-	TestEqual(TEXT("Gem stats still modify the attribute"), ASC->GetNumericAttribute(UCharacterAttributeSet::GetDamageMultiplierAttribute()),
-			  1.04f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Gem stats still modify the attribute"),
+			  ASC->GetNumericAttribute(UCharacterAttributeSet::GetDamageMultiplierAttribute()), 1.04f,
+			  KINDA_SMALL_NUMBER);
 	TestTrue(TEXT("An unrelated effect is purged"), ASC->GetActiveGameplayEffect(OtherHandle) == nullptr);
-	TestEqual(TEXT("Its modifier is gone"), ASC->GetNumericAttribute(UCharacterAttributeSet::GetDamageReductionAttribute()),
-			  0.f, KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Its modifier is gone"),
+			  ASC->GetNumericAttribute(UCharacterAttributeSet::GetDamageReductionAttribute()), 0.f, KINDA_SMALL_NUMBER);
 	TestFalse(TEXT("The cooldown is cleared"), ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Ability_Cooldown));
 
 	GEngine->DestroyWorldContext(World);
 	World->DestroyWorld(false);
+	return true;
+}
+
+/** A begun listen-server world, for a test that spawns actors the way a match does. */
+static UWorld* CreateTestWorld()
+{
+	UWorld* World = UWorld::CreateWorld(EWorldType::PIE, false);
+	World->SetPlayInEditorInitialNetMode(NM_ListenServer);
+	FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::PIE);
+	WorldContext.SetCurrentWorld(World);
+	World->InitializeActorsForPlay(FURL());
+	World->GetWorldSettings()->NotifyBeginPlay();
+	return World;
+}
+
+static void DestroyTestWorld(UWorld* World)
+{
+	GEngine->DestroyWorldContext(World);
+	World->DestroyWorld(false);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoDeployableStartHealthTest, "GeoTrinity.Deployable.StartHealth", GeoGemTestFlags)
+
+bool FGeoDeployableStartHealthTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+
+	APawn* Deployer = World->SpawnActor<AGeoTestDeployer>();
+	auto const Spawn = [Deployer](float const StartHealthRatio)
+	{
+		FDeployableData Data;
+		Data.Owner = Deployer;
+		Data.Instigator = Deployer;
+		Data.Params.StartHealthRatio = StartHealthRatio;
+		Data.Params.LifeDrainMaxDuration = 10.f;
+		return GeoASLib::FullySpawnDeployable(AGeoTestDeployable::StaticClass(), Data, FTransform::Identity);
+	};
+	auto const Attribute = [](AGeoDeployableBase const* Deployable, FGameplayAttribute const& Which)
+	{
+		return Deployable->GetAbilitySystemComponent()->GetNumericAttribute(Which);
+	};
+
+	AGeoDeployableBase const* Full = Spawn(1.f);
+	AGeoDeployableBase const* Half = Spawn(0.5f);
+	if (TestNotNull(TEXT("Both deployables spawn"), Full) && TestNotNull(TEXT("Both deployables spawn"), Half))
+	{
+		float const MaxHealth = Attribute(Full, UGeoAttributeSetBase::GetMaxHealthAttribute());
+		TestTrue(TEXT("Default attributes gave a max health"), MaxHealth > 0.f);
+		TestEqual(TEXT("Ratio 1 starts full"), Attribute(Full, UGeoAttributeSetBase::GetHealthAttribute()), MaxHealth);
+		TestEqual(TEXT("Ratio 0.5 keeps the max health"),
+				  Attribute(Half, UGeoAttributeSetBase::GetMaxHealthAttribute()), MaxHealth);
+		TestEqual(TEXT("Ratio 0.5 starts at half"), Attribute(Half, UGeoAttributeSetBase::GetHealthAttribute()),
+				  MaxHealth * 0.5f, KINDA_SMALL_NUMBER);
+	}
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoDeployableStartHealthFromAbilityTest,
+								 "GeoTrinity.Deployable.StartHealthFromAbility", GeoGemTestFlags)
+
+bool FGeoDeployableStartHealthFromAbilityTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+
+	AGeoTestDeployer* Deployer = World->SpawnActor<AGeoTestDeployer>();
+	UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(Deployer->GetAbilitySystemComponent());
+	ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestDeployAbility::StaticClass(), 1));
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute(), 2.f);
+
+	AGeoDeployableBase const* Copy = GeoASLib::SpawnDeployableFromAbility(*ASC, FVector::ZeroVector, 0.5f);
+	if (TestNotNull(TEXT("The ability places the deployable"), Copy))
+	{
+		UAbilitySystemComponent const* CopyASC = Copy->GetAbilitySystemComponent();
+		float const BaseMaxHealth = UGeoTestDeployableAttributes::MaxHealth;
+		TestEqual(TEXT("The deployer's gems scale the max health (x2)"),
+				  CopyASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute()), BaseMaxHealth * 2.f);
+		TestEqual(TEXT("Ratio 0.5 starts at half of that"),
+				  CopyASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute()), BaseMaxHealth,
+				  KINDA_SMALL_NUMBER);
+	}
+
+	DestroyTestWorld(World);
 	return true;
 }
 

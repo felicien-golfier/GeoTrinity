@@ -7,7 +7,7 @@ description: Push the game's gem values (Data/gems.csv, plus the catalog's loot,
 
 The doc is https://claude.ai/artifact/SQYwGjtE7bspcCA5KKV67K (Claude Docs id `cdbe4119-4ccb-4017-a52c-70d469714c62`).
 Its "Gem catalog" table is a 5-column view of `Data/gems.csv`: `Tier`, `Gem`, `Effect per gem`, `Max per class`,
-`Attribute or system`. `AI/Python/Data/gem_doc_sync.py` keeps `Data/gems.sync.json`, the stamp of the last sync: the
+`Attribute or system`. `AI/Python/Gem/gem_doc_sync.py` keeps `Data/gems.sync.json`, the stamp of the last sync: the
 CSV's hash and the doc table's hash `h`. Its `doc-table` and `diff` still expect an older 10-column layout, so use
 `status` and `stamp` only and compare rows by hand, on `Gem` = CSV `Name`.
 The opposite direction is the `gem-doc-to-csv` skill, which also holds the per-gem / max-per-class rules.
@@ -21,7 +21,7 @@ anything else unclear.
 1. **Load the docs tools.** Load the docs skill (or call the connector's `guide` with `topic.index`), then read the
    doc's outline. The catalog table is the first `<table>` after the "Gem catalog" heading. Read it with
    `{"kind":"view","parentId":"<table id>"}`, and note its id and `h`.
-2. **Check freshness.** Run `python AI/Python/Data/gem_doc_sync.py status <h>`.
+2. **Check freshness.** Run `python AI/Python/Gem/gem_doc_sync.py status <h>`.
    - Doc table unchanged since the stamp: go on.
    - Doc table changed, or no stamp:
      - Copy the table's cells exactly, as a pipe table, to `<scratchpad>/doc_table.md`, then run
@@ -33,7 +33,7 @@ anything else unclear.
    - Gems: `Data/gems.csv`.
    - Forge craft and break-down costs, loot and XP difficulty scales, XP per level: `UGeoGemCatalog` defaults in
      `Source/GeoTrinity/Public/Gem/GeoGemCatalog.h`.
-   - Drop tables and XP per health bar: `AI/Python/Asset/gem_catalog.py`.
+   - Drop tables and XP per health bar: `AI/Python/Gem/gem_catalog.py`.
    - Sockets and unlock levels: `GeoGem::GetSockets()` in `Source/GeoTrinity/Private/Gem/GeoGemTypes.cpp`.
      `SOCKETS_PER_CLASS` in the script must match it; fix the script if it does not.
    - Base crit chance: `UGeoGemAttributeSet`'s constructor. Crit damage: `GeoAbilitySystemLibrary.cpp`.

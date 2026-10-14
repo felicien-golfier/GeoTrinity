@@ -106,6 +106,10 @@ public:
 	/** Applies the DefaultAttributes gameplay effect to initialize base attribute values. */
 	void InitializeDefaultAttributes();
 
+	/** Effect InitializeDefaultAttributes applies; set per Blueprint (a test deployable sets it in its constructor). */
+	UPROPERTY(EditAnywhere, Category = "GeoGAS")
+	TSubclassOf<UGameplayEffect> DefaultAttributes;
+
 	/** Value the DefaultAttributes effect gives Attribute at CombatLevel, before any gem or other modifier. For a player
 	 * the effect is its class's (APlayableCharacter::GetClassDefaultAttributes), otherwise this component's own. 0 when
 	 * the effect has no static modifier on it. */
@@ -247,9 +251,6 @@ private:
 	TArray<UPattern*> Patterns;
 
 	// DATA //
-	UPROPERTY(EditAnywhere, Category = "GeoGAS")
-	TSubclassOf<UGameplayEffect> DefaultAttributes;
-
 	UPROPERTY(EditAnywhere, Category = "GeoGAS")
 	TArray<FGameplayTag> StartupAbilityTags;
 };

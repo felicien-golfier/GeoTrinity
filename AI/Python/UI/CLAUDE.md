@@ -26,18 +26,12 @@ Widget Blueprints and trees. Docs: `AI/UI.md`, `AI/MCP/MCP_UI.md`. Every write g
 | `character_sheet.py` | Level / XP meters, ability rows, sheet |
 | `ability_page.py` | Abilities page, `WBP_AbilityCard`, card grid |
 | `ability_detail.py` | Detail drawer (`WBP_AbilityDetail`) and scrim |
-| `gems_page.py` | Gems menu: loadout, Forge, tab underline |
 | `leaderboard_menu.py` | Leaderboard on the list frame, main-menu entry, fight timer (after `list_panel.py`) |
-| `local_connect_menu.py` | Child panel inside an existing menu widget |
 | `interface_settings.py` | Interface settings page + button |
-| `volume_sliders.py` | Four labelled volume sliders |
-| `second_player_gamepad_toggle.py` | Couch-coop gamepad row on key bindings |
-| `main_menu_layout.py` / `pause_menu_setup.py` / `space_menu_buttons.py` | Centre / space button columns |
-| `ability_bar.py` | Ability bar pipeline (legacy: refuses existing assets) |
-| `charge_beam_gauge.py` | Create a widget BP, build its tree, wire it to a component |
-| `group_widgets.py` | Wrap canvas children into one panel without moving them |
-| `crosshair_cursor.py` | Crosshair software cursor |
+| `space_menu_buttons.py` | Re-space the menu button columns of every widget to the theme gap |
 | `passive_bar.py` | `WBP_PassiveSlot` (copy of the ability slot, no key / count) and `PassiveBox` + `PassiveSlotWidgetClass` on `WBP_AbilityBar`; headless |
 | `slot_gauge.py` | `GaugeMeter` (`DA_Meter_SlotGauge`) + `GaugeText` in `WBP_AbilitySlot` and `WBP_PassiveSlot`, between `Icon` and `CooldownMeter`; headless, after `wings_hud.py` / `passive_bar.py` |
+| `xp_strip.py` | `WBP_XpStrip` (level, echo level, XP meter) + `XpStrip` under the health stack of `WBP_PlayerWing`; headless, after `wings_hud.py` |
+| `message_log.py` | `UGeoMessageLog` "MessageLog" in the bottom row of `WBP_MenuPageFrame`, right of `BackButton`; headless, after `menu_pages.py` |
 | `import_icons.py` | `DA_Icon_*` from `SourceArt/Icons`, set on abilities and effects |
 | `import_fonts.py` | Menu fonts as Font Face + Font (answer Yes) |

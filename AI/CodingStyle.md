@@ -13,8 +13,12 @@ an existing function, an existing member — and use it.
 - **Write the simple version, then stop.** It is the deliverable — never ship an elaborate one "to be safe".
 - **YAGNI.** No unused parameters, variables or speculative features. Delete a declaration *and* its
   implementation when its last call site goes; no dead-code safety nets.
+- **No leftovers, ever.** Remove a feature whole (code, BP widgets, assets, docs); never hide or disable it instead.
 
 ## Writing code
+- **clang-format every file you touch** (`.h`, `.cpp`, `.cs`), whole file, even when it reformats lines that
+  are not yours. Never hand-format around it or skip it to keep a diff small. Not on PATH yet →
+  `C:\Program Files\LLVM\bin\clang-format.exe`.
 - Prefer fewer, longer `if`s — merge with `&&` rather than nesting.
 - One blank line after the closing `}` of an `if`/`else`/loop/`switch` block when another statement follows it
   (never before `else` or a closing `}`). clang-format can't insert it — write it yourself.

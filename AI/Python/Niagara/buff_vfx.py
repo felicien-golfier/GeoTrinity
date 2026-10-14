@@ -11,7 +11,7 @@ Builds the six systems named by UGameDataSettings::BuffVFX, into /Game/Art/VFX/G
   NS_MendingDrift   ReceivedHealBoost         the body no strand — sprites  continuous rate
   NS_BulwarkShell   DamageReduction           the body no strand — sprites  continuous rate
 
-NS_ChargedTrail is built by AI/Python/Niagara/charged_trail_vfx.py and is not rewritten here; it is the shape the
+NS_ChargedTrail is built by AI/Python/Niagara/Electric/charged_trail_vfx.py and is not rewritten here; it is the shape the
 other ribbons follow.
 
 A strand is drawn one of two ways, and which one a system uses follows from whether its owner moves.

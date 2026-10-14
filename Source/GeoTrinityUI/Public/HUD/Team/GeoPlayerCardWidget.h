@@ -11,13 +11,15 @@
 class AGeoPlayerState;
 class UGeoMeter;
 class UGeoShape;
+class UGeoXpStripWidget;
 class UTextBlock;
 
 /**
  * One player as the HUD shows them: their class shape and colour, their name and role, a health meter with the shield
  * as its overhang, and — each optional — the health number, the health over the max, the shield line and the class
- * gauge: a frame in the class's shape round it, filling towards the class's big move and pulsing once it is ready. The local player's wing (WBP_PlayerWing) and every team-list row (WBP_TeamRow) are this widget in two
- * layouts. Follows the player's class as it changes.
+ * gauge: a frame in the class's shape round it, filling towards the class's big move and pulsing once it is ready. The
+ * local player's wing (WBP_PlayerWing) and every team-list row (WBP_TeamRow) are this widget in two layouts. Follows
+ * the player's class as it changes.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoPlayerCardWidget : public UGenericCombattantWidget
@@ -63,6 +65,11 @@ protected:
 	 * number. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> GaugeText;
+
+	/** The local wing's XP strip under the health meter; absent on a team row. Told the player and the class changes.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoXpStripWidget> XpStrip;
 
 	/** {0} is the health, {1} the max health. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoPlayerCard")

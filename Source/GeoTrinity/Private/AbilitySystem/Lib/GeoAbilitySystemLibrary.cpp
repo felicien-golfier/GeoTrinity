@@ -316,6 +316,12 @@ TArray<AActor*> UGeoAbilitySystemLibrary::GetInteractableActors(UObject const* W
 			return;
 		}
 
+		AGeoDeployableBase const* const Deployable = Cast<AGeoDeployableBase>(OtherActor);
+		if (Deployable && !Deployable->IsActive())
+		{
+			return;
+		}
+
 		IGenericTeamAgentInterface const* TeamInterface = Cast<IGenericTeamAgentInterface>(OtherActor);
 		checkf(TeamInterface, TEXT("%s is a IGenericTeamAgentInterface, this should never fail"), ClassName);
 

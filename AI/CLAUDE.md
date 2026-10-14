@@ -18,6 +18,7 @@ Agent-facing docs, scripts and workspaces. Code maps are in the `CLAUDE.md` file
 | VFX / Niagara | `VFX.md` |
 | Sound effect end to end | `SoundCreation.md` |
 | Animation authoring | `MCP/MCP_Animation.md` |
+| Claude.ai artifacts (Gems UI, Gems doc, History) and the "move to history" rule | `Artifacts.md` |
 
 ## Folders
 | Folder | Purpose |
@@ -30,7 +31,7 @@ Agent-facing docs, scripts and workspaces. Code maps are in the `CLAUDE.md` file
 | `Tasks/` | Daily-agent task lists (`TODO.md`, `Tasks.md`) |
 
 ## Working rules
-- A workflow that proved itself becomes a script in `AI/Python/<Topic>/` (row in that folder's `CLAUDE.md`) and a section in the matching topic doc the same session; never left in the scratchpad.
+- A workflow that proved itself and will run again becomes a script in `AI/Python/<Topic>/` (row in that folder's `CLAUDE.md`) and a section in the matching topic doc the same session; never left in the scratchpad. A one-off change is done through the Epic MCP tools instead, and a script that finished its one change is deleted (`AI/MCP/CLAUDE.md`, "Script rules").
 - A render / export / file the user will look at ends with `explorer.exe /select,"<path>"`; audio is played (`AI/SoundCreation.md`, "Delivering").
 - Verify UI before reporting with what needs no mouse (tests, bridge probes, `Python/Runtime/pie_layout_audit.py`); real-click PIE only when the user said to test it yourself (`UI.md`, "Check your own work").
 - This folder, the module `CLAUDE.md`s and `TroobleshootingLogs.md` are the only memory: nothing durable lives anywhere else.

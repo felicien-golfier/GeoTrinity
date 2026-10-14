@@ -10,12 +10,13 @@
 
 class UCanvasPanel;
 class UGeoButton;
+class UGeoEchoHalo;
 class UGeoEditableTextBox;
+class UGeoFrameStyle;
 class UGeoGemSocketButton;
 class UGeoIcon;
 class UGeoIconImage;
 class UGeoMenuButton;
-class UGeoMeter;
 class UGeoShape;
 class UGeoTableWidget;
 class UHorizontalBox;
@@ -67,18 +68,18 @@ struct FGeoGemCluster
  * level, in the box the Gems menu's header lends it; the class's builds, each a whole saved loadout: picking a build's
  * tab plays it, so the page always edits the build the class fights with, its tab framed in the class's colour and
  * holding its rename pencil and remove cross (a double click on it renames too, its name field then standing in the
- * tab), then a dashed tab adding an empty build; the socket board, three clusters each a Core ringed by its Prisms, Cuts
- * and Chips, linked by dashed lines, a locked socket showing the level that opens it, the class's level, its pips and
- * what the next level opens in its corner; the stacks with their owned and free counts under a tier filter; the
- * selection, a stack (EQUIP into the first socket it fits, REPLACE ALL: every socket it fits, replacing what is slotted) or a socket (UNEQUIP); and the build's
- * total bonus, a table of stat, bonus and copies.
- * The detail follows the cursor: over a stack or a filled socket it describes that gem without a click, and falls
- * back to the pick when the cursor leaves. Picking a socket also opens its tier's stacks.
- * Picking a stack then a socket it fits, or a socket then a stack, equips it there; the sockets the picked stack fits
- * glow, and the stack stays picked, so a click per socket fills several while copies are free. A click on neither a
- * socket, the stacks nor the detail drops the pick. The board is built once and updated in place, so the socket under
- * the gamepad keeps its focus.
- * Required in the BP hierarchy: UCanvasPanel "Board", UUniformGridPanel "StackGrid". Every other part is optional.
+ * tab), then a dashed tab adding an empty build; the socket board, three clusters each a Core ringed by its Prisms,
+ * Cuts and Chips, linked by dashed lines, a locked socket showing the level that opens it, the class's level and what
+ * the next level opens in its corner; the stacks with their owned and free counts under a tier filter; the selection, a
+ * stack (EQUIP into the first socket it fits, REPLACE ALL: every socket it fits, replacing what is slotted) or a socket
+ * (UNEQUIP); and the build's total bonus, a table of stat, bonus and copies. The detail follows the cursor: over a
+ * stack or a filled socket it describes that gem without a click, and falls back to the pick when the cursor leaves.
+ * Picking a socket also opens its tier's stacks. Picking a stack then a socket it fits, or a socket then a stack,
+ * equips it there; the sockets the picked stack fits glow, and the stack stays picked, so a click per socket fills
+ * several while copies are free. A click on neither a socket, the stacks nor the detail drops the pick. The board is
+ * built once and updated in place, so the socket under the gamepad keeps its focus. Between the clusters, the echo
+ * socket (from the max class level) holds one more gem, worth a share of its tier. Required in the BP hierarchy:
+ * UCanvasPanel "Board", UUniformGridPanel "StackGrid". Every other part is optional.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoGemLoadoutWidget : public UGeoGemPageWidget
@@ -86,14 +87,12 @@ class GEOTRINITYUI_API UGeoGemLoadoutWidget : public UGeoGemPageWidget
 	GENERATED_BODY()
 
 public:
-	/** Refreshes the Loadout page from the current gem profile: socket states, stack counts, selection detail and totals. */
+	/** Refreshes the Loadout page from the current gem profile: socket states, stack counts, selection detail and
+	 * totals. */
 	virtual void Refresh() override;
 
 	/** The box the class tabs are built in, which lives outside the page, in the Gems menu's header. */
-	void SetClassTabBox(UHorizontalBox* InClassTabBox)
-	{
-		ClassTabBox = InClassTabBox;
-	}
+	void SetClassTabBox(UHorizontalBox* InClassTabBox) { ClassTabBox = InClassTabBox; }
 
 protected:
 	/** Shows the local player's class first, wires the buttons, and takes the clicks no part of it handles. */
@@ -127,9 +126,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> LevelMaxText;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UGeoMeter> LevelPips;
 
 	/** What the next level opens. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
@@ -179,6 +175,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> UnequipButton;
 
+	/** Puts the picked stack in the echo socket; asks a second press when that empties sockets. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoMenuButton> EchoButton;
+
 	/** Shown in place of DetailBox: what to do, or what the picked empty socket takes. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> HintText;
@@ -205,12 +205,31 @@ protected:
 											{EGeoGemTier::Cut, {108.f, -54.f, 34.f}},
 											{EGeoGemTier::Chip, {156.f, -90.f, 30.f}}};
 
+	/** Where the echo socket's centre sits on the board, between the clusters. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Board")
+	FVector2D EchoPosition = FVector2D(342.f, 374.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Board", meta = (ClampMin = "4"))
+	float EchoSize = 44.f;
+
+	/** Width and height of the halo behind the echo socket, about three times EchoSize. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Board", meta = (ClampMin = "4"))
+	float EchoHaloSize = 132.f;
+
+	/** The frame style the echo halo wears for its runners, glow and idle / active blend (DA_Frame_Button). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Board")
+	TObjectPtr<UGeoFrameStyle> EchoHaloStyle;
+
+	/** The halo's colour while the echo socket is open and holds no gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Board")
+	FLinearColor EchoHaloOpenColor = FLinearColor(.45f, .2f, 1.f, 1.f);
+
 	/** The disc behind a cluster reaches this far past its outermost ring's guide circle. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Board", meta = (ClampMin = "0"))
 	float ClusterDiscMargin = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Board")
-	FLinearColor ClusterDiscColor = FLinearColor(.0024f, .0018f, .0103f, 1.f);
+	FLinearColor ClusterDiscColor = FLinearColor(.0024f, .0018f, .0103f, .6f);
 
 	/** The guide circle each ring of sockets sits on. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Board")
@@ -382,9 +401,9 @@ protected:
 	FText FilledFormat = INVTEXT("{0} / {1} FILLED");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText HintNothingPicked =
-		INVTEXT("Pick a stack to equip it, or a socket to fill it. Each cluster holds a Core in the middle, then "
-				"Prisms, Cuts and Chips.");
+	FText HintNothingPicked = INVTEXT(
+		"Pick a stack to equip it, or a socket to fill it. Each cluster holds a Core in the middle, then "
+		"Prisms, Cuts and Chips.");
 
 	/** {0} is the socket's tier, {1} the class, {2} the level that opens it. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -408,6 +427,51 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText CoreTotalText = INVTEXT("RULE");
 
+	/** ECHO's label, and its label while the echo waits for its confirm. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText EchoText = INVTEXT("ECHO");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText EchoConfirmText = INVTEXT("ECHO IT");
+
+	/** Shown in the totals' count column of the echoed gem: {0} is the echo level. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText EchoTotalFormat = INVTEXT("LV {0}");
+
+	/** The echo socket's tier line: {0} is the echoed gem's tier name. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText EchoTierFormat = INVTEXT("ECHO SOCKET · {0}");
+
+	/** After the class level of a class at its max: {0} is the echo level. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText EchoLevelFormat = INVTEXT(" · ECHO {0}");
+
+	/** The echo at its max level: {0} is the echo level. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText EchoMaxCountsFormat = INVTEXT("ECHO LEVEL {0}");
+
+	/** The echo's progress: {0} echo level, {1} XP earned towards the next, {2} XP it costs. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText EchoCountsFormat = INVTEXT("ECHO LEVEL {0} · {1} / {2} XP");
+
+	/** The stack tile of the echoed gem: {0} is the tier. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText StackEchoedFormat = INVTEXT("{0} · ECHOED");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText NoteEchoed = INVTEXT("Already in the echo socket.");
+
+	/** {0} is the sockets of the build the echo empties. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText NoteEchoConfirm = INVTEXT("Echoing it empties {0} socket(s) of this build. Press ECHO IT to confirm.");
+
+	/** {0} is the class level that opens the echo socket on every class. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText HintLockedEcho = INVTEXT("The echo socket opens once any class reaches level {0}.");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText HintEmptyEcho = INVTEXT("Empty echo socket. Pick a Chip, Cut or Prism stack to echo it.");
+
 private:
 	UFUNCTION()
 	void HandleEquip();
@@ -417,6 +481,10 @@ private:
 
 	UFUNCTION()
 	void HandleUnequip();
+
+	/** Echoes the picked stack: first asks to confirm when the build slots that gem, which the echo empties. */
+	UFUNCTION()
+	void HandleEcho();
 
 	UFUNCTION()
 	void HandleRenameBuild();
@@ -462,19 +530,40 @@ private:
 	void EndRename();
 	void ShowLevel(UGeoGemProfileSave const& Profile);
 	void ShowSockets(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
+	/** The echo halo's colour, lock and active look from the echo socket's gem, the pick and the hover; flares once per
+	 * session when the echo socket is first shown open. */
+	void ShowEchoHalo(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	void ShowFilters(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	void ShowStacks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	/** The stack or filled socket under the cursor, else the picked stack or filled socket, else the hint for what is
 	 * picked. */
 	void ShowDetail(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
-	/** bFromSocket words the tier and counts for a socket's gem. bPreview is a gem hovered that is not the picked one:
-	 * its description only, the buttons and the note belonging to what is picked. */
+	/** ShownSocket, when not INDEX_NONE, words the tier and counts for a socket's gem; the echo socket's shows the
+	 * value the echo gives and its level. bPreview is a gem hovered that is not the picked one: its description only,
+	 * the buttons and the note belonging to what is picked. */
 	void ShowGemDetail(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog, FGeoGemInfo const& Gem,
-					   EGeoGemTier Tier, bool bFromSocket, bool bPreview);
+					   EGeoGemTier Tier, int32 ShownSocket, bool bPreview);
+
+	/** The echo socket's index in the board, the picks and the hovers: one past GeoGem::GetSockets(). */
+	static int32 GetEchoIndex() { return GeoGem::GetSockets().Num(); }
+
+	/** Socket Index of the board: one of GeoGem::GetSockets(), or the echo socket, a Core socket at the echo unlock. */
+	static FGeoGemSocket GetSocket(int32 Index);
+
+	/** Whether socket Index is locked: the echo socket until the shared echo level is 1, the others by the shown
+	 * class's level. */
+	bool IsSocketLocked(UGeoGemProfileSave const& Profile, int32 Index) const;
+
+	/** What socket Index of Loadout holds, the echo socket's gem included. */
+	static FName GetSlottedGem(FGeoGemLoadout const& Loadout, int32 Index);
+
 	void ShowTotals(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 
 	void PickSocket(int32 SocketIndex);
 	void PickStack(FName GemId);
+
+	/** Drops the picked stack or socket, and an echo waiting for its confirm. */
+	void ClearPick();
 
 	/** Sets what the cursor is over, a stack (GemId) or a socket (SocketIndex), and shows its detail. */
 	void Hover(FName GemId, int32 SocketIndex);
@@ -493,7 +582,7 @@ private:
 	/** The picked stack, kept while it equips socket after socket; NAME_None while a socket or nothing is picked. */
 	FName PickedGem;
 
-	/** The picked socket; INDEX_NONE while a stack or nothing is picked. */
+	/** The picked socket, the echo socket (GetEchoIndex) included; INDEX_NONE while a stack or nothing is picked. */
 	int32 PickedSocket = INDEX_NONE;
 
 	/** The stack under the cursor; NAME_None when none. */
@@ -501,6 +590,9 @@ private:
 
 	/** The socket under the cursor; INDEX_NONE when none. */
 	int32 HoveredSocket = INDEX_NONE;
+
+	/** Whether ECHO of the picked stack waits for a second press, because it empties sockets. */
+	bool bConfirmingEcho = false;
 
 	/** Whether the build in play shows its name field rather than its name. */
 	bool bRenamingBuild = false;
@@ -511,4 +603,11 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UGeoGemSocketButton>> SocketButtons;
+
+	/** Behind the echo socket's button; built with the board. */
+	UPROPERTY(Transient)
+	TObjectPtr<UGeoEchoHalo> EchoHalo;
+
+	/** Whether the echo halo has flared yet this session. */
+	static bool bEchoFlared;
 };

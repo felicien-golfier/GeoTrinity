@@ -11,6 +11,8 @@ Two servers: UE 5.8 built-in `mcp-epic` (default for reads and every toolset-cov
 
 ## Script rules
 - Multi-step or reusable work = `.py` in `AI/Python/<Topic>/`, referenced by path; run by compiling the file's own source.
+- One-off change (set a value, flip a flag, bind one parameter, rename, wire one asset) = no script: `mcp-epic` property / Blueprint / material / table tools (`MCP_UnrealBuiltin.md` → "Which server"), or an inline `execute_script` snippet that is not saved.
+- A script left that did its one change and is not re-run on rebuild (a rebuild path, a regenerated asset, a recurring maintenance pass) is deleted in the same session: file, its row in the folder `CLAUDE.md`, every reference. The technique worth keeping moves to the matching `MCP_<Topic>.md`.
 - A script with results writes them to a file the caller reads.
 - Re-runnable: free the target path first (rename aside; close its editor window; else rewrite in place).
 - Compile a Blueprint before saving class-default writes (`MCP_Blueprint.md`).

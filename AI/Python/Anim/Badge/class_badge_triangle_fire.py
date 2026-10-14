@@ -31,7 +31,7 @@ the arrowhead's sloping top, and the two against each other.
 A beat is authored at 30 fps and sped up to the ability's delay by the play rate; End runs at that same rate. The
 montage goes in the Top slot.
 
-Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/class_badge_wiring.py.
+Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/Badge/class_badge_wiring.py.
 Re-runnable: rewrites the sequences and montages in place. Report written to AI/Output/class_badge_triangle_fire.txt.
 """
 import math

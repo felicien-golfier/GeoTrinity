@@ -57,7 +57,7 @@ Every clip from the track writer holds every bone, so moving a bone's rest pose 
 one until that bone's keys are shifted by the same offset in every sequence on the skeleton; the shift is made
 on the sampled per-frame values and written back through the sparse writer, never key by key. On a rig whose bones rest unturned and unscaled, a bone's rest moved by an offset keeps every clip
 playing as before when its keys are multiplied by that offset on its own side and its children's keys take it back
-on theirs (`AI/Python/Anim/rerig_class_badges.py`). A bone resting off the centre of what it carries needs a
+on theirs (`AI/Python/Anim/Badge/rerig_class_badges.py`). A bone resting off the centre of what it carries needs a
 translation key beside every turn to hold that part in place, so rest each bone on its part's centre. Rebuilding a skinned mesh from a static mesh resets its material slots to
 the static mesh's.
 
@@ -178,7 +178,7 @@ parts read different values at its two ends.
 - Where several clips are cut from one driver, how each winds up is what tells them apart, so give each its own
   rather than the one that reads best.
 
-`AI/Python/Anim/star_spike_nova.py` is a hit built on these and `star_idle_breath.py` the looping counterpart;
+`AI/Python/Anim/Boss/star_spike_nova.py` is a hit built on these and `star_idle_breath.py` the looping counterpart;
 `hex_boss_idle.py` closes a loop on symmetry rather than stillness, and `hex_boss_abilities.py` drives several
 clips from one parameter table — the same abilities are cut three ways from three drivers (one eased curve, one
 run of steps, one spin held at the symmetry's speed limit) across that file and its `_clockwork` and `_frenzy`
@@ -214,7 +214,7 @@ still before the beat that finishes it; one breaking has nothing to wind up for,
 anywhere in it reads as intent. Where such a clip ends on its parts at rest rather than cleared away, each has
 to stop turning on the frame it stops moving, or the wreckage keeps spinning where it lies.
 
-See `AI/Python/Anim/hex_boss_intro.py` (parts that exist from the first frame and fly together), `star_intro.py` (a
+See `AI/Python/Anim/Boss/hex_boss_intro.py` (parts that exist from the first frame and fly together), `star_intro.py` (a
 shape with nothing to scatter, growing its own points), `hex_boss_death.py` (parts leaving the axis one at a
 time and thrown apart to stay) and `star_death.py` (a shape that throws its features out and swallows them).
 
@@ -236,7 +236,7 @@ part against that volume on every frame, since either alone stays under a cap th
 A sustained phase pulses better shaped like a hit than like a wave — out over a fifth of it and decaying across
 the rest — since a wave of the same peak spends most of the phase halfway out, which reads as floating.
 
-`AI/Python/Anim/hex_boss_abilities.py` carries clips cut this way and the per-frame report of compounded scale
+`AI/Python/Anim/Boss/hex_boss_abilities.py` carries clips cut this way and the per-frame report of compounded scale
 against the cap.
 
 ## Checking a clip's silhouette
@@ -349,4 +349,4 @@ the concept before concluding it is unreachable.
 ## Ability clip recoil
 - `UGeoGameFeelComponent` already kicks the whole badge on every shot: a clip never adds a whole-badge or root / layer translation recoil.
 - A clip's recoil works on the parts: crush along X with a translation that keeps the part's back face where it rests (Y bulges a little), or step back in ratchet clicks. The body may follow a little the same way.
-- A wind-up reads as vibration plus a roll that accelerates right up to the release and stops dead on it. Model: `AI/Python/Anim/class_badge_deploy.py` `square_key`.
+- A wind-up reads as vibration plus a roll that accelerates right up to the release and stops dead on it. Model: `AI/Python/Anim/Badge/class_badge_deploy.py` `square_key`.

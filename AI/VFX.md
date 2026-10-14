@@ -105,7 +105,7 @@ is `NS_ChargedHalo`.
 own mesh, differing only in what moves the fire — radial push, a vortex about the up axis, or nothing.
 `NS_EmpoweredArcRun` is the electric counterpart.
 
-Built by `AI/Python/Niagara/static_electricity_vfx.py`, `cone_coil_vfx.py`, `lightning_variants.py`,
+Built by `AI/Python/Niagara/Electric/static_electricity_vfx.py`, `cone_coil_vfx.py`, `lightning_variants.py`,
 `empowered_arc_vfx.py`, `empowered_aura_vfx.py` and `charged_trail_vfx.py`.
 
 ## Geometric Shapes as Particles

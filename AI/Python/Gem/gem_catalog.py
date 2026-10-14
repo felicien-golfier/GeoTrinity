@@ -4,7 +4,7 @@ Rewrites the drop tables and class XP below in place when the asset exists, so r
 themselves come from Data/gems.csv, which UGeoGemCsvSync keeps equal to the asset both ways in the open editor;
 this script only imports it, for edits made while no editor was open. Writes a readback of every row to
 AI/Output/gem_catalog.txt. Runs in the open editor or headless:
-UnrealEditor-Cmd GeoTrinity.uproject -run=pythonscript -script=AI/Python/Asset/gem_catalog.py
+UnrealEditor-Cmd GeoTrinity.uproject -run=pythonscript -script=AI/Python/Gem/gem_catalog.py
 """
 import traceback
 

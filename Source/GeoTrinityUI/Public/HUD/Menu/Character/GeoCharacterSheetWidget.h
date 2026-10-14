@@ -240,8 +240,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
 	FText NextLevelFormat = INVTEXT("NEXT  \u00B7  LV {0}  \u00B7  +{1} SOCKETS");
 
+	/** After the level of a class under the max once the shared echo is unlocked: {0} is the echo level. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
-	FText MaxLevelText = INVTEXT("MAX LEVEL");
+	FText EchoLevelFormat = INVTEXT("  ·  ECHO {0}");
+
+	/** At the max class level, where the XP feeds the echo socket: {0} is the echo level. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")
+	FText MaxLevelEchoFormat = INVTEXT("MAX LEVEL  ·  ECHO {0}");
 
 	/** {0} is the XP earned, {1} the XP the level takes. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet")

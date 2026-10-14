@@ -44,20 +44,35 @@ FGameplayEffectSpecHandle UGeoGemStatsEffect::MakeSpec(UAbilitySystemComponent c
 
 	TMap<FName, float> SummedMagnitudes;
 	FGameplayTagContainer GrantedTags;
+	auto AddCopies = [&SummedMagnitudes](FGeoGemInfo const& Gem, float const Copies)
+	{
+		if (Gem.Attribute.IsValid())
+		{
+			ensureMsgf(Supports(Gem), TEXT("%hs: gem %s raises %s, which UGeoGemStatsEffect does not list"),
+					   __FUNCTION__, *Gem.Id.ToString(), *Gem.Attribute.GetName());
+			SummedMagnitudes.FindOrAdd(GetSetByCallerName(Gem.Attribute, Gem.Operation)) +=
+				Gem.MagnitudePerGem * Copies;
+		}
+	};
+
 	for (FName const GemId : Loadout.Sockets)
 	{
-		FGeoGemInfo const* Gem = Catalog.Find(GemId);
-		if (Gem && Gem->GrantedTag.IsValid())
+		if (FGeoGemInfo const* Gem = Catalog.Find(GemId))
 		{
-			GrantedTags.AddTag(Gem->GrantedTag);
-		}
+			if (Gem->GrantedTag.IsValid())
+			{
+				GrantedTags.AddTag(Gem->GrantedTag);
+			}
 
-		if (Gem && Gem->Attribute.IsValid())
-		{
-			ensureMsgf(Supports(*Gem), TEXT("%hs: gem %s raises %s, which UGeoGemStatsEffect does not list"),
-					   __FUNCTION__, *GemId.ToString(), *Gem->Attribute.GetName());
-			SummedMagnitudes.FindOrAdd(GetSetByCallerName(Gem->Attribute, Gem->Operation)) += Gem->MagnitudePerGem;
+			AddCopies(*Gem, 1.f);
 		}
+	}
+
+	FGeoGemInfo const* EchoGem = Catalog.Find(Loadout.Echo);
+	TOptional<EGeoGemTier> const EchoTier = Catalog.FindTier(Loadout.Echo);
+	if (EchoGem && EchoTier)
+	{
+		AddCopies(*EchoGem, Catalog.GetEchoCopies(*EchoTier, Loadout.EchoLevel));
 	}
 
 	FGameplayEffectSpecHandle SpecHandle = ASC.MakeOutgoingSpec(StaticClass(), 1.f, ASC.MakeEffectContext());

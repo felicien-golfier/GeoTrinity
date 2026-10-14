@@ -47,8 +47,7 @@ exported text into a fresh struct, then merge overrides — a single-field text 
 preserves the rest — reassign the whole rebuilt container and save. An object reference merges in as its
 exported text, never as the asset itself. A container edit can leave the package clean, so save unconditionally.
 
-See `AI/Python/Asset/struct_container_edit.py` for both container kinds and `AI/Python/Ability/ability_info_icons.py` for a
-worked array case.
+See `AI/Python/Asset/struct_container_edit.py` for both container kinds.
 
 ## Authoring a curve asset
 

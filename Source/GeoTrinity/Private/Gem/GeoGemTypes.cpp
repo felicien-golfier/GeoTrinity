@@ -2,7 +2,10 @@
 
 #include "Gem/GeoGemTypes.h"
 
-FText FGeoGemInfo::GetMagnitudeText(int32 const Count) const
+#include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
+
+FText FGeoGemInfo::GetMagnitudeText(float const Copies) const
 {
 	if (MagnitudePerGem == 0.f)
 	{
@@ -13,15 +16,22 @@ FText FGeoGemInfo::GetMagnitudeText(int32 const Count) const
 	Options.SetAlwaysSign(true).SetMaximumFractionalDigits(2);
 	if (Operation == EGeoGemOperation::Flat)
 	{
-		return FText::AsNumber(MagnitudePerGem * Count, &Options);
+		return FText::AsNumber(MagnitudePerGem * Copies, &Options);
 	}
 
-	return FText::Format(INVTEXT("{0}%"), FText::AsNumber(MagnitudePerGem * Count * 100.f, &Options));
+	return FText::Format(INVTEXT("{0}%"), FText::AsNumber(MagnitudePerGem * Copies * 100.f, &Options));
 }
 
-FText FGeoGemInfo::GetEffectText(int32 const Count) const
+FText FGeoGemInfo::GetEffectText(float const Copies) const
 {
-	return MagnitudePerGem == 0.f ? Effect : FText::Format(INVTEXT("{0} {1}"), Effect, GetMagnitudeText(Count));
+	// {Token}s read the Core's passive ability, else UGameDataSettings (Leverage has no ability).
+	UGeoGameplayAbility const* const Source = GrantedAbility
+		? GrantedAbility->GetDefaultObject<UGeoGameplayAbility>()
+		: GetDefault<UGeoGameplayAbility>();
+	FText const ResolvedEffect =
+		FText::FromString(GeoDescription::ResolveTokens(Effect.ToString(), *Source, 1, false));
+	return MagnitudePerGem == 0.f ? ResolvedEffect
+								  : FText::Format(INVTEXT("{0} {1}"), ResolvedEffect, GetMagnitudeText(Copies));
 }
 
 TArray<FGeoGemSocket> const& GeoGem::GetSockets()

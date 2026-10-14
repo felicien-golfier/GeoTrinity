@@ -4,7 +4,7 @@ The Gems menu in the Rail look, opened from the character sheet's GEMS (design: 
   tab drawn from the Menu_ icons, then the build in play and the build count on the right) over a divider; the socket
   board (Board, a 684 x 639 canvas the widget fills with the clusters, the class level block in its top-left corner);
   the stacks under their tier filters (WBP_TabUnderline, spread over a divider), scrolling in StackScroll; right of a
-  divider, the selection (glyph, tier, name, effect, counts, EQUIP / FILL / UNEQUIP, note) or the hint, then the total
+  divider, the selection (glyph, tier, name, effect, counts, EQUIP / FILL / UNEQUIP / ECHO, note) or the hint, then the total
   bonus table (TotalsTable, a WBP_Table: STAT, BONUS, QTY).
 - WBP_GemForge (UGeoGemForgeWidget): the tiers to select, BREAK DOWN FREE SELECTED and the rate table (RateTable, a
   WBP_Table: TIER, BREAK DOWN, CRAFT); the gem types
@@ -39,7 +39,7 @@ wings_hud = character_sheet.wings_hud
 asset_guard = wings_hud.asset_guard
 add, write_slot, text = wings_hud.add, wings_hud.write_slot, wings_hud.text
 remove_unless_edited = wings_hud.remove_unless_edited
-frame, meter = wings_hud.frame, wings_hud.meter
+frame = wings_hud.frame
 label, spacer, button = character_sheet.label, character_sheet.spacer, character_sheet.button
 
 UTIL = unreal.GeoWidgetBuilderUtil.get_default_object()
@@ -49,6 +49,7 @@ LOADOUT_PATH = f"{MENU_DIR}/WBP_GemLoadout"
 FORGE_PATH = f"{MENU_DIR}/WBP_GemForge"
 GEMS_PATH = f"{MENU_DIR}/WBP_Gems"
 ROW_CLASS = "/Game/HUD/WBP_ListRow.WBP_ListRow_C"
+ECHO_HALO_STYLE = "/Game/HUD/Style/DA_Frame_Button.DA_Frame_Button"
 CENTER = unreal.VerticalAlignment.V_ALIGN_CENTER
 FILL = unreal.SlateChildSize(1.0, unreal.SlateSizeRule.FILL)
 # The forge's left column: the tier rows with their counts, and the break-down summary.
@@ -274,7 +275,6 @@ def loadout_layout(wbp, path, underline_tab):
         UTIL.attach_widget(wbp, "BoardOverlay", "Board")
         UTIL.attach_widget(wbp, "BoardSize", "BoardOverlay")
     recreated(wbp, unreal.GeoText, "LevelText", text(ROLE.HEADING, "1"))
-    recreated(wbp, unreal.GeoMeter, "LevelPips", {"meter_style": meter("DA_Meter_LevelPips")})
     recreated(wbp, unreal.GeoText, "NextText", text(ROLE.LABEL, "NEXT"))
     rail_style.fill_slot(UTIL.find_widget(wbp, "Board").get_editor_property("slot"))
     level_size_slot = placed(wbp, path, unreal.SizeBox, "LevelBoxSize", "BoardOverlay", 1,
@@ -289,12 +289,7 @@ def loadout_layout(wbp, path, underline_tab):
     asset_guard.write(path, UTIL.find_widget(wbp, "LevelText"), "role", ROLE.HEADING, earlier=[ROLE.MONO])
     level_max_slot = placed(wbp, path, unreal.GeoText, "LevelMaxText", "LevelRow", 1, text(ROLE.LABEL, " / 20"))
     padded(path, level_max_slot, unreal.Margin(0, 0, 0, 3), vertical_alignment=unreal.VerticalAlignment.V_ALIGN_BOTTOM)
-    pips_slot = placed(wbp, path, unreal.SizeBox, "LevelPipsSize", "LevelBox", 2,
-                       dict(override_width_override=True, width_override=138.0,
-                            override_height_override=True, height_override=14.0))
-    padded(path, pips_slot, unreal.Margin(0, 8, 0, 0), horizontal_alignment=unreal.HorizontalAlignment.H_ALIGN_LEFT)
-    rail_style.fill_slot(move(wbp, "LevelPips", "LevelPipsSize"))
-    padded(path, move(wbp, "NextText", "LevelBox", 3), unreal.Margin(0, 8, 0, 0))
+    padded(path, move(wbp, "NextText", "LevelBox", 2), unreal.Margin(0, 8, 0, 0))
     if UTIL.find_widget(wbp, "ClassRow") and not UTIL.find_widget(wbp, "ClassRow").get_children_count():
         UTIL.remove_widget(wbp, "ClassRow")
 
@@ -314,6 +309,8 @@ def loadout_layout(wbp, path, underline_tab):
     add(wbp, path, unreal.VerticalBox, "DetailStack", "DetailSection")
     move(wbp, "DetailBox", "DetailStack", 0)
     move(wbp, "HintText", "DetailStack", 1)
+    button(wbp, path, "EchoButton", "DetailButtons", "ECHO")
+    write_slot(path, UTIL.find_widget(wbp, "EchoButton").get_editor_property("slot"), {"size": FILL})
     padded(path, divider(wbp, path, "TotalsDivider", "DetailColumn", 1), unreal.Margin(0, 16, 0, 14))
     placed(wbp, path, unreal.HorizontalBox, "TotalsHead", "DetailColumn", 2)
     padded(path, move(wbp, "TotalsTitleText", "TotalsHead", 0), rail_style.NO_PADDING)
@@ -384,9 +381,6 @@ def build_loadout(underline_tab):
         spacer(wbp, path, "ClassSpacer", "ClassRow")
         _, level_slot = add(wbp, path, unreal.GeoText, "LevelText", "ClassRow", text(ROLE.MONO, "LEVEL 1 / 20"))
         write_slot(path, level_slot, {"vertical_alignment": CENTER})
-        _, pips_slot = add(wbp, path, unreal.GeoMeter, "LevelPips", "ClassRow",
-                           {"meter_style": meter("DA_Meter_LevelPips")})
-        padded(path, pips_slot, unreal.Margin(18, 0, 18, 0), vertical_alignment=CENTER)
         next_slot = label(wbp, path, "NextText", "ClassRow", "NEXT")
         write_slot(path, next_slot, {"vertical_alignment": CENTER})
 
@@ -439,6 +433,10 @@ def build_loadout(underline_tab):
     wbp = unreal.load_asset(path)
     asset_guard.write(path, UTIL.find_widget(wbp, "TotalsTitleText"), "auto_wrap_text", True)
     build_row(wbp, path)
+    echo_defaults = unreal.get_default_object(wbp.generated_class())
+    asset_guard.write(path, echo_defaults, "echo_halo_style", unreal.load_asset(ECHO_HALO_STYLE))
+    asset_guard.write(path, echo_defaults, "echo_size", 56.0)
+    asset_guard.write(path, echo_defaults, "echo_halo_size", 168.0)
     wings_hud.scrolled(wbp, path, "StackGrid", "StackScroll")
     kept = loadout_layout(wbp, path, underline_tab)
     wings_hud.finish(wbp)

@@ -109,7 +109,7 @@ band-limited cracks, no ringing line anywhere.
 
 A sound that follows an animation is timed off the animation's own motion, not placed by eye.
 
-1. Dump the bones with `AI/Python/Anim/dump_bone_motion.py`: position, unwrapped yaw and scale, four samples a frame.
+1. Dump the bones with `AI/Python/Anim/Boss/dump_bone_motion.py`: position, unwrapped yaw and scale, four samples a frame.
 2. Score it with a script like `AI/Python/Audio/hex_intro_score.py`: it writes its one-shots, a stem per
    continuous sound, a `cues.json` of every notify (track, sound, time, volume) and a preview mix of the whole
    animation — into `Draft/`, or into `SourceArt/Audio` once approved.

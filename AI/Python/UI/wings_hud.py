@@ -78,6 +78,10 @@ METER_STYLES = {
     # The class gauge rising over a slot's icon: white, tinted by the class colour.
     "DA_Meter_SlotGauge": dict(
         shape=SHAPE.RISE, size=unreal.Vector2D(84, 84), track_color=srgb("000000", 0.0), fill_color=srgb("FFFFFF", .35)),
+    # The class XP towards the next level (then the echo level) under the player's health: thin and quiet.
+    "DA_Meter_Xp": dict(
+        shape=SHAPE.BAR, size=unreal.Vector2D(200, 5), track_color=srgb("FFFFFF", .12),
+        low_track_color=srgb("FFFFFF", .12), fill_color=srgb("F4EEFF", .75)),
     # The time left along a status tile's bottom edge.
     "DA_Meter_StatusTime": dict(
         shape=SHAPE.BAR, size=unreal.Vector2D(56, 3), track_color=srgb("000000", 0.0),
@@ -395,7 +399,7 @@ def restyle_ability_slot():
     write_slot(path, cooldown.get_editor_property("slot"),
                {"horizontal_alignment": unreal.HorizontalAlignment.H_ALIGN_FILL, "vertical_alignment": CENTER})
     square = UTIL.find_widget(wbp, "Square")
-    # ability_bar.py built the slot 64 wide before the ledger existed.
+    # The slot was first built 64 wide, before the ledger existed.
     for key, value in dict(override_width_override=True, width_override=84.0, override_height_override=True,
                            height_override=84.0).items():
         asset_guard.write(path, square, key, value, earlier=(64.0,))

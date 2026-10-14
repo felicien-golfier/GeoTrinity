@@ -19,7 +19,7 @@ The three differ by the mechanism that moves the fire, not by tuning:
 Layers emit at a continuous rate rather than in bursts - a rate reads as an ambient state, a burst as a series
 of events, and empowerment is a state.
 
-Electricity is not built here; it lives in AI/Python/Niagara/empowered_arc_vfx.py.
+Electricity is not built here; it lives in AI/Python/Niagara/Electric/empowered_arc_vfx.py.
 
 A run is `prepare()`, then the `niagara_ops` route to drop each base system's own emitter - the one step no
 Python here reaches - then `main()`.

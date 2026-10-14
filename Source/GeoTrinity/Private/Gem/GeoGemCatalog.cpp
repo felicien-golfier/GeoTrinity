@@ -2,6 +2,8 @@
 
 #include "Gem/GeoGemCatalog.h"
 
+#include "Algo/Count.h"
+#include "Curves/CurveFloat.h"
 #include "Settings/GameDataSettings.h"
 
 UGeoGemCatalog const* UGeoGemCatalog::Get()
@@ -113,6 +115,34 @@ int32 UGeoGemCatalog::GetXp(EGeoBossType const BossType, float const HealthTaken
 
 	return FMath::RoundToInt32(FMath::Clamp(HealthTakenRatio, 0.f, 1.f) * *XpPerBar
 							   * GetDifficultyScale(DifficultyXpScale, Difficulty));
+}
+
+float UGeoGemCatalog::GetEchoShare(EGeoGemTier const Tier, int32 const Level) const
+{
+	int32 const Place = EchoTierOrder.Find(Tier);
+	int32 const CycleLength = EchoTierOrder.Num();
+	int32 const LevelCount = Place == INDEX_NONE || Level <= Place ? 0 : (Level - Place - 1) / CycleLength + 1;
+	return EchoPercentPerLevel * LevelCount;
+}
+
+float UGeoGemCatalog::GetEchoCopies(EGeoGemTier const Tier, int32 const EchoLevel) const
+{
+	int32 const TierSocketCount = Algo::CountIf(GeoGem::GetSockets(),
+												[Tier](FGeoGemSocket const& Socket)
+												{
+													return Socket.Tier == Tier;
+												});
+	return TierSocketCount * GetEchoShare(Tier, EchoLevel);
+}
+
+int32 UGeoGemCatalog::GetEchoXpForLevel(int32 const Level) const
+{
+	if (!ensureMsgf(EchoXpCurve, TEXT("%hs: %s has no EchoXpCurve"), __FUNCTION__, *GetName()))
+	{
+		return XpPerLevel;
+	}
+
+	return FMath::RoundToInt32(EchoXpCurve->GetFloatValue(Level));
 }
 
 float UGeoGemCatalog::GetDifficultyScale(TMap<EGeoDifficulty, float> const& Scales,

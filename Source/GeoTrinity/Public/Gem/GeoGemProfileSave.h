@@ -75,10 +75,10 @@ public:
 	/** Total copies of GemId this player owns, across loadouts and unslotted inventory. */
 	int32 GetOwnedCount(FName GemId) const { return OwnedGems.FindRef(GemId); }
 
-	/** Copies of GemId PlayerClass can still equip: owned - those the build it plays already slots. */
+	/** Copies of GemId PlayerClass can still equip: owned - those the build it plays already slots or echoes. */
 	int32 GetFreeCount(FName GemId, EPlayerClass PlayerClass) const;
 
-	/** Copies of GemId the Forge may break down: owned - the most any one build slots. */
+	/** Copies of GemId the Forge may break down: owned - the most any one build slots or echoes. */
 	int32 GetBreakableCount(FName GemId) const;
 
 	/** Current level of PlayerClass, from 1 up to GeoGem::MaxClassLevel. */
@@ -86,6 +86,36 @@ public:
 
 	/** XP PlayerClass earned since its current level. */
 	int32 GetClassXp(EPlayerClass PlayerClass) const;
+
+	/** The gem in the echo socket of the build PlayerClass plays; NAME_None when empty. */
+	FName GetEcho(EPlayerClass PlayerClass) const;
+
+	/** The echo level shared by every class: 0 until a class first reaches GeoGem::EchoUnlockLevel, then up to
+	 * Catalog.EchoMaxLevel. */
+	int32 GetEchoLevel() const;
+
+	/** XP earned since the current echo level; keeps growing at the max echo level. */
+	int32 GetEchoXp() const;
+
+	/**
+	 * How far PlayerClass is towards its next level, 0 .. 1, the same bar below and at the max class level: XP into the
+	 * class level, then XP into the echo level. OutXpTaken / OutXpNeeded are that bar's numbers; a class at the max
+	 * echo level reads full.
+	 */
+	float GetXpProgress(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32& OutXpTaken,
+						int32& OutXpNeeded) const;
+
+	/**
+	 * Whether SetEcho would take GemId into the echo socket of the build PlayerClass plays: not when the echo level is
+	 * still 0, GemId is a Core or already the echo, or no copy is owned.
+	 */
+	bool CanEcho(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, FName GemId) const;
+
+	/** Echoes a copy of GemId, emptying the sockets of the build that hold it. Refused (false) when CanEcho is not. */
+	bool SetEcho(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, FName GemId);
+
+	/** Empties the echo socket of the build PlayerClass plays; the copy goes back to free. */
+	void ClearEcho(EPlayerClass PlayerClass);
 
 	/** The loadout of the build PlayerClass plays, one entry per GeoGem::GetSockets() index. */
 	FGeoGemLoadout GetLoadout(EPlayerClass PlayerClass) const;
@@ -113,17 +143,29 @@ public:
 
 	/**
 	 * Sets PlayerClass's level, clamped to [1, GeoGem::MaxClassLevel], with no XP towards the next. Lowering it empties
-	 * every socket of every build that is locked again at the new level; the copies go back to free.
+	 * every socket of every build that is locked again at the new level; the copies go back to free. A class at the max
+	 * level lifts the echo level to 1; once no class is at the max level the echo level and XP go back to 0 and every
+	 * echo socket empties.
 	 */
 	void SetClassLevel(EPlayerClass PlayerClass, int32 Level);
 
-	/** Adds Xp to PlayerClass, leveling it up every Catalog.XpPerLevel up to the max level. Returns the levels gained. */
+#if !UE_BUILD_SHIPPING
+	/** Dev: sets the shared echo level, clamped 0 .. Catalog.EchoMaxLevel; the echo XP restarts at 0. A level above 0
+	 * with no class at the max level first takes Triangle there. */
+	void SetEchoLevel(UGeoGemCatalog const& Catalog, int32 Level);
+#endif
+
+	/**
+	 * Adds Xp to PlayerClass, leveling it up every Catalog.XpPerLevel up to the max level; what is earned at the max
+	 * level goes to the shared echo XP, raising the echo level (each costing Catalog.GetEchoXpForLevel) up to
+	 * Catalog.EchoMaxLevel, where the XP is still kept. Returns the class levels gained.
+	 */
 	int32 AddClassXp(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 Xp);
 
 	/**
 	 * Whether Equip would take GemId into socket SocketIndex of the build PlayerClass plays: not when the socket is
-	 * still locked at the class level, is of another tier or already holds GemId, no copy is free, or GemId is a Core
-	 * this build already holds.
+	 * still locked at the class level, is of another tier or already holds GemId, no copy is free, GemId is the build's
+	 * echo, or GemId is a Core this build already holds.
 	 */
 	bool CanEquip(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 SocketIndex, FName GemId) const;
 
@@ -157,8 +199,18 @@ private:
 	 * socket. */
 	FGeoGemClassProgress& FindOrAddClass(EPlayerClass PlayerClass);
 
-	/** The sockets of the build PlayerClass plays, sized to every socket. */
-	TArray<FName>& GetActiveSockets(EPlayerClass PlayerClass);
+	/** The loadout of the build PlayerClass plays, its sockets sized to every socket. */
+	FGeoGemLoadout& GetActiveLoadout(EPlayerClass PlayerClass);
+
+	/** Whether any class is at GeoGem::EchoUnlockLevel. */
+	bool HasClassAtEchoUnlockLevel() const;
+
+	/** The echo follows the class levels: any class at GeoGem::EchoUnlockLevel lifts the echo level from 0 to 1; none
+	 * resets the echo level and XP to 0 and empties every build's echo socket. */
+	void SyncEchoWithClassLevels();
+
+	/** Copies of GemId Loadout holds: its sockets plus the echo. */
+	static int32 CountSlotted(FGeoGemLoadout const& Loadout, FName GemId);
 
 	UPROPERTY()
 	TMap<FName, int32> OwnedGems;
@@ -168,4 +220,12 @@ private:
 
 	UPROPERTY()
 	TMap<EPlayerClass, FGeoGemClassProgress> Classes;
+
+	/** One echo level for the whole profile, 0 until a class reaches the max level; kept across builds and classes. */
+	UPROPERTY()
+	int32 EchoLevel = 0;
+
+	/** Every XP point earned at the max class level since reaching EchoLevel; never reset at the max echo level. */
+	UPROPERTY()
+	int32 EchoXp = 0;
 };

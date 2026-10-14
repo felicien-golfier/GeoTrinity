@@ -15,6 +15,8 @@ Write plain text with `{Token}` placeholders, replaced with the **live values on
 data), so descriptions never drift from balance changes. Never hardcode a number that exists on the ability.
 An unresolved token stays visible (`{Typo}`) and logs a warning.
 
+A gem's `Effect` text (`Data/gems.csv`, shown on the gem) takes the same tokens, resolved on the Core's passive ability, or on `UGameDataSettings` for a gem with none (Leverage): `x{LeverageHealthMultiplier.Min}`. Never type a number the code holds.
+
 Cooldown is shown next to the ability's name in the UI — don't append it to the description body.
 
 ## Tokens
@@ -28,6 +30,7 @@ Cooldown is shown next to the ability's name in the UI — don't append it to th
 | `{PropertyName}` | Any numeric or `FScalableFloat` UPROPERTY on the ability class, by exact C++ name (`{DashDistance}`); a name the ability lacks is read from `UGameDataSettings` (`{MinDeployDistance}`) |
 | `{EffectProperty}` | A single `TInstancedStruct<FEffectData>` UPROPERTY holding an `FGameplayEffectData` — its `Magnitude` |
 | `{ArrayName}` | Any `TArray<TInstancedStruct<FEffectData>>` UPROPERTY — expands like `{Effects}` over that array |
+| `{Struct.Member}` | A member of a struct property, for an interval: `{LeverageHealthMultiplier.Min}` (read from `UGameDataSettings` when the ability lacks it) |
 | `{A*B}` | Product of two numeric/`FScalableFloat` properties, for a derived cap like per-unit × max-count. Honors suffixes |
 
 ## Suffixes

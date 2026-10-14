@@ -23,7 +23,7 @@ charge cuts straight to it. Every montage goes in the full-body slot, over the a
 ability system then leaves auto-fire's own montage unplayed until this one is done. Nothing moves the root, whose fire
 sockets must stay put, and nothing kicks the whole badge back, which the character's game feel already does.
 
-Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/class_badge_wiring.py.
+Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script, then AI/Python/Anim/Badge/class_badge_wiring.py.
 Re-runnable: rewrites the sequences and montages in place. Report written to AI/Output/class_badge_deploy.txt.
 """
 import math

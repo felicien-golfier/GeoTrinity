@@ -24,10 +24,13 @@ void UGeoGemSubsystem::CommitChanges()
 	Profile->Save(LocalPlayer->GetLocalPlayerIndex());
 
 	APlayerController const* PlayerController = LocalPlayer->GetPlayerController(GetWorld());
-	if (AGeoPlayerState const* PlayerState = PlayerController ? PlayerController->GetPlayerState<AGeoPlayerState>() : nullptr)
+	if (AGeoPlayerState const* PlayerState =
+			PlayerController ? PlayerController->GetPlayerState<AGeoPlayerState>() : nullptr)
 	{
 		PlayerState->GetGemComponent()->SendLoadoutsToServer(*Profile);
 	}
+
+	OnProfileCommitted.Broadcast();
 }
 
 void UGeoGemSubsystem::GrantReward(FGeoGemReward const& Reward)
@@ -63,29 +66,30 @@ static EPlayerClass ParsePlayerClass(FString const& Name)
 	return Value == INDEX_NONE ? EPlayerClass::None : static_cast<EPlayerClass>(Value);
 }
 
-static FAutoConsoleCommandWithWorldAndArgs GGemsGrantCommand(
-	TEXT("Geo.Gems.Grant"), TEXT("Geo.Gems.Grant <GemId|All> <Count> — adds gems to the first local player's stacks"),
-	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
-		[](TArray<FString> const& Args, UWorld* World)
-		{
-			UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
-			UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
-			if (Gems && Catalog && Args.Num() == 2)
-			{
-				int32 const Count = FCString::Atoi(*Args[1]);
-				for (TPair<EGeoGemTier, FGeoGemList> const& Tier : Catalog->GemsByTier)
-				{
-					for (FGeoGemInfo const& Gem : Tier.Value.Gems)
-					{
-						if (Args[0] == TEXT("All") || Gem.Id == FName(Args[0]))
-						{
-							Gems->GetProfile()->AddGems(Gem.Id, Count);
-						}
-					}
-				}
-				Gems->CommitChanges();
-			}
-		}));
+static FAutoConsoleCommandWithWorldAndArgs
+	GGemsGrantCommand(TEXT("Geo.Gems.Grant"),
+					  TEXT("Geo.Gems.Grant <GemId|All> <Count> — adds gems to the first local player's stacks"),
+					  FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
+						  [](TArray<FString> const& Args, UWorld* World)
+						  {
+							  UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
+							  UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+							  if (Gems && Catalog && Args.Num() == 2)
+							  {
+								  int32 const Count = FCString::Atoi(*Args[1]);
+								  for (TPair<EGeoGemTier, FGeoGemList> const& Tier : Catalog->GemsByTier)
+								  {
+									  for (FGeoGemInfo const& Gem : Tier.Value.Gems)
+									  {
+										  if (Args[0] == TEXT("All") || Gem.Id == FName(Args[0]))
+										  {
+											  Gems->GetProfile()->AddGems(Gem.Id, Count);
+										  }
+									  }
+								  }
+								  Gems->CommitChanges();
+							  }
+						  }));
 
 static FAutoConsoleCommandWithWorldAndArgs GGemsSetLevelCommand(
 	TEXT("Geo.Gems.SetLevel"), TEXT("Geo.Gems.SetLevel <Triangle|Circle|Square> <Level> — sets a class level"),
@@ -100,9 +104,67 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsSetLevelCommand(
 			}
 		}));
 
+static FAutoConsoleCommandWithWorldAndArgs
+	GGemsSetEchoLevelCommand(TEXT("Geo.Gems.SetEchoLevel"),
+							 TEXT("Geo.Gems.SetEchoLevel <Level> — sets the shared echo level"),
+							 FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
+								 [](TArray<FString> const& Args, UWorld* World)
+								 {
+									 UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
+									 UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+									 if (Gems && Catalog && Args.Num() == 1)
+									 {
+										 Gems->GetProfile()->SetEchoLevel(*Catalog, FCString::Atoi(*Args[0]));
+										 Gems->CommitChanges();
+									 }
+								 }));
+
+static FAutoConsoleCommandWithWorldAndArgs GGemsAddXpCommand(
+	TEXT("Geo.Gems.AddXp"),
+	TEXT("Geo.Gems.AddXp <Triangle|Circle|Square> <Xp> — earns class XP; past the max level it feeds the echo"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
+		[](TArray<FString> const& Args, UWorld* World)
+		{
+			UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
+			UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+			if (Gems && Catalog && Args.Num() == 2)
+			{
+				Gems->GetProfile()->AddClassXp(*Catalog, ParsePlayerClass(Args[0]), FCString::Atoi(*Args[1]));
+				Gems->CommitChanges();
+			}
+		}));
+
+static FAutoConsoleCommandWithWorldAndArgs GGemsEchoCommand(
+	TEXT("Geo.Gems.Echo"),
+	TEXT(
+		"Geo.Gems.Echo <Triangle|Circle|Square> <GemId|None> — echoes a gem in the class's build, or empties the echo"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
+		[](TArray<FString> const& Args, UWorld* World)
+		{
+			UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
+			UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+			if (Gems && Catalog && Args.Num() == 2)
+			{
+				EPlayerClass const PlayerClass = ParsePlayerClass(Args[0]);
+				if (Args[1] == TEXT("None"))
+				{
+					Gems->GetProfile()->ClearEcho(PlayerClass);
+				}
+				else
+				{
+					bool const bEchoed = Gems->GetProfile()->SetEcho(*Catalog, PlayerClass, FName(Args[1]));
+					UE_LOG(LogGeoTrinity, Display, TEXT("Geo.Gems.Echo: %s"),
+						   bEchoed ? TEXT("echoed") : TEXT("refused"));
+				}
+
+				Gems->CommitChanges();
+			}
+		}));
+
 static FAutoConsoleCommandWithWorldAndArgs GGemsFillCommand(
 	TEXT("Geo.Gems.Fill"),
-	TEXT("Geo.Gems.Fill <Triangle|Circle|Square> <GemId> — fills every socket of the gem's tier a class has open, replacing slotted gems"),
+	TEXT(
+		"Geo.Gems.Fill <Triangle|Circle|Square> <GemId> — fills every socket of the gem's tier a class has open, replacing slotted gems"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
 		[](TArray<FString> const& Args, UWorld* World)
 		{
@@ -143,7 +205,8 @@ static FAutoConsoleCommandWithWorld GGemsDumpCommand(
 			if (Gems && Catalog)
 			{
 				UGeoGemProfileSave const* Profile = Gems->GetProfile();
-				UE_LOG(LogGeoTrinity, Display, TEXT("Gems: %d shards"), Profile->GetShards());
+				UE_LOG(LogGeoTrinity, Display, TEXT("Gems: %d shards, echo level %d, %d XP"), Profile->GetShards(),
+					   Profile->GetEchoLevel(), Profile->GetEchoXp());
 				for (TPair<EGeoGemTier, FGeoGemList> const& Tier : Catalog->GemsByTier)
 				{
 					for (FGeoGemInfo const& Gem : Tier.Value.Gems)
@@ -152,10 +215,12 @@ static FAutoConsoleCommandWithWorld GGemsDumpCommand(
 							   Profile->GetOwnedCount(Gem.Id), Profile->GetBreakableCount(Gem.Id));
 					}
 				}
-				for (EPlayerClass const PlayerClass : {EPlayerClass::Triangle, EPlayerClass::Circle, EPlayerClass::Square})
+				for (EPlayerClass const PlayerClass :
+					 {EPlayerClass::Triangle, EPlayerClass::Circle, EPlayerClass::Square})
 				{
-					UE_LOG(LogGeoTrinity, Display, TEXT("  %s: level %d, %d XP"), *UEnum::GetValueAsString(PlayerClass),
-						   Profile->GetClassLevel(PlayerClass), Profile->GetClassXp(PlayerClass));
+					UE_LOG(LogGeoTrinity, Display, TEXT("  %s: level %d, %d XP, echo %s"),
+						   *UEnum::GetValueAsString(PlayerClass), Profile->GetClassLevel(PlayerClass),
+						   Profile->GetClassXp(PlayerClass), *Profile->GetEcho(PlayerClass).ToString());
 				}
 			}
 		}));

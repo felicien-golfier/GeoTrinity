@@ -10,6 +10,8 @@
 class UGeoGemProfileSave;
 struct FGeoGemReward;
 
+DECLARE_MULTICAST_DELEGATE(FGeoGemProfileCommittedSignature);
+
 /**
  * Owns one local player's gem profile for the whole session. Whatever edits the profile (the Gems menu, loot, a
  * cheat) calls CommitChanges afterwards, which is what reaches the disk and the server.
@@ -26,8 +28,12 @@ public:
 	/** This local player's gem profile for the session; never null after Initialize. */
 	UGeoGemProfileSave* GetProfile() const { return Profile; }
 
-	/** Saves the profile and sends its loadouts to the server, when this player is connected to one. */
+	/** Saves the profile and sends its loadouts to the server, when this player is connected to one. Then broadcasts
+	 * OnProfileCommitted. */
 	void CommitChanges();
+
+	/** Fires after every CommitChanges: the profile (levels, XP, gems) may have changed. */
+	FGeoGemProfileCommittedSignature OnProfileCommitted;
 
 	/** Adds a finished attempt's class XP and gems to the profile, then commits it. */
 	void GrantReward(FGeoGemReward const& Reward);

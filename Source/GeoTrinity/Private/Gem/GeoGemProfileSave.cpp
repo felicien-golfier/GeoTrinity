@@ -2,6 +2,7 @@
 
 #include "Gem/GeoGemProfileSave.h"
 
+#include "Algo/AnyOf.h"
 #include "Algo/Count.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -17,6 +18,7 @@ UGeoGemProfileSave* UGeoGemProfileSave::Load(int32 const LocalPlayerIndex)
 		Profile->FindOrAddClass(PlayerClass);
 	}
 
+	Profile->SyncEchoWithClassLevels();
 	return Profile;
 }
 
@@ -27,7 +29,7 @@ void UGeoGemProfileSave::Save(int32 const LocalPlayerIndex)
 
 int32 UGeoGemProfileSave::GetFreeCount(FName const GemId, EPlayerClass const PlayerClass) const
 {
-	return GetOwnedCount(GemId) - static_cast<int32>(Algo::Count(GetLoadout(PlayerClass).Sockets, GemId));
+	return GetOwnedCount(GemId) - CountSlotted(GetLoadout(PlayerClass), GemId);
 }
 
 int32 UGeoGemProfileSave::GetBreakableCount(FName const GemId) const
@@ -37,7 +39,7 @@ int32 UGeoGemProfileSave::GetBreakableCount(FName const GemId) const
 	{
 		for (FGeoGemBuild const& Build : Class.Value.Builds)
 		{
-			MostSlotted = FMath::Max(MostSlotted, static_cast<int32>(Algo::Count(Build.Loadout.Sockets, GemId)));
+			MostSlotted = FMath::Max(MostSlotted, CountSlotted(Build.Loadout, GemId));
 		}
 	}
 
@@ -56,6 +58,61 @@ int32 UGeoGemProfileSave::GetClassXp(EPlayerClass const PlayerClass) const
 	return Progress ? Progress->Xp : 0;
 }
 
+FName UGeoGemProfileSave::GetEcho(EPlayerClass const PlayerClass) const
+{
+	return GetLoadout(PlayerClass).Echo;
+}
+
+int32 UGeoGemProfileSave::GetEchoLevel() const
+{
+	return EchoLevel;
+}
+
+int32 UGeoGemProfileSave::GetEchoXp() const
+{
+	return EchoXp;
+}
+
+float UGeoGemProfileSave::GetXpProgress(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass,
+										int32& OutXpTaken, int32& OutXpNeeded) const
+{
+	bool const bMaxLevel = GetClassLevel(PlayerClass) >= GeoGem::MaxClassLevel;
+	OutXpTaken = bMaxLevel ? EchoXp : GetClassXp(PlayerClass);
+	OutXpNeeded = bMaxLevel ? Catalog.GetEchoXpForLevel(EchoLevel + 1) : Catalog.XpPerLevel;
+	return bMaxLevel && EchoLevel >= Catalog.EchoMaxLevel ? 1.f
+														  : static_cast<float>(OutXpTaken) / FMath::Max(OutXpNeeded, 1);
+}
+
+bool UGeoGemProfileSave::CanEcho(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, FName const GemId) const
+{
+	TOptional<EGeoGemTier> const Tier = Catalog.FindTier(GemId);
+	return Tier && *Tier != EGeoGemTier::Core && EchoLevel >= 1 && GetEcho(PlayerClass) != GemId && GetOwnedCount(GemId) > 0;
+}
+
+bool UGeoGemProfileSave::SetEcho(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, FName const GemId)
+{
+	bool const bCanEcho = CanEcho(Catalog, PlayerClass, GemId);
+	if (bCanEcho)
+	{
+		FGeoGemLoadout& Loadout = GetActiveLoadout(PlayerClass);
+		Loadout.Echo = GemId;
+		for (FName& Slotted : Loadout.Sockets)
+		{
+			if (Slotted == GemId)
+			{
+				Slotted = NAME_None;
+			}
+		}
+	}
+
+	return bCanEcho;
+}
+
+void UGeoGemProfileSave::ClearEcho(EPlayerClass const PlayerClass)
+{
+	GetActiveLoadout(PlayerClass).Echo = NAME_None;
+}
+
 FGeoGemLoadout UGeoGemProfileSave::GetLoadout(EPlayerClass const PlayerClass) const
 {
 	FGeoGemLoadout Loadout;
@@ -66,6 +123,7 @@ FGeoGemLoadout UGeoGemProfileSave::GetLoadout(EPlayerClass const PlayerClass) co
 
 	Loadout.Sockets.SetNum(GeoGem::GetSockets().Num());
 	Loadout.Level = GetClassLevel(PlayerClass);
+	Loadout.EchoLevel = EchoLevel;
 	return Loadout;
 }
 
@@ -141,7 +199,22 @@ void UGeoGemProfileSave::SetClassLevel(EPlayerClass const PlayerClass, int32 con
 			}
 		}
 	}
+
+	SyncEchoWithClassLevels();
 }
+
+#if !UE_BUILD_SHIPPING
+void UGeoGemProfileSave::SetEchoLevel(UGeoGemCatalog const& Catalog, int32 const Level)
+{
+	if (Level > 0 && !HasClassAtEchoUnlockLevel())
+	{
+		SetClassLevel(EPlayerClass::Triangle, GeoGem::EchoUnlockLevel);
+	}
+
+	EchoLevel = FMath::Clamp(Level, 0, Catalog.EchoMaxLevel);
+	EchoXp = 0;
+}
+#endif
 
 int32 UGeoGemProfileSave::AddClassXp(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, int32 const Xp)
 {
@@ -160,7 +233,16 @@ int32 UGeoGemProfileSave::AddClassXp(UGeoGemCatalog const& Catalog, EPlayerClass
 	}
 	if (Progress.Level == GeoGem::MaxClassLevel)
 	{
+		SyncEchoWithClassLevels();
+		EchoXp += Progress.Xp;
 		Progress.Xp = 0;
+		int32 NextEchoCost = Catalog.GetEchoXpForLevel(EchoLevel + 1);
+		while (EchoLevel < Catalog.EchoMaxLevel && EchoXp >= NextEchoCost)
+		{
+			EchoXp -= NextEchoCost;
+			++EchoLevel;
+			NextEchoCost = Catalog.GetEchoXpForLevel(EchoLevel + 1);
+		}
 	}
 
 	return Progress.Level - StartLevel;
@@ -179,7 +261,8 @@ bool UGeoGemProfileSave::CanEquip(UGeoGemCatalog const& Catalog, EPlayerClass co
 	TArray<FName> const Slotted = GetLoadout(PlayerClass).Sockets;
 	FGeoGemSocket const& Socket = Sockets[SocketIndex];
 	return Tier == Socket.Tier && GetClassLevel(PlayerClass) >= Socket.UnlockLevel && Slotted[SocketIndex] != GemId
-		&& GetFreeCount(GemId, PlayerClass) > 0 && (Tier != EGeoGemTier::Core || !Slotted.Contains(GemId));
+		&& GetFreeCount(GemId, PlayerClass) > 0 && (Tier != EGeoGemTier::Core || !Slotted.Contains(GemId))
+		&& GetEcho(PlayerClass) != GemId;
 }
 
 bool UGeoGemProfileSave::Equip(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, int32 const SocketIndex,
@@ -188,7 +271,7 @@ bool UGeoGemProfileSave::Equip(UGeoGemCatalog const& Catalog, EPlayerClass const
 	bool const bCanEquip = CanEquip(Catalog, PlayerClass, SocketIndex, GemId);
 	if (bCanEquip)
 	{
-		GetActiveSockets(PlayerClass)[SocketIndex] = GemId;
+		GetActiveLoadout(PlayerClass).Sockets[SocketIndex] = GemId;
 	}
 
 	return bCanEquip;
@@ -196,7 +279,7 @@ bool UGeoGemProfileSave::Equip(UGeoGemCatalog const& Catalog, EPlayerClass const
 
 void UGeoGemProfileSave::Unequip(EPlayerClass const PlayerClass, int32 const SocketIndex)
 {
-	TArray<FName>& Sockets = GetActiveSockets(PlayerClass);
+	TArray<FName>& Sockets = GetActiveLoadout(PlayerClass).Sockets;
 	if (ensureMsgf(Sockets.IsValidIndex(SocketIndex), TEXT("%hs: no socket %d"), __FUNCTION__, SocketIndex))
 	{
 		Sockets[SocketIndex] = NAME_None;
@@ -206,7 +289,7 @@ void UGeoGemProfileSave::Unequip(EPlayerClass const PlayerClass, int32 const Soc
 int32 UGeoGemProfileSave::FillSockets(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, FName const GemId)
 {
 	int32 Filled = 0;
-	int32 const SocketCount = GetActiveSockets(PlayerClass).Num();
+	int32 const SocketCount = GetActiveLoadout(PlayerClass).Sockets.Num();
 	for (int32 SocketIndex = 0; SocketIndex < SocketCount; ++SocketIndex)
 	{
 		if (Equip(Catalog, PlayerClass, SocketIndex, GemId))
@@ -296,8 +379,42 @@ FGeoGemClassProgress& UGeoGemProfileSave::FindOrAddClass(EPlayerClass const Play
 	return Progress;
 }
 
-TArray<FName>& UGeoGemProfileSave::GetActiveSockets(EPlayerClass const PlayerClass)
+bool UGeoGemProfileSave::HasClassAtEchoUnlockLevel() const
+{
+	return Algo::AnyOf(Classes,
+					   [](TPair<EPlayerClass, FGeoGemClassProgress> const& Class)
+					   {
+						   return Class.Value.Level >= GeoGem::EchoUnlockLevel;
+					   });
+}
+
+void UGeoGemProfileSave::SyncEchoWithClassLevels()
+{
+	if (HasClassAtEchoUnlockLevel())
+	{
+		EchoLevel = FMath::Max(EchoLevel, 1);
+	}
+	else
+	{
+		EchoLevel = 0;
+		EchoXp = 0;
+		for (TPair<EPlayerClass, FGeoGemClassProgress>& Class : Classes)
+		{
+			for (FGeoGemBuild& Build : Class.Value.Builds)
+			{
+				Build.Loadout.Echo = NAME_None;
+			}
+		}
+	}
+}
+
+int32 UGeoGemProfileSave::CountSlotted(FGeoGemLoadout const& Loadout, FName const GemId)
+{
+	return static_cast<int32>(Algo::Count(Loadout.Sockets, GemId)) + (Loadout.Echo == GemId ? 1 : 0);
+}
+
+FGeoGemLoadout& UGeoGemProfileSave::GetActiveLoadout(EPlayerClass const PlayerClass)
 {
 	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);
-	return Progress.Builds[Progress.ActiveBuild].Loadout.Sockets;
+	return Progress.Builds[Progress.ActiveBuild].Loadout;
 }

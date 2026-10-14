@@ -23,13 +23,13 @@ REPORT = unreal.Paths.project_dir() + "AI/Output/verify_badge_scripts.txt"
 # (live folder, scripts in the order they run: a script reading a sibling's clip runs after it)
 TARGETS = [
     ("/Game/Characters/Anim/ClassBadge",
-     ["class_badge_idle.py", "class_badge_body_turns.py", "class_badge_circle_charge_orbit.py",
-      "class_badge_death.py", "class_badge_deploy.py", "class_badge_rez.py", "class_badge_square_fire_piston.py",
-      "class_badge_square_sacrifice.py", "class_badge_triangle_fire.py", "class_badge_triangle_reload.py"]),
+     ["Badge/class_badge_idle.py", "Badge/class_badge_body_turns.py", "Badge/class_badge_circle_charge_orbit.py",
+      "Badge/class_badge_death.py", "Badge/class_badge_deploy.py", "Badge/class_badge_rez.py", "Badge/class_badge_square_fire_piston.py",
+      "Badge/class_badge_square_sacrifice.py", "Badge/class_badge_triangle_fire.py", "Badge/class_badge_triangle_reload.py"]),
     ("/Game/Characters/Anim/HexBoss",
-     ["hex_boss_intro.py", "hex_boss_idle.py", "hex_boss_death.py", "hex_boss_abilities.py", "hex_boss_launch.py"]),
+     ["Boss/hex_boss_intro.py", "Boss/hex_boss_idle.py", "Boss/hex_boss_death.py", "Boss/hex_boss_abilities.py", "Boss/hex_boss_launch.py"]),
     ("/Game/Characters/Anim/Star",
-     ["star_intro.py", "star_idle_breath.py", "star_death.py", "star_devastating_wave.py", "star_spike_nova.py"]),
+     ["Boss/star_intro.py", "Boss/star_idle_breath.py", "Boss/star_death.py", "Boss/star_devastating_wave.py", "Boss/star_spike_nova.py"]),
 ]
 # Below these a difference is float noise from the build.
 TRANSLATION_TOLERANCE = 0.01

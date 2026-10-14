@@ -18,24 +18,24 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
-#include "GameClasses/Player/GeoPlayerController.h"
 #include "GameClasses/Match/GeoPlayerState.h"
-#include "GeoTrinity/GeoTrinity.h"
+#include "GameClasses/Player/GeoPlayerController.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemStatsEffect.h"
 #include "Gem/GeoGemSubsystem.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "HUD/Menu/Character/GeoAbilityCardWidget.h"
 #include "HUD/Menu/Character/GeoAbilityDetailWidget.h"
-#include "HUD/Menu/Gems/GeoGemsWidget.h"
 #include "HUD/Menu/Frame/GeoMenuButton.h"
 #include "HUD/Menu/Frame/GeoMenuRootWidget.h"
+#include "HUD/Menu/Gems/GeoGemsWidget.h"
 #include "HUD/Menu/List/GeoTableWidget.h"
-#include "HUD/Style/Glyph/GeoGemGlyph.h"
-#include "HUD/Style/Meter/GeoMeter.h"
-#include "HUD/Style/Glyph/GeoShape.h"
 #include "HUD/Style/GeoUITheme.h"
+#include "HUD/Style/Glyph/GeoGemGlyph.h"
+#include "HUD/Style/Glyph/GeoShape.h"
+#include "HUD/Style/Meter/GeoMeter.h"
 #include "TimerManager.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -138,7 +138,8 @@ void UGeoCharacterSheetWidget::OnPageShown()
 	}
 	else
 	{
-		UE_LOG(LogGeoTrinity, Log, TEXT("UGeoCharacterSheetWidget: no player state or playable pawn yet, sheet left empty"));
+		UE_LOG(LogGeoTrinity, Log,
+			   TEXT("UGeoCharacterSheetWidget: no player state or playable pawn yet, sheet left empty"));
 	}
 }
 
@@ -284,11 +285,16 @@ void UGeoCharacterSheetWidget::ShowLevel(EPlayerClass const PlayerClass, UGeoGem
 										 UGeoGemCatalog const& Catalog)
 {
 	int32 const Level = Profile.GetClassLevel(PlayerClass);
-	int32 const Xp = Profile.GetClassXp(PlayerClass);
 	bool const bMaxLevel = Level >= GeoGem::MaxClassLevel;
+	int32 const EchoLevel = Profile.GetEchoLevel();
+	int32 XpTaken = 0;
+	int32 XpNeeded = 0;
+	float const XpFill = Profile.GetXpProgress(Catalog, PlayerClass, XpTaken, XpNeeded);
 	if (LevelText)
 	{
-		LevelText->SetText(FText::Format(LevelFormat, Level, GeoGem::MaxClassLevel));
+		FText const EchoText = EchoLevel >= 1 && !bMaxLevel ? FText::Format(EchoLevelFormat, EchoLevel) : FText::GetEmpty();
+		LevelText->SetText(
+			FText::Join(FText::GetEmpty(), FText::Format(LevelFormat, Level, GeoGem::MaxClassLevel), EchoText));
 	}
 	if (LevelPips)
 	{
@@ -296,11 +302,11 @@ void UGeoCharacterSheetWidget::ShowLevel(EPlayerClass const PlayerClass, UGeoGem
 	}
 	if (XpMeter)
 	{
-		XpMeter->SetFill(bMaxLevel ? 1.f : static_cast<float>(Xp) / FMath::Max(Catalog.XpPerLevel, 1));
+		XpMeter->SetFill(XpFill);
 	}
 	if (XpText)
 	{
-		XpText->SetText(FText::Format(XpFormat, Xp, Catalog.XpPerLevel));
+		XpText->SetText(FText::Format(XpFormat, XpTaken, XpNeeded));
 	}
 	if (NextLevelText)
 	{
@@ -309,7 +315,8 @@ void UGeoCharacterSheetWidget::ShowLevel(EPlayerClass const PlayerClass, UGeoGem
 		{
 			NextSockets += Socket.UnlockLevel == Level + 1 ? 1 : 0;
 		}
-		NextLevelText->SetText(bMaxLevel ? MaxLevelText : FText::Format(NextLevelFormat, Level + 1, NextSockets));
+		NextLevelText->SetText(bMaxLevel ? FText::Format(MaxLevelEchoFormat, EchoLevel)
+										 : FText::Format(NextLevelFormat, Level + 1, NextSockets));
 	}
 
 	UGeoUITheme const* Theme = UGeoUITheme::Get();
@@ -371,20 +378,21 @@ void UGeoCharacterSheetWidget::ShowStats()
 			break;
 		}
 
-		StatTable->AddLine({StatTable->MakeCellText(Stat.Label), StatTable->MakeCellText(FText::FromString(ValueString)),
-							MakeBonusCell(Stat.Format, WithGems - ASC->GetNumericAttributeBase(Stat.Attribute),
-										  GemBonusColor),
-							MakeBonusCell(Stat.Format, Value - WithGems, BuffBonusColor)});
+		StatTable->AddLine(
+			{StatTable->MakeCellText(Stat.Label), StatTable->MakeCellText(FText::FromString(ValueString)),
+			 MakeBonusCell(Stat.Format, WithGems - ASC->GetNumericAttributeBase(Stat.Attribute), GemBonusColor),
+			 MakeBonusCell(Stat.Format, Value - WithGems, BuffBonusColor)});
 	}
 
 	for (FGameplayAbilitySpec const& Spec : ASC->GetActivatableAbilities())
 	{
 		if (UGeoDeployAbility const* Deploy = Cast<UGeoDeployAbility>(Spec.GetPrimaryInstance()))
 		{
-			StatTable->AddLine(
-				{StatTable->MakeCellText(DeployStacksLabel), StatTable->MakeCellText(FText::AsNumber(Deploy->GetMaxStacks(*ASC))),
-				 MakeBonusCell(EGeoStatFormat::Number, Deploy->GetMaxStacks(*ASC) - Deploy->GetBaseMaxStacks(), GemBonusColor),
-				 MakeBonusCell(EGeoStatFormat::Number, 0.f, BuffBonusColor)});
+			StatTable->AddLine({StatTable->MakeCellText(DeployStacksLabel),
+								StatTable->MakeCellText(FText::AsNumber(Deploy->GetMaxStacks(*ASC))),
+								MakeBonusCell(EGeoStatFormat::Number,
+											  Deploy->GetMaxStacks(*ASC) - Deploy->GetBaseMaxStacks(), GemBonusColor),
+								MakeBonusCell(EGeoStatFormat::Number, 0.f, BuffBonusColor)});
 		}
 	}
 }
@@ -456,7 +464,8 @@ void UGeoCharacterSheetWidget::ShowAbilities(APlayableCharacter const& PlayableC
 	}
 
 	AbilityBox->ClearChildren();
-	for (UGeoAbilityCardWidget* Row : UGeoAbilityCardWidget::CreateClassCards(*this, AbilityRowClass, PlayableCharacter))
+	for (UGeoAbilityCardWidget* Row :
+		 UGeoAbilityCardWidget::CreateClassCards(*this, AbilityRowClass, PlayableCharacter))
 	{
 		Row->SetIsFocusable(true);
 		Row->OnSelected.AddUniqueDynamic(this, &UGeoCharacterSheetWidget::HandleAbilitySelected);
@@ -545,7 +554,7 @@ void UGeoCharacterSheetWidget::ShowGems(EPlayerClass const PlayerClass, UGeoGemP
 			}
 			OwnedPerTier.Add(Owned);
 		}
-		OwnedText->SetText(FText::Format(OwnedFormat, OwnedPerTier[0], OwnedPerTier[1], OwnedPerTier[2],
-										 OwnedPerTier[3]));
+		OwnedText->SetText(
+			FText::Format(OwnedFormat, OwnedPerTier[0], OwnedPerTier[1], OwnedPerTier[2], OwnedPerTier[3]));
 	}
 }

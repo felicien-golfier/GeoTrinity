@@ -129,7 +129,7 @@ new SVG and a re-run of `import_icons.py`.
 
 The scripts in `AI/Python/UI/` build the look in this order: `import_fonts.py`, `ui_theme.py`, `rail_style.py`,
 `rail_main_menu.py`, `rail_sub_panels.py`, `import_icons.py`, `ability_page.py`, `ability_detail.py`, `wings_hud.py`,
-`character_sheet.py` (which builds `WBP_Table` with `table.py` first), `gems_page.py`, `interface_settings.py`, `menu_pages.py`, then `space_menu_buttons.py`. `rail_style.py`,
+`character_sheet.py` (which builds `WBP_Table` with `table.py` first), `Gem/gems_page.py`, `interface_settings.py`, `menu_pages.py`, then `space_menu_buttons.py`. `rail_style.py`,
 `rail_main_menu.py` and `rail_sub_panels.py` still rebuild whole widgets, so they stop at the first asset that already exists
 (`asset_guard.legacy_rebuild`). On the current project, skip them and run the rest.
 

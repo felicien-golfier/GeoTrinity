@@ -55,7 +55,7 @@ Gate rules:
 ## Writing CLAUDE.md
 - Written in workflow step 3; the daily agent only does JavaDoc comments (`AI/Tasks/`) and never rewrites a `CLAUDE.md` to follow the code — only fixes a mistake or fills a missing part.
 - A map, not documentation: purpose line, file → one-line role table, then only what code and comments do not say — intent, why, invariants, ordering, cross-class links.
-- Fragments, not sentences. The good way of doing; never "don't do X" history (a real pitfall goes to `TroobleshootingLogs.md`).
+- Succinct, every doc: fewest words that carry the fact. Fragments, not sentences. The good way of doing; never "don't do X" history (a real pitfall goes to `TroobleshootingLogs.md`).
 - Pin-point down to the leaf folder; leaf = where the code's architecture is explained (the way we go, what we expect).
 - ≥ 3 files of one kind → own subfolder with its own `CLAUDE.md`. Keep each doc small enough to load whole.
 - Each fact in one place only; any other section that needs it points to it (as step 3 "Grouping" points to the ≥ 3 files rule above).

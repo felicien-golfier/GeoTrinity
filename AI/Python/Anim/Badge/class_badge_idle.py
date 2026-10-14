@@ -9,7 +9,7 @@ The breath is the root's own X and Y scale, so it reaches the parts too and a pa
 also keeps playing under a top-slot montage. A part only turns where the turn cannot sweep it into anything round it,
 and every turn is a whole one, so the loop closes on the pose it opened on. Every key eases to a stop.
 
-One sequence per badge feeds both layers of its AnimBlueprint (AI/Python/Anim/class_badge_anim_blueprints.py), each
+One sequence per badge feeds both layers of its AnimBlueprint (AI/Python/Anim/Badge/class_badge_anim_blueprints.py), each
 layer taking its own bones from it.
 
 Run AFTER AI/Python/Mesh/rig_class_badges.py, via mcp-unreal execute_script. Re-runnable: rewrites each sequence in

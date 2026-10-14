@@ -8,7 +8,7 @@ description: Pull the gem values edited in the "GeoTrinity — Gem System" doc's
 The doc is https://claude.ai/artifact/SQYwGjtE7bspcCA5KKV67K (Claude Docs id `cdbe4119-4ccb-4017-a52c-70d469714c62`).
 Its "Gem catalog" table is a 5-column view of `Data/gems.csv`: `Tier`, `Gem`, `Effect per gem`, `Max per class`,
 `Attribute or system`. The CSV holds more (`Id`, `Operation`, `Color`, `GrantedTag`, `GrantedAbility`): the doc never
-shows them, so a write to the CSV keeps every column it does not own. `AI/Python/Data/gem_doc_sync.py` keeps
+shows them, so a write to the CSV keeps every column it does not own. `AI/Python/Gem/gem_doc_sync.py` keeps
 `Data/gems.sync.json`, the stamp of the last sync (the CSV's hash and the doc table's hash `h`); its `to-csv`,
 `doc-table` and `diff` still expect an older 10-column doc layout, so do not run them. Use `status` and `stamp` only.
 
@@ -18,7 +18,7 @@ shows them, so a write to the CSV keeps every column it does not own. `AI/Python
   checks.
 - `GrantedAbility` (`/Game/AbilitySystem/Abilities/Gem/GA_Core_Bond.GA_Core_Bond_C`): the Core's passive ability
   Blueprint, a child of a `UGeoCorePassiveAbility` C++ class that holds the rule. The gem gives it while slotted.
-  Only `AI/Python/Ability/gem_core_passives.py` writes this cell, when it creates the Blueprint.
+  Only `AI/Python/Gem/gem_core_passives.py` writes this cell, when it creates the Blueprint.
 - A Core holds one or the other. A Core with neither has no rule in the game yet.
 - The editor refuses the whole CSV when a `GrantedAbility` path does not load as a Core passive class, so never type
   or guess one.
@@ -57,7 +57,7 @@ unclear.
 1. **Load the docs tools.** Load the docs skill (or call the connector's `guide` with `topic.index`), then read the
    doc's outline. The catalog table is the first `<table>` after the "Gem catalog" heading. Read it with
    `{"kind":"view","parentId":"<table id>"}`, and note its id, `h`, and each row's per-gem and max cell `rev`.
-2. **Check freshness.** Run `python AI/Python/Data/gem_doc_sync.py status <h>`.
+2. **Check freshness.** Run `python AI/Python/Gem/gem_doc_sync.py status <h>`.
    - Doc table unchanged since the stamp: nothing to pull; say so and stop.
    - CSV changed since the stamp, or no stamp: compare the doc rows with the CSV by hand and show the user every
      difference (CSV value / doc value). Ask which side wins: the doc, the CSV (then run `gem-csv-to-doc` instead),
@@ -75,7 +75,7 @@ unclear.
      naming each bad line and changes nothing. Read `Saved/Logs/GeoTrinity.log` (read only) for the `Gem CSV` line, and report a
      rejection to the user.
    - **No editor open:** the next editor launch imports it, or the user runs
-     `AI/Python/Asset/gem_catalog.py` headless.
+     `AI/Python/Gem/gem_catalog.py` headless.
 6. **Write back into the doc** the cells the reconcile derived (the other of per gem / max, and the effect text),
    one `replace` per cell with a `find` target `within` that cell and `"as":"text"`, so comments and revisions stay.
    Never replace the whole table. If the docs write is refused, stop there, say which cells are still stale, and

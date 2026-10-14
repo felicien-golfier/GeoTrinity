@@ -61,16 +61,27 @@ static FString BuildEffectsSummary(TArray<TInstancedStruct<FEffectData>> const& 
 }
 
 /** Resolves a numeric or FScalableFloat property to its scalar value at the given level; false if not such a property.
- *  A name the ability lacks is looked up on UGameDataSettings, where project-wide values (deploy distances) live. */
+ *  A name the ability lacks is looked up on UGameDataSettings, where project-wide values (deploy distances) live.
+ *  "Struct.Member" reads a member of a struct property (an FFloatInterval's Min / Max). */
 static bool ResolvePropertyScalar(FString const& PropertyName, UGeoGameplayAbility const& AbilityCDO, int32 Level,
 								  float& OutValue)
 {
-	UObject const* Owner = &AbilityCDO;
-	FProperty const* Property = AbilityCDO.GetClass()->FindPropertyByName(*PropertyName);
+	FString StructName = PropertyName;
+	FString MemberName;
+	PropertyName.Split(TEXT("."), &StructName, &MemberName);
+
+	void const* Owner = &AbilityCDO;
+	FProperty const* Property = AbilityCDO.GetClass()->FindPropertyByName(*StructName);
 	if (!Property)
 	{
 		Owner = GetDefault<UGameDataSettings>();
-		Property = UGameDataSettings::StaticClass()->FindPropertyByName(*PropertyName);
+		Property = UGameDataSettings::StaticClass()->FindPropertyByName(*StructName);
+	}
+
+	if (FStructProperty const* Container = CastField<FStructProperty>(Property); Container && !MemberName.IsEmpty())
+	{
+		Owner = Container->ContainerPtrToValuePtr<void>(Owner);
+		Property = Container->Struct->FindPropertyByName(*MemberName);
 	}
 
 	if (FNumericProperty const* Numeric = CastField<FNumericProperty>(Property))
@@ -328,18 +339,9 @@ static void WriteDescriptionToFile(FGameplayTag const& AbilityTag, FString const
 }
 #endif
 
-/** Text with every {Token} replaced by its live value on Info's ability (see GetResolvedDescription); unchanged when
- *  Info names no Geo ability. */
-static FString ResolveTokens(FString const& Text, FGameplayAbilityInfo const& Info, int32 AbilityLevel,
-							 bool bRichTextValues)
+FString GeoDescription::ResolveTokens(FString const& Text, UGeoGameplayAbility const& AbilityCDO,
+									  int32 const AbilityLevel, bool const bRichTextValues)
 {
-	UGeoGameplayAbility const* AbilityCDO =
-		Info.AbilityClass ? Cast<UGeoGameplayAbility>(Info.AbilityClass->GetDefaultObject()) : nullptr;
-	if (!AbilityCDO)
-	{
-		return Text;
-	}
-
 	FDescriptionFormat Format;
 	Format.AbilityLevel = AbilityLevel;
 	Format.bRichTextValues = bRichTextValues;
@@ -390,21 +392,31 @@ static FString ResolveTokens(FString const& Text, FGameplayAbilityInfo const& In
 		FString TokenValue;
 		if (TokenName == TEXT("Effects"))
 		{
-			Resolved += BuildEffectsSummary(AbilityCDO->GetEffectDataArray(), TokenFormat);
+			Resolved += BuildEffectsSummary(AbilityCDO.GetEffectDataArray(), TokenFormat);
 		}
-		else if (ResolveDescriptionToken(TokenName, *AbilityCDO, TokenFormat, TokenValue))
+		else if (ResolveDescriptionToken(TokenName, AbilityCDO, TokenFormat, TokenValue))
 		{
 			Resolved += TokenValue;
 		}
 		else
 		{
-			UE_LOG(LogGeoASC, Warning, TEXT("Ability %s description token {%s} could not be resolved"),
-				   *Info.AbilityDisplayName, *Token);
+			UE_LOG(LogGeoASC, Warning, TEXT("%s description token {%s} could not be resolved"), *AbilityCDO.GetName(),
+				   *Token);
 			Resolved += Text.Mid(OpenBrace, CloseBrace - OpenBrace + 1);
 		}
 		Index = CloseBrace + 1;
 	}
 	return Resolved;
+}
+
+/** Text with every {Token} replaced by its live value on Info's ability (see GetResolvedDescription); unchanged when
+ *  Info names no Geo ability. */
+static FString ResolveTokens(FString const& Text, FGameplayAbilityInfo const& Info, int32 AbilityLevel,
+							 bool bRichTextValues)
+{
+	UGeoGameplayAbility const* AbilityCDO =
+		Info.AbilityClass ? Cast<UGeoGameplayAbility>(Info.AbilityClass->GetDefaultObject()) : nullptr;
+	return AbilityCDO ? GeoDescription::ResolveTokens(Text, *AbilityCDO, AbilityLevel, bRichTextValues) : Text;
 }
 
 /** The lines of Info's description source (its file section, else its Description): stat lines ("| LABEL | value")

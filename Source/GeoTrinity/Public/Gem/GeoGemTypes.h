@@ -76,11 +76,12 @@ struct FGeoGemInfo
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	float MagnitudePerGem = 0.f;
 
-	/** What Count slotted copies add as the menus show it, "+0.67%", or "+1" under Flat; empty for a gem with no magnitude (a Core). */
-	GEOTRINITY_API FText GetMagnitudeText(int32 Count = 1) const;
+	/** What Copies slotted copies add as the menus show it, "+0.67%", or "+1" under Flat; empty for a gem with no
+	 *  magnitude (a Core). Copies is fractional for the echo socket (UGeoGemCatalog::GetEchoCopies). */
+	GEOTRINITY_API FText GetMagnitudeText(float Copies = 1.f) const;
 
-	/** The effect of Count slotted copies as the menus show it: "Damage +0.67%", or a Core's rule alone. */
-	GEOTRINITY_API FText GetEffectText(int32 Count = 1) const;
+	/** The effect of Copies slotted copies as the menus show it: "Damage +0.67%", or a Core's rule alone. */
+	GEOTRINITY_API FText GetEffectText(float Copies = 1.f) const;
 };
 
 /** The gem types of one tier. */
@@ -181,11 +182,23 @@ struct FGeoGemLoadout
 	 *  read back from a saved build. */
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
 	int32 Level = 1;
+
+	/** The gem in the echo socket, which opens at GeoGem::EchoUnlockLevel; NAME_None when empty. Outside Sockets. */
+	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
+	FName Echo;
+
+	/** The class's echo level when UGeoGemProfileSave::GetLoadout read this, so the server learns it with the loadout.
+	 *  Never read back from a saved build. */
+	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
+	int32 EchoLevel = 1;
 };
 
 namespace GeoGem
 {
 	constexpr int32 MaxClassLevel = 20;
+
+	/** Class level that opens the echo socket. */
+	constexpr int32 EchoUnlockLevel = MaxClassLevel;
 
 	/** Builds one class keeps at most. */
 	constexpr int32 MaxBuilds = 10;

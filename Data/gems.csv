@@ -20,9 +20,9 @@ Prism,Reach,Reach,SpellDistanceMultiplier,Add,0.0311111,Spell distance,Neutral,,
 Core,Surplus,Surplus,,Flat,1,deployable charge,DeployableNotBlocking,Gem.Core.Surplus,
 Core,Overclock,Overclock,DeployableCooldownMultiplier,Add,-0.15,Deployable recharge,DeployableNotBlocking,,
 Core,Relay,Relay,,Add,0,Dash snaps to your nearest deployable within 30 degrees of the dash; no direction moves you toward the nearest one,MoveSpeed,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Relay.GA_Core_Relay_C
-Core,Split,Split,,Add,0,Deploy places a half-health copy next to it (cooldown 20 s),DeployableNotBlocking,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Split.GA_Core_Split_C
+Core,Split,Split,,Add,0,Deploy places a copy with {StartHealthRatio:%} health next to it (cooldown {Cooldown} s),DeployableNotBlocking,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Split.GA_Core_Split_C
 Core,Critical,Critical,,Add,0,Unlocks crits: 10% chance for 150% damage,DamageBoost,Gem.Core.Critical,
 Core,Bond,Bond,,Add,0,Link to allies: you absorb 15% of the damage they take,DamageReduction,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Bond.GA_Core_Bond_C
-Core,Wake,Wake,,Add,0,Dash spawns your deployable at the start point (cooldown 20 s),MoveSpeed,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Wake.GA_Core_Wake_C
-Core,Kinship,Kinship,,Add,0,"When your deployable dies, it spawns one of your ally's (cooldown 12 s)",DeployableNotBlocking,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Kinship.GA_Core_Kinship_C
-Core,Leverage,Leverage,,Add,0,Deployable health x0.7 close up to x1.3 at max deploy distance,DeployableBlockingEnemies,Gem.Core.Leverage,
+Core,Wake,Wake,,Add,0,Dash spawns your deployable at the start point with {StartHealthRatio:%} health (cooldown {Cooldown} s),MoveSpeed,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Wake.GA_Core_Wake_C
+Core,Kinship,Kinship,,Add,0,"When your deployable dies, it spawns one of your ally's with {StartHealthRatio:%} health (cooldown {Cooldown} s)",DeployableNotBlocking,,/Game/AbilitySystem/Abilities/Gem/GA_Core_Kinship.GA_Core_Kinship_C
+Core,Leverage,Leverage,,Add,0,Deployable health x{LeverageHealthMultiplier.Min} close up to x{LeverageHealthMultiplier.Max} at max deploy distance,DeployableBlockingEnemies,Gem.Core.Leverage,

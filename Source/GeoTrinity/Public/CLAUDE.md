@@ -18,4 +18,4 @@ Gameplay module. Headers in `Public/`, `.cpp` mirrored in `Private/` at the same
 | `Tool/` | `GeoLib`, colour, icons, Niagara names, lag compensation | `Tool/CLAUDE.md` |
 | `World/` | Camera, volumes, backdrop, world settings | `World/CLAUDE.md` |
 
-Private-only: `Private/Tests/GeoGemTests.cpp`, `Private/Tests/GeoAbilityReadyTests.cpp`, `Private/Tests/GeoIncomingDamageTests.cpp` (`AI/Testing.md`).
+Private-only: `Private/Tests/GeoGemTests.cpp`, `Private/Tests/GeoAbilityReadyTests.cpp`, `Private/Tests/GeoIncomingDamageTests.cpp`, `Private/Tests/GeoTestDeployable.h` (fake deployable + deployer pawn, `AI/Testing.md`).

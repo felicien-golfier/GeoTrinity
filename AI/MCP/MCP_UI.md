@@ -23,7 +23,7 @@ raw engine button.
 ## Creating a widget Blueprint
 
 Use `WidgetBlueprintFactory` with `parent_class` set, then create through `AssetTools`; it has no
-`use_inherited_viewport_size` property. See `AI/Python/UI/charge_beam_gauge.py`.
+`use_inherited_viewport_size` property.
 
 A widget Blueprint's parent-class property is unreadable from Python — read it from the asset-registry tag,
 which exposes both the immediate and the native parent class, to confirm a designer Blueprint already reparents
@@ -104,7 +104,7 @@ set in the designer.
 A user-widget template constructed inside another widget's tree holds its own property values, so setting a
 default on the child class CDO afterwards does not reach it. Set the property on the template object inside the
 parent asset and save the parent; re-running a builder that reconstructs the template needs those values
-re-applied. See `AI/Python/UI/local_connect_menu.py` (`set_child_template_property`).
+re-applied.
 
 To replicate one widget's appearance onto another, read the source widget's brush and colour properties through
 the find-by-name lookup and copy each value across rather than guessing: tint, resource texture and draw type
@@ -129,18 +129,17 @@ reload the package and recompile after the swap. See `AI/Python/UI/rail_style.py
   `SetBarFillType` explicitly (the default is `LeftToRight`; a vertical bar wants `BottomToTop`).
 - **WidgetComponent on an actor Blueprint**: `draw_size` is an `IntPoint`, not a `Vector2D`, and its orientation
   must match the bar (`height > width` for a vertical one). Configure through `SubobjectDataSubsystem` handle
-  enumeration — print all indices first to identify the target. See `AI/Python/UI/charge_beam_gauge.py`.
+  enumeration — print all indices first to identify the target.
 - **Constraining a label**: cap the width with a SizeBox and wrap the text in a ScaleBox set to scale-to-fit-X,
   down-only, so short text keeps its size and only over-wide text shrinks. See `GeoHudWidgetBuilderUtil.cpp`
   (`BuildAbilitySlotWidget`).
 - **Single-image widget**: a widget showing one image needs only an Image root — no canvas, no slotting, since
   the hotspot is the widget's top-left. To draw only the bright parts of a texture, feed the Image a UI-domain
-  translucent material mapping luminance to opacity rather than a raw texture. See `AI/Python/UI/crosshair_cursor.py`.
+  translucent material mapping luminance to opacity rather than a raw texture.
 - **Grouping existing children under one container**: re-parent each child into a new panel rather than
   re-creating it, so it keeps its name, GUID and bindings. Set the panel's pixel rect to the cluster's bounding
   box and rebase each child's offsets by subtracting that origin — a child canvas inside a canvas keeps pixel
-  offsets exact. Re-parent in the intended draw order, since child order is z-order. See
-  `AI/Python/UI/group_widgets.py`.
+  offsets exact. Re-parent in the intended draw order, since child order is z-order.
 - An `OverlaySlot`'s alignment properties in Python are `horizontal_alignment` and `vertical_alignment`.
 - A SizeBox override (width, min width) only takes effect through its setter, which also raises the override flag.
 - A brush's image size is a deprecation-wrapper struct in Python: build it empty and set `x` and `y`.

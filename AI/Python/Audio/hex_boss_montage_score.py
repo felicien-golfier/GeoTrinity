@@ -10,9 +10,9 @@ rings turn, the rattle how hard the boss shakes. Every curve starts and ends on 
 death's, whose blast cuts the loop.
 
 Run outside the editor: uv run AI/Python/Audio/hex_boss_montage_score.py [ship]
-Needs AI/Audio/BoneMotion/<montage>.json (AI/Python/Anim/dump_bone_motion.py) and the fight loop's layers
+Needs AI/Audio/BoneMotion/<montage>.json (AI/Python/Anim/Boss/dump_bone_motion.py) and the fight loop's layers
 (SourceArt/Audio/HexBossIntro/loop.json, from hex_intro_mech_score.py). Writes each montage's cues.json and
-curves.json — what AI/Python/Anim/boss_montage_sounds.py puts on it — into DRAFT, or into SourceArt with `ship`.
+curves.json — what AI/Python/Anim/Boss/boss_montage_sounds.py puts on it — into DRAFT, or into SourceArt with `ship`.
 A preview of each, played between stretches of fight with its live phase looped, always goes to DRAFT.
 """
 import collections

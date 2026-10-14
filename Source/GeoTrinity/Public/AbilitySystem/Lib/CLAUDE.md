@@ -12,7 +12,7 @@
   - `SpawnDeployableFromAbility(DeployerASC, Location, StartHealthRatio = 1, DeployDistance = -1)`: the deployer's own deploy ability spawns its deployable again — its class, effects and params (`UGeoDeployAbility::MakeSpawnParams(ASC, DeployDistance)`: gems applied, Leverage when `DeployDistance >= 0`), fresh seed, payload from its spec. Overridable: start health ratio and the distance Leverage reads; a new override is a new argument. Spends no charge, throws no projectile. Null when the ASC holds no deploy ability.
 - **Projectiles** (pool-aware): `FullySpawnProjectile`, `StartSpawnProjectile` / `FinishSpawnProjectile`; both take only `FExternalProjectileParams` (applied via `ApplyProjectileParams`); `AdvanceProjectile(Elapsed)` compensates lag.
 - **Targeting**: `GetTargetDirections(Payload, Mode)`.
-- **Agents**: `GetInteractableActors(World, SourceTeam, AttitudeBitmask, …)`, `GetInteractableActorsInLine(…)` (2D beam segment), `IsTeamAttitudeAligned`.
+- **Agents**: `GetInteractableActors(World, SourceTeam, AttitudeBitmask, …)`, `GetInteractableActorsInLine(…)` (2D beam segment), `IsTeamAttitudeAligned`. Expired deployables (`!IsActive()`, lingering until delayed destroy, e.g. fallen into the void) are never returned.
 - `ETargetOverlapMode` (default `Automatic`): `Enemy` source → `CenterOnly`, others → `IncludeRadius`; line half-width always kept.
 - **Cues**: `ExecuteLocalGameplayCue(ASC, Tag, Params)` — this machine only, for cosmetics from logic already running everywhere.
 - **Context**: `GetStatusTag` / `SetStatusTag`; scoped fields via `FEffectData::UpdateContextHandle`.
