@@ -16,7 +16,7 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 | `Zones/` | `GeoEffectZone`: editor-placed capsule applying `EffectDataArray`; owns its ASC; heal/damage re-applied per tick (per-second magnitude), other types once on entry/exit |
 
 ## Lifecycle
-- Spawned server-side by `ADeployableSpawnerProjectile::EndProjectileLife()` → `InitDrain()` → server `Tick()` drains → zero health/duration starts blink → `Expire()` (hide, event, delayed destroy).
+- Spawned server-side, always through `GeoASLib::FullySpawnDeployable` (`AbilitySystem/Lib/CLAUDE.md`; no deployable, pickups included, calls `SpawnActorDeferred` itself): by `ADeployableSpawnerProjectile::EndProjectileLife()` for a throw, by `GeoASLib::SpawnDeployableFromAbility` for a passive's placement → `InitDrain()` → `ApplyHealthMultiplier()` → server `Tick()` drains → zero health/duration starts blink → `Expire()` (hide, event, delayed destroy).
 - `Recall(Value)` is the only end-of-life path: `RecallEffect(Value)` then `Expire()`; non-server also fires the recall cue locally.
 - On hex arenas the fall-check recalls/expires anything over a dead tile; subclasses with recall side effects must account for it.
 
@@ -27,6 +27,9 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 
 ## Data and fields
 - `FDeployableData : FInteractableActorData`: `EffectDataArray`, `Params` (`BlinkDuration`, `LifeDrainMaxDuration`, `Size`, `Value`), `PredictionKey`, `AbilityTag`.
+- Health params (`FDeployableDataParams`, set by the deployer, never by hand): `HealthMultiplier` scales `MaxHealth` and `Health`; `StartHealthRatio` (0..1, default 1) then sets `Health = MaxHealth * StartHealthRatio`, `MaxHealth` untouched.
+- `DeployDistance` (same struct, set by the deployer, -1 = not thrown): the throw distance the deployable's Leverage was computed from; a copy of it reads it to carry Leverage (`SpawnDeployableFromAbility`).
+- Drain rate = `MaxHealth / LifeDrainMaxDuration`, computed before the start ratio: a half-health start lives half as long at the normal rate; health bar and blink follow `Health / MaxHealth`.
 - Replicated `*Data` is `COND_InitialOnly` on every concrete deployable.
 - `bUseRegularDrain` / `DrainMagnitudePerSecond`; `bAutoRecallAtEndLife`; `bPushActorsOnSpawn` (fight-spawned only; redirects to `FightCenter`).
 - `bUnlimitedDeploy` (default true, class CDO, exempt from slot limit); `bDestroyOldestWhenLimitReached`.

@@ -18,6 +18,7 @@ Shared by every player class.
 - Extends `GeoProjectileAbility`; release fires `ADeployableSpawnerProjectile`, which spawns `DeployableActorClass` on impact.
 - Distance = charge ratio encoded in `StoredPayload.Seed` as integer cm, lerped `MinDeployDistance`..`MaxDeployDistance` (`GameDataSettings`).
 - UI: `ShowDeployChargeGauge(Self)` / `HideDeployChargeGauge()`.
+- Owns what it deploys (class, `Params`), never the spawning of copies: `MakeSpawnParams(ASC, DeployDistance = -1)` = `Params` with the deployer's gems (blink, drain, health), Leverage when `DeployDistance >= 0`, and `DeployDistance` stored in the params; the throw passes its charged distance, `SpawnProjectile` sets the result on the spawner projectile. Placing one without a throw = `GeoASLib::SpawnDeployableFromAbility`.
 
 ### Charges
 - Charge pool = stack count of the Cooldown GE; no ability-side counter.

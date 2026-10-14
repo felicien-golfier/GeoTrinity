@@ -170,67 +170,32 @@ float UGeoDeployAbility::GetChargedDeployDistance() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-FDeployableDataParams UGeoDeployAbility::ApplyGemsToParams(UAbilitySystemComponent const& ASC,
-														   FDeployableDataParams const& BaseParams)
+FDeployableDataParams UGeoDeployAbility::MakeSpawnParams(UAbilitySystemComponent const& ASC,
+														 float const DeployDistance) const
 {
-	FDeployableDataParams GemParams = BaseParams;
+	FDeployableDataParams SpawnParams = Params;
+	SpawnParams.DeployDistance = DeployDistance;
 	if (ensureMsgf(ASC.HasAttributeSetForAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute()),
 				   TEXT("%hs: %s deploys from an ASC without gem attributes"), __FUNCTION__, *ASC.GetName()))
 	{
-		GemParams.BlinkDuration *=
+		SpawnParams.BlinkDuration *=
 			ASC.GetNumericAttribute(UGeoGemAttributeSet::GetDeployableBlinkMultiplierAttribute());
-		GemParams.LifeDrainMaxDuration /=
+		SpawnParams.LifeDrainMaxDuration /=
 			ASC.GetNumericAttribute(UGeoGemAttributeSet::GetDeployableDrainMultiplierAttribute());
-		GemParams.HealthMultiplier =
+		SpawnParams.HealthMultiplier =
 			ASC.GetNumericAttribute(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute());
 	}
 
-	return GemParams;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-FDeployableDataParams UGeoDeployAbility::GetGemParams(float const DeployDistance) const
-{
-	UAbilitySystemComponent const* ASC = GetAbilitySystemComponentFromActorInfo();
-	FDeployableDataParams GemParams = ApplyGemsToParams(*ASC, Params);
-	if (ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Leverage))
+	if (DeployDistance >= 0.f && ASC.HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Leverage))
 	{
 		UGameDataSettings const* GameDataSettings = GetDefault<UGameDataSettings>();
 		float const DistanceRatio = FMath::GetRangePct(GameDataSettings->MinDeployDistance,
 													   GameDataSettings->MaxDeployDistance, DeployDistance);
-		GemParams.HealthMultiplier *=
+		SpawnParams.HealthMultiplier *=
 			GameDataSettings->LeverageHealthMultiplier.Interpolate(FMath::Clamp(DistanceRatio, 0.f, 1.f));
 	}
-	return GemParams;
-}
 
-// ---------------------------------------------------------------------------------------------------------------------
-AGeoDeployableBase* UGeoDeployAbility::SpawnDeployableAt(UAbilitySystemComponent& DeployerASC, FVector const& Location,
-														 float const HealthFraction)
-{
-	UGeoDeployAbility const* DeployAbility = GeoASLib::GetGrantedAbility<UGeoDeployAbility>(DeployerASC);
-	FGameplayAbilitySpec const* Spec =
-		DeployAbility ? DeployerASC.FindAbilitySpecFromClass(DeployAbility->GetClass()) : nullptr;
-
-	AGeoDeployableBase* Deployable = nullptr;
-	if (ensureMsgf(Spec, TEXT("%hs: %s holds no deploy ability"), __FUNCTION__,
-				   *DeployerASC.GetOwnerActor()->GetName()))
-	{
-		FAbilityPayload Payload;
-		Payload.SourceOwner = DeployerASC.GetOwnerActor();
-		Payload.SourceAvatar = DeployerASC.GetAvatarActor();
-		Payload.AbilityLevel = Spec->Level;
-		Payload.AbilityTag = GeoASLib::GetAbilityTagFromSpec(*Spec);
-		Payload.Seed = FMath::Rand32();
-
-		FDeployableDataParams SpawnParams = ApplyGemsToParams(DeployerASC, DeployAbility->Params);
-		SpawnParams.HealthMultiplier *= HealthFraction;
-		Deployable =
-			GeoASLib::FullySpawnDeployable(DeployAbility->DeployableActorClass, Payload,
-										   DeployAbility->GetEffectDataArray(), SpawnParams, FTransform(Location));
-	}
-
-	return Deployable;
+	return SpawnParams;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -306,7 +271,8 @@ void UGeoDeployAbility::SpawnProjectile(FTransform const& SpawnTransform, float 
 
 	ADeployableSpawnerProjectile* DeployableSpawnerProjectile = Cast<ADeployableSpawnerProjectile>(Projectile);
 	checkf(DeployableSpawnerProjectile, TEXT("SpawnerProjectile  must be a ADeployableSpawnerProjectile"));
-	DeployableSpawnerProjectile->Params = GetGemParams(SpawnParams.DistanceSpan);
+	DeployableSpawnerProjectile->Params =
+		MakeSpawnParams(*GetAbilitySystemComponentFromActorInfo(), SpawnParams.DistanceSpan);
 	DeployableSpawnerProjectile->DeployableActorClass = DeployableActorClass;
 
 	GeoASLib::FinishSpawnProjectile(GetWorld(), Projectile, SpawnTransform, SpawnServerTime, PredictionKey);

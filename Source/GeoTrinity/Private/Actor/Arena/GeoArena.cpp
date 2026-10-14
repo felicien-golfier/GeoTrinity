@@ -641,13 +641,6 @@ void AGeoArena::SpawnLootBurst()
 	FTransform const SpawnTransform{LootOrigin};
 	for (int32 PickupIndex = 0; PickupIndex < LootPickupsPerBurst; ++PickupIndex)
 	{
-		AGeoBuffPickup* Pickup = GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(
-			LootReloadCDO->BuffPickupClass, SpawnTransform, PayloadOwner, PayloadOwner,
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (!ensureMsgf(IsValid(Pickup), TEXT("%hs: failed to spawn AGeoBuffPickup"), __FUNCTION__))
-		{
-			return;
-		}
 		// Server-only spawning of replicated actors — no client prediction, so plain RNG is fine here.
 		float const Angle = FMath::FRandRange(0.f, 2.f * PI);
 		float const Radius = LootMaxRadius * FMath::Sqrt(FMath::FRand()); // sqrt → uniform over the disc
@@ -663,7 +656,6 @@ void AGeoArena::SpawnLootBurst()
 		PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
 		PickupData.TargetLocation = LootOrigin + FVector{FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f};
 
-		Pickup->InitInteractable(&PickupData);
-		Pickup->FinishSpawning(SpawnTransform);
+		GeoASLib::FullySpawnDeployable(LootReloadCDO->BuffPickupClass, PickupData, SpawnTransform);
 	}
 }

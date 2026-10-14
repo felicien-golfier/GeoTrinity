@@ -2,7 +2,6 @@
 
 #include "AbilitySystem/Abilities/Gem/GeoKinshipPassiveAbility.h"
 
-#include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
@@ -30,7 +29,7 @@ void UGeoKinshipPassiveAbility::OnDeployableDestroyed(AGeoDeployableBase& Deploy
 	Allies.Remove(Cast<APlayableCharacter>(GetAvatarActorFromActorInfo()));
 	if (!Allies.IsEmpty() && TryTrigger())
 	{
-		UGeoDeployAbility::SpawnDeployableAt(*GeoASLib::GetGeoAscFromActor(Allies[FMath::RandHelper(Allies.Num())]),
-											 Deployable.GetActorLocation());
+		GeoASLib::SpawnDeployableFromAbility(*GeoASLib::GetGeoAscFromActor(Allies[FMath::RandHelper(Allies.Num())]),
+											 Deployable.GetActorLocation(), StartHealthRatio);
 	}
 }

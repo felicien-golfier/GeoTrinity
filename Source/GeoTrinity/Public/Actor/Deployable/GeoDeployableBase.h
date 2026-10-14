@@ -75,6 +75,15 @@ struct FDeployableDataParams
 	/** Scales the health the deployable's DefaultAttributes give it. Set by the deployer's gems, never by hand. */
 	UPROPERTY()
 	float HealthMultiplier = 1.f;
+
+	/** Share of its max health the deployable starts with, after HealthMultiplier; max health is untouched. Set by the
+	 * deployer, never by hand. */
+	UPROPERTY()
+	float StartHealthRatio = 1.f;
+
+	/** Throw distance, in cm, Leverage was computed from; -1 when not thrown. Set by the deployer, never by hand. */
+	UPROPERTY()
+	float DeployDistance = -1.f;
 };
 
 /** Runtime init data passed from the spawner projectile to the deployable actor before BeginPlay. */
@@ -392,8 +401,9 @@ private:
 
 	void EnableActorCollision();
 
-	/** Server. Scales MaxHealth and Health by Params.HealthMultiplier. Runs after InitDrain, so the drain keeps the
-	 *  rate of the unscaled health and a tougher deployable lives longer. */
+	/** Server. Scales MaxHealth and Health by Params.HealthMultiplier, then sets Health to Params.StartHealthRatio of
+	 *  MaxHealth. Runs after InitDrain, so the drain keeps the rate of the unscaled health: a tougher deployable lives
+	 *  longer, a partly healthy one shorter. */
 	void ApplyHealthMultiplier();
 
 	/** Server. Judges Explosion, an instant hazard over Params.Size, then runs again next tick until it is over. A timer

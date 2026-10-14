@@ -52,13 +52,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoAbility|Deploy")
 	FVector GetPendingDeployLocation() const;
 
-	/**
-	 * Server: spawns the deployable of the deploy ability DeployerASC holds at Location, owned by DeployerASC's owner,
-	 * with the deployer's gems on it, without Leverage, which needs a throw. Spends no charge and passes no spawner
-	 * projectile. HealthFraction scales its health on top. Null when DeployerASC holds no deploy ability.
-	 */
-	static AGeoDeployableBase* SpawnDeployableAt(UAbilitySystemComponent& DeployerASC, FVector const& Location,
-												 float HealthFraction = 1.f);
+	/** Params as ASC's gems change them: blink time, drain and health, and Leverage when DeployDistance >= 0. Stores
+	 * DeployDistance in the result. */
+	FDeployableDataParams MakeSpawnParams(UAbilitySystemComponent const& ASC, float DeployDistance = -1.f) const;
 
 protected:
 	/** Binds the cooldown-tag event that plays the charge-refilled sound. */
@@ -108,13 +104,6 @@ private:
 	/** Deploy distance for the current charge ratio, lerped between the project-wide Min/MaxDeployDistance, before
 	 *  the Reach gems' SpellDistanceMultiplier, which the spawner projectile applies to its flight like any shot's. */
 	float GetChargedDeployDistance() const;
-
-	/** BaseParams as ASC's gems change them: blink time, drain and health. */
-	static FDeployableDataParams ApplyGemsToParams(UAbilitySystemComponent const& ASC,
-												   FDeployableDataParams const& BaseParams);
-
-	/** Params as the deployer's gems change them, and Leverage with DeployDistance. */
-	FDeployableDataParams GetGemParams(float DeployDistance) const;
 
 	/** Spawns the deployable spawner projectile and, on the deployer's machine, the DeployTargetCue that marks its
 	 * landing point until it lands. */

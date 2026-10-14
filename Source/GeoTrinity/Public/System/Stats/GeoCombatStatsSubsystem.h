@@ -53,6 +53,8 @@ struct FActorCombatStats
 	FCombatRate Damage;
 	FCombatRate Healing;
 	float TotalDamageReceived = 0.f;
+	/** World time the player went down in this fight; their whole-combat averages stop being measured here. */
+	TOptional<float> DeathTime;
 };
 
 /**
@@ -85,6 +87,9 @@ public:
 	/** Records an amount of healing dealt by Source and refreshes the displayed stats. Ignored while no session is
 	 *  running, so a heal still ticking after a fight never replaces that fight's final stats. */
 	void ReportHealingDealt(AGeoPlayerState* Source, float Amount);
+	/** Stops measuring Player's whole-combat averages at CurrentTime, so the fight going on without them does not
+	 *  dilute their figures. No-op for a player with no stats in the running session; cleared by the next ResetStats. */
+	void ReportPlayerDied(AGeoPlayerState* Player, float CurrentTime);
 	/**
 	 * Decays the smoothed rates to CurrentTime and pushes updated stats to each player state.
 	 * Called by Tick every frame; no-op while no combat session is running (StatsPerActor empty, e.g. right

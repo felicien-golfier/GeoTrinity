@@ -104,16 +104,6 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 			AvatarLocation, {FMath::Cos(RandomAngle) * RandomRadius, FMath::Sin(RandomAngle) * RandomRadius, 0.f});
 		FTransform const SpawnTransform{AvatarLocation};
 
-		AGeoBuffPickup* Pickup = GetWorld()->SpawnActorDeferred<AGeoBuffPickup>(
-			BuffPickupClass, SpawnTransform, StoredPayload.SourceAvatar, Cast<APawn>(StoredPayload.SourceAvatar),
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
-		if (!ensureMsgf(IsValid(Pickup), TEXT("GeoTriangleReloadAbility: Failed to spawn AGeoBuffPickup!")))
-		{
-			EndAbility(true, true);
-			return;
-		}
-
 		FBuffPickupData PickupData;
 		GeoASLib::FillDeployableData(PickupData, StoredPayload, BuffEffects, FDeployableDataParams());
 		PickupData.Level = BuffLevel;
@@ -122,8 +112,7 @@ void UGeoReloadAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 		PickupData.BuffIndex = Index;
 		PickupData.TargetLocation = AvatarLocation + SpawnOffset;
 
-		Pickup->InitInteractable(&PickupData);
-		Pickup->FinishSpawning(SpawnTransform);
+		GeoASLib::FullySpawnDeployable(BuffPickupClass, PickupData, SpawnTransform);
 	}
 
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);

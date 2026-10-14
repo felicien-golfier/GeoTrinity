@@ -9,6 +9,7 @@ UGeoCorePassiveAbility::UGeoCorePassiveAbility()
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerInitiated;
 	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
+	CommitBehaviour = ECommitBehaviour::DoNotAutoCommit;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

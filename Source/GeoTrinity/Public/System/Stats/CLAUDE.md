@@ -6,7 +6,9 @@
 | `GeoLeaderboardSave.h` | Fight records on this machine, one entry per finished attempt (name, class, figures) |
 
 ## Combat stats
-- Rates exponentially smoothed (`SmoothingWindowSeconds = 3`); `FightDPS` / `FightHPS` = totals / time since `CombatStartTime`.
+- Rates exponentially smoothed (`SmoothingWindowSeconds = 3`); `FightDPS` / `FightHPS` = totals / the player's own active time (`CombatStartTime` → their death, or now while alive), clamped to ≥ 1 s.
+- Death stops the player's ø: `FActorCombatStats::DeathTime` set by `AGeoGameState::NotifyPlayerDied` (in-fight deaths only) → `ReportPlayerDied`; `PushPlayerStats` divides their totals by `DeathTime - CombatStartTime`, so the meter keeps the alive averages instead of ones diluted by the fight going on. The live rate decays to 0 as usual; peak and totals are untouched.
+- `DeathTime` lives in the per-fight entry: cleared by `ResetStats()` (new fight).
 - MAX columns (`FBurstTracker`): biggest total inside one tumbling 0.5 s window = biggest single spell.
 - Server-only `OnWorldBeginPlay` subscribes to `AGeoGameState::OnMatchStateChanged`: entering InProgress `ResetStats()`; leaving empties `StatsPerActor` without pushing zeros (final values stay displayed).
 - `Report*` decays rates, folds the event, pushes stats; first event outside a match opens a new session.

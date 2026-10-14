@@ -2,7 +2,6 @@
 
 #include "AbilitySystem/Abilities/Gem/GeoSplitPassiveAbility.h"
 
-#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
@@ -25,23 +24,14 @@ void UGeoSplitPassiveAbility::UnbindEvent(UGeoAbilitySystemComponent& HolderASC)
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoSplitPassiveAbility::SplitDeployable(AGeoDeployableBase& Deployable)
 {
-	if (TryTrigger())
+	if (!TryTrigger())
 	{
-		FDeployableData const& Data = *Deployable.GetData();
-		FAbilityPayload Payload;
-		Payload.SourceOwner = Data.Owner;
-		Payload.SourceAvatar = Data.Instigator;
-		Payload.AbilityLevel = Data.Level;
-		Payload.AbilityTag = Data.AbilityTag;
-		Payload.Seed = Data.Seed;
-
-		FDeployableDataParams CopyParams = Data.Params;
-		CopyParams.HealthMultiplier *= CopyHealthFraction;
-
-		float const Angle = FMath::FRandRange(0.f, UE_TWO_PI);
-		FVector const Offset = FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.f)
-			* FMath::FRandRange(MinCopyDistance, MaxCopyDistance);
-		GeoASLib::FullySpawnDeployable(Deployable.GetClass(), Payload, Data.EffectDataArray, CopyParams,
-									   FTransform(Deployable.GetActorLocation() + Offset));
+		return;
 	}
+	float const Angle = FMath::FRandRange(0.f, UE_TWO_PI);
+	FVector const Offset =
+		FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.f) * FMath::FRandRange(MinCopyDistance, MaxCopyDistance);
+	GeoASLib::SpawnDeployableFromAbility(*GetGeoAbilitySystemComponentFromActorInfo(),
+										 Deployable.GetActorLocation() + Offset, StartHealthRatio,
+										 Deployable.GetData()->Params.DeployDistance);
 }

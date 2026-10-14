@@ -135,6 +135,15 @@ void UGeoCombatStatsSubsystem::ReportHealingDealt(AGeoPlayerState* Source, float
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
+void UGeoCombatStatsSubsystem::ReportPlayerDied(AGeoPlayerState* Player, float CurrentTime)
+{
+	if (FActorCombatStats* Stats = StatsPerActor.Find(Player))
+	{
+		Stats->DeathTime = CurrentTime;
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
 void UGeoCombatStatsSubsystem::ComputePlayerStats(float CurrentTime)
 {
 	// Empty means no combat session is running (e.g. a fight just ended): keep the last displayed
@@ -175,8 +184,6 @@ void UGeoCombatStatsSubsystem::PushPlayerStats(float CurrentTime)
 		GameState->SetCombatSeconds(CombatSeconds);
 	}
 
-	// Clamped to one second so the first hits of a combat don't read as an absurd average.
-	float const CombatDuration = FMath::Max(CombatSeconds, 1.f);
 	for (auto It = StatsPerActor.CreateIterator(); It; ++It)
 	{
 		AGeoPlayerState* GeoPlayerState = It.Key().Get();
@@ -187,6 +194,8 @@ void UGeoCombatStatsSubsystem::PushPlayerStats(float CurrentTime)
 		}
 
 		FActorCombatStats const& Stats = It.Value();
+		// Clamped to one second so the first hits of a combat don't read as an absurd average.
+		float const CombatDuration = FMath::Max(Stats.DeathTime.Get(CurrentTime) - CombatStartTime, 1.f);
 		FGeoCombatDisplayStats Display;
 		Display.LiveDPS = Stats.Damage.Smoothed;
 		Display.LiveHPS = Stats.Healing.Smoothed;

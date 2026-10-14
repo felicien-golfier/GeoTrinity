@@ -3,7 +3,9 @@
 // ReSharper disable CppUE4CodingStandardNamingViolationWarning
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
@@ -551,16 +553,23 @@ UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 											   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 											   FDeployableDataParams const& Params, FTransform const& SpawnTransform)
 {
-	AGeoDeployableBase* Deployable = StartSpawnDeployable(DeployableActorClass, Payload.SourceOwner,
-														  Cast<APawn>(Payload.SourceAvatar), SpawnTransform);
+	FDeployableData Data;
+	FillDeployableData(Data, Payload, EffectDataArray, Params);
+
+	return FullySpawnDeployable(DeployableActorClass, Data, SpawnTransform);
+}
+
+AGeoDeployableBase* UGeoAbilitySystemLibrary::FullySpawnDeployable(
+	TSubclassOf<AGeoDeployableBase> const DeployableActorClass, FDeployableData& Data, FTransform const& SpawnTransform)
+{
+	AGeoDeployableBase* Deployable =
+		StartSpawnDeployable(DeployableActorClass, Data.Owner, Cast<APawn>(Data.Instigator), SpawnTransform);
 	if (!ensureMsgf(IsValid(Deployable), TEXT("%hs: failed to spawn %s"), __FUNCTION__,
-					*DeployableActorClass->GetName()))
+					*GetNameSafe(DeployableActorClass)))
 	{
 		return nullptr;
 	}
 
-	FDeployableData Data;
-	FillDeployableData(Data, Payload, EffectDataArray, Params);
 	Deployable->InitInteractable(&Data);
 
 	if (!ensureMsgf(Deployable->IsActive(), TEXT("%hs: %s went inactive during init"), __FUNCTION__,
@@ -569,6 +578,36 @@ UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 		return nullptr;
 	}
 	Deployable->FinishSpawning(SpawnTransform);
+
+	return Deployable;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+AGeoDeployableBase* UGeoAbilitySystemLibrary::SpawnDeployableFromAbility(UAbilitySystemComponent& DeployerASC,
+																		 FVector const& Location,
+																		 float const StartHealthRatio,
+																		 float const DeployDistance)
+{
+	UGeoDeployAbility const* DeployAbility = GetGrantedAbility<UGeoDeployAbility>(DeployerASC);
+	FGameplayAbilitySpec const* Spec =
+		DeployAbility ? DeployerASC.FindAbilitySpecFromClass(DeployAbility->GetClass()) : nullptr;
+
+	AGeoDeployableBase* Deployable = nullptr;
+	if (ensureMsgf(Spec, TEXT("%hs: %s holds no deploy ability"), __FUNCTION__,
+				   *DeployerASC.GetOwnerActor()->GetName()))
+	{
+		FAbilityPayload Payload;
+		Payload.SourceOwner = DeployerASC.GetOwnerActor();
+		Payload.SourceAvatar = DeployerASC.GetAvatarActor();
+		Payload.AbilityLevel = Spec->Level;
+		Payload.AbilityTag = GetAbilityTagFromSpec(*Spec);
+		Payload.Seed = FMath::Rand32();
+
+		FDeployableDataParams SpawnParams = DeployAbility->MakeSpawnParams(DeployerASC, DeployDistance);
+		SpawnParams.StartHealthRatio = StartHealthRatio;
+		Deployable = FullySpawnDeployable(DeployAbility->GetDeployableActorClass(), Payload,
+										  DeployAbility->GetEffectDataArray(), SpawnParams, FTransform(Location));
+	}
 
 	return Deployable;
 }

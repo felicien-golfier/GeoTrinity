@@ -8,6 +8,8 @@
 ## GeoASLib
 - **Effects**: `ApplyEffectFromEffectData(Array, SourceASC, TargetASC, Level, Seed, AbilityTag)` — two passes (all `UpdateContextHandle`, then all `ApplyEffect`); fresh context per call.
 - **Deployables**: `StartSpawnDeployable` (call `InitInteractable` before finish), `FillDeployableData`, `FinishSpawnDeployable`, `FullySpawnDeployable`.
+  - `FullySpawnDeployable` is the only spawn funnel: (Class, Payload, EffectData, Params, Transform) or (Class, pre-filled `FDeployableData` subclass, Transform) for pickups, which carry extra fields.
+  - `SpawnDeployableFromAbility(DeployerASC, Location, StartHealthRatio = 1, DeployDistance = -1)`: the deployer's own deploy ability spawns its deployable again — its class, effects and params (`UGeoDeployAbility::MakeSpawnParams(ASC, DeployDistance)`: gems applied, Leverage when `DeployDistance >= 0`), fresh seed, payload from its spec. Overridable: start health ratio and the distance Leverage reads; a new override is a new argument. Spends no charge, throws no projectile. Null when the ASC holds no deploy ability.
 - **Projectiles** (pool-aware): `FullySpawnProjectile`, `StartSpawnProjectile` / `FinishSpawnProjectile`; both take only `FExternalProjectileParams` (applied via `ApplyProjectileParams`); `AdvanceProjectile(Elapsed)` compensates lag.
 - **Targeting**: `GetTargetDirections(Payload, Mode)`.
 - **Agents**: `GetInteractableActors(World, SourceTeam, AttitudeBitmask, …)`, `GetInteractableActorsInLine(…)` (2D beam segment), `IsTeamAttitudeAligned`.

@@ -6,8 +6,10 @@
 #include "Characters/PlayableCharacter.h"
 #include "Engine/World.h"
 #include "GameClasses/Match/GeoGameMode.h"
+#include "GameClasses/Match/GeoPlayerState.h"
 #include "GameFramework/PlayerController.h"
 #include "Net/UnrealNetwork.h"
+#include "System/Stats/GeoCombatStatsSubsystem.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void AGeoGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -99,6 +101,11 @@ void AGeoGameState::NotifyPlayerDied(APlayableCharacter& Player)
 																				}),
 											   DeathTime, false);
 		return;
+	}
+
+	if (UGeoCombatStatsSubsystem* CombatStats = GetWorld()->GetSubsystem<UGeoCombatStatsSubsystem>())
+	{
+		CombatStats->ReportPlayerDied(Player.GetPlayerState<AGeoPlayerState>(), GetWorld()->GetTimeSeconds());
 	}
 
 	// In a fight the player stays down; the group only comes back once everyone who started the fight is down.

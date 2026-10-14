@@ -225,6 +225,24 @@ public:
 													TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 													FDeployableDataParams const& Params,
 													FTransform const& SpawnTransform);
+
+	/** Same funnel for a deployable that carries extra fields (a buff pickup): Data is pre-filled, its Owner and
+	 * Instigator spawn it. Returns nullptr on failure. */
+	static AGeoDeployableBase* FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> DeployableActorClass,
+													FDeployableData& Data, FTransform const& SpawnTransform);
+
+	/**
+	 * Server: the deploy ability DeployerASC holds spawns its deployable again at Location, with its class, effects and
+	 * MakeSpawnParams(DeployerASC, DeployDistance), a fresh seed and a payload from its spec. Spends no charge, throws no
+	 * projectile.
+	 *
+	 * @param StartHealthRatio  Share of its max health the deployable starts with.
+	 * @param DeployDistance    Throw distance Leverage reads; -1 for none.
+	 * @return                  The deployable, or nullptr when DeployerASC holds no deploy ability.
+	 */
+	static AGeoDeployableBase* SpawnDeployableFromAbility(UAbilitySystemComponent& DeployerASC, FVector const& Location,
+														  float StartHealthRatio = 1.f, float DeployDistance = -1.f);
+
 	/** Deferred-spawns a deployable actor without calling FinishSpawning; caller must call InitInteractable and then
 	 * FinishSpawning itself. Returns nullptr on failure. */
 	static AGeoDeployableBase* StartSpawnDeployable(TSubclassOf<AGeoDeployableBase> DeployableActorClass, AActor* Owner,

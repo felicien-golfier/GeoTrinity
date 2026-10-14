@@ -10,9 +10,9 @@
 class AGeoDeployableBase;
 
 /**
- * Passive of the Split Core: a deployable that lands from a throw places a copy of itself, with a fraction of its
- * health, at a random spot around it, at most once per its Cooldown GE. Only a throw can split, so a copy never splits
- * again.
+ * Passive of the Split Core: a deployable that lands from a throw places a copy of itself, starting at a fraction of
+ * its health, at a random spot around it, at most once per its Cooldown GE. The copy carries the throw's Leverage. Only
+ * a throw can split, so a copy never splits again.
  */
 UCLASS()
 class GEOTRINITY_API UGeoSplitPassiveAbility : public UGeoCorePassiveAbility
@@ -28,9 +28,10 @@ private:
 	/** Places a copy of Deployable, which just landed, when TryTrigger passes. */
 	void SplitDeployable(AGeoDeployableBase& Deployable);
 
-	/** Health of the copy, as a fraction of the deployable's. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Split", meta = (ClampMin = "0", ClampMax = "1"))
-	float CopyHealthFraction = 0.5f;
+	/** Health the copy starts with, as a share of its max health; the max is the deployable's own. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Split",
+			  meta = (ClampMin = "0.01", ClampMax = "1"))
+	float StartHealthRatio = 0.5f;
 
 	/** The copy lands this far from the deployable at least, in cm. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Split", meta = (ClampMin = "0"))

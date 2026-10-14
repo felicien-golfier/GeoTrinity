@@ -33,7 +33,7 @@ CORES = [
 ]
 
 # Cooldown seconds of the Cores whose rule fires on an event; each gets its own GE_CD_Core_<gem> (Bond and Relay have none)
-COOLDOWNS = {"Wake": 8.0, "Split": 10.0, "Kinship": 5.0}
+COOLDOWNS = {"Wake": 20.0, "Split": 20.0, "Kinship": 12.0}
 GE_FOLDER = "/Game/AbilitySystem/GameplayEffects/Cooldown"
 GE_TEMPLATE = GE_FOLDER + "/GE_CD_Special"
 
@@ -95,17 +95,21 @@ def create_blueprint(gem_id, cpp_class):
 
 
 def register(info, entries):
-    """Shared entries replaced per Core, by tag or display name; no Description: Content/Data/AbilityDescriptions.txt owns it."""
+    """Shared entries replaced per Core, by tag or display name, keeping the AbilityIcon import_icons.py set; no Description: Content/Data/AbilityDescriptions.txt owns it."""
     shared = list(info.get_editor_property("SharedAbilities"))
     for gem_id, class_path, display_name in entries:
         tag = "Ability.Spell." + gem_id
-        shared = [e for e in shared
-                  if tag not in e.export_text() and e.get_editor_property("AbilityDisplayName") != display_name]
+        stale = [e for e in shared
+                 if tag in e.export_text() or e.get_editor_property("AbilityDisplayName") == display_name]
+        icon = next((e.get_editor_property("AbilityIcon") for e in stale if e.get_editor_property("AbilityIcon")), None)
+        shared = [e for e in shared if e not in stale]
         entry = unreal.PlayersGameplayAbilityInfo()
         entry.import_text(
             '(TypeOfAbilityTag=(TagName="Ability.Type.Passive"),bGiveAtStartup=False,'
             'AbilityClass="/Script/Engine.BlueprintGeneratedClass\'%s\'",AbilityTag=(TagName="%s"),'
             'AbilityDisplayName="%s")' % (class_path, tag, display_name))
+        if icon:
+            entry.set_editor_property("AbilityIcon", icon)
         shared.append(entry)
     info.set_editor_property("SharedAbilities", shared)
     info.populate_ability_tags()

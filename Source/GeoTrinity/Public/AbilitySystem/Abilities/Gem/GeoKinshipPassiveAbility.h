@@ -28,4 +28,9 @@ protected:
 private:
 	/** Lets a random living ally deploy where Deployable stood, when TryTrigger passes. */
 	void OnDeployableDestroyed(AGeoDeployableBase& Deployable);
+
+	/** Health the ally's deployable starts with, as a share of its max health. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Kinship",
+			  meta = (ClampMin = "0.01", ClampMax = "1"))
+	float StartHealthRatio = 1.f;
 };

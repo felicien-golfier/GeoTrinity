@@ -245,12 +245,17 @@ void AGeoDeployableBase::ApplyHealthMultiplier()
 	if (GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		float const Multiplier = GetData()->Params.HealthMultiplier;
+		FDeployableDataParams const& Params = GetData()->Params;
 		for (FGameplayAttribute const& Attribute :
 			 {UGeoAttributeSetBase::GetMaxHealthAttribute(), UGeoAttributeSetBase::GetHealthAttribute()})
 		{
-			ASC->SetNumericAttributeBase(Attribute, ASC->GetNumericAttributeBase(Attribute) * Multiplier);
+			ASC->SetNumericAttributeBase(Attribute, ASC->GetNumericAttributeBase(Attribute) * Params.HealthMultiplier);
 		}
+
+		float const StartRatio = FMath::Clamp(Params.StartHealthRatio, KINDA_SMALL_NUMBER, 1.f);
+		ASC->SetNumericAttributeBase(
+			UGeoAttributeSetBase::GetHealthAttribute(),
+			ASC->GetNumericAttributeBase(UGeoAttributeSetBase::GetMaxHealthAttribute()) * StartRatio);
 	}
 }
 

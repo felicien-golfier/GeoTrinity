@@ -2,8 +2,8 @@
 
 #include "AbilitySystem/Abilities/Gem/GeoWakePassiveAbility.h"
 
-#include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void UGeoWakePassiveAbility::BindEvent(UGeoAbilitySystemComponent& HolderASC)
@@ -25,6 +25,6 @@ void UGeoWakePassiveAbility::OnDashStarted(FVector const& DashStart)
 {
 	if (TryTrigger())
 	{
-		UGeoDeployAbility::SpawnDeployableAt(*GetGeoAbilitySystemComponentFromActorInfo(), DashStart);
+		GeoASLib::SpawnDeployableFromAbility(*GetGeoAbilitySystemComponentFromActorInfo(), DashStart, StartHealthRatio);
 	}
 }

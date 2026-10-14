@@ -9,7 +9,7 @@
 
 /**
  * Passive of the Wake Core: a dash leaves the holder's deployable where it started, at most once per its Cooldown GE.
- * It spends no deploy charge and has the health of a deployable thrown without Leverage.
+ * It spends no deploy charge and, placed without a throw, carries no Leverage.
  */
 UCLASS()
 class GEOTRINITY_API UGeoWakePassiveAbility : public UGeoCorePassiveAbility
@@ -24,4 +24,9 @@ protected:
 private:
 	/** Spawns the holder's deployable at DashStart when TryTrigger passes. */
 	void OnDashStarted(FVector const& DashStart);
+
+	/** Health the deployable starts with, as a share of its max health. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Wake",
+			  meta = (ClampMin = "0.01", ClampMax = "1"))
+	float StartHealthRatio = 1.f;
 };

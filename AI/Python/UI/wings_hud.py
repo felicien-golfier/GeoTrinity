@@ -26,6 +26,7 @@ UI_SCRIPTS = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Path
 if UI_SCRIPTS not in sys.path:
     sys.path.insert(0, UI_SCRIPTS)
 import ability_page
+import rail_style
 import ui_theme
 
 ability_page = importlib.reload(ability_page)
@@ -352,10 +353,23 @@ def restyle_boss_bar():
     write_slot(path, meter_slot, {"size": FILL, "vertical_alignment": CENTER})
     _, percent_slot = add(wbp, path, unreal.GeoText, "HealthPercentText", "RailRow", text(ROLE.MONO, "100%"))
     write_slot(path, percent_slot, {"padding": unreal.Margin(18, 0, 18, 0), "vertical_alignment": CENTER})
+    # The timer is built exactly like HealthPercentText: a themed GeoText of the MONO role straight in RailRow, centred
+    # by its slot, so it centres in the rail's height like the percentage whatever its size. Earlier runs boxed and
+    # shifted a plain TextBlock; that is undone here.
+    if UTIL.find_widget(wbp, "TimerBox"):
+        UTIL.attach_widget(wbp, "RailRow", "FightTimerText")
+        UTIL.remove_widget(wbp, "TimerBox")
+    timer = rail_style.swap_widget_class(wbp, "FightTimerText", unreal.GeoText)
+    asset_guard.write(path, timer, "role", ROLE.MONO)
+    asset_guard.write(path, timer, "render_transform", unreal.WidgetTransform(),
+                      earlier=(unreal.WidgetTransform(scale=unreal.Vector2D(0.85, 0.85)),
+                               unreal.WidgetTransform(translation=unreal.Vector2D(0, -16.0),
+                                                      scale=unreal.Vector2D(0.85, 0.85)),
+                               unreal.WidgetTransform(translation=unreal.Vector2D(0, -10.0))))
     if timer.get_parent().get_name() != "RailRow":
         UTIL.attach_widget(wbp, "RailRow", "FightTimerText")
-    write_slot(path, UTIL.find_widget(wbp, "FightTimerText").get_editor_property("slot"),
-               {"vertical_alignment": CENTER})
+    write_slot(path, timer.get_editor_property("slot"),
+               {"padding": unreal.Margin(18, 0, 0, 0), "vertical_alignment": CENTER})
     asset_guard.write(path, UTIL.find_widget(wbp, "WBP_ProgressBar"), "visibility", unreal.SlateVisibility.COLLAPSED)
     finish(wbp)
 
@@ -460,7 +474,7 @@ def build_overlay(wing, team_list, stats):
     place(wbp, path, root, "TeamList", team_list.generated_class(),
           canvas_layout((0, 0, 0, 0), (6, 199, 360, 200), (0, 0)))
     place(wbp, path, root, "StatsPanel", stats.generated_class(),
-          canvas_layout((1, 0, 1, 0), (-1, 40, 340, 120), (1, 0)))
+          canvas_layout((1, 0, 1, 0), (-1, 54, 340, 120), (1, 0)), earlier=(canvas_layout((1, 0, 1, 0), (-1, 40, 340, 120), (1, 0)),))
     life = UTIL.find_widget(wbp, "LifeBarGroup")
     if life:
         asset_guard.write(path, life, "visibility", unreal.SlateVisibility.COLLAPSED)
