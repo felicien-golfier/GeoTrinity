@@ -46,8 +46,8 @@ static FAutoConsoleCommandWithWorld GDestroyTileUnderMouseCommand(
 
 			FVector WorldLocation;
 			FVector WorldDirection;
-			if (!PC->DeprojectMousePositionToWorld(WorldLocation, WorldDirection) ||
-				FMath::IsNearlyZero(WorldDirection.Z))
+			if (!PC->DeprojectMousePositionToWorld(WorldLocation, WorldDirection)
+				|| FMath::IsNearlyZero(WorldDirection.Z))
 			{
 				return;
 			}
@@ -131,7 +131,7 @@ namespace
 		UINT const LayoutCharCode = MapVirtualKeyExW(LayoutVirtualKey, MAPVK_VK_TO_CHAR, ActiveLayout) & 0xFFFF;
 		return FInputKeyManager::Get().GetKeyFromCodes(LayoutVirtualKey, LayoutCharCode);
 	}
-}
+} // namespace
 #endif
 
 void AGeoPlayerController::SeedKeyBindingsForKeyboardLayout()
@@ -204,7 +204,7 @@ void AGeoPlayerController::SetMenuInputMappingActive(bool bMenuActive)
 	UEnhancedInputLocalPlayerSubsystem* InputSystem =
 		LocalPlayer ? LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
 	if (!ensureMsgf(InputSystem, TEXT("AGeoPlayerController: no Enhanced Input subsystem on %s"), *GetName())
-		|| !ensureMsgf(!InputMapping.IsNull() && !MenuInputMapping.IsNull(),
+		|| !ensureMsgf(InputMapping && MenuInputMapping,
 					   TEXT("AGeoPlayerController: InputMapping or MenuInputMapping is not set")))
 	{
 		return;
@@ -213,10 +213,8 @@ void AGeoPlayerController::SetMenuInputMappingActive(bool bMenuActive)
 	// screen can enumerate its player-mappable rows and saved remaps get applied on rebuild.
 	FModifyContextOptions Options;
 	Options.bNotifyUserSettings = true;
-	InputSystem->RemoveMappingContext(
-		bMenuActive ? InputMapping.LoadSynchronous() : MenuInputMapping.LoadSynchronous(), Options);
-	InputSystem->AddMappingContext(bMenuActive ? MenuInputMapping.LoadSynchronous() : InputMapping.LoadSynchronous(),
-								   0, Options);
+	InputSystem->RemoveMappingContext(bMenuActive ? InputMapping : MenuInputMapping, Options);
+	InputSystem->AddMappingContext(bMenuActive ? MenuInputMapping : InputMapping, 0, Options);
 }
 
 AGeoPlayerController* AGeoPlayerController::GetLocalGeoPlayerController(UWorld const* World)
@@ -238,20 +236,20 @@ void AGeoPlayerController::SetupInputComponent()
 
 	// Every local player has their own stat counter, so this binds before the player-1 check below.
 	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent);
-	if (EnhancedInput && !ToggleStatsDetailAction.IsNull())
+	if (EnhancedInput && ToggleStatsDetailAction)
 	{
-		EnhancedInput->BindActionInstanceLambda(ToggleStatsDetailAction.LoadSynchronous(), ETriggerEvent::Started,
+		EnhancedInput->BindActionInstanceLambda(ToggleStatsDetailAction, ETriggerEvent::Started,
 												[this](FInputActionInstance const& /*Instance*/)
 												{
 													OnToggleStatsDetail.Broadcast();
 												});
 	}
 
-	if (EnhancedInput && !ShowCharacterSheetAction.IsNull())
+	if (EnhancedInput && ShowCharacterSheetAction)
 	{
-		UInputAction const* ShowAction = ShowCharacterSheetAction.LoadSynchronous();
-		EnhancedInput->BindAction(ShowAction, ETriggerEvent::Started, this, &AGeoPlayerController::ShowCharacterSheet);
-		EnhancedInput->BindAction(ShowAction, ETriggerEvent::Completed, this,
+		EnhancedInput->BindAction(ShowCharacterSheetAction, ETriggerEvent::Started, this,
+								  &AGeoPlayerController::ShowCharacterSheet);
+		EnhancedInput->BindAction(ShowCharacterSheetAction, ETriggerEvent::Completed, this,
 								  &AGeoPlayerController::HideCharacterSheet);
 	}
 
@@ -262,13 +260,11 @@ void AGeoPlayerController::SetupInputComponent()
 		return;
 	}
 
-	if (!ensureMsgf(EnhancedInput && !ToggleMenuAction.IsNull(),
-					TEXT("AGeoPlayerController: ToggleMenuAction is not set")))
+	if (!ensureMsgf(EnhancedInput && ToggleMenuAction, TEXT("AGeoPlayerController: ToggleMenuAction is not set")))
 	{
 		return;
 	}
-	EnhancedInput->BindAction(ToggleMenuAction.LoadSynchronous(), ETriggerEvent::Started, this,
-							  &AGeoPlayerController::HandleToggleMenu);
+	EnhancedInput->BindAction(ToggleMenuAction, ETriggerEvent::Started, this, &AGeoPlayerController::HandleToggleMenu);
 }
 
 void AGeoPlayerController::HandleToggleMenu(FInputActionInstance const& /*Instance*/)
@@ -340,9 +336,8 @@ void AGeoPlayerController::OpenPauseMenu()
 	PauseMenuWidget->AddToViewport(PauseMenuZOrder);
 	SetMenuInputMappingActive(true);
 	FlushPressedKeys();
-	SetInputMode(FInputModeGameAndUI()
-					 .SetHideCursorDuringCapture(false)
-					 .SetWidgetToFocus(PauseMenuWidget->TakeWidget()));
+	SetInputMode(
+		FInputModeGameAndUI().SetHideCursorDuringCapture(false).SetWidgetToFocus(PauseMenuWidget->TakeWidget()));
 }
 
 void AGeoPlayerController::ClosePauseMenu()

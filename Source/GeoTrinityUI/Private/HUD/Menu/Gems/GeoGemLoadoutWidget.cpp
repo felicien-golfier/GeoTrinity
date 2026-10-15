@@ -56,15 +56,10 @@ void UGeoGemLoadoutWidget::NativeConstruct()
 	if (FillButton)
 	{
 		FillButton->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleFill);
-		FillButton->TextRole = FillTextRole;
 	}
-	if (UnequipButton)
+	if (UnequipTierButton)
 	{
-		UnequipButton->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleUnequip);
-	}
-	if (EchoButton)
-	{
-		EchoButton->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleEcho);
+		UnequipTierButton->OnClicked.AddUniqueDynamic(this, &UGeoGemLoadoutWidget::HandleUnequipTier);
 	}
 	SetVisibility(ESlateVisibility::Visible);
 	Refresh();
@@ -119,7 +114,8 @@ void UGeoGemLoadoutWidget::Refresh()
 	ShowBuildTabs(*Profile);
 	ShowLevel(*Profile);
 	ShowSockets(*Profile, *Catalog);
-	ShowFilters(*Profile, *Catalog);
+	ShowFilters();
+	ShowUnequipTier(*Profile, *Catalog);
 	ShowStacks(*Profile, *Catalog);
 	ShowDetail(*Profile, *Catalog);
 	ShowTotals(*Profile, *Catalog);
@@ -621,8 +617,9 @@ TArray<int32> UGeoGemLoadoutWidget::GetTargetSockets(UGeoGemProfileSave const& P
 // ---------------------------------------------------------------------------------------------------------------------
 int32 UGeoGemLoadoutWidget::GetFillCount(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog) const
 {
-	int32 const MostCopies =
-		Catalog.FindTier(PickedGem) == EGeoGemTier::Core ? 1 : Profile.GetFreeCount(PickedGem, ShownClass);
+	bool const bCore = Catalog.FindTier(PickedGem) == EGeoGemTier::Core;
+	bool const bHeld = Profile.GetLoadout(ShownClass).Sockets.Contains(PickedGem);
+	int32 const MostCopies = bCore ? (bHeld ? 0 : 1) : Profile.GetFreeCount(PickedGem, ShownClass);
 	return FMath::Min(GetTargetSockets(Profile, Catalog).Num(), MostCopies);
 }
 
@@ -642,6 +639,10 @@ void UGeoGemLoadoutWidget::ShowSockets(UGeoGemProfileSave const& Profile, UGeoGe
 		if (Gem && GemTier)
 		{
 			Glyph->SetGem(*GemTier, Gem->Color.GetColor(1.f));
+		}
+		else if (Index == GetEchoIndex())
+		{
+			Glyph->SetEchoSocket(IsSocketLocked(Profile, Index), Socket.UnlockLevel);
 		}
 		else
 		{
@@ -674,27 +675,15 @@ void UGeoGemLoadoutWidget::ShowEchoHalo(UGeoGemProfileSave const& Profile, UGeoG
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGemLoadoutWidget::ShowFilters(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
+void UGeoGemLoadoutWidget::ShowFilters()
 {
 	if (!TierFilterBox)
 	{
 		return;
 	}
 
-	TMap<EGeoGemTier, int32> OwnedPerTier;
-	int32 OwnedTotal = 0;
-	for (EGeoGemTier const Tier : GetTiers())
-	{
-		FGeoGemList const* List = Catalog.GemsByTier.Find(Tier);
-		for (FGeoGemInfo const& Gem : List ? List->Gems : TArray<FGeoGemInfo>())
-		{
-			OwnedPerTier.FindOrAdd(Tier) += Profile.GetOwnedCount(Gem.Id);
-			OwnedTotal += Profile.GetOwnedCount(Gem.Id);
-		}
-	}
-
 	TierFilterBox->ClearChildren();
-	auto AddFilter = [this](TOptional<EGeoGemTier> const Filter, FText const& Name, int32 const Owned)
+	auto AddFilter = [this](TOptional<EGeoGemTier> const Filter, FText const& Name)
 	{
 		UGeoListRowWidget* Tab = MakeRow(
 			Filter == TierFilter ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
@@ -711,14 +700,37 @@ void UGeoGemLoadoutWidget::ShowFilters(UGeoGemProfileSave const& Profile, UGeoGe
 		}
 		if (Tab)
 		{
-			Tab->AddTextColumn(FText::Format(FilterFormat, Name, Owned), 0.f);
+			Tab->AddTextColumn(Name, 0.f);
 			TierFilterBox->AddChildToHorizontalBox(Tab);
 		}
 	};
-	AddFilter(TOptional<EGeoGemTier>(), AllFilterText, OwnedTotal);
+	AddFilter(TOptional<EGeoGemTier>(), AllFilterText);
 	for (EGeoGemTier const Tier : GetTiers())
 	{
-		AddFilter(Tier, GetTierName(Tier, true), OwnedPerTier.FindRef(Tier));
+		AddFilter(Tier, GetTierName(Tier, true));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::ShowUnequipTier(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
+{
+	if (UnequipTierButton)
+	{
+		FGeoGemLoadout const Loadout = Profile.GetLoadout(ShownClass);
+		TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+		auto IsFiltered = [this](TOptional<EGeoGemTier> const Tier)
+		{
+			return Tier && (!TierFilter || *TierFilter == *Tier);
+		};
+		bool bHoldsGem = IsFiltered(Catalog.FindTier(Loadout.Echo));
+		for (int32 SocketIndex = 0; SocketIndex < Sockets.Num() && !bHoldsGem; ++SocketIndex)
+		{
+			bHoldsGem = !Loadout.Sockets[SocketIndex].IsNone() && IsFiltered(Sockets[SocketIndex].Tier);
+		}
+
+		UnequipTierButton->SetLabel(TierFilter ? FText::Format(UnequipTierFormat, GetTierName(*TierFilter, true))
+											   : UnequipAllText);
+		UnequipTierButton->SetIsEnabled(bHoldsGem);
 	}
 }
 
@@ -878,11 +890,9 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 											  : FText::Format(CountsFormat, Owned, Owned - Free, Free));
 	}
 
-	int32 const FillCount = bFromSocket || bPreview ? 0 : GetFillCount(Profile, Catalog);
-	SetShown(EquipButton, !bFromSocket && !bPreview);
-	SetShown(FillButton, !bFromSocket && !bPreview);
-	SetShown(UnequipButton, bFromSocket && !bPreview);
-	SetShown(EchoButton, !bFromSocket && !bPreview);
+	int32 const FillCount = GetFillCount(Profile, Catalog);
+	SetShown(EquipButton, true);
+	SetShown(FillButton, true);
 	bool const bEmptyTarget = Algo::AnyOf(GetTargetSockets(Profile, Catalog),
 										  [&Slotted](int32 const Index)
 										  {
@@ -890,6 +900,7 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 										  });
 	if (EquipButton)
 	{
+		EquipButton->SetLabel(EquipText);
 		EquipButton->SetIsEnabled(FillCount > 0 && bEmptyTarget);
 	}
 	if (FillButton)
@@ -897,23 +908,12 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 		FillButton->SetLabel(FillText);
 		FillButton->SetIsEnabled(FillCount > 0);
 	}
-	int32 const EchoReplaced = static_cast<int32>(Algo::Count(Slotted, Gem.Id));
-	bool const bCanEcho = !bFromSocket && !bPreview && Profile.CanEcho(Catalog, ShownClass, Gem.Id);
-	bool const bAskedToConfirm = bCanEcho && bConfirmingEcho && EchoReplaced > 0;
-	if (EchoButton)
-	{
-		EchoButton->SetLabel(bAskedToConfirm ? EchoConfirmText : EchoText);
-		EchoButton->SetIsEnabled(bCanEcho);
-	}
 	if (DetailNoteText)
 	{
-		bool const bCoreHeld = Tier == EGeoGemTier::Core && Slotted.Contains(Gem.Id);
 		DetailNoteText->SetText(bFromSocket || bPreview ? FText::GetEmpty()
-									: bAskedToConfirm	? FText::Format(NoteEchoConfirm, EchoReplaced)
 									: bEchoed			? NoteEchoed
 									: FillCount > 0		? FText::GetEmpty()
-									: bCoreHeld			? NoteCoreOnce
-									: Free <= 0 ? NoteNoFreeCopy
+									: Free <= 0			? NoteNoFreeCopy
 												: FText::Format(NoteNoSocket, GetTierName(Tier, false).ToLower()));
 	}
 }
@@ -993,11 +993,10 @@ void UGeoGemLoadoutWidget::ShowTotals(UGeoGemProfileSave const& Profile, UGeoGem
 	TOptional<EGeoGemTier> const EchoTier = Catalog.FindTier(Echo);
 	if (EchoGem && EchoTier && TotalsTable)
 	{
-		int32 const EchoLevel = Profile.GetEchoLevel();
-		TotalsTable->AddLine(
-			{MakeLabel(*EchoGem, EchoGem->Effect),
-			 TotalsTable->MakeCellText(EchoGem->GetMagnitudeText(Catalog.GetEchoCopies(*EchoTier, EchoLevel))),
-			 TotalsTable->MakeCellText(FText::Format(EchoTotalFormat, EchoLevel))});
+		TotalsTable->AddLine({MakeLabel(*EchoGem, EchoGem->Effect),
+							  TotalsTable->MakeCellText(
+								  EchoGem->GetMagnitudeText(Catalog.GetEchoCopies(*EchoTier, Profile.GetEchoLevel()))),
+							  TotalsTable->MakeFittingCellText(EchoTotalText, EchoTotalShortText, 2)});
 	}
 }
 
@@ -1011,7 +1010,6 @@ void UGeoGemLoadoutWidget::PickSocket(int32 const SocketIndex)
 		&& Profile->Equip(*Catalog, ShownClass, SocketIndex, PickedGem);
 	if (bEquip)
 	{
-		bConfirmingEcho = false;
 		CommitChanges();
 	}
 	else if (bEcho && Profile && Catalog && Profile->CanEcho(*Catalog, ShownClass, PickedGem))
@@ -1050,7 +1048,6 @@ void UGeoGemLoadoutWidget::PickStack(FName const GemId)
 	bool const bEquip = Profile && Catalog && PickedSocket != INDEX_NONE && !bEcho
 		&& Profile->Equip(*Catalog, ShownClass, PickedSocket, GemId);
 	bool const bEchoIt = Profile && Catalog && bEcho && Profile->CanEcho(*Catalog, ShownClass, GemId);
-	bConfirmingEcho = false;
 	if (bEquip)
 	{
 		CommitChanges();
@@ -1075,7 +1072,6 @@ void UGeoGemLoadoutWidget::ClearPick()
 {
 	PickedGem = NAME_None;
 	PickedSocket = INDEX_NONE;
-	bConfirmingEcho = false;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -1097,7 +1093,6 @@ void UGeoGemLoadoutWidget::HandleEquip()
 		});
 	if (EmptyTarget && Profile->Equip(*Catalog, ShownClass, *EmptyTarget, PickedGem))
 	{
-		bConfirmingEcho = false;
 		CommitChanges();
 	}
 }
@@ -1109,24 +1104,26 @@ void UGeoGemLoadoutWidget::HandleFill()
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 	if (Profile && Catalog && Profile->FillSockets(*Catalog, ShownClass, PickedGem) > 0)
 	{
-		bConfirmingEcho = false;
 		CommitChanges();
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGemLoadoutWidget::HandleUnequip()
+void UGeoGemLoadoutWidget::HandleUnequipTier()
 {
 	UGeoGemProfileSave* Profile = GetProfile();
-	bool const bEcho = PickedSocket == GetEchoIndex();
-	if (Profile && bEcho)
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (Profile && Catalog)
 	{
-		Profile->ClearEcho(ShownClass);
-		CommitChanges();
-	}
-	else if (Profile && GeoGem::GetSockets().IsValidIndex(PickedSocket))
-	{
-		Profile->Unequip(ShownClass, PickedSocket);
+		for (EGeoGemTier const Tier : GetTiers())
+		{
+			if (TierFilter.Get(Tier) == Tier)
+			{
+				Profile->UnequipTier(*Catalog, ShownClass, Tier);
+			}
+		}
+
+		ClearPick();
 		CommitChanges();
 	}
 }
@@ -1136,16 +1133,8 @@ void UGeoGemLoadoutWidget::HandleEcho()
 {
 	UGeoGemProfileSave* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
-	bool const bCanEcho = Profile && Catalog && Profile->CanEcho(*Catalog, ShownClass, PickedGem);
-	bool const bEmptiesSockets = bCanEcho && Profile->GetLoadout(ShownClass).Sockets.Contains(PickedGem);
-	if (bCanEcho && bEmptiesSockets && !bConfirmingEcho)
+	if (Profile && Catalog && Profile->SetEcho(*Catalog, ShownClass, PickedGem))
 	{
-		bConfirmingEcho = true;
-		Refresh();
-	}
-	else if (bCanEcho && Profile->SetEcho(*Catalog, ShownClass, PickedGem))
-	{
-		bConfirmingEcho = false;
 		CommitChanges();
 	}
 }

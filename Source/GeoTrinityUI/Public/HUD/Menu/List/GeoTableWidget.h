@@ -53,6 +53,9 @@ public:
 	/** A cell's text, in the Table text role, cut with an ellipsis when its cell is too narrow. */
 	UTextBlock* MakeCellText(FText const& Text) const;
 
+	/** A cell's text: Text when it fits in the fixed width of Column, else ShortText. A filling column takes Text. */
+	UTextBlock* MakeFittingCellText(FText const& Text, FText const& ShortText, int32 Column) const;
+
 protected:
 	/** Builds the header from Columns, so the designer previews it. */
 	virtual void NativePreConstruct() override;

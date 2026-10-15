@@ -17,6 +17,8 @@ Constraints:
 - The lag order reverses across the burst, so an inner ring never opens into a shell that has not.
 - A blade past reach 1 is stretched, and goes through whatever its ring sits inside: a turning ring clears that
   shell's near side, a still one its corners.
+- A clip with a tell shows only its front blade out from the wind-up's first frames, folded on frame 0: a
+  turning ring retracts the blade leaving the front as the next one arrives, and the recoil still ends folded.
 - Only the middle ring rests with a spike facing front, so a sharp focus leaves the other two barely open.
 - Nothing moves or scales on Z under an orthographic camera.
 
@@ -79,13 +81,15 @@ Swing = collections.namedtuple("Swing", "back frames")
 
 # (asset suffix, wind-up frames, loop frames, recoil frames, how sharply the spikes favour the front,
 #  spike reach wound tightest, the whole-boss swell, the wind-up's crank, units it rattles at its loudest,
-#  the rings)
-Clip = collections.namedtuple("Clip", "name start loop end focus charge_spike body swing shake rings")
+#  the reach the front blade holds from the wind-up's first frames — 0 for none, frames it takes to open, and how
+#  sharply the blades favour the front meanwhile —, the rings)
+Clip = collections.namedtuple(
+    "Clip", "name start loop end focus charge_spike body swing shake tell tell_frames tell_focus rings")
 
 CLIPS = [
     # Sweeping laser: one unbroken accelerating wind-up, then a spinning emitter with teeth all round.
     # Tightest of the three for room — every ring turns, so every inner blade is held to a near side.
-    Clip("SweepBeam", 54, 36, 20, 0.0, 0.30, Body(0.68, 1.22, 1.00, 0.050), None, 18.0, {
+    Clip("SweepBeam", 54, 36, 20, 0.0, 0.30, Body(0.68, 1.22, 1.00, 0.050), None, 18.0, 0.0, 1, 0.0, {
         OUTER: Ring(3, 0.86, 1.14, 2, 2, 0.000, 1.80, 0.0),
         MID: Ring(2, 0.82, 1.00, -4, -4, 0.000, 1.03, 0.0),
         CORE: Ring(0, 1.18, 1.00, 8, 8, 0.000, 1.30, 0.0)}),
@@ -93,14 +97,16 @@ CLIPS = [
     # alone. Only the core turns, and only once live, juddering as it goes. That turn is what lets its blades
     # read: at rest none of its six faces front, so a still core barely opens whatever reach it is given.
     # Standing still buys the outer two the longest blades of any clip — corners, not near sides.
-    Clip("CarvingRay", 48, 12, 24, 5.0, 0.45, Body(0.62, 1.30, 1.00, 0.000), None, 22.0, {
+    Clip("CarvingRay", 48, 12, 24, 5.0, 0.45, Body(0.62, 1.30, 1.00, 0.000), None, 22.0, 0.0, 1, 5.0, {
         OUTER: Ring(3, 0.80, 1.08, 0, 0, 0.100, 3.30, 0.0),
         MID: Ring(2, 0.84, 1.00, 0, 0, 0.100, 1.45, 0.0),
         CORE: Ring(0, 1.18, 1.00, 0, 1, 0.100, 1.40, 8.0)}),
     # Cone spray: salvos out of the front, the core turning so its blades ripple across the cone. Three-beat
     # wind-up — crank right, whip left, then clamp still. Only the body pulses through the loop, so every ring
-    # holds its spacing there.
-    Clip("ConeSpray", 50, 15, 18, 3.0, 0.25, Body(0.70, 1.25, 1.00, 0.100), Swing(0.40, 15), 16.0, {
+    # holds its spacing there. The blades at the front are out from the first frames, so the facing reads while it
+    # winds. The outer ring is the only one whose blades show, and none of its faces points dead front at rest
+    # (30 degrees off either side), so the tell's window is wide enough to open both.
+    Clip("ConeSpray", 50, 15, 18, 3.0, 0.25, Body(0.70, 1.25, 1.00, 0.100), Swing(0.40, 15), 16.0, 1.0, 4, 4.0, {
         OUTER: Ring(3, 0.86, 1.09, 1, 0, 0.000, 1.90, 0.0),
         MID: Ring(2, 0.86, 1.00, -1, 0, 0.000, 1.35, 0.0),
         CORE: Ring(0, 1.22, 1.00, 2, 1, 0.000, 1.35, 0.0)}),
@@ -280,10 +286,17 @@ def spike_reach(frame, clip, ring, angle):
 
     `angle` is where the spike points this frame, not where it rests, so a turning ring opens its blades as they
     sweep the front. Capped at the ring's reach — the burst's overshoot belongs to the rings, not the blades.
+    Winding up, the clip's tell holds the front blade out from the first frames, through the sharper tell_focus.
     """
     value = lagged(frame, clip, ring)
-    reach = -value * clip.charge_spike if value < 0.0 else min(1.0, value) * ring.burst_spike
-    return reach * max(0.0, math.cos(math.radians(angle))) ** clip.focus
+    winding = value <= 0.0 and frame <= loop_end(clip)
+    focus = clip.tell_focus if winding else clip.focus
+    if winding:
+        opened = min(1.0, max(0.0, frame - ring.lag) / float(clip.tell_frames))
+        reach = max(-value * clip.charge_spike, clip.tell * (1.0 - (1.0 - opened) ** 2))
+    else:
+        reach = -value * clip.charge_spike if value < 0.0 else min(1.0, value) * ring.burst_spike
+    return reach * max(0.0, math.cos(math.radians(angle))) ** focus
 
 
 def key(frame, bone, clip, rest, layout):

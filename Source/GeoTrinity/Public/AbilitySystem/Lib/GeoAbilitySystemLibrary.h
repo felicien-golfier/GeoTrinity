@@ -133,8 +133,8 @@ public:
 										  bool bIsHeal);
 
 	/**
-	 * What a hit or a heal from SourceASC is multiplied by: its stat ASC's CritDamage when that ASC holds the Critical
-	 * Core and wins a CritChance roll, else 1. Server only, like the ExecCalcs that ask it, so the roll needs no shared
+	 * What a hit or a heal from SourceASC is multiplied by: its stat ASC's CritDamage when that ASC wins a CritChance
+	 * roll, else 1. Server only, like the ExecCalcs that ask it, so the roll needs no shared
 	 * seed.
 	 */
 	static float RollCritMultiplier(UAbilitySystemComponent const* SourceASC);
@@ -233,8 +233,8 @@ public:
 
 	/**
 	 * Server: the deploy ability DeployerASC holds spawns its deployable again at Location, with its class, effects and
-	 * MakeSpawnParams(DeployerASC, DeployDistance), a fresh seed and a payload from its spec. Spends no charge, throws no
-	 * projectile.
+	 * MakeSpawnParams(DeployerASC, DeployDistance), a fresh seed and a payload from its spec. Spends no charge, throws
+	 * no projectile.
 	 *
 	 * @param StartHealthRatio  Share of its max health the deployable starts with.
 	 * @param DeployDistance    Throw distance Leverage reads; -1 for none.

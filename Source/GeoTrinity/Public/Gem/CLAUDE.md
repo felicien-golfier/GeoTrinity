@@ -20,12 +20,15 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 
 ## Invariants
 - Lowering a class level empties every locked-again socket of all its builds (`SetClassLevel`); fill (`FillSockets`) replaces slotted gems.
+- `UnequipTier(Catalog, PlayerClass, Tier)` empties every socket of that tier in the build PlayerClass plays, and its echo when the echoed gem is of that tier; the copies go back to free. There is no single-socket unequip in the menus (a socket changes by replacement), `Unequip` stays for `SetClassLevel` and the dev commands.
 - Gem tier fits only a socket of its own tier; a Core's rule is its `GrantedAbility` (`Abilities/Gem/CLAUDE.md`).
+- A Core is in one socket per build: slotting it into another socket moves it (the previous socket empties, `Equip`; the copy moves, no free copy needed). Its own socket is refused. `FillSockets` of a Core slots one socket at most, none when the build already holds it.
 - Socket order = loadout index order = save format: append, never reorder. Three clusters of seven steps over levels 1-20, the Core in the last step.
 - `FGeoGemInfo::Id` is the key in saves and loadouts; renaming orphans every owned copy.
 - `Operation`: `Add` (attributes starting at 0 or multipliers), `Percent` (flat values), `Flat` (counts).
 - Drop roll goes high tier down: Core chance, else Prism, else Cut, else Chip.
 - New gem stat = attribute in `UGeoGemAttributeSet` + catalog row.
+- Crits belong to everyone, no Core needed: `RollCritMultiplier` rolls `CritChance` (base 0%, raised by Precision) for `CritDamage` (base x1.2, raised by Edge). The Critical Core adds +30% `CritDamage` (its catalog row) and +10% `CritChance` (`UGeoGemStatsEffect`, constant next to the `Gem.Core.Critical` grant); the tag stays for the menus.
 - Editor sync: `GeoGemCsvSync` (`GeoTrinityEditor/Gem`) keeps catalog gems and the CSV equal, both ways; tests in `Private/Tests/GeoGemTests.cpp`.
 
 ## Echo socket
@@ -39,7 +42,7 @@ Design: "GeoTrinity — Gem System" doc, "Echo socket". One extra socket per bui
 - Share per tier: each echo level adds `EchoPercentPerLevel` (1%) to ONE tier, cycling `EchoTierOrder` (Chip, Cut, Prism). Level 1 = Chip 1%, level 2 = Cut 1%, level 3 = Prism 1%, level 4 = Chip 2%… Level 100 = Chip 34%, Cut 33%, Prism 33%.
 - Value: the echo is worth `Catalog.GetEchoCopies(Tier, EchoLevel)` slotted copies = the tier's socket count in `GetSockets()` × its share; times `MagnitudePerGem`, same attribute / operation as a slotted copy. The one formula: the stats GE (`UGeoGemStatsEffect::MakeSpec`) and the menus (`GetMagnitudeText(Copies)`) both read it.
 - Echo level rides with the sent loadout like `Level` (`FGeoGemLoadout::EchoLevel`, filled by `GetLoadout`).
-- Exclusive per build: an echoed type fits no other socket of that build (`CanEquip` refuses, `FillSockets` skips). Echoing a type the build slots empties those sockets (`SetEcho`), so `CanEcho` needs one owned copy, not a free one. Echoing the gem already there is refused.
+- Last placed wins, per build: a type is in the echo socket or in sockets, never both. Echoing a type the build slots empties those sockets (`SetEcho`, no confirmation), so `CanEcho` needs one owned copy, not a free one. Slotting the echoed type clears the echo and fills the socket (`Equip`; the echo's copy moves, no free copy needed). Echoing the gem already there is refused.
 - Copies: the echoed gem takes one copy like a socket; `GetFreeCount` and `GetBreakableCount` count it (`CountSlotted`).
 - The echo follows class levels, not a past moment: while no class is at 20 the echo level and XP are 0 and every build's echo gem is emptied (`SyncEchoWithClassLevels`, run by `SetClassLevel`, `AddClassXp`, `Load`); any class at 20 lifts it to 1. Lowering one class while another stays at 20 changes nothing.
 - Dev commands (non-shipping): `Geo.Gems.Echo <class> <GemId|None>`, `Geo.Gems.AddXp <class> <Xp>`, `Geo.Gems.SetEchoLevel <Level>` (shared, 0 .. max, XP restarts at 0; above 0 with no class at 20 it takes Triangle to 20 first); `Geo.Gems.Dump` lists the shared echo level / XP and each class's echo gem.

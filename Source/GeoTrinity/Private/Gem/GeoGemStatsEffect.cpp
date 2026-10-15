@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Gem/GeoGemCatalog.h"
 
@@ -64,6 +65,12 @@ FGameplayEffectSpecHandle UGeoGemStatsEffect::MakeSpec(UAbilitySystemComponent c
 				GrantedTags.AddTag(Gem->GrantedTag);
 			}
 
+			if (Gem->GrantedTag == FGeoGameplayTags::Get().Gem_Core_Critical)
+			{
+				SummedMagnitudes.FindOrAdd(GetSetByCallerName(UGeoGemAttributeSet::GetCritChanceAttribute(),
+															  EGeoGemOperation::Add)) += CriticalCoreCritChance;
+			}
+
 			AddCopies(*Gem, 1.f);
 		}
 	}
@@ -91,10 +98,10 @@ bool UGeoGemStatsEffect::Supports(FGeoGemInfo const& Gem)
 	FName const SetByCallerName = GetSetByCallerName(Gem.Attribute, Gem.Operation);
 	return !Gem.Attribute.IsValid()
 		|| GetDefault<UGeoGemStatsEffect>()->Modifiers.ContainsByPredicate(
-			   [SetByCallerName](FGameplayModifierInfo const& Modifier)
-			   {
-				   return Modifier.ModifierMagnitude.GetSetByCallerFloat().DataName == SetByCallerName;
-			   });
+			[SetByCallerName](FGameplayModifierInfo const& Modifier)
+			{
+				return Modifier.ModifierMagnitude.GetSetByCallerFloat().DataName == SetByCallerName;
+			});
 }
 
 FName UGeoGemStatsEffect::GetSetByCallerName(FGameplayAttribute const& Attribute, EGeoGemOperation const Operation)

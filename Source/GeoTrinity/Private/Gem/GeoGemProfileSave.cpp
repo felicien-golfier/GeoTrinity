@@ -86,7 +86,8 @@ float UGeoGemProfileSave::GetXpProgress(UGeoGemCatalog const& Catalog, EPlayerCl
 bool UGeoGemProfileSave::CanEcho(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, FName const GemId) const
 {
 	TOptional<EGeoGemTier> const Tier = Catalog.FindTier(GemId);
-	return Tier && *Tier != EGeoGemTier::Core && EchoLevel >= 1 && GetEcho(PlayerClass) != GemId && GetOwnedCount(GemId) > 0;
+	return Tier && *Tier != EGeoGemTier::Core && EchoLevel >= 1 && GetEcho(PlayerClass) != GemId
+		&& GetOwnedCount(GemId) > 0;
 }
 
 bool UGeoGemProfileSave::SetEcho(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, FName const GemId)
@@ -260,9 +261,9 @@ bool UGeoGemProfileSave::CanEquip(UGeoGemCatalog const& Catalog, EPlayerClass co
 	TOptional<EGeoGemTier> const Tier = Catalog.FindTier(GemId);
 	TArray<FName> const Slotted = GetLoadout(PlayerClass).Sockets;
 	FGeoGemSocket const& Socket = Sockets[SocketIndex];
+	bool const bCopyMoves = GetEcho(PlayerClass) == GemId || (Tier == EGeoGemTier::Core && Slotted.Contains(GemId));
 	return Tier == Socket.Tier && GetClassLevel(PlayerClass) >= Socket.UnlockLevel && Slotted[SocketIndex] != GemId
-		&& GetFreeCount(GemId, PlayerClass) > 0 && (Tier != EGeoGemTier::Core || !Slotted.Contains(GemId))
-		&& GetEcho(PlayerClass) != GemId;
+		&& (bCopyMoves || GetFreeCount(GemId, PlayerClass) > 0);
 }
 
 bool UGeoGemProfileSave::Equip(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, int32 const SocketIndex,
@@ -271,7 +272,21 @@ bool UGeoGemProfileSave::Equip(UGeoGemCatalog const& Catalog, EPlayerClass const
 	bool const bCanEquip = CanEquip(Catalog, PlayerClass, SocketIndex, GemId);
 	if (bCanEquip)
 	{
-		GetActiveLoadout(PlayerClass).Sockets[SocketIndex] = GemId;
+		FGeoGemLoadout& Loadout = GetActiveLoadout(PlayerClass);
+		if (Loadout.Echo == GemId)
+		{
+			Loadout.Echo = NAME_None;
+		}
+		else if (Catalog.FindTier(GemId) == EGeoGemTier::Core)
+		{
+			int32 const HeldIndex = Loadout.Sockets.Find(GemId);
+			if (HeldIndex != INDEX_NONE)
+			{
+				Loadout.Sockets[HeldIndex] = NAME_None;
+			}
+		}
+
+		Loadout.Sockets[SocketIndex] = GemId;
 	}
 
 	return bCanEquip;
@@ -286,11 +301,33 @@ void UGeoGemProfileSave::Unequip(EPlayerClass const PlayerClass, int32 const Soc
 	}
 }
 
+void UGeoGemProfileSave::UnequipTier(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass,
+									 EGeoGemTier const Tier)
+{
+	FGeoGemLoadout& Loadout = GetActiveLoadout(PlayerClass);
+	TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+	for (int32 SocketIndex = 0; SocketIndex < Sockets.Num(); ++SocketIndex)
+	{
+		if (Sockets[SocketIndex].Tier == Tier)
+		{
+			Loadout.Sockets[SocketIndex] = NAME_None;
+		}
+	}
+
+	if (Catalog.FindTier(Loadout.Echo) == Tier)
+	{
+		Loadout.Echo = NAME_None;
+	}
+}
+
 int32 UGeoGemProfileSave::FillSockets(UGeoGemCatalog const& Catalog, EPlayerClass const PlayerClass, FName const GemId)
 {
+	bool const bCore = Catalog.FindTier(GemId) == EGeoGemTier::Core;
+	bool const bHeld = GetActiveLoadout(PlayerClass).Sockets.Contains(GemId);
+	int32 const MaxFilled = bCore ? (bHeld ? 0 : 1) : MAX_int32;
 	int32 Filled = 0;
 	int32 const SocketCount = GetActiveLoadout(PlayerClass).Sockets.Num();
-	for (int32 SocketIndex = 0; SocketIndex < SocketCount; ++SocketIndex)
+	for (int32 SocketIndex = 0; SocketIndex < SocketCount && Filled < MaxFilled; ++SocketIndex)
 	{
 		if (Equip(Catalog, PlayerClass, SocketIndex, GemId))
 		{

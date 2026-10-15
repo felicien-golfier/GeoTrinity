@@ -36,7 +36,7 @@ anything else unclear.
    - Drop tables and XP per health bar: `AI/Python/Gem/gem_catalog.py`.
    - Sockets and unlock levels: `GeoGem::GetSockets()` in `Source/GeoTrinity/Private/Gem/GeoGemTypes.cpp`.
      `SOCKETS_PER_CLASS` in the script must match it; fix the script if it does not.
-   - Base crit chance: `UGeoGemAttributeSet`'s constructor. Crit damage: `GeoAbilitySystemLibrary.cpp`.
+   - Base crit chance (0%) and crit damage (x1.2): `UGeoGemAttributeSet`'s constructor. The Critical Core's +30% damage is its CSV row, its +10% chance `CriticalCoreCritChance` in `GeoGemStatsEffect.h`.
    - A value someone hand-edited in `DA_GemCatalog`, other than a gem, is invisible from code. When the user says the
      asset differs, read it through the editor bridge.
 4. **Update the catalog table cell by cell.** Per gem from `MagnitudePerGem`; max per class = per gem × sockets

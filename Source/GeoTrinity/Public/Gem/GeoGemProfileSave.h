@@ -164,8 +164,10 @@ public:
 
 	/**
 	 * Whether Equip would take GemId into socket SocketIndex of the build PlayerClass plays: not when the socket is
-	 * still locked at the class level, is of another tier or already holds GemId, no copy is free, GemId is the build's
-	 * echo, or GemId is a Core this build already holds.
+
+	 * * still locked at the class level, is of another tier or already holds GemId, or no copy is free. The copy
+	 * already
+	 * in the build's echo, or a Core already in another of its sockets, counts as free: it moves.
 	 */
 	bool CanEquip(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 SocketIndex, FName GemId) const;
 
@@ -175,6 +177,10 @@ public:
 
 	/** Empties PlayerClass's socket SocketIndex; the copy goes back to free. */
 	void Unequip(EPlayerClass PlayerClass, int32 SocketIndex);
+
+	/** Empties every Tier socket of the build PlayerClass plays, and its echo socket when the echoed gem is of Tier;
+	 * the copies go back to free. */
+	void UnequipTier(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, EGeoGemTier Tier);
 
 	/**
 	 * Equips GemId into every socket of PlayerClass it may go in, empty or not (a slotted gem is replaced), while free

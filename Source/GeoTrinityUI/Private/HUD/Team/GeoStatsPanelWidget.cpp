@@ -16,13 +16,13 @@
 #include "Components/VerticalBoxSlot.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameClasses/Match/GeoGameState.h"
-#include "GameClasses/Player/GeoPlayerController.h"
 #include "GameClasses/Match/GeoPlayerState.h"
+#include "GameClasses/Player/GeoPlayerController.h"
 #include "GameFramework/GameStateBase.h"
 #include "HUD/HudFunctionLibrary.h"
+#include "HUD/Style/GeoUITheme.h"
 #include "HUD/Style/Glyph/GeoIconImage.h"
 #include "HUD/Style/Glyph/GeoShape.h"
-#include "HUD/Style/GeoUITheme.h"
 #include "InputAction.h"
 #include "Settings/GeoGameUserSettings.h"
 #include "Tool/Visual/GeoIcon.h"
@@ -67,7 +67,7 @@ void UGeoStatsPanelWidget::NativeConstruct()
 	Settings->OnShowCombatStatsChanged.AddUObject(this, &UGeoStatsPanelWidget::ShowPanel);
 	if (AGeoPlayerController* Controller = GetOwningPlayer<AGeoPlayerController>())
 	{
-		Controller->OnToggleStatsDetail.AddUObject(this, &UGeoStatsPanelWidget::ToggleDetail);
+		Controller->OnToggleStatsDetail.AddUObject(this, &UGeoStatsPanelWidget::CycleView);
 	}
 }
 
@@ -89,16 +89,20 @@ void UGeoStatsPanelWidget::ShowPanel(bool const bShow)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoStatsPanelWidget::ToggleDetail()
+void UGeoStatsPanelWidget::CycleView()
 {
-	bFullTable = !bFullTable;
+	View = View == EGeoStatsView::Short ? EGeoStatsView::Full
+		: View == EGeoStatsView::Full	? EGeoStatsView::Hidden
+										: EGeoStatsView::Short;
+	StatsGrid->SetVisibility(View == EGeoStatsView::Hidden ? ESlateVisibility::Collapsed
+														   : ESlateVisibility::HitTestInvisible);
 	TablePlayers.Reset();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 TArray<EGeoStatColumn> const& UGeoStatsPanelWidget::GetShownColumns() const
 {
-	return bFullTable ? FullColumns : ShortColumns;
+	return View == EGeoStatsView::Full ? FullColumns : ShortColumns;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -155,7 +159,7 @@ void UGeoStatsPanelWidget::NativeTick(FGeometry const& MyGeometry, float const I
 	for (int32 Index = 0; Index < Players.Num() && !bPlayersChanged; ++Index)
 	{
 		bPlayersChanged = TablePlayers[Index].Key != Players[Index]
-					   || TablePlayers[Index].Value != static_cast<uint8>(Players[Index]->GetPlayerClass());
+			|| TablePlayers[Index].Value != static_cast<uint8>(Players[Index]->GetPlayerClass());
 	}
 	if (bPlayersChanged)
 	{
@@ -252,11 +256,12 @@ int32 UGeoStatsPanelWidget::BuildHeadings(TArray<EGeoStatColumn> const& Columns)
 		First += Span;
 	}
 
-	for (int32 Index = 0; bFullTable && Index < Columns.Num(); ++Index)
+	bool const bFull = View == EGeoStatsView::Full;
+	for (int32 Index = 0; bFull && Index < Columns.Num(); ++Index)
 	{
 		AddCell(MakeText(ColumnLabels.FindRef(Columns[Index]), LabelSize, SecondaryColor), 1, 2 + Index);
 	}
-	return bFullTable ? 2 : 1;
+	return bFull ? 2 : 1;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -287,8 +292,7 @@ void UGeoStatsPanelWidget::BuildTable(TArray<AGeoPlayerState*> const& Players)
 		AddCell(Shape, GridRow, 0, 1, HAlign_Center);
 
 		FString const Name = Player->GetPlayerName().Left(NameLength).ToUpper();
-		UTextBlock* NameText =
-			MakeText(FText::FromString(Name), NameSize, bOwningPlayer ? ValueColor : NameColor);
+		UTextBlock* NameText = MakeText(FText::FromString(Name), NameSize, bOwningPlayer ? ValueColor : NameColor);
 		NameText->SetToolTipText(FText::FromString(Player->GetPlayerName()));
 		NameText->SetRenderOpacity(Opacity);
 		AddCell(NameText, GridRow, 1, 1, HAlign_Left);
@@ -298,8 +302,7 @@ void UGeoStatsPanelWidget::BuildTable(TArray<AGeoPlayerState*> const& Players)
 		for (int32 Index = 0; Index < Columns.Num(); ++Index)
 		{
 			bool const bPrimary = Columns[Index] == EGeoStatColumn::DamageNow
-							   || Columns[Index] == EGeoStatColumn::HealingNow
-							   || Columns[Index] == EGeoStatColumn::DamageTaken;
+				|| Columns[Index] == EGeoStatColumn::HealingNow || Columns[Index] == EGeoStatColumn::DamageTaken;
 			UTextBlock* Cell = MakeText(FText::GetEmpty(), bPrimary ? ValueSize : SecondarySize, ValueColor);
 			Cell->SetRenderOpacity(Opacity);
 			AddCell(Cell, GridRow, 2 + Index);
@@ -316,9 +319,11 @@ void UGeoStatsPanelWidget::BuildTable(TArray<AGeoPlayerState*> const& Players)
 		ToggleHintText->SetColorAndOpacity(ZeroColor);
 		ToggleHintText->SetShadowColorAndOpacity(ShadowColor);
 		ToggleHintText->SetShadowOffset(FVector2D(1.f, 1.f));
-		ToggleHintText->SetVisibility(Key.IsEmpty() ? ESlateVisibility::Collapsed
-													: ESlateVisibility::HitTestInvisible);
-		ToggleHintText->SetText(FText::Format(bFullTable ? LessFormat : MoreFormat, Key));
+		ToggleHintText->SetVisibility(Key.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		FText const& HintFormat = View == EGeoStatsView::Short ? MoreFormat
+			: View == EGeoStatsView::Full					   ? HideFormat
+															   : ShowFormat;
+		ToggleHintText->SetText(FText::Format(HintFormat, Key));
 	}
 }
 
@@ -398,7 +403,7 @@ void UGeoStatsPanelWidget::WriteRow(FGeoStatsRow const& Row, TArray<EGeoStatColu
 		UTextBlock* Cell = Row.Cells[Index];
 		Cell->SetText(Text);
 		Cell->SetColorAndOpacity(FMath::IsNearlyEqual(Value, Neutral, .005f) ? ZeroColor
-								 : bPrimary									 ? ValueColor
+									 : bPrimary								 ? ValueColor
 																			 : SecondaryColor);
 	}
 }
@@ -409,7 +414,7 @@ FText UGeoStatsPanelWidget::GetToggleKeyName() const
 	AGeoPlayerController const* Controller = GetOwningPlayer<AGeoPlayerController>();
 	UEnhancedInputLocalPlayerSubsystem const* InputSubsystem =
 		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetOwningLocalPlayer());
-	UInputAction const* Action = Controller ? Controller->ToggleStatsDetailAction.LoadSynchronous() : nullptr;
+	UInputAction const* Action = Controller ? Controller->ToggleStatsDetailAction : nullptr;
 	TArray<FKey> const Keys =
 		Action && InputSubsystem ? InputSubsystem->QueryKeysMappedToAction(Action) : TArray<FKey>();
 	return Keys.Num() > 0 ? Keys[0].GetDisplayName(false) : FText::GetEmpty();

@@ -12,9 +12,9 @@ class UGeoMenuPageWidget;
 /**
  * A menu the player navigates through pages: its TopLevel (its own buttons and dressing), and every UGeoMenuPageWidget
  * in its tree, one of which shows at a time in TopLevel's place. Pages are reached by class, from TopLevel or from
- * another page, and the menu keeps the path taken, so Back retraces it page by page and Close leaves every page at once.
- * Base of UGeoMainMenuWidget and UGeoPauseMenuWidget.
- * Required in the BP hierarchy: a widget "TopLevel" holding everything shown while no page is open.
+ * another page, and the menu keeps the path taken, so Back retraces it page by page and Close leaves every page at
+ * once. Base of UGeoMainMenuWidget and UGeoPauseMenuWidget. Required in the BP hierarchy: a widget "TopLevel" holding
+ * everything shown while no page is open.
  */
 UCLASS(Abstract)
 class GEOTRINITYUI_API UGeoMenuRootWidget : public UGeoMenuPanelWidget
@@ -33,6 +33,8 @@ public:
 protected:
 	/** Starts on TopLevel with every page collapsed: the menu is reused on its next open. */
 	virtual void NativeConstruct() override;
+	/** Clears the message log: it lives as long as the menu. */
+	virtual void NativeDestruct() override;
 	/** Calls CloseMenu and consumes the Escape input, from any page. */
 	virtual bool HandleEscapeAction() override;
 
@@ -40,6 +42,8 @@ protected:
 	TObjectPtr<UWidget> TopLevel;
 
 private:
+	/** Clears the messages of UGeoMessageSubsystem. */
+	void ClearMessages() const;
 	/** Shows the last page of PageStack, or TopLevel when it is empty, and collapses every other page. */
 	void ShowTop();
 	/** Focuses what ShowTop shows. */

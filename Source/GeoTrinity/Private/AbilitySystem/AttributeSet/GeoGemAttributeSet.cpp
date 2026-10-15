@@ -6,8 +6,8 @@
 
 UGeoGemAttributeSet::UGeoGemAttributeSet()
 {
-	InitCritChance(0.1f);
-	InitCritDamage(1.5f);
+	InitCritChance(0.f);
+	InitCritDamage(1.2f);
 	InitDashDistanceMultiplier(1.f);
 	InitDeployableBlinkMultiplier(1.f);
 	InitDeployableHealthMultiplier(1.f);
@@ -78,7 +78,8 @@ void UGeoGemAttributeSet::OnRep_SpecialCooldownMultiplier(FGameplayAttributeData
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UGeoGemAttributeSet, SpecialCooldownMultiplier, OldSpecialCooldownMultiplier);
 }
 
-void UGeoGemAttributeSet::OnRep_DeployableCooldownMultiplier(FGameplayAttributeData const& OldDeployableCooldownMultiplier)
+void UGeoGemAttributeSet::OnRep_DeployableCooldownMultiplier(
+	FGameplayAttributeData const& OldDeployableCooldownMultiplier)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UGeoGemAttributeSet, DeployableCooldownMultiplier, OldDeployableCooldownMultiplier);
 }

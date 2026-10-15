@@ -90,7 +90,7 @@ struct FGeoGemList
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (TitleProperty = "DisplayName"))
 	TArray<FGeoGemInfo> Gems;
 
 	/** Returns the gem whose Id matches GemId, or null if no gem in this list carries that id. */

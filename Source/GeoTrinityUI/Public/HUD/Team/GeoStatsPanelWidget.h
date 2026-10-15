@@ -42,6 +42,15 @@ enum class EGeoStatGroup : uint8
 	Modifiers
 };
 
+/** What the stat counter shows; the detail key cycles Short, Full, Hidden. */
+UENUM(BlueprintType)
+enum class EGeoStatsView : uint8
+{
+	Short,
+	Full,
+	Hidden
+};
+
 /** The widgets of one player's line, kept to write its figures in place every tick. */
 USTRUCT()
 struct FGeoStatsRow
@@ -61,8 +70,9 @@ struct FGeoStatsRow
  * fight (ø), their totals and the damage taken; full, it adds each one's peak and the player's modifiers. The time is
  * the live arena's clock while a fight runs, the one the boss bar shows, and AGeoGameState::GetCombatSeconds
  * otherwise, which keeps a finished fight's final time and runs for a session at a training dummy. The key bound to
- * AGeoPlayerController::ToggleStatsDetailAction switches between the two, and the hint under the table names it. Built
- * in C++ into StatsGrid: rebuilt when the players or the detail change, its figures written in place every tick.
+ * AGeoPlayerController::ToggleStatsDetailAction cycles short, full and hidden (StatsGrid collapsed, the hint kept), and
+ * the hint under the table names the next view. Built in C++ into StatsGrid: rebuilt when the players or the view
+ * change, its figures written in place every tick.
  * Shown while the player's Show Combat Stats setting is on.
  * Required in the BP hierarchy: UGridPanel "StatsGrid". Optional: UTextBlock "ToggleHintText".
  */
@@ -78,7 +88,8 @@ public:
 protected:
 	/** Shows or hides the panel from the setting, and follows its changes and the detail key. */
 	virtual void NativeConstruct() override;
-	/** Unregisters the detail-key and settings delegates so NativeConstruct can re-register cleanly on a reused instance. */
+	/** Unregisters the detail-key and settings delegates so NativeConstruct can re-register cleanly on a reused
+	 * instance. */
 	virtual void NativeDestruct() override;
 	/** Rebuilds the table when the players changed, then writes every figure. */
 	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
@@ -86,7 +97,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGridPanel> StatsGrid;
 
-	/** "[C] MORE", "[C] LESS". */
+	/** "[C] MORE", "[C] HIDE", "[C] SHOW". Outside StatsGrid, so it stays when the table is hidden. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> ToggleHintText;
 
@@ -176,13 +187,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoStats|Text")
 	FText MoreFormat = INVTEXT("[{0}] MORE");
 
-	/** {0} is the key that shows the short table. */
+	/** {0} is the key that hides the table. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoStats|Text")
-	FText LessFormat = INVTEXT("[{0}] LESS");
+	FText HideFormat = INVTEXT("[{0}] HIDE");
+
+	/** {0} is the key that shows the short table again. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoStats|Text")
+	FText ShowFormat = INVTEXT("[{0}] SHOW");
 
 private:
 	void ShowPanel(bool bShow);
-	void ToggleDetail();
+	/** Short, then full, then hidden, then short again; rebuilds the table for the new view. */
+	void CycleView();
 
 	/** The owning player first, then the others in the game state's order. */
 	TArray<AGeoPlayerState*> GetPlayers() const;
@@ -203,14 +219,14 @@ private:
 	void AddCell(UWidget* Content, int32 Row, int32 Column, int32 ColumnSpan = 1,
 				 EHorizontalAlignment Alignment = HAlign_Right) const;
 
-	/** The key bound to the detail toggle, or empty when none is. */
+	/** The key bound to the view cycle, or empty when none is. */
 	FText GetToggleKeyName() const;
 
 	TArray<EGeoStatColumn> const& GetShownColumns() const;
 
 	static EGeoStatGroup GetGroup(EGeoStatColumn Column);
 
-	bool bFullTable = false;
+	EGeoStatsView View = EGeoStatsView::Short;
 
 	/** Who the table was built for, to rebuild it when someone joins, leaves or swaps class. */
 	TArray<TPair<TWeakObjectPtr<AGeoPlayerState>, uint8>> TablePlayers;

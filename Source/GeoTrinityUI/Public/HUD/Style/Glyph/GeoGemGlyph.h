@@ -19,7 +19,11 @@ enum class EGeoGemGlyphState : uint8
 	/** An open socket waiting for a gem of its tier. */
 	EmptySocket,
 	/** A socket the class level has not opened yet, showing the level that opens it. */
-	LockedSocket
+	LockedSocket,
+	/** The echo socket, empty: the Prism, Cut and Chip outlines one inside the other. */
+	EmptyEchoSocket,
+	/** The echo socket before any class opened it, showing the level that opens it. */
+	LockedEchoSocket
 };
 
 /**
@@ -37,6 +41,9 @@ public:
 
 	/** An open socket, or a locked one showing InUnlockLevel. */
 	void SetSocket(EGeoGemTier InTier, bool bLocked, int32 InUnlockLevel);
+
+	/** The empty echo socket, open or locked showing InUnlockLevel. */
+	void SetEchoSocket(bool bLocked, int32 InUnlockLevel);
 
 	/** Turns the highlight on or off: highlights the selected socket and sockets the selected gem can fill. */
 	void SetHighlighted(bool bInHighlighted);

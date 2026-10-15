@@ -3,7 +3,9 @@
 #include "HUD/Menu/Frame/GeoMenuRootWidget.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Engine/GameInstance.h"
 #include "HUD/Menu/Frame/GeoMenuPageWidget.h"
+#include "HUD/Menu/Frame/GeoMessageSubsystem.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMenuRootWidget::NativeConstruct()
@@ -12,6 +14,14 @@ void UGeoMenuRootWidget::NativeConstruct()
 
 	PageStack.Reset();
 	ShowTop();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMenuRootWidget::NativeDestruct()
+{
+	ClearMessages();
+
+	Super::NativeDestruct();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -59,9 +69,19 @@ void UGeoMenuRootWidget::GoBack()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMenuRootWidget::CloseMenu()
 {
+	ClearMessages();
 	PageStack.Reset();
 	ShowTop();
 	FocusTop();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMenuRootWidget::ClearMessages() const
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		GameInstance->GetSubsystem<UGeoMessageSubsystem>()->Clear();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -75,8 +95,7 @@ void UGeoMenuRootWidget::ShowTop()
 				Page->SetVisibility(ESlateVisibility::Collapsed);
 			}
 		});
-	TopLevel->SetVisibility(PageStack.IsEmpty() ? ESlateVisibility::SelfHitTestInvisible
-												: ESlateVisibility::Collapsed);
+	TopLevel->SetVisibility(PageStack.IsEmpty() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 	if (!PageStack.IsEmpty())
 	{
 		PageStack.Last()->SetVisibility(ESlateVisibility::Visible);

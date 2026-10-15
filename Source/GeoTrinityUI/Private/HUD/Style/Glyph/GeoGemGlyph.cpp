@@ -4,8 +4,8 @@
 
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
-#include "HUD/Style/Glyph/GeoShapePainter.h"
 #include "HUD/Style/GeoUITheme.h"
+#include "HUD/Style/Glyph/GeoShapePainter.h"
 #include "Rendering/DrawElements.h"
 #include "Rendering/SlateRenderer.h"
 #include "Widgets/SLeafWidget.h"
@@ -82,14 +82,31 @@ public:
 		}
 		else
 		{
-			bool const bLocked = State == EGeoGemGlyphState::LockedSocket;
+			bool const bLocked =
+				State == EGeoGemGlyphState::LockedSocket || State == EGeoGemGlyphState::LockedEchoSocket;
+			bool const bEcho =
+				State == EGeoGemGlyphState::EmptyEchoSocket || State == EGeoGemGlyphState::LockedEchoSocket;
 			FLinearColor const LineColor = bHighlighted ? Style.HighlightColor
-										 : bLocked		? Style.LockedLineColor
+				: bLocked								? Style.LockedLineColor
 														: Style.SocketLineColor;
 			FGeoShapePainter::DrawFilled(OutDrawElements, LayerId + 1, AllottedGeometry, Outline,
 										 Style.SocketFillColor * Tint);
 			FGeoShapePainter::DrawOutline(OutDrawElements, LayerId + 1, AllottedGeometry, Outline, LineColor * Tint,
 										  Style.LineThickness);
+			if (bEcho)
+			{
+				float NestedRadius = Radius;
+				for (EGeoGemTier const NestedTier : {EGeoGemTier::Cut, EGeoGemTier::Chip})
+				{
+					FGeoGemTierShape const NestedShape = Style.TierShapes.FindRef(NestedTier);
+					NestedRadius *= Style.EchoNestScale;
+					FGeoShapePainter::DrawOutline(
+						OutDrawElements, LayerId + 1, AllottedGeometry,
+						FGeoShapePainter::MakePolygon(Center, NestedRadius, NestedShape.Sides, NestedShape.Rotation),
+						LineColor * Tint, Style.LineThickness);
+				}
+			}
+
 			if (bLocked)
 			{
 				PaintUnlockLevel(*Theme, AllottedGeometry, OutDrawElements, LayerId + 2, Tint);
@@ -118,8 +135,7 @@ private:
 		FSlateFontInfo Font = TextStyle->Font;
 		Font.Size = FMath::Max(6.f, Theme.GemStyle.LockTextScale * Size);
 		FString const Level = FString::FromInt(UnlockLevel);
-		FVector2f const TextSize(
-			FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Level, Font));
+		FVector2f const TextSize(FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Level, Font));
 		FVector2f const Offset = .5f * (AllottedGeometry.GetLocalSize() - TextSize);
 		FSlateDrawElement::MakeText(OutDrawElements, LayerId,
 									AllottedGeometry.ToPaintGeometry(TextSize, FSlateLayoutTransform(Offset)), Level,
@@ -148,6 +164,15 @@ void UGeoGemGlyph::SetSocket(EGeoGemTier const InTier, bool const bLocked, int32
 {
 	Tier = InTier;
 	State = bLocked ? EGeoGemGlyphState::LockedSocket : EGeoGemGlyphState::EmptySocket;
+	UnlockLevel = InUnlockLevel;
+	SynchronizeProperties();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemGlyph::SetEchoSocket(bool const bLocked, int32 const InUnlockLevel)
+{
+	Tier = EGeoGemTier::Prism;
+	State = bLocked ? EGeoGemGlyphState::LockedEchoSocket : EGeoGemGlyphState::EmptyEchoSocket;
 	UnlockLevel = InUnlockLevel;
 	SynchronizeProperties();
 }

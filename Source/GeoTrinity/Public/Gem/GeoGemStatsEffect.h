@@ -27,8 +27,8 @@ public:
 	/** Lists the gem attributes, UGeoGemAttributeSet's included, with their Add and Percent modifiers. */
 	UGeoGemStatsEffect();
 
-	/** Spec giving ASC the summed stats of Loadout's gems, neutral on every attribute no slotted gem raises, and the tag
-	 *  of every slotted gem that grants one. */
+	/** Spec giving ASC the summed stats of Loadout's gems, neutral on every attribute no slotted gem raises, and the
+	 * tag of every slotted gem that grants one. */
 	static FGameplayEffectSpecHandle MakeSpec(UAbilitySystemComponent const& ASC, UGeoGemCatalog const& Catalog,
 											  FGeoGemLoadout const& Loadout);
 
@@ -36,6 +36,9 @@ public:
 	static bool Supports(FGeoGemInfo const& Gem);
 
 private:
+	/** Crit chance the Critical Core adds on top of its catalog row (+crit damage). */
+	static constexpr float CriticalCoreCritChance = 0.1f;
+
 	/** SetByCaller name of Attribute's modifier for Operation. */
 	static FName GetSetByCallerName(FGameplayAttribute const& Attribute, EGeoGemOperation Operation);
 };

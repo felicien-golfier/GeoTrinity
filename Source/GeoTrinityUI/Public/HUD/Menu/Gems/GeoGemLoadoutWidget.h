@@ -71,13 +71,14 @@ struct FGeoGemCluster
  * tab), then a dashed tab adding an empty build; the socket board, three clusters each a Core ringed by its Prisms,
  * Cuts and Chips, linked by dashed lines, a locked socket showing the level that opens it, the class's level and what
  * the next level opens in its corner; the stacks with their owned and free counts under a tier filter; the selection, a
- * stack (EQUIP into the first socket it fits, REPLACE ALL: every socket it fits, replacing what is slotted) or a socket
- * (UNEQUIP); and the build's total bonus, a table of stat, bonus and copies. The detail follows the cursor: over a
- * stack or a filled socket it describes that gem without a click, and falls back to the pick when the cursor leaves.
- * Picking a socket also opens its tier's stacks. Picking a stack then a socket it fits, or a socket then a stack,
- * equips it there; the sockets the picked stack fits glow, and the stack stays picked, so a click per socket fills
- * several while copies are free. A click on neither a socket, the stacks nor the detail drops the pick. The board is
- * built once and updated in place, so the socket under the gamepad keeps its focus. Between the clusters, the echo
+ * stack (EQUIP: the first empty socket it fits; ALL: every socket it fits, replacing what is slotted; both always
+ * shown, off without a picked stack), and UNEQUIP ALL <tier> under the stacks, emptying the filtered tier of the build
+ * (the whole build under ALL); and the build's total bonus, a table of stat, bonus and copies. The detail follows the
+ * cursor: over a stack or a filled socket it describes that gem without a click, and falls back to the pick when the
+ * cursor leaves. Picking a socket also opens its tier's stacks. Picking a stack then a socket it fits, or a socket then
+ * a stack, equips it there; the sockets the picked stack fits glow, and the stack stays picked, so a click per socket
+ * fills several while copies are free. A click on neither a socket, the stacks nor the detail drops the pick. The board
+ * is built once and updated in place, so the socket under the gamepad keeps its focus. Between the clusters, the echo
  * socket (from the max class level) holds one more gem, worth a share of its tier. Required in the BP hierarchy:
  * UCanvasPanel "Board", UUniformGridPanel "StackGrid". Every other part is optional.
  */
@@ -172,12 +173,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> FillButton;
 
+	/** Empties every socket of the tier the filter shows, or the whole build under ALL; under the stacks. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UGeoMenuButton> UnequipButton;
-
-	/** Puts the picked stack in the echo socket; asks a second press when that empties sockets. */
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UGeoMenuButton> EchoButton;
+	TObjectPtr<UGeoMenuButton> UnequipTierButton;
 
 	/** Shown in place of DetailBox: what to do, or what the picked empty socket takes. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
@@ -361,12 +359,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText ClusterFormat = INVTEXT("CLUSTER {0} \u00B7 LV {1}");
 
-	/** {0} is the tier, {1} the copies owned. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText FilterFormat = INVTEXT("{0} {1}");
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText AllFilterText = INVTEXT("ALL");
+
+	/** {0} is the filtered tier's plural name. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText UnequipTierFormat = INVTEXT("UNEQUIP ALL {0}");
+
+	/** UnequipTierButton's label under the ALL filter. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText UnequipAllText = INVTEXT("UNEQUIP ALL");
 
 	/** {0} is the tier, {1} the free copies. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -388,13 +390,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText SocketCountsFormat = INVTEXT("OWNED {0} \u00B7 FREE {1}");
 
+	/** EQUIP's label; it slots the picked stack into the first empty socket it fits. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
+	FText EquipText = INVTEXT("EQUIP");
+
 	/** FILL's label; it replaces the gems already slotted in the sockets it fills. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText FillText = INVTEXT("REPLACE ALL");
-
-	/** Text role of FILL's label, smaller than the other buttons' so it fits its button. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	EGeoTextRole FillTextRole = EGeoTextRole::Table;
+	FText FillText = INVTEXT("ALL");
 
 	/** {0} is the sockets filled, {1} the sockets open. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -414,9 +416,6 @@ protected:
 	FText HintEmptySocket = INVTEXT("Empty {0} socket. Pick any {0} stack to fill it.");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText NoteCoreOnce = INVTEXT("Each Core fits once per build.");
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText NoteNoFreeCopy = INVTEXT("No free copy. Craft more in the Forge.");
 
 	/** {0} is the gem's tier. */
@@ -427,16 +426,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText CoreTotalText = INVTEXT("RULE");
 
-	/** ECHO's label, and its label while the echo waits for its confirm. */
+	/** Shown in the totals' count column of the echoed gem. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText EchoText = INVTEXT("ECHO");
+	FText EchoTotalText = INVTEXT("ECHO");
 
+	/** EchoTotalText when the count column is too narrow for it. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText EchoConfirmText = INVTEXT("ECHO IT");
-
-	/** Shown in the totals' count column of the echoed gem: {0} is the echo level. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText EchoTotalFormat = INVTEXT("LV {0}");
+	FText EchoTotalShortText = INVTEXT("ECH");
 
 	/** The echo socket's tier line: {0} is the echoed gem's tier name. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -461,10 +457,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText NoteEchoed = INVTEXT("Already in the echo socket.");
 
-	/** {0} is the sockets of the build the echo empties. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText NoteEchoConfirm = INVTEXT("Echoing it empties {0} socket(s) of this build. Press ECHO IT to confirm.");
-
 	/** {0} is the class level that opens the echo socket on every class. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText HintLockedEcho = INVTEXT("The echo socket opens once any class reaches level {0}.");
@@ -479,11 +471,11 @@ private:
 	UFUNCTION()
 	void HandleFill();
 
+	/** Empties the filtered tier's sockets of the build in play, or every socket under ALL. */
 	UFUNCTION()
-	void HandleUnequip();
+	void HandleUnequipTier();
 
-	/** Echoes the picked stack: first asks to confirm when the build slots that gem, which the echo empties. */
-	UFUNCTION()
+	/** Echoes the picked stack; the sockets of the build slotting that gem empty. */
 	void HandleEcho();
 
 	UFUNCTION()
@@ -533,7 +525,9 @@ private:
 	/** The echo halo's colour, lock and active look from the echo socket's gem, the pick and the hover; flares once per
 	 * session when the echo socket is first shown open. */
 	void ShowEchoHalo(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
-	void ShowFilters(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
+	void ShowFilters();
+	/** UnequipTierButton's label from the tier filter; off when the build holds nothing of it. */
+	void ShowUnequipTier(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	void ShowStacks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
 	/** The stack or filled socket under the cursor, else the picked stack or filled socket, else the hint for what is
 	 * picked. */
@@ -590,9 +584,6 @@ private:
 
 	/** The socket under the cursor; INDEX_NONE when none. */
 	int32 HoveredSocket = INDEX_NONE;
-
-	/** Whether ECHO of the picked stack waits for a second press, because it empties sockets. */
-	bool bConfirmingEcho = false;
 
 	/** Whether the build in play shows its name field rather than its name. */
 	bool bRenamingBuild = false;

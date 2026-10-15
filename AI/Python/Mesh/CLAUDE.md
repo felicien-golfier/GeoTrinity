@@ -9,6 +9,9 @@ Procedural static meshes and rigging.
 | `generate_bomb_mesh.py` | Round bomb mesh sized to replace the pillar |
 | `generate_class_badge_meshes.py` | Three class logo silhouettes extruded per class; Triangle body thins to its point |
 | `generate_hex_boss_mesh.py` | Hex boss body (three concentric hexagons) + rig data |
+| `generate_hex_mine_mesh.py` | Hex boss mine: flat hexagon, six spikes alternating long / short (turret cannon shape), core hexagon in its own `Core` slot for the blinking material |
+| `generate_hex_turret_mesh.py` | Hex boss turret: flat hexagon + hexagonal-section cannon along +X (firing direction), separate prism for later animation |
+| `generate_triangle_turret_mesh.py` | Triangle class turret: triangular socle (flat edge +X) on three floor legs out of its tips, cannon lying on the socle and out of the front edge between the two front legs, four thin stripes from alternating `Cannon` / `CannonBand` slots; own `Legs` slot |
 | `generate_star_mesh.py` | Star boss body: eight points, counter-points, star-shaped heart hole |
 | `rig_hex_boss.py` | Hex body → skeletal mesh on a new skeleton |
 | `rig_star.py` | Rebuild `SKM_Star` on `SK_Star`'s hierarchy, weighted so existing clips play unchanged |

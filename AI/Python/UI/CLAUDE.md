@@ -31,7 +31,7 @@ Widget Blueprints and trees. Docs: `AI/UI.md`, `AI/MCP/MCP_UI.md`. Every write g
 | `space_menu_buttons.py` | Re-space the menu button columns of every widget to the theme gap |
 | `passive_bar.py` | `WBP_PassiveSlot` (copy of the ability slot, no key / count) and `PassiveBox` + `PassiveSlotWidgetClass` on `WBP_AbilityBar`; headless |
 | `slot_gauge.py` | `GaugeMeter` (`DA_Meter_SlotGauge`) + `GaugeText` in `WBP_AbilitySlot` and `WBP_PassiveSlot`, between `Icon` and `CooldownMeter`; headless, after `wings_hud.py` / `passive_bar.py` |
-| `xp_strip.py` | `WBP_XpStrip` (level, echo level, XP meter) + `XpStrip` under the health stack of `WBP_PlayerWing`; headless, after `wings_hud.py` |
-| `message_log.py` | `UGeoMessageLog` "MessageLog" in the bottom row of `WBP_MenuPageFrame`, right of `BackButton`; headless, after `menu_pages.py` |
+| `xp_strip.py` | `WBP_XpStrip` (level, echo level, XP meter) + `XpStrip` under the health stack of `WBP_PlayerWing`; headless, after `wings_hud.py`; run with `UnrealEditor-Win64-DebugGame-Cmd.exe` (the Development `-Cmd` loads no project module) |
+| `message_log.py` | `UGeoMessageLog` "MessageLog" in the bottom row of `WBP_MenuFrame`, text right of BACK; headless, after `menu_pages.py` |
 | `import_icons.py` | `DA_Icon_*` from `SourceArt/Icons`, set on abilities and effects |
 | `import_fonts.py` | Menu fonts as Font Face + Font (answer Yes) |

@@ -4,8 +4,8 @@ The Gems menu in the Rail look, opened from the character sheet's GEMS (design: 
   tab drawn from the Menu_ icons, then the build in play and the build count on the right) over a divider; the socket
   board (Board, a 684 x 639 canvas the widget fills with the clusters, the class level block in its top-left corner);
   the stacks under their tier filters (WBP_TabUnderline, spread over a divider), scrolling in StackScroll; right of a
-  divider, the selection (glyph, tier, name, effect, counts, EQUIP / FILL / UNEQUIP / ECHO, note) or the hint, then the total
-  bonus table (TotalsTable, a WBP_Table: STAT, BONUS, QTY).
+  divider, the selection (glyph, tier, name, effect, counts, EQUIP / ALL, note) or the hint, then the total
+  bonus table (TotalsTable, a WBP_Table: STAT, BONUS, QTY); UnequipTierButton under the stacks.
 - WBP_GemForge (UGeoGemForgeWidget): the tiers to select, BREAK DOWN FREE SELECTED and the rate table (RateTable, a
   WBP_Table: TIER, BREAK DOWN, CRAFT); the gem types
   of a tier, scrolling in GemScroll; the picked type broken down or crafted by a quantity typed in its field or set by
@@ -56,7 +56,7 @@ FILL = unreal.SlateChildSize(1.0, unreal.SlateSizeRule.FILL)
 LEFT_WIDTH = 540.0
 BREAK_SELECTED = "BREAK DOWN SELECTED"
 FIELD_WIDTH = 72.0
-UNDERLINE_TAB_PATH = "/Game/HUD/WBP_TabUnderline"
+UNDERLINE_TAB_PATH ="/Game/HUD/WBP_TabUnderline"
 SHARD_ICON = "/Game/HUD/Icons/DA_Icon_Gems_Shard"
 # The Loadout's socket board and selection column, and the total bonus table's columns, as the design sizes them.
 BOARD_SIZE = (684.0, 639.0)
@@ -173,6 +173,15 @@ def build_row(wbp, path):
     for key, icon in [("rename_build_icon", "Menu_Rename"), ("remove_build_icon", "Menu_Remove"),
                       ("add_build_icon", "Menu_AddTab")]:
         asset_guard.write(path, defaults, key, unreal.load_asset(f"/Game/HUD/Icons/DA_Icon_{icon}"))
+
+
+def unequip_tier_row(wbp, path):
+    """UnequipTierButton at the bottom of the stacks column; the buttons the detail no longer has (UNEQUIP, the old
+    ECHO) go unless edited by hand."""
+    remove_unless_edited(wbp, path, ["UnequipButton", "EchoButton"])
+    _, row_slot = add(wbp, path, unreal.HorizontalBox, "UnequipTierRow", "InventoryColumn")
+    padded(path, row_slot, unreal.Margin(0, 12, 0, 0))
+    button(wbp, path, "UnequipTierButton", "UnequipTierRow", "UNEQUIP ALL")
 
 
 def move(wbp, name, parent, index=-1):
@@ -309,8 +318,6 @@ def loadout_layout(wbp, path, underline_tab):
     add(wbp, path, unreal.VerticalBox, "DetailStack", "DetailSection")
     move(wbp, "DetailBox", "DetailStack", 0)
     move(wbp, "HintText", "DetailStack", 1)
-    button(wbp, path, "EchoButton", "DetailButtons", "ECHO")
-    write_slot(path, UTIL.find_widget(wbp, "EchoButton").get_editor_property("slot"), {"size": FILL})
     padded(path, divider(wbp, path, "TotalsDivider", "DetailColumn", 1), unreal.Margin(0, 16, 0, 14))
     placed(wbp, path, unreal.HorizontalBox, "TotalsHead", "DetailColumn", 2)
     padded(path, move(wbp, "TotalsTitleText", "TotalsHead", 0), rail_style.NO_PADDING)
@@ -418,7 +425,7 @@ def build_loadout(underline_tab):
         padded(path, counts_slot, unreal.Margin(0, 8, 0, 0))
         _, buttons_slot = add(wbp, path, unreal.HorizontalBox, "DetailButtons", "DetailBox")
         padded(path, buttons_slot, unreal.Margin(0, 16, 0, 0))
-        for name, caption in [("EquipButton", "EQUIP"), ("FillButton", "FILL"), ("UnequipButton", "UNEQUIP")]:
+        for name, caption in [("EquipButton", "EQUIP"), ("FillButton", "FILL")]:
             button(wbp, path, name, "DetailButtons", caption)
             write_slot(path, UTIL.find_widget(wbp, name).get_editor_property("slot"), {"size": FILL})
         _, note_slot = add(wbp, path, unreal.GeoText, "DetailNoteText", "DetailBox",
@@ -433,6 +440,7 @@ def build_loadout(underline_tab):
     wbp = unreal.load_asset(path)
     asset_guard.write(path, UTIL.find_widget(wbp, "TotalsTitleText"), "auto_wrap_text", True)
     build_row(wbp, path)
+    unequip_tier_row(wbp, path)
     echo_defaults = unreal.get_default_object(wbp.generated_class())
     asset_guard.write(path, echo_defaults, "echo_halo_style", unreal.load_asset(ECHO_HALO_STYLE))
     asset_guard.write(path, echo_defaults, "echo_size", 56.0)

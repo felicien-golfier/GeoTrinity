@@ -38,7 +38,7 @@ AGeoCharacter            ASC interface + team agent
 - `Death()` (server) sets replicated `bIsDead`, `StopCharacter()`, then `AGeoGameState::NotifyPlayerDied`. Policy = GameState's (`GameClasses/Match/CLAUDE.md`).
 - `OnRep_IsDead` runs the same `DeathLogic()` / `ReviveLogic()`; `RemoveActiveEffects` is server-guarded inside both.
 - Death keeps the gems: `DeathLogic()` → `ASC->HandleOwnerDeath(GemComponent->GetSurvivingEffectHandles())`. Gem stats GE stays (a dead player's deployables, zones and passives still read their stats); every other GE goes. Each ability's `OnOwnerDeath()` decides if it ends (`Abilities/Base/CLAUDE.md`); Core passives stay active.
-- `Revive()`: `ResetAbilitiesAndEffects()` (full reset: cancel everything, remove every GE), `StopAllSpawnedElements()`, re-apply class visuals + `OnRevived`, `GiveLife()` (`ApplyGems` re-grants stats + Core passives), `RestartCharacter()`. `ChangeClass` uses the same full reset.
+- `Revive()`: `ResetAbilitiesAndEffects()` (full reset: cancel every ability but the uncancellable Core passives, remove every GE), `StopAllSpawnedElements()`, re-apply class visuals + `OnRevived`, `GiveLife()` (`ApplyGems` re-grants stats + Core passives), `RestartCharacter()`. `ChangeClass` uses the same full reset.
 - Late joiners spawn alive and are not in `FightPlayers`.
 
 ## EnemyCharacter

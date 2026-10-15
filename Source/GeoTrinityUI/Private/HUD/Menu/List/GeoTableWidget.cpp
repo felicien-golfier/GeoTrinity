@@ -10,8 +10,11 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
+#include "Fonts/FontMeasure.h"
+#include "Framework/Application/SlateApplication.h"
 #include "HUD/Style/Frame/GeoFrame.h"
 #include "HUD/Style/GeoUITheme.h"
+#include "Rendering/SlateRenderer.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoTableWidget::NativePreConstruct()
@@ -70,6 +73,19 @@ UTextBlock* UGeoTableWidget::MakeCellText(FText const& Text) const
 	TextBlock->SetTextOverflowPolicy(ETextOverflowPolicy::Ellipsis);
 	TextBlock->SetText(Text);
 	return TextBlock;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UTextBlock* UGeoTableWidget::MakeFittingCellText(FText const& Text, FText const& ShortText, int32 const Column) const
+{
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	FGeoTextStyle const* TextStyle = Theme ? Theme->FindTextStyle(EGeoTextRole::Table) : nullptr;
+	float const Room = Columns[Column].Width - 2.f * CellPadding;
+	float const TextWidth = TextStyle
+		? FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Text.ToString(), TextStyle->Font).X
+		: 0.f;
+	bool const bFits = Columns[Column].Width <= 0.f || TextWidth <= Room;
+	return MakeCellText(bFits ? Text : ShortText);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
@@ -10,6 +10,7 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "Algo/Count.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -24,7 +25,7 @@
 #include "Settings/GameDataSettings.h"
 #include "Tests/GeoTestDeployable.h"
 
-#if WITH_DEV_AUTOMATION_TESTS
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 
 constexpr EAutomationTestFlags GeoGemTestFlags =
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
@@ -54,7 +55,8 @@ static UGeoGemCatalog* MakeTestCatalog()
 		MakeGem("Magazine", UCharacterAttributeSet::GetMaxAmmoAttribute(), EGeoGemOperation::Percent, 0.012f)};
 	Catalog->GemsByTier[EGeoGemTier::Prism].Gems = {
 		MakeGem("Anchor", UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute(), EGeoGemOperation::Add, 0.03f)};
-	FGeoGemInfo Critical = MakeGem("Critical");
+	FGeoGemInfo Critical =
+		MakeGem("Critical", UGeoGemAttributeSet::GetCritDamageAttribute(), EGeoGemOperation::Add, 0.3f);
 	Critical.GrantedTag = FGeoGameplayTags::Get().Gem_Core_Critical;
 	Catalog->GemsByTier[EGeoGemTier::Core].Gems = {MakeGem("Surplus"), Critical};
 
@@ -181,8 +183,17 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 	Profile->AddGems("Surplus", 2);
 	TestEqual(TEXT("A Core fills one socket at most"), Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Surplus"),
 			  1);
-	TestFalse(TEXT("A loadout holds each Core once"),
-			  Profile->Equip(Catalog, EPlayerClass::Triangle, FindSocket(EGeoGemTier::Core, 14), "Surplus"));
+	TestEqual(TEXT("Fill of a held Core slots none"), Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Surplus"),
+			  0);
+	int32 const HeldCoreSocket = Profile->GetLoadout(EPlayerClass::Triangle).Sockets.Find("Surplus");
+	TestFalse(TEXT("A Core is refused in its own socket"),
+			  Profile->Equip(Catalog, EPlayerClass::Triangle, HeldCoreSocket, "Surplus"));
+	int32 const OtherCoreSocket =
+		FindSocket(EGeoGemTier::Core, HeldCoreSocket == FindSocket(EGeoGemTier::Core, 7) ? 14 : 7);
+	TestTrue(TEXT("A held Core moves to another socket"),
+			 Profile->Equip(Catalog, EPlayerClass::Triangle, OtherCoreSocket, "Surplus"));
+	TestTrue(TEXT("The previous socket emptied"),
+			 Profile->GetLoadout(EPlayerClass::Triangle).Sockets[HeldCoreSocket].IsNone());
 	TestFalse(TEXT("A Core socket stays locked until its cluster's last level"),
 			  Profile->Equip(Catalog, EPlayerClass::Circle, FindSocket(EGeoGemTier::Core, 7), "Surplus"));
 	Profile->SetClassLevel(EPlayerClass::Circle, 7);
@@ -196,6 +207,41 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Empty loadout of a class never touched"),
 			  static_cast<int32>(Algo::Count(Profile->GetLoadout(EPlayerClass::Square).Sockets, NAME_None)),
 			  GeoGem::GetSockets().Num());
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemUnequipTierTest, "GeoTrinity.Gems.UnequipTier", GeoGemTestFlags)
+
+bool FGeoGemUnequipTierTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	UGeoGemProfileSave* Profile = NewObject<UGeoGemProfileSave>();
+	EPlayerClass const PlayerClass = EPlayerClass::Triangle;
+	Profile->SetClassLevel(PlayerClass, GeoGem::MaxClassLevel);
+	Profile->AddGems("Power", 40);
+	Profile->AddGems("Magazine", 20);
+	Profile->AddGems("Surplus", 1);
+	Profile->FillSockets(Catalog, PlayerClass, "Power");
+	Profile->FillSockets(Catalog, PlayerClass, "Magazine");
+	Profile->FillSockets(Catalog, PlayerClass, "Surplus");
+	auto const CountSlotted = [Profile, PlayerClass](FName const GemId)
+	{
+		return static_cast<int32>(Algo::Count(Profile->GetLoadout(PlayerClass).Sockets, GemId));
+	};
+	int32 const Cuts = CountSlotted("Magazine");
+	TestTrue(TEXT("Cuts are slotted"), Cuts > 0);
+
+	Profile->UnequipTier(Catalog, PlayerClass, EGeoGemTier::Cut);
+	TestEqual(TEXT("The tier's sockets empty"), CountSlotted("Magazine"), 0);
+	TestTrue(TEXT("Other tiers stay"), CountSlotted("Power") > 0 && CountSlotted("Surplus") == 1);
+	TestEqual(TEXT("The copies go back to free"), Profile->GetFreeCount("Magazine", PlayerClass), 20);
+
+	Profile->SetEcho(Catalog, PlayerClass, "Power");
+	Profile->UnequipTier(Catalog, PlayerClass, EGeoGemTier::Cut);
+	TestEqual(TEXT("The echo of another tier stays"), Profile->GetEcho(PlayerClass), FName("Power"));
+	Profile->UnequipTier(Catalog, PlayerClass, EGeoGemTier::Chip);
+	TestTrue(TEXT("The echo of the tier empties"), Profile->GetEcho(PlayerClass).IsNone());
 	return true;
 }
 
@@ -438,10 +484,17 @@ bool FGeoGemEchoTest::RunTest(FString const& /*Parameters*/)
 			  static_cast<int32>(Algo::Count(Profile->GetLoadout(PlayerClass).Sockets, FName("Power"))), 0);
 	TestEqual(TEXT("The echo takes one copy"), Profile->GetFreeCount("Power", PlayerClass), 1);
 	TestEqual(TEXT("The echo reserves a copy from the Forge"), Profile->GetBreakableCount("Power"), 1);
-	TestFalse(TEXT("An echoed type fits no socket"),
-			  Profile->Equip(Catalog, PlayerClass, FindSocket(EGeoGemTier::Chip, 1), "Power"));
-	TestEqual(TEXT("Fill skips an echoed type"), Profile->FillSockets(Catalog, PlayerClass, "Power"), 0);
 	TestFalse(TEXT("Echoing the echoed gem again"), Profile->SetEcho(Catalog, PlayerClass, "Power"));
+	TestTrue(TEXT("Slotting the echoed type"),
+			 Profile->Equip(Catalog, PlayerClass, FindSocket(EGeoGemTier::Chip, 1), "Power"));
+	TestTrue(TEXT("Slotting it empties the echo"), Profile->GetEcho(PlayerClass).IsNone());
+	TestEqual(TEXT("The echo's copy moved"), Profile->GetFreeCount("Power", PlayerClass), 1);
+	TestTrue(TEXT("Echoing it again empties the socket"), Profile->SetEcho(Catalog, PlayerClass, "Power"));
+	TestEqual(TEXT("Fill of an echoed type clears the echo, then fills"),
+			  Profile->FillSockets(Catalog, PlayerClass, "Power"), 2);
+	TestTrue(TEXT("Fill emptied the echo"), Profile->GetEcho(PlayerClass).IsNone());
+	TestTrue(TEXT("Echo a slotted type, one copy owned"), Profile->SetEcho(Catalog, PlayerClass, "Power"));
+	TestEqual(TEXT("Echoed copies count once"), Profile->GetFreeCount("Power", PlayerClass), 1);
 
 	TestTrue(TEXT("Another gem replaces the echo"), Profile->SetEcho(Catalog, PlayerClass, "Guard"));
 	TestEqual(TEXT("The replaced gem is free again"), Profile->GetFreeCount("Power", PlayerClass), 2);
@@ -711,23 +764,32 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 			  1.f);
 	TestEqual(TEXT("9 Anchor: deployable health +27%"),
 			  Value(UGeoGemAttributeSet::GetDeployableHealthMultiplierAttribute()), 1.27f, KINDA_SMALL_NUMBER);
-	TestEqual(TEXT("No Precision: base crit chance"), Value(UGeoGemAttributeSet::GetCritChanceAttribute()), 0.1f,
+	TestEqual(TEXT("No Precision: no base crit chance"), Value(UGeoGemAttributeSet::GetCritChanceAttribute()), 0.f,
+			  KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("No Edge: base crit damage"), Value(UGeoGemAttributeSet::GetCritDamageAttribute()), 1.2f,
 			  KINDA_SMALL_NUMBER);
 	TestFalse(TEXT("No Critical Core: no crit tag"),
 			  ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical));
 
 	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetCritChanceAttribute(), 1.f);
-	TestEqual(TEXT("Without Critical, a sure crit chance never crits"), GeoASLib::RollCritMultiplier(ASC), 1.f);
+	TestEqual(TEXT("Without Critical, a sure crit chance still crits for 120%"), GeoASLib::RollCritMultiplier(ASC),
+			  1.2f, KINDA_SMALL_NUMBER);
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetCritChanceAttribute(), 0.f);
+	TestEqual(TEXT("Without Critical and no crit chance: no crit"), GeoASLib::RollCritMultiplier(ASC), 1.f);
+
 	ASC->RemoveActiveGameplayEffect(Handle);
 	Loadout.Sockets[54] = "Critical";
 	Handle = ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
 	TestTrue(TEXT("Critical slotted: crit tag held"),
 			 ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical));
+	TestEqual(TEXT("Critical: crit chance +10%"), Value(UGeoGemAttributeSet::GetCritChanceAttribute()), 0.1f,
+			  KINDA_SMALL_NUMBER);
+	TestEqual(TEXT("Critical: crit damage +30%"), Value(UGeoGemAttributeSet::GetCritDamageAttribute()), 1.5f,
+			  KINDA_SMALL_NUMBER);
+	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetCritChanceAttribute(), 1.f);
 	TestEqual(TEXT("Critical and a sure crit chance: every hit deals 150%"), GeoASLib::RollCritMultiplier(ASC), 1.5f,
 			  KINDA_SMALL_NUMBER);
 	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetCritChanceAttribute(), 0.f);
-	TestEqual(TEXT("Critical and no crit chance: no crit"), GeoASLib::RollCritMultiplier(ASC), 1.f);
-	ASC->SetNumericAttributeBase(UGeoGemAttributeSet::GetCritChanceAttribute(), 0.1f);
 
 	ASC->RemoveActiveGameplayEffect(Handle);
 	for (int32 i = 0; i < 30; ++i)
@@ -928,6 +990,73 @@ bool FGeoDeployableStartHealthFromAbilityTest::RunTest(FString const& /*Paramete
 		TestEqual(TEXT("Ratio 0.5 starts at half of that"),
 				  CopyASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute()), BaseMaxHealth,
 				  KINDA_SMALL_NUMBER);
+	}
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoRelaySnapDashTest, "GeoTrinity.Gems.RelaySnapDash", GeoGemTestFlags)
+
+bool FGeoRelaySnapDashTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	FGeoGemInfo const* Relay = Catalog ? Catalog->Find("Relay") : nullptr;
+	if (!TestTrue(TEXT("The catalog's Relay gives a Core passive"), Relay && Relay->GrantedAbility))
+	{
+		return false;
+	}
+
+	UWorld* World = CreateTestWorld();
+
+	AGeoTestDeployer* Deployer = World->SpawnActor<AGeoTestDeployer>();
+	NewObject<UGeoDeployableManagerComponent>(Deployer)->RegisterComponent();
+	UGeoAbilitySystemComponent* ASC = Cast<UGeoAbilitySystemComponent>(Deployer->GetAbilitySystemComponent());
+	ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestDeployAbility::StaticClass(), 1));
+	FGameplayAbilitySpecHandle const RelayHandle = ASC->GiveAbility(FGameplayAbilitySpec(Relay->GrantedAbility, 1));
+	bool const bRelayActive = ASC->TryActivateAbility(RelayHandle);
+
+	FDeployableData Data;
+	Data.Owner = Deployer;
+	Data.Instigator = Deployer;
+	Data.Params.LifeDrainMaxDuration = 10.f;
+	AGeoDeployableBase const* Deployable =
+		GeoASLib::FullySpawnDeployable(AGeoTestDeployable::StaticClass(), Data, FTransform(FVector(300.f, 0.f, 0.f)));
+
+	if (TestTrue(TEXT("Relay activates and the deployable spawns"), bRelayActive && Deployable))
+	{
+		FVector Direction = FVector::ZeroVector;
+		float Distance = 0.f;
+		auto const AimDash = [ASC, &Direction, &Distance](bool const bHasDirection, float const Yaw)
+		{
+			Direction = FRotator(0.f, Yaw, 0.f).Vector();
+			Distance = 500.f;
+			ASC->OnDashAiming.Broadcast(FVector::ZeroVector, bHasDirection, Direction, Distance);
+		};
+
+		AimDash(true, 10.f);
+		TestTrue(TEXT("A dash 10 degrees off turns straight at the deployable"),
+				 Direction.Equals(FVector::ForwardVector, KINDA_SMALL_NUMBER));
+		TestEqual(TEXT("It stops on the deployable"), Distance, 300.f, 1.f);
+
+		AimDash(true, 90.f);
+		TestEqual(TEXT("A dash at 90 degrees keeps its direction"), Direction.Y, 1.0, static_cast<double>(UE_KINDA_SMALL_NUMBER));
+		TestEqual(TEXT("And its distance"), Distance, 500.f);
+
+		AimDash(false, 90.f);
+		TestTrue(TEXT("A dash from standing still heads for the deployable"),
+				 Direction.Equals(FVector::ForwardVector, KINDA_SMALL_NUMBER));
+
+		ASC->CancelAllAbilities();
+		AimDash(true, 10.f);
+		TestTrue(TEXT("The revive reset (CancelAllAbilities, also run by the owning client) keeps the snap"),
+				 Direction.Equals(FVector::ForwardVector, KINDA_SMALL_NUMBER));
+
+		ASC->ClearAbility(RelayHandle);
+		AimDash(true, 10.f);
+		TestTrue(TEXT("Removing the Relay spec stops the snap"),
+				 Direction.Equals(FRotator(0.f, 10.f, 0.f).Vector(), KINDA_SMALL_NUMBER));
 	}
 
 	DestroyTestWorld(World);

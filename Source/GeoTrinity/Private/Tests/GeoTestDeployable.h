@@ -80,7 +80,9 @@ public:
 	{
 		DurationPolicy = EGameplayEffectDurationType::HasDuration;
 		DurationMagnitude = FGameplayEffectModifierMagnitude(FScalableFloat(10.f));
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS // SetStackingType is not exported
 		StackingType = EGameplayEffectStackingType::AggregateByTarget;
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 		StackLimitCount = 0;
 		GEComponents.Add(CreateDefaultSubobject<UTargetTagsGameplayEffectComponent>(TEXT("CooldownTagsComponent")));
 	}

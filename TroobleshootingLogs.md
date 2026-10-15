@@ -82,6 +82,14 @@ Held ability (Moira beam) stuck "in use" / slot stuck grayed on death. `FGamepla
 IsLocallyControlled() is true for host AI too, so we need to use also IsPlayerControlled 
 ie SetCombattantWidgetVisible(!(IsPlayerControlled() && IsLocallyControlled()));
 
+## Tab / C dead after the pause menu, packaged build only (2026-10-15)
+
+**Symptom:** after time in the pause menu (gems), Tab (character sheet) and C (stats detail) never fire again; everything else works. Never in editor.
+
+**Root cause:** `AGeoPlayerController` held its mapping contexts and those actions as `TSoftObjectPtr`. Opening the menu removes the gameplay context, the only hard reference to it and to Tab / C's actions → GC unloads them (build only; the editor keeps assets loaded). Closing reloads new copies, but `UEnhancedInputComponent` bindings hold the old action by `TWeakObjectPtr` → dead binding. Pawn actions survive: hard `TObjectPtr`.
+
+**Fix:** input assets the controller binds or swaps are `TObjectPtr`. Any input action or context bound in code and not always held by an active context needs a hard reference.
+
 ---
 
 # AI — StateTree
@@ -106,6 +114,7 @@ The folder `CLAUDE.md`s state the way to do things; the failures behind those ru
 - **Deploy charges refilled by hand**: re-arming off the cooldown tag's removed edge broke on clients (the server re-arm inside the removal callback coalesced remove+add into one replicated delta, so the client tag never reached 0; a client cannot re-arm either, no scoped prediction key, `CommitAbilityCooldown` fails `HasAuthorityOrPredictionKey`). Use the Cooldown GE's own stack expiry. `ShouldIgnoreCooldowns` instead of `CheckCooldown() = true` would stop the GE applying.
 - **Dash with `LaunchCharacter` or a hand timer**: CMC correction artifacts; a client-only wall-clock timer fired early, forced `MOVE_Walking` mid-dash and cut it short. The root-motion task owns the timeout.
 - **Passive that is not ServerOnly**: a client `CancelAllAbilities()` on revive kills the server's freshly reactivated passive.
+- **Core passive cancellable on the owning client** (Relay, 2026-10-14): on revive the server re-grants the Core and its activation RPC activates the client copy; the client's own `ReviveLogic` (`OnRep_IsDead`, another actor channel, either order) then ran `CancelAllAbilities` and ended that copy. Nothing re-activates a ServerInitiated ability on a client, so the client dashed unsnapped while the server snapped (correction). Fixed by `UGeoCorePassiveAbility::CanBeCanceled` = false.
 - **Slicing a derived `FPatternData`**: `Make(Derived)` without the template arg resolves to the base type, `GetPtr<Derived>()` then returns null everywhere (looks like "InstancedStruct arrives empty").
 - **`FMath::Rand*` in abilities**: client and server diverge; use `FRandomStream(StoredPayload.Seed)`. `Seed % Num` goes negative, use `RandHelper`.
 - **`GetAvatarActor()` in abilities**: payload is client-set and may differ from ActorInfo; use `StoredPayload`.

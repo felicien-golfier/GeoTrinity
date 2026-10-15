@@ -31,8 +31,8 @@
 #include "Settings/GameDataSettings.h"
 #include "System/Pooling/GeoActorPoolingSubsystem.h"
 #include "System/Pooling/GeoPoolableInterface.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UAbilityInfo* UGeoAbilitySystemLibrary::GetAbilityInfo()
@@ -131,7 +131,7 @@ bool UGeoAbilitySystemLibrary::ShouldSuppressGameplayCue(FGeoGameplayEffectConte
 float UGeoAbilitySystemLibrary::RollCritMultiplier(UAbilitySystemComponent const* SourceASC)
 {
 	UAbilitySystemComponent const* const StatASC = GetStatAsc(SourceASC);
-	bool const bCrits = IsValid(StatASC) && StatASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical)
+	bool const bCrits = IsValid(StatASC)
 		&& FMath::FRand() < StatASC->GetNumericAttribute(UGeoGemAttributeSet::GetCritChanceAttribute());
 	return bCrits ? StatASC->GetNumericAttribute(UGeoGemAttributeSet::GetCritDamageAttribute()) : 1.f;
 }
@@ -565,8 +565,9 @@ UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 	return FullySpawnDeployable(DeployableActorClass, Data, SpawnTransform);
 }
 
-AGeoDeployableBase* UGeoAbilitySystemLibrary::FullySpawnDeployable(
-	TSubclassOf<AGeoDeployableBase> const DeployableActorClass, FDeployableData& Data, FTransform const& SpawnTransform)
+AGeoDeployableBase*
+UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> const DeployableActorClass,
+											   FDeployableData& Data, FTransform const& SpawnTransform)
 {
 	AGeoDeployableBase* Deployable =
 		StartSpawnDeployable(DeployableActorClass, Data.Owner, Cast<APawn>(Data.Instigator), SpawnTransform);

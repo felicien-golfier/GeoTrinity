@@ -6,6 +6,7 @@ Claude.ai artifacts the user means by "the artifact", "the doc", "history". Read
 |---|---|---|
 | Gems UI | https://claude.ai/artifact/UrHCWS7YbX3PbbrLX85h1q#page-dcb81aee8d83 | Gem UI design artifact; "the UI artifact" |
 | Gems doc | https://claude.ai/artifact/SQYwGjtE7bspcCA5KKV67K#7a523923-3535.m5j08tmcn2j.13694 | "GeoTrinity — Gem System" doc; synced with `Data/gems.csv` via `gem-csv-to-doc` / `gem-doc-to-csv` |
+| Research | https://claude.ai/artifact/RZhzLd3DV8276eMvRo7bbF | "Turret Research": hex-boss and Triangle turret concept studies; "the research artifact" |
 | History | https://claude.ai/artifact/JyVvjNov9R4MQPkXfpQMrt | Archive of retired content |
 
 ## History

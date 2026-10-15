@@ -73,9 +73,12 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 		if (CanPlayMontageLocally(AnimInstance))
 		{
 			int const StartSection = GeoASLib::GetAndCheckSection(AnimMontage, GeoASLib::SectionStartName);
-			float const PlayRate = AnimMontage->GetSectionLength(StartSection) / StartDelay;
+			float StartSectionStartTime, StartSectionEndTime;
+			AnimMontage->GetSectionStartAndEndTime(StartSection, StartSectionStartTime, StartSectionEndTime);
+			float const PlayRate = (StartSectionEndTime - StartSectionStartTime) / StartDelay;
+			float const MontagePositionReached = StartSectionStartTime + FMath::Max(0.f, TravelTime) * PlayRate;
 			AnimInstance->Montage_Play(AnimMontage, PlayRate, EMontagePlayReturnType::MontageLength,
-									   FMath::Max(0.f, TravelTime));
+									   MontagePositionReached);
 		}
 
 		float const RemainingStartTime = StartDelay - TravelTime;
@@ -137,7 +140,7 @@ void UPattern::StartPattern()
 		if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 		{
 			UE_LOG(LogPattern, Warning, TEXT("Montage is NOT playing %s"), *AnimMontage->GetName());
-			AnimInstance->Montage_Play(AnimMontage);
+ 			AnimInstance->Montage_Play(AnimMontage);
 		}
 		else
 		{

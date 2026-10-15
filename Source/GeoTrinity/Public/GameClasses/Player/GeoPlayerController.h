@@ -26,7 +26,8 @@ public:
 	AGeoPlayerController(FObjectInitializer const& ObjectInitializer);
 
 protected:
-	/** Sets the camera view target, input mode, and activates the gameplay mapping context; seeds key bindings for the active keyboard layout on the first run. */
+	/** Sets the camera view target, input mode, and activates the gameplay mapping context; seeds key bindings for the
+	 * active keyboard layout on the first run. */
 	virtual void ReceivedPlayer() override;
 	/** Binds ToggleMenuAction to HandleToggleMenu and ToggleStatsDetailAction to OnToggleStatsDetail via the Enhanced
 	 * Input component. */
@@ -59,10 +60,7 @@ public:
 	void OpenPauseMenu();
 
 	/** The pause menu, created on its first open; null before. */
-	UUserWidget* GetPauseMenuWidget() const
-	{
-		return PauseMenuWidget;
-	}
+	UUserWidget* GetPauseMenuWidget() const { return PauseMenuWidget; }
 
 	/** Closes the pause menu and restores game input mode. Called by the widget's Resume button. */
 	void ClosePauseMenu();
@@ -70,26 +68,26 @@ public:
 	/** Returns true while the pause menu is on screen (gameplay input suspended). */
 	bool IsPauseMenuOpen() const;
 
-	/** ToggleStatsDetailAction was pressed: the HUD's stat counter switches between its short and its full table. */
+	/** ToggleStatsDetailAction was pressed: the HUD's stat counter cycles its short table, its full table and hidden. */
 	FSimpleMulticastDelegate OnToggleStatsDetail;
 
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
-	TSoftObjectPtr<UInputMappingContext> InputMapping;
+	TObjectPtr<UInputMappingContext> InputMapping;
 
 	// Replaces InputMapping while the pause menu is open, so gameplay abilities cannot fire behind the menu.
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
-	TSoftObjectPtr<UInputMappingContext> MenuInputMapping;
+	TObjectPtr<UInputMappingContext> MenuInputMapping;
 
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
-	TSoftObjectPtr<UInputAction> ToggleMenuAction;
+	TObjectPtr<UInputAction> ToggleMenuAction;
 
 	/** Broadcasts OnToggleStatsDetail; optional. */
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
-	TSoftObjectPtr<UInputAction> ToggleStatsDetailAction;
+	TObjectPtr<UInputAction> ToggleStatsDetailAction;
 
 	/** Shows CharacterSheetWidget while held (Tab), the mouse free to click it, and removes it on release; optional. */
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
-	TSoftObjectPtr<UInputAction> ShowCharacterSheetAction;
+	TObjectPtr<UInputAction> ShowCharacterSheetAction;
 
 	/** Engine base so gameplay never names the UI type; concrete UGeoCharacterSheetWidget set in Blueprint. */
 	UPROPERTY(EditAnywhere, Category = "GeoUI")
@@ -103,7 +101,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "GeoUI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
-	/** Viewport layer of the pause menu: above every HUD layer (damage numbers 5, boss bar 10), so nothing draws over it. */
+	/** Viewport layer of the pause menu: above every HUD layer (damage numbers 5, boss bar 10), so nothing draws over
+	 * it. */
 	UPROPERTY(EditAnywhere, Category = "GeoUI", meta = (ClampMin = "0"))
 	int32 PauseMenuZOrder = 100;
 

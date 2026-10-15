@@ -49,3 +49,5 @@ Skeletal animation and montage authoring. Rules: `AI/MCP/MCP_Animation.md`. Run 
 | `star_intro.py` `star_idle_breath.py` `star_death.py` | Star boss intro, idle, death |
 | `star_devastating_wave.py` `star_pike_nova.py` `star_spike_nova.py` | Star boss attacks |
 | `star_intro_camera_shake.py` | Camera-shake curve climbing with the intro montage |
+
+Hex ability clips (`hex_boss_abilities.py`): the wind-up is readable from its first frames — a clip's `tell` opens the blade at the boss's front within `tell_frames`, folded on frame 0. Only the blades near the front are out (`tell_focus` above `focus`, so blades 60° off stay almost folded): a turning ring retracts a blade as it leaves the front and opens the next as it arrives. Only the outer ring's blades show — the middle ring's lie inside its shell — and it rests with faces at ±30° of front, not dead on it, so the window must be wide enough to open those. The burst then widens to `focus`.

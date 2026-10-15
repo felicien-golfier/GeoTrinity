@@ -99,9 +99,9 @@ struct FGeoGemStyle
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	TMap<EGeoGemTier, FGeoGemTierShape> TierShapes = {{EGeoGemTier::Chip, {4, 0.f}},
-													   {EGeoGemTier::Cut, {6, 0.f}},
-													   {EGeoGemTier::Prism, {5, 0.f}},
-													   {EGeoGemTier::Core, {8, 22.5f}}};
+													  {EGeoGemTier::Cut, {6, 0.f}},
+													  {EGeoGemTier::Prism, {5, 0.f}},
+													  {EGeoGemTier::Core, {8, 22.5f}}};
 
 	/** Size of the bright facet on a gem, as a share of the gem. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "0", ClampMax = "1"))
@@ -126,6 +126,11 @@ struct FGeoGemStyle
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	FLinearColor SocketFillColor = FLinearColor(.0012f, .0012f, .003f, 1.f);
+
+	/** The empty echo socket draws the Prism, Cut and Chip outlines one inside the other: each is this share of the
+	 * one around it. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "0.1", ClampMax = "0.95"))
+	float EchoNestScale = .68f;
 
 	/** Line of an open socket. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")

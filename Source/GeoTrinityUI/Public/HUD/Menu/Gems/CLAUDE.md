@@ -12,16 +12,23 @@ Gems menu over `UGeoGemSubsystem` (`GeoTrinity/Public/Gem/CLAUDE.md`). Opened fr
 
 - Glyph drawing and colours: `Style/Glyph/`; gem polygons and highlight from theme `GemStyle`.
 
+## Unequip and tier filter (Loadout page)
+- No unequip in the gem detail, none per socket: a socket changes by replacement.
+- `UnequipTierButton`, at the bottom of the stacks column (`UnequipTierRow` in `InventoryColumn`), follows the tier filter: tab CUT → `UNEQUIP ALL CUTS` (`UnequipTierFormat`, {0} the plural tier name) → `UGeoGemProfileSave::UnequipTier` for that tier, echo included; tab ALL → `UNEQUIP ALL` (`UnequipAllText`), every tier. Disabled when the build holds nothing of it. Through `CommitChanges` like every edit; clears the pick.
+- Tier filter tabs read the tier name only (ALL, CHIP, CUT, PRISM): the owned count is not shown (`FilterFormat` gone).
+
 ## Echo socket (Loadout page)
 Rules: `GeoTrinity/Public/Gem/CLAUDE.md` "Echo socket". The page only shows and calls `UGeoGemProfileSave`.
-- One `UGeoGemSocketButton` between the clusters (`EchoPosition` = centre, `EchoSize` tunables), index `GetEchoIndex()` = one past `GeoGem::GetSockets()`, so picks / hovers use the same socket index; drawn as a Core socket (empty / locked shows the unlock level) or the echoed gem.
-- Picking it opens its detail: gem, the value it gives, `ECHO LEVEL n · xp / cost XP` (text, no bar; at the max level just `ECHO LEVEL n`), UNEQUIP. No upgrade button: levels come from XP.
+- One `UGeoGemSocketButton` between the clusters (`EchoPosition` = centre, `EchoSize` tunables), index `GetEchoIndex()` = one past `GeoGem::GetSockets()`, so picks / hovers use the same socket index; drawn as the echoed gem, or empty / locked as the echo glyph (`Style/Glyph/`: the Chip, Cut and Prism outlines nested, never a Core look; locked adds the unlock level).
+- Picking it opens its detail: gem, the value it gives, `ECHO LEVEL n · xp / cost XP` (text, no bar; at the max level just `ECHO LEVEL n`), no button. No upgrade button: levels come from XP.
 - Endless look: the echo level is never shown with a max (`EchoMaxLevel` stays hidden, nor the XP kept past it), no pips, no "MAX" state; players read it as infinite.
 - Class level box: once the shared echo level is 1 or more (any class shown, even under 20), an `ECHO LEVEL` block under the class level shows it as a bare number in violet, almost as big as the class level; the character sheet's XP meter shows echo XP only for a class at level 20.
 - Echo socket look (design: Gems Loadout (Echo) artboard): the board's focal point, far larger than any socket. A `UGeoEchoHalo` (`Style/Glyph/`) built with the board sits behind the echo button (`EchoHaloSize` tunable, about 3x `EchoSize`; `EchoHaloStyle` = the frame style it wears, `EchoHaloOpenColor`): dark disc, ring, a rosace of outline squares turned a step apart, a second smaller one turning the other way, small squares running the ring like frame runners. Colour: the echoed gem's, violet while open and empty, grey while locked.
 - Halo states: idle = slow turn, calm glow; a stack that can echo is picked, or the socket is picked / hovered = faster turn, brighter glow, runners faster (the frame style's active blend); locked = still, dim, no runners. Opening the socket (shared echo level 0 → 1) is a one-off flare (active blend held for a moment, `PlayFlare`), not a loop; shown once per session.
 - The halo never takes input (HitTestInvisible); the echo button on top stays the click target. The other sockets and the cluster rings are untouched.
-- Gem detail gains `EchoButton` after UNEQUIP (built by `AI/Python/Gem/gems_page.py`; off for a Core / locked / no copy / already echoed). A type the build slots needs a second press (label ECHO IT, note says it empties sockets); any other pick or click away cancels (`bConfirmingEcho`).
-- Stack tile of the echoed type: "ECHOED" mark, not "n FREE"; its sockets do not glow.
-- Totals table: a row for the echoed stat after the slotted ones, its count cell `LV n` of the echo level.
+- No echo button: the click on the echo socket is the action (stack picked, then socket; or the reverse). The gem detail has two buttons only, EQUIP (the first empty socket the picked stack fits) and ALL (every socket it fits, replaces what is slotted); both always shown, hovering a stack or a socket included, and act on the picked stack (off with none). ALL wears the theme's normal button text role, the room the echo button took goes to it.
+- One click echoes, even a type the build slots: those sockets empty at once (no confirmation step). Off for a Core / locked / no copy / already echoed (the note says why).
+- Slotting the echoed type into a socket is allowed: the echo empties, the socket fills. A Core already in another socket moves: the previous socket empties. Neither has a refusal note any more (`NoteCoreOnce` gone).
+- Stack tile of the echoed type: "ECHOED" mark, not "n FREE"; its sockets glow like any pickable socket.
+- Totals table: a row for the echoed stat after the slotted ones, its count cell reads `ECHO` (`ECH` when the column is too narrow for it), where a slotted stat shows `×n`; the level is in the detail.
 - A stack picked, then the echo socket (or the reverse), echoes it, like a socket.

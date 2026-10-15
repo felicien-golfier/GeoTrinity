@@ -24,7 +24,7 @@ public:
 	/** Registers all gem stat attributes for replication. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	/** Chance of a hit or a heal to crit, once the Critical Core unlocks crits. */
+	/** Chance of a hit or a heal to crit, before the Critical Core's bonus. */
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem", ReplicatedUsing = OnRep_CritChance)
 	FGameplayAttributeData CritChance;
 	ATTRIBUTE_ACCESSORS(UGeoGemAttributeSet, CritChance)

@@ -25,35 +25,38 @@ void UGeoRelayPassiveAbility::SnapDash(FVector const& Start, bool const bHasDire
 {
 	UGeoDeployAbility const* DeployAbility =
 		GeoASLib::GetGrantedAbility<UGeoDeployAbility>(*GetGeoAbilitySystemComponentFromActorInfo());
-	AActor const* Avatar = GetAvatarActorFromActorInfo();
 	UGeoDeployableManagerComponent const* Manager =
-		DeployAbility && Avatar ? Avatar->FindComponentByClass<UGeoDeployableManagerComponent>() : nullptr;
-	if (Manager)
+		GetAvatarActorFromActorInfo()->FindComponentByClass<UGeoDeployableManagerComponent>();
+	if (!ensureMsgf(DeployAbility && Manager,
+					TEXT("%hs: %s holds no deploy ability, or its avatar no UGeoDeployableManagerComponent"),
+					__FUNCTION__, *GetNameSafe(GetOwningActorFromActorInfo())))
 	{
-		float const MinAlignment = FMath::Cos(FMath::DegreesToRadians(SnapHalfAngle));
-		FVector const DashDirection2D = Direction.GetSafeNormal2D();
-		float NearestDistance = TNumericLimits<float>::Max();
-		FVector NearestDirection = Direction;
-		bool bSnapped = false;
-		for (AGeoDeployableBase const* Deployable : Manager->GetDeployables(DeployAbility->GetDeployableActorClass()))
-		{
-			FVector ToDeployable = Deployable->GetActorLocation() - Start;
-			ToDeployable.Z = 0.f;
-			float const DeployableDistance = ToDeployable.Size();
-			if (Deployable->IsActive() && !Deployable->IsBlinking() && DeployableDistance > UE_KINDA_SMALL_NUMBER
-				&& DeployableDistance < NearestDistance
-				&& (!bHasDirection || (DashDirection2D | ToDeployable / DeployableDistance) >= MinAlignment))
-			{
-				NearestDistance = DeployableDistance;
-				NearestDirection = ToDeployable / DeployableDistance;
-				bSnapped = true;
-			}
-		}
+		return;
+	}
 
-		if (bSnapped)
+	float const MinAlignment = FMath::Cos(FMath::DegreesToRadians(SnapHalfAngle));
+	FVector const DashDirection2D = Direction.GetSafeNormal2D();
+	float NearestDistance = TNumericLimits<float>::Max();
+	FVector NearestDirection = Direction;
+	bool bSnapped = false;
+	for (AGeoDeployableBase const* Deployable : Manager->GetDeployables(DeployAbility->GetDeployableActorClass()))
+	{
+		FVector ToDeployable = Deployable->GetActorLocation() - Start;
+		ToDeployable.Z = 0.f;
+		float const DeployableDistance = ToDeployable.Size();
+		if (Deployable->IsActive() && !Deployable->IsBlinking() && DeployableDistance > UE_KINDA_SMALL_NUMBER
+			&& DeployableDistance < NearestDistance
+			&& (!bHasDirection || (DashDirection2D | ToDeployable / DeployableDistance) >= MinAlignment))
 		{
-			Direction = NearestDirection;
-			Distance = FMath::Min(NearestDistance, Distance * MaxRangeMultiplier);
+			NearestDistance = DeployableDistance;
+			NearestDirection = ToDeployable / DeployableDistance;
+			bSnapped = true;
 		}
+	}
+
+	if (bSnapped)
+	{
+		Direction = NearestDirection;
+		Distance = FMath::Min(NearestDistance, Distance * MaxRangeMultiplier);
 	}
 }

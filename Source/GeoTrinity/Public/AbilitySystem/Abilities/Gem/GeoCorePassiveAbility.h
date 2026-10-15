@@ -8,10 +8,10 @@
 #include "GeoCorePassiveAbility.generated.h"
 
 /**
- * Base of the passive ability a Core gem gives its holder (FGeoGemInfo::GrantedAbility). Active from its grant, it binds
- * its rule to the delegate of the event the rule reacts to (BindEvent) and unbinds it when it ends, so the code raising
- * the event never names a Core. Each Core's Blueprint child carries the Ability.Type.Passive and Ability.Spell.<Core>
- * asset tags, the AbilityInfo entry and the rule's tunables.
+ * Base of the passive ability a Core gem gives its holder (FGeoGemInfo::GrantedAbility). Active from its grant, it
+ * binds its rule to the delegate of the event the rule reacts to (BindEvent) and unbinds it when it ends, so the code
+ * raising the event never names a Core. Each Core's Blueprint child carries the Ability.Type.Passive and
+ * Ability.Spell.<Core> asset tags, the AbilityInfo entry and the rule's tunables.
  */
 UCLASS(Abstract)
 class GEOTRINITY_API UGeoCorePassiveAbility : public UGeoGameplayAbility
@@ -26,6 +26,11 @@ public:
 	/** Stays active and bound: a Core's rule outlives its holder (deployables, zones), and the gem stats behind it
 	 *  survive death too. A rule that needs a living holder checks IsDead() in its handler. */
 	virtual void OnOwnerDeath() override {}
+
+	/** Never: a Core runs from its grant until its spec is removed (UGeoGemComponent::ApplyGems re-grants, class
+	 * change, ASC teardown), which ends it on every machine. A cancel would end only the instance of the machine it
+	 * runs on: the owning client's own CancelAllAbilities on revive would unbind its copy for good. */
+	virtual bool CanBeCanceled() const override { return false; }
 
 protected:
 	/** Binds the rule through BindEvent. */
@@ -42,8 +47,8 @@ protected:
 	/** Undoes BindEvent. */
 	virtual void UnbindEvent(UGeoAbilitySystemComponent& HolderASC) PURE_VIRTUAL(UGeoCorePassiveAbility::UnbindEvent, );
 
-	/** Server, for a rule that fires on an event (Wake, Split, Kinship): true, and applies the Cooldown GE (replicated, so
-	 *  the owning client's HUD sweeps it), when that GE is not running and the TriggerChance roll passes. */
+	/** Server, for a rule that fires on an event (Wake, Split, Kinship): true, and applies the Cooldown GE (replicated,
+	 * so the owning client's HUD sweeps it), when that GE is not running and the TriggerChance roll passes. */
 	bool TryTrigger();
 
 	/** Chance the rule fires each time its event happens off cooldown; 1 always fires. */
