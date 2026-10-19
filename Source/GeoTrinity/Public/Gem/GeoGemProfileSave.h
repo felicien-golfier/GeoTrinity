@@ -105,10 +105,10 @@ public:
 	float GetXpProgress(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32& OutXpTaken,
 						int32& OutXpNeeded) const;
 
-	/**
-	 * Whether SetEcho would take GemId into the echo socket of the build PlayerClass plays: not when the echo level is
-	 * still 0, GemId is a Core or already the echo, or no copy is owned.
-	 */
+	/** Why SetEcho would not take GemId into the echo socket of the build PlayerClass plays; None when it would. */
+	EGeoGemRefusal GetEchoRefusal(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, FName GemId) const;
+
+	/** Whether SetEcho would take GemId: GetEchoRefusal is None. */
 	bool CanEcho(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, FName GemId) const;
 
 	/** Echoes a copy of GemId, emptying the sockets of the build that hold it. Refused (false) when CanEcho is not. */
@@ -163,12 +163,13 @@ public:
 	int32 AddClassXp(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 Xp);
 
 	/**
-	 * Whether Equip would take GemId into socket SocketIndex of the build PlayerClass plays: not when the socket is
-
-	 * * still locked at the class level, is of another tier or already holds GemId, or no copy is free. The copy
-	 * already
-	 * in the build's echo, or a Core already in another of its sockets, counts as free: it moves.
+	 * Why Equip would not take GemId into socket SocketIndex of the build PlayerClass plays; None when it would. The
+	 * copy already in the build's echo, or a Core already in another of its sockets, counts as free: it moves.
 	 */
+	EGeoGemRefusal GetEquipRefusal(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 SocketIndex,
+								   FName GemId) const;
+
+	/** Whether Equip would take GemId: GetEquipRefusal is None. */
 	bool CanEquip(UGeoGemCatalog const& Catalog, EPlayerClass PlayerClass, int32 SocketIndex, FName GemId) const;
 
 	/** Slots a free copy of GemId into PlayerClass's socket SocketIndex, returning whatever it held to free. Refused

@@ -464,6 +464,70 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText HintEmptyEcho = INVTEXT("Empty echo socket. Pick a Chip, Cut or Prism stack to echo it.");
 
+	/** {0} is the gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgAlreadyThere = INVTEXT("{0} is already in this socket.");
+
+	/** {0} is the gem, {1} the socket's tier. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgWrongTier = INVTEXT("{0} does not fit a {1} socket.");
+
+	/** {0} is the class, {1} the level. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgLocked = INVTEXT("This socket opens at {0} level {1}.");
+
+	/** {0} is the gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgNoFreeCopy = INVTEXT("No free {0}: every copy is slotted.");
+
+	/** {0} is the class level. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgEchoLocked = INVTEXT("The echo socket opens once any class reaches level {0}.");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgEchoCore = INVTEXT("A Core can't go in the echo socket.");
+
+	/** {0} is the gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgAlreadyEcho = INVTEXT("{0} is already your echo.");
+
+	/** {0} is the gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgNoCopy = INVTEXT("You own no {0} to echo.");
+
+	/** {0} is the Core. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgCoreMoved = INVTEXT("{0} moved from its previous socket.");
+
+	/** {0} is the count, {1} the gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgEchoEmptied = INVTEXT("{0} {1} emptied for the echo.");
+
+	/** {0} is the gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgEchoCleared = INVTEXT("Echo cleared: {0} is now in a socket.");
+
+	/** {0} is the count, {1} the gem. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgFilled = INVTEXT("{0} sockets filled with {1}.");
+
+	/** {0} is the count. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgUnequipped = INVTEXT("{0} gems unequipped.");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgBuildAdded = INVTEXT("Build created.");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgBuildRemoved = INVTEXT("Build deleted.");
+
+	/** {0} is the limit. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgMaxBuilds = INVTEXT("Maximum of {0} builds.");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgLastBuild = INVTEXT("A class keeps at least one build.");
+
 private:
 	UFUNCTION()
 	void HandleEquip();
@@ -558,6 +622,21 @@ private:
 
 	/** Drops the picked stack or socket, and an echo waiting for its confirm. */
 	void ClearPick();
+
+	/** Why a click on socket SocketIndex does nothing: the picked gem's refusal there, else, with nothing picked, the
+	 * lock of the socket. */
+	EGeoGemRefusal GetClickRefusal(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog,
+								   int32 SocketIndex) const;
+
+	/** Posts Refusal's message to the strip; GemId and SocketIndex fill in the gem and the socket's tier or lock. */
+	void PostRefusal(UGeoGemCatalog const& Catalog, EGeoGemRefusal Refusal, FName GemId, int32 SocketIndex) const;
+
+	/** Posts what slotting GemId moved, from Before, the loadout as it was: a Core leaving its socket, the echo
+	 * cleared. */
+	void PostEquipEffects(UGeoGemCatalog const& Catalog, FGeoGemLoadout const& Before, FName GemId) const;
+
+	/** Sockets and echo of Loadout holding a gem. */
+	static int32 CountFilled(FGeoGemLoadout const& Loadout);
 
 	/** Sets what the cursor is over, a stack (GemId) or a socket (SocketIndex), and shows its detail. */
 	void Hover(FName GemId, int32 SocketIndex);

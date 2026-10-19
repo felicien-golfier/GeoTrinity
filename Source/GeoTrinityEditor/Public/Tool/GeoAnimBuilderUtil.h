@@ -10,6 +10,7 @@
 struct FMovieSceneFloatChannel;
 class UMovieSceneControlRigParameterSection;
 class UAnimBlueprint;
+class UEdGraph;
 class UAnimMontage;
 class UAnimSequence;
 class USkeletalMesh;
@@ -47,7 +48,8 @@ public:
 	/**
 	 * Generic: rebuilds Montage's sections from three parallel arrays, each entry linked at its StartTimes value so
 	 * the section's cached segment/link data stays consistent. A NextSectionNames entry of None ends the chain (the
-	 * montage stops there); naming the section itself loops it. Requires a slot track to already exist. Saves the asset.
+	 * montage stops there); naming the section itself loops it. Requires a slot track to already exist. Saves the
+	 * asset.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void SetMontageSections(UAnimMontage* Montage, TArray<FName> SectionNames, TArray<float> StartTimes,
@@ -116,6 +118,18 @@ public:
 									  UAnimSequence* Idle);
 
 	/**
+	 * Generic: puts a Slot node NewSlotName right after the Slot node AfterSlotName in AnimBlueprint's AnimGraph, so a
+	 * montage in NewSlotName plays over everything AfterSlotName outputs. What AfterSlotName fed now feeds from the new
+	 * node. The new slot is registered on the target skeleton in SlotGroupName, since playing a montage stops only the
+	 * montages of its own group. AnimBlueprint must own the graph (a child AnimBlueprint has none: pass its parent).
+	 *
+	 * Compiles and saves the asset and its skeleton; returns false when a node or pin is missing or the compile fails.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool InsertSlotAfter(UAnimBlueprint* AnimBlueprint, FName AfterSlotName, FName NewSlotName,
+								FName SlotGroupName);
+
+	/**
 	 * Generic: replaces one channel of BoneName's track with linear keys. Channel is 0-2 translation X/Y/Z, 3-5
 	 * rotation Euler roll/pitch/yaw in degrees, 6-8 scale X/Y/Z. Frames are whole frame numbers in increasing order,
 	 * one per Values entry; with no Frames the channel becomes the constant ConstantValue and holds no key.
@@ -140,6 +154,9 @@ public:
 	static TArray<FName> GetBoneTrackNames(UAnimSequence const* Sequence);
 
 private:
+	/** AnimBlueprint's own AnimGraph, or null (flagged) when it has none, as a child AnimBlueprint. */
+	static UEdGraph* FindAnimGraph(UAnimBlueprint const* AnimBlueprint);
+
 	/** The sequence's FK control-rig section, or null. */
 	static UMovieSceneControlRigParameterSection* FindFKSection(UAnimSequence const* Sequence);
 

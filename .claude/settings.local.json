@@ -41,34 +41,5 @@
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "mcp-unreal"
-  ],
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python C:/GeoTrinity/AI/Python/Tools/token_meter.py stop"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python C:/GeoTrinity/AI/Python/Tools/token_meter.py start"
-          }
-        ]
-      }
-    ]
-  },
-  "env": {
-    "TOKEN_METER_WINDOW": "1000000"
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "python C:/GeoTrinity/AI/Python/Tools/token_meter_status.py"
-  }
+  ]
 }

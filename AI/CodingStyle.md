@@ -22,6 +22,8 @@ an existing function, an existing member — and use it.
 - Prefer fewer, longer `if`s — merge with `&&` rather than nesting.
 - One blank line after the closing `}` of an `if`/`else`/loop/`switch` block when another statement follows it
   (never before `else` or a closing `}`). clang-format can't insert it — write it yourself.
+- Parenthesize `&&` groups mixed with `||`: `(A && B) || C`. Linux clang builds with `-Werror`
+  (`-Wlogical-op-parentheses`) and fails on `A && B || C`; clang-format can't add parentheses.
 - **No `return` that skips the rest of a function.** Once the function has started its work, never bail out
   of it: wrap the remaining work in an `if` (or fold the condition into the loop's), so whoever appends code
   later sees which case it runs in. Fine: an early return — a guard at the top, before any work (the
@@ -100,7 +102,7 @@ what the next line does with `x` when it is null.
 
 ## Bindings
 Gate condition-based bindings at the binding site, not inside the callback — guard server-only or
-local-player-only bindings before `AddDynamic`.
+local-player-only bindings before `AddDynamic`. Exception: a binding made in `OnGiveAbility` gates inside the callback — a client gets the ability before its pawn has a controller, so a check at binding time is false for good (`UGeoReloadAbility`).
 
 ## GAS conventions
 - Every ability extends `UGeoGameplayAbility`, never `UGameplayAbility`.

@@ -20,7 +20,7 @@ The menu skeleton. Look is themed (`Style/`), never authored per button or page.
 Short messages telling the player what just happened in the UI (every rule that fires). One system, one place: the
 strip in the bottom row of the window, on every frame layer — the menu's top level and every page, with or without BACK.
 
-- **Post**: `UGeoMessageSubsystem::PostMessage` from any UI code; gameplay reaches it through the HUD interface seam, never directly. The subsystem owns the messages (text, colour, post time), so navigating never drops them; closing the menu (`UGeoMenuRootWidget::CloseMenu`, menu destroyed) clears them. Every `UGeoMessageLog` paints the same state, none keeps its own.
+- **Post**: `UGeoMessageSubsystem::Post(WorldContext, Text, Color)` from any UI widget (null-safe, finds the subsystem); an identical text still shown as the newest message is not posted again (`DuplicateSeconds`), so a spammed click shows one line; gameplay reaches it through the HUD interface seam, never directly. The subsystem owns the messages (text, colour, post time), so navigating never drops them; closing the menu (`UGeoMenuRootWidget::CloseMenu`, menu destroyed) clears them. Every `UGeoMessageLog` paints the same state, none keeps its own.
 - **Place**: `UGeoMessageLog` lives in `WBP_MenuFrame` (layer 1, so layer 2 and the top level both have it), bottom row, from a fixed left inset equal to BACK's width to the window's right padding — same place whether BACK shows or not, lines bottom-anchored, left-aligned. Its height is `MaxLines × LineHeight`, tuned so the stack stays about BACK's height, never taller than the bottom row.
 - **Stack**: the bottom line is the oldest live message. A message arriving while others still show appears on the line above the newest and fades in there; when the bottom one expires (fades out), every line eases one slot down, so a lone survivor comes back to the bottom line.
 - **Max `MaxLines` (5)**: a 6th message drops the oldest early (it fades out at once), never grows the strip.
@@ -28,4 +28,5 @@ strip in the bottom row of the window, on every frame layer — the menu's top l
 - Text in a small theme text role (`TextRole`, `UGeoUITheme::ApplyTextStyle`), colour an `EGeoColor`; one line, clipped, never wrapped.
 - Motion on a Slate active timer, never a `UUserWidget` tick (`AI/UI.md`, "Look"); the timer sleeps while no message lives.
 - A page shown outside a menu (character sheet on Tab) keeps the strip like the rest; it shows nothing there unless something posts.
+- Colours by meaning: refusal `Damage`, side effect `Neutral`, success `Heal`.
 - Tunables (`EditAnywhere`, `Geo|Messages`): `MaxLines`, `LineHeight`, `LeftInset`, `Lifetime`, `FadeTime`, `SlideTime`, `TextRole`.

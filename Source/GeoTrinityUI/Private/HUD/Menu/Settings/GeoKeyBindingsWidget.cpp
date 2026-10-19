@@ -12,9 +12,11 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameClasses/Player/GeoGameViewportClient.h"
 #include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/Frame/GeoMessageSubsystem.h"
 #include "HUD/Style/Frame/GeoFrame.h"
 #include "HUD/Style/GeoUITheme.h"
 #include "Settings/GeoGameUserSettings.h"
+#include "Tool/Visual/GeoColor.h"
 #include "UserSettings/EnhancedInputUserSettings.h"
 
 namespace
@@ -27,9 +29,9 @@ namespace
 	}
 
 	// Row order of the key-bindings list; unknown mappings land after these, sorted by display name.
-	FName const MappingOrder[] = {"MoveForward", "MoveBackward", "MoveLeft", "MoveRight", "Dash",
-								  "SpellBasic", "SpellDeployable", "SpellSpecial", "Reload", "ToggleMenu"};
-}
+	FName const MappingOrder[] = {"MoveForward", "MoveBackward",	"MoveLeft",		"MoveRight", "Dash",
+								  "SpellBasic",	 "SpellDeployable", "SpellSpecial", "Reload",	 "ToggleMenu"};
+} // namespace
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoKeyBindingSelector::InitBinding(FName InMappingName, EPlayerMappableKeySlot InSlot, bool bInGamepad)
@@ -78,6 +80,11 @@ void UGeoKeyBindingSelector::CommitKey(FKey Key)
 	{
 		UE_LOG(LogTemp, Log, TEXT("UGeoKeyBindingSelector: rejected key %s for %s (%s)"), *Key.ToString(),
 			   *MappingName.ToString(), *FailureReason.ToString());
+		UGeoMessageSubsystem::Post(
+			this,
+			FText::Format(NSLOCTEXT("GeoSettings", "KeyRejected", "{0} can't be used for this action."),
+						  Key.GetDisplayName(false)),
+			EGeoColor::Damage);
 	}
 	else
 	{
@@ -158,7 +165,8 @@ void UGeoKeyBindingsWidget::HandleSecondPlayerGamepadChanged(bool bIsChecked)
 	ULocalPlayer const* LocalPlayer = GetOwningLocalPlayer();
 	UGeoGameViewportClient* ViewportClient =
 		LocalPlayer ? Cast<UGeoGameViewportClient>(LocalPlayer->ViewportClient) : nullptr;
-	if (!ensureMsgf(ViewportClient, TEXT("UGeoKeyBindingsWidget: no UGeoGameViewportClient, gamepads keep their old owners")))
+	if (!ensureMsgf(ViewportClient,
+					TEXT("UGeoKeyBindingsWidget: no UGeoGameViewportClient, gamepads keep their old owners")))
 	{
 		return;
 	}
@@ -168,8 +176,11 @@ void UGeoKeyBindingsWidget::HandleSecondPlayerGamepadChanged(bool bIsChecked)
 // ---------------------------------------------------------------------------------------------------------------------
 UGeoKeyBindingSelector* UGeoKeyBindingsWidget::FindListeningSelector() const
 {
-	TObjectPtr<UGeoKeyBindingSelector> const* Listening =
-		Selectors.FindByPredicate([](UGeoKeyBindingSelector const* Selector) { return Selector->IsListening(); });
+	TObjectPtr<UGeoKeyBindingSelector> const* Listening = Selectors.FindByPredicate(
+		[](UGeoKeyBindingSelector const* Selector)
+		{
+			return Selector->IsListening();
+		});
 	return Listening ? *Listening : nullptr;
 }
 
@@ -178,8 +189,9 @@ void UGeoKeyBindingsWidget::BuildKeyBindingsList()
 {
 	UEnhancedInputUserSettings* UserSettings = GetUserSettings(GetOwningLocalPlayer());
 	UEnhancedPlayerMappableKeyProfile* Profile = UserSettings ? UserSettings->GetActiveKeyProfile() : nullptr;
-	if (!ensureMsgf(Profile, TEXT("UGeoKeyBindingsWidget: no active Enhanced Input key profile — is bEnableUserSettings "
-								  "on and the mapping context registered?")))
+	if (!ensureMsgf(Profile,
+					TEXT("UGeoKeyBindingsWidget: no active Enhanced Input key profile — is bEnableUserSettings "
+						 "on and the mapping context registered?")))
 	{
 		return;
 	}

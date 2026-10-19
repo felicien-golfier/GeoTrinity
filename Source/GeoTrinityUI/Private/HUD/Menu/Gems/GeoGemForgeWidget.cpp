@@ -12,9 +12,11 @@
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/Frame/GeoMessageSubsystem.h"
 #include "HUD/Menu/List/GeoTableWidget.h"
-#include "HUD/Style/Glyph/GeoGemGlyph.h"
 #include "HUD/Style/GeoUITheme.h"
+#include "HUD/Style/Glyph/GeoGemGlyph.h"
+#include "Tool/Visual/GeoColor.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemForgeWidget::NativeConstruct()
@@ -92,7 +94,7 @@ void UGeoGemForgeWidget::Refresh()
 
 // ---------------------------------------------------------------------------------------------------------------------
 int32 UGeoGemForgeWidget::GetBreakableCount(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog,
-											 EGeoGemTier const Tier) const
+											EGeoGemTier const Tier) const
 {
 	int32 Breakable = 0;
 	FGeoGemList const* List = Catalog.GemsByTier.Find(Tier);
@@ -130,18 +132,18 @@ void UGeoGemForgeWidget::ShowTierBreaks(UGeoGemProfileSave const& Profile, UGeoG
 			AllShards += Shards;
 		}
 
-		UGeoListRowWidget* Row =
-			TierBreakBox ? MakeRow(bSelected ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
-								   Breakable > 0 ? TFunction<void()>([this, Tier]
-																	 {
-																		 if (BreakTiers.Remove(Tier) == 0)
-																		 {
-																			 BreakTiers.Add(Tier);
-																		 }
-																		 Refresh();
-																	 })
-												 : TFunction<void()>())
-						 : nullptr;
+		UGeoListRowWidget* Row = TierBreakBox ? MakeRow(bSelected ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
+														Breakable > 0 ? TFunction<void()>(
+																			[this, Tier]
+																			{
+																				if (BreakTiers.Remove(Tier) == 0)
+																				{
+																					BreakTiers.Add(Tier);
+																				}
+																				Refresh();
+																			})
+																	  : TFunction<void()>())
+											  : nullptr;
 		if (Row)
 		{
 			UGeoGemGlyph* Glyph = WidgetTree->ConstructWidget<UGeoGemGlyph>(UGeoGemGlyph::StaticClass());
@@ -153,9 +155,8 @@ void UGeoGemForgeWidget::ShowTierBreaks(UGeoGemProfileSave const& Profile, UGeoG
 			Names->AddChildToVerticalBox(
 				MakeText(EGeoTextRole::Label, FText::Format(TierSubFormat, Owned, Owned - Breakable)));
 			Row->AddColumn(Names, 1.f);
-			Row->AddColumn(MakeText(EGeoTextRole::Mono, Breakable > 0
-															? FText::Format(TierBreakFormat, Breakable, Shards)
-															: NoneFreeText),
+			Row->AddColumn(MakeText(EGeoTextRole::Mono,
+									Breakable > 0 ? FText::Format(TierBreakFormat, Breakable, Shards) : NoneFreeText),
 						   0.f);
 			TierBreakBox->AddChildToVerticalBox(Row)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 		}
@@ -190,10 +191,9 @@ void UGeoGemForgeWidget::ShowRates(UGeoGemCatalog const& Catalog)
 	RateTable->ClearLines();
 	for (EGeoGemTier const Tier : GetTiers())
 	{
-		RateTable->AddLine(
-			{RateTable->MakeCellText(GetTierName(Tier, false)),
-			 RateTable->MakeCellText(FText::Format(RateBreakFormat, Catalog.GetBreakDownShards(Tier))),
-			 RateTable->MakeCellText(FText::AsNumber(Catalog.GetCraftCost(Tier)))});
+		RateTable->AddLine({RateTable->MakeCellText(GetTierName(Tier, false)),
+							RateTable->MakeCellText(FText::Format(RateBreakFormat, Catalog.GetBreakDownShards(Tier))),
+							RateTable->MakeCellText(FText::AsNumber(Catalog.GetCraftCost(Tier)))});
 	}
 }
 
@@ -205,15 +205,16 @@ void UGeoGemForgeWidget::ShowGems(UGeoGemProfileSave const& Profile, UGeoGemCata
 		TierTabBox->ClearChildren();
 		for (EGeoGemTier const Tier : GetTiers())
 		{
-			UGeoListRowWidget* Tab = MakeRow(Tier == ShownTier ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
-											 [this, Tier]
-											 {
-												 ShownTier = Tier;
-												 BreakQuantity = 1;
-												 CraftQuantity = 1;
-												 Refresh();
-											 },
-											 TabRowClass);
+			UGeoListRowWidget* Tab = MakeRow(
+				Tier == ShownTier ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
+				[this, Tier]
+				{
+					ShownTier = Tier;
+					BreakQuantity = 1;
+					CraftQuantity = 1;
+					Refresh();
+				},
+				TabRowClass);
 			if (Tab)
 			{
 				Tab->AddTextColumn(GetTierName(Tier, true), 0.f);
@@ -303,9 +304,9 @@ void UGeoGemForgeWidget::ShowPicked(UGeoGemProfileSave const& Profile, UGeoGemCa
 	if (BreakButton)
 	{
 		BreakButton->SetIsEnabled(Breakable > 0);
-		BreakButton->SetLabel(Breakable > 0 ? FText::Format(BreakFormat, BreakQuantity,
-															BreakQuantity * Catalog.GetBreakDownShards(*Tier))
-											: NoFreeCopyText);
+		BreakButton->SetLabel(
+			Breakable > 0 ? FText::Format(BreakFormat, BreakQuantity, BreakQuantity * Catalog.GetBreakDownShards(*Tier))
+						  : NoFreeCopyText);
 	}
 
 	CraftQuantity = FMath::Max(CraftQuantity, 1);
@@ -362,10 +363,12 @@ void UGeoGemForgeWidget::HandleBreakAll()
 		Count += GetBreakableCount(*Profile, *Catalog, Tier);
 		Shards += Profile->BreakDownTier(*Catalog, Tier);
 	}
-	if (MessageText && Shards > 0)
+	if (Shards > 0)
 	{
-		MessageText->SetText(
-			FText::Format(BrokenFormat, Shards, Count, Tiers.Num() == 1 ? GetTierName(Tiers[0], true) : AllGemsName));
+		UGeoMessageSubsystem::Post(
+			this,
+			FText::Format(BrokenFormat, Shards, Count, Tiers.Num() == 1 ? GetTierName(Tiers[0], true) : AllGemsName),
+			EGeoColor::Heal);
 	}
 	BreakTiers.Empty();
 	CommitChanges();
@@ -409,10 +412,8 @@ void UGeoGemForgeWidget::HandleBreak()
 	int32 const Shards = Profile && Gem ? Profile->BreakDown(*Catalog, PickedGem, BreakQuantity) : 0;
 	if (Shards > 0)
 	{
-		if (MessageText)
-		{
-			MessageText->SetText(FText::Format(BrokenFormat, Shards, BreakQuantity, Gem->DisplayName.ToUpper()));
-		}
+		UGeoMessageSubsystem::Post(this, FText::Format(BrokenFormat, Shards, BreakQuantity, Gem->DisplayName.ToUpper()),
+								   EGeoColor::Heal);
 		BreakQuantity = 1;
 		CommitChanges();
 	}
@@ -456,10 +457,8 @@ void UGeoGemForgeWidget::HandleCraft()
 	int32 const Cost = Tier ? CraftQuantity * Catalog->GetCraftCost(*Tier) : 0;
 	if (Profile && Gem && Profile->Craft(*Catalog, PickedGem, CraftQuantity))
 	{
-		if (MessageText)
-		{
-			MessageText->SetText(FText::Format(CraftedFormat, CraftQuantity, Gem->DisplayName.ToUpper(), Cost));
-		}
+		UGeoMessageSubsystem::Post(this, FText::Format(CraftedFormat, CraftQuantity, Gem->DisplayName.ToUpper(), Cost),
+								   EGeoColor::Heal);
 		CraftQuantity = 1;
 		CommitChanges();
 	}

@@ -18,6 +18,7 @@ Flow: `UPatternAbility::ActivateAbility` → `PatternStartMulticast` → every m
   - Loop started by `InitPattern`, self-schedules with `SetTimerForNextTick`.
   - Wind-up ticks go to `TickDuringInit(SpentTime)` (negative, counting to 0); override to keep a telegraph on its target.
   - `StartPattern` never kicks the loop itself.
+- Montage: `AnimMontage` is cosmetic and played locally by each rendering machine, never by a dedicated server and never replicated; `HasMontage()` tells the launching ability to leave its own montage unplayed (`Base/CLAUDE.md`, "Montage ownership").
 - Randomness always from `Payload.Seed`.
 - One live instance per pattern class per ASC (`FindPatternByClass`, `IsA`): two configs = two BP subclasses. Reset per-activation state in `InitPattern`/`StartPattern`.
 

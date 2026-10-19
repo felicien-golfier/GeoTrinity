@@ -50,7 +50,11 @@ class GEOTRINITYUI_API UGeoMessageSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	/** Adds a message at the current time, last in the stack. */
+	/** Posts to the subsystem of WorldContext's game instance; nothing without one. */
+	static void Post(UObject const* WorldContext, FText const& Text, EGeoColor Color);
+
+	/** Adds a message at the current time, last in the stack, unless the newest says the same and was posted less than
+	 * DuplicateSeconds ago. */
 	void PostMessage(FText const& Text, EGeoColor Color);
 
 	/** Forgets every message, as when the menu closes. */
@@ -69,6 +73,9 @@ public:
 	 */
 	static TArray<FGeoMessageLine> Layout(TArray<FGeoMessage> const& Messages, double Now,
 										  FGeoMessageLayoutParams const& Params);
+
+	/** Seconds an identical message right after the newest is taken for the same click and dropped. */
+	static constexpr double DuplicateSeconds = 2.;
 
 	/** Fires when a message is posted, so a sleeping log wakes. */
 	FOnGeoMessagePosted OnMessagePosted;

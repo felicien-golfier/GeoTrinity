@@ -4,6 +4,9 @@
 
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "Fonts/FontMeasure.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Rendering/SlateRenderer.h"
 #include "Tool/Visual/GeoColor.h"
 #include "Widgets/SLeafWidget.h"
 
@@ -48,6 +51,8 @@ public:
 		{
 			float const Opacity = InWidgetStyle.GetColorAndOpacityTint().A;
 			FVector2f const LocalSize = AllottedGeometry.GetLocalSize();
+			TSharedRef<FSlateFontMeasure> const FontMeasure =
+				FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
 			OutDrawElements.PushClip(FSlateClippingZone(AllottedGeometry));
 			for (FGeoMessageLine const& Line : UGeoMessageSubsystem::Layout(
 					 Messages->GetMessages(), FPlatformTime::Seconds(), Log->GetLayoutParams()))
@@ -55,7 +60,8 @@ public:
 				FGeoMessage const& Message = Messages->GetMessages()[Line.MessageIndex];
 				FGeoColorParam ColorParam;
 				ColorParam.Color = Message.Color;
-				FVector2f const Offset(Log->LeftInset, LocalSize.Y - (Line.Slot + 1.f) * Log->LineHeight);
+				float const TextHeight = FontMeasure->Measure(Message.Text.ToString(), TextStyle->Font).Y;
+				FVector2f const Offset(Log->LeftInset, LocalSize.Y - Line.Slot * Log->LineHeight - TextHeight);
 				FSlateDrawElement::MakeText(
 					OutDrawElements, LayerId,
 					AllottedGeometry.ToPaintGeometry(FVector2f(LocalSize.X - Log->LeftInset, Log->LineHeight),

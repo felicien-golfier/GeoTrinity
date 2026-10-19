@@ -155,7 +155,8 @@ public:
 
 	/**
 	 * The player card's class gauge, answered by the one ability per class that feeds it. Fill and readiness are
-	 * separate answers: bOutReady follows the ability's own ready rule, not a full fill. Same CDO constraints as IsReady.
+	 * separate answers: bOutReady follows the ability's own ready rule, not a full fill. Same CDO constraints as
+	 * IsReady.
 	 *
 	 * @param OutFill    Gauge fill, 0–1.
 	 * @param bOutReady  The gauge pulses.
@@ -248,10 +249,10 @@ protected:
 	 */
 	virtual int32& GetFireSectionIndex(UGeoAbilitySystemComponent* ASC, UAnimInstance const* AnimInstance);
 	/** Plays AnimMontage from the section the current fire section index selects. No-op when the ability has no montage
-	 * or the avatar no anim instance. Also a no-op while the ASC's montage is a full-body (DefaultSlot) one and this
-	 * one is not: the full-body slot covers every other layer, and the ASC replicates a single montage, so playing this
-	 * one would take the full-body montage away from every other machine while showing nowhere. The fire section index
-	 * still advances. */
+	 * or the avatar no anim instance, or when ShouldPlayAbilityMontage is false. Also a no-op while the ASC's montage
+	 * is a full-body (DefaultSlot) one and this one is not: the full-body slot covers every other layer, and the ASC
+	 * replicates a single montage, so playing this one would take the full-body montage away from every other machine
+	 * while showing nowhere. The fire section index still advances. */
 	void HandleAnimationMontage(UAnimInstance* AnimInstance, FGameplayAbilityActivationInfo const& ActivationInfo);
 	/** Sends AbilityTargetData to the server via ServerSetReplicatedTargetData for authoritative shot execution. */
 	void SendFireDataToServer(FGeoAbilityTargetData const& AbilityTargetData) const;
@@ -259,8 +260,8 @@ protected:
 	/** Seconds since ChargeStartTime, unclamped. Only meaningful when FireMode == EFireMode::ChargeForFireDelay. */
 	float GetChargeElapsedSeconds() const;
 
-	/** Client-side shot logic (spawn predicted projectile, play VFX). Override in subclasses. Base sends the data to the
-	 * server and kicks the fire recoil. */
+	/** Client-side shot logic (spawn predicted projectile, play VFX). Override in subclasses. Base sends the data to
+	 * the server and kicks the fire recoil. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData);
 
 	/** Snaps the avatar's mesh backward by RecoilDistance. No-op at 0 or on an avatar this machine doesn't control. */
@@ -300,6 +301,10 @@ protected:
 	bool TryConsumeShotSlot(float ShotTime, float Interval, float MaxBurst);
 
 public:
+	/** False when something else plays this ability's montage, so HandleAnimationMontage plays none. Default true: the
+	 * ability plays AnimMontage through the ASC, which replicates it to every machine. */
+	virtual bool ShouldPlayAbilityMontage() const { return true; }
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;
 

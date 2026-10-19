@@ -3,9 +3,9 @@
 #pragma once
 
 #include "AttributeSet.h"
-#include "GameplayTagContainer.h"
 #include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Tool/Visual/GeoColor.h"
 
 #include "GeoGemTypes.generated.h"
@@ -20,6 +20,26 @@ enum class EGeoGemTier : uint8
 	Cut,
 	Prism,
 	Core
+};
+
+/** Why a gem can not go in a socket or the echo socket; None when it can. */
+UENUM(BlueprintType)
+enum class EGeoGemRefusal : uint8
+{
+	None,
+	/** Already in this socket. */
+	AlreadyThere,
+	WrongTier,
+	/** Socket still locked at the class level. */
+	Locked,
+	NoFreeCopy,
+	/** Echo socket not open yet: no class reached the unlock level. */
+	EchoLocked,
+	/** A Core never goes in the echo socket. */
+	EchoCore,
+	/** The gem already is the echo. */
+	AlreadyEcho,
+	NoCopy
 };
 
 /** How a stat gem's summed magnitude lands on its attribute. */
@@ -66,8 +86,8 @@ struct FGeoGemInfo
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	FGameplayTag GrantedTag;
 
-	/** Passive ability given to the player while the gem is slotted, which carries the Core's rule and its tunables; the
-	 *  abilities page lists it from the catalog's AbilityInfo. Empty on a stat gem. */
+	/** Passive ability given to the player while the gem is slotted, which carries the Core's rule and its tunables;
+	 * the abilities page lists it from the catalog's AbilityInfo. Empty on a stat gem. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	TSubclassOf<UGeoCorePassiveAbility> GrantedAbility;
 

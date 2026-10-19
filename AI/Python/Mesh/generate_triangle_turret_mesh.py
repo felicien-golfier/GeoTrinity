@@ -1,16 +1,18 @@
 """
-Generates SM_TriangleTurret: the Triangle class turret as a flat triangular socle, a flat edge toward +X, standing
-on three low legs, with a cannon lying on the socle and out of its front edge.
+Generates SM_TriangleTurret: the Triangle class turret seen from above as a flat triangular body, its tip toward +X,
+a round hub on its centre carrying a long cannon out of the tip, and a grey side cannon at each back corner.
 
-Seen from the top-down camera the legs are three bars lying on the floor, one out of each tip of the socle: two
-at the front corners with the cannon between them, one at the back. The cannon starts above the socle's centre,
-so it is seen on the socle too. Legs and cannon have a triangular section, so a rolling cannon reads as three faces.
+Reference (top view, +X up): body tip at the front, hub on the centre (dark rim, light disc, dark ring, light disc,
+dark dot), a dark rear block behind the hub, the cannon from the hub to a dark muzzle block carrying two thin stripes,
+the cannon itself yellow with three dark bands, and two grey side cannons at the back corners, tilted outward, each
+with a dark slot near its end.
 
-The cannon is a row of prisms alternating the `Cannon` and `CannonBand` slots: four thin regular stripes in colour
-alone, no relief. `Legs` is a slot of its own so they can be tinted apart from the socle (`Color`).
+The cannon, its rear block and the side cannons are prisms with a triangular section, apex up: from above they read
+as plain bars, but when one rolls its three faces show. Slots: `Color` body, `Cannon` every light part, `CannonBand`
+every dark part, `Legs` the grey side cannons.
 
-The turret actor yaws as a whole toward its target (AGeoTurret::Tick), so +X is the firing direction. Legs sink
-into the socle, so no faces show inside.
+The turret actor yaws as a whole toward its target (AGeoTurret::Tick), so +X is the firing direction. Side cannons sink
+into the body, so no faces show inside.
 
 Run via mcp-unreal execute_script. Summary written to AI/Output/triangle_turret_gen.json.
 """
@@ -28,17 +30,35 @@ CANNON_SLOT = "Cannon"
 BAND_SLOT = "CannonBand"
 SLOTS = (SOCLE_SLOT, LEGS_SLOT, CANNON_SLOT, BAND_SLOT)
 
-SOCLE_RADIUS = 34.0  # centre to tip
-SOCLE_BOTTOM = 5.0
-SOCLE_TOP = 13.0
-LEG_RADIUS = 6.5  # circumradius of a leg's triangular section
-LEG_HEIGHT = 5.0  # of the leg's centre line above the floor
-LEG_LENGTH = 6.0  # beyond its socle tip
-SINK = 8.0  # how far a leg sits inside the socle
-CANNON_RADIUS = 3.5
-CANNON_LENGTH = 30.0  # beyond the middle of the front edge
-CANNON_BAND_COUNT = 4  # evenly spaced along the cannon, a gap of `Cannon` at both ends
-CANNON_BAND_WIDTH = 3.25  # along the cannon
+BODY_TIP = 32.9  # forward of the hub centre
+BODY_BACK = -19.8
+BODY_HALF_BASE = 29.5
+BODY_BOTTOM = 5.0
+BODY_TOP = 13.0
+HUB_SIDES = 32
+# (slot, radius, top): stacked from the body top, each disc on the one before.
+HUB_LAYERS = ((BAND_SLOT, 12.2, 16.0), (CANNON_SLOT, 11.0, 17.0), (BAND_SLOT, 8.0, 18.0), (CANNON_SLOT, 6.8, 19.0),
+              (BAND_SLOT, 1.9, 20.0))
+CANNON_RADIUS = 5.3  # circumradius of the triangular section of cannon, rear block and side cannons
+CANNON_START = 12.2  # the hub's rim
+# (slot, from, to) along the cannon, forward of the hub centre.
+CANNON_SEGMENTS = ((CANNON_SLOT, 12.2, 22.4), (BAND_SLOT, 22.4, 25.8), (CANNON_SLOT, 25.8, 32.7),
+                   (BAND_SLOT, 32.7, 36.1), (CANNON_SLOT, 36.1, 42.2), (BAND_SLOT, 42.2, 43.7),
+                   (CANNON_SLOT, 43.7, 52.4))
+REAR_BLOCK = (-17.9, -12.2)
+MUZZLE_BLOCK = (52.4, 61.4)  # box, forward extent
+MUZZLE_HALF_WIDTH = 7.9
+MUZZLE_TOP = 22.0
+MUZZLE_STRIPES = ((58.1, 59.1), (55.5, 56.4))  # forward extents of the two light stripes
+MUZZLE_STRIPE_HALF_WIDTH = 5.9
+MUZZLE_STRIPE_HEIGHT = 0.6
+SIDE_CANNON_RADIUS = 5.5
+SIDE_CANNON_HEIGHT = 5.0  # of the centre line above the floor
+SIDE_CANNON_ANGLES = (110.0, 250.0)  # outward and slightly back, either side
+SIDE_CANNON_SINK = 3.0  # inside the body, behind the corner
+SIDE_CANNON_LENGTH = 17.0  # beyond the corner
+SIDE_SLOT_RADIUS = 2.8
+SIDE_SLOT_RANGE = (8.0, 13.0)  # along the side cannon, from the corner
 
 
 def triangle(radius, apex_deg):
@@ -47,34 +67,57 @@ def triangle(radius, apex_deg):
              radius * math.sin(math.radians(apex_deg + 120.0 * i))) for i in range(3)]
 
 
-def place_along(angle_deg, height):
-    """(u, v, w) -> world for a prism along the horizontal direction `angle_deg`, centre line at `height`.
+def circle(radius):
+    return [(radius * math.cos(2.0 * math.pi * i / HUB_SIDES), radius * math.sin(2.0 * math.pi * i / HUB_SIDES))
+            for i in range(HUB_SIDES)]
+
+
+def rectangle(x0, x1, half_width):
+    return [(x0, -half_width), (x1, -half_width), (x1, half_width), (x0, half_width)]
+
+
+def place_along(angle_deg, height, origin=(0.0, 0.0)):
+    """(u, v, w) -> world for a prism along the horizontal direction `angle_deg` from `origin`, centre line at `height`.
 
     u runs sideways, v up, w outward: a cyclic permutation followed by a turn about Z, so winding is kept.
     """
     a = math.radians(angle_deg)
     c, s = math.cos(a), math.sin(a)
-    return lambda u, v, w: (w * c - u * s, w * s + u * c, v + height)
+    return lambda u, v, w: (origin[0] + w * c - u * s, origin[1] + w * s + u * c, v + height)
 
 
 def build_parts():
     """Every part is (slot, outline CCW in (u, v), w_bottom, w_top, place mapping (u, v, w) to world)."""
-    front_edge = SOCLE_RADIUS * 0.5  # centre to the middle of an edge
-    parts = [(SOCLE_SLOT, triangle(SOCLE_RADIUS, 180.0), SOCLE_BOTTOM, SOCLE_TOP, lambda u, v, w: (u, v, w))]
-    for angle in (60.0, 180.0, 300.0):
-        parts.append((LEGS_SLOT, triangle(LEG_RADIUS, 90.0), SOCLE_RADIUS - SINK, SOCLE_RADIUS + LEG_LENGTH,
-                      place_along(angle, LEG_HEIGHT)))
+    flat = lambda u, v, w: (u, v, w)
+    body = [(BODY_TIP, 0.0), (BODY_BACK, BODY_HALF_BASE), (BODY_BACK, -BODY_HALF_BASE)]
+    parts = [(SOCLE_SLOT, body, BODY_BOTTOM, BODY_TOP, flat)]
 
-    # The section's flat side rests on the socle top: its lowest point is half the circumradius under the centre.
-    cannon_height = SOCLE_TOP + CANNON_RADIUS * 0.5
-    cannon_end = front_edge + CANNON_LENGTH
-    gap = (cannon_end - CANNON_BAND_COUNT * CANNON_BAND_WIDTH) / (CANNON_BAND_COUNT + 1)
-    start = 0.0
-    for i in range(2 * CANNON_BAND_COUNT + 1):
-        length = CANNON_BAND_WIDTH if i % 2 == 1 else gap
-        parts.append((BAND_SLOT if i % 2 == 1 else CANNON_SLOT, triangle(CANNON_RADIUS, 90.0), start,
-                      start + length, place_along(0.0, cannon_height)))
-        start += length
+    bottom = BODY_TOP
+    for slot, radius, top in HUB_LAYERS:
+        parts.append((slot, circle(radius), bottom, top, flat))
+        bottom = top
+
+    # The section's flat side rests on the body top: its lowest point is half the circumradius under the centre.
+    cannon_height = BODY_TOP + CANNON_RADIUS * 0.5
+    section = triangle(CANNON_RADIUS, 90.0)
+    along_cannon = place_along(0.0, cannon_height)
+    for slot, start, end in CANNON_SEGMENTS:
+        parts.append((slot, section, start, end, along_cannon))
+    parts.append((BAND_SLOT, section, REAR_BLOCK[0], REAR_BLOCK[1], along_cannon))
+
+    parts.append((BAND_SLOT, rectangle(MUZZLE_BLOCK[0], MUZZLE_BLOCK[1], MUZZLE_HALF_WIDTH), BODY_TOP, MUZZLE_TOP,
+                  flat))
+    for start, end in MUZZLE_STRIPES:
+        parts.append((CANNON_SLOT, rectangle(start, end, MUZZLE_STRIPE_HALF_WIDTH), MUZZLE_TOP,
+                      MUZZLE_TOP + MUZZLE_STRIPE_HEIGHT, flat))
+
+    for angle in SIDE_CANNON_ANGLES:
+        corner = (BODY_BACK, BODY_HALF_BASE if math.sin(math.radians(angle)) > 0.0 else -BODY_HALF_BASE)
+        parts.append((LEGS_SLOT, triangle(SIDE_CANNON_RADIUS, 90.0), -SIDE_CANNON_SINK, SIDE_CANNON_LENGTH,
+                      place_along(angle, SIDE_CANNON_HEIGHT, corner)))
+        ridge = SIDE_CANNON_HEIGHT + SIDE_CANNON_RADIUS
+        parts.append((BAND_SLOT, triangle(SIDE_SLOT_RADIUS, 90.0), SIDE_SLOT_RANGE[0], SIDE_SLOT_RANGE[1],
+                      place_along(angle, ridge, corner)))
     return parts
 
 

@@ -22,6 +22,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Menu/Frame/GeoButton.h"
 #include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/Frame/GeoMessageSubsystem.h"
 #include "HUD/Menu/Gems/GeoGemSocketButton.h"
 #include "HUD/Menu/List/GeoTableWidget.h"
 #include "HUD/Style/Frame/GeoFrame.h"
@@ -31,6 +32,7 @@
 #include "HUD/Style/Glyph/GeoGemGlyph.h"
 #include "HUD/Style/Glyph/GeoIconImage.h"
 #include "HUD/Style/Glyph/GeoShape.h"
+#include "Tool/Visual/GeoColor.h"
 #include "Tool/Visual/GeoIcon.h"
 
 bool UGeoGemLoadoutWidget::bEchoFlared = false;
@@ -525,7 +527,10 @@ void UGeoGemLoadoutWidget::HandleRemoveBuild()
 	ChangeBuilds(
 		[this](UGeoGemProfileSave& ChangedProfile)
 		{
+			bool const bLast = ChangedProfile.GetBuilds(ShownClass).Num() <= 1;
 			ChangedProfile.RemoveActiveBuild(ShownClass);
+			UGeoMessageSubsystem::Post(this, bLast ? MsgLastBuild : MsgBuildRemoved,
+									   bLast ? EGeoColor::Damage : EGeoColor::Neutral);
 		});
 }
 
@@ -535,7 +540,9 @@ void UGeoGemLoadoutWidget::HandleAddBuild()
 	ChangeBuilds(
 		[this](UGeoGemProfileSave& ChangedProfile)
 		{
-			ChangedProfile.AddBuild(ShownClass);
+			bool const bAdded = ChangedProfile.AddBuild(ShownClass);
+			UGeoMessageSubsystem::Post(this, bAdded ? MsgBuildAdded : FText::Format(MsgMaxBuilds, GeoGem::MaxBuilds),
+									   bAdded ? EGeoColor::Heal : EGeoColor::Damage);
 		});
 }
 
@@ -1006,10 +1013,12 @@ void UGeoGemLoadoutWidget::PickSocket(int32 const SocketIndex)
 	UGeoGemProfileSave* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 	bool const bEcho = SocketIndex == GetEchoIndex();
+	FGeoGemLoadout const Before = Profile ? Profile->GetLoadout(ShownClass) : FGeoGemLoadout();
 	bool const bEquip = Profile && Catalog && !PickedGem.IsNone() && !bEcho
 		&& Profile->Equip(*Catalog, ShownClass, SocketIndex, PickedGem);
 	if (bEquip)
 	{
+		PostEquipEffects(*Catalog, Before, PickedGem);
 		CommitChanges();
 	}
 	else if (bEcho && Profile && Catalog && Profile->CanEcho(*Catalog, ShownClass, PickedGem))
@@ -1018,6 +1027,11 @@ void UGeoGemLoadoutWidget::PickSocket(int32 const SocketIndex)
 	}
 	else
 	{
+		if (Profile && Catalog)
+		{
+			PostRefusal(*Catalog, GetClickRefusal(*Profile, *Catalog, SocketIndex), PickedGem, SocketIndex);
+		}
+
 		ClearPick();
 		PickedSocket = SocketIndex;
 		TierFilter = bEcho ? TOptional<EGeoGemTier>() : TOptional<EGeoGemTier>(GetSocket(SocketIndex).Tier);
@@ -1045,15 +1059,24 @@ void UGeoGemLoadoutWidget::PickStack(FName const GemId)
 	UGeoGemProfileSave* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 	bool const bEcho = PickedSocket == GetEchoIndex();
+	FGeoGemLoadout const Before = Profile ? Profile->GetLoadout(ShownClass) : FGeoGemLoadout();
 	bool const bEquip = Profile && Catalog && PickedSocket != INDEX_NONE && !bEcho
 		&& Profile->Equip(*Catalog, ShownClass, PickedSocket, GemId);
 	bool const bEchoIt = Profile && Catalog && bEcho && Profile->CanEcho(*Catalog, ShownClass, GemId);
 	if (bEquip)
 	{
+		PostEquipEffects(*Catalog, Before, GemId);
 		CommitChanges();
 	}
 	else
 	{
+		if (Profile && Catalog && PickedSocket != INDEX_NONE && !bEchoIt)
+		{
+			EGeoGemRefusal const Refusal = bEcho ? Profile->GetEchoRefusal(*Catalog, ShownClass, GemId)
+												 : Profile->GetEquipRefusal(*Catalog, ShownClass, PickedSocket, GemId);
+			PostRefusal(*Catalog, Refusal, GemId, PickedSocket);
+		}
+
 		PickedGem = GemId;
 		PickedSocket = INDEX_NONE;
 		if (bEchoIt)
@@ -1075,6 +1098,98 @@ void UGeoGemLoadoutWidget::ClearPick()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+EGeoGemRefusal UGeoGemLoadoutWidget::GetClickRefusal(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog,
+													 int32 const SocketIndex) const
+{
+	bool const bEcho = SocketIndex == GetEchoIndex();
+	EGeoGemRefusal Refusal = EGeoGemRefusal::None;
+	if (!PickedGem.IsNone())
+	{
+		Refusal = bEcho ? Profile.GetEchoRefusal(Catalog, ShownClass, PickedGem)
+						: Profile.GetEquipRefusal(Catalog, ShownClass, SocketIndex, PickedGem);
+	}
+	else if (IsSocketLocked(Profile, SocketIndex))
+	{
+		Refusal = bEcho ? EGeoGemRefusal::EchoLocked : EGeoGemRefusal::Locked;
+	}
+
+	return Refusal;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::PostRefusal(UGeoGemCatalog const& Catalog, EGeoGemRefusal const Refusal, FName const GemId,
+									   int32 const SocketIndex) const
+{
+	FGeoGemInfo const* Gem = Catalog.Find(GemId);
+	FText const GemName = Gem ? Gem->DisplayName.ToUpper() : FText::GetEmpty();
+	UGeoUITheme const* Theme = UGeoUITheme::Get();
+	FGeoClassStyle const* ClassStyle = Theme ? Theme->FindClassStyle(ShownClass) : nullptr;
+	FGeoGemSocket const Socket = GetSocket(SocketIndex);
+	TOptional<FText> Message;
+	switch (Refusal)
+	{
+	case EGeoGemRefusal::AlreadyThere:
+		Message = FText::Format(MsgAlreadyThere, GemName);
+		break;
+	case EGeoGemRefusal::WrongTier:
+		Message = FText::Format(MsgWrongTier, GemName, GetTierName(Socket.Tier, false));
+		break;
+	case EGeoGemRefusal::Locked:
+		Message = FText::Format(MsgLocked, ClassStyle ? ClassStyle->Name : FText::GetEmpty(), Socket.UnlockLevel);
+		break;
+	case EGeoGemRefusal::NoFreeCopy:
+		Message = FText::Format(MsgNoFreeCopy, GemName);
+		break;
+	case EGeoGemRefusal::EchoLocked:
+		Message = FText::Format(MsgEchoLocked, GeoGem::EchoUnlockLevel);
+		break;
+	case EGeoGemRefusal::EchoCore:
+		Message = MsgEchoCore;
+		break;
+	case EGeoGemRefusal::AlreadyEcho:
+		Message = FText::Format(MsgAlreadyEcho, GemName);
+		break;
+	case EGeoGemRefusal::NoCopy:
+		Message = FText::Format(MsgNoCopy, GemName);
+		break;
+	case EGeoGemRefusal::None:
+		break;
+	}
+
+	if (Message)
+	{
+		UGeoMessageSubsystem::Post(this, *Message, EGeoColor::Damage);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::PostEquipEffects(UGeoGemCatalog const& Catalog, FGeoGemLoadout const& Before,
+											FName const GemId) const
+{
+	FGeoGemInfo const* Gem = Catalog.Find(GemId);
+	FText const GemName = Gem ? Gem->DisplayName.ToUpper() : FText::GetEmpty();
+	if (Before.Echo == GemId)
+	{
+		UGeoMessageSubsystem::Post(this, FText::Format(MsgEchoCleared, GemName), EGeoColor::Neutral);
+	}
+	else if (Catalog.FindTier(GemId) == EGeoGemTier::Core && Before.Sockets.Contains(GemId))
+	{
+		UGeoMessageSubsystem::Post(this, FText::Format(MsgCoreMoved, GemName), EGeoColor::Neutral);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+int32 UGeoGemLoadoutWidget::CountFilled(FGeoGemLoadout const& Loadout)
+{
+	return static_cast<int32>(Algo::CountIf(Loadout.Sockets,
+											[](FName const GemId)
+											{
+												return !GemId.IsNone();
+											}))
+		+ (Loadout.Echo.IsNone() ? 0 : 1);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemLoadoutWidget::HandleEquip()
 {
 	UGeoGemProfileSave* Profile = GetProfile();
@@ -1091,8 +1206,10 @@ void UGeoGemLoadoutWidget::HandleEquip()
 		{
 			return Slotted[Index].IsNone();
 		});
+	FGeoGemLoadout const Before = Profile->GetLoadout(ShownClass);
 	if (EmptyTarget && Profile->Equip(*Catalog, ShownClass, *EmptyTarget, PickedGem))
 	{
+		PostEquipEffects(*Catalog, Before, PickedGem);
 		CommitChanges();
 	}
 }
@@ -1102,8 +1219,11 @@ void UGeoGemLoadoutWidget::HandleFill()
 {
 	UGeoGemProfileSave* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
-	if (Profile && Catalog && Profile->FillSockets(*Catalog, ShownClass, PickedGem) > 0)
+	FGeoGemInfo const* Gem = Catalog ? Catalog->Find(PickedGem) : nullptr;
+	int32 const Filled = Profile && Catalog ? Profile->FillSockets(*Catalog, ShownClass, PickedGem) : 0;
+	if (Filled > 0 && Gem)
 	{
+		UGeoMessageSubsystem::Post(this, FText::Format(MsgFilled, Filled, Gem->DisplayName.ToUpper()), EGeoColor::Heal);
 		CommitChanges();
 	}
 }
@@ -1115,12 +1235,19 @@ void UGeoGemLoadoutWidget::HandleUnequipTier()
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 	if (Profile && Catalog)
 	{
+		int32 const FilledBefore = CountFilled(Profile->GetLoadout(ShownClass));
 		for (EGeoGemTier const Tier : GetTiers())
 		{
 			if (TierFilter.Get(Tier) == Tier)
 			{
 				Profile->UnequipTier(*Catalog, ShownClass, Tier);
 			}
+		}
+
+		int32 const Emptied = FilledBefore - CountFilled(Profile->GetLoadout(ShownClass));
+		if (Emptied > 0)
+		{
+			UGeoMessageSubsystem::Post(this, FText::Format(MsgUnequipped, Emptied), EGeoColor::Heal);
 		}
 
 		ClearPick();
@@ -1133,8 +1260,17 @@ void UGeoGemLoadoutWidget::HandleEcho()
 {
 	UGeoGemProfileSave* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	FGeoGemLoadout const Before = Profile ? Profile->GetLoadout(ShownClass) : FGeoGemLoadout();
+	FGeoGemInfo const* Gem = Catalog ? Catalog->Find(PickedGem) : nullptr;
 	if (Profile && Catalog && Profile->SetEcho(*Catalog, ShownClass, PickedGem))
 	{
+		int32 const Emptied = static_cast<int32>(Algo::Count(Before.Sockets, PickedGem));
+		if (Emptied > 0 && Gem)
+		{
+			UGeoMessageSubsystem::Post(this, FText::Format(MsgEchoEmptied, Emptied, Gem->DisplayName.ToUpper()),
+									   EGeoColor::Neutral);
+		}
+
 		CommitChanges();
 	}
 }

@@ -89,19 +89,20 @@ It refuses to start when `LINUX_MULTIARCH_ROOT` is unset. The Windows package (`
 
 ### Not covered yet
 - **Linux dedicated server** — needs a source engine, like the Win64 server. Do it on CI.
-- **itch.io Linux channel** — `Push_Itch.bat` only pushes `exyoe/geotrinity:windows`.
 - **Mac** — cannot be built from Windows at all. It needs a Mac with the Xcode version that 5.8 requires, plus an
   Apple Developer account to sign and notarize the build.
 
 ## Publishing to itch.io
 
-The game lives at https://exyoe.itch.io/geotrinity; the Windows build is the butler channel
-`exyoe/geotrinity:windows`.
+The game lives at https://exyoe.itch.io/geotrinity; the butler channels are
+`exyoe/geotrinity:windows` and `exyoe/geotrinity:linux`.
 
 | Script | Does |
 |---|---|
-| `Tools\BuildAndUpload_Itch.bat [version]` | `Build_Package.bat`, then `Push_Itch.bat` if the package succeeded |
-| `Tools\Push_Itch.bat [version]` | Pushes the existing `Build\GeoTrinity.zip`, no build |
+| `Tools\Build_Package_Windows.bat` / `Build_Package_Linux.bat` / `Build_Package_All.bat` | Build one platform, or Windows then Linux |
+| `Tools\BuildAndUpload_Itch_Windows.bat` / `_Linux.bat` / `_All.bat` `[version]` | Build then push that platform (wrappers of `BuildAndUpload_Itch.bat windows\|linux\|all`); push skipped per channel when itch is up to date |
+| `Tools\Push_Itch_Windows.bat` / `Push_Itch_Linux.bat` `[version]` | Push one channel (wrappers of `Push_Itch.bat windows\|linux`) |
+| `Tools\Push_Itch.bat [windows\|linux\|all] [version]` | Pushes the existing `Build\GeoTrinity.zip` (windows) and `Build\GeoTrinity_Linux.zip` (linux), no build. Each channel only when its zip is newer than the channel's last build on itch (`Itch_IsNewer.ps1`, zip mtime vs butler `createdAt`); missing zip skipped; `GEO_FORCE_PUSH=1` bypasses the check |
 
 - butler unpacks the zip and diffs its contents against the last push, uploading only what changed.
 - Build the zip with `tar -a -c -f` (as `Build_Package.bat` does), never Windows PowerShell's `Compress-Archive`

@@ -32,10 +32,10 @@ void UGeoBulletSubsystem::FireBullet(FAbilityPayload const& Payload, FExternalPr
 
 	float const Speed =
 		ResolveFlightParam(Params.OverrideSpeed, Params.ProjectileSpeed, Settings->GeneralSpellSpeed, TEXT("speed"));
-	float const DistanceSpan = ResolveFlightParam(Params.OverrideDistanceSpan, Params.DistanceSpan,
-												  bPlayerInstigator ? Settings->GeneralSpellDistance
-																	: Settings->EnemySpellDistance,
-												  TEXT("distance span"))
+	float const DistanceSpan =
+		ResolveFlightParam(Params.OverrideDistanceSpan, Params.DistanceSpan,
+						   bPlayerInstigator ? Settings->GeneralSpellDistance : Settings->EnemySpellDistance,
+						   TEXT("distance span"))
 		* GeoASLib::GetStatValue(GeoASLib::GetGeoAscFromActor(Payload.SourceAvatar),
 								 UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(), 1.f);
 
@@ -71,7 +71,7 @@ void UGeoBulletSubsystem::Tick(float const DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UWorld const* const World = GetWorld();
-	if (Bullets.Num() == 0 && PendingBullets.Num() == 0 || !World || !World->GetGameState())
+	if ((Bullets.Num() == 0 && PendingBullets.Num() == 0) || !World || !World->GetGameState())
 	{
 		return;
 	}

@@ -23,6 +23,7 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 - `UnequipTier(Catalog, PlayerClass, Tier)` empties every socket of that tier in the build PlayerClass plays, and its echo when the echoed gem is of that tier; the copies go back to free. There is no single-socket unequip in the menus (a socket changes by replacement), `Unequip` stays for `SetClassLevel` and the dev commands.
 - Gem tier fits only a socket of its own tier; a Core's rule is its `GrantedAbility` (`Abilities/Gem/CLAUDE.md`).
 - A Core is in one socket per build: slotting it into another socket moves it (the previous socket empties, `Equip`; the copy moves, no free copy needed). Its own socket is refused. `FillSockets` of a Core slots one socket at most, none when the build already holds it.
+- Refusals have a reason: `GetEquipRefusal` / `GetEchoRefusal` return an `EGeoGemRefusal` (`None` = allowed); `CanEquip` / `CanEcho` are `== None`. The menus turn the reason into a message (`HUD/Menu/Gems/CLAUDE.md`, "Messages").
 - Socket order = loadout index order = save format: append, never reorder. Three clusters of seven steps over levels 1-20, the Core in the last step.
 - `FGeoGemInfo::Id` is the key in saves and loadouts; renaming orphans every owned copy.
 - `Operation`: `Add` (attributes starting at 0 or multipliers), `Percent` (flat values), `Flat` (counts).

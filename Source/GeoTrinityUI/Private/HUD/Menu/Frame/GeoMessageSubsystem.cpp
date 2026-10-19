@@ -2,13 +2,32 @@
 
 #include "HUD/Menu/Frame/GeoMessageSubsystem.h"
 
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "Tool/Visual/GeoColor.h"
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMessageSubsystem::Post(UObject const* WorldContext, FText const& Text, EGeoColor const Color)
+{
+	UWorld const* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+	UGameInstance const* GameInstance = World ? World->GetGameInstance() : nullptr;
+	if (UGeoMessageSubsystem* Messages = GameInstance ? GameInstance->GetSubsystem<UGeoMessageSubsystem>() : nullptr)
+	{
+		Messages->PostMessage(Text, Color);
+	}
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMessageSubsystem::PostMessage(FText const& Text, EGeoColor const Color)
 {
-	Messages.Add({Text, Color, FPlatformTime::Seconds()});
-	OnMessagePosted.Broadcast();
+	double const Now = FPlatformTime::Seconds();
+	bool const bDuplicate = !Messages.IsEmpty() && Messages.Last().Text.ToString() == Text.ToString()
+		&& Now - Messages.Last().PostTime < DuplicateSeconds;
+	if (!bDuplicate)
+	{
+		Messages.Add({Text, Color, Now});
+		OnMessagePosted.Broadcast();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

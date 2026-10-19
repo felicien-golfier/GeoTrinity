@@ -470,8 +470,6 @@ def build_forge(underline_tab):
         # The gem types of a tier.
         _, middle_slot = add(wbp, path, unreal.VerticalBox, "MiddleBox", "ForgeBody")
         padded(path, middle_slot, unreal.Margin(32, 0, 32, 0), size=FILL)
-        _, message_slot = add(wbp, path, unreal.GeoText, "MessageText", "MiddleBox", text(ROLE.MONO, ""))
-        padded(path, message_slot, unreal.Margin(0, 0, 0, 8))
         _, tabs_slot = add(wbp, path, unreal.HorizontalBox, "TierTabBox", "MiddleBox")
         padded(path, tabs_slot, unreal.Margin(0, 0, 0, 12))
         add(wbp, path, unreal.VerticalBox, "GemListBox", "MiddleBox")

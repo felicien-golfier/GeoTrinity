@@ -135,11 +135,19 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 	int32 const LevelTwoChip = FindSocket(EGeoGemTier::Chip, 2);
 
 	TestFalse(TEXT("No copy owned"), Profile->Equip(Catalog, EPlayerClass::Triangle, LevelOneChip, "Power"));
+	TestEqual(TEXT("No copy says why"),
+			  Profile->GetEquipRefusal(Catalog, EPlayerClass::Triangle, LevelOneChip, "Power"),
+			  EGeoGemRefusal::NoFreeCopy);
 
 	Profile->AddGems("Power", 3);
 	TestFalse(TEXT("Socket locked above the class level"),
 			  Profile->Equip(Catalog, EPlayerClass::Triangle, LevelTwoChip, "Power"));
+	TestEqual(TEXT("A locked socket says why"),
+			  Profile->GetEquipRefusal(Catalog, EPlayerClass::Triangle, LevelTwoChip, "Power"), EGeoGemRefusal::Locked);
 	TestFalse(TEXT("Unknown gem"), Profile->Equip(Catalog, EPlayerClass::Triangle, LevelOneChip, "Nothing"));
+	TestEqual(TEXT("A gem of another tier says why"),
+			  Profile->GetEquipRefusal(Catalog, EPlayerClass::Triangle, FindSocket(EGeoGemTier::Core, 7), "Power"),
+			  EGeoGemRefusal::WrongTier);
 
 	TestEqual(TEXT("Fill at level 1 takes both open Chip sockets"),
 			  Profile->FillSockets(Catalog, EPlayerClass::Triangle, "Power"), 2);
@@ -188,6 +196,9 @@ bool FGeoGemEquipRulesTest::RunTest(FString const& /*Parameters*/)
 	int32 const HeldCoreSocket = Profile->GetLoadout(EPlayerClass::Triangle).Sockets.Find("Surplus");
 	TestFalse(TEXT("A Core is refused in its own socket"),
 			  Profile->Equip(Catalog, EPlayerClass::Triangle, HeldCoreSocket, "Surplus"));
+	TestEqual(TEXT("A gem already in the socket says why"),
+			  Profile->GetEquipRefusal(Catalog, EPlayerClass::Triangle, HeldCoreSocket, "Surplus"),
+			  EGeoGemRefusal::AlreadyThere);
 	int32 const OtherCoreSocket =
 		FindSocket(EGeoGemTier::Core, HeldCoreSocket == FindSocket(EGeoGemTier::Core, 7) ? 14 : 7);
 	TestTrue(TEXT("A held Core moves to another socket"),
@@ -476,6 +487,15 @@ bool FGeoGemEchoTest::RunTest(FString const& /*Parameters*/)
 	TestFalse(TEXT("A Core is refused"), Profile->CanEcho(Catalog, PlayerClass, "Surplus"));
 	TestFalse(TEXT("A gem with no copy is refused"), Profile->CanEcho(Catalog, PlayerClass, "Vigor"));
 	TestFalse(TEXT("An unknown gem is refused"), Profile->CanEcho(Catalog, PlayerClass, "Nothing"));
+	TestEqual(TEXT("A Core says why"), Profile->GetEchoRefusal(Catalog, PlayerClass, "Surplus"),
+			  EGeoGemRefusal::EchoCore);
+	TestEqual(TEXT("No copy says why"), Profile->GetEchoRefusal(Catalog, PlayerClass, "Vigor"), EGeoGemRefusal::NoCopy);
+	TestEqual(TEXT("An open echo takes it"), Profile->GetEchoRefusal(Catalog, PlayerClass, "Power"),
+			  EGeoGemRefusal::None);
+	Profile->SetClassLevel(PlayerClass, 1);
+	TestEqual(TEXT("A locked echo says why"), Profile->GetEchoRefusal(Catalog, PlayerClass, "Power"),
+			  EGeoGemRefusal::EchoLocked);
+	Profile->SetClassLevel(PlayerClass, GeoGem::EchoUnlockLevel);
 
 	TestEqual(TEXT("Both copies slotted"), Profile->FillSockets(Catalog, PlayerClass, "Power"), 2);
 	TestTrue(TEXT("Echoing a slotted type"), Profile->SetEcho(Catalog, PlayerClass, "Power"));
@@ -485,6 +505,8 @@ bool FGeoGemEchoTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("The echo takes one copy"), Profile->GetFreeCount("Power", PlayerClass), 1);
 	TestEqual(TEXT("The echo reserves a copy from the Forge"), Profile->GetBreakableCount("Power"), 1);
 	TestFalse(TEXT("Echoing the echoed gem again"), Profile->SetEcho(Catalog, PlayerClass, "Power"));
+	TestEqual(TEXT("Echoing the echoed gem says why"), Profile->GetEchoRefusal(Catalog, PlayerClass, "Power"),
+			  EGeoGemRefusal::AlreadyEcho);
 	TestTrue(TEXT("Slotting the echoed type"),
 			 Profile->Equip(Catalog, PlayerClass, FindSocket(EGeoGemTier::Chip, 1), "Power"));
 	TestTrue(TEXT("Slotting it empties the echo"), Profile->GetEcho(PlayerClass).IsNone());
@@ -1041,7 +1063,8 @@ bool FGeoRelaySnapDashTest::RunTest(FString const& /*Parameters*/)
 		TestEqual(TEXT("It stops on the deployable"), Distance, 300.f, 1.f);
 
 		AimDash(true, 90.f);
-		TestEqual(TEXT("A dash at 90 degrees keeps its direction"), Direction.Y, 1.0, static_cast<double>(UE_KINDA_SMALL_NUMBER));
+		TestEqual(TEXT("A dash at 90 degrees keeps its direction"), Direction.Y, 1.0,
+				  static_cast<double>(UE_KINDA_SMALL_NUMBER));
 		TestEqual(TEXT("And its distance"), Distance, 500.f);
 
 		AimDash(false, 90.f);

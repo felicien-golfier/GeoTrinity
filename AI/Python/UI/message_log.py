@@ -26,10 +26,12 @@ UTIL = wings_hud.UTIL
 H = unreal.HorizontalAlignment
 V = unreal.VerticalAlignment
 GAP_AFTER_BACK = 16.0
+# The frame's bottom bar is drawn over the window's lowest pixels; the text sits above it.
+ABOVE_FRAME_BAR = 16.0
 # Bottom row of the window: BACK's corner inset on the left and bottom, the frame's padding on the right.
 SLOT_PADDING = unreal.Margin(menu_pages.BACK_CORNER_INSET.left, 0, menu_pages.FRAME_PADDING.right,
-                             menu_pages.BACK_CORNER_INSET.bottom)
-VALUES = {"max_lines": 5, "line_height": 11.0, "left_inset": menu_pages.BACK_WIDTH + GAP_AFTER_BACK,
+                             menu_pages.BACK_CORNER_INSET.bottom + ABOVE_FRAME_BAR)
+VALUES = {"max_lines": 5, "line_height": 15.0, "left_inset": menu_pages.BACK_WIDTH + GAP_AFTER_BACK,
           "lifetime": 4.0, "fade_time": 0.4, "slide_time": 0.25, "text_role": wings_hud.ROLE.LABEL,
           "visibility": unreal.SlateVisibility.HIT_TEST_INVISIBLE}
 

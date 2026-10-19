@@ -70,7 +70,8 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 		}
 	}
 
-	// Schedule fire with network delay compensation (plays montage on client, timer-only on server)
+	// Schedule fire with network delay compensation (every machine that runs the ability, server included, plays the
+	// montage and replicates it)
 	ScheduleFireTrigger(ActivationInfo, ActorInfo->GetAnimInstance());
 }
 
@@ -316,7 +317,7 @@ int32& UGeoGameplayAbility::GetFireSectionIndex(UGeoAbilitySystemComponent* ASC,
 void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 												 FGameplayAbilityActivationInfo const& ActivationInfo)
 {
-	if (!AnimMontage || !AnimInstance)
+	if (!ShouldPlayAbilityMontage() || !AnimMontage || !AnimInstance)
 	{
 		return;
 	}
@@ -365,8 +366,10 @@ void UGeoGameplayAbility::HandleAnimationMontage(UAnimInstance* AnimInstance,
 	if (!bCoveredByFullBodyMontage)
 	{
 		// Only PlayMontage bumps the replicated PlayInstanceId, the single thing that makes a non-owning client restart
-		// the montage. A section jump reaches it as a position correction, which does nothing once that client's montage
-		// instance ended — and it ends whenever the correction lands a ping too late. So every shot plays outright.
+		// the montage. A section jump reaches it as a position correction, which does nothing once that client's
+		// montage instance ended — and it ends whenever the correction lands a ping too late. So every shot plays
+		// outright. A pattern ability never gets here: its pattern plays its own montage locally
+		// (ShouldPlayAbilityMontage).
 		ASC->PlayMontage(this, ActivationInfo, AnimMontage, PlayRate, SectionToJumpTo);
 	}
 }

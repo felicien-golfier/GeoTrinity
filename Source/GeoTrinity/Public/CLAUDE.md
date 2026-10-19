@@ -9,6 +9,7 @@ Gameplay module. Headers in `Public/`, `.cpp` mirrored in `Private/` at the same
 | `AI/` | Enemy controller, blackboard, StateTree tasks | `AI/CLAUDE.md` |
 | `Animation/` | Montage notifies | `Animation/CLAUDE.md` |
 | `Characters/` | Player + enemy characters, components, class data | `Characters/CLAUDE.md` |
+| `Encounter/` | Scripted steps: level-placed encounter, Blueprint triggers / conditions / actions, event bus | `Encounter/CLAUDE.md` |
 | `GameClasses/` | GameMode / State / PlayerState / Controller / viewport | `GameClasses/CLAUDE.md` |
 | `Gem/` | Gem progression | `Gem/CLAUDE.md` |
 | `HUD/Interface/` | Gameplay↔UI interfaces | `HUD/Interface/CLAUDE.md` |
@@ -18,4 +19,4 @@ Gameplay module. Headers in `Public/`, `.cpp` mirrored in `Private/` at the same
 | `Tool/` | `GeoLib`, colour, icons, Niagara names, lag compensation | `Tool/CLAUDE.md` |
 | `World/` | Camera, volumes, backdrop, world settings | `World/CLAUDE.md` |
 
-Private-only: `Private/Tests/GeoGemTests.cpp`, `Private/Tests/GeoAbilityReadyTests.cpp`, `Private/Tests/GeoIncomingDamageTests.cpp`, `Private/Tests/GeoTestDeployable.h` (fake deployable + deployer pawn, `AI/Testing.md`).
+Private-only: `Private/Tests/GeoGemTests.cpp`, `Private/Tests/GeoAbilityReadyTests.cpp`, `Private/Tests/GeoIncomingDamageTests.cpp`, `Private/Tests/GeoMontageOwnershipTests.cpp`, `Private/Tests/GeoTestDeployable.h` (fake deployable + deployer pawn, `AI/Testing.md`), `Private/Tests/GeoTestPatternAbility.h` (fake patterns + pattern abilities).

@@ -19,6 +19,7 @@ Agent-facing docs, scripts and workspaces. Code maps are in the `CLAUDE.md` file
 | Sound effect end to end | `SoundCreation.md` |
 | Animation authoring | `MCP/MCP_Animation.md` |
 | Claude.ai artifacts (Gems UI, Gems doc, History) and the "move to history" rule | `Artifacts.md` |
+| Tutorial: tone, lore, the Cat, intro board, steps | `Tutorial/CLAUDE.md` |
 
 ## Folders
 | Folder | Purpose |

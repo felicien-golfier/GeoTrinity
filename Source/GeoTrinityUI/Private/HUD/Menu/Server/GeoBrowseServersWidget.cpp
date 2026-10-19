@@ -7,14 +7,16 @@
 #include "Components/ProgressBar.h"
 #include "Components/ScrollBox.h"
 #include "GameClasses/GeoGameInstance.h"
+#include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/Frame/GeoMessageSubsystem.h"
 #include "HUD/Menu/List/GeoListFrameWidget.h"
 #include "HUD/Menu/List/GeoListRowWidget.h"
-#include "HUD/Menu/Frame/GeoMenuButton.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Online/OnlineSessionNames.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "Tool/Visual/GeoColor.h"
 
 // Share of the row each column takes, so every row lines up whatever the panel is wide.
 static float const ServerNameColumnWeight = 6.f;
@@ -29,7 +31,7 @@ void UGeoBrowseServersWidget::NativeConstruct()
 
 	LanguageComboBox->ClearOptions();
 	LanguageComboBox->AddOption(TEXT("All"));
-	for (const FString& Language : LanguageOptions)
+	for (FString const& Language : LanguageOptions)
 	{
 		LanguageComboBox->AddOption(Language);
 	}
@@ -128,15 +130,18 @@ void UGeoBrowseServersWidget::OnFindSessionsComplete(bool bWasSuccessful)
 		GeoGameInstance->ShowSessionDebugMessage(
 			FString::Printf(TEXT("Server search failed on the %s online subsystem."), *SubsystemName.ToString()),
 			FColor::Red);
+		UGeoMessageSubsystem::Post(this, NSLOCTEXT("GeoServers", "SearchFailed", "Server search failed."),
+								   EGeoColor::Damage);
 		return;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("%hs: network version %u, found %d results"), __FUNCTION__,
 		   FNetworkVersion::GetLocalNetworkVersion(), SessionSearch->SearchResults.Num());
 	GeoGameInstance->ShowSessionDebugMessage(
-		FString::Printf(TEXT("Server search on %s: %d servers found. Your build id is %d; servers with another build id "
-							 "are hidden (LogOnlineSession 'Removed incompatible build')."),
-						*SubsystemName.ToString(), SessionSearch->SearchResults.Num(), GetBuildUniqueId()),
+		FString::Printf(
+			TEXT("Server search on %s: %d servers found. Your build id is %d; servers with another build id "
+				 "are hidden (LogOnlineSession 'Removed incompatible build')."),
+			*SubsystemName.ToString(), SessionSearch->SearchResults.Num(), GetBuildUniqueId()),
 		FColor::Cyan);
 
 	CachedResults = SessionSearch->SearchResults;
@@ -149,9 +154,9 @@ void UGeoBrowseServersWidget::PopulateServerList()
 	UE_LOG(LogTemp, Log, TEXT("Populating Server list with %u results"), CachedResults.Num());
 	ListFrame->RowsBox->ClearChildren();
 
-	const FString FilterText = SearchInput->GetText().ToString().ToLower();
+	FString const FilterText = SearchInput->GetText().ToString().ToLower();
 
-	for (const FOnlineSessionSearchResult& Result : CachedResults)
+	for (FOnlineSessionSearchResult const& Result : CachedResults)
 	{
 		if (!FilterText.IsEmpty())
 		{
@@ -171,19 +176,18 @@ void UGeoBrowseServersWidget::PopulateServerList()
 		}
 
 		RowWidget->SetTint(ListFrame->RowsBox->GetChildrenCount() % 2 == 0 ? EGeoListRowTint::Normal
-																		 : EGeoListRowTint::Alternate);
+																		   : EGeoListRowTint::Alternate);
 		FillServerRow(RowWidget, Result);
 		// The row carries the session it stands for as the payload of its click, so the row itself holds no state.
 		RowWidget->OnClicked.AddUObject(this, &UGeoBrowseServersWidget::HandleServerSelected, Result);
 		ListFrame->RowsBox->AddChild(RowWidget);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("%hs: listing %d server rows"), __FUNCTION__,
-		   ListFrame->RowsBox->GetChildrenCount());
+	UE_LOG(LogTemp, Log, TEXT("%hs: listing %d server rows"), __FUNCTION__, ListFrame->RowsBox->GetChildrenCount());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoBrowseServersWidget::FillServerRow(UGeoListRowWidget* RowWidget, const FOnlineSessionSearchResult& Result)
+void UGeoBrowseServersWidget::FillServerRow(UGeoListRowWidget* RowWidget, FOnlineSessionSearchResult const& Result)
 {
 	FString ServerName;
 	if (!Result.Session.SessionSettings.Get(FName("SERVER_NAME"), ServerName))
@@ -199,12 +203,12 @@ void UGeoBrowseServersWidget::FillServerRow(UGeoListRowWidget* RowWidget, const 
 	}
 	RowWidget->AddTextColumn(FText::FromString(MapName), MapColumnWeight);
 
-	const int32 MaxPlayers = Result.Session.SessionSettings.NumPublicConnections;
-	const int32 CurrentPlayers = MaxPlayers - Result.Session.NumOpenPublicConnections;
+	int32 const MaxPlayers = Result.Session.SessionSettings.NumPublicConnections;
+	int32 const CurrentPlayers = MaxPlayers - Result.Session.NumOpenPublicConnections;
 	RowWidget->AddTextColumn(FText::FromString(FString::Printf(TEXT("%d/%d"), CurrentPlayers, MaxPlayers)),
 							 PlayersColumnWeight);
 
-	const FString PingString =
+	FString const PingString =
 		(Result.PingInMs < MAX_QUERY_PING) ? FString::Printf(TEXT("%dms"), Result.PingInMs) : TEXT("-");
 	RowWidget->AddTextColumn(FText::FromString(PingString), PingColumnWeight);
 }
@@ -229,7 +233,7 @@ void UGeoBrowseServersWidget::SetSearchInProgress(bool bInProgress)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoBrowseServersWidget::HandleSearchTextChanged(const FText& Text)
+void UGeoBrowseServersWidget::HandleSearchTextChanged(FText const& Text)
 {
 	PopulateServerList();
 }

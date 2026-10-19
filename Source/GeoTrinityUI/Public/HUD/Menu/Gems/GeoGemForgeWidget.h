@@ -18,11 +18,11 @@ class UVerticalBox;
 /**
  * The Forge page of the Gems menu: gems into shards and shards into gems. Left, the tiers: clicking one selects or
  * deselects it, BREAK DOWN SELECTED breaks down every free copy of the selected tiers, and a framed line under it shows
- * the gems that destroys and the shards it gives, with each tier's shard rates under them. Middle, the gem types of the chosen tier with their owned and free counts. Right, the picked type
- * broken down or crafted by a quantity typed in its field or set with -, + and MAX. Free here is what no loadout needs
- * (UGeoGemProfileSave::GetBreakableCount): slotted copies are never broken down. MessageText says what the last action
- * gave.
- * Required in the BP hierarchy: UVerticalBox "GemListBox". Every other part is optional.
+ * the gems that destroys and the shards it gives, with each tier's shard rates under them. Middle, the gem types of the
+ * chosen tier with their owned and free counts. Right, the picked type broken down or crafted by a quantity typed in
+ * its field or set with -, + and MAX. Free here is what no loadout needs (UGeoGemProfileSave::GetBreakableCount):
+ * slotted copies are never broken down. What the last action gave shows in the message strip. Required in the BP
+ * hierarchy: UVerticalBox "GemListBox". Every other part is optional.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoGemForgeWidget : public UGeoGemPageWidget
@@ -30,7 +30,8 @@ class GEOTRINITYUI_API UGeoGemForgeWidget : public UGeoGemPageWidget
 	GENERATED_BODY()
 
 public:
-	/** Refreshes the Forge page from the current gem profile: tier break-down summary, gem list and picked gem detail. */
+	/** Refreshes the Forge page from the current gem profile: tier break-down summary, gem list and picked gem detail.
+	 */
 	virtual void Refresh() override;
 
 protected:
@@ -111,10 +112,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> CraftButton;
-
-	/** What the last break-down or craft gave. */
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> MessageText;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "8", ClampMax = "128"))
 	float TierGlyphSize = 34.f;

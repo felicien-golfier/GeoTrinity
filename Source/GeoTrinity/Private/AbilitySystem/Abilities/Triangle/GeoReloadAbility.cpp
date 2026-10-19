@@ -24,21 +24,19 @@ void UGeoReloadAbility::OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo
 		return;
 	}
 
-	if (ASC->AbilityActorInfo->IsLocallyControlledPlayer())
-	{
-		FGameplayAbilitySpecHandle const SpecHandle = Spec.Handle;
-		ASC->GetGameplayAttributeValueChangeDelegate(UCharacterAttributeSet::GetAmmoAttribute())
-			.AddWeakLambda(this,
-						   [this, ASC, SpecHandle](FOnAttributeChangeData const& Data)
-						   {
-							   if (FMath::RoundToInt(Data.NewValue) > 0.f)
-							   {
-								   return;
-							   }
-							   CastChecked<UGeoAbilitySystemComponent>(ASC)->TryActivateAbilityWithTargetData(
-								   SpecHandle, GetAbilityTag());
-						   });
-	}
+	FGameplayAbilitySpecHandle const SpecHandle = Spec.Handle;
+	ASC->GetGameplayAttributeValueChangeDelegate(UCharacterAttributeSet::GetAmmoAttribute())
+		.AddWeakLambda(
+			this,
+			[this, ASC, SpecHandle](FOnAttributeChangeData const& Data)
+			{
+				if (FMath::RoundToInt(Data.NewValue) > 0.f || !ASC->AbilityActorInfo->IsLocallyControlledPlayer())
+				{
+					return;
+				}
+				CastChecked<UGeoAbilitySystemComponent>(ASC)->TryActivateAbilityWithTargetData(SpecHandle,
+																							   GetAbilityTag());
+			});
 }
 
 bool UGeoReloadAbility::CheckCost(FGameplayAbilitySpecHandle const Handle, FGameplayAbilityActorInfo const* ActorInfo,

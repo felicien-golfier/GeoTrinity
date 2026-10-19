@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Actor/Arena/GeoArena.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -14,6 +15,11 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 {
 	ensureMsgf(PatternToLaunch, TEXT("Please fill the PatternToLaunch in Blueprint"));
 	ensureMsgf(GeoLib::IsServer(GetWorld()), TEXT("PatternAbility are made for Server initiated abilities only."));
+	if (AnimMontage && !ShouldPlayAbilityMontage())
+	{
+		UE_LOG(LogGeoASC, Warning, TEXT("%s sets an AnimMontage but its pattern has one too: the ability's is ignored"),
+			   *GetName());
+	}
 
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
@@ -33,6 +39,11 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	{
 		LaunchPattern();
 	}
+}
+
+bool UPatternAbility::ShouldPlayAbilityMontage() const
+{
+	return !PatternToLaunch || !GetDefault<UPattern>(PatternToLaunch)->HasMontage();
 }
 
 void UPatternAbility::BeginPreLaunch()

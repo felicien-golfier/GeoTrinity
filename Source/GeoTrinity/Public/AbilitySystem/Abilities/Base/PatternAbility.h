@@ -37,6 +37,10 @@ public:
 	/** Returns the UPattern subclass that this ability will instantiate when activated. */
 	TSubclassOf<UPattern> GetPatternClass() const { return PatternToLaunch; }
 
+	/** False when the pattern has a montage: it plays it locally on each machine, so a replicated one would restart it.
+	 */
+	virtual bool ShouldPlayAbilityMontage() const override;
+
 protected:
 	/**
 	 * Stamps a fresh payload, multicasts the pattern to every machine and binds its end delegate.

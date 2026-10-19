@@ -7,7 +7,7 @@
 | `GeoStateTreeBuilderUtil.h` | `UStateTree` edits; each op validates, compiles, saves atomically |
 | `GeoWidgetBuilderUtil.h` | Generic widget-tree primitives (no per-asset functions) |
 | `GeoHudWidgetBuilderUtil.h` | Content-specific HUD tree builders composed from the generic ones |
-| `GeoAnimBuilderUtil.h` | Montage section layout / links (C++-only); rig / mesh rebuild; per-channel bone keys |
+| `GeoAnimBuilderUtil.h` | Montage section layout / links (C++-only); rig / mesh rebuild; per-channel bone keys; AnimGraph slot layouts |
 | `GeoMaterialBuilderUtil.h` | Material-instance layer stack (static parameters) |
 | `GeoNiagaraBuilderUtil.h` | Niagara emitter stack ops; `FunctionName` addresses a module or dynamic input by its rapid-iteration name |
 
@@ -32,3 +32,8 @@
 ## Hud builder
 - `BuildAbilitySlotWidget`, `BuildAbilityBarWidget`, `BuildChargeBeamGaugeWidget`, `BuildCombattantLifeBarWidget`, `AddAbilityBarToOverlay`, `BuildLocalConnectWidget`, `AddLocalConnectToMainMenu` (re-run-safe).
 - New per-widget builders go here.
+
+## Anim builder — AnimGraph slots
+- `BuildLayeredAnimGraph`: rebuilds a whole graph as a layered badge rig. `InsertSlotAfter`: adds one Slot node after an existing one in a graph that stays as authored (the boss), and registers it in its own slot group.
+- Both register every new slot in a skeleton slot group (`SetSlotGroupName`), the only path: Python reaches neither groups nor pin links.
+- A child AnimBlueprint holds no AnimGraph (`FindAnimGraph` flags it): edit its parent.

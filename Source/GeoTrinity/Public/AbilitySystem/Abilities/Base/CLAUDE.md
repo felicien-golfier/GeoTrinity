@@ -14,6 +14,8 @@
 - `FireMode`: `ShootAfterFireDelay` | `ChargeForFireDelay` (release fires; `GetChargeRatio()` 0..1 via `GaugeChargingSpeedCurve`).
 - `SetChargeGaugeVisible` virtual — override to bind another gauge widget.
 - Montage sections cycle Start → Fire1 → Fire2…; counter lives on ASC per ability tag; play rate fits `FireDelay`.
+- Montage ownership: `ShouldPlayAbilityMontage()` (virtual, default true) gates `HandleAnimationMontage`. True = the ability plays `AnimMontage` through `ASC->PlayMontage` on every machine that runs it, server included, so it replicates to remote copies. A pattern ability answers false when its pattern has a montage: the pattern plays it locally per machine (`Pattern/CLAUDE.md`), so a replicated one would restart it at the server's section and rate.
+- An ability with no pattern (bomb, turret, mine, player kits) keeps the replicated montage. It must not cut a montage already playing on the same avatar: author it in its own slot group, since `Montage_Play` stops only its own group's montages (`MCP_Animation.md`, "slot group").
 - `CommitBehaviour`: `AtActivate` | `CostAtActivateCooldownAtEnd` | `DoNotAutoCommit`.
 - `bActivateOnFreshPressOnly` for abilities sharing one input.
 - Server-driven abilities (`ServerInitiated`/`ServerOnly`/passive) activate without TriggerEventData and build payload from avatar state (`STTask_FireAbility` path).
@@ -47,3 +49,4 @@
 - `CreatePatternData()` computes pattern-specific data once on server; pattern reads it via `StoredPatternData.GetPtr<T>()`.
 - Fill derived data with explicit template: `TInstancedStruct<FPatternData>::Make<FDerived>(...)`.
 - `EndAbility` force-stops the pattern before `Super`.
+- `ShouldPlayAbilityMontage()` is false when `PatternToLaunch`'s CDO `HasMontage()`; a pattern without montage leaves the ability's own `AnimMontage` replicated as for any ability.

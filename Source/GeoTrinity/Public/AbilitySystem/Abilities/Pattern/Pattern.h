@@ -68,6 +68,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoPattern")
 	virtual void EndPattern(bool bForceStop = false);
 
+	/** True when the pattern plays its own montage; the launching ability then leaves its own montage unplayed. */
+	bool HasMontage() const { return IsValid(AnimMontage); }
+
 	UPROPERTY(BlueprintAssignable)
 	FOnPatternEvent OnPatternEnd;
 	UPROPERTY(BlueprintAssignable)
@@ -114,7 +117,8 @@ protected:
 	 * pattern lives as long as Owner's ASC — but absolute, so the pattern places it in world space. */
 	UNiagaraComponent* SpawnPersistentVfx(UNiagaraSystem* System, AActor& Owner) const;
 
-	/** Seeks the boss's active montage to its End section; no-op when the montage is not playing, already at End, or the End section does not exist. */
+	/** Seeks the boss's active montage to its End section; no-op when the montage is not playing, already at End, or
+	 * the End section does not exist. */
 	void JumpMontageToEndSection() const;
 
 	/**

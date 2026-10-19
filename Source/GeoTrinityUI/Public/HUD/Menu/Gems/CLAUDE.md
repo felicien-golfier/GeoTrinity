@@ -32,3 +32,11 @@ Rules: `GeoTrinity/Public/Gem/CLAUDE.md` "Echo socket". The page only shows and 
 - Stack tile of the echoed type: "ECHOED" mark, not "n FREE"; its sockets glow like any pickable socket.
 - Totals table: a row for the echoed stat after the slotted ones, its count cell reads `ECHO` (`ECH` when the column is too narrow for it), where a slotted stat shows `×n`; the level is in the detail.
 - A stack picked, then the echo socket (or the reverse), echoes it, like a socket.
+
+## Messages
+Every refusal and every side effect the player did not ask for shows in the message strip (`Frame/CLAUDE.md`, "Message log"); texts are `FText` tunables of the widget (`GeoGem|Messages`), formats with the gem / tier / count. Clicks only, never hover. Disabled buttons post nothing (their note says why).
+- Refusal (`Damage`), from `EGeoGemRefusal` on a socket or stack click: already in this socket, wrong tier, socket locked (level), no free copy; echo: not unlocked (level 20), a Core, already the echo, no copy. Clicking the locked echo socket with nothing picked says when it opens.
+- Side effect (`Neutral`): a Core moved from its previous socket; echoing emptied n sockets of that gem; slotting the echoed type cleared the echo.
+- Success (`Heal`): ALL filled n sockets; unequip emptied n; build created / deleted; build limit and last-build refusals (`Damage`).
+- Forge: broken / crafted lines (`Heal`).
+- Key bindings page: a rejected key (wrong device, or a conflict) says so. Server browser: a failed search says so.

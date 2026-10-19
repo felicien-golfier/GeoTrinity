@@ -1,5 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
+#include "Engine/GameInstance.h"
 #include "HUD/Menu/Frame/GeoMessageSubsystem.h"
 #include "Misc/AutomationTest.h"
 #include "Tool/Visual/GeoColor.h"
@@ -54,6 +55,26 @@ bool FGeoMessageLogLayoutTest::RunTest(FString const& /*Parameters*/)
 
 	Lines = UGeoMessageSubsystem::Layout(MakeMessages({0.}), Params.Lifetime + Params.FadeTime, Params);
 	TestEqual(TEXT("Fully faded at Lifetime + FadeTime"), Lines.Num(), 0);
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoMessagePostTest, "GeoTrinity.MessageLog.Post", GeoMessageLogTestFlags)
+
+bool FGeoMessagePostTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoMessageSubsystem* Messages = NewObject<UGeoMessageSubsystem>(NewObject<UGameInstance>(GetTransientPackage()));
+	Messages->PostMessage(INVTEXT("one"), EGeoColor::Neutral);
+	Messages->PostMessage(INVTEXT("one"), EGeoColor::Neutral);
+	TestEqual(TEXT("A repeat of the newest message is dropped"), Messages->GetMessages().Num(), 1);
+
+	Messages->PostMessage(INVTEXT("two"), EGeoColor::Neutral);
+	Messages->PostMessage(INVTEXT("one"), EGeoColor::Neutral);
+	TestEqual(TEXT("The same text after another message shows again"), Messages->GetMessages().Num(), 3);
+
+	UGeoMessageSubsystem::Post(nullptr, INVTEXT("nowhere"), EGeoColor::Neutral);
+	TestEqual(TEXT("Posting without a world changes nothing"), Messages->GetMessages().Num(), 3);
 
 	return true;
 }

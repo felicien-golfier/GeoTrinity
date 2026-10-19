@@ -25,6 +25,8 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "MeshDescription.h"
+#include "MovieScene.h"
+#include "MovieSceneSequence.h"
 #include "ReferenceSkeleton.h"
 #include "Rendering/SkeletalMeshModel.h"
 #include "Rigs/FKControlRig.h"
@@ -32,8 +34,6 @@
 #include "Sections/MovieSceneParameterSection.h"
 #include "Sequencer/MovieSceneControlRigParameterSection.h"
 #include "Sequencer/MovieSceneControlRigParameterTrack.h"
-#include "MovieScene.h"
-#include "MovieSceneSequence.h"
 #include "StaticToSkeletalMeshConverter.h"
 
 namespace
@@ -44,10 +44,10 @@ namespace
 		Montage->PostEditChange();
 		UEditorLoadingAndSavingUtils::SavePackages({Montage->GetPackage()}, false);
 	}
-}
+} // namespace
 
 void UGeoAnimBuilderUtil::SetMontageSlotSegment(UAnimMontage* Montage, UAnimSequence* Sequence, FName SlotName,
-												 float PlayLength)
+												float PlayLength)
 {
 	if (!ensureMsgf(Montage && Sequence, TEXT("SetMontageSlotSegment needs both a Montage and a Sequence")))
 	{
@@ -199,10 +199,10 @@ bool UGeoAnimBuilderUtil::RebuildSkeletalMeshFromStaticMesh(USkeletalMesh* Mesh,
 	{
 		return false;
 	}
-	if (!ensureMsgf(BoneNames.Num() > 0 && BoneNames.Num() == ParentNames.Num()
-						&& BoneNames.Num() == Transforms.Num(),
-					TEXT("RebuildSkeletalMeshFromStaticMesh needs three non-empty arrays of equal length (got %d/%d/%d)"),
-					BoneNames.Num(), ParentNames.Num(), Transforms.Num()))
+	if (!ensureMsgf(
+			BoneNames.Num() > 0 && BoneNames.Num() == ParentNames.Num() && BoneNames.Num() == Transforms.Num(),
+			TEXT("RebuildSkeletalMeshFromStaticMesh needs three non-empty arrays of equal length (got %d/%d/%d)"),
+			BoneNames.Num(), ParentNames.Num(), Transforms.Num()))
 	{
 		return false;
 	}
@@ -214,24 +214,23 @@ bool UGeoAnimBuilderUtil::RebuildSkeletalMeshFromStaticMesh(USkeletalMesh* Mesh,
 		{
 			int32 const ParentIndex = Builder.FindBoneIndex(ParentNames[Index]);
 			if (!ensureMsgf(Index == 0 || ParentIndex != INDEX_NONE,
-							TEXT("Bone %s parents to %s, which no earlier bone declares"),
-							*BoneNames[Index].ToString(), *ParentNames[Index].ToString()))
+							TEXT("Bone %s parents to %s, which no earlier bone declares"), *BoneNames[Index].ToString(),
+							*ParentNames[Index].ToString()))
 			{
 				return false;
 			}
-			Builder.Add(FMeshBoneInfo(BoneNames[Index], BoneNames[Index].ToString(),
-									  Index == 0 ? INDEX_NONE : ParentIndex),
-						Transforms[Index]);
+			Builder.Add(
+				FMeshBoneInfo(BoneNames[Index], BoneNames[Index].ToString(), Index == 0 ? INDEX_NONE : ParentIndex),
+				Transforms[Index]);
 		}
 	}
 
 	Mesh->GetImportedModel()->LODModels.Empty();
 	Mesh->SetNumSourceModels(0);
 
-	if (!ensureMsgf(FStaticToSkeletalMeshConverter::InitializeSkeletalMeshFromStaticMesh(Mesh, StaticMesh,
-																						 ReferenceSkeleton),
-					TEXT("Could not build SkeletalMesh %s out of StaticMesh %s"), *Mesh->GetName(),
-					*StaticMesh->GetName()))
+	if (!ensureMsgf(
+			FStaticToSkeletalMeshConverter::InitializeSkeletalMeshFromStaticMesh(Mesh, StaticMesh, ReferenceSkeleton),
+			TEXT("Could not build SkeletalMesh %s out of StaticMesh %s"), *Mesh->GetName(), *StaticMesh->GetName()))
 	{
 		return false;
 	}
@@ -248,6 +247,86 @@ bool UGeoAnimBuilderUtil::RebuildSkeletalMeshFromStaticMesh(USkeletalMesh* Mesh,
 
 	UEditorLoadingAndSavingUtils::SavePackages({Mesh->GetPackage(), Skeleton->GetPackage()}, false);
 	return true;
+}
+
+UEdGraph* UGeoAnimBuilderUtil::FindAnimGraph(UAnimBlueprint const* AnimBlueprint)
+{
+	TObjectPtr<UEdGraph> const* AnimGraphEntry = AnimBlueprint->FunctionGraphs.FindByPredicate(
+		[](UEdGraph const* Graph)
+		{
+			return Graph->GetFName() == UEdGraphSchema_K2::GN_AnimGraph;
+		});
+	if (!ensureMsgf(AnimGraphEntry, TEXT("AnimBlueprint %s has no AnimGraph"), *AnimBlueprint->GetName()))
+	{
+		return nullptr;
+	}
+
+	return *AnimGraphEntry;
+}
+
+bool UGeoAnimBuilderUtil::InsertSlotAfter(UAnimBlueprint* AnimBlueprint, FName AfterSlotName, FName NewSlotName,
+										  FName SlotGroupName)
+{
+	if (!ensureMsgf(AnimBlueprint && AnimBlueprint->TargetSkeleton,
+					TEXT("InsertSlotAfter needs an AnimBlueprint with a target skeleton")))
+	{
+		return false;
+	}
+
+	UEdGraph* AnimGraph = FindAnimGraph(AnimBlueprint);
+	if (!AnimGraph)
+	{
+		return false;
+	}
+
+	UAnimGraphNode_Slot* AfterSlot = nullptr;
+	for (UEdGraphNode* Node : AnimGraph->Nodes)
+	{
+		UAnimGraphNode_Slot* Slot = Cast<UAnimGraphNode_Slot>(Node);
+		if (Slot && Slot->Node.SlotName == AfterSlotName)
+		{
+			AfterSlot = Slot;
+		}
+	}
+
+	UEdGraphPin* AfterPose = AfterSlot ? AfterSlot->FindPin(TEXT("Pose"), EGPD_Output) : nullptr;
+	if (!ensureMsgf(AfterPose, TEXT("AnimGraph of %s has no Slot node %s"), *AnimBlueprint->GetName(),
+					*AfterSlotName.ToString()))
+	{
+		return false;
+	}
+
+	FGraphNodeCreator<UAnimGraphNode_Slot> Creator(*AnimGraph);
+	UAnimGraphNode_Slot* NewSlot = Creator.CreateNode(false);
+	NewSlot->Node.SlotName = NewSlotName;
+	NewSlot->NodePosX = AfterSlot->NodePosX;
+	NewSlot->NodePosY = AfterSlot->NodePosY + 200;
+	Creator.Finalize();
+
+	TArray<UEdGraphPin*> const Consumers = AfterPose->LinkedTo;
+	AfterPose->BreakAllPinLinks();
+
+	UEdGraphSchema const* Schema = AnimGraph->GetSchema();
+	UEdGraphPin* NewSource = NewSlot->FindPin(TEXT("Source"), EGPD_Input);
+	UEdGraphPin* NewPose = NewSlot->FindPin(TEXT("Pose"), EGPD_Output);
+	bool bLinked =
+		ensureMsgf(NewSource && NewPose && Schema->TryCreateConnection(AfterPose, NewSource),
+				   TEXT("Could not link %s into the new slot %s"), *AfterSlotName.ToString(), *NewSlotName.ToString());
+	for (UEdGraphPin* Consumer : Consumers)
+	{
+		bLinked = bLinked
+			&& ensureMsgf(Schema->TryCreateConnection(NewPose, Consumer), TEXT("Could not link the new slot %s to %s"),
+						  *NewSlotName.ToString(), *Consumer->GetOwningNode()->GetName());
+	}
+
+	USkeleton* Skeleton = AnimBlueprint->TargetSkeleton;
+	Skeleton->Modify();
+	Skeleton->SetSlotGroupName(NewSlotName, SlotGroupName);
+
+	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(AnimBlueprint);
+	FKismetEditorUtilities::CompileBlueprint(AnimBlueprint);
+	UEditorLoadingAndSavingUtils::SavePackages({AnimBlueprint->GetPackage(), Skeleton->GetPackage()}, false);
+	return bLinked && AnimBlueprint->Status != BS_Error;
 }
 
 bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, FName LayerBone, FName BaseSlotName,
@@ -268,14 +347,12 @@ bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, F
 		return false;
 	}
 
-	TObjectPtr<UEdGraph> const* AnimGraphEntry = AnimBlueprint->FunctionGraphs.FindByPredicate(
-		[](UEdGraph const* Graph) { return Graph->GetFName() == UEdGraphSchema_K2::GN_AnimGraph; });
-	if (!ensureMsgf(AnimGraphEntry, TEXT("AnimBlueprint %s has no AnimGraph"), *AnimBlueprint->GetName()))
+	UEdGraph* AnimGraph = FindAnimGraph(AnimBlueprint);
+	if (!AnimGraph)
 	{
 		return false;
 	}
 
-	UEdGraph* AnimGraph = *AnimGraphEntry;
 	UAnimGraphNode_Root* Output = nullptr;
 	TArray<TObjectPtr<UEdGraphNode>> const ExistingNodes = AnimGraph->Nodes;
 	for (UEdGraphNode* Node : ExistingNodes)
@@ -398,8 +475,7 @@ bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, F
 	// The idle keeps ticking under a montage, and the base slot's weight is read off its own last update.
 	BaseSlot->Node.bAlwaysUpdateSourcePose = true;
 	LayerSlot->Node.bAlwaysUpdateSourcePose = true;
-	UAnimGraphNode_UseCachedPose* LayerSource =
-		UseCache(BaseCache, OutputX - 7 * ColumnWidth, OutputY + 5 * RowHeight);
+	UAnimGraphNode_UseCachedPose* LayerSource = UseCache(BaseCache, OutputX - 7 * ColumnWidth, OutputY + 5 * RowHeight);
 	UAnimGraphNode_UseCachedPose* BlendBase = UseCache(BaseCache, OutputX - 5 * ColumnWidth, OutputY + RowHeight);
 	UAnimGraphNode_UseCachedPose* BlendBranch =
 		UseCache(LayerCache, OutputX - 5 * ColumnWidth, OutputY + 2 * RowHeight);

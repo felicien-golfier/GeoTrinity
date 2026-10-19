@@ -296,7 +296,14 @@ multiplies its scale into whatever the other clip holds, so a bound the other cl
 for their product, and the check is every frame of one against every frame of the other.
 
 Playing a montage stops only the montages of its own slot group, but the ability system replicates a single
-montage per character, so on other machines the latest one played is the one that is sure to show.
+montage per character, so on other machines the latest one played is the one that is sure to show. A replicated
+montage that must not cut another one (an enemy cast over a pattern montage) goes in its own slot group, with a Slot
+node for it in the anim graph.
+
+A child AnimBlueprint shows its parent's graph and owns none, so a slot is added to the parent
+(`SK_GeoAnimBlueprint` for the hex boss) through the editor shim's slot insertion, which also registers the slot's
+group on the skeleton. A montage's slot is renamed in place on its slot-track array, which keeps its notifies and
+sections; rewriting the segment would clear them.
 
 Sections cut from one sequence share their boundary key, so a section's last frame interpolates toward whatever
 the section after it in the sequence starts on. Lay them out so each begins on the pose its neighbour ends on,

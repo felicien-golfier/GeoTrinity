@@ -209,3 +209,11 @@ Server attribute delegates broadcast synchronously from `SetNumericAttributeBase
 ## CoreRedirects resolve one hop
 `A -> B`, `B -> C` leaves an asset still storing `A` one hop short. For a `TMap` whose *value* is the redirected struct the element type mismatches and the engine discards the **whole map** on load (`LogClass: Warning: ... struct type mismatch`, `Map Element Type mismatch`); the next save writes it empty.
 - **Rule**: one entry per old name straight to the final name. After any struct rename `grep -ra "OldStructName" Content/` for the names actually on disk, and check the editor log for `type mismatch` before re-saving any affected asset.
+
+## Auto-reload at 0 ammo dead on clients only (2026-10-16)
+
+**Symptom:** the Triangle never reloads by itself at 0 ammo on a client; the listen-server host is fine.
+
+**Root cause:** `UGeoReloadAbility::OnGiveAbility` tested `IsLocallyControlledPlayer()` once, at binding time. A client receives the ability through spec replication before its pawn has a controller → false → ammo delegate never bound. The host has its controller by then. The "gate at the binding site" style rule pushed the check out of the callback twice (fixed 2026-09-10, regressed 2026-10-12).
+
+**Fix:** bind always, test `IsLocallyControlledPlayer()` inside the callback.
