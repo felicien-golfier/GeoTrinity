@@ -3,7 +3,9 @@
 ## Premise (one paragraph)
 Three friends play a tabletop role-playing game on a game night, with cardboard-and-plastic geometric figurines: a Square, a Circle and a Triangle. Their cat sits at the edge of the table, sarcastic, watching. Something on the board that was never meant to be touched gets knocked, and it reads as an accident. The game wakes up, absorbs the players Jumanji-style, and drops them inside as the figurines they were playing. The cat is dragged in too. They cannot leave until every boss is dead.
 
-What the player believes: the Cat is a prisoner like them and wants to help them out. What is true: it knows how this works and is not telling everything (`Cat.md`, "Two readings").
+What the player believes: the Cat is a prisoner like them and wants to help them out. What is true: the Cat is the one who pushed people into the game, and got locked in too by mistake. It does help them out, but it is also the last boss: it enjoys watching them suffer and die in a loop (`Cat.md`, "Two readings"). The board keeps the push ambiguous; the truth is fixed here.
+
+Landing: the Cat and the Circle both landed somewhere safe by luck. The other two friends most likely landed in front of a boss and are already dead (the explanation for the solo Healer, no per-class tutorial).
 
 Only the Cat speaks, and every joke is its. Players and bosses are silent.
 
@@ -37,9 +39,12 @@ The Cat reveals in steps; each rung must be hinted before it is told. Rungs are 
 2. **The push** (intro page 2): the glowing piece is knocked (a paw, ambiguous), the table lights up, the players are absorbed, the Cat last, tail first. It is the only calm one.
 3. **Landing** (tutorial start): a new geometric place, the Cat appears as a geometric hologram: "I'm stuck here too. Let's get out." It welcomes them as "adventurers" and starts helping, insultingly.
 4. **Tutorial steps**: the Cat teaches while taking credit and refusing blame (`Steps.md`).
-5. **Bosses**, one after another, each a campaign figurine. Final boss: open (candidates: the Cat itself, "the one who pressed the button").
+5. **Bosses**, one after another, each a campaign figurine. Final boss: the Cat, who finally says it is taking a lot of pleasure watching them suffer and die in a loop in here.
+
+## Decided
+- Tabletop game name: *Dungeon & Dihedral*, said by the Cat in the landing's situation line (`IntroBoard.md`, page 3).
+- Language: EN only for now.
+- The Cat pushed them and is the final boss (see Premise).
 
 ## Open questions
-- The name of the tabletop game (working: *Dungeons & Dodecahedrons*).
-- What the Cat really wants, and whether it stays an ally. Is it the final boss? (Decide before boss 3.)
-- Did it push the piece, or was it pushed? Keep both readings alive.
+- What the Cat's reveal line and timing are (Secrets ladder rungs 3-4 are now answered; hints stay in the board).

@@ -13,6 +13,12 @@ Menu system: a root shows pages; pages wear frames; lists share one frame and ro
 | `Gems/` | Gems menu: loadout board, Forge |
 | `Character/` | Character sheet, ability cards and detail drawer |
 
+## Tutorial entry
+Flow and rules: `AI/Tutorial/Flow.md`.
+- `GeoTutorialPromptWidget.h`: first-launch prompt, a main-menu page wearing the bare `WBP_MenuFrame` (no Back / cross); the Cat's text, two buttons (do it / skip); opened by `UGeoMainMenuWidget` on construct when `bTutorialPromptAnswered` is false, which it sets on either answer.
+- `UGeoMainMenuWidget`: `TutorialButton` opens the tutorial map. `UGeoPauseMenuWidget`: **Leave tutorial** only while in the tutorial map (world package = `UGeoGameInstance::TutorialMap`).
+- Map knowledge stays on `UGeoGameInstance`: `OpenTutorial()`, `LeaveTutorial()`, `IsInTutorial()`; the widgets only call them.
+
 ## Navigation
 - `UGeoMenuRootWidget`: `TopLevel` + every `UGeoMenuPageWidget` in its tree, one shown at a time; keeps the path, so Back retraces and Close leaves all.
 - Pages open other pages by class (`OpenPage`); a page never knows who opened it.

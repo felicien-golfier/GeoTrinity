@@ -23,9 +23,13 @@ public:
 	 * it over direct IP via JoinByAddress. No separate server process is launched.
 	 *
 	 * @param MapPackagePath  Package path of the gameplay map to host (e.g. /Game/Maps/DraftMap).
+	 * @param Portal          PlayerStartTag of the start the host spawns at; empty = any start.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GeoTrinity|Session")
-	void HostListen(FString const& MapPackagePath);
+	void HostListen(FString const& MapPackagePath, FString const& Portal = TEXT(""));
+
+	/** Travel URL of HostListen: <Map>?listen, then #Portal when Portal is not empty. */
+	static FString MakeListenUrl(FString const& MapPackagePath, FString const& Portal);
 
 	/** Travels the local player to a host at Address (IP, optional :port). */
 	UFUNCTION(BlueprintCallable, Category = "GeoTrinity|Session")

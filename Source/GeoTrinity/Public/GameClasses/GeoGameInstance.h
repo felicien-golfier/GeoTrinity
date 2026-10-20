@@ -54,6 +54,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoOnline")
 	void QuitGame();
 
+	/** Hosts TutorialMap as a solo listen server: encounters run on the authority only (AI/Tutorial/Flow.md). A Room
+	 * (portal) starts there, earlier rooms skipped ("Jump to a room"); console Geo.Tutorial.Jump <Room>. */
+	void OpenTutorial(FString const& Room = TEXT(""));
+
+	/** The tutorial's exit: hosts TrainingRoomMap, the player spawning at its "TrainingRoom" PlayerStart. */
+	void LeaveTutorial();
+
+	/** True while the current world is TutorialMap. */
+	bool IsInTutorial() const;
+
 	/**
 	 * Takes, and clears, the reason the last create, join or connection failed, for the menu's error popup. Empty when
 	 * nothing failed since the last take. Held rather than broadcast: a failed connection lands on a freshly loaded
@@ -71,6 +81,14 @@ public:
 	/** Map to return to when leaving a session via LeaveSessionAndReturnToMenu. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoOnline")
 	TSoftObjectPtr<UWorld> MainMenuMap;
+
+	/** Solo tutorial, opened as a listen server from the main menu (AI/Tutorial/Flow.md). */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoOnline")
+	TSoftObjectPtr<UWorld> TutorialMap;
+
+	/** Shared map holding the Training Room, where the tutorial hands the player off. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoOnline")
+	TSoftObjectPtr<UWorld> TrainingRoomMap;
 
 private:
 	/** Online **/

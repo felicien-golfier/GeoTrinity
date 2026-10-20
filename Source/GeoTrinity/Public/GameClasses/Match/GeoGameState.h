@@ -11,6 +11,7 @@
 #include "GeoGameState.generated.h"
 
 class AEnemyCharacter;
+class AGeoCharacter;
 class APlayableCharacter;
 class UAbilitySystemComponent;
 
@@ -18,6 +19,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, AEnemyCharacter*, E
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMatchStateChanged, FName, MatchState, FName, PreviousMatchState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWipe, float, DeathTime);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDifficultyChanged);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCharacterDied, AGeoCharacter&);
 DECLARE_MULTICAST_DELEGATE_FourParams(FOnIncomingDamage, UAbilitySystemComponent& /*VictimASC*/,
 									  FGameplayEffectContextHandle const& /*DamageContext*/, float /*Damage*/,
 									  float& /*SparedDamage*/);
@@ -39,7 +41,8 @@ public:
 	/** Registers Difficulty, so a floor pad lights up for the live tuning on every machine, and CombatSeconds. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	/** Server. Snapshots the players alive as the fight begins into FightPlayers, the set a wipe is measured against. */
+	/** Server. Snapshots the players alive as the fight begins into FightPlayers, the set a wipe is measured against.
+	 */
 	virtual void HandleMatchHasStarted() override;
 
 	/**
@@ -57,7 +60,8 @@ public:
 	 *  them once a fight ends. */
 	float GetCombatSeconds() const { return CombatSeconds; }
 
-	/** Server. Revives every player pawn currently in the world (no-op on a living one, so overlapping calls are free). */
+	/** Server. Revives every player pawn currently in the world (no-op on a living one, so overlapping calls are free).
+	 */
 	void RevivePlayers() const;
 
 	/**
@@ -81,14 +85,16 @@ public:
 	 */
 	void RequestWaitingToStart() const;
 
-	/** Server-side revives on leaving InProgress (mid-fight casualties on a victory); broadcasts OnMatchStateChanged. */
+	/** Server-side revives on leaving InProgress (mid-fight casualties on a victory); broadcasts OnMatchStateChanged.
+	 */
 	virtual void OnRep_MatchState() override;
 
 	UPROPERTY(BlueprintAssignable, Category = "GeoEnemy")
 	FOnEnemySpawned OnEnemySpawned;
 
 	/** Seconds from a fight starting to its commit. Shared by every arena; also the barrier's closing lerp duration.
-	 *  A plain timing constant, not an arena reference, so it stays here where the arena and the barrier both read it. */
+	 *  A plain timing constant, not an arena reference, so it stays here where the arena and the barrier both read it.
+	 */
 	UPROPERTY(EditAnywhere, Category = "GeoFight")
 	float CommitFightTime = 3.f;
 
@@ -97,15 +103,21 @@ public:
 	UPROPERTY(EditAnywhere, Category = "GeoFight")
 	float DeathTime = 3.f;
 
-	/** Broadcast on every match state transition, on server and clients alike. AGeoArena subscribes to run its fight. */
+	/** Broadcast on every match state transition, on server and clients alike. AGeoArena subscribes to run its fight.
+	 */
 	FMatchStateChanged OnMatchStateChanged;
 
 	/** Server. Broadcast the moment every fight player is down — DeathTime seconds before the group respawns. */
 	FOnWipe OnWipe;
 
+	/** Server. Broadcast by AGeoCharacter::Death() for every character, player or enemy, falls and disconnects
+	 * included, right after bIsDead is set. The one hub for listeners that watch several characters (encounter
+	 * triggers). */
+	FOnCharacterDied OnCharacterDied;
+
 	/** Server. Stage 1 of a hit about to take Damage off VictimASC's shield and health: a listener takes the hit over
-	 *  (the Martyr redirect). It adds the part it takes onto itself to SparedDamage, never more than Damage - SparedDamage;
-	 *  the victim is spared that much. A hit taken over whole ends here, stage 2 never sees it. */
+	 *  (the Martyr redirect). It adds the part it takes onto itself to SparedDamage, never more than Damage -
+	 * SparedDamage; the victim is spared that much. A hit taken over whole ends here, stage 2 never sees it. */
 	FOnIncomingDamage OnIncomingDamage;
 
 	/** Server. Stage 2, with what stage 1 left as Damage: a listener takes a part of it on itself (Bond), same

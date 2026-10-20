@@ -90,6 +90,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoInput")
 	TObjectPtr<UInputAction> ZoomAction;
 
+#if WITH_EDITORONLY_DATA
+	/** Test aim (editor only, set on the live component): while true, UpdateMouseLook aims at TestAimWorld instead of
+	 * the mouse cursor. */
+	UPROPERTY(EditInstanceOnly, Transient, Category = "GeoInput|Test")
+	bool bTestAimActive = false;
+
+	/** World X / Y the pawn aims at while bTestAimActive. */
+	UPROPERTY(EditInstanceOnly, Transient, Category = "GeoInput|Test")
+	FVector2D TestAimWorld = FVector2D::ZeroVector;
+#endif
+
 private:
 	// Cached latest right stick vector in viewport space (X,Y), not normalized. Zero when idle.
 	FVector2D LastLookInput = FVector2D::ZeroVector;

@@ -567,10 +567,23 @@ UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> c
 
 AGeoDeployableBase*
 UGeoAbilitySystemLibrary::FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> const DeployableActorClass,
-											   FDeployableData& Data, FTransform const& SpawnTransform)
+											   FDeployableData& Data, FTransform const& SpawnTransform,
+											   UWorld* const World)
 {
-	AGeoDeployableBase* Deployable =
-		StartSpawnDeployable(DeployableActorClass, Data.Owner, Cast<APawn>(Data.Instigator), SpawnTransform);
+	AGeoDeployableBase* Deployable = nullptr;
+	if (Data.Owner)
+	{
+		Deployable =
+			StartSpawnDeployable(DeployableActorClass, Data.Owner, Cast<APawn>(Data.Instigator), SpawnTransform);
+	}
+	else if (ensureMsgf(World, TEXT("%hs: a deployable without owner needs a World"), __FUNCTION__))
+	{
+		Deployable = World->SpawnActorDeferred<AGeoDeployableBase>(
+			DeployableActorClass, SpawnTransform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		Data.Owner = Deployable;
+		Data.Instigator = Deployable;
+	}
+
 	if (!ensureMsgf(IsValid(Deployable), TEXT("%hs: failed to spawn %s"), __FUNCTION__,
 					*GetNameSafe(DeployableActorClass)))
 	{

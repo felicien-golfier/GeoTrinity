@@ -8,8 +8,13 @@
 #include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "TimerManager.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
+#include "UObject/ConstructorHelpers.h"
 
 namespace
 {
@@ -35,19 +40,97 @@ AGeoTeleporter::AGeoTeleporter()
 	TextComponent->SetRelativeRotation(FRotator(0, 90.0, 0.0));
 	TextComponent->SetHorizontalAlignment(EHTA_Center);
 	TextComponent->CastShadow = false;
+
+	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> PortalSystem(
+		TEXT("/Game/Art/VFX/Teleporter/NS_TeleportPortal.NS_TeleportPortal"));
+	PortalComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("PortalComponent"));
+	PortalComponent->SetupAttachment(MeshComponent);
+	PortalComponent->SetAsset(PortalSystem.Object);
+	PortalComponent->SetAutoActivate(false);
+
+	bReplicates = true;
+}
+
+void AGeoTeleporter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AGeoTeleporter, bOpen);
+}
+
+void AGeoTeleporter::SetOpen(bool bNewOpen)
+{
+	if (HasAuthority() && bOpen != bNewOpen)
+	{
+		bOpen = bNewOpen;
+		ApplyOpen();
+		PlayPortalTransition();
+	}
+}
+
+void AGeoTeleporter::OnRep_Open()
+{
+	ApplyOpen();
+	PlayPortalTransition();
+}
+
+void AGeoTeleporter::ApplyOpen()
+{
+	MeshComponent->SetCollisionEnabled(bOpen ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+	if (!bOpen)
+	{
+		PendingArrivals.Empty();
+	}
+
+	TextComponent->SetVisibility(bOpen);
+	OnOpenChanged(bOpen);
+}
+
+void AGeoTeleporter::PlayPortalTransition()
+{
+	if (bOpen)
+	{
+		PortalComponent->Activate(true);
+	}
+	else
+	{
+		PortalComponent->Deactivate();
+	}
+}
+
+void AGeoTeleporter::SetPortalColor(FLinearColor const NewColor)
+{
+	PortalColor = NewColor;
+	PortalComponent->SetVariableLinearColor(GeoNiagaraParams::Color, PortalColor);
 }
 
 void AGeoTeleporter::OnConstruction(FTransform const& Transform)
 {
 	Super::OnConstruction(Transform);
 	TextComponent->SetText(DisplayText);
+
+	// The mesh only shapes the overlap; the portal is the visual, and the label rides above it so they never z-fight.
+	MeshComponent->SetVisibility(false);
+	float const PortalHeight = 2.0f;
+	float const LabelHeight = 5.0f;
+	PortalComponent->SetRelativeLocation(FVector(0.0f, 0.0f, PortalHeight));
+	FVector LabelLocation = TextComponent->GetRelativeLocation();
+	LabelLocation.Z = LabelHeight;
+	TextComponent->SetRelativeLocation(LabelLocation);
+
+	SetPortalColor(PortalColor);
 }
 
 void AGeoTeleporter::BeginPlay()
 {
 	Super::BeginPlay();
+	SetPortalColor(PortalColor);
 	MeshComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
 	MeshComponent->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
+	ApplyOpen();
+	if (bOpen)
+	{
+		PortalComponent->Activate(true);
+	}
 
 	if (AGeoTeleporter const* NextTeleporter = FindNextTeleporter())
 	{

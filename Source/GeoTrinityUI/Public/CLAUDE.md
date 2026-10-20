@@ -8,7 +8,7 @@ Runtime UI module (`Type=Runtime`): HUD, widgets, menus, styles. Depends on `Geo
 | `HUD/Menu/` | Main / pause menus and every page | `HUD/Menu/CLAUDE.md` |
 | `HUD/Style/` | Themed primitives drawn with Slate | `HUD/Style/CLAUDE.md` |
 
-Private-only: `Private/Tests/GeoMessageLogTests.cpp` (message log layout, `AI/Testing.md`).
+Private-only: `Private/Tests/GeoMessageLogTests.cpp` (message log layout), `Private/Tests/GeoCatLineTests.cpp` (Cat line markup, Cat face motion) (`AI/Testing.md`).
 
 UI rules (generic reusable styles, Blueprint-tweakable values): `AI/UI.md`. Widget building: `AI/MCP/MCP_UI.md`.
 

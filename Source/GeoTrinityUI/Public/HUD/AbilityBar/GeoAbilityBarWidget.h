@@ -13,11 +13,13 @@ class UHorizontalBox;
 class UWrapBox;
 class UGeoAbilitySlotWidget;
 class AGeoHUD;
+class UGeoAbilitySystemComponent;
 
 /**
  * Bottom-center ability bar. On BuildBar it clears SlotBox, queries AGeoHUD::GetAbilityBarEntries, and creates one
  * WBP_AbilitySlot per entry. Binds the HUD's deploy-count ping so deployable slots refresh their badges without
- * polling. Passives get a tile each in PassiveBox, rebuilt when the granted passive set changes.
+ * polling. Passives get a tile each in PassiveBox. A grant or removal on the player's ASC (OnAbilitySetChanged) queues
+ * one rebuild for the next tick, so a burst of grants costs one.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoAbilityBarWidget : public UGeoUserWidget
@@ -30,8 +32,8 @@ public:
 	void BuildBar(AGeoHUD* InHUD, APlayableCharacter* PlayableCharacter);
 
 protected:
-	/** Rebuilds the passive tiles when the granted passive set differs from the one shown. */
-	virtual void NativeTick(FGeometry const& MyGeometry, float InDeltaTime) override;
+	/** Unbinds the ASC grant event. */
+	virtual void NativeDestruct() override;
 
 	/** Re-broadcast target: re-queries every deployable slot's count on the HUD's tagless ping. */
 	UFUNCTION()
@@ -54,6 +56,12 @@ protected:
 	TSubclassOf<UGeoAbilitySlotWidget> PassiveSlotWidgetClass;
 
 private:
+	/** ASC grant event: queues one BuildBar for the next tick. */
+	void OnAbilitySetChanged();
+
+	/** Rebuilds the bar from the HUD's current ability set. */
+	void Rebuild();
+
 	/** Replaces PassiveBox's tiles with one per entry of Passives. */
 	void BuildPassiveTiles(TArray<FGeoAbilityBarEntry> const& Passives);
 
@@ -66,6 +74,9 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UGeoAbilitySlotWidget>> Slots;
 
-	/** Ability tags of the passive tiles shown, in tile order. */
-	TArray<FGameplayTag> ShownPassiveTags;
+	/** The ASC whose grants this bar follows. */
+	TWeakObjectPtr<UGeoAbilitySystemComponent> BoundASC;
+
+	FDelegateHandle AbilitySetHandle;
+	bool bRebuildQueued = false;
 };

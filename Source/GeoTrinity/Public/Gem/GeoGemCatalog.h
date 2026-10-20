@@ -24,7 +24,8 @@ public:
 	/** The catalog UGameDataSettings points at, kept resident. Null only when the setting is left empty. */
 	static UGeoGemCatalog const* Get();
 
-	/** The gem whose Id is GemId, or null for an id no gem carries (one removed from the catalog since it was saved). */
+	/** The gem whose Id is GemId, or null for an id no gem carries (one removed from the catalog since it was saved).
+	 */
 	FGeoGemInfo const* Find(FName GemId) const;
 
 	/** The tier the gem whose Id is GemId is filed under; unset for an id no gem carries. */
@@ -37,10 +38,26 @@ public:
 	int32 GetBreakDownShards(EGeoGemTier Tier) const;
 
 	/**
-	 * Gems one player gets from killing a BossType at Difficulty: its drop table's count scaled by DifficultyLootScale,
-	 * each gem's tier rolled from the table's chances, the gem picked evenly among that tier's gems.
+	 * Gems one player gets from DropTable at Difficulty: its count scaled by DifficultyLootScale, each gem's tier
+	 * rolled from the table's chances, the gem picked evenly among that tier's gems.
 	 */
-	TArray<FGeoGemStack> RollLoot(EGeoBossType BossType, EGeoDifficulty Difficulty, FRandomStream& Stream) const;
+	TArray<FGeoGemStack> RollLoot(FGeoGemDropTable const& DropTable, EGeoDifficulty Difficulty,
+								  FRandomStream& Stream) const;
+
+	/**
+	 * What one player gets from killing a BossType with BossLoot at Difficulty: the roll of BossLoot's drop table (or
+	 * the DropTables entry of BossType) plus its fixed gems and shards, which difficulty never scales. A fixed gem also
+	 * rolled merges into one stack. Only Gems and Shards of the reward are set.
+	 */
+	FGeoGemReward MakeKillLoot(FGeoBossLoot const& BossLoot, EGeoBossType BossType, EGeoDifficulty Difficulty,
+							   FRandomStream& Stream) const;
+
+	/** Why BossLoot's fixed gems are wrong: a GemId no catalog gem carries, a Count under 1. Empty when valid. */
+	TArray<FString> FindBossLootErrors(FGeoBossLoot const& BossLoot) const;
+
+	/** Every catalog gem Id, Chip tier to Core: the dropdown of FGeoGemLootEntry::GemId. */
+	UFUNCTION()
+	static TArray<FName> GetGemIdOptions();
 
 	/** Class XP for taking HealthTakenRatio of a BossType's health bar at Difficulty, whether it died or not. */
 	int32 GetXp(EGeoBossType BossType, float HealthTakenRatio, EGeoDifficulty Difficulty) const;
@@ -68,12 +85,16 @@ public:
 												 {EGeoGemTier::Core, FGeoGemList()}};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Forge")
-	TMap<EGeoGemTier, int32> CraftCosts = {
-		{EGeoGemTier::Chip, 5}, {EGeoGemTier::Cut, 25}, {EGeoGemTier::Prism, 125}, {EGeoGemTier::Core, 625}};
+	TMap<EGeoGemTier, int32> CraftCosts = {{EGeoGemTier::Chip, 5},
+										   {EGeoGemTier::Cut, 25},
+										   {EGeoGemTier::Prism, 125},
+										   {EGeoGemTier::Core, 625}};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Forge")
-	TMap<EGeoGemTier, int32> BreakDownShards = {
-		{EGeoGemTier::Chip, 1}, {EGeoGemTier::Cut, 5}, {EGeoGemTier::Prism, 25}, {EGeoGemTier::Core, 125}};
+	TMap<EGeoGemTier, int32> BreakDownShards = {{EGeoGemTier::Chip, 1},
+												{EGeoGemTier::Cut, 5},
+												{EGeoGemTier::Prism, 25},
+												{EGeoGemTier::Core, 125}};
 
 	/** What each kind of kill drops, at a difficulty scale of 1. Cores never drop from a boss: they are crafted. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Loot")
@@ -81,8 +102,9 @@ public:
 
 	/** Multiplies a kill's drop counts. A failed attempt drops nothing at any difficulty. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Loot")
-	TMap<EGeoDifficulty, float> DifficultyLootScale = {
-		{EGeoDifficulty::Safe, 0.5f}, {EGeoDifficulty::Reduced, 0.75f}, {EGeoDifficulty::Original, 1.f}};
+	TMap<EGeoDifficulty, float> DifficultyLootScale = {{EGeoDifficulty::Safe, 0.5f},
+													   {EGeoDifficulty::Reduced, 0.75f},
+													   {EGeoDifficulty::Original, 1.f}};
 
 	/** Class XP between two levels. The same for every level, so leveling is linear. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|ClassXp")
@@ -97,8 +119,9 @@ public:
 
 	/** Multiplies the class XP an attempt gives. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|ClassXp")
-	TMap<EGeoDifficulty, float> DifficultyXpScale = {
-		{EGeoDifficulty::Safe, 0.5f}, {EGeoDifficulty::Reduced, 0.75f}, {EGeoDifficulty::Original, 1.f}};
+	TMap<EGeoDifficulty, float> DifficultyXpScale = {{EGeoDifficulty::Safe, 0.5f},
+													 {EGeoDifficulty::Reduced, 0.75f},
+													 {EGeoDifficulty::Original, 1.f}};
 
 	/** Share of its tier's max per class each echo level adds to the one tier whose turn it is: 0.01 is 1%. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Echo", meta = (ClampMin = 0, ClampMax = 1))
@@ -117,6 +140,9 @@ public:
 	TObjectPtr<UCurveFloat> EchoXpCurve;
 
 private:
+	/** Adds Count copies of GemId to Stacks, onto its stack when it has one. */
+	static void AddToStacks(TArray<FGeoGemStack>& Stacks, FName GemId, int32 Count);
+
 	/** Scales' entry for Difficulty; 0 with an ensure when it has none. */
 	float GetDifficultyScale(TMap<EGeoDifficulty, float> const& Scales, EGeoDifficulty Difficulty) const;
 };

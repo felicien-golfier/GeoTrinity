@@ -15,8 +15,8 @@ class USoundBase;
  * Main lobby menu widget. Composes the UGeoMenuButton instances and handles all action logic in C++.
  * Blueprint subclasses configure appearance through the button UPROPERTYs and set MusicLoop.
  * Required in the BP hierarchy: UGeoMenuButton widgets named "CreateServerButton", "JoinServerButton",
- * "PlayLocalButton", "LeaderboardButton", "QuitButton", and as pages a UGeoCreateServerWidget, a
- * UGeoBrowseServersWidget, a UGeoLocalConnectWidget and a UGeoLeaderboardWidget.
+ * "PlayLocalButton", "TutorialButton", "LeaderboardButton", "QuitButton", and as pages a UGeoCreateServerWidget, a
+ * UGeoBrowseServersWidget, a UGeoLocalConnectWidget, a UGeoLeaderboardWidget and a UGeoTutorialPromptWidget.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoMainMenuWidget : public UGeoMenuRootWidget
@@ -24,12 +24,14 @@ class GEOTRINITYUI_API UGeoMainMenuWidget : public UGeoMenuRootWidget
 	GENERATED_BODY()
 
 public:
-	/** Returns the local player's display name from the game instance settings; used to populate name labels in the lobby. */
+	/** Returns the local player's display name from the game instance settings; used to populate name labels in the
+	 * lobby. */
 	UFUNCTION(BlueprintCallable, Category = "GeoSession")
 	FString GetLocalPlayerName() const;
 
 protected:
-	/** Wires each main-menu button to its handler and fades in MusicLoop. */
+	/** Wires each main-menu button to its handler, fades in MusicLoop, and opens the tutorial prompt until it is
+	 * answered. */
 	virtual void NativeConstruct() override;
 	/** Fades the music out and releases it. */
 	virtual void NativeDestruct() override;
@@ -38,7 +40,8 @@ protected:
 	/** Returns CreateServerButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
 
-	/** Looping menu music, played 2D for as long as the menu exists. Its Sound Class sets which volume slider drives it. */
+	/** Looping menu music, played 2D for as long as the menu exists. Its Sound Class sets which volume slider drives
+	 * it. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoMenu|Music")
 	TObjectPtr<USoundBase> MusicLoop;
 
@@ -50,6 +53,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> PlayLocalButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UGeoMenuButton> TutorialButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> LeaderboardButton;
@@ -66,6 +72,9 @@ private:
 
 	UFUNCTION()
 	void HandlePlayLocal();
+
+	UFUNCTION()
+	void HandleTutorial();
 
 	UFUNCTION()
 	void HandleLeaderboard();

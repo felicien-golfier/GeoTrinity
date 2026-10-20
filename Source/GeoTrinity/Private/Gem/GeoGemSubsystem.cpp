@@ -18,6 +18,13 @@ void UGeoGemSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Profile = UGeoGemProfileSave::Load(GetLocalPlayerChecked()->GetLocalPlayerIndex());
 }
 
+UGeoGemProfileSave* UGeoGemSubsystem::GetFirstLocalProfile(UWorld const* World)
+{
+	ULocalPlayer const* const LocalPlayer = World ? World->GetFirstLocalPlayerFromController() : nullptr;
+	UGeoGemSubsystem const* const GemSubsystem = LocalPlayer ? LocalPlayer->GetSubsystem<UGeoGemSubsystem>() : nullptr;
+	return GemSubsystem ? GemSubsystem->GetProfile() : nullptr;
+}
+
 void UGeoGemSubsystem::CommitChanges()
 {
 	ULocalPlayer const* LocalPlayer = GetLocalPlayerChecked();
@@ -48,8 +55,9 @@ void UGeoGemSubsystem::GrantReward(FGeoGemReward const& Reward)
 		Profile->AddGems(Stack.Id, Stack.Count);
 		GemCount += Stack.Count;
 	}
-	UE_LOG(LogGeoTrinity, Display, TEXT("Gems: %s +%d XP (+%d level), %d gem(s)"),
-		   *UEnum::GetValueAsString(Reward.PlayerClass), Reward.Xp, LevelsGained, GemCount);
+	Profile->AddShards(Reward.Shards);
+	UE_LOG(LogGeoTrinity, Display, TEXT("Gems: %s +%d XP (+%d level), %d gem(s), %d shard(s)"),
+		   *UEnum::GetValueAsString(Reward.PlayerClass), Reward.Xp, LevelsGained, GemCount, Reward.Shards);
 	CommitChanges();
 }
 

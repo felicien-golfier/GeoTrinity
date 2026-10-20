@@ -21,6 +21,9 @@ AGeoEnemyAIController::AGeoEnemyAIController(FObjectInitializer const& ObjectIni
 	StateTreeComp = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComp"));
 	GeoBlackBoard = CreateDefaultSubobject<UGeoAIBlackboardComponent>(TEXT("GeoBlackBoard"));
 
+	// InitializeStateTree starts it once the pawn's tree is known; a pawn with none (hidden caster) runs nothing.
+	StateTreeComp->SetStartLogicAutomatically(false);
+
 	// AGeoCharacter::Tick drives ControlRotation itself (clamped turn toward TargetYaw). Leaving this on would have
 	// AAIController::Tick snap ControlRotation back to the pawn's (stale, previous-frame) actor rotation every
 	// frame, fighting that clamp and preventing the boss from ever visibly turning.
@@ -67,7 +70,10 @@ void AGeoEnemyAIController::InitializeForPawn(APawn* InPawn)
 	}
 
 	InitializeStateTree(EnemyChar);
-	InitializeAggro(EnemyChar);
+	if (EnemyChar->CanBeAggroed())
+	{
+		InitializeAggro(EnemyChar);
+	}
 }
 
 void AGeoEnemyAIController::InitializeAggro(AEnemyCharacter const* EnemyChar)
@@ -190,7 +196,8 @@ void AGeoEnemyAIController::UpdateCurrentTarget(float const DeltaTime)
 
 void AGeoEnemyAIController::CheckAggroDistance()
 {
-	if (GeoBlackBoard->Data.bAggroed || !GetPawn() || GetWorld()->GetGameStateChecked<AGeoGameState>()->IsMatchInProgress())
+	if (GeoBlackBoard->Data.bAggroed || !GetPawn()
+		|| GetWorld()->GetGameStateChecked<AGeoGameState>()->IsMatchInProgress())
 	{
 		return;
 	}

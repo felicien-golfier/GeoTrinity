@@ -3,7 +3,7 @@
 Two servers: UE 5.8 built-in `mcp-epic` (default for reads and every toolset-covered write: Blueprint graphs, material graphs, properties, tables, tags) and `mcp-unreal` `execute_script` (Python in `AI/Python/`, plus C++ `UEditorUtilityObject` shims for what Python cannot reach). Which one: `MCP_UnrealBuiltin.md` → "Which server".
 
 ## Prerequisites
-- Editor open before Claude Code starts (tools register at session start).
+- Editor open before Claude Code starts (tools register at session start). `mcp-epic` is disconnected by default: ask the user for access whenever a task needs it (`MCP_EpicTesting.md`, "Setup").
 - MCP client down → POST scripts to the bridge on the `.mcp.json` port (`MCP_LiveCodingAndConnect.md`).
 - New tags in `Config/Tags/GeoGameplayTags.ini` → editor restart.
 - New `UFUNCTION` / type / header change → full build, editor closed. Implementation-only `.cpp` → Live Coding.
@@ -32,6 +32,7 @@ Two servers: UE 5.8 built-in `mcp-epic` (default for reads and every toolset-cov
 | Project / per-level settings | `MCP_Settings.md` |
 | Reading the running game in PIE | `MCP_PIE.md` |
 | Judging a visual change without PIE | `MCP_Preview.md` |
+| Testing the running game with `mcp-epic` only: teleport, log, GAS, key input, limits | `MCP_EpicTesting.md` |
 | Live Coding, connecting the bridge | `MCP_LiveCodingAndConnect.md` |
 | UE built-in MCP: enable, connect, toolsets | `MCP_UnrealBuiltin.md` |
 | Audacity | `Audacity/CLAUDE.md`, `GameSoundDesign.md`, `ListeningToSound.md` |

@@ -4,6 +4,8 @@
 #include "HUD/HudFunctionLibrary.h"
 
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
+#include "Engine/LocalPlayer.h"
+#include "EnhancedInputSubsystems.h"
 
 bool UHudFunctionLibrary::ShouldDrawHUD(UObject const* WorldContextObject)
 {
@@ -45,8 +47,7 @@ float UHudFunctionLibrary::GetHealthRatio(UAbilitySystemComponent const* Ability
 FText UHudFunctionLibrary::FormatDuration(float Seconds)
 {
 	int32 const Tenths = FMath::Max(0, FMath::FloorToInt32(Seconds * 10.f));
-	return FText::FromString(
-		FString::Printf(TEXT("%d:%02d.%d"), Tenths / 600, (Tenths / 10) % 60, Tenths % 10));
+	return FText::FromString(FString::Printf(TEXT("%d:%02d.%d"), Tenths / 600, (Tenths / 10) % 60, Tenths % 10));
 }
 
 FText UHudFunctionLibrary::FormatCompactNumber(float Value)
@@ -60,4 +61,12 @@ FText UHudFunctionLibrary::FormatCompactNumber(float Value)
 		return FText::FromString(FString::Printf(TEXT("%.1fk"), Value / 1000.f));
 	}
 	return FText::FromString(FString::Printf(TEXT("%.0f"), Value));
+}
+
+FKey UHudFunctionLibrary::GetMappedKey(ULocalPlayer const* LocalPlayer, UInputAction const* InputAction)
+{
+	UEnhancedInputLocalPlayerSubsystem const* const InputSubsystem =
+		LocalPlayer && InputAction ? LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
+	TArray<FKey> const Keys = InputSubsystem ? InputSubsystem->QueryKeysMappedToAction(InputAction) : TArray<FKey>();
+	return Keys.Num() > 0 ? Keys[0] : FKey();
 }

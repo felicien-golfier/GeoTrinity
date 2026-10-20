@@ -17,6 +17,7 @@
 #include "GameplayEffect.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/GeoWorldSettings.h"
 
 namespace
 {
@@ -222,22 +223,49 @@ void UGeoAbilitySystemComponent::GiveStartupAbilities(EPlayerClass const PlayerC
 		return;
 	}
 
+	AGeoWorldSettings const* const WorldSettings = Cast<AGeoWorldSettings>(GetWorld()->GetWorldSettings());
 	for (FPlayersGameplayAbilityInfo const& AbilityInfo : AbilityInfos->GetAbilitiesForClass(PlayerClass))
 	{
-		if (!AbilityInfo.bGiveAtStartup)
+		bool const bLocked = WorldSettings && WorldSettings->LockedAbilityTags.HasTagExact(AbilityInfo.AbilityTag);
+		if (AbilityInfo.bGiveAtStartup && !bLocked)
 		{
-			continue;
+			GivePlayerAbility(AbilityInfo);
 		}
-
-		bool const bHasInput = AbilityInfo.InputAction != nullptr;
-		ensureMsgf(!bHasInput || AbilityInfo.InputTag.IsValid(),
-				   TEXT("Ability %s has an InputAction but no InputTag — fill InputTag in DA_AbilityInfo"),
-				   *AbilityInfo.AbilityClass->GetName());
-
-		GiveAbilitySpec(AbilityInfo.AbilityClass, bHasInput ? AbilityInfo.InputTag : FGameplayTag());
 	}
 
 	bStartupAbilitiesGiven = true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoAbilitySystemComponent::GiveClassAbility(EPlayerClass const PlayerClass, FGameplayTag const AbilityTag)
+{
+	UAbilityInfo const* AbilityInfos = GetCheckedAbilityInfo(__FUNCTION__);
+	TArray<FPlayersGameplayAbilityInfo> const ClassInfos =
+		AbilityInfos ? AbilityInfos->GetAbilitiesForClass(PlayerClass) : TArray<FPlayersGameplayAbilityInfo>();
+	FPlayersGameplayAbilityInfo const* const AbilityInfo = ClassInfos.FindByPredicate(
+		[AbilityTag](FPlayersGameplayAbilityInfo const& Candidate)
+		{
+			return Candidate.AbilityTag == AbilityTag;
+		});
+	bool const bGrant =
+		AbilityInfo && AbilityInfo->AbilityClass && !FindAbilitySpecFromClass(AbilityInfo->AbilityClass);
+	if (bGrant)
+	{
+		GivePlayerAbility(*AbilityInfo);
+	}
+
+	return bGrant;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilitySystemComponent::GivePlayerAbility(FPlayersGameplayAbilityInfo const& AbilityInfo)
+{
+	bool const bHasInput = AbilityInfo.InputAction != nullptr;
+	ensureMsgf(!bHasInput || AbilityInfo.InputTag.IsValid(),
+			   TEXT("Ability %s has an InputAction but no InputTag — fill InputTag in DA_AbilityInfo"),
+			   *AbilityInfo.AbilityClass->GetName());
+
+	GiveAbilitySpec(AbilityInfo.AbilityClass, bHasInput ? AbilityInfo.InputTag : FGameplayTag());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -516,6 +544,18 @@ bool UGeoAbilitySystemComponent::FindPatternByClass(UClass* PatternClass, UPatte
 
 	Pattern = *FoundPattern;
 	return true;
+}
+
+void UGeoAbilitySystemComponent::OnGiveAbility(FGameplayAbilitySpec& AbilitySpec)
+{
+	Super::OnGiveAbility(AbilitySpec);
+	OnAbilitySetChanged.Broadcast();
+}
+
+void UGeoAbilitySystemComponent::OnRemoveAbility(FGameplayAbilitySpec& AbilitySpec)
+{
+	Super::OnRemoveAbility(AbilitySpec);
+	OnAbilitySetChanged.Broadcast();
 }
 
 void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload, UClass* PatternClass,

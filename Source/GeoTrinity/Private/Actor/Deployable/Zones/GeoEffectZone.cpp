@@ -8,8 +8,8 @@
 #include "Components/MeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Net/UnrealNetwork.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 
 AGeoEffectZone::AGeoEffectZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -111,7 +111,7 @@ void AGeoEffectZone::JudgeZone()
 		MakeHazardSource(), Data.EffectDataArray, FGeoHazardJudge::FindCandidates(Data.Owner, Data.Params.Attitude),
 		[this](AActor const* Target, FVector2D const Location, float /*SpentTime*/)
 		{
-			return GeoASLib::IsInCircle(Target, Location, FVector2D(GetActorLocation()), Data.Params.Size,
+			return GeoASLib::IsInCircle(Target, Location, FVector2D(GetActorLocation()), GetRadius(),
 										ETargetOverlapMode::IncludeRadius, GeoASLib::GetTeamId(Data.Owner));
 		}));
 
@@ -131,14 +131,15 @@ void AGeoEffectZone::OnRep_Data()
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoEffectZone::ApplyRadius() const
 {
-	CapsuleComponent->SetCapsuleHalfHeight(Data.Params.Size);
-	CapsuleComponent->SetCapsuleRadius(Data.Params.Size);
+	float const ZoneRadius = GetRadius();
+	CapsuleComponent->SetCapsuleHalfHeight(ZoneRadius);
+	CapsuleComponent->SetCapsuleRadius(ZoneRadius);
 
 	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
 	{
 		FVector Scale = MeshComponent->GetRelativeScale3D();
-		Scale.X = Data.Params.Size * .02f;
-		Scale.Y = Data.Params.Size * .02f;
+		Scale.X = ZoneRadius * .02f;
+		Scale.Y = ZoneRadius * .02f;
 		MeshComponent->SetRelativeScale3D(Scale);
 	}
 }

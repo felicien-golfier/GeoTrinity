@@ -7,18 +7,19 @@
 
 #include "GeoPauseMenuWidget.generated.h"
 
+class APlayerController;
 class UGeoMenuButton;
+class UGeoMenuPageWidget;
 
 /**
  * In-game pause menu opened via AGeoPlayerController's toggle-menu input. Owned and shown/hidden by the
  * PlayerController, not nested in a parent menu; closing it, from any page, resumes the game.
  * Required in the BP hierarchy: UGeoMenuButton "ResumeButton", "SettingsButton", "LeaderboardButton",
- * "ReturnToMainMenuButton", "QuitButton", and as pages a UGeoSettingsWidget (with the UGeoSoundSettingsWidget,
- * UGeoKeyBindingsWidget and UGeoInterfaceSettingsWidget it opens) and a UGeoLeaderboardWidget. Optional:
- * "CharacterButton" with a
- * UGeoCharacterSheetWidget page, and the UGeoGemsWidget page that sheet opens.
- * The leaderboard is the same page class the main menu opens, and it reads the save on every construct, so a run
- * finished this session shows up without leaving the level.
+ * "ReturnToMainMenuButton", "LeaveTutorialButton" (shown only in the tutorial map), "QuitButton", and as pages a
+ * UGeoSettingsWidget (with the UGeoSoundSettingsWidget, UGeoKeyBindingsWidget and UGeoInterfaceSettingsWidget it opens)
+ * and a UGeoLeaderboardWidget. Optional: "CharacterButton" with a UGeoCharacterSheetWidget page, and the UGeoGemsWidget
+ * page that sheet opens. The leaderboard is the same page class the main menu opens, and it reads the save on every
+ * construct, so a run finished this session shows up without leaving the level.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoPauseMenuWidget : public UGeoMenuRootWidget
@@ -29,8 +30,12 @@ public:
 	/** Closes the pause menu. */
 	virtual void CloseMenu() override;
 
+	/** Opens Controller's pause menu on its page of PageClass, from outside the menu (the Tab sheet, the tutorial's
+	 * ability page). Returns that page, null when it could not open. */
+	static UGeoMenuPageWidget* OpenOnPage(APlayerController* Controller, TSubclassOf<UGeoMenuPageWidget> PageClass);
+
 protected:
-	/** Wires each pause-menu button. */
+	/** Wires each pause-menu button; collapses LeaveTutorialButton outside the tutorial map. */
 	virtual void NativeConstruct() override;
 	/** Returns ResumeButton. */
 	virtual UWidget* GetInitialFocusWidget() const override;
@@ -50,6 +55,9 @@ protected:
 	TObjectPtr<UGeoMenuButton> ReturnToMainMenuButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UGeoMenuButton> LeaveTutorialButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UGeoMenuButton> QuitButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
@@ -67,6 +75,9 @@ private:
 
 	UFUNCTION()
 	void HandleReturnToMainMenu();
+
+	UFUNCTION()
+	void HandleLeaveTutorial();
 
 	UFUNCTION()
 	void HandleQuit();

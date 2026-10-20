@@ -135,7 +135,8 @@ namespace GeoMaterialParams
 	}
 	inline FName const PillarRadius(TEXT("Pillar_Radius"));
 
-	/** HUD sweep materials, 0..1 — the cooldown (UGeoAbilitySlotWidget) and the effect depletion (UGeoStatusBarWidget). */
+	/** HUD sweep materials, 0..1 — the cooldown (UGeoAbilitySlotWidget) and the effect depletion (UGeoStatusBarWidget).
+	 */
 	inline FName const SweepFill(TEXT("Fill"));
 } // namespace GeoMaterialParams
 

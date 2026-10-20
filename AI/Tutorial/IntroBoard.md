@@ -24,6 +24,7 @@ Every page is 3 layers drifting at different speeds on a horizontal axis. No fra
 ## Page 3 — Landing
 - Purpose: first in-game screen. New geometric place (an empty arena-lobby on the lattice), one shape: the Circle, the only class of the tutorial (the other classes are discovered in the Training Room, `Steps.md` step 13). The Cat's hologram speaks in a dialogue box.
 - Beat: the Cat says it is stuck too and will get them out, insults them, hints it knows more than it says, jokes that the Healer is probably the only time the player will ever play one (forced, it is the tutorial), announces the first lesson. Its text ends on a doable action (move) and hands over control.
+- Situation line, right after the Cat's first quip: it explains where they are. The game is *Dungeon & Dihedral*; the Cat and the Healer landed here by luck, the two other friends surely landed in front of a boss and are already dead. Text lives on Board page 3.
 - Hand-off: its last line leads into `Steps.md` step 1 (Move).
 
 ## Implementation notes (target, once the user greenlights step 4)

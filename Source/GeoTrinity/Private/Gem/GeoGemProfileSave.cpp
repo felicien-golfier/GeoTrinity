@@ -192,6 +192,11 @@ void UGeoGemProfileSave::AddGems(FName const GemId, int32 const Count)
 	OwnedGems.FindOrAdd(GemId) += Count;
 }
 
+void UGeoGemProfileSave::AddShards(int32 const Count)
+{
+	Shards += Count;
+}
+
 void UGeoGemProfileSave::SetClassLevel(EPlayerClass const PlayerClass, int32 const Level)
 {
 	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);
@@ -305,6 +310,7 @@ bool UGeoGemProfileSave::Equip(UGeoGemCatalog const& Catalog, EPlayerClass const
 		}
 
 		Loadout.Sockets[SocketIndex] = GemId;
+		OnGemEquipped.Broadcast(PlayerClass, SocketIndex, GemId);
 	}
 
 	return bCanEquip;
@@ -408,6 +414,7 @@ bool UGeoGemProfileSave::Craft(UGeoGemCatalog const& Catalog, FName const GemId,
 	{
 		Shards -= Cost;
 		AddGems(GemId, Quantity);
+		OnGemCrafted.Broadcast(GemId, Quantity);
 	}
 
 	return bCanCraft;

@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## Project
-GeoTrinity — multiplayer 2D boss-fight bullet-hell, Unreal Engine 5.7, GAS. Players are shapes (Tank=Square, Heal=Circle, DPS=Triangle). Orthographic camera.
+GeoTrinity — multiplayer 2D boss-fight bullet-hell, Unreal Engine 5.8, GAS. Players are shapes (Tank=Square, Heal=Circle, DPS=Triangle). Orthographic camera.
 
 ## Workflow (every feature) — MANDATORY GATE
 Applies to every session, every agent (interactive, daily, nightly, cloud). Default is the gate. Waiver, for that request only: the user directly asks for the code ("code the UI of this artifact", "just code it", "skip the docs", "quick fix") → do it straight away, no discussion, no docs, no Pending file. A goal or idea with no ask to code is not a waiver.
@@ -27,6 +27,7 @@ Gate rules:
 - Never test in the editor (PIE, live editor, in-editor MCP checks) unless the user asks; automated tests (headless) are the default check.
 - Never take mouse or window focus (clicking in the editor, PIE with real clicks, focus-dependent screen grabs) unless the user asked to test it yourself. Default tests: automated (`GeoGemTests.cpp`), headless, bridge scripts (`AI/Testing.md`).
 - Launch / quit / dismiss dialogs of an editor only on request, and only your own (`-RemoteControlAllow`).
+- Full autonomy: when the user says "on your own", "I'm out", "you're alone" (or similar), every optional rule above is lifted for that task: build, test, play in editor, take focus, and even close the user's editor or test in their open editor. Even Workflow stops are removed, you can implement straight after step 3 directly. Don't stop until task is fully done : Planned, implemented, tested.
 - Never write into `Saved/`. Sound work → `AI/Audio/`; reports, probes, exports → `AI/Output/`; throwaway → session scratchpad.
 - Before writing any code: read `AI/CodingStyle.md`. Planning or answering: don't.
 - Opening a `.cpp`: read it entirely, and the `CLAUDE.md` of its Public folder.

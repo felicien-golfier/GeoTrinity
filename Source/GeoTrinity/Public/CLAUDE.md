@@ -5,7 +5,7 @@ Gameplay module. Headers in `Public/`, `.cpp` mirrored in `Private/` at the same
 | Folder | Holds | Doc |
 |---|---|---|
 | `AbilitySystem/` | GAS: abilities, attributes, effect data, library, tags | `AbilitySystem/CLAUDE.md` |
-| `Actor/` | Arenas, buttons, deployables, projectiles | `Actor/CLAUDE.md` |
+| `Actor/` | Arenas, buttons, deployables, projectiles, the Tutorial Cat | `Actor/CLAUDE.md` |
 | `AI/` | Enemy controller, blackboard, StateTree tasks | `AI/CLAUDE.md` |
 | `Animation/` | Montage notifies | `Animation/CLAUDE.md` |
 | `Characters/` | Player + enemy characters, components, class data | `Characters/CLAUDE.md` |
@@ -19,4 +19,4 @@ Gameplay module. Headers in `Public/`, `.cpp` mirrored in `Private/` at the same
 | `Tool/` | `GeoLib`, colour, icons, Niagara names, lag compensation | `Tool/CLAUDE.md` |
 | `World/` | Camera, volumes, backdrop, world settings | `World/CLAUDE.md` |
 
-Private-only: `Private/Tests/GeoGemTests.cpp`, `Private/Tests/GeoAbilityReadyTests.cpp`, `Private/Tests/GeoIncomingDamageTests.cpp`, `Private/Tests/GeoMontageOwnershipTests.cpp`, `Private/Tests/GeoTestDeployable.h` (fake deployable + deployer pawn, `AI/Testing.md`), `Private/Tests/GeoTestPatternAbility.h` (fake patterns + pattern abilities).
+Private-only: `Private/Tests/GeoGemTests.cpp`, `Private/Tests/GeoAbilityReadyTests.cpp`, `Private/Tests/GeoIncomingDamageTests.cpp`, `Private/Tests/GeoMontageOwnershipTests.cpp`, `Private/Tests/GeoTutorialTests.cpp` (solo-only login, listen URL, locked / unlocked abilities), `Private/Tests/GeoCatTests.cpp` (cat walk, stop distance, replace, roam, montage order), `Private/Tests/GeoEncounterTests.cpp` + `Private/Tests/GeoTestEncounter.h` (fake trigger / actions / encounter / HUD, readable growing zone, set-up summoned dummy), `Private/Tests/GeoVoidDeathTests.cpp` + `Private/Tests/GeoTestEnemy.h` (enemy whose body stays after death), `Private/Tests/GeoTestWorld.h` (listen-server test world), `Private/Tests/GeoTestDeployable.h` (fake deployable + deployer pawn, `AI/Testing.md`), `Private/Tests/GeoTestPatternAbility.h` (fake patterns + pattern abilities).

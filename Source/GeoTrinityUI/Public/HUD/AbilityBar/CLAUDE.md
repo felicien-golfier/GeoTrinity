@@ -4,11 +4,12 @@ C++ data layer on `AGeoHUD`; layout is Blueprint (`WBP_AbilityBar`, `WBP_Ability
 
 | File | Role |
 |---|---|
-| `GeoAbilityBarWidget.h` | Bottom-centre bar; `BuildBar` creates one slot per `GetAbilityBarEntries()` entry and one passive tile per `GetPassiveBarEntries()` entry (`PassiveBox`, left of `SlotBox`); refreshes badges on the deploy-count ping; rebuilds the passive tiles when the granted passive set changes |
+| `GeoAbilityBarWidget.h` | Bottom-centre bar; `BuildBar` creates one slot per `GetAbilityBarEntries()` entry and one passive tile per `GetPassiveBarEntries()` entry (`PassiveBox`, left of `SlotBox`); refreshes badges on the deploy-count ping; rebuilds on a grant / removal on the player's ASC |
 | `GeoAbilitySlotWidget.h` | One slot: icon, cooldown sweep, countdown, value gauge + its number, deploy badge, live key label; pulls everything from the HUD each tick. Also the passive tile (`WBP_PassiveSlot`: no key / count text, `bIsPassive` entry) |
 | `GeoStatusBarWidget.h` | Active-effect icon row, local player; pure C++ tree polling `GetActiveEffectIcons()` |
 
 - `GetAbilityBarEntries()`: granted activatable abilities, passives skipped, matched to the class `UAbilityInfo` entry.
+- Late grants (tutorial unlocks, Core passives): `UGeoAbilitySystemComponent::OnAbilitySetChanged` (fired by its `OnGiveAbility` / `OnRemoveAbility`, server and replicated clients) queues one `BuildBar` for the next tick, so a burst of grants costs one rebuild; the bar rebinds to the character's ASC on every `BuildBar`. The bar has no tick.
 - `GetPassiveBarEntries()`: granted passives (class passives and Core passives) matched to their `UAbilityInfo` entry, icon required; granted order.
 - Passive column: left of the ability slots, `UWrapBox` vertical, wrapping every 2 tiles → two tiles stacked, a new column for the 3rd, 4th… (6 passives = 3 columns). Status tiles keep the whole right side.
 - Height invariant: 2 passive tiles + gap = one ability icon + its key label (tile 50, gap 6 in `AI/Python/UI/passive_bar.py`; passive tile is square). `WBP_AbilityBar`: `Row` (HorizontalBox) = `PassiveBox`, `SlotBox`; the bar's centre shifts right by half the passive width.

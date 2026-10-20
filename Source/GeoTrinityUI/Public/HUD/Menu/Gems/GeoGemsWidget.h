@@ -33,6 +33,9 @@ public:
 	/** Refreshes: the profile may have changed since the menu was last open. */
 	virtual void OnPageShown() override;
 
+	/** Shows the Forge page (bForge) or the Loadout, as its tab would. */
+	void ShowPage(bool bForge);
+
 protected:
 	/** Follows the pages' changes to the profile with the shard count, once for the widget's life. */
 	virtual void NativeOnInitialized() override;
@@ -73,5 +76,6 @@ protected:
 private:
 	/** The page tabs, and the class tabs shown while the Loadout is. */
 	void ShowHeaderTabs();
+	void SelectPage(int32 PageIndex);
 	void ShowShards();
 };

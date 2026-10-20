@@ -4,12 +4,14 @@
 
 #include "Characters/GeoCharacter.h"
 #include "CoreMinimal.h"
+#include "ScalableFloat.h"
 #include "UObject/SoftObjectPtr.h"
 
 #include "EnemyCharacter.generated.h"
 
 
 class AGeoArena;
+struct FGeoEnemySetup;
 class UAnimMontage;
 class UGeoLoopSoundComponent;
 class UStateTree;
@@ -61,6 +63,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoBoss")
 	bool IsFighting() const;
 
+	/** False: its controller never watches for players or damage, so no aggro and no fight start (a hidden caster). */
+	virtual bool CanBeAggroed() const { return true; }
+
+	/** Server. The one spawn of an enemy outside its arena's boss slot: ArbitraryCharacterZ, unit scale, deferred.
+	 * Arena (null for none) and Setup (null for none) are applied before FinishSpawning, so the controller's
+	 * possession and the StateTree already see them. Null when the spawn failed. */
+	static AEnemyCharacter* SpawnEnemy(UWorld& World, TSubclassOf<AEnemyCharacter> EnemyClass, FVector Location,
+									   AActor* Owner, AGeoArena* Arena, FGeoEnemySetup const* Setup);
+
+	/** Server. Applies the spawner's variant: team, dies or resets at zero, StateTree, extra abilities, health, actor
+	 * tag. Between SpawnActorDeferred and FinishSpawning only, so the controller's possession and InitGAS see it. */
+	void ApplySetup(FGeoEnemySetup const& Setup);
+
 	/** Resets health to max and restarts the StateTree. Called on full-wipe to start a new attempt. */
 	void ResetForNewAttempt();
 
@@ -85,6 +100,18 @@ protected:
 	virtual void OnHealthChanged_Implementation(float NewValue);
 
 private:
+	/** Sets max health and health to MaxHealthOverride when it names one. */
+	void ApplyMaxHealthOverride();
+
+	/** Default attributes again, then the override. Always at full health. */
+	void ResetAttributes();
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "GeoCharacter|Boss")
 	bool ResetToFullLifeWhenReachingZero = false;
+
+	/** FGeoEnemySetup::MaxHealth; 0 = the DefaultAttributes' own. */
+	FScalableFloat MaxHealthOverride;
+
+	/** FGeoEnemySetup::StartHealthRatio; the first InitGAS only. */
+	float StartHealthRatio = 1.f;
 };

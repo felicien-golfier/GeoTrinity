@@ -126,23 +126,23 @@ Drops turrets that creep in from the rim as the boss loses health
 [Ability.Spell.SpawnMine]
 Arms a mine on a random tile that bursts unless its tile is destroyed first
 
-[Ability.Spell.TutorialHealOverTime]
-Tutorial zone demonstration.
+[Ability.Spell.TrainingHealOverTime]
+Training Room zone demonstration.
 
-[Ability.Spell.TutorialBurstHeal]
-Tutorial zone demonstration.
+[Ability.Spell.TrainingBurstHeal]
+Training Room zone demonstration.
 
-[Ability.Spell.TutorialDamageReduction]
-Tutorial zone demonstration.
+[Ability.Spell.TrainingDamageReduction]
+Training Room zone demonstration.
 
-[Ability.Spell.TutorialDamageOverTime]
-Tutorial zone demonstration.
+[Ability.Spell.TrainingDamageOverTime]
+Training Room zone demonstration.
 
-[Ability.Spell.TutorialBurstDamage]
-Tutorial zone demonstration.
+[Ability.Spell.TrainingBurstDamage]
+Training Room zone demonstration.
 
-[Ability.Spell.TutorialLethal]
-Tutorial zone demonstration.
+[Ability.Spell.TrainingLethal]
+Training Room zone demonstration.
 
 [Ability.Spell.Bond]
 You absorb {SharedDamageFraction:%} of the damage every other living ally takes, with your own damage reduction applied. You can die from it. A shared hit is never shared again.

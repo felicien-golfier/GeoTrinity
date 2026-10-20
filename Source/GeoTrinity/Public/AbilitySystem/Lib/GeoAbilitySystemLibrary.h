@@ -227,9 +227,11 @@ public:
 													FTransform const& SpawnTransform);
 
 	/** Same funnel for a deployable that carries extra fields (a buff pickup): Data is pre-filled, its Owner and
-	 * Instigator spawn it. Returns nullptr on failure. */
+	 * Instigator spawn it. A null Data.Owner makes the deployable its own owner and instigator (a self-owned zone, its
+	 * own ASC is the effect source), spawned in World. Returns nullptr on failure. */
 	static AGeoDeployableBase* FullySpawnDeployable(TSubclassOf<AGeoDeployableBase> DeployableActorClass,
-													FDeployableData& Data, FTransform const& SpawnTransform);
+													FDeployableData& Data, FTransform const& SpawnTransform,
+													UWorld* World = nullptr);
 
 	/**
 	 * Server: the deploy ability DeployerASC holds spawns its deployable again at Location, with its class, effects and

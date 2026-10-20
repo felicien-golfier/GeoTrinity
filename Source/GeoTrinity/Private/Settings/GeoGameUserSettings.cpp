@@ -35,11 +35,18 @@ void UGeoGameUserSettings::SetShowCombatStats(bool const bShow)
 	OnShowCombatStatsChanged.Broadcast(bShow);
 }
 
+void UGeoGameUserSettings::MarkTutorialPromptAnswered()
+{
+	bTutorialPromptAnswered = true;
+	SaveSettings();
+}
+
 void UGeoGameUserSettings::ApplyVolumes(FAudioDevice& AudioDevice) const
 {
 	TSoftObjectPtr<USoundMix> const BaseSoundMix(GetDefault<UAudioSettings>()->DefaultBaseSoundMix);
 	USoundMix* const VolumeMix = UGameDataSettings::GetLoadedDataAsset(BaseSoundMix);
-	if (!ensureMsgf(VolumeMix, TEXT("Project Settings -> Audio -> Default Base Sound Mix is unset: volumes can't apply")))
+	if (!ensureMsgf(VolumeMix,
+					TEXT("Project Settings -> Audio -> Default Base Sound Mix is unset: volumes can't apply")))
 	{
 		return;
 	}

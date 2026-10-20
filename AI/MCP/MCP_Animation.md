@@ -184,6 +184,17 @@ clips from one parameter table — the same abilities are cut three ways from th
 run of steps, one spin held at the symmetry's speed limit) across that file and its `_clockwork` and `_frenzy`
 siblings, while `hex_boss_launch.py` cuts the eased one to a single beat with no loop and no direction in it.
 
+## Making a creature read as alive
+
+A clip reads as a machine when every part runs on one sine of the same period and amplitude, in phase, eased the same at both ends, with left and right mirrored and nothing starting before something else. The cures:
+- **Layer unequal cycles**: a driver is a sum of two or three whole-cycle counts over the loop (2 + 3 + 5 in 150 frames), amplitudes unequal, so it never visibly repeats yet still closes. Never one sine per bone.
+- **Lead and follow**: one driver read by each part later than the one before it (eyes, then head 3-4 frames, body 4-8, tail 8 and more). A left / right pair is offset 2-3 frames with unequal amplitudes.
+- **Uneven attack and release**: fast in, slow settle (a blink closes in 3 frames and opens in 8, a glance snaps and eases). Smoothstep both ways is the robot's ease.
+- **Events, not constant motion**: one thing at a time (glance, ear swivel, groom, yawn) at uneven times, with held stillness between; a long loop (8-10 s) beats a short busy one. Jitter comes from a fixed seed.
+- **Weight**: a slow shift of the mass side to side, breath carrying head and shoulders a little, every action opening with a small counter-move and closing with an overshoot that settles.
+- **Contacts**: a planted foot slides back at the ground's speed (a straight line), the swing is quicker and eased; never a sine. Gaits follow the real animal's footfall order.
+- **No frame-to-frame alternation** outside a deliberate vibration: a wiggle is a side-to-side of 4-6 frames a swing with growing amplitude, the body leading and the tail late.
+
 ## Bringing a shape together
 
 A clip that assembles a shape runs on two clocks: until every part is home each keeps its own schedule, since
@@ -254,6 +265,8 @@ against the cap.
   the reference pose; to see a clip, evaluate its poses, place the rig's vertex groups and draw their outlines.
 - Measure every frame, not the ones a report prints: nested parts cross over two or three frames, so a coarser
   sample calls a clip clear that is not.
+- Characters seen by the top camera (the Cat) are animated for an orthographic top view without perspective: no scale for nearness or height; travel, in-plane stretch and the ground plane cutting the mesh carry the motion (`AI/Tutorial/CatAnimation.md`).
+- A top-down check of a whole clip, every part's hull from the vertices extreme along 26 directions in its bone's space, is `AI/Python/Anim/Cat/cat_clip.py` `check_clip`.
 - A clip that only scales needs no mesh to check — the point it converges on is the root's translation with its
   own scaling undone, and reading that per frame catches a rig whose root sits off the shape.
 - A silhouette measured off the rig is in the mesh's own units, which the actor's scale sits between and the
@@ -333,6 +346,8 @@ an event's trigger time is read through the library rather than off the event, w
 exposed. A notify on a montage links to the segment beneath it, so the slot track has to be in place first.
 Which animation triggers a given effect is readable from that effect's referencer list, since the notify holding
 it is a subobject of the animation asset.
+
+A notify state goes in through the same library with a duration and reads back from its event's state-class property (the plain notify property is empty). The engine's `Timed Niagara Effect` state spawns its system attached at a socket or bone when it begins and deactivates it gracefully when it ends, so an effect with an outro needs no notify class of ours.
 
 ## Float curves
 

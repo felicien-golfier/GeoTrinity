@@ -10,6 +10,7 @@ A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving 
 | `GeoSweepBeamAbility.h` | Beam aimed at the hex arena centre (`GetFireYaw` override) |
 | `GeoTileBombAbility.h` | Draws a live player, spawns `AGeoBombZone` attached to them; not a pattern (replicated deployable) |
 | `GeoSpawnOnTileAbility.h` | Turret / mine drop on arena tiles; ServerOnly, not a pattern |
+| `GeoSummonAddAbility.h` | `UPatternAbility`: its zone pattern telegraphs a spot near a live player (Damage colour, lands its hit), then `Arena->SpawnAdd(AddClass)` there |
 
 ## Montages
 - Bomb and turret have no pattern, so their `AnimMontage` replicates (`Base/CLAUDE.md`, "Montage ownership"). Authored in the `Cast` slot group, apart from the pattern montages' group, so a cast never cuts a running pattern montage.
@@ -23,3 +24,8 @@ A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving 
 ## Tile bomb
 - Random pick: `FRandomStream(Seed)` + `RandHelper`.
 - Two phases live on `AGeoBombZone` (`Actor/Deployable/BombZone`).
+
+## GeoSummonAddAbility
+- Spot = `GetFireOrigin2D`: a live player (seeded pick) plus an offset up to `SpotRadius`; the caster when none lives. Stamped in the payload, so the telegraph and the add agree.
+- `PatternToLaunch` = a `UZonePattern` Blueprint (telegraph in the Damage colour, then its effects): the hit lands on whoever stays.
+- The add spawns in `OnPatternEnd` (server), only on a natural end: a force-stopped pattern (wipe, boss death) brings nothing.

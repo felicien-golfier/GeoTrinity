@@ -32,7 +32,7 @@ bool UGeoMenuRootWidget::HandleEscapeAction()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoMenuRootWidget::OpenPage(TSubclassOf<UGeoMenuPageWidget> const PageClass)
+UGeoMenuPageWidget* UGeoMenuRootWidget::OpenPage(TSubclassOf<UGeoMenuPageWidget> const PageClass)
 {
 	UGeoMenuPageWidget* Page = nullptr;
 	WidgetTree->ForEachWidget(
@@ -45,12 +45,13 @@ void UGeoMenuRootWidget::OpenPage(TSubclassOf<UGeoMenuPageWidget> const PageClas
 		});
 	if (!ensureMsgf(Page, TEXT("%hs: %s holds no %s page"), __FUNCTION__, *GetName(), *GetNameSafe(PageClass)))
 	{
-		return;
+		return nullptr;
 	}
 
 	PageStack.Add(Page);
 	ShowTop();
 	FocusTop();
+	return Page;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

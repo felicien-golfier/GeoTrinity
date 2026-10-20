@@ -8,3 +8,4 @@
 
 - Rich-text styles come from the data table set on the widget (`DT_AbilityText…`); layout, fonts, colours in the WBPs.
 - Descriptions resolve `{Token}`s (`AI/AbilityDescriptions.md`).
+- Open on an ability: `UGeoCharacterSheetWidget::OpenAbilityDetail(AbilityTag)` picks that ability's row as a click would; `UGeoPauseMenuWidget::OpenOnPage` opens the pause menu on the sheet first (`AGeoHUD::ShowAbilityPage`, tutorial unlocks). The player closes it.

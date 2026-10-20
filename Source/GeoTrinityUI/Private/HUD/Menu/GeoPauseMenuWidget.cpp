@@ -5,8 +5,8 @@
 #include "GameClasses/GeoGameInstance.h"
 #include "GameClasses/Player/GeoPlayerController.h"
 #include "HUD/Menu/Character/GeoCharacterSheetWidget.h"
-#include "HUD/Menu/List/GeoLeaderboardWidget.h"
 #include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/List/GeoLeaderboardWidget.h"
 #include "HUD/Menu/Settings/GeoSettingsWidget.h"
 
 #if WITH_EDITOR
@@ -22,6 +22,10 @@ void UGeoPauseMenuWidget::NativeConstruct()
 	SettingsButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleSettings);
 	LeaderboardButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleLeaderboard);
 	ReturnToMainMenuButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleReturnToMainMenu);
+	LeaveTutorialButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleLeaveTutorial);
+	UGeoGameInstance const* const GameInstance = Cast<UGeoGameInstance>(GetGameInstance());
+	LeaveTutorialButton->SetVisibility(GameInstance && GameInstance->IsInTutorial() ? ESlateVisibility::Visible
+																					: ESlateVisibility::Collapsed);
 	QuitButton->OnClicked.AddUniqueDynamic(this, &UGeoPauseMenuWidget::HandleQuit);
 	if (CharacterButton)
 	{
@@ -52,6 +56,27 @@ void UGeoPauseMenuWidget::CloseMenu()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+UGeoMenuPageWidget* UGeoPauseMenuWidget::OpenOnPage(APlayerController* const Controller,
+													TSubclassOf<UGeoMenuPageWidget> const PageClass)
+{
+	AGeoPlayerController* const GeoController = Cast<AGeoPlayerController>(Controller);
+	if (!ensureMsgf(GeoController, TEXT("%hs: %s is not an AGeoPlayerController"), __FUNCTION__,
+					*GetNameSafe(Controller)))
+	{
+		return nullptr;
+	}
+
+	GeoController->OpenPauseMenu();
+	UGeoMenuRootWidget* const PauseMenu = Cast<UGeoMenuRootWidget>(GeoController->GetPauseMenuWidget());
+	if (!ensureMsgf(PauseMenu, TEXT("%hs: the pause menu is not a UGeoMenuRootWidget"), __FUNCTION__))
+	{
+		return nullptr;
+	}
+
+	return PauseMenu->OpenPage(PageClass);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoPauseMenuWidget::HandleCharacter()
 {
 	OpenPage(UGeoCharacterSheetWidget::StaticClass());
@@ -75,6 +100,15 @@ void UGeoPauseMenuWidget::HandleReturnToMainMenu()
 	if (UGeoGameInstance* GameInstance = Cast<UGeoGameInstance>(GetGameInstance()))
 	{
 		GameInstance->LeaveSessionAndReturnToMenu();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoPauseMenuWidget::HandleLeaveTutorial()
+{
+	if (UGeoGameInstance* GameInstance = Cast<UGeoGameInstance>(GetGameInstance()))
+	{
+		GameInstance->LeaveTutorial();
 	}
 }
 

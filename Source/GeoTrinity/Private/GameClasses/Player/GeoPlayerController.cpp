@@ -10,6 +10,7 @@
 #include "EnhancedInput/Public/EnhancedInputComponent.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "Framework/Application/SlateApplication.h"
+#include "GameClasses/Match/GeoGameMode.h"
 #include "GameFramework/PlayerState.h"
 #include "InputAction.h"
 #include "Kismet/GameplayStatics.h"
@@ -265,6 +266,16 @@ void AGeoPlayerController::SetupInputComponent()
 		return;
 	}
 	EnhancedInput->BindAction(ToggleMenuAction, ETriggerEvent::Started, this, &AGeoPlayerController::HandleToggleMenu);
+
+	if (!ensureMsgf(InteractUIAction, TEXT("AGeoPlayerController: InteractUIAction is not set")))
+	{
+		return;
+	}
+	EnhancedInput->BindActionInstanceLambda(InteractUIAction, ETriggerEvent::Started,
+											[this](FInputActionInstance const& /*Instance*/)
+											{
+												OnInteractUI.Broadcast();
+											});
 }
 
 void AGeoPlayerController::HandleToggleMenu(FInputActionInstance const& /*Instance*/)
@@ -338,6 +349,7 @@ void AGeoPlayerController::OpenPauseMenu()
 	FlushPressedKeys();
 	SetInputMode(
 		FInputModeGameAndUI().SetHideCursorDuringCapture(false).SetWidgetToFocus(PauseMenuWidget->TakeWidget()));
+	SetPause(IsSoloOnlyWorld());
 }
 
 void AGeoPlayerController::ClosePauseMenu()
@@ -348,6 +360,13 @@ void AGeoPlayerController::ClosePauseMenu()
 	}
 	SetMenuInputMappingActive(false);
 	SetGameplayInputMode();
+	SetPause(false);
+}
+
+bool AGeoPlayerController::IsSoloOnlyWorld() const
+{
+	AGeoGameMode const* const GameMode = GetWorld()->GetAuthGameMode<AGeoGameMode>();
+	return GameMode && GameMode->bSoloOnly;
 }
 
 void AGeoPlayerController::SetGameplayInputMode()

@@ -2,18 +2,20 @@
 
 #include "HUD/Menu/GeoMainMenuWidget.h"
 
-#include "GameClasses/GeoGameInstance.h"
-#include "HUD/Menu/Server/GeoBrowseServersWidget.h"
-#include "HUD/Menu/Server/GeoCreateServerWidget.h"
-#include "HUD/Menu/List/GeoLeaderboardWidget.h"
-#include "HUD/Menu/Server/GeoLocalConnectWidget.h"
-#include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "Components/AudioComponent.h"
 #include "Engine/GameViewportClient.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Components/AudioComponent.h"
+#include "GameClasses/GeoGameInstance.h"
+#include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/GeoTutorialPromptWidget.h"
+#include "HUD/Menu/List/GeoLeaderboardWidget.h"
+#include "HUD/Menu/Server/GeoBrowseServersWidget.h"
+#include "HUD/Menu/Server/GeoCreateServerWidget.h"
+#include "HUD/Menu/Server/GeoLocalConnectWidget.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "OnlineSubsystem.h"
+#include "Settings/GeoGameUserSettings.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -49,6 +51,7 @@ void UGeoMainMenuWidget::NativeConstruct()
 	CreateServerButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleCreateServer);
 	JoinServerButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleJoinServer);
 	PlayLocalButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandlePlayLocal);
+	TutorialButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleTutorial);
 	LeaderboardButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleLeaderboard);
 	QuitButton->OnClicked.AddUniqueDynamic(this, &UGeoMainMenuWidget::HandleQuit);
 
@@ -56,6 +59,11 @@ void UGeoMainMenuWidget::NativeConstruct()
 	{
 		MusicComponent = UGameplayStatics::CreateSound2D(this, MusicLoop, 1.f, 1.f, 0.f, nullptr, false, false);
 		MusicComponent->FadeIn(1.f, 1.f);
+	}
+
+	if (!UGeoGameUserSettings::Get()->IsTutorialPromptAnswered())
+	{
+		OpenPage(UGeoTutorialPromptWidget::StaticClass());
 	}
 }
 
@@ -102,25 +110,22 @@ void UGeoMainMenuWidget::ShowErrorPopup(FString const& Message)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.7f))
 			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-				[SNew(SBox)
-					 .MaxDesiredWidth(800.f)
-						 [SNew(SBorder)
-							  .BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							  .BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.08f, 1.f))
-							  .Padding(24.f)
-								  [SNew(SVerticalBox)
-								   + SVerticalBox::Slot().AutoHeight()
-										 [SNew(STextBlock)
-											  .Text(INVTEXT("Connection error"))
-											  .Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
-											  .ColorAndOpacity(FLinearColor(1.f, 0.3f, 0.3f, 1.f))]
-								   + SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f)
-										 [SNew(STextBlock)
-											  .Text(FText::FromString(Message))
-											  .Font(FCoreStyle::GetDefaultFontStyle("Regular", 16))
-											  .AutoWrapText(true)]
-								   + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[OkButton]]]];
+			.VAlign(VAlign_Center)[SNew(SBox).MaxDesiredWidth(
+				800.f)[SNew(SBorder)
+						   .BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						   .BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.08f, 1.f))
+						   .Padding(24.f)[SNew(SVerticalBox)
+										  + SVerticalBox::Slot()
+												.AutoHeight()[SNew(STextBlock)
+																  .Text(INVTEXT("Connection error"))
+																  .Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
+																  .ColorAndOpacity(FLinearColor(1.f, 0.3f, 0.3f, 1.f))]
+										  + SVerticalBox::Slot().AutoHeight().Padding(
+											  0.f, 16.f)[SNew(STextBlock)
+															 .Text(FText::FromString(Message))
+															 .Font(FCoreStyle::GetDefaultFontStyle("Regular", 16))
+															 .AutoWrapText(true)]
+										  + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[OkButton]]]];
 
 	GetGameInstance()->GetGameViewportClient()->AddViewportWidgetContent(ErrorPopup.ToSharedRef(), 100);
 	FSlateApplication::Get().SetAllUserFocus(OkButton, EFocusCause::SetDirectly);
@@ -157,6 +162,16 @@ void UGeoMainMenuWidget::HandleJoinServer()
 void UGeoMainMenuWidget::HandlePlayLocal()
 {
 	OpenPage(UGeoLocalConnectWidget::StaticClass());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoMainMenuWidget::HandleTutorial()
+{
+	UGeoGameInstance* GameInstance = Cast<UGeoGameInstance>(GetGameInstance());
+	if (ensureMsgf(GameInstance, TEXT("%hs: GameInstance is not a UGeoGameInstance"), __FUNCTION__))
+	{
+		GameInstance->OpenTutorial();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

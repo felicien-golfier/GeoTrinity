@@ -5,6 +5,7 @@
 #include "AttributeSet.h"
 #include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "HUD/Menu/Frame/GeoMenuPageWidget.h"
 
 #include "GeoCharacterSheetWidget.generated.h"
@@ -77,6 +78,9 @@ public:
 	 * have changed the gems. */
 	virtual void OnPageShown() override;
 
+	/** Opens the details of the ability with AbilityTag, as a click on its row would (tutorial unlocks). */
+	void OpenAbilityDetail(FGameplayTag AbilityTag);
+
 protected:
 	/** Wires GEMS, follows the stats and refreshes this fight's numbers every FightRefreshInterval; a sheet outside any
 	 * menu (the one held open with Tab) fills itself here, as no menu will show it. */
@@ -131,8 +135,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UHorizontalBox> OtherClassesBox;
 
-	/** Filled with one line per Stats entry: its label, its live value, what the slotted gems add and what the buffs now
-	 * on the player add; then the deploy ability's charges, what the gems add to them. */
+	/** Filled with one line per Stats entry: its label, its live value, what the slotted gems add and what the buffs
+	 * now on the player add; then the deploy ability's charges, what the gems add to them. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoTableWidget> StatTable;
 
@@ -257,7 +261,8 @@ protected:
 	FText OwnedFormat = INVTEXT("CHIPS {0}  \u00B7  CUTS {1}  \u00B7  PRISMS {2}  \u00B7  CORES {3}");
 
 	/** Seconds between two refreshes of this fight's numbers while the sheet is shown. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet", meta = (ClampMin = "0.05", ClampMax = "5"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCharacterSheet",
+			  meta = (ClampMin = "0.05", ClampMax = "5"))
 	float FightRefreshInterval = .5f;
 
 	/** The stat line of the deploy ability's charges. */

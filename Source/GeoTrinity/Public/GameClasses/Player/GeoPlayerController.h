@@ -56,7 +56,8 @@ public:
 	/** Opens the pause menu if closed, or closes it (resumes) if already open. */
 	void TogglePauseMenu();
 
-	/** Opens the pause menu, in place of the character sheet held open, and gives it the input. */
+	/** Opens the pause menu, in place of the character sheet held open, and gives it the input. Pauses the game in a
+	 * solo-only world. */
 	void OpenPauseMenu();
 
 	/** The pause menu, created on its first open; null before. */
@@ -68,7 +69,8 @@ public:
 	/** Returns true while the pause menu is on screen (gameplay input suspended). */
 	bool IsPauseMenuOpen() const;
 
-	/** ToggleStatsDetailAction was pressed: the HUD's stat counter cycles its short table, its full table and hidden. */
+	/** ToggleStatsDetailAction was pressed: the HUD's stat counter cycles its short table, its full table and hidden.
+	 */
 	FSimpleMulticastDelegate OnToggleStatsDetail;
 
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
@@ -80,6 +82,13 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
 	TObjectPtr<UInputAction> ToggleMenuAction;
+
+	/** Broadcasts OnInteractUI; bound for local player 0 only. */
+	UPROPERTY(EditAnywhere, Category = "GeoInput")
+	TObjectPtr<UInputAction> InteractUIAction;
+
+	/** InteractUIAction was pressed: in-game UI that takes a press without the pause menu (the Cat line skip). */
+	FSimpleMulticastDelegate OnInteractUI;
 
 	/** Broadcasts OnToggleStatsDetail; optional. */
 	UPROPERTY(EditAnywhere, Category = "GeoInput")
@@ -117,6 +126,9 @@ private:
 	void ShowCharacterSheet();
 	void HideCharacterSheet();
 	void SetMenuInputMappingActive(bool bMenuActive);
+	/** True when the world's game mode is solo only (the tutorial): the pause menu then pauses the game. A client has
+	 * no game mode, so it never pauses. */
+	bool IsSoloOnlyWorld() const;
 	/** Puts input back in gameplay mode, keeping the non-obvious mouse-capture setting the game needs. */
 	void SetGameplayInputMode();
 

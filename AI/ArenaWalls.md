@@ -3,6 +3,8 @@
 Every arena border is a row of engine `Cube` static mesh actors wearing `MI_ArenaRailHalo`: plain walls, and the
 walls a barrier (`AGeoArenaBarrier::AnimatedActors`) moves between its fight-on and fight-off transforms.
 `AI/Python/Level/arena_walls.py` places all of them from these rules — re-run it after moving a floor.
+The Tutorial map's walls (`tutorial_map.py`, `place_wall`) follow the same rules, orientation included, round each
+room's centre: the side and end walls meet at the corners and are never scaled to the floor's bounds.
 
 ## Fixed values — every wall, every state
 
@@ -15,6 +17,18 @@ walls a barrier (`AGeoArenaBarrier::AnimatedActors`) moves between its fight-on 
 A wall is only ever placed or resized through its X/Y location, its yaw and its X scale. A barrier does the
 same between its two states: it may move, turn and lengthen a wall, never thicken or raise it. The one exception
 is a hidden barrier state — scale 0, parked below the floor — which keeps its own values.
+
+## Orientation
+The rail's squares always travel along the wall's local +X; the material knows no arena and takes no centre. The wall
+is placed to make that the right way round:
+
+- **Every wall of one arena travels the same way round it.** Local +X follows the tangent `(r.y, -r.x)`, `r` = wall
+  centre minus arena centre: +X on the +Y side, −Y on the +X side, −X on the −Y side, +Y on the −X side. Yaw is the
+  direction start → end of the wall's line, and a line is listed in that direction.
+- **A barrier wall turns less than 90° between its states**, so its squares never reverse mid-move; a corridor wall
+  (fight-off) takes the direction its fight-on state has.
+- **A split side keeps one direction end to end** (Cube21 | Door_main | Cube22).
+- One overlay instance, `MI_ArenaRail`, serves every map; every wall wears `MI_ArenaRailHalo` + `MI_ArenaRail`.
 
 ## Placement
 

@@ -40,6 +40,17 @@ Skeletal animation and montage authoring. Rules: `AI/MCP/MCP_Animation.md`. Run 
 | `class_badge_triangle_fire.py` | Triangle heavy shot: FireRatchet (auto-fire), FireFormation (turret launch) |
 | `class_badge_triangle_reload.py` | Triangle reload, full-body slot |
 
+## Cat/ — the Tutorial Cat (`AI/Tutorial/CatAnimation.md`)
+| Script | Does |
+|---|---|
+| `cat_clip.py` | Shared by the Cat clips: clip writer from a `pose(frame)` of deltas on rest, eased-curve helpers (attack / release curves, summed whole-cycle drivers, lagged reads, planted / swing foot), top-down check (new part overlaps, highest vertex, loop closure) reported to `AI/Output/cat_<clip>.json` |
+| `cat_idle.py` | Sit, head up to the camera, blink / ear / tail flick loop |
+| `cat_walk.py` | Diagonal-pair walk loop |
+| `cat_portal_jump.py` | Open portal, hop, sink through the plane: clip, montage `AM_Cat_PortalJump`, portal notify state |
+| `cat_reassemble.py` | Splashed apart on the floor, gather, stretch, release onto idle: clip + montage `AM_Cat_Reassemble` |
+| `cat_anim_blueprint.py` | `ABP_Cat`: Idle / Walk blended on `Speed`, montage slot (`BuildBlendedAnimGraph`) |
+| `cat_blueprint.py` | `BP_Cat` (child of `AGeoCat`, `/Game/Actors/Cat`): mesh `SKM_Cat`, anim class `ABP_Cat` (montages are given by the encounter) |
+
 ## Boss/ — hex and star bosses
 | Script | Does |
 |---|---|

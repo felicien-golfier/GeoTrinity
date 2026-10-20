@@ -217,3 +217,10 @@ Server attribute delegates broadcast synchronously from `SetNumericAttributeBase
 **Root cause:** `UGeoReloadAbility::OnGiveAbility` tested `IsLocallyControlledPlayer()` once, at binding time. A client receives the ability through spec replication before its pawn has a controller → false → ammo delegate never bound. The host has its controller by then. The "gate at the binding site" style rule pushed the check out of the callback twice (fixed 2026-09-10, regressed 2026-10-12).
 
 **Fix:** bind always, test `IsLocallyControlledPlayer()` inside the callback.
+
+## Headless tutorial flow: lines never end, slomo ignored (2026-10-20)
+- `-game -nullrhi`: `slomo` is a cheat ("Command not recognized"), so the flow runs in real time; Cat lines run on Slate active timers, which barely tick there (one line took 50 s to over 4 min). The flow passed before only because Landing's lines fired at t=0, before the HUD's line widget existed, and ended at once.
+- Fix: `pie_tutorial_flow.py` presses `IA_InteractUI` every other frame (`inject_input_vector_for_action`), the player's skip; two presses end any line.
+
+## Placed actor commanded before its own BeginPlay (2026-10-20)
+- An encounter with `bStartOnBeginPlay` runs `OnEnter` from its `BeginPlay`, possibly before another placed actor's `BeginPlay`. `AGeoCat` hid itself in `BeginPlay` and undid the `Reassemble` that had just shown it. Start-of-play state goes in `PostInitializeComponents`, or is placed (the Cat now uses the engine's `bHidden`, set by the level script).

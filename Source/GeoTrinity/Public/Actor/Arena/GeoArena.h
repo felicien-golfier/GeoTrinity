@@ -18,17 +18,19 @@ class AStaticMeshActor;
 class UGeoDeployableManagerComponent;
 class UGeoReloadAbility;
 class UMaterialInterface;
+struct FGeoEnemySetup;
 
 /**
  * One boss encounter, and it runs itself. It owns its boss and its adds (spawn + reset), its barrier, its fight-commit,
- * the boss health bar, the post-victory loot shower and the look of its floors. The GameState tells it nothing: on aggro TriggerAggro calls
- * StartFight directly, and it subscribes to AGeoGameState::OnMatchStateChanged to tear the fight down when the match
- * leaves InProgress (a wipe or a victory). Whether this arena's fight is live is the replicated bFighting flag, so
- * clients resolve their own boss bar and the GameState needs no arena pointer at all. What a player's death means
- * stays the GameState's policy; the arena's only part in it is taking over the GameState's CurrentArenaTag for as
- * long as its fight runs, which is what makes a wipe come back here rather than wherever the players last walked.
- * The fight runs Start (bFighting set, barrier closes, players walk in) -> Commit (players teleported in) -> End;
- * CommitFight and EndFight are virtual so subclasses arm whatever only makes sense once the fight is really live.
+ * the boss health bar, the post-victory loot shower and the look of its floors. The GameState tells it nothing: on
+ * aggro TriggerAggro calls StartFight directly, and it subscribes to AGeoGameState::OnMatchStateChanged to tear the
+ * fight down when the match leaves InProgress (a wipe or a victory). Whether this arena's fight is live is the
+ * replicated bFighting flag, so clients resolve their own boss bar and the GameState needs no arena pointer at all.
+ * What a player's death means stays the GameState's policy; the arena's only part in it is taking over the GameState's
+ * CurrentArenaTag for as long as its fight runs, which is what makes a wipe come back here rather than wherever the
+ * players last walked. The fight runs Start (bFighting set, barrier closes, players walk in) -> Commit (players
+ * teleported in) -> End; CommitFight and EndFight are virtual so subclasses arm whatever only makes sense once the
+ * fight is really live.
  */
 UCLASS()
 class GEOTRINITY_API AGeoArena : public AActor
@@ -43,7 +45,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Server. Spawns the boss, or resets the one already standing, for a fresh attempt. A boss spawned with its intro
-	 *  pending stays invulnerable until AGeoEnemyAIController::StartFight, once the intro has played. */
+	 *  pending stays invulnerable until AGeoEnemyAIController::StartFight, once the intro has played. Nothing else
+	 *  touches the flag, so a boss that spawns invulnerable (hidden caster) stays so. */
 	void ResetBoss();
 
 	/** Opens or seals the barrier, if this arena has one. Barrier state is owned by the fight-lifecycle functions. */
@@ -70,6 +73,12 @@ public:
 	/** Server. RespawnBoss on every arena whose boss was defeated. What a respawn button drives. */
 	static void RespawnAllBosses(UObject const* WorldContextObject);
 
+	/** Server. Spawns an add of AddClass at Transform (Z set to the character height) and registers it, so the next
+	 *  wipe or the boss's death removes it like the AddClasses ones. Setup, when given, varies it
+	 *  (AEnemyCharacter::ApplySetup). Null when the spawn failed. */
+	AEnemyCharacter* SpawnAdd(TSubclassOf<AEnemyCharacter> AddClass, FTransform Transform,
+							  FGeoEnemySetup const* Setup = nullptr);
+
 	/** Returns this arena's boss character; nullptr before BeginPlay spawns it. */
 	AEnemyCharacter* GetBoss() const { return Boss; }
 	/** True while this arena's fight is live. Replicated, so it reads the same on every machine. */
@@ -93,7 +102,8 @@ public:
 
 	/** Returns this boss's owning arena via AEnemyCharacter::Arena. Null if Boss is null or not an AEnemyCharacter. */
 	static AGeoArena* GetArenaOfBoss(AActor const* Boss);
-	/** Returns the arena whose fight is currently live, or null when no fight runs. At most one arena is ever fighting. */
+	/** Returns the arena whose fight is currently live, or null when no fight runs. At most one arena is ever fighting.
+	 */
 	static AGeoArena* GetFightingArena(UObject const* WorldContextObject);
 
 	/**
@@ -153,6 +163,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	EGeoBossType BossType = EGeoBossType::Boss;
 
+	/** What this boss's kill drops: its own roll or the catalog's for BossType, plus fixed gems and shards. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot")
+	FGeoBossLoot BossLoot;
+
+	/** False: a finished attempt here never reaches the leaderboard (the tutorial miniboss is no real boss run). */
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
+	bool bRecordsLeaderboard = true;
+
+#if WITH_EDITOR
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+#endif
+
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_Boss)
 	TObjectPtr<AEnemyCharacter> Boss;
@@ -167,7 +189,8 @@ private:
 	/** Server. Destroys every standing add and empties the list. */
 	void DestroyAdds();
 
-	/** True while this arena's fight is live. Replicated so every client shows/hides the boss bar off OnRep_bFighting. */
+	/** True while this arena's fight is live. Replicated so every client shows/hides the boss bar off OnRep_bFighting.
+	 */
 	UPROPERTY(ReplicatedUsing = OnRep_bFighting)
 	bool bFighting = false;
 
@@ -177,7 +200,8 @@ private:
 	float FightStartTime = 0.f;
 
 	/** This machine's own GetTimeSeconds the fight started at. Counting from here is what makes the timer linear;
-	 *  deriving it from FightStartTime is what keeps it agreeing with the other machines, mid-fight joiners included. */
+	 *  deriving it from FightStartTime is what keeps it agreeing with the other machines, mid-fight joiners included.
+	 */
 	float LocalFightStartTime = 0.f;
 
 	/** How long the fight that ended ran, taken straight from the recorded entry. */
@@ -202,8 +226,8 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRecordAttempt(FGeoAttemptEntry const& Entry);
 
-	/** Server. Gives every player class XP for the boss health Entry took, kill or not, and on a kill gems rolled
-	 *  from BossType's table. Called by RecordAttempt. */
+	/** Server. Gives every player class XP for the boss health Entry took, kill or not, and on a kill BossLoot's gems
+	 *  and shards. Called by RecordAttempt. */
 	void GrantGemRewards(FGeoAttemptEntry const& Entry) const;
 
 	/** True once this arena's boss has been beaten. Blocks the EndFight respawn until RespawnBoss clears it, so a
@@ -221,7 +245,8 @@ private:
 	 * StartFight and EndFight on the server, OnRep_bFighting on the clients — so both halves land on every machine. */
 	void ApplyFightVisuals();
 
-	/** Shows the boss bar for Boss while bFighting, hides it otherwise. Local HUD only; a no-op on a dedicated server. */
+	/** Shows the boss bar for Boss while bFighting, hides it otherwise. Local HUD only; a no-op on a dedicated server.
+	 */
 	void ApplyBossBar();
 
 	/** Runs the boss's loop sound while bFighting or while the boss is dead, fades it out otherwise: its death montage

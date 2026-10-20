@@ -8,7 +8,7 @@
 #include "IPAddress.h"
 #include "SocketSubsystem.h"
 
-void UGeoSessionSubsystem::HostListen(FString const& MapPackagePath)
+void UGeoSessionSubsystem::HostListen(FString const& MapPackagePath, FString const& Portal)
 {
 	if (!ensureMsgf(!MapPackagePath.IsEmpty(), TEXT("HostListen: empty MapPackagePath")))
 	{
@@ -19,7 +19,18 @@ void UGeoSessionSubsystem::HostListen(FString const& MapPackagePath)
 	{
 		return;
 	}
-	World->ServerTravel(MapPackagePath + TEXT("?listen"));
+	World->ServerTravel(MakeListenUrl(MapPackagePath, Portal));
+}
+
+FString UGeoSessionSubsystem::MakeListenUrl(FString const& MapPackagePath, FString const& Portal)
+{
+	FString Url = MapPackagePath + TEXT("?listen");
+	if (!Portal.IsEmpty())
+	{
+		Url += TEXT("#") + Portal;
+	}
+
+	return Url;
 }
 
 void UGeoSessionSubsystem::JoinByAddress(FString const& Address)

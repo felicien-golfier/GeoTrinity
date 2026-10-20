@@ -19,8 +19,8 @@
 #include "Characters/PlayableCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "GameClasses/Match/GeoGameState.h"
-#include "GameClasses/Player/GeoPlayerController.h"
 #include "GameClasses/Match/GeoPlayerState.h"
+#include "GameClasses/Player/GeoPlayerController.h"
 #include "GameplayEffectExtension.h"
 #include "HUD/Combatant/GenericCombattantWidget.h"
 #include "HUD/Combatant/GeoDamageNumberWidget.h"
@@ -28,8 +28,13 @@
 #include "HUD/GeoUserWidget.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "HUD/Interface/GeoDamageNumberHost.h"
-#include "Tool/Visual/GeoIcon.h"
+#include "HUD/Menu/Character/GeoCharacterSheetWidget.h"
+#include "HUD/Menu/Gems/GeoGemsWidget.h"
+#include "HUD/Menu/GeoPauseMenuWidget.h"
+#include "HUD/Tutorial/GeoCatLineWidget.h"
+#include "HUD/Tutorial/GeoQuestCardWidget.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Tool/Visual/GeoIcon.h"
 
 namespace
 {
@@ -38,9 +43,8 @@ namespace
 	int32 GetInputTagBarOrder(FGameplayTag const& InputTag)
 	{
 		FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
-		TArray<FGameplayTag> const BarOrder = {Tags.InputTag_Basic, Tags.InputTag_Deployable,
-											   Tags.InputTag_Special, Tags.InputTag_Reload,
-											   Tags.InputTag_Dash};
+		TArray<FGameplayTag> const BarOrder = {Tags.InputTag_Basic, Tags.InputTag_Deployable, Tags.InputTag_Special,
+											   Tags.InputTag_Reload, Tags.InputTag_Dash};
 
 		int32 const Order = BarOrder.IndexOfByKey(InputTag);
 		ensureMsgf(Order != INDEX_NONE, TEXT("GetInputTagBarOrder: %s has no ability-bar position"),
@@ -288,6 +292,85 @@ void AGeoHUD::HideBossHealthBar()
 		PrevBoss->SetCombattantWidgetVisible(true);
 	}
 	BossWithSuppressedBar = nullptr;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename WidgetType>
+WidgetType* AGeoHUD::GetTutorialWidget(TSubclassOf<WidgetType> const& WidgetClass, TObjectPtr<WidgetType>& Widget,
+									   int32 const ZOrder)
+{
+	if (!Widget
+		&& ensureMsgf(WidgetClass, TEXT("%hs: a tutorial widget class is unset on %s"), __FUNCTION__, *GetName()))
+	{
+		Widget = CreateWidget<WidgetType>(GetOwningPlayerController(), WidgetClass);
+		Widget->AddToViewport(ZOrder);
+	}
+
+	return Widget;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::ShowCatLine(FText const& Line, FSimpleDelegate OnEnded)
+{
+	if (UGeoCatLineWidget* const Widget = GetTutorialWidget(CatLineWidgetClass, CatLineWidget, CatLineZOrder))
+	{
+		Widget->ShowLine(Line, MoveTemp(OnEnded));
+	}
+	else
+	{
+		OnEnded.ExecuteIfBound();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::ShowAbilityPage(FGameplayTag const AbilityTag)
+{
+	UGeoCharacterSheetWidget* const Sheet = Cast<UGeoCharacterSheetWidget>(
+		UGeoPauseMenuWidget::OpenOnPage(GetOwningPlayerController(), UGeoCharacterSheetWidget::StaticClass()));
+	if (Sheet)
+	{
+		Sheet->OpenAbilityDetail(AbilityTag);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::ShowQuestCard(FText const& Title, int32 const Max, float const TimeLimitSeconds)
+{
+	if (UGeoQuestCardWidget* const Widget =
+			GetTutorialWidget(QuestCardWidgetClass, QuestCardWidget, TutorialWidgetZOrder))
+	{
+		Widget->ShowCard(Title, Max, TimeLimitSeconds);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::SetQuestCount(int32 const Count)
+{
+	if (UGeoQuestCardWidget* const Widget =
+			GetTutorialWidget(QuestCardWidgetClass, QuestCardWidget, TutorialWidgetZOrder))
+	{
+		Widget->SetCount(Count);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::HideQuestCard()
+{
+	if (QuestCardWidget)
+	{
+		QuestCardWidget->HideCard();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::OpenGemsPage(bool const bForge)
+{
+	UGeoGemsWidget* const Gems = Cast<UGeoGemsWidget>(
+		UGeoPauseMenuWidget::OpenOnPage(GetOwningPlayerController(), UGeoGemsWidget::StaticClass()));
+	if (Gems)
+	{
+		Gems->ShowPage(bForge);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

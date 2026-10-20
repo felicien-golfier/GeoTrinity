@@ -9,14 +9,13 @@ whose line is nearer, so overlapping halos join as one shape instead of adding u
 Its overlay material, M_ArenaRail, is additive: a near-white core line and small quads riding it, hollow and solid in
 turn, travelling and turning, each shown whole while its centre is on the line. Those do add up where walls cross.
 
-Everything is measured in world cm, so the rail keeps its size while a barrier scales a wall in or out. Each wall
-picks its travel direction from its arena's centre, so every wall of one arena circulates the same way round, and
-quads are placed from the world origin, so two walls on one line draw the same quads. One overlay instance per
-arena, holding that centre.
+Everything is measured in world cm, so the rail keeps its size while a barrier scales a wall in or out. The quads
+travel along the wall's local +X (AI/ArenaWalls.md, "Orientation"), and are placed from the world origin, so two walls
+on one line draw the same quads. One overlay instance, MI_ArenaRail, serves every wall.
 
-Puts each placed wall on the engine's VR frame material, or already on the rail, onto the halo and its arena's
-overlay. The level is left dirty, never saved. Run through execute_script, outside PIE. Report written to
-AI/Output/arena_rail_material.txt.
+Puts each placed wall on the engine's VR frame material, or already on the rail, onto the halo and the overlay, and
+deletes the per-arena instances MI_ArenaRail_* it replaces. The level is left dirty, never saved. Run through
+execute_script, outside PIE. Report written to AI/Output/arena_rail_material.txt.
 """
 import unreal
 
@@ -31,13 +30,7 @@ HALF_CUBE = 50.0  # the engine cube spans -50..50 cm on each local axis
 HALF_SQRT2 = 0.7071067811865476
 RAIL_COLOR = (0.45, 0.2, 1.0, 1.0)
 
-# Arena actor label -> (instance suffix, centre the walls circulate around, world XY).
-ARENAS = {
-    "StarArena": ("Star", (2571.0, 0.0)),
-    "HexArena": ("Hex", (6740.0, 0.0)),
-    "Tuto_ZoneArena": ("Tutorial", (-6000.0, 0.0)),
-    "EntranceArena": ("Entrance", (0.0, 0.0)),
-}
+OLD_OVERLAYS = ["Star", "Hex", "Tutorial", "Entrance"]  # the per-arena instances this script replaces
 
 toolkit_path = unreal.Paths.project_dir() + "AI/Python/Material/material_graph_authoring.py"
 toolkit = {}
@@ -66,7 +59,6 @@ def build_frame():
                                      "scaled and turned.",
                                      CATEGORY)
     op = graph.op
-    center = graph.input("ArenaCenter", "Vector2", 0, "World XY every wall of the arena circulates around.", -1400, 700)
     end_inset = graph.input("EndInset", "Scalar", 1, "How far before each end of the wall its line stops, in half "
                             "widths of the wall.", -1400, 900)
     offset = op(unreal.MaterialExpressionSubtract, -1000, -100,
@@ -92,28 +84,10 @@ def build_frame():
     top_face = graph.node(unreal.MaterialExpressionStep, -700, 520, const_y=0.5)
     graph.connect(normal_z, top_face, "X")
 
-    # The wall's length axis against the tangent (r.y, -r.x) at the wall's centre: +1 with it, -1 against.
-    radial = op(unreal.MaterialExpressionSubtract, -1000, 700,
-                A=graph.mask(graph.node(unreal.MaterialExpressionObjectPositionWS, -1300, 820), "rg", -1150, 820),
-                B=center)
-    minus_radial_x = graph.node(unreal.MaterialExpressionMultiply, -850, 760, const_b=-1.0)
-    graph.connect(graph.mask(radial, "r", -900, 700), minus_radial_x, "A")
-    tangent = op(unreal.MaterialExpressionAppendVector, -700, 720, A=graph.mask(radial, "g", -850, 660),
-                 B=minus_radial_x)
-    agreement = op(unreal.MaterialExpressionDotProduct, -550, 700, A=graph.mask(length_axis, "rg", -700, 620),
-                   B=tangent)
-    with_tangent = graph.node(unreal.MaterialExpressionStep, -400, 700, const_y=0.0)
-    graph.connect(agreement, with_tangent, "X")
-    doubled = graph.node(unreal.MaterialExpressionMultiply, -260, 700, const_b=2.0)
-    graph.connect(with_tangent, doubled, "A")
-    circulation = graph.node(unreal.MaterialExpressionSubtract, -120, 700, const_b=1.0)
-    graph.connect(doubled, circulation, "A")
     # From the world origin rather than the wall's centre, so walls on one line agree.
-    world_along = op(unreal.MaterialExpressionDotProduct, -700, -100,
-                     A=graph.node(unreal.MaterialExpressionWorldPosition, -900, -240), B=length_axis)
-    along = op(unreal.MaterialExpressionMultiply, 40, -100, A=world_along, B=circulation)
-    from_centre = op(unreal.MaterialExpressionMultiply, 40, 0, B=circulation,
-                     A=op(unreal.MaterialExpressionDotProduct, -700, -20, A=offset, B=length_axis))
+    along = op(unreal.MaterialExpressionDotProduct, -700, -100,
+               A=graph.node(unreal.MaterialExpressionWorldPosition, -900, -240), B=length_axis)
+    from_centre = op(unreal.MaterialExpressionDotProduct, -700, -20, A=offset, B=length_axis)
     beyond_end = op(unreal.MaterialExpressionSubtract, -250, 100,
                     A=op(unreal.MaterialExpressionAbs, -400, 60, from_centre), B=line_half_length)
     past_end = graph.node(unreal.MaterialExpressionMax, -100, 100, const_b=0.0)
@@ -121,8 +95,8 @@ def build_frame():
     segment_distance = op(unreal.MaterialExpressionLength, 200, 100,
                           op(unreal.MaterialExpressionAppendVector, 50, 100, A=across, B=past_end))
 
-    graph.output("Along", 0, "Position along the wall's line from the world origin, in world cm, growing the same way "
-                 "round ArenaCenter on every wall.", along, 200, -100)
+    graph.output("Along", 0, "Position along the wall's line from the world origin, in world cm, growing along the wall's "
+                 "local +X.", along, 200, -100)
     graph.output("Across", 1, "Signed distance across the wall's width from its centre line, in world cm.", across,
                  -400, 60)
     graph.output("HalfWidth", 2, "Half the wall's width, in world cm.", half_width, -400, 400)
@@ -191,15 +165,11 @@ def build_material(frame_function, quads_function):
     graph = toolkit["open_material"](FOLDER, "M_ArenaRail")
     node, op, parameter = graph.node, graph.op, graph.parameter
 
-    center = parameter(vector, "ArenaCenter", unreal.LinearColor(0.0, 0.0, 0.0, 0.0), "04 Arena", 0,
-                       "World XY, in RG, every wall of this arena's quads circulate around. Set per arena instance by "
-                       "make_arena_rail_material.py", -2000, 900)
     # Stops where a wall meeting this one at a corner has its own centre line, so the two lines meet, not cross.
     end_inset = parameter(scalar, "EndInset", 1.0, "01 Line", 2,
                           "How far before each end of the wall the line stops, in half widths of the wall; keep equal "
                           "to MI_ArenaRailHalo's EndInset", -2000, 1000)
-    frame = graph.call(frame_function, -1700, 300, ArenaCenter=graph.mask(center, "rg", -1850, 900),
-                       EndInset=end_inset)
+    frame = graph.call(frame_function, -1700, 300, EndInset=end_inset)
 
     # Core line over the distance to the wall's line segment.
     core_width = parameter(scalar, "CoreWidth", 1.5, "01 Line", 0, "Width of the core at half brightness, in cm",
@@ -253,9 +223,7 @@ def build_halo_material(frame_function):
     end_inset = parameter(scalar, "EndInset", 1.0, "01 Halo", 2,
                           "How far before each end of the wall the line stops, in half widths of the wall; the halo "
                           "rounds off around that end. Keep equal to the overlay instances' EndInset", -1500, 100)
-    # The centre only drives Along, which is not wired here, so it never compiles in.
-    frame = graph.call(frame_function, -1300, 0, EndInset=end_inset,
-                       ArenaCenter=graph.node(unreal.MaterialExpressionConstant2Vector, -1500, 0, r=0.0, g=0.0))
+    frame = graph.call(frame_function, -1300, 0, EndInset=end_inset)
     distance = (frame, "SegmentDistance")
     halo = graph.call(load(f"{GENERIC}/MF_Stroke_Smooth"), -800, -100, Distance=distance, Width=(frame, "HalfWidth"))
     color = parameter(vector, "HaloColor", unreal.LinearColor(*RAIL_COLOR), "01 Halo", 0,
@@ -293,46 +261,42 @@ def finish_material(graph):
     return material
 
 
-def build_instance(parent, name, center=None):
+def build_instance(parent, name):
     instance = toolkit["load_or_create"](FOLDER, name, unreal.MaterialInstanceConstant,
                                          unreal.MaterialInstanceConstantFactoryNew())
     mel.set_material_instance_parent(instance, parent)
-    if center:
-        mel.set_material_instance_vector_parameter_value(instance, "ArenaCenter",
-                                                         unreal.LinearColor(center[0], center[1], 0.0, 0.0))
-
     mel.update_material_instance(instance)
     save(instance)
     return instance
 
 
-def wire_walls(halo, overlays):
-    """Every wall on the old frame material or already on the rail: the halo as its material, its arena's overlay."""
+def wire_walls(halo, overlay):
+    """Every wall on the old frame material or already on the rail: the halo as its material, the overlay on top."""
     wall_materials = {OLD_WALL_MATERIAL, halo.get_path_name()}
-    wall_materials |= {overlay.get_path_name() for overlay in overlays.values()}
     actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem).get_all_level_actors()
     for actor in actors:
-        arena = actor.get_attach_parent_actor()
         for component in actor.get_components_by_class(unreal.StaticMeshComponent):
             material = component.get_material(0)
             if material and material.get_path_name() in wall_materials:
-                arena_label = arena.get_actor_label() if arena else None
-                if arena_label in overlays:
-                    actor.modify()
-                    component.modify()
-                    component.set_material(0, halo)
-                    component.set_editor_property("overlay_material", overlays[arena_label])
-                    LOG.append(f"{actor.get_actor_label()} -> {halo.get_name()} + {overlays[arena_label].get_name()}")
-                else:
-                    LOG.append(f"{actor.get_actor_label()}: arena {arena_label} has no rail instance, left as is")
+                actor.modify()
+                component.modify()
+                component.set_material(0, halo)
+                component.set_editor_property("overlay_material", overlay)
+                LOG.append(f"{actor.get_actor_label()} -> {halo.get_name()} + {overlay.get_name()}")
+
+
+def delete_old_overlays():
+    for suffix in OLD_OVERLAYS:
+        path = f"{FOLDER}/MI_ArenaRail_{suffix}"
+        if unreal.EditorAssetLibrary.does_asset_exist(path):
+            LOG.append(f"{path}: {'deleted' if unreal.EditorAssetLibrary.delete_asset(path) else 'NOT deleted'}")
 
 
 try:
     frame = build_frame()
     halo = build_instance(build_halo_material(frame), "MI_ArenaRailHalo")
-    parent = build_material(frame, build_quads())
-    wire_walls(halo, {label: build_instance(parent, f"MI_ArenaRail_{suffix}", center)
-                      for label, (suffix, center) in ARENAS.items()})
+    wire_walls(halo, build_instance(build_material(frame, build_quads()), "MI_ArenaRail"))
+    delete_old_overlays()
 except Exception:
     import traceback
     LOG.append(traceback.format_exc())

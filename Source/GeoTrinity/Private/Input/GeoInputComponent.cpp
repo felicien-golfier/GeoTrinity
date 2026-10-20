@@ -46,6 +46,15 @@ void UGeoInputComponent::UpdateMouseLook()
 		return;
 	}
 
+#if WITH_EDITORONLY_DATA
+	if (bTestAimActive)
+	{
+		bIsUsingController = false;
+		LastLookInput = TestAimWorld - FVector2D(GeoCharacter->GetActorLocation());
+		return;
+	}
+#endif
+
 	FVector2D ScreenPosition;
 	ULocalPlayer* const LocalPlayer = GeoPlayerController->GetLocalPlayer();
 	if (!IsValid(LocalPlayer) || !IsValid(LocalPlayer->ViewportClient)

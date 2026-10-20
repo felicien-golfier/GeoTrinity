@@ -1,19 +1,21 @@
 """
-Tutorial room builder for GeoTrinity (DraftMap).
+Training Room builder for GeoTrinity (DraftMap, room tag Arena.TrainingRoom).
 
-Builds the training room the players spawn into: its AI StateTrees, its dummy and totem Blueprints,
-the zone ability/deployable Blueprints, the zone material instances, and the room itself (floor, walls,
-the arena, the zone row and its target points, class-change pads, teleporter pair, player starts).
+Builds the Training Room the players spawn into and the tutorial hands off to: its AI StateTrees, its dummy and
+caster Blueprints (the Training* kit), the zone deployable Blueprints, the zone material instances, and the room
+itself (floor, walls, the arena, the zone row and its target points, class-change pads, teleporter pair, player
+starts). The six zone abilities (GA_Training_*: UPatternAbility launching a BP_ZonePattern_*) are hand-kept and
+only referenced here by tag.
 Idempotent — assets and actors are keyed by path/label, so a re-run updates instead of duplicating.
 
 The room is one AGeoDummyArena, not one per enemy: the hidden zone caster is its boss and every station
 enemy is an add on its own TargetPoint.AddSpawn, so the whole room spawns and resets as a single unit.
 
-The zones are ability-driven, not placed: one hidden caster holds all six UGeoZoneAbility Blueprints and
-fires them at once, each onto the AGeoTargetPoint carrying its own TargetPoint.Tutorial.* tag. An ability
-telegraphs its circle for its FireDelay, then either leaves an AGeoEffectZone behind (lingering zones) or
-bursts its effects on the spot (the two one-shot zones). Every cadence but the telegraph lives in the
-StateTree: FireAll (all six at once, and it waits for all six) -> Rest(delay) -> FireAll.
+The zones are ability-driven, not placed: one hidden caster (AHiddenCasterCharacter) holds all six zone abilities
+and fires them at once, each onto the AGeoTargetPoint carrying its own TargetPoint.Training.* tag. A zone pattern
+telegraphs its circle, then either leaves an AGeoEffectZone behind (lingering zones) or bursts its effects on the
+spot (the two one-shot zones). Every cadence but the telegraph lives in the StateTree: FireAll (all six at once, and
+it waits for all six) -> Rest(delay) -> FireAll.
 
 The room sits outside the level's NavMeshBoundsVolume: nothing in it paths, the moving dummy chases
 in a straight line. Widen that volume first if a MoveTo/firing-point patrol is ever wanted here.
@@ -26,27 +28,25 @@ Reference: AI/MCP/MCP_Blueprint.md, AI/MCP/MCP_StateTree.md, AI/MCP/MCP_NewEnemy
 Nothing a script prints comes back through MCP, so the run report is written to REPORT_PATH.
 
 Stages (call from execute_script):
-    build_assets()   # StateTrees, Blueprints (zones, abilities, caster), material instances
+    build_assets()   # StateTrees, Blueprints (zones, dummies, caster), material instances
     build_level()    # room geometry, stations, the zone row and its points, signs, access
 """
 import unreal
 
-REPORT_PATH = (r"C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity"
-               r"/815bf150-b301-4e36-8455-df35c78d0614/scratchpad/tutorial_report.txt")
+REPORT_PATH = r"C:/GeoTrinity/AI/Output/training_room_report.txt"
 
 # Names the room twice over: the teleporter pads that lead here, and the arena the zone caster belongs to,
 # which is what makes its abilities resolve against this room's AGeoTargetPoints and no other arena's.
-TUTORIAL_TAG = "Arena.Tutorial"
-AGGRO_EVENT = "AI.Boss.AggroEvent"
+TRAINING_TAG = "Arena.TrainingRoom"
 
 ST_SRC = "/Game/AI/ST_EnemyBehaviour"
-ST_DIR = "/Game/AI/Tutorial"
-BP_DIR = "/Game/Characters/Enemies/Tutorial"
-BP_DUMMY = "/Game/Characters/Enemies/BP_Dummy"
-
-GA_DIR = "/Game/AbilitySystem/Abilities/Enemy/Tutorial"
-GA_PARENT = "/Script/GeoTrinity.GeoZoneAbility"
-ZONE_BP_DIR = "/Game/Actors/Tutorial"
+ST_DIR = "/Game/AI/Training"
+DUMMY_SHOOTER_TREE = "/Game/AI/Dummy/ST_Dummy_Shooter"
+DUMMY_CHASER_TREE = "/Game/AI/Dummy/ST_Dummy_Chaser"
+BP_DIR = "/Game/Characters/Enemies/Training"
+BP_DUMMY = BP_DIR + "/BP_Dummy"
+CASTER_PARENT = "/Script/GeoTrinity.HiddenCasterCharacter"
+ZONE_BP_DIR = "/Game/Actors/Training"
 ZONE_SRC_DAMAGE = "/Game/Actors/BP_DamageZone"
 ZONE_SRC_HEAL = "/Game/Actors/BP_HealingZone"
 
@@ -59,17 +59,11 @@ MI_SRC = MI_DIR + "/MI_PulseCircle"
 MI_LETHAL = MI_DIR + "/MI_PulseCircle_Lethal"
 MI_REDUCTION = MI_DIR + "/MI_PulseCircle_DamageReduction"
 
-CUE_INDICATOR = "GameplayCue.Generic.ZoneIndicator"
-CUE_EXPLOSION = "GameplayCue.Generic.Explosion"
-
-# Zone cadence. TELEGRAPH is the ability's own FireDelay; ZONE_LIFE + ZONE_BLINK is how long the
-# deployable stays up; REST is the StateTree delay between two casts, sized so the next telegraph
-# starts as the previous zone finishes blinking out.
-TELEGRAPH = 1.0
+# Zone cadence. ZONE_LIFE + ZONE_BLINK is how long a lingering zone stays up (set on the BP_ZonePattern_*); REST is
+# the StateTree delay between two casts, sized so the next telegraph starts as the previous zone finishes blinking out.
 ZONE_LIFE = 5.0
 ZONE_BLINK = 1.0
 REST = ZONE_LIFE + ZONE_BLINK
-ZONE_RADIUS = 250.0
 
 # Only players are hostile to an Enemy-team caster, so this reaches them and leaves the dummies alone.
 HOSTILE = 4
@@ -112,21 +106,6 @@ def tag(name):
     return value
 
 
-def cue(cue_tag, color):
-    """FGeoCueParam built from its own export form, so the EGeoColor slot is named the way C++ spells it."""
-    value = unreal.GeoCueParam()
-    value.import_text('(CueTag=(TagName="%s"),Color=%s,SoundTag=(TagName=""))' % (cue_tag, color))
-    return value
-
-
-def set_struct(owner, prop, values):
-    """Read-modify-write: works for any struct the reflection system exposes, named or not."""
-    struct = owner.get_editor_property(prop)
-    for key, value in values.items():
-        struct.set_editor_property(key, value)
-    owner.set_editor_property(prop, struct)
-
-
 def actors():
     return unreal.get_editor_subsystem(unreal.EditorActorSubsystem).get_all_level_actors()
 
@@ -138,67 +117,26 @@ def find_actor(label):
     return None
 
 
-# ---------------------------------------------------------------- effect entries
-
-GE_REDUCTION = "/Game/AbilitySystem/GameplayEffects/Buffs/GE_DamageReductionBuff.GE_DamageReductionBuff_C"
-REDUCTION_ICON = "/Game/Art/Textures/Gameplay/Status/MAT_ShieldStatus.MAT_ShieldStatus"
-
-# Long enough to outlast any visit; the zone removes the handle on exit anyway, and a duration of 0
-# would leave GE_DamageReductionBuff's SetByCaller duration unset and expire it on the spot.
-REDUCTION_DURATION = 600.0
-
-
-def effect(text):
-    value = unreal.InstancedStruct()
-    value.import_text(text)
-    return value
-
-
-def flat_effect(struct, amount, per_second=False):
-    """One heal/damage entry. The per-second flag is what a zone reads to tell a rate it re-applies for
-    every tick an actor stays inside from a one-shot it lands once on entry, so a lingering zone sets it
-    and a burst does not — the same value then reads as HP/sec or as a flat hit."""
-    return effect('/Script/GeoTrinity.%s(Amount=(Value=%f),bIsPerSecond=%s,bLimitGameplayCue=True)'
-                  % (struct, amount, per_second))
-
-
-def gameplay_effect(effect_class, data_tag, magnitude, duration=0.0, icon=None):
-    """Applied once on entry and removed on exit."""
-    text = ('/Script/GeoTrinity.GameplayEffectData('
-            'GameplayEffect="/Script/Engine.BlueprintGeneratedClass\'%s\'",'
-            'DataTag=(TagName="%s"),Magnitude=(Value=%f),Duration=(Value=%f)'
-            % (effect_class, data_tag, magnitude, duration))
-    if icon:
-        text += ',Icon="/Script/Engine.MaterialInstanceConstant\'%s\'"' % icon
-    return effect(text + ')')
-
-
 def point_tag(key):
     """Purpose tag of the AGeoTargetPoint this zone lands on. Editor-authored in Config/Tags/GeoGameplayTags.ini:
     no code names one of these, only the ability asset aiming at it."""
-    return "TargetPoint.Tutorial." + key
+    return "TargetPoint.Training." + key
 
 
-# key, Y, ability tag, zone Blueprint key (None = burst), effect entry, EGeoColor slot, sign lines, sign color
+# key, Y, ability tag, sign lines, sign color
 def zone_specs():
     return [
-        ("HealOverTime", -1500.0, "Ability.Spell.TutorialHealOverTime", "HealOverTime",
-         flat_effect("HealEffectData", 15.0, per_second=True), "Heal",
+        ("HealOverTime", -1500.0, "Ability.Spell.TrainingHealOverTime",
          "HEAL OVER TIME\n+15 HP / sec\nwhile inside", GREEN),
-        ("BurstHeal", -900.0, "Ability.Spell.TutorialBurstHeal", None,
-         flat_effect("HealEffectData", 25.0), "Heal",
+        ("BurstHeal", -900.0, "Ability.Spell.TrainingBurstHeal",
          "HEAL BURST\n+25 HP\nwhen it lands", GREEN),
-        ("DamageReduction", -300.0, "Ability.Spell.TutorialDamageReduction", "DamageReduction",
-         gameplay_effect(GE_REDUCTION, "Status.Buff.DamageReduction", .5, REDUCTION_DURATION, REDUCTION_ICON),
-         "DamageReduction", "DAMAGE REDUCTION\n-50% damage taken\nwhile inside", BLUE),
-        ("DamageOverTime", 300.0, "Ability.Spell.TutorialDamageOverTime", "DamageOverTime",
-         flat_effect("DamageEffectData", 15.0, per_second=True), "Damage",
+        ("DamageReduction", -300.0, "Ability.Spell.TrainingDamageReduction",
+         "DAMAGE REDUCTION\n-50% damage taken\nwhile inside", BLUE),
+        ("DamageOverTime", 300.0, "Ability.Spell.TrainingDamageOverTime",
          "DAMAGE OVER TIME\n-15 HP / sec\nwhile inside", RED),
-        ("BurstDamage", 900.0, "Ability.Spell.TutorialBurstDamage", None,
-         flat_effect("DamageEffectData", 25.0), "Damage",
+        ("BurstDamage", 900.0, "Ability.Spell.TrainingBurstDamage",
          "DAMAGE BURST\n-25 HP\nwhen it lands", RED),
-        ("Lethal", 1500.0, "Ability.Spell.TutorialLethal", "Lethal",
-         effect('/Script/GeoTrinity.LethalEffectData()'), "LethalDamage",
+        ("Lethal", 1500.0, "Ability.Spell.TrainingLethal",
          "LETHAL\ninstant death\nwhatever your HP", ORANGE),
     ]
 
@@ -283,56 +221,6 @@ def build_zone_blueprints():
     return made
 
 
-def build_ability_blueprints(zone_blueprints):
-    """One UGeoZoneAbility Blueprint per zone, and its entry in the global ability catalog."""
-    parent = unreal.load_class(None, GA_PARENT)
-    catalog = unreal.load_asset("/Game/AbilitySystem/Data/DA_AbilityInfo")
-    infos = catalog.get_editor_property("EnemyAbilityInfos")
-    known = "".join(info.export_text() for info in infos)
-
-    made = {}
-    for key, _, ability_tag, zone_key, entry, color, _, _ in zone_specs():
-        name = "GA_Tutorial_" + key
-        blueprint, created = make_bp(name, GA_DIR, parent)
-        cdo = unreal.get_default_object(blueprint.generated_class())
-
-        tags = unreal.GameplayTagContainer()
-        tags.import_text('(GameplayTags=((TagName="%s")))' % ability_tag)
-        cdo.set_editor_property("AbilityTags", tags)
-
-        cdo.set_editor_property("bUseGeneralChargeTimeForFireDelay", False)
-        cdo.set_editor_property("FireDelay", TELEGRAPH)
-        cdo.set_editor_property("EffectDataInstances", [entry])
-        cdo.set_editor_property("TargetPointTag", tag(point_tag(key)))
-        cdo.set_editor_property("BurstAttitude", HOSTILE)
-        cdo.set_editor_property("TelegraphCue", cue(CUE_INDICATOR, color))
-        set_struct(cdo, "ZoneParams", {"Size": ZONE_RADIUS})
-
-        if zone_key:
-            cdo.set_editor_property("ZoneClass", zone_blueprints[zone_key].generated_class())
-            set_struct(cdo, "ZoneParams", {"LifeDrainMaxDuration": ZONE_LIFE, "BlinkDuration": ZONE_BLINK})
-        else:
-            # A burst leaves nothing behind, so the explosion is the only thing that marks where it landed.
-            cdo.set_editor_property("BurstCue", cue(CUE_EXPLOSION, color))
-
-        commit_bp(blueprint)
-        made[key] = blueprint
-        log("Ability", name, "created" if created else "updated")
-
-        if '(TagName="%s")' % ability_tag not in known:
-            info = unreal.GameplayAbilityInfo()
-            info.import_text('(AbilityClass="/Script/Engine.BlueprintGeneratedClass\'%s\'",'
-                             'AbilityTag=(TagName="%s"),AbilityDisplayName="%s",'
-                             'Description="Tutorial zone demonstration.")'
-                             % (blueprint.generated_class().get_path_name(), ability_tag, key))
-            infos.append(info)
-            log("  registered in DA_AbilityInfo")
-
-    catalog.set_editor_property("EnemyAbilityInfos", infos)
-    unreal.EditorLoadingAndSavingUtils.save_packages([catalog.get_outermost()], False)
-    return made
-
-
 def build_state_trees():
     """Trims of the star boss's own tree — same tasks, none of its movement or wave states.
 
@@ -342,30 +230,14 @@ def build_state_trees():
     builder = unreal.GeoStateTreeBuilderUtil.get_default_object()
     trees = {}
 
-    # Bullets totem: Dormant -> Wait -> FireAll(ProjectileToAllPlayers). That ability re-schedules its
-    # own salves forever, so the state never completing is exactly the behaviour wanted.
-    tree, created = dup_asset(ST_SRC, ST_DIR + "/ST_Tutorial_Bullets")
-    if created:
-        builder.clear_transitions(tree, "FireAll")
-        builder.remove_state(tree, "Behaviour")
-    trees["bullets"] = tree
-
-    # Moving dummy: chases whoever is nearest, straight line, no navmesh and no firing points needed.
-    tree, created = dup_asset(ST_SRC, ST_DIR + "/ST_Tutorial_Chase")
-    if created:
-        builder.clear_transitions(tree, "Dormant")
-        builder.clear_transitions(tree, "FireAll")
-        builder.remove_state(tree, "InitFight")
-        builder.remove_state(tree, "Behaviour")
-        builder.add_state(tree, "Chase", "Root", -1)
-        builder.add_task_to_state(tree, "Chase", "STTask_ChaseTarget")
-        builder.add_transition(tree, "Dormant", "Chase", unreal.StateTreeTransitionTrigger.ON_EVENT, AGGRO_EVENT)
-    trees["chase"] = tree
+    # The shooter and the chaser are the tutorial's shared trees (tutorial_assets.py builds them).
+    trees["bullets"] = unreal.load_asset(DUMMY_SHOOTER_TREE)
+    trees["chase"] = unreal.load_asset(DUMMY_CHASER_TREE)
 
     # Zone caster: Dormant -> Wait -> FireAll -> Rest -> FireAll, forever. FireAll carries one fire task per zone
     # ability and a state starts all its tasks at once, so the six go off together; TasksCompletion ALL is what
     # makes the state wait for the last of them instead of ending on the first, so one Rest spaces every cycle.
-    tree, created = dup_asset(ST_SRC, ST_DIR + "/ST_Tutorial_Zones")
+    tree, created = dup_asset(ST_SRC, ST_DIR + "/ST_Training_Zones")
     if created:
         builder.clear_transitions(tree, "FireAll")
         builder.remove_state(tree, "Behaviour")
@@ -393,20 +265,20 @@ def build_blueprints(trees):
     made = {}
 
     specs = [
-        ("BP_TutorialChaser", {"StateTree": trees["chase"]}, None),
-        ("BP_TutorialAlly", {"TeamId": unreal.Team.PLAYER}, None),
-        ("BP_TutorialTotemBullets", {"StateTree": trees["bullets"]}, ["Ability.Spell.ProjectileToAllPlayers"]),
+        ("BP_TrainingChaser", dummy_class, {"StateTree": trees["chase"]}, None),
+        ("BP_TrainingAlly", dummy_class, {"TeamId": unreal.Team.PLAYER}, None),
+        ("BP_TrainingShooter", dummy_class, {"StateTree": trees["bullets"]}, ["Ability.Spell.ProjectileToAllPlayers"]),
     ]
-    # The caster is nothing but what fires the six zone abilities: it never moves and never takes a hit, so it is
-    # hidden and undamageable rather than a target the room invites you to shoot. Its capsule still overlaps
-    # rather than blocks (the GeoCapsule profile), so nobody bumps into what they cannot see. Its aggro radius
-    # is what wakes the whole row at once: walk up to the zones and every one of them starts.
-    specs.append(("BP_TutorialZoneCaster",
-                  {"StateTree": trees["zones"], "bCanBeDamaged": False, "bHidden": True},
+    # The caster is nothing but what fires the six zone abilities: AHiddenCasterCharacter draws nothing and takes no
+    # hit. Its StateTree fires the whole row on a loop as soon as it spawns.
+    caster_class = unreal.load_class(None, CASTER_PARENT)
+    specs.append(("BP_TrainingZoneCaster", caster_class, {"StateTree": trees["zones"]},
                   [spec[2] for spec in zone_specs()]))
 
-    for name, props, ability_tags in specs:
-        blueprint, created = make_bp(name, BP_DIR, dummy_class)
+    for name, parent, props, ability_tags in specs:
+        blueprint, created = make_bp(name, BP_DIR, parent)
+        if unreal.BlueprintEditorLibrary.get_blueprint_parent_class(blueprint) != parent:
+            unreal.BlueprintEditorLibrary.reparent_blueprint(blueprint, parent)
         cdo = unreal.get_default_object(blueprint.generated_class())
         for prop, value in props.items():
             cdo.set_editor_property(prop, value)
@@ -445,8 +317,7 @@ def build_assets():
     REPORT[:] = []
     try:
         build_materials()
-        zone_blueprints = build_zone_blueprints()
-        build_ability_blueprints(zone_blueprints)
+        build_zone_blueprints()
         trees = build_state_trees()
         build_blueprints(trees)
         log("ASSETS OK")
@@ -514,8 +385,8 @@ def build_stations(blueprints):
     order, so the pairing also holds for any name-ordered lookup."""
     log("-- stations")
     stations = [
-        ("Ally", 400.0, blueprints["BP_TutorialAlly"], "ALLY ON FIRE\nheal it (its zone burns you too)"),
-        ("Bullets", 1200.0, blueprints["BP_TutorialTotemBullets"], "BULLET TOTEM\ndodge the shots"),
+        ("Ally", 400.0, blueprints["BP_TrainingAlly"], "ALLY ON FIRE\nheal it (its zone burns you too)"),
+        ("Bullets", 1200.0, blueprints["BP_TrainingShooter"], "BULLET TOTEM\ndodge the shots"),
         ("Target", -400.0, unreal.load_asset(BP_DUMMY), "TRAINING DUMMY\nshoot it"),
     ]
     add_classes = []
@@ -540,19 +411,9 @@ def target_point(label, location, purpose_tag):
         actor.set_actor_label(label)
     actor.set_actor_location(unreal.Vector(*location), False, False)
     tags = unreal.GameplayTagContainer()
-    tags.import_text('(GameplayTags=((TagName="%s"),(TagName="%s")))' % (purpose_tag, TUTORIAL_TAG))
+    tags.import_text('(GameplayTags=((TagName="%s"),(TagName="%s")))' % (purpose_tag, TRAINING_TAG))
     actor.set_editor_property("GameplayTags", tags)
     return actor
-
-
-def prune_zone_totems():
-    """The six per-zone totems the one caster replaces: their arenas first, then the assets behind them."""
-    for key, *_ in zone_specs():
-        destroy_actor("Tuto_ZoneArena_" + key)
-        for asset in ("%s/BP_TutorialTotem_%s" % (BP_DIR, key), "%s/ST_Tutorial_%s" % (ST_DIR, key)):
-            if unreal.EditorAssetLibrary.does_asset_exist(asset):
-                unreal.EditorAssetLibrary.delete_asset(asset)
-                log("  deleted", asset)
 
 
 def build_arena(add_classes):
@@ -564,8 +425,8 @@ def build_arena(add_classes):
     if arena is None:
         return
     arena.set_editor_property("BossClass",
-                              unreal.load_asset(BP_DIR + "/BP_TutorialZoneCaster").generated_class())
-    arena.set_editor_property("ArenaTag", tag(TUTORIAL_TAG))
+                              unreal.load_asset(BP_DIR + "/BP_TrainingZoneCaster").generated_class())
+    arena.set_editor_property("ArenaTag", tag(TRAINING_TAG))
     arena.set_editor_property("AddClasses", add_classes)
     log("  arena adds ->", [c.get_name() for c in add_classes])
 
@@ -575,12 +436,11 @@ def build_zones(add_classes):
     log("-- zone caster")
     for label in LEGACY_LABELS:
         destroy_actor(label)
-    prune_zone_totems()
     sign("Tuto_Sign_Zones", (ROW_TITLE, 0.0, 0.0),
          "EFFECT ZONES\nthey all land together on a loop, step in to see what each one does", size=90.0)
     target_point("Tuto_ZoneSpawn", (ROW_ZONE, 0.0, 0.0), BOSS_SPAWN_TAG)
     build_arena(add_classes)
-    for key, offset, _, _, _, _, text, color in zone_specs():
+    for key, offset, _, text, color in zone_specs():
         target_point("Tuto_ZonePoint_" + key, (ROW_ZONE, offset, 0.0), point_tag(key))
         sign("Tuto_Sign_Zone_" + key, (ROW_ZONE_SIGN, offset, 0.0), text, size=45.0, color=color)
         log("  ", key)
@@ -590,10 +450,10 @@ def build_access():
     log("-- access")
     pad_in = dup_actor("BP_TeleportToHex", "Tuto_TeleportToHub", (ROW_ENTRY, 0.0, 47.0))
     pad_out = dup_actor("BP_TeleportToHex", "Tuto_TeleportFromHub", (-580.0, -270.0, 47.0))
-    for pad, text in ((pad_in, "Hub"), (pad_out, "Tutorial")):
+    for pad, text in ((pad_in, "Hub"), (pad_out, "Training")):
         if pad is None:
             continue
-        pad.set_editor_property("TeleportTag", tag(TUTORIAL_TAG))
+        pad.set_editor_property("TeleportTag", tag(TRAINING_TAG))
         pad.set_editor_property("DisplayText", text)
     sign("Tuto_Sign_Teleport", (ROW_ENTRY_SIGN, 0.0, 0.0), "BACK TO THE HUB", size=60.0)
 
@@ -602,7 +462,7 @@ def build_access():
     dup_actor("BP_Circle_ChangeClassTrigger", "Tuto_Class_Circle", (ROW_ENTRY, 1100.0, 80.0))
     sign("Tuto_Sign_Class", (ROW_ENTRY_SIGN, 800.0, 0.0), "CHANGE CLASS", size=60.0)
 
-    sign("Tuto_Sign_Room", (ROW_ENTRY_SIGN, -1300.0, 0.0), "TUTORIAL", size=130.0)
+    sign("Tuto_Sign_Room", (ROW_ENTRY_SIGN, -1300.0, 0.0), "TRAINING ROOM", size=130.0)
 
     # First entry into the level lands here; the pad above is the way out and back.
     for index, label in enumerate(("PlayerStart", "PlayerStart2", "PlayerStart3")):
@@ -618,7 +478,7 @@ def build_level():
     REPORT[:] = []
     try:
         blueprints = {}
-        for name in ("BP_TutorialAlly", "BP_TutorialTotemBullets"):
+        for name in ("BP_TrainingAlly", "BP_TrainingShooter"):
             blueprints[name] = unreal.load_asset("%s/%s" % (BP_DIR, name))
         build_room()
         build_zones(build_stations(blueprints))

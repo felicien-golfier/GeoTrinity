@@ -50,22 +50,16 @@ int32 UGeoGemCatalog::GetCraftCost(EGeoGemTier const Tier) const
 int32 UGeoGemCatalog::GetBreakDownShards(EGeoGemTier const Tier) const
 {
 	int32 const* Shards = BreakDownShards.Find(Tier);
-	ensureMsgf(Shards, TEXT("%hs: %s has no break-down value for tier %d"), __FUNCTION__, *GetName(), static_cast<int32>(Tier));
+	ensureMsgf(Shards, TEXT("%hs: %s has no break-down value for tier %d"), __FUNCTION__, *GetName(),
+			   static_cast<int32>(Tier));
 	return Shards ? *Shards : 0;
 }
 
-TArray<FGeoGemStack> UGeoGemCatalog::RollLoot(EGeoBossType const BossType, EGeoDifficulty const Difficulty,
-											   FRandomStream& Stream) const
+TArray<FGeoGemStack> UGeoGemCatalog::RollLoot(FGeoGemDropTable const& DropTable, EGeoDifficulty const Difficulty,
+											  FRandomStream& Stream) const
 {
-	FGeoGemDropTable const* DropTable = DropTables.Find(BossType);
-	if (!ensureMsgf(DropTable, TEXT("%hs: %s has no drop table for boss type %d"), __FUNCTION__, *GetName(),
-					static_cast<int32>(BossType)))
-	{
-		return {};
-	}
-
-	float const ScaledCount = Stream.RandRange(DropTable->MinCount, DropTable->MaxCount)
-							* GetDifficultyScale(DifficultyLootScale, Difficulty);
+	float const ScaledCount =
+		Stream.RandRange(DropTable.MinCount, DropTable.MaxCount) * GetDifficultyScale(DifficultyLootScale, Difficulty);
 	int32 const Count = FMath::FloorToInt32(ScaledCount) + (Stream.FRand() < FMath::Frac(ScaledCount) ? 1 : 0);
 	TArray<FGeoGemStack> Loot;
 	for (int32 i = 0; i < Count; ++i)
@@ -73,7 +67,7 @@ TArray<FGeoGemStack> UGeoGemCatalog::RollLoot(EGeoBossType const BossType, EGeoD
 		EGeoGemTier Tier = EGeoGemTier::Chip;
 		for (EGeoGemTier const HigherTier : {EGeoGemTier::Core, EGeoGemTier::Prism, EGeoGemTier::Cut})
 		{
-			if (Tier == EGeoGemTier::Chip && Stream.FRand() < DropTable->TierChances.FindRef(HigherTier))
+			if (Tier == EGeoGemTier::Chip && Stream.FRand() < DropTable.TierChances.FindRef(HigherTier))
 			{
 				Tier = HigherTier;
 			}
@@ -83,24 +77,87 @@ TArray<FGeoGemStack> UGeoGemCatalog::RollLoot(EGeoBossType const BossType, EGeoD
 		if (ensureMsgf(TierGems && !TierGems->Gems.IsEmpty(), TEXT("%hs: %s drops tier %d but lists no gem of it"),
 					   __FUNCTION__, *GetName(), static_cast<int32>(Tier)))
 		{
-			FName const GemId = TierGems->Gems[Stream.RandHelper(TierGems->Gems.Num())].Id;
-			FGeoGemStack* Stack = Loot.FindByPredicate(
-				[GemId](FGeoGemStack const& Existing)
-				{
-					return Existing.Id == GemId;
-				});
-			if (Stack)
-			{
-				++Stack->Count;
-			}
-			else
-			{
-				Loot.Add({GemId, 1});
-			}
+			AddToStacks(Loot, TierGems->Gems[Stream.RandHelper(TierGems->Gems.Num())].Id, 1);
 		}
 	}
 
 	return Loot;
+}
+
+FGeoGemReward UGeoGemCatalog::MakeKillLoot(FGeoBossLoot const& BossLoot, EGeoBossType const BossType,
+										   EGeoDifficulty const Difficulty, FRandomStream& Stream) const
+{
+	FGeoGemDropTable const* DropTable = BossLoot.bOverrideDropTable ? &BossLoot.DropTable : DropTables.Find(BossType);
+	ensureMsgf(DropTable, TEXT("%hs: %s has no drop table for boss type %d"), __FUNCTION__, *GetName(),
+			   static_cast<int32>(BossType));
+
+	FGeoGemReward Loot;
+	if (DropTable)
+	{
+		Loot.Gems = RollLoot(*DropTable, Difficulty, Stream);
+	}
+
+	for (FGeoGemLootEntry const& Entry : BossLoot.FixedGems)
+	{
+		AddToStacks(Loot.Gems, Entry.GemId, Entry.Count);
+	}
+
+	Loot.Shards = BossLoot.FixedShards;
+	return Loot;
+}
+
+TArray<FString> UGeoGemCatalog::FindBossLootErrors(FGeoBossLoot const& BossLoot) const
+{
+	TArray<FString> Errors;
+	for (FGeoGemLootEntry const& Entry : BossLoot.FixedGems)
+	{
+		if (!Find(Entry.GemId))
+		{
+			Errors.Add(FString::Printf(TEXT("Fixed gem \"%s\" is not in the gem catalog"), *Entry.GemId.ToString()));
+		}
+
+		if (Entry.Count < 1)
+		{
+			Errors.Add(FString::Printf(TEXT("Fixed gem \"%s\" has a count under 1"), *Entry.GemId.ToString()));
+		}
+	}
+
+	return Errors;
+}
+
+TArray<FName> UGeoGemCatalog::GetGemIdOptions()
+{
+	TArray<FName> GemIds;
+	UGeoGemCatalog const* Catalog = Get();
+	if (Catalog)
+	{
+		for (EGeoGemTier const Tier : {EGeoGemTier::Chip, EGeoGemTier::Cut, EGeoGemTier::Prism, EGeoGemTier::Core})
+		{
+			for (FGeoGemInfo const& Gem : Catalog->GemsByTier.FindRef(Tier).Gems)
+			{
+				GemIds.Add(Gem.Id);
+			}
+		}
+	}
+
+	return GemIds;
+}
+
+void UGeoGemCatalog::AddToStacks(TArray<FGeoGemStack>& Stacks, FName const GemId, int32 const Count)
+{
+	FGeoGemStack* Stack = Stacks.FindByPredicate(
+		[GemId](FGeoGemStack const& Existing)
+		{
+			return Existing.Id == GemId;
+		});
+	if (Stack)
+	{
+		Stack->Count += Count;
+	}
+	else
+	{
+		Stacks.Add({GemId, Count});
+	}
 }
 
 int32 UGeoGemCatalog::GetXp(EGeoBossType const BossType, float const HealthTakenRatio,

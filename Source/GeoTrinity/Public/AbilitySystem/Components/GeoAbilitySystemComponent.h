@@ -16,11 +16,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAbilityHit, FGameplayTag, Abil
 											   HitActor);
 
 class AGeoDeployableBase;
+struct FPlayersGameplayAbilityInfo;
 
 DECLARE_MULTICAST_DELEGATE_FourParams(FOnDashAiming, FVector const& /*Start*/, bool /*bHasDirection*/,
 									  FVector& /*Direction*/, float& /*Distance*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDashStarted, FVector const& /*Start*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDeployableEvent, AGeoDeployableBase& /*Deployable*/);
+DECLARE_MULTICAST_DELEGATE(FOnAbilitySetChanged);
 
 class UGeoGameplayAbility;
 struct FGeoGameplayEffectContext;
@@ -48,16 +50,27 @@ class GEOTRINITY_API UGeoAbilitySystemComponent : public UAbilitySystemComponent
 	GENERATED_BODY()
 
 public:
-	/** Pre-creates pattern instances for every UPatternAbility-derived ability in StartupAbilityTags so PatternStartMulticast can always find one; no-op in non-game worlds. */
+	/** Abilities GiveStartupAbilities grants; a spawner may append to it before the owner's BeginPlay. */
+	UPROPERTY(EditAnywhere, Category = "GeoGAS")
+	TArray<FGameplayTag> StartupAbilityTags;
+
+	/** Pre-creates pattern instances for every UPatternAbility-derived ability in StartupAbilityTags so
+	 * PatternStartMulticast can always find one; no-op in non-game worlds. */
 	virtual void InitializeComponent() override;
-	/** Binds health and speed attribute change delegates; also registers ally remote-fire tag listeners on clients so cosmetic shot replay works for observed allies. */
+	/** Binds health and speed attribute change delegates; also registers ally remote-fire tag listeners on clients so
+	 * cosmetic shot replay works for observed allies. */
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
 
 	/** Grants every ability in StartupAbilityTags, looked up from the global UAbilityInfo asset. */
 	void GiveStartupAbilities();
 
-	/** Grants all abilities defined for PlayerClass in the global UAbilityInfo asset. */
+	/** Grants every startup ability of PlayerClass in the global UAbilityInfo asset, but those the world's
+	 * LockedAbilityTags hold back. */
 	void GiveStartupAbilities(EPlayerClass PlayerClass);
+
+	/** Grants PlayerClass's ability with AbilityTag from its UAbilityInfo entry, bound to its InputTag. Returns false,
+	 * granting nothing, when it is already granted or PlayerClass has no such ability. */
+	bool GiveClassAbility(EPlayerClass PlayerClass, FGameplayTag AbilityTag);
 
 	/** Removes all abilities that were granted for a specific player class. */
 	void ClearPlayerClassAbilities();
@@ -84,10 +97,11 @@ public:
 	 * Clears every ability cooldown: the server drops the cooldown effects, and each machine drops the cooldown tags it
 	 * still holds locally.
 	 *
-	 * Must be called from a path that runs on every machine — drive it from replicated state (bIsDead, OnRep_PlayerClass),
-	 * never from the server alone. A client raises the cooldown tag itself when it predicts an activation and never
-	 * lowers it; only the replicated count does, and it cannot when the server drops the effect on the frame it was
-	 * applied — the count then goes 0 -> 1 -> 0 between two replication passes and no delta is ever sent.
+	 * Must be called from a path that runs on every machine — drive it from replicated state (bIsDead,
+	 * OnRep_PlayerClass), never from the server alone. A client raises the cooldown tag itself when it predicts an
+	 * activation and never lowers it; only the replicated count does, and it cannot when the server drops the effect on
+	 * the frame it was applied — the count then goes 0 -> 1 -> 0 between two replication passes and no delta is ever
+	 * sent.
 	 */
 	void ResetCooldowns();
 
@@ -95,8 +109,8 @@ public:
 	 * Death teardown, run on every machine: every live ability instance gets OnOwnerDeath(), cooldowns are reset
 	 * (ResetCooldowns), and on the server every active gameplay effect is removed except KeptEffects.
 	 *
-	 * @param KeptEffects  Handles that survive the purge (UGeoGemComponent::GetSurvivingEffectHandles). Empty on a client,
-	 *                     where the server's removal replicates down.
+	 * @param KeptEffects  Handles that survive the purge (UGeoGemComponent::GetSurvivingEffectHandles). Empty on a
+	 * client, where the server's removal replicates down.
 	 */
 	void HandleOwnerDeath(TArray<FActiveGameplayEffectHandle> const& KeptEffects);
 
@@ -110,9 +124,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "GeoGAS")
 	TSubclassOf<UGameplayEffect> DefaultAttributes;
 
-	/** Value the DefaultAttributes effect gives Attribute at CombatLevel, before any gem or other modifier. For a player
-	 * the effect is its class's (APlayableCharacter::GetClassDefaultAttributes), otherwise this component's own. 0 when
-	 * the effect has no static modifier on it. */
+	/** Value the DefaultAttributes effect gives Attribute at CombatLevel, before any gem or other modifier. For a
+	 * player the effect is its class's (APlayableCharacter::GetClassDefaultAttributes), otherwise this component's own.
+	 * 0 when the effect has no static modifier on it. */
 	float GetDefaultAttributeValue(FGameplayAttribute const& Attribute) const;
 
 	/**
@@ -196,19 +210,33 @@ public:
 	/** Server: a deployable this ASC's owner threw just landed. A deployable spawned any other way never fires it. */
 	FOnDeployableEvent OnDeployableLanded;
 
-	/** Server: a deployable of this ASC's owner that a hit destroyed, not its life drain, reaches the end of its blink. A
-	 *  recall never fires it. */
+	/** Server: a deployable of this ASC's owner that a hit destroyed, not its life drain, reaches the end of its blink.
+	 * A recall never fires it. */
 	FOnDeployableEvent OnDeployableDestroyedByDamage;
+
+	/** An ability was granted or removed, on the server and (once the spec replicates) on clients: the ability bar
+	 * rebuilds on it. */
+	FOnAbilitySetChanged OnAbilitySetChanged;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnMaxHealthChanged;
 
+protected:
+	/** Broadcasts OnAbilitySetChanged. */
+	virtual void OnGiveAbility(FGameplayAbilitySpec& AbilitySpec) override;
+	/** Broadcasts OnAbilitySetChanged. */
+	virtual void OnRemoveAbility(FGameplayAbilitySpec& AbilitySpec) override;
+
 private:
 	/** Grants AbilityClass at CombatLevel, tagging the spec with InputTag when it is valid. The single grant path
 	 * shared by both GiveStartupAbilities overloads. */
 	void GiveAbilitySpec(TSubclassOf<UGameplayAbility> AbilityClass, FGameplayTag InputTag);
+
+	/** Grants a player ability bound to its input: the grant of GiveStartupAbilities(EPlayerClass) and
+	 * GiveClassAbility. */
+	void GivePlayerAbility(FPlayersGameplayAbilityInfo const& AbilityInfo);
 
 	/**
 	 * Walks the granted specs matching InputTag and pushes the press into them. bFreshPress selects the polarity:
@@ -249,8 +277,4 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<UPattern*> Patterns;
-
-	// DATA //
-	UPROPERTY(EditAnywhere, Category = "GeoGAS")
-	TArray<FGameplayTag> StartupAbilityTags;
 };

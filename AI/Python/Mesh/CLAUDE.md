@@ -7,6 +7,8 @@ Procedural static meshes and rigging.
 | Script | Does |
 |---|---|
 | `generate_bomb_mesh.py` | Round bomb mesh sized to replace the pillar |
+| `generate_cat_mesh.py` | `SM_Cat` (`/Game/Art/Meshes/Cat`): the Tutorial Cat, face toward +X, built for the top-down camera, nothing touches: HUD portrait face extruded (head, ears, tilted eyes, nose, mouth), three-sided pyramid body floating behind the head (a triangle from above, apex back), four disc paws (two hands at the head's sides, two feet beside the body), tail of 9 small squares curling sideways from the apex; one part each for a rig; slots = colour roles `Base` / `Shade` / `Ink` / `Light`; part bounds in `AI/Output/cat_gen.json` |
+| `rig_cat.py` | `SM_Cat` → `SKM_Cat` on `SK_Cat` (same folder): one rigid bone per part, a vertex owned by the smallest part box holding it, tail as a chain, `PortalPoint` socket on `Root` at `PORTAL_X` (bones: `AI/Tutorial/CatAnimation.md`); helpers loaded from `rig_class_badges.py` |
 | `generate_class_badge_meshes.py` | Three class logo silhouettes extruded per class; Triangle body thins to its point |
 | `generate_hex_boss_mesh.py` | Hex boss body (three concentric hexagons) + rig data |
 | `generate_hex_mine_mesh.py` | Hex boss mine: flat hexagon, six spikes alternating long / short (turret cannon shape), core hexagon in its own `Core` slot for the blinking material |

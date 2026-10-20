@@ -11,7 +11,7 @@ Mascot, narrator, the **only speaking character**. It incarnates the sarcasm: ev
 | Reading | What the player believes at first | Truth, revealed in pieces |
 |---|---|---|
 | **Surface** | A fellow prisoner of the world, sarcastic coping mechanism, wants out as much as you and helps you get there. | |
-| **Under** | | It knows how the world works, who the bosses are, what the exit costs. It tells only what the current lesson needs, deflects the rest with a joke. |
+| **Under** | | It pushed them in, got locked in by mistake, and is the final boss. It knows how the world works, who the bosses are, what the exit costs. It tells only what the current lesson needs, deflects the rest with a joke. |
 
 Rules of the double reading:
 - Early on, everything the Cat does must be readable as help; the clues only make sense afterwards (e.g. page 2's paw on the glowing piece looks like a stumble).
@@ -30,9 +30,13 @@ Smug, bored, theatrical, helpful through insult. Treats the players as customers
 | Eyes | 2 hexagons, the boss shape: foreshadows that the Cat is tied to the bosses |
 | Body | Elongated rounded rectangle / stacked polygons |
 | Tail | Chain of segments, the part that animates |
-| Colour | Magenta-violet family, outside the class colours (blue / yellow / green). Exact palette slot: open. |
+| Colour | The bosses' colour and variations of it (tints / shades), outside the class colours (blue / yellow / green): the Cat is tied to the bosses. Four roles: base, shade, ink (darkest), light (eyes / nose). |
 
 In the real-world pages (1-2) the Cat is a soft silhouette with a halo; in game it is full neon geometry. Same proportions.
+
+## In game
+- Dialogue box: the Board's face portrait beside the line (`HUD/Tutorial/CLAUDE.md`, "Cat face"), identical shape and motion; mouth moves while it speaks.
+- The 3D Cat (`AGeoCat`, `Actor/CLAUDE.md`) lives in the Landing room, same palette. How it moves: `CatAnimation.md`; staged by the encounter (`Steps.md`, step 1 "Cat staging").
 
 ## Voice samples (draft bank; final text lives in the Tutorial Board artifact)
 - "Welcome, adventurers. Please keep your hands inside the game at all times. I've lost mine already."

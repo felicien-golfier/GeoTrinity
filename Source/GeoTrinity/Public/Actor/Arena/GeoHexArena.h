@@ -170,8 +170,6 @@ private:
 	bool IsSupported(FVector2D WorldLocation) const;
 	/** Converts a world location to fractional axial (Q, R) hex coordinates in this arena's frame. */
 	FVector2D WorldToAxial(FVector2D WorldLocation) const;
-	/** Kills Player and moves the corpse off the platform, to this arena's TargetPoint.FallRespawn point. */
-	void KillFallenPlayer(APlayableCharacter& Player) const;
 	/** Deterministically fills TileCoords / CoordToIndex for the configured GridRadius. Idempotent. */
 	void BuildGrid();
 	/** Applies TileStates (alive scale + highlight custom data) to the ISM instances, diffing against

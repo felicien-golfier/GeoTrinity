@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "UObject/Interface.h"
 
 #include "GeoHUDInterface.generated.h"
@@ -40,4 +41,16 @@ public:
 	virtual void ShowBossHealthBar(AEnemyCharacter* Boss) = 0;
 	/** Hides the dedicated on-screen boss health bar. */
 	virtual void HideBossHealthBar() = 0;
+
+	/** Tutorial: shows the Cat's Line (Tutorial Board markup) in place of any line shown. OnEnded is called once when
+	 * this line ends, whatever the reason. */
+	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded) = 0;
+	/** Tutorial: opens the pause menu on the character sheet, the details of AbilityTag open. */
+	virtual void ShowAbilityPage(FGameplayTag AbilityTag) = 0;
+	/** Tutorial quest card: Title, a count over Max, a countdown from TimeLimitSeconds, stopping at 0 (0: none). */
+	virtual void ShowQuestCard(FText const& Title, int32 Max, float TimeLimitSeconds) = 0;
+	virtual void SetQuestCount(int32 Count) = 0;
+	virtual void HideQuestCard() = 0;
+	/** Opens the pause menu on the Gems menu, on its Forge page (bForge) or its loadout. */
+	virtual void OpenGemsPage(bool bForge) = 0;
 };

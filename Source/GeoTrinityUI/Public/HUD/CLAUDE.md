@@ -12,6 +12,7 @@ In-game HUD. Seam to gameplay: `GeoTrinity/Public/HUD/Interface/CLAUDE.md`.
 | `Combatant/` | Health bars, boss bar, damage numbers, widget component |
 | `Team/` | Player card, team list, stats panel |
 | `Gauge/` | World-space charge gauges |
+| `Tutorial/` | Cat line, quest card → `Tutorial/CLAUDE.md` |
 | `Menu/` `Style/` | see module map |
 
 ```

@@ -22,8 +22,9 @@ class GEOTRINITYUI_API UGeoMenuRootWidget : public UGeoMenuPanelWidget
 	GENERATED_BODY()
 
 public:
-	/** Shows the page of PageClass held in this menu's tree over whatever shows now, which Back then returns to. */
-	void OpenPage(TSubclassOf<UGeoMenuPageWidget> PageClass);
+	/** Shows the page of PageClass held in this menu's tree over whatever shows now, which Back then returns to.
+	 * Returns that page, null when the tree holds none. */
+	UGeoMenuPageWidget* OpenPage(TSubclassOf<UGeoMenuPageWidget> PageClass);
 	/** Shows again what showed before the top page: the page that opened it, or TopLevel. */
 	void GoBack();
 	/** Leaves every page for TopLevel; a menu that closes itself (the pause menu) closes instead. */

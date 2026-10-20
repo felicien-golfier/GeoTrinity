@@ -6,6 +6,7 @@
 | `GeoGameUserSettings.h` | Player settings in `GameUserSettings.ini`: couch-coop gamepad choice, volumes, HUD options |
 
 - `GeoGameUserSettings` registered by `GameUserSettingsClassName` in `Config/DefaultEngine.ini`; `Get()` `checkf`s it.
+- `bTutorialPromptAnswered`: set when the first-launch tutorial prompt is answered either way, never reset (`AI/Tutorial/Flow.md`).
 - `bUseFirstGamepadForSecondPlayer` is local only; applying it = `UGeoGameViewportClient::ApplyCouchCoopSetting()` after every write (done by `UGeoKeyBindingsWidget`).
 - Palette: `ColorPalette` is a single `ColorPalette=((Key,(R=..)),…)` line in `[/Script/GeoTrinity.GameDataSettings]`.
 - Global data assets come from `GetLoadedDataAsset()`, which `AddToRoot()`s them: `RF_Standalone` protects only in the editor, a package collects every asset nothing hard-references. Never `LoadSynchronous()` a global asset around that helper; never cache a `UObject*` past a frame outside a `UPROPERTY` (holder = file-scope `USTRUCT`; `TObjectPtr` alone keeps nothing alive). Detail: `TroobleshootingLogs.md`.

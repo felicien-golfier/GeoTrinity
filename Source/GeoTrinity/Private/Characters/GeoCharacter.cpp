@@ -3,13 +3,14 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "Characters/Component/FX/GeoIndicatorComponent.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
-#include "Characters/Component/FX/GeoIndicatorComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/GameInstance.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Input/GeoInputComponent.h"
@@ -58,6 +59,11 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 		CharacterWidgetComponent = Cast<UWidgetComponent>(ObjectInitializer.CreateDefaultSubobject(
 			this, TEXT("CharacterWidgetComponent"), UWidgetComponent::StaticClass(), WidgetComponentClass,
 			/*bIsRequired=*/false, /*bIsTransient=*/false));
+	}
+
+	// Still null for a subclass that opted out with DoNotCreateDefaultSubobject (the hidden caster).
+	if (CharacterWidgetComponent)
+	{
 		CharacterWidgetComponent->SetupAttachment(WidgetAnchorComponent);
 		// Orthographic top-down: World space lies the bar flat on the ground; Screen space at desired size keeps it
 		// upright and sized to the WBP. Both stay BP-overridable.
@@ -231,7 +237,7 @@ void AGeoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	TargetYaw = GetActorRotation().Yaw;
-	ensureMsgf(CharacterWidgetComponent || GeoLib::IsDedicatedServer(GetWorld()),
+	ensureMsgf(CharacterWidgetComponent || IsHidden() || GeoLib::IsDedicatedServer(GetWorld()),
 			   TEXT("%s has no CharacterWidgetComponent — set CombattantWidgetComponentClass in Game Data Settings"),
 			   *GetName());
 	BindCosmeticsToASC();
@@ -262,7 +268,17 @@ void AGeoCharacter::Death()
 	}
 	DeathServerTime = GeoLib::GetServerTime(GetWorld());
 	bIsDead = true;
+	AGeoGameState* const GameState = GetWorld()->GetGameState<AGeoGameState>();
+	if (GameState)
+	{
+		GameState->OnCharacterDied.Broadcast(*this);
+	}
 	DeathLogic();
+}
+
+void AGeoCharacter::FellOutOfWorld(UDamageType const& /*DamageType*/)
+{
+	Death();
 }
 
 void AGeoCharacter::DeathLogic()

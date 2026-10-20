@@ -11,6 +11,10 @@
 
 class UGeoGemCatalog;
 
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FGeoGemEquippedSignature, EPlayerClass /*PlayerClass*/, int32 /*SocketIndex*/,
+									   FName /*GemId*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FGeoGemCraftedSignature, FName /*GemId*/, int32 /*Quantity*/);
+
 /** One saved page of a class's sockets: a whole loadout under the name the player gave it. */
 USTRUCT()
 struct FGeoGemBuild
@@ -141,6 +145,9 @@ public:
 	/** Adds Count copies of GemId to its stack: loot, or a cheat. */
 	void AddGems(FName GemId, int32 Count);
 
+	/** Adds Count shards: loot, or a cheat. */
+	void AddShards(int32 Count);
+
 	/**
 	 * Sets PlayerClass's level, clamped to [1, GeoGem::MaxClassLevel], with no XP towards the next. Lowering it empties
 	 * every socket of every build that is locked again at the new level; the copies go back to free. A class at the max
@@ -197,6 +204,12 @@ public:
 
 	/** Spends shards on Quantity copies of GemId. Refused (false) when the shards do not cover it. */
 	bool Craft(UGeoGemCatalog const& Catalog, FName GemId, int32 Quantity);
+
+	/** Fires after every successful Equip, FillSockets included (once per socket filled). */
+	FGeoGemEquippedSignature OnGemEquipped;
+
+	/** Fires after every successful Craft. */
+	FGeoGemCraftedSignature OnGemCrafted;
 
 private:
 	/** GeoGems.sav for the first local player, GeoGems_P<n>.sav for the n-th couch-coop one. */

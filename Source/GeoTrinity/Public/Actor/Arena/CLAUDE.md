@@ -6,7 +6,7 @@ One boss encounter and everything room-shaped. The arena drives itself; GameStat
 |---|---|
 | `GeoArena.h` | Base arena: owns boss + adds, barrier, fight commit, boss bar, loot, floor look |
 | `GeoHexArena.h` | Arena on a destructible hex tile grid |
-| `GeoDummyArena.h` | Training dummy: spawns its enemy, `IsBoss() = false`, no fight machinery |
+| `GeoDummyArena.h` | Training dummy: spawns its enemy, `IsBoss() = false`, no fight machinery; also hosts a room's `AHiddenCasterCharacter` (`Characters/CLAUDE.md`) |
 | `GeoArenaBarrier.h` | Replicated barrier lerping transforms Fight-On ↔ Fight-Off |
 | `GeoHexBarrier.h` | Barrier variant: hex-tile alley vanishing tile by tile |
 | `GeoArenaVolume.h` | Box naming which arena players stand in (checkpoint/respawn tag outside a fight) |
@@ -19,13 +19,16 @@ One boss encounter and everything room-shaped. The arena drives itself; GameStat
   - `EndFight()` (from `AGeoGameState::OnMatchStateChanged`, server): clears timer, `bFighting` false, hides bar; resets the boss only on a wipe (victory sets `bBossDefeated`).
   - `RespawnBoss()` / static `RespawnAllBosses()`: only way back after a victory (`GeoMatchStateButton` `RespawnBosses`, or new server).
 - Loot: `OnBossDefeated` starts a looping shower until any fight starts (`StopLoot()`); `GetFightingArena()` = static "who is fighting".
+- Rewards: `BossLoot` (`FGeoBossLoot`, next to `BossType`) = this boss's random part (own drop table, or the catalog's for `BossType`) + fixed gems + fixed shards; `GrantGemRewards` hands every player the same kill loot. Rules: `Gem/CLAUDE.md` ("Boss loot"). `IsDataValid` (editor) flags fixed gems the catalog no longer has.
 - `IsBoss()` is virtual and the sole gate on match start (checked in `TriggerAggro`).
-- Finished attempts go to `UGeoLeaderboardSave`.
+- Adds: `AddClasses` at reset, and `SpawnAdd(Class, Transform, Setup)` (server; `Setup` optional; spawns through `AEnemyCharacter::SpawnEnemy`, `Characters/CLAUDE.md` "Enemy setup") for one brought in mid-fight (a boss summon, a dead summon's ally). Every add is in `Adds`, `Arena` set: a wipe (`ResetBoss` → `ResetAdds`) and the boss's death (`DestroyAdds`) remove them all, so each attempt starts clean.
+- Finished attempts go to `UGeoLeaderboardSave`, unless `bRecordsLeaderboard` is off (tutorial miniboss: not a real boss run).
 
 ## GeoHexArena
 - Tiles are NoCollision visuals over a flat invisible floor; replicated `TileStates` (`FHexTileState`: `bAlive`, `bHighlighted`) is truth.
 - `ApplyTileVisuals()` diffs and zero-scales dead tiles (never remove instances). Server calls it manually after mutating.
-- Server tick = one rule: anything unsupported over a hole falls (players die → respawn at `TargetPoint.FallRespawn`, except mid-dash; deployables `Recall()` / `Expire()`).
+- The precise fall rule of this arena (dead tiles sit over an invisible floor, so nothing really falls through them); falling off real geometry is the world `KillZ` (`Characters/CLAUDE.md`, "Void").
+- Server tick = one rule: anything unsupported over a hole falls (players `Death()`, except mid-dash or under root motion, then the GameState death policy respawns them; deployables `Expire()`). Runs only between `CommitFight` and `EndFight` (`bFallCheckEnabled`).
   - `IsSupported`: within `FallGraceMargin` of the shared border of the alive neighbour (found O(1) by cube coordinates; distance perpendicular to the border).
   - Tick enabled by `CommitFight`, disabled + reset by `EndFight`.
 - Telegraph: `HighlightTiles(Requester, Center, Radius)` / `ClearHighlight`, server-only bookkeeping keyed by requester (`HighlightRequests`); only the union bool replicates.
@@ -34,4 +37,5 @@ One boss encounter and everything room-shaped. The arena drives itself; GameStat
 ## Barriers
 - `SetClosed(bool)` server-only; lerp driven by the actor's own `Tick`, enabled from `OnRep_bIsClosed` (called manually on authority). Times from GameState `CommitFightTime` / `DeathTime`.
 - `OnBarrierStateChanged` is VFX only.
+- Every `AnimatedActors` actor (a door mesh) needs Movable mobility on its root component: a Static one never moves (PIE warning "has to be 'Movable' if you'd like to move") and the door silently stays at its fight-off place. Tutorial map doors (`Tut_*_Door`) are Movable; a script placing a door sets it.
 - `GeoHexBarrier`: rides inherited `bIsClosed`; alley must lie inside the arena's `FallCheckRadius` if players should fall through. Shape = `TileLayout` ((Column, Row) in vanish order); sculpt by deleting instances then `CaptureLayout` button, before anything re-runs the construction script.

@@ -10,6 +10,7 @@
 GEOTRINITY_API DECLARE_LOG_CATEGORY_EXTERN(LogGeoTrinity, Log, All);
 GEOTRINITY_API DECLARE_LOG_CATEGORY_EXTERN(LogGeoASC, Log, All);
 GEOTRINITY_API DECLARE_LOG_CATEGORY_EXTERN(LogPattern, Log, All);
+GEOTRINITY_API DECLARE_LOG_CATEGORY_EXTERN(LogGeoEncounter, Log, All);
 
 #define ECC_GeoCharacter ECollisionChannel::ECC_GameTraceChannel1
 #define ECC_MovementBlocker ECollisionChannel::ECC_GameTraceChannel2

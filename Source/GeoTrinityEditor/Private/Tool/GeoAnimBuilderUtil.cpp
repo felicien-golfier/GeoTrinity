@@ -22,6 +22,7 @@
 #include "Engine/StaticMesh.h"
 #include "FileHelpers.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_VariableGet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "MeshDescription.h"
@@ -264,6 +265,112 @@ UEdGraph* UGeoAnimBuilderUtil::FindAnimGraph(UAnimBlueprint const* AnimBlueprint
 	return *AnimGraphEntry;
 }
 
+UAnimGraphNode_Root* UGeoAnimBuilderUtil::ResetAnimGraph(UAnimBlueprint* AnimBlueprint, UEdGraph& AnimGraph)
+{
+	UAnimGraphNode_Root* Output = nullptr;
+	TArray<TObjectPtr<UEdGraphNode>> const ExistingNodes = AnimGraph.Nodes;
+	for (UEdGraphNode* Node : ExistingNodes)
+	{
+		if (UAnimGraphNode_Root* Root = Cast<UAnimGraphNode_Root>(Node))
+		{
+			Output = Root;
+		}
+		else
+		{
+			FBlueprintEditorUtils::RemoveNode(AnimBlueprint, Node, true);
+		}
+	}
+
+	ensureMsgf(Output, TEXT("AnimGraph of %s has no output node"), *AnimBlueprint->GetName());
+	return Output;
+}
+
+bool UGeoAnimBuilderUtil::BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, UAnimSequence* Idle,
+												UAnimSequence* Moving, FName BlendVariable, FName SlotName)
+{
+	if (!ensureMsgf(AnimBlueprint && AnimBlueprint->TargetSkeleton && Idle && Moving,
+					TEXT("BuildBlendedAnimGraph needs an AnimBlueprint with a target skeleton and two sequences")))
+	{
+		return false;
+	}
+
+	UEdGraph* AnimGraph = FindAnimGraph(AnimBlueprint);
+	UAnimGraphNode_Root* Output = AnimGraph ? ResetAnimGraph(AnimBlueprint, *AnimGraph) : nullptr;
+	if (!Output)
+	{
+		return false;
+	}
+
+	USkeleton* Skeleton = AnimBlueprint->TargetSkeleton;
+	Skeleton->Modify();
+	Skeleton->SetSlotGroupName(SlotName, SlotName);
+
+	if (FBlueprintEditorUtils::FindNewVariableIndex(AnimBlueprint, BlendVariable) == INDEX_NONE)
+	{
+		FEdGraphPinType const FloatType(UEdGraphSchema_K2::PC_Real, UEdGraphSchema_K2::PC_Double, nullptr,
+										EPinContainerType::None, false, FEdGraphTerminalType());
+		FBlueprintEditorUtils::AddMemberVariable(AnimBlueprint, BlendVariable, FloatType);
+	}
+
+	int32 const ColumnWidth = 320;
+	int32 const RowHeight = 200;
+	int32 const OutputX = Output->NodePosX;
+	int32 const OutputY = Output->NodePosY;
+
+	auto AddPlayer = [AnimGraph, OutputX, OutputY, ColumnWidth, RowHeight](UAnimSequence* Sequence, int32 Row)
+	{
+		FGraphNodeCreator<UAnimGraphNode_SequencePlayer> Creator(*AnimGraph);
+		UAnimGraphNode_SequencePlayer* Player = Creator.CreateNode(false);
+		Player->SetAnimationAsset(Sequence);
+		Player->NodePosX = OutputX - 3 * ColumnWidth;
+		Player->NodePosY = OutputY + Row * RowHeight;
+		Creator.Finalize();
+		return Player;
+	};
+
+	UAnimGraphNode_SequencePlayer* IdlePlayer = AddPlayer(Idle, 0);
+	UAnimGraphNode_SequencePlayer* MovingPlayer = AddPlayer(Moving, 1);
+
+	FGraphNodeCreator<UAnimGraphNode_TwoWayBlend> BlendCreator(*AnimGraph);
+	UAnimGraphNode_TwoWayBlend* Blend = BlendCreator.CreateNode(false);
+	Blend->NodePosX = OutputX - 2 * ColumnWidth;
+	Blend->NodePosY = OutputY;
+	BlendCreator.Finalize();
+
+	FGraphNodeCreator<UK2Node_VariableGet> VariableCreator(*AnimGraph);
+	UK2Node_VariableGet* Variable = VariableCreator.CreateNode(false);
+	Variable->VariableReference.SetSelfMember(BlendVariable);
+	Variable->NodePosX = OutputX - 3 * ColumnWidth;
+	Variable->NodePosY = OutputY - RowHeight;
+	VariableCreator.Finalize();
+
+	FGraphNodeCreator<UAnimGraphNode_Slot> SlotCreator(*AnimGraph);
+	UAnimGraphNode_Slot* Slot = SlotCreator.CreateNode(false);
+	Slot->Node.SlotName = SlotName;
+	Slot->NodePosX = OutputX - ColumnWidth;
+	Slot->NodePosY = OutputY;
+	SlotCreator.Finalize();
+
+	UEdGraphSchema const* Schema = AnimGraph->GetSchema();
+	auto Connect = [Schema](UEdGraphPin* From, UEdGraphNode* To, FName InputPinName)
+	{
+		UEdGraphPin* InputPin = To->FindPin(InputPinName, EGPD_Input);
+		return ensureMsgf(From && InputPin && Schema->TryCreateConnection(From, InputPin),
+						  TEXT("Could not link into pin %s of %s"), *InputPinName.ToString(), *To->GetName());
+	};
+
+	bool const bLinked = Connect(IdlePlayer->FindPin(TEXT("Pose"), EGPD_Output), Blend, TEXT("A"))
+		&& Connect(MovingPlayer->FindPin(TEXT("Pose"), EGPD_Output), Blend, TEXT("B"))
+		&& Connect(Variable->GetValuePin(), Blend, TEXT("Alpha"))
+		&& Connect(Blend->FindPin(TEXT("Pose"), EGPD_Output), Slot, TEXT("Source"))
+		&& Connect(Slot->FindPin(TEXT("Pose"), EGPD_Output), Output, TEXT("Result"));
+
+	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(AnimBlueprint);
+	FKismetEditorUtilities::CompileBlueprint(AnimBlueprint);
+	UEditorLoadingAndSavingUtils::SavePackages({AnimBlueprint->GetPackage(), Skeleton->GetPackage()}, false);
+	return bLinked && AnimBlueprint->Status != BS_Error;
+}
+
 bool UGeoAnimBuilderUtil::InsertSlotAfter(UAnimBlueprint* AnimBlueprint, FName AfterSlotName, FName NewSlotName,
 										  FName SlotGroupName)
 {
@@ -353,21 +460,8 @@ bool UGeoAnimBuilderUtil::BuildLayeredAnimGraph(UAnimBlueprint* AnimBlueprint, F
 		return false;
 	}
 
-	UAnimGraphNode_Root* Output = nullptr;
-	TArray<TObjectPtr<UEdGraphNode>> const ExistingNodes = AnimGraph->Nodes;
-	for (UEdGraphNode* Node : ExistingNodes)
-	{
-		if (UAnimGraphNode_Root* Root = Cast<UAnimGraphNode_Root>(Node))
-		{
-			Output = Root;
-		}
-		else
-		{
-			FBlueprintEditorUtils::RemoveNode(AnimBlueprint, Node, true);
-		}
-	}
-
-	if (!ensureMsgf(Output, TEXT("AnimGraph of %s has no output node"), *AnimBlueprint->GetName()))
+	UAnimGraphNode_Root* Output = ResetAnimGraph(AnimBlueprint, *AnimGraph);
+	if (!Output)
 	{
 		return false;
 	}

@@ -4,10 +4,11 @@ Gameplay → UI seam. Gameplay holds engine base pointers (`UWidgetComponent*`, 
 
 | Interface | Implemented by | Used by |
 |---|---|---|
-| `GeoHUDInterface.h` | `AGeoHUD` | `AGeoPlayerState`, `AGeoGameState` |
+| `GeoHUDInterface.h` | `AGeoHUD` | `AGeoPlayerState`, `AGeoGameState`, encounter actions (`Encounter/Action/CLAUDE.md`) |
 | `GeoCombattantWidgetHost.h` | `UGeoCombattantWidgetComp` | `AGeoCharacter`, `AGeoDeployableBase` |
 | `GeoChargeGaugeWidgetInterface.h` | deploy / charge-beam gauge widgets | `APlayableCharacter` |
 | `GeoChargeBeamGaugeWidgetInterface.h` | `UGeoChargeBeamGaugeWidget` (adds the sweet-spot window) | `APlayableCharacter` |
 | `GeoDamageNumberHost.h` | `AGeoDeployableBase` | `AGeoHUD::RegisterASCForDamageNumbers` (skips when `ShowsDamageNumbers()` is false) |
 
 - Runtime UI classes come from soft class refs in `GameDataSettings` (`CombattantWidgetComponentClass`, …).
+- Tutorial calls on `GeoHUDInterface` (`GeoTrinityUI/.../HUD/Tutorial/CLAUDE.md`): `ShowCatLine(Line, OnEnded)` (board markup, one line at a time; `OnEnded` called once when that line ends, whatever the reason), `ShowAbilityPage(AbilityTag)` (pause menu → character sheet → that ability's detail drawer). Reached from an encounter action through the first local player's HUD: the tutorial is a solo listen host, so authority and the local UI share one process.

@@ -21,6 +21,8 @@ class UGeoAbilitySystemComponent;
 class APlayerState;
 class UGenericCombattantWidget;
 class UGeoDamageNumberWidget;
+class UGeoCatLineWidget;
+class UGeoQuestCardWidget;
 class AEnemyCharacter;
 class APlayableCharacter;
 class UGeoGameplayAbility;
@@ -227,6 +229,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoStatusBar")
 	TArray<FGeoActiveEffectIcon> GetActiveEffectIcons() const;
 
+	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded) override;
+	virtual void ShowAbilityPage(FGameplayTag AbilityTag) override;
+	virtual void ShowQuestCard(FText const& Title, int32 Max, float TimeLimitSeconds) override;
+	virtual void SetQuestCount(int32 Count) override;
+	virtual void HideQuestCard() override;
+	virtual void OpenGemsPage(bool bForge) override;
+
 	/** Binds Health and Shield attribute delegates on ASC so deltas feed OwnerActor's floating-number buffer. */
 	void RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor);
 	/** Finds or creates a pooled UGeoDamageNumberWidget and activates it at the projected screen position. */
@@ -269,6 +278,12 @@ private:
 	 */
 	void BufferDamageNumber(AActor* OwnerActor, float& Carry, float Delta, EGeoDamageNumberType Type);
 
+	/** Widget, created from WidgetClass and added to the viewport at ZOrder on first use; null when WidgetClass is
+	 * unset. */
+	template <typename WidgetType>
+	WidgetType* GetTutorialWidget(TSubclassOf<WidgetType> const& WidgetClass, TObjectPtr<WidgetType>& Widget,
+								  int32 ZOrder);
+
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GeoHUD")
 	TObjectPtr<UGeoUserWidget> OverlayWidget;
@@ -292,6 +307,29 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "GeoDamageNumbers")
 	TSubclassOf<UGeoDamageNumberWidget> DamageNumberWidgetClass;
+
+	/** WBP_CatLine. */
+	UPROPERTY(EditAnywhere, Category = "GeoTutorial")
+	TSubclassOf<UGeoCatLineWidget> CatLineWidgetClass;
+
+	/** WBP_QuestCard. */
+	UPROPERTY(EditAnywhere, Category = "GeoTutorial")
+	TSubclassOf<UGeoQuestCardWidget> QuestCardWidgetClass;
+
+	/** Quest card layer: above the overlay, under the boss bar and the menus. */
+	UPROPERTY(EditAnywhere, Category = "GeoTutorial")
+	int32 TutorialWidgetZOrder = 8;
+
+	/** Cat line layer: above the pause menu (AGeoPlayerController::PauseMenuZOrder), so a line said over an ability
+	 * page shows. */
+	UPROPERTY(EditAnywhere, Category = "GeoTutorial")
+	int32 CatLineZOrder = 110;
+
+	UPROPERTY()
+	TObjectPtr<UGeoCatLineWidget> CatLineWidget;
+
+	UPROPERTY()
+	TObjectPtr<UGeoQuestCardWidget> QuestCardWidget;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UGeoDamageNumberWidget>> DamageNumberPool;

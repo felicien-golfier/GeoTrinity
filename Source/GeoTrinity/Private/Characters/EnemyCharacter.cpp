@@ -4,10 +4,12 @@
 
 #include "AI/GeoEnemyAIController.h"
 #include "AbilitySystem/AttributeSet/CharacterAttributeSet.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/Component/FX/GeoLoopSoundComponent.h"
+#include "Characters/GeoEnemySetup.h"
 #include "Engine/World.h"
 #include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/Character.h"
@@ -52,9 +54,50 @@ void AEnemyCharacter::InitGAS()
 
 	Super::InitGAS();
 
+	ApplyMaxHealthOverride();
+	AbilitySystemComponent->SetNumericAttributeBase(
+		UGeoAttributeSetBase::GetHealthAttribute(),
+		AbilitySystemComponent->GetNumericAttributeBase(UGeoAttributeSetBase::GetMaxHealthAttribute())
+			* StartHealthRatio);
+
 	AbilitySystemComponent->OnHealthChanged.AddDynamic(
 		this,
 		&AEnemyCharacter::OnHealthChanged); // Do we need to remove this on destroy?
+}
+
+void AEnemyCharacter::ApplySetup(FGeoEnemySetup const& Setup)
+{
+	TeamId = Setup.Team;
+	ResetToFullLifeWhenReachingZero = Setup.bResetToFullLife;
+	if (Setup.StateTree)
+	{
+		StateTree = Setup.StateTree;
+	}
+
+	AbilitySystemComponent->StartupAbilityTags.Append(Setup.AbilityTags);
+	if (!Setup.Tag.IsNone())
+	{
+		Tags.Add(Setup.Tag);
+	}
+
+	MaxHealthOverride = Setup.MaxHealth;
+	StartHealthRatio = Setup.StartHealthRatio;
+}
+
+void AEnemyCharacter::ApplyMaxHealthOverride()
+{
+	float const MaxHealth = MaxHealthOverride.GetValueAtLevel(AbilitySystemComponent->GetCombatLevel());
+	if (MaxHealth > 0.f)
+	{
+		AbilitySystemComponent->SetNumericAttributeBase(UGeoAttributeSetBase::GetMaxHealthAttribute(), MaxHealth);
+		AbilitySystemComponent->SetNumericAttributeBase(UGeoAttributeSetBase::GetHealthAttribute(), MaxHealth);
+	}
+}
+
+void AEnemyCharacter::ResetAttributes()
+{
+	AbilitySystemComponent->InitializeDefaultAttributes();
+	ApplyMaxHealthOverride();
 }
 
 void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
@@ -63,7 +106,7 @@ void AEnemyCharacter::OnHealthChanged_Implementation(float NewValue)
 	{
 		if (ResetToFullLifeWhenReachingZero)
 		{
-			AbilitySystemComponent->InitializeDefaultAttributes();
+			ResetAttributes();
 		}
 		else
 		{
@@ -84,6 +127,28 @@ void AEnemyCharacter::DeathLogic()
 	Super::DeathLogic();
 }
 
+AEnemyCharacter* AEnemyCharacter::SpawnEnemy(UWorld& World, TSubclassOf<AEnemyCharacter> const EnemyClass,
+											 FVector Location, AActor* const Owner, AGeoArena* const Arena,
+											 FGeoEnemySetup const* const Setup)
+{
+	Location.Z = ArbitraryCharacterZ;
+	FTransform const Transform(FRotator::ZeroRotator, Location);
+	AEnemyCharacter* const Enemy = World.SpawnActorDeferred<AEnemyCharacter>(
+		EnemyClass, Transform, Owner, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	if (ensureMsgf(Enemy, TEXT("Failed to spawn %s"), *GetNameSafe(EnemyClass)))
+	{
+		Enemy->Arena = Arena;
+		if (Setup)
+		{
+			Enemy->ApplySetup(*Setup);
+		}
+
+		Enemy->FinishSpawning(Transform);
+	}
+
+	return Enemy;
+}
+
 bool AEnemyCharacter::IsFighting() const
 {
 	return Arena.IsValid() && Arena->IsFighting();
@@ -92,7 +157,7 @@ bool AEnemyCharacter::IsFighting() const
 void AEnemyCharacter::ResetForNewAttempt()
 {
 	StopAllSpawnedElements();
-	AbilitySystemComponent->InitializeDefaultAttributes();
+	ResetAttributes();
 	if (AGeoEnemyAIController* AIController = GetController<AGeoEnemyAIController>())
 	{
 		AIController->ResetAI();

@@ -5,12 +5,12 @@
 #include "AbilitySystem/Abilities/Damaging/GeoAutomaticFireAbility.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/TextBlock.h"
-#include "EnhancedInputSubsystems.h"
 #include "GameClasses/Match/GeoPlayerState.h"
+#include "HUD/HudFunctionLibrary.h"
 #include "HUD/Style/Frame/GeoFrame.h"
+#include "HUD/Style/GeoUITheme.h"
 #include "HUD/Style/Glyph/GeoIconImage.h"
 #include "HUD/Style/Meter/GeoMeter.h"
-#include "HUD/Style/GeoUITheme.h"
 
 namespace
 {
@@ -19,7 +19,7 @@ namespace
 		UGeoGameplayAbility const* const AbilityCDO = GeoASLib::GetAbilityCDO(AbilityTag);
 		return AbilityCDO && AbilityCDO->GetClass()->IsChildOf(UGeoAutomaticFireAbility::StaticClass());
 	}
-}
+} // namespace
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilitySlotWidget::InitSlot(TArray<FGeoAbilityBarEntry> const& InEntries, AGeoHUD* InHUD)
@@ -130,8 +130,8 @@ void UGeoAbilitySlotWidget::RefreshGauge(bool const bCountdownVisible)
 	if (GaugeText)
 	{
 		ESlateVisibility const TextVisibility = !bHasGauge ? ESlateVisibility::Collapsed
-			: bCountdownVisible                           ? ESlateVisibility::Hidden
-														  : ESlateVisibility::HitTestInvisible;
+			: bCountdownVisible							   ? ESlateVisibility::Hidden
+														   : ESlateVisibility::HitTestInvisible;
 		GaugeText->SetVisibility(TextVisibility);
 		GaugeText->SetText(Label);
 	}
@@ -145,15 +145,7 @@ void UGeoAbilitySlotWidget::RefreshKeyLabel()
 		return;
 	}
 
-	UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
-		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetOwningLocalPlayer());
-	if (!InputSubsystem)
-	{
-		return;
-	}
-
-	TArray<FKey> const Keys = InputSubsystem->QueryKeysMappedToAction(DisplayedEntry().InputAction);
-	FKey const Key = Keys.Num() > 0 ? Keys[0] : FKey();
+	FKey const Key = UHudFunctionLibrary::GetMappedKey(GetOwningLocalPlayer(), DisplayedEntry().InputAction);
 
 	// Re-queried every tick; only touch the text when the binding actually changed so idle slots stay cheap.
 	if (Key == CachedKey)

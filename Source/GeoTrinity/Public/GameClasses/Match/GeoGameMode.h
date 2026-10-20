@@ -33,10 +33,20 @@ public:
 	virtual bool ReadyToStartMatch_Implementation() override;
 	/** Assigns the joining player's class from join order and completes server-side pawn setup. */
 	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
+	/** Refuses the player when bSoloOnly and another one is already in. */
+	virtual FString InitNewPlayer(APlayerController* NewPlayerController, FUniqueNetIdRepl const& UniqueId,
+								  FString const& Options, FString const& Portal = TEXT("")) override;
+	/** No portal: a random start among those with no PlayerStartTag (a tagged start is reached only by its portal);
+	 * the PIE "Play from Here" start first. Falls back to the engine pick when every start is tagged. */
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 
 	/** Transitions the match back to WaitingToStart, resetting the round. */
 	void RequestWaitingToStart() { SetMatchState(MatchState::WaitingToStart); }
 
 	/** Transitions the match to WaitingPostMatch after the boss is defeated. */
 	void RequestWaitingPostMatch() { SetMatchState(MatchState::WaitingPostMatch); }
+
+	/** One player only: a remote joiner and a second local player are both refused (tutorial map). */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoGame")
+	bool bSoloOnly = false;
 };

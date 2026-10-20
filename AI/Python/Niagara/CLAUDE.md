@@ -12,6 +12,7 @@ Niagara systems and emitter stacks. Docs: `AI/VFX.md`, `AI/MCP/MCP_Niagara.md`.
 | `buff_vfx.py` | Every buff a character or its shots can wear, one style |
 | `geo_aura_vfx.py` | Five character auras as geometry |
 | `empowerment_vfx.py` / `empowered_aura_vfx.py` | Empowerment aura (ortho view), three auras (electricity: `Electric/empowered_arc_vfx.py`) |
+| `teleport_portal_vfx.py` | Teleport portal: intro + hold system and one-shot outro system, one sprite wearing `M_TeleportPortal` |
 | `sacrifice_release_vfx.py` / `sacrifice_hole_vfx.py` | Square sacrifice detonation ray / keyhole during the channel |
 
 ## Electric/ — lightning, arcs, helices

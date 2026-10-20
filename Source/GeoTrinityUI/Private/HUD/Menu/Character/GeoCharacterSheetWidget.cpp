@@ -19,7 +19,6 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameClasses/Match/GeoPlayerState.h"
-#include "GameClasses/Player/GeoPlayerController.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemStatsEffect.h"
@@ -29,8 +28,8 @@
 #include "HUD/Menu/Character/GeoAbilityCardWidget.h"
 #include "HUD/Menu/Character/GeoAbilityDetailWidget.h"
 #include "HUD/Menu/Frame/GeoMenuButton.h"
-#include "HUD/Menu/Frame/GeoMenuRootWidget.h"
 #include "HUD/Menu/Gems/GeoGemsWidget.h"
+#include "HUD/Menu/GeoPauseMenuWidget.h"
 #include "HUD/Menu/List/GeoTableWidget.h"
 #include "HUD/Style/GeoUITheme.h"
 #include "HUD/Style/Glyph/GeoGemGlyph.h"
@@ -197,6 +196,33 @@ void UGeoCharacterSheetWidget::HandleAbilitySelected(UGeoAbilityCardWidget* Row)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoCharacterSheetWidget::OpenAbilityDetail(FGameplayTag const AbilityTag)
+{
+	UGeoAbilityCardWidget* Row = nullptr;
+	if (AbilityBox)
+	{
+		for (UWidget* const Child : AbilityBox->GetAllChildren())
+		{
+			UGeoAbilityCardWidget* const Card = Cast<UGeoAbilityCardWidget>(Child);
+			if (!Row && Card && Card->GetAbilityTag() == AbilityTag)
+			{
+				Row = Card;
+			}
+		}
+	}
+
+	if (Row)
+	{
+		HandleAbilitySelected(Row);
+	}
+	else
+	{
+		UE_LOG(LogGeoTrinity, Warning, TEXT("%hs: no ability row for %s on %s"), __FUNCTION__, *AbilityTag.ToString(),
+			   *GetName());
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoCharacterSheetWidget::CloseDetail()
 {
 	if (SelectedRow)
@@ -218,19 +244,13 @@ void UGeoCharacterSheetWidget::CloseDetail()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCharacterSheetWidget::HandleGems()
 {
-	AGeoPlayerController* Controller = Cast<AGeoPlayerController>(GetOwningPlayer());
 	if (IsInMenu())
 	{
 		OpenPage(UGeoGemsWidget::StaticClass());
 	}
-	else if (ensureMsgf(Controller, TEXT("%hs: %s is not owned by an AGeoPlayerController"), __FUNCTION__, *GetName()))
+	else
 	{
-		Controller->OpenPauseMenu();
-		UGeoMenuRootWidget* PauseMenu = Cast<UGeoMenuRootWidget>(Controller->GetPauseMenuWidget());
-		if (ensureMsgf(PauseMenu, TEXT("%hs: the pause menu is not a UGeoMenuRootWidget"), __FUNCTION__))
-		{
-			PauseMenu->OpenPage(UGeoGemsWidget::StaticClass());
-		}
+		UGeoPauseMenuWidget::OpenOnPage(GetOwningPlayer(), UGeoGemsWidget::StaticClass());
 	}
 }
 
@@ -292,7 +312,8 @@ void UGeoCharacterSheetWidget::ShowLevel(EPlayerClass const PlayerClass, UGeoGem
 	float const XpFill = Profile.GetXpProgress(Catalog, PlayerClass, XpTaken, XpNeeded);
 	if (LevelText)
 	{
-		FText const EchoText = EchoLevel >= 1 && !bMaxLevel ? FText::Format(EchoLevelFormat, EchoLevel) : FText::GetEmpty();
+		FText const EchoText =
+			EchoLevel >= 1 && !bMaxLevel ? FText::Format(EchoLevelFormat, EchoLevel) : FText::GetEmpty();
 		LevelText->SetText(
 			FText::Join(FText::GetEmpty(), FText::Format(LevelFormat, Level, GeoGem::MaxClassLevel), EchoText));
 	}

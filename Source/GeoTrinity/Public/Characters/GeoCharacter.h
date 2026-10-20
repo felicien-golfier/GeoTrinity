@@ -129,6 +129,10 @@ public:
 	 */
 	void Death();
 
+	/** Server (engine calls it on authority, from movement under the world's KillZ). Death() instead of the engine's
+	 * destroy; nothing while already dead. */
+	virtual void FellOutOfWorld(UDamageType const& DamageType) override;
+
 	/**
 	 * Server. Makes this character untouchable: nothing can be applied to it — every targeting and hit path in the
 	 * project gates on CanBeDamaged — its collision is off, and the effects others put on it are dropped, so nothing

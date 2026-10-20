@@ -51,6 +51,13 @@ protected:
 	/** Server. What a zone does beyond applying its effects, for every actor the judge just found inside it. */
 	virtual void OnZoneJudged(TArray<FGeoHazardJudge::FTargetResult> const& Results) {}
 
+	/** The radius the zone judges and draws with: Data.Params.Size, the one both the placed and the spawned path end
+	 * up in. */
+	virtual float GetRadius() const { return Data.Params.Size; }
+
+	/** Matches the capsule and the meshes to GetRadius(). */
+	void ApplyRadius() const;
+
 	UPROPERTY(ReplicatedUsing = OnRep_Data)
 	FDeployableData Data;
 
@@ -89,8 +96,6 @@ private:
 	UFUNCTION()
 	void OnRep_Data();
 
-	/** Matches the capsule to Data.Params.Size — the one radius both the placed and the spawned path end up in. */
-	void ApplyRadius() const;
 	/** Writes Data.Params.Color into the outline, and Color then its secondary colours into the fill colours, on every
 	 * mesh of the zone, with how many fill colours that makes (GeoMaterialParams::Zone*). */
 	void ApplyColor() const;

@@ -8,6 +8,9 @@
 #include "HudFunctionLibrary.generated.h"
 
 class UAbilitySystemComponent;
+class UInputAction;
+class ULocalPlayer;
+struct FKey;
 /**
  * Blueprint-callable HUD utility functions shared across widgets that have no single natural owner.
  * Centralises the draw-gate check (hides the HUD on dedicated servers transparently) and common
@@ -35,4 +38,8 @@ public:
 	 * the leaderboard, so a figure reads the same wherever it is shown. */
 	UFUNCTION(BlueprintPure, Category = "GeoHUD")
 	static FText FormatCompactNumber(float Value);
+
+	/** The first key LocalPlayer has mapped to InputAction now; invalid when none. Shared by the ability slots' key
+	 * label and the Cat's {Key:...} tokens, so a key reads the same everywhere. */
+	static FKey GetMappedKey(ULocalPlayer const* LocalPlayer, UInputAction const* InputAction);
 };

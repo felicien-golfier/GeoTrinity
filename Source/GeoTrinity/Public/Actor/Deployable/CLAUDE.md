@@ -13,10 +13,10 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 | `Pillar/` | Boss pillar blocking the devastating wave |
 | `Mine/` | Hex-boss mine, fuse + burst |
 | `BombZone/` | Hex-boss tile bomb |
-| `Zones/` | `GeoEffectZone`: editor-placed capsule applying `EffectDataArray`; owns its ASC; heal/damage re-applied per tick (per-second magnitude), other types once on entry/exit |
+| `Zones/` | `GeoEffectZone`: editor-placed capsule applying `EffectDataArray`; owns its ASC; heal/damage re-applied per tick (per-second magnitude), other types once on entry/exit. `GeoGrowingZone`: one whose radius grows from its spawn size to `MaxRadius` over `GrowthSeconds`, then stays |
 
 ## Lifecycle
-- Spawned server-side, always through `GeoASLib::FullySpawnDeployable` (`AbilitySystem/Lib/CLAUDE.md`; no deployable, pickups included, calls `SpawnActorDeferred` itself): by `ADeployableSpawnerProjectile::EndProjectileLife()` for a throw, by `GeoASLib::SpawnDeployableFromAbility` for a passive's placement → `InitDrain()` → `ApplyHealthMultiplier()` → server `Tick()` drains → zero health/duration starts blink → `Expire()` (hide, event, delayed destroy).
+- Spawned server-side, always through `GeoASLib::FullySpawnDeployable` (`AbilitySystem/Lib/CLAUDE.md`; no deployable, pickups included, calls `SpawnActorDeferred` itself): by `ADeployableSpawnerProjectile::EndProjectileLife()` for a throw, by `GeoASLib::SpawnDeployableFromAbility` for a passive's placement, by `GeoSpawnZoneAction` for an encounter's self-owned zone (`Encounter/Action/CLAUDE.md`) → `InitDrain()` → `ApplyHealthMultiplier()` → server `Tick()` drains → zero health/duration starts blink → `Expire()` (hide, event, delayed destroy).
 - `Recall(Value)` is the only end-of-life path: `RecallEffect(Value)` then `Expire()`; non-server also fires the recall cue locally.
 - On hex arenas the fall-check recalls/expires anything over a dead tile; subclasses with recall side effects must account for it.
 
@@ -45,3 +45,8 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 - `AGeoInteractableActor`'s ASC is `Minimal` but a deployable is net-owned by its deployer: that client receives neither replicated cue `WhileActive` nor tags for its own deployables (works on the listen server and on other players' deployables).
 - Read deployable state through replicated members, not tags. Cue visuals spawn from both `OnActive` and `WhileActive` behind an idempotent guard. Target fix: `Mixed` on that ASC. Detail: `TroobleshootingLogs.md`.
 - Every concrete subclass overrides `GetData()` returning a non-null pointer to its own data `UPROPERTY` struct (`FTurretData`, `FBuffPickupData`, …): `Tick`, `GetDurationPercent`, `InitInteractableData` dereference it unchecked. Audit every subclass when touching the pattern. Spawn with `SpawnActorDeferred` + `FinishSpawning`.
+
+## Growing zone
+- Radius from the elapsed time since its BeginPlay, on every machine (`Tick`): the server judges with it, a client only draws it; nothing about the growth replicates.
+- `Data.Params.Size` stays the spawn size (what a client receives, whenever it joins); the grown radius goes through `AGeoEffectZone::GetRadius()`, which the judge and `ApplyRadius` read.
+- `GrowthSeconds`, `MaxRadius`: `FScalableFloat` on the Blueprint (tutorial: `CT_Tutorial` rows).

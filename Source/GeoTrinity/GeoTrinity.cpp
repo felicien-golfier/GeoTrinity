@@ -7,5 +7,6 @@
 DEFINE_LOG_CATEGORY(LogGeoTrinity);
 DEFINE_LOG_CATEGORY(LogGeoASC);
 DEFINE_LOG_CATEGORY(LogPattern);
+DEFINE_LOG_CATEGORY(LogGeoEncounter);
 
 IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultGameModuleImpl, GeoTrinity, "GeoTrinity");

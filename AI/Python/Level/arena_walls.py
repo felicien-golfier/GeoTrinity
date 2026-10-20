@@ -13,6 +13,9 @@ Layout, world XY:
   HexBorder2/6 hide and those two become the corridor from the star's +X tip, ending with the corridor floor.
 - Tutorial: a rectangle.
 
+Every line is listed in its travel direction, the way the rail's squares move (AI/ArenaWalls.md, "Orientation"): clockwise
+round its arena, tangent (r.y, -r.x). A barrier wall's two states turn less than 90 degrees; the report flags any that do.
+
 Barrier walls are left in their fight-off state, where BeginPlay puts them. The level is left dirty, never saved.
 Run through execute_script, outside PIE. Report written to AI/Output/arena_walls.txt.
 """
@@ -57,12 +60,9 @@ def rectangle(floor):
     return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
 
 
-def wall_transform(start, end, reference_yaw, end_inset):
-    """A wall whose rail line runs start..end, facing whichever way along it is nearer reference_yaw."""
+def wall_transform(start, end, end_inset):
+    """A wall whose rail line runs start..end, local +X pointing from start to end."""
     yaw = math.degrees(math.atan2(end[1] - start[1], end[0] - start[0]))
-    if abs((yaw - reference_yaw + 180.0) % 360.0 - 180.0) > 90.0:
-        yaw = yaw - 180.0 if yaw > 0.0 else yaw + 180.0
-
     length = math.hypot(end[0] - start[0], end[1] - start[1]) + 2.0 * end_inset * HALF_WIDTH
     transform = unreal.Transform()
     transform.translation = unreal.Vector((start[0] + end[0]) / 2.0, (start[1] + end[1]) / 2.0, WALL_Z)
@@ -104,14 +104,14 @@ def layout(actors):
         return offset_corner(star_outline, star(*first)), offset_corner(star_outline, star(*second))
 
     static.update({
-        "Cube5": star_edge((notch, -half), (half, -half)),
-        "Cube6": star_edge((-half, -half), (-notch, -half)),
-        "Cube11": star_edge((-notch, half), (-half, half)),
-        "Cube12": star_edge((half, half), (notch, half)),
-        "Cube13": star_edge((half, -half), (half, -notch)),
-        "Cube14": star_edge((half, notch), (half, half)),
-        "Cube19": star_edge((-half, -notch), (-half, -half)),
-        "Cube20": star_edge((-half, half), (-half, notch)),
+        "Cube5": star_edge((half, -half), (notch, -half)),
+        "Cube6": star_edge((-notch, -half), (-half, -half)),
+        "Cube11": star_edge((-half, half), (-notch, half)),
+        "Cube12": star_edge((notch, half), (half, half)),
+        "Cube13": star_edge((half, -notch), (half, -half)),
+        "Cube14": star_edge((half, half), (half, notch)),
+        "Cube19": star_edge((-half, -half), (-half, -notch)),
+        "Cube20": star_edge((-half, notch), (-half, half)),
         "Cube7": star_edge((0.0, -tip), (-notch, -half)),
         "Cube8": star_edge((notch, -half), (0.0, -tip)),
         "Cube9": star_edge((-notch, half), (0.0, tip)),
@@ -129,20 +129,20 @@ def layout(actors):
     entrance_line_x = corner[entrance[1]][0]
     static.update({
         "Cube": (corner[entrance[3]], corner[entrance[2]]),
-        "Cube2": (corner[entrance[0]], corner[entrance[1]]),
+        "Cube2": (corner[entrance[1]], corner[entrance[0]]),
         "Cube4": (corner[entrance[0]], corner[entrance[3]]),
-        "Cube21": (corner[entrance[1]], (entrance_line_x, west_low[1])),
-        "Cube22": ((entrance_line_x, west_high[1]), corner[entrance[2]]),
+        "Cube21": ((entrance_line_x, west_low[1]), corner[entrance[1]]),
+        "Cube22": (corner[entrance[2]], (entrance_line_x, west_high[1])),
     })
 
     hex_corridor_end = rectangle(actors["HexRoomFloor2"])[1][0] - HALF_WIDTH  # the wall ends with the floor
     barrier.update({
-        "Door_main": {"on": ((entrance_line_x, west_low[1]), (entrance_line_x, west_high[1]))},
-        "Door_left": {"on": star_edge((-half, -notch), (-tip, 0.0)), "off": ((entrance_line_x, west_low[1]), west_low)},
+        "Door_main": {"on": ((entrance_line_x, west_high[1]), (entrance_line_x, west_low[1]))},
+        "Door_left": {"on": star_edge((-half, -notch), (-tip, 0.0)), "off": (west_low, (entrance_line_x, west_low[1]))},
         "Door_right": {"on": star_edge((-tip, 0.0), (-half, notch)), "off": ((entrance_line_x, west_high[1]), west_high)},
-        "DoorToHex2": {"on": star_edge((half, -notch), (tip, 0.0))},
-        "DoorToHex1": {"on": star_edge((tip, 0.0), (half, notch))},
-        "HexBorder2": {"off": (east_low, (hex_corridor_end, east_low[1]))},
+        "DoorToHex2": {"on": star_edge((tip, 0.0), (half, -notch))},
+        "DoorToHex1": {"on": star_edge((half, notch), (tip, 0.0))},
+        "HexBorder2": {"off": ((hex_corridor_end, east_low[1]), east_low)},
         "HexBorder6": {"off": (east_high, (hex_corridor_end, east_high[1]))},
     })
 
@@ -153,14 +153,14 @@ def layout(actors):
     # Label -> side, counted counter-clockwise from the side facing +X.
     for label, side in (("HexBorder4", 0), ("HexBorder5", 1), ("HexBorder6", 2),
                         ("HexBorder1", 3), ("HexBorder2", 4), ("HexBorder3", 5)):
-        line = (offset_corner(hex_outline, hex_outline[side - 1]), offset_corner(hex_outline, hex_outline[side]))
+        line = (offset_corner(hex_outline, hex_outline[side]), offset_corner(hex_outline, hex_outline[side - 1]))
         barrier.setdefault(label, {})["on"] = line
 
     tutorial = rectangle(actors["Tuto_Floor"])
     corner = {vertex: offset_corner(tutorial, vertex) for vertex in tutorial}
     static.update({
-        "Tuto_Wall_S": (corner[tutorial[0]], corner[tutorial[1]]),
-        "Tuto_Wall_E": (corner[tutorial[1]], corner[tutorial[2]]),
+        "Tuto_Wall_S": (corner[tutorial[1]], corner[tutorial[0]]),
+        "Tuto_Wall_E": (corner[tutorial[2]], corner[tutorial[1]]),
         "Tuto_Wall_N": (corner[tutorial[3]], corner[tutorial[2]]),
         "Tuto_Wall_W": (corner[tutorial[0]], corner[tutorial[3]]),
     })
@@ -173,17 +173,22 @@ def place_barrier(barrier_actor, lines, end_inset):
     for stored in barrier_actor.get_editor_property("animated_actors"):
         entry = stored.copy()
         label = entry.get_editor_property("actor").get_actor_label()
+        yaws = {}
         for state, field in (("on", "fight_on_transform"), ("off", "fight_off_transform")):
             current = entry.get_editor_property(field)
             if is_hidden(current):
                 LOG.append("%s %s: hidden, kept" % (label, state))
             elif state in lines.get(label, {}):
                 start, end = lines[label][state]
-                placed = wall_transform(start, end, current.rotation.rotator().yaw, end_inset)
+                placed = wall_transform(start, end, end_inset)
+                yaws[state] = placed.rotation.rotator().yaw
                 LOG.append("%s %s: %s -> %s" % (label, state, describe(current), describe(placed)))
                 entry.set_editor_property(field, placed)
             else:
                 LOG.append("%s %s: not a wall, kept" % (label, state))
+
+        if len(yaws) == 2 and abs((yaws["on"] - yaws["off"] + 180.0) % 360.0 - 180.0) >= 90.0:
+            LOG.append("%s: TURNS 90 DEGREES OR MORE between its states, flip a line" % label)
 
         entries.append(entry)
 
@@ -205,7 +210,7 @@ def main():
     with unreal.ScopedEditorTransaction("Place arena walls"):
         for label, (start, end) in static.items():
             wall = actors[label]
-            placed = wall_transform(start, end, wall.get_actor_rotation().yaw, end_inset)
+            placed = wall_transform(start, end, end_inset)
             LOG.append("%s: %s -> %s" % (label, describe(wall.get_actor_transform()), describe(placed)))
             wall.modify()
             wall.set_actor_transform(placed, False, True)

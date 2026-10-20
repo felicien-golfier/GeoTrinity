@@ -31,7 +31,8 @@ class GEOTRINITYUI_API UGeoAbilityCardWidget : public UGeoUserWidget
 
 public:
 	/** Fills the card for Info at AbilityLevel; ClassColor tints the icon tile's glow of an active ability. */
-	virtual void SetAbility(FPlayersGameplayAbilityInfo const& Info, int32 AbilityLevel, FLinearColor const& ClassColor);
+	virtual void SetAbility(FPlayersGameplayAbilityInfo const& Info, int32 AbilityLevel,
+							FLinearColor const& ClassColor);
 
 	/** Shows the ability Source shows. */
 	void CopyAbility(UGeoAbilityCardWidget const& Source);
@@ -39,14 +40,17 @@ public:
 	/** Lights CardFrame as the card whose details are open. */
 	void SetSelected(bool bSelected);
 
+	/** The ability SetAbility last showed. */
+	FGameplayTag GetAbilityTag() const { return Ability.AbilityTag; }
+
 	UPROPERTY(BlueprintAssignable, Category = "GeoAbilityCard")
 	FGeoAbilityCardSelectedSignature OnSelected;
 
 	/** One CardClass card, owned by Owner, per catalogued ability of PlayableCharacter's class, actives first, each at
 	 * the level it is granted at. */
 	static TArray<UGeoAbilityCardWidget*> CreateClassCards(UUserWidget& Owner,
-															TSubclassOf<UGeoAbilityCardWidget> CardClass,
-															APlayableCharacter const& PlayableCharacter);
+														   TSubclassOf<UGeoAbilityCardWidget> CardClass,
+														   APlayableCharacter const& PlayableCharacter);
 
 protected:
 	/** Takes the mouse on a left press, so only a click that started on this card selects it. */

@@ -166,7 +166,46 @@ struct FGeoGemStack
 	int32 Count = 0;
 };
 
-/** What one player earns from a finished attempt: class XP for the class they played, and the gems of a kill. */
+/** Count copies of the catalog gem GemId, picked by hand in a boss's fixed loot. */
+USTRUCT(BlueprintType)
+struct FGeoGemLootEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem",
+			  meta = (GetOptions = "/Script/GeoTrinity.GeoGemCatalog.GetGemIdOptions"))
+	FName GemId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = 1))
+	int32 Count = 1;
+};
+
+/**
+ * What one boss kill drops, on its arena: a random part (the catalog's drop table for the boss type, or DropTable
+ * instead) plus a fixed part (FixedGems and FixedShards, every kill, never scaled by difficulty). Both are given at
+ * once.
+ */
+USTRUCT(BlueprintType)
+struct FGeoBossLoot
+{
+	GENERATED_BODY()
+
+	/** Rolls DropTable instead of the catalog's table for the boss type. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	bool bOverrideDropTable = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (EditCondition = "bOverrideDropTable"))
+	FGeoGemDropTable DropTable;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	TArray<FGeoGemLootEntry> FixedGems;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = 0))
+	int32 FixedShards = 0;
+};
+
+/** What one player earns from a finished attempt: class XP for the class they played, and the gems and shards of a
+ * kill. */
 USTRUCT(BlueprintType)
 struct FGeoGemReward
 {
@@ -180,6 +219,9 @@ struct FGeoGemReward
 
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
 	TArray<FGeoGemStack> Gems;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
+	int32 Shards = 0;
 };
 
 /** One socket of a class's board: the tier it takes and the class level that opens it. */

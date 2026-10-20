@@ -4,15 +4,16 @@
 #include "GameClasses/GeoGameInstance.h"
 
 #include "Engine/Engine.h"
-#include "GeoTrinity/GeoTrinity.h"
+#include "Engine/NetDriver.h"
 #include "GenericTeamAgentInterface.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
-#include "Engine/NetDriver.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "System/GeoSessionSubsystem.h"
 #include "TimerManager.h"
 #include "Tool/Team.h"
 
@@ -123,9 +124,10 @@ void UGeoGameInstance::CheckOwnLobbyListed()
 	if (SubsystemName != STEAM_SUBSYSTEM)
 	{
 		ShowSessionDebugMessage(
-			FString::Printf(TEXT("SERVER NOT LISTED: hosted on the %s online subsystem, not Steam. Steam failed to start "
-								 "(Steam not running, or a second game instance on this PC)."),
-							*SubsystemName.ToString()),
+			FString::Printf(
+				TEXT("SERVER NOT LISTED: hosted on the %s online subsystem, not Steam. Steam failed to start "
+					 "(Steam not running, or a second game instance on this PC)."),
+				*SubsystemName.ToString()),
 			FColor::Red);
 	}
 	else
@@ -156,7 +158,8 @@ void UGeoGameInstance::PollOwnLobbyListed()
 															   LobbyMatchList_t::k_iCallback, &bResultFailed);
 		if (!bGotResult || bCallFailed || bResultFailed)
 		{
-			ShowSessionDebugMessage(TEXT("Server list check failed: Steam did not answer the lobby query."), FColor::Red);
+			ShowSessionDebugMessage(TEXT("Server list check failed: Steam did not answer the lobby query."),
+									FColor::Red);
 		}
 		else
 		{
@@ -172,11 +175,11 @@ void UGeoGameInstance::PollOwnLobbyListed()
 				TEXT("(%u GeoTrinity lobbies listed near you, build id %d: a player only sees servers with the same "
 					 "build id)"),
 				LobbyList.m_nLobbiesMatching, GetBuildUniqueId());
-			ShowSessionDebugMessage(
-				(bOwnLobbyListed ? TEXT("SERVER LISTED: Steam lists your server. ")
-								 : TEXT("SERVER NOT LISTED: Steam's lobby list does not contain your server. "))
-					+ Summary,
-				bOwnLobbyListed ? FColor::Green : FColor::Red);
+			ShowSessionDebugMessage((bOwnLobbyListed
+										 ? TEXT("SERVER LISTED: Steam lists your server. ")
+										 : TEXT("SERVER NOT LISTED: Steam's lobby list does not contain your server. "))
+										+ Summary,
+									bOwnLobbyListed ? FColor::Green : FColor::Red);
 		}
 	}
 }
@@ -186,7 +189,11 @@ void UGeoGameInstance::ShowSessionDebugMessage(FString const& Message, FColor co
 {
 	GEngine->AddOnScreenDebugMessage(SessionDebugMessageKey, SessionDebugMessageSeconds, Color, Message);
 	GetTimerManager().SetTimer(
-		SessionDebugMessageTimer, []() { GEngine->RemoveOnScreenDebugMessage(SessionDebugMessageKey); },
+		SessionDebugMessageTimer,
+		[]()
+		{
+			GEngine->RemoveOnScreenDebugMessage(SessionDebugMessageKey);
+		},
 		SessionDebugMessageSeconds, false);
 }
 
@@ -274,6 +281,48 @@ void UGeoGameInstance::LeaveSessionAndReturnToMenu()
 		{
 			UGameplayStatics::OpenLevel(this, FName(*MainMenuMap.ToSoftObjectPath().GetLongPackageName()));
 		});
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::OpenTutorial(FString const& Room)
+{
+	if (ensureMsgf(!TutorialMap.IsNull(), TEXT("%hs: TutorialMap is not set"), __FUNCTION__))
+	{
+		GetSubsystem<UGeoSessionSubsystem>()->HostListen(TutorialMap.ToSoftObjectPath().GetLongPackageName(), Room);
+	}
+}
+
+static FAutoConsoleCommandWithWorldAndArgs GTutorialJumpCommand(
+	TEXT("Geo.Tutorial.Jump"),
+	TEXT("Geo.Tutorial.Jump <Room> — reopens the tutorial in Room, by name (Dash, Shoot, ...) or number (0 Landing, "
+		 "1 Dash, ...), what earlier rooms unlock granted"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
+		[](TArray<FString> const& Args, UWorld* World)
+		{
+			UGeoGameInstance* const GameInstance = World ? World->GetGameInstance<UGeoGameInstance>() : nullptr;
+			if (GameInstance && Args.Num() == 1)
+			{
+				GameInstance->OpenTutorial(Args[0]);
+			}
+		}));
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGameInstance::LeaveTutorial()
+{
+	if (ensureMsgf(!TrainingRoomMap.IsNull(), TEXT("%hs: TrainingRoomMap is not set"), __FUNCTION__))
+	{
+		GetSubsystem<UGeoSessionSubsystem>()->HostListen(TrainingRoomMap.ToSoftObjectPath().GetLongPackageName(),
+														 TEXT("TrainingRoom"));
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoGameInstance::IsInTutorial() const
+{
+	UWorld const* const World = GetWorld();
+	return World && !TutorialMap.IsNull()
+		&& UWorld::RemovePIEPrefix(World->GetPackage()->GetName())
+		== TutorialMap.ToSoftObjectPath().GetLongPackageName();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

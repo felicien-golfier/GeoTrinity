@@ -24,6 +24,7 @@
 #include "Misc/AutomationTest.h"
 #include "Settings/GameDataSettings.h"
 #include "Tests/GeoTestDeployable.h"
+#include "Tests/GeoTestWorld.h"
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 
@@ -330,6 +331,52 @@ bool FGeoGemForgeTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Crafted copies land in the stack"), Profile->GetOwnedCount("Guard"), 4);
 	TestEqual(TEXT("Craft spends the shards"), Profile->GetShards(), 0);
 	TestFalse(TEXT("Zero quantity is refused"), Profile->Craft(Catalog, "Guard", 0));
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemProfileEventsTest, "GeoTrinity.Gems.ProfileEvents", GeoGemTestFlags)
+
+bool FGeoGemProfileEventsTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	UGeoGemProfileSave* Profile = NewObject<UGeoGemProfileSave>();
+	int32 Equipped = 0;
+	int32 LastSocket = INDEX_NONE;
+	FName LastEquippedGem;
+	Profile->OnGemEquipped.AddLambda(
+		[&](EPlayerClass /*PlayerClass*/, int32 const SocketIndex, FName const GemId)
+		{
+			++Equipped;
+			LastSocket = SocketIndex;
+			LastEquippedGem = GemId;
+		});
+	int32 Crafted = 0;
+	int32 LastQuantity = 0;
+	Profile->OnGemCrafted.AddLambda(
+		[&](FName /*GemId*/, int32 const Quantity)
+		{
+			++Crafted;
+			LastQuantity = Quantity;
+		});
+
+	int32 const LevelOneChip = FindSocket(EGeoGemTier::Chip, 1);
+	Profile->Equip(Catalog, EPlayerClass::Triangle, LevelOneChip, "Power");
+	TestEqual(TEXT("A refused Equip broadcasts nothing"), Equipped, 0);
+	Profile->AddGems("Power", 3);
+	Profile->Equip(Catalog, EPlayerClass::Triangle, LevelOneChip, "Power");
+	TestEqual(TEXT("A successful Equip broadcasts once"), Equipped, 1);
+	TestEqual(TEXT("With its socket"), LastSocket, LevelOneChip);
+	TestEqual(TEXT("And its gem"), LastEquippedGem, FName("Power"));
+	Profile->FillSockets(Catalog, EPlayerClass::Circle, "Power");
+	TestEqual(TEXT("FillSockets broadcasts once per socket filled"), Equipped, 3);
+
+	Profile->Craft(Catalog, "Guard", 1);
+	TestEqual(TEXT("A refused Craft broadcasts nothing"), Crafted, 0);
+	Profile->AddShards(10);
+	Profile->Craft(Catalog, "Guard", 2);
+	TestEqual(TEXT("A successful Craft broadcasts once"), Crafted, 1);
+	TestEqual(TEXT("With its quantity"), LastQuantity, 2);
 	return true;
 }
 
@@ -688,7 +735,8 @@ bool FGeoGemLootTest::RunTest(FString const& /*Parameters*/)
 	TSet<FName> DroppedGems;
 	for (int32 Roll = 0; Roll < RollCount; ++Roll)
 	{
-		TArray<FGeoGemStack> const Loot = Catalog.RollLoot(EGeoBossType::Boss, EGeoDifficulty::Original, Stream);
+		TArray<FGeoGemStack> const Loot =
+			Catalog.RollLoot(Catalog.DropTables.FindChecked(EGeoBossType::Boss), EGeoDifficulty::Original, Stream);
 		TMap<EGeoGemTier, int32> const Counts = CountTiers(Loot);
 		bCountsInRange &= CountAll(Counts) >= 38 && CountAll(Counts) <= 50 && !Counts.Contains(EGeoGemTier::Core);
 		TotalCuts += Counts.FindRef(EGeoGemTier::Cut);
@@ -708,17 +756,125 @@ bool FGeoGemLootTest::RunTest(FString const& /*Parameters*/)
 	bool bSafeInRange = true;
 	for (int32 Roll = 0; Roll < RollCount; ++Roll)
 	{
-		TMap<EGeoGemTier, int32> const MiniBoss =
-			CountTiers(Catalog.RollLoot(EGeoBossType::MiniBoss, EGeoDifficulty::Original, Stream));
+		TMap<EGeoGemTier, int32> const MiniBoss = CountTiers(
+			Catalog.RollLoot(Catalog.DropTables.FindChecked(EGeoBossType::MiniBoss), EGeoDifficulty::Original, Stream));
 		bMiniBossInRange &= CountAll(MiniBoss) >= 38 && CountAll(MiniBoss) <= 50
 			&& !MiniBoss.Contains(EGeoGemTier::Prism) && !MiniBoss.Contains(EGeoGemTier::Core);
 
-		int32 const SafeCount =
-			CountAll(CountTiers(Catalog.RollLoot(EGeoBossType::Boss, EGeoDifficulty::Safe, Stream)));
+		int32 const SafeCount = CountAll(CountTiers(
+			Catalog.RollLoot(Catalog.DropTables.FindChecked(EGeoBossType::Boss), EGeoDifficulty::Safe, Stream)));
 		bSafeInRange &= SafeCount >= 19 && SafeCount <= 25;
 	}
 	TestTrue(TEXT("Mini-boss kill: 38-50 gems, no Prism, no Core"), bMiniBossInRange);
 	TestTrue(TEXT("Safe halves the count: 19-25 gems"), bSafeInRange);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+/** Gems of a reward, all stacks summed. */
+static int32 CountGems(FGeoGemReward const& Reward)
+{
+	int32 Total = 0;
+	for (FGeoGemStack const& Stack : Reward.Gems)
+	{
+		Total += Stack.Count;
+	}
+	return Total;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoBossLootDefaultTest, "GeoTrinity.Gems.BossLoot.Default", GeoGemTestFlags)
+
+bool FGeoBossLootDefaultTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	FRandomStream Stream(77);
+	FGeoBossLoot const BossLoot;
+
+	bool bInRange = true;
+	for (int32 Roll = 0; Roll < 200; ++Roll)
+	{
+		FGeoGemReward const Loot = Catalog.MakeKillLoot(BossLoot, EGeoBossType::Boss, EGeoDifficulty::Original, Stream);
+		bInRange &= CountGems(Loot) >= 38 && CountGems(Loot) <= 50 && Loot.Shards == 0;
+	}
+	TestTrue(TEXT("Override off: the catalog's 38-50 gems, no shards"), bInRange);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoBossLootOverrideTest, "GeoTrinity.Gems.BossLoot.Override", GeoGemTestFlags)
+
+bool FGeoBossLootOverrideTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	FRandomStream Stream(78);
+	FGeoBossLoot BossLoot;
+	BossLoot.bOverrideDropTable = true;
+	BossLoot.FixedGems = {{"Power", 3}, {"Guard", 1}};
+	BossLoot.FixedShards = 5;
+
+	FGeoGemReward const Loot = Catalog.MakeKillLoot(BossLoot, EGeoBossType::MiniBoss, EGeoDifficulty::Original, Stream);
+	TestEqual(TEXT("Count 0 table: only the fixed gems"), CountGems(Loot), 4);
+	TestEqual(TEXT("Fixed shards"), Loot.Shards, 5);
+	TestEqual(TEXT("Two stacks"), Loot.Gems.Num(), 2);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoBossLootFixedUnscaledTest, "GeoTrinity.Gems.BossLoot.FixedUnscaled",
+								 GeoGemTestFlags)
+
+bool FGeoBossLootFixedUnscaledTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	FRandomStream Stream(79);
+	FGeoBossLoot BossLoot;
+	BossLoot.bOverrideDropTable = true;
+	BossLoot.FixedGems = {{"Power", 3}};
+	BossLoot.FixedShards = 5;
+	FGeoGemReward const Fixed = Catalog.MakeKillLoot(BossLoot, EGeoBossType::Boss, EGeoDifficulty::Safe, Stream);
+	TestEqual(TEXT("Safe: fixed gems unchanged"), CountGems(Fixed), 3);
+	TestEqual(TEXT("Safe: fixed shards unchanged"), Fixed.Shards, 5);
+
+	BossLoot.DropTable.MinCount = 10;
+	BossLoot.DropTable.MaxCount = 10;
+	bool bMerged = true;
+	for (int32 Roll = 0; Roll < 200; ++Roll)
+	{
+		FGeoGemReward const Loot = Catalog.MakeKillLoot(BossLoot, EGeoBossType::Boss, EGeoDifficulty::Original, Stream);
+		int32 PowerStacks = 0;
+		for (FGeoGemStack const& Stack : Loot.Gems)
+		{
+			PowerStacks += Stack.Id == "Power" ? 1 : 0;
+		}
+		bMerged &= CountGems(Loot) == 13 && PowerStacks == 1;
+	}
+	TestTrue(TEXT("A fixed gem also rolled merges into one stack: 10 rolled + 3 fixed"), bMerged);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoBossLootShardsTest, "GeoTrinity.Gems.BossLoot.Shards", GeoGemTestFlags)
+
+bool FGeoBossLootShardsTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemProfileSave* Profile = NewObject<UGeoGemProfileSave>();
+	Profile->AddShards(7);
+	Profile->AddShards(5);
+	TestEqual(TEXT("Shards add up"), Profile->GetShards(), 12);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoBossLootValidationTest, "GeoTrinity.Gems.BossLoot.Validation", GeoGemTestFlags)
+
+bool FGeoBossLootValidationTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const& Catalog = *MakeTestCatalog();
+	FGeoBossLoot BossLoot;
+	BossLoot.FixedGems = {{"Power", 2}, {"Magazine", 1}};
+	TestEqual(TEXT("Valid list: no error"), Catalog.FindBossLootErrors(BossLoot).Num(), 0);
+
+	BossLoot.FixedGems = {{"Nope", 1}};
+	TestEqual(TEXT("Unknown id"), Catalog.FindBossLootErrors(BossLoot).Num(), 1);
+
+	BossLoot.FixedGems = {{"Power", 0}};
+	TestEqual(TEXT("Count 0"), Catalog.FindBossLootErrors(BossLoot).Num(), 1);
 	return true;
 }
 
@@ -930,24 +1086,6 @@ bool FGeoGemStatsSurviveDeathTest::RunTest(FString const& /*Parameters*/)
 	GEngine->DestroyWorldContext(World);
 	World->DestroyWorld(false);
 	return true;
-}
-
-/** A begun listen-server world, for a test that spawns actors the way a match does. */
-static UWorld* CreateTestWorld()
-{
-	UWorld* World = UWorld::CreateWorld(EWorldType::PIE, false);
-	World->SetPlayInEditorInitialNetMode(NM_ListenServer);
-	FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::PIE);
-	WorldContext.SetCurrentWorld(World);
-	World->InitializeActorsForPlay(FURL());
-	World->GetWorldSettings()->NotifyBeginPlay();
-	return World;
-}
-
-static void DestroyTestWorld(UWorld* World)
-{
-	GEngine->DestroyWorldContext(World);
-	World->DestroyWorld(false);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -131,6 +131,19 @@ the pixel's distance from the centre along the nearest edge normal, against an a
   copy: the values land on the right emitter and the material on another, which draws the template's own soft
   sprite and reads as a blurred ball.
 
+## Teleport portal
+
+Reference: Research artifact, Teleport tab, "6 · Round" (`AI/Artifacts.md`); the game copy is identical, only the colour is a parameter (`AGeoTeleporter::PortalColor`, `Actor/Buttons/CLAUDE.md`).
+
+| Part | Made of | Parameters |
+|---|---|---|
+| Everything: rim rings (r 168/150/136/127/120 of 200, last one hot, breathing 1 → .72 over 3 s), black core r 117 with two dim rings, four turning polygon shells, four bright arcs, 24 sparks on exact 15° steps (triangle / hexagon outline / diamond / streak by index mod 4, two reaches, two sizes, shrinking and fading, staggered) | `M_TeleportPortal`: one Custom HLSL node, analytic, driven by `Time`; numbers are the artifact's `round()` / `sparks()` | particle colour (RGB = colour, A = fade) |
+| Intro / hold / outro | `NS_TeleportPortal` (a copy of `NS_Beam`: one emitter, INTRO scale and alpha 0 → 1 over 0.5 s, MAIN held, OUTRO 1 → 0 over 0.9 s after a graceful `Deactivate`), built by `AI/Python/Niagara/teleport_portal_vfx.py`; the material reads colour and alpha from the particle colour | `User.Color` |
+
+- Hot colour = the colour lerped toward white; only one colour is ever authored.
+- Sparks live in the same shader, so they ride the pad.
+- Life curve: scale .35 → 1.04 (8 %) → 1 (12 %) of the open phase, opacity 0 → 1; close is the reverse over its own duration.
+
 ## Rings Without Randomness
 
 `ShapeLocation`'s Ring / Disc distribution takes `Direct`, `Uniform` or `Random`. `Uniform` spaces a burst at

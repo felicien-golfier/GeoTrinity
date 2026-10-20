@@ -77,13 +77,26 @@ void UGeoGemsWidget::ShowHeaderTabs()
 			Tab->OnClicked.AddWeakLambda(this,
 										 [this, PageIndex]
 										 {
-											 PageSwitcher->SetActiveWidgetIndex(PageIndex);
-											 Refresh();
-											 ShowHeaderTabs();
+											 SelectPage(PageIndex);
 										 });
 			PageTabBox->AddChildToHorizontalBox(Tab)->SetPadding(FMargin(0.f, 0.f, PageTabGap, 0.f));
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemsWidget::ShowPage(bool const bForge)
+{
+	UWidget* const Page = bForge ? static_cast<UWidget*>(ForgePage) : static_cast<UWidget*>(LoadoutPage);
+	SelectPage(PageSwitcher->GetChildIndex(Page));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemsWidget::SelectPage(int32 const PageIndex)
+{
+	PageSwitcher->SetActiveWidgetIndex(PageIndex);
+	Refresh();
+	ShowHeaderTabs();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

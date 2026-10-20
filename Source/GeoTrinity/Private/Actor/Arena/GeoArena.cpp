@@ -11,8 +11,8 @@
 #include "Actor/Arena/GeoArenaBarrier.h"
 #include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
 #include "Animation/AnimMontage.h"
-#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/Component/FX/GeoLoopSoundComponent.h"
+#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/SceneComponent.h"
@@ -30,20 +30,21 @@
 #include "Gem/GeoGemComponent.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Materials/MaterialInterface.h"
+#include "Misc/DataValidation.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
 #include "System/Stats/GeoCombatStatsSubsystem.h"
 #include "System/Stats/GeoLeaderboardSave.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 
 static TAutoConsoleVariable<bool> CVarSkipBossIntro(TEXT("Geo.SkipBossIntro"),
 #if WITH_EDITOR
-													 true,
+													true,
 #else
-													 false,
+													false,
 #endif
-													 TEXT("When true, boss intros never play."));
+													TEXT("When true, boss intros never play."));
 
 AGeoArena::AGeoArena()
 {
@@ -115,7 +116,10 @@ void AGeoArena::ResetBoss()
 		return;
 	}
 	Boss->Arena = this;
-	Boss->SetInvulnerable(IsIntroPending());
+	if (IsIntroPending())
+	{
+		Boss->SetInvulnerable(true);
+	}
 
 	ResetAdds();
 }
@@ -136,29 +140,32 @@ void AGeoArena::ResetAdds()
 		return;
 	}
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Owner = this;
-
 	for (int32 AddIndex = 0; AddIndex < AddClasses.Num(); ++AddIndex)
 	{
 		TSubclassOf<AEnemyCharacter> const AddClass = AddClasses[AddIndex];
-		if (!ensureMsgf(AddClass, TEXT("%s: AddClasses[%d] is empty"), *GetName(), AddIndex))
+		if (ensureMsgf(AddClass, TEXT("%s: AddClasses[%d] is empty"), *GetName(), AddIndex))
 		{
-			continue;
+			SpawnAdd(AddClass, FTransform(SpawnPoints[AddIndex % SpawnPoints.Num()]->GetActorLocation()));
 		}
-		FVector SpawnLocation = SpawnPoints[AddIndex % SpawnPoints.Num()]->GetActorLocation();
-		SpawnLocation.Z = ArbitraryCharacterZ;
+	}
+}
 
-		AEnemyCharacter* Add =
-			GetWorld()->SpawnActor<AEnemyCharacter>(AddClass, FTransform(SpawnLocation), SpawnParams);
-		if (!ensureMsgf(Add, TEXT("%s: failed to spawn %s"), *GetName(), *AddClass->GetName()))
-		{
-			continue;
-		}
-		Add->Arena = this;
+AEnemyCharacter* AGeoArena::SpawnAdd(TSubclassOf<AEnemyCharacter> const AddClass, FTransform Transform,
+									 FGeoEnemySetup const* const Setup)
+{
+	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("%s: SpawnAdd is server-only"), *GetName()))
+	{
+		return nullptr;
+	}
+
+	AEnemyCharacter* const Add =
+		AEnemyCharacter::SpawnEnemy(*GetWorld(), AddClass, Transform.GetLocation(), this, this, Setup);
+	if (Add)
+	{
 		Adds.Add(Add);
 	}
+
+	return Add;
 }
 
 void AGeoArena::DestroyAdds()
@@ -314,9 +321,9 @@ void AGeoArena::RecordAttempt()
 	if (!bBossDefeated)
 	{
 		UGeoAbilitySystemComponent const* const BossASC = GeoASLib::GetGeoAscFromActor(Boss.Get());
-		UGeoAttributeSetBase const* const BossAttributes =
-			BossASC ? Cast<UGeoAttributeSetBase>(BossASC->GetAttributeSet(UGeoAttributeSetBase::StaticClass()))
-					: nullptr;
+		UGeoAttributeSetBase const* const BossAttributes = BossASC
+			? Cast<UGeoAttributeSetBase>(BossASC->GetAttributeSet(UGeoAttributeSetBase::StaticClass()))
+			: nullptr;
 		if (!ensureMsgf(BossAttributes, TEXT("%s: fight ended with no boss attributes to read the health left from"),
 						*GetName()))
 		{
@@ -368,22 +375,44 @@ void AGeoArena::GrantGemRewards(FGeoAttemptEntry const& Entry) const
 	{
 		if (AGeoPlayerState const* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState))
 		{
-			FGeoGemReward Reward;
+			FGeoGemReward Reward =
+				bBossDefeated ? Catalog->MakeKillLoot(BossLoot, BossType, Entry.Difficulty, Stream) : FGeoGemReward();
 			Reward.PlayerClass = GeoPlayerState->GetPlayerClass();
 			Reward.Xp = Catalog->GetXp(BossType, 1.f - Entry.BossHealthRatio, Entry.Difficulty);
-			if (bBossDefeated)
-			{
-				Reward.Gems = Catalog->RollLoot(BossType, Entry.Difficulty, Stream);
-			}
 			GeoPlayerState->GetGemComponent()->GrantReward(Reward);
 		}
 	}
 }
 
+#if WITH_EDITOR
+EDataValidationResult AGeoArena::IsDataValid(FDataValidationContext& Context) const
+{
+	Super::IsDataValid(Context);
+
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (Catalog)
+	{
+		for (FString const& Error : Catalog->FindBossLootErrors(BossLoot))
+		{
+			Context.AddError(FText::FromString(Error));
+		}
+	}
+
+	if (Context.GetNumErrors() > 0)
+	{
+		return EDataValidationResult::Invalid;
+	}
+	return EDataValidationResult::Valid;
+}
+#endif
+
 void AGeoArena::MulticastRecordAttempt_Implementation(FGeoAttemptEntry const& Entry)
 {
 	LastFightDuration = Entry.DurationSeconds;
-	UGeoLeaderboardSave::Record(Entry);
+	if (bRecordsLeaderboard)
+	{
+		UGeoLeaderboardSave::Record(Entry);
+	}
 }
 
 void AGeoArena::RespawnBoss()

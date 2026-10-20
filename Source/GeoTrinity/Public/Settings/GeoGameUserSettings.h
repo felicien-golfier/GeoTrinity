@@ -38,7 +38,8 @@ public:
 	/** The engine's settings object, which DefaultEngine.ini points at this class. Never null in a running game. */
 	static UGeoGameUserSettings* Get();
 
-	/** Returns true when the first connected gamepad drives a second local player instead of sharing player 1 with the keyboard and mouse. */
+	/** Returns true when the first connected gamepad drives a second local player instead of sharing player 1 with the
+	 * keyboard and mouse. */
 	bool UseFirstGamepadForSecondPlayer() const { return bUseFirstGamepadForSecondPlayer; }
 
 	/** Sets the value and persists it; call UGeoGameViewportClient::ApplyCouchCoopSetting to act on it. */
@@ -65,6 +66,12 @@ public:
 	/** Fires after SetShowCombatStats, with the new value. */
 	FGeoShowCombatStatsChangedSignature OnShowCombatStatsChanged;
 
+	/** Returns true once the first-launch tutorial prompt was answered, either way. */
+	bool IsTutorialPromptAnswered() const { return bTutorialPromptAnswered; }
+
+	/** Sets the flag for good and persists it. */
+	void MarkTutorialPromptAnswered();
+
 private:
 	UPROPERTY(Config)
 	bool bUseFirstGamepadForSecondPlayer = false;
@@ -78,4 +85,7 @@ private:
 
 	UPROPERTY(Config)
 	bool bShowCombatStats = true;
+
+	UPROPERTY(Config)
+	bool bTutorialPromptAnswered = false;
 };

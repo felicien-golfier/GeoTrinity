@@ -28,6 +28,9 @@ public:
 	/** This local player's gem profile for the session; never null after Initialize. */
 	UGeoGemProfileSave* GetProfile() const { return Profile; }
 
+	/** The gem profile of World's first local player; null without one (a dedicated server). */
+	static UGeoGemProfileSave* GetFirstLocalProfile(UWorld const* World);
+
 	/** Saves the profile and sends its loadouts to the server, when this player is connected to one. Then broadcasts
 	 * OnProfileCommitted. */
 	void CommitChanges();

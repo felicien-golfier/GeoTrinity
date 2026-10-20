@@ -10,7 +10,8 @@ Materials, material functions, parameter collections. Docs: `AI/Materials.md`, `
 | `make_color_pattern_functions.py` | Meaning-colour patterns (zigzag, quads, stripes) + `MF_MeaningColors` over `MPC_MeaningColors`; `PATTERN` picks |
 | `make_pulse_circle_material.py` | `M_PulseCircle` zone disc from functions |
 | `make_beam_and_telegraph_materials.py` | `M_PulseBeam`, `M_ZoneIndicatorRay`, `M_ZoneIndicator` |
-| `make_arena_rail_material.py` | Arena border rail: core line, halo, travelling quads; instance per arena |
+| `make_arena_rail_material.py` | Arena border rail: core line, halo, quads travelling along the wall's local +X (`AI/ArenaWalls.md`, "Orientation"); one halo and one overlay instance for every wall |
+| `make_cat_materials.py` | Tutorial Cat: `M_Cat` (flat unlit, masked below the actor origin height) + `MI_Cat_<role>`, put on `SKM_Cat` |
 | `make_class_badge_materials.py` | Badge body material: logo masks, instance per class, wired to class data and meshes |
 | `compare_material_layers.py` | Compile candidate layers in one slot, report instruction counts |
 | `dry_run_material_build.py` | Run builders outside the editor against a stand-in, checking every pin |

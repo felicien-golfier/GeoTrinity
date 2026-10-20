@@ -2,13 +2,15 @@
 
 #include "HUD/AbilityBar/GeoAbilityBarWidget.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Components/HorizontalBox.h"
-#include "Algo/Transform.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/WrapBox.h"
 #include "Components/WrapBoxSlot.h"
 #include "HUD/AbilityBar/GeoAbilitySlotWidget.h"
+#include "TimerManager.h"
 
 namespace
 {
@@ -39,11 +41,11 @@ void UGeoAbilityBarWidget::BuildBar(AGeoHUD* InHUD, APlayableCharacter* Playable
 	{
 		PassiveBox->ClearChildren();
 	}
-	ShownPassiveTags.Reset();
 
 	// Abilities sharing one input (sacrifice channel/detonate) collapse into a single slot that swaps between them.
+	TArray<FGeoAbilityBarEntry> const Entries = HUD->GetAbilityBarEntries(PlayableCharacter);
 	TArray<TArray<FGeoAbilityBarEntry>> GroupedEntries;
-	for (FGeoAbilityBarEntry const& Entry : HUD->GetAbilityBarEntries(PlayableCharacter))
+	for (FGeoAbilityBarEntry const& Entry : Entries)
 	{
 		TArray<FGeoAbilityBarEntry>* Group = GroupedEntries.FindByPredicate(
 			[&Entry](TArray<FGeoAbilityBarEntry> const& Candidate)
@@ -78,25 +80,58 @@ void UGeoAbilityBarWidget::BuildBar(AGeoHUD* InHUD, APlayableCharacter* Playable
 		Slots.Add(SlotWidget);
 	}
 
+	if (PassiveBox)
+	{
+		BuildPassiveTiles(HUD->GetPassiveBarEntries(PlayableCharacter));
+	}
+
 	// AddUnique so repeated BuildBar calls (class change) leave exactly one binding.
 	HUD->OnPlayerDeployCountChanged.AddUniqueDynamic(this, &UGeoAbilityBarWidget::OnDeployCountChanged);
+
+	// Follow the ASC of this character: a late grant (tutorial unlock) or a Core passive rebuilds the bar.
+	UGeoAbilitySystemComponent* ASC = UGeoAbilitySystemLibrary::GetGeoAscFromActor(PlayableCharacter);
+	if (ASC != BoundASC.Get())
+	{
+		if (UGeoAbilitySystemComponent* OldASC = BoundASC.Get())
+		{
+			OldASC->OnAbilitySetChanged.Remove(AbilitySetHandle);
+		}
+		BoundASC = ASC;
+		AbilitySetHandle = ASC ? ASC->OnAbilitySetChanged.AddUObject(this, &UGeoAbilityBarWidget::OnAbilitySetChanged)
+							   : FDelegateHandle();
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoAbilityBarWidget::NativeTick(FGeometry const& MyGeometry, float const InDeltaTime)
+void UGeoAbilityBarWidget::NativeDestruct()
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
-
-	if (PassiveBox && HUD && Character)
+	if (UGeoAbilitySystemComponent* ASC = BoundASC.Get())
 	{
-		TArray<FGeoAbilityBarEntry> const Passives = HUD->GetPassiveBarEntries(Character);
-		TArray<FGameplayTag> PassiveTags;
-		Algo::Transform(Passives, PassiveTags, &FGeoAbilityBarEntry::AbilityTag);
-		if (PassiveTags != ShownPassiveTags)
-		{
-			ShownPassiveTags = PassiveTags;
-			BuildPassiveTiles(Passives);
-		}
+		ASC->OnAbilitySetChanged.Remove(AbilitySetHandle);
+	}
+	BoundASC.Reset();
+	Super::NativeDestruct();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilityBarWidget::OnAbilitySetChanged()
+{
+	UWorld* const World = GetWorld();
+	if (bRebuildQueued || !World)
+	{
+		return;
+	}
+	bRebuildQueued = true;
+	World->GetTimerManager().SetTimerForNextTick(this, &UGeoAbilityBarWidget::Rebuild);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoAbilityBarWidget::Rebuild()
+{
+	bRebuildQueued = false;
+	if (HUD && Character)
+	{
+		BuildBar(HUD, Character);
 	}
 }
 

@@ -10,6 +10,7 @@
 struct FMovieSceneFloatChannel;
 class UMovieSceneControlRigParameterSection;
 class UAnimBlueprint;
+class UAnimGraphNode_Root;
 class UEdGraph;
 class UAnimMontage;
 class UAnimSequence;
@@ -118,6 +119,23 @@ public:
 									  UAnimSequence* Idle);
 
 	/**
+	 * Generic: rebuilds AnimBlueprint's AnimGraph as a blend of two looping sequences played through a slot:
+	 *
+	 *   Idle (A) + Moving (B), blended by the float member variable BlendVariable (0 = Idle, 1 = Moving)
+	 *   -> Slot SlotName -> Output
+	 *
+	 * BlendVariable is added to the AnimBlueprint when it has none, for the owner to write. SlotName is registered on
+	 * the target skeleton in a slot group named after it, since playing a montage stops only the montages of its own
+	 * group.
+	 *
+	 * Every node but the output is replaced, so a re-run rebuilds the graph. Compiles and saves the asset and its
+	 * skeleton; returns false when the compile fails.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, UAnimSequence* Idle, UAnimSequence* Moving,
+									  FName BlendVariable, FName SlotName);
+
+	/**
 	 * Generic: puts a Slot node NewSlotName right after the Slot node AfterSlotName in AnimBlueprint's AnimGraph, so a
 	 * montage in NewSlotName plays over everything AfterSlotName outputs. What AfterSlotName fed now feeds from the new
 	 * node. The new slot is registered on the target skeleton in SlotGroupName, since playing a montage stops only the
@@ -156,6 +174,9 @@ public:
 private:
 	/** AnimBlueprint's own AnimGraph, or null (flagged) when it has none, as a child AnimBlueprint. */
 	static UEdGraph* FindAnimGraph(UAnimBlueprint const* AnimBlueprint);
+
+	/** Removes every node of AnimGraph but its output and returns that node, or null (flagged) when it has none. */
+	static UAnimGraphNode_Root* ResetAnimGraph(UAnimBlueprint* AnimBlueprint, UEdGraph& AnimGraph);
 
 	/** The sequence's FK control-rig section, or null. */
 	static UMovieSceneControlRigParameterSection* FindFKSection(UAnimSequence const* Sequence);
