@@ -88,6 +88,8 @@ __pycache__/
 docs/index.bleve/
 # Claude Code scheduled-tasks lock (transient, session-specific)
 .claude/scheduled_tasks.lock
+# Claude Code per-machine settings (Windows paths, local permissions)
+.claude/settings.local.json
 # Agent workspace (never Saved/): script reports, and the sound references and drafts' media
 AI/Output/*
 !AI/Output/README.md
