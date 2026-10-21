@@ -99,8 +99,8 @@ struct FGeoGemStyle
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	TMap<EGeoGemTier, FGeoGemTierShape> TierShapes = {{EGeoGemTier::Chip, {4, 0.f}},
-													  {EGeoGemTier::Cut, {6, 0.f}},
-													  {EGeoGemTier::Prism, {5, 0.f}},
+													  {EGeoGemTier::Cut, {5, 0.f}},
+													  {EGeoGemTier::Prism, {6, 0.f}},
 													  {EGeoGemTier::Core, {8, 22.5f}}};
 
 	/** Size of the bright facet on a gem, as a share of the gem. */

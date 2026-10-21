@@ -8,11 +8,11 @@
 #include "GeoPeriodicPatternAbility.generated.h"
 
 /**
- * Fires salves at all players, again and again: the ability never ends on its own, every salve schedules the next one,
- * so a single activation keeps the boss firing.
- * One launch of its USalvePattern is one salve, aimed and stamped here right before it leaves — so a salve always
- * departs from where the boss stands at that moment, towards where the players stand, instead of replaying an aim taken
- * at the start of the burst.
+ * Fires salves at all players (or at the arena's boss, bAimAtArenaBoss), again and again: the ability never ends on its
+ * own, every salve schedules the next one, so a single activation keeps the boss firing. One launch of its
+ * USalvePattern is one salve, aimed and stamped here right before it leaves — so a salve always departs from where the
+ * boss stands at that moment, towards where the players stand, instead of replaying an aim taken at the start of the
+ * burst.
  */
 UCLASS()
 class GEOTRINITY_API UGeoPeriodicPatternAbility : public UPatternAbility
@@ -54,6 +54,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.1"))
 	float FireIntervalMax = 5.f;
+
+	/** Aims at the boss of the caster's arena instead of at the players: an ally add shooting the boss. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility")
+	bool bAimAtArenaBoss = false;
 
 private:
 	int32 RemainingSalveCount = 0;

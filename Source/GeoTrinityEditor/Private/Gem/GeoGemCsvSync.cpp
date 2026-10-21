@@ -2,6 +2,8 @@
 
 #include "Gem/GeoGemCsvSync.h"
 
+#include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "DirectoryWatcherModule.h"
 #include "Engine/Engine.h"
 #include "EngineUtils.h"
@@ -10,7 +12,6 @@
 #include "Framework/Notifications/NotificationManager.h"
 #include "GameClasses/Match/GeoPlayerState.h"
 #include "Gem/GeoGemCatalog.h"
-#include "AbilitySystem/Abilities/Gem/GeoCorePassiveAbility.h"
 #include "Gem/GeoGemComponent.h"
 #include "Gem/GeoGemStatsEffect.h"
 #include "IDirectoryWatcher.h"
@@ -38,6 +39,18 @@ void UGeoGemCsvSync::Initialize(FSubsystemCollectionBase& Collection)
 		CsvFolder, IDirectoryWatcher::FDirectoryChanged::CreateUObject(this, &UGeoGemCsvSync::OnCsvFolderChanged),
 		CsvFolderChangedHandle);
 
+	if (FGeoGameplayTags::AreNativeTagsInitialized())
+	{
+		SyncOnStartup();
+	}
+	else
+	{
+		FCoreDelegates::OnPostEngineInit.AddUObject(this, &UGeoGemCsvSync::SyncOnStartup);
+	}
+}
+
+void UGeoGemCsvSync::SyncOnStartup() const
+{
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 	if (Catalog && !FPaths::FileExists(GetCsvPath()))
 	{
@@ -51,6 +64,7 @@ void UGeoGemCsvSync::Initialize(FSubsystemCollectionBase& Collection)
 
 void UGeoGemCsvSync::Deinitialize()
 {
+	FCoreDelegates::OnPostEngineInit.RemoveAll(this);
 	UPackage::PackageSavedWithContextEvent.Remove(PackageSavedHandle);
 	FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(ObjectPropertyChangedHandle);
 	if (FDirectoryWatcherModule* DirectoryWatcher =
@@ -174,8 +188,8 @@ TOptional<TMap<EGeoGemTier, FGeoGemList>> UGeoGemCsvSync::ParseCsv(FString const
 			});
 		if (!bBlankLine && Cells.Num() != Rows[0].Num())
 		{
-			Errors.Add(FString::Printf(TEXT("line %d has %d cells instead of %d"), RowIndex + 1, Cells.Num(),
-									   Rows[0].Num()));
+			Errors.Add(
+				FString::Printf(TEXT("line %d has %d cells instead of %d"), RowIndex + 1, Cells.Num(), Rows[0].Num()));
 		}
 		else if (!bBlankLine)
 		{
@@ -358,7 +372,8 @@ void UGeoGemCsvSync::OnCsvFolderChanged(TArray<FFileChangeData> const& Changes) 
 	bool const bCsvChanged = Changes.ContainsByPredicate(
 		[&CsvName](FFileChangeData const& Change)
 		{
-			return Change.Action != FFileChangeData::FCA_Removed && FPaths::GetCleanFilename(Change.Filename) == CsvName;
+			return Change.Action != FFileChangeData::FCA_Removed
+				&& FPaths::GetCleanFilename(Change.Filename) == CsvName;
 		});
 	if (bCsvChanged)
 	{

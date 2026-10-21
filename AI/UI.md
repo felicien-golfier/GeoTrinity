@@ -125,7 +125,8 @@ TextBlock, `FieldFrameStyle` on a frame it wraps around a field. `UGeoMenuButton
 
 An icon is drawn, never a texture: its shapes live in an SVG under `SourceArt/Icons` (the subset `import_icons.py`
 parses), its colour is a game colour named on the SVG root (`data-geo-color`) and tuned on the asset. A new icon is a
-new SVG and a re-run of `import_icons.py`.
+new SVG and a re-run of `import_icons.py`. An `Override` icon keeps the SVG's own hex per shape (at most four
+distinct, e.g. the three facets of `Gems_Shard.svg`); no glow.
 
 The scripts in `AI/Python/UI/` build the look in this order: `import_fonts.py`, `ui_theme.py`, `rail_style.py`,
 `rail_main_menu.py`, `rail_sub_panels.py`, `import_icons.py`, `ability_page.py`, `ability_detail.py`, `wings_hud.py`,

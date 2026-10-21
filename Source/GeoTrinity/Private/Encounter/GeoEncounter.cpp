@@ -15,7 +15,9 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Misc/DataValidation.h"
 #include "Tool/UGeoGameplayLibrary.h"
-
+#if WITH_EDITOR
+#include "World/GeoWorldSettings.h"
+#endif
 AGeoEncounter::AGeoEncounter()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -88,7 +90,18 @@ void AGeoEncounter::StartAfterSkippingChain()
 
 AGeoEncounter* AGeoEncounter::FindJumpTarget() const
 {
-	FString const& Portal = GetWorld()->URL.Portal;
+	FString Portal = GetWorld()->URL.Portal;
+
+#if WITH_EDITOR
+	if (Portal.IsEmpty()) // Let the previous map launch the step it needs.
+	{
+		if (AGeoWorldSettings const* GeoWorldSettings = Cast<AGeoWorldSettings>(GetWorld()->GetWorldSettings()))
+		{
+			Portal = GeoWorldSettings->StartingTutoRoomInEditor.ToString();
+		}
+	}
+#endif
+
 	AGeoEncounter* Target = nullptr;
 	if (Portal.IsNumeric())
 	{
@@ -213,7 +226,7 @@ void AGeoEncounter::GoToStep(FName const StepName)
 	}
 }
 
-void AGeoEncounter::AddToCounter(FName const Counter, int32 const Delta)
+void AGeoEncounter::AddToEncounterCounter(FName const Counter, int32 const Delta)
 {
 	int32 const NewValue = Counters.FindOrAdd(Counter) += Delta;
 	OnCounterChanged.Broadcast(Counter, NewValue);

@@ -13,7 +13,7 @@ Docs written: `GeoTrinityUI/Public/HUD/Tutorial/CLAUDE.md` ("Cat line", markup r
 - [x] clang-format every touched file
 
 ## Scripts
-- [x] script edited and checked against the scene (`encounters_diff.py`: only the removed waits differ); **re-run still to do**, headless with the editor closed: `AI/Python/Level/tutorial_encounters.py` — drop the `wait()` that follows a `say()` (16 uses of `wait` / `LINE_SECONDS`: keep only waits that are real pacing, not line length); re-run per `AI/Python/Level/CLAUDE.md` (hand-edited rooms are kept: list them to the user)
+- [x] script edited and checked against the scene (`encounters_diff.py`: only the removed waits differ); **re-run still to do**, headless with the editor closed: `AI/Python/Tutorial/Level/tutorial_encounters.py` — drop the `wait()` that follows a `say()` (16 uses of `wait` / `LINE_SECONDS`: keep only waits that are real pacing, not line length); re-run per `AI/Python/Level/CLAUDE.md` (hand-edited rooms are kept: list them to the user)
 
 ## Editor / Blueprint
 - [ ] `WBP_CatLine` `TypeSound` = `/Game/Art/SFX/Mech/SW_Mech_Tick_1` (placeholder for the test; the real sound comes through `AI/SoundCreation.md`, then this row is the only change); check it routes to the interface sound class (`/Game/Art/SFX/Mix/SC_Interface`), set on the wave or the widget's play if not

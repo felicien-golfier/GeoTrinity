@@ -6,6 +6,7 @@
 | `GeoAITask_MoveTo.h` | Helper task: auto-repath on invalidation, move cue, face along velocity |
 | `STTask_ChaseTarget.h` | Straight-line chase ignoring navmesh (hex boss); never Succeeds |
 | `STTask_FaceTarget.h` | Track `GetCurrentTarget()` while rooted; never Succeeds |
+| `STTask_MoveToTargetPoint.h` | Straight walk to a random point of a purpose tag in the boss's arena, ignoring the navmesh; Succeeds on arrival (tutorial miniboss) |
 | `STTask_SelectNextFiringPoint.h` | Random `AI.FiringPoint` excluding the last, from the boss's own arena (`GetArenaOfBoss`) |
 
 ## GeoAITask_MoveTo
@@ -21,3 +22,7 @@
 
 ## SelectNextFiringPoint
 - Instance `TargetLocation` (out); `LastFiringPointIndex` in the blackboard; completes in `EnterState`.
+
+## MoveToTargetPoint
+- For a room with no navmesh (`MoveTo` needs one). `EnterState` picks, at random, a `PointTag` point of the pawn's arena (`GetArenaOfBoss`, `ArenaTag`) the pawn is not already at (2D, within `AcceptanceRadius`); none left = `Failed` with a log. `Tick` faces it (`SetTargetYaw`), `AddMovementInput`s straight at it, and Succeeds once within `AcceptanceRadius`.
+- The pick lives in the instance data: each entry of the state walks to a new point.

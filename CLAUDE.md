@@ -69,6 +69,7 @@ Gate rules:
 | Editor module (`GeoTrinityEditor`) | `Source/GeoTrinityEditor/Public/CLAUDE.md` |
 | Gameplay↔UI seam | `Source/GeoTrinity/Public/HUD/Interface/CLAUDE.md` |
 | Everything under `AI/` (topic docs, MCP, scripts, audio) | `AI/CLAUDE.md` |
+| Out-of-editor data (plain files, not assets): `gems.csv`, `AbilityDescriptions.txt` | `Data/` at project root (read via `FPaths::ProjectDir()`; runtime files staged by `RuntimeDependencies` in `GeoTrinity.Build.cs`) |
 | Pending editor work of a feature | `AI/Pending/` |
 | Past issues and fixes | `TroobleshootingLogs.md` |
 

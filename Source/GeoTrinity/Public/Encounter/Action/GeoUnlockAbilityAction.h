@@ -9,8 +9,8 @@
 #include "GeoUnlockAbilityAction.generated.h"
 
 /**
- * Grants the local player's class ability AbilityTag, held back by the map's LockedAbilityTags, then opens its page
- * (character sheet, its details drawer). Already granted: nothing happens. Skipped: granted, no page.
+ * Grants the local player's class ability AbilityTag, held back by the map's LockedAbilityTags. Already granted:
+ * nothing happens. Never opens the page (UGeoShowAbilityPageAction, after the Cat's line). Skipped: granted.
  */
 UCLASS()
 class GEOTRINITY_API UGeoUnlockAbilityAction : public UGeoEncounterAction
@@ -23,8 +23,4 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (Categories = "Ability.Spell"))
 	FGameplayTag AbilityTag;
-
-private:
-	/** Grants AbilityTag to the local player's class; true when it was not granted yet. */
-	bool GrantAbility() const;
 };

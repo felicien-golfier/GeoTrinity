@@ -102,7 +102,7 @@ no script, no result file and no traceback handler. Use it to inspect before any
 | Data tables, curve tables, meshes, textures, actors in the level | the matching EditorToolset toolset |
 | Gameplay tags; StateTree structure; Niagara systems | GameplayTags, StateTree, Niagara toolsets |
 | Live GAS state of an actor in PIE | GAS → attributes, active effects, granted abilities, active tags |
-| Output log; viewport, asset or editor-window picture | Logs and EditorApp toolsets |
+| Load a level, find actors, focus / move the camera, viewport / asset / editor-window picture, output log | Scene (`load_level`, `find_actors`), EditorApp (`FocusOnActors`, `SetCameraTransform`, `CaptureViewport`), Logs |
 
 **Writes a toolset covers go to the built-in server too:**
 - Blueprint graphs — create, delete and wire nodes, set pin values, add variables, functions and events, or write a

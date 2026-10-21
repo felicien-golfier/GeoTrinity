@@ -8,23 +8,8 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "HUD/Interface/GeoHUDInterface.h"
 
 void UGeoUnlockAbilityAction::Execute_Implementation(FGeoEncounterPayload const& /*Payload*/)
-{
-	IGeoHUDInterface* const HUD = GrantAbility() ? GetLocalHUD() : nullptr;
-	if (HUD)
-	{
-		HUD->ShowAbilityPage(AbilityTag);
-	}
-}
-
-void UGeoUnlockAbilityAction::OnSkipped_Implementation()
-{
-	GrantAbility();
-}
-
-bool UGeoUnlockAbilityAction::GrantAbility() const
 {
 	APlayerController const* const PlayerController = GetWorld()->GetFirstPlayerController();
 	APlayableCharacter* const Player =
@@ -36,5 +21,13 @@ bool UGeoUnlockAbilityAction::GrantAbility() const
 			   *AbilityTag.ToString());
 	}
 
-	return ASC && ASC->GiveClassAbility(Player->GetPlayerClass(), AbilityTag);
+	else
+	{
+		ASC->GiveClassAbility(Player->GetPlayerClass(), AbilityTag);
+	}
+}
+
+void UGeoUnlockAbilityAction::OnSkipped_Implementation()
+{
+	Execute(FGeoEncounterPayload());
 }

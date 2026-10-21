@@ -5,7 +5,7 @@ A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving 
 
 | File | Role |
 |---|---|
-| `GeoPeriodicPatternAbility.h` | Never ends: each `USalvePattern` launch is one salve at all players, aimed and stamped right before it leaves, then schedules the next |
+| `GeoPeriodicPatternAbility.h` | Never ends: each `USalvePattern` launch is one salve at all players (`bAimAtArenaBoss`: at the boss of the caster's arena), aimed and stamped right before it leaves, then schedules the next |
 | `GeoSpawnPillarAbility.h` | Resolves pillar zone locations once (`CreatePatternData`): health ratio → 1-3 zones, players sorted by `PlayerId`, seeded |
 | `GeoSweepBeamAbility.h` | Beam aimed at the hex arena centre (`GetFireYaw` override) |
 | `GeoTileBombAbility.h` | Draws a live player, spawns `AGeoBombZone` attached to them; not a pattern (replicated deployable) |
@@ -29,3 +29,6 @@ A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving 
 - Spot = `GetFireOrigin2D`: a live player (seeded pick) plus an offset up to `SpotRadius`; the caster when none lives. Stamped in the payload, so the telegraph and the add agree.
 - `PatternToLaunch` = a `UZonePattern` Blueprint (telegraph in the Damage colour, then its effects): the hit lands on whoever stays.
 - The add spawns in `OnPatternEnd` (server), only on a natural end: a force-stopped pattern (wipe, boss death) brings nothing.
+
+## GeoPeriodicPatternAbility
+- `bAimAtArenaBoss`: the salve's one yaw points at `AGeoArena::Boss` of the caster's arena (`GetArenaOfBoss(caster)`), not at the players; no yaw (nothing fired) when the caster has no arena or the boss is dead. For a player-team add that shoots the boss (tutorial ally dummy); its pattern BP sets the bullets' `OverlapAttitude` to hostile only, so they never hit the player.

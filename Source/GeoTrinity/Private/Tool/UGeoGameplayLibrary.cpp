@@ -5,6 +5,7 @@
 #include "Camera/CameraShakeBase.h"
 #include "Characters/GeoCharacter.h"
 #include "Characters/PlayableCharacter.h"
+#include "Encounter/GeoEncounter.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
@@ -243,8 +244,8 @@ void UGeoGameplayLibrary::TeleportPlayersToTargetPoints(UObject const* WorldCont
 	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 	{
 		APawn* Pawn = It->IsValid() ? (*It)->GetPawn() : nullptr;
-		if (!IsValid(Pawn) ||
-			(bSkipPlayersInArenaVolume && AGeoArenaVolume::IsPawnInside(WorldContextObject, *Pawn, ArenaTag)))
+		if (!IsValid(Pawn)
+			|| (bSkipPlayersInArenaVolume && AGeoArenaVolume::IsPawnInside(WorldContextObject, *Pawn, ArenaTag)))
 		{
 			continue;
 		}
@@ -281,7 +282,7 @@ APawn* UGeoGameplayLibrary::ResolveOwnerPawn(UObject* Owner)
 	{
 		return Controller->GetPawn();
 	}
-	
+
 	return Cast<APawn>(Owner);
 }
 
@@ -314,4 +315,24 @@ void UGeoGameplayLibrary::WriteUserSaveFile(USaveGame* SaveGame, FString const& 
 FString UGeoGameplayLibrary::GetUserSaveFilePath(FString const& FileName)
 {
 	return FPaths::Combine(FPlatformProcess::UserSettingsDir(), FApp::GetProjectName(), FileName);
+}
+
+FString UGeoGameplayLibrary::ReplaceCounterTokens(FString Text, AGeoEncounter const* const Encounter)
+{
+	int32 Start = Text.Find(CounterTokenOpen, ESearchCase::CaseSensitive);
+	int32 End = Start == INDEX_NONE
+		? INDEX_NONE
+		: Text.Find(CounterTokenClose, ESearchCase::CaseSensitive, ESearchDir::FromStart, Start);
+	while (End != INDEX_NONE && ensureMsgf(Encounter, TEXT("%hs: a counter token outside an encounter"), __FUNCTION__))
+	{
+		FName const CounterName(*Text.Mid(Start + CounterTokenOpen.Len(), End - Start - CounterTokenOpen.Len()));
+		Text = Text.Left(Start) + FString::FromInt(Encounter->GetCounter(CounterName))
+			+ Text.Mid(End + CounterTokenClose.Len());
+		Start = Text.Find(CounterTokenOpen, ESearchCase::CaseSensitive);
+		End = Start == INDEX_NONE
+			? INDEX_NONE
+			: Text.Find(CounterTokenClose, ESearchCase::CaseSensitive, ESearchDir::FromStart, Start);
+	}
+
+	return Text;
 }

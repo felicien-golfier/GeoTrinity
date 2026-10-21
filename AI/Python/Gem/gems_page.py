@@ -368,7 +368,7 @@ def gems_header(wbp, path):
     write_slot(path, shards_slot, {"vertical_alignment": CENTER})
     add(wbp, path, unreal.HorizontalBox, "ShardsRow", "ShardsFrame")
     icon_slot = placed(wbp, path, unreal.GeoIconImage, "ShardIcon", "ShardsRow", 0,
-                       {"icon": unreal.load_asset(SHARD_ICON), "size": 16.0})
+                       {"icon": unreal.load_asset(SHARD_ICON), "size": 24.0})
     write_slot(path, icon_slot, {"vertical_alignment": CENTER})
     padded(path, move(wbp, "ShardsText", "ShardsRow", 1), unreal.Margin(12, 0, 0, 0), vertical_alignment=CENTER)
     padded(path, move(wbp, "ShardsLabel", "ShardsRow", 2), unreal.Margin(8, 0, 0, 0), vertical_alignment=CENTER)

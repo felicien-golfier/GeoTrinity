@@ -39,4 +39,4 @@ Driving a PIE session through `mcp-epic` tools alone (no Python server). Server 
 - The cursor rewrites the pawn's yaw every tick, so aim is set on the game, not on the pawn: on the pawn's `GeoInputComponent` set `bTestAimActive` true and `TestAimWorld` to the world point (`set_properties`, `Input/CLAUDE.md`). A tap deploys 140 cm from the pawn toward that point: stand within that distance of the target first. Set it back to false when done.
 
 ## Pictures
-Image results are base64 in the tool result; over the size limit they land in a file. Decode it with `AI/Python/Runtime/decode_tool_image.py` and Read the PNG; capture only to judge a look, since every picture is a large result.
+Viewport capture takes every parameter: pass the annotation block in full (zero spacing, extent, height, label distance and count hide the overlay; the class filter is the base actor class). Image results are base64 in the tool result; over the size limit they land in a file. Decode it with `AI/Python/Runtime/decode_tool_image.py` and Read the PNG; capture only to judge a look, since every picture is a large result.

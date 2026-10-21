@@ -44,8 +44,8 @@ protected:
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** The beam is live for BeamDuration. */
 	virtual float GetHazardDuration() const override;
-	/** True when Target, at Location, overlaps the beam rectangle as aimed at SpentTime. A beam following the boss follows
-	 * it as Target's screen showed it then — GeoLib::GetReplicationDelay earlier, the boss reaching it through
+	/** True when Target, at Location, overlaps the beam rectangle as aimed at SpentTime. A beam following the boss
+	 * follows it as Target's screen showed it then — GeoLib::GetReplicationDelay earlier, the boss reaching it through
 	 * replication. */
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
 	/** Lets the beam VFX fade out. */
@@ -63,8 +63,9 @@ protected:
 	 * otherwise. The current server time follows the boss this machine shows. */
 	FVector GetBeamOrigin(float BossServerTime) const;
 
-	/** Places the beam VFX where GetBeamOrigin/GetBeamYaw put it at SpentTime. */
-	void MoveBeamVfx(float SpentTime);
+	/** Places the beam VFX where GetBeamOrigin/GetBeamYaw put it at SpentTime. Ticked in the wind-up (negative
+	 * SpentTime) too. */
+	virtual void MoveBeamVfx(float SpentTime);
 
 	/** Full arc swept over BeamDuration, in degrees, centered on the payload yaw. 0 keeps the beam static. */
 	float SweepAngle;
@@ -104,14 +105,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
 	TArray<FGeoColorParam> SecondaryBeamColors;
 
-private:
-	/** Windup preview asset (Ray Zone Indicator), loaded once from UGameDataSettings::RayIndicatorSystem in OnCreate —
-	 * no per-pattern configuration needed. Same project-wide asset UGeoIndicatorComponent's Ray uses; one NiagaraComponent
-	 * serves both looks, swapped via GeoNiagaraParams::ApplySwappableAsset. Leaving the settings value unset shows
-	 * BeamVfxSystem for the whole windup, as before. */
-	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraSystem> IndicatorSystem;
-
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> BeamVfxComponent;
+
+private:
+	/** Windup preview asset (Ray Zone Indicator), loaded once from UGameDataSettings::RayIndicatorSystem in OnCreate —
+	 * no per-pattern configuration needed. Same project-wide asset UGeoIndicatorComponent's Ray uses; one
+	 * NiagaraComponent serves both looks, swapped via GeoNiagaraParams::ApplySwappableAsset. Leaving the settings value
+	 * unset shows BeamVfxSystem for the whole windup, as before. */
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> IndicatorSystem;
 };

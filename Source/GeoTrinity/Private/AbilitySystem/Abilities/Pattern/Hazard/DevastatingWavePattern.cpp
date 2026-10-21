@@ -2,27 +2,20 @@
 
 #include "AbilitySystem/Abilities/Pattern/Hazard/DevastatingWavePattern.h"
 
+#include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotMask.h"
+#include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotSource.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Deployable/Pillar/GeoPillar.h"
 #include "DrawDebugHelpers.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "Kismet/KismetMaterialLibrary.h"
 #include "NiagaraComponent.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 
 static TAutoConsoleVariable
 	CVarDrawDevastatingWave(TEXT("Geo.DrawDevastatingWave"), false,
 							TEXT("When true, draws the devastating wave's front / inner radius and pillar safe zones"));
-
-namespace
-{
-	constexpr int32 MaxMaskedPillarSlots = 8;
-	// Matches the "unused slot" default of MPC_MaskedArea's PillarPosWS_XX parameters.
-	constexpr FLinearColor UnusedPillarSlotValue(-10000.f, -10000.f, -10000.f, 0.f);
-} // namespace
 
 UDevastatingWavePattern::UDevastatingWavePattern()
 {
@@ -45,19 +38,31 @@ void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
 	// Skipped on the "too late" path (Super::InitPattern ran StartPattern synchronously, no wind-up scheduled).
 	if (IsValid(AOEVfxComponent) && StartSectionTimerHandle.IsValid())
 	{
-		AddAllPillarsToVfxMask();
+		AddPillarSpots(0.f);
 		ActivateAoeVfxTelegraph();
 	}
 }
 
-void UDevastatingWavePattern::AddAllPillarsToVfxMask()
+void UDevastatingWavePattern::AddPillarSpots(float const MaxDistance)
 {
-	for (AGeoPillar* Pillar :
-		 GeoASLib::GetInteractableActors<AGeoPillar>(this, GeoASLib::GetTeamId(StoredPayload.SourceOwner),
-													 TeamAttitudeMask::HostileOrNeutral, true, StoredPayload.Origin, 0))
+	bool bAdded = false;
+	for (FSafeSpot const& Spot : GatherSafeSpots(this, StoredPayload, {ESafeSpotSource::Pillars},
+												 ESafeSpotShadow::Behind, MaxDistance, 0.f, {}))
 	{
-		PillarsWaveData.Add({FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Pillar});
-		AddPillarToVfxMask();
+		if (!PillarSpots.ContainsByPredicate(
+				[&Spot](FSafeSpot const& Known)
+				{
+					return Known.Source == Spot.Source;
+				}))
+		{
+			PillarSpots.Add(Spot);
+			bAdded = true;
+		}
+	}
+
+	if (bAdded)
+	{
+		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, PillarSpots);
 	}
 }
 
@@ -75,15 +80,11 @@ void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 
 void UDevastatingWavePattern::ClearData()
 {
-	PillarsWaveData.Empty();
+	PillarSpots.Empty();
 	// The MPC is global state — clear slots left over from a previous wave before the AOE starts rendering.
-	for (int32 SlotIndex = 0; SlotIndex < MaxMaskedPillarSlots; ++SlotIndex)
-	{
-		UKismetMaterialLibrary::SetVectorParameterValue(this, MaskMaterialParameterCollection,
-														GeoMaterialParams::GetPillarPositionName(SlotIndex),
-														UnusedPillarSlotValue);
-	}
+	FSafeSpotMask::Clear(this, MaskMaterialParameterCollection);
 }
+
 void UDevastatingWavePattern::StartPattern()
 {
 	ClearData();
@@ -123,30 +124,6 @@ void UDevastatingWavePattern::ActivateAOEVfx() const
 	AOEVfxComponent->Activate(true);
 }
 
-void UDevastatingWavePattern::AddPillarToVfxMask()
-{
-	if (GeoLib::IsDedicatedServer(GetWorld()) || !MaskMaterialParameterCollection)
-	{
-		return;
-	}
-
-	int32 const SlotIndex = PillarsWaveData.Num() - 1;
-	if (SlotIndex >= MaxMaskedPillarSlots)
-	{
-		UE_LOG(LogPattern, Warning,
-			   TEXT("UDevastatingWavePattern: more pillars hit than MPC mask slots (%d), skipping"),
-			   MaxMaskedPillarSlots);
-		return;
-	}
-
-	FPillarWaveData const& PillarData = PillarsWaveData[SlotIndex];
-	UKismetMaterialLibrary::SetVectorParameterValue(this, MaskMaterialParameterCollection,
-													GeoMaterialParams::GetPillarPositionName(SlotIndex),
-													FLinearColor(PillarData.Location.X, PillarData.Location.Y, 0.f));
-	UKismetMaterialLibrary::SetScalarParameterValue(this, MaskMaterialParameterCollection,
-													GeoMaterialParams::PillarRadius, PillarData.Radius);
-}
-
 FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)
 {
 	FGameplayCueParameters CueParams = Super::FillCueParam(Cue, Payload);
@@ -164,20 +141,7 @@ void UDevastatingWavePattern::TickPattern(float /*ServerTime*/, float const Spen
 		return;
 	}
 
-	for (AGeoPillar* Pillar : GeoASLib::GetInteractableActors<AGeoPillar>(
-			 this, GeoASLib::GetTeamId(StoredPayload.SourceOwner), TeamAttitudeMask::HostileOrNeutral, true,
-			 StoredPayload.Origin, CurrentRadius))
-	{
-		if (!PillarsWaveData.ContainsByPredicate(
-				[Pillar](FPillarWaveData const& Data)
-				{
-					return Data.Pillar.Get() == Pillar;
-				}))
-		{
-			PillarsWaveData.Add({FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Pillar});
-			AddPillarToVfxMask();
-		}
-	}
+	AddPillarSpots(CurrentRadius);
 
 	if (CVarDrawDevastatingWave.GetValueOnGameThread())
 	{
@@ -195,7 +159,8 @@ bool UDevastatingWavePattern::IsInHazard(AActor const* /*Target*/, FVector2D con
 {
 	float const WaveRadius = FMath::Min(ExpansionSpeed * SpentTime, MaxRadius);
 	float const FrontOffset = WaveRadius - FVector2D::Distance(StoredPayload.Origin, Location);
-	return FrontOffset >= 0.f && FrontOffset <= AnnulusWidth && !IsBehindPillar(Location);
+	return FrontOffset >= 0.f && FrontOffset <= AnnulusWidth
+		&& !FSafeSpot::AnyShields(PillarSpots, Location, StoredPayload.Origin, FVector2D::ZeroVector);
 }
 
 void UDevastatingWavePattern::OnHazardEnd()
@@ -207,33 +172,6 @@ void UDevastatingWavePattern::OnHazardEnd()
 	}
 }
 
-bool UDevastatingWavePattern::IsBehindPillar(FVector2D const Location) const
-{
-	FVector2D const CenterToLocation(Location - StoredPayload.Origin);
-	for (FPillarWaveData const& PillarData : PillarsWaveData)
-	{
-		FVector2D const CenterToPillar(PillarData.Location - StoredPayload.Origin);
-		float const Dot = CenterToLocation | CenterToPillar;
-		float const CenterToPillarSizeSquared = CenterToPillar.SizeSquared();
-
-		if (Dot < CenterToPillarSizeSquared) // Before the Pillar
-		{
-			continue;
-		}
-
-		FVector2D const LocationProjectedOnCenterToPillar = CenterToPillar * Dot / CenterToPillarSizeSquared;
-		float const DistanceSquaredToPillarVector =
-			(LocationProjectedOnCenterToPillar - CenterToLocation).SizeSquared();
-
-		if (DistanceSquaredToPillarVector < PillarData.Radius * PillarData.Radius)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
 void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
 {
 	FVector const Center(StoredPayload.Origin, ArbitraryCharacterZ);
@@ -243,10 +181,10 @@ void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
 					3.f, FVector::XAxisVector, FVector::YAxisVector, false);
 
 	int i = 0;
-	for (FPillarWaveData const& PillarData : PillarsWaveData)
+	for (FSafeSpot const& PillarSpot : PillarSpots)
 	{
-		FVector2D const PillarLocation(PillarData.Location);
-		float const PillarRadius = PillarData.Radius;
+		FVector2D const PillarLocation(PillarSpot.Location);
+		float const PillarRadius = PillarSpot.Radius;
 		FVector2D const CenterToPillar(PillarLocation - StoredPayload.Origin);
 		float const PillarDistance = CenterToPillar.Size();
 		FVector2D const PillarDir(CenterToPillar / PillarDistance);
@@ -290,13 +228,13 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 
 	if (!bForceStop)
 	{
-		for (FPillarWaveData const& PillarData : PillarsWaveData)
+		for (FSafeSpot const& PillarSpot : PillarSpots)
 		{
-			if (!PillarData.Pillar.IsValid())
+			if (!PillarSpot.Source.IsValid())
 			{
 				continue;
 			}
-			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(PillarData.Pillar.Get());
+			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(PillarSpot.Source.Get());
 			if (!ensureMsgf(TargetASC, TEXT("%hs: alive pillar has no ASC"), __FUNCTION__))
 			{
 				continue;
@@ -305,7 +243,7 @@ void UDevastatingWavePattern::EndPattern(bool bForceStop)
 			UGeoAbilitySystemLibrary::ApplySingleEffectData(LethalEffectData, SourceASC, TargetASC,
 															StoredPayload.AbilityLevel, StoredPayload.Seed,
 															StoredPayload.AbilityTag);
-			UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, PillarData.Pillar.Get());
+			UGeoAbilitySystemLibrary::NotifyAbilityHit(StoredPayload, PillarSpot.Source.Get());
 		}
 	}
 

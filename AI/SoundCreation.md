@@ -58,6 +58,10 @@ on whatever plays it. Regenerate a family with its script.
 | Crack | `SW_Metal_Crack` | The trailer clack's strikes alone: a four-click broadband snap, 150 ms — a part slamming home | `metal_one_shots.py`, from `hex_lock_layers.py` |
 | Bright crack | `SW_Metal_CrackBright` | The clack heard first in the trailer, brighter and harder | same |
 
+| Sound | Assets in `/Game/Art/SFX/Gem/` | Character | Script |
+|---|---|---|---|
+| Gem glint / chime | `SW_Gem_Spawn` / `SW_Gem_Pickup` | Glass, no metal: a 0.3 s bright strike on throw; two climbing notes with a 1.5 s ring on pickup. One asset each, the drop varies the pitch | `gem_kit.py` |
+
 | Sound | Assets in `/Game/Art/SFX/Machine/` | Character | Script |
 |---|---|---|---|
 | Clamp slam | `SW_Machine_Slam_Low` / `_Mid` / `_High` | Heavy parts clipping together, a car-door ker-chunk: latch catch, the mass seating 22–29 ms later dead within ~60 ms, a brief rattle, ~0.3 s, largest part lowest — under a crack, at 0.7 of its volume | `heavy_machine.py`, written by `hex_intro_score.py ship` |
@@ -109,7 +113,7 @@ band-limited cracks, no ringing line anywhere.
 
 A sound that follows an animation is timed off the animation's own motion, not placed by eye.
 
-1. Dump the bones with `AI/Python/Anim/Boss/dump_bone_motion.py`: position, unwrapped yaw and scale, four samples a frame.
+1. Dump the bones with `AI/Python/Boss/Anim/dump_bone_motion.py`: position, unwrapped yaw and scale, four samples a frame.
 2. Score it with a script like `AI/Python/Audio/hex_intro_score.py`: it writes its one-shots, a stem per
    continuous sound, a `cues.json` of every notify (track, sound, time, volume) and a preview mix of the whole
    animation — into `Draft/`, or into `SourceArt/Audio` once approved.

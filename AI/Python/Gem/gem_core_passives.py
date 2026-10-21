@@ -95,7 +95,7 @@ def create_blueprint(gem_id, cpp_class):
 
 
 def register(info, entries):
-    """Shared entries replaced per Core, by tag or display name, keeping the AbilityIcon import_icons.py set; no Description: Content/Data/AbilityDescriptions.txt owns it."""
+    """Shared entries replaced per Core, by tag or display name, keeping the AbilityIcon import_icons.py set; no Description: Data/AbilityDescriptions.txt owns it."""
     shared = list(info.get_editor_property("SharedAbilities"))
     for gem_id, class_path, display_name in entries:
         tag = "Ability.Spell." + gem_id

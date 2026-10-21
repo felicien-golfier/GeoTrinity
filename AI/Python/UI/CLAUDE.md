@@ -1,6 +1,6 @@
 # AI/Python/UI
 
-Widget Blueprints and trees. Docs: `AI/UI.md`, `AI/MCP/MCP_UI.md`. Every write goes through `asset_guard` (never overrides a hand edit).
+Widget Blueprints and trees. Docs: `AI/UI.md`, `AI/MCP/MCP_UI.md`. Every write goes through `asset_guard` (never overrides a hand edit). Tutorial widgets: `Tutorial/UI/`; Gems pages: `Gem/gems_page.py`.
 
 ## Toolkit
 | Script | Does |
@@ -33,7 +33,5 @@ Widget Blueprints and trees. Docs: `AI/UI.md`, `AI/MCP/MCP_UI.md`. Every write g
 | `slot_gauge.py` | `GaugeMeter` (`DA_Meter_SlotGauge`) + `GaugeText` in `WBP_AbilitySlot` and `WBP_PassiveSlot`, between `Icon` and `CooldownMeter`; headless, after `wings_hud.py` / `passive_bar.py` |
 | `xp_strip.py` | `WBP_XpStrip` (level, echo level, XP meter) + `XpStrip` under the health stack of `WBP_PlayerWing`; headless, after `wings_hud.py`; run with `UnrealEditor-Win64-DebugGame-Cmd.exe` (the Development `-Cmd` loads no project module) |
 | `message_log.py` | `UGeoMessageLog` "MessageLog" in the bottom row of `WBP_MenuFrame`, text right of BACK; headless, after `menu_pages.py` |
-| `tutorial_menu.py` | `WBP_TutorialPrompt`, `TutorialButton` + prompt page in the main menu, `LeaveTutorialButton` in the pause menu; headless, after `menu_pages.py` |
-| `tutorial_hud.py` | `WBP_CatLine`, `WBP_QuestCard`, `DT_CatLine`, `CatLineWidgetClass` / `QuestCardWidgetClass` on `BP_GeoHudMain`; headless, after `ui_theme.py` |
 | `import_icons.py` | `DA_Icon_*` from `SourceArt/Icons`, set on abilities and effects |
 | `import_fonts.py` | Menu fonts as Font Face + Font (answer Yes) |

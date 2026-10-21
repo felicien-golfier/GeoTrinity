@@ -1,8 +1,8 @@
 # Writing Ability Descriptions
 
-Descriptions live in `Content/Data/AbilityDescriptions.txt` — one `[Ability.Spell.X]` section per ability keyed
+Descriptions live in `Data/AbilityDescriptions.txt` — one `[Ability.Spell.X]` section per ability keyed
 by its AbilityTag, `#` for comments. The file is re-read on every menu open, so edits show live without a
-rebuild, and it is staged into packages (`DirectoriesToAlwaysStageAsUFS` in `DefaultGame.ini`). An ability with
+rebuild, and it is staged into packages by `RuntimeDependencies` in `GeoTrinity.Build.cs`. An ability with
 no section falls back to the `Description` field of its **AbilityInfo** entry. Both are shown in the pause
 menu's Abilities view, resolved by `FGameplayAbilityInfo::GetResolvedDescription()`.
 

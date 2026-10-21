@@ -48,6 +48,6 @@ protected:
 	IGeoHUDInterface* GetLocalHUD() const;
 
 	/** True: Execute starts something that ends with a call to Finish. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoEncounter")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
 	bool bLatent = false;
 };

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Actor/GeoGemDrop.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
@@ -13,16 +14,13 @@
 
 class AEnemyCharacter;
 class AGeoArenaBarrier;
-class AGeoDeployableBase;
 class AStaticMeshActor;
-class UGeoDeployableManagerComponent;
-class UGeoReloadAbility;
 class UMaterialInterface;
 struct FGeoEnemySetup;
 
 /**
  * One boss encounter, and it runs itself. It owns its boss and its adds (spawn + reset), its barrier, its fight-commit,
- * the boss health bar, the post-victory loot shower and the look of its floors. The GameState tells it nothing: on
+ * the boss health bar, the post-victory gem fountain and the look of its floors. The GameState tells it nothing: on
  * aggro TriggerAggro calls StartFight directly, and it subscribes to AGeoGameState::OnMatchStateChanged to tear the
  * fight down when the match leaves InProgress (a wipe or a victory). Whether this arena's fight is live is the
  * replicated bFighting flag, so clients resolve their own boss bar and the GameState needs no arena pointer at all.
@@ -79,6 +77,10 @@ public:
 	AEnemyCharacter* SpawnAdd(TSubclassOf<AEnemyCharacter> AddClass, FTransform Transform,
 							  FGeoEnemySetup const* Setup = nullptr);
 
+	/** The adds still alive, the dead ones a death leaves in the list until they are destroyed left out. The list lives on
+	 *  the server, so a client gets none. */
+	TArray<AEnemyCharacter const*> GetLiveAdds() const;
+
 	/** Returns this arena's boss character; nullptr before BeginPlay spawns it. */
 	AEnemyCharacter* GetBoss() const { return Boss; }
 	/** True while this arena's fight is live. Replicated, so it reads the same on every machine. */
@@ -105,6 +107,10 @@ public:
 	/** Returns the arena whose fight is currently live, or null when no fight runs. At most one arena is ever fighting.
 	 */
 	static AGeoArena* GetFightingArena(UObject const* WorldContextObject);
+
+	/** Seconds after the kill the fountain throws drop ThrowIndex of ThrowCount at: 0 for the first, FountainDuration
+	 *  for the last, bunched toward the start by FountainFrontLoad. */
+	float GetFountainThrowTime(int32 ThrowIndex, int32 ThrowCount) const;
 
 	/**
 	 * Names this encounter. Every AGeoTargetPoint it uses carries this tag alongside its TargetPoint.* purpose, so a
@@ -149,16 +155,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GeoArena|Background")
 	TArray<TSoftObjectPtr<UMaterialInterface>> BackgroundLooks;
 
-	/** Seconds between loot pickup bursts after the boss dies. */
-	UPROPERTY(EditAnywhere, Category = "GeoLoot")
-	float LootSpawnInterval = 0.1f;
-	/** Pickups spawned per burst. */
-	UPROPERTY(EditAnywhere, Category = "GeoLoot")
-	int32 LootPickupsPerBurst = 1;
-	/** Scatter radius around the dead boss the pickups are launched to. */
-	UPROPERTY(EditAnywhere, Category = "GeoLoot")
-	float LootMaxRadius = 1500.f;
-
 	/** What this arena's enemy is: picks the gem catalog's drop table and class XP per health bar. */
 	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	EGeoBossType BossType = EGeoBossType::Boss;
@@ -166,6 +162,38 @@ protected:
 	/** What this boss's kill drops: its own roll or the catalog's for BossType, plus fixed gems and shards. */
 	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	FGeoBossLoot BossLoot;
+
+	/** The actor each gem and shard of the kill is thrown out as; a Blueprint child sets the look and feel. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain")
+	TSubclassOf<AGeoGemDrop> GemDropClass = AGeoGemDrop::StaticClass();
+
+	/** Seconds from the first throw to the last. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain", meta = (ClampMin = 0.1))
+	float FountainDuration = 5.f;
+
+	/** Above 1 the throws bunch at the start (a burst, then a trickle); 1 spaces them evenly. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain", meta = (ClampMin = 1))
+	float FountainFrontLoad = 1.8f;
+
+	/** Upward speed of each throw. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain")
+	float FountainUpSpeed = 900.f;
+
+	/** Share of FountainUpSpeed each throw may lose or gain, so the drops peak at different heights. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain", meta = (ClampMin = 0, ClampMax = 1))
+	float FountainUpSpread = 0.3f;
+
+	/** Sideways speed of each throw, rolled in this range, in a random direction. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain")
+	FFloatInterval FountainSideSpeed = FFloatInterval(100.f, 600.f);
+
+	/** Shards one shard drop stands for. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain", meta = (ClampMin = 1))
+	int32 ShardsPerDrop = 10;
+
+	/** Most shard drops a kill throws, however many shards it gave. */
+	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain", meta = (ClampMin = 0))
+	int32 MaxShardDrops = 12;
 
 	/** False: a finished attempt here never reaches the leaderboard (the tutorial miniboss is no real boss run). */
 	UPROPERTY(EditAnywhere, Category = "GeoArena")
@@ -227,8 +255,15 @@ private:
 	void MulticastRecordAttempt(FGeoAttemptEntry const& Entry);
 
 	/** Server. Gives every player class XP for the boss health Entry took, kill or not, and on a kill BossLoot's gems
-	 *  and shards. Called by RecordAttempt. */
-	void GrantGemRewards(FGeoAttemptEntry const& Entry) const;
+	 *  and shards, the same for all, which it then throws out (StartFountain). Called by RecordAttempt. */
+	void GrantGemRewards(FGeoAttemptEntry const& Entry);
+
+	/** Server. Queues one drop per gem of Loot and one per ShardsPerDrop shards (at most MaxShardDrops), in random
+	 *  order, and throws them out one by one over FountainDuration from LootOrigin, the first at once. */
+	void StartFountain(FGeoGemReward const& Loot);
+	/** Throws the next queued drop and arms the timer for the one after it, per GetFountainThrowTime. Started by
+	 *  StartFountain. */
+	void SpawnFountainDrop();
 
 	/** True once this arena's boss has been beaten. Blocks the EndFight respawn until RespawnBoss clears it, so a
 	 *  victory doesn't drop a fresh boss on the players looting the corpse. Server-only state. */
@@ -282,29 +317,19 @@ private:
 	UFUNCTION()
 	void OnWipe(float DeathTime);
 
-	/** Starts the loot shower from the dead boss and stands the match down on the next tick. Bound to
+	/** Remembers where the boss died and stands the match down on the next tick. Bound to
 	 *  Boss->OnEnemyDefeated. */
 	UFUNCTION()
 	void OnBossDefeated();
 
-	/** Server. Resolves the reload ability that configures the pickups, then starts the looping loot shower erupting
-	 *  from LootOrigin. Declines to start the timer when no such ability is registered. */
-	void Loot();
-	/** Server. Stops the shower and hands back the pickup slots it borrowed. Runs when any fight starts. */
-	void StopLoot();
-	/** Spawns one burst of loot pickups from LootOrigin. Timer callback started by Loot(). */
-	void SpawnLootBurst();
-
 	FTimerHandle CommitFightTimer;
 
-	FTimerHandle LootTimer;
+	/** Where the boss died, the fountain's start. Set by OnBossDefeated. */
 	FVector LootOrigin = FVector::ZeroVector;
 
-	/** Pickup configuration for the running shower, resolved once in Loot() rather than re-scanned on every burst. */
-	UGeoReloadAbility const* LootReloadCDO = nullptr;
-	FGameplayTag LootReloadTag;
-
-	/** Managers granted an unlimited pickup slot for the loot shower; restored when the next fight starts. */
-	TArray<TWeakObjectPtr<UGeoDeployableManagerComponent>> LootBoostedManagers;
-	TSubclassOf<AGeoDeployableBase> LootPickupClass;
+	/** Drops StartFountain has yet to throw, last first. */
+	TArray<FGeoGemDropSpec> FountainQueue;
+	/** Drops the fountain has thrown so far. */
+	int32 FountainThrown = 0;
+	FTimerHandle FountainTimer;
 };

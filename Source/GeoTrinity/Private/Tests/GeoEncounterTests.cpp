@@ -24,6 +24,7 @@
 #include "Encounter/Action/GeoSpawnEnemiesAction.h"
 #include "Encounter/Action/GeoSpawnZoneAction.h"
 #include "Encounter/GeoEncounterSubsystem.h"
+#include "Encounter/Trigger/GeoAbilityActivatedTrigger.h"
 #include "Encounter/Trigger/GeoActorDiedTrigger.h"
 #include "Encounter/Trigger/GeoCounterTrigger.h"
 #include "Encounter/Trigger/GeoEventTrigger.h"
@@ -342,7 +343,7 @@ bool FGeoEncounterRestartTest::RunTest(FString const& /*Parameters*/)
 	UGeoTestTrigger* const TriggerB = Encounter->AddRule(1, {});
 	Encounter->Start();
 	TriggerA->FireNow();
-	Encounter->AddToCounter("X", 3);
+	Encounter->AddToEncounterCounter("X", 3);
 	TestEqual(TEXT("B is the current step"), TriggerB->ArmCount, 1);
 
 	Encounter->Restart();
@@ -859,6 +860,45 @@ bool FGeoEncounterActivateAbilityCancelTest::RunTest(FString const& /*Parameters
 	LeaveTrigger->FireNow();
 	TestFalse(TEXT("Leaving the step cancels the ability"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
 	TestEqual(TEXT("The cancelled wait never reaches the next action"), After->Runs, 0);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterAbilityActivatedTest, "GeoTrinity.Encounter.AbilityActivated",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterAbilityActivatedTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	APlayerController* const PlayerController = World->SpawnActor<APlayerController>();
+	AGeoTestDeployer* const Player = World->SpawnActor<AGeoTestDeployer>();
+	PlayerController->SetPawn(Player);
+	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Player);
+	UGeoGameplayAbility const* const Ability = GetDefault<UGeoTestCastAbility>();
+	ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestCastAbility::StaticClass(), 1));
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoAbilityActivatedTrigger* const Trigger = NewObject<UGeoAbilityActivatedTrigger>(Encounter);
+	Trigger->AbilityTag = UGeoTestCastAbility::GetCastTag();
+	UGeoTestAction* const Reaction = Encounter->NewAction("Activated");
+	Encounter->AddRuleWithTrigger(0, Trigger, {Reaction}, true);
+
+	ASC->AbilityActivatedCallbacks.Broadcast(const_cast<UGeoGameplayAbility*>(Ability));
+	Encounter->Start();
+	TestEqual(TEXT("An activation before arming never counts"), Reaction->Runs, 0);
+
+	ASC->AbilityActivatedCallbacks.Broadcast(const_cast<UGeoGameplayAbility*>(Ability));
+	TestEqual(TEXT("The watched ability fires"), Reaction->Runs, 1);
+	TestEqual(TEXT("Count is the activations since arming"), Reaction->LastPayload.Count, 1);
+	ASC->AbilityActivatedCallbacks.Broadcast(const_cast<UGeoGameplayAbility*>(Ability));
+	TestEqual(TEXT("Count goes up"), Reaction->LastPayload.Count, 2);
+
+	Trigger->AbilityTag = FGeoGameplayTags::Get().Ability_Type_Special;
+	ASC->AbilityActivatedCallbacks.Broadcast(const_cast<UGeoGameplayAbility*>(Ability));
+	TestEqual(TEXT("Another ability's tag does not fire"), Reaction->Runs, 2);
 
 	DestroyTestWorld(World);
 	return true;
@@ -1704,6 +1744,13 @@ bool FGeoEncounterCatLineTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Not before the last line ends"), After->Runs, 0);
 	HUD->LineEnded.ExecuteIfBound();
 	TestEqual(TEXT("The run goes on once the last line ends"), After->Runs, 1);
+
+	UGeoCatLineAction* const Counting = NewObject<UGeoCatLineAction>(Encounter);
+	Counting->Line = INVTEXT("That's {Counter:Falls} deaths, {Counter:Falls}. {Counter:Unset} {Key:X}");
+	Encounter->AddToEncounterCounter("Falls", 3);
+	Counting->Begin(FGeoEncounterPayload());
+	TestEqual(TEXT("A counter token reads its encounter's counter, an unset one is 0, other tokens stay"),
+			  HUD->Lines.Last(), FString("That's 3 deaths, 3. 0 {Key:X}"));
 
 	DestroyTestWorld(World);
 	return true;

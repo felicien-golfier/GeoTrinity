@@ -13,9 +13,9 @@ nova, a gust as every point blows out. Every curve starts and ends on the fight'
 whose vanishing cuts the loop.
 
 Run outside the editor: uv run AI/Python/Audio/star_boss_score.py [ship]
-Needs AI/Audio/BoneMotion/Star/<montage>.json (AI/Python/Anim/Boss/dump_bone_motion.py) and the ninja kit
-(ninja_kit.py ship). Writes loop.json — the layers AI/Python/Asset/boss_fight_loop.py puts on the boss — and each
-montage's cues.json and curves.json — what AI/Python/Anim/Boss/boss_montage_sounds.py puts on it — into DRAFT, or into
+Needs AI/Audio/BoneMotion/Star/<montage>.json (AI/Python/Boss/Anim/dump_bone_motion.py) and the ninja kit
+(ninja_kit.py ship). Writes loop.json — the layers AI/Python/Boss/boss_fight_loop.py puts on the boss — and each
+montage's cues.json and curves.json — what AI/Python/Boss/Anim/boss_montage_sounds.py puts on it — into DRAFT, or into
 SourceArt with `ship`. A preview of each, played between stretches of fight, always goes to DRAFT.
 """
 import collections

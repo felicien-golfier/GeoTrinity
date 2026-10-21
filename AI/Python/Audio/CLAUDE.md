@@ -1,6 +1,6 @@
 # AI/Python/Audio
 
-Run from a shell with `uv run <script>`, outside the editor; each declares its dependencies. Workspace for outputs: `AI/Audio/CLAUDE.md`. Process: `AI/SoundCreation.md`, `AI/MCP/Audacity/`. `Patches/<Pack>/` holds one fitted patch per reproduced sound.
+Run from a shell with `uv run <script>`, outside the editor; each declares its dependencies. Stays one folder (scripts import each other as siblings); boss scores and `gem_kit.py` are not moved to `Boss/` / `Gem/`. Workspace for outputs: `AI/Audio/CLAUDE.md`. Process: `AI/SoundCreation.md`, `AI/MCP/Audacity/`. `Patches/<Pack>/` holds one fitted patch per reproduced sound.
 
 ## Analysis
 | Script | Does |
@@ -21,6 +21,7 @@ Run from a shell with `uv run <script>`, outside the editor; each declares its d
 | `mech_kit.py` | Mechanical kit (`Mech`): ticks, clicks, impacts, riser, grind, engine, loops |
 | `metal_one_shots.py` | Reusable metal one-shots (`Metal`) |
 | `ninja_kit.py` | Air and cloth, no metal (`Ninja`) |
+| `gem_kit.py` | Crystal chimes for gem drops, no metal (`Gem`): spawn glints, pickup chime with a long ring |
 | `zap_kit.py` | Small electric hits for boosted shots (`Elec`) |
 | `menu_music_loop.py` | Seamless music loop cut from an mp3 on whole bars, crossfade baked in (`MenuMusic`) |
 | `electric_layers.py` | Seamless electric loop, one WAV per layer |

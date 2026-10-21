@@ -5,6 +5,8 @@
 #include "AbilitySystem/Abilities/Pattern/Projectile/ProjectilePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "Actor/Arena/GeoArena.h"
+#include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -33,9 +35,21 @@ TInstancedStruct<FPatternData> UGeoPeriodicPatternAbility::CreatePatternData() c
 	FProjectilePatternData SalveData;
 
 	FVector const Origin(StoredPayload.Origin, ArbitraryCharacterZ);
-	for (APlayableCharacter const* Player : GeoLib::GetAlivePlayers(this))
+	if (bAimAtArenaBoss)
 	{
-		SalveData.Yaws.Add((Player->GetActorLocation() - Origin).Rotation().Yaw);
+		AGeoArena const* Arena = AGeoArena::GetArenaOfBoss(GetAvatarActorFromActorInfo());
+		AEnemyCharacter const* Boss = IsValid(Arena) ? Arena->GetBoss() : nullptr;
+		if (IsValid(Boss) && !Boss->IsDead())
+		{
+			SalveData.Yaws.Add((Boss->GetActorLocation() - Origin).Rotation().Yaw);
+		}
+	}
+	else
+	{
+		for (APlayableCharacter const* Player : GeoLib::GetAlivePlayers(this))
+		{
+			SalveData.Yaws.Add((Player->GetActorLocation() - Origin).Rotation().Yaw);
+		}
 	}
 
 	return TInstancedStruct<FPatternData>::Make<FProjectilePatternData>(SalveData);

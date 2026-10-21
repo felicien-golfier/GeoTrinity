@@ -2,6 +2,7 @@
 
 #include "HUD/Tutorial/GeoShakeTextDecorator.h"
 
+#include "HUD/Tutorial/GeoCatLineMarkup.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -50,7 +51,7 @@ public:
 
 	virtual bool Supports(FTextRunParseResults const& RunParseResult, FString const& /*Text*/) const override
 	{
-		return RunParseResult.Name == TEXT("Shake");
+		return RunParseResult.Name == GeoCatLine::ShakeRunName;
 	}
 
 protected:

@@ -16,6 +16,10 @@ Run via mcp-unreal execute_script. Summary written to AI/Output/bomb_gen.json.
 """
 import unreal, json, math
 
+mesh_toolkit_path = unreal.Paths.project_dir() + "AI/Python/Mesh/static_mesh_asset.py"
+mesh_toolkit = {}
+exec(compile(open(mesh_toolkit_path).read(), mesh_toolkit_path, "exec"), mesh_toolkit)
+
 ASSET_NAME = "SM_Bomb"
 FOLDER     = "/Game/Art/Meshes/Bomb"
 PACKAGE    = f"{FOLDER}/{ASSET_NAME}"
@@ -126,16 +130,8 @@ def build():
                    for r, z in FIN_PROFILE]
         prism(outline, [-across[k] * FIN_THICK for k in range(3)])
 
-    if unreal.EditorAssetLibrary.does_asset_exist(PACKAGE):
-        unreal.EditorAssetLibrary.delete_asset(PACKAGE)
-
-    asset = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
-        ASSET_NAME, FOLDER, unreal.StaticMesh, None)
-    asset.build_from_static_mesh_descriptions([desc], False, True)
-    asset.set_editor_property("static_materials",
-                              [unreal.StaticMaterial(material_slot_name=SLOT_NAME)])
-
-    unreal.EditorAssetLibrary.save_loaded_asset(asset)
+    asset = mesh_toolkit["save_static_mesh"](FOLDER, ASSET_NAME, desc,
+                                             [unreal.StaticMaterial(material_slot_name=SLOT_NAME)])
     return asset
 
 

@@ -6,37 +6,48 @@
 
 FString GeoCatLine::ToRichText(FString const& Markup, TFunctionRef<FText(FGameplayTag InputTag)> KeyLabel)
 {
-	FString const KeyPrefix = TEXT("Key:");
 	FString Result;
 	bool bInBold = false;
 	bool bInShake = false;
+	auto const ToggleRun = [&Result](TCHAR const* const RunName, bool& bInRun)
+	{
+		if (bInRun)
+		{
+			Result.Append(RunClose);
+		}
+		else
+		{
+			Result.AppendChar(RichTagOpen);
+			Result.Append(RunName);
+			Result.Append(RichTagClose);
+		}
+		bInRun = !bInRun;
+	};
 	int32 Index = 0;
 	while (Index < Markup.Len())
 	{
-		int32 const TokenEnd = Markup[Index] == TCHAR('{')
-			? Markup.Find(TEXT("}"), ESearchCase::CaseSensitive, ESearchDir::FromStart, Index)
+		int32 const TokenEnd = Markup[Index] == BraceOpen
+			? Markup.Find(BraceClose, ESearchCase::CaseSensitive, ESearchDir::FromStart, Index)
 			: INDEX_NONE;
 		FString const Token = TokenEnd != INDEX_NONE ? Markup.Mid(Index + 1, TokenEnd - Index - 1) : FString();
-		FGameplayTag const InputTag = Token.StartsWith(KeyPrefix, ESearchCase::CaseSensitive)
-			? UGameplayTagsManager::Get().RequestGameplayTag(FName(*Token.RightChop(KeyPrefix.Len())), false)
+		FGameplayTag const InputTag = Token.StartsWith(KeyTokenPrefix, ESearchCase::CaseSensitive)
+			? UGameplayTagsManager::Get().RequestGameplayTag(FName(*Token.RightChop(KeyTokenPrefix.Len())), false)
 			: FGameplayTag();
 
-		if (Markup.Mid(Index, 2) == TEXT("**"))
+		if (FStringView(*Markup + Index).StartsWith(BoldMarker, ESearchCase::CaseSensitive))
 		{
-			Result += bInBold ? TEXT("</>") : TEXT("<Bold>");
-			bInBold = !bInBold;
-			Index += 2;
+			ToggleRun(BoldRunName, bInBold);
+			Index += BoldMarker.Len();
 		}
-		else if (Markup.Mid(Index, 2) == TEXT("~~"))
+		else if (FStringView(*Markup + Index).StartsWith(ShakeMarker, ESearchCase::CaseSensitive))
 		{
-			Result += bInShake ? TEXT("</>") : TEXT("<Shake>");
-			bInShake = !bInShake;
-			Index += 2;
+			ToggleRun(ShakeRunName, bInShake);
+			Index += ShakeMarker.Len();
 		}
 		else if (InputTag.IsValid())
 		{
 			Result += KeyLabel(InputTag).ToString();
-			Index = TokenEnd + 1;
+			Index = TokenEnd + BraceClose.Len();
 		}
 		else
 		{
@@ -51,8 +62,8 @@ FString GeoCatLine::ToRichText(FString const& Markup, TFunctionRef<FText(FGamepl
 // ---------------------------------------------------------------------------------------------------------------------
 int32 GeoCatLine::TagLengthAt(FString const& RichText, int32 const Index)
 {
-	int32 const TagEnd = RichText[Index] == TCHAR('<')
-		? RichText.Find(TEXT(">"), ESearchCase::CaseSensitive, ESearchDir::FromStart, Index)
+	int32 const TagEnd = RichText[Index] == RichTagOpen
+		? RichText.Find(RichTagClose, ESearchCase::CaseSensitive, ESearchDir::FromStart, Index)
 		: INDEX_NONE;
 	return TagEnd != INDEX_NONE ? TagEnd - Index + 1 : 0;
 }
@@ -92,7 +103,7 @@ FString GeoCatLine::RevealRichText(FString const& RichText, int32 const VisibleC
 		if (TagLength > 0)
 		{
 			Result += RichText.Mid(Index, TagLength);
-			bRunOpen = RichText[Index + 1] != TCHAR('/');
+			bRunOpen = RichText[Index + 1] != RichTagEnd;
 			Index += TagLength;
 		}
 		else
@@ -105,7 +116,7 @@ FString GeoCatLine::RevealRichText(FString const& RichText, int32 const VisibleC
 
 	if (bRunOpen)
 	{
-		Result += TEXT("</>");
+		Result.Append(RunClose);
 	}
 
 	return Result;

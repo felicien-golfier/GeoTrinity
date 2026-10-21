@@ -1,6 +1,6 @@
 # The Cat — animation
 
-How `SM_Cat` moves. Rig: `SKM_Cat` on `SK_Cat` in `/Game/Art/Meshes/Cat` (`AI/Python/Mesh/rig_cat.py`), materials `M_Cat` + `MI_Cat_<role>` (`AI/Python/Material/make_cat_materials.py`). Clips: `AI/Python/Anim/Cat/`, assets in `/Game/Characters/Anim/Cat`. Authoring rules: `AI/MCP/MCP_Animation.md`. Look and personality: `Cat.md`.
+How `SM_Cat` moves. Rig: `SKM_Cat` on `SK_Cat` in `/Game/Art/Meshes/Cat` (`AI/Python/Cat/Mesh/rig_cat.py`), materials `M_Cat` + `MI_Cat_<role>` (`AI/Python/Cat/make_cat_materials.py`). Clips: `AI/Python/Anim/Cat/`, assets in `/Game/Characters/Anim/Cat`. Authoring rules: `AI/MCP/MCP_Animation.md`. Look and personality: `Cat.md`.
 
 ## Reading from the top camera
 The camera is orthographic and straight above; the mesh faces +X, so its face plane is edge-on.

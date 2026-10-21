@@ -6,9 +6,9 @@
 Score the hex boss intro off its own motion as a heavy machine: what plays where, and the stems that follow the parts.
 
 Run outside the editor: uv run AI/Python/Audio/hex_intro_score.py [ship]
-Needs AI/Audio/BoneMotion/Intro.json (AI/Python/Anim/Boss/dump_bone_motion.py) and the cracks from
+Needs AI/Audio/BoneMotion/Intro.json (AI/Python/Boss/Anim/dump_bone_motion.py) and the cracks from
 metal_one_shots.py. Writes the Machine one-shots, a stem per continuous sound and cues.json — every notify
-AI/Python/Anim/Boss/boss_montage_sounds.py puts on the montage — into DRAFT, or into SourceArt with `ship`.
+AI/Python/Boss/Anim/boss_montage_sounds.py puts on the montage — into DRAFT, or into SourceArt with `ship`.
 The whole intro mixed always goes to DRAFT, for listening.
 """
 import json

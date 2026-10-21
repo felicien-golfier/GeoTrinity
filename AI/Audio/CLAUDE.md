@@ -8,7 +8,7 @@ Everything made or gathered for sound that does not ship. Shipped sources → `S
 | `References/*.wav` | Single references cut to the passage asked | by hand |
 | `Reproductions/<patch>/` | Synth, reference-then-synth A/B, picture | `fit_patch.py` |
 | `Drafts/<Sound>/` | Drafts to hear, new name per iteration, with `.aup3` | kit and score scripts |
-| `BoneMotion/` | Montage bone motion a score is timed from | `AI/Python/Anim/Boss/dump_bone_motion.py` |
+| `BoneMotion/` | Montage bone motion a score is timed from | `AI/Python/Boss/Anim/dump_bone_motion.py` |
 
 Audio, video, pictures and `.aup3` are git-ignored; READMEs, surveys, labels, `cuts.json` are checked in.
 

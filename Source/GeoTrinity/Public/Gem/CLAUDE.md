@@ -9,6 +9,7 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 | `GeoGemProfileSave.h` | `UGeoGemProfileSave` SaveGame per local player: owned gems, shards, per-class level / XP / builds |
 | `GeoGemSubsystem.h` | `ULocalPlayerSubsystem` owning the profile; `CommitChanges()` saves and sends loadouts to the server |
 | `GeoGemComponent.h` | On `AGeoPlayerState`: server half, applies the current class's loadout to the ASC |
+| `GeoGemMeshes.h` | `GeoGem::GetTierMesh(Tier)` / `GetShardMesh(Variant)`: soft paths of the drop meshes ("3D gems", "Shards") |
 | `GeoGemStatsEffect.h` | Native infinite GE carrying all slotted gem stats as SetByCaller modifiers |
 
 ## Flow
@@ -32,6 +33,44 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 - New gem stat = attribute in `UGeoGemAttributeSet` + catalog row.
 - Crits belong to everyone, no Core needed: `RollCritMultiplier` rolls `CritChance` (base 0%, raised by Precision) for `CritDamage` (base x1.2, raised by Edge). The Critical Core adds +30% `CritDamage` (its catalog row) and +10% `CritChance` (`UGeoGemStatsEffect`, constant next to the `Gem.Core.Critical` grant); the tag stays for the menus.
 - Editor sync: `GeoGemCsvSync` (`GeoTrinityEditor/Gem`) keeps catalog gems and the CSV equal, both ways; tests in `Private/Tests/GeoGemTests.cpp`.
+
+## 3D gems
+One cut-stone solid per tier, richer and bigger as the tier rises; at rest, seen from above (orthographic camera), it shows its menu glyph's number of corners in the menus (the drop in the world stops in whatever pose its tumble reaches).
+- One static mesh per tier, `/Game/Art/Meshes/Gem/SM_Gem_<Tier>`, built by `AI/Python/Gem/generate_gem_meshes.py`: Chip octahedron (a corner up: a square from above), Cut dodecahedron (a pentagon face up), Prism icosahedron (a face up: a hexagon outline); the rarer the tier, the more complex the solid, Core diamond (low-poly brilliant: octagon girdle at the glyph's 22.5° turn, table on top, pavilion to a point).
+- Size = tier: circumradius grows Chip < Cut < Prism < Core (`RADIUS` in the script, ~×1.25 a step). Mesh centred on its bounding box. Flat faces, no bevel: the solid and its size tell the tier.
+- One material slot `Gem`, each tier wears its own instance `MI_Gem_<Tier>` of the master `M_Gem` (`/Game/Art/Mat/`): glowing faceted stone, emissive above 1 so bloom lights it, rim brighter at grazing angles, flat faces catch the light as facets (self-lit, "Drop feel"), `Flash` scalar (set per frame by the drop) boosting the glow. The stat colour is the `Color` parameter, set on every slot's dynamic instance per drop, same stat colours as `UGeoGemGlyph`. A Core glows hardest (its glyph's bright centre); a Chip, the smallest, glows above Cut to stay visible.
+- Halo: second slot `Halo`, a smooth sphere around the stone (1.7× its radius) wearing `M_GemHalo`: unlit additive, the stat `Color` fading from the centre to nothing at the outline. A sphere, so the tumble never shows on it. Gems only; shards have none.
+- `AGeoGemDrop` (`Actor/`) is one gem lying in the world: mesh by tier, colour by stat, bob once landed. Visual only: the gems are already in the profile when the boss dies (`GrantGemRewards`, `Boss loot`), the drop never grants anything.
+- One drop per gem of the kill loot (a count of 3 = 3 drops), the same gem ids the players were granted. Shards drop too ("Shards" below), in the same fountain.
+
+### Drop feel
+A drop is a solid in 3D, never a sprite turned to the camera; every motion is a pure function of the replicated launch data and `FGeoGemDropSpec::Seed`, so every machine plays the same thing.
+- Lit by the material itself (`M_Gem`): a fixed key light direction against the pixel normal, so every face shades by its turn whatever the level's lights are, plus a specular glint. A turning gem flashes facet by facet.
+- Flight: full 3D tumble around a random axis, starting fast (`TumbleSpeed` range, axis and speed from the seed). Spawn pops the mesh in from zero with an overshoot (`PopTime`).
+- Rotation never jumps: one axis, one angular speed that `TumbleFriction` decays exponentially from the throw, so the gem lands turning and winds down to a stop in the pose it reached (angle = speed / friction × (1 − e^(−friction × t))). No resting pose it blends into.
+- Walls: the horizontal path is simulated once at `BeginPlay` (`BuildPath`, fixed `PathStep`, deterministic on every machine): a sphere sweep (`CollisionRadius`, below `RestHeight` so the floor is never hit) at floor height against world-static geometry, reflecting the velocity off the wall (`WallRestitution`). Floor height at any altitude: a wall holds a gem in, however high it flies. Height stays the analytic arc.
+- Ground friction: from the first touchdown the horizontal speed decays at `GroundFriction`, so the drop slides and stops (`RestSpeed`). The root moves until then.
+- Landing: the mesh bounces `BounceCount` times from the first touchdown, each at `BounceRestitution` of the last impact speed, vertical only (even while it slides). Each touchdown sets the material scalar `Flash` to a spike (smaller each bounce) that decays at `FlashDecay`: the gem lights up on every hit. Bob fades in once the bounces are over.
+- Pickup: collision turns on when the slide ends (`TravelTime`), the root then stays still.
+
+### Fountain feel
+- Front-loaded: the first drop leaves at once, then the gaps grow (drop `k` of `N` at `FountainDuration * (k / (N - 1)) ^ FountainFrontLoad`, exponent above 1 = burst first, trickle after). A kill reads as an eruption, not a drip.
+- Each throw's upward speed varies by `FountainUpSpread` (fraction), so the gems peak at different heights.
+
+### Drop sounds
+Two sounds per drop, `FGeoSoundEntry` on `AGeoGemDrop` (`SpawnSound`, `PickupSound`, set on `BP_GemDrop`; gems and shards share them). Kit `Gem` in `/Game/Art/SFX/Gem/` (`AI/SoundCreation.md`, "Reusable sounds"): crystal, glassy, chime-bright; no metal.
+- Spawn: on every machine the moment the drop begins play at its throw location (the fountain throws them one by one over `FountainDuration`, so one sound each, a pile never repeats: one asset, pitch rolled in `DropPitchRange` by both sounds, set in the constructor).
+- Pickup: the server destroys the drop, each machine plays the sound where the drop lay when its actor is destroyed (`EndPlay` reason `Destroyed` only: a level change, PIE end or streaming-out is silent). The sound lives in its own audio component, fire-and-forget at the world position, never attached to the drop: the actor is gone at once, the sound rings out its full length (`UGeoSoundRowLibrary::PlaySoundEntryAtLocation`, `AbilitySystem/Data/FX/CLAUDE.md`). A tail may be as long as the asset wants; never cut on destroy.
+- Positional, not 2D: a drop picked up across the arena is quieter. Audience stays `All`; the drop itself is the sound instigator and no player's, so `ShouldPlay` treats it as `InstigatorMachine`: full volume on every machine; no per-picker sound, the pickup is not replicated.
+- Dedicated server plays nothing (`ShouldPlay`).
+
+## Shards
+The Forge currency, drawn as a raw crystal fragment: irregular, angular, faceted, like a broken piece of a gem (never a regular solid, that is a gem's look).
+- 3D: `/Game/Art/Meshes/Gem/SM_Shard_<A|B|C>`, three hand-listed low-poly convex shapes (a tall spike, a tilted block, a squat chunk), flat faces, one slot `Gem`, built by `generate_gem_meshes.py` with the gems. Material `MI_Shard` (instance of `M_Gem`), one fixed pink colour set on the instance by `make_gem_materials.py`, no stat (the drop leaves the material alone). Every shard drop picks a variant at random and a random turn, so a pile never repeats.
+- A drop holds `ShardsPerDrop` shards (kill shards divided, rounded up, at most `MaxShardDrops` drops; both on the arena), so a large amount stays a small fountain; same fountain, landing and pickup rules as a gem drop (`FGeoGemDropSpec::Kind` = Gem / Shard).
+- 3D only: shards have no 2D look; the menus keep writing the shard count as text.
+- Fountain: on the kill the server spawns the drops one by one over `FountainDuration` (about 5 s) at the boss's death position; each is thrown up with a random sideways spread, falls under gravity and lands on the arena floor around the boss. Replicated actor (gem id, launch velocity, start time): every client replays the same arc, no movement replication.
+- Stays forever once landed, until a player character walks onto it: the server destroys it on overlap of any player character (the same drop for everyone, the first to step on it removes it). No effect on the character. A drop still in the air cannot be picked. Pickup collision is server-only, off until the slide ends (`Land`, a timer at `TravelTime`), and overlaps `GeoCharacter` only. Once its slide ends the actor stays still and only its mesh bobs: a lying drop costs no overlap update. A dedicated server never ticks a drop.
 
 ## Boss loot
 `FGeoBossLoot`, one per boss on its `AGeoArena` (`Actor/Arena/CLAUDE.md`). Kill loot = random part + fixed part, added together; built by `UGeoGemCatalog::MakeKillLoot`.

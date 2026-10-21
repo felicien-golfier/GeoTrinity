@@ -40,6 +40,10 @@ setters. A material reading them then renders in the level viewport as it would 
 saved nowhere, so write the neutral ones back when done. A material moved by the Time node animates in a realtime
 level viewport; two captures a few seconds apart show its motion only if the camera stayed put between them.
 
+## A rebuilt asset can look different
+
+Rebuilding a mesh or material changes what the engine derives from it (normals, tangents, bounds), and a material may have leaned on the old values. Capture the asset in the level that uses it, before and after, not on a bare preview mesh.
+
 ## Sharing the viewport
 
 The level viewport is also the user's. Remember its camera before a preview moves it, and restore it afterwards. A

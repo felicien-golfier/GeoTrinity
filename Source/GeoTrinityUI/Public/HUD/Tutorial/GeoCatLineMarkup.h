@@ -8,6 +8,21 @@
 
 namespace GeoCatLine
 {
+	/** Board markup: a brace token ({Key:<InputTag>}), and the two run markers. */
+	constexpr TCHAR BraceOpen = TCHAR('{');
+	constexpr FStringView BraceClose = TEXTVIEW("}");
+	constexpr FStringView KeyTokenPrefix = TEXTVIEW("Key:");
+	constexpr FStringView BoldMarker = TEXTVIEW("**");
+	constexpr FStringView ShakeMarker = TEXTVIEW("~~");
+
+	/** Rich text: the run names (the widget's style row, the decorator's tag) and the tag punctuation. */
+	constexpr TCHAR const* BoldRunName = TEXT("Bold");
+	constexpr TCHAR const* ShakeRunName = TEXT("Shake");
+	constexpr TCHAR RichTagOpen = TCHAR('<');
+	constexpr FStringView RichTagClose = TEXTVIEW(">");
+	constexpr TCHAR RichTagEnd = TCHAR('/');
+	constexpr FStringView RunClose = TEXTVIEW("</>");
+
 	/**
 	 * Tutorial Board markup to URichTextBlock text: **x** to <Bold>x</>, ~~x~~ to <Shake>x</>, {Key:<InputTag>} to
 	 * KeyLabel of that tag. Any other brace token, or one naming no existing tag, stays as written. No nesting.

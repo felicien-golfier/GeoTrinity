@@ -65,7 +65,8 @@ In-game source of the text: Tutorial Board page 5.
 ## Step 3 — Shoot
 Teaches: basic attack. Unlocks it.
 Action: destroy a training dummy (a `GeoDummyArena` enemy, `Actor/Arena/CLAUDE.md`).
-Quest gag (joke target: endless kill quests, `Tone.md`): once the first dummy dies, a quest card (UI, not a voice) shows "Cull the Dummies, KILLED n/100" and a 30:00 countdown as if the quest ended then (decoration only: the cut below comes first, and 00:00 does nothing); no respawn timer shown. Nine dummies spawn at once, in 3 groups of 3, and each one respawns 5 s (tunable) after its own death, at the spot it died. The Cat quips at 3, 6 and 9 kills.
+First dummy: alone, standing at the room's centre (`TargetPoint.Tutorial.ShootFirst`); nothing else in the room, no card yet. Its death montage plays out (`FirstDummyDeathSeconds`, 2 s, placeholder), and only then the Cat's quest message, the card and the nine dummies appear together.
+Quest gag (joke target: endless kill quests, `Tone.md`): once the first dummy has died and the delay is over, a quest card (UI, not a voice) shows "Cull the Dummies, KILLED n/100" and a 30:00 countdown as if the quest ended then (decoration only: the cut below comes first, and 00:00 does nothing); no respawn timer shown. Nine dummies spawn at once, in 3 groups of 3, and each one respawns 5 s (tunable) after its own death, at the spot it died. The Cat quips at 3, 6 and 9 kills.
 Layout (so the Healer beam, a forward rectangle, never reaches more than one group): each group is 3 dummies in a line on its own ray from the room's entry spot, the 3 rays wide apart (≥ 60°), a group's dummies close enough to share one beam, groups far enough that one beam never covers two. Layout only, no cap on the beam. The Cat cuts it at the first of: 12 kills, 45 s after the card. The cut: every dummy bursts at once, the counter jumps to 100/100, the Cat keeps the reward (joke only, no currency exists), then leads to step 4. Dummies are harmless.
 Done when: the quest is cut (never when 100 is reached). Text: Board page 6.
 
@@ -74,14 +75,15 @@ Teaches: the Healer's deployable, the Healing Zone, and healing with it. Unlocks
 Scene: a friendly dummy with low health (the ally dummy of step 10) next to the player.
 Action: drop the Healing Zone on the friendly dummy until it is full.
 Done when: the friendly dummy is back to full health (not only when the zone lands). Text: Board page 7.
-Hurt ally (steps 4 and 5): spawned by the step (`GeoSpawnEnemiesAction`, `BP_Dummy`), its setup = player team, `StartHealthRatio` 0.1, its own `Tag`. Nothing else sets its health. The room's first encounter step, `Setup`, only spawns (the ally passes through full health while it starts, so the heal step watches it after).
+Hurt ally (steps 4 and 5): spawned by the step (`GeoSpawnEnemiesAction`, `BP_Dummy`), its setup = player team, `StartHealthRatio` 0.1, its own `Tag`. Nothing else sets its health. The Deploy room's first encounter step, `Setup`, only spawns (the ally passes through full health while it starts, so the heal step watches it after). The Special room has no `Setup`: its fight step spawns both dummies itself, a spawned actor's health being read on the next tick.
 
 ## Step 5 — Special
 Teaches: the Special (the Healer's beam), which interacts with the deployable. Unlocks it. The Cat stays vague on how; the mechanics are on the ability page (single source, never restated in Cat lines).
 Scene: two dummies, a hurt friendly one and an enemy one, in their own room behind the step 4 barrier: a second ally (spawned, like every tutorial dummy), starting hurt like the first (step 4's ally stays full behind).
 Action: kill the enemy dummy and fully heal the friendly one with the beam.
 Real deployable rules, no tutorial exception: 3 charges, slow refill (`Abilities/Common/CLAUDE.md`, "Charges"). The Cat tells the player to spend them wisely.
-Done when: the enemy dummy is dead AND the friendly dummy is at full health, in either order. Each goal counts once (`bRepeat` false): an ally that dips and is healed back never counts twice. Which ability did it is not checked (not observable on a death); the Cat and the ability page push the beam. Text: Board page 8.
+Done when: the enemy dummy is dead AND the friendly dummy is at full health, in either order, AND the Special was activated at least once during the step. Each goal counts once (`bRepeat` false): an ally that dips and is healed back never counts twice. Which ability did the killing or healing is not checked (not observable on a death); the usage check is what makes the lesson real.
+Special never used when both goals are met: not done. Both goals are tallied in one counter (enemy dead +1, ally full +1, Special used +10): 2 = the sting, 12 = done. The Cat stings (a "cinglante" line, `Cat.md` voice: insult + useful fact, the Special key printed with `{Key:<InputTag>}`, never typed: you did all that without the one thing you were taught), both dummies respawn (the fight step re-enters itself: leaving kills the survivors, entering spawns them again), retry. Used once = the step ends normally, however it was done after. Text: Board page 8, the sting is in-game only.
 
 ## Step 6 — Three dummies
 Teaches: combining shoot + deploy + special + dash.
@@ -93,7 +95,7 @@ Teaches: a zone's color says what it does (`EGeoColor`: Heal, Shield, Damage; hu
 Cat angle: customer service; "the color is the whole game".
 Action: stand in each zone color as zones appear.
 Done when: player has stood in every color shown. Text: Board page 10.
-Shape: one color at a time (heal, shield, damage), each its own encounter step: entering spawns that color's zone on its fixed spot (`GeoSpawnZoneAction`, `TargetPoint.ZoneSpawn`; no wind-up); a placed box over the spot completes the step. The step enters with the spawn, so the spot is never empty while it is watched.
+Shape: one color at a time (heal, shield, damage), each its own encounter step: entering spawns that color's zone on its fixed spot (`GeoSpawnZoneAction`, the color's `TargetPoint.Tutorial.Zone<Color>`; no wind-up); a placed box over the spot completes the step. The box is the square inscribed in the zone's circle, so being in the box is being in the zone. The step enters with the spawn, so the spot is never empty while it is watched.
 
 ## Step 8 — Lethal wave
 Teaches: the lethal color kills, and you will die.
@@ -105,18 +107,20 @@ Done when: player dies once (forced). Respawn free. Text: Board page 11. Step 9 
 Teaches: read the hole in the lethal color and move into it before it lands.
 The Cat adds the safe spots nicely ("don't tell the other cats"). Several waves; spots move each wave and shrink in number.
 Done when: N waves survived in a row (N = the waves listed). On death: the series stops, gentle comment once the player is back, then the series restarts from wave 1 after `DeathTime`. Text: Board page 12.
-Shape: step `SafeSpots` runs the waves in order (one ability each, its spots and count), each awaited, then marks the series done; a player death leaves for `SafeSpotsWait` (a `DeathTime` timer), which goes back to `SafeSpots`. Leaving cancels the running wave. Counters reset on each entry, so nothing counts across a death.
+Shape: step `SafeSpots` runs the waves in order (one ability each, its spots and count), each awaited, then marks the series done; a player death leaves for `SafeSpotsWait` (a `DeathTime` timer), which goes back to `SafeSpots`. Leaving cancels the running wave. Counters reset on each entry, so nothing counts across a death. The room's exit pad opens from the finishing rule (after its Cat line), never from `OnExit`: a death leaves the step too.
 
 ## Step 10 — Miniboss
 Teaches: the combined fight; reuses every earlier step (dash, deployable, Special, zone colors, lethal wave + safe lines).
 - Miniboss: 500 HP. Moves between 3 map points, each a `TargetPoint` placed in the level (movable in the editor); fires projectiles; then summons dummies that fire projectiles.
 - Each dummy lands with a damage hit at its spawn (telegraphed in the Damage color, like the pillars); then a zone grows at its place until it is killed. Low damage, but it never stops growing until it reaches its max size (pressure, not burst); at max it stays and keeps ticking its low damage until the dummy dies.
 - A killed dummy turns ally and its zone is gone: has health, healable, blocks bullets (cover), shoots the boss. As the Healer the player heals it (healing the dummies is a core verb of the fight). Strategy on offer: kill the dummies, use the allies for damage. It is optional (a tutorial): the player may kill the miniboss directly; "done" is the miniboss dead by any means.
-- When an ally dummy is low on health, the Cat calls it out (allies are spawned, many: a `GeoHealthThresholdTrigger` with `WatchedClass` = the ally class, `Below`, watches every one, spawned ones included): it quotes "I need healing" and reminisces about an old friend who jumped around barking it, named Genji. No UI bubble or icon: the Cat stays the only speaker, and the name is a wink, never a copy of the hero shooter's art (`Tone.md`, limits). Exact line: Board page.
+- When an ally dummy is low on health, the Cat calls it out (allies are spawned, many: a `GeoHealthThresholdTrigger` with `WatchedClass` = the ally class, `Below`, watches every one, spawned ones included): three Cat lines, one per firing (`bRepeat`, the trigger's `Count` 1 / 2 / 3, silent after): (1) the Cat reminisces about an old friend who jumped around barking "I need healing", named Genji: "'I need healing.' Reminds me of my old friend Genji. Jumped around the whole map, barking it at anyone who'd listen. Nobody ever came."; (2) it pities the lone dummy: "Poor dummy, yawning 'I need healing' with no one around to help. If ONLY we had a healer in the team..."; (3) the cry, "I need healing. **I NEED HEALING.** ~~I NEED HEALING~~". Same Cat reaction as to a death. No UI bubble or icon: the Cat stays the only speaker, and the name is a wink, never a copy of the hero shooter's art (`Tone.md`, limits). Text: in-game source (the Board's page 13 notes still describe the old icon callout).
 - The Cat gives strategy advice only on the player's death (one tip per death, in order: dummies + growing zone, allies, lateral wave). Silent otherwise. Each tip ends with a sarcastic jab (the tip stays plain, the insult wraps it, `Tone.md`).
-- Every N dummies *spawned* a lateral lethal wave crosses the room with safe lines to pass through. N = `CyclesRequired` of the `STTask_SendEventAfterNCycles` after the summon in the miniboss State Tree (tunable in the editor).
+- Every N dummies *spawned* a lateral lethal wave crosses the room. N = `CyclesRequired` of the `STTask_SendEventAfterNCycles` after the summon in the miniboss State Tree (tunable in the editor).
+- Its safe spots are not random: each living dummy, summoned or ally, makes a safe lane through its own place, there from the wave's start. A dummy that dies loses its lane at once, even mid-wave. So dummies are worth keeping alive (and healing), which pulls against killing the summoned ones for their growing zone. No dummy alive = no safe spot (the wave is then lethal everywhere; the Cat's third tip covers it). Only this wave: step 9's waves keep their fixed layout.
 - A player death is a wipe (solo): the arena resets the fight. Summoned dummies and allies are the arena's adds, so the reset removes them (zones die with their dummy); the State Tree restarts, so the wave count does too. Each attempt starts clean.
 Done when: the miniboss is dead. The kill grants the normal class XP of its `BossType` on every run, plus its `BossLoot`. On the kill: the Cat's joke that it is time to come back to the real world (the joke lands here; the loot and Forge steps follow). Text: Board page 13.
+Shape: the room is a real boss fight (an `AGeoArena`, `BossType` MiniBoss, no leaderboard; aggro and wipe are the arena's, `Actor/Arena/CLAUDE.md`), not a dummy arena. The boss's tree: `Start` (its salve at every player begins and keeps firing on its own) → `Move` (straight walk to another `TargetPoint.Tutorial.MinibossPoint`, no navmesh, `STTask_MoveToTargetPoint`) → `Summon` → `CountSummons` (every `CyclesRequired` entries sends the wave event) → `Wave` (only when the event came) → `Move`. The lateral wave starts on the room's `TargetPoint.Tutorial.WaveStart` and crosses along +X whatever the boss faces (`TravelYaw`). The summoned dummy shoots the players (same salve, its own ASC); the ally it turns into shoots the boss (`bAimAtArenaBoss`, bullets hostile only). The encounter only talks (intro, one tip per death, ally call-outs, kill line) and opens the exit pad. Built by `tutorial_miniboss.py` (assets) and `tutorial_encounters.py` (room, arena, steps).
 
 ## Step 11 — Gems
 Teaches: gems and sockets (`Gem/CLAUDE.md`). The miniboss drops one copy of each Chip (scripted, not rolled; the 7 chips of `Data/gems.csv`).
@@ -139,13 +143,13 @@ Text: Board page 16 (tutorial's last page).
 
 ## Tuning
 - Every tutorial number lives in one curve table, `CT_Tutorial` (`Content/AbilitySystem/Data/CurveTables/`, next to `CT_BossHex` etc.): one row per knob, read through `FScalableFloat` like the other kits. Placeholder values until the user tunes them.
-- Rows: `MinibossHealth` (500), `DummyHealth`, `AllyDummyHealth`, `DummyLandingDamage`, `DummyZoneDamage`, `DummyZoneGrowthTime`, `DummyZoneMaxRadius`, plus the damage / speed numbers of the miniboss projectiles.
+- Rows: `MinibossHealth` (500), `DummyHealth`, `AllyDummyHealth`, `DummyLandingDamage`, `DummyZoneDamage`, `DummyZoneGrowthTime`, `DummyZoneMaxRadius`, plus `MinibossProjectileDamage`, `MinibossProjectileSpeed` (the miniboss's salves) and `AllyProjectileDamage` (the ally dummies' salves at the boss).
 - Not in the table: the lateral wave interval N (`CyclesRequired` in the miniboss State Tree), the 3 miniboss points (level `TargetPoint`s), the hurt ally's 10% start (its `DefaultAttributes` effect) and the ally low-health ratio (`Ratio` on the placed trigger).
 
 ## Unlock rule (steps 3-5)
 - Locked = not granted: the tutorial map starts the Circle without its dash, basic attack, deployable and Special; the slot appears on the ability bar when its step grants it. Dash is locked too, granted on arrival in the Dash room (step 2); the Landing room has no dash.
-- Each grant opens the ability page: the Character sheet (`HUD/Menu/Character/CLAUDE.md`) with that ability's detail drawer open; the player closes it. Generic, not per step.
-- The unlock's Cat line shows above the page ("Read the ability page that popped up. Or don't, I'm a cat, not a cop."), then ends after its time or on F (`HUD/Tutorial/CLAUDE.md`); the game holds while the menu is open (`Flow.md`, "Menus pause"), so the next line or timer runs once it is closed.
+- Each grant ends on the ability page: the Character sheet (`HUD/Menu/Character/CLAUDE.md`) with that ability's detail drawer open; the player closes it. Generic, not per step.
+- Cat first, page after: the unlock's Cat line ("An ability page is about to pop up. Read it. Or don't, I'm a cat, not a cop.") is said and gone before the page opens, so it never appears out of nowhere. Order (a rule's actions or the step's `OnEnter`): the room's lines, the unlock line, the grant, then the page; the slot and the page arrive together, after the Cat. The game holds while the menu is open (`Flow.md`, "Menus pause"), so the next line or timer runs once it is closed.
 
 ## Step template
 ```

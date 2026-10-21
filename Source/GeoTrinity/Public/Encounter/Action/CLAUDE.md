@@ -4,13 +4,14 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 
 | File | Does | Latent |
 |---|---|---|
-| `GeoDelayAction.h` | Waits `Duration` s | yes |
+| `GeoDelayAction.h` | Waits `Duration` s (world time: holds during the solo pause) | yes |
 | `GeoAddToCounterAction.h` | `AddToCounter(Name, Delta)` on its encounter | no |
-| `GeoStartEncounterAction.h` | Starts (or restarts) another `AGeoEncounter` | no |
+| `GeoStartEncounterAction.h` | Starts another `AGeoEncounter` through its arrival reset (`StartAfterSkippingChain`: aborts the other running encounters, clears the left room's Cat line and quest card, replays the skipped chain, starts at step 0; `../CLAUDE.md`, "Arrival reset"). One already running starts over | no |
 | `GeoSetTeleporterOpenAction.h` | `SetOpen(bool)` on the referenced `AGeoTeleporter` (a room's exit / entry pad) | no |
 | `GeoActivateAbilityAction.h` | Activates `AbilityTag` on the boss of the referenced `AGeoArena` (a room's hidden caster, or a real boss) | yes |
 | `GeoCatLineAction.h` | `ShowCatLine(Line, OnEnded)` on the first local player's HUD; `bWaitForRespawn`: while that player is dead, shown on its `OnRevived`; finishes when the line ends (typed + read, or F twice, `HUD/Tutorial/CLAUDE.md`) | yes |
-| `GeoUnlockAbilityAction.h` | Grants the local player's class ability `AbilityTag` (`GiveClassAbility`), then `ShowAbilityPage`; nothing the second time. `OnSkipped`: grants, no page | no |
+| `GeoUnlockAbilityAction.h` | Grants the local player's class ability `AbilityTag` (`GiveClassAbility`); nothing the second time. Never opens the page. `OnSkipped` = `Execute` | no |
+| `GeoShowAbilityPageAction.h` | `ShowAbilityPage(AbilityTag)` on the local HUD; placed after the unlock's Cat line, so the page never pops before the Cat speaks (`Tutorial/Steps.md`, "Unlock rule"). No-op when skipped | no |
 | `GeoSpawnEnemiesAction.h` | Keeps `Count` of `EnemyClass` + `Setup` alive on the points tagged `PurposeTag` + `ArenaTag`: spawns them, replaces each dead one `RespawnDelay` s after its own death, where it died (0: never); `bKillOnStepExit` kills the living when the step is left | yes, until cancelled |
 | `GeoSpawnZoneAction.h` | Spawns one effect zone (inline effects, size, colours, attitude, team) on the point tagged `PurposeTag` + `ArenaTag`; expires it when the step is left | yes, until cancelled |
 | `GeoQuestCardAction.h` | Quest card on the local HUD: `Show` (title, max, `TimeLimitSeconds`: decorative countdown), `Count` (payload `Count`, or `Max` with `bShowMax`), `Hide` | no |
@@ -28,6 +29,8 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 - A rule's actions run to the end before it fires again (`../CLAUDE.md`): a quip rule ignores firings while its line is still on screen.
 - `OnCancel` (step left while the line shows) unbinds the callback only; the line stays on screen until it ends.
 - A death line waiting for the respawn (`bWaitForRespawn`) finishes after the respawn and the line.
+
+- `{Counter:<Name>}` in `Line` is replaced by that step counter of the action's encounter when the line shows (`GeoLib::ReplaceCounterTokens`; tested in `GeoTrinity.Encounter.CatLine`); the markup of `HUD/Tutorial` never sees it.
 
 ## GeoSpawnEnemiesAction
 - Never finishes on its own: last in its action list (later ones would wait forever); the step ends through another rule, which cancels it.

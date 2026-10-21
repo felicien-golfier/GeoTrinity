@@ -10,6 +10,7 @@ World actors.
 | `Projectile/` | Projectile base, pooled, shield burst, deployable spawner |
 | `GeoInteractableActor.h` | Base of actors receiving `FInteractableActorData` |
 | `GeoTargetPoint.h` | Tagged point (`TargetPoint.*` purpose + `Arena.*` arena tag) |
+| `GeoGemDrop.h` | `AGeoGemDrop`: a granted gem (3D tier solid) or shard thrown in a fountain, lying until a character steps on it, visual only; sounds on spawn and pickup → `Gem/CLAUDE.md` ("3D gems", "Drop sounds") |
 | `GeoCat.h` | `AGeoCat`: the Tutorial Cat in the world (`SKM_Cat` + `ABP_Cat`); orders: walk, roam, play a montage |
 
 ## GeoInteractableActor

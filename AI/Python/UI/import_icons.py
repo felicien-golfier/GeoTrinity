@@ -206,14 +206,24 @@ def shape_points(element):
 
 
 def parse_svg(path):
-    """(EGeoColor names, the root's first, the SVG's own colour as an (r, g, b) tuple or None, view size, strokes as
-    dicts, each with the index of its colour name)."""
+    """([EGeoColor name, own colour as an (r, g, b) tuple or None] per colour, the root's first; the SVG's first own
+    colour; view size; strokes as dicts, each with the index of its colour). Every Override shape painted in a
+    different colour gets its own entry, so an icon can wear several fixed colours."""
     root = ElementTree.parse(path).getroot()
     view_size = numbers(root.get("viewBox", "0 0 44 44"))[2]
     inherited = ["fill", "stroke", "stroke-width", "stroke-opacity", "fill-opacity", "stroke-dasharray",
                  "data-geo-color"]
-    color_names = [root.get("data-geo-color", "Override")]
+    colors = [[root.get("data-geo-color", "Override"), None]]
     strokes, own_color = [], None
+
+    def color_index(name, paint_color):
+        for index, (known_name, known_color) in enumerate(colors):
+            if known_name == name and (name != "Override" or known_color in (None, paint_color)):
+                if name == "Override":
+                    colors[index][1] = paint_color
+                return index
+        colors.append([name, paint_color])
+        return len(colors) - 1
 
     def walk(element, style):
         nonlocal own_color
@@ -227,16 +237,15 @@ def parse_svg(path):
             points, closed = shape
             filled = style.get("fill", "black") != "none"
             stroked = style.get("stroke", "none") != "none"
+            paint_color = None
             for paint in [style.get("stroke"), style.get("fill")]:
-                if own_color is None and paint and paint.startswith("#"):
-                    own_color = tuple(int(paint[i:i + 2], 16) / 255 for i in (1, 3, 5))
+                if paint_color is None and paint and paint.startswith("#"):
+                    paint_color = tuple(int(paint[i:i + 2], 16) / 255 for i in (1, 3, 5))
+            own_color = own_color or paint_color
             opacity = float(style.get("stroke-opacity" if stroked else "fill-opacity", 1)) * style["opacity"]
             dashes = numbers(style.get("stroke-dasharray", "")) if stroked else []
-            color_name = style.get("data-geo-color", "Override")
-            if color_name not in color_names:
-                color_names.append(color_name)
             strokes.append({
-                "color_index": color_names.index(color_name),
+                "color_index": color_index(style.get("data-geo-color", "Override"), paint_color),
                 "points": points, "closed": closed, "filled": filled,
                 "thickness": float(style.get("stroke-width", 1)) if stroked else 0.0,
                 "opacity": opacity,
@@ -246,7 +255,7 @@ def parse_svg(path):
             walk(child, style)
 
     walk(root, {})
-    return color_names, own_color, view_size, strokes
+    return colors, own_color, view_size, strokes
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -269,7 +278,7 @@ def srgb_to_linear(value):
 
 def build_icon(name, svg_path):
     import unreal
-    color_names, own_color, view_size, strokes = parse_svg(svg_path)
+    svg_colors, own_color, view_size, strokes = parse_svg(svg_path)
     asset_path = f"{ICON_FOLDER}/DA_Icon_{name}"
     icon = unreal.load_asset(asset_path) if unreal.EditorAssetLibrary.does_asset_exist(asset_path) else None
     if not icon:
@@ -279,12 +288,13 @@ def build_icon(name, svg_path):
         icon = unreal.AssetToolsHelpers.get_asset_tools().create_asset(f"DA_Icon_{name}", ICON_FOLDER, unreal.GeoIcon,
                                                                         factory)
     colors = []
-    for color_name in color_names:
+    for color_name, color_own in svg_colors:
         color = unreal.GeoColorParam()
         color.set_editor_property("color", getattr(unreal.GeoColor,
                                                    re.sub(r"(?<!^)(?=[A-Z])", "_", color_name).upper()))
-        if own_color:
-            color.set_editor_property("override_color", unreal.LinearColor(*[srgb_to_linear(c) for c in own_color], 1))
+        override = color_own if color_name == "Override" else own_color
+        if override:
+            color.set_editor_property("override_color", unreal.LinearColor(*[srgb_to_linear(c) for c in override], 1))
         colors.append(color)
     asset_guard.write(asset_path, icon, "color", colors[0])
     asset_guard.write(asset_path, icon, "secondary_colors", colors[1:])

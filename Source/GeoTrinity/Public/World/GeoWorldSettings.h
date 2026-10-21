@@ -29,4 +29,9 @@ public:
 	/** Class abilities this map does not grant at startup; an encounter grants them later (GeoUnlockAbilityAction). */
 	UPROPERTY(EditAnywhere, Category = "GeoTrinity", meta = (Categories = "Ability.Spell"))
 	FGameplayTagContainer LockedAbilityTags;
+
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(EditAnywhere, Category = "GeoTrinity")
+	FName StartingTutoRoomInEditor = "0";
+#endif
 };

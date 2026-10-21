@@ -10,6 +10,7 @@ Gems menu over `UGeoGemSubsystem` (`GeoTrinity/Public/Gem/CLAUDE.md`). Opened fr
 | `GeoGemForgeWidget.h` | Forge: tiers (select, break down free copies → shards), gem types with owned / free counts, shards → gems |
 | `GeoGemSocketButton.h` | Bare button drawn by its `UGeoGemGlyph`; says which socket it is on click |
 
+- Shard count (header, `ShardsFrame` key cap): `ShardIcon` = `DA_Icon_Gems_Shard`, the three-facet pink crystal of the design, 24 px, then the number and `SHARDS`.
 - Glyph drawing and colours: `Style/Glyph/`; gem polygons and highlight from theme `GemStyle`.
 
 ## Unequip and tier filter (Loadout page)

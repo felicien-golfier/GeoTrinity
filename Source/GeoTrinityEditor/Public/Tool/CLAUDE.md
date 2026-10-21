@@ -9,6 +9,7 @@
 | `GeoHudWidgetBuilderUtil.h` | Content-specific HUD tree builders composed from the generic ones |
 | `GeoAnimBuilderUtil.h` | Montage section layout / links (C++-only); rig / mesh rebuild; per-channel bone keys; AnimGraph slot layouts |
 | `GeoMaterialBuilderUtil.h` | Material-instance layer stack (static parameters) |
+| `GeoMeshBuilderUtil.h` | `ClearFastBuild`: static mesh fast-build flag (Python cannot write it); called by `AI/Python/Mesh/static_mesh_asset.py` only |
 | `GeoNiagaraBuilderUtil.h` | Niagara emitter stack ops; `FunctionName` addresses a module or dynamic input by its rapid-iteration name |
 
 ## Anim builder — bone channel keys

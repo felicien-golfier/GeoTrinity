@@ -19,6 +19,7 @@ FOLDERS = [
     ("SourceArt/Audio/HexBossIntro", "/Game/Art/SFX/Enemy/HexBoss"),
     ("SourceArt/Audio/Death", "/Game/Art/SFX/Death"),
     ("SourceArt/Audio/Ninja", "/Game/Art/SFX/Ninja"),
+    ("SourceArt/Audio/Gem", "/Game/Art/SFX/Gem"),
     ("SourceArt/Audio/MenuMusic", "/Game/Art/SFX/Music"),
 ]
 FILE_PREFIX = "SFX_"

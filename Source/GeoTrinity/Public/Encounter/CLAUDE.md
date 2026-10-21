@@ -42,8 +42,15 @@ AGeoEncounter
 - `bRepeat` false: the rule fires once per visit of the step, then its trigger is disarmed. True: every passing firing runs the actions.
 - A rule ignores firings while its own actions are still running; no queue, no overlapping runs of one instance.
 
+## Arrival reset
+Every chain start (`GeoStartEncounterAction`, `Action/CLAUDE.md`; the jump below) lands the world in the state the target encounter expects, whatever the previous room was doing: a portal never waits for, or lets run on, the room left behind.
+- `AGeoEncounter::StartAfterSkippingChain()` order: (1) `Abort()` every other encounter still running; (2) clear the presentation of the left room (`HideCatLine`, `HideQuestCard` on the local HUD, `HUD/Interface/CLAUDE.md`); (3) skip replay of the chain before the target (below); (4) `Start()`.
+- `Abort()` (server, Blueprint-callable): stops the current step without `OnExit` (disarm, then cancel runs: spawns killed, zones recalled, `OnCancel` of every action), back to `Idle`, no `OnCompleted`, no later step change until `Start()`. Same one-change-at-a-time rule as `Restart()`: asked from inside its own call (the encounter whose rule runs the start action), it applies when the call returns.
+- Skip replay then rebuilds what the target needs: abilities unlocked, movement lock / unlock pairs netted (the one lock makes the aborted room's lock harmless: lock while locked does nothing, the replayed unlock frees). A player who took the portal early gets what the skipped part would have given.
+- Presentation of a skipped part (lines, pads, spawns, menus) is never replayed (`OnSkipped` no-op); what a room needs of the previous one beyond abilities and locks is set by the target's own `OnEnter`.
+
 ## Jump start
-Start a chain of encounters at a later one, as if the earlier ones had been played (tutorial: `AI/Tutorial/Flow.md`, "Jump to a room").
+Start a chain of encounters at a later one, as if the earlier ones had been played (tutorial: `AI/Tutorial/Flow.md`, "Jump to a room"). Same mechanism as the arrival reset: the world-URL jump is a reset whose target comes from the portal instead of a start action.
 - `AGeoEncounter::JumpStart`: optional level reference to the `APlayerStart` of its room. Target (`FindJumpTarget()`) from the world URL's portal: a number N = the Nth encounter along the chain (0 = the start encounter); else the encounter whose `JumpStart->PlayerStartTag` equals it.
 - With a target, no `bStartOnBeginPlay` start; the target's `BeginPlay` moves the first local pawn onto its `JumpStart` (a number matches no tag, so the engine spawned it on the default start; `GameClasses/Match/CLAUDE.md`, "Player starts"), then calls its `StartAfterSkippingChain()`. No target (no portal, no match, number past the chain's end) → normal start.
 - Chain: from the `bStartOnBeginPlay` encounter (`FindChainStart()`), next = the `Target` of the first `GeoStartEncounterAction` in its steps (any action list), until the target. Target not on the chain → log, start it with nothing skipped. The walk lives on the encounter: it reads other encounters' steps.

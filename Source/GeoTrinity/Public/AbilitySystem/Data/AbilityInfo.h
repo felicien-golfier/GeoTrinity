@@ -17,10 +17,10 @@ class UInputAction;
 
 namespace GeoDescription
 {
-/** Text with every {Token} replaced by its live value on AbilityCDO, or on UGameDataSettings for a name the ability
- * lacks (token syntax: AI/AbilityDescriptions.md). Shared by ability descriptions and gem effect texts. */
-GEOTRINITY_API FString ResolveTokens(FString const& Text, UGeoGameplayAbility const& AbilityCDO, int32 AbilityLevel,
-									 bool bRichTextValues);
+	/** Text with every {Token} replaced by its live value on AbilityCDO, or on UGameDataSettings for a name the ability
+	 * lacks (token syntax: AI/AbilityDescriptions.md). Shared by ability descriptions and gem effect texts. */
+	GEOTRINITY_API FString ResolveTokens(FString const& Text, UGeoGameplayAbility const& AbilityCDO, int32 AbilityLevel,
+										 bool bRichTextValues);
 } // namespace GeoDescription
 
 /** One cell of an ability's stat grid: what is measured and its resolved value. */
@@ -51,7 +51,7 @@ struct FGameplayAbilityInfo
 
 	/**
 	 * Returns the description text with every {Token} replaced by the matching live value from the ability CDO.
-	 * The text comes from the [AbilityTag] section of Content/Data/AbilityDescriptions.txt when present
+	 * The text comes from the [AbilityTag] section of Data/AbilityDescriptions.txt when present
 	 * (editable plain-text file, re-read on every call), falling back to the Description field otherwise.
 	 * Supported tokens: Cooldown, FireDelay, Damage/Heal/Shield (summed from the ability's effect data),
 	 * Effects (one line per effect entry: damage/heal/shield, buffs with magnitude and duration, statuses
@@ -140,7 +140,8 @@ public:
 	/** Re-reads all ability CDO asset tags and syncs description text from the plain-text file after loading. */
 	virtual void PostLoad() override;
 #if WITH_EDITOR
-	/** Pushes every entry's Description back to the plain-text file whenever a Description is edited in the Details panel. */
+	/** Pushes every entry's Description back to the plain-text file whenever a Description is edited in the Details
+	 * panel. */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
@@ -168,12 +169,14 @@ public:
 	TArray<FGameplayAbilityInfo> FindAbilityInfoForListOfTag(TArray<FGameplayTag> const& AbilityTags,
 															 bool bLogIfNotFound = false) const;
 
-	/** Re-reads every ability CDO's AssetTags and fills AbilityTag fields. Call from Python after modifying ability arrays. */
+	/** Re-reads every ability CDO's AssetTags and fills AbilityTag fields. Call from Python after modifying ability
+	 * arrays. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	void PopulateAbilityTags();
 
 #if WITH_EDITOR
-	/** Pulls every entry's Description from the plain-text file, discarding unsaved in-asset edits (external-edit merge). */
+	/** Pulls every entry's Description from the plain-text file, discarding unsaved in-asset edits (external-edit
+	 * merge). */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	void ReloadDescriptionsFromDisc();
 #endif

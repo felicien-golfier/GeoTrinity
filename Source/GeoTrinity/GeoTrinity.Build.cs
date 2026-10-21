@@ -47,6 +47,9 @@ public class GeoTrinity : ModuleRules
 		// UGeoGameInstance's server-list self-check queries Steam's lobby list directly.
 		AddEngineThirdPartyPrivateStaticDependencies(Target, "Steamworks");
 
+		// Out-of-Content data read at runtime by FPaths::ProjectDir() (AI/AbilityDescriptions.md), staged next to the exe.
+		RuntimeDependencies.Add("$(ProjectDir)/Data/AbilityDescriptions.txt");
+
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 

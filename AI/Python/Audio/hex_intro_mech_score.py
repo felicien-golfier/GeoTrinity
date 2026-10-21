@@ -10,8 +10,8 @@ first notify starts it and the montage's curves bend it to the intro's speed, so
 joined there by the outer ring's tick-tock.
 
 Run outside the editor: uv run AI/Python/Audio/hex_intro_mech_score.py [ship]
-Needs AI/Audio/BoneMotion/Intro.json (AI/Python/Anim/Boss/dump_bone_motion.py). Writes the kit's sounds, a
-stem per continuous sound, the fight whir loop, cues.json — every notify AI/Python/Anim/Boss/boss_montage_sounds.py puts
+Needs AI/Audio/BoneMotion/Intro.json (AI/Python/Boss/Anim/dump_bone_motion.py). Writes the kit's sounds, a
+stem per continuous sound, the fight whir loop, cues.json — every notify AI/Python/Boss/Anim/boss_montage_sounds.py puts
 on the montage — and loop.json — the fight loop's layers and the curves bending them — into DRAFT, or into SourceArt
 with `ship`. The whole intro mixed, once per hum version, always goes to DRAFT, for listening: the Loop version as
 Unreal plays it, curves and pitch clamp included, running on into the fight.

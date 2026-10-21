@@ -177,8 +177,8 @@ static bool ResolveDescriptionToken(FString const& Token, UGeoGameplayAbility co
 		{
 			if (FGameplayEffectData const* Effect = Data.GetPtr<FGameplayEffectData>())
 			{
-				OutValue = FormatScalableRange(
-					Token == TEXT("EffectDuration") ? Effect->Duration : Effect->Magnitude, Format);
+				OutValue =
+					FormatScalableRange(Token == TEXT("EffectDuration") ? Effect->Duration : Effect->Magnitude, Format);
 				return true;
 			}
 		}
@@ -219,13 +219,13 @@ static bool ResolveDescriptionToken(FString const& Token, UGeoGameplayAbility co
 
 static FString GetDescriptionsFilePath()
 {
-	return FPaths::ProjectContentDir() / TEXT("Data/AbilityDescriptions.txt");
+	return FPaths::ProjectDir() / TEXT("Data/AbilityDescriptions.txt");
 }
 
 /**
- * Content/Data/AbilityDescriptions.txt parsed into section header ("[AbilityTag]") → body. Lines starting with # are
- * comments. Re-parsed whenever the file's timestamp changes, so an edit still shows live while a description list
- * built for every ability at once reads the file once instead of once per entry.
+ * Data/AbilityDescriptions.txt parsed into section header ("[AbilityTag]") → body. Lines starting
+ * with # are comments. Re-parsed whenever the file's timestamp changes, so an edit still shows live while a description
+ * list built for every ability at once reads the file once instead of once per entry.
  */
 static TMap<FString, FString> const& GetDescriptionsBySection()
 {
@@ -288,9 +288,10 @@ static FString LoadDescriptionFromFile(FGameplayTag const& AbilityTag)
 
 #if WITH_EDITOR
 /**
- * Writes Description as the body of the [AbilityTag] section of Content/Data/AbilityDescriptions.txt, replacing the
- * existing section body when present (preserving every other section and the header comments) or appending a new
- * section otherwise. Editor-only: keeps the plain-text source of truth in sync when the field is edited in the asset.
+ * Writes Description as the body of the [AbilityTag] section of Data/AbilityDescriptions.txt,
+ * replacing the existing section body when present (preserving every other section and the header comments) or
+ * appending a new section otherwise. Editor-only: keeps the plain-text source of truth in sync when the field is edited
+ * in the asset.
  */
 static void WriteDescriptionToFile(FGameplayTag const& AbilityTag, FString const& Description)
 {
@@ -454,8 +455,8 @@ TArray<FGeoAbilityStat> FGameplayAbilityInfo::GetResolvedStats(int32 AbilityLeve
 	{
 		TArray<FString> Cells;
 		Line.ParseIntoArray(Cells, TEXT("|"));
-		if (ensureMsgf(Cells.Num() == 2, TEXT("Ability %s stat line '%s' is not '| LABEL | value'"), *AbilityDisplayName,
-					   *Line))
+		if (ensureMsgf(Cells.Num() == 2, TEXT("Ability %s stat line '%s' is not '| LABEL | value'"),
+					   *AbilityDisplayName, *Line))
 		{
 			Stats.Add({Cells[0].TrimStartAndEnd(),
 					   ResolveTokens(Cells[1].TrimStartAndEnd(), *this, AbilityLevel, bRichTextValues)});

@@ -5,9 +5,34 @@
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/AudioComponent.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "Tool/UGeoGameplayLibrary.h"
+
+namespace
+{
+	/** True when SoundInstigator belongs to a player of another machine: a player's avatar, or anything its abilities
+	 * spawned (owned by its PlayerState, the ASC owner, through the actor owner chain). Anything no player owns (a boss
+	 * and what it spawns, a drop, a world actor) counts as the instigator machine's, on every machine. */
+	bool IsOtherPlayersSound(AActor const* SoundInstigator)
+	{
+		for (AActor const* Actor = SoundInstigator; Actor; Actor = Actor->GetOwner())
+		{
+			APawn const* Pawn = Cast<APawn>(Actor);
+			if (APlayerState const* PlayerState = Pawn ? Pawn->GetPlayerState() : Cast<APlayerState>(Actor))
+			{
+				// Another machine's player has no PlayerController here
+				APlayerController const* Controller = PlayerState->GetPlayerController();
+				return !Controller || !Controller->IsLocalController();
+			}
+		}
+
+		return false;
+	}
+} // namespace
 
 bool UGeoSoundRowLibrary::ShouldPlay(UObject const* WorldContextObject, FGeoSoundEntry const& Entry,
 									 AActor* SoundInstigator)
@@ -22,16 +47,16 @@ bool UGeoSoundRowLibrary::ShouldPlay(UObject const* WorldContextObject, FGeoSoun
 		return true;
 	}
 
-	uint8 const MachineBit = GeoLib::IsLocalPlayerAvatar(SoundInstigator) ? GeoSoundAudienceMask::InstigatorMachine
-																		  : GeoSoundAudienceMask::OtherMachines;
+	uint8 const MachineBit = IsOtherPlayersSound(SoundInstigator) ? GeoSoundAudienceMask::OtherMachines
+																  : GeoSoundAudienceMask::InstigatorMachine;
 	return (Entry.Audience & MachineBit) != 0;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 float UGeoSoundRowLibrary::GetVolume(FGeoSoundEntry const& Entry, AActor* SoundInstigator, int32 const AbilityLevel)
 {
-	bool const bInstigatorMachine = !IsValid(SoundInstigator) || GeoLib::IsLocalPlayerAvatar(SoundInstigator);
-	float const Volume = bInstigatorMachine ? Entry.Volume : Entry.Volume * Entry.OtherMachinesVolumeMultiplier;
+	float const Volume =
+		IsOtherPlayersSound(SoundInstigator) ? Entry.Volume * Entry.OtherMachinesVolumeMultiplier : Entry.Volume;
 	return Volume
 		* GeoASLib::SampleAttributeCurve(Entry.VolumeMultiplierCurve, Entry.VolumeAttribute,
 										 Entry.bVolumeFromAbilityLevel, SoundInstigator, AbilityLevel);
@@ -39,7 +64,7 @@ float UGeoSoundRowLibrary::GetVolume(FGeoSoundEntry const& Entry, AActor* SoundI
 
 // ---------------------------------------------------------------------------------------------------------------------
 float UGeoSoundRowLibrary::GetPitch(FGeoSoundEntry const& Entry, AActor* SoundInstigator, int32 const AbilityLevel,
-									 float const PitchVariation)
+									float const PitchVariation)
 {
 	float const Pitch = GeoASLib::SampleAttributeCurve(Entry.PitchCurve, Entry.PitchAttribute,
 													   Entry.bPitchFromAbilityLevel, SoundInstigator, AbilityLevel);
@@ -61,6 +86,20 @@ void UGeoSoundRowLibrary::PlaySoundEntry2D(UObject const* WorldContextObject, FG
 		UGameplayStatics::PlaySound2D(WorldContextObject, Entry.Sound, GetVolume(Entry, SoundInstigator, AbilityLevel),
 									  GetPitch(Entry, SoundInstigator, AbilityLevel, RollPitchVariation(Entry)),
 									  Entry.StartTime);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoSoundRowLibrary::PlaySoundEntryAtLocation(UObject const* WorldContextObject, FGeoSoundEntry const& Entry,
+												   FVector const& Location, AActor* SoundInstigator,
+												   int32 const AbilityLevel)
+{
+	if (ShouldPlay(WorldContextObject, Entry, SoundInstigator))
+	{
+		UGameplayStatics::PlaySoundAtLocation(WorldContextObject, Entry.Sound, Location, FRotator::ZeroRotator,
+											  GetVolume(Entry, SoundInstigator, AbilityLevel),
+											  GetPitch(Entry, SoundInstigator, AbilityLevel, RollPitchVariation(Entry)),
+											  Entry.StartTime);
 	}
 }
 

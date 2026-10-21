@@ -2,26 +2,16 @@
 
 #pragma once
 
+#include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpot.h"
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "CoreMinimal.h"
 #include "Tool/Visual/GeoColor.h"
 
-class AGeoPillar;
 class UMaterialParameterCollection;
 class UNiagaraComponent;
 class UNiagaraSystem;
 
 #include "DevastatingWavePattern.generated.h"
-
-USTRUCT()
-struct FPillarWaveData
-{
-	GENERATED_BODY()
-
-	FVector2D Location;
-	float Radius = 0.f;
-	TWeakObjectPtr<AGeoPillar> Pillar;
-};
 
 /**
  * Expanding radial wave fired from the boss's center position.
@@ -40,8 +30,9 @@ public:
 	UDevastatingWavePattern();
 	/** Spawns the masked AOE Niagara component deactivated — the pattern instance is reused across activations. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
-	/** Clears wave pillar data and resets all MPC pillar mask slots to the unused sentinel.
-	 * Called at the start of both InitPattern and StartPattern so stale data from a previous activation never bleeds in. */
+	/** Clears the wave's pillar spots and resets all MPC mask slots to the unused sentinel.
+	 * Called at the start of both InitPattern and StartPattern so stale data from a previous activation never bleeds
+	 * in. */
 	void ClearData();
 
 protected:
@@ -49,9 +40,9 @@ protected:
 	 * the wind-up phase (skipped on the "too late" path when TravelTime >= StartDelay). */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
-	/** Pre-populates the MPC pillar-mask slots with all pillars currently visible from the wave origin so safe zones
-	 * appear on the static telegraph before the wave starts expanding. */
-	void AddAllPillarsToVfxMask();
+	/** Adds the pillars within MaxDistance of the wave origin (0 = all) that are not spots yet, and uploads the spots
+	 * to the VFX mask. Called with all pillars in the wind-up so safe zones appear on the static telegraph. */
+	void AddPillarSpots(float MaxDistance);
 	/** Resets wave tracking data and MPC pillar slots via ClearData(), then activates the real expanding-wave AOE. */
 	virtual void StartPattern() override;
 	/** Activates the AOE VFX component in telegraph mode: full MaxRadius extent at AOEColor, grow time =
@@ -72,10 +63,6 @@ protected:
 	virtual void EndPattern(bool bForceStop = false) override;
 
 private:
-	/** True when a pillar the wave reached stands between the wave origin and Location. */
-	bool IsBehindPillar(FVector2D Location) const;
-	/** Writes the last added PillarsWaveData entry into the next mask MPC pillar slot. */
-	void AddPillarToVfxMask();
 	/** Positions the AOE component at the wave origin, pushes its user params and activates it. */
 	void ActivateAOEVfx() const;
 	/** Draws the wave front (red) and inner annulus (green) circles, plus each pillar's safe-zone shadow.
@@ -117,5 +104,7 @@ private:
 
 	FTimerHandle TelegraphBlinkTimerHandle;
 
-	TArray<FPillarWaveData> PillarsWaveData;
+	/** The pillars the wave has reached, as spots (Source = the pillar): the hit test, the mask and the end-of-wave
+	 * kill read this one list. */
+	TArray<FSafeSpot> PillarSpots;
 };

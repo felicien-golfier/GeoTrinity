@@ -95,7 +95,7 @@ material scripts build their graphs through the toolkit `AI/Python/Material/mate
 - A mask image with a transparent outside carries arbitrary colour under zero alpha, so the mask is its colour times
   its alpha.
 
-`AI/Python/Material/make_class_badge_materials.py` projects line masks through the same pixel frame a procedural
+`AI/Python/Badge/make_class_badge_materials.py` projects line masks through the same pixel frame a procedural
 mesh was extruded from; `AI/Python/Asset/import_textures.py` imports the masks with sRGB off.
 
 ## Dry-running a build script

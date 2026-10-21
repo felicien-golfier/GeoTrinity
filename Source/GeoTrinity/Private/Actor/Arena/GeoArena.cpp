@@ -2,19 +2,14 @@
 
 #include "Actor/Arena/GeoArena.h"
 
-#include "AbilitySystem/Abilities/Triangle/GeoReloadAbility.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Arena/GeoArenaBarrier.h"
-#include "Actor/Deployable/BuffPickup/GeoBuffPickup.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/Component/FX/GeoLoopSoundComponent.h"
-#include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Characters/EnemyCharacter.h"
-#include "Characters/PlayableCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
@@ -28,6 +23,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemComponent.h"
+#include "Gem/GeoGemMeshes.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/DataValidation.h"
@@ -166,6 +162,20 @@ AEnemyCharacter* AGeoArena::SpawnAdd(TSubclassOf<AEnemyCharacter> const AddClass
 	}
 
 	return Add;
+}
+
+TArray<AEnemyCharacter const*> AGeoArena::GetLiveAdds() const
+{
+	TArray<AEnemyCharacter const*> LiveAdds;
+	for (AEnemyCharacter const* const Add : Adds)
+	{
+		if (IsValid(Add) && !Add->IsDead())
+		{
+			LiveAdds.Add(Add);
+		}
+	}
+
+	return LiveAdds;
 }
 
 void AGeoArena::DestroyAdds()
@@ -362,7 +372,7 @@ void AGeoArena::RecordAttempt()
 	GrantGemRewards(Entry);
 }
 
-void AGeoArena::GrantGemRewards(FGeoAttemptEntry const& Entry) const
+void AGeoArena::GrantGemRewards(FGeoAttemptEntry const& Entry)
 {
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 	if (!Catalog)
@@ -371,16 +381,89 @@ void AGeoArena::GrantGemRewards(FGeoAttemptEntry const& Entry) const
 	}
 
 	FRandomStream Stream(FMath::Rand());
+	FGeoGemReward const KillLoot =
+		bBossDefeated ? Catalog->MakeKillLoot(BossLoot, BossType, Entry.Difficulty, Stream) : FGeoGemReward();
 	for (APlayerState const* PlayerState : GetWorld()->GetGameStateChecked<AGeoGameState>()->PlayerArray)
 	{
 		if (AGeoPlayerState const* GeoPlayerState = Cast<AGeoPlayerState>(PlayerState))
 		{
-			FGeoGemReward Reward =
-				bBossDefeated ? Catalog->MakeKillLoot(BossLoot, BossType, Entry.Difficulty, Stream) : FGeoGemReward();
+			FGeoGemReward Reward = KillLoot;
 			Reward.PlayerClass = GeoPlayerState->GetPlayerClass();
 			Reward.Xp = Catalog->GetXp(BossType, 1.f - Entry.BossHealthRatio, Entry.Difficulty);
 			GeoPlayerState->GetGemComponent()->GrantReward(Reward);
 		}
+	}
+
+	if (bBossDefeated)
+	{
+		StartFountain(KillLoot);
+	}
+}
+
+void AGeoArena::StartFountain(FGeoGemReward const& Loot)
+{
+	FountainQueue.Reset();
+	FountainThrown = 0;
+	for (FGeoGemStack const& Stack : Loot.Gems)
+	{
+		for (int32 Copy = 0; Copy < Stack.Count; ++Copy)
+		{
+			FountainQueue.Add({EGeoGemDropKind::Gem, Stack.Id, 0, FMath::Rand()});
+		}
+	}
+
+	int32 const ShardDrops = FMath::Min(FMath::DivideAndRoundUp(Loot.Shards, ShardsPerDrop), MaxShardDrops);
+	for (int32 Drop = 0; Drop < ShardDrops; ++Drop)
+	{
+		FountainQueue.Add(
+			{EGeoGemDropKind::Shard, NAME_None, FMath::RandRange(0, GeoGem::ShardVariantCount - 1), FMath::Rand()});
+	}
+
+	for (int32 Index = FountainQueue.Num() - 1; Index > 0; --Index)
+	{
+		FountainQueue.Swap(Index, FMath::RandRange(0, Index));
+	}
+
+	if (!FountainQueue.IsEmpty())
+	{
+		SpawnFountainDrop();
+	}
+}
+
+float AGeoArena::GetFountainThrowTime(int32 const ThrowIndex, int32 const ThrowCount) const
+{
+	float Time = 0.f;
+	if (ThrowCount > 1)
+	{
+		Time = FountainDuration * FMath::Pow(static_cast<float>(ThrowIndex) / (ThrowCount - 1), FountainFrontLoad);
+	}
+
+	return Time;
+}
+
+void AGeoArena::SpawnFountainDrop()
+{
+	FGeoGemDropSpec const Spec = FountainQueue.Pop();
+	++FountainThrown;
+	if (!FountainQueue.IsEmpty())
+	{
+		int32 const ThrowCount = FountainThrown + FountainQueue.Num();
+		GetWorld()->GetTimerManager().SetTimer(FountainTimer, this, &AGeoArena::SpawnFountainDrop,
+											   GetFountainThrowTime(FountainThrown, ThrowCount)
+												   - GetFountainThrowTime(FountainThrown - 1, ThrowCount));
+	}
+
+	float const Direction = FMath::FRandRange(0.f, 2.f * PI);
+	float const SideSpeed = FMath::FRandRange(FountainSideSpeed.Min, FountainSideSpeed.Max);
+	float const UpSpeed = FountainUpSpeed * FMath::FRandRange(1.f - FountainUpSpread, 1.f + FountainUpSpread);
+	FVector const Velocity(FMath::Cos(Direction) * SideSpeed, FMath::Sin(Direction) * SideSpeed, UpSpeed);
+	FTransform const Transform(FRotator(0.f, FMath::FRandRange(0.f, 360.f), 0.f), LootOrigin);
+
+	AGeoGemDrop* const Drop = GetWorld()->SpawnActorDeferred<AGeoGemDrop>(GemDropClass, Transform);
+	if (ensureMsgf(Drop, TEXT("%s: failed to spawn a gem drop"), *GetName()))
+	{
+		Drop->Init(Spec, Velocity);
+		Drop->FinishSpawning(Transform);
 	}
 }
 
@@ -464,11 +547,7 @@ float AGeoArena::PlayIntro()
 
 void AGeoArena::OnMatchStateChanged(FName NewMatchState, FName PreviousMatchState)
 {
-	if (NewMatchState == MatchState::InProgress)
-	{
-		StopLoot();
-	}
-	else if (PreviousMatchState == MatchState::InProgress)
+	if (NewMatchState != MatchState::InProgress && PreviousMatchState == MatchState::InProgress)
 	{
 		EndFight();
 	}
@@ -579,112 +658,7 @@ void AGeoArena::OnBossDefeated()
 	bBossDefeated = true;
 	DestroyAdds();
 
-	Loot();
 	// Next tick: this fires from inside the killing blow, which still has to be counted in the fight's combat stats.
 	GetWorld()->GetTimerManager().SetTimerForNextTick(GetWorld()->GetGameStateChecked<AGeoGameState>(),
 													  &AGeoGameState::RequestWaitingToStart);
-}
-
-void AGeoArena::Loot()
-{
-	if (!GeoLib::IsServer(this))
-	{
-		return;
-	}
-
-	// Resolve the Blueprint-derived reload ability CDO that owns the pickup config (class, buff pool, color palette)
-	// once for the whole shower. The ability catalog is keyed by the Spell AbilityTag, which has no native constant,
-	// so find the entry by class.
-	LootReloadCDO = nullptr;
-	LootReloadTag = FGameplayTag();
-	if (UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo())
-	{
-		for (FGameplayAbilityInfo const& Info : AbilityInfo->GetAllAbilityInfos())
-		{
-			if (Info.AbilityClass && Info.AbilityClass->IsChildOf(UGeoReloadAbility::StaticClass()))
-			{
-				LootReloadCDO = Info.AbilityClass->GetDefaultObject<UGeoReloadAbility>();
-				LootReloadTag = Info.AbilityTag;
-				break;
-			}
-		}
-	}
-	if (!ensureMsgf(LootReloadCDO && LootReloadCDO->BuffPickupClass,
-					TEXT("%hs: no reload ability with a BuffPickupClass registered in AbilityInfo"), __FUNCTION__))
-	{
-		return;
-	}
-
-	GetWorld()->GetTimerManager().SetTimer(LootTimer, this, &AGeoArena::SpawnLootBurst, LootSpawnInterval, true);
-}
-
-void AGeoArena::StopLoot()
-{
-	GetWorld()->GetTimerManager().ClearTimer(LootTimer);
-	for (TWeakObjectPtr<UGeoDeployableManagerComponent> const& Manager : LootBoostedManagers)
-	{
-		if (UGeoDeployableManagerComponent* DeployableManager = Manager.Get())
-		{
-			DeployableManager->RemoveDeployableSlot(LootPickupClass);
-		}
-	}
-	LootBoostedManagers.Empty();
-}
-
-void AGeoArena::SpawnLootBurst()
-{
-	TArray<TInstancedStruct<FEffectData>> const BuffEffects = LootReloadCDO->GetEffectDataArray();
-
-	// The pickup needs a live player as Owner: its ASC is the effect source and drives the Friendly attitude check.
-	APlayableCharacter* PayloadOwner = nullptr;
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		PayloadOwner = It->IsValid() ? Cast<APlayableCharacter>((*It)->GetPawn()) : nullptr;
-		if (IsValid(PayloadOwner))
-		{
-			break;
-		}
-	}
-	if (BuffEffects.IsEmpty() || !IsValid(PayloadOwner))
-	{
-		return;
-	}
-
-	// The pickups register on PayloadOwner's deployable manager; lift its cap for the shower so pickups
-	// don't expire each other. Restored in StopLoot when the next fight starts.
-	if (UGeoDeployableManagerComponent* DeployableManager =
-			PayloadOwner->GetComponentByClass<UGeoDeployableManagerComponent>())
-	{
-		DeployableManager->SetDeployableInfinitCount(LootReloadCDO->BuffPickupClass);
-		LootBoostedManagers.AddUnique(DeployableManager);
-		LootPickupClass = LootReloadCDO->BuffPickupClass;
-	}
-
-	FAbilityPayload Payload;
-	Payload.Origin = FVector2D(LootOrigin);
-	Payload.ServerSpawnTime = GetWorld()->GetTimeSeconds();
-	Payload.AbilityTag = LootReloadTag;
-	Payload.SourceOwner = PayloadOwner;
-	Payload.SourceAvatar = PayloadOwner;
-
-	FTransform const SpawnTransform{LootOrigin};
-	for (int32 PickupIndex = 0; PickupIndex < LootPickupsPerBurst; ++PickupIndex)
-	{
-		// Server-only spawning of replicated actors — no client prediction, so plain RNG is fine here.
-		float const Angle = FMath::FRandRange(0.f, 2.f * PI);
-		float const Radius = LootMaxRadius * FMath::Sqrt(FMath::FRand()); // sqrt → uniform over the disc
-		float const PowerScale = FMath::FRandRange(0.3f, 1.f);
-		Payload.Seed = FMath::Rand();
-		int32 const BuffIndex = Payload.Seed % BuffEffects.Num();
-
-		FBuffPickupData PickupData;
-		GeoASLib::FillDeployableData(PickupData, Payload, BuffEffects, FDeployableDataParams());
-		PickupData.EffectDataArray = {BuffEffects[BuffIndex]};
-		PickupData.BuffIndex = BuffIndex;
-		PickupData.PowerScale = PowerScale;
-		PickupData.Level = FMath::RoundToInt32(PowerScale * 10.f);
-		PickupData.TargetLocation = LootOrigin + FVector{FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f};
-
-		GeoASLib::FullySpawnDeployable(LootReloadCDO->BuffPickupClass, PickupData, SpawnTransform);
-	}
 }

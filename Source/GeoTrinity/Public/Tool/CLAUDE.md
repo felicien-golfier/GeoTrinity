@@ -17,4 +17,5 @@
 - `GetServerTime(...)`: network-approximated; never for local client timing (use `GetWorld()->GetTimeSeconds()`).
 - `GetPerceivedServerTime(Actor)`: target's own time for lag compensation (remote player = last processed move stamp, clamped to `MaxLatencyCompensation`).
 - `GetTargetPoints(World, PurposeTag, ArenaTag)`, `GetAlivePlayers(World)`, `TeleportPlayersToTargetPoints(..., ExemptZoneName)`, `TriggerCameraShake` (local), `GetColorForObject`, `ArbitraryCharacterZ = 50`.
+- `ReplaceCounterTokens(Text, Encounter)`: each `{Counter:<Name>}` becomes that step counter's value; any text that may carry the token calls it (`GeoCatLineAction`).
 - Editor builders (StateTree/Widget) live in `GeoTrinityEditor`.

@@ -20,7 +20,7 @@ Read `AI/CodingStyle.md` first.
 - Slate has no curves in a simple painter: tessellate the quads / rounded rect into polygons (`FSlateDrawElement::MakeLines` / a convex fan through `MakeCustomVerts`, or `FSlateBrush` rounded box for the rect)
 
 ## Editor / Blueprint (by hand or script)
-- [x] `WBP_CatLine` (`AI/Python/UI/tutorial_hud.py`, `AI/UI.md` hand-edit protection): add `CatFace` left of `LineText` in a horizontal box, square ~56 px, name label "CAT" above the line (theme role like the Board's `.who`), panel brush dark translucent + 1 px Base border (not done: the frame is still `DA_Frame_Panel`)
+- [x] `WBP_CatLine` (`AI/Python/Tutorial/UI/tutorial_hud.py`, `AI/UI.md` hand-edit protection): add `CatFace` left of `LineText` in a horizontal box, square ~56 px, name label "CAT" above the line (theme role like the Board's `.who`), panel brush dark translucent + 1 px Base border (not done: the frame is still `DA_Frame_Panel`)
 - [x] Palette defaults on `CatFace`: Base = the hex boss colour (placeholder = Board `--boss` #ff5a3c until the exact boss slot is chosen, `AI/Pending/Tutorial.md` open design "Cat palette"), Shade ≈ 55 % value, Ink ≈ 12 % value, Light ≈ 85 % toward white
 - [ ] Reconcile with the user: confirm the shades look right next to the real hex boss
 
@@ -28,5 +28,5 @@ Read `AI/CodingStyle.md` first.
 - [x] none headless for the paint; `GeoTrinityUI` test of the pure motion curves if they live in a pure helper (blink / ear / mouth value at time t): `GeoTrinityUI.Tutorial.CatFaceMotion`
 
 ## Verify
-- [ ] `Tools\Build_Editor.bat` (editor closed, `GEO_NO_PAUSE=1`), `Tools\Run_Tests.bat GeoTrinityUI.Tutorial`
+- [x] `Tools\Build_Editor.bat` (editor closed, `GEO_NO_PAUSE=1`), `Tools\Run_Tests.bat GeoTrinityUI` (2026-10-21: 4/4)
 - [ ] Look: user checks in game / bridge probe `Python/Runtime/pie_layout_audit.py`; no real-click PIE unless asked

@@ -2,7 +2,7 @@
 
 Research notes (2026-10-06) on writing and running Unreal automation tests for GeoTrinity, so an agent can write
 a test, run it, read the failures and fix them in a loop. **Status:** option A (headless runner) is set up:
-`Tools\Run_Tests.bat`. Tests so far: `Source/GeoTrinity/Private/Tests/GeoGemTests.cpp`, `GeoAbilityReadyTests.cpp`, `GeoIncomingDamageTests.cpp`, `GeoEncounterTests.cpp`, `GeoVoidDeathTests.cpp`, `GeoTutorialTests.cpp`, `GeoTestEnemy.h`, `GeoTestDeployable.h`, `GeoTestEncounter.h`, `GeoTestWorld.h` (`CreateTestWorld` / `DestroyTestWorld`) (same folder).
+`Tools\Run_Tests.bat`. Tests so far: `Source/GeoTrinity/Private/Tests/GeoGemTests.cpp`, `GeoAbilityReadyTests.cpp`, `GeoIncomingDamageTests.cpp`, `GeoEncounterTests.cpp`, `GeoVoidDeathTests.cpp`, `GeoTutorialTests.cpp`, `GeoPatternTests.cpp`, `GeoTestEnemy.h`, `GeoTestDeployable.h`, `GeoTestEncounter.h`, `GeoTestWorld.h` (`CreateTestWorld` / `DestroyTestWorld`) (same folder).
 
 ## Test layers
 

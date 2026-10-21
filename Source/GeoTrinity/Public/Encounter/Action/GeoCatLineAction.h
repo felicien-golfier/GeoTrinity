@@ -10,9 +10,9 @@
 class AGeoCharacter;
 
 /**
- * Says Line, the Cat's text in the Tutorial Board markup (**bold**, ~~shake~~, {Key:<InputTag>}), on the local
- * player's HUD. With bWaitForRespawn, a line fired while that player is dead shows once it is revived. Latent: finishes
- * when the line ends.
+ * Says Line, the Cat's text in the Tutorial Board markup (**bold**, ~~shake~~, {Key:<InputTag>}; {Counter:<Name>} = the
+ * value of that step counter of its encounter), on the local player's HUD. With bWaitForRespawn, a line fired while
+ * that player is dead shows once it is revived. Latent: finishes when the line ends.
  */
 UCLASS()
 class GEOTRINITY_API UGeoCatLineAction : public UGeoEncounterAction

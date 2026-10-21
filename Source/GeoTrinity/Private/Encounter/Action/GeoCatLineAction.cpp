@@ -3,9 +3,11 @@
 #include "Encounter/Action/GeoCatLineAction.h"
 
 #include "Characters/GeoCharacter.h"
+#include "Encounter/GeoEncounter.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "HUD/Interface/GeoHUDInterface.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 void UGeoCatLineAction::Execute_Implementation(FGeoEncounterPayload const& /*Payload*/)
 {
@@ -38,7 +40,7 @@ void UGeoCatLineAction::ShowLine()
 
 	if (IGeoHUDInterface* const HUD = GetLocalHUD())
 	{
-		HUD->ShowCatLine(Line,
+		HUD->ShowCatLine(FText::FromString(GeoLib::ReplaceCounterTokens(Line.ToString(), GetEncounter())),
 						 FSimpleDelegate::CreateWeakLambda(this,
 														   [this, Run = LineRun]()
 														   {

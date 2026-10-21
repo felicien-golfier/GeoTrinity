@@ -1,0 +1,8 @@
+6.45 6.95 ChestPop
+7.30 7.75 ChestLift
+7.72 9.80 LootBurst
+9.80 11.00 Pickup1
+12.40 13.75 Pickup2
+13.78 14.70 Pickup3
+14.70 15.40 Pickup4
+16.20 17.09 EndCue

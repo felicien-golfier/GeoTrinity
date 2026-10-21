@@ -1,20 +1,11 @@
 # AI/Python/Mesh
 
-Procedural static meshes and rigging.
+Mesh toolkit and uncategorised meshes. Category meshes and rigs sit with their category: `Cat/Mesh`, `Gem/`, `Badge/Mesh`, `Boss/{Hex,Star}/Mesh`. The rules below apply to all of them.
 
 - Winding: front face = clockwise seen from outside. Generators outline counter-clockwise and reverse in their one triangle helper. Check a new mesh against the engine cube: a top-face triangle's edge cross product points down.
+- Static mesh writes, any script (generators, material slot edits): through `static_mesh_asset.py` only. `save_static_mesh` for a generator (full build), `load_mesh` / `save_mesh` for an edit: compile waited, fast-build flag cleared, built bounds checked against the vertices before the save. Never `build_from_static_mesh_descriptions` or a bare `save_loaded_asset` on a mesh. Rewriting a mesh can change its shading (computed normals, a material that relied on none): capture it in the level that uses it afterwards (`AI/MCP/MCP_Preview.md`).
 
 | Script | Does |
 |---|---|
+| `static_mesh_asset.py` | Toolkit (exec-loaded) for every static mesh write: `save_static_mesh(folder, name, desc, materials)`, `load_mesh(package)`, `save_mesh(asset)` |
 | `generate_bomb_mesh.py` | Round bomb mesh sized to replace the pillar |
-| `generate_cat_mesh.py` | `SM_Cat` (`/Game/Art/Meshes/Cat`): the Tutorial Cat, face toward +X, built for the top-down camera, nothing touches: HUD portrait face extruded (head, ears, tilted eyes, nose, mouth), three-sided pyramid body floating behind the head (a triangle from above, apex back), four disc paws (two hands at the head's sides, two feet beside the body), tail of 9 small squares curling sideways from the apex; one part each for a rig; slots = colour roles `Base` / `Shade` / `Ink` / `Light`; part bounds in `AI/Output/cat_gen.json` |
-| `rig_cat.py` | `SM_Cat` → `SKM_Cat` on `SK_Cat` (same folder): one rigid bone per part, a vertex owned by the smallest part box holding it, tail as a chain, `PortalPoint` socket on `Root` at `PORTAL_X` (bones: `AI/Tutorial/CatAnimation.md`); helpers loaded from `rig_class_badges.py` |
-| `generate_class_badge_meshes.py` | Three class logo silhouettes extruded per class; Triangle body thins to its point |
-| `generate_hex_boss_mesh.py` | Hex boss body (three concentric hexagons) + rig data |
-| `generate_hex_mine_mesh.py` | Hex boss mine: flat hexagon, six spikes alternating long / short (turret cannon shape), core hexagon in its own `Core` slot for the blinking material |
-| `generate_hex_turret_mesh.py` | Hex boss turret: flat hexagon + hexagonal-section cannon along +X (firing direction), separate prism for later animation |
-| `generate_triangle_turret_mesh.py` | Triangle class turret: flat triangular body (tip +X) with a layered round hub, long triangular-section cannon out of the tip (dark bands, muzzle block with two stripes), rear block, two grey side cannons at the back corners; slots `Color` / `Cannon` / `CannonBand` / `Legs` |
-| `generate_star_mesh.py` | Star boss body: eight points, counter-points, star-shaped heart hole |
-| `rig_hex_boss.py` | Hex body → skeletal mesh on a new skeleton |
-| `rig_star.py` | Rebuild `SKM_Star` on `SK_Star`'s hierarchy, weighted so existing clips play unchanged |
-| `rig_class_badges.py` | Rig badges: body bottom layer, parts on own bones under a top layer, fire sockets, Square keyhole socket |

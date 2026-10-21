@@ -26,7 +26,7 @@ class UGeoGemCsvSync : public UEditorSubsystem
 	GENERATED_BODY()
 
 public:
-	/** Watches the catalog's saves and edits and the CSV's folder, then imports the CSV, or writes it when missing. */
+	/** Watches the catalog's saves and edits and the CSV's folder, then syncs once the native gameplay tags exist. */
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	/** Unregisters all delegate handles and stops watching the catalog asset and CSV folder. */
 	virtual void Deinitialize() override;
@@ -45,6 +45,12 @@ private:
 		TEXT("Tier,Id,Name,Attribute,Operation,MagnitudePerGem,Effect,Color,GrantedTag,GrantedAbility");
 
 	static FString GetCsvPath();
+
+	/**
+	 * Imports the CSV, or writes it when missing. Waits for engine init in the editor: editor subsystems start before
+	 * UGeoAssetManager registers the native tags the CSV's GrantedTag column names.
+	 */
+	void SyncOnStartup() const;
 
 	/** The CSV file's text with \n line ends; empty when it cannot be read. */
 	static FString LoadCsv();

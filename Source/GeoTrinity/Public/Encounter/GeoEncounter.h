@@ -78,7 +78,7 @@ public:
 
 	/** Adds Delta to the step counter and tells OnCounterChanged. */
 	UFUNCTION(BlueprintCallable, Category = "GeoEncounter")
-	void AddToCounter(FName Counter, int32 Delta = 1);
+	void AddToEncounterCounter(FName Counter, int32 Delta = 1);
 
 	/** The step counter's value; 0 until written during this visit of the step. */
 	UFUNCTION(BlueprintPure, Category = "GeoEncounter")
@@ -98,7 +98,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "GeoEncounter")
 	FOnEncounterCompleted OnCompleted;
 
-	/** Broadcast on every AddToCounter. */
+	/** Broadcast on every AddToEncounterCounter. */
 	FOnEncounterCounterChanged OnCounterChanged;
 
 protected:

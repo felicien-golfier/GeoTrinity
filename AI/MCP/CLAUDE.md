@@ -1,6 +1,6 @@
 # MCP / Python editor automation
 
-Two servers: UE 5.8 built-in `mcp-epic` (default for reads and every toolset-covered write: Blueprint graphs, material graphs, properties, tables, tags) and `mcp-unreal` `execute_script` (Python in `AI/Python/`, plus C++ `UEditorUtilityObject` shims for what Python cannot reach). Which one: `MCP_UnrealBuiltin.md` → "Which server".
+Two servers: UE 5.8 built-in `mcp-epic` (default for reads and every toolset-covered write: Blueprint graphs, material graphs, properties, tables, tags) and `mcp-unreal` `execute_script` (Python in `AI/Python/`, plus C++ `UEditorUtilityObject` shims for what Python cannot reach). Which one: `MCP_UnrealBuiltin.md` → "Which server". Navigating the editor (load a level, find actors, move the camera, capture the viewport) is `mcp-epic` too; judge any look change in the level that uses the asset (`MCP_Preview.md`).
 
 ## Prerequisites
 - Editor open before Claude Code starts (tools register at session start). `mcp-epic` is disconnected by default: ask the user for access whenever a task needs it (`MCP_EpicTesting.md`, "Setup").
@@ -48,7 +48,7 @@ Motion rules in `MCP_Animation.md` before authoring an animation. Script index: 
 - **Structs write through**: `get_editor_property("struct")` is bound to its object; every member `set_editor_property` writes and notifies, so a multi-member edit exposes inconsistent states the engine `check()`s on (material layers: `Blends.Num() == Layers.Num() - 1`). `.copy()`, edit, assign once.
 - **GameplayTag repr**: a tag (or a struct holding one) prints `{}` set or not; read with `export_text()` and cross-check `git show HEAD:<asset>` before dropping a property.
 - **T3D export**: export the Material itself to read constant inputs; never a subobject (`EditorOnlyData`) — fatal.
-- **Static mesh rebuild**: call `get_num_vertices(0)` before `build_from_static_mesh_descriptions` on a loaded mesh (waits out the async compile; otherwise Fatal "FRenderResource deleted without being released").
+- **Static mesh rebuild**: go through `AI/Python/Mesh/static_mesh_asset.py` (`save_static_mesh`): it waits out the async compile (`get_num_vertices(0)`, else Fatal "FRenderResource deleted without being released") and never fast-builds (a fast-built asset loads with garbage bounds, `TroobleshootingLogs.md`, "Gem meshes with NaN bounds").
 - **Registry after save**: a re-saved asset still lists its old references until `scan_files_synchronous([file], True)`; rescan between save and a delete-if-unreferenced check.
 - **Blueprint node deletion**: `delete_node` over the bridge is blocked by the permission classifier; dump the graph, write the C++, hand the user the exact nodes to delete.
 - **Server RPCs run locally** from editor Python: `MCP_PIE.md`.

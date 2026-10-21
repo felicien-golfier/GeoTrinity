@@ -1,4 +1,4 @@
-﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
+// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 #include "UGeoGameplayLibrary.generated.h"
@@ -12,6 +12,7 @@ constexpr float Sqrt3 = 1.7320508f;
 
 
 class AEnemyCharacter;
+class AGeoEncounter;
 class APlayableCharacter;
 enum class EGeoColor : uint8;
 class AGeoProjectile;
@@ -133,7 +134,8 @@ public:
 	 * testing it against Actor. Every non-character actor is simply at the current time. */
 	static float GetPerceivedServerTime(AActor const* Actor);
 	/** Server. How late Viewer's screen shows what reaches it through replication, like another character moving: half
-	 * its ping, capped at MaxLatencyCompensation. 0 for a viewer the server runs itself — AI, the listen-server host. */
+	 * its ping, capped at MaxLatencyCompensation. 0 for a viewer the server runs itself — AI, the listen-server host.
+	 */
 	static float GetReplicationDelay(AActor const* Viewer);
 	/** Where Actor stood, and which way it faced, at ServerTime: a character's from its pose history
 	 * (UGeoCharacterMovementComponent::GetPoseAt, server only), any other actor's current one. */
@@ -177,7 +179,16 @@ public:
 	/** Writes SaveGame to the AppData file FileName that LoadUserSaveFile reads. */
 	static void WriteUserSaveFile(USaveGame* SaveGame, FString const& FileName);
 
+	/**
+	 * Text with each {Counter:<Name>} replaced by that step counter's value in Encounter at this moment. A token with
+	 * no Encounter is a design bug: it is left as written.
+	 */
+	static FString ReplaceCounterTokens(FString Text, AGeoEncounter const* Encounter);
+
 private:
+	static constexpr FStringView CounterTokenOpen = TEXTVIEW("{Counter:");
+	static constexpr FStringView CounterTokenClose = TEXTVIEW("}");
+
 	/** <AppData>/Local/<Project>/FileName — the one place a user save file's location is written down. */
 	static FString GetUserSaveFilePath(FString const& FileName);
 };

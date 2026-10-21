@@ -10,8 +10,8 @@ Depends on: `CatAnimation.md` "Alive pass" clips re-run in the editor (the curre
 - [x] clang-format every touched file
 
 ## Scripts
-- [x] `AI/Python/Anim/Cat/cat_blueprint.py` — `BP_Cat` in `/Game/Actors/Cat` (parent `AGeoCat`): `Mesh` = `SKM_Cat`, anim class `ABP_Cat`, `ReassembleMontage` = `AM_Cat_Reassemble`, `PortalJumpMontage` = `AM_Cat_PortalJump`; report `AI/Output/cat_blueprint.json`; after the build, editor via bridge
-- [x] `AI/Python/Level/tutorial_encounters.py` — run `encounters_diff.py` first (rule); place `Tut_Landing_Cat` (`BP_Cat`, ~300 cm ahead of the Landing start, facing it, `RoamArea` = `Tut_Landing_ArenaVolume`) and `Tut_Landing_CatPath_0..1` (`TargetPoint`, a short line across the room); `CATEGORIES` += `("Cat", "Gameplay")` (covers the path points); `Builder.cat(command, path=(), target=None, wait=True)`; `landing_steps` OnEnter: lock → cat `Reassemble` (wait) → line 0 → cat `WalkPath` (no wait) + line 1 → lines 2-3 → unlock + cat `Roam` + line 4 → line 5's pad open + cat `PortalJump` `Target` = `Tut_Landing_PadExit` (no wait) + line 5 → count `Done`
+- [x] `AI/Python/Cat/Anim/cat_blueprint.py` — `BP_Cat` in `/Game/Actors/Cat` (parent `AGeoCat`): `Mesh` = `SKM_Cat`, anim class `ABP_Cat`, `ReassembleMontage` = `AM_Cat_Reassemble`, `PortalJumpMontage` = `AM_Cat_PortalJump`; report `AI/Output/cat_blueprint.json`; after the build, editor via bridge
+- [x] `AI/Python/Tutorial/Level/tutorial_encounters.py` — run `encounters_diff.py` first (rule); place `Tut_Landing_Cat` (`BP_Cat`, ~300 cm ahead of the Landing start, facing it, `RoamArea` = `Tut_Landing_ArenaVolume`) and `Tut_Landing_CatPath_0..1` (`TargetPoint`, a short line across the room); `CATEGORIES` += `("Cat", "Gameplay")` (covers the path points); `Builder.cat(command, path=(), target=None, wait=True)`; `landing_steps` OnEnter: lock → cat `Reassemble` (wait) → line 0 → cat `WalkPath` (no wait) + line 1 → lines 2-3 → unlock + cat `Roam` + line 4 → line 5's pad open + cat `PortalJump` `Target` = `Tut_Landing_PadExit` (no wait) + line 5 → count `Done`
 - [x] Re-run `tutorial_encounters.py` headless (editor closed), read `AI/Output/tutorial_encounters_report.txt`
 
 ## Tests (`Private/Tests/GeoCatTests.cpp`, `GeoTrinity.Cat.*`; bare `AGeoCat` spawned in `GeoTestWorld.h`, no mesh, `AdvanceMove` called by hand)
@@ -27,5 +27,5 @@ Done 2026-10-20: built, `GeoTrinity.` 86/86, `BP_Cat` and the Landing staging wr
 Restructured 2026-10-20 (captain / navigator): the cat only walks, roams, plays a given montage; orders and hiding are encounter actions (`Encounter/Action/Cat/CLAUDE.md`). Rebuilt `BP_Cat` + Landing through the bridge, diff identical, 86/86, flow PASSED (cat hidden 110 cm before the pad, position stable).
 
 ## Verify
-- [x] `Runtime/pie_tutorial_flow.py` passes headless (Landing → Shoot; Cat shown at start, hidden 110 cm before `Tut_Landing_PadExit`); the flow now presses the skip key (`TroobleshootingLogs.md`)
+- [x] `Tutorial/Runtime/pie_tutorial_flow.py` passes headless (Landing → Shoot; Cat shown at start, hidden 110 cm before `Tut_Landing_PadExit`); the flow now presses the skip key (`TroobleshootingLogs.md`)
 - [ ] User, in PIE when asked: splat → idle facing the player, walk line, roam, jump into the pad (the clip's portal opening on the open pad: concentric, check it reads), walk speed vs foot slide

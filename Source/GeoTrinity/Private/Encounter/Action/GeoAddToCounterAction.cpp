@@ -6,5 +6,5 @@
 
 void UGeoAddToCounterAction::Execute_Implementation(FGeoEncounterPayload const& /*Payload*/)
 {
-	GetEncounter()->AddToCounter(CounterName, Delta);
+	GetEncounter()->AddToEncounterCounter(CounterName, Delta);
 }

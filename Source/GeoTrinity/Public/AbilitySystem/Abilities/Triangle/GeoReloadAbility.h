@@ -34,7 +34,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoAbility|Reload")
 	static FLinearColor GetColorForAmmo(int32 Ammo);
 
-	/** Public so AGeoGameState::Loot() can spawn the same pickups from this CDO without duplicating the config. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Reload")
 	TSubclassOf<AGeoBuffPickup> BuffPickupClass;
 

@@ -9,21 +9,30 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystemComponent.h"
+#include "Actor/Arena/GeoArena.h"
+#include "Actor/GeoGemDrop.h"
 #include "Algo/Count.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
+#include "Characters/PlayableCharacter.h"
+#include "Components/StaticMeshComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/StaticMeshActor.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/WorldSettings.h"
 #include "GameplayEffect.h"
 #include "GameplayEffectComponents/TargetTagsGameplayEffectComponent.h"
 #include "Gem/GeoGemCatalog.h"
+#include "Gem/GeoGemMeshes.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemStatsEffect.h"
 #include "Misc/AutomationTest.h"
 #include "Settings/GameDataSettings.h"
 #include "Tests/GeoTestDeployable.h"
+#include "Tests/GeoTestGemDrop.h"
 #include "Tests/GeoTestWorld.h"
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
@@ -1219,6 +1228,155 @@ bool FGeoRelaySnapDashTest::RunTest(FString const& /*Parameters*/)
 		TestTrue(TEXT("Removing the Relay spec stops the snap"),
 				 Direction.Equals(FRotator(0.f, 10.f, 0.f).Vector(), KINDA_SMALL_NUMBER));
 	}
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemMeshPathsTest, "GeoTrinity.Gems.MeshPaths", GeoGemTestFlags)
+
+bool FGeoGemMeshPathsTest::RunTest(FString const& /*Parameters*/)
+{
+	TSet<FSoftObjectPath> Paths;
+	for (EGeoGemTier const Tier : {EGeoGemTier::Chip, EGeoGemTier::Cut, EGeoGemTier::Prism, EGeoGemTier::Core})
+	{
+		Paths.Add(GeoGem::GetTierMesh(Tier).ToSoftObjectPath());
+	}
+
+	for (int32 Variant = 0; Variant < GeoGem::ShardVariantCount; ++Variant)
+	{
+		Paths.Add(GeoGem::GetShardMesh(Variant).ToSoftObjectPath());
+	}
+
+	TestEqual(TEXT("Every tier and shard variant has its own mesh"), Paths.Num(), 4 + GeoGem::ShardVariantCount);
+	TestEqual(TEXT("The Cut mesh path"), GeoGem::GetTierMesh(EGeoGemTier::Cut).ToString(),
+			  FString(TEXT("/Game/Art/Meshes/Gem/SM_Gem_Cut.SM_Gem_Cut")));
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemDropTest, "GeoTrinity.Gems.Drop", GeoGemTestFlags)
+
+bool FGeoGemDropTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	if (!TestNotNull(TEXT("The catalog is set"), Catalog))
+	{
+		return false;
+	}
+
+	UWorld* World = CreateTestWorld();
+	auto const Spawn = [World](FGeoGemDropSpec const& Spec, FVector const& Location)
+	{
+		FTransform const Transform(Location);
+		AGeoGemDrop* Drop = World->SpawnActorDeferred<AGeoGemDrop>(AGeoGemDrop::StaticClass(), Transform);
+		Drop->Init(Spec, FVector::ZeroVector);
+		Drop->FinishSpawning(Transform);
+		return Drop;
+	};
+
+	for (EGeoGemTier const Tier : {EGeoGemTier::Chip, EGeoGemTier::Cut, EGeoGemTier::Prism, EGeoGemTier::Core})
+	{
+		FGeoGemDropSpec Spec;
+		Spec.GemId = Catalog->GemsByTier[Tier].Gems[0].Id;
+		AGeoGemDrop const* Gem = Spawn(Spec, FVector::ZeroVector);
+		UStaticMesh const* const Expected = GeoGem::GetTierMesh(Tier).LoadSynchronous();
+		TestNotNull(TEXT("The tier's mesh asset exists (run generate_gem_meshes.py)"), Expected);
+		TestTrue(TEXT("A gem drop wears its tier's mesh"), Gem->GetMesh()->GetStaticMesh() == Expected);
+	}
+
+	FGeoGemDropSpec Shard;
+	Shard.Kind = EGeoGemDropKind::Shard;
+	Shard.Variant = 1;
+	TestTrue(TEXT("A shard drop wears its variant's mesh"),
+			 Spawn(Shard, FVector::ZeroVector)->GetMesh()->GetStaticMesh()
+				 == GeoGem::GetShardMesh(1).LoadSynchronous());
+
+	FVector const Rest(0.f, 0.f, 20.f);
+	FVector const Air(5000.f, 0.f, 1000.f);
+	AGeoGemDrop* Landed = Spawn(Shard, Rest);
+	AGeoGemDrop* Flying = Spawn(Shard, Air);
+	TestTrue(TEXT("A drop spawned at the rest height is landed"), Landed->IsLanded());
+	TestFalse(TEXT("A drop spawned high is still in the air"), Flying->IsLanded());
+
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
+	for (FVector const& Location : {Rest, Air})
+	{
+		FTransform const Transform(Location);
+		APlayableCharacter* const Character =
+			World->SpawnActorDeferred<APlayableCharacter>(APlayableCharacter::StaticClass(), Transform);
+		Character->SetActorHiddenInGame(true);
+		Character->FinishSpawning(Transform);
+	}
+
+	World->Tick(LEVELTICK_All, 0.1f);
+	TestFalse(TEXT("A landed drop a player character overlaps is destroyed"), IsValid(Landed));
+	TestTrue(TEXT("A drop in the air is not picked, character or not"), IsValid(Flying));
+
+	auto const SpawnCounting = [World, &Shard](FVector const& Location)
+	{
+		FTransform const Transform(Location);
+		AGeoTestGemDrop* Drop = World->SpawnActorDeferred<AGeoTestGemDrop>(AGeoTestGemDrop::StaticClass(), Transform);
+		Drop->Init(Shard, FVector::ZeroVector);
+		Drop->FinishSpawning(Transform);
+		return Drop;
+	};
+	AGeoTestGemDrop* const Thrown = SpawnCounting(FVector(5000.f, 0.f, 1000.f));
+	AGeoTestGemDrop* const Lying = SpawnCounting(FVector(9000.f, 0.f, 20.f));
+	TestEqual(TEXT("A thrown drop sounds on spawn"), Thrown->SpawnSoundCount, 1);
+	TestEqual(TEXT("A drop already lying is silent on spawn"), Lying->SpawnSoundCount, 0);
+
+	Thrown->Destroy();
+	TestEqual(TEXT("A drop destroyed in the air is silent"), Thrown->PickupSoundCount, 0);
+	Lying->RouteEndPlay(EEndPlayReason::RemovedFromWorld);
+	TestEqual(TEXT("A drop ended by anything but a pickup is silent"), Lying->PickupSoundCount, 0);
+
+	AGeoTestGemDrop* const Picked = SpawnCounting(FVector(9000.f, 0.f, 20.f));
+	Picked->Destroy();
+	TestEqual(TEXT("A landed drop sounds when destroyed"), Picked->PickupSoundCount, 1);
+
+	AGeoGemDrop const* const Falling = Spawn(Shard, Air);
+	TestTrue(TEXT("A drop mid-bounce is above its resting place"), Falling->GetBounce(0.1f).Height > 0.f);
+	TestTrue(TEXT("A touchdown lights the drop"), Falling->GetBounce(0.f).Flash > 0.9f);
+	TestEqual(TEXT("A settled drop no longer bounces"), Falling->GetBounce(30.f).Height, 0.f);
+	TestEqual(TEXT("A drop in the air is not settled"), Falling->GetSettled(-1.f), 0.f);
+	TestEqual(TEXT("A drop is settled once the bounces are over"), Falling->GetSettled(30.f), 1.f);
+	TestEqual(TEXT("A drop pops in from nothing"), Falling->GetPopScale(0.f), 0.f);
+	TestEqual(TEXT("A drop pops in to full size"), Falling->GetPopScale(30.f), 1.f);
+	TestFalse(TEXT("A flying drop tumbles, never staying upright"),
+			  Falling->GetPose(0.5f).GetUpVector().Equals(FVector::UpVector, 0.01f));
+	TestTrue(TEXT("A drop's turn winds down to a stop in the pose it reached"),
+			 Falling->GetPose(60.f).Equals(Falling->GetPose(90.f), 0.001f));
+
+	auto const SpawnSliding = [World, &Shard](FVector const& Velocity)
+	{
+		FTransform const Transform(FVector(0.f, 0.f, 20.f));
+		AGeoGemDrop* const Drop = World->SpawnActorDeferred<AGeoGemDrop>(AGeoGemDrop::StaticClass(), Transform);
+		Drop->Init(Shard, Velocity);
+		Drop->FinishSpawning(Transform);
+		return Drop;
+	};
+	AGeoGemDrop const* const Sliding = SpawnSliding(FVector(300.f, 0.f, 0.f));
+	TestFalse(TEXT("A drop sliding on the ground is not at rest yet"), Sliding->IsLanded());
+	TestTrue(TEXT("Friction stops a sliding drop short of where its speed would carry it"),
+			 Sliding->GetRestLocation().X > 100.f && Sliding->GetRestLocation().X < 125.f);
+
+	AStaticMeshActor* const Wall =
+		World->SpawnActor<AStaticMeshActor>(FVector(100.f, 0.f, 100.f), FRotator::ZeroRotator);
+	Wall->SetMobility(EComponentMobility::Movable);
+	Wall->GetStaticMeshComponent()->SetStaticMesh(
+		LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));
+	Wall->SetActorScale3D(FVector(1.f, 20.f, 4.f));
+	AGeoGemDrop const* const Walled = SpawnSliding(FVector(1000.f, 0.f, 0.f));
+	TestTrue(TEXT("A wall holds a drop in"), Walled->GetRestLocation().X < 50.f);
+
+	AGeoArena const* const Arena = GetDefault<AGeoArena>();
+	TestEqual(TEXT("The fountain throws its first drop at once"), Arena->GetFountainThrowTime(0, 5), 0.f);
+	TestTrue(TEXT("The fountain throws its last drop after its first"), Arena->GetFountainThrowTime(4, 5) > 0.f);
+	TestTrue(TEXT("The fountain bunches its throws at the start"),
+			 Arena->GetFountainThrowTime(1, 5) - Arena->GetFountainThrowTime(0, 5)
+				 < Arena->GetFountainThrowTime(4, 5) - Arena->GetFountainThrowTime(3, 5));
 
 	DestroyTestWorld(World);
 	return true;

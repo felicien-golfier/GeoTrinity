@@ -4,7 +4,7 @@ One boss encounter and everything room-shaped. The arena drives itself; GameStat
 
 | File | Role |
 |---|---|
-| `GeoArena.h` | Base arena: owns boss + adds, barrier, fight commit, boss bar, loot, floor look |
+| `GeoArena.h` | Base arena: owns boss + adds, barrier, fight commit, boss bar, gem fountain, floor look |
 | `GeoHexArena.h` | Arena on a destructible hex tile grid |
 | `GeoDummyArena.h` | Training dummy: spawns its enemy, `IsBoss() = false`, no fight machinery; also hosts a room's `AHiddenCasterCharacter` (`Characters/CLAUDE.md`) |
 | `GeoArenaBarrier.h` | Replicated barrier lerping transforms Fight-On ↔ Fight-Off |
@@ -18,10 +18,11 @@ One boss encounter and everything room-shaped. The arena drives itself; GameStat
   - `CommitFight()`: teleports players to `TargetPoint.FightLocation` (skips those inside `FightZoneTagName`).
   - `EndFight()` (from `AGeoGameState::OnMatchStateChanged`, server): clears timer, `bFighting` false, hides bar; resets the boss only on a wipe (victory sets `bBossDefeated`).
   - `RespawnBoss()` / static `RespawnAllBosses()`: only way back after a victory (`GeoMatchStateButton` `RespawnBosses`, or new server).
-- Loot: `OnBossDefeated` starts a looping shower until any fight starts (`StopLoot()`); `GetFightingArena()` = static "who is fighting".
+- `OnBossDefeated` stores `LootOrigin` (the death position the fountain starts from); `GetFightingArena()` = static "who is fighting".
 - Rewards: `BossLoot` (`FGeoBossLoot`, next to `BossType`) = this boss's random part (own drop table, or the catalog's for `BossType`) + fixed gems + fixed shards; `GrantGemRewards` hands every player the same kill loot. Rules: `Gem/CLAUDE.md` ("Boss loot"). `IsDataValid` (editor) flags fixed gems the catalog no longer has.
+- Fountain (`Gem/CLAUDE.md`, "3D gems"): on a kill `GrantGemRewards` rolls the loot once (every player gets that same loot) and `StartFountain` queues one `AGeoGemDrop` per gem and per `ShardsPerDrop` shards (shuffled), thrown from `LootOrigin` (the boss's death position) by `SpawnFountainDrop`, a timer re-armed after each throw so the gaps follow `FountainFrontLoad` ("Fountain feel"): up at `FountainUpSpeed` ± `FountainUpSpread`, sideways in `FountainSideSpeed`, random direction; each drop carries a random `Seed` for its tumble. Class `GemDropClass` (default native; a Blueprint child sets gravity, spin, bob, pickup radius, scale).
 - `IsBoss()` is virtual and the sole gate on match start (checked in `TriggerAggro`).
-- Adds: `AddClasses` at reset, and `SpawnAdd(Class, Transform, Setup)` (server; `Setup` optional; spawns through `AEnemyCharacter::SpawnEnemy`, `Characters/CLAUDE.md` "Enemy setup") for one brought in mid-fight (a boss summon, a dead summon's ally). Every add is in `Adds`, `Arena` set: a wipe (`ResetBoss` → `ResetAdds`) and the boss's death (`DestroyAdds`) remove them all, so each attempt starts clean.
+- Adds: `AddClasses` at reset, and `SpawnAdd(Class, Transform, Setup)` (server; `Setup` optional; spawns through `AEnemyCharacter::SpawnEnemy`, `Characters/CLAUDE.md` "Enemy setup") for one brought in mid-fight (a boss summon, a dead summon's ally). Every add is in `Adds`, `Arena` set: a wipe (`ResetBoss` → `ResetAdds`) and the boss's death (`DestroyAdds`) remove them all, so each attempt starts clean. `GetLiveAdds()` = the ones not dead (a corpse stays listed until destroyed); the list is server-side, a client gets none (`Pattern/Hazard/CLAUDE.md`, "LateralWave").
 - Finished attempts go to `UGeoLeaderboardSave`, unless `bRecordsLeaderboard` is off (tutorial miniboss: not a real boss run).
 
 ## GeoHexArena

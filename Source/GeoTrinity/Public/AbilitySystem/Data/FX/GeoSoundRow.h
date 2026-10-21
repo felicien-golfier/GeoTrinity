@@ -128,11 +128,14 @@ class GEOTRINITY_API UGeoSoundRowLibrary : public UBlueprintFunctionLibrary
 
 public:
 	/** Returns true when Entry should play on this machine: never on a dedicated server or without a valid Sound;
-	 * otherwise gated by Entry.Audience relative to SoundInstigator (always plays when SoundInstigator is null). */
+	 * otherwise gated by Entry.Audience relative to SoundInstigator: OtherMachines only for a sound of another
+	 * machine's player (its avatar or anything its abilities spawned, found through the actor owner chain); everything
+	 * else (null, a boss and what it spawns, a world actor) counts as InstigatorMachine, so it plays everywhere. */
 	static bool ShouldPlay(UObject const* WorldContextObject, FGeoSoundEntry const& Entry, AActor* SoundInstigator);
 
 	/** Returns Entry.Volume scaled by VolumeMultiplierCurve at its chosen source, and multiplied by
-	 * Entry.OtherMachinesVolumeMultiplier when SoundInstigator is not the local player's avatar. */
+	 * Entry.OtherMachinesVolumeMultiplier when SoundInstigator is another machine's player's (same owner-chain rule as
+	 * ShouldPlay). */
 	static float GetVolume(FGeoSoundEntry const& Entry, AActor* SoundInstigator, int32 AbilityLevel);
 
 	/**
@@ -150,6 +153,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoTrinity|Sound", meta = (DefaultToSelf = "WorldContextObject"))
 	static void PlaySoundEntry2D(UObject const* WorldContextObject, FGeoSoundEntry const& Entry,
 								 AActor* SoundInstigator, int32 AbilityLevel = 1);
+
+	/** Plays Entry once at Location as a fire-and-forget positional sound, under the same gating, volume and pitch as
+	 * PlaySoundEntry2D. Owned by the world, not by any actor: the caller may be destroyed right after and the sound
+	 * still plays to its end. */
+	static void PlaySoundEntryAtLocation(UObject const* WorldContextObject, FGeoSoundEntry const& Entry,
+										 FVector const& Location, AActor* SoundInstigator, int32 AbilityLevel = 1);
 
 	/** Sets Entry's sound, Volume and Pitch on AudioComponent and starts it — the looping counterpart of
 	 * PlaySoundEntry2D, applying the same ShouldPlay gating. Does nothing when the entry must not play here.

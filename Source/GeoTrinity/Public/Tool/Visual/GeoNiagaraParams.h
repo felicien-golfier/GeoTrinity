@@ -109,7 +109,7 @@ namespace GeoMaterialParams
 	inline FName const BuffPickupColor(TEXT("Color"));
 
 	/** Character body material 0 — UShieldBurstPassiveComponent: the gauge fill, then its full-face flash, both 0..1.
-	 * Built by AI/Python/Material/make_class_badge_materials.py. */
+	 * Built by AI/Python/Badge/make_class_badge_materials.py. */
 	inline FName const ShieldBurstGauge(TEXT("GlowGauge"));
 	inline FName const ShieldBurstFullGauge(TEXT("FullGlowGauge"));
 
@@ -128,12 +128,14 @@ namespace GeoMaterialParams
 		return FName(FString::Printf(TEXT("PulseSource_%02d"), SlotIndex));
 	}
 
-	/** MPC_MaskedArea — UDevastatingWavePattern: the pillars shadowing the wave, one position per slot, one radius. */
+	/** MPC_MaskedArea — FSafeSpotMask: the safe spots shadowing a hazard, one position per slot, one radius, and the
+	 * shadow mode (1 = Lane, parallel to the beam; 0 = Behind, radial from the AOE origin). */
 	inline FName GetPillarPositionName(int32 const SlotIndex)
 	{
 		return FName(FString::Printf(TEXT("PillarPosWS_%02d"), SlotIndex));
 	}
 	inline FName const PillarRadius(TEXT("Pillar_Radius"));
+	inline FName const SafeSpotShadowLane(TEXT("SafeSpot_ShadowLane"));
 
 	/** HUD sweep materials, 0..1 — the cooldown (UGeoAbilitySlotWidget) and the effect depletion (UGeoStatusBarWidget).
 	 */

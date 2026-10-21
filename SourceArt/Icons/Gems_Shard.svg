@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-geo-color="Override" fill="none" stroke="#D9B3FF">
-  <polygon points="8,1 15,8 8,15 1,8" stroke-width="1.5"/>
-  <polygon points="8,5 11,8 8,11 5,8" fill="#D9B3FF" stroke="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" data-geo-color="Override" stroke="none">
+  <polygon points="21,1 13,10 15,30 20,22" fill="#F29BDD"/>
+  <polygon points="21,1 26,9 27,27 20,22" fill="#D45BBB"/>
+  <polygon points="15,30 20,22 27,27 20,39" fill="#A2418F"/>
 </svg>
