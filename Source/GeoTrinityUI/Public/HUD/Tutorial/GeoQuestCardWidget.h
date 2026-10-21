@@ -26,8 +26,10 @@ public:
 	/** Shows the card at a count of 0; TimeLimitSeconds 0 hides the countdown. */
 	void ShowCard(FText const& Title, int32 InMax, float InTimeLimitSeconds);
 
+	/** Updates the displayed count. */
 	void SetCount(int32 Count);
 
+	/** Collapses the card. */
 	void HideCard();
 
 protected:

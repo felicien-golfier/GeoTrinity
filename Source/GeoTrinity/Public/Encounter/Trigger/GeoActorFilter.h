@@ -21,5 +21,6 @@ struct GEOTRINITY_API FGeoActorFilter
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
 	FName Tag;
 
+	/** Returns true when Actor is of Class and carries Tag (None = any). */
 	bool Matches(AActor const& Actor) const;
 };
