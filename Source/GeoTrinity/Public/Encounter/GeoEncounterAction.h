@@ -24,6 +24,7 @@ public:
 	/** Encounter only. Runs Execute, then Finish when the action is not latent. */
 	void Begin(FGeoEncounterPayload const& Payload);
 
+	/** Called by Begin. Performs this action's effect; a latent action calls Finish when done. */
 	UFUNCTION(BlueprintNativeEvent, Category = "GeoEncounter")
 	void Execute(FGeoEncounterPayload const& Payload);
 	virtual void Execute_Implementation(FGeoEncounterPayload const& /*Payload*/) {}
@@ -32,6 +33,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoEncounter")
 	void Finish();
 
+	/** Called when the step is left before this action finished. Must release timers and bindings. */
 	UFUNCTION(BlueprintNativeEvent, Category = "GeoEncounter")
 	void OnCancel();
 	virtual void OnCancel_Implementation() {}

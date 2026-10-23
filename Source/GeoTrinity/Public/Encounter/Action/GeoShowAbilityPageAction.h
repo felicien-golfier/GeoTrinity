@@ -18,6 +18,7 @@ class GEOTRINITY_API UGeoShowAbilityPageAction : public UGeoEncounterAction
 	GENERATED_BODY()
 
 public:
+	/** Opens AbilityTag's ability page on the local player's HUD. */
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (Categories = "Ability.Spell"))
