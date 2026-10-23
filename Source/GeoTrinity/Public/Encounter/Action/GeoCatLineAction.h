@@ -20,8 +20,10 @@ class GEOTRINITY_API UGeoCatLineAction : public UGeoEncounterAction
 	GENERATED_BODY()
 
 public:
+	/** Sets bLatent true — this action waits until the line ends before the encounter advances. */
 	UGeoCatLineAction() { bLatent = true; }
 
+	/** Shows the line on the local player's HUD; waits for respawn first when bWaitForRespawn is set and the player is dead. */
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
 	/** Stops waiting for the respawn or the line's end; a line on screen stays until it ends. */
