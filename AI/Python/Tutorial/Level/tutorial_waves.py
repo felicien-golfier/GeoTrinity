@@ -1,43 +1,40 @@
 """
-Lateral-wave abilities of the tutorial (AI/Tutorial/Steps.md steps 8-10) and the hidden caster that fires the zone room's.
+The lateral-wave ability of the tutorial (AI/Tutorial/Steps.md steps 8-10).
 
-Per wave: a pattern Blueprint (child of ULateralWavePattern, the geometry) and a PatternAbility Blueprint (the lethal
-effect, the wind-up, the wave start point), registered in the enemy ability catalog. Then BP_HiddenCaster_TutorialWaves
-holding the room's waves. The miniboss wave is built here too (lanes from the arena's adds) and held by the miniboss
-(tutorial_miniboss.py).
+One wave for every firing: a pattern Blueprint (child of ULateralWavePattern, the geometry and look) and a PatternAbility
+Blueprint (the lethal effect, the wind-up, the wave start point), registered in the enemy ability catalog. What changes
+per firing is runtime data, never an asset: the zone room's safe spots are the encounter action's PatternData
+(tutorial_encounters.py), the miniboss's lanes come from its living adds. Its caster is the Zones arena's native
+AHiddenCasterCharacter + BossSetup (tutorial_encounters.py). The per-wave assets of the old layout (TutorialWaves/) are
+deleted with their catalog entries, the old caster Blueprint once nothing references it (re-run after
+tutorial_encounters.py).
 Idempotent: assets keyed by path, properties rewritten. Report: AI/Output/tutorial_waves_report.txt.
-Usage: headless (AI/Commands.md), editor closed; Config/Tags/GeoGameplayTags.ini already holds the tags.
+Usage: headless (AI/Commands.md), editor closed; Config/Tags/GeoGameplayTags.ini already holds the tag.
 """
 import traceback
 
 import unreal
 
 REPORT_PATH = "C:/GeoTrinity/AI/Output/tutorial_waves_report.txt"
-ABILITY_DIR = "/Game/AbilitySystem/Abilities/Enemy/TutorialWaves"
-CASTER_DIR = "/Game/Characters/Enemies/Tutorial"
+ABILITY_DIR = "/Game/AbilitySystem/Abilities/Enemy/LateralWave"
+OLD_ABILITY_DIR = "/Game/AbilitySystem/Abilities/Enemy/TutorialWaves"
+OLD_CASTER = "/Game/Characters/Enemies/Tutorial/BP_HiddenCaster_TutorialWaves"
 CATALOG = "/Game/AbilitySystem/Data/DA_AbilityInfo"
 BEAM_SYSTEM = "/Game/Art/VFX/Generic/Niagara/NS_Beam"
-MASK_MPC = "/Game/Art/VFX/Abilities/Enemies/PillarsAOE/MPC_MaskedArea"
-WAVE_START_TAG = "TargetPoint.Tutorial.WaveStart"
+MASK_COLLECTION = "/Game/Art/VFX/Abilities/Enemies/PillarsAOE/MPC_MaskedArea"
+WAVE_START_TAG ="TargetPoint.Tutorial.WaveStart"
+WAVE_TAG = "Ability.Spell.LateralWave"
 LETHAL_EFFECT = ("/Script/GeoTrinity.LethalEffectData(OneShotCue=(CueTag=(TagName=\"\"),Color=Neutral,"
                  "SecondaryColors=,SoundTag=(TagName=\"\")),Difficulties=7)")
 
 # The zone room is 1400 long (X) and 2200 wide (Y): the front starts on the wave point near the entry end and crosses
-# the room along +X, the lanes are Y offsets from that point.
+# the room along +X; safe spots are offsets from that point (tutorial_encounters.py).
 TRAVEL = 1300.0
 HALF_WIDTH = 1200.0
 LANE_WIDTH = 380.0
-
-# key: tag suffix, lanes (None = from the arena's adds), band width, speed, wind-up seconds, description
-WAVES = {
-    "Lethal": ([], TRAVEL, 2500.0, 3.0, "Lethal wave over the whole floor of the zone-colours room, no safe lane."),
-    "Safe1": ([-650.0, 0.0, 650.0], 300.0, 1400.0, 3.5, "First safe-spot wave: three lanes."),
-    "Safe2": ([-300.0, 500.0], 300.0, 1400.0, 3.0, "Second safe-spot wave: two lanes."),
-    "Safe3": ([250.0], 300.0, 1400.0, 2.5, "Third safe-spot wave: one lane."),
-    "MinibossWave": (None, 300.0, 1200.0, 2.5, "Lethal wave with one safe lane through each living dummy."),
-}
-ROOM_WAVES = ["Lethal", "Safe1", "Safe2", "Safe3"]
-TAG_PREFIX = "Ability.Spell.Tutorial"
+BAND_WIDTH = 300.0
+SPEED = 1400.0
+WIND_UP = 3.0
 
 REPORT = []
 
@@ -57,10 +54,6 @@ def tag(name):
     return value
 
 
-def ability_tag(key):
-    return TAG_PREFIX + ("Wave" + key if not key.startswith("Miniboss") else key)
-
-
 def make_bp(name, folder, parent_class):
     path = "%s/%s" % (folder, name)
     if unreal.EditorAssetLibrary.does_asset_exist(path):
@@ -77,41 +70,53 @@ def commit_bp(blueprint):
     unreal.EditorAssetLibrary.save_loaded_asset(blueprint)
 
 
-def build_wave(key):
-    lanes, band, speed, wind_up, description = WAVES[key]
-    pattern_bp, _ = make_bp("BP_LateralWave_" + key, ABILITY_DIR, unreal.load_class(None, "/Script/GeoTrinity.LateralWavePattern"))
+def build_wave():
+    pattern_bp, _ = make_bp("BP_LateralWave", ABILITY_DIR, unreal.load_class(None, "/Script/GeoTrinity.LateralWavePattern"))
     cdo = unreal.get_default_object(pattern_bp.generated_class())
-    cdo.set_editor_property("Speed", speed)
+    cdo.set_editor_property("Speed", SPEED)
     cdo.set_editor_property("TravelDistance", TRAVEL)
-    cdo.set_editor_property("BandWidth", band)
+    cdo.set_editor_property("BandWidth", BAND_WIDTH)
     cdo.set_editor_property("HalfWidth", HALF_WIDTH)
     cdo.set_editor_property("SpotRadius", LANE_WIDTH * 0.5)
-    cdo.set_editor_property("FixedSpotOffsets", [unreal.Vector2D(0.0, lane) for lane in lanes or []])
-    source = unreal.SafeSpotSource.ADDS if lanes is None else unreal.SafeSpotSource.FIXED
-    cdo.set_editor_property("SafeSpotSources", [source])
-    cdo.set_editor_property("MaskMaterialParameterCollection", unreal.load_asset(MASK_MPC))
+    cdo.set_editor_property("SafeSpotSources", [unreal.SafeSpotSource.FIXED, unreal.SafeSpotSource.ADDS])
     cdo.set_editor_property("BeamVfxSystem", unreal.load_asset(BEAM_SYSTEM))
     color = unreal.GeoColorParam()
     color.import_text("(Color=LethalDamage)")
     cdo.set_editor_property("BeamColor", color)
+    cdo.set_editor_property("MaskMaterialParameterCollection", unreal.load_asset(MASK_COLLECTION))
     commit_bp(pattern_bp)
 
-    ability_bp, created = make_bp("GA_TutorialWave_" + key, ABILITY_DIR,
-                                  unreal.load_class(None, "/Script/GeoTrinity.PatternAbility"))
+    ability_bp, created = make_bp("GA_LateralWave", ABILITY_DIR, unreal.load_class(None, "/Script/GeoTrinity.PatternAbility"))
     cdo = unreal.get_default_object(ability_bp.generated_class())
     tags = unreal.GameplayTagContainer()
-    tags.import_text('(GameplayTags=((TagName="%s")))' % ability_tag(key))
+    tags.import_text('(GameplayTags=((TagName="%s")))' % WAVE_TAG)
     cdo.set_editor_property("AbilityTags", tags)
     cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
     cdo.set_editor_property("TargetPointTag", tag(WAVE_START_TAG))
-    cdo.set_editor_property("FireDelay", wind_up)
+    cdo.set_editor_property("FireDelay", WIND_UP)
     effect = unreal.InstancedStruct()
     effect.import_text(LETHAL_EFFECT)
     cdo.set_editor_property("EffectDataInstances", [effect])
     commit_bp(ability_bp)
-    register(ability_bp, ability_tag(key), "Tutorial wave: " + key, description)
-    log("wave", key, "created" if created else "updated")
+    register(ability_bp, WAVE_TAG, "Lateral wave",
+             "Lethal wave crossing the room sideways; safe lanes given per firing or through living adds.")
+    log("wave", "created" if created else "updated")
     return ability_bp
+
+
+def delete_old_waves():
+    """Drops the per-wave assets of the old layout and their catalog entries."""
+    catalog = unreal.load_asset(CATALOG)
+    infos = catalog.get_editor_property("EnemyAbilityInfos")
+    kept = [info for info in infos if OLD_ABILITY_DIR + "/" not in info.export_text()]
+    if len(kept) != len(infos):
+        catalog.set_editor_property("EnemyAbilityInfos", kept)
+        unreal.EditorAssetLibrary.save_loaded_asset(catalog, only_if_is_dirty=False)
+        log("catalog entries removed", len(infos) - len(kept))
+    if unreal.EditorAssetLibrary.does_directory_exist(OLD_ABILITY_DIR):
+        for path in unreal.EditorAssetLibrary.list_assets(OLD_ABILITY_DIR, recursive=True, include_folder=False):
+            log("deleted" if unreal.EditorAssetLibrary.delete_asset(path) else "NOT deleted", path)
+        unreal.EditorAssetLibrary.delete_directory(OLD_ABILITY_DIR)
 
 
 def register(ability_bp, ability_tag_name, display_name, description):
@@ -128,22 +133,27 @@ def register(ability_bp, ability_tag_name, display_name, description):
     unreal.EditorAssetLibrary.save_loaded_asset(catalog, only_if_is_dirty=False)
 
 
-def build_caster():
-    parent = unreal.load_class(None, "/Script/GeoTrinity.HiddenCasterCharacter")
-    blueprint, created = make_bp("BP_HiddenCaster_TutorialWaves", CASTER_DIR, parent)
-    cdo = unreal.get_default_object(blueprint.generated_class())
-    asc = cdo.get_editor_property("AbilitySystemComponent")
-    asc.set_editor_property("StartupAbilityTags", [tag(ability_tag(key)) for key in ROOM_WAVES])
-    commit_bp(blueprint)
-    log("caster", "created" if created else "updated")
+def delete_unreferenced(paths, log_to):
+    """Deletes each asset of paths that nothing outside paths references; logs what it kept and why."""
+    registry = unreal.AssetRegistryHelpers.get_asset_registry()
+    options = unreal.AssetRegistryDependencyOptions(include_soft_package_references=True,
+                                                    include_hard_package_references=True)
+    for path in paths:
+        if unreal.EditorAssetLibrary.does_asset_exist(path):
+            referencers = [str(name) for name in (registry.get_referencers(path, options) or [])
+                           if str(name) not in paths]
+            if referencers:
+                log_to("kept, still referenced by", referencers, path)
+            else:
+                log_to("deleted" if unreal.EditorAssetLibrary.delete_asset(path) else "NOT deleted", path)
 
 
 def run():
     REPORT[:] = []
     try:
-        for key in WAVES:
-            build_wave(key)
-        build_caster()
+        build_wave()
+        delete_old_waves()
+        delete_unreferenced([OLD_CASTER], log)
         log("OK")
     except Exception:
         log("FAILED", traceback.format_exc())

@@ -9,7 +9,8 @@
 
 class AGeoEncounter;
 
-/** Starts another encounter at its first step; one already running starts over. */
+/** Starts another encounter at its first step through its arrival reset (AGeoEncounter::StartAfterSkippingChain); one
+ * already running starts over. */
 UCLASS()
 class GEOTRINITY_API UGeoStartEncounterAction : public UGeoEncounterAction
 {

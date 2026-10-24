@@ -23,7 +23,8 @@ enum class EGeoHealthSide : uint8
  * OnArm when it is already there. Watched: every character matching the filter, the ones spawned while armed
  * included (watched one tick after their spawn, once their setup tag and starting health are set). Re-checked on every
  * Health or MaxHealth change. Each actor fires again only after its ratio left that side and came back; a MaxHealth of
- * 0 is on no side. Actor = the watched actor, Value = the ratio.
+ * 0 is on no side. Actor = the watched actor, Count = crossings since OnArm (all watched actors together), Value = the
+ * ratio.
  */
 UCLASS()
 class GEOTRINITY_API UGeoHealthThresholdTrigger : public UGeoEncounterTrigger
@@ -59,6 +60,9 @@ private:
 
 	/** Per watched actor: was its ratio on the chosen side at the last check. */
 	TMap<TWeakObjectPtr<AActor>, bool> WasPast;
+
+	/** Crossings fired since OnArm: the payload's Count. */
+	int32 Crossings = 0;
 
 	/** Valid while armed: OnArm sets it before its first evaluation, OnDisarm resets it. */
 	FDelegateHandle ActorSpawnedHandle;

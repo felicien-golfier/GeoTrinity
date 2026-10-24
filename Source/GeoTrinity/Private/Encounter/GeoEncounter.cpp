@@ -59,10 +59,51 @@ void AGeoEncounter::Start()
 	}
 }
 
+void AGeoEncounter::Abort()
+{
+	if (GeoLib::IsServer(this))
+	{
+		TGuardValue<bool> const Aborting(bAborting, true);
+		Pending = FPendingChange();
+		StopCurrentStep();
+		State = EState::Idle;
+		CurrentStep = INDEX_NONE;
+
+		auto const CancelAll = [](TArray<TObjectPtr<UGeoEncounterAction>> const& Actions)
+		{
+			for (UGeoEncounterAction* const Action : Actions)
+			{
+				if (Action)
+				{
+					Action->OnCancel();
+				}
+			}
+		};
+		for (FGeoEncounterStep const& Step : Steps)
+		{
+			CancelAll(Step.OnEnter);
+			for (FGeoEncounterRule const& Rule : Step.Rules)
+			{
+				CancelAll(Rule.Actions);
+			}
+
+			CancelAll(Step.OnExit);
+		}
+	}
+}
+
 void AGeoEncounter::StartAfterSkippingChain()
 {
 	if (GeoLib::IsServer(this))
 	{
+		for (TActorIterator<AGeoEncounter> It(GetWorld()); It; ++It)
+		{
+			if (*It != this)
+			{
+				It->Abort();
+			}
+		}
+
 		TArray<AGeoEncounter const*> Skipped;
 		AGeoEncounter const* Link = FindChainStart();
 		while (Link && Link != this && !Skipped.Contains(Link))
@@ -85,7 +126,7 @@ void AGeoEncounter::StartAfterSkippingChain()
 		}
 	}
 
-	Start();
+	Restart();
 }
 
 AGeoEncounter* AGeoEncounter::FindJumpTarget() const
@@ -296,6 +337,21 @@ void AGeoEncounter::StopCurrentStep()
 	{
 		CancelRun(Run);
 	}
+
+	TArray<TObjectPtr<UGeoEncounterAction>> const Held = MoveTemp(HeldActions);
+	HeldActions.Reset();
+	for (UGeoEncounterAction* const Action : Held)
+	{
+		if (Action)
+		{
+			Action->OnCancel();
+		}
+	}
+}
+
+void AGeoEncounter::HoldUntilStepLeft(UGeoEncounterAction& Action)
+{
+	HeldActions.AddUnique(&Action);
 }
 
 void AGeoEncounter::EnterStep(int32 const StepIndex)
@@ -347,11 +403,25 @@ void AGeoEncounter::DisarmRule(int32 const RuleIndex)
 	}
 }
 
+bool AGeoEncounter::IsCompletionUnderway() const
+{
+	TArray<FGeoEncounterRule> const& Rules = Steps[CurrentStep].Rules;
+	for (int32 RuleIndex = 0; RuleIndex < Rules.Num(); ++RuleIndex)
+	{
+		if (Rules[RuleIndex].bCompletesStep && RuleRuns[RuleIndex].bActive)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void AGeoEncounter::OnTriggerFired(UGeoEncounterTrigger const& Trigger, FGeoEncounterPayload const& Payload)
 {
 	FCallScope const Scope(*this);
 	int32 RuleIndex = INDEX_NONE;
-	if (State == EState::Running && !Pending.IsSet())
+	if (State == EState::Running && !Pending.IsSet() && !IsCompletionUnderway())
 	{
 		RuleIndex = Steps[CurrentStep].Rules.IndexOfByPredicate(
 			[&Trigger](FGeoEncounterRule const& Rule)
@@ -508,6 +578,28 @@ EDataValidationResult AGeoEncounter::IsDataValid(FDataValidationContext& Context
 		{
 			Context.AddError(
 				FText::FromString(FString::Printf(TEXT("Step %s has a null action"), *Step.Name.ToString())));
+		}
+
+		auto const HasActionAfterStart = [](TArray<TObjectPtr<UGeoEncounterAction>> const& Actions)
+		{
+			int32 const StartIndex = Actions.IndexOfByPredicate(
+				[](UGeoEncounterAction const* const Action)
+				{
+					return Cast<UGeoStartEncounterAction>(Action) != nullptr;
+				});
+			return StartIndex != INDEX_NONE && StartIndex < Actions.Num() - 1;
+		};
+		bool bActionAfterStart = HasActionAfterStart(Step.OnEnter) || HasActionAfterStart(Step.OnExit);
+		for (FGeoEncounterRule const& Rule : Step.Rules)
+		{
+			bActionAfterStart |= HasActionAfterStart(Rule.Actions);
+		}
+
+		if (bActionAfterStart)
+		{
+			Context.AddError(FText::FromString(FString::Printf(
+				TEXT("Step %s: an action follows a start encounter action, which aborts this encounter first"),
+				*Step.Name.ToString())));
 		}
 
 		for (FGeoEncounterRule const& Rule : Step.Rules)

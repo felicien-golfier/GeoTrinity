@@ -8,6 +8,24 @@
 
 #include "PatternAbility.generated.h"
 
+UINTERFACE(meta = (CannotImplementInterfaceInBlueprint))
+class GEOTRINITY_API UPatternDataSource : public UInterface
+{
+	GENERATED_BODY()
+};
+
+/**
+ * Gives a pattern ability its pattern data at activation: passed as the activation's TriggerEventData OptionalObject,
+ * so one ability serves every firing with its own configuration (a wave's safe spots).
+ */
+class GEOTRINITY_API IPatternDataSource
+{
+	GENERATED_BODY()
+
+public:
+	virtual TInstancedStruct<FPatternData> GetPatternData() const = 0;
+};
+
 /**
  * Server-driven ability that spawns a bullet pattern via multicast RPC.
  * Activates a UPattern instance on all clients, waits for it to finish, then ends the ability.
@@ -56,9 +74,10 @@ protected:
 
 	/**
 	 * Builds the pattern-specific data sent through PatternStartMulticast to every client's InitPattern.
-	 * Base returns an unset struct (no extra data). Override to fill your own FPatternData subclass.
+	 * Base returns the data given at activation (GivenPatternData), unset when none. Override to fill your own
+	 * FPatternData subclass.
 	 */
-	virtual TInstancedStruct<FPatternData> CreatePatternData() const { return {}; }
+	virtual TInstancedStruct<FPatternData> CreatePatternData() const { return GivenPatternData; }
 
 	/** Returns the location of the caster arena's TargetPointTag point, where the pattern launches from instead. */
 	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
@@ -106,6 +125,10 @@ protected:
 	FGeoCueParam PreLaunchCue;
 
 	TArray<TWeakObjectPtr<UGeoAbilitySystemComponent>> PreLaunchCueASCs;
+
+	/** Pattern data of the IPatternDataSource the activation came with (TriggerEventData OptionalObject); unset when
+	 * none. */
+	TInstancedStruct<FPatternData> GivenPatternData;
 
 	FTimerHandle PreLaunchTimerHandle;
 };

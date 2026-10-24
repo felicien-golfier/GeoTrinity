@@ -7,7 +7,6 @@
 AHiddenCasterCharacter::AHiddenCasterCharacter(FObjectInitializer const& ObjectInitializer) :
 	Super(ObjectInitializer.DoNotCreateDefaultSubobject(TEXT("CharacterWidgetComponent")))
 {
-	SetActorHiddenInGame(true);
 }
 
 void AHiddenCasterCharacter::BeginPlay()

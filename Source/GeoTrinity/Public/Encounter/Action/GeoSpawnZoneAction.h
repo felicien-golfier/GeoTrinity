@@ -17,8 +17,8 @@ class AGeoEffectZone;
 /**
  * Spawns one effect zone (the project's DefaultZoneClass) on the first target point tagged PurposeTag and ArenaTag,
  * with the effects, size, colours, attitude and team written on the action. It has no owner: the zone is its own
- * effect source. Lasts until the step is left, then expires. Never finishes on its own, so it goes last in its action
- * list.
+ * effect source. Finishes at once and lasts until the step is left (held by the encounter), then expires. Run again
+ * while held (a repeating rule): the previous zone is recalled first.
  */
 UCLASS()
 class GEOTRINITY_API UGeoSpawnZoneAction : public UGeoEncounterAction
@@ -26,11 +26,9 @@ class GEOTRINITY_API UGeoSpawnZoneAction : public UGeoEncounterAction
 	GENERATED_BODY()
 
 public:
-	UGeoSpawnZoneAction() { bLatent = true; }
-
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
-	/** Recalls the zone: it blinks, then goes. */
+	/** The step was left, or the action runs again: recalls the zone, it blinks, then goes. */
 	virtual void OnCancel_Implementation() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (Categories = "TargetPoint"))

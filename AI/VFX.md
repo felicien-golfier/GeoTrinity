@@ -320,7 +320,7 @@ cannot be called.
 
 `NS_Beam`, `NS_Ray_ZoneIndicator` and `NS_Round_ZoneIndicator` carry `User.Color`, `User.Color2`–`4` and
 `User.ColorCount`, which the sprite renderer binds to the same-named material parameters
-(`AI/Python/Niagara/meaning_color_bindings.py`), so each effect draws through its own dynamic material instance.
+(`AI/Python/Niagara/material_user_bindings.py`), so each effect draws through its own dynamic material instance.
 `GeoNiagaraParams::SetMeaningColors` writes them, from an owner's colour plus its secondary colours:
 `UGeoBeamVFXComponent` on the live beam, `UBeamPattern` on whichever of its two systems its one component is showing,
 `UGeoIndicatorComponent::SpawnIndicator` on every ray and round telegraph it draws (a channel beam's windup, a zone

@@ -8,7 +8,7 @@ Niagara systems and emitter stacks. Docs: `AI/VFX.md`, `AI/MCP/MCP_Niagara.md`.
 |---|---|
 | `niagara_stack_edit.py` | Stack editing: modules, switches, inputs |
 | `decode_niagara_parameters.py` | Decode a rapid-iteration store from the property API |
-| `meaning_color_bindings.py` | Beam / telegraph systems' meaning-colour User params bound to material params |
+| `material_user_bindings.py` | Beam / telegraph systems' User params bound to material params: meaning colours, `SafeSpotCut` |
 | `buff_vfx.py` | Every buff a character or its shots can wear, one style |
 | `geo_aura_vfx.py` | Five character auras as geometry |
 | `empowerment_vfx.py` / `empowered_aura_vfx.py` | Empowerment aura (ortho view), three auras (electricity: `Electric/empowered_arc_vfx.py`) |

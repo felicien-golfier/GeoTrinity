@@ -13,4 +13,5 @@ Enemy AI: `AGeoEnemyAIController` + GameplayStateTree.
 - `bSetControlRotationFromPawnOrientation = false`; facing goes through `AGeoCharacter::SetTargetYaw`.
 - `TriggerAggro`: for boss arenas calls `Arena->StartFight()` then `GameMode->StartMatch()` (gated by `IsBoss()`); non-match bosses get `AI.Boss.AggroEvent`.
 - The tree starts only from `InitializeStateTree` (`bStartLogicAutomatically` off). No `StateTree` on the pawn: possession starts no logic. `CanBeAggroed()` false (hidden caster): no aggro watch.
+- Aggro wakes on a hostile within the radius (`CheckAggroDistance`, 0.5 s timer) or on any effect applied by another source (a hit). Radius = the enemy's `AggroRadiusOverride` (`FGeoEnemySetup::AggroRadius`) when set, else the controller's `AggroRadius`. A small radius = "wait to be hit" (tutorial: 100).
 - Server only; cosmetics reach clients through replicated cues or state.

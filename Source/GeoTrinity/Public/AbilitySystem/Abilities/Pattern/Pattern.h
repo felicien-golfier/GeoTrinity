@@ -114,7 +114,8 @@ protected:
 	virtual void OnHazardEnd();
 
 	/** Spawns an inactive System kept for the pattern's whole life. Attached to Owner so it is destroyed with it — the
-	 * pattern lives as long as Owner's ASC — but absolute, so the pattern places it in world space. */
+	 * pattern lives as long as Owner's ASC — but absolute, so the pattern places it in world space. Null where nothing
+	 * renders (dedicated server, headless tests). */
 	UNiagaraComponent* SpawnPersistentVfx(UNiagaraSystem* System, AActor& Owner) const;
 
 	/** Seeks the boss's active montage to its End section; no-op when the montage is not playing, already at End, or
@@ -128,6 +129,10 @@ protected:
 	 * it.
 	 */
 	bool CanPlayMontageLocally(UAnimInstance const* AnimInstance) const;
+
+	/** The caster's anim instance when this pattern plays its own montage (HasMontage); null otherwise, so a caster
+	 * with no mesh (hidden caster) is never asked for one. */
+	UAnimInstance* GetMontageAnimInstance() const;
 
 	TArray<TInstancedStruct<FEffectData>> EffectDataArray;
 

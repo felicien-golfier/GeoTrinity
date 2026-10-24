@@ -5,7 +5,11 @@
 bool FSafeSpot::Shields(FVector2D const Target, FVector2D const Origin, FVector2D const Direction) const
 {
 	bool bShields = false;
-	if (Shadow == ESafeSpotShadow::Lane)
+	if (Shadow == ESafeSpotShadow::Disc)
+	{
+		bShields = (Target - Location).SizeSquared() <= Radius * Radius;
+	}
+	else if (Shadow == ESafeSpotShadow::Lane)
 	{
 		FVector2D const Right(-Direction.Y, Direction.X);
 		bShields = FMath::Abs((Target - Location) | Right) < Radius;

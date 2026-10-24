@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
+#include "Encounter/GeoEncounter.h"
 #include "Engine/World.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
@@ -11,6 +12,8 @@
 
 void UGeoSpawnZoneAction::Execute_Implementation(FGeoEncounterPayload const& /*Payload*/)
 {
+	OnCancel_Implementation();
+	GetEncounter()->HoldUntilStepLeft(*this);
 	TArray<AActor*> const SpawnPoints = GeoLib::GetTargetPoints(this, PurposeTag, ArenaTag);
 	TSubclassOf<AGeoEffectZone> const ZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass.LoadSynchronous();
 	if (SpawnPoints.IsEmpty()
@@ -22,7 +25,7 @@ void UGeoSpawnZoneAction::Execute_Implementation(FGeoEncounterPayload const& /*P
 	else
 	{
 		FVector Location = SpawnPoints[0]->GetActorLocation();
-		Location.Z = 0.f;
+		Location.Z = ArbitraryCharacterZ;
 		FDeployableData Data;
 		Data.TeamID = FGenericTeamId(static_cast<uint8>(Team));
 		Data.EffectDataArray = EffectDataArray;
@@ -36,5 +39,6 @@ void UGeoSpawnZoneAction::OnCancel_Implementation()
 	if (Zone.IsValid())
 	{
 		Zone->Recall();
+		Zone.Reset();
 	}
 }

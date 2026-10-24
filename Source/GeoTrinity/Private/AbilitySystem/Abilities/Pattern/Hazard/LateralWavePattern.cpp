@@ -9,21 +9,9 @@
 
 void ULateralWavePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
-	FSafeSpotMask::Clear(this, MaskMaterialParameterCollection);
-
 	Super::InitPattern(Payload, PatternData);
-}
 
-void ULateralWavePattern::TickDuringInit(float const SpentTime)
-{
-	Super::TickDuringInit(SpentTime);
-	RefreshMask();
-}
-
-void ULateralWavePattern::TickPattern(float const ServerTime, float const SpentTime)
-{
-	Super::TickPattern(ServerTime, SpentTime);
-	RefreshMask();
+	FSafeSpotMask::Clear(this, MaskMaterialParameterCollection);
 }
 
 float ULateralWavePattern::GetHazardDuration() const
@@ -41,18 +29,21 @@ TArray<FSafeSpot> ULateralWavePattern::GetSafeSpots() const
 	FVector2D const Forward = GetForward();
 	FVector2D const Right(-Forward.Y, Forward.X);
 	TArray<FVector2D> FixedLocations;
-	for (FVector2D const& Offset : FixedSpotOffsets)
+	if (FLateralWavePatternData const* const WaveData = StoredPatternData.GetPtr<FLateralWavePatternData>())
 	{
-		FixedLocations.Add(StoredPayload.Origin + Forward * Offset.X + Right * Offset.Y);
+		for (FVector2D const& Offset : WaveData->SafeSpotOffsets)
+		{
+			FixedLocations.Add(StoredPayload.Origin + Forward * Offset.X + Right * Offset.Y);
+		}
 	}
 
-	return GatherSafeSpots(this, StoredPayload, SafeSpotSources, ESafeSpotShadow::Lane, 0.f, SpotRadius,
-						   FixedLocations);
-}
+	TArray<ESafeSpotSource> Sources = SafeSpotSources;
+	if (!GeoLib::IsServer(GetWorld()))
+	{
+		Sources.Remove(ESafeSpotSource::Adds);
+	}
 
-void ULateralWavePattern::RefreshMask()
-{
-	FSafeSpotMask::Set(this, MaskMaterialParameterCollection, GetSafeSpots());
+	return GatherSafeSpots(this, StoredPayload, Sources, ESafeSpotShadow::Lane, 0.f, SpotRadius, FixedLocations);
 }
 
 bool ULateralWavePattern::IsInHazard(AActor const* /*Target*/, FVector2D const Location, float const SpentTime) const
@@ -79,7 +70,6 @@ void ULateralWavePattern::MoveBeamVfx(float const SpentTime)
 		FVector2D BeamDirection = Forward;
 		float BeamLength = TravelDistance;
 		float BeamWidth = HalfWidth * 2.f;
-
 		if (SpentTime >= 0.f)
 		{
 			float const BandEnd = FMath::Clamp(Speed * SpentTime, 0.f, TravelDistance);
@@ -94,6 +84,8 @@ void ULateralWavePattern::MoveBeamVfx(float const SpentTime)
 													  FVector(BeamDirection, 0.f).Rotation());
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamLength);
 		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamWidth);
+		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::SafeSpotCut, 1.f);
+		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, GetSafeSpots(), Forward);
 	}
 }
 

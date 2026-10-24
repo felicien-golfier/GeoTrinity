@@ -66,14 +66,18 @@ public:
 	/** False: its controller never watches for players or damage, so no aggro and no fight start (a hidden caster). */
 	virtual bool CanBeAggroed() const { return true; }
 
-	/** Server. The one spawn of an enemy outside its arena's boss slot: ArbitraryCharacterZ, unit scale, deferred.
+	/** FGeoEnemySetup::AggroRadius; negative = its controller's AggroRadius. */
+	float AggroRadiusOverride = -1.f;
+
+	/** Server. The one spawn of an enemy, arena bosses included: ArbitraryCharacterZ, unit scale, deferred.
 	 * Arena (null for none) and Setup (null for none) are applied before FinishSpawning, so the controller's
 	 * possession and the StateTree already see them. Null when the spawn failed. */
 	static AEnemyCharacter* SpawnEnemy(UWorld& World, TSubclassOf<AEnemyCharacter> EnemyClass, FVector Location,
 									   AActor* Owner, AGeoArena* Arena, FGeoEnemySetup const* Setup);
 
-	/** Server. Applies the spawner's variant: team, dies or resets at zero, StateTree, extra abilities, health, actor
-	 * tag. Between SpawnActorDeferred and FinishSpawning only, so the controller's possession and InitGAS see it. */
+	/** Server. Applies the spawner's variant: team, dies or resets at zero, StateTree and BehaviourStateTree, extra
+	 * abilities, health, actor tag. Between SpawnActorDeferred and FinishSpawning only, so the controller's possession
+	 * and InitGAS see it. */
 	void ApplySetup(FGeoEnemySetup const& Setup);
 
 	/** Resets health to max and restarts the StateTree. Called on full-wipe to start a new attempt. */

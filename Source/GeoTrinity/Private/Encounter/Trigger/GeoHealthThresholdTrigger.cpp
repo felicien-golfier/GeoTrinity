@@ -12,6 +12,7 @@
 void UGeoHealthThresholdTrigger::OnArm_Implementation()
 {
 	WasPast.Reset();
+	Crossings = 0;
 	ensureMsgf(Watched.Class, TEXT("%s: nothing watched"), *GetName());
 	ActorSpawnedHandle = GetWorld()->AddOnActorSpawnedHandler(
 		FOnActorSpawned::FDelegate::CreateUObject(this, &UGeoHealthThresholdTrigger::OnActorSpawned));
@@ -92,7 +93,11 @@ void UGeoHealthThresholdTrigger::Evaluate(AActor& Actor)
 	float const MaxHealth = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute());
 	float const Current = MaxHealth > 0.f ? Health / MaxHealth : 0.f;
 
-	bool const bPast = MaxHealth > 0.f && ((Side == EGeoHealthSide::Above) ? Current >= Ratio : Current <= Ratio);
+	AGeoCharacter const* const Character = Cast<AGeoCharacter>(&Actor);
+	bool const bAlive = !Character || !Character->IsDead();
+
+	bool const bPast =
+		bAlive && MaxHealth > 0.f && ((Side == EGeoHealthSide::Above) ? Current >= Ratio : Current <= Ratio);
 	bool& bWasPast = WasPast.FindOrAdd(&Actor);
 	bool const bCrossed = bPast && !bWasPast;
 	bWasPast = bPast;
@@ -100,6 +105,7 @@ void UGeoHealthThresholdTrigger::Evaluate(AActor& Actor)
 	{
 		FGeoEncounterPayload Payload;
 		Payload.Actor = &Actor;
+		Payload.Count = ++Crossings;
 		Payload.Value = Current;
 		Fire(Payload);
 	}

@@ -6,6 +6,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "Engine/LocalPlayer.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 bool UHudFunctionLibrary::ShouldDrawHUD(UObject const* WorldContextObject)
 {
@@ -69,4 +70,16 @@ FKey UHudFunctionLibrary::GetMappedKey(ULocalPlayer const* LocalPlayer, UInputAc
 		LocalPlayer && InputAction ? LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
 	TArray<FKey> const Keys = InputSubsystem ? InputSubsystem->QueryKeysMappedToAction(InputAction) : TArray<FKey>();
 	return Keys.Num() > 0 ? Keys[0] : FKey();
+}
+
+FKey UHudFunctionLibrary::GetDefaultMappedKey(UInputMappingContext const* Context, UInputAction const* InputAction)
+{
+	FEnhancedActionKeyMapping const* const Mapping = Context
+		? Context->GetMappings().FindByPredicate(
+			  [InputAction](FEnhancedActionKeyMapping const& Candidate)
+			  {
+				  return Candidate.Action == InputAction;
+			  })
+		: nullptr;
+	return Mapping ? Mapping->Key : FKey();
 }

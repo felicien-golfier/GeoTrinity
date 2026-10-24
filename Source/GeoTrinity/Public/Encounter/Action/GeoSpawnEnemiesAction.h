@@ -15,8 +15,9 @@ class AGeoCharacter;
 /**
  * Spawns Count enemies of EnemyClass, varied by Setup, on the target points tagged PurposeTag and ArenaTag (round
  * robin). Each one that dies comes back RespawnDelay seconds after its own death, where it died (0: never); the others
- * are untouched. Runs until its step is left; bKillOnStepExit then kills the ones still alive. Never finishes on its
- * own, so it goes last in its action list.
+ * are untouched. Finishes at once and keeps working until its step is left (held by the encounter); bKillOnStepExit
+ * then kills the ones still alive. Anything after it in the list runs right away. Run again while held (a repeating
+ * rule): the previous run ends first, as a cancel does.
  */
 UCLASS()
 class GEOTRINITY_API UGeoSpawnEnemiesAction : public UGeoEncounterAction
@@ -24,11 +25,9 @@ class GEOTRINITY_API UGeoSpawnEnemiesAction : public UGeoEncounterAction
 	GENERATED_BODY()
 
 public:
-	UGeoSpawnEnemiesAction() { bLatent = true; }
-
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
-	/** Stops every respawn; kills the living with bKillOnStepExit. */
+	/** The step was left, or the action runs again: stops every respawn; kills the living with bKillOnStepExit. */
 	virtual void OnCancel_Implementation() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")

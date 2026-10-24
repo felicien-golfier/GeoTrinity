@@ -24,7 +24,8 @@ public:
 
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
-	/** Stops waiting for the respawn or the line's end; a line on screen stays until it ends. */
+	/** Stops waiting for the respawn or the line's end. A line on screen stays until it ends, unless the encounter is
+	 * aborting: then it is ended at once. */
 	virtual void OnCancel_Implementation() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (MultiLine = true))
@@ -42,4 +43,10 @@ private:
 
 	/** Bumped on cancel: the end of a line shown by a cancelled run no longer finishes the action. */
 	int32 LineRun = 0;
+
+	/** Lines this action has shown; the end of an older one no longer clears bLineShowing. */
+	int32 ShownLines = 0;
+
+	/** The line this action showed is still on the HUD (it outlives a cancelled run until it ends). */
+	bool bLineShowing = false;
 };

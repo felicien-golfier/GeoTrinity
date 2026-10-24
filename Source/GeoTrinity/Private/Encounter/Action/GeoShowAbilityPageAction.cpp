@@ -8,6 +8,23 @@ void UGeoShowAbilityPageAction::Execute_Implementation(FGeoEncounterPayload cons
 {
 	if (IGeoHUDInterface* const HUD = GetLocalHUD())
 	{
-		HUD->ShowAbilityPage(AbilityTag);
+		HUD->ShowAbilityPage(AbilityTag,
+							 FSimpleDelegate::CreateWeakLambda(this,
+															   [this, Run = PageRun]()
+															   {
+																   if (Run == PageRun)
+																   {
+																	   Finish();
+																   }
+															   }));
 	}
+	else
+	{
+		Finish();
+	}
+}
+
+void UGeoShowAbilityPageAction::OnCancel_Implementation()
+{
+	++PageRun;
 }

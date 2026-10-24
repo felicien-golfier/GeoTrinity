@@ -1,21 +1,23 @@
 """
 Training Room builder for GeoTrinity (DraftMap, room tag Arena.TrainingRoom).
 
-Builds the Training Room the players spawn into and the tutorial hands off to: its AI StateTrees, its dummy and
-caster Blueprints (the Training* kit), the zone deployable Blueprints, the zone material instances, and the room
-itself (floor, walls, the arena, the zone row and its target points, class-change pads, teleporter pair, player
-starts). The six zone abilities (GA_Training_*: UPatternAbility launching a BP_ZonePattern_*) are hand-kept and
-only referenced here by tag.
+Builds the Training Room the players spawn into and the tutorial hands off to: its zone StateTree, the tint of each
+zone pattern, and the room itself (floor, walls, the arena, the zone row and its target points, class-change pads,
+teleporter pair, player starts). The six zone abilities (GA_Training_*: UPatternAbility launching a BP_ZonePattern_*)
+are hand-kept and only referenced here by tag. No Blueprint per variant (AI/CodingStyle.md, "Variants are data"): the
+caster is the native AHiddenCasterCharacter + the arena's BossSetup, every station BP_Dummy + its StartAdds setup, every
+zone the project's DefaultZoneClass tinted by its pattern's ZoneParams.Color. The Training* Blueprints, zone Blueprints
+and pulse-circle tints of the old layout are deleted once nothing references them.
 Idempotent — assets and actors are keyed by path/label, so a re-run updates instead of duplicating.
 
 The room is one AGeoDummyArena, not one per enemy: the hidden zone caster is its boss and every station
 enemy is an add on its own TargetPoint.AddSpawn, so the whole room spawns and resets as a single unit.
 
-The zones are ability-driven, not placed: one hidden caster (AHiddenCasterCharacter) holds all six zone abilities
-and fires them at once, each onto the AGeoTargetPoint carrying its own TargetPoint.Training.* tag. A zone pattern
-telegraphs its circle, then either leaves an AGeoEffectZone behind (lingering zones) or bursts its effects on the
-spot (the two one-shot zones). Every cadence but the telegraph lives in the StateTree: FireAll (all six at once, and
-it waits for all six) -> Rest(delay) -> FireAll.
+The zones are ability-driven, not placed: one hidden caster holds all six zone abilities and fires them at once, each
+onto the AGeoTargetPoint carrying its own TargetPoint.Training.* tag. A zone pattern telegraphs its circle, then
+either leaves an AGeoEffectZone behind (lingering zones) or bursts its effects on the spot (the two one-shot zones).
+Every cadence but the telegraph lives in the StateTree: FireAll (all six at once, and it waits for all six) ->
+Rest(delay) -> FireAll.
 
 The room sits outside the level's NavMeshBoundsVolume: nothing in it paths, the moving dummy chases
 in a straight line. Widen that volume first if a MoveTo/firing-point patrol is ever wanted here.
@@ -27,11 +29,17 @@ The editor's own top view renders that 180 degrees around, which is why signs lo
 Reference: AI/MCP/MCP_Blueprint.md, AI/MCP/MCP_StateTree.md, AI/MCP/MCP_NewEnemyAbility.md.
 Nothing a script prints comes back through MCP, so the run report is written to REPORT_PATH.
 
-Stages (call from execute_script):
-    build_assets()   # StateTrees, Blueprints (zones, dummies, caster), material instances
-    build_level()    # room geometry, stations, the zone row and its points, signs, access
+Stages (call from execute_script, DraftMap open):
+    build_assets()        # zone StateTree, zone pattern tints
+    build_level()         # room geometry, stations, the zone row and its points, signs, access
+    delete_old_assets()   # in a later run: the old layout's Blueprints and tints nothing references any more
 """
+import sys
+
 import unreal
+
+sys.path.insert(0, "C:/GeoTrinity/AI/Python/Tutorial/Level")
+import tutorial_waves  # noqa: E402  delete_unreferenced
 
 REPORT_PATH = r"C:/GeoTrinity/AI/Output/training_room_report.txt"
 
@@ -42,31 +50,28 @@ TRAINING_TAG = "Arena.TrainingRoom"
 ST_SRC = "/Game/AI/ST_EnemyBehaviour"
 ST_DIR = "/Game/AI/Training"
 DUMMY_SHOOTER_TREE = "/Game/AI/Dummy/ST_Dummy_Shooter"
-DUMMY_CHASER_TREE = "/Game/AI/Dummy/ST_Dummy_Chaser"
 BP_DIR = "/Game/Characters/Enemies/Training"
 BP_DUMMY = BP_DIR + "/BP_Dummy"
-CASTER_PARENT = "/Script/GeoTrinity.HiddenCasterCharacter"
-ZONE_BP_DIR = "/Game/Actors/Training"
-ZONE_SRC_DAMAGE = "/Game/Actors/BP_DamageZone"
-ZONE_SRC_HEAL = "/Game/Actors/BP_HealingZone"
+CASTER_CLASS = "/Script/GeoTrinity.HiddenCasterCharacter"
+PATTERN_DIR = "/Game/AbilitySystem/Abilities/Enemy/Training"
+SHOOTER_ABILITY_TAG = "Ability.Spell.ProjectileToAllPlayers"
 
 TARGET_POINT_BP = "/Game/Actors/GeoTargetPoint"
 BOSS_SPAWN_TAG = "TargetPoint.BossSpawn"
 ADD_SPAWN_TAG = "TargetPoint.AddSpawn"
 
-MI_DIR = "/Game/Art/VFX/AOE"
-MI_SRC = MI_DIR + "/MI_PulseCircle"
-MI_LETHAL = MI_DIR + "/MI_PulseCircle_Lethal"
-MI_REDUCTION = MI_DIR + "/MI_PulseCircle_DamageReduction"
+# The old layout: one Blueprint or material per variant.
+OLD_ASSETS = [BP_DIR + "/BP_TrainingChaser", BP_DIR + "/BP_TrainingAlly", BP_DIR + "/BP_TrainingShooter",
+              BP_DIR + "/BP_TrainingZoneCaster", "/Game/Actors/Training/BP_Zone_HealOverTime",
+              "/Game/Actors/Training/BP_Zone_DamageOverTime", "/Game/Actors/Training/BP_Zone_DamageReduction",
+              "/Game/Actors/Training/BP_Zone_Lethal", "/Game/Art/VFX/AOE/MI_PulseCircle_Lethal",
+              "/Game/Art/VFX/AOE/MI_PulseCircle_DamageReduction"]
 
 # Zone cadence. ZONE_LIFE + ZONE_BLINK is how long a lingering zone stays up (set on the BP_ZonePattern_*); REST is
 # the StateTree delay between two casts, sized so the next telegraph starts as the previous zone finishes blinking out.
 ZONE_LIFE = 5.0
 ZONE_BLINK = 1.0
 REST = ZONE_LIFE + ZONE_BLINK
-
-# Only players are hostile to an Enemy-team caster, so this reaches them and leaves the dummies alone.
-HOSTILE = 4
 
 # Room: 2600 x 3800, walled, reachable only through the teleporter pair.
 CX, CY = -6000.0, 0.0
@@ -150,14 +155,8 @@ LEGACY_LABELS = ("Tuto_Arena_Zones", "Tuto_HazardZone",
                  "Tuto_Arena_Ally", "Tuto_Arena_Bullets", "Tuto_Arena_Target")
 
 
-# zone Blueprint key -> (source Blueprint, material override or None)
-def zone_bp_specs():
-    return {
-        "HealOverTime": (ZONE_SRC_HEAL, None),
-        "DamageOverTime": (ZONE_SRC_DAMAGE, None),
-        "DamageReduction": (ZONE_SRC_DAMAGE, MI_REDUCTION),
-        "Lethal": (ZONE_SRC_DAMAGE, MI_LETHAL),
-    }
+# lingering zone key -> its EGeoColor, written on the pattern's ZoneParams.Color (the zone and its telegraph)
+ZONE_COLORS = {"HealOverTime": "Heal", "DamageOverTime": "Damage", "DamageReduction": "DamageReduction", "Lethal": "LethalDamage"}
 
 
 # ---------------------------------------------------------------- assets
@@ -170,69 +169,28 @@ def dup_asset(src, dst):
     return unreal.EditorAssetLibrary.duplicate_asset(src, dst), True
 
 
-def make_bp(name, folder, parent_class):
-    """Returns (blueprint, created)."""
-    path = "%s/%s" % (folder, name)
-    if unreal.EditorAssetLibrary.does_asset_exist(path):
-        return unreal.load_asset(path), False
-    factory = unreal.BlueprintFactory()
-    factory.set_editor_property("ParentClass", parent_class)
-    blueprint = unreal.AssetToolsHelpers.get_asset_tools().create_asset(name, folder, unreal.Blueprint, factory)
-    unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
-    return blueprint, True
-
-
-def commit_bp(blueprint):
-    """Writing to a Blueprint's CDO only reaches spawned actors once the Blueprint is recompiled — without
-    this a totem spawns with none of the properties set here (no StateTree, still damageable)."""
-    unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
-    unreal.EditorAssetLibrary.save_loaded_asset(blueprint)
-
-
-def subobject(blueprint, name):
-    """Component template of a Blueprint by component name, or None."""
-    subsystem = unreal.get_engine_subsystem(unreal.SubobjectDataSubsystem)
-    for handle in subsystem.k2_gather_subobject_data_for_blueprint(blueprint):
-        data = subsystem.k2_find_subobject_data_from_handle(handle)
-        component = unreal.SubobjectDataBlueprintFunctionLibrary.get_object(data)
-        if component is not None and component.get_name().startswith(name):
-            return component
-    return None
-
-
-def build_zone_blueprints():
-    """One AGeoEffectZone Blueprint per lingering zone: same deployable, different tint and nothing else.
-    Duplicated off the hand-placed zones so the pulse-circle plane and its material slot come along."""
-    made = {}
-    for key, (source, material) in zone_bp_specs().items():
-        name = "BP_Zone_" + key
-        blueprint, created = dup_asset(source, "%s/%s" % (ZONE_BP_DIR, name))
+def build_zone_patterns():
+    """Each lingering zone's pattern spawns the project's DefaultZoneClass in its own colour: no zone Blueprint."""
+    for key, color in ZONE_COLORS.items():
+        blueprint = unreal.load_asset("%s/BP_ZonePattern_%s" % (PATTERN_DIR, key))
         cdo = unreal.get_default_object(blueprint.generated_class())
-        cdo.set_editor_property("AttitudeBitmask", HOSTILE)
-        # The spawning ability owns the effects now; the placed-zone Details fields would only confuse.
-        cdo.set_editor_property("EffectDataArray", [])
-        if material:
-            mesh = subobject(blueprint, "Zone")
-            if mesh is not None:
-                mesh.set_editor_property("OverrideMaterials", [unreal.load_asset(material)])
-        commit_bp(blueprint)
-        made[key] = blueprint
-        log("ZoneBP", name, "created" if created else "updated")
-    return made
+        params = cdo.get_editor_property("ZoneParams").copy()
+        params.import_text("(Color=(Color=%s))" % color)
+        cdo.set_editor_property("ZoneParams", params)
+        cdo.set_editor_property("ZoneClass", None)
+        unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
+        unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
+        log("ZonePattern", key, "->", color)
 
 
-def build_state_trees():
-    """Trims of the star boss's own tree — same tasks, none of its movement or wave states.
+def build_zone_tree():
+    """A trim of the enemy base tree for the zone caster. The bullet totem runs the tutorial's shared shooter tree
+    (tutorial_assets.py builds it).
 
     Every builder call compiles the asset, so a transition must be cleared *before* the state it points
     at is removed — a dangling transition fails that compile and raises a blocking ensure.
     """
     builder = unreal.GeoStateTreeBuilderUtil.get_default_object()
-    trees = {}
-
-    # The shooter and the chaser are the tutorial's shared trees (tutorial_assets.py builds them).
-    trees["bullets"] = unreal.load_asset(DUMMY_SHOOTER_TREE)
-    trees["chase"] = unreal.load_asset(DUMMY_CHASER_TREE)
 
     # Zone caster: Dormant -> Wait -> FireAll -> Rest -> FireAll, forever. FireAll carries one fire task per zone
     # ability and a state starts all its tasks at once, so the six go off together; TasksCompletion ALL is what
@@ -253,73 +211,14 @@ def build_state_trees():
                                unreal.StateTreeTransitionTrigger.ON_STATE_COMPLETED)
         builder.add_transition(tree, "Rest", "FireAll",
                                unreal.StateTreeTransitionTrigger.ON_STATE_COMPLETED)
-    trees["zones"] = tree
-
-    for key, tree in trees.items():
-        log("StateTree", key, "->", tree.get_name())
-    return trees
-
-
-def build_blueprints(trees):
-    dummy_class = unreal.load_asset(BP_DUMMY).generated_class()
-    made = {}
-
-    specs = [
-        ("BP_TrainingChaser", dummy_class, {"StateTree": trees["chase"]}, None),
-        ("BP_TrainingAlly", dummy_class, {"TeamId": unreal.Team.PLAYER}, None),
-        ("BP_TrainingShooter", dummy_class, {"StateTree": trees["bullets"]}, ["Ability.Spell.ProjectileToAllPlayers"]),
-    ]
-    # The caster is nothing but what fires the six zone abilities: AHiddenCasterCharacter draws nothing and takes no
-    # hit. Its StateTree fires the whole row on a loop as soon as it spawns.
-    caster_class = unreal.load_class(None, CASTER_PARENT)
-    specs.append(("BP_TrainingZoneCaster", caster_class, {"StateTree": trees["zones"]},
-                  [spec[2] for spec in zone_specs()]))
-
-    for name, parent, props, ability_tags in specs:
-        blueprint, created = make_bp(name, BP_DIR, parent)
-        if unreal.BlueprintEditorLibrary.get_blueprint_parent_class(blueprint) != parent:
-            unreal.BlueprintEditorLibrary.reparent_blueprint(blueprint, parent)
-        cdo = unreal.get_default_object(blueprint.generated_class())
-        for prop, value in props.items():
-            cdo.set_editor_property(prop, value)
-        if ability_tags:
-            asc = cdo.get_editor_property("AbilitySystemComponent")
-            asc.set_editor_property("StartupAbilityTags", [tag(t) for t in ability_tags])
-        commit_bp(blueprint)
-        made[name] = blueprint
-        log("Blueprint", name, "created" if created else "updated")
-    return made
-
-
-def build_materials():
-    """Two tints of the shared pulse circle, parented to MI_PulseCircle so its ring and pulse tuning
-    stays in one place. Colors are the EGeoColor palette values for LethalDamage and DamageReduction."""
-    tools = unreal.AssetToolsHelpers.get_asset_tools()
-    library = unreal.MaterialEditingLibrary
-    parent = unreal.load_asset(MI_SRC)
-
-    for path, color in ((MI_LETHAL, unreal.LinearColor(1.0, .262451, 0.0, 1.0)),
-                        (MI_REDUCTION, unreal.LinearColor(0.0, 0.0, 1.0, 1.0))):
-        if unreal.EditorAssetLibrary.does_asset_exist(path):
-            log("Material", path, "exists")
-            continue
-        name = path.rsplit("/", 1)[1]
-        instance = tools.create_asset(name, MI_DIR, unreal.MaterialInstanceConstant,
-                                      unreal.MaterialInstanceConstantFactoryNew())
-        library.set_material_instance_parent(instance, parent)
-        library.set_material_instance_vector_parameter_value(instance, "InsideColor", color)
-        library.set_material_instance_vector_parameter_value(instance, "OutlineColor", color)
-        unreal.EditorAssetLibrary.save_asset(path)
-        log("Material", path, "created")
+    log("StateTree zones", "created" if created else "kept")
 
 
 def build_assets():
     REPORT[:] = []
     try:
-        build_materials()
-        build_zone_blueprints()
-        trees = build_state_trees()
-        build_blueprints(trees)
+        build_zone_tree()
+        build_zone_patterns()
         log("ASSETS OK")
     except Exception:
         import traceback
@@ -378,27 +277,44 @@ def build_room():
         dup_actor("PointLight", label, (CX, CY + offset, 900.0))
 
 
-def build_stations(blueprints):
-    """Three dummies to shoot, heal and dodge, spawned as the room arena's adds. Returns their classes in the
-    order their TargetPoint.AddSpawn points are created: ResetAdds walks AddClasses and the points GetTargetPoints
+def station_setup(team=unreal.Team.ENEMY, state_tree=None, ability_tags=()):
+    """A training dummy: BP_Dummy back at full health at zero, varied by team, tree and abilities."""
+    setup = unreal.GeoEnemySetup()
+    setup.set_editor_property("Team", team)
+    setup.set_editor_property("bResetToFullLife", True)
+    setup.set_editor_property("AggroRadius", 100.0)
+    if state_tree is not None:
+        setup.set_editor_property("StateTree", unreal.load_asset(state_tree))
+    setup.set_editor_property("AbilityTags", [tag(t) for t in ability_tags])
+    return setup
+
+
+def build_stations():
+    """Three dummies to shoot, heal and dodge, spawned as the room arena's adds. Returns their StartAdds in the
+    order their TargetPoint.AddSpawn points are created: ResetAdds walks StartAdds and the points GetTargetPoints
     returns in step, so the two orders have to agree. The keys are listed alphabetically, which is that creation
     order, so the pairing also holds for any name-ordered lookup."""
     log("-- stations")
     stations = [
-        ("Ally", 400.0, blueprints["BP_TrainingAlly"], "ALLY ON FIRE\nheal it (its zone burns you too)"),
-        ("Bullets", 1200.0, blueprints["BP_TrainingShooter"], "BULLET TOTEM\ndodge the shots"),
-        ("Target", -400.0, unreal.load_asset(BP_DUMMY), "TRAINING DUMMY\nshoot it"),
+        ("Ally", 400.0, station_setup(team=unreal.Team.PLAYER), "ALLY ON FIRE\nheal it (its zone burns you too)"),
+        ("Bullets", 1200.0, station_setup(state_tree=DUMMY_SHOOTER_TREE, ability_tags=[SHOOTER_ABILITY_TAG]),
+         "BULLET TOTEM\ndodge the shots"),
+        ("Target", -400.0, station_setup(), "TRAINING DUMMY\nshoot it"),
     ]
-    add_classes = []
-    for key, offset, blueprint, text in stations:
+    dummy_class = unreal.load_asset(BP_DUMMY).generated_class()
+    start_adds = []
+    for key, offset, setup, text in stations:
         target_point("Tuto_AddSpawn_" + key, (ROW_STATION, offset, 0.0), ADD_SPAWN_TAG)
         sign("Tuto_Sign_" + key, (ROW_STATION_SIGN, offset, 0.0), text)
-        add_classes.append(blueprint.generated_class())
-        log("  ", key, "->", blueprint.get_name())
+        start_add = unreal.GeoArenaAdd()
+        start_add.set_editor_property("Class", dummy_class)
+        start_add.set_editor_property("Setup", setup)
+        start_adds.append(start_add)
+        log("  ", key, "->", setup.export_text())
 
     # Constant drain on the ally so there is always something to heal.
     dup_actor("BP_DamageZone", "Tuto_Drain", (ROW_STATION, 400.0, 0.0))
-    return add_classes
+    return start_adds
 
 
 def target_point(label, location, purpose_tag):
@@ -416,7 +332,7 @@ def target_point(label, location, purpose_tag):
     return actor
 
 
-def build_arena(add_classes):
+def build_arena(start_adds):
     """The one GeoDummyArena the whole room hangs off. Its boss is the hidden zone caster, spawned on the room's
     TargetPoint.BossSpawn, which is what makes the caster's abilities resolve against this room's points and no
     other arena's; the station enemies are its adds. IsBoss() is false on this class, so walking up to any of them
@@ -424,14 +340,17 @@ def build_arena(add_classes):
     arena = dup_actor("EntranceArena", "Tuto_ZoneArena", (ROW_ZONE, 0.0, 0.0))
     if arena is None:
         return
-    arena.set_editor_property("BossClass",
-                              unreal.load_asset(BP_DIR + "/BP_TrainingZoneCaster").generated_class())
+    caster = unreal.GeoEnemySetup()
+    caster.set_editor_property("StateTree", unreal.load_asset(ST_DIR + "/ST_Training_Zones"))
+    caster.set_editor_property("AbilityTags", [tag(spec[2]) for spec in zone_specs()])
+    arena.set_editor_property("BossClass", unreal.load_class(None, CASTER_CLASS))
+    arena.set_editor_property("BossSetup", caster)
     arena.set_editor_property("ArenaTag", tag(TRAINING_TAG))
-    arena.set_editor_property("AddClasses", add_classes)
-    log("  arena adds ->", [c.get_name() for c in add_classes])
+    arena.set_editor_property("StartAdds", start_adds)
+    log("  arena adds ->", len(start_adds))
 
 
-def build_zones(add_classes):
+def build_zones(start_adds):
     """One hidden caster in the middle of the row, dropping every zone at once on its own tagged point."""
     log("-- zone caster")
     for label in LEGACY_LABELS:
@@ -439,7 +358,7 @@ def build_zones(add_classes):
     sign("Tuto_Sign_Zones", (ROW_TITLE, 0.0, 0.0),
          "EFFECT ZONES\nthey all land together on a loop, step in to see what each one does", size=90.0)
     target_point("Tuto_ZoneSpawn", (ROW_ZONE, 0.0, 0.0), BOSS_SPAWN_TAG)
-    build_arena(add_classes)
+    build_arena(start_adds)
     for key, offset, _, text, color in zone_specs():
         target_point("Tuto_ZonePoint_" + key, (ROW_ZONE, offset, 0.0), point_tag(key))
         sign("Tuto_Sign_Zone_" + key, (ROW_ZONE_SIGN, offset, 0.0), text, size=45.0, color=color)
@@ -477,15 +396,19 @@ def build_access():
 def build_level():
     REPORT[:] = []
     try:
-        blueprints = {}
-        for name in ("BP_TrainingAlly", "BP_TrainingShooter"):
-            blueprints[name] = unreal.load_asset("%s/%s" % (BP_DIR, name))
         build_room()
-        build_zones(build_stations(blueprints))
+        build_zones(build_stations())
         build_access()
         unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
         log("LEVEL OK")
     except Exception:
         import traceback
         log("LEVEL FAILED:", traceback.format_exc())
+    flush()
+
+
+def delete_old_assets():
+    """In its own run after build_level saved the room, so the asset registry no longer sees the old references."""
+    REPORT[:] = []
+    tutorial_waves.delete_unreferenced(OLD_ASSETS, log)
     flush()

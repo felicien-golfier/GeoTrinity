@@ -67,6 +67,8 @@ coordinates, so one shape drawn there repeats in every tile.
 | `MF_RandomFromPosition` | Repeatable pseudo-random 0–1 per position, such as one value per cell |
 | `MF_LissajousPoint` | A point swinging around a centre on its own frequency per axis: a slow wandering path |
 | `MF_DurationWipe` | Clock-wipe mask for remaining-life readouts |
+| `MF_ZeroOneToSigned` | A 0 to 1 coordinate remapped to −1 to 1: a quad's UV centred on its middle |
+| `MF_IsWholeNumber` | 1 where a value equals a whole number, else 0: reads a mode stored as a scalar |
 | `MF_WrapIndex` | A whole number wrapped into 0 to Count − 1, negatives included |
 | `MF_PickColor` | One of four colours, by index |
 | `MF_ColorPattern_Zigzag` | Flat-topped zigzag bands, one colour each in turn: every colour gets the same share |
@@ -94,6 +96,23 @@ in, `ColorIndex` out). At `ColorCount` 1 every pattern returns 0 and the effect 
 and `ColorCount`. The beam and the two telegraphs (`M_PulseBeam`, `M_ZoneIndicatorRay`, `M_ZoneIndicator`) take theirs
 from their Niagara system (`AI/VFX.md`).
 
+## Safe spots on a beam
+
+The beam and its ray telegraph (`M_PulseBeam`, `M_ZoneIndicatorRay`) cut the hazard's safe spots out of their light:
+`MF_SafeSpotCut` reads the 8 slots of `MPC_MaskedArea` (`SafeSpot/CLAUDE.md` "Mask") and returns `CutMask`, 1 where a
+spot shadows the pixel; the emissive (and the ray's opacity) is multiplied by `1 - CutMask`, outline frame included.
+A spot is a location with a radius, in one of two modes: `Disc` (default), a round hole around the location; `Lane`,
+the beam cut across its width wherever the location projects perpendicularly, so only the parts between the lanes
+stay lit (lateral wave). Unused slots (alpha 0) cut nothing, so a beam with no safe spots looks as before. The function reads world
+position, like `MF_TelegraphColors`: the beam's own orientation plays no part.
+
+The mask is global, so the cut is opt-in: `CutMask` is multiplied by the material scalar `SafeSpotCut` (default 0, bound
+to `User.SafeSpotCut`). Only the hazard that uploads the spots sets it to 1 on its own component (`ULateralWavePattern`);
+every other beam on the same systems (Moira, sacrifice, hex sweep, channel windups) stays whole while a mask is live.
+
+`MF_SafeSpotCut` holds only what the 8 slots share: the mode flags, the lane's right-hand direction, the radius, and
+the `Max` of its slots. The slot's maths is `MF_SafeSpotSlotCut`, called once per slot with that slot's `Spot`.
+
 A telegraph asks for its own pattern: the telegraph materials call `MF_TelegraphColors` instead, straight stripes over
 the world at `MPC_MeaningColors`' `TelegraphStripeWidth` and `TelegraphStripeAngle`, each stripe taking the next
 colour. A telegraph never draws one flat colour: alone, its colour is paired with a shade of itself
@@ -101,7 +120,8 @@ colour. A telegraph never draws one flat colour: alone, its colour is paired wit
 
 ## Writing a function
 
-- Name it `MF_<What>`. Interchangeable functions share a prefix: `MF_Pattern_<Name>`, `MF_Stroke_<Name>`. A
+- Name it `MF_<What>` for what it does or returns (`MF_InsideFrameOnAxis`, `MF_PulseBrightness`), never for where it
+  is first used or a vague noun (`Shape`, `Helper`). Interchangeable functions share a prefix: `MF_Pattern_<Name>`, `MF_Stroke_<Name>`. A
   layer is `ML_<What>` and a layer blend `MLB_<What>`, prefixed the same way (`ML_Pattern_`, `ML_Wave_`).
 - Fill the function description (the palette tooltip) and every input and output description, with units: world
   cm, turns, 0–1.
@@ -110,7 +130,10 @@ colour. A telegraph never draws one flat colour: alone, its colour is paired wit
 - An optional input takes its default from the node wired into its Preview pin, with Use Preview Value As Default
   on. Any other unwired input is a compile error.
 - Expose to Library with category `GeoTrinity|<Topic>`, so the right-click search finds it.
-- A block repeated N times is one function called N times, never N copies of the nodes.
+- A block repeated N times is one function called N times, never N copies of the nodes — whether the copies come
+  from a Python loop, a helper called N times, or nodes placed by hand. A block that is only slightly different is the
+  same function with an extra input. Check this before finishing any material script: a `for` loop or a helper that
+  creates nodes is a function.
 
 ## Swapping a stage: the pin contract
 
@@ -134,10 +157,21 @@ keeps its callers' wires.
 
 ## Keeping a graph readable
 
-- Flow left to right, one stage per column, outputs at the far right.
+Model: `M_MAskedArea` (`/Game/Art/VFX/Abilities/Enemies/PillarsAOE`): one function call per slot in its own row, rows
+evenly spaced, one column per step, wide gaps, the shared radius read through a named reroute (a material variable).
+
+- Flow left to right, one column per step, outputs at the far right. No wire goes back.
+- No node box over another and no wire over a box, as few wires over each other as the graph allows. Nodes sit close
+  where little connects them and apart where much does: the gap after a column is small for one wire and grows with
+  every wire leaving it, so a fan of wires has room to spread. Rows are a small gap apart.
+- No useless box: a mask of a mask is one mask of the source, a node nothing reads is deleted.
+- A function wherever a block is needed (see "Writing a function"); a call is one node, so the graph reads as the
+  steps it takes.
+- A value read far from where it is made — a radius feeding eight slot calls, world XY feeding pattern and
+  animation — travels as a named reroute (a variable), never as a long wire running over other nodes.
 - One comment box per stage, colour-coded; a node description for a single-node note.
-- A value used far from where it is made — world XY feeding both pattern and animation — goes through a named
-  reroute instead of a long wire.
+- Scripts never place a node by hand: the toolkit places and wires every node when the graph finishes
+  (`AI/Python/Material/CLAUDE.md`, "Layout").
 
 ## Background lattice
 

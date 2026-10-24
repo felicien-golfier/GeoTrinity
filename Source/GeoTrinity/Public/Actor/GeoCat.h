@@ -70,6 +70,9 @@ public:
 	 * before the blend back to locomotion shows. No montage or anim instance: completes at once. */
 	void PlayMontage(UAnimMontage* Montage);
 
+	/** Ends the running order as replaced and stops any montage: the cat stands where it is. Nothing when idle. */
+	void Stop();
+
 	/** True from an order's start until it ends (completed or replaced). */
 	bool IsOrderRunning() const { return bOrderRunning; }
 
@@ -100,7 +103,7 @@ protected:
 	TObjectPtr<USkeletalMeshComponent> Mesh;
 
 private:
-	/** Ends the running order as replaced, stops any montage, and starts NewOrder. */
+	/** Stops, then starts NewOrder. */
 	void BeginOrder(EGeoCatOrder NewOrder);
 
 	/** Drops the walk and the roam pause, then broadcasts OnOrderEnded; nothing when no order runs. */

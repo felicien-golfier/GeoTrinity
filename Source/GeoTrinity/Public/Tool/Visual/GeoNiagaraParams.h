@@ -41,9 +41,13 @@ namespace GeoNiagaraParams
 	/** Beam systems and the ray telegraph — UGeoBeamVFXComponent, UBeamPattern, UGeoIndicatorComponent. */
 	inline FName const BeamWidth(TEXT("User.Beam_Width"));
 	inline FName const BeamLength(TEXT("User.Beam_Length"));
+	/** 1 when the beam is cut by the safe spots of MPC_MaskedArea, 0 (default) to ignore them: only the hazard that
+	 * uploads the spots opts in (ULateralWavePattern), so every other beam stays whole while a mask is live. Bound to
+	 * the beam materials' SafeSpotCut by AI/Python/Niagara/material_user_bindings.py. */
+	inline FName const SafeSpotCut(TEXT("User.SafeSpotCut"));
 
 	/** Systems drawing a colour pattern through MF_MeaningColors — the beam and the zone telegraphs: one colour per
-	 * meaning, Color first, bound to the renderer's material by AI/Python/Niagara/meaning_color_bindings.py. */
+	 * meaning, Color first, bound to the renderer's material by AI/Python/Niagara/material_user_bindings.py. */
 	inline FName const MeaningColors[] = {Color, FName(TEXT("User.Color2")), FName(TEXT("User.Color3")),
 										  FName(TEXT("User.Color4"))};
 	static_assert(UE_ARRAY_COUNT(MeaningColors) == GeoColor::MaxMeaningColorCount);
@@ -128,14 +132,15 @@ namespace GeoMaterialParams
 		return FName(FString::Printf(TEXT("PulseSource_%02d"), SlotIndex));
 	}
 
-	/** MPC_MaskedArea — FSafeSpotMask: the safe spots shadowing a hazard, one position per slot, one radius, and the
-	 * shadow mode (1 = Lane, parallel to the beam; 0 = Behind, radial from the AOE origin). */
+	/** MPC_MaskedArea — FSafeSpotMask: the safe spots shadowing a hazard, one position per slot, one radius, the
+	 * shadow mode (ESafeSpotShadow ordinal: 0 Behind, 1 Lane, 2 Disc) and the unit XY direction a Lane runs along. */
 	inline FName GetPillarPositionName(int32 const SlotIndex)
 	{
 		return FName(FString::Printf(TEXT("PillarPosWS_%02d"), SlotIndex));
 	}
 	inline FName const PillarRadius(TEXT("Pillar_Radius"));
-	inline FName const SafeSpotShadowLane(TEXT("SafeSpot_ShadowLane"));
+	inline FName const SafeSpotShadowMode(TEXT("SafeSpot_ShadowMode"));
+	inline FName const SafeSpotLaneDirection(TEXT("SafeSpot_LaneDirection"));
 
 	/** HUD sweep materials, 0..1 — the cooldown (UGeoAbilitySlotWidget) and the effect depletion (UGeoStatusBarWidget).
 	 */

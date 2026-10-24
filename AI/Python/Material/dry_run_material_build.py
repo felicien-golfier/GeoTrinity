@@ -172,6 +172,10 @@ class MaterialEditingLibrary:
         pass
 
     @staticmethod
+    def delete_material_expression(asset, node):
+        pass
+
+    @staticmethod
     def delete_all_material_expressions(asset):
         pass
 

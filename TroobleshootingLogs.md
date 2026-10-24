@@ -236,3 +236,20 @@ Server attribute delegates broadcast synchronously from `SetNumericAttributeBase
 - **Side effect:** a fast-built mesh keeps the description's normals as stored (none authored = none); the repaired editor build computes proper ones. `SM_HexTile` is a hex prism whose top ring of vertices is shared with its sides, so the computed normals were averaged (top + sides): every tile shaded as a dome, a big white blob per tile in `M_HexTile` (Default Lit; the old look relied on the missing normals). Not specular: roughness 1 / specular 0 changed nothing. Fixed on the material: `Normal` = constant world-space (0, 0, 1) (`tangent_space_normal` off), tiles are flat and never rotated. Checked in `DraftMap` through the Epic MCP viewport capture (arena top-down, before / after). Any other repaired mesh with shared top / side vertices and a lit material can show the same.
 - **Check:** no `.uasset` under `Content/` holds the name `bDoFastBuild` (`grep -rl -a --include=*.uasset bDoFastBuild Content`); a script summary read right after a build proves nothing, the bounds go bad on the next uncached rebuild. Reproduction used: load, set the material slots empty then back, read `get_bounds` against the vertices: failed on all 17 before, passes on all 17 after.
 - **Verified:** PIE, kill of the Star boss (`on_health_changed(0)` on the server pawn once the match is `InProgress`): 36 `AGeoGemDrop` actors landed around the boss (chip / cut meshes, dynamic material), a pawn on one removed it, no new ensure.
+
+---
+
+# Encounters / Tutorial
+
+## An action after a `GeoStartEncounterAction` never runs (2026-10-23)
+The start action aborts every other encounter, the one it sits in included, synchronously: the rest of its list is dropped. The tutorial's `Leave` rules were `[start next, close exit pad]`, so the exit pad stayed open after every portal. Fix: the start goes last (`leave_steps`); `AGeoEncounter::IsDataValid` flags any action after it.
+
+## `Geo.PlayerInvincible` made allies immortal (2026-10-23)
+The cheat tested `TeamId == Player`, so a player-team ally dummy ignored `Death()`: `bKillOnStepExit` left it alive and full, and the next round's "ally full" rule fired on it at once. Fix: `IsPlayerControlled()`, as its help text says.
+
+## Two encounters watching one actor tag (2026-10-23)
+The Deploy room's ally (`TutorialAlly`) stays alive and full behind; the Special room's health rule on the same tag fired at once on arming. One tag per room's ally (`TutorialSpecialAlly`). A dead body at full health also counted: `GeoHealthThresholdTrigger` now puts a dead character on no side.
+
+## `AutomationOpenMap` in an editor test starts its own PIE (2026-10-23)
+In the editor it loads the map and queues a standalone play session; a test that then requests its own (listen) session gets the first one torn down after its first latent step ran on it (time dilation, cheats, restarts lost). Load with `FAutomationEditorCommonUtils::LoadMap` and start the one session yourself.
+

@@ -66,8 +66,23 @@ public:
 	void Restart();
 
 	/**
-	 * Server. Runs OnSkipped of every encounter chained before this one, in chain order (each step's OnEnter then
-	 * OnExit), then Start. Not on the chain: logged, started with nothing skipped (Encounter/CLAUDE.md, "Jump start").
+	 * Server. Stops the current step without OnExit and without OnCompleted, then calls OnCancel on every action of
+	 * every step so each undoes what it left standing (IsAborting is true meanwhile). Valid in any state, also from
+	 * inside one of this encounter's own calls: the step's runs are dropped at once (Encounter/CLAUDE.md, "Arrival
+	 * reset").
+	 */
+	UFUNCTION(BlueprintCallable, Category = "GeoEncounter")
+	void Abort();
+
+	/** True while Abort cancels the actions: an action whose leftover outlives a normal step exit undoes it only then.
+	 */
+	UFUNCTION(BlueprintPure, Category = "GeoEncounter")
+	bool IsAborting() const { return bAborting; }
+
+	/**
+	 * Server. Aborts every other encounter, runs OnSkipped of every encounter chained before this one, in chain order
+	 * (each step's OnEnter then OnExit), then starts this one over. Not on the chain: logged, started with nothing
+	 * skipped (Encounter/CLAUDE.md, "Arrival reset", "Jump start").
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GeoEncounter")
 	void StartAfterSkippingChain();
@@ -100,6 +115,11 @@ public:
 
 	/** Broadcast on every AddToEncounterCounter. */
 	FOnEncounterCounterChanged OnCounterChanged;
+
+	/** For an action that finishes at once but leaves something running (spawned enemies, a zone): its OnCancel runs
+	 * when the current step is left, after the step's runs are cancelled (asked from OnExit: when the step it leads to
+	 * is left). Held once per visit of the step. */
+	void HoldUntilStepLeft(UGeoEncounterAction& Action);
 
 protected:
 	virtual void BeginPlay() override;
@@ -163,6 +183,8 @@ private:
 	void Advance(FGeoEncounterActionRun& Run);
 	void CancelRun(FGeoEncounterActionRun& Run);
 	void OnRunFinished(FGeoEncounterActionRun const& Run);
+	/** True while the actions of a bCompletesStep rule of the current step are running: that rule owns the step. */
+	bool IsCompletionUnderway() const;
 	int32 FindStep(FName StepName) const;
 	/** From the world URL's portal: a number N = the Nth encounter along the chain (0 = its start), else the encounter
 	 * whose JumpStart tag is the portal; null when none matches. */
@@ -180,9 +202,14 @@ private:
 	int32 CurrentStep = INDEX_NONE;
 	int32 ExitTarget = INDEX_NONE;
 	int32 CallDepth = 0;
+	bool bAborting = false;
 	FPendingChange Pending;
 
 	TMap<FName, int32> Counters;
+
+	/** Actions that asked HoldUntilStepLeft during the current step. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UGeoEncounterAction>> HeldActions;
 
 	/** Per rule of the current step. */
 	TArray<bool> RuleArmed;

@@ -22,6 +22,7 @@ void AGeoEffectZone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(AGeoEffectZone, Data, COND_InitialOnly);
+	DOREPLIFETIME_CONDITION(AGeoEffectZone, GrowthStartServerTime, COND_InitialOnly);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -84,6 +85,7 @@ void AGeoEffectZone::BeginPlay()
 
 	if (GeoLib::IsServer(GetWorld()))
 	{
+		GrowthStartServerTime = GeoLib::GetServerTime(GetWorld());
 		ZoneJudge.Start(GeoLib::GetServerTime(GetWorld()), FGeoHazardJudge::UntilEnded,
 						/*bSeenThroughReplication*/ true, /*bEndsOnHit*/ false,
 						/*bRemovesInfiniteEffectsOnLeave*/ true);
@@ -92,11 +94,36 @@ void AGeoEffectZone::BeginPlay()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void AGeoEffectZone::Tick(float const DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (Data.Params.GrowToSize.GetValueAtLevel(Data.Level) > 0.f)
+	{
+		float const Seconds = Data.Params.GrowSeconds.GetValueAtLevel(Data.Level);
+		float const Alpha = Seconds > 0.f
+			? FMath::Clamp((GeoLib::GetServerTime(GetWorld()) - GrowthStartServerTime) / Seconds, 0.f, 1.f)
+			: 1.f;
+		if (Alpha != GrowthAlpha)
+		{
+			GrowthAlpha = Alpha;
+			ApplyRadius();
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+float AGeoEffectZone::GetRadius() const
+{
+	return FMath::Lerp(Data.Params.Size, Data.Params.GrowToSize.GetValueAtLevel(Data.Level), GrowthAlpha);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void AGeoEffectZone::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
 	ZoneJudge.Stop();
 	Super::EndPlay(EndPlayReason);
-}
+}ww
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoEffectZone::JudgeZone()

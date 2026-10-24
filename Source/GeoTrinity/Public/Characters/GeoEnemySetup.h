@@ -31,6 +31,11 @@ struct GEOTRINITY_API FGeoEnemySetup
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEnemySetup")
 	TObjectPtr<UStateTree> StateTree;
 
+	/** The spell chain StateTree runs in its AI.Boss.Behaviour state (AEnemyCharacter::BehaviourStateTree), so a boss
+	 * keeps the base tree's fight-start gate. None keeps the class's. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEnemySetup")
+	TObjectPtr<UStateTree> BehaviourStateTree;
+
 	/** Abilities granted besides the class's. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEnemySetup")
 	TArray<FGameplayTag> AbilityTags;
@@ -46,4 +51,9 @@ struct GEOTRINITY_API FGeoEnemySetup
 	/** Actor tag put on it, so a trigger can tell it from others of its class. None = no tag. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEnemySetup")
 	FName Tag;
+
+	/** Distance in cm at which a player wakes it. Negative keeps its controller's AggroRadius. A hit wakes it from
+	 * anywhere. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEnemySetup")
+	float AggroRadius = -1.f;
 };

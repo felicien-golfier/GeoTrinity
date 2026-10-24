@@ -8,6 +8,6 @@ void UGeoStartEncounterAction::Execute_Implementation(FGeoEncounterPayload const
 {
 	if (ensureMsgf(Target, TEXT("%s: no Target set"), *GetName()))
 	{
-		Target->Restart();
+		Target->StartAfterSkippingChain();
 	}
 }

@@ -2,22 +2,34 @@
 
 #pragma once
 
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/BeamPattern.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotSource.h"
 #include "CoreMinimal.h"
 
+#include "LateralWavePattern.generated.h"
+
 class UMaterialParameterCollection;
 
-#include "LateralWavePattern.generated.h"
+/** What one firing of a lateral wave changes: its safe spots. Given by whoever fires it (GeoActivateAbilityAction). */
+USTRUCT(BlueprintType)
+struct GEOTRINITY_API FLateralWavePatternData : public FPatternData
+{
+	GENERATED_BODY()
+
+	/** Safe spots of this firing, as offsets from the wave origin: X along the travel, Y across it. */
+	UPROPERTY(EditAnywhere, Category = "GeoLateralWave")
+	TArray<FVector2D> SafeSpotOffsets;
+};
 
 /**
  * Wave crossing the arena from the payload origin along TravelYaw, at Speed, over TravelDistance. The band
  * [front - BandWidth, front] (along the travel) hits everything within HalfWidth of the origin across the travel,
- * except what stands in a safe spot's lane (ESafeSpotShadow::Lane, parallel to the travel). A BandWidth of
- * TravelDistance fills the floor behind the front instead (nothing to dodge but the lanes). Spots come from
- * SafeSpotSources, read every tick so a dead add drops its lane at once; the arena keeps its adds on the server only,
- * so a client sees no add lane: the tutorial is solo. The beam VFX draws the whole rectangle during the wind-up and the
- * band after; the beam material cuts the lanes out of both through the mask MPC.
+ * except what stands in a safe spot's lane (ESafeSpotShadow::Lane, parallel to the travel). Spots come from
+ * SafeSpotSources, read every tick so a dead add drops its lane at once: Fixed from the firing's
+ * FLateralWavePatternData, Adds from the caster's arena (server only, the tutorial is solo). The band is one beam VFX:
+ * the whole travel during the wind-up, the moving band after; the beam materials cut the lanes out of it from the
+ * safe spot mask.
  */
 UCLASS(Blueprintable)
 class GEOTRINITY_API ULateralWavePattern : public UBeamPattern
@@ -25,20 +37,17 @@ class GEOTRINITY_API ULateralWavePattern : public UBeamPattern
 	GENERATED_BODY()
 
 protected:
-	/** Frees the mask MPC of a previous wave's lanes. */
+	/** Frees the safe spot mask a previous firing left. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
-	/** Keeps the telegraph on the lanes as they stand. */
-	virtual void TickDuringInit(float SpentTime) override;
-	/** Moves the band and keeps the mask on the lanes as they stand. */
-	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** The front crosses TravelDistance, then the band leaves it. */
 	virtual float GetHazardDuration() const override;
 	/** True when Location lies in the band, across the wave's width, outside every safe spot's lane. */
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
-	/** Lays the beam VFX on the whole rectangle while SpentTime is negative, on the band after. */
+	/** Lays the beam VFX over the whole travel while SpentTime is negative, on the band after, uploads the safe spots
+	 * to the mask and opts the VFX into it (GeoNiagaraParams::SafeSpotCut). */
 	virtual void MoveBeamVfx(float SpentTime) override;
-	/** Frees the mask MPC. */
+	/** Frees the safe spot mask. */
 	virtual void EndPattern(bool bForceStop = false) override;
 
 private:
@@ -47,9 +56,6 @@ private:
 
 	/** The safe spots as they stand now. */
 	TArray<FSafeSpot> GetSafeSpots() const;
-
-	/** Uploads the safe spots as they stand now to the mask MPC. */
-	void RefreshMask();
 
 	/** Direction of the travel, in degrees (0 = +X). The caster's own facing plays no part. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave", meta = (AllowPrivateAccess = "true"))
@@ -73,18 +79,14 @@ private:
 
 	/** Where the safe spots come from; several sources add up. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|SafeSpots", meta = (AllowPrivateAccess = "true"))
-	TArray<ESafeSpotSource> SafeSpotSources;
+	TArray<ESafeSpotSource> SafeSpotSources = {ESafeSpotSource::Fixed, ESafeSpotSource::Adds};
 
-	/** Fixed spots, as offsets from the origin: X along the travel, Y across it. Used with the Fixed source. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|SafeSpots", meta = (AllowPrivateAccess = "true"))
-	TArray<FVector2D> FixedSpotOffsets;
-
-	/** Radius of an Adds or Fixed spot: its lane is twice as wide. */
+	/** Radius of a spot: its lane is twice as wide. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|SafeSpots",
 			  meta = (ClampMin = "1.0", AllowPrivateAccess = "true"))
 	float SpotRadius = 150.f;
 
-	/** MPC_MaskedArea — receives the spots to cut their lanes out of the beam material. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|SafeSpots", meta = (AllowPrivateAccess = "true"))
+	/** MPC_MaskedArea — receives the safe spots, which the beam materials cut out of the wave. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|VFX", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMaterialParameterCollection> MaskMaterialParameterCollection;
 };

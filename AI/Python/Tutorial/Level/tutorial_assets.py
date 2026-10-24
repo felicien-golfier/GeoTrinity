@@ -31,7 +31,6 @@ ROWS = [
     ("DummyZoneMaxRadius", 700.0),
     ("MinibossProjectileDamage", 8.0),
     ("MinibossProjectileSpeed", 600.0),
-    ("AllyProjectileDamage", 25.0),
 ]
 
 REPORT = []

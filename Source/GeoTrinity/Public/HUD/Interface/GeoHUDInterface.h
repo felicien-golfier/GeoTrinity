@@ -45,8 +45,11 @@ public:
 	/** Tutorial: shows the Cat's Line (Tutorial Board markup) in place of any line shown. OnEnded is called once when
 	 * this line ends, whatever the reason. */
 	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded) = 0;
-	/** Tutorial: opens the pause menu on the character sheet, the details of AbilityTag open. */
-	virtual void ShowAbilityPage(FGameplayTag AbilityTag) = 0;
+	/** Tutorial: ends the shown Cat line at once, its OnEnded called as for any end. Nothing shown: nothing. */
+	virtual void HideCatLine() = 0;
+	/** Tutorial: opens the pause menu on the character sheet, the details of AbilityTag open. OnClosed is called once
+	 * when the pause menu closes, at once when the page could not open. */
+	virtual void ShowAbilityPage(FGameplayTag AbilityTag, FSimpleDelegate OnClosed) = 0;
 	/** Tutorial quest card: Title, a count over Max, a countdown from TimeLimitSeconds, stopping at 0 (0: none). */
 	virtual void ShowQuestCard(FText const& Title, int32 Max, float TimeLimitSeconds) = 0;
 	virtual void SetQuestCount(int32 Count) = 0;

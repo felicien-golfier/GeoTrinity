@@ -47,6 +47,7 @@
 ## PatternAbility
 - Enemy only; `PatternToLaunch` class instantiated on every machine via `PatternStartMulticast(Payload, Class, CreatePatternData())`.
 - `CreatePatternData()` computes pattern-specific data once on server; pattern reads it via `StoredPatternData.GetPtr<T>()`.
+- Data given by the caller: an activation whose `TriggerEventData->OptionalObject` is an `IPatternDataSource` (`GeoActivateAbilityAction`) keeps its `GetPatternData()`; the base `CreatePatternData()` returns it (unset when none). One ability, its pattern configured per firing at runtime (lateral wave safe spots). An override computing its own data ignores it.
 - Fill derived data with explicit template: `TInstancedStruct<FPatternData>::Make<FDerived>(...)`.
 - `EndAbility` force-stops the pattern before `Super`.
 - `ShouldPlayAbilityMontage()` is false when `PatternToLaunch`'s CDO `HasMontage()`; a pattern without montage leaves the ability's own `AnimMontage` replicated as for any ability.

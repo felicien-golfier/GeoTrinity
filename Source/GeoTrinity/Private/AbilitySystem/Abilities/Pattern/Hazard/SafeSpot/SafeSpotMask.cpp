@@ -26,7 +26,8 @@ TArray<FLinearColor> FSafeSpotMask::GetSlotValues(TArray<FSafeSpot> const& Spots
 	return SlotValues;
 }
 
-void FSafeSpotMask::Set(UObject* WorldContext, UMaterialParameterCollection* Collection, TArray<FSafeSpot> const& Spots)
+void FSafeSpotMask::Set(UObject* WorldContext, UMaterialParameterCollection* Collection, TArray<FSafeSpot> const& Spots,
+						FVector2D const LaneDirection)
 {
 	if (!GeoLib::IsDedicatedServer(WorldContext) && Collection)
 	{
@@ -37,15 +38,19 @@ void FSafeSpotMask::Set(UObject* WorldContext, UMaterialParameterCollection* Col
 				WorldContext, Collection, GeoMaterialParams::GetPillarPositionName(SlotIndex), SlotValues[SlotIndex]);
 		}
 
-		bool const bFirstIsLane = Spots.Num() > 0 && Spots[0].Shadow == ESafeSpotShadow::Lane;
+		bool const bAnySpot = Spots.Num() > 0;
 		UKismetMaterialLibrary::SetScalarParameterValue(WorldContext, Collection, GeoMaterialParams::PillarRadius,
-														Spots.Num() > 0 ? Spots[0].Radius : 0.f);
-		UKismetMaterialLibrary::SetScalarParameterValue(WorldContext, Collection, GeoMaterialParams::SafeSpotShadowLane,
-														bFirstIsLane ? 1.f : 0.f);
+														bAnySpot ? Spots[0].Radius : 0.f);
+		UKismetMaterialLibrary::SetScalarParameterValue(WorldContext, Collection, GeoMaterialParams::SafeSpotShadowMode,
+														bAnySpot ? static_cast<float>(Spots[0].Shadow)
+																 : static_cast<float>(ESafeSpotShadow::Behind));
+		UKismetMaterialLibrary::SetVectorParameterValue(WorldContext, Collection,
+														GeoMaterialParams::SafeSpotLaneDirection,
+														FLinearColor(LaneDirection.X, LaneDirection.Y, 0.f, 0.f));
 	}
 }
 
 void FSafeSpotMask::Clear(UObject* WorldContext, UMaterialParameterCollection* Collection)
 {
-	Set(WorldContext, Collection, {});
+	Set(WorldContext, Collection, {}, FVector2D::ZeroVector);
 }

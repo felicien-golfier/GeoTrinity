@@ -69,7 +69,8 @@ public:
 	static void AddFireAbilityTaskToState(UStateTree* StateTree, FName StateName, FName AbilityTagName);
 
 	/**
-	 * Adds a new empty state (no tasks) and compiles/saves. Use for idle/dormant states waiting on an OnEvent transition.
+	 * Adds a new empty state (no tasks) and compiles/saves. Use for idle/dormant states waiting on an OnEvent
+	 * transition.
 	 *
 	 * @param ParentStateName  Name of the parent state; pass NAME_None to add at the root.
 	 * @param InsertIndex      Position inside the parent's children; pass -1 to append.
@@ -108,13 +109,15 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void AddFloatEnterCondition(UStateTree* StateTree, FName StateName, float Threshold,
-									   EGenericAICheck Operator, bool bInvert = false);
+									   UE::StateTree::EComparisonOperator Operator, bool bInvert = false);
 
 	/**
-	 * Binds a property on an enter condition to a Property Function output and wires the function's Input to a context object.
+	 * Binds a property on an enter condition to a Property Function output and wires the function's Input to a context
+	 * object.
 	 *
 	 * @param ConditionIndex  Zero-based index into the state's EnterConditions array.
-	 * @param Binding         Names the condition property, the function struct, its output/input properties, and the context class.
+	 * @param Binding         Names the condition property, the function struct, its output/input properties, and the
+	 * context class.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void BindConditionPropertyToPropertyFunction(UStateTree* StateTree, FName StateName, int32 ConditionIndex,

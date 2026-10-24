@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Actor/GeoGemDrop.h"
+#include "Characters/GeoEnemySetup.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
@@ -16,7 +17,19 @@ class AEnemyCharacter;
 class AGeoArenaBarrier;
 class AStaticMeshActor;
 class UMaterialInterface;
-struct FGeoEnemySetup;
+
+/** One add the arena spawns at every reset: its class, and how this one differs from the class's defaults. */
+USTRUCT()
+struct FGeoArenaAdd
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
+	TSubclassOf<AEnemyCharacter> Class;
+
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
+	FGeoEnemySetup Setup;
+};
 
 /**
  * One boss encounter, and it runs itself. It owns its boss and its adds (spawn + reset), its barrier, its fight-commit,
@@ -42,9 +55,10 @@ public:
 	/** Registers Boss (clients bind the health bar) and bFighting (clients show/hide it). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	/** Server. Spawns the boss, or resets the one already standing, for a fresh attempt. A boss spawned with its intro
-	 *  pending stays invulnerable until AGeoEnemyAIController::StartFight, once the intro has played. Nothing else
-	 *  touches the flag, so a boss that spawns invulnerable (hidden caster) stays so. */
+	/** Server. Spawns the boss (BossClass varied by BossSetup), or resets the one already standing, for a fresh
+	 * attempt, then the StartAdds. A boss spawned with its intro pending stays invulnerable until
+	 * AGeoEnemyAIController::StartFight, once the intro has played. Nothing else touches the flag, so a boss that
+	 * spawns invulnerable (hidden caster) stays so. */
 	void ResetBoss();
 
 	/** Opens or seals the barrier, if this arena has one. Barrier state is owned by the fight-lifecycle functions. */
@@ -72,13 +86,13 @@ public:
 	static void RespawnAllBosses(UObject const* WorldContextObject);
 
 	/** Server. Spawns an add of AddClass at Transform (Z set to the character height) and registers it, so the next
-	 *  wipe or the boss's death removes it like the AddClasses ones. Setup, when given, varies it
+	 *  wipe or the boss's death removes it like the StartAdds ones. Setup, when given, varies it
 	 *  (AEnemyCharacter::ApplySetup). Null when the spawn failed. */
 	AEnemyCharacter* SpawnAdd(TSubclassOf<AEnemyCharacter> AddClass, FTransform Transform,
 							  FGeoEnemySetup const* Setup = nullptr);
 
-	/** The adds still alive, the dead ones a death leaves in the list until they are destroyed left out. The list lives on
-	 *  the server, so a client gets none. */
+	/** The adds still alive, the dead ones a death leaves in the list until they are destroyed left out. The list lives
+	 * on the server, so a client gets none. */
 	TArray<AEnemyCharacter const*> GetLiveAdds() const;
 
 	/** Returns this arena's boss character; nullptr before BeginPlay spawns it. */
@@ -137,10 +151,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GeoArena")
 	TSubclassOf<AEnemyCharacter> BossClass;
 
-	/** Extra enemies spawned with the boss, one per entry, at the arena's TargetPoint.AddSpawn points. They never gate
-	 *  the fight: IsBoss ignores them, they get no health bar, and they are wiped the moment the boss dies. */
+	/** How this arena's boss differs from BossClass's defaults, so a boss variant needs no Blueprint of its own. The
+	 *  default one: enemy team, dies at zero, the class's tree, abilities and health. */
 	UPROPERTY(EditAnywhere, Category = "GeoArena")
-	TArray<TSubclassOf<AEnemyCharacter>> AddClasses;
+	FGeoEnemySetup BossSetup;
+
+	/** Extra enemies spawned with the boss, one per entry, at the arena's TargetPoint.AddSpawn points in order. They
+	 *  never gate the fight: IsBoss ignores them, they get no health bar, and they are wiped the moment the boss dies.
+	 */
+	UPROPERTY(EditAnywhere, Category = "GeoArena")
+	TArray<FGeoArenaAdd> StartAdds;
 
 	/** Barrier sealing this arena while the fight runs. Optional — arenas without one never seal. */
 	UPROPERTY(EditAnywhere, Category = "GeoArena")
@@ -212,7 +232,7 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<AEnemyCharacter>> Adds;
 
-	/** Server. Clears the standing adds and spawns a fresh set from AddClasses. Called by ResetBoss. */
+	/** Server. Clears the standing adds and spawns a fresh set from StartAdds. Called by ResetBoss. */
 	void ResetAdds();
 	/** Server. Destroys every standing add and empties the list. */
 	void DestroyAdds();

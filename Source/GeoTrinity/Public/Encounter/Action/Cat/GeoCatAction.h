@@ -23,7 +23,7 @@ public:
 
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
-	/** Unbinds only: the cat keeps carrying out its order. */
+	/** Unbinds: the cat keeps carrying out its order, unless the encounter is aborting: then the cat stops. */
 	virtual void OnCancel_Implementation() override;
 
 #if WITH_EDITOR

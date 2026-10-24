@@ -15,6 +15,14 @@ an existing function, an existing member — and use it.
   implementation when its last call site goes; no dead-code safety nets.
 - **No leftovers, ever.** Remove a feature whole (code, BP widgets, assets, docs); never hide or disable it instead.
 
+## Variants are data
+Any class, Blueprint, asset or script.
+- One kind = one type, one asset; per-use values = data given by the user of it (`FLateralWavePatternData`, `FGeoEnemySetup`, `FDeployableDataParams`).
+- New type only for new behaviour or look; never for values.
+- Spawner lacks the field → extend it. One-case flag → derive from team / owner / context.
+- Asset order: native class + params set where it is used (`AHiddenCasterCharacter` + the arena's `BossSetup`), no Blueprint. Needs a look (mesh, VFX) → one Blueprint, params set on it per use (projectiles: `FExternalProjectileParams` + one BP; enemies: `BP_Dummy` + `FGeoEnemySetup`). Never a copy of an asset to change values.
+- Tunable numbers in params = `FScalableFloat`, so a use points at a curve table row (`CT_Tutorial`) like any other data.
+
 ## Writing code
 - **clang-format every file you touch** (`.h`, `.cpp`, `.cs`), whole file, even when it reformats lines that
   are not yours. Never hand-format around it or skip it to keep a diff small. Not on PATH yet →

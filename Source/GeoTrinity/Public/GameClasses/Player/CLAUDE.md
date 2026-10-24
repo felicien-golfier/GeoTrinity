@@ -9,7 +9,8 @@
 - Local setup (cursor, input mode, view target, mapping context, key seeding) in `ReceivedPlayer`.
 - Pause menu: `ToggleMenuAction` bound only for local player 0; swaps `InputMapping` ↔ `MenuInputMapping` while open.
 - Solo pause: in a world whose game mode has `bSoloOnly` (the tutorial, `Match/CLAUDE.md`), `OpenPauseMenu` pauses the game (`SetPause`) and `ClosePauseMenu` unpauses it; any other map keeps running (others are playing). The menu's input actions trigger while paused (`bTriggerWhenPaused`).
-- `InteractUIAction` ("Interact with UI in game", in `InputMapping`, rebindable, never a mouse button): bound for local player 0, broadcasts native `OnInteractUI`. In-game UI that takes a press without the menu binds it (first user: Cat line skip, `GeoTrinityUI/.../HUD/Tutorial/CLAUDE.md`). Hard `TObjectPtr`, like every action bound here.
+- `OnPauseMenuClosed` (native multicast): broadcast by `ClosePauseMenu` when the menu was open, whatever page and whichever way it closed. Whoever waits for the player to come back to the game binds it (the latent ability page, `Encounter/Action/CLAUDE.md`).
+- `InteractUIAction` ("Interact with UI in game", in `InputMapping` and `MenuInputMapping` with the same default key, so a popup over a menu skips and shows its key, rebindable, never a mouse button): bound for local player 0, broadcasts native `OnInteractUI`. In-game UI that takes a press without the menu binds it (first user: Cat line skip, `GeoTrinityUI/.../HUD/Tutorial/CLAUDE.md`). Hard `TObjectPtr`, like every action bound here.
 - Cursor and `SeedKeyBindingsForKeyboardLayout` gated on `GeoLib::IsKeyboardMousePlayer`.
 - Ticks `ComputePlayerStats` (non-shipping, `Geo.ShowCombatStats`).
 

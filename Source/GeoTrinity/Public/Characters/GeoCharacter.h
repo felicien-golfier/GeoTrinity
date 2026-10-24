@@ -152,6 +152,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	/** False for a character that has no health bar by design (AHiddenCasterCharacter). */
+	virtual bool NeedsCombattantWidget() const { return true; }
+
 	//----------------------------------------------------------------------//
 	// GAS START
 	//----------------------------------------------------------------------//

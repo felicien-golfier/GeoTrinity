@@ -77,6 +77,13 @@ Also check that the expected tests **actually ran**: an empty filter match "succ
 - The engine still writes its own files into `Saved/`. That cannot be avoided, and nothing there may be read or
   relied on.
 
+## Tutorial runs (mandatory gate)
+
+Headless play-in-editor runs of the real `/Game/Maps/Tutorial`, a bot playing it: `Source/GeoTrinityEditor/Private/Tests/Tutorial/` (bot, branches, coverage table: its `CLAUDE.md`). `GeoTrinity.Tutorial.FullRun` plays every room in order (the gate, `CLAUDE.md` "Tutorial gate"); `GeoTrinity.Tutorial.Path.*` and `GeoTrinity.Tutorial.Jump.*` play every other branch, one session each.
+- Run: `Tools\Build_Editor.bat` (editor closed), then `Tools\Run_Tests.bat GeoTrinity.Tutorial.FullRun`; the whole set with `Tools\Run_Tests.bat GeoTrinity.Tutorial.`.
+- Map loaded with `FAutomationEditorCommonUtils::LoadMap`, never `AutomationOpenMap`: in the editor that starts its own standalone play session, which the listen one then replaces under the bot. Play session: listen server, one client process (`FGeoStartListenPlayCommand`).
+- A new room, step or branch adds its stages and its coverage row in the same change.
+
 ## Spawning a deployable in a test
 
 Any test that needs a deployable spawns a real one, through the production funnel, never a hand-built stand-in.

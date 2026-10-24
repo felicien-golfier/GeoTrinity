@@ -31,13 +31,10 @@ def build_material():
     graph = toolkit["open_material"](FOLDER, "M_Cat")
     node, op = graph.node, graph.op
     color = graph.parameter(unreal.MaterialExpressionVectorParameter, "Color", ROLES["Base"], "01 Cat", 0,
-                            "The colour role, emissive", -300, 0)
-    height = op(unreal.MaterialExpressionSubtract, -200, 300,
-                graph.mask(node(unreal.MaterialExpressionWorldPosition, -600, 300), "b", -400, 300),
-                B=graph.mask(node(unreal.MaterialExpressionActorPositionWS, -600, 450), "b", -400, 450))
-    visible = op(unreal.MaterialExpressionSaturate, 200, 300,
-                 op(unreal.MaterialExpressionMultiply, 0, 300, height, B=node(unreal.MaterialExpressionConstant, -200, 450,
-                                                                               r=CUT_SHARPNESS)))
+                            "The colour role, emissive")
+    height = op(unreal.MaterialExpressionSubtract, graph.mask(node(unreal.MaterialExpressionWorldPosition), "b"),
+                B=graph.mask(node(unreal.MaterialExpressionActorPositionWS), "b"))
+    visible = op(unreal.MaterialExpressionSaturate, op(unreal.MaterialExpressionMultiply, height, B=node(unreal.MaterialExpressionConstant, r=CUT_SHARPNESS)))
     graph.to_property(color, unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     graph.to_property(visible, unreal.MaterialProperty.MP_OPACITY_MASK)
 

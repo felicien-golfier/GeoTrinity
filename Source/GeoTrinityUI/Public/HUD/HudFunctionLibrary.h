@@ -9,6 +9,7 @@
 
 class UAbilitySystemComponent;
 class UInputAction;
+class UInputMappingContext;
 class ULocalPlayer;
 struct FKey;
 /**
@@ -42,4 +43,7 @@ public:
 	/** The first key LocalPlayer has mapped to InputAction now; invalid when none. Shared by the ability slots' key
 	 * label and the Cat's {Key:...} tokens, so a key reads the same everywhere. */
 	static FKey GetMappedKey(ULocalPlayer const* LocalPlayer, UInputAction const* InputAction);
+
+	/** The first key Context (the asset, whether or not it is active) maps to InputAction; invalid when none. */
+	static FKey GetDefaultMappedKey(UInputMappingContext const* Context, UInputAction const* InputAction);
 };

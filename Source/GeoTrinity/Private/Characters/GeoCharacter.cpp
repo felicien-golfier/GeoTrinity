@@ -237,7 +237,7 @@ void AGeoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	TargetYaw = GetActorRotation().Yaw;
-	ensureMsgf(CharacterWidgetComponent || IsHidden() || GeoLib::IsDedicatedServer(GetWorld()),
+	ensureMsgf(CharacterWidgetComponent || !NeedsCombattantWidget() || GeoLib::IsDedicatedServer(GetWorld()),
 			   TEXT("%s has no CharacterWidgetComponent — set CombattantWidgetComponentClass in Game Data Settings"),
 			   *GetName());
 	BindCosmeticsToASC();
@@ -262,7 +262,7 @@ void AGeoCharacter::BeginPlay()
 
 void AGeoCharacter::Death()
 {
-	if (bIsDead || (TeamId == ETeam::Player && CVarPlayerInvincible.GetValueOnGameThread()))
+	if (bIsDead || (IsPlayerControlled() && CVarPlayerInvincible.GetValueOnGameThread()))
 	{
 		return;
 	}

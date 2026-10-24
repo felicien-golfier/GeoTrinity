@@ -28,7 +28,7 @@ void UGeoSummonAddAbility::OnPatternEnd()
 	if (ensureMsgf(Arena, TEXT("%s: the caster has no arena to summon into"), *GetName())
 		&& ensureMsgf(AddClass, TEXT("%s: no AddClass set"), *GetName()))
 	{
-		Arena->SpawnAdd(AddClass, FTransform(FVector(StoredPayload.Origin, ArbitraryCharacterZ)));
+		Arena->SpawnAdd(AddClass, FTransform(FVector(StoredPayload.Origin, ArbitraryCharacterZ)), &AddSetup);
 	}
 
 	Super::OnPatternEnd();

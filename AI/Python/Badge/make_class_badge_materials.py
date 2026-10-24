@@ -53,64 +53,52 @@ def build_material(default_mask):
     Vector, Scalar = unreal.MaterialExpressionVectorParameter, unreal.MaterialExpressionScalarParameter
 
     # Vertex stage: pre-skinned position -> mask UV, pre-skinned normal -> top-face flag.
-    position = node(unreal.MaterialExpressionLocalPosition, -2000, 0,
-                    local_origin=unreal.LocalPositionOrigin.INSTANCE_PRE_SKINNING)
+    position = node(unreal.MaterialExpressionLocalPosition, local_origin=unreal.LocalPositionOrigin.INSTANCE_PRE_SKINNING)
     # Image right is +Y, image down is -X.
-    minus_x = node(unreal.MaterialExpressionMultiply, -1600, 60, const_b=-1.0)
-    connect(graph.mask(position, "r", -1800, 60), minus_x)
-    image_direction = op(unreal.MaterialExpressionAppendVector, -1400, 0,
-                         A=graph.mask(position, "g", -1800, -60), B=minus_x)
+    minus_x = node(unreal.MaterialExpressionMultiply, const_b=-1.0)
+    connect(graph.mask(position, "r"), minus_x)
+    image_direction = op(unreal.MaterialExpressionAppendVector, A=graph.mask(position, "g"), B=minus_x)
     uv_per_cm = parameter(Scalar, "MaskUVPerCm", 0.01, "02 Mask", 2,
-                          "Mask UV per cm of badge; set by make_class_badge_materials.py from the mesh frame",
-                          -1600, 200)
+                          "Mask UV per cm of badge; set by make_class_badge_materials.py from the mesh frame")
     center = parameter(Vector, "MaskCenterUV", unreal.LinearColor(0.5, 0.5, 0.0, 0.0), "02 Mask", 3,
-                       "Mask UV at the badge's origin, in RG; set by make_class_badge_materials.py", -1600, 320)
-    uv = op(unreal.MaterialExpressionAdd, -1000, 0,
-            op(unreal.MaterialExpressionMultiply, -1200, 0, image_direction, B=uv_per_cm),
-            B=graph.mask(center, "rg", -1200, 320))
-    normal_z = graph.mask(node(unreal.MaterialExpressionPreSkinnedNormal, -1400, 480), "b", -1300, 480)
-    cap_face = op(unreal.MaterialExpressionStep, -1000, 480, X=op(unreal.MaterialExpressionAbs, -1150, 480, normal_z))
+                       "Mask UV at the badge's origin, in RG; set by make_class_badge_materials.py")
+    uv = op(unreal.MaterialExpressionAdd, op(unreal.MaterialExpressionMultiply, image_direction, B=uv_per_cm),
+            B=graph.mask(center, "rg"))
+    normal_z = graph.mask(node(unreal.MaterialExpressionPreSkinnedNormal), "b")
+    cap_face = op(unreal.MaterialExpressionStep, X=op(unreal.MaterialExpressionAbs, normal_z))
     cap_face.set_editor_property("const_y", CAP_FACE_MIN_NORMAL_Z)
-    to_pixel = op(unreal.MaterialExpressionVertexInterpolator, -600, 200,
-                  op(unreal.MaterialExpressionAppendVector, -800, 200, A=uv, B=cap_face))
+    to_pixel = op(unreal.MaterialExpressionVertexInterpolator, op(unreal.MaterialExpressionAppendVector, A=uv, B=cap_face))
 
     # Pixel stage: the mask's lines, transparent pixels dropped, top and bottom faces only.
-    sample = node(unreal.MaterialExpressionTextureSampleParameter2D, -300, 100, parameter_name="Mask",
+    sample = node(unreal.MaterialExpressionTextureSampleParameter2D, parameter_name="Mask",
                   texture=default_mask, sampler_type=unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR,
                   group="02 Mask", sort_priority=0, desc="White lines on the badge; alpha 0 draws nothing")
-    connect(graph.mask(to_pixel, "rg", -450, 100), sample, "UVs")
-    line = op(unreal.MaterialExpressionMultiply, 100, 200,
-              op(unreal.MaterialExpressionMultiply, -50, 150, (sample, "R"), B=(sample, "A")),
-              B=graph.mask(to_pixel, "b", -450, 300))
+    connect(graph.mask(to_pixel, "rg"), sample, "UVs")
+    line = op(unreal.MaterialExpressionMultiply, op(unreal.MaterialExpressionMultiply, (sample, "R"), B=(sample, "A")),
+              B=graph.mask(to_pixel, "b"))
     color = parameter(Vector, "Color", unreal.LinearColor(0.0, 0.0, 1.0, 1.0), "01 Body", 0,
-                      "Class colour, emissive", 100, 0)
+                      "Class colour, emissive")
     line_color = parameter(Vector, "LineColor", unreal.LinearColor(0.6, 0.6, 1.0, 1.0), "02 Mask", 1,
-                           "Colour of the mask's lines, emissive", 100, 100)
-    body = op(unreal.MaterialExpressionLinearInterpolate, 350, 100, A=color, B=line_color, Alpha=line)
+                           "Colour of the mask's lines, emissive")
+    body = op(unreal.MaterialExpressionLinearInterpolate, A=color, B=line_color, Alpha=line)
 
     # Shield-burst gauge glow, as in MAT_Cube_Alive: brightest at the UV border, filling in with FullGlowGauge.
-    uvs = node(unreal.MaterialExpressionTextureCoordinate, -1200, 800)
+    uvs = node(unreal.MaterialExpressionTextureCoordinate)
     border = []
     for index, channel in enumerate("rg"):
-        coordinate = graph.mask(uvs, channel, -1000, 700 + 200 * index)
-        opposite = node(unreal.MaterialExpressionSubtract, -800, 760 + 200 * index, const_a=1.0)
+        coordinate = graph.mask(uvs, channel)
+        opposite = node(unreal.MaterialExpressionSubtract, const_a=1.0)
         connect(coordinate, opposite, "B")
-        border.append(op(unreal.MaterialExpressionMin, -600, 700 + 200 * index, coordinate, B=opposite))
-    full = parameter(Scalar, "FullGlowGauge", 0.0, "03 Shield Gauge", 1, "0-1, widens the glow to the whole face",
-                     -800, 1100)
-    reach = op(unreal.MaterialExpressionLinearInterpolate, -600, 1100, Alpha=full)
+        border.append(op(unreal.MaterialExpressionMin, coordinate, B=opposite))
+    full = parameter(Scalar, "FullGlowGauge", 0.0, "03 Shield Gauge", 1, "0-1, widens the glow to the whole face")
+    reach = op(unreal.MaterialExpressionLinearInterpolate, Alpha=full)
     reach.set_editor_property("const_a", 0.1)
-    glow_shape = op(unreal.MaterialExpressionOneMinus, -100, 800,
-                    op(unreal.MaterialExpressionSaturate, -250, 800,
-                       op(unreal.MaterialExpressionDivide, -400, 800,
-                          op(unreal.MaterialExpressionMin, -450, 750, border[0], B=border[1]), B=reach)))
+    glow_shape = op(unreal.MaterialExpressionOneMinus, op(unreal.MaterialExpressionSaturate, op(unreal.MaterialExpressionDivide, op(unreal.MaterialExpressionMin, border[0], B=border[1]), B=reach)))
     gauge_color = parameter(Vector, "GlowGaugeColor", unreal.LinearColor(0.0, 0.876863, 1.0, 1.0), "03 Shield Gauge",
-                            2, "Gauge glow colour", -100, 650)
-    gauge = parameter(Scalar, "GlowGauge", 0.0, "03 Shield Gauge", 0, "0-1, gauge fill; written by the shield burst",
-                      100, 950)
-    glow = op(unreal.MaterialExpressionMultiply, 350, 800,
-              op(unreal.MaterialExpressionMultiply, 150, 800, gauge_color, B=glow_shape), B=gauge)
-    graph.to_property(op(unreal.MaterialExpressionAdd, 600, 300, glow, B=body),
+                            2, "Gauge glow colour")
+    gauge = parameter(Scalar, "GlowGauge", 0.0, "03 Shield Gauge", 0, "0-1, gauge fill; written by the shield burst")
+    glow = op(unreal.MaterialExpressionMultiply, op(unreal.MaterialExpressionMultiply, gauge_color, B=glow_shape), B=gauge)
+    graph.to_property(op(unreal.MaterialExpressionAdd, glow, B=body),
                       unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 
     material = graph.asset

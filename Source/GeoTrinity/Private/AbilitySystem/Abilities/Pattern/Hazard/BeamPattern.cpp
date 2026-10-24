@@ -127,8 +127,8 @@ void UBeamPattern::TickPattern(float const ServerTime, float const SpentTime)
 					  false, 0.f);
 		DrawDebugLine(GetWorld(), BeamStart - Right * BeamHalfWidth, BeamEnd - Right * BeamHalfWidth, FColor::Red,
 					  false, 0.f);
-		DrawDebugLine(GetWorld(), BeamEnd - Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red,
-					  false, 0.f);
+		DrawDebugLine(GetWorld(), BeamEnd - Right * BeamHalfWidth, BeamEnd + Right * BeamHalfWidth, FColor::Red, false,
+					  0.f);
 	}
 }
 

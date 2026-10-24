@@ -1,8 +1,12 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "HUD/HudFunctionLibrary.h"
 #include "HUD/Tutorial/GeoCatFaceMotion.h"
 #include "HUD/Tutorial/GeoCatLineMarkup.h"
+#include "InputAction.h"
+#include "InputCoreTypes.h"
+#include "InputMappingContext.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -108,6 +112,23 @@ bool FGeoCatFaceMotionTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Mouth closed at the start"), GeoCatFaceMotion::GetMouthScale(0.), .35f);
 	TestEqual(TEXT("Mouth open after .38 s"), GeoCatFaceMotion::GetMouthScale(.38), 1.f, .001f);
 	TestEqual(TEXT("Mouth closes again after .76 s"), GeoCatFaceMotion::GetMouthScale(.76), .35f, .001f);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoDefaultMappedKeyTest, "GeoTrinityUI.Tutorial.DefaultMappedKey",
+								 GeoCatLineTestFlags)
+
+bool FGeoDefaultMappedKeyTest::RunTest(FString const& /*Parameters*/)
+{
+	UInputAction* const Mapped = NewObject<UInputAction>();
+	UInputAction* const Unmapped = NewObject<UInputAction>();
+	UInputMappingContext* const Context = NewObject<UInputMappingContext>();
+	Context->MapKey(Mapped, EKeys::F);
+
+	TestEqual(TEXT("Mapped action"), UHudFunctionLibrary::GetDefaultMappedKey(Context, Mapped), FKey(EKeys::F));
+	TestFalse(TEXT("Unmapped action"), UHudFunctionLibrary::GetDefaultMappedKey(Context, Unmapped).IsValid());
+	TestFalse(TEXT("No context"), UHudFunctionLibrary::GetDefaultMappedKey(nullptr, Mapped).IsValid());
 	return true;
 }
 

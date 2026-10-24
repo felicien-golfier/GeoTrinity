@@ -23,7 +23,7 @@ World actors.
 
 ## GeoCat
 The Cat's 3D body (`AI/Tutorial/CatAnimation.md` for clips and rig, `Cat.md` for the character); `BP_Cat` sets mesh and AnimBP. Captain / navigator: the cat knows *how* to walk, roam and play a montage; *what, where and when* (points, speed, roam area, which montage, hiding) come from the encounter's Cat actions (`Encounter/Action/Cat/CLAUDE.md`). It knows no clip, no portal, no room.
-- Orders (C++): `Walk(Points, Speed, StopDistance)`, `Roam(FGeoCatRoam)`, `PlayMontage(Montage)`. One at a time: a new one ends the current (montage stopped, walk dropped).
+- Orders (C++): `Walk(Points, Speed, StopDistance)`, `Roam(FGeoCatRoam)`, `PlayMontage(Montage)`. One at a time: a new one ends the current (montage stopped, walk dropped). `Stop()` ends the current one with no new order (an encounter abort).
 - `OnOrderEnded(bool bCompleted)` (native multicast): every order ends through it, completed or replaced, so an awaiting action never hangs. `Roam` ends only when replaced.
 - No order = idle: it stands and turns toward the first local pawn (`bFacePlayer`), so the idle reads as talking to you; never while a montage plays (a clip effect on a socket must not swing).
 - `PlayMontage` completes when the montage starts blending out, not when it ends: an order or a hide given then lands before the blend back to locomotion shows (a clip ending below the plane would rise again). No montage / anim instance: completes at once, so headless tests and a missing asset never stall an encounter.

@@ -62,7 +62,7 @@ void UDevastatingWavePattern::AddPillarSpots(float const MaxDistance)
 
 	if (bAdded)
 	{
-		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, PillarSpots);
+		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, PillarSpots, FVector2D::ZeroVector);
 	}
 }
 

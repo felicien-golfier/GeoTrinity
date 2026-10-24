@@ -14,9 +14,8 @@ Supersedes the lane design of `AI/Pending/MinibossWaveSpots.md` (its `GetDangero
 - [x] Hazard `GeoPatternTests.cpp` — replace `LateralWaveLanes` (below)
 
 ## Editor / Blueprint (by hand or script)
-- [ ] Beam material used by `BP_LateralWave_*`: read `MPC_MaskedArea` slots, cut `Lane` shadows (parallel to the beam) out of the band and the indicator; probe how `NS_PillarsAOE`'s material does `Behind` first, reuse its function (`AI/MCP/MCP_Material.md`)
+- Lateral wave items moved to `AI/Pending/BeamSafeSpotMask.md` (spots at runtime done; lanes cut by the beam materials)
 - [x] (script updated, not run: `FixedSpotOffsets` (0, lane), `SafeSpotSources`, `SpotRadius`, `BeamColor`, `MaskMaterialParameterCollection`) `tutorial_waves.py` — `BP_LateralWave_MinibossWave` : new parent, `SafeSpotSources = Adds`; step 9 waves: `Fixed` offsets, no `FixedLanes`; `MPC_MaskedArea` assigned on the pattern
-- [ ] Existing `BP_LateralWave_*` children keep `TravelYaw`, `Speed`, `TravelDistance`, `BandWidth`, `HalfWidth`; they lose `WaveColor` (now the base's `BeamColor`), `BeamVfxSystem` (same name, now the base's), `FixedLanes`, `SafeLaneWidth`, `bLanesFromAdds`: rerun `tutorial_waves.py` (editor) to set the new ones
 
 ## Tests (`AI/CodingStyle.md` "Tests")
 - [x] `GeoTrinity.Pattern.SafeSpotShadow` — `Behind`: before the spot not shielded, behind within radius shielded, beside not; `Lane`: shielded on both sides of the spot, outside width not; zero spots shield nothing

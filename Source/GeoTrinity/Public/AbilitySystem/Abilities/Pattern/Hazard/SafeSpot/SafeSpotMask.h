@@ -17,9 +17,10 @@ struct GEOTRINITY_API FSafeSpotMask
 	 * sentinel the material ignores. */
 	static TArray<FLinearColor> GetSlotValues(TArray<FSafeSpot> const& Spots);
 
-	/** Writes Spots to Collection: their slots, the radius of the first, the shadow mode of the first. Does nothing on
-	 * a dedicated server or without a Collection. */
-	static void Set(UObject* WorldContext, UMaterialParameterCollection* Collection, TArray<FSafeSpot> const& Spots);
+	/** Writes Spots to Collection: their slots, the radius and the shadow mode of the first, and LaneDirection (unit
+	 * XY, read by Lane only). Does nothing on a dedicated server or without a Collection. */
+	static void Set(UObject* WorldContext, UMaterialParameterCollection* Collection, TArray<FSafeSpot> const& Spots,
+					FVector2D LaneDirection);
 
 	/** Frees every slot. */
 	static void Clear(UObject* WorldContext, UMaterialParameterCollection* Collection);

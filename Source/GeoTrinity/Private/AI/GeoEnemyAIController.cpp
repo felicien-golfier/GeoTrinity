@@ -201,9 +201,16 @@ void AGeoEnemyAIController::CheckAggroDistance()
 	{
 		return;
 	}
+	float Radius = AggroRadius;
+	if (AEnemyCharacter const* const EnemyChar = GetPawn<AEnemyCharacter>();
+		EnemyChar && EnemyChar->AggroRadiusOverride >= 0.f)
+	{
+		Radius = EnemyChar->AggroRadiusOverride;
+	}
+
 	FVector2D const BossPos(GetPawn()->GetActorLocation());
-	TArray<AActor*> Actors = GeoASLib::GetInteractableActors(this, GetGenericTeamId(), TeamAttitudeMask::Hostile, false,
-															 BossPos, AggroRadius);
+	TArray<AActor*> Actors =
+		GeoASLib::GetInteractableActors(this, GetGenericTeamId(), TeamAttitudeMask::Hostile, false, BossPos, Radius);
 	if (Actors.Num() > 0)
 	{
 		TriggerAggro();

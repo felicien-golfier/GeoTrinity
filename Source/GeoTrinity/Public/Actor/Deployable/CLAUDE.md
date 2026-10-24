@@ -13,7 +13,7 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 | `Pillar/` | Boss pillar blocking the devastating wave |
 | `Mine/` | Hex-boss mine, fuse + burst |
 | `BombZone/` | Hex-boss tile bomb |
-| `Zones/` | `GeoEffectZone`: editor-placed capsule applying `EffectDataArray`; owns its ASC; heal/damage re-applied per tick (per-second magnitude), other types once on entry/exit. `GeoGrowingZone`: one whose radius grows from its spawn size to `MaxRadius` over `GrowthSeconds`, then stays |
+| `Zones/` | `GeoEffectZone`: editor-placed capsule applying `EffectDataArray`; owns its ASC; heal/damage re-applied per tick (per-second magnitude), other types once on entry/exit; grows when its params say so (Data and fields) |
 
 ## Lifecycle
 - Spawned server-side, always through `GeoASLib::FullySpawnDeployable` (`AbilitySystem/Lib/CLAUDE.md`; no deployable, pickups included, calls `SpawnActorDeferred` itself): by `ADeployableSpawnerProjectile::EndProjectileLife()` for a throw, by `GeoASLib::SpawnDeployableFromAbility` for a passive's placement, by `GeoSpawnZoneAction` for an encounter's self-owned zone (`Encounter/Action/CLAUDE.md`) → `InitDrain()` → `ApplyHealthMultiplier()` → server `Tick()` drains → zero health/duration starts blink → `Expire()` (hide, event, delayed destroy).
@@ -27,6 +27,7 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 
 ## Data and fields
 - `FDeployableData : FInteractableActorData`: `EffectDataArray`, `Params` (`BlinkDuration`, `LifeDrainMaxDuration`, `Size`, `Value`), `PredictionKey`, `AbilityTag`.
+- Growth params (zones only): `GrowToSize`, `GrowSeconds` (`FScalableFloat`, read at `Data.Level`, so a spawner points them at a curve table row). `GrowToSize` 0 = fixed `Size`; else the radius goes `Size` → `GrowToSize` over `GrowSeconds` from the server's BeginPlay, then stays. Every machine grows it on the server clock (`GeoLib::GetServerTime`) from `GrowthStartServerTime` (initial-only, like `Data`), so a late client draws the radius the server judges. `Size` is never written after spawn (what a late client receives); the grown radius = `AGeoEffectZone::GetRadius()`, read by the judge and `ApplyRadius`.
 - Health params (`FDeployableDataParams`, set by the deployer, never by hand): `HealthMultiplier` scales `MaxHealth` and `Health`; `StartHealthRatio` (0..1, default 1) then sets `Health = MaxHealth * StartHealthRatio`, `MaxHealth` untouched.
 - `DeployDistance` (same struct, set by the deployer, -1 = not thrown): the throw distance the deployable's Leverage was computed from; a copy of it reads it to carry Leverage (`SpawnDeployableFromAbility`).
 - Drain rate = `MaxHealth / LifeDrainMaxDuration`, computed before the start ratio: a half-health start lives half as long at the normal rate; health bar and blink follow `Health / MaxHealth`.
@@ -45,8 +46,3 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 - `AGeoInteractableActor`'s ASC is `Minimal` but a deployable is net-owned by its deployer: that client receives neither replicated cue `WhileActive` nor tags for its own deployables (works on the listen server and on other players' deployables).
 - Read deployable state through replicated members, not tags. Cue visuals spawn from both `OnActive` and `WhileActive` behind an idempotent guard. Target fix: `Mixed` on that ASC. Detail: `TroobleshootingLogs.md`.
 - Every concrete subclass overrides `GetData()` returning a non-null pointer to its own data `UPROPERTY` struct (`FTurretData`, `FBuffPickupData`, …): `Tick`, `GetDurationPercent`, `InitInteractableData` dereference it unchecked. Audit every subclass when touching the pattern. Spawn with `SpawnActorDeferred` + `FinishSpawning`.
-
-## Growing zone
-- Radius from the elapsed time since its BeginPlay, on every machine (`Tick`): the server judges with it, a client only draws it; nothing about the growth replicates.
-- `Data.Params.Size` stays the spawn size (what a client receives, whenever it joins); the grown radius goes through `AGeoEffectZone::GetRadius()`, which the judge and `ApplyRadius` read.
-- `GrowthSeconds`, `MaxRadius`: `FScalableFloat` on the Blueprint (tutorial: `CT_Tutorial` rows).

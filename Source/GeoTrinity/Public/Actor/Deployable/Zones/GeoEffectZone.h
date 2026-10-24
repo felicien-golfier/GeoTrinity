@@ -15,7 +15,10 @@ class UGeoAbilitySystemComponent;
  * ability through FDeployableData, which supplies all of that plus a life-drain duration to expire on. The effects and
  * Params.Attitude are what build a healing zone (heal effect, Friendly attitude) or a damage zone (damage effect,
  * Hostile attitude), so a spawned zone needs no Blueprint of its own beyond the project-wide one in
- * UGameDataSettings::DefaultZoneClass — Params.Color is what tells the two apart on screen.
+ * UGameDataSettings::DefaultZoneClass — Params.Color is what tells the two apart on screen. Params.GrowToSize above 0
+ * grows it from Size over Params.GrowSeconds, then it stays: every machine grows it on the server clock from the
+ * server's BeginPlay (GrowthStartServerTime), so a client that receives the zone late draws the radius the server
+ * judges.
  *
  * The server judges the zone as a hazard (FGeoHazardJudge), each actor where it stood when its screen showed it: the
  * per-second entries for the time spent inside, any other entry on entering, its infinite ones removed on leaving.
@@ -32,8 +35,10 @@ public:
 
 	/** Stores the spawner's data: its EffectDataArray and Params replace every Details-panel field. */
 	virtual void InitInteractable(FInteractableActorData* InputData) override;
-	/** Registers Data (COND_InitialOnly) so clients can size and tint the zone. */
+	/** Registers Data and GrowthStartServerTime (COND_InitialOnly) so clients can size, grow and tint the zone. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	/** Advances the growth (Data.Params.GrowToSize above 0) and resizes the zone. */
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	virtual FDeployableData const* GetData() const override { return &Data; }
@@ -51,15 +56,19 @@ protected:
 	/** Server. What a zone does beyond applying its effects, for every actor the judge just found inside it. */
 	virtual void OnZoneJudged(TArray<FGeoHazardJudge::FTargetResult> const& Results) {}
 
-	/** The radius the zone judges and draws with: Data.Params.Size, the one both the placed and the spawned path end
-	 * up in. */
-	virtual float GetRadius() const { return Data.Params.Size; }
+	/** The radius the zone judges and draws with: Data.Params.Size (the one both the placed and the spawned path end up
+	 * in, never written after spawn) grown toward Data.Params.GrowToSize by GrowthAlpha. */
+	float GetRadius() const;
 
 	/** Matches the capsule and the meshes to GetRadius(). */
 	void ApplyRadius() const;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Data)
 	FDeployableData Data;
+
+	/** Server time of the server's BeginPlay, the growth's start. */
+	UPROPERTY(Replicated)
+	float GrowthStartServerTime = 0.f;
 
 private:
 	// Hand-placed zones only — a spawned zone reads all of these off the FDeployableData its ability filled in.
@@ -91,6 +100,9 @@ private:
 	void JudgeZone();
 
 	FGeoHazardJudge ZoneJudge;
+
+	/** 0 at Data.Params.Size, 1 at Data.Params.GrowToSize. */
+	float GrowthAlpha = 0.f;
 
 	/** Client-side sizing and tinting: a spawned zone's Data only arrives after the actor exists. */
 	UFUNCTION()

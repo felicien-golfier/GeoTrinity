@@ -11,7 +11,7 @@ Scripted sequences of steps driven by triggers and actions, authored in the leve
 | `GeoEncounterCondition.h` | `UGeoEncounterCondition`: `Evaluate(Payload) → bool` filter on a rule |
 | `GeoCompareCondition.h` | The stock condition: payload `Count`, payload `Value` or a step counter, compared with an operand |
 | `GeoEncounterAction.h` | `UGeoEncounterAction`: base of every action; `Execute(Payload)`, `Finish()`, `OnCancel()`, `bLatent` |
-| `GeoEncounterSubsystem.h` | World subsystem: tag event bus (`Raise(Tag, Payload)`, Blueprint-callable); `bMovementLocked`, the encounters' one movement lock |
+| `GeoEncounterSubsystem.h` | World subsystem: tag event bus (`Raise(Tag, Payload)`, Blueprint-callable); `bMovementLocked`, the encounters' one movement lock; `OnCatLine` (native): every Cat line as it shows, tokens replaced (the tutorial bot's line log); aborts every encounter of its world when the session ends (below) |
 | `Trigger/` | Stock triggers → `Trigger/CLAUDE.md` |
 | `Action/` | Stock actions → `Action/CLAUDE.md` |
 
@@ -32,7 +32,7 @@ AGeoEncounter
 - `GeoCompareCondition`: source (`PayloadCount`, `PayloadValue`, `Counter` + name), operator (`==`, `!=`, `<`, `<=`, `>`, `>=`, `MultipleOf`), operand. Other filters are Blueprint children of `UGeoEncounterCondition`.
 
 ## Flow
-- `Start()` (or `bStartOnBeginPlay`): enter step 0 when not running. `Restart()`: cancel everything (no `OnExit`), back to step 0, in any state; `GeoStartEncounterAction` calls it.
+- `Start()` (or `bStartOnBeginPlay`): enter step 0 when not running. `Restart()`: cancel everything (no `OnExit`), back to step 0, in any state. `GeoStartEncounterAction` calls `StartAfterSkippingChain()` (Arrival reset).
 - Enter step: clear counters, arm every rule's trigger (`OnArm`), then run `OnEnter`: in order, each action awaited, alongside the armed rules; cancelled if the step exits first.
 - Trigger `Fire(Payload)` → rule's `Condition` (none = pass) → rule's `Actions` in order, each awaited (`Finish()`) → if `bCompletesStep`, complete the step.
 - Complete step: disarm all triggers (`OnDisarm`), cancel running actions (`OnCancel`), run `OnExit` awaited, then enter `StepAfter` (None = next in the list). After the last step: `OnCompleted`, encounter finished.
@@ -41,13 +41,23 @@ AGeoEncounter
 - `GoToStep(Name)` (only while a step runs) is Blueprint-callable for an action that picks the destination itself; the current step's name re-enters it (fresh triggers, counters at 0).
 - `bRepeat` false: the rule fires once per visit of the step, then its trigger is disarmed. True: every passing firing runs the actions.
 - A rule ignores firings while its own actions are still running; no queue, no overlapping runs of one instance.
+- A `bCompletesStep` rule that fired owns the step until its actions end: every other rule ignores firings meanwhile (a long completing list, e.g. a line that waits for the respawn, never lets a sibling complete the step first, `SafeSpots`: a death must not let the remaining waves open the exit). The step's `OnEnter` keeps running until the completion cancels it.
 
 ## Arrival reset
 Every chain start (`GeoStartEncounterAction`, `Action/CLAUDE.md`; the jump below) lands the world in the state the target encounter expects, whatever the previous room was doing: a portal never waits for, or lets run on, the room left behind.
-- `AGeoEncounter::StartAfterSkippingChain()` order: (1) `Abort()` every other encounter still running; (2) clear the presentation of the left room (`HideCatLine`, `HideQuestCard` on the local HUD, `HUD/Interface/CLAUDE.md`); (3) skip replay of the chain before the target (below); (4) `Start()`.
-- `Abort()` (server, Blueprint-callable): stops the current step without `OnExit` (disarm, then cancel runs: spawns killed, zones recalled, `OnCancel` of every action), back to `Idle`, no `OnCompleted`, no later step change until `Start()`. Same one-change-at-a-time rule as `Restart()`: asked from inside its own call (the encounter whose rule runs the start action), it applies when the call returns.
+- `AGeoEncounter::StartAfterSkippingChain()` order: (1) `Abort()` every other encounter of the world, whatever its state (a completed room can leave a Cat line standing); (2) skip replay of the chain before the target (below); (3) `Restart()` the target (a running one starts over). Nothing about the left room is cleared by the encounter: every action undoes its own leftovers.
+- `Abort()` (server, Blueprint-callable): stops the current step without `OnExit` (disarm, then the normal cancel of running and held actions), drops the pending change, then calls `OnCancel` on every action of every step (`OnEnter`, rules, `OnExit`) so the ones that finished at once, or in an earlier step, can undo what they left standing. `IsAborting()` is true during the whole call. Back to `Idle`, no `OnCompleted`, no later step change until `Start()` or `Restart()`.
+- `Abort()` is synchronous, also from inside the encounter's own call (the room whose rule runs the start action): the runs are dropped at once (`bActive` false), so the rest of that rule's list and a completion it asked never happen. Synchronous so the left room's undo is over before the arrived room's `OnEnter` runs.
+- Action contract: `OnCancel` undoes what the action left standing and is safe on an action that never ran or already ended (a "did something" flag, set in `Execute`, cleared by the cancel). An action whose leftover outlives a normal step exit on purpose (a Cat line finishing, the Cat's order) undoes it only when `IsAborting()`. Per-action effects: `Action/CLAUDE.md`, "Cancel".
 - Skip replay then rebuilds what the target needs: abilities unlocked, movement lock / unlock pairs netted (the one lock makes the aborted room's lock harmless: lock while locked does nothing, the replayed unlock frees). A player who took the portal early gets what the skipped part would have given.
 - Presentation of a skipped part (lines, pads, spawns, menus) is never replayed (`OnSkipped` no-op); what a room needs of the previous one beyond abilities and locks is set by the target's own `OnEnter`.
+
+## Session end
+The world's end is an `Abort()` of every encounter, same synchronous stop as the arrival reset, so nothing advances while the session is torn down.
+- Why: the viewport is destroyed before the encounters' `EndPlay` (PIE: `UEditorEngine::EndPlayMap` → `CleanupGameViewport`, before `UWorld::BeginTearingDown`). Destroying the HUD ends the Cat line it shows (`NativeDestruct` → `EndLine`), which finishes the awaited `GeoCatLineAction`; the encounter would then run the next action with no player controller left.
+- `UGeoEncounterSubsystem` binds in `Initialize`, unbinds in `Deinitialize`: `FWorldDelegates::OnWorldBeginTearDown` (quit, travel; packaged too) and, editor only, `FWorldDelegates::OnPIEEnded` (fires before the viewport cleanup, matched to the world by its game instance). Both call the same handler.
+- Handler: once per subsystem (a flag), `Abort()` every `AGeoEncounter` of the world. After it every encounter is `Idle`: a later `Finish()` is ignored (not awaited), no step change until `Start()` / `Restart()`.
+- Actions need nothing of their own: `OnCancel` already undoes what they left (contract above). An action never has to tolerate "no player controller" for this; `GeoSetMovementLockedAction` keeps its ensure for a real missing player.
 
 ## Jump start
 Start a chain of encounters at a later one, as if the earlier ones had been played (tutorial: `AI/Tutorial/Flow.md`, "Jump to a room"). Same mechanism as the arrival reset: the world-URL jump is a reset whose target comes from the portal instead of a start action.
@@ -67,10 +77,11 @@ Start a chain of encounters at a later one, as if the earlier ones had been play
 - Run state (`FGeoEncounterActionRun`) is reflected: a payload actor destroyed while its run waits reaches the next action as null.
 - A trigger on a state (inside a volume, health past a ratio) fires from `OnArm` when the state already holds; an event trigger (a death, a raised tag) only fires on the next occurrence.
 - A firing from `OnArm` may disarm the trigger at once (a rule that does not repeat): such a trigger binds everything before its first `Fire`, and stops arming once disarmed, so `OnDisarm` always undoes all of `OnArm`.
+- An action that leaves something running (enemies, a zone) finishes at once and asks `HoldUntilStepLeft`: its `OnCancel` runs when the step is left (asked from `OnExit`: when the step it leads to is left), so a list never waits on it. Run again while held (a repeating rule), it ends its previous run first, as a cancel does.
 - An action that waits (`bLatent`) must call `Finish()` and release its timers/bindings in `OnCancel`. Non-latent: `Finish()` is called by the base after `Execute` returns.
 - Events a trigger waits for come from the event that happens (a delegate on its hub), never from a call planted in someone else's code (`AI/CodingStyle.md`, "GAS conventions"). No dedicated delegate to bind → raise a tag event.
 - Event tags `Encounter.Event.*` are authored in `Config/Tags/GeoGameplayTags.ini`; no C++ names them, only the emitter and the `GeoEventTrigger` that listens.
-- `IsDataValid` (editor) on the encounter: unique non-empty step names, `StepAfter` exists, no null trigger or action, no rule without actions and without `bCompletesStep`, a counter compare with no name.
+- `IsDataValid` (editor) on the encounter: unique non-empty step names, `StepAfter` exists, no null trigger or action, no rule without actions and without `bCompletesStep`, a counter compare with no name, an action after a `GeoStartEncounterAction` in its list (the start aborts the encounter it sits in, so what follows never runs: Arrival reset).
 - Runtime misses (nothing to teleport to, a watched actor gone) log to `LogGeoEncounter`; step entries and firings log at `Verbose`.
 
 ## Arena

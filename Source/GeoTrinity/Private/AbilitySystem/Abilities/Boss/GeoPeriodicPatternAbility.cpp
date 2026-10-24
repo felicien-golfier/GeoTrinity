@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Pattern/Projectile/ProjectilePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
@@ -35,9 +36,10 @@ TInstancedStruct<FPatternData> UGeoPeriodicPatternAbility::CreatePatternData() c
 	FProjectilePatternData SalveData;
 
 	FVector const Origin(StoredPayload.Origin, ArbitraryCharacterZ);
-	if (bAimAtArenaBoss)
+	AActor const* const Caster = GetAvatarActorFromActorInfo();
+	if (GeoASLib::GetTeamId(Caster).GetId() == static_cast<uint8>(ETeam::Player))
 	{
-		AGeoArena const* Arena = AGeoArena::GetArenaOfBoss(GetAvatarActorFromActorInfo());
+		AGeoArena const* Arena = AGeoArena::GetArenaOfBoss(Caster);
 		AEnemyCharacter const* Boss = IsValid(Arena) ? Arena->GetBoss() : nullptr;
 		if (IsValid(Boss) && !Boss->IsDead())
 		{

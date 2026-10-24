@@ -225,8 +225,8 @@ FNetworkPredictionData_Client* UGeoCharacterMovementComponent::GetPredictionData
 void UGeoCharacterMovementComponent::ServerMove_PerformMovement(FCharacterNetworkMoveData const& MoveData)
 {
 	Super::ServerMove_PerformMovement(MoveData);
-	LastMoveServerTime = FMath::Max(LastMoveServerTime,
-									static_cast<FGeoCharacterNetworkMoveData const&>(MoveData).PerceivedServerTime);
+	LastMoveServerTime =
+		FMath::Max(LastMoveServerTime, static_cast<FGeoCharacterNetworkMoveData const&>(MoveData).PerceivedServerTime);
 }
 
 float UGeoCharacterMovementComponent::GetPerceivedServerTime() const
@@ -265,18 +265,16 @@ FGeoPose UGeoCharacterMovementComponent::GetPoseAt(float const ServerTime) const
 	return Pose;
 }
 
-void UGeoCharacterMovementComponent::ServerMoveHandleClientError(float ClientTimeStamp, float DeltaTime,
-																 FVector const& Accel,
-																 FVector const& RelativeClientLocation,
-																 UPrimitiveComponent* ClientMovementBase,
-																 FName ClientBaseBoneName, uint8 ClientMovementMode)
+void UGeoCharacterMovementComponent::ServerMoveHandleClientError(
+	float ClientTimeStamp, float DeltaTime, FVector const& Accel, FVector const& RelativeClientLocation,
+	FMovementBaseInterfaceData* ClientMovementBaseInterfaceData, FName ClientBaseBoneName, uint8 ClientMovementMode)
 {
 	bool const bCorpseFollowingClient = IsCorpseFollowingClient();
 	bIgnoreClientMovementErrorChecksAndCorrection = bCorpseFollowingClient;
 	bServerAcceptClientAuthoritativePosition = bCorpseFollowingClient;
 
-	Super::ServerMoveHandleClientError(ClientTimeStamp, DeltaTime, Accel, RelativeClientLocation, ClientMovementBase,
-									   ClientBaseBoneName, ClientMovementMode);
+	Super::ServerMoveHandleClientError(ClientTimeStamp, DeltaTime, Accel, RelativeClientLocation,
+									   ClientMovementBaseInterfaceData, ClientBaseBoneName, ClientMovementMode);
 }
 
 bool UGeoCharacterMovementComponent::IsCorpseFollowingClient() const

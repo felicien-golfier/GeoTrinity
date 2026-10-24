@@ -74,12 +74,18 @@ void AEnemyCharacter::ApplySetup(FGeoEnemySetup const& Setup)
 		StateTree = Setup.StateTree;
 	}
 
+	if (Setup.BehaviourStateTree)
+	{
+		BehaviourStateTree = Setup.BehaviourStateTree;
+	}
+
 	AbilitySystemComponent->StartupAbilityTags.Append(Setup.AbilityTags);
 	if (!Setup.Tag.IsNone())
 	{
 		Tags.Add(Setup.Tag);
 	}
 
+	AggroRadiusOverride = Setup.AggroRadius;
 	MaxHealthOverride = Setup.MaxHealth;
 	StartHealthRatio = Setup.StartHealthRatio;
 }

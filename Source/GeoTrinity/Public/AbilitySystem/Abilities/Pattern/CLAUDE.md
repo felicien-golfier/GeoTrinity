@@ -20,7 +20,7 @@ Flow: `UPatternAbility::ActivateAbility` → `PatternStartMulticast` → every m
   - `StartPattern` never kicks the loop itself.
 - Montage: `AnimMontage` is cosmetic and played locally by each rendering machine, never by a dedicated server and never replicated; `HasMontage()` tells the launching ability to leave its own montage unplayed (`Base/CLAUDE.md`, "Montage ownership").
 - Randomness always from `Payload.Seed`.
-- One live instance per pattern class per ASC (`FindPatternByClass`, `IsA`): two configs = two BP subclasses. Reset per-activation state in `InitPattern`/`StartPattern`.
+- One live instance per pattern class per ASC (`FindPatternByClass`, `IsA`): two configs live at once on one caster = two BP subclasses (Training Room's six zones); one at a time = one BP, per-firing data (`Hazard/CLAUDE.md`, "LateralWave"). Reset per-activation state in `InitPattern`/`StartPattern`.
 
 ## Lag compensation (every server hit test)
 - Judge each target at its own time: `GeoLib::GetPerceivedServerTime(Actor)`.

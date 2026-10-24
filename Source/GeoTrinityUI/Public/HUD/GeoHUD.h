@@ -230,7 +230,8 @@ public:
 	TArray<FGeoActiveEffectIcon> GetActiveEffectIcons() const;
 
 	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded) override;
-	virtual void ShowAbilityPage(FGameplayTag AbilityTag) override;
+	virtual void HideCatLine() override;
+	virtual void ShowAbilityPage(FGameplayTag AbilityTag, FSimpleDelegate OnClosed) override;
 	virtual void ShowQuestCard(FText const& Title, int32 Max, float TimeLimitSeconds) override;
 	virtual void SetQuestCount(int32 Count) override;
 	virtual void HideQuestCard() override;

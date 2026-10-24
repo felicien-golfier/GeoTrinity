@@ -53,7 +53,8 @@ public:
 	/** Passes the movement component reference to the base class prediction data. */
 	explicit FGeoNetworkPredictionData_Client_Character(UCharacterMovementComponent const& ClientMovement);
 
-	/** Allocates FGeoSavedMove_Character instead of the base type so each move carries a perceived-server-time stamp. */
+	/** Allocates FGeoSavedMove_Character instead of the base type so each move carries a perceived-server-time stamp.
+	 */
 	virtual FSavedMovePtr AllocateNewMove() override;
 };
 
@@ -62,9 +63,11 @@ struct FGeoCharacterNetworkMoveData : public FCharacterNetworkMoveData
 {
 	using Super = FCharacterNetworkMoveData;
 
-	/** Copies PerceivedServerTime from the client's saved move into the packed network data alongside the base fields. */
+	/** Copies PerceivedServerTime from the client's saved move into the packed network data alongside the base fields.
+	 */
 	virtual void ClientFillNetworkMoveData(FSavedMove_Character const& ClientMove, ENetworkMoveType MoveType) override;
-	/** Serializes PerceivedServerTime to/from the network packet so the server receives the client's pattern-clock stamp. */
+	/** Serializes PerceivedServerTime to/from the network packet so the server receives the client's pattern-clock
+	 * stamp. */
 	virtual bool Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Archive, UPackageMap* PackageMap,
 						   ENetworkMoveType MoveType) override;
 
@@ -74,7 +77,8 @@ struct FGeoCharacterNetworkMoveData : public FCharacterNetworkMoveData
 /** Points the new, pending and old move slots at FGeoCharacterNetworkMoveData. */
 struct FGeoCharacterNetworkMoveDataContainer : public FCharacterNetworkMoveDataContainer
 {
-	/** Wires the three move slots (new, pending, old) to GeoMoveData so the engine allocates FGeoCharacterNetworkMoveData. */
+	/** Wires the three move slots (new, pending, old) to GeoMoveData so the engine allocates
+	 * FGeoCharacterNetworkMoveData. */
 	FGeoCharacterNetworkMoveDataContainer();
 
 	FGeoCharacterNetworkMoveData GeoMoveData[3];
@@ -150,8 +154,8 @@ public:
 	/**
 	 * Where the character stood, and which way it faced, at ServerTime, interpolated between the poses the server
 	 * records every frame. They reach 2 × MaxLatencyCompensation back, as far as a hazard can look: a target's own time
-	 * trails by up to one, and it saw this character up to one more earlier (GeoLib::GetReplicationDelay). An older time
-	 * gets the oldest pose kept; a time at or past now, the current one — and so does any time on a client, which
+	 * trails by up to one, and it saw this character up to one more earlier (GeoLib::GetReplicationDelay). An older
+	 * time gets the oldest pose kept; a time at or past now, the current one — and so does any time on a client, which
 	 * records none.
 	 */
 	FGeoPose GetPoseAt(float ServerTime) const;
@@ -169,8 +173,8 @@ protected:
 	 */
 	virtual void ServerMoveHandleClientError(float ClientTimeStamp, float DeltaTime, FVector const& Accel,
 											 FVector const& RelativeClientLocation,
-											 UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName,
-											 uint8 ClientMovementMode) override;
+											 FMovementBaseInterfaceData* ClientMovementBaseInterfaceData,
+											 FName ClientBaseBoneName, uint8 ClientMovementMode) override;
 
 private:
 	/**

@@ -4,24 +4,30 @@
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
-#include "Actor/Deployable/Zones/GeoGrowingZone.h"
+#include "Actor/Deployable/Zones/GeoEffectZone.h"
+#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void AGeoSummonedDummy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GeoLib::IsServer(this) && ensureMsgf(ZoneClass, TEXT("%s: no ZoneClass set"), *GetName()))
+	if (GeoLib::IsServer(this))
 	{
-		FDeployableData ZoneData;
-		ZoneData.Owner = this;
-		ZoneData.Instigator = this;
-		ZoneData.TeamID = GetGenericTeamId();
-		ZoneData.EffectDataArray = ZoneEffects;
-		ZoneData.Params = ZoneParams;
-		FVector Location = GetActorLocation();
-		Location.Z = 0.f;
-		GeoASLib::FullySpawnDeployable(ZoneClass, ZoneData, FTransform(Location));
+		TSubclassOf<AGeoEffectZone> const ZoneClass =
+			GetDefault<UGameDataSettings>()->DefaultZoneClass.LoadSynchronous();
+		if (ensureMsgf(ZoneClass, TEXT("%s: no DefaultZoneClass in Game Data Settings"), *GetName()))
+		{
+			FDeployableData ZoneData;
+			ZoneData.Owner = this;
+			ZoneData.Instigator = this;
+			ZoneData.TeamID = GetGenericTeamId();
+			ZoneData.EffectDataArray = ZoneEffects;
+			ZoneData.Params = ZoneParams;
+			FVector Location = GetActorLocation();
+			Location.Z = 0.f;
+			GeoASLib::FullySpawnDeployable(ZoneClass, ZoneData, FTransform(Location));
+		}
 	}
 }
 

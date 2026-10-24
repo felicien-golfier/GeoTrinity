@@ -7,10 +7,13 @@ Tutorial Board text; the player keys come through {Key:...}. Gems and Forge step
 Run after tutorial_map.py, tutorial_assets.py, tutorial_waves.py and tutorial_miniboss.py. Idempotent: actors keyed by label, the encounters' steps rewritten.
 Report: AI/Output/tutorial_encounters_report.txt. Usage: headless (AI/Commands.md), editor closed.
 """
-import math
+import sys
 import traceback
 
 import unreal
+
+sys.path.insert(0, "C:/GeoTrinity/AI/Python/Tutorial/Level")
+from tutorial_map import size_box  # noqa: E402  (one trigger-box sizing for both scripts)
 
 REPORT_PATH = "C:/GeoTrinity/AI/Output/tutorial_encounters_report.txt"
 TUTORIAL_MAP = "/Game/Maps/Tutorial"
@@ -41,12 +44,12 @@ CAT_PATH = [(100.0, -350.0), (100.0, 350.0)]  # a short line across the Landing 
 IDLE_DELAY = 10.0
 QUEST_RESPAWN = 5.0
 QUEST_TIME_LIMIT = 1800.0
-QUEST_GROUPS = 3
-QUEST_GROUP_SIZE = 3
-QUEST_RAY_DEGREES = 70.0  # between two neighbouring rays (>= 60)
-QUEST_ENTRY_INSET = 150.0  # the rays' origin, from the room's near end
-QUEST_GROUP_START = 350.0  # first dummy of a ray, from the origin
-QUEST_GROUP_SPACING = 350.0
+# The Quest's nine respawn points, (X, Y) from the room's centre, as placed by hand in the scene: three rows of three.
+SHOOT_SPAWNS = [
+    (134.9, -529.3), (-186.4, -528.8), (507.9, -514.8),
+    (-200.0, 0.0), (150.0, 0.0), (500.0, 0.0),
+    (-195.4, 516.3), (132.2, 524.5), (497.4, 514.5),
+]
 QUEST_CUT_SECONDS = 45.0
 DASH_KEY = "{Key:InputTag.Dash}"
 DASH_ABILITY_TAG = "Ability.Spell.Dash"
@@ -54,24 +57,28 @@ HURT_ALLY_START_HEALTH = 0.1
 FIRST_DUMMY_DEATH_SECONDS = 2.0  # the death montage plays out before the Cat and the quest start (placeholder)
 SPECIAL_ABILITY_TAG = "Ability.Spell.MoiraBeam"
 SPECIAL_KEY = "{Key:InputTag.Special}"
+SPECIAL_ALLY_TAG = "TutorialSpecialAlly"  # not the Deploy ally's: that one stays alive and full behind
 PAGE_LINE = "An ability page is about to pop up. Read it. Or don't, I'm a cat, not a cop."
 
-CASTER_BP = "/Game/Characters/Enemies/Tutorial/BP_HiddenCaster_TutorialWaves"
+CASTER_CLASS = "/Script/GeoTrinity.HiddenCasterCharacter"
 ZONE_X = 150.0  # from the room's centre
 ZONE_SPOTS = {"Heal": -550.0, "Shield": 0.0, "Damage": 550.0}  # Y of each zone
 ZONE_RADIUS = 250.0
-ZONE_BOX_SCALE = ZONE_RADIUS * 0.7 / 100.0  # the square inscribed in the zone's circle: inside the box is inside the zone
+ZONE_BOX_HALF_Z = 80.0  # a standing capsule is inside it
+PAD_BOX_HALF = 50.0  # the exit pad's footprint
 WAVE_START_INSET = 650.0  # tutorial_waves.py: the front starts here, from the room's centre, and crosses it along +X
 CASTER_SPAWN = (600.0, -900.0)  # from the room's centre, off the zones
-MINIBOSS_BP = "/Game/Characters/Enemies/Tutorial/BP_TutorialMiniboss"
-MINIBOSS_POINTS = [(150.0, -650.0), (350.0, 0.0), (150.0, 650.0)]  # from the room's centre; the boss spawns on the middle one, within its aggro radius of the entry pad
+MINIBOSS_TREE = "/Game/AI/Tutorial/ST_TutorialMiniboss"  # tutorial_miniboss.py: its spells, in BP_Dummy's base tree
+MINIBOSS_ABILITIES = ["Ability.Spell.TutorialSalve", "Ability.Spell.TutorialMinibossSummon", "Ability.Spell.LateralWave"]
+MINIBOSS_TAG = "TutorialMiniboss"  # the boss's BossSetup.Tag: the kill line watches it
+MINIBOSS_POINTS = [(150.0, -650.0), (350.0, 0.0), (150.0, 650.0)]  # from the room's centre; the boss spawns on the middle one and waits to be hit (setup AggroRadius 100)
 MINIBOSS_ALLY_TAG = "TutorialMinibossAlly"  # BP_TutorialSummonedDummy's AllySetup.Tag
 MINIBOSS_ALLY_LOW_RATIO = 0.3
 MINIBOSS_CHIPS = ["Power", "Guard", "Vigor", "Mend", "Swift", "Precision", "Edge"]  # Data/gems.csv, tier Chip
 HOSTILE_ATTITUDE = 4  # ETeamAttitudeBitflag: acts on the other team
 DEATH_TIME = 3.0  # AGeoGameState::DeathTime
-LETHAL_WAVE_TAG = "Ability.Spell.TutorialWaveLethal"
-SAFE_WAVE_TAGS = ["Ability.Spell.TutorialWaveSafe1", "Ability.Spell.TutorialWaveSafe2", "Ability.Spell.TutorialWaveSafe3"]
+WAVE_TAG = "Ability.Spell.LateralWave"  # tutorial_waves.py: the one wave, its safe spots given per firing
+SAFE_WAVE_LANES = [[-650.0, 0.0, 650.0], [-300.0, 500.0], [250.0]]  # Y of each safe lane from the wave start, per wave
 HEAL_EFFECT = ('/Script/GeoTrinity.HealEffectData(bSuppressHealProvided=False,Amount=(Value=15.000000),bIsPerSecond=True,'
                'bLimitGameplayCue=True)')
 SHIELD_EFFECT = ('/Script/GeoTrinity.GameplayEffectData(GameplayEffect="/Script/Engine.BlueprintGeneratedClass\'/Game/'
@@ -152,17 +159,11 @@ def build_landing_room():
 
 def build_shoot_room():
     cx = room_x("Shoot")
-    for stale in range(QUEST_GROUPS * QUEST_GROUP_SIZE, 10):
+    for stale in range(len(SHOOT_SPAWNS), 10):
         remove_actor("Tut_Shoot_Spawn_%d" % stale)
 
-    origin_x = cx - ROOM_HALF_X + QUEST_ENTRY_INSET
-    for group in range(QUEST_GROUPS):
-        angle = math.radians((group - (QUEST_GROUPS - 1) / 2.0) * QUEST_RAY_DEGREES)
-        for rank in range(QUEST_GROUP_SIZE):
-            distance = QUEST_GROUP_START + rank * QUEST_GROUP_SPACING
-            point("Tut_Shoot_Spawn_%d" % (group * QUEST_GROUP_SIZE + rank),
-                  (origin_x + distance * math.cos(angle), distance * math.sin(angle), 0.0),
-                  "TargetPoint.AddSpawn", "Shoot")
+    for index, (x, y) in enumerate(SHOOT_SPAWNS):
+        point("Tut_Shoot_Spawn_%d" % index, (cx + x, y, 0.0), "TargetPoint.AddSpawn", "Shoot")
 
 
 def build_shoot_first_point():
@@ -204,9 +205,12 @@ def build_zones_room():
     build_zone_points()
     for color, y in ZONE_SPOTS.items():
         box = place("Tut_Zones_ZoneVolume_" + color, unreal.TriggerBox, (cx + ZONE_X, y, 0.0))
-        box.set_actor_scale3d(unreal.Vector(ZONE_BOX_SCALE, ZONE_BOX_SCALE, 2.0))
+        size_box(box, ZONE_RADIUS, ZONE_RADIUS, ZONE_BOX_HALF_Z)  # the zone's bounding square
     arena = place("Tut_Zones_CasterArena", unreal.GeoDummyArena, (cx, 0.0, 0.0))
-    arena.set_editor_property("BossClass", unreal.load_asset(CASTER_BP).generated_class())
+    caster = unreal.GeoEnemySetup()
+    caster.set_editor_property("AbilityTags", [tag(WAVE_TAG)])
+    arena.set_editor_property("BossClass", unreal.load_class(None, CASTER_CLASS))
+    arena.set_editor_property("BossSetup", caster)
     arena.set_editor_property("ArenaTag", tag("Arena.Tutorial.Zones"))
 
 
@@ -231,7 +235,11 @@ def build_miniboss_room():
     build_miniboss_points()
     cx = room_x("Miniboss")
     arena = place("Tut_Miniboss_Arena", unreal.GeoArena, (cx, 0.0, 0.0))
-    arena.set_editor_property("BossClass", unreal.load_asset(MINIBOSS_BP).generated_class())
+    boss = Builder(arena).enemy_setup(MINIBOSS_TAG, "MinibossHealth")
+    boss.set_editor_property("BehaviourStateTree", unreal.load_asset(MINIBOSS_TREE))
+    boss.set_editor_property("AbilityTags", [tag(ability) for ability in MINIBOSS_ABILITIES])
+    arena.set_editor_property("BossClass", unreal.load_asset(DUMMY_BP).generated_class())
+    arena.set_editor_property("BossSetup", boss)
     arena.set_editor_property("ArenaTag", tag("Arena.Tutorial.Miniboss"))
     arena.set_editor_property("BossType", unreal.GeoBossType.MINI_BOSS)
     arena.set_editor_property("bRecordsLeaderboard", False)
@@ -262,10 +270,16 @@ class Builder:
     def count(self, name, delta=1):
         return self.make(unreal.GeoAddToCounterAction, CounterName=name, Delta=delta)
 
-    def unlock(self, ability_tag):
-        """The Cat's page line, the grant, then the ability's page: the Cat speaks before anything pops up."""
-        return [self.say(PAGE_LINE), self.make(unreal.GeoUnlockAbilityAction, AbilityTag=tag(ability_tag)),
-                self.make(unreal.GeoShowAbilityPageAction, AbilityTag=tag(ability_tag))]
+    def unlock(self, ability_tag, page_line=True):
+        """The Cat's page line (the Dash room's only), the grant, then the ability's page: the Cat speaks before anything
+        pops up, and the page is latent, so what follows waits for the player to close it."""
+        actions = [self.say(PAGE_LINE)] if page_line else []
+        return actions + [self.make(unreal.GeoUnlockAbilityAction, AbilityTag=tag(ability_tag)),
+                          self.make(unreal.GeoShowAbilityPageAction, AbilityTag=tag(ability_tag))]
+
+    def delay(self, seconds):
+        """A wait inside a rule or a list: delays are actions, never a trigger."""
+        return self.make(unreal.GeoDelayAction, Duration=seconds)
 
     def lock(self, locked):
         return self.make(unreal.GeoSetMovementLockedAction, bLocked=locked)
@@ -304,6 +318,7 @@ class Builder:
         setup = unreal.GeoEnemySetup()
         setup.set_editor_property("Team", team)
         setup.set_editor_property("bResetToFullLife", False)
+        setup.set_editor_property("AggroRadius", 100.0)
         setup.set_editor_property("MaxHealth", max_health)
         setup.set_editor_property("StartHealthRatio", start_health)
         setup.set_editor_property("Tag", enemy_tag)
@@ -332,10 +347,14 @@ class Builder:
                          ArenaTag=tag("Arena.Tutorial.Zones"), EffectDataArray=[effect], Params=params,
                          Team=unreal.Team.ENEMY)
 
-    def wave(self, ability_tag):
-        """The zone room's hidden caster fires the wave; the action waits for its end."""
+    def wave(self, lanes=()):
+        """The zone room's hidden caster fires the wave, one safe spot per lane (Y from the wave start); the action
+        waits for its end."""
+        data = unreal.InstancedStruct()
+        data.import_text("/Script/GeoTrinity.LateralWavePatternData(SafeSpotOffsets=(%s))"
+                         % ",".join("(X=0.000000,Y=%f)" % lane for lane in lanes))
         return self.make(unreal.GeoActivateAbilityAction, Arena=find_actor("Tut_Zones_CasterArena"),
-                         AbilityTag=tag(ability_tag), bWaitForEnd=True)
+                         AbilityTag=tag(WAVE_TAG), bWaitForEnd=True, PatternData=data)
 
     # triggers
     def entered(self, volume_actor):
@@ -349,9 +368,6 @@ class Builder:
 
     def player_died(self):
         return self.died(watched_class=unreal.PlayableCharacter.static_class())
-
-    def timer(self, delay, looping=False):
-        return self.make(unreal.GeoTimerTrigger, Delay=delay, bLooping=looping)
 
     def idle(self, delay=IDLE_DELAY):
         return self.make(unreal.GeoPlayerIdleTrigger, Delay=delay)
@@ -395,9 +411,9 @@ class Builder:
         step.set_editor_property("OnExit", list(on_exit))
         return step
 
-    def narrate(self, name, lines, first_delay=0.5):
-        """A rule that says the lines one after the other once the step has started: the teaching never waits on them."""
-        return self.rule(self.timer(first_delay), [self.say(line) for line in lines])
+    def narrate(self, lines, first_delay=0.5):
+        """The lines one after the other, a beat after the step starts: for an OnEnter list."""
+        return [self.delay(first_delay)] + [self.say(line) for line in lines]
 
 
 def encounter_actor(room):
@@ -414,8 +430,8 @@ def leave_steps(builder, room, extra_rules=()):
     """After a room: Leave = the player lands in the next room (start its encounter, close this room's exit pad), plus
     the room's own extra_rules while it waits. The next room's entry pad never opens (Flow.md, "Rooms")."""
     following = ROOMS[ROOMS.index(room) + 1]
-    arrive = [builder.make(unreal.GeoStartEncounterAction, Target=encounter_actor(following)),
-              builder.pad("Tut_%s_PadExit" % room, False)]
+    arrive = [builder.pad("Tut_%s_PadExit" % room, False),
+              builder.make(unreal.GeoStartEncounterAction, Target=encounter_actor(following))]  # last: it aborts this room
     return [builder.step("Leave", [builder.rule(builder.entered(find_actor("Tut_%s_ArenaVolume" % following)), arrive,
                                                 completes=True)] + list(extra_rules))]
 
@@ -438,7 +454,7 @@ def landing_steps(b):
     """Steps 0-1 in one step: movement locked while the Cat talks; after the last line the exit pad opens and the lock
     lifts (the pad is the Move target; Leave waits for it). Cat staging: AI/Tutorial/Steps.md."""
     lines = [
-        "Ouch. Landed. Welcome to wherever this is: flat, bright, suspiciously empty. Very on brand.",
+        "**Ouch**. Landed. Welcome to wherever this is: flat, bright, suspiciously empty. Very on brand.",
         "Welcome to the bowels of the game you were playing five minutes ago. You and I landed somewhere safe, by pure luck. Your two other friends most likely landed in front of a boss. They're ~~dead~~ already. I'd observe a minute of silence, but I'm busy.",
         "Right. I'm stuck in here with you, so let's get us out. Rule one: To leave, you must kill all bosses. Dead. Tot. Muertos.",
         "How do I know that? I'd love to explain. I won't. Moving on.",
@@ -446,7 +462,7 @@ def landing_steps(b):
         "Hold W, A, S or D and your shape slides around. Congratulations, you have unlocked walking.",
         "See the round portal on the floor? Walk onto it. I'll wait. I have nine lives and no schedule.",
     ]
-    actions = [b.lock(True), b.hidden("Tut_Landing_Cat", False), b.cat_montage(CAT_REASSEMBLE)]
+    actions = [b.lock(True), b.hidden("Tut_Landing_Cat", False), b.cat_montage(CAT_REASSEMBLE, wait=False)]
     for index, line in enumerate(lines):
         if index == CAT_PATH_LINE_INDEX:
             actions.append(b.cat_walk(["Tut_Landing_CatPath_%d" % i for i in range(len(CAT_PATH))], wait=False))
@@ -529,15 +545,14 @@ def shoot_steps(b):
     spawn_tag = "TargetPoint.AddSpawn"
     dummy = b.enemy_setup("TutorialShootDummy", "DummyHealth")
     first = b.step("Shoot", [
-        b.rule(b.timer(0.1), [b.spawn(dummy, 1, "TargetPoint.Tutorial.ShootFirst", "Shoot")]),
-        b.rule(b.timer(0.5), [
-            b.say("New room, new toy. This is a Dummy. It does not dodge, it does not fight back, it has no opinions. "
-                  "Basically your favorite raid member."),
-            b.say("Your basic attack is about to be yours. Hold the attack button and make the Dummy regret existing."),
-        ] + b.unlock("Ability.Spell.BasicBeam")),
-        b.rule(b.dummy_died("TutorialShootDummy"), [b.make(unreal.GeoDelayAction, Duration=FIRST_DUMMY_DEATH_SECONDS)],
-               completes=True),
-    ])
+        b.rule(b.dummy_died("TutorialShootDummy"), [b.delay(FIRST_DUMMY_DEATH_SECONDS)], completes=True),
+    ], on_enter=[
+        b.spawn(dummy, 1, "TargetPoint.Tutorial.ShootFirst", "Shoot"),
+        b.say("New room, new toy. This is a Dummy. It does not dodge, it does not fight back, it has no opinions. "
+              "Basically your favorite raid member."),
+        b.say("Your basic attack is about to be yours. Hold the attack button, release on the sweet spot and make the "
+              "Dummy regret existing."),
+    ] + b.unlock("Ability.Spell.BasicBeam", page_line=False))
 
     def quip(kills, line):
         return b.rule(b.dummy_died("TutorialShootDummy"), [b.say(line)], condition=b.payload_count(EQUAL, kills),
@@ -553,14 +568,14 @@ def shoot_steps(b):
         quip(9, "There is a guy named Greg who has been stuck at 99 out of 100 since the beta. The last one never "
                 "spawned. I think about Greg a lot."),
         b.rule(b.dummy_died("TutorialShootDummy"), stop, condition=b.payload_count(EQUAL, 12), completes=True),
-        b.rule(b.timer(QUEST_CUT_SECONDS), stop, completes=True),
-        b.rule(b.timer(0.1), [b.spawn(dummy, QUEST_GROUPS * QUEST_GROUP_SIZE, spawn_tag, "Shoot",
-                                      respawn=QUEST_RESPAWN, kill_on_step_exit=True)]),
+        b.rule(b.counter("Cut"), stop, completes=True),
     ], on_enter=[
         b.card(unreal.GeoQuestCardOperation.SHOW, Title="Cull the Dummies", Max=100, TimeLimitSeconds=QUEST_TIME_LIMIT),
-        b.say("Dummy destroyed. Somewhere, a wooden target is filing a complaint with HR."),
+        b.spawn(dummy, len(SHOOT_SPAWNS), spawn_tag, "Shoot", respawn=QUEST_RESPAWN, kill_on_step_exit=True),
         b.say("Oh look, a quest! Nine Dummies are already here, and every one comes back after dying, so we will never run "
               "out. Other games call this 'content'."),
+        b.delay(QUEST_CUT_SECONDS),
+        b.count("Cut"),
     ], on_exit=[
         b.card(unreal.GeoQuestCardOperation.COUNT, bShowMax=True),
         b.say("Quest abandoned. Dummies, off. Quest complete! Reward: 3 copper. Mine now. Administration fee."),
@@ -570,64 +585,70 @@ def shoot_steps(b):
     return [first, quest]
 
 
-def settle_step(b, spawns):
-    """First step of a room with a hurt ally: spawns it, then leaves. The ally passes through full health while it starts,
-    so the step that watches its health arms only after that."""
-    return b.step("Setup", [b.rule(b.timer(0.5), [], completes=True)], on_enter=spawns)
-
-
 def deploy_steps(b):
+    """One step: the hurt ally and the Cat's lines in OnEnter, the ally's full health ends it."""
     ally = b.enemy_setup("TutorialAlly", "AllyDummyHealth", team=unreal.Team.PLAYER,
                          start_health=HURT_ALLY_START_HEALTH)
-    setup = settle_step(b, [b.spawn(ally, 1, "TargetPoint.Tutorial.Ally", "Deploy")])
-    heal = b.step("Heal", [
-        b.rule(b.timer(0.5), [
-            b.say("Second toy: the deployable. You are the Healer, so yours is a Healing Zone. Hold the button to charge "
-                  "the throw, release to drop it. Longer press is further. Physics, basically."),
-            b.say("See the friendly Dummy over there, barely standing? Drop the Zone on it and let it heal up. It can't "
-                  "ask nicely. Dummies never do."),
-        ] + b.unlock("Ability.Spell.HealingZone")),
+    return [b.step("Heal", [
         b.rule(b.dummy_health("TutorialAlly", unreal.GeoHealthSide.ABOVE, 1.0),
-               [b.say("Keep it in the Zone until it's full. Congratulations, you've healed. The most thankless job in "
-                      "gaming, and you chose it. Well, I chose it for you."),
-                b.say("You have 3 charges and they refill slowly, so aim like you mean it.")],
-               completes=True),
-    ], on_exit=hand_off(b, "Deploy"))
-    return [setup, heal]
+               [b.say("Wow, the healer job suits you perfectly!")], completes=True),
+    ], on_enter=[
+        b.say("Second toy: the deployable. You are the Healer, so yours is a Healing Zone. Hold the button to charge "
+              "the throw, release to drop it. Longer press is further. Physics, basically."),
+    ] + b.unlock("Ability.Spell.HealingZone", page_line=False) + [
+        b.spawn(ally, 1, "TargetPoint.Tutorial.Ally", "Deploy"),
+        b.say("See the friendly Dummy over there, barely standing? Drop the Zone on it and let it heal up. You can stack "
+              "several to heal faster. It won't ask nicely. Dummies never do."),
+    ], on_exit=hand_off(b, "Deploy"))]
 
 
 def special_steps(b):
-    """Intro (lines, then the unlock) then Fight. Fight spawns both dummies itself and tallies one counter: enemy dead 1,
-    ally full 1, Special used 10. 2 = both goals without the Special (sting, the step re-enters itself: leaving kills the
-    survivors), 12 = done (Steps.md, step 5)."""
-    ally = b.enemy_setup("TutorialAlly", "AllyDummyHealth", team=unreal.Team.PLAYER,
+    """Three rounds, each spawning both dummies (leaving a round kills the survivors) and tallying one counter, Progress:
+    enemy dead 1, ally full 1, Special used 4. 6 = both goals and the Special: done. 2 = both goals without the Special:
+    the Cat stings, then the next round respawns them; after the third, the Cat surrenders and opens the exit anyway
+    (Steps.md, step 5)."""
+    ally = b.enemy_setup(SPECIAL_ALLY_TAG, "AllyDummyHealth", team=unreal.Team.PLAYER,
                          start_health=HURT_ALLY_START_HEALTH)
     enemy = b.enemy_setup("TutorialRudeDummy", "DummyHealth")
-    intro = b.step("Intro", [
-        b.rule(b.timer(0.5), [
-            b.say("Third toy: the Special. Two Dummies are on their way: a friendly one, hurt, and an enemy one, rude. "
-                  "The Special interacts with your deployable. The ability page explains how, and unlike me, it is not "
-                  "sarcastic."),
-            b.say("Kill the rude one and bring the hurt one back to full health. Same beam for both. The healer's natural "
-                  "habitat: do everything at once and get blamed for the rest."),
-            b.say("Remember: your zones have 3 charges, slow refill. Spend them wisely. Or don't, I'm a cat, I don't pay "
-                  "the bills."),
-        ] + b.unlock(SPECIAL_ABILITY_TAG), completes=True),
-    ])
-    sting = [b.say("Wow. You killed one Dummy and healed the other without pressing **%s** even once. That is the button "
-                   "I just handed you. It is right there. Humbling. Again, and this time with the beam." % SPECIAL_KEY)]
-    done = [b.say("Done? You hurt one and helped the other with the same beam. Mixed messages, but it works."),
-            b.pad("Tut_Special_PadExit", True)]
-    fight = b.step("Fight", [
-        b.rule(b.timer(0.1), [b.spawn(ally, 1, "TargetPoint.Tutorial.Ally", "Special", kill_on_step_exit=True)]),
-        b.rule(b.timer(0.1), [b.spawn(enemy, 1, "TargetPoint.AddSpawn", "Special", kill_on_step_exit=True)]),
-        b.rule(b.dummy_health("TutorialAlly", unreal.GeoHealthSide.ABOVE, 1.0), [b.count("Progress")]),
-        b.rule(b.dummy_died("TutorialRudeDummy"), [b.count("Progress")]),
-        b.rule(b.ability_used(SPECIAL_ABILITY_TAG), [b.count("Progress", 10)]),
-        b.rule(b.counter("Progress"), sting, condition=b.payload_count(EQUAL, 2), completes=True, step_after="Fight"),
-        b.rule(b.counter("Progress"), done, condition=b.payload_count(EQUAL, 12), completes=True),
-    ])
-    return [intro, fight]
+    no_special_endings = [
+        [b.say("Wow. You killed one Dummy and healed the other without pressing **%s** even once. That is the button "
+               "I just handed you. It is right there. Humbling. Again, and this time with the beam." % SPECIAL_KEY)],
+        [b.say("Twice. Two Dummies handled, zero **%s**. I'm starting to think you're doing it on purpose. Once more. "
+               "With. The. Beam." % SPECIAL_KEY)],
+        [b.say("Three times, and not one press of **%s**. Fine. I surrender. Take the portal, I'll write 'Special: "
+               "mastered' in your file and nobody will ever check." % SPECIAL_KEY),
+         b.pad("Tut_Special_PadExit", True)],
+    ]
+
+    def done():
+        return [b.say("Done? You hurt one and helped the other with the same beam. Mixed messages, passive-aggressive, "
+                      "but it works."),
+                b.pad("Tut_Special_PadExit", True)]
+
+    intro = [
+        b.say("Third toy: the Special. Two Dummies are on their way: a friendly one, hurt, and an enemy one, rude. The "
+              "Special interacts with your deployable. The ability page explains how, and unlike me, it is not "
+              "sarcastic."),
+    ] + b.unlock(SPECIAL_ABILITY_TAG, page_line=False)
+    orders = [
+        b.say("Kill the rude one and bring the hurt one back to full health. Same beam for both. The healer's natural "
+              "habitat: do everything at once and get blamed for the rest."),
+        b.say("Remember: your zones have 3 charges, slow refill. Spend them wisely. Or don't, I'm a cat, I don't pay the "
+              "bills."),
+    ]
+    rounds = []
+    for index, no_special in enumerate(no_special_endings):
+        spawns = [b.spawn(ally, 1, "TargetPoint.Tutorial.Ally", "Special", kill_on_step_exit=True),
+                  b.spawn(enemy, 1, "TargetPoint.AddSpawn", "Special", kill_on_step_exit=True)]
+        rounds.append(b.step("Round%d" % (index + 1), [
+            b.rule(b.dummy_health(SPECIAL_ALLY_TAG, unreal.GeoHealthSide.ABOVE, 1.0), [b.count("Progress")]),
+            b.rule(b.dummy_died("TutorialRudeDummy"), [b.count("Progress")]),
+            b.rule(b.ability_used(SPECIAL_ABILITY_TAG), [b.count("Progress", 4)]),
+            b.rule(b.counter("Progress"), no_special, condition=b.payload_count(EQUAL, 2), completes=True),
+            b.rule(b.counter("Progress"), done(), condition=b.payload_count(GREATER_OR_EQUAL, 6), completes=True,
+                   step_after="Leave"),
+        ], on_enter=intro + spawns + orders if index == 0 else spawns))
+    return rounds
 
 
 def dummies_steps(b):
@@ -636,26 +657,27 @@ def dummies_steps(b):
     mover = b.enemy_setup("TutorialMover", "DummyHealth")
 
     def spawner(setup, purpose):
-        return b.rule(b.timer(0.5), [b.spawn(setup, 1, purpose, "Dummies")])
+        return b.spawn(setup, 1, purpose, "Dummies")
 
     def watch(enemy_tag):
         return b.rule(b.dummy_died(enemy_tag), [b.count("Dead")])
 
-    fight = b.step("Fight", [
-        b.narrate("Fight", [
+    lines = b.narrate([
             "Plot twist: the Dummies have been training. One chases you, one shoots, one just wanders off and acts "
             "annoying. Truly a full raid composition.",
             "Use everything you learned. Dash the bullets, drop your toy, pop your Special. I'll narrate if anyone dies. "
             "I'm told I'm very supportive.",
-        ]),
-        spawner(chaser, "TargetPoint.Tutorial.Chaser"),
-        spawner(shooter, "TargetPoint.Tutorial.Shooter"),
-        spawner(mover, "TargetPoint.Tutorial.Mover"),
+    ])
+    fight = b.step("Fight", [
         watch("TutorialChaser"), watch("TutorialShooter"), watch("TutorialMover"),
         b.rule(b.counter("Dead"),
                [b.say("All three down. You've officially beaten the cardboard. Don't let it go to your head. The floor is "
                       "about to get opinions.")], condition=b.payload_count(EQUAL, 3), completes=True),
-    ], on_exit=hand_off(b, "Dummies"))
+    ], on_enter=[
+        spawner(chaser, "TargetPoint.Tutorial.Chaser"),
+        spawner(shooter, "TargetPoint.Tutorial.Shooter"),
+        spawner(mover, "TargetPoint.Tutorial.Mover"),
+    ] + lines, on_exit=hand_off(b, "Dummies"))
     return [fight]
 
 
@@ -682,7 +704,7 @@ def miniboss_steps(b):
     for count, line in enumerate(calls, start=1):
         rules.append(b.rule(b.dummy_health(MINIBOSS_ALLY_TAG, unreal.GeoHealthSide.BELOW, MINIBOSS_ALLY_LOW_RATIO),
                             [b.say(line)], condition=b.payload_count(EQUAL, count), repeat=True))
-    rules.append(b.rule(b.died(unreal.load_asset(MINIBOSS_BP).generated_class()),
+    rules.append(b.rule(b.dummy_died(MINIBOSS_TAG),
                         [b.say("It's dead. You've got it: time to come back to the real world. Your snacks are cold and "
                                "someone has to roll initiative. But first: loot.")], completes=True))
     return [b.step("Fight", rules, on_enter=[
@@ -704,11 +726,9 @@ def zones_steps(b):
     for color in ZONE_SPOTS:
         rules = [b.rule(b.entered(find_actor("Tut_Zones_ZoneVolume_" + color)),
                         colors_learned if color == "Damage" else [], completes=True)]
-        if color == "Heal":
-            rules.insert(0, b.narrate(color, intro))
-        steps.append(b.step("Zones_" + color, rules, on_enter=[b.zone(color)]))
+        steps.append(b.step("Zones_" + color, rules,
+                            on_enter=[b.zone(color)] + (b.narrate(intro) if color == "Heal" else [])))
     steps.append(b.step("LethalWave", [
-        b.rule(b.timer(0.5), [b.say("Big wave is coming! Avoid it! Quick, quick, you can do it!")]),
         b.rule(b.player_died(), [
             b.say("Oh, it hurts? Upsy, I forgot to leave you room to survive...", True),
             b.say("But get used to it. Dying is part of the job, you will die a lot. At least statistically."),
@@ -716,8 +736,10 @@ def zones_steps(b):
             b.say("Look, I added safe spots in the wave. For you. Out of the goodness of my heart. Don't tell the other "
                   "cats."),
         ], completes=True),
-    ], on_enter=[b.wave(LETHAL_WAVE_TAG)]))
-    steps.append(b.step("SafeSpotsWait", [b.rule(b.timer(DEATH_TIME), [], completes=True)]))
+    ], on_enter=[b.delay(0.5), b.say("Big wave is coming! Avoid it! Quick, quick, you can do it!"),
+                 b.wave()]))
+    steps.append(b.step("SafeSpotsWait", [b.rule(b.counter("Waited"), [], completes=True)],
+                        on_enter=[b.delay(DEATH_TIME), b.count("Waited")]))
     # The exit pad opens from the finishing rule, not OnExit: a death leaves this step too.
     steps.append(b.step("SafeSpots", [
         b.rule(b.player_died(), [b.say("Get into a spot before the wave lands. Then another wave. The spots move, so you "
@@ -726,7 +748,7 @@ def zones_steps(b):
         b.rule(b.counter("WavesDone"),
                [b.say("Survived? Don't get cocky: this wave was nicely labeled. The real ones are not.")]
                + hand_off(b, "Zones"), condition=b.payload_count(EQUAL, 1), completes=True),
-    ], on_enter=[b.wave(wave_tag) for wave_tag in SAFE_WAVE_TAGS] + [b.count("WavesDone")]))
+    ], on_enter=[b.wave(lanes) for lanes in SAFE_WAVE_LANES] + [b.count("WavesDone")]))
     return steps
 
 
@@ -749,7 +771,7 @@ def build_final_exit():
     exit_pad = find_actor("Tut_%s_PadExit" % ROOMS[-1])
     exit_pad.set_editor_property("TeleportTag", tag(FINAL_EXIT_TAG))
     volume = place("Tut_%s_PadExitVolume" % ROOMS[-1], unreal.TriggerBox, exit_pad.get_actor_location().to_tuple())
-    volume.set_actor_scale3d(unreal.Vector(1.0, 1.0, 2.0))
+    size_box(volume, PAD_BOX_HALF, PAD_BOX_HALF, ZONE_BOX_HALF_Z)
 
 
 def build_encounters():

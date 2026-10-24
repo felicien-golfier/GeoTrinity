@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Actor/Arena/GeoDummyArena.h"
-#include "Actor/Deployable/Zones/GeoGrowingZone.h"
+#include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Characters/GeoSummonedDummy.h"
 #include "Characters/HiddenCasterCharacter.h"
 #include "CoreMinimal.h"
@@ -111,7 +111,8 @@ public:
 	FName StepName;
 };
 
-/** Arena that spawns a hidden caster as its boss, the way a room with no boss hosts one. */
+/** Arena that spawns a hidden caster as its boss, the way a room with no boss hosts one. Its setups are open to a test
+ * between SpawnActorDeferred and FinishSpawning. */
 UCLASS(NotPlaceable, Transient)
 class AGeoTestCasterArena : public AGeoDummyArena
 {
@@ -119,6 +120,9 @@ class AGeoTestCasterArena : public AGeoDummyArena
 
 public:
 	AGeoTestCasterArena() { BossClass = AHiddenCasterCharacter::StaticClass(); }
+
+	FGeoEnemySetup& EditBossSetup() { return BossSetup; }
+	TArray<FGeoArenaAdd>& EditStartAdds() { return StartAdds; }
 };
 
 /** Counts the times an encounter completed. */
@@ -237,34 +241,48 @@ public:
 		LineEnded = MoveTemp(OnEnded);
 	}
 
-	virtual void ShowAbilityPage(FGameplayTag /*AbilityTag*/) override {}
-	virtual void ShowQuestCard(FText const& /*Title*/, int32 /*Max*/, float /*TimeLimitSeconds*/) override {}
+	virtual void HideCatLine() override
+	{
+		++HiddenLines;
+		FSimpleDelegate const Waiter = MoveTemp(LineEnded);
+		Waiter.ExecuteIfBound();
+	}
+
+	virtual void ShowAbilityPage(FGameplayTag /*AbilityTag*/, FSimpleDelegate OnClosed) override
+	{
+		PageClosed = MoveTemp(OnClosed);
+	}
+	virtual void ShowQuestCard(FText const& /*Title*/, int32 /*Max*/, float /*TimeLimitSeconds*/) override
+	{
+		bQuestCardShown = true;
+	}
 	virtual void SetQuestCount(int32 /*Count*/) override {}
-	virtual void HideQuestCard() override {}
+	virtual void HideQuestCard() override { bQuestCardShown = false; }
 	virtual void OpenGemsPage(bool /*bForge*/) override {}
 
+	int32 HiddenLines = 0;
+	bool bQuestCardShown = false;
 	TArray<FString> Lines;
 	FSimpleDelegate LineEnded;
+	FSimpleDelegate PageClosed;
 };
 
-/** Growing zone with its radius and spawn size readable by a test. */
+/** Effect zone with its radius and spawn size readable by a test. */
 UCLASS(NotPlaceable, Transient)
-class AGeoTestGrowingZone : public AGeoGrowingZone
+class AGeoTestReadableZone : public AGeoEffectZone
 {
 	GENERATED_BODY()
 
 public:
-	AGeoTestGrowingZone()
-	{
-		GrowthSeconds = FScalableFloat(10.f);
-		MaxRadius = FScalableFloat(600.f);
-	}
-
 	float GetTestRadius() const { return GetRadius(); }
 	float GetSpawnSize() const { return Data.Params.Size; }
+	float GetGrowthStartServerTime() const { return GrowthStartServerTime; }
+	/** What a client that receives the zone late gets: the server's growth start, not its own BeginPlay. */
+	void ReceiveGrowthStartServerTime(float const ServerTime) { GrowthStartServerTime = ServerTime; }
 };
 
-/** Summoned dummy with its zone and ally set, as its Blueprint would: the ally is a plain enemy tagged "Ally". */
+/** Summoned dummy with its zone and ally set, as its Blueprint would: the zone grows, the ally is a plain enemy tagged
+ * "Ally". Its zone class is the Game Data Settings' DefaultZoneClass, which the test sets. */
 UCLASS(NotPlaceable, Transient)
 class AGeoTestSummonedDummy : public AGeoSummonedDummy
 {
@@ -273,8 +291,9 @@ class AGeoTestSummonedDummy : public AGeoSummonedDummy
 public:
 	AGeoTestSummonedDummy()
 	{
-		ZoneClass = AGeoTestGrowingZone::StaticClass();
 		ZoneParams.Size = 100.f;
+		ZoneParams.GrowToSize = FScalableFloat(600.f);
+		ZoneParams.GrowSeconds = FScalableFloat(10.f);
 		AllyClass = AEnemyCharacter::StaticClass();
 		AllySetup.Team = ETeam::Player;
 		AllySetup.Tag = TEXT("Ally");

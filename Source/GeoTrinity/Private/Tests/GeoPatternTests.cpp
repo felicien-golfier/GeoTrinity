@@ -2,9 +2,18 @@
 
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpot.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotMask.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/PlayableCharacter.h"
+#include "Engine/GameInstance.h"
+#include "GameClasses/Match/GeoGameState.h"
+#include "GameFramework/PlayerController.h"
 #include "Misc/AutomationTest.h"
+#include "Tests/GeoTestEncounter.h"
+#include "Tests/GeoTestPatternAbility.h"
+#include "Tests/GeoTestWorld.h"
 
-#if WITH_DEV_AUTOMATION_TESTS
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 
 constexpr EAutomationTestFlags GeoPatternTestFlags =
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
@@ -32,6 +41,15 @@ bool FGeoSafeSpotShadowTest::RunTest(FString const& /*Parameters*/)
 	TestFalse(TEXT("Lane: outside the spot's width is not shielded"),
 			  Lane.Shields(FVector2D(500.f, 400.f), Origin, Forward));
 
+	FSafeSpot const Disc{FVector2D(500.f, 200.f), 150.f, ESafeSpotShadow::Disc};
+	FVector2D const Ignored(0.f, 1.f);
+	TestTrue(TEXT("Disc: inside the radius is shielded"), Disc.Shields(FVector2D(600.f, 300.f), Ignored, Ignored));
+	TestFalse(TEXT("Disc: outside the radius is not shielded"),
+			  Disc.Shields(FVector2D(700.f, 200.f), Ignored, Ignored));
+	TestFalse(TEXT("Disc: nothing behind it is shielded"), Disc.Shields(FVector2D(900.f, 200.f), Origin, Forward));
+	TestFalse(TEXT("Disc: nothing along its lane is shielded"), Disc.Shields(FVector2D(500.f, 400.f), Origin, Forward));
+	TestTrue(TEXT("A spot casts a Disc unless told otherwise"), FSafeSpot().Shadow == ESafeSpotShadow::Disc);
+
 	TestFalse(TEXT("No spots shield nothing"), FSafeSpot::AnyShields({}, FVector2D(900.f, 0.f), Origin, Forward));
 	TestTrue(TEXT("Any spot shielding is enough"),
 			 FSafeSpot::AnyShields({Lane, Pillar}, FVector2D(900.f, 0.f), Origin, Forward));
@@ -48,6 +66,7 @@ bool FGeoSafeSpotMaskTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Always one value per slot"), SlotValues.Num(), FSafeSpotMask::MaxSlots);
 	TestEqual(TEXT("No spot: every slot holds the sentinel"), SlotValues[0].R, -10000.f);
 	TestEqual(TEXT("No spot: the last slot too"), SlotValues.Last().R, -10000.f);
+	TestEqual(TEXT("No spot: slots are free (alpha 0)"), SlotValues[0].A, 0.f);
 
 	TArray<FSafeSpot> Spots;
 	for (int32 Index = 0; Index < FSafeSpotMask::MaxSlots + 2; ++Index)
@@ -60,7 +79,65 @@ bool FGeoSafeSpotMaskTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Spots over the slots are skipped"), SlotValues.Num(), FSafeSpotMask::MaxSlots);
 	TestEqual(TEXT("A spot lands in its slot"), SlotValues[3].R, 300.f);
 	TestEqual(TEXT("The last slot is the eighth spot"), SlotValues.Last().R, 700.f);
+	TestEqual(TEXT("A used slot has alpha 1"), SlotValues[3].A, 1.f);
 
+	UWorld* const World = CreateTestWorld();
+	FSafeSpotMask::Set(World, nullptr, Spots, FVector2D(1.f, 0.f));
+	FSafeSpotMask::Clear(World, nullptr);
+	DestroyTestWorld(World);
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSalveAimByTeamTest, "GeoTrinity.Pattern.SalveAimByTeam", GeoPatternTestFlags)
+
+bool FGeoSalveAimByTeamTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
+	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
+	World->SetGameState(World->SpawnActor<AGeoGameState>());
+	for (FVector const& Location : {FVector(1000.f, 0.f, 0.f), FVector(-1000.f, 0.f, 0.f)})
+	{
+		FTransform const Transform(Location);
+		APlayableCharacter* const Player =
+			World->SpawnActorDeferred<APlayableCharacter>(APlayableCharacter::StaticClass(), Transform);
+		Player->SetActorHiddenInGame(true);
+		Player->FinishSpawning(Transform);
+		World->SpawnActor<APlayerController>()->SetPawn(Player);
+	}
+
+	AGeoTestCasterArena* const Arena =
+		World->SpawnActor<AGeoTestCasterArena>(FVector(0.f, 1000.f, 0.f), FRotator::ZeroRotator);
+	auto const GetAimYaws = [](AActor* const Caster)
+	{
+		UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Caster);
+		FGameplayAbilitySpecHandle const Handle =
+			ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSalveAbility::StaticClass(), 1));
+		return CastChecked<UGeoTestSalveAbility>(ASC->FindAbilitySpecFromHandle(Handle)->GetPrimaryInstance())
+			->GetAimYaws();
+	};
+
+	TArray<float> const EnemyYaws = GetAimYaws(Arena->GetBoss());
+	if (TestEqual(TEXT("Enemy team: one yaw per live player"), EnemyYaws.Num(), 2))
+	{
+		TestTrue(TEXT("At each player"), FMath::IsNearlyEqual(FMath::Abs(EnemyYaws[0] - EnemyYaws[1]), 180.f, 0.1f));
+	}
+
+	FGeoEnemySetup AllySetup;
+	AllySetup.Team = ETeam::Player;
+	AEnemyCharacter* const Ally = Arena->SpawnAdd(AEnemyCharacter::StaticClass(), FTransform(), &AllySetup);
+	TArray<float> const AllyYaws = GetAimYaws(Ally);
+	if (TestEqual(TEXT("Player team: one yaw"), AllyYaws.Num(), 1))
+	{
+		TestEqual(TEXT("At the arena's boss"), AllyYaws[0], 90.f, 0.1f);
+	}
+
+	Arena->GetBoss()->Death();
+	TestEqual(TEXT("Player team, boss dead: none"), GetAimYaws(Ally).Num(), 0);
+
+	DestroyTestWorld(World);
 	return true;
 }
 

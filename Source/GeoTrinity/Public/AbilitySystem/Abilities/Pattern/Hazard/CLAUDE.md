@@ -7,10 +7,10 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 | `BeamPattern.h` | Static or sweeping beam; `SweepAngle` 0 = static ray, 90 = sweep |
 | `TileCarveRayPattern.h` | Beam that destroys the furthest standing hex tile it reaches (keeps hex out of `UBeamPattern`) |
 | `DevastatingWavePattern.h` | Expanding radial wave, pillars cut safe-zone shadows |
-| `LateralWavePattern.h` | `UBeamPattern` child: wide band crossing the room sideways; safe spots from a fixed list or from living actors |
+| `LateralWavePattern.h` | `UBeamPattern` child: wide band crossing the room sideways; safe spots given at runtime (`FLateralWavePatternData`) or from living adds |
 | `SafeSpot/` | Safe spots shared by every hazard: model, sources, MPC mask → `SafeSpot/CLAUDE.md` |
 | `SpawnPillarPattern.h` | Telegraphed zones → effects, then pillars |
-| `ZonePattern.h` | Circle telegraph at payload origin, then effects or a lingering zone (`ZoneParams.LifeDrainMaxDuration`) |
+| `ZonePattern.h` | Circle telegraph at payload origin, then effects or a lingering zone (`ZoneParams.LifeDrainMaxDuration`); the zone is `DefaultZoneClass` tinted by `ZoneParams.Color`, never a zone Blueprint per tint |
 
 ## Beam
 - Fired from `Payload.Origin` along `Yaw` for `BeamDuration`; hex boss ships two BP children (sweep laser, tile-carving ray).
@@ -34,11 +34,16 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 - Debug: `Geo.DrawDevastatingWave`.
 
 ## LateralWave
-- `UBeamPattern` child, a *pattern with spots to keep safe*: no lane or strip logic of its own. Beam rectangle = `Payload.Origin` along `TravelYaw` (the pattern's own, 0 = +X, never the caster's facing), `TravelDistance` long, `2 * HalfWidth` wide; the origin is the ability's `TargetPointTag` point. The beam VFX (single component, the base's; `BeamVfxSystem`, `BeamColor`) shows that rectangle in the wind-up (Ray Zone Indicator) and the moving band after, both laid by the `MoveBeamVfx` override.
-- Front crosses `TravelDistance` at `Speed`; the band `[front - BandWidth, front]` hits everything inside the rectangle (`BandWidth` = `TravelDistance` leaves the floor lethal behind the front), minus the safe spots.
-- Spots: `FSafeSpot` (`ESafeSpotShadow::Lane`, direction = the travel) from `SafeSpotSources` (`Fixed` via `FixedSpotOffsets`, X along / Y across the travel, or `Adds`; radius `SpotRadius`; `SafeSpot/CLAUDE.md`); the pattern refreshes its `FSafeSpotMask` (`MaskMaterialParameterCollection`) every tick, the beam material cuts the lanes out of the band and the telegraph. Boss-specific waves = a BP child with its own spots, never a new class.
-- Base hook: `UBeamPattern::MoveBeamVfx` is virtual; the child overrides it (rectangle / band), `IsInHazard` (band + spots), `GetHazardDuration`.
-- Hit test server only, lag-compensated by the base (spots read at judge time). Adds are server-only (arena): the tutorial is solo.
+- `UBeamPattern` child, a *pattern with spots to keep safe*: no lane logic of its own beyond the visual. Beam rectangle = `Payload.Origin` along `TravelYaw` (the pattern's own, 0 = +X, never the caster's facing), `TravelDistance` long, `2 * HalfWidth` wide; the origin is the ability's `TargetPointTag` point.
+- Front crosses `TravelDistance` at `Speed`; the band `[front - BandWidth, front]` hits everything inside the rectangle, minus the safe spots.
+- One wave, one ability, one pattern Blueprint (`GA_LateralWave` / `BP_LateralWave`): what changes per firing is runtime data, never a new asset.
+- Spots: `FSafeSpot` (`ESafeSpotShadow::Lane`, direction = the travel) gathered every tick from `SafeSpotSources` (default `Fixed` + `Adds`; `SafeSpot/CLAUDE.md`), radius `SpotRadius`.
+  - `Fixed` = `FLateralWavePatternData::SafeSpotOffsets` (X along / Y across the travel, from the origin), given by whoever fires the wave (`GeoActivateAbilityAction::PatternData`, `Base/CLAUDE.md` "PatternAbility"); replicated with the pattern start, so every machine draws them. Fired with no data (state tree) = no fixed spot.
+  - `Adds` = living adds of the caster's arena; server only (the tutorial is solo). None in a room without adds.
+- Visual = the base beam, one component, the `Lane` spots cut by the beam materials: wind-up = the whole rectangle (Ray Zone Indicator, `M_ZoneIndicatorRay`), live = the band (`BeamVfxSystem`, `M_PulseBeam`). `MoveBeamVfx` lays the rectangle, uploads `GetSafeSpots()` (+ `TravelYaw` direction) to the mask MPC and sets `User.SafeSpotCut = 1` on its component every tick, so a dead add's lane closes at once. The materials read the mask (`SafeSpot/CLAUDE.md` "Mask"; `AI/Materials.md` "Safe spots on a beam").
+- Mask MPC: own `MaskMaterialParameterCollection` (`MPC_MaskedArea`); cleared at `InitPattern` and `EndPattern`.
+- Base hooks: `MoveBeamVfx` virtual; the child overrides `MoveBeamVfx` (rectangle + mask), `IsInHazard` (band + spots), `GetHazardDuration`, `InitPattern` / `EndPattern` (mask clear).
+- Hit test server only, lag-compensated by the base (spots read at judge time). Hit test and mask read the same `GetSafeSpots()`.
 
 ## SpawnPillar
 - Zone locations come from `FSpawnPillarPatternData` (ability's `CreatePatternData`).

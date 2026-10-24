@@ -3,6 +3,7 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "GeoTrinity/GeoTrinity.h"
+#include "Misc/App.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -55,7 +56,7 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 	bHazardEnded = false;
 	TravelTime = GeoLib::GetServerTime(GetWorld(), true) - Payload.ServerSpawnTime;
 
-	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(Payload);
+	UAnimInstance* AnimInstance = GetMontageAnimInstance();
 
 	ExecuteGameplayCue(InitCue);
 
@@ -132,15 +133,20 @@ bool UPattern::CanPlayMontageLocally(UAnimInstance const* AnimInstance) const
 	return IsValid(AnimMontage) && IsValid(AnimInstance) && !GeoLib::IsDedicatedServer(GetWorld());
 }
 
+UAnimInstance* UPattern::GetMontageAnimInstance() const
+{
+	return HasMontage() ? GeoASLib::GetAnimInstance(StoredPayload) : nullptr;
+}
+
 void UPattern::StartPattern()
 {
-	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
+	UAnimInstance* AnimInstance = GetMontageAnimInstance();
 	if (CanPlayMontageLocally(AnimInstance))
 	{
 		if (!AnimInstance->Montage_IsPlaying(AnimMontage))
 		{
 			UE_LOG(LogPattern, Warning, TEXT("Montage is NOT playing %s"), *AnimMontage->GetName());
- 			AnimInstance->Montage_Play(AnimMontage);
+			AnimInstance->Montage_Play(AnimMontage);
 		}
 		else
 		{
@@ -168,7 +174,7 @@ void UPattern::StartPattern()
 
 void UPattern::JumpMontageToEndSection() const
 {
-	UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
+	UAnimInstance* AnimInstance = GetMontageAnimInstance();
 	if (CanPlayMontageLocally(AnimInstance) && AnimInstance->Montage_IsPlaying(AnimMontage)
 		&& AnimInstance->Montage_GetCurrentSection(AnimMontage) != GeoASLib::SectionEndName
 		&& AnimMontage->IsValidSectionName(GeoASLib::SectionEndName))
@@ -281,9 +287,13 @@ UNiagaraComponent* UPattern::SpawnPersistentVfx(UNiagaraSystem* System, AActor& 
 	UNiagaraComponent* const Component = UNiagaraFunctionLibrary::SpawnSystemAttached(
 		System, Owner.GetRootComponent(), NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
 		EAttachLocation::KeepRelativeOffset, /*bAutoDestroy*/ false, /*bAutoActivate*/ false);
-	if (ensureMsgf(Component, TEXT("Pattern %s: failed to spawn %s"), *GetName(), *GetNameSafe(System)))
+	if (Component)
 	{
 		Component->SetAbsolute(true, true, true);
+	}
+	else
+	{
+		ensureMsgf(!FApp::CanEverRender(), TEXT("Pattern %s: failed to spawn %s"), *GetName(), *GetNameSafe(System));
 	}
 
 	return Component;

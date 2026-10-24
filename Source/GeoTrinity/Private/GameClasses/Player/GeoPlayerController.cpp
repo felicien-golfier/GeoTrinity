@@ -354,6 +354,7 @@ void AGeoPlayerController::OpenPauseMenu()
 
 void AGeoPlayerController::ClosePauseMenu()
 {
+	bool const bWasOpen = IsPauseMenuOpen();
 	if (PauseMenuWidget)
 	{
 		PauseMenuWidget->RemoveFromParent();
@@ -361,6 +362,10 @@ void AGeoPlayerController::ClosePauseMenu()
 	SetMenuInputMappingActive(false);
 	SetGameplayInputMode();
 	SetPause(false);
+	if (bWasOpen)
+	{
+		OnPauseMenuClosed.Broadcast();
+	}
 }
 
 bool AGeoPlayerController::IsSoloOnlyWorld() const

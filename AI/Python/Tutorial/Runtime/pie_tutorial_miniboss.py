@@ -21,9 +21,9 @@ SLOMO = 8
 TIMEOUT_SECONDS = 300.0
 ROOM_PITCH = 2900.0   # tutorial_map.py: 2 * 700 + ROOM_GAP
 ROOM = 7              # Miniboss
-BOSS_CLASS = "BP_TutorialMiniboss_C"
+BOSS_TAG = "TutorialMiniboss"  # the Miniboss arena's BossSetup.Tag: the boss is a BP_Dummy
 SUMMONED_CLASS = "BP_TutorialSummonedDummy_C"
-ALLY_CLASS = "BP_Dummy_C"
+DUMMY_CLASS = "BP_Dummy_C"
 ALLY_TAG = "TutorialMinibossAlly"   # tutorial_encounters.py MINIBOSS_ALLY_TAG
 EXIT_PAD_LABEL = "Tut_Miniboss_PadExit"
 EXIT_VOLUME_LABEL = "Tut_Miniboss_PadExitVolume"
@@ -101,11 +101,11 @@ def watch_fight(world, boss):
         if dummy.get_name() not in state["summoned_names"]:
             state["summoned_names"].add(dummy.get_name())
             log("summoned dummy %d landed at %s" % (len(state["summoned_names"]), dummy.get_actor_location()))
-    if not state["zone_seen"] and actors_of(world, unreal.GeoGrowingZone):
+    if not state["zone_seen"] and actors_of(world, unreal.GeoEffectZone):
         state["zone_seen"] = True
         log("growing zone present")
     if not state["ally_seen"] and any(a.actor_has_tag(ALLY_TAG)
-                                      for a in of_class(world, unreal.EnemyCharacter, ALLY_CLASS)):
+                                      for a in of_class(world, unreal.EnemyCharacter, DUMMY_CLASS)):
         state["ally_seen"] = True
         state["ally_time"] = state["elapsed"]
         log("ally dummy present")
@@ -172,7 +172,7 @@ def on_tick(delta):
         else:
             state["stage"] = "Fight"
     elif state["stage"] == "Fight":
-        boss = next(iter(of_class(world, unreal.EnemyCharacter, BOSS_CLASS)), None)
+        boss = next((a for a in of_class(world, unreal.EnemyCharacter, DUMMY_CLASS) if a.actor_has_tag(BOSS_TAG)), None)
         if boss is None:
             if state["elapsed"] - state["last_log"] >= 5.0:
                 state["last_log"] = state["elapsed"]

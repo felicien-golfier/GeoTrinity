@@ -6,6 +6,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/EnemyCharacter.h"
+#include "Encounter/GeoEncounter.h"
 #include "GeoTrinity/GeoTrinity.h"
 
 void UGeoActivateAbilityAction::Execute_Implementation(FGeoEncounterPayload const& /*Payload*/)
@@ -26,15 +27,17 @@ void UGeoActivateAbilityAction::Execute_Implementation(FGeoEncounterPayload cons
 	else
 	{
 		FGameplayAbilitySpecHandle const Handle = Specs[0]->Handle;
+		ActivatedASC = ASC;
+		ActivatedHandle = Handle;
 		if (bWaitForEnd)
 		{
-			WaitedASC = ASC;
-			WaitedHandle = Handle;
 			AbilityEndedDelegateHandle =
 				ASC->OnAbilityEnded.AddUObject(this, &UGeoActivateAbilityAction::OnAbilityEnded);
 		}
 
-		if (!ASC->TryActivateAbility(Handle))
+		FGameplayEventData ActivationData;
+		ActivationData.OptionalObject = this;
+		if (!ASC->InternalTryActivateAbility(Handle, FPredictionKey(), nullptr, nullptr, &ActivationData))
 		{
 			UE_LOG(LogGeoEncounter, Warning, TEXT("%s: %s refused to activate on the boss of %s"), *GetName(),
 				   *AbilityTag.ToString(), *GetNameSafe(Arena));
@@ -50,10 +53,11 @@ void UGeoActivateAbilityAction::Execute_Implementation(FGeoEncounterPayload cons
 
 void UGeoActivateAbilityAction::OnCancel_Implementation()
 {
-	UAbilitySystemComponent* const ASC = WaitedASC.Get();
-	FGameplayAbilitySpecHandle const Handle = WaitedHandle;
+	UAbilitySystemComponent* const ASC = ActivatedASC.Get();
+	FGameplayAbilitySpecHandle const Handle = ActivatedHandle;
+	bool const bWasWaiting = AbilityEndedDelegateHandle.IsValid();
 	StopWaiting();
-	if (ASC)
+	if (ASC && (bWasWaiting || GetEncounter()->IsAborting()))
 	{
 		ASC->CancelAbilityHandle(Handle);
 	}
@@ -61,7 +65,7 @@ void UGeoActivateAbilityAction::OnCancel_Implementation()
 
 void UGeoActivateAbilityAction::OnAbilityEnded(FAbilityEndedData const& EndedData)
 {
-	if (EndedData.AbilitySpecHandle == WaitedHandle)
+	if (EndedData.AbilitySpecHandle == ActivatedHandle)
 	{
 		StopWaiting();
 		Finish();
@@ -70,11 +74,11 @@ void UGeoActivateAbilityAction::OnAbilityEnded(FAbilityEndedData const& EndedDat
 
 void UGeoActivateAbilityAction::StopWaiting()
 {
-	if (UAbilitySystemComponent* const ASC = WaitedASC.Get())
+	if (UAbilitySystemComponent* const ASC = ActivatedASC.Get())
 	{
 		ASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
 	}
 	AbilityEndedDelegateHandle.Reset();
-	WaitedASC.Reset();
-	WaitedHandle = FGameplayAbilitySpecHandle();
+	ActivatedASC.Reset();
+	ActivatedHandle = FGameplayAbilitySpecHandle();
 }

@@ -3,17 +3,18 @@
 #pragma once
 
 #include "AbilitySystem/Data/EffectData.h"
-#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "AbilitySystem/Data/FX/GeoCueParam.h"
 #include "AbilitySystem/Data/FX/GeoFXMoment.h"
+#include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "Actor/GeoInteractableActor.h"
 #include "CoreMinimal.h"
 #include "HUD/Interface/GeoDamageNumberHost.h"
+#include "ScalableFloat.h"
 #include "Settings/GameDataSettings.h"
 #include "StructUtils/InstancedStruct.h"
-#include "Tool/Visual/GeoColor.h"
 #include "Tool/Net/GeoHazardJudge.h"
 #include "Tool/Team.h"
+#include "Tool/Visual/GeoColor.h"
 
 #include "GeoDeployableBase.generated.h"
 
@@ -46,31 +47,40 @@ struct FDeployableDataParams
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	float BlinkDuration = 2.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	float LifeDrainMaxDuration = 0.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	float Size = 0.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	float Value = 0.f;
 
 	/** Colour the deployable tints its material with, so one Blueprint can serve every ability that spawns it. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	FGeoColorParam Color;
 
 	/** Further colours a zone draws beside Color, one per extra meaning it carries (damage and heal, say), split by its
 	 * material's colour pattern. Zones only; at most GeoColor::MaxMeaningColorCount - 1. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	TArray<FGeoColorParam> SecondaryColors;
 
 	/** Which attitudes, relative to the deployable's own team, it acts on. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly,
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable",
 			  meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.ETeamAttitudeBitflag"))
 	int32 Attitude = TeamAttitudeMask::All;
+
+	/** Zones only. Radius the zone grows to from Size over GrowSeconds, from the server's BeginPlay, then keeps; 0 = it
+	 * stays at Size. Read at the data's Level. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
+	FScalableFloat GrowToSize;
+
+	/** Zones only. Seconds the growth from Size to GrowToSize takes. Read at the data's Level. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
+	FScalableFloat GrowSeconds;
 
 	/** Scales the health the deployable's DefaultAttributes give it. Set by the deployer's gems, never by hand. */
 	UPROPERTY()
@@ -170,7 +180,8 @@ public:
 	/**
 	 * Called when duration or health reaches zero, when recalled, or when aborted from above.
 	 *
-	 * @param bForce  When true, bypasses active-state guards and expires immediately — used by internal lifecycle paths.
+	 * @param bForce  When true, bypasses active-state guards and expires immediately — used by internal lifecycle
+	 * paths.
 	 */
 	UFUNCTION()
 	virtual void Expire(bool bForce = false);
@@ -274,8 +285,8 @@ protected:
 	 */
 	virtual void ExplodeEffect(float const Value);
 
-	/** The shot a hazard of this deployable judges on behalf of: its owner applies the effects and takes the hit credit,
-	 * the deployable itself is the avatar. */
+	/** The shot a hazard of this deployable judges on behalf of: its owner applies the effects and takes the hit
+	 * credit, the deployable itself is the avatar. */
 	FAbilityPayload MakeHazardSource() const;
 
 	/** Every mesh drawing this deployable. UWidgetComponent derives from UMeshComponent, so the health bar is filtered
@@ -391,7 +402,8 @@ private:
 	/** Drives Movement from From to To with a short root-motion source, and schedules its removal. */
 	void ApplyPushRootMotion(UCharacterMovementComponent* Movement, FVector const& From, FVector const& To);
 
-	/** Blink-timer callback: ends the deployable's lifetime via Recall when bAutoRecallAtEndLife is set, or Expire otherwise. */
+	/** Blink-timer callback: ends the deployable's lifetime via Recall when bAutoRecallAtEndLife is set, or Expire
+	 * otherwise. */
 	UFUNCTION()
 	void TryRecallOrExpire();
 
@@ -406,9 +418,9 @@ private:
 	 *  longer, a partly healthy one shorter. */
 	void ApplyHealthMultiplier();
 
-	/** Server. Judges Explosion, an instant hazard over Params.Size, then runs again next tick until it is over. A timer
-	 * rather than Tick, which Expire turns off; the actor outlives the window because TimeBeforeDestroyAtExpire is
-	 * longer. */
+	/** Server. Judges Explosion, an instant hazard over Params.Size, then runs again next tick until it is over. A
+	 * timer rather than Tick, which Expire turns off; the actor outlives the window because TimeBeforeDestroyAtExpire
+	 * is longer. */
 	void JudgeExplosion();
 
 	FGeoHazardJudge Explosion;

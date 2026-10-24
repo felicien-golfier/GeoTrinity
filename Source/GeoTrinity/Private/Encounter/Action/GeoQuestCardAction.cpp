@@ -12,6 +12,7 @@ void UGeoQuestCardAction::Execute_Implementation(FGeoEncounterPayload const& Pay
 		{
 		case EGeoQuestCardOperation::Show:
 			HUD->ShowQuestCard(Title, Max, TimeLimitSeconds);
+			bCardShown = true;
 			break;
 		case EGeoQuestCardOperation::Count:
 			HUD->SetQuestCount(bShowMax ? Max : Payload.Count);
@@ -19,6 +20,18 @@ void UGeoQuestCardAction::Execute_Implementation(FGeoEncounterPayload const& Pay
 		case EGeoQuestCardOperation::Hide:
 			HUD->HideQuestCard();
 			break;
+		}
+	}
+}
+
+void UGeoQuestCardAction::OnCancel_Implementation()
+{
+	if (bCardShown)
+	{
+		bCardShown = false;
+		if (IGeoHUDInterface* const HUD = GetLocalHUD())
+		{
+			HUD->HideQuestCard();
 		}
 	}
 }

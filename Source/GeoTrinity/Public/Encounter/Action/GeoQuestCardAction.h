@@ -27,6 +27,9 @@ class GEOTRINITY_API UGeoQuestCardAction : public UGeoEncounterAction
 public:
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
+	/** Hides the card when this action showed it (Show); the card it left standing goes with an abort. */
+	virtual void OnCancel_Implementation() override;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
 	EGeoQuestCardOperation Operation = EGeoQuestCardOperation::Show;
 
@@ -47,4 +50,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter",
 			  meta = (EditCondition = "Operation == EGeoQuestCardOperation::Count", EditConditionHides))
 	bool bShowMax = false;
+
+private:
+	/** A Show of this action put a card on the HUD that its OnCancel has not hidden yet. */
+	bool bCardShown = false;
 };

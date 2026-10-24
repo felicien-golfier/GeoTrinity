@@ -110,6 +110,8 @@ anything; engine node pin names are not checked. See `AI/Python/Material/dry_run
 - Parameter group, sort priority, description and slider range are editor properties on the parameter node.
 - A named reroute declaration can be created, named and fed, but the link from a usage to its declaration is out
   of Python's reach and needs an editor-utility shim.
+- A node's position is its `material_expression_editor_x` / `_y` properties; its drawn size is not exposed, so a
+  layout works from estimates. A plain reroute node (`MaterialExpressionReroute`) wires like any expression.
 - Comment boxes need an editor-utility shim too: the expression call files a comment as an ordinary node, and its
   size is not exposed.
 - The editing library's statistics call returns the compiled instruction counts of a material or an instance;

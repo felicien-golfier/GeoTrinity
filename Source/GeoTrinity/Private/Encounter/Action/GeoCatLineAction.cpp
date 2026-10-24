@@ -4,6 +4,7 @@
 
 #include "Characters/GeoCharacter.h"
 #include "Encounter/GeoEncounter.h"
+#include "Encounter/GeoEncounterSubsystem.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "HUD/Interface/GeoHUDInterface.h"
@@ -38,12 +39,21 @@ void UGeoCatLineAction::ShowLine()
 	}
 	WaitedPlayer.Reset();
 
+	FText const ShownLine = FText::FromString(GeoLib::ReplaceCounterTokens(Line.ToString(), GetEncounter()));
+	GetWorld()->GetSubsystem<UGeoEncounterSubsystem>()->OnCatLine.Broadcast(ShownLine);
+
 	if (IGeoHUDInterface* const HUD = GetLocalHUD())
 	{
-		HUD->ShowCatLine(FText::FromString(GeoLib::ReplaceCounterTokens(Line.ToString(), GetEncounter())),
+		bLineShowing = true;
+		HUD->ShowCatLine(ShownLine,
 						 FSimpleDelegate::CreateWeakLambda(this,
-														   [this, Run = LineRun]()
+														   [this, Run = LineRun, Shown = ++ShownLines]()
 														   {
+															   if (Shown == ShownLines)
+															   {
+																   bLineShowing = false;
+															   }
+
 															   if (Run == LineRun)
 															   {
 																   Finish();
@@ -64,4 +74,12 @@ void UGeoCatLineAction::OnCancel_Implementation()
 	}
 	WaitedPlayer.Reset();
 	++LineRun;
+
+	if (bLineShowing && GetEncounter()->IsAborting())
+	{
+		if (IGeoHUDInterface* const HUD = GetLocalHUD())
+		{
+			HUD->HideCatLine();
+		}
+	}
 }

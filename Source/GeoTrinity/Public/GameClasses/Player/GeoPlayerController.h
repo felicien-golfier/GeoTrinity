@@ -66,6 +66,9 @@ public:
 	/** Closes the pause menu and restores game input mode. Called by the widget's Resume button. */
 	void ClosePauseMenu();
 
+	/** The pause menu was closed while open (any page, any way): what waits for the player to come back to the game. */
+	FSimpleMulticastDelegate OnPauseMenuClosed;
+
 	/** Returns true while the pause menu is on screen (gameplay input suspended). */
 	bool IsPauseMenuOpen() const;
 

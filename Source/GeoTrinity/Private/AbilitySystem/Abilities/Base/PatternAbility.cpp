@@ -28,6 +28,9 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	}
 
 	LaunchSeed = GetNewSeed();
+	IPatternDataSource const* const PatternDataSource =
+		TriggerEventData ? Cast<IPatternDataSource>(TriggerEventData->OptionalObject.Get()) : nullptr;
+	GivenPatternData = PatternDataSource ? PatternDataSource->GetPatternData() : TInstancedStruct<FPatternData>();
 
 	if (PreLaunchDelay > 0.f)
 	{

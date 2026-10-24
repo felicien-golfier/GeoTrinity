@@ -59,14 +59,14 @@ static bool RemoveStateRecursive(TArray<TObjectPtr<UStateTreeState>>& States, FN
 				   {
 					   return State && State->Name == StateName;
 				   })
-			   > 0;
+			> 0;
 	};
 	return RemoveFromSiblings(States)
-		   || ForEachStateRecursive(States,
-									[&RemoveFromSiblings](UStateTreeState& State, int32)
-									{
-										return RemoveFromSiblings(State.Children);
-									});
+		|| ForEachStateRecursive(States,
+								 [&RemoveFromSiblings](UStateTreeState& State, int32)
+								 {
+									 return RemoveFromSiblings(State.Children);
+								 });
 }
 
 static void CompileAndSave(UStateTree* StateTree, ANSICHAR const* CallerName)
@@ -146,7 +146,8 @@ static void LogState(UStateTreeState const& State, int32 Depth)
 		if (TaskNode.GetInstance().GetStruct()
 			&& TaskNode.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
 		{
-			FSTTask_FireAbilityInstanceData const* Data = TaskNode.GetInstance().GetPtr<FSTTask_FireAbilityInstanceData>();
+			FSTTask_FireAbilityInstanceData const* Data =
+				TaskNode.GetInstance().GetPtr<FSTTask_FireAbilityInstanceData>();
 			TaskTags += FString::Printf(TEXT(" [tag=%s]"), *Data->AbilityTag.ToString());
 		}
 	}
@@ -167,8 +168,8 @@ static void LogState(UStateTreeState const& State, int32 Depth)
 		FString TriggerStr = UEnum::GetValueAsString(Transition.Trigger);
 		FString TypeStr = UEnum::GetValueAsString(Transition.State.LinkType);
 		FString TargetStr = Transition.State.Name.IsNone()
-								? FString()
-								: FString::Printf(TEXT("→'%s'"), *Transition.State.Name.ToString());
+			? FString()
+			: FString::Printf(TEXT("→'%s'"), *Transition.State.Name.ToString());
 		TransitionInfo += FString::Printf(TEXT(" [%s %s%s]"), *TriggerStr, *TypeStr, *TargetStr);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("StateTree state: %s'%s'%s%s"), *Indent, *State.Name.ToString(), *TaskTags,
@@ -275,27 +276,27 @@ void UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState(UStateTree* StateTre
 															FName NewAbilityTagName)
 {
 	ANSICHAR const* const Caller = __FUNCTION__;
-	WithState(StateTree, StateName, Caller,
-			  [NewAbilityTagName, Caller](UStateTreeEditorData&, UStateTreeState& State)
-			  {
-				  FGameplayTag NewTag;
-				  if (!ResolveTag(NewAbilityTagName, Caller, NewTag))
-				  {
-					  return false;
-				  }
+	WithState(
+		StateTree, StateName, Caller,
+		[NewAbilityTagName, Caller](UStateTreeEditorData&, UStateTreeState& State)
+		{
+			FGameplayTag NewTag;
+			if (!ResolveTag(NewAbilityTagName, Caller, NewTag))
+			{
+				return false;
+			}
 
-				  for (FStateTreeEditorNode& TaskNode : State.Tasks)
-				  {
-					  if (TaskNode.GetInstance().GetStruct()
-						  && TaskNode.GetInstance().GetStruct()->IsChildOf(
-							  FSTTask_FireAbilityInstanceData::StaticStruct()))
-					  {
-						  TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = NewTag;
-						  break;
-					  }
-				  }
-				  return true;
-			  });
+			for (FStateTreeEditorNode& TaskNode : State.Tasks)
+			{
+				if (TaskNode.GetInstance().GetStruct()
+					&& TaskNode.GetInstance().GetStruct()->IsChildOf(FSTTask_FireAbilityInstanceData::StaticStruct()))
+				{
+					TaskNode.GetInstance().GetMutablePtr<FSTTask_FireAbilityInstanceData>()->AbilityTag = NewTag;
+					break;
+				}
+			}
+			return true;
+		});
 }
 
 void UGeoStateTreeBuilderUtil::RemoveState(UStateTree* StateTree, FName StateName)
@@ -363,7 +364,7 @@ void UGeoStateTreeBuilderUtil::AddTransition(UStateTree* StateTree, FName Source
 }
 
 void UGeoStateTreeBuilderUtil::AddFloatEnterCondition(UStateTree* StateTree, FName StateName, float Threshold,
-													  EGenericAICheck Operator, bool bInvert)
+													  UE::StateTree::EComparisonOperator Operator, bool bInvert)
 {
 	WithState(StateTree, StateName, __FUNCTION__,
 			  [Threshold, Operator, bInvert](UStateTreeEditorData&, UStateTreeState& State)
@@ -381,44 +382,43 @@ void UGeoStateTreeBuilderUtil::BindConditionPropertyToPropertyFunction(UStateTre
 																	   FGeoPropertyFunctionBinding const& Binding)
 {
 	ANSICHAR const* const Caller = __FUNCTION__;
-	WithState(
-		StateTree, StateName, Caller,
-		[StateName, ConditionIndex, &Binding, Caller](UStateTreeEditorData& EditorData, UStateTreeState& State)
-		{
-			if (!ensureMsgf(State.EnterConditions.IsValidIndex(ConditionIndex),
-							TEXT("%hs — condition index %d out of range on state '%s'"), Caller, ConditionIndex,
-							*StateName.ToString()))
-			{
-				return false;
-			}
+	WithState(StateTree, StateName, Caller,
+			  [StateName, ConditionIndex, &Binding, Caller](UStateTreeEditorData& EditorData, UStateTreeState& State)
+			  {
+				  if (!ensureMsgf(State.EnterConditions.IsValidIndex(ConditionIndex),
+								  TEXT("%hs — condition index %d out of range on state '%s'"), Caller, ConditionIndex,
+								  *StateName.ToString()))
+				  {
+					  return false;
+				  }
 
-			UScriptStruct const* FuncStruct =
-				FindFirstObject<UScriptStruct>(*Binding.PropertyFunctionStructName.ToString());
-			UClass const* ContextClass = FindFirstObject<UClass>(*Binding.ContextClassName.ToString());
-			if (!ensureMsgf(FuncStruct, TEXT("%hs — struct '%s' not found"), Caller,
-							*Binding.PropertyFunctionStructName.ToString())
-				|| !ensureMsgf(ContextClass, TEXT("%hs — class '%s' not found"), Caller,
-							   *Binding.ContextClassName.ToString()))
-			{
-				return false;
-			}
+				  UScriptStruct const* FuncStruct =
+					  FindFirstObject<UScriptStruct>(*Binding.PropertyFunctionStructName.ToString());
+				  UClass const* ContextClass = FindFirstObject<UClass>(*Binding.ContextClassName.ToString());
+				  if (!ensureMsgf(FuncStruct, TEXT("%hs — struct '%s' not found"), Caller,
+								  *Binding.PropertyFunctionStructName.ToString())
+					  || !ensureMsgf(ContextClass, TEXT("%hs — class '%s' not found"), Caller,
+									 *Binding.ContextClassName.ToString()))
+				  {
+					  return false;
+				  }
 
-			FStateTreeEditorNode const& CondNode = State.EnterConditions[ConditionIndex];
-			FPropertyBindingPath TargetPath(CondNode.ID, Binding.ConditionPropertyName);
+				  FStateTreeEditorNode const& CondNode = State.EnterConditions[ConditionIndex];
+				  FPropertyBindingPath TargetPath(CondNode.ID, Binding.ConditionPropertyName);
 
-			FPropertyBindingPath SourcePath = EditorData.GetPropertyEditorBindings()->AddFunctionBinding(
-				FuncStruct, {FPropertyBindingPathSegment(Binding.FunctionOutputPropertyName)}, TargetPath);
+				  FPropertyBindingPath SourcePath = EditorData.GetPropertyEditorBindings()->AddFunctionBinding(
+					  FuncStruct, {FPropertyBindingPathSegment(Binding.FunctionOutputPropertyName)}, TargetPath);
 
-			FStateTreeBindableStructDesc ContextDesc = EditorData.FindContextData(ContextClass, TEXT(""));
-			if (ensureMsgf(ContextDesc.ID.IsValid(), TEXT("%hs — class '%s' not found in StateTree context"), Caller,
-						   *Binding.ContextClassName.ToString()))
-			{
-				FPropertyBindingPath InputSourcePath(ContextDesc.ID);
-				FPropertyBindingPath InputTargetPath(SourcePath.GetStructID(), Binding.FunctionInputPropertyName);
-				EditorData.AddPropertyBinding(InputSourcePath, InputTargetPath);
-			}
-			return true;
-		});
+				  FStateTreeBindableStructDesc ContextDesc = EditorData.FindContextData(ContextClass, TEXT(""));
+				  if (ensureMsgf(ContextDesc.ID.IsValid(), TEXT("%hs — class '%s' not found in StateTree context"),
+								 Caller, *Binding.ContextClassName.ToString()))
+				  {
+					  FPropertyBindingPath InputSourcePath(ContextDesc.ID);
+					  FPropertyBindingPath InputTargetPath(SourcePath.GetStructID(), Binding.FunctionInputPropertyName);
+					  EditorData.AddPropertyBinding(InputSourcePath, InputTargetPath);
+				  }
+				  return true;
+			  });
 }
 
 void UGeoStateTreeBuilderUtil::AddTaskToState(UStateTree* StateTree, FName StateName, FName TaskStructName)

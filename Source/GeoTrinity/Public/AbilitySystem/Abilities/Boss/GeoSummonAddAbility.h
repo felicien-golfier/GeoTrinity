@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/Base/PatternAbility.h"
+#include "Characters/GeoEnemySetup.h"
 #include "CoreMinimal.h"
 
 #include "GeoSummonAddAbility.generated.h"
@@ -11,8 +12,8 @@ class AEnemyCharacter;
 
 /**
  * Boss ability bringing an add into the fight: its zone pattern (PatternToLaunch, a telegraph in the Damage colour then
- * the hit) lands on a spot near a live player, then AddClass spawns there as an add of the caster's arena. A
- * force-stopped pattern (wipe, boss death) brings nothing.
+ * the hit) lands on a spot near a live player, then AddClass spawns there as an add of the caster's arena, varied by
+ * AddSetup. A force-stopped pattern (wipe, boss death) brings nothing.
  */
 UCLASS()
 class GEOTRINITY_API UGeoSummonAddAbility : public UPatternAbility
@@ -24,11 +25,15 @@ protected:
 	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
 									  int Seed) const override;
 
-	/** Server. The hit landed: spawns AddClass on its spot, then ends the ability. */
+	/** Server. The hit landed: spawns AddClass with AddSetup on its spot, then ends the ability. */
 	virtual void OnPatternEnd() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Summon")
 	TSubclassOf<AEnemyCharacter> AddClass;
+
+	/** The add's variant (health, tree, abilities), so AddClass holds only its look and its own behaviour's params. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Summon")
+	FGeoEnemySetup AddSetup;
 
 	/** Largest distance between the picked player and the spot. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Summon", meta = (ClampMin = "0"))

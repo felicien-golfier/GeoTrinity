@@ -3,6 +3,7 @@
 #include "Encounter/Action/Cat/GeoCatAction.h"
 
 #include "Actor/GeoCat.h"
+#include "Encounter/GeoEncounter.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Misc/DataValidation.h"
 
@@ -30,6 +31,10 @@ void UGeoCatAction::Execute_Implementation(FGeoEncounterPayload const& /*Payload
 void UGeoCatAction::OnCancel_Implementation()
 {
 	StopWaiting();
+	if (IsValid(Cat) && GetEncounter()->IsAborting())
+	{
+		Cat->Stop();
+	}
 }
 
 void UGeoCatAction::OnOrderEnded(bool /*bCompleted*/)

@@ -1,5 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
+#include "AbilitySystem/Abilities/Pattern/Hazard/LateralWavePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -18,9 +19,12 @@
 #include "Encounter/Action/GeoActivateAbilityAction.h"
 #include "Encounter/Action/GeoAddToCounterAction.h"
 #include "Encounter/Action/GeoCatLineAction.h"
+#include "Encounter/Action/GeoDelayAction.h"
+#include "Encounter/Action/GeoQuestCardAction.h"
 #include "Encounter/Action/GeoSetActorHiddenAction.h"
 #include "Encounter/Action/GeoSetMovementLockedAction.h"
 #include "Encounter/Action/GeoSetTeleporterOpenAction.h"
+#include "Encounter/Action/GeoShowAbilityPageAction.h"
 #include "Encounter/Action/GeoSpawnEnemiesAction.h"
 #include "Encounter/Action/GeoSpawnZoneAction.h"
 #include "Encounter/GeoEncounterSubsystem.h"
@@ -30,7 +34,6 @@
 #include "Encounter/Trigger/GeoEventTrigger.h"
 #include "Encounter/Trigger/GeoHealthThresholdTrigger.h"
 #include "Encounter/Trigger/GeoPlayerIdleTrigger.h"
-#include "Encounter/Trigger/GeoTimerTrigger.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
 #include "GameClasses/Match/GeoGameState.h"
@@ -41,8 +44,10 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/DataValidation.h"
 #include "Settings/GameDataSettings.h"
+#include "StateTree.h"
 #include "Tests/GeoTestDeployable.h"
 #include "Tests/GeoTestEncounter.h"
+#include "Tests/GeoTestEnemy.h"
 #include "Tests/GeoTestPatternAbility.h"
 #include "Tests/GeoTestWorld.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -695,6 +700,22 @@ bool FGeoEncounterValidationTest::RunTest(FString const& /*Parameters*/)
 					 Encounter.AddSteps(1);
 				 })
 				 > 0u);
+	TestTrue(TEXT("An action after a start action is flagged"),
+			 ErrorsOf(
+				 [](AGeoTestEncounter& Encounter)
+				 {
+					 Encounter.AddSteps(1);
+					 Encounter.AddRule(0, {Encounter.NewStartAction(&Encounter), Encounter.NewAction("After")});
+				 })
+				 > 0u);
+	TestEqual(TEXT("A start action last in its list is fine"),
+			  ErrorsOf(
+				  [](AGeoTestEncounter& Encounter)
+				  {
+					  Encounter.AddSteps(1);
+					  Encounter.AddRule(0, {Encounter.NewAction("Before"), Encounter.NewStartAction(&Encounter)});
+				  }),
+			  0u);
 	TestTrue(TEXT("An unknown StepAfter is flagged"),
 			 ErrorsOf(
 				 [](AGeoTestEncounter& Encounter)
@@ -765,7 +786,8 @@ bool FGeoHiddenCasterTest::RunTest(FString const& /*Parameters*/)
 	{
 		TestFalse(TEXT("Nothing can damage it"), Caster->CanBeDamaged());
 		TestFalse(TEXT("Nothing can touch it"), Caster->GetActorEnableCollision());
-		TestTrue(TEXT("Nothing is drawn"), Caster->IsHidden());
+		TestFalse(TEXT("The actor stays shown, so the VFX it owns draw"), Caster->IsHidden());
+		TestNull(TEXT("Nothing is drawn: no mesh asset"), Caster->GetMesh()->GetSkeletalMeshAsset());
 		TestNull(TEXT("No health bar"), Caster->FindComponentByClass<UWidgetComponent>());
 		TestFalse(TEXT("Never aggroed"), Caster->CanBeAggroed());
 	}
@@ -860,6 +882,67 @@ bool FGeoEncounterActivateAbilityCancelTest::RunTest(FString const& /*Parameters
 	LeaveTrigger->FireNow();
 	TestFalse(TEXT("Leaving the step cancels the ability"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
 	TestEqual(TEXT("The cancelled wait never reaches the next action"), After->Runs, 0);
+
+	UGeoTestTrigger* const NoWaitTrigger = Encounter->AddRule(1, {NewActivateAction(*Encounter, Arena, false)});
+	UGeoTestTrigger* const NoWaitLeaveTrigger = Encounter->AddRule(1, {}, false, true);
+	Encounter->Restart();
+	CastTrigger->FireNow();
+	LeaveTrigger->FireNow();
+	NoWaitTrigger->FireNow();
+	NoWaitLeaveTrigger->FireNow();
+	TestTrue(TEXT("A step exit leaves an ability fired without waiting running"),
+			 ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+	Encounter->Abort();
+	TestFalse(TEXT("An abort cancels the ability fired without waiting"),
+			  ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterActivateAbilityPatternDataTest,
+								 "GeoTrinity.Encounter.ActivateAbilityPatternData", GeoEncounterTestFlags)
+
+bool FGeoEncounterActivateAbilityPatternDataTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
+	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Arena->GetBoss());
+	FGameplayAbilitySpecHandle const Handle =
+		ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestDataPatternAbility::StaticClass(), 1));
+	auto RunningAbility = [ASC, Handle]
+	{
+		TArray<UGameplayAbility*> const Instances = ASC->FindAbilitySpecFromHandle(Handle)->GetAbilityInstances();
+		return Instances.IsEmpty() ? nullptr : Cast<UGeoTestDataPatternAbility>(Instances.Last());
+	};
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoActivateAbilityAction* const WithData = NewActivateAction(*Encounter, Arena, false);
+	FLateralWavePatternData WaveData;
+	WaveData.SafeSpotOffsets = {FVector2D(0.f, -300.f), FVector2D(0.f, 500.f)};
+	WithData->PatternData = TInstancedStruct<FPatternData>::Make<FLateralWavePatternData>(WaveData);
+	UGeoTestTrigger* const WithDataTrigger = Encounter->AddRule(0, {WithData});
+	UGeoTestTrigger* const NoDataTrigger = Encounter->AddRule(0, {NewActivateAction(*Encounter, Arena, false)});
+	Encounter->Start();
+
+	WithDataTrigger->FireNow();
+	UGeoTestDataPatternAbility const* Ability = RunningAbility();
+	FLateralWavePatternData const* const Received =
+		Ability ? Ability->LaunchedPatternData.GetPtr<FLateralWavePatternData>() : nullptr;
+	if (TestNotNull(TEXT("The action's data reaches the pattern launch"), Received))
+	{
+		TestTrue(TEXT("With its spots"), Received->SafeSpotOffsets == WaveData.SafeSpotOffsets);
+	}
+
+	ASC->CancelAbilityHandle(Handle);
+	NoDataTrigger->FireNow();
+	Ability = RunningAbility();
+	if (TestNotNull(TEXT("The ability runs again"), Ability))
+	{
+		TestFalse(TEXT("An action without data leaves the launch's unset"), Ability->LaunchedPatternData.IsValid());
+	}
 
 	DestroyTestWorld(World);
 	return true;
@@ -1120,6 +1203,135 @@ bool FGeoEncounterSpawnEnemiesRespawnTest::RunTest(FString const& /*Parameters*/
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSpawnEnemiesHeldTest, "GeoTrinity.Encounter.SpawnEnemiesHeld",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterSpawnEnemiesHeldTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
+	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
+	World->SetGameState(World->SpawnActor<AGeoGameState>());
+
+	FGameplayTag const PurposeTag = FGeoGameplayTags::Get().TargetPoint_AddSpawn;
+	FGameplayTag const ArenaTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
+	AGeoTargetPoint* const Point = World->SpawnActor<AGeoTargetPoint>(FVector(500.f, 0.f, 0.f), FRotator());
+	Point->GameplayTags.AddTag(PurposeTag);
+	Point->GameplayTags.AddTag(ArenaTag);
+
+	auto const Living = [World]
+	{
+		int32 Enemies = 0;
+		for (TActorIterator<AEnemyCharacter> It(World); It; ++It)
+		{
+			Enemies += It->IsDead() ? 0 : 1;
+		}
+
+		return Enemies;
+	};
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoSpawnEnemiesAction* const Spawner = NewObject<UGeoSpawnEnemiesAction>(Encounter);
+	Spawner->EnemyClass = AEnemyCharacter::StaticClass();
+	Spawner->RespawnDelay = 2.f;
+	Spawner->PurposeTag = PurposeTag;
+	Spawner->ArenaTag = ArenaTag;
+	Spawner->bKillOnStepExit = true;
+	UGeoTestAction* const After = Encounter->NewAction("After");
+	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner, After}, true);
+	Encounter->Start();
+
+	SpawnTrigger->FireNow();
+	TestEqual(TEXT("The enemy spawns"), Living(), 1);
+	TestEqual(TEXT("The action after the spawner runs at once"), After->Runs, 1);
+
+	SpawnTrigger->FireNow();
+	TestEqual(TEXT("Run again: the previous run's enemy is killed, one new one lives"), Living(), 1);
+
+	for (TActorIterator<AEnemyCharacter> It(World); It; ++It)
+	{
+		if (!It->IsDead())
+		{
+			It->Death();
+		}
+	}
+
+	TickTestTimers(*World, 0.f);
+	TickTestTimers(*World, 2.1f);
+	TestEqual(TEXT("One respawn per death, not one per run"), Living(), 1);
+
+	Encounter->Restart();
+	TestEqual(TEXT("Restart kills the held spawner's enemy"), Living(), 0);
+	TickTestTimers(*World, 0.f);
+	TickTestTimers(*World, 3.f);
+	TestEqual(TEXT("No respawn once the step is left"), Living(), 0);
+
+	SpawnTrigger->FireNow();
+	Encounter->Abort();
+	TestEqual(TEXT("Abort kills the held spawner's enemy"), Living(), 0);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSpawnZoneHeldTest, "GeoTrinity.Encounter.SpawnZoneHeld",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterSpawnZoneHeldTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
+	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
+	World->SetGameState(World->SpawnActor<AGeoGameState>());
+	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoEffectZone::StaticClass();
+
+	FGameplayTag const PurposeTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("TargetPoint.ZoneSpawn"));
+	FGameplayTag const ArenaTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
+	AGeoTargetPoint* const Point = World->SpawnActor<AGeoTargetPoint>(FVector(400.f, 0.f, 0.f), FRotator());
+	Point->GameplayTags.AddTag(PurposeTag);
+	Point->GameplayTags.AddTag(ArenaTag);
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoSpawnZoneAction* const Spawner = NewObject<UGeoSpawnZoneAction>(Encounter);
+	Spawner->PurposeTag = PurposeTag;
+	Spawner->ArenaTag = ArenaTag;
+	Spawner->Params.Size = 300.f;
+	UGeoTestAction* const After = Encounter->NewAction("After");
+	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner, After}, true);
+	Encounter->Start();
+
+	SpawnTrigger->FireNow();
+	TestEqual(TEXT("The action after the zone runs at once"), After->Runs, 1);
+	TActorIterator<AGeoEffectZone> const FirstFound(World);
+	if (TestTrue(TEXT("The zone spawns"), static_cast<bool>(FirstFound)))
+	{
+		AGeoEffectZone const* const First = *FirstFound;
+		SpawnTrigger->FireNow();
+		AGeoEffectZone const* Second = nullptr;
+		for (TActorIterator<AGeoEffectZone> It(World); It; ++It)
+		{
+			Second = *It != First ? *It : Second;
+		}
+
+		TestFalse(TEXT("Run again: the previous zone is recalled"), First->IsActive());
+		if (TestNotNull(TEXT("Run again: a new zone spawns"), Second))
+		{
+			TestTrue(TEXT("The new zone is up"), Second->IsActive());
+			Encounter->Abort();
+			TestFalse(TEXT("Abort recalls the held zone"), Second->IsActive());
+		}
+	}
+
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoArenaSpawnAddResetTest, "GeoTrinity.Arena.SpawnAddReset", GeoEncounterTestFlags)
 
 bool FGeoArenaSpawnAddResetTest::RunTest(FString const& /*Parameters*/)
@@ -1169,6 +1381,28 @@ bool FGeoCharactersSetupHealthResetTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("It is back at the overridden max health"),
 			  ASC->GetNumericAttributeBase(UGeoAttributeSetBase::GetHealthAttribute()), 200.f);
 
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCharactersSetupAggroRadiusTest, "GeoTrinity.Characters.SetupAggroRadius",
+								 GeoEncounterTestFlags)
+
+bool FGeoCharactersSetupAggroRadiusTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AEnemyCharacter* const Enemy =
+		World->SpawnActorDeferred<AEnemyCharacter>(AEnemyCharacter::StaticClass(), FTransform());
+	TestTrue(TEXT("No setup keeps the controller's radius"), Enemy->AggroRadiusOverride < 0.f);
+
+	FGeoEnemySetup Setup;
+	TestTrue(TEXT("A setup keeps the controller's radius by default"), Setup.AggroRadius < 0.f);
+	Setup.AggroRadius = 100.f;
+	Enemy->ApplySetup(Setup);
+	TestEqual(TEXT("The setup's radius reaches the enemy"), Enemy->AggroRadiusOverride, 100.f);
+
+	Enemy->Destroy();
 	DestroyTestWorld(World);
 	return true;
 }
@@ -1229,6 +1463,7 @@ bool FGeoEncounterSpawnZoneTest::RunTest(FString const& /*Parameters*/)
 	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
 	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
 	World->SetGameState(World->SpawnActor<AGeoGameState>());
+	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
 	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoEffectZone::StaticClass();
 
 	FGameplayTag const PurposeTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("TargetPoint.ZoneSpawn"));
@@ -1260,6 +1495,7 @@ bool FGeoEncounterSpawnZoneTest::RunTest(FString const& /*Parameters*/)
 		TestFalse(TEXT("Leaving the step ends it"), Zone->IsActive());
 	}
 
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
 	DestroyTestWorld(World);
 	return true;
 }
@@ -1500,6 +1736,218 @@ bool FGeoEncounterJumpSkipLockTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterArrivalAbortTest, "GeoTrinity.Encounter.ArrivalAbort",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterArrivalAbortTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	TArray<FName> Order;
+	AGeoTestEncounter* const Left = World->SpawnActor<AGeoTestEncounter>();
+	AGeoTestEncounter* const Arrived = World->SpawnActor<AGeoTestEncounter>();
+	Left->SetStartOnBeginPlay(true);
+
+	Left->AddSteps(1);
+	UGeoTestLatentAction* const Waiting = Left->NewAction<UGeoTestLatentAction>("Waiting", &Order);
+	UGeoTestAction* const Finished = Left->NewAction("Finished", &Order);
+	UGeoTestAction* const LeftExit = Left->NewAction("LeftExit", &Order);
+	Left->EditSteps()[0].OnExit = {LeftExit};
+	UGeoTestTrigger* const FinishedTrigger = Left->AddRule(0, {Finished});
+	UGeoTestTrigger* const WaitingTrigger = Left->AddRule(0, {Waiting});
+	Left->AddRule(0, {Left->NewStartAction(Arrived)});
+	UGeoTestCompletionListener* const Listener = NewObject<UGeoTestCompletionListener>(Left);
+	Left->OnCompleted.AddDynamic(Listener, &UGeoTestCompletionListener::OnCompleted);
+
+	Arrived->AddSteps(1);
+	UGeoTestAction* const EnterArrived = Arrived->NewAction("EnterArrived", &Order);
+	Arrived->EditSteps()[0].OnEnter = {EnterArrived};
+	Arrived->AddRule(0, {});
+
+	Left->Start();
+	FinishedTrigger->FireNow();
+	WaitingTrigger->FireNow();
+	Arrived->StartAfterSkippingChain();
+	TestTrue(TEXT("The running action of the left room is cancelled"), Waiting->Cancels > 0);
+	TestTrue(TEXT("A finished action of the left room is cancelled too"), Finished->Cancels > 0);
+	TestEqual(TEXT("No OnExit for the left room"), LeftExit->Runs, 0);
+	TestEqual(TEXT("The left room's trigger is disarmed"), FinishedTrigger->DisarmCount, 1);
+	TestEqual(TEXT("An abort is not a completion"), Listener->Completions, 0);
+	TestEqual(TEXT("The arrived room starts once"), EnterArrived->Runs, 1);
+
+	FinishedTrigger->FireNow();
+	TestEqual(TEXT("The left room reacts to nothing any more"), Finished->Runs, 1);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterArrivalFromOwnRuleTest, "GeoTrinity.Encounter.ArrivalFromOwnRule",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterArrivalFromOwnRuleTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	TArray<FName> Order;
+	AGeoTestEncounter* const Left = World->SpawnActor<AGeoTestEncounter>();
+	AGeoTestEncounter* const Arrived = World->SpawnActor<AGeoTestEncounter>();
+	Left->SetStartOnBeginPlay(true);
+
+	Left->AddSteps(2);
+	UGeoTestAction* const AfterStart = Left->NewAction("AfterStart", &Order);
+	UGeoTestAction* const LeftExit = Left->NewAction("LeftExit", &Order);
+	UGeoTestAction* const LeftSecondStep = Left->NewAction("LeftSecondStep", &Order);
+	Left->EditSteps()[0].OnExit = {LeftExit};
+	Left->EditSteps()[1].OnEnter = {LeftSecondStep};
+	UGeoTestTrigger* const Trigger = Left->AddRule(0, {Left->NewStartAction(Arrived), AfterStart}, false, true);
+	Left->AddRule(1, {});
+	UGeoTestCompletionListener* const Listener = NewObject<UGeoTestCompletionListener>(Left);
+	Left->OnCompleted.AddDynamic(Listener, &UGeoTestCompletionListener::OnCompleted);
+
+	Arrived->AddSteps(1);
+	UGeoTestAction* const EnterArrived = Arrived->NewAction("EnterArrived", &Order);
+	Arrived->EditSteps()[0].OnEnter = {EnterArrived};
+	Arrived->AddRule(0, {});
+
+	Left->Start();
+	Trigger->FireNow();
+	TestEqual(TEXT("The arrived room starts once"), EnterArrived->Runs, 1);
+	TestEqual(TEXT("The rest of the aborted rule never runs"), AfterStart->Runs, 0);
+	TestEqual(TEXT("The completion the rule asked is dropped: no OnExit"), LeftExit->Runs, 0);
+	TestEqual(TEXT("The completion the rule asked is dropped: no next step"), LeftSecondStep->Runs, 0);
+	TestEqual(TEXT("An abort is not a completion"), Listener->Completions, 0);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterArrivalCancelUndoesTest, "GeoTrinity.Encounter.ArrivalCancelUndoes",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterArrivalCancelUndoesTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	APlayerController* const PlayerController = World->SpawnActor<APlayerController>();
+	AGeoTestHUD* const HUD = World->SpawnActor<AGeoTestHUD>();
+	PlayerController->MyHUD = HUD;
+	AGeoCat* const Cat = World->SpawnActor<AGeoCat>();
+	Cat->SetActorHiddenInGame(true);
+	AActor* const Point = World->SpawnActor<AGeoTargetPoint>(FVector(500.f, 0.f, 0.f), FRotator());
+
+	AGeoTestEncounter* const Left = World->SpawnActor<AGeoTestEncounter>();
+	AGeoTestEncounter* const Arrived = World->SpawnActor<AGeoTestEncounter>();
+	Left->SetStartOnBeginPlay(true);
+
+	Left->AddSteps(1);
+	UGeoQuestCardAction* const Card = NewObject<UGeoQuestCardAction>(Left);
+	UGeoSetActorHiddenAction* const ShowCat = NewObject<UGeoSetActorHiddenAction>(Left);
+	ShowCat->Actor = Cat;
+	ShowCat->bHidden = false;
+	UGeoCatWalkAction* const Walk = NewObject<UGeoCatWalkAction>(Left);
+	Walk->Cat = Cat;
+	Walk->Path = {Point};
+	Walk->bWaitForEnd = false;
+	UGeoCatLineAction* const Line = NewObject<UGeoCatLineAction>(Left);
+	Line->Line = INVTEXT("Line");
+	UGeoTestTrigger* const Trigger = Left->AddRule(0, {Card, ShowCat, Walk, Line}, true);
+	Left->AddRule(0, {Left->NewStartAction(Arrived)});
+
+	Arrived->AddSteps(1);
+	Arrived->AddRule(0, {});
+	UGeoCatLineAction* const NeverRun = NewObject<UGeoCatLineAction>(Arrived);
+	UGeoQuestCardAction* const NeverShown = NewObject<UGeoQuestCardAction>(Arrived);
+	UGeoSetActorHiddenAction* const NeverShowed = NewObject<UGeoSetActorHiddenAction>(Arrived);
+	NeverShowed->Actor = Cat;
+	NeverShowed->bHidden = false;
+
+	Left->Start();
+	Trigger->FireNow();
+	TestTrue(TEXT("The card, the cat and the line show"),
+			 HUD->bQuestCardShown && !Cat->IsHidden() && HUD->Lines.Num() == 1);
+
+	Left->Restart();
+	TestEqual(TEXT("A normal step exit leaves the line standing"), HUD->HiddenLines, 0);
+
+	Trigger->FireNow();
+	NeverRun->OnCancel();
+	NeverShown->OnCancel();
+	NeverShowed->OnCancel();
+	TestTrue(TEXT("Cancelling actions that never ran undoes nothing"),
+			 HUD->HiddenLines == 0 && HUD->bQuestCardShown && !Cat->IsHidden());
+
+	Arrived->StartAfterSkippingChain();
+	TestEqual(TEXT("The abort ends the line"), HUD->HiddenLines, 1);
+	TestFalse(TEXT("The abort hides the card"), HUD->bQuestCardShown);
+	TestTrue(TEXT("The abort hides the cat again"), Cat->IsHidden());
+	TestFalse(TEXT("The abort stops the cat's order"), Cat->IsOrderRunning());
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterArrivalSkipReplayTest, "GeoTrinity.Encounter.ArrivalSkipReplay",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterArrivalSkipReplayTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	APlayerController* const PlayerController = World->SpawnActor<APlayerController>();
+	AGeoTestEncounter* const Left = World->SpawnActor<AGeoTestEncounter>();
+	AGeoTestEncounter* const Arrived = World->SpawnActor<AGeoTestEncounter>();
+	Left->SetStartOnBeginPlay(true);
+
+	Left->AddSteps(1);
+	UGeoSetMovementLockedAction* const Unlock = NewObject<UGeoSetMovementLockedAction>(Left);
+	Unlock->bLocked = false;
+	Left->EditSteps()[0].OnEnter = {NewObject<UGeoSetMovementLockedAction>(Left)};
+	Left->EditSteps()[0].OnExit = {Unlock};
+	Left->AddRule(0, {Left->NewStartAction(Arrived)});
+	Arrived->AddSteps(1);
+	Arrived->AddRule(0, {});
+
+	Left->Start();
+	TestTrue(TEXT("The left room locked movement"), PlayerController->IsMoveInputIgnored());
+
+	Arrived->StartAfterSkippingChain();
+	TestFalse(TEXT("Aborted without OnExit, the replayed unlock still frees movement"),
+			  PlayerController->IsMoveInputIgnored());
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSessionEndTest, "GeoTrinity.Encounter.SessionEnd", GeoEncounterTestFlags)
+
+bool FGeoEncounterSessionEndTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoTestLatentAction* const Waiting = Encounter->NewAction<UGeoTestLatentAction>("Waiting");
+	UGeoTestAction* const Next = Encounter->NewAction("Next");
+	UGeoTestTrigger* const Trigger = Encounter->AddRule(0, {Waiting, Next});
+	Encounter->Start();
+	Trigger->FireNow();
+
+	FWorldDelegates::OnWorldBeginTearDown.Broadcast(World);
+	TestTrue(TEXT("The session end cancels the awaited action"), Waiting->Cancels > 0);
+	TestEqual(TEXT("The encounter disarms its trigger"), Trigger->DisarmCount, 1);
+
+	Waiting->Finish();
+	TestEqual(TEXT("A Finish after the session end runs no next action"), Next->Runs, 0);
+
+	int32 const CancelsAfterFirstEnd = Waiting->Cancels;
+	FWorldDelegates::OnWorldBeginTearDown.Broadcast(World);
+	TestEqual(TEXT("A second session end aborts nothing twice"), Waiting->Cancels, CancelsAfterFirstEnd);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterHealthSpawnedSameStepTest, "GeoTrinity.Encounter.HealthSpawnedSameStep",
 								 GeoEncounterTestFlags)
 
@@ -1633,6 +2081,37 @@ bool FGeoEncounterKillOnStepExitTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterHealthIgnoresDeadTest, "GeoTrinity.Encounter.HealthIgnoresDead",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterHealthIgnoresDeadTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
+	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
+	World->SetGameState(World->SpawnActor<AGeoGameState>());
+	AGeoTestBodyEnemy* const Body = World->SpawnActor<AGeoTestBodyEnemy>();
+	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Body);
+	ASC->SetNumericAttributeBase(UGeoAttributeSetBase::GetMaxHealthAttribute(), 100.f);
+	ASC->SetNumericAttributeBase(UGeoAttributeSetBase::GetHealthAttribute(), 100.f);
+	Body->Death();
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoHealthThresholdTrigger* const Trigger = NewObject<UGeoHealthThresholdTrigger>(Encounter);
+	Trigger->Watched.Class = AEnemyCharacter::StaticClass();
+	Trigger->Side = EGeoHealthSide::Above;
+	Trigger->Ratio = 1.f;
+	UGeoTestAction* const Reaction = Encounter->NewAction("Reaction");
+	Encounter->AddRuleWithTrigger(0, Trigger, {Reaction});
+	Encounter->Start();
+	TestEqual(TEXT("A dead body at full health is on no side"), Reaction->Runs, 0);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterHealthFiredOnArmTest, "GeoTrinity.Encounter.HealthFiredOnArm",
 								 GeoEncounterTestFlags)
 
@@ -1679,32 +2158,31 @@ bool FGeoEncounterHealthFiredOnArmTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterTimerTest, "GeoTrinity.Encounter.Timer", GeoEncounterTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterEnterDelayTest, "GeoTrinity.Encounter.EnterDelay", GeoEncounterTestFlags)
 
-bool FGeoEncounterTimerTest::RunTest(FString const& /*Parameters*/)
+bool FGeoEncounterEnterDelayTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
 	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
 	Encounter->AddSteps(2);
-	UGeoTimerTrigger* const Trigger = NewObject<UGeoTimerTrigger>(Encounter);
-	Trigger->Delay = 1.f;
-	Trigger->bLooping = true;
+	UGeoDelayAction* const Delay = NewObject<UGeoDelayAction>(Encounter);
+	Delay->Duration = 1.f;
 	UGeoTestAction* const Reaction = Encounter->NewAction("Reaction");
-	Encounter->AddRuleWithTrigger(0, Trigger, {Reaction}, true);
+	Encounter->EditSteps()[0].OnEnter = {Delay, Reaction};
 	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
 	Encounter->Start();
 
 	TickTestTimers(*World, 0.f);
 	TickTestTimers(*World, 0.5f);
-	TestEqual(TEXT("Not before Delay"), Reaction->Runs, 0);
+	TestEqual(TEXT("OnEnter waits for its delay action"), Reaction->Runs, 0);
 	TickTestTimers(*World, 0.51f);
-	TestEqual(TEXT("Fires after Delay"), Reaction->Runs, 1);
-	TestEqual(TEXT("Count = firings so far"), Reaction->LastPayload.Count, 1);
-	TickTestTimers(*World, 1.01f);
-	TestEqual(TEXT("Looping: fires every Delay"), Reaction->LastPayload.Count, 2);
+	TestEqual(TEXT("Runs after the delay"), Reaction->Runs, 1);
+
+	Encounter->Restart();
+	TickTestTimers(*World, 0.f);
 	LeaveTrigger->FireNow();
-	TickTestTimers(*World, 1.01f);
-	TestEqual(TEXT("Disarmed: the timer is gone"), Reaction->Runs, 2);
+	TickTestTimers(*World, 2.f);
+	TestEqual(TEXT("Leaving the step cancels the delay"), Reaction->Runs, 1);
 
 	DestroyTestWorld(World);
 	return true;
@@ -1748,9 +2226,51 @@ bool FGeoEncounterCatLineTest::RunTest(FString const& /*Parameters*/)
 	UGeoCatLineAction* const Counting = NewObject<UGeoCatLineAction>(Encounter);
 	Counting->Line = INVTEXT("That's {Counter:Falls} deaths, {Counter:Falls}. {Counter:Unset} {Key:X}");
 	Encounter->AddToEncounterCounter("Falls", 3);
+	TArray<FString> BroadcastLines;
+	World->GetSubsystem<UGeoEncounterSubsystem>()->OnCatLine.AddLambda(
+		[&BroadcastLines](FText const& Line)
+		{
+			BroadcastLines.Add(Line.ToString());
+		});
 	Counting->Begin(FGeoEncounterPayload());
 	TestEqual(TEXT("A counter token reads its encounter's counter, an unset one is 0, other tokens stay"),
 			  HUD->Lines.Last(), FString("That's 3 deaths, 3. 0 {Key:X}"));
+	TestTrue(TEXT("OnCatLine got the replaced text"), BroadcastLines == TArray<FString>{HUD->Lines.Last()});
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterAbilityPageTest, "GeoTrinity.Encounter.AbilityPage",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterAbilityPageTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	APlayerController* const PlayerController = World->SpawnActor<APlayerController>();
+	AGeoTestHUD* const HUD = World->SpawnActor<AGeoTestHUD>();
+	PlayerController->MyHUD = HUD;
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoShowAbilityPageAction* const Page = NewObject<UGeoShowAbilityPageAction>(Encounter);
+	UGeoTestAction* const After = Encounter->NewAction("After");
+	UGeoTestTrigger* const Trigger = Encounter->AddRule(0, {Page, After}, true);
+	Encounter->Start();
+
+	Trigger->FireNow();
+	TestTrue(TEXT("The page opens"), HUD->PageClosed.IsBound());
+	TestEqual(TEXT("What follows waits while the page is open"), After->Runs, 0);
+
+	FSimpleDelegate const CancelledClose = HUD->PageClosed;
+	Encounter->Restart();
+	Trigger->FireNow();
+	CancelledClose.ExecuteIfBound();
+	TestEqual(TEXT("The close of a page opened by a cancelled run finishes nothing"), After->Runs, 0);
+
+	HUD->PageClosed.ExecuteIfBound();
+	TestEqual(TEXT("The run goes on once the player closes the page"), After->Runs, 1);
 
 	DestroyTestWorld(World);
 	return true;
@@ -1824,20 +2344,44 @@ bool FGeoGrowingZoneTest::RunTest(FString const& /*Parameters*/)
 	World->SetGameState(World->SpawnActor<AGeoGameState>());
 	FDeployableData Data;
 	Data.Params.Size = 100.f;
-	AGeoTestGrowingZone* const Zone = Cast<AGeoTestGrowingZone>(
-		GeoASLib::FullySpawnDeployable(AGeoTestGrowingZone::StaticClass(), Data, FTransform::Identity, World));
-	if (TestNotNull(TEXT("The zone spawns"), Zone))
+	AGeoTestReadableZone* const FixedZone = Cast<AGeoTestReadableZone>(GeoASLib::FullySpawnDeployable(
+		AGeoTestReadableZone::StaticClass(), Data, FTransform(FVector(2000.f, 0.f, 0.f)), World));
+	Data.Owner = nullptr;
+	Data.Instigator = nullptr;
+	Data.Params.GrowToSize = FScalableFloat(600.f);
+	Data.Params.GrowSeconds = FScalableFloat(10.f);
+	AGeoTestReadableZone* const Zone = Cast<AGeoTestReadableZone>(
+		GeoASLib::FullySpawnDeployable(AGeoTestReadableZone::StaticClass(), Data, FTransform::Identity, World));
+	if (TestNotNull(TEXT("The zones spawn"), Zone) && FixedZone)
 	{
 		TestEqual(TEXT("It starts at its spawn size"), Zone->GetTestRadius(), 100.f);
 		World->TimeSeconds += 5.f;
 		Zone->Tick(0.f);
-		TestEqual(TEXT("Half of GrowthSeconds: half way to MaxRadius"), Zone->GetTestRadius(), 350.f, 0.01f);
+		FixedZone->Tick(0.f);
+		TestEqual(TEXT("Half of GrowSeconds: half way to GrowToSize"), Zone->GetTestRadius(), 350.f, 0.01f);
 		TestEqual(TEXT("The capsule follows"),
 				  Zone->FindComponentByClass<UCapsuleComponent>()->GetUnscaledCapsuleRadius(), 350.f, 0.01f);
 		TestEqual(TEXT("The replicated spawn size never changes"), Zone->GetSpawnSize(), 100.f);
+		TestEqual(TEXT("GrowToSize 0: it keeps its size"), FixedZone->GetTestRadius(), 100.f);
 		World->TimeSeconds += 60.f;
 		Zone->Tick(0.f);
-		TestEqual(TEXT("It stops at MaxRadius"), Zone->GetTestRadius(), 600.f, 0.01f);
+		TestEqual(TEXT("It stops at GrowToSize"), Zone->GetTestRadius(), 600.f, 0.01f);
+
+		World->TimeSeconds = 100.f;
+		Data.Owner = nullptr;
+		Data.Instigator = nullptr;
+		AGeoTestReadableZone* const LateZone = Cast<AGeoTestReadableZone>(
+			GeoASLib::FullySpawnDeployable(AGeoTestReadableZone::StaticClass(), Data, FTransform::Identity, World));
+		if (TestNotNull(TEXT("The late zone spawns"), LateZone))
+		{
+			TestEqual(TEXT("The growth starts at the server time of its BeginPlay"),
+					  LateZone->GetGrowthStartServerTime(), 100.f);
+			LateZone->ReceiveGrowthStartServerTime(92.f);
+			World->TimeSeconds = 97.f;
+			LateZone->Tick(0.f);
+			TestEqual(TEXT("A late receiver grows from the server's start, not its own BeginPlay"),
+					  LateZone->GetTestRadius(), 350.f, 0.01f);
+		}
 	}
 
 	DestroyTestWorld(World);
@@ -1851,11 +2395,20 @@ bool FGeoSummonedDummyTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
 	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
+	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoTestReadableZone::StaticClass();
 	AEnemyCharacter* const Dummy =
 		Arena->SpawnAdd(AGeoTestSummonedDummy::StaticClass(), FTransform(FVector(300.f, 0.f, 0.f)));
 	if (TestNotNull(TEXT("The dummy spawns"), Dummy))
 	{
-		TestTrue(TEXT("A zone grows at its feet"), static_cast<bool>(TActorIterator<AGeoTestGrowingZone>(World)));
+		TActorIterator<AGeoTestReadableZone> const Zone(World);
+		if (TestTrue(TEXT("The default zone spawns at its feet"), static_cast<bool>(Zone)))
+		{
+			World->TimeSeconds += 5.f;
+			Zone->Tick(0.f);
+			TestEqual(TEXT("It grows by the dummy's ZoneParams"), Zone->GetTestRadius(), 350.f, 0.01f);
+		}
+
 		Dummy->Death();
 		AEnemyCharacter* Ally = nullptr;
 		for (TActorIterator<AEnemyCharacter> It(World); It && !Ally; ++It)
@@ -1871,6 +2424,106 @@ bool FGeoSummonedDummyTest::RunTest(FString const& /*Parameters*/)
 			TestEqual(TEXT("In its place"), Ally->GetActorLocation().X, 300.0, 1.0);
 		}
 	}
+
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSummonAddSetupTest, "GeoTrinity.Abilities.SummonAddSetup", GeoEncounterTestFlags)
+
+bool FGeoSummonAddSetupTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
+	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Arena->GetBoss());
+	ASC->CreatePatternInstance(UGeoTestBarePattern::StaticClass(), FGameplayTag());
+	FGameplayAbilitySpecHandle const Handle =
+		ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSummonAddAbility::StaticClass(), 1));
+	UGeoTestSummonAddAbility* const Summon =
+		Cast<UGeoTestSummonAddAbility>(ASC->FindAbilitySpecFromHandle(Handle)->GetPrimaryInstance());
+	if (TestNotNull(TEXT("The summon is instanced"), Summon))
+	{
+		Summon->Summon(FVector2D(400.f, 0.f));
+		AEnemyCharacter* Add = nullptr;
+		for (TActorIterator<AEnemyCharacter> It(World); It && !Add; ++It)
+		{
+			Add = It->ActorHasTag(TEXT("Summoned")) ? *It : nullptr;
+		}
+
+		if (TestNotNull(TEXT("The add spawns with the summon's AddSetup"), Add))
+		{
+			TestTrue(TEXT("An add of the caster's arena"), Arena->GetLiveAdds().Contains(Add));
+			TestEqual(TEXT("With the setup's max health"),
+					  GeoASLib::GetGeoAscFromActor(Add)->GetNumericAttributeBase(
+						  UGeoAttributeSetBase::GetMaxHealthAttribute()),
+					  300.f);
+			TestEqual(TEXT("On the summoned spot"), Add->GetActorLocation().X, 400.0, 1.0);
+		}
+	}
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoArenaBossSetupTest, "GeoTrinity.Arena.BossSetup", GeoEncounterTestFlags)
+
+bool FGeoArenaBossSetupTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
+	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
+	World->SetGameState(World->SpawnActor<AGeoGameState>());
+	FGameplayTag const ArenaTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
+	AGeoTargetPoint* const AddPoint = World->SpawnActor<AGeoTargetPoint>(FVector(500.f, 0.f, 0.f), FRotator());
+	AddPoint->GameplayTags.AddTag(FGeoGameplayTags::Get().TargetPoint_AddSpawn);
+	AddPoint->GameplayTags.AddTag(ArenaTag);
+
+	FGameplayTag const AbilityTag = UGeoTestCastAbility::GetCastTag();
+	AGeoTestCasterArena* const Arena =
+		World->SpawnActorDeferred<AGeoTestCasterArena>(AGeoTestCasterArena::StaticClass(), FTransform::Identity);
+	Arena->ArenaTag = ArenaTag;
+	FGeoEnemySetup& BossSetup = Arena->EditBossSetup();
+	BossSetup.Team = ETeam::Neutral;
+	BossSetup.AbilityTags = {AbilityTag};
+	BossSetup.MaxHealth = FScalableFloat(500.f);
+	BossSetup.BehaviourStateTree = NewObject<UStateTree>(Arena);
+	FGeoArenaAdd& StartAdd = Arena->EditStartAdds().AddDefaulted_GetRef();
+	StartAdd.Class = AEnemyCharacter::StaticClass();
+	StartAdd.Setup.Team = ETeam::Player;
+	StartAdd.Setup.Tag = TEXT("StartAdd");
+	Arena->FinishSpawning(FTransform::Identity);
+
+	auto const TestBoss = [this, Arena, AbilityTag](TCHAR const* const When)
+	{
+		AEnemyCharacter* const Boss = Arena->GetBoss();
+		if (TestNotNull(When, Boss))
+		{
+			UGeoAbilitySystemComponent const* const ASC = GeoASLib::GetGeoAscFromActor(Boss);
+			TestEqual(TEXT("The setup's team"), Boss->GetGenericTeamId(),
+					  FGenericTeamId(static_cast<uint8>(ETeam::Neutral)));
+			TestTrue(TEXT("The setup's abilities"), ASC->StartupAbilityTags.Contains(AbilityTag));
+			TestEqual(TEXT("The setup's max health"),
+					  ASC->GetNumericAttributeBase(UGeoAttributeSetBase::GetMaxHealthAttribute()), 500.f);
+			TestTrue(TEXT("The setup's behaviour tree"),
+					 Boss->BehaviourStateTree == Arena->EditBossSetup().BehaviourStateTree);
+			TestTrue(TEXT("Still the arena's boss"), Boss->Arena.Get() == Arena);
+		}
+
+		TArray<AEnemyCharacter const*> const Adds = Arena->GetLiveAdds();
+		if (TestEqual(TEXT("One start add"), Adds.Num(), 1))
+		{
+			TestTrue(TEXT("With its setup's tag"), Adds[0]->ActorHasTag(TEXT("StartAdd")));
+			TestEqual(TEXT("With its setup's team"), Adds[0]->GetGenericTeamId(),
+					  FGenericTeamId(static_cast<uint8>(ETeam::Player)));
+			TestEqual(TEXT("On its add point"), Adds[0]->GetActorLocation().X, 500.0, 1.0);
+		}
+	};
+	TestBoss(TEXT("The arena spawns its boss"));
+	Arena->ResetBoss();
+	TestBoss(TEXT("A reset spawns it again"));
 
 	DestroyTestWorld(World);
 	return true;

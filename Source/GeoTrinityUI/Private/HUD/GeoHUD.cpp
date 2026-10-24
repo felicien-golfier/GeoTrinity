@@ -323,14 +323,40 @@ void AGeoHUD::ShowCatLine(FText const& Line, FSimpleDelegate OnEnded)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::ShowAbilityPage(FGameplayTag const AbilityTag)
+void AGeoHUD::HideCatLine()
 {
-	UGeoCharacterSheetWidget* const Sheet = Cast<UGeoCharacterSheetWidget>(
-		UGeoPauseMenuWidget::OpenOnPage(GetOwningPlayerController(), UGeoCharacterSheetWidget::StaticClass()));
-	if (Sheet)
+	if (CatLineWidget)
 	{
-		Sheet->OpenAbilityDetail(AbilityTag);
+		CatLineWidget->EndLine();
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::ShowAbilityPage(FGameplayTag const AbilityTag, FSimpleDelegate OnClosed)
+{
+	AGeoPlayerController* const Controller = Cast<AGeoPlayerController>(GetOwningPlayerController());
+	UGeoCharacterSheetWidget* const Sheet = Cast<UGeoCharacterSheetWidget>(
+		UGeoPauseMenuWidget::OpenOnPage(Controller, UGeoCharacterSheetWidget::StaticClass()));
+	if (!Sheet)
+	{
+		OnClosed.ExecuteIfBound();
+		return;
+	}
+
+	Sheet->OpenAbilityDetail(AbilityTag);
+	TSharedRef<FDelegateHandle> const Handle = MakeShared<FDelegateHandle>();
+	*Handle = Controller->OnPauseMenuClosed.AddWeakLambda(
+		this,
+		[Controller = TWeakObjectPtr<AGeoPlayerController>(Controller), Handle, OnClosed = MoveTemp(OnClosed)]()
+		{
+			// Remove destroys this lambda and its captures mid-call: take what is needed out first.
+			FSimpleDelegate const Closed = OnClosed;
+			if (Controller.IsValid())
+			{
+				Controller->OnPauseMenuClosed.Remove(*Handle);
+			}
+			Closed.ExecuteIfBound();
+		});
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

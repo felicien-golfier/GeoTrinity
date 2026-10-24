@@ -1,11 +1,11 @@
 """
-Tutorial miniboss assets (AI/Tutorial/Steps.md step 10): BP_TutorialMiniboss and its behaviour tree, the summoned dummy
-and the ally it turns into, the abilities between them (miniboss salve, summon, ally salve), the growing zone and the
-health effects. The lateral wave it fires is built by tutorial_waves.py (run it first); the room, the arena and the
-encounter by tutorial_encounters.py.
-Rows read from CT_Tutorial (tutorial_assets.py): MinibossHealth, DummyHealth, AllyDummyHealth, DummyLandingDamage,
-DummyZoneDamage, DummyZoneGrowthTime, DummyZoneMaxRadius, MinibossProjectileDamage, MinibossProjectileSpeed,
-AllyProjectileDamage.
+Tutorial miniboss assets (AI/Tutorial/Steps.md step 10), only what holds a look or behaviour (AI/CodingStyle.md,
+"Variants are data"): the boss's behaviour tree, the summoned dummy (zone and ally params), the shooter tree of the
+summons and allies, the one salve (boss, summons, allies) and the summon. The boss itself is BP_Dummy + the Miniboss
+arena's BossSetup (tutorial_encounters.py); the lateral wave it fires (WAVE_TAG) is built by tutorial_waves.py (run it
+first). Deletes the assets of the old layout once nothing references them (re-run after tutorial_encounters.py).
+Rows read from CT_Tutorial (tutorial_assets.py): DummyHealth, AllyDummyHealth, DummyLandingDamage, DummyZoneDamage,
+DummyZoneGrowthTime, DummyZoneMaxRadius, MinibossProjectileDamage, MinibossProjectileSpeed.
 Idempotent: assets keyed by path, properties rewritten; the behaviour tree is rebuilt from the star boss's whole.
 Report: AI/Output/tutorial_miniboss_report.txt.
 Usage: headless (AI/Commands.md), editor closed or via the bridge; Config/Tags/GeoGameplayTags.ini already holds the tags.
@@ -25,23 +25,22 @@ importlib.reload(waves)
 REPORT_PATH = "C:/GeoTrinity/AI/Output/tutorial_miniboss_report.txt"
 ABILITY_DIR = "/Game/AbilitySystem/Abilities/Enemy/TutorialMiniboss"
 ATTRIBUTE_DIR = "/Game/AbilitySystem/DefaultAttributes"
+CATALOG = "/Game/AbilitySystem/Data/DA_AbilityInfo"
 CHARACTER_DIR = "/Game/Characters/Enemies/Tutorial"
 ACTOR_DIR = "/Game/Actors/Tutorial"
 TREE_DIR = "/Game/AI/Tutorial"
 CURVE_TABLE = "/Game/AbilitySystem/Data/CurveTables/CT_Tutorial"
 BP_DUMMY = "/Game/Characters/Enemies/Training/BP_Dummy"
-ATTRIBUTES_SRC = ATTRIBUTE_DIR + "/GE_Dummy_Attributes"
-ZONE_SRC = "/Game/Actors/BP_DamageZone"
 SALVE_ABILITY_SRC = "/Game/AbilitySystem/Abilities/Enemy/ProjectileToAll/GA_FireProjectileToAllPlayers"
 SALVE_PATTERN_SRC = "/Game/AbilitySystem/Abilities/Enemy/ProjectileToAll/BP_ProjectileToAll_Pattern"
-SUMMON_PATTERN_SRC = "/Game/AbilitySystem/Abilities/Enemy/Training/BP_ZonePattern_BurstDamage"
+SUMMON_PATTERN = "/Game/AbilitySystem/Abilities/Enemy/Training/BP_ZonePattern_BurstDamage"
 TREE_SRC = "/Game/AI/ST_StarBossBehaviour"
 SHOOTER_TREE = "/Game/AI/Dummy/ST_Dummy_Shooter"
+SALVE_SHOOTER_TREE = TREE_DIR + "/ST_TutorialSalveShooter"  # ST_Dummy_Shooter firing the salve: summons, allies
 
-MINIBOSS_SHOOT_TAG = "Ability.Spell.TutorialMinibossShoot"
+SALVE_TAG = "Ability.Spell.TutorialSalve"
 SUMMON_TAG = "Ability.Spell.TutorialMinibossSummon"
-WAVE_TAG = "Ability.Spell.TutorialMinibossWave"
-ALLY_SHOOT_TAG = "Ability.Spell.TutorialAllyShoot"
+WAVE_TAG = "Ability.Spell.LateralWave"  # tutorial_waves.py: the one wave, lanes from the living adds
 WAVE_EVENT_TAG = "Event.StateTree.TriggerMinibossWave"
 POINT_TAG = "TargetPoint.Tutorial.MinibossPoint"
 ALLY_ACTOR_TAG = "TutorialMinibossAlly"
@@ -53,6 +52,14 @@ SUMMON_SPOT_RADIUS = 400.0
 ZONE_START_RADIUS = 150.0
 HOSTILE_ATTITUDE = 4  # ETeamAttitudeBitflag: acts on the other team
 COLUMN = 1.0  # CT_Tutorial is flat: every difficulty column holds the same value
+
+# The old layout: one Blueprint or effect per variant. Deleted once nothing references them.
+OLD_ASSETS = [CHARACTER_DIR + "/BP_TutorialMiniboss", ABILITY_DIR + "/GA_TutorialMinibossShoot",
+              ABILITY_DIR + "/GA_TutorialAllyShoot", ABILITY_DIR + "/BP_TutorialPattern_MinibossShoot",
+              ABILITY_DIR + "/BP_TutorialPattern_AllyShoot", ABILITY_DIR + "/BP_ZonePattern_MinibossSummon",
+              ATTRIBUTE_DIR + "/GE_TutorialMinibossAttributes", ATTRIBUTE_DIR + "/GE_TutorialSummonedDummyAttributes",
+              ACTOR_DIR + "/BP_TutorialGrowingZone"]
+OLD_TAGS = ["Ability.Spell.TutorialMinibossShoot", "Ability.Spell.TutorialAllyShoot"]
 
 REPORT = []
 
@@ -87,6 +94,16 @@ def table_value(row):
     return value
 
 
+def scalable_row(row):
+    value = unreal.ScalableFloat()
+    handle = unreal.CurveTableRowHandle()
+    handle.set_editor_property("CurveTable", unreal.load_asset(CURVE_TABLE))
+    handle.set_editor_property("RowName", row)
+    value.set_editor_property("Value", 1.0)
+    value.set_editor_property("Curve", handle)
+    return value
+
+
 def damage_effect(row, per_second=False):
     """The star boss's salve damage with its amount reading a CT_Tutorial row; per second it ticks, cue limited."""
     template = unreal.get_default_object(
@@ -101,67 +118,56 @@ def damage_effect(row, per_second=False):
     return effect
 
 
-# ---------------------------------------------------------------- health effects
-
-def build_health_effect(name, row):
-    """A copy of the dummy's attributes whose Health and MaxHealth read a CT_Tutorial row."""
-    effect, created = dup_asset(ATTRIBUTES_SRC, "%s/%s" % (ATTRIBUTE_DIR, name))
-    cdo = unreal.get_default_object(effect.generated_class())
-    modifiers = []
-    for modifier in cdo.get_editor_property("Modifiers"):
-        text = modifier.export_text()
-        if "ScalableFloatMagnitude=(Value=500.000000,Curve=(CurveTable=None,RowName=\"\")" in text:
-            text = text.replace("ScalableFloatMagnitude=(Value=500.000000,Curve=(CurveTable=None,RowName=\"\")",
-                                "ScalableFloatMagnitude=(Value=1.000000," + curve_row(row))
-        rebuilt = unreal.GameplayModifierInfo()
-        rebuilt.import_text(text)
-        modifiers.append(rebuilt)
-    cdo.set_editor_property("Modifiers", modifiers)
-    waves.commit_bp(effect)
-    log("health effect", name, row, "created" if created else "updated")
-    return effect
+def enemy_setup(team, health_row, actor_tag=""):
+    """A summon or an ally: the salve shooter tree and the salve, dies at zero, health from a CT_Tutorial row."""
+    setup = unreal.GeoEnemySetup()
+    setup.set_editor_property("Team", team)
+    setup.set_editor_property("bResetToFullLife", False)
+    setup.set_editor_property("AggroRadius", 100.0)
+    setup.set_editor_property("MaxHealth", scalable_row(health_row))
+    setup.set_editor_property("StateTree", unreal.load_asset(SALVE_SHOOTER_TREE))
+    setup.set_editor_property("AbilityTags", [waves.tag(SALVE_TAG)])
+    setup.set_editor_property("Tag", actor_tag)
+    return setup
 
 
 # ---------------------------------------------------------------- abilities
 
-def build_salve(key, ability_tag, damage_row, speed, aim_at_boss):
-    """A salve at every player (or, aimed at the arena's boss, an ally's), a copy of the star boss's with its numbers
-    in CT_Tutorial."""
-    pattern_bp, _ = dup_asset(SALVE_PATTERN_SRC, "%s/BP_TutorialPattern_%s" % (ABILITY_DIR, key))
+def build_salve():
+    """The one salve of the fight, a copy of the star boss's with its numbers in CT_Tutorial: its caster's side picks the
+    target (enemy team: every player; player team: the arena's boss), its bullets hit the other side only."""
+    pattern_bp, _ = dup_asset(SALVE_PATTERN_SRC, ABILITY_DIR + "/BP_TutorialPattern_Salve")
     cdo = unreal.get_default_object(pattern_bp.generated_class())
     params = cdo.get_editor_property("ProjectileParams").copy()
-    params.import_text("(OverrideSpeed=OverrideValue,ProjectileSpeed=%f)" % speed)
-    if aim_at_boss:
-        params.import_text("(OverrideOverlapAttitude=OverrideValue,OverlapAttitude=%d)" % HOSTILE_ATTITUDE)
+    params.import_text("(OverrideSpeed=OverrideValue,ProjectileSpeed=%f)" % table_value("MinibossProjectileSpeed"))
+    params.import_text("(OverrideOverlapAttitude=OverrideValue,OverlapAttitude=%d)" % HOSTILE_ATTITUDE)
     cdo.set_editor_property("ProjectileParams", params)
     waves.commit_bp(pattern_bp)
 
-    ability_bp, created = dup_asset(SALVE_ABILITY_SRC, "%s/GA_Tutorial%s" % (ABILITY_DIR, key))
+    ability_bp, created = dup_asset(SALVE_ABILITY_SRC, ABILITY_DIR + "/GA_TutorialSalve")
     cdo = unreal.get_default_object(ability_bp.generated_class())
     tags = unreal.GameplayTagContainer()
-    tags.import_text('(GameplayTags=((TagName="%s")))' % ability_tag)
+    tags.import_text('(GameplayTags=((TagName="%s")))' % SALVE_TAG)
     cdo.set_editor_property("AbilityTags", tags)
     cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
-    cdo.set_editor_property("EffectDataInstances", [damage_effect(damage_row)])
-    cdo.set_editor_property("bAimAtArenaBoss", aim_at_boss)
+    cdo.set_editor_property("EffectDataInstances", [damage_effect("MinibossProjectileDamage")])
     waves.commit_bp(ability_bp)
-    waves.register(ability_bp, ability_tag, "Tutorial " + key, "Salve of the tutorial miniboss fight.")
-    log("salve", key, "created" if created else "updated")
+    waves.register(ability_bp, SALVE_TAG, "Tutorial salve",
+                   "Salve of the tutorial miniboss fight: the boss at the players, its summons' allies at the boss.")
+    log("salve", "created" if created else "updated")
 
 
 def build_summon(add_class):
-    """Telegraphs the landing spot in the Damage colour, hits there, then the dummy lands."""
-    pattern_bp, _ = dup_asset(SUMMON_PATTERN_SRC, ABILITY_DIR + "/BP_ZonePattern_MinibossSummon")
-    waves.commit_bp(pattern_bp)
-
+    """Telegraphs the landing spot in the Damage colour, hits there, then the dummy lands with its AddSetup."""
     ability_bp, created = waves.make_bp("GA_TutorialMinibossSummon", ABILITY_DIR,
                                         unreal.load_class(None, "/Script/GeoTrinity.GeoSummonAddAbility"))
     cdo = unreal.get_default_object(ability_bp.generated_class())
     tags = unreal.GameplayTagContainer()
     tags.import_text('(GameplayTags=((TagName="%s")))' % SUMMON_TAG)
     cdo.set_editor_property("AbilityTags", tags)
-    cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
+    cdo.set_editor_property("PatternToLaunch", unreal.load_asset(SUMMON_PATTERN).generated_class())
     cdo.set_editor_property("AddClass", add_class)
+    cdo.set_editor_property("AddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth"))
     cdo.set_editor_property("SpotRadius", SUMMON_SPOT_RADIUS)
     cdo.set_editor_property("FireDelay", SUMMON_WIND_UP)
     cdo.set_editor_property("EffectDataInstances", [damage_effect("DummyLandingDamage")])
@@ -170,33 +176,7 @@ def build_summon(add_class):
     log("summon", "created" if created else "updated")
 
 
-# ---------------------------------------------------------------- characters
-
-def enemy_setup(health_row, state_tree, ability_tag, actor_tag):
-    handle = unreal.CurveTableRowHandle()
-    handle.set_editor_property("CurveTable", unreal.load_asset(CURVE_TABLE))
-    handle.set_editor_property("RowName", health_row)
-    max_health = unreal.ScalableFloat()
-    max_health.set_editor_property("Value", 1.0)
-    max_health.set_editor_property("Curve", handle)
-    setup = unreal.GeoEnemySetup()
-    setup.set_editor_property("Team", unreal.Team.PLAYER)
-    setup.set_editor_property("MaxHealth", max_health)
-    setup.set_editor_property("StateTree", unreal.load_asset(state_tree))
-    setup.set_editor_property("AbilityTags", [waves.tag(ability_tag)])
-    setup.set_editor_property("Tag", actor_tag)
-    return setup
-
-
-def scalable_row(row):
-    value = unreal.ScalableFloat()
-    handle = unreal.CurveTableRowHandle()
-    handle.set_editor_property("CurveTable", unreal.load_asset(CURVE_TABLE))
-    handle.set_editor_property("RowName", row)
-    value.set_editor_property("Value", 1.0)
-    value.set_editor_property("Curve", handle)
-    return value
-
+# ---------------------------------------------------------------- characters and trees
 
 def reparented_copy(source, destination, parent_path):
     blueprint, created = dup_asset(source, destination)
@@ -205,38 +185,38 @@ def reparented_copy(source, destination, parent_path):
     return blueprint, created
 
 
-def build_growing_zone():
-    """The damage zone of the tutorial rooms, grown over DummyZoneGrowthTime to DummyZoneMaxRadius."""
-    blueprint, created = reparented_copy(ZONE_SRC, ACTOR_DIR + "/BP_TutorialGrowingZone", "/Script/GeoTrinity.GeoGrowingZone")
-    cdo = unreal.get_default_object(blueprint.generated_class())
-    cdo.set_editor_property("AttitudeBitmask", HOSTILE_ATTITUDE)
-    cdo.set_editor_property("EffectDataArray", [])
-    cdo.set_editor_property("GrowthSeconds", scalable_row("DummyZoneGrowthTime"))
-    cdo.set_editor_property("MaxRadius", scalable_row("DummyZoneMaxRadius"))
-    waves.commit_bp(blueprint)
-    log("growing zone", "created" if created else "updated")
-    return blueprint
-
-
-def build_summoned_dummy(zone_bp, health_effect):
+def build_summoned_dummy():
+    """BP_Dummy's look with the zone and ally params; its health, tree and salve are the summon's AddSetup, so the
+    rest stays BP_Dummy's."""
     blueprint, created = reparented_copy(BP_DUMMY, CHARACTER_DIR + "/BP_TutorialSummonedDummy",
                                          "/Script/GeoTrinity.GeoSummonedDummy")
     cdo = unreal.get_default_object(blueprint.generated_class())
     zone_params = unreal.DeployableDataParams()
     zone_params.import_text("(Size=%f,Color=(Color=Damage),Attitude=%d)" % (ZONE_START_RADIUS, HOSTILE_ATTITUDE))
-    cdo.set_editor_property("ZoneClass", zone_bp.generated_class())
+    zone_params.set_editor_property("GrowToSize", scalable_row("DummyZoneMaxRadius"))
+    zone_params.set_editor_property("GrowSeconds", scalable_row("DummyZoneGrowthTime"))
     cdo.set_editor_property("ZoneEffects", [damage_effect("DummyZoneDamage", per_second=True)])
     cdo.set_editor_property("ZoneParams", zone_params)
     cdo.set_editor_property("AllyClass", unreal.load_asset(BP_DUMMY).generated_class())
-    cdo.set_editor_property("AllySetup", enemy_setup("AllyDummyHealth", SHOOTER_TREE, ALLY_SHOOT_TAG, ALLY_ACTOR_TAG))
-    cdo.set_editor_property("StateTree", unreal.load_asset(SHOOTER_TREE))
-    cdo.set_editor_property("ResetToFullLifeWhenReachingZero", False)
+    cdo.set_editor_property("AllySetup", enemy_setup(unreal.Team.PLAYER, "AllyDummyHealth", ALLY_ACTOR_TAG))
+    dummy = unreal.get_default_object(unreal.load_asset(BP_DUMMY).generated_class())
+    for name in ("StateTree", "ResetToFullLifeWhenReachingZero"):
+        cdo.set_editor_property(name, dummy.get_editor_property(name))
     asc = cdo.get_editor_property("AbilitySystemComponent")
-    asc.set_editor_property("DefaultAttributes", health_effect.generated_class())
-    asc.set_editor_property("StartupAbilityTags", [waves.tag(MINIBOSS_SHOOT_TAG)])
+    dummy_asc = dummy.get_editor_property("AbilitySystemComponent")
+    for name in ("DefaultAttributes", "StartupAbilityTags"):
+        asc.set_editor_property(name, dummy_asc.get_editor_property(name))
     waves.commit_bp(blueprint)
     log("summoned dummy", "created" if created else "updated")
     return blueprint
+
+
+def build_salve_shooter_tree():
+    """ST_Dummy_Shooter's one Shoot state, firing the salve: what the summons and their allies run."""
+    tree, created = dup_asset(SHOOTER_TREE, SALVE_SHOOTER_TREE)
+    unreal.GeoStateTreeBuilderUtil.get_default_object().replace_fire_ability_tag_in_state(tree, "Shoot", SALVE_TAG)
+    unreal.EditorAssetLibrary.save_loaded_asset(tree, only_if_is_dirty=False)
+    log("salve shooter tree", "created" if created else "updated")
 
 
 def build_tree():
@@ -253,7 +233,7 @@ def build_tree():
         for name in ("Start", "Move", "Summon", "CountSummons", "Wave"):
             builder.add_state(tree, name, "Root", -1)
 
-        builder.add_fire_ability_task_to_state(tree, "Start", MINIBOSS_SHOOT_TAG)
+        builder.add_fire_ability_task_to_state(tree, "Start", SALVE_TAG)
         builder.add_task_to_state(tree, "Start", "StateTreeDelayTask")
         builder.set_task_property(tree, "Start", "StateTreeDelayTask", "Duration", str(SHOOT_START_SECONDS))
         builder.set_tasks_completion(tree, "Start", unreal.StateTreeTaskCompletionType.ANY)
@@ -271,35 +251,35 @@ def build_tree():
         builder.add_transition(tree, "CountSummons", "Wave", completed)
         builder.add_transition(tree, "CountSummons", "Move", completed)
         builder.add_transition(tree, "Wave", "Move", completed)
-        unreal.EditorAssetLibrary.save_loaded_asset(tree)
+    else:
+        builder.replace_fire_ability_tag_in_state(tree, "Start", SALVE_TAG)
+        builder.replace_fire_ability_tag_in_state(tree, "Wave", WAVE_TAG)
+    unreal.EditorAssetLibrary.save_loaded_asset(tree, only_if_is_dirty=False)
     log("behaviour tree", "created" if created else "kept")
-    return tree
 
 
-def build_miniboss(tree, health_effect):
-    blueprint, created = dup_asset(BP_DUMMY, CHARACTER_DIR + "/BP_TutorialMiniboss")
-    cdo = unreal.get_default_object(blueprint.generated_class())
-    cdo.set_editor_property("BehaviourStateTree", tree)
-    cdo.set_editor_property("ResetToFullLifeWhenReachingZero", False)
-    asc = cdo.get_editor_property("AbilitySystemComponent")
-    asc.set_editor_property("DefaultAttributes", health_effect.generated_class())
-    asc.set_editor_property("StartupAbilityTags", [waves.tag(t) for t in (MINIBOSS_SHOOT_TAG, SUMMON_TAG, WAVE_TAG)])
-    waves.commit_bp(blueprint)
-    log("miniboss", "created" if created else "updated")
+def delete_old_assets():
+    """Drops the old layout's catalog entries, then each of its assets nothing outside the old layout references."""
+    catalog = unreal.load_asset(CATALOG)
+    infos = catalog.get_editor_property("EnemyAbilityInfos")
+    kept = [info for info in infos
+            if not any(path + "." in info.export_text() for path in OLD_ASSETS)
+            and not any('"%s"' % old_tag in info.export_text() for old_tag in OLD_TAGS)]
+    if len(kept) != len(infos):
+        catalog.set_editor_property("EnemyAbilityInfos", kept)
+        unreal.EditorAssetLibrary.save_loaded_asset(catalog, only_if_is_dirty=False)
+        log("catalog entries removed", len(infos) - len(kept))
+    waves.delete_unreferenced(OLD_ASSETS, log)
 
 
 def run():
     REPORT[:] = []
     try:
-        miniboss_health = build_health_effect("GE_TutorialMinibossAttributes", "MinibossHealth")
-        dummy_health = build_health_effect("GE_TutorialSummonedDummyAttributes", "DummyHealth")
-        build_salve("MinibossShoot", MINIBOSS_SHOOT_TAG, "MinibossProjectileDamage",
-                    table_value("MinibossProjectileSpeed"), aim_at_boss=False)
-        build_salve("AllyShoot", ALLY_SHOOT_TAG, "AllyProjectileDamage", table_value("MinibossProjectileSpeed"),
-                    aim_at_boss=True)
-        dummy = build_summoned_dummy(build_growing_zone(), dummy_health)
-        build_summon(dummy.generated_class())
-        build_miniboss(build_tree(), miniboss_health)
+        build_salve()
+        build_salve_shooter_tree()
+        build_summon(build_summoned_dummy().generated_class())
+        build_tree()
+        delete_old_assets()
         log("OK")
     except Exception:
         log("FAILED", traceback.format_exc())

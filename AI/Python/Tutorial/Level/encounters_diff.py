@@ -10,12 +10,13 @@ import unreal
 
 SCRIPT = "C:/GeoTrinity/AI/Python/Tutorial/Level/tutorial_encounters.py"
 REPORT = "C:/GeoTrinity/AI/Output/encounters_diff.txt"
+SCENE_REPORT = "C:/GeoTrinity/AI/Output/encounters_scene.txt"  # every room's steps as they are in the scene, whole
 PROPS = ["Line", "bWaitForRespawn", "CounterName", "Delta", "AbilityTag", "bLocked", "Teleporter", "bOpen",
          "EnemyClass", "Setup", "Count", "RespawnDelay", "PurposeTag", "ArenaTag", "bKillOnStepExit", "Operation",
          "Title", "Max", "TimeLimitSeconds", "bShowMax", "Target", "Duration", "Volume", "Watched", "Delay",
          "bLooping", "Side", "Ratio", "Source", "Comparison", "Operand", "bForge", "Cat", "Path", "Speed",
          "StopDistance", "Settings", "Montage", "Actor", "bHidden", "bWaitForEnd", "Arena", "EffectDataArray", "Params",
-         "Team"]  # add a new action's properties here
+         "Team", "PatternData"]  # add a new action's properties here
 
 ns = {"__name__": "tutorial_encounters"}
 exec(compile(open(SCRIPT, encoding="utf-8").read(), SCRIPT, "exec"), ns)
@@ -101,6 +102,7 @@ def section(title, scene, script):
 
 script_lines, labels = script_points()
 report = section("spawn points", scene_points(labels), script_lines)
+full_scene = []
 for room in ns["ROOMS"]:
     builder = ns["Builder"](unreal.find_object(None, "/Engine/Transient"))
     waiting = ns["WAITING_RULES"][room](builder) if room in ns["WAITING_RULES"] else []
@@ -109,5 +111,7 @@ for room in ns["ROOMS"]:
     encounter = ns["find_actor"]("Tut_%s_Encounter" % room)
     scene_steps = encounter.get_editor_property("Steps") if encounter is not None else []
     report += section(room, dump_steps(scene_steps), dump_steps(script_steps))
+    full_scene += ["##### " + room] + dump_steps(scene_steps)
 
 open(REPORT, "w", encoding="utf-8").write("\n".join(report))
+open(SCENE_REPORT, "w", encoding="utf-8").write("\n".join(full_scene))

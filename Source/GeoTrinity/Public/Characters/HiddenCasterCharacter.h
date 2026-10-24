@@ -17,13 +17,15 @@ class GEOTRINITY_API AHiddenCasterCharacter : public AEnemyCharacter
 	GENERATED_BODY()
 
 public:
-	/** Skips the health bar, hides the actor. */
+	/** Skips the health bar. */
 	AHiddenCasterCharacter(FObjectInitializer const& ObjectInitializer);
 
 	/** Never aggroed: aggro would start a fight and make it touchable again. */
 	virtual bool CanBeAggroed() const override { return false; }
 
 protected:
+	virtual bool NeedsCombattantWidget() const override { return false; }
+
 	/** Server: untouchable from the start, so it never dies. */
 	virtual void BeginPlay() override;
 };

@@ -8,8 +8,9 @@
 #include "GeoPeriodicPatternAbility.generated.h"
 
 /**
- * Fires salves at all players (or at the arena's boss, bAimAtArenaBoss), again and again: the ability never ends on its
- * own, every salve schedules the next one, so a single activation keeps the boss firing. One launch of its
+ * Fires salves at the caster's hostiles, again and again: at all players from the enemy team, at the boss of its arena
+ * from the player team (an ally add, so one salve ability serves a boss, its summons and their allies). It never ends
+ * on its own, every salve schedules the next one, so a single activation keeps the boss firing. One launch of its
  * USalvePattern is one salve, aimed and stamped here right before it leaves — so a salve always departs from where the
  * boss stands at that moment, towards where the players stand, instead of replaying an aim taken at the start of the
  * burst.
@@ -29,7 +30,8 @@ public:
 								 FGameplayEventData const* TriggerEventData) override;
 
 protected:
-	/** Aims one yaw at each alive player, from the origin the salve about to leave was stamped with. */
+	/** Aims from the origin the salve about to leave was stamped with: player-team caster, one yaw at its arena's boss
+	 * (none when it has no arena or the boss is dead); else one yaw at each alive player. */
 	virtual TInstancedStruct<FPatternData> CreatePatternData() const override;
 
 	/** Fires one salve, sizing a new burst first when the previous one is spent, then schedules what comes next: the
@@ -54,10 +56,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.1"))
 	float FireIntervalMax = 5.f;
-
-	/** Aims at the boss of the caster's arena instead of at the players: an ally add shooting the boss. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility")
-	bool bAimAtArenaBoss = false;
 
 private:
 	int32 RemainingSalveCount = 0;

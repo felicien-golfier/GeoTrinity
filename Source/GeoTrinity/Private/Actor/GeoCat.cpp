@@ -119,14 +119,18 @@ void AGeoCat::AdvanceMove(float const DeltaSeconds)
 	WriteAnimSpeed();
 }
 
-void AGeoCat::BeginOrder(EGeoCatOrder const NewOrder)
+void AGeoCat::Stop()
 {
 	EndOrder(false);
 	if (UAnimInstance* const AnimInstance = Mesh->GetAnimInstance())
 	{
 		AnimInstance->Montage_Stop(0.2f);
 	}
+}
 
+void AGeoCat::BeginOrder(EGeoCatOrder const NewOrder)
+{
+	Stop();
 	Order = NewOrder;
 	bOrderRunning = true;
 }

@@ -98,20 +98,15 @@ void AGeoArena::ResetBoss()
 		Boss->Destroy();
 	}
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Owner = this;
-
 	TArray<AActor*> const SpawnPoints =
 		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_BossSpawn, ArenaTag);
-	FVector SpawnLocation = SpawnPoints.IsEmpty() ? GetActorLocation() : SpawnPoints[0]->GetActorLocation();
-	SpawnLocation.Z = ArbitraryCharacterZ;
-	Boss = GetWorld()->SpawnActor<AEnemyCharacter>(BossClass, FTransform(SpawnLocation), SpawnParams);
-	if (!ensureMsgf(Boss, TEXT("%s: failed to spawn %s"), *GetName(), *BossClass->GetName()))
+	FVector const SpawnLocation = SpawnPoints.IsEmpty() ? GetActorLocation() : SpawnPoints[0]->GetActorLocation();
+	Boss = AEnemyCharacter::SpawnEnemy(*GetWorld(), BossClass, SpawnLocation, this, this, &BossSetup);
+	if (!Boss)
 	{
 		return;
 	}
-	Boss->Arena = this;
+
 	if (IsIntroPending())
 	{
 		Boss->SetInvulnerable(true);
@@ -123,25 +118,26 @@ void AGeoArena::ResetBoss()
 void AGeoArena::ResetAdds()
 {
 	DestroyAdds();
-	if (AddClasses.IsEmpty())
+	if (StartAdds.IsEmpty())
 	{
 		return;
 	}
 
 	TArray<AActor*> const SpawnPoints =
 		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_AddSpawn, ArenaTag);
-	if (!ensureMsgf(!SpawnPoints.IsEmpty(), TEXT("%s: AddClasses set but no TargetPoint.AddSpawn carries %s"),
+	if (!ensureMsgf(!SpawnPoints.IsEmpty(), TEXT("%s: StartAdds set but no TargetPoint.AddSpawn carries %s"),
 					*GetName(), *ArenaTag.ToString()))
 	{
 		return;
 	}
 
-	for (int32 AddIndex = 0; AddIndex < AddClasses.Num(); ++AddIndex)
+	for (int32 AddIndex = 0; AddIndex < StartAdds.Num(); ++AddIndex)
 	{
-		TSubclassOf<AEnemyCharacter> const AddClass = AddClasses[AddIndex];
-		if (ensureMsgf(AddClass, TEXT("%s: AddClasses[%d] is empty"), *GetName(), AddIndex))
+		FGeoArenaAdd const& StartAdd = StartAdds[AddIndex];
+		if (ensureMsgf(StartAdd.Class, TEXT("%s: StartAdds[%d] has no Class"), *GetName(), AddIndex))
 		{
-			SpawnAdd(AddClass, FTransform(SpawnPoints[AddIndex % SpawnPoints.Num()]->GetActorLocation()));
+			SpawnAdd(StartAdd.Class, FTransform(SpawnPoints[AddIndex % SpawnPoints.Num()]->GetActorLocation()),
+					 &StartAdd.Setup);
 		}
 	}
 }

@@ -13,8 +13,8 @@
 void UGeoSpawnEnemiesAction::Execute_Implementation(FGeoEncounterPayload const& /*Payload*/)
 {
 	ensureMsgf(EnemyClass, TEXT("%s: no EnemyClass set"), *GetName());
-	Spawned.Reset();
-	RespawnTimers.Reset();
+	OnCancel_Implementation();
+	GetEncounter()->HoldUntilStepLeft(*this);
 
 	TArray<AActor*> const SpawnPoints = GeoLib::GetTargetPoints(this, PurposeTag, ArenaTag);
 	if (SpawnPoints.IsEmpty() || !EnemyClass)
@@ -48,6 +48,8 @@ void UGeoSpawnEnemiesAction::OnCancel_Implementation()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(Timer);
 	}
+
+	RespawnTimers.Reset();
 
 	TArray<TObjectPtr<AEnemyCharacter>> const Living = MoveTemp(Spawned);
 	if (bKillOnStepExit)

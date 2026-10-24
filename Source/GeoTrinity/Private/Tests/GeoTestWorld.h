@@ -8,6 +8,8 @@
 #include "GameFramework/WorldSettings.h"
 #include "TimerManager.h"
 
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+
 /** A begun listen-server world, for a test that spawns actors the way a match does. */
 inline UWorld* CreateTestWorld()
 {
@@ -33,3 +35,5 @@ inline void TickTestTimers(UWorld& World, float const Seconds)
 	++GFrameCounter;
 	World.GetTimerManager().Tick(Seconds);
 }
+
+#endif

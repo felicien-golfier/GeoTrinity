@@ -45,7 +45,7 @@ void UGeoGemCsvSync::Initialize(FSubsystemCollectionBase& Collection)
 	}
 	else
 	{
-		FCoreDelegates::OnPostEngineInit.AddUObject(this, &UGeoGemCsvSync::SyncOnStartup);
+		FCoreDelegates::GetOnPostEngineInit().AddUObject(this, &UGeoGemCsvSync::SyncOnStartup);
 	}
 }
 
@@ -64,7 +64,7 @@ void UGeoGemCsvSync::SyncOnStartup() const
 
 void UGeoGemCsvSync::Deinitialize()
 {
-	FCoreDelegates::OnPostEngineInit.RemoveAll(this);
+	FCoreDelegates::GetOnPostEngineInit().RemoveAll(this);
 	UPackage::PackageSavedWithContextEvent.Remove(PackageSavedHandle);
 	FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(ObjectPropertyChangedHandle);
 	if (FDirectoryWatcherModule* DirectoryWatcher =

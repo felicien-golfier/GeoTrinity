@@ -54,60 +54,50 @@ def build_material():
     graph = toolkit["open_material"](FOLDER, "M_Gem")
     node, op = graph.node, graph.op
     vector, scalar = unreal.MaterialExpressionVectorParameter, unreal.MaterialExpressionScalarParameter
-    color = graph.parameter(vector, "Color", WHITE, "01 Gem", 0, "The stat colour", -800, 0)
-    glow = graph.parameter(scalar, "Glow", 3.0, "01 Gem", 1, "Emissive multiplier, above 1 so bloom lights it", -800, 200)
-    rim_boost = graph.parameter(scalar, "RimBoost", 1.5, "01 Gem", 2, "Extra brightness at grazing angles", -800, 400)
+    color = graph.parameter(vector, "Color", WHITE, "01 Gem", 0, "The stat colour")
+    glow = graph.parameter(scalar, "Glow", 3.0, "01 Gem", 1, "Emissive multiplier, above 1 so bloom lights it")
+    rim_boost = graph.parameter(scalar, "RimBoost", 1.5, "01 Gem", 2, "Extra brightness at grazing angles")
 
-    base = op(unreal.MaterialExpressionMultiply, -400, -200, color,
-              B=node(unreal.MaterialExpressionConstant, -600, -100, r=BASE_DARKEN))
-    rim = op(unreal.MaterialExpressionMultiply, -400, 400,
-             node(unreal.MaterialExpressionFresnel, -600, 400, exponent=RIM_EXPONENT, base_reflect_fraction=0.0),
+    base = op(unreal.MaterialExpressionMultiply, color,
+              B=node(unreal.MaterialExpressionConstant, r=BASE_DARKEN))
+    rim = op(unreal.MaterialExpressionMultiply, node(unreal.MaterialExpressionFresnel, exponent=RIM_EXPONENT, base_reflect_fraction=0.0),
              B=rim_boost)
-    flash = graph.parameter(scalar, "Flash", 0.0, "01 Gem", 3, "0..1 glow spike, set by the drop at each touchdown", -800, 600)
-    flash_boost = graph.parameter(scalar, "FlashBoost", 3.0, "01 Gem", 4, "Extra brightness at Flash 1", -800, 800)
+    flash = graph.parameter(scalar, "Flash", 0.0, "01 Gem", 3, "0..1 glow spike, set by the drop at each touchdown")
+    flash_boost = graph.parameter(scalar, "FlashBoost", 3.0, "01 Gem", 4, "Extra brightness at Flash 1")
 
     # Lit by a fixed key light against the pixel normal, so the gem shades whatever the level's lights are.
-    key_light = node(unreal.MaterialExpressionConstant3Vector, -1000, 1000,
-                     constant=unreal.LinearColor(*KEY_LIGHT_DIRECTION, 0.0))
-    diffuse = op(unreal.MaterialExpressionSaturate, -600, 1000,
-                 op(unreal.MaterialExpressionDotProduct, -800, 1000,
-                    node(unreal.MaterialExpressionPixelNormalWS, -1000, 900), B=key_light))
-    glint_power = node(unreal.MaterialExpressionPower, -400, 1200, const_exponent=GLINT_EXPONENT)
-    graph.connect(op(unreal.MaterialExpressionSaturate, -600, 1200,
-                     op(unreal.MaterialExpressionDotProduct, -800, 1200,
-                        node(unreal.MaterialExpressionReflectionVectorWS, -1000, 1200), B=key_light)),
+    key_light = node(unreal.MaterialExpressionConstant3Vector, constant=unreal.LinearColor(*KEY_LIGHT_DIRECTION, 0.0))
+    diffuse = op(unreal.MaterialExpressionSaturate, op(unreal.MaterialExpressionDotProduct, node(unreal.MaterialExpressionPixelNormalWS), B=key_light))
+    glint_power = node(unreal.MaterialExpressionPower, const_exponent=GLINT_EXPONENT)
+    graph.connect(op(unreal.MaterialExpressionSaturate, op(unreal.MaterialExpressionDotProduct, node(unreal.MaterialExpressionReflectionVectorWS), B=key_light)),
                   glint_power, "Base")
-    glint = op(unreal.MaterialExpressionMultiply, -200, 1200, glint_power,
-               B=node(unreal.MaterialExpressionConstant, -400, 1300, r=GLINT_STRENGTH))
+    glint = op(unreal.MaterialExpressionMultiply, glint_power,
+               B=node(unreal.MaterialExpressionConstant, r=GLINT_STRENGTH))
 
-    shade = op(unreal.MaterialExpressionAdd, -200, 300,
-               op(unreal.MaterialExpressionAdd, -400, 300, rim, B=node(unreal.MaterialExpressionConstant, -600, 300, r=AMBIENT)),
+    shade = op(unreal.MaterialExpressionAdd, op(unreal.MaterialExpressionAdd, rim, B=node(unreal.MaterialExpressionConstant, r=AMBIENT)),
                B=diffuse)
-    brightness = op(unreal.MaterialExpressionMultiply, -100, 200, glow, B=shade)
-    flash_gain = op(unreal.MaterialExpressionAdd, -100, 700,
-                    op(unreal.MaterialExpressionMultiply, -300, 700, flash, B=flash_boost),
-                    B=node(unreal.MaterialExpressionConstant, -300, 800, r=1.0))
-    face = op(unreal.MaterialExpressionAdd, 100, 100, op(unreal.MaterialExpressionMultiply, -50, 100, color, B=brightness), B=glint)
+    brightness = op(unreal.MaterialExpressionMultiply, glow, B=shade)
+    flash_gain = op(unreal.MaterialExpressionAdd, op(unreal.MaterialExpressionMultiply, flash, B=flash_boost),
+                    B=node(unreal.MaterialExpressionConstant, r=1.0))
+    face = op(unreal.MaterialExpressionAdd, op(unreal.MaterialExpressionMultiply, color, B=brightness), B=glint)
 
     # The mesh carries each pixel's distance to the solid's edges in UV0.xy (generate_gem_meshes.py).
-    edge_width = graph.parameter(scalar, "EdgeWidth", 2.0, "02 Edges", 0, "Width of the lit edges, in mesh units", -800, 1000)
-    edge_glow = graph.parameter(scalar, "EdgeGlow", 7.0, "02 Edges", 1, "Emissive multiplier of the edges", -800, 1200)
-    uv0 = node(unreal.MaterialExpressionTextureCoordinate, -1400, 1500, coordinate_index=0)
-    edge_distance = op(unreal.MaterialExpressionMin, -600, 1600, graph.mask(uv0, "r", -1000, 1500),
-                       B=graph.mask(uv0, "g", -1000, 1600))
-    edge_mask = op(unreal.MaterialExpressionSaturate, -200, 1600,
-                   op(unreal.MaterialExpressionSubtract, -400, 1600, edge_width, B=edge_distance))
-    edge_color = op(unreal.MaterialExpressionMultiply, 0, 1500,
-                    op(unreal.MaterialExpressionLinearInterpolate, -200, 1400, color,
-                       B=node(unreal.MaterialExpressionConstant3Vector, -400, 1400, constant=WHITE),
-                       Alpha=node(unreal.MaterialExpressionConstant, -400, 1500, r=EDGE_WHITENING)),
+    edge_width = graph.parameter(scalar, "EdgeWidth", 2.0, "02 Edges", 0, "Width of the lit edges, in mesh units")
+    edge_glow = graph.parameter(scalar, "EdgeGlow", 7.0, "02 Edges", 1, "Emissive multiplier of the edges")
+    uv0 = node(unreal.MaterialExpressionTextureCoordinate, coordinate_index=0)
+    edge_distance = op(unreal.MaterialExpressionMin, graph.mask(uv0, "r"),
+                       B=graph.mask(uv0, "g"))
+    edge_mask = op(unreal.MaterialExpressionSaturate, op(unreal.MaterialExpressionSubtract, edge_width, B=edge_distance))
+    edge_color = op(unreal.MaterialExpressionMultiply, op(unreal.MaterialExpressionLinearInterpolate, color,
+                       B=node(unreal.MaterialExpressionConstant3Vector, constant=WHITE),
+                       Alpha=node(unreal.MaterialExpressionConstant, r=EDGE_WHITENING)),
                     B=edge_glow)
-    lit = op(unreal.MaterialExpressionLinearInterpolate, 250, 100, face, B=edge_color, Alpha=edge_mask)
-    emissive = op(unreal.MaterialExpressionMultiply, 400, 100, lit, B=flash_gain)
+    lit = op(unreal.MaterialExpressionLinearInterpolate, face, B=edge_color, Alpha=edge_mask)
+    emissive = op(unreal.MaterialExpressionMultiply, lit, B=flash_gain)
 
     graph.to_property(base, unreal.MaterialProperty.MP_BASE_COLOR)
     graph.to_property(emissive, unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    graph.to_property(node(unreal.MaterialExpressionConstant, -200, -300, r=0.3), unreal.MaterialProperty.MP_ROUGHNESS)
+    graph.to_property(node(unreal.MaterialExpressionConstant, r=0.3), unreal.MaterialProperty.MP_ROUGHNESS)
 
     graph.finish()
     return graph.asset
@@ -120,23 +110,18 @@ def build_halo_material():
     material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_ADDITIVE)
     color = graph.parameter(unreal.MaterialExpressionVectorParameter, "Color", WHITE, "01 Halo", 0,
-                            "The stat colour", -800, 0)
+                            "The stat colour")
     halo_glow = graph.parameter(unreal.MaterialExpressionScalarParameter, "HaloGlow", 1.0, "01 Halo", 1,
-                                "Emissive multiplier at the centre", -800, 200)
+                                "Emissive multiplier at the centre")
     falloff = graph.parameter(unreal.MaterialExpressionScalarParameter, "HaloFalloff", 1.5, "01 Halo", 2,
-                              "Fade toward the outline, higher = tighter around the stone", -800, 400)
+                              "Fade toward the outline, higher = tighter around the stone")
 
     # facing = cos of the angle to the camera; the sphere point lies at sqrt(1 - facing^2) of the radius off-centre.
-    facing = op(unreal.MaterialExpressionSaturate, -1000, 600,
-                op(unreal.MaterialExpressionDotProduct, -1200, 600, node(unreal.MaterialExpressionVertexNormalWS, -1400, 550),
-                   B=node(unreal.MaterialExpressionCameraVectorWS, -1400, 650)))
-    off_centre = op(unreal.MaterialExpressionSquareRoot, -600, 600,
-                    op(unreal.MaterialExpressionOneMinus, -700, 600,
-                       op(unreal.MaterialExpressionMultiply, -800, 600, facing, B=facing)))
-    fade = op(unreal.MaterialExpressionPower, -300, 500,
-              op(unreal.MaterialExpressionOneMinus, -450, 600, off_centre), Exp=falloff)
-    emissive = op(unreal.MaterialExpressionMultiply, 0, 100,
-                  op(unreal.MaterialExpressionMultiply, -200, 100, color, B=halo_glow), B=fade)
+    facing = op(unreal.MaterialExpressionSaturate, op(unreal.MaterialExpressionDotProduct, node(unreal.MaterialExpressionVertexNormalWS),
+                   B=node(unreal.MaterialExpressionCameraVectorWS)))
+    off_centre = op(unreal.MaterialExpressionSquareRoot, op(unreal.MaterialExpressionOneMinus, op(unreal.MaterialExpressionMultiply, facing, B=facing)))
+    fade = op(unreal.MaterialExpressionPower, op(unreal.MaterialExpressionOneMinus, off_centre), Exp=falloff)
+    emissive = op(unreal.MaterialExpressionMultiply, op(unreal.MaterialExpressionMultiply, color, B=halo_glow), B=fade)
     graph.to_property(emissive, unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 
     graph.finish()
