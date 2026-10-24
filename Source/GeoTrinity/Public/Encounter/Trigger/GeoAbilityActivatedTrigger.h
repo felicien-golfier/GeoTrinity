@@ -21,7 +21,9 @@ class GEOTRINITY_API UGeoAbilityActivatedTrigger : public UGeoEncounterTrigger
 	GENERATED_BODY()
 
 public:
+	/** Binds to the first local player's ASC ability-activated delegate. */
 	virtual void OnArm_Implementation() override;
+	/** Unbinds the ability-activated delegate. */
 	virtual void OnDisarm_Implementation() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (Categories = "Ability.Spell"))

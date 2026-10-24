@@ -83,6 +83,7 @@ public:
 	 */
 	bool IsLanded() const;
 
+	/** The gem's static mesh component. */
 	UStaticMeshComponent* GetMesh() const { return Mesh; }
 
 	/** Where the drop comes to rest. */

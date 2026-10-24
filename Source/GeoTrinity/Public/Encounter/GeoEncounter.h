@@ -106,6 +106,7 @@ public:
 	void OnActionFinished(UGeoEncounterAction const& Action);
 
 #if WITH_EDITOR
+	/** Validates unique non-empty step names, that StepAfter targets exist, and that no trigger or action is null. */
 	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
 #endif
 

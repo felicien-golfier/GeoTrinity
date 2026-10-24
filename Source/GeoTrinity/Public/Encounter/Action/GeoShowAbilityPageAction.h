@@ -21,6 +21,7 @@ class GEOTRINITY_API UGeoShowAbilityPageAction : public UGeoEncounterAction
 public:
 	UGeoShowAbilityPageAction() { bLatent = true; }
 
+	/** Opens AbilityTag's ability page on the local player's HUD. */
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
 	/** Stops waiting for the close; the page stays open until the player closes it. */
