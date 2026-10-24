@@ -43,6 +43,8 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 ## GeoSpawnZoneAction
 - A zone that only teaches its colour or sits in a room: no ability, no pattern, no caster. A telegraphed or patterned hazard stays an ability fired by `GeoActivateAbilityAction`.
 - `DefaultZoneClass` (`UGameDataSettings`) through `GeoASLib::FullySpawnDeployable` with an `FDeployableData` filled from the action: `EffectDataArray`, `Params` (`Size`, `Color`, `SecondaryColors`, `Attitude`; `LifeDrainMaxDuration` 0 = lasts until cancelled), `TeamID` = `Team`, no `Owner`: self-owned, its own ASC is the effect source, like a hand-placed zone (`AbilitySystem/Lib/CLAUDE.md`).
+- A growing zone is `Params.GrowToSize` + `GrowSeconds` (`GeoEffectZone` grows from `Size`; replicated start time); the action adds nothing. The zone stops at `GrowToSize` and stays until cancelled.
+- Several zones in one step: one action per zone in the step's `OnEnter`, each held until the step is left, so they all end together (the Zones room's colour step, `Tutorial/Steps.md` step 7).
 - Ground Z (0), like every zone. One zone per action: several zones on one step = a step per zone, or a Blueprint child spawning several.
 - `OnCancel`: `Recall()` on its zone (blink, then gone). Held like `GeoSpawnEnemiesAction`; run again while held, it recalls its previous zone first.
 

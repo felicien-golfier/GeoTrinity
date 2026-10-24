@@ -95,7 +95,12 @@ Teaches: a zone's color says what it does (`EGeoColor`: Heal, Shield, Damage; hu
 Cat angle: customer service; "the color is the whole game".
 Action: stand in each zone color as zones appear.
 Done when: player has stood in every color shown. Text: Board page 10.
-Shape: one color at a time (heal, shield, damage), each its own encounter step: entering spawns that color's zone on its fixed spot (`GeoSpawnZoneAction`, the color's `TargetPoint.Tutorial.Zone<Color>`; no wind-up); a placed box over the spot completes the step. The box is the zone's bounding square (`AI/Python/Tutorial/CLAUDE.md`, "Trigger boxes"). The step enters with the spawn, so the spot is never empty while it is watched.
+Shape: one encounter step, `ZoneColors`, because the zones must outlive each other (a `GeoSpawnZoneAction` zone lasts until its step is left). Its `OnEnter`, in order (each zone `GeoSpawnZoneAction` on the color's `TargetPoint.Tutorial.Zone<Color>`, no wind-up):
+1. Damage zone on the room centre, tiny damage per second, growing (`Params.GrowToSize` / `GrowSeconds`) from a small start to past the room's corners: the whole floor ends up inside it. It is kept to the end.
+2. After the growth (a delay of `GrowSeconds`, so the zone has stopped growing): the Shield zone on the left spot (Y -550), the Heal zone on the right spot (Y +550). Both sit inside the full Damage zone: the shield visibly cuts the tick, the heal pays it back.
+- Done when: the player stood in the Shield once AND in the Heal once (a box over each spot, the zone's bounding square, `AI/Python/Tutorial/CLAUDE.md` "Trigger boxes"; each counts after its zone is up: a step into the spot before the spawn does not count, and a stand-still player is not counted twice). Then 2 s pass (`GeoDelayAction` in the completing rule: stepping into the last zone must not cut the room at once), and the step is left: every zone is recalled together. Cat line "colors learned" comes with the completion.
+- The Damage zone ticks until the end; the Heal zone pays it back, so a player who stays in the room all along dips but does not die. Damage per second stays under the Heal zone's.
+- Text: the intro lines say damage first (it spreads and stays), then shield and heal; the third intro line is the only one that changes ("Now stand in each one" becomes the shield-then-heal ask).
 
 ## Step 8 — Lethal wave
 Teaches: the lethal color kills, and you will die.
@@ -143,7 +148,7 @@ Text: Board page 16 (tutorial's last page).
 
 ## Tuning
 - Every tutorial number lives in one curve table, `CT_Tutorial` (`Content/AbilitySystem/Data/CurveTables/`, next to `CT_BossHex` etc.): one row per knob, read through `FScalableFloat` like the other kits. Placeholder values until the user tunes them.
-- Rows: `MinibossHealth` (500), `DummyHealth`, `AllyDummyHealth`, `DummyLandingDamage`, `DummyZoneDamage`, `DummyZoneGrowthTime`, `DummyZoneMaxRadius`, plus `MinibossProjectileDamage`, `MinibossProjectileSpeed` (the one salve: boss, summons, allies).
+- Rows: `MinibossHealth` (500), `DummyHealth`, `AllyDummyHealth`, `DummyLandingDamage`, `DummyZoneDamage`, `DummyZoneGrowthTime`, `DummyZoneMaxRadius`, `ColorZoneDamage` (damage per second of the Zones room's growing zone), `ColorZoneGrowSeconds`, `ColorZoneMaxRadius`, plus `MinibossProjectileDamage`, `MinibossProjectileSpeed` (the one salve: boss, summons, allies).
 - Not in the table: the lateral wave interval N (`CyclesRequired` in the miniboss State Tree), the 3 miniboss points (level `TargetPoint`s), the hurt ally's 10% start (its `DefaultAttributes` effect) and the ally low-health ratio (`Ratio` on the placed trigger).
 
 ## Unlock rule (steps 3-5)

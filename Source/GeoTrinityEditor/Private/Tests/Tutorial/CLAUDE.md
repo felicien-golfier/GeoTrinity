@@ -49,7 +49,7 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 | Special | three rounds without: surrender line, pad opens | Path.SpecialSurrender |
 | Dummies | chaser closes in, shooter fires; three kills | FullRun |
 | Dummies | death mid-fight: respawn on the entrance, survivors stay, fight goes on | Path.DummiesDeath |
-| Zones | each colour spawns and the pawn stands in it, the Damage zone hurts; lethal wave kills | FullRun |
+| Zones | Damage zone grows from the centre to cover the room and hurts; then Shield and Heal spawn, the pawn stands in each, 2 s later every zone is gone (a step into a spot before its zone is up counts nothing); lethal wave kills | FullRun |
 | Zones | safe spots: series 1 dies on wave 2, series 2 on wave 3, series 3 clears; every lane of every wave used once; retry line, restart from wave 1 | Path.SafeSpotsRetry |
 | Miniboss | salve, boss moves between its points, summon's zone grows, killed summon turns ally and fires, wave, last hit (health to 0, as damage does) opens the final exit, loot and XP granted | FullRun |
 | Miniboss | deaths 1-3: wipe (adds gone, boss full), tips in order; 4th death silent | Path.MinibossWipe |
@@ -58,4 +58,4 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 | Miniboss | step on the final exit: Training Room, on its `TrainingRoom` start | Path.FinalExit |
 | any | pause menu Leave tutorial: Training Room | Path.LeaveFromMenu |
 
-Covered elsewhere: solo-only login (`GeoTrinity.Tutorial.SoloOnly`), locked / unlocked abilities, encounter mechanics (`GeoTrinity.Encounter.*`). Not played: the Heal and Shield zones' effect (their step ends on entry, before the zone acts), the Dummies room's mover patrol (not built, `AI/Pending/Tutorial.md`), the Miniboss wave count after a wipe (tree state), quest card display and line typing (UI module, no probe), first-launch prompt and menu button (main menu, no tutorial world), steps 11-13 (not built).
+Covered elsewhere: solo-only login (`GeoTrinity.Tutorial.SoloOnly`), locked / unlocked abilities, encounter mechanics (`GeoTrinity.Encounter.*`). Not played: the Heal and Shield zones' effect (the bot stands in them, the effect is not measured), the Dummies room's mover patrol (not built, `AI/Pending/Tutorial.md`), the Miniboss wave count after a wipe (tree state), quest card display and line typing (UI module, no probe), first-launch prompt and menu button (main menu, no tutorial world), steps 11-13 (not built).
