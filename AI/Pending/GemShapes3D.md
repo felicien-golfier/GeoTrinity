@@ -9,3 +9,6 @@ Done: meshes, `AGeoGemDrop` (tumble, pop-in, bounces + `Flash`, rocking rest), a
 - [ ] Look at it once in the editor (shader compiled by eye? never seen lit): kill a boss, tune `Glow` / `RimBoost` / `FlashBoost` on `M_Gem` instances, `HaloGlow` / `HaloFalloff` on `M_GemHalo`, `KEY_LIGHT_DIRECTION` / `GLINT_*` in `make_gem_materials.py`, and the feel numbers on the drop (`TumbleSpeed`, `TumbleFriction`, `GroundFriction`, `WallRestitution`, `BounceRestitution`; walls are found as world-static objects: check the barrier's moving walls and the pillars hold a gem in too) and arena (`FountainFrontLoad`, `FountainUpSpread`).
 - [ ] Tier solids (octahedron / dodecahedron / icosahedron / diamond, size by tier) regenerated and materials re-slotted: check in that same look that `RestHeight` (20, the centre's Z) suits the sizes (Core half-height ~26, Chip ~25; the halo sphere, 1.7× radius, is additive and may meet the floor) and tune `RADIUS` in `generate_gem_meshes.py` if the size steps read too weak / strong; shards (~30–70 tall) now outsize a Chip.
 - [ ] Optional: `/Game/Actors/BP_GemDrop` (child of `AGeoGemDrop`), then set it as `GemDropClass` on the arenas.
+
+## Status 2026-10-25
+Code and scripts exist (scripts in `AI/Python/Gem/`, not `Mesh/`). Remaining: look at gems in editor and tune; the optional `BP_GemDrop` item is done (see GemDropSounds).

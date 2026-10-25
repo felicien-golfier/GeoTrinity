@@ -7,3 +7,6 @@ Done 2026-10-21: code, `GeoTrinity.Encounter.SetTeleporterOpen`, map and encount
 ## Left (user)
 - [ ] The pad Blueprint's open / close animation on `OnOpenChanged` (in progress); all tutorial pads use `/Game/Actors/TriggersActors/BP_Teleport`
 - [ ] Open question: `ApplyOpen` hides the pad in C++ the instant it closes, which would cut the close animation; if the animation needs the mesh until it ends, hide on an animation-finished call instead
+
+## Status 2026-10-25
+`GeoSetTeleporterOpenAction`, test and `OnOpenChanged` exist. Remaining: `BP_Teleport` open/close animation (editor).

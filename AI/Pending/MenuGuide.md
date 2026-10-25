@@ -10,3 +10,6 @@ Docs written: none yet (workflow steps 2-3 when picked up). Referenced by `AI/Tu
 ## Known effects on existing code
 - `GeoOpenGemsPageAction` (opens the menu for the player) is replaced by the guide's action, then removed whole (code, doc row in `Encounter/Action/CLAUDE.md`, `IGeoHUDInterface::OpenGemsPage`, `AGeoHUD`, `UGeoGemsWidget::ShowPage` if unused)
 - Its open bug goes with it: opening while the menu is already up re-adds the pause menu to the viewport (warning) and pushes the Gems page twice (`UGeoPauseMenuWidget::OpenOnPage`)
+
+## Status 2026-10-25
+Design-only, no code; both open-design items still open.

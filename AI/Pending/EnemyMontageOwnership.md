@@ -27,3 +27,6 @@ Docs written: `Abilities/Base/CLAUDE.md`, `Abilities/Pattern/CLAUDE.md`, `Abilit
 ## Verify
 - [x] Headless test above passes
 - [ ] Bridge probe / dedicated-server run: boss pattern montage keeps its compensated start section on a client while a bomb cast plays (PIE only if the user asks)
+
+## Status 2026-10-25
+C++, tests and docs verified. Remaining (editor/unverifiable): AnimBP slot insertion + bomb/turret montage tracks, other patternless enemy ability montages, pattern ability BPs with both montages, boss montage start-section probe.

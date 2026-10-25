@@ -27,3 +27,6 @@ Grouping checked: loot code is `UGeoGemCatalog::RollLoot` + `AGeoArena::GrantGem
 
 ## Verify
 - [ ] Parsed report: counts and failures; no PIE unless asked
+
+## Status 2026-10-25
+Code and the 5 `Gems.BossLoot.*` tests exist. Remaining: DraftMap arenas check (override off), tutorial miniboss arena setup (editor), parsed test report.

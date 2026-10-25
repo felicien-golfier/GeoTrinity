@@ -10,3 +10,6 @@ Built and tested (editor build, `GeoTrinity.` 17 / 17, loadout page checked in P
 - [ ] Design doc "Proposal: Echo socket" still shows the old table (33% flat, shard ranks, 100 ranks +1 point); update it to the docs above.
 - [ ] Pause-menu "Gems" screenshot / look of the echo socket at the board centre (44 px, drawn as a Core socket): judge and adjust `EchoPosition` / `EchoSize` on `WBP_GemLoadout`.
 - [ ] Delete this file once the above are settled.
+
+## Status 2026-10-25
+Code and tests exist. Remaining user decisions: socket name, XP curve, design doc 'Proposal: Echo socket' update, look of the socket. Text on socket look is stale (see EchoUiPolish / EchoSocketHalo).

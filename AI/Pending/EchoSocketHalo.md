@@ -10,3 +10,6 @@ Code done and built (Editor target): `GeoEchoHalo.h/.cpp`, halo built in `UGeoGe
 
 ## Tests
 - [ ] None automated (pure drawing); look judged on the loadout page when the user asks for an editor check.
+
+## Status 2026-10-25
+`GeoEchoHalo` and `gems_page.py` halo values exist. Remaining: run `gems_page.py` in editor, judge/tune halo.

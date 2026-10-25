@@ -19,3 +19,6 @@ Docs written: `Source/GeoTrinity/Public/Encounter/CLAUDE.md` ("Arrival reset"), 
 - [ ] `GeoTrinity.Encounter.ArrivalHidesLine` — fake HUD saw `HideCatLine` (and `HideQuestCard`) before the target's `OnEnter`
 - [ ] `GeoTrinity.Encounter.ArrivalSkipReplay` — unlock in a skipped `OnEnter` granted when the chain was left early; lock in aborted room + replayed unlock leaves movement free
 - Run: `Tools\Run_Tests.bat GeoTrinity.Encounter` after the build (editor closed, `GEO_NO_PAUSE=1`)
+
+## Status 2026-10-25
+Nothing implemented: no `GeoEncounter::Abort()`, `StartAfterSkippingChain()` lacks abort-others/`HideCatLine`/`HideQuestCard`, `GeoStartEncounterAction` still calls `Restart()`, no `HideCatLine` anywhere, none of the 4 `Encounter.Arrival*` tests. Open items (room text after pad opens, Cat state on arrival) need the editor. Note: the Encounter/Action/HUD CLAUDE.md files already describe this API.

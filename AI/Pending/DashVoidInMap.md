@@ -10,3 +10,6 @@ Docs written: `AI/Tutorial/Steps.md` (step 2 level rule), `AI/Python/Level/CLAUD
 ## Verify
 - [ ] Reports are OK; re-running either script in either order leaves the 300 cm hole
 - [ ] User PIE check: the 300 cm gap is crossable by the dash (headless world cannot run it, see `Pending/Tutorial.md` slice 3)
+
+## Status 2026-10-25
+`build_dash_void` and `Tut_Dash_PlatformVolume` exist. Remaining: headless runs of `tutorial_map.py` / `tutorial_encounters.py`, re-run order check, user PIE dash check. Doc path is `AI/Python/Tutorial/CLAUDE.md`, not `Level/`.

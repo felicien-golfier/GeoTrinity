@@ -20,3 +20,6 @@ Done (unbuilt, editor was open): `PlaySoundEntryAtLocation`, `AGeoGemDrop` sound
 ## Verify
 - [ ] `GeoTrinity.Gems` tests pass (build first: big enough to need it, editor closed, `Tools\*.bat` `GEO_NO_PAUSE=1`).
 - [ ] Listen once to the drafts (played by the agent); in-game check only if the user asks.
+
+## Status 2026-10-25
+Code, test, `gem_kit.py` and wavs exist. Remaining: build + `Run_Tests GeoTrinity.Gems`, pickup attenuation/concurrency in editor, listen to drafts. `AI/Audio/Drafts/Gem` is missing.

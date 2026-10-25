@@ -30,3 +30,6 @@ Read `AI/CodingStyle.md` first.
 ## Verify
 - [x] `Tools\Build_Editor.bat` (editor closed, `GEO_NO_PAUSE=1`), `Tools\Run_Tests.bat GeoTrinityUI` (2026-10-21: 4/4)
 - [ ] Look: user checks in game / bridge probe `Python/Runtime/pie_layout_audit.py`; no real-click PIE unless asked
+
+## Status 2026-10-25
+Code, script and `CatFaceMotion` test exist. Remaining: user confirms shades vs boss hex, in-game look (`pie_layout_audit.py`).

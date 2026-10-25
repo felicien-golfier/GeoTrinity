@@ -22,3 +22,6 @@ Docs written: `GeoTrinityUI/Public/HUD/Tutorial/CLAUDE.md` ("Cat line", markup r
 - [x] Tests (`GeoCatLineTests.cpp`): `GeoTrinityUI.Tutorial.CatLineReveal` — plain text, bold / shake run cut mid-way is closed, key label counted, N ≥ total returns the full text, N = 0 returns nothing visible; `GeoTrinityUI.Tutorial.CatLinePitch` — same word same pitch, case-insensitive, always within `[Min, Max]`, at least 10 distinct pitches over 26 different words
 - [ ] Phase logic and F-F-advance have no headless layer (need a local player and viewport): PIE check by the user when asked
 - [x] Build `Tools\Build_Editor.bat`, `Tools\Run_Tests.bat GeoTrinityUI.Tutorial` and `GeoTrinity.Encounter`
+
+## Status 2026-10-25
+Code and tests (`CatLineReveal`, `CatLinePitch`) exist; `SkipGraceSeconds` removed. Remaining: `WBP_CatLine` `TypeSound` = `SW_Mech_Tick_1` + `SC_Interface` routing, headless script re-run, PIE phase check.

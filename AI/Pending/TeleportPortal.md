@@ -23,3 +23,6 @@ Read with `Artifact action=read url=https://claude.ai/artifact/RZhzLd3DV8276eMvR
 - [ ] Look: compare with the artifact's held frame (spark ease approximated by `1-(1-t)^2.5`; spins assume UV y down the screen; scale intro goes 0 → 1, no 1.04 overshoot)
 - [ ] Disc size vs the trigger shape of `TeleportDirectionMesh` (quad is 464 units wide); two pads, two colours
 - [ ] Close / reopen seen in PIE (needs an encounter or `SetOpen` call)
+
+## Status 2026-10-25
+`GeoTeleporter` portal API and script exist. Remaining: assets and look comparison, disc size vs trigger, close/reopen in PIE.

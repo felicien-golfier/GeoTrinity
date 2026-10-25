@@ -6,3 +6,6 @@ Done 2026-10-21: script + map applied; `Tutorial/Runtime/pie_tutorial_jump.py` (
 
 ## Left (user)
 - [ ] Open question: the exit pad's look is the normal portal; fine, or a distinct colour for "last door"?
+
+## Status 2026-10-25
+Code/scripts hold. Remaining: user decision on the exit pad look. File says `DraftMap`; code uses `TrainingRoomMap`.

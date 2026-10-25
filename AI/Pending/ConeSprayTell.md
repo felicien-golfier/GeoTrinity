@@ -12,3 +12,6 @@ Done: `hex_boss_abilities.py` has `tell` / `tell_frames` / `tell_focus` on `Clip
 ## Verify
 - [ ] Report: frame 0 and last frame max blade negative (folded); "closest the rings come" > 0 through the wind-up; FireLoop closure gaps unchanged.
 - [ ] Report rows frames 0–30: "blades past face" > 0, from the front blade only, changing as the crank turns. Tune `tell` / `tell_focus` off the room columns if a shell is punched.
+
+## Status 2026-10-25
+`tell` fields exist in `hex_boss_abilities.py`. Remaining: re-run in editor, `dump_bone_motion.py` if re-timed, both Verify checks.
