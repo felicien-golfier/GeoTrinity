@@ -14,3 +14,6 @@ Docs written: `Source/GeoTrinity/Public/Input/CLAUDE.md` ("Test aim"), `AI/MCP/M
 - [x] Heal by `mcp-epic` (2026-10-19): zone landed on the ally, three taps took Health 20 → 200, `Heal` step completed, `Tut_Pad_04_Exit` opened
 - [ ] Special: not granted in the rooms reachable (encounter 5 is a Fight room); find the step that unlocks it, then check what a `LeftShift` tap does before deciding on a hold seam
 - [ ] Then delete this file
+
+## Status 2026-10-25
+Code ticks hold, but the file's `UPROPERTY(EditAnywhere)` text is stale (code is `EditInstanceOnly, Transient` under `WITH_EDITORONLY_DATA`; `Input/CLAUDE.md` is right). Remaining: Special not granted in reachable rooms; check `LeftShift` tap.

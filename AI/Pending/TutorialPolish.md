@@ -14,3 +14,6 @@ Read first: `AI/CodingStyle.md`, `AI/Python/Tutorial/CLAUDE.md` ("Read the scene
 - [ ] `encounters_diff.py` (carry hand edits), then `tutorial_encounters.py` (creates `Tut_Shoot_FirstDummyPoint`, removes arrival zones, rewrites steps)
 - [ ] Headless `pie_tutorial_flow.py` (Landing → Shoot) and `pie_tutorial_jump.py`
 - [ ] User plays: Deploy and Special rooms (page after the Cat line; Special sting when the beam is never pressed); tune `FIRST_DUMMY_DEATH_SECONDS` (2 s placeholder) against the death montage; rewrite the sting line
+
+## Status 2026-10-25
+Code/scripts present. Remaining: build + tests, script re-run (maybe done per Tutorial.md), headless `pie_tutorial_*`, playtest, tune `FIRST_DUMMY_DEATH_SECONDS`, sting line.

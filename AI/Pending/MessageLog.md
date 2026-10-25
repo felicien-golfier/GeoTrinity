@@ -15,3 +15,6 @@ Done: C++ (`GeoMessageSubsystem`, `GeoMessageLog`, root clears on `CloseMenu` / 
 - [ ] Layout audit `AI/Python/Runtime/pie_layout_audit.py` on a page (no mouse).
 - [x] Rules wired in C++ (`Gems/CLAUDE.md` "Messages"), Forge `MessageText` removed (code, `gems_page.py`, `WBP_GemForge`); built, `GeoTrinity.MessageLog` and `GeoTrinity.Gems` pass.
 - [ ] Not wired (gameplay-side, the strip is menu-only): class level-up, loot, echo unlock. Delete this file once the two editor items above are checked.
+
+## Status 2026-10-25
+Code, tests and `message_log.py` exist. Remaining: `WBP_MenuFrame` `LineHeight`/`LeftInset` tuning, `Label` role check, `pie_layout_audit.py`.

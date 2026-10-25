@@ -21,3 +21,6 @@ Goal: the Cat reads as a living cat, not a robot; a new clip has it splashed apa
 - [x] `Tools\Build_Editor.bat` is up to date (the shim is in the DebugGame DLLs)
 - [ ] With the editor open, run `AI/Python/Cat/Anim/cat_anim_blueprint.py` → `ABP_Cat`, read `AI/Output/cat_anim_bp.json`
 - [ ] User judges the feel in the editor (no PIE unless asked): idle head pitch / slid head / ears, walk stride, jump timing, portal size against the Cat, the cut at the plane (a throwaway skeletal-mesh actor in a scratch level only if a visual check is asked; no actor class for now)
+
+## Status 2026-10-25
+Remaining: run the `AI/Python/Cat/Anim/` scripts and `cat_anim_blueprint.py` in the editor, read the reports, user judges feel. Docs-written paths are stale (real layout: `AI/Python/Cat/CLAUDE.md`).

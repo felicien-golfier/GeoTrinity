@@ -7,3 +7,6 @@ Code done and built (Editor target): `EchoButton`, `EchoText`, `FillTextRole` go
 ## Editor / Blueprint (by hand or script)
 - [ ] `/Game/HUD/InGameMenu/WBP_GemLoadout` — delete the stale `EchoButton` in `DetailButtons` (the script never removes widgets), then drop its line from `AI/Python/UI/asset_values.json`.
 - [ ] Look: REPLACE ALL fits at the normal text role, the echo socket reads as nested outlines, tune `EchoNestScale` on `DA_UITheme` if needed (user's editor check).
+
+## Status 2026-10-25
+C++ cleanup verified. Remaining: delete stale `EchoButton` in `WBP_GemLoadout`, check look in editor (`EchoNestScale` on `DA_UITheme`).

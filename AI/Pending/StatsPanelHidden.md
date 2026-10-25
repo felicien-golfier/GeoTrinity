@@ -8,3 +8,6 @@ Docs written: `Source/GeoTrinityUI/Public/HUD/Team/CLAUDE.md` ("Stats panel").
 
 ## Verify
 - [ ] Build the editor target (user asks); no automated test: pure widget view state, nothing a headless layer proves.
+
+## Status 2026-10-25
+Code and docs verified. Remaining: WBP `LessFormat` override, `ToggleHintText` outside `StatsGrid`, editor build.

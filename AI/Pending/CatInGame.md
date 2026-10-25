@@ -29,3 +29,6 @@ Restructured 2026-10-20 (captain / navigator): the cat only walks, roams, plays 
 ## Verify
 - [x] `Tutorial/Runtime/pie_tutorial_flow.py` passes headless (Landing → Shoot; Cat shown at start, hidden 110 cm before `Tut_Landing_PadExit`); the flow now presses the skip key (`TroobleshootingLogs.md`)
 - [ ] User, in PIE when asked: splat → idle facing the player, walk line, roam, jump into the pad (the clip's portal opening on the open pad: concentric, check it reads), walk speed vs foot slide
+
+## Status 2026-10-25
+Work done but checklist is stale: it lists `AGeoCat` commands / tests (`WalkPath`, `JumpHides`, `JumpApproach`) replaced by `Walk`/`Roam`/`PlayMontage`, `GeoCatWalkAction`/`GeoCatRoamAction`/`GeoCatMontageAction` (`Encounter/Action/Cat/`) and tests `Cat.Walk`, `WalkStopDistance`, `Replace`, `RoamStaysInside`, `Montage`. Remaining: user PIE look; then rewrite or delete.

@@ -26,3 +26,6 @@ Grouping checked: one caster class next to `EnemyCharacter.h`, one action next t
 
 ## Verify
 - [x] Parsed report: 62/62, the four HiddenCaster / ActivateAbility tests included
+
+## Status 2026-10-25
+C++ and 4 tests verified. Remaining: `BP_HiddenCaster` Blueprint and per-room `AGeoDummyArena` setup (editor).

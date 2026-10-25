@@ -168,3 +168,6 @@ Docs first: `Gem/CLAUDE.md` (profile events), `Encounter/Trigger/CLAUDE.md` (two
 - [ ] Intro screens: layered images + drift data (`IntroBoard.md`); layer art for pages 1-2
 - [ ] Landing level dressing; Cat hologram: mesh done (`SM_Cat`, `Cat/Mesh/generate_cat_mesh.py`), left: materials per slot (palette, open design above), placement; rig + animation → `CatAnimation.md`
 - [ ] Cat animations: whistle (note glyph + tail sway), stunned (jaw drop, wide eyes, spin)
+
+## Status 2026-10-25
+Large; many items open. Notably: test `Characters.DashOverVoid` not written; slice 6 miniboss checkbox stale (Task split says built); mover patrol, intro art, Cat rig/animations, Prompt page, `IA_InteractUI` mapping unconfirmed. Referenced by several docs/scripts, so never delete without fixing them.

@@ -12,3 +12,6 @@ Docs written: `AI/Python/Level/CLAUDE.md` ("Hand edits survive a re-run").
 
 ## Verify
 - [ ] Headless re-run on the current map: report lists the kept values, `git status` shows no `Tutorial.umap` change from a no-op run.
+
+## Status 2026-10-25
+Not implemented: `tutorial_map.py` / `tutorial_encounters.py` do not use `asset_guard`; every Scripts item open. Note `AI/Python/Tutorial/CLAUDE.md:39-45` already documents it as built.

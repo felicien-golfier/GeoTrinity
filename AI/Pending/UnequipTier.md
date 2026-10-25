@@ -7,3 +7,6 @@ Code, `gems_page.py`, `asset_values.json` and the test are written, unbuilt and 
 ## Left
 - [ ] Build (editor closed, `Tools\*.bat`, `GEO_NO_PAUSE=1`), then `Tools\Run_Tests.bat GeoTrinity.Gems`.
 - [ ] Run `AI/Python/Gem/gems_page.py` (editor): adds `UnequipTierRow` under the stacks, removes stale `UnequipButton` / `EchoButton` unless hand-edited.
+
+## Status 2026-10-25
+Code, test and script exist. Remaining: build + `Run_Tests GeoTrinity.Gems`, run `gems_page.py` in editor.
