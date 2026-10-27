@@ -123,7 +123,7 @@ void AGeoEffectZone::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
 	ZoneJudge.Stop();
 	Super::EndPlay(EndPlayReason);
-}ww
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoEffectZone::JudgeZone()
