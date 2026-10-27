@@ -142,6 +142,9 @@ local-player-only bindings before `AddDynamic`. Exception: a binding made in `On
   it (`AI/Testing.md`), next to the code it covers; the Pending file lists the files and the run command.
 - Run them headless (`Tools\Run_Tests.bat [filter]`) once built. A feature is not done without its tests unless they
   cannot be automated; say why.
+- A bug fix asks: can it come back silently? Yes (logic, ordering, replication, data wiring, tutorial flow) → a
+  regression test that fails on the old code, added to the existing test of that area when one fits, else a new one;
+  the post-mortem in `TroobleshootingLogs.md` names it. No (typo, one-off asset, cannot be automated) → say why.
 - Never `Sleep()`; wait on an observable condition. Layers, paths and flags: `AI/Testing.md`.
 
 ## Grouping

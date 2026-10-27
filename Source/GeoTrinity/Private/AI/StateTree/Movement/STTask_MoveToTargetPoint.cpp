@@ -3,7 +3,6 @@
 #include "AI/StateTree/Movement/STTask_MoveToTargetPoint.h"
 
 #include "AI/GeoEnemyAIController.h"
-#include "Actor/Arena/GeoArena.h"
 #include "Characters/GeoCharacter.h"
 #include "StateTreeExecutionContext.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -14,13 +13,14 @@ EStateTreeRunStatus FSTTask_MoveToTargetPoint::EnterState(FStateTreeExecutionCon
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AGeoCharacter const* GeoCharacter =
 		InstanceData.AIController ? Cast<AGeoCharacter>(InstanceData.AIController->GetPawn()) : nullptr;
-	AGeoArena const* Arena = AGeoArena::GetArenaOfBoss(GeoCharacter);
-	if (!ensureMsgf(Arena, TEXT("MoveToTargetPoint: %s was not spawned by an arena"), *GetNameSafe(GeoCharacter)))
+	if (!ensureMsgf(GeoCharacter, TEXT("MoveToTargetPoint: AIController has no GeoCharacter pawn"))
+		|| !ensureMsgf(InstanceData.ArenaTag.IsValid(), TEXT("MoveToTargetPoint: %s's StateTree sets no ArenaTag"),
+					   *GeoCharacter->GetName()))
 	{
 		return EStateTreeRunStatus::Failed;
 	}
 
-	TArray<AActor*> Points = GeoLib::GetTargetPoints(GeoCharacter, InstanceData.PointTag, Arena->ArenaTag);
+	TArray<AActor*> Points = GeoLib::GetTargetPoints(GeoCharacter, InstanceData.PointTag, InstanceData.ArenaTag);
 	Points.RemoveAll(
 		[&](AActor const* Point)
 		{

@@ -193,7 +193,7 @@ void UPattern::EndPattern(bool const bForceStop)
 
 	if (bForceStop)
 	{
-		UAnimInstance* AnimInstance = GeoASLib::GetAnimInstance(StoredPayload);
+		UAnimInstance* AnimInstance = GetMontageAnimInstance();
 		if (IsValid(AnimInstance))
 		{
 			AnimInstance->StopAllMontages(.2f);

@@ -38,6 +38,11 @@ In the real-world pages (1-2) the Cat is a soft silhouette with a halo; in game 
 - Dialogue box: the Board's face portrait beside the line (`HUD/Tutorial/CLAUDE.md`, "Cat face"), identical shape and motion; mouth moves while it speaks.
 - The 3D Cat (`AGeoCat`, `Actor/CLAUDE.md`) lives in the Landing room, same palette. How it moves: `CatAnimation.md`; staged by the encounter (`Steps.md`, step 1 "Cat staging").
 
+## Training Room Cat
+- A second body of the same Cat (`AGeoTrainingCat`, `Source/GeoTrinity/Public/Characters/CLAUDE.md`), sitting in the room's top-left corner. Not tutorial staging: free-roaming comic relief for whoever practises.
+- Calm: tells a `Pun` now and then, only when a player is in earshot. Hit: a `Retort` and a non-lethal warning burst. Hit again within the dare window: it chases and kills, then walks home and sulks back to calm.
+- Lines: `Data/CatLines.txt`, categories `Pun` and `Retort` (`Source/GeoTrinity/Public/Tool/CatLine/CLAUDE.md`). Retort = the Cat insulting the situation ("you just hit a cat"), never the player's skill (`Tone.md`).
+
 ## Voice samples (draft bank; final text lives in the Tutorial Board artifact)
 - "Welcome, adventurers. Please keep your hands inside the game at all times. I've lost mine already."
 - "Heal. You're the Circle. No, nobody will thank you. Yes, it is on purpose."

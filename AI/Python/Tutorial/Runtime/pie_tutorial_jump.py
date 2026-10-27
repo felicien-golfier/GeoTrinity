@@ -1,7 +1,7 @@
 """
 Check of the tutorial's jump start and a room-to-room teleport in one process (listen host, no PIE client, no mouse, no focus): the
 game starts in the room named by the URL's portal (`Tutorial?listen#Zones`), the script plays that room's part and steps on
-the final exit pad, then reports where the player lands. Only the last room is played: the pawn stands in each zone's box,
+the final exit pad, then reports where the player lands. Only the last room is played: the pawn stands on the Shield then the Heal zone point,
 stays in the last until the lethal wave kills it, then waits just past the safe-spot waves' reach (they hit by centre
 only), so it survives all three; Deploy / Special need a heal and are left to the user. Cat lines are skipped as a player
 mashing F would.
@@ -20,8 +20,9 @@ ROOM_PITCH = 2900.0   # tutorial_map.py: 2 * 700 + ROOM_GAP
 LAST_ROOM = 6         # Zones, the room played
 NEXT_ROOM_HALF_X = 700.0   # tutorial_map.py room half size
 EXIT_PAD = "Tut_Pad_06_Exit"
-ZONE_VOLUMES = ["Tut_Zones_ZoneVolume_Heal", "Tut_Zones_ZoneVolume_Shield", "Tut_Zones_ZoneVolume_Damage"]
-ZONE_SECONDS = 2.0    # in each box
+ZONE_POINTS = ["Tut_Zones_ZonePoint_Shield", "Tut_Zones_ZonePoint_Heal"]  # the zones born after the Damage zone has grown
+GROW_WAIT = 14.0      # CT_Tutorial ColorZoneGrowSeconds (8) plus the intro lines
+ZONE_SECONDS = 2.0    # on each point
 ENTRANCE_REACH_X = -300.0   # from the room's centre: a pawn behind it has respawned at the entrance
 SAFE_STRIP_X = 662.0  # from the room's centre: past the waves' travel (tutorial_waves.py), which hit by centre only
 
@@ -75,15 +76,15 @@ def pads_of(world):
 
 
 def play_zones(world, pawn):
-    """The room's task: each zone's box in turn, the last one until the lethal wave kills the pawn, then the safe strip."""
+    """The room's task: the Shield then the Heal point in turn, after the growth, the last one until the lethal wave kills the pawn, then the safe strip."""
     centre = LAST_ROOM * ROOM_PITCH
-    index = int((state["elapsed"] - state["work_start"]) / ZONE_SECONDS)
-    if index < len(ZONE_VOLUMES) and index != state["zone"]:
-        volume = next(a for a in actors_of(world, unreal.TriggerBox) if a.get_actor_label() == ZONE_VOLUMES[index])
+    index = int((state["elapsed"] - state["work_start"] - GROW_WAIT) / ZONE_SECONDS)
+    if 0 <= index < len(ZONE_POINTS) and index != state["zone"]:
+        volume = next(a for a in actors_of(world, unreal.Actor) if a.get_actor_label() == ZONE_POINTS[index])
         pawn.set_actor_location(volume.get_actor_location() + unreal.Vector(0.0, 0.0, 60.0), False, True)
-        log("pawn on %s" % ZONE_VOLUMES[index])
+        log("pawn on %s" % ZONE_POINTS[index])
         state["zone"] = index
-    elif index >= len(ZONE_VOLUMES) and not state["died"] and pawn.get_actor_location().x < centre + ENTRANCE_REACH_X:
+    elif index >= len(ZONE_POINTS) and not state["died"] and pawn.get_actor_location().x < centre + ENTRANCE_REACH_X:
         log("pawn died to the lethal wave, respawned at %s" % pawn.get_actor_location())
         pawn.set_actor_location(unreal.Vector(centre + SAFE_STRIP_X, 0.0, 60.0), False, True)
         state["died"] = True

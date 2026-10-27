@@ -53,4 +53,5 @@ Motion rules in `MCP_Animation.md` before authoring an animation. Script index: 
 - **Blueprint node deletion**: `delete_node` over the bridge is blocked by the permission classifier; dump the graph, write the C++, hand the user the exact nodes to delete.
 - **Server RPCs run locally** from editor Python: `MCP_PIE.md`.
 - **Hand edits**: scripts never overwrite what the user changed by hand (`AI/UI.md`, `asset_guard`).
+- **Scripts are CRLF**: scripted text edits open with `newline=''`, or multi-line matches silently miss.
 - **MCP client down**: probe the bridge port before reporting automation unavailable (`MCP_LiveCodingAndConnect.md`).

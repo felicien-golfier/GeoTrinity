@@ -10,9 +10,12 @@
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/Component/FX/GeoLoopSoundComponent.h"
 #include "Characters/GeoEnemySetup.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/Character.h"
+#include "Net/UnrealNetwork.h"
+#include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 AEnemyCharacter::AEnemyCharacter(FObjectInitializer const& ObjectInitializer) :
@@ -44,6 +47,12 @@ void AEnemyCharacter::BeginPlay()
 	InitGAS();
 }
 
+void AEnemyCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AEnemyCharacter, bFriendlyLook);
+}
+
 void AEnemyCharacter::InitGAS()
 {
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
@@ -68,6 +77,8 @@ void AEnemyCharacter::InitGAS()
 void AEnemyCharacter::ApplySetup(FGeoEnemySetup const& Setup)
 {
 	TeamId = Setup.Team;
+	bFriendlyLook = TeamId == ETeam::Player;
+	ApplyFriendlyLook();
 	ResetToFullLifeWhenReachingZero = Setup.bResetToFullLife;
 	if (Setup.StateTree)
 	{
@@ -88,6 +99,24 @@ void AEnemyCharacter::ApplySetup(FGeoEnemySetup const& Setup)
 	AggroRadiusOverride = Setup.AggroRadius;
 	MaxHealthOverride = Setup.MaxHealth;
 	StartHealthRatio = Setup.StartHealthRatio;
+}
+
+void AEnemyCharacter::ApplyFriendlyLook()
+{
+	if (bFriendlyLook && FriendlyBodyMesh)
+	{
+		GetMesh()->SetSkeletalMesh(FriendlyBodyMesh);
+	}
+
+	if (bFriendlyLook && FriendlyBodyMaterial)
+	{
+		GetMesh()->SetMaterial(0, FriendlyBodyMaterial);
+	}
+}
+
+void AEnemyCharacter::OnRep_FriendlyLook()
+{
+	ApplyFriendlyLook();
 }
 
 void AEnemyCharacter::ApplyMaxHealthOverride()

@@ -1,6 +1,6 @@
 """
-Tutorial assets for GeoTrinity: CT_Tutorial (every tutorial number, Steps.md "Tuning") and the two dummy StateTrees
-/Game/AI/Dummy/ST_Dummy_Shooter and ST_Dummy_Chaser, shared with the Training Room. Enemy variants are setups on the
+Tutorial assets for GeoTrinity: CT_Tutorial (every tutorial number, Steps.md "Tuning") and the three dummy StateTrees
+/Game/AI/Dummy/ST_Dummy_Shooter, ST_Dummy_Chaser and ST_Dummy_Mover, shared with the Training Room. Enemy variants are setups on the
 spawn actions (tutorial_encounters.py), never Blueprints.
 The tutorial map and its encounters come from tutorial_map.py and tutorial_encounters.py.
 Idempotent: assets are keyed by path. Report: AI/Output/tutorial_assets_report.txt.
@@ -18,6 +18,9 @@ CURVE_NAME = "CT_Tutorial"
 ST_SRC = "/Game/AI/ST_EnemyBehaviour"
 ST_SHOOTER = "/Game/AI/Dummy/ST_Dummy_Shooter"
 ST_CHASER = "/Game/AI/Dummy/ST_Dummy_Chaser"
+ST_MOVER = "/Game/AI/Dummy/ST_Dummy_Mover"
+MOVER_TAG = "TargetPoint.Tutorial.Mover"
+MOVER_ARENA_TAG = "Arena.Tutorial.Dummies"
 SHOOT_ABILITY_TAG = "Ability.Spell.ProjectileToAllPlayers"
 
 # Placeholder values until the user tunes them; the three columns are the difficulty levels (CT_BossHex shape).
@@ -29,6 +32,9 @@ ROWS = [
     ("DummyZoneDamage", 3.0),
     ("DummyZoneGrowthTime", 12.0),
     ("DummyZoneMaxRadius", 700.0),
+    ("ColorZoneDamage", 2.0),
+    ("ColorZoneGrowSeconds", 8.0),
+    ("ColorZoneMaxRadius", 1350.0),  # past the Zones room's corner (half 700 x 1100)
     ("MinibossProjectileDamage", 8.0),
     ("MinibossProjectileSpeed", 600.0),
 ]
@@ -102,12 +108,30 @@ def build_chaser_tree():
         log("state tree", ST_CHASER)
 
 
+def build_mover_tree():
+    """Mover outside any arena gate: Root -> Patrol, walking from one `TargetPoint.Tutorial.Mover` point of its room to
+    another, forever (the state re-enters itself, each entry picks a new point)."""
+    if not unreal.EditorAssetLibrary.does_asset_exist(ST_MOVER):
+        tree = unreal.EditorAssetLibrary.duplicate_asset(ST_SRC, ST_MOVER)
+        builder = unreal.GeoStateTreeBuilderUtil.get_default_object()
+        builder.remove_state(tree, "InitFight")
+        builder.add_state(tree, "Patrol", "Root", 0)
+        builder.add_task_to_state(tree, "Patrol", "STTask_MoveToTargetPoint")
+        builder.set_task_property(tree, "Patrol", "STTask_MoveToTargetPoint", "PointTag", '(TagName="%s")' % MOVER_TAG)
+        builder.set_task_property(tree, "Patrol", "STTask_MoveToTargetPoint", "ArenaTag", '(TagName="%s")' % MOVER_ARENA_TAG)
+        builder.add_transition(tree, "Patrol", "Patrol", unreal.StateTreeTransitionTrigger.ON_STATE_COMPLETED)
+        builder.remove_state(tree, "WaitFightToStart")
+        unreal.EditorAssetLibrary.save_loaded_asset(tree)
+        log("state tree", ST_MOVER)
+
+
 def run():
     REPORT[:] = []
     try:
         build_curve_table()
         build_shooter_tree()
         build_chaser_tree()
+        build_mover_tree()
         log("OK")
     except Exception:
         log("FAILED", traceback.format_exc())

@@ -14,6 +14,8 @@ class UAnimGraphNode_Root;
 class UEdGraph;
 class UAnimMontage;
 class UAnimSequence;
+class UBlendSpace;
+class UBlendSpace1D;
 class USkeletalMesh;
 class USkeleton;
 class UStaticMesh;
@@ -119,9 +121,11 @@ public:
 									  UAnimSequence* Idle);
 
 	/**
-	 * Generic: rebuilds AnimBlueprint's AnimGraph as a blend of two looping sequences played through a slot:
+	 * Generic: rebuilds AnimBlueprint's AnimGraph as an idle blended into a locomotion blend space, played through a
+	 * slot:
 	 *
-	 *   Idle (A) + Moving (B), blended by the float member variable BlendVariable (0 = Idle, 1 = Moving)
+	 *   Idle (A) + Moving (B), blended by BlendVariable / IdleToMovingRange clamped to 0-1 (0 = Idle, 1 = Moving)
+	 *   Moving's X axis = BlendVariable
 	 *   -> Slot SlotName -> Output
 	 *
 	 * BlendVariable is added to the AnimBlueprint when it has none, for the owner to write. SlotName is registered on
@@ -132,8 +136,17 @@ public:
 	 * skeleton; returns false when the compile fails.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
-	static bool BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, UAnimSequence* Idle, UAnimSequence* Moving,
-									  FName BlendVariable, FName SlotName);
+	static bool BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, UAnimSequence* Idle, UBlendSpace* Moving,
+									  FName BlendVariable, FName SlotName, float IdleToMovingRange);
+
+	/**
+	 * Generic: rebuilds BlendSpace's single axis as AxisName from 0 to Max and its samples as Sequences[i] at
+	 * Positions[i] (the sequences' own speeds, say), then rebuilds its runtime data. Saves the asset; returns false on
+	 * mismatched arrays, a position outside 0-Max (never added) or a sample the blend space refuses.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool BuildBlendSpace1D(UBlendSpace1D* BlendSpace, FString AxisName, float Max,
+								  TArray<UAnimSequence*> Sequences, TArray<float> Positions);
 
 	/**
 	 * Generic: puts a Slot node NewSlotName right after the Slot node AfterSlotName in AnimBlueprint's AnimGraph, so a

@@ -2,6 +2,7 @@
 
 #include "Actor/Arena/GeoArenaVolume.h"
 #include "Actor/GeoCat.h"
+#include "Animation/AnimMontage.h"
 #include "Components/BoxComponent.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/GeoTestWorld.h"
@@ -139,6 +140,71 @@ bool FGeoCatMontageTest::RunTest(FString const& /*Parameters*/)
 	TestFalse(TEXT("Nothing runs after"), Cat->IsOrderRunning());
 	Cat->AdvanceMove(1.f);
 	TestTrue(TEXT("The walk is dropped"), Cat->GetActorLocation().Equals(FVector::ZeroVector));
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCatIdleVariantBagTest, "GeoTrinity.Cat.IdleVariantBag", GeoCatTestFlags)
+
+bool FGeoCatIdleVariantBagTest::RunTest(FString const& /*Parameters*/)
+{
+	FGeoCatFixture Fixture;
+	AGeoCat* const Cat = Fixture.Cat;
+	TestNull(TEXT("No variant to draw"), Cat->PickIdleVariant());
+
+	constexpr int32 VariantCount = 5;
+	for (int32 Index = 0; Index < VariantCount; ++Index)
+	{
+		Cat->IdleVariants.Add(NewObject<UAnimMontage>(GetTransientPackage()));
+	}
+
+	UAnimMontage* Previous = nullptr;
+	bool bNeverTwiceInARow = true;
+	bool bEveryRoundComplete = true;
+	for (int32 Round = 0; Round < 20; ++Round)
+	{
+		TSet<UAnimMontage*> Drawn;
+		for (int32 Draw = 0; Draw < VariantCount; ++Draw)
+		{
+			UAnimMontage* const Variant = Cat->PickIdleVariant();
+			bNeverTwiceInARow &= Variant != Previous;
+			Drawn.Add(Variant);
+			Previous = Variant;
+		}
+
+		bEveryRoundComplete &= Drawn.Num() == VariantCount;
+	}
+
+	TestTrue(TEXT("Every variant comes round before any repeats"), bEveryRoundComplete);
+	TestTrue(TEXT("Never the same twice in a row, round borders included"), bNeverTwiceInARow);
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCatIdleVariantsStandOnlyTest, "GeoTrinity.Cat.IdleVariantsStandOnly",
+								 GeoCatTestFlags)
+
+bool FGeoCatIdleVariantsStandOnlyTest::RunTest(FString const& /*Parameters*/)
+{
+	FGeoCatFixture Fixture;
+	AGeoCat* const Cat = Fixture.Cat;
+	float const Start = Cat->GetIdleVariantCountdown();
+	TestTrue(TEXT("Armed inside the pause range"),
+			 Start >= Cat->IdleVariantPause.X && Start <= Cat->IdleVariantPause.Y);
+
+	Cat->Walk({FVector(1000.f, 0.f, 0.f)}, 100.f, 0.f);
+	Cat->AdvanceMove(2.f);
+	TestEqual(TEXT("A walk does not count down"), Cat->GetIdleVariantCountdown(), Start);
+
+	Cat->PlayMontage(nullptr);
+	Cat->AdvanceMove(2.f);
+	TestEqual(TEXT("Standing counts down"), Cat->GetIdleVariantCountdown(), Start - 2.f);
+
+	Cat->Walk({FVector(1000.f, 0.f, 0.f)}, 100.f, 0.f);
+	Cat->AdvanceMove(2.f);
+	TestEqual(TEXT("A new walk holds it again"), Cat->GetIdleVariantCountdown(), Start - 2.f);
 
 	return true;
 }

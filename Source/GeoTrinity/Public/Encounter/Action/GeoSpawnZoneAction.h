@@ -48,6 +48,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
 	ETeam Team = ETeam::Neutral;
 
+	/** Optional. Raised on UGeoEncounterSubsystem (Actor = the player) whenever a player begins overlapping the zone,
+	 * and once at spawn for each player already inside. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (Categories = "Encounter.Event"))
+	FGameplayTag EnteredEvent;
+
 private:
+	UFUNCTION()
+	void OnZoneBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
+
+	void RaiseEntered(AActor& Player) const;
+
 	TWeakObjectPtr<AGeoEffectZone> Zone;
 };

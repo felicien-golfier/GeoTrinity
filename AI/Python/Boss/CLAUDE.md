@@ -28,6 +28,7 @@ Hex ability clips (`hex_boss_abilities.py`): the wind-up is readable from its fi
 | Script | Does |
 |---|---|
 | `generate_star_mesh.py` | Star boss body: eight points, counter-points, star-shaped heart hole |
+| `generate_soft_star_mesh.py` | Friendly dummy body `SKM_SoftStar` (rounded star, pale core slot, on `SK_Star`) + `MI_SoftStar_Body` / `MI_SoftStar_Core`; `BP_Dummy` points at them |
 | `rig_star.py` | Rebuild `SKM_Star` on `SK_Star`'s hierarchy, weighted so existing clips play unchanged |
 
 ## Star/Anim/

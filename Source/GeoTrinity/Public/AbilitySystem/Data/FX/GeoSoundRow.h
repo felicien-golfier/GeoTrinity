@@ -14,6 +14,7 @@
 class UAudioComponent;
 class USceneComponent;
 class USoundBase;
+class USoundConcurrency;
 class UCurveFloat;
 
 UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
@@ -98,6 +99,11 @@ struct FGeoSoundEntry
 	 * keeps its roll while its curve is re-pushed. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
 	FVector2D RandomPitchMultiplierRange = FVector2D(1.f, 1.f);
+
+	/** Limits how many copies of this sound play together on this machine. Null = the project default for one-shots
+	 * (UGameDataSettings::DefaultOneShotConcurrency), none for a loop. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<USoundConcurrency> Concurrency;
 };
 
 // MIGRATION SHIM — delete with FGeoCueParam::SoundTag once the sounds are re-authored as moments.
@@ -148,6 +154,9 @@ public:
 
 	/** A random pitch multiplier in Entry.RandomPitchMultiplierRange, rolled once per play of Entry. */
 	static float RollPitchVariation(FGeoSoundEntry const& Entry);
+
+	/** Returns Entry.Concurrency; when null, the project default for a one-shot and null for a loop. */
+	static USoundConcurrency* GetConcurrency(FGeoSoundEntry const& Entry, bool bOneShot);
 
 	/** Plays Entry once as a 2D sound, applying ShouldPlay gating and instigator-relative volume and pitch. */
 	UFUNCTION(BlueprintCallable, Category = "GeoTrinity|Sound", meta = (DefaultToSelf = "WorldContextObject"))

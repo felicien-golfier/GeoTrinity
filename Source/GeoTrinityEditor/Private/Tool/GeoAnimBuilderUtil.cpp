@@ -3,6 +3,7 @@
 #include "Tool/GeoAnimBuilderUtil.h"
 
 #include "AnimGraphNode_ApplyAdditive.h"
+#include "AnimGraphNode_BlendSpacePlayer.h"
 #include "AnimGraphNode_IdentityPose.h"
 #include "AnimGraphNode_LayeredBoneBlend.h"
 #include "AnimGraphNode_Root.h"
@@ -15,6 +16,8 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/BlendSpace.h"
+#include "Animation/BlendSpace1D.h"
 #include "Animation/Skeleton.h"
 #include "Channels/MovieSceneFloatChannel.h"
 #include "EdGraphSchema_K2.h"
@@ -23,6 +26,7 @@
 #include "FileHelpers.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_VariableGet.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "MeshDescription.h"
@@ -285,11 +289,13 @@ UAnimGraphNode_Root* UGeoAnimBuilderUtil::ResetAnimGraph(UAnimBlueprint* AnimBlu
 	return Output;
 }
 
-bool UGeoAnimBuilderUtil::BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, UAnimSequence* Idle,
-												UAnimSequence* Moving, FName BlendVariable, FName SlotName)
+bool UGeoAnimBuilderUtil::BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, UAnimSequence* Idle, UBlendSpace* Moving,
+												FName BlendVariable, FName SlotName, float IdleToMovingRange)
 {
-	if (!ensureMsgf(AnimBlueprint && AnimBlueprint->TargetSkeleton && Idle && Moving,
-					TEXT("BuildBlendedAnimGraph needs an AnimBlueprint with a target skeleton and two sequences")))
+	if (!ensureMsgf(
+			AnimBlueprint && AnimBlueprint->TargetSkeleton && Idle && Moving && IdleToMovingRange > 0.f,
+			TEXT(
+				"BuildBlendedAnimGraph needs an AnimBlueprint with a target skeleton, a sequence, a blend space and a range")))
 	{
 		return false;
 	}
@@ -317,19 +323,27 @@ bool UGeoAnimBuilderUtil::BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, U
 	int32 const OutputX = Output->NodePosX;
 	int32 const OutputY = Output->NodePosY;
 
-	auto AddPlayer = [AnimGraph, OutputX, OutputY, ColumnWidth, RowHeight](UAnimSequence* Sequence, int32 Row)
-	{
-		FGraphNodeCreator<UAnimGraphNode_SequencePlayer> Creator(*AnimGraph);
-		UAnimGraphNode_SequencePlayer* Player = Creator.CreateNode(false);
-		Player->SetAnimationAsset(Sequence);
-		Player->NodePosX = OutputX - 3 * ColumnWidth;
-		Player->NodePosY = OutputY + Row * RowHeight;
-		Creator.Finalize();
-		return Player;
-	};
+	FGraphNodeCreator<UAnimGraphNode_SequencePlayer> IdleCreator(*AnimGraph);
+	UAnimGraphNode_SequencePlayer* IdlePlayer = IdleCreator.CreateNode(false);
+	IdlePlayer->SetAnimationAsset(Idle);
+	IdlePlayer->NodePosX = OutputX - 3 * ColumnWidth;
+	IdlePlayer->NodePosY = OutputY;
+	IdleCreator.Finalize();
 
-	UAnimGraphNode_SequencePlayer* IdlePlayer = AddPlayer(Idle, 0);
-	UAnimGraphNode_SequencePlayer* MovingPlayer = AddPlayer(Moving, 1);
+	FGraphNodeCreator<UAnimGraphNode_BlendSpacePlayer> MovingCreator(*AnimGraph);
+	UAnimGraphNode_BlendSpacePlayer* MovingPlayer = MovingCreator.CreateNode(false);
+	MovingPlayer->SetAnimationAsset(Moving);
+	MovingPlayer->NodePosX = OutputX - 3 * ColumnWidth;
+	MovingPlayer->NodePosY = OutputY + RowHeight;
+	MovingCreator.Finalize();
+
+	FGraphNodeCreator<UK2Node_CallFunction> AlphaCreator(*AnimGraph);
+	UK2Node_CallFunction* Alpha = AlphaCreator.CreateNode(false);
+	Alpha->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(
+		GET_FUNCTION_NAME_CHECKED(UKismetMathLibrary, MapRangeClamped)));
+	Alpha->NodePosX = OutputX - 3 * ColumnWidth;
+	Alpha->NodePosY = OutputY - RowHeight;
+	AlphaCreator.Finalize();
 
 	FGraphNodeCreator<UAnimGraphNode_TwoWayBlend> BlendCreator(*AnimGraph);
 	UAnimGraphNode_TwoWayBlend* Blend = BlendCreator.CreateNode(false);
@@ -340,7 +354,7 @@ bool UGeoAnimBuilderUtil::BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, U
 	FGraphNodeCreator<UK2Node_VariableGet> VariableCreator(*AnimGraph);
 	UK2Node_VariableGet* Variable = VariableCreator.CreateNode(false);
 	Variable->VariableReference.SetSelfMember(BlendVariable);
-	Variable->NodePosX = OutputX - 3 * ColumnWidth;
+	Variable->NodePosX = OutputX - 4 * ColumnWidth;
 	Variable->NodePosY = OutputY - RowHeight;
 	VariableCreator.Finalize();
 
@@ -359,9 +373,25 @@ bool UGeoAnimBuilderUtil::BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, U
 						  TEXT("Could not link into pin %s of %s"), *InputPinName.ToString(), *To->GetName());
 	};
 
-	bool const bLinked = Connect(IdlePlayer->FindPin(TEXT("Pose"), EGPD_Output), Blend, TEXT("A"))
+	auto SetDefault = [Schema, Alpha](FName PinName, float Value)
+	{
+		UEdGraphPin* Pin = Alpha->FindPin(PinName, EGPD_Input);
+		bool const bFound = ensureMsgf(Pin, TEXT("MapRangeClamped has no pin %s"), *PinName.ToString());
+		if (bFound)
+		{
+			Schema->TrySetDefaultValue(*Pin, FString::SanitizeFloat(Value));
+		}
+
+		return bFound;
+	};
+
+	bool const bLinked = SetDefault(TEXT("InRangeA"), 0.f) && SetDefault(TEXT("InRangeB"), IdleToMovingRange)
+		&& SetDefault(TEXT("OutRangeA"), 0.f) && SetDefault(TEXT("OutRangeB"), 1.f)
+		&& Connect(Variable->GetValuePin(), Alpha, TEXT("Value"))
+		&& Connect(Alpha->GetReturnValuePin(), Blend, TEXT("Alpha"))
+		&& Connect(Variable->GetValuePin(), MovingPlayer, TEXT("X"))
+		&& Connect(IdlePlayer->FindPin(TEXT("Pose"), EGPD_Output), Blend, TEXT("A"))
 		&& Connect(MovingPlayer->FindPin(TEXT("Pose"), EGPD_Output), Blend, TEXT("B"))
-		&& Connect(Variable->GetValuePin(), Blend, TEXT("Alpha"))
 		&& Connect(Blend->FindPin(TEXT("Pose"), EGPD_Output), Slot, TEXT("Source"))
 		&& Connect(Slot->FindPin(TEXT("Pose"), EGPD_Output), Output, TEXT("Result"));
 
@@ -369,6 +399,46 @@ bool UGeoAnimBuilderUtil::BuildBlendedAnimGraph(UAnimBlueprint* AnimBlueprint, U
 	FKismetEditorUtilities::CompileBlueprint(AnimBlueprint);
 	UEditorLoadingAndSavingUtils::SavePackages({AnimBlueprint->GetPackage(), Skeleton->GetPackage()}, false);
 	return bLinked && AnimBlueprint->Status != BS_Error;
+}
+
+bool UGeoAnimBuilderUtil::BuildBlendSpace1D(UBlendSpace1D* BlendSpace, FString AxisName, float const Max,
+											TArray<UAnimSequence*> Sequences, TArray<float> Positions)
+{
+	FStructProperty const* const AxesProperty = BlendSpace
+		? CastField<FStructProperty>(BlendSpace->GetClass()->FindPropertyByName(TEXT("BlendParameters")))
+		: nullptr;
+	FBlendParameter* const Axis =
+		AxesProperty ? AxesProperty->ContainerPtrToValuePtr<FBlendParameter>(BlendSpace) : nullptr;
+	if (!ensureMsgf(Axis && Max > 0.f && Sequences.Num() == Positions.Num() && !Sequences.IsEmpty(),
+					TEXT("BuildBlendSpace1D needs a 1D blend space, a range and one position per sequence")))
+	{
+		return false;
+	}
+
+	BlendSpace->Modify();
+	Axis->DisplayName = AxisName;
+	Axis->Min = 0.f;
+	Axis->Max = Max;
+	for (int32 Index = BlendSpace->GetBlendSamples().Num() - 1; Index >= 0; --Index)
+	{
+		BlendSpace->DeleteSample(Index);
+	}
+
+	bool bAdded = true;
+	for (int32 Index = 0; Index < Sequences.Num(); ++Index)
+	{
+		bAdded &= ensureMsgf(Sequences[Index] && Positions[Index] >= 0.f && Positions[Index] <= Max
+								 && BlendSpace->AddSample(Sequences[Index], FVector(Positions[Index], 0.0, 0.0))
+									 != INDEX_NONE,
+							 TEXT("%s: sample %d has no sequence, lies outside 0-%g or was refused"),
+							 *BlendSpace->GetName(), Index, Max);
+	}
+
+	BlendSpace->ValidateSampleData();
+	BlendSpace->ResampleData();
+	BlendSpace->MarkPackageDirty();
+	UEditorLoadingAndSavingUtils::SavePackages({BlendSpace->GetPackage()}, false);
+	return bAdded;
 }
 
 bool UGeoAnimBuilderUtil::InsertSlotAfter(UAnimBlueprint* AnimBlueprint, FName AfterSlotName, FName NewSlotName,

@@ -11,7 +11,9 @@
 #include "Actor/GeoTargetPoint.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/GeoEnemySetup.h"
+#include "Characters/PlayableCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Encounter/Action/Cat/GeoCatMontageAction.h"
 #include "Encounter/Action/Cat/GeoCatRoamAction.h"
@@ -19,6 +21,7 @@
 #include "Encounter/Action/GeoActivateAbilityAction.h"
 #include "Encounter/Action/GeoAddToCounterAction.h"
 #include "Encounter/Action/GeoCatLineAction.h"
+#include "Encounter/Action/GeoCatLineFromFileAction.h"
 #include "Encounter/Action/GeoDelayAction.h"
 #include "Encounter/Action/GeoQuestCardAction.h"
 #include "Encounter/Action/GeoSetActorHiddenAction.h"
@@ -41,8 +44,12 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameplayTagsManager.h"
+#include "HAL/FileManager.h"
+#include "Materials/Material.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/DataValidation.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "Settings/GameDataSettings.h"
 #include "StateTree.h"
 #include "Tests/GeoTestDeployable.h"
@@ -50,6 +57,7 @@
 #include "Tests/GeoTestEnemy.h"
 #include "Tests/GeoTestPatternAbility.h"
 #include "Tests/GeoTestWorld.h"
+#include "Tool/CatLine/GeoCatLineBank.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
@@ -1356,6 +1364,43 @@ bool FGeoArenaSpawnAddResetTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCharactersFriendlyLookTest, "GeoTrinity.Characters.FriendlyLook",
+								 GeoEncounterTestFlags)
+
+bool FGeoCharactersFriendlyLookTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
+	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
+	World->SetGameState(World->SpawnActor<AGeoGameState>());
+	FGeoEnemySetup AllySetup;
+	AllySetup.Team = ETeam::Player;
+	FGeoEnemySetup EnemySetup;
+	AEnemyCharacter* const Ally = AEnemyCharacter::SpawnEnemy(*World, AEnemyCharacter::StaticClass(),
+															  FVector::ZeroVector, nullptr, nullptr, &AllySetup);
+	AEnemyCharacter* const Enemy = AEnemyCharacter::SpawnEnemy(*World, AEnemyCharacter::StaticClass(),
+															   FVector::ZeroVector, nullptr, nullptr, &EnemySetup);
+	if (TestNotNull(TEXT("The ally spawns"), Ally) && TestNotNull(TEXT("The enemy spawns"), Enemy))
+	{
+		TestTrue(TEXT("A player-team setup gives the friendly look"), Ally->HasFriendlyLook());
+		TestFalse(TEXT("An enemy-team setup keeps the enemy look"), Enemy->HasFriendlyLook());
+
+		// A native class's defaults never reach its instances from a changed CDO: the material is set on the actors.
+		UMaterialInterface* const FriendlyMaterial = UMaterial::GetDefaultMaterial(MD_Surface);
+		Ally->FriendlyBodyMaterial = FriendlyMaterial;
+		Enemy->FriendlyBodyMaterial = FriendlyMaterial;
+		Ally->ApplySetup(AllySetup);
+		Enemy->ApplySetup(EnemySetup);
+		TestTrue(TEXT("The ally's body wears the friendly material"),
+				 Ally->GetMesh()->GetMaterial(0) == FriendlyMaterial);
+		TestTrue(TEXT("The enemy's body keeps its own material"), Enemy->GetMesh()->GetMaterial(0) != FriendlyMaterial);
+	}
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCharactersSetupHealthResetTest, "GeoTrinity.Characters.SetupHealthReset",
 								 GeoEncounterTestFlags)
 
@@ -1494,6 +1539,69 @@ bool FGeoEncounterSpawnZoneTest::RunTest(FString const& /*Parameters*/)
 		LeaveTrigger->FireNow();
 		TestFalse(TEXT("Leaving the step ends it"), Zone->IsActive());
 	}
+
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSpawnZoneEnteredTest, "GeoTrinity.Encounter.SpawnZoneEntered",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterSpawnZoneEnteredTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
+	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
+	World->SetGameState(World->SpawnActor<AGeoGameState>());
+	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoEffectZone::StaticClass();
+
+	FGameplayTag const PurposeTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("TargetPoint.ZoneSpawn"));
+	FGameplayTag const ArenaTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
+	AGeoTargetPoint* const Point = World->SpawnActor<AGeoTargetPoint>(FVector::ZeroVector, FRotator());
+	Point->GameplayTags.AddTag(PurposeTag);
+	Point->GameplayTags.AddTag(ArenaTag);
+
+	FTransform const Transform(FVector(2000.f, 0.f, 0.f));
+	APlayableCharacter* const Player =
+		World->SpawnActorDeferred<APlayableCharacter>(APlayableCharacter::StaticClass(), Transform);
+	Player->SetActorHiddenInGame(true);
+	Player->FinishSpawning(Transform);
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoSpawnZoneAction* const Spawner = NewObject<UGeoSpawnZoneAction>(Encounter);
+	Spawner->PurposeTag = PurposeTag;
+	Spawner->ArenaTag = ArenaTag;
+	Spawner->Params.Size = 300.f;
+	Spawner->EnteredEvent = FGameplayTag::RequestGameplayTag("Encounter.Event.ZoneShield");
+	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner});
+	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
+	Encounter->Start();
+
+	int32 Entries = 0;
+	World->GetSubsystem<UGeoEncounterSubsystem>()->OnRaised.AddLambda(
+		[&Entries, Player](FGeoEncounterPayload const& Payload)
+		{
+			Entries += Payload.Actor == Player ? 1 : 0;
+		});
+
+	SpawnTrigger->FireNow();
+	TestEqual(TEXT("Outside at spawn: nothing raised"), Entries, 0);
+	// No default attributes in a test world: the zone has no health and blinks, which turns its collision off.
+	(*TActorIterator<AGeoEffectZone>(World))->SetActorEnableCollision(true);
+	Player->SetActorLocation(FVector::ZeroVector);
+	TestEqual(TEXT("Entering raises"), Entries, 1);
+	Player->SetActorLocation(FVector(2000.f, 0.f, 0.f));
+	Player->SetActorLocation(FVector::ZeroVector);
+	TestEqual(TEXT("Leaving and entering again raises again"), Entries, 2);
+
+	LeaveTrigger->FireNow();
+	Player->SetActorLocation(FVector(2000.f, 0.f, 0.f));
+	Player->SetActorLocation(FVector::ZeroVector);
+	TestEqual(TEXT("After the step is left: nothing"), Entries, 2);
 
 	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
 	DestroyTestWorld(World);
@@ -2238,6 +2346,48 @@ bool FGeoEncounterCatLineTest::RunTest(FString const& /*Parameters*/)
 	TestTrue(TEXT("OnCatLine got the replaced text"), BroadcastLines == TArray<FString>{HUD->Lines.Last()});
 
 	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterCatLineFromFileTest, "GeoTrinity.Encounter.CatLineFromFile",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterCatLineFromFileTest::RunTest(FString const& /*Parameters*/)
+{
+	FString const Path = FPaths::CreateTempFilename(*FPaths::ProjectIntermediateDir(), TEXT("CatLines"), TEXT(".txt"));
+	FFileHelper::SaveStringToFile(TEXT("[Falls]\nThat's {Counter:Falls} deaths.\n[Other]\nnever\n"), *Path,
+								  FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+	GeoCatLines::SetFilePath(Path);
+
+	UWorld* World = CreateTestWorld();
+	APlayerController* const PlayerController = World->SpawnActor<APlayerController>();
+	AGeoTestHUD* const HUD = World->SpawnActor<AGeoTestHUD>();
+	PlayerController->MyHUD = HUD;
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	Encounter->AddToEncounterCounter("Falls", 3);
+
+	UGeoCatLineFromFileAction* const FromFile = NewObject<UGeoCatLineFromFileAction>(Encounter);
+	FromFile->Categories.Names = {"Falls"};
+	FromFile->Begin(FGeoEncounterPayload());
+	TestTrue(TEXT("A line of the picked category shows, its counter token replaced"),
+			 HUD->Lines == TArray<FString>{"That's 3 deaths."});
+
+	FromFile->bRandom = false;
+	HUD->LineEnded.ExecuteIfBound();
+	FromFile->Begin(FGeoEncounterPayload());
+	TestEqual(TEXT("File order shows a line too"), HUD->Lines.Last(), FString("That's 3 deaths."));
+
+	UGeoCatLineFromFileAction* const NoMatch = NewObject<UGeoCatLineFromFileAction>(Encounter);
+	NoMatch->Categories.Names = {"Nope"};
+	int32 const ShownBefore = HUD->Lines.Num();
+	NoMatch->Begin(FGeoEncounterPayload());
+	TestEqual(TEXT("No line in the picked categories shows nothing"), HUD->Lines.Num(), ShownBefore);
+
+	DestroyTestWorld(World);
+	GeoCatLines::SetFilePath(FString());
+	IFileManager::Get().Delete(*Path);
 	return true;
 }
 

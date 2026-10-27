@@ -8,6 +8,7 @@ Design docs of the tutorial: tone, lore, the Cat, the board of pages. Design onl
 | `Lore.md` | Premise, cast, world rules, why the player is stuck, how it ends. |
 | `Cat.md` | The Cat: role, personality, shape language, voice, reusable line bank. |
 | `CatAnimation.md` | The Cat's rig, idle / walk / portal-jump clips, how to animate a cat for the top camera. |
+| `Data/CatLines.txt` | Hand-edited bank of the Cat's random lines (tips, puns, nags) by `[Category]`; read live by the game and the editor picker (`Source/GeoTrinity/Public/Tool/CatLine/CLAUDE.md`). Replaces `LoadingTips.md`. |
 | `IntroBoard.md` | Pages 1-3: game night, absorption, landing. Layers, motion, beats. |
 | `Steps.md` | The teaching steps after landing (skeleton; content arrives later). |
 | `Flow.md` | Maps, entry (menu button, first-launch Cat prompt), jump to a room (dev), skip, exit to the Training Room, replay and loot. |

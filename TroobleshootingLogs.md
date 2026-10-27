@@ -253,3 +253,12 @@ The Deploy room's ally (`TutorialAlly`) stays alive and full behind; the Special
 ## `AutomationOpenMap` in an editor test starts its own PIE (2026-10-23)
 In the editor it loads the map and queues a standalone play session; a test that then requests its own (listen) session gets the first one torn down after its first latent step ran on it (time dilation, cheats, restarts lost). Load with `FAutomationEditorCommonUtils::LoadMap` and start the one session yourself.
 
+
+## A changed native CDO does not reach new instances (2026-10-27)
+A test set `GetMutableDefault<AEnemyCharacter>()->FriendlyBodyMaterial` and spawned one: the instance kept null. A native class's instances only re-copy their post-construct properties from the archetype; everything its C++ constructor set is taken as already initialised, so a runtime CDO edit is ignored (a Blueprint class copies its non-native ones). In a test, set the property on the spawned actor, or use a test subclass whose constructor sets it.
+
+## `ServerTravel` keeps the current portal (2026-10-27)
+`UWorld::ServerTravel` is relative by default: a URL without `#Portal` inherits the current world's (`FURL` copies `Base->Portal`). Opening the tutorial from the Training Room went to `Tutorial?listen#TrainingRoom`, and a tutorial reopened without a room after a jump would restart in the jumped room. An empty `#` does not help: `ProcessServerTravel` rebuilds the URL with `ToString()`, which drops it, and browses relative again. Fix: `HostListen` travels absolute.
+
+## Force-stopping a montage-less pattern logged an error (2026-10-27)
+`UPattern::EndPattern(true)` read the avatar's anim instance whatever the pattern: the Training Room's hidden caster (no mesh) logged `Please set an anim instance` for each zone pattern cut by the map's teardown. It goes through `GetMontageAnimInstance()` (null when the pattern has no montage), like every other montage path.

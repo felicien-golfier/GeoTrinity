@@ -5,5 +5,5 @@ Docs written: `Source/GeoTrinityUI/Public/HUD/Menu/Gems/CLAUDE.md` ("Echo socket
 Code done and built (Editor target): `EchoButton`, `EchoText`, `FillTextRole` gone; `UGeoTableWidget::MakeFittingCellText` (ECHO / ECH); `UGeoGemGlyph::SetEchoSocket`, `EchoNestScale` on `FGeoGemStyle`; `gems_page.py` no longer builds `EchoButton`.
 
 ## Editor / Blueprint (by hand or script)
-- [ ] `/Game/HUD/InGameMenu/WBP_GemLoadout` — delete the stale `EchoButton` in `DetailButtons` (the script never removes widgets), then drop its line from `AI/Python/UI/asset_values.json`.
+- [x] `/Game/HUD/InGameMenu/WBP_GemLoadout` — delete the stale `EchoButton` in `DetailButtons` (the script never removes widgets), then drop its line from `AI/Python/UI/asset_values.json`.
 - [ ] Look: REPLACE ALL fits at the normal text role, the echo socket reads as nested outlines, tune `EchoNestScale` on `DA_UITheme` if needed (user's editor check).

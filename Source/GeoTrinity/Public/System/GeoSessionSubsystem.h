@@ -20,7 +20,8 @@ class GEOTRINITY_API UGeoSessionSubsystem : public UGameInstanceSubsystem
 public:
 	/**
 	 * Hosts a listen server: the local player travels to MapPackagePath as the authority and also plays. Joiners reach
-	 * it over direct IP via JoinByAddress. No separate server process is launched.
+	 * it over direct IP via JoinByAddress. No separate server process is launched. The travel is absolute: nothing of
+	 * the current URL (portal, options) carries over.
 	 *
 	 * @param MapPackagePath  Package path of the gameplay map to host (e.g. /Game/Maps/DraftMap).
 	 * @param Portal          PlayerStartTag of the start the host spawns at; empty = any start.

@@ -35,6 +35,6 @@
 - New per-widget builders go here.
 
 ## Anim builder — AnimGraph slots
-- `BuildLayeredAnimGraph`: rebuilds a whole graph as a layered badge rig. `BuildBlendedAnimGraph`: two looping sequences blended by a float member variable (added when missing) into one slot (the Cat). `InsertSlotAfter`: adds one Slot node after an existing one in a graph that stays as authored (the boss), and registers it in its own slot group.
+- `BuildLayeredAnimGraph`: rebuilds a whole graph as a layered badge rig. `BuildBlendedAnimGraph`: an idle sequence blended into a locomotion blend space by a float member variable (added when missing; alpha = it over a range, clamped, and it is also the blend space's X) into one slot (the Cat). `BuildBlendSpace1D`: a 1D blend space's axis and samples (its axis array is protected, so reflection), then `ResampleData()`: `AddSample` never rebuilds the runtime data the player reads, only the blend space editor does. `InsertSlotAfter`: adds one Slot node after an existing one in a graph that stays as authored (the boss), and registers it in its own slot group.
 - Both register every new slot in a skeleton slot group (`SetSlotGroupName`), the only path: Python reaches neither groups nor pin links.
 - A child AnimBlueprint holds no AnimGraph (`FindAnimGraph` flags it): edit its parent.

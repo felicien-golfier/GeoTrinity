@@ -46,7 +46,7 @@ namespace GeoTutorialStages
 	/** Falls = 0: the real dash over the void, the stunned line. Falls 1..: that many falls, each a respawn on the
 	 * entrance and its line, then the dash and the relief line. */
 	void AddDashStages(FGeoTutorialBot& Bot, int32 Falls);
-	/** Four idle tiers, the last one repeats. */
+	/** Four idle tiers, each once, then the Cat's Pun jokes. */
 	void AddDashIdleStages(FGeoTutorialBot& Bot);
 
 	void AddShootStages(FGeoTutorialBot& Bot, EGeoShootBranch Branch);
@@ -72,8 +72,12 @@ namespace GeoTutorialStages
 
 	/** The pause menu's Leave tutorial: the Training Room. */
 	void AddLeaveFromMenuStages(FGeoTutorialBot& Bot);
-	/** The console `Geo.Tutorial.Jump Zones`: the reloaded map lands in Zones. */
-	void AddJumpCommandStages(FGeoTutorialBot& Bot);
+	/** The console `Geo.Tutorial.Jump <Argument>` (a room name or number) reloads the map in Room: the jump checks. */
+	void AddJumpCommandStages(FGeoTutorialBot& Bot, FString const& Argument, int32 Room);
+	/** The console jump to a number past the chain: the tutorial starts at Landing, as a fresh one. */
+	void AddJumpPastEndStages(FGeoTutorialBot& Bot);
+	/** Leave tutorial, then the tutorial opened again from the Training Room: a fresh one, at Landing, nothing kept. */
+	void AddReplayStages(FGeoTutorialBot& Bot);
 	/** The jump to Room: the pawn on its start, the earlier abilities granted, Landing never run, the room's step 0. */
 	void AddJumpCheckStages(FGeoTutorialBot& Bot, int32 Room);
 

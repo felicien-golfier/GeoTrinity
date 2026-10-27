@@ -9,7 +9,9 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 | `GeoStartEncounterAction.h` | Starts another `AGeoEncounter` through its arrival reset (`StartAfterSkippingChain`: aborts the other running encounters, replays the skipped chain, starts at step 0; `../CLAUDE.md`, "Arrival reset"). One already running starts over. Last in its list: it aborts the encounter it sits in, so nothing after it runs (`IsDataValid` error) | no |
 | `GeoSetTeleporterOpenAction.h` | `SetOpen(bool)` on the referenced `AGeoTeleporter` (a room's exit / entry pad) | no |
 | `GeoActivateAbilityAction.h` | Activates `AbilityTag` on the boss of the referenced `AGeoArena` (a room's hidden caster, or a real boss), with optional `PatternData` for a pattern ability | yes |
-| `GeoCatLineAction.h` | `ShowCatLine(Line, OnEnded)` on the first local player's HUD; `bWaitForRespawn`: while that player is dead, shown on its `OnRevived`; finishes when the line ends (typed + read, or F twice, `HUD/Tutorial/CLAUDE.md`) | yes |
+| `GeoCatSpeechAction.h` | Abstract base of the Cat's spoken actions: `ShowCatLine(text, OnEnded)` on the first local player's HUD; `bWaitForRespawn`: while that player is dead, shown on its `OnRevived`; finishes when the line ends (typed + read, or F twice, `HUD/Tutorial/CLAUDE.md`). Children give the text (`GetLineText`) | yes |
+| `GeoCatLineAction.h` | Cat speech: `Line`, typed in place | yes |
+| `GeoCatLineFromFileAction.h` | Cat speech: a line of `Categories` from `Data/CatLines.txt`, `bRandom` true = shuffled, no repeat; false = file order, cycling (`Tool/CatLine/CLAUDE.md`) | yes |
 | `GeoUnlockAbilityAction.h` | Grants the local player's class ability `AbilityTag` (`GiveClassAbility`); nothing the second time. Never opens the page. `OnSkipped` = `Execute` | no |
 | `GeoShowAbilityPageAction.h` | `ShowAbilityPage(AbilityTag)` on the local HUD; placed after a Cat line, so the page never pops before the Cat speaks (`Tutorial/Steps.md`, "Unlock rule"). Finishes when the player closes the pause menu (`AGeoPlayerController::OnPauseMenuClosed`), at once with no HUD or no page; what follows never plays behind the page. `OnCancel` stops waiting only (the page stays open; its close no longer finishes the action). No-op when skipped | yes |
 | `GeoSpawnEnemiesAction.h` | Keeps `Count` of `EnemyClass` + `Setup` alive on the points tagged `PurposeTag` + `ArenaTag`: spawns them, replaces each dead one `RespawnDelay` s after its own death, where it died (0: never); `bKillOnStepExit` kills the living when the step is left | no (held until the step is left) |
@@ -24,12 +26,14 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 ## Local HUD
 - `GetLocalHUD()` (base): the first local player's `IGeoHUDInterface`. The tutorial is a solo listen host, so authority and UI share a process; on a remote client nothing is shown (encounters are authority-only).
 
-## GeoCatLineAction
+## GeoCatSpeechAction (GeoCatLineAction, GeoCatLineFromFileAction)
+- The base owns everything below; a child only gives the text (`GetLineText`, drawn when the line shows, never before). A new way to find a line = a new child, never a copy of the show / cancel logic.
 - Latent: lines in a list play one after the other, each ends before the next starts; a placed encounter needs no `GeoDelayAction` after a line. The HUD's end callback calls `Finish()`; no local HUD = `Finish()` at once.
 - A rule's actions run to the end before it fires again (`../CLAUDE.md`): a quip rule ignores firings while its line is still on screen.
 - `OnCancel`: unbinds the callback; step left while the line shows = the line stays on screen until it ends. On abort (`IsAborting()`) it also ends the line it shows (`HideCatLine`, only when that line is still the shown one).
 - A death line waiting for the respawn (`bWaitForRespawn`) finishes after the respawn and the line.
 
+- `GeoCatLineFromFileAction`: the line is `GeoCatLines::PickLine(Categories, bRandom)` (`Tool/CatLine/CLAUDE.md`). Every run draws again, so a repeating rule says a new line each time. No line in the picked categories: logs, `Finish()`, nothing shown; `IsDataValid` warns on such a set. The drawn text goes through the same `{Counter:}` replacement and the same `OnCatLine` broadcast as a typed line. The waiting-for-respawn path draws once, at show time.
 - Showing a line broadcasts `UGeoEncounterSubsystem::OnCatLine` with the shown text, also with no local HUD: what a test reads, never the widget.
 - `{Counter:<Name>}` in `Line` is replaced by that step counter of the action's encounter when the line shows (`GeoLib::ReplaceCounterTokens`; tested in `GeoTrinity.Encounter.CatLine`); the markup of `HUD/Tutorial` never sees it.
 
@@ -43,6 +47,7 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 ## GeoSpawnZoneAction
 - A zone that only teaches its colour or sits in a room: no ability, no pattern, no caster. A telegraphed or patterned hazard stays an ability fired by `GeoActivateAbilityAction`.
 - `DefaultZoneClass` (`UGameDataSettings`) through `GeoASLib::FullySpawnDeployable` with an `FDeployableData` filled from the action: `EffectDataArray`, `Params` (`Size`, `Color`, `SecondaryColors`, `Attitude`; `LifeDrainMaxDuration` 0 = lasts until cancelled), `TeamID` = `Team`, no `Owner`: self-owned, its own ASC is the effect source, like a hand-placed zone (`AbilitySystem/Lib/CLAUDE.md`).
+- `EnteredEvent` (optional tag, `Encounter.Event.*`): the spawned zone raises it on `UGeoEncounterSubsystem` (`Actor` = the player) whenever a player's capsule begins overlapping the zone's, and once at spawn for each player already inside. The trigger is the zone itself, so it exists exactly as long as the zone; the rule reads it with a `GeoEventTrigger`. Unbound in `OnCancel`. Zones need no placed box.
 - A growing zone is `Params.GrowToSize` + `GrowSeconds` (`GeoEffectZone` grows from `Size`; replicated start time); the action adds nothing. The zone stops at `GrowToSize` and stays until cancelled.
 - Several zones in one step: one action per zone in the step's `OnEnter`, each held until the step is left, so they all end together (the Zones room's colour step, `Tutorial/Steps.md` step 7).
 - Ground Z (0), like every zone. One zone per action: several zones on one step = a step per zone, or a Blueprint child spawning several.

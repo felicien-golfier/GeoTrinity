@@ -20,6 +20,7 @@ class UWidgetComponent;
 class UGameplayEffect;
 class USoundBase;
 class USoundClass;
+class USoundConcurrency;
 class UNiagaraSystem;
 class UGeoBuffFXDataAsset;
 class UPlayerClassDataAsset;
@@ -85,6 +86,11 @@ public:
 	 * back to Project Settings -> Audio -> Default Sound Class, which is the Effects one. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoSound")
 	TMap<EGeoVolumeChannel, TSoftObjectPtr<USoundClass>> VolumeSoundClasses;
+
+	/** Concurrency every one-shot gameplay sound plays under unless its entry sets its own, so identical sounds played
+	 * together do not sum louder. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoSound")
+	TSoftObjectPtr<USoundConcurrency> DefaultOneShotConcurrency;
 
 	/** Color every FGeoColorParam of the game resolves its slot through; EGeoColor::Override is never looked up here.
 	 * Materials read the same values through the palette texture AGeoGameCamera builds from this map. */

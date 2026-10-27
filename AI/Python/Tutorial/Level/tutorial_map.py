@@ -42,8 +42,11 @@ START_INSET = 250.0
 ROOM_GAP = 1500.0
 VOID_WIDTH = 300.0  # the Dash room's hole: narrower than the 500 cm dash, wider than a walk-off step
 NEAR_FLOOR_WIDTH = 600.0
-PLATFORM_VOLUME_Z = 57.7  # the landing volume's centre height: a standing capsule is inside it
-PLATFORM_VOLUME_HALF_Z = 40.0
+# The Dash landing volume as placed by hand in the scene: centre height (a standing capsule is inside it), actor scale
+# and BoxComponent extent (the world half size is their product: 197.2 x 1150.9 x 40).
+PLATFORM_VOLUME_Z = 57.655
+PLATFORM_VOLUME_SCALE = (2.0, 10.0, 2.0)
+PLATFORM_VOLUME_EXTENT = (98.618, 115.094, 20.0)
 WALL_HALO = "/Game/Art/VFX/Arena/MI_ArenaRailHalo"
 WALL_RAIL = "/Game/Art/VFX/Arena/MI_ArenaRail"
 TELEPORTER_BP = "/Game/Actors/TriggersActors/BP_Teleport"
@@ -268,10 +271,10 @@ def build_dash_void(cx, prefix):
     far_left = near_left + NEAR_FLOOR_WIDTH + VOID_WIDTH
     build_floor(prefix + "_Floor", "Floor", near_left, near_left + NEAR_FLOOR_WIDTH)
     build_floor(prefix + "_FarFloor", prefix + "_Floor", far_left, cx + ROOM_HALF_X)
-    platform_half_x = (cx + ROOM_HALF_X - far_left) / 2.0
     platform = spawn_volume(unreal.TriggerBox, prefix + "_PlatformVolume",
                             ((far_left + cx + ROOM_HALF_X) / 2.0, 0.0, PLATFORM_VOLUME_Z))
-    size_box(platform, platform_half_x, ROOM_HALF_Y, PLATFORM_VOLUME_HALF_Z)  # the whole far floor: no edge to dash past
+    platform.set_actor_scale3d(unreal.Vector(*PLATFORM_VOLUME_SCALE))
+    platform.get_components_by_class(unreal.BoxComponent)[0].set_box_extent(unreal.Vector(*PLATFORM_VOLUME_EXTENT), True)
 
 
 def build_room(index, name):

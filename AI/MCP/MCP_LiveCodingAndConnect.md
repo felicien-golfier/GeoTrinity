@@ -38,7 +38,7 @@ While the client is down the bridge can be driven directly by POSTing `{"script"
 reports success even for a script that raises, and stdout does not surface in the response, so wrap the source
 in a handler that writes its traceback to a file under `AI/Output/` and read that back. The editor's working directory
 is not the project, so the script file is handed over by absolute path. `AI/Python/Runtime/run_via_bridge.py` does
-all of this from the host; a missing result file after the response means the editor never finished the script.
+all of this from the host (any host Python; run clips in a row, then `AI/Python/Asset/save_dirty_assets.py`); a missing result file after the response means the editor never finished the script.
 
 ## Inspecting a specific PIE world
 

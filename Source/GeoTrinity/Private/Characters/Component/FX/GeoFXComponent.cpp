@@ -13,8 +13,8 @@
 #include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
 #include "TimerManager.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 
 static constexpr float BlinkInterval = 0.2f;
 static constexpr float FastBlinkWindow = 0.8f;
@@ -211,7 +211,8 @@ void UGeoFXComponent::PlaySound(FGeoSoundEntry const& Entry) const
 	{
 		UGameplayStatics::PlaySoundAtLocation(
 			this, Entry.Sound, GetOwner()->GetActorLocation(), FRotator::ZeroRotator, GetVolume(Entry),
-			GetPitch(Entry, UGeoSoundRowLibrary::RollPitchVariation(Entry)), Entry.StartTime);
+			GetPitch(Entry, UGeoSoundRowLibrary::RollPitchVariation(Entry)), Entry.StartTime, nullptr,
+			UGeoSoundRowLibrary::GetConcurrency(Entry, /*bOneShot*/ true));
 	}
 }
 

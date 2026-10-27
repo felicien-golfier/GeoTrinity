@@ -13,6 +13,8 @@
 class AGeoArena;
 struct FGeoEnemySetup;
 class UAnimMontage;
+class UMaterialInterface;
+class USkeletalMesh;
 class UGeoLoopSoundComponent;
 class UStateTree;
 
@@ -83,8 +85,23 @@ public:
 	/** Resets health to max and restarts the StateTree. Called on full-wipe to start a new attempt. */
 	void ResetForNewAttempt();
 
+	/** Body shown instead of the Blueprint's own while this enemy is on the player team (a friendly dummy). None =
+	 * the body stays as it is. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|FriendlyLook")
+	TObjectPtr<USkeletalMesh> FriendlyBodyMesh;
+
+	/** Material put on the body's slot 0 while it is on the player team. None = the body keeps its material. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoCharacter|FriendlyLook")
+	TObjectPtr<UMaterialInterface> FriendlyBodyMaterial;
+
+	/** True when the body wears the friendly look (the setup's team is the player's). */
+	bool HasFriendlyLook() const { return bFriendlyLook; }
+
 protected:
 	virtual void BeginPlay() override;
+
+	/** Registers bFriendlyLook (TeamId does not replicate). */
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Sets the combat level from the current GameState difficulty before calling the base GAS init. */
 	virtual void InitGAS() override;
@@ -104,6 +121,12 @@ protected:
 	virtual void OnHealthChanged_Implementation(float NewValue);
 
 private:
+	/** Puts FriendlyBodyMesh and FriendlyBodyMaterial on the body. Same call on the server and on clients. */
+	void ApplyFriendlyLook();
+
+	UFUNCTION()
+	void OnRep_FriendlyLook();
+
 	/** Sets max health and health to MaxHealthOverride when it names one. */
 	void ApplyMaxHealthOverride();
 
@@ -118,4 +141,7 @@ private:
 
 	/** FGeoEnemySetup::StartHealthRatio; the first InitGAS only. */
 	float StartHealthRatio = 1.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_FriendlyLook)
+	bool bFriendlyLook = false;
 };

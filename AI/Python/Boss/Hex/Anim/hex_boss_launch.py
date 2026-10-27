@@ -31,8 +31,7 @@ APE = unreal.AnimPoseExtensions
 SKELETON_PATH = "/Game/Characters/Meshes/HexBoss/SK_HexBoss"
 MESH_PATH = "/Game/Characters/Meshes/HexBoss/SKM_HexBoss"
 ANIM_PACKAGE = "/Game/Characters/Anim/HexBoss"
-REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
-          "0b3b8214-c633-4920-a4b1-c68d4e9de203/scratchpad/hex_boss_launch.txt")
+REPORT = unreal.Paths.project_dir() + "AI/Output/hex_boss_launch.txt"
 
 ROOT = "Root"
 OUTER, MID, CORE = "HexOuter", "HexMid", "HexCore"
@@ -213,7 +212,8 @@ def build_montage(clip, sequence, toolkit):
     """
     names, starts = ["Start", "Fire1"], [0.0, clip.gather / float(FPS)]
     montage = toolkit["build_montage"](sequence, ANIM_PACKAGE, "SK_HexBoss_Montage_{}".format(clip.name),
-                                       names, starts, ["Fire1", "None"])
+                                       names, starts, ["Fire1", "None"],
+                                       slot_name="CastSlot")  # own slot group: never cuts a pattern montage
     return montage, names, starts
 
 

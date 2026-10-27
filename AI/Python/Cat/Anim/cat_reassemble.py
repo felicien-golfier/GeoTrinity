@@ -5,7 +5,8 @@ settles onto the first pose of Cat_Idle. Montage AM_Cat_Reassemble, DefaultSlot,
     Stir     eyes pulse first, then the other parts twitch, each at its own moment
     Gather   parts come home one at a time on an accelerating schedule (Body, Head, ears, face, feet, hands); the tail
              chain is dragged after the Body; each hops (scales up mid-flight), overshoots and settles
-    Stretch  hands forward, feet back, the Body long; held with a tremble; released past rest
+    Stretch  the Twist pose (cat_posing.py `twist_spec`, as Cat_Stretch_Twist): spine curved, front swung to one side,
+             hands across, feet kicked the other way, head looking back, the Body long; held with a tremble
     Settle   a head shake, an ear flick, the idle's first pose
 
 Every bone is placed in world space: a splat state blended into the assembled state by the bone's own progress, then
@@ -26,6 +27,12 @@ CLIP = {}
 exec(compile(open(_CLIP_PATH, encoding="utf-8").read(), _CLIP_PATH, "exec"), CLIP)
 TOOLKIT, attack_release, curve, run, smooth = (CLIP["TOOLKIT"], CLIP["attack_release"], CLIP["curve"], CLIP["run"],
                                                CLIP["smooth"])
+
+_POSING_PATH = unreal.Paths.project_dir() + "AI/Python/Cat/Anim/cat_posing.py"
+POSING = {}
+exec(compile(open(_POSING_PATH, encoding="utf-8").read(), _POSING_PATH, "exec"), POSING)
+posed, twist_spec, shake_between, quat, nlerp, lerp = (POSING["posed"], POSING["twist_spec"], POSING["shake_between"],
+                                                       POSING["quat"], POSING["nlerp"], POSING["lerp"])
 
 _IDLE_PATH = unreal.Paths.project_dir() + "AI/Python/Cat/Anim/cat_idle.py"
 IDLE = {"__name__": "cat_idle_library"}
@@ -50,11 +57,12 @@ TAIL_DRAG = 3  # frames each tail segment arrives after the one before it
 TRAVEL = 14  # frames a part is in flight
 OVERSHOOT = 1.2  # ease-out-back strength
 HOP_SCALE = 0.25  # extra size at mid-flight
-STRETCH = [(150, 0.0), (172, 1.0), (196, 1.0), (204, -0.12), (214, 0.0)]  # how far into the stretch, per frame
-TREMBLE_HOLD = (172, 196, 3, 0.8)  # start, end, period, degrees
+STRETCH = [(150, 0.0), (172, 1.0)]  # how far into the Twist pose, per frame, held until the settle takes over
+STRETCH_SHAKE = (172, 200)  # first and last frame of the tremble through the hold
 SETTLE = (206, 30)  # start frame, frames to the idle's first pose
 SHAKE = (210, 20, 10, 14.0)  # start, frames, period, degrees
 EAR_FLICK = ("EarRight", 214, 15.0)
+MOUTH = ("Mouth0", "Mouth1")  # two curves of one mouth, joined at the middle: they lie, fly and twitch as one piece
 FLAT_BONES = ["Body"] + ["Tail{}".format(index) for index in range(9)]  # lie as they are; the rest lie on their faces
 
 
@@ -113,49 +121,46 @@ def local_of(world, parent):
             tuple(world[2][i] / parent[2][i] for i in range(3)))
 
 
-IDENTITY = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))  # translation, euler degrees, scale
+IDENTITY = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0), (1.0, 1.0, 1.0))  # translation, quaternion, scale
+HIDDEN_FANGS = {bone: (IDENTITY[0], IDENTITY[1], CLIP["FANG_HIDDEN_DELTA"][2]) for bone in CLIP["FANG_BONES"]}  # no splat, no gather: hidden throughout
 
 
 def mixed(a, b, t):
-    """Delta triples blended: a at 0, b at 1."""
-    return tuple(tuple(x + (y - x) * t for x, y in zip(part_a, part_b)) for part_a, part_b in zip(a, b))
+    """Deltas (translation, quaternion, scale) blended: a at 0, b at 1."""
+    return (lerp(a[0], b[0], t), nlerp(a[1], b[1], t), lerp(a[2], b[2], t))
 
 
 def assembled_deltas(frame):
-    """Deltas on rest of the assembled Cat at `frame`: rest until the stretch, then stretch, shake, settle onto idle."""
+    """Deltas on rest of the assembled Cat at `frame`: rest until the stretch, the Twist pose, shake, settle onto idle."""
+    goal = posed(twist_spec(shake_between(frame, *STRETCH_SHAKE)))
     stretch = curve(frame, STRETCH)
-    tremble_start, tremble_end, period, degrees = TREMBLE_HOLD
-    tremble = degrees * math.sin(2.0 * math.pi * (frame - tremble_start) / period) \
-        if tremble_start <= frame < tremble_end else 0.0
+    deltas = dict(HIDDEN_FANGS, **{bone: mixed(IDENTITY, delta, stretch) for bone, delta in goal.items()})
+
     shake_start, shake_length, shake_period, shake_degrees = SHAKE
     shake = shake_degrees * math.sin(2.0 * math.pi * (frame - shake_start) / shake_period) \
         * (1.0 - (frame - shake_start) / float(shake_length)) if shake_start <= frame < shake_start + shake_length else 0.0
-
-    deltas = {"Body": ((-12.0 * stretch, 0, 0), (0, 0, tremble), (1.0 + 0.35 * stretch, 1.0 - 0.1 * stretch, 1.0)),
-              "Head": ((10.0 * stretch, 0, 0), (0, -25.0 * stretch, shake), (1, 1, 1)),
-              "FootLeft": ((-10.0 * stretch, 0, 0), (0, 0, 0), (1, 1, 1)),
-              "FootRight": ((-10.0 * stretch, 0, 0), (0, 0, 0), (1, 1, 1)),
-              "HandLeft": ((28.0 * stretch + 0.5 * tremble, 0, 0), (0, 0, 0), (1, 1, 1)),
-              "HandRight": ((28.0 * stretch - 0.5 * tremble, 0, 0), (0, 0, 0), (1, 1, 1))}
-    for index in range(9):
-        deltas["Tail{}".format(index)] = ((0, 0, 0), (0, 0, 6.0 * stretch), (1, 1, 1))
+    head = deltas["Head"]
+    deltas["Head"] = (head[0], quat_multiply(head[1], euler_quat(0.0, 0.0, shake)), head[2])
 
     ear, flick_start, flick_degrees = EAR_FLICK
-    deltas[ear] = ((0, 0, 0), (attack_release(frame, flick_start, 4, 6, 10, flick_degrees), 0, 0), (1, 1, 1))
+    deltas[ear] = ((0, 0, 0), euler_quat(attack_release(frame, flick_start, 4, 6, 10, flick_degrees), 0, 0), (1, 1, 1))
 
     settle_start, settle_length = SETTLE
     weight = smooth((frame - settle_start) / float(settle_length))
-    idle = IDLE["pose"](0)
+    idle = {bone: (translation, quat(euler), scale) for bone, (translation, euler, scale) in IDLE["pose"](0).items()}
     return {bone: mixed(deltas.get(bone, IDENTITY), idle.get(bone, IDENTITY), weight)
             for bone in set(deltas) | set(idle)}
 
 
-def splat_layout(bones, groups, rng):
-    """{bone: (position, quaternion, scale, reach)} lying on the floor, no two parts' reaches touching."""
+def splat_layout(bones, groups, rest, rng):
+    """{bone: (position, quaternion, scale, reach)} lying on the floor, no two parts' reaches touching; the second mouth
+    curve keeps its rest offset from the first, turned with it."""
     reach = {bone: SPLAT_SCALE * max(math.sqrt(sum(c * c for c in v)) for v in map(lambda p: (p.x, p.y, p.z), groups[bone]))
              for bone in bones}
+    mouth_offset = tuple(rest[MOUTH[1]][i] - rest[MOUTH[0]][i] for i in range(3))
+    reach[MOUTH[0]] += math.sqrt(sum(c * c for c in mouth_offset))
     placed, layout = [], {}
-    for bone in sorted(bones, key=lambda b: -reach[b]):
+    for bone in sorted((b for b in bones if b != MOUTH[1]), key=lambda b: -reach[b]):
         for _ in range(4000):
             angle, distance = rng.uniform(0.0, 2.0 * math.pi), (SPLAT_RADIUS - reach[bone]) * math.sqrt(rng.random())
             x, y = SEAT[0] + distance * math.cos(angle), SEAT[1] + distance * math.sin(angle)
@@ -171,6 +176,10 @@ def splat_layout(bones, groups, rng):
         floor = SPLAT_SCALE * up + 0.25 * reach[bone] * (0.0 if flat else 1.0) + 1.5
         layout[bone] = ((x, y, floor), euler_quat(0.0, pitch, rng.uniform(-180.0, 180.0)),
                         (SPLAT_SCALE,) * 3, reach[bone])
+
+    position, rotation, scale, size = layout[MOUTH[0]]
+    turned = quat_rotate(rotation, mouth_offset)
+    layout[MOUTH[1]] = (tuple(position[i] + SPLAT_SCALE * turned[i] for i in range(3)), rotation, scale, size)
     return layout
 
 
@@ -186,6 +195,7 @@ def gather_windows(bones):
         arrivals["Tail{}".format(index)] = arrivals["Body"] + TAIL_DRAG * (index + 1)
     assert set(arrivals) == set(bones), "the gather schedule must name every bone"
     assert max(arrivals.values()) < STRETCH[0][0] - 1, "the gather must end before the stretch begins"
+    arrivals[MOUTH[1]] = arrivals[MOUTH[0]]
     return {bone: (arrival - TRAVEL, arrival) for bone, arrival in arrivals.items()}
 
 
@@ -215,11 +225,12 @@ def make_pose():
     bones = list(table)
     groups = TOOLKIT["rigid_vertex_groups"](CLIP["MESH_PATH"], CLIP["SKELETON_PATH"])
     rng = random.Random(SEED)
-    parts = [bone for bone in bones if bone in groups]
-    layout = splat_layout(parts, groups, rng)
+    parts = [bone for bone in bones if bone in groups and bone not in CLIP["FANG_BONES"]]
+    layout = splat_layout(parts, groups, rest, rng)
     windows = gather_windows(parts)
     stir = {bone: STIR_FIRST.get(bone, rng.randint(STIR_RANGE[0], min(STIR_RANGE[1], windows[bone][0] - STIR_LENGTH)))
             for bone in parts}
+    stir[MOUTH[1]] = stir[MOUTH[0]]
 
     def pose(frame):
         deltas = assembled_deltas(frame)
@@ -227,7 +238,7 @@ def make_pose():
         for bone in bones:
             parent = parents[bone]
             delta = deltas.get(bone, IDENTITY)
-            local = (tuple(rest[bone][i] + delta[0][i] for i in range(3)), euler_quat(*delta[1]), delta[2])
+            local = (tuple(rest[bone][i] + delta[0][i] for i in range(3)), delta[1], delta[2])
             final[bone] = world_of(local, final[parent]) if parent != "None" else local
 
             if bone not in layout:

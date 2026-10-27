@@ -3,7 +3,7 @@
     Root
     └── Body            the pyramid; every other bone hangs under it
         ├── Head        HeadRound, HeadFur
-        │   ├── EarLeft, EarRight (ear + inner ear), EyeLeft, EyeRight, Nose, Mouth0, Mouth1
+        │   ├── EarLeft, EarRight (ear + inner ear), EyeLeft, EyeRight, Nose, Mouth0, Mouth1, FangLeft, FangRight
         ├── HandLeft, HandRight, FootLeft, FootRight
         └── Tail0 ── Tail1 ── ... ── Tail8
 
@@ -35,7 +35,7 @@ GENERATED = "AI/Output/cat_gen.json"
 TAIL = ["Tail{}".format(index) for index in range(9)]
 BONES = ([(ROOT, "None", ()), ("Body", ROOT, ("Body",)), ("Head", "Body", ("HeadRound", "HeadFur"))]
          + [(ear, "Head", (ear, ear + "Inner")) for ear in ("EarLeft", "EarRight")]
-         + [(part, "Head", (part,)) for part in ("EyeLeft", "EyeRight", "Nose", "Mouth0", "Mouth1")]
+         + [(part, "Head", (part,)) for part in ("EyeLeft", "EyeRight", "Nose", "Mouth0", "Mouth1", "FangLeft", "FangRight")]
          + [(part, "Body", (part,)) for part in ("HandLeft", "HandRight", "FootLeft", "FootRight")]
          + [(bone, "Body" if index == 0 else TAIL[index - 1], (bone,)) for index, bone in enumerate(TAIL)])
 

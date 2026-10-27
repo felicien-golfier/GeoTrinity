@@ -3,7 +3,7 @@
 A clip script loads this by project-relative path (`exec`) and describes its motion as `pose(frame)`:
     {bone: (translation, rotation, scale)}  deltas on the rest pose, in the bone's parent space
 translation is (x, y, z) units, rotation (roll, pitch, yaw) degrees or a quaternion (x, y, z, w), scale (x, y, z)
-factors; a bone left out rests.
+factors; a bone left out rests, except the fangs, which hide (`FANG_HIDDEN_SCALE`).
 The rig's bones rest unturned and unscaled (AI/Tutorial/CatAnimation.md), so a delta is the bone's local transform.
 
 The camera is orthographic and straight above, so `check_clip` judges a clip as it is seen: each part's hull on the
@@ -26,13 +26,18 @@ MESH_PATH = "/Game/Art/Meshes/Cat/SKM_Cat"
 ANIM_PACKAGE = "/Game/Characters/Anim/Cat"
 FPS = 30
 
-HEAD_FAMILY = ("Head", "EarLeft", "EarRight", "EyeLeft", "EyeRight", "Nose", "Mouth0", "Mouth1")
+FANG_BONES = ("FangLeft", "FangRight")
+HEAD_FAMILY = ("Head", "EarLeft", "EarRight", "EyeLeft", "EyeRight", "Nose", "Mouth0", "Mouth1") + FANG_BONES
 FAMILIES = ([("Head", HEAD_FAMILY), ("Body", ("Body",))]
             + [(paw, (paw,)) for paw in ("HandLeft", "HandRight", "FootLeft", "FootRight")]
             + [("Tail{}".format(index), ("Tail{}".format(index),)) for index in range(9)])
 SUPPORT_DIRECTIONS = [d for d in itertools.product((-1.0, 0.0, 1.0), repeat=3) if any(d)]
 PARTS = [(bone, (bone,)) for _, bones in FAMILIES for bone in bones]  # every bone alone
 CLOSURE_TOLERANCE = 0.01  # units and degrees
+FANG_HIDDEN_SCALE = 0.001  # not 0: a singular matrix
+REST_DELTA = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
+FANG_HIDDEN_DELTA = (REST_DELTA[0], REST_DELTA[1], (FANG_HIDDEN_SCALE,) * 3)
+EAR_DETACH = {"EarLeft": (0.0, -5.0, 7.0), "EarRight": (0.0, 5.0, 7.0)}  # Head space: the ears float off the head, seen from above once the head is pitched
 
 
 def smooth(t):
@@ -103,7 +108,7 @@ def write_clip(name, frames, pose):
         if frame not in cache:
             cache.clear()
             cache[frame] = pose(frame)
-        translation, rotation, scale = cache[frame].get(bone, ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)))
+        translation, rotation, scale = cache[frame].get(bone, FANG_HIDDEN_DELTA if bone in FANG_BONES else REST_DELTA)
         rest = rest_local.translation
         rest_scale = rest_local.scale3d
         return (unreal.Vector(rest.x + translation[0], rest.y + translation[1], rest.z + translation[2]),
@@ -162,26 +167,33 @@ def covered_pairs(hulls):
             if TOOLKIT["outline_separation"](hulls[a], hulls[b]) < 0.0}
 
 
-def check_clip(sequence, frames, step=1, families=FAMILIES):
-    """Judge a clip top-down -> {closure, new_overlaps, extents, highest_z, below_plane_from}.
+def check_clip(sequence, frames, step=1, families=FAMILIES, allowed_overlaps=()):
+    """Judge a clip top-down -> {closure, new_overlaps, extents, highest_z, below_plane_from, head_pitch_min}.
 
-    new_overlaps: family pairs that cover one another in the pose but not at rest, with the frames they do.
+    new_overlaps: family pairs that cover one another in the pose but not at rest, with the frames they do; the
+    `allowed_overlaps` pairs ("Body|Head") are the clip's intended ones and are left out.
+    head_pitch_min: [frame, degrees] where the Head is pitched least above its rest (the face peek rule).
     """
     groups = TOOLKIT["rigid_vertex_groups"](MESH_PATH, SKELETON_PATH)
     supports = {bone: support_points(points) for bone, points in groups.items()}
     component = TOOLKIT["_component_transforms"]
 
-    rest_hulls, _ = family_hulls(supports, component(APE.get_reference_pose(unreal.load_asset(SKELETON_PATH))),
-                               families)
+    rest_pose = component(APE.get_reference_pose(unreal.load_asset(SKELETON_PATH)))
+    rest_hulls, _ = family_hulls(supports, rest_pose, families)
+    rest_head_pitch = rest_pose["Head"].rotation.rotator().pitch
     resting = covered_pairs(rest_hulls)
 
     result = {"frames": frames, "fps": FPS, "resting_overlaps": sorted(resting), "new_overlaps": {}, "extents": [],
               "highest_z": []}
     for frame in sorted(set(range(0, frames + 1, step)) | {frames}):
         pose = APE.get_anim_pose_at_time(sequence, frame / float(FPS), unreal.AnimPoseEvaluationOptions())
-        hulls, placed = family_hulls(supports, component(pose), families)
+        posed = component(pose)
+        hulls, placed = family_hulls(supports, posed, families)
+        head_pitch = round(posed["Head"].rotation.rotator().pitch - rest_head_pitch, 1)
+        if "head_pitch_min" not in result or head_pitch < result["head_pitch_min"][1]:
+            result["head_pitch_min"] = [frame, head_pitch]
         points = [point for bone_points in placed.values() for point in bone_points]
-        for pair in covered_pairs(hulls) - resting:
+        for pair in covered_pairs(hulls) - resting - set(allowed_overlaps):
             result["new_overlaps"].setdefault(pair, []).append(frame)
         result["extents"].append([frame] + [round(value, 1) for value in (
             min(p.x for p in points), max(p.x for p in points), min(p.y for p in points), max(p.y for p in points))])
@@ -192,13 +204,13 @@ def check_clip(sequence, frames, step=1, families=FAMILIES):
     return result
 
 
-def run(name, frames, pose, step=1, after=None, families=FAMILIES):
+def run(name, frames, pose, step=1, after=None, families=FAMILIES, allowed_overlaps=()):
     """Write the clip, check it and report to AI/Output/cat_<name>.json; `after(sequence)` adds what else the clip
     carries (a montage, notifies) and returns {key: value} for the report."""
     result = {}
     try:
         sequence = write_clip(name, frames, pose)
-        result = check_clip(sequence, frames, step, families)
+        result = check_clip(sequence, frames, step, families, allowed_overlaps)
         result.update(after(sequence) if after else {})
         result["ok"] = True
     except Exception as exc:  # noqa

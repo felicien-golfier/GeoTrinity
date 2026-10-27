@@ -67,6 +67,7 @@ namespace GeoTutorialStages
 	constexpr TCHAR const* DummiesDoneLine = TEXT("officially beaten the cardboard");
 
 	constexpr TCHAR const* ZonesIntroLine = TEXT("Welcome to the Color Room");
+	constexpr float ColorZoneMaxRadius = 1350.f; // CT_Tutorial row ColorZoneMaxRadius (tutorial_assets.py)
 	constexpr TCHAR const* ZonesLearnedLine = TEXT("Colors learned?");
 	constexpr TCHAR const* ZonesLethalLine = TEXT("Big wave is coming");
 	constexpr TCHAR const* ZonesLethalDeathLine = TEXT("Oh, it hurts?");
@@ -89,6 +90,12 @@ namespace GeoTutorialStages
 	FName const LateralWaveAbility = "Ability.Spell.LateralWave";
 	FName const SalveAbility = "Ability.Spell.TutorialSalve";
 	FName const ShooterAbility = "Ability.Spell.ProjectileToAllPlayers";
+
+	/** Each class ability and the room that unlocks it. */
+	TPair<FName, int32> const UnlockRooms[] = {{DashAbility, GeoTutorial::Dash},
+											   {BasicBeamAbility, GeoTutorial::Shoot},
+											   {HealingZoneAbility, GeoTutorial::Deploy},
+											   {SpecialAbility, GeoTutorial::Special}};
 
 	FName const ShootDummyTag = "TutorialShootDummy";
 	FName const AllyTag = "TutorialAlly";
@@ -287,7 +294,9 @@ namespace GeoTutorialStages
 	{
 		Bot.AddExitPadStage(GeoTutorial::Landing);
 		Bot.AddLineStage(TEXT("Landing: idle on the open pad, the nag"), LandingNagLine);
-		Bot.AddLineStage(TEXT("Landing: the nag repeats"), LandingNagLine);
+		FGeoCatLineCategories Puns;
+		Puns.Names = {"Pun"};
+		Bot.AddFileLineStage(TEXT("Landing: then a Pun joke"), Puns);
 	}
 
 	void AddEarlyPortalStages(FGeoTutorialBot& Bot)
@@ -429,7 +438,10 @@ namespace GeoTutorialStages
 			Bot.AddLineStage(TEXT("Dash: an idle tier"), Fragment);
 		}
 
-		Bot.AddLineStage(TEXT("Dash: the last idle tier repeats"), DashIdleLines[UE_ARRAY_COUNT(DashIdleLines) - 1]);
+		FGeoCatLineCategories Puns;
+		Puns.Names = {"Pun"};
+		Bot.AddFileLineStage(TEXT("Dash: past the tiers, a Pun joke"), Puns);
+		Bot.AddFileLineStage(TEXT("Dash: and another one"), Puns);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -903,53 +915,89 @@ namespace GeoTutorialStages
 	// -----------------------------------------------------------------------------------------------------------------
 	// Zones
 	// -----------------------------------------------------------------------------------------------------------------
-	/** One colour: its zone spawns and the pawn stands in it. The step ends as the pawn enters, so only a zone the step
-	 * holds a while (Damage: its Cat line) acts on the pawn: bHurts checks that its health fell. */
-	void AddZoneColorStage(FGeoTutorialBot& Bot, FString const& Color, bool const bHurts)
+	/** Zone points, as the user placed them: the Damage zone grows on its point, Shield and Heal appear on theirs. */
+	FVector2D GetZonePoint(FGeoTutorialBot const& Bot, FString const& Color)
 	{
+		AActor const* const Point = Bot.FindByLabel(TEXT("Tut_Zones_ZonePoint_") + Color);
+		return Bot.Test.TestNotNull(*FString::Printf(TEXT("%s zone point"), *Color), Point)
+			? FVector2D(Point->GetActorLocation())
+			: FVector2D::ZeroVector;
+	}
+
+	/** The colours step: the Damage zone grows past ColorZoneMaxRadius's start and hurts the pawn, Shield and Heal
+	 * appear after the growth, the pawn stands in each, the step runs on right after the second, and 2 s later every
+	 * zone is gone. */
+	void AddZoneColorsStages(FGeoTutorialBot& Bot)
+	{
+		TSharedRef<float> FirstRadius = MakeShared<float>(0.f);
 		TSharedRef<bool> bHurt = MakeShared<bool>(false);
-		TSharedRef<bool> bMoved = MakeShared<bool>(false);
-		Bot.AddStage(FString::Printf(TEXT("Zones: the %s zone spawns and the pawn stands in it"), *Color),
-					 [&Bot, Color, bHurts, bHurt, bMoved](bool const bFirstTick)
+		Bot.AddStage(TEXT("Zones: the Damage zone grows over the room and hurts the pawn"),
+					 [&Bot, FirstRadius, bHurt](bool const bFirstTick)
 					 {
-						 AActor const* const Volume = Bot.FindByLabel(TEXT("Tut_Zones_ZoneVolume_") + Color);
-						 bool bDone = !Bot.Test.TestNotNull(*FString::Printf(TEXT("%s zone volume"), *Color), Volume);
-						 if (!bDone)
+						 FVector2D const Spot = GetZonePoint(Bot, TEXT("Damage"));
+						 AGeoEffectZone const* const Zone = Bot.FindZoneAt(Spot);
+						 if (bFirstTick)
 						 {
-							 FVector2D const Spot(Volume->GetActorLocation());
-							 if (bFirstTick && bHurts)
+							 Bot.SetInvincible(false);
+							 GeoASLib::GetGeoAscFromActor(Bot.GetPawn())
+								 ->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
+								 .AddLambda(
+									 [bHurt](FOnAttributeChangeData const& Data)
+									 {
+										 *bHurt |= Data.NewValue < Data.OldValue;
+									 });
+						 }
+
+						 bool bDone = false;
+						 if (Zone)
+						 {
+							 if (*FirstRadius == 0.f)
 							 {
-								 // The zone lives while the step's line does: keep it up until the zone has hurt.
-								 Bot.KeepLineFragment = ZonesLearnedLine;
-								 GeoASLib::GetGeoAscFromActor(Bot.GetPawn())
-									 ->GetGameplayAttributeValueChangeDelegate(
-										 UGeoAttributeSetBase::GetHealthAttribute())
-									 .AddLambda(
-										 [bHurt](FOnAttributeChangeData const& Data)
-										 {
-											 *bHurt |= Data.NewValue < Data.OldValue;
-										 });
+								 *FirstRadius = Zone->GetSimpleCollisionRadius();
+								 Bot.MovePawn(Spot);
 							 }
 
+							 bDone = Zone->GetSimpleCollisionRadius() >= ColorZoneMaxRadius - 1.f;
+							 if (bDone)
+							 {
+								 Bot.Test.TestTrue(TEXT("The Damage zone grew"),
+												   Zone->GetSimpleCollisionRadius() > *FirstRadius);
+								 Bot.Test.TestTrue(TEXT("The Damage zone hurt the pawn"), *bHurt);
+								 Bot.SetInvincible(true);
+							 }
+						 }
+
+						 return bDone;
+					 });
+		for (FString const Color : {TEXT("Shield"), TEXT("Heal")})
+		{
+			TSharedRef<bool> bMoved = MakeShared<bool>(false);
+			Bot.AddStage(FString::Printf(TEXT("Zones: the %s zone appears and the pawn stands in it"), *Color),
+						 [&Bot, Color, bMoved](bool)
+						 {
+							 FVector2D const Spot = GetZonePoint(Bot, Color);
 							 if (!*bMoved && Bot.FindZoneAt(Spot))
 							 {
 								 *bMoved = true;
 								 Bot.MovePawn(Spot);
 							 }
 
-							 if (bHurts && *bHurt)
-							 {
-								 Bot.KeepLineFragment.Empty();
-							 }
+							 return *bMoved;
+						 });
+		}
 
-							 bDone = *bMoved && !Bot.FindZoneAt(Spot);
-							 if (bDone && bHurts)
-							 {
-								 Bot.Test.TestTrue(*FString::Printf(TEXT("The %s zone hurt the pawn"), *Color), *bHurt);
-							 }
+		Bot.AddStage(TEXT("Zones: every zone is still up after the last entry, gone with the step"),
+					 [&Bot](bool const bFirstTick)
+					 {
+						 bool const bAnyUp = Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Damage")))
+							 || Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Shield")))
+							 || Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Heal")));
+						 if (bFirstTick)
+						 {
+							 Bot.Test.TestTrue(TEXT("The step runs on after the second entry"), bAnyUp);
 						 }
 
-						 return bDone;
+						 return !bAnyUp;
 					 });
 	}
 
@@ -978,7 +1026,8 @@ namespace GeoTutorialStages
 						 {
 							 if (!*bAlive)
 							 {
-								 // Back from a death: waves of the run before still fired while it waited for the respawn.
+								 // Back from a death: waves of the run before still fired while it waited for the
+								 // respawn.
 								 *Base = Bot.GetWatchCount(Watch);
 							 }
 
@@ -1019,9 +1068,7 @@ namespace GeoTutorialStages
 			},
 			LateralWaveAbility);
 		Bot.AddLineStage(TEXT("Zones: the first line"), ZonesIntroLine);
-		AddZoneColorStage(Bot, TEXT("Heal"), false);
-		AddZoneColorStage(Bot, TEXT("Shield"), false);
-		AddZoneColorStage(Bot, TEXT("Damage"), true);
+		AddZoneColorsStages(Bot);
 		Bot.AddLineStage(TEXT("Zones: colors learned"), ZonesLearnedLine);
 		TSharedRef<int32> LethalWaveCount = MakeShared<int32>(0);
 		Bot.AddStage(TEXT("Zones: the lethal wave kills the pawn"),
@@ -1424,7 +1471,7 @@ namespace GeoTutorialStages
 				UWorld* const World = Bot.GetWorld();
 				bool bArrived = World && World != OldWorld->Get() && Bot.GetPawn()
 					&& UWorld::RemovePIEPrefix(World->GetPackage()->GetName()).Contains(MapName);
-				if (bArrived)
+				if (bArrived && !PlayerStartTag.IsNone())
 				{
 					APlayerStart const* PlayerStart = nullptr;
 					for (TActorIterator<APlayerStart> It(World); It; ++It)
@@ -1483,19 +1530,65 @@ namespace GeoTutorialStages
 					   });
 	}
 
-	void AddJumpCommandStages(FGeoTutorialBot& Bot)
+	void AddJumpCommandStages(FGeoTutorialBot& Bot, FString const& Argument, int32 const Room)
 	{
-		AddTravelStage(Bot, TEXT("Jump command: Geo.Tutorial.Jump Zones reloads the tutorial in Zones"),
-					   TEXT("Tutorial"), "Zones",
-					   [](UWorld* const World)
+		FString const Command = TEXT("Geo.Tutorial.Jump ") + Argument;
+		AddTravelStage(Bot, FString::Printf(TEXT("Jump command: '%s' reloads the tutorial"), *Command),
+					   TEXT("Tutorial"), FName(*GeoTutorial::RoomName(Room)),
+					   [Command](UWorld* const World)
 					   {
-						   GEngine->Exec(World, TEXT("Geo.Tutorial.Jump Zones"));
+						   GEngine->Exec(World, *Command);
 					   });
-		Bot.AddLineStage(TEXT("Jump command: the Zones room's first line"), ZonesIntroLine);
-		Bot.AddStage(TEXT("Jump command: Landing never ran"),
+		AddJumpCheckStages(Bot, Room);
+	}
+
+	/** Waits for the tutorial reloaded at its start: the pawn in the Landing room, movement locked, no class ability,
+	 * Landing's first line. */
+	void AddFreshTutorialStages(FGeoTutorialBot& Bot, FString Name, TFunction<void(UWorld*)> Leave)
+	{
+		AddTravelStage(Bot, MoveTemp(Name), TEXT("Tutorial"), NAME_None, MoveTemp(Leave));
+		Bot.AddLineStage(TEXT("Fresh tutorial: Landing's first line"), LandingFirstLine);
+		Bot.AddStage(TEXT("Fresh tutorial: in Landing, locked, no class ability"),
 					 [&Bot](bool)
 					 {
-						 Bot.ExpectNoLine(LandingFirstLine);
+						 Bot.Test.TestTrue(TEXT("The pawn is in the Landing room"),
+										   FMath::Abs(Bot.GetPawn()->GetActorLocation().X
+													  - GeoTutorial::RoomCentreX(GeoTutorial::Landing))
+											   < GeoTutorial::RoomHalfX);
+						 Bot.Test.TestTrue(TEXT("Landing locks the movement"),
+										   Bot.GetWorld()->GetSubsystem<UGeoEncounterSubsystem>()->bMovementLocked);
+						 for (TPair<FName, int32> const& Unlock : UnlockRooms)
+						 {
+							 Bot.Test.TestFalse(*FString::Printf(TEXT("%s not granted"), *Unlock.Key.ToString()),
+												Bot.IsGranted(Unlock.Key));
+						 }
+
+						 return true;
+					 });
+	}
+
+	void AddJumpPastEndStages(FGeoTutorialBot& Bot)
+	{
+		AddFreshTutorialStages(Bot, TEXT("Jump command: a number past the chain starts at Landing"),
+							   [](UWorld* const World)
+							   {
+								   GEngine->Exec(World, TEXT("Geo.Tutorial.Jump 99"));
+							   });
+	}
+
+	void AddReplayStages(FGeoTutorialBot& Bot)
+	{
+		AddLeaveFromMenuStages(Bot);
+		AddFreshTutorialStages(Bot, TEXT("Replay: the tutorial opened again from the Training Room"),
+							   [](UWorld* const World)
+							   {
+								   World->GetGameInstance<UGeoGameInstance>()->OpenTutorial();
+							   });
+		Bot.AddStage(TEXT("Replay: the Training Room's portal is not carried over"),
+					 [&Bot](bool)
+					 {
+						 Bot.Test.TestEqual(TEXT("Portal of the replayed tutorial"), Bot.GetWorld()->URL.Portal,
+											FString());
 						 return true;
 					 });
 	}
@@ -1520,15 +1613,16 @@ namespace GeoTutorialStages
 											   Distance2D(Bot.GetPawn(), FVector2D(Start->GetActorLocation())) < 150.f);
 						 }
 
-						 Bot.Test.TestTrue(TEXT("Dash granted by the skipped rooms"),
-										   Bot.IsGranted(DashAbility) == (Room > GeoTutorial::Dash));
-						 Bot.Test.TestTrue(TEXT("Basic attack granted by the skipped rooms"),
-										   Bot.IsGranted(BasicBeamAbility) == (Room > GeoTutorial::Shoot));
-						 // Deploy and Special unlock as their step starts, so the room jumped to already holds its own.
-						 Bot.Test.TestTrue(TEXT("Healing Zone granted by the skipped rooms and Deploy's entry"),
-										   Bot.IsGranted(HealingZoneAbility) == (Room >= GeoTutorial::Deploy));
-						 Bot.Test.TestTrue(TEXT("Special granted by the skipped rooms and Special's entry"),
-										   Bot.IsGranted(SpecialAbility) == (Room >= GeoTutorial::Special));
+						 // The room's own unlock may already have run as its step started: only the others are checked.
+						 for (TPair<FName, int32> const& Unlock : UnlockRooms)
+						 {
+							 if (Unlock.Value != Room)
+							 {
+								 Bot.Test.TestEqual(*FString::Printf(TEXT("%s granted by the skipped rooms only"),
+																	 *Unlock.Key.ToString()),
+													Bot.IsGranted(Unlock.Key), Unlock.Value < Room);
+							 }
+						 }
 						 Bot.Test.TestFalse(TEXT("Movement is free"),
 											Bot.GetWorld()->GetSubsystem<UGeoEncounterSubsystem>()->bMovementLocked);
 						 Bot.ExpectNoLine(LandingFirstLine);

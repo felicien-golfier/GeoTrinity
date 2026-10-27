@@ -20,9 +20,13 @@ struct GEOTRINITY_API FSTTask_MoveToTargetPointInstanceData
 	UPROPERTY(EditAnywhere, Category = Context)
 	TObjectPtr<AAIController> AIController = nullptr;
 
-	/** Purpose of the points walked between (TargetPoint.*), among those of the pawn's own arena. */
+	/** Purpose of the points walked between (TargetPoint.*). */
 	UPROPERTY(EditAnywhere, Category = Parameter)
 	FGameplayTag PointTag;
+
+	/** Arena the points belong to (Arena.*): an encounter-spawned pawn has no arena to ask. */
+	UPROPERTY(EditAnywhere, Category = Parameter)
+	FGameplayTag ArenaTag;
 
 	/** 2D distance at which the walk is over; a point the pawn already stands within is not picked. */
 	UPROPERTY(EditAnywhere, Category = Parameter, meta = (ClampMin = "1.0"))
@@ -34,7 +38,7 @@ struct GEOTRINITY_API FSTTask_MoveToTargetPointInstanceData
 };
 
 /**
- * Walks the pawn in a straight line — no navmesh — to a random point of PointTag in its arena that it is not already
+ * Walks the pawn in a straight line — no navmesh — to a random point of PointTag and ArenaTag that it is not already
  * at, facing it: sets AGeoCharacter::SetTargetYaw() each tick, which the character turns toward at its own
  * MaxRotationSpeed. Speed comes from the pawn's movement component. Succeeds on arrival; Fails when no other point
  * exists.
@@ -49,7 +53,7 @@ struct GEOTRINITY_API FSTTask_MoveToTargetPoint : public FStateTreeAIActionTaskB
 	/** Declares FSTTask_MoveToTargetPointInstanceData as the per-execution instance data type so StateTree allocates
 	 * the correct struct for each context. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
-	/** Picks the point to walk to. Failed when the pawn has no arena or no other point is left. */
+	/** Picks the point to walk to. Failed when ArenaTag is unset (ensure) or no other point is left. */
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 										   FStateTreeTransitionResult const& Transition) const override;
 	/** Faces the point and moves toward it; Succeeded once within AcceptanceRadius. */

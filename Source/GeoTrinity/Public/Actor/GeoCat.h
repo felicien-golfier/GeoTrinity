@@ -57,6 +57,7 @@ class GEOTRINITY_API AGeoCat : public AActor
 public:
 	AGeoCat();
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Walks through Points in order at Speed, stopping StopDistance short of the last one, facing it; completes
@@ -76,8 +77,16 @@ public:
 	/** True from an order's start until it ends (completed or replaced). */
 	bool IsOrderRunning() const { return bOrderRunning; }
 
-	/** Moves the cat along its walk, turns it and eases the AnimBP's Speed; called by Tick while visible. */
+	/** Moves the cat along its walk, turns it, eases the AnimBP's Speed and counts down to the next idle variant while
+	 * it stands with no montage playing; called by Tick while visible. */
 	void AdvanceMove(float DeltaSeconds);
+
+	/** The next idle variant of the shuffled bag: all of IdleVariants come round before any repeats, never the same
+	 * twice in a row. Null when IdleVariants is empty. */
+	UAnimMontage* PickIdleVariant();
+
+	/** Seconds of standing left before the next idle variant is drawn. */
+	float GetIdleVariantCountdown() const { return IdleVariantCountdown; }
 
 	/** Every order ends through it: true when it completed, false when a new order replaced it. */
 	FOnGeoCatOrderEnded OnOrderEnded;
@@ -86,9 +95,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoCat", meta = (ClampMin = "1"))
 	float TurnRate = 360.f;
 
-	/** Units per second the AnimBP's Speed moves toward 0 (idle) or 1 (walk). */
+	/** cm/s per second the AnimBP's Speed moves toward 0 (standing) or the walk's speed. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoCat", meta = (ClampMin = "0.1"))
-	float SpeedBlendRate = 4.f;
+	float SpeedBlendRate = 600.f;
+
+	/** Montages played at random while the cat stands, a roam pause included (BP_Cat: the Cat_Idle_* montages). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoCat")
+	TArray<TObjectPtr<UAnimMontage>> IdleVariants;
+
+	/** Seconds of standing between the end of one idle variant and the next: random between X (min) and Y (max). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoCat")
+	FVector2D IdleVariantPause = FVector2D(6.f, 14.f);
 
 	/** Standing with no montage: turns toward the first local pawn, so the idle reads as talking to the player. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoCat")
@@ -114,9 +131,17 @@ private:
 
 	void WalkToRandomRoamSpot();
 
+	/** Draws and plays an idle variant. */
+	void PlayIdleVariant();
+
+	void StopMontages() const;
+
 	void OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
 
 	void TurnToward(FVector const& Direction, float DeltaSeconds);
+
+	/** Counts the countdown down by DeltaSeconds and plays the next idle variant at 0. */
+	void TickIdleVariant(float DeltaSeconds);
 
 	/** Writes AnimSpeed to the anim instance's Speed variable (cat_anim_blueprint.py SPEED_VARIABLE). */
 	void WriteAnimSpeed() const;
@@ -135,6 +160,16 @@ private:
 	FGeoCatRoam RoamSettings;
 	FTimerHandle RoamPauseTimer;
 
-	/** 0 idle, 1 walk, eased at SpeedBlendRate. */
+	/** The real speed in cm/s (0 standing), eased at SpeedBlendRate. */
 	float AnimSpeed = 0.f;
+
+	/** Standing seconds left before the next idle variant; held while any montage plays. */
+	float IdleVariantCountdown = 0.f;
+
+	/** Variants still to come in this round; the next one is the last. */
+	UPROPERTY()
+	TArray<TObjectPtr<UAnimMontage>> IdleVariantBag;
+
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> LastIdleVariant;
 };

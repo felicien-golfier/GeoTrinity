@@ -7,16 +7,16 @@ Headless play-in-editor runs of the real `/Game/Maps/Tutorial`: a bot plays the 
 | `GeoTutorialBot.h/.cpp` | `FGeoTutorialBot`: latent command running a list of stages, one per frame; world / pawn / pad / enemy / zone helpers, the Cat line and page logs, ability watches, per-frame observers, `JumpTo(Room)`, `QueueSession` (load map, play session, bot, end, restore profile). Also `FGeoStartListenPlayCommand`, `FGeoRestoreGemProfileCommand` |
 | `GeoTutorialRoomStages.h/.cpp` | `GeoTutorialStages::Add<Room>Stages(Bot, branch)` per room and branch: its stages, mirroring the room's script (`AI/Python/Tutorial/Level/tutorial_encounters.py`, whose line fragments sit at the top of the `.cpp`); the caller adds the start stage and the teleports |
 | `GeoTutorialRunTests.cpp` | `GeoTrinity.Tutorial.FullRun`: Landing to Miniboss in one session, real pads, the main branch of each room |
-| `GeoTutorialPathTests.cpp` | Complex tests: `GeoTrinity.Tutorial.Path.<Case>` (every other branch, one session each, entered by `JumpTo`) and `GeoTrinity.Tutorial.Jump.<Room>` (the jump of each room) |
+| `GeoTutorialPathTests.cpp` | Complex tests: `GeoTrinity.Tutorial.Path.<Case>` (every other branch, one session each, entered by `JumpTo`) and `GeoTrinity.Tutorial.Jump.<Room>` (the console jump to each room by name, real travel) |
 
 ## Bot
 - Stage = name + lambda `bool(bFirstTick)`; true moves on. Each stage has a real-time timeout naming it; a dummy that never spawns stalls its spawn stage, an extra one fails at once.
 - Every frame: closes pause menus (after noting how many class abilities the player held and whether the world paused: one unlock, one page), ends Cat lines (`HideCatLine`; `KeepLineFragment` leaves one standing: `Path.EarlyPortal`), fails if an entry pad opens. 8x time dilation.
 - `Geo.PlayerInvincible` on, except where the room needs the hit: falls, lethal and safe-spot waves, wipes. Allies still die.
-- Line log: every line from `UGeoEncounterSubsystem::OnCatLine`, in order. A branch is proved by its line (stunned vs relief, sting vs surrender, quip at 3 / 6 / 9, tips in order), never by its text typed in the test: the test holds a short unique fragment of the script's line.
+- Line log: every line from `UGeoEncounterSubsystem::OnCatLine`, in order. A play world is subscribed the moment it initialises (`FWorldDelegates::OnPostWorldInitialization`), so a travel's first line, shown in `BeginPlay`, is not missed. A branch is proved by its line (stunned vs relief, sting vs surrender, quip at 3 / 6 / 9, tips in order), never by its text typed in the test: the test holds a short unique fragment of the script's line.
 - Counters: `AGeoEncounter::GetCounter` reads the room's tally (`Falls`, `Progress`, `Dead`, `WavesDone`; step-scoped, so read while the step runs). Ability watches (`WatchActivations`) count what an actor's ASC activates and follow a respawned actor; observers run every frame (boss points visited). `bKeepPlayerHealthy` refills the pawn each frame in the Miniboss branches (a stray bullet kills nothing); `KillPlayer` drops the invincibility for the one `Death()` only.
 - Kills through `Death()` (the Miniboss's last hit sets its health to 0: only that path reaches the arena's defeat and loot); real abilities where headless allows: Dash (placed at the void edge facing +X, then `TryActivateAbility`), Healing Zone (`GeoASLib::SpawnDeployableFromAbility` on the ally), Special (`TryActivateAbility`). Health set through the attribute to hurt (call-outs, the Heal zone check) and in the Special room, where the beam cannot be aimed headless.
-- `JumpTo(Room)`: the world-URL jump without the travel: pawn onto the `PlayerStart` tagged with the room name, then `StartAfterSkippingChain()` on `Tut_<Room>_Encounter`. The real console travel is `Path.JumpCommand`; `FinalExit`, `LeaveFromMenu` and `JumpCommand` wait for a new play world (PIE server travel).
+- `JumpTo(Room)`: the world-URL jump without the travel: pawn onto the `PlayerStart` tagged with the room name, then `StartAfterSkippingChain()` on `Tut_<Room>_Encounter`. The real console travel is `Jump.<Room>`; it, `FinalExit`, `LeaveFromMenu`, `Replay` and the `Jump*` paths wait for a new play world (PIE server travel).
 - The map's `StartingTutoRoomInEditor` (editor quick-start room, a jump that replays the unlocks before it) is cleared on the loaded editor map before play, in memory only: every session starts at Landing or at its own `JumpTo`.
 - Expected, never failed on: `GC_Explosion`'s Blueprint error (headless: no Niagara component to set a variable on).
 - A kept line (`KeepLineFragment`) is released when `AddTeleportStages` sees the pawn arrive: the line ending is what starts the next room.
@@ -31,14 +31,15 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 | Room | Branch | Test |
 |---|---|---|
 | all | entry pads never open; exit closes on arrival; each unlock pops its page, world paused while it shows | FullRun |
-| all | jump: pawn on `JumpStart`, earlier abilities granted (and Deploy's / Special's own, they unlock as their step starts), Landing never runs, room's step 0 starts | Jump.<Room> |
-| all | console `Geo.Tutorial.Jump Zones` travels and lands in Zones | Path.JumpCommand |
+| all | console `Geo.Tutorial.Jump <Room>` travels; pawn on `JumpStart`, earlier abilities granted (and Deploy's / Special's own, they unlock as their step starts), Landing never runs, room's step 0 starts | Jump.<Room> |
+| all | jump by number (`Geo.Tutorial.Jump 6`): Zones | Path.JumpByNumber |
+| all | jump by a number past the chain: fresh start at Landing (locked, no class ability) | Path.JumpPastEnd |
 | Landing | locked until the WASD line, then free; Cat shown, then hidden after its portal jump | FullRun |
-| Landing | idle on the open pad: nag repeats | Path.LandingNag |
+| Landing | idle on the open pad: the nag once, then `Pun` jokes | Path.LandingNag |
 | Landing | pad taken during the last line: the line ends, the Dash room's first line follows, no Landing line after | Path.EarlyPortal |
 | Dash | real dash over the void, 0 falls: stunned line | FullRun |
 | Dash | falls 1-7: each respawns on the room's entrance; first, second, 3-5, 6+ lines; reach: relief line with the count | Path.DashFalls |
-| Dash | idle tiers 1-4, tier 4 repeats | Path.DashIdle |
+| Dash | idle tiers 1-4, each once, then `Pun` jokes from `Data/CatLines.txt` (two in a row) | Path.DashIdle |
 | Shoot | first dummy, delay, nine; quips at 3 / 6 / 9; a dead one respawns where it died; 12 kills cut; dummies removed | FullRun |
 | Shoot | 45 s cut before 12 kills | Path.ShootCut |
 | Shoot | pause menu open: respawns and the cut hold | Path.PauseHolds |
@@ -57,5 +58,6 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 | Miniboss | wave: in a living dummy's lane survives, out of it dies; no dummy alive: dies anywhere | Path.MinibossWaveLanes |
 | Miniboss | step on the final exit: Training Room, on its `TrainingRoom` start | Path.FinalExit |
 | any | pause menu Leave tutorial: Training Room | Path.LeaveFromMenu |
+| any | Leave tutorial, then the tutorial opened again: fresh start at Landing, nothing kept | Path.Replay |
 
 Covered elsewhere: solo-only login (`GeoTrinity.Tutorial.SoloOnly`), locked / unlocked abilities, encounter mechanics (`GeoTrinity.Encounter.*`). Not played: the Heal and Shield zones' effect (the bot stands in them, the effect is not measured), the Dummies room's mover patrol (not built, `AI/Pending/Tutorial.md`), the Miniboss wave count after a wipe (tree state), quest card display and line typing (UI module, no probe), first-launch prompt and menu button (main menu, no tutorial world), steps 11-13 (not built).

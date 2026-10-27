@@ -1,0 +1,77 @@
+# The Cat's random lines. One [Category] header, then one Cat line per line (Board markup: **bold**, ~~shake~~, {Key:<InputTag>}).
+# # = comment (the joke's intent for the French pass goes above its line). Blank lines ignored. UTF-8.
+# The category name is the key stored on encounter actions: rename one and every action naming it must follow.
+# Read live by the game and the editor picker; format and rules: Source/GeoTrinity/Public/Tool/CatLine/CLAUDE.md
+
+[Controls]
+Press W to go forward. Press S to go backward. Press both to experience quantum indecision.
+WASD moves you. The mouse aims. Your brain is sold separately.
+Avoid getting killed. Pro tip.
+Standing in the fire is not a strategy. It's a lifestyle, and a short one.
+Cooldowns exist so you can't spam your best ability. I didn't make the rules. I just enforce them with enthusiasm.
+
+[Roles]
+Tank: you're the Square. Stand in front. That's the whole job. Friends everywhere salute you.
+Healer: you're the Circle. Nobody will say thanks. Heal anyway. I'll say it. Quietly. Once.
+Healer: tanks will stand in deadly zones, dps will move far from you. Adapt
+DPS: you're the Triangle. Yes, the damage meter is watching. No, it doesn't love you back.
+DPS: Blame the healer, it's never your fault
+DPS: YES you have the BEST DPS EVER ! But you're dead already...
+
+[Teamwork]
+Dead teammates can't be blamed. Wait, they can. Heal them first, then blame.
+Standing next to the Healer is free. Standing in front of the boss costs health. Choose wisely, or choose the Tank.
+
+[LiveService]
+Loading… Estimated time: soon™. Actual time: also soon™, but with a straight face.
+This loading screen contains no hidden tips. This is the hidden tip.
+Searching for a fourth player… Still searching… The Cat is considering joining out of pity.
+Season 14 begins shortly. Season 1 never ended. Don't ask.
+New extension is out ! Time to request time off.
+We hear you. We have no plans to act on it, but we hear you.
+Play the meta, it will be nerfed SOON™
+# loading bar gag
+I tried to make a loading screen pun, but I got stuck at 99%. Classic.
+
+[FourthWall]
+A wipe is just a very dramatic nap. Get up. Try again. I'll pretend I didn't notice.
+Skip the tutorial? Bold. The boss will explain it to you. Loudly.
+# Under-reading clue: check `Lore.md` "Secrets ladder" before shipping
+Fun fact: the bosses and I share an eye shape. Pure coincidence. Moving on.
+Have you tried not dying? Neither have I. Haha. Anyway.
+Loading complete. I'd say good luck, but I've seen the boss list and I've chosen honesty.
+
+[Pun]
+Jump to the red dot ! Here ! Right above the open window ! Hum... cat jokes
+# level = floor / character level
+Why did the Tank bring a ladder? To reach the next level. I'll see myself out. No I won't, I'm locked in.
+# purr-fectly
+What do you call a Healer who runs out of mana? A purr-fectly normal Tuesday.
+# far-fetched / fetch
+I'd tell you a joke about the boss's attack, but it's a little too far-fetched. Fetch? Cat? Never mind.
+# acronym twist
+DPS stands for Damage Per Second. For me it's Dozing Per Second. I'm first of the leaderboard !
+# point / sharp corner
+Why don't Triangles ever win arguments? They always lose their point. Wait, they have three. Bad example. Moving on.
+# block, paws/pause
+What's a Square's favorite spell? Block. What's mine? Paws. As in: paws the game. Don't.
+# cat-a-clysm
+You can't spell 'cataclysm' without 'cat'. I take full credit and zero responsibility.
+# edges, circle shape
+Why was the Circle so calm? It had no edges to be cut up about.
+# cat-astrophe
+What do you call a wipe at the final boss? A cat-astrophe. Thank you, I'll be here all run.
+# sockets / issues; match gem system
+Why did the gem go to therapy? It had too many unresolved sockets.
+# hiss / flamed
+I used to be a DPS main, but I kept getting hissed at in chat.
+# LFG running gag
+A Healer, a Tank and a DPS walk into a lobby. Nobody picks Healer. It's not a joke, it's a Tuesday.
+# two left feet; boss shape is hexagon
+Why is the boss such a bad dancer? Two left hexagons.
+# catch, cat nap
+What's the best way to catch a boss? Wait for it to nap. I mean, wipe. I mean, phase change.
+# nine lives
+I was dying playing Tank last time, Healer said to me : 'You're the one with nine lives. Use one.'
+# knock-knock, healer abandonment gag
+Knock knock. Who's there? Not the Healer. Again.

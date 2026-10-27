@@ -19,7 +19,7 @@ void UGeoSessionSubsystem::HostListen(FString const& MapPackagePath, FString con
 	{
 		return;
 	}
-	World->ServerTravel(MakeListenUrl(MapPackagePath, Portal));
+	World->ServerTravel(MakeListenUrl(MapPackagePath, Portal), /*bAbsolute*/ true);
 }
 
 FString UGeoSessionSubsystem::MakeListenUrl(FString const& MapPackagePath, FString const& Portal)

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Misc/AutomationTest.h"
+#include "Tool/CatLine/GeoCatLineCategories.h"
 #include "UObject/StrongObjectPtr.h"
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
@@ -108,6 +109,9 @@ public:
 	void AddStartStage(int32 StartRoom);
 	/** Waits for a Cat line holding Fragment, shown after the one the last line stage matched. */
 	void AddLineStage(FString Name, FString Fragment);
+	/** Waits for a Cat line that is one of the lines of Categories (Data/CatLines.txt), shown after the one the last
+	 * line stage matched. */
+	void AddFileLineStage(FString Name, FGeoCatLineCategories Categories);
 	/** Waits Seconds of real time (the world may be paused or dilated). */
 	void AddWaitStage(FString Name, double Seconds);
 	/** Exactly Count living enemies tagged Tag exist: a spawn that never happens (or happens twice) stalls or fails. */
@@ -200,8 +204,8 @@ private:
 	void KeepPlayerHealthy() const;
 	void UpdateWatches();
 	void Unbind(FWatch& Watch);
-	/** The first Cat line is logged from the moment the world exists. */
-	void SubscribeToLines();
+	/** Logs the Cat lines of World, the play world, and stops logging those of the one before. */
+	void SubscribeToLines(UWorld* World);
 	/** The world-URL jump without the travel: the pawn onto Room's player start, then its encounter's arrival reset. */
 	void JumpTo(int32 Room) const;
 	int32 CountGrantedAbilities() const;
@@ -215,6 +219,8 @@ private:
 	TArray<FWatch> Watches;
 	TWeakObjectPtr<UWorld> LineWorld;
 	FDelegateHandle LineHandle;
+	/** Subscribes a play world as soon as it exists: a travel's first line shows before the next frame. */
+	FDelegateHandle WorldInitializedHandle;
 };
 
 #endif

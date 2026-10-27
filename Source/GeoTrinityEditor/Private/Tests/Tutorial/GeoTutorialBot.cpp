@@ -18,6 +18,7 @@
 #include "GameFramework/WorldSettings.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "HUD/Interface/GeoHUDInterface.h"
+#include "Tool/CatLine/GeoCatLineBank.h"
 #include "UObject/StrongObjectPtr.h"
 #include "World/GeoWorldSettings.h"
 
@@ -83,10 +84,19 @@ bool FGeoStartListenPlayCommand::Update()
 // ---------------------------------------------------------------------------------------------------------------------
 FGeoTutorialBot::FGeoTutorialBot(FAutomationTestBase& InTest) : Test(InTest)
 {
+	WorldInitializedHandle = FWorldDelegates::OnPostWorldInitialization.AddLambda(
+		[this](UWorld* const World, UWorld::InitializationValues const /*Values*/)
+		{
+			if (World->WorldType == EWorldType::PIE)
+			{
+				SubscribeToLines(World);
+			}
+		});
 }
 
 FGeoTutorialBot::~FGeoTutorialBot()
 {
+	FWorldDelegates::OnPostWorldInitialization.Remove(WorldInitializedHandle);
 	for (FWatch& Watch : Watches)
 	{
 		Unbind(Watch);
@@ -106,7 +116,8 @@ void FGeoTutorialBot::QueueSession(FAutomationTestBase& Test, TSharedRef<FGeoTut
 	// The editor map only: AutomationOpenMap would also start a standalone play session, which the listen one below
 	// then replaces after the first stage has run on it.
 	FAutomationEditorCommonUtils::LoadMap(TEXT("/Game/Maps/Tutorial"));
-	// The map's editor quick-start room (a jump that replays the unlocks before it) would start the session past Landing.
+	// The map's editor quick-start room (a jump that replays the unlocks before it) would start the session past
+	// Landing.
 	if (AGeoWorldSettings* const WorldSettings =
 			Cast<AGeoWorldSettings>(GEditor->GetEditorWorldContext().World()->GetWorldSettings()))
 	{
@@ -140,7 +151,7 @@ bool FGeoTutorialBot::Update()
 	}
 	else
 	{
-		SubscribeToLines();
+		SubscribeToLines(GetWorld());
 		ServeUI();
 		CheckEntryPadsClosed();
 		if (GetWorld())
@@ -209,6 +220,29 @@ void FGeoTutorialBot::AddLineStage(FString Name, FString Fragment)
 				 }
 
 				 return Index != INDEX_NONE;
+			 });
+}
+
+void FGeoTutorialBot::AddFileLineStage(FString Name, FGeoCatLineCategories Categories)
+{
+	AddStage(MoveTemp(Name),
+			 [this, Categories = MoveTemp(Categories)](bool)
+			 {
+				 int32 Found = INDEX_NONE;
+				 for (int32 Index = LineCursor; Found == INDEX_NONE && Index < Lines.Num(); ++Index)
+				 {
+					 if (GeoCatLines::HasLine(Categories, Lines[Index]))
+					 {
+						 Found = Index;
+					 }
+				 }
+
+				 if (Found != INDEX_NONE)
+				 {
+					 LineCursor = Found + 1;
+				 }
+
+				 return Found != INDEX_NONE;
 			 });
 }
 
@@ -508,9 +542,8 @@ void FGeoTutorialBot::ExpectNoLine(FString const& Fragment) const
 	Test.TestFalse(*FString::Printf(TEXT("No Cat line holds '%s'"), *Fragment), SawLine(Fragment));
 }
 
-void FGeoTutorialBot::SubscribeToLines()
+void FGeoTutorialBot::SubscribeToLines(UWorld* const World)
 {
-	UWorld* const World = GetWorld();
 	UGeoEncounterSubsystem* const Encounters = World ? World->GetSubsystem<UGeoEncounterSubsystem>() : nullptr;
 	if (Encounters && World != LineWorld.Get())
 	{

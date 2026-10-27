@@ -1,7 +1,7 @@
-"""BP_Cat: the Blueprint child of AGeoCat placed in the Tutorial; carries SKM_Cat and ABP_Cat (montages are the
-encounter's: GeoCatMontageAction).
+"""BP_Cat: the Blueprint child of AGeoCat placed in the Tutorial; carries SKM_Cat, ABP_Cat and the idle variants it plays
+while it stands (the other montages are the encounter's: GeoCatMontageAction).
 
-Run AFTER cat_anim_blueprint.py, via mcp-unreal execute_script (needs a build
+Run AFTER cat_idles.py and cat_anim_blueprint.py, via mcp-unreal execute_script (needs a build
 with AGeoCat). Re-runnable: an existing BP_Cat is updated in place. Report written to AI/Output/cat_blueprint.json.
 """
 import json
@@ -14,6 +14,7 @@ PARENT_CLASS = "/Script/GeoTrinity.GeoCat"
 MESH = "/Game/Art/Meshes/Cat/SKM_Cat"
 ANIM_FOLDER = "/Game/Characters/Anim/Cat"
 ANIM_BLUEPRINT = ANIM_FOLDER + "/ABP_Cat"
+IDLE_VARIANTS = ("Toilet", "Groom", "Loaf", "LookAround", "Knead")  # AM_Cat_Idle_<Name>, cat_idles.py
 
 
 def required(path):
@@ -45,6 +46,8 @@ def main():
         mesh.set_editor_property("skeletal_mesh_asset", required(MESH))
         mesh.set_editor_property("animation_mode", unreal.AnimationMode.ANIMATION_BLUEPRINT)
         mesh.set_editor_property("anim_class", required(ANIM_BLUEPRINT).generated_class())
+        defaults.set_editor_property(
+            "IdleVariants", [required("{}/AM_Cat_Idle_{}".format(ANIM_FOLDER, name)) for name in IDLE_VARIANTS])
         # Instances copy only the defaults the last compile recorded.
         unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
         unreal.EditorAssetLibrary.save_loaded_asset(blueprint, only_if_is_dirty=False)
@@ -54,6 +57,7 @@ def main():
         result["blueprint"] = blueprint.get_path_name()
         result["mesh"] = mesh.get_editor_property("skeletal_mesh_asset").get_path_name()
         result["anim_class"] = str(mesh.get_editor_property("anim_class"))
+        result["idle_variants"] = [variant.get_name() for variant in defaults.get_editor_property("IdleVariants")]
         result["ok"] = True
     except Exception as exc:  # noqa
         import traceback

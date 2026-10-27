@@ -67,7 +67,13 @@ namespace GeoTutorialPaths
 			{TEXT("MinibossWaveLanes"), GeoTutorial::Miniboss, &AddMinibossWaveLaneStages},
 			{TEXT("FinalExit"), GeoTutorial::Miniboss, &AddFinalExitStages},
 			{TEXT("LeaveFromMenu"), GeoTutorial::Dash, &AddLeaveFromMenuStages},
-			{TEXT("JumpCommand"), INDEX_NONE, &AddJumpCommandStages},
+			{TEXT("JumpByNumber"), INDEX_NONE,
+			 [](FGeoTutorialBot& Bot)
+			 {
+				 AddJumpCommandStages(Bot, FString::FromInt(GeoTutorial::Zones), GeoTutorial::Zones);
+			 }},
+			{TEXT("JumpPastEnd"), INDEX_NONE, &AddJumpPastEndStages},
+			{TEXT("Replay"), GeoTutorial::Dash, &AddReplayStages},
 		};
 	}
 } // namespace GeoTutorialPaths
@@ -103,7 +109,7 @@ bool FGeoTutorialPathTest::RunTest(FString const& Parameters)
 	return true;
 }
 
-/** The jump to each room, as the world-URL jump does it (the travel itself: Path.JumpCommand). */
+/** The console jump to each room by its name: the real travel, then the jump checks. */
 IMPLEMENT_COMPLEX_AUTOMATION_TEST(FGeoTutorialJumpTest, "GeoTrinity.Tutorial.Jump", GeoTutorialRunFlags)
 
 void FGeoTutorialJumpTest::GetTests(TArray<FString>& OutBeautifiedNames, TArray<FString>& OutTestCommands) const
@@ -119,8 +125,8 @@ bool FGeoTutorialJumpTest::RunTest(FString const& Parameters)
 {
 	int32 const Room = FCString::Atoi(*Parameters);
 	TSharedRef<FGeoTutorialBot> Bot = MakeShared<FGeoTutorialBot>(*this);
-	Bot->AddStartStage(Room);
-	GeoTutorialStages::AddJumpCheckStages(*Bot, Room);
+	Bot->AddStartStage(INDEX_NONE);
+	GeoTutorialStages::AddJumpCommandStages(*Bot, GeoTutorial::RoomName(Room), Room);
 	FGeoTutorialBot::QueueSession(*this, Bot);
 
 	return true;

@@ -22,6 +22,8 @@ DUMMY_BP = "/Game/Characters/Enemies/Training/BP_Dummy"
 CURVE_TABLE = "/Game/AbilitySystem/Data/CurveTables/CT_Tutorial"
 SHOOTER_TREE = "/Game/AI/Dummy/ST_Dummy_Shooter"
 CHASER_TREE = "/Game/AI/Dummy/ST_Dummy_Chaser"
+MOVER_TREE = "/Game/AI/Dummy/ST_Dummy_Mover"
+MOVER_POINTS = [(300.0, 600.0), (300.0, 250.0), (-100.0, 425.0)]  # from the Dummies room's centre: the mover's patrol
 CAT_BP = "/Game/Actors/Cat/BP_Cat"
 CAT_ANIM = "/Game/Characters/Anim/Cat"
 CAT_REASSEMBLE = CAT_ANIM + "/AM_Cat_Reassemble"
@@ -62,8 +64,10 @@ PAGE_LINE = "An ability page is about to pop up. Read it. Or don't, I'm a cat, n
 
 CASTER_CLASS = "/Script/GeoTrinity.HiddenCasterCharacter"
 ZONE_X = 150.0  # from the room's centre
-ZONE_SPOTS = {"Heal": -550.0, "Shield": 0.0, "Damage": 550.0}  # Y of each zone
+ZONE_SPOTS = {"Damage": (0.0, 0.0), "Shield": (ZONE_X, -550.0), "Heal": (ZONE_X, 550.0)}  # from the room's centre: Damage always there, the others where a missing point is created
 ZONE_RADIUS = 250.0
+DAMAGE_ZONE_START_SIZE = 100.0
+COLOR_ZONE_GROW_SECONDS = 8.0  # the CT_Tutorial row ColorZoneGrowSeconds (tutorial_assets.py): Shield and Heal wait for it
 ZONE_BOX_HALF_Z = 80.0  # a standing capsule is inside it
 PAD_BOX_HALF = 50.0  # the exit pad's footprint
 WAVE_START_INSET = 650.0  # tutorial_waves.py: the front starts here, from the room's centre, and crosses it along +X
@@ -71,11 +75,13 @@ CASTER_SPAWN = (600.0, -900.0)  # from the room's centre, off the zones
 MINIBOSS_TREE = "/Game/AI/Tutorial/ST_TutorialMiniboss"  # tutorial_miniboss.py: its spells, in BP_Dummy's base tree
 MINIBOSS_ABILITIES = ["Ability.Spell.TutorialSalve", "Ability.Spell.TutorialMinibossSummon", "Ability.Spell.LateralWave"]
 MINIBOSS_TAG = "TutorialMiniboss"  # the boss's BossSetup.Tag: the kill line watches it
-MINIBOSS_POINTS = [(150.0, -650.0), (350.0, 0.0), (150.0, 650.0)]  # from the room's centre; the boss spawns on the middle one and waits to be hit (setup AggroRadius 100)
+MINIBOSS_POINTS = [(150.0, -650.0), (350.0, 0.0), (150.0, 650.0)]  # from the room's centre; the boss spawns on the middle one and waits to be hit (setup AggroRadius -1)
 MINIBOSS_ALLY_TAG = "TutorialMinibossAlly"  # BP_TutorialSummonedDummy's AllySetup.Tag
 MINIBOSS_ALLY_LOW_RATIO = 0.3
 MINIBOSS_CHIPS = ["Power", "Guard", "Vigor", "Mend", "Swift", "Precision", "Edge"]  # Data/gems.csv, tier Chip
-HOSTILE_ATTITUDE = 4  # ETeamAttitudeBitflag: acts on the other team
+ZONE_ATTITUDE = 7  # ETeamAttitudeBitflag: Neutral | Friendly | Hostile, a zone acts on everyone
+NO_AGGRO_RADIUS = -1.0  # GeoEnemySetup default: the enemy waits to be hit
+DUMMIES_AGGRO_RADIUS = 100.0  # the Dummies room's three
 DEATH_TIME = 3.0  # AGeoGameState::DeathTime
 WAVE_TAG = "Ability.Spell.LateralWave"  # tutorial_waves.py: the one wave, its safe spots given per firing
 SAFE_WAVE_LANES = [[-650.0, 0.0, 650.0], [-300.0, 500.0], [250.0]]  # Y of each safe lane from the wave start, per wave
@@ -86,8 +92,11 @@ SHIELD_EFFECT = ('/Script/GeoTrinity.GameplayEffectData(GameplayEffect="/Script/
                  'DataTag=(TagName="Status.Buff.DamageReduction"),Magnitude=(Value=0.500000),bInfiniteDuration=True,'
                  'Icon="/Script/GeoTrinity.GeoIcon\'/Game/HUD/Icons/DA_Icon_Status_DamageReduction.'
                  'DA_Icon_Status_DamageReduction\'")')
-DAMAGE_EFFECT = '/Script/GeoTrinity.DamageEffectData(Amount=(Value=15.000000),bIsPerSecond=True,bLimitGameplayCue=True)'
+DAMAGE_EFFECT = ("/Script/GeoTrinity.DamageEffectData(Amount=(Value=1.000000,Curve=(CurveTable=\"/Script/Engine.CurveTable'%s.CT_Tutorial'\","
+                 "RowName=\"ColorZoneDamage\")),bIsPerSecond=True,bLimitGameplayCue=True)" % CURVE_TABLE)
 ZONE_EFFECTS = {"Heal": HEAL_EFFECT, "Shield": SHIELD_EFFECT, "Damage": DAMAGE_EFFECT}
+ZONE_COLORS = {"Heal": "Heal", "Shield": "Override", "Damage": "Damage"}  # EGeoColor of each zone (Override = white)
+ZONE_TEAMS = {"Heal": unreal.Team.PLAYER, "Shield": unreal.Team.ENEMY, "Damage": unreal.Team.ENEMY}
 
 REPORT = []
 
@@ -188,24 +197,28 @@ def build_dummies_room():
     cx = room_x("Dummies")
     point("Tut_Dummies_Chaser", (cx + 300.0, -600.0, 0.0), "TargetPoint.Tutorial.Chaser", "Dummies")
     point("Tut_Dummies_Shooter", (cx + 300.0, 0.0, 0.0), "TargetPoint.Tutorial.Shooter", "Dummies")
-    point("Tut_Dummies_Mover", (cx + 300.0, 600.0, 0.0), "TargetPoint.Tutorial.Mover", "Dummies")
+    for index, (x, y) in enumerate(MOVER_POINTS):  # the mover spawns on one and patrols between them all
+        point("Tut_Dummies_Mover" + ("" if index == 0 else "_%d" % index), (cx + x, y, 0.0),
+              "TargetPoint.Tutorial.Mover", "Dummies")
 
 
 def build_zone_points():
     cx = room_x("Zones")
-    for color, y in ZONE_SPOTS.items():
-        point("Tut_Zones_ZonePoint_" + color, (cx + ZONE_X, y, 0.0), "TargetPoint.Tutorial.Zone" + color, "Zones")
+    for color, (x, y) in ZONE_SPOTS.items():
+        label = "Tut_Zones_ZonePoint_" + color
+        if color == "Damage" or find_actor(label) is None:  # the Damage point is the room's centre; the others are placed by the user, never moved
+            point(label, (cx + x, y, 0.0), "TargetPoint.Tutorial.Zone" + color, "Zones")
     point("Tut_Zones_WaveStart", (cx - WAVE_START_INSET, 0.0, 0.0), "TargetPoint.Tutorial.WaveStart", "Zones")
     point("Tut_Zones_BossSpawn", (cx + CASTER_SPAWN[0], CASTER_SPAWN[1], 0.0), "TargetPoint.BossSpawn", "Zones")
 
 
 def build_zones_room():
-    """The room's points, a box over each zone spot, and the arena that spawns the hidden caster."""
+    """The room's points and the arena that spawns the hidden caster."""
     cx = room_x("Zones")
     build_zone_points()
-    for color, y in ZONE_SPOTS.items():
-        box = place("Tut_Zones_ZoneVolume_" + color, unreal.TriggerBox, (cx + ZONE_X, y, 0.0))
-        size_box(box, ZONE_RADIUS, ZONE_RADIUS, ZONE_BOX_HALF_Z)  # the zone's bounding square
+    remove_actor("Tut_Zones_ZoneVolume_Heal")  # earlier versions: the zones raise their own entry now
+    remove_actor("Tut_Zones_ZoneVolume_Shield")
+    remove_actor("Tut_Zones_ZoneVolume_Damage")
     arena = place("Tut_Zones_CasterArena", unreal.GeoDummyArena, (cx, 0.0, 0.0))
     caster = unreal.GeoEnemySetup()
     caster.set_editor_property("AbilityTags", [tag(WAVE_TAG)])
@@ -267,6 +280,12 @@ class Builder:
     def say(self, line, wait_for_respawn=False):
         return self.make(unreal.GeoCatLineAction, Line=line, bWaitForRespawn=wait_for_respawn)
 
+    def say_from_file(self, category):
+        """A random line of one Data/CatLines.txt category (no repeat until the category is spent)."""
+        categories = unreal.GeoCatLineCategories()
+        categories.set_editor_property("Names", [unreal.Name(category)])
+        return self.make(unreal.GeoCatLineFromFileAction, Categories=categories, bRandom=True)
+
     def count(self, name, delta=1):
         return self.make(unreal.GeoAddToCounterAction, CounterName=name, Delta=delta)
 
@@ -306,20 +325,24 @@ class Builder:
     def hidden(self, label, hide):
         return self.make(unreal.GeoSetActorHiddenAction, Actor=find_actor(label), bHidden=hide)
 
-    def enemy_setup(self, enemy_tag, health_row, team=unreal.Team.ENEMY, state_tree=None, ability=None,
-                    start_health=1.0):
-        """The variant of BP_Dummy: tutorial enemies die at zero, their health reads a CT_Tutorial row."""
+    def scalable(self, row):
+        """A number that reads a CT_Tutorial row."""
         handle = unreal.CurveTableRowHandle()
         handle.set_editor_property("CurveTable", unreal.load_asset(CURVE_TABLE))
-        handle.set_editor_property("RowName", health_row)
-        max_health = unreal.ScalableFloat()
-        max_health.set_editor_property("Value", 1.0)
-        max_health.set_editor_property("Curve", handle)
+        handle.set_editor_property("RowName", row)
+        value = unreal.ScalableFloat()
+        value.set_editor_property("Value", 1.0)
+        value.set_editor_property("Curve", handle)
+        return value
+
+    def enemy_setup(self, enemy_tag, health_row, team=unreal.Team.ENEMY, state_tree=None, ability=None,
+                    start_health=1.0, aggro_radius=NO_AGGRO_RADIUS):
+        """The variant of BP_Dummy: tutorial enemies die at zero, their health reads a CT_Tutorial row."""
         setup = unreal.GeoEnemySetup()
         setup.set_editor_property("Team", team)
         setup.set_editor_property("bResetToFullLife", False)
-        setup.set_editor_property("AggroRadius", 100.0)
-        setup.set_editor_property("MaxHealth", max_health)
+        setup.set_editor_property("AggroRadius", aggro_radius)
+        setup.set_editor_property("MaxHealth", self.scalable(health_row))
         setup.set_editor_property("StartHealthRatio", start_health)
         setup.set_editor_property("Tag", enemy_tag)
         if state_tree is not None:
@@ -337,15 +360,20 @@ class Builder:
     def card(self, operation, **props):
         return self.make(unreal.GeoQuestCardAction, Operation=operation, **props)
 
-    def zone(self, color):
-        """The colour's zone on its spot, until the step is left."""
+    def zone(self, color, event=None):
+        """The colour's zone on its point, until the step is left. Damage grows from the point to cover the room and
+        ticks the CT_Tutorial amount; the others raise `event` when a player is in."""
         effect = unreal.InstancedStruct()
         effect.import_text(ZONE_EFFECTS[color])
         params = unreal.DeployableDataParams()
-        params.import_text("(Size=%f,Color=(Color=%s),Attitude=%d)" % (ZONE_RADIUS, color, HOSTILE_ATTITUDE))
+        size = DAMAGE_ZONE_START_SIZE if color == "Damage" else ZONE_RADIUS
+        params.import_text("(Size=%f,Color=(Color=%s),Attitude=%d)" % (size, ZONE_COLORS[color], ZONE_ATTITUDE))
+        if color == "Damage":
+            params.set_editor_property("GrowToSize", self.scalable("ColorZoneMaxRadius"))
+            params.set_editor_property("GrowSeconds", self.scalable("ColorZoneGrowSeconds"))
         return self.make(unreal.GeoSpawnZoneAction, PurposeTag=tag("TargetPoint.Tutorial.Zone" + color),
                          ArenaTag=tag("Arena.Tutorial.Zones"), EffectDataArray=[effect], Params=params,
-                         Team=unreal.Team.ENEMY)
+                         Team=ZONE_TEAMS[color], EnteredEvent=tag(event) if event else unreal.GameplayTag())
 
     def wave(self, lanes=()):
         """The zone room's hidden caster fires the wave, one safe spot per lane (Y from the wave start); the action
@@ -357,6 +385,9 @@ class Builder:
                          AbilityTag=tag(WAVE_TAG), bWaitForEnd=True, PatternData=data)
 
     # triggers
+    def event(self, event_tag):
+        return self.make(unreal.GeoEventTrigger, Tag=tag(event_tag))
+
     def entered(self, volume_actor):
         return self.make(unreal.GeoVolumeEnteredTrigger, Volume=volume_actor)
 
@@ -410,10 +441,6 @@ class Builder:
         step.set_editor_property("Rules", list(rules))
         step.set_editor_property("OnExit", list(on_exit))
         return step
-
-    def narrate(self, lines, first_delay=0.5):
-        """The lines one after the other, a beat after the step starts: for an OnEnter list."""
-        return [self.delay(first_delay)] + [self.say(line) for line in lines]
 
 
 def encounter_actor(room):
@@ -482,8 +509,12 @@ def landing_steps(b):
 
 
 def landing_nag(b):
-    """While Leave waits for the player to step on the opened pad (armed after the unlock)."""
-    return [b.rule(b.idle(), [b.say("Still standing there? The portal is not going to walk to you.")], repeat=True)]
+    """While Leave waits for the player to step on the opened pad (armed after the unlock): the nag once, then puns."""
+    return [
+        b.rule(b.idle(), [b.say("Still standing there? The portal is not going to walk to you.")],
+               condition=b.payload_count(EQUAL, 1), repeat=True),
+        b.rule(b.idle(), [b.say_from_file("Pun")], condition=b.payload_count(GREATER_OR_EQUAL, 2), repeat=True),
+    ]
 
 
 def dash_steps(b):
@@ -533,8 +564,9 @@ def dash_steps(b):
         "I've started naming the pixels of the Void. This one is Kevin. Kevin is more motivated than you.",
     ]
     for tier, line in enumerate(idle_lines, start=1):
-        operator = EQUAL if tier < len(idle_lines) else GREATER_OR_EQUAL
-        rules.append(b.rule(b.idle(), [b.say(line)], condition=b.payload_count(operator, tier), repeat=True))
+        rules.append(b.rule(b.idle(), [b.say(line)], condition=b.payload_count(EQUAL, tier), repeat=True))
+    rules.append(b.rule(b.idle(), [b.say_from_file("Pun")],
+                        condition=b.payload_count(GREATER_OR_EQUAL, len(idle_lines) + 1), repeat=True))
     arrival = [
         b.say("You reached a portal by walking. Truly the peak of the genre. Next lesson: gravity."),
     ] + b.unlock(DASH_ABILITY_TAG)
@@ -652,9 +684,10 @@ def special_steps(b):
 
 
 def dummies_steps(b):
-    chaser = b.enemy_setup("TutorialChaser", "DummyHealth", state_tree=CHASER_TREE)
-    shooter = b.enemy_setup("TutorialShooter", "DummyHealth", state_tree=SHOOTER_TREE, ability=SHOOT_ABILITY_TAG)
-    mover = b.enemy_setup("TutorialMover", "DummyHealth")
+    chaser = b.enemy_setup("TutorialChaser", "DummyHealth", state_tree=CHASER_TREE, aggro_radius=DUMMIES_AGGRO_RADIUS)
+    shooter = b.enemy_setup("TutorialShooter", "DummyHealth", state_tree=SHOOTER_TREE, ability=SHOOT_ABILITY_TAG,
+                            aggro_radius=DUMMIES_AGGRO_RADIUS)
+    mover = b.enemy_setup("TutorialMover", "DummyHealth", state_tree=MOVER_TREE, aggro_radius=DUMMIES_AGGRO_RADIUS)
 
     def spawner(setup, purpose):
         return b.spawn(setup, 1, purpose, "Dummies")
@@ -662,22 +695,22 @@ def dummies_steps(b):
     def watch(enemy_tag):
         return b.rule(b.dummy_died(enemy_tag), [b.count("Dead")])
 
-    lines = b.narrate([
-            "Plot twist: the Dummies have been training. One chases you, one shoots, one just wanders off and acts "
-            "annoying. Truly a full raid composition.",
-            "Use everything you learned. Dash the bullets, drop your toy, pop your Special. I'll narrate if anyone dies. "
-            "I'm told I'm very supportive.",
-    ])
+    lines = [
+        b.say("Plot twist: the Dummies have been training. One chases you, one shoots, one just wanders off and acts "
+              "annoying. Truly a full raid composition."),
+        b.say("Use everything you learned. Dash the bullets, drop your toy, pop your Special. I'll narrate if anyone "
+              "dies. I'm told I'm very supportive."),
+    ]
     fight = b.step("Fight", [
         watch("TutorialChaser"), watch("TutorialShooter"), watch("TutorialMover"),
         b.rule(b.counter("Dead"),
                [b.say("All three down. You've officially beaten the cardboard. Don't let it go to your head. The floor is "
                       "about to get opinions.")], condition=b.payload_count(EQUAL, 3), completes=True),
-    ], on_enter=[
+    ], on_enter=[lines[0],  # the first line, then the three, then the second
         spawner(chaser, "TargetPoint.Tutorial.Chaser"),
         spawner(shooter, "TargetPoint.Tutorial.Shooter"),
         spawner(mover, "TargetPoint.Tutorial.Mover"),
-    ] + lines, on_exit=hand_off(b, "Dummies"))
+    ] + lines[1:], on_exit=hand_off(b, "Dummies"))
     return [fight]
 
 
@@ -713,21 +746,23 @@ def miniboss_steps(b):
 
 
 def zones_steps(b):
-    """Steps 7-9. One step per colour (its zone spawns on entry, a box over it completes), the lethal wave (the player's
-    death leaves), then the safe-spot waves; a death leaves SafeSpots for SafeSpotsWait, which comes back after DeathTime."""
+    """Steps 7-9. One step for the colours (the Damage zone grows and stays, then Shield and Heal appear inside it; the
+    player stood in both once, 2 s, the step is left and every zone goes), the lethal wave (the player's death leaves),
+    then the safe-spot waves; a death leaves SafeSpots for SafeSpotsWait, which comes back after DeathTime."""
     intro = [
         "Welcome to the Color Room. The floor will now heal, shield and hurt you. Think of it as customer service.",
-        "Green heals. Blue shields. Orange hurts. The color tells you what the floor will do before it does it. "
-        "Remember that. It is the whole game.",
-        "Now stand in each one. Yes, including the orange. It's a small hurt. An educational hurt.",
+        "Orange hurts. It starts small and spreads until it owns the whole floor, so don't get attached to your "
+        "position. Green heals. Blue shields. The color tells you what the floor will do before it does it. Remember "
+        "that. It is the whole game.",
+        "Now stand in the shield, then in the heal. Yes, while the orange is nibbling at you. An educational nibble.",
     ]
-    colors_learned = [b.say("Colors learned? Good. There is one more. I'll show you in a minute. Stretch.")]
-    steps = []
-    for color in ZONE_SPOTS:
-        rules = [b.rule(b.entered(find_actor("Tut_Zones_ZoneVolume_" + color)),
-                        colors_learned if color == "Damage" else [], completes=True)]
-        steps.append(b.step("Zones_" + color, rules,
-                            on_enter=[b.zone(color)] + (b.narrate(intro) if color == "Heal" else [])))
+    colors_learned = [b.delay(2.0), b.say("Colors learned? Good. There is one more. I'll show you in a minute. Stretch.")]
+    rules = [b.rule(b.event(event), [b.count("Stood")]) for event in ("Encounter.Event.ZoneShield",
+                                                                       "Encounter.Event.ZoneHeal")]
+    rules.append(b.rule(b.counter("Stood"), colors_learned, condition=b.counter_is("Stood", EQUAL, 2), completes=True))
+    steps = [b.step("ZoneColors", rules, on_enter=[
+        b.say(intro[0]), b.zone("Damage"), b.say(intro[1]), b.say(intro[2]), b.delay(COLOR_ZONE_GROW_SECONDS),
+        b.zone("Shield", "Encounter.Event.ZoneShield"), b.zone("Heal", "Encounter.Event.ZoneHeal")])]
     steps.append(b.step("LethalWave", [
         b.rule(b.player_died(), [
             b.say("Oh, it hurts? Upsy, I forgot to leave you room to survive...", True),
@@ -791,7 +826,7 @@ CATEGORIES = [
     ("Encounter", "Encounter"), ("Pad", "Teleporters"), ("JumpStart", "Teleporters"), ("CameraVolume", "Camera"),
     ("ArenaVolume", "Arena"), ("Entrance", "Points"), ("Spawn", "Points"), ("Chaser", "Points"),
     ("Shooter", "Points"), ("Mover", "Points"), ("ZonePoint", "Points"), ("WaveStart", "Points"),
-    ("PlatformVolume", "Gameplay"), ("ZoneVolume", "Gameplay"), ("CasterArena", "Arena"), ("Cat", "Gameplay"),
+    ("PlatformVolume", "Gameplay"), ("CasterArena", "Arena"), ("Cat", "Gameplay"),
     ("MinibossPoint", "Points"), ("BossSpawn", "Points"), ("FightLocation", "Points"), ("Arena", "Arena"),
     ("Floor", "Geometry"), ("Wall", "Geometry"),
 ]

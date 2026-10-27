@@ -9,6 +9,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 AGeoCat::AGeoCat()
 {
@@ -21,6 +22,12 @@ AGeoCat::AGeoCat()
 	Mesh->SetupAttachment(Root);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh->SetGenerateOverlapEvents(false);
+}
+
+void AGeoCat::BeginPlay()
+{
+	Super::BeginPlay();
+	IdleVariantCountdown = FMath::FRandRange(IdleVariantPause.X, IdleVariantPause.Y);
 }
 
 void AGeoCat::Tick(float const DeltaSeconds)
@@ -88,7 +95,9 @@ void AGeoCat::PlayMontage(UAnimMontage* Montage)
 void AGeoCat::AdvanceMove(float const DeltaSeconds)
 {
 	bool const bMoving = !Waypoints.IsEmpty();
-	bool const bPlayingMontage = bOrderRunning && Order == EGeoCatOrder::Montage;
+	bool const bMontageOrderRunning = bOrderRunning && Order == EGeoCatOrder::Montage;
+	UAnimInstance const* const AnimInstance = Mesh->GetAnimInstance();
+	bool const bMontagePlaying = AnimInstance && AnimInstance->IsAnyMontagePlaying();
 	if (bMoving)
 	{
 		FVector const Location = GetActorLocation();
@@ -110,22 +119,29 @@ void AGeoCat::AdvanceMove(float const DeltaSeconds)
 		}
 	}
 	else if (APawn const* const Player =
-				 bFacePlayer && !bPlayingMontage ? UGameplayStatics::GetPlayerPawn(this, 0) : nullptr)
+				 bFacePlayer && !bMontagePlaying ? UGameplayStatics::GetPlayerPawn(this, 0) : nullptr)
 	{
 		TurnToward(Player->GetActorLocation() - GetActorLocation(), DeltaSeconds);
 	}
 
-	AnimSpeed = FMath::FInterpConstantTo(AnimSpeed, bMoving ? 1.f : 0.f, DeltaSeconds, SpeedBlendRate);
+	AnimSpeed = FMath::FInterpConstantTo(AnimSpeed, bMoving ? WalkSpeed : 0.f, DeltaSeconds, SpeedBlendRate);
 	WriteAnimSpeed();
+
+	if (!bMoving && !bMontageOrderRunning && !bMontagePlaying)
+	{
+		TickIdleVariant(DeltaSeconds);
+	}
+}
+
+UAnimMontage* AGeoCat::PickIdleVariant()
+{
+	return GeoLib::DrawFromShuffledBag(IdleVariantBag, IdleVariants, LastIdleVariant);
 }
 
 void AGeoCat::Stop()
 {
 	EndOrder(false);
-	if (UAnimInstance* const AnimInstance = Mesh->GetAnimInstance())
-	{
-		AnimInstance->Montage_Stop(0.2f);
-	}
+	StopMontages();
 }
 
 void AGeoCat::BeginOrder(EGeoCatOrder const NewOrder)
@@ -167,6 +183,7 @@ void AGeoCat::OnWalkEnded()
 
 void AGeoCat::WalkToRandomRoamSpot()
 {
+	StopMontages();
 	if (!RoamSettings.Area)
 	{
 		UE_LOG(LogGeoTrinity, Warning, TEXT("%s: Roam with no Area, standing still"), *GetName());
@@ -180,6 +197,34 @@ void AGeoCat::WalkToRandomRoamSpot()
 		float const HalfY = FMath::Max(Extent.Y - RoamSettings.Margin, 0.f);
 		Waypoints.Add(FVector(Origin.X + FMath::FRandRange(-HalfX, HalfX), Origin.Y + FMath::FRandRange(-HalfY, HalfY),
 							  GetActorLocation().Z));
+	}
+}
+
+void AGeoCat::PlayIdleVariant()
+{
+	UAnimInstance* const AnimInstance = Mesh->GetAnimInstance();
+	UAnimMontage* const Variant = PickIdleVariant();
+	if (Variant && AnimInstance)
+	{
+		AnimInstance->Montage_Play(Variant);
+	}
+}
+
+void AGeoCat::StopMontages() const
+{
+	if (UAnimInstance* const AnimInstance = Mesh->GetAnimInstance())
+	{
+		AnimInstance->Montage_Stop(0.2f);
+	}
+}
+
+void AGeoCat::TickIdleVariant(float const DeltaSeconds)
+{
+	IdleVariantCountdown -= DeltaSeconds;
+	if (IdleVariantCountdown <= 0.f)
+	{
+		PlayIdleVariant();
+		IdleVariantCountdown = FMath::FRandRange(IdleVariantPause.X, IdleVariantPause.Y);
 	}
 }
 

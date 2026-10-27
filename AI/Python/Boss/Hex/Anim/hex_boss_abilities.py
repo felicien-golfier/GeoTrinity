@@ -41,8 +41,7 @@ MATH = unreal.MathLibrary
 SKELETON_PATH = "/Game/Characters/Meshes/HexBoss/SK_HexBoss"
 MESH_PATH = "/Game/Characters/Meshes/HexBoss/SKM_HexBoss"
 ANIM_PACKAGE = "/Game/Characters/Anim/HexBoss"
-REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
-          "8d5b0c3d-b469-4d6a-8e0e-557ad9e88982/scratchpad/hex_boss_abilities.txt")
+REPORT = unreal.Paths.project_dir() + "AI/Output/hex_boss_abilities.txt"
 
 ROOT = "Root"
 OUTER, MID, CORE = "HexOuter", "HexMid", "HexCore"

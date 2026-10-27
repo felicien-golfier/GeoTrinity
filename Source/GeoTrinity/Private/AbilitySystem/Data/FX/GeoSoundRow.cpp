@@ -9,7 +9,9 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "Settings/GameDataSettings.h"
 #include "Sound/SoundBase.h"
+#include "Sound/SoundConcurrency.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 namespace
@@ -78,6 +80,18 @@ float UGeoSoundRowLibrary::RollPitchVariation(FGeoSoundEntry const& Entry)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+USoundConcurrency* UGeoSoundRowLibrary::GetConcurrency(FGeoSoundEntry const& Entry, bool const bOneShot)
+{
+	if (Entry.Concurrency || !bOneShot)
+	{
+		return Entry.Concurrency;
+	}
+
+	UGameDataSettings const* const Settings = GetDefault<UGameDataSettings>();
+	return UGameDataSettings::GetLoadedDataAsset(Settings->DefaultOneShotConcurrency);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoSoundRowLibrary::PlaySoundEntry2D(UObject const* WorldContextObject, FGeoSoundEntry const& Entry,
 										   AActor* SoundInstigator, int32 const AbilityLevel)
 {
@@ -85,7 +99,7 @@ void UGeoSoundRowLibrary::PlaySoundEntry2D(UObject const* WorldContextObject, FG
 	{
 		UGameplayStatics::PlaySound2D(WorldContextObject, Entry.Sound, GetVolume(Entry, SoundInstigator, AbilityLevel),
 									  GetPitch(Entry, SoundInstigator, AbilityLevel, RollPitchVariation(Entry)),
-									  Entry.StartTime);
+									  Entry.StartTime, GetConcurrency(Entry, /*bOneShot*/ true));
 	}
 }
 
@@ -99,7 +113,7 @@ void UGeoSoundRowLibrary::PlaySoundEntryAtLocation(UObject const* WorldContextOb
 		UGameplayStatics::PlaySoundAtLocation(WorldContextObject, Entry.Sound, Location, FRotator::ZeroRotator,
 											  GetVolume(Entry, SoundInstigator, AbilityLevel),
 											  GetPitch(Entry, SoundInstigator, AbilityLevel, RollPitchVariation(Entry)),
-											  Entry.StartTime);
+											  Entry.StartTime, nullptr, GetConcurrency(Entry, /*bOneShot*/ true));
 	}
 }
 
@@ -111,6 +125,11 @@ void UGeoSoundRowLibrary::ConfigureAudioComponent(UAudioComponent* AudioComponen
 		|| !ShouldPlay(AudioComponent, Entry, SoundInstigator))
 	{
 		return;
+	}
+
+	if (USoundConcurrency* const Concurrency = GetConcurrency(Entry, /*bOneShot*/ false))
+	{
+		AudioComponent->ConcurrencySet.Add(Concurrency);
 	}
 
 	AudioComponent->SetSound(Entry.Sound);
@@ -131,6 +150,7 @@ UAudioComponent* UGeoSoundRowLibrary::SpawnAudioComponent(USceneComponent* Attac
 
 	return UGameplayStatics::SpawnSoundAttached(Entry.Sound, AttachTo, NAME_None, FVector::ZeroVector,
 												EAttachLocation::SnapToTarget, /*bStopWhenAttachedToDestroyed*/ true,
-												Volume, Pitch, Entry.StartTime, nullptr, nullptr,
+												Volume, Pitch, Entry.StartTime, nullptr,
+												GetConcurrency(Entry, /*bOneShot*/ false),
 												/*bAutoDestroy*/ false);
 }

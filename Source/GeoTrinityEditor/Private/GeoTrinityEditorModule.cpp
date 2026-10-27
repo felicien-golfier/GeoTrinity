@@ -6,12 +6,14 @@
 #include "AbilitySystem/Data/FX/GeoSoundRow.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Detail/ExternalProjectileParamsCustomization.h"
+#include "Detail/GeoCatLineCategoriesCustomization.h"
 #include "Detail/GeoCurveSourceCustomization.h"
 #include "Detail/GeoIconCustomization.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 #include "Thumbnail/GeoIconThumbnailRenderer.h"
 #include "ThumbnailRendering/ThumbnailManager.h"
+#include "Tool/CatLine/GeoCatLineCategories.h"
 #include "Tool/Visual/GeoIcon.h"
 
 IMPLEMENT_MODULE(FGeoTrinityEditorModule, GeoTrinityEditor)
@@ -31,6 +33,9 @@ void FGeoTrinityEditorModule::StartupModule()
 	PropertyEditor.RegisterCustomPropertyTypeLayout(
 		FGeoBurstVFXParams::StaticStruct()->GetFName(),
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoCurveSourceCustomization::MakeInstance));
+	PropertyEditor.RegisterCustomPropertyTypeLayout(
+		FGeoCatLineCategories::StaticStruct()->GetFName(),
+		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGeoCatLineCategoriesCustomization::MakeInstance));
 	PropertyEditor.RegisterCustomClassLayout(
 		UGeoIcon::StaticClass()->GetFName(),
 		FOnGetDetailCustomizationInstance::CreateStatic(&FGeoIconCustomization::MakeInstance));
@@ -56,6 +61,7 @@ void FGeoTrinityEditorModule::ShutdownModule()
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoSoundEntry::StaticStruct()->GetFName());
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoVFXParams::StaticStruct()->GetFName());
 	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoBurstVFXParams::StaticStruct()->GetFName());
+	PropertyEditor.UnregisterCustomPropertyTypeLayout(FGeoCatLineCategories::StaticStruct()->GetFName());
 	PropertyEditor.UnregisterCustomClassLayout(UGeoIcon::StaticClass()->GetFName());
 	PropertyEditor.NotifyCustomizationModuleChanged();
 }

@@ -192,8 +192,15 @@ A clip reads as a machine when every part runs on one sine of the same period an
 - **Uneven attack and release**: fast in, slow settle (a blink closes in 3 frames and opens in 8, a glance snaps and eases). Smoothstep both ways is the robot's ease.
 - **Events, not constant motion**: one thing at a time (glance, ear swivel, groom, yawn) at uneven times, with held stillness between; a long loop (8-10 s) beats a short busy one. Jitter comes from a fixed seed.
 - **Weight**: a slow shift of the mass side to side, breath carrying head and shoulders a little, every action opening with a small counter-move and closing with an overshoot that settles.
-- **Contacts**: a planted foot slides back at the ground's speed (a straight line), the swing is quicker and eased; never a sine. Gaits follow the real animal's footfall order.
+- **Contacts**: a planted foot slides back at the ground's speed (a straight line), the swing is quicker and eased: a brisk gait. A gliding gait runs each paw on a sine: the line-then-ease has a speed jump that reads as bumpy. Gaits follow the real animal's footfall order.
 - **No frame-to-frame alternation** outside a deliberate vibration: a wiggle is a side-to-side of 4-6 frames a swing with growing amplitude, the body leading and the tail late.
+
+## Seen from straight above
+
+Height is invisible: a pose must change length, direction or spread on the floor.
+- A raised tail, an arch, a hop read as nothing: lie the creature down and spread it.
+- A part pitched toward the camera shortens; a lifted part is drawn over the others.
+- Real photos are the pose reference, redrawn as a top silhouette.
 
 ## Bringing a shape together
 

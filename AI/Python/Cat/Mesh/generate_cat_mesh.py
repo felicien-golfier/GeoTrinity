@@ -3,7 +3,8 @@ Generates SM_Cat: the Tutorial Cat, face toward +X, centred on Y = 0, built from
 can later weight each to its own bone.
 
 Face = the HUD portrait (SGeoCatFace.cpp, 200x200 design box, y down) extruded: head (polygon + rounded rectangle),
-two ears with inner shades, two tilted rounded eyes, nose, two mouth curves. Rayman-style, nothing touches: the body is
+two ears with inner shades, two tilted rounded eyes, nose, two mouth curves, two fangs under the grin (hidden by every
+clip but the evil face). Rayman-style, nothing touches: the body is
 a three-sided pyramid floating behind the head, apex pointing back (a triangle from above), four disc paws (two hands at
 the head's sides, two feet beside the body), the tail a row of small squares curling sideways from the apex.
 
@@ -34,6 +35,7 @@ HEAD_FRONT_X = 30.0
 EAR_BACK_X = 8.0
 EAR_FRONT_X = 22.0
 FEATURE_DEPTH = 1.5  # inner ears, eyes, nose, mouth stand this far off the surface they sit on
+FANG_GAP = 0.5  # fangs float this far over the mouth, so no mouth vertex falls in a fang's box when rigging
 POLYGON_SETBACK = 0.2  # the head polygon's front sits behind the rounded rectangle's so the overlap does not z-fight
 MOUTH_HALF_THICKNESS = 1.5  # design units
 CURVE_SEGMENTS = 8
@@ -66,6 +68,7 @@ NOSE = ((95, 128), (105, 128), (100, 134))
 EYE_X = (70.0, 130.0)
 EYE_CENTER_Y = 106.0
 MOUTH_CURVES = (((86, 139), (93, 149), (100, 139)), ((100, 139), (107, 149), (114, 139)))
+FANGS = (((88, 142), (94, 142), (91, 151)), ((106, 142), (112, 142), (109, 151)))
 
 FACE = lambda u, v, w: (w, u, v)  # u sideways, v up, w forward: a cyclic permutation keeps the winding
 FLAT = lambda u, v, w: (u, v, w)
@@ -217,6 +220,10 @@ def build_parts():
         tilt = EYE_TILT_DEGREES if side == 0 else -EYE_TILT_DEGREES
         tilted = rotate(eye_shape(EYE_X[side]), tilt, (EYE_X[side], EYE_CENTER_Y))
         parts.append(Part(name, LIGHT, face_outline(tilted), front, front + FEATURE_DEPTH, FACE))
+
+    for side, name in enumerate(("FangLeft", "FangRight")):
+        parts.append(Part(name, LIGHT, face_outline(FANGS[side]), front + FEATURE_DEPTH + FANG_GAP,
+                          front + 2.0 * FEATURE_DEPTH + FANG_GAP, FACE))
 
     parts.append(Part("Nose", LIGHT, face_outline(NOSE), front, front + FEATURE_DEPTH, FACE))
     for index, (start, control, end) in enumerate(MOUTH_CURVES):

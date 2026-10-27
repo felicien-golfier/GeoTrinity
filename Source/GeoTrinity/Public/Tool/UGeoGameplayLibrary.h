@@ -185,6 +185,38 @@ public:
 	 */
 	static FString ReplaceCounterTokens(FString Text, AGeoEncounter const* Encounter);
 
+	/**
+	 * The next item of a shuffle bag: pops Bag, refilled with Pool shuffled once empty, so every item of Pool comes
+	 * round before any repeats; a refill never starts with Last when Pool holds more than one. Last becomes the drawn
+	 * item. Empty Pool: T{} and Last untouched.
+	 */
+	template <typename T>
+	static T DrawFromShuffledBag(TArray<T>& Bag, TArray<T> const& Pool, T& Last)
+	{
+		if (Bag.IsEmpty())
+		{
+			Bag = Pool;
+			for (int32 Index = Bag.Num() - 1; Index > 0; --Index)
+			{
+				Bag.Swap(Index, FMath::RandRange(0, Index));
+			}
+
+			if (Bag.Num() > 1 && Bag.Last() == Last)
+			{
+				Bag.Swap(Bag.Num() - 1, FMath::RandRange(0, Bag.Num() - 2));
+			}
+		}
+
+		T Drawn{};
+		if (!Bag.IsEmpty())
+		{
+			Drawn = Bag.Pop();
+			Last = Drawn;
+		}
+
+		return Drawn;
+	}
+
 private:
 	static constexpr FStringView CounterTokenOpen = TEXTVIEW("{Counter:");
 	static constexpr FStringView CounterTokenClose = TEXTVIEW("}");

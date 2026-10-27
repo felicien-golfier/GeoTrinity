@@ -43,6 +43,7 @@ SUMMON_TAG = "Ability.Spell.TutorialMinibossSummon"
 WAVE_TAG = "Ability.Spell.LateralWave"  # tutorial_waves.py: the one wave, lanes from the living adds
 WAVE_EVENT_TAG = "Event.StateTree.TriggerMinibossWave"
 POINT_TAG = "TargetPoint.Tutorial.MinibossPoint"
+ARENA_TAG = "Arena.Tutorial.Miniboss"
 ALLY_ACTOR_TAG = "TutorialMinibossAlly"
 
 SUMMONS_PER_WAVE = 3  # CyclesRequired: Board page 13, tip 3 ("every third Dummy")
@@ -238,7 +239,6 @@ def build_tree():
         builder.set_task_property(tree, "Start", "StateTreeDelayTask", "Duration", str(SHOOT_START_SECONDS))
         builder.set_tasks_completion(tree, "Start", unreal.StateTreeTaskCompletionType.ANY)
         builder.add_task_to_state(tree, "Move", "STTask_MoveToTargetPoint")
-        builder.set_task_property(tree, "Move", "STTask_MoveToTargetPoint", "PointTag", '(TagName="%s")' % POINT_TAG)
         builder.add_fire_ability_task_to_state(tree, "Summon", SUMMON_TAG)
         builder.add_send_event_after_n_cycles_task(tree, "CountSummons", SUMMONS_PER_WAVE, WAVE_EVENT_TAG)
         builder.add_fire_ability_task_to_state(tree, "Wave", WAVE_TAG)
@@ -254,6 +254,8 @@ def build_tree():
     else:
         builder.replace_fire_ability_tag_in_state(tree, "Start", SALVE_TAG)
         builder.replace_fire_ability_tag_in_state(tree, "Wave", WAVE_TAG)
+    for name, value in (("PointTag", POINT_TAG), ("ArenaTag", ARENA_TAG)):
+        builder.set_task_property(tree, "Move", "STTask_MoveToTargetPoint", name, '(TagName="%s")' % value)
     unreal.EditorAssetLibrary.save_loaded_asset(tree, only_if_is_dirty=False)
     log("behaviour tree", "created" if created else "kept")
 
