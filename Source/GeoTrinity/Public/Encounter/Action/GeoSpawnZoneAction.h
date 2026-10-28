@@ -26,6 +26,7 @@ class GEOTRINITY_API UGeoSpawnZoneAction : public UGeoEncounterAction
 	GENERATED_BODY()
 
 public:
+	/** Spawns the zone on the first target point tagged PurposeTag + ArenaTag; held by the encounter until the step is left. */
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
 	/** The step was left, or the action runs again: recalls the zone, it blinks, then goes. */

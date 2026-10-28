@@ -60,8 +60,10 @@ namespace GeoTutorial
 class FGeoRestoreGemProfileCommand : public IAutomationLatentCommand
 {
 public:
+	/** Captures InProfile to write back to disk when Update runs. */
 	explicit FGeoRestoreGemProfileCommand(UGeoGemProfileSave* InProfile);
 
+	/** Writes the held profile back once the PIE session has ended; returns true when done. */
 	virtual bool Update() override;
 
 private:
@@ -91,9 +93,12 @@ public:
 
 	using FStageFunction = TFunction<bool(bool /*bFirstTick*/)>;
 
+	/** Binds InTest as the failure and log target for all stages. */
 	explicit FGeoTutorialBot(FAutomationTestBase& InTest);
+	/** Unbinds all delegates so no stage fires after the command is destroyed. */
 	virtual ~FGeoTutorialBot() override;
 
+	/** Runs the current stage one tick; returns true when every stage has completed or one timed out. */
 	virtual bool Update() override;
 
 	/** Loads the tutorial map, starts the play session, runs Bot, ends the session and writes the gem profile back. The
@@ -102,6 +107,7 @@ public:
 
 	// --- Stages ---------------------------------------------------------------------------------------------------
 
+	/** Appends a stage: Run is called every frame until it returns true or TimeoutSeconds of real time elapse. */
 	void AddStage(FString Name, FStageFunction Run, double TimeoutSeconds = GeoTutorial::DefaultStageTimeoutSeconds);
 	/** Waits for the play world, its pawn and its HUD; subscribes to the Cat lines; the time runs at TimeDilation. When
 	 * StartRoom is a room, jumps to it, else (FullRun) restarts the Landing room, which began before the player joined.
@@ -123,39 +129,53 @@ public:
 
 	// --- The world ------------------------------------------------------------------------------------------------
 
+	/** The play-in-editor world, null before the session starts. */
 	UWorld* GetWorld() const;
+	/** The first local player controller in the play world. */
 	AGeoPlayerController* GetController() const;
+	/** The local playable character in the play world. */
 	APlayableCharacter* GetPawn() const;
+	/** The AGeoTeleporter labeled Name in the play world, null when absent. */
 	AGeoTeleporter* FindPad(FString const& Name) const;
+	/** True when the pad labeled Name is currently open. */
 	bool IsPadOpen(FString const& Name) const;
+	/** The AGeoEncounter for Room in the play world, null when absent. */
 	AGeoEncounter* FindEncounter(int32 Room) const;
 	/** The step counter of Room's encounter. */
 	int32 GetCounter(int32 Room, FName Counter) const;
+	/** The actor whose editor label is Label in the play world, null when absent. */
 	AActor* FindByLabel(FString const& Label) const;
 	/** The living enemies carrying Tag, as spawned by the room's spawn action. */
 	TArray<AEnemyCharacter*> FindLiving(FName Tag) const;
 	/** The active zone standing at Location, null when none. */
 	AGeoEffectZone* FindZoneAt(FVector2D Location) const;
+	/** Teleports the pawn to (Location.X, Location.Y, PawnZ). */
 	void MovePawn(FVector2D Location) const;
 	/** The player dies, once: the invincibility is off for the call only, so nothing else kills it meanwhile. */
 	void KillPlayer() const;
 
+	/** Current health divided by max health for Actor; reads the GAS attribute. */
 	static float HealthRatio(AActor* Actor);
 	/** Sets the health through its attribute: how the bot hurts or heals what the room does not. */
 	static void SetHealthRatio(AActor* Actor, float Ratio);
 
 	// --- Abilities ------------------------------------------------------------------------------------------------
 
+	/** The granted spec on Actor whose ability tag matches AbilityTagName, null when absent. */
 	static FGameplayAbilitySpec const* FindSpec(AActor* Actor, FName AbilityTagName);
+	/** True when the player pawn holds a granted spec tagged AbilityTagName. */
 	bool IsGranted(FName AbilityTagName) const;
+	/** True when the ability tagged AbilityTagName is currently active on Actor. */
 	static bool IsAbilityActive(AActor* Actor, FName AbilityTagName);
 	/** The player uses the ability as the input does: its ASC with the aim target data. */
 	bool ActivatePlayerAbility(FName AbilityTagName) const;
 	/** Counts the activations of AbilityTagName on the ASC of what GetActor returns, followed when it is respawned.
 	 * Returns the watch to read with GetWatchCount. */
 	int32 WatchActivations(TFunction<AActor*()> GetActor, FName AbilityTagName);
+	/** Activations counted so far for the watch index returned by WatchActivations. */
 	int32 GetWatchCount(int32 Watch) const { return Watches[Watch].Count; }
 
+	/** Turns the player pawn's invincibility on (true) or off (false). */
 	void SetInvincible(bool bInvincible) const;
 
 	// --- The Cat lines and the pages ------------------------------------------------------------------------------
@@ -164,6 +184,7 @@ public:
 	int32 CountLines(FString const& Fragment) const;
 	/** Index of the first line holding Fragment from index From on, INDEX_NONE when none. */
 	int32 FindLine(FString const& Fragment, int32 From = 0) const;
+	/** True when any logged Cat line contains Fragment. */
 	bool SawLine(FString const& Fragment) const { return FindLine(Fragment) != INDEX_NONE; }
 	/** Fails Test when a line holding Fragment was shown: the branch it belongs to did not run. */
 	void ExpectNoLine(FString const& Fragment) const;
