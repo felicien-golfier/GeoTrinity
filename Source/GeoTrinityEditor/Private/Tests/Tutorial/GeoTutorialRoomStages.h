@@ -49,8 +49,11 @@ namespace GeoTutorialStages
 	/** Four idle tiers, each once, then the Cat's Pun jokes. */
 	void AddDashIdleStages(FGeoTutorialBot& Bot);
 
+	/** Shoots dummies per Branch: twelve kills, the 45 s cut, or the cut held by a pause menu. */
 	void AddShootStages(FGeoTutorialBot& Bot, EGeoShootBranch Branch);
+	/** Ally starts hurt; a real Healing Zone heals it to full; pad opens. */
 	void AddDeployStages(FGeoTutorialBot& Bot);
+	/** Special ability used per Branch: two-sting, first-try, order, or surrender. */
 	void AddSpecialStages(FGeoTutorialBot& Bot, EGeoSpecialBranch Branch);
 	/** bDieMidFight: the player dies with the three dummies alive, then the fight goes on; else each dummy shows its
 	 * behaviour. */

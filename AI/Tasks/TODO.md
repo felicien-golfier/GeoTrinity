@@ -10,7 +10,7 @@ Tasks tagged `[recur:daily]` are reset to `[ ]` each day by this automated agent
 
 ## Tasks
 
-- [x] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below. <!-- last run: 2026-10-23 -->
+- [x] [recur:daily] For every header modified in the last 25h and every public function that has no comment or a malformed comment: add or fix its Unreal-style JavaDoc header. Rules below. <!-- last run: 2026-10-28 -->
 
   **Scope**
   - Run `git diff --name-only @{25.hours.ago} HEAD` to get the files changed by commits in the last day. Only open and process `.h` files from that list; never touch a `.cpp` file — do not scan the whole codebase. (Do NOT use `git diff --name-only HEAD` — that only reports uncommitted working-tree changes, which are empty in the cloud checkout, so the day's committed work would be missed.)
