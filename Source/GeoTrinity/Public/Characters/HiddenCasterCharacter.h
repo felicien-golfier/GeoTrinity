@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -8,8 +8,8 @@
 #include "HiddenCasterCharacter.generated.h"
 
 /**
- * Enemy with nothing on screen and nothing to hit. Lends an ASC to a room with no boss so an encounter can cast hazard
- * patterns and waves through it (UGeoActivateAbilityAction). A Blueprint child lists the abilities it can cast.
+ * Enemy with nothing on screen and nothing to hit. Lends an ASC to the encounters so they can cast hazard patterns and
+ * waves through it (UGeoEncounterSubsystem::GetSharedCaster, UGeoActivateAbilityAction).
  */
 UCLASS()
 class GEOTRINITY_API AHiddenCasterCharacter : public AEnemyCharacter
@@ -17,7 +17,8 @@ class GEOTRINITY_API AHiddenCasterCharacter : public AEnemyCharacter
 	GENERATED_BODY()
 
 public:
-	/** Skips the health bar. */
+	/** Skips the health bar; DefaultAttributes = the empty UGameplayEffect (no stats yet, nothing to fill per
+	 * Blueprint). */
 	AHiddenCasterCharacter(FObjectInitializer const& ObjectInitializer);
 
 	/** Never aggroed: aggro would start a fight and make it touchable again. */

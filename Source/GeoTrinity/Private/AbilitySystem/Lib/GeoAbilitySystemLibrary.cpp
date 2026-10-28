@@ -14,12 +14,15 @@
 #include "AbilitySystem/Types/GeoAscTypes.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "Actor/Arena/GeoArena.h"
 #include "Actor/Deployable/GeoDeployableBase.h"
 #include "Actor/GeoInteractableActor.h"
 #include "Actor/Projectile/ExternalProjectileParams.h"
 #include "Actor/Projectile/GeoProjectile.h"
 #include "Characters/Component/GeoGameFeelComponent.h"
+#include "Characters/EnemyCharacter.h"
 #include "Characters/GeoCharacter.h"
+#include "Characters/PlayableCharacter.h"
 #include "Curves/CurveFloat.h"
 #include "EngineUtils.h"
 #include "GameplayEffectTypes.h"
@@ -801,16 +804,23 @@ TArray<FVector> UGeoAbilitySystemLibrary::GetTargetDirections(UWorld const* Worl
 	case EProjectileTarget::AllPlayers:
 		{
 			TArray<FVector> Directions;
-			for (auto PlayerControllerIt = World->GetPlayerControllerIterator(); PlayerControllerIt;
-				 ++PlayerControllerIt)
+			for (APlayableCharacter const* const Player : GeoLib::GetAlivePlayers(World))
 			{
-				if (APlayerController const* PlayerController = PlayerControllerIt->Get();
-					PlayerController && PlayerController->GetPawn())
-				{
-					Directions.Add((PlayerController->GetPawn()->GetActorLocation() - Origin).GetSafeNormal());
-				}
+				Directions.Add((Player->GetActorLocation() - Origin).GetSafeNormal());
 			}
 			return Directions;
+		}
+
+	case EProjectileTarget::Boss:
+		{
+			AGeoArena const* const Arena = AGeoArena::GetFightingArena(World);
+			AEnemyCharacter const* const Boss = Arena ? Arena->GetBoss() : nullptr;
+			if (IsValid(Boss) && !Boss->IsDead())
+			{
+				return {(Boss->GetActorLocation() - Origin).GetSafeNormal()};
+			}
+
+			return {};
 		}
 
 	default:

@@ -1,6 +1,7 @@
 # MenuGuide — pending (later)
 
 Goal: in tutorial steps 11-12 the player opens the Gems menu (loadout, then Forge) themselves, led by a guide: the next control on the path is highlighted (Esc menu → Character → Gems → Forge tab) and nothing else can be clicked until the guide is done. A guide the player must follow, reusable for any menu path.
+Priority: 3
 Docs written: none yet (workflow steps 2-3 when picked up). Referenced by `AI/Tutorial/Steps.md` (steps 11, 12) and `AI/Pending/Tutorial.md` (slice 7).
 
 ## Open design (user)

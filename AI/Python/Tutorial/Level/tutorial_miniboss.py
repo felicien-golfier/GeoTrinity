@@ -1,7 +1,7 @@
 """
 Tutorial miniboss assets (AI/Tutorial/Steps.md step 10), only what holds a look or behaviour (AI/CodingStyle.md,
 "Variants are data"): the boss's behaviour tree, the summoned dummy (zone and ally params), the shooter tree of the
-summons and allies, the one salve (boss, summons, allies) and the summon. The boss itself is BP_Dummy + the Miniboss
+summons and allies, the salve (boss, summons: at the players), its ally child (at the boss) and the summon. The boss itself is BP_Dummy + the Miniboss
 arena's BossSetup (tutorial_encounters.py); the lateral wave it fires (WAVE_TAG) is built by tutorial_waves.py (run it
 first). Deletes the assets of the old layout once nothing references them (re-run after tutorial_encounters.py).
 Rows read from CT_Tutorial (tutorial_assets.py): DummyHealth, AllyDummyHealth, DummyLandingDamage, DummyZoneDamage,
@@ -39,6 +39,7 @@ SHOOTER_TREE = "/Game/AI/Dummy/ST_Dummy_Shooter"
 SALVE_SHOOTER_TREE = TREE_DIR + "/ST_TutorialSalveShooter"  # ST_Dummy_Shooter firing the salve: summons, allies
 
 SALVE_TAG = "Ability.Spell.TutorialSalve"
+ALLY_SALVE_TAG = SALVE_TAG + ".Ally"  # a child tag: the shooter tree firing SALVE_TAG fires the ally's salve too
 SUMMON_TAG = "Ability.Spell.TutorialMinibossSummon"
 WAVE_TAG = "Ability.Spell.LateralWave"  # tutorial_waves.py: the one wave, lanes from the living adds
 WAVE_EVENT_TAG = "Event.StateTree.TriggerMinibossWave"
@@ -119,15 +120,15 @@ def damage_effect(row, per_second=False):
     return effect
 
 
-def enemy_setup(team, health_row, actor_tag=""):
-    """A summon or an ally: the salve shooter tree and the salve, dies at zero, health from a CT_Tutorial row."""
+def enemy_setup(team, health_row, salve_tag, actor_tag=""):
+    """A summon or an ally: the salve shooter tree and its salve, dies at zero, health from a CT_Tutorial row."""
     setup = unreal.GeoEnemySetup()
     setup.set_editor_property("Team", team)
     setup.set_editor_property("bResetToFullLife", False)
     setup.set_editor_property("AggroRadius", 100.0)
     setup.set_editor_property("MaxHealth", scalable_row(health_row))
     setup.set_editor_property("StateTree", unreal.load_asset(SALVE_SHOOTER_TREE))
-    setup.set_editor_property("AbilityTags", [waves.tag(SALVE_TAG)])
+    setup.set_editor_property("AbilityTags", [waves.tag(salve_tag)])
     setup.set_editor_property("Tag", actor_tag)
     return setup
 
@@ -135,8 +136,8 @@ def enemy_setup(team, health_row, actor_tag=""):
 # ---------------------------------------------------------------- abilities
 
 def build_salve():
-    """The one salve of the fight, a copy of the star boss's with its numbers in CT_Tutorial: its caster's side picks the
-    target (enemy team: every player; player team: the arena's boss), its bullets hit the other side only."""
+    """The salve of the boss and its summons, a copy of the star boss's with its numbers in CT_Tutorial: at every player
+    (Target AllPlayers), its bullets hit the other side only. Returns the ability Blueprint."""
     pattern_bp, _ = dup_asset(SALVE_PATTERN_SRC, ABILITY_DIR + "/BP_TutorialPattern_Salve")
     cdo = unreal.get_default_object(pattern_bp.generated_class())
     params = cdo.get_editor_property("ProjectileParams").copy()
@@ -152,10 +153,26 @@ def build_salve():
     cdo.set_editor_property("AbilityTags", tags)
     cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
     cdo.set_editor_property("EffectDataInstances", [damage_effect("MinibossProjectileDamage")])
+    cdo.set_editor_property("Target", unreal.ProjectileTarget.ALL_PLAYERS)
     waves.commit_bp(ability_bp)
     waves.register(ability_bp, SALVE_TAG, "Tutorial salve",
-                   "Salve of the tutorial miniboss fight: the boss at the players, its summons' allies at the boss.")
+                   "Salve of the tutorial miniboss fight: the boss and its summons at the players.")
     log("salve", "created" if created else "updated")
+    return ability_bp
+
+
+def build_ally_salve(salve_bp):
+    """The salve's child for the summons' allies: only its tag (a child of the salve's) and Target Boss differ."""
+    ability_bp, created = waves.make_bp("GA_TutorialAllySalve", ABILITY_DIR, salve_bp.generated_class())
+    cdo = unreal.get_default_object(ability_bp.generated_class())
+    tags = unreal.GameplayTagContainer()
+    tags.import_text('(GameplayTags=((TagName="%s")))' % ALLY_SALVE_TAG)
+    cdo.set_editor_property("AbilityTags", tags)
+    cdo.set_editor_property("Target", unreal.ProjectileTarget.BOSS)
+    waves.commit_bp(ability_bp)
+    waves.register(ability_bp, ALLY_SALVE_TAG, "Tutorial ally salve",
+                   "Salve of the tutorial miniboss fight: the summons' allies at the boss.")
+    log("ally salve", "created" if created else "updated")
 
 
 def build_summon(add_class):
@@ -168,7 +185,7 @@ def build_summon(add_class):
     cdo.set_editor_property("AbilityTags", tags)
     cdo.set_editor_property("PatternToLaunch", unreal.load_asset(SUMMON_PATTERN).generated_class())
     cdo.set_editor_property("AddClass", add_class)
-    cdo.set_editor_property("AddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth"))
+    cdo.set_editor_property("AddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth", SALVE_TAG))
     cdo.set_editor_property("SpotRadius", SUMMON_SPOT_RADIUS)
     cdo.set_editor_property("FireDelay", SUMMON_WIND_UP)
     cdo.set_editor_property("EffectDataInstances", [damage_effect("DummyLandingDamage")])
@@ -199,7 +216,7 @@ def build_summoned_dummy():
     cdo.set_editor_property("ZoneEffects", [damage_effect("DummyZoneDamage", per_second=True)])
     cdo.set_editor_property("ZoneParams", zone_params)
     cdo.set_editor_property("AllyClass", unreal.load_asset(BP_DUMMY).generated_class())
-    cdo.set_editor_property("AllySetup", enemy_setup(unreal.Team.PLAYER, "AllyDummyHealth", ALLY_ACTOR_TAG))
+    cdo.set_editor_property("AllySetup", enemy_setup(unreal.Team.PLAYER, "AllyDummyHealth", ALLY_SALVE_TAG, ALLY_ACTOR_TAG))
     dummy = unreal.get_default_object(unreal.load_asset(BP_DUMMY).generated_class())
     for name in ("StateTree", "ResetToFullLifeWhenReachingZero"):
         cdo.set_editor_property(name, dummy.get_editor_property(name))
@@ -277,7 +294,7 @@ def delete_old_assets():
 def run():
     REPORT[:] = []
     try:
-        build_salve()
+        build_ally_salve(build_salve())
         build_salve_shooter_tree()
         build_summon(build_summoned_dummy().generated_class())
         build_tree()

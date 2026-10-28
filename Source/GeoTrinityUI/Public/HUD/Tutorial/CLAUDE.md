@@ -7,9 +7,6 @@ Tutorial HUD pieces, driven by `AGeoHUD` through `GeoHUDInterface` (`GeoTrinity/
 | `GeoCatLineMarkup.h` | `GeoCatLine::ToRichText(Markup, KeyLabel)`: board markup → rich text; `RevealRichText(RichText, VisibleCount)`: the typewriter's prefix; `PitchForWord(Word, Min, Max)`: the tick's pitch; pure, tested |
 | `GeoSpeechPopupWidget.h` | Base of every in-game chat popup: phases, timer, F skip, F key cap, `OnLineEnded` (below) |
 | `GeoCatLineWidget.h` | `WBP_CatLine`: child of the base; the Cat's markup, type tick, face, name label |
-| `SGeoCatFace.h` | Slate widget painting the Cat's face (the Tutorial Board's `catface` / `catfacet` symbols), animated |
-| `GeoCatFaceMotion.h` | Blink / ear flick / mouth loops as pure functions of time; tested |
-| `GeoCatFaceWidget.h` | UMG wrapper of `SGeoCatFace`: palette + talking flag as Blueprint properties |
 | `GeoShakeTextDecorator.h` | Rich-text decorator for `<Shake>` runs: the run jitters on a Slate active timer |
 | `GeoQuestCardWidget.h` | `WBP_QuestCard`: quest title, `n/Max`, time-limit countdown (step 3 gag) |
 
@@ -40,16 +37,13 @@ One widget class owns everything a popup that talks to the player shares; a spea
 - Skip = `OnInteractUI` (key F) of the owning `AGeoPlayerController`, no mouse button (the mouse fires abilities): press in Typing → whole text at once (Reading starts); press in Reading → Ended. Two presses always end a line, so mashing F runs the tutorial as fast as the player wants. No grace delay: a press never ends an unread line (the first one only completes it).
 - Skip hint: a key cap at the panel's top right showing only the key bound to `InteractUIAction` (label through `UHudFunctionLibrary::GetMappedKey` on the owning controller's `InteractUIAction`, never a typed "F"; text-only, no "to skip" words). Optional `BindWidgetOptional` `SkipKey` (`UTextBlock`) inside a `SkipHint` border of `WBP_CatLine`. Resolved on each `ShowLine`, so a rebind shows on the next line. Always visible while a line shows (both phases skip); see "Speech popup" for the label rule.
 - `OnLineEnded` (native delegate on the widget) fires on every end: timer, skip, replaced by a new line (the old line's waiter must not hang), widget destroyed. `AGeoHUD::ShowCatLine(Line, OnEnded)` hands the caller's delegate to it; one waiter per line.
-- `AGeoHUD::HideCatLine()`: ends the shown line at once (Ended phase, `OnLineEnded` fires). Called by `GeoCatLineAction::OnCancel` on an abort, so the left room's text never runs on in the next one (`Encounter/CLAUDE.md`, "Arrival reset").
-- Lines come from `GeoCatLineAction` (`Encounter/Action/CLAUDE.md`), which waits for `OnLineEnded`: the line's own length paces the encounter, no delay is placed after a line. Text authored on the placed encounter.
+- `AGeoHUD::HideCatLine()`: ends the shown line at once (Ended phase, `OnLineEnded` fires). Called by `GeoCatSpeechAction::OnCancel` on an abort, so the left room's text never runs on in the next one (`Encounter/CLAUDE.md`, "Arrival reset").
+- Lines come from the `GeoCatSpeechAction` children (`Encounter/Action/CLAUDE.md`), which wait for `OnLineEnded`: the line's own length paces the encounter, no delay is placed after a line. Text authored on the placed encounter.
 
 ## Cat face (the speaker's portrait)
-- `WBP_CatLine` = panel: `CatFace` (left, square; optional `BindWidget` of `UGeoCatLineWidget`) + name label "CAT" + `LineText`. Same layout as the Board's speech box: dark translucent panel, 1 px border and soft glow in the Cat's base shade.
-- `SGeoCatFace` draws the Board's face vertex for vertex in a 200×200 design box scaled to the widget: 2 ears + inner ear shades, head (polygon + rounded rect), 2 rounded eyes, nose triangle, mouth. Flat fills, no textures (`HUD/Style/CLAUDE.md`). Vertices live in the file as the single copy of the shape; the Board is the visual reference.
-- Palette = the bosses' colour in shades (`Tutorial/Cat.md`), 4 properties on `UGeoCatFaceWidget`: `Base` (head, ears, border), `Shade` (inner ears, darker), `Ink` (mouth, darkest), `Light` (eyes, nose; pale tint, drawn with a soft halo). Nothing hard-coded; defaults = the Board's boss hue.
-- Motion on one Slate active timer, no Tick, same loops as the Board: eye squint / blink 5.4 s, ear flick 5.5 s (second ear offset 0.3 s), mouth open-close 0.38 s while talking.
-- Talking = a line is on screen: `UGeoCatLineWidget` sets it on `ShowLine`, clears it when the line ends or is skipped. Idle = closed mouth.
-- Face only; the full body, tail and 3D hologram are the Cat hologram slice (`Tutorial/Cat.md`).
+- `WBP_CatLine` = panel: `CatFace` (left, square; optional `BindWidget` of `UGeoCatLineWidget`, a `UGeoCatFaceWidget`, `CatFace/CLAUDE.md`) + name label "CAT" + `LineText`. Same layout as the Board's speech box: dark translucent panel, 1 px border and soft glow in the Cat's base shade.
+- Talking = a line is on screen: `UGeoCatLineWidget` sets it on `ShowLine`, clears it when the line ends or is skipped.
+- `{Key:<InputTag>}` labels: `UHudFunctionLibrary::GetInputTagKeyLabel(LocalPlayer, InputTag)`, shared with the loading screen's tips.
 
 ## Quest card
 - `ShowQuestCard(Title, Max, TimeLimitSeconds)`, `SetQuestCount(Count)`, `HideQuestCard()` on `GeoHUDInterface`; `AGeoHUD` creates it on first use (`QuestCardWidgetClass`).

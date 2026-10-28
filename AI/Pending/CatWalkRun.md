@@ -1,6 +1,7 @@
 # CatWalkRun — pending
 
 Goal: the two Cat walks share length and pattern so they blend perfectly (slow Prowl, long-step Fast), and a real-cat Run (gallop) clip exists, to be integrated in `ABP_Cat` later.
+Priority: 3
 Docs written: `AI/Tutorial/CatAnimation.md` ("Living, not mechanical" Walk / Run, "Clips", `ABP_Cat`), `AI/Python/Cat/CLAUDE.md`, `Source/GeoTrinity/Public/Actor/CLAUDE.md`.
 
 ## Scripts

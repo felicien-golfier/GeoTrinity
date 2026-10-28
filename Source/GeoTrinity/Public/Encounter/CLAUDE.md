@@ -11,7 +11,7 @@ Scripted sequences of steps driven by triggers and actions, authored in the leve
 | `GeoEncounterCondition.h` | `UGeoEncounterCondition`: `Evaluate(Payload) → bool` filter on a rule |
 | `GeoCompareCondition.h` | The stock condition: payload `Count`, payload `Value` or a step counter, compared with an operand |
 | `GeoEncounterAction.h` | `UGeoEncounterAction`: base of every action; `Execute(Payload)`, `Finish()`, `OnCancel()`, `bLatent` |
-| `GeoEncounterSubsystem.h` | World subsystem: tag event bus (`Raise(Tag, Payload)`, Blueprint-callable); `bMovementLocked`, the encounters' one movement lock; `OnCatLine` (native): every Cat line as it shows, tokens replaced (the tutorial bot's line log); aborts every encounter of its world when the session ends (below) |
+| `GeoEncounterSubsystem.h` | World subsystem: tag event bus (`Raise(Tag, Payload)`, Blueprint-callable); `bMovementLocked`, the encounters' one movement lock; `OnCatLine` (native): every Cat line as it shows, tokens replaced (the tutorial bot's line log); aborts every encounter of its world when the session ends (below); `GetSharedCaster()` / `GrantSharedAbility(Class)`: the encounters' one ability caster (below) |
 | `Trigger/` | Stock triggers → `Trigger/CLAUDE.md` |
 | `Action/` | Stock actions → `Action/CLAUDE.md` |
 
@@ -28,7 +28,7 @@ AGeoEncounter
 - Trigger, Condition, Action derive from `UGeoEncounterObject`: `Blueprintable`, `EditInlineNew`, `DefaultToInstanced`. The Details panel picks a class, the class is code (C++ or Blueprint). No enum of trigger types anywhere.
 - Instances live on the placed encounter, so properties hold direct level references (pad, volume, arena); characters are never referenced, they are spawned and watched by filter (`Trigger/CLAUDE.md`). A reusable encounter is a Blueprint child of `AGeoEncounter`.
 - `FGeoEncounterPayload`: `Actor` (the actor the event is about: who entered, who died), `Count`, `Value`, `Tag`. The trigger fills it; conditions and actions read it. A trigger keeps its own running number (deaths since arm) and sends it as `Count`.
-- Counters: what one rule needs to know about another (falls before the reach, colors visited, "enemy dead AND ally full"). Written by `GeoAddToCounterAction`, read by `GeoCompareCondition` (source `Counter`), watched by `GeoCounterTrigger`. `AddToCounter` / `GetCounter` are Blueprint-callable on the encounter.
+- Counters: what one rule needs to know about another (falls before the reach, colors visited, "enemy dead AND ally full"). Written by `GeoAddToCounterAction`, read by `GeoCompareCondition` (source `Counter`), watched by `GeoCounterTrigger`. `AddToEncounterCounter` / `GetCounter` are Blueprint-callable on the encounter.
 - `GeoCompareCondition`: source (`PayloadCount`, `PayloadValue`, `Counter` + name), operator (`==`, `!=`, `<`, `<=`, `>`, `>=`, `MultipleOf`), operand. Other filters are Blueprint children of `UGeoEncounterCondition`.
 
 ## Flow
@@ -59,6 +59,14 @@ The world's end is an `Abort()` of every encounter, same synchronous stop as the
 - Handler: once per subsystem (a flag), `Abort()` every `AGeoEncounter` of the world. After it every encounter is `Idle`: a later `Finish()` is ignored (not awaited), no step change until `Start()` / `Restart()`.
 - Actions need nothing of their own: `OnCancel` already undoes what they left (contract above). An action never has to tolerate "no player controller" for this; `GeoSetMovementLockedAction` keeps its ensure for a real missing player.
 
+## Shared caster
+Every ability an encounter fires runs on one caster per world, owned by `UGeoEncounterSubsystem`; no room places a caster or an arena for it. Boss fights and real enemies (dummies, adds) keep their own abilities and trees.
+- `GetSharedCaster()`: server only (null on a client). First call spawns it: `AHiddenCasterCharacter` through `AEnemyCharacter::SpawnEnemy`, default setup (enemy team, no abilities, no tree), no arena, at the world origin, `ArbitraryCharacterZ`. Lives until the world ends; an abort never resets it (its abilities stop through the actions' `OnCancel`).
+- Where it stands does not matter: an ability's origin comes from the room the firing action names (`FPatternAbilityParams`, `AbilitySystem/Abilities/Base/CLAUDE.md`, "Activation params"), its aim from the ability itself, pattern VFX are absolute.
+- `GrantSharedAbility(Class)`: the caster's spec of that class, else `GiveAbility` (level 1); kept for the session, so abilities are granted on first use, never listed.
+- Refusal, the one place it is checked: a class whose CDO `RequiresArena()` (`AbilitySystem/Abilities/Base/CLAUDE.md`, "RequiresArena") → `ensureMsgf`, invalid handle, nothing granted.
+- One spec per class: a second firing of a class still running is refused (logged by the action). One room fires at a time (solo tutorial); rooms firing at once are not supported.
+
 ## Jump start
 Start a chain of encounters at a later one, as if the earlier ones had been played (tutorial: `AI/Tutorial/Flow.md`, "Jump to a room"). Same mechanism as the arrival reset: the world-URL jump is a reset whose target comes from the portal instead of a start action.
 - `AGeoEncounter::JumpStart`: optional level reference to the `APlayerStart` of its room. Target (`FindJumpTarget()`) from the world URL's portal: a number N = the Nth encounter along the chain (0 = the start encounter); else the encounter whose `JumpStart->PlayerStartTag` equals it.
@@ -85,4 +93,4 @@ Start a chain of encounters at a later one, as if the earlier ones had been play
 - Runtime misses (nothing to teleport to, a watched actor gone) log to `LogGeoEncounter`; step entries and firings log at `Verbose`.
 
 ## Arena
-`AGeoArena` stays its own system: a replicated fight lifecycle (match state, barrier, boss bar, wipe reset, rewards, leaderboard) shared by every machine, where an encounter is authority-only scripting. An encounter talks to an arena only through triggers and actions (a death, a barrier); the arena never knows encounters.
+`AGeoArena` stays its own system: a replicated fight lifecycle (match state, barrier, boss bar, wipe reset, rewards, leaderboard) shared by every machine, where an encounter is authority-only scripting. An encounter talks to an arena only through triggers and actions (a death, a barrier); the arena never knows encounters. An encounter fires no ability through an arena: the shared caster (above).

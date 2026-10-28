@@ -9,12 +9,6 @@
 #include "Tool/CatLine/GeoCatLineCategories.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-struct FGeoCatLineFile
-{
-	TArray<FName> Categories;
-	TMap<FName, TArray<FString>> LinesByCategory;
-};
-
 /** What one category set has said: the lines left of its shuffled bag, its file-order cursor, its last line. */
 struct FGeoCatLineDraw
 {
@@ -28,11 +22,12 @@ static FGeoCatLineFile ParsedFile;
 static FDateTime ParsedTimeStamp = FDateTime::MinValue();
 static TMap<FString, FGeoCatLineDraw> Draws;
 
-static FGeoCatLineFile const& GetFile()
+FGeoCatLineFile const& GeoCatLines::GetFile()
 {
 	FString const FilePath =
 		FilePathOverride.IsEmpty() ? FPaths::ProjectDir() / TEXT("Data/CatLines.txt") : FilePathOverride;
 	FDateTime const TimeStamp = IFileManager::Get().GetTimeStamp(*FilePath);
+	ensureMsgf(TimeStamp != FDateTime::MinValue(), TEXT("No Cat lines file at %s"), *FilePath);
 	if (TimeStamp != ParsedTimeStamp)
 	{
 		ParsedTimeStamp = TimeStamp;
@@ -73,8 +68,7 @@ static FGeoCatLineFile const& GetFile()
 	return ParsedFile;
 }
 
-/** The picked categories' lines, in file order; a line in two of them comes once. */
-static TArray<FString> GatherPool(FGeoCatLineCategories const& Categories)
+TArray<FString> GeoCatLines::GatherPool(FGeoCatLineCategories const& Categories)
 {
 	FGeoCatLineFile const& File = GetFile();
 	TArray<FString> Pool;

@@ -36,8 +36,7 @@ SKELETON_PATH = "/Game/Characters/Meshes/Star/SK_Star"
 MESH_PATH = "/Game/Characters/Meshes/Star/SKM_Star"
 ANIM_PACKAGE = "/Game/Characters/Anim/Star"
 SEQ_NAME = "SK_Star_Sequence_DevastatingWave"
-REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
-          "35cec9f6-d360-4be8-9a7e-b2f43048da1c/scratchpad/devastating_wave.txt")
+REPORT = unreal.Paths.project_dir() + "AI/Output/devastating_wave.txt"
 
 SPIKE_PREFIX = "apexe_outside_"
 RING_BONE = "apexes_outside"

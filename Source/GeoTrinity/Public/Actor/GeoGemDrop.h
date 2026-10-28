@@ -58,10 +58,10 @@ struct FGeoGemBounce
  * latter outliving the actor. It is thrown from where it spawns along LaunchVelocity under Gravity, lands on
  * RestHeight. It tumbles in 3D, the turn winding down by friction to a stop in whatever pose it reached, bounces
  * BounceCount times on landing (lighting up at each touchdown), slides to a stop on the ground and is held in by the
- * world's static walls, then bobs until a player character touches it, which destroys it for everyone.
- * Replicated once with its launch data: every machine replays the same path, no movement is replicated. Pickup
- * collision exists on the server only, from the end of the slide on; the actor root stays still from then, so a lying
- * drop costs no overlap update.
+ * world's static walls, then bobs. From PickupDelay after the throw, flying, sliding or lying, a player character
+ * touching it destroys it for everyone. Replicated once with its launch data: every machine replays the same path, no
+ * movement is replicated. Pickup collision exists on the server only; the server moves the root along the throw until
+ * the slide ends and keeps it still from then, so a lying drop costs no overlap update.
  */
 UCLASS()
 class GEOTRINITY_API AGeoGemDrop : public AActor
@@ -79,9 +79,12 @@ public:
 	 *  starts at the spawn location, now. */
 	void Init(FGeoGemDropSpec const& InSpec, FVector const& InLaunchVelocity);
 
-	/** True once the throw has come down and slid to a stop: from then the drop rests, and a character can pick it up.
-	 */
+	/** True once the throw has come down and slid to a stop: from then the drop rests. */
 	bool IsLanded() const;
+
+	/** True from PickupDelay after the throw: a player character touching it picks it up, wherever it is on its path.
+	 */
+	bool IsPickable() const;
 
 	/** The gem's static mesh component. */
 	UStaticMeshComponent* GetMesh() const { return Mesh; }
@@ -105,17 +108,18 @@ public:
 
 protected:
 	/** Sizes the pickup sphere, anchors the throw on the local clock, shows the mesh and colour; on the server, binds
-	 *  the pickup and lands the drop when the throw comes down. A dedicated server never ticks a drop. */
+	 *  the pickup, turns it on at PickupDelay and lands the drop when the slide ends. A dedicated server ticks a drop
+	 *  only until it lands, to carry the pickup along the throw. */
 	virtual void BeginPlay() override;
 
-	/** Plays PickupSound where the drop lies when it was landed and destroyed; any other end (level change, PIE end,
-	 *  a drop still in the air) is silent. */
+	/** Plays PickupSound where the drop is when it was pickable and destroyed; any other end (level change, PIE end,
+	 *  a drop destroyed before PickupDelay) is silent. */
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	/** Plays Entry at Location as a world-owned one-shot, so it rings on after this actor is gone. */
 	virtual void PlayDropSound(FGeoSoundEntry const& Entry, FVector const& Location);
 
-	/** Visual: moves the actor along the arc, then poses, lifts, scales and lights the mesh. */
+	/** Moves the actor along the arc (the server's pickup with it), then poses, lifts, scales and lights the mesh. */
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Simulates the drop's horizontal path from the launch, one point per PathStep: straight in the air, slowing by
@@ -125,8 +129,10 @@ protected:
 	/** Where the throw is TravelSeconds after it started: along Path, at the height of the arc. */
 	FVector GetThrowLocation(float TravelSeconds) const;
 
-	/** Server. Puts the drop at its rest location and turns the pickup collision on; a player character already
-	 *  standing there picks it up at once. */
+	/** Server. Turns the pickup collision on; a player character already touching the drop picks it up at once. */
+	void EnablePickup();
+
+	/** Server. Puts the drop at its rest location; a dedicated server stops ticking it. */
 	void Land();
 
 	/** Server. Destroys the drop when OtherActor is a player character. Bound to the pickup's begin overlap. */
@@ -206,6 +212,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoGemDrop")
 	float PickupRadius = 90.f;
 
+	/** Seconds after the throw the drop can be picked up, in the air or sliding: a player standing where it comes down
+	 *  takes it without moving. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoGemDrop", meta = (ClampMin = 0.05))
+	float PickupDelay = 0.5f;
+
 	/** Played at the throw location when a drop starts its throw; a drop already lying on a late join stays silent. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoGemDrop|Sound")
 	FGeoSoundEntry SpawnSound;
@@ -235,8 +246,9 @@ private:
 	UPROPERTY(Replicated)
 	float LaunchTime = 0.f;
 
-	/** This machine's own world time the throw started at. */
-	float LocalLaunchTime = 0.f;
+	/** This machine's own world time the throw started at; double like the world clock, so a drop spawned lying reads
+	 *  exactly 0 s since its throw. */
+	double LocalLaunchTime = 0.;
 
 	/** Where the throw started. */
 	FVector LaunchLocation = FVector::ZeroVector;

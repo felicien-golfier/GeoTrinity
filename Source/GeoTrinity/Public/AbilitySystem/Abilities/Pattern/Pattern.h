@@ -71,6 +71,9 @@ public:
 	/** True when the pattern plays its own montage; the launching ability then leaves its own montage unplayed. */
 	bool HasMontage() const { return IsValid(AnimMontage); }
 
+	/** True when the pattern needs its caster's arena itself; its launching ability answers RequiresArena with it. */
+	virtual bool RequiresArena() const { return false; }
+
 	UPROPERTY(BlueprintAssignable)
 	FOnPatternEvent OnPatternEnd;
 	UPROPERTY(BlueprintAssignable)

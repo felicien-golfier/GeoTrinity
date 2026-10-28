@@ -1,6 +1,7 @@
 # TutorialAggroRadius — pending
 
 Goal: tutorial enemies have no distance aggro, they wait to be hit (radius 100 instead of 1000).
+Priority: 2
 Docs written: `Source/GeoTrinity/Public/Characters/CLAUDE.md` ("Enemy setup", "EnemyCharacter"), `Source/GeoTrinity/Public/AI/CLAUDE.md`.
 
 ## Code (to implement)

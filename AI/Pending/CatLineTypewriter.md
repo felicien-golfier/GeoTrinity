@@ -1,6 +1,7 @@
 # CatLineTypewriter — pending
 
 Goal: a Cat line types out letter by letter with a small tick per word at a per-word pitch, ends on its own timer, and F drives it (F = whole text, F again = end line and advance the tutorial), so mashing F runs the tutorial faster.
+Priority: 2
 Docs written: `GeoTrinityUI/Public/HUD/Tutorial/CLAUDE.md` ("Cat line", markup row), `GeoTrinity/Public/Encounter/Action/CLAUDE.md` ("GeoCatLineAction"), `GeoTrinity/Public/HUD/Interface/CLAUDE.md`, `AI/Tutorial/CLAUDE.md`, `Flow.md`, `Steps.md`, `AI/Python/Level/CLAUDE.md`.
 
 ## Code (to implement)

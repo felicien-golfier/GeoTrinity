@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include "AbilitySystem/Abilities/Boss/GeoSummonAddAbility.h"
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/Abilities/Pattern/Projectile/ProjectilePattern.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/EnemyCharacter.h"
@@ -78,6 +79,16 @@ protected:
 #endif
 };
 
+/** UGeoTestCastAbility that needs its caster's arena: the encounters' shared caster refuses it. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestArenaBoundAbility : public UGeoTestCastAbility
+{
+	GENERATED_BODY()
+
+public:
+	virtual bool RequiresArena() const override { return true; }
+};
+
 /** Pattern ability of a test launching UGeoTestSilentPattern. */
 UCLASS(NotPlaceable, Transient)
 class UGeoTestSilentPatternAbility : public UPatternAbility
@@ -99,9 +110,15 @@ public:
 	UGeoTestDataPatternAbility() { PatternToLaunch = UGeoTestSilentPattern::StaticClass(); }
 
 	TInstancedStruct<FPatternData> LaunchedPatternData;
+	/** Where the launch would have left from (GetFireOrigin2D). */
+	FVector2D LaunchedOrigin = FVector2D::ZeroVector;
 
 protected:
-	virtual void LaunchPattern() override { LaunchedPatternData = CreatePatternData(); }
+	virtual void LaunchPattern() override
+	{
+		LaunchedPatternData = CreatePatternData();
+		LaunchedOrigin = CreateAbilityPayload(LaunchSeed).Origin;
+	}
 
 	/** No pattern was launched: skips UPatternAbility's stop of it. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
@@ -120,14 +137,31 @@ protected:
 #endif
 };
 
-/** Salve ability whose aim a test reads, for a salve leaving the world origin. */
+/** UGeoTestDataPatternAbility launching from a point of its activation's room (FPatternAbilityParams::ArenaTag). The
+ * tag is set on its one instance, once granted: native tags do not exist yet in a constructor. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestPointPatternAbility : public UGeoTestDataPatternAbility
+{
+	GENERATED_BODY()
+
+public:
+	UGeoTestPointPatternAbility() { InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor; }
+
+	void SetPointTag(FGameplayTag const Tag) { TargetPointTag = Tag; }
+};
+
+/** Salve ability whose aim a test reads, for a salve leaving the world origin at the given Target. */
 UCLASS(NotPlaceable, Transient)
 class UGeoTestSalveAbility : public UGeoPeriodicPatternAbility
 {
 	GENERATED_BODY()
 
 public:
-	TArray<float> GetAimYaws() const { return CreatePatternData().Get<FProjectilePatternData>().Yaws; }
+	TArray<float> GetAimYaws(EProjectileTarget const AimTarget)
+	{
+		Target = AimTarget;
+		return CreatePatternData().Get<FProjectilePatternData>().Yaws;
+	}
 };
 
 /** Summon ability bringing a plain enemy, tagged "Summoned" with 300 max health by its AddSetup. Summon runs the end

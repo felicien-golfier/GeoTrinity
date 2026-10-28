@@ -33,18 +33,22 @@ void UGeoGameplayAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handl
 	}
 
 	bool const bIsPassive = IsPassive();
-	bool const bHasTargetData = TriggerEventData && TriggerEventData->TargetData.Num() > 0;
 	// Server-driven abilities build their payload from avatar state: no client ever sends them target data. That covers
 	// ServerOnly too, not just ServerInitiated — an AI ability fired by STTask_FireAbility carries no TriggerEventData.
 	bool const bIsServerDriven = GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::ServerInitiated
 		|| GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::ServerOnly;
-	ensureMsgf(bIsServerDriven || bIsPassive || bHasTargetData,
-			   TEXT("No TargetData in TriggerEventData! This ability is not set as passive, it should exist"));
-	FGeoAbilityTargetData const* TargetData =
-		bHasTargetData ? static_cast<FGeoAbilityTargetData const*>(TriggerEventData->TargetData.Get(0)) : nullptr;
-	ensureMsgf(bIsServerDriven || bIsPassive || TargetData, TEXT("Target Data 0 is not a FGeoAbilityTargetData"));
+	// Target data of another type (FPatternAbilityParams, an encounter firing) is not this ability's fire data.
+	FGameplayAbilityTargetData const* const FirstTargetData =
+		TriggerEventData ? TriggerEventData->TargetData.Get(0) : nullptr;
+	FGeoAbilityTargetData const* const TargetData =
+		FirstTargetData && FirstTargetData->GetScriptStruct()->IsChildOf(FGeoAbilityTargetData::StaticStruct())
+		? static_cast<FGeoAbilityTargetData const*>(FirstTargetData)
+		: nullptr;
+	ensureMsgf(
+		bIsServerDriven || bIsPassive || TargetData,
+		TEXT("No FGeoAbilityTargetData in TriggerEventData! This ability is not set as passive, it should exist"));
 
-	if (!bIsPassive && bHasTargetData && TargetData)
+	if (!bIsPassive && TargetData)
 	{
 		StoredPayload = CreateAbilityPayloadFromTargetData(*TargetData);
 	}

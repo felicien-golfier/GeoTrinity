@@ -7,13 +7,13 @@
 
 #include "GeoPeriodicPatternAbility.generated.h"
 
+enum class EProjectileTarget : uint8;
+
 /**
- * Fires salves at the caster's hostiles, again and again: at all players from the enemy team, at the boss of its arena
- * from the player team (an ally add, so one salve ability serves a boss, its summons and their allies). It never ends
- * on its own, every salve schedules the next one, so a single activation keeps the boss firing. One launch of its
- * USalvePattern is one salve, aimed and stamped here right before it leaves — so a salve always departs from where the
- * boss stands at that moment, towards where the players stand, instead of replaying an aim taken at the start of the
- * burst.
+ * Fires salves at its Target, again and again. It never ends on its own, every salve schedules the next one, so a
+ * single activation keeps the boss firing. One launch of its USalvePattern is one salve, aimed and stamped here right
+ * before it leaves — so a salve always departs from where the caster stands at that moment, towards where its targets
+ * stand, instead of replaying an aim taken at the start of the burst.
  */
 UCLASS()
 class GEOTRINITY_API UGeoPeriodicPatternAbility : public UPatternAbility
@@ -21,7 +21,7 @@ class GEOTRINITY_API UGeoPeriodicPatternAbility : public UPatternAbility
 	GENERATED_BODY()
 
 public:
-	/** Configures ServerOnly net execution, InstancedPerActor instancing, and no replication. */
+	/** Configures ServerOnly net execution, InstancedPerActor instancing, no replication, and AllPlayers as Target. */
 	UGeoPeriodicPatternAbility();
 
 	/** Drops what is left of the previous activation's burst — the instance is kept alive between activations. */
@@ -30,8 +30,8 @@ public:
 								 FGameplayEventData const* TriggerEventData) override;
 
 protected:
-	/** Aims from the origin the salve about to leave was stamped with: player-team caster, one yaw at its arena's boss
-	 * (none when it has no arena or the boss is dead); else one yaw at each alive player. */
+	/** Aims from the origin the salve about to leave was stamped with: one yaw per direction of Target
+	 * (GeoASLib::GetTargetDirections). */
 	virtual TInstancedStruct<FPatternData> CreatePatternData() const override;
 
 	/** Fires one salve, sizing a new burst first when the previous one is spent, then schedules what comes next: the
@@ -56,6 +56,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.1"))
 	float FireIntervalMax = 5.f;
+
+	/** What each salve aims at. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility")
+	EProjectileTarget Target;
 
 private:
 	int32 RemainingSalveCount = 0;

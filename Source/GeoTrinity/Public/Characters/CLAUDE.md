@@ -15,7 +15,7 @@ AGeoCharacter            ASC interface + team agent
 | `PlayableCharacter.h` | Human player: input forwarding, `ChangeClass()`, gauges, downed/revive |
 | `EnemyCharacter.h` | AI enemy: own ASC, StateTree, boss death / reset |
 | `GeoEnemySetup.h` | `FGeoEnemySetup`: per-spawn variant of an enemy class (team, dies or resets, StateTree, extra abilities, health, actor tag) |
-| `HiddenCasterCharacter.h` | Enemy with nothing on screen and nothing to hit: casts abilities for an encounter in a room with no boss |
+| `HiddenCasterCharacter.h` | Enemy with nothing on screen and nothing to hit: the encounters' shared ability caster |
 | `GeoSummonedDummy.h` | Add summoned by `GeoSummonAddAbility` (tutorial miniboss): its zone grows until it dies, then an ally takes its place |
 | `GeoTrainingCat.h` | The Training Room's Cat: enemy-team character, hit detection, spoken line replication, home spot |
 | `PlayerClassTypes.h` | `EPlayerClass`: Triangle=1, Circle=2, Square=3, All=4 |
@@ -71,11 +71,11 @@ AGeoCharacter            ASC interface + team agent
 - `SetSkeletalMesh` + `SetMaterial(0)`, never a per-instance asset; death / reset-at-zero keep the look (the team does not change).
 
 ## HiddenCasterCharacter
-- Purpose: hazard patterns and waves are abilities and need an ASC; this lends one to a room with no boss. The encounter fires its abilities with `GeoActivateAbilityAction` (`Encounter/Action/CLAUDE.md`).
+- Purpose: hazard patterns and waves are abilities and need an ASC; this lends one to the encounters. One per world, spawned and owned by `UGeoEncounterSubsystem` (`Encounter/CLAUDE.md`, "Shared caster"), fired by `GeoActivateAbilityAction`.
 - Nothing on screen: no mesh, no health bar (subobject not created), no mesh asset (native class, no Blueprint), the actor itself never hidden (a hidden actor also hides the pattern VFX attached to it: the wave would not show). Nothing to hit: `SetInvulnerable(true)` on BeginPlay (no damage, no collision, no gravity), so it never dies. `CanBeAggroed()` false: its controller starts no aggro watch, since aggro would start a fight and make it touchable again.
-- No StateTree by default: it acts when an encounter asks. The arena's `BossSetup.StateTree` gives it one to cast on its own loop (the Training Room's zone row).
-- Hosted by an `AGeoDummyArena` per room (`BossClass` = `AHiddenCasterCharacter` itself, `ArenaTag` = the room's tag): `Arena` is set, so target-point patterns fire from that room's points. One caster per room that casts; patterns centred on the caster fire from where its arena spawns it.
-- No Blueprint: its abilities (and tree, if any) are the arena's `BossSetup` (`Actor/Arena/CLAUDE.md`); enemy team, so its hazards hit players. Only for real hazard patterns (waves, safe spots); a plain zone in a scripted room is `GeoSpawnZoneAction`, no caster.
+- No StateTree, no arena, no abilities of its own: it acts when an encounter asks, with abilities granted on first use. Enemy team, so its hazards hit players.
+- `DefaultAttributes` = the plain `UGameplayEffect` (empty), set in its constructor: every stat 0 until an ability needs one, then that effect gets the modifiers.
+- Training Room exception (until its redesign): its `AGeoDummyArena` still hosts one as boss, tree and zone abilities from the arena's `BossSetup` (`training_room.py`).
 - Counts as a live enemy: a `GeoActorDiedTrigger` watching `AEnemyCharacter` sees it alive forever; watch the dummy's own class.
 
 ## GeoSummonedDummy

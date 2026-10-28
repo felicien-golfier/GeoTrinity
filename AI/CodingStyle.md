@@ -20,7 +20,7 @@ Any class, Blueprint, asset or script.
 - One kind = one type, one asset; per-use values = data given by the user of it (`FLateralWavePatternData`, `FGeoEnemySetup`, `FDeployableDataParams`).
 - New type only for new behaviour or look; never for values.
 - Spawner lacks the field → extend it. One-case flag → derive from team / owner / context.
-- Asset order: native class + params set where it is used (`AHiddenCasterCharacter` + the arena's `BossSetup`), no Blueprint. Needs a look (mesh, VFX) → one Blueprint, params set on it per use (projectiles: `FExternalProjectileParams` + one BP; enemies: `BP_Dummy` + `FGeoEnemySetup`). Never a copy of an asset to change values.
+- Asset order: native class + params set where it is used (`BP_Dummy` + the arena's `BossSetup`), no Blueprint. Needs a look (mesh, VFX) → one Blueprint, params set on it per use (projectiles: `FExternalProjectileParams` + one BP; enemies: `BP_Dummy` + `FGeoEnemySetup`). Never a copy of an asset to change values.
 - Tunable numbers in params = `FScalableFloat`, so a use points at a curve table row (`CT_Tutorial`) like any other data.
 
 ## Writing code
@@ -144,7 +144,7 @@ local-player-only bindings before `AddDynamic`. Exception: a binding made in `On
   cannot be automated; say why.
 - A bug fix asks: can it come back silently? Yes (logic, ordering, replication, data wiring, tutorial flow) → a
   regression test that fails on the old code, added to the existing test of that area when one fits, else a new one;
-  the post-mortem in `TroobleshootingLogs.md` names it. No (typo, one-off asset, cannot be automated) → say why.
+  a `TroobleshootingLogs.md` entry only if the user asks for one (root `CLAUDE.md`). No (typo, one-off asset, cannot be automated) → say why.
 - Never `Sleep()`; wait on an observable condition. Layers, paths and flags: `AI/Testing.md`.
 
 ## Grouping

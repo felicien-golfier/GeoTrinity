@@ -31,11 +31,11 @@
 #include "Gem/GeoGemStatsEffect.h"
 #include "Misc/AutomationTest.h"
 #include "Settings/GameDataSettings.h"
-#include "Tests/GeoTestDeployable.h"
-#include "Tests/GeoTestGemDrop.h"
-#include "Tests/GeoTestWorld.h"
+#include "Tests/Gameplay/Fake/GeoTestDeployable.h"
+#include "Tests/Gameplay/Fake/GeoTestGemDrop.h"
+#include "Tests/Gameplay/Fake/GeoTestWorld.h"
 
-#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#if WITH_DEV_AUTOMATION_TESTS
 
 constexpr EAutomationTestFlags GeoGemTestFlags =
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
@@ -1293,6 +1293,8 @@ bool FGeoGemDropTest::RunTest(FString const& /*Parameters*/)
 			 Spawn(Shard, FVector::ZeroVector)->GetMesh()->GetStaticMesh()
 				 == GeoGem::GetShardMesh(1).LoadSynchronous());
 
+	// Before the drops: their pickup timers go to the game instance's timer manager, the one the world ticks.
+	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
 	FVector const Rest(0.f, 0.f, 20.f);
 	FVector const Air(5000.f, 0.f, 1000.f);
 	AGeoGemDrop* Landed = Spawn(Shard, Rest);
@@ -1300,19 +1302,28 @@ bool FGeoGemDropTest::RunTest(FString const& /*Parameters*/)
 	TestTrue(TEXT("A drop spawned at the rest height is landed"), Landed->IsLanded());
 	TestFalse(TEXT("A drop spawned high is still in the air"), Flying->IsLanded());
 
-	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
-	for (FVector const& Location : {Rest, Air})
-	{
-		FTransform const Transform(Location);
-		APlayableCharacter* const Character =
-			World->SpawnActorDeferred<APlayableCharacter>(APlayableCharacter::StaticClass(), Transform);
-		Character->SetActorHiddenInGame(true);
-		Character->FinishSpawning(Transform);
-	}
+	FTransform const CharacterTransform(Rest);
+	APlayableCharacter* const Character =
+		World->SpawnActorDeferred<APlayableCharacter>(APlayableCharacter::StaticClass(), CharacterTransform);
+	Character->SetActorHiddenInGame(true);
+	Character->FinishSpawning(CharacterTransform);
 
-	World->Tick(LEVELTICK_All, 0.1f);
-	TestFalse(TEXT("A landed drop a player character overlaps is destroyed"), IsValid(Landed));
-	TestTrue(TEXT("A drop in the air is not picked, character or not"), IsValid(Flying));
+	// Short frames, each a new engine frame: the world caps one frame's time (MaxUndilatedFrameTime) and a timer
+	// manager ticks once per engine frame.
+	auto const TickFor = [World](float const Seconds)
+	{
+		for (float Ticked = 0.f; Ticked < Seconds; Ticked += 0.1f)
+		{
+			++GFrameCounter;
+			World->Tick(LEVELTICK_All, 0.1f);
+		}
+	};
+	TickFor(0.1f);
+	TestTrue(TEXT("Before PickupDelay a drop under a player character stays"), IsValid(Landed));
+	TickFor(0.5f);
+	TestFalse(TEXT("From PickupDelay a drop a player character touches is picked, without moving"), IsValid(Landed));
+	TestTrue(TEXT("A drop nobody touches stays"), IsValid(Flying));
+	TestTrue(TEXT("A drop still in the air is pickable from PickupDelay"), Flying->IsPickable() && !Flying->IsLanded());
 
 	auto const SpawnCounting = [World, &Shard](FVector const& Location)
 	{
@@ -1328,13 +1339,14 @@ bool FGeoGemDropTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("A drop already lying is silent on spawn"), Lying->SpawnSoundCount, 0);
 
 	Thrown->Destroy();
-	TestEqual(TEXT("A drop destroyed in the air is silent"), Thrown->PickupSoundCount, 0);
+	TestEqual(TEXT("A drop destroyed before PickupDelay is silent"), Thrown->PickupSoundCount, 0);
 	Lying->RouteEndPlay(EEndPlayReason::RemovedFromWorld);
 	TestEqual(TEXT("A drop ended by anything but a pickup is silent"), Lying->PickupSoundCount, 0);
 
 	AGeoTestGemDrop* const Picked = SpawnCounting(FVector(9000.f, 0.f, 20.f));
+	TickFor(0.6f);
 	Picked->Destroy();
-	TestEqual(TEXT("A landed drop sounds when destroyed"), Picked->PickupSoundCount, 1);
+	TestEqual(TEXT("A pickable drop sounds when destroyed"), Picked->PickupSoundCount, 1);
 
 	AGeoGemDrop const* const Falling = Spawn(Shard, Air);
 	TestTrue(TEXT("A drop mid-bounce is above its resting place"), Falling->GetBounce(0.1f).Height > 0.f);

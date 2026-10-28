@@ -46,8 +46,7 @@ MESH_PATH = "/Game/Characters/Meshes/Star/SKM_Star"
 ANIM_PACKAGE = "/Game/Characters/Anim/Star"
 SEQ_NAME = "SK_Star_Sequence_Death"
 MONTAGE_NAME = "SK_Star_Montage_Death"
-REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
-          "d68d07b7-9cd8-4924-91b7-154cbe48353c/scratchpad/star_death.txt")
+REPORT = unreal.Paths.project_dir() + "AI/Output/star_death.txt"
 
 SPIKE_PREFIX = "apexe_outside_"
 RING_BONE = "apexes_outside"

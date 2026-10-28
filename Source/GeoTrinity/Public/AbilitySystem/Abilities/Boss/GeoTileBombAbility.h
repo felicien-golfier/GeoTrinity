@@ -23,6 +23,9 @@ public:
 	/** Configures ServerOnly net execution, InstancedPerActor instancing, and no replication. */
 	UGeoTileBombAbility();
 
+	/** Reads its caster's hex arena. */
+	virtual bool RequiresArena() const override { return true; }
+
 protected:
 	/** Server. Draws one live player from the payload seed, spawns the bomb on them and attaches it, then ends. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;

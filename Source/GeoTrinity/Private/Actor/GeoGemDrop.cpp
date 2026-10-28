@@ -73,11 +73,7 @@ void AGeoGemDrop::BeginPlay()
 	TumbleAxis = Stream.VRand();
 	TumbleRadians = FMath::DegreesToRadians(Stream.FRandRange(TumbleSpeed.Min, TumbleSpeed.Max));
 
-	if (GeoLib::IsDedicatedServer(this))
-	{
-		SetActorTickEnabled(false);
-	}
-	else
+	if (!GeoLib::IsDedicatedServer(this))
 	{
 		ApplyLook();
 	}
@@ -85,6 +81,8 @@ void AGeoGemDrop::BeginPlay()
 	if (GeoLib::IsServer(this))
 	{
 		Pickup->OnComponentBeginOverlap.AddUniqueDynamic(this, &AGeoGemDrop::OnPickupOverlap);
+		FTimerHandle PickupTimer;
+		GetWorldTimerManager().SetTimer(PickupTimer, this, &AGeoGemDrop::EnablePickup, PickupDelay, false);
 		if (TravelTime > 0.f)
 		{
 			FTimerHandle LandTimer;
@@ -104,7 +102,7 @@ void AGeoGemDrop::BeginPlay()
 
 void AGeoGemDrop::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
-	if (EndPlayReason == EEndPlayReason::Destroyed && IsLanded())
+	if (EndPlayReason == EEndPlayReason::Destroyed && IsPickable())
 	{
 		PlayDropSound(PickupSound, GetActorLocation());
 	}
@@ -139,6 +137,11 @@ void AGeoGemDrop::ApplyLook()
 bool AGeoGemDrop::IsLanded() const
 {
 	return GetWorld()->GetTimeSeconds() - LocalLaunchTime >= TravelTime;
+}
+
+bool AGeoGemDrop::IsPickable() const
+{
+	return GetWorld()->GetTimeSeconds() - LocalLaunchTime >= PickupDelay;
 }
 
 void AGeoGemDrop::Tick(float const DeltaSeconds)
@@ -252,10 +255,18 @@ FVector AGeoGemDrop::GetRestLocation() const
 	return GetThrowLocation(TravelTime);
 }
 
+void AGeoGemDrop::EnablePickup()
+{
+	Pickup->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
 void AGeoGemDrop::Land()
 {
 	SetActorLocation(GetRestLocation());
-	Pickup->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	if (GeoLib::IsDedicatedServer(this))
+	{
+		SetActorTickEnabled(false);
+	}
 }
 
 void AGeoGemDrop::OnPickupOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,

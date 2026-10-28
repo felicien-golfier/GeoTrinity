@@ -1,6 +1,7 @@
 # PendingSweep — pending
 
 Goal: go through every `AI/Pending/*.md` one by one: check whether each open row is still needed (code / assets may already do it), apply what an agent can do, delete files left with nothing an agent can do.
+Priority: 2
 Docs written: none (a sweep, no feature). Scope: new features excluded (`TrainingCat`, `TutorialAggroRadius`, `MaterialFunctionDedup`, `MenuGuide`, `EncounterHandEdits`).
 
 ## Method (per file)
@@ -16,9 +17,6 @@ Docs written: none (a sweep, no feature). Scope: new features excluded (`Trainin
 - Applied: `WBP_CatLine` `TypeSound` = `SW_Mech_Tick_1` (class `SC_Interface`); `SCon_GemDrop` on `BP_GemDrop` spawn / pickup; `BP_ZonePattern_DamageReduction` colour `DamageReduction`; Cat face peek (`FACE_PEEK_DEGREES` in `cat_posing.py`, Reach / Flat / portal jump, `head_pitch_min` in `cat_clip.py`), every Cat clip + `ABP_Cat` re-run headless; `hex_boss_abilities.py` / `hex_boss_launch.py` reports → `AI/Output`, launch montages on `CastSlot`.
 
 ## Left
-- [ ] Bomb / Turret montages: live sections `Start → Fire`, `hex_boss_launch.py` writes `Start → Fire1` (its docstring: a `Fire` section is never jumped to). Ask the user which is right; if `Fire1`, re-run `hex_boss_launch.py` then `boss_montage_sounds.py`.
-- [ ] Other boss clip scripts still write their report to a dead session scratchpad (`hex_boss_death/idle/intro.py`, `star_death/devastating_wave/idle_breath/intro/pike_nova/spike_nova.py`): point `REPORT` at `AI/Output/`.
-- [ ] ConeSpray tell shows 4–6 of 18 blades past the face in frames 6–30 (row asked "front blade only"); no shell punched. Tune `tell_focus` in `hex_boss_abilities.py` only if the user wants it narrower.
 - [ ] Sweep the rest. Every row left needs the user (look, feel, PIE, design question) or is an excluded feature: CatAnimation, CatClipsPick, CatEvilFace, CatLocomotionIdles, CatWalkRun, CatPortrait, CatLineTypewriter, EchoSocketHalo, EchoUiPolish, SoundConcurrency (bullet impacts by ear), TutorialPolish, TutorialTeleporters, TutorialExit, TeleportPortal, GemShapes3D, GemEcho, MessageLog, QuestDummies, TestAim, Tutorial. Re-check each for a row an agent can still do; otherwise list them for the user.
-- [ ] Tell the user (design, from the deleted TutorialTestCoverage): the Heal and Shield zone steps end the instant the pawn enters, so the player never feels the zone.
+- [ ] Zones room: docs and `tutorial_encounters.py` already hold a 2 s `delay()` after both Shield and Heal were entered (`ZoneColors`, `AI/Tutorial/Steps.md` step 7). Check the scene has it (`encounters_diff.py` through the bridge, editor open) before calling it done.
 - [ ] Delete this file when empty.

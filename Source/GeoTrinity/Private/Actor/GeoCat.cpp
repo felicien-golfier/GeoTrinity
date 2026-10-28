@@ -48,7 +48,12 @@ void AGeoCat::Walk(TArray<FVector> const& Points, float const Speed, float const
 		Waypoints.Add(FVector(Point.X, Point.Y, GetActorLocation().Z));
 	}
 
-	if (Waypoints.IsEmpty())
+	if (!ensureMsgf(!IsHidden(), TEXT("%s: Walk while hidden, a hidden cat never moves: the walk ends at once"),
+					*GetName()))
+	{
+		EndOrder(true);
+	}
+	else if (Waypoints.IsEmpty())
 	{
 		UE_LOG(LogGeoTrinity, Warning, TEXT("%s: Walk with no point"), *GetName());
 		EndOrder(true);

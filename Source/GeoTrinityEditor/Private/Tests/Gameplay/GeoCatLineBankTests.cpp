@@ -74,8 +74,14 @@ bool FGeoCatLineBankTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("A new line of the edited file is picked"), GeoCatLines::PickLine(Picked({"C"}), true),
 			  FString("c1"));
 
-	GeoCatLines::SetFilePath(FString());
 	IFileManager::Get().Delete(*Path);
+	AddExpectedErrorPlain(TEXT("TimeStamp != FDateTime::MinValue()"), EAutomationExpectedErrorFlags::Contains, 0);
+	AddExpectedErrorPlain(TEXT("No Cat lines file"), EAutomationExpectedErrorFlags::Contains, 1);
+	AddExpectedError(TEXT("=== Handled ensure: ===|^\\s*$|^Stack:|\\[Callstack\\]"),
+					 EAutomationExpectedErrorFlags::Contains, -1);
+	TestTrue(TEXT("A missing file holds no category"), GeoCatLines::GetCategories().IsEmpty());
+
+	GeoCatLines::SetFilePath(FString());
 	return true;
 }
 

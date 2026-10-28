@@ -85,16 +85,14 @@ AActor* AGeoTurret::FindBestTarget() const
 	TArray<AActor*> const HostileActors = UGeoAbilitySystemLibrary::GetInteractableActors(
 		this, GeoASLib::GetTeamId(this), TeamAttitudeMask::HostileOrNeutral, true);
 
-	if (UGeoAbilitySystemComponent* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner))
+	if (!IsPlayerTurret())
 	{
-		AActor* PreferredTarget = OwnerASC->GetLastBasicAbilityTarget();
-		if (IsValid(PreferredTarget) && HostileActors.Contains(PreferredTarget))
-		{
-			return PreferredTarget;
-		}
+		return UGeoAbilitySystemLibrary::GetNearestActorFromList(this, HostileActors);
 	}
 
-	return UGeoAbilitySystemLibrary::GetNearestActorFromList(this, HostileActors);
+	UGeoAbilitySystemComponent const* OwnerASC = GeoASLib::GetGeoAscFromActor(GetData()->Owner);
+	AActor* PreferredTarget = OwnerASC ? OwnerASC->GetLastBasicAbilityTarget() : nullptr;
+	return (IsValid(PreferredTarget) && HostileActors.Contains(PreferredTarget)) ? PreferredTarget : nullptr;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

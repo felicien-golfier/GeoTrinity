@@ -408,8 +408,7 @@ void AGeoArena::StartFountain(FGeoGemReward const& Loot)
 		}
 	}
 
-	int32 const ShardDrops = FMath::Min(FMath::DivideAndRoundUp(Loot.Shards, ShardsPerDrop), MaxShardDrops);
-	for (int32 Drop = 0; Drop < ShardDrops; ++Drop)
+	for (int32 Shard = 0; Shard < Loot.Shards; ++Shard)
 	{
 		FountainQueue.Add(
 			{EGeoGemDropKind::Shard, NAME_None, FMath::RandRange(0, GeoGem::ShardVariantCount - 1), FMath::Rand()});

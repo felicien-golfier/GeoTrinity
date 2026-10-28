@@ -6,8 +6,6 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
-#include "Actor/Arena/GeoArena.h"
-#include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -19,6 +17,7 @@ UGeoPeriodicPatternAbility::UGeoPeriodicPatternAbility()
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateNo;
+	Target = EProjectileTarget::AllPlayers;
 }
 
 void UGeoPeriodicPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -34,24 +33,10 @@ void UGeoPeriodicPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle cons
 TInstancedStruct<FPatternData> UGeoPeriodicPatternAbility::CreatePatternData() const
 {
 	FProjectilePatternData SalveData;
-
-	FVector const Origin(StoredPayload.Origin, ArbitraryCharacterZ);
-	AActor const* const Caster = GetAvatarActorFromActorInfo();
-	if (GeoASLib::GetTeamId(Caster).GetId() == static_cast<uint8>(ETeam::Player))
+	for (FVector const& Direction : GeoASLib::GetTargetDirections(GetWorld(), Target, StoredPayload.Yaw,
+																  FVector(StoredPayload.Origin, ArbitraryCharacterZ)))
 	{
-		AGeoArena const* Arena = AGeoArena::GetArenaOfBoss(Caster);
-		AEnemyCharacter const* Boss = IsValid(Arena) ? Arena->GetBoss() : nullptr;
-		if (IsValid(Boss) && !Boss->IsDead())
-		{
-			SalveData.Yaws.Add((Boss->GetActorLocation() - Origin).Rotation().Yaw);
-		}
-	}
-	else
-	{
-		for (APlayableCharacter const* Player : GeoLib::GetAlivePlayers(this))
-		{
-			SalveData.Yaws.Add((Player->GetActorLocation() - Origin).Rotation().Yaw);
-		}
+		SalveData.Yaws.Add(Direction.Rotation().Yaw);
 	}
 
 	return TInstancedStruct<FPatternData>::Make<FProjectilePatternData>(SalveData);

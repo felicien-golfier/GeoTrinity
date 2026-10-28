@@ -1,6 +1,7 @@
 # MaterialFunctionDedup — pending
 
 Goal: no material function repeats a block of nodes, and every material graph reads like `M_MAskedArea`: functions where a block is needed, room where it is needed, no wire back, no box over another, shared values as variables.
+Priority: 3
 Docs written: `AI/Materials.md` ("Writing a function", "Keeping a graph readable"), `AI/Python/Material/CLAUDE.md` ("Layout"), `AI/MCP/MCP_Material.md` ("Graph organisation").
 
 Done (this pass): dedup (`MF_IsWholeNumber`, `MF_ZeroOneToSigned`, `MF_PulseBrightness`, `MF_InsideFrameOnAxis`, `MF_BeamFrame` replacing `MF_BeamShape`, `MF_SafeSpotSlotCut`), toolkit layout (tight per-node sizes, mask-of-mask merged, unused nodes deleted), coordinates removed from every builder, generic / colour-pattern / pulse-circle / beam scripts rebuilt in the open editor (instruction counts unchanged: `M_PulseBeam` 320, `M_ZoneIndicatorRay` 317, `M_ZoneIndicator` 194, `M_PulseCircle` 208), `MF_BeamShape` deleted (no referencers).

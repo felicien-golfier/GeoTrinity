@@ -15,7 +15,7 @@ enum class ESafeSpotSource : uint8
 {
 	/** Living pillars hostile or neutral to the caster; the radius is the pillar's own. */
 	Pillars,
-	/** Living adds of the caster's arena (server only); the given radius. */
+	/** Living adds of the caster's arena (server only; none without an arena); the given radius. */
 	Adds,
 	/** The given fixed locations; the given radius. */
 	Fixed,

@@ -41,8 +41,7 @@ MESH_PATH = "/Game/Characters/Meshes/HexBoss/SKM_HexBoss"
 ANIM_PACKAGE = "/Game/Characters/Anim/HexBoss"
 SEQ_NAME = "SK_HexBoss_Sequence_Intro"
 MONTAGE_NAME = "SK_HexBoss_Montage_Intro"
-REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
-          "d01a11ac-5e89-4af5-9d0a-7a9d27ea8837/scratchpad/hex_boss_intro.txt")
+REPORT = unreal.Paths.project_dir() + "AI/Output/hex_boss_intro.txt"
 
 ROOT = "Root"
 OUTER, MID, CORE = "HexOuter", "HexMid", "HexCore"

@@ -36,11 +36,15 @@ enum class EGeoSpecialBranch : uint8
  * runs. */
 namespace GeoTutorialStages
 {
+	/** Fails when a room's exit pad opens with any other line last shown than the room's closing one (Flow.md,
+	 * "Rooms"). An observer: add it once, before the first room. */
+	void WatchExitPadsOpenWithLastLine(FGeoTutorialBot& Bot);
 	/** Movement locked then freed, the Cat shown then hidden after its portal jump. Pad open at the end. */
 	void AddLandingStages(FGeoTutorialBot& Bot);
 	/** Idle on the open pad: the nag repeats. */
 	void AddLandingNagStages(FGeoTutorialBot& Bot);
-	/** The pad taken during the last line: the Dash room's first line follows, no Landing line after. */
+	/** The pad taken during the last line, the Landing step still running: the Dash room starts at once, the Landing
+	 * Cat stops, no Landing line after. */
 	void AddEarlyPortalStages(FGeoTutorialBot& Bot);
 
 	/** Falls = 0: the real dash over the void, the stunned line. Falls 1..: that many falls, each a respawn on the

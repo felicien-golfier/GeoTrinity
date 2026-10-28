@@ -1,6 +1,7 @@
 # TutorialPolish — pending
 
 Goal: the tutorial rooms feel staged, not abrupt: the Cat speaks before an ability page opens, pads vanish on arrival, the Shoot room starts with one centred dummy and a pause after its death, and the Special room cannot be passed without using the Special.
+Priority: 2
 Docs written: `AI/Tutorial/Steps.md` (steps 3, 5, "Unlock rule"), `AI/Tutorial/Flow.md` ("Rooms"), `Encounter/Action/CLAUDE.md` (`GeoShowAbilityPageAction`, `GeoUnlockAbilityAction`), `Encounter/Trigger/CLAUDE.md` (`GeoAbilityActivatedTrigger`), `AI/Python/Tutorial/CLAUDE.md`.
 Read first: `AI/CodingStyle.md`, `AI/Python/Tutorial/CLAUDE.md` ("Read the scene first", "Hand edits survive a re-run"; run `encounters_diff.py` before the script).
 

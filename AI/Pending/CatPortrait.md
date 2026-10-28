@@ -1,6 +1,7 @@
 # CatPortrait — pending
 
 Goal: the Cat that speaks in the game's chat box is exactly the Tutorial Board's Cat face (same shape, same motion), in the bosses' colour shades, shown like the Board's speech box.
+Priority: 3
 Docs written: `GeoTrinityUI/Public/HUD/Tutorial/CLAUDE.md` ("Cat face"), `AI/Tutorial/Cat.md` ("In game", colour roles).
 
 ## Code (to implement)

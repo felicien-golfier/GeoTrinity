@@ -8,8 +8,10 @@
 #include "Actor/Arena/GeoArena.h"
 #include "Actor/Buttons/GeoTeleporter.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
+#include "Actor/GeoGemDrop.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/GeoSummonedDummy.h"
+#include "Characters/HiddenCasterCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Encounter/GeoEncounterSubsystem.h"
@@ -89,6 +91,7 @@ namespace GeoTutorialStages
 	FName const SpecialAbility = "Ability.Spell.MoiraBeam";
 	FName const LateralWaveAbility = "Ability.Spell.LateralWave";
 	FName const SalveAbility = "Ability.Spell.TutorialSalve";
+	FName const AllySalveAbility = "Ability.Spell.TutorialSalve.Ally";
 	FName const ShooterAbility = "Ability.Spell.ProjectileToAllPlayers";
 
 	/** Each class ability and the room that unlocks it. */
@@ -290,6 +293,36 @@ namespace GeoTutorialStages
 					 });
 	}
 
+	void WatchExitPadsOpenWithLastLine(FGeoTutorialBot& Bot)
+	{
+		struct FClosingLine
+		{
+			int32 Room;
+			TCHAR const* Line;
+		};
+		// Landing's is Path.EarlyPortal's: its pad may open in the run before the FullRun restart, with no HUD.
+		static FClosingLine const ClosingLines[] = {
+			{GeoTutorial::Dash, DashUselessLine},	  {GeoTutorial::Shoot, ShootNextToyLine},
+			{GeoTutorial::Deploy, DeployFullLine},	  {GeoTutorial::Special, SpecialDoneLine},
+			{GeoTutorial::Dummies, DummiesDoneLine},  {GeoTutorial::Zones, ZonesSurvivedLine},
+			{GeoTutorial::Miniboss, MinibossKillLine}};
+		TSharedRef<TSet<int32>> Opened = MakeShared<TSet<int32>>();
+		Bot.Observers.Add(
+			[&Bot, Opened]()
+			{
+				for (FClosingLine const& Closing : ClosingLines)
+				{
+					if (!Opened->Contains(Closing.Room) && Bot.IsPadOpen(ExitPad(Closing.Room)))
+					{
+						Opened->Add(Closing.Room);
+						Bot.Test.TestTrue(
+							*FString::Printf(TEXT("Room %d: the exit opens with '%s'"), Closing.Room, Closing.Line),
+							!Bot.Lines.IsEmpty() && Bot.Lines.Last().Contains(Closing.Line));
+					}
+				}
+			});
+	}
+
 	void AddLandingNagStages(FGeoTutorialBot& Bot)
 	{
 		Bot.AddExitPadStage(GeoTutorial::Landing);
@@ -311,8 +344,15 @@ namespace GeoTutorialStages
 				return *PortalLine != INDEX_NONE && Bot.IsPadOpen(ExitPad(GeoTutorial::Landing));
 			},
 			150.);
+		// The kept line never ends by itself here: only the arrival, while the Landing step still runs, can start Dash.
 		Bot.AddTeleportStages(GeoTutorial::Landing);
-		Bot.AddLineStage(TEXT("Landing: the Dash room's first line follows"), DashArrivalLine);
+		Bot.AddLineStage(TEXT("Landing: the Dash room starts at once, the Landing line still standing"),
+						 DashArrivalLine);
+		Bot.AddStage(TEXT("Landing: the arrival stopped the Landing Cat"),
+					 [&Bot](bool)
+					 {
+						 return Bot.FindByLabel(TEXT("Tut_Landing_Cat"))->IsHidden();
+					 });
 		Bot.AddWaitStage(TEXT("Landing: a second for a late Landing line"), 1.);
 		Bot.AddStage(TEXT("Landing: no Landing line after the pad"),
 					 [&Bot, PortalLine](bool)
@@ -1061,10 +1101,11 @@ namespace GeoTutorialStages
 		float const CentreX = GeoTutorial::RoomCentreX(GeoTutorial::Zones);
 		TArray<FSafeSeries> const AllSeries = GetSafeSeries(bAllSeries);
 		int32 const Caster = Bot.WatchActivations(
+			// Spawns the shared caster on the bot's first tick, so the watch is bound before the first wave fires.
 			[&Bot]() -> AActor*
 			{
-				AGeoArena const* const Arena = Cast<AGeoArena>(Bot.FindByLabel(TEXT("Tut_Zones_CasterArena")));
-				return Arena ? Arena->GetBoss() : nullptr;
+				UWorld* const World = Bot.GetWorld();
+				return World ? World->GetSubsystem<UGeoEncounterSubsystem>()->GetSharedCaster() : nullptr;
 			},
 			LateralWaveAbility);
 		Bot.AddLineStage(TEXT("Zones: the first line"), ZonesIntroLine);
@@ -1127,6 +1168,8 @@ namespace GeoTutorialStages
 		TSharedRef<float> FirstZoneRadius = MakeShared<float>(0.f);
 		TSharedRef<TSet<int32>> PointsReached = MakeShared<TSet<int32>>();
 		TSharedRef<TMap<FName, int32>> ChipsBefore = MakeShared<TMap<FName, int32>>();
+		TSharedRef<int32> ShardsBefore = MakeShared<int32>(0);
+		TSharedRef<int32> DropsThrown = MakeShared<int32>(0);
 		Bot.Observers.Add(
 			[&Bot, PointsReached]()
 			{
@@ -1142,7 +1185,7 @@ namespace GeoTutorialStages
 				}
 			});
 		Bot.AddStage(TEXT("Miniboss: the gem profile before the fight"),
-					 [&Bot, ChipsBefore](bool)
+					 [&Bot, ChipsBefore, ShardsBefore, DropsThrown](bool)
 					 {
 						 UGeoGemProfileSave const* const Profile =
 							 UGeoGemSubsystem::GetFirstLocalProfile(Bot.GetWorld());
@@ -1151,6 +1194,12 @@ namespace GeoTutorialStages
 							 ChipsBefore->Add(Chip, Profile->GetOwnedCount(Chip));
 						 }
 
+						 *ShardsBefore = Profile->GetShards();
+						 Bot.GetWorld()->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateLambda(
+							 [DropsThrown](AActor* const Actor)
+							 {
+								 *DropsThrown += Actor->IsA<AGeoGemDrop>() ? 1 : 0;
+							 }));
 						 return true;
 					 });
 		AddMinibossFightStages(Bot);
@@ -1178,7 +1227,7 @@ namespace GeoTutorialStages
 						 }
 
 						 AEnemyCharacter* const Ally = FindFirstLiving(Bot, MinibossAllyTag);
-						 return Ally && FGeoTutorialBot::IsAbilityActive(Ally, SalveAbility);
+						 return Ally && FGeoTutorialBot::IsAbilityActive(Ally, AllySalveAbility);
 					 });
 		Bot.AddStage(TEXT("Miniboss: every third summon, the lateral wave"),
 					 [&Bot, WaveWatch](bool)
@@ -1213,6 +1262,20 @@ namespace GeoTutorialStages
 						 }
 
 						 return bGranted;
+					 });
+		Bot.AddStage(TEXT("Miniboss: the fountain throws one drop per gem and per shard granted"),
+					 [&Bot, ShardsBefore, DropsThrown](bool)
+					 {
+						 int32 const Shards =
+							 UGeoGemSubsystem::GetFirstLocalProfile(Bot.GetWorld())->GetShards() - *ShardsBefore;
+						 int32 const Expected = UE_ARRAY_COUNT(MinibossChips) + Shards;
+						 if (*DropsThrown > Expected)
+						 {
+							 Bot.Test.AddError(
+								 FString::Printf(TEXT("%d drops thrown, expected %d"), *DropsThrown, Expected));
+						 }
+
+						 return Shards > 0 && *DropsThrown == Expected;
 					 });
 	}
 

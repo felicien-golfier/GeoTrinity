@@ -1,6 +1,7 @@
 # CatEvilFace — pending
 
 Goal: the 3D Tutorial Cat sometimes flashes an "evil" face (arched squinting eyes, wide grin, small fangs, ears pinned back) in its idle and while walking.
+Priority: 3
 Docs written: `AI/Tutorial/CatAnimation.md` ("Evil face", rig table, clips), `AI/Python/Cat/CLAUDE.md`.
 
 Done (2026-10-26, headless DebugGame commandlet): mesh + rig + every clip re-run, loop gap 0 on idle / walks / run, fangs visible only in idle (frames 16-59), walks (24-35), run (8-18); `GeoTrinity.Tutorial.FullRun` green.

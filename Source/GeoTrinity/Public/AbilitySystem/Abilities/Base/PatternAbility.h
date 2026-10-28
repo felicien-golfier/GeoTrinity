@@ -5,26 +5,9 @@
 #include "AbilitySystem/Data/FX/GeoCueParam.h"
 #include "CoreMinimal.h"
 #include "GeoGameplayAbility.h"
+#include "PatternAbilityParams.h"
 
 #include "PatternAbility.generated.h"
-
-UINTERFACE(meta = (CannotImplementInterfaceInBlueprint))
-class GEOTRINITY_API UPatternDataSource : public UInterface
-{
-	GENERATED_BODY()
-};
-
-/**
- * Gives a pattern ability its pattern data at activation: passed as the activation's TriggerEventData OptionalObject,
- * so one ability serves every firing with its own configuration (a wave's safe spots).
- */
-class GEOTRINITY_API IPatternDataSource
-{
-	GENERATED_BODY()
-
-public:
-	virtual TInstancedStruct<FPatternData> GetPatternData() const = 0;
-};
 
 /**
  * Server-driven ability that spawns a bullet pattern via multicast RPC.
@@ -59,6 +42,9 @@ public:
 	 */
 	virtual bool ShouldPlayAbilityMontage() const override;
 
+	/** PatternToLaunch's answer (UPattern::RequiresArena). */
+	virtual bool RequiresArena() const override;
+
 protected:
 	/**
 	 * Stamps a fresh payload, multicasts the pattern to every machine and binds its end delegate.
@@ -74,12 +60,13 @@ protected:
 
 	/**
 	 * Builds the pattern-specific data sent through PatternStartMulticast to every client's InitPattern.
-	 * Base returns the data given at activation (GivenPatternData), unset when none. Override to fill your own
+	 * Base returns the activation's ActivationParams.PatternData, unset when none. Override to fill your own
 	 * FPatternData subclass.
 	 */
-	virtual TInstancedStruct<FPatternData> CreatePatternData() const { return GivenPatternData; }
+	virtual TInstancedStruct<FPatternData> CreatePatternData() const;
 
-	/** Returns the location of the caster arena's TargetPointTag point, where the pattern launches from instead. */
+	/** Returns the location of the TargetPointTag point of the ActivationParams.ArenaTag room, where the pattern
+	 * launches from instead. */
 	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
 									  int Seed) const override;
 
@@ -110,8 +97,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UPattern> PatternToLaunch;
 
-	/** Which AGeoTargetPoint of the caster's own arena the pattern launches from (TargetPoint.*). Unset launches it
-	 * from the caster. */
+	/** Which AGeoTargetPoint of the ActivationParams.ArenaTag room the pattern launches from (TargetPoint.*). Unset
+	 * launches it from the caster. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))
 	FGameplayTag TargetPointTag;
 
@@ -126,9 +113,13 @@ protected:
 
 	TArray<TWeakObjectPtr<UGeoAbilitySystemComponent>> PreLaunchCueASCs;
 
-	/** Pattern data of the IPatternDataSource the activation came with (TriggerEventData OptionalObject); unset when
-	 * none. */
-	TInstancedStruct<FPatternData> GivenPatternData;
+	/** Server. The activation's params: the FPatternAbilityParams of TriggerEventData's TargetData when given (an
+	 * encounter firing), else the caster's arena's tag and no pattern data. */
+	FPatternAbilityParams MakeActivationParams(FGameplayEventData const* TriggerEventData) const;
+
+	/** The running activation's params (MakeActivationParams), kept until the ability ends. */
+	UPROPERTY()
+	FPatternAbilityParams ActivationParams;
 
 	FTimerHandle PreLaunchTimerHandle;
 };

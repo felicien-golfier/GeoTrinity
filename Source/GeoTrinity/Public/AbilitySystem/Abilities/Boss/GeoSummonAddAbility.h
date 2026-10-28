@@ -20,6 +20,10 @@ class GEOTRINITY_API UGeoSummonAddAbility : public UPatternAbility
 {
 	GENERATED_BODY()
 
+public:
+	/** Brings the add into its caster's arena. */
+	virtual bool RequiresArena() const override { return true; }
+
 protected:
 	/** A live player, picked from Seed, offset by up to SpotRadius; the caster's own place when no player lives. */
 	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,

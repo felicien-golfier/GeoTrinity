@@ -207,14 +207,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain")
 	FFloatInterval FountainSideSpeed = FFloatInterval(100.f, 600.f);
 
-	/** Shards one shard drop stands for. */
-	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain", meta = (ClampMin = 1))
-	int32 ShardsPerDrop = 10;
-
-	/** Most shard drops a kill throws, however many shards it gave. */
-	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain", meta = (ClampMin = 0))
-	int32 MaxShardDrops = 12;
-
 	/** False: a finished attempt here never reaches the leaderboard (the tutorial miniboss is no real boss run). */
 	UPROPERTY(EditAnywhere, Category = "GeoArena")
 	bool bRecordsLeaderboard = true;
@@ -278,8 +270,8 @@ private:
 	 *  and shards, the same for all, which it then throws out (StartFountain). Called by RecordAttempt. */
 	void GrantGemRewards(FGeoAttemptEntry const& Entry);
 
-	/** Server. Queues one drop per gem of Loot and one per ShardsPerDrop shards (at most MaxShardDrops), in random
-	 *  order, and throws them out one by one over FountainDuration from LootOrigin, the first at once. */
+	/** Server. Queues one drop per gem and one per shard of Loot, in random order, and throws them out one by one over
+	 *  FountainDuration from LootOrigin, the first at once. */
 	void StartFountain(FGeoGemReward const& Loot);
 	/** Throws the next queued drop and arms the timer for the one after it, per GetFountainThrowTime. Started by
 	 *  StartFountain. */

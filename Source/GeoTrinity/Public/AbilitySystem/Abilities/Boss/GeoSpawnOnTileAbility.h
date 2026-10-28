@@ -26,6 +26,9 @@ public:
 	/** Configures ServerOnly net execution, InstancedPerActor instancing, and no replication. */
 	UGeoSpawnOnTileAbility();
 
+	/** Reads its caster's hex arena. */
+	virtual bool RequiresArena() const override { return true; }
+
 protected:
 	/** Server. Spawns up to SpawnCount deployables on picked tiles, then ends the ability. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;

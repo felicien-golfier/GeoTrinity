@@ -9,11 +9,11 @@
 #include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/PlayerController.h"
 #include "Misc/AutomationTest.h"
-#include "Tests/GeoTestEncounter.h"
-#include "Tests/GeoTestPatternAbility.h"
-#include "Tests/GeoTestWorld.h"
+#include "Tests/Gameplay/Fake/GeoTestEncounter.h"
+#include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
+#include "Tests/Gameplay/Fake/GeoTestWorld.h"
 
-#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#if WITH_DEV_AUTOMATION_TESTS
 
 constexpr EAutomationTestFlags GeoPatternTestFlags =
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
@@ -90,9 +90,9 @@ bool FGeoSafeSpotMaskTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSalveAimByTeamTest, "GeoTrinity.Pattern.SalveAimByTeam", GeoPatternTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSalveAimTest, "GeoTrinity.Pattern.SalveAim", GeoPatternTestFlags)
 
-bool FGeoSalveAimByTeamTest::RunTest(FString const& /*Parameters*/)
+bool FGeoSalveAimTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
 	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
@@ -110,32 +110,38 @@ bool FGeoSalveAimByTeamTest::RunTest(FString const& /*Parameters*/)
 
 	AGeoTestCasterArena* const Arena =
 		World->SpawnActor<AGeoTestCasterArena>(FVector(0.f, 1000.f, 0.f), FRotator::ZeroRotator);
-	auto const GetAimYaws = [](AActor* const Caster)
+	auto const GetAimYaws = [](AActor* const Caster, EProjectileTarget const Target)
 	{
 		UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Caster);
-		FGameplayAbilitySpecHandle const Handle =
-			ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSalveAbility::StaticClass(), 1));
-		return CastChecked<UGeoTestSalveAbility>(ASC->FindAbilitySpecFromHandle(Handle)->GetPrimaryInstance())
-			->GetAimYaws();
+		FGameplayAbilitySpec const* Spec = ASC->FindAbilitySpecFromClass(UGeoTestSalveAbility::StaticClass());
+		if (!Spec)
+		{
+			Spec = ASC->FindAbilitySpecFromHandle(
+				ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSalveAbility::StaticClass(), 1)));
+		}
+		return CastChecked<UGeoTestSalveAbility>(Spec->GetPrimaryInstance())->GetAimYaws(Target);
 	};
 
-	TArray<float> const EnemyYaws = GetAimYaws(Arena->GetBoss());
-	if (TestEqual(TEXT("Enemy team: one yaw per live player"), EnemyYaws.Num(), 2))
+	TArray<float> const PlayerYaws = GetAimYaws(Arena->GetBoss(), EProjectileTarget::AllPlayers);
+	if (TestEqual(TEXT("AllPlayers: one yaw per live player"), PlayerYaws.Num(), 2))
 	{
-		TestTrue(TEXT("At each player"), FMath::IsNearlyEqual(FMath::Abs(EnemyYaws[0] - EnemyYaws[1]), 180.f, 0.1f));
+		TestTrue(TEXT("At each player"), FMath::IsNearlyEqual(FMath::Abs(PlayerYaws[0] - PlayerYaws[1]), 180.f, 0.1f));
 	}
 
 	FGeoEnemySetup AllySetup;
 	AllySetup.Team = ETeam::Player;
 	AEnemyCharacter* const Ally = Arena->SpawnAdd(AEnemyCharacter::StaticClass(), FTransform(), &AllySetup);
-	TArray<float> const AllyYaws = GetAimYaws(Ally);
-	if (TestEqual(TEXT("Player team: one yaw"), AllyYaws.Num(), 1))
+	TestEqual(TEXT("Boss, no fight: none"), GetAimYaws(Ally, EProjectileTarget::Boss).Num(), 0);
+
+	Arena->StartFight();
+	TArray<float> const BossYaws = GetAimYaws(Ally, EProjectileTarget::Boss);
+	if (TestEqual(TEXT("Boss, fighting: one yaw"), BossYaws.Num(), 1))
 	{
-		TestEqual(TEXT("At the arena's boss"), AllyYaws[0], 90.f, 0.1f);
+		TestEqual(TEXT("At the fighting arena's boss"), BossYaws[0], 90.f, 0.1f);
 	}
 
 	Arena->GetBoss()->Death();
-	TestEqual(TEXT("Player team, boss dead: none"), GetAimYaws(Ally).Num(), 0);
+	TestEqual(TEXT("Boss dead: none"), GetAimYaws(Ally, EProjectileTarget::Boss).Num(), 0);
 
 	DestroyTestWorld(World);
 	return true;

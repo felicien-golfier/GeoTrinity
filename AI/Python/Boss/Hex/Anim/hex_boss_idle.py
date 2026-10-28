@@ -35,8 +35,7 @@ SKELETON_PATH = "/Game/Characters/Meshes/HexBoss/SK_HexBoss"
 MESH_PATH = "/Game/Characters/Meshes/HexBoss/SKM_HexBoss"
 ANIM_PACKAGE = "/Game/Characters/Anim/HexBoss"
 SEQ_NAME = "SK_HexBoss_Idle"
-REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
-          "0b3b8214-c633-4920-a4b1-c68d4e9de203/scratchpad/hex_boss_idle.txt")
+REPORT = unreal.Paths.project_dir() + "AI/Output/hex_boss_idle.txt"
 
 CORE, MID, OUTER = "HexCore", "HexMid", "HexOuter"
 SPIKE = "HexOuter_Spike_{}"

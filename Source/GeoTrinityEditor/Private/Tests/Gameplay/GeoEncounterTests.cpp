@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Pattern/Hazard/LateralWavePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
@@ -52,15 +52,15 @@
 #include "Misc/Paths.h"
 #include "Settings/GameDataSettings.h"
 #include "StateTree.h"
-#include "Tests/GeoTestDeployable.h"
-#include "Tests/GeoTestEncounter.h"
-#include "Tests/GeoTestEnemy.h"
-#include "Tests/GeoTestPatternAbility.h"
-#include "Tests/GeoTestWorld.h"
+#include "Tests/Gameplay/Fake/GeoTestDeployable.h"
+#include "Tests/Gameplay/Fake/GeoTestEncounter.h"
+#include "Tests/Gameplay/Fake/GeoTestEnemy.h"
+#include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
+#include "Tests/Gameplay/Fake/GeoTestWorld.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
-#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#if WITH_DEV_AUTOMATION_TESTS
 
 constexpr EAutomationTestFlags GeoEncounterTestFlags =
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
@@ -756,48 +756,85 @@ bool FGeoEncounterValidationTest::RunTest(FString const& /*Parameters*/)
 	return true;
 }
 
-/** A caster arena in World, its hidden caster spawned. */
-static AGeoTestCasterArena* SpawnCasterArena(FAutomationTestBase& Test, UWorld& World)
+/** A game instance and a game state in World, so an enemy can spawn. */
+static void PrepareEnemyWorld(FAutomationTestBase& Test, UWorld& World)
 {
 	World.SetGameInstance(NewObject<UGameInstance>(GEngine));
-	Test.AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
 	World.SetGameState(World.SpawnActor<AGeoGameState>());
+}
+
+/** A caster arena in World, its hidden caster spawned. The adds it spawns are test enemies with no DefaultAttributes.
+ */
+static AGeoTestCasterArena* SpawnCasterArena(FAutomationTestBase& Test, UWorld& World)
+{
+	PrepareEnemyWorld(Test, World);
+	Test.AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
 	return World.SpawnActor<AGeoTestCasterArena>();
 }
 
-/** Grants UGeoTestCastAbility to the arena's hidden caster. */
-static FGameplayAbilitySpecHandle GrantCastAbility(AGeoArena const& Arena)
+/** The ASC of World's shared caster, AbilityClass granted to it; Handle is its spec. */
+static UGeoAbilitySystemComponent* GrantShared(UWorld& World, TSubclassOf<UGeoGameplayAbility> const AbilityClass,
+											   FGameplayAbilitySpecHandle& Handle)
 {
-	return GeoASLib::GetGeoAscFromActor(Arena.GetBoss())
-		->GiveAbility(FGameplayAbilitySpec(UGeoTestCastAbility::StaticClass(), 1));
+	UGeoEncounterSubsystem* const Subsystem = World.GetSubsystem<UGeoEncounterSubsystem>();
+	Handle = Subsystem->GrantSharedAbility(AbilityClass);
+	return GeoASLib::GetGeoAscFromActor(Subsystem->GetSharedCaster());
 }
 
-static UGeoActivateAbilityAction* NewActivateAction(AGeoTestEncounter& Encounter, AGeoArena* Arena,
+static UGeoActivateAbilityAction* NewActivateAction(AGeoTestEncounter& Encounter,
+													TSubclassOf<UGeoGameplayAbility> const AbilityClass,
 													bool const bWaitForEnd = true)
 {
 	UGeoActivateAbilityAction* const Action = NewObject<UGeoActivateAbilityAction>(&Encounter);
-	Action->Arena = Arena;
-	Action->AbilityTag = UGeoTestCastAbility::GetCastTag();
+	Action->AbilityClass = AbilityClass;
 	Action->bWaitForEnd = bWaitForEnd;
 	return Action;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoHiddenCasterTest, "GeoTrinity.Characters.HiddenCaster", GeoEncounterTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSharedCasterTest, "GeoTrinity.Encounter.SharedCaster",
+								 GeoEncounterTestFlags)
 
-bool FGeoHiddenCasterTest::RunTest(FString const& /*Parameters*/)
+bool FGeoEncounterSharedCasterTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
-	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
-	AEnemyCharacter const* const Caster = Arena->GetBoss();
-	if (TestTrue(TEXT("The arena spawns the caster"), Caster && Caster->IsA<AHiddenCasterCharacter>()))
+	PrepareEnemyWorld(*this, *World);
+	UGeoEncounterSubsystem* const Subsystem = World->GetSubsystem<UGeoEncounterSubsystem>();
+	AHiddenCasterCharacter* const Caster = Subsystem->GetSharedCaster();
+	if (TestNotNull(TEXT("The first call spawns the caster"), Caster))
 	{
+		TestTrue(TEXT("The second returns it"), Subsystem->GetSharedCaster() == Caster);
+		int32 Casters = 0;
+		for (TActorIterator<AHiddenCasterCharacter> It(World); It; ++It)
+		{
+			++Casters;
+		}
+
+		TestEqual(TEXT("One caster in the world"), Casters, 1);
+		TestEqual(TEXT("Enemy team"), Caster->GetGenericTeamId(), FGenericTeamId(static_cast<uint8>(ETeam::Enemy)));
+		TestFalse(TEXT("No arena"), Caster->Arena.IsValid());
 		TestFalse(TEXT("Nothing can damage it"), Caster->CanBeDamaged());
 		TestFalse(TEXT("Nothing can touch it"), Caster->GetActorEnableCollision());
 		TestFalse(TEXT("The actor stays shown, so the VFX it owns draw"), Caster->IsHidden());
 		TestNull(TEXT("Nothing is drawn: no mesh asset"), Caster->GetMesh()->GetSkeletalMeshAsset());
 		TestNull(TEXT("No health bar"), Caster->FindComponentByClass<UWidgetComponent>());
 		TestFalse(TEXT("Never aggroed"), Caster->CanBeAggroed());
+
+		UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Caster);
+		int32 const SpecsBefore = ASC->GetActivatableAbilities().Num();
+		FGameplayAbilitySpecHandle const First = Subsystem->GrantSharedAbility(UGeoTestCastAbility::StaticClass());
+		FGameplayAbilitySpecHandle const Second = Subsystem->GrantSharedAbility(UGeoTestCastAbility::StaticClass());
+		TestTrue(TEXT("A grant gives the class"), First.IsValid());
+		TestTrue(TEXT("Two grants of one class are one spec"), First == Second);
+		TestEqual(TEXT("One spec added"), ASC->GetActivatableAbilities().Num(), SpecsBefore + 1);
+
+		AddExpectedErrorPlain(TEXT("->RequiresArena()"), EAutomationExpectedErrorFlags::Contains, 0);
+		AddExpectedErrorPlain(TEXT("needs its caster's arena"), EAutomationExpectedErrorFlags::Contains, 1);
+		AddExpectedError(TEXT("=== Handled ensure: ===|^\\s*$|^Stack:|\\[Callstack\\]"),
+						 EAutomationExpectedErrorFlags::Contains, -1);
+		TestFalse(TEXT("A RequiresArena class is refused"),
+				  Subsystem->GrantSharedAbility(UGeoTestArenaBoundAbility::StaticClass()).IsValid());
+		TestNull(TEXT("Nothing granted"), ASC->FindAbilitySpecFromClass(UGeoTestArenaBoundAbility::StaticClass()));
 	}
 
 	DestroyTestWorld(World);
@@ -811,21 +848,22 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterActivateAbilityTest, "GeoTrinity.E
 bool FGeoEncounterActivateAbilityTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
-	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
-	FGameplayAbilitySpecHandle const Handle = GrantCastAbility(*Arena);
-	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Arena->GetBoss());
+	PrepareEnemyWorld(*this, *World);
+	FGameplayAbilitySpecHandle Handle;
+	UGeoAbilitySystemComponent* const ASC = GrantShared(*World, UGeoTestCastAbility::StaticClass(), Handle);
 
 	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
 	Encounter->AddSteps(1);
 	UGeoTestAction* const AfterWait = Encounter->NewAction("AfterWait");
-	UGeoTestTrigger* const WaitTrigger = Encounter->AddRule(0, {NewActivateAction(*Encounter, Arena), AfterWait});
+	UGeoTestTrigger* const WaitTrigger =
+		Encounter->AddRule(0, {NewActivateAction(*Encounter, UGeoTestCastAbility::StaticClass()), AfterWait});
 	UGeoTestAction* const AfterNoWait = Encounter->NewAction("AfterNoWait");
 	UGeoTestTrigger* const NoWaitTrigger =
-		Encounter->AddRule(0, {NewActivateAction(*Encounter, Arena, false), AfterNoWait});
+		Encounter->AddRule(0, {NewActivateAction(*Encounter, UGeoTestCastAbility::StaticClass(), false), AfterNoWait});
 	Encounter->Start();
 
 	WaitTrigger->FireNow();
-	TestTrue(TEXT("The ability runs on the arena's boss"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+	TestTrue(TEXT("The ability runs on the shared caster"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
 	TestEqual(TEXT("bWaitForEnd holds the next action"), AfterWait->Runs, 0);
 	ASC->CancelAbilityHandle(Handle);
 	TestEqual(TEXT("It goes on when the ability ends"), AfterWait->Runs, 1);
@@ -844,24 +882,34 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterActivateAbilityRefusedTest, "GeoTr
 
 bool FGeoEncounterActivateAbilityRefusedTest::RunTest(FString const& /*Parameters*/)
 {
-	AddExpectedMessage(TEXT("no ability tagged"), ELogVerbosity::Warning, EAutomationExpectedMessageFlags::Contains, 2,
+	AddExpectedMessage(TEXT("not granted"), ELogVerbosity::Warning, EAutomationExpectedMessageFlags::Contains, 1,
+					   false);
+	AddExpectedMessage(TEXT("already running"), ELogVerbosity::Warning, EAutomationExpectedMessageFlags::Contains, 1,
 					   false);
 	UWorld* World = CreateTestWorld();
-	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
+	PrepareEnemyWorld(*this, *World);
 
 	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
 	Encounter->AddSteps(1);
-	UGeoTestAction* const AfterUnknownTag = Encounter->NewAction("AfterUnknownTag");
-	UGeoTestTrigger* const UnknownTagTrigger =
-		Encounter->AddRule(0, {NewActivateAction(*Encounter, Arena), AfterUnknownTag});
-	UGeoTestAction* const AfterNoBoss = Encounter->NewAction("AfterNoBoss");
-	UGeoTestTrigger* const NoBossTrigger = Encounter->AddRule(0, {NewActivateAction(*Encounter, nullptr), AfterNoBoss});
+	UGeoTestAction* const AfterNoClass = Encounter->NewAction("AfterNoClass");
+	UGeoTestTrigger* const NoClassTrigger =
+		Encounter->AddRule(0, {NewActivateAction(*Encounter, nullptr), AfterNoClass});
+	UGeoTestTrigger* const FirstTrigger =
+		Encounter->AddRule(0, {NewActivateAction(*Encounter, UGeoTestCastAbility::StaticClass(), false)});
+	UGeoTestAction* const AfterRunning = Encounter->NewAction("AfterRunning");
+	UGeoTestTrigger* const RunningTrigger =
+		Encounter->AddRule(0, {NewActivateAction(*Encounter, UGeoTestCastAbility::StaticClass()), AfterRunning});
 	Encounter->Start();
 
-	UnknownTagTrigger->FireNow();
-	TestEqual(TEXT("A boss with no such ability: the step goes on"), AfterUnknownTag->Runs, 1);
-	NoBossTrigger->FireNow();
-	TestEqual(TEXT("No boss: the step goes on"), AfterNoBoss->Runs, 1);
+	NoClassTrigger->FireNow();
+	TestEqual(TEXT("No ability class: the step goes on"), AfterNoClass->Runs, 1);
+	FirstTrigger->FireNow();
+	RunningTrigger->FireNow();
+	TestEqual(TEXT("The class already running: the step goes on"), AfterRunning->Runs, 1);
+
+	FDataValidationContext Context;
+	NewActivateAction(*Encounter, UGeoTestArenaBoundAbility::StaticClass())->IsDataValid(Context);
+	TestEqual(TEXT("A RequiresArena class is flagged"), Context.GetNumErrors(), 1u);
 
 	DestroyTestWorld(World);
 	return true;
@@ -874,14 +922,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterActivateAbilityCancelTest, "GeoTri
 bool FGeoEncounterActivateAbilityCancelTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
-	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
-	FGameplayAbilitySpecHandle const Handle = GrantCastAbility(*Arena);
-	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Arena->GetBoss());
+	PrepareEnemyWorld(*this, *World);
+	FGameplayAbilitySpecHandle Handle;
+	UGeoAbilitySystemComponent* const ASC = GrantShared(*World, UGeoTestCastAbility::StaticClass(), Handle);
 
 	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
 	Encounter->AddSteps(2);
 	UGeoTestAction* const After = Encounter->NewAction("After");
-	UGeoTestTrigger* const CastTrigger = Encounter->AddRule(0, {NewActivateAction(*Encounter, Arena), After});
+	UGeoTestTrigger* const CastTrigger =
+		Encounter->AddRule(0, {NewActivateAction(*Encounter, UGeoTestCastAbility::StaticClass()), After});
 	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
 	Encounter->Start();
 
@@ -891,7 +940,8 @@ bool FGeoEncounterActivateAbilityCancelTest::RunTest(FString const& /*Parameters
 	TestFalse(TEXT("Leaving the step cancels the ability"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
 	TestEqual(TEXT("The cancelled wait never reaches the next action"), After->Runs, 0);
 
-	UGeoTestTrigger* const NoWaitTrigger = Encounter->AddRule(1, {NewActivateAction(*Encounter, Arena, false)});
+	UGeoTestTrigger* const NoWaitTrigger =
+		Encounter->AddRule(1, {NewActivateAction(*Encounter, UGeoTestCastAbility::StaticClass(), false)});
 	UGeoTestTrigger* const NoWaitLeaveTrigger = Encounter->AddRule(1, {}, false, true);
 	Encounter->Restart();
 	CastTrigger->FireNow();
@@ -915,10 +965,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterActivateAbilityPatternDataTest,
 bool FGeoEncounterActivateAbilityPatternDataTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
-	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
-	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Arena->GetBoss());
-	FGameplayAbilitySpecHandle const Handle =
-		ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestDataPatternAbility::StaticClass(), 1));
+	PrepareEnemyWorld(*this, *World);
+	FGameplayAbilitySpecHandle Handle;
+	UGeoAbilitySystemComponent* const ASC = GrantShared(*World, UGeoTestDataPatternAbility::StaticClass(), Handle);
 	auto RunningAbility = [ASC, Handle]
 	{
 		TArray<UGameplayAbility*> const Instances = ASC->FindAbilitySpecFromHandle(Handle)->GetAbilityInstances();
@@ -927,12 +976,14 @@ bool FGeoEncounterActivateAbilityPatternDataTest::RunTest(FString const& /*Param
 
 	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
 	Encounter->AddSteps(1);
-	UGeoActivateAbilityAction* const WithData = NewActivateAction(*Encounter, Arena, false);
+	UGeoActivateAbilityAction* const WithData =
+		NewActivateAction(*Encounter, UGeoTestDataPatternAbility::StaticClass(), false);
 	FLateralWavePatternData WaveData;
 	WaveData.SafeSpotOffsets = {FVector2D(0.f, -300.f), FVector2D(0.f, 500.f)};
 	WithData->PatternData = TInstancedStruct<FPatternData>::Make<FLateralWavePatternData>(WaveData);
 	UGeoTestTrigger* const WithDataTrigger = Encounter->AddRule(0, {WithData});
-	UGeoTestTrigger* const NoDataTrigger = Encounter->AddRule(0, {NewActivateAction(*Encounter, Arena, false)});
+	UGeoTestTrigger* const NoDataTrigger =
+		Encounter->AddRule(0, {NewActivateAction(*Encounter, UGeoTestDataPatternAbility::StaticClass(), false)});
 	Encounter->Start();
 
 	WithDataTrigger->FireNow();
@@ -950,6 +1001,53 @@ bool FGeoEncounterActivateAbilityPatternDataTest::RunTest(FString const& /*Param
 	if (TestNotNull(TEXT("The ability runs again"), Ability))
 	{
 		TestFalse(TEXT("An action without data leaves the launch's unset"), Ability->LaunchedPatternData.IsValid());
+	}
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterAbilityRoomTest, "GeoTrinity.Encounter.AbilityRoom",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterAbilityRoomTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	PrepareEnemyWorld(*this, *World);
+	FGameplayTag const PointTag = FGeoGameplayTags::Get().TargetPoint_AddSpawn;
+	FGameplayTag const RoomTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Tutorial.Zones"));
+	FGameplayTag const OtherRoomTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
+	for (TPair<FGameplayTag, FVector> const& Point :
+		 {TPair<FGameplayTag, FVector>(OtherRoomTag, FVector(-700.f, 0.f, 0.f)),
+		  TPair<FGameplayTag, FVector>(RoomTag, FVector(400.f, 250.f, 0.f))})
+	{
+		AGeoTargetPoint* const TargetPoint = World->SpawnActor<AGeoTargetPoint>(Point.Value, FRotator());
+		TargetPoint->GameplayTags.AddTag(PointTag);
+		TargetPoint->GameplayTags.AddTag(Point.Key);
+	}
+
+	FGameplayAbilitySpecHandle Handle;
+	UGeoAbilitySystemComponent* const ASC = GrantShared(*World, UGeoTestPointPatternAbility::StaticClass(), Handle);
+	CastChecked<UGeoTestPointPatternAbility>(ASC->FindAbilitySpecFromHandle(Handle)->GetPrimaryInstance())
+		->SetPointTag(PointTag);
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoActivateAbilityAction* const Action =
+		NewActivateAction(*Encounter, UGeoTestPointPatternAbility::StaticClass(), false);
+	Action->ArenaTag = RoomTag;
+	UGeoTestTrigger* const Trigger = Encounter->AddRule(0, {Action});
+	Encounter->Start();
+
+	Trigger->FireNow();
+	TArray<UGameplayAbility*> const Instances = ASC->FindAbilitySpecFromHandle(Handle)->GetAbilityInstances();
+	UGeoTestPointPatternAbility const* const Ability =
+		Instances.IsEmpty() ? nullptr : Cast<UGeoTestPointPatternAbility>(Instances.Last());
+	if (TestNotNull(TEXT("The ability runs"), Ability))
+	{
+		TestEqual(TEXT("It leaves from its point in the action's room, not another room's (X)"),
+				  Ability->LaunchedOrigin.X, 400.0);
+		TestEqual(TEXT("(Y)"), Ability->LaunchedOrigin.Y, 250.0);
 	}
 
 	DestroyTestWorld(World);

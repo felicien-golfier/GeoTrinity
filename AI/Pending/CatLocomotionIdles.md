@@ -1,6 +1,7 @@
 # CatLocomotionIdles — pending
 
 Goal: the Cat walks with two takes blended by its real speed (Prowl slow, Fast fast), plays every idle variant at random while it stands, and the Tutorial's stretch is Twist; the other clips are cut or kept as decided.
+Priority: 3
 Docs written: `AI/Tutorial/CatAnimation.md` ("Living, not mechanical", "Cat_Reassemble", "Clips", `ABP_Cat`), `AI/Python/Cat/CLAUDE.md`, `Source/GeoTrinity/Public/Actor/CLAUDE.md` ("GeoCat"). Settles `Pending/CatClipsPick.md` "Decide".
 Assumption to confirm: "stretch in tuto" = `Cat_Reassemble`'s stretch beat (the only stretch the Tutorial plays), now the Twist pose. If you meant a separate Twist montage at some line, say so.
 

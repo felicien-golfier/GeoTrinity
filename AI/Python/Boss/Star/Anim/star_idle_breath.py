@@ -25,7 +25,7 @@ SKELETON_PATH = "/Game/Characters/Meshes/Star/SK_Star"
 MESH_PATH = "/Game/Characters/Meshes/Star/SKM_Star"
 ANIM_PACKAGE = "/Game/Characters/Anim/Star"
 SEQ_NAME = "SK_Star_Idle"
-REPORT = "C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/43c49c4b-16e7-4c2d-ab55-b98aad7877bc/scratchpad/star_idle.txt"
+REPORT = unreal.Paths.project_dir() + "AI/Output/star_idle.txt"
 
 SPIKE_PREFIX = "apexe_outside_"
 ROOT_BONE = "Root"

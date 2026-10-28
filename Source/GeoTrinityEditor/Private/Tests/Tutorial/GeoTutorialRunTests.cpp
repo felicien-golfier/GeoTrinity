@@ -13,6 +13,7 @@ bool FGeoTutorialFullRunTest::RunTest(FString const& /*Parameters*/)
 {
 	TSharedRef<FGeoTutorialBot> Bot = MakeShared<FGeoTutorialBot>(*this);
 	Bot->AddStartStage(GeoTutorial::Landing);
+	GeoTutorialStages::WatchExitPadsOpenWithLastLine(*Bot);
 	GeoTutorialStages::AddLandingStages(*Bot);
 	Bot->AddTeleportStages(GeoTutorial::Landing);
 	GeoTutorialStages::AddDashStages(*Bot, 0);

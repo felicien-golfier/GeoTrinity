@@ -28,5 +28,5 @@ Every page is 3 layers drifting at different speeds on a horizontal axis. No fra
 - Hand-off: its last line leads into `Steps.md` step 1 (Move).
 
 ## Implementation notes (target, once the user greenlights step 4)
-- Pages 1-2: 2D UI screens in `GeoTrinityUI` (layered images, scripted drift); page 3: a real level with a UI dialogue box.
+- Pages 1-2: 2D UI screens in `GeoTrinityUI` (layered images, scripted drift), shown as the tutorial map's loading screen (a per-map kind chosen in `SGeoLoadingScreen::Make`, `GeoTrinityUI/Public/LoadingScreen/CLAUDE.md`); page 3: a real level with a UI dialogue box.
 - Layer images and drift speeds are data, not hard-coded (tweakable in Blueprint per `AI/UI.md`).

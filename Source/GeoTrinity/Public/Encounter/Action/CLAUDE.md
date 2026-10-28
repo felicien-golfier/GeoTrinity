@@ -8,7 +8,7 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 | `GeoAddToCounterAction.h` | `AddToCounter(Name, Delta)` on its encounter | no |
 | `GeoStartEncounterAction.h` | Starts another `AGeoEncounter` through its arrival reset (`StartAfterSkippingChain`: aborts the other running encounters, replays the skipped chain, starts at step 0; `../CLAUDE.md`, "Arrival reset"). One already running starts over. Last in its list: it aborts the encounter it sits in, so nothing after it runs (`IsDataValid` error) | no |
 | `GeoSetTeleporterOpenAction.h` | `SetOpen(bool)` on the referenced `AGeoTeleporter` (a room's exit / entry pad) | no |
-| `GeoActivateAbilityAction.h` | Activates `AbilityTag` on the boss of the referenced `AGeoArena` (a room's hidden caster, or a real boss), with optional `PatternData` for a pattern ability | yes |
+| `GeoActivateAbilityAction.h` | Fires `AbilityClass` on the encounters' shared caster (`../CLAUDE.md`, "Shared caster"), in the room `ArenaTag`, with optional `PatternData` for a pattern ability | yes |
 | `GeoCatSpeechAction.h` | Abstract base of the Cat's spoken actions: `ShowCatLine(text, OnEnded)` on the first local player's HUD; `bWaitForRespawn`: while that player is dead, shown on its `OnRevived`; finishes when the line ends (typed + read, or F twice, `HUD/Tutorial/CLAUDE.md`). Children give the text (`GetLineText`) | yes |
 | `GeoCatLineAction.h` | Cat speech: `Line`, typed in place | yes |
 | `GeoCatLineFromFileAction.h` | Cat speech: a line of `Categories` from `Data/CatLines.txt`, `bRandom` true = shuffled, no repeat; false = file order, cycling (`Tool/CatLine/CLAUDE.md`) | yes |
@@ -54,10 +54,11 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 - `OnCancel`: `Recall()` on its zone (blink, then gone). Held like `GeoSpawnEnemiesAction`; run again while held, it recalls its previous zone first.
 
 ## GeoActivateAbilityAction
-- Caster = `Arena->GetBoss()`: a level reference to the arena, since the caster is spawned at runtime.
-- `PatternData` (optional, `TInstancedStruct<FPatternData>`): handed to a `UPatternAbility` as its pattern data (the action is the activation's `IPatternDataSource`, `AbilitySystem/Abilities/Base/CLAUDE.md`). A wave's safe spots live here (`FLateralWavePatternData`), so one wave ability serves every firing.
+- Caster = `UGeoEncounterSubsystem::GetSharedCaster()`, ability = `AbilityClass`, granted on first use (`GrantSharedAbility`). No arena, no tag: every ability a room fires goes through it; a boss's or a dummy's own abilities run from their tree, never from this action.
+- The action only gives data: `ArenaTag` and `PatternData` as the activation's `FPatternAbilityParams` (`TriggerEventData.TargetData`; `AbilitySystem/Abilities/Base/CLAUDE.md`, "Activation params"). The ability picks its point in that room and its own aim.
+- `PatternData` (optional, `TInstancedStruct<FPatternData>`): a wave's safe spots live here (`FLateralWavePatternData`), so one wave ability serves every firing.
 - `bWaitForEnd` true: `Finish()` when the activated ability ends (ASC ability-ended delegate, matched by spec handle); false: `Finish()` right after activation (overlapping waves).
-- Refused activation (no boss, no ability with the tag, blocked): log to `LogGeoEncounter`, `Finish()`; the encounter never stalls on it.
+- Refused activation (no caster on a client, a `RequiresArena()` class, blocked or already running): log to `LogGeoEncounter`, `Finish()`; the encounter never stalls on it. `IsDataValid` (editor) flags an empty `AbilityClass` and a `RequiresArena()` one.
 - `OnCancel` (step left while waiting) cancels the ability and unbinds. One fired without waiting runs on past a step exit (overlapping waves); an abort (`IsAborting()`) cancels it too.
 
 - `OnSkipped` (jump start, `../CLAUDE.md`): only `GeoUnlockAbilityAction` and `GeoSetMovementLockedAction` (table above) override it; everything else (lines, pads, spawns, cards, menus) is a no-op when skipped.

@@ -35,8 +35,7 @@ SKELETON_PATH = "/Game/Characters/Meshes/Star/SK_Star"
 MESH_PATH = "/Game/Characters/Meshes/Star/SKM_Star"
 ANIM_PACKAGE = "/Game/Characters/Anim/Star"
 SEQ_NAME = "SK_Star_Sequence_SpikeNova"
-REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
-          "35cec9f6-d360-4be8-9a7e-b2f43048da1c/scratchpad/spike_nova.txt")
+REPORT = unreal.Paths.project_dir() + "AI/Output/spike_nova.txt"
 
 SPIKE_PREFIX = "apexe_outside_"
 RING_BONE = "apexes_outside"

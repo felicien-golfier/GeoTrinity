@@ -1,6 +1,7 @@
 # TeleportPortal — pending
 
 Goal: every `AGeoTeleporter` wears the "6 · Round" portal of the Research artifact, identical, with one colour property to change its colour.
+Priority: 2
 Docs written: `Source/GeoTrinity/Public/Actor/Buttons/CLAUDE.md` ("Portal look", "Open / closed"), `AI/VFX.md` ("Teleport portal").
 
 ## Sources (the artifact is the only source; no image / texture / font to fetch)

@@ -19,6 +19,10 @@ class GEOTRINITY_API UTileCarveRayPattern : public UBeamPattern
 {
 	GENERATED_BODY()
 
+public:
+	/** Carves the tiles of its caster's hex arena. */
+	virtual bool RequiresArena() const override { return true; }
+
 protected:
 	/** Highlights the tile the beam is about to carve while it fires, then runs the regular beam tick. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;

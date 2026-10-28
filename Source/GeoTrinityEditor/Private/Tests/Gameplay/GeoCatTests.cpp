@@ -5,9 +5,9 @@
 #include "Animation/AnimMontage.h"
 #include "Components/BoxComponent.h"
 #include "Misc/AutomationTest.h"
-#include "Tests/GeoTestWorld.h"
+#include "Tests/Gameplay/Fake/GeoTestWorld.h"
 
-#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#if WITH_DEV_AUTOMATION_TESTS
 
 constexpr EAutomationTestFlags GeoCatTestFlags =
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
@@ -83,6 +83,26 @@ bool FGeoCatWalkStopDistanceTest::RunTest(FString const& /*Parameters*/)
 			 Cat->GetActorLocation().Equals(FVector(0.f, 390.f, 0.f)));
 	TestEqual(TEXT("Facing it"), Cat->GetActorRotation().Yaw, 90.0, 0.01);
 	TestTrue(TEXT("Completed"), Fixture.Ends == TArray<bool>{true});
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCatWalkHiddenTest, "GeoTrinity.Cat.WalkHidden", GeoCatTestFlags)
+
+bool FGeoCatWalkHiddenTest::RunTest(FString const& /*Parameters*/)
+{
+	FGeoCatFixture Fixture;
+	AGeoCat* const Cat = Fixture.Cat;
+	Cat->SetActorHiddenInGame(true);
+	AddExpectedErrorPlain(TEXT("!IsHidden()"), EAutomationExpectedErrorFlags::Contains, 0);
+	AddExpectedErrorPlain(TEXT("Walk while hidden"), EAutomationExpectedErrorFlags::Contains, 1);
+	AddExpectedError(TEXT("=== Handled ensure: ===|^\\s*$|^Stack:|\\[Callstack\\]"),
+					 EAutomationExpectedErrorFlags::Contains, -1);
+	Cat->Walk({FVector(500.f, 0.f, 0.f)}, 150.f, 0.f);
+	TestTrue(TEXT("A walk on a hidden cat ends at once, so no action waits for it"),
+			 Fixture.Ends == TArray<bool>{true});
+	TestFalse(TEXT("No order left running"), Cat->IsOrderRunning());
 
 	return true;
 }

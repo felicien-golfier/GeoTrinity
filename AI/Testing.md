@@ -2,7 +2,7 @@
 
 Research notes (2026-10-06) on writing and running Unreal automation tests for GeoTrinity, so an agent can write
 a test, run it, read the failures and fix them in a loop. **Status:** option A (headless runner) is set up:
-`Tools\Run_Tests.bat`. Tests so far: `Source/GeoTrinity/Private/Tests/GeoGemTests.cpp`, `GeoAbilityReadyTests.cpp`, `GeoIncomingDamageTests.cpp`, `GeoEncounterTests.cpp`, `GeoVoidDeathTests.cpp`, `GeoTutorialTests.cpp`, `GeoPatternTests.cpp`, `GeoTestEnemy.h`, `GeoTestDeployable.h`, `GeoTestEncounter.h`, `GeoTestWorld.h` (`CreateTestWorld` / `DestroyTestWorld`) (same folder).
+`Tools\Run_Tests.bat`. All tests live in the editor module, `Source/GeoTrinityEditor/Private/Tests/` (map: its `CLAUDE.md`), so none compiles into a game, server or packaged build.
 
 ## Test layers
 
@@ -31,6 +31,8 @@ Use the lightest layer that can prove the behaviour.
 - Recommended home: a dedicated `GeoTrinityTests` module (Type=Editor, depends on `CQTest`), so test code and
   its dependencies never reach a package. `GeoGemTests.cpp` would move there.
 - **A new test class appears only after a full editor restart.** Live Coding does not register it.
+- Expecting an `ensureMsgf`: its condition line and its dump lines log as errors, its message as its own line. Expect each: `AddExpectedErrorPlain(<condition text>, Contains, 0)` (logged twice), `AddExpectedErrorPlain(<message>, Contains, 1)`, `AddExpectedError("=== Handled ensure: ===|^\\s*$|^Stack:|\\[Callstack\\]", Contains, -1)` (`GeoTrinity.Encounter.SharedCaster`). An ensure fires once per process: one test per ensure.
+- A fake ability's per-test value goes on its granted instance (`InstancedPerActor`, `GetPrimaryInstance()`), never its CDO: a native class's instances never copy CDO edits.
 
 ## Running
 
@@ -89,12 +91,12 @@ Headless play-in-editor runs of the real `/Game/Maps/Tutorial`, a bot playing it
 Any test that needs a deployable spawns a real one, through the production funnel, never a hand-built stand-in.
 Model: `GeoTrinity.Deployable.StartHealth` in `GeoGemTests.cpp`.
 
-- **Class**: `AGeoTestDeployable` (`Private/Tests/GeoTestDeployable.h`), a concrete transient `AGeoDeployableBase`.
+- **Class**: `AGeoTestDeployable` (`GeoTrinityEditor/Private/Tests/Gameplay/Fake/GeoTestDeployable.h`), a concrete transient `AGeoDeployableBase`.
   `AGeoDeployableBase` is `Abstract` and gets its health from a Blueprint's `DefaultAttributes`, so the fake carries
   its own (`UGeoTestDeployableAttributes`: 100 MaxHealth / Health) and stores its own `FDeployableData`.
   Need another behaviour (a drain, an explosion, a pickup)? Add a test subclass or extend this header; never skip the funnel.
 - **World**: `UWorld::CreateWorld(EWorldType::PIE, false)`, `SetPlayInEditorInitialNetMode(NM_ListenServer)`, a world
-  context, `World->InitializeActorsForPlay(FURL())` + `World->GetWorldSettings()->NotifyBeginPlay()` (`World->BeginPlay()` does nothing without a GameMode) (without them no actor gets `BeginPlay`, so no default attributes), then `GEngine->DestroyWorldContext(World)` / `World->DestroyWorld(false)` at the end. Server-only code
+  context, `World->InitializeActorsForPlay(FURL())` + `World->GetWorldSettings()->NotifyBeginPlay()` (`World->BeginPlay()` does nothing without a GameMode) (without them no actor gets `BeginPlay`, so no default attributes), then `World->EndPlay(EEndPlayReason::EndPlayInEditor)`, `GEngine->DestroyWorldContext(World)`, `World->DestroyWorld(false)` at the end (`DestroyTestWorld`, `Fake/GeoTestWorld.h`). Server-only code
   (`GeoLib::IsServer`) needs the listen-server mode.
 - **Deployer**: `World->SpawnActor<AGeoTestDeployer>()` (same header): a pawn owning an ASC, as owner and avatar. `StartSpawnDeployable` needs an owner and an `APawn` instigator, and spawn cues resolve the instigator's avatar through its ASC. Grant its ASC the abilities the test goes through.
 - **Spawn**: fill an `FDeployableData` (`Owner`, `Instigator`, `Params.*`) and call

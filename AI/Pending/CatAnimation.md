@@ -1,6 +1,7 @@
 # CatAnimation — pending
 
 Goal: the Tutorial Cat (`SM_Cat`) idles looking up at the camera with an animated face, walks, and opens a portal, jumps in and sinks through the ground plane.
+Priority: 3
 Docs written: `AI/Tutorial/CatAnimation.md`, `AI/Tutorial/Cat.md` ("In game"), `AI/Python/Mesh/CLAUDE.md`, `AI/Python/Anim/CLAUDE.md` ("Cat/"), `AI/Python/Material/CLAUDE.md`, `Source/GeoTrinityEditor/Public/Tool/CLAUDE.md`.
 
 ## Done (run via the bridge; reports in `AI/Output/cat_*.json`)

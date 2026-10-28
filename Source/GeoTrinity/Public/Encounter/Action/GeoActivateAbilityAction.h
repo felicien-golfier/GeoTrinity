@@ -3,31 +3,35 @@
 #pragma once
 
 #include "Abilities/GameplayAbilityTypes.h"
-#include "AbilitySystem/Abilities/Base/PatternAbility.h"
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "CoreMinimal.h"
 #include "Encounter/GeoEncounterAction.h"
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayTagContainer.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include "GeoActivateAbilityAction.generated.h"
 
-class AGeoArena;
 class UAbilitySystemComponent;
+class UGeoGameplayAbility;
 
 /**
- * Activates AbilityTag on the boss of Arena: a room's hidden caster, or a real boss. Finishes when the ability ends
- * (bWaitForEnd) or at once. A refused activation is logged and finishes, so the encounter never stalls on it.
- * PatternData configures a pattern ability for this firing.
+ * Fires AbilityClass on the encounters' shared caster (UGeoEncounterSubsystem::GetSharedCaster), with ArenaTag and
+ * PatternData as its FPatternAbilityParams. Finishes when the ability ends (bWaitForEnd) or at once. A refused
+ * activation is logged and finishes, so the encounter never stalls on it.
  */
 UCLASS()
-class GEOTRINITY_API UGeoActivateAbilityAction
-	: public UGeoEncounterAction
-	, public IPatternDataSource
+class GEOTRINITY_API UGeoActivateAbilityAction : public UGeoEncounterAction
 {
 	GENERATED_BODY()
 
 public:
 	UGeoActivateAbilityAction() { bLatent = true; }
+
+#if WITH_EDITOR
+	/** Flags an empty AbilityClass and one whose CDO RequiresArena (the shared caster refuses it). */
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+#endif
 
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
@@ -35,14 +39,13 @@ public:
 	 * (bWaitForEnd false), so a wave never runs on in the room left behind. */
 	virtual void OnCancel_Implementation() override;
 
-	virtual TInstancedStruct<FPatternData> GetPatternData() const override { return PatternData; }
-
-	/** The caster is spawned at runtime, so the action points at its arena. */
+	/** The ability fired; granted to the shared caster on first use. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
-	TObjectPtr<AGeoArena> Arena;
+	TSubclassOf<UGeoGameplayAbility> AbilityClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
-	FGameplayTag AbilityTag;
+	/** The room the ability fires in: its points (an ability's TargetPointTag) are the ones carrying this tag. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (Categories = "Arena"))
+	FGameplayTag ArenaTag;
 
 	/** True: Finish when the ability ends. False: Finish right after activation (overlapping waves). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")

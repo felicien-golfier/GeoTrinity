@@ -20,7 +20,6 @@ void UGeoUnlockAbilityAction::Execute_Implementation(FGeoEncounterPayload const&
 		UE_LOG(LogGeoEncounter, Warning, TEXT("%s: no local player to unlock %s for"), *GetName(),
 			   *AbilityTag.ToString());
 	}
-
 	else
 	{
 		ASC->GiveClassAbility(Player->GetPlayerClass(), AbilityTag);

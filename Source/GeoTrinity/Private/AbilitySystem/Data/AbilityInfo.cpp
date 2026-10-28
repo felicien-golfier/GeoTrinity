@@ -234,6 +234,7 @@ static TMap<FString, FString> const& GetDescriptionsBySection()
 
 	FString const FilePath = GetDescriptionsFilePath();
 	FDateTime const TimeStamp = IFileManager::Get().GetTimeStamp(*FilePath);
+	ensureMsgf(TimeStamp != FDateTime::MinValue(), TEXT("No ability descriptions file at %s"), *FilePath);
 	if (TimeStamp == ParsedTimeStamp)
 	{
 		return Descriptions;

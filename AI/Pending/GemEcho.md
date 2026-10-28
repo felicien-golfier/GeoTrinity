@@ -1,6 +1,7 @@
 # GemEcho — pending
 
 Goal: each class opens one extra Echo socket at class level 20 that holds one Chip / Cut / Prism of a build and gives a share of that gem's max per class, the share growing with an Echo level (+1% of one tier per level, cycling Chip / Cut / Prism) fed by the XP earned at class level 20.
+Priority: 2
 Docs written: `Source/GeoTrinity/Public/Gem/CLAUDE.md` ("Echo socket"), `Source/GeoTrinityUI/Public/HUD/Menu/Gems/CLAUDE.md` ("Echo socket (Loadout page)").
 Built and tested (editor build, `GeoTrinity.` 17 / 17, loadout page checked in PIE); what is left is the user's call:
 

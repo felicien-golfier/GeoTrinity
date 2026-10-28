@@ -1,6 +1,7 @@
 # EncounterHandEdits — pending
 
 Goal: re-running `tutorial_encounters.py` and `tutorial_map.py` never overwrites what the user changed by hand in the Tutorial map.
+Priority: 2
 Docs written: `AI/Python/Level/CLAUDE.md` ("Hand edits survive a re-run").
 
 ## Scripts

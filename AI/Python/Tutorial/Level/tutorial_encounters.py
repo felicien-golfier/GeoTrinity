@@ -1,7 +1,7 @@
 """
 Tutorial rooms 0-7 for GeoTrinity (Steps.md steps 0-10; the Landing room holds steps 0-1, the Zones room steps 7-9,
 the Miniboss room step 10): the placed content of each room (void line and far platform, spawn points, the zone room's
-zone spots, wave start and caster arena, the miniboss arena and its points) and one AGeoEncounter per room, chained: a
+zone spots and wave start, the miniboss arena and its points) and one AGeoEncounter per room, chained: a
 room's last step opens its exit pad; the next room's encounter starts when the player lands in it. Cat lines are the
 Tutorial Board text; the player keys come through {Key:...}. Gems and Forge steps are built later (AI/Pending/Tutorial.md).
 Run after tutorial_map.py, tutorial_assets.py, tutorial_waves.py and tutorial_miniboss.py. Idempotent: actors keyed by label, the encounters' steps rewritten.
@@ -62,7 +62,6 @@ SPECIAL_KEY = "{Key:InputTag.Special}"
 SPECIAL_ALLY_TAG = "TutorialSpecialAlly"  # not the Deploy ally's: that one stays alive and full behind
 PAGE_LINE = "An ability page is about to pop up. Read it. Or don't, I'm a cat, not a cop."
 
-CASTER_CLASS = "/Script/GeoTrinity.HiddenCasterCharacter"
 ZONE_X = 150.0  # from the room's centre
 ZONE_SPOTS = {"Damage": (0.0, 0.0), "Shield": (ZONE_X, -550.0), "Heal": (ZONE_X, 550.0)}  # from the room's centre: Damage always there, the others where a missing point is created
 ZONE_RADIUS = 250.0
@@ -71,7 +70,6 @@ COLOR_ZONE_GROW_SECONDS = 8.0  # the CT_Tutorial row ColorZoneGrowSeconds (tutor
 ZONE_BOX_HALF_Z = 80.0  # a standing capsule is inside it
 PAD_BOX_HALF = 50.0  # the exit pad's footprint
 WAVE_START_INSET = 650.0  # tutorial_waves.py: the front starts here, from the room's centre, and crosses it along +X
-CASTER_SPAWN = (600.0, -900.0)  # from the room's centre, off the zones
 MINIBOSS_TREE = "/Game/AI/Tutorial/ST_TutorialMiniboss"  # tutorial_miniboss.py: its spells, in BP_Dummy's base tree
 MINIBOSS_ABILITIES = ["Ability.Spell.TutorialSalve", "Ability.Spell.TutorialMinibossSummon", "Ability.Spell.LateralWave"]
 MINIBOSS_TAG = "TutorialMiniboss"  # the boss's BossSetup.Tag: the kill line watches it
@@ -83,7 +81,7 @@ ZONE_ATTITUDE = 7  # ETeamAttitudeBitflag: Neutral | Friendly | Hostile, a zone 
 NO_AGGRO_RADIUS = -1.0  # GeoEnemySetup default: the enemy waits to be hit
 DUMMIES_AGGRO_RADIUS = 100.0  # the Dummies room's three
 DEATH_TIME = 3.0  # AGeoGameState::DeathTime
-WAVE_TAG = "Ability.Spell.LateralWave"  # tutorial_waves.py: the one wave, its safe spots given per firing
+WAVE_ABILITY = "/Game/AbilitySystem/Abilities/Enemy/LateralWave/GA_LateralWave"  # tutorial_waves.py: the one wave, its safe spots given per firing
 SAFE_WAVE_LANES = [[-650.0, 0.0, 650.0], [-300.0, 500.0], [250.0]]  # Y of each safe lane from the wave start, per wave
 HEAL_EFFECT = ('/Script/GeoTrinity.HealEffectData(bSuppressHealProvided=False,Amount=(Value=15.000000),bIsPerSecond=True,'
                'bLimitGameplayCue=True)')
@@ -209,22 +207,16 @@ def build_zone_points():
         if color == "Damage" or find_actor(label) is None:  # the Damage point is the room's centre; the others are placed by the user, never moved
             point(label, (cx + x, y, 0.0), "TargetPoint.Tutorial.Zone" + color, "Zones")
     point("Tut_Zones_WaveStart", (cx - WAVE_START_INSET, 0.0, 0.0), "TargetPoint.Tutorial.WaveStart", "Zones")
-    point("Tut_Zones_BossSpawn", (cx + CASTER_SPAWN[0], CASTER_SPAWN[1], 0.0), "TargetPoint.BossSpawn", "Zones")
+    remove_actor("Tut_Zones_BossSpawn")  # earlier versions: the waves fire on the encounters' shared caster now
 
 
 def build_zones_room():
-    """The room's points and the arena that spawns the hidden caster."""
-    cx = room_x("Zones")
+    """The room's points; its waves fire on the encounters' shared caster, no arena."""
     build_zone_points()
     remove_actor("Tut_Zones_ZoneVolume_Heal")  # earlier versions: the zones raise their own entry now
     remove_actor("Tut_Zones_ZoneVolume_Shield")
     remove_actor("Tut_Zones_ZoneVolume_Damage")
-    arena = place("Tut_Zones_CasterArena", unreal.GeoDummyArena, (cx, 0.0, 0.0))
-    caster = unreal.GeoEnemySetup()
-    caster.set_editor_property("AbilityTags", [tag(WAVE_TAG)])
-    arena.set_editor_property("BossClass", unreal.load_class(None, CASTER_CLASS))
-    arena.set_editor_property("BossSetup", caster)
-    arena.set_editor_property("ArenaTag", tag("Arena.Tutorial.Zones"))
+    remove_actor("Tut_Zones_CasterArena")
 
 
 def chip_shard_cost():
@@ -376,13 +368,13 @@ class Builder:
                          Team=ZONE_TEAMS[color], EnteredEvent=tag(event) if event else unreal.GameplayTag())
 
     def wave(self, lanes=()):
-        """The zone room's hidden caster fires the wave, one safe spot per lane (Y from the wave start); the action
-        waits for its end."""
+        """The encounters' shared caster fires the wave in the Zones room, one safe spot per lane (Y from the wave
+        start); the action waits for its end."""
         data = unreal.InstancedStruct()
         data.import_text("/Script/GeoTrinity.LateralWavePatternData(SafeSpotOffsets=(%s))"
                          % ",".join("(X=0.000000,Y=%f)" % lane for lane in lanes))
-        return self.make(unreal.GeoActivateAbilityAction, Arena=find_actor("Tut_Zones_CasterArena"),
-                         AbilityTag=tag(WAVE_TAG), bWaitForEnd=True, PatternData=data)
+        return self.make(unreal.GeoActivateAbilityAction, AbilityClass=unreal.load_asset(WAVE_ABILITY).generated_class(),
+                         ArenaTag=tag("Arena.Tutorial.Zones"), bWaitForEnd=True, PatternData=data)
 
     # triggers
     def event(self, event_tag):
@@ -448,19 +440,24 @@ def encounter_actor(room):
     return place(label, unreal.GeoEncounter, (room_x(room), 0.0, 0.0))
 
 
-def hand_off(builder, room):
-    """OnExit of a room's last step: once its last Cat line is gone, open its exit pad."""
-    return [builder.pad("Tut_%s_PadExit" % room, True)]
+def open_with_last_line(builder, room, lines):
+    """The room's closing Cat lines, its exit pad opening as the last one shows (Flow.md, "Rooms")."""
+    return lines[:-1] + [builder.pad("Tut_%s_PadExit" % room, True)] + lines[-1:]
+
+
+def arrival_rule(builder, room):
+    """The player lands in the next room: close this room's exit pad, start the next encounter (last: it aborts this
+    room). On every step of the room, so a pad taken while the room still runs starts the next one at once. The next
+    room's entry pad never opens (Flow.md, "Rooms")."""
+    following = ROOMS[ROOMS.index(room) + 1]
+    arrive = [builder.pad("Tut_%s_PadExit" % room, False),
+              builder.make(unreal.GeoStartEncounterAction, Target=encounter_actor(following))]
+    return builder.rule(builder.entered(find_actor("Tut_%s_ArenaVolume" % following)), arrive, completes=True)
 
 
 def leave_steps(builder, room, extra_rules=()):
-    """After a room: Leave = the player lands in the next room (start its encounter, close this room's exit pad), plus
-    the room's own extra_rules while it waits. The next room's entry pad never opens (Flow.md, "Rooms")."""
-    following = ROOMS[ROOMS.index(room) + 1]
-    arrive = [builder.pad("Tut_%s_PadExit" % room, False),
-              builder.make(unreal.GeoStartEncounterAction, Target=encounter_actor(following))]  # last: it aborts this room
-    return [builder.step("Leave", [builder.rule(builder.entered(find_actor("Tut_%s_ArenaVolume" % following)), arrive,
-                                                completes=True)] + list(extra_rules))]
+    """After a room: Leave waits for the arrival (on every step, room_steps) with the room's own extra_rules."""
+    return [builder.step("Leave", list(extra_rules))]
 
 
 def exit_steps(builder, room):
@@ -548,12 +545,12 @@ def dash_steps(b):
         fall = 3 + index
         operator = EQUAL if index < len(later_falls) - 1 else GREATER_OR_EQUAL
         rules.append(b.rule(b.player_died(), [b.say(line, True)], condition=b.payload_count(operator, fall), repeat=True))
-    stunned = [
+    stunned = open_with_last_line(b, "Dash", [
         b.say("... ... WHAT. You just... in one go?! I wasn't even looking! Nobody does that on the first try. Nobody. "
               "Do it again, slowly, for me. For science. For my bet."), b.say(useless),
-    ]
-    relief = [b.say("There. Finally. Only {Counter:Falls} deaths. In the story I'll tell, it took 'a moment'."),
-              b.say(useless)]
+    ])
+    relief = open_with_last_line(b, "Dash", [
+        b.say("There. Finally. Only {Counter:Falls} deaths. In the story I'll tell, it took 'a moment'."), b.say(useless)])
     rules.append(b.rule(b.entered(platform), stunned, condition=b.counter_is("Falls", EQUAL, 0), completes=True))
     rules.append(b.rule(b.entered(platform), relief, condition=b.counter_is("Falls", GREATER_OR_EQUAL, 1),
                         completes=True))
@@ -570,7 +567,7 @@ def dash_steps(b):
     arrival = [
         b.say("You reached a portal by walking. Truly the peak of the genre. Next lesson: gravity."),
     ] + b.unlock(DASH_ABILITY_TAG)
-    return [b.step("Dash", rules, on_enter=arrival, on_exit=hand_off(b, "Dash"))]
+    return [b.step("Dash", rules, on_enter=arrival)]
 
 
 def shoot_steps(b):
@@ -610,10 +607,10 @@ def shoot_steps(b):
         b.count("Cut"),
     ], on_exit=[
         b.card(unreal.GeoQuestCardOperation.COUNT, bShowMax=True),
+    ] + open_with_last_line(b, "Shoot", [
         b.say("Quest abandoned. Dummies, off. Quest complete! Reward: 3 copper. Mine now. Administration fee."),
         b.say("That was the first quest of every game ever, shrunk to forty seconds. You're welcome. Next toy."),
-        b.card(unreal.GeoQuestCardOperation.HIDE),
-    ] + hand_off(b, "Shoot"))
+    ]) + [b.card(unreal.GeoQuestCardOperation.HIDE)])
     return [first, quest]
 
 
@@ -623,7 +620,7 @@ def deploy_steps(b):
                          start_health=HURT_ALLY_START_HEALTH)
     return [b.step("Heal", [
         b.rule(b.dummy_health("TutorialAlly", unreal.GeoHealthSide.ABOVE, 1.0),
-               [b.say("Wow, the healer job suits you perfectly!")], completes=True),
+               open_with_last_line(b, "Deploy", [b.say("Wow, the healer job suits you perfectly!")]), completes=True),
     ], on_enter=[
         b.say("Second toy: the deployable. You are the Healer, so yours is a Healing Zone. Hold the button to charge "
               "the throw, release to drop it. Longer press is further. Physics, basically."),
@@ -631,7 +628,7 @@ def deploy_steps(b):
         b.spawn(ally, 1, "TargetPoint.Tutorial.Ally", "Deploy"),
         b.say("See the friendly Dummy over there, barely standing? Drop the Zone on it and let it heal up. You can stack "
               "several to heal faster. It won't ask nicely. Dummies never do."),
-    ], on_exit=hand_off(b, "Deploy"))]
+    ])]
 
 
 def special_steps(b):
@@ -647,15 +644,15 @@ def special_steps(b):
                "I just handed you. It is right there. Humbling. Again, and this time with the beam." % SPECIAL_KEY)],
         [b.say("Twice. Two Dummies handled, zero **%s**. I'm starting to think you're doing it on purpose. Once more. "
                "With. The. Beam." % SPECIAL_KEY)],
-        [b.say("Three times, and not one press of **%s**. Fine. I surrender. Take the portal, I'll write 'Special: "
-               "mastered' in your file and nobody will ever check." % SPECIAL_KEY),
-         b.pad("Tut_Special_PadExit", True)],
+        open_with_last_line(b, "Special", [
+            b.say("Three times, and not one press of **%s**. Fine. I surrender. Take the portal, I'll write 'Special: "
+                  "mastered' in your file and nobody will ever check." % SPECIAL_KEY)]),
     ]
 
     def done():
-        return [b.say("Done? You hurt one and helped the other with the same beam. Mixed messages, passive-aggressive, "
-                      "but it works."),
-                b.pad("Tut_Special_PadExit", True)]
+        return open_with_last_line(b, "Special", [
+            b.say("Done? You hurt one and helped the other with the same beam. Mixed messages, passive-aggressive, "
+                  "but it works.")])
 
     intro = [
         b.say("Third toy: the Special. Two Dummies are on their way: a friendly one, hurt, and an enemy one, rude. The "
@@ -703,14 +700,14 @@ def dummies_steps(b):
     ]
     fight = b.step("Fight", [
         watch("TutorialChaser"), watch("TutorialShooter"), watch("TutorialMover"),
-        b.rule(b.counter("Dead"),
-               [b.say("All three down. You've officially beaten the cardboard. Don't let it go to your head. The floor is "
-                      "about to get opinions.")], condition=b.payload_count(EQUAL, 3), completes=True),
+        b.rule(b.counter("Dead"), open_with_last_line(b, "Dummies", [
+            b.say("All three down. You've officially beaten the cardboard. Don't let it go to your head. The floor is "
+                  "about to get opinions.")]), condition=b.payload_count(EQUAL, 3), completes=True),
     ], on_enter=[lines[0],  # the first line, then the three, then the second
         spawner(chaser, "TargetPoint.Tutorial.Chaser"),
         spawner(shooter, "TargetPoint.Tutorial.Shooter"),
         spawner(mover, "TargetPoint.Tutorial.Mover"),
-    ] + lines[1:], on_exit=hand_off(b, "Dummies"))
+    ] + lines[1:])
     return [fight]
 
 
@@ -737,12 +734,12 @@ def miniboss_steps(b):
     for count, line in enumerate(calls, start=1):
         rules.append(b.rule(b.dummy_health(MINIBOSS_ALLY_TAG, unreal.GeoHealthSide.BELOW, MINIBOSS_ALLY_LOW_RATIO),
                             [b.say(line)], condition=b.payload_count(EQUAL, count), repeat=True))
-    rules.append(b.rule(b.dummy_died(MINIBOSS_TAG),
-                        [b.say("It's dead. You've got it: time to come back to the real world. Your snacks are cold and "
-                               "someone has to roll initiative. But first: loot.")], completes=True))
+    rules.append(b.rule(b.dummy_died(MINIBOSS_TAG), open_with_last_line(b, "Miniboss", [
+        b.say("It's dead. You've got it: time to come back to the real world. Your snacks are cold and someone has to "
+              "roll initiative. But first: loot.")]), completes=True))
     return [b.step("Fight", rules, on_enter=[
         b.say("Meet the Miniboss. Large, angry, and on a budget: it only owns three places to stand. Good luck. I'll be "
-              "quiet. Mostly.")], on_exit=hand_off(b, "Miniboss"))]
+              "quiet. Mostly.")])]
 
 
 def zones_steps(b):
@@ -780,9 +777,9 @@ def zones_steps(b):
         b.rule(b.player_died(), [b.say("Get into a spot before the wave lands. Then another wave. The spots move, so you "
                                        "move. It's like dancing, but you die.", True)],
                completes=True, step_after="SafeSpotsWait"),
-        b.rule(b.counter("WavesDone"),
-               [b.say("Survived? Don't get cocky: this wave was nicely labeled. The real ones are not.")]
-               + hand_off(b, "Zones"), condition=b.payload_count(EQUAL, 1), completes=True),
+        b.rule(b.counter("WavesDone"), open_with_last_line(b, "Zones", [
+            b.say("Survived? Don't get cocky: this wave was nicely labeled. The real ones are not.")]),
+               condition=b.payload_count(EQUAL, 1), completes=True),
     ], on_enter=[b.wave(lanes) for lanes in SAFE_WAVE_LANES] + [b.count("WavesDone")]))
     return steps
 
@@ -809,13 +806,23 @@ def build_final_exit():
     size_box(volume, PAD_BOX_HALF, PAD_BOX_HALF, ZONE_BOX_HALF_Z)
 
 
+def room_steps(builder, room):
+    """Every step of the room: its own, then Leave (the last room: Exit); before the last room, each step also watches
+    the arrival in the next room (arrival_rule)."""
+    waiting = WAITING_RULES[room](builder) if room in WAITING_RULES else []
+    after = exit_steps(builder, room) if room == ROOMS[-1] else leave_steps(builder, room, waiting)
+    steps = ROOM_STEPS[room](builder) + after
+    if room != ROOMS[-1]:
+        for step in steps:
+            step.set_editor_property("Rules", list(step.get_editor_property("Rules")) + [arrival_rule(builder, room)])
+    return steps
+
+
 def build_encounters():
     for room in ROOMS:
         encounter = encounter_actor(room)
         builder = Builder(encounter)
-        waiting = WAITING_RULES[room](builder) if room in WAITING_RULES else []
-        after = exit_steps(builder, room) if room == ROOMS[-1] else leave_steps(builder, room, waiting)
-        encounter.set_editor_property("Steps", ROOM_STEPS[room](builder) + after)
+        encounter.set_editor_property("Steps", room_steps(builder, room))
         encounter.set_editor_property("bStartOnBeginPlay", room == ROOMS[0])
         encounter.set_editor_property("JumpStart", find_actor("Tut_%s_JumpStart" % room))
         log("encounter", room, len(encounter.get_editor_property("Steps")), "steps")
@@ -826,7 +833,7 @@ CATEGORIES = [
     ("Encounter", "Encounter"), ("Pad", "Teleporters"), ("JumpStart", "Teleporters"), ("CameraVolume", "Camera"),
     ("ArenaVolume", "Arena"), ("Entrance", "Points"), ("Spawn", "Points"), ("Chaser", "Points"),
     ("Shooter", "Points"), ("Mover", "Points"), ("ZonePoint", "Points"), ("WaveStart", "Points"),
-    ("PlatformVolume", "Gameplay"), ("CasterArena", "Arena"), ("Cat", "Gameplay"),
+    ("PlatformVolume", "Gameplay"), ("Cat", "Gameplay"),
     ("MinibossPoint", "Points"), ("BossSpawn", "Points"), ("FightLocation", "Points"), ("Arena", "Arena"),
     ("Floor", "Geometry"), ("Wall", "Geometry"),
 ]

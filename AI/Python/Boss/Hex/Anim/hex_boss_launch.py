@@ -2,7 +2,7 @@
 
 Two very short clips, one beat each. Neither ability is a pattern — both are server-only, spawn a replicated
 deployable and end — so these hang off the base ability's own montage property rather than off a pattern. That
-gives two sections and no loop: Start gathers and is stretched to the ability's FireDelay, Fire1 throws and
+gives two sections and no loop: Start gathers and is stretched to the ability's FireDelay, Fire throws and
 springs back, and nothing ever jumps to an End section on a fixed-delay ability, so the montage just plays out.
 
 Neither ability has a direction. The bomb lands on whichever player is drawn and the turrets on whichever tiles
@@ -207,12 +207,11 @@ def build_sequence(clip, toolkit, layout):
 def build_montage(clip, sequence, toolkit):
     """Two sections and no loop, since neither ability has a phase of its own to hold through.
 
-    Fire1 rather than Fire: the base ability jumps to Start on a fresh activation and to Fire<n> on a repeat, so a
-    section named Fire would satisfy the has-a-fire-section test and then never be jumped to.
+    One fire per montage, so the section is plain Fire; Fire<n> is for montages with several fires.
     """
-    names, starts = ["Start", "Fire1"], [0.0, clip.gather / float(FPS)]
+    names, starts = ["Start", "Fire"], [0.0, clip.gather / float(FPS)]
     montage = toolkit["build_montage"](sequence, ANIM_PACKAGE, "SK_HexBoss_Montage_{}".format(clip.name),
-                                       names, starts, ["Fire1", "None"],
+                                       names, starts, ["Fire", "None"],
                                        slot_name="CastSlot")  # own slot group: never cuts a pattern montage
     return montage, names, starts
 

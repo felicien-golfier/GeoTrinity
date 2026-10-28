@@ -1,6 +1,7 @@
 # EchoUiPolish — pending
 
 Goal: lighten the echo UI: no ECHO button (clicking the echo socket is enough, REPLACE ALL gets the room), the echo's cell in the totals reads ECHO / ECH, and the empty echo socket stops looking like a Core.
+Priority: 3
 Docs written: `Source/GeoTrinityUI/Public/HUD/Menu/Gems/CLAUDE.md` ("Echo socket (Loadout page)"), `Source/GeoTrinityUI/Public/HUD/Style/Glyph/CLAUDE.md` (`GeoGemGlyph.h`).
 Code done and built (Editor target): `EchoButton`, `EchoText`, `FillTextRole` gone; `UGeoTableWidget::MakeFittingCellText` (ECHO / ECH); `UGeoGemGlyph::SetEchoSocket`, `EchoNestScale` on `FGeoGemStyle`; `gems_page.py` no longer builds `EchoButton`.
 

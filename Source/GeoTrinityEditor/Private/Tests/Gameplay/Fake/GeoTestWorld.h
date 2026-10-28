@@ -8,7 +8,7 @@
 #include "GameFramework/WorldSettings.h"
 #include "TimerManager.h"
 
-#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#if WITH_DEV_AUTOMATION_TESTS
 
 /** A begun listen-server world, for a test that spawns actors the way a match does. */
 inline UWorld* CreateTestWorld()
@@ -22,8 +22,12 @@ inline UWorld* CreateTestWorld()
 	return World;
 }
 
+/** Ends play on every actor, as a play session does, then destroys World: an actor that registered with an engine
+ *  system in BeginPlay (the Water plugin's buoyancy manager, on the physics solver) unregisters before its world goes.
+ */
 inline void DestroyTestWorld(UWorld* World)
 {
+	World->EndPlay(EEndPlayReason::EndPlayInEditor);
 	GEngine->DestroyWorldContext(World);
 	World->DestroyWorld(false);
 }

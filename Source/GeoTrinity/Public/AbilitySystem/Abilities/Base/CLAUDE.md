@@ -6,6 +6,7 @@
 | `GeoChannelBeamAbility.h` | Channelled beam base (Moira beam, sacrifice beam): beam VFX lifecycle, windup preview, line scan |
 | `PatternAbility.h` | Server-driven enemy pattern launcher; multicasts pattern start |
 | `AbilityPayload.h` | `FAbilityPayload` per-shot snapshot, `FPatternData` polymorphic pattern data |
+| `PatternAbilityParams.h` | `FPatternAbilityParams`: what the firer decides for one pattern activation (room, pattern data) |
 
 ## GeoGameplayAbility
 - Two data stages: `ActivateAbility` (TriggerEventData → payload) then optional `SendFireDataToServer` after `FireDelay`.
@@ -21,6 +22,11 @@
 - Server-driven abilities (`ServerInitiated`/`ServerOnly`/passive) activate without TriggerEventData and build payload from avatar state (`STTask_FireAbility` path).
 - `OnFireTargetDataReceived` is server-only by design; `Fire()` always sends the RPC.
 - `GetFireOrigin2D` / `GetFireYaw` are the override points for aim.
+
+### RequiresArena
+- `RequiresArena() const` virtual, false: true = needs the caster's arena itself, beyond a room tag (`FPatternAbilityParams`; hex tiles, adds): `GeoSpawnOnTileAbility`, `GeoSweepBeamAbility`, `GeoTileBombAbility`, `GeoSummonAddAbility`; `UPatternAbility` answers its `PatternToLaunch` CDO's `UPattern::RequiresArena()` (`UTileCarveRayPattern` true).
+- Read on the CDO by the encounters' shared caster only (`Encounter/CLAUDE.md`, "Shared caster"), its one `ensureMsgf`; the ability never checks it itself.
+- `ESafeSpotSource::Adds` reads the caster's arena too (`Pattern/Hazard/SafeSpot/CLAUDE.md`): pattern data, not class, so it never refuses; an encounter firing just has no add spots.
 
 ### Owner death (`OnOwnerDeath`)
 - `OnOwnerDeath()` virtual, called on every active instance by `UGeoAbilitySystemComponent::HandleOwnerDeath` when the owner dies; runs on every machine, like `DeathLogic`.
@@ -47,7 +53,17 @@
 ## PatternAbility
 - Enemy only; `PatternToLaunch` class instantiated on every machine via `PatternStartMulticast(Payload, Class, CreatePatternData())`.
 - `CreatePatternData()` computes pattern-specific data once on server; pattern reads it via `StoredPatternData.GetPtr<T>()`.
-- Data given by the caller: an activation whose `TriggerEventData->OptionalObject` is an `IPatternDataSource` (`GeoActivateAbilityAction`) keeps its `GetPatternData()`; the base `CreatePatternData()` returns it (unset when none). One ability, its pattern configured per firing at runtime (lateral wave safe spots). An override computing its own data ignores it.
+- Activation params (below): the base `CreatePatternData()` returns `ActivationParams.PatternData` (unset when none). One ability, its pattern configured per firing at runtime (lateral wave safe spots). An override computing its own data ignores it.
+- `GetFireOrigin2D` with `TargetPointTag` set = the first point tagged `TargetPointTag` + `ActivationParams.ArenaTag` (`GeoLib::GetTargetPoints`); no point → ensure, the caster's own origin.
+
+### Activation params
+- The firer only decides data; the ability does the rest with it (where to look, what to aim at). No firer implements anything, the ability names no arena or encounter class.
+- `FPatternAbilityParams` (`FGameplayAbilityTargetData` child, server only, never replicated): `ArenaTag` (the room of its points), `PatternData` (unset = the ability's own).
+- `MakeActivationParams` at activation (server), kept in `ActivationParams` until the ability ends: the params of `TriggerEventData->TargetData[0]` when given (an encounter firing, `GeoActivateAbilityAction`), else the caster's arena's `ArenaTag` (`GetArenaOfBoss`), no pattern data. That fallback is the one arena lookup of the pattern path.
+- No room (a dummy with no arena): a `TargetPointTag` ability ensures and launches from the caster.
+- Aim is ability data, never the firer's: `EProjectileTarget` on the ability (`Lib/CLAUDE.md`, "Targeting").
+- `UGeoGameplayAbility::ActivateAbility` reads `TargetData[0]` as fire data only when it is an `FGeoAbilityTargetData`, so an encounter firing of a non-pattern ability is a plain server-driven activation.
+- Exceptions that read the arena itself: `RequiresArena()` (above).
 - Fill derived data with explicit template: `TInstancedStruct<FPatternData>::Make<FDerived>(...)`.
 - `EndAbility` force-stops the pattern before `Super`.
 - `ShouldPlayAbilityMontage()` is false when `PatternToLaunch`'s CDO `HasMontage()`; a pattern without montage leaves the ability's own `AnimMontage` replicated as for any ability.

@@ -18,13 +18,12 @@ void UGeoSpawnZoneAction::Execute_Implementation(FGeoEncounterPayload const& /*P
 	GetEncounter()->HoldUntilStepLeft(*this);
 	TArray<AActor*> const SpawnPoints = GeoLib::GetTargetPoints(this, PurposeTag, ArenaTag);
 	TSubclassOf<AGeoEffectZone> const ZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass.LoadSynchronous();
-	if (SpawnPoints.IsEmpty()
-		|| !ensureMsgf(ZoneClass, TEXT("%s: no DefaultZoneClass in Game Data Settings"), *GetName()))
+	if (SpawnPoints.IsEmpty())
 	{
 		UE_LOG(LogGeoEncounter, Warning, TEXT("%s: no %s point tagged %s to spawn a zone on"), *GetName(),
 			   *PurposeTag.ToString(), *ArenaTag.ToString());
 	}
-	else
+	else if (ensureMsgf(ZoneClass, TEXT("%s: no DefaultZoneClass in Game Data Settings"), *GetName()))
 	{
 		FVector Location = SpawnPoints[0]->GetActorLocation();
 		Location.Z = ArbitraryCharacterZ;

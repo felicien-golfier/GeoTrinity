@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotSource.h"
 
@@ -27,8 +27,7 @@ TArray<FSafeSpot> GatherSafeSpots(UObject const* WorldContext, FAbilityPayload c
 	if (Sources.Contains(ESafeSpotSource::Adds))
 	{
 		AGeoArena const* const Arena = AGeoArena::GetArenaOfBoss(Payload.SourceAvatar);
-		if (ensureMsgf(Arena, TEXT("%hs: %s has no arena to take add safe spots from"), __FUNCTION__,
-					   *GetNameSafe(Payload.SourceAvatar)))
+		if (Arena)
 		{
 			for (AEnemyCharacter const* const Add : Arena->GetLiveAdds())
 			{

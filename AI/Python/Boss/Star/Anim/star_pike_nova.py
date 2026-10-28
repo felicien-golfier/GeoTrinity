@@ -28,7 +28,7 @@ ANIM_PACKAGE = "/Game/Characters/Anim/Star"
 SEQ_NAME = "SK_Star_Sequence_PikeNova"
 MONTAGE_NAME = "SK_Star_PikeNova_Montage"
 PATTERN_BP = "/Game/AbilitySystem/Abilities/Enemy/SpawnPillar/BP_SpawnPillarPattern"
-REPORT = "C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/43c49c4b-16e7-4c2d-ab55-b98aad7877bc/scratchpad/pike_nova.txt"
+REPORT = unreal.Paths.project_dir() + "AI/Output/pike_nova.txt"
 
 SPIKE_PREFIX = "apexe_outside_"
 

@@ -14,11 +14,16 @@
 
 #include "GeoAbilitySystemLibrary.generated.h"
 
+/** Where a projectile ability or pattern aims, through GetTargetDirections, the one aim code of all of them. */
 UENUM(BlueprintType)
 enum class EProjectileTarget : uint8
 {
+	/** Along the caster's yaw. */
 	Forward,
-	AllPlayers
+	/** One direction per live player. */
+	AllPlayers,
+	/** The live boss of the fighting arena (AGeoArena::GetFightingArena); none outside a fight. */
+	Boss
 };
 
 class AGeoDeployableBase;
@@ -291,10 +296,10 @@ public:
 	/**
 	 * Returns normalized launch directions for a projectile ability based on the targeting mode.
 	 *
-	 * @param World   The world context (used to enumerate players for AllPlayers mode).
-	 * @param Target  Targeting mode: Forward fires along Yaw; AllPlayers fires one direction per live player.
+	 * @param World   The world context (used to find the players or the fighting arena's boss).
+	 * @param Target  Targeting mode (EProjectileTarget).
 	 * @param Yaw     Instigator facing yaw in degrees; defines the forward direction for Forward mode.
-	 * @param Origin  3D world position of the fire socket; used to compute per-player directions.
+	 * @param Origin  3D world position of the fire socket; used to compute per-target directions.
 	 * @return        Array of normalized direction vectors, one per intended projectile.
 	 */
 	static TArray<FVector> GetTargetDirections(UWorld const* World, EProjectileTarget Target, float Yaw,

@@ -6,9 +6,24 @@
 
 struct FGeoCatLineCategories;
 
+/** Data/CatLines.txt parsed: the categories in file order, and each one's lines. */
+struct FGeoCatLineFile
+{
+	TArray<FName> Categories;
+	TMap<FName, TArray<FString>> LinesByCategory;
+};
+
 /** The Cat's lines of Data/CatLines.txt (Tool/CatLine/CLAUDE.md), re-parsed whenever the file's timestamp changes. */
 namespace GeoCatLines
 {
+	/** The parsed file, read again when its timestamp changed (every draw state dropped then). A missing file is a
+	 * packaging or path bug: ensures, and holds no category. */
+	GEOTRINITY_API FGeoCatLineFile const& GetFile();
+
+	/** The picked categories' lines, in file order; a line in two of them comes once (an empty set = every category).
+	 */
+	GEOTRINITY_API TArray<FString> GatherPool(FGeoCatLineCategories const& Categories);
+
 	/** The category names of the file, in file order. */
 	GEOTRINITY_API TArray<FName> GetCategories();
 

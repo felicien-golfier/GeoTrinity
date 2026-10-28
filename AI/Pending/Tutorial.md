@@ -1,6 +1,7 @@
 # Tutorial — pending
 
 Goal: a new player learns move, dash, shoot, deploy, Special, zone colours, lethal waves, gems and the Forge in a solo tutorial narrated by a sarcastic geometric Cat (MMO parody, tabletop-RPG lore), then lands in the Training Room.
+Priority: 1
 Docs written: `AI/Tutorial/CLAUDE.md`, `Tone.md`, `Lore.md`, `Cat.md`, `IntroBoard.md`, `Steps.md`, `Flow.md`; `Settings/CLAUDE.md` (`bTutorialPromptAnswered`), `System/CLAUDE.md` (Session), `GeoTrinityUI/.../HUD/Menu/CLAUDE.md` ("Tutorial entry"), `Characters/CLAUDE.md` ("HiddenCasterCharacter"), `AI/Python/Level/CLAUDE.md` (`training_room.py`); the encounter system it runs on (`Encounter/CLAUDE.md`) is built.
 Depends on: `HiddenCaster.md` (slice 5), `BossLoot.md` (slices 6-7), `MenuGuide.md` (slice 7, later). `VoidDeath.md` done.
 
@@ -80,7 +81,7 @@ Docs first: `GameClasses/Match/CLAUDE.md` (`bSoloOnly` rule), `GameClasses/CLAUD
 - [x] `GeoPauseMenuWidget` — `LeaveTutorialButton`, visible only when the world's package is `TutorialMap`'s; → `HostListen(TrainingRoomMap, "TrainingRoom")`
 - [x] Editor: map `/Game/Maps/Tutorial`, `BP_TutorialGameMode`, `BP_GeoGameInstance` map refs, `DraftMap` `PlayerStart_TrainingRoom` (`tutorial_map.py`)
 - [x] Editor: `WBP_TutorialPrompt`, `TutorialButton`, `LeaveTutorialButton` (`tutorial_menu.py`); prompt text is a placeholder until Board page "Prompt" is validated
-- [x] Tests `Private/Tests/GeoTutorialTests.cpp` (listen-server world, `GeoTestWorld.h`):
+- [x] Tests `GeoTrinityEditor/Private/Tests/Gameplay/GeoTutorialTests.cpp` (listen-server world, `Fake/GeoTestWorld.h`):
   - `GeoTrinity.Tutorial.SoloOnly` — `bSoloOnly`: first player accepted, a second refused with an error; off: both accepted
   - `GeoTrinity.Session.ListenUrl` — `MakeListenUrl` with and without a portal
 - [x] Run: `Tools\Build_Editor.bat`, then `Tools\Run_Tests.bat GeoTrinity.Tutorial` and `GeoTrinity.Session` (`GEO_NO_PAUSE=1`, editor closed)
@@ -94,7 +95,7 @@ Docs first: `HUD/Interface/CLAUDE.md` (two calls below), new `GeoTrinityUI/.../H
 - [x] Editor: `WBP_CatLine`, `DT_CatLine`, `BP_GeoHudMain` `CatLineWidgetClass` (`tutorial_hud.py`); look not reviewed in game
 - [x] `UGeoCharacterSheetWidget` — open on an ability: pause menu → Character sheet page → that ability's `GeoAbilityDetailWidget` drawer; `AGeoHUD::ShowAbilityPage` drives it
 - [x] `Encounter/Action/GeoCatLineAction.h/.cpp` — `Line` (`FText`), `bWaitForRespawn` (a line fired by a death shows once the player is alive again); non-latent; calls `ShowCatLine` on the first local player's HUD (same process: solo listen host, `Flow.md`)
-- [x] Tests `GeoTrinityUI/Private/Tests/GeoCatLineTests.cpp`: `GeoTrinityUI.Tutorial.CatLineMarkup` — bold, shake, key token, unknown token left as text
+- [x] Tests `GeoTrinityEditor/Private/Tests/UI/GeoCatLineTests.cpp`: `GeoTrinityUI.Tutorial.CatLineMarkup` — bold, shake, key token, unknown token left as text
 - [x] Run: build, then `Tools\Run_Tests.bat GeoTrinityUI.Tutorial`
 
 ## Slice 3 — Steps 0-2 (Landing, Move, Dash)
@@ -136,7 +137,7 @@ Docs first: `World/CLAUDE.md` (`LockedAbilityTags`), `AbilitySystem/Components/C
 
 ## Slice 5 — Steps 7-9 (zone colours, lethal wave, safe spots)
 Needs `HiddenCaster.md` done.
-- [x] Zones room = an `AGeoDummyArena` (`Tut_Zones_CasterArena`) whose boss is `BP_HiddenCaster_TutorialWaves`; points `Tut_Zones_ZonePoint_<Color>` (`TargetPoint.Tutorial.Zone<Color>`), `Tut_Zones_WaveStart`, `Tut_Zones_BossSpawn`, all `Arena.Tutorial.Zones` (`tutorial_encounters.py`)
+- [x] Zones room = points `Tut_Zones_ZonePoint_<Color>` (`TargetPoint.Tutorial.Zone<Color>`) and `Tut_Zones_WaveStart`, all `Arena.Tutorial.Zones`; waves fire on the encounters' shared caster, no arena (`tutorial_encounters.py`, `Encounter/CLAUDE.md` "Shared caster")
 - [x] Step 7 = steps `Zones_Heal`, `Zones_Shield`, `Zones_Damage` (`GeoSpawnZoneAction`, box over each spot)
 - [x] Step 8 = `LethalWave`: the player's death completes, next in the list is `SafeSpotsWait`
 - [x] Step 9 = `SafeSpotsWait` (`DeathTime` timer) then `SafeSpots` (three waves, `WavesDone`; a death → `SafeSpotsWait`; the exit pad opens from the finishing rule)

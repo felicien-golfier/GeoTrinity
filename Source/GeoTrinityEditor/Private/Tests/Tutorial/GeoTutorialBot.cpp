@@ -1,4 +1,4 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "GeoTutorialBot.h"
 
@@ -110,7 +110,6 @@ FGeoTutorialBot::~FGeoTutorialBot()
 
 void FGeoTutorialBot::QueueSession(FAutomationTestBase& Test, TSharedRef<FGeoTutorialBot> Bot)
 {
-	Test.AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
 	// Headless -NullRHI spawns no Niagara component: the explosion cue's Set Niagara Variable reads None.
 	Test.AddExpectedError(TEXT("On Execute Blueprint:  GC_Explosion"), EAutomationExpectedErrorFlags::Contains, -1);
 	// The editor map only: AutomationOpenMap would also start a standalone play session, which the listen one below
@@ -296,15 +295,7 @@ void FGeoTutorialBot::AddTeleportStages(int32 const Room)
 												 nullptr, ETeleportType::TeleportPhysics);
 				 }
 
-				 bool const bArrived =
-					 GetPawn()->GetActorLocation().X > GeoTutorial::RoomCentreX(Room + 1) - GeoTutorial::RoomHalfX;
-				 if (bArrived)
-				 {
-					 // A line kept standing while the pad was taken ends now, as a player would dismiss it.
-					 KeepLineFragment.Empty();
-				 }
-
-				 return bArrived;
+				 return GetPawn()->GetActorLocation().X > GeoTutorial::RoomCentreX(Room + 1) - GeoTutorial::RoomHalfX;
 			 });
 	AddStage(FString::Printf(TEXT("Room %d: arrival closes the exit"), Room),
 			 [this, Room](bool)

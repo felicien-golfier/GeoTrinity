@@ -13,7 +13,7 @@
 class UCapsuleComponent;
 
 /**
- * Deployable turret that periodically fires projectiles at the nearest hostile actor.
+ * Deployable turret that periodically fires projectiles at its target (FindBestTarget).
  * Configured via FDeployableData supplied by the deploy ability at spawn time.
  */
 UCLASS(Blueprintable, ClassGroup = (Custom))
@@ -42,8 +42,8 @@ protected:
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	/**
-	 * Returns the owner's last basic-ability target when it is still a valid in-range hostile, otherwise the nearest
-	 * hostile within range, or nullptr if none is found.
+	 * Player turret: the owner's last basic-ability target while it is a valid hostile, else nullptr (it waits for the
+	 * owner's next basic hit). Enemy turret: the nearest hostile, or nullptr if none is found.
 	 */
 	AActor* FindBestTarget() const;
 

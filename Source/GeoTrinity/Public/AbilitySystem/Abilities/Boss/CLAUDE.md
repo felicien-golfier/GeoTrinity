@@ -1,11 +1,11 @@
 # Abilities/Boss
 
-Server-only boss abilities. Reach the arena via `AGeoArena::GetArenaOfBoss(StoredPayload.Owner)`; never look it up by class.
+Server-only boss abilities. Where comes from the activation params (`Base/CLAUDE.md`, "Activation params"), whom from the ability's own `EProjectileTarget`; only a `RequiresArena()` ability reaches the arena itself, via `AGeoArena::GetArenaOfBoss(StoredPayload.Owner)`, never looked up by class.
 A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving ray, cone spray).
 
 | File | Role |
 |---|---|
-| `GeoPeriodicPatternAbility.h` | Never ends: each `USalvePattern` launch is one salve at the caster's hostiles (enemy team: all players; player team: the boss of its arena), aimed and stamped right before it leaves, then schedules the next |
+| `GeoPeriodicPatternAbility.h` | Never ends: each `USalvePattern` launch is one salve at its `Target`, aimed and stamped right before it leaves, then schedules the next |
 | `GeoSpawnPillarAbility.h` | Resolves pillar zone locations once (`CreatePatternData`): health ratio → 1-3 zones, players sorted by `PlayerId`, seeded |
 | `GeoSweepBeamAbility.h` | Beam aimed at the hex arena centre (`GetFireYaw` override) |
 | `GeoTileBombAbility.h` | Draws a live player, spawns `AGeoBombZone` attached to them; not a pattern (replicated deployable) |
@@ -33,5 +33,5 @@ A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving 
 - `PatternToLaunch` is any zone pattern as is (tutorial: the Training Room's `BP_ZonePattern_BurstDamage`); the hit's numbers are the ability's `EffectDataInstances`.
 
 ## GeoPeriodicPatternAbility
-- Aim from the caster's team, no flag: enemy team → one yaw per live player; player team (an ally add shooting the boss, tutorial) → one yaw at `AGeoArena::Boss` of its arena (`GetArenaOfBoss(caster)`), none (nothing fired) when it has no arena or the boss is dead.
-- One salve ability serves a boss, its summons and their allies (tutorial: `GA_TutorialSalve`); its pattern BP's bullets are `OverlapAttitude` hostile only, so each side hits only the other.
+- One yaw per direction of `GeoASLib::GetTargetDirections(Target)` (default `AllPlayers`). No target (boss dead, no fight) → nothing fired.
+- An aim variant is a Blueprint child setting only `Target` (tutorial: `GA_TutorialSalve` for the boss and its summons, its child `GA_TutorialAllySalve` = `Boss` for their allies); the pattern BP's bullets are `OverlapAttitude` hostile only, so each side hits only the other.

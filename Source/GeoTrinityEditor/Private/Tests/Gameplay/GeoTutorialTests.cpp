@@ -10,11 +10,11 @@
 #include "GameFramework/PlayerStart.h"
 #include "Misc/AutomationTest.h"
 #include "System/GeoSessionSubsystem.h"
-#include "Tests/GeoTestDeployable.h"
-#include "Tests/GeoTestWorld.h"
+#include "Tests/Gameplay/Fake/GeoTestDeployable.h"
+#include "Tests/Gameplay/Fake/GeoTestWorld.h"
 #include "World/GeoWorldSettings.h"
 
-#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#if WITH_DEV_AUTOMATION_TESTS
 
 constexpr EAutomationTestFlags GeoTutorialTestFlags =
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;

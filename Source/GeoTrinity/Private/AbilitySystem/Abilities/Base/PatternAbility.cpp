@@ -28,9 +28,7 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 	}
 
 	LaunchSeed = GetNewSeed();
-	IPatternDataSource const* const PatternDataSource =
-		TriggerEventData ? Cast<IPatternDataSource>(TriggerEventData->OptionalObject.Get()) : nullptr;
-	GivenPatternData = PatternDataSource ? PatternDataSource->GetPatternData() : TInstancedStruct<FPatternData>();
+	ActivationParams = MakeActivationParams(TriggerEventData);
 
 	if (PreLaunchDelay > 0.f)
 	{
@@ -47,6 +45,34 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 bool UPatternAbility::ShouldPlayAbilityMontage() const
 {
 	return !PatternToLaunch || !GetDefault<UPattern>(PatternToLaunch)->HasMontage();
+}
+
+bool UPatternAbility::RequiresArena() const
+{
+	return PatternToLaunch && GetDefault<UPattern>(PatternToLaunch)->RequiresArena();
+}
+
+FPatternAbilityParams UPatternAbility::MakeActivationParams(FGameplayEventData const* TriggerEventData) const
+{
+	FGameplayAbilityTargetData const* const GivenData =
+		TriggerEventData ? TriggerEventData->TargetData.Get(0) : nullptr;
+	if (GivenData && GivenData->GetScriptStruct()->IsChildOf(FPatternAbilityParams::StaticStruct()))
+	{
+		return *static_cast<FPatternAbilityParams const*>(GivenData);
+	}
+
+	FPatternAbilityParams CasterArenaParams;
+	if (AGeoArena const* const Arena = AGeoArena::GetArenaOfBoss(GetAvatarActorFromActorInfo()))
+	{
+		CasterArenaParams.ArenaTag = Arena->ArenaTag;
+	}
+
+	return CasterArenaParams;
+}
+
+TInstancedStruct<FPatternData> UPatternAbility::CreatePatternData() const
+{
+	return ActivationParams.PatternData;
 }
 
 void UPatternAbility::BeginPreLaunch()
@@ -126,21 +152,14 @@ FVector2D UPatternAbility::GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystem
 		return Super::GetFireOrigin2D(Instigator, SourceASC, Seed);
 	}
 
-	AGeoArena const* const Arena = AGeoArena::GetArenaOfBoss(Instigator);
-	if (!ensureMsgf(Arena, TEXT("%hs: %s was not spawned by an arena, so it has no points to launch from"),
-					__FUNCTION__, *GetNameSafe(Instigator)))
+	TArray<AActor*> const FirePoints = GeoLib::GetTargetPoints(this, TargetPointTag, ActivationParams.ArenaTag);
+	if (!ensureMsgf(!FirePoints.IsEmpty(), TEXT("%hs: %s has no %s point to launch from in room %s"), __FUNCTION__,
+					*GetName(), *TargetPointTag.ToString(), *ActivationParams.ArenaTag.ToString()))
 	{
 		return Super::GetFireOrigin2D(Instigator, SourceASC, Seed);
 	}
 
-	TArray<AActor*> const TargetPoints = GeoLib::GetTargetPoints(Instigator, TargetPointTag, Arena->ArenaTag);
-	if (!ensureMsgf(!TargetPoints.IsEmpty(), TEXT("%hs: no AGeoTargetPoint tagged %s in arena %s"), __FUNCTION__,
-					*TargetPointTag.ToString(), *Arena->ArenaTag.ToString()))
-	{
-		return Super::GetFireOrigin2D(Instigator, SourceASC, Seed);
-	}
-
-	return FVector2D(TargetPoints[0]->GetActorLocation());
+	return FVector2D(FirePoints[0]->GetActorLocation());
 }
 
 void UPatternAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
@@ -158,5 +177,7 @@ void UPatternAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbi
 	{
 		PatternInstance->EndPattern(true);
 	}
+
+	ActivationParams = FPatternAbilityParams();
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

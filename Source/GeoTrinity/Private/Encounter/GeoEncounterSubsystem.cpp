@@ -2,10 +2,15 @@
 
 #include "Encounter/GeoEncounterSubsystem.h"
 
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Characters/HiddenCasterCharacter.h"
 #include "Encounter/GeoEncounter.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 void UGeoEncounterSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -46,6 +51,33 @@ void UGeoEncounterSubsystem::Raise(FGameplayTag const Tag, FGeoEncounterPayload 
 {
 	Payload.Tag = Tag;
 	OnRaised.Broadcast(Payload);
+}
+
+AHiddenCasterCharacter* UGeoEncounterSubsystem::GetSharedCaster()
+{
+	if (!IsValid(SharedCaster) && GeoLib::IsServer(GetWorld()))
+	{
+		SharedCaster = Cast<AHiddenCasterCharacter>(AEnemyCharacter::SpawnEnemy(
+			*GetWorld(), AHiddenCasterCharacter::StaticClass(), FVector::ZeroVector, nullptr, nullptr, nullptr));
+	}
+
+	return SharedCaster;
+}
+
+FGameplayAbilitySpecHandle
+UGeoEncounterSubsystem::GrantSharedAbility(TSubclassOf<UGeoGameplayAbility> const AbilityClass)
+{
+	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(GetSharedCaster());
+	if (!ASC || !AbilityClass
+		|| !ensureMsgf(!GetDefault<UGeoGameplayAbility>(AbilityClass)->RequiresArena(),
+					   TEXT("%s needs its caster's arena: the encounters' shared caster has none"),
+					   *AbilityClass->GetName()))
+	{
+		return FGameplayAbilitySpecHandle();
+	}
+
+	FGameplayAbilitySpec const* const Spec = ASC->FindAbilitySpecFromClass(AbilityClass);
+	return Spec ? Spec->Handle : ASC->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1));
 }
 
 void UGeoEncounterSubsystem::AbortEncounters()

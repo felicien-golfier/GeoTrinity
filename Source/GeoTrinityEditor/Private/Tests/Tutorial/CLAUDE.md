@@ -19,7 +19,7 @@ Headless play-in-editor runs of the real `/Game/Maps/Tutorial`: a bot plays the 
 - `JumpTo(Room)`: the world-URL jump without the travel: pawn onto the `PlayerStart` tagged with the room name, then `StartAfterSkippingChain()` on `Tut_<Room>_Encounter`. The real console travel is `Jump.<Room>`; it, `FinalExit`, `LeaveFromMenu`, `Replay` and the `Jump*` paths wait for a new play world (PIE server travel).
 - The map's `StartingTutoRoomInEditor` (editor quick-start room, a jump that replays the unlocks before it) is cleared on the loaded editor map before play, in memory only: every session starts at Landing or at its own `JumpTo`.
 - Expected, never failed on: `GC_Explosion`'s Blueprint error (headless: no Niagara component to set a variable on).
-- A kept line (`KeepLineFragment`) is released when `AddTeleportStages` sees the pawn arrive: the line ending is what starts the next room.
+- A kept line (`KeepLineFragment`) is never ended by the bot: the arrival's abort ends it (`Path.EarlyPortal`).
 - Waves after a death: the run before still fires its remaining waves while its Cat line waits for the respawn, so the safe-spot bot re-bases its wave count when the pawn is alive again. The Miniboss wipe stages walk the respawned pawn back into the arena before each death.
 - The play-in-editor world begins play before its player joins: its start stage clears the line log, then a FullRun restarts `Tut_Landing_Encounter` once the pawn exists; a path test jumps instead.
 - The Miniboss kill writes XP and loot to the user's gem profile: every session that can kill it loads the profile first and writes it back after (`FGeoRestoreGemProfileCommand`).
@@ -36,7 +36,8 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 | all | jump by a number past the chain: fresh start at Landing (locked, no class ability) | Path.JumpPastEnd |
 | Landing | locked until the WASD line, then free; Cat shown, then hidden after its portal jump | FullRun |
 | Landing | idle on the open pad: the nag once, then `Pun` jokes | Path.LandingNag |
-| Landing | pad taken during the last line: the line ends, the Dash room's first line follows, no Landing line after | Path.EarlyPortal |
+| Landing | pad taken during the last line, Cat still on its way to the portal: the Dash room starts at once (its first line while the Landing step still ran), the Landing line and the Cat stop, no Landing line after | Path.EarlyPortal |
+| all | each room's exit pad opens with its last Cat line (Shoot: "Next toy"), from Dash on (`WatchExitPadsOpenWithLastLine`; Landing: Path.EarlyPortal) | FullRun |
 | Dash | real dash over the void, 0 falls: stunned line | FullRun |
 | Dash | falls 1-7: each respawns on the room's entrance; first, second, 3-5, 6+ lines; reach: relief line with the count | Path.DashFalls |
 | Dash | idle tiers 1-4, each once, then `Pun` jokes from `Data/CatLines.txt` (two in a row) | Path.DashIdle |
@@ -52,7 +53,7 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 | Dummies | death mid-fight: respawn on the entrance, survivors stay, fight goes on | Path.DummiesDeath |
 | Zones | Damage zone grows from the centre to cover the room and hurts; then Shield and Heal spawn, the pawn stands in each, 2 s later every zone is gone (a step into a spot before its zone is up counts nothing); lethal wave kills | FullRun |
 | Zones | safe spots: series 1 dies on wave 2, series 2 on wave 3, series 3 clears; every lane of every wave used once; retry line, restart from wave 1 | Path.SafeSpotsRetry |
-| Miniboss | salve, boss moves between its points, summon's zone grows, killed summon turns ally and fires, wave, last hit (health to 0, as damage does) opens the final exit, loot and XP granted | FullRun |
+| Miniboss | salve, boss moves between its points, summon's zone grows, killed summon turns ally and fires its own salve (`GA_TutorialAllySalve`), wave, last hit (health to 0, as damage does) opens the final exit, loot and XP granted; the fountain throws one drop per granted gem and shard | FullRun |
 | Miniboss | deaths 1-3: wipe (adds gone, boss full), tips in order; 4th death silent | Path.MinibossWipe |
 | Miniboss | ally under 30 %: call-outs 1-3, then silent | Path.MinibossCallouts |
 | Miniboss | wave: in a living dummy's lane survives, out of it dies; no dummy alive: dies anywhere | Path.MinibossWaveLanes |

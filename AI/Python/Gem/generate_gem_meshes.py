@@ -41,6 +41,7 @@ DIAMOND_TABLE = 0.55  # table radius
 DIAMOND_CROWN = 0.32  # table height above the girdle
 DIAMOND_PAVILION = 0.86  # culet depth below the girdle
 
+SHARD_SCALE = 0.5  # one shard is one Forge unit and a kill throws many: each stays under a Chip
 # Hand-listed convex fragments. A tall spike, a tilted block, a squat chunk.
 SHARDS = {
     "A": [(14, -9, -22), (-11, -13, -20), (-15, 10, -24), (10, 15, -19), (3, -2, 48)],
@@ -282,7 +283,8 @@ def main():
     try:
         jobs = [(f"SM_Gem_{tier}", fill_solid(tier, tier_points(tier), HALO_SCALE * RADIUS[tier]), [SLOT, HALO_SLOT])
                 for tier in RADIUS]
-        jobs += [(f"SM_Shard_{name}", fill_solid(f"shard {name}", points), [SLOT]) for name, points in SHARDS.items()]
+        jobs += [(f"SM_Shard_{name}", fill_solid(f"shard {name}", [scale(p, SHARD_SCALE) for p in points]), [SLOT])
+                 for name, points in SHARDS.items()]
         for asset_name, fill, slots in jobs:
             asset = build(asset_name, fill, slots)
             result["meshes"][asset_name] = {

@@ -42,8 +42,7 @@ MESH_PATH = "/Game/Characters/Meshes/Star/SKM_Star"
 ANIM_PACKAGE = "/Game/Characters/Anim/Star"
 SEQ_NAME = "SK_Star_Sequence_Intro"
 MONTAGE_NAME = "SK_Star_Montage_Intro"
-REPORT = ("C:/Users/Felou/AppData/Local/Temp/claude/C--GeoTrinity/"
-          "d01a11ac-5e89-4af5-9d0a-7a9d27ea8837/scratchpad/star_intro.txt")
+REPORT = unreal.Paths.project_dir() + "AI/Output/star_intro.txt"
 
 SPIKE_PREFIX = "apexe_outside_"
 RING_BONE = "apexes_outside"

@@ -18,6 +18,7 @@
 #if WITH_EDITOR
 #include "World/GeoWorldSettings.h"
 #endif
+
 AGeoEncounter::AGeoEncounter()
 {
 	PrimaryActorTick.bCanEverTick = false;

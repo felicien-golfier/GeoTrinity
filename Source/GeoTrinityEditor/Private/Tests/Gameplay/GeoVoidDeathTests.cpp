@@ -4,11 +4,11 @@
 #include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/WorldSettings.h"
 #include "Misc/AutomationTest.h"
-#include "Tests/GeoTestEnemy.h"
-#include "Tests/GeoTestWorld.h"
+#include "Tests/Gameplay/Fake/GeoTestEnemy.h"
+#include "Tests/Gameplay/Fake/GeoTestWorld.h"
 #include "World/GeoWorldSettings.h"
 
-#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#if WITH_DEV_AUTOMATION_TESTS
 
 constexpr EAutomationTestFlags GeoVoidDeathTestFlags =
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;

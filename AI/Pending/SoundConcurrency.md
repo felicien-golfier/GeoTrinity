@@ -1,6 +1,7 @@
 # SoundConcurrency — pending
 
 Goal: several copies of the same sound playing together (bullet impacts, gem fountain) must not get louder than one.
+Priority: 2
 Docs written: `Source/GeoTrinity/Public/AbilitySystem/Data/FX/CLAUDE.md` ("Sound": "Stacking", "Concurrency assets", Entry list).
 
 ## Code (to implement)

@@ -1,6 +1,7 @@
 # CatClipsPick — pending
 
 Goal: settle the Cat's new takes (walks, stretches, idles) and finish the one-scaled-part rewrite.
+Priority: 3
 Docs written: `AI/Tutorial/CatAnimation.md`, `AI/MCP/MCP_Animation.md` ("Scale as motion"), `AI/Python/Cat/CLAUDE.md`.
 
 ## Decide (user, in the editor)

@@ -15,7 +15,7 @@ PROPS = ["Line", "bWaitForRespawn", "CounterName", "Delta", "AbilityTag", "bLock
          "EnemyClass", "Setup", "Count", "RespawnDelay", "PurposeTag", "ArenaTag", "bKillOnStepExit", "Operation",
          "Title", "Max", "TimeLimitSeconds", "bShowMax", "Target", "Duration", "Volume", "Watched", "Delay",
          "bLooping", "Side", "Ratio", "Source", "Comparison", "Operand", "bForge", "Cat", "Path", "Speed",
-         "StopDistance", "Settings", "Montage", "Actor", "bHidden", "bWaitForEnd", "Arena", "EffectDataArray", "Params",
+         "StopDistance", "Settings", "Montage", "Actor", "bHidden", "bWaitForEnd", "AbilityClass", "EffectDataArray", "Params",
          "Team", "PatternData"]  # add a new action's properties here
 
 ns = {"__name__": "tutorial_encounters"}
@@ -105,9 +105,7 @@ report = section("spawn points", scene_points(labels), script_lines)
 full_scene = []
 for room in ns["ROOMS"]:
     builder = ns["Builder"](unreal.find_object(None, "/Engine/Transient"))
-    waiting = ns["WAITING_RULES"][room](builder) if room in ns["WAITING_RULES"] else []
-    after = ns["exit_steps"](builder, room) if room == ns["ROOMS"][-1] else ns["leave_steps"](builder, room, waiting)
-    script_steps = ns["ROOM_STEPS"][room](builder) + after
+    script_steps = ns["room_steps"](builder, room)
     encounter = ns["find_actor"]("Tut_%s_Encounter" % room)
     scene_steps = encounter.get_editor_property("Steps") if encounter is not None else []
     report += section(room, dump_steps(scene_steps), dump_steps(script_steps))

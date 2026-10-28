@@ -44,6 +44,8 @@ public class GeoTrinityEditor : ModuleRules
 				"ControlRig",
 			"BlueprintGraph",
 			"GameplayTags",
+			"EnhancedInput",
+			"InputCore",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"StateTreeEditorModule",

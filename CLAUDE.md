@@ -29,13 +29,15 @@ Gate rules:
 - Never take mouse or window focus (clicking in the editor, PIE with real clicks, focus-dependent screen grabs) unless the user asked to test it yourself. Default tests: automated (`GeoGemTests.cpp`), headless, bridge scripts (`AI/Testing.md`).
 - Launch / quit / dismiss dialogs of an editor only on request, and only your own (`-RemoteControlAllow`).
 - Full autonomy: when the user says "on your own", "I'm out", "you're alone" (or similar), every optional rule above is lifted for that task: build, test, play in editor, take focus, and even close the user's editor or test in their open editor. Even Workflow stops are removed, you can implement straight after step 3 directly. Don't stop until task is fully done : Planned, implemented, tested.
+- Empty folder left by a move or delete (code, docs, scripts): delete it in the same change, always; no ask needed.
 - Never write into `Saved/`. Sound work → `AI/Audio/`; reports, probes, exports → `AI/Output/`; throwaway → session scratchpad.
 - Before writing any code: read `AI/CodingStyle.md`. Planning or answering: don't.
 - Opening a `.cpp`: read it entirely, and the `CLAUDE.md` of its Public folder.
 - Navigate by docs: this file → module `Public/CLAUDE.md` → folder `CLAUDE.md`; then Read / Grep those files. Explore agents only for undocumented areas.
 - Before MCP / Python editor automation: `AI/MCP/CLAUDE.md`.
-- Pitfalls and incident post-mortems: `TroobleshootingLogs.md` (root), not in CLAUDE.md.
+- `TroobleshootingLogs.md` (root): only hard-to-find bugs we spent time figuring out, and only when the user says so. Never add an entry on your own; when one seems worth it, ask.
 - **No memory files, ever.** Never create or update anything under `~/.claude/projects/*/memory/`. A fact worth keeping goes in the file from "Where a fact goes" below, in the same session. A rule the user states ("always…", "never…") is written there, not remembered.
+- **Research page.** Every research / study / concept-exploration artifact (visual studies, design options, room or feature research) goes into the existing "Research" artifact (`https://claude.ai/artifact/RZhzLd3DV8276eMvRo7bbF`) as a new tab (`pages` array + `<main id="page…">`), never a separate artifact. Read the whole saved file before republishing.
 - Camera is orthographic: a position mismatch is never parallax or height; find the gameplay or network cause.
 
 ## Where a fact goes
@@ -45,7 +47,7 @@ Gate rules:
 | Cross-cutting design (networking, data structures, effects, cue transport) | `AI/Architecture.md` |
 | Code style, reuse rules, module / API-macro rules | `AI/CodingStyle.md` |
 | Build, compile check, editor config | `AI/Commands.md`, `AI/BuildPackage.md` |
-| What broke and why (post-mortem), silent-loss traps | `TroobleshootingLogs.md` |
+| Hard-to-find bug and its fix, when the user asks for it (Rules) | `TroobleshootingLogs.md` |
 | Editor / Python / MCP technique or hazard | `AI/MCP/<topic>.md` (`AI/MCP/CLAUDE.md` → "Hazards") |
 | Look of shapes, colours, motion, VFX, materials | `AI/ArtDirection.md`, `AI/VFX.md`, `AI/Materials.md` |
 | UI rules, hand-edit protection | `AI/UI.md` |
@@ -57,7 +59,7 @@ Gate rules:
 ## Writing CLAUDE.md
 - Written in workflow step 3; the daily agent only does JavaDoc comments (`AI/Tasks/`) and never rewrites a `CLAUDE.md` to follow the code — only fixes a mistake or fills a missing part.
 - A map, not documentation: purpose line, file → one-line role table, then only what code and comments do not say — intent, why, invariants, ordering, cross-class links.
-- Succinct, every doc: fewest words that carry the fact. Fragments, not sentences. The good way of doing; never "don't do X" history (a real pitfall goes to `TroobleshootingLogs.md`).
+- Succinct, every doc: fewest words that carry the fact. Fragments, not sentences. The good way of doing; never "don't do X" history (a real pitfall: ask the user about `TroobleshootingLogs.md`).
 - Pin-point down to the leaf folder; leaf = where the code's architecture is explained (the way we go, what we expect).
 - ≥ 3 files of one kind → own subfolder with its own `CLAUDE.md`. Keep each doc small enough to load whole.
 - Each fact in one place only; any other section that needs it points to it (as step 3 "Grouping" points to the ≥ 3 files rule above).

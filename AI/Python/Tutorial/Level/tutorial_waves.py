@@ -4,8 +4,8 @@ The lateral-wave ability of the tutorial (AI/Tutorial/Steps.md steps 8-10).
 One wave for every firing: a pattern Blueprint (child of ULateralWavePattern, the geometry and look) and a PatternAbility
 Blueprint (the lethal effect, the wind-up, the wave start point), registered in the enemy ability catalog. What changes
 per firing is runtime data, never an asset: the zone room's safe spots are the encounter action's PatternData
-(tutorial_encounters.py), the miniboss's lanes come from its living adds. Its caster is the Zones arena's native
-AHiddenCasterCharacter + BossSetup (tutorial_encounters.py). The per-wave assets of the old layout (TutorialWaves/) are
+(tutorial_encounters.py), the miniboss's lanes come from its living adds. Zones fires it on the encounters' shared
+caster (UGeoEncounterSubsystem), the miniboss from its own BossSetup. The per-wave assets of the old layout (TutorialWaves/) are
 deleted with their catalog entries, the old caster Blueprint once nothing references it (re-run after
 tutorial_encounters.py).
 Idempotent: assets keyed by path, properties rewritten. Report: AI/Output/tutorial_waves_report.txt.

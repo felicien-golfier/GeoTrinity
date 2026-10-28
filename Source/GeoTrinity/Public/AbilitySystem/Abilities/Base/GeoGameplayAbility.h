@@ -305,6 +305,10 @@ public:
 	 * ability plays AnimMontage through the ASC, which replicates it to every machine. */
 	virtual bool ShouldPlayAbilityMontage() const { return true; }
 
+	/** True when the ability needs its caster's arena itself (hex tiles, adds), beyond a room tag
+	 * (FPatternAbilityParams): the encounters' shared caster, which has no arena, refuses it. Read on the CDO. */
+	virtual bool RequiresArena() const { return false; }
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;
 

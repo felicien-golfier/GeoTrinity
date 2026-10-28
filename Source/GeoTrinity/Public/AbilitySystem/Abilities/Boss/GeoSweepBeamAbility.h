@@ -20,6 +20,9 @@ public:
 	/** Returns the sweep arc angle in degrees fed to the BeamPattern for this ability. */
 	float GetSweepAngle() const { return Angle; }
 
+	/** Reads its caster's hex arena. */
+	virtual bool RequiresArena() const override { return true; }
+
 protected:
 	/** Yaw from Instigator toward the arena center; falls back to its facing when it is not a hex arena boss. */
 	virtual float GetFireYaw(AActor const* Instigator, int Seed) const override;

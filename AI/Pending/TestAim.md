@@ -1,6 +1,7 @@
 # TestAim — pending
 
 Goal: let a driven session (`mcp-epic`) tell the game where the mouse is, so the real ability inputs it can already send as keys (`RightMouseButton`, `LeftMouseButton`, `LeftShift`) land where it wants and the tutorial's Deploy and Special steps can be walked end to end.
+Priority: 2
 Docs written: `Source/GeoTrinity/Public/Input/CLAUDE.md` ("Test aim"), `AI/MCP/MCP_EpicTesting.md` (Walking the tutorial).
 
 ## Code (to implement)

@@ -7,8 +7,12 @@ Runtime UI module (`Type=Runtime`): HUD, widgets, menus, styles. Depends on `Geo
 | `HUD/` | `AGeoHUD`, overlay, in-game widgets | `HUD/CLAUDE.md` |
 | `HUD/Menu/` | Main / pause menus and every page | `HUD/Menu/CLAUDE.md` |
 | `HUD/Style/` | Themed primitives drawn with Slate | `HUD/Style/CLAUDE.md` |
+| `CatFace/` | The Cat's Slate face, motion, expressions; HUD and loading screen | `CatFace/CLAUDE.md` |
+| `LoadingScreen/` | Map-load screen painted by the movie player | `LoadingScreen/CLAUDE.md` |
 
-Private-only: `Private/Tests/GeoMessageLogTests.cpp` (message log layout), `Private/Tests/GeoCatLineTests.cpp` (Cat line markup, Cat face motion) (`AI/Testing.md`).
+Module class `FGeoTrinityUIModule` (`Private/GeoTrinityUI.cpp`): registers the loading-screen factory on startup, clears it on shutdown.
+
+Tests of this module live in `GeoTrinityEditor/Private/Tests/UI/` (`GeoTrinityEditor/Private/Tests/CLAUDE.md`); no test code here.
 
 UI rules (generic reusable styles, Blueprint-tweakable values): `AI/UI.md`. Widget building: `AI/MCP/MCP_UI.md`.
 

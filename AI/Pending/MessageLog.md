@@ -1,6 +1,7 @@
 # MessageLog — pending
 
 Goal: a small stack of short, timed messages in the menu space beside BACK, showing what happens in the UI (every rule): the system, then the Gems / Forge / key bindings / server browser rules wired to it.
+Priority: 3
 Docs written: `Source/GeoTrinityUI/Public/HUD/Menu/Frame/CLAUDE.md` ("Message log"), `AI/Python/UI/CLAUDE.md`.
 Done: C++ (`GeoMessageSubsystem`, `GeoMessageLog`, root clears on `CloseMenu` / `NativeDestruct`), `GeoMessageLogTests.cpp` (built, `GeoTrinity.MessageLog` passes), `AI/Python/UI/message_log.py` written.
 

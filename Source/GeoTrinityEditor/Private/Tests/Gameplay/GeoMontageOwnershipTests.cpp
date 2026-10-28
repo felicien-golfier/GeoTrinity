@@ -1,10 +1,10 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
-#include "GeoTestPatternAbility.h"
+#include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Misc/AutomationTest.h"
 
-#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#if WITH_DEV_AUTOMATION_TESTS
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoMontageOwnershipTest, "GeoTrinity.Abilities.MontageOwnership",
 								 EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)

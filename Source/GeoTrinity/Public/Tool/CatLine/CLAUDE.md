@@ -4,7 +4,7 @@ The Cat's random lines: a plain text bank in `Data/CatLines.txt` (tips, puns, na
 
 | File | Role |
 |---|---|
-| `GeoCatLineBank.h` | `GeoCatLines` namespace: `GetCategories()` (file order), `CountLines(Categories)`, `HasLine(Categories, Line)` (tests), `PickLine(Categories, bRandom)` (random no repeat, or file order cycling), `SetFilePath(Path)` (tests: another file, empty = default; drops the cache and every bag) |
+| `GeoCatLineBank.h` | `GeoCatLines` namespace: `GetFile()` (the parsed `FGeoCatLineFile`), `GatherPool(Categories)`, `GetCategories()` (file order), `CountLines(Categories)`, `HasLine(Categories, Line)` (tests), `PickLine(Categories, bRandom)` (random no repeat, or file order cycling), `SetFilePath(Path)` (tests: another file, empty = default; drops the cache and every bag) |
 | `GeoCatLineCategories.h` | `FGeoCatLineCategories`: the picked category names; empty = every category |
 
 ## File `Data/CatLines.txt`
@@ -18,6 +18,7 @@ The Cat's random lines: a plain text bank in `Data/CatLines.txt` (tips, puns, na
 - Re-parsed whenever the file's timestamp changes (as `AbilityInfo.cpp`'s descriptions): an edit shows in the next pick, and in the editor picker the next time it opens, with no rebuild or reload button.
 - `PickLine`: the union of the picked categories' lines in file order, a line in two categories once (empty set = all); returns empty text when no line matches (log `LogGeoEncounter` warning, the caller shows nothing and finishes). `bRandom` false = the pool in file order, one step per call, cycling.
 - No repeat until the pool is spent (`bRandom`): one shuffled bag per distinct category set, shared process-wide (every action and room draws from the same bag, so a nag firing for ever cycles all its puns before any returns). A refill never starts with the line just shown. A re-parse drops every bag and cursor, so an edited, added or cut line counts from the next pick. The file-order cursor is its own state per set, same sharing.
+- Missing file = packaging or path bug: `ensureMsgf`, no category (same in `AbilityInfo.cpp` for `AbilityDescriptions.txt`).
 - Pure over the file: no world, no UObject, so a loading screen can call it before any world exists.
 
 ## Categories (picker)
@@ -29,4 +30,4 @@ The Cat's random lines: a plain text bank in `Data/CatLines.txt` (tips, puns, na
 - `UGeoCatLineFromFileAction` (`Encounter/Action/CLAUDE.md`): `Categories` + `bRandom`; its sibling `UGeoCatLineAction` types its text in place (same base).
 - Idle nags: a repeating rule on `GeoPlayerIdleTrigger` + a random-line action; each firing says another line.
 - `AGeoTrainingCat` (`Characters/CLAUDE.md`): `Pun` on its idle loop, `Retort` when hit; same bank and bag as every other speaker.
-- Loading-screen tips: same call, `Categories` = the tip categories (not wired yet).
+- Loading-screen tips: `SGeoLoadingScreen::Make` draws a few lines at once on the game thread, `Categories` = `UGeoGameInstance::LoadingTipCategories` (`GeoTrinityUI/Public/LoadingScreen/CLAUDE.md`). The bank is game thread only.

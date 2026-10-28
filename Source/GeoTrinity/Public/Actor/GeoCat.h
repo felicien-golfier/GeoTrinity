@@ -61,7 +61,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Walks through Points in order at Speed, stopping StopDistance short of the last one, facing it; completes
-	 * there. */
+	 * there. Hidden (no tick work, it would never arrive): ensures and completes at once. */
 	void Walk(TArray<FVector> const& Points, float Speed, float StopDistance);
 
 	/** Walks to random spots of Settings.Area, pausing between them. Ends only when replaced. */
