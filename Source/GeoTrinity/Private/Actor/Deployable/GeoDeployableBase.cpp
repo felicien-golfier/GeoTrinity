@@ -10,11 +10,14 @@
 #include "AbilitySystemComponent.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Actor/Deployable/GeoDeployableFXComponent.h"
+#include "Animation/AnimInstance.h"
 #include "Blueprint/UserWidget.h"
 #include "Characters/Component/GeoDeployableManagerComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/MeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Curves/CurveFloat.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
@@ -23,8 +26,8 @@
 #include "HUD/Interface/GeoCombattantWidgetHost.h"
 #include "Net/UnrealNetwork.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "Tool/Visual/GeoNiagaraParams.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------
 AGeoDeployableBase::AGeoDeployableBase(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
@@ -60,7 +63,7 @@ void AGeoDeployableBase::InitInteractable(FInteractableActorData* Data)
 	bBlinking = false;
 	bActive = true;
 	bRecalled = false;
-	if (bPushActorsOnSpawn)
+	if (bPushActorsOnSpawn && GetData()->Params.InitDuration <= 0.f)
 	{
 		PushAway();
 	}
@@ -171,6 +174,8 @@ void AGeoDeployableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(AGeoDeployableBase, bActive);
 	DOREPLIFETIME(AGeoDeployableBase, bRecalled);
 	DOREPLIFETIME(AGeoDeployableBase, bBlinking);
+	DOREPLIFETIME_CONDITION(AGeoDeployableBase, InitStartServerTime, COND_InitialOnly);
+	DOREPLIFETIME(AGeoDeployableBase, bInitialising);
 }
 
 void AGeoDeployableBase::InitDrain()
@@ -205,13 +210,25 @@ void AGeoDeployableBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	if (bInitialising)
+	{
+		float const Alpha = FMath::Clamp(
+			(GeoLib::GetServerTime(GetWorld()) - InitStartServerTime) / GetData()->Params.InitDuration, 0.f, 1.f);
+		ApplyInitPose(Alpha);
+		if (Alpha >= 1.f && GetData()->Params.bAutoFinishInit)
+		{
+			FinishInit();
+		}
+	}
+
 	float const DurationSpent = 1.f - GetDrainDurationRatio();
 	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
 	{
 		MeshComponent->SetCustomPrimitiveDataFloat(GeoMaterialParams::DurationSpentPrimitiveDataIndex, DurationSpent);
 	}
 
-	if (bUseRegularDrain && DrainMagnitudePerSecond > 0.f && bActive && !IsBlinking() && GeoLib::IsServer(GetWorld()))
+	if (bUseRegularDrain && DrainMagnitudePerSecond > 0.f && bActive && !IsBlinking() && !bInitialising
+		&& GeoLib::IsServer(GetWorld()))
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		bApplyingDrain = true;
@@ -228,8 +245,6 @@ void AGeoDeployableBase::PreInitializeComponents()
 	if (bPushActorsOnSpawn)
 	{
 		SetActorEnableCollision(false);
-		GetWorldTimerManager().SetTimer(CollisionEnableTimerHandle, this, &ThisClass::EnableActorCollision,
-										CollisionEnableDelay, false);
 	}
 }
 
@@ -238,6 +253,113 @@ void AGeoDeployableBase::PreInitializeComponents()
 void AGeoDeployableBase::EnableActorCollision()
 {
 	SetActorEnableCollision(true);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+
+void AGeoDeployableBase::StartInit()
+{
+	bDamageableAfterInit = CanBeDamaged();
+	SetCanBeDamaged(false);
+	SetActorEnableCollision(false);
+	if (CombattantWidgetComponent)
+	{
+		CombattantWidgetComponent->SetHiddenInGame(true);
+	}
+	if (GeoLib::IsServer(GetWorld()))
+	{
+		InitStartServerTime = GeoLib::GetServerTime(GetWorld());
+	}
+
+	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
+	{
+		InitRestTransforms.Add(MeshComponent, MeshComponent->GetRelativeTransform());
+	}
+	ApplyInitPose(0.f);
+	PlayInitMontage();
+
+	if (InitCue.IsValid() && !GeoLib::IsDedicatedServer(this))
+	{
+		FGameplayCueParameters CueParams = GetGenericCueParams(InitCue);
+		CueParams.Normal.X = GetData()->Params.InitDuration;
+		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), InitCue, CueParams, true);
+	}
+	PlayMoment(EDeployableMoment::Init);
+}
+
+void AGeoDeployableBase::ApplyInitPose(float const Alpha)
+{
+	float const Weight = IsValid(InitCurve) ? InitCurve->GetFloatValue(Alpha) : 1.f - Alpha;
+	for (TPair<TObjectPtr<UMeshComponent>, FTransform> const& Rest : InitRestTransforms)
+	{
+		FTransform const& RestTransform = Rest.Value;
+		Rest.Key->SetRelativeLocation(RestTransform.GetLocation() + InitStartOffset.GetLocation() * Weight);
+		Rest.Key->SetRelativeRotation(RestTransform.GetRotation()
+									  * FQuat::Slerp(FQuat::Identity, InitStartOffset.GetRotation(), Weight));
+		Rest.Key->SetRelativeScale3D(RestTransform.GetScale3D()
+									 * FMath::Lerp(FVector::OneVector, InitStartOffset.GetScale3D(), Weight));
+	}
+}
+
+void AGeoDeployableBase::PlayInitMontage() const
+{
+	if (InitMontage && !GeoLib::IsDedicatedServer(this))
+	{
+		USkeletalMeshComponent const* const SkeletalMesh = FindComponentByClass<USkeletalMeshComponent>();
+		UAnimInstance* const AnimInstance = IsValid(SkeletalMesh) ? SkeletalMesh->GetAnimInstance() : nullptr;
+		if (ensureMsgf(AnimInstance, TEXT("%s: InitMontage needs a skeletal mesh with an anim instance"), *GetName()))
+		{
+			float const Duration = GetData()->Params.InitDuration;
+			float const Elapsed = FMath::Clamp(GeoLib::GetServerTime(GetWorld()) - InitStartServerTime, 0.f, Duration);
+			float const PlayRate = InitMontage->GetPlayLength() / Duration;
+			AnimInstance->Montage_Play(InitMontage, PlayRate, EMontagePlayReturnType::MontageLength,
+									   Elapsed * PlayRate);
+		}
+	}
+}
+
+void AGeoDeployableBase::FinishInit()
+{
+	bInitialising = false;
+	ApplyInitPose(1.f);
+	SetCanBeDamaged(bDamageableAfterInit);
+	if (CombattantWidgetComponent && bDamageableAfterInit)
+	{
+		CombattantWidgetComponent->SetHiddenInGame(false);
+	}
+
+	if (bPushActorsOnSpawn)
+	{
+		if (GeoLib::IsServer(GetWorld()))
+		{
+			PushAway();
+		}
+		GetWorldTimerManager().SetTimer(CollisionEnableTimerHandle, this, &ThisClass::EnableActorCollision,
+										CollisionEnableDelay, false);
+	}
+	else
+	{
+		EnableActorCollision();
+	}
+
+	PlaySpawnCosmetics();
+}
+
+void AGeoDeployableBase::OnRep_Initialising(bool const bOldValue)
+{
+	if (bOldValue && !bInitialising)
+	{
+		FinishInit();
+	}
+}
+
+void AGeoDeployableBase::PlaySpawnCosmetics() const
+{
+	if (!GeoLib::IsDedicatedServer(this))
+	{
+		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), SpawnCue, GetSpawnCueParams(), true);
+	}
+	PlayMoment(EDeployableMoment::Spawn);
 }
 
 void AGeoDeployableBase::ApplyHealthMultiplier()
@@ -253,9 +375,9 @@ void AGeoDeployableBase::ApplyHealthMultiplier()
 		}
 
 		float const StartRatio = FMath::Clamp(Params.StartHealthRatio, KINDA_SMALL_NUMBER, 1.f);
-		ASC->SetNumericAttributeBase(
-			UGeoAttributeSetBase::GetHealthAttribute(),
-			ASC->GetNumericAttributeBase(UGeoAttributeSetBase::GetMaxHealthAttribute()) * StartRatio);
+		ASC->SetNumericAttributeBase(UGeoAttributeSetBase::GetHealthAttribute(),
+									 ASC->GetNumericAttributeBase(UGeoAttributeSetBase::GetMaxHealthAttribute())
+										 * StartRatio);
 	}
 }
 
@@ -343,11 +465,24 @@ void AGeoDeployableBase::BeginPlay()
 		CombattantWidgetComponent->SetHiddenInGame(true);
 	}
 
-	if (!GeoLib::IsDedicatedServer(this))
+	if (GeoLib::IsServer(GetWorld()))
 	{
-		GeoASLib::ExecuteGeoCue(GetAbilitySystemComponent(), SpawnCue, GetSpawnCueParams(), true);
+		bInitialising = GetData()->Params.InitDuration > 0.f;
 	}
-	PlayMoment(EDeployableMoment::Spawn);
+
+	if (bInitialising)
+	{
+		StartInit();
+	}
+	else
+	{
+		if (bPushActorsOnSpawn)
+		{
+			GetWorldTimerManager().SetTimer(CollisionEnableTimerHandle, this, &ThisClass::EnableActorCollision,
+											CollisionEnableDelay, false);
+		}
+		PlaySpawnCosmetics();
+	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------

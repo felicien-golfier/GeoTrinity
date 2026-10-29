@@ -40,8 +40,8 @@ public:
 	/** Turns the hazard on. It keeps the default zero duration: the zones expire at the single instant the pattern goes
 	 * live. */
 	USpawnPillarPattern();
-	/** Server: spawns a pillar at every zone location, unless force-stopped. Coming once every hostile has been
-	 * judged, no pillar is simulated around a player who had already left. */
+	/** Server. Natural end, once every hostile is judged: the pillars finish their arrival, so the hazard never hits
+	 * them. Force-stop: they are expired. */
 	virtual void EndPattern(bool bForceStop = false) override;
 
 protected:
@@ -51,7 +51,8 @@ protected:
 	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
 
 private:
-	/** Reads ZoneLocations from FSpawnPillarPatternData and schedules the per-zone countdown cues. */
+	/** Reads ZoneLocations from FSpawnPillarPatternData, schedules the per-zone countdown cues and, on the server,
+	 * spawns a pillar per zone that arrives over the wind-up left. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** Fires the zone-indicator cue at every zone location rather than just the pattern origin. */
@@ -78,4 +79,7 @@ private:
 	FGeoCueParam DirectionCue;
 
 	TSet<FVector2D> PillarSpawnLocations;
+
+	/** Server. Pillars InitPattern spawned this run. */
+	TArray<TWeakObjectPtr<AGeoDeployableBase>> SpawnedPillars;
 };

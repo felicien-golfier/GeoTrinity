@@ -14,6 +14,7 @@ AGeoPillar::AGeoPillar(FObjectInitializer const& ObjectInitializer) : Super(Obje
 	bExplodeAtRecall = true;
 	CapsuleComponent->SetCapsuleSize(100.f, 100.f, false);
 	CapsuleComponent->SetCollisionProfileName(TEXT("MovementBlocker"));
+	InitStartOffset = FTransform(FRotator::ZeroRotator, FVector(0.f, 0.f, 3000.f), FVector(3.f));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

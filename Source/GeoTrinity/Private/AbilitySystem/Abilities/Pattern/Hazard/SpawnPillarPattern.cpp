@@ -31,6 +31,7 @@ FGameplayCueParameters USpawnPillarPattern::FillCueParam(FGeoCueParam const& Cue
 void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
 	PillarSpawnLocations.Empty();
+	SpawnedPillars.Empty();
 
 	FSpawnPillarPatternData const* PillarData = PatternData.GetPtr<FSpawnPillarPatternData>();
 	if (!ensureMsgf(PillarData,
@@ -48,6 +49,19 @@ void USpawnPillarPattern::InitPattern(FAbilityPayload const& Payload, TInstanced
 	Super::InitPattern(Payload, PatternData);
 
 	ExecuteGameplayCue(DirectionCue); // Call after super to have Storedpayload
+
+	if (IsPatternActive() && GeoLib::IsServer(GetWorld()))
+	{
+		FDeployableDataParams SpawnParams = PillarParams;
+		SpawnParams.InitDuration = FMath::Max(0.f, StartDelay - TravelTime);
+		SpawnParams.bAutoFinishInit = false;
+		for (FVector2D const& ZoneLocation : PillarSpawnLocations)
+		{
+			SpawnedPillars.Add(GeoASLib::FullySpawnDeployable(
+				PillarClass, StoredPayload, GeoASLib::GetEffectDataArray(StoredPayload.AbilityTag), SpawnParams,
+				FTransform(FVector(ZoneLocation, ArbitraryCharacterZ))));
+		}
+	}
 }
 void USpawnPillarPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 {
@@ -89,13 +103,18 @@ TArray<TInstancedStruct<FEffectData>> const& USpawnPillarPattern::GetHazardEffec
 
 void USpawnPillarPattern::EndPattern(bool const bForceStop)
 {
-	if (IsPatternActive() && !bForceStop && GeoLib::IsServer(GetWorld()))
+	if (IsPatternActive() && GeoLib::IsServer(GetWorld()))
 	{
-		for (FVector2D const& ZoneLocation : PillarSpawnLocations)
+		for (TWeakObjectPtr<AGeoDeployableBase> const& Pillar : SpawnedPillars)
 		{
-			GeoASLib::FullySpawnDeployable(PillarClass, StoredPayload,
-										   GeoASLib::GetEffectDataArray(StoredPayload.AbilityTag), PillarParams,
-										   FTransform(FVector(ZoneLocation, ArbitraryCharacterZ)));
+			if (Pillar.IsValid() && bForceStop)
+			{
+				Pillar->Expire(true);
+			}
+			else if (Pillar.IsValid())
+			{
+				Pillar->FinishInit();
+			}
 		}
 	}
 

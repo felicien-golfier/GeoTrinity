@@ -8,7 +8,7 @@ Applies to every session, every agent (interactive, daily, nightly, cloud). Defa
 
 1. **Why** — the user states the goal. No file written.
 2. **How** — discuss the approach, or the user dictates it. No file written.
-3. **Write it down** — the `CLAUDE.md` of every code folder and `AI/Python` folder touched, written as if the feature exists (map, intent, invariants). Then ONE temporary `AI/Pending/<Feature>.md`: its `Goal:` line is the Why, then everything left to do (template: `AI/Pending/README.md`). Stop; the user reviews the docs.
+3. **Write it down** — the `CLAUDE.md` of every code folder and `AI/Python` folder touched, written as if the feature exists (map, intent, invariants). Then ONE temporary `AI/Pending/<Feature>.md`: its `Goal:` line is the Why, its `Priority:` line (ask the user when unsure) with its row in the README "Order" table, then everything left to do (template: `AI/Pending/README.md`). Stop; the user reviews the docs.
    Grouping: a new feature is also a chance to regroup. Look for existing code of the same kind and fold it, with the new code, into a shared folder (own `CLAUDE.md`, ≥ 3 files rule below); list the moves in the Pending file.
    Tests: the Pending file lists them per `AI/CodingStyle.md` ("Tests").
    Sort every piece of info with one test: *still true and useful to a future task once this feature ships?* Yes (a lasting design rule, layout or behaviour choice) → the `CLAUDE.md` of the leaf folder that owns it. No (one-off steps, sources to fetch from, assets to import, values to copy) → the Pending file only, gone when it is deleted.
@@ -38,7 +38,7 @@ Gate rules:
 - `TroobleshootingLogs.md` (root): only hard-to-find bugs we spent time figuring out, and only when the user says so. Never add an entry on your own; when one seems worth it, ask.
 - **No memory files, ever.** Never create or update anything under `~/.claude/projects/*/memory/`. A fact worth keeping goes in the file from "Where a fact goes" below, in the same session. A rule the user states ("always…", "never…") is written there, not remembered.
 - **Research page.** Every research / study / concept-exploration artifact (visual studies, design options, room or feature research) goes into the existing "Research" artifact (`https://claude.ai/artifact/RZhzLd3DV8276eMvRo7bbF`) as a new tab (`pages` array + `<main id="page…">`), never a separate artifact. Read the whole saved file before republishing.
-- Camera is orthographic: a position mismatch is never parallax or height; find the gameplay or network cause.
+- Camera is orthographic by default (`Geo.CameraPerspective 0`): a position mismatch is then never parallax or height; find the gameplay or network cause.
 
 ## Where a fact goes
 | Kind of fact | File |

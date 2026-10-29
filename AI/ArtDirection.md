@@ -98,7 +98,7 @@ Colour comes from the palette slot the effect means; shape, placement and rotati
 ## Player characters
 - A character is its shape in one solid colour: Square (Tank) blue, Triangle (DPS) yellow, Circle (Heal) green. A halo may surround it; no rim, no inner core, no symbol inside. Extra meaning (stored damage, buffs) sits outside the shape.
 - These class colours are separate from the `EGeoColor` effect palette.
-- Camera is orthographic: a position mismatch is never parallax or height; look for the gameplay or network cause (origin, direction, distance, flight, replication).
+- Camera is orthographic by default (`Geo.CameraPerspective 0`): a position mismatch is then never parallax or height; look for the gameplay or network cause (origin, direction, distance, flight, replication).
 
 ## Dummies
 - Enemy dummy = eight-point star, sharp points, enemy red. Friendly dummy (player team) = the same star as "soft star": ally green (the Healer / ally colour), points rounded, a pale core disc. Rounded points + green = nothing to shoot, at 24 px as at 64 px.

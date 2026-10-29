@@ -25,5 +25,5 @@ def import_texture(file_path, destination_folder, asset_name, srgb=True,
 
 
 if __name__ == "__main__":
-    import_texture(unreal.Paths.project_dir() + "GamePictures/tank_NB.png", "/Game/Characters/Meshes/Class/Materials",
+    import_texture(unreal.Paths.project_dir() + "GamePictures/BadgeMasks/Square_Mask.png", "/Game/Characters/Meshes/Class/Materials",
                    "T_SquareBadge_Mask", srgb=False)

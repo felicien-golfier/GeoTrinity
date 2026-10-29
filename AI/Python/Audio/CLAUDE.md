@@ -33,6 +33,7 @@ Run from a shell with `uv run <script>`, outside the editor; each declares its d
 | `hex_intro_mech_score.py` | Hex boss intro, mechanical kit: `cues.json`, `loop.json`, preview per hum version |
 | `hex_intro_score.py` | Hex boss intro as a heavy machine |
 | `hex_boss_montage_score.py` | Hex boss ability + death montages: one-shots on section beats, loop-bending curves |
+| `hex_turret_deploy_score.py` | Hex turret deploy montage: hiss, telescoping slide, two-latch lock, notifies on `AM_HexTurret_Deploy` |
 | `star_boss_score.py` | Star boss with the ninja kit: fight loop + every montage |
 
 ## Compute

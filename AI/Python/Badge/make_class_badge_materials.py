@@ -6,6 +6,8 @@ The projection runs straight through along Z, so the bottom cap shows the lines 
 Pre-skinned data is vertex-shader only: the mask UV and the cap-face flag cross to the pixel shader through one
 vertex interpolator, exact on the flat caps. The shield-burst gauge glow of MAT_Cube_Alive is carried over as is.
 
+Masks: GamePictures/BadgeMasks/<Class>_Mask.png, written by generate_class_badge_masks.py (run it first).
+
 Points DA_PlayerClassData's AliveMaterial and each SKM_<Class>Badge slot 0 at the class's instance. An existing
 instance keeps its tuned values; only its texture and mask frame are set again. Run through execute_script, outside
 PIE. Report written to AI/Output/class_badge_materials.txt.
@@ -15,18 +17,20 @@ import unreal
 FOLDER = "/Game/Characters/Meshes/Class/Materials"
 MESH_FOLDER = "/Game/Characters/Meshes/Class"
 CLASS_DATA = "/Game/Characters/Playable/DA_PlayerClassData"
-MASK_FOLDER = unreal.Paths.project_dir() + "GamePictures/"
+MASK_FOLDER = unreal.Paths.project_dir() + "GamePictures/BadgeMasks/"
 REPORT = (unreal.Paths.project_dir() + "AI/Output/") + "class_badge_materials.txt"
 CAP_FACE_MIN_NORMAL_Z = 0.5  # the needle's sloped faces count as caps
 
-# Badge -> (class, mask file, colour, line colour). Colours are those of the class's previous alive material.
+BLACK = unreal.LinearColor(0.0, 0.0, 0.0, 1.0)
+
+# Badge -> (class, mask file, colour, line colour). Body colours are those of the class's previous alive material.
 BADGES = {
-    "Square": (unreal.PlayerClass.SQUARE, "tank_NB.png",
-               unreal.LinearColor(0.0, 0.0, 1.0, 1.0), unreal.LinearColor(0.6, 0.6, 1.0, 1.0)),
-    "Triangle": (unreal.PlayerClass.TRIANGLE, "damage_NB.png",
-                 unreal.LinearColor(1.0, 1.0, 0.0, 1.0), unreal.LinearColor(1.0, 1.0, 0.6, 1.0)),
-    "Circle": (unreal.PlayerClass.CIRCLE, "heal_NB.png",
-               unreal.LinearColor(0.0, 1.0, 0.0, 1.0), unreal.LinearColor(0.6, 1.0, 0.6, 1.0)),
+    "Square": (unreal.PlayerClass.SQUARE, "Square_Mask.png",
+               unreal.LinearColor(0.0, 0.0, 1.0, 1.0), BLACK),
+    "Triangle": (unreal.PlayerClass.TRIANGLE, "Triangle_Mask.png",
+                 unreal.LinearColor(1.0, 1.0, 0.0, 1.0), BLACK),
+    "Circle": (unreal.PlayerClass.CIRCLE, "Circle_Mask.png",
+               unreal.LinearColor(0.0, 1.0, 0.0, 1.0), BLACK),
 }
 
 toolkit_path = unreal.Paths.project_dir() + "AI/Python/Material/material_graph_authoring.py"
@@ -78,7 +82,7 @@ def build_material(default_mask):
               B=graph.mask(to_pixel, "b"))
     color = parameter(Vector, "Color", unreal.LinearColor(0.0, 0.0, 1.0, 1.0), "01 Body", 0,
                       "Class colour, emissive")
-    line_color = parameter(Vector, "LineColor", unreal.LinearColor(0.6, 0.6, 1.0, 1.0), "02 Mask", 1,
+    line_color = parameter(Vector, "LineColor", BLACK, "02 Mask", 1,
                            "Colour of the mask's lines, emissive")
     body = op(unreal.MaterialExpressionLinearInterpolate, A=color, B=line_color, Alpha=line)
 

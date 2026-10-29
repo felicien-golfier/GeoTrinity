@@ -16,6 +16,8 @@ Automation tests of the `GeoTrinity` module. Fakes they spawn: `Fake/CLAUDE.md`.
 | `GeoCatTests.cpp` | Cat walk, stop distance, hidden walk, replace, roam, montage order |
 | `GeoEncounterTests.cpp` | Fake trigger / actions / encounter / HUD, readable zone, set-up summoned dummy |
 | `GeoVoidDeathTests.cpp` | Void death with an enemy whose body stays |
+| `GeoDeployableInitTests.cpp` | Deployable init phase: inert while arriving, live once it ends |
+| `GeoCameraTests.cpp` | Width → perspective distance, cursor ray onto a Z plane, projection switch round trip |
 | `GeoTurretTests.cpp` | Player turret waits for the owner's basic-hit target, idles when it is gone |
 
 - Each test builds its own world with `CreateTestWorld` / `DestroyTestWorld` (`Fake/GeoTestWorld.h`); none touches a map asset.

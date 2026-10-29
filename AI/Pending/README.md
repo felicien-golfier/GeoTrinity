@@ -35,7 +35,10 @@ Every Pending file carries `Priority:` (1 high, 2 normal, 3 later). This list is
 | 1 | `LateralWaveVisual.md` |
 | 1 | `TutorialMinibossRework.md` |
 | 1 | `Tutorial.md` |
+| 2 | `HexDeployAnims.md` |
 | 2 | `DashVoidEdge.md` |
+| 2 | `BadgePartMarks.md` |
+| 2 | `PillarDrop.md` |
 | 2 | `TutorialPolish.md` |
 | 2 | `QuestDummies.md` |
 | 2 | `TutorialExit.md` |
@@ -51,6 +54,7 @@ Every Pending file carries `Priority:` (1 high, 2 normal, 3 later). This list is
 | 2 | `TeleportPortal.md` |
 | 2 | `CatLineTypewriter.md` |
 | 2 | `LoadingScreen.md` |
+| 2 | `CameraPerspective.md` |
 | 2 | `CatExpressions.md` |
 | 3 | `CatAnimation.md` |
 | 3 | `CatClipsPick.md` |
@@ -63,3 +67,4 @@ Every Pending file carries `Priority:` (1 high, 2 normal, 3 later). This list is
 | 3 | `MaterialFunctionDedup.md` |
 | 3 | `MenuGuide.md` |
 | 3 | `MessageLog.md` |
+| 3 | `RemoveZoneGrowth.md` |

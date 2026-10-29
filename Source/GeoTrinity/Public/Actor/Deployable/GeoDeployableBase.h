@@ -24,6 +24,8 @@ class UGeoDeployableFXComponent;
 class AGeoArena;
 struct FEffectData;
 class UMeshComponent;
+class UAnimMontage;
+class UCurveFloat;
 class UWidgetComponent;
 class UUserWidget;
 
@@ -38,7 +40,8 @@ enum class EDeployableMoment : uint8
 	Recall,
 	Explode,
 	Expire,
-	ExpireButNotRecalled
+	ExpireButNotRecalled,
+	Init
 };
 
 /** Configuration parameters set by the deploy ability and passed to the deployable actor via FDeployableData. */
@@ -58,6 +61,16 @@ struct FDeployableDataParams
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
 	float Value = 0.f;
+
+	/** Seconds the arrival animation lasts after BeginPlay; until the arrival ends the deployable has no collision, is
+	 * not damageable and does not drain. Set by the spawner; 0 = it is live at once. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
+	float InitDuration = 0.f;
+
+	/** True: the arrival ends by itself when InitDuration is over. False: it stays inert, resting at the end pose,
+	 * until the spawner calls FinishInit (server). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
+	bool bAutoFinishInit = true;
 
 	/** Colour the deployable tints its material with, so one Blueprint can serve every ability that spawns it. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoDeployable")
@@ -186,6 +199,14 @@ public:
 	UFUNCTION()
 	virtual void Expire(bool bForce = false);
 
+	/** True from BeginPlay until the arrival ends (Params.bAutoFinishInit, else FinishInit): the deployable is inert.
+	 */
+	bool IsInitialising() const { return bInitialising; }
+
+	/** Server. Ends the arrival: meshes at rest, damageable again, push, collision, then the spawn cue and moment.
+	 * Clients follow through replication. Called by the spawner when Params.bAutoFinishInit is false. */
+	void FinishInit();
+
 	/** Returns false once the deployable is dead / blinking (health or duration reached zero). */
 	UFUNCTION(BlueprintPure)
 	bool IsActive() const { return bActive; }
@@ -313,6 +334,8 @@ protected:
 	// notify Blueprint needs of the moment (a recall beam's two points, an explosion's magnitude), the FXMap entry
 	// carries the plain system and its sounds.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
+	FGeoCueParam InitCue;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam SpawnCue;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoGameFeel", meta = (AllowPrivateAccess = true))
 	FGeoCueParam RecallCue;
@@ -381,6 +404,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bDestroyOldestWhenLimitReached = false;
 
+	/** Played once over Params.InitDuration on the first skeletal mesh while the deployable arrives. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable|Init", meta = (AllowPrivateAccess = true))
+	TObjectPtr<UAnimMontage> InitMontage;
+
+	/** Transform every visual mesh starts at, relative to its rest transform, while the deployable arrives: location is
+	 * added, rotation composed, scale multiplied (identity = no offset). The orthographic top view shows no height, so
+	 * a scale above 1 is what reads as a fall. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable|Init", meta = (AllowPrivateAccess = true))
+	FTransform InitStartOffset;
+
+	/** Share of InitStartOffset still applied (1 = full offset, 0 = at rest) over the arrival, x = 0..1 of
+	 * Params.InitDuration. Null = linear 1 to 0. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable|Init", meta = (AllowPrivateAccess = true))
+	TObjectPtr<UCurveFloat> InitCurve;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (AllowPrivateAccess = true))
 	bool bUnlimitedDeploy = true;
 
@@ -413,6 +451,22 @@ private:
 
 	void EnableActorCollision();
 
+	/** Starts the arrival: inert (no collision, not damageable, health bar hidden), meshes at the start pose, montage
+	 * playing, init cue and Init moment fired (the cue's Normal.X carries Params.InitDuration). */
+	void StartInit();
+
+	/** Puts every visual mesh at Alpha (0 = start of the arrival, 1 = rest transform). */
+	void ApplyInitPose(float Alpha);
+
+	/** Plays InitMontage stretched over Params.InitDuration, from where the server clock already is. */
+	void PlayInitMontage() const;
+
+	UFUNCTION()
+	void OnRep_Initialising(bool bOldValue);
+
+	/** Fires the spawn cue and the Spawn moment. */
+	void PlaySpawnCosmetics() const;
+
 	/** Server. Scales MaxHealth and Health by Params.HealthMultiplier, then sets Health to Params.StartHealthRatio of
 	 *  MaxHealth. Runs after InitDrain, so the drain keeps the rate of the unscaled health: a tougher deployable lives
 	 *  longer, a partly healthy one shorter. */
@@ -424,6 +478,19 @@ private:
 	void JudgeExplosion();
 
 	FGeoHazardJudge Explosion;
+
+	/** Server clock at the server's BeginPlay; every machine reads its arrival progress from it. */
+	UPROPERTY(Replicated)
+	float InitStartServerTime = 0.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Initialising)
+	bool bInitialising = false;
+	/** CanBeDamaged before the arrival turned it off. */
+	bool bDamageableAfterInit = false;
+
+	/** Rest transform of each visual mesh, put back by FinishInit. */
+	UPROPERTY(Transient)
+	TMap<TObjectPtr<UMeshComponent>, FTransform> InitRestTransforms;
 
 	FTimerHandle BlinkTimerHandle;
 	FTimerHandle CollisionEnableTimerHandle;

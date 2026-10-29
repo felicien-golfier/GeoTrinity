@@ -47,5 +47,6 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 
 ## SpawnPillar
 - Zone locations come from `FSpawnPillarPatternData` (ability's `CreatePatternData`).
-- Effects per hostile when `ZoneExpiry` (`FGeoLagCompensatedEvent`) judges it; pillars spawn and pattern ends once it `IsOver`.
+- Server: pillars spawn in `InitPattern` with `PillarParams.InitDuration` = wind-up left (`StartDelay - TravelTime`), so they drop in during the telegraph, `bAutoFinishInit` false: inert (not a hazard target) until `EndPattern` (hazard judged) calls `FinishInit()`. A force-stop expires them (`Expire(true)`).
+- Effects per hostile when the base hazard judge reaches it; the pattern ends once it `IsOver`.
 - `DelayGameplayCueTag` countdown cue per spawn point; clients end in `StartPattern`.

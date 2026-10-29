@@ -310,13 +310,15 @@ def build(name, parts):
 
         Only the ends carry a cap, so every profile keeps its outline at full size there; a middle layer
         is free to pinch in. `height(x)` scales each layer's z where it stands, linear in x so a cap stays
-        flat. Nothing is shared with any other part.
+        flat. Nothing is shared with any other part. Each cap owns its vertices, so the walls never smooth its
+        normal: the material's cap test reads a clean 1 across the cap and 0 on the walls.
         """
         cx, cy = narrow_side(outline)[1]
-        layers = []
+        layers, corners = [], []
         for z, s in profile:
             points = [(cx + (x - cx) * s, cy + (y - cy) * s) for x, y in outline]
-            layers.append([vert(x, y, z * height(x)) for x, y in points])
+            corners.append([(x, y, z * height(x)) for x, y in points])
+            layers.append([vert(*corner) for corner in corners[-1]])
 
         count = len(outline)
         edges = [(outline[i], outline[(i + 1) % count]) for i in range(count)]
@@ -330,9 +332,10 @@ def build(name, parts):
         caps = ear_clip(outline)
         # A simple polygon always clips to n-2 ears; anything less means a hole in the cap.
         assert len(caps) == count - 2, "{}: {} ears for {} points".format(name, len(caps), count)
+        top_cap, bottom_cap = [vert(*corner) for corner in corners[-1]], [vert(*corner) for corner in corners[0]]
         for i, j, k in caps:
-            tri(layers[-1][i], layers[-1][j], layers[-1][k])
-            tri(layers[0][k], layers[0][j], layers[0][i])
+            tri(top_cap[i], top_cap[j], top_cap[k])
+            tri(bottom_cap[k], bottom_cap[j], bottom_cap[i])
 
     for part in parts:
         if part.kind == DIAMOND:
