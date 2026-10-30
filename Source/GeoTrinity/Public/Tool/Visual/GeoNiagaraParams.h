@@ -102,7 +102,8 @@ namespace GeoMaterialParams
 	}
 
 	/** MPC_MaskedArea — FSafeSpotMask: the safe spots shadowing a hazard, one position per slot, one radius, the
-	 * shadow mode (ESafeSpotShadow ordinal: 0 Behind, 1 Lane, 2 Disc) and the unit XY direction a Lane runs along. */
+	 * shadow mode (ESafeSpotShadow ordinal: 0 Behind, 1 Lane, 2 Disc), the unit XY direction a Lane runs along and the
+	 * hazard origin a Behind shadow is cast from. */
 	inline FName GetPillarPositionName(int32 const SlotIndex)
 	{
 		return FName(FString::Printf(TEXT("PillarPosWS_%02d"), SlotIndex));
@@ -110,6 +111,7 @@ namespace GeoMaterialParams
 	inline FName const PillarRadius(TEXT("Pillar_Radius"));
 	inline FName const SafeSpotShadowMode(TEXT("SafeSpot_ShadowMode"));
 	inline FName const SafeSpotLaneDirection(TEXT("SafeSpot_LaneDirection"));
+	inline FName const SafeSpotOrigin(TEXT("SafeSpot_OriginWS"));
 
 	/** HUD sweep materials, 0..1 — the cooldown (UGeoAbilitySlotWidget) and the effect depletion (UGeoStatusBarWidget).
 	 */

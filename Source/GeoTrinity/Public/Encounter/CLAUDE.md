@@ -4,7 +4,7 @@ Scripted sequences of steps driven by triggers and actions, authored in the leve
 
 | File / folder | Role |
 |---|---|
-| `GeoEncounter.h` | `AGeoEncounter`: placed actor holding `Steps`; runs the current step, arms its rules, moves between steps, holds the step counters |
+| `GeoEncounter.h` | `AGeoEncounter`: placed actor holding `Steps`; runs the current step, arms its rules, moves between steps, holds the step counters; `GetCurrentStepName()` (what a test reports on a stall) |
 | `GeoEncounterTypes.h` | `FGeoEncounterPayload`, `FGeoEncounterRule`, `FGeoEncounterStep`, `EGeoCompareSource`, `EGeoCompareOperator` |
 | `GeoEncounterObject.h` | `UGeoEncounterObject`: abstract base of trigger, condition, action; `GetWorld()` (null on the CDO), `GetEncounter()` (typed outer) |
 | `GeoEncounterTrigger.h` | `UGeoEncounterTrigger`: base of every trigger; binds in `OnArm`, unbinds in `OnDisarm`, calls `Fire(Payload)` |

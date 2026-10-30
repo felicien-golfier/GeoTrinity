@@ -32,7 +32,7 @@ CAT_SPEED = 150.0  # placeholder, tuned against the Cat_Walk stride
 CAT_PORTAL_DISTANCE = 110.0  # rig_cat.py PORTAL_X: the jump clip's portal opens this far ahead, on the pad
 SHOOT_ABILITY_TAG = "Ability.Spell.ProjectileToAllPlayers"
 
-ROOMS = ["Landing", "Dash", "Shoot", "Deploy", "Special", "Dummies", "Zones", "Miniboss"]
+ROOMS = ["Landing", "Dash", "Zones", "Shoot", "Deploy", "Special", "Dummies", "Miniboss"]
 SHARED_PAD_TAG = "Teleport.Tutorial"
 FINAL_EXIT_TAG = "Teleport.TutorialExit"
 ROOM_HALF_X = 700.0
@@ -63,19 +63,18 @@ SPECIAL_ALLY_TAG = "TutorialSpecialAlly"  # not the Deploy ally's: that one stay
 PAGE_LINE = "An ability page is about to pop up. Read it. Or don't, I'm a cat, not a cop."
 
 ZONE_X = 150.0  # from the room's centre
-ZONE_SPOTS = {"Damage": (0.0, 0.0), "Shield": (ZONE_X, -550.0), "Heal": (ZONE_X, 550.0)}  # from the room's centre: Damage always there, the others where a missing point is created
-ZONE_RADIUS = 250.0
+ZONE_SPOTS = {"Damage": (0.0, 0.0), "Shield": (ZONE_X, -200.0), "Heal": (ZONE_X, 200.0)}  # from the room's centre: Damage always there, the others where a missing point is created
+ZONE_RADIUS = 300.0  # more than half the Shield-Heal distance: the two zones overlap
 DAMAGE_ZONE_START_SIZE = 100.0
-COLOR_ZONE_GROW_SECONDS = 8.0  # the CT_Tutorial row ColorZoneGrowSeconds (tutorial_assets.py): Shield and Heal wait for it
 ZONE_BOX_HALF_Z = 80.0  # a standing capsule is inside it
 PAD_BOX_HALF = 50.0  # the exit pad's footprint
-WAVE_START_INSET = 650.0  # tutorial_waves.py: the front starts here, from the room's centre, and crosses it along +X
+WAVE_START_INSET = 650.0  # the Miniboss room's wave point, from the room's centre
+ZONES_WAVE_START_INSET = ROOM_HALF_X  # tutorial_waves.py: the Zones front starts on the near wall and crosses the whole room (TRAVEL) along +X
 MINIBOSS_TREE = "/Game/AI/Tutorial/ST_TutorialMiniboss"  # tutorial_miniboss.py: its spells, in BP_Dummy's base tree
 MINIBOSS_ABILITIES = ["Ability.Spell.TutorialSalve", "Ability.Spell.TutorialMinibossSummon", "Ability.Spell.LateralWave"]
 MINIBOSS_TAG = "TutorialMiniboss"  # the boss's BossSetup.Tag: the kill line watches it
 MINIBOSS_POINTS = [(150.0, -650.0), (350.0, 0.0), (150.0, 650.0)]  # from the room's centre; the boss spawns on the middle one and waits to be hit (setup AggroRadius -1)
 MINIBOSS_ALLY_TAG = "TutorialMinibossAlly"  # BP_TutorialSummonedDummy's AllySetup.Tag
-MINIBOSS_ALLY_LOW_RATIO = 0.3
 MINIBOSS_CHIPS = ["Power", "Guard", "Vigor", "Mend", "Swift", "Precision", "Edge"]  # Data/gems.csv, tier Chip
 ZONE_ATTITUDE = 7  # ETeamAttitudeBitflag: Neutral | Friendly | Hostile, a zone acts on everyone
 NO_AGGRO_RADIUS = -1.0  # GeoEnemySetup default: the enemy waits to be hit
@@ -83,15 +82,21 @@ DUMMIES_AGGRO_RADIUS = 100.0  # the Dummies room's three
 DEATH_TIME = 3.0  # AGeoGameState::DeathTime
 WAVE_ABILITY = "/Game/AbilitySystem/Abilities/Enemy/LateralWave/GA_LateralWave"  # tutorial_waves.py: the one wave, its safe spots given per firing
 SAFE_WAVE_LANES = [[-650.0, 0.0, 650.0], [-300.0, 500.0], [250.0]]  # Y of each safe lane from the wave start, per wave
-HEAL_EFFECT = ('/Script/GeoTrinity.HealEffectData(bSuppressHealProvided=False,Amount=(Value=15.000000),bIsPerSecond=True,'
-               'bLimitGameplayCue=True)')
+def row_value(row):
+    """A scalable float read from a CT_Tutorial row, in import_text form."""
+    return "(Value=1.000000,Curve=(CurveTable=\"/Script/Engine.CurveTable'%s.CT_Tutorial'\",RowName=\"%s\"))" % (
+        CURVE_TABLE, row)
+
+
+HEAL_EFFECT = ('/Script/GeoTrinity.HealEffectData(bSuppressHealProvided=False,Amount=%s,bIsPerSecond=True,'
+               'bLimitGameplayCue=True)' % row_value("ColorZoneHeal"))
 SHIELD_EFFECT = ('/Script/GeoTrinity.GameplayEffectData(GameplayEffect="/Script/Engine.BlueprintGeneratedClass\'/Game/'
                  'AbilitySystem/GameplayEffects/Buffs/GE_DamageReductionBuff.GE_DamageReductionBuff_C\'",'
-                 'DataTag=(TagName="Status.Buff.DamageReduction"),Magnitude=(Value=0.500000),bInfiniteDuration=True,'
+                 'DataTag=(TagName="Status.Buff.DamageReduction"),Magnitude=%s,bInfiniteDuration=True,'
                  'Icon="/Script/GeoTrinity.GeoIcon\'/Game/HUD/Icons/DA_Icon_Status_DamageReduction.'
-                 'DA_Icon_Status_DamageReduction\'")')
-DAMAGE_EFFECT = ("/Script/GeoTrinity.DamageEffectData(Amount=(Value=1.000000,Curve=(CurveTable=\"/Script/Engine.CurveTable'%s.CT_Tutorial'\","
-                 "RowName=\"ColorZoneDamage\")),bIsPerSecond=True,bLimitGameplayCue=True)" % CURVE_TABLE)
+                 'DA_Icon_Status_DamageReduction\'")' % row_value("ColorZoneShieldShare"))
+DAMAGE_EFFECT = "/Script/GeoTrinity.DamageEffectData(Amount=%s,bIsPerSecond=True,bLimitGameplayCue=True)" % row_value(
+    "ColorZoneDamage")
 ZONE_EFFECTS = {"Heal": HEAL_EFFECT, "Shield": SHIELD_EFFECT, "Damage": DAMAGE_EFFECT}
 ZONE_COLORS = {"Heal": "Heal", "Shield": "DamageReduction", "Damage": "Damage"}  # EGeoColor of each zone
 ZONE_TEAMS = {"Heal": unreal.Team.PLAYER, "Shield": unreal.Team.ENEMY, "Damage": unreal.Team.ENEMY}
@@ -206,7 +211,7 @@ def build_zone_points():
         label = "Tut_Zones_ZonePoint_" + color
         if color == "Damage" or find_actor(label) is None:  # the Damage point is the room's centre; the others are placed by the user, never moved
             point(label, (cx + x, y, 0.0), "TargetPoint.Tutorial.Zone" + color, "Zones")
-    point("Tut_Zones_WaveStart", (cx - WAVE_START_INSET, 0.0, 0.0), "TargetPoint.Tutorial.WaveStart", "Zones")
+    point("Tut_Zones_WaveStart", (cx - ZONES_WAVE_START_INSET, 0.0, 0.0), "TargetPoint.Tutorial.WaveStart", "Zones")
     remove_actor("Tut_Zones_BossSpawn")  # earlier versions: the waves fire on the encounters' shared caster now
 
 
@@ -269,14 +274,19 @@ class Builder:
         return obj
 
     # actions
-    def say(self, line, wait_for_respawn=False):
-        return self.make(unreal.GeoCatLineAction, Line=line, bWaitForRespawn=wait_for_respawn)
+    def say(self, line, wait_for_respawn=False, seconds=""):
+        """`seconds` = a CT_Tutorial row: a timed, unskippable line of that length."""
+        return self.make(unreal.GeoCatLineAction, Line=line, bWaitForRespawn=wait_for_respawn, **self.timing(seconds))
 
-    def say_from_file(self, category):
-        """A random line of one Data/CatLines.txt category (no repeat until the category is spent)."""
+    def say_from_file(self, category, random=True, wait_for_respawn=False, seconds=""):
+        """A line of one Data/CatLines.txt category: random, no repeat until the category is spent, or in file order."""
         categories = unreal.GeoCatLineCategories()
         categories.set_editor_property("Names", [unreal.Name(category)])
-        return self.make(unreal.GeoCatLineFromFileAction, Categories=categories, bRandom=True)
+        return self.make(unreal.GeoCatLineFromFileAction, Categories=categories, bRandom=random,
+                         bWaitForRespawn=wait_for_respawn, **self.timing(seconds))
+
+    def timing(self, seconds_row):
+        return {"bTimed": True, "Seconds": self.scalable(seconds_row)} if seconds_row else {}
 
     def count(self, name, delta=1):
         return self.make(unreal.GeoAddToCounterAction, CounterName=name, Delta=delta)
@@ -289,8 +299,13 @@ class Builder:
                           self.make(unreal.GeoShowAbilityPageAction, AbilityTag=tag(ability_tag))]
 
     def delay(self, seconds):
-        """A wait inside a rule or a list: delays are actions, never a trigger."""
-        return self.make(unreal.GeoDelayAction, Duration=seconds)
+        """A wait inside a rule or a list: delays are actions, never a trigger. A number, or a CT_Tutorial row name."""
+        if isinstance(seconds, str):
+            duration = self.scalable(seconds)
+        else:
+            duration = unreal.ScalableFloat()
+            duration.set_editor_property("Value", seconds)
+        return self.make(unreal.GeoDelayAction, Duration=duration)
 
     def lock(self, locked):
         return self.make(unreal.GeoSetMovementLockedAction, bLocked=locked)
@@ -352,9 +367,9 @@ class Builder:
     def card(self, operation, **props):
         return self.make(unreal.GeoQuestCardAction, Operation=operation, **props)
 
-    def zone(self, color, event=None):
-        """The colour's zone on its point, until the step is left. Damage grows from the point to cover the room and
-        ticks the CT_Tutorial amount; the others raise `event` when a player is in."""
+    def zone(self, color):
+        """The colour's zone on its point, until the step is left. Damage grows from the point to cover the room; every
+        amount reads a CT_Tutorial row."""
         effect = unreal.InstancedStruct()
         effect.import_text(ZONE_EFFECTS[color])
         params = unreal.DeployableDataParams()
@@ -365,7 +380,7 @@ class Builder:
             params.set_editor_property("GrowSeconds", self.scalable("ColorZoneGrowSeconds"))
         return self.make(unreal.GeoSpawnZoneAction, PurposeTag=tag("TargetPoint.Tutorial.Zone" + color),
                          ArenaTag=tag("Arena.Tutorial.Zones"), EffectDataArray=[effect], Params=params,
-                         Team=ZONE_TEAMS[color], EnteredEvent=tag(event) if event else unreal.GameplayTag())
+                         Team=ZONE_TEAMS[color])
 
     def wave(self, lanes=()):
         """The encounters' shared caster fires the wave in the Zones room, one safe spot per lane (Y from the wave
@@ -447,8 +462,8 @@ def open_with_last_line(builder, room, lines):
 
 def arrival_rule(builder, room):
     """The player lands in the next room: close this room's exit pad, start the next encounter (last: it aborts this
-    room). On every step of the room, so a pad taken while the room still runs starts the next one at once. The next
-    room's entry pad never opens (Flow.md, "Rooms")."""
+    room). On the steps where the exit pad is open (room_steps). The next room's entry pad never opens (Flow.md,
+    "Rooms")."""
     following = ROOMS[ROOMS.index(room) + 1]
     arrive = [builder.pad("Tut_%s_PadExit" % room, False),
               builder.make(unreal.GeoStartEncounterAction, Target=encounter_actor(following))]
@@ -456,7 +471,7 @@ def arrival_rule(builder, room):
 
 
 def leave_steps(builder, room, extra_rules=()):
-    """After a room: Leave waits for the arrival (on every step, room_steps) with the room's own extra_rules."""
+    """After a room: Leave waits for the arrival (room_steps) with the room's own extra_rules."""
     return [builder.step("Leave", list(extra_rules))]
 
 
@@ -614,8 +629,17 @@ def shoot_steps(b):
     return [first, quest]
 
 
+HEAL_CALLS = [
+    "'I need healing.' Reminds me of my old friend Genji. Jumped around the whole map, barking it at anyone who'd "
+    "listen. Nobody ever came.",
+    "Poor dummy, yawning 'I need healing' with no one around to help. If ONLY we had a healer in the team...",
+    "I need healing. **I NEED HEALING.** ~~I NEED HEALING~~",
+]
+
+
 def deploy_steps(b):
-    """One step: the hurt ally and the Cat's lines in OnEnter, the ally's full health ends it."""
+    """One step: the hurt ally and the Cat's lines in OnEnter, the ally's full health ends it (and cuts the "I need
+    healing" calls still waiting in OnEnter)."""
     ally = b.enemy_setup("TutorialAlly", "AllyDummyHealth", team=unreal.Team.PLAYER,
                          start_health=HURT_ALLY_START_HEALTH)
     return [b.step("Heal", [
@@ -628,7 +652,7 @@ def deploy_steps(b):
         b.spawn(ally, 1, "TargetPoint.Tutorial.Ally", "Deploy"),
         b.say("See the friendly Dummy over there, barely standing? Drop the Zone on it and let it heal up. You can stack "
               "several to heal faster. It won't ask nicely. Dummies never do."),
-    ])]
+    ] + [action for line in HEAL_CALLS for action in (b.delay("HealCallPauseSeconds"), b.say(line))])]
 
 
 def special_steps(b):
@@ -701,8 +725,8 @@ def dummies_steps(b):
     fight = b.step("Fight", [
         watch("TutorialChaser"), watch("TutorialShooter"), watch("TutorialMover"),
         b.rule(b.counter("Dead"), open_with_last_line(b, "Dummies", [
-            b.say("All three down. You've officially beaten the cardboard. Don't let it go to your head. The floor is "
-                  "about to get opinions.")]), condition=b.payload_count(EQUAL, 3), completes=True),
+            b.say("All three down. You've officially beaten the cardboard. Don't let it go to your head. The next "
+                  "one has a health bar bigger than your ego.")]), condition=b.payload_count(EQUAL, 3), completes=True),
     ], on_enter=[lines[0],  # the first line, then the three, then the second
         spawner(chaser, "TargetPoint.Tutorial.Chaser"),
         spawner(shooter, "TargetPoint.Tutorial.Shooter"),
@@ -713,7 +737,7 @@ def dummies_steps(b):
 
 def miniboss_steps(b):
     """Step 10. The fight is the arena's; the encounter only talks: an intro, one strategy tip per death (in order), the
-    ally call-out at low health (three lines), the kill line. Done when the miniboss is dead, by any means."""
+    kill line. Done when the miniboss is dead, by any means."""
     deaths = [
         "Tip: those Dummies land hard, then a zone grows around each one. It does little, but it never stops, until the "
         "whole map is covered. Kill the Dummies. Revolutionary, I know. Take notes.",
@@ -722,18 +746,9 @@ def miniboss_steps(b):
         "Every third Dummy, a lethal wave sweeps the room sideways. Find the safe line and slip through. You remember "
         "lethal. You were there. Very memorable. For all the wrong reasons.",
     ]
-    calls = [
-        "'I need healing.' Reminds me of my old friend Genji. Jumped around the whole map, barking it at anyone who'd "
-        "listen. Nobody ever came.",
-        "Poor dummy, yawning 'I need healing' with no one around to help. If ONLY we had a healer in the team...",
-        "I need healing. **I NEED HEALING.** ~~I NEED HEALING~~",
-    ]
     rules = []
     for count, line in enumerate(deaths, start=1):
         rules.append(b.rule(b.player_died(), [b.say(line, True)], condition=b.payload_count(EQUAL, count), repeat=True))
-    for count, line in enumerate(calls, start=1):
-        rules.append(b.rule(b.dummy_health(MINIBOSS_ALLY_TAG, unreal.GeoHealthSide.BELOW, MINIBOSS_ALLY_LOW_RATIO),
-                            [b.say(line)], condition=b.payload_count(EQUAL, count), repeat=True))
     rules.append(b.rule(b.dummy_died(MINIBOSS_TAG), open_with_last_line(b, "Miniboss", [
         b.say("It's dead. You've got it: time to come back to the real world. Your snacks are cold and someone has to "
               "roll initiative. But first: loot.")]), completes=True))
@@ -743,23 +758,36 @@ def miniboss_steps(b):
 
 
 def zones_steps(b):
-    """Steps 7-9. One step for the colours (the Damage zone grows and stays, then Shield and Heal appear inside it; the
-    player stood in both once, 2 s, the step is left and every zone goes), the lethal wave (the player's death leaves),
-    then the safe-spot waves; a death leaves SafeSpots for SafeSpotsWait, which comes back after DeathTime."""
-    intro = [
-        "Welcome to the Color Room. The floor will now heal, shield and hurt you. Think of it as customer service.",
-        "Orange hurts. It starts small and spreads until it owns the whole floor, so don't get attached to your "
-        "position. Green heals. Blue shields. The color tells you what the floor will do before it does it. Remember "
-        "that. It is the whole game.",
-        "Now stand in the shield, then in the heal. Yes, while the orange is nibbling at you. An educational nibble.",
+    """Steps 7-9. The colours: a timed script (every line a CT_Tutorial row, unskippable) where the Damage zone grows,
+    Shield and Heal come in with their lines and only their overlap survives; a death never leaves the colour steps: after
+    DeathTime ZoneColorsRetry replays the whole script with a ZoneDeath pun as its opening instead of the welcome.
+    No line names a colour (zone colours are params).
+    Then the lethal wave (the player's death leaves), then the safe-spot waves; a death leaves SafeSpots for
+    SafeSpotsWait, which comes back after DeathTime."""
+    def colors_step(name, opening, opening_row):
+        return b.step(name, [
+            b.rule(b.player_died(), [b.delay(DEATH_TIME)], completes=True, step_after="ZoneColorsRetry"),
+            b.rule(b.counter("Survived"), [], completes=True, step_after="LethalWave"),
+        ], on_enter=[
+            opening, b.zone("Damage"), b.delay(opening_row),
+            b.say("It starts small and spreads until it owns the whole floor, like you did in ~~my~~ house.",
+                  seconds="ColorLineHouseSeconds"),
+            b.delay("ColorLineHouseSeconds"),
+            b.say("Let me \"help\": a zone that softens the damage. Softens. I just like the show to last.",
+                  seconds="ColorLineShieldSeconds"),
+            b.zone("Shield"), b.delay("ColorLineShieldSeconds"),
+            b.say("Now one that heals, because you don't have nine lives. I'm saving you. Stand in both, if you like your "
+                  "tail.", seconds="ColorLineHealSeconds"),
+            b.zone("Heal"), b.delay("ColorLineHealSeconds"),
+            b.delay("ColorSurviveSeconds"), b.count("Survived")])
+
+    steps = [
+        colors_step("ZoneColors", b.say(
+            "Welcome to the Color Room. The floor will hurt you, and I'll enjoy it. Think of it as customer service.",
+            seconds="ColorLineWelcomeSeconds"), "ColorLineWelcomeSeconds"),
+        colors_step("ZoneColorsRetry", b.say_from_file("ZoneDeath", random=False, seconds="ColorDeathLineSeconds"),
+                    "ColorDeathLineSeconds"),
     ]
-    colors_learned = [b.delay(2.0), b.say("Colors learned? Good. There is one more. I'll show you in a minute. Stretch.")]
-    rules = [b.rule(b.event(event), [b.count("Stood")]) for event in ("Encounter.Event.ZoneShield",
-                                                                       "Encounter.Event.ZoneHeal")]
-    rules.append(b.rule(b.counter("Stood"), colors_learned, condition=b.counter_is("Stood", EQUAL, 2), completes=True))
-    steps = [b.step("ZoneColors", rules, on_enter=[
-        b.say(intro[0]), b.zone("Damage"), b.say(intro[1]), b.say(intro[2]), b.delay(COLOR_ZONE_GROW_SECONDS),
-        b.zone("Shield", "Encounter.Event.ZoneShield"), b.zone("Heal", "Encounter.Event.ZoneHeal")])]
     steps.append(b.step("LethalWave", [
         b.rule(b.player_died(), [
             b.say("Oh, it hurts? Upsy, I forgot to leave you room to survive...", True),
@@ -768,8 +796,10 @@ def zones_steps(b):
             b.say("Look, I added safe spots in the wave. For you. Out of the goodness of my heart. Don't tell the other "
                   "cats."),
         ], completes=True),
-    ], on_enter=[b.delay(0.5), b.say("Big wave is coming! Avoid it! Quick, quick, you can do it!"),
-                 b.wave()]))
+    ], on_enter=[b.say("The color tells you what the floor will do before it does it. Remember that. It is the whole "
+                       "game.", seconds="ColorLineRememberSeconds"),
+                 b.delay("ColorLineRememberSeconds"), b.delay(0.5),
+                 b.say("Big wave is coming! Avoid it! Quick, quick, you can do it!"), b.wave()]))
     steps.append(b.step("SafeSpotsWait", [b.rule(b.counter("Waited"), [], completes=True)],
                         on_enter=[b.delay(DEATH_TIME), b.count("Waited")]))
     # The exit pad opens from the finishing rule, not OnExit: a death leaves this step too.
@@ -791,6 +821,7 @@ ROOM_STEPS = {
 
 
 WAITING_RULES = {"Landing": landing_nag}
+EARLY_PAD_ROOMS = {"Landing"}  # the exit pad opens in the step's OnEnter, so the pad can be taken while the step runs
 
 
 def build_final_exit():
@@ -807,14 +838,15 @@ def build_final_exit():
 
 
 def room_steps(builder, room):
-    """Every step of the room: its own, then Leave (the last room: Exit); before the last room, each step also watches
-    the arrival in the next room (arrival_rule)."""
+    """Every step of the room: its own, then Leave (the last room: Exit); before the last room, the steps where the exit
+    pad is open watch the arrival in the next room (arrival_rule): Leave, and every step of a room in EARLY_PAD_ROOMS."""
     waiting = WAITING_RULES[room](builder) if room in WAITING_RULES else []
     after = exit_steps(builder, room) if room == ROOMS[-1] else leave_steps(builder, room, waiting)
     steps = ROOM_STEPS[room](builder) + after
     if room != ROOMS[-1]:
         for step in steps:
-            step.set_editor_property("Rules", list(step.get_editor_property("Rules")) + [arrival_rule(builder, room)])
+            if room in EARLY_PAD_ROOMS or step.get_editor_property("Name") == "Leave":
+                step.set_editor_property("Rules", list(step.get_editor_property("Rules")) + [arrival_rule(builder, room)])
     return steps
 
 

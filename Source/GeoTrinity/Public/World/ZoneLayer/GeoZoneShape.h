@@ -28,6 +28,18 @@ enum class EGeoZoneLayer : uint8
 	Telegraph
 };
 
+/** Where a shape's fill grows from as it goes 0 to 1; picked per use (a pattern's telegraph, its live hazard). */
+UENUM(BlueprintType)
+enum class EGeoFillMode : uint8
+{
+	/** From the core outward: circle centre, beam middle line. */
+	FromCore,
+	/** Beam only: from its start end to its far end, across its whole width. */
+	AlongBeam,
+	/** Never filled, whatever the fill. */
+	None
+};
+
 /** One shape's size, in the local space of the component drawing it, world cm. Each shape reads its own fields. */
 USTRUCT()
 struct FGeoZoneShape
@@ -65,12 +77,14 @@ namespace GeoZoneLayer
 	/** Bits of a slot's Flags texel. */
 	constexpr uint32 TelegraphFlag = 1;
 	constexpr uint32 SafeSpotCutFlag = 2;
+	constexpr uint32 FillAlongFlag = 4;
 
 	/** One slot's texels, one per row. */
 	using FSlotTexels = TStaticArray<FLinearColor, SlotRows>;
 
 	/**
-	 * Component's slot as drawn now: row 0 = (Shape ordinal, ColorMask, Flags, GetFill()), rows 1–2 = the shape at
+	 * Component's slot as drawn now: row 0 = (Shape ordinal, ColorMask, Flags, GetFill() or 0 when FillMode is None),
+	 * rows 1–2 = the shape at
 	 * Component's world transform (circle: centre XY, radius; beam: start XY, end XY, half-width).
 	 */
 	GEOTRINITY_API FSlotTexels PackSlot(UGeoZoneVisualComponent const& Component);

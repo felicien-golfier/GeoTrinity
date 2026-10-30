@@ -4,14 +4,15 @@
 
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "World/ZoneLayer/GeoZoneShape.h"
 
 #include "GeoBeamVFXComponent.generated.h"
 
 struct FGeoColorParam;
 class UGeoZoneVisualComponent;
 
-/** Replication bundle for the beam's visual dimensions and on/off state; a single OnRep fires when any field changes.
- */
+/** Replication bundle for the beam's visual dimensions, fill and on/off state; a single OnRep fires when any field
+ * changes. */
 USTRUCT()
 struct FBeamVFXState
 {
@@ -25,6 +26,17 @@ struct FBeamVFXState
 
 	UPROPERTY()
 	float Length = 0.f;
+
+	UPROPERTY()
+	EGeoFillMode FillMode = EGeoFillMode::None;
+
+	/** Server time the fill starts at: the channel's start. */
+	UPROPERTY()
+	float FillStartServerTime = 0.f;
+
+	/** Seconds the fill takes to reach 1: the channel's whole length; 0 = no fill. */
+	UPROPERTY()
+	float FillDuration = 0.f;
 };
 
 /**
@@ -50,11 +62,13 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/**
-	 * Shows or hides the beam and sets its size. The server's write replicates to all clients; the owning client may
-	 * also call it for lag-free local visuals (its write only feeds its own shape). The windup telegraph is not this
-	 * component's: it is a Ray on the owner's UGeoIndicatorComponent.
+	 * Shows or hides the beam and sets its size and fill (FillMode from FillStartServerTime over FillDuration, off the
+	 * server clock). The server's write replicates to all clients; the owning client may also call it for lag-free
+	 * local visuals (its write only feeds its own shape). The windup telegraph is not this component's: it is a Ray on
+	 * the owner's UGeoIndicatorComponent.
 	 */
-	void SetBeamState(bool bActive, float HalfWidth, float Length);
+	void SetBeamState(bool bActive, float HalfWidth, float Length, EGeoFillMode FillMode, float FillStartServerTime,
+					  float FillDuration);
 	/** Sets the beam's colours (GeoZoneLayer::MakeColorMask); call from the owning ability's OnGiveAbility. */
 	void SetBeamColors(FGeoColorParam const& Color, TArray<FGeoColorParam> const& SecondaryColors);
 

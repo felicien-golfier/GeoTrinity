@@ -1646,70 +1646,6 @@ bool FGeoEncounterSpawnZoneTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSpawnZoneEnteredTest, "GeoTrinity.Encounter.SpawnZoneEntered",
-								 GeoEncounterTestFlags)
-
-bool FGeoEncounterSpawnZoneEnteredTest::RunTest(FString const& /*Parameters*/)
-{
-	UWorld* World = CreateTestWorld();
-	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
-	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
-	World->SetGameState(World->SpawnActor<AGeoGameState>());
-	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
-	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoEffectZone::StaticClass();
-
-	FGameplayTag const PurposeTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("TargetPoint.ZoneSpawn"));
-	FGameplayTag const ArenaTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
-	AGeoTargetPoint* const Point = World->SpawnActor<AGeoTargetPoint>(FVector::ZeroVector, FRotator());
-	Point->GameplayTags.AddTag(PurposeTag);
-	Point->GameplayTags.AddTag(ArenaTag);
-
-	FTransform const Transform(FVector(2000.f, 0.f, 0.f));
-	APlayableCharacter* const Player =
-		World->SpawnActorDeferred<APlayableCharacter>(APlayableCharacter::StaticClass(), Transform);
-	Player->SetActorHiddenInGame(true);
-	Player->FinishSpawning(Transform);
-
-	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
-	Encounter->AddSteps(1);
-	UGeoSpawnZoneAction* const Spawner = NewObject<UGeoSpawnZoneAction>(Encounter);
-	Spawner->PurposeTag = PurposeTag;
-	Spawner->ArenaTag = ArenaTag;
-	Spawner->Params.Size = 300.f;
-	Spawner->Params.Color.Color = EGeoColor::Shield;
-	Spawner->EnteredEvent = FGameplayTag::RequestGameplayTag("Encounter.Event.ZoneShield");
-	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner});
-	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
-	Encounter->Start();
-
-	int32 Entries = 0;
-	World->GetSubsystem<UGeoEncounterSubsystem>()->OnRaised.AddLambda(
-		[&Entries, Player](FGeoEncounterPayload const& Payload)
-		{
-			Entries += Payload.Actor == Player ? 1 : 0;
-		});
-
-	SpawnTrigger->FireNow();
-	TestEqual(TEXT("Outside at spawn: nothing raised"), Entries, 0);
-	// No default attributes in a test world: the zone has no health and blinks, which turns its collision off.
-	(*TActorIterator<AGeoEffectZone>(World))->SetActorEnableCollision(true);
-	Player->SetActorLocation(FVector::ZeroVector);
-	TestEqual(TEXT("Entering raises"), Entries, 1);
-	Player->SetActorLocation(FVector(2000.f, 0.f, 0.f));
-	Player->SetActorLocation(FVector::ZeroVector);
-	TestEqual(TEXT("Leaving and entering again raises again"), Entries, 2);
-
-	LeaveTrigger->FireNow();
-	Player->SetActorLocation(FVector(2000.f, 0.f, 0.f));
-	Player->SetActorLocation(FVector::ZeroVector);
-	TestEqual(TEXT("After the step is left: nothing"), Entries, 2);
-
-	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
-	DestroyTestWorld(World);
-	return true;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSetTeleporterOpenTest, "GeoTrinity.Encounter.SetTeleporterOpen",
 								 GeoEncounterTestFlags)
 
@@ -2375,7 +2311,7 @@ bool FGeoEncounterEnterDelayTest::RunTest(FString const& /*Parameters*/)
 	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
 	Encounter->AddSteps(2);
 	UGeoDelayAction* const Delay = NewObject<UGeoDelayAction>(Encounter);
-	Delay->Duration = 1.f;
+	Delay->Duration = FScalableFloat(1.f);
 	UGeoTestAction* const Reaction = Encounter->NewAction("Reaction");
 	Encounter->EditSteps()[0].OnEnter = {Delay, Reaction};
 	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
@@ -2445,6 +2381,41 @@ bool FGeoEncounterCatLineTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("A counter token reads its encounter's counter, an unset one is 0, other tokens stay"),
 			  HUD->Lines.Last(), FString("That's 3 deaths, 3. 0 {Key:X}"));
 	TestTrue(TEXT("OnCatLine got the replaced text"), BroadcastLines == TArray<FString>{HUD->Lines.Last()});
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterTimedCatLineTest, "GeoTrinity.Encounter.TimedCatLine",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterTimedCatLineTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	APlayerController* const PlayerController = World->SpawnActor<APlayerController>();
+	AGeoTestHUD* const HUD = World->SpawnActor<AGeoTestHUD>();
+	PlayerController->MyHUD = HUD;
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(1);
+	UGeoCatLineAction* const Timed = NewObject<UGeoCatLineAction>(Encounter);
+	Timed->Line = INVTEXT("Hi");
+	Timed->bTimed = true;
+	Timed->Seconds = FScalableFloat(5.f);
+	UGeoTestAction* const After = Encounter->NewAction("After");
+	UGeoTestTrigger* const Trigger = Encounter->AddRule(0, {Timed, After}, true);
+	Encounter->Start();
+
+	Trigger->FireNow();
+	TestEqual(TEXT("A timed line asks the HUD for its Seconds"), HUD->LineSeconds, TArray<float>{5.f});
+	TestEqual(TEXT("The run goes on as the timed line starts"), After->Runs, 1);
+
+	Timed->Line = INVTEXT("A line far too long to type out in a single second of the Cat's time");
+	Timed->Seconds = FScalableFloat(1.f);
+	FDataValidationContext Context;
+	Timed->IsDataValid(Context);
+	TestTrue(TEXT("A text that cannot type within Seconds is a data error"), Context.GetNumErrors() > 0);
 
 	DestroyTestWorld(World);
 	return true;

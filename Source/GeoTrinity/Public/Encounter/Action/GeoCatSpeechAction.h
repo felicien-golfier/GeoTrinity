@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Encounter/GeoEncounterAction.h"
+#include "ScalableFloat.h"
 
 #include "GeoCatSpeechAction.generated.h"
 
@@ -13,7 +14,8 @@ class AGeoCharacter;
  * Base of the actions making the Cat say a line: shows the text of GetLineText, in the Tutorial Board markup (**bold**,
  * ~~shake~~, {Key:<InputTag>}; {Counter:<Name>} = the value of that step counter of its encounter), on the local
  * player's HUD. With bWaitForRespawn, a line fired while that player is dead shows once it is revived. Latent: finishes
- * when the line ends, at once when GetLineText is empty.
+ * when the line ends, at once when GetLineText is empty. With bTimed it is not latent: the line lives Seconds, cannot
+ * be skipped, and the action finishes as it starts.
  */
 UCLASS(Abstract)
 class GEOTRINITY_API UGeoCatSpeechAction : public UGeoEncounterAction
@@ -23,6 +25,11 @@ class GEOTRINITY_API UGeoCatSpeechAction : public UGeoEncounterAction
 public:
 	/** Sets bLatent true — this action waits until the line ends before the encounter advances. */
 	UGeoCatSpeechAction() { bLatent = true; }
+
+#if WITH_EDITOR
+	/** A timed line whose text cannot type within Seconds is an error. */
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+#endif
 
 	/** Shows the line on the local player's HUD; waits for respawn first when bWaitForRespawn is set and the player is
 	 * dead. */
@@ -36,10 +43,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
 	bool bWaitForRespawn = false;
 
+	/** True: the line shows for exactly Seconds, unskippable, and the action finishes at once (a scripted timeline). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
+	bool bTimed = false;
+
+	/** The life of a timed line, in seconds (a CT_Tutorial row). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (EditCondition = "bTimed"))
+	FScalableFloat Seconds;
+
 protected:
 	/** The text to say, asked once each time a line is about to show. Empty: nothing is shown and the action finishes.
 	 */
 	virtual FText GetLineText() const PURE_VIRTUAL(UGeoCatSpeechAction::GetLineText, return FText::GetEmpty(););
+
+	/** The longest text this action can say, for the timed-line data check. */
+	virtual FText GetLongestLineText() const { return GetLineText(); }
 
 private:
 	void ShowLine();

@@ -6,6 +6,7 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "CoreMinimal.h"
 #include "Tool/Visual/GeoColor.h"
+#include "World/ZoneLayer/GeoZoneShape.h"
 
 #include "BeamPattern.generated.h"
 
@@ -32,7 +33,7 @@ protected:
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
 
 	/** Stores the activation payload for use during the tick sweep and shows the beam as a telegraph, filling over the
-	 * wind-up. */
+	 * wind-up; placed by MoveBeamVfx before it is shown, so its first frame is already in place. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** Turns the telegraph into the live beam, on the ground layer, filling over the hazard's duration. */
@@ -99,6 +100,14 @@ protected:
 	 * by the zone layer. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
 	TArray<FGeoColorParam> SecondaryBeamColors;
+
+	/** Where the wind-up telegraph's fill grows from (hex beam: its middle line; tutorial wave: along its travel). */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
+	EGeoFillMode TelegraphFillMode = EGeoFillMode::FromCore;
+
+	/** Where the live beam's fill grows from. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
+	EGeoFillMode HazardFillMode = EGeoFillMode::FromCore;
 
 	/** The beam on the zone layer, placed in world space by MoveBeamVfx; null on a dedicated server. */
 	UPROPERTY(Transient)

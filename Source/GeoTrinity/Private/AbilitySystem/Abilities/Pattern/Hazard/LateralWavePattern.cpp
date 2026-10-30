@@ -8,6 +8,12 @@
 #include "Tool/UGeoGameplayLibrary.h"
 #include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
+ULateralWavePattern::ULateralWavePattern()
+{
+	TelegraphFillMode = EGeoFillMode::AlongBeam;
+	HazardFillMode = EGeoFillMode::AlongBeam;
+}
+
 float ULateralWavePattern::RollTravelYaw(int32 const Seed)
 {
 	FRandomStream Stream(Seed);
@@ -26,9 +32,8 @@ void ULateralWavePattern::InitPattern(FAbilityPayload const& Payload, TInstanced
 		RollDirection(Payload);
 	}
 
-	Super::InitPattern(Payload, PatternData);
-
 	FSafeSpotMask::Clear(this, MaskMaterialParameterCollection);
+	Super::InitPattern(Payload, PatternData);
 }
 
 void ULateralWavePattern::RollDirection(FAbilityPayload const& Payload)
@@ -116,17 +121,13 @@ void ULateralWavePattern::MoveBeamVfx(float const SpentTime)
 			BeamLength = FiringHalfWidth * 2.f;
 			ShapeHalfWidth = (BandEnd - BandStart) * 0.5f;
 		}
-		else if (StartDelay > 0.f)
-		{
-			BeamLength *= FMath::Clamp(1.f + SpentTime / StartDelay, 0.f, 1.f);
-		}
 
 		BeamVisual->SetWorldLocationAndRotation(FVector(BeamStart, ArbitraryCharacterZ),
 												FVector(BeamDirection, 0.f).Rotation());
 		BeamVisual->Shape.Length = BeamLength;
 		BeamVisual->Shape.HalfWidth = ShapeHalfWidth;
 		BeamVisual->bSafeSpotCut = true;
-		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, GetSafeSpots(), Forward);
+		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, GetSafeSpots(), Forward, FiringOrigin);
 	}
 }
 

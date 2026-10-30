@@ -44,7 +44,9 @@ def build_material():
     material.set_editor_property("two_sided", True)
     material.set_editor_property("used_with_skeletal_mesh", True)
     graph.finish()
-    assert mel.get_statistics(material).num_pixel_shader_instructions > 0, "M_Cat did not compile, see the editor"
+    if hasattr(mel, "get_statistics"):  # absent in some editor builds: the check is skipped, the instances still apply
+        assert mel.get_statistics(material).num_pixel_shader_instructions > 0, "M_Cat did not compile, see the editor"
+
     return material
 
 

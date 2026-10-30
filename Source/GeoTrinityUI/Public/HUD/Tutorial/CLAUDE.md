@@ -18,7 +18,7 @@ Tutorial HUD pieces, driven by `AGeoHUD` through `GeoHUDInterface` (`GeoTrinity/
 
 ## Speech popup (base of every chat popup)
 One widget class owns everything a popup that talks to the player shares; a speaker (the Cat, any later one) is a child adding only its look and content. No popup re-implements phases, skip or the key cap.
-- Owns: Typing / Reading / Ended phases and the Slate active timer (`CharsPerSecond`, reading-time `constexpr`s in `GeoSpeechPopupWidget.cpp`, the one place to tune), `LineSeconds`, `OnLineEnded` (fires once per line on every end), `OnInteractUI` binding (`SkipLine`), `EndLine`, the skip hint. Children implement three hooks: `StartLine` (convert, return the visible length), `RevealCharacters(Previous, New, bTick)`, `SetTalking`.
+- Owns: Typing / Reading / Ended phases and the Slate active timer (`GeoCatLines::TypingCharsPerSecond` in `Tool/CatLine/GeoCatLineBank.h`, shared with the timed-line data check; reading-time `constexpr`s in `GeoSpeechPopupWidget.cpp`, the one place to tune), `LineSeconds`, `OnLineEnded` (fires once per line on every end), `OnInteractUI` binding (`SkipLine`), `EndLine`, the skip hint. Children implement three hooks: `StartLine` (convert, return the visible length), `RevealCharacters(Previous, New, bTick)`, `SetTalking`.
 - Skip hint: `SkipHint` + `SkipKey` are required `BindWidget`s of the base: a child Blueprint lacking them does not compile, so a popup can never exist without its F cap.
 - The cap is made visible on every `ShowLine`, never collapsed for a missing key. Label: the key bound in the active context (rebinds win), else the default key in the controller's `InputMapping`, then `MenuInputMapping` (`UHudFunctionLibrary::GetDefaultMappedKey`; a menu open swaps the active context, `GameClasses/Player/CLAUDE.md`), else the action's name.
 - F works in the menu context too: `InteractUIAction` is mapped in `MenuInputMapping` as well, so a line said over an ability page skips like any other.
@@ -30,7 +30,7 @@ One widget class owns everything a popup that talks to the player shares; a spea
 - `AGeoHUD::ShowCatLine(Line)` creates the widget on first use (`CatLineWidgetClass`), then `UGeoCatLineWidget::ShowLine`: a new line replaces the shown one at once (one speaker, one line).
 - Drawn above every menu (`CatLineZOrder` > the controller's `PauseMenuZOrder`): a line said with an ability page shows over it. `HitTestInvisible`: it never takes a click.
 - Three phases on one Slate active timer (Slate time: it runs while the solo pause holds the world, `GameClasses/Player/CLAUDE.md`, so a line over a page keeps going while the player reads):
-  1. **Typing**: letter by letter at `CharsPerSecond` (a `constexpr` in `GeoSpeechPopupWidget.cpp`, the one place to tune the speed). Only visible characters count; markup never shows half-open (`GeoCatLine::RevealRichText`).
+  1. **Typing**: letter by letter at `GeoCatLines::TypingCharsPerSecond` (the one place to tune the speed). Only visible characters count; markup never shows half-open (`GeoCatLine::RevealRichText`).
   2. **Reading**: the whole text shows; the line stays a reading time set by its length (`ReadingBaseSeconds` + visible characters / `ReadingCharsPerSecond`, `constexpr`s beside `CharsPerSecond`; `LineSeconds` is on the base), unless `LineSeconds` on the widget is set (> 0), which overrides it. No delay on the encounter.
   3. **Ended**: collapsed, face silent, `OnLineEnded` broadcast.
 - Typing sound: one short tick per word (`TypeSound`, `USoundBase` on the widget, played 2D), played when the word's first visible character appears; none when F reveals the rest. Pitch = a pure function of the word (`GeoCatLine::PitchForWord`, range `constexpr`s next to `CharsPerSecond`): the same word always sounds the same, words differ, so a sentence has a melody. A word is a run of visible non-space characters (markup tags are not visible, a bold run inside a sentence still splits on its spaces). Several words revealed in one frame (low frame rate) play one tick, the last word's pitch.
@@ -39,6 +39,15 @@ One widget class owns everything a popup that talks to the player shares; a spea
 - `OnLineEnded` (native delegate on the widget) fires on every end: timer, skip, replaced by a new line (the old line's waiter must not hang), widget destroyed. `AGeoHUD::ShowCatLine(Line, OnEnded)` hands the caller's delegate to it; one waiter per line.
 - `AGeoHUD::HideCatLine()`: ends the shown line at once (Ended phase, `OnLineEnded` fires). Called by `GeoCatSpeechAction::OnCancel` on an abort, so the left room's text never runs on in the next one (`Encounter/CLAUDE.md`, "Arrival reset").
 - Lines come from the `GeoCatSpeechAction` children (`Encounter/Action/CLAUDE.md`), which wait for `OnLineEnded`: the line's own length paces the encounter, no delay is placed after a line. Text authored on the placed encounter.
+
+## Timed line
+- `ShowCatLine(Line, OnEnded, Seconds)`, `Seconds` > 0: the line lives exactly `Seconds` of Slate time, whatever its length: typing at `CharsPerSecond` (the reading-time `constexpr`s are ignored), then Reading to the end of `Seconds`, then Ended. F is ignored (`SkipLine` returns at once) and the skip hint is collapsed. `OnLineEnded` still fires once on every end (timer, replaced, `HideCatLine`, destroyed).
+- Typing longer than `Seconds` is a data error: the line is shown whole at `Seconds` and the overflow is logged (`IsDataValid` on the action catches it first).
+- Why: a scripted timeline (`Tutorial/Steps.md`, the Zones room's colour step) must not be skippable by mashing F; every other line keeps the free skip.
+
+## Cat emotion
+- `ShowCatLine(..., Emotion)` (`EGeoCatEmotion`, `HUD/Interface/CLAUDE.md`): `UGeoCatLineWidget::ShowLine` maps it onto the face's preset (`CatFace/CLAUDE.md`, "Expressions") and calls `SetExpression`; when the line ends the face blends back to Neutral. A new line replaces the previous expression.
+- The talking mouth moves during Typing only; in Reading the face holds the expression's own mouth (a smirk must be readable while the line stays).
 
 ## Cat face (the speaker's portrait)
 - `WBP_CatLine` = panel: `CatFace` (left, square; optional `BindWidget` of `UGeoCatLineWidget`, a `UGeoCatFaceWidget`, `CatFace/CLAUDE.md`) + name label "CAT" + `LineText`. Same layout as the Board's speech box: dark translucent panel, 1 px border and soft glow in the Cat's base shade.

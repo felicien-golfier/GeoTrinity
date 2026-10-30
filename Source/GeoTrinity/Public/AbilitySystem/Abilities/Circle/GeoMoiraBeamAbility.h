@@ -43,6 +43,8 @@ class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoChannelBeamAbility
 
 	/** Beam half-width in cm: half the capsule radius, grown by HalfWidthGrowthPerAbsorbedZone per absorbed zone. */
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const override;
+	/** Returns ChannelDuration: InitialDuration plus the fuel absorbed so far. */
+	virtual float GetChannelDuration() const override { return ChannelDuration; }
 
 	/** Damage applied per second to each enemy inside the beam cylinder. Scales with ability level. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
@@ -93,5 +95,8 @@ class GEOTRINITY_API UGeoMoiraBeamAbility : public UGeoChannelBeamAbility
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	float RemainingDuration = 0.f;
+	/** Seconds the channel lasts as known now: InitialDuration plus the fuel absorbed so far; the server's value fills
+	 * the beam on every machine. */
+	float ChannelDuration = 0.f;
 	float BeamRatio = 1.f;
 };

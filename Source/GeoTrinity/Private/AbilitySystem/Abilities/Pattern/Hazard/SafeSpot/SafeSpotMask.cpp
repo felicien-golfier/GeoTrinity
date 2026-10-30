@@ -27,7 +27,7 @@ TArray<FLinearColor> FSafeSpotMask::GetSlotValues(TArray<FSafeSpot> const& Spots
 }
 
 void FSafeSpotMask::Set(UObject* WorldContext, UMaterialParameterCollection* Collection, TArray<FSafeSpot> const& Spots,
-						FVector2D const LaneDirection)
+						FVector2D const LaneDirection, FVector2D const Origin)
 {
 	if (!GeoLib::IsDedicatedServer(WorldContext) && Collection)
 	{
@@ -47,10 +47,12 @@ void FSafeSpotMask::Set(UObject* WorldContext, UMaterialParameterCollection* Col
 		UKismetMaterialLibrary::SetVectorParameterValue(WorldContext, Collection,
 														GeoMaterialParams::SafeSpotLaneDirection,
 														FLinearColor(LaneDirection.X, LaneDirection.Y, 0.f, 0.f));
+		UKismetMaterialLibrary::SetVectorParameterValue(WorldContext, Collection, GeoMaterialParams::SafeSpotOrigin,
+														FLinearColor(Origin.X, Origin.Y, 0.f, 0.f));
 	}
 }
 
 void FSafeSpotMask::Clear(UObject* WorldContext, UMaterialParameterCollection* Collection)
 {
-	Set(WorldContext, Collection, {}, FVector2D::ZeroVector);
+	Set(WorldContext, Collection, {}, FVector2D::ZeroVector, FVector2D::ZeroVector);
 }

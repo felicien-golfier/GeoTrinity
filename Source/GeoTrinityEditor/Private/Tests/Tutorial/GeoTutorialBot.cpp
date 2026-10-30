@@ -10,6 +10,7 @@
 #include "Actor/Buttons/GeoTeleporter.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Characters/EnemyCharacter.h"
+#include "Characters/GeoSummonedDummy.h"
 #include "Characters/PlayableCharacter.h"
 #include "Encounter/GeoEncounter.h"
 #include "Encounter/GeoEncounterSubsystem.h"
@@ -41,8 +42,8 @@
 
 FString GeoTutorial::RoomName(int32 const Room)
 {
-	static TCHAR const* const Names[] = {TEXT("Landing"), TEXT("Dash"),	   TEXT("Shoot"), TEXT("Deploy"),
-										 TEXT("Special"), TEXT("Dummies"), TEXT("Zones"), TEXT("Miniboss")};
+	static TCHAR const* const Names[] = {TEXT("Landing"), TEXT("Dash"),	   TEXT("Zones"),	TEXT("Shoot"),
+										 TEXT("Deploy"),  TEXT("Special"), TEXT("Dummies"), TEXT("Miniboss")};
 	static_assert(UE_ARRAY_COUNT(Names) == RoomCount);
 	return Names[Room];
 }
@@ -133,6 +134,9 @@ void FGeoTutorialBot::QueueSession(FAutomationTestBase& Test, TSharedRef<FGeoTut
 		WorldSettings->StartingTutoRoomInEditor = NAME_None;
 	}
 
+	// File-order lines (the Zones death puns) keep their place for the whole process: every session starts at the
+	// first.
+	GeoCatLines::SetFilePath(FString());
 	UGeoGemProfileSave* const ProfileBefore = UGeoGemProfileSave::Load(0);
 	ADD_LATENT_AUTOMATION_COMMAND(FGeoStartListenPlayCommand());
 	FAutomationTestFramework::Get().EnqueueLatentCommand(Bot);
@@ -156,7 +160,8 @@ bool FGeoTutorialBot::Update()
 	else if (Now - StageStartSeconds > Stages[StageIndex].TimeoutSeconds)
 	{
 		FString const HealthLogTail = GetHealthLog(GeoTutorial::HealthLogTailCount);
-		Test.AddError(FString::Printf(TEXT("Stage '%s' timed out%s%s"), *Stages[StageIndex].Name,
+		Test.AddError(FString::Printf(TEXT("Stage '%s' timed out after %.0f s (%s)%s%s"), *Stages[StageIndex].Name,
+									  Stages[StageIndex].TimeoutSeconds, *DescribeState(),
 									  HealthLogTail.IsEmpty() ? TEXT("") : TEXT(". Last health log:\n"),
 									  *HealthLogTail));
 		bFinished = true;
@@ -223,40 +228,44 @@ void FGeoTutorialBot::AddStartStage(int32 const StartRoom)
 
 void FGeoTutorialBot::AddLineStage(FString Name, FString Fragment)
 {
-	AddStage(MoveTemp(Name),
-			 [this, Fragment = MoveTemp(Fragment)](bool)
-			 {
-				 int32 const Index = FindLine(Fragment, LineCursor);
-				 if (Index != INDEX_NONE)
-				 {
-					 LineCursor = Index + 1;
-				 }
+	AddStage(
+		MoveTemp(Name),
+		[this, Fragment = MoveTemp(Fragment)](bool)
+		{
+			int32 const Index = FindLine(Fragment, LineCursor);
+			if (Index != INDEX_NONE)
+			{
+				LineCursor = Index + 1;
+			}
 
-				 return Index != INDEX_NONE;
-			 });
+			return Index != INDEX_NONE;
+		},
+		GeoTutorial::LineStageTimeoutSeconds);
 }
 
 void FGeoTutorialBot::AddFileLineStage(FString Name, FGeoCatLineCategories Categories)
 {
-	AddStage(MoveTemp(Name),
-			 [this, Categories = MoveTemp(Categories)](bool)
-			 {
-				 int32 Found = INDEX_NONE;
-				 for (int32 Index = LineCursor; Found == INDEX_NONE && Index < Lines.Num(); ++Index)
-				 {
-					 if (GeoCatLines::HasLine(Categories, Lines[Index]))
-					 {
-						 Found = Index;
-					 }
-				 }
+	AddStage(
+		MoveTemp(Name),
+		[this, Categories = MoveTemp(Categories)](bool)
+		{
+			int32 Found = INDEX_NONE;
+			for (int32 Index = LineCursor; Found == INDEX_NONE && Index < Lines.Num(); ++Index)
+			{
+				if (GeoCatLines::HasLine(Categories, Lines[Index]))
+				{
+					Found = Index;
+				}
+			}
 
-				 if (Found != INDEX_NONE)
-				 {
-					 LineCursor = Found + 1;
-				 }
+			if (Found != INDEX_NONE)
+			{
+				LineCursor = Found + 1;
+			}
 
-				 return Found != INDEX_NONE;
-			 });
+			return Found != INDEX_NONE;
+		},
+		GeoTutorial::LineStageTimeoutSeconds);
 }
 
 void FGeoTutorialBot::AddWaitStage(FString Name, double const Seconds)
@@ -529,6 +538,40 @@ FString FGeoTutorialBot::GetHealthLog(int32 const Count) const
 	return FString::Join(TArrayView<FString const>(HealthLog).RightChop(First), TEXT("\n"));
 }
 
+FString FGeoTutorialBot::DescribeState() const
+{
+	FString Description;
+	UWorld const* const World = GetWorld();
+	if (World)
+	{
+		APlayableCharacter* const Pawn = GetPawn();
+		if (Pawn)
+		{
+			UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Pawn);
+			Description +=
+				FString::Printf(TEXT("pawn %s, health %.0f/%.0f, at %s"), Pawn->IsDead() ? TEXT("dead") : TEXT("alive"),
+								ASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute()),
+								ASC->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute()),
+								*Pawn->GetActorLocation().ToString());
+		}
+		else
+		{
+			Description += TEXT("no pawn");
+		}
+
+		for (TActorIterator<AGeoEncounter> It(World); It; ++It)
+		{
+			if (!It->GetCurrentStepName().IsNone())
+			{
+				Description += FString::Printf(TEXT("; %s in step '%s'"), *It->GetActorLabel(),
+											   *It->GetCurrentStepName().ToString());
+			}
+		}
+	}
+
+	return Description + FString::Printf(TEXT("; last Cat line '%s'"), Lines.IsEmpty() ? TEXT("") : *Lines.Last());
+}
+
 void FGeoTutorialBot::UpdateHealthWatches()
 {
 	for (FHealthWatch& Watch : HealthWatches)
@@ -560,7 +603,8 @@ void FGeoTutorialBot::UpdateHealthWatches()
 				Watch.MovementMode = Movement->MovementMode;
 				FHitResult Floor;
 				FVector const Here = Character->GetActorLocation();
-				bool const bFloor = GetWorld()->LineTraceSingleByChannel(Floor, Here, Here - FVector(0., 0., 400.), ECC_Visibility);
+				bool const bFloor =
+					GetWorld()->LineTraceSingleByChannel(Floor, Here, Here - FVector(0., 0., 400.), ECC_Visibility);
 				AddHealthLog(FString::Printf(TEXT("%s movement %s at %s, velocity %s, floor below: %s"), *Watch.Name,
 											 *UEnum::GetValueAsString(Movement->MovementMode), *Here.ToCompactString(),
 											 *Movement->Velocity.ToCompactString(),
@@ -576,6 +620,36 @@ void FGeoTutorialBot::UpdateHealthWatches()
 
 	if (!HealthTags.IsEmpty())
 	{
+		for (TActorIterator<AGeoSummonedDummy> It(GetWorld()); It; ++It)
+		{
+			AGeoSummonedDummy* const Summon = *It;
+			FSummonWatch* Found = SummonWatches.FindByPredicate(
+				[Summon](FSummonWatch const& W)
+				{
+					return W.Summon == Summon;
+				});
+			if (!Found)
+			{
+				Found = &SummonWatches.AddDefaulted_GetRef();
+				Found->Summon = Summon;
+				AGeoCharacter const* const Pawn = GetPawn();
+				AddHealthLog(FString::Printf(TEXT("%s summoned at %s, pawn at %s"), *Summon->GetName(),
+											 *Summon->GetActorLocation().ToCompactString(),
+											 Pawn ? *Pawn->GetActorLocation().ToCompactString() : TEXT("none")));
+			}
+			if (!Summon->IsDead())
+			{
+				Found->Last = Summon->GetActorLocation();
+			}
+			else if (!Found->bDead)
+			{
+				Found->bDead = true;
+				AddHealthLog(FString::Printf(TEXT("%s died, last alive at %s, now at %s"), *Summon->GetName(),
+											 *Found->Last.ToCompactString(),
+											 *Summon->GetActorLocation().ToCompactString()));
+			}
+		}
+
 		TArray<TPair<AGeoCharacter*, bool>> Candidates;
 		Candidates.Emplace(GetPawn(), false);
 		for (FName const Tag : HealthTags)
@@ -627,11 +701,13 @@ void FGeoTutorialBot::BindHealth(AGeoCharacter* const Character, bool const bEve
 				It->GetActorBounds(false, Origin, Extent);
 				if (FBox2D(FVector2D(Origin - Extent), FVector2D(Origin + Extent)).IsInside(FVector2D(Watch.Location)))
 				{
-					Inside += FString::Printf(TEXT(" %s(X %.0f..%.0f, Y %.0f..%.0f)"), *It->GetName(), Origin.X - Extent.X,
-											  Origin.X + Extent.X, Origin.Y - Extent.Y, Origin.Y + Extent.Y);
+					Inside +=
+						FString::Printf(TEXT(" %s(X %.0f..%.0f, Y %.0f..%.0f)"), *It->GetName(), Origin.X - Extent.X,
+										Origin.X + Extent.X, Origin.Y - Extent.Y, Origin.Y + Extent.Y);
 				}
 			}
-			AddHealthLog(FString::Printf(TEXT("%s inside arena volumes:%s"), *Watch.Name, Inside.IsEmpty() ? TEXT(" NONE") : *Inside));
+			AddHealthLog(FString::Printf(TEXT("%s inside arena volumes:%s"), *Watch.Name,
+										 Inside.IsEmpty() ? TEXT(" NONE") : *Inside));
 		}
 
 		Watch.Handle = ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
@@ -765,7 +841,8 @@ void FGeoTutorialBot::ServeUI()
 		Controller->ClosePauseMenu();
 	}
 
-	if (Controller && (Lines.IsEmpty() || KeepLineFragment.IsEmpty() || !Lines.Last().Contains(KeepLineFragment)))
+	if (Controller && !bLinesRunOnTheirOwn
+		&& (Lines.IsEmpty() || KeepLineFragment.IsEmpty() || !Lines.Last().Contains(KeepLineFragment)))
 	{
 		if (IGeoHUDInterface* const HUD = Cast<IGeoHUDInterface>(Controller->GetHUD()))
 		{

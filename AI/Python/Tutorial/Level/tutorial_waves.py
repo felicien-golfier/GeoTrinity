@@ -26,9 +26,9 @@ WAVE_TAG = "Ability.Spell.LateralWave"
 LETHAL_EFFECT = ("/Script/GeoTrinity.LethalEffectData(OneShotCue=(CueTag=(TagName=\"\"),Color=Neutral,"
                  "SecondaryColors=,SoundTag=(TagName=\"\")),Difficulties=7)")
 
-# The zone room is 1400 long (X) and 2200 wide (Y): the front starts on the wave point near the entry end and crosses
-# the room along +X; safe spots are offsets from that point (tutorial_encounters.py).
-TRAVEL = 1300.0
+# The zone room is 1400 long (X) and 2200 wide (Y): the front starts on the wave point at the near wall and crosses
+# the room along +X to the far wall; safe spots are offsets from that point (tutorial_encounters.py).
+TRAVEL = 1400.0
 HALF_WIDTH = 1200.0
 LANE_WIDTH = 380.0
 BAND_WIDTH = 300.0

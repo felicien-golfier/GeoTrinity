@@ -21,11 +21,17 @@ GeoZoneLayer::FSlotTexels GeoZoneLayer::PackSlot(UGeoZoneVisualComponent const& 
 		Flags |= SafeSpotCutFlag;
 	}
 
+	if (Component.FillMode == EGeoFillMode::AlongBeam)
+	{
+		Flags |= FillAlongFlag;
+	}
+
 	FTransform const& Transform = Component.GetComponentTransform();
 	FVector2D const Origin(Transform.GetLocation());
+	float const Fill = Component.FillMode == EGeoFillMode::None ? 0.f : Component.GetFill();
 	FSlotTexels Texels(InPlace, FLinearColor::Transparent);
 	Texels[0] = FLinearColor(static_cast<float>(Component.Shape.Shape), static_cast<float>(Component.ColorMask),
-							 static_cast<float>(Flags), Component.GetFill());
+							 static_cast<float>(Flags), Fill);
 	switch (Component.Shape.Shape)
 	{
 	case EGeoZoneShape::Circle:

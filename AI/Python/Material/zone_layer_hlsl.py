@@ -4,9 +4,10 @@ A slot is three texels of the slot texture UGeoZoneLayerSubsystem writes (World/
 (shape ordinal, colour mask, flags, fill), rows 1-2 = the shape's 8 world-space floats. A new shape is one branch in
 SHAPES, matching its case in GeoZoneLayer::PackSlot."""
 
-# Bits of the slot's flags texel: GeoZoneLayer::TelegraphFlag, SafeSpotCutFlag.
+# Bits of the slot's flags texel: GeoZoneLayer::TelegraphFlag, SafeSpotCutFlag, FillAlongFlag.
 TELEGRAPH_FLAG = 1
 SAFE_SPOT_CUT_FLAG = 2
+FILL_ALONG_FLAG = 4
 # Colour bits read from a mask: one per EGeoColor palette slot (static_assert in GeoZoneShape.cpp).
 COLOR_BITS = 16
 MAX_MEANINGS = 4
@@ -15,8 +16,10 @@ MAX_MEANINGS = 4
 SHAPES = """struct FGeoZoneShapes
 {
     // Signed distance from Position to the shape's outline, negative inside. Core: distance from the shape's core
-    // (circle centre, beam middle line); Extent: the core's distance to the outline (radius, half-width).
-    float Distance(int Shape, float2 Position, float4 Params0, float4 Params1, out float Extent, out float Core)
+    // (circle centre, beam middle line); Extent: the core's distance to the outline (radius, half-width). A beam with
+    // bFillAlong: Core = distance along it from its start, Extent = its length (EGeoFillMode::AlongBeam).
+    float Distance(int Shape, float2 Position, float4 Params0, float4 Params1, bool bFillAlong, out float Extent,
+                   out float Core)
     {
         if (Shape == 0)
         {
@@ -32,16 +35,18 @@ SHAPES = """struct FGeoZoneShapes
         float2 Forward = Axis / Length;
         float2 Local = Position - Params0.xy;
         float HalfLength = Length * 0.5;
-        Extent = Params1.x;
-        Core = abs(dot(Local, float2(-Forward.y, Forward.x)));
-        float2 Outside = float2(abs(dot(Local, Forward) - HalfLength) - HalfLength, Core - Extent);
+        float Along = dot(Local, Forward);
+        float Across = abs(dot(Local, float2(-Forward.y, Forward.x)));
+        Extent = bFillAlong ? Length : Params1.x;
+        Core = bFillAlong ? Along : Across;
+        float2 Outside = float2(abs(Along - HalfLength) - HalfLength, Across - Params1.x);
         return length(max(Outside, 0.0)) + min(max(Outside.x, Outside.y), 0.0);
     }
 };
 """
 
 SHAPE_DISTANCE = SHAPES + """FGeoZoneShapes Shapes;
-return Shapes.Distance((int)Shape, Position, Params0, Params1, Extent, Core);
+return Shapes.Distance((int)Shape, Position, Params0, Params1, false, Extent, Core);
 """
 
 # Inputs: ZoneSlots (texture), ZoneCount, WorldXY, IsTelegraph, CutMask, OutlineWidth.
@@ -67,12 +72,13 @@ for (int Slot = 0; Slot < Count; ++Slot)
     uint Flags = (uint)Head.z;
     bool bTelegraph = (Flags & {TELEGRAPH_FLAG}u) != 0u;
     bool bCut = (Flags & {SAFE_SPOT_CUT_FLAG}u) != 0u && bInSafeSpot;
+    bool bFillAlong = (Flags & {FILL_ALONG_FLAG}u) != 0u;
     if (bTelegraph == bDrawsTelegraphs && !bCut)
     {{
         float Extent;
         float Core;
         float Distance = Shapes.Distance((int)Head.x, WorldXY, ZoneSlots.Load(int3(Slot, 1, 0)),
-                                         ZoneSlots.Load(int3(Slot, 2, 0)), Extent, Core);
+                                         ZoneSlots.Load(int3(Slot, 2, 0)), bFillAlong, Extent, Core);
         if (Distance <= 0.0)
         {{
             uint Mask = (uint)Head.y;
@@ -83,8 +89,9 @@ for (int Slot = 0; Slot < Count; ++Slot)
             }}
 
             Covered = 1.0;
-            // The spent part grows from the core: Fill 1 reaches the outline.
-            if (Core <= Head.w * Extent)
+            // The spent part grows from the core (a FillAlong beam: from its start end): Fill 1 reaches the outline,
+            // Fill 0 (EGeoFillMode::None included) shades nothing.
+            if (Core < Head.w * Extent)
             {{
                 Shade = 1.0;
             }}

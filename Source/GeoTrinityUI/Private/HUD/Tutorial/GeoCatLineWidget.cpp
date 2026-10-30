@@ -11,9 +11,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 
-constexpr float PitchMin = 0.8f;
-constexpr float PitchMax = 1.4f;
-
 // ---------------------------------------------------------------------------------------------------------------------
 int32 UGeoCatLineWidget::StartLine(FText const& Line)
 {
@@ -51,7 +48,7 @@ void UGeoCatLineWidget::RevealCharacters(int32 const PreviousCount, int32 const 
 	LineText->SetText(FText::FromString(GeoCatLine::RevealRichText(RichLine, NewCount)));
 	if (bTick && Words.IsValidIndex(LastNewWord) && TypeSound)
 	{
-		UGameplayStatics::PlaySound2D(this, TypeSound, 1.f,
+		UGameplayStatics::PlaySound2D(this, TypeSound, Volume,
 									  GeoCatLine::PitchForWord(Words[LastNewWord], PitchMin, PitchMax));
 	}
 }

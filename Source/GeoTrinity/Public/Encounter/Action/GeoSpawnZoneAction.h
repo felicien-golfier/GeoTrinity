@@ -26,7 +26,8 @@ class GEOTRINITY_API UGeoSpawnZoneAction : public UGeoEncounterAction
 	GENERATED_BODY()
 
 public:
-	/** Spawns the zone on the first target point tagged PurposeTag + ArenaTag; held by the encounter until the step is left. */
+	/** Spawns the zone on the first target point tagged PurposeTag + ArenaTag; held by the encounter until the step is
+	 * left. */
 	virtual void Execute_Implementation(FGeoEncounterPayload const& Payload) override;
 
 	/** The step was left, or the action runs again: recalls the zone, it blinks, then goes. */
@@ -49,16 +50,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
 	ETeam Team = ETeam::Neutral;
 
-	/** Optional. Raised on UGeoEncounterSubsystem (Actor = the player) whenever a player begins overlapping the zone,
-	 * and once at spawn for each player already inside. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (Categories = "Encounter.Event"))
-	FGameplayTag EnteredEvent;
-
 private:
-	UFUNCTION()
-	void OnZoneBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
-
-	void RaiseEntered(AActor& Player) const;
-
 	TWeakObjectPtr<AGeoEffectZone> Zone;
 };

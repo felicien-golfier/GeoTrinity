@@ -37,6 +37,7 @@ namespace GeoTutorialPaths
 			 {
 				 AddShootStages(Bot, EGeoShootBranch::PauseHolds);
 			 }},
+			{TEXT("DeployCalls"), GeoTutorial::Deploy, &AddDeployCallStages},
 			{TEXT("SpecialFirstTry"), GeoTutorial::Special,
 			 [](FGeoTutorialBot& Bot)
 			 {
@@ -62,8 +63,8 @@ namespace GeoTutorialPaths
 			 {
 				 AddZonesStages(Bot, true);
 			 }},
+			{TEXT("ZonesCamp"), GeoTutorial::Zones, &AddZonesCampStages},
 			{TEXT("MinibossWipe"), GeoTutorial::Miniboss, &AddMinibossWipeStages},
-			{TEXT("MinibossCallouts"), GeoTutorial::Miniboss, &AddMinibossCalloutStages},
 			{TEXT("MinibossWaveLanes"), GeoTutorial::Miniboss, &AddMinibossWaveLaneStages},
 			{TEXT("FinalExit"), GeoTutorial::Miniboss, &AddFinalExitStages},
 			{TEXT("LeaveFromMenu"), GeoTutorial::Dash, &AddLeaveFromMenuStages},

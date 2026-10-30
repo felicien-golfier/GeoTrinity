@@ -92,7 +92,7 @@ public:
 	FOnDeployCountChanged OnDeployCountChanged;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoDeployable", meta = (ClampMin = "1"))
-	int32 MaxDeployables = 3;
+	int32 MaxDeployables = 8;
 
 	/**
 	 * Per-class deployable slots. Add an entry to give a class its own independent cap.

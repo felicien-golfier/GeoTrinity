@@ -33,8 +33,8 @@ struct GEOTRINITY_API FLateralWavePatternData : public FPatternData
  * except what stands in a safe spot's lane (ESafeSpotShadow::Lane, parallel to the travel). Spots come from
  * SafeSpotSources, read every tick so a dead add drops its lane at once: Fixed from the firing's
  * FLateralWavePatternData, Adds from the caster's arena (server only, the tutorial is solo). The band is one beam
- * shape: during the wind-up a rectangle growing from the start edge along the travel until it covers the whole
- * travel, the moving band after; the zone layer cuts the lanes out of it from the safe spot mask.
+ * shape: during the wind-up the whole rectangle, its fill running from the start edge along the travel, the moving
+ * band after; the zone layer cuts the lanes out of it from the safe spot mask.
  * A firing with FLateralWavePatternData::bRandomDirection rolls its direction and fits origin, distance and width to
  * the caster's arena.
  */
@@ -44,6 +44,9 @@ class GEOTRINITY_API ULateralWavePattern : public UBeamPattern
 	GENERATED_BODY()
 
 public:
+	/** Both fills run along the beam: the telegraph's along the travel, the band's across it. */
+	ULateralWavePattern();
+
 	/** One of 0 / 90 / 180 / 270 degrees, the same for the same Seed on every machine. */
 	static float RollTravelYaw(int32 Seed);
 
@@ -53,17 +56,16 @@ public:
 	float GetFiringHalfWidth() const { return FiringHalfWidth; }
 
 protected:
-	/** Sets this firing's travel (fixed, or rolled and fitted to the arena) before the base reads the hazard duration,
-	 * and frees the safe spot mask a previous firing left. */
+	/** Sets this firing's travel (fixed, or rolled and fitted to the arena) and frees the safe spot mask a previous
+	 * firing left, both before the base reads the hazard duration and first places the beam. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** The front crosses TravelDistance, then the band leaves it. */
 	virtual float GetHazardDuration() const override;
 	/** True when Location lies in the band, across the wave's width, outside every safe spot's lane. */
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
-	/** While SpentTime is negative, grows the beam from the start edge along the travel until it covers the whole
-	 * travel when the wave starts; the band after. Uploads the safe spots to the mask and opts the shape into it
-	 * (UGeoZoneVisualComponent::bSafeSpotCut). */
+	/** While SpentTime is negative, the whole travel rectangle; the band after. Uploads the safe spots to the mask and
+	 * opts the shape into it (UGeoZoneVisualComponent::bSafeSpotCut). */
 	virtual void MoveBeamVfx(float SpentTime) override;
 	/** Frees the safe spot mask. */
 	virtual void EndPattern(bool bForceStop = false) override;

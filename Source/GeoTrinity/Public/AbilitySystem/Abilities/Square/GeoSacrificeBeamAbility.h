@@ -48,6 +48,8 @@ protected:
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const override { return BeamHalfWidth; }
 	/** Returns FriendlyOrNeutral so the scan marks only allies and neutral actors, never enemies. */
 	virtual uint8 GetScanAttitudeMask() const override { return TeamAttitudeMask::FriendlyOrNeutral; }
+	/** Returns MaxChannelDuration: the channel's fixed length. */
+	virtual float GetChannelDuration() const override { return MaxChannelDuration; }
 
 private:
 	/**

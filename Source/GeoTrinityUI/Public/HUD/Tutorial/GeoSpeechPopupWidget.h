@@ -26,8 +26,10 @@ class GEOTRINITYUI_API UGeoSpeechPopupWidget : public UUserWidget
 
 public:
 	/** Shows Line, replacing the shown line, which ends first. OnEnded is called once when this line ends, whatever the
-	 * reason: time, skip, a new line, destruction. */
-	void ShowLine(FText const& Line, FSimpleDelegate OnEnded);
+	 * reason: time, skip, a new line, destruction.
+	 * Seconds > 0: the line lives exactly that long (typing, then reading) and ignores the skip key, whose cap is
+	 * hidden. A text that cannot type within Seconds is shown whole at Seconds and logged. */
+	void ShowLine(FText const& Line, FSimpleDelegate OnEnded, float Seconds = 0.f);
 
 	/** Collapses the popup, calls the waiter. Nothing when no line shows. */
 	void EndLine();
@@ -76,7 +78,7 @@ private:
 	/** Reveals up to Count visible characters. Starts the Reading phase once all show. */
 	void RevealUpTo(int32 Count, bool bTick);
 
-	/** Typing: shows the whole text. Reading: ends the line. Ended: nothing. */
+	/** Typing: shows the whole text. Reading: ends the line. Ended or timed line: nothing. */
 	void SkipLine();
 
 	/** The skip key's label: its key now, else its default key in the controller's mapping contexts, else the
@@ -87,6 +89,9 @@ private:
 	int32 VisibleLength = 0;
 	int32 RevealedCount = 0;
 	double PhaseStartTime = 0.;
+	/** The fixed life of a timed line, 0 for a skippable one. */
+	float TimedSeconds = 0.f;
+	double LineStartTime = 0.;
 	FSimpleDelegate OnLineEnded;
 	TWeakPtr<FActiveTimerHandle> WatchTimer;
 };

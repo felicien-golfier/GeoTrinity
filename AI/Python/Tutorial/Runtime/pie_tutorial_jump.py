@@ -17,9 +17,9 @@ SKIP_ACTION = "/Game/Input/InputActions/IA_InteractUI"
 SLOMO = 8
 TIMEOUT_SECONDS = 180.0
 ROOM_PITCH = 2900.0   # tutorial_map.py: 2 * 700 + ROOM_GAP
-LAST_ROOM = 6         # Zones, the room played
+LAST_ROOM = 2         # Zones, the room played (its exit lands in Shoot)
 NEXT_ROOM_HALF_X = 700.0   # tutorial_map.py room half size
-EXIT_PAD = "Tut_Pad_06_Exit"
+EXIT_PAD = "Tut_Pad_02_Exit"
 ZONE_POINTS = ["Tut_Zones_ZonePoint_Shield", "Tut_Zones_ZonePoint_Heal"]  # the zones born after the Damage zone has grown
 GROW_WAIT = 14.0      # CT_Tutorial ColorZoneGrowSeconds (8) plus the intro lines
 ZONE_SECONDS = 2.0    # on each point
@@ -135,7 +135,7 @@ def on_tick(delta):
     elif state["stage"] == "Teleport":
         next_centre = (LAST_ROOM + 1) * ROOM_PITCH
         if pawn.get_actor_location().x > next_centre - NEXT_ROOM_HALF_X:
-            finish(world, "PASSED: teleported to the Miniboss room at %s" % pawn.get_actor_location())
+            finish(world, "PASSED: teleported to the Shoot room at %s" % pawn.get_actor_location())
 
 
 state["handle"] = unreal.register_slate_post_tick_callback(on_tick)

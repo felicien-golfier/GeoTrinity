@@ -47,7 +47,8 @@
 ## GeoChannelBeamAbility
 - Server creates/destroys the replicated `UGeoBeamVFXComponent` in `OnGiveAbility` / `OnRemoveAbility`.
 - Windup preview shows the shared Ray Zone Indicator sized to `GetFireDelay()`.
-- Active beam ticks `TickBeam(DeltaTime, ActorsInLine)` (pure virtual); hooks `GetCurrentBeamHalfWidth`, `GetScanAttitudeMask`.
+- Active beam ticks `TickBeam(DeltaTime, ActorsInLine)` (pure virtual); hooks `GetCurrentBeamHalfWidth`, `GetScanAttitudeMask`, `GetChannelDuration`.
+- Beam fill: `BeamFillMode` (`EGeoFillMode`, per Blueprint, default `AlongBeam` = character → tip) over `GetChannelDuration()` (default 0 = no fill), from the channel's start (`StoredPayload.ServerSpawnTime + GetFireDelay()`); pushed with the beam state (`Characters/Component/FX/CLAUDE.md`, "Beam VFX"). Sacrifice beam: `MaxChannelDuration`. Moira: `InitialDuration` + the fuel absorbed so far, server-written, so the fill re-times when a zone adds fuel.
 - Does not call `UGeoGameplayAbility::Fire`; subclasses needing a later RPC call `SendFireDataToServer` themselves.
 
 ## PatternAbility

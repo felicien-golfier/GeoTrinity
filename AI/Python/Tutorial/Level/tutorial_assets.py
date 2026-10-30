@@ -32,9 +32,19 @@ ROWS = [
     ("DummyZoneDamage", 3.0),
     ("DummyZoneGrowthTime", 12.0),
     ("DummyZoneMaxRadius", 700.0),
-    ("ColorZoneDamage", 2.0),
+    ("ColorZoneDamage", 8.5),  # per second: D(1-s) < h < D keeps every single zone lossy and the triple overlap a small gain
+    ("ColorZoneShieldShare", 0.47),  # share s of the incoming damage the Shield zone removes
+    ("ColorZoneHeal", 6.25),  # per second
     ("ColorZoneGrowSeconds", 8.0),
     ("ColorZoneMaxRadius", 1350.0),  # past the Zones room's corner (half 700 x 1100)
+    ("ColorLineWelcomeSeconds", 5.0),  # the timed script of the Zones room (AI/Tutorial/Steps.md): one row per beat
+    ("ColorLineHouseSeconds", 6.0),
+    ("ColorLineShieldSeconds", 6.0),
+    ("ColorLineHealSeconds", 6.0),
+    ("ColorSurviveSeconds", 6.0),
+    ("ColorLineRememberSeconds", 5.0),  # first line of the lethal-wave step
+    ("ColorDeathLineSeconds", 5.0),
+    ("HealCallPauseSeconds", 6.0),  # Deploy room: pause before each "I need healing" line
     ("MinibossProjectileDamage", 8.0),
     ("MinibossProjectileSpeed", 600.0),
 ]

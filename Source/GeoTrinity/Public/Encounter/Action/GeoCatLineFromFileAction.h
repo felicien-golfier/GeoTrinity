@@ -29,4 +29,5 @@ public:
 
 protected:
 	virtual FText GetLineText() const override;
+	virtual FText GetLongestLineText() const override;
 };

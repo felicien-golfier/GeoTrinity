@@ -7,6 +7,7 @@
 #include "Tickable.h"
 #include "Tool/Team.h"
 #include "Tool/Visual/GeoColor.h"
+#include "World/ZoneLayer/GeoZoneShape.h"
 
 #include "GeoChannelBeamAbility.generated.h"
 
@@ -71,6 +72,9 @@ protected:
 	/** Attitude bitmask used by the per-tick line scan. */
 	virtual uint8 GetScanAttitudeMask() const { return TeamAttitudeMask::All; }
 
+	/** Seconds the channel lasts as known now, from Fire: the beam's fill reaches 1 at its end. 0 = no fill. */
+	virtual float GetChannelDuration() const { return 0.f; }
+
 #ifdef WITH_EDITOR
 	/** Editor-only: draws the beam sweep volume as debug lines in the viewport for the current tick. */
 	void DrawBeamDebugLines(float DeltaTime) const;
@@ -85,10 +89,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
 	TArray<FGeoColorParam> SecondaryBeamColors;
 
+	/** Where the beam's fill, the channel's time spent, grows from; None leaves the beam unfilled. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
+	EGeoFillMode BeamFillMode = EGeoFillMode::AlongBeam;
+
 	bool bIsBeamActive = false;
 
 private:
-	/** Switches the avatar's beam on at the beam's current dimensions. */
+	/** Switches the avatar's beam on at the beam's current dimensions, filled over GetChannelDuration() from the
+	 * channel's start. */
 	void PushBeamState(ACharacter const* Character) const;
 
 	/** Ends the telegraph ActivateAbility added. */

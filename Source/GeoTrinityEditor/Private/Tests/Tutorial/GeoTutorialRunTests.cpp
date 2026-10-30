@@ -18,6 +18,8 @@ bool FGeoTutorialFullRunTest::RunTest(FString const& /*Parameters*/)
 	Bot->AddTeleportStages(GeoTutorial::Landing);
 	GeoTutorialStages::AddDashStages(*Bot, 0);
 	Bot->AddTeleportStages(GeoTutorial::Dash);
+	GeoTutorialStages::AddZonesStages(*Bot, false);
+	Bot->AddTeleportStages(GeoTutorial::Zones);
 	GeoTutorialStages::AddShootStages(*Bot, EGeoShootBranch::Kills);
 	Bot->AddTeleportStages(GeoTutorial::Shoot);
 	GeoTutorialStages::AddDeployStages(*Bot);
@@ -26,8 +28,6 @@ bool FGeoTutorialFullRunTest::RunTest(FString const& /*Parameters*/)
 	Bot->AddTeleportStages(GeoTutorial::Special);
 	GeoTutorialStages::AddDummiesStages(*Bot, false);
 	Bot->AddTeleportStages(GeoTutorial::Dummies);
-	GeoTutorialStages::AddZonesStages(*Bot, false);
-	Bot->AddTeleportStages(GeoTutorial::Zones);
 	GeoTutorialStages::AddMinibossStages(*Bot);
 	GeoTutorialStages::AddPageCheckStage(*Bot);
 	FGeoTutorialBot::QueueSession(*this, Bot);

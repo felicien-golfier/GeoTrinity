@@ -11,7 +11,7 @@ Components attached to `AGeoCharacter` and subclasses. Visual / audio ones are i
 | `FX/` | `GeoBeamVFXComponent`, `GeoFXComponent`, `GeoIndicatorComponent`, `GeoLoopSoundComponent`, `GeoDeploySatelliteComponent` |
 
 ## Deployable manager
-- Limit = global `MaxDeployables = 3` or per-class `DeployableSlots` (0 = unlimited).
+- Limit = global `MaxDeployables = 8` or per-class `DeployableSlots` (0 = unlimited).
 - `HasReachMaxLimit` checks class CDO `IsUnlimitedDeploy()` first (agrees on every machine, no replication).
 - Always can deploy when `bDestroyOldestWhenLimitReached` (oldest expires on register).
 - `SetDeployableInfinitCount` / `RemoveDeployableSlot` only to lift a normally limited class (reload shower).

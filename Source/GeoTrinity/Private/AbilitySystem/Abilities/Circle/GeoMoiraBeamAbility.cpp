@@ -20,6 +20,7 @@ UGeoMoiraBeamAbility::UGeoMoiraBeamAbility()
 void UGeoMoiraBeamAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
 {
 	RemainingDuration = InitialDuration;
+	ChannelDuration = InitialDuration;
 	BeamRatio = 1.f;
 	FinishedZones.Reset();
 
@@ -145,7 +146,9 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 
 			float const DrainRatio = ActualDrain / MaxHealth;
 			BeamRatio = FMath::Min(BeamRatio + DrainRatio + BoostFinishedZone, MaximumZoneAbsorbed + 1.f);
-			RemainingDuration += DurationPerAbsorbedZone * DrainRatio;
+			float const AbsorbedDuration = DurationPerAbsorbedZone * DrainRatio;
+			RemainingDuration += AbsorbedDuration;
+			ChannelDuration += AbsorbedDuration;
 		}
 		else if (GeoLib::IsServer(GetWorld()) && Target->CanBeDamaged())
 		{

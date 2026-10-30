@@ -12,6 +12,7 @@
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
 #include "Tool/Visual/GeoNiagaraParams.h"
+#include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
 static TAutoConsoleVariable
 	CVarDrawDevastatingWave(TEXT("Geo.DrawDevastatingWave"), false,
@@ -36,10 +37,14 @@ void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
 	StoredPayload.SourceAvatar->SetActorLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
 
 	// Skipped on the "too late" path (Super::InitPattern ran StartPattern synchronously, no wind-up scheduled).
-	if (IsValid(AOEVfxComponent) && StartSectionTimerHandle.IsValid())
+	if (IsValid(TelegraphVisual) && StartSectionTimerHandle.IsValid())
 	{
 		AddPillarSpots(0.f);
-		ActivateAoeVfxTelegraph();
+		TelegraphVisual->SetWorldLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
+		TelegraphVisual->Shape.Radius = MaxRadius;
+		TelegraphVisual->FillMode = TelegraphFillMode;
+		TelegraphVisual->SetTimedFill(StoredPayload.ServerSpawnTime, StartDelay);
+		TelegraphVisual->SetZoneVisible(true);
 	}
 }
 
@@ -62,7 +67,8 @@ void UDevastatingWavePattern::AddPillarSpots(float const MaxDistance)
 
 	if (bAdded)
 	{
-		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, PillarSpots, FVector2D::ZeroVector);
+		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, PillarSpots, FVector2D::ZeroVector,
+						   StoredPayload.Origin);
 	}
 }
 
@@ -75,6 +81,16 @@ void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
 					  TEXT("UDevastatingWavePattern: AOEVfxSystem or MaskMaterialParameterCollection is not set")))
 	{
 		AOEVfxComponent = SpawnPersistentVfx(AOEVfxSystem, Owner);
+		TelegraphVisual = NewObject<UGeoZoneVisualComponent>(&Owner);
+		TelegraphVisual->SetupAttachment(Owner.GetRootComponent());
+		// Placed in world space by InitPattern, whatever the owner does.
+		TelegraphVisual->SetAbsolute(true, true, true);
+		TelegraphVisual->Shape.Shape = EGeoZoneShape::Circle;
+		TelegraphVisual->Layer = EGeoZoneLayer::Telegraph;
+		TelegraphVisual->bSafeSpotCut = true;
+		TelegraphVisual->ColorMask = GeoZoneLayer::MakeColorMask(AOEColor, {});
+		TelegraphVisual->SetZoneVisible(false);
+		TelegraphVisual->RegisterComponent();
 	}
 }
 
@@ -89,27 +105,17 @@ void UDevastatingWavePattern::StartPattern()
 {
 	ClearData();
 
-	// Leave the telegraph behind and start the real expanding wave. Re-activating keeps the same component alive,
-	// so the wave origin and grow params are re-pushed here.
-	GetWorld()->GetTimerManager().ClearTimer(TelegraphBlinkTimerHandle);
+	if (IsValid(TelegraphVisual))
+	{
+		TelegraphVisual->SetZoneVisible(false);
+	}
+
 	if (IsValid(AOEVfxComponent))
 	{
 		ActivateAOEVfx();
 	}
 
 	Super::StartPattern();
-}
-
-void UDevastatingWavePattern::ActivateAoeVfxTelegraph() const
-{
-	AOEVfxComponent->ReinitializeSystem();
-	AOEVfxComponent->SetWorldLocation(FVector(StoredPayload.Origin, 0.f));
-	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOERadius, MaxRadius);
-	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOEGrowDuration, StartDelay - TravelTime);
-	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::FadeOutDuration, TelegraphFadeOutDuration);
-	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AnnulusRadius, MaxRadius);
-	AOEVfxComponent->SetVariableLinearColor(GeoNiagaraParams::AOEColor, AOEColor.GetColor());
-	AOEVfxComponent->Activate(true);
 }
 
 void UDevastatingWavePattern::ActivateAOEVfx() const
@@ -207,7 +213,11 @@ void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
 
 void UDevastatingWavePattern::EndPattern(bool bForceStop)
 {
-	GetWorld()->GetTimerManager().ClearTimer(TelegraphBlinkTimerHandle);
+	if (IsValid(TelegraphVisual))
+	{
+		TelegraphVisual->SetZoneVisible(false);
+	}
+
 	if (bForceStop && IsValid(AOEVfxComponent))
 	{
 		AOEVfxComponent->DeactivateImmediate();

@@ -117,7 +117,9 @@ void UGeoChannelBeamAbility::PushBeamState(ACharacter const* const Character) co
 	if (ensureMsgf(BeamVFXComponent, TEXT("UGeoChannelBeamAbility: BeamVFXComponent is missing on the avatar")))
 	{
 		BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character),
-									   GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()));
+									   GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()),
+									   BeamFillMode, StoredPayload.ServerSpawnTime + GetFireDelay(),
+									   GetChannelDuration());
 	}
 }
 
@@ -135,7 +137,7 @@ void UGeoChannelBeamAbility::EndAbility(FGameplayAbilitySpecHandle const Handle,
 	{
 		if (UGeoBeamVFXComponent* BeamVFXComponent = Avatar->FindComponentByClass<UGeoBeamVFXComponent>())
 		{
-			BeamVFXComponent->SetBeamState(false, 0.f, 0.f);
+			BeamVFXComponent->SetBeamState(false, 0.f, 0.f, EGeoFillMode::None, 0.f, 0.f);
 		}
 	}
 

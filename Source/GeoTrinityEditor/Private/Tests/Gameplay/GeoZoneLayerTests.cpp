@@ -1,5 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
+#include "Characters/Component/FX/GeoBeamVFXComponent.h"
 #include "Characters/Component/FX/GeoIndicatorComponent.h"
 #include "Components/SceneComponent.h"
 #include "Misc/AutomationTest.h"
@@ -65,6 +66,15 @@ bool FGeoZoneLayerPackSlotTest::RunTest(FString const& /*Parameters*/)
 			 BeamTexels[0].Equals(FLinearColor(1.f, 2.f, 3.f, 0.25f), UE_KINDA_SMALL_NUMBER));
 	TestTrue(TEXT("Beam: start XY, end XY"), BeamTexels[1].Equals(FLinearColor(100.f, 250.f, 100.f, 550.f), 0.01f));
 	TestEqual(TEXT("Beam: half width"), BeamTexels[2], FLinearColor(20.f, 0.f, 0.f, 0.f));
+
+	Beam->FillMode = EGeoFillMode::AlongBeam;
+	TestEqual(
+		TEXT("AlongBeam adds the fill-along flag"), GeoZoneLayer::PackSlot(*Beam)[0].B,
+		static_cast<float>(GeoZoneLayer::TelegraphFlag | GeoZoneLayer::SafeSpotCutFlag | GeoZoneLayer::FillAlongFlag));
+	Beam->FillMode = EGeoFillMode::None;
+	GeoZoneLayer::FSlotTexels const UnfilledTexels = GeoZoneLayer::PackSlot(*Beam);
+	TestEqual(TEXT("None: no fill-along flag"), UnfilledTexels[0].B, 3.f);
+	TestEqual(TEXT("None: nothing filled, whatever the timed fill"), UnfilledTexels[0].A, 0.f);
 
 	DestroyTestWorld(World);
 	return true;
@@ -187,6 +197,39 @@ bool FGeoZoneLayerIndicatorExpiryTest::RunTest(FString const& /*Parameters*/)
 		Subsystem->PackSlots();
 		TestEqual(TEXT("Past its Duration: removed itself"), Subsystem->GetZoneCount(), 1);
 		TestTrue(TEXT("The one left lasts until removed"), IsValid(Lasting) && Lasting->IsRegistered());
+	}
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoZoneLayerBeamFillTest, "GeoTrinity.ZoneLayer.BeamFill", GeoZoneLayerTestFlags)
+
+bool FGeoZoneLayerBeamFillTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* const World = CreateTestWorld();
+	AActor* const Owner = SpawnZoneShape(*World, FVector::ZeroVector, 0.f, FVector::ZeroVector)->GetOwner();
+	UGeoBeamVFXComponent* const BeamVFX = NewObject<UGeoBeamVFXComponent>(Owner);
+	BeamVFX->RegisterComponent();
+	UGeoZoneVisualComponent* BeamShape = nullptr;
+	for (UGeoZoneVisualComponent* const Shape : TInlineComponentArray<UGeoZoneVisualComponent*>(Owner))
+	{
+		if (Shape->Shape.Shape == EGeoZoneShape::Beam)
+		{
+			BeamShape = Shape;
+		}
+	}
+
+	if (TestNotNull(TEXT("The beam draws through its own zone shape"), BeamShape))
+	{
+		// Half a second into a two-second channel at server time 0.
+		BeamVFX->SetBeamState(true, 20.f, 300.f, EGeoFillMode::AlongBeam, -0.5f, 2.f);
+		TestEqual(TEXT("Fill mode passed on"), BeamShape->FillMode, EGeoFillMode::AlongBeam);
+		TestEqual(TEXT("Fill = time spent / channel duration"), BeamShape->GetFill(), 0.25f);
+
+		BeamVFX->SetBeamState(true, 20.f, 300.f, EGeoFillMode::AlongBeam, -0.5f, 4.f);
+		TestEqual(TEXT("A longer channel re-times the fill at once"), BeamShape->GetFill(), 0.125f);
 	}
 
 	DestroyTestWorld(World);

@@ -57,9 +57,11 @@ void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const HalfWidth, float const Length)
+void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const HalfWidth, float const Length,
+										EGeoFillMode const FillMode, float const FillStartServerTime,
+										float const FillDuration)
 {
-	BeamState = {bActive, HalfWidth, Length};
+	BeamState = {bActive, HalfWidth, Length, FillMode, FillStartServerTime, FillDuration};
 	// Apply locally too: the listen-server host renders but never receives OnRep for its own writes.
 	ApplyBeamState();
 }
@@ -90,6 +92,8 @@ void UGeoBeamVFXComponent::ApplyBeamState() const
 		ZoneVisual->Shape.Length = BeamState.Length;
 		ZoneVisual->Shape.HalfWidth = BeamState.HalfWidth;
 		ZoneVisual->ColorMask = ColorMask;
+		ZoneVisual->FillMode = BeamState.FillMode;
+		ZoneVisual->SetTimedFill(BeamState.FillStartServerTime, BeamState.FillDuration);
 		ZoneVisual->SetZoneVisible(BeamState.bActive);
 	}
 }

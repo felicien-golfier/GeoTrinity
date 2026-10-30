@@ -4,7 +4,8 @@ the slot texture UGeoZoneLayerSubsystem writes; one HLSL loop (zone_layer_hlsl.p
 into their colours, fill shade and outlines.
 
 MF_SafeSpotCut cuts the safe spots of MPC_MaskedArea (FSafeSpotMask) out of the slots flagged SafeSpotCut; the script
-adds the collection's SafeSpot_ShadowMode and SafeSpot_LaneDirection parameters when they are missing.
+adds the collection's SafeSpot_ShadowMode, SafeSpot_LaneDirection and SafeSpot_OriginWS parameters when they are
+missing.
 
 Run make_generic_material_functions.py and make_color_pattern_functions.py first. The ZoneSlots, ZoneCount and Palette
 parameters are written by AGeoZoneLayerActor (GeoMaterialParams in GeoNiagaraParams.h): renaming one here means
@@ -48,7 +49,7 @@ FLOAT1 = unreal.CustomMaterialOutputType.CMOT_FLOAT1
 FLOAT3 = unreal.CustomMaterialOutputType.CMOT_FLOAT3
 FLOAT4 = unreal.CustomMaterialOutputType.CMOT_FLOAT4
 
-# --- MPC_MaskedArea: the shadow mode and lane direction FSafeSpotMask writes beside the slots and the radius ---
+# --- MPC_MaskedArea: the shadow mode, lane direction and origin FSafeSpotMask writes beside the slots and radius ---
 scalars = list(mask_collection.get_editor_property("scalar_parameters"))
 vectors = list(mask_collection.get_editor_property("vector_parameters"))
 scalar_names = [str(scalar.get_editor_property("parameter_name")) for scalar in scalars]
@@ -60,25 +61,28 @@ if "SafeSpot_ShadowMode" not in scalar_names:
     scalars.append(scalar)
     mask_collection.set_editor_property("scalar_parameters", scalars, toolkit["ALWAYS"])
 
-if "SafeSpot_LaneDirection" not in vector_names:
-    vector = unreal.CollectionVectorParameter()
-    vector.set_editor_property("parameter_name", "SafeSpot_LaneDirection")
-    vector.set_editor_property("default_value", unreal.LinearColor(0.0, 0.0, 0.0, 0.0))
-    vectors.append(vector)
-    mask_collection.set_editor_property("vector_parameters", vectors, toolkit["ALWAYS"])
+for vector_name in ("SafeSpot_LaneDirection", "SafeSpot_OriginWS"):
+    if vector_name not in vector_names:
+        vector = unreal.CollectionVectorParameter()
+        vector.set_editor_property("parameter_name", vector_name)
+        vector.set_editor_property("default_value", unreal.LinearColor(0.0, 0.0, 0.0, 0.0))
+        vectors.append(vector)
+        mask_collection.set_editor_property("vector_parameters", vectors, toolkit["ALWAYS"])
 
 toolkit["save"](mask_collection)
 
 # --- MF_SafeSpotSlotCut: 1 where one safe spot shadows the pixel ---
 graph = open_function(SAFE_SPOT_FUNCTIONS, "MF_SafeSpotSlotCut", "1 where one safe spot shadows a world position: its "
-                      "whole strip across the spot when IsLane, its round hole when IsDisc, nothing for an unused "
-                      "slot.", CATEGORY)
+                      "whole strip across the spot when IsLane, its round hole when IsDisc, the strip beyond it seen "
+                      "from Origin when IsBehind, nothing for an unused slot.", CATEGORY)
 world_xy = graph.input("WorldXY", "Vector2", 0, "The pixel's world position, cm.")
 spot = graph.input("Spot", "Vector4", 1, "The spot's world XY in red and green, alpha 1 when the slot is used.")
 radius = graph.input("Radius", "Scalar", 2, "Radius of the hole, or half width of the strip, cm.")
 is_lane = graph.input("IsLane", "Scalar", 3, "1 when the spot cuts a strip across the shape.")
 is_disc = graph.input("IsDisc", "Scalar", 4, "1 when the spot cuts a round hole.")
 lane_right = graph.input("LaneRight", "Vector2", 5, "Unit vector across the strip, perpendicular to its direction.")
+is_behind = graph.input("IsBehind", "Scalar", 6, "1 when the spot cuts the strip beyond it, seen from Origin.")
+origin = graph.input("Origin", "Vector2", 7, "World XY the Behind shadow is cast from: the hazard origin.")
 spot_xy = graph.mask(spot, "rg")
 offset = graph.op(unreal.MaterialExpressionSubtract, A=world_xy, B=spot_xy)
 along_right = graph.op(unreal.MaterialExpressionDotProduct, A=offset, B=lane_right)
@@ -86,24 +90,38 @@ across = graph.op(unreal.MaterialExpressionAbs, along_right)
 lane_distance = graph.op(unreal.MaterialExpressionMultiply, A=across, B=is_lane)
 round_distance = graph.op(unreal.MaterialExpressionDistance, A=world_xy, B=spot_xy)
 disc_distance = graph.op(unreal.MaterialExpressionMultiply, A=round_distance, B=is_disc)
-distance = graph.op(unreal.MaterialExpressionAdd, A=lane_distance, B=disc_distance)
-# Step(Y, X) is 1 where X >= Y: the pixel is within the radius.
+# Behind (FSafeSpot::Shields): the strip of the spot's width running away from Origin, from the spot on.
+away = graph.op(unreal.MaterialExpressionNormalize, graph.op(unreal.MaterialExpressionSubtract, A=spot_xy, B=origin))
+away_right_x = graph.node(unreal.MaterialExpressionMultiply, const_b=-1.0)
+graph.connect(graph.mask(away, "g"), away_right_x, "A")
+away_right = graph.op(unreal.MaterialExpressionAppendVector, A=away_right_x, B=graph.mask(away, "r"))
+behind_across = graph.op(unreal.MaterialExpressionAbs,
+                         graph.op(unreal.MaterialExpressionDotProduct, A=offset, B=away_right))
+behind_distance = graph.op(unreal.MaterialExpressionMultiply, A=behind_across, B=is_behind)
+distance = graph.fold(unreal.MaterialExpressionAdd, [lane_distance, disc_distance, behind_distance])
+# Step(Y, X) is 1 where X >= Y: the pixel is within the radius; for Behind, also past the spot.
 within = graph.op(unreal.MaterialExpressionStep, Y=distance, X=radius)
-casts_cut = graph.op(unreal.MaterialExpressionAdd, A=is_lane, B=is_disc)
+past_spot = graph.op(unreal.MaterialExpressionStep, Y=graph.node(unreal.MaterialExpressionConstant, r=0.0),
+                     X=graph.op(unreal.MaterialExpressionDotProduct, A=offset, B=away))
+behind_cut = graph.op(unreal.MaterialExpressionMultiply, A=is_behind, B=past_spot)
+casts_cut = graph.fold(unreal.MaterialExpressionAdd, [is_lane, is_disc, behind_cut])
 shadowed = graph.op(unreal.MaterialExpressionMultiply, A=within, B=casts_cut)
 slot_cut = graph.op(unreal.MaterialExpressionMultiply, A=shadowed, B=graph.mask(spot, "a"))
 graph.output("SlotCut", 0, "1 where the spot shadows the position, else 0.", slot_cut)
 graph.finish()
 safe_spot_slot_cut = graph.asset
 
-# --- MF_SafeSpotCut: 1 where a safe spot shadows the pixel (Lane or Disc; Behind belongs to the AOE material) ---
+# --- MF_SafeSpotCut: 1 where a safe spot shadows the pixel (Behind, Lane or Disc) ---
 graph = open_function(SAFE_SPOT_FUNCTIONS, "MF_SafeSpotCut", "1 where one of the safe spots of MPC_MaskedArea shadows "
-                      "a world position: Lane (mode 1) cuts the whole strip across the spot, Disc (mode 2) its round "
-                      "hole. Behind (mode 0) and unused slots cut nothing.", CATEGORY)
+                      "a world position: Behind (mode 0) cuts the strip beyond the spot seen from SafeSpot_OriginWS, "
+                      "Lane (mode 1) the whole strip across the spot, Disc (mode 2) its round hole. Unused slots cut "
+                      "nothing.", CATEGORY)
 world_xy = graph.input("WorldXY", "Vector2", 0, "The pixel's world position, cm.")
 radius = graph.collection_parameter(mask_collection, "Pillar_Radius")
 mode = graph.collection_parameter(mask_collection, "SafeSpot_ShadowMode")
 lane_direction = graph.collection_parameter(mask_collection, "SafeSpot_LaneDirection")
+origin = graph.mask(graph.collection_parameter(mask_collection, "SafeSpot_OriginWS"), "rg")
+is_behind = graph.call(is_whole_number, Value=mode, Whole=graph.node(unreal.MaterialExpressionConstant, r=0.0))
 is_lane = graph.call(is_whole_number, Value=mode, Whole=graph.node(unreal.MaterialExpressionConstant, r=1.0))
 is_disc = graph.call(is_whole_number, Value=mode, Whole=graph.node(unreal.MaterialExpressionConstant, r=2.0))
 lane_right_x = graph.node(unreal.MaterialExpressionMultiply, const_b=-1.0)
@@ -113,7 +131,8 @@ slot_cuts = []
 for slot in range(MASK_SLOTS):
     spot = graph.collection_parameter(mask_collection, f"PillarPosWS_{slot:02d}")
     slot_cuts.append((graph.call(safe_spot_slot_cut, WorldXY=world_xy, Spot=spot, Radius=radius,
-                                 IsLane=(is_lane, "Is"), IsDisc=(is_disc, "Is"), LaneRight=lane_right), "SlotCut"))
+                                 IsLane=(is_lane, "Is"), IsDisc=(is_disc, "Is"), LaneRight=lane_right,
+                                 IsBehind=(is_behind, "Is"), Origin=origin), "SlotCut"))
 
 graph.output("CutMask", 0, "1 where a safe spot shadows the position, else 0.",
              graph.fold(unreal.MaterialExpressionMax, slot_cuts))

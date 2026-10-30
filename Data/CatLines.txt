@@ -75,3 +75,11 @@ What's the best way to catch a boss? Wait for it to nap. I mean, wipe. I mean, p
 I was dying playing Tank last time, Healer said to me : 'You're the one with nine lives. Use one.'
 # knock-knock, healer abandonment gag
 Knock knock. Who's there? Not the Healer. Again.
+
+[ZoneDeath]
+# nine lives, the first death (smirk)
+Oh, you died? Careful: you may have nine lives too after all. Or more. Who knows.
+# the count goes on
+Eight left. Maybe. I keep the count; you keep dying.
+# the count is lost
+I lost count. Not because of the math.

@@ -33,11 +33,11 @@ namespace GeoTutorial
 	{
 		Landing,
 		Dash,
+		Zones,
 		Shoot,
 		Deploy,
 		Special,
 		Dummies,
-		Zones,
 		Miniboss,
 		RoomCount
 	};
@@ -46,6 +46,8 @@ namespace GeoTutorial
 	constexpr float RoomHalfX = 700.f;
 	constexpr float TimeDilation = 8.f;
 	constexpr double DefaultStageTimeoutSeconds = 90.;
+	/** A stage that only waits for a Cat line: lines come every few game seconds, so a longer wait is a soft lock. */
+	constexpr double LineStageTimeoutSeconds = 30.;
 	constexpr float PawnZ = 60.f;
 	/** Health log lines a failure carries (FGeoTutorialBot::GetHealthLog). */
 	constexpr int32 HealthLogTailCount = 12;
@@ -196,6 +198,9 @@ public:
 	void WatchHealth(FName Tag);
 	/** The last Count lines of the health log, oldest first, one per line; empty when nothing was logged. */
 	FString GetHealthLog(int32 Count) const;
+	/** What a stalled stage needs to be understood: the pawn (alive or dead, health, location), the step each running
+	 * encounter is in, the last Cat line. */
+	FString DescribeState() const;
 
 	// --- The Cat lines and the pages ------------------------------------------------------------------------------
 
@@ -219,6 +224,8 @@ public:
 	/** True: the player's health is refilled every frame, so a stray bullet never kills it; only what the test asks
 	 * for. */
 	bool bKeepPlayerHealthy = false;
+	/** True: the bot never ends a Cat line, so a timed line lives its Seconds (the Zones room's timeline). */
+	bool bLinesRunOnTheirOwn = false;
 	/** Called every frame, before the stage: what a test watches whatever the stage. */
 	TArray<TFunction<void()>> Observers;
 
@@ -259,6 +266,15 @@ private:
 		/** Last logged movement mode (bEveryChange only), so a change to or from Walking is logged once. */
 		int32 MovementMode = -1;
 	};
+
+	/** A summoned dummy seen alive: where it spawned and last stood, to compare with the ally that takes its place. */
+	struct FSummonWatch
+	{
+		TWeakObjectPtr<AActor> Summon;
+		FVector Last = FVector::ZeroVector;
+		bool bDead = false;
+	};
+	TArray<FSummonWatch> SummonWatches;
 
 	void ServeUI();
 	void CheckEntryPadsClosed();

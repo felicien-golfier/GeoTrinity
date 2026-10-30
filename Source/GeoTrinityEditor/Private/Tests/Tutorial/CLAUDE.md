@@ -6,11 +6,11 @@ Headless play-in-editor runs of the real `/Game/Maps/Tutorial`: a bot plays the 
 |---|---|
 | `GeoTutorialBot.h/.cpp` | `FGeoTutorialBot`: latent command running a list of stages, one per frame; world / pawn / pad / enemy / zone helpers, the Cat line and page logs, ability watches, per-frame observers, `JumpTo(Room)`, `QueueSession` (load map, play session, bot, end, restore profile). Also `FGeoStartListenPlayCommand`, `FGeoRestoreGemProfileCommand` |
 | `GeoTutorialRoomStages.h/.cpp` | `GeoTutorialStages::Add<Room>Stages(Bot, branch)` per room and branch: its stages, mirroring the room's script (`AI/Python/Tutorial/Level/tutorial_encounters.py`, whose line fragments sit at the top of the `.cpp`); the caller adds the start stage and the teleports |
-| `GeoTutorialRunTests.cpp` | `GeoTrinity.Tutorial.FullRun`: Landing to Miniboss in one session, real pads, the main branch of each room |
+| `GeoTutorialRunTests.cpp` | `GeoTrinity.Tutorial.FullRun`: Landing to Miniboss in one session, in play order (Zones right after Dash), real pads, the main branch of each room |
 | `GeoTutorialPathTests.cpp` | Complex tests: `GeoTrinity.Tutorial.Path.<Case>` (every other branch, one session each, entered by `JumpTo`) and `GeoTrinity.Tutorial.Jump.<Room>` (the console jump to each room by name, real travel) |
 
 ## Bot
-- Stage = name + lambda `bool(bFirstTick)`; true moves on. Each stage has a real-time timeout naming it; a dummy that never spawns stalls its spawn stage, an extra one fails at once.
+- Stage = name + lambda `bool(bFirstTick)`; true moves on. Each stage has a real-time timeout (90 s; a stage that only waits for a Cat line, 30 s: a soft lock) and its failure names the stage and `DescribeState()`: the pawn (alive / dead, health, location), the step of each running encounter (`AGeoEncounter::GetCurrentStepName`) and the last Cat line; a dummy that never spawns stalls its spawn stage, an extra one fails at once. Each session starts with the Cat line bank's file-order positions reset (`GeoCatLines::SetFilePath("")`), so a `[ZoneDeath]` pun never depends on the tests that ran before.
 - Every frame: closes pause menus (after noting how many class abilities the player held and whether the world paused: one unlock, one page), ends Cat lines (`HideCatLine`; `KeepLineFragment` leaves one standing: `Path.EarlyPortal`), fails if an entry pad opens. 8x time dilation.
 - `Geo.PlayerInvincible` on, except where the room needs the hit: falls, lethal and safe-spot waves, wipes. Allies still die.
 - Line log: every line from `UGeoEncounterSubsystem::OnCatLine`, in order. A play world is subscribed the moment it initialises (`FWorldDelegates::OnPostWorldInitialization`), so a travel's first line, shown in `BeginPlay`, is not missed. A branch is proved by its line (stunned vs relief, sting vs surrender, quip at 3 / 6 / 9, tips in order), never by its text typed in the test: the test holds a short unique fragment of the script's line.
@@ -21,6 +21,7 @@ Headless play-in-editor runs of the real `/Game/Maps/Tutorial`: a bot plays the 
 - The map's `StartingTutoRoomInEditor` (editor quick-start room, a jump that replays the unlocks before it) is cleared on the loaded editor map before play, in memory only: every session starts at Landing or at its own `JumpTo`.
 - Expected, never failed on: `GC_Explosion`'s Blueprint error (headless: no Niagara component to set a variable on).
 - A kept line (`KeepLineFragment`) is never ended by the bot: the arrival's abort ends it (`Path.EarlyPortal`).
+- Miniboss wave lanes: the wave's direction is rolled per firing, so the bot reads the live pattern's yaw and half width and places the pawn by its offset across the travel. "Out of every lane" and "no dummy alive" both stand where no lane is, clear of the spot a killed ally respawns on (its lane reopens at once).
 - Waves after a death: the run before still fires its remaining waves while its Cat line waits for the respawn, so the safe-spot bot re-bases its wave count when the pawn is alive again. The Miniboss wipe stages walk the respawned pawn back into the arena before each death.
 - The play-in-editor world begins play before its player joins: its start stage clears the line log, then a FullRun restarts `Tut_Landing_Encounter` once the pawn exists; a path test jumps instead.
 - The Miniboss kill writes XP and loot to the user's gem profile: every session that can kill it loads the profile first and writes it back after (`FGeoRestoreGemProfileCommand`).
@@ -33,7 +34,7 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 |---|---|---|
 | all | entry pads never open; exit closes on arrival; each unlock pops its page, world paused while it shows | FullRun |
 | all | console `Geo.Tutorial.Jump <Room>` travels; pawn on `JumpStart`, earlier abilities granted (and Deploy's / Special's own, they unlock as their step starts), Landing never runs, room's step 0 starts | Jump.<Room> |
-| all | jump by number (`Geo.Tutorial.Jump 6`): Zones | Path.JumpByNumber |
+| all | jump by number (`Geo.Tutorial.Jump 2`): Zones | Path.JumpByNumber |
 | all | jump by a number past the chain: fresh start at Landing (locked, no class ability) | Path.JumpPastEnd |
 | Landing | locked until the WASD line, then free; Cat shown, then hidden after its portal jump | FullRun |
 | Landing | idle on the open pad: the nag once, then `Pun` jokes | Path.LandingNag |
@@ -46,20 +47,21 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 | Shoot | 45 s cut before 12 kills | Path.ShootCut |
 | Shoot | pause menu open: respawns and the cut hold | Path.PauseHolds |
 | Deploy | ally starts hurt; real Healing Zone heals it full; pad | FullRun |
+| Deploy | hurt ally: "I need healing" calls 1 and 2 in turn; healed to full: the full line, the 3rd call never said | Path.DeployCalls |
 | Special | two stings, then Special: done | FullRun |
 | Special | Special in round 1: done, round 2 never spawns | Path.SpecialFirstTry |
 | Special | Special first, ally full, then kill; ally dips and is healed again: counted once | Path.SpecialOrder |
 | Special | three rounds without: surrender line, pad opens | Path.SpecialSurrender |
 | Dummies | chaser closes in, shooter fires; three kills | FullRun |
 | Dummies | death mid-fight: respawn on the entrance, survivors stay, fight goes on | Path.DummiesDeath |
-| Zones | Damage zone grows from the centre to cover the room and hurts; then Shield and Heal spawn, the pawn stands in each, 2 s later every zone is gone (a step into a spot before its zone is up counts nothing); lethal wave kills | FullRun |
+| Zones | timed script: Damage zone grows from the centre and hurts; Shield then Heal spawn on their lines; the pawn walks into the Shield, then the overlap, and survives with health rising there; the step ends on its clock (no early finish, F ignored: lines are timed) and every zone is gone; the colour line opens the lethal wave step; lethal wave kills | FullRun |
+| Zones | camping outside Shield and Heal dies before the survive beat; camping in the Shield only, then in the Heal only, dies before the timeline ends; each death: next `[ZoneDeath]` line in file order as the opening line of `ZoneColorsRetry` (the welcome is not said again), the timeline restarts from t=0 (zones back); no Cat line of the room names a colour; the wave's far edge reaches the room's far wall; camping in both survives to the colour line of the lethal wave step | Path.ZonesCamp |
 | Zones | safe spots: series 1 dies on wave 2, series 2 on wave 3, series 3 clears; every lane of every wave used once; retry line, restart from wave 1 | Path.SafeSpotsRetry |
 | Miniboss | salve, boss moves between its points, summon's zone grows, killed summon turns ally and fires its own salve (`GA_TutorialAllySalve`), wave, last hit (health to 0, as damage does) opens the final exit, loot and XP granted; the fountain throws one drop per granted gem and shard | FullRun |
 | Miniboss | deaths 1-3: wipe (adds gone, boss full), tips in order; 4th death silent | Path.MinibossWipe |
-| Miniboss | ally under 30 %: call-outs 1-3, then silent | Path.MinibossCallouts |
 | Miniboss | wave (direction rolled per firing; the bot reads the live pattern's yaw and half width): in a living dummy's lane survives, out of it dies; no dummy alive: dies anywhere | Path.MinibossWaveLanes |
 | Miniboss | step on the final exit: Training Room, on its `TrainingRoom` start | Path.FinalExit |
 | any | pause menu Leave tutorial: Training Room | Path.LeaveFromMenu |
 | any | Leave tutorial, then the tutorial opened again: fresh start at Landing, nothing kept | Path.Replay |
 
-Covered elsewhere: solo-only login (`GeoTrinity.Tutorial.SoloOnly`), locked / unlocked abilities, encounter mechanics (`GeoTrinity.Encounter.*`). Not played: the Heal and Shield zones' effect (the bot stands in them, the effect is not measured), the Dummies room's mover patrol (not built, `AI/Pending/Tutorial.md`), the Miniboss wave count after a wipe (tree state), quest card display and line typing (UI module, no probe), first-launch prompt and menu button (main menu, no tutorial world), steps 11-13 (not built).
+Covered elsewhere: solo-only login (`GeoTrinity.Tutorial.SoloOnly`), locked / unlocked abilities, encounter mechanics (`GeoTrinity.Encounter.*`). Not played: the Dummies room's mover patrol (not built, `AI/Pending/Tutorial.md`), the Miniboss wave count after a wipe (tree state), quest card display and line typing (UI module, no probe), first-launch prompt and menu button (main menu, no tutorial world), steps 11-13 (not built).

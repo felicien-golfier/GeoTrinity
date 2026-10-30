@@ -83,7 +83,7 @@ bool FGeoSafeSpotMaskTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("A used slot has alpha 1"), SlotValues[3].A, 1.f);
 
 	UWorld* const World = CreateTestWorld();
-	FSafeSpotMask::Set(World, nullptr, Spots, FVector2D(1.f, 0.f));
+	FSafeSpotMask::Set(World, nullptr, Spots, FVector2D(1.f, 0.f), FVector2D::ZeroVector);
 	FSafeSpotMask::Clear(World, nullptr);
 	DestroyTestWorld(World);
 

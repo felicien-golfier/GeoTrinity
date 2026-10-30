@@ -51,6 +51,9 @@ public:
 	/** 0..1, time spent of what the shape announces or lasts: the shade grows from the core to the outline. */
 	float Fill = 0.f;
 
+	/** Where the fill grows from. */
+	EGeoFillMode FillMode = EGeoFillMode::FromCore;
+
 private:
 	bool bZoneVisible = true;
 

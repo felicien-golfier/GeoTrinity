@@ -4,12 +4,12 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 
 | File | Does | Latent |
 |---|---|---|
-| `GeoDelayAction.h` | Waits `Duration` s (world time: holds during the solo pause) | yes |
+| `GeoDelayAction.h` | Waits `Duration` s (`FScalableFloat`, so a timed script reads one `CT_Tutorial` row for a line and its delay; world time: holds during the solo pause) | yes |
 | `GeoAddToCounterAction.h` | `AddToCounter(Name, Delta)` on its encounter | no |
 | `GeoStartEncounterAction.h` | Starts another `AGeoEncounter` through its arrival reset (`StartAfterSkippingChain`: aborts the other running encounters, replays the skipped chain, starts at step 0; `../CLAUDE.md`, "Arrival reset"). One already running starts over. Last in its list: it aborts the encounter it sits in, so nothing after it runs (`IsDataValid` error) | no |
 | `GeoSetTeleporterOpenAction.h` | `SetOpen(bool)` on the referenced `AGeoTeleporter` (a room's exit / entry pad) | no |
 | `GeoActivateAbilityAction.h` | Fires `AbilityClass` on the encounters' shared caster (`../CLAUDE.md`, "Shared caster"), in the room `ArenaTag`, with optional `PatternData` for a pattern ability | yes |
-| `GeoCatSpeechAction.h` | Abstract base of the Cat's spoken actions: `ShowCatLine(text, OnEnded)` on the first local player's HUD; `bWaitForRespawn`: while that player is dead, shown on its `OnRevived`; finishes when the line ends (typed + read, or F twice, `HUD/Tutorial/CLAUDE.md`). Children give the text (`GetLineText`) | yes |
+| `GeoCatSpeechAction.h` | Abstract base of the Cat's spoken actions: `ShowCatLine(text, OnEnded)` on the first local player's HUD; `bWaitForRespawn`: while that player is dead, shown on its `OnRevived`; finishes when the line ends (typed + read, or F twice, `HUD/Tutorial/CLAUDE.md`). Children give the text (`GetLineText`). `bTimed` / `Emotion` below | yes; not when timed |
 | `GeoCatLineAction.h` | Cat speech: `Line`, typed in place | yes |
 | `GeoCatLineFromFileAction.h` | Cat speech: a line of `Categories` from `Data/CatLines.txt`, `bRandom` true = shuffled, no repeat; false = file order, cycling (`Tool/CatLine/CLAUDE.md`) | yes |
 | `GeoUnlockAbilityAction.h` | Grants the local player's class ability `AbilityTag` (`GiveClassAbility`); nothing the second time. Never opens the page. `OnSkipped` = `Execute` | no |
@@ -36,6 +36,12 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 - `GeoCatLineFromFileAction`: the line is `GeoCatLines::PickLine(Categories, bRandom)` (`Tool/CatLine/CLAUDE.md`). Every run draws again, so a repeating rule says a new line each time. No line in the picked categories: logs, `Finish()`, nothing shown; `IsDataValid` warns on such a set. The drawn text goes through the same `{Counter:}` replacement and the same `OnCatLine` broadcast as a typed line. The waiting-for-respawn path draws once, at show time.
 - Showing a line broadcasts `UGeoEncounterSubsystem::OnCatLine` with the shown text, also with no local HUD: what a test reads, never the widget.
 - `{Counter:<Name>}` in `Line` is replaced by that step counter of the action's encounter when the line shows (`GeoLib::ReplaceCounterTokens`; tested in `GeoTrinity.Encounter.CatLine`); the markup of `HUD/Tutorial` never sees it.
+
+## Timed lines and emotion (GeoCatSpeechAction)
+- `bTimed` + `Seconds` (`FScalableFloat`, a `CT_Tutorial` row): the line shows for exactly `Seconds`, unskippable (F does nothing, no skip hint), and ends by itself. The action is not latent: `Finish()` at once, so the next action (a zone spawn, a delay) runs as the line starts. A scripted timeline (`Tutorial/Steps.md`, the Zones room's colour step) is made of timed lines and `GeoDelayAction`s of the same row: nothing a player does speeds it up. Untimed lines keep the latent, skippable behaviour above.
+- A timed line replaces the line on screen at once (one speaker); a step left while it shows leaves it standing until its time (abort ends it, as for any line). `bWaitForRespawn` still holds the show until the player is back.
+- Text must type within `Seconds` (`HUD/Tutorial/CLAUDE.md`, "Timed line"): `IsDataValid` (editor) warns when it cannot (typed lines; a file line is checked against its longest).
+- `Emotion` (`EGeoCatEmotion`, default Neutral; one per action, so a file category shares it): the Cat portrait's expression for this line (`HUD/Tutorial/CLAUDE.md`, "Cat emotion"); back to Neutral when the line ends. Both options go through `ShowCatLine` (`HUD/Interface/CLAUDE.md`).
 
 ## GeoSpawnEnemiesAction
 - Finishes at once; `AGeoEncounter::HoldUntilStepLeft` runs its `OnCancel` when the step is left (any way: completion, restart, abort, end of play), so the list goes on and respawns last until then. Run again while held (a repeating rule): its previous run ends first, as a cancel does (respawns stopped, the living killed with `bKillOnStepExit`; those deaths reach the step's armed rules).

@@ -37,6 +37,12 @@ protected:
 	/** The tick played when a word's first letter appears. Null: silent. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCatLine")
 	TObjectPtr<USoundBase> TypeSound;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCatLine")
+	float Volume = 1.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCatLine")
+	float PitchMin = 0.8f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoCatLine")
+	float PitchMax = 1.4f;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoCatFaceWidget> CatFace;

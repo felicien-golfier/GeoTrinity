@@ -43,8 +43,8 @@ public:
 	virtual void HideBossHealthBar() = 0;
 
 	/** Tutorial: shows the Cat's Line (Tutorial Board markup) in place of any line shown. OnEnded is called once when
-	 * this line ends, whatever the reason. */
-	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded) = 0;
+	 * this line ends, whatever the reason. Seconds > 0: the line lives exactly that long and cannot be skipped. */
+	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded, float Seconds = 0.f) = 0;
 	/** Tutorial: ends the shown Cat line at once, its OnEnded called as for any end. Nothing shown: nothing. */
 	virtual void HideCatLine() = 0;
 	/** Tutorial: opens the pause menu on the character sheet, the details of AbilityTag open. OnClosed is called once

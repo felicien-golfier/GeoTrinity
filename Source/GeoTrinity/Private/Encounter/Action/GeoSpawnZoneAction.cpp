@@ -4,9 +4,7 @@
 
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
-#include "Characters/PlayableCharacter.h"
 #include "Encounter/GeoEncounter.h"
-#include "Encounter/GeoEncounterSubsystem.h"
 #include "Engine/World.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Settings/GameDataSettings.h"
@@ -32,16 +30,6 @@ void UGeoSpawnZoneAction::Execute_Implementation(FGeoEncounterPayload const& /*P
 		Data.EffectDataArray = EffectDataArray;
 		Data.Params = Params;
 		Zone = Cast<AGeoEffectZone>(GeoASLib::FullySpawnDeployable(ZoneClass, Data, FTransform(Location), GetWorld()));
-		if (Zone.IsValid() && EnteredEvent.IsValid())
-		{
-			Zone->OnActorBeginOverlap.AddDynamic(this, &UGeoSpawnZoneAction::OnZoneBeginOverlap);
-			TArray<AActor*> Inside;
-			Zone->GetOverlappingActors(Inside, APlayableCharacter::StaticClass());
-			for (AActor* const Player : Inside)
-			{
-				RaiseEntered(*Player);
-			}
-		}
 	}
 }
 
@@ -49,23 +37,7 @@ void UGeoSpawnZoneAction::OnCancel_Implementation()
 {
 	if (Zone.IsValid())
 	{
-		Zone->OnActorBeginOverlap.RemoveDynamic(this, &UGeoSpawnZoneAction::OnZoneBeginOverlap);
 		Zone->Recall();
 		Zone.Reset();
 	}
-}
-
-void UGeoSpawnZoneAction::OnZoneBeginOverlap(AActor* /*OverlappedActor*/, AActor* OtherActor)
-{
-	if (Cast<APlayableCharacter>(OtherActor))
-	{
-		RaiseEntered(*OtherActor);
-	}
-}
-
-void UGeoSpawnZoneAction::RaiseEntered(AActor& Player) const
-{
-	FGeoEncounterPayload Payload;
-	Payload.Actor = &Player;
-	GetWorld()->GetSubsystem<UGeoEncounterSubsystem>()->Raise(EnteredEvent, Payload);
 }

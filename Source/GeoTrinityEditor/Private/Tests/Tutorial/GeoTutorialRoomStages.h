@@ -57,6 +57,8 @@ namespace GeoTutorialStages
 	void AddShootStages(FGeoTutorialBot& Bot, EGeoShootBranch Branch);
 	/** Ally starts hurt; a real Healing Zone heals it to full; pad opens. */
 	void AddDeployStages(FGeoTutorialBot& Bot);
+	/** The hurt ally gets its "I need healing" calls one after the other; healed to full, the rest is never said. */
+	void AddDeployCallStages(FGeoTutorialBot& Bot);
 	/** Special ability used per Branch: two-sting, first-try, order, or surrender. */
 	void AddSpecialStages(FGeoTutorialBot& Bot, EGeoSpecialBranch Branch);
 	/** bDieMidFight: the player dies with the three dummies alive, then the fight goes on; else each dummy shows its
@@ -65,13 +67,14 @@ namespace GeoTutorialStages
 	/** The three colours, the lethal wave, then the safe-spot waves: bAllSeries = three runs covering every lane of
 	 * every wave (two end in a death and a retry), else the one run that clears. */
 	void AddZonesStages(FGeoTutorialBot& Bot, bool bAllSeries);
+	/** Camping outside the Shield and Heal zones, in one, or in the other dies; each death replays the timeline with
+	 * the next [ZoneDeath] line as its opening instead of the welcome. Camping in both survives the step. */
+	void AddZonesCampStages(FGeoTutorialBot& Bot);
 
 	/** Boss, summon, zone, ally, wave, points visited, kill, exit pad, loot. */
 	void AddMinibossStages(FGeoTutorialBot& Bot);
 	/** Three deaths wipe the fight and say their tips in order, a fourth is silent. */
 	void AddMinibossWipeStages(FGeoTutorialBot& Bot);
-	/** An ally under 30 % health calls out three times, then is silent. */
-	void AddMinibossCalloutStages(FGeoTutorialBot& Bot);
 	/** The wave kills out of a living dummy's lane and in every lane once no dummy lives. */
 	void AddMinibossWaveLaneStages(FGeoTutorialBot& Bot);
 	/** The Miniboss killed, the final exit stepped on: the Training Room. */

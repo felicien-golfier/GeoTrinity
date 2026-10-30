@@ -229,7 +229,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoStatusBar")
 	TArray<FGeoActiveEffectIcon> GetActiveEffectIcons() const;
 
-	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded) override;
+	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded, float Seconds = 0.f) override;
 	virtual void HideCatLine() override;
 	virtual void ShowAbilityPage(FGameplayTag AbilityTag, FSimpleDelegate OnClosed) override;
 	virtual void ShowQuestCard(FText const& Title, int32 Max, float TimeLimitSeconds) override;

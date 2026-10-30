@@ -16,6 +16,9 @@ struct FGeoCatLineFile
 /** The Cat's lines of Data/CatLines.txt (Tool/CatLine/CLAUDE.md), re-parsed whenever the file's timestamp changes. */
 namespace GeoCatLines
 {
+	/** How fast a Cat line types out; the popup's typewriter and the timed-line data check share it. */
+	constexpr float TypingCharsPerSecond = 40.f;
+
 	/** The parsed file, read again when its timestamp changed (every draw state dropped then). A missing file is a
 	 * packaging or path bug: ensures, and holds no category. */
 	GEOTRINITY_API FGeoCatLineFile const& GetFile();

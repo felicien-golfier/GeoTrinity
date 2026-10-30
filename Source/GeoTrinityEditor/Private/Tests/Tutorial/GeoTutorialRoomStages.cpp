@@ -60,6 +60,7 @@ namespace GeoTutorialStages
 
 	constexpr TCHAR const* DeployIntroLine = TEXT("Second toy");
 	constexpr TCHAR const* DeployFullLine = TEXT("healer job suits you");
+	constexpr TCHAR const* DeployCalls[] = {TEXT("Genji"), TEXT("Poor dummy"), TEXT("**I NEED HEALING.**")};
 
 	constexpr TCHAR const* SpecialIntroLine = TEXT("Third toy");
 	constexpr TCHAR const* SpecialStings[] = {TEXT("You killed one Dummy and healed"), TEXT("Two Dummies handled")};
@@ -71,7 +72,24 @@ namespace GeoTutorialStages
 
 	constexpr TCHAR const* ZonesIntroLine = TEXT("Welcome to the Color Room");
 	constexpr float ColorZoneMaxRadius = 1350.f; // CT_Tutorial row ColorZoneMaxRadius (tutorial_assets.py)
-	constexpr TCHAR const* ZonesLearnedLine = TEXT("Colors learned?");
+	constexpr TCHAR const* ZonesHouseLine = TEXT("like you did in ~~my~~ house");
+	constexpr TCHAR const* ZonesShieldLine = TEXT("a zone that softens");
+	/** Hues the zone colours may take: no line of the room names one (they are params). */
+	constexpr TCHAR const* ZonesColourNames[] = {TEXT("orange"), TEXT("blue"),	 TEXT("green"),
+												 TEXT("red"),	 TEXT("yellow"), TEXT("purple")};
+	/** From the room's centre: 10 cm inside the far wall (the room is 1400 long), where the lethal wave must reach. */
+	constexpr float ZonesFarWallInset = 690.f;
+	constexpr TCHAR const* ZonesHealLine = TEXT("you don't have nine lives");
+	constexpr TCHAR const* ZonesRememberLine = TEXT("It is the whole game");
+	constexpr TCHAR const* ZonesDeathLines[] = {TEXT("nine lives too after all"), TEXT("Eight left"),
+												TEXT("I lost count")};
+	// CT_Tutorial rows of the Zones timeline (tutorial_assets.py): the step ends 29 s after the first line (welcome 5 +
+	// house 6 + shield 6 + heal 6 + survive 6).
+	constexpr double ZonesTimelineSeconds = 29.;
+	constexpr double ZonesSurviveSeconds = 6.;
+	constexpr double ZonesOverlapCheckSeconds = 4.;
+	/** A Shield-only or Heal-only camper dies in the last seconds of the timeline, not sooner. */
+	constexpr double ZonesLateDeathWindowSeconds = 3.;
 	constexpr TCHAR const* ZonesLethalLine = TEXT("Big wave is coming");
 	constexpr TCHAR const* ZonesLethalDeathLine = TEXT("Oh, it hurts?");
 	constexpr TCHAR const* ZonesRetryLine = TEXT("dancing, but you die");
@@ -80,11 +98,10 @@ namespace GeoTutorialStages
 	constexpr TCHAR const* MinibossIntroLine = TEXT("Meet the Miniboss");
 	constexpr TCHAR const* MinibossTips[] = {TEXT("those Dummies land hard"), TEXT("A dead Dummy switches sides"),
 											 TEXT("Every third Dummy")};
-	constexpr TCHAR const* MinibossCallouts[] = {TEXT("Genji"), TEXT("Poor dummy"), TEXT("**I NEED HEALING.**")};
 	constexpr TCHAR const* MinibossKillLine = TEXT("come back to the real world");
 
-	constexpr TCHAR const* FirstRoomLines[] = {TEXT(""),		 DashArrivalLine,  ShootIntroLine, DeployIntroLine,
-											   SpecialIntroLine, DummiesIntroLine, ZonesIntroLine, MinibossIntroLine};
+	constexpr TCHAR const* FirstRoomLines[] = {TEXT(""),		DashArrivalLine,  ZonesIntroLine,	ShootIntroLine,
+											   DeployIntroLine, SpecialIntroLine, DummiesIntroLine, MinibossIntroLine};
 
 	FName const DashAbility = "Ability.Spell.Dash";
 	FName const BasicBeamAbility = "Ability.Spell.BasicBeam";
@@ -179,22 +196,6 @@ namespace GeoTutorialStages
 	AEnemyCharacter* FindMiniboss(FGeoTutorialBot const& Bot)
 	{
 		return FindFirstLiving(Bot, MinibossTag);
-	}
-
-	/** The Miniboss ally's health ratio; an ally that died fails the test, with the health log saying why, instead of
-	 * crashing it. */
-	void SetAllyRatio(FGeoTutorialBot& Bot, float const Ratio)
-	{
-		AEnemyCharacter* const Ally = FindFirstLiving(Bot, MinibossAllyTag);
-		if (Ally)
-		{
-			FGeoTutorialBot::SetHealthRatio(Ally, Ratio);
-		}
-		else
-		{
-			Bot.Test.AddError(FString::Printf(TEXT("The Miniboss ally is not alive. Last health log:\n%s"),
-											  *Bot.GetHealthLog(GeoTutorial::HealthLogTailCount)));
-		}
 	}
 
 	AGeoSummonedDummy* FindLivingSummon(FGeoTutorialBot const& Bot)
@@ -666,6 +667,27 @@ namespace GeoTutorialStages
 		Bot.AddLineStage(TEXT("Deploy: the full health line"), DeployFullLine);
 	}
 
+	void AddDeployCallStages(FGeoTutorialBot& Bot)
+	{
+		Bot.AddSpawnStage(GeoTutorial::Deploy, AllyTag, 1);
+		Bot.AddLineStage(TEXT("Deploy: the first call while the ally is hurt"), DeployCalls[0]);
+		Bot.AddLineStage(TEXT("Deploy: the second call"), DeployCalls[1]);
+		Bot.AddStage(TEXT("Deploy: the ally is healed"),
+					 [&Bot](bool)
+					 {
+						 FGeoTutorialBot::SetHealthRatio(FindFirstLiving(Bot, AllyTag), 1.f);
+						 return Bot.IsPadOpen(ExitPad(GeoTutorial::Deploy));
+					 });
+		Bot.AddLineStage(TEXT("Deploy: the full health line"), DeployFullLine);
+		Bot.AddWaitStage(TEXT("Deploy: past the call pause"), 2.);
+		Bot.AddStage(TEXT("Deploy: the third call is never said once the ally is full"),
+					 [&Bot](bool)
+					 {
+						 Bot.ExpectNoLine(DeployCalls[2]);
+						 return true;
+					 });
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// Special
 	// -----------------------------------------------------------------------------------------------------------------
@@ -971,15 +993,24 @@ namespace GeoTutorialStages
 			: FVector2D::ZeroVector;
 	}
 
-	/** The colours step: the Damage zone grows past ColorZoneMaxRadius's start and hurts the pawn, Shield and Heal
-	 * appear after the growth, the pawn stands in each, the step runs on right after the second, and 2 s later every
-	 * zone is gone. */
+	/** The Zones room's timed colour step, from its first line: the Damage zone grows and hurts; Shield then Heal spawn
+	 * on their lines and intersect; the pawn in the overlap gains health; the step ends on its clock with every zone
+	 * gone. The bot ends no Cat line meanwhile (they are timed: F does nothing). */
 	void AddZoneColorsStages(FGeoTutorialBot& Bot)
 	{
+		TSharedRef<double> Start = MakeShared<double>(0.);
 		TSharedRef<float> FirstRadius = MakeShared<float>(0.f);
 		TSharedRef<bool> bHurt = MakeShared<bool>(false);
+		TSharedRef<bool> bRestored = MakeShared<bool>(false);
+		Bot.AddStage(TEXT("Zones: the Cat lines run their own time"),
+					 [&Bot](bool)
+					 {
+						 Bot.bLinesRunOnTheirOwn = true;
+						 return true;
+					 });
+		Bot.AddLineStage(TEXT("Zones: the first line"), ZonesIntroLine);
 		Bot.AddStage(TEXT("Zones: the Damage zone grows over the room and hurts the pawn"),
-					 [&Bot, FirstRadius, bHurt](bool const bFirstTick)
+					 [&Bot, Start, FirstRadius, bHurt, bRestored](bool const bFirstTick)
 					 {
 						 FVector2D const Spot = GetZonePoint(Bot, TEXT("Damage"));
 						 AGeoEffectZone const* const Zone = Bot.FindZoneAt(Spot);
@@ -995,59 +1026,239 @@ namespace GeoTutorialStages
 									 });
 						 }
 
+						 if (*bHurt && !*bRestored)
+						 {
+							 *bRestored = true;
+							 Bot.SetInvincible(true);
+							 FGeoTutorialBot::SetHealthRatio(Bot.GetPawn(), 1.f);
+						 }
+
 						 bool bDone = false;
 						 if (Zone)
 						 {
 							 if (*FirstRadius == 0.f)
 							 {
 								 *FirstRadius = Zone->GetSimpleCollisionRadius();
+								 // The timeline starts with its first zone: not on the frame the bot noticed it.
+								 *Start = Bot.GetWorld()->GetTimeSeconds() - Zone->GetGameTimeSinceCreation();
 								 Bot.MovePawn(Spot);
 							 }
 
-							 bDone = Zone->GetSimpleCollisionRadius() >= ColorZoneMaxRadius - 1.f;
+							 bDone = *bRestored && Zone->GetSimpleCollisionRadius() >= ColorZoneMaxRadius - 1.f;
 							 if (bDone)
 							 {
 								 Bot.Test.TestTrue(TEXT("The Damage zone grew"),
 												   Zone->GetSimpleCollisionRadius() > *FirstRadius);
-								 Bot.Test.TestTrue(TEXT("The Damage zone hurt the pawn"), *bHurt);
-								 Bot.SetInvincible(true);
 							 }
 						 }
 
 						 return bDone;
 					 });
-		for (FString const Color : {TEXT("Shield"), TEXT("Heal")})
-		{
-			TSharedRef<bool> bMoved = MakeShared<bool>(false);
-			Bot.AddStage(FString::Printf(TEXT("Zones: the %s zone appears and the pawn stands in it"), *Color),
-						 [&Bot, Color, bMoved](bool)
+		Bot.AddLineStage(TEXT("Zones: the house line"), ZonesHouseLine);
+		Bot.AddLineStage(TEXT("Zones: the Shield line"), ZonesShieldLine);
+		Bot.AddStage(TEXT("Zones: the Shield zone spawns with its line"),
+					 [&Bot](bool)
+					 {
+						 return Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Shield"))) != nullptr;
+					 });
+		Bot.AddLineStage(TEXT("Zones: the Heal line"), ZonesHealLine);
+		Bot.AddStage(TEXT("Zones: the Heal zone spawns with its line"),
+					 [&Bot](bool)
+					 {
+						 return Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Heal"))) != nullptr;
+					 });
+		TSharedRef<double> OverlapFrom = MakeShared<double>(0.);
+		TSharedRef<float> StartRatio = MakeShared<float>(0.f);
+		Bot.AddStage(TEXT("Zones: in the overlap of Shield and Heal the pawn gains health"),
+					 [&Bot, OverlapFrom, StartRatio](bool const bFirstTick)
+					 {
+						 FVector2D const ShieldSpot = GetZonePoint(Bot, TEXT("Shield"));
+						 FVector2D const HealSpot = GetZonePoint(Bot, TEXT("Heal"));
+						 double const Now = Bot.GetWorld()->GetTimeSeconds();
+						 if (bFirstTick)
 						 {
-							 FVector2D const Spot = GetZonePoint(Bot, Color);
-							 if (!*bMoved && Bot.FindZoneAt(Spot))
-							 {
-								 *bMoved = true;
-								 Bot.MovePawn(Spot);
-							 }
+							 AGeoEffectZone const* const ShieldZone = Bot.FindZoneAt(ShieldSpot);
+							 AGeoEffectZone const* const HealZone = Bot.FindZoneAt(HealSpot);
+							 Bot.Test.TestTrue(TEXT("The Shield and Heal zones intersect"),
+											   ShieldZone && HealZone
+												   && FVector2D::Distance(ShieldSpot, HealSpot)
+													   < ShieldZone->GetSimpleCollisionRadius()
+														   + HealZone->GetSimpleCollisionRadius());
+							 Bot.MovePawn((ShieldSpot + HealSpot) * 0.5f);
+							 FGeoTutorialBot::SetHealthRatio(Bot.GetPawn(), 0.5f);
+							 *StartRatio = FGeoTutorialBot::HealthRatio(Bot.GetPawn());
+							 *OverlapFrom = Now;
+							 Bot.SetInvincible(false);
+						 }
 
-							 return *bMoved;
-						 });
-		}
+						 bool const bDone = Now - *OverlapFrom >= ZonesOverlapCheckSeconds;
+						 if (bDone)
+						 {
+							 Bot.Test.TestTrue(TEXT("Health rises in the overlap"),
+											   FGeoTutorialBot::HealthRatio(Bot.GetPawn()) > *StartRatio);
+						 }
 
-		Bot.AddStage(TEXT("Zones: every zone is still up after the last entry, gone with the step"),
-					 [&Bot](bool const bFirstTick)
+						 return bDone;
+					 });
+		Bot.AddStage(TEXT("Zones: the step ends on its clock, every zone gone"),
+					 [&Bot, Start](bool)
 					 {
 						 bool const bAnyUp = Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Damage")))
 							 || Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Shield")))
 							 || Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Heal")));
-						 if (bFirstTick)
+						 if (!bAnyUp)
 						 {
-							 Bot.Test.TestTrue(TEXT("The step runs on after the second entry"), bAnyUp);
+							 Bot.Test.TestTrue(TEXT("The step does not end before its clock"),
+											   Bot.GetWorld()->GetTimeSeconds() - *Start >= ZonesTimelineSeconds - 1.);
+							 Bot.SetInvincible(true);
 						 }
 
 						 return !bAnyUp;
 					 });
+		Bot.AddLineStage(TEXT("Zones: the colour line opens the lethal wave"), ZonesRememberLine);
+		Bot.AddStage(TEXT("Zones: the Cat lines are ended by the bot again"),
+					 [&Bot](bool)
+					 {
+						 Bot.bLinesRunOnTheirOwn = false;
+						 return true;
+					 });
 	}
 
+	/** No Cat line from the Zones room's first on names a colour. */
+	void TestZonesLinesNameNoColour(FGeoTutorialBot const& Bot)
+	{
+		int32 const First = Bot.FindLine(ZonesIntroLine);
+		for (int32 Index = First; First != INDEX_NONE && Index < Bot.Lines.Num(); ++Index)
+		{
+			for (TCHAR const* const Colour : ZonesColourNames)
+			{
+				Bot.Test.TestFalse(
+					*FString::Printf(TEXT("The line '%s' names no colour (%s)"), *Bot.Lines[Index], Colour),
+					Bot.Lines[Index].Contains(Colour));
+			}
+		}
+	}
+
+	void AddZonesCampStages(FGeoTutorialBot& Bot)
+	{
+		struct FCamp
+		{
+			FString Name;
+			TFunction<FVector2D(FGeoTutorialBot const&)> GetSpot;
+			/** Dies between these many seconds into the timeline; LatestDeath < 0: survives to the end of the step. */
+			double EarliestDeath;
+			double LatestDeath;
+		};
+		// The camper comes at the Damage zone's full growth with full health and never moves. Outside the Shield and
+		// Heal zones, in the Shield only, in the Heal only, in both.
+		TArray<FCamp> const Camps = {
+			{TEXT("Damage only"),
+			 [](FGeoTutorialBot const& Camper)
+			 {
+				 return GetZonePoint(Camper, TEXT("Heal")) + FVector2D(0.f, 700.f);
+			 },
+			 0., ZonesTimelineSeconds - ZonesSurviveSeconds},
+			{TEXT("Shield only"),
+			 [](FGeoTutorialBot const& Camper)
+			 {
+				 return GetZonePoint(Camper, TEXT("Shield")) + FVector2D(0.f, -250.f);
+			 },
+			 ZonesTimelineSeconds - ZonesLateDeathWindowSeconds, ZonesTimelineSeconds},
+			{TEXT("Heal only"),
+			 [](FGeoTutorialBot const& Camper)
+			 {
+				 return GetZonePoint(Camper, TEXT("Heal")) + FVector2D(0.f, 250.f);
+			 },
+			 ZonesTimelineSeconds - ZonesLateDeathWindowSeconds, ZonesTimelineSeconds},
+			{TEXT("Shield and Heal"),
+			 [](FGeoTutorialBot const& Camper)
+			 {
+				 return (GetZonePoint(Camper, TEXT("Shield")) + GetZonePoint(Camper, TEXT("Heal"))) * 0.5f;
+			 },
+			 0., -1.}};
+		TSharedRef<double> Start = MakeShared<double>(0.);
+		Bot.AddStage(TEXT("Zones camp: the Cat lines run their own time"),
+					 [&Bot](bool)
+					 {
+						 Bot.bLinesRunOnTheirOwn = true;
+						 return true;
+					 });
+		for (int32 Index = 0; Index < Camps.Num(); ++Index)
+		{
+			FCamp const Camp = Camps[Index];
+			TSharedRef<bool> bCamping = MakeShared<bool>(false);
+			TSharedRef<double> LastLogged = MakeShared<double>(-1.);
+			// The first run opens with the welcome; after a death ZoneColorsRetry opens with the next death line.
+			Bot.AddLineStage(FString::Printf(TEXT("Zones camp %d (%s): the timeline starts"), Index + 1, *Camp.Name),
+							 Index == 0 ? ZonesIntroLine : ZonesDeathLines[Index - 1]);
+			Bot.AddStage(
+				FString::Printf(TEXT("Zones camp %d (%s): %s"), Index + 1, *Camp.Name,
+								Camp.LatestDeath < 0. ? TEXT("the camper survives the whole step")
+													  : TEXT("the camper dies")),
+				[&Bot, Camp, Start, bCamping, LastLogged](bool const bFirstTick)
+				{
+					double const Now = Bot.GetWorld()->GetTimeSeconds();
+					if (bFirstTick)
+					{
+						*Start = Now;
+						*bCamping = false;
+						Bot.SetInvincible(true);
+					}
+
+					AGeoEffectZone const* const Damage = Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Damage")));
+					if (!*bCamping && Damage && Damage->GetSimpleCollisionRadius() >= ColorZoneMaxRadius - 1.f)
+					{
+						*bCamping = true;
+						Bot.MovePawn(Camp.GetSpot(Bot));
+						FGeoTutorialBot::SetHealthRatio(Bot.GetPawn(), 1.f);
+						Bot.SetInvincible(false);
+					}
+
+					if (*bCamping && FMath::FloorToInt(Now - *Start) != FMath::FloorToInt(*LastLogged))
+					{
+						*LastLogged = Now - *Start;
+						UE_LOG(LogTemp, Display, TEXT("TutorialBot camp: %s t=%.0f health %.2f"), *Camp.Name,
+							   *LastLogged, FGeoTutorialBot::HealthRatio(Bot.GetPawn()));
+					}
+
+					bool bDone = false;
+					if (Camp.LatestDeath < 0.)
+					{
+						bool const bStepOver = *bCamping && !Bot.FindZoneAt(GetZonePoint(Bot, TEXT("Damage")));
+						bDone = bStepOver;
+						if (bDone)
+						{
+							UE_LOG(LogTemp, Display,
+								   TEXT("TutorialBot camp: %s ended the step at %.1f s with health %.2f"), *Camp.Name,
+								   Now - *Start, FGeoTutorialBot::HealthRatio(Bot.GetPawn()));
+							Bot.Test.TestFalse(TEXT("The camper in both zones survived"), Bot.GetPawn()->IsDead());
+							Bot.SetInvincible(true);
+						}
+					}
+					else if (*bCamping && Bot.GetPawn()->IsDead())
+					{
+						bDone = true;
+						UE_LOG(LogTemp, Display, TEXT("TutorialBot camp: %s died at %.1f s"), *Camp.Name, Now - *Start);
+						Bot.Test.TestTrue(FString::Printf(TEXT("%s camper died at %.1f s, window %.1f - %.1f"),
+														  *Camp.Name, Now - *Start, Camp.EarliestDeath,
+														  Camp.LatestDeath),
+										  Now - *Start >= Camp.EarliestDeath && Now - *Start <= Camp.LatestDeath);
+						Bot.SetInvincible(true);
+					}
+
+					return bDone;
+				});
+		}
+
+		Bot.AddLineStage(TEXT("Zones camp: the colour line opens the lethal wave"), ZonesRememberLine);
+		Bot.AddStage(TEXT("Zones camp: the welcome is said once, no line names a colour"),
+					 [&Bot](bool)
+					 {
+						 Bot.Test.TestEqual(TEXT("Welcome lines"), Bot.CountLines(ZonesIntroLine), 1);
+						 TestZonesLinesNameNoColour(Bot);
+						 return true;
+					 });
+	}
 
 	/** The pawn stands in a lane of each wave of Series (or outside them all on its death wave): a lane that does not
 	 * shield, or a death elsewhere, fails the run. */
@@ -1115,9 +1326,7 @@ namespace GeoTutorialStages
 				return World ? World->GetSubsystem<UGeoEncounterSubsystem>()->GetSharedCaster() : nullptr;
 			},
 			LateralWaveAbility);
-		Bot.AddLineStage(TEXT("Zones: the first line"), ZonesIntroLine);
 		AddZoneColorsStages(Bot);
-		Bot.AddLineStage(TEXT("Zones: colors learned"), ZonesLearnedLine);
 		TSharedRef<int32> LethalWaveCount = MakeShared<int32>(0);
 		Bot.AddStage(TEXT("Zones: the lethal wave kills the pawn"),
 					 [&Bot, CentreX, Caster, LethalWaveCount](bool const bFirstTick)
@@ -1125,7 +1334,7 @@ namespace GeoTutorialStages
 						 if (bFirstTick)
 						 {
 							 Bot.SetInvincible(false);
-							 Bot.MovePawn(FVector2D(CentreX, 0.f));
+							 Bot.MovePawn(FVector2D(CentreX + ZonesFarWallInset, 0.f));
 						 }
 
 						 bool const bDead = Bot.GetPawn()->IsDead();
@@ -1150,6 +1359,7 @@ namespace GeoTutorialStages
 						 Bot.SetInvincible(true);
 						 Bot.Test.TestEqual(TEXT("Retry lines"), Bot.CountLines(ZonesRetryLine), Deaths);
 						 Bot.Test.TestTrue(TEXT("The survived line"), Bot.SawLine(ZonesSurvivedLine));
+						 TestZonesLinesNameNoColour(Bot);
 						 return true;
 					 });
 	}
@@ -1356,74 +1566,12 @@ namespace GeoTutorialStages
 					 });
 	}
 
-	void AddMinibossCalloutStages(FGeoTutorialBot& Bot)
-	{
-		Bot.bKeepPlayerHealthy = true;
-		AddMinibossFightStages(Bot);
-		Bot.AddStage(TEXT("Miniboss: a summon lands, then dies and turns ally"),
-					 [&Bot](bool)
-					 {
-						 AGeoSummonedDummy* const Summon = FindLivingSummon(Bot);
-						 if (Summon)
-						 {
-							 Summon->Death();
-						 }
-
-						 return Summon != nullptr;
-					 });
-		Bot.AddStage(TEXT("Miniboss: the ally stands"),
-					 [&Bot](bool)
-					 {
-						 return FindFirstLiving(Bot, MinibossAllyTag) != nullptr;
-					 });
-		for (int32 Call = 1; Call <= int32(UE_ARRAY_COUNT(MinibossCallouts)); ++Call)
-		{
-			Bot.AddStage(FString::Printf(TEXT("Miniboss: the ally under 30 %%, call-out %d"), Call),
-						 [&Bot](bool const bFirstTick)
-						 {
-							 if (bFirstTick)
-							 {
-								 SetAllyRatio(Bot, 0.2f);
-							 }
-
-							 return true;
-						 });
-			Bot.AddLineStage(FString::Printf(TEXT("Miniboss: the call-out %d line"), Call), MinibossCallouts[Call - 1]);
-			Bot.AddStage(TEXT("Miniboss: the ally healed again"),
-						 [&Bot](bool)
-						 {
-							 SetAllyRatio(Bot, 1.f);
-							 return true;
-						 });
-			Bot.AddWaitStage(TEXT("Miniboss: a beat above the threshold"), 0.3);
-		}
-
-		Bot.AddStage(TEXT("Miniboss: a fourth time under 30 %"),
-					 [&Bot](bool)
-					 {
-						 SetAllyRatio(Bot, 0.2f);
-						 return true;
-					 });
-		Bot.AddWaitStage(TEXT("Miniboss: the fourth call-out is silent"), 1.5);
-		Bot.AddStage(TEXT("Miniboss: each call-out was said once"),
-					 [&Bot](bool)
-					 {
-						 for (TCHAR const* const Call : MinibossCallouts)
-						 {
-							 Bot.Test.TestEqual(*FString::Printf(TEXT("Call-out '%s' said once"), Call),
-												Bot.CountLines(Call), 1);
-						 }
-
-						 return true;
-					 });
-	}
-
 	/** The miniboss's live lateral wave, null until a firing has begun. */
 	ULateralWavePattern const* FindMinibossWave(FGeoTutorialBot const& Bot)
 	{
 		AEnemyCharacter const* const Boss = FindMiniboss(Bot);
-		UGeoAbilitySystemComponent* const ASC = Boss ? Cast<UGeoAbilitySystemComponent>(Boss->GetAbilitySystemComponent())
-													   : nullptr;
+		UGeoAbilitySystemComponent* const ASC =
+			Boss ? Cast<UGeoAbilitySystemComponent>(Boss->GetAbilitySystemComponent()) : nullptr;
 		UPattern* Pattern = nullptr;
 		return ASC && ASC->FindPatternByClass(ULateralWavePattern::StaticClass(), Pattern) && Pattern->IsPatternActive()
 			? Cast<ULateralWavePattern>(Pattern)
@@ -1447,12 +1595,39 @@ namespace GeoTutorialStages
 		return (FVector2D(Dummy->GetActorLocation()) - FVector2D(CentreX, 0.f)) | Right;
 	}
 
+	/** The across-offset, from the room centre, farthest from the lane of every living dummy: out of every lane, and
+	 * clear of the spot a killed ally respawns on (its lane opens again at once). */
+	float FarthestFromLanes(TArray<AEnemyCharacter*> const& Dummies, ULateralWavePattern const& Wave,
+							float const CentreX)
+	{
+		float Best = 0.f;
+		float BestDistance = -1.f;
+		for (float const Fraction : {-0.75f, -0.375f, 0.f, 0.375f, 0.75f})
+		{
+			float const Candidate = Fraction * Wave.GetFiringHalfWidth();
+			float Nearest = TNumericLimits<float>::Max();
+			for (AEnemyCharacter const* const Dummy : Dummies)
+			{
+				Nearest = FMath::Min(Nearest, FMath::Abs(WaveAcross(CentreX, Wave, Dummy) - Candidate));
+			}
+
+			if (Nearest > BestDistance)
+			{
+				BestDistance = Nearest;
+				Best = Candidate;
+			}
+		}
+
+		return Best;
+	}
+
 	/** At the frame the next wave fires, puts the pawn at the across-offset chosen by PlaceAcross (invincibility off),
 	 * then waits for the outcome. The direction is the wave's own roll. bSurvives: the pawn lives WaveSurviveSeconds
 	 * after; else it dies. */
-	void AddWaveLaneStage(FGeoTutorialBot& Bot, FString Name, int32 const WaveWatch, bool const bSurvives,
-						  bool const bKillDummies,
-						  TFunction<float(TArray<AEnemyCharacter*> const&, ULateralWavePattern const&, float)> PlaceAcross)
+	void
+	AddWaveLaneStage(FGeoTutorialBot& Bot, FString Name, int32 const WaveWatch, bool const bSurvives,
+					 bool const bKillDummies,
+					 TFunction<float(TArray<AEnemyCharacter*> const&, ULateralWavePattern const&, float)> PlaceAcross)
 	{
 		float const CentreX = GeoTutorial::RoomCentreX(GeoTutorial::Miniboss);
 		TSharedRef<int32> Base = MakeShared<int32>(0);
@@ -1511,50 +1686,28 @@ namespace GeoTutorialStages
 		int32 const WaveWatch = WatchMiniboss(Bot, LateralWaveAbility);
 		Bot.bKeepPlayerHealthy = true;
 		AddMinibossFightStages(Bot);
-		AddWaveLaneStage(Bot, TEXT("Miniboss: in a living dummy's lane the pawn survives the wave"), WaveWatch, true,
-						 false,
-						 [](TArray<AEnemyCharacter*> const& Dummies, ULateralWavePattern const& Wave, float const CentreX)
-						 {
-							 return Dummies.IsEmpty() ? 0.f : WaveAcross(CentreX, Wave, Dummies[0]);
-						 });
+		AddWaveLaneStage(
+			Bot, TEXT("Miniboss: in a living dummy's lane the pawn survives the wave"), WaveWatch, true, false,
+			[](TArray<AEnemyCharacter*> const& Dummies, ULateralWavePattern const& Wave, float const CentreX)
+			{
+				return Dummies.IsEmpty() ? 0.f : WaveAcross(CentreX, Wave, Dummies[0]);
+			});
 		Bot.AddStage(TEXT("Miniboss: the wave is over"),
 					 [&Bot](bool)
 					 {
 						 return !Bot.GetPawn()->IsDead();
 					 });
-		AddWaveLaneStage(Bot, TEXT("Miniboss: out of every lane the pawn dies"), WaveWatch, false, false,
-						 [](TArray<AEnemyCharacter*> const& Dummies, ULateralWavePattern const& Wave, float const CentreX)
-						 {
-							 float Best = 0.f;
-							 float BestDistance = -1.f;
-							 for (float const Fraction : {-0.75f, -0.375f, 0.f, 0.375f, 0.75f})
-							 {
-								 float const Candidate = Fraction * Wave.GetFiringHalfWidth();
-								 float Nearest = TNumericLimits<float>::Max();
-								 for (AEnemyCharacter const* const Dummy : Dummies)
-								 {
-									 Nearest = FMath::Min(Nearest, FMath::Abs(WaveAcross(CentreX, Wave, Dummy) - Candidate));
-								 }
-
-								 if (Nearest > BestDistance)
-								 {
-									 BestDistance = Nearest;
-									 Best = Candidate;
-								 }
-							 }
-
-							 return Best;
-						 });
+		AddWaveLaneStage(
+			Bot, TEXT("Miniboss: out of every lane the pawn dies"), WaveWatch, false, false,
+			FarthestFromLanes);
 		Bot.AddStage(TEXT("Miniboss: the player is back"),
 					 [&Bot](bool)
 					 {
 						 return !Bot.GetPawn()->IsDead();
 					 });
-		AddWaveLaneStage(Bot, TEXT("Miniboss: with no dummy alive the pawn dies anywhere"), WaveWatch, false, true,
-						 [](TArray<AEnemyCharacter*> const& Dummies, ULateralWavePattern const& Wave, float const CentreX)
-						 {
-							 return Dummies.IsEmpty() ? 0.f : WaveAcross(CentreX, Wave, Dummies[0]);
-						 });
+		AddWaveLaneStage(
+			Bot, TEXT("Miniboss: with no dummy alive the pawn dies anywhere"), WaveWatch, false, true,
+			FarthestFromLanes);
 	}
 
 	/** Waits for a new play world (the pawn in it) on a map whose name holds MapName. */

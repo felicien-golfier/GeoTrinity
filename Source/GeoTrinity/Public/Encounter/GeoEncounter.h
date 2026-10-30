@@ -99,6 +99,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoEncounter")
 	int32 GetCounter(FName Counter) const { return Counters.FindRef(Counter); }
 
+	/** The name of the step being run, NAME_None while the encounter is not running (what a test reports on a stall).
+	 */
+	FName GetCurrentStepName() const
+	{
+		FName StepName = NAME_None;
+		if (State != EState::Idle && Steps.IsValidIndex(CurrentStep))
+		{
+			StepName = Steps[CurrentStep].Name;
+		}
+
+		return StepName;
+	}
+
 	/** Trigger only (UGeoEncounterTrigger::Fire). */
 	void OnTriggerFired(UGeoEncounterTrigger const& Trigger, FGeoEncounterPayload const& Payload);
 

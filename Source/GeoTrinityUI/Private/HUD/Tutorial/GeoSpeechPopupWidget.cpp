@@ -5,10 +5,11 @@
 #include "Components/TextBlock.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameClasses/Player/GeoPlayerController.h"
+#include "GeoTrinity/GeoTrinity.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "InputAction.h"
+#include "Tool/CatLine/GeoCatLineBank.h"
 
-constexpr float CharsPerSecond = 40.f;
 /** Reading time once the text is complete: a base plus the length of the line at this reading speed. */
 constexpr float ReadingBaseSeconds = 1.f;
 constexpr float ReadingCharsPerSecond = 30.f;
@@ -40,10 +41,10 @@ void UGeoSpeechPopupWidget::NativeDestruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoSpeechPopupWidget::ShowLine(FText const& Line, FSimpleDelegate OnEnded)
+void UGeoSpeechPopupWidget::ShowLine(FText const& Line, FSimpleDelegate OnEnded, float const Seconds)
 {
 	SkipKey->SetText(GetSkipKeyLabel());
-	SkipHint->SetVisibility(ESlateVisibility::HitTestInvisible);
+	SkipHint->SetVisibility(Seconds > 0.f ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 
 	VisibleLength = StartLine(Line);
 
@@ -52,6 +53,8 @@ void UGeoSpeechPopupWidget::ShowLine(FText const& Line, FSimpleDelegate OnEnded)
 	Phase = EPhase::Typing;
 	RevealedCount = 0;
 	PhaseStartTime = FSlateApplication::Get().GetCurrentTime();
+	LineStartTime = PhaseStartTime;
+	TimedSeconds = Seconds;
 	SetVisibility(ESlateVisibility::HitTestInvisible);
 	SetTalking(true);
 
@@ -67,11 +70,19 @@ void UGeoSpeechPopupWidget::ShowLine(FText const& Line, FSimpleDelegate OnEnded)
 // ---------------------------------------------------------------------------------------------------------------------
 EActiveTimerReturnType UGeoSpeechPopupWidget::WatchLine(double const CurrentTime, float /*DeltaTime*/)
 {
-	if (Phase == EPhase::Typing)
+	if (TimedSeconds > 0.f && CurrentTime - LineStartTime >= TimedSeconds)
 	{
-		RevealUpTo(FMath::FloorToInt((CurrentTime - PhaseStartTime) * CharsPerSecond), true);
+		UE_CLOG(Phase == EPhase::Typing, LogGeoTrinity, Warning,
+				TEXT("UGeoSpeechPopupWidget: a %.1f s line cannot type its %d characters in time"), TimedSeconds,
+				VisibleLength);
+		RevealUpTo(VisibleLength, false);
+		EndLine();
 	}
-	else if (Phase == EPhase::Reading)
+	else if (Phase == EPhase::Typing)
+	{
+		RevealUpTo(FMath::FloorToInt((CurrentTime - PhaseStartTime) * GeoCatLines::TypingCharsPerSecond), true);
+	}
+	else if (Phase == EPhase::Reading && TimedSeconds <= 0.f)
 	{
 		float const ReadingSeconds =
 			LineSeconds > 0.f ? LineSeconds : ReadingBaseSeconds + VisibleLength / ReadingCharsPerSecond;
@@ -104,6 +115,11 @@ void UGeoSpeechPopupWidget::RevealUpTo(int32 const Count, bool const bTick)
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoSpeechPopupWidget::SkipLine()
 {
+	if (TimedSeconds > 0.f)
+	{
+		return;
+	}
+
 	if (Phase == EPhase::Typing)
 	{
 		RevealUpTo(VisibleLength, false);

@@ -49,7 +49,9 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 		BeamVisual->Shape.Length = BeamRange;
 		BeamVisual->Shape.HalfWidth = BeamHalfWidth;
 		BeamVisual->Layer = EGeoZoneLayer::Telegraph;
+		BeamVisual->FillMode = TelegraphFillMode;
 		BeamVisual->SetTimedFill(StoredPayload.ServerSpawnTime, StartDelay);
+		MoveBeamVfx(-StartDelay);
 		BeamVisual->SetZoneVisible(true);
 	}
 }
@@ -96,6 +98,7 @@ void UBeamPattern::StartPattern()
 	if (IsValid(BeamVisual))
 	{
 		BeamVisual->Layer = EGeoZoneLayer::Ground;
+		BeamVisual->FillMode = HazardFillMode;
 		BeamVisual->SetTimedFill(StoredPayload.ServerSpawnTime + StartDelay, GetHazardDuration());
 	}
 

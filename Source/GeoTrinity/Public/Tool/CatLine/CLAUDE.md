@@ -14,7 +14,7 @@ The Cat's random lines: a plain text bank in `Data/CatLines.txt` (tips, puns, na
 - Voice rules `AI/Tutorial/Tone.md`; the Cat `AI/Tutorial/Cat.md`.
 
 ## Bank
-- Categories in use: tips (`Controls`, `Roles`, `Teamwork`), `LiveService`, `FourthWall`, `Pun`, `Retort` (what the Training Room Cat snaps when hit: angry, short, insults the situation never the player's skill, `AI/Tutorial/Tone.md`).
+- Categories in use: tips (`Controls`, `Roles`, `Teamwork`), `LiveService`, `FourthWall`, `Pun`, `Retort` (what the Training Room Cat snaps when hit: angry, short, insults the situation never the player's skill, `AI/Tutorial/Tone.md`), `ZoneDeath` (the Zones room's death lines, read in file order, cycling: the first is the nine-lives pun, `AI/Tutorial/Steps.md`, Zone colors).
 - Re-parsed whenever the file's timestamp changes (as `AbilityInfo.cpp`'s descriptions): an edit shows in the next pick, and in the editor picker the next time it opens, with no rebuild or reload button.
 - `PickLine`: the union of the picked categories' lines in file order, a line in two categories once (empty set = all); returns empty text when no line matches (log `LogGeoEncounter` warning, the caller shows nothing and finishes). `bRandom` false = the pool in file order, one step per call, cycling.
 - No repeat until the pool is spent (`bRandom`): one shuffled bag per distinct category set, shared process-wide (every action and room draws from the same bag, so a nag firing for ever cycles all its puns before any returns). A refill never starts with the line just shown. A re-parse drops every bag and cursor, so an edited, added or cut line counts from the next pick. The file-order cursor is its own state per set, same sharing.

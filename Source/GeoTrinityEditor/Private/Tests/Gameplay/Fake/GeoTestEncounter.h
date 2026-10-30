@@ -250,9 +250,10 @@ public:
 	virtual void HideBossHealthBar() override {}
 
 	/** Records the line text and holds OnEnded so a test can trigger the end manually via HideCatLine. */
-	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded) override
+	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded, float const Seconds = 0.f) override
 	{
 		Lines.Add(Line.ToString());
+		LineSeconds.Add(Seconds);
 		LineEnded = MoveTemp(OnEnded);
 	}
 
@@ -284,6 +285,8 @@ public:
 	int32 HiddenLines = 0;
 	bool bQuestCardShown = false;
 	TArray<FString> Lines;
+	/** The Seconds each shown line asked for (0: untimed). */
+	TArray<float> LineSeconds;
 	FSimpleDelegate LineEnded;
 	FSimpleDelegate PageClosed;
 };

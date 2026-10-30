@@ -310,11 +310,11 @@ WidgetType* AGeoHUD::GetTutorialWidget(TSubclassOf<WidgetType> const& WidgetClas
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::ShowCatLine(FText const& Line, FSimpleDelegate OnEnded)
+void AGeoHUD::ShowCatLine(FText const& Line, FSimpleDelegate OnEnded, float const Seconds)
 {
 	if (UGeoCatLineWidget* const Widget = GetTutorialWidget(CatLineWidgetClass, CatLineWidget, CatLineZOrder))
 	{
-		Widget->ShowLine(Line, MoveTemp(OnEnded));
+		Widget->ShowLine(Line, MoveTemp(OnEnded), Seconds);
 	}
 	else
 	{

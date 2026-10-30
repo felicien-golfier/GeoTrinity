@@ -54,7 +54,7 @@ TELEPORT_TAG = "Teleport.Tutorial"
 PAD_INSET = 250.0
 EXIT_PAD_Y = 800.0
 START_Z = 115.0  # PlayerStart height: capsule clear of the floor
-ROOMS = ["Landing", "Dash", "Shoot", "Deploy", "Special", "Dummies", "Zones", "Miniboss"]
+ROOMS = ["Landing", "Dash", "Zones", "Shoot", "Deploy", "Special", "Dummies", "Miniboss"]
 REMOVED_ROOMS = ["Move"]
 
 LOCKED_ABILITY_TAGS = ["Ability.Spell.Dash", "Ability.Spell.BasicBeam", "Ability.Spell.HealingZone",

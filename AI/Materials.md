@@ -118,7 +118,7 @@ one static switch `Telegraph` apart: `MI_ZoneLayer_Ground` (the meaning pattern,
   to that colour before the pattern picks: two heal zones under a shield beam brighten the heal bands only.
 - More than four meanings at one pixel: the first four by ordinal show.
 - Same loop, after the colours: fill shade, darkened by `FillShade` wherever a covering slot's `Fill` has grown from its
-  core (darkest wins), then each slot's outline stroke (`OutlineWidth`, the slot's first colour) over everything in
+  core (darkest wins; a slot flagged `FillAlong` grows from its beam's start end instead), then each slot's outline stroke (`OutlineWidth`, the slot's first colour) over everything in
   its layer. No pulse.
 
 ## Safe spots

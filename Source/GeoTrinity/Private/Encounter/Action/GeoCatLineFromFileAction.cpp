@@ -24,3 +24,17 @@ FText UGeoCatLineFromFileAction::GetLineText() const
 {
 	return FText::FromString(GeoCatLines::PickLine(Categories, bRandom));
 }
+
+FText UGeoCatLineFromFileAction::GetLongestLineText() const
+{
+	FString Longest;
+	for (FString const& Line : GeoCatLines::GatherPool(Categories))
+	{
+		if (Line.Len() > Longest.Len())
+		{
+			Longest = Line;
+		}
+	}
+
+	return FText::FromString(Longest);
+}

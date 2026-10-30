@@ -28,3 +28,4 @@ The Cat's animated face, drawn in Slate. Shared by the Cat line popup (`HUD/Tuto
 - `SGeoCatFace::SetExpression(Expression)`: tilt, squints and ears blend to the new values over `ExpressionBlendSeconds` (ease-out); the mouth switches at once; a short pop (scale 1.12 over .3 s) marks the change.
 - Loops on top: squint × blink scale, ear angle + flick. Talking replaces the mouth with the moving one.
 - Loading screen: `GeoLoadingTimeline::GetExpression(Progress)` = the preset of the current eighth, in enum order.
+- Cat line popup: the line's `EGeoCatEmotion` (`HUD/Tutorial/CLAUDE.md`, "Cat emotion") picks the preset, in the same order as `EGeoCatExpression` (a static assert pins it). While talking the mouth moves only if the caller says so: the popup stops "talking" when Typing ends, so the expression's mouth shows during Reading.
