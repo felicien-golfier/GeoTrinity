@@ -130,7 +130,31 @@ class GuidLibrary:
         return Obj(text=text), len(text) == 32
 
 
+class AnyPins(list):
+    """The pins of an engine node, which only the editor knows: every name is found, on the first pin."""
+
+    def index(self, name):
+        return 0
+
+
+class Exporter:
+    @staticmethod
+    def run_asset_export_task(task):
+        open(task.filename, "w").close()
+        return True
+
+
 class MaterialEditingLibrary:
+    @staticmethod
+    def get_material_expression_input_names(node):
+        call = stand_in.MaterialExpressionMaterialFunctionCall
+        return node.props["material_function"].inputs if isinstance(node, call) else AnyPins(["Pin"])
+
+    @staticmethod
+    def get_material_expression_output_names(node):
+        call = stand_in.MaterialExpressionMaterialFunctionCall
+        return node.props["material_function"].outputs if isinstance(node, call) else AnyPins(["Pin"])
+
     @staticmethod
     def create_material_expression_in_function(asset, cls, x, y):
         assert isinstance(asset, stand_in.MaterialFunction), f"{asset.get_name()} is not a function"
@@ -206,7 +230,7 @@ class MaterialEditingLibrary:
 
 stand_in = types.ModuleType("unreal")
 stand_in.__getattr__ = module_attribute
-for name in ("Obj", "Paths", "EditorAssetLibrary", "AssetToolsHelpers", "SystemLibrary", "GuidLibrary",
+for name in ("Obj", "Paths", "EditorAssetLibrary", "AssetToolsHelpers", "SystemLibrary", "GuidLibrary", "Exporter",
              "MaterialEditingLibrary"):
     setattr(stand_in, name, globals()[name])
 for name in ("FunctionInputType", "PropertyAccessChangeNotifyMode", "MaterialProperty", "BlendMode",

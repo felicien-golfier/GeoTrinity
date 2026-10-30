@@ -13,12 +13,12 @@ which draws the sacrifice in during the channel.
   Scatter      eight solid squares thrown off the hole's rim
 
 Local space pointing +X from the socket, lifted above the block's top face like the channel effect. The ray is
-`User.Beam_Length` long and `User.Beam_Width` is its half-width, the pair its base system carries; the defaults
+`User.Beam_Length` long and `User.Beam_Width` is its half-width, the pair the system adds; the defaults
 are GeneralSpellDistance and the detonation's LineHalfWidth. Colour is `User.Color`, multiplied by
 each layer's own brightness and re-tinted every frame.
 
-A run is `prepare()`, then the `niagara_ops` route to drop the base system's own emitter (`Explosion`) — the
-one step no Python here reaches — then `main()`. The report names every builder call that returned false.
+A run is `prepare()` then `main()`; the system is rebuilt empty, so it holds exactly the layers below. The report
+names every builder call that returned false.
 
 Reference: AI/ArtDirection.md (Rail recipe), AI/MCP/MCP_Niagara.md, AI/VFX.md (Bolt Emitters).
 """
@@ -27,7 +27,6 @@ import unreal
 
 TARGET_FOLDER = "/Game/Art/VFX/Assets"
 SYSTEM_NAME = "NS_Square_SacrificeRelease"
-BASE_SYSTEM = "/Game/Art/VFX/Generic/Niagara/NS_Ray_ZoneIndicator.NS_Ray_ZoneIndicator"  # carries the beam's params
 LAYER_SOURCE_FOLDER = "/Game/Art/VFX/Assets/_SacrificeReleaseSources"
 TEMPLATE_SPRITE = "/Niagara/DefaultAssets/Templates/Emitters/SimpleSpriteBurst.SimpleSpriteBurst"
 TEMPLATE_BEAM = "/Niagara/DefaultAssets/Templates/Emitters/StaticBeam.StaticBeam"
@@ -138,6 +137,16 @@ def duplicate_into(source_path, folder, name):
     return duplicate
 
 
+def create_system():
+    """An empty system over folder/name: the layers are its only emitters, `main()` adds its User parameters."""
+    clear_asset("%s/%s" % (TARGET_FOLDER, SYSTEM_NAME))
+    system = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        SYSTEM_NAME, TARGET_FOLDER, unreal.NiagaraSystem, unreal.NiagaraSystemFactoryNew())
+    record(SYSTEM_NAME, system.get_path_name() if system else "FAILED")
+    if system:
+        unreal.EditorAssetLibrary.save_asset(system.get_path_name())
+
+
 def system_path():
     return "%s/%s.%s" % (TARGET_FOLDER, SYSTEM_NAME, SYSTEM_NAME)
 
@@ -165,8 +174,8 @@ def prepare_source(one):
 
 
 def prepare():
-    """Rewrites the target and every layer source; dropping the base's own emitter goes next."""
-    duplicate_into(BASE_SYSTEM, TARGET_FOLDER, SYSTEM_NAME)
+    """Rewrites the target system and every layer source."""
+    create_system()
     for one in LAYERS:
         prepare_source(one)
     return "\n".join(LOG)
@@ -376,8 +385,10 @@ def main():
     for one in LAYERS:
         record("emitter %s" % one["name"], cdo.add_emitter(
             system, "%s/%s.%s" % (LAYER_SOURCE_FOLDER, one["name"], one["name"])))
-    for parameter, value in (("User.Color", DEFAULT_COLOR), ("User.Beam_Length", DEFAULT_LENGTH),
-                             ("User.Beam_Width", DEFAULT_HALF_WIDTH)):
+    for parameter, type_name, value in (("User.Color", "LinearColor", DEFAULT_COLOR),
+                                        ("User.Beam_Length", "Float", DEFAULT_LENGTH),
+                                        ("User.Beam_Width", "Float", DEFAULT_HALF_WIDTH)):
+        record("add %s" % parameter, cdo.add_user_parameter(system, parameter, type_name))
         record(parameter, cdo.set_user_parameter(system, parameter, str(value)))
     record("compile emitters", cdo.compile_and_save(system))
 

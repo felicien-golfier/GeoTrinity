@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
@@ -24,6 +25,11 @@ struct GEOTRINITY_API FSTTask_FireAbilityInstanceData
 	UPROPERTY(EditAnywhere, Category = "GeoParameter", meta = (ClampMin = "0"))
 	float DelayAfterAbilityEnd = 0.f;
 
+	/** Pattern data this firing launches a pattern ability with (FPatternAbilityParams, in the caster's arena); unset =
+	 * the ability's own. */
+	UPROPERTY(EditAnywhere, Category = "GeoParameter")
+	TInstancedStruct<FPatternData> PatternData;
+
 	/** Handle used to unbind the OnAbilityEnded delegate when the task exits. */
 	FDelegateHandle AbilityEndedDelegateHandle;
 };
@@ -44,7 +50,8 @@ struct GEOTRINITY_API FSTTask_FireAbility : public FStateTreeAIActionTaskBase
 	/** Returns FSTTask_FireAbilityInstanceData as the per-execution instance data type. */
 	virtual UStruct const* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 	/** Activates the configured ability by tag on the pawn's ASC. Binds to OnAbilityEnded for async completion. Returns
-	 * Running until the ability ends (plus DelayAfterAbilityEnd) or failed if the ASC is missing or the tag is invalid. */
+	 * Running until the ability ends (plus DelayAfterAbilityEnd) or failed if the ASC is missing or the tag is invalid.
+	 */
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 										   FStateTreeTransitionResult const& Transition) const override;
 
@@ -54,4 +61,9 @@ struct GEOTRINITY_API FSTTask_FireAbility : public FStateTreeAIActionTaskBase
 
 private:
 	UAbilitySystemComponent* GetASC(FStateTreeExecutionContext const& Context) const;
+
+	/** Activates the ability tagged AbilityTag: by tag alone, or, with PatternData set, with it as the activation's
+	 * FPatternAbilityParams. */
+	bool TryActivate(FStateTreeExecutionContext const& Context, UAbilitySystemComponent& ASC,
+					 FInstanceDataType const& InstanceData) const;
 };

@@ -3,8 +3,10 @@
 #include "AI/StateTree/Ability/STTask_FireAbility.h"
 
 #include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/Abilities/Base/PatternAbilityParams.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "Actor/Arena/GeoArena.h"
 #include "Engine/World.h"
 #include "StateTreeAsyncExecutionContext.h"
 #include "StateTreeExecutionContext.h"
@@ -38,7 +40,11 @@ EStateTreeRunStatus FSTTask_FireAbility::EnterState(FStateTreeExecutionContext& 
 				{
 					FTimerHandle TimerHandle;
 					World->GetTimerManager().SetTimer(
-						TimerHandle, [WeakContext]() { WeakContext.FinishTask(EStateTreeFinishTaskType::Succeeded); },
+						TimerHandle,
+						[WeakContext]()
+						{
+							WeakContext.FinishTask(EStateTreeFinishTaskType::Succeeded);
+						},
 						Delay, false);
 				}
 				else
@@ -48,7 +54,7 @@ EStateTreeRunStatus FSTTask_FireAbility::EnterState(FStateTreeExecutionContext& 
 			}
 		});
 
-	if (!ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(InstanceData.AbilityTag)))
+	if (!TryActivate(Context, *ASC, InstanceData))
 	{
 		ASC->OnAbilityEnded.Remove(InstanceData.AbilityEndedDelegateHandle);
 		InstanceData.AbilityEndedDelegateHandle.Reset();
@@ -71,6 +77,34 @@ void FSTTask_FireAbility::ExitState(FStateTreeExecutionContext& Context,
 		}
 		InstanceData.AbilityEndedDelegateHandle.Reset();
 	}
+}
+
+bool FSTTask_FireAbility::TryActivate(FStateTreeExecutionContext const& Context, UAbilitySystemComponent& ASC,
+									  FInstanceDataType const& InstanceData) const
+{
+	FGameplayTagContainer const AbilityTags(InstanceData.AbilityTag);
+	if (!InstanceData.PatternData.IsValid())
+	{
+		return ASC.TryActivateAbilitiesByTag(AbilityTags);
+	}
+
+	TArray<FGameplayAbilitySpec*> Specs;
+	ASC.GetActivatableGameplayAbilitySpecsByAllMatchingTags(AbilityTags, Specs);
+	if (Specs.IsEmpty())
+	{
+		return false;
+	}
+
+	FPatternAbilityParams* const Params = new FPatternAbilityParams();
+	if (AGeoArena const* const Arena = AGeoArena::GetArenaOfBoss(GeoLib::ResolveOwnerPawn(Context.GetOwner())))
+	{
+		Params->ArenaTag = Arena->ArenaTag;
+	}
+
+	Params->PatternData = InstanceData.PatternData;
+	FGameplayEventData ActivationData;
+	ActivationData.TargetData.Add(Params);
+	return ASC.InternalTryActivateAbility(Specs[0]->Handle, FPredictionKey(), nullptr, nullptr, &ActivationData);
 }
 
 UAbilitySystemComponent* FSTTask_FireAbility::GetASC(FStateTreeExecutionContext const& Context) const

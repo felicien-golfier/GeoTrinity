@@ -6,6 +6,7 @@
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/Arena/GeoArenaVolume.h"
 #include "Actor/Buttons/GeoTeleporter.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Characters/EnemyCharacter.h"
@@ -14,6 +15,7 @@
 #include "Encounter/GeoEncounterSubsystem.h"
 #include "EngineUtils.h"
 #include "GameClasses/Player/GeoPlayerController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/WorldSettings.h"
@@ -552,6 +554,19 @@ void FGeoTutorialBot::UpdateHealthWatches()
 											 *Character->GetActorLocation().ToCompactString()));
 			}
 
+			UCharacterMovementComponent const* const Movement = Character->GetCharacterMovement();
+			if (Watch.bEveryChange && !Watch.bDead && Movement && Movement->MovementMode != Watch.MovementMode)
+			{
+				Watch.MovementMode = Movement->MovementMode;
+				FHitResult Floor;
+				FVector const Here = Character->GetActorLocation();
+				bool const bFloor = GetWorld()->LineTraceSingleByChannel(Floor, Here, Here - FVector(0., 0., 400.), ECC_Visibility);
+				AddHealthLog(FString::Printf(TEXT("%s movement %s at %s, velocity %s, floor below: %s"), *Watch.Name,
+											 *UEnum::GetValueAsString(Movement->MovementMode), *Here.ToCompactString(),
+											 *Movement->Velocity.ToCompactString(),
+											 bFloor ? *GetNameSafe(Floor.GetActor()) : TEXT("none")));
+			}
+
 			if (!Watch.bDead)
 			{
 				Watch.Location = Character->GetActorLocation();
@@ -602,13 +617,30 @@ void FGeoTutorialBot::BindHealth(AGeoCharacter* const Character, bool const bEve
 		Watch.Location = Character->GetActorLocation();
 		AddHealthLog(FString::Printf(TEXT("%s watched, health %.1f at %s"), *Watch.Name, Watch.Health,
 									 *Watch.Location.ToCompactString()));
+		if (bEveryChange)
+		{
+			FString Inside;
+			for (TActorIterator<AGeoArenaVolume> It(GetWorld()); It; ++It)
+			{
+				FVector Origin;
+				FVector Extent;
+				It->GetActorBounds(false, Origin, Extent);
+				if (FBox2D(FVector2D(Origin - Extent), FVector2D(Origin + Extent)).IsInside(FVector2D(Watch.Location)))
+				{
+					Inside += FString::Printf(TEXT(" %s(X %.0f..%.0f, Y %.0f..%.0f)"), *It->GetName(), Origin.X - Extent.X,
+											  Origin.X + Extent.X, Origin.Y - Extent.Y, Origin.Y + Extent.Y);
+				}
+			}
+			AddHealthLog(FString::Printf(TEXT("%s inside arena volumes:%s"), *Watch.Name, Inside.IsEmpty() ? TEXT(" NONE") : *Inside));
+		}
+
 		Watch.Handle = ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
 						   .AddLambda(
 							   [this, Index](FOnAttributeChangeData const& Data)
 							   {
 								   FHealthWatch& Changed = HealthWatches[Index];
 								   Changed.Health = Data.NewValue;
-								   if (Changed.bEveryChange || Data.NewValue <= 0.f)
+								   if (Data.OldValue != Data.NewValue && (Changed.bEveryChange || Data.NewValue <= 0.f))
 								   {
 									   AddHealthLog(FString::Printf(TEXT("%s health %.1f -> %.1f at %s: %s"),
 																	*Changed.Name, Data.OldValue, Data.NewValue,
@@ -616,6 +648,22 @@ void FGeoTutorialBot::BindHealth(AGeoCharacter* const Character, bool const bEve
 																	*DescribeHealthChange(Data)));
 								   }
 							   });
+		if (bEveryChange)
+		{
+			FString const Name = Watch.Name;
+			Watch.AppliedHandle = ASC->OnGameplayEffectAppliedDelegateToSelf.AddLambda(
+				[this, Name](UAbilitySystemComponent* /*Source*/, FGameplayEffectSpec const& Spec,
+							 FActiveGameplayEffectHandle /*Handle*/)
+				{
+					AddHealthLog(FString::Printf(TEXT("%s takes %s"), *Name, *DescribeEffect(Spec)));
+				});
+			Watch.PeriodicHandle = ASC->OnPeriodicGameplayEffectExecuteDelegateOnSelf.AddLambda(
+				[this, Name](UAbilitySystemComponent* /*Source*/, FGameplayEffectSpec const& Spec,
+							 FActiveGameplayEffectHandle /*Handle*/)
+				{
+					AddHealthLog(FString::Printf(TEXT("%s takes periodic %s"), *Name, *DescribeEffect(Spec)));
+				});
+		}
 	}
 }
 
@@ -624,10 +672,14 @@ void FGeoTutorialBot::UnbindHealth(FHealthWatch& Watch)
 	if (UGeoAbilitySystemComponent* const ASC = Watch.BoundASC.Get())
 	{
 		ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute()).Remove(Watch.Handle);
+		ASC->OnGameplayEffectAppliedDelegateToSelf.Remove(Watch.AppliedHandle);
+		ASC->OnPeriodicGameplayEffectExecuteDelegateOnSelf.Remove(Watch.PeriodicHandle);
 	}
 
 	Watch.BoundASC.Reset();
 	Watch.Handle.Reset();
+	Watch.AppliedHandle.Reset();
+	Watch.PeriodicHandle.Reset();
 }
 
 void FGeoTutorialBot::AddHealthLog(FString const& Line)
@@ -640,12 +692,14 @@ void FGeoTutorialBot::AddHealthLog(FString const& Line)
 
 FString FGeoTutorialBot::DescribeHealthChange(FOnAttributeChangeData const& Data)
 {
-	if (!Data.GEModData)
-	{
-		return TEXT("set directly (the bot, or code outside an effect)");
-	}
+	// An effect through IncomingDamage sets Health after its data is gone: its "takes" line sits at the same time.
+	return Data.GEModData
+		? DescribeEffect(Data.GEModData->EffectSpec)
+		: FString(TEXT("no effect data (a \"takes\" line at the same t is the cause, else set directly)"));
+}
 
-	FGameplayEffectSpec const& Spec = Data.GEModData->EffectSpec;
+FString FGeoTutorialBot::DescribeEffect(FGameplayEffectSpec const& Spec)
+{
 	FGameplayEffectContextHandle const& Context = Spec.GetContext();
 	UGameplayAbility const* const Ability = Context.GetAbility();
 	return FString::Printf(TEXT("effect %s, instigator %s, causer %s, ability %s"), *GetNameSafe(Spec.Def),

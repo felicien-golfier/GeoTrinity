@@ -39,6 +39,9 @@ public:
 	/** True when Pawn stands inside any volume carrying ArenaTag. */
 	static bool IsPawnInside(UObject const* WorldContextObject, APawn const& Pawn, FGameplayTag ArenaTag);
 
+	/** XY box around every volume carrying ArenaTag; invalid (bIsValid false) when none does. */
+	static FBox2D GetArenaBounds(UObject const* WorldContextObject, FGameplayTag ArenaTag);
+
 protected:
 	/** Binds the overlap registering the current arena. Server only — nothing reads the tag on a client. */
 	virtual void BeginPlay() override;

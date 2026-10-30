@@ -31,8 +31,6 @@ Every Pending file carries `Priority:` (1 high, 2 normal, 3 later). This list is
 
 | Priority | File |
 |---|---|
-| 1 | `MaterialLayoutStraight.md` |
-| 1 | `ZoneOverlapColors.md` |
 | 1 | `ZonesRoomDamageZone.md` |
 | 1 | `LateralWaveVisual.md` |
 | 1 | `TutorialMinibossRework.md` |

@@ -143,7 +143,7 @@ colour. A telegraph never draws one flat colour: alone, its colour is paired wit
 
 ## Writing a function
 
-- Name it `MF_<What>` for what it does or returns (`MF_InsideFrameOnAxis`, `MF_PulseBrightness`), never for where it
+- Name it `MF_<What>` for what it does or returns (`MF_SafeSpotCut`, `MF_RepeatDistance`), never for where it
   is first used or a vague noun (`Shape`, `Helper`). Interchangeable functions share a prefix: `MF_Pattern_<Name>`, `MF_Stroke_<Name>`. A
   layer is `ML_<What>` and a layer blend `MLB_<What>`, prefixed the same way (`ML_Pattern_`, `ML_Wave_`).
 - Fill the function description (the palette tooltip) and every input and output description, with units: world
@@ -187,9 +187,9 @@ column per step, the shared radius read through a named reroute (a material vari
 - No node box over another and no wire over a box, as few wires over each other as the graph allows. Nodes sit close
   where little connects them and apart where much does: the gap after a column is small for one wire and grows with
   every wire leaving it, so a fan of wires has room to spread. Rows are a small gap apart.
-- Wires as straight as possible: a source sits level with the pin it feeds, so the wire is a horizontal line; a wire
-  that ends higher comes from a node placed higher (no crossing for nothing). A long value runs flat across the
-  columns and bends only at its end, never in stairs or S curves.
+- Wires as straight as possible: a node sits level with the pins that feed it, so the wire is a horizontal line; nodes
+  nothing feeds start at the top, aligned. A long value runs flat across the columns and bends only at its end, never
+  in stairs or S curves.
 - No useless box: a mask of a mask is one mask of the source, a node nothing reads is deleted.
 - A function wherever a block is needed (see "Writing a function"); a call is one node, so the graph reads as the
   steps it takes.

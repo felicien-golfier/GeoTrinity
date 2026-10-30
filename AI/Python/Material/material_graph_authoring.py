@@ -24,11 +24,14 @@ COLUMN_GAP = 48
 WIRE_GAP = 12
 MAX_COLUMN_GAP = 360
 ROW_GAP = 28
-HEADER_HEIGHT = 34
-PIN_HEIGHT = 26
-PREVIEW_HEIGHT = 100
-NODE_PADDING = 16
+HEADER_HEIGHT = 26
+SUBTITLE_HEIGHT = 14
+PIN_HEIGHT = 30
+PREVIEW_HEIGHT = 85
+NODE_PADDING = 6
 REROUTE_SIZE = 24
+ROOT_GAP = 160
+
 
 
 def struct(cls, **members):
@@ -116,10 +119,9 @@ class Box:
         self.is_reroute = is_reroute
         self.label = label
         self.keep = False
-        self.sources = []
-        self.input_names = []
-        self.targets = []
-        self.outputs = set()
+        self.has_subtitle = False
+        self.input_pins = [""]
+        self.output_pins = [""]
         self.column = 0
         self.x = 0
         self.top = 0.0
@@ -131,7 +133,7 @@ class Box:
 
         width = len(self.label) * CHARACTER_WIDTH + TITLE_PADDING
         if not self.has_preview:
-            pin_text = max(map(len, self.input_names), default=0) + max(map(len, self.outputs), default=0)
+            pin_text = max(map(len, self.input_pins), default=0) + max(map(len, self.output_pins), default=0)
             width = max(width, pin_text * CHARACTER_WIDTH + PIN_PADDING)
 
         return max(width, MIN_WIDTH)
@@ -141,19 +143,30 @@ class Box:
         if self.is_reroute:
             return REROUTE_SIZE
 
-        pins_height = PIN_HEIGHT * max(len(self.sources), len(self.outputs), 1)
-        return HEADER_HEIGHT + (max(pins_height, PREVIEW_HEIGHT) if self.has_preview else pins_height) + NODE_PADDING
+        pins_height = PIN_HEIGHT * max(len(self.input_pins), len(self.output_pins), 1)
+        return self.header_height + pins_height + (PREVIEW_HEIGHT if self.has_preview else 0) + NODE_PADDING
 
     @property
-    def centre(self):
-        return self.top + self.height / 2
+    def header_height(self):
+        return HEADER_HEIGHT + (SUBTITLE_HEIGHT if self.has_subtitle else 0)
+
+    def pin_offset(self, index):
+        """Height of a pin under the top of the box."""
+        return REROUTE_SIZE / 2 if self.is_reroute else self.header_height + PIN_HEIGHT * index + PIN_HEIGHT / 2
+
+    def input_offset(self, pin):
+        """An empty pin name is the first pin."""
+        return self.pin_offset(self.input_pins.index(pin) if pin else 0)
+
+    def output_offset(self, output):
+        return self.pin_offset(self.output_pins.index(output) if output else 0)
 
 
-def pack(boxes, wanted_centres):
-    """Stacks a column top to bottom in the order of the centres each box wants, none over another."""
+def pack(boxes, wanted_tops):
+    """Stacks a column top to bottom in the order of the tops each box wants, none over another."""
     bottom = None
-    for box in sorted(boxes, key=wanted_centres.get):
-        box.top = wanted_centres[box] - box.height / 2
+    for box in sorted(boxes, key=wanted_tops.get):
+        box.top = wanted_tops[box]
         if bottom is not None:
             box.top = max(box.top, bottom + ROW_GAP)
 
@@ -213,8 +226,11 @@ class Graph:
         for name, value in properties.items():
             node.set_editor_property(name, value)
 
-        self.boxes[id(node)] = Box(node, cls is not unreal.MaterialExpressionMaterialFunctionCall,
-                                   label=str(properties.get("parameter_name", cls.__name__.removeprefix("MaterialExpression"))))
+        box = Box(node, "Texture" in cls.__name__ or "CollectionParameter" in cls.__name__,
+                  label=str(properties.get("parameter_name", cls.__name__.removeprefix("MaterialExpression"))))
+        # Parameters and input data nodes draw a second header line.
+        box.has_subtitle = "Parameter" in cls.__name__ or cls is unreal.MaterialExpressionWorldPosition
+        self.boxes[id(node)] = box
         return node
 
     def connect(self, source, target, pin=""):
@@ -373,9 +389,10 @@ class Graph:
         """Places every node and makes every wire: left to right, one column per step of the longest chain.
 
         A wire only ever joins two neighbouring columns, so none goes back and none passes over a node: a value
-        needed further on travels a rail of reroutes, one per column. A node sits as far right as its consumers
-        allow and starts level with them; a column then stacks its nodes downward from there, in the order they were
-        made, so a chain of nodes stays on one line."""
+        needed further on travels a rail of reroutes, one per column, flat at one height. A node sits as far right as
+        its consumers allow. Columns are then stacked from the left: a node with no feeder starts at the top, any
+        other is level with the pins that feed it. A material's root node cannot move, the graph is placed left of it
+        and from its top."""
         self.prune_unused_nodes()
         boxes = list(self.boxes.values())
         earliest = {}
@@ -400,15 +417,14 @@ class Graph:
         for box in boxes:
             box.column = used_columns.index(latest[box])
 
-        links = self.route_through_rails()
+        links, rails = self.route_through_rails()
         boxes = list(self.boxes.values())
-        columns = [[box for box in boxes if box.column == column] for column in range(len(used_columns))]
         for box in boxes:
-            box.sources = [source for source, _, target, _ in links if target is box]
-            box.input_names = [pin for _, _, target, pin in links if target is box]
-            box.targets = [target for source, _, target, _ in links if source is box]
-            box.outputs = {output for source, output, _, _ in links if source is box}
+            if not box.is_reroute:
+                box.input_pins = mel.get_material_expression_input_names(box.node)
+                box.output_pins = mel.get_material_expression_output_names(box.node)
 
+        columns = [[box for box in boxes if box.column == column] for column in range(len(used_columns))]
         left = 0
         for index, column in enumerate(columns):
             for box in column:
@@ -417,16 +433,20 @@ class Graph:
             wires_out = sum(source.column == index for source, _, _, _ in links)
             left += max(box.width for box in column) + min(COLUMN_GAP + WIRE_GAP * wires_out, MAX_COLUMN_GAP)
 
-        row = {}
-        for box in sorted(boxes, key=lambda box: box.column, reverse=True):
-            row[box] = sum(row[target] for target in box.targets) / len(box.targets) if box.targets else 0.0
-
         for column in columns:
-            pack(column, row)
+            nodes = [box for box in column if not box.is_reroute]
+            pack(nodes, {box: self.wanted_top(box) for box in nodes})
 
+        self.place_rails(rails, columns)
         lowest = min(box.top for box in boxes)
+        root_x, root_y = (0, 0) if self.is_function else self.root_position()
+        right = max(box.x + box.width for box in boxes)
         for box in boxes:
-            box.top -= lowest
+            box.top += root_y - lowest
+            if not self.is_function:
+                box.x += root_x - ROOT_GAP - right
+
+        for box in boxes:
             box.node.set_editor_property("material_expression_editor_x", box.x)
             box.node.set_editor_property("material_expression_editor_y", int(box.top))
 
@@ -476,7 +496,43 @@ class Graph:
 
             links.append((*rail[target.column - 1], target, pin))
 
-        return links
+        return links, rails
+
+    def wanted_top(self, box):
+        """The top that puts the box level with the pins feeding it: the height most of them agree on, the highest
+        when tied. A box nothing feeds starts at the top."""
+        tops = [source.top + source.output_offset(output) - box.input_offset(pin)
+                for source, output, target, pin in self.wires if target is box]
+        return min(tops, key=lambda top: (-tops.count(top), top)) if tops else 0.0
+
+    def root_position(self):
+        """Where the material's root node sits: only its text export tells, a default position being left out."""
+        reader = {}
+        reader_path = unreal.Paths.project_dir() + "AI/Python/Material/read_material_text.py"
+        exec(compile(open(reader_path).read(), reader_path, "exec"), reader)
+        position = {line.split("=")[0]: int(line.split("=")[1])
+                    for line in reader["read_properties"](self.asset.get_path_name(), ("EditorX", "EditorY"))}
+        return position.get("EditorX", 0), position.get("EditorY", 0)
+
+    def place_rails(self, rails, columns):
+        """Gives every reroute of a rail the height of the rail's source pin, or the nearest height where no box is
+        in the way in any column the rail crosses; only the last hop to each target leaves that height."""
+        placed = set()
+        for (source, output), rail in rails.items():
+            hops = [box for box, _ in rail.values() if box.is_reroute]
+            if hops:
+                obstacles = [box for hop in hops for box in columns[hop.column] if box in placed or not box.is_reroute]
+                wanted = source.top + source.output_offset(output)
+                clearance = REROUTE_SIZE / 2 + ROW_GAP / 2
+                candidates = [wanted] + [edge for box in obstacles for edge in (box.top - clearance,
+                                                                                 box.top + box.height + clearance)]
+                free = [height for height in candidates if all(height + clearance <= box.top
+                                                               or height - clearance >= box.top + box.height
+                                                               for box in obstacles)]
+                height = min(free, key=lambda candidate: abs(candidate - wanted))
+                for hop in hops:
+                    hop.top = height - REROUTE_SIZE / 2
+                    placed.add(hop)
 
     def reroute(self, column):
         if self.is_function:
@@ -490,26 +546,28 @@ class Graph:
         return box
 
     def check_layout(self, boxes, links):
-        """Asserts the two hard rules and logs the soft one: wires crossing each other."""
+        """Asserts the two hard rules and logs the soft ones: wires crossing each other, wires not level."""
         for index, box in enumerate(boxes):
             for other in boxes[index + 1:]:
-                assert box.column != other.column or box.top + box.height <= other.top or \
-                    other.top + other.height <= box.top, f"{self.asset.get_name()}: two nodes overlap"
+                assert box.column != other.column or box.top + box.height <= other.top or                     other.top + other.height <= box.top, f"{self.asset.get_name()}: two nodes overlap"
 
         for source, _, target, _ in links:
             assert target.column == source.column + 1, f"{self.asset.get_name()}: a wire skips or goes back"
 
-        wires = [((source.x + source.width, source.centre), (target.x, target.centre)) for source, _, target, _ in links]
+        wires = [((source.x + source.width, source.top + source.output_offset(output)),
+                  (target.x, target.top + target.input_offset(pin))) for source, output, target, pin in links]
         crossings = sum(segments_cross(first, second) for index, first in enumerate(wires)
                         for second in wires[index + 1:])
+        bends = sum(abs(start[1] - end[1]) > 2 for start, end in wires)
         reroutes = sum(box.is_reroute for box in boxes)
-        unreal.log(f"LAYOUT::{self.asset.get_name()}: {len(boxes)} nodes, {reroutes} reroutes, {crossings} crossings")
+        unreal.log(f"LAYOUT::{self.asset.get_name()}: {len(boxes)} nodes, {reroutes} reroutes, {crossings} crossings, "
+                   f"{bends} bends")
 
     def _pin(self, key, cls):
         """The node this pin had in the last build, so callers keep their wires, or a new one."""
         if key in self.previous_pins:
             node = self.previous_pins.pop(key)
-            self.boxes[id(node)] = Box(node, True)
+            self.boxes[id(node)] = Box(node, False)
             return node
 
         return self.node(cls)

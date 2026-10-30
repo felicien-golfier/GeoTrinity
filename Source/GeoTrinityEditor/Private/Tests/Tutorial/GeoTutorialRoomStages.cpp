@@ -2,6 +2,7 @@
 
 #include "GeoTutorialRoomStages.h"
 
+#include "AbilitySystem/Abilities/Pattern/Hazard/LateralWavePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -1417,16 +1418,47 @@ namespace GeoTutorialStages
 					 });
 	}
 
-	/** At the frame the next wave fires, puts the pawn at the Y chosen by PlaceY (invincibility off), then waits for
-	 * the outcome. bSurvives: the pawn lives WaveSurviveSeconds after; else it dies. */
+	/** The miniboss's live lateral wave, null until a firing has begun. */
+	ULateralWavePattern const* FindMinibossWave(FGeoTutorialBot const& Bot)
+	{
+		AEnemyCharacter const* const Boss = FindMiniboss(Bot);
+		UGeoAbilitySystemComponent* const ASC = Boss ? Cast<UGeoAbilitySystemComponent>(Boss->GetAbilitySystemComponent())
+													   : nullptr;
+		UPattern* Pattern = nullptr;
+		return ASC && ASC->FindPatternByClass(ULateralWavePattern::StaticClass(), Pattern) && Pattern->IsPatternActive()
+			? Cast<ULateralWavePattern>(Pattern)
+			: nullptr;
+	}
+
+	/** The pawn's place for a wave lane: the room centre, WaveLaneBackoff back along the rolled travel, Across to its
+	 * side. */
+	FVector2D WaveLanePlace(float const CentreX, ULateralWavePattern const& Wave, float const Across)
+	{
+		FVector2D const Forward(FRotator(0.f, Wave.GetFiringYaw(), 0.f).Vector());
+		FVector2D const Right(-Forward.Y, Forward.X);
+		return FVector2D(CentreX, 0.f) - Forward * WaveLaneBackoff + Right * Across;
+	}
+
+	/** Where Dummy stands across the wave's travel, from the room centre. */
+	float WaveAcross(float const CentreX, ULateralWavePattern const& Wave, AActor const* const Dummy)
+	{
+		FVector2D const Forward(FRotator(0.f, Wave.GetFiringYaw(), 0.f).Vector());
+		FVector2D const Right(-Forward.Y, Forward.X);
+		return (FVector2D(Dummy->GetActorLocation()) - FVector2D(CentreX, 0.f)) | Right;
+	}
+
+	/** At the frame the next wave fires, puts the pawn at the across-offset chosen by PlaceAcross (invincibility off),
+	 * then waits for the outcome. The direction is the wave's own roll. bSurvives: the pawn lives WaveSurviveSeconds
+	 * after; else it dies. */
 	void AddWaveLaneStage(FGeoTutorialBot& Bot, FString Name, int32 const WaveWatch, bool const bSurvives,
-						  bool const bKillDummies, TFunction<float(TArray<AEnemyCharacter*> const&)> PlaceY)
+						  bool const bKillDummies,
+						  TFunction<float(TArray<AEnemyCharacter*> const&, ULateralWavePattern const&, float)> PlaceAcross)
 	{
 		float const CentreX = GeoTutorial::RoomCentreX(GeoTutorial::Miniboss);
 		TSharedRef<int32> Base = MakeShared<int32>(0);
 		TSharedRef<double> FiredAt = MakeShared<double>(0.);
 		Bot.AddStage(MoveTemp(Name),
-					 [&Bot, WaveWatch, bSurvives, bKillDummies, CentreX, PlaceY = MoveTemp(PlaceY), Base,
+					 [&Bot, WaveWatch, bSurvives, bKillDummies, CentreX, PlaceAcross = MoveTemp(PlaceAcross), Base,
 					  FiredAt](bool const bFirstTick)
 					 {
 						 if (bFirstTick)
@@ -1436,7 +1468,8 @@ namespace GeoTutorialStages
 						 }
 
 						 bool bDone = false;
-						 if (*FiredAt == 0. && Bot.GetWatchCount(WaveWatch) > *Base)
+						 ULateralWavePattern const* const Wave = FindMinibossWave(Bot);
+						 if (*FiredAt == 0. && Wave && Bot.GetWatchCount(WaveWatch) > *Base)
 						 {
 							 TArray<AEnemyCharacter*> const Dummies = FindLivingDummies(Bot);
 							 if (bSurvives)
@@ -1444,7 +1477,7 @@ namespace GeoTutorialStages
 								 Bot.Test.TestFalse(TEXT("A dummy lives to shield the pawn"), Dummies.IsEmpty());
 							 }
 
-							 float const Y = PlaceY(Dummies);
+							 float const Across = PlaceAcross(Dummies, *Wave, CentreX);
 							 for (AEnemyCharacter* const Dummy : Dummies)
 							 {
 								 if (bKillDummies)
@@ -1453,7 +1486,7 @@ namespace GeoTutorialStages
 								 }
 							 }
 
-							 Bot.MovePawn(FVector2D(CentreX - WaveLaneBackoff, Y));
+							 Bot.MovePawn(WaveLanePlace(CentreX, *Wave, Across));
 							 Bot.SetInvincible(false);
 							 *FiredAt = FPlatformTime::Seconds();
 						 }
@@ -1480,9 +1513,9 @@ namespace GeoTutorialStages
 		AddMinibossFightStages(Bot);
 		AddWaveLaneStage(Bot, TEXT("Miniboss: in a living dummy's lane the pawn survives the wave"), WaveWatch, true,
 						 false,
-						 [](TArray<AEnemyCharacter*> const& Dummies)
+						 [](TArray<AEnemyCharacter*> const& Dummies, ULateralWavePattern const& Wave, float const CentreX)
 						 {
-							 return Dummies.IsEmpty() ? 0.f : Dummies[0]->GetActorLocation().Y;
+							 return Dummies.IsEmpty() ? 0.f : WaveAcross(CentreX, Wave, Dummies[0]);
 						 });
 		Bot.AddStage(TEXT("Miniboss: the wave is over"),
 					 [&Bot](bool)
@@ -1490,26 +1523,27 @@ namespace GeoTutorialStages
 						 return !Bot.GetPawn()->IsDead();
 					 });
 		AddWaveLaneStage(Bot, TEXT("Miniboss: out of every lane the pawn dies"), WaveWatch, false, false,
-						 [](TArray<AEnemyCharacter*> const& Dummies)
+						 [](TArray<AEnemyCharacter*> const& Dummies, ULateralWavePattern const& Wave, float const CentreX)
 						 {
-							 float BestY = 0.f;
+							 float Best = 0.f;
 							 float BestDistance = -1.f;
-							 for (float const Candidate : {-900.f, -450.f, 0.f, 450.f, 900.f})
+							 for (float const Fraction : {-0.75f, -0.375f, 0.f, 0.375f, 0.75f})
 							 {
+								 float const Candidate = Fraction * Wave.GetFiringHalfWidth();
 								 float Nearest = TNumericLimits<float>::Max();
 								 for (AEnemyCharacter const* const Dummy : Dummies)
 								 {
-									 Nearest = FMath::Min(Nearest, FMath::Abs(Dummy->GetActorLocation().Y - Candidate));
+									 Nearest = FMath::Min(Nearest, FMath::Abs(WaveAcross(CentreX, Wave, Dummy) - Candidate));
 								 }
 
 								 if (Nearest > BestDistance)
 								 {
 									 BestDistance = Nearest;
-									 BestY = Candidate;
+									 Best = Candidate;
 								 }
 							 }
 
-							 return BestY;
+							 return Best;
 						 });
 		Bot.AddStage(TEXT("Miniboss: the player is back"),
 					 [&Bot](bool)
@@ -1517,9 +1551,9 @@ namespace GeoTutorialStages
 						 return !Bot.GetPawn()->IsDead();
 					 });
 		AddWaveLaneStage(Bot, TEXT("Miniboss: with no dummy alive the pawn dies anywhere"), WaveWatch, false, true,
-						 [](TArray<AEnemyCharacter*> const& Dummies)
+						 [](TArray<AEnemyCharacter*> const& Dummies, ULateralWavePattern const& Wave, float const CentreX)
 						 {
-							 return Dummies.IsEmpty() ? 0.f : Dummies[0]->GetActorLocation().Y;
+							 return Dummies.IsEmpty() ? 0.f : WaveAcross(CentreX, Wave, Dummies[0]);
 						 });
 	}
 

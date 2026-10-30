@@ -22,8 +22,8 @@ Colour is `User.Color`, the beam's palette colour pushed by UGeoBeamVFXComponent
 its own brightness, which is what separates core from halo. `User.Radius` is the keyhole radius, and the
 lattice radii are fractions of it.
 
-A run is `prepare()`, then the `niagara_ops` route to drop the base system's own emitter (`Explosion`) —
-the one step no Python here reaches — then `main()`. The report names every builder call that returned false.
+A run is `prepare()` then `main()`; the system is rebuilt empty, so it holds exactly the layers below. The report
+names every builder call that returned false.
 
 Reference: AI/ArtDirection.md, AI/MCP/MCP_Niagara.md, AI/VFX.md.
 """
@@ -34,7 +34,6 @@ import unreal
 
 TARGET_FOLDER = "/Game/Art/VFX/Assets"
 SYSTEM_NAME = "NS_Square_SacrificeHole"
-BASE_SYSTEM = "/Game/Art/VFX/Generic/Niagara/NS_Round_ZoneIndicator.NS_Round_ZoneIndicator"  # carries User.Color
 LAYER_SOURCE_FOLDER = "/Game/Art/VFX/Assets/_SacrificeHoleSources"
 TEMPLATE_SPRITE = "/Niagara/DefaultAssets/Templates/Emitters/SimpleSpriteBurst.SimpleSpriteBurst"
 SHAPES = "/Game/Art/VFX/Generic/Materials/MatInstances"
@@ -126,6 +125,16 @@ def duplicate_into(source_path, folder, name):
     return duplicate
 
 
+def create_system():
+    """An empty system over folder/name: the layers are its only emitters, `main()` adds its User parameters."""
+    clear_asset("%s/%s" % (TARGET_FOLDER, SYSTEM_NAME))
+    system = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        SYSTEM_NAME, TARGET_FOLDER, unreal.NiagaraSystem, unreal.NiagaraSystemFactoryNew())
+    record(SYSTEM_NAME, system.get_path_name() if system else "FAILED")
+    if system:
+        unreal.EditorAssetLibrary.save_asset(system.get_path_name())
+
+
 def system_path():
     return "%s/%s.%s" % (TARGET_FOLDER, SYSTEM_NAME, SYSTEM_NAME)
 
@@ -159,9 +168,9 @@ def prepare_source(one):
 
 
 def prepare():
-    """Rewrites the target and every layer source; dropping the base's own emitter goes next."""
+    """Rewrites the target system and every layer source."""
     thin_frame()
-    duplicate_into(BASE_SYSTEM, TARGET_FOLDER, SYSTEM_NAME)
+    create_system()
     for one in LAYERS:
         prepare_source(one)
     return "\n".join(LOG)
@@ -289,6 +298,8 @@ def main():
     for one in LAYERS:
         record("emitter %s" % one["name"], cdo.add_emitter(
             system, "%s/%s.%s" % (LAYER_SOURCE_FOLDER, one["name"], one["name"])))
+    record("add User.Radius", cdo.add_user_parameter(system, "User.Radius", "Float"))
+    record("add User.Color", cdo.add_user_parameter(system, "User.Color", "LinearColor"))
     record("User.Radius", cdo.set_user_parameter(system, "User.Radius", str(HOLE_RADIUS)))
     record("User.Color", cdo.set_user_parameter(system, "User.Color", DEFAULT_COLOR))
     record("compile emitters", cdo.compile_and_save(system))

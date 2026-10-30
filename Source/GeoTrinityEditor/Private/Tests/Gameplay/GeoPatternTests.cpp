@@ -1,5 +1,6 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
+#include "AbilitySystem/Abilities/Pattern/Hazard/LateralWavePattern.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpot.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotMask.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
@@ -85,6 +86,27 @@ bool FGeoSafeSpotMaskTest::RunTest(FString const& /*Parameters*/)
 	FSafeSpotMask::Set(World, nullptr, Spots, FVector2D(1.f, 0.f));
 	FSafeSpotMask::Clear(World, nullptr);
 	DestroyTestWorld(World);
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoLateralWaveRollTest, "GeoTrinity.Pattern.LateralWaveRoll", GeoPatternTestFlags)
+
+bool FGeoLateralWaveRollTest::RunTest(FString const& /*Parameters*/)
+{
+	TSet<float> Reached;
+	for (int32 Seed = 0; Seed < 200; ++Seed)
+	{
+		float const Yaw = ULateralWavePattern::RollTravelYaw(Seed);
+		TestEqual(TEXT("The same seed rolls the same yaw"), ULateralWavePattern::RollTravelYaw(Seed), Yaw);
+		TestTrue(TEXT("A roll is one of the four basic directions"),
+				 Yaw == 0.f || Yaw == 90.f || Yaw == 180.f || Yaw == 270.f);
+		Reached.Add(Yaw);
+	}
+
+	TestEqual(TEXT("All four directions are reachable"), Reached.Num(), 4);
+	TestFalse(TEXT("A firing keeps its fixed direction unless asked"), FLateralWavePatternData().bRandomDirection);
 
 	return true;
 }

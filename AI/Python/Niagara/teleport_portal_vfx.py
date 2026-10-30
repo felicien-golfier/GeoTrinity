@@ -1,11 +1,15 @@
 """The teleport portal's Niagara system, NS_TeleportPortal: one emitter, intro and outro included.
 
-A copy of NS_Beam (`AI/VFX.md`, "Life phases"): its single emitter already plays INTRO, holds MAIN for as long as the
-emitter is active and plays OUTRO once the system is deactivated (a graceful Deactivate, which lets the particle
-finish on its own). Only what a beam is and a portal is not changes: the sprite wears M_TeleportPortal, centred and
-facing the camera, as wide as the material's quad, and its `Color` bound to User.Color. The beam's size phases only
-thin it (a width curve), so they are disabled and a stock ScaleSpriteSize scales it uniformly by the brightness of the
-phase-faded particle colour, which is also the fade the material reads.
+One emitter (`Minimal`) on the life-phase modules (`AI/VFX.md`, "Life phases"): it plays INTRO, holds MAIN for as
+long as the emitter is active and plays OUTRO once the system is deactivated (a graceful Deactivate, which lets the
+particle finish on its own). The sprite wears M_TeleportPortal, centred and facing the camera, as wide as the
+material's quad, and its `Color` bound to User.Color. The phases' size module is disabled and a stock
+ScaleSpriteSize scales the sprite uniformly by the brightness of the phase-faded particle colour, which is also the
+fade the material reads.
+
+The script retunes the system in place, on the emitter the asset already holds: `prepare()` resets the renderer,
+`main()` rewrites every value and the binding, and adds the scale module only while `ADD_SCALE_MODULE` is set (a
+rerun on a system that has it would stack a second one).
 
 The pad calls Activate and Deactivate (AGeoTeleporter::ApplyOpen) and nothing else.
 
@@ -20,7 +24,6 @@ import unreal
 SYSTEM_NAME = "NS_TeleportPortal"
 EMITTER = "Minimal"
 TARGET_FOLDER = "/Game/Art/VFX/Teleporter"
-BASE_SYSTEM = "/Game/Art/VFX/Generic/Niagara/NS_Beam.NS_Beam"
 PORTAL_MATERIAL = "/Game/Art/VFX/Teleporter/M_TeleportPortal.M_TeleportPortal"
 
 PARTICLE_SPAWN = unreal.NiagaraScriptUsage.PARTICLE_SPAWN_SCRIPT
@@ -33,6 +36,7 @@ DYN_FLOAT_FROM_COLOR = "/Niagara/DynamicInputs/TypeConversions/MakeFloatFromLine
 
 QUAD_SIZE = 464.0  # the material's quad: the artifact's 200-unit disc, 16 % wider for the sparks
 HELD = 100000.0  # the beam's lifetime parameter: long enough that only Deactivate ends the portal
+ADD_SCALE_MODULE = False  # True only on a system whose stack has no ScaleSpriteSize yet
 PORTAL_BLUE = "0.0685,0.3915,1,1"
 INTRO_SECONDS = 0.5
 OUTRO_SECONDS = 0.9
@@ -55,13 +59,9 @@ def system_path():
 
 
 def prepare():
-    """Duplicates the beam over the portal and rewrites its renderer."""
-    path = "%s/%s" % (TARGET_FOLDER, SYSTEM_NAME)
-    if unreal.EditorAssetLibrary.does_asset_exist(path):
-        unreal.EditorAssetLibrary.delete_asset(path)
-    system = unreal.AssetToolsHelpers.get_asset_tools().duplicate_asset(
-        SYSTEM_NAME, TARGET_FOLDER, unreal.load_object(None, BASE_SYSTEM))
-    record(SYSTEM_NAME, system.get_path_name() if system else "FAILED")
+    """Rewrites the renderer of the system's emitter."""
+    system = unreal.load_object(None, system_path())
+    record(SYSTEM_NAME, system.get_path_name() if system else "MISSING")
 
     sprite = unreal.find_object(unreal.find_object(system, EMITTER), "NiagaraSpriteRendererProperties_0")
     sprite.set_editor_property("Material", unreal.load_object(None, PORTAL_MATERIAL))
@@ -103,7 +103,8 @@ def main():
     write(system, PARTICLE_SPAWN, INITIALIZE_PARTICLE, "Uniform Sprite Size", QUAD_SIZE)
     write(system, PARTICLE_UPDATE, PHASE_STATE, "INTRO_Lifetime", INTRO_SECONDS)
     write(system, PARTICLE_UPDATE, PHASE_STATE, "OUTRO_Lifetime", OUTRO_SECONDS)
-    scale_by_fade(system)
+    if ADD_SCALE_MODULE:
+        scale_by_fade(system)
     record("bind Color", cdo.bind_material_parameter_to_user_parameter(system, EMITTER, "Color", "User.Color"))
     record("compile", cdo.compile_and_save(system))
 

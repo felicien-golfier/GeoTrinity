@@ -9,7 +9,7 @@ One boss encounter and everything room-shaped. The arena drives itself; GameStat
 | `GeoDummyArena.h` | Training dummy: spawns its enemy, `IsBoss() = false`, no fight machinery |
 | `GeoArenaBarrier.h` | Replicated barrier lerping transforms Fight-On ↔ Fight-Off |
 | `GeoHexBarrier.h` | Barrier variant: hex-tile alley vanishing tile by tile |
-| `GeoArenaVolume.h` | Box naming which arena players stand in (checkpoint/respawn tag outside a fight) |
+| `GeoArenaVolume.h` | Box naming which arena players stand in (checkpoint/respawn tag outside a fight); `GetArenaBounds(ArenaTag)` = XY box over every volume of the arena (a rolled lateral wave fits itself to it) |
 
 ## GeoArena
 - Reached by abilities via `GetArenaOfBoss(Boss)` (reads `AEnemyCharacter::Arena`). One boss per arena.

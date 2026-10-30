@@ -43,6 +43,7 @@ ALLY_SALVE_TAG = SALVE_TAG + ".Ally"  # a child tag: the shooter tree firing SAL
 SUMMON_TAG = "Ability.Spell.TutorialMinibossSummon"
 WAVE_TAG = "Ability.Spell.LateralWave"  # tutorial_waves.py: the one wave, lanes from the living adds
 WAVE_EVENT_TAG = "Event.StateTree.TriggerMinibossWave"
+WAVE_PATTERN_DATA = "/Script/GeoTrinity.LateralWavePatternData(bRandomDirection=True)"  # each firing rolls its direction
 POINT_TAG = "TargetPoint.Tutorial.MinibossPoint"
 ARENA_TAG = "Arena.Tutorial.Miniboss"
 ALLY_ACTOR_TAG = "TutorialMinibossAlly"
@@ -271,6 +272,8 @@ def build_tree():
     else:
         builder.replace_fire_ability_tag_in_state(tree, "Start", SALVE_TAG)
         builder.replace_fire_ability_tag_in_state(tree, "Wave", WAVE_TAG)
+    # The wave's direction is rolled per firing (one of the 4 basic ones); its lanes come from the living adds.
+    builder.set_task_property(tree, "Wave", "STTask_FireAbility", "PatternData", WAVE_PATTERN_DATA)
     for name, value in (("PointTag", POINT_TAG), ("ArenaTag", ARENA_TAG)):
         builder.set_task_property(tree, "Move", "STTask_MoveToTargetPoint", name, '(TagName="%s")' % value)
     unreal.EditorAssetLibrary.save_loaded_asset(tree, only_if_is_dirty=False)

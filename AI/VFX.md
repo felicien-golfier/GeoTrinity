@@ -127,7 +127,7 @@ Reference: Research artifact, Teleport tab, "6 · Round" (`AI/Artifacts.md`); th
 | Part | Made of | Parameters |
 |---|---|---|
 | Everything: rim rings (r 168/150/136/127/120 of 200, last one hot, breathing 1 → .72 over 3 s), black core r 117 with two dim rings, four turning polygon shells, four bright arcs, 24 sparks on exact 15° steps (triangle / hexagon outline / diamond / streak by index mod 4, two reaches, two sizes, shrinking and fading, staggered) | `M_TeleportPortal`: one Custom HLSL node, analytic, driven by `Time`; numbers are the artifact's `round()` / `sparks()` | particle colour (RGB = colour, A = fade) |
-| Intro / hold / outro | `NS_TeleportPortal` (a copy of `NS_Beam`: one emitter, INTRO scale and alpha 0 → 1 over 0.5 s, MAIN held, OUTRO 1 → 0 over 0.9 s after a graceful `Deactivate`), built by `AI/Python/Niagara/teleport_portal_vfx.py`; the material reads colour and alpha from the particle colour | `User.Color` |
+| Intro / hold / outro | `NS_TeleportPortal` (one emitter on the life-phase modules: INTRO scale and alpha 0 → 1 over 0.5 s, MAIN held, OUTRO 1 → 0 over 0.9 s after a graceful `Deactivate`), built by `AI/Python/Niagara/teleport_portal_vfx.py`; the material reads colour and alpha from the particle colour | `User.Color` |
 
 - Hot colour = the colour lerped toward white; only one colour is ever authored.
 - Sparks live in the same shader, so they ride the pad.

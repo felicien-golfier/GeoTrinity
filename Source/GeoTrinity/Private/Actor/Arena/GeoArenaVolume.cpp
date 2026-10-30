@@ -61,3 +61,18 @@ bool AGeoArenaVolume::IsPawnInside(UObject const* WorldContextObject, APawn cons
 	}
 	return false;
 }
+
+FBox2D AGeoArenaVolume::GetArenaBounds(UObject const* WorldContextObject, FGameplayTag const ArenaTag)
+{
+	FBox2D ArenaBounds(ForceInit);
+	for (TActorIterator<AGeoArenaVolume> It(WorldContextObject->GetWorld()); It; ++It)
+	{
+		if (It->ArenaTag == ArenaTag)
+		{
+			FBox const Box = It->TriggerBox->Bounds.GetBox();
+			ArenaBounds += FBox2D(FVector2D(Box.Min), FVector2D(Box.Max));
+		}
+	}
+
+	return ArenaBounds;
+}

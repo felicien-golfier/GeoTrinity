@@ -11,6 +11,7 @@
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 
 struct FGameplayAbilitySpec;
+struct FGameplayEffectSpec;
 struct FOnAttributeChangeData;
 class AEnemyCharacter;
 class AGeoCharacter;
@@ -185,10 +186,12 @@ public:
 	// --- Health log -----------------------------------------------------------------------------------------------
 
 	/**
-	 * From the next frame on, logs every health change of each enemy tagged Tag and the change that kills the player's
-	 * pawn (its health is refilled every frame), with its cause: effect, instigator, causer, ability, or set directly
-	 * (the bot, or code outside an effect). Also each death, revive, and removal while alive (an arena wipe). Written
-	 * to run.log as it happens and kept for GetHealthLog; a stage timeout carries its tail.
+	 * From the next frame on, logs every change of health value of each enemy tagged Tag and the change that kills the
+	 * player's pawn (its health is refilled every frame), with its cause: effect, instigator, causer, ability, or set
+	 * directly (the bot, or code outside an effect). Each effect applied or executed on those enemies has its own line
+	 * at the same time: damage through IncomingDamage reaches Health without its effect's data. Also each death,
+	 * revive, and removal while alive (an arena wipe).
+	 * Written to run.log as it happens and kept for GetHealthLog; a stage timeout carries its tail.
 	 */
 	void WatchHealth(FName Tag);
 	/** The last Count lines of the health log, oldest first, one per line; empty when nothing was logged. */
@@ -241,6 +244,9 @@ private:
 		TWeakObjectPtr<AGeoCharacter> Character;
 		TWeakObjectPtr<UGeoAbilitySystemComponent> BoundASC;
 		FDelegateHandle Handle;
+		/** Effects applied and periodic effects executed on it: bEveryChange only. */
+		FDelegateHandle AppliedHandle;
+		FDelegateHandle PeriodicHandle;
 		FString Name;
 		/** False: only the change that empties its health is logged. */
 		bool bEveryChange = true;
@@ -250,6 +256,8 @@ private:
 		float Health = 0.f;
 		/** Where it last stood alive. */
 		FVector Location = FVector::ZeroVector;
+		/** Last logged movement mode (bEveryChange only), so a change to or from Walking is logged once. */
+		int32 MovementMode = -1;
 	};
 
 	void ServeUI();
@@ -263,8 +271,10 @@ private:
 	void UnbindHealth(FHealthWatch& Watch);
 	/** Writes Line to run.log and the health log, stamped with the play world's time. */
 	void AddHealthLog(FString const& Line);
-	/** The effect, instigator, causer and ability behind Data, or that it was set directly. */
+	/** DescribeEffect of the effect behind Data, or that it carries none. */
 	static FString DescribeHealthChange(FOnAttributeChangeData const& Data);
+	/** Spec's effect, instigator, causer and ability. */
+	static FString DescribeEffect(FGameplayEffectSpec const& Spec);
 	/** Logs the Cat lines of World, the play world, and stops logging those of the one before. */
 	void SubscribeToLines(UWorld* World);
 	/** The world-URL jump without the travel: the pawn onto Room's player start, then its encounter's arrival reset. */
